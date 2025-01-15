@@ -7,12 +7,9 @@ import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Person;
-import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.content.pm.PackageManager;
-import android.content.pm.ServiceInfo;
 import android.graphics.Bitmap;
 import android.graphics.drawable.Icon;
 import android.media.AudioAttributes;
@@ -21,14 +18,11 @@ import android.media.MediaPlayer;
 import android.media.RingtoneManager;
 import android.net.Uri;
 import android.os.Build;
-import android.os.IBinder;
 import android.os.Vibrator;
 import android.provider.Settings;
 import android.text.SpannableString;
 import android.text.TextUtils;
 import android.text.style.ForegroundColorSpan;
-
-import androidx.annotation.Nullable;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
@@ -400,7 +394,7 @@ public class VoIPPreNotificationService { // } extends Service implements AudioM
         FileLog.d("VoIPPreNotification.show()");
 
         if (call == null || intent == null) {
-            dismiss(context);
+            dismiss(context, false);
             FileLog.d("VoIPPreNotification.show(): call or intent is null");
             return;
         }
@@ -409,7 +403,7 @@ public class VoIPPreNotificationService { // } extends Service implements AudioM
             return;
         }
 
-        dismiss(context);
+        dismiss(context, false);
 
         pendingVoIP = intent;
         pendingCall = call;
@@ -472,7 +466,7 @@ public class VoIPPreNotificationService { // } extends Service implements AudioM
                 if (currentState != null) {
                     currentState.destroy();
                 }
-                dismiss(context);
+                dismiss(context, false);
             } else if (whenAcknowledged != null) {
                 whenAcknowledged.run();
             }
@@ -493,7 +487,7 @@ public class VoIPPreNotificationService { // } extends Service implements AudioM
             context.startService(pendingVoIP);
         }
         pendingVoIP = null;
-        dismiss(context);
+        dismiss(context, true);
         return true;
     }
 
@@ -533,7 +527,7 @@ public class VoIPPreNotificationService { // } extends Service implements AudioM
             }
             pendingVoIP = null;
         }
-        dismiss(context);
+        dismiss(context, true);
     }
 
     public static void decline(Context context, int reason) {
@@ -580,10 +574,10 @@ public class VoIPPreNotificationService { // } extends Service implements AudioM
                 }
             }
         }, ConnectionsManager.RequestFlagFailOnServerErrors);
-        dismiss(context);
+        dismiss(context, false);
     }
 
-    public static void dismiss(Context context) {
+    public static void dismiss(Context context, boolean answered) {
         FileLog.d("VoIPPreNotification.dismiss()");
         pendingVoIP = null;
         pendingCall = null;
@@ -593,6 +587,11 @@ public class VoIPPreNotificationService { // } extends Service implements AudioM
         final NotificationManager nm = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
         nm.cancel(VoIPService.ID_INCOMING_CALL_PRENOTIFICATION);
         stopRinging();
+        if (!answered) {
+            for (int i = 0; i < UserConfig.MAX_ACCOUNT_COUNT; ++i) {
+                MessagesController.getInstance(i).ignoreSetOnline = false;
+            }
+        }
 //        if (pendingNotificationService != null) {
 //            context.stopService(pendingNotificationService);
 //        }

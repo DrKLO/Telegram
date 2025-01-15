@@ -7,8 +7,11 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.ColorFilter;
 import android.graphics.Paint;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffXfermode;
 import android.graphics.Rect;
 import android.graphics.RectF;
+import android.graphics.Xfermode;
 import android.graphics.drawable.Drawable;
 import android.text.TextUtils;
 import android.view.Gravity;
@@ -112,32 +115,46 @@ public class ChooseQualityLayout {
     public static class QualityIcon extends Drawable {
 
         private final Paint bgPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final Paint bgLinePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         private final Drawable base;
         private final RectF rect = new RectF();
-        public final AnimatedTextView.AnimatedTextDrawable text = new AnimatedTextView.AnimatedTextDrawable();
+        public final AnimatedTextView.AnimatedTextDrawable topText = new AnimatedTextView.AnimatedTextDrawable();
+        public final AnimatedTextView.AnimatedTextDrawable bottomText = new AnimatedTextView.AnimatedTextDrawable();
+
+        private final Callback callback = new Callback() {
+            @Override
+            public void invalidateDrawable(@NonNull Drawable who) {
+                QualityIcon.this.invalidateSelf();
+            }
+            @Override
+            public void scheduleDrawable(@NonNull Drawable who, @NonNull Runnable what, long when) {
+                QualityIcon.this.scheduleSelf(what, when);
+            }
+            @Override
+            public void unscheduleDrawable(@NonNull Drawable who, @NonNull Runnable what) {
+                QualityIcon.this.unscheduleSelf(what);
+            }
+        };
 
         public QualityIcon(Context context) {
             base = context.getResources().getDrawable(R.drawable.msg_settings).mutate();
 
-            text.setTypeface(AndroidUtilities.getTypeface("fonts/num.otf"));
-            text.setTextColor(0xFFFFFFFF);
-            text.setTextSize(dp(8));
-            text.setCallback(new Callback() {
-                @Override
-                public void invalidateDrawable(@NonNull Drawable who) {
-                    QualityIcon.this.invalidateSelf();
-                }
-                @Override
-                public void scheduleDrawable(@NonNull Drawable who, @NonNull Runnable what, long when) {
-                    QualityIcon.this.scheduleSelf(what, when);
-                }
-                @Override
-                public void unscheduleDrawable(@NonNull Drawable who, @NonNull Runnable what) {
-                    QualityIcon.this.unscheduleSelf(what);
-                }
-            });
-            text.setGravity(Gravity.CENTER);
-            text.setOverrideFullWidth(AndroidUtilities.displaySize.x);
+            bgLinePaint.setColor(0xFFFFFFFF);
+            bgLinePaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.DST_OUT));
+
+            topText.setTypeface(AndroidUtilities.getTypeface("fonts/num.otf"));
+            topText.setTextColor(0xFF000000);
+            topText.setTextSize(dp(7));
+            topText.setCallback(callback);
+            topText.setGravity(Gravity.CENTER);
+            topText.setOverrideFullWidth(AndroidUtilities.displaySize.x);
+
+            bottomText.setTypeface(AndroidUtilities.getTypeface("fonts/num.otf"));
+            bottomText.setTextColor(0xFF000000);
+            bottomText.setTextSize(dp(7));
+            bottomText.setCallback(callback);
+            bottomText.setGravity(Gravity.CENTER);
+            bottomText.setOverrideFullWidth(AndroidUtilities.displaySize.x);
         }
 
         private float rotation;
@@ -148,23 +165,59 @@ public class ChooseQualityLayout {
 
         @Override
         public void draw(@NonNull Canvas canvas) {
-            final Rect bounds = getBounds();
+            final float top_w = dp(5) * topText.isNotEmpty() + topText.getCurrentWidth();
+            final float bottom_w = dp(5) * bottomText.isNotEmpty() + bottomText.getCurrentWidth();
 
-            base.setBounds(bounds);
+            final Rect bounds = getBounds();
+            if (top_w > 0 || bottom_w > 0)
+                canvas.saveLayerAlpha(bounds.left, bounds.top, bounds.right, bounds.bottom, 0xFF, Canvas.ALL_SAVE_FLAG);
+
+            AndroidUtilities.rectTmp2.set(dp(6), dp(6), dp(6) + (int) bounds.width() - dp(12), dp(6) + (int) bounds.height() - dp(12));
+            base.setBounds(AndroidUtilities.rectTmp2);
             canvas.save();
             canvas.rotate(rotation * -180, bounds.centerX(), bounds.centerY());
             base.draw(canvas);
             canvas.restore();
 
-            bgPaint.setColor(Theme.getColor(Theme.key_featuredStickers_addButton));
-            final float right = bounds.left + bounds.width() * .97f;
-            final float cy = bounds.top + bounds.height() * .75f;
-            final float h = dp(11);
-            final float w = dp(5) * text.isNotEmpty() + text.getCurrentWidth();
-            rect.set(right - w, cy - h / 2f, right, cy + h / 2f);
-            canvas.drawRoundRect(rect, dp(3), dp(3), bgPaint);
-            text.setBounds(rect);
-            text.draw(canvas);
+            bgPaint.setColor(0xFFFFFFFF);
+            final float right = bounds.left + bounds.width() * .98f;
+            final float cy_top = bounds.top + bounds.height() * .18f;
+            final float cy_bottom = bounds.top + bounds.height() * .78f;
+            final float h = dp(10);
+
+            if (top_w > 0) {
+                rect.set(right - top_w, cy_top - h / 2f, right, cy_top + h / 2f);
+                canvas.drawRoundRect(rect, dp(3), dp(3), bgLinePaint);
+            }
+            if (bottom_w > 0) {
+                rect.set(right - bottom_w, cy_bottom - h / 2f, right, cy_bottom + h / 2f);
+                canvas.drawRoundRect(rect, dp(3), dp(3), bgLinePaint);
+            }
+
+            if (top_w > 0 || bottom_w > 0)
+                canvas.restore();
+
+            if (top_w > 0) {
+                bgPaint.setAlpha((int) (0xFF * topText.isNotEmpty()));
+                topText.setAlpha((int) (0xFF * topText.isNotEmpty()));
+                rect.set(right - top_w, cy_top - h / 2f, right, cy_top + h / 2f);
+                rect.inset(dp(1), dp(1));
+                canvas.drawRoundRect(rect, dp(3), dp(3), bgPaint);
+                rect.inset(-dp(1), -dp(1));
+                topText.setBounds(rect);
+                topText.draw(canvas);
+            }
+
+            if (bottom_w > 0) {
+                bgPaint.setAlpha((int) (0xFF * bottomText.isNotEmpty()));
+                bottomText.setAlpha((int) (0xFF * bottomText.isNotEmpty()));
+                rect.set(right - bottom_w, cy_bottom - h / 2f, right, cy_bottom + h / 2f);
+                rect.inset(dp(1), dp(1));
+                canvas.drawRoundRect(rect, dp(3), dp(3), bgPaint);
+                rect.inset(-dp(1), -dp(1));
+                bottomText.setBounds(rect);
+                bottomText.draw(canvas);
+            }
         }
 
         @Override
@@ -184,12 +237,12 @@ public class ChooseQualityLayout {
 
         @Override
         public int getIntrinsicWidth() {
-            return base.getIntrinsicWidth();
+            return base.getIntrinsicWidth() + dp(12);
         }
 
         @Override
         public int getIntrinsicHeight() {
-            return base.getIntrinsicHeight();
+            return base.getIntrinsicHeight() + dp(12);
         }
     }
 

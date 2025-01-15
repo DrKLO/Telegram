@@ -63,7 +63,7 @@ public class TableView extends TableLayout {
         setColumnStretchable(1, true);
     }
 
-    public void addRow(CharSequence title, View content) {
+    public TableRow addRow(CharSequence title, View content) {
         TableRow row = new TableRow(getContext());
         TableRow.LayoutParams lp;
         lp = new TableRow.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT);
@@ -71,6 +71,7 @@ public class TableView extends TableLayout {
         lp = new TableRow.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 1f);
         row.addView(new TableRowContent(this, content), lp);
         addView(row);
+        return row;
     }
 
     public TableRow addRowUnpadded(CharSequence title, View content) {
@@ -160,7 +161,7 @@ public class TableView extends TableLayout {
         return addRow(title, LocaleController.formatString(R.string.formatDateAtTime, LocaleController.getInstance().getFormatterGiveawayCard().format(new Date(date * 1000L)), LocaleController.getInstance().getFormatterDay().format(new Date(date * 1000L))));
     }
 
-    public void addRowLink(CharSequence title, CharSequence value, Runnable onClick) {
+    public TableRow addRowLink(CharSequence title, CharSequence value, Runnable onClick) {
         final LinkSpanDrawable.LinksTextView textView = new LinkSpanDrawable.LinksTextView(getContext(), resourcesProvider);
         textView.setPadding(dp(12.66f), dp(9.33f), dp(12.66f), dp(9.33f));
         textView.setEllipsize(TextUtils.TruncateAt.END);
@@ -183,14 +184,37 @@ public class TableView extends TableLayout {
             }
         }, 0, ssb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         textView.setText(ssb);
-        addRowUnpadded(title, textView);
+        return addRowUnpadded(title, textView);
     }
 
     public TableRow addRow(CharSequence title, CharSequence text) {
         ButtonSpan.TextViewButtons textView = new ButtonSpan.TextViewButtons(getContext());
         textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-        textView.setText(text);
+        textView.setText(Emoji.replaceEmoji(text, textView.getPaint().getFontMetricsInt(), false));
+        NotificationCenter.listenEmojiLoading(textView);
+
+        TableRow row = new TableRow(getContext());
+        TableRow.LayoutParams lp;
+        lp = new TableRow.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT);
+        row.addView(new TableRowTitle(this, title), lp);
+        lp = new TableRow.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 1f);
+        row.addView(new TableRowContent(this, textView), lp);
+        addView(row);
+
+        return row;
+    }
+
+    public TableRow addRow(CharSequence title, CharSequence text, CharSequence buttonText, Runnable buttonOnClick) {
+        ButtonSpan.TextViewButtons textView = new ButtonSpan.TextViewButtons(getContext());
+        textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+        textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+        SpannableStringBuilder ssb = new SpannableStringBuilder(Emoji.replaceEmoji(text, textView.getPaint().getFontMetricsInt(), false));
+        if (buttonText != null) {
+            ssb.append(" ").append(ButtonSpan.make(buttonText, buttonOnClick, resourcesProvider));
+        }
+        textView.setText(ssb);
+        NotificationCenter.listenEmojiLoading(textView);
 
         TableRow row = new TableRow(getContext());
         TableRow.LayoutParams lp;

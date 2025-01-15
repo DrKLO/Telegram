@@ -92,6 +92,11 @@ public abstract class GradientHeaderActivity extends BaseFragment {
     public int statusBarHeight;
     private int firstViewHeight;
     private final Paint headerBgPaint = new Paint();
+    private int minusHeaderHeight;
+
+    public void setMinusHeaderHeight(int h) {
+        minusHeaderHeight = h;
+    }
 
     public boolean whiteBackground;
 
@@ -118,7 +123,7 @@ public abstract class GradientHeaderActivity extends BaseFragment {
                 } else {
                     int h = AndroidUtilities.dp(140) + statusBarHeight;
                     if (backgroundView.getMeasuredHeight() + AndroidUtilities.dp(24) > h) {
-                        h = backgroundView.getMeasuredHeight() + AndroidUtilities.dp(24);
+                        h = Math.max(h, backgroundView.getMeasuredHeight() + AndroidUtilities.dp(24) - minusHeaderHeight);
                     }
                     firstViewHeight = h;
                 }

@@ -89,6 +89,7 @@ public class CaptionContainerView extends FrameLayout {
     public FrameLayout limitTextContainer;
     public AnimatedTextView limitTextView;
     private int codePointCount;
+    private long dialogId;
 
     private final Paint fadePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final LinearGradient fadeGradient = new LinearGradient(0, 0, 0, AndroidUtilities.dp(10), new int[] { 0xffff0000, 0x00000000 }, new float[] { 0.05f, 1 }, Shader.TileMode.CLAMP);
@@ -196,7 +197,7 @@ public class CaptionContainerView extends FrameLayout {
                     if (blurDrawer == null) {
                         blurDrawer = new BlurringShader.StoryBlurDrawer(blurManager, view, BlurringShader.StoryBlurDrawer.BLUR_TYPE_EMOJI_VIEW);
                     }
-                    drawBlur(blurDrawer, canvas, rectF, 0, false, 0, -view.getY(), false);
+                    drawBlur(blurDrawer, canvas, rectF, 0, false, 0, -view.getY(), false, 1.0f);
                 } else {
                     drawBackground(canvas, rectF, 0, .95f, view);
                 }
@@ -245,6 +246,9 @@ public class CaptionContainerView extends FrameLayout {
         editText.getEditText().setHintText(LocaleController.getString(R.string.AddCaption), false);
         hintTextBitmapPaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.DST_IN));
         editText.getEditText().setTranslationX(AndroidUtilities.dp(-40 + 18));
+        if (isAtTop()) {
+            editText.getEditText().setGravity(Gravity.TOP);
+        }
         editText.getEmojiButton().setAlpha(0f);
         editText.getEditText().addTextChangedListener(new TextWatcher() {
 
@@ -265,7 +269,7 @@ public class CaptionContainerView extends FrameLayout {
                     createMentionsContainer();
                 }
                 if (mentionContainer.getAdapter() != null) {
-//                    mentionContainer.getAdapter().setUserOrChat(UserConfig.getInstance(currentAccount).getCurrentUser(), null);
+                    mentionContainer.getAdapter().setUserOrChat(MessagesController.getInstance(currentAccount).getUser(dialogId), MessagesController.getInstance(currentAccount).getChat(-dialogId));
                     mentionContainer.getAdapter().searchUsernameOrHashtag(text, editText.getEditText().getSelectionStart(), null, false, false);
                 }
             }
@@ -308,7 +312,7 @@ public class CaptionContainerView extends FrameLayout {
             }
         });
         editText.getEditText().setLinkTextColor(Color.WHITE);
-        addView(editText, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM | Gravity.FILL_HORIZONTAL, 12, 12, 12 + additionalRightMargin(), 12));
+        addView(editText, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, (isAtTop() ? Gravity.TOP : Gravity.BOTTOM) | Gravity.FILL_HORIZONTAL, 12, 12, 12 + additionalRightMargin(), 12));
 
         applyButton = new BounceableImageView(context);
         ScaleStateListAnimator.apply(applyButton, 0.05f, 1.25f);
@@ -326,7 +330,7 @@ public class CaptionContainerView extends FrameLayout {
             textChangeRunnable.run();
         });
         applyButton.setTranslationY(-AndroidUtilities.dp(1));
-        addView(applyButton, LayoutHelper.createFrame(44, 44, Gravity.RIGHT | Gravity.BOTTOM));
+        addView(applyButton, LayoutHelper.createFrame(44, 44, Gravity.RIGHT | (isAtTop() ? Gravity.TOP : Gravity.BOTTOM)));
 
         limitTextView = new AnimatedTextView(context, false, true, true);
         limitTextView.setGravity(Gravity.CENTER);
@@ -336,11 +340,15 @@ public class CaptionContainerView extends FrameLayout {
         limitTextView.setTypeface(AndroidUtilities.bold());
         limitTextContainer = new FrameLayout(context);
         limitTextContainer.setTranslationX(dp(2));
-        limitTextContainer.addView(limitTextView, LayoutHelper.createFrame(52, 16, Gravity.RIGHT | Gravity.BOTTOM));
-        addView(limitTextContainer, LayoutHelper.createFrame(52, 16, Gravity.RIGHT | Gravity.BOTTOM, 0, 0, 0, 50));
+        limitTextContainer.addView(limitTextView, LayoutHelper.createFrame(52, 16, Gravity.RIGHT | (isAtTop() ? Gravity.TOP : Gravity.BOTTOM)));
+        addView(limitTextContainer, LayoutHelper.createFrame(52, 16, Gravity.RIGHT | (isAtTop() ? Gravity.TOP : Gravity.BOTTOM), 0, (isAtTop() ? 50 : 0), 0, (isAtTop() ? 0 : 50)));
 
         fadePaint.setShader(fadeGradient);
         fadePaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.DST_OUT));
+    }
+
+    public void setDialogId(long dialogId) {
+        this.dialogId = dialogId;
     }
 
     public int additionalRightMargin() {
@@ -397,6 +405,7 @@ public class CaptionContainerView extends FrameLayout {
                     return super.dispatchTouchEvent(ev);
                 }
             }
+            keyboardNotifier.ignore(false);
             editText.getEditText().setForceCursorEnd(true);
             editText.getEditText().requestFocus();
             editText.openKeyboard();
@@ -444,7 +453,7 @@ public class CaptionContainerView extends FrameLayout {
             public void drawRoundRect(Canvas canvas, Rect rectTmp, float radius) {
                 rectF.set(rectTmp);
                 if (customBlur()) {
-                    drawBlur(mentionBackgroundBlur, canvas, rectF, radius, false, -mentionContainer.getX(), -mentionContainer.getY(), false);
+                    drawBlur(mentionBackgroundBlur, canvas, rectF, radius, false, -mentionContainer.getX(), -mentionContainer.getY(), false, 1.0f);
                 } else {
                     Paint blurPaint = mentionBackgroundBlur.getPaint(1f);
                     if (blurPaint == null) {
@@ -457,22 +466,24 @@ public class CaptionContainerView extends FrameLayout {
                     }
                 }
             }
+            @Override
+            protected boolean isStories() {
+                return true;
+            }
         };
         mentionBackgroundBlur = new BlurringShader.StoryBlurDrawer(blurManager, mentionContainer, BlurringShader.StoryBlurDrawer.BLUR_TYPE_BACKGROUND);
-        setupMentionContainer();
         mentionContainer.withDelegate(new MentionsContainerView.Delegate() {
-
             @Override
             public void replaceText(int start, int len, CharSequence replacingString, boolean allowShort) {
                 replaceWithText(start, len, replacingString, allowShort);
             }
-
             @Override
             public Paint.FontMetricsInt getFontMetrics() {
                 return editText.getEditText().getPaint().getFontMetricsInt();
             }
         });
         containerView.addView(mentionContainer, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT | Gravity.BOTTOM));
+        setupMentionContainer();
     }
 
     protected void setupMentionContainer() {
@@ -531,7 +542,7 @@ public class CaptionContainerView extends FrameLayout {
         return AndroidUtilities.navigationBarHeight;
     }
 
-    private void updateKeyboard(int keyboardHeight) {
+    public void updateKeyboard(int keyboardHeight) {
         if (sizeNotifierFrameLayout != null) {
             sizeNotifierFrameLayout.notifyHeightChanged();
         }
@@ -544,21 +555,23 @@ public class CaptionContainerView extends FrameLayout {
         View parent = (View) getParent();
         parent.clearAnimation();
 
-        if (parentKeyboardAnimator != null) {
-            parentKeyboardAnimator.removeAllListeners();
-            parentKeyboardAnimator.cancel();
-            parentKeyboardAnimator = null;
-        }
+        if (!isAtTop()) {
+            if (parentKeyboardAnimator != null) {
+                parentKeyboardAnimator.removeAllListeners();
+                parentKeyboardAnimator.cancel();
+                parentKeyboardAnimator = null;
+            }
 
-        parentKeyboardAnimator = ObjectAnimator.ofFloat(parent, TRANSLATION_Y, parent.getTranslationY(), -keyboardHeight);
-        if (keyboardHeight > AndroidUtilities.dp(20)) {
-            parentKeyboardAnimator.setInterpolator(AdjustPanLayoutHelper.keyboardInterpolator);
-            parentKeyboardAnimator.setDuration(AdjustPanLayoutHelper.keyboardDuration);
-        } else {
-            parentKeyboardAnimator.setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT);
-            parentKeyboardAnimator.setDuration(640);
+            parentKeyboardAnimator = ObjectAnimator.ofFloat(parent, TRANSLATION_Y, parent.getTranslationY(), -keyboardHeight);
+            if (keyboardHeight > AndroidUtilities.dp(20)) {
+                parentKeyboardAnimator.setInterpolator(AdjustPanLayoutHelper.keyboardInterpolator);
+                parentKeyboardAnimator.setDuration(AdjustPanLayoutHelper.keyboardDuration);
+            } else {
+                parentKeyboardAnimator.setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT);
+                parentKeyboardAnimator.setDuration(640);
+            }
+            parentKeyboardAnimator.start();
         }
-        parentKeyboardAnimator.start();
 
         toKeyboardShow = keyboardHeight > AndroidUtilities.dp(20);
         AndroidUtilities.cancelRunOnUIThread(updateShowKeyboard);
@@ -569,7 +582,7 @@ public class CaptionContainerView extends FrameLayout {
         }
     }
 
-    private boolean toKeyboardShow;
+    public boolean toKeyboardShow;
     private Runnable updateShowKeyboard = () -> {
         updateShowKeyboard(toKeyboardShow, true);
     };
@@ -612,7 +625,7 @@ public class CaptionContainerView extends FrameLayout {
                 keyboardT = (float) anm.getAnimatedValue();
                 editText.getEditText().setTranslationX(lerp(dp(-40 + 18) + getEditTextLeft(), dp(2), keyboardT));
                 editText.setTranslationX(lerp(0, dp(-8), keyboardT));
-                editText.setTranslationY(lerp(0, dp(10), keyboardT));
+                editText.setTranslationY(lerp(0, dp(isAtTop() ? -10 : 10), keyboardT));
                 limitTextContainer.setTranslationX(lerp(-dp(8), dp(2), keyboardT));
                 limitTextContainer.setTranslationY(lerp(-dp(8), 0, keyboardT));
                 editText.getEmojiButton().setAlpha(keyboardT);
@@ -654,7 +667,7 @@ public class CaptionContainerView extends FrameLayout {
             keyboardT = show ? 1 : 0;
             editText.getEditText().setTranslationX(lerp(AndroidUtilities.dp(-40 + 18) + getEditTextLeft(), AndroidUtilities.dp(2), keyboardT));
             editText.setTranslationX(lerp(0, AndroidUtilities.dp(-8), keyboardT));
-            editText.setTranslationY(lerp(0, AndroidUtilities.dp(10), keyboardT));
+            editText.setTranslationY(lerp(0, AndroidUtilities.dp(isAtTop() ? -10 : 10), keyboardT));
             limitTextContainer.setTranslationX(lerp(-dp(8), dp(2), keyboardT));
             limitTextContainer.setTranslationY(lerp(-dp(8), 0, keyboardT));
             editText.getEmojiButton().setAlpha(keyboardT);
@@ -776,7 +789,7 @@ public class CaptionContainerView extends FrameLayout {
     private boolean ignoreDraw = false;
 
     private final RectF rectF = new RectF();
-    private final RectF bounds = new RectF();
+    public final RectF bounds = new RectF();
     private final RectF clickBounds = new RectF();
 
     protected void onEditHeightChange(int height) {}
@@ -870,6 +883,10 @@ public class CaptionContainerView extends FrameLayout {
         }
     }
 
+    protected float forceRound() {
+        return 0.0f;
+    }
+
     @Override
     protected void dispatchDraw(Canvas canvas) {
         if (ignoreDraw) {
@@ -895,32 +912,47 @@ public class CaptionContainerView extends FrameLayout {
             lastHeight = height;
         }
         updateMentionsLayoutPosition();
-        final float heightTranslation = dpf2(-1) * keyboardT + height - heightAnimated;
-        if (Math.abs(lastHeightTranslation - heightTranslation) >= 1 && !collapsed) {
-            editText.getEditText().setTranslationY(lastHeightTranslation = heightTranslation);
-        }
 
-        final float pad = lerp(dp(12), 0, keyboardT);
-        bounds.set(
-            pad,
-            getHeight() - pad - heightAnimated,
-            getWidth() - pad,
-            getHeight() - pad
-        );
-        clickBounds.set(
-            0,
-            getHeight() - heightAnimated - dp(24),
-            getWidth(),
-            getHeight()
-        );
+        final float pad = lerp(dp(12), 0, keyboardT * (1.0f - forceRound()));
+        if (isAtTop()) {
+            bounds.set(
+                pad,
+                pad,
+                getWidth() - pad,
+                pad + heightAnimated
+            );
+            clickBounds.set(
+                pad,
+                pad,
+                getWidth() - pad,
+                pad + heightAnimated + dp(24)
+            );
+        } else {
+            final float heightTranslation = dpf2(-1) * keyboardT + height - heightAnimated;
+            if (Math.abs(lastHeightTranslation - heightTranslation) >= 1 && !collapsed) {
+                editText.getEditText().setTranslationY(lastHeightTranslation = heightTranslation);
+            }
+            bounds.set(
+                pad,
+                getHeight() - pad - heightAnimated,
+                getWidth() - pad,
+                getHeight() - pad
+            );
+            clickBounds.set(
+                0,
+                getHeight() - heightAnimated - dp(24),
+                getWidth(),
+                getHeight()
+            );
+        }
 
         canvas.save();
         final float s = bounce.getScale(.018f);
         canvas.scale(s, s, bounds.centerX(), bounds.centerY());
 
-        final float r = lerp(dp(21), 0, keyboardT);
+        final float r = lerp(dp(21), 0, keyboardT * (1.0f - forceRound()));
         if (customBlur()) {
-            drawBlur(backgroundBlur, canvas, bounds, r, false, 0, 0, true);
+            drawBlur(backgroundBlur, canvas, bounds, r, false, 0, 0, true, 1.0f);
             backgroundPaint.setAlpha((int) (lerp(0x26, 0x40, keyboardT)));
             canvas.drawRoundRect(bounds, r, r, backgroundPaint);
         } else {
@@ -1057,7 +1089,7 @@ public class CaptionContainerView extends FrameLayout {
             canvas.translate(-e.hintLayoutX, 0);
             canvas.saveLayerAlpha(0, 0, hintTextBitmap.getWidth(), hintTextBitmap.getHeight(), 0xff, Canvas.ALL_SAVE_FLAG);
             rectF.set(0, 1, hintTextBitmap.getWidth(), hintTextBitmap.getHeight() - 1);
-            drawBlur(captionBlur, canvas, rectF, 0, true, -editText.getX() - e.getPaddingLeft(), -editText.getY() - e.getPaddingTop() - e.getExtendedPaddingTop(), true);
+            drawBlur(captionBlur, canvas, rectF, 0, true, -editText.getX() - e.getPaddingLeft(), -editText.getY() - e.getPaddingTop() - e.getExtendedPaddingTop(), true, 1.0f);
             canvas.save();
             hintTextBitmapPaint.setAlpha(0xa5);
             canvas.drawBitmap(hintTextBitmap, 0, 0, hintTextBitmapPaint);
@@ -1082,7 +1114,7 @@ public class CaptionContainerView extends FrameLayout {
         return false;
     }
 
-    protected void drawBlur(BlurringShader.StoryBlurDrawer blur, Canvas canvas, RectF rect, float r, boolean text, float ox, float oy, boolean thisView) {
+    protected void drawBlur(BlurringShader.StoryBlurDrawer blur, Canvas canvas, RectF rect, float r, boolean text, float ox, float oy, boolean thisView, float alpha) {
 
     }
 
@@ -1109,7 +1141,7 @@ public class CaptionContainerView extends FrameLayout {
     @Override
     protected boolean drawChild(Canvas canvas, View child, long drawingTime) {
         if (child == editText) {
-            float ty = Math.max(0, editText.getHeight() - dp(82) - editText.getScrollY()) * (1f - keyboardT);
+            float ty = isAtTop() ? 0 : Math.max(0, editText.getHeight() - dp(82) - editText.getScrollY()) * (1f - keyboardT);
             canvas.saveLayerAlpha(0, 0, getWidth(), getHeight(), 0xFF, Canvas.ALL_SAVE_FLAG);
 
             canvas.save();
@@ -1425,6 +1457,10 @@ public class CaptionContainerView extends FrameLayout {
         public int getOpacity() {
             return PixelFormat.TRANSPARENT;
         }
+    }
+
+    protected boolean isAtTop() {
+        return false;
     }
 
 }

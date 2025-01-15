@@ -28,6 +28,7 @@ import android.media.AudioFormat;
 import android.media.MediaCodec;
 import android.media.MediaCrypto;
 import android.media.MediaFormat;
+import android.opengl.EGLContext;
 import android.os.Handler;
 import androidx.annotation.CallSuper;
 import androidx.annotation.DoNotInline;
@@ -418,7 +419,9 @@ public class MediaCodecAudioRenderer extends MediaCodecRenderer implements Media
       MediaCodecInfo codecInfo,
       Format format,
       @Nullable MediaCrypto crypto,
-      float codecOperatingRate) {
+      float codecOperatingRate,
+      EGLContext parentContext
+  ) {
     codecMaxInputSize = getCodecMaxInputSize(codecInfo, format, getStreamFormats());
     codecNeedsDiscardChannelsWorkaround = codecNeedsDiscardChannelsWorkaround(codecInfo.name);
     MediaFormat mediaFormat =

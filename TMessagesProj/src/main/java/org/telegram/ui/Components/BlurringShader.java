@@ -1,5 +1,7 @@
 package org.telegram.ui.Components;
 
+import static org.telegram.messenger.AndroidUtilities.dp;
+
 import android.animation.ValueAnimator;
 import android.graphics.Bitmap;
 import android.graphics.BitmapShader;
@@ -9,16 +11,19 @@ import android.graphics.ColorMatrix;
 import android.graphics.ColorMatrixColorFilter;
 import android.graphics.Matrix;
 import android.graphics.Paint;
+import android.graphics.Path;
 import android.graphics.PixelFormat;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.Rect;
 import android.graphics.RectF;
+import android.graphics.RenderEffect;
 import android.graphics.RenderNode;
 import android.graphics.Shader;
 import android.graphics.drawable.Drawable;
 import android.opengl.GLES11Ext;
 import android.opengl.GLES20;
+import android.os.Build;
 import android.text.TextUtils;
 import android.view.View;
 
@@ -29,6 +34,7 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
+import org.telegram.ui.ActionBar.Theme;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -427,6 +433,37 @@ public class BlurringShader {
 
         private final Object textureLock = new Object();
 
+        private int renderNodeBackgroundColor;
+        private View renderNodeView;
+        private Object renderNode;
+        private Object blurRenderNode;
+        public void setRenderNode(View view, Object renderNode) {
+            setRenderNode(view, renderNode, 0xFF000000);
+        }
+        public void setRenderNode(View view, Object renderNode, int bgColor) {
+            this.renderNodeView = view;
+            this.renderNode = renderNode;
+            this.renderNodeBackgroundColor = bgColor;
+            if (renderNode != null && Build.VERSION.SDK_INT >= 31) {
+                RenderNode parent = (RenderNode) renderNode;
+                RenderNode node = new RenderNode("blurRenderNode");
+                node.setRenderEffect(RenderEffect.createBlurEffect(dp(35), dp(35), Shader.TileMode.CLAMP));
+                node.setPosition(0, 0, parent.getWidth(), parent.getHeight());
+                Canvas renderNodeCanvas = node.beginRecording();
+                renderNodeCanvas.drawColor(bgColor);
+//                renderNodeCanvas.translate(dp(32), dp(32));
+                renderNodeCanvas.drawRenderNode(parent);
+                node.endRecording();
+                this.blurRenderNode = node;
+            } else {
+                this.blurRenderNode = null;
+            }
+        }
+
+        public boolean hasRenderNode() {
+            return this.blurRenderNode != null;
+        }
+
         public BlurManager(View parentView) {
             this.view = parentView;
             if (view.isAttachedToWindow()) {
@@ -647,7 +684,9 @@ public class BlurringShader {
                 }
                 canvas.rotate(orientation);
                 canvas.translate(-padding - width / 2f, -padding - height / 2f);
-                canvas.drawBitmap(bitmap, src, dst, null);
+                try {
+                    canvas.drawBitmap(bitmap, src, dst, null);
+                } catch (Exception e) {}
                 Utilities.stackBlurBitmap(resultBitmap, 6);
                 if (padding > 0) {
                     // clear borders
@@ -712,6 +751,7 @@ public class BlurringShader {
 
         public RenderNode renderNode;
         public final ColorMatrix colorMatrix;
+        public boolean xfer;
 
         private boolean animateBitmapChange;
         private boolean oldPaintSet;
@@ -720,6 +760,7 @@ public class BlurringShader {
 
         public Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
         private final int type;
+        private Integer bgColor;
 
         public StoryBlurDrawer(@Nullable BlurManager manager, @NonNull View view, int type) {
             this(manager, view, type, false);
@@ -738,12 +779,14 @@ public class BlurringShader {
                 paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC_IN));
                 oldPaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC_IN));
                 AndroidUtilities.adjustSaturationColorMatrix(colorMatrix, +.3f);
+                xfer = true;
             } else if (type == BLUR_TYPE_CAPTION_XFER) {
                 paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC_IN));
                 oldPaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC_IN));
                 AndroidUtilities.adjustBrightnessColorMatrix(colorMatrix, +.4f);
                 AndroidUtilities.adjustSaturationColorMatrix(colorMatrix, +.3f);
 //                AndroidUtilities.multiplyBrightnessColorMatrix(colorMatrix, 1.4f);
+                xfer = true;
             } else if (type == BLUR_TYPE_CAPTION) {
                 AndroidUtilities.adjustSaturationColorMatrix(colorMatrix, +.35f);
                 AndroidUtilities.adjustBrightnessColorMatrix(colorMatrix, +.7f);
@@ -751,6 +794,7 @@ public class BlurringShader {
             } else if (type == BLUR_TYPE_AUDIO_BACKGROUND) {
                 AndroidUtilities.adjustSaturationColorMatrix(colorMatrix, +.5f);
             } else if (type == BLUR_TYPE_AUDIO_WAVEFORM_BACKGROUND) {
+                bgColor = 0xFF626262;
                 AndroidUtilities.adjustSaturationColorMatrix(colorMatrix, +.6f);
                 AndroidUtilities.adjustBrightnessColorMatrix(colorMatrix, +.3f);
                 AndroidUtilities.multiplyBrightnessColorMatrix(colorMatrix, 1.2f);
@@ -768,6 +812,7 @@ public class BlurringShader {
                 oldPaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC_IN));
                 AndroidUtilities.adjustBrightnessColorMatrix(colorMatrix, +.4f);
                 AndroidUtilities.adjustSaturationColorMatrix(colorMatrix, +.45f);
+                xfer = true;
 //                AndroidUtilities.multiplyBrightnessColorMatrix(colorMatrix, 1.4f);
             } else if (type == BLUR_TYPE_ACTION_BACKGROUND) {
                 colorMatrix.setSaturation(1.6f);
@@ -796,6 +841,68 @@ public class BlurringShader {
                     recycle();
                 }
             });
+        }
+
+        private int getBackgroundColor() {
+            if (bgColor != null) return bgColor;
+            return manager.renderNodeBackgroundColor;
+        }
+
+        private final Path clipPath = new Path();
+        private int clipPathWidth, clipPathHeight;
+
+        public void drawRect(Canvas canvas) {
+            drawRect(canvas, 0, 0, 1.0f);
+        }
+        public void drawRect(Canvas canvas, float tx, float ty, float alpha) {
+            drawRect(canvas, tx, ty, alpha, true);
+        }
+        public void drawRect(Canvas canvas, float tx, float ty, float alpha, boolean clip) {
+            if (manager.hasRenderNode() && Build.VERSION.SDK_INT >= 31) {
+                if (!canvas.isHardwareAccelerated()) {
+                    canvas.drawColor(getBackgroundColor());
+                    return;
+                }
+                final RenderNode node = (RenderNode) manager.blurRenderNode;
+                if (!node.hasDisplayList()) {
+                    final RenderNode parentNode = (RenderNode) manager.renderNode;
+                    node.setPosition(0, 0, parentNode.getWidth(), parentNode.getHeight());
+                    Canvas renderNodeCanvas = node.beginRecording();
+                    renderNodeCanvas.drawColor(getBackgroundColor());
+//                    renderNodeCanvas.translate(dp(32), dp(32));
+                    renderNodeCanvas.drawRenderNode(parentNode);
+                    node.endRecording();
+                }
+                if (!node.hasDisplayList()) {
+                    canvas.drawColor(getBackgroundColor());
+                } else {
+                    canvas.drawColor(getBackgroundColor());
+                    if (setupMatrix(node.getWidth(), node.getHeight(), true)) {
+                        if (node.hasDisplayList()) {
+                            matrix.postTranslate(-tx, -ty);
+                            paint.setAlpha((int) (0xFF * alpha));
+                            canvas.saveLayer(null, paint);
+                            canvas.concat(matrix);
+                            if (clip) {
+                                if (clipPathWidth != node.getWidth() || clipPathHeight != node.getHeight()) {
+                                    clipPath.rewind();
+                                    AndroidUtilities.rectTmp.set(0, 0, clipPathWidth = node.getWidth(), clipPathHeight = node.getHeight());
+                                    clipPath.addRoundRect(AndroidUtilities.rectTmp, dp(12), dp(12), Path.Direction.CW);
+                                }
+                                canvas.clipPath(clipPath);
+                            }
+//                            canvas.translate(-dp(32), -dp(32));
+                            canvas.drawRenderNode(node);
+                            canvas.restore();
+                        }
+                    }
+                }
+            } else {
+                Paint paint = getPaint(alpha, tx, ty);
+                if (paint != null) {
+                    canvas.drawPaint(paint);
+                }
+            }
         }
 
         private boolean customOffset;
@@ -887,7 +994,7 @@ public class BlurringShader {
                 paint.setShader(bitmapShader);
             }
 
-            if (!setupMatrix(bitmap.getWidth(), bitmap.getHeight())) {
+            if (!setupMatrix(bitmap.getWidth(), bitmap.getHeight(), false)) {
                 return null;
             }
             matrix.postTranslate(-tx, -ty);
@@ -936,11 +1043,13 @@ public class BlurringShader {
             paint.setShader(bitmapShader = null);
         }
 
-        private boolean setupMatrix(int bitmapWidth, int bitmapHeight) {
+        private final int[] loc1 = new int[2], loc2 = new int[2];
+        private boolean setupMatrix(int bitmapWidth, int bitmapHeight, boolean renderNode) {
             matrix.reset();
+            final View parentView = manager != null ? (renderNode ? manager.renderNodeView : manager.view) : null;
             if (customOffset) {
                 matrix.postTranslate(-customOffsetX, -customOffsetY);
-            } else {
+            } else if (manager != null) {
                 View view = this.view;
                 do {
                     matrix.preScale(1f / view.getScaleX(), 1f / view.getScaleY(), view.getPivotX(), view.getPivotY());
@@ -951,25 +1060,33 @@ public class BlurringShader {
                     } else {
                         break;
                     }
-                } while (view != null && manager != null && !manager.parents.contains(view));
+                } while (view != null && !manager.parents.contains(view));
 
-                if (manager != null && manager.view != view) {
+                if (parentView != view) {
                     int index = manager.parents.indexOf(view) + 1;
+                    if (index == 0) {
+                        View child = manager.parents.get(index);
+                        if (child != null) {
+                            view.getLocationOnScreen(loc1);
+                            child.getLocationOnScreen(loc2);
+                            matrix.preTranslate(loc2[0] - loc1[0], loc2[1] - loc1[1]);
+                        }
+                    }
                     while (index >= 0 && index < manager.parents.size()) {
                         View child = manager.parents.get(index);
                         if (child == null) {
                             continue;
                         }
-                        matrix.postTranslate(child.getX(), child.getY());
-                        matrix.postScale(1f / child.getScaleX(), 1f / child.getScaleY(), child.getPivotX(), child.getPivotY());
-                        matrix.postRotate(child.getRotation(), child.getPivotX(), child.getPivotY());
+                        matrix.preScale(child.getScaleX(), child.getScaleY(), child.getPivotX(), child.getPivotY());
+                        matrix.preRotate(child.getRotation(), child.getPivotX(), child.getPivotY());
+                        matrix.preTranslate(child.getX(), child.getY());
                         index++;
                     }
                 }
             }
 
-            if (manager != null && manager.view != null) {
-                matrix.preScale((float) manager.view.getWidth() / bitmapWidth, (float) manager.view.getHeight() / bitmapHeight);
+            if (parentView != null) {
+                matrix.preScale((float) parentView.getWidth() / bitmapWidth, (float) parentView.getHeight() / bitmapHeight);
             }
             return true;
         }
@@ -980,6 +1097,7 @@ public class BlurringShader {
                 float alpha = 1f;
                 private final Paint dimPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
                 private final Rect rect = new Rect();
+                private final Path clipPath = new Path();
 
                 @Nullable
                 private Paint getPaint() {
@@ -1010,12 +1128,29 @@ public class BlurringShader {
                 public void draw(@NonNull Canvas canvas) {
                     Paint paint = getPaint();
                     Rect bounds = getBounds();
-                    if (paint != null) {
+                    if (paint != null || manager != null && manager.hasRenderNode()) {
                         if (base != null) {
                             canvas.saveLayerAlpha(bounds.left, bounds.top, bounds.right, bounds.bottom, 0xFF, Canvas.ALL_SAVE_FLAG);
                             base.setBounds(bounds);
                             base.draw(canvas);
-                            canvas.drawRect(bounds, paint);
+                            if (manager != null && manager.hasRenderNode()) {
+                                canvas.save();
+                                getPadding(rect);
+                                AndroidUtilities.rectTmp.set(
+                                    bounds.left + rect.left,
+                                    bounds.top + rect.top,
+                                    bounds.right - rect.right,
+                                    bounds.bottom - rect.bottom
+                                );
+                                clipPath.rewind();
+                                clipPath.addRoundRect(AndroidUtilities.rectTmp, r, r, Path.Direction.CW);
+                                canvas.clipPath(clipPath);
+//                                canvas.translate(Math.max(0, -customOffsetX - offsetX / 2.0f), Math.max(0, -customOffsetY - offsetY / 2.0f));
+                                drawRect(canvas, 0, 0, 1, false);
+                                canvas.restore();
+                            } else {
+                                canvas.drawRect(bounds, paint);
+                            }
                             canvas.restore();
                             getPadding(rect);
                             AndroidUtilities.rectTmp.set(
@@ -1029,9 +1164,27 @@ public class BlurringShader {
                         } else {
                             if (r > 0) {
                                 AndroidUtilities.rectTmp.set(bounds);
-                                canvas.drawRoundRect(AndroidUtilities.rectTmp, r, r, paint);
+                                if (manager != null && manager.hasRenderNode()) {
+                                    canvas.save();
+                                    clipPath.rewind();
+                                    clipPath.addRoundRect(AndroidUtilities.rectTmp, r, r, Path.Direction.CW);
+                                    canvas.clipPath(clipPath);
+//                                    canvas.translate(-customOffsetX - offsetX, -customOffsetY - offsetY);
+                                    drawRect(canvas, 0, 0, 1, false);
+                                    canvas.restore();
+                                } else {
+                                    canvas.drawRoundRect(AndroidUtilities.rectTmp, r, r, paint);
+                                }
                             } else {
-                                canvas.drawRect(bounds, paint);
+                                if (manager != null && manager.hasRenderNode()) {
+                                    canvas.save();
+                                    canvas.clipRect(bounds);
+//                                    canvas.translate(-customOffsetX - offsetX, -customOffsetY - offsetY);
+                                    drawRect(canvas, 0, 0, 1, false);
+                                    canvas.restore();
+                                } else {
+                                    canvas.drawRect(bounds, paint);
+                                }
                             }
                             dimPaint.setColor(0x66000000);
                             if (r > 0) {

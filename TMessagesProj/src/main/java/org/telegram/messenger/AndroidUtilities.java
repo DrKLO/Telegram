@@ -666,21 +666,31 @@ public class AndroidUtilities {
         }
         SpannableStringBuilder spannableStringBuilder = new SpannableStringBuilder(str);
         if (index >= 0) {
-            spannableStringBuilder.setSpan(new ClickableSpan() {
-                @Override
-                public void updateDrawState(@NonNull TextPaint ds) {
-                    super.updateDrawState(ds);
-                    ds.setUnderlineText(false);
-                    ds.setColor(color);
-                }
-
-                @Override
-                public void onClick(@NonNull View view) {
-                    if (onClick != null) {
-                        onClick.run();
+            if (onClick != null) {
+                spannableStringBuilder.setSpan(new ClickableSpan() {
+                    @Override
+                    public void updateDrawState(@NonNull TextPaint ds) {
+                        super.updateDrawState(ds);
+                        ds.setUnderlineText(false);
+                        ds.setColor(color);
                     }
-                }
-            }, index, index + len, 0);
+
+                    @Override
+                    public void onClick(@NonNull View view) {
+                        if (onClick != null) {
+                            onClick.run();
+                        }
+                    }
+                }, index, index + len, 0);
+            } else {
+                spannableStringBuilder.setSpan(new CharacterStyle() {
+                    @Override
+                    public void updateDrawState(@NonNull TextPaint ds) {
+                        ds.setUnderlineText(false);
+                        ds.setColor(color);
+                    }
+                }, index, index + len, 0);
+            }
         }
         return spannableStringBuilder;
     }
@@ -3202,8 +3212,36 @@ public class AndroidUtilities {
         return new SpannableStringBuilder(str);
     }
 
+    public static SpannableStringBuilder replaceTags(SpannableStringBuilder stringBuilder) {
+        try {
+            int start;
+            int end;
+            ArrayList<Integer> bolds = new ArrayList<>();
+            while ((start = AndroidUtilities.charSequenceIndexOf(stringBuilder, "**")) != -1) {
+                stringBuilder.replace(start, start + 2, "");
+                end = AndroidUtilities.charSequenceIndexOf(stringBuilder, "**");
+                if (end >= 0) {
+                    stringBuilder.replace(end, end + 2, "");
+                    bolds.add(start);
+                    bolds.add(end);
+                }
+            }
+            SpannableStringBuilder spannableStringBuilder = new SpannableStringBuilder(stringBuilder);
+            for (int a = 0; a < bolds.size() / 2; a++) {
+                spannableStringBuilder.setSpan(new TypefaceSpan(AndroidUtilities.bold()), bolds.get(a * 2), bolds.get(a * 2 + 1), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            }
+            return spannableStringBuilder;
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+        return stringBuilder;
+    }
+
     private static Pattern linksPattern;
     public static SpannableStringBuilder replaceLinks(String str, Theme.ResourcesProvider resourcesProvider) {
+        return replaceLinks(str, resourcesProvider, null);
+    }
+    public static SpannableStringBuilder replaceLinks(String str, Theme.ResourcesProvider resourcesProvider, Runnable onLinkClick) {
         if (linksPattern == null) {
             linksPattern = Pattern.compile("\\[(.+?)\\]\\((.+?)\\)");
         }
@@ -3220,6 +3258,9 @@ public class AndroidUtilities {
             spannable.setSpan(new ClickableSpan() {
                 @Override
                 public void onClick(@NonNull View widget) {
+                    if (onLinkClick != null) {
+                        onLinkClick.run();
+                    }
                     Browser.openUrl(ApplicationLoader.applicationContext, url);
                 }
                 @Override
@@ -4840,6 +4881,10 @@ public class AndroidUtilities {
         return -1;
     }
 
+    public static float distance(float x1, float y1, float x2, float y2) {
+        return (float) Math.sqrt((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1));
+    }
+
     public static int lerp(int a, int b, float f) {
         return (int) (a + f * (b - a));
     }
@@ -5817,6 +5862,10 @@ public class AndroidUtilities {
     }
 
     public static boolean intersect1d(int x1, int x2, int y1, int y2) {
+        return Math.max(x1, x2) > Math.min(y1, y2) && Math.max(y1, y2) > Math.min(x1, x2);
+    }
+
+    public static boolean intersect1d(float x1, float x2, float y1, float y2) {
         return Math.max(x1, x2) > Math.min(y1, y2) && Math.max(y1, y2) > Math.min(x1, x2);
     }
 

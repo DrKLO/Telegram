@@ -1,6 +1,8 @@
 package org.telegram.ui.bots;
 
+import static org.telegram.messenger.AndroidUtilities.distanceInfluenceForSnapDuration;
 import static org.telegram.messenger.AndroidUtilities.dp;
+import static org.telegram.messenger.AndroidUtilities.lerp;
 import static org.telegram.ui.Components.Bulletin.DURATION_PROLONG;
 
 import android.animation.Animator;
@@ -14,17 +16,22 @@ import android.content.ContextWrapper;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.ColorFilter;
+import android.graphics.Insets;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.PixelFormat;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
+import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Bundle;
+import android.text.SpannableStringBuilder;
 import android.text.TextPaint;
 import android.text.TextUtils;
+import android.util.Log;
+import android.util.Pair;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.MotionEvent;
@@ -33,6 +40,7 @@ import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowInsets;
 import android.view.WindowManager;
+import android.widget.FrameLayout;
 import android.widget.TextView;
 
 import androidx.annotation.IntDef;
@@ -41,12 +49,20 @@ import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
 import androidx.core.graphics.ColorUtils;
 import androidx.core.math.MathUtils;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsAnimationCompat;
+import androidx.core.view.WindowInsetsCompat;
+import androidx.core.view.WindowInsetsControllerCompat;
 import androidx.dynamicanimation.animation.SpringAnimation;
 import androidx.dynamicanimation.animation.SpringForce;
+
+import com.google.android.exoplayer2.offline.Download;
+import com.google.android.gms.vision.Frame;
 
 import org.json.JSONObject;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.AnimationNotificationsLocker;
+import org.telegram.messenger.BotFullscreenButtons;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.Emoji;
@@ -59,12 +75,14 @@ import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SendMessagesHelper;
+import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
 import org.telegram.messenger.Utilities;
 import org.telegram.messenger.browser.Browser;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.tgnet.tl.TL_bots;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.ActionBarMenuItem;
@@ -76,28 +94,36 @@ import org.telegram.ui.ActionBar.BottomSheetTabs;
 import org.telegram.ui.ActionBar.BottomSheetTabsOverlay;
 import org.telegram.ui.ActionBar.INavigationLayout;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ArticleViewer;
 import org.telegram.ui.ChatActivity;
+import org.telegram.ui.Components.AnchorSpan;
 import org.telegram.ui.Components.Bulletin;
 import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.CubicBezierInterpolator;
+import org.telegram.ui.Components.ItemOptions;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.OverlayActionBarLayoutDialog;
 import org.telegram.ui.Components.PasscodeView;
-import org.telegram.ui.Components.RadialProgressView;
 import org.telegram.ui.Components.SimpleFloatPropertyCompat;
 import org.telegram.ui.Components.SizeNotifierFrameLayout;
 import org.telegram.ui.Components.VerticalPositionAutoAnimator;
 import org.telegram.ui.DialogsActivity;
 import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.PaymentFormActivity;
+import org.telegram.ui.ProfileActivity;
 import org.telegram.ui.Stars.StarsController;
 import org.telegram.ui.web.BotWebViewContainer;
 
 import java.io.File;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 public class BotWebViewSheet extends Dialog implements NotificationCenter.NotificationCenterDelegate, BottomSheetTabsOverlay.Sheet {
     public final static int TYPE_WEB_VIEW_BUTTON = 0, TYPE_SIMPLE_WEB_VIEW_BUTTON = 1, TYPE_BOT_MENU_BUTTON = 2, TYPE_WEB_VIEW_BOT_APP = 3, TYPE_WEB_VIEW_BOT_MAIN = 4;
@@ -105,6 +131,8 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
     public final static int FLAG_FROM_INLINE_SWITCH = 1;
     public final static int FLAG_FROM_SIDE_MENU = 2;
     private int lineColor;
+
+    public static HashSet<BotWebViewSheet> activeSheets = new HashSet<>();
 
     public void showJustAddedBulletin() {
         TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(botId);
@@ -120,17 +148,18 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
         }
         String str;
         if (currentBot.show_in_side_menu && currentBot.show_in_attach_menu) {
-            str = LocaleController.formatString("BotAttachMenuShortcatAddedAttachAndSide", R.string.BotAttachMenuShortcatAddedAttachAndSide, user.first_name);
+            str = LocaleController.formatString(R.string.BotAttachMenuShortcatAddedAttachAndSide, user.first_name);
         } else if (currentBot.show_in_side_menu) {
-            str = LocaleController.formatString("BotAttachMenuShortcatAddedSide", R.string.BotAttachMenuShortcatAddedSide, user.first_name);
+            str = LocaleController.formatString(R.string.BotAttachMenuShortcatAddedSide, user.first_name);
         } else {
-            str = LocaleController.formatString("BotAttachMenuShortcatAddedAttach", R.string.BotAttachMenuShortcatAddedAttach, user.first_name);
+            str = LocaleController.formatString(R.string.BotAttachMenuShortcatAddedAttach, user.first_name);
         }
         AndroidUtilities.runOnUIThread(() -> {
-            BulletinFactory.of(windowView, resourcesProvider)
+            showBulletin(b ->
+                b
                     .createSimpleBulletin(R.raw.contact_check, AndroidUtilities.replaceTags(str))
                     .setDuration(DURATION_PROLONG)
-                    .show(true);
+            );
         }, 200);
     }
 
@@ -153,6 +182,7 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
         obj.actionBar.setAlpha(value);
 
         obj.updateLightStatusBar();
+        obj.updateDownloadBulletinArrow();
     }).setMultiplier(100f);
     private float actionBarTransitionProgress = 0f;
     private SpringAnimation springAnimation;
@@ -160,10 +190,17 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
     private Boolean wasLightStatusBar;
 
     private WindowView windowView;
+    private final Rect navInsets = new Rect();
+    private final Rect insets = new Rect();
+    private int keyboardInset = 0;
+    
+    private BottomSheetTabs bottomTabs;
+    private BottomSheetTabs.ClipTools bottomTabsClip;
 
     private long lastSwipeTime;
 
     private ChatAttachAlertBotWebViewLayout.WebViewSwipeContainer swipeContainer;
+    private FrameLayout.LayoutParams swipeContainerLayoutParams;
     private BotWebViewContainer webViewContainer;
     private ChatAttachAlertBotWebViewLayout.WebProgressView progressView;
     private Theme.ResourcesProvider resourcesProvider;
@@ -187,24 +224,35 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
     private boolean actionBarIsLight;
     private Paint actionBarPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
+    private boolean overrideActionBarColor;
     private boolean overrideBackgroundColor;
 
     private ActionBar actionBar;
+    private FrameLayout.LayoutParams actionBarLayoutParams;
     private Drawable actionBarShadow;
-    private ActionBarMenuSubItem settingsItem;
+    private ActionBarMenuItem optionsItem;
+    private BotFullscreenButtons.OptionsIcon optionsIcon;
+    private boolean hasSettings;
     private TLRPC.BotApp currentWebApp;
 
     private boolean dismissed;
+    private boolean fullscreen;
+    private float fullscreenProgress;
+    private float fullscreenTransitionProgress;
+    private boolean fullscreenInProgress;
+    private int swipeContainerFromWidth, swipeContainerFromHeight;
 
     private Activity parentActivity;
+    private BotButtons botButtons;
+    private FrameLayout.LayoutParams botButtonsLayoutParams;
+    private BotFullscreenButtons fullscreenButtons;
 
-    private boolean mainButtonWasVisible, mainButtonProgressWasVisible;
-    private TextView mainButton;
-    private RadialProgressView radialProgressView;
+    private Bulletin downloadBulletin;
+    private BotDownloads.DownloadBulletin downloadBulletinLayout;
+    private FrameLayout bulletinContainer;
+    private FrameLayout.LayoutParams bulletinContainerLayoutParams;
 
     private boolean needCloseConfirmation;
-
-    private VerticalPositionAutoAnimator mainButtonAutoAnimator, radialProgressAutoAnimator;
 
     private PasscodeView passcodeView;
 
@@ -241,25 +289,37 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
     private Boolean fullsize = null;
     private boolean needsContext;
 
+    private BotSensors sensors;
+    private boolean orientationLocked;
+
+    private BottomSheetTabs.WebTabData lastTab;
+
     public BottomSheetTabs.WebTabData saveState() {
         BottomSheetTabs.WebTabData tab = new BottomSheetTabs.WebTabData();
         tab.actionBarColor = actionBarColor;
         tab.actionBarColorKey = actionBarColorKey;
-        tab.overrideActionBarColor = overrideBackgroundColor;
+        tab.overrideActionBarColor = overrideActionBarColor;
+        tab.overrideBackgroundColor = overrideBackgroundColor;
         tab.backgroundColor = backgroundPaint.getColor();
         tab.props = requestProps;
         tab.ready = webViewContainer != null && webViewContainer.isPageLoaded();
         tab.themeIsDark = Theme.isCurrentThemeDark();
         tab.lastUrl = webViewContainer != null ? webViewContainer.getUrlLoaded() : null;
-        tab.expanded = swipeContainer != null && swipeContainer.getSwipeOffsetY() < 0 || forceExpnaded || isFullSize();
-        tab.fullsize = isFullSize();
+        tab.expanded = swipeContainer != null && swipeContainer.getSwipeOffsetY() < 0 || forceExpnaded || isFullSize() || fullscreen;
+        tab.fullscreen = fullscreen;
+        tab.fullsize = (fullsize == null ? defaultFullsize : fullsize);
         tab.expandedOffset = swipeContainer != null ? swipeContainer.getOffsetY() : Float.MAX_VALUE;
         tab.needsContext = needsContext;
         tab.backButton = backButtonShown;
-        tab.main = mainButtonSettings;
         tab.confirmDismiss = needCloseConfirmation;
-        tab.settings = settingsItem != null && settingsItem.getVisibility() == View.VISIBLE;
+        tab.settings = hasSettings;
         tab.allowSwipes = swipeContainer == null || swipeContainer.isAllowedSwipes();
+        tab.buttons = botButtons.state;
+        tab.navigationBarColor = navBarColor;
+        if (sensors != null) {
+            sensors.pause();
+        }
+        tab.sensors = sensors;
         BotWebViewContainer.MyWebView webView = webViewContainer == null ? null : webViewContainer.getWebView();
         if (webView != null) {
             webViewContainer.preserveWebView();
@@ -270,33 +330,57 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
             webView.onPause();
 //            webView.pauseTimers();
         }
-        return tab;
+        if (tab.error = errorShown) {
+            tab.errorDescription = errorCode;
+        }
+        tab.orientationLocked = orientationLocked;
+        return lastTab = tab;
     }
 
+    public Activity getActivity() {
+        Activity a = getOwnerActivity();
+        if (a == null) a = LaunchActivity.instance;
+        if (a == null) a = AndroidUtilities.findActivity(getContext());
+        return a;
+    }
+
+    public boolean fromTab;
     public boolean showExpanded;
     public float showOffsetY;
 
     public boolean restoreState(BaseFragment fragment, BottomSheetTabs.WebTabData tab) {
         if (tab == null || tab.props == null) return false;
-        if (tab.overrideActionBarColor) {
-            setBackgroundColor(tab.backgroundColor, false);
+        fromTab = true;
+        if (overrideBackgroundColor = tab.overrideBackgroundColor) {
+            setBackgroundColor(tab.backgroundColor, true, false);
         }
         setActionBarColor(!tab.overrideActionBarColor ? Theme.getColor(tab.actionBarColorKey < 0 ? Theme.key_windowBackgroundWhite : tab.actionBarColorKey, resourcesProvider) : tab.actionBarColor, tab.overrideActionBarColor, false);
+        setNavigationBarColor(tab.navigationBarColor, false);
         showExpanded = tab.expanded;
         showOffsetY = tab.expandedOffset;
         webViewContainer.setIsBackButtonVisible(backButtonShown = tab.backButton);
         swipeContainer.setAllowSwipes(tab.allowSwipes);
         AndroidUtilities.updateImageViewImageAnimated(actionBar.getBackButton(), backButtonShown ? R.drawable.ic_ab_back : R.drawable.ic_close_white);
+        if (fullscreenButtons != null) {
+            fullscreenButtons.setBack(backButtonShown, false);
+        }
         needCloseConfirmation = tab.confirmDismiss;
         fullsize = tab.fullsize;
         needsContext = tab.needsContext;
-        if (tab.main != null) {
-            setMainButton(tab.main);
+        sensors = tab.sensors;
+        if (sensors != null) {
+            sensors.resume();
         }
+        if (tab.buttons != null) {
+//            setMainButton(tab.main);
+            botButtons.setState(tab.buttons, false);
+        }
+        setFullscreen( tab.fullscreen, false);
+        currentAccount = tab.props != null ? tab.props.currentAccount : UserConfig.selectedAccount;
         if (tab.webView != null) {
 //            tab.webView.resumeTimers();
             tab.webView.onResume();
-            webViewContainer.replaceWebView(tab.webView, tab.proxy);
+            webViewContainer.replaceWebView(currentAccount, tab.webView, tab.proxy);
             webViewContainer.setState(tab.ready || tab.webView.isPageLoaded(), tab.lastUrl);
             if (Theme.isCurrentThemeDark() != tab.themeIsDark) {
 //                webViewContainer.notifyThemeChanged();
@@ -310,7 +394,7 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
                 progressView.setVisibility(View.VISIBLE);
 
                 webViewContainer.setBotUser(MessagesController.getInstance(currentAccount).getUser(botId));
-                webViewContainer.loadFlickerAndSettingsItem(currentAccount, botId, settingsItem);
+                webViewContainer.loadFlickerAndSettingsItem(currentAccount, botId, null);
                 webViewContainer.setState(false, null);
                 if (webViewContainer.getWebView() != null) {
                     webViewContainer.getWebView().loadUrl("about:blank");
@@ -324,9 +408,18 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
             tab.props.responseTime = 0;
         }
         requestWebView(fragment, tab.props);
-        if (settingsItem != null) {
-            settingsItem.setVisibility(tab.settings ? View.VISIBLE : View.GONE);
+        hasSettings = tab.settings;
+
+        if (tab.error) {
+            errorShown = true;
+            createErrorContainer();
+            errorContainer.set(UserObject.getUserName(MessagesController.getInstance(currentAccount).getUser(botId)), errorCode = tab.errorDescription);
+            errorContainer.setDark(AndroidUtilities.computePerceivedBrightness(backgroundPaint.getColor()) <= .721f, false);
+            errorContainer.setBackgroundColor(backgroundPaint.getColor());
+            errorContainer.setVisibility(View.VISIBLE);
+            errorContainer.setAlpha(1f);
         }
+        lockOrientation(tab.orientationLocked);
         return true;
     }
 
@@ -350,16 +443,29 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
                     padding = 0;
                 }
 
-                if (getOffsetY() != padding && !dismissed) {
+                if (getOffsetY() != padding && !dismissed && resetOffsetY) {
                     ignoreLayout = true;
                     setOffsetY(padding);
                     ignoreLayout = false;
+                    resetOffsetY = false;
                 }
 
-                if (AndroidUtilities.isTablet() && !AndroidUtilities.isInMultiwindow && !AndroidUtilities.isSmallTablet()) {
+                if (!fullscreen && AndroidUtilities.isTablet() && !AndroidUtilities.isInMultiwindow && !AndroidUtilities.isSmallTablet()) {
                     widthMeasureSpec = MeasureSpec.makeMeasureSpec((int) (Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y) * 0.8f), MeasureSpec.EXACTLY);
                 }
-                super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(heightMeasureSpec) - ActionBar.getCurrentActionBarHeight() - AndroidUtilities.statusBarHeight + AndroidUtilities.dp(24) - (mainButtonWasVisible ? mainButton.getLayoutParams().height : 0), MeasureSpec.EXACTLY));
+                int height = MeasureSpec.getSize(heightMeasureSpec);
+                if (!fullscreen) {
+                    height -= AndroidUtilities.statusBarHeight;
+                    height -= ActionBar.getCurrentActionBarHeight();
+                }
+                if (botButtons != null && botButtons.getTotalHeight() > 0) {
+                    height -= botButtons.getTotalHeight();
+//                    if (fullscreen) {
+//                        height -= insets.bottom;
+//                    }
+                }
+                height += dp(24);
+                super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(height, MeasureSpec.EXACTLY));
             }
 
             @Override
@@ -369,14 +475,50 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
                 }
                 super.requestLayout();
             }
+
+            @Override
+            public void setTranslationY(float translationY) {
+                super.setTranslationY(translationY);
+                if (fullscreenButtons != null) {
+                    fullscreenButtons.setTranslationY(dp(24) + translationY);
+                }
+                if (bulletinContainer != null) {
+                    bulletinContainer.setTranslationY(lerp(ActionBar.getCurrentActionBarHeight() - dp(24), insets.top + dp(24 + 8 + 30 + 8), fullscreenProgress) + swipeContainer.getTranslationY());
+                }
+            }
         };
         swipeContainer.setAllowFullSizeSwipe(true);
         swipeContainer.setShouldWaitWebViewScroll(true);
         webViewContainer = new BotWebViewContainer(context, resourcesProvider, getColor(Theme.key_windowBackgroundWhite), true) {
             @Override
-            public void onWebViewCreated() {
-                super.onWebViewCreated();
-                swipeContainer.setWebView(webViewContainer.getWebView());
+            public void onWebViewCreated(MyWebView webView) {
+                super.onWebViewCreated(webView);
+                swipeContainer.setWebView(webView);
+                if (sensors != null) {
+                    sensors.attachWebView(webView);
+                }
+                fullscreenButtons.setWebView(webView);
+            }
+
+            @Override
+            public void onWebViewDestroyed(MyWebView webView) {
+                if (sensors != null) {
+                    sensors.detachWebView(webView);
+                }
+                fullscreenButtons.setWebView(null);
+            }
+
+            @Override
+            protected void onErrorShown(boolean shown, int errorCode, String description) {
+                if (shown) {
+                    createErrorContainer();
+                    errorContainer.set(UserObject.getUserName(MessagesController.getInstance(currentAccount).getUser(botId)), description);
+                    errorContainer.setDark(AndroidUtilities.computePerceivedBrightness(backgroundPaint.getColor()) <= .721f, false);
+                    errorContainer.setBackgroundColor(backgroundPaint.getColor());
+                    BotWebViewSheet.this.errorCode = description;
+                }
+                AndroidUtilities.updateViewVisibilityAnimated(errorContainer, errorShown = shown, 1f, false);
+                invalidate();
             }
         };
         webViewContainer.setDelegate(new BotWebViewContainer.Delegate() {
@@ -394,7 +536,41 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
 
             @Override
             public void onWebAppSwipingBehavior(boolean allowSwiping) {
-                swipeContainer.setAllowSwipes(allowSwiping);
+                if (swipeContainer != null) {
+                    swipeContainer.setAllowSwipes(allowSwiping);
+                }
+            }
+
+            @Override
+            public void onCloseToTabs() {
+                dismiss(true);
+            }
+
+            @Override
+            public void onSharedTo(ArrayList<Long> dialogIds) {
+                String message;
+                if (dialogIds.size() == 1) {
+                    message = LocaleController.formatString(R.string.BotSharedToOne, MessagesController.getInstance(currentAccount).getPeerName(dialogIds.get(0)));
+                } else {
+                    message = LocaleController.formatPluralString("BotSharedToMany", dialogIds.size());
+                }
+                showBulletin(b -> b.createSimpleBulletin(R.raw.forward, AndroidUtilities.replaceTags(message)));
+            }
+
+            @Override
+            public void onOrientationLockChanged(boolean locked) {
+                lockOrientation(locked);
+            }
+
+            @Override
+            public void onOpenBackFromTabs() {
+                if (lastTab != null) {
+                    final BottomSheetTabs tabs = LaunchActivity.instance.getBottomSheetTabs();
+                    if (tabs != null) {
+                        tabs.openTab(lastTab);
+                    }
+                    lastTab = null;
+                }
             }
 
             @Override
@@ -424,20 +600,89 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
             }
 
             @Override
+            public void onWebAppSetNavigationBarColor(int color) {
+                setNavigationBarColor(color, true);
+            }
+
+            @Override
             public void onWebAppSetBackgroundColor(int color) {
-                setBackgroundColor(color, true);
+                setBackgroundColor(color, true, true);
+            }
+
+            @Override
+            public void onLocationGranted(boolean granted) {
+                final TLRPC.User bot = MessagesController.getInstance(currentAccount).getUser(botId);
+                if (granted) {
+                    BulletinFactory.UndoObject undo = new BulletinFactory.UndoObject();
+                    undo.undoText = LocaleController.getString(R.string.Undo);
+                    undo.onUndo = () -> {
+                        BotLocation.get(getContext(), currentAccount, botId).setGranted(false, null);
+                    };
+                    showBulletin(b ->
+                            b
+                                    .createUsersBulletin(Arrays.asList(bot), AndroidUtilities.replaceTags(LocaleController.formatString(R.string.BotLocationPermissionRequestGranted, UserObject.getUserName(bot))), null, undo)
+                                    .setDuration(DURATION_PROLONG)
+                    );
+                } else {
+                    SpannableStringBuilder text = new SpannableStringBuilder();
+                    text.append(AndroidUtilities.replaceTags(LocaleController.formatString(R.string.BotLocationPermissionRequestDeniedApp, UserObject.getUserName(bot))));
+                    text.append(" ");
+                    text.append(AndroidUtilities.replaceArrows(AndroidUtilities.makeClickable(LocaleController.getString(R.string.BotLocationPermissionRequestDeniedAppSettings), () -> {
+                        BaseFragment lastFragment = LaunchActivity.getSafeLastFragment();
+                        if (lastFragment == null || lastFragment.getParentLayout() == null) return;
+                        final INavigationLayout parentLayout = lastFragment.getParentLayout();
+                        lastFragment.presentFragment(ProfileActivity.of(botId));
+                        AndroidUtilities.scrollToFragmentRow(parentLayout, "botPermissionLocation");
+                        dismiss(true);
+                    }), true));
+                    showBulletin(b ->
+                            b.createSimpleBulletinDetail(R.raw.error, text)
+                                    .setDuration(DURATION_PROLONG)
+                    );
+                }
+            }
+
+            @Override
+            public void onEmojiStatusGranted(boolean granted) {
+                final TLRPC.User bot = MessagesController.getInstance(currentAccount).getUser(botId);
+                if (granted) {
+                    BulletinFactory.UndoObject undo = new BulletinFactory.UndoObject();
+                    undo.onUndo = () -> {
+                        TL_bots.toggleUserEmojiStatusPermission req = new TL_bots.toggleUserEmojiStatusPermission();
+                        req.bot = MessagesController.getInstance(currentAccount).getInputUser(botId);
+                        req.enabled = false;
+                        ConnectionsManager.getInstance(currentAccount).sendRequest(req, (res, err) -> AndroidUtilities.runOnUIThread(() -> {
+                            if (res instanceof TLRPC.TL_boolTrue) {
+                                webViewContainer.notifyEmojiStatusAccess("cancelled");
+                            } else {
+                                showBulletin(b -> b.makeForError(err));
+                            }
+                        }));
+                    };
+                    showBulletin(b ->
+                            b
+                                    .createUsersBulletin(Arrays.asList(bot), AndroidUtilities.replaceTags(LocaleController.formatString(R.string.BotEmojiStatusPermissionRequestGranted, UserObject.getUserName(bot))), null, undo)
+                                    .setDuration(DURATION_PROLONG)
+                    );
+                }
+            }
+
+            @Override
+            public void onEmojiStatusSet(TLRPC.Document document) {
+                showBulletin(b -> b.createEmojiBulletin(document, LocaleController.getString(R.string.BotEmojiStatusUpdated)));
             }
 
             @Override
             public void onSetBackButtonVisible(boolean visible) {
                 AndroidUtilities.updateImageViewImageAnimated(actionBar.getBackButton(), (backButtonShown = visible) ? R.drawable.ic_ab_back : R.drawable.ic_close_white);
+                if (fullscreenButtons != null) {
+                    fullscreenButtons.setBack(visible, true);
+                }
             }
 
             @Override
             public void onSetSettingsButtonVisible(boolean visible) {
-                if (settingsItem != null) {
-                    settingsItem.setVisibility(visible ? View.VISIBLE : View.GONE);
-                }
+                hasSettings = visible;
             }
 
             @Override
@@ -538,7 +783,10 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
                                 webViewContainer.destroyWebView();
                                 NotificationCenter.getInstance(currentAccount).removeObserver(BotWebViewSheet.this, NotificationCenter.webViewResultSent);
                                 NotificationCenter.getGlobalInstance().removeObserver(BotWebViewSheet.this, NotificationCenter.didSetNewTheme);
-                                BotWebViewSheet.super.dismiss();
+                                if (!superDismissed) {
+                                    BotWebViewSheet.super.dismiss();
+                                    superDismissed = true;
+                                }
 
                                 lastFragment.presentFragment(new INavigationLayout.NavigationParams(new ChatActivity(args1)).setRemoveLast(true));
                             }
@@ -552,12 +800,20 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
 
             @Override
             public void onSetupMainButton(boolean isVisible, boolean isActive, String text, int color, int textColor, boolean isProgressVisible, boolean hasShineEffect) {
-                setMainButton(BotWebViewAttachedSheet.MainButtonSettings.of(isVisible, isActive, text, color, textColor, isProgressVisible));
+                botButtons.setMainState(BotButtons.ButtonState.of(isVisible, isActive, isProgressVisible, hasShineEffect, text, color, textColor), true);
+                if (fullscreen) {
+                    updateFullscreenLayout();
+                    updateWindowFlags();
+                }
             }
 
             @Override
             public void onSetupSecondaryButton(boolean isVisible, boolean isActive, String text, int color, int textColor, boolean isProgressVisible, boolean hasShineEffect, String position) {
-
+                botButtons.setSecondaryState(BotButtons.ButtonState.of(isVisible, isActive, isProgressVisible, hasShineEffect, text, color, textColor, position), true);
+                if (fullscreen) {
+                    updateFullscreenLayout();
+                    updateWindowFlags();
+                }
             }
 
             @Override
@@ -571,6 +827,26 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
             @Override
             public boolean isClipboardAvailable() {
                 return MediaDataController.getInstance(currentAccount).botInAttachMenu(botId);
+            }
+
+            @Override
+            public String onFullscreenRequested(boolean fullscreen) {
+                if (BotWebViewSheet.this.fullscreen == fullscreen) {
+                    if (BotWebViewSheet.this.fullscreen)
+                        return "ALREADY_FULLSCREEN";
+                    return null;
+                }
+                setFullscreen(fullscreen, true);
+                return null;
+            }
+
+            @Override
+            public BotSensors getBotSensors() {
+                if (sensors == null) {
+                    sensors = new BotSensors(context, botId);
+                    sensors.attachWebView(webViewContainer.getWebView());
+                }
+                return sensors;
             }
         });
 
@@ -588,49 +864,56 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
                 swipeContainer.stickTo(-swipeContainer.getOffsetY() + swipeContainer.getTopActionBarOffsetY());
             }
         });
-        windowView.addView(swipeContainer, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 0, 24, 0, 0));
+        windowView.addView(swipeContainer, swipeContainerLayoutParams = LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.CENTER_HORIZONTAL));
 
-        mainButton = new TextView(context) {
+        botButtons = new BotButtons(getContext(), resourcesProvider) {
+            @Override
+            public void setTranslationY(float translationY) {
+                super.setTranslationY(translationY);
+            }
+
             @Override
             protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-                if (AndroidUtilities.isTablet() && !AndroidUtilities.isInMultiwindow && !AndroidUtilities.isSmallTablet()) {
+                if (!fullscreen && AndroidUtilities.isTablet() && !AndroidUtilities.isInMultiwindow && !AndroidUtilities.isSmallTablet()) {
                     widthMeasureSpec = MeasureSpec.makeMeasureSpec((int) (Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y) * 0.8f), MeasureSpec.EXACTLY);
                 }
                 super.onMeasure(widthMeasureSpec, heightMeasureSpec);
             }
         };
-        mainButton.setVisibility(View.GONE);
-        mainButton.setAlpha(0f);
-        mainButton.setSingleLine();
-        mainButton.setGravity(Gravity.CENTER);
-        mainButton.setTypeface(AndroidUtilities.bold());
-        int padding = AndroidUtilities.dp(16);
-        mainButton.setPadding(padding, 0, padding, 0);
-        mainButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-        mainButton.setOnClickListener(v -> webViewContainer.onMainButtonPressed());
-        windowView.addView(mainButton, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL));
-        mainButtonAutoAnimator = VerticalPositionAutoAnimator.attach(mainButton);
-
-        radialProgressView = new RadialProgressView(context) {
-            @Override
-            protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-                super.onMeasure(widthMeasureSpec, heightMeasureSpec);
-
-                ViewGroup.MarginLayoutParams params = (ViewGroup.MarginLayoutParams) getLayoutParams();
-                if (AndroidUtilities.isTablet() && !AndroidUtilities.isInMultiwindow && !AndroidUtilities.isSmallTablet()) {
-                    params.rightMargin = (int) (AndroidUtilities.dp(10) + Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y) * 0.1f);
+        botButtons.setOnButtonClickListener(main -> {
+            if (webViewContainer != null) {
+                if (main) {
+                    webViewContainer.onMainButtonPressed();
                 } else {
-                    params.rightMargin = AndroidUtilities.dp(10);
+                    webViewContainer.onSecondaryButtonPressed();
                 }
             }
-        };
-        radialProgressView.setSize(AndroidUtilities.dp(18));
-        radialProgressView.setAlpha(0f);
-        radialProgressView.setScaleX(0.1f);
-        radialProgressView.setScaleY(0.1f);
-        radialProgressView.setVisibility(View.GONE);
-        windowView.addView(radialProgressView, LayoutHelper.createFrame(28, 28, Gravity.BOTTOM | Gravity.RIGHT, 0, 0, 10, 10));
-        radialProgressAutoAnimator = VerticalPositionAutoAnimator.attach(radialProgressView);
+        });
+        botButtons.setOnResizeListener(() -> {
+            swipeContainer.requestLayout();
+        });
+        windowView.addView(botButtons, botButtonsLayoutParams = LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL));
+
+        fullscreenButtons = new BotFullscreenButtons(getContext());
+        fullscreenButtons.setAlpha(0f);
+        fullscreenButtons.setVisibility(View.GONE);
+        if (!MessagesController.getInstance(currentAccount).disableBotFullscreenBlur) {
+            fullscreenButtons.setParentRenderNode(swipeContainer.getRenderNode());
+        }
+        windowView.addView(fullscreenButtons, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.FILL));
+        fullscreenButtons.setOnCloseClickListener(() -> {
+            if (!webViewContainer.onBackPressed()) {
+                onCheckDismissByUser();
+            }
+        });
+        fullscreenButtons.setOnCollapseClickListener(() -> {
+            forceExpnaded = true;
+            dismiss(true, null);
+        });
+        fullscreenButtons.setOnMenuClickListener(this::openOptions);
+
+        bulletinContainer = new FrameLayout(context);
+        windowView.addView(bulletinContainer, bulletinContainerLayoutParams = LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 200, Gravity.TOP | Gravity.FILL_HORIZONTAL));
 
         actionBarShadow = ContextCompat.getDrawable(getContext(), R.drawable.header_shadow).mutate();
 
@@ -655,7 +938,7 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
             }
         });
         actionBar.setAlpha(0f);
-        windowView.addView(actionBar, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.CENTER_HORIZONTAL));
+        windowView.addView(actionBar, actionBarLayoutParams = LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.CENTER_HORIZONTAL));
 
         windowView.addView(progressView = new ChatAttachAlertBotWebViewLayout.WebProgressView(context, resourcesProvider) {
             @Override
@@ -700,28 +983,31 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
                     springAnimation.start();
                 }
             }
-            float offsetY = Math.max(0, swipeContainer.getSwipeOffsetY());
-            mainButtonAutoAnimator.setOffsetY(offsetY);
-            radialProgressAutoAnimator.setOffsetY(offsetY);
+            float offsetY = fullscreen ? insets.bottom : Math.max(0, swipeContainer.getSwipeOffsetY());
             lastSwipeTime = System.currentTimeMillis();
         });
         swipeContainer.setScrollEndListener(()-> webViewContainer.invalidateViewPortHeight(true));
-        swipeContainer.setDelegate(() -> {
-//            if (can_minimize) {
-                dismiss(true, null);
-//            } else {
-//                if (!onCheckDismissByUser()) {
-//                    swipeContainer.stickTo(0);
-//                }
-//            }
+        swipeContainer.setDelegate(byTap -> {
+            if (fullscreen && byTap) return;
+            dismiss(true, null);
         });
-        swipeContainer.setTopActionBarOffsetY(ActionBar.getCurrentActionBarHeight() + AndroidUtilities.statusBarHeight - AndroidUtilities.dp(24));
         swipeContainer.setIsKeyboardVisible(obj -> windowView.getKeyboardHeight() >= AndroidUtilities.dp(20));
 
         passcodeView = new PasscodeView(context);
         windowView.addView(passcodeView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
         setContentView(windowView, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        updateFullscreenLayout();
+
+        bottomTabs = LaunchActivity.instance != null ? LaunchActivity.instance.getBottomSheetTabs() : null;
+        if (bottomTabs != null) {
+            bottomTabs.listen(windowView::invalidate, this::relayout);
+            bottomTabsClip = new BottomSheetTabs.ClipTools(bottomTabs);
+        }
+    }
+
+    private void relayout() {
+        updateFullscreenLayout();
     }
 
     @Override
@@ -755,7 +1041,7 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
     }
 
     private void updateActionBarColors() {
-        if (!overrideBackgroundColor) {
+        if (!overrideActionBarColor) {
             actionBar.setTitleColor(getColor(Theme.key_windowBackgroundWhiteBlackText));
             actionBar.setItemsColor(getColor(Theme.key_windowBackgroundWhiteBlackText), false);
             actionBar.setItemsBackgroundColor(getColor(Theme.key_actionBarWhiteSelector), false);
@@ -764,11 +1050,12 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
             actionBar.setPopupItemsColor(getColor(Theme.key_actionBarDefaultSubmenuItemIcon), true, false);
             actionBar.setPopupItemsSelectorColor(getColor(Theme.key_dialogButtonSelector), false);
         }
+        webViewContainer.setFlickerViewColor(backgroundPaint.getColor());
     }
 
     private void updateLightStatusBar() {
         boolean lightStatusBar;
-        if (overrideBackgroundColor) {
+        if (overrideActionBarColor) {
             lightStatusBar = !actionBarIsLight;
         } else {
             int color = Theme.getColor(Theme.key_windowBackgroundWhite, null, true);
@@ -812,6 +1099,11 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             params.layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
         }
+        if (fullscreen) {
+            params.flags |= WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS;
+        } else {
+            params.flags &=~ WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS;
+        }
         window.setAttributes(params);
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -822,7 +1114,27 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
         windowView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             windowView.setOnApplyWindowInsetsListener((v, insets) -> {
-                v.setPadding(0, 0, 0, insets.getSystemWindowInsetBottom());
+                final WindowInsetsCompat insetsCompat = WindowInsetsCompat.toWindowInsetsCompat(insets, v);
+                final androidx.core.graphics.Insets navInsets = insetsCompat.getInsets(WindowInsetsCompat.Type.navigationBars());
+                this.navInsets.set(navInsets.left, navInsets.top, navInsets.right, navInsets.bottom);
+                final androidx.core.graphics.Insets cutoutInsets = insetsCompat.getInsets(WindowInsetsCompat.Type.displayCutout() | WindowInsetsCompat.Type.systemBars());
+                this.insets.set(
+                    Math.max(cutoutInsets.left,   insets.getStableInsetLeft()),
+                    Math.max(cutoutInsets.top,    insets.getStableInsetTop()),
+                    Math.max(cutoutInsets.right,  insets.getStableInsetRight()),
+                    Math.max(cutoutInsets.bottom, insets.getStableInsetBottom())
+                );
+                if (Build.VERSION.SDK_INT <= 28) {
+                    this.insets.top = Math.max(this.insets.top, AndroidUtilities.getStatusBarHeight(getContext()));
+                }
+                final androidx.core.graphics.Insets keyboardInsets = insetsCompat.getInsets(WindowInsetsCompat.Type.ime());
+                final int keyboardHeight = keyboardInsets.bottom;
+                if (keyboardHeight > this.insets.bottom && keyboardHeight > dp(20)) {
+                    this.keyboardInset = keyboardHeight;
+                } else {
+                    this.keyboardInset = 0;
+                }
+                updateFullscreenLayout();
                 if (Build.VERSION.SDK_INT >= 30) {
                     return WindowInsets.CONSUMED;
                 } else {
@@ -830,17 +1142,88 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
                 }
             });
         }
+        if (fullscreen && !(botButtons != null && botButtons.getTotalHeight() > 0)) {
+            windowView.setSystemUiVisibility(windowView.getSystemUiVisibility() | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION);
+        } else {
+            windowView.setSystemUiVisibility(windowView.getSystemUiVisibility() & ~View.SYSTEM_UI_FLAG_HIDE_NAVIGATION);
+        }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             AndroidUtilities.setLightNavigationBar(window, ColorUtils.calculateLuminance(navBarColor) >= 0.721f);
         }
 
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.didSetNewTheme);
+        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.botDownloadsUpdate);
+    }
+
+    public void updateFullscreenLayout() {
+        fullscreenButtons.setInsets(insets);
+        if (fullscreen) {
+            final int bottom = botButtons != null && botButtons.getTotalHeight() > 0 ? insets.bottom : 0;
+            webViewContainer.reportSafeInsets(new Rect(insets.left, insets.top, insets.right, keyboardInset > bottom ? 0 : (botButtons != null && botButtons.getTotalHeight() > 0 ? 0 : insets.bottom)), dp(8 + 30 + 8));
+            windowView.setPadding(0, 0, 0, Math.max(keyboardInset, bottom));
+        } else {
+            webViewContainer.reportSafeInsets(new Rect(0, 0, 0, 0), 0);
+            windowView.setPadding(insets.left, 0, insets.right, Math.max(this.keyboardInset, (bottomTabs != null ? bottomTabs.getHeight(false) : 0) + insets.bottom));
+        }
+        swipeContainerLayoutParams.topMargin = dp(24);
+//        botButtonsLayoutParams.bottomMargin = fullscreen ? insets.bottom : 0;
+        actionBarLayoutParams.leftMargin = !fullscreen ? 0 : insets.left;
+        actionBarLayoutParams.rightMargin = 0;
+        bulletinContainerLayoutParams.leftMargin = !fullscreen ? 0 : insets.left;
+        bulletinContainerLayoutParams.rightMargin = !fullscreen ? 0 : insets.right;
+        if (!fullscreenInProgress) {
+            swipeContainer.setSwipeOffsetAnimationDisallowed(true);
+            if (fullscreen) {
+                swipeContainer.setTopActionBarOffsetY(-dp(24));
+            } else {
+                swipeContainer.setTopActionBarOffsetY(ActionBar.getCurrentActionBarHeight() + AndroidUtilities.statusBarHeight - dp(24));
+            }
+            swipeContainer.setSwipeOffsetAnimationDisallowed(false);
+            swipeContainer.invalidateTranslation();
+            swipeContainer.invalidate();
+            swipeContainer.requestLayout();
+        }
+        if (swipeContainer != null) {
+            swipeContainer.setFullSize(isFullSize());
+        }
+        botButtons.requestLayout();
+        windowView.requestLayout();
+        fullscreenButtons.setVisibility(fullscreen ? View.VISIBLE : View.GONE);
+    }
+
+    public void updateWindowFlags() {
+        try {
+            Window window = getWindow();
+            if (window == null) return;
+            WindowManager.LayoutParams params = window.getAttributes();
+            final int flags;
+            if (Build.VERSION.SDK_INT <= 28) {
+                flags = WindowManager.LayoutParams.FLAG_FULLSCREEN;
+            } else {
+                flags = WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS;
+            }
+            if (fullscreen) {
+                params.flags |= flags;
+            } else {
+                params.flags &= ~flags;
+            }
+            if (fullscreen && !(botButtons != null && botButtons.getTotalHeight() > 0) && !windowView.drawingFromOverlay) {
+                windowView.setSystemUiVisibility(windowView.getSystemUiVisibility() | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION);
+            } else {
+                windowView.setSystemUiVisibility(windowView.getSystemUiVisibility() & ~View.SYSTEM_UI_FLAG_HIDE_NAVIGATION);
+            }
+            window.setAttributes(params);
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
     }
 
     @Override
     public void onAttachedToWindow() {
         super.onAttachedToWindow();
+
+        setAttached(true);
 
         if (springAnimation == null) {
             springAnimation = new SpringAnimation(this, ACTION_BAR_TRANSITION_PROGRESS_VALUE)
@@ -854,6 +1237,8 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
     @Override
     public void onDetachedFromWindow() {
         super.onDetachedFromWindow();
+
+        setAttached(false);
 
         if (springAnimation != null) {
             springAnimation.cancel();
@@ -914,11 +1299,16 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
     }
 
     public boolean isFullSize() {
-        return fullsize == null ? defaultFullsize : fullsize;
+        return fullscreen || (fullsize == null ? defaultFullsize : fullsize);
     }
 
     @Override
     public boolean setDialog(BottomSheetTabDialog dialog) {
+        return false;
+    }
+
+    @Override
+    public boolean hadDialog() {
         return false;
     }
 
@@ -934,7 +1324,7 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
         this.buttonText = props.buttonText;
         this.currentWebApp = props.app;
 
-        TLRPC.User userbot = MessagesController.getInstance(currentAccount).getUser(botId);
+        final TLRPC.User userbot = MessagesController.getInstance(currentAccount).getUser(botId);
         CharSequence title = UserObject.getUserName(userbot);
         try {
             TextPaint tp = new TextPaint();
@@ -942,7 +1332,7 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
             title = Emoji.replaceEmoji(title, tp.getFontMetricsInt(), false);
         } catch (Exception ignore) {}
         actionBar.setTitle(title);
-        TLRPC.UserFull userInfo = MessagesController.getInstance(currentAccount).getUserFull(botId);
+        final TLRPC.UserFull userInfo = MessagesController.getInstance(currentAccount).getUserFull(botId);
         if (userbot != null && userbot.verified || userInfo != null && userInfo.user != null && userInfo.user.verified) {
             verifiedDrawable = getContext().getResources().getDrawable(R.drawable.verified_profile).mutate();
             verifiedDrawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_featuredStickers_addButton), PorterDuff.Mode.SRC_IN));
@@ -980,6 +1370,9 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
                 }
             });
         }
+        if (fullscreenButtons != null) {
+            fullscreenButtons.setName(UserObject.getUserName(userbot), userbot != null && userbot.verified);
+        }
         ActionBarMenu menu = actionBar.createMenu();
         menu.removeAllViews();
 
@@ -990,20 +1383,30 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
                 break;
             }
         }
+        if (!fromTab) {
+            if (userInfo != null) {
+                if (userInfo.bot_info != null && userInfo.bot_info.app_settings != null) {
+                    applyAppBotSettings(userInfo.bot_info.app_settings, false);
+                }
+            } else {
+                MessagesController.getInstance(currentAccount).loadFullUser(userbot, 0, true, (userFull2) -> {
+                    AndroidUtilities.runOnUIThread(() -> {
+                        if (userFull2 != null && userFull2.bot_info != null && userFull2.bot_info.app_settings != null) {
+                            applyAppBotSettings(userFull2.bot_info.app_settings, true);
+                        }
+                    });
+                });
+            }
+            if (props.fullscreen) {
+                setFullscreen(true, false);
+            }
+        }
 
         menu.addItem(R.id.menu_collapse_bot, R.drawable.arrow_more);
-        ActionBarMenuItem otherItem = menu.addItem(0, R.drawable.ic_ab_other);
-        otherItem.addSubItem(R.id.menu_open_bot, R.drawable.msg_bot, LocaleController.getString(R.string.BotWebViewOpenBot));
-        settingsItem = otherItem.addSubItem(R.id.menu_settings, R.drawable.msg_settings, LocaleController.getString(R.string.BotWebViewSettings));
-        settingsItem.setVisibility(View.GONE);
-        otherItem.addSubItem(R.id.menu_reload_page, R.drawable.msg_retry, LocaleController.getString(R.string.BotWebViewReloadPage));
-        if (currentBot != null && MediaDataController.getInstance(currentAccount).canCreateAttachedMenuBotShortcut(currentBot.bot_id)) {
-            otherItem.addSubItem(R.id.menu_add_to_home_screen_bot, R.drawable.msg_home, LocaleController.getString(R.string.AddShortcut));
-        }
-        otherItem.addSubItem(R.id.menu_tos_bot, R.drawable.menu_intro, LocaleController.getString(R.string.BotWebViewToS));
-        if (currentBot != null && (currentBot.show_in_side_menu || currentBot.show_in_attach_menu)) {
-            otherItem.addSubItem(R.id.menu_delete_bot, R.drawable.msg_delete, LocaleController.getString(R.string.BotWebViewDeleteBot));
-        }
+        optionsItem = menu.addItem(0, optionsIcon = new BotFullscreenButtons.OptionsIcon(getContext()));
+        optionsItem.setOnClickListener(v -> {
+            openOptions();
+        });
 
         actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
             @Override
@@ -1012,34 +1415,6 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
                     if (!webViewContainer.onBackPressed()) {
                         onCheckDismissByUser();
                     }
-                } else if (id == R.id.menu_open_bot) {
-                    Bundle bundle = new Bundle();
-                    bundle.putLong("user_id", botId);
-                    if (parentActivity instanceof LaunchActivity) {
-                        ((LaunchActivity) parentActivity).presentFragment(new ChatActivity(bundle));
-                    }
-                    dismiss();
-                } else if (id == R.id.menu_tos_bot) {
-                    Browser.openUrl(getContext(), LocaleController.getString(R.string.BotWebViewToSLink));
-                } else if (id == R.id.menu_reload_page) {
-                    if (webViewContainer.getWebView() != null) {
-                        webViewContainer.getWebView().animate().cancel();
-                        webViewContainer.getWebView().animate().alpha(0).start();
-                    }
-
-                    progressView.setLoadProgress(0);
-                    progressView.setAlpha(1f);
-                    progressView.setVisibility(View.VISIBLE);
-
-                    webViewContainer.setBotUser(MessagesController.getInstance(currentAccount).getUser(botId));
-                    webViewContainer.loadFlickerAndSettingsItem(currentAccount, botId, settingsItem);
-                    webViewContainer.reload();
-                } else if (id == R.id.menu_settings) {
-                    webViewContainer.onSettingsButtonPressed();
-                } else if (id == R.id.menu_delete_bot) {
-                    deleteBot(currentAccount, botId, () -> dismiss());
-                } else if (id == R.id.menu_add_to_home_screen_bot) {
-                    MediaDataController.getInstance(currentAccount).installShortcut(botId, MediaDataController.SHORTCUT_TYPE_ATTACHED_BOT);
                 } else if (id == R.id.menu_collapse_bot) {
                     forceExpnaded = true;
                     dismiss(true, null);
@@ -1050,10 +1425,10 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
         final JSONObject themeParams = makeThemeParams(resourcesProvider);
 
         webViewContainer.setBotUser(MessagesController.getInstance(currentAccount).getUser(botId));
-        webViewContainer.loadFlickerAndSettingsItem(currentAccount, botId, settingsItem);
+        webViewContainer.loadFlickerAndSettingsItem(currentAccount, botId, null);
         preloadShortcutBotIcon(props.botUser, currentBot);
         if (props.response != null) {
-            loadFromResponse(true);
+            loadFromResponse();
         } else {
             switch (props.type) {
                 case TYPE_BOT_MENU_BUTTON: {
@@ -1062,6 +1437,7 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
                     req.peer = MessagesController.getInstance(currentAccount).getInputPeer(botId);
                     req.platform = "android";
                     req.compact = props.compact;
+                    req.fullscreen = props.fullscreen;
 
                     req.url = props.buttonUrl;
                     req.flags |= 2;
@@ -1077,7 +1453,7 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
 
                         } else if (requestProps != null) {
                             requestProps.applyResponse(response);
-                            loadFromResponse(false);
+                            loadFromResponse();
                         }
                     }));
                     NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.webViewResultSent);
@@ -1091,6 +1467,7 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
                     req.platform = "android";
                     req.from_side_menu = (props.flags & FLAG_FROM_SIDE_MENU) != 0;
                     req.compact = props.compact;
+                    req.fullscreen = props.fullscreen;
                     if (themeParams != null) {
                         req.theme_params = new TLRPC.TL_dataJSON();
                         req.theme_params.data = themeParams.toString();
@@ -1110,7 +1487,7 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
 
                         } else if (requestProps != null) {
                             requestProps.applyResponse(response);
-                            loadFromResponse(false);
+                            loadFromResponse();
                         }
                     }));
                     break;
@@ -1121,6 +1498,7 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
                     req.bot = MessagesController.getInstance(currentAccount).getInputUser(botId);
                     req.platform = "android";
                     req.compact = props.compact;
+                    req.fullscreen = props.fullscreen;
                     if (props.buttonUrl != null) {
                         req.url = props.buttonUrl;
                         req.flags |= 2;
@@ -1142,7 +1520,7 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
 
                         } else if (requestProps != null) {
                             requestProps.applyResponse(response);
-                            loadFromResponse(false);
+                            loadFromResponse();
                         }
                     }));
                     NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.webViewResultSent);
@@ -1160,6 +1538,7 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
                     req.peer = fragment instanceof ChatActivity ? ((ChatActivity) fragment).getCurrentUser() != null ? MessagesController.getInputPeer(((ChatActivity) fragment).getCurrentUser()) : MessagesController.getInputPeer(((ChatActivity) fragment).getCurrentChat())
                             : MessagesController.getInputPeer(props.botUser);
                     req.compact = props.compact;
+                    req.fullscreen = props.fullscreen;
 
                     if (!TextUtils.isEmpty(props.startParam)) {
                         req.start_param = props.startParam;
@@ -1177,7 +1556,7 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
 
                         } else if (requestProps != null) {
                             requestProps.applyResponse(response2);
-                            loadFromResponse(false);
+                            loadFromResponse();
                         }
                     }), ConnectionsManager.RequestFlagInvokeAfter | ConnectionsManager.RequestFlagFailOnServerErrors);
                     break;
@@ -1190,6 +1569,7 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
                     req.peer = fragment instanceof ChatActivity ? ((ChatActivity) fragment).getCurrentUser() != null ? MessagesController.getInputPeer(((ChatActivity) fragment).getCurrentUser()) : MessagesController.getInputPeer(((ChatActivity) fragment).getCurrentChat())
                             : MessagesController.getInputPeer(props.botUser);
                     req.compact = props.compact;
+                    req.fullscreen = props.fullscreen;
 
                     if (!TextUtils.isEmpty(props.startParam)) {
                         req.start_param = props.startParam;
@@ -1207,7 +1587,7 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
 
                         } else if (requestProps != null) {
                             requestProps.applyResponse(response2);
-                            loadFromResponse(false);
+                            loadFromResponse();
                         }
                     }), ConnectionsManager.RequestFlagInvokeAfter | ConnectionsManager.RequestFlagFailOnServerErrors);
                     break;
@@ -1216,7 +1596,186 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
         }
     }
 
-    private void loadFromResponse(boolean fromTab) {
+    private HashMap<BotDownloads.FileDownload, ActionBarMenuSubItem> fileItems = new HashMap<>();
+    private ItemOptions options;
+    private void openOptions() {
+        final TLRPC.User userbot = MessagesController.getInstance(currentAccount).getUser(botId);
+        TLRPC.TL_attachMenuBot currentBot = null;
+        for (TLRPC.TL_attachMenuBot bot : MediaDataController.getInstance(currentAccount).getAttachMenuBots().bots) {
+            if (bot.bot_id == botId) {
+                currentBot = bot;
+                break;
+            }
+        }
+        if (options != null) {
+            options.dismiss();
+        }
+        final ItemOptions o = options = ItemOptions.makeOptions(windowView, resourcesProvider, fullscreen ? fullscreenButtons : optionsItem, true);
+        final BotDownloads botDownloads = BotDownloads.get(getContext(), currentAccount, botId);
+        fileItems.clear();
+        if (botDownloads.hasFiles()) {
+            final ItemOptions so = o.makeSwipeback();
+            so.add(R.drawable.msg_arrow_back, LocaleController.getString(R.string.Back), o::closeSwipeback);
+            so.addGap();
+            for (BotDownloads.FileDownload file : botDownloads.getFiles()) {
+                final ActionBarMenuSubItem fileItem = so.add(file.file_name, "", () -> {}).getLast();
+                fileItems.put(file, fileItem);
+            }
+            updateDownloadBulletin();
+            so.setMinWidth(dp(180));
+
+            o.add(R.drawable.menu_download_round, LocaleController.getString(R.string.BotDownloads), () -> {
+                o.openSwipeback(so);
+            });
+            o.addGap();
+        }
+        o
+            .add(R.drawable.msg_bot, LocaleController.getString(R.string.BotWebViewOpenBot), () -> {
+                if (parentActivity instanceof LaunchActivity) {
+                    ((LaunchActivity) parentActivity).presentFragment(ChatActivity.of(botId));
+                }
+                dismiss(true);
+            })
+            .addIf(hasSettings, R.drawable.msg_settings, LocaleController.getString(R.string.BotWebViewSettings), () -> {
+                webViewContainer.onSettingsButtonPressed();
+            })
+            .add(R.drawable.msg_retry, LocaleController.getString(R.string.BotWebViewReloadPage), () -> {
+                if (webViewContainer.getWebView() != null) {
+                    webViewContainer.getWebView().animate().cancel();
+                    webViewContainer.getWebView().animate().alpha(0).start();
+                }
+
+                progressView.setLoadProgress(0);
+                progressView.setAlpha(1f);
+                progressView.setVisibility(View.VISIBLE);
+
+                webViewContainer.setBotUser(MessagesController.getInstance(currentAccount).getUser(botId));
+                webViewContainer.loadFlickerAndSettingsItem(currentAccount, botId, null);
+                webViewContainer.reload();
+            })
+            .addIf(userbot != null && userbot.bot_has_main_app, R.drawable.msg_home, LocaleController.getString(R.string.AddShortcut), () -> {
+                MediaDataController.getInstance(currentAccount).installShortcut(botId, MediaDataController.SHORTCUT_TYPE_ATTACHED_BOT);
+            })
+            .add(R.drawable.menu_intro, LocaleController.getString(R.string.BotWebViewToS), () -> {
+                Browser.openUrl(getContext(), LocaleController.getString(R.string.BotWebViewToSLink));
+            })
+            .addIf(currentBot != null && (currentBot.show_in_side_menu || currentBot.show_in_attach_menu), R.drawable.msg_delete, LocaleController.getString(R.string.BotWebViewDeleteBot), () -> {
+                deleteBot(currentAccount, botId, () -> dismiss());
+            })
+            .setGravity(Gravity.RIGHT)
+            .translate(-insets.right, 0)
+            .forceTop(true)
+            .setDrawScrim(false)
+            .show();
+    }
+
+    private void showBulletin(Utilities.CallbackReturn<BulletinFactory, Bulletin> make) {
+        make.run(BulletinFactory.of(bulletinContainer, resourcesProvider)).show(true);
+    }
+
+    private void updateDownloadBulletinArrow() {
+        if (downloadBulletinLayout == null) return;
+        if (fullscreen) {
+            downloadBulletinLayout.setArrow(lerp(dp(24), dp(26), fullscreenProgress));
+        } else if (actionBarTransitionProgress > .5f) {
+            downloadBulletinLayout.setArrow(dp(24));
+        } else {
+            downloadBulletinLayout.setArrow(-1);
+        }
+    }
+
+    private BotDownloads.FileDownload lastBulletinFile;
+    private void updateDownloadBulletin() {
+        final BotDownloads botDownloads = BotDownloads.get(getContext(), currentAccount, botId);
+        final BotDownloads.FileDownload file = botDownloads.getCurrent();
+
+        if (file == null) {
+            if (downloadBulletin != null) {
+                downloadBulletin.hide();
+                downloadBulletin = null;
+            }
+        } else if (file.isDownloading() && !file.shown || file.resaved) {
+            if (lastBulletinFile != file && downloadBulletin != null) {
+                downloadBulletin.hide();
+                downloadBulletin = null;
+            }
+            if (downloadBulletin == null || !downloadBulletin.isShowing()) {
+                lastBulletinFile = file;
+                downloadBulletin = Bulletin.make(bulletinContainer, downloadBulletinLayout = new BotDownloads.DownloadBulletin(getContext(), resourcesProvider), DURATION_PROLONG);
+                downloadBulletin.show(true);
+            }
+            if (downloadBulletinLayout.set(file)) {
+                downloadBulletin = null;
+            }
+            file.resaved = false;
+            file.shown = true;
+        } else if (downloadBulletinLayout != null) {
+            lastBulletinFile = file;
+            if (downloadBulletinLayout.set(file)) {
+                downloadBulletin = null;
+            }
+        }
+        updateDownloadBulletinArrow();
+
+        for (Map.Entry<BotDownloads.FileDownload, ActionBarMenuSubItem> entry : fileItems.entrySet()) {
+            final ActionBarMenuSubItem item = entry.getValue();
+            final BotDownloads.FileDownload itemFile = entry.getKey();
+
+            item.setText(itemFile.file_name);
+            if (!itemFile.isDownloading()) {
+                item.setSubtext(AndroidUtilities.formatFileSize(itemFile.size));
+            } else {
+                final Pair<Long, Long> progress = itemFile.getProgress();
+                if (progress.second > 0) {
+                    item.setSubtext(AndroidUtilities.formatFileSize(progress.first) + " / " + AndroidUtilities.formatFileSize(progress.second));
+                } else {
+                    item.setSubtext(AndroidUtilities.formatFileSize(progress.first));
+                }
+            }
+
+            if (itemFile.isDownloading()) {
+                item.setRightIcon(R.drawable.msg_close);
+                item.subtextView.setPadding(0, 0, dp(32), 0);
+            } else if (itemFile.cancelled) {
+                item.setVisibility(View.GONE);
+            } else {
+                item.setRightIcon(0);
+                item.subtextView.setPadding(0, 0, 0, 0);
+            }
+
+            item.setOnClickListener(v -> {
+                if (itemFile.isDownloading()) {
+                    itemFile.cancel();
+                } else {
+                    itemFile.open();
+                }
+                if (options != null) {
+                    options.dismiss();
+                    options = null;
+                }
+            });
+        }
+
+        optionsIcon.setDownloading(botDownloads.isDownloading());
+        fullscreenButtons.setDownloading(botDownloads.isDownloading());
+
+    }
+
+    private void applyAppBotSettings(TL_bots.botAppSettings botAppSettings, boolean animated) {
+        if (botAppSettings == null) return;
+        final boolean dark = Theme.isCurrentThemeDark();
+        final boolean hasBackgroundColor = (botAppSettings.flags & ((dark ? 4 : 2))) != 0;
+        final boolean hasHeaderColor = (botAppSettings.flags & ((dark ? 16 : 8))) != 0;
+        if (hasHeaderColor) {
+            setActionBarColor((dark ? botAppSettings.header_dark_color : botAppSettings.header_color) | 0xFF000000, true, animated);
+        }
+        if (hasBackgroundColor) {
+            setBackgroundColor((dark ? botAppSettings.background_dark_color : botAppSettings.background_color) | 0xFF000000, true, animated);
+            setNavigationBarColor((dark ? botAppSettings.background_dark_color : botAppSettings.background_color) | 0xFF000000, animated);
+        }
+    }
+
+    private void loadFromResponse() {
         if (requestProps == null) return;
         final long pollTimeout = Math.max(0, POLL_PERIOD - (System.currentTimeMillis() - requestProps.responseTime));
         String url = null;
@@ -1226,6 +1785,9 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
             queryId = resultUrl.query_id;
             url = resultUrl.url;
             fullsize = resultUrl.fullsize;
+            if (!fromTab) {
+                setFullscreen(resultUrl.fullscreen, !fromTab);
+            }
         } else if (requestProps.response instanceof TLRPC.TL_appWebViewResultUrl) { // deprecated
             TLRPC.TL_appWebViewResultUrl result = (TLRPC.TL_appWebViewResultUrl) requestProps.response;
             queryId = 0;
@@ -1273,7 +1835,7 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
             return;
         }
         String botName = currentBot.short_name;
-        description = LocaleController.formatString("BotRemoveFromMenu", R.string.BotRemoveFromMenu, botName);
+        description = LocaleController.formatString(R.string.BotRemoveFromMenu, botName);
         TLRPC.TL_attachMenuBot finalCurrentBot = currentBot;
         new AlertDialog.Builder(LaunchActivity.getLastFragment().getContext())
                 .setTitle(LocaleController.getString(R.string.BotRemoveFromMenuTitle))
@@ -1303,6 +1865,7 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
     @Override
     public void show() {
         if (!AndroidUtilities.isSafeToShow(getContext())) return;
+        setOpen(true);
         windowView.setAlpha(0f);
         windowView.addOnLayoutChangeListener(new View.OnLayoutChangeListener() {
             @Override
@@ -1312,14 +1875,15 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
                 swipeContainer.setSwipeOffsetY(swipeContainer.getHeight());
                 windowView.setAlpha(1f);
 
-                AnimationNotificationsLocker locker = new AnimationNotificationsLocker();
-                locker.lock();
-
                 if (showOffsetY != Float.MAX_VALUE) {
                     swipeContainer.setSwipeOffsetAnimationDisallowed(true);
                     swipeContainer.setOffsetY(showOffsetY);
                     swipeContainer.setSwipeOffsetAnimationDisallowed(false);
                 }
+
+                webViewContainer.invalidateViewPortHeight(true, true);
+                AnimationNotificationsLocker locker = new AnimationNotificationsLocker();
+                locker.lock();
 
                 if (showExpanded || isFullSize()) {
                     swipeContainer.stickTo(-swipeContainer.getOffsetY() + swipeContainer.getTopActionBarOffsetY(), locker::unlock);
@@ -1333,9 +1897,16 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
                             }).start();
                 }
                 swipeContainer.opened = true;
+
+                if (fullscreen && fullscreenButtons != null) {
+                    fullscreenButtons.setAlpha(0f);
+                    fullscreenButtons.animate().alpha(1f).setDuration(220).start();
+                }
             }
         });
         super.show();
+        superDismissed = false;
+        activeSheets.add(this);
     }
 
     @Override
@@ -1398,14 +1969,17 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
         dismiss(false, callback);
     }
 
+    private boolean superDismissed = false;
     public void dismiss(boolean intoTabs, Runnable callback) {
         if (dismissed) {
             return;
         }
         dismissed = true;
+        setOpen(false);
         AndroidUtilities.cancelRunOnUIThread(pollRunnable);
 
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.webViewResultSent);
+        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.botDownloadsUpdate);
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.didSetNewTheme);
 
         if (intoTabs && (LaunchActivity.instance == null || LaunchActivity.instance.getBottomSheetTabsOverlay() == null)) {
@@ -1418,18 +1992,55 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
             }
             LaunchActivity.instance.getBottomSheetTabsOverlay().dismissSheet(this);
         } else {
+            if (botButtons != null) {
+                botButtons.animate().translationY(botButtons.getTotalHeight()).alpha(0).setDuration(160).setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT).start();
+            }
             webViewContainer.destroyWebView();
-            swipeContainer.stickTo(swipeContainer.getHeight() + windowView.measureKeyboardHeight() + (isFullSize() ? dp(200) : 0), () -> {
-                super.dismiss();
+            swipeContainer.stickTo(swipeContainer.getHeight() + (botButtons != null ? botButtons.getTotalHeight() : 0) + insets.top + insets.bottom + windowView.measureKeyboardHeight() + (isFullSize() ? dp(200) : 0), true, () -> {
+                if (!superDismissed) {
+                    super.dismiss();
+                    superDismissed = true;
+                }
                 if (callback != null) {
                     callback.run();
                 }
             });
         }
+        activeSheets.remove(this);
     }
 
     public void release() {
-        super.dismiss();
+        if (superDismissed) return;
+        try {
+            super.dismiss();
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+        setOpen(false);
+    }
+
+    private float openedProgress;
+    private ValueAnimator openAnimator;
+    public void setOpen(boolean opened) {
+        if (openAnimator != null) {
+            openAnimator.cancel();
+        }
+        if (Math.abs(openedProgress - (opened ? 1.0f : 0.0f)) < 0.01f) return;
+        openAnimator = ValueAnimator.ofFloat(openedProgress, opened ? 1.0f : 0.0f);
+        openAnimator.addListener(new AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationEnd(Animator animation) {
+                openedProgress = opened ? 1.0f : 0.0f;
+                checkNavBarColor();
+            }
+        });
+        openAnimator.addUpdateListener(anm -> {
+            openedProgress = (float) anm.getAnimatedValue();
+            checkNavBarColor();
+        });
+        openAnimator.setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT);
+        openAnimator.setDuration(220);
+        openAnimator.start();
     }
 
     @Override
@@ -1445,47 +2056,216 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
             webViewContainer.updateFlickerBackgroundColor(getColor(Theme.key_windowBackgroundWhite));
             updateActionBarColors();
             updateLightStatusBar();
+        } else if (id == NotificationCenter.botDownloadsUpdate) {
+            updateDownloadBulletin();
         }
     }
 
     public static int navigationBarColor(int actionBarColor) {
-        final boolean isDark = AndroidUtilities.computePerceivedBrightness(actionBarColor) < 0.721f;
-//        final int themeNavBarColor = (Theme.isCurrentThemeDark() == isDark ? Theme.getColor(Theme.key_windowBackgroundGray) : (isDark ? 0xFF151E27 : 0xFFF0F0F0));
-//        return Theme.adaptHue(themeNavBarColor, actionBarColor);
-//        return OKLCH.adapt(themeNavBarColor, actionBarColor);
         return Theme.adaptHSV(actionBarColor, +.35f, -.1f);
     }
 
-
-    public void setBackgroundColor(int color, boolean animated) {
+    private ValueAnimator backgroundColorAnimator;
+    public void setBackgroundColor(int color, boolean isOverride, boolean animated) {
         int from = backgroundPaint.getColor();
+        overrideBackgroundColor = isOverride;
+        if (backgroundColorAnimator != null) {
+            backgroundColorAnimator.cancel();
+        }
         if (animated) {
-            ValueAnimator animator = ValueAnimator.ofFloat(0, 1).setDuration(200);
-            animator.setInterpolator(CubicBezierInterpolator.DEFAULT);
-            animator.addUpdateListener(animation -> {
+            backgroundColorAnimator = ValueAnimator.ofFloat(0, 1).setDuration(200);
+            backgroundColorAnimator.setInterpolator(CubicBezierInterpolator.DEFAULT);
+            backgroundColorAnimator.addUpdateListener(animation -> {
                 backgroundPaint.setColor(ColorUtils.blendARGB(from, color, (Float) animation.getAnimatedValue()));
                 updateActionBarColors();
                 windowView.invalidate();
+                if (errorContainer != null) {
+                    errorContainer.setDark(AndroidUtilities.computePerceivedBrightness(backgroundPaint.getColor()) <= .721f, false);
+                    errorContainer.setBackgroundColor(backgroundPaint.getColor());
+                }
             });
-            animator.start();
+            backgroundColorAnimator.addListener(new AnimatorListenerAdapter() {
+                @Override
+                public void onAnimationEnd(Animator animation) {
+                    backgroundPaint.setColor(color);
+                    updateActionBarColors();
+                    windowView.invalidate();
+                    if (errorContainer != null) {
+                        errorContainer.setDark(AndroidUtilities.computePerceivedBrightness(backgroundPaint.getColor()) <= .721f, false);
+                        errorContainer.setBackgroundColor(backgroundPaint.getColor());
+                    }
+                }
+            });
+            backgroundColorAnimator.start();
         } else {
             backgroundPaint.setColor(color);
             updateActionBarColors();
             windowView.invalidate();
+            if (errorContainer != null) {
+                errorContainer.setDark(AndroidUtilities.computePerceivedBrightness(backgroundPaint.getColor()) <= .721f, false);
+                errorContainer.setBackgroundColor(backgroundPaint.getColor());
+            }
         }
     }
 
-    public void setActionBarColor(int color, boolean isOverrideColor, boolean animated) {
+    private boolean resetOffsetY = true;
+    private ValueAnimator fullscreenAnimator;
+    public void setFullscreen(boolean fullscreen, boolean animated) {
+        if (this.fullscreen == fullscreen) return;
+        this.fullscreen = fullscreen;
+        if (fullscreenAnimator != null) {
+            fullscreenAnimator.cancel();
+        }
+        if (fullscreenButtons != null) {
+            fullscreenButtons.setPreview(fullscreen, animated);
+        }
+        swipeContainerFromWidth = swipeContainer.getWidth();
+        swipeContainerFromHeight = swipeContainer.getHeight();
+        resetOffsetY = false;
+        if (animated) {
+            updateFullscreenLayout();
+            updateWindowFlags();
+            updateDownloadBulletinArrow();
+            final float tabletOffset = AndroidUtilities.isTablet() && !AndroidUtilities.isInMultiwindow && !AndroidUtilities.isSmallTablet() ? (AndroidUtilities.displaySize.x - (int) (Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y) * 0.8f)) / 2f : 0;
+            final float fromTranslationX = fullscreen ? insets.left + tabletOffset : -insets.left - tabletOffset;
+            final float fromButtonsTranslationX = fullscreen ? +tabletOffset : -tabletOffset;
+            final float toTranslationX = 0;
+            final float fromTranslationY = fullscreen ? swipeContainer.getTranslationY() : -dp(24);
+            final float toTranslationY = fullscreen ? -dp(24) : (ActionBar.getCurrentActionBarHeight() + AndroidUtilities.statusBarHeight - dp(24));
+            final float topoffset = ActionBar.getCurrentActionBarHeight() + AndroidUtilities.statusBarHeight;
+            swipeContainer.cancelStickTo();
+            swipeContainer.setSwipeOffsetAnimationDisallowed(true);
+            actionBar.setVisibility(View.VISIBLE);
+            if (fullscreen) {
+                swipeContainer.setTopActionBarOffsetY(-dp(24));
+            } else {
+                swipeContainer.setTopActionBarOffsetY(topoffset - dp(24));
+            }
+            swipeContainer.invalidateTranslation();
+            swipeContainer.invalidate();
+
+            fullscreenTransitionProgress = 0.0f;
+            fullscreenProgress = fullscreen ? fullscreenTransitionProgress : 1.0f - fullscreenTransitionProgress;
+            actionBar.setAlpha(1.0f - fullscreenProgress);
+            actionBar.setTranslationY(-ActionBar.getCurrentActionBarHeight() * fullscreenProgress);
+            swipeContainer.setTranslationY(lerp(fromTranslationY, toTranslationY, fullscreenTransitionProgress));
+            swipeContainer.setTranslationX(lerp(fromTranslationX, toTranslationX, fullscreenTransitionProgress));
+            botButtons.setTranslationX(lerp(fromButtonsTranslationX, 0, fullscreenTransitionProgress));
+            fullscreenButtons.setAlpha(fullscreenProgress);
+            windowView.invalidate();
+            webViewContainer.setViewPortHeightOffset(swipeContainer.getTranslationY() - toTranslationY);
+            webViewContainer.invalidateViewPortHeight(false, false);
+
+            fullscreenInProgress = true;
+            fullscreenAnimator = ValueAnimator.ofFloat(0, 1);
+            fullscreenAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+                @Override
+                public void onAnimationUpdate(@NonNull ValueAnimator animation) {
+                    fullscreenTransitionProgress = (float) animation.getAnimatedValue();
+                    fullscreenProgress = fullscreen ? fullscreenTransitionProgress : 1.0f - fullscreenTransitionProgress;
+                    actionBar.setAlpha(1.0f - fullscreenProgress);
+                    actionBar.setTranslationY(-ActionBar.getCurrentActionBarHeight() * fullscreenProgress);
+                    swipeContainer.setTranslationY(lerp(fromTranslationY, toTranslationY, fullscreenTransitionProgress));
+                    swipeContainer.setTranslationX(lerp(fromTranslationX, toTranslationX, fullscreenTransitionProgress));
+                    botButtons.setTranslationX(lerp(fromButtonsTranslationX, 0, fullscreenTransitionProgress));
+                    fullscreenButtons.setAlpha(fullscreenProgress);
+                    windowView.invalidate();
+                    webViewContainer.setViewPortHeightOffset(swipeContainer.getTranslationY() - toTranslationY);
+                    webViewContainer.invalidateViewPortHeight(false, false);
+                    updateDownloadBulletinArrow();
+                }
+            });
+            fullscreenAnimator.addListener(new AnimatorListenerAdapter() {
+                @Override
+                public void onAnimationEnd(Animator animation) {
+                    fullscreenInProgress = false;
+                    if (!fullscreen) {
+                        updateFullscreenLayout();
+                        updateWindowFlags();
+                        swipeContainer.setForceOffsetY(topoffset - dp(24));
+                        swipeContainer.setTopActionBarOffsetY(topoffset - dp(24));
+                        swipeContainer.setSwipeOffsetY(0);
+                    } else {
+                        swipeContainer.setForceOffsetY(-dp(24));
+                        swipeContainer.setTopActionBarOffsetY(-dp(24));
+                        swipeContainer.setSwipeOffsetY(0);
+                    }
+                    fullscreenProgress = fullscreen ? fullscreenTransitionProgress : 1.0f - fullscreenTransitionProgress;
+                    actionBar.setAlpha(1.0f - fullscreenProgress);
+                    actionBar.setTranslationY(-ActionBar.getCurrentActionBarHeight() * fullscreenProgress);
+                    fullscreenButtons.setAlpha(fullscreenProgress);
+                    if (fullscreen) {
+                        actionBar.setVisibility(View.GONE);
+                    }
+                    swipeContainer.setSwipeOffsetAnimationDisallowed(false);
+                    swipeContainer.setTranslationX(lerp(fromTranslationX, toTranslationX, fullscreenTransitionProgress));
+                    botButtons.setTranslationX(0);
+                    windowView.invalidate();
+                    webViewContainer.setViewPortHeightOffset(0);
+                    webViewContainer.invalidateViewPortHeight(true, true);
+                    updateDownloadBulletinArrow();
+                }
+            });
+            fullscreenAnimator.setDuration(280);
+            fullscreenAnimator.setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT);
+            fullscreenAnimator.start();
+        } else {
+            fullscreenInProgress = false;
+            fullscreenProgress = fullscreen ? 1.0f : 0.0f;
+            fullscreenTransitionProgress = 0.0f;
+            updateFullscreenLayout();
+            updateWindowFlags();
+            actionBar.setVisibility(fullscreen ? View.GONE : View.VISIBLE);
+            actionBar.setAlpha(1.0f - fullscreenProgress);
+            actionBar.setTranslationY(-ActionBar.getCurrentActionBarHeight() * fullscreenProgress);
+            botButtons.setTranslationX(0);
+            fullscreenButtons.setAlpha(fullscreenProgress);
+            webViewContainer.setViewPortHeightOffset(0);
+            webViewContainer.invalidateViewPortHeight(true, true);
+            updateDownloadBulletinArrow();
+        }
+    }
+
+    public void setNavigationBarColor(int color, boolean animated) {
+        int from = navBarColor;
+        int to = color;
+
+        botButtons.setBackgroundColor(color, animated);
+        if (animated) {
+            ValueAnimator animator = ValueAnimator.ofFloat(0, 1).setDuration(200);
+            animator.setInterpolator(CubicBezierInterpolator.DEFAULT);
+            animator.addUpdateListener(animation -> {
+                float progress = (float) animation.getAnimatedValue();
+                navBarColor = ColorUtils.blendARGB(from, to, progress);
+                checkNavBarColor();
+            });
+            animator.addListener(new AnimatorListenerAdapter() {
+                @Override
+                public void onAnimationEnd(Animator animation) {
+                    float progress = 1f;
+                    navBarColor = ColorUtils.blendARGB(from, to, progress);
+                    checkNavBarColor();
+                }
+            });
+            animator.start();
+        } else {
+            navBarColor = to;
+            checkNavBarColor();
+        }
+        AndroidUtilities.setNavigationBarColor(getWindow(), navBarColor, false);
+    }
+
+    public void setActionBarColor(int color, boolean isOverride, boolean animated) {
         int from = actionBarColor;
-        int navBarFrom = navBarColor;
+//        int navBarFrom = navBarColor;
         int to = color;
         int navBarTo = navigationBarColor(color);
 
         BotWebViewMenuContainer.ActionBarColorsAnimating actionBarColorsAnimating = new BotWebViewMenuContainer.ActionBarColorsAnimating();
-        actionBarColorsAnimating.setFrom(overrideBackgroundColor ? actionBarColor : 0, resourcesProvider);
-        overrideBackgroundColor = isOverrideColor;
+        actionBarColorsAnimating.setFrom(overrideActionBarColor ? actionBarColor : 0, resourcesProvider);
+        overrideActionBarColor = isOverride;
         actionBarIsLight = ColorUtils.calculateLuminance(color) < 0.721f;
-        actionBarColorsAnimating.setTo(overrideBackgroundColor ? to : 0, resourcesProvider);
+        actionBarColorsAnimating.setTo(overrideActionBarColor ? to : 0, resourcesProvider);
 
         if (animated) {
             ValueAnimator animator = ValueAnimator.ofFloat(0, 1).setDuration(200);
@@ -1493,7 +2273,7 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
             animator.addUpdateListener(animation -> {
                 float progress = (float) animation.getAnimatedValue();
                 actionBarColor = ColorUtils.blendARGB(from, to, progress);
-                navBarColor = ColorUtils.blendARGB(navBarFrom, navBarTo, progress);
+//                navBarColor = ColorUtils.blendARGB(navBarFrom, navBarTo, progress);
                 checkNavBarColor();
                 windowView.invalidate();
                 actionBar.setBackgroundColor(actionBarColor);
@@ -1508,7 +2288,7 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
                 public void onAnimationEnd(Animator animation) {
                     float progress = 1f;
                     actionBarColor = ColorUtils.blendARGB(from, to, progress);
-                    navBarColor = ColorUtils.blendARGB(navBarFrom, navBarTo, progress);
+//                    navBarColor = ColorUtils.blendARGB(navBarFrom, navBarTo, progress);
                     checkNavBarColor();
                     windowView.invalidate();
                     actionBar.setBackgroundColor(actionBarColor);
@@ -1523,7 +2303,7 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
         } else {
             float progress = 1f;
             actionBarColor = to;
-            navBarColor = navBarTo;
+//            navBarColor = navBarTo;
             checkNavBarColor();
             windowView.invalidate();
             actionBar.setBackgroundColor(actionBarColor);
@@ -1537,15 +2317,18 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
     }
 
     public void checkNavBarColor() {
-        if (!dismissed && LaunchActivity.instance != null) {
+        if (!superDismissed && LaunchActivity.instance != null) {
             LaunchActivity.instance.checkSystemBarColors(true, true, true, false);
-            //LaunchActivity.instance.setNavigationBarColor(fragment.getNavigationBarColor(), false);
+//            AndroidUtilities.setNavigationBarColor(getWindow(), navBarColor, false);
+        }
+        if (windowView != null) {
+            windowView.invalidate();
         }
     }
 
     @Override
     public int getNavigationBarColor(int color) {
-        return navBarColor;
+        return ColorUtils.blendARGB(color, navBarColor, openedProgress);
     }
 
     public WindowView getWindowView() {
@@ -1563,17 +2346,85 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
             setWillNotDraw(false);
         }
 
+        @Override
+        protected boolean drawChild(@NonNull Canvas canvas, View child, long drawingTime) {
+            boolean restore = false;
+            if (child == swipeContainer && fullscreenInProgress && swipeContainerFromHeight > 0 && swipeContainerFromWidth > 0) {
+                canvas.save();
+                canvas.clipRect(
+                    child.getX(), child.getY(),
+                    child.getX() + lerp(swipeContainerFromWidth, child.getWidth(), fullscreenTransitionProgress),
+                    child.getY() + lerp(swipeContainerFromHeight, child.getHeight(), fullscreenTransitionProgress)
+                );
+                restore = true;
+            }
+            boolean r = super.drawChild(canvas, child, drawingTime);
+            if (restore) {
+                canvas.restore();
+            }
+            return r;
+        }
+
+        @Override
+        public boolean dispatchTouchEvent(MotionEvent ev) {
+            final BottomSheetTabs tabs = LaunchActivity.instance != null ? LaunchActivity.instance.getBottomSheetTabs() : null;
+            if (tabs != null && insets != null) {
+                final int bottomTabsHeight = (int) (tabs.getHeight(true) * (1.0f - fullscreenProgress));
+                if (ev.getY() >= getHeight() - insets.bottom - bottomTabsHeight && ev.getY() <= getHeight() - insets.bottom && !AndroidUtilities.isTablet()) {
+                    return tabs.touchEvent(ev.getAction(), ev.getX(), ev.getY() - (getHeight() - insets.bottom - bottomTabsHeight));
+                }
+            }
+            return super.dispatchTouchEvent(ev);
+        }
+
         private final Paint navbarPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         @Override
         protected void dispatchDraw(Canvas canvas) {
             if (drawingFromOverlay) return;
 
+            if (passcodeView.getVisibility() != View.VISIBLE && fullscreenProgress < 1 && fullscreenProgress > 0) {
+                navbarPaint.setColor(Theme.multAlpha(navBarColor, openedProgress));
+                if (navInsets.left > 0) {
+                    canvas.drawRect(0, 0, navInsets.left, getHeight(), navbarPaint);
+                }
+                if (navInsets.top > 0) {
+                    canvas.drawRect(0, 0, getWidth(), navInsets.top, navbarPaint);
+                }
+                if (navInsets.bottom > 0) {
+                    canvas.drawRect(0, getHeight() - navInsets.bottom, getWidth(), getHeight(), navbarPaint);
+                }
+                if (navInsets.right > 0) {
+                    canvas.drawRect(getWidth() - navInsets.right, 0, getWidth(), getHeight(), navbarPaint);
+                }
+            }
+
+            boolean restore = false;
+            if (bottomTabsClip != null && !AndroidUtilities.isTablet()) {
+                canvas.save();
+                canvas.translate(insets.left * (1.0f - fullscreenProgress), 0);
+                bottomTabsClip.clip(canvas, true, false, lerp(getWidth() - insets.left - insets.right, getWidth(), fullscreenProgress), getHeight(), 1.0f - fullscreenProgress);
+                canvas.translate(-insets.left * (1.0f - fullscreenProgress), 0);
+                restore = true;
+            }
             super.dispatchDraw(canvas);
+            if (restore) {
+                canvas.restore();
+            }
 
             if (passcodeView.getVisibility() != View.VISIBLE) {
-                navbarPaint.setColor(navBarColor);
-                AndroidUtilities.rectTmp.set(0, getHeight() - getPaddingBottom(), getWidth(), getHeight() + AndroidUtilities.navigationBarHeight);
-                canvas.drawRect(AndroidUtilities.rectTmp, navbarPaint);
+                navbarPaint.setColor(Theme.multAlpha(navBarColor, openedProgress));
+                if (navInsets.left > 0) {
+                    canvas.drawRect(0, 0, navInsets.left * (1.0f - fullscreenProgress), getHeight(), navbarPaint);
+                }
+                if (navInsets.top > 0) {
+                    canvas.drawRect(0, 0, getWidth(), navInsets.top * (1.0f - fullscreenProgress), navbarPaint);
+                }
+                if (navInsets.bottom > 0) {
+                    canvas.drawRect(0, getHeight() - (navInsets.bottom * (botButtons != null && botButtons.getTotalHeight() > 0 ? 1.0f : 1.0f - fullscreenProgress)), getWidth(), getHeight(), navbarPaint);
+                }
+                if (navInsets.right > 0) {
+                    canvas.drawRect(getWidth() - (navInsets.right * (1.0f - fullscreenProgress)), 0, getWidth(), getHeight(), navbarPaint);
+                }
             }
         }
 
@@ -1584,19 +2435,34 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
             super.onDraw(canvas);
 
             if (passcodeView.getVisibility() != View.VISIBLE) {
+                canvas.save();
+                if (bottomTabsClip != null) {
+                    bottomTabsClip.clip(canvas, false, false, getWidth(), getHeight(), 1.0f - fullscreenProgress);
+                }
+
                 if (!overrideBackgroundColor) {
-                    backgroundPaint.setColor(getColor(Theme.key_windowBackgroundWhite));
+                    final int color = getColor(Theme.key_windowBackgroundWhite);
+                    backgroundPaint.setColor(color);
+                    webViewContainer.setFlickerViewColor(color);
+                    if (errorContainer != null) {
+                        errorContainer.setDark(AndroidUtilities.computePerceivedBrightness(backgroundPaint.getColor()) <= .721f, false);
+                        errorContainer.setBackgroundColor(backgroundPaint.getColor());
+                    }
                 }
                 AndroidUtilities.rectTmp.set(0, 0, getWidth(), getHeight());
                 canvas.drawRect(AndroidUtilities.rectTmp, dimPaint);
 
+                final int bottomTabsHeight = bottomTabs != null ? bottomTabs.getHeight(true) : 0;
+
                 actionBarPaint.setColor(actionBarColor);
                 float radius = AndroidUtilities.dp(16) * (AndroidUtilities.isTablet() ? 1f : 1f - actionBarTransitionProgress);
-                AndroidUtilities.rectTmp.set(swipeContainer.getLeft(), AndroidUtilities.lerp(swipeContainer.getTranslationY(), 0, actionBarTransitionProgress), swipeContainer.getRight(), swipeContainer.getTranslationY() + AndroidUtilities.dp(24) + radius);
+                AndroidUtilities.rectTmp.set(lerp(swipeContainer.getLeft(), 0, fullscreenProgress), lerp(swipeContainer.getTranslationY(), 0, actionBarTransitionProgress), swipeContainer.getRight(), swipeContainer.getTranslationY() + AndroidUtilities.dp(24) + radius);
                 canvas.drawRoundRect(AndroidUtilities.rectTmp, radius, radius, actionBarPaint);
 
-                AndroidUtilities.rectTmp.set(swipeContainer.getLeft(), swipeContainer.getTranslationY() + AndroidUtilities.dp(24), swipeContainer.getRight(), getHeight());
+                AndroidUtilities.rectTmp.set(lerp(swipeContainer.getLeft(), 0, fullscreenProgress), swipeContainer.getTranslationY() + AndroidUtilities.dp(24), lerp(swipeContainer.getRight(), getWidth(), fullscreenProgress), getHeight() - bottomTabsHeight);
                 canvas.drawRect(AndroidUtilities.rectTmp, backgroundPaint);
+
+                canvas.restore();
             }
         }
 
@@ -1608,26 +2474,26 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
 
             float transitionProgress = AndroidUtilities.isTablet() ? 0 : actionBarTransitionProgress;
             linePaint.setColor(lineColor);
-            linePaint.setAlpha((int) (linePaint.getAlpha() * (1f - Math.min(0.5f, transitionProgress) / 0.5f)));
+            linePaint.setAlpha((int) (linePaint.getAlpha() * (1f - Math.min(0.5f, transitionProgress) / 0.5f) * (1.0f - fullscreenProgress)));
 
             canvas.save();
             float scale = 1f - transitionProgress;
-            float y = AndroidUtilities.isTablet() ? AndroidUtilities.lerp(swipeContainer.getTranslationY() + AndroidUtilities.dp(12), AndroidUtilities.statusBarHeight / 2f, actionBarTransitionProgress) :
-                    (AndroidUtilities.lerp(swipeContainer.getTranslationY(), AndroidUtilities.statusBarHeight + ActionBar.getCurrentActionBarHeight() / 2f, transitionProgress) + AndroidUtilities.dp(12));
+            float y = AndroidUtilities.isTablet() ? lerp(swipeContainer.getTranslationY() + AndroidUtilities.dp(12), AndroidUtilities.statusBarHeight / 2f, actionBarTransitionProgress) :
+                    (lerp(swipeContainer.getTranslationY(), AndroidUtilities.statusBarHeight + ActionBar.getCurrentActionBarHeight() / 2f, transitionProgress) + AndroidUtilities.dp(12));
             canvas.scale(scale, scale, getWidth() / 2f, y);
             canvas.drawLine(getWidth() / 2f - AndroidUtilities.dp(16), y, getWidth() / 2f + AndroidUtilities.dp(16), y, linePaint);
             canvas.restore();
 
             actionBarShadow.setAlpha((int) (actionBar.getAlpha() * 0xFF));
             y = actionBar.getY() + actionBar.getTranslationY() + actionBar.getHeight();
-            actionBarShadow.setBounds(0, (int)y, getWidth(), (int)(y + actionBarShadow.getIntrinsicHeight()));
+            actionBarShadow.setBounds(insets.left, (int) y, getWidth() - insets.right, (int) (y + actionBarShadow.getIntrinsicHeight()));
             actionBarShadow.draw(canvas);
         }
 
         @SuppressLint("ClickableViewAccessibility")
         @Override
         public boolean onTouchEvent(MotionEvent event) {
-            if (event.getAction() == MotionEvent.ACTION_DOWN && (event.getY() <= AndroidUtilities.lerp(swipeContainer.getTranslationY() + AndroidUtilities.dp(24), 0, actionBarTransitionProgress) ||
+            if (event.getAction() == MotionEvent.ACTION_DOWN && (event.getY() <= lerp(swipeContainer.getTranslationY() + AndroidUtilities.dp(24), 0, actionBarTransitionProgress) ||
                     event.getX() > swipeContainer.getRight() || event.getX() < swipeContainer.getLeft())) {
                 dismiss(true, null);
                 return true;
@@ -1657,6 +2523,11 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
             if (this.drawingFromOverlay != drawingFromOverlay) {
                 this.drawingFromOverlay = drawingFromOverlay;
                 invalidate();
+                updateWindowFlags();
+                if (LaunchActivity.instance != null && fullscreen) {
+                    LaunchActivity.instance.requestCustomNavigationBar();
+                    LaunchActivity.instance.setNavigationBarColor(navBarColor, false);
+                }
             }
         }
 
@@ -1675,7 +2546,7 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
 
             clipPath.rewind();
             float radius = dp(16) * (AndroidUtilities.isTablet() ? 1f : 1f - actionBarTransitionProgress);
-            final float r = AndroidUtilities.lerp(radius, dp(10), progress);
+            final float r = lerp(radius, dp(10), progress);
             clipPath.addRoundRect(clipRect, r, r, Path.Direction.CW);
             canvas.clipPath(clipPath);
             canvas.drawPaint(backgroundPaint);
@@ -1694,51 +2565,58 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
 
     }
 
-    private BotWebViewAttachedSheet.MainButtonSettings mainButtonSettings;
-    public void setMainButton(BotWebViewAttachedSheet.MainButtonSettings s) {
-        mainButtonSettings = s;
-
-        mainButton.setClickable(s.isActive);
-        mainButton.setText(s.text);
-        mainButton.setTextColor(s.textColor);
-        mainButton.setBackground(BotWebViewContainer.getMainButtonRippleDrawable(s.color));
-        if (s.isVisible != mainButtonWasVisible) {
-            mainButtonWasVisible = s.isVisible;
-            mainButton.animate().cancel();
-            if (s.isVisible) {
-                mainButton.setAlpha(0f);
-                mainButton.setVisibility(View.VISIBLE);
-            }
-            mainButton.animate().alpha(s.isVisible ? 1f : 0f).setDuration(150).setListener(new AnimatorListenerAdapter() {
-                @Override
-                public void onAnimationEnd(Animator animation) {
-                    if (!s.isVisible) {
-                        mainButton.setVisibility(View.GONE);
-                    }
-                    swipeContainer.requestLayout();
+    private boolean errorShown;
+    private String errorCode;
+    private ArticleViewer.ErrorContainer errorContainer;
+    public ArticleViewer.ErrorContainer createErrorContainer() {
+        if (errorContainer == null) {
+            swipeContainer.addView(errorContainer = new ArticleViewer.ErrorContainer(getContext()), LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+            errorContainer.setTranslationY(-1);
+            errorContainer.buttonView.setOnClickListener(v -> {
+                BotWebViewContainer.MyWebView webView = webViewContainer.getWebView();
+                if (webView != null) {
+                    webView.reload();
                 }
-            }).start();
+            });
+            errorContainer.setBackgroundColor(backgroundPaint.getColor());
+            AndroidUtilities.updateViewVisibilityAnimated(errorContainer, errorShown, 1f, false);
         }
-        radialProgressView.setProgressColor(s.textColor);
-        if (s.isProgressVisible != mainButtonProgressWasVisible) {
-            mainButtonProgressWasVisible = s.isProgressVisible;
-            radialProgressView.animate().cancel();
-            if (s.isProgressVisible) {
-                radialProgressView.setAlpha(0f);
-                radialProgressView.setVisibility(View.VISIBLE);
+        return errorContainer;
+    }
+
+    private static int shownLockedBots = 0;
+    public boolean attached = false;
+    public void setAttached(boolean b) {
+        if (attached == b) return;
+        if (attached = b) {
+            if (orientationLocked) {
+                shownLockedBots++;
             }
-            radialProgressView.animate().alpha(s.isProgressVisible ? 1f : 0f)
-                    .scaleX(s.isProgressVisible ? 1f : 0.1f)
-                    .scaleY(s.isProgressVisible ? 1f : 0.1f)
-                    .setDuration(250)
-                    .setListener(new AnimatorListenerAdapter() {
-                        @Override
-                        public void onAnimationEnd(Animator animation) {
-                            if (!s.isProgressVisible) {
-                                radialProgressView.setVisibility(View.GONE);
-                            }
-                        }
-                    }).start();
+        } else {
+            if (orientationLocked) {
+                shownLockedBots--;
+            }
+        }
+        if (shownLockedBots > 0) {
+            AndroidUtilities.lockOrientation(getActivity());
+        } else {
+            AndroidUtilities.unlockOrientation(getActivity());
+        }
+    }
+    public void lockOrientation(boolean lock) {
+        if (orientationLocked == lock) return;
+        orientationLocked = lock;
+        if (attached) {
+            if (lock) {
+                shownLockedBots++;
+            } else {
+                shownLockedBots--;
+            }
+        }
+        if (shownLockedBots > 0) {
+            AndroidUtilities.lockOrientation(getActivity());
+        } else {
+            AndroidUtilities.unlockOrientation(getActivity());
         }
     }
 }

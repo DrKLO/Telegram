@@ -151,6 +151,11 @@ public class GroupCreateSpan extends View {
                     avatarDrawable.setColor(Theme.getColor(Theme.key_premiumGradientBackground2, resourcesProvider));
                     firstName = LocaleController.getString(R.string.PrivacyPremium);
                     break;
+                case "miniapps":
+                    isFlag = true;
+                    avatarDrawable.setColor(Theme.getColor(Theme.key_avatar_backgroundBlue, resourcesProvider), Theme.getColor(Theme.key_avatar_background2Blue, resourcesProvider));
+                    firstName = LocaleController.getString(R.string.PrivacyMiniapps);
+                    break;
                 case "archived":
                 default:
                     avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_FILTER_ARCHIVED);
@@ -238,6 +243,8 @@ public class GroupCreateSpan extends View {
         }
         if (object instanceof String && "premium".equals((String) object)) {
             imageReceiver.setImageBitmap(GroupCreateUserCell.makePremiumUsersDrawable(getContext(), true));
+        } else if (object instanceof String && "miniapps".equals((String) object)) {
+            imageReceiver.setImageBitmap(GroupCreateUserCell.makeMiniAppsDrawable(getContext(), true));
         } else {
             imageReceiver.setImage(imageLocation, "50_50", avatarDrawable, 0, null, imageParent, 1);
         }

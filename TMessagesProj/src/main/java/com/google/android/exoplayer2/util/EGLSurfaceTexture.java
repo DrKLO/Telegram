@@ -90,7 +90,7 @@ public final class EGLSurfaceTexture implements SurfaceTexture.OnFrameAvailableL
   /**
    * @param handler The {@link Handler} that will be used to call {@link
    *     SurfaceTexture#updateTexImage()} to update images on the {@link SurfaceTexture}. Note that
-   *     {@link #init(int)} has to be called on the same looper thread as the {@link Handler}'s
+   *     {@link #init(int, EGLContext)} has to be called on the same looper thread as the {@link Handler}'s
    *     looper.
    */
   public EGLSurfaceTexture(Handler handler) {
@@ -100,7 +100,7 @@ public final class EGLSurfaceTexture implements SurfaceTexture.OnFrameAvailableL
   /**
    * @param handler The {@link Handler} that will be used to call {@link
    *     SurfaceTexture#updateTexImage()} to update images on the {@link SurfaceTexture}. Note that
-   *     {@link #init(int)} has to be called on the same looper thread as the looper of the {@link
+   *     {@link #init(int, EGLContext)} has to be called on the same looper thread as the looper of the {@link
    *     Handler}.
    * @param callback The {@link TextureImageListener} to be called when the texture image on {@link
    *     SurfaceTexture} has been updated. This callback will be called on the same handler thread
@@ -117,10 +117,10 @@ public final class EGLSurfaceTexture implements SurfaceTexture.OnFrameAvailableL
    *
    * @param secureMode The {@link SecureMode} to be used for EGL surface.
    */
-  public void init(@SecureMode int secureMode) throws GlUtil.GlException {
+  public void init(@SecureMode int secureMode, EGLContext parentContext) throws GlUtil.GlException {
     display = getDefaultDisplay();
     EGLConfig config = chooseEGLConfig(display);
-    context = createEGLContext(display, config, secureMode);
+    context = createEGLContext(display, config, secureMode, parentContext);
     surface = createEGLSurface(display, config, context, secureMode);
     generateTextureIds(textureIdHolder);
     texture = new SurfaceTexture(textureIdHolder[0]);
@@ -164,7 +164,7 @@ public final class EGLSurfaceTexture implements SurfaceTexture.OnFrameAvailableL
   }
 
   /**
-   * Returns the wrapped {@link SurfaceTexture}. This can only be called after {@link #init(int)}.
+   * Returns the wrapped {@link SurfaceTexture}. This can only be called after {@link #init(int, EGLContext)}.
    */
   public SurfaceTexture getSurfaceTexture() {
     return Assertions.checkNotNull(texture);
@@ -232,7 +232,7 @@ public final class EGLSurfaceTexture implements SurfaceTexture.OnFrameAvailableL
   }
 
   private static EGLContext createEGLContext(
-      EGLDisplay display, EGLConfig config, @SecureMode int secureMode) throws GlUtil.GlException {
+      EGLDisplay display, EGLConfig config, @SecureMode int secureMode, EGLContext eglContext) throws GlUtil.GlException {
     int[] glAttributes;
     if (secureMode == SECURE_MODE_NONE) {
       glAttributes = new int[] {EGL14.EGL_CONTEXT_CLIENT_VERSION, 2, EGL14.EGL_NONE};
@@ -248,7 +248,7 @@ public final class EGLSurfaceTexture implements SurfaceTexture.OnFrameAvailableL
     }
     EGLContext context =
         EGL14.eglCreateContext(
-            display, config, android.opengl.EGL14.EGL_NO_CONTEXT, glAttributes, 0);
+            display, config, eglContext == null ? android.opengl.EGL14.EGL_NO_CONTEXT : eglContext, glAttributes, 0);
     GlUtil.checkGlException(context != null, "eglCreateContext failed");
     return context;
   }

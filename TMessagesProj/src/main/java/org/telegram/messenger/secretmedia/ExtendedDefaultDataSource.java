@@ -23,17 +23,24 @@ import com.google.android.exoplayer2.upstream.DefaultHttpDataSource;
 import com.google.android.exoplayer2.upstream.FileDataSource;
 import com.google.android.exoplayer2.upstream.RawResourceDataSource;
 import com.google.android.exoplayer2.upstream.TransferListener;
+import com.google.android.exoplayer2.upstream.cache.Cache;
+import com.google.android.exoplayer2.upstream.cache.CacheSpan;
+import com.google.android.exoplayer2.upstream.cache.ContentMetadata;
+import com.google.android.exoplayer2.upstream.cache.ContentMetadataMutations;
 import com.google.android.exoplayer2.util.Assertions;
 import com.google.android.exoplayer2.util.Log;
 import com.google.android.exoplayer2.util.Util;
 
 import org.telegram.messenger.FileStreamLoadOperation;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.NavigableSet;
+import java.util.Set;
 
 public final class ExtendedDefaultDataSource implements DataSource {
 

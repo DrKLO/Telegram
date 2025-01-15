@@ -127,7 +127,7 @@ public final class Format implements Bundleable {
    * of format being constructed. See the {@link Format} Javadoc for information about which fields
    * should be set for different types of format.
    */
-  public static final class Builder {
+  public static class Builder {
 
     @Nullable private String id;
     @Nullable private String label;
@@ -138,6 +138,10 @@ public final class Format implements Bundleable {
     private int peakBitrate;
     @Nullable private String codecs;
     @Nullable private Metadata metadata;
+    public boolean cached;
+    public long documentId;
+    public String documentFilename;
+    public int currentAccount;
 
     // Container specific.
 
@@ -207,6 +211,7 @@ public final class Format implements Bundleable {
       tileCountVertical = NO_VALUE;
       // Provided by the source.
       cryptoType = C.CRYPTO_TYPE_NONE;
+      cached = false;
     }
 
     /**
@@ -254,6 +259,10 @@ public final class Format implements Bundleable {
       this.tileCountVertical = format.tileCountVertical;
       // Provided by the source.
       this.cryptoType = format.cryptoType;
+      this.cached = format.cached;
+      this.documentId = format.documentId;
+      this.currentAccount = format.currentAccount;
+      this.documentFilename = format.documentFilename;
     }
 
     /**
@@ -278,6 +287,46 @@ public final class Format implements Bundleable {
     @CanIgnoreReturnValue
     public Builder setId(int id) {
       this.id = Integer.toString(id);
+      return this;
+    }
+
+    @CanIgnoreReturnValue
+    public Builder setCached(boolean cached) {
+      this.cached = cached;
+      return this;
+    }
+
+    @CanIgnoreReturnValue
+    public Builder setDocumentId(String documentId) {
+      try {
+        this.documentId = Long.parseLong(documentId);
+      } catch (Exception e) {}
+      return this;
+    }
+
+    @CanIgnoreReturnValue
+    public Builder setDocumentId(long documentId) {
+      this.documentId = documentId;
+      return this;
+    }
+
+    @CanIgnoreReturnValue
+    public Builder setCurrentAccount(int currentAccount) {
+      this.currentAccount = currentAccount;
+      return this;
+    }
+
+    @CanIgnoreReturnValue
+    public Builder setCurrentAccount(String currentAccount) {
+      try {
+        this.currentAccount = Integer.parseInt(currentAccount);
+      } catch (Exception e) {}
+      return this;
+    }
+
+    @CanIgnoreReturnValue
+    public Builder setDocumentFilename(String filename) {
+      this.documentFilename = filename;
       return this;
     }
 
@@ -747,6 +796,11 @@ public final class Format implements Bundleable {
   /** Metadata, or null if unknown or not applicable. */
   @Nullable public final Metadata metadata;
 
+  public boolean cached;
+  public long documentId;
+  public int currentAccount;
+  public String documentFilename;
+
   // Container specific.
 
   /** The mime type of the container, or null if unknown or not applicable. */
@@ -1030,6 +1084,10 @@ public final class Format implements Bundleable {
     bitrate = peakBitrate != NO_VALUE ? peakBitrate : averageBitrate;
     codecs = builder.codecs;
     metadata = builder.metadata;
+    cached = builder.cached;
+    documentId = builder.documentId;
+    currentAccount = builder.currentAccount;
+    documentFilename = builder.documentFilename;
     // Container specific.
     containerMimeType = builder.containerMimeType;
     // Sample specific.

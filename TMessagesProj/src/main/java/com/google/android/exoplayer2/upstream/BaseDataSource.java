@@ -33,7 +33,7 @@ import java.util.ArrayList;
  */
 public abstract class BaseDataSource implements DataSource {
 
-  private final boolean isNetwork;
+  protected boolean isNetwork;
   private final ArrayList<TransferListener> listeners;
 
   private int listenerCount;

@@ -557,13 +557,15 @@ public class UndoView extends FrameLayout {
                     } else {
                         infoText = AndroidUtilities.replaceTags(LocaleController.formatString("VoipChatUserJoined", R.string.VoipChatUserJoined, UserObject.getFirstName(user)));
                     }
-                } else {
+                } else if (infoObject instanceof TLRPC.Chat) {
                     TLRPC.Chat chat = (TLRPC.Chat) infoObject;
                     if (ChatObject.isChannelOrGiga(currentChat)) {
                         infoText = AndroidUtilities.replaceTags(LocaleController.formatString("VoipChannelChatJoined", R.string.VoipChannelChatJoined, chat.title));
                     } else {
                         infoText = AndroidUtilities.replaceTags(LocaleController.formatString("VoipChatChatJoined", R.string.VoipChatChatJoined, chat.title));
                     }
+                } else {
+                    infoText = "";
                 }
                 subInfoText = null;
                 icon = 0;

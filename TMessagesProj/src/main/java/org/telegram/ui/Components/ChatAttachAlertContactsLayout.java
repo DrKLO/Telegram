@@ -704,7 +704,7 @@ public class ChatAttachAlertContactsLayout extends ChatAttachAlert.AttachAlertLa
             users.add(prepareContact(object));
         }
 
-        delegate.didSelectContacts(users, parentAlert.commentTextView.getText().toString(), notify, scheduleDate, effectId, invertMedia);
+        delegate.didSelectContacts(users, parentAlert.getCommentView().getText().toString(), notify, scheduleDate, effectId, invertMedia);
     }
 
     public ArrayList<TLRPC.User> getSelected() {

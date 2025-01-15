@@ -3401,13 +3401,13 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
                             actionCell.setColors(Theme.key_windowBackgroundWhiteBlueIcon, Theme.key_windowBackgroundWhiteBlueButton);
                             boolean showDivider = addNew2Row != -1 || (!(loadingUsers && !firstLoaded) && membersHeaderRow == -1 && !participants.isEmpty());
                             if (isChannel) {
-                                actionCell.setText(getString("AddSubscriber", R.string.AddSubscriber), null, R.drawable.msg_contact_add, showDivider);
+                                actionCell.setText(getString(R.string.AddSubscriber), null, R.drawable.msg_contact_add, showDivider);
                             } else {
-                                actionCell.setText(getString("AddMember", R.string.AddMember), null, R.drawable.msg_contact_add, showDivider);
+                                actionCell.setText(getString(R.string.AddMember), null, R.drawable.msg_contact_add, showDivider);
                             }
                         }
                     } else if (position == recentActionsRow) {
-                        actionCell.setText(getString("EventLog", R.string.EventLog), null, R.drawable.msg_log, antiSpamRow > recentActionsRow);
+                        actionCell.setText(getString(R.string.EventLog), null, R.drawable.msg_log, antiSpamRow > recentActionsRow);
                     } else if (position == addNew2Row) {
                         actionCell.setColors(Theme.key_windowBackgroundWhiteBlueIcon, Theme.key_windowBackgroundWhiteBlueButton);
                         boolean showDivider = !(loadingUsers && !firstLoaded) && membersHeaderRow == -1 && !participants.isEmpty();

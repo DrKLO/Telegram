@@ -5240,7 +5240,7 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
             final TLRPC.StickerSetCovered installingStickerSet = primaryInstallingStickerSets[i];
             if (installingStickerSet != null) {
                 final TLRPC.TL_messages_stickerSet pack = mediaDataController.getStickerSetById(installingStickerSet.set.id);
-                if (pack != null && !pack.set.archived) {
+                if (pack != null && pack.set != null && !pack.set.archived) {
                     primaryInstallingStickerSets[i] = null;
                 } else {
                     final TLRPC.TL_messages_stickerSet set = new TLRPC.TL_messages_stickerSet();
@@ -5259,7 +5259,7 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
         packs = MessagesController.getInstance(currentAccount).filterPremiumStickers(packs);
         for (int a = 0; a < packs.size(); a++) {
             TLRPC.TL_messages_stickerSet pack = packs.get(a);
-            if (pack.set.archived || pack.documents == null || pack.documents.isEmpty()) {
+            if (pack.set != null && pack.set.archived || pack.documents == null || pack.documents.isEmpty()) {
                 continue;
             }
             stickerSets.add(pack);
@@ -6772,6 +6772,7 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
         public int index;
         public TLRPC.StickerSet set;
         public ArrayList<TLRPC.Document> documents = new ArrayList<>();
+        public TLRPC.InputStickerSet needLoadSet;
         public boolean free;
         public boolean installed;
         public boolean featured;
@@ -7069,6 +7070,10 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
                     EmojiPack pack2 = emojipacksProcessed.get(a);
                     EmojiPack before = a - 1 >= 0 ? emojipacksProcessed.get(a - 1) : null;
                     boolean divider = pack2 != null && pack2.featured && !(before != null && !before.free && before.installed && !UserConfig.getInstance(currentAccount).isPremium());
+                    if (pack2 != null && pack2.needLoadSet != null) {
+                        MediaDataController.getInstance(currentAccount).getStickerSet(pack2.needLoadSet, false);
+                        pack2.needLoadSet = null;
+                    }
                     header.setStickerSet(pack2, divider);
                     break;
             }
@@ -7204,15 +7209,16 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
 //                    continue;
 //                }
                 EmojiPack pack = new EmojiPack();
-
                 pack.installed = mediaDataController.isStickerPackInstalled(set.set.id);
                 pack.set = set.set;
                 if (set instanceof TLRPC.TL_stickerSetFullCovered) {
                     pack.documents = ((TLRPC.TL_stickerSetFullCovered) set).documents;
                 } else if (set instanceof TLRPC.TL_stickerSetNoCovered) {
-                    TLRPC.TL_messages_stickerSet stickerSet = mediaDataController.getStickerSet(MediaDataController.getInputStickerSet(set.set), set.set.hash, false);
+                    TLRPC.TL_messages_stickerSet stickerSet = mediaDataController.getStickerSet(MediaDataController.getInputStickerSet(set.set), set.set.hash, true);
                     if (stickerSet != null) {
                         pack.documents = stickerSet.documents;
+                    } else {
+                        pack.needLoadSet = MediaDataController.getInputStickerSet(set.set);
                     }
                 } else {
                     pack.documents = set.covers;
@@ -7733,6 +7739,26 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
 
                                     next.run();
                                 }, null, SharedConfig.suggestAnimatedEmoji || UserConfig.getInstance(currentAccount).isPremium(), false, true, 25);
+                            },
+                            next -> {
+                                if (ConnectionsManager.getInstance(currentAccount).getConnectionState() != ConnectionsManager.ConnectionStateConnected) {
+                                    next.run();
+                                    return;
+                                }
+                                final String lang_code = newLanguage == null || newLanguage.length == 0 ? "" : newLanguage[0];
+                                MediaDataController.getInstance(currentAccount).searchStickers(true, lang_code, query, emojis -> {
+                                    if (!query.equals(lastSearchEmojiString)) {
+                                        return;
+                                    }
+                                    AnimatedEmojiDrawable.getDocumentFetcher(currentAccount).putDocuments(emojis);
+                                    for (TLRPC.Document emoji : emojis) {
+                                        MediaDataController.KeywordResult keywordResult = new MediaDataController.KeywordResult();
+                                        keywordResult.emoji = "animated_" + emoji.id;
+                                        keywordResult.keyword = null;
+                                        searchResult.add(keywordResult);
+                                    }
+                                    next.run();
+                                });
                             },
                             next -> {
                                 if (SharedConfig.suggestAnimatedEmoji || UserConfig.getInstance(currentAccount).isPremium()) {
@@ -8708,20 +8734,34 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
             }
 
             private void searchStickerSets(Runnable finished) {
-                final TLRPC.TL_messages_searchStickerSets req = new TLRPC.TL_messages_searchStickerSets();
-                req.q = query;
-                reqId = ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+                final String[] newLanguage = AndroidUtilities.getCurrentKeyboardLanguage();
+                final String lang_code = newLanguage == null || newLanguage.length == 0 ? "" : newLanguage[0];
+                MediaDataController.getInstance(currentAccount).searchStickers(false, lang_code, query, stickers -> {
                     if (emojiSearchId != lastId) {
                         return;
                     }
-
-                    if (response instanceof TLRPC.TL_messages_foundStickerSets) {
-                        reqId = 0;
-                        TLRPC.TL_messages_foundStickerSets res = (TLRPC.TL_messages_foundStickerSets) response;
-                        serverPacks.addAll(res.sets);
+                    emojiStickersArray.addAll(stickers);
+                    for (TLRPC.Document sticker : stickers) {
+                        emojiStickersMap.put(sticker.id, sticker);
                     }
+                    emojiStickers.put(emojiStickersArray, searchQuery);
+                    emojiArrays.add(emojiStickersArray);
                     finished.run();
-                }));
+                });
+//                final TLRPC.TL_messages_searchStickerSets req = new TLRPC.TL_messages_searchStickerSets();
+//                req.q = query;
+//                reqId = ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+//                    if (emojiSearchId != lastId) {
+//                        return;
+//                    }
+//
+//                    if (response instanceof TLRPC.TL_messages_foundStickerSets) {
+//                        reqId = 0;
+//                        TLRPC.TL_messages_foundStickerSets res = (TLRPC.TL_messages_foundStickerSets) response;
+//                        serverPacks.addAll(res.sets);
+//                    }
+//                    finished.run();
+//                }));
             }
 
             private void searchStickers(Runnable finished) {

@@ -107,7 +107,6 @@ public class CachedStaticLayout {
             (e = (!lastLayoutBounds.equals(getLayoutBounds()))) ||
             (f = (!emojiLoadedEquals(emojiLoaded = getEmojiLoaded(), lastEmojiLoaded)))
         ) {
-//            Log.i("lolkek", "draw \"" + getText() + "\" because " + (renderNode == null ? "first" : a ? "textcolor ["+Integer.toHexString(textColor) + " => "+Integer.toHexString(layout.getPaint().getColor())+"]" : (b ? "linkcolor" : (c ? "textsize" : (d ? "typeface" : (e ? "bounds" : (f ? "emojis" : "???")))))));
             textColor = layout.getPaint().getColor();
             linkColor = layout.getPaint().linkColor;
             textSize = layout.getPaint().getTextSize();

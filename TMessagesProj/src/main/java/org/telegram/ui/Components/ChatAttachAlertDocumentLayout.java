@@ -764,7 +764,7 @@ public class ChatAttachAlertDocumentLayout extends ChatAttachAlert.AttachAlertLa
             fmessages.add(selectedMessages.get(hashId));
         }
         ArrayList<String> files = new ArrayList<>(selectedFilesOrder);
-        delegate.didSelectFiles(files, parentAlert.commentTextView.getText().toString(), fmessages, notify, scheduleDate, effectId, invertMedia);
+        delegate.didSelectFiles(files, parentAlert.getCommentView().getText().toString(), fmessages, notify, scheduleDate, effectId, invertMedia);
 
         parentAlert.dismiss(true);
     }

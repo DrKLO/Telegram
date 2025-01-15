@@ -26,7 +26,7 @@ public class Text {
     private final TextPaint paint;
     private StaticLayout layout;
     private float width, left;
-    private float maxWidth = 999999;
+    private float maxWidth = 9999;
 
     public Text(CharSequence text, TextPaint paint) {
         this.paint = paint;
@@ -52,10 +52,10 @@ public class Text {
     public void setText(CharSequence text) {
         layout = new StaticLayout(AndroidUtilities.replaceNewLines(text), paint, (int) Math.max(maxWidth, 1), Layout.Alignment.ALIGN_NORMAL, 1f, 0f, false);
         width = 0;
-        left = 0;
+        left = layout.getWidth();
         for (int i = 0; i < layout.getLineCount(); ++i) {
             width = Math.max(width, layout.getLineWidth(i));
-            left = Math.max(left, layout.getLineLeft(i));
+            left = Math.min(left, layout.getLineLeft(i));
         }
     }
 
@@ -93,8 +93,8 @@ public class Text {
         paint.setColor(color);
     }
 
-    private int ellipsizeWidth = -1;
-    public Text ellipsize(int width) {
+    private float ellipsizeWidth = -1;
+    public Text ellipsize(float width) {
         ellipsizeWidth = width;
         return this;
     }
@@ -118,7 +118,7 @@ public class Text {
         if (!doNotSave) {
             canvas.save();
         }
-        canvas.translate(x - left, cy - layout.getHeight() / 2f);
+        canvas.translate(x, cy - layout.getHeight() / 2f);
         draw(canvas);
         if (!doNotSave) {
             canvas.restore();
@@ -133,7 +133,7 @@ public class Text {
         if (!doNotSave) {
             canvas.save();
         }
-        canvas.translate(x - left, cy - layout.getHeight() / 2f);
+        canvas.translate(x, cy - layout.getHeight() / 2f);
         draw(canvas);
         if (!doNotSave) {
             canvas.restore();
@@ -163,11 +163,14 @@ public class Text {
         if (!doNotSave && ellipsizeWidth >= 0 && width > ellipsizeWidth) {
             canvas.saveLayerAlpha(0, -vertPad, ellipsizeWidth - 1, layout.getHeight() + vertPad, 0xFF, Canvas.ALL_SAVE_FLAG);
         }
+        canvas.save();
+        canvas.translate(-left, 0);
         if (hackClipBounds) {
             canvas.drawText(layout.getText().toString(), 0, -paint.getFontMetricsInt().ascent, paint);
         } else {
             layout.draw(canvas);
         }
+        canvas.restore();
         if (!doNotSave && ellipsizeWidth >= 0 && width > ellipsizeWidth) {
             if (ellipsizeGradient == null) {
                 ellipsizeGradient = new LinearGradient(0, 0, dp(8), 0, new int[] { 0x00ffffff, 0xffffffff }, new float[] {0, 1}, Shader.TileMode.CLAMP);
@@ -178,9 +181,9 @@ public class Text {
             }
             canvas.save();
             ellipsizeMatrix.reset();
-            ellipsizeMatrix.postTranslate(ellipsizeWidth - left - dp(8), 0);
+            ellipsizeMatrix.postTranslate(ellipsizeWidth - dp(8), 0);
             ellipsizeGradient.setLocalMatrix(ellipsizeMatrix);
-            canvas.drawRect(ellipsizeWidth - left - dp(8), 0, ellipsizeWidth - left, layout.getHeight(), ellipsizePaint);
+            canvas.drawRect(ellipsizeWidth - dp(8), 0, ellipsizeWidth, layout.getHeight(), ellipsizePaint);
             canvas.restore();
             canvas.restore();
         }

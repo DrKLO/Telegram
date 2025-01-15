@@ -668,7 +668,7 @@ public class SelectAnimatedEmojiDialog extends FrameLayout implements Notificati
                     if (index > 0 && sectionToPosition.indexOfKey(index - 1) >= 0) {
                         position = sectionToPosition.get(index - 1);
                     }
-                    scrollToPosition(position, AndroidUtilities.dp(-2));
+                    scrollToPosition(position, AndroidUtilities.dp(-2 + (type == TYPE_CHAT_REACTIONS ? 7 : 0)));
                     SelectAnimatedEmojiDialog.this.emojiTabs.select(index);
                     emojiGridView.scrolledByUserOnce = true;
                     search(null);
@@ -762,7 +762,7 @@ public class SelectAnimatedEmojiDialog extends FrameLayout implements Notificati
         emojiItemAnimator.setMoveInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT);
         emojiItemAnimator.setDelayAnimations(false);
         emojiGridView.setItemAnimator(emojiItemAnimator);
-        emojiGridView.setPadding(dp(5), dp(type == TYPE_CHAT_REACTIONS ? 8 : 2), dp(5), dp(2 + 36));
+        emojiGridView.setPadding(dp(5), dp(2), dp(5), dp(2 + 36));
         adapter = new Adapter();
         emojiGridView.setAdapter(adapter);
 
@@ -1900,6 +1900,20 @@ public class SelectAnimatedEmojiDialog extends FrameLayout implements Notificati
                             next.run();
                         });
                     };
+                    final Utilities.Callback<Runnable> serverSearch = next -> {
+                        if (ConnectionsManager.getInstance(currentAccount).getConnectionState() != ConnectionsManager.ConnectionStateConnected) {
+                            next.run();
+                            return;
+                        }
+                        final String lang_code = newLanguage == null || newLanguage.length == 0 ? "" : newLanguage[0];
+                        MediaDataController.getInstance(currentAccount).searchStickers(true, lang_code, query, documents -> {
+                            AnimatedEmojiDrawable.getDocumentFetcher(currentAccount).putDocuments(documents);
+                            for (TLRPC.Document doc : documents) {
+                                documentIds.add(doc.id);
+                            }
+                            next.run();
+                        });
+                    };
                     final Utilities.Callback<Runnable> searchEmojiSuggestions = next -> {
                         if (queryFullyConsistsOfEmojis) {
                             ArrayList<TLRPC.TL_messages_stickerSet> stickerSets = MediaDataController.getInstance(currentAccount).getStickerSets(MediaDataController.TYPE_EMOJIPACKS);
@@ -2059,7 +2073,7 @@ public class SelectAnimatedEmojiDialog extends FrameLayout implements Notificati
                         next.run();
                     };
 
-                    Utilities.doCallbacks(searchCategories, searchByKeywords, searchEmojiSuggestions, searchAvatarConstructor, searchFromSets, applySearch);
+                    Utilities.doCallbacks(searchCategories, searchByKeywords, serverSearch, searchEmojiSuggestions, searchAvatarConstructor, searchFromSets, applySearch);
                 }
             }, delay ? 425 : 0);
             if (searchBox != null) {
@@ -2574,6 +2588,10 @@ public class SelectAnimatedEmojiDialog extends FrameLayout implements Notificati
                 int index = positionToSection.get(position);
                 if (index >= 0) {
                     EmojiView.EmojiPack pack = packs.get(index);
+                    if (pack.needLoadSet != null) {
+                        MediaDataController.getInstance(currentAccount).getStickerSet(pack.needLoadSet, false);
+                        pack.needLoadSet = null;
+                    }
                     header.setText(pack.set.title, !pack.free && !UserConfig.getInstance(currentAccount).isPremium() && type != TYPE_AVATAR_CONSTRUCTOR && type != TYPE_SET_REPLY_ICON && type != TYPE_SET_REPLY_ICON_BOTTOM && type != TYPE_CHAT_REACTIONS);
                 } else {
                     header.setText(null, false);
@@ -3574,7 +3592,7 @@ public class SelectAnimatedEmojiDialog extends FrameLayout implements Notificati
         recentStickers.clear();
         standardEmojis.clear();
 
-        if ((!installedEmojipacks.isEmpty() || type == TYPE_AVATAR_CONSTRUCTOR) && type != TYPE_SET_REPLY_ICON && type != TYPE_SET_REPLY_ICON_BOTTOM && type != TYPE_CHAT_REACTIONS && type != TYPE_EXPANDABLE_REACTIONS) {
+        if ((!installedEmojipacks.isEmpty() || type == TYPE_AVATAR_CONSTRUCTOR) && type != TYPE_SET_REPLY_ICON && type != TYPE_SET_REPLY_ICON_BOTTOM && type != TYPE_EXPANDABLE_REACTIONS) {
             searchRow = totalCount++;
             rowHashCodes.add(9L);
         } else {
@@ -3899,12 +3917,17 @@ public class SelectAnimatedEmojiDialog extends FrameLayout implements Notificati
                     continue;
                 }
 
+                TLRPC.InputStickerSet needLoadSet = null;
                 ArrayList<TLRPC.Document> documents = null;
                 if (set1 instanceof TLRPC.TL_stickerSetNoCovered) {
                     TLRPC.TL_messages_stickerSet fullSet = mediaDataController.getStickerSet(MediaDataController.getInputStickerSet(set1.set), set1.set.hash, true);
                     if (fullSet != null) {
                         documents = fullSet.documents;
                         isPremiumPack = MessageObject.isPremiumEmojiPack(fullSet);
+                    } else {
+                        needLoadSet = MediaDataController.getInputStickerSet(set1.set);
+                        documents = new ArrayList<>();
+                        isPremiumPack = true;
                     }
                 } else if (set1 instanceof TLRPC.TL_stickerSetFullCovered) {
                     documents = ((TLRPC.TL_stickerSetFullCovered) set1).documents;
@@ -3928,6 +3951,7 @@ public class SelectAnimatedEmojiDialog extends FrameLayout implements Notificati
                 rowHashCodes.add(9211 + 13L * set.id);
 
                 EmojiView.EmojiPack pack = new EmojiView.EmojiPack();
+                pack.needLoadSet = needLoadSet;
                 pack.installed = installedEmojiSets.contains(set.id);
                 pack.featured = true;
                 pack.free = !isPremiumPack;

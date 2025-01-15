@@ -461,7 +461,10 @@ public class UserSelectorBottomSheet extends BottomSheetWithRecyclerListView imp
         List<TLRPC.TL_premiumGiftCodeOption> options = BoostRepository.filterGiftOptions(paymentOptions, selectedUsers.size());
         options = BoostRepository.filterGiftOptionsByBilling(options);
         if (selectedUsers.size() == 1) {
-            new GiftSheet(getContext(), currentAccount, selectedUsers.get(0).id, options, this::dismiss).show();
+            final long userId = selectedUsers.get(0).id;
+            new GiftSheet(getContext(), currentAccount, userId, options, this::dismiss)
+                .setBirthday(birthdays != null && birthdays.contains(userId))
+                .show();
             return;
         }
 //        PremiumPreviewGiftToUsersBottomSheet.show(selectedUsers, options);

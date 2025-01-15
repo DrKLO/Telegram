@@ -8,17 +8,23 @@
 
 package org.telegram.ui.Adapters;
 
+import static org.telegram.messenger.AndroidUtilities.dp;
+import static org.telegram.ui.PremiumPreviewFragment.applyNewSpan;
+
 import android.Manifest;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.graphics.drawable.ColorDrawable;
 import android.location.Location;
 import android.os.Build;
 import android.text.Spanned;
 import android.text.TextUtils;
 import android.util.TypedValue;
+import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.collection.LongSparseArray;
@@ -55,9 +61,14 @@ import org.telegram.ui.Cells.BotSwitchCell;
 import org.telegram.ui.Cells.ContextLinkCell;
 import org.telegram.ui.Cells.MentionCell;
 import org.telegram.ui.Cells.StickerCell;
+import org.telegram.ui.Cells.TextInfoPrivacyCell;
 import org.telegram.ui.ChatActivity;
 import org.telegram.ui.Components.AnimatedEmojiSpan;
+import org.telegram.ui.Components.AvatarDrawable;
+import org.telegram.ui.Components.BackupImageView;
+import org.telegram.ui.Components.CombinedDrawable;
 import org.telegram.ui.Components.EmojiView;
+import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RecyclerListView;
 
 import java.io.File;
@@ -84,14 +95,18 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter implement
     private final boolean USE_DIVIDERS = false;
 
     private int currentAccount = UserConfig.selectedAccount;
-    private Context mContext;
+    private final Context mContext;
     private long dialog_id;
     private long threadMessageId;
+    private final boolean stories;
     private TLRPC.ChatFull info;
     private SearchAdapterHelper searchAdapterHelper;
     private ArrayList<TLObject> searchResultUsernames;
     private LongSparseArray<TLObject> searchResultUsernamesMap;
     private Runnable searchGlobalRunnable;
+    private String hintHashtag;
+    private boolean hintHashtagDivider;
+    private HashtagHint topHint, bottomHint;
     private ArrayList<String> searchResultHashtags;
     private ArrayList<String> searchResultCommands;
     private ArrayList<String> searchResultCommandsHelp;
@@ -122,7 +137,7 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter implement
     private int channelReqId;
     private boolean isSearchingMentions;
     private TLRPC.User user;
-    private TLRPC.Chat chat;
+    public TLRPC.Chat chat;
 
     private boolean searchInDailogs = false;
 
@@ -153,7 +168,7 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter implement
     private boolean delayLocalResults;
     private Runnable checkAgainRunnable;
 
-    private ChatActivity parentFragment;
+    public ChatActivity parentFragment;
     private final Theme.ResourcesProvider resourcesProvider;
 
     private static class StickerResult {
@@ -187,12 +202,13 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter implement
         }
     };
 
-    public MentionsAdapter(Context context, boolean darkTheme, long did, long threadMessageId, MentionsAdapterDelegate mentionsAdapterDelegate, Theme.ResourcesProvider resourcesProvider) {
+    public MentionsAdapter(Context context, boolean darkTheme, long did, long threadMessageId, MentionsAdapterDelegate mentionsAdapterDelegate, Theme.ResourcesProvider resourcesProvider, boolean stories) {
         this.resourcesProvider = resourcesProvider;
         mContext = context;
         delegate = mentionsAdapterDelegate;
         isDarkTheme = darkTheme;
         dialog_id = did;
+        this.stories = stories;
         this.threadMessageId = threadMessageId;
         searchAdapterHelper = new SearchAdapterHelper(true);
         searchAdapterHelper.setDelegate(new SearchAdapterHelper.SearchAdapterHelperDelegate() {
@@ -426,6 +442,7 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter implement
         stickers = null;
         stickersMap = null;
         notifyDataSetChanged();
+        visibleByStickersSearch = false;
         if (lastReqId != 0) {
             ConnectionsManager.getInstance(currentAccount).cancelRequest(lastReqId, true);
             lastReqId = 0;
@@ -602,6 +619,60 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter implement
             searchForContextBotResults(true, foundContextBot, searchingContextQuery, "");
         }
     }
+
+//    private String lastSearchForStickersQuery;
+//    private Runnable searchForStickersRunnable;
+//    private MediaDataController.SearchStickersKey loadingSearchKey;
+//    public void loadMoreStickers() {
+//        searchForStickers(lastSearchForStickersQuery, true);
+//    }
+//    private void searchForStickers(final String q, boolean allowNext) {
+//        if (TextUtils.isEmpty(q)) {
+//            if (loadingSearchKey != null) {
+//                MediaDataController.getInstance(currentAccount).cancelSearchStickers(loadingSearchKey);
+//                loadingSearchKey = null;
+//            }
+//            if (searchForStickersRunnable != null) {
+//                AndroidUtilities.cancelRunOnUIThread(searchForStickersRunnable);
+//                searchForStickersRunnable = null;
+//            }
+//            return;
+//        }
+//        if (TextUtils.equals(lastSearchForStickersQuery, q) && (!allowNext || loadingSearchKey == null && (stickers == null || stickers.isEmpty()))) {
+//            return;
+//        }
+//        lastSearchForStickersQuery = q;
+//        AndroidUtilities.runOnUIThread(searchForStickersRunnable = () -> {
+//            if (!TextUtils.equals(lastSearchForStickersQuery, q)) {
+//                return;
+//            }
+//            final String[] newLanguage = AndroidUtilities.getCurrentKeyboardLanguage();
+//            final String lang_code = newLanguage == null || newLanguage.length == 0 ? "" : newLanguage[0];
+//            if (loadingSearchKey != null) {
+//                MediaDataController.getInstance(currentAccount).cancelSearchStickers(loadingSearchKey);
+//                loadingSearchKey = null;
+//            }
+//            loadingSearchKey = MediaDataController.getInstance(currentAccount).searchStickers(false, lang_code, q, stickers -> {
+//                if (!TextUtils.equals(lastSearchForStickersQuery, q)) {
+//                    return;
+//                }
+//                loadingSearchKey = null;
+//                int oldCount = stickers != null ? stickers.size() : 0;
+//                if (!stickers.isEmpty()) {
+//                    addStickersToResult(stickers, null);
+//                }
+//                int newCount = stickers != null ? stickers.size() : 0;
+//                if (!visibleByStickersSearch && stickers != null && !stickers.isEmpty()) {
+//                    checkStickerFilesExistAndDownload();
+//                    delegate.needChangePanelVisibility(getItemCountInternal() > 0);
+//                    visibleByStickersSearch = true;
+//                }
+//                if (oldCount != newCount) {
+//                    notifyDataSetChanged();
+//                }
+//            }, allowNext);
+//        }, 600);
+//    }
 
     private void searchForContextBot(final String username, final String query) {
         if (foundContextBot != null && foundContextBot.username != null && foundContextBot.username.equals(username) && searchingContextQuery != null && searchingContextQuery.equals(query)) {
@@ -819,6 +890,7 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter implement
                 searchResultSuggestions = null;
                 searchResultCommandsHelp = null;
                 searchResultCommandsUsers = null;
+                visibleByStickersSearch = false;
                 delegate.needChangePanelVisibility(!searchResultBotContext.isEmpty() || searchResultBotContextSwitch != null || searchResultBotWebViewSwitch != null);
                 if (added) {
                     boolean hasTop = searchResultBotContextSwitch != null || searchResultBotWebViewSwitch != null;
@@ -1059,8 +1131,13 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter implement
             } else {
                 username = "";
             }
+//            searchForStickers(null, false);
             searchForContextBot(username, query);
+        } else if (allowStickers && parentFragment != null && parentFragment.getCurrentEncryptedChat() == null && (currentChat == null || ChatObject.canSendStickers(currentChat)) && text.trim().length() >= 2 && text.trim().indexOf(' ') < 0) {
+//            searchForStickers(text.trim(), false);
+            searchForContextBot(null, null);
         } else {
+//            searchForStickers(null, false);
             searchForContextBot(null, null);
         }
         if (foundContextBot != null) {
@@ -1068,6 +1145,10 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter implement
         }
         final MessagesController messagesController = MessagesController.getInstance(currentAccount);
         int dogPostion = -1;
+        final String oldHintHashtag = hintHashtag;
+        final boolean oldHintHashtagDivider = hintHashtagDivider;
+        hintHashtag = null;
+        hintHashtagDivider = false;
         if (usernameOnly) {
             result.append(text.substring(1));
             resultStartPosition = 0;
@@ -1096,6 +1177,11 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter implement
                             break;
                         }
                     } else if (ch == '#') {
+                        if (ChatObject.isChannelAndNotMegaGroup(currentChat) && !TextUtils.isEmpty(ChatObject.getPublicUsername(currentChat))) {
+                            hintHashtag = text.substring(a);
+                            if (hintHashtag.length() < 4 || !hintHashtag.matches("^[#$][\\p{L}_-]+$"))
+                                hintHashtag = null;
+                        }
                         if (searchAdapterHelper.loadRecentHashtags()) {
                             foundType = 1;
                             resultStartPosition = a;
@@ -1126,6 +1212,14 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter implement
                 }
                 result.insert(0, ch);
             }
+        }
+        if (oldHintHashtag == null && hintHashtag != null) {
+            notifyItemRangeInserted(0, 2);
+        } else if (oldHintHashtag != null && hintHashtag == null) {
+            notifyItemRangeRemoved(0, 2);
+        } else {
+            if (topHint != null) topHint.set(0, hintHashtag, currentChat);
+            if (bottomHint != null) bottomHint.set(1, hintHashtag, currentChat);
         }
         if (foundType == -1) {
             contextMedia = false;
@@ -1428,12 +1522,12 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter implement
             contextMedia = false;
             searchResultBotContext = null;
             notifyDataSetChanged();
-            delegate.needChangePanelVisibility(!searchResultHashtags.isEmpty());
+            delegate.needChangePanelVisibility(!searchResultHashtags.isEmpty() || hintHashtag != null);
         } else if (foundType == 2) {
             ArrayList<String> newResult = new ArrayList<>();
             ArrayList<String> newResultHelp = new ArrayList<>();
             ArrayList<TLRPC.User> newResultUsers = new ArrayList<>();
-            String command = result.toString().toLowerCase();
+            final String command = result.toString().toLowerCase();
             for (int b = 0; b < botInfo.size(); b++) {
                 TL_bots.BotInfo info = botInfo.valueAt(b);
                 for (int a = 0; a < info.commands.size(); a++) {
@@ -1446,13 +1540,15 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter implement
                 }
             }
             if (parentFragment != null && !DialogObject.isEncryptedDialog(dialog_id) && parentFragment.getChatMode() == 0 && parentFragment.getCurrentUser() != null && !parentFragment.getCurrentUser().bot && !UserObject.isReplyUser(parentFragment.getCurrentUser()) && !UserObject.isService(parentFragment.getCurrentUser().id)) {
-                QuickRepliesController quickRepliesController = QuickRepliesController.getInstance(currentAccount);
+                final QuickRepliesController quickRepliesController = QuickRepliesController.getInstance(currentAccount);
                 quickRepliesController.load();
                 quickRepliesQuery = command;
-                quickReplies = new ArrayList<QuickRepliesController.QuickReply>();
+                quickReplies = new ArrayList<>();
                 for (int i = 0; i < quickRepliesController.replies.size(); i++) {
-                    QuickRepliesController.QuickReply reply = quickRepliesController.replies.get(i);
-                    if (!reply.isSpecial() && reply.name.startsWith(command)) {
+                    final QuickRepliesController.QuickReply reply = quickRepliesController.replies.get(i);
+                    if (reply.isSpecial()) continue;
+                    final String replyName = reply.name.toLowerCase();
+                    if (replyName.startsWith(command) || AndroidUtilities.translitSafe(replyName).startsWith(command)) {
                         quickReplies.add(reply);
                     }
                 }
@@ -1570,20 +1666,24 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter implement
         if (foundContextBot != null && !inlineMediaEnabled) {
             return 1;
         }
-        if (stickers != null) {
-            return stickers.size();
-        } else if (searchResultBotContext != null) {
-            return searchResultBotContext.size() + (searchResultBotContextSwitch != null || searchResultBotWebViewSwitch != null ? 1 : 0);
-        } else if (searchResultUsernames != null) {
-            return searchResultUsernames.size();
-        } else if (searchResultHashtags != null) {
-            return searchResultHashtags.size();
-        } else if (searchResultCommands != null || quickReplies != null) {
-            return (quickReplies == null ? 0 : quickReplies.size()) + (searchResultCommands == null ? 0 : searchResultCommands.size());
-        } else if (searchResultSuggestions != null) {
-            return searchResultSuggestions.size();
+        int count = 0;
+        if (hintHashtag != null) {
+            count += 2;// + (!searchResultHashtags.isEmpty() ? 1 : 0);
         }
-        return 0;
+        if (stickers != null) {
+            count += stickers.size();
+        } else if (searchResultBotContext != null) {
+            count += searchResultBotContext.size() + (searchResultBotContextSwitch != null || searchResultBotWebViewSwitch != null ? 1 : 0);
+        } else if (searchResultUsernames != null) {
+            count += searchResultUsernames.size();
+        } else if (searchResultHashtags != null) {
+            count += searchResultHashtags.size();
+        } else if (searchResultCommands != null || quickReplies != null) {
+            count += (quickReplies == null ? 0 : quickReplies.size()) + (searchResultCommands == null ? 0 : searchResultCommands.size());
+        } else if (searchResultSuggestions != null) {
+            count += searchResultSuggestions.size();
+        }
+        return count;
     }
 
     public void clear(boolean safe) {
@@ -1591,6 +1691,7 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter implement
             return;
         }
         foundContextBot = null;
+        hintHashtag = null;
         if (stickers != null) {
             stickers.clear();
         }
@@ -1619,6 +1720,12 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter implement
 
     @Override
     public int getItemViewType(int position) {
+        if (hintHashtag != null) {
+            if (position < 2) return 6;
+            position -= 2;
+//            if (!searchResultHashtags.isEmpty() && position == 0) return 7;
+//            position--;
+        }
         if (stickers != null) {
             return 4;
         } else if (foundContextBot != null && !inlineMediaEnabled) {
@@ -1640,6 +1747,12 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter implement
     }
 
     public int getItemPosition(int i) {
+        if (hintHashtag != null) {
+            if (i < 2) return 0;
+            i -= 2;
+//            if (!searchResultHashtags.isEmpty() && i == 0) return 0;
+//            i--;
+        }
         if (searchResultBotContext != null && (searchResultBotContextSwitch != null || searchResultBotWebViewSwitch != null)) {
             i--;
         }
@@ -1647,10 +1760,22 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter implement
     }
 
     public Object getItemParent(int i) {
+        if (hintHashtag != null) {
+            if (i < 2) return null;
+            i -= 2;
+//            if (!searchResultHashtags.isEmpty() && i == 0) return null;
+//            i--;
+        }
         return stickers != null && i >= 0 && i < stickers.size() ? stickers.get(i).parent : null;
     }
 
     public Object getItem(int i) {
+        if (hintHashtag != null) {
+            if (i < 2) return null;
+            i -= 2;
+//            if (!searchResultHashtags.isEmpty() && i == 0) return null;
+//            i--;
+        }
         if (stickers != null) {
             return i >= 0 && i < stickers.size() ? stickers.get(i).sticker : null;
         } else if (searchResultBotContext != null) {
@@ -1757,13 +1882,27 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter implement
                 break;
             case 3:
                 TextView textView = new TextView(mContext);
-                textView.setPadding(AndroidUtilities.dp(8), AndroidUtilities.dp(8), AndroidUtilities.dp(8), AndroidUtilities.dp(8));
+                textView.setPadding(dp(8), dp(8), dp(8), dp(8));
                 textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
                 textView.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteGrayText2));
                 view = textView;
                 break;
             case 5:
                 view = new QuickRepliesActivity.QuickReplyView(mContext, false, resourcesProvider);
+                break;
+            case 6:
+                view = new HashtagHint(mContext, stories, resourcesProvider);
+                break;
+            case 7:
+                view = new View(mContext) {
+                    @Override
+                    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+                        super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(dp(8), MeasureSpec.EXACTLY));
+                    }
+                };
+                CombinedDrawable combinedDrawable = new CombinedDrawable(new ColorDrawable(stories ? Theme.multAlpha(0xFFFFFFFF, .15f) : Theme.getColor(Theme.key_windowBackgroundGray, resourcesProvider)), Theme.getThemedDrawable(mContext, R.drawable.greydivider, Theme.getColor(Theme.key_windowBackgroundGrayShadow, resourcesProvider)), 0, 0);
+                combinedDrawable.setFullsize(true);
+                view.setBackground(combinedDrawable);
                 break;
             case 4:
             default:
@@ -1775,6 +1914,10 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter implement
 
     @Override
     public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
+        if (hintHashtag != null) {
+            position -= 2;
+//            if (!searchResultHashtags.isEmpty()) position--;
+        }
         int type = holder.getItemViewType();
         if (type == 4) {
             StickerCell stickerCell = (StickerCell) holder.itemView;
@@ -1814,6 +1957,18 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter implement
                     ((ContextLinkCell) holder.itemView).setLink(searchResultBotContext.get(position), foundContextBot, contextMedia, position != searchResultBotContext.size() - 1, hasTop && position == 0, "gif".equals(searchingContextUsername));
                 }
             }
+        } else if (type == 6) {
+            HashtagHint hint = (HashtagHint) holder.itemView;
+            position += 2;
+            if (position == 0) topHint = hint;
+            else bottomHint = hint;
+            TLRPC.Chat chat = MentionsAdapter.this.chat;
+            if (chat == null && parentFragment != null) {
+                chat = parentFragment.getCurrentChat();
+            }
+            hint.set(position, hintHashtag, chat);
+        } else if (type == 7) {
+
         } else {
             MentionCell cell = (MentionCell) holder.itemView;
             if (searchResultUsernames != null) {
@@ -1890,5 +2045,78 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter implement
 
     public void setAllowChats(boolean allowChats) {
         this.allowChats = allowChats;
+    }
+
+    public String getHashtagHint() {
+        return hintHashtag;
+    }
+
+    public boolean isLocalHashtagHint(int position) {
+        return hintHashtag != null && position == 1;
+    }
+
+    public boolean isGlobalHashtagHint(int position) {
+        return hintHashtag != null && position == 0;
+    }
+
+    public static class HashtagHint extends LinearLayout {
+
+        private final Theme.ResourcesProvider resourcesProvider;
+        private final BackupImageView imageView;
+        private final AvatarDrawable avatarDrawable = new AvatarDrawable();
+        private final LinearLayout textLayout;
+        private final TextView titleView;
+        private final TextView textView;
+        private final boolean transparent;
+
+        public HashtagHint(Context context, boolean transparent, Theme.ResourcesProvider resourcesProvider) {
+            super(context);
+            this.resourcesProvider = resourcesProvider;
+            this.transparent = transparent;
+
+            setOrientation(HORIZONTAL);
+            imageView = new BackupImageView(context);
+            imageView.setRoundRadius(dp(28));
+            addView(imageView, LayoutHelper.createLinear(28, 28, Gravity.CENTER_VERTICAL | Gravity.LEFT, 12, 0, 12, 0));
+
+            textLayout = new LinearLayout(context);
+            textLayout.setOrientation(VERTICAL);
+            addView(textLayout, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.FILL_HORIZONTAL | Gravity.TOP, 0, 4, 12, 4));
+
+            titleView = new TextView(context);
+            titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
+            titleView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+            textLayout.addView(titleView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+
+            textView = new TextView(context);
+            textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
+            textView.setTextColor(transparent ? Theme.multAlpha(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider), .5f) : Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2, resourcesProvider));
+            textLayout.addView(textView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+        }
+
+        public void set(int type, String hashtag, TLRPC.Chat chat) {
+            if (hashtag == null) return;
+            if (type == 0) {
+                CombinedDrawable drawable = new CombinedDrawable(
+                    Theme.createRoundRectDrawable(dp(28), Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider)),
+                    getContext().getResources().getDrawable(R.drawable.menu_hashtag).mutate()
+                );
+                drawable.setIconOffset(dp(-0.66f), 0);
+                drawable.setIconSize(dp(20), dp(20));
+                imageView.setImageDrawable(drawable);
+                titleView.setText(LocaleController.formatString(R.string.HashtagSuggestion1Title, hashtag));
+                textView.setText(LocaleController.getString(R.string.HashtagSuggestion1Text));
+            } else {
+                avatarDrawable.setInfo(chat);
+                imageView.setForUserOrChat(chat, avatarDrawable);
+                titleView.setText(applyNewSpan(LocaleController.formatString(R.string.HashtagSuggestion2Title, hashtag + "@" + ChatObject.getPublicUsername(chat)), 8));
+                textView.setText(LocaleController.getString(R.string.HashtagSuggestion2Text));
+            }
+        }
+
+        @Override
+        protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+            super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), heightMeasureSpec);
+        }
     }
 }

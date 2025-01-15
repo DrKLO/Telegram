@@ -901,7 +901,7 @@ public class SearchTagsList extends BlurredFrameLayout implements NotificationCe
 
         @Override
         protected void onDraw(Canvas canvas) {
-            reactionButton.draw(canvas, (getWidth() - reactionButton.width) / 2f, (getHeight() - reactionButton.height) / 2f, progress.set(1f), 1f, false);
+            reactionButton.draw(canvas, (getWidth() - reactionButton.width) / 2f, (getHeight() - reactionButton.height) / 2f, progress.set(1f), 1f, false, false, 0.0f);
         }
 
         private boolean attached;

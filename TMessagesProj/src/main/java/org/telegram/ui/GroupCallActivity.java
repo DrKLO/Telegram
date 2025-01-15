@@ -1673,7 +1673,7 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
         } else {
             permissionItem.setVisibility(View.GONE);
         }
-        soundItem.setVisibility(isRtmpStream() ? View.GONE : View.VISIBLE);
+        soundItem.setVisibility(isRtmpStream() && !call.isScheduled() ? View.GONE : View.VISIBLE);
         if (editTitleItem.getVisibility() == View.VISIBLE || permissionItem.getVisibility() == View.VISIBLE || inviteItem.getVisibility() == View.VISIBLE ||
                 screenItem.getVisibility() == View.VISIBLE || recordItem.getVisibility() == View.VISIBLE || leaveItem.getVisibility() == View.VISIBLE) {
             soundItemDivider.setVisibility(View.VISIBLE);
@@ -1682,7 +1682,7 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
         }
 
         int margin = 48;
-        if ((VoIPService.getSharedInstance() != null && VoIPService.getSharedInstance().hasFewPeers || scheduleHasFewPeers) && !isRtmpStream()) {
+        if ((VoIPService.getSharedInstance() != null && VoIPService.getSharedInstance().hasFewPeers || scheduleHasFewPeers) && !isRtmpStream() && selfPeer != null) {
             accountSelectCell.setVisibility(View.VISIBLE);
             accountGap.setVisibility(View.VISIBLE);
             long peerId = MessageObject.getPeerId(selfPeer);
@@ -4756,7 +4756,7 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
         screenItem = otherItem.addSubItem(screen_capture_item, R.drawable.msg_screencast, LocaleController.getString(R.string.VoipChatStartScreenCapture));
         recordItem = otherItem.addSubItem(start_record_item, 0, recordCallDrawable, LocaleController.getString(R.string.VoipGroupRecordCall), true, false);
         recordCallDrawable.setParentView(recordItem.getImageView());
-        leaveItem = otherItem.addSubItem(leave_item, R.drawable.msg_endcall, ChatObject.isChannelOrGiga(currentChat) ? LocaleController.getString(R.string.VoipChannelEndChat) : LocaleController.getString(R.string.VoipGroupEndChat));
+        leaveItem = otherItem.addSubItem(leave_item, R.drawable.msg_cancel, ChatObject.isChannelOrGiga(currentChat) ? LocaleController.getString(R.string.VoipChannelEndChat) : LocaleController.getString(R.string.VoipGroupEndChat));
         otherItem.setPopupItemsSelectorColor(Theme.getColor(Theme.key_voipgroup_listSelector));
         otherItem.getPopupLayout().setFitItems(true);
 

@@ -294,21 +294,27 @@ public class UItem extends AdapterWithDiffUtils.Item {
         item.texts = choices;
         item.intValue = chosen;
         item.intCallback = whenChose;
+        item.longValue = -1;
         return item;
     }
 
     public static UItem asIntSlideView(
         int style,
-        int minStringResId, int min,
-        int valueMinStringResId, int valueStringResId, int valueMaxStringResId, int value,
-        int maxStringResId, int max,
+        int min, int value, int max,
+        Utilities.CallbackReturn<Integer, String> toString,
         Utilities.Callback<Integer> whenChose
     ) {
         UItem item = new UItem(UniversalAdapter.VIEW_TYPE_INTSLIDE, false);
         item.intValue = value;
         item.intCallback = whenChose;
-        item.object = SlideIntChooseView.Options.make(style, min, minStringResId, valueMinStringResId, valueStringResId, valueMaxStringResId, max, maxStringResId);
+        item.object = SlideIntChooseView.Options.make(style, min, max, toString);
+        item.longValue = -1;
         return item;
+    }
+
+    public UItem setMinSliderValue(int value) {
+        this.longValue = value;
+        return this;
     }
 
     public static UItem asQuickReply(QuickRepliesController.QuickReply quickReply) {
@@ -428,6 +434,13 @@ public class UItem extends AdapterWithDiffUtils.Item {
 
     public static UItem asSearchMessage(MessageObject messageObject) {
         UItem item = new UItem(UniversalAdapter.VIEW_TYPE_SEARCH_MESSAGE, false);
+        item.object = messageObject;
+        return item;
+    }
+
+    public static UItem asSearchMessage(int id, MessageObject messageObject) {
+        UItem item = new UItem(UniversalAdapter.VIEW_TYPE_SEARCH_MESSAGE, false);
+        item.id = id;
         item.object = messageObject;
         return item;
     }

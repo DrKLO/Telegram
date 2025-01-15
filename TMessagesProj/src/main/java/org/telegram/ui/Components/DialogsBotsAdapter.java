@@ -4,8 +4,15 @@ import static org.telegram.messenger.LocaleController.getString;
 
 import android.content.Context;
 import android.database.sqlite.SQLiteStatement;
+import android.text.SpannableStringBuilder;
+import android.text.Spanned;
+import android.text.TextPaint;
 import android.text.TextUtils;
+import android.text.style.ClickableSpan;
+import android.text.style.URLSpan;
 import android.view.View;
+
+import androidx.annotation.NonNull;
 
 import org.telegram.SQLite.SQLiteCursor;
 import org.telegram.SQLite.SQLiteDatabase;
@@ -13,18 +20,23 @@ import org.telegram.SQLite.SQLitePreparedStatement;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.FileLog;
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.MessagesStorage;
 import org.telegram.messenger.R;
+import org.telegram.messenger.browser.Browser;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.tl.TL_bots;
+import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.Theme;
 
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class DialogsBotsAdapter extends UniversalAdapter {
 
@@ -43,8 +55,10 @@ public class DialogsBotsAdapter extends UniversalAdapter {
     public boolean expandedMyBots;
     public boolean expandedSearchBots;
 
+    private final CharSequence infoText;
+
     public DialogsBotsAdapter(RecyclerListView listView, Context context, int currentAccount, int folderId, boolean showOnlyPopular, Theme.ResourcesProvider resourcesProvider) {
-        super(listView, context, currentAccount, 0, null, resourcesProvider);
+        super(listView, context, currentAccount, 0, true, null, resourcesProvider);
         super.fillItems = this::fillItems;
         this.context = context;
         this.currentAccount = currentAccount;
@@ -52,6 +66,37 @@ public class DialogsBotsAdapter extends UniversalAdapter {
         this.resourcesProvider = resourcesProvider;
         this.showOnlyPopular = showOnlyPopular;
         this.popular = new PopularBots(currentAccount, () -> update(true));
+        this.infoText = AndroidUtilities.replaceArrows(AndroidUtilities.replaceSingleTag(LocaleController.getString(R.string.AppsTabInfo), () -> {
+            final AlertDialog[] alert = new AlertDialog[1];
+            SpannableStringBuilder text = AndroidUtilities.replaceTags(AndroidUtilities.replaceLinks(LocaleController.getString(R.string.AppsTabInfoText), resourcesProvider, () -> {
+                if (alert[0] != null) {
+                    alert[0].dismiss();
+                }
+            }));
+            Matcher m = Pattern.compile("@([a-zA-Z0-9_-]+)").matcher(text);
+            while (m.find()) {
+                final String username = m.group(1);
+                text.setSpan(new ClickableSpan() {
+                    @Override
+                    public void onClick(@NonNull View widget) {
+                        if (alert[0] != null) {
+                            alert[0].dismiss();
+                        }
+                        Browser.openUrl(context, "https://t.me/" + username);
+                    }
+                    @Override
+                    public void updateDrawState(@NonNull TextPaint ds) {
+                        super.updateDrawState(ds);
+                        ds.setUnderlineText(false);
+                    }
+                }, m.start(), m.end(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            }
+            alert[0] = new AlertDialog.Builder(context, resourcesProvider)
+                .setTitle(LocaleController.getString(R.string.AppsTabInfoTitle))
+                .setMessage(text)
+                .setPositiveButton(LocaleController.getString(R.string.AppsTabInfoButton), null)
+                .show();
+        }), true);
         update(false);
         MediaDataController.getInstance(currentAccount).loadHints(true);
     }
@@ -98,6 +143,7 @@ public class DialogsBotsAdapter extends UniversalAdapter {
                     top_peers_bots.add(user);
                 }
             }
+            boolean hasAdded = false;
             topPeersStart = items.size();
             if (!top_peers_bots.isEmpty() && !showOnlyPopular) {
                 if (top_peers_bots.size() > 5) {
@@ -120,7 +166,8 @@ public class DialogsBotsAdapter extends UniversalAdapter {
                     final TLRPC.User user = popular.bots.get(i);
                     if (uids.contains(user.id)) continue;
                     uids.add(user.id);
-                    items.add(UItem.asProfileCell(user).accent());
+                    items.add(UItem.asProfileCell(user).accent().red());
+                    hasAdded = true;
                 }
                 if (popular.loading) {
                     items.add(UItem.asFlicker(FlickerLoadingView.PROFILE_SEARCH_CELL));
@@ -133,6 +180,9 @@ public class DialogsBotsAdapter extends UniversalAdapter {
                 items.add(UItem.asFlicker(FlickerLoadingView.PROFILE_SEARCH_CELL));
                 items.add(UItem.asFlicker(FlickerLoadingView.PROFILE_SEARCH_CELL));
                 items.add(UItem.asFlicker(FlickerLoadingView.PROFILE_SEARCH_CELL));
+            }
+            if (hasAdded) {
+                items.add(UItem.asShadow(infoText));
             }
         }
     }

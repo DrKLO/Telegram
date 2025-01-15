@@ -45,7 +45,12 @@ import java.util.Date;
 
 public class MessagePrivateSeenView extends FrameLayout {
 
+    public static final int TYPE_SEEN = 0;
+    public static final int TYPE_EDIT = 1;
+    public static final int TYPE_FORWARD = 2;
+
     private final int currentAccount;
+    private final int type;
     private final Theme.ResourcesProvider resourcesProvider;
 
     private final LinearLayout valueLayout;
@@ -55,12 +60,15 @@ public class MessagePrivateSeenView extends FrameLayout {
 
     private final long dialogId;
     private final int messageId;
+    private final int edit_date;
+    private final int fwd_date;
     private final Runnable dismiss;
 
     private final int messageDiff;
 
-    public MessagePrivateSeenView(Context context, @NonNull MessageObject messageObject, Runnable dismiss, Theme.ResourcesProvider resourcesProvider) {
+    public MessagePrivateSeenView(Context context, int type, @NonNull MessageObject messageObject, Runnable dismiss, Theme.ResourcesProvider resourcesProvider) {
         super(context);
+        this.type = type;
 
         currentAccount = messageObject.currentAccount;
         this.resourcesProvider = resourcesProvider;
@@ -69,10 +77,22 @@ public class MessagePrivateSeenView extends FrameLayout {
 
         dialogId = messageObject.getDialogId();
         messageId = messageObject.getId();
+        edit_date = messageObject.messageOwner == null ? 0 : messageObject.messageOwner.edit_date;
+        fwd_date = messageObject.messageOwner == null || messageObject.messageOwner.fwd_from == null ? 0 : messageObject.messageOwner.fwd_from.date;
 
         ImageView iconView = new ImageView(context);
         addView(iconView, LayoutHelper.createFrame(24, 24, Gravity.LEFT | Gravity.CENTER_VERTICAL, 11, 0, 0, 0));
-        Drawable drawable = ContextCompat.getDrawable(context, messageObject.isVoice() ? R.drawable.msg_played : R.drawable.msg_seen).mutate();
+        int icon;
+        if (type == TYPE_EDIT) {
+            icon = R.drawable.menu_edited_stamp;
+        } else if (type == TYPE_FORWARD) {
+            icon = R.drawable.menu_forward_stamp;
+        } else if (messageObject.isVoice()) {
+            icon = R.drawable.msg_played;
+        } else {
+            icon = R.drawable.msg_seen;
+        }
+        Drawable drawable = ContextCompat.getDrawable(context, icon).mutate();
         drawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_actionBarDefaultSubmenuItemIcon, resourcesProvider), PorterDuff.Mode.MULTIPLY));
         iconView.setImageDrawable(drawable);
 
@@ -105,6 +125,19 @@ public class MessagePrivateSeenView extends FrameLayout {
     }
 
     private void request() {
+        if (type == TYPE_EDIT) {
+            valueLayout.setAlpha(1f);
+            loadingView.setAlpha(0f);
+            premiumTextView.setVisibility(View.GONE);
+            valueTextView.setText(LocaleController.formatPmEditedDate(edit_date));
+            return;
+        } else if (type == TYPE_FORWARD) {
+            valueLayout.setAlpha(1f);
+            loadingView.setAlpha(0f);
+            premiumTextView.setVisibility(View.GONE);
+            valueTextView.setText(LocaleController.formatPmFwdDate(fwd_date));
+            return;
+        }
         setOnClickListener(null);
         valueLayout.setAlpha(0f);
         loadingView.setAlpha(1f);
@@ -310,17 +343,21 @@ public class MessagePrivateSeenView extends FrameLayout {
 
         if (minWidth < 0) {
             minWidth = 0;
-            final long date = System.currentTimeMillis();
-            minWidth = Math.max(minWidth, dp(40 + 96 + 8));
-            minWidth = Math.max(minWidth, dp(40 + 8) + valueTextView.getPaint().measureText(LocaleController.getString(R.string.PmReadUnknown)));
-            minWidth = Math.max(minWidth, dp(40 + 16 + 8) + valueTextView.getPaint().measureText(LocaleController.getString(R.string.PmRead) + premiumTextView.getPaint().measureText(LocaleController.getString(R.string.PmReadShowWhen))));
-            minWidth = Math.max(minWidth, dp(40 + 8) + valueTextView.getPaint().measureText(LocaleController.formatString(R.string.PmReadTodayAt, LocaleController.getInstance().getFormatterDay().format(new Date(date)))));
-            if (messageDiff > 60 * 60 * 24) {
-                minWidth = Math.max(minWidth, dp(40 + 8) + valueTextView.getPaint().measureText(LocaleController.formatString(R.string.PmReadYesterdayAt, LocaleController.getInstance().getFormatterDay().format(new Date(date)))));
-            }
-            if (messageDiff > 60 * 60 * 24 * 2) {
-                minWidth = Math.max(minWidth, dp(40 + 8) + valueTextView.getPaint().measureText(LocaleController.formatString(R.string.PmReadDateTimeAt, LocaleController.getInstance().getFormatterDayMonth().format(new Date(date)), LocaleController.getInstance().getFormatterDay().format(new Date(date)))));
-                minWidth = Math.max(minWidth, dp(40 + 8) + valueTextView.getPaint().measureText(LocaleController.formatString(R.string.PmReadDateTimeAt, LocaleController.getInstance().getFormatterYear().format(new Date(date)), LocaleController.getInstance().getFormatterDay().format(new Date(date)))));
+            if (type == TYPE_SEEN) {
+                final long date = System.currentTimeMillis();
+                minWidth = Math.max(minWidth, dp(40 + 96 + 8));
+                minWidth = Math.max(minWidth, dp(40 + 8) + valueTextView.getPaint().measureText(LocaleController.getString(R.string.PmReadUnknown)));
+                minWidth = Math.max(minWidth, dp(40 + 16 + 8) + valueTextView.getPaint().measureText(LocaleController.getString(R.string.PmRead) + premiumTextView.getPaint().measureText(LocaleController.getString(R.string.PmReadShowWhen))));
+                minWidth = Math.max(minWidth, dp(40 + 8) + valueTextView.getPaint().measureText(LocaleController.formatString(R.string.PmReadTodayAt, LocaleController.getInstance().getFormatterDay().format(new Date(date)))));
+                if (messageDiff > 60 * 60 * 24) {
+                    minWidth = Math.max(minWidth, dp(40 + 8) + valueTextView.getPaint().measureText(LocaleController.formatString(R.string.PmReadYesterdayAt, LocaleController.getInstance().getFormatterDay().format(new Date(date)))));
+                }
+                if (messageDiff > 60 * 60 * 24 * 2) {
+                    minWidth = Math.max(minWidth, dp(40 + 8) + valueTextView.getPaint().measureText(LocaleController.formatString(R.string.PmReadDateTimeAt, LocaleController.getInstance().getFormatterDayMonth().format(new Date(date)), LocaleController.getInstance().getFormatterDay().format(new Date(date)))));
+                    minWidth = Math.max(minWidth, dp(40 + 8) + valueTextView.getPaint().measureText(LocaleController.formatString(R.string.PmReadDateTimeAt, LocaleController.getInstance().getFormatterYear().format(new Date(date)), LocaleController.getInstance().getFormatterDay().format(new Date(date)))));
+                }
+            } else {
+                minWidth = dp(40 + 8) + valueTextView.getPaint().measureText(valueTextView.getText().toString());
             }
         }
 

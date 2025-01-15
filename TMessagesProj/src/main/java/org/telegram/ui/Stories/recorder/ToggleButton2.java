@@ -37,7 +37,7 @@ public class ToggleButton2 extends View implements FlashViews.Invertable {
     }
 
     private boolean selected;
-    private AnimatedFloat animatedSelected = new AnimatedFloat(this, 0, 380, CubicBezierInterpolator.EASE_OUT_QUINT);
+    private final AnimatedFloat animatedSelected = new AnimatedFloat(this, 0, 380, CubicBezierInterpolator.EASE_OUT_QUINT);
 
     private Drawable drawable;
     private Bitmap activeBitmap;
@@ -50,6 +50,7 @@ public class ToggleButton2 extends View implements FlashViews.Invertable {
         if (currentIcon == iconRes) {
             return;
         }
+        currentIcon = iconRes;
 
         if (animator != null) {
             animator.cancel();
@@ -66,6 +67,7 @@ public class ToggleButton2 extends View implements FlashViews.Invertable {
                     changed.set(true);
                     setDrawable(iconRes);
                 }
+                invalidate();
             });
             animator.start();
         } else {
@@ -74,8 +76,44 @@ public class ToggleButton2 extends View implements FlashViews.Invertable {
         }
     }
 
+    public void setIcon(Drawable iconDrawable, boolean animated) {
+        if (drawable == iconDrawable) {
+            return;
+        }
+
+        if (animator != null) {
+            animator.cancel();
+            animator = null;
+        }
+
+        if (animated) {
+            animator = ValueAnimator.ofFloat(0, 1).setDuration(150);
+            AtomicBoolean changed = new AtomicBoolean();
+            animator.addUpdateListener(animation -> {
+                float val = (float) animation.getAnimatedValue();
+                this.scale = 0.5f + Math.abs(val - 0.5f);
+                if (val >= 0.5f && !changed.get()) {
+                    changed.set(true);
+                    setDrawable(iconDrawable);
+                }
+            });
+            animator.start();
+        } else {
+            scale = 1f;
+            setDrawable(iconDrawable);
+        }
+    }
+
     public void setSelected(boolean selected) {
         this.selected = selected;
+        invalidate();
+    }
+
+    public void setSelected(boolean selected, boolean animated) {
+        this.selected = selected;
+        if (!animated) {
+            animatedSelected.set(selected ? 1.0f : 0.0f, true);
+        }
         invalidate();
     }
 
@@ -88,7 +126,7 @@ public class ToggleButton2 extends View implements FlashViews.Invertable {
         invalidate();
     }
 
-    private void setDrawable(int iconRes) {
+    public void setDrawable(int iconRes) {
         drawable = getContext().getResources().getDrawable(iconRes).mutate();
         if (activeBitmap != null) {
             activeBitmap.recycle();
@@ -97,6 +135,21 @@ public class ToggleButton2 extends View implements FlashViews.Invertable {
         if (activeBitmap == null && iconRes != 0) {
             activeBitmap = BitmapFactory.decodeResource(getResources(), iconRes);
         }
+        invalidate();
+    }
+
+    public void setDrawable(Drawable drawable) {
+        this.drawable = drawable;
+        if (activeBitmap != null) {
+            activeBitmap.recycle();
+            activeBitmap = null;
+        }
+        if (activeBitmap == null && drawable != null && drawable.getIntrinsicWidth() > 0 && drawable.getIntrinsicHeight() > 0) {
+            activeBitmap = Bitmap.createBitmap(drawable.getIntrinsicWidth(), drawable.getIntrinsicHeight(), Bitmap.Config.ARGB_8888);
+            drawable.setBounds(0, 0, activeBitmap.getWidth(), activeBitmap.getHeight());
+            drawable.draw(new Canvas(activeBitmap));
+        }
+        invalidate();
     }
 
     @Override
@@ -106,6 +159,8 @@ public class ToggleButton2 extends View implements FlashViews.Invertable {
         }
 
         float t = animatedSelected.set(selected);
+//        canvas.save();
+//        canvas.scale(scale, scale, getWidth() / 2.0f, getHeight() / 2.0f);
 
         final int w = drawable.getIntrinsicWidth(), h = drawable.getIntrinsicHeight();
 
@@ -133,6 +188,8 @@ public class ToggleButton2 extends View implements FlashViews.Invertable {
             canvas.restore();
             canvas.restore();
         }
+
+//        canvas.restore();
     }
 
     @Override

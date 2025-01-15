@@ -48,6 +48,9 @@ import android.media.MediaRecorder;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
+import android.os.Handler;
+import android.os.HandlerThread;
+import android.os.Looper;
 import android.os.PowerManager;
 import android.os.SystemClock;
 import android.provider.MediaStore;
@@ -2968,7 +2971,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                 }
             }
         } else if (videoPlayer.isPlaying() && playbackState == ExoPlayer.STATE_ENDED) {
-            if (playingMessageObject.isVideo() && !destroyAtEnd && (playCount == null || playCount[0] < 4)) {
+            if (playingMessageObject != null && playingMessageObject.isVideo() && !destroyAtEnd && (playCount == null || playCount[0] < 4)) {
                 videoPlayer.seekTo(0);
                 if (playCount != null) {
                     playCount[0]++;
@@ -5602,24 +5605,30 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
 
     private static class VideoConvertRunnable implements Runnable {
 
-        private VideoConvertMessage convertMessage;
+        private final VideoConvertMessage convertMessage;
+        private final Handler handler;
 
-        private VideoConvertRunnable(VideoConvertMessage message) {
-            convertMessage = message;
+        private VideoConvertRunnable(VideoConvertMessage message, Handler handler) {
+            this.convertMessage = message;
+            this.handler = handler;
         }
 
         @Override
         public void run() {
-            MediaController.getInstance().convertVideo(convertMessage);
+            MediaController.getInstance().convertVideo(convertMessage, handler);
         }
 
         public static void runConversion(final VideoConvertMessage obj) {
+            HandlerThread handlerThread = new HandlerThread("VideoConvertRunnableThread");
+            handlerThread.start();
+            Handler handler = new Handler(handlerThread.getLooper());
             new Thread(() -> {
                 try {
-                    VideoConvertRunnable wrapper = new VideoConvertRunnable(obj);
+                    VideoConvertRunnable wrapper = new VideoConvertRunnable(obj, handler);
                     Thread th = new Thread(wrapper, "VideoConvertRunnable");
                     th.start();
                     th.join();
+                    handlerThread.join();
                 } catch (Exception e) {
                     FileLog.e(e);
                 }
@@ -5628,7 +5637,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
     }
 
 
-    private boolean convertVideo(final VideoConvertMessage convertMessage) {
+    private boolean convertVideo(final VideoConvertMessage convertMessage, final Handler handler) {
         MessageObject messageObject = convertMessage.messageObject;
         VideoEditedInfo info = convertMessage.videoEditedInfo;
         if (messageObject == null || info == null) {
@@ -5734,7 +5743,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                 callback,
                 info);
         convertVideoParams.soundInfos.addAll(info.mixedSoundInfos);
-        boolean error = videoConvertor.convertVideo(convertVideoParams);
+        boolean error = videoConvertor.convertVideo(convertVideoParams, handler);
 
 
         boolean canceled = info.canceled;

@@ -27,22 +27,28 @@ public class UserNameResolver {
     LruCache<String, CachedPeer> resolvedCache = new LruCache<>(100);
     HashMap<String, ArrayList<Consumer<Long>>> resolvingConsumers = new HashMap<>();
 
-    public void resolve(String username, Consumer<Long> resolveConsumer) {
-        CachedPeer cachedPeer = resolvedCache.get(username);
-        if (cachedPeer != null) {
-            if (System.currentTimeMillis() - cachedPeer.time < CACHE_TIME) {
-                resolveConsumer.accept(cachedPeer.peerId);
-                FileLog.d("resolve username from cache " + username + " " + cachedPeer.peerId);
-                return;
-            } else {
-                resolvedCache.remove(username);
+    public int resolve(String username, Consumer<Long> resolveConsumer) {
+        return resolve(username, null, resolveConsumer);
+    }
+
+    public int resolve(String username, String referrer, Consumer<Long> resolveConsumer) {
+        if (TextUtils.isEmpty(referrer)) {
+            CachedPeer cachedPeer = resolvedCache.get(username);
+            if (cachedPeer != null) {
+                if (System.currentTimeMillis() - cachedPeer.time < CACHE_TIME) {
+                    resolveConsumer.accept(cachedPeer.peerId);
+                    FileLog.d("resolve username from cache " + username + " " + cachedPeer.peerId);
+                    return -1;
+                } else {
+                    resolvedCache.remove(username);
+                }
             }
         }
 
         ArrayList<Consumer<Long>> consumers = resolvingConsumers.get(username);
         if (consumers != null) {
             consumers.add(resolveConsumer);
-            return;
+            return -1;
         }
         consumers = new ArrayList<>();
         consumers.add(resolveConsumer);
@@ -57,14 +63,24 @@ public class UserNameResolver {
         } else {
             TLRPC.TL_contacts_resolveUsername resolveUsername = new TLRPC.TL_contacts_resolveUsername();
             resolveUsername.username = username;
+            if (!TextUtils.isEmpty(referrer)) {
+                resolveUsername.flags |= 1;
+                resolveUsername.referer = referrer;
+            }
             req = resolveUsername;
         }
-        ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+        return ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
             ArrayList<Consumer<Long>> finalConsumers = resolvingConsumers.remove(username);
             if (finalConsumers == null) {
                 return;
             }
             if (error != null) {
+                if (error != null && error.text != null && "STARREF_EXPIRED".equals(error.text)) {
+                    for (int i = 0; i < finalConsumers.size(); i++) {
+                        finalConsumers.get(i).accept(Long.MAX_VALUE);
+                    }
+                    return;
+                }
                 for (int i = 0; i < finalConsumers.size(); i++) {
                     finalConsumers.get(i).accept(null);
                 }

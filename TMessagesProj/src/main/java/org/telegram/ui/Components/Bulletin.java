@@ -99,6 +99,7 @@ public class Bulletin {
     private SpringAnimation bottomOffsetSpring;
 
     public static Bulletin make(@NonNull FrameLayout containerLayout, @NonNull Layout contentLayout, int duration) {
+        if (containerLayout == null) return new EmptyBulletin();
         return new Bulletin(null, containerLayout, contentLayout, duration);
     }
 
@@ -110,7 +111,10 @@ public class Bulletin {
     }
 
     @SuppressLint("RtlHardcoded")
-    public static Bulletin make(@NonNull BaseFragment fragment, @NonNull Layout contentLayout, int duration) {
+    public static Bulletin make(@Nullable BaseFragment fragment, @NonNull Layout contentLayout, int duration) {
+        if (fragment == null) {
+            return new EmptyBulletin();
+        }
         if (fragment instanceof ChatActivity) {
             contentLayout.setWideScreenParams(ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL);
         } else if (fragment instanceof DialogsActivity) {
@@ -127,6 +131,15 @@ public class Bulletin {
             }
         }
         return null;
+    }
+
+    public Bulletin setImageScale(float scale) {
+        if (layout instanceof Bulletin.TwoLineLottieLayout) {
+            View imageView = ((TwoLineLottieLayout) layout).imageView;
+            imageView.setScaleX(scale);
+            imageView.setScaleY(scale);
+        }
+        return this;
     }
 
     public static void hide(@NonNull FrameLayout containerLayout) {

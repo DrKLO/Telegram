@@ -47,14 +47,23 @@ import org.telegram.ui.Components.BlurringShader;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.ItemOptions;
 import org.telegram.ui.Components.Scroller;
+import org.telegram.ui.Components.Text;
+import org.telegram.ui.Stories.StoriesViewPager;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Collections;
 
 public class TimelineView extends View {
 
     // milliseconds when timeline goes out of the box
-    public static final long MAX_SCROLL_DURATION = 120 * 1000L;
+    public long getMaxScrollDuration() {
+        if (collageTracks.isEmpty()) {
+            return 120 * 1000L;
+        } else {
+            return 70 * 1000L;
+        }
+    }
     // minimal allowed duration to select
     public static final long MIN_SELECT_DURATION = 1 * 1000L;
     // maximum allowed duration to select
@@ -67,6 +76,12 @@ public class TimelineView extends View {
         default void onVideoLeftChange(float left) {};
         default void onVideoRightChange(float right) {};
         default void onVideoVolumeChange(float volume) {};
+
+        default void onVideoLeftChange(int i, float left) {};
+        default void onVideoRightChange(int i, float right) {};
+        default void onVideoVolumeChange(int i, float volume) {};
+        default void onVideoOffsetChange(int i, long offset) {};
+        default void onVideoSelected(int i) {};
 
         default void onAudioOffsetChange(long offset) {};
         default void onAudioLeftChange(float left) {};
@@ -84,18 +99,69 @@ public class TimelineView extends View {
     }
 
     private TimelineDelegate delegate;
+    private Runnable onTimelineClick;
+    public void setOnTimelineClick(Runnable click) {
+        this.onTimelineClick = click;
+    }
 
     private long progress;
     private long scroll;
 
-    private boolean hasVideo;
-    private boolean isMainVideoRound;
-    private String videoPath;
-    private long videoDuration;
-    private float videoLeft;
-    private float videoRight;
-    private float videoVolume;
-    private VideoThumbsLoader thumbs;
+    private class Track {
+        int index;
+        boolean isRound;
+        VideoThumbsLoader thumbs;
+        String path;
+        long duration;
+        long offset;
+        float left, right;
+        float volume;
+
+        final RectF bounds = new RectF();
+
+        private final AnimatedFloat selectedT = new AnimatedFloat(TimelineView.this, 360, CubicBezierInterpolator.EASE_OUT_QUINT);
+
+        private void setupThumbs(boolean force) {
+            if (getMeasuredWidth() <= 0 || thumbs != null && !force) {
+                return;
+            }
+            if (thumbs != null) {
+                thumbs.destroy();
+                thumbs = null;
+            }
+            thumbs = new VideoThumbsLoader(isRound, path, w - px - px, dp(38), duration > 2 ? duration : null, getMaxScrollDuration(), coverStart, coverEnd, () -> {
+                if (thumbs != null && thumbs.getDuration() > 0) {
+                    duration = thumbs.getDuration();
+                    sortCollage();
+                }
+            });
+        }
+
+        private void setupWaveform(boolean force) {
+            if (index < 0 || index >= collageWaveforms.size())
+                return;
+            AudioWaveformLoader waveform = collageWaveforms.get(index);
+            if (getMeasuredWidth() <= 0 || waveform != null && !force) {
+                return;
+            }
+            if (waveform != null) {
+                waveform.destroy();
+                waveform = null;
+            }
+            waveform = new AudioWaveformLoader(path, getMeasuredWidth() - getPaddingLeft() - getPaddingRight());
+            collageWaveforms.set(index, waveform);
+        }
+    }
+
+    private Track videoTrack;
+
+    private int collageSelected = 0;
+    private final ArrayList<AudioWaveformLoader> collageWaveforms = new ArrayList<>();
+    private final ArrayList<Track> collageTracks = new ArrayList<>();
+    private Track collageMain;
+    private final Paint collageFramePaint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
+    private final Path collageClipPath = new Path();
+    private final Path selectedCollageClipPath = new Path();
 
     private boolean hasRound;
     private String roundPath;
@@ -120,14 +186,14 @@ public class TimelineView extends View {
     private AudioWaveformLoader waveform;
 
     private long getBaseDuration() {
-        if (hasVideo) {
-            return videoDuration;
+        if (videoTrack != null) {
+            return Math.max(1, videoTrack.duration);
+        }
+        if (collageMain != null) {
+            return Math.max(1, collageMain.duration);
         }
         if (hasRound) {
-            return roundDuration;
-        }
-        if (hasAudio) {
-            return audioDuration;
+            return Math.max(1, roundDuration);
         }
         return Math.max(1, audioDuration);
     }
@@ -138,15 +204,31 @@ public class TimelineView extends View {
     private final AnimatedFloat audioT = new AnimatedFloat(this, 0, 360, CubicBezierInterpolator.EASE_OUT_QUINT);
     private final AnimatedFloat audioSelectedT = new AnimatedFloat(this, 360, CubicBezierInterpolator.EASE_OUT_QUINT);
 
-    private final AnimatedFloat videoSelectedT = new AnimatedFloat(this, 360, CubicBezierInterpolator.EASE_OUT_QUINT);
-
-    private final AnimatedFloat waveformLoaded = new AnimatedFloat(this, 0, 600, CubicBezierInterpolator.EASE_OUT_QUINT);
     private final AnimatedFloat waveformMax = new AnimatedFloat(this, 0, 360, CubicBezierInterpolator.EASE_OUT_QUINT);
+
+    private final AnimatedFloat timelineWaveformLoaded = new AnimatedFloat(this, 0, 600, CubicBezierInterpolator.EASE_OUT_QUINT);
+    private final AnimatedFloat timelineWaveformMax = new AnimatedFloat(this, 0, 360, CubicBezierInterpolator.EASE_OUT_QUINT);
+    private final AnimatedFloat openT = new AnimatedFloat(this, 0, 320, CubicBezierInterpolator.EASE_OUT_QUINT);
+    public boolean open = true;
+    public void setOpen(boolean open, boolean animated) {
+        if (this.open == open && animated) return;
+        this.open = open;
+        if (!animated) {
+            openT.set(open, true);
+        }
+        invalidate();
+    }
 
     private final BlurringShader.BlurManager blurManager;
     private final BlurringShader.StoryBlurDrawer backgroundBlur;
     private final BlurringShader.StoryBlurDrawer audioBlur;
     private final BlurringShader.StoryBlurDrawer audioWaveformBlur;
+
+    private final RectF timelineBounds = new RectF();
+    private final Path timelineClipPath = new Path();
+    private final Text timelineText;
+    private final Drawable timelineIcon;
+    private final WaveformPath timelineWaveformPath = new WaveformPath();
 
     private final RectF videoBounds = new RectF();
     private final Paint videoFramePaint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
@@ -218,6 +300,10 @@ public class TimelineView extends View {
         progressWhitePaint.setColor(0xffffffff);
         progressShadowPaint.setColor(0x26000000);
 
+        timelineText = new Text(LocaleController.getString(R.string.StoryTimeline), 12, AndroidUtilities.bold());
+        timelineIcon = getContext().getResources().getDrawable(R.drawable.timeline).mutate();
+        timelineIcon.setColorFilter(new PorterDuffColorFilter(0xffffffff, PorterDuff.Mode.SRC_IN));
+
         audioIcon = getContext().getResources().getDrawable(R.drawable.filled_widget_music).mutate();
         audioIcon.setColorFilter(new PorterDuffColorFilter(0xffffffff, PorterDuff.Mode.SRC_IN));
 
@@ -238,9 +324,8 @@ public class TimelineView extends View {
                                 delegate.onAudioVolumeChange(volume);
                             }
                         });
-                final long videoScrollDuration = Math.min(getBaseDuration(), MAX_SCROLL_DURATION);
+                final long videoScrollDuration = Math.min(getBaseDuration(), getMaxScrollDuration());
                 final float uiRight = Math.min(w - px - ph, px + ph + (audioOffset - scroll + lerp(audioRight, 1, audioSelectedT.get()) * audioDuration) / (float) videoScrollDuration * sw);
-                final float y = h - py - (hasVideo ? getVideoHeight() + dp(4) : 0) - (hasRound ? getRoundHeight() + dp(4) : 0) - (hasAudio ? getAudioHeight() + dp(4) : 0);
                 ItemOptions itemOptions = ItemOptions.makeOptions(container, resourcesProvider, this)
                     .addView(slider)
                     .addSpaceGap()
@@ -251,7 +336,7 @@ public class TimelineView extends View {
                     })
                     .setGravity(Gravity.RIGHT)
                     .forceTop(true)
-                    .translate(-(w - uiRight) + dp(18), y)
+                    .translate(-(w - uiRight) + dp(18), audioBounds.top)
                     .show();
                 itemOptions.setBlurBackground(blurManager, -previewContainer.getX(), -previewContainer.getY());
 
@@ -269,9 +354,8 @@ public class TimelineView extends View {
                                 delegate.onRoundVolumeChange(volume);
                             }
                         });
-                final long videoScrollDuration = Math.min(getBaseDuration(), MAX_SCROLL_DURATION);
+                final long videoScrollDuration = Math.min(getBaseDuration(), getMaxScrollDuration());
                 final float uiRight = Math.min(w - px - ph, px + ph + (roundOffset - scroll + lerp(roundRight, 1, roundSelectedT.get()) * roundDuration) / (float) videoScrollDuration * sw);
-                final float y = h - py - (hasVideo ? getVideoHeight() + dp(4) : 0) - (hasRound ? getRoundHeight() + dp(4) : 0);
                 ItemOptions itemOptions = ItemOptions.makeOptions(container, resourcesProvider, this)
                     .addView(slider)
                     .addSpaceGap()
@@ -282,31 +366,52 @@ public class TimelineView extends View {
                     })
                     .setGravity(Gravity.RIGHT)
                     .forceTop(true)
-                    .translate(-(w - uiRight) + dp(18), y)
+                    .translate(-(w - uiRight) + dp(18), roundBounds.top)
                     .show();
                 itemOptions.setBlurBackground(blurManager, -previewContainer.getX(), -previewContainer.getY());
 
                 try {
                     performHapticFeedback(HapticFeedbackConstants.LONG_PRESS, HapticFeedbackConstants.FLAG_IGNORE_VIEW_SETTING);
                 } catch (Exception e) {}
-            } else if (pressType == 0 && hasVideo) {
+            } else if (pressType == 0 && videoTrack != null) {
                 SliderView slider =
                     new SliderView(getContext(), SliderView.TYPE_VOLUME)
                         .setMinMax(0, 1.5f)
-                        .setValue(videoVolume)
+                        .setValue(videoTrack.volume)
                         .setOnValueChange(volume -> {
-                            videoVolume = volume;
+                            videoTrack.volume = volume;
                             if (delegate != null) {
                                 delegate.onVideoVolumeChange(volume);
                             }
                         });
-                final float y = h - py - (hasVideo ? getVideoHeight() + dp(4) : 0);
                 ItemOptions itemOptions = ItemOptions.makeOptions(container, resourcesProvider, this)
                     .addView(slider)
                     .setGravity(Gravity.RIGHT)
                     .forceTop(true)
-                    .translate(dp(18), y)
+                    .translate(dp(18), videoBounds.top)
                     .show();
+                itemOptions.setBlurBackground(blurManager, -previewContainer.getX(), -previewContainer.getY());
+                try {
+                    performHapticFeedback(HapticFeedbackConstants.LONG_PRESS, HapticFeedbackConstants.FLAG_IGNORE_VIEW_SETTING);
+                } catch (Exception e) {}
+            } else if (pressType == 3 && pressCollageIndex >= 0 && pressCollageIndex < collageTracks.size()) {
+                final Track track = collageTracks.get(pressCollageIndex);
+                SliderView slider =
+                    new SliderView(getContext(), SliderView.TYPE_VOLUME)
+                        .setMinMax(0, 1.5f)
+                        .setValue(track.volume)
+                        .setOnValueChange(volume -> {
+                            track.volume = volume;
+                            if (delegate != null) {
+                                delegate.onVideoVolumeChange(track.index, volume);
+                            }
+                        });
+                ItemOptions itemOptions = ItemOptions.makeOptions(container, resourcesProvider, this)
+                        .addView(slider)
+                        .setGravity(Gravity.RIGHT)
+                        .forceTop(true)
+                        .translate(dp(18), track.bounds.top)
+                        .show();
                 itemOptions.setBlurBackground(blurManager, -previewContainer.getX(), -previewContainer.getY());
                 try {
                     performHapticFeedback(HapticFeedbackConstants.LONG_PRESS, HapticFeedbackConstants.FLAG_IGNORE_VIEW_SETTING);
@@ -323,35 +428,90 @@ public class TimelineView extends View {
     public void setCoverVideo(long videoStart, long videoEnd) {
         coverStart = videoStart;
         coverEnd = videoEnd;
-        setupVideoThumbs(true);
+        if (videoTrack != null) {
+            videoTrack.setupThumbs(true);
+        }
     }
 
     public void setVideo(boolean isRound, String videoPath, long videoDuration, float videoVolume) {
-        if (TextUtils.equals(this.videoPath, videoPath)) {
+        if (TextUtils.equals(videoTrack == null ? null : videoTrack.path, videoPath)) {
             return;
         }
-        if (thumbs != null) {
-            thumbs.destroy();
-            thumbs = null;
+        if (videoTrack != null) {
+            if (videoTrack.thumbs != null) {
+                videoTrack.thumbs.destroy();
+                videoTrack.thumbs = null;
+            }
+            videoTrack = null;
         }
-        isMainVideoRound = isRound;
         if (videoPath != null) {
             scroll = 0;
-            this.videoPath = videoPath;
-            this.videoDuration = videoDuration;
-            this.videoVolume = videoVolume;
-            setupVideoThumbs(false);
+            videoTrack = new Track();
+            videoTrack.isRound = isRound;
+            videoTrack.path = videoPath;
+            videoTrack.duration = videoDuration;
+            videoTrack.volume = videoVolume;
+            videoTrack.setupThumbs(false);
         } else {
-            this.videoPath = null;
-            this.videoDuration = 1;
+            videoTrack = null;
             scroll = 0;
         }
         if (!hasRound) {
             roundSelected = false;
         }
-        hasVideo = this.videoPath != null;
         progress = 0;
         invalidate();
+    }
+
+    public void setCollage(ArrayList<StoryEntry> entries) {
+        for (int i = 0; i < collageTracks.size(); ++i) {
+            Track track = collageTracks.get(i);
+            if (track != null && track.thumbs != null) {
+                track.thumbs.destroy();
+            }
+        }
+        collageTracks.clear();
+        for (int i = 0; i < collageWaveforms.size(); ++i) {
+            AudioWaveformLoader waveform = collageWaveforms.get(i);
+            if (waveform != null) {
+                waveform.destroy();
+            }
+        }
+        collageWaveforms.clear();
+        timelineWaveformMax.set(1, true);
+        if (entries != null) {
+            for (int i = 0; i < entries.size(); ++i) {
+                collageWaveforms.add(null);
+                StoryEntry entry = entries.get(i);
+                if (entry.isVideo) {
+                    final Track track = new Track();
+                    track.index = i;
+                    track.isRound = false;
+                    track.path = entry.file.getAbsolutePath();
+                    track.duration = entry.duration;
+                    track.offset = entry.videoOffset;
+                    track.volume = entry.videoVolume;
+                    track.left = entry.videoLeft;
+                    track.right = entry.videoRight;
+                    track.setupThumbs(false);
+                    track.setupWaveform(false);
+                    collageTracks.add(track);
+                }
+            }
+        }
+        sortCollage();
+        collageSelected = 0;
+    }
+
+    public void sortCollage() {
+        Collections.sort(collageTracks, (a, b) -> (int) (b.duration - a.duration));
+        collageMain = collageTracks.isEmpty() ? null : collageTracks.get(0);
+        if (collageMain != null && collageMain.offset != 0) {
+//            collageMain.offset = 0;
+//            if (delegate != null) {
+//                delegate.onVideoOffsetChange(collageMain.index, 0);
+//            }
+        }
     }
 
     public void setRoundNull(boolean animated) {
@@ -375,7 +535,7 @@ public class TimelineView extends View {
             this.roundRight = right;
             this.roundVolume = volume;
             setupRoundThumbs();
-            if (!hasVideo) {
+            if (videoTrack == null) {
                 audioSelected = false;
                 roundSelected = true;
             }
@@ -385,11 +545,11 @@ public class TimelineView extends View {
             roundSelected = false;
         }
         hasRound = this.roundPath != null;
-        if (hadRoundDuration != roundDuration && !hasVideo && waveform != null) {
+        if (hadRoundDuration != roundDuration && videoTrack == null && waveform != null) {
             resetWaveform = true;
             setupAudioWaveform();
         }
-        if (hasAudio && hasRound && !hasVideo) {
+        if (hasAudio && hasRound && videoTrack == null) {
             audioLeft = 0;
             audioRight = Utilities.clamp((float) roundDuration / audioDuration, 1, 0);
         }
@@ -407,43 +567,29 @@ public class TimelineView extends View {
             audioSelected = false;
         } else {
             roundSelected = false;
-            audioSelected = hasAudio && !hasVideo;
+            audioSelected = hasAudio && videoTrack == null;
         }
         invalidate();
     }
 
-    private void setupVideoThumbs(boolean force) {
-        if (getMeasuredWidth() <= 0 || this.thumbs != null && !force) {
-            return;
-        }
-        if (thumbs != null) {
-            thumbs.destroy();
-            thumbs = null;
-        }
-        this.thumbs = new VideoThumbsLoader(isMainVideoRound, videoPath, w - px - px, dp(38), videoDuration > 2 ? videoDuration : null, MAX_SCROLL_DURATION, coverStart, coverEnd);
-        if (this.thumbs.getDuration() > 0) {
-            videoDuration = this.thumbs.getDuration();
-        }
-        setupRoundThumbs();
-    }
-
     private void setupRoundThumbs() {
-        if (getMeasuredWidth() <= 0 || this.roundThumbs != null || hasVideo && videoDuration < 1) {
+        if (getMeasuredWidth() <= 0 || this.roundThumbs != null || videoTrack != null && videoTrack.duration < 1) {
             return;
         }
-        this.roundThumbs = new VideoThumbsLoader(false, roundPath, w - px - px, dp(38), roundDuration > 2 ? roundDuration : null, hasVideo ? videoDuration : MAX_SCROLL_DURATION, -1, -1);
-        if (this.roundThumbs.getDuration() > 0) {
-            roundDuration = this.roundThumbs.getDuration();
-        }
+        this.roundThumbs = new VideoThumbsLoader(false, roundPath, w - px - px, dp(38), roundDuration > 2 ? roundDuration : null, videoTrack != null ? videoTrack.duration : getMaxScrollDuration(), -1, -1, () -> {
+            if (this.roundThumbs != null && this.roundThumbs.getDuration() > 0) {
+                roundDuration = this.roundThumbs.getDuration();
+            }
+        });
     }
 
     private final AnimatedFloat loopProgress = new AnimatedFloat(0, this, 0, 340, CubicBezierInterpolator.EASE_OUT_QUINT);
     private long loopProgressFrom = -1;
     public void setProgress(long progress) {
         if (
-            hasVideo && progress < this.progress && progress <= videoDuration * videoLeft + 240 && this.progress + 240 >= videoDuration * videoRight ||
-            hasAudio && !hasRound && !hasVideo && progress < this.progress && progress <= audioDuration * audioLeft + 240 && this.progress + 240 >= audioDuration * audioRight ||
-            hasRound && !hasVideo && progress < this.progress && progress <= roundDuration * audioLeft + 240 && this.progress + 240 >= roundDuration * audioRight
+            videoTrack != null && progress < this.progress && progress <= videoTrack.duration * videoTrack.left + 240 && this.progress + 240 >= videoTrack.duration * videoTrack.right ||
+            hasAudio && !hasRound && videoTrack == null && progress < this.progress && progress <= audioDuration * audioLeft + 240 && this.progress + 240 >= audioDuration * audioRight ||
+            hasRound && videoTrack == null && progress < this.progress && progress <= roundDuration * audioLeft + 240 && this.progress + 240 >= roundDuration * audioRight
         ) {
             loopProgressFrom = -1;
             loopProgress.set(1, true);
@@ -453,12 +599,14 @@ public class TimelineView extends View {
     }
 
     public void setVideoLeft(float left) {
-        videoLeft = left;
+        if (videoTrack == null) return;
+        videoTrack.left = left;
         invalidate();
     }
 
     public void setVideoRight(float right) {
-        videoRight = right;
+        if (videoTrack == null) return;
+        videoTrack.right = right;
         invalidate();
     }
 
@@ -468,7 +616,6 @@ public class TimelineView extends View {
                 waveform.destroy();
                 waveform = null;
                 waveformIsLoaded = false;
-                waveformLoaded.set(0, true);
             }
             this.audioPath = audioPath;
             setupAudioWaveform();
@@ -521,7 +668,6 @@ public class TimelineView extends View {
         }
         this.waveform = new AudioWaveformLoader(audioPath, getMeasuredWidth() - getPaddingLeft() - getPaddingRight());
         waveformIsLoaded = false;
-        waveformLoaded.set(0, true);
         waveformMax.set(1, true);
     }
 
@@ -542,45 +688,76 @@ public class TimelineView extends View {
     private static final int HANDLE_ROUND_RIGHT = 11;
     private static final int HANDLE_ROUND_REGION = 12;
 
+    private static final int HANDLE_COLLAGE_LEFT = 13;
+    private static final int HANDLE_COLLAGE_RIGHT = 14;
+    private static final int HANDLE_COLLAGE_REGION = 15;
+    private static final int HANDLE_COLLAGE_SCROLL = 16;
+
     private int detectHandle(MotionEvent event) {
         float x = event.getX();
         float y = event.getY();
 
-        final long scrollWidth = Math.min(getBaseDuration(), MAX_SCROLL_DURATION);
-        final float progressT = (Utilities.clamp(progress, getBaseDuration(), 0) + (!hasVideo ? audioOffset : 0) - scroll) / (float) scrollWidth;
+        final long scrollWidth = Math.min(getBaseDuration(), getMaxScrollDuration());
+        final float progressT = (Utilities.clamp(progress, getBaseDuration(), 0) + (collageMain != null ? collageMain.offset + collageMain.left * collageMain.duration : (videoTrack == null ? audioOffset : 0)) - scroll) / (float) scrollWidth;
         final float progressX = px + ph + sw * progressT;
         if (!isCover && x >= progressX - dp(12) && x <= progressX + dp(12)) {
             return HANDLE_PROGRESS;
         }
 
-        final boolean isInVideo = hasVideo && y > h - py - getVideoHeight() - dp(2);
-        final boolean isInRound = hasRound && y > h - py - getVideoHeight() - dp(4) - getRoundHeight() - dp(4) - dp(2) && y < h - py - getVideoHeight() - dp(2);
+        final boolean isInVideo = videoTrack != null && y > h - py - getVideoHeight() - dp(2);
+        final boolean isInCollage = !collageTracks.isEmpty() && y > h - py - getVideoHeight() - dp(4) - getCollageHeight() - dp(4) - dp(2) && y < h - py - getVideoHeight() - dp(2);
+        final boolean isInRound = hasRound && y > h - py - getVideoHeight() - dp(4) - getCollageHeight() - dp(collageTracks.isEmpty() ? 0 : 4) - getRoundHeight() - dp(4) - dp(2) && y < h - py - getVideoHeight() - dp(2) - getCollageHeight() - dp(collageTracks.isEmpty() ? 0 : 4);
 
-        if (isInVideo) {
+        if (isInCollage) {
+            for (int i = 0; i < collageTracks.size(); ++i) {
+                Track track = collageTracks.get(i);
+                AndroidUtilities.rectTmp.set(track.bounds);
+                AndroidUtilities.rectTmp.inset(-dp(2), -dp(2));
+                if (AndroidUtilities.rectTmp.contains(x, y)) {
+                    float startX = px + ph + (track.offset) / (float) scrollWidth * sw;
+                    float leftX = px + ph + (track.offset + track.left * track.duration) / (float) scrollWidth * sw;
+                    float rightX = px + ph + (track.offset + track.right * track.duration) / (float) scrollWidth * sw;
+                    float endX = px + ph + (track.offset + track.duration) / (float) scrollWidth * sw;
+
+                    pressHandleCollageIndex = i;
+                    if (x >= leftX - dp(10 + 5) && x <= leftX + dp(5)) {
+                        return HANDLE_COLLAGE_LEFT;
+                    } else if (x >= rightX - dp(5) && x <= rightX + dp(10 + 5)) {
+                        return HANDLE_COLLAGE_RIGHT;
+                    } else if (x >= leftX && x <= rightX && (track.left > 0.01f || track.right < .99f)) {
+                        return HANDLE_COLLAGE_REGION;
+                    } else if (x >= startX && x <= endX) {
+                        return HANDLE_COLLAGE_SCROLL;
+                    } else {
+                        return -1;
+                    }
+                }
+            }
+        } else if (isInVideo) {
             if (isCover) {
                 return HANDLE_VIDEO_REGION;
             }
 
-            final float leftX = px + ph + (videoLeft * videoDuration - scroll) / (float) scrollWidth * sw;
-            final float rightX = px + ph + (videoRight * videoDuration - scroll) / (float) scrollWidth * sw;
+            final float leftX = px + ph + (videoTrack.left * videoTrack.duration - scroll) / (float) scrollWidth * sw;
+            final float rightX = px + ph + (videoTrack.right * videoTrack.duration - scroll) / (float) scrollWidth * sw;
 
             if (x >= leftX - dp(10 + 5) && x <= leftX + dp(5)) {
                 return HANDLE_VIDEO_LEFT;
             } else if (x >= rightX - dp(5) && x <= rightX + dp(10 + 5)) {
                 return HANDLE_VIDEO_RIGHT;
-            } else if (x >= leftX && x <= rightX && (videoLeft > 0.01f || videoRight < .99f)) {
+            } else if (x >= leftX && x <= rightX && (videoTrack.left > 0.01f || videoTrack.right < .99f)) {
                 return HANDLE_VIDEO_REGION;
             }
         } else if (isInRound) {
             float leftX = px + ph + (roundOffset + roundLeft * roundDuration - scroll) / (float) scrollWidth * sw;
             float rightX = px + ph + (roundOffset + roundRight * roundDuration - scroll) / (float) scrollWidth * sw;
-            if (roundSelected || !hasVideo) {
+            if (roundSelected || videoTrack == null) {
                 if (x >= leftX - dp(10 + 5) && x <= leftX + dp(5)) {
                     return HANDLE_ROUND_LEFT;
                 } else if (x >= rightX - dp(5) && x <= rightX + dp(10 + 5)) {
                     return HANDLE_ROUND_RIGHT;
                 } else if (x >= leftX && x <= rightX) {
-                    if (!hasVideo) {
+                    if (videoTrack == null) {
                         return HANDLE_ROUND_REGION;
                     } else {
                         return HANDLE_ROUND_SCROLL;
@@ -595,13 +772,13 @@ public class TimelineView extends View {
         } else if (hasAudio) {
             float leftX = px + ph + (audioOffset + audioLeft * audioDuration - scroll) / (float) scrollWidth * sw;
             float rightX = px + ph + (audioOffset + audioRight * audioDuration - scroll) / (float) scrollWidth * sw;
-            if (audioSelected || !hasVideo && !hasRound) {
+            if (audioSelected || videoTrack == null && !hasRound) {
                 if (x >= leftX - dp(10 + 5) && x <= leftX + dp(5)) {
                     return HANDLE_AUDIO_LEFT;
                 } else if (x >= rightX - dp(5) && x <= rightX + dp(10 + 5)) {
                     return HANDLE_AUDIO_RIGHT;
                 } else if (x >= leftX && x <= rightX) {
-                    if (!hasVideo) {
+                    if (videoTrack == null) {
                         return HANDLE_AUDIO_REGION;
                     } else {
                         return HANDLE_AUDIO_SCROLL;
@@ -615,7 +792,7 @@ public class TimelineView extends View {
             }
         }
 
-        if (videoDuration > MAX_SCROLL_DURATION && isInVideo) {
+        if (videoTrack != null && videoTrack.duration > getMaxScrollDuration() && isInVideo) {
             return HANDLE_VIDEO_SCROLL;
         }
 
@@ -625,7 +802,7 @@ public class TimelineView extends View {
     public boolean onBackPressed() {
         if (audioSelected) {
             audioSelected = false;
-            if (hasRound && !hasVideo) {
+            if (hasRound && videoTrack == null) {
                 roundSelected = true;
                 if (delegate != null) {
                     delegate.onRoundSelectChange(true);
@@ -642,17 +819,24 @@ public class TimelineView extends View {
 
     private Runnable askExactSeek;
     private boolean setProgressAt(float x, boolean fast) {
-        if (!hasVideo && !hasAudio) {
+        if (videoTrack == null && !hasAudio && collageTracks.isEmpty()) {
             return false;
         }
 
-        final long scrollWidth = Math.min(getBaseDuration(), MAX_SCROLL_DURATION);
+        final long scrollWidth = Math.min(getBaseDuration(), getMaxScrollDuration());
         final float t = (x - px - ph) / sw;
-        long progress = (long) Utilities.clamp(t * scrollWidth + (!hasVideo ? -audioOffset : 0) + scroll, hasVideo ? videoDuration : audioDuration, 0);
-        if (hasVideo && (progress / (float) videoDuration < videoLeft || progress / (float) videoDuration > videoRight)) {
+        long offset = 0;
+        if (collageMain != null) {
+            offset = (long) (collageMain.offset + collageMain.left * collageMain.duration);
+        }
+        long progress = (long) Utilities.clamp(t * scrollWidth - (collageMain != null ? offset : (videoTrack == null ? audioOffset : 0)) + scroll, getBaseDuration(), 0);
+        if (videoTrack != null && (progress / (float) videoTrack.duration < videoTrack.left || progress / (float) videoTrack.duration > videoTrack.right)) {
             return false;
         }
-        if (hasAudio && !hasVideo && (progress / (float) audioDuration < audioLeft || progress / (float) audioDuration > audioRight)) {
+        if (collageMain != null && (progress < 0 || progress >= (long) ((collageMain.right - collageMain.left) * collageMain.duration))) {
+            return false;
+        }
+        if (hasAudio && videoTrack == null && collageTracks.isEmpty() && (progress / (float) audioDuration < audioLeft || progress / (float) audioDuration > audioRight)) {
             return false;
         }
         this.progress = progress;
@@ -675,10 +859,24 @@ public class TimelineView extends View {
     }
 
     private float getVideoHeight() {
-        if (!hasVideo)
+        if (videoTrack == null)
             return 0;
-        float videoSelected = this.videoSelectedT.set(!this.audioSelected && !this.roundSelected);
+        float videoSelected = videoTrack.selectedT.get();
         return lerp(dp(28), dp(38), videoSelected);
+    }
+
+    private float getCollageHeight() {
+        if (collageTracks.isEmpty())
+            return 0;
+        float h = 0;
+        for (int i = 0; i < collageTracks.size(); ++i) {
+            if (h > 0) {
+                h += dp(4);
+            }
+            float selected = collageTracks.get(i).selectedT.get();
+            h += lerp(dp(28), dp(38), selected);
+        }
+        return h;
     }
 
     private float getAudioHeight() {
@@ -697,20 +895,23 @@ public class TimelineView extends View {
     private long pressTime;
     private float lastX;
     private int pressHandle = -1;
+    private int pressHandleCollageIndex = -1;
     private int pressType = -1;
+    private int pressCollageIndex = -1;
     private boolean draggingProgress, dragged;
     private boolean hadDragChange;
     private VelocityTracker velocityTracker;
     private boolean scrollingVideo = true;
+    private int scrollingCollage = -1;
     private boolean scrolling = false;
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
-        if (!hasVideo && !hasAudio && !hasRound) {
+        if (videoTrack == null && collageTracks.isEmpty() && !hasAudio && !hasRound) {
             return false;
         }
 
-        final float top = h - py - py - (hasVideo ? getVideoHeight() + dp(4) : 0) - (hasAudio ? getAudioHeight() + dp(4) : 0) - (hasRound ? getRoundHeight() + dp(4) : 0);
+        final float top = h - getTimelineHeight();
         if (event.getAction() == MotionEvent.ACTION_DOWN && event.getY() < top) {
             return false;
         }
@@ -722,14 +923,32 @@ public class TimelineView extends View {
                 askExactSeek = null;
             }
             scroller.abortAnimation();
+            pressHandleCollageIndex = -1;
             pressHandle = detectHandle(event);
             pressType = -1;
+            pressCollageIndex = -1;
             int y = h - py;
-            if (pressType == -1 && hasVideo) {
+            if (pressType == -1 && !open && timelineBounds.contains(event.getX(), event.getY())) {
+                pressType = 10;
+                pressHandle = -1;
+            }
+            if (pressType == -1 && videoTrack != null) {
                 if (event.getY() < y && event.getY() > y - getVideoHeight() - dp(2)) {
                     pressType = 0;
                 }
                 y -= getVideoHeight() + dp(4);
+            }
+            if (pressType == -1 && !collageTracks.isEmpty()) {
+                for (int i = 0; i < collageTracks.size(); ++i) {
+                    final Track track = collageTracks.get(i);
+                    final float selected = track.selectedT.get();
+                    final float h = lerp(dp(28), dp(38), selected);
+                    if (event.getY() < y && event.getY() > y - h - dp(2)) {
+                        pressType = 3;
+                        pressCollageIndex = i; break;
+                    }
+                    y -= h + dp(4);
+                }
             }
             if (pressType == -1 && hasRound) {
                 if (event.getY() < y && event.getY() > y - getRoundHeight() - dp(2)) {
@@ -760,53 +979,53 @@ public class TimelineView extends View {
             }
         } else if (event.getAction() == MotionEvent.ACTION_MOVE) {
             final float Δx = event.getX() - lastX;
-            final boolean allowDrag = dragged || Math.abs(Δx) > AndroidUtilities.touchSlop;
+            final boolean allowDrag = open && (dragged || Math.abs(Δx) > AndroidUtilities.touchSlop);
             if (allowDrag) {
-                final long videoScrollDuration = Math.min(getBaseDuration(), MAX_SCROLL_DURATION);
-                if (pressHandle == HANDLE_VIDEO_SCROLL) {
-                    scroll = (long) Utilities.clamp(scroll - Δx / sw * videoScrollDuration, videoDuration - videoScrollDuration, 0);
+                final long videoScrollDuration = Math.min(getBaseDuration(), getMaxScrollDuration());
+                if (videoTrack != null && pressHandle == HANDLE_VIDEO_SCROLL) {
+                    scroll = (long) Utilities.clamp(scroll - Δx / sw * videoScrollDuration, videoTrack.duration - videoScrollDuration, 0);
                     invalidate();
                     dragged = true;
                     draggingProgress = false;
-                } else if (pressHandle == HANDLE_VIDEO_LEFT || pressHandle == HANDLE_VIDEO_RIGHT || pressHandle == HANDLE_VIDEO_REGION) {
-                    float d = Δx / sw * (videoScrollDuration / (float) videoDuration);
+                } else if (videoTrack != null && (pressHandle == HANDLE_VIDEO_LEFT || pressHandle == HANDLE_VIDEO_RIGHT || pressHandle == HANDLE_VIDEO_REGION)) {
+                    float d = Δx / sw * (videoScrollDuration / (float) videoTrack.duration);
                     if (pressHandle == HANDLE_VIDEO_LEFT) {
-                        videoLeft = Utilities.clamp(videoLeft + d, videoRight - MIN_SELECT_DURATION / (float) videoDuration, 0);
+                        videoTrack.left = Utilities.clamp(videoTrack.left + d, videoTrack.right - MIN_SELECT_DURATION / (float) videoTrack.duration, 0);
                         if (delegate != null) {
-                            delegate.onVideoLeftChange(videoLeft);
+                            delegate.onVideoLeftChange(videoTrack.left);
                         }
-                        if (videoRight - videoLeft > MAX_SELECT_DURATION / (float) videoDuration) {
-                            videoRight = Math.min(1, videoLeft + MAX_SELECT_DURATION / (float) videoDuration);
+                        if (videoTrack.right - videoTrack.left > MAX_SELECT_DURATION / (float) videoTrack.duration) {
+                            videoTrack.right = Math.min(1, videoTrack.left + MAX_SELECT_DURATION / (float) videoTrack.duration);
                             if (delegate != null) {
-                                delegate.onVideoRightChange(videoRight);
+                                delegate.onVideoRightChange(videoTrack.right);
                             }
                         }
                     } else if (pressHandle == HANDLE_VIDEO_RIGHT) {
-                        videoRight = Utilities.clamp(videoRight + d, 1, videoLeft + MIN_SELECT_DURATION / (float) videoDuration);
+                        videoTrack.right = Utilities.clamp(videoTrack.right + d, 1, videoTrack.left + MIN_SELECT_DURATION / (float) videoTrack.duration);
                         if (delegate != null) {
-                            delegate.onVideoRightChange(videoRight);
+                            delegate.onVideoRightChange(videoTrack.right);
                         }
-                        if (videoRight - videoLeft > MAX_SELECT_DURATION / (float) videoDuration) {
-                            videoLeft = Math.max(0, videoRight - MAX_SELECT_DURATION / (float) videoDuration);
+                        if (videoTrack.right - videoTrack.left > MAX_SELECT_DURATION / (float) videoTrack.duration) {
+                            videoTrack.left = Math.max(0, videoTrack.right - MAX_SELECT_DURATION / (float) videoTrack.duration);
                             if (delegate != null) {
-                                delegate.onVideoLeftChange(videoLeft);
+                                delegate.onVideoLeftChange(videoTrack.left);
                             }
                         }
                     } else if (pressHandle == HANDLE_VIDEO_REGION) {
                         if (d > 0) {
-                            d = Math.min(1 - videoRight, d);
+                            d = Math.min(1 - videoTrack.right, d);
                         } else {
-                            d = Math.max(-videoLeft, d);
+                            d = Math.max(-videoTrack.left, d);
                         }
-                        videoLeft += d;
-                        videoRight += d;
+                        videoTrack.left += d;
+                        videoTrack.right += d;
                         if (delegate != null) {
-                            delegate.onVideoLeftChange(videoLeft);
-                            delegate.onVideoRightChange(videoRight);
+                            delegate.onVideoLeftChange(videoTrack.left);
+                            delegate.onVideoRightChange(videoTrack.right);
                         }
                     }
-                    if (progress / (float) videoDuration < videoLeft || progress / (float) videoDuration > videoRight) {
-                        progress = (long) (videoLeft * videoDuration);
+                    if (progress / (float) videoTrack.duration < videoTrack.left || progress / (float) videoTrack.duration > videoTrack.right) {
+                        progress = (long) (videoTrack.left * videoTrack.duration);
                         if (delegate != null) {
                             delegate.onProgressChange(progress, false);
                         }
@@ -819,15 +1038,17 @@ public class TimelineView extends View {
                     if (pressHandle == HANDLE_AUDIO_LEFT) {
                         float maxValue = audioRight - minAudioSelect() / (float) audioDuration;
                         float minValue = Math.max(0, scroll - audioOffset) / (float) audioDuration;
-                        if (!hasVideo && !hasRound) {
+                        if (videoTrack != null) {
+                            minValue = Math.max(minValue, (videoTrack.left * videoTrack.duration + scroll - audioOffset) / (float) audioDuration);
+                        } else if (collageMain != null) {
+                            minValue = Math.max(minValue, (collageMain.left * collageMain.duration + scroll - audioOffset) / (float) audioDuration);
+                        } else if (hasRound) {
+                            minValue = Math.max(minValue, (roundLeft * roundDuration + scroll - audioOffset) / (float) audioDuration);
+                        } else {
                             minValue = Math.max(minValue, audioRight - MAX_SELECT_DURATION / (float) audioDuration);
                             if (!hadDragChange && d < 0 && audioLeft <= (audioRight - MAX_SELECT_DURATION / (float) audioDuration)) {
                                 pressHandle = HANDLE_AUDIO_REGION;
                             }
-                        } else if (hasVideo) {
-                            minValue = Math.max(minValue, (videoLeft * videoDuration + scroll - audioOffset) / (float) audioDuration);
-                        } else if (hasRound) {
-                            minValue = Math.max(minValue, (roundLeft * roundDuration + scroll - audioOffset) / (float) audioDuration);
                         }
                         float wasAudioLeft = audioLeft;
                         audioLeft = Utilities.clamp(audioLeft + d, maxValue, minValue);
@@ -843,15 +1064,17 @@ public class TimelineView extends View {
                     } else if (pressHandle == HANDLE_AUDIO_RIGHT) {
                         float maxValue = Math.min(1, Math.max(0, scroll - audioOffset + videoScrollDuration) / (float) audioDuration);
                         float minValue = audioLeft + minAudioSelect() / (float) audioDuration;
-                        if (!hasVideo && !hasRound) {
+                        if (videoTrack != null) {
+                            maxValue = Math.min(maxValue, (videoTrack.right * videoTrack.duration + scroll - audioOffset) / (float) audioDuration);
+                        } else if (collageMain != null) {
+                            maxValue = Math.min(maxValue, (collageMain.right * collageMain.duration + scroll - audioOffset) / (float) audioDuration);
+                        } else if (hasRound) {
+                            maxValue = Math.min(maxValue, (roundRight * roundDuration + scroll - audioOffset) / (float) audioDuration);
+                        } else {
                             maxValue = Math.min(maxValue, audioLeft + MAX_SELECT_DURATION / (float) audioDuration);
                             if (!hadDragChange && d > 0 && audioRight >= (audioLeft + MAX_SELECT_DURATION / (float) audioDuration)) {
                                 pressHandle = HANDLE_AUDIO_REGION;
                             }
-                        } else if (hasVideo) {
-                            maxValue = Math.min(maxValue, (videoRight * videoDuration + scroll - audioOffset) / (float) audioDuration);
-                        } else if (hasRound) {
-                            maxValue = Math.min(maxValue, (roundRight * roundDuration + scroll - audioOffset) / (float) audioDuration);
                         }
                         float wasAudioRight = audioRight;
                         audioRight = Utilities.clamp(audioRight + d, maxValue, minValue);
@@ -865,6 +1088,10 @@ public class TimelineView extends View {
                     if (pressHandle == HANDLE_AUDIO_REGION) {
                         float minLeft = Math.max(0, scroll - audioOffset) / (float) audioDuration;
                         float maxRight = Math.min(1, Math.max(0, scroll - audioOffset + videoScrollDuration) / (float) audioDuration);
+//                        if (collageMain != null) {
+//                            minLeft = Math.max(minLeft, (collageMain.left * collageMain.duration + scroll - audioOffset) / (float) audioDuration);
+//                            maxRight = Math.min(maxRight, (collageMain.right * collageMain.duration + scroll - audioOffset) / (float) audioDuration);
+//                        }
                         if (d > 0) {
                             d = Math.min(Math.max(0, maxRight - audioRight), d);
                         } else {
@@ -882,7 +1109,7 @@ public class TimelineView extends View {
                             delegate.onProgressDragChange(true);
                         }
                     }
-                    if (!hasVideo && !hasRound) {
+                    if (videoTrack == null && !hasRound) {
                         progress = (long) (audioLeft * audioDuration);
                         if (delegate != null) {
                             delegate.onProgressDragChange(true);
@@ -897,13 +1124,15 @@ public class TimelineView extends View {
                     if (pressHandle == HANDLE_ROUND_LEFT) {
                         float maxValue = roundRight - minAudioSelect() / (float) roundDuration;
                         float minValue = Math.max(0, scroll - roundOffset) / (float) roundDuration;
-                        if (!hasVideo) {
+                        if (videoTrack != null) {
+                            minValue = Math.max(minValue, (videoTrack.left * videoTrack.duration + scroll - roundOffset) / (float) roundDuration);
+                        } else if (collageMain != null) {
+                            minValue = Math.max(minValue, (collageMain.left * collageMain.duration + scroll - roundOffset) / (float) roundDuration);
+                        } else {
                             minValue = Math.max(minValue, roundRight - MAX_SELECT_DURATION / (float) roundDuration);
                             if (!hadDragChange && d < 0 && roundLeft <= (roundRight - MAX_SELECT_DURATION / (float) roundDuration)) {
                                 pressHandle = HANDLE_AUDIO_REGION;
                             }
-                        } else {
-                            minValue = Math.max(minValue, (videoLeft * videoDuration + scroll - roundOffset) / (float) roundDuration);
                         }
                         float wasAudioLeft = roundLeft;
                         roundLeft = Utilities.clamp(roundLeft + d, maxValue, minValue);
@@ -919,13 +1148,15 @@ public class TimelineView extends View {
                     } else if (pressHandle == HANDLE_ROUND_RIGHT) {
                         float maxValue = Math.min(1, Math.max(0, scroll - roundOffset + videoScrollDuration) / (float) roundDuration);
                         float minValue = roundLeft + minAudioSelect() / (float) roundDuration;
-                        if (!hasVideo) {
+                        if (videoTrack != null) {
+                            maxValue = Math.min(maxValue, (videoTrack.right * videoTrack.duration + scroll - roundOffset) / (float) roundDuration);
+                        } if (collageMain != null) {
+                            maxValue = Math.min(maxValue, (collageMain.right * collageMain.duration + scroll - roundOffset) / (float) roundDuration);
+                        } else {
                             maxValue = Math.min(maxValue, roundLeft + MAX_SELECT_DURATION / (float) roundDuration);
                             if (!hadDragChange && d > 0 && roundRight >= (roundLeft + MAX_SELECT_DURATION / (float) roundDuration)) {
                                 pressHandle = HANDLE_AUDIO_REGION;
                             }
-                        } else {
-                            maxValue = Math.min(maxValue, (videoRight * videoDuration + scroll - roundOffset) / (float) roundDuration);
                         }
                         float wasAudioRight = roundRight;
                         roundRight = Utilities.clamp(roundRight + d, maxValue, minValue);
@@ -939,6 +1170,10 @@ public class TimelineView extends View {
                     if (pressHandle == HANDLE_ROUND_REGION) {
                         float minLeft = Math.max(0, scroll - roundOffset) / (float) roundDuration;
                         float maxRight = Math.min(1, Math.max(0, scroll - roundOffset + videoScrollDuration) / (float) roundDuration);
+//                        if (collageMain != null) {
+//                            minLeft = Math.max(minLeft, (collageMain.left * collageMain.duration + scroll - roundOffset) / (float) roundDuration);
+//                            maxRight = Math.min(maxRight, (collageMain.right * collageMain.duration + scroll - roundOffset) / (float) roundDuration);
+//                        }
                         if (d > 0) {
                             d = Math.min(maxRight - roundRight, d);
                         } else {
@@ -956,13 +1191,94 @@ public class TimelineView extends View {
                             delegate.onProgressDragChange(true);
                         }
                     }
-                    if (!hasVideo) {
+                    if (videoTrack == null) {
                         progress = (long) (roundLeft * roundDuration);
                         if (delegate != null) {
                             delegate.onProgressDragChange(true);
                             delegate.onProgressChange(progress, false);
                         }
                     }
+                    invalidate();
+                    dragged = true;
+                    draggingProgress = false;
+                } else if ((pressHandleCollageIndex >= 0 && pressHandleCollageIndex < collageTracks.size()) && (pressHandle == HANDLE_COLLAGE_LEFT || pressHandle == HANDLE_COLLAGE_RIGHT || pressHandle == HANDLE_COLLAGE_REGION)) {
+                    final Track track = collageTracks.get(pressHandleCollageIndex);
+                    float d = Δx / sw * (videoScrollDuration / (float) track.duration);
+                    if (pressHandle == HANDLE_COLLAGE_LEFT) {
+                        float maxValue = track.right - minAudioSelect() / (float) track.duration;
+                        float minValue = Math.max(0, scroll - track.offset) / (float) track.duration;
+                        if (track == collageMain) {
+                            minValue = Math.max(minValue, track.right - MAX_SELECT_DURATION / (float) track.duration);
+                            if (!hadDragChange && d < 0 && track.left <= (track.right - MAX_SELECT_DURATION / (float) track.duration)) {
+                                pressHandle = HANDLE_COLLAGE_REGION;
+                            }
+                        }
+//                        else if (collageMain != null) {
+//                            minValue = Math.max(minValue, (collageMain.left * collageMain.duration + scroll - track.offset) / (float) track.duration);
+//                        }
+                        float wasTrackLeft = track.left;
+                        track.left = Utilities.clamp(track.left + d, maxValue, minValue);
+                        if (Math.abs(wasTrackLeft - track.left) > 0.01f) {
+                            hadDragChange = true;
+                        }
+                        if (delegate != null) {
+                            delegate.onVideoOffsetChange(track.index, track.offset);
+                        }
+                        if (delegate != null) {
+                            delegate.onVideoLeftChange(track.index, track.left);
+                        }
+                    } else if (pressHandle == HANDLE_COLLAGE_RIGHT) {
+                        float maxValue = Math.min(1, Math.max(0, scroll - track.offset + videoScrollDuration) / (float) track.duration);
+                        float minValue = track.left + minAudioSelect() / (float) track.duration;
+                        if (track == collageMain) {
+                            maxValue = Math.min(maxValue, track.left + MAX_SELECT_DURATION / (float) track.duration);
+                            if (!hadDragChange && d > 0 && track.right >= (track.left + MAX_SELECT_DURATION / (float) track.duration)) {
+                                pressHandle = HANDLE_COLLAGE_REGION;
+                            }
+                        }
+//                        else if (collageMain != null) {
+//                            maxValue = Math.min(maxValue, (collageMain.right * collageMain.duration + scroll - track.offset) / (float) track.duration);
+//                        }
+                        float wasTrackRight = track.right;
+                        track.right = Utilities.clamp(track.right + d, maxValue, minValue);
+                        if (Math.abs(wasTrackRight - track.right) > 0.01f) {
+                            hadDragChange = true;
+                        }
+                        if (delegate != null) {
+                            delegate.onVideoRightChange(track.index, track.right);
+                        }
+                    }
+                    if (pressHandle == HANDLE_COLLAGE_REGION) {
+                        float minLeft = Math.max(0, scroll - track.offset) / (float) track.duration;
+                        float maxRight = Math.min(1, Math.max(0, scroll - track.offset + videoScrollDuration) / (float) track.duration);
+//                        if (track != collageMain) {
+//                            minLeft = Math.max(minLeft, (collageMain.left * collageMain.duration + scroll - track.offset) / (float) track.duration);
+//                            maxRight = Math.min(maxRight, (collageMain.right * collageMain.duration + scroll - track.offset) / (float) track.duration);
+//                        }
+                        if (d > 0) {
+                            d = Math.min(maxRight - track.right, d);
+                        } else {
+                            d = Math.max(minLeft - track.left, d);
+                        }
+                        track.left += d;
+                        track.right += d;
+
+                        if (delegate != null) {
+                            delegate.onVideoLeftChange(track.index, track.left);
+                            delegate.onVideoOffsetChange(track.index, track.offset);
+                            delegate.onVideoRightChange(track.index, track.right);
+                        }
+                        if (delegate != null) {
+                            delegate.onProgressDragChange(true);
+                        }
+                    }
+//                    if (collageMain == track) {
+//                        progress = (long) (track.left * track.duration);
+//                        if (delegate != null) {
+//                            delegate.onProgressDragChange(true);
+//                            delegate.onProgressChange(progress, false);
+//                        }
+//                    }
                     invalidate();
                     dragged = true;
                     draggingProgress = false;
@@ -974,6 +1290,12 @@ public class TimelineView extends View {
                 } else if (pressHandle == HANDLE_ROUND_SCROLL) {
                     float d = Δx / sw * videoScrollDuration;
                     moveRoundOffset(d);
+                    dragged = true;
+                    draggingProgress = false;
+                } else if ((pressHandleCollageIndex >= 0 && pressHandleCollageIndex < collageTracks.size()) && pressHandle == HANDLE_COLLAGE_SCROLL) {
+                    final Track track = collageTracks.get(pressHandleCollageIndex);
+                    float d = Δx / sw * videoScrollDuration;
+                    moveCollageOffset(track, d);
                     dragged = true;
                     draggingProgress = false;
                 } else if (draggingProgress) {
@@ -996,14 +1318,29 @@ public class TimelineView extends View {
             scroller.abortAnimation();
             boolean scrollStopped = true;
             if (event.getAction() == MotionEvent.ACTION_UP) {
-                if (System.currentTimeMillis() - pressTime <= ViewConfiguration.getTapTimeout() && !dragged) {
-                    if (isCover) {
-                        float d = videoRight - videoLeft;
-                        videoLeft = (event.getX() - px - ph) / sw * (1 - d);
-                        videoRight = videoLeft + d;
+                if (System.currentTimeMillis() - pressTime <= ViewConfiguration.getTapTimeout() && !dragged || !open) {
+                    if (!open) {
+                        if (pressType == 10) {
+                            if (onTimelineClick != null) {
+                                onTimelineClick.run();
+                            }
+                        }
+                    } else if (isCover && videoTrack != null) {
+                        float d = videoTrack.right - videoTrack.left;
+                        videoTrack.left = (event.getX() - px - ph) / sw * (1 - d);
+                        videoTrack.right = videoTrack.left + d;
                         if (delegate != null) {
-                            delegate.onVideoLeftChange(videoLeft);
-                            delegate.onVideoRightChange(videoRight);
+                            delegate.onVideoLeftChange(videoTrack.left);
+                            delegate.onVideoRightChange(videoTrack.right);
+                        }
+                        invalidate();
+                    } else if (pressType == 3 && (audioSelected || roundSelected ? -1 : collageSelected) != pressCollageIndex) {
+                        audioSelected = false;
+                        roundSelected = false;
+                        collageSelected = pressCollageIndex;
+                        if (delegate != null && pressCollageIndex >= 0 && pressCollageIndex < collageTracks.size()) {
+                            Track track = collageTracks.get(pressCollageIndex);
+                            delegate.onVideoSelected(track.index);
                         }
                         invalidate();
                     } else if (pressType == 2 && !audioSelected) {
@@ -1042,54 +1379,66 @@ public class TimelineView extends View {
                             invalidate();
                         }
                     }
+                } else if (pressHandle == HANDLE_COLLAGE_SCROLL && velocityTracker != null) {
+                    velocityTracker.computeCurrentVelocity(1000);
+                    final int velocity = (int) velocityTracker.getXVelocity();
+                    scrollingVideo = true;
+                    if (videoTrack != null && Math.abs(velocity) > dp(100)) {
+                        final long videoScrollDuration = Math.min(videoTrack.duration, getMaxScrollDuration());
+                        final int scrollX = (int) (px + scroll / (float) videoScrollDuration * sw);
+                        final int maxScrollX = (int) (px + (videoTrack.duration - videoScrollDuration) / (float) videoScrollDuration * sw);
+                        scrolling = true;
+                        scroller.fling(wasScrollX = scrollX, 0, -velocity, 0, px, maxScrollX, 0, 0);
+                        scrollStopped = false;
+                    }
                 } else if (pressHandle == HANDLE_VIDEO_SCROLL && velocityTracker != null) {
                     velocityTracker.computeCurrentVelocity(1000);
                     final int velocity = (int) velocityTracker.getXVelocity();
                     scrollingVideo = true;
-                    if (Math.abs(velocity) > dp(100)) {
-                        final long videoScrollDuration = Math.min(videoDuration, MAX_SCROLL_DURATION);
+                    if (videoTrack != null && Math.abs(velocity) > dp(100)) {
+                        final long videoScrollDuration = Math.min(videoTrack.duration, getMaxScrollDuration());
                         final int scrollX = (int) (px + scroll / (float) videoScrollDuration * sw);
-                        final int maxScrollX = (int) (px + (videoDuration - videoScrollDuration) / (float) videoScrollDuration * sw);
+                        final int maxScrollX = (int) (px + (videoTrack.duration - videoScrollDuration) / (float) videoScrollDuration * sw);
                         scrolling = true;
                         scroller.fling(wasScrollX = scrollX, 0, -velocity, 0, px, maxScrollX, 0, 0);
                         scrollStopped = false;
                     }
                 } else if ((pressHandle == HANDLE_AUDIO_SCROLL || pressHandle == HANDLE_AUDIO_REGION && !dragged) && audioSelected && velocityTracker != null) {
-                    velocityTracker.computeCurrentVelocity(hasVideo ? 1000 : 1500);
+                    velocityTracker.computeCurrentVelocity(videoTrack != null ? 1000 : 1500);
                     final int velocity = (int) velocityTracker.getXVelocity();
                     scrollingVideo = false;
                     if (Math.abs(velocity) > dp(100)) {
-                        final long videoScrollDuration = Math.min(getBaseDuration(), MAX_SCROLL_DURATION);
+                        final long videoScrollDuration = Math.min(getBaseDuration(), getMaxScrollDuration());
                         final int scrollX = (int) (px + ph + audioOffset / (float) videoScrollDuration * sw);
                         final long mx, mn;
-                        if (hasVideo) {
-                            mx = (long) ((videoRight * videoDuration) - (0 * audioDuration));
-                            mn = (long) ((videoLeft * videoDuration) - (1 * audioDuration));
+                        if (videoTrack != null) {
+                            mx = (long) ((videoTrack.right * videoTrack.duration) - (0 * audioDuration));
+                            mn = (long) ((videoTrack.left * videoTrack.duration) - (1 * audioDuration));
                         } else if (hasRound) {
                             mx = (long) ((roundRight * roundDuration) - (0 * audioDuration));
                             mn = (long) ((roundLeft * roundDuration) - (1 * audioDuration));
                         } else {
                             mx = 0;
-                            mn = (long) -(audioDuration - Math.min(getBaseDuration(), MAX_SCROLL_DURATION));
+                            mn = (long) -(audioDuration - Math.min(getBaseDuration(), getMaxScrollDuration()));
                         }
                         scrolling = true;
                         scroller.fling(wasScrollX = scrollX, 0, velocity, 0, (int) (px + ph + mn / (float) videoScrollDuration * sw), (int) (px + ph + mx / (float) videoScrollDuration * sw), 0, 0);
                         scrollStopped = false;
                     }
                 } else if ((pressHandle == HANDLE_ROUND_SCROLL || pressHandle == HANDLE_ROUND_REGION && !dragged) && roundSelected && velocityTracker != null) {
-                    velocityTracker.computeCurrentVelocity(hasVideo ? 1000 : 1500);
+                    velocityTracker.computeCurrentVelocity(videoTrack != null ? 1000 : 1500);
                     final int velocity = (int) velocityTracker.getXVelocity();
                     scrollingVideo = false;
                     if (Math.abs(velocity) > dp(100)) {
-                        final long videoScrollDuration = Math.min(getBaseDuration(), MAX_SCROLL_DURATION);
+                        final long videoScrollDuration = Math.min(getBaseDuration(), getMaxScrollDuration());
                         final int scrollX = (int) (px + ph + roundOffset / (float) videoScrollDuration * sw);
                         final long mx, mn;
-                        if (hasVideo) {
-                            mx = (long) ((videoRight * videoDuration) - (0 * roundDuration));
-                            mn = (long) ((videoLeft * videoDuration) - (1 * roundDuration));
+                        if (videoTrack != null) {
+                            mx = (long) ((videoTrack.right * videoTrack.duration) - (0 * roundDuration));
+                            mn = (long) ((videoTrack.left * videoTrack.duration) - (1 * roundDuration));
                         } else {
                             mx = 0;
-                            mn = (long) -(roundDuration - Math.min(getBaseDuration(), MAX_SCROLL_DURATION));
+                            mn = (long) -(roundDuration - Math.min(getBaseDuration(), getMaxScrollDuration()));
                         }
                         scrolling = true;
                         scroller.fling(wasScrollX = scrollX, 0, velocity, 0, (int) (px + ph + mn / (float) videoScrollDuration * sw), (int) (px + ph + mx / (float) videoScrollDuration * sw), 0, 0);
@@ -1118,13 +1467,13 @@ public class TimelineView extends View {
     }
 
     private long minAudioSelect() {
-        return (long) Math.max(MIN_SELECT_DURATION, Math.min(hasVideo ? videoDuration : (hasRound ? roundDuration : audioDuration), MAX_SELECT_DURATION) * 0.15f);
+        return (long) Math.max(MIN_SELECT_DURATION, Math.min(getBaseDuration(), MAX_SELECT_DURATION) * 0.15f);
     }
 
     private void moveAudioOffset(final float d) {
-        if (!hasVideo && !hasRound) {
+        if (videoTrack == null && !hasRound) {
             long wasAudioOffset = audioOffset;
-            audioOffset = Utilities.clamp(audioOffset + (long) d, 0, (long) -(audioDuration - Math.min(getBaseDuration(), MAX_SCROLL_DURATION)));
+            audioOffset = Utilities.clamp(audioOffset + (long) d, 0, (long) -(audioDuration - Math.min(getBaseDuration(), getMaxScrollDuration())));
             long rd = audioOffset - wasAudioOffset;
             audioLeft = Utilities.clamp(audioLeft - (float) rd / audioDuration, 1, 0);
             audioRight = Utilities.clamp(audioRight - (float) rd / audioDuration, 1, 0);
@@ -1133,9 +1482,9 @@ public class TimelineView extends View {
                 delegate.onAudioRightChange(audioRight);
             }
         } else if (audioSelected) {
-            final float L = hasVideo ? videoLeft * videoDuration : roundLeft * roundDuration;
-            final float R = hasVideo ? videoRight * videoDuration : roundRight * roundDuration;
-            final float D = hasVideo ? (videoRight - videoLeft) * videoDuration : (roundRight - roundLeft) * roundDuration;
+            final float L = videoTrack != null ? videoTrack.left * videoTrack.duration : roundLeft * roundDuration;
+            final float R = videoTrack != null ? videoTrack.right * videoTrack.duration : roundRight * roundDuration;
+            final float D = videoTrack != null ? (videoTrack.right - videoTrack.left) * videoTrack.duration : (roundRight - roundLeft) * roundDuration;
             long mx = (long) (R - (audioRight * audioDuration));
             long mn = (long) (L - (audioLeft * audioDuration));
             final float wasDuration = Math.min(audioRight - audioLeft, D / (float) audioDuration);
@@ -1183,23 +1532,23 @@ public class TimelineView extends View {
             delegate.onProgressDragChange(true);
 
             long progressToStart;
-            if (hasVideo) {
-                progressToStart = Utilities.clamp(audioOffset + (long) (audioLeft * audioDuration), (long) (videoRight * videoDuration), (long) (videoLeft * videoDuration));
+            if (videoTrack != null) {
+                progressToStart = Utilities.clamp(audioOffset + (long) (audioLeft * audioDuration), (long) (videoTrack.right * videoTrack.duration), (long) (videoTrack.left * videoTrack.duration));
             } else if (hasRound) {
                 progressToStart = Utilities.clamp(audioOffset + (long) (audioLeft * audioDuration), (long) (roundRight * roundDuration), (long) (roundLeft * roundDuration));
             } else {
                 progressToStart = Utilities.clamp((long) (audioLeft * audioDuration), audioDuration, 0);
             }
-            if (hasVideo && Math.abs(progress - progressToStart) > 400) {
+            if (videoTrack != null && Math.abs(progress - progressToStart) > 400) {
                 loopProgressFrom = progress;
                 loopProgress.set(1, true);
             }
             delegate.onProgressChange(progress = progressToStart, false);
         } else if (dragged || scrolling) {
-            if (hasVideo) {
-                progress = Utilities.clamp(audioOffset + (long) (audioLeft * audioDuration), (long) (videoRight * videoDuration), (long) (videoLeft * videoDuration));
-            } else if (hasRound) {
-                progress = Utilities.clamp(audioOffset + (long) (audioLeft * audioDuration), (long) (roundRight * videoDuration), (long) (roundLeft * videoDuration));
+            if (videoTrack != null) {
+                progress = Utilities.clamp(audioOffset + (long) (audioLeft * audioDuration), (long) (videoTrack.right * videoTrack.duration), (long) (videoTrack.left * videoTrack.duration));
+            } else if (hasRound && videoTrack != null) {
+                progress = Utilities.clamp(audioOffset + (long) (audioLeft * audioDuration), (long) (roundRight * videoTrack.duration), (long) (roundLeft * videoTrack.duration));
             } else {
                 progress = Utilities.clamp((long) (audioLeft * audioDuration), audioDuration, 0);
             }
@@ -1210,25 +1559,25 @@ public class TimelineView extends View {
     }
 
     private void moveRoundOffset(final float d) {
-        if (!hasVideo) {
+        if (videoTrack == null) {
             long wasAudioOffset = roundOffset;
-            roundOffset = Utilities.clamp(roundOffset + (long) d, 0, (long) -(roundDuration - Math.min(getBaseDuration(), MAX_SCROLL_DURATION)));
+            roundOffset = Utilities.clamp(roundOffset + (long) d, 0, (long) -(roundDuration - Math.min(getBaseDuration(), getMaxScrollDuration())));
             long rd = roundOffset - wasAudioOffset;
             roundLeft = Utilities.clamp(roundLeft - (float) rd / roundDuration, 1, 0);
             roundRight = Utilities.clamp(roundRight - (float) rd / roundDuration, 1, 0);
             if (delegate != null) {
-                delegate.onAudioLeftChange(roundLeft);
-                delegate.onAudioRightChange(roundRight);
+                delegate.onRoundLeftChange(roundLeft);
+                delegate.onRoundRightChange(roundRight);
             }
         } else if (roundSelected) {
-            long mx = (long) ((videoRight * videoDuration) - (roundRight * roundDuration));
-            long mn = (long) ((videoLeft * videoDuration) - (roundLeft * roundDuration));
-            final float wasDuration = Math.min(roundRight - roundLeft, (videoRight - videoLeft) * videoDuration / (float) roundDuration);
+            long mx = (long) ((videoTrack.right * videoTrack.duration) - (roundRight * roundDuration));
+            long mn = (long) ((videoTrack.left * videoTrack.duration) - (roundLeft * roundDuration));
+            final float wasDuration = Math.min(roundRight - roundLeft, (videoTrack.right - videoTrack.left) * videoTrack.duration / (float) roundDuration);
             if (roundOffset + (long) d > mx) {
-                roundRight = Utilities.clamp((videoRight * videoDuration - roundOffset - (long) d) / (float) roundDuration, 1, wasDuration);
+                roundRight = Utilities.clamp((videoTrack.right * videoTrack.duration - roundOffset - (long) d) / (float) roundDuration, 1, wasDuration);
                 roundLeft = Utilities.clamp(roundRight - wasDuration, 1, 0);
-                long mmx = (long) ((videoRight * videoDuration) - (roundRight * roundDuration));
-                long mmn = (long) ((videoLeft * videoDuration) - (roundLeft * roundDuration));
+                long mmx = (long) ((videoTrack.right * videoTrack.duration) - (roundRight * roundDuration));
+                long mmn = (long) ((videoTrack.left * videoTrack.duration) - (roundLeft * roundDuration));
                 if (mmx < mmn) {
                     long t = mmx;
                     mmx = mmn;
@@ -1240,10 +1589,10 @@ public class TimelineView extends View {
                     delegate.onRoundRightChange(roundRight);
                 }
             } else if (roundOffset + (long) d < mn) {
-                roundLeft = Utilities.clamp((videoLeft * videoDuration - roundOffset - (long) d) / (float) roundDuration, 1 - wasDuration, 0);
+                roundLeft = Utilities.clamp((videoTrack.left * videoTrack.duration - roundOffset - (long) d) / (float) roundDuration, 1 - wasDuration, 0);
                 roundRight = Utilities.clamp(roundLeft + wasDuration, 1, 0);
-                long mmx = (long) ((videoRight * videoDuration) - (roundRight * roundDuration));
-                long mmn = (long) ((videoLeft * videoDuration) - (roundLeft * roundDuration));
+                long mmx = (long) ((videoTrack.right * videoTrack.duration) - (roundRight * roundDuration));
+                long mmn = (long) ((videoTrack.left * videoTrack.duration) - (roundLeft * roundDuration));
                 if (mmx < mmn) {
                     long t = mmx;
                     mmx = mmn;
@@ -1268,21 +1617,103 @@ public class TimelineView extends View {
             delegate.onProgressDragChange(true);
 
             long progressToStart;
-            if (hasVideo) {
-                progressToStart = Utilities.clamp(roundOffset + (long) (roundLeft * roundDuration), (long) (videoRight * videoDuration), (long) (videoLeft * videoDuration));
+            if (videoTrack != null) {
+                progressToStart = Utilities.clamp(roundOffset + (long) (roundLeft * roundDuration), (long) (videoTrack.right * videoTrack.duration), (long) (videoTrack.left * videoTrack.duration));
             } else {
                 progressToStart = Utilities.clamp((long) (roundLeft * roundDuration), roundDuration, 0);
             }
-            if (hasVideo && Math.abs(progress - progressToStart) > 400) {
+            if (videoTrack != null && Math.abs(progress - progressToStart) > 400) {
                 loopProgressFrom = progress;
                 loopProgress.set(1, true);
             }
             delegate.onProgressChange(progress = progressToStart, false);
         } else if (dragged || scrolling) {
-            if (hasVideo) {
-                progress = Utilities.clamp(roundOffset + (long) (roundLeft * roundDuration), (long) (videoRight * videoDuration), (long) (videoLeft * videoDuration));
+            if (videoTrack != null) {
+                progress = Utilities.clamp(roundOffset + (long) (roundLeft * roundDuration), (long) (videoTrack.right * videoTrack.duration), (long) (videoTrack.left * videoTrack.duration));
             } else {
                 progress = Utilities.clamp((long) (roundLeft * roundDuration), roundDuration, 0);
+            }
+            if (delegate != null) {
+                delegate.onProgressChange(progress, false);
+            }
+        }
+    }
+
+    private void moveCollageOffset(Track track, final float d) {
+        if (track == null) return;
+        if (collageMain == track || collageMain == null) {
+//            long wasAudioOffset = track.offset;
+//            track.offset = Utilities.clamp(track.offset + (long) d, 0, (long) -(track.duration - Math.min(getBaseDuration(), getMaxScrollDuration())));
+//            long rd = track.offset - wasAudioOffset;
+//            track.left = Utilities.clamp(track.left - (float) rd / track.duration, 1, 0);
+//            track.right = Utilities.clamp(track.right - (float) rd / track.duration, 1, 0);
+//            if (delegate != null) {
+//                delegate.onVideoLeftChange(track.index, track.left);
+//                delegate.onVideoRightChange(track.index, track.right);
+//            }
+        } else if (collageSelected == collageTracks.indexOf(track)) {
+            long mx = (long) ((1.0f/*collageMain.right*/ * collageMain.duration) - (track.right * track.duration));
+            long mn = (long) ((0.0f/*collageMain.left*/ * collageMain.duration) - (track.left * track.duration));
+            final float wasDuration = Math.min(track.right - track.left, (collageMain.right - collageMain.left) * collageMain.duration / (float) track.duration);
+            if (track.offset + (long) d > mx) {
+                track.right = Utilities.clamp((collageMain.right * collageMain.duration - track.offset - (long) d) / (float) track.duration, 1, wasDuration);
+                track.left = Utilities.clamp(track.right - wasDuration, 1, 0);
+                long mmx = (long) ((collageMain.right * collageMain.duration) - (track.right * track.duration));
+                long mmn = (long) ((collageMain.left * collageMain.duration) - (track.left * track.duration));
+                if (mmx < mmn) {
+                    long t = mmx;
+                    mmx = mmn;
+                    mmn = t;
+                }
+                track.offset = Utilities.clamp(track.offset + (long) d, mmx, mmn);
+                if (delegate != null) {
+                    delegate.onVideoLeftChange(track.index, track.left);
+                    delegate.onVideoRightChange(track.index, track.right);
+                }
+            } else if (track.offset + (long) d < mn) {
+                track.left = Utilities.clamp((collageMain.left * collageMain.duration - track.offset - (long) d) / (float) track.duration, 1 - wasDuration, 0);
+                track.right = Utilities.clamp(track.left + wasDuration, 1, 0);
+                long mmx = (long) ((collageMain.right * collageMain.duration) - (track.right * track.duration));
+                long mmn = (long) ((collageMain.left * collageMain.duration) - (track.left * track.duration));
+                if (mmx < mmn) {
+                    long t = mmx;
+                    mmx = mmn;
+                    mmn = t;
+                }
+                track.offset = Utilities.clamp(track.offset + (long) d, mmx, mmn);
+                if (delegate != null) {
+                    delegate.onVideoLeftChange(track.index, track.left);
+                    delegate.onVideoRightChange(track.index, track.right);
+                }
+            } else {
+                track.offset += (long) d;
+            }
+        } else {
+            track.offset = Utilities.clamp(track.offset + (long) d, (long) (getBaseDuration() - track.duration * track.right), (long) (-track.left * track.duration));
+        }
+        invalidate();
+        if (delegate != null) {
+            delegate.onVideoOffsetChange(track.index, track.offset);
+        }
+        if (!dragged && delegate != null) {
+            delegate.onProgressDragChange(true);
+
+            long progressToStart;
+            if (collageMain != track && collageMain != null) {
+                progressToStart = Utilities.clamp(track.offset + (long) (track.left * track.duration), (long) (collageMain.right * collageMain.duration), (long) (collageMain.left * collageMain.duration));
+            } else {
+                progressToStart = Utilities.clamp((long) (track.left * track.duration), track.duration, 0);
+            }
+            if (collageMain != track && collageMain != null && Math.abs(progress - progressToStart) > 400) {
+                loopProgressFrom = progress;
+                loopProgress.set(1, true);
+            }
+            delegate.onProgressChange(progress = progressToStart, false);
+        } else if (dragged || scrolling) {
+            if (collageMain != track && collageMain != null) {
+                progress = Utilities.clamp(track.offset + (long) (track.left * track.duration), (long) (collageMain.right * collageMain.duration), (long) (collageMain.left * collageMain.duration));
+            } else {
+                progress = Utilities.clamp((long) (track.left * track.duration), track.duration, 0);
             }
             if (delegate != null) {
                 delegate.onProgressChange(progress, false);
@@ -1295,7 +1726,7 @@ public class TimelineView extends View {
     public void computeScroll() {
         if (scroller.computeScrollOffset()) {
             int scrollX = scroller.getCurrX();
-            final long videoScrollDuration = Math.min(getBaseDuration(), MAX_SCROLL_DURATION);
+            final long videoScrollDuration = Math.min(getBaseDuration(), getMaxScrollDuration());
             if (scrollingVideo) {
                 scroll = (long) Math.max(0, ((scrollX - px - ph) / (float) sw * videoScrollDuration));
             } else {
@@ -1316,10 +1747,13 @@ public class TimelineView extends View {
         }
     }
 
-    class WaveformPath extends Path {
+    static class WaveformPath extends Path {
+        private final int ph = dp(10);
+        private final float[] waveformRadii = new float[8];
 
-        private int lastWaveformCount;
-        private float lastAnimatedLoaded;
+        private ArrayList<AudioWaveformLoader> lastWaveforms;
+        private ArrayList<Integer> lastWaveformCounts;
+        private ArrayList<Float> lastWaveformLoaded;
         private long lastScrollDuration;
         private float lastAudioHeight;
         private float lastMaxBar;
@@ -1329,21 +1763,68 @@ public class TimelineView extends View {
         private float lastLeft;
         private float lastRight;
 
+        WaveformPath() {
+            waveformRadii[0] = waveformRadii[1] = waveformRadii[2] = waveformRadii[3] = dp(2);
+            waveformRadii[4] = waveformRadii[5] = waveformRadii[6] = waveformRadii[7] = 0;
+        }
+
+        private boolean eqCount(ArrayList<Integer> counts, ArrayList<AudioWaveformLoader> waveforms) {
+            if (counts == null && waveforms == null) return true;
+            if (counts == null || waveforms == null) return false;
+            if (counts.size() != waveforms.size()) return false;
+            for (int i = 0; i < counts.size(); ++i) {
+                if (counts.get(i) != (waveforms.get(i) == null ? 0 : waveforms.get(i).getCount()))
+                    return false;
+            }
+            return true;
+        }
+
+        private boolean eqLoadedCounts(ArrayList<Float> loadedCounts, ArrayList<AudioWaveformLoader> waveforms) {
+            if (loadedCounts == null && waveforms == null) return true;
+            if (loadedCounts == null || waveforms == null) return false;
+            if (loadedCounts.size() != waveforms.size()) return false;
+            for (int i = 0; i < loadedCounts.size(); ++i) {
+                if (loadedCounts.get(i) != (waveforms.get(i) == null ? 0 : waveforms.get(i).animatedLoaded.set(waveforms.get(i).getLoadedCount())))
+                    return false;
+            }
+            return true;
+        }
+
+        public static int getMaxBar(ArrayList<AudioWaveformLoader> waveforms) {
+            if (waveforms == null) return 0;
+            int sum = 0;
+            for (int i = 0; i < waveforms.size(); ++i) {
+                if (waveforms.get(i) == null) continue;
+                sum += waveforms.get(i).getMaxBar();
+            }
+            return sum;
+        }
+
+        public static int getMaxLoadedCount(ArrayList<AudioWaveformLoader> waveforms) {
+            if (waveforms == null) return 0;
+            int max = 0;
+            for (int i = 0; i < waveforms.size(); ++i) {
+                if (waveforms.get(i) == null) continue;
+                max = Math.max(waveforms.get(i).getLoadedCount(), max);
+            }
+            return max;
+        }
+
         public void check(
             float start, float left, float right,
             float audioSelected,
-            float animatedLoaded,
             long scrollDuration,
             float audioHeight,
             float maxBar,
-            float bottom
+            float bottom,
+            AudioWaveformLoader waveform
         ) {
             if (waveform == null) {
                 rewind();
                 return;
             }
-            if (lastWaveformCount != waveform.getCount() ||
-                Math.abs(lastAnimatedLoaded - animatedLoaded) > 0.01f ||
+            final float animatedLoaded = waveform == null ? 0 : waveform.animatedLoaded.set(waveform.getLoadedCount());
+            if (
                 lastScrollDuration != scrollDuration ||
                 Math.abs(lastAudioHeight - audioHeight) > 1f ||
                 Math.abs(lastMaxBar - maxBar) > 0.01f ||
@@ -1351,17 +1832,72 @@ public class TimelineView extends View {
                 Math.abs(lastBottom - bottom) > 1f ||
                 Math.abs(lastStart - start) > 1f ||
                 Math.abs(lastLeft - left) > 1f ||
-                Math.abs(lastRight - right) > 1f
+                Math.abs(lastRight - right) > 1f ||
+                (waveform != null) != (lastWaveformCounts != null && lastWaveformCounts.size() == 1) ||
+                Math.abs((lastWaveformLoaded == null || lastWaveformLoaded.isEmpty() ? 0 : lastWaveformLoaded.get(0)) - animatedLoaded) > 0.01f
             ) {
-                lastWaveformCount = waveform.getCount();
+                if (lastWaveformCounts == null) {
+                    lastWaveformCounts = new ArrayList<>();
+                } else lastWaveformCounts.clear();
+                lastWaveformCounts.add(waveform.getCount());
+                if (lastWaveformLoaded == null) {
+                    lastWaveformLoaded = new ArrayList<>();
+                } else lastWaveformLoaded.clear();
+                lastWaveformLoaded.add(animatedLoaded);
                 layout(
                     lastStart = start, lastLeft = left, lastRight = right,
                     lastAudioSelected = audioSelected,
-                    lastAnimatedLoaded = animatedLoaded,
-                    lastScrollDuration = scrollDuration,
                     lastMaxBar = maxBar,
                     lastAudioHeight = audioHeight,
-                    lastBottom = bottom
+                    lastBottom = bottom,
+                    waveform == null ? 0 : waveform.animatedLoaded.set(waveform.getLoadedCount()),
+                    waveform
+                );
+            }
+        }
+
+        public void check(
+            float start, float left, float right,
+            float audioSelected,
+            float audioHeight,
+            float maxBar,
+            float bottom,
+            ArrayList<AudioWaveformLoader> waveforms
+        ) {
+            if (waveforms == null || waveforms.isEmpty()) {
+                rewind();
+                return;
+            }
+            if (Math.abs(lastAudioHeight - audioHeight) > 1f ||
+                Math.abs(lastMaxBar - maxBar) > 0.01f ||
+                Math.abs(lastAudioSelected - audioSelected) > 0.1f ||
+                Math.abs(lastBottom - bottom) > 1f ||
+                Math.abs(lastStart - start) > 1f ||
+                Math.abs(lastLeft - left) > 1f ||
+                Math.abs(lastRight - right) > 1f ||
+                eqCount(lastWaveformCounts, waveforms) ||
+                eqLoadedCounts(lastWaveformLoaded, waveforms)
+            ) {
+                if (lastWaveformCounts == null) {
+                    lastWaveformCounts = new ArrayList<>();
+                } else lastWaveformCounts.clear();
+                for (int i = 0; i < waveforms.size(); ++i) {
+                    lastWaveformCounts.add(waveforms.get(i) == null ? 0 : waveforms.get(i).getCount());
+                }
+                if (lastWaveformLoaded == null) {
+                    lastWaveformLoaded = new ArrayList<>();
+                } else lastWaveformLoaded.clear();
+                for (int i = 0; i < waveforms.size(); ++i) {
+                    lastWaveformLoaded.add(waveforms.get(i) == null ? 0 : waveforms.get(i).animatedLoaded.set(waveforms.get(i).getLoadedCount()));
+                }
+                layout(
+                    lastStart = start, lastLeft = left, lastRight = right,
+                    lastAudioSelected = audioSelected,
+                    lastMaxBar = maxBar,
+                    lastAudioHeight = audioHeight,
+                    lastBottom = bottom,
+                    lastWaveformLoaded,
+                    waveforms
                 );
             }
         }
@@ -1369,19 +1905,70 @@ public class TimelineView extends View {
         private void layout(
             float start, float left, float right,
             float audioSelected,
-            float animatedLoaded,
-            long scrollDuration,
             float maxBar,
             float audioHeight,
-            float bottom
+            float bottom,
+            ArrayList<Float> animatedLoaded,
+            ArrayList<AudioWaveformLoader> waveforms
         ) {
-            waveformPath.rewind();
+            rewind();
             final float barWidth = Math.round(dpf2(3.3333f));
+            int maxCount = 0;
+            for (int i = 0; i < waveforms.size(); ++i) {
+                if (waveforms.get(i) != null) {
+                    maxCount = Math.max(maxCount, waveforms.get(i).getCount());
+                }
+            }
             int from = Math.max(0, (int) ((left - ph - start) / barWidth));
-            int to = Math.min(waveform.getCount() - 1, (int) Math.ceil((right + ph - start) / barWidth));
+            int to = Math.min(maxCount - 1, (int) Math.ceil((right + ph - start) / barWidth));
             for (int i = from; i <= to; ++i) {
                 float x = start + i * barWidth + dp(2);
-                float h = maxBar <= 0 ? 0 : waveform.getBar(i) / (float) maxBar * audioHeight * .6f;
+                int sum = 0;
+                for (int j = 0; j < waveforms.size(); ++j) {
+                    short bar = waveforms.get(j) == null || i >= waveforms.get(j).getCount() ? 0 : waveforms.get(j).getBar(i);
+                    if (i < animatedLoaded.get(j) && i + 1 > animatedLoaded.get(j)) {
+                        bar *= (animatedLoaded.get(j) - i);
+                    } else if (i > animatedLoaded.get(j)) {
+                        bar = 0;
+                    }
+                    sum += bar;
+                }
+                float h = maxBar <= 0 ? 0 : sum / (float) maxBar * audioHeight * .6f;
+                if (x < left || x > right) {
+                    h *= audioSelected;
+                    if (h <= 0) {
+                        continue;
+                    }
+                }
+                h = Math.max(h, lerp(dpf2(0.66f), dpf2(1.5f), audioSelected));
+                AndroidUtilities.rectTmp.set(
+                    x,
+                    lerp(bottom - h, bottom - (audioHeight + h) / 2f, audioSelected),
+                    x + dpf2(1.66f),
+                    lerp(bottom, bottom - (audioHeight - h) / 2f, audioSelected)
+                );
+                addRoundRect(AndroidUtilities.rectTmp, waveformRadii, Path.Direction.CW);
+            }
+        }
+
+        private void layout(
+            float start, float left, float right,
+            float audioSelected,
+            float maxBar,
+            float audioHeight,
+            float bottom,
+            float animatedLoaded,
+            AudioWaveformLoader waveform
+        ) {
+            rewind();
+            final float barWidth = Math.round(dpf2(3.3333f));
+            int maxCount = waveform.getCount();
+            int from = Math.max(0, (int) ((left - ph - start) / barWidth));
+            int to = Math.min(maxCount - 1, (int) Math.ceil((right + ph - start) / barWidth));
+            for (int i = from; i <= to; ++i) {
+                float x = start + i * barWidth + dp(2);
+                int sum = waveform.getBar(i);
+                float h = maxBar <= 0 ? 0 : sum / (float) maxBar * audioHeight * .6f;
                 if (i < animatedLoaded && i + 1 > animatedLoaded) {
                     h *= (animatedLoaded - i);
                 } else if (i > animatedLoaded) {
@@ -1400,83 +1987,355 @@ public class TimelineView extends View {
                         x + dpf2(1.66f),
                         lerp(bottom, bottom - (audioHeight - h) / 2f, audioSelected)
                 );
-                waveformPath.addRoundRect(AndroidUtilities.rectTmp, waveformRadii, Path.Direction.CW);
+                addRoundRect(AndroidUtilities.rectTmp, waveformRadii, Path.Direction.CW);
             }
         }
     }
 
     final float[] selectedVideoRadii = new float[8];
-    final float[] waveformRadii = new float[8];
 
     @Override
     protected void dispatchDraw(Canvas canvas) {
         final Paint blurPaint = backgroundBlur.getPaint(1f);
+        final float open = this.openT.set(this.open);
+        final long scrollDuration = Math.min(getBaseDuration(), getMaxScrollDuration());
 
-        final long scrollDuration = Math.min(getBaseDuration(), MAX_SCROLL_DURATION);
-        float videoHeight = 0;
-        float videoT = hasVideo ? 1 : 0;
-        float videoSelected = videoSelectedT.set(!audioSelected && !roundSelected);
+        if (open < 1) {
+            timelineBounds.set(px, h - py - dp(28), w - px, h - py);
+            timelineClipPath.rewind();
+            timelineClipPath.addRoundRect(timelineBounds, dp(8), dp(8), Path.Direction.CW);
+            canvas.saveLayerAlpha(timelineBounds, (int) (0xFF * (1.0f - open)), Canvas.ALL_SAVE_FLAG);
+            canvas.clipPath(timelineClipPath);
+            if (blurManager.hasRenderNode()) {
+                backgroundBlur.drawRect(canvas);
+                canvas.drawColor(0x33000000);
+            } else if (blurPaint == null) {
+                canvas.drawColor(0x40000000);
+            } else {
+                canvas.drawRect(timelineBounds, blurPaint);
+                canvas.drawColor(0x33000000);
+            }
+            if (!collageWaveforms.isEmpty() && blurManager != null && blurManager.hasRenderNode()) {
+                final float maxBar = timelineWaveformMax.set(WaveformPath.getMaxBar(collageWaveforms));
+                final float start = px + ph + (audioOffset - scroll) / (float) scrollDuration * sw;
+                timelineWaveformPath.check(start, timelineBounds.left, timelineBounds.right, 0.0f, dp(28), maxBar, timelineBounds.bottom, collageWaveforms);
+                canvas.saveLayerAlpha(timelineBounds, (int) (0xFF * 0.4f), Canvas.ALL_SAVE_FLAG);
+                canvas.clipPath(timelineWaveformPath);
+                audioWaveformBlur.drawRect(canvas);
+                canvas.restore();
+            } else if (!collageWaveforms.isEmpty()) {
+                Paint paint = audioWaveformBlur.getPaint(.4f);
+                if (paint == null) {
+                    paint = waveformPaint;
+                    paint.setAlpha((int) (0x40));
+                }
+                final float maxBar = timelineWaveformMax.set(WaveformPath.getMaxBar(collageWaveforms));
+//                final float animatedLoaded = timelineWaveformLoaded.set(WaveformPath.getMaxLoadedCount(collageWaveforms));
+                final float start = px + ph + (audioOffset - scroll) / (float) scrollDuration * sw;
+                timelineWaveformPath.check(start, timelineBounds.left, timelineBounds.right, 0.0f, dp(28), maxBar, timelineBounds.bottom, collageWaveforms);
+                canvas.drawPath(timelineWaveformPath, paint);
+            }
+            final float w = timelineText.getCurrentWidth() + dp(3.66f) + timelineIcon.getIntrinsicWidth();
+            int x = (int) (timelineBounds.centerX() - w / 2.0f), cy = (int) timelineBounds.centerY();
+            timelineIcon.setBounds(x, cy - timelineIcon.getIntrinsicHeight() / 2, x + timelineIcon.getIntrinsicWidth(), cy + timelineIcon.getIntrinsicHeight() / 2);
+            timelineIcon.setAlpha((int) (0xFF * 0.75f));
+            timelineIcon.draw(canvas);
+            timelineText.draw(canvas, timelineBounds.centerX() - w / 2.0f + timelineIcon.getIntrinsicWidth() + dp(3.66f), cy, 0xFFFFFFFF, 0.75f);
+            canvas.restore();
+        }
 
-        // draw video thumbs
-        if (hasVideo) {
-            canvas.save();
-            videoHeight = getVideoHeight();
-            final float videoStartX = (videoDuration <= 0 ? 0 : px + ph - scroll / (float) scrollDuration * sw) - ph;
-            final float videoEndX = (videoDuration <= 0 ? 0 : px + ph + (videoDuration - scroll) / (float) scrollDuration * sw) + ph;
-            videoBounds.set(videoStartX, h - py - videoHeight, videoEndX, h - py);
-            videoClipPath.rewind();
-            videoClipPath.addRoundRect(videoBounds, dp(8), dp(8), Path.Direction.CW);
-            canvas.clipPath(videoClipPath);
-            if (thumbs != null) {
-                float x = videoStartX;
-                final int frameWidth = thumbs.getFrameWidth();
-                final int fromFrame = (int) Math.max(0, Math.floor((videoStartX - px) / frameWidth));
-                final int toFrame = (int) Math.min(thumbs.count, Math.ceil(((videoEndX - videoStartX) - px) / frameWidth) + 1);
+        if (open > 0) {
+            boolean restore = false;
+            if (open < 1) {
+                canvas.saveLayerAlpha(0, 0, getWidth(), getHeight(), (int) (0xFF * open), Canvas.ALL_SAVE_FLAG);
+                restore = true;
+            }
 
-                final int y = (int) videoBounds.top;
+            float videoHeight = 0;
+            float videoT = videoTrack != null ? 1 : 0;
+            float videoSelected = videoTrack != null ? videoTrack.selectedT.set(!audioSelected && !roundSelected) : 0;
 
-                boolean allLoaded = thumbs.frames.size() >= toFrame;
-                boolean fullyCovered = allLoaded && !isMainVideoRound;
-                if (fullyCovered) {
-                    for (int i = fromFrame; i < Math.min(thumbs.frames.size(), toFrame); ++i) {
-                        VideoThumbsLoader.BitmapFrame frame = thumbs.frames.get(i);
-                        if (frame.bitmap == null) {
-                            fullyCovered = false;
-                            break;
+            float bottom = h - py;
+            float regionTop = 0, regionBottom = 0;
+            float left = 0, right = 0;
+
+            final float p = dp(4);
+            final float video = videoSelected;
+            // draw video thumbs
+            if (videoTrack != null) {
+                canvas.save();
+                videoHeight = getVideoHeight();
+                left += (videoTrack.left * videoTrack.duration) * video;
+                right += (videoTrack.right * videoTrack.duration) * video;
+                final float videoStartX = (videoTrack.duration <= 0 ? 0 : px + ph - scroll / (float) scrollDuration * sw) - ph;
+                final float videoEndX = (videoTrack.duration <= 0 ? 0 : px + ph + (videoTrack.duration - scroll) / (float) scrollDuration * sw) + ph;
+                videoBounds.set(videoStartX, bottom - videoHeight, videoEndX, bottom);
+                bottom -= videoHeight + p * videoT;
+                regionTop += videoBounds.top * video;
+                regionBottom += videoBounds.bottom * video;
+                videoClipPath.rewind();
+                videoClipPath.addRoundRect(videoBounds, dp(8), dp(8), Path.Direction.CW);
+                canvas.clipPath(videoClipPath);
+                if (videoTrack.thumbs != null) {
+                    float x = videoStartX;
+                    final int frameWidth = videoTrack.thumbs.getFrameWidth();
+                    final int fromFrame = (int) Math.max(0, Math.floor((videoStartX - px) / frameWidth));
+                    final int toFrame = (int) Math.min(videoTrack.thumbs.count, Math.ceil(((videoEndX - videoStartX) - px) / frameWidth) + 1);
+
+                    final int y = (int) videoBounds.top;
+
+                    boolean allLoaded = videoTrack.thumbs.frames.size() >= toFrame;
+                    boolean fullyCovered = frameWidth != 0 && allLoaded && !videoTrack.isRound;
+                    if (fullyCovered) {
+                        for (int i = fromFrame; i < Math.min(videoTrack.thumbs.frames.size(), toFrame); ++i) {
+                            VideoThumbsLoader.BitmapFrame frame = videoTrack.thumbs.frames.get(i);
+                            if (frame.bitmap == null) {
+                                fullyCovered = false;
+                                break;
+                            }
                         }
                     }
-                }
 
-                if (!fullyCovered) {
-                    if (blurPaint == null) {
-                        canvas.drawColor(0x40000000);
+                    if (!fullyCovered) {
+                        if (blurManager.hasRenderNode()) {
+                            backgroundBlur.drawRect(canvas);
+                            canvas.drawColor(0x33000000);
+                        } else if (blurPaint == null) {
+                            canvas.drawColor(0x40000000);
+                        } else {
+                            canvas.drawRect(videoBounds, blurPaint);
+                            canvas.drawColor(0x33000000);
+                        }
+                    }
+
+                    if (frameWidth != 0) {
+                        for (int i = fromFrame; i < Math.min(videoTrack.thumbs.frames.size(), toFrame); ++i) {
+                            VideoThumbsLoader.BitmapFrame frame = videoTrack.thumbs.frames.get(i);
+                            if (frame.bitmap != null) {
+                                videoFramePaint.setAlpha((int) (0xFF * frame.getAlpha()));
+                                canvas.drawBitmap(frame.bitmap, x, y - (int) ((frame.bitmap.getHeight() - videoHeight) / 2f), videoFramePaint);
+                            }
+                            x += frameWidth;
+                        }
+                    }
+
+                    if (!allLoaded) {
+                        videoTrack.thumbs.load();
+                    }
+                }
+                selectedVideoClipPath.rewind();
+
+                if (!isCover) {
+                    AndroidUtilities.rectTmp.set(
+                            px + ph + (videoTrack.left * videoTrack.duration - scroll) / (float) scrollDuration * sw - (videoTrack.left <= 0 ? ph : 0),
+                            h - py - videoHeight,
+                            px + ph + (videoTrack.right * videoTrack.duration - scroll) / (float) scrollDuration * sw + (videoTrack.right >= 1 ? ph : 0),
+                            h - py
+                    );
+                    selectedVideoClipPath.addRoundRect(
+                            AndroidUtilities.rectTmp,
+                            selectedVideoRadii,
+                            Path.Direction.CW
+                    );
+                    canvas.clipPath(selectedVideoClipPath, Region.Op.DIFFERENCE);
+                    canvas.drawColor(0x50000000);
+                }
+                canvas.restore();
+            }
+
+            float collageHeight = 0;
+            float collageT = 0;
+            if (!collageTracks.isEmpty()) {
+                collageT = 1;
+                collageHeight = getCollageHeight();
+
+                for (int i = 0; i < collageTracks.size(); ++i) {
+                    final Track track = collageTracks.get(i);
+
+                    final float selected = track.selectedT.set(!this.audioSelected && !this.roundSelected && collageSelected == i);
+                    float _left, _right;
+                    if (track != collageMain) {
+                        _left = px + ph + (track.offset - scroll + lerp(track.left, 0, selected) * track.duration) / (float) scrollDuration * sw;
+                        _right = px + ph + (track.offset - scroll + lerp(track.right, 1, selected) * track.duration) / (float) scrollDuration * sw;
                     } else {
-                        canvas.drawRect(videoBounds, blurPaint);
-                        canvas.drawColor(0x33000000);
+                        _left = px + ph + (track.offset - scroll) / (float) scrollDuration * sw;
+                        _right = px + ph + (track.offset - scroll + track.duration) / (float) scrollDuration * sw;
                     }
-                }
 
-                for (int i = fromFrame; i < Math.min(thumbs.frames.size(), toFrame); ++i) {
-                    VideoThumbsLoader.BitmapFrame frame = thumbs.frames.get(i);
-                    if (frame.bitmap != null) {
-                        videoFramePaint.setAlpha((int) (0xFF * frame.getAlpha()));
-                        canvas.drawBitmap(frame.bitmap, x, y - (int) ((frame.bitmap.getHeight() - videoHeight) / 2f), videoFramePaint);
+                    canvas.save();
+                    final float height = lerp(dp(28), dp(38), selected);
+                    track.bounds.set(_left - ph, bottom - height, _right + ph, bottom);
+                    regionTop += track.bounds.top * selected;
+                    regionBottom += track.bounds.bottom * selected;
+                    left += (track.offset + track.left * track.duration) * selected;
+                    right += (track.offset + track.right * track.duration) * selected;
+
+                    collageClipPath.rewind();
+                    collageClipPath.addRoundRect(track.bounds, dp(8), dp(8), Path.Direction.CW);
+                    canvas.clipPath(collageClipPath);
+                    if (track.thumbs != null) {
+                        final float trackStartX = (track.duration <= 0 ? 0 : px + ph + (track.offset - scroll) / (float) scrollDuration * sw) - ph;
+                        final float trackEndX = (track.duration <= 0 ? 0 : px + ph + (track.offset + track.duration - scroll) / (float) scrollDuration * sw) + ph;
+
+                        float x = trackStartX;
+                        final int frameWidth = track.thumbs.getFrameWidth();
+                        final float L;
+//                        if (videoTrack != null) {
+                            L = px + ph + (track.offset - scroll) / (float) scrollDuration * sw;
+//                        } else {
+//                            L = px;
+//                        }
+                        final int fromFrame = (int) Math.max(0, Math.floor((trackStartX - L) / frameWidth));
+                        final int toFrame = (int) Math.min(track.thumbs.count, Math.ceil((trackEndX - trackStartX) / frameWidth) + 1);
+
+                        final int y = (int) track.bounds.top;
+
+                        boolean allLoaded = track.thumbs.frames.size() >= toFrame;
+                        boolean fullyCovered = allLoaded;
+                        if (fullyCovered) {
+                            for (int j = fromFrame; j < Math.min(track.thumbs.frames.size(), toFrame); ++j) {
+                                final VideoThumbsLoader.BitmapFrame frame = track.thumbs.frames.get(j);
+                                if (frame.bitmap == null) {
+                                    fullyCovered = false;
+                                    break;
+                                }
+                            }
+                        }
+
+                        if (!fullyCovered) {
+                            if (blurManager.hasRenderNode()) {
+                                backgroundBlur.drawRect(canvas);
+                                canvas.drawColor(0x33000000);
+                            } else if (blurPaint == null) {
+                                canvas.drawColor(0x40000000);
+                            } else {
+                                canvas.drawRect(track.bounds, blurPaint);
+                                canvas.drawColor(0x33000000);
+                            }
+                        }
+
+                        if (frameWidth != 0) {
+                            for (int j = fromFrame; j < Math.min(track.thumbs.frames.size(), toFrame); ++j) {
+                                VideoThumbsLoader.BitmapFrame frame = track.thumbs.frames.get(j);
+                                if (frame.bitmap != null) {
+                                    collageFramePaint.setAlpha((int) (0xFF * frame.getAlpha()));
+                                    canvas.drawBitmap(frame.bitmap, x, y - (int) ((frame.bitmap.getHeight() - height) / 2f), collageFramePaint);
+                                }
+                                x += frameWidth;
+                            }
+                        }
+
+                        if (!allLoaded) {
+                            track.thumbs.load();
+                        }
                     }
-                    x += frameWidth;
-                }
+                    selectedCollageClipPath.rewind();
 
-                if (!allLoaded) {
-                    thumbs.load();
+                    if (!isCover) {
+                        AndroidUtilities.rectTmp.set(
+                            px + ph + (track.left * track.duration - scroll + track.offset) / (float) scrollDuration * sw - (track.left <= 0 ? ph : 0),
+                            track.bounds.top,
+                            px + ph + (track.right * track.duration - scroll + track.offset) / (float) scrollDuration * sw + (track.right >= 1 ? ph : 0),
+                            track.bounds.bottom
+                        );
+                        selectedCollageClipPath.addRoundRect(AndroidUtilities.rectTmp, selectedVideoRadii, Path.Direction.CW);
+                        canvas.clipPath(selectedCollageClipPath, Region.Op.DIFFERENCE);
+                        canvas.drawColor(0x50000000);
+                    }
+                    canvas.restore();
+
+                    bottom -= height + p * collageT;
                 }
             }
-            selectedVideoClipPath.rewind();
 
-            if (!isCover) {
+            float roundT = this.roundT.set(hasRound);
+            float roundSelected = this.roundSelectedT.set(hasRound && this.roundSelected);
+            final float roundHeight = getRoundHeight() * roundT;
+            final float round = roundT * (videoTrack != null || hasAudio || !collageTracks.isEmpty() ? roundSelected : 1);
+            if (roundT > 0) {
+                left += (roundOffset + roundLeft * roundDuration) * round;
+                right += (roundOffset + roundRight * roundDuration) * round;
+
+                float _left, _right;
+                if (videoTrack != null) {
+                    _left = px + ph + (roundOffset - scroll + lerp(roundLeft, 0, roundSelected) * roundDuration) / (float) scrollDuration * sw;
+                    _right = px + ph + (roundOffset - scroll + lerp(roundRight, 1, roundSelected) * roundDuration) / (float) scrollDuration * sw;
+                } else {
+                    _left = px + ph + (roundOffset - scroll) / (float) scrollDuration * sw;
+                    _right = px + ph + (roundOffset - scroll + roundDuration) / (float) scrollDuration * sw;
+                }
+
+                roundBounds.set(_left - ph, bottom - roundHeight, _right + ph, bottom);
+                bottom -= roundHeight + p * roundT;
+                regionTop += roundBounds.top * round;
+                regionBottom += roundBounds.bottom * round;
+
+                roundClipPath.rewind();
+                roundClipPath.addRoundRect(roundBounds, dp(8), dp(8), Path.Direction.CW);
+                canvas.save();
+                canvas.clipPath(roundClipPath);
+                if (roundThumbs != null) {
+                    final float roundStartX = (roundDuration <= 0 ? 0 : px + ph + (roundOffset - scroll) / (float) scrollDuration * sw) - ph;
+                    final float roundEndX = (roundDuration <= 0 ? 0 : px + ph + (roundOffset + roundDuration - scroll) / (float) scrollDuration * sw) + ph;
+
+                    float x = roundStartX;
+                    final int frameWidth = roundThumbs.getFrameWidth();
+                    final float L;
+                    if (videoTrack != null) {
+                        L = px + ph + (roundOffset - scroll) / (float) scrollDuration * sw;
+                    } else {
+                        L = px;
+                    }
+                    final int fromFrame = (int) Math.max(0, Math.floor((roundStartX - L) / frameWidth));
+                    final int toFrame = (int) Math.min(roundThumbs.count, Math.ceil((roundEndX - roundStartX) / frameWidth) + 1);
+
+                    final int y = (int) roundBounds.top;
+
+                    boolean allLoaded = roundThumbs.frames.size() >= toFrame;
+                    boolean fullyCovered = allLoaded;
+                    if (fullyCovered) {
+                        for (int i = fromFrame; i < Math.min(roundThumbs.frames.size(), toFrame); ++i) {
+                            VideoThumbsLoader.BitmapFrame frame = roundThumbs.frames.get(i);
+                            if (frame.bitmap == null) {
+                                fullyCovered = false;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (!fullyCovered) {
+                        if (blurManager.hasRenderNode()) {
+                            backgroundBlur.drawRect(canvas);
+                            canvas.drawColor(0x33000000);
+                        } else if (blurPaint == null) {
+                            canvas.drawColor(0x40000000);
+                        } else {
+                            canvas.drawRect(roundBounds, blurPaint);
+                            canvas.drawColor(0x33000000);
+                        }
+                    }
+
+                    if (frameWidth != 0) {
+                        for (int i = fromFrame; i < Math.min(roundThumbs.frames.size(), toFrame); ++i) {
+                            VideoThumbsLoader.BitmapFrame frame = roundThumbs.frames.get(i);
+                            if (frame.bitmap != null) {
+                                videoFramePaint.setAlpha((int) (0xFF * frame.getAlpha()));
+                                canvas.drawBitmap(frame.bitmap, x, y - (int) ((frame.bitmap.getHeight() - roundHeight) / 2f), videoFramePaint);
+                            }
+                            x += frameWidth;
+                        }
+                    }
+
+                    if (!allLoaded) {
+                        roundThumbs.load();
+                    }
+                }
+                selectedVideoClipPath.rewind();
                 AndroidUtilities.rectTmp.set(
-                    px + ph + (videoLeft * videoDuration - scroll) / (float) scrollDuration * sw - (videoLeft <= 0 ? ph : 0),
-                    h - py - videoHeight,
-                    px + ph + (videoRight * videoDuration - scroll) / (float) scrollDuration * sw + (videoRight >= 1 ? ph : 0),
-                    h - py
+                        px + ph + (roundLeft * roundDuration - scroll + roundOffset) / (float) scrollDuration * sw - (roundLeft <= 0 ? ph : 0) - ph * (1f - roundSelected),
+                        roundBounds.top,
+                        px + ph + (roundRight * roundDuration - scroll + roundOffset) / (float) scrollDuration * sw + (roundRight >= 1 ? ph : 0) + ph * (1f - roundSelected),
+                        roundBounds.bottom
                 );
                 selectedVideoClipPath.addRoundRect(
                         AndroidUtilities.rectTmp,
@@ -1485,275 +2344,201 @@ public class TimelineView extends View {
                 );
                 canvas.clipPath(selectedVideoClipPath, Region.Op.DIFFERENCE);
                 canvas.drawColor(0x50000000);
-            }
-            canvas.restore();
-        }
-
-        final float p = dp(4);
-        float roundT = this.roundT.set(hasRound);
-        float roundSelected = this.roundSelectedT.set(hasRound && this.roundSelected);
-        final float roundHeight = getRoundHeight() * roundT;
-        if (roundT > 0) {
-            float left, right;
-            if (hasVideo) {
-                left = px + ph + (roundOffset - scroll + lerp(roundLeft, 0, roundSelected) * roundDuration) / (float) scrollDuration * sw;
-                right = px + ph + (roundOffset - scroll + lerp(roundRight, 1, roundSelected) * roundDuration) / (float) scrollDuration * sw;
-            } else {
-                left = px + ph + (roundOffset - scroll) / (float) scrollDuration * sw;
-                right = px + ph + (roundOffset - scroll + roundDuration) / (float) scrollDuration * sw;
+                canvas.restore();
             }
 
-            final float bottom = h - py - videoHeight - p * videoT;
-            roundBounds.set(left - ph, bottom - roundHeight, right + ph, bottom);
-            roundClipPath.rewind();
-            roundClipPath.addRoundRect(roundBounds, dp(8), dp(8), Path.Direction.CW);
-            canvas.save();
-            canvas.clipPath(roundClipPath);
-            if (roundThumbs != null) {
-                final float roundStartX = (roundDuration <= 0 ? 0 : px + ph + (roundOffset - scroll) / (float) scrollDuration * sw) - ph;
-                final float roundEndX = (roundDuration <= 0 ? 0 : px + ph + (roundOffset + roundDuration - scroll) / (float) scrollDuration * sw) + ph;
+            // draw audio
+            float audioT = this.audioT.set(hasAudio);
+            float audioSelected = this.audioSelectedT.set(hasAudio && this.audioSelected);
+            final float audioHeight = getAudioHeight() * audioT;
+            final float audio = audioT * (videoTrack != null || hasRound || !collageTracks.isEmpty() ? audioSelected : 1);
+            if (audioT > 0) {
+                left += (audioOffset + audioLeft * audioDuration) * audio;
+                right += (audioOffset + audioRight * audioDuration) * audio;
 
-                float x = roundStartX;
-                final int frameWidth = roundThumbs.getFrameWidth();
-                final float L;
-                if (hasVideo) {
-                    L = px + ph + (roundOffset - scroll) / (float) scrollDuration * sw;
+                final Paint audioBlurPaint = audioBlur.getPaint(audioT);
+                canvas.save();
+                float _left, _right;
+                if (videoTrack != null || hasRound || !collageTracks.isEmpty()) {
+                    _left = px + ph + (audioOffset - scroll + lerp(audioLeft, 0, audioSelected) * audioDuration) / (float) scrollDuration * sw;
+                    _right = px + ph + (audioOffset - scroll + lerp(audioRight, 1, audioSelected) * audioDuration) / (float) scrollDuration * sw;
                 } else {
-                    L = px;
-                }
-                final int fromFrame = (int) Math.max(0, Math.floor((roundStartX - L) / frameWidth));
-                final int toFrame = (int) Math.min(roundThumbs.count, Math.ceil((roundEndX - roundStartX) / frameWidth) + 1);
-
-                final int y = (int) roundBounds.top;
-
-                boolean allLoaded = roundThumbs.frames.size() >= toFrame;
-                boolean fullyCovered = allLoaded;
-                if (fullyCovered) {
-                    for (int i = fromFrame; i < Math.min(roundThumbs.frames.size(), toFrame); ++i) {
-                        VideoThumbsLoader.BitmapFrame frame = roundThumbs.frames.get(i);
-                        if (frame.bitmap == null) {
-                            fullyCovered = false;
-                            break;
-                        }
-                    }
+                    _left = px + ph + (audioOffset - scroll) / (float) scrollDuration * sw;
+                    _right = px + ph + (audioOffset - scroll + audioDuration) / (float) scrollDuration * sw;
                 }
 
-                if (!fullyCovered) {
-                    if (blurPaint == null) {
-                        canvas.drawColor(0x40000000);
-                    } else {
-                        canvas.drawRect(roundBounds, blurPaint);
-                        canvas.drawColor(0x33000000);
-                    }
+                audioBounds.set(_left - ph, bottom - audioHeight, _right + ph, bottom);
+                bottom -= audioHeight + p * audioT;
+                regionTop += audioBounds.top * audio;
+                regionBottom += audioBounds.bottom * audio;
+                audioClipPath.rewind();
+                audioClipPath.addRoundRect(audioBounds, dp(8), dp(8), Path.Direction.CW);
+                canvas.clipPath(audioClipPath);
+
+                if (blurManager != null && blurManager.hasRenderNode()) {
+                    backgroundBlur.drawRect(canvas);
+                    canvas.drawColor(Theme.multAlpha(0x33000000, audioT));
+                } else if (audioBlurPaint == null) {
+                    canvas.drawColor(Theme.multAlpha(0x40000000, audioT));
+                } else {
+                    canvas.drawRect(audioBounds, audioBlurPaint);
+                    canvas.drawColor(Theme.multAlpha(0x33000000, audioT));
                 }
 
-                for (int i = fromFrame; i < Math.min(roundThumbs.frames.size(), toFrame); ++i) {
-                    VideoThumbsLoader.BitmapFrame frame = roundThumbs.frames.get(i);
-                    if (frame.bitmap != null) {
-                        videoFramePaint.setAlpha((int) (0xFF * frame.getAlpha()));
-                        canvas.drawBitmap(frame.bitmap, x, y - (int) ((frame.bitmap.getHeight() - roundHeight) / 2f), videoFramePaint);
-                    }
-                    x += frameWidth;
-                }
-
-                if (!allLoaded) {
-                    roundThumbs.load();
-                }
-            }
-            selectedVideoClipPath.rewind();
-            AndroidUtilities.rectTmp.set(
-                px + ph + (roundLeft * roundDuration - scroll + roundOffset) / (float) scrollDuration * sw - (roundLeft <= 0 ? ph : 0) - ph * (1f - roundSelected),
-                roundBounds.top,
-                px + ph + (roundRight * roundDuration - scroll + roundOffset) / (float) scrollDuration * sw + (roundRight >= 1 ? ph : 0) + ph * (1f - roundSelected),
-                roundBounds.bottom
-            );
-            selectedVideoClipPath.addRoundRect(
-                    AndroidUtilities.rectTmp,
-                    selectedVideoRadii,
-                    Path.Direction.CW
-            );
-            canvas.clipPath(selectedVideoClipPath, Region.Op.DIFFERENCE);
-            canvas.drawColor(0x50000000);
-            canvas.restore();
-        }
-
-        // draw audio
-        float audioT = this.audioT.set(hasAudio);
-        float audioSelected = this.audioSelectedT.set(hasAudio && this.audioSelected);
-        final float audioHeight = getAudioHeight() * audioT;
-        if (audioT > 0) {
-            final Paint audioBlurPaint = audioBlur.getPaint(audioT);
-            canvas.save();
-            float left, right;
-            if (hasVideo || hasRound) {
-                left = px + ph + (audioOffset - scroll + lerp(audioLeft, 0, audioSelected) * audioDuration) / (float) scrollDuration * sw;
-                right = px + ph + (audioOffset - scroll + lerp(audioRight, 1, audioSelected) * audioDuration) / (float) scrollDuration * sw;
-            } else {
-                left = px + ph + (audioOffset - scroll) / (float) scrollDuration * sw;
-                right = px + ph + (audioOffset - scroll + audioDuration) / (float) scrollDuration * sw;
-            }
-
-            final float bottom = h - py - videoHeight - p * videoT - roundHeight - p * roundT;
-            audioBounds.set(left - ph, bottom - audioHeight, right + ph, bottom);
-            audioClipPath.rewind();
-            audioClipPath.addRoundRect(audioBounds, dp(8), dp(8), Path.Direction.CW);
-            canvas.clipPath(audioClipPath);
-
-            if (audioBlurPaint == null) {
-                canvas.drawColor(Theme.multAlpha(0x40000000, audioT));
-            } else {
-                canvas.drawRect(audioBounds, audioBlurPaint);
-                canvas.drawColor(Theme.multAlpha(0x33000000, audioT));
-            }
-
-            if (waveform != null && audioBlurPaint != null) {
-                Paint paint = audioWaveformBlur.getPaint(.4f * audioT);
-                if (paint == null) {
-                    paint = waveformPaint;
-                    paint.setAlpha((int) (0x40 * audioT));
-                }
-                final float maxBar = waveformMax.set(waveform.getMaxBar(), !waveformIsLoaded);
-                waveformIsLoaded = waveform.getLoadedCount() > 0;
-                final float animatedLoaded = waveformLoaded.set(waveform.getLoadedCount());
-                final float start = px + ph + (audioOffset - scroll) / (float) scrollDuration * sw;
-                waveformPath.check(start, left, right, audioSelected, animatedLoaded, scrollDuration, audioHeight, maxBar, bottom);
-                canvas.drawPath(waveformPath, paint);
-            }
-
-            if (audioSelected < 1) {
-                final float tleft = px + ph + (audioOffset - scroll + audioLeft * audioDuration) / (float) scrollDuration * sw;
-                final float tright = px + ph + (audioOffset - scroll + audioRight * audioDuration) / (float) scrollDuration * sw;
-
-                final float textCx = (Math.max(px, tleft) + Math.min(w - px, tright)) / 2f;
-                final float textCy = bottom - audioHeight + dp(28 / 2);
-                final float textMaxWidth = Math.max(0, Math.min(w - px, tright) - Math.max(px, tleft) - dp(24));
-                float textWidth = dpf2(13) + (audioAuthor == null && audioTitle == null ? 0 : dpf2(3.11f) + audioAuthorWidth + dpf2(3.66f + 2 + 4) + audioTitleWidth);
-                final boolean fit = textWidth < textMaxWidth;
-
-                float x = textCx - Math.min(textWidth, textMaxWidth) / 2f;
-                audioIcon.setBounds((int) x, (int) (textCy - dp(13) / 2f), (int) (x + dp(13)), (int) (textCy + dp(13) / 2f));
-                audioIcon.setAlpha((int) (0xFF * (1f - audioSelected)));
-                audioIcon.draw(canvas);
-                x += dpf2(13 + 3.11f);
-                canvas.saveLayerAlpha(0, 0, w, h, 0xFF, Canvas.ALL_SAVE_FLAG);
-                final float x2 = Math.min(tright, w) - dp(12);
-                canvas.clipRect(x, 0, x2, h);
-                if (audioAuthor != null) {
-                    canvas.save();
-                    canvas.translate(x - audioAuthorLeft, textCy - audioAuthor.getHeight() / 2f);
-                    audioAuthorPaint.setAlpha((int) (0xFF * (1f - audioSelected) * audioT));
-                    audioAuthor.draw(canvas);
+                if (waveform != null && blurManager != null && blurManager.hasRenderNode()) {
+                    final float maxBar = waveformMax.set(waveform.getMaxBar(), !waveformIsLoaded);
+                    waveformIsLoaded = waveform.getLoadedCount() > 0;
+                    final float start = px + ph + (audioOffset - scroll) / (float) scrollDuration * sw;
+                    waveformPath.check(start, _left, _right, audioSelected, scrollDuration, audioHeight, maxBar, audioBounds.bottom, waveform);
+                    canvas.saveLayerAlpha(audioBounds, (int) (0xFF * 0.4f), Canvas.ALL_SAVE_FLAG);
+                    canvas.clipPath(waveformPath);
+                    audioWaveformBlur.drawRect(canvas);
                     canvas.restore();
-                    x += audioAuthorWidth;
+                } else if (waveform != null && audioBlurPaint != null) {
+                    Paint paint = audioWaveformBlur.getPaint(.4f * audioT);
+                    if (paint == null) {
+                        paint = waveformPaint;
+                        paint.setAlpha((int) (0x40 * audioT));
+                    }
+                    final float maxBar = waveformMax.set(waveform.getMaxBar(), !waveformIsLoaded);
+                    waveformIsLoaded = waveform.getLoadedCount() > 0;
+                    final float start = px + ph + (audioOffset - scroll) / (float) scrollDuration * sw;
+                    waveformPath.check(start, _left, _right, audioSelected, scrollDuration, audioHeight, maxBar, audioBounds.bottom, waveform);
+                    canvas.drawPath(waveformPath, paint);
                 }
-                if (audioAuthor != null && audioTitle != null) {
-                    x += dpf2(3.66f);
-                    int wasAlpha = audioDotPaint.getAlpha();
-                    audioDotPaint.setAlpha((int) (wasAlpha * (1f - audioSelected)));
-                    canvas.drawCircle(x + dp(1), textCy, dp(1), audioDotPaint);
-                    audioDotPaint.setAlpha(wasAlpha);
-                    x += dpf2(2);
-                    x += dpf2(4);
-                }
-                if (audioTitle != null) {
-                    canvas.save();
-                    canvas.translate(x - audioTitleLeft, textCy - audioTitle.getHeight() / 2f);
-                    audioTitlePaint.setAlpha((int) (0xFF * (1f - audioSelected) * audioT));
-                    audioTitle.draw(canvas);
+
+                if (audioSelected < 1) {
+                    final float tleft = px + ph + (audioOffset - scroll + audioLeft * audioDuration) / (float) scrollDuration * sw;
+                    final float tright = px + ph + (audioOffset - scroll + audioRight * audioDuration) / (float) scrollDuration * sw;
+
+                    final float textCx = (Math.max(px, tleft) + Math.min(w - px, tright)) / 2f;
+                    final float textCy = audioBounds.centerY();
+                    final float textMaxWidth = Math.max(0, Math.min(w - px, tright) - Math.max(px, tleft) - dp(24));
+                    float textWidth = dpf2(13) + (audioAuthor == null && audioTitle == null ? 0 : dpf2(3.11f) + audioAuthorWidth + dpf2(3.66f + 2 + 4) + audioTitleWidth);
+                    final boolean fit = textWidth < textMaxWidth;
+
+                    float x = textCx - Math.min(textWidth, textMaxWidth) / 2f;
+                    audioIcon.setBounds((int) x, (int) (textCy - dp(13) / 2f), (int) (x + dp(13)), (int) (textCy + dp(13) / 2f));
+                    audioIcon.setAlpha((int) (0xFF * (1f - audioSelected)));
+                    audioIcon.draw(canvas);
+                    x += dpf2(13 + 3.11f);
+                    canvas.saveLayerAlpha(0, 0, w, h, 0xFF, Canvas.ALL_SAVE_FLAG);
+                    final float x2 = Math.min(tright, w) - dp(12);
+                    canvas.clipRect(x, 0, x2, h);
+                    if (audioAuthor != null) {
+                        canvas.save();
+                        canvas.translate(x - audioAuthorLeft, textCy - audioAuthor.getHeight() / 2f);
+                        audioAuthorPaint.setAlpha((int) (0xFF * (1f - audioSelected) * audioT));
+                        audioAuthor.draw(canvas);
+                        canvas.restore();
+                        x += audioAuthorWidth;
+                    }
+                    if (audioAuthor != null && audioTitle != null) {
+                        x += dpf2(3.66f);
+                        int wasAlpha = audioDotPaint.getAlpha();
+                        audioDotPaint.setAlpha((int) (wasAlpha * (1f - audioSelected)));
+                        canvas.drawCircle(x + dp(1), textCy, dp(1), audioDotPaint);
+                        audioDotPaint.setAlpha(wasAlpha);
+                        x += dpf2(2);
+                        x += dpf2(4);
+                    }
+                    if (audioTitle != null) {
+                        canvas.save();
+                        canvas.translate(x - audioTitleLeft, textCy - audioTitle.getHeight() / 2f);
+                        audioTitlePaint.setAlpha((int) (0xFF * (1f - audioSelected) * audioT));
+                        audioTitle.draw(canvas);
+                        canvas.restore();
+                    }
+                    if (!fit) {
+                        ellipsizeMatrix.reset();
+                        ellipsizeMatrix.postScale(dpf2(8) / 16, 1);
+                        ellipsizeMatrix.postTranslate(x2 - dp(8), 0);
+                        ellipsizeGradient.setLocalMatrix(ellipsizeMatrix);
+                        canvas.drawRect(x2 - dp(8), audioBounds.top, x2, audioBounds.bottom, ellipsizePaint);
+                    }
                     canvas.restore();
-                }
-                if (!fit) {
-                    ellipsizeMatrix.reset();
-                    ellipsizeMatrix.postScale(dpf2(8) / 16, 1);
-                    ellipsizeMatrix.postTranslate(x2 - dp(8), 0);
-                    ellipsizeGradient.setLocalMatrix(ellipsizeMatrix);
-                    canvas.drawRect(x2 - dp(8), bottom - audioHeight, x2, bottom, ellipsizePaint);
                 }
                 canvas.restore();
             }
-            canvas.restore();
-        }
 
-        // draw region
-        final float audio = audioT * (hasVideo || hasRound ? audioSelected : 1);
-        final float round = roundT * (hasVideo || hasAudio ? roundSelected : 1);
-        final float video = videoSelected;
-        float regionTop = 0;
-        regionTop += (h - py - videoHeight - p * videoT - roundHeight - p * roundT - audioHeight) * audio;
-        regionTop += (h - py - videoHeight - p * videoT - roundHeight) * round;
-        regionTop += (h - py - videoHeight) * video;
-        float regionBottom = 0;
-        regionBottom += (h - py - videoHeight - p * videoT - roundHeight - p * roundT) * audio;
-        regionBottom += (h - py - videoHeight - p * videoT) * round;
-        regionBottom += (h - py) * video;
-        float left = 0;
-        left += (audioOffset + audioLeft * audioDuration) * audio;
-        left += (roundOffset + roundLeft * roundDuration) * round;
-        left += (videoLeft * videoDuration) * video;
-        float right = 0;
-        right += (audioOffset + audioRight * audioDuration) * audio;
-        right += (roundOffset + roundRight * roundDuration) * round;
-        right += (videoRight * videoDuration) * video;
-        float leftX = px + ph + (left - scroll) / (float) scrollDuration * sw;
-        float rightX = px + ph + (right - scroll) / (float) scrollDuration * sw;
-        float progressAlpha = (hasAudio && !hasVideo ? audioT : Math.max(videoT, roundT));
-        if (audioT > 0. || roundT > 0. || videoT > 0.) {
-            drawRegion(canvas, blurPaint, regionTop, regionBottom, leftX, rightX, (hasVideo || hasRound ? 1 : lerp(.6f, 1f, audioSelected) * audioT) * progressAlpha);
-            if (hasVideo && (hasAudio || hasRound) && (audioSelected > 0 || roundSelected > 0)) {
-                drawRegion(
-                    canvas,
-                    blurPaint,
-                    h - py - videoHeight,
-                    h - py,
-                    ph + px + (videoLeft * videoDuration - scroll) / (float) scrollDuration * sw,
-                    ph + px + (videoRight * videoDuration - scroll) / (float) scrollDuration * sw,
-                    .8f
-                );
-            }
-
-            // draw progress
-            float loopT = loopProgress.set(0);
-            final float y1 = h - py - videoHeight - (audioHeight + p * Math.max(roundT, videoT)) * audioT - (roundHeight + p * videoT) * roundT - dpf2(4.3f);
-            final float y2 = h - py + dpf2(4.3f);
-            if (loopT > 0) {
-                final long end;
-                if (loopProgressFrom != -1) {
-                    end = loopProgressFrom;
-                } else if (hasVideo) {
-                    end = (long) (videoDuration * videoRight);
-                } else if (hasRound) {
-                    end = (long) (roundDuration * roundRight);
-                } else {
-                    end = (long) (audioDuration * audioRight);
+            // draw region
+            float leftX = px + ph + (left - scroll) / (float) scrollDuration * sw;
+            float rightX = px + ph + (right - scroll) / (float) scrollDuration * sw;
+            float progressAlpha = !collageTracks.isEmpty() ? collageT : (hasAudio && videoTrack == null ? audioT : Math.max(videoT, roundT));
+            if (audioT > 0. || roundT > 0. || videoT > 0. || collageT > 0.) {
+                drawRegion(canvas, blurPaint, regionTop, regionBottom, leftX, rightX, (videoTrack != null || hasRound || !collageTracks.isEmpty() ? 1 : lerp(.6f, 1f, audioSelected) * audioT) * progressAlpha);
+                if (videoTrack != null && (hasAudio || hasRound) && (audioSelected > 0 || roundSelected > 0)) {
+                    drawRegion(
+                        canvas,
+                        blurPaint,
+                        h - py - videoHeight,
+                        h - py,
+                        ph + px + (videoTrack.left * videoTrack.duration - scroll) / (float) scrollDuration * sw,
+                        ph + px + (videoTrack.right * videoTrack.duration - scroll) / (float) scrollDuration * sw,
+                        .8f
+                    );
+                } else if (collageMain != null && collageTracks.size() > 1) {
+                    drawRegion(
+                        canvas,
+                        blurPaint,
+                        collageMain.bounds.top,
+                        collageMain.bounds.bottom,
+                        ph + px + (collageMain.offset + collageMain.left * collageMain.duration - scroll) / (float) scrollDuration * sw,
+                        ph + px + (collageMain.offset + collageMain.right * collageMain.duration - scroll) / (float) scrollDuration * sw,
+                        .8f
+                    );
                 }
-                drawProgress(canvas, y1, y2, end, loopT * progressAlpha);
+
+                // draw progress
+                float loopT = loopProgress.set(0);
+                final float y1 = h - getContentHeight() + py - dpf2(2.3f);
+                final float y2 = h - py + dpf2(4.3f);
+                if (loopT > 0) {
+                    final long end;
+                    if (loopProgressFrom != -1) {
+                        end = loopProgressFrom;
+                    } else if (videoTrack != null) {
+                        end = (long) (videoTrack.duration * videoTrack.right);
+                    } else if (collageMain != null) {
+                        end = (long) (collageMain.duration * (collageMain.right - collageMain.left));
+                    } else if (hasRound) {
+                        end = (long) (roundDuration * roundRight);
+                    } else {
+                        end = (long) (audioDuration * audioRight);
+                    }
+                    drawProgress(canvas, y1, y2, end, loopT * progressAlpha);
+                }
+                drawProgress(canvas, y1, y2, progress, (1f - loopT) * progressAlpha);
             }
-            drawProgress(canvas, y1, y2, progress, (1f - loopT) * progressAlpha);
+
+            if (restore) {
+                canvas.restore();
+            }
         }
 
         if (dragged) {
             long Δd = (long) (dp(32) / (float) sw * scrollDuration * (1f / (1000f / AndroidUtilities.screenRefreshRate)));
-            if (pressHandle == HANDLE_VIDEO_REGION) {
+            if (pressHandle == HANDLE_VIDEO_REGION && videoTrack != null) {
                 int direction = 0;
-                if (videoLeft < (scroll / (float) videoDuration)) {
+                if (videoTrack.left < (scroll / (float) videoTrack.duration)) {
                     direction = -1;
-                } else if (videoRight > ((scroll + scrollDuration) / (float) videoDuration)) {
+                } else if (videoTrack.right > ((scroll + scrollDuration) / (float) videoTrack.duration)) {
                     direction = +1;
                 }
                 long wasScroll = scroll;
-                scroll = Utilities.clamp(scroll + direction * Δd, videoDuration - scrollDuration, 0);
+                scroll = Utilities.clamp(scroll + direction * Δd, videoTrack.duration - scrollDuration, 0);
                 progress += direction * Δd;
-                float d = (scroll - wasScroll) / (float) videoDuration;
+                float d = (scroll - wasScroll) / (float) videoTrack.duration;
                 if (d > 0) {
-                    d = Math.min(1 - videoRight, d);
+                    d = Math.min(1 - videoTrack.right, d);
                 } else {
-                    d = Math.max(0 - videoLeft, d);
+                    d = Math.max(0 - videoTrack.left, d);
                 }
-                videoLeft = Utilities.clamp(videoLeft + d, 1, 0);
-                videoRight = Utilities.clamp(videoRight + d, 1, 0);
+                videoTrack.left = Utilities.clamp(videoTrack.left + d, 1, 0);
+                videoTrack.right = Utilities.clamp(videoTrack.right + d, 1, 0);
                 if (delegate != null) {
-                    delegate.onVideoLeftChange(videoLeft);
-                    delegate.onVideoRightChange(videoRight);
+                    delegate.onVideoLeftChange(videoTrack.left);
+                    delegate.onVideoRightChange(videoTrack.right);
                 }
                 invalidate();
             } else if (pressHandle == HANDLE_AUDIO_REGION) {
@@ -1765,12 +2550,12 @@ public class TimelineView extends View {
                 }
                 if (direction != 0) {
                     long wasOffset = audioOffset;
-                    if (this.audioSelected && hasVideo) {
-                        audioOffset = Utilities.clamp(audioOffset - direction * Δd, (long) ((videoRight * videoDuration) - (audioLeft * audioDuration)), (long) ((videoLeft * videoDuration) - (audioRight * audioDuration)));
+                    if (this.audioSelected && videoTrack != null) {
+                        audioOffset = Utilities.clamp(audioOffset - direction * Δd, (long) ((videoTrack.right * videoTrack.duration) - (audioLeft * audioDuration)), (long) ((videoTrack.left * videoTrack.duration) - (audioRight * audioDuration)));
                     } else if (this.roundSelected && hasRound) {
                         audioOffset = Utilities.clamp(audioOffset - direction * Δd, (long) ((roundRight * roundDuration) - (audioLeft * audioDuration)), (long) ((roundLeft * roundDuration) - (audioRight * audioDuration)));
                     } else{
-                        audioOffset = Utilities.clamp(audioOffset - direction * Δd, 0, (long) -(audioDuration - Math.min(getBaseDuration(), MAX_SCROLL_DURATION)));
+                        audioOffset = Utilities.clamp(audioOffset - direction * Δd, 0, (long) -(audioDuration - Math.min(getBaseDuration(), getMaxScrollDuration())));
                     }
                     float d = -(audioOffset - wasOffset) / (float) audioDuration;
                     if (d > 0) {
@@ -1778,7 +2563,7 @@ public class TimelineView extends View {
                     } else {
                         d = Math.max(0 - audioLeft, d);
                     }
-                    if (!hasVideo) {
+                    if (videoTrack == null) {
                         progress = (long) Utilities.clamp(progress + d * audioDuration, audioDuration, 0);
                     }
                     audioLeft = Utilities.clamp(audioLeft + d, 1, 0);
@@ -1792,6 +2577,7 @@ public class TimelineView extends View {
                 }
             }
         }
+
     }
 
     private void drawRegion(Canvas canvas, Paint blurPaint, float top, float bottom, float left, float right, float alpha) {
@@ -1847,12 +2633,12 @@ public class TimelineView extends View {
     private void drawProgress(Canvas canvas, float y1, float y2, long progress, float scale) {
         if (isCover) return;
 
-        final long scrollDuration = Math.min(getBaseDuration(), MAX_SCROLL_DURATION);
+        final long scrollDuration = Math.min(getBaseDuration(), getMaxScrollDuration());
 
-        final float progressT = (Utilities.clamp(progress, getBaseDuration(), 0) + (!hasVideo ? audioOffset : 0) - scroll) / (float) scrollDuration;
+        final float progressT = (Utilities.clamp(progress, getBaseDuration(), 0) + (collageMain != null ? collageMain.offset + collageMain.left * collageMain.duration : (videoTrack == null ? audioOffset : 0)) - scroll) / (float) scrollDuration;
         final float progressX = px + ph + sw * progressT;
 
-        float yd = (y1 + y2) / 2;
+        final float yd = (y2 - y1) / 2;
         y1 += yd / 2f * (1f - scale);
         y2 -= yd / 2f * (1f - scale);
         progressShadowPaint.setAlpha((int) (0x26 * scale));
@@ -1869,21 +2655,28 @@ public class TimelineView extends View {
     private int w, h, ph, px, py;
 
     public static int heightDp() {
-        return 5 + 38 + 4 + 28 + 4 + 28 + 5;
+        final int maxCollageCount = 9;
+        return 5 + 38 + 4 + 28 + 4 + 28 + 5 + (maxCollageCount - 1) * 28 + (maxCollageCount > 0 ? 32 : 0) + 5 * 4;
     }
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         audioAuthorPaint.setTextSize(dp(12));
         audioTitlePaint.setTextSize(dp(12));
-        waveformRadii[0] = waveformRadii[1] = waveformRadii[2] = waveformRadii[3] = dp(2);
-        waveformRadii[4] = waveformRadii[5] = waveformRadii[6] = waveformRadii[7] = 0;
         setPadding(px = dp(12), py = dp(5), dp(12), dp(5));
         setMeasuredDimension(w = MeasureSpec.getSize(widthMeasureSpec), h = dp(heightDp()));
         ph = dp(10);
         sw = w - 2 * ph - 2 * px;
-        if (videoPath != null && this.thumbs == null) {
-            setupVideoThumbs(false);
+        if (videoTrack != null && videoTrack.path != null && videoTrack.thumbs == null) {
+            videoTrack.setupThumbs(false);
+        }
+        if (!collageTracks.isEmpty()) {
+            for (Track track : collageTracks) {
+                if (track.path != null && track.thumbs == null) {
+                    track.setupThumbs(false);
+                    track.setupWaveform(false);
+                }
+            }
         }
         if (audioPath != null && this.waveform == null) {
             setupAudioWaveform();
@@ -1893,81 +2686,86 @@ public class TimelineView extends View {
     private class VideoThumbsLoader {
 
         private long duration;
-        private final long frameIterator;
-        private final int count;
+        private volatile long frameIterator;
+        private int count;
 
         private final ArrayList<BitmapFrame> frames = new ArrayList<>();
         private MediaMetadataRetriever metadataRetriever;
 
-        private final int frameWidth;
-        private final int frameHeight;
+        private volatile int frameWidth;
+        private volatile int frameHeight;
         private final boolean isRound;
 
         private boolean destroyed;
 
         public VideoThumbsLoader(boolean isRound, String path, int uiWidth, int uiHeight, Long overrideDuration) {
-            this(isRound, path, uiWidth, uiHeight, overrideDuration, MAX_SCROLL_DURATION);
+            this(isRound, path, uiWidth, uiHeight, overrideDuration, getMaxScrollDuration(), -1, -1, null);
         }
 
         public VideoThumbsLoader(boolean isRound, String path, int uiWidth, int uiHeight, Long overrideDuration, long maxDuration) {
-            this(isRound, path, uiWidth, uiHeight, overrideDuration, maxDuration, -1, -1);
+            this(isRound, path, uiWidth, uiHeight, overrideDuration, maxDuration, -1, -1, null);
         }
 
-        public VideoThumbsLoader(boolean isRound, String path, int uiWidth, int uiHeight, Long overrideDuration, long maxDuration, long startFrom, long endTo) {
+        public VideoThumbsLoader(boolean isRound, String path, int uiWidth, int uiHeight, Long overrideDuration, long maxDuration, long startFrom, long endTo, Runnable inited) {
             this.isRound = isRound;
             metadataRetriever = new MediaMetadataRetriever();
-            long duration = MAX_SCROLL_DURATION;
-            int width = 0;
-            int height = 0;
-            try {
-                metadataRetriever.setDataSource(path);
-                String value;
-                value = metadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION);
-                if (value != null) {
-                    this.duration = duration = Long.parseLong(value);
-                }
-                value = metadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH);
-                if (value != null) {
-                    width = Integer.parseInt(value);
-                }
-                value = metadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT);
-                if (value != null) {
-                    height = Integer.parseInt(value);
-                }
-                value = metadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_ROTATION);
-                if (value != null) {
-                    int orientation = Integer.parseInt(value);
-                    if (orientation == 90 || orientation == 270) {
-                        int temp = width;
-                        width = height;
-                        height = temp;
+            Utilities.themeQueue.postRunnable(() -> {
+                long duration = getMaxScrollDuration();
+                int width = 0;
+                int height = 0;
+                try {
+                    metadataRetriever.setDataSource(path);
+                    String value;
+                    value = metadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION);
+                    if (value != null) {
+                        this.duration = duration = Long.parseLong(value);
                     }
+                    value = metadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH);
+                    if (value != null) {
+                        width = Integer.parseInt(value);
+                    }
+                    value = metadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT);
+                    if (value != null) {
+                        height = Integer.parseInt(value);
+                    }
+                    value = metadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_ROTATION);
+                    if (value != null) {
+                        int orientation = Integer.parseInt(value);
+                        if (orientation == 90 || orientation == 270) {
+                            int temp = width;
+                            width = height;
+                            height = temp;
+                        }
+                    }
+                } catch (Exception e) {
+                    metadataRetriever = null;
+                    FileLog.e(e);
                 }
-            } catch (Exception e) {
-                metadataRetriever = null;
-                FileLog.e(e);
-            }
-            if (overrideDuration != null) {
-                this.duration = duration = overrideDuration;
-            }
-            if (startFrom != -1 && endTo != -1) {
-                duration = endTo - startFrom;
-            }
-            float aspectRatio = 1;
-            if (width != 0 && height != 0) {
-                aspectRatio = width / (float) height;
-            }
-            aspectRatio = Utilities.clamp(aspectRatio, 4 / 3f, 9f / 16f);
-            frameHeight = Math.max(1, uiHeight);
-            frameWidth = Math.max(1, (int) Math.ceil(uiHeight * aspectRatio));
-            final float uiScrollWidth = Math.max(duration, maxDuration) / (float) maxDuration * uiWidth;
-            count = (int) Math.ceil(uiScrollWidth / frameWidth);
-            frameIterator = (long) (duration / (float) count);
-            nextFrame = -frameIterator;
-            if (startFrom != -1) {
-                nextFrame = startFrom - frameIterator;
-            }
-            load();
+                if (overrideDuration != null) {
+                    this.duration = duration = overrideDuration;
+                }
+                if (startFrom != -1 && endTo != -1) {
+                    duration = endTo - startFrom;
+                }
+                float aspectRatio = 1;
+                if (width != 0 && height != 0) {
+                    aspectRatio = width / (float) height;
+                }
+                aspectRatio = Utilities.clamp(aspectRatio, 4 / 3f, 9f / 16f);
+                frameHeight = Math.max(1, uiHeight);
+                frameWidth = Math.max(1, (int) Math.ceil(uiHeight * aspectRatio));
+                final float uiScrollWidth = Math.max(duration, maxDuration) / (float) maxDuration * uiWidth;
+                count = (int) Math.ceil(uiScrollWidth / frameWidth);
+                frameIterator = (long) (duration / (float) count);
+                nextFrame = -frameIterator;
+                if (startFrom != -1) {
+                    nextFrame = startFrom - frameIterator;
+                }
+                load();
+                if (inited != null) {
+                    AndroidUtilities.runOnUIThread(inited);
+                }
+            });
         }
 
         public int getFrameWidth() {
@@ -2092,6 +2890,7 @@ public class TimelineView extends View {
     }
 
     private class AudioWaveformLoader {
+        private final AnimatedFloat animatedLoaded = new AnimatedFloat(TimelineView.this, 0, 600, CubicBezierInterpolator.EASE_OUT_QUINT);
 
         private final int count;
         private int loaded = 0;
@@ -2132,14 +2931,14 @@ public class TimelineView extends View {
                 FileLog.e(e);
             }
 
-            final float videoScrollWidth = Math.min(hasVideo ? videoDuration : (hasRound ? roundDuration : duration * 1000), MAX_SCROLL_DURATION);
+            final float videoScrollWidth = Math.min(videoTrack != null ? videoTrack.duration : (!collageTracks.isEmpty() ? getBaseDuration() : (hasRound ? roundDuration : duration * 1000)), getMaxScrollDuration());
             final float uiScrollWidth = (duration * 1000) / videoScrollWidth * uiWidth;
             final int sampleWidth = Math.round(dpf2(3.3333f));
-            count = Math.round(uiScrollWidth / sampleWidth);
+            count = Math.min(Math.round(uiScrollWidth / sampleWidth), 4000);
             data = new short[count];
 
             if (duration > 0 && inputFormat != null) {
-                if ("audio/mpeg".equals(mime) || "audio/mp3".equals(mime)) {
+                if ("audio/mpeg".equals(mime) || "audio/mp3".equals(mime) || "audio/mp4a".equals(mime) || "audio/mp4a-latm".equals(mime)) {
                     waveformLoader = new FfmpegAudioWaveformLoader(path, count, this::receiveData);
                 } else {
                     Utilities.phoneBookQueue.postRunnable(this::run);
@@ -2314,7 +3113,11 @@ public class TimelineView extends View {
         }
     }
 
+    public int getTimelineHeight() {
+        return lerp(py + dp(28) + py, getContentHeight(), openT.get());
+    }
+
     public int getContentHeight() {
-        return (int) (py + (hasVideo ? getVideoHeight() + dp(4) : 0) + (hasRound ? getRoundHeight() + dp(4) : 0) + (hasAudio ? getAudioHeight() + dp(4) : 0) + py);
+        return (int) (py + (videoTrack != null ? getVideoHeight() + dp(4) : 0) + (collageTracks.isEmpty() ? 0 : getCollageHeight() + dp(4)) + (hasRound ? getRoundHeight() + dp(4) : 0) + (hasAudio ? getAudioHeight() + dp(4) : 0) + py);
     }
 }

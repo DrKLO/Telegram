@@ -9,6 +9,8 @@
 
 package org.telegram.ui.Cells;
 
+import static org.telegram.messenger.AndroidUtilities.dp;
+
 import android.content.Context;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
@@ -45,11 +47,12 @@ public class AccountSelectCell extends FrameLayout {
     public AccountSelectCell(Context context, boolean hasInfo) {
         super(context);
 
+        setMinimumWidth(dp(196));
         avatarDrawable = new AvatarDrawable();
-        avatarDrawable.setTextSize(AndroidUtilities.dp(12));
+        avatarDrawable.setTextSize(dp(12));
 
         imageView = new BackupImageView(context);
-        imageView.setRoundRadius(AndroidUtilities.dp(18));
+        imageView.setRoundRadius(dp(18));
         addView(imageView, LayoutHelper.createFrame(36, 36, Gravity.LEFT | Gravity.TOP, 10, 10, 0, 0));
 
         textView = new SimpleTextView(context);
@@ -70,7 +73,7 @@ public class AccountSelectCell extends FrameLayout {
             infoTextView.setLines(1);
             infoTextView.setMaxLines(1);
             infoTextView.setSingleLine(true);
-            infoTextView.setMaxWidth(AndroidUtilities.dp(320));
+            infoTextView.setMaxWidth(dp(320));
             infoTextView.setGravity(Gravity.LEFT | Gravity.TOP);
             infoTextView.setEllipsize(TextUtils.TruncateAt.END);
             addView(infoTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 61, 27, 8, 0));
@@ -86,12 +89,21 @@ public class AccountSelectCell extends FrameLayout {
         }
     }
 
+    private int width() {
+        return (int) Math.max(dp(196), dp(61 + 8 + (checkImageView != null ? 50 : 0)) + Math.max(
+            textView.getTextPaint().measureText(textView.getText().toString()),
+            (infoTextView != null ? infoTextView.getPaint().measureText(infoTextView.getText().toString()) : 0)
+        ));
+    }
+
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         if (checkImageView != null || infoTextView != null && getLayoutParams().width != LayoutHelper.WRAP_CONTENT) {
-            super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(56), MeasureSpec.EXACTLY));
+            super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(dp(56), MeasureSpec.EXACTLY));
+        } else if (MeasureSpec.getMode(widthMeasureSpec) == MeasureSpec.AT_MOST) {
+            super.onMeasure(MeasureSpec.makeMeasureSpec(width(), MeasureSpec.AT_MOST), MeasureSpec.makeMeasureSpec(dp(56), MeasureSpec.EXACTLY));
         } else {
-            super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.AT_MOST), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(56), MeasureSpec.EXACTLY));
+            super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(dp(56), MeasureSpec.EXACTLY));
         }
     }
 

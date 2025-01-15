@@ -42,6 +42,7 @@ import com.android.billingclient.api.QueryProductDetailsParams;
 import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.BillingController;
+import org.telegram.messenger.BirthdayController;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.DocumentObject;
 import org.telegram.messenger.FileLoader;
@@ -127,6 +128,8 @@ public class GiftSheet extends BottomSheetWithRecyclerListView implements Notifi
     private final int TAB_LIMITED = 1;
     private final ArrayList<CharSequence> tabs = new ArrayList<>();
     private int selectedTab;
+
+    private boolean birthday;
 
     public GiftSheet(Context context, int currentAccount, long userId, Runnable closeParentSheet) {
         this(context, currentAccount, userId, null, closeParentSheet);
@@ -307,10 +310,24 @@ public class GiftSheet extends BottomSheetWithRecyclerListView implements Notifi
         adapter.update(false);
         updateTitle();
 
+        if (BirthdayController.getInstance(currentAccount).isToday(userId)) {
+            setBirthday();
+        }
+
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.billingProductDetailsUpdated);
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.starGiftsLoaded);
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.userInfoDidLoad);
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.starGiftSoldOut);
+    }
+
+    public GiftSheet setBirthday() {
+        return setBirthday(true);
+    }
+
+    public GiftSheet setBirthday(boolean b) {
+        this.birthday = b;
+        adapter.update(false);
+        return this;
     }
 
     private void onGiftSuccess(boolean fromGooglePlay) {
@@ -546,7 +563,8 @@ public class GiftSheet extends BottomSheetWithRecyclerListView implements Notifi
             items.add(UItem.asFlicker(3, FlickerLoadingView.STAR_GIFT).setSpanCount(1));
         }
 
-        final ArrayList<TL_stars.StarGift> gifts = StarsController.getInstance(currentAccount).gifts;
+        final StarsController s = StarsController.getInstance(currentAccount);
+        final ArrayList<TL_stars.StarGift> gifts = birthday ? s.birthdaySortedGifts : s.gifts;
         if (!MessagesController.getInstance(currentAccount).stargiftsBlocked && !gifts.isEmpty()) {
             items.add(UItem.asCustom(starsHeaderView));
             final TreeSet<Long> prices = new TreeSet<>();
@@ -583,7 +601,7 @@ public class GiftSheet extends BottomSheetWithRecyclerListView implements Notifi
                     items.add(GiftCell.Factory.asStarGift(selectedTab, gift));
                 }
             }
-            if (StarsController.getInstance(currentAccount).giftsLoading) {
+            if (s.giftsLoading) {
                 items.add(UItem.asFlicker(4, FlickerLoadingView.STAR_GIFT).setSpanCount(1));
                 items.add(UItem.asFlicker(5, FlickerLoadingView.STAR_GIFT).setSpanCount(1));
                 items.add(UItem.asFlicker(6, FlickerLoadingView.STAR_GIFT).setSpanCount(1));
@@ -736,11 +754,11 @@ public class GiftSheet extends BottomSheetWithRecyclerListView implements Notifi
 
             if (gift.limited && gift.availability_remains <= 0) {
                 ribbon.setVisibility(View.VISIBLE);
-                ribbon.setColor(Theme.getColor(Theme.key_text_RedBold, resourcesProvider));
+                ribbon.setColor(Theme.getColor(Theme.key_gift_ribbon_soldout, resourcesProvider));
                 ribbon.setText(LocaleController.getString(R.string.Gift2SoldOut), true);
             } else if (gift.limited) {
                 ribbon.setVisibility(View.VISIBLE);
-                ribbon.setColor(0xFF46A4F2);
+                ribbon.setColor(Theme.getColor(Theme.key_gift_ribbon, resourcesProvider));
                 ribbon.setText(getString(R.string.Gift2LimitedRibbon), false);
             } else {
                 ribbon.setVisibility(View.GONE);
@@ -788,7 +806,7 @@ public class GiftSheet extends BottomSheetWithRecyclerListView implements Notifi
 
             if (userGift.gift.limited) {
                 ribbon.setVisibility(View.VISIBLE);
-                ribbon.setColor(0xFF46A4F2);
+                ribbon.setColor(Theme.getColor(Theme.key_gift_ribbon, resourcesProvider));
                 ribbon.setText(LocaleController.formatString(R.string.Gift2Limited1OfRibbon, AndroidUtilities.formatWholeNumber(userGift.gift.availability_total, 0)), true);
             } else {
                 ribbon.setVisibility(View.GONE);

@@ -73,12 +73,12 @@ public class MessageCustomParamsHelper {
 
         private Params_v1(TLRPC.Message message) {
             this.message = message;
-            flags += message.voiceTranscription != null ? 1 : 0;
-            flags += message.voiceTranscriptionForce ? 2 : 0;
+            flags |= message.voiceTranscription != null ? 1 : 0;
+            flags |= message.voiceTranscriptionForce ? 2 : 0;
 
-            flags += message.originalLanguage != null ? 4 : 0;
-            flags += message.translatedToLanguage != null ? 8 : 0;
-            flags += message.translatedText != null ? 16 : 0;
+            flags |= message.originalLanguage != null ? 4 : 0;
+            flags |= message.translatedToLanguage != null ? 8 : 0;
+            flags |= message.translatedText != null ? 16 : 0;
         }
 
         @Override

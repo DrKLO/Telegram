@@ -65,6 +65,7 @@ import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.ui.Components.AnimatedEmojiDrawable;
 import org.telegram.ui.Components.AnimatedFloat;
+import org.telegram.ui.Components.AttachableDrawable;
 import org.telegram.ui.Components.EffectsTextView;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.LineProgressView;
@@ -279,6 +280,7 @@ public class AlertDialog extends Dialog implements Drawable.Callback, Notificati
         super(context, R.style.TransparentDialog);
         this.resourcesProvider = resourcesProvider;
 
+        progressViewStyle = progressStyle;
         backgroundColor = getThemedColor(Theme.key_dialogBackground);
         final boolean isDark = AndroidUtilities.computePerceivedBrightness(backgroundColor) < 0.721f;
         blurredNativeBackground = supportsNativeBlur() && progressViewStyle == ALERT_TYPE_MESSAGE;
@@ -292,8 +294,6 @@ public class AlertDialog extends Dialog implements Drawable.Callback, Notificati
             shadowDrawable.getPadding(backgroundPaddings);
         }
         withCancelDialog = progressViewStyle == ALERT_TYPE_SPINNER;
-
-        progressViewStyle = progressStyle;
     }
 
     private long shownAt;
@@ -636,6 +636,20 @@ public class AlertDialog extends Dialog implements Drawable.Callback, Notificati
             topImageView = new RLottieImageView(getContext());
             if (topDrawable != null) {
                 topImageView.setImageDrawable(topDrawable);
+                if (topDrawable instanceof AttachableDrawable) {
+                    final AttachableDrawable d = (AttachableDrawable) topDrawable;
+                    topImageView.addOnAttachStateChangeListener(new View.OnAttachStateChangeListener() {
+                        @Override
+                        public void onViewAttachedToWindow(@NonNull View v) {
+                            d.onAttachedToWindow(null);
+                        }
+                        @Override
+                        public void onViewDetachedFromWindow(@NonNull View v) {
+                            d.onDetachedFromWindow(null);
+                        }
+                    });
+                    d.setParent(topImageView);
+                }
             } else if (topResId != 0) {
                 topImageView.setImageResource(topResId);
             } else {

@@ -46,7 +46,10 @@ import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.DocumentObject;
+import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
+import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaDataController;
@@ -55,6 +58,7 @@ import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
+import org.telegram.messenger.SvgHelper;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
 import org.telegram.messenger.Utilities;
@@ -350,6 +354,14 @@ public class EmojiPacksAlert extends BottomSheet implements NotificationCenter.N
                 }
             }
         });
+        listView.addOnScrollListener(new RecyclerView.OnScrollListener() {
+            @Override
+            public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
+                if (contentView != null && listView.scrollingByUser) {
+                    contentView.hidePreviewEmoji();
+                }
+            }
+        });
         final Theme.ResourcesProvider finalResourceProvider = resourceProvider;
         RecyclerListView.OnItemClickListener stickersOnItemClickListener;
         listView.setOnItemClickListener(stickersOnItemClickListener = (view, position) -> {
@@ -559,6 +571,10 @@ public class EmojiPacksAlert extends BottomSheet implements NotificationCenter.N
         shown = show;
     }
 
+    public void setPreviewEmoji(TLRPC.Document document) {
+        contentView.setPreviewEmoji(document);
+    }
+
     private class ContentView extends FrameLayout {
         public ContentView(Context context) {
             super(context);
@@ -576,6 +592,39 @@ public class EmojiPacksAlert extends BottomSheet implements NotificationCenter.N
 
         private final AnimatedFloat statusBarT = new AnimatedFloat(this, 0, 350, CubicBezierInterpolator.EASE_OUT_QUINT);
 
+        private ImageReceiver previewImageReceiver;
+        private boolean previewImageVisible;
+        private final AnimatedFloat previewImageVisibleT = new AnimatedFloat(this, 0, 320, CubicBezierInterpolator.EASE_OUT_QUINT);
+
+        public void setPreviewEmoji(TLRPC.Document document) {
+            previewImageReceiver = new ImageReceiver(this);
+            if (attached) previewImageReceiver.onAttachedToWindow();
+            previewImageVisible = true;
+            previewImageVisibleT.set(1.0f, true);
+
+            final TLRPC.PhotoSize thumb = FileLoader.getClosestPhotoSizeWithSize(document.thumbs, 90);
+            final SvgHelper.SvgDrawable svgThumb = DocumentObject.getSvgThumb(document.thumbs, Theme.key_windowBackgroundWhiteGrayIcon, 0.2f, true);
+            previewImageReceiver.setImage(
+                ImageLocation.getForDocument(document), "140_140",
+                ImageLocation.getForDocument(thumb, document), "140_140",
+                svgThumb,
+                0, null, null, 0
+            );
+            previewImageReceiver.setLayerNum(7);
+            previewImageReceiver.setAllowStartLottieAnimation(true);
+            previewImageReceiver.setAllowStartAnimation(true);
+            previewImageReceiver.setAutoRepeat(1);
+            previewImageReceiver.setAllowDecodeSingleFrame(true);
+            previewImageReceiver.setParentView(this);
+        }
+
+        public void hidePreviewEmoji() {
+            if (previewImageVisible) {
+                previewImageVisible = false;
+                invalidate();
+            }
+        }
+
         @Override
         protected void dispatchDraw(Canvas canvas) {
             if (!attached) {
@@ -586,13 +635,25 @@ public class EmojiPacksAlert extends BottomSheet implements NotificationCenter.N
             path.reset();
             float y = lastY = getListTop();
             float pad = 0;
-//            if (fromY != null) {
-//                float wasY = y;
-//                y = AndroidUtilities.lerp(fromY, y + containerView.getY(), loadT) - containerView.getY();
-//                pad = y - wasY;
-//            }
             final float statusBarT = this.statusBarT.set(y <= containerView.getPaddingTop());
             y = AndroidUtilities.lerp(y, 0, statusBarT);
+
+            if (previewImageReceiver != null) {
+                final float sz = dp(140), p = dp(20);
+                if (y < sz + p) previewImageVisible = false;
+                previewImageReceiver.setAlpha(previewImageVisibleT.set(previewImageVisible));
+                if (previewImageReceiver.getAlpha() > 0.0f) {
+                    final float scale = .6f + .4f * previewImageReceiver.getAlpha();
+                    final float size = sz * scale;
+                    final float cx = getWidth() / 2.0f, cy = y - p - sz / 2.0f;
+                    previewImageReceiver.setImageCoords(cx - size / 2.0f, cy - size / 2.0f, size, size);
+                    previewImageReceiver.draw(canvas);
+                } else {
+                    previewImageReceiver.onDetachedFromWindow();
+                    previewImageReceiver = null;
+                }
+            }
+
             float r = dp((1f - statusBarT) * 14);
             AndroidUtilities.rectTmp.set(getPaddingLeft(), y, getWidth() - getPaddingRight(), getBottom() + r);
             path.addRoundRect(AndroidUtilities.rectTmp, r, r, Path.Direction.CW);
@@ -861,6 +922,9 @@ public class EmojiPacksAlert extends BottomSheet implements NotificationCenter.N
         protected void onAttachedToWindow() {
             super.onAttachedToWindow();
             attached = true;
+            if (previewImageReceiver != null) {
+                previewImageReceiver.onAttachedToWindow();
+            }
         }
 
         @Override
@@ -875,6 +939,9 @@ public class EmojiPacksAlert extends BottomSheet implements NotificationCenter.N
             }
             lineDrawables.clear();
             AnimatedEmojiSpan.release(this, animatedEmojiDrawables);
+            if (previewImageReceiver != null) {
+                previewImageReceiver.onDetachedFromWindow();
+            }
         }
     }
 
@@ -1187,6 +1254,9 @@ public class EmojiPacksAlert extends BottomSheet implements NotificationCenter.N
 
     @Override
     public void dismiss() {
+        if (contentView != null) {
+            contentView.hidePreviewEmoji();
+        }
         super.dismiss();
         if (customEmojiPacks != null) {
             customEmojiPacks.recycle();
@@ -1902,7 +1972,7 @@ public class EmojiPacksAlert extends BottomSheet implements NotificationCenter.N
                 });
                 if (data.length == 1 && stickerSet != null && stickerSet.set != null && !stickerSet.set.emojis) {
                     AndroidUtilities.runOnUIThread(() -> EmojiPacksAlert.this.dismiss());
-                    StickersAlert alert = new StickersAlert(getContext(), fragment,  inputStickerSets.get(i), null, fragment instanceof ChatActivity ? ((ChatActivity) fragment).getChatActivityEnterView() : null, resourcesProvider);
+                    StickersAlert alert = new StickersAlert(getContext(), fragment,  inputStickerSets.get(i), null, fragment instanceof ChatActivity ? ((ChatActivity) fragment).getChatActivityEnterView() : null, resourcesProvider, false);
                     alert.show();
                     return;
                 }
@@ -1920,7 +1990,7 @@ public class EmojiPacksAlert extends BottomSheet implements NotificationCenter.N
                         TLRPC.TL_messages_stickerSet stickerSet = MediaDataController.getInstance(currentAccount).getStickerSet(this.inputStickerSets.get(i), true);
                         if (stickerSets.size() == 1 && stickerSet != null && stickerSet.set != null && !stickerSet.set.emojis) {
                             EmojiPacksAlert.this.dismiss();
-                            StickersAlert alert = new StickersAlert(getContext(), fragment,  inputStickerSets.get(i), null, fragment instanceof ChatActivity ? ((ChatActivity) fragment).getChatActivityEnterView() : null, resourcesProvider);
+                            StickersAlert alert = new StickersAlert(getContext(), fragment,  inputStickerSets.get(i), null, fragment instanceof ChatActivity ? ((ChatActivity) fragment).getChatActivityEnterView() : null, resourcesProvider, false);
                             alert.show();
                             return;
                         }

@@ -203,6 +203,10 @@ public class FlashViews {
         invertableViews.add(view);
     }
 
+    public void remove(Invertable view) {
+        invertableViews.remove(view);
+    }
+
     private int lastWidth, lastHeight, lastColor;
     private float lastInvert;
     private int color;

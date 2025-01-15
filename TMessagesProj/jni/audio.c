@@ -917,6 +917,8 @@ JNIEXPORT void JNICALL Java_org_telegram_ui_Stories_recorder_FfmpegAudioWaveform
     int skip = 4;
     int barWidth = (int) round((double) duration_in_seconds * sampleRate / count / (1 + skip)); // Assuming you have 'duration' and 'count' defined somewhere
 
+    int channels = codecContext->channels;
+
     short peak = 0;
     int currentCount = 0;
     int index = 0;
@@ -937,9 +939,43 @@ JNIEXPORT void JNICALL Java_org_telegram_ui_Stories_recorder_FfmpegAudioWaveform
                     break;
                 }
 
-                int16_t* samples = (int16_t*) frame->data[0];
+                const int is_planar = av_sample_fmt_is_planar(codecContext->sample_fmt);
+                const int sample_size = av_get_bytes_per_sample(codecContext->sample_fmt);
                 for (int i = 0; i < frame->nb_samples; i++) {
-                    short value = samples[i];  // Read the 16-bit PCM sample
+                    int sum = 0;
+                    for (int channel = 0; channel < channels; channel++) {
+                        uint8_t *data;
+                        if (is_planar) {
+                            data = frame->data[channel] + i * sample_size;
+                        } else {
+                            data = frame->data[0] + (i * channels + channel) * sample_size;
+                        }
+                        short sample_value = 0;
+                        switch (codecContext->sample_fmt) {
+                            case AV_SAMPLE_FMT_S16:
+                            case AV_SAMPLE_FMT_S16P:
+                                // Signed 16-bit PCM
+                                sample_value = *(int16_t *)data;
+                                break;
+
+                            case AV_SAMPLE_FMT_FLT:
+                            case AV_SAMPLE_FMT_FLTP:
+                                // 32-bit float, scale to 16-bit PCM range
+                                sample_value = (short)(*(float *)data * 32767.0f);
+                                break;
+
+                            case AV_SAMPLE_FMT_U8:
+                            case AV_SAMPLE_FMT_U8P:
+                                // Unsigned 8-bit PCM, scale to 16-bit PCM range
+                                sample_value = (*(uint8_t *)data - 128) * 256;
+                                break;
+
+                            default:
+                                break;
+                        }
+                        sum += sample_value;
+                    }
+                    short value = sum / channels;
 
                     if (currentCount >= barWidth) {
                         waveformChunkData[index - chunkIndex] = peak;

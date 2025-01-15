@@ -1,5 +1,8 @@
 package org.telegram.tgnet.tl;
 
+import android.graphics.Path;
+
+import org.telegram.messenger.SvgHelper;
 import org.telegram.tgnet.AbstractSerializedData;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
@@ -352,6 +355,7 @@ public class TL_bots {
         public TLRPC.Document description_document;
         public boolean has_preview_medias;
         public String privacy_policy_url;
+        public botAppSettings app_settings;
 
         public static BotInfo TLdeserialize(AbstractSerializedData stream, int constructor, boolean exception) {
             BotInfo result = null;
@@ -373,6 +377,9 @@ public class TL_bots {
                     break;
                 case TL_botInfo_layer185.constructor:
                     result = new TL_botInfo_layer185();
+                    break;
+                case TL_botInfo_layer192.constructor:
+                    result = new TL_botInfo_layer192();
                     break;
                 case TL_botInfo.constructor:
                     result = new TL_botInfo();
@@ -513,6 +520,89 @@ public class TL_bots {
     }
 
     public static class TL_botInfo extends BotInfo {
+        public static final int constructor = 0x36607333;
+
+
+        public void readParams(AbstractSerializedData stream, boolean exception) {
+            flags = stream.readInt32(exception);
+            has_preview_medias = (flags & 64) != 0;
+            if ((flags & 1) != 0) {
+                user_id = stream.readInt64(exception);
+            }
+            if ((flags & 2) != 0) {
+                description = stream.readString(exception);
+            }
+            if ((flags & 16) != 0) {
+                description_photo = TLRPC.Photo.TLdeserialize(stream, stream.readInt32(exception), exception);
+            }
+            if ((flags & 32) != 0) {
+                description_document = TLRPC.Document.TLdeserialize(stream, stream.readInt32(exception), exception);
+            }
+            if ((flags & 4) != 0) {
+                int magic = stream.readInt32(exception);
+                if (magic != 0x1cb5c415) {
+                    if (exception) {
+                        throw new RuntimeException(String.format("wrong Vector magic, got %x", magic));
+                    }
+                    return;
+                }
+                int count = stream.readInt32(exception);
+                for (int a = 0; a < count; a++) {
+                    TLRPC.TL_botCommand object = TLRPC.TL_botCommand.TLdeserialize(stream, stream.readInt32(exception), exception);
+                    if (object == null) {
+                        return;
+                    }
+                    commands.add(object);
+                }
+            }
+            if ((flags & 8) != 0) {
+                menu_button = BotMenuButton.TLdeserialize(stream, stream.readInt32(exception), exception);
+            }
+            if ((flags & 128) != 0) {
+                privacy_policy_url = stream.readString(exception);
+            }
+            if ((flags & 256) != 0) {
+                app_settings = botAppSettings.TLdeserialize(stream, stream.readInt32(exception), exception);
+            }
+        }
+
+        public void serializeToStream(AbstractSerializedData stream) {
+            stream.writeInt32(constructor);
+            flags = has_preview_medias ? flags | 64 : flags &~ 64;
+            stream.writeInt32(flags);
+            if ((flags & 1) != 0) {
+                stream.writeInt64(user_id);
+            }
+            if ((flags & 2) != 0) {
+                stream.writeString(description);
+            }
+            if ((flags & 16) != 0) {
+                description_photo.serializeToStream(stream);
+            }
+            if ((flags & 32) != 0) {
+                description_document.serializeToStream(stream);
+            }
+            if ((flags & 4) != 0) {
+                stream.writeInt32(0x1cb5c415);
+                int count = commands.size();
+                stream.writeInt32(count);
+                for (int a = 0; a < count; a++) {
+                    commands.get(a).serializeToStream(stream);
+                }
+            }
+            if ((flags & 8) != 0) {
+                menu_button.serializeToStream(stream);
+            }
+            if ((flags & 128) != 0) {
+                stream.writeString(privacy_policy_url);
+            }
+            if ((flags & 256) != 0) {
+                app_settings.serializeToStream(stream);
+            }
+        }
+    }
+
+    public static class TL_botInfo_layer192 extends TL_botInfo {
         public static final int constructor = 0x82437e74;
 
 
@@ -934,4 +1024,156 @@ public class TL_bots {
             }
         }
     }
+
+    public static class botAppSettings extends TLObject {
+        public static final int constructor = 0xc99b1950;
+
+        public int flags;
+        public byte[] placeholder_path;
+        public Path placeholder_svg_path; //custom
+        public int background_color;
+        public int background_dark_color;
+        public int header_color;
+        public int header_dark_color;
+
+        public static botAppSettings TLdeserialize(AbstractSerializedData stream, int constructor, boolean exception) {
+            if (botAppSettings.constructor != constructor) {
+                if (exception) {
+                    throw new RuntimeException(String.format("can't parse magic %x in botAppSettings", constructor));
+                } else {
+                    return null;
+                }
+            }
+            botAppSettings result = new botAppSettings();
+            result.readParams(stream, exception);
+            return result;
+        }
+
+        @Override
+        public void readParams(AbstractSerializedData stream, boolean exception) {
+            flags = stream.readInt32(exception);
+            if ((flags & 1) != 0) {
+                placeholder_path = stream.readByteArray(exception);
+                placeholder_svg_path = SvgHelper.doPath(SvgHelper.decompress(placeholder_path));
+            }
+            if ((flags & 2) != 0) {
+                background_color = stream.readInt32(exception);
+            }
+            if ((flags & 4) != 0) {
+                background_dark_color = stream.readInt32(exception);
+            }
+            if ((flags & 8) != 0) {
+                header_color = stream.readInt32(exception);
+            }
+            if ((flags & 16) != 0) {
+                header_dark_color = stream.readInt32(exception);
+            }
+        }
+
+        @Override
+        public void serializeToStream(AbstractSerializedData stream) {
+            stream.writeInt32(constructor);
+            stream.writeInt32(flags);
+            if ((flags & 1) != 0) {
+                stream.writeByteArray(placeholder_path);
+            }
+            if ((flags & 2) != 0) {
+                stream.writeInt32(background_color);
+            }
+            if ((flags & 4) != 0) {
+                stream.writeInt32(background_dark_color);
+            }
+            if ((flags & 8) != 0) {
+                stream.writeInt32(header_color);
+            }
+            if ((flags & 16) != 0) {
+                stream.writeInt32(header_dark_color);
+            }
+        }
+    }
+
+    public static class toggleUserEmojiStatusPermission extends TLObject {
+        public static final int constructor = 0x6de6392;
+
+        public TLRPC.InputUser bot;
+        public boolean enabled;
+
+        @Override
+        public TLObject deserializeResponse(AbstractSerializedData stream, int constructor, boolean exception) {
+            return TLRPC.Bool.TLdeserialize(stream, constructor, exception);
+        }
+
+        @Override
+        public void serializeToStream(AbstractSerializedData stream) {
+            stream.writeInt32(constructor);
+            bot.serializeToStream(stream);
+            stream.writeBool(enabled);
+        }
+    }
+
+    public static class checkDownloadFileParams extends TLObject {
+        public static final int constructor = 0x50077589;
+
+        public TLRPC.InputUser bot;
+        public String file_name;
+        public String url;
+
+        @Override
+        public TLObject deserializeResponse(AbstractSerializedData stream, int constructor, boolean exception) {
+            return TLRPC.Bool.TLdeserialize(stream, constructor, exception);
+        }
+
+        @Override
+        public void serializeToStream(AbstractSerializedData stream) {
+            stream.writeInt32(constructor);
+            bot.serializeToStream(stream);
+            stream.writeString(file_name);
+            stream.writeString(url);
+        }
+    }
+
+    public static class updateStarRefProgram extends TLObject {
+        public static final int constructor = 0x778b5ab3;
+
+        public int flags;
+        public TLRPC.InputUser bot;
+        public int commission_permille;
+        public int duration_months;
+
+        @Override
+        public TLObject deserializeResponse(AbstractSerializedData stream, int constructor, boolean exception) {
+            return TL_payments.starRefProgram.TLdeserialize(stream, constructor, exception);
+        }
+
+        @Override
+        public void serializeToStream(AbstractSerializedData stream) {
+            stream.writeInt32(constructor);
+            stream.writeInt32(flags);
+            bot.serializeToStream(stream);
+            stream.writeInt32(commission_permille);
+            if ((flags & 1) != 0) {
+                stream.writeInt32(duration_months);
+            }
+        }
+    }
+
+    public static class getAdminedBots extends TLObject {
+        public static final int constructor = 0xb0711d83;
+
+        @Override
+        public TLObject deserializeResponse(AbstractSerializedData stream, int constructor, boolean exception) {
+            TLRPC.Vector vector = new TLRPC.Vector();
+            int size = stream.readInt32(exception);
+            for (int a = 0; a < size; a++) {
+                vector.objects.add(TLRPC.User.TLdeserialize(stream, stream.readInt32(exception), exception));
+            }
+            return vector;
+        }
+
+        @Override
+        public void serializeToStream(AbstractSerializedData stream) {
+            stream.writeInt32(constructor);
+        }
+    }
+
 }

@@ -876,13 +876,13 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
     public static void fillPremiumFeaturesList(ArrayList<PremiumFeatureData> premiumFeatures, int currentAccount, boolean all) {
         MessagesController messagesController = MessagesController.getInstance(currentAccount);
 
-        premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_LIMITS, R.drawable.msg_premium_limits, getString("PremiumPreviewLimits", R.string.PremiumPreviewLimits), LocaleController.formatString("PremiumPreviewLimitsDescription", R.string.PremiumPreviewLimitsDescription,
+        premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_LIMITS, R.drawable.msg_premium_limits, getString(R.string.PremiumPreviewLimits), LocaleController.formatString(R.string.PremiumPreviewLimitsDescription,
                 messagesController.channelsLimitPremium, messagesController.dialogFiltersLimitPremium, messagesController.dialogFiltersPinnedLimitPremium, messagesController.publicLinksLimitPremium, 4)));
         premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_STORIES, R.drawable.msg_filled_stories, getString(R.string.PremiumPreviewStories), LocaleController.formatString(R.string.PremiumPreviewStoriesDescription)));
-        premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_UPLOAD_LIMIT, R.drawable.msg_premium_uploads, getString("PremiumPreviewUploads", R.string.PremiumPreviewUploads), getString("PremiumPreviewUploadsDescription", R.string.PremiumPreviewUploadsDescription)));
-        premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_DOWNLOAD_SPEED, R.drawable.msg_premium_speed, getString("PremiumPreviewDownloadSpeed", R.string.PremiumPreviewDownloadSpeed), getString("PremiumPreviewDownloadSpeedDescription", R.string.PremiumPreviewDownloadSpeedDescription)));
-        premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_VOICE_TO_TEXT, R.drawable.msg_premium_voice, getString("PremiumPreviewVoiceToText", R.string.PremiumPreviewVoiceToText), getString("PremiumPreviewVoiceToTextDescription", R.string.PremiumPreviewVoiceToTextDescription)));
-        premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_ADS, R.drawable.msg_premium_ads, getString("PremiumPreviewNoAds", R.string.PremiumPreviewNoAds), getString("PremiumPreviewNoAdsDescription", R.string.PremiumPreviewNoAdsDescription)));
+        premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_UPLOAD_LIMIT, R.drawable.msg_premium_uploads, getString(R.string.PremiumPreviewUploads), getString(R.string.PremiumPreviewUploadsDescription)));
+        premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_DOWNLOAD_SPEED, R.drawable.msg_premium_speed, getString(R.string.PremiumPreviewDownloadSpeed), getString(R.string.PremiumPreviewDownloadSpeedDescription)));
+        premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_VOICE_TO_TEXT, R.drawable.msg_premium_voice, getString(R.string.PremiumPreviewVoiceToText), getString(R.string.PremiumPreviewVoiceToTextDescription)));
+        premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_ADS, R.drawable.msg_premium_ads, getString(R.string.PremiumPreviewNoAds), getString(R.string.PremiumPreviewNoAdsDescription)));
         premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_REACTIONS, R.drawable.msg_premium_reactions, getString(R.string.PremiumPreviewReactions2), getString(R.string.PremiumPreviewReactions2Description)));
         premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_STICKERS, R.drawable.msg_premium_stickers, getString(R.string.PremiumPreviewStickers), getString(R.string.PremiumPreviewStickersDescription)));
         premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_ANIMATED_EMOJI, R.drawable.msg_premium_emoji, getString(R.string.PremiumPreviewEmoji), getString(R.string.PremiumPreviewEmojiDescription)));
@@ -951,9 +951,12 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
     }
 
     public static CharSequence applyNewSpan(String str) {
+        return applyNewSpan(str, -1);
+    }
+    public static CharSequence applyNewSpan(String str, int fontSize) {
         SpannableStringBuilder spannableStringBuilder = new SpannableStringBuilder(str);
         spannableStringBuilder.append("  d");
-        FilterCreateActivity.NewSpan span = new FilterCreateActivity.NewSpan(false);
+        FilterCreateActivity.NewSpan span = new FilterCreateActivity.NewSpan(false, fontSize);
         span.setColor(Theme.getColor(Theme.key_premiumGradient1));
         spannableStringBuilder.setSpan(span, spannableStringBuilder.length() - 1, spannableStringBuilder.length(), 0);
         return spannableStringBuilder;
@@ -1459,7 +1462,7 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
 
                 if (position == showAdsInfoRow) {
                     privacyCell.setText(AndroidUtilities.replaceArrows(AndroidUtilities.replaceSingleTag(getString(R.string.ShowAdsInfo), () -> {
-                        showDialog(new RevenueSharingAdsInfoBottomSheet(PremiumPreviewFragment.this, getContext(), getResourceProvider()));
+                        showDialog(new RevenueSharingAdsInfoBottomSheet(getContext(), false, getResourceProvider(), null));
                     }), true));
                 } else if (position == statusRow && type == FEATURES_BUSINESS) {
                     privacyCell.setText(getString(R.string.PremiumPreviewMoreBusinessFeaturesInfo));

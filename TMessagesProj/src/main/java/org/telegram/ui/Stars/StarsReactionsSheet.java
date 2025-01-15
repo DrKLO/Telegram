@@ -345,7 +345,7 @@ public class StarsReactionsSheet extends BottomSheet {
                 });
             };
 
-            if (starsController.balanceAvailable() && starsController.getBalance() < totalStars) {
+            if (starsController.balanceAvailable() && starsController.getBalance().amount < totalStars) {
                 new StarsIntroActivity.StarsNeededSheet(context, resourcesProvider, totalStars, StarsIntroActivity.StarsNeededSheet.TYPE_REACTIONS, chat == null ? "" : chat.title, send).show();
             } else {
                 send.run();

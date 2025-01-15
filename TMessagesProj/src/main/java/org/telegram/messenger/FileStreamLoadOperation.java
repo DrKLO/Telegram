@@ -52,7 +52,7 @@ public class FileStreamLoadOperation extends BaseDataSource implements FileLoadO
     private static final ConcurrentHashMap<Long, Integer> priorityMap = new ConcurrentHashMap<>();
 
     public FileStreamLoadOperation() {
-        super(/* isNetwork= */ false);
+        super(/* isNetwork= */ true);
     }
 
     @Deprecated
@@ -113,6 +113,7 @@ public class FileStreamLoadOperation extends BaseDataSource implements FileLoadO
                     file = new RandomAccessFile(currentFile, "r");
                     file.seek(currentOffset);
                     if (loadOperation.isFinished()) {
+                        super.isNetwork = false;
                         bytesRemaining = currentFile.length() - currentOffset;
                         if (requestedLength != C.LENGTH_UNSET) {
                             bytesRemaining = Math.min(bytesRemaining, requestedLength - bytesTransferred);
@@ -122,7 +123,8 @@ public class FileStreamLoadOperation extends BaseDataSource implements FileLoadO
                 }
             }
         }
-//        FileLog.e("FileStreamLoadOperation " + document.id + " open operation=" + loadOperation + " currentFile=" + currentFile + " file=" + file + " bytesRemaining=" + bytesRemaining + " me=" + this);
+        FileLog.e("FileStreamLoadOperation " + document.id + " open operation=" + loadOperation + " currentFile=" + currentFile + " file=" + file + " bytesRemaining=" + bytesRemaining + " me=" + this);
+        FileLog.e("FileStreamLoadOperation " + document.id + " " + MessageObject.getVideoWidth(document) + "x" + MessageObject.getVideoWidth(document) + " mime_type="+document.mime_type+" codec="+MessageObject.getVideoCodec(document)+" size="+ document.size);
         return bytesRemaining;
     }
 
@@ -185,13 +187,22 @@ public class FileStreamLoadOperation extends BaseDataSource implements FileLoadO
                                 file = new RandomAccessFile(currentFile, "r");
                                 file.seek(currentOffset);
                                 if (loadOperation.isFinished()) {
+                                    super.isNetwork = false;
                                     bytesRemaining = currentFile.length() - currentOffset;
                                     if (requestedLength != C.LENGTH_UNSET) {
                                         bytesRemaining = Math.min(bytesRemaining, requestedLength - bytesTransferred);
                                     }
                                 }
                             } catch (Throwable e) {
-
+                                if (loadOperation.isFinished() && !currentFile.exists()) {
+                                    FileLoader.getInstance(currentAccount).cancelLoadFile(loadOperation.getFileName());
+                                    FileLoadOperation newLoadOperation = FileLoader.getInstance(currentAccount).loadStreamFile(this, document, null, parentObject, currentOffset, false, getCurrentPriority());
+                                    if (this.loadOperation != newLoadOperation) {
+//                            FileLog.e("FileStreamLoadOperation " + document.id + " read: changed operation!");
+                                        this.loadOperation.removeStreamListener(this);
+                                        this.loadOperation = newLoadOperation;
+                                    }
+                                }
                             }
                         }
                     } else {
@@ -223,7 +234,7 @@ public class FileStreamLoadOperation extends BaseDataSource implements FileLoadO
 
     @Override
     public void close() {
-//        FileLog.e("FileStreamLoadOperation " + document.id + " close me=" + this);
+        FileLog.e("FileStreamLoadOperation " + document.id + " close me=" + this);
         if (loadOperation != null) {
             loadOperation.removeStreamListener(this);
         }
@@ -273,15 +284,16 @@ public class FileStreamLoadOperation extends BaseDataSource implements FileLoadO
             return Uri.fromFile(file);
         }
         try {
-            String params = "?account=" + currentAccount +
-                    "&id=" + document.id +
-                    "&hash=" + document.access_hash +
-                    "&dc=" + document.dc_id +
-                    "&size=" + document.size +
-                    "&mime=" + URLEncoder.encode(document.mime_type, "UTF-8") +
-                    "&rid=" + FileLoader.getInstance(currentAccount).getFileReference(parent) +
-                    "&name=" + URLEncoder.encode(FileLoader.getDocumentFileName(document), "UTF-8") +
-                    "&reference=" + Utilities.bytesToHex(document.file_reference != null ? document.file_reference : new byte[0]);
+            String params =
+                "?account=" + currentAccount +
+                "&id=" + document.id +
+                "&hash=" + document.access_hash +
+                "&dc=" + document.dc_id +
+                "&size=" + document.size +
+                "&mime=" + URLEncoder.encode(document.mime_type, "UTF-8") +
+                "&rid=" + FileLoader.getInstance(currentAccount).getFileReference(parent) +
+                "&name=" + URLEncoder.encode(FileLoader.getDocumentFileName(document), "UTF-8") +
+                "&reference=" + Utilities.bytesToHex(document.file_reference != null ? document.file_reference : new byte[0]);
             return Uri.parse("tg://" + attachFileName + params);
         } catch (UnsupportedEncodingException e) {
             FileLog.e(e);

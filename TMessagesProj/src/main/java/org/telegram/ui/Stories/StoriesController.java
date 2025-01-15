@@ -57,6 +57,7 @@ import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.Premium.LimitReachedBottomSheet;
 import org.telegram.ui.Components.Reactions.ReactionImageHolder;
 import org.telegram.ui.Components.Reactions.ReactionsLayoutInBubble;
+import org.telegram.ui.Components.Text;
 import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.StatisticActivity;
 import org.telegram.ui.Stories.bots.BotPreviewsEditContainer;
@@ -2448,6 +2449,8 @@ public class StoriesController {
         }
     }
 
+    public final ArrayList<SearchStoriesList> attachedSearchLists = new ArrayList<>();
+
     public void updateStoriesInLists(long dialogId, List<TL_stories.StoryItem> storyItems) {
         FileLog.d("updateStoriesInLists " + dialogId + " storyItems[" + storyItems.size() + "] {" + storyItemIds(storyItems) + "}");
         StoriesList pinned = getStoriesList(dialogId, StoriesList.TYPE_PINNED, false);
@@ -2457,6 +2460,9 @@ public class StoriesController {
         }
         if (archived != null) {
             archived.updateStories(storyItems);
+        }
+        for (SearchStoriesList list : attachedSearchLists) {
+            list.updateStories(storyItems);
         }
     }
 
@@ -2796,17 +2802,20 @@ public class StoriesController {
     public static class SearchStoriesList extends StoriesList {
 
         public final String query;
+        public final String username;
         public final TL_stories.MediaArea queryArea;
 
-        public SearchStoriesList(int currentAccount, String query) {
+        public SearchStoriesList(int currentAccount, String username, String query) {
             super(currentAccount, 0, TYPE_SEARCH, null);
             this.query = query;
+            this.username = username;
             this.queryArea = null;
         }
 
         public SearchStoriesList(int currentAccount, TL_stories.MediaArea area) {
             super(currentAccount, 0, TYPE_SEARCH, null);
             this.query = null;
+            this.username = null;
             this.queryArea = area;
         }
 
@@ -2858,6 +2867,32 @@ public class StoriesController {
             }
 
             loading = true;
+
+            TLObject chat = null;
+            if (!TextUtils.isEmpty(username)) {
+                chat = MessagesController.getInstance(currentAccount).getUserOrChat(username);
+                if (chat == null) {
+                    MessagesController.getInstance(currentAccount).getUserNameResolver().resolve(username, resolvedId -> {
+                        TLObject resolvedChat = MessagesController.getInstance(currentAccount).getUserOrChat(username);
+                        loading = false;
+                        if (resolvedChat != null) {
+                            load(force, count, ids);
+                        } else {
+                            this.count = 0;
+                            last_offset = "";
+                            AndroidUtilities.cancelRunOnUIThread(super.notify);
+                            AndroidUtilities.runOnUIThread(super.notify);
+                        }
+                    });
+                    return true;
+                }
+            }
+            if (chat != null) {
+                req.flags |= 4;
+                req.peer = MessagesController.getInputPeer(chat);
+//                if (req.hashtag.startsWith("#") || req.hashtag.startsWith("$"))
+//                    req.hashtag = req.hashtag.substring(1);
+            }
 
             this.reqId = ConnectionsManager.getInstance(currentAccount).sendRequest(req, (res, err) -> AndroidUtilities.runOnUIThread(() -> {
                 this.reqId = 0;

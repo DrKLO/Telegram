@@ -46,6 +46,8 @@ import com.google.zxing.common.detector.MathUtils;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.ChatThemeController;
+import org.telegram.messenger.ImageLoader;
+import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.Utilities;
@@ -64,6 +66,7 @@ import org.telegram.ui.Components.VideoEditTextureView;
 import org.telegram.ui.Components.VideoPlayer;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.HashSet;
 
 public class PreviewView extends FrameLayout {
@@ -85,6 +88,7 @@ public class PreviewView extends FrameLayout {
 
     private VideoPlayer audioPlayer;
 
+    private CollageLayoutView2 collage;
 //    private VideoTimelinePlayView videoTimelineView;
     private TimelineView timelineView;
 
@@ -129,14 +133,20 @@ public class PreviewView extends FrameLayout {
         if (entry == null) {
             setupVideoPlayer(null, whenReady, seekTo);
             setupImage(null);
+            setupCollage(null);
             setupWallpaper(null, false);
             gradientPaint.setShader(null);
             setupAudio((StoryEntry) null, false);
             setupRound(null, null, false);
             return;
         }
-        if (entry.isVideo) {
+        if (entry.isCollage()) {
+            setupImage(null);
+            setupVideoPlayer(null, whenReady, seekTo);
+            setupCollage(entry);
+        } else if (entry.isVideo) {
             setupImage(entry);
+            setupCollage(null);
             setupVideoPlayer(entry, whenReady, seekTo);
             if (entry.gradientTopColor != 0 || entry.gradientBottomColor != 0) {
                 setupGradient();
@@ -144,6 +154,7 @@ public class PreviewView extends FrameLayout {
                 entry.setupGradient(this::setupGradient);
             }
         } else {
+            setupCollage(null);
             setupVideoPlayer(null, whenReady, 0);
             setupImage(entry);
             setupGradient();
@@ -152,6 +163,14 @@ public class PreviewView extends FrameLayout {
         setupWallpaper(entry, false);
         setupAudio(entry, false);
         setupRound(entry, null, false);
+    }
+
+    public void setCollageView(CollageLayoutView2 collage) {
+        this.collage = collage;
+    }
+
+    public boolean isCollage() {
+        return collage != null && entry != null && entry.isCollage();
     }
 
     // set without video for faster transition
@@ -278,8 +297,15 @@ public class PreviewView extends FrameLayout {
                     entry.audioOffset = (long) (entry.left * getDuration());
                 }
                 entry.audioLeft = 0;
-                long scrollDuration = Math.min(entry != null && entry.isVideo ? getDuration() : entry.audioDuration, TimelineView.MAX_SCROLL_DURATION);
-                entry.audioRight = entry.audioDuration == 0 ? 1 : Math.min(1, Math.min(scrollDuration, TimelineView.MAX_SELECT_DURATION) / (float) entry.audioDuration);
+                long duration;
+                if (isCollage() && collage.hasVideo()) {
+                    duration = collage.getDuration();
+                } else if (entry.isVideo) {
+                    duration = getDuration();
+                } else {
+                    duration = entry.audioDuration;
+                }
+                entry.audioRight = entry.audioDuration == 0 ? 1 : Math.min(1, Math.min(duration, TimelineView.MAX_SELECT_DURATION) / (float) entry.audioDuration);
             }
         }
         setupAudio(entry, animated);
@@ -300,6 +326,8 @@ public class PreviewView extends FrameLayout {
     public void seekTo(long position, boolean fast) {
         if (videoPlayer != null) {
             videoPlayer.seekTo(position, fast);
+        } else if (isCollage()) {
+            collage.seekTo(position, fast);
         } else if (roundPlayer != null) {
             roundPlayer.seekTo(position, fast);
         } else if (audioPlayer != null) {
@@ -393,6 +421,9 @@ public class PreviewView extends FrameLayout {
             timelineView.setDelegate(new TimelineView.TimelineDelegate() {
                 @Override
                 public void onProgressDragChange(boolean dragging) {
+                    if (isCollage()) {
+                        collage.forceNotRestorePosition();
+                    }
                     updatePauseReason(-4, dragging);
                 }
 
@@ -402,6 +433,8 @@ public class PreviewView extends FrameLayout {
                         seekTo(progress);
                     } else if (videoPlayer != null) {
                         videoPlayer.seekTo(progress, true);
+                    } else if (isCollage()) {
+                        collage.seekTo(progress, true);
                     } else if (audioPlayer != null) {
                         audioPlayer.seekTo(progress, false);
                     }
@@ -532,6 +565,41 @@ public class PreviewView extends FrameLayout {
                 public void onRoundSelectChange(boolean selected) {
                     PreviewView.this.onRoundSelectChange(selected);
                 }
+
+                @Override
+                public void onVideoVolumeChange(int i, float volume) {
+                    if (entry != null && entry.collageContent != null && i >= 0 && i < entry.collageContent.size()) {
+                        entry.collageContent.get(i).videoVolume = volume;
+                    }
+                }
+
+                @Override
+                public void onVideoLeftChange(int i, float left) {
+                    if (entry != null && entry.collageContent != null && i >= 0 && i < entry.collageContent.size()) {
+                        entry.collageContent.get(i).videoLeft = left;
+                    }
+                }
+
+                @Override
+                public void onVideoRightChange(int i, float right) {
+                    if (entry != null && entry.collageContent != null && i >= 0 && i < entry.collageContent.size()) {
+                        entry.collageContent.get(i).videoRight = right;
+                    }
+                }
+
+                @Override
+                public void onVideoOffsetChange(int i, long offset) {
+                    if (entry != null && entry.collageContent != null && i >= 0 && i < entry.collageContent.size()) {
+                        entry.collageContent.get(i).videoOffset = offset;
+                    }
+                }
+
+                @Override
+                public void onVideoSelected(int i) {
+                    if (collage != null) {
+                        collage.highlight(i);
+                    }
+                }
             });
         }
     }
@@ -630,6 +698,12 @@ public class PreviewView extends FrameLayout {
         invalidate();
     }
 
+    private void setupCollage(StoryEntry entry) {
+        if (timelineView != null) {
+            timelineView.setCollage(entry != null ? entry.collageContent : null);
+        }
+    }
+
     private void setupGradient() {
         final int height = getMeasuredHeight() > 0 ? getMeasuredHeight() : AndroidUtilities.displaySize.y;
         if (entry.gradientTopColor == 0 || entry.gradientBottomColor == 0) {
@@ -678,7 +752,7 @@ public class PreviewView extends FrameLayout {
     }
 
     public void setupVideoPlayer(StoryEntry entry, Runnable whenReady, long seekTo) {
-        if (entry == null) {
+        if (entry == null || entry.isCollage()) {
             if (videoPlayer != null) {
                 videoPlayer.pause();
                 videoPlayer.releasePlayer(true);
@@ -1043,7 +1117,7 @@ public class PreviewView extends FrameLayout {
     };
 
     private final Runnable updateAudioProgressRunnable = () -> {
-        if (audioPlayer == null || videoPlayer != null || roundPlayer != null || timelineView == null) {
+        if (audioPlayer == null || videoPlayer != null || roundPlayer != null || timelineView == null || isCollage()) {
             return;
         }
 
@@ -1061,7 +1135,7 @@ public class PreviewView extends FrameLayout {
     };
 
     private final Runnable updateRoundProgressRunnable = () -> {
-        if (roundPlayer == null || videoPlayer != null || timelineView == null) {
+        if (roundPlayer == null || videoPlayer != null || isCollage() || timelineView == null) {
             return;
         }
 
@@ -1079,12 +1153,12 @@ public class PreviewView extends FrameLayout {
         }
     };
 
-    private void updateAudioPlayer(boolean updateSeek) {
+    public void updateAudioPlayer(boolean updateSeek) {
         if (audioPlayer == null || entry == null) {
             return;
         }
 
-        if (videoPlayer == null && roundPlayer == null) {
+        if (videoPlayer == null && roundPlayer == null && !isCollage()) {
             audioPlayer.setPlayWhenReady(pauseLinks.isEmpty());
             audioPlayer.setLooping(true);
 
@@ -1099,26 +1173,34 @@ public class PreviewView extends FrameLayout {
             return;
         }
 
-        VideoPlayer player = videoPlayer != null ? videoPlayer : roundPlayer;
+        final long pos;
+        final boolean playing;
+        if (isCollage()) {
+            pos = collage.getPositionWithOffset();
+            playing = collage.isPlaying();
+        } else {
+            VideoPlayer player = videoPlayer != null ? videoPlayer : roundPlayer;
+            pos = player.getCurrentPosition();
+            playing = player.isPlaying();
+        }
 
-        final long pos = player.getCurrentPosition();
         final long duration = (long) ((entry.audioRight - entry.audioLeft) * entry.audioDuration);
-        boolean shouldPlaying = player.isPlaying() && pos >= entry.audioOffset && pos <= entry.audioOffset + duration;
+        boolean shouldPlaying = playing && pos >= entry.audioOffset && pos <= entry.audioOffset + duration;
         long audioPos = pos - entry.audioOffset + (long) (entry.audioLeft * entry.audioDuration);
         if (audioPlayer.isPlaying() != shouldPlaying) {
             audioPlayer.setPlayWhenReady(shouldPlaying);
             audioPlayer.seekTo(audioPos);
-        } else if (updateSeek && Math.abs(audioPlayer.getCurrentPosition() - audioPos) > 120) {
+        } else if (updateSeek && Math.abs(audioPlayer.getCurrentPosition() - audioPos) > (isCollage() ? 300 : 120)) {
             audioPlayer.seekTo(audioPos);
         }
     }
 
-    private void updateRoundPlayer(boolean updateSeek) {
+    public void updateRoundPlayer(boolean updateSeek) {
         if (roundPlayer == null || entry == null) {
             return;
         }
 
-        if (videoPlayer == null) {
+        if (videoPlayer == null && !isCollage()) {
             roundPlayer.setPlayWhenReady(pauseLinks.isEmpty());
             roundPlayer.setLooping(true);
             if (roundView != null) {
@@ -1136,10 +1218,19 @@ public class PreviewView extends FrameLayout {
             return;
         }
 
-        final long pos = videoPlayer.getCurrentPosition();
+        final long pos;
+        final boolean playing;
+        if (isCollage()) {
+            pos = collage.getPositionWithOffset();
+            playing = collage.isPlaying();
+        } else {
+            pos = videoPlayer.getCurrentPosition();
+            playing = videoPlayer.isPlaying();
+        }
+
         final long duration = (long) ((entry.roundRight - entry.roundLeft) * entry.roundDuration);
         boolean shouldPlayingInSeek = pos >= entry.roundOffset && pos <= entry.roundOffset + duration;
-        boolean shouldPlaying = videoPlayer.isPlaying() && shouldPlayingInSeek;
+        boolean shouldPlaying = playing && shouldPlayingInSeek;
         long roundPos = pos - entry.roundOffset + (long) (entry.roundLeft * entry.roundDuration);
         if (roundView != null) {
             roundView.setShown(shouldPlayingInSeek, true);
@@ -1147,7 +1238,7 @@ public class PreviewView extends FrameLayout {
         if (roundPlayer.isPlaying() != shouldPlaying) {
             roundPlayer.setPlayWhenReady(shouldPlaying);
             roundPlayer.seekTo(roundPos);
-        } else if (updateSeek && Math.abs(roundPlayer.getCurrentPosition() - roundPos) > 120) {
+        } else if (updateSeek && Math.abs(roundPlayer.getCurrentPosition() - roundPos) > (isCollage() ? 300 : 120)) {
             roundPlayer.seekTo(roundPos);
         }
     }
@@ -1171,6 +1262,9 @@ public class PreviewView extends FrameLayout {
         }
         if (audioPlayer != null) {
             audioPlayer.setVolume(isMuted ? 0 : (entry != null ? entry.audioVolume : 1f));
+        }
+        if (collage != null) {
+            collage.setMuted(isMuted);
         }
     }
 
@@ -1245,7 +1339,7 @@ public class PreviewView extends FrameLayout {
         } else {
             canvas.drawRect(0, 0, getWidth(), getHeight(), gradientPaint);
         }
-        if (draw && entry != null) {
+        if (draw && entry != null && !isCollage()) {
             float alpha = this.thumbAlpha.set(bitmap != null);
             if (thumbBitmap != null && (1f - alpha) > 0) {
                 matrix.set(entry.matrix);
@@ -1519,6 +1613,9 @@ public class PreviewView extends FrameLayout {
         }
         if (videoPlayer != null) {
             videoPlayer.setPlayWhenReady(pauseLinks.isEmpty());
+        }
+        if (collage != null) {
+            collage.setPlaying(pauseLinks.isEmpty());
         }
         updateAudioPlayer(true);
         updateRoundPlayer(true);

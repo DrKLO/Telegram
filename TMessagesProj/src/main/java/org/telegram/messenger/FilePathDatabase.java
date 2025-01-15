@@ -171,12 +171,10 @@ public class FilePathDatabase {
             }
             return path;
         }
+        if (dispatchQueue != null && dispatchQueue.getHandler() != null && Thread.currentThread() == dispatchQueue.getHandler().getLooper().getThread()) {
+            useQueue = false;
+        }
         if (useQueue) {
-            if (BuildVars.DEBUG_PRIVATE_VERSION) {
-                if (dispatchQueue != null && dispatchQueue.getHandler() != null && Thread.currentThread() == dispatchQueue.getHandler().getLooper().getThread()) {
-                    throw new RuntimeException("Error, lead to infinity loop");
-                }
-            }
 
             CountDownLatch syncLatch = new CountDownLatch(1);
             String[] res = new String[1];

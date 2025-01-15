@@ -1381,7 +1381,7 @@ public class StoryViewer implements NotificationCenter.NotificationCenterDelegat
                                 currentPlayerScope.firstFrameRendered = true;
                             }
                             FileLog.d("StoryViewer requestPlayer: currentPlayerScope.player start " + uri);
-                            currentPlayerScope.player.start(isPaused(), uri, t, isInSilentMode, currentSpeed);
+                            currentPlayerScope.player.start(false, isPaused(), uri, t, isInSilentMode, currentSpeed);
                             currentPlayerScope.invalidate();
                         } else {
                             FileLog.d("StoryViewer requestPlayer: url is null (1)");

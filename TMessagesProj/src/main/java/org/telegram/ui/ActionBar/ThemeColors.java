@@ -66,6 +66,9 @@ public class ThemeColors {
         defaultColors[key_dialogCardShadow] = 0x30999999;
         defaultColors[key_dialogGiftsBackground] = 0xffF5F6F7;
         defaultColors[key_dialogGiftsTabText] = 0xFF56595C;
+        defaultColors[key_bot_loadingIcon] = 0xFFF2F2F2;
+        defaultColors[key_gift_ribbon] = 0xFF46A4F2;
+        defaultColors[key_gift_ribbon_soldout] = 0xffcc4747;
 
         defaultColors[key_windowBackgroundWhite] = 0xffffffff;
         defaultColors[key_windowBackgroundUnchecked] = 0xff9da7b1;
@@ -843,6 +846,9 @@ public class ThemeColors {
         colorKeysMap.put(key_dialog_inlineProgress, "dialog_inlineProgress");
         colorKeysMap.put(key_dialogSearchBackground, "dialogSearchBackground");
         colorKeysMap.put(key_dialogSearchHint, "dialogSearchHint");
+        colorKeysMap.put(key_bot_loadingIcon, "bot_loadingIcon");
+        colorKeysMap.put(key_gift_ribbon, "gift_ribbon");
+        colorKeysMap.put(key_gift_ribbon_soldout, "gift_ribbon_soldout");
         colorKeysMap.put(key_dialogSearchIcon, "dialogSearchIcon");
         colorKeysMap.put(key_dialogSearchText, "dialogSearchText");
         colorKeysMap.put(key_dialogFloatingButton, "dialogFloatingButton");

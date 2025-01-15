@@ -187,11 +187,11 @@ public class QuoteSpan implements LeadingMarginSpan {
         final QuoteSpan quoteSpan = styleSpan.span = new QuoteSpan(true, collapsed, styleSpan);
         quoteSpan.start = start;
         quoteSpan.end = end;
-        editable.setSpan(quoteSpan, start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-        editable.setSpan(styleSpan, start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        editable.setSpan(quoteSpan, Utilities.clamp(start, editable.length(), 0), Utilities.clamp(end, editable.length(), 0), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        editable.setSpan(styleSpan, Utilities.clamp(start, editable.length(), 0), Utilities.clamp(end, editable.length(), 0), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
 
-        editable.insert(end, "\uFEFF");
-        editable.delete(end, end + 1);
+        editable.insert(Utilities.clamp(end, editable.length(), 0), "\uFEFF");
+        editable.delete(Utilities.clamp(end, editable.length(), 0), Utilities.clamp(end + 1, editable.length(), 0));
 
         return selectEnd;
     }

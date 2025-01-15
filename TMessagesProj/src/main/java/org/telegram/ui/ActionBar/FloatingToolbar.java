@@ -16,6 +16,8 @@
 
 package org.telegram.ui.ActionBar;
 
+import static org.telegram.messenger.AndroidUtilities.allGlobalViews;
+
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
@@ -70,6 +72,8 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.LaunchActivity;
+import org.telegram.ui.PhotoViewer;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -1406,11 +1410,70 @@ public final class FloatingToolbar {
     }
 
     private static PopupWindow createPopupWindow(ViewGroup content) {
-        ViewGroup popupContentHolder = new LinearLayout(content.getContext());
+        ViewGroup popupContentHolder = new LinearLayout(content.getContext()) {
+            @Override
+            public boolean onInterceptTouchEvent(MotionEvent ev) {
+                return super.onInterceptTouchEvent(ev);
+            }
+            private boolean isParent(View child, View parent) {
+                if (child == parent) return true;
+                if (child.getParent() == null) return false;
+                if (child.getParent() instanceof View) {
+                    return isParent((View) child.getParent(), parent);
+                } else if (child.getParent() == parent) {
+                    return true;
+                } else if (child.getRootView() == parent) {
+                    return true;
+                }
+                return false;
+            }
+
+            private final int[] p = new int[2];
+            private View downRootView = null;
+            @Override
+            public boolean dispatchTouchEvent(MotionEvent ev) {
+                boolean r = super.dispatchTouchEvent(ev);
+                if (!r) {
+                    getLocationOnScreen(p);
+                    ev.offsetLocation(p[0], p[1]);
+                    if (ev.getAction() == MotionEvent.ACTION_DOWN) {
+                        final List<View> views = allGlobalViews();
+                        if (views != null && views.size() > 1) {
+                            for (int i = views.size() - 2; i >= 0; --i) {
+                                final View view = views.get(i);
+                                if (isParent(this, view)) continue;
+                                view.getLocationOnScreen(p);
+                                ev.offsetLocation(-p[0], -p[1]);
+                                r = view.dispatchTouchEvent(ev);
+                                if (r) {
+                                    downRootView = view;
+                                    return true;
+                                }
+                                ev.offsetLocation(p[0], p[1]);
+                            }
+                        }
+                    } else if (downRootView != null) {
+                        View view = downRootView;
+                        view.getLocationOnScreen(p);
+                        ev.offsetLocation(-p[0], -p[1]);
+                        r = view.dispatchTouchEvent(ev);
+                    }
+                }
+                if (ev.getAction() == MotionEvent.ACTION_UP || ev.getAction() == MotionEvent.ACTION_CANCEL) {
+                    downRootView = null;
+                }
+                return r;
+            }
+            @Override
+            public boolean onTouchEvent(MotionEvent event) {
+                return super.onTouchEvent(event);
+            }
+        };
         PopupWindow popupWindow = new PopupWindow(popupContentHolder);
         popupWindow.setClippingEnabled(false);
         popupWindow.setAnimationStyle(0);
         popupWindow.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+        popupWindow.setSplitTouchEnabled(true);
         content.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         popupContentHolder.addView(content);
         return popupWindow;

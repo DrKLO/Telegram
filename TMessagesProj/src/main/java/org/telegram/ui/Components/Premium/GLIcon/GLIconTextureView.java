@@ -80,7 +80,7 @@ public class GLIconTextureView extends TextureView implements TextureView.Surfac
         super(context);
 
         this.type = type;
-        animationsCount = type == Icon3D.TYPE_COIN ? 1 : 5;
+        animationsCount = type == Icon3D.TYPE_COIN || type == Icon3D.TYPE_DEAL ? 1 : 5;
         setOpaque(false);
         setRenderer(new GLIconRenderer(context, style, type));
         initialize(context);
@@ -638,7 +638,7 @@ public class GLIconTextureView extends TextureView implements TextureView.Surfac
     private void pullAnimation() {
         int i = Math.abs(Utilities.random.nextInt() % 4);
         animatorSet = new AnimatorSet();
-        if (i == 0 && type != Icon3D.TYPE_COIN) {
+        if (i == 0 && type != Icon3D.TYPE_COIN && type != Icon3D.TYPE_DEAL) {
             int a = 48;
 
             ValueAnimator v1 = ValueAnimator.ofFloat(mRenderer.angleY, a);
@@ -655,7 +655,7 @@ public class GLIconTextureView extends TextureView implements TextureView.Surfac
             animatorSet.playTogether(v1, v2);
         } else {
             int dg = 485;
-            if (type == Icon3D.TYPE_COIN) {
+            if (type == Icon3D.TYPE_COIN || type == Icon3D.TYPE_DEAL) {
                 dg = 360;
             }
             int a = dg;

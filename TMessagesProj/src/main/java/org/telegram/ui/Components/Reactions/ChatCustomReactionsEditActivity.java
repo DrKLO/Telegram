@@ -15,6 +15,8 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffColorFilter;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.text.Editable;
@@ -27,6 +29,7 @@ import android.view.KeyEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 
@@ -43,19 +46,26 @@ import org.telegram.messenger.browser.Browser;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.tl.TL_stories;
 import org.telegram.ui.ActionBar.ActionBar;
+import org.telegram.ui.ActionBar.AdjustPanLayoutHelper;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
+import org.telegram.ui.ActionBar.INavigationLayout;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.HeaderCell;
 import org.telegram.ui.Cells.SlideIntChooseView;
 import org.telegram.ui.Cells.TextCheckCell;
 import org.telegram.ui.Cells.TextInfoPrivacyCell;
+import org.telegram.ui.ChannelAdminLogActivity;
 import org.telegram.ui.Components.AnimatedEmojiDrawable;
 import org.telegram.ui.Components.AnimatedEmojiSpan;
 import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.CubicBezierInterpolator;
+import org.telegram.ui.Components.HideViewAfterAnimation;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.DialogsActivity;
+import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.SelectAnimatedEmojiDialog;
+import org.telegram.ui.Stories.recorder.KeyboardNotifier;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -80,6 +90,9 @@ public class ChatCustomReactionsEditActivity extends BaseFragment implements Not
     private SlideIntChooseView slideView;
     private TextCheckCell paidCheckCell;
     private UpdateReactionsButton actionButton;
+    private FrameLayout actionButtonContainer;
+    private ImageView actionButtonContainerGradient;
+    private int keyboardHeight;
     private ScrollView scrollView;
 
     private final HashMap<Long, AnimatedEmojiSpan> selectedEmojisMap = new LinkedHashMap<>();
@@ -153,9 +166,60 @@ public class ChatCustomReactionsEditActivity extends BaseFragment implements Not
             }
         });
 
-        FrameLayout rootLayout = new FrameLayout(context);
         scrollView = new ScrollView(context);
         scrollView.setFillViewport(true);
+        FrameLayout rootLayout = new FrameLayout(context) {
+            final AdjustPanLayoutHelper adjustPanLayoutHelper = new AdjustPanLayoutHelper(this) {
+
+                @Override
+                protected void onTransitionStart(boolean keyboardVisible, int contentHeight) {
+                    actionButtonContainer.setVisibility(View.VISIBLE);
+                    actionButtonContainer.animate().alpha(!keyboardVisible ? 1.0f : 0.0f).withEndAction(() -> {
+                        if (keyboardVisible) {
+                            actionButtonContainer.setVisibility(View.INVISIBLE);
+                        }
+                    }).start();
+                }
+
+                @Override
+                protected void onTransitionEnd() {
+
+                }
+
+                @Override
+                protected void onPanTranslationUpdate(float y, float progress, boolean keyboardVisible) {
+                    if (getParentLayout() != null && getParentLayout().isPreviewOpenAnimationInProgress()) {
+                        return;
+                    }
+                }
+
+                @Override
+                protected boolean applyTranslation() {
+                    return false;
+                }
+
+                @Override
+                protected boolean heightAnimationEnabled() {
+                    INavigationLayout actionBarLayout = getParentLayout();
+                    if (inPreviewMode || AndroidUtilities.isTablet() || inBubbleMode || AndroidUtilities.isInMultiwindow || actionBarLayout == null) {
+                        return false;
+                    }
+                    return true;
+                }
+            };
+
+            @Override
+            protected void onAttachedToWindow() {
+                super.onAttachedToWindow();
+                adjustPanLayoutHelper.onAttach();
+            }
+
+            @Override
+            protected void onDetachedFromWindow() {
+                super.onDetachedFromWindow();
+                adjustPanLayoutHelper.onDetach();
+            }
+        };
 
         contentLayout = new LinearLayout(context);
         contentLayout.setOrientation(LinearLayout.VERTICAL);
@@ -274,6 +338,14 @@ public class ChatCustomReactionsEditActivity extends BaseFragment implements Not
             infoCell3.setBottomPadding(70);
         }
 
+        actionButtonContainer = new FrameLayout(context);
+
+        actionButtonContainerGradient = new ImageView(context);
+        actionButtonContainerGradient.setImageResource(R.drawable.gradient_bottom);
+        actionButtonContainerGradient.setScaleType(ImageView.ScaleType.FIT_XY);
+        actionButtonContainerGradient.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundGray, resourceProvider), PorterDuff.Mode.SRC_ATOP));
+        actionButtonContainer.addView(actionButtonContainerGradient, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.FILL));
+
         actionButton = new UpdateReactionsButton(context, getResourceProvider());
         actionButton.setDefaultState();
         actionButton.setOnClickListener(v -> {
@@ -316,7 +388,8 @@ public class ChatCustomReactionsEditActivity extends BaseFragment implements Not
             }, this::finishFragment);
         });
         rootLayout.addView(scrollView);
-        rootLayout.addView(actionButton, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.BOTTOM, 13, 0, 13, 13));
+        rootLayout.addView(actionButtonContainer, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 13 + 48 + 13, Gravity.BOTTOM, 0, 0, 0, 0));
+        actionButtonContainer.addView(actionButton, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.BOTTOM, 13, 13, 13, 13));
         rootLayout.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundGray));
 
         bottomDialogLayout = new FrameLayout(context) {
@@ -325,13 +398,12 @@ public class ChatCustomReactionsEditActivity extends BaseFragment implements Not
                 super.onLayout(changed, left, top, right, bottom);
                 if (emojiKeyboardVisible && changed) {
                     //support screen rotation
-                    actionButton.setTranslationY(-bottomDialogLayout.getMeasuredHeight());
+                    actionButtonContainer.setTranslationY(-bottomDialogLayout.getMeasuredHeight());
                     updateScrollViewMarginBottom(bottomDialogLayout.getMeasuredHeight());
-                    scrollView.fullScroll(ScrollView.FOCUS_DOWN);
+//                    scrollView.fullScroll(ScrollView.FOCUS_DOWN);
                 }
             }
         };
-
         bottomDialogLayout.setVisibility(View.INVISIBLE);
         rootLayout.addView(bottomDialogLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM));
 
@@ -594,9 +666,9 @@ public class ChatCustomReactionsEditActivity extends BaseFragment implements Not
 
         if (selectType == SELECT_TYPE_SOME || selectType == SELECT_TYPE_ALL || paid) {
             switchLayout.setVisibility(View.VISIBLE);
-            actionButton.setVisibility(View.VISIBLE);
+            actionButtonContainer.setVisibility(View.VISIBLE);
             if (animated) {
-                actionButton.animate().setListener(null).cancel();
+                actionButtonContainer.animate().setListener(null).cancel();
                 switchLayout.animate().setListener(null).cancel();
                 switchLayout.animate().alpha(1f).setDuration(350).setInterpolator(CubicBezierInterpolator.DEFAULT).setListener(new AnimatorListenerAdapter() {
                     @Override
@@ -604,7 +676,7 @@ public class ChatCustomReactionsEditActivity extends BaseFragment implements Not
                         editText.setFocusableInTouchMode(true);
                     }
                 }).start();
-                actionButton.animate().alpha(1f).setDuration(350).setInterpolator(CubicBezierInterpolator.DEFAULT).start();
+                actionButtonContainer.animate().alpha(1f).setDuration(350).setInterpolator(CubicBezierInterpolator.DEFAULT).start();
                 if (selectedEmojisMap.isEmpty()) {
                     selectAnimatedEmojiDialog.clearSelectedDocuments();
                     editText.setText("");
@@ -626,12 +698,12 @@ public class ChatCustomReactionsEditActivity extends BaseFragment implements Not
         } else {
             if (animated) {
                 closeKeyboard();
-                actionButton.animate().setListener(null).cancel();
+                actionButtonContainer.animate().setListener(null).cancel();
                 switchLayout.animate().setListener(null).cancel();
-                actionButton.animate().alpha(0f).setDuration(350).setInterpolator(CubicBezierInterpolator.DEFAULT).setListener(new AnimatorListenerAdapter() {
+                actionButtonContainer.animate().alpha(0f).setDuration(350).setInterpolator(CubicBezierInterpolator.DEFAULT).setListener(new AnimatorListenerAdapter() {
                     @Override
                     public void onAnimationEnd(Animator animation) {
-                        actionButton.setVisibility(View.INVISIBLE);
+                        actionButtonContainer.setVisibility(View.INVISIBLE);
                     }
                 }).start();
                 switchLayout.animate().alpha(0f).setDuration(350).setInterpolator(CubicBezierInterpolator.DEFAULT).setListener(new AnimatorListenerAdapter() {
@@ -643,7 +715,7 @@ public class ChatCustomReactionsEditActivity extends BaseFragment implements Not
                 }).start();
             } else {
                 switchLayout.setVisibility(View.INVISIBLE);
-                actionButton.setVisibility(View.INVISIBLE);
+                actionButtonContainer.setVisibility(View.INVISIBLE);
             }
         }
     }
@@ -771,12 +843,13 @@ public class ChatCustomReactionsEditActivity extends BaseFragment implements Not
             bottomDialogLayout.setTranslationY(bottomDialogLayout.getMeasuredHeight());
             bottomDialogLayout.animate().setListener(null).cancel();
             bottomDialogLayout.animate().translationY(0).withLayer().setDuration(350).setInterpolator(CubicBezierInterpolator.DEFAULT).setUpdateListener(animation -> {
-                actionButton.setTranslationY(-(float) animation.getAnimatedValue() * bottomDialogLayout.getMeasuredHeight());
+                actionButtonContainer.setTranslationY(-(float) animation.getAnimatedValue() * bottomDialogLayout.getMeasuredHeight());
             }).setListener(new AnimatorListenerAdapter() {
                 @Override
                 public void onAnimationEnd(Animator animation) {
                     NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.startAllHeavyOperations, 512);
-                    scrollView.fullScroll(ScrollView.FOCUS_DOWN);
+//                    scrollView.fullScroll(ScrollView.FOCUS_DOWN);
+//                    scrollView.smoothScrollTo();
                 }
             }).start();
         }
@@ -795,7 +868,7 @@ public class ChatCustomReactionsEditActivity extends BaseFragment implements Not
             NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.stopAllHeavyOperations, 512);
             bottomDialogLayout.animate().setListener(null).cancel();
             bottomDialogLayout.animate().translationY(bottomDialogLayout.getMeasuredHeight()).setDuration(350).withLayer().setInterpolator(CubicBezierInterpolator.DEFAULT).setUpdateListener(animation -> {
-                actionButton.setTranslationY(-(1f - (float) animation.getAnimatedValue()) * bottomDialogLayout.getMeasuredHeight());
+                actionButtonContainer.setTranslationY(-(1f - (float) animation.getAnimatedValue()) * bottomDialogLayout.getMeasuredHeight());
             }).setListener(new AnimatorListenerAdapter() {
                 @Override
                 public void onAnimationEnd(Animator animation) {

@@ -291,7 +291,7 @@ public class StoriesViewPager extends ViewPager {
         }
         return true;
     }
-    private static boolean eq(ArrayList<Integer> a, ArrayList<Integer> b) {
+    public static boolean eq(ArrayList<Integer> a, ArrayList<Integer> b) {
         if (a == null && b == null) return true;
         if (a == null || b == null) return false;
         if (a.size() != b.size()) return false;

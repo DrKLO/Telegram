@@ -2,6 +2,9 @@ package org.telegram.ui.ActionBar;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
 
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
+import android.animation.ValueAnimator;
 import android.content.Context;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
@@ -15,20 +18,23 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import androidx.core.graphics.ColorUtils;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
 import org.telegram.ui.Components.AnimatedTextView;
 import org.telegram.ui.Components.CheckBox2;
+import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RLottieImageView;
 
 public class ActionBarMenuSubItem extends FrameLayout {
 
-    private TextView textView;
+    public TextView textView;
     public TextView subtextView;
     public RLottieImageView imageView;
-    private boolean checkViewLeft;
-    private CheckBox2 checkView;
+    public boolean checkViewLeft;
+    public CheckBox2 checkView;
     private ImageView rightIcon;
 
     private int textColor;
@@ -189,13 +195,16 @@ public class ActionBarMenuSubItem extends FrameLayout {
         textView.setText(text);
         if (icon != 0 || iconDrawable != null || checkView != null) {
             if (iconDrawable != null) {
+                iconResId = 0;
                 imageView.setImageDrawable(iconDrawable);
             } else {
+                iconResId = icon;
                 imageView.setImageResource(icon);
             }
             imageView.setVisibility(VISIBLE);
             textView.setPadding(checkViewLeft ? (checkView != null ? dp(43) : 0) : dp(icon != 0 || iconDrawable != null ? 43 : 0), 0, checkViewLeft ? dp(icon != 0 || iconDrawable != null ? 43 : 0) : (checkView != null ? dp(43) : 0), 0);
         } else {
+            iconResId = 0;
             imageView.setVisibility(INVISIBLE);
             textView.setPadding(0, 0, 0, 0);
         }
@@ -219,15 +228,47 @@ public class ActionBarMenuSubItem extends FrameLayout {
         }
     }
 
+    private ValueAnimator enabledAnimator;
+    private boolean enabled;
+    public void setEnabledByColor(boolean enabled, int colorDisabled, int colorEnabled) {
+        if (enabledAnimator != null) {
+            enabledAnimator.cancel();
+        }
+        enabledAnimator = ValueAnimator.ofFloat(this.enabled ? 1.0f : 0.0f, enabled ? 1.0f : 0.0f);
+        this.enabled = enabled;
+        enabledAnimator.addUpdateListener(anm -> {
+            final float t = (float) anm.getAnimatedValue();
+            setTextColor(ColorUtils.blendARGB(colorDisabled, colorEnabled, t));
+            setIconColor(ColorUtils.blendARGB(colorDisabled, colorEnabled, t));
+        });
+        enabledAnimator.addListener(new AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationEnd(Animator animation) {
+                final float t = enabled ? 1.0f : 0.0f;
+                setTextColor(ColorUtils.blendARGB(colorDisabled, colorEnabled, t));
+                setIconColor(ColorUtils.blendARGB(colorDisabled, colorEnabled, t));
+            }
+        });
+        enabledAnimator.setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT);
+        enabledAnimator.start();
+    }
+
+    private int iconResId;
+    public int getIconResId() {
+        return iconResId;
+    }
+
     public void setIcon(int resId) {
-        imageView.setImageResource(resId);
+        imageView.setImageResource(iconResId = resId);
     }
 
     public void setIcon(Drawable drawable) {
+        iconResId = 0;
         imageView.setImageDrawable(drawable);
     }
 
     public void setAnimatedIcon(int resId) {
+        iconResId = 0;
         imageView.setAnimation(resId, 24, 24);
     }
 
@@ -247,7 +288,7 @@ public class ActionBarMenuSubItem extends FrameLayout {
         }
     }
 
-    public void setSubtext(String text) {
+    public void setSubtext(CharSequence text) {
         if (subtextView == null) {
             subtextView = new TextView(getContext());
             subtextView.setLines(1);

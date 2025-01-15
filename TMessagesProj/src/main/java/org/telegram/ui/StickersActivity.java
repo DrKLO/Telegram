@@ -361,7 +361,7 @@ public class StickersActivity extends BaseFragment implements NotificationCenter
                     inputStickerSets.add(inputStickerSetID);
                     showDialog(new EmojiPacksAlert(StickersActivity.this, getParentActivity(), getResourceProvider(), inputStickerSets));
                 } else {
-                    showDialog(new StickersAlert(getParentActivity(), StickersActivity.this, inputStickerSetID, null, null));
+                    showDialog(new StickersAlert(getParentActivity(), StickersActivity.this, inputStickerSetID, null, null, false));
                 }
             } else if (position == featuredStickersShowMoreRow || position == featuredRow) {
                 if (currentType == MediaDataController.TYPE_EMOJIPACKS) {
@@ -410,7 +410,7 @@ public class StickersActivity extends BaseFragment implements NotificationCenter
                         inputs.add(inputId);
                         showDialog(new EmojiPacksAlert(StickersActivity.this, getParentActivity(), getResourceProvider(), inputs));
                     } else {
-                        showDialog(new StickersAlert(getParentActivity(), StickersActivity.this, null, stickerSet, null));
+                        showDialog(new StickersAlert(getParentActivity(), StickersActivity.this, null, stickerSet, null, false));
                     }
                 } else {
                     listAdapter.toggleSelected(position);

@@ -2,7 +2,9 @@ package org.telegram.tgnet;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.content.Context;
 import android.content.SharedPreferences;
+import android.content.pm.InstallSourceInfo;
 import android.content.pm.PackageInfo;
 import android.os.AsyncTask;
 import android.os.Build;
@@ -10,6 +12,7 @@ import android.os.SystemClock;
 import android.text.TextUtils;
 import android.util.Base64;
 
+import com.google.android.exoplayer2.upstream.DefaultBandwidthMeter;
 import com.google.android.gms.tasks.Task;
 import com.google.android.play.core.integrity.IntegrityManager;
 import com.google.android.play.core.integrity.IntegrityManagerFactory;
@@ -38,6 +41,7 @@ import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.StatsController;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
+import org.telegram.ui.Components.VideoPlayer;
 import org.telegram.ui.LoginActivity;
 
 import java.io.ByteArrayOutputStream;
@@ -346,7 +350,7 @@ public class ConnectionsManager extends BaseController {
             object.freeResources();
 
             long startRequestTime = 0;
-            if (BuildVars.DEBUG_PRIVATE_VERSION && BuildVars.LOGS_ENABLED) {
+            if (BuildVars.DEBUG_PRIVATE_VERSION && BuildVars.LOGS_ENABLED || (connectionType & ConnectionTypeDownload) != 0) {
                 startRequestTime = System.currentTimeMillis();
             }
             long finalStartRequestTime = startRequestTime;
@@ -376,6 +380,12 @@ public class ConnectionsManager extends BaseController {
                         if (BuildVars.LOGS_ENABLED && error.code != -2000) {
                             FileLog.e(object + " got error " + error.code + " " + error.text);
                         }
+                    }
+                    if ((connectionType & ConnectionTypeDownload) != 0 && VideoPlayer.activePlayers.isEmpty()) {
+                        long ping_time = native_getCurrentPingTime(currentAccount);
+                        final long size = responseSize;
+                        final long delta = Math.max(0, (System.currentTimeMillis() - finalStartRequestTime) - ping_time);
+                        DefaultBandwidthMeter.getSingletonInstance(ApplicationLoader.applicationContext).onTransfer(size, delta);
                     }
                     if (BuildVars.DEBUG_PRIVATE_VERSION && !getUserConfig().isClientActivated() && error != null && error.code == 400 && Objects.equals(error.text, "CONNECTION_NOT_INITED")) {
                         if (BuildVars.LOGS_ENABLED) {
@@ -429,16 +439,16 @@ public class ConnectionsManager extends BaseController {
 
     private void listen(int requestToken, RequestDelegateInternal onComplete, QuickAckDelegate onQuickAck, WriteToSocketDelegate onWriteToSocket) {
         requestCallbacks.put(requestToken, new RequestCallbacks(onComplete, onQuickAck, onWriteToSocket));
-        FileLog.d("{rc} listen(" + currentAccount + ", " + requestToken + "): " + requestCallbacks.size() + " requests' callbacks");
+//        FileLog.d("{rc} listen(" + currentAccount + ", " + requestToken + "): " + requestCallbacks.size() + " requests' callbacks");
     }
 
     private void listenCancel(int requestToken, Runnable onCancelled) {
         RequestCallbacks callbacks = requestCallbacks.get(requestToken);
         if (callbacks != null) {
             callbacks.onCancelled = onCancelled;
-            FileLog.d("{rc} listenCancel(" + currentAccount + ", " + requestToken + "): " + requestCallbacks.size() + " requests' callbacks");
+//            FileLog.d("{rc} listenCancel(" + currentAccount + ", " + requestToken + "): " + requestCallbacks.size() + " requests' callbacks");
         } else {
-            FileLog.d("{rc} listenCancel(" + currentAccount + ", " + requestToken + "): callback not found, " + requestCallbacks.size() + " requests' callbacks");
+//            FileLog.d("{rc} listenCancel(" + currentAccount + ", " + requestToken + "): callback not found, " + requestCallbacks.size() + " requests' callbacks");
         }
     }
 
@@ -452,13 +462,13 @@ public class ConnectionsManager extends BaseController {
                     callbacks.onCancelled.run();
                 }
                 connectionsManager.requestCallbacks.remove(requestToken);
-                FileLog.d("{rc} onRequestClear(" + currentAccount + ", " + requestToken + ", " + cancelled + "): request to cancel is found " + connectionsManager.requestCallbacks.size() + " requests' callbacks");
+//                FileLog.d("{rc} onRequestClear(" + currentAccount + ", " + requestToken + ", " + cancelled + "): request to cancel is found " + connectionsManager.requestCallbacks.size() + " requests' callbacks");
             } else {
-                FileLog.d("{rc} onRequestClear(" + currentAccount + ", " + requestToken + ", " + cancelled + "): request to cancel is not found " + connectionsManager.requestCallbacks.size() + " requests' callbacks");
+//                FileLog.d("{rc} onRequestClear(" + currentAccount + ", " + requestToken + ", " + cancelled + "): request to cancel is not found " + connectionsManager.requestCallbacks.size() + " requests' callbacks");
             }
         } else if (callbacks != null) {
             connectionsManager.requestCallbacks.remove(requestToken);
-            FileLog.d("{rc} onRequestClear(" + currentAccount + ", " + requestToken + ", " + cancelled + "): " + connectionsManager.requestCallbacks.size() + " requests' callbacks");
+//            FileLog.d("{rc} onRequestClear(" + currentAccount + ", " + requestToken + ", " + cancelled + "): " + connectionsManager.requestCallbacks.size() + " requests' callbacks");
         }
     }
 
@@ -471,9 +481,9 @@ public class ConnectionsManager extends BaseController {
             if (callbacks.onComplete != null) {
                 callbacks.onComplete.run(response, errorCode, errorText, networkType, timestamp, requestMsgId, dcId);
             }
-            FileLog.d("{rc} onRequestComplete(" + currentAccount + ", " + requestToken + "): found request " + requestToken + ", " + connectionsManager.requestCallbacks.size() + " requests' callbacks");
+//            FileLog.d("{rc} onRequestComplete(" + currentAccount + ", " + requestToken + "): found request " + requestToken + ", " + connectionsManager.requestCallbacks.size() + " requests' callbacks");
         } else {
-            FileLog.d("{rc} onRequestComplete(" + currentAccount + ", " + requestToken + "): not found request " + requestToken + "! " + connectionsManager.requestCallbacks.size() + " requests' callbacks");
+//            FileLog.d("{rc} onRequestComplete(" + currentAccount + ", " + requestToken + "): not found request " + requestToken + "! " + connectionsManager.requestCallbacks.size() + " requests' callbacks");
         }
     }
 
@@ -485,9 +495,9 @@ public class ConnectionsManager extends BaseController {
             if (callbacks.onQuickAck != null) {
                 callbacks.onQuickAck.run();
             }
-            FileLog.d("{rc} onRequestQuickAck(" + currentAccount + ", " + requestToken + "): found request " + requestToken + ", " + connectionsManager.requestCallbacks.size() + " requests' callbacks");
+//            FileLog.d("{rc} onRequestQuickAck(" + currentAccount + ", " + requestToken + "): found request " + requestToken + ", " + connectionsManager.requestCallbacks.size() + " requests' callbacks");
         } else {
-            FileLog.d("{rc} onRequestQuickAck(" + currentAccount + ", " + requestToken + "): not found request " + requestToken + "! " + connectionsManager.requestCallbacks.size() + " requests' callbacks");
+//            FileLog.d("{rc} onRequestQuickAck(" + currentAccount + ", " + requestToken + "): not found request " + requestToken + "! " + connectionsManager.requestCallbacks.size() + " requests' callbacks");
         }
     }
 
@@ -499,9 +509,9 @@ public class ConnectionsManager extends BaseController {
             if (callbacks.onWriteToSocket != null) {
                 callbacks.onWriteToSocket.run();
             }
-            FileLog.d("{rc} onRequestWriteToSocket(" + currentAccount + ", " + requestToken + "): found request " + requestToken + ", " + connectionsManager.requestCallbacks.size() + " requests' callbacks");
+//            FileLog.d("{rc} onRequestWriteToSocket(" + currentAccount + ", " + requestToken + "): found request " + requestToken + ", " + connectionsManager.requestCallbacks.size() + " requests' callbacks");
         } else {
-            FileLog.d("{rc} onRequestWriteToSocket(" + currentAccount + ", " + requestToken + "): not found request " + requestToken + "! " + connectionsManager.requestCallbacks.size() + " requests' callbacks");
+//            FileLog.d("{rc} onRequestWriteToSocket(" + currentAccount + ", " + requestToken + "): not found request " + requestToken + "! " + connectionsManager.requestCallbacks.size() + " requests' callbacks");
         }
     }
 
@@ -578,7 +588,18 @@ public class ConnectionsManager extends BaseController {
         }
         String installer = "";
         try {
-            installer = ApplicationLoader.applicationContext.getPackageManager().getInstallerPackageName(ApplicationLoader.applicationContext.getPackageName());
+            Context context = ApplicationLoader.applicationContext;
+            if (Build.VERSION.SDK_INT >= 30) {
+                InstallSourceInfo installSourceInfo = context.getPackageManager().getInstallSourceInfo(context.getPackageName());
+                if (installSourceInfo != null) {
+                    installer = installSourceInfo.getInitiatingPackageName();
+                    if (installer == null) {
+                        installer = installSourceInfo.getInstallingPackageName();
+                    }
+                }
+            } else {
+                installer = context.getPackageManager().getInstallerPackageName(context.getPackageName());
+            }
         } catch (Throwable ignore) {
 
         }
@@ -906,6 +927,7 @@ public class ConnectionsManager extends BaseController {
     public static native void native_resumeNetwork(int currentAccount, boolean partial);
     public static native long native_getCurrentTimeMillis(int currentAccount);
     public static native int native_getCurrentTime(int currentAccount);
+    public static native int native_getCurrentPingTime(int currentAccount);
     public static native int native_getCurrentDatacenterId(int currentAccount);
     public static native int native_getTimeDifference(int currentAccount);
     public static native void native_sendRequest(int currentAccount, long object, int flags, int datacenterId, int connectionType, boolean immediate, int requestToken);
