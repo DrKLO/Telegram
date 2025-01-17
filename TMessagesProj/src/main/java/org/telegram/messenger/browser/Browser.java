@@ -823,7 +823,7 @@ public class Browser {
             modifiedUriBuilder.append(originalUri.getPath());
         }
         if (originalUri.getQuery() != null) {
-            modifiedUriBuilder.append("?").append(originalUri.getQuery());
+            modifiedUriBuilder.append("?").append(originalUri.getEncodedQuery());
         }
         if (originalUri.getFragment() != null) {
             modifiedUriBuilder.append("#").append(originalUri.getFragment());
