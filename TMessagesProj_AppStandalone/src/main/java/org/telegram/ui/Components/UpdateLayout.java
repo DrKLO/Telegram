@@ -112,11 +112,12 @@ public class UpdateLayout extends IUpdateLayout {
             if (!SharedConfig.isAppUpdateAvailable()) {
                 return;
             }
-            updateAppUpdateViews(currentAccount, true);
-            if (updateLayoutIcon.getIcon() == MediaActionDrawable.ICON_DOWNLOAD) {
+
+            int neededIcon = getNeededAction(currentAccount);
+            if (neededIcon == MediaActionDrawable.ICON_DOWNLOAD) {
                 FileLoader.getInstance(currentAccount).loadFile(SharedConfig.pendingAppUpdate.document, "update", FileLoader.PRIORITY_NORMAL, 1);
                 updateAppUpdateViews(currentAccount,  true);
-            } else if (updateLayoutIcon.getIcon() == MediaActionDrawable.ICON_CANCEL) {
+            } else if (neededIcon == MediaActionDrawable.ICON_CANCEL) {
                 FileLoader.getInstance(currentAccount).cancelLoadFile(SharedConfig.pendingAppUpdate.document);
                 updateAppUpdateViews(currentAccount, true);
             } else {
@@ -148,6 +149,21 @@ public class UpdateLayout extends IUpdateLayout {
         updateSizeTextView.setGravity(Gravity.RIGHT);
         updateSizeTextView.setTextColor(0xffffffff);
         updateLayout.addView(updateSizeTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL | Gravity.RIGHT, 0, 0, 17, 0));
+    }
+
+    public int getNeededAction(int currentAccount) {
+        if (SharedConfig.isAppUpdateAvailable()) {
+            String fileName = FileLoader.getAttachFileName(SharedConfig.pendingAppUpdate.document);
+            File path = FileLoader.getInstance(currentAccount).getPathToAttach(SharedConfig.pendingAppUpdate.document, true);
+            if (path.exists()) {
+                return MediaActionDrawable.ICON_UPDATE;
+            } else if (FileLoader.getInstance(currentAccount).isLoadingFile(fileName)) {
+                return MediaActionDrawable.ICON_CANCEL;
+            } else {
+                return MediaActionDrawable.ICON_DOWNLOAD;
+            }
+        }
+        return -1;
     }
 
     public void updateAppUpdateViews(int currentAccount, boolean animated) {
