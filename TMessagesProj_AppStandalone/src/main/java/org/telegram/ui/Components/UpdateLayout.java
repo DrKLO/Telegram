@@ -60,6 +60,7 @@ public class UpdateLayout extends IUpdateLayout {
                 Long loadedSize = (Long) args[1];
                 Long totalSize = (Long) args[2];
                 float loadProgress = loadedSize / (float) totalSize;
+                updateLayoutIcon.setIcon(MediaActionDrawable.ICON_CANCEL, true, true);
                 updateLayoutIcon.setProgress(loadProgress, true);
                 updateTextViews[0].setText(LocaleController.formatString("AppUpdateDownloading", R.string.AppUpdateDownloading, (int) (loadProgress * 100)));
             }
@@ -111,6 +112,7 @@ public class UpdateLayout extends IUpdateLayout {
             if (!SharedConfig.isAppUpdateAvailable()) {
                 return;
             }
+            updateAppUpdateViews(currentAccount, true);
             if (updateLayoutIcon.getIcon() == MediaActionDrawable.ICON_DOWNLOAD) {
                 FileLoader.getInstance(currentAccount).loadFile(SharedConfig.pendingAppUpdate.document, "update", FileLoader.PRIORITY_NORMAL, 1);
                 updateAppUpdateViews(currentAccount,  true);
