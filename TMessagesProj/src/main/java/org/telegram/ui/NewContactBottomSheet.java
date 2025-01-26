@@ -794,7 +794,7 @@ public class NewContactBottomSheet extends BottomSheet implements AdapterView.On
         if (flag != null) {
             sb.append(flag);
         }
-        setCountryButtonText(Emoji.replaceEmoji(sb, countryFlag.getPaint().getFontMetricsInt(), AndroidUtilities.dp(20), false));
+        setCountryButtonText(Emoji.replaceEmoji(sb, countryFlag.getPaint().getFontMetricsInt(), false));
         countryCodeForHint = code;
         wasCountryHintIndex = -1;
         invalidateCountryHint();

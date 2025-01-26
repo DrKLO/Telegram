@@ -205,7 +205,9 @@ public class PremiumStickersPreviewRecycler extends RecyclerListView implements 
         } else if (oldSelectedView != sortedView.get(sortedView.size() - 1)) {
             oldSelectedView = sortedView.get(sortedView.size() - 1);
             if (haptic) {
-                performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
+                try {
+                    performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
+                } catch (Exception ignored) {}
             }
         }
         for (int i = 0; i < sortedView.size(); i++) {

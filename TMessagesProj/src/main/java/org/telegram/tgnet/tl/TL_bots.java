@@ -4,8 +4,11 @@ import android.graphics.Path;
 
 import org.telegram.messenger.SvgHelper;
 import org.telegram.tgnet.AbstractSerializedData;
+import org.telegram.tgnet.InputSerializedData;
+import org.telegram.tgnet.OutputSerializedData;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.tgnet.Vector;
 
 import java.util.ArrayList;
 
@@ -17,7 +20,7 @@ public class TL_bots {
         public int date;
         public TLRPC.MessageMedia media;
 
-        public static botPreviewMedia TLdeserialize(AbstractSerializedData stream, int constructor, boolean exception) {
+        public static botPreviewMedia TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
             if (botPreviewMedia.constructor != constructor) {
                 if (exception) {
                     throw new RuntimeException(String.format("can't parse magic %x in botPreviewMedia", constructor));
@@ -31,13 +34,13 @@ public class TL_bots {
         }
 
         @Override
-        public void readParams(AbstractSerializedData stream, boolean exception) {
+        public void readParams(InputSerializedData stream, boolean exception) {
             date = stream.readInt32(exception);
             media = TLRPC.MessageMedia.TLdeserialize(stream, stream.readInt32(exception), exception);
         }
 
         @Override
-        public void serializeToStream(AbstractSerializedData stream) {
+        public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
             stream.writeInt32(date);
             media.serializeToStream(stream);
@@ -52,12 +55,12 @@ public class TL_bots {
         public TLRPC.InputMedia media;
 
         @Override
-        public TLObject deserializeResponse(AbstractSerializedData stream, int constructor, boolean exception) {
+        public TLObject deserializeResponse(InputSerializedData stream, int constructor, boolean exception) {
             return botPreviewMedia.TLdeserialize(stream, constructor, exception);
         }
 
         @Override
-        public void serializeToStream(AbstractSerializedData stream) {
+        public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
             bot.serializeToStream(stream);
             stream.writeString(lang_code);
@@ -75,12 +78,12 @@ public class TL_bots {
         public TLRPC.InputMedia new_media;
 
         @Override
-        public TLObject deserializeResponse(AbstractSerializedData stream, int constructor, boolean exception) {
+        public TLObject deserializeResponse(InputSerializedData stream, int constructor, boolean exception) {
             return botPreviewMedia.TLdeserialize(stream, constructor, exception);
         }
 
         @Override
-        public void serializeToStream(AbstractSerializedData stream) {
+        public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
             bot.serializeToStream(stream);
             stream.writeString(lang_code);
@@ -97,21 +100,16 @@ public class TL_bots {
         public ArrayList<TLRPC.InputMedia> media = new ArrayList<>();
 
         @Override
-        public TLObject deserializeResponse(AbstractSerializedData stream, int constructor, boolean exception) {
+        public TLObject deserializeResponse(InputSerializedData stream, int constructor, boolean exception) {
             return TLRPC.Bool.TLdeserialize(stream, constructor, exception);
         }
 
         @Override
-        public void serializeToStream(AbstractSerializedData stream) {
+        public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
             bot.serializeToStream(stream);
             stream.writeString(lang_code);
-            stream.writeInt32(0x1cb5c415);
-            int count = media.size();
-            stream.writeInt32(count);
-            for (int a = 0; a < count; a++) {
-                media.get(a).serializeToStream(stream);
-            }
+            Vector.serialize(stream, media);
         }
     }
 
@@ -123,21 +121,16 @@ public class TL_bots {
         public ArrayList<TLRPC.InputMedia> order = new ArrayList<>();
 
         @Override
-        public TLObject deserializeResponse(AbstractSerializedData stream, int constructor, boolean exception) {
+        public TLObject deserializeResponse(InputSerializedData stream, int constructor, boolean exception) {
             return TLRPC.Bool.TLdeserialize(stream, constructor, exception);
         }
 
         @Override
-        public void serializeToStream(AbstractSerializedData stream) {
+        public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
             bot.serializeToStream(stream);
             stream.writeString(lang_code);
-            stream.writeInt32(0x1cb5c415);
-            int count = order.size();
-            stream.writeInt32(count);
-            for (int a = 0; a < count; a++) {
-                order.get(a).serializeToStream(stream);
-            }
+            Vector.serialize(stream, order);
         }
     }
 
@@ -147,17 +140,12 @@ public class TL_bots {
         public TLRPC.InputUser bot;
 
         @Override
-        public TLObject deserializeResponse(AbstractSerializedData stream, int constructor, boolean exception) {
-            TLRPC.Vector vector = new TLRPC.Vector();
-            int size = stream.readInt32(exception);
-            for (int a = 0; a < size; a++) {
-                vector.objects.add(botPreviewMedia.TLdeserialize(stream, stream.readInt32(exception), exception));
-            }
-            return vector;
+        public TLObject deserializeResponse(InputSerializedData stream, int constructor, boolean exception) {
+            return Vector.TLDeserialize(stream, constructor, exception, botPreviewMedia::TLdeserialize);
         }
 
         @Override
-        public void serializeToStream(AbstractSerializedData stream) {
+        public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
             bot.serializeToStream(stream);
         }
@@ -170,12 +158,12 @@ public class TL_bots {
         public String lang_code = "";
 
         @Override
-        public TLObject deserializeResponse(AbstractSerializedData stream, int constructor, boolean exception) {
+        public TLObject deserializeResponse(InputSerializedData stream, int constructor, boolean exception) {
             return previewInfo.TLdeserialize(stream, constructor, exception);
         }
 
         @Override
-        public void serializeToStream(AbstractSerializedData stream) {
+        public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
             bot.serializeToStream(stream);
             stream.writeString(lang_code);
@@ -188,7 +176,7 @@ public class TL_bots {
         public ArrayList<TL_bots.botPreviewMedia> media = new ArrayList<>();
         public ArrayList<String> lang_codes = new ArrayList<>();
 
-        public static previewInfo TLdeserialize(AbstractSerializedData stream, int constructor, boolean exception) {
+        public static previewInfo TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
             if (previewInfo.constructor != constructor) {
                 if (exception) {
                     throw new RuntimeException(String.format("can't parse magic %x in previewInfo", constructor));
@@ -202,50 +190,16 @@ public class TL_bots {
         }
 
         @Override
-        public void readParams(AbstractSerializedData stream, boolean exception) {
-            int magic = stream.readInt32(exception);
-            if (magic != 0x1cb5c415) {
-                if (exception) {
-                    throw new RuntimeException(String.format("wrong Vector magic, got %x", magic));
-                }
-                return;
-            }
-            int count = stream.readInt32(exception);
-            for (int a = 0; a < count; a++) {
-                botPreviewMedia object = botPreviewMedia.TLdeserialize(stream, stream.readInt32(exception), exception);
-                if (object == null) {
-                    return;
-                }
-                media.add(object);
-            }
-            magic = stream.readInt32(exception);
-            if (magic != 0x1cb5c415) {
-                if (exception) {
-                    throw new RuntimeException(String.format("wrong Vector magic, got %x", magic));
-                }
-                return;
-            }
-            count = stream.readInt32(exception);
-            for (int a = 0; a < count; a++) {
-                lang_codes.add(stream.readString(exception));
-            }
+        public void readParams(InputSerializedData stream, boolean exception) {
+            media = Vector.deserialize(stream, botPreviewMedia::TLdeserialize, exception);
+            lang_codes = Vector.deserializeString(stream, exception);
         }
 
         @Override
-        public void serializeToStream(AbstractSerializedData stream) {
+        public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
-            stream.writeInt32(0x1cb5c415);
-            int count = media.size();
-            stream.writeInt32(count);
-            for (int i = 0; i < count; ++i) {
-                media.get(i).serializeToStream(stream);
-            }
-            stream.writeInt32(0x1cb5c415);
-            count = lang_codes.size();
-            stream.writeInt32(count);
-            for (int i = 0; i < count; ++i) {
-                stream.writeString(lang_codes.get(i));
-            }
+            Vector.serialize(stream, media);
+            Vector.serializeString(stream, lang_codes);
         }
     }
 
@@ -259,11 +213,11 @@ public class TL_bots {
         public String about;
         public String description;
 
-        public TLObject deserializeResponse(AbstractSerializedData stream, int constructor, boolean exception) {
+        public TLObject deserializeResponse(InputSerializedData stream, int constructor, boolean exception) {
             return TLRPC.Bool.TLdeserialize(stream, constructor, exception);
         }
 
-        public void serializeToStream(AbstractSerializedData stream) {
+        public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
             stream.writeInt32(flags);
             if ((flags & 4) != 0) {
@@ -289,11 +243,11 @@ public class TL_bots {
         public TLRPC.InputUser bot;
         public String lang_code;
 
-        public TLObject deserializeResponse(AbstractSerializedData stream, int constructor, boolean exception) {
+        public TLObject deserializeResponse(InputSerializedData stream, int constructor, boolean exception) {
             return BotInfo.TLdeserialize(stream, constructor, exception);
         }
 
-        public void serializeToStream(AbstractSerializedData stream) {
+        public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
             stream.writeInt32(flags);
             if ((flags & 1) != 0) {
@@ -309,19 +263,14 @@ public class TL_bots {
         public TLRPC.InputUser bot;
         public ArrayList<String> order = new ArrayList<>();
 
-        public TLObject deserializeResponse(AbstractSerializedData stream, int constructor, boolean exception) {
+        public TLObject deserializeResponse(InputSerializedData stream, int constructor, boolean exception) {
             return TLRPC.Bool.TLdeserialize(stream, constructor, exception);
         }
 
-        public void serializeToStream(AbstractSerializedData stream) {
+        public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
             bot.serializeToStream(stream);
-            stream.writeInt32(0x1cb5c415);
-            int count = order.size();
-            stream.writeInt32(count);
-            for (int a = 0; a < count; a++) {
-                stream.writeString(order.get(a));
-            }
+            Vector.serializeString(stream, order);
         }
     }
 
@@ -332,11 +281,11 @@ public class TL_bots {
         public String username;
         public boolean active;
 
-        public TLObject deserializeResponse(AbstractSerializedData stream, int constructor, boolean exception) {
+        public TLObject deserializeResponse(InputSerializedData stream, int constructor, boolean exception) {
             return TLRPC.Bool.TLdeserialize(stream, constructor, exception);
         }
 
-        public void serializeToStream(AbstractSerializedData stream) {
+        public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
             bot.serializeToStream(stream);
             stream.writeString(username);
@@ -356,8 +305,9 @@ public class TL_bots {
         public boolean has_preview_medias;
         public String privacy_policy_url;
         public botAppSettings app_settings;
+        public botVerifierSettings verifier_settings;
 
-        public static BotInfo TLdeserialize(AbstractSerializedData stream, int constructor, boolean exception) {
+        public static BotInfo TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
             BotInfo result = null;
             switch (constructor) {
                 case TL_botInfo_layer140.constructor:
@@ -381,6 +331,9 @@ public class TL_bots {
                 case TL_botInfo_layer192.constructor:
                     result = new TL_botInfo_layer192();
                     break;
+                case TL_botInfo_layer195.constructor:
+                    result = new TL_botInfo_layer195();
+                    break;
                 case TL_botInfo.constructor:
                     result = new TL_botInfo();
                     break;
@@ -399,7 +352,7 @@ public class TL_bots {
         public static final int constructor = 0xbb2e37ce;
 
 
-        public void serializeToStream(AbstractSerializedData stream) {
+        public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
         }
     }
@@ -408,36 +361,17 @@ public class TL_bots {
         public static final int constructor = 0x98e81d3a;
 
 
-        public void readParams(AbstractSerializedData stream, boolean exception) {
+        public void readParams(InputSerializedData stream, boolean exception) {
             user_id = stream.readInt32(exception);
             description = stream.readString(exception);
-            int magic = stream.readInt32(exception);
-            if (magic != 0x1cb5c415) {
-                if (exception) {
-                    throw new RuntimeException(String.format("wrong Vector magic, got %x", magic));
-                }
-                return;
-            }
-            int count = stream.readInt32(exception);
-            for (int a = 0; a < count; a++) {
-                TLRPC.TL_botCommand object = TLRPC.TL_botCommand.TLdeserialize(stream, stream.readInt32(exception), exception);
-                if (object == null) {
-                    return;
-                }
-                commands.add(object);
-            }
+            commands = Vector.deserialize(stream, TLRPC.TL_botCommand::TLdeserialize, exception);
         }
 
-        public void serializeToStream(AbstractSerializedData stream) {
+        public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
             stream.writeInt32((int) user_id);
             stream.writeString(description);
-            stream.writeInt32(0x1cb5c415);
-            int count = commands.size();
-            stream.writeInt32(count);
-            for (int a = 0; a < count; a++) {
-                commands.get(a).serializeToStream(stream);
-            }
+            Vector.serialize(stream, commands);
         }
     }
 
@@ -445,40 +379,21 @@ public class TL_bots {
         public static final int constructor = 0x9cf585d;
 
 
-        public void readParams(AbstractSerializedData stream, boolean exception) {
+        public void readParams(InputSerializedData stream, boolean exception) {
             user_id = stream.readInt32(exception);
             version = stream.readInt32(exception);
             stream.readString(exception);
             description = stream.readString(exception);
-            int magic = stream.readInt32(exception);
-            if (magic != 0x1cb5c415) {
-                if (exception) {
-                    throw new RuntimeException(String.format("wrong Vector magic, got %x", magic));
-                }
-                return;
-            }
-            int count = stream.readInt32(exception);
-            for (int a = 0; a < count; a++) {
-                TLRPC.TL_botCommand object = TLRPC.TL_botCommand.TLdeserialize(stream, stream.readInt32(exception), exception);
-                if (object == null) {
-                    return;
-                }
-                commands.add(object);
-            }
+            commands = Vector.deserialize(stream, TLRPC.TL_botCommand::TLdeserialize, exception);
         }
 
-        public void serializeToStream(AbstractSerializedData stream) {
+        public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
             stream.writeInt32((int) user_id);
             stream.writeInt32(version);
             stream.writeString("");
             stream.writeString(description);
-            stream.writeInt32(0x1cb5c415);
-            int count = commands.size();
-            stream.writeInt32(count);
-            for (int a = 0; a < count; a++) {
-                commands.get(a).serializeToStream(stream);
-            }
+            Vector.serialize(stream, commands);
         }
     }
 
@@ -486,44 +401,24 @@ public class TL_bots {
         public static final int constructor = 0x1b74b335;
 
 
-        public void readParams(AbstractSerializedData stream, boolean exception) {
+        public void readParams(InputSerializedData stream, boolean exception) {
             user_id = stream.readInt64(exception);
             description = stream.readString(exception);
-            int magic = stream.readInt32(exception);
-            if (magic != 0x1cb5c415) {
-                if (exception) {
-                    throw new RuntimeException(String.format("wrong Vector magic, got %x", magic));
-                }
-                return;
-            }
-            int count = stream.readInt32(exception);
-            for (int a = 0; a < count; a++) {
-                TLRPC.TL_botCommand object = TLRPC.TL_botCommand.TLdeserialize(stream, stream.readInt32(exception), exception);
-                if (object == null) {
-                    return;
-                }
-                commands.add(object);
-            }
+            commands = Vector.deserialize(stream, TLRPC.TL_botCommand::TLdeserialize, exception);
         }
 
-        public void serializeToStream(AbstractSerializedData stream) {
+        public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
             stream.writeInt64(user_id);
             stream.writeString(description);
-            stream.writeInt32(0x1cb5c415);
-            int count = commands.size();
-            stream.writeInt32(count);
-            for (int a = 0; a < count; a++) {
-                commands.get(a).serializeToStream(stream);
-            }
+            Vector.serialize(stream, commands);
         }
     }
 
     public static class TL_botInfo extends BotInfo {
-        public static final int constructor = 0x36607333;
+        public static final int constructor = 0x4d8a0299;
 
-
-        public void readParams(AbstractSerializedData stream, boolean exception) {
+        public void readParams(InputSerializedData stream, boolean exception) {
             flags = stream.readInt32(exception);
             has_preview_medias = (flags & 64) != 0;
             if ((flags & 1) != 0) {
@@ -539,21 +434,7 @@ public class TL_bots {
                 description_document = TLRPC.Document.TLdeserialize(stream, stream.readInt32(exception), exception);
             }
             if ((flags & 4) != 0) {
-                int magic = stream.readInt32(exception);
-                if (magic != 0x1cb5c415) {
-                    if (exception) {
-                        throw new RuntimeException(String.format("wrong Vector magic, got %x", magic));
-                    }
-                    return;
-                }
-                int count = stream.readInt32(exception);
-                for (int a = 0; a < count; a++) {
-                    TLRPC.TL_botCommand object = TLRPC.TL_botCommand.TLdeserialize(stream, stream.readInt32(exception), exception);
-                    if (object == null) {
-                        return;
-                    }
-                    commands.add(object);
-                }
+                commands = Vector.deserialize(stream, TLRPC.TL_botCommand::TLdeserialize, exception);
             }
             if ((flags & 8) != 0) {
                 menu_button = BotMenuButton.TLdeserialize(stream, stream.readInt32(exception), exception);
@@ -564,9 +445,12 @@ public class TL_bots {
             if ((flags & 256) != 0) {
                 app_settings = botAppSettings.TLdeserialize(stream, stream.readInt32(exception), exception);
             }
+            if ((flags & 512) != 0) {
+                verifier_settings = botVerifierSettings.TLdeserialize(stream, stream.readInt32(exception), exception);
+            }
         }
 
-        public void serializeToStream(AbstractSerializedData stream) {
+        public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
             flags = has_preview_medias ? flags | 64 : flags &~ 64;
             stream.writeInt32(flags);
@@ -583,12 +467,73 @@ public class TL_bots {
                 description_document.serializeToStream(stream);
             }
             if ((flags & 4) != 0) {
-                stream.writeInt32(0x1cb5c415);
-                int count = commands.size();
-                stream.writeInt32(count);
-                for (int a = 0; a < count; a++) {
-                    commands.get(a).serializeToStream(stream);
-                }
+                Vector.serialize(stream, commands);
+            }
+            if ((flags & 8) != 0) {
+                menu_button.serializeToStream(stream);
+            }
+            if ((flags & 128) != 0) {
+                stream.writeString(privacy_policy_url);
+            }
+            if ((flags & 256) != 0) {
+                app_settings.serializeToStream(stream);
+            }
+            if ((flags & 512) != 0) {
+                verifier_settings.serializeToStream(stream);
+            }
+        }
+    }
+
+    public static class TL_botInfo_layer195 extends TL_botInfo {
+        public static final int constructor = 0x36607333;
+
+        public void readParams(InputSerializedData stream, boolean exception) {
+            flags = stream.readInt32(exception);
+            has_preview_medias = (flags & 64) != 0;
+            if ((flags & 1) != 0) {
+                user_id = stream.readInt64(exception);
+            }
+            if ((flags & 2) != 0) {
+                description = stream.readString(exception);
+            }
+            if ((flags & 16) != 0) {
+                description_photo = TLRPC.Photo.TLdeserialize(stream, stream.readInt32(exception), exception);
+            }
+            if ((flags & 32) != 0) {
+                description_document = TLRPC.Document.TLdeserialize(stream, stream.readInt32(exception), exception);
+            }
+            if ((flags & 4) != 0) {
+                commands = Vector.deserialize(stream, TLRPC.TL_botCommand::TLdeserialize, exception);
+            }
+            if ((flags & 8) != 0) {
+                menu_button = BotMenuButton.TLdeserialize(stream, stream.readInt32(exception), exception);
+            }
+            if ((flags & 128) != 0) {
+                privacy_policy_url = stream.readString(exception);
+            }
+            if ((flags & 256) != 0) {
+                app_settings = botAppSettings.TLdeserialize(stream, stream.readInt32(exception), exception);
+            }
+        }
+
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+            flags = has_preview_medias ? flags | 64 : flags &~ 64;
+            stream.writeInt32(flags);
+            if ((flags & 1) != 0) {
+                stream.writeInt64(user_id);
+            }
+            if ((flags & 2) != 0) {
+                stream.writeString(description);
+            }
+            if ((flags & 16) != 0) {
+                description_photo.serializeToStream(stream);
+            }
+            if ((flags & 32) != 0) {
+                description_document.serializeToStream(stream);
+            }
+            if ((flags & 4) != 0) {
+                Vector.serialize(stream, commands);
             }
             if ((flags & 8) != 0) {
                 menu_button.serializeToStream(stream);
@@ -606,7 +551,7 @@ public class TL_bots {
         public static final int constructor = 0x82437e74;
 
 
-        public void readParams(AbstractSerializedData stream, boolean exception) {
+        public void readParams(InputSerializedData stream, boolean exception) {
             flags = stream.readInt32(exception);
             has_preview_medias = (flags & 64) != 0;
             if ((flags & 1) != 0) {
@@ -622,21 +567,7 @@ public class TL_bots {
                 description_document = TLRPC.Document.TLdeserialize(stream, stream.readInt32(exception), exception);
             }
             if ((flags & 4) != 0) {
-                int magic = stream.readInt32(exception);
-                if (magic != 0x1cb5c415) {
-                    if (exception) {
-                        throw new RuntimeException(String.format("wrong Vector magic, got %x", magic));
-                    }
-                    return;
-                }
-                int count = stream.readInt32(exception);
-                for (int a = 0; a < count; a++) {
-                    TLRPC.TL_botCommand object = TLRPC.TL_botCommand.TLdeserialize(stream, stream.readInt32(exception), exception);
-                    if (object == null) {
-                        return;
-                    }
-                    commands.add(object);
-                }
+                commands = Vector.deserialize(stream, TLRPC.TL_botCommand::TLdeserialize, exception);
             }
             if ((flags & 8) != 0) {
                 menu_button = BotMenuButton.TLdeserialize(stream, stream.readInt32(exception), exception);
@@ -646,7 +577,7 @@ public class TL_bots {
             }
         }
 
-        public void serializeToStream(AbstractSerializedData stream) {
+        public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
             flags = has_preview_medias ? flags | 64 : flags &~ 64;
             stream.writeInt32(flags);
@@ -663,12 +594,7 @@ public class TL_bots {
                 description_document.serializeToStream(stream);
             }
             if ((flags & 4) != 0) {
-                stream.writeInt32(0x1cb5c415);
-                int count = commands.size();
-                stream.writeInt32(count);
-                for (int a = 0; a < count; a++) {
-                    commands.get(a).serializeToStream(stream);
-                }
+                Vector.serialize(stream, commands);
             }
             if ((flags & 8) != 0) {
                 menu_button.serializeToStream(stream);
@@ -683,7 +609,7 @@ public class TL_bots {
         public static final int constructor = 0x8f300b57;
 
 
-        public void readParams(AbstractSerializedData stream, boolean exception) {
+        public void readParams(InputSerializedData stream, boolean exception) {
             flags = stream.readInt32(exception);
             has_preview_medias = (flags & 64) != 0;
             if ((flags & 1) != 0) {
@@ -699,28 +625,14 @@ public class TL_bots {
                 description_document = TLRPC.Document.TLdeserialize(stream, stream.readInt32(exception), exception);
             }
             if ((flags & 4) != 0) {
-                int magic = stream.readInt32(exception);
-                if (magic != 0x1cb5c415) {
-                    if (exception) {
-                        throw new RuntimeException(String.format("wrong Vector magic, got %x", magic));
-                    }
-                    return;
-                }
-                int count = stream.readInt32(exception);
-                for (int a = 0; a < count; a++) {
-                    TLRPC.TL_botCommand object = TLRPC.TL_botCommand.TLdeserialize(stream, stream.readInt32(exception), exception);
-                    if (object == null) {
-                        return;
-                    }
-                    commands.add(object);
-                }
+                commands = Vector.deserialize(stream, TLRPC.TL_botCommand::TLdeserialize, exception);
             }
             if ((flags & 8) != 0) {
                 menu_button = BotMenuButton.TLdeserialize(stream, stream.readInt32(exception), exception);
             }
         }
 
-        public void serializeToStream(AbstractSerializedData stream) {
+        public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
             flags = has_preview_medias ? flags | 64 : flags &~ 64;
             stream.writeInt32(flags);
@@ -737,12 +649,7 @@ public class TL_bots {
                 description_document.serializeToStream(stream);
             }
             if ((flags & 4) != 0) {
-                stream.writeInt32(0x1cb5c415);
-                int count = commands.size();
-                stream.writeInt32(count);
-                for (int a = 0; a < count; a++) {
-                    commands.get(a).serializeToStream(stream);
-                }
+                Vector.serialize(stream, commands);
             }
             if ((flags & 8) != 0) {
                 menu_button.serializeToStream(stream);
@@ -754,44 +661,25 @@ public class TL_bots {
         public static final int constructor = 0xe4169b5d;
 
 
-        public void readParams(AbstractSerializedData stream, boolean exception) {
+        public void readParams(InputSerializedData stream, boolean exception) {
             user_id = stream.readInt64(exception);
             description = stream.readString(exception);
-            int magic = stream.readInt32(exception);
-            if (magic != 0x1cb5c415) {
-                if (exception) {
-                    throw new RuntimeException(String.format("wrong Vector magic, got %x", magic));
-                }
-                return;
-            }
-            int count = stream.readInt32(exception);
-            for (int a = 0; a < count; a++) {
-                TLRPC.TL_botCommand object = TLRPC.TL_botCommand.TLdeserialize(stream, stream.readInt32(exception), exception);
-                if (object == null) {
-                    return;
-                }
-                commands.add(object);
-            }
+            commands = Vector.deserialize(stream, TLRPC.TL_botCommand::TLdeserialize, exception);
             menu_button = BotMenuButton.TLdeserialize(stream, stream.readInt32(exception), exception);
         }
 
-        public void serializeToStream(AbstractSerializedData stream) {
+        public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
             stream.writeInt64(user_id);
             stream.writeString(description);
-            stream.writeInt32(0x1cb5c415);
-            int count = commands.size();
-            stream.writeInt32(count);
-            for (int a = 0; a < count; a++) {
-                commands.get(a).serializeToStream(stream);
-            }
+            Vector.serialize(stream, commands);
             menu_button.serializeToStream(stream);
         }
     }
 
     public static abstract class BotMenuButton extends TLObject {
 
-        public static BotMenuButton TLdeserialize(AbstractSerializedData stream, int constructor, boolean exception) {
+        public static BotMenuButton TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
             BotMenuButton result = null;
             switch (constructor) {
                 case 0xc7b57ce6:
@@ -820,12 +708,12 @@ public class TL_bots {
         public String text;
         public String url;
 
-        public void readParams(AbstractSerializedData stream, boolean exception) {
+        public void readParams(InputSerializedData stream, boolean exception) {
             text = stream.readString(exception);
             url = stream.readString(exception);
         }
 
-        public void serializeToStream(AbstractSerializedData stream) {
+        public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
             stream.writeString(text);
             stream.writeString(url);
@@ -836,7 +724,7 @@ public class TL_bots {
         public static final int constructor = 0x7533a588;
 
 
-        public void serializeToStream(AbstractSerializedData stream) {
+        public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
         }
     }
@@ -845,7 +733,7 @@ public class TL_bots {
         public static final int constructor = 0x4258c205;
 
 
-        public void serializeToStream(AbstractSerializedData stream) {
+        public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
         }
     }
@@ -856,12 +744,12 @@ public class TL_bots {
         public long bot_id;
         public BotMenuButton button;
 
-        public void readParams(AbstractSerializedData stream, boolean exception) {
+        public void readParams(InputSerializedData stream, boolean exception) {
             bot_id = stream.readInt64(exception);
             button = BotMenuButton.TLdeserialize(stream, stream.readInt32(exception), exception);
         }
 
-        public void serializeToStream(AbstractSerializedData stream) {
+        public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
             stream.writeInt64(bot_id);
             button.serializeToStream(stream);
@@ -874,11 +762,11 @@ public class TL_bots {
         public TLRPC.InputUser user_id;
         public BotMenuButton button;
 
-        public TLObject deserializeResponse(AbstractSerializedData stream, int constructor, boolean exception) {
+        public TLObject deserializeResponse(InputSerializedData stream, int constructor, boolean exception) {
             return TLRPC.Bool.TLdeserialize(stream, constructor, exception);
         }
 
-        public void serializeToStream(AbstractSerializedData stream) {
+        public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
             user_id.serializeToStream(stream);
             button.serializeToStream(stream);
@@ -890,11 +778,11 @@ public class TL_bots {
 
         public TLRPC.InputUser user_id;
 
-        public TLObject deserializeResponse(AbstractSerializedData stream, int constructor, boolean exception) {
+        public TLObject deserializeResponse(InputSerializedData stream, int constructor, boolean exception) {
             return BotMenuButton.TLdeserialize(stream, constructor, exception);
         }
 
-        public void serializeToStream(AbstractSerializedData stream) {
+        public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
             user_id.serializeToStream(stream);
         }
@@ -905,11 +793,11 @@ public class TL_bots {
 
         public TLRPC.InputUser bot;
 
-        public TLObject deserializeResponse(AbstractSerializedData stream, int constructor, boolean exception) {
+        public TLObject deserializeResponse(InputSerializedData stream, int constructor, boolean exception) {
             return TLRPC.Bool.TLdeserialize(stream, constructor, exception);
         }
 
-        public void serializeToStream(AbstractSerializedData stream) {
+        public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
             bot.serializeToStream(stream);
         }
@@ -920,11 +808,11 @@ public class TL_bots {
 
         public TLRPC.InputUser bot;
 
-        public TLObject deserializeResponse(AbstractSerializedData stream, int constructor, boolean exception) {
+        public TLObject deserializeResponse(InputSerializedData stream, int constructor, boolean exception) {
             return TLRPC.Updates.TLdeserialize(stream, constructor, exception);
         }
 
-        public void serializeToStream(AbstractSerializedData stream) {
+        public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
             bot.serializeToStream(stream);
         }
@@ -937,11 +825,11 @@ public class TL_bots {
         public String custom_method;
         public TLRPC.TL_dataJSON params;
 
-        public TLObject deserializeResponse(AbstractSerializedData stream, int constructor, boolean exception) {
+        public TLObject deserializeResponse(InputSerializedData stream, int constructor, boolean exception) {
             return TLRPC.TL_dataJSON.TLdeserialize(stream, constructor, exception);
         }
 
-        public void serializeToStream(AbstractSerializedData stream) {
+        public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
             bot.serializeToStream(stream);
             stream.writeString(custom_method);
@@ -956,12 +844,12 @@ public class TL_bots {
         public int limit;
 
         @Override
-        public TLObject deserializeResponse(AbstractSerializedData stream, int constructor, boolean exception) {
+        public TLObject deserializeResponse(InputSerializedData stream, int constructor, boolean exception) {
             return popularAppBots.TLdeserialize(stream, constructor, exception);
         }
 
         @Override
-        public void serializeToStream(AbstractSerializedData stream) {
+        public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
             stream.writeString(offset);
             stream.writeInt32(limit);
@@ -975,7 +863,7 @@ public class TL_bots {
         public String next_offset;
         public ArrayList<TLRPC.User> users = new ArrayList<>();
 
-        public static popularAppBots TLdeserialize(AbstractSerializedData stream, int constructor, boolean exception) {
+        public static popularAppBots TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
             if (popularAppBots.constructor != constructor) {
                 if (exception) {
                     throw new RuntimeException(String.format("can't parse magic %x in TL_bots_popularAppBots", constructor));
@@ -988,40 +876,21 @@ public class TL_bots {
             return result;
         }
 
-        public void readParams(AbstractSerializedData stream, boolean exception) {
+        public void readParams(InputSerializedData stream, boolean exception) {
             flags = stream.readInt32(exception);
             if ((flags & 1) != 0) {
                 next_offset = stream.readString(exception);
             }
-            int magic = stream.readInt32(exception);
-            if (magic != 0x1cb5c415) {
-                if (exception) {
-                    throw new RuntimeException(String.format("wrong Vector magic, got %x", magic));
-                }
-                return;
-            }
-            int count = stream.readInt32(exception);
-            for (int a = 0; a < count; a++) {
-                TLRPC.User object = TLRPC.User.TLdeserialize(stream, stream.readInt32(exception), exception);
-                if (object == null) {
-                    return;
-                }
-                users.add(object);
-            }
+            users = Vector.deserialize(stream, TLRPC.User::TLdeserialize, exception);
         }
 
-        public void serializeToStream(AbstractSerializedData stream) {
+        public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
             stream.writeInt32(flags);
             if ((flags & 1) != 0) {
                 stream.writeString(next_offset);
             }
-            stream.writeInt32(0x1cb5c415);
-            int count = users.size();
-            stream.writeInt32(count);
-            for (int i = 0; i < count; ++i) {
-                users.get(i).serializeToStream(stream);
-            }
+            Vector.serialize(stream, users);
         }
     }
 
@@ -1036,7 +905,7 @@ public class TL_bots {
         public int header_color;
         public int header_dark_color;
 
-        public static botAppSettings TLdeserialize(AbstractSerializedData stream, int constructor, boolean exception) {
+        public static botAppSettings TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
             if (botAppSettings.constructor != constructor) {
                 if (exception) {
                     throw new RuntimeException(String.format("can't parse magic %x in botAppSettings", constructor));
@@ -1050,7 +919,7 @@ public class TL_bots {
         }
 
         @Override
-        public void readParams(AbstractSerializedData stream, boolean exception) {
+        public void readParams(InputSerializedData stream, boolean exception) {
             flags = stream.readInt32(exception);
             if ((flags & 1) != 0) {
                 placeholder_path = stream.readByteArray(exception);
@@ -1071,7 +940,7 @@ public class TL_bots {
         }
 
         @Override
-        public void serializeToStream(AbstractSerializedData stream) {
+        public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
             stream.writeInt32(flags);
             if ((flags & 1) != 0) {
@@ -1099,12 +968,12 @@ public class TL_bots {
         public boolean enabled;
 
         @Override
-        public TLObject deserializeResponse(AbstractSerializedData stream, int constructor, boolean exception) {
+        public TLObject deserializeResponse(InputSerializedData stream, int constructor, boolean exception) {
             return TLRPC.Bool.TLdeserialize(stream, constructor, exception);
         }
 
         @Override
-        public void serializeToStream(AbstractSerializedData stream) {
+        public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
             bot.serializeToStream(stream);
             stream.writeBool(enabled);
@@ -1119,12 +988,12 @@ public class TL_bots {
         public String url;
 
         @Override
-        public TLObject deserializeResponse(AbstractSerializedData stream, int constructor, boolean exception) {
+        public TLObject deserializeResponse(InputSerializedData stream, int constructor, boolean exception) {
             return TLRPC.Bool.TLdeserialize(stream, constructor, exception);
         }
 
         @Override
-        public void serializeToStream(AbstractSerializedData stream) {
+        public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
             bot.serializeToStream(stream);
             stream.writeString(file_name);
@@ -1141,12 +1010,12 @@ public class TL_bots {
         public int duration_months;
 
         @Override
-        public TLObject deserializeResponse(AbstractSerializedData stream, int constructor, boolean exception) {
+        public TLObject deserializeResponse(InputSerializedData stream, int constructor, boolean exception) {
             return TL_payments.starRefProgram.TLdeserialize(stream, constructor, exception);
         }
 
         @Override
-        public void serializeToStream(AbstractSerializedData stream) {
+        public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
             stream.writeInt32(flags);
             bot.serializeToStream(stream);
@@ -1161,18 +1030,141 @@ public class TL_bots {
         public static final int constructor = 0xb0711d83;
 
         @Override
-        public TLObject deserializeResponse(AbstractSerializedData stream, int constructor, boolean exception) {
-            TLRPC.Vector vector = new TLRPC.Vector();
-            int size = stream.readInt32(exception);
-            for (int a = 0; a < size; a++) {
-                vector.objects.add(TLRPC.User.TLdeserialize(stream, stream.readInt32(exception), exception));
-            }
-            return vector;
+        public TLObject deserializeResponse(InputSerializedData stream, int constructor, boolean exception) {
+            return Vector.TLDeserialize(stream, constructor, exception, TLRPC.User::TLdeserialize);
         }
 
         @Override
-        public void serializeToStream(AbstractSerializedData stream) {
+        public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
+        }
+    }
+
+    public static class botVerifierSettings extends TLObject {
+        public static final int constructor = 0xb0cd6617;
+
+        public int flags;
+        public boolean can_modify_custom_description;
+        public long icon;
+        public String company;
+        public String custom_description;
+
+        public static botVerifierSettings TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
+            if (botVerifierSettings.constructor != constructor) {
+                if (exception) {
+                    throw new RuntimeException(String.format("can't parse magic %x in TL_bots.botVerifierSettings", constructor));
+                } else {
+                    return null;
+                }
+            }
+            botVerifierSettings result = new botVerifierSettings();
+            result.readParams(stream, exception);
+            return result;
+        }
+
+        @Override
+        public void readParams(InputSerializedData stream, boolean exception) {
+            flags = stream.readInt32(exception);
+            can_modify_custom_description = (flags & 2) != 0;
+            icon = stream.readInt64(exception);
+            company = stream.readString(exception);
+            if ((flags & 1) != 0) {
+                custom_description = stream.readString(exception);
+            }
+        }
+
+        @Override
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+            flags = can_modify_custom_description ? flags | 2 : flags &~ 2;
+            stream.writeInt32(flags);
+            stream.writeString(company);
+            if ((flags & 1) != 0) {
+                stream.writeString(custom_description);
+            }
+        }
+    }
+
+    public static class botVerification extends TLObject {
+        public static final int constructor = 0xf93cd45c;
+
+        public long bot_id;
+        public long icon;
+        public String description;
+
+        public static botVerification TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
+            if (botVerification.constructor != constructor) {
+                if (exception) {
+                    throw new RuntimeException(String.format("can't parse magic %x in TL_bots.botVerification", constructor));
+                } else {
+                    return null;
+                }
+            }
+            botVerification result = new botVerification();
+            result.readParams(stream, exception);
+            return result;
+        }
+
+        @Override
+        public void readParams(InputSerializedData stream, boolean exception) {
+            bot_id = stream.readInt64(exception);
+            icon = stream.readInt64(exception);
+            description = stream.readString(exception);
+        }
+
+        @Override
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+            stream.writeInt64(bot_id);
+            stream.writeInt64(icon);
+            stream.writeString(description);
+        }
+    }
+
+    public static class setCustomVerification extends TLObject {
+        public static final int constructor = 0x8b89dfbd;
+
+        public int flags;
+        public boolean enabled;
+        public TLRPC.InputUser bot;
+        public TLRPC.InputPeer peer;
+        public String custom_description;
+
+        @Override
+        public TLObject deserializeResponse(InputSerializedData stream, int constructor, boolean exception) {
+            return TLRPC.Bool.TLdeserialize(stream, constructor, exception);
+        }
+
+        @Override
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+            flags = enabled ? flags | 2 : flags &~ 2;
+            stream.writeInt32(flags);
+            if ((flags & 1) != 0) {
+                bot.serializeToStream(stream);
+            }
+            peer.serializeToStream(stream);
+            if ((flags & 4) != 0) {
+                stream.writeString(custom_description);
+            }
+        }
+
+    }
+
+    public static class getBotRecommendations extends TLObject {
+        public static final int constructor = 0xa1b70815;
+
+        public TLRPC.InputUser bot;
+
+        @Override
+        public TLObject deserializeResponse(InputSerializedData stream, int constructor, boolean exception) {
+            return TLRPC.Users.TLdeserialize(stream, constructor, exception);
+        }
+
+        @Override
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+            bot.serializeToStream(stream);
         }
     }
 

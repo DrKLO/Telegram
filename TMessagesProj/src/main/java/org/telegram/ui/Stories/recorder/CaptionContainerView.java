@@ -501,7 +501,7 @@ public class CaptionContainerView extends FrameLayout {
             SpannableStringBuilder builder = new SpannableStringBuilder(editText.getText());
             builder.replace(start, start + len, text);
             if (parseEmoji) {
-                Emoji.replaceEmoji(builder, editText.getEditText().getPaint().getFontMetricsInt(), AndroidUtilities.dp(20), false);
+                Emoji.replaceEmoji(builder, editText.getEditText().getPaint().getFontMetricsInt(), false);
             }
             editText.setText(builder);
             editText.setSelection(start + text.length());
@@ -774,7 +774,7 @@ public class CaptionContainerView extends FrameLayout {
             return true;
         }
 
-        if (editText.isKeyboardVisible() && !keyboardNotifier.ignoring) {
+        if ((editText.isKeyboardVisible() || keyboardNotifier.keyboardVisible()) && !keyboardNotifier.ignoring) {
             closeKeyboard();
             return true;
         }
@@ -813,7 +813,7 @@ public class CaptionContainerView extends FrameLayout {
     private Path replyLinePath;
     private float[] replyLinePathRadii;
     private void drawReply(Canvas canvas) {
-        if (!hasReply || replyBackgroundBlur == null || replyTextBlur == null || customBlur()) {
+        if (!hasReply || replyBackgroundBlur == null || replyTextBlur == null) {
             return;
         }
 

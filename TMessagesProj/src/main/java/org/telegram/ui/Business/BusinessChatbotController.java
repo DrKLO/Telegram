@@ -5,7 +5,7 @@ import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.ConnectionsManager;
-import org.telegram.tgnet.TLRPC;
+import org.telegram.tgnet.tl.TL_account;
 
 import java.util.ArrayList;
 
@@ -37,18 +37,18 @@ public class BusinessChatbotController {
     }
 
     private long lastTime;
-    private TLRPC.TL_account_connectedBots value;
-    private ArrayList<Utilities.Callback<TLRPC.TL_account_connectedBots>> callbacks = new ArrayList<>();
+    private TL_account.connectedBots value;
+    private ArrayList<Utilities.Callback<TL_account.connectedBots>> callbacks = new ArrayList<>();
     private boolean loading, loaded;
 
-    public void load(Utilities.Callback<TLRPC.TL_account_connectedBots> callback) {
+    public void load(Utilities.Callback<TL_account.connectedBots> callback) {
         callbacks.add(callback);
         if (loading) return;
         if (System.currentTimeMillis() - lastTime > 1000 * 60 || !loaded) {
             loading = true;
-            ConnectionsManager.getInstance(currentAccount).sendRequest(new TLRPC.TL_account_getConnectedBots(), (res, err) -> AndroidUtilities.runOnUIThread(() -> {
+            ConnectionsManager.getInstance(currentAccount).sendRequest(new TL_account.getConnectedBots(), (res, err) -> AndroidUtilities.runOnUIThread(() -> {
                 loading = false;
-                value = res instanceof TLRPC.TL_account_connectedBots ? (TLRPC.TL_account_connectedBots) res : null;
+                value = res instanceof TL_account.connectedBots ? (TL_account.connectedBots) res : null;
                 if (value != null) {
                     MessagesController.getInstance(currentAccount).putUsers(value.users, false);
                 }

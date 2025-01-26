@@ -476,6 +476,7 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
     }
 
     private int lastWidth = -1, lastHeight = -1;
+    public boolean fit;
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         int width = MeasureSpec.getSize(widthMeasureSpec),
@@ -493,7 +494,12 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
                 frameWidth = previewSize[0].getHeight();
                 frameHeight = previewSize[0].getWidth();
             }
-            float s = Math.max(MeasureSpec.getSize(widthMeasureSpec) / (float) frameWidth , MeasureSpec.getSize(heightMeasureSpec) / (float) frameHeight);
+            float s;
+            if (fit) {
+                s = Math.min(width / (float) frameWidth, height / (float) frameHeight);
+            } else {
+                s = Math.max(width / (float) frameWidth, height / (float) frameHeight);
+            }
             blurredStubView.getLayoutParams().width = textureView.getLayoutParams().width = (int) (s * frameWidth);
             blurredStubView.getLayoutParams().height = textureView.getLayoutParams().height = (int) (s * frameHeight);
         }
@@ -504,10 +510,14 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
 
         pixelW = getMeasuredWidth();
         pixelH = getMeasuredHeight();
-        if (pixelDualW <= 0) {
+//        if (previewSize[1] != null) {
+//            pixelDualW = previewSize[1].getWidth();
+//            pixelDualH = previewSize[1].getHeight();
+//        }
+//        if (pixelDualW <= 0) {
             pixelDualW = getMeasuredWidth();
             pixelDualH = getMeasuredHeight();
-        }
+//        }
     }
 
     public float getTextureHeight(float width, float height) {
@@ -720,6 +730,10 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
             aspectRatio = new Size(1, 1);
             photoMaxWidth = wantedWidth = 720;
             photoMaxHeight = wantedHeight = 720;
+//        } else if (!isStory) {
+//            photoMaxWidth = wantedWidth = AndroidUtilities.displaySize.x;
+//            photoMaxHeight = wantedHeight = AndroidUtilities.displaySize.y;
+//            aspectRatio = new Size(wantedWidth, wantedHeight);
         } else if (initialFrontface) {
             aspectRatio = new Size(16, 9);
             photoMaxWidth = wantedWidth = 1280;
@@ -785,6 +799,17 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
 
     @Override
     public void onSurfaceTextureUpdated(SurfaceTexture surface) {
+        if (!(!inited && cameraSession[0] != null && cameraSession[0].isInitiated()) && !(renderNode != null && !((RenderNode) renderNode).hasDisplayList())) {
+            return;
+        }
+        if (Looper.myLooper() != Looper.getMainLooper()) {
+            AndroidUtilities.runOnUIThread(this::onSurfaceTextureUpdatedInternal);
+        } else {
+            onSurfaceTextureUpdatedInternal();
+        }
+    }
+
+    private void onSurfaceTextureUpdatedInternal() {
         if (!inited && cameraSession[0] != null && cameraSession[0].isInitiated()) {
             if (delegate != null) {
                 delegate.onCameraInit();
@@ -794,6 +819,10 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
                 textureView.setAlpha(0);
                 showTexture(true, true);
             }
+        }
+
+        if (renderNode != null && !((RenderNode) renderNode).hasDisplayList()) {
+            invalidate();
         }
     }
 
@@ -1045,7 +1074,9 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
             vibrator.cancel();
             vibrator.vibrate(vibrationEffect);
         } else {
-            performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
+            try {
+                performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
+            } catch (Exception ignored) {}
         }
     }
 
@@ -1716,11 +1747,28 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
 
                 GLES20.glUniformMatrix4fv(textureMatrixHandle, 1, false, mSTMatrix[i], 0);
                 GLES20.glUniformMatrix4fv(vertexMatrixHandle, 1, false, mMVPMatrix[i], 0);
+                Size size = previewSize[i];
+                if (size != null && currentSession[i] != null) {
+                    int angle = currentSession[i].getWorldAngle();
+                    int w, h;
+                    if (angle == 90 || angle == 270) {
+                        w = size.getWidth();
+                        h = size.getHeight();
+                    } else {
+                        w = size.getHeight();
+                        h = size.getWidth();
+                    }
+                    GLES20.glUniform2f(pixelHandle, w, h);
+                } else {
+                    if (i == 0) {
+                        GLES20.glUniform2f(pixelHandle, pixelW, pixelH);
+                    } else {
+                        GLES20.glUniform2f(pixelHandle, pixelDualW, pixelDualH);
+                    }
+                }
                 if (i == 0) {
-                    GLES20.glUniform2f(pixelHandle, pixelW, pixelH);
                     GLES20.glUniform1f(dualHandle, dual ? 1 : 0);
                 } else {
-                    GLES20.glUniform2f(pixelHandle, pixelDualW, pixelDualH);
                     GLES20.glUniform1f(dualHandle, 1f);
                 }
                 GLES20.glUniform1f(blurHandle, i == 0 ? camera1Blur : 0f);
@@ -2738,11 +2786,28 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
                 GLES20.glUniformMatrix4fv(textureMatrixHandle, 1, false, mSTMatrix[i], 0);
 
                 GLES20.glUniform1f(blurHandle, 0);
+                Size size = previewSize[i];
+                if (size != null && cameraSession[i] != null) {
+                    int angle = cameraSession[i].getWorldAngle();
+                    int w, h;
+                    if (angle == 90 || angle == 270) {
+                        w = size.getWidth();
+                        h = size.getHeight();
+                    } else {
+                        w = size.getHeight();
+                        h = size.getWidth();
+                    }
+                    GLES20.glUniform2f(pixelHandle, w, h);
+                } else {
+                    if (i == 0) {
+                        GLES20.glUniform2f(pixelHandle, pixelW, pixelH);
+                    } else {
+                        GLES20.glUniform2f(pixelHandle, pixelDualW, pixelDualH);
+                    }
+                }
                 if (i == 0) {
-                    GLES20.glUniform2f(pixelHandle, pixelW, pixelH);
                     GLES20.glUniform1f(dualHandle, isDual ? 1f : 0f);
                 } else {
-                    GLES20.glUniform2f(pixelHandle, pixelDualW, pixelDualH);
                     GLES20.glUniform1f(dualHandle, 1f);
                 }
                 if (i == 1) {

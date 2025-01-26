@@ -19,6 +19,8 @@ import org.telegram.messenger.FileLog;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.AbstractSerializedData;
+import org.telegram.tgnet.InputSerializedData;
+import org.telegram.tgnet.OutputSerializedData;
 import org.telegram.tgnet.SerializedData;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
@@ -164,7 +166,7 @@ public class BillingUtilities {
         public long id;
         public TLRPC.InputStorePaymentPurpose purpose;
 
-        public static TL_savedPurpose TLdeserialize(AbstractSerializedData stream, int constructor, boolean exception) {
+        public static TL_savedPurpose TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
             TL_savedPurpose result = null;
             switch (constructor) {
                 case TL_savedPurpose.constructor:
@@ -181,7 +183,7 @@ public class BillingUtilities {
         }
 
         @Override
-        public void readParams(AbstractSerializedData stream, boolean exception) {
+        public void readParams(InputSerializedData stream, boolean exception) {
             flags = stream.readInt32(exception);
             id = stream.readInt64(exception);
             if ((flags & 1) != 0) {
@@ -190,7 +192,7 @@ public class BillingUtilities {
         }
 
         @Override
-        public void serializeToStream(AbstractSerializedData stream) {
+        public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
             stream.writeInt32(flags);
             stream.writeInt64(id);

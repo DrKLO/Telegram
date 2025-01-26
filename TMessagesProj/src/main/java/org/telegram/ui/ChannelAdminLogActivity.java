@@ -102,6 +102,7 @@ import org.telegram.messenger.Utilities;
 import org.telegram.messenger.browser.Browser;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.tgnet.Vector;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.ActionBarMenuItem;
@@ -253,7 +254,7 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
     private PhotoViewer.PhotoViewerProvider provider = new PhotoViewer.EmptyPhotoViewerProvider() {
 
         @Override
-        public PhotoViewer.PlaceProviderObject getPlaceForPhoto(MessageObject messageObject, TLRPC.FileLocation fileLocation, int index, boolean needPreview) {
+        public PhotoViewer.PlaceProviderObject getPlaceForPhoto(MessageObject messageObject, TLRPC.FileLocation fileLocation, int index, boolean needPreview, boolean closing) {
             int count = chatListView.getChildCount();
 
             for (int a = 0; a < count; a++) {
@@ -2427,8 +2428,8 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
         inputUser.user_id = userId;
         req.id.add(inputUser);
         ConnectionsManager.getInstance(currentAccount).sendRequest(req, (res, err) -> {
-            if (res instanceof TLRPC.Vector) {
-                ArrayList<Object> objects = ((TLRPC.Vector) res).objects;
+            if (res instanceof Vector) {
+                ArrayList<Object> objects = ((Vector) res).objects;
                 ArrayList<TLRPC.User> users = new ArrayList<>();
                 for (int i = 0; i < objects.size(); ++i) {
                     if (objects.get(i) instanceof TLRPC.User) {

@@ -1,7 +1,9 @@
 package org.telegram.messenger;
 
 import org.telegram.tgnet.AbstractSerializedData;
+import org.telegram.tgnet.InputSerializedData;
 import org.telegram.tgnet.NativeByteBuffer;
+import org.telegram.tgnet.OutputSerializedData;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 
@@ -82,7 +84,7 @@ public class MessageCustomParamsHelper {
         }
 
         @Override
-        public void serializeToStream(AbstractSerializedData stream) {
+        public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(VERSION);
             flags = message.voiceTranscriptionForce ? (flags | 2) : (flags &~ 2);
             stream.writeInt32(flags);
@@ -108,7 +110,7 @@ public class MessageCustomParamsHelper {
         }
 
         @Override
-        public void readParams(AbstractSerializedData stream, boolean exception) {
+        public void readParams(InputSerializedData stream, boolean exception) {
             flags = stream.readInt32(true);
             if ((flags & 1) != 0) {
                 message.voiceTranscription = stream.readString(exception);

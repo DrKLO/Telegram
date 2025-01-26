@@ -38,11 +38,13 @@ import java.util.ArrayList;
 
 public class BubbleActivity extends BasePermissionsActivity implements INavigationLayout.INavigationLayoutDelegate {
 
+    public static BubbleActivity instance;
+
     private boolean finished;
     private ArrayList<BaseFragment> mainFragmentsStack = new ArrayList<>();
 
     private PasscodeView passcodeView;
-    private INavigationLayout actionBarLayout;
+    public INavigationLayout actionBarLayout;
     protected DrawerLayoutContainer drawerLayoutContainer;
 
     private Intent passcodeSaveIntent;
@@ -105,6 +107,7 @@ public class BubbleActivity extends BasePermissionsActivity implements INavigati
         actionBarLayout.removeAllFragments();
 
         handleIntent(getIntent(), false, savedInstanceState != null, false, UserConfig.selectedAccount, 0);
+        instance = this;
     }
 
     private void showPasscodeActivity() {
@@ -196,6 +199,7 @@ public class BubbleActivity extends BasePermissionsActivity implements INavigati
             lockRunnable = null;
         }
         finished = true;
+        instance = null;
     }
 
     public void presentFragment(BaseFragment fragment) {
@@ -215,6 +219,7 @@ public class BubbleActivity extends BasePermissionsActivity implements INavigati
         if (passcodeView != null) {
             passcodeView.onPause();
         }
+        instance = null;
     }
 
     @Override
@@ -225,6 +230,7 @@ public class BubbleActivity extends BasePermissionsActivity implements INavigati
             AccountInstance.getInstance(currentAccount).getConnectionsManager().setAppPaused(false, false);
         }
         onFinish();
+        instance = null;
     }
 
     @Override
@@ -265,6 +271,7 @@ public class BubbleActivity extends BasePermissionsActivity implements INavigati
             actionBarLayout.dismissDialogs();
             passcodeView.onResume();
         }
+        instance = this;
     }
 
     private void onPasscodePause() {

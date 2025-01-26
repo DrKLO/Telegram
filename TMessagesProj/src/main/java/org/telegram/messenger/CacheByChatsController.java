@@ -28,13 +28,11 @@ public class CacheByChatsController {
 
     private final int currentAccount;
 
-    int[] keepMediaByTypes = {-1, -1, -1, -1};
+    private boolean gotKeepMediaByTypes = false;
+    private final int[] keepMediaByTypes = { -1, -1, -1, -1 };
 
     public CacheByChatsController(int currentAccount) {
         this.currentAccount = currentAccount;
-        for (int i = 0; i < 4; i++) {
-            keepMediaByTypes[i] = SharedConfig.getPreferences().getInt("keep_media_type_" + i, getDefault(i));
-        }
     }
 
     public static int getDefault(int type) {
@@ -122,6 +120,12 @@ public class CacheByChatsController {
     }
 
     public int getKeepMedia(int type) {
+        if (!gotKeepMediaByTypes) {
+            gotKeepMediaByTypes = true;
+            for (int i = 0; i < 4; i++) {
+                keepMediaByTypes[i] = SharedConfig.getPreferences().getInt("keep_media_type_" + i, getDefault(i));
+            }
+        }
         if (keepMediaByTypes[type] == -1) {
             return SharedConfig.keepMedia;
         }
@@ -129,6 +133,12 @@ public class CacheByChatsController {
     }
 
     public void setKeepMedia(int type, int keepMedia) {
+        if (!gotKeepMediaByTypes) {
+            gotKeepMediaByTypes = true;
+            for (int i = 0; i < 4; i++) {
+                keepMediaByTypes[i] = SharedConfig.getPreferences().getInt("keep_media_type_" + i, getDefault(i));
+            }
+        }
         keepMediaByTypes[type] = keepMedia;
         SharedConfig.getPreferences().edit().putInt("keep_media_type_" + type, keepMedia).apply();
     }

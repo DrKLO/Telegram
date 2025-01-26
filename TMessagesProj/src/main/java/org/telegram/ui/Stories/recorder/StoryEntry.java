@@ -18,6 +18,7 @@ import android.os.Build;
 import android.provider.MediaStore;
 import android.text.SpannableString;
 import android.text.TextUtils;
+import android.util.Pair;
 
 import androidx.annotation.NonNull;
 
@@ -38,10 +39,12 @@ import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.messenger.VideoEditedInfo;
 import org.telegram.messenger.video.MediaCodecVideoConvertor;
+import org.telegram.tgnet.AbstractSerializedData;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.RequestDelegate;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.tgnet.Vector;
 import org.telegram.tgnet.tl.TL_stories;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.AnimatedFileDrawable;
@@ -117,13 +120,13 @@ public class StoryEntry {
     public boolean coverSet;
     public Bitmap coverBitmap;
 
-//    public int width, height;
     public long duration;
 
     public int resultWidth = 720;
     public int resultHeight = 1280;
 
     public int width, height;
+    public MediaController.CropState crop;
     // matrix describes transformations from width x height to resultWidth x resultHeight
     public final Matrix matrix = new Matrix();
 
@@ -197,6 +200,12 @@ public class StoryEntry {
         }
         if (round != null) {
             return true;
+        }
+        if (messageObjects != null && messageObjects.size() == 1) {
+            final MessageObject messageObject = messageObjects.get(0);
+            if (messageObject != null && messageObject.messageOwner != null && messageObject.messageOwner.action instanceof TLRPC.TL_messageActionStarGiftUnique) {
+                return true;
+            }
         }
         if (mediaEntities != null && !mediaEntities.isEmpty()) {
             for (int i = 0; i < mediaEntities.size(); ++i) {
@@ -292,29 +301,57 @@ public class StoryEntry {
             tempMatrix.preScale(s, s);
             tempMatrix.postScale(scale, scale);
             canvas.drawBitmap(mainFileBitmap, tempMatrix, bitmapPaint);
+//            final float s = (float) width / mainFileBitmap.getWidth();
+//            canvas.save();
+//            canvas.scale(scale, scale);
+//            canvas.concat(matrix);
+//            if (crop != null) {
+//                canvas.translate(width / 2.0f, height / 2.0f);
+//                int _w = width, _h = height;
+//                if ((crop.transformRotation / 90) % 2 == 1) {
+//                    _w = height;
+//                    _h = width;
+//                }
+//                canvas.clipRect(
+//                    -_w * crop.cropPw / 2.0f, -_h * crop.cropPh / 2.0f,
+//                    +_w * crop.cropPw / 2.0f, +_h * crop.cropPh / 2.0f
+//                );
+//                canvas.scale(crop.cropScale, crop.cropScale);
+//                canvas.translate(crop.cropPx * _w, crop.cropPy * _h);
+//                canvas.rotate(crop.cropRotate + crop.transformRotation);
+//                if (crop.mirrored) {
+//                    canvas.scale(-1, 1);
+//                }
+//                canvas.translate(-width / 2.0f, -height / 2.0f);
+//            }
+//            canvas.scale(s, s);
+//            canvas.drawBitmap(mainFileBitmap, 0, 0, bitmapPaint);
+//            canvas.restore();
         } else {
             if (isCollage()) {
                 for (int i = 0; i < collageContent.size(); ++i) {
-                    StoryEntry entry = collageContent.get(i);
+                    final StoryEntry entry = collageContent.get(i);
                     final File file = entry.filterFile != null ? entry.filterFile : entry.file;
                     if (file != null) {
                         try {
                             final Bitmap fileBitmap = getScaledBitmap(opts -> BitmapFactory.decodeFile(file.getPath(), opts), w, h, true, true);
                             canvas.save();
                             final RectF bounds = new RectF();
+                            int fw = fileBitmap.getWidth(), fh = fileBitmap.getHeight();
+                            final Pair<Integer, Integer> orientation = AndroidUtilities.getImageOrientation(file);
+                            if ((orientation.first / 90) % 2 == 1) {
+                                fw = fileBitmap.getHeight();
+                                fh = fileBitmap.getWidth();
+                            }
                             collage.parts.get(i).bounds(bounds, w, h);
                             canvas.translate(bounds.centerX(), bounds.centerY());
                             canvas.clipRect(-bounds.width() / 2.0f, -bounds.height() / 2.0f, bounds.width() / 2.0f, bounds.height() / 2.0f);
-                            final float s = Math.max(bounds.width() / fileBitmap.getWidth(), bounds.height() / fileBitmap.getHeight());
+                            final float s = Math.max(bounds.width() / fw, bounds.height() / fh);
                             canvas.scale(s, s);
+                            canvas.rotate(orientation.first);
                             canvas.translate(-fileBitmap.getWidth() / 2.0f, -fileBitmap.getHeight() / 2.0f);
                             canvas.drawBitmap(fileBitmap, 0, 0, null);
                             canvas.restore();
-//                            final float s = (float) width / fileBitmap.getWidth();
-//                            tempMatrix.preScale(s, s);
-//                            tempMatrix.postScale(scale, scale);
-//                            canvas.drawBitmap(fileBitmap, tempMatrix, bitmapPaint);
-//                            fileBitmap.recycle();
                         } catch (Exception e) {
                             FileLog.e(e);
                         }
@@ -334,6 +371,40 @@ public class StoryEntry {
                         FileLog.e(e);
                     }
                 }
+//                if (file != null) {
+//                    try {
+//                        Bitmap fileBitmap = getScaledBitmap(opts -> BitmapFactory.decodeFile(file.getPath(), opts), w, h, true, true);
+//                        final float s = (float) width / fileBitmap.getWidth();
+//                        canvas.save();
+//                        canvas.scale(scale, scale);
+//                        canvas.concat(matrix);
+//                        if (crop != null) {
+//                            canvas.translate(width / 2.0f, height / 2.0f);
+//                            int _w = width, _h = height;
+//                            if ((crop.transformRotation / 90) % 2 == 1) {
+//                                _w = height;
+//                                _h = width;
+//                            }
+//                            canvas.clipRect(
+//                                -_w * crop.cropPw / 2.0f, -_h * crop.cropPh / 2.0f,
+//                                +_w * crop.cropPw / 2.0f, +_h * crop.cropPh / 2.0f
+//                            );
+//                            canvas.scale(crop.cropScale, crop.cropScale);
+//                            canvas.translate(crop.cropPx * _w, crop.cropPy * _h);
+//                            canvas.rotate(crop.cropRotate + crop.transformRotation);
+//                            if (crop.mirrored) {
+//                                canvas.scale(-1, 1);
+//                            }
+//                            canvas.translate(-width / 2.0f, -height / 2.0f);
+//                        }
+//                        canvas.scale(s, s);
+//                        canvas.drawBitmap(fileBitmap, 0, 0, bitmapPaint);
+//                        canvas.restore();
+//                        fileBitmap.recycle();
+//                    } catch (Exception e) {
+//                        FileLog.e(e);
+//                    }
+//                }
             }
 
             if (paintFile != null) {
@@ -1206,7 +1277,11 @@ public class StoryEntry {
             info.isDark = isDark;
             info.avatarStartTime = -1;
 
-            info.cropState = new MediaController.CropState();
+            if (crop != null) {
+                info.cropState = crop.clone();
+            } else {
+                info.cropState = new MediaController.CropState();
+            }
             info.cropState.useMatrix = new Matrix();
             info.cropState.useMatrix.set(matrix);
 
@@ -1416,9 +1491,9 @@ public class StoryEntry {
         }
         final RequestDelegate requestDelegate = (response, error) -> AndroidUtilities.runOnUIThread(() -> {
             checkStickersReqId = 0;
-            if (response instanceof TLRPC.Vector) {
+            if (response instanceof Vector) {
                 editStickers = new ArrayList<>();
-                TLRPC.Vector vector = (TLRPC.Vector) response;
+                Vector vector = (Vector) response;
                 for (int i = 0; i < vector.objects.size(); ++i) {
                     TLRPC.StickerSetCovered setCovered = (TLRPC.StickerSetCovered) vector.objects.get(i);
                     TLRPC.Document document = setCovered.cover;

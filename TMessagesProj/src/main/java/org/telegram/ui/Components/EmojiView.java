@@ -513,20 +513,21 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
 
         @Override
         public void setAsEmojiStatus(TLRPC.Document document, Integer until) {
-            TLRPC.EmojiStatus status;
+            final TLRPC.EmojiStatus emojiStatus;
             if (document == null) {
-                status = new TLRPC.TL_emojiStatusEmpty();
-            } else if (until != null) {
-                status = new TLRPC.TL_emojiStatusUntil();
-                ((TLRPC.TL_emojiStatusUntil) status).document_id = document.id;
-                ((TLRPC.TL_emojiStatusUntil) status).until = until;
+                emojiStatus = new TLRPC.TL_emojiStatusEmpty();
             } else {
-                status = new TLRPC.TL_emojiStatus();
-                ((TLRPC.TL_emojiStatus) status).document_id = document.id;
+                TLRPC.TL_emojiStatus status = new TLRPC.TL_emojiStatus();
+                status.document_id = document.id;
+                if (until != null) {
+                    status.flags |= 1;
+                    status.until = until;
+                }
+                emojiStatus = status;
             }
-            TLRPC.User user = UserConfig.getInstance(UserConfig.selectedAccount).getCurrentUser();
+            final TLRPC.User user = UserConfig.getInstance(UserConfig.selectedAccount).getCurrentUser();
             final TLRPC.EmojiStatus previousEmojiStatus = user == null ? new TLRPC.TL_emojiStatusEmpty() : user.emoji_status;
-            MessagesController.getInstance(currentAccount).updateEmojiStatus(status);
+            MessagesController.getInstance(currentAccount).updateEmojiStatus(emojiStatus);
 
             Runnable undoAction = () -> MessagesController.getInstance(currentAccount).updateEmojiStatus(previousEmojiStatus);
             if (document == null) {
@@ -1553,7 +1554,7 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
         if (needAnimatedEmoji) {
             MediaDataController.getInstance(currentAccount).checkStickers(MediaDataController.TYPE_EMOJIPACKS);
             MediaDataController.getInstance(currentAccount).checkFeaturedEmoji();
-            animatedEmojiTextColorFilter = new PorterDuffColorFilter(getThemedColor(Theme.key_windowBackgroundWhiteBlackText), PorterDuff.Mode.SRC_IN);
+            animatedEmojiTextColorFilter = new PorterDuffColorFilter(getThemedColor(Theme.key_featuredStickers_addButton), PorterDuff.Mode.SRC_IN);
         }
         emojiGridView = new EmojiGridView(context);
         DefaultItemAnimator emojiItemAnimator = new DefaultItemAnimator();
@@ -1729,7 +1730,7 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
             }
         });
 
-        emojiTabs = new EmojiTabsStrip(context, resourcesProvider, true, true, needAnimatedEmoji, 0, fragment != null ? () -> {
+        emojiTabs = new EmojiTabsStrip(context, resourcesProvider, true, false, true, needAnimatedEmoji, 0, fragment != null ? () -> {
             if (delegate != null) {
                 delegate.onEmojiSettingsClick(emojiAdapter.frozenEmojiPacks);
             }
@@ -2474,7 +2475,9 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
                     backspacePressed = false;
                     if (!backspaceOnce) {
                         if (delegate != null && delegate.onBackspace()) {
-                            backspaceButton.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
+                            try {
+                                backspaceButton.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
+                            } catch (Exception ignore) {}
                         }
                     }
                 }
@@ -4705,9 +4708,11 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
                 backspaceButton.setVisibility(VISIBLE);
             }
             backspaceButtonAnimation = new AnimatorSet();
-            backspaceButtonAnimation.playTogether(ObjectAnimator.ofFloat(backspaceButton, View.ALPHA, show ? 1.0f : 0.0f),
-                    ObjectAnimator.ofFloat(backspaceButton, View.SCALE_X, show ? 1.0f : 0.0f),
-                    ObjectAnimator.ofFloat(backspaceButton, View.SCALE_Y, show ? 1.0f : 0.0f));
+            backspaceButtonAnimation.playTogether(
+                ObjectAnimator.ofFloat(backspaceButton, View.ALPHA, show ? 1.0f : 0.0f),
+                ObjectAnimator.ofFloat(backspaceButton, View.SCALE_X, show ? 1.0f : 0.0f),
+                ObjectAnimator.ofFloat(backspaceButton, View.SCALE_Y, show ? 1.0f : 0.0f)
+            );
             backspaceButtonAnimation.setDuration(200);
             backspaceButtonAnimation.setInterpolator(CubicBezierInterpolator.EASE_OUT);
             backspaceButtonAnimation.addListener(new AnimatorListenerAdapter() {
@@ -5145,7 +5150,9 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
                 return;
             }
             if (delegate != null && delegate.onBackspace()) {
-                backspaceButton.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
+                try {
+                    backspaceButton.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
+                } catch (Exception ignore) {}
             }
             backspaceOnce = true;
             postBackspaceRunnable(Math.max(50, time - 100));
@@ -5557,7 +5564,7 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
             gifSearchAdapter.progressEmptyView.textView.setTextColor(getThemedColor(Theme.key_chat_emojiPanelEmptyText));
             gifSearchAdapter.progressEmptyView.progressView.setProgressColor(getThemedColor(Theme.key_progressCircle));
         }
-        animatedEmojiTextColorFilter = new PorterDuffColorFilter(getThemedColor(Theme.key_windowBackgroundWhiteBlackText), PorterDuff.Mode.SRC_IN);
+        animatedEmojiTextColorFilter = new PorterDuffColorFilter(getThemedColor(Theme.key_featuredStickers_addButton), PorterDuff.Mode.SRC_IN);
 
         for (int a = 0; a < tabIcons.length; a++) {
             Theme.setEmojiDrawableColor(tabIcons[a], getThemedColor(Theme.key_chat_emojiBottomPanelIcon), false);

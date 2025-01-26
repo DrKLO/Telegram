@@ -1180,6 +1180,7 @@ public class ThanosEffect extends TextureView {
                 }
                 if (view instanceof ChatActionCell && ((ChatActionCell) view).hasGradientService()) {
                     ((ChatActionCell) view).drawBackground(canvas, true);
+                    ((ChatActionCell) view).drawReactions(canvas, true, null);
                 } else if (view instanceof ChatMessageCell && ((ChatMessageCell) view).drawBackgroundInParent()) {
                     ((ChatMessageCell) view).drawBackgroundInternal(canvas, true);
                 }

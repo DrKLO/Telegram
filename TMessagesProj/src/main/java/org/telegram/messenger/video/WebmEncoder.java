@@ -11,15 +11,12 @@ import android.graphics.PorterDuff;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.RectF;
 import android.graphics.Typeface;
-import android.opengl.GLES20;
-import android.opengl.GLUtils;
 import android.os.Build;
 import android.text.Layout;
 import android.text.Spannable;
 import android.text.SpannableString;
 import android.text.Spanned;
 import android.text.TextUtils;
-import android.util.Log;
 import android.util.Pair;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -29,32 +26,22 @@ import android.view.inputmethod.EditorInfo;
 import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
 
-import com.google.common.collect.BiMap;
-
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
-import org.telegram.messenger.Bitmaps;
 import org.telegram.messenger.Emoji;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.UserConfig;
-import org.telegram.messenger.Utilities;
 import org.telegram.messenger.VideoEditedInfo;
-import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.AnimatedEmojiSpan;
 import org.telegram.ui.Components.AnimatedFileDrawable;
-import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.Paint.Views.EditTextOutline;
 import org.telegram.ui.Components.Paint.Views.PaintTextOptionsView;
 import org.telegram.ui.Components.RLottieDrawable;
 
 import java.io.File;
-import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 import java.util.ArrayList;
-
-import javax.microedition.khronos.opengles.GL10;
 
 public class WebmEncoder {
 
@@ -290,7 +277,7 @@ public class WebmEncoder {
                 };
                 ((Spannable) text).setSpan(span, e.offset, e.offset + e.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
             }
-            text = Emoji.replaceEmoji(text, editText.getPaint().getFontMetricsInt(), (int) (editText.getTextSize() * .8f), false);
+            text = Emoji.replaceEmoji(text, editText.getPaint().getFontMetricsInt(), false);
             if (text instanceof Spanned) {
                 Emoji.EmojiSpan[] spans = ((Spanned) text).getSpans(0, text.length(), Emoji.EmojiSpan.class);
                 if (spans != null) {

@@ -65,6 +65,7 @@ import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.tgnet.Vector;
 import org.telegram.ui.ActionBar.ActionBarMenuItem;
 import org.telegram.ui.ActionBar.ActionBarMenuSubItem;
 import org.telegram.ui.ActionBar.ActionBarPopupWindow;
@@ -164,22 +165,23 @@ public class EmojiPacksAlert extends BottomSheet implements NotificationCenter.N
 
         @Override
         public void setAsEmojiStatus(TLRPC.Document document, Integer until) {
-            TLRPC.EmojiStatus status;
+            final TLRPC.EmojiStatus emojiStatus;
             if (document == null) {
-                status = new TLRPC.TL_emojiStatusEmpty();
-            } else if (until != null) {
-                status = new TLRPC.TL_emojiStatusUntil();
-                ((TLRPC.TL_emojiStatusUntil) status).document_id = document.id;
-                ((TLRPC.TL_emojiStatusUntil) status).until = until;
+                emojiStatus = new TLRPC.TL_emojiStatusEmpty();
             } else {
-                status = new TLRPC.TL_emojiStatus();
-                ((TLRPC.TL_emojiStatus) status).document_id = document.id;
+                final TLRPC.TL_emojiStatus status = new TLRPC.TL_emojiStatus();
+                status.document_id = document.id;
+                if (until != null) {
+                    status.flags |= 1;
+                    status.until = until;
+                }
+                emojiStatus = status;
             }
-            TLRPC.User user = UserConfig.getInstance(UserConfig.selectedAccount).getCurrentUser();
+            final TLRPC.User user = UserConfig.getInstance(UserConfig.selectedAccount).getCurrentUser();
             final TLRPC.EmojiStatus previousEmojiStatus = user == null ? new TLRPC.TL_emojiStatusEmpty() : user.emoji_status;
-            MessagesController.getInstance(currentAccount).updateEmojiStatus(status);
+            MessagesController.getInstance(currentAccount).updateEmojiStatus(emojiStatus);
 
-            Runnable undoAction = () -> MessagesController.getInstance(currentAccount).updateEmojiStatus(previousEmojiStatus);
+            final Runnable undoAction = () -> MessagesController.getInstance(currentAccount).updateEmojiStatus(previousEmojiStatus);
             if (document == null) {
                 final Bulletin.SimpleLayout layout = new Bulletin.SimpleLayout(getContext(), resourcesProvider);
                 layout.textView.setText(LocaleController.getString(R.string.RemoveStatusInfo));
@@ -253,7 +255,6 @@ public class EmojiPacksAlert extends BottomSheet implements NotificationCenter.N
 
         progressDrawable = new CircularProgressDrawable(AndroidUtilities.dp(32), AndroidUtilities.dp(3.5f), getThemedColor(Theme.key_featuredStickers_addButton));
 
-        final ColorFilter colorFilter = new PorterDuffColorFilter(ColorUtils.setAlphaComponent(getThemedColor(Theme.key_windowBackgroundWhiteLinkText), 178), PorterDuff.Mode.MULTIPLY);
         containerView = contentView = new ContentView(context);
 
         paddingView = new View(context) {
@@ -1931,24 +1932,24 @@ public class EmojiPacksAlert extends BottomSheet implements NotificationCenter.N
                 }
                 ConnectionsManager.getInstance(currentAccount).sendRequest(req, (res, err) -> {
                     AndroidUtilities.runOnUIThread(() -> {
-                        if (err != null || !(res instanceof TLRPC.Vector)) {
-                           EmojiPacksAlert.this.dismiss();
-                           if (fragment != null && fragment.getParentActivity() != null) {
+                        if (err != null || !(res instanceof Vector)) {
+                            EmojiPacksAlert.this.dismiss();
+                            if (fragment != null && fragment.getParentActivity() != null) {
                                BulletinFactory.of(fragment).createErrorBulletin(LocaleController.getString(R.string.UnknownError)).show();
-                           }
+                            }
                         } else {
-                           TLRPC.Vector vector = (TLRPC.Vector) res;
+                            Vector vector = (Vector) res;
                             if (inputStickerSets == null) {
                                 inputStickerSets = new ArrayList<>();
                             }
-                           for (int i = 0; i < vector.objects.size(); ++i) {
-                               Object object = vector.objects.get(i);
-                               if (object instanceof TLRPC.StickerSetCovered && ((TLRPC.StickerSetCovered) object).set != null) {
+                            for (int i = 0; i < vector.objects.size(); ++i) {
+                                Object object = vector.objects.get(i);
+                                if (object instanceof TLRPC.StickerSetCovered && ((TLRPC.StickerSetCovered) object).set != null) {
                                    inputStickerSets.add(MediaDataController.getInputStickerSet(((TLRPC.StickerSetCovered) object).set));
-                               }
-                           }
-                           parentObject = null;
-                           init();
+                                }
+                            }
+                            parentObject = null;
+                            init();
                         }
                     });
                 });

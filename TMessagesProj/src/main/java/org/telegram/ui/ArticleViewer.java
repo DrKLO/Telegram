@@ -114,7 +114,6 @@ import androidx.viewpager.widget.PagerAdapter;
 import androidx.viewpager.widget.ViewPager;
 
 import com.google.android.exoplayer2.ui.AspectRatioFrameLayout;
-import com.google.android.exoplayer2.util.Log;
 
 import org.json.JSONObject;
 import org.telegram.messenger.AndroidUtilities;
@@ -1249,7 +1248,9 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
             if (checkingForLongPress && windowView != null) {
                 checkingForLongPress = false;
                 if (pressedLink != null) {
-                    windowView.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
+                    try {
+                        windowView.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
+                    } catch (Exception ignored) {}
                     showCopyPopup(pressedLink.getSpan().getUrl());
                     pressedLink = null;
                     pressedLinkOwnerLayout = null;
@@ -1263,10 +1264,14 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                         textSelectionHelper.trySelect(pressedLinkOwnerView);
                     }
                     if (textSelectionHelper.isInSelectionMode()) {
-                        windowView.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
+                        try {
+                            windowView.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
+                        } catch (Exception ignored) {}
                     }
                 } else if (pressedLinkOwnerLayout != null && pressedLinkOwnerView != null) {
-                    windowView.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
+                    try {
+                        windowView.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
+                    } catch (Exception ignored) {}
 
                     int[] location = new int[2];
                     pressedLinkOwnerView.getLocationInWindow(location);
@@ -8446,15 +8451,20 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                 webView.setWebViewClient(new WebViewClient() {
                     @Override
                     public boolean onRenderProcessGone(WebView view, RenderProcessGoneDetail detail) {
-                        if (LaunchActivity.instance != null && LaunchActivity.instance.isFinishing()) {
+                        try {
+                            if (LaunchActivity.instance != null && LaunchActivity.instance.isFinishing()) {
+                                return true;
+                            }
+                            new AlertDialog.Builder(getContext(), null)
+                                    .setTitle(getString(R.string.ChromeCrashTitle))
+                                    .setMessage(AndroidUtilities.replaceSingleTag(getString(R.string.ChromeCrashMessage), () -> Browser.openUrl(getContext(), "https://play.google.com/store/apps/details?id=com.google.android.webview")))
+                                    .setPositiveButton(getString(R.string.OK), null)
+                                    .show();
                             return true;
+                        } catch (Exception e) {
+                            FileLog.e(e);
+                            return false;
                         }
-                        new AlertDialog.Builder(getContext(), null)
-                                .setTitle(getString(R.string.ChromeCrashTitle))
-                                .setMessage(AndroidUtilities.replaceSingleTag(getString(R.string.ChromeCrashMessage), () -> Browser.openUrl(getContext(), "https://play.google.com/store/apps/details?id=com.google.android.webview")))
-                                .setPositiveButton(getString(R.string.OK), null)
-                                .show();
-                        return true;
                     }
 
                     @Override
@@ -12668,7 +12678,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
         }
 
         @Override
-        public PhotoViewer.PlaceProviderObject getPlaceForPhoto(MessageObject messageObject, TLRPC.FileLocation fileLocation, int index, boolean needPreview) {
+        public PhotoViewer.PlaceProviderObject getPlaceForPhoto(MessageObject messageObject, TLRPC.FileLocation fileLocation, int index, boolean needPreview, boolean closing) {
             if (index < 0 || index >= pageBlocks.size()) {
                 return null;
             }
@@ -13281,6 +13291,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                             try {
                                 try {
                                     Uri uri2 = Uri.parse(url);
+                                    if (uri2.getHost() == null) uri2 = uri;
                                     String hostname = Browser.IDN_toUnicode(uri2.getHost());
                                     String[] levels = hostname.split("\\.");
                                     if (levels.length > 2 && actionBar != null && HintView2.measureCorrectly(hostname, actionBar.titlePaint) > AndroidUtilities.displaySize.x - dp(3 * 54)) {

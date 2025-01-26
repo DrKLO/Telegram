@@ -17,7 +17,7 @@ import android.widget.TextView;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
-import org.telegram.tgnet.TLRPC;
+import org.telegram.tgnet.tl.TL_account;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.BulletinFactory;
@@ -30,7 +30,7 @@ public class BusinessLinksEmptyView extends LinearLayout {
     private TextView descriptionView;
     private TextView linkView;
 
-    public BusinessLinksEmptyView(Context context, BaseFragment fragment, TLRPC.TL_businessChatLink businessLink, Theme.ResourcesProvider resourcesProvider) {
+    public BusinessLinksEmptyView(Context context, BaseFragment fragment, TL_account.TL_businessChatLink businessLink, Theme.ResourcesProvider resourcesProvider) {
         super(context);
         setOrientation(VERTICAL);
 

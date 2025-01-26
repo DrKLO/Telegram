@@ -95,6 +95,8 @@ import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.SerializedData;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.tgnet.tl.TL_account;
+import org.telegram.tgnet.tl.TL_phone;
 import org.telegram.ui.ActionBar.ActionBarMenuItem;
 import org.telegram.ui.ActionBar.ActionBarPopupWindow;
 import org.telegram.ui.ActionBar.AlertDialog;
@@ -303,7 +305,7 @@ public class AlertsCreator {
             } else {
                 showSimpleAlert(fragment, LocaleController.getString(R.string.ImportErrorTitle), LocaleController.getString(R.string.ErrorOccurred) + "\n" + error.text);
             }
-        } else if (request instanceof TLRPC.TL_account_saveSecureValue || request instanceof TLRPC.TL_account_getAuthorizationForm) {
+        } else if (request instanceof TL_account.saveSecureValue || request instanceof TL_account.getAuthorizationForm) {
             if (fragment == null) {
                 fragment = LaunchActivity.getLastFragment();
             }
@@ -325,7 +327,7 @@ public class AlertsCreator {
                 request instanceof TLRPC.TL_messages_editChatDefaultBannedRights ||
                 request instanceof TLRPC.TL_messages_editChatAdmin ||
                 request instanceof TLRPC.TL_messages_migrateChat ||
-                request instanceof TLRPC.TL_phone_inviteToGroupCall) {
+                request instanceof TL_phone.inviteToGroupCall) {
             if (fragment != null && error.text.equals("CHANNELS_TOO_MUCH")) {
                 if (fragment.getParentActivity() != null) {
                     fragment.showDialog(new LimitReachedBottomSheet(fragment, fragment.getParentActivity(), LimitReachedBottomSheet.TYPE_TO0_MANY_COMMUNITIES, currentAccount, null));
@@ -477,7 +479,7 @@ public class AlertsCreator {
             if (fragment != null && fragment.getParentActivity() != null) {
                 Toast.makeText(fragment.getParentActivity(), LocaleController.getString(R.string.ErrorOccurred) + "\n" + error.text, Toast.LENGTH_SHORT).show();
             }
-        } else if (request instanceof TLRPC.TL_account_confirmPhone || request instanceof TLRPC.TL_account_verifyPhone || request instanceof TLRPC.TL_account_verifyEmail) {
+        } else if (request instanceof TL_account.confirmPhone || request instanceof TL_account.verifyPhone || request instanceof TL_account.verifyEmail) {
             if (error.text.contains("PHONE_CODE_EMPTY") || error.text.contains("PHONE_CODE_INVALID") || error.text.contains("CODE_INVALID") || error.text.contains("CODE_EMPTY")) {
                 return showSimpleAlert(fragment, LocaleController.getString(R.string.InvalidCode));
             } else if (error.text.contains("PHONE_CODE_EXPIRED") || error.text.contains("EMAIL_VERIFY_EXPIRED")) {
@@ -499,7 +501,7 @@ public class AlertsCreator {
             } else if (error.code != -1000) {
                 return showSimpleAlert(fragment, LocaleController.getString(R.string.ErrorOccurred) + "\n" + error.text);
             }
-        } else if (request instanceof TLRPC.TL_account_sendConfirmPhoneCode) {
+        } else if (request instanceof TL_account.sendConfirmPhoneCode) {
             if (error.code == 400) {
                 return showSimpleAlert(fragment, LocaleController.getString(R.string.CancelLinkExpired));
             } else {
@@ -509,7 +511,7 @@ public class AlertsCreator {
                     return showSimpleAlert(fragment, LocaleController.getString(R.string.ErrorOccurred));
                 }
             }
-        } else if (request instanceof TLRPC.TL_account_changePhone) {
+        } else if (request instanceof TL_account.changePhone) {
             if (error.text.contains("PHONE_NUMBER_INVALID")) {
                 showSimpleAlert(fragment, LocaleController.getString(R.string.InvalidPhoneNumber));
             } else if (error.text.contains("PHONE_CODE_EMPTY") || error.text.contains("PHONE_CODE_INVALID")) {
@@ -523,7 +525,7 @@ public class AlertsCreator {
             } else {
                 showSimpleAlert(fragment, error.text);
             }
-        } else if (request instanceof TLRPC.TL_account_sendChangePhoneCode) {
+        } else if (request instanceof TL_account.sendChangePhoneCode) {
             if (error.text.contains("PHONE_NUMBER_INVALID")) {
                 LoginActivity.needShowInvalidAlert(fragment, (String) args[0], false);
             } else if (error.text.contains("PHONE_CODE_EMPTY") || error.text.contains("PHONE_CODE_INVALID")) {
@@ -539,7 +541,7 @@ public class AlertsCreator {
             } else {
                 showSimpleAlert(fragment, LocaleController.getString(R.string.ErrorOccurred));
             }
-        } else if (request instanceof TLRPC.TL_account_updateUsername) {
+        } else if (request instanceof TL_account.updateUsername) {
             switch (error.text) {
                 case "USERNAME_INVALID":
                     showSimpleAlert(fragment, LocaleController.getString(R.string.UsernameInvalid));
@@ -557,7 +559,7 @@ public class AlertsCreator {
             } else {
                 showSimpleAlert(fragment, LocaleController.getString(R.string.ErrorOccurred) + "\n" + error.text);
             }
-        } else if (request instanceof TLRPC.TL_account_getPassword || request instanceof TLRPC.TL_account_getTmpPassword) {
+        } else if (request instanceof TL_account.getPassword || request instanceof TL_account.getTmpPassword) {
             if (error.text.startsWith("FLOOD_WAIT")) {
                 showSimpleToast(fragment, getFloodWaitString(error.text));
             } else {
@@ -2325,7 +2327,7 @@ public class AlertsCreator {
         editTextView.setSelection(editTextView.getText().toString().length());
 
         builder.setView(dialogView);
-        DialogInterface.OnClickListener onDoneListener = (dialogInterface, i) -> {
+        AlertDialog.OnButtonClickListener onDoneListener = (dialogInterface, i) -> {
             if (peerId > 0) {
                 final TLRPC.UserFull userFull = MessagesController.getInstance(currentAccount).getUserFull(UserConfig.getInstance(currentAccount).getClientUserId());
                 final String newName = editTextView.getText().toString().replace("\n", " ").replaceAll(" +", " ").trim();
@@ -2343,7 +2345,7 @@ public class AlertsCreator {
                     NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.userInfoDidLoad, peerId, userFull);
                 }
 
-                final TLRPC.TL_account_updateProfile req = new TLRPC.TL_account_updateProfile();
+                final TL_account.updateProfile req = new TL_account.updateProfile();
                 req.about = newName;
                 req.flags |= 4;
                 NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.showBulletin, Bulletin.TYPE_BIO_CHANGED, peerId);
@@ -2457,7 +2459,7 @@ public class AlertsCreator {
 
         builder.setView(dialogView);
         EditText finalLastNameEditTextView = lastNameEditTextView;
-        DialogInterface.OnClickListener onDoneListener = (dialogInterface, i) -> {
+        AlertDialog.OnButtonClickListener onDoneListener = (dialogInterface, i) -> {
             if (firstNameEditTextView.getText() == null) {
                 return;
             }
@@ -2478,7 +2480,7 @@ public class AlertsCreator {
                     dialogInterface.dismiss();
                     return;
                 }
-                TLRPC.TL_account_updateProfile req = new TLRPC.TL_account_updateProfile();
+                TL_account.updateProfile req = new TL_account.updateProfile();
                 req.flags = 3;
                 currentUser.first_name = req.first_name = newFirst;
                 currentUser.last_name = req.last_name = newLast;
@@ -2578,18 +2580,12 @@ public class AlertsCreator {
         AlertDialog.Builder builder = new AlertDialog.Builder(baseFragment.getParentActivity(), resourcesProvider);
         builder.setTitle(LocaleController.getString(R.string.DiscardTopic));
         builder.setMessage(LocaleController.getString(R.string.DiscardTopicMessage));
-        builder.setNegativeButton(LocaleController.getString(R.string.Cancel), new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-                dialog.dismiss();
-            }
+        builder.setNegativeButton(LocaleController.getString(R.string.Cancel), (dialog, which) -> {
+            dialog.dismiss();
         });
-        builder.setPositiveButton(LocaleController.getString(R.string.Discard), new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-                dialog.dismiss();
-                onDiscard.run();
-            }
+        builder.setPositiveButton(LocaleController.getString(R.string.Discard), (dialog, which) -> {
+            dialog.dismiss();
+            onDiscard.run();
         });
         baseFragment.showDialog(builder.create());
     }
@@ -3693,7 +3689,7 @@ public class AlertsCreator {
         return builder;
     }
 
-    public static BottomSheet.Builder createBirthdayPickerDialog(Context context, String title, String button, TLRPC.TL_birthday currentBirthday, final Utilities.Callback<TLRPC.TL_birthday> whenSelectedBirthday, Runnable addPrivacyText, Theme.ResourcesProvider resourcesProvider) {
+    public static BottomSheet.Builder createBirthdayPickerDialog(Context context, String title, String button, TL_account.TL_birthday currentBirthday, final Utilities.Callback<TL_account.TL_birthday> whenSelectedBirthday, Runnable addPrivacyText, Theme.ResourcesProvider resourcesProvider) {
         if (context == null) {
             return null;
         }
@@ -3926,7 +3922,7 @@ public class AlertsCreator {
         buttonTextView.setBackground(Theme.createSimpleSelectorRoundRectDrawable(dp(8), Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider), Theme.getColor(Theme.key_featuredStickers_addButtonPressed, resourcesProvider)));
         container.addView(buttonTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48, Gravity.LEFT | Gravity.BOTTOM, 16, 15, 16, 16));
         buttonTextView.setOnClickListener(v -> {
-            TLRPC.TL_birthday b = new TLRPC.TL_birthday();
+            TL_account.TL_birthday b = new TL_account.TL_birthday();
             b.day   = dayPicker.getValue();
             b.month = 1 + monthPicker.getValue();
             if (yearPicker.getValue() != undefinedYear) {
@@ -5401,7 +5397,7 @@ public class AlertsCreator {
         return builder;
     }
 
-    public static AlertDialog.Builder createGigagroupConvertAlert(Activity activity, DialogInterface.OnClickListener onProcess, DialogInterface.OnClickListener onCancel) {
+    public static AlertDialog.Builder createGigagroupConvertAlert(Activity activity, AlertDialog.OnButtonClickListener onProcess, AlertDialog.OnButtonClickListener onCancel) {
         AlertDialog.Builder builder = new AlertDialog.Builder(activity);
         String svg = AndroidUtilities.readRes(R.raw.gigagroup);
         FrameLayout frameLayout = new FrameLayout(activity);
@@ -5429,7 +5425,7 @@ public class AlertsCreator {
     }
 
     @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
-    public static AlertDialog.Builder createDrawOverlayPermissionDialog(Activity activity, DialogInterface.OnClickListener onCancel) {
+    public static AlertDialog.Builder createDrawOverlayPermissionDialog(Activity activity, AlertDialog.OnButtonClickListener onCancel) {
         AlertDialog.Builder builder = new AlertDialog.Builder(activity);
         String svg = AndroidUtilities.readRes(R.raw.pip_video_request);
 
@@ -6120,7 +6116,7 @@ public class AlertsCreator {
             }
         }
 
-        DialogInterface.OnClickListener deleteAction = (dialogInterface, i) -> {
+        AlertDialog.OnButtonClickListener deleteAction = (dialogInterface, i) -> {
             ArrayList<Integer> ids = null;
             long thisDialogId = dialogId;
             if (isSavedMessages) {

@@ -305,6 +305,7 @@ public class AndroidUtilities {
     public static Pattern BAD_CHARS_MESSAGE_PATTERN = null;
     public static Pattern BAD_CHARS_MESSAGE_LONG_PATTERN = null;
     public static Pattern REMOVE_MULTIPLE_DIACRITICS = null;
+    public static Pattern REMOVE_RTL = null;
     private static Pattern singleTagPatter = null;
 
     public static String removeDiacritics(String str) {
@@ -313,6 +314,20 @@ public class AndroidUtilities {
         Matcher matcher = REMOVE_MULTIPLE_DIACRITICS.matcher(str);
         if (matcher == null) return str;
         return matcher.replaceAll("$1");
+    }
+
+    public static String removeRTL(String str) {
+        if (str == null) return null;
+        if (REMOVE_RTL == null) {
+            REMOVE_RTL = Pattern.compile("[\\u200E\\u200F\\u202A-\\u202E]");
+        }
+        Matcher matcher = REMOVE_RTL.matcher(str);
+        if (matcher == null) return str;
+        return matcher.replaceAll("");
+    }
+
+    public static String escape(String str) {
+        return removeRTL(removeDiacritics(str));
     }
 
     static {
@@ -972,6 +987,16 @@ public class AndroidUtilities {
     }
 
     @RequiresApi(api = Build.VERSION_CODES.N)
+    public static void getBitmapFromSurface(SurfaceView surfaceView, Bitmap surfaceBitmap, Runnable done) {
+        if (surfaceView == null || ApplicationLoader.applicationHandler == null || !surfaceView.getHolder().getSurface().isValid()) {
+            return;
+        }
+        PixelCopy.request(surfaceView, surfaceBitmap, copyResult -> {
+            done.run();
+        }, ApplicationLoader.applicationHandler);
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.N)
     public static void getBitmapFromSurface(Surface surface, Bitmap surfaceBitmap) {
         if (surface == null || !surface.isValid()) {
             return;
@@ -1018,6 +1043,13 @@ public class AndroidUtilities {
     }
 
     public static void doOnLayout(View view, Runnable runnable) {
+        if (runnable == null) {
+            return;
+        }
+        if (view == null) {
+            runnable.run();
+            return;
+        }
         view.addOnLayoutChangeListener(new View.OnLayoutChangeListener() {
             @Override
             public void onLayoutChange(View v, int left, int top, int right, int bottom, int oldLeft, int oldTop, int oldRight, int oldBottom) {
@@ -2666,6 +2698,7 @@ public class AndroidUtilities {
             }
             ViewConfiguration vc = ViewConfiguration.get(context);
             touchSlop = vc.getScaledTouchSlop();
+            isSmallScreen = null;
         } catch (Exception e) {
             FileLog.e(e);
         }
@@ -3212,6 +3245,14 @@ public class AndroidUtilities {
         return new SpannableStringBuilder(str);
     }
 
+    public static CharSequence replaceTags(CharSequence cs) {
+        if (cs instanceof SpannableStringBuilder) {
+            return replaceTags((SpannableStringBuilder) cs);
+        } else {
+            return replaceTags(new SpannableStringBuilder(cs));
+        }
+    }
+
     public static SpannableStringBuilder replaceTags(SpannableStringBuilder stringBuilder) {
         try {
             int start;
@@ -3751,6 +3792,23 @@ public class AndroidUtilities {
 
     public static String formatShortDuration(int duration) {
         return formatDuration(duration, false);
+    }
+
+    public static String formatTimestamp(int duration) {
+        int h = duration / 3600;
+        int m = duration / 60 % 60;
+        int s = duration % 60;
+        if (h > 0) {
+            return String.format(Locale.US, "%dh%02dm%02ds", h, m, s);
+        }
+        if (m > 0) {
+            if (s > 0) {
+                return String.format(Locale.US, "%dm%02ds", m, s);
+            } else {
+                return String.format(Locale.US, "%dm", m);
+            }
+        }
+        return String.format(Locale.US, "%d", s);
     }
 
     public static String formatLongDuration(int duration) {
@@ -4898,6 +4956,10 @@ public class AndroidUtilities {
         return a + f * (b - a);
     }
 
+    public static float lerp(boolean a, boolean b, float f) {
+        return (a ? 1.0f : 0.0f) + f * ((b ? 1.0f : 0.0f) - (a ? 1.0f : 0.0f));
+    }
+
     public static double lerp(double a, double b, float f) {
         return a + f * (b - a);
     }
@@ -4944,6 +5006,24 @@ public class AndroidUtilities {
             int bv = b == null || i >= b.length ? 0 : b[i];
             to[i] = lerp(av, bv, f);
         }
+    }
+
+    public static void lerp(float[] a, float[] b, float f, float[] to) {
+        if (to == null) return;
+        for (int i = 0; i < to.length; ++i) {
+            float av = a == null || i >= a.length ? 0 : a[i];
+            float bv = b == null || i >= b.length ? 0 : b[i];
+            to[i] = lerp(av, bv, f);
+        }
+    }
+
+    private static final float[] tempFloats = new float[9], tempFloats2 = new float[9];
+    public static void lerp(Matrix a, Matrix b, float t, Matrix to) {
+        if (a == null || b == null) return;
+        a.getValues(tempFloats);
+        b.getValues(tempFloats2);
+        lerp(tempFloats, tempFloats2, t, tempFloats2);
+        to.setValues(tempFloats2);
     }
 
     public static void scaleRect(RectF rect, float scale) {
@@ -5401,8 +5481,8 @@ public class AndroidUtilities {
             view.setVisibility(show ? View.VISIBLE : View.GONE);
             view.setTag(show ? 1 : null);
             view.setAlpha(1f);
-            view.setScaleX(scale && !show ? 0f : 1f);
-            view.setScaleY(scale && !show ? 0f : 1f);
+            view.setScaleX(scale && !show ? 0.5f : 1f);
+            view.setScaleY(scale && !show ? 0.5f : 1f);
             if (translate != 0) {
                 view.setTranslationY(show ? 0 : AndroidUtilities.dp(-16) * translate);
             }
@@ -5413,8 +5493,8 @@ public class AndroidUtilities {
             if (view.getVisibility() != View.VISIBLE) {
                 view.setVisibility(View.VISIBLE);
                 view.setAlpha(0f);
-                view.setScaleX(scale ? 0 : 1);
-                view.setScaleY(scale ? 0 : 1);
+                view.setScaleX(scale ? 0.5f : 1);
+                view.setScaleY(scale ? 0.5f : 1);
                 if (translate != 0) {
                     view.setTranslationY(AndroidUtilities.dp(-16) * translate);
                 }
@@ -5427,7 +5507,7 @@ public class AndroidUtilities {
             animate.start();
         } else {
             ViewPropertyAnimator animate = view.animate();
-            animate = animate.alpha(0).scaleY(scale ? 0 : 1).scaleX(scale ? 0 : 1).setListener(new HideViewAfterAnimation(view)).setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT).setDuration(340).withEndAction(onDone);
+            animate = animate.alpha(0).scaleY(scale ? 0.5f : 1).scaleX(scale ? 0.5f : 1).setListener(new HideViewAfterAnimation(view)).setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT).setDuration(340).withEndAction(onDone);
             if (translate != 0) {
                 animate.translationY(AndroidUtilities.dp(-16) * translate);
             }
@@ -5629,7 +5709,7 @@ public class AndroidUtilities {
                     views.add((View) getRootView.invoke(wmgInstance, viewName));
                 }
                 return views;
-            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.ICE_CREAM_SANDWICH && Build.VERSION.SDK_INT < Build.VERSION_CODES.JELLY_BEAN_MR1) {
+            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.ICE_CREAM_SANDWICH) {
                 Class wmiClass = Class.forName("android.view.WindowManagerImpl");
                 Object wmiInstance = wmiClass.getMethod("getDefault").invoke(null);
 

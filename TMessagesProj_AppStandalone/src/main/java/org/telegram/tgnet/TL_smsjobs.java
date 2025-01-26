@@ -9,13 +9,13 @@ public class TL_smsjobs {
         public int monthly_sent_sms;
 
         @Override
-        public void readParams(AbstractSerializedData stream, boolean exception) {
+        public void readParams(InputSerializedData stream, boolean exception) {
             terms_of_use = stream.readString(exception);
             monthly_sent_sms = stream.readInt32(exception);
         }
 
         @Override
-        public void serializeToStream(AbstractSerializedData stream) {
+        public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
             stream.writeString(terms_of_use);
             stream.writeInt32(monthly_sent_sms);
@@ -36,7 +36,7 @@ public class TL_smsjobs {
         public String terms_url;
 
         @Override
-        public void readParams(AbstractSerializedData stream, boolean exception) {
+        public void readParams(InputSerializedData stream, boolean exception) {
             flags = stream.readInt32(exception);
             allow_international = (flags & 1) != 0;
             recent_sent = stream.readInt32(exception);
@@ -51,7 +51,7 @@ public class TL_smsjobs {
         }
 
         @Override
-        public void serializeToStream(AbstractSerializedData stream) {
+        public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
             flags = allow_international ? flags | 1 : flags &~ 1;
             stream.writeInt32(flags);
@@ -72,12 +72,12 @@ public class TL_smsjobs {
 
         public String job_id;
         @Override
-        public void readParams(AbstractSerializedData stream, boolean exception) {
+        public void readParams(InputSerializedData stream, boolean exception) {
             job_id = stream.readString(exception);
         }
 
         @Override
-        public void serializeToStream(AbstractSerializedData stream) {
+        public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
             stream.writeString(job_id);
         }
@@ -91,14 +91,14 @@ public class TL_smsjobs {
         public String text;
 
         @Override
-        public void readParams(AbstractSerializedData stream, boolean exception) {
+        public void readParams(InputSerializedData stream, boolean exception) {
             job_id = stream.readString(exception);
             phone_number = stream.readString(exception);
             text = stream.readString(exception);
         }
 
         @Override
-        public void serializeToStream(AbstractSerializedData stream) {
+        public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
             stream.writeString(job_id);
             stream.writeString(phone_number);
@@ -110,7 +110,7 @@ public class TL_smsjobs {
         public static final int constructor = 0xedc39d0;
 
         @Override
-        public TLObject deserializeResponse(AbstractSerializedData stream, int constructor, boolean exception) {
+        public TLObject deserializeResponse(InputSerializedData stream, int constructor, boolean exception) {
             if (constructor == TL_smsjobs_eligibleToJoin.constructor) {
                 TL_smsjobs_eligibleToJoin result = new TL_smsjobs_eligibleToJoin();
                 result.readParams(stream, exception);
@@ -120,7 +120,7 @@ public class TL_smsjobs {
         }
 
         @Override
-        public void serializeToStream(AbstractSerializedData stream) {
+        public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
         }
     }
@@ -129,12 +129,12 @@ public class TL_smsjobs {
         public static final int constructor = 0xa74ece2d;
 
         @Override
-        public TLObject deserializeResponse(AbstractSerializedData stream, int constructor, boolean exception) {
+        public TLObject deserializeResponse(InputSerializedData stream, int constructor, boolean exception) {
             return TLRPC.Bool.TLdeserialize(stream, constructor, exception);
         }
 
         @Override
-        public void serializeToStream(AbstractSerializedData stream) {
+        public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
         }
     }
@@ -143,12 +143,12 @@ public class TL_smsjobs {
         public static final int constructor = 0x9898ad73;
 
         @Override
-        public TLObject deserializeResponse(AbstractSerializedData stream, int constructor, boolean exception) {
+        public TLObject deserializeResponse(InputSerializedData stream, int constructor, boolean exception) {
             return TLRPC.Bool.TLdeserialize(stream, constructor, exception);
         }
 
         @Override
-        public void serializeToStream(AbstractSerializedData stream) {
+        public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
         }
     }
@@ -157,7 +157,7 @@ public class TL_smsjobs {
         public static final int constructor = 0x10a698e8;
 
         @Override
-        public TLObject deserializeResponse(AbstractSerializedData stream, int constructor, boolean exception) {
+        public TLObject deserializeResponse(InputSerializedData stream, int constructor, boolean exception) {
             if (constructor == TL_smsjobs_status.constructor) {
                 TL_smsjobs_status result = new TL_smsjobs_status();
                 result.readParams(stream, exception);
@@ -167,7 +167,7 @@ public class TL_smsjobs {
         }
 
         @Override
-        public void serializeToStream(AbstractSerializedData stream) {
+        public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
         }
     }
@@ -178,7 +178,7 @@ public class TL_smsjobs {
         public String job_id;
 
         @Override
-        public TLObject deserializeResponse(AbstractSerializedData stream, int constructor, boolean exception) {
+        public TLObject deserializeResponse(InputSerializedData stream, int constructor, boolean exception) {
             if (constructor == TL_smsJob.constructor) {
                 TL_smsJob result = new TL_smsJob();
                 result.readParams(stream, exception);
@@ -188,7 +188,7 @@ public class TL_smsjobs {
         }
 
         @Override
-        public void serializeToStream(AbstractSerializedData stream) {
+        public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
             stream.writeString(job_id);
         }
@@ -202,12 +202,12 @@ public class TL_smsjobs {
         public String error;
 
         @Override
-        public TLObject deserializeResponse(AbstractSerializedData stream, int constructor, boolean exception) {
+        public TLObject deserializeResponse(InputSerializedData stream, int constructor, boolean exception) {
             return TLRPC.Bool.TLdeserialize(stream, constructor, exception);
         }
 
         @Override
-        public void serializeToStream(AbstractSerializedData stream) {
+        public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
             stream.writeInt32(flags);
             stream.writeString(job_id);
@@ -224,12 +224,12 @@ public class TL_smsjobs {
         public boolean allow_international;
 
         @Override
-        public TLObject deserializeResponse(AbstractSerializedData stream, int constructor, boolean exception) {
+        public TLObject deserializeResponse(InputSerializedData stream, int constructor, boolean exception) {
             return TLRPC.Bool.TLdeserialize(stream, constructor, exception);
         }
 
         @Override
-        public void serializeToStream(AbstractSerializedData stream) {
+        public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
             flags = allow_international ? flags | 1 : flags &~ 1;
             stream.writeInt32(flags);

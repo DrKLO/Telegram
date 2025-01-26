@@ -171,7 +171,9 @@ public class StealthModeAlert extends BottomSheet {
                     ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
 
                     }));
-                    containerView.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
+                    try {
+                        containerView.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
+                    } catch (Exception ignored) {}
                     dismiss();
                     if (type == TYPE_FROM_STORIES) {
                         showStealthModeEnabledBulletin();

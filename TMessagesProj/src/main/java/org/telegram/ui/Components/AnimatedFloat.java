@@ -134,6 +134,13 @@ public class AnimatedFloat {
     }
 
     // do set(value, true) when it's needed to skip animation
+    public void force(float value) {
+        this.set(value, true);
+    }
+
+    public void force(boolean value) {
+        this.set(value ? 1 : 0, true);
+    }
 
     public float set(boolean mustBe, boolean force) {
         return this.set(mustBe ? 1 : 0, force);

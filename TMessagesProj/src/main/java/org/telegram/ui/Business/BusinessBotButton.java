@@ -20,6 +20,7 @@ import org.telegram.messenger.UserObject;
 import org.telegram.messenger.browser.Browser;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.tgnet.tl.TL_account;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ChatActivity;
 import org.telegram.ui.Components.AnimatedTextView;
@@ -110,7 +111,7 @@ public class BusinessBotButton extends FrameLayout {
                 .putInt("dialog_botflags" + dialogId, flags)
                 .apply();
 
-            TLRPC.TL_account_toggleConnectedBotPaused req = new TLRPC.TL_account_toggleConnectedBotPaused();
+            TL_account.toggleConnectedBotPaused req = new TL_account.toggleConnectedBotPaused();
             req.peer = MessagesController.getInstance(currentAccount).getInputPeer(dialogId);
             req.paused = paused;
             ConnectionsManager.getInstance(currentAccount).sendRequest(req, null);
@@ -133,7 +134,7 @@ public class BusinessBotButton extends FrameLayout {
         menuView.setOnClickListener(e -> {
             ItemOptions itemOptions = ItemOptions.makeOptions(chatActivity.getLayoutContainer(), resourcesProvider, menuView);
             itemOptions.add(R.drawable.msg_cancel, LocaleController.getString(R.string.BizBotRemove), true, () -> {
-                TLRPC.TL_account_disablePeerConnectedBot req = new TLRPC.TL_account_disablePeerConnectedBot();
+                TL_account.disablePeerConnectedBot req = new TL_account.disablePeerConnectedBot();
                 req.peer = MessagesController.getInstance(currentAccount).getInputPeer(dialogId);
                 ConnectionsManager.getInstance(currentAccount).sendRequest(req, null);
 

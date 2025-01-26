@@ -6,6 +6,7 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
+import android.graphics.drawable.Drawable;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.ImageView;
@@ -134,12 +135,36 @@ public class SelectorUserCell extends BaseCell {
         imageView.setForUserOrChat(user, avatarDrawable);
         titleTextView.setText(UserObject.getUserName(user));
         isOnline[0] = false;
-        setSubtitle(LocaleController.formatUserStatus(UserConfig.selectedAccount, user, isOnline));
+        if (UserObject.isBot(user)) {
+            if (user.bot_active_users > 0) {
+                setSubtitle(LocaleController.formatPluralStringComma("BotUsers", user.bot_active_users, ','));
+            } else {
+                setSubtitle(LocaleController.getString(R.string.Bot));
+            }
+        } else {
+            setSubtitle(LocaleController.formatUserStatus(UserConfig.selectedAccount, user, isOnline));
+        }
         subtitleTextView.setTextColor(Theme.getColor(isOnline[0] ? Theme.key_dialogTextBlue2 : Theme.key_dialogTextGray3, resourcesProvider));
         if (checkBox != null) {
             checkBox.setAlpha(1f);
         }
         titleTextView.setRightDrawable(statusBadgeComponent.updateDrawable(user, Theme.getColor(Theme.key_chats_verifiedBackground), false));
+    }
+
+    public void setCustomUser(Drawable icon, CharSequence title, CharSequence subtitle) {
+        optionsView.setVisibility(View.GONE);
+        this.user = null;
+        this.chat = null;
+        imageView.setRoundRadius(dp(20));
+        imageView.setImageDrawable(icon);
+        titleTextView.setText(title);
+        isOnline[0] = false;
+        setSubtitle(subtitle);
+        subtitleTextView.setTextColor(Theme.getColor(isOnline[0] ? Theme.key_dialogTextBlue2 : Theme.key_dialogTextGray3, resourcesProvider));
+        if (checkBox != null) {
+            checkBox.setAlpha(1f);
+        }
+        titleTextView.setRightDrawable(null);
     }
 
     public void setChat(TLRPC.Chat chat, int participants_count) {

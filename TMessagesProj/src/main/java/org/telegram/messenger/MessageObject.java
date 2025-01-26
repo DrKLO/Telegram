@@ -10,6 +10,7 @@ package org.telegram.messenger;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
 import static org.telegram.messenger.LocaleController.formatPluralString;
+import static org.telegram.messenger.LocaleController.formatPluralStringComma;
 import static org.telegram.messenger.LocaleController.formatString;
 import static org.telegram.messenger.LocaleController.getString;
 
@@ -75,8 +76,11 @@ import org.telegram.ui.Components.URLSpanNoUnderlineBold;
 import org.telegram.ui.Components.URLSpanReplacement;
 import org.telegram.ui.Components.URLSpanUserMention;
 import org.telegram.ui.Components.VideoPlayer;
+import org.telegram.ui.Components.WebPlayerView;
 import org.telegram.ui.Components.spoilers.SpoilerEffect;
+import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.PeerColorActivity;
+import org.telegram.ui.PhotoViewer;
 import org.telegram.ui.Stars.StarsController;
 import org.telegram.ui.Stars.StarsIntroActivity;
 import org.telegram.ui.Stories.StoriesController;
@@ -3159,7 +3163,7 @@ public class MessageObject {
                 prev.setSpan(new AnimatedEmojiSpan(DialogObject.getEmojiStatusDocumentId(action.prev_value), Theme.chat_actionTextPaint.getFontMetricsInt()), 0, 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
             }
 
-            boolean hasUntil = action.new_value instanceof TLRPC.TL_emojiStatusUntil;
+            final int until = DialogObject.getEmojiStatusUntil(action.new_value);
 
             SpannableString next;
             if (action.new_value instanceof TLRPC.TL_emojiStatusEmpty) {
@@ -3171,17 +3175,17 @@ public class MessageObject {
 
             SpannableStringBuilder ssb = new SpannableStringBuilder(getString(
                 prevNone ? (
-                    hasUntil ? (isChannel ? R.string.EventLogChangedEmojiStatusFor : R.string.EventLogChangedEmojiStatusForGroup) : (isChannel ? R.string.EventLogChangedEmojiStatus : R.string.EventLogChangedEmojiStatusGroup)
+                    until != 0 ? (isChannel ? R.string.EventLogChangedEmojiStatusFor : R.string.EventLogChangedEmojiStatusForGroup) : (isChannel ? R.string.EventLogChangedEmojiStatus : R.string.EventLogChangedEmojiStatusGroup)
                 ) : (
-                    hasUntil ? (isChannel ? R.string.EventLogChangedEmojiStatusFromFor : R.string.EventLogChangedEmojiStatusFromForGroup) : (isChannel ? R.string.EventLogChangedEmojiStatusFrom : R.string.EventLogChangedEmojiStatusFromGroup)
+                    until != 0 ? (isChannel ? R.string.EventLogChangedEmojiStatusFromFor : R.string.EventLogChangedEmojiStatusFromForGroup) : (isChannel ? R.string.EventLogChangedEmojiStatusFrom : R.string.EventLogChangedEmojiStatusFromGroup)
                 )
             ));
 
             ssb = AndroidUtilities.replaceCharSequence("%1$s", ssb, prev);
             ssb = AndroidUtilities.replaceCharSequence("%2$s", ssb, next);
-            if (hasUntil) {
-                String until = LocaleController.formatTTLString((int) ((DialogObject.getEmojiStatusUntil(action.new_value) - event.date) * 1.05f));
-                ssb = AndroidUtilities.replaceCharSequence("%3$s", ssb, until);
+            if (until != 0) {
+                final String untilString = LocaleController.formatTTLString((int) ((until - event.date) * 1.05f));
+                ssb = AndroidUtilities.replaceCharSequence("%3$s", ssb, untilString);
             }
 
             messageText = replaceWithLink(ssb, "un1", fromUser);
@@ -3627,7 +3631,7 @@ public class MessageObject {
                 messageText = LocaleController.formatPluralString("NotificationPinnedPaidMedia", (int) paidMedia.stars_amount, username);
             } else if (getMedia(replyMessageObject) instanceof TLRPC.TL_messageMediaGame) {
                 messageText = replaceWithLink(formatString("ActionPinnedGame", R.string.ActionPinnedGame, "\uD83C\uDFAE " + getMedia(replyMessageObject).game.title), "un1", fromUser != null ? fromUser : chat);
-                messageText = Emoji.replaceEmoji(messageText, Theme.chat_msgTextPaint.getFontMetricsInt(), dp(20), false);
+                messageText = Emoji.replaceEmoji(messageText, Theme.chat_msgTextPaint.getFontMetricsInt(), false);
             } else if (replyMessageObject.messageText != null && replyMessageObject.messageText.length() > 0) {
                 CharSequence mess = AnimatedEmojiSpan.cloneSpans(replyMessageObject.messageText);
                 boolean ellipsize = false;
@@ -3635,7 +3639,7 @@ public class MessageObject {
                     mess = mess.subSequence(0, 20);
                     ellipsize = true;
                 }
-                mess = Emoji.replaceEmoji(mess, Theme.chat_msgTextPaint.getFontMetricsInt(), dp(20), true);
+                mess = Emoji.replaceEmoji(mess, Theme.chat_msgTextPaint.getFontMetricsInt(), true);
                 if (replyMessageObject != null && replyMessageObject.messageOwner != null) {
                     mess = replyMessageObject.replaceAnimatedEmoji(mess, Theme.chat_msgTextPaint.getFontMetricsInt());
                 }
@@ -4033,7 +4037,7 @@ public class MessageObject {
                         if (str == null) {
                             str = "";
                         }
-                        text = Emoji.replaceEmoji(str, Theme.chat_msgBotButtonPaint.getFontMetricsInt(), dp(15), false);
+                        text = Emoji.replaceEmoji(str, Theme.chat_msgBotButtonPaint.getFontMetricsInt(), false);
                     }
                     StaticLayout staticLayout = new StaticLayout(text, Theme.chat_msgBotButtonPaint, dp(2000), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
                     if (staticLayout.getLineCount() > 0) {
@@ -4365,7 +4369,7 @@ public class MessageObject {
                     boolean isChannel = ChatObject.isChannelAndNotMegaGroup(chat);
                     boolean isStars = (giveawayLaunch.flags & 1) != 0;
                     if (isStars) {
-                        messageText = LocaleController.formatPluralStringComma(isChannel ? "BoostingStarsGiveawayJustStarted" : "BoostingStarsGiveawayJustStartedGroup", (int) giveawayLaunch.stars, chat != null ? chat.title : "");
+                        messageText = formatPluralStringComma(isChannel ? "BoostingStarsGiveawayJustStarted" : "BoostingStarsGiveawayJustStartedGroup", (int) giveawayLaunch.stars, chat != null ? chat.title : "");
                     } else {
                         messageText = formatString(isChannel ? R.string.BoostingGiveawayJustStarted : R.string.BoostingGiveawayJustStartedGroup, chat != null ? chat.title : "");
                     }
@@ -4401,7 +4405,7 @@ public class MessageObject {
                     TLRPC.TL_messageActionGiveawayResults giveawayResults = (TLRPC.TL_messageActionGiveawayResults) messageOwner.action;
                     SpannableStringBuilder stringBuilder = new SpannableStringBuilder();
                     if (giveawayResults.stars) {
-                        stringBuilder.append(LocaleController.formatPluralStringComma("BoostingStarsGiveawayServiceWinnersSelected", giveawayResults.winners_count));
+                        stringBuilder.append(formatPluralStringComma("BoostingStarsGiveawayServiceWinnersSelected", giveawayResults.winners_count));
                         if (giveawayResults.unclaimed_count > 0) {
                             stringBuilder.append("\n");
                             stringBuilder.append(LocaleController.formatPluralString(isChannel ? "BoostingStarsGiveawayServiceUndistributed" : "BoostingStarsGiveawayServiceUndistributedGroup", giveawayResults.unclaimed_count));
@@ -4418,15 +4422,48 @@ public class MessageObject {
                     final TLRPC.TL_messageActionPrizeStars action = (TLRPC.TL_messageActionPrizeStars) messageOwner.action;
                     final long chatId = -DialogObject.getPeerDialogId(action.boost_peer);
                     final TLRPC.Chat chat = getChat(chats, sChats, chatId);
-                    messageText = replaceWithLink(AndroidUtilities.replaceTags(LocaleController.formatPluralStringComma("ActionStarGiveawayPrize", (int) action.stars)), "un1", chat);
+                    messageText = replaceWithLink(AndroidUtilities.replaceTags(formatPluralStringComma("ActionStarGiveawayPrize", (int) action.stars)), "un1", chat);
                 } else if (messageOwner.action instanceof TLRPC.TL_messageActionStarGift) {
-                    TLRPC.TL_messageActionStarGift action = (TLRPC.TL_messageActionStarGift) messageOwner.action;
+                    final TLRPC.TL_messageActionStarGift action = (TLRPC.TL_messageActionStarGift) messageOwner.action;
                     int stars = 0;
                     if (action.gift != null) {
                         stars = (int) action.gift.stars;
                     }
-                    if (fromObject instanceof TLRPC.User && ((TLRPC.User) fromObject).self && !action.forceIn) {
-                        TLRPC.User user = getUser(users, sUsers, messageOwner.peer_id.user_id);
+//                    if (action.can_upgrade && action.upgrade_stars == 0) {
+                        stars += (int) action.upgrade_stars;
+//                    }
+                    final boolean isForChannel = action.peer != null && DialogObject.getPeerDialogId(action.peer) < 0;
+                    TLRPC.User user = getUser(users, sUsers, messageOwner.peer_id.user_id);
+                    TLObject obj = fromObject;
+                    if (action.from_id != null) {
+                        final long fromId = DialogObject.getPeerDialogId(action.from_id);
+                        if (fromId >= 0) {
+                            obj = getUser(users, sUsers, fromId);
+                        } else {
+                            obj = getChat(chats, sChats, -fromId);
+                        }
+                    }
+                    TLObject peerObj = null;
+                    if (action.peer != null) {
+                        final long peerId = DialogObject.getPeerDialogId(action.peer);
+                        if (peerId >= 0) {
+                            peerObj = getUser(users, sUsers, peerId);
+                        } else {
+                            peerObj = getChat(chats, sChats, -peerId);
+                        }
+                    }
+                    if (UserObject.isService(getDialogId()) && action.from_id == null) {
+                        messageText = AndroidUtilities.replaceTags(getString(R.string.ActionGiftSomeone));
+                        messageTextShort = getString(R.string.ActionStarGift);
+                    } else if (isForChannel) {
+                        messageText = AndroidUtilities.replaceTags(formatPluralStringComma("ActionGiftChannel", stars));
+                        messageText = replaceWithLink(messageText, "un1", obj);
+                        messageText = replaceWithLink(messageText, "un2", peerObj);
+                        messageTextShort = getString(R.string.ActionStarGift);
+                    } else if (UserObject.isUserSelf(user)) {
+                        messageText = AndroidUtilities.replaceTags(getString(R.string.ActionGiftSelf));
+                        messageTextShort = getString(R.string.ActionStarGift);
+                    } else if (obj instanceof TLRPC.User && ((TLRPC.User) obj).self && !action.forceIn) {
                         messageText = replaceWithLink(AndroidUtilities.replaceTags(getString(R.string.ActionGiftOutbound)), "un1", user);
                         if (action.message != null && !TextUtils.isEmpty(action.message.text)) {
                             SpannableStringBuilder stringBuilder = new SpannableStringBuilder(action.message.text);
@@ -4435,10 +4472,10 @@ public class MessageObject {
                         } else {
                             messageTextShort = getString(R.string.ActionStarGift);
                         }
-                    } else if (fromObject instanceof TLRPC.User && UserObject.isService(((TLRPC.User) fromObject).id)) {
+                    } else if (obj instanceof TLRPC.User && UserObject.isService(((TLRPC.User) obj).id)) {
                         messageText = TextUtils.replace(AndroidUtilities.replaceTags(getString(R.string.ActionGiftInbound)), new String[] {"un1"}, new CharSequence[]{ getString(R.string.StarsTransactionUnknown) });
                     } else {
-                        messageText = replaceWithLink(AndroidUtilities.replaceTags(getString(R.string.ActionGiftInbound)), "un1", fromObject);
+                        messageText = replaceWithLink(AndroidUtilities.replaceTags(getString(R.string.ActionGiftInbound)), "un1", obj);
                         if (action.message != null && !TextUtils.isEmpty(action.message.text)) {
                             SpannableStringBuilder stringBuilder = new SpannableStringBuilder(action.message.text);
                             addEntitiesToText(stringBuilder, action.message.entities, isOutOwner(), false, false, false);
@@ -4450,7 +4487,51 @@ public class MessageObject {
                     int i = messageText.toString().indexOf("un2");
                     if (i != -1) {
                         SpannableStringBuilder sb = SpannableStringBuilder.valueOf(messageText);
-                        messageText = sb.replace(i, i + 3, LocaleController.formatPluralStringComma("Gift2StarsCount", (int) stars));
+                        messageText = sb.replace(i, i + 3, formatPluralStringComma("Gift2StarsCount", (int) stars));
+                    }
+                } else if (messageOwner.action instanceof TLRPC.TL_messageActionStarGiftUnique) {
+                    TLRPC.TL_messageActionStarGiftUnique action = (TLRPC.TL_messageActionStarGiftUnique) messageOwner.action;
+                    TLRPC.User user = getUser(users, sUsers, getDialogId());
+                    if (action.upgrade) {
+                        if (action.peer != null) {
+                            long peerId = DialogObject.getPeerDialogId(action.peer);
+                            TLObject peer;
+                            if (peerId >= 0) {
+                                peer = getUser(users, sUsers, peerId);
+                            } else {
+                                peer = getChat(chats, sChats, -peerId);
+                            }
+                            messageText = replaceWithLink(AndroidUtilities.replaceTags(getString(R.string.ActionUniqueGiftUpgradeInboundChannel)), "un1", peer);
+                        } else if (UserObject.isUserSelf(user)) {
+                            messageText = AndroidUtilities.replaceTags(getString(R.string.ActionUniqueGiftUpgradeSelf));
+                        } else {
+                            messageText = replaceWithLink(AndroidUtilities.replaceTags(getString(isOutOwner() ? R.string.ActionUniqueGiftUpgradeOutbound : R.string.ActionUniqueGiftUpgradeInbound)), "un1", user);
+                        }
+                    } else {
+                        long fromId = getDialogId();
+                        if (action.from_id != null) {
+                            fromId = DialogObject.getPeerDialogId(action.from_id);
+                        }
+                        TLObject obj;
+                        if (fromId >= 0) {
+                            obj = getUser(users, sUsers, fromId);
+                        } else {
+                            obj = getChat(chats, sChats, -fromId);
+                        }
+                        if (action.peer != null) {
+                            long peerId = DialogObject.getPeerDialogId(action.peer);
+                            TLObject peer;
+                            if (peerId >= 0) {
+                                peer = getUser(users, sUsers, peerId);
+                            } else {
+                                peer = getChat(chats, sChats, -peerId);
+                            }
+                            messageText = AndroidUtilities.replaceTags(getString(R.string.ActionUniqueGiftTransferService));
+                            messageText = replaceWithLink(messageText, "un1", obj);
+                            messageText = replaceWithLink(messageText, "un2", peer);
+                        } else {
+                            messageText = replaceWithLink(AndroidUtilities.replaceTags(getString(isOutOwner() ? R.string.ActionUniqueGiftTransferOutbound : R.string.ActionUniqueGiftTransferInbound)), "un1", obj);
+                        }
                     }
                 } else if (messageOwner.action instanceof TLRPC.TL_messageActionGiftStars) {
                     if (fromObject instanceof TLRPC.User && ((TLRPC.User) fromObject).self) {
@@ -5117,6 +5198,10 @@ public class MessageObject {
         if (messageText == null) {
             messageText = "";
         }
+
+        isEmbedVideoCached = null;
+        cachedStartsTimestamp = null;
+        cachedSavedTimestamp = null;
     }
 
     public CharSequence getMediaTitle(TLRPC.MessageMedia media) {
@@ -5423,7 +5508,7 @@ public class MessageObject {
             } else if (messageOwner.action instanceof TLRPC.TL_messageActionGiftPremium || messageOwner.action instanceof TLRPC.TL_messageActionGiftCode) {
                 contentType = 1;
                 type = TYPE_GIFT_PREMIUM;
-            } else if (messageOwner.action instanceof TLRPC.TL_messageActionGiftStars || messageOwner.action instanceof TLRPC.TL_messageActionStarGift || messageOwner.action instanceof TLRPC.TL_messageActionPrizeStars) {
+            } else if (messageOwner.action instanceof TLRPC.TL_messageActionGiftStars || messageOwner.action instanceof TLRPC.TL_messageActionStarGift || messageOwner.action instanceof TLRPC.TL_messageActionPrizeStars || messageOwner.action instanceof TLRPC.TL_messageActionStarGiftUnique && ((TLRPC.TL_messageActionStarGiftUnique) messageOwner.action).refunded) {
                 contentType = 1;
                 type = TYPE_GIFT_STARS;
             } else if (messageOwner.action instanceof TLRPC.TL_messageActionChatEditPhoto || messageOwner.action instanceof TLRPC.TL_messageActionUserUpdatedPhoto) {
@@ -5925,6 +6010,13 @@ public class MessageObject {
         return getFileName(messageOwner);
     }
 
+    public String getFileNameFast() {
+        if (getDocumentFast() != null) {
+            return getFileName(getDocumentFast());
+        }
+        return getFileName(messageOwner);
+    }
+
     public static String getFileName(TLRPC.Message messageOwner) {
         if (getMedia(messageOwner) instanceof TLRPC.TL_messageMediaDocument) {
             return getFileName(getDocument(messageOwner));
@@ -6088,7 +6180,7 @@ public class MessageObject {
                     FileLog.e(e);
                 }
             }
-            linkDescription = Emoji.replaceEmoji(linkDescription, Theme.chat_msgTextPaint.getFontMetricsInt(), dp(20), false);
+            linkDescription = Emoji.replaceEmoji(linkDescription, Theme.chat_msgTextPaint.getFontMetricsInt(), false);
             if (webPageDescriptionEntities != null) {
                 addEntitiesToText(linkDescription, webPageDescriptionEntities, isOut(), allowUsernames, false, !allowUsernames);
                 replaceAnimatedEmoji(linkDescription, webPageDescriptionEntities, Theme.chat_msgTextPaint.getFontMetricsInt());
@@ -6119,7 +6211,7 @@ public class MessageObject {
         }
         CharSequence text = messageOwner.voiceTranscription;
         if (!TextUtils.isEmpty(text)) {
-            text = Emoji.replaceEmoji(text, Theme.chat_msgTextPaint.getFontMetricsInt(), dp(20), false);
+            text = Emoji.replaceEmoji(text, Theme.chat_msgTextPaint.getFontMetricsInt(), false);
         }
         return text;
     }
@@ -6179,7 +6271,7 @@ public class MessageObject {
             entities = messageOwner.translatedText.entities;
         }
         if (!isMediaEmpty() && !(getMedia(messageOwner) instanceof TLRPC.TL_messageMediaGame) && !TextUtils.isEmpty(text)) {
-            caption = Emoji.replaceEmoji(text, Theme.chat_msgTextPaint.getFontMetricsInt(), dp(20), false);
+            caption = Emoji.replaceEmoji(text, Theme.chat_msgTextPaint.getFontMetricsInt(), false);
             caption = replaceAnimatedEmoji(caption, entities, Theme.chat_msgTextPaint.getFontMetricsInt(), false);
 
             boolean hasEntities;
@@ -6395,6 +6487,9 @@ public class MessageObject {
     public boolean hasValidGroupId() {
         return getGroupId() != 0 && (photoThumbs != null && !photoThumbs.isEmpty() || type == TYPE_VIDEO || type == TYPE_PHOTO || isMusic() || isDocument());
     }
+    public boolean hasValidGroupIdFast() {
+        return getGroupId() != 0 && (photoThumbs != null && !photoThumbs.isEmpty() || type == TYPE_VIDEO || type == TYPE_PHOTO || type == TYPE_MUSIC || type == TYPE_FILE);
+    }
 
     public long getGroupIdForUse() {
         return localSentGroupId != 0 ? localSentGroupId : messageOwner.grouped_id;
@@ -6520,6 +6615,13 @@ public class MessageObject {
     }
 
     public static Spannable replaceAnimatedEmoji(CharSequence text, ArrayList<TLRPC.MessageEntity> entities, Paint.FontMetricsInt fontMetricsInt, boolean top) {
+        return replaceAnimatedEmoji(text, entities, fontMetricsInt, top, 1.2f);
+    }
+
+    public static Spannable replaceAnimatedEmoji(CharSequence text, ArrayList<TLRPC.MessageEntity> entities, Paint.FontMetricsInt fontMetricsInt, boolean top, float scale) {
+            if (text == null) {
+            return null;
+        }
         Spannable spannable = text instanceof Spannable ? (Spannable) text : new SpannableString(text);
         if (entities == null) {
             return spannable;
@@ -6551,9 +6653,9 @@ public class MessageObject {
 
                     AnimatedEmojiSpan span;
                     if (entity.document != null) {
-                        span = new AnimatedEmojiSpan(entity.document, fontMetricsInt);
+                        span = new AnimatedEmojiSpan(entity.document, scale, fontMetricsInt);
                     } else {
-                        span = new AnimatedEmojiSpan(entity.document_id, fontMetricsInt);
+                        span = new AnimatedEmojiSpan(entity.document_id, scale, fontMetricsInt);
                     }
                     span.top = top;
                     spannable.setSpan(span, messageEntity.offset, messageEntity.offset + messageEntity.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
@@ -6761,7 +6863,7 @@ public class MessageObject {
             }
         }
 
-        int count = runs.size();
+        final int count = Math.min(MediaDataController.MAX_STYLE_RUNS_COUNT, runs.size());
         for (int a = 0; a < count; a++) {
             TextStyleSpan.TextStyleRun run = runs.get(a);
 
@@ -6917,6 +7019,12 @@ public class MessageObject {
         return getMedia(messageOwner) instanceof TLRPC.TL_messageMediaWebPage && getMedia(messageOwner).webpage != null && !TextUtils.isEmpty(getMedia(messageOwner).webpage.embed_url) && "YouTube".equals(getMedia(messageOwner).webpage.site_name);
     }
 
+    private Boolean isEmbedVideoCached;
+    public boolean isEmbedVideo() {
+        if (isEmbedVideoCached != null) return messageOwner != null && messageOwner.media != null && messageOwner.media.webpage != null && isEmbedVideoCached;
+        return isEmbedVideoCached = messageOwner != null && messageOwner.media != null && messageOwner.media.webpage != null && !TextUtils.isEmpty(WebPlayerView.getYouTubeVideoId(messageOwner.media.webpage.url));
+    }
+
     public int getMaxMessageTextWidth() {
         int maxWidth = 0;
         if (AndroidUtilities.isTablet() && eventId != 0) {
@@ -6939,9 +7047,7 @@ public class MessageObject {
                 } else if (segment.length() == 6 || segment.length() == 13 && segment.charAt(6) == '-') {
                     maxWidth = dp(200);
                 }
-            } catch (Exception ignore) {
-
-            }
+            } catch (Exception ignore) {}
         } else if (isAndroidTheme()) {
             maxWidth = dp(200);
         }
@@ -8272,9 +8378,6 @@ public class MessageObject {
         } else {
             document = media != null ? media.document : null;
         }
-        if (media != null && !media.alt_documents.isEmpty()) {
-            document = VideoPlayer.getDocumentForThumb(UserConfig.selectedAccount, media);
-        }
         if (document != null) {
             return document.size;
         }
@@ -8286,6 +8389,8 @@ public class MessageObject {
             return highestQuality.document.size;
         } else if (thumbQuality != null) {
             return thumbQuality.document.size;
+        } else if (cachedQuality != null) {
+            return cachedQuality.document.size;
         }
         return getMessageSize(messageOwner);
     }
@@ -8504,6 +8609,12 @@ public class MessageObject {
             }
         }
         return null;
+    }
+
+    public boolean canSetReaction() {
+        if (messageOwner instanceof TLRPC.TL_messageService)
+            return messageOwner.reactions_are_possible;
+        return true;
     }
 
     public boolean isSending() {
@@ -8761,6 +8872,13 @@ public class MessageObject {
         }
         if (hasVideoQualities() && highestQuality != null) {
             return highestQuality.document;
+        }
+        return getDocument(messageOwner);
+    }
+
+    public TLRPC.Document getDocumentFast() {
+        if (emojiAnimatedSticker != null) {
+            return emojiAnimatedSticker;
         }
         return getDocument(messageOwner);
     }
@@ -9103,6 +9221,10 @@ public class MessageObject {
     }
 
     public int getApproximateHeight() {
+        return getApproximateHeight(false);
+    }
+
+    public int getApproximateHeight(boolean fast) {
         if (type == TYPE_TEXT) {
             int height = textHeight() + (getMedia(messageOwner) instanceof TLRPC.TL_messageMediaWebPage && getMedia(messageOwner).webpage instanceof TLRPC.TL_webPage ? dp(100) : 0);
             if (isReply()) {
@@ -9178,7 +9300,12 @@ public class MessageObject {
             if (photoHeight > AndroidUtilities.getPhotoSize()) {
                 photoHeight = AndroidUtilities.getPhotoSize();
             }
-            TLRPC.PhotoSize currentPhotoObject = FileLoader.getClosestPhotoSizeWithSize(photoThumbs, AndroidUtilities.getPhotoSize());
+            TLRPC.PhotoSize currentPhotoObject;
+            if (fast) {
+                currentPhotoObject = photoThumbs == null || photoThumbs.isEmpty() ? null : photoThumbs.get(0);
+            } else {
+                currentPhotoObject = FileLoader.getClosestPhotoSizeWithSize(photoThumbs, AndroidUtilities.getPhotoSize());
+            }
 
             if (currentPhotoObject != null) {
                 float scale = (float) currentPhotoObject.w / (float) photoWidth;
@@ -9191,7 +9318,7 @@ public class MessageObject {
                 } else if (h < dp(120)) {
                     h = dp(120);
                 }
-                if (needDrawBluredPreview()) {
+                if (!fast && needDrawBluredPreview()) {
                     if (AndroidUtilities.isTablet()) {
                         h = (int) (AndroidUtilities.getMinTabletSide() * 0.5f);
                     } else {
@@ -10277,7 +10404,7 @@ public class MessageObject {
     }
 
     public boolean isReactionsAvailable() {
-        return !isEditing() && !isSponsored() && isSent() && messageOwner.action == null && !isExpiredStory();
+        return !isEditing() && !isSponsored() && isSent() && !isExpiredStory() && canSetReaction();
     }
 
     public boolean isPaidReactionChosen() {
@@ -11131,7 +11258,7 @@ public class MessageObject {
     public ArrayList<VideoPlayer.Quality> videoQualities;
     public TLRPC.Document qualityToSave;
 
-    public VideoPlayer.VideoUri highestQuality, thumbQuality;
+    public VideoPlayer.VideoUri highestQuality, thumbQuality, cachedQuality;
 
     public boolean hasVideoQualities() {
         if (videoQualitiesCached == null) {
@@ -11143,6 +11270,7 @@ public class MessageObject {
                 videoQualitiesCached = videoQualities != null && videoQualities.size() > 1;
                 highestQuality = VideoPlayer.getQualityForPlayer(videoQualities);
                 thumbQuality = VideoPlayer.getQualityForThumb(videoQualities);
+                cachedQuality = VideoPlayer.getCachedQuality(videoQualities);
             } catch (Exception e) {
                 FileLog.e(e);
                 videoQualitiesCached = false;
@@ -11152,7 +11280,7 @@ public class MessageObject {
     }
 
     public boolean isStarGiftAction() {
-        return messageOwner != null && messageOwner.action instanceof TLRPC.TL_messageActionStarGift;
+        return messageOwner != null && (messageOwner.action instanceof TLRPC.TL_messageActionStarGift || messageOwner.action instanceof TLRPC.TL_messageActionStarGiftUnique);
     }
 
     public boolean mediaExists() {
@@ -11163,12 +11291,49 @@ public class MessageObject {
     }
 
     public void updateQualitiesCached(boolean useFileDatabaseQueue) {
-        if (videoQualities == null) return;
+        if (videoQualities == null) {
+            cachedQuality = null;
+            return;
+        }
         for (VideoPlayer.Quality q : videoQualities) {
             for (VideoPlayer.VideoUri u : q.uris) {
                 u.updateCached(useFileDatabaseQueue);
             }
         }
+        highestQuality = VideoPlayer.getQualityForPlayer(videoQualities);
+        thumbQuality = VideoPlayer.getQualityForThumb(videoQualities);
+        cachedQuality = VideoPlayer.getCachedQuality(videoQualities);
+    }
+
+    public boolean areTags() {
+        if (messageOwner == null) return false;
+        if (messageOwner.reactions == null) return false;
+        return messageOwner.reactions.reactions_as_tags;
+    }
+
+    public boolean openedInViewer;
+
+    private Integer cachedStartsTimestamp;
+    public int getVideoStartsTimestamp() {
+        if (cachedStartsTimestamp != null) return cachedStartsTimestamp;
+        if (!isVideo()) return cachedStartsTimestamp = -1;
+        final TLRPC.MessageMedia media = getMedia(this);
+        if (media.video_timestamp != 0) {
+            return media.video_timestamp;
+        }
+        if (media != null && media.webpage != null && media.webpage.url != null) {
+            try {
+                return cachedStartsTimestamp = LaunchActivity.getTimestampFromLink(Uri.parse(media.webpage.url));
+            } catch (Exception e) {}
+        }
+        return cachedStartsTimestamp = -1;
+    }
+
+    public Float cachedSavedTimestamp;
+    public float getVideoSavedProgress() {
+//        if (cachedSavedTimestamp != null) return cachedSavedTimestamp;
+        if (cachedSavedTimestamp != null) return PhotoViewer.getSavedProgressFast(this);
+        return cachedSavedTimestamp = PhotoViewer.getSavedProgress(this);
     }
 
 }

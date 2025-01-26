@@ -33,6 +33,7 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.Emoji;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
@@ -49,6 +50,7 @@ import org.telegram.ui.Cells.HeaderCell;
 import org.telegram.ui.Cells.ShadowSectionCell;
 import org.telegram.ui.Cells.TextCheckCell;
 import org.telegram.ui.Cells.TextInfoPrivacyCell;
+import org.telegram.ui.Components.AnimatedEmojiDrawable;
 import org.telegram.ui.Components.Bulletin;
 import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.CombinedDrawable;
@@ -190,7 +192,7 @@ public class FiltersSetupActivity extends BaseFragment implements NotificationCe
             suggestedFilter = filter;
             setWillNotDraw(!needDivider);
 
-            textView.setText(filter.filter.title);
+            textView.setText(filter.filter.title.text);
             valueTextView.setText(filter.description);
         }
 
@@ -287,6 +289,7 @@ public class FiltersSetupActivity extends BaseFragment implements NotificationCe
             addView(colorImageView, LayoutHelper.createFrame(20, 20, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL, 22, 0, 22, 0));
 
             textView = new SimpleTextView(context);
+            textView.setPadding(0, dp(4), 0, dp(4));
             textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
             textView.setTextSize(16);
             textView.setMaxLines(1);
@@ -294,7 +297,8 @@ public class FiltersSetupActivity extends BaseFragment implements NotificationCe
             Drawable drawable = ContextCompat.getDrawable(getContext(), R.drawable.other_lockedfolders2);
             drawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_stickers_menu), PorterDuff.Mode.MULTIPLY));
             textView.setRightDrawable(drawable);
-            addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 80 : 64, 14, LocaleController.isRTL ? 64 : 80, 0));
+            textView.setEmojiColor(Theme.getColor(Theme.key_featuredStickers_addButton, resourceProvider));
+            addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 80 : 64, 10, LocaleController.isRTL ? 64 : 80, 0));
 
             valueTextView = new TextView(context);
             valueTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2));
@@ -472,7 +476,11 @@ public class FiltersSetupActivity extends BaseFragment implements NotificationCe
             if (!animated) {
                 progressToLock = currentFilter.locked ? 1f : 0;
             }
-            textView.setText(Emoji.replaceEmoji(name, textView.getPaint().getFontMetricsInt(), dp(20), false));
+            CharSequence title = name;
+            title = Emoji.replaceEmoji(title, textView.getPaint().getFontMetricsInt(), false);
+            title = MessageObject.replaceAnimatedEmoji(title, filter.entities, textView.getPaint().getFontMetricsInt());
+            textView.setEmojiCacheType(filter.title_noanimate ? AnimatedEmojiDrawable.CACHE_TYPE_NOANIMATE_FOLDER : AnimatedEmojiDrawable.CACHE_TYPE_MESSAGES);
+            textView.setText(title);
 
             valueTextView.setText(info);
             needDivider = divider;
@@ -955,7 +963,8 @@ public class FiltersSetupActivity extends BaseFragment implements NotificationCe
                     suggestedFilterCell.setAddOnClickListener(v -> {
                         TLRPC.TL_dialogFilterSuggested suggested = suggestedFilterCell.getSuggestedFilter();
                         MessagesController.DialogFilter filter = new MessagesController.DialogFilter();
-                        filter.name = suggested.filter.title;
+                        filter.name = suggested.filter.title.text;
+                        filter.entities = suggested.filter.title.entities;
                         filter.id = 2;
                         while (getMessagesController().dialogFiltersById.get(filter.id) != null) {
                             filter.id++;
@@ -1002,7 +1011,7 @@ public class FiltersSetupActivity extends BaseFragment implements NotificationCe
                         if (suggested.filter.exclude_muted) {
                             filter.flags |= MessagesController.DIALOG_FILTER_FLAG_EXCLUDE_MUTED;
                         }
-                        FilterCreateActivity.saveFilterToServer(filter, filter.flags, filter.name, filter.color, filter.alwaysShow, filter.neverShow, filter.pinnedDialogs, true, true, true, true, true, FiltersSetupActivity.this, () -> {
+                        FilterCreateActivity.saveFilterToServer(filter, filter.flags, filter.name, filter.entities, filter.title_noanimate, filter.color, filter.alwaysShow, filter.neverShow, filter.pinnedDialogs, true, true, true, true, true, FiltersSetupActivity.this, () -> {
                             getMessagesController().suggestedFilters.remove(suggested);
                             getNotificationCenter().postNotificationName(NotificationCenter.dialogFiltersUpdated);
                         });

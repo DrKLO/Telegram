@@ -1,8 +1,11 @@
 package org.telegram.tgnet.tl;
 
 import org.telegram.tgnet.AbstractSerializedData;
+import org.telegram.tgnet.InputSerializedData;
+import org.telegram.tgnet.OutputSerializedData;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.tgnet.Vector;
 
 import java.util.ArrayList;
 
@@ -21,7 +24,7 @@ public class TL_payments {
         public long participants;
         public long revenue;
 
-        public static connectedBotStarRef TLdeserialize(AbstractSerializedData stream, int constructor, boolean exception) {
+        public static connectedBotStarRef TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
             if (connectedBotStarRef.constructor != constructor) {
                 if (exception) {
                     throw new RuntimeException(String.format("can't parse magic %x in TL_payments.connectedBotStarRef", constructor));
@@ -35,7 +38,7 @@ public class TL_payments {
         }
 
         @Override
-        public void readParams(AbstractSerializedData stream, boolean exception) {
+        public void readParams(InputSerializedData stream, boolean exception) {
             flags = stream.readInt32(exception);
             revoked = (flags & 2) != 0;
             url = stream.readString(exception);
@@ -50,7 +53,7 @@ public class TL_payments {
         }
 
         @Override
-        public void serializeToStream(AbstractSerializedData stream) {
+        public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
             flags = revoked ? flags | 2 : flags &~ 2;
             stream.writeInt32(flags);
@@ -73,7 +76,7 @@ public class TL_payments {
         public ArrayList<connectedBotStarRef> connected_bots = new ArrayList<>();
         public ArrayList<TLRPC.User> users = new ArrayList<TLRPC.User>();
 
-        public static connectedStarRefBots TLdeserialize(AbstractSerializedData stream, int constructor, boolean exception) {
+        public static connectedStarRefBots TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
             if (connectedStarRefBots.constructor != constructor) {
                 if (exception) {
                     throw new RuntimeException(String.format("can't parse magic %x in TL_payments.connectedStarRefBots", constructor));
@@ -87,48 +90,18 @@ public class TL_payments {
         }
 
         @Override
-        public void readParams(AbstractSerializedData stream, boolean exception) {
+        public void readParams(InputSerializedData stream, boolean exception) {
             count = stream.readInt32(exception);
-            int magic = stream.readInt32(exception);
-            if (magic != 0x1cb5c415) {
-                if (exception) {
-                    throw new RuntimeException(String.format("wrong Vector magic, got %x", magic));
-                }
-                return;
-            }
-            int count = stream.readInt32(exception);
-            for (int i = 0; i < count; ++i) {
-                connected_bots.add(connectedBotStarRef.TLdeserialize(stream, stream.readInt32(exception), exception));
-            }
-            magic = stream.readInt32(exception);
-            if (magic != 0x1cb5c415) {
-                if (exception) {
-                    throw new RuntimeException(String.format("wrong Vector magic, got %x", magic));
-                }
-                return;
-            }
-            count = stream.readInt32(exception);
-            for (int i = 0; i < count; ++i) {
-                users.add(TLRPC.User.TLdeserialize(stream, stream.readInt32(exception), exception));
-            }
+            connected_bots = Vector.deserialize(stream, connectedBotStarRef::TLdeserialize, exception);
+            users = Vector.deserialize(stream, TLRPC.User::TLdeserialize, exception);
         }
 
         @Override
-        public void serializeToStream(AbstractSerializedData stream) {
+        public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
             stream.writeInt32(count);
-            stream.writeInt32(0x1cb5c415);
-            int count = connected_bots.size();
-            stream.writeInt32(count);
-            for (int i = 0; i < count; ++i) {
-                connected_bots.get(i).serializeToStream(stream);
-            }
-            stream.writeInt32(0x1cb5c415);
-            count = users.size();
-            stream.writeInt32(count);
-            for (int i = 0; i < count; ++i) {
-                users.get(i).serializeToStream(stream);
-            }
+            Vector.serialize(stream, connected_bots);
+            Vector.serialize(stream, users);
         }
     }
 
@@ -141,7 +114,7 @@ public class TL_payments {
         public ArrayList<TLRPC.User> users = new ArrayList<>();
         public String next_offset;
 
-        public static suggestedStarRefBots TLdeserialize(AbstractSerializedData stream, int constructor, boolean exception) {
+        public static suggestedStarRefBots TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
             if (suggestedStarRefBots.constructor != constructor) {
                 if (exception) {
                     throw new RuntimeException(String.format("can't parse magic %x in TL_payments.suggestedStarRefBots", constructor));
@@ -155,52 +128,22 @@ public class TL_payments {
         }
 
         @Override
-        public void readParams(AbstractSerializedData stream, boolean exception) {
+        public void readParams(InputSerializedData stream, boolean exception) {
             flags = stream.readInt32(exception);
             count = stream.readInt32(exception);
-            int magic = stream.readInt32(exception);
-            if (magic != 0x1cb5c415) {
-                if (exception) {
-                    throw new RuntimeException(String.format("wrong Vector magic, got %x", magic));
-                }
-                return;
-            }
-            int count = stream.readInt32(exception);
-            for (int i = 0; i < count; ++i) {
-                suggested_bots.add(starRefProgram.TLdeserialize(stream, stream.readInt32(exception), exception));
-            }
-            magic = stream.readInt32(exception);
-            if (magic != 0x1cb5c415) {
-                if (exception) {
-                    throw new RuntimeException(String.format("wrong Vector magic, got %x", magic));
-                }
-                return;
-            }
-            count = stream.readInt32(exception);
-            for (int i = 0; i < count; ++i) {
-                users.add(TLRPC.User.TLdeserialize(stream, stream.readInt32(exception), exception));
-            }
+            suggested_bots = Vector.deserialize(stream, starRefProgram::TLdeserialize, exception);
+            users = Vector.deserialize(stream, TLRPC.User::TLdeserialize, exception);
             if ((flags & 1) != 0) {
                 next_offset = stream.readString(exception);
             }
         }
 
         @Override
-        public void serializeToStream(AbstractSerializedData stream) {
+        public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
             stream.writeInt32(count);
-            stream.writeInt32(0x1cb5c415);
-            int count = suggested_bots.size();
-            stream.writeInt32(count);
-            for (int i = 0; i < count; ++i) {
-                suggested_bots.get(i).serializeToStream(stream);
-            }
-            stream.writeInt32(0x1cb5c415);
-            count = users.size();
-            stream.writeInt32(count);
-            for (int i = 0; i < count; ++i) {
-                users.get(i).serializeToStream(stream);
-            }
+            Vector.serialize(stream, suggested_bots);
+            Vector.serialize(stream, users);
             if ((flags & 1) != 0) {
                 stream.writeString(next_offset);
             }
@@ -217,7 +160,7 @@ public class TL_payments {
         public int end_date;
         public TL_stars.StarsAmount daily_revenue_per_user = new TL_stars.StarsAmount(0);
 
-        public static starRefProgram TLdeserialize(AbstractSerializedData stream, int constructor, boolean exception) {
+        public static starRefProgram TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
             if (starRefProgram.constructor != constructor) {
                 if (exception) {
                     throw new RuntimeException(String.format("can't parse magic %x in TL_payments.starRefProgram", constructor));
@@ -231,7 +174,7 @@ public class TL_payments {
         }
 
         @Override
-        public void readParams(AbstractSerializedData stream, boolean exception) {
+        public void readParams(InputSerializedData stream, boolean exception) {
             flags = stream.readInt32(exception);
             bot_id = stream.readInt64(exception);
             commission_permille = stream.readInt32(exception);
@@ -247,7 +190,7 @@ public class TL_payments {
         }
 
         @Override
-        public void serializeToStream(AbstractSerializedData stream) {
+        public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
             stream.writeInt32(flags);
             stream.writeInt64(bot_id);
@@ -271,12 +214,12 @@ public class TL_payments {
         public TLRPC.InputUser bot;
 
         @Override
-        public TLObject deserializeResponse(AbstractSerializedData stream, int constructor, boolean exception) {
+        public TLObject deserializeResponse(InputSerializedData stream, int constructor, boolean exception) {
             return connectedStarRefBots.TLdeserialize(stream, constructor, exception);
         }
 
         @Override
-        public void serializeToStream(AbstractSerializedData stream) {
+        public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
             peer.serializeToStream(stream);
             bot.serializeToStream(stream);
@@ -294,12 +237,12 @@ public class TL_payments {
         public int limit;
 
         @Override
-        public TLObject deserializeResponse(AbstractSerializedData stream, int constructor, boolean exception) {
+        public TLObject deserializeResponse(InputSerializedData stream, int constructor, boolean exception) {
             return suggestedStarRefBots.TLdeserialize(stream, constructor, exception);
         }
 
         @Override
-        public void serializeToStream(AbstractSerializedData stream) {
+        public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
             flags = order_by_revenue ? flags | 1 : flags &~ 1;
             flags = order_by_date ? flags | 2 : flags &~ 2;
@@ -320,12 +263,12 @@ public class TL_payments {
         public int limit;
 
         @Override
-        public TLObject deserializeResponse(AbstractSerializedData stream, int constructor, boolean exception) {
+        public TLObject deserializeResponse(InputSerializedData stream, int constructor, boolean exception) {
             return connectedStarRefBots.TLdeserialize(stream, constructor, exception);
         }
 
         @Override
-        public void serializeToStream(AbstractSerializedData stream) {
+        public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
             stream.writeInt32(flags);
             peer.serializeToStream(stream);
@@ -345,12 +288,12 @@ public class TL_payments {
         public TLRPC.InputUser bot;
 
         @Override
-        public TLObject deserializeResponse(AbstractSerializedData stream, int constructor, boolean exception) {
+        public TLObject deserializeResponse(InputSerializedData stream, int constructor, boolean exception) {
             return connectedStarRefBots.TLdeserialize(stream, constructor, exception);
         }
 
         @Override
-        public void serializeToStream(AbstractSerializedData stream) {
+        public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
             peer.serializeToStream(stream);
             bot.serializeToStream(stream);
@@ -366,12 +309,12 @@ public class TL_payments {
         public String link;
 
         @Override
-        public TLObject deserializeResponse(AbstractSerializedData stream, int constructor, boolean exception) {
+        public TLObject deserializeResponse(InputSerializedData stream, int constructor, boolean exception) {
             return connectedStarRefBots.TLdeserialize(stream, constructor, exception);
         }
 
         @Override
-        public void serializeToStream(AbstractSerializedData stream) {
+        public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
             flags = revoked ? flags | 1 : flags &~ 1;
             stream.writeInt32(flags);

@@ -48,6 +48,7 @@ import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.tgnet.tl.TL_stars;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ChatActivity;
@@ -204,9 +205,11 @@ public class CustomEmojiReactionsWindow {
             }
 
             @Override
-            protected void onEmojiSelected(View emojiView, Long documentId, TLRPC.Document document, Integer until) {
+            protected void onEmojiSelected(View emojiView, Long documentId, TLRPC.Document document, TL_stars.TL_starGiftUnique gift, Integer until) {
                 if (baseFragment != null && !reactionsContainerLayout.channelReactions && reactionsContainerLayout.getWindowType() != SelectAnimatedEmojiDialog.TYPE_STICKER_SET_EMOJI && !UserConfig.getInstance(baseFragment.getCurrentAccount()).isPremium()) {
-                    windowView.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
+                    try {
+                        windowView.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
+                    } catch (Exception ignored) {}
                     BulletinFactory.of(windowView, null).createEmojiBulletin(
                             document,
                             AndroidUtilities.replaceTags(LocaleController.getString(R.string.UnlockPremiumEmojiReaction)),

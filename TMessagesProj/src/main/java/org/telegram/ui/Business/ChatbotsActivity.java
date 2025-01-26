@@ -7,13 +7,10 @@ import android.content.Context;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.drawable.Drawable;
-import android.media.Image;
 import android.text.Editable;
 import android.text.InputType;
-import android.text.SpannableString;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
-import android.text.SpannedString;
 import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.util.LongSparseArray;
@@ -26,27 +23,20 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
-import org.checkerframework.checker.guieffect.qual.UI;
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.BotWebViewVibrationEffect;
 import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
-import org.telegram.messenger.UserObject;
 import org.telegram.messenger.browser.Browser;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.tgnet.tl.TL_account;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenuItem;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Adapters.SearchAdapterHelper;
-import org.telegram.ui.Cells.DialogRadioCell;
-import org.telegram.ui.Cells.RadioCell;
 import org.telegram.ui.Cells.TextCheckCell;
-import org.telegram.ui.ChangeUsernameActivity;
-import org.telegram.ui.Components.Bulletin;
 import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.CircularProgressDrawable;
 import org.telegram.ui.Components.ColoredImageSpan;
@@ -57,7 +47,6 @@ import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.UItem;
 import org.telegram.ui.Components.UniversalAdapter;
 import org.telegram.ui.Components.UniversalRecyclerView;
-import org.telegram.ui.LaunchActivity;
 
 import java.util.ArrayList;
 
@@ -269,8 +258,8 @@ public class ChatbotsActivity extends BaseFragment {
         }
     };
 
-    public TLRPC.TL_account_connectedBots currentValue;
-    public TLRPC.TL_connectedBot currentBot;
+    public TL_account.connectedBots currentValue;
+    public TL_account.TL_connectedBot currentBot;
 
     public boolean exclude;
     public boolean allowReply = true;
@@ -391,15 +380,15 @@ public class ChatbotsActivity extends BaseFragment {
         ArrayList<TLObject> requests = new ArrayList<>();
 
         if (currentBot != null && (selectedBot == null || currentBot.bot_id != selectedBot.id)) {
-            TLRPC.TL_account_updateConnectedBot req = new TLRPC.TL_account_updateConnectedBot();
+            TL_account.updateConnectedBot req = new TL_account.updateConnectedBot();
             req.deleted = true;
             req.bot = getMessagesController().getInputUser(currentBot.bot_id);
-            req.recipients = new TLRPC.TL_inputBusinessBotRecipients();
+            req.recipients = new TL_account.TL_inputBusinessBotRecipients();
             requests.add(req);
         }
 
         if (selectedBot != null) {
-            TLRPC.TL_account_updateConnectedBot req = new TLRPC.TL_account_updateConnectedBot();
+            TL_account.updateConnectedBot req = new TL_account.updateConnectedBot();
             req.deleted = false;
             req.can_reply = allowReply;
             req.bot = getMessagesController().getInputUser(selectedBot);

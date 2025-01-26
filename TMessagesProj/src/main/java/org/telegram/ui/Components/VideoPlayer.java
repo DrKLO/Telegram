@@ -918,6 +918,15 @@ public class VideoPlayer implements Player.Listener, VideoListener, AnalyticsLis
         return uri;
     }
 
+    public static VideoUri getCachedQuality(ArrayList<Quality> qualities) {
+        if (qualities == null) return null;
+        for (final Quality q : qualities)
+        for (final VideoUri v : q.uris)
+            if (v.isCached())
+                return v;
+        return null;
+    }
+
     public static VideoUri getQualityForPlayer(ArrayList<Quality> qualities) {
         for (final Quality q : qualities) {
             for (final VideoUri v : q.uris) {
@@ -1507,6 +1516,13 @@ public class VideoPlayer implements Player.Listener, VideoListener, AnalyticsLis
         if (audioPlayer != null) {
             audioPlayer.setVolume(volume);
         }
+    }
+
+    public float getVolume() {
+        if (player != null) {
+            return player.getVolume();
+        }
+        return 1.0f;
     }
 
     public void seekTo(long positionMs) {

@@ -84,12 +84,14 @@ public class EntityView extends FrameLayout {
     private EntityViewDelegate delegate;
 
     private Point position;
-    protected SelectionView selectionView;
+    public SelectionView selectionView;
 
     private final Runnable longPressRunnable = () -> {
         recognizedLongPress = true;
         if (delegate != null) {
-            performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
+            try {
+                performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
+            } catch (Exception ignored) {}
             delegate.onEntityLongClicked(EntityView.this);
         }
     };
@@ -601,8 +603,7 @@ public class EntityView extends FrameLayout {
         if (allowHaptic() && (newScale >= getMaxScale() || newScale <= getMinScale()) != (oldScale >= getMaxScale() || oldScale <= getMinScale())) {
             try {
                 performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_VIEW_SETTING);
-            } catch (Exception ignore) {
-            }
+            } catch (Exception ignore) {}
         }
         setScaleX(newScale);
         setScaleY(newScale);
@@ -834,7 +835,7 @@ public class EntityView extends FrameLayout {
             dotStrokePaint.setShadowLayer(AndroidUtilities.dpf2(0.75f), 0, 0, 0x50000000);
         }
 
-        protected void updatePosition() {
+        public void updatePosition() {
             Rect bounds = getSelectionBounds();
             LayoutParams layoutParams = (LayoutParams) getLayoutParams();
             layoutParams.leftMargin = (int) bounds.x;

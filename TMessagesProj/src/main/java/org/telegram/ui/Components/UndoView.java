@@ -1,5 +1,7 @@
 package org.telegram.ui.Components;
 
+import static org.telegram.messenger.LocaleController.formatSpannable;
+
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
@@ -46,6 +48,7 @@ import org.telegram.messenger.Emoji;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaController;
+import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SavedMessagesController;
@@ -65,6 +68,7 @@ import java.util.ArrayList;
 @Deprecated // use Bulletin instead
 public class UndoView extends FrameLayout {
 
+    private int infoTextViewEmojiCacheType = AnimatedEmojiDrawable.CACHE_TYPE_MESSAGES;
     private LinkSpanDrawable.LinksTextView infoTextView;
     private TextView subinfoTextView;
     private TextView undoTextView;
@@ -240,7 +244,12 @@ public class UndoView extends FrameLayout {
         parentFragment = parent;
         fromTop = top;
 
-        infoTextView = new LinkSpanDrawable.LinksTextView(context, resourcesProvider);
+        infoTextView = new LinkSpanDrawable.LinksTextView(context, resourcesProvider) {
+            @Override
+            protected int emojiCacheType() {
+                return infoTextViewEmojiCacheType;
+            }
+        };
         infoTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
         infoTextView.setTextColor(getThemedColor(Theme.key_undo_infoColor));
         infoTextView.setLinkTextColor(getThemedColor(Theme.key_undo_cancelColor));
@@ -819,6 +828,10 @@ public class UndoView extends FrameLayout {
                 icon = R.raw.chats_infotip;
             } else if (action == ACTION_ADDED_TO_FOLDER || action == ACTION_REMOVED_FROM_FOLDER) {
                 MessagesController.DialogFilter filter = (MessagesController.DialogFilter) infoObject2;
+                CharSequence filterName = filter.name;
+                filterName = Emoji.replaceEmoji(filterName, infoTextView.getPaint().getFontMetricsInt(), false);
+                filterName = MessageObject.replaceAnimatedEmoji(filterName, filter.entities, infoTextView.getPaint().getFontMetricsInt());
+                infoTextViewEmojiCacheType = filter.title_noanimate ? AnimatedEmojiDrawable.CACHE_TYPE_NOANIMATE_FOLDER : AnimatedEmojiDrawable.CACHE_TYPE_MESSAGES;
                 if (did != 0) {
                     long dialogId = did;
                     if (DialogObject.isEncryptedDialog(did)) {
@@ -834,23 +847,23 @@ public class UndoView extends FrameLayout {
                             name = LocaleController.getString(R.string.RepliesTitle);
                         }
                         if (action == ACTION_ADDED_TO_FOLDER) {
-                            infoText = AndroidUtilities.replaceTags(LocaleController.formatString("FilterUserAddedToExisting", R.string.FilterUserAddedToExisting, name, filter.name));
+                            infoText = AndroidUtilities.replaceTags(formatSpannable(R.string.FilterUserAddedToExisting, name, filterName));
                         } else {
-                            infoText = AndroidUtilities.replaceTags(LocaleController.formatString("FilterUserRemovedFrom", R.string.FilterUserRemovedFrom, name, filter.name));
+                            infoText = AndroidUtilities.replaceTags(formatSpannable(R.string.FilterUserRemovedFrom, name, filterName));
                         }
                     } else {
                         TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-dialogId);
                         if (action == ACTION_ADDED_TO_FOLDER) {
-                            infoText = AndroidUtilities.replaceTags(LocaleController.formatString("FilterChatAddedToExisting", R.string.FilterChatAddedToExisting, chat.title, filter.name));
+                            infoText = AndroidUtilities.replaceTags(formatSpannable(R.string.FilterChatAddedToExisting, chat.title, filterName));
                         } else {
-                            infoText = AndroidUtilities.replaceTags(LocaleController.formatString("FilterChatRemovedFrom", R.string.FilterChatRemovedFrom, chat.title, filter.name));
+                            infoText = AndroidUtilities.replaceTags(formatSpannable(R.string.FilterChatRemovedFrom, chat.title, filterName));
                         }
                     }
                 } else {
                     if (action == ACTION_ADDED_TO_FOLDER) {
-                        infoText = AndroidUtilities.replaceTags(LocaleController.formatString("FilterChatsAddedToExisting", R.string.FilterChatsAddedToExisting, LocaleController.formatPluralString("ChatsSelected", (Integer) infoObject), filter.name));
+                        infoText = AndroidUtilities.replaceTags(formatSpannable(R.string.FilterChatsAddedToExisting, LocaleController.formatPluralString("ChatsSelected", (Integer) infoObject), filterName));
                     } else {
-                        infoText = AndroidUtilities.replaceTags(LocaleController.formatString("FilterChatsRemovedFrom", R.string.FilterChatsRemovedFrom, LocaleController.formatPluralString("ChatsSelected", (Integer) infoObject), filter.name));
+                        infoText = AndroidUtilities.replaceTags(formatSpannable(R.string.FilterChatsRemovedFrom, LocaleController.formatPluralString("ChatsSelected", (Integer) infoObject), filterName));
                     }
                 }
                 subInfoText = null;
@@ -1116,7 +1129,9 @@ public class UndoView extends FrameLayout {
             leftImageView.playAnimation();
             if (hapticDelay > 0) {
                 leftImageView.postDelayed(() -> {
-                    leftImageView.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
+                    try {
+                        leftImageView.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
+                    } catch (Exception ignored) {}
                 }, hapticDelay);
             }
         } else if (currentAction == ACTION_PROXIMITY_SET || currentAction == ACTION_PROXIMITY_REMOVED) {
@@ -1240,9 +1255,9 @@ public class UndoView extends FrameLayout {
                 } else {
                     String info = LocaleController.getServerString("DiceEmojiInfo_" + emoji);
                     if (!TextUtils.isEmpty(info)) {
-                        infoTextView.setText(Emoji.replaceEmoji(info, infoTextView.getPaint().getFontMetricsInt(), AndroidUtilities.dp(14), false));
+                        infoTextView.setText(Emoji.replaceEmoji(info, infoTextView.getPaint().getFontMetricsInt(), false));
                     } else {
-                        infoTextView.setText(Emoji.replaceEmoji(LocaleController.formatString("DiceEmojiInfo", R.string.DiceEmojiInfo, emoji), infoTextView.getPaint().getFontMetricsInt(), AndroidUtilities.dp(14), false));
+                        infoTextView.setText(Emoji.replaceEmoji(LocaleController.formatString("DiceEmojiInfo", R.string.DiceEmojiInfo, emoji), infoTextView.getPaint().getFontMetricsInt(), false));
                     }
                 }
                 leftImageView.setImageDrawable(Emoji.getEmojiDrawable(emoji));

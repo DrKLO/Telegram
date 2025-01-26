@@ -16,10 +16,12 @@ import android.graphics.Path;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.RectF;
+import android.graphics.RenderEffect;
 import android.graphics.RenderNode;
 import android.graphics.Shader;
+import android.graphics.drawable.Drawable;
 import android.net.Uri;
-import android.util.Log;
+import android.os.Build;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.HapticFeedbackConstants;
@@ -58,6 +60,8 @@ public class CollageLayoutView2 extends FrameLayout implements ItemOptions.Scrim
 
     private final FrameLayout containerView;
     private final Theme.ResourcesProvider resourcesProvider;
+
+    public final QRScanner.QrRegionDrawer qrDrawer = new QRScanner.QrRegionDrawer(this::invalidate);
 
     public CameraView cameraView;
     private Object cameraViewBlurRenderNode;
@@ -323,12 +327,45 @@ public class CollageLayoutView2 extends FrameLayout implements ItemOptions.Scrim
         }
     }
 
+    private Object renderNode;
+    private Object blurRenderNode;
+
+    public Object getBlurRenderNode() {
+        if (renderNode == null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            renderNode = new RenderNode("CameraViewRenderNode");
+            blurRenderNode = new RenderNode("CameraViewRenderNodeBlur");
+            ((RenderNode) blurRenderNode).setRenderEffect(RenderEffect.createBlurEffect(dp(32), dp(32), Shader.TileMode.DECAL));
+        }
+        return blurRenderNode;
+    }
+
+    private void finishNode(Canvas canvas) {
+        if (renderNode != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && canvas.isHardwareAccelerated()) {
+            RenderNode node = (RenderNode) renderNode;
+            node.endRecording();
+            canvas.drawRenderNode(node);
+            if (blurRenderNode != null) {
+                RenderNode blurNode = (RenderNode) blurRenderNode;
+                blurNode.setPosition(0, 0, getWidth(), getHeight());
+                blurNode.beginRecording().drawRenderNode(node);
+                blurNode.endRecording();;
+            }
+        }
+    }
+
     private final RectF rect = new RectF();
     @Override
-    protected void dispatchDraw(@NonNull Canvas canvas) {
+    protected void dispatchDraw(@NonNull Canvas c) {
+        Canvas canvas = c;
+        if (renderNode != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && canvas.isHardwareAccelerated()) {
+            RenderNode node = (RenderNode) renderNode;
+            node.setPosition(0, 0, getWidth(), getHeight());
+            canvas = node.beginRecording();
+        }
         super.dispatchDraw(canvas);
-        if (!hasLayout() && !reordering && !this.reorderingTouch && animatedRows.get() == currentLayout.h && animatedColumns[0].get() == currentLayout.columns[0]) {
+        if (!hasLayout() && !reordering && !this.reorderingTouch && animatedRows.get() == currentLayout.h && animatedColumns[0].get() == currentLayout.columns[0] && qrDrawer.hasNoDraw()) {
             setCameraNeedsBlur(false);
+            finishNode(c);
             return;
         } else if (preview) {
             setCameraNeedsBlur(false);
@@ -466,16 +503,24 @@ public class CollageLayoutView2 extends FrameLayout implements ItemOptions.Scrim
         if (blurNeedsInvalidate && blurManager != null) {
             blurManager.invalidate();
         }
+        finishNode(c);
     }
 
-    public float getFilledProgress() {
-        int done = 0, total = 0;
+    public int getTotalCount() {
+        return parts.size();
+    }
+
+    public int getFilledCount() {
+        int done = 0;
         for (int i = 0; i < parts.size(); ++i) {
             if (parts.get(i).hasContent())
                 done++;
-            total++;
         }
-        return (float) done / total;
+        return done;
+    }
+
+    public float getFilledProgress() {
+        return (float) getFilledCount() / getTotalCount();
     }
 
     private final Path clipPath = new Path();
@@ -500,21 +545,28 @@ public class CollageLayoutView2 extends FrameLayout implements ItemOptions.Scrim
             } else {
                 part.imageReceiver.setImageCoords(rect.left, rect.top, rect.width(), rect.height());
                 if (!part.imageReceiver.draw(canvas)) {
-                    drawView(canvas, cameraView, rect, 0);
+                    if (cameraView == null && cameraThumbVisible) {
+                        drawDrawable(canvas, cameraThumbDrawable, rect, 0);
+                    } else {
+                        drawView(canvas, cameraView, rect, 0);
+                    }
                 }
             }
         } else if (part != null && part.current || AndroidUtilities.makingGlobalBlurBitmap) {
-            drawView(canvas, cameraView, rect, !(part != null && part.current) ? 0.4f : 0);
+            if (cameraView == null && cameraThumbVisible) {
+                drawDrawable(canvas, cameraThumbDrawable, rect, !(part != null && part.current) ? 0.4f : 0);
+            } else {
+                drawView(canvas, cameraView, rect, !(part != null && part.current) ? 0.4f : 0);
+            }
         } else {
             setCameraNeedsBlur(!preview);
             if (cameraViewBlurRenderNode != null && android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q && canvas.isHardwareAccelerated()) {
                 final RenderNode node = (RenderNode) cameraViewBlurRenderNode;
                 final float scale = Math.max(rect.width() / node.getWidth(), rect.height() / node.getHeight());
                 canvas.save();
-                canvas.translate(rect.centerX(), rect.centerY());
-                canvas.clipRect(-rect.width() / 2.0f, -rect.height() / 2.0f, rect.width() / 2.0f, rect.height() / 2.0f);
+                canvas.translate(rect.left, rect.top);
+                canvas.clipRect(0, 0, rect.width(), rect.height());
                 canvas.scale(scale, scale);
-                canvas.translate(-node.getWidth() / 2.0f, -node.getHeight() / 2.0f);
                 canvas.drawRenderNode(node);
                 canvas.drawColor(0x64000000);
                 canvas.restore();
@@ -559,6 +611,28 @@ public class CollageLayoutView2 extends FrameLayout implements ItemOptions.Scrim
         }
         if (overlayAlpha > 0) {
             canvas.drawColor(Theme.multAlpha(0xFF000000, view.getAlpha() * overlayAlpha));
+        }
+        canvas.restore();
+
+        if (view == cameraView && qrDrawer != null) {
+            qrDrawer.draw(canvas, rect);
+        }
+    }
+
+    private void drawDrawable(Canvas canvas, Drawable drawable, RectF rect, float overlayAlpha) {
+        if (drawable == null) return;
+        int w = drawable.getIntrinsicWidth();
+        int h = drawable.getIntrinsicHeight();
+        final float scale = Math.max(rect.width() / w, rect.height() / h);
+        canvas.save();
+        canvas.translate(rect.centerX(), rect.centerY());
+        canvas.clipRect(-rect.width() / 2.0f, -rect.height() / 2.0f, rect.width() / 2.0f, rect.height() / 2.0f);
+        canvas.scale(scale, scale);
+        canvas.translate(-w / 2.0f, -h / 2.0f);
+        drawable.setBounds(0, 0, w, h);
+        drawable.draw(canvas);
+        if (overlayAlpha > 0) {
+            canvas.drawColor(Theme.multAlpha(0xFF000000, drawable.getAlpha() * overlayAlpha));
         }
         canvas.restore();
     }
@@ -668,6 +742,24 @@ public class CollageLayoutView2 extends FrameLayout implements ItemOptions.Scrim
         updateCameraNeedsBlur();
 
         invalidate();
+    }
+
+    private Drawable cameraThumbDrawable;
+    private boolean cameraThumbVisible = true;
+    private Runnable onCameraThumbClick;
+
+    public void setCameraThumb(Drawable cameraThumbDrawable) {
+        this.cameraThumbDrawable = cameraThumbDrawable;
+        invalidate();
+    }
+
+    public void setCameraThumbVisible(boolean cameraThumbVisible) {
+        this.cameraThumbVisible = cameraThumbVisible;
+        invalidate();
+    }
+
+    public void setOnCameraThumbClick(Runnable listener) {
+        this.onCameraThumbClick = listener;
     }
 
     private boolean needsBlur;
@@ -788,7 +880,9 @@ public class CollageLayoutView2 extends FrameLayout implements ItemOptions.Scrim
                 }
             })
             .show();
-        performHapticFeedback(HapticFeedbackConstants.LONG_PRESS, HapticFeedbackConstants.FLAG_IGNORE_VIEW_SETTING);
+        try {
+            performHapticFeedback(HapticFeedbackConstants.LONG_PRESS, HapticFeedbackConstants.FLAG_IGNORE_VIEW_SETTING);
+        } catch (Exception ignored) {}
     }
 
     public void retake(Part part) {
@@ -833,7 +927,12 @@ public class CollageLayoutView2 extends FrameLayout implements ItemOptions.Scrim
     @Override
     public boolean dispatchTouchEvent(MotionEvent event) {
         if (!hasLayout() || preview) {
-            return super.dispatchTouchEvent(event);
+            cancelTouch();
+            return false;
+        }
+        if (event.getPointerCount() > 1) {
+            cancelTouch();
+            return false;
         }
         final Part hitPart = getPartAt(event.getX(), event.getY());
         if (event.getAction() == MotionEvent.ACTION_DOWN) {
@@ -1022,7 +1121,9 @@ public class CollageLayoutView2 extends FrameLayout implements ItemOptions.Scrim
             if (content == null) {
                 imageReceiver.clearImage();
             } else if (content.isVideo) {
-                if (content.thumbBitmap != null) {
+                if (content.blurredVideoThumb != null) {
+                    imageReceiver.setImageBitmap(content.blurredVideoThumb);
+                } else if (content.thumbBitmap != null) {
                     imageReceiver.setImageBitmap(content.thumbBitmap);
                 } else if (content.thumbPath != null) {
                     imageReceiver.setImage(content.thumbPath, filter, null, null, 0);

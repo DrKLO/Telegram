@@ -21,20 +21,16 @@ import android.graphics.RectF;
 import android.graphics.SurfaceTexture;
 import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
-import android.net.Uri;
-import android.opengl.EGLContext;
 import android.opengl.GLES11Ext;
 import android.opengl.GLES20;
 import android.opengl.GLES30;
 import android.opengl.GLUtils;
 import android.opengl.Matrix;
 import android.os.Build;
-import android.os.Handler;
 import android.text.Layout;
 import android.text.SpannableString;
 import android.text.Spanned;
 import android.text.TextUtils;
-import android.util.Log;
 import android.util.Pair;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -68,7 +64,6 @@ import org.telegram.ui.Components.Paint.Views.LinkPreview;
 import org.telegram.ui.Components.Paint.Views.LocationMarker;
 import org.telegram.ui.Components.Paint.Views.PaintTextOptionsView;
 import org.telegram.ui.Components.RLottieDrawable;
-import org.telegram.ui.Components.VideoPlayer;
 import org.telegram.ui.Stories.recorder.PreviewView;
 import org.telegram.ui.Stories.recorder.StoryEntry;
 
@@ -77,8 +72,6 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
 import java.util.ArrayList;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.microedition.khronos.opengles.GL10;
@@ -86,6 +79,7 @@ import javax.microedition.khronos.opengles.GL10;
 public class TextureRenderer {
 
     private FloatBuffer verticesBuffer;
+    private FloatBuffer croppedTextureBuffer;
     private FloatBuffer gradientVerticesBuffer;
     private FloatBuffer gradientTextureBuffer;
     private FloatBuffer textureBuffer;
@@ -277,8 +271,6 @@ public class TextureRenderer {
     private final RectF roundDst = new RectF();
     private Path roundClipPath;
 
-    private int imageOrientation;
-
     private boolean blendEnabled;
     private boolean isPhoto;
 
@@ -297,8 +289,6 @@ public class TextureRenderer {
     private int[] blurTexture;
 
     private int gradientTopColor, gradientBottomColor;
-    private final Handler handler;
-    private final EGLContext parentContext;
 
     public TextureRenderer(
         MediaController.SavedFilterState savedFilterState,
@@ -315,14 +305,10 @@ public class TextureRenderer {
         Integer gradientTopColor,
         Integer gradientBottomColor,
         StoryEntry.HDRInfo hdrInfo,
-        MediaCodecVideoConvertor.ConvertVideoParams params,
-        Handler handler,
-        EGLContext parentContext
+        MediaCodecVideoConvertor.ConvertVideoParams params
     ) {
         isPhoto = photo;
         collageParts = params.collageParts;
-        this.handler = handler;
-        this.parentContext = parentContext;
 
         float[] texData = {
                 0.f, 0.f,
@@ -409,11 +395,17 @@ public class TextureRenderer {
         if (cropState != null) {
             if (cropState.useMatrix != null) {
                 useMatrixForImagePath = true;
+                float pw = cropState.cropPw, ph = cropState.cropPh;
+                if ((cropState.orientation / 90) % 2 == 1) {
+                    pw = cropState.cropPh;
+                    ph = cropState.cropPw;
+                }
+                float _pw = (1.0f - pw) / 2.0f, _ph = (1.0f - ph) / 2.0f;
                 float[] verticesData = {
-                    0, 0,
-                    originalWidth, 0,
-                    0, originalHeight,
-                    originalWidth, originalHeight
+                    originalWidth * _pw, originalHeight * _ph,
+                    originalWidth * (_pw + pw), originalHeight * _ph,
+                    originalWidth * _pw, originalHeight * (_ph + ph),
+                    originalWidth * (_pw + pw), originalHeight * (_ph + ph)
                 };
                 cropState.useMatrix.mapPoints(verticesData);
                 for (int a = 0; a < 4; a++) {
@@ -422,6 +414,36 @@ public class TextureRenderer {
                 }
                 verticesBuffer = ByteBuffer.allocateDirect(verticesData.length * 4).order(ByteOrder.nativeOrder()).asFloatBuffer();
                 verticesBuffer.put(verticesData).position(0);
+
+                float uvOw = originalWidth, uvOh = originalHeight;
+                float[] uv = {
+                    uvOw*pw*-0.5f, uvOh*ph*-0.5f,
+                    uvOw*pw*+0.5f, uvOh*ph*-0.5f,
+                    uvOw*pw*-0.5f, uvOh*ph*+0.5f,
+                    uvOw*pw*+0.5f, uvOh*ph*+0.5f
+                };
+                float angle = (float) (-cropState.cropRotate * (Math.PI / 180.0f));
+                for (int a = 0; a < 4; ++a) {
+                    float x = uv[a * 2 + 0], y = uv[a * 2 + 1];
+                    x -= cropState.cropPx * uvOw;
+                    y -= cropState.cropPy * uvOh;
+                    float x2 = (float) (x * Math.cos(angle) - y * Math.sin(angle)) / uvOw;
+                    float y2 = (float) (x * Math.sin(angle) + y * Math.cos(angle)) / uvOh;
+                    x2 /= cropState.cropScale;
+                    y2 /= cropState.cropScale;
+                    x2 += 0.5f;
+                    y2 += 0.5f;
+                    uv[a * 2 + 0] = x2;
+                    uv[a * 2 + 1] = y2;
+                }
+                if (filterShaders == null && !isPhoto && messageVideoMaskPath == null) {
+                    uv[1] = 1f - uv[1];
+                    uv[3] = 1f - uv[3];
+                    uv[5] = 1f - uv[5];
+                    uv[7] = 1f - uv[7];
+                }
+                croppedTextureBuffer = ByteBuffer.allocateDirect(uv.length * 4).order(ByteOrder.nativeOrder()).asFloatBuffer();
+                croppedTextureBuffer.put(uv).position(0);
             } else {
                 float[] verticesData = {
                         0, 0,
@@ -517,12 +539,6 @@ public class TextureRenderer {
                         1.f, 1.f
                 };
             }
-        }
-        if (!isPhoto && useMatrixForImagePath) {
-            textureData[1] = 1f - textureData[1];
-            textureData[3] = 1f - textureData[3];
-            textureData[5] = 1f - textureData[5];
-            textureData[7] = 1f - textureData[7];
         }
         if (cropState != null && cropState.mirrored) {
             for (int a = 0; a < 4; a++) {
@@ -647,7 +663,7 @@ public class TextureRenderer {
 
             GLES20.glVertexAttribPointer(maPositionHandle[index], 2, GLES20.GL_FLOAT, false, 8, verticesBuffer);
             GLES20.glEnableVertexAttribArray(maPositionHandle[index]);
-            GLES20.glVertexAttribPointer(maTextureHandle[index], 2, GLES20.GL_FLOAT, false, 8, renderTextureBuffer);
+            GLES20.glVertexAttribPointer(maTextureHandle[index], 2, GLES20.GL_FLOAT, false, 8, useMatrixForImagePath ? croppedTextureBuffer : renderTextureBuffer);
             GLES20.glEnableVertexAttribArray(maTextureHandle[index]);
             if (messageVideoMaskPath != null && videoMaskTexture != -1) {
                 GLES20.glVertexAttribPointer(mmTextureHandle[index], 2, GLES20.GL_FLOAT, false, 8, maskTextureBuffer);
@@ -972,7 +988,7 @@ public class TextureRenderer {
         bitmapVerticesBuffer.put(bitmapData).position(0);
         GLES20.glVertexAttribPointer(simplePositionHandle, 2, GLES20.GL_FLOAT, false, 8, useCropMatrix ? verticesBuffer : bitmapVerticesBuffer);
         GLES20.glEnableVertexAttribArray(simpleInputTexCoordHandle);
-        GLES20.glVertexAttribPointer(simpleInputTexCoordHandle, 2, GLES20.GL_FLOAT, false, 8, useCropMatrix ? renderTextureBuffer : textureBuffer);
+        GLES20.glVertexAttribPointer(simpleInputTexCoordHandle, 2, GLES20.GL_FLOAT, false, 8, useCropMatrix ? croppedTextureBuffer : textureBuffer);
         if (bind) {
             GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, texture);
         }
@@ -1329,7 +1345,7 @@ public class TextureRenderer {
             };
             text.setSpan(span, e.offset, e.offset + e.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         }
-        editText.setText(Emoji.replaceEmoji(text, editText.getPaint().getFontMetricsInt(), (int) (editText.getTextSize() * .8f), false));
+        editText.setText(Emoji.replaceEmoji(text, editText.getPaint().getFontMetricsInt(), false));
         editText.setTextColor(entity.color);
         CharSequence text2 = editText.getText();
         if (text2 instanceof Spanned) {
@@ -1519,6 +1535,35 @@ public class TextureRenderer {
                 opts.inMutable = true;
             }
             entity.bitmap = BitmapFactory.decodeFile(path, opts);
+            if (entity.bitmap != null && entity.crop != null) {
+                Bitmap newBitmap = Bitmap.createBitmap((int) Math.max(1, entity.crop.cropPw * entity.bitmap.getWidth()), (int) Math.max(1, entity.crop.cropPh * entity.bitmap.getHeight()), Bitmap.Config.ARGB_8888);
+                Canvas canvas = new Canvas(newBitmap);
+                canvas.translate(newBitmap.getWidth() / 2.0f, newBitmap.getHeight() / 2.0f);
+
+                canvas.rotate(-entity.crop.orientation);
+                int w = entity.bitmap.getWidth(), h = entity.bitmap.getHeight();
+                if (((entity.crop.orientation + entity.crop.transformRotation) / 90) % 2 == 1) {
+                    w = entity.bitmap.getHeight();
+                    h = entity.bitmap.getWidth();
+                }
+                canvas.clipRect(
+                    -w * entity.crop.cropPw / 2.0f, -h * entity.crop.cropPh / 2.0f,
+                    +w * entity.crop.cropPw / 2.0f, +h * entity.crop.cropPh / 2.0f
+                );
+                canvas.scale(entity.crop.cropScale, entity.crop.cropScale);
+                canvas.translate(entity.crop.cropPx * w, entity.crop.cropPy * h);
+                canvas.rotate(entity.crop.cropRotate + entity.crop.transformRotation);
+                if (entity.crop.mirrored) {
+                    canvas.scale(-1, 1);
+                }
+                canvas.rotate(entity.crop.orientation);
+
+                canvas.translate(-entity.bitmap.getWidth() / 2.0f, -entity.bitmap.getHeight() / 2.0f);
+                canvas.drawBitmap(entity.bitmap, 0, 0, null);
+
+                entity.bitmap.recycle();
+                entity.bitmap = newBitmap;
+            }
             if (entity.type == VideoEditedInfo.MediaEntity.TYPE_PHOTO && entity.bitmap != null) {
                 entity.roundRadius = AndroidUtilities.dp(12) / (float) Math.min(entity.viewWidth, entity.viewHeight);
                 Pair<Integer, Integer> orientation = AndroidUtilities.getImageOrientation(entity.text);

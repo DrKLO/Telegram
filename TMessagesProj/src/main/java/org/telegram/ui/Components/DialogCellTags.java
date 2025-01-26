@@ -11,13 +11,16 @@ import android.graphics.PorterDuff;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.Shader;
 import android.text.Layout;
+import android.text.SpannableStringBuilder;
 import android.text.StaticLayout;
 import android.text.TextUtils;
+import android.view.View;
 
 import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.Emoji;
 import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.UserConfig;
 import org.telegram.ui.ActionBar.Theme;
@@ -28,9 +31,14 @@ import java.util.Locale;
 
 public class DialogCellTags {
 
+    private final View parentView;
     private final ArrayList<MessagesController.DialogFilter> filters = new ArrayList<>();
     private final ArrayList<Tag> tags = new ArrayList<>();
     private Tag moreTags = null;
+
+    public DialogCellTags(View view) {
+        parentView = view;
+    }
 
     private static class Tag {
         private final static float padDp = 4.66f;
@@ -39,38 +47,38 @@ public class DialogCellTags {
         public int filterId;
         public int colorId;
 
-        StaticLayout layout;
+        Text text;
         int color;
-        int left;
         int width;
         private int textHeight;
 
-        public static Tag asMore(int n) {
+        public static Tag asMore(View view, int n) {
             Tag tag = new Tag();
             tag.filterId = n;
 
             String text = "+" + n;
-            tag.layout = new StaticLayout(text, Theme.dialogs_tagTextPaint, AndroidUtilities.displaySize.x, Layout.Alignment.ALIGN_NORMAL, 0f, 1f, false);
-            tag.left = (int) (tag.layout.getLineCount() >= 1 ? tag.layout.getLineLeft(0) : 0);
-            tag.width = dp(2 * padDp) + (int) (tag.layout.getLineCount() >= 1 ? tag.layout.getLineWidth(0) : 0);
-            tag.textHeight = tag.layout.getHeight();
+            tag.text = new Text(text, 10, AndroidUtilities.bold()).supportAnimatedEmojis(view);
+            tag.width = dp(2 * padDp) + (int) tag.text.getCurrentWidth();
+            tag.textHeight = (int) tag.text.getHeight();
 
             tag.color = Theme.getColor(Theme.key_avatar_nameInMessageBlue);
 
             return tag;
         }
 
-        public static Tag fromFilter(int currentAccount, MessagesController.DialogFilter filter) {
+        public static Tag fromFilter(View view, int currentAccount, MessagesController.DialogFilter filter) {
             Tag tag = new Tag();
             tag.filterId = filter.id;
             tag.colorId = filter.color;
 
-            CharSequence text = (filter.name == null ? "" : filter.name).toUpperCase();
-            text = Emoji.replaceEmoji(text, Theme.dialogs_tagTextPaint.getFontMetricsInt(), false);
-            tag.layout = new StaticLayout(text, Theme.dialogs_tagTextPaint, AndroidUtilities.displaySize.x, Layout.Alignment.ALIGN_NORMAL, 0f, 1f, false);
-            tag.left = (int) (tag.layout.getLineCount() >= 1 ? tag.layout.getLineLeft(0) : 0);
-            tag.width = dp(2 * padDp) + (int) (tag.layout.getLineCount() >= 1 ? tag.layout.getLineWidth(0) : 0);
-            tag.textHeight = tag.layout.getHeight();
+            CharSequence text = new SpannableStringBuilder((filter.name == null ? "" : filter.name).toUpperCase());
+            tag.text = new Text(text, 10, AndroidUtilities.bold()).supportAnimatedEmojis(view);
+            text = Emoji.replaceEmoji(text, tag.text.getFontMetricsInt(), false);
+            text = MessageObject.replaceAnimatedEmoji(text, filter.entities, tag.text.getFontMetricsInt());
+            tag.text.setText(text);
+            tag.text.setEmojiCacheType(AnimatedEmojiDrawable.CACHE_TYPE_NOANIMATE_FOLDER);
+            tag.width = dp(2 * padDp) + (int) tag.text.getCurrentWidth();
+            tag.textHeight = (int) tag.text.getHeight();
 
             tag.color = Theme.getColor(Theme.keys_avatar_nameInMessage[filter.color % Theme.keys_avatar_nameInMessage.length]);
 
@@ -79,14 +87,10 @@ public class DialogCellTags {
 
         public void draw(Canvas canvas) {
             Theme.dialogs_tagPaint.setColor(Theme.multAlpha(color, Theme.isCurrentThemeDark() ? .20f : .10f));
-            Theme.dialogs_tagTextPaint.setColor(color);
 
             AndroidUtilities.rectTmp.set(0, 0, width, dp(heightDp));
             canvas.drawRoundRect(AndroidUtilities.rectTmp, dp(4), dp(4), Theme.dialogs_tagPaint);
-            canvas.save();
-            canvas.translate(dp(padDp) - left, (dp(heightDp) - textHeight) / 2f);
-            layout.draw(canvas);
-            canvas.restore();
+            text.draw(canvas, dp(padDp), dp(heightDp) / 2f, color, 1.0f);
         }
     }
 
@@ -140,8 +144,8 @@ public class DialogCellTags {
                 changed = true;
                 tags.remove(i);
                 i--;
-            } else if (filter.color != tag.colorId || filter.name != null && tag.layout != null && filter.name.length() != tag.layout.getText().length()) {
-                tags.set(i, Tag.fromFilter(currentAccount, filter));
+            } else if (filter.color != tag.colorId || filter.name != null && tag.text != null && filter.name.length() != tag.text.getText().length()) {
+                tags.set(i, Tag.fromFilter(parentView, currentAccount, filter));
                 changed = true;
             }
         }
@@ -159,7 +163,7 @@ public class DialogCellTags {
 
             if (tag == null) {
                 changed = true;
-                tags.add(i, Tag.fromFilter(currentAccount, filter));
+                tags.add(i, Tag.fromFilter(parentView, currentAccount, filter));
             }
         }
 
@@ -210,7 +214,7 @@ public class DialogCellTags {
         if (i < tags.size()) {
             final int count = tags.size() - i;
             if (moreTags == null || moreTags.filterId != count) {
-                moreTags = Tag.asMore(count);
+                moreTags = Tag.asMore(parentView, count);
             }
             if (LocaleController.isRTL) {
                 canvas.translate(-moreTags.width, 0);

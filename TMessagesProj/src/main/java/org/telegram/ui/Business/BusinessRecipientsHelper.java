@@ -3,8 +3,6 @@ package org.telegram.ui.Business;
 import static org.telegram.messenger.LocaleController.formatString;
 import static org.telegram.messenger.LocaleController.getString;
 
-import android.text.TextUtils;
-
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.BotWebViewVibrationEffect;
 import org.telegram.messenger.FileLog;
@@ -13,6 +11,7 @@ import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.tgnet.tl.TL_account;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.Components.UItem;
@@ -49,7 +48,7 @@ public class BusinessRecipientsHelper {
     }
 
 
-    private TLRPC.TL_businessBotRecipients currentValue;
+    private TL_account.TL_businessBotRecipients currentValue;
     public boolean hasChanges() {
         if (currentValue == null) return true;
         if (currentValue.exclude_selected != exclude) return true;
@@ -72,10 +71,10 @@ public class BusinessRecipientsHelper {
         return false;
     }
 
-    public void setValue(TLRPC.TL_businessRecipients recipients) {
+    public void setValue(TL_account.TL_businessRecipients recipients) {
         this.bot = false;
         if (recipients != null) {
-            currentValue = new TLRPC.TL_businessBotRecipients();
+            currentValue = new TL_account.TL_businessBotRecipients();
             currentValue.flags = recipients.flags;
             currentValue.existing_chats = recipients.existing_chats;
             currentValue.new_chats = recipients.new_chats;
@@ -111,7 +110,7 @@ public class BusinessRecipientsHelper {
         }
     }
 
-    public void setValue(TLRPC.TL_businessBotRecipients recipients) {
+    public void setValue(TL_account.TL_businessBotRecipients recipients) {
         this.bot = true;
         currentValue = recipients;
         if (currentValue == null) {
@@ -139,8 +138,8 @@ public class BusinessRecipientsHelper {
         }
     }
 
-    public TLRPC.TL_businessRecipients getValue() {
-        TLRPC.TL_businessRecipients value = new TLRPC.TL_businessRecipients();
+    public TL_account.TL_businessRecipients getValue() {
+        TL_account.TL_businessRecipients value = new TL_account.TL_businessRecipients();
         final int flags = getFlags();
         value.flags = flags &~ (32 | 16);
         value.existing_chats = (flags & PRIVATE_FLAG_EXISTING_CHATS) != 0;
@@ -166,8 +165,8 @@ public class BusinessRecipientsHelper {
         return value;
     }
 
-    public TLRPC.TL_businessBotRecipients getBotValue() {
-        TLRPC.TL_businessBotRecipients value = new TLRPC.TL_businessBotRecipients();
+    public TL_account.TL_businessBotRecipients getBotValue() {
+        TL_account.TL_businessBotRecipients value = new TL_account.TL_businessBotRecipients();
         final int flags = getFlags();
         value.flags = flags &~ (32 | 16);
         value.existing_chats = (flags & PRIVATE_FLAG_EXISTING_CHATS) != 0;
@@ -207,8 +206,8 @@ public class BusinessRecipientsHelper {
         return value;
     }
 
-    public TLRPC.TL_inputBusinessRecipients getInputValue() {
-        TLRPC.TL_inputBusinessRecipients value = new TLRPC.TL_inputBusinessRecipients();
+    public TL_account.TL_inputBusinessRecipients getInputValue() {
+        TL_account.TL_inputBusinessRecipients value = new TL_account.TL_inputBusinessRecipients();
         final int flags = getFlags();
         value.flags = flags &~ (32 | 16);
         value.existing_chats = (flags & PRIVATE_FLAG_EXISTING_CHATS) != 0;
@@ -234,8 +233,8 @@ public class BusinessRecipientsHelper {
         return value;
     }
 
-    public TLRPC.TL_inputBusinessBotRecipients getBotInputValue() {
-        TLRPC.TL_inputBusinessBotRecipients value = new TLRPC.TL_inputBusinessBotRecipients();
+    public TL_account.TL_inputBusinessBotRecipients getBotInputValue() {
+        TL_account.TL_inputBusinessBotRecipients value = new TL_account.TL_inputBusinessBotRecipients();
         final int flags = getFlags();
         value.flags = flags &~ (32 | 16);
         value.existing_chats = (flags & PRIVATE_FLAG_EXISTING_CHATS) != 0;

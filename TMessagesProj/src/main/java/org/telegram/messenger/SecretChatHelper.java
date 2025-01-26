@@ -19,7 +19,9 @@ import org.telegram.SQLite.SQLiteCursor;
 import org.telegram.messenger.support.LongSparseIntArray;
 import org.telegram.tgnet.AbstractSerializedData;
 import org.telegram.tgnet.ConnectionsManager;
+import org.telegram.tgnet.InputSerializedData;
 import org.telegram.tgnet.NativeByteBuffer;
+import org.telegram.tgnet.OutputSerializedData;
 import org.telegram.tgnet.TLClassStore;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
@@ -43,7 +45,7 @@ public class SecretChatHelper extends BaseController {
         public boolean new_key_used;
         public int decryptedWithVersion;
 
-        public void readParams(AbstractSerializedData stream, boolean exception) {
+        public void readParams(InputSerializedData stream, boolean exception) {
             stream.readInt64(exception);
             date = stream.readInt32(exception);
             layer = TLRPC.TL_decryptedMessageLayer.TLdeserialize(stream, stream.readInt32(exception), exception);
@@ -53,7 +55,7 @@ public class SecretChatHelper extends BaseController {
             new_key_used = stream.readBool(exception);
         }
 
-        public void serializeToStream(AbstractSerializedData stream) {
+        public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
             stream.writeInt64(0);
             stream.writeInt32(date);

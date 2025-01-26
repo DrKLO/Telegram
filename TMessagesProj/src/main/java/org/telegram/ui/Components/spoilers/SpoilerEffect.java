@@ -67,19 +67,19 @@ public class SpoilerEffect extends Drawable {
     public final static float[] ALPHAS = {
             0.3f, 0.6f, 1.0f
     };
-    private Paint[] particlePaints = new Paint[ALPHAS.length];
+    private final Paint[] particlePaints = new Paint[ALPHAS.length];
 
-    private Stack<Particle> particlesPool = new Stack<>();
+    private final Stack<Particle> particlesPool = new Stack<>();
     private int maxParticles;
     float[][] particlePoints = new float[ALPHAS.length][MAX_PARTICLES_PER_ENTITY * 5];
-    private float[] particleRands = new float[RAND_REPEAT];
-    private int[] renderCount = new int[ALPHAS.length];
+    private final float[] particleRands = new float[RAND_REPEAT];
+    private final int[] renderCount = new int[ALPHAS.length];
 
     private static Path tempPath = new Path();
 
     private RectF visibleRect;
 
-    private ArrayList<Particle> particles = new ArrayList<>();
+    private final ArrayList<Particle> particles = new ArrayList<>();
     private View mParent;
 
     private long lastDrawTime;
@@ -371,7 +371,7 @@ public class SpoilerEffect extends Drawable {
                 for (int i = 0; i < particles.size(); i++) {
                     Particle p = particles.get(i);
 
-                    if (visibleRect != null && !visibleRect.contains(p.x, p.y) || p.alpha != a && enableAlpha) {
+                    if (p == null || visibleRect != null && !visibleRect.contains(p.x, p.y) || p.alpha != a && enableAlpha) {
                         continue;
                     }
 
@@ -596,6 +596,8 @@ public class SpoilerEffect extends Drawable {
         addSpoilers(v, textLayout, -1, -1, spannable, spoilersPool, spoilers, null);
     }
 
+    public static final int MAX_SPOILERS_COUNT = 100;
+
     /**
      * Parses spoilers from spannable
      *
@@ -614,7 +616,7 @@ public class SpoilerEffect extends Drawable {
             return;
         }
         TextStyleSpan[] spans = spannable.getSpans(0, textLayout.getText().length(), TextStyleSpan.class);
-        for (int i = 0; i < spans.length; ++i) {
+        for (int i = 0; i < Math.min(MAX_SPOILERS_COUNT, spans.length); ++i) {
             if (spans[i].isSpoiler()) {
                 final int start = spannable.getSpanStart(spans[i]);
                 final int end = spannable.getSpanEnd(spans[i]);
@@ -743,7 +745,9 @@ public class SpoilerEffect extends Drawable {
             SpannableStringBuilder sb = new SpannableStringBuilder(textLayout.getText());
             if (textLayout.getText() instanceof Spanned) {
                 Spanned sp = (Spanned) textLayout.getText();
-                for (TextStyleSpan ss : sp.getSpans(0, sp.length(), TextStyleSpan.class)) {
+                TextStyleSpan[] spans = sp.getSpans(0, sp.length(), TextStyleSpan.class);
+                for (int i = 0; i < Math.min(MAX_SPOILERS_COUNT, spans.length); ++i) {
+                    TextStyleSpan ss = spans[i];
                     if (ss.isSpoiler()) {
                         int start = sp.getSpanStart(ss), end = sp.getSpanEnd(ss);
                         for (Emoji.EmojiSpan e : sp.getSpans(start, end, Emoji.EmojiSpan.class)) {

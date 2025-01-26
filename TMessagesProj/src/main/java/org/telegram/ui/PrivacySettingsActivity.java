@@ -17,7 +17,6 @@ import android.content.DialogInterface;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.drawable.Drawable;
-import android.text.Spannable;
 import android.text.SpannableString;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
@@ -47,6 +46,7 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.tgnet.tl.TL_account;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
@@ -81,7 +81,7 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
     @SuppressWarnings("FieldCanBeLocal")
     private LinearLayoutManager layoutManager;
 
-    private TLRPC.account_Password currentPassword;
+    private TL_account.Password currentPassword;
 
     private int privacySectionRow;
     private int blockedRow;
@@ -224,7 +224,7 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
         if (globalPrivacySettings != null && globalPrivacySettings.archive_and_mute_new_noncontact_peers != archiveChats) {
             globalPrivacySettings.archive_and_mute_new_noncontact_peers = archiveChats;
             save = true;
-            TLRPC.TL_account_setGlobalPrivacySettings req = new TLRPC.TL_account_setGlobalPrivacySettings();
+            TL_account.setGlobalPrivacySettings req = new TL_account.setGlobalPrivacySettings();
             req.settings = getContactsController().getGlobalPrivacySettings();
             if (req.settings == null) {
                 req.settings = new TLRPC.TL_globalPrivacySettings();
@@ -349,7 +349,7 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
                         progressDialog.setCanCancel(false);
                         progressDialog.show();
 
-                        final TLRPC.TL_account_setAccountTTL req = new TLRPC.TL_account_setAccountTTL();
+                        final TL_account.setAccountTTL req = new TL_account.setAccountTTL();
                         req.ttl = new TLRPC.TL_accountDaysTTL();
                         req.ttl.days = value;
                         getConnectionsManager().sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
@@ -634,7 +634,7 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
             listAdapter.notifyItemChanged(blockedRow);
         } else if (id == NotificationCenter.didSetOrRemoveTwoStepPassword) {
             if (args.length > 0) {
-                currentPassword = (TLRPC.account_Password) args[0];
+                currentPassword = (TL_account.Password) args[0];
                 if (listAdapter != null) {
                     listAdapter.notifyItemChanged(passwordRow);
                 }
@@ -744,7 +744,7 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
         }
     }
 
-    public PrivacySettingsActivity setCurrentPassword(TLRPC.account_Password currentPassword) {
+    public PrivacySettingsActivity setCurrentPassword(TL_account.Password currentPassword) {
         this.currentPassword = currentPassword;
         if (currentPassword != null) {
             initPassword();
@@ -784,10 +784,10 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
     }
 
     private void loadPasswordSettings() {
-        TLRPC.TL_account_getPassword req = new TLRPC.TL_account_getPassword();
+        TL_account.getPassword req = new TL_account.getPassword();
         getConnectionsManager().sendRequest(req, (response, error) -> {
             if (response != null) {
-                TLRPC.account_Password password = (TLRPC.account_Password) response;
+                TL_account.Password password = (TL_account.Password) response;
                 AndroidUtilities.runOnUIThread(() -> {
                     currentPassword = password;
                     initPassword();

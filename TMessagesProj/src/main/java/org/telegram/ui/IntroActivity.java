@@ -61,6 +61,7 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.tgnet.Vector;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
@@ -495,8 +496,8 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
         req.keys.add("ContinueOnThisLanguage");
         String finalSystemLang = systemLang;
         ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> {
-            if (response != null) {
-                TLRPC.Vector vector = (TLRPC.Vector) response;
+            if (response instanceof Vector) {
+                Vector vector = (Vector) response;
                 if (vector.objects.isEmpty()) {
                     return;
                 }

@@ -570,7 +570,7 @@ public class LinkEditActivity extends BaseFragment {
             @Override public void onTextChanged(CharSequence s, int start, int before, int count) { }
             @Override
             public void afterTextChanged(Editable s) {
-                Emoji.replaceEmoji(s, nameEditText.getPaint().getFontMetricsInt(), (int) nameEditText.getPaint().getTextSize(), false);
+                Emoji.replaceEmoji(s, nameEditText.getPaint().getFontMetricsInt(), false);
             }
         });
         nameEditText.setCursorVisible(false);
@@ -940,7 +940,7 @@ public class LinkEditActivity extends BaseFragment {
             setUsesVisible(!invite.request_needed);
             if (!TextUtils.isEmpty(invite.title)) {
                 SpannableStringBuilder builder = new SpannableStringBuilder(invite.title);
-                Emoji.replaceEmoji(builder, nameEditText.getPaint().getFontMetricsInt(), (int) nameEditText.getPaint().getTextSize(), false);
+                Emoji.replaceEmoji(builder, nameEditText.getPaint().getFontMetricsInt(), false);
                 nameEditText.setText(builder);
             }
 

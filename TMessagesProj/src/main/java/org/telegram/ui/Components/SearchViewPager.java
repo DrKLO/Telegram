@@ -1412,4 +1412,10 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
         void move(float dy);
         void finish();
     }
+
+    public void onShown() {
+        if (dialogsSearchAdapter != null) {
+            dialogsSearchAdapter.resetFilter();
+        }
+    }
 }

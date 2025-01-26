@@ -32,6 +32,7 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.UserObject;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.tgnet.tl.TL_account;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.SimpleTextView;
@@ -224,7 +225,7 @@ public class MessagePrivateSeenView extends FrameLayout {
         button1.setOnClickListener(v -> {
             button1.setLoading(true);
             if (lastSeen) {
-                TLRPC.TL_account_setPrivacy req = new TLRPC.TL_account_setPrivacy();
+                TL_account.setPrivacy req = new TL_account.setPrivacy();
                 req.key = new TLRPC.TL_inputPrivacyKeyStatusTimestamp();
                 req.rules.add(new TLRPC.TL_inputPrivacyValueAllowAll());
                 ConnectionsManager.getInstance(currentAccount).sendRequest(req, (res, err) -> AndroidUtilities.runOnUIThread(() -> {
@@ -242,7 +243,7 @@ public class MessagePrivateSeenView extends FrameLayout {
                     }
                 }));
             } else {
-                TLRPC.TL_account_setGlobalPrivacySettings req = new TLRPC.TL_account_setGlobalPrivacySettings();
+                TL_account.setGlobalPrivacySettings req = new TL_account.setGlobalPrivacySettings();
                 req.settings = ContactsController.getInstance(currentAccount).getGlobalPrivacySettings();
                 if (req.settings == null) {
                     req.settings = new TLRPC.TL_globalPrivacySettings();

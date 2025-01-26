@@ -552,6 +552,7 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
     public boolean onFragmentCreate() {
         super.onFragmentCreate();
         getNotificationCenter().addObserver(this, NotificationCenter.chatInfoDidLoad);
+        getNotificationCenter().addObserver(this, NotificationCenter.dialogDeleted);
         loadChatParticipants(0, 200);
         return true;
     }
@@ -560,6 +561,7 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
     public void onFragmentDestroy() {
         super.onFragmentDestroy();
         getNotificationCenter().removeObserver(this, NotificationCenter.chatInfoDidLoad);
+        getNotificationCenter().removeObserver(this, NotificationCenter.dialogDeleted);
     }
 
     @Override
@@ -1950,6 +1952,15 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
                 }
                 AndroidUtilities.runOnUIThread(() -> loadChatParticipants(0, 200));
             }
+        } else if (id == NotificationCenter.dialogDeleted) {
+            long dialogId = (long) args[0];
+            if (dialogId == -chatId) {
+                if (parentLayout != null && parentLayout.getLastFragment() == this) {
+                    finishFragment();
+                } else {
+                    removeSelfFromStack();
+                }
+            }
         }
     }
 
@@ -3011,20 +3022,20 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
                     GraySectionCell sectionCell = (GraySectionCell) holder.itemView;
                     if (position == groupStartRow) {
                         if (type == TYPE_BANNED) {
-                            sectionCell.setText(getString("ChannelBlockedUsers", R.string.ChannelBlockedUsers));
+                            sectionCell.setText(getString(R.string.ChannelBlockedUsers));
                         } else if (type == TYPE_KICKED) {
-                            sectionCell.setText(getString("ChannelRestrictedUsers", R.string.ChannelRestrictedUsers));
+                            sectionCell.setText(getString(R.string.ChannelRestrictedUsers));
                         } else {
                             if (isChannel) {
-                                sectionCell.setText(getString("ChannelSubscribers", R.string.ChannelSubscribers));
+                                sectionCell.setText(getString(R.string.ChannelSubscribers));
                             } else {
-                                sectionCell.setText(getString("ChannelMembers", R.string.ChannelMembers));
+                                sectionCell.setText(getString(R.string.ChannelMembers));
                             }
                         }
                     } else if (position == globalStartRow) {
-                        sectionCell.setText(getString("GlobalSearch", R.string.GlobalSearch));
+                        sectionCell.setText(getString(R.string.GlobalSearch));
                     } else if (position == contactsStartRow) {
-                        sectionCell.setText(getString("Contacts", R.string.Contacts));
+                        sectionCell.setText(getString(R.string.Contacts));
                     }
                     break;
                 }

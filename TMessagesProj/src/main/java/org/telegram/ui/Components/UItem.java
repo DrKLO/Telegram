@@ -432,6 +432,12 @@ public class UItem extends AdapterWithDiffUtils.Item {
         return item;
     }
 
+    public UItem withOpenButton(Utilities.Callback<TLRPC.User> onOpenButton) {
+        this.checked = true;
+        this.object2 = onOpenButton;
+        return this;
+    }
+
     public static UItem asSearchMessage(MessageObject messageObject) {
         UItem item = new UItem(UniversalAdapter.VIEW_TYPE_SEARCH_MESSAGE, false);
         item.object = messageObject;

@@ -72,6 +72,7 @@ public class Icon3D {
     int resolutionHandle;
     int gradientPositionHandle;
     int modelIndexHandle;
+    int typeHandle;
     int nightHandle;
     int timeHandle;
 
@@ -195,6 +196,7 @@ public class Icon3D {
         resolutionHandle = GLES20.glGetUniformLocation(mProgramObject, "resolution");
         gradientPositionHandle = GLES20.glGetUniformLocation(mProgramObject, "gradientPosition");
         modelIndexHandle = GLES20.glGetUniformLocation(mProgramObject, "modelIndex");
+        typeHandle = GLES20.glGetUniformLocation(mProgramObject, "type");
         nightHandle = GLES20.glGetUniformLocation(mProgramObject, "night");
         timeHandle = GLES20.glGetUniformLocation(mProgramObject, "time");
 
@@ -250,35 +252,15 @@ public class Icon3D {
         GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_LINEAR);
         GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, mBackgroundTextureHandle);
 
+        Bitmap bitmap = null;
         if (type == TYPE_STAR || type == TYPE_GOLDEN_STAR) {
-            Bitmap bitmap;
-//            if (type == TYPE_GOLDEN_STAR) {
-                bitmap = SvgHelper.getBitmap(R.raw.start_texture, 240, 240, Color.WHITE);
-//            } else {
-//                bitmap = SvgHelper.getBitmap(R.raw.start_texture, 80, 80, Color.WHITE);
-//                Utilities.stackBlurBitmap(bitmap, 3);
-//            }
-
-            final int[] texture = new int[1];
-            GLES20.glGenTextures(1, texture, 0);
-            GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, texture[0]);
-
-            GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_LINEAR);
-            GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_LINEAR);
-
-            GLUtils.texImage2D(GLES20.GL_TEXTURE_2D, 0, bitmap, 0);
-            bitmap.recycle();
-
-            GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
-            GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, texture[0]);
-            GLES20.glUniform1i(mTextureUniformHandle, 0);
-
-            GLES20.glActiveTexture(GLES20.GL_TEXTURE1);
-            GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, normalMap[0]);
-            GLES20.glUniform1i(mNormalMapUniformHandle, 1);
+            bitmap = SvgHelper.getBitmap(R.raw.start_texture, 240, 240, Color.WHITE);
         } else if (type == TYPE_COIN) {
-            Bitmap bitmap = getBitmapFromAsset(context, "models/coin_border.png");
-
+            bitmap = getBitmapFromAsset(context, "models/coin_border.png");
+        } else if (type == TYPE_DEAL) {
+            bitmap = getBitmapFromAsset(context, "models/deal_border.png");
+        }
+        if (bitmap != null) {
             final int[] texture = new int[1];
             GLES20.glGenTextures(1, texture, 0);
             GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, texture[0]);
@@ -361,6 +343,7 @@ public class Icon3D {
             GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, buffers[3 * i + 2]);
             GLES20.glVertexAttribPointer(mVerticesHandle, 3, GLES20.GL_FLOAT, false, 0, 0);
             GLES20.glUniform1i(modelIndexHandle, i);
+            GLES20.glUniform1i(typeHandle, type);
             GLES20.glDrawArrays(GLES20.GL_TRIANGLES, 0, trianglesCount[i] / 3);
         }
 

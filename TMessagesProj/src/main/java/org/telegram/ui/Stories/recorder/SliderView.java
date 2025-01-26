@@ -215,8 +215,7 @@ public class SliderView extends View {
                 if (volume <= this.minVolume && pastVolume > volume || volume >= this.maxVolume && pastVolume < volume) {
                     try {
                         performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_VIEW_SETTING);
-                    } catch (Exception ignore) {
-                    }
+                    } catch (Exception ignored) {}
                 } else if (Math.floor(pastVolume * 5) != Math.floor(volume * 5)) {
                     AndroidUtilities.vibrateCursor(this);
                 }

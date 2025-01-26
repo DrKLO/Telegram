@@ -1759,9 +1759,9 @@ int TurnEntry::Send(const void* data,
                     size_t size,
                     bool payload,
                     const rtc::PacketOptions& options) {
+  if (port_ == nullptr) return -1;
   rtc::ByteBufferWriter buf;
-  if (state_ != STATE_BOUND ||
-      !port_->TurnCustomizerAllowChannelData(data, size, payload)) {
+  if (state_ != STATE_BOUND || !port_->TurnCustomizerAllowChannelData(data, size, payload)) {
     // If we haven't bound the channel yet, we have to use a Send Indication.
     // The turn_customizer_ can also make us use Send Indication.
     TurnMessage msg(TURN_SEND_INDICATION);
@@ -1781,6 +1781,7 @@ int TurnEntry::Send(const void* data,
       state_ = STATE_BINDING;
     }
   } else {
+    if (data == nullptr && size > 0) return -1;
     // If the channel is bound, we can send the data as a Channel Message.
     buf.WriteUInt16(channel_id_);
     buf.WriteUInt16(static_cast<uint16_t>(size));

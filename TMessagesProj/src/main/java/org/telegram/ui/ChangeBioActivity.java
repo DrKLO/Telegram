@@ -35,6 +35,7 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.tgnet.tl.TL_account;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.AlertDialog;
@@ -210,7 +211,7 @@ public class ChangeBioActivity extends BaseFragment {
 
         final AlertDialog progressDialog = new AlertDialog(getParentActivity(), AlertDialog.ALERT_TYPE_SPINNER);
 
-        final TLRPC.TL_account_updateProfile req = new TLRPC.TL_account_updateProfile();
+        final TL_account.updateProfile req = new TL_account.updateProfile();
         req.about = newName;
         req.flags |= 4;
 

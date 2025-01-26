@@ -2,42 +2,28 @@ package org.telegram.ui.bots;
 
 import static android.graphics.PorterDuff.Mode.SRC_IN;
 import static org.telegram.messenger.AndroidUtilities.dp;
-import static org.telegram.messenger.AndroidUtilities.getDataColumn;
-import static org.telegram.messenger.LocaleController.getCurrencyExpDivider;
 import static org.telegram.messenger.LocaleController.getString;
 
 import android.app.Activity;
-import android.app.Dialog;
 import android.content.Context;
-import android.content.ContextWrapper;
-import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Canvas;
 import android.graphics.ColorFilter;
 import android.graphics.Paint;
 import android.graphics.PixelFormat;
 import android.graphics.PorterDuffColorFilter;
-import android.graphics.PorterDuffXfermode;
 import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
-import android.net.Uri;
-import android.text.TextUtils;
-import android.util.TypedValue;
-import android.view.Gravity;
 import android.view.View;
-import android.widget.LinearLayout;
-import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import org.checkerframework.checker.units.qual.A;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.DocumentObject;
 import org.telegram.messenger.FileLoader;
-import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.LocaleController;
@@ -51,31 +37,20 @@ import org.telegram.messenger.UserObject;
 import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.tgnet.tl.TL_account;
 import org.telegram.tgnet.tl.TL_bots;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
-import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Components.AlertsCreator;
 import org.telegram.ui.Components.AnimatedEmojiDrawable;
-import org.telegram.ui.Components.AnimatedFileDrawable;
 import org.telegram.ui.Components.AnimatedFloat;
 import org.telegram.ui.Components.AttachableDrawable;
 import org.telegram.ui.Components.AvatarDrawable;
-import org.telegram.ui.Components.BackupImageView;
-import org.telegram.ui.Components.ChatAttachAlert;
 import org.telegram.ui.Components.CubicBezierInterpolator;
-import org.telegram.ui.Components.LayoutHelper;
-import org.telegram.ui.Components.PhotoViewerCaptionEnterView;
 import org.telegram.ui.Components.Premium.PremiumFeatureBottomSheet;
-import org.telegram.ui.Components.Premium.PremiumPreviewBottomSheet;
 import org.telegram.ui.Components.Text;
 import org.telegram.ui.LaunchActivity;
-import org.telegram.ui.PhotoViewer;
 import org.telegram.ui.PremiumPreviewFragment;
-import org.telegram.ui.Stories.recorder.ButtonWithCounterView;
-
-import java.util.ArrayList;
 
 public class SetupEmojiStatusSheet {
 
@@ -163,17 +138,14 @@ public class SetupEmojiStatusSheet {
                 }
                 setting[0] = true;
 
-                TLRPC.TL_account_updateEmojiStatus req = new TLRPC.TL_account_updateEmojiStatus();
+                TL_account.updateEmojiStatus req = new TL_account.updateEmojiStatus();
+                TLRPC.TL_emojiStatus status = new TLRPC.TL_emojiStatus();
+                status.document_id = document.id;
                 if (duration > 0) {
-                    TLRPC.TL_emojiStatusUntil status = new TLRPC.TL_emojiStatusUntil();
+                    status.flags |= 1;
                     status.until = ConnectionsManager.getInstance(currentAccount).getCurrentTime() + duration;
-                    status.document_id = document.id;
-                    req.emoji_status = status;
-                } else {
-                    TLRPC.TL_emojiStatus status = new TLRPC.TL_emojiStatus();
-                    status.document_id = document.id;
-                    req.emoji_status = status;
                 }
+                req.emoji_status = status;
                 ConnectionsManager.getInstance(currentAccount).sendRequest(req, (res, err) -> AndroidUtilities.runOnUIThread(() -> {
                     if (!(res instanceof TLRPC.TL_boolTrue)) {
                         if (!sentDone[0]) {

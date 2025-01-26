@@ -17,14 +17,17 @@ import java.util.Objects;
 
 public class DarkThemeResourceProvider implements Theme.ResourcesProvider {
 
-    HashSet<Integer> debugUnknownKeys = new HashSet<>();
-    SparseIntArray sparseIntArray = new SparseIntArray();
+    protected HashSet<Integer> debugUnknownKeys = new HashSet<>();
+    protected SparseIntArray sparseIntArray = new SparseIntArray();
 
     Paint dividerPaint = new Paint();
     Paint actionPaint;
     ColorFilter animatedEmojiColorFilter;
 
     public DarkThemeResourceProvider() {
+        sparseIntArray.put(Theme.key_chat_BlurAlpha, -1308622848);
+        sparseIntArray.put(Theme.key_chat_BlurAlphaSlow, -1056964608);
+
         sparseIntArray.put(Theme.key_statisticChartSignature, -1214008894);
         sparseIntArray.put(Theme.key_statisticChartSignatureAlpha, -1946157057);
         sparseIntArray.put(Theme.key_statisticChartHintLine, 452984831);
@@ -63,6 +66,7 @@ public class DarkThemeResourceProvider implements Theme.ResourcesProvider {
 
         sparseIntArray.put(Theme.key_chat_emojiSearchBackground, ColorUtils.setAlphaComponent(Color.WHITE, 30));
         sparseIntArray.put(Theme.key_chat_emojiPanelBackground, 0xc0000000);
+        sparseIntArray.put(Theme.key_actionBarActionModeDefaultIcon, Color.WHITE);
 
         sparseIntArray.put(Theme.key_dialogSearchHint, ColorUtils.blendARGB(Color.BLACK, Color.WHITE, 0.5f));
         sparseIntArray.put(Theme.key_dialogSearchBackground, ColorUtils.setAlphaComponent(Color.WHITE, 17));
@@ -116,6 +120,7 @@ public class DarkThemeResourceProvider implements Theme.ResourcesProvider {
         sparseIntArray.put(Theme.key_windowBackgroundWhiteGrayText4, 0xFF808080);
         sparseIntArray.put(Theme.key_voipgroup_nameText, 0xffffffff);
         sparseIntArray.put(Theme.key_voipgroup_inviteMembersBackground, 0xff222A33);
+        sparseIntArray.put(Theme.key_dialogScrollGlow, 0xff222A33);
         sparseIntArray.put(Theme.key_chats_secretName, -9316522);
         sparseIntArray.put(Theme.key_chats_name, -1446156);
         sparseIntArray.put(Theme.key_chat_serviceBackground, -2110438831);
@@ -159,6 +164,17 @@ public class DarkThemeResourceProvider implements Theme.ResourcesProvider {
         sparseIntArray.put(Theme.key_chat_outBubbleGradient2, 0);
         sparseIntArray.put(Theme.key_chat_outBubbleGradient3, 0);
         sparseIntArray.put(Theme.key_chat_textSelectBackground, ColorUtils.setAlphaComponent(Color.WHITE, 75));
+
+        sparseIntArray.put(Theme.key_radioBackgroundChecked, -10177041);
+        sparseIntArray.put(Theme.key_checkboxDisabled, -12237499);
+        sparseIntArray.put(Theme.key_checkboxCheck, 0xFFFFFFFF);
+
+        sparseIntArray.put(Theme.key_avatar_backgroundSaved, 0xFF5CADF6);
+        sparseIntArray.put(Theme.key_avatar_background2Saved, 0xFF408BCF);
+
+        sparseIntArray.put(Theme.key_share_icon, -1);
+        sparseIntArray.put(Theme.key_share_linkText, 0xB7FFFFFF);
+        sparseIntArray.put(Theme.key_share_linkBackground, 352321535);
 
         appendColors();
         dividerPaint.setColor(getColor(Theme.key_divider));

@@ -5,6 +5,8 @@ import android.os.SystemClock;
 import org.telegram.tgnet.RequestDelegate;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.tgnet.Vector;
+import org.telegram.tgnet.tl.TL_account;
 import org.telegram.tgnet.tl.TL_bots;
 import org.telegram.tgnet.tl.TL_stories;
 import org.telegram.ui.ActionBar.Theme;
@@ -499,7 +501,7 @@ public class FileRefController extends BaseController {
             }
         } else if (parentObject instanceof TLRPC.TL_wallPaper) {
             TLRPC.TL_wallPaper wallPaper = (TLRPC.TL_wallPaper) parentObject;
-            TLRPC.TL_account_getWallPaper req = new TLRPC.TL_account_getWallPaper();
+            TL_account.getWallPaper req = new TL_account.getWallPaper();
             TLRPC.TL_inputWallPaper inputWallPaper = new TLRPC.TL_inputWallPaper();
             inputWallPaper.id = wallPaper.id;
             inputWallPaper.access_hash = wallPaper.access_hash;
@@ -507,7 +509,7 @@ public class FileRefController extends BaseController {
             getConnectionsManager().sendRequest(req, (response, error) -> onRequestComplete(locationKey, parentKey, response, error, true, false));
         } else if (parentObject instanceof TLRPC.TL_theme) {
             TLRPC.TL_theme theme = (TLRPC.TL_theme) parentObject;
-            TLRPC.TL_account_getTheme req = new TLRPC.TL_account_getTheme();
+            TL_account.getTheme req = new TL_account.getTheme();
             TLRPC.TL_inputTheme inputTheme = new TLRPC.TL_inputTheme();
             inputTheme.id = theme.id;
             inputTheme.access_hash = theme.access_hash;
@@ -540,7 +542,7 @@ public class FileRefController extends BaseController {
             String string = (String) parentObject;
             if ("wallpaper".equals(string)) {
                 if (wallpaperWaiters.isEmpty()) {
-                    TLRPC.TL_account_getWallPapers req = new TLRPC.TL_account_getWallPapers();
+                    TL_account.getWallPapers req = new TL_account.getWallPapers();
                     getConnectionsManager().sendRequest(req, (response, error) -> broadcastWaitersData(wallpaperWaiters, response, error));
                 }
                 wallpaperWaiters.add(new Waiter(locationKey, parentKey));
@@ -897,7 +899,7 @@ public class FileRefController extends BaseController {
         String cacheKey = parentKey;
         if (response instanceof TLRPC.TL_help_premiumPromo) {
             cacheKey = "premium_promo";
-        } else if (response instanceof TLRPC.TL_account_wallPapers) {
+        } else if (response instanceof TL_account.TL_wallPapers) {
             cacheKey = "wallpaper";
         } else if (response instanceof TLRPC.TL_messages_savedGifs) {
             cacheKey = "gif";
@@ -1140,8 +1142,8 @@ public class FileRefController extends BaseController {
                 result = getFileReference(res.webpage, requester.location, needReplacement, locationReplacement);
             } else if (response instanceof TLRPC.WebPage) {
                 result = getFileReference((TLRPC.WebPage) response, requester.location, needReplacement, locationReplacement);
-            } else if (response instanceof TLRPC.TL_account_wallPapers) {
-                TLRPC.TL_account_wallPapers accountWallPapers = (TLRPC.TL_account_wallPapers) response;
+            } else if (response instanceof TL_account.TL_wallPapers) {
+                TL_account.TL_wallPapers accountWallPapers = (TL_account.TL_wallPapers) response;
                 for (int i = 0, size10 = accountWallPapers.wallpapers.size(); i < size10; i++) {
                     result = getFileReference(((TLRPC.WallPaper) accountWallPapers.wallpapers.get(i)).document, null, requester.location, needReplacement, locationReplacement);
                     if (result != null) {
@@ -1165,8 +1167,8 @@ public class FileRefController extends BaseController {
                 if (result != null && cache) {
                     AndroidUtilities.runOnUIThread(() -> Theme.setThemeFileReference(theme));
                 }
-            } else if (response instanceof TLRPC.Vector) {
-                TLRPC.Vector vector = (TLRPC.Vector) response;
+            } else if (response instanceof Vector) {
+                Vector vector = (Vector) response;
                 if (!vector.objects.isEmpty()) {
                     for (int i = 0, size10 = vector.objects.size(); i < size10; i++) {
                         Object object = vector.objects.get(i);

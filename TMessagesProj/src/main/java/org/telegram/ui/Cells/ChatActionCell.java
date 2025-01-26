@@ -43,6 +43,7 @@ import android.text.style.CharacterStyle;
 import android.text.style.ClickableSpan;
 import android.text.style.URLSpan;
 import android.util.TypedValue;
+import android.view.Gravity;
 import android.view.HapticFeedbackConstants;
 import android.view.MotionEvent;
 import android.view.SoundEffectConstants;
@@ -53,7 +54,6 @@ import android.view.accessibility.AccessibilityNodeInfo;
 import androidx.annotation.NonNull;
 import androidx.core.graphics.ColorUtils;
 
-import org.checkerframework.checker.units.qual.A;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BuildVars;
@@ -79,6 +79,7 @@ import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
 import org.telegram.messenger.Utilities;
 import org.telegram.messenger.browser.Browser;
+import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.tl.TL_stories;
@@ -93,6 +94,7 @@ import org.telegram.ui.Components.AnimatedEmojiSpan;
 import org.telegram.ui.Components.AnimatedFloat;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.ButtonBounce;
+import org.telegram.ui.Components.ColoredImageSpan;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.Forum.ForumUtilities;
 import org.telegram.ui.Components.ImageUpdater;
@@ -102,6 +104,7 @@ import org.telegram.ui.Components.Premium.StarParticlesView;
 import org.telegram.ui.Components.RLottieDrawable;
 import org.telegram.ui.Components.RadialProgress2;
 import org.telegram.ui.Components.RadialProgressView;
+import org.telegram.ui.Components.Reactions.ReactionsLayoutInBubble;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.ScaleStateListAnimator;
 import org.telegram.ui.Components.Text;
@@ -113,6 +116,8 @@ import org.telegram.ui.GradientClip;
 import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.PhotoViewer;
 import org.telegram.ui.ProfileActivity;
+import org.telegram.ui.Stars.StarGiftSheet;
+import org.telegram.ui.Stars.StarGiftUniqueActionLayout;
 import org.telegram.ui.Stars.StarsIntroActivity;
 import org.telegram.ui.Stories.StoriesUtilities;
 import org.telegram.ui.Stories.UploadingDotsSpannable;
@@ -211,6 +216,9 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
         default void didPressReplyMessage(ChatActionCell cell, int id) {
         }
 
+        default void didPressReaction(ChatActionCell cell, TLRPC.ReactionCount reaction, boolean longpress, float x, float y) {
+        }
+
         default void needOpenInviteLink(TLRPC.TL_chatInviteExported invite) {
         }
 
@@ -286,6 +294,10 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
     private boolean wasLayout;
 
     private boolean hasReplyMessage;
+
+    public final ReactionsLayoutInBubble reactionsLayoutInBubble = new ReactionsLayoutInBubble(this);
+    public float starGiftLayoutX, starGiftLayoutY;
+    public final StarGiftUniqueActionLayout starGiftLayout;
 
     private MessageObject currentMessageObject;
     private int customDate;
@@ -384,8 +396,7 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
 
                         try {
                             performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
-                        } catch (Exception ignored) {
-                        }
+                        } catch (Exception ignored) {}
 
                         if (getContext() instanceof LaunchActivity) {
                             ((LaunchActivity) getContext()).getFireworksOverlay().start();
@@ -395,7 +406,7 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
                             delegate.needShowEffectOverlay(ChatActionCell.this, giftSticker, giftEffectAnimation);
                         }
                     }
-                } else {
+                } else if (drawable.getCurrentFrame() < 1) {
                     drawable.stop();
                     drawable.setCurrentFrame(drawable.getFramesCount() - 1, false);
                 }
@@ -429,6 +440,8 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
         avatarDrawable = new AvatarDrawable();
         TAG = DownloadController.getInstance(currentAccount).generateObserverTag();
 
+        starGiftLayout = new StarGiftUniqueActionLayout(currentAccount, this, resourcesProvider);
+
         giftTitlePaint.setTextSize(TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 16, getResources().getDisplayMetrics()));
         giftSubtitlePaint.setTextSize(TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 15, getResources().getDisplayMetrics()));
         giftTextPaint.setTextSize(TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 15, getResources().getDisplayMetrics()));
@@ -456,6 +469,10 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
 
     public void setDelegate(ChatActionCellDelegate delegate) {
         this.delegate = delegate;
+    }
+
+    public ChatActionCellDelegate getDelegate() {
+        return delegate;
     }
 
     public void setCustomDate(int date, boolean scheduled, boolean inLayout) {
@@ -522,6 +539,9 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
         }
         accessibilityText = null;
         boolean messageIdChanged = currentMessageObject == null || currentMessageObject.stableId != messageObject.stableId;
+        if (currentMessageObject != null) {
+            messageObject.playedGiftAnimation = currentMessageObject.playedGiftAnimation;
+        }
         currentMessageObject = messageObject;
         messageObject.forceUpdate = false;
         hasReplyMessage = messageObject.replyMessageObject != null;
@@ -533,6 +553,17 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
             giftPremiumText = null;
             giftPremiumTextUncollapsed = false;
         }
+        if (messageIdChanged || messageObject.reactionsChanged) {
+            messageObject.reactionsChanged = false;
+            final boolean isTag = messageObject.messageOwner != null && messageObject.messageOwner.reactions != null && messageObject.messageOwner.reactions.reactions_as_tags;
+            if (messageObject.shouldDrawReactions()) {
+                final boolean isSmall = !messageObject.shouldDrawReactionsInLayout();
+                reactionsLayoutInBubble.setMessage(messageObject, isSmall, isTag, themeDelegate);
+            } else {
+                reactionsLayoutInBubble.setMessage(null, false, false, themeDelegate);
+            }
+        }
+        starGiftLayout.set(messageObject, !messageIdChanged);
         imageReceiver.setAutoRepeatCount(0);
         imageReceiver.clearDecorators();
         if (messageObject.type != MessageObject.TYPE_ACTION_WALLPAPER) {
@@ -668,6 +699,12 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
                     final TLRPC.TL_messageActionStarGift action = (TLRPC.TL_messageActionStarGift) messageObject.messageOwner.action;
                     if (action.gift != null) {
                         document = action.gift.sticker;
+                    }
+                } else if (messageObject.messageOwner.action instanceof TLRPC.TL_messageActionStarGiftUnique && ((TLRPC.TL_messageActionStarGiftUnique) messageObject.messageOwner.action).refunded) {
+                    parentObject = messageObject;
+                    final TLRPC.TL_messageActionStarGiftUnique action = (TLRPC.TL_messageActionStarGiftUnique) messageObject.messageOwner.action;
+                    if (action.gift != null) {
+                        document = action.gift.getDocument();
                     }
                 } else {
                     packName = UserConfig.getInstance(currentAccount).premiumGiftsStickerPack;
@@ -818,7 +855,7 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
             imageReceiver.setDelegate(null);
             imageReceiver.setImageBitmap((Bitmap) null);
         }
-        rippleView.setVisibility(isButtonLayout(messageObject) ? VISIBLE : GONE);
+        rippleView.setVisibility(isButtonLayout(messageObject) && !starGiftLayout.has() ? VISIBLE : GONE);
         ForumUtilities.applyTopicToMessage(messageObject);
         requestLayout();
     }
@@ -881,6 +918,7 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
     @Override
     protected void onDetachedFromWindow() {
         super.onDetachedFromWindow();
+        attachedToWindow = false;
         DownloadController.getInstance(currentAccount).removeLoadingFileObserver(this);
         imageReceiver.onDetachedFromWindow();
         setStarsPaused(true);
@@ -894,11 +932,21 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.starGiftsLoaded);
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.diceStickersDidLoad);
         avatarStoryParams.onDetachFromWindow();
+
+        transitionParams.onDetach();
+        starGiftLayout.detach();
+        reactionsLayoutInBubble.onDetachFromWindow();
+    }
+
+    private boolean attachedToWindow;
+    public boolean isCellAttachedToWindow() {
+        return attachedToWindow;
     }
 
     @Override
     protected void onAttachedToWindow() {
         super.onAttachedToWindow();
+        attachedToWindow = true;
         imageReceiver.onAttachedToWindow();
         setStarsPaused(false);
 
@@ -913,6 +961,8 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
         if (currentMessageObject != null && currentMessageObject.type == MessageObject.TYPE_SUGGEST_PHOTO) {
             setMessageObject(currentMessageObject, true);
         }
+        starGiftLayout.attach();
+        reactionsLayoutInBubble.onAttachToWindow();
     }
 
     private void setStarsPaused(boolean paused) {
@@ -937,6 +987,15 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
         if (messageObject == null) {
             return super.onTouchEvent(event);
         }
+
+        if (starGiftLayout.has() && starGiftLayout.onTouchEvent(starGiftLayoutX, starGiftLayoutY, event)) {
+            return true;
+        }
+
+        if (reactionsLayoutInBubble.checkTouchEvent(event)) {
+            return true;
+        }
+
         float x = lastTouchX = event.getX();
         float y = lastTouchY = event.getY();
 
@@ -1217,7 +1276,14 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
         } else if (currentMessageObject.messageOwner.action instanceof TLRPC.TL_messageActionStarGift) {
             final TLRPC.TL_messageActionStarGift action = (TLRPC.TL_messageActionStarGift) currentMessageObject.messageOwner.action;
             if (action.forceIn) return;
-            StarsIntroActivity.showActionGiftSheet(getContext(), currentAccount, currentMessageObject.getDialogId(), currentMessageObject.isOutOwner(), currentMessageObject.messageOwner.date, currentMessageObject.getId(), action, themeDelegate);
+//            StarsIntroActivity.showActionGiftSheet(getContext(), currentAccount, currentMessageObject.getDialogId(), currentMessageObject.isOutOwner(), currentMessageObject.messageOwner.date, currentMessageObject.getId(), action, themeDelegate);
+            new StarGiftSheet(getContext(), currentAccount, currentMessageObject.getDialogId(), themeDelegate)
+                .set(currentMessageObject)
+                .show();
+        } else if (currentMessageObject.messageOwner.action instanceof TLRPC.TL_messageActionStarGiftUnique) {
+            new StarGiftSheet(getContext(), currentAccount, currentMessageObject.getDialogId(), themeDelegate)
+                .set(currentMessageObject)
+                .show();
         }
     }
 
@@ -1295,24 +1361,26 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
 
         textHeight = 0;
         textWidth = 0;
-        try {
-            int linesCount = textLayout.getLineCount();
-            for (int a = 0; a < linesCount; a++) {
-                float lineWidth;
-                try {
-                    lineWidth = textLayout.getLineWidth(a);
-                    if (lineWidth > maxWidth) {
-                        lineWidth = maxWidth;
+        if (currentMessageObject == null || !currentMessageObject.isRepostPreview) {
+            try {
+                int linesCount = textLayout.getLineCount();
+                for (int a = 0; a < linesCount; a++) {
+                    float lineWidth;
+                    try {
+                        lineWidth = textLayout.getLineWidth(a);
+                        if (lineWidth > maxWidth) {
+                            lineWidth = maxWidth;
+                        }
+                        textHeight = (int) Math.max(textHeight, Math.ceil(textLayout.getLineBottom(a)));
+                    } catch (Exception e) {
+                        FileLog.e(e);
+                        return;
                     }
-                    textHeight = (int) Math.max(textHeight, Math.ceil(textLayout.getLineBottom(a)));
-                } catch (Exception e) {
-                    FileLog.e(e);
-                    return;
+                    textWidth = (int) Math.max(textWidth, Math.ceil(lineWidth));
                 }
-                textWidth = (int) Math.max(textWidth, Math.ceil(lineWidth));
+            } catch (Exception e) {
+                FileLog.e(e);
             }
-        } catch (Exception e) {
-            FileLog.e(e);
         }
         textX = (width - textWidth) / 2;
         textY = dp(7);
@@ -1361,7 +1429,16 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
         }
 
         int exactlyHeight = 0;
-        if (isButtonLayout(messageObject)) {
+        if (starGiftLayout.has()) {
+            if (!starGiftLayout.repost) {
+                exactlyHeight += textY + textHeight + dp(4 + 6 + 6);
+            }
+            exactlyHeight += (int) starGiftLayout.getHeight() + dp(4 + 4);
+            if (!reactionsLayoutInBubble.isEmpty) {
+                reactionsLayoutInBubble.totalHeight = reactionsLayoutInBubble.height + dp(8);
+                exactlyHeight += reactionsLayoutInBubble.totalHeight;
+            }
+        } else if (isButtonLayout(messageObject)) {
             boolean isGiftChannel = isGiftChannel(messageObject);
             int imageSize = getImageSize(messageObject);
             float y;
@@ -1449,17 +1526,26 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
                 backgroundRectHeight += dp(16);
                 exactlyHeight += backgroundRectHeight;
                 exactlyHeight += dp(6);
+                if (!reactionsLayoutInBubble.isEmpty) {
+                    reactionsLayoutInBubble.totalHeight = reactionsLayoutInBubble.height + dp(8);
+                    exactlyHeight += reactionsLayoutInBubble.totalHeight;
+                }
             }
         }
-        if (messageObject != null && (isNewStyleButtonLayout())) {
+        if (!reactionsLayoutInBubble.isEmpty) {
+            reactionsLayoutInBubble.totalHeight = reactionsLayoutInBubble.height + dp(8);
+            additionalHeight += reactionsLayoutInBubble.totalHeight;
+        }
+        if (messageObject != null && isNewStyleButtonLayout()) {
             setMeasuredDimension(width, exactlyHeight);
         } else {
             setMeasuredDimension(width, textHeight + additionalHeight + dp(14));
         }
+        reactionsLayoutInBubble.y = getMeasuredHeight() - reactionsLayoutInBubble.totalHeight;
     }
 
     private boolean isNewStyleButtonLayout() {
-        return currentMessageObject.type == MessageObject.TYPE_SUGGEST_PHOTO || currentMessageObject.type == MessageObject.TYPE_ACTION_WALLPAPER || currentMessageObject.isStoryMention();
+        return starGiftLayout.has() || currentMessageObject.type == MessageObject.TYPE_SUGGEST_PHOTO || currentMessageObject.type == MessageObject.TYPE_ACTION_WALLPAPER || currentMessageObject.isStoryMention();
     }
 
     private int getImageSize(MessageObject messageObject) {
@@ -1470,6 +1556,8 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
         return imageSize;
     }
 
+    private ColoredImageSpan upgradeIconSpan;
+
     private void buildLayout() {
         CharSequence text = null;
         MessageObject messageObject = currentMessageObject;
@@ -1477,11 +1565,11 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
             if (messageObject.isExpiredStory()) {
                 long dialogId = messageObject.messageOwner.media.user_id;
                 if (dialogId != UserConfig.getInstance(currentAccount).getClientUserId()) {
-                    text = StoriesUtilities.createExpiredStoryString(true, "ExpiredStoryMention", R.string.ExpiredStoryMention);
+                    text = StoriesUtilities.createExpiredStoryString(true, R.string.ExpiredStoryMention);
                 } else {
-                    text = StoriesUtilities.createExpiredStoryString(true, "ExpiredStoryMentioned", R.string.ExpiredStoryMentioned, MessagesController.getInstance(currentAccount).getUser(messageObject.getDialogId()).first_name);
+                    text = StoriesUtilities.createExpiredStoryString(true, R.string.ExpiredStoryMentioned, MessagesController.getInstance(currentAccount).getUser(messageObject.getDialogId()).first_name);
                 }
-            } else if (delegate.getTopicId() == 0 && MessageObject.isTopicActionMessage(messageObject)) {
+            } else if (delegate != null && delegate.getTopicId() == 0 && MessageObject.isTopicActionMessage(messageObject)) {
                 TLRPC.TL_forumTopic topic = MessagesController.getInstance(currentAccount).getTopicsController().findTopic(-messageObject.getDialogId(), MessageObject.getTopicId(currentAccount, messageObject.messageOwner, true));
                 text = ForumUtilities.createActionTextWithTopic(topic, messageObject);
             }
@@ -1507,6 +1595,9 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
         } else {
             text = customText;
         }
+        if (currentMessageObject != null && currentMessageObject.isRepostPreview) {
+            text = "";
+        }
         createLayout(text, previousWidth);
         if (messageObject != null) {
             if (messageObject.type == MessageObject.TYPE_ACTION_PHOTO) {
@@ -1523,57 +1614,133 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
                         null,
                         AndroidUtilities.replaceTags(currentMessageObject.isOutOwner() ? formatString(R.string.ActionGiftStarsSubtitle, UserObject.getForcedFirstName(user)) : getString(R.string.ActionGiftStarsSubtitleYou)),
                         false, getString(R.string.ActionGiftStarsView),
-                        null, giftRectSize,
+                            11, null, giftRectSize,
+                        true
+                    );
+                } else if (messageObject.messageOwner.action instanceof TLRPC.TL_messageActionStarGiftUnique && ((TLRPC.TL_messageActionStarGiftUnique) messageObject.messageOwner.action).refunded) {
+                    final long selfId = UserConfig.getInstance(currentAccount).getClientUserId();
+                    final TLRPC.TL_messageActionStarGiftUnique action = (TLRPC.TL_messageActionStarGiftUnique) messageObject.messageOwner.action;
+                    final long fromId = messageObject.isOutOwner() == !action.upgrade ? selfId : messageObject.getDialogId();
+                    final TLRPC.User fromUser = MessagesController.getInstance(currentAccount).getUser(fromId);
+                    final SpannableStringBuilder sb = new SpannableStringBuilder();
+                    sb.append(LocaleController.getString(R.string.Gift2ActionTitle)).append(" ");
+                    if (fromUser != null && fromUser.photo != null) {
+                        sb.append("a ");
+                        final AvatarSpan avatarSpan = new AvatarSpan(this, currentAccount, 18);
+                        avatarSpan.setUser(fromUser);
+                        sb.setSpan(avatarSpan, sb.length() - 2, sb.length() - 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                    }
+                    sb.append(UserObject.getForcedFirstName(fromUser));
+                    createGiftPremiumLayouts(
+                        sb,
+                        null,
+                        getString(R.string.Gift2ActionUpgradeRefundedText),
+                        false,
+                        getString(R.string.ActionGiftStarsView),
+                        12, getString(R.string.Gift2UniqueRibbon),
+                        giftRectSize,
                         true
                     );
                 } else if (messageObject.messageOwner.action instanceof TLRPC.TL_messageActionStarGift) {
                     final TLRPC.TL_messageActionStarGift action = (TLRPC.TL_messageActionStarGift) messageObject.messageOwner.action;
                     stars = action.convert_stars;
-                    final long userId = messageObject.getFromChatId();
-                    final SpannableStringBuilder sb = new SpannableStringBuilder();
-                    final TLRPC.User userReceiver = MessagesController.getInstance(currentAccount).getUser(userId);
-                    sb.append(LocaleController.getString(R.string.Gift2ActionTitle)).append(" ");
-                    if (userReceiver != null && userReceiver.photo != null) {
-                        sb.append("a ");
-                        final AvatarSpan avatarSpan = new AvatarSpan(this, currentAccount, 18);
-                        avatarSpan.setUser(userReceiver);
-                        sb.setSpan(avatarSpan, sb.length() - 2, sb.length() - 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                    final long selfId = UserConfig.getInstance(currentAccount).getClientUserId();
+                    final boolean isForChannel = action.peer != null;
+                    final boolean self = messageObject.getDialogId() == selfId && !isForChannel;
+                    long fromId = messageObject.getFromChatId();
+                    if (action.from_id != null) {
+                        fromId = DialogObject.getPeerDialogId(action.from_id);
                     }
-                    sb.append(UserObject.getForcedFirstName(userReceiver));
+                    final SpannableStringBuilder sb = new SpannableStringBuilder();
+                    final TLObject sender = MessagesController.getInstance(currentAccount).getUserOrChat(fromId);
+                    final boolean freeUpgrade = action.can_upgrade && !action.converted && action.upgrade_stars > 0 && !action.upgraded;
+                    if (self) {
+                        sb.append(getString(R.string.Gift2ActionSelfTitle));
+                    } else {
+                        sb.append(LocaleController.getString(R.string.Gift2ActionTitle)).append(" ");
+                        if (DialogObject.hasPhoto(sender)) {
+                            sb.append("a ");
+                            final AvatarSpan avatarSpan = new AvatarSpan(this, currentAccount, 18);
+                            avatarSpan.setObject(sender);
+                            sb.setSpan(avatarSpan, sb.length() - 2, sb.length() - 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                        }
+                        sb.append(DialogObject.getShortName(sender));
+                    }
+                    final int within = MessagesController.getInstance(currentAccount).stargiftsConvertPeriodMax - (ConnectionsManager.getInstance(currentAccount).getCurrentTime() - messageObject.messageOwner.date);
+                    final boolean canConvert = (messageObject.isOutOwner() && !self || !action.converted) && action.convert_stars > 0 && within > 0 && !action.refunded;
                     CharSequence title;
-                    if (action.message != null && !TextUtils.isEmpty(action.message.text)) {
+                    if (action.refunded) {
+                        title = getString(R.string.Gift2ActionConvertRefundedText);
+                    } else if (action.message != null && !TextUtils.isEmpty(action.message.text)) {
                         title = new SpannableStringBuilder(action.message.text);
                         giftTextPaint.setTextSize(dp(13));
                         MessageObject.addEntitiesToText(title, action.message.entities, false, false, true, true);
                         title = Emoji.replaceEmoji(title, giftTextPaint.getFontMetricsInt(), false, null);
                         title = MessageObject.replaceAnimatedEmoji(title, action.message.entities, giftTextPaint.getFontMetricsInt());
+                    } else if (isForChannel) {
+                        if (action.converted) {
+                            title = formatPluralStringComma("Gift2ActionConvertedInfo", (int) stars);
+                        } else if (canConvert && stars > 0) {
+                            title = AndroidUtilities.replaceTags(formatPluralStringComma("Gift2ActionInfoChannel", (int) stars));
+                        } else {
+                            title = AndroidUtilities.replaceTags(getString(R.string.Gift2ActionInfoChannelNoConvert));
+                        }
+                    } else if (self) {
+                        if (action.converted && stars > 0) {
+                            title = formatPluralStringComma("Gift2ActionConvertedInfo", (int) stars);
+                        } else if (action.can_upgrade) {
+                            title = AndroidUtilities.replaceTags(getString(R.string.Gift2ActionSelfInfoUpgrade));
+                        } else {
+                            title = AndroidUtilities.replaceTags(getString(R.string.Gift2ActionSelfInfoNoConvert));
+                        }
+                    } else if (freeUpgrade) {
+                        title = AndroidUtilities.replaceTags(messageObject.isOutOwner() ? formatString(R.string.Gift2ActionUpgradeOut, UserObject.getForcedFirstName(user)) : getString(R.string.Gift2ActionUpgrade));
                     } else if (messageObject.isOutOwner()) {
-                        title = AndroidUtilities.replaceTags(formatPluralStringComma("Gift2ActionOutInfo", (int) stars, UserObject.getForcedFirstName(user)));
+                        if (canConvert && stars > 0) {
+                            title = AndroidUtilities.replaceTags(formatPluralStringComma("Gift2ActionOutInfo", (int) stars, UserObject.getForcedFirstName(user)));
+                        } else if (action.can_upgrade) {
+                            title = AndroidUtilities.replaceTags(formatString(R.string.Gift2ActionOutInfoUpgrade, UserObject.getForcedFirstName(user)));
+                        } else {
+                            title = AndroidUtilities.replaceTags(formatString(R.string.Gift2ActionOutInfoNoConvert, UserObject.getForcedFirstName(user)));
+                        }
                     } else {
                         if (action.converted) {
                             title = formatPluralStringComma("Gift2ActionConvertedInfo", (int) stars);
                         } else if (action.saved) {
-                            if (action.convert_stars <= 0) {
+                            if (!canConvert) {
                                 title = getString(R.string.Gift2ActionBotSavedInfo);
                             } else {
                                 title = getString(R.string.Gift2ActionSavedInfo);
                             }
-                        } else if (action.convert_stars <= 0) {
+                        } else if (!canConvert) {
                             title = getString(R.string.Gift2ActionBotInfo);
                         } else {
-                            title = formatPluralStringComma("Gift2ActionInfo", (int) stars);
+                            title = AndroidUtilities.replaceTags(formatPluralStringComma("Gift2ActionInfo", (int) stars));
                         }
                     }
                     CharSequence ribbon = null;
                     if (action.gift != null && action.gift.limited) {
                         ribbon = LocaleController.formatString(R.string.Gift2Limited1OfRibbon, action.gift.availability_total > 1500 ? AndroidUtilities.formatWholeNumber(action.gift.availability_total, 0) : action.gift.availability_total);
                     }
+                    CharSequence buttonText = getString(R.string.ActionGiftStarsView);
+                    if (!messageObject.isOutOwner() || action.forceIn || freeUpgrade) {
+                        if (!messageObject.isOutOwner() && freeUpgrade) {
+                            SpannableStringBuilder ssb = new SpannableStringBuilder();
+                            ssb.append("^  ");
+                            ColoredImageSpan span = new ColoredImageSpan(R.drawable.gift_unpack);
+                            span.setScale(.8f, .8f);
+                            ssb.setSpan(span, 0, 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                            ssb.append(LocaleController.getString(R.string.Gift2Unpack));
+                            buttonText = ssb;
+                        }
+                    }
                     createGiftPremiumLayouts(
                         sb,
                         null,
                         title,
-                        false, messageObject.isOutOwner() && !action.forceIn ? null : getString(R.string.ActionGiftStarsView),
-                        ribbon,
+                        false,
+                        buttonText,
+                        11, ribbon,
                         giftRectSize,
                         true
                     );
@@ -1583,8 +1750,8 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
                         getString(R.string.ActionStarGiveawayPrizeTitle),
                         null,
                         currentMessageObject.messageText,
-                            false, getString(R.string.ActionGiftStarsView),
-                        null,
+                        false, getString(R.string.ActionGiftStarsView),
+                            11, null,
                         giftRectSize,
                         true
                     );
@@ -1612,7 +1779,7 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
                     messageText = LocaleController.getString(R.string.ActionGiftPremiumText);
                 }
                 String actionName = getString(isGiftCode() && !isSelfGiftCode() ? R.string.GiftPremiumUseGiftBtn : R.string.ActionGiftPremiumView);
-                createGiftPremiumLayouts(formatPluralStringComma("ActionGiftPremiumTitle2", messageObject.messageOwner.action.months), null, messageText, true, actionName, null, giftRectSize, false);
+                createGiftPremiumLayouts(formatPluralStringComma("ActionGiftPremiumTitle2", messageObject.messageOwner.action.months), null, messageText, true, actionName, 11, null, giftRectSize, false);
             } else if (messageObject.type == MessageObject.TYPE_SUGGEST_PHOTO) {
                 TLRPC.TL_messageActionSuggestProfilePhoto actionSuggestProfilePhoto = (TLRPC.TL_messageActionSuggestProfilePhoto) messageObject.messageOwner.action;
                 String description;
@@ -1638,7 +1805,7 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
                 } else {
                     action = getString(R.string.ViewPhotoAction);
                 }
-                createGiftPremiumLayouts(null, null, description, false, action, null, giftRectSize, true);
+                createGiftPremiumLayouts(null, null, description, false, action, 11, null, giftRectSize, true);
                 textLayout = null;
                 textHeight = 0;
                 textY = 0;
@@ -1659,7 +1826,7 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
                     description = messageObject.messageText;
                     action = getString(R.string.ViewWallpaperAction);
                 }
-                createGiftPremiumLayouts(null, null, description, false, action, null, giftRectSize, actionClickableAsImage);
+                createGiftPremiumLayouts(null, null, description, false, action, 11, null, giftRectSize, actionClickableAsImage);
                 textLayout = null;
                 textHeight = 0;
                 textY = 0;
@@ -1676,12 +1843,14 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
                 }
                 action = getString(R.string.StoryMentionedAction);
 
-                createGiftPremiumLayouts(null, null, description, false, action, null, giftRectSize, true);
+                createGiftPremiumLayouts(null, null, description, false, action, 11, null, giftRectSize, true);
                 textLayout = null;
                 textHeight = 0;
                 textY = 0;
             }
         }
+        reactionsLayoutInBubble.x = dp(12);
+        reactionsLayoutInBubble.measure(previousWidth - dp(24), Gravity.CENTER_HORIZONTAL);
     }
 
     private void createGiftPremiumChannelLayouts() {
@@ -1738,7 +1907,7 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
         giftPremiumButtonWidth = measureLayoutWidth(giftPremiumButtonLayout);
     }
 
-    private void createGiftPremiumLayouts(CharSequence title, CharSequence subtitle, CharSequence text, boolean allowCollapsing, CharSequence button, CharSequence ribbon, int width, boolean buttonClickableAsImage) {
+    private void createGiftPremiumLayouts(CharSequence title, CharSequence subtitle, CharSequence text, boolean allowCollapsing, CharSequence button, int ribbonTextDp, CharSequence ribbon, int width, boolean buttonClickableAsImage) {
         width -= dp(16);
         if (currentMessageObject != null && currentMessageObject.type == MessageObject.TYPE_GIFT_STARS) {
             width -= dp(16);
@@ -1822,9 +1991,9 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
             }
             if (giftRibbonPath == null) {
                 giftRibbonPath = new Path();
-                GiftSheet.Ribbon.fillRibbonPath(giftRibbonPath, 1.35f);
+                GiftSheet.RibbonDrawable.fillRibbonPath(giftRibbonPath, 1.35f);
             }
-            giftRibbonText = new Text(ribbon, 11, AndroidUtilities.bold());
+            giftRibbonText = new Text(ribbon, ribbonTextDp, AndroidUtilities.bold());
             giftRibbonText.ellipsize(dp(62));
         } else {
             giftRibbonPath = null;
@@ -1856,7 +2025,7 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
         MessageObject messageObject = currentMessageObject;
         final float expanded = giftPremiumTextExpandedAnimated.set(!giftPremiumTextCollapsed);
         int imageSize = stickerSize;
-        if (isButtonLayout(messageObject)) {
+        if (!starGiftLayout.has() && isButtonLayout(messageObject)) {
             stickerSize = giftRectSize - dp(106);
             if (isNewStyleButtonLayout()) {
                 imageSize = getImageSize(messageObject);
@@ -1874,8 +2043,7 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
                 imageSize = (int) (stickerSize * (AndroidUtilities.isTablet() ? 1.0f : 1.2f));
                 imageReceiver.setImageCoords((previousWidth - imageSize) / 2f, textY + textHeight + giftRectSize * 0.075f - dp(22), imageSize, imageSize);
             } else if (messageObject.isStarGiftAction()) {
-                imageSize = (int) (stickerSize * 1.1f);
-                imageReceiver.setImageCoords((previousWidth - imageSize) / 2f, textY + textHeight + giftRectSize * 0.075f - dp(0), imageSize, imageSize);
+                imageReceiver.setImageCoords((previousWidth - imageSize) / 2f, textY + textHeight + giftRectSize * 0.075f + dp(2), imageSize, imageSize);
             } else if (messageObject.type == MessageObject.TYPE_GIFT_STARS) {
                 imageSize = (int) (stickerSize * 1.1f);
                 if (messageObject.messageOwner != null && !(messageObject.messageOwner.action instanceof TLRPC.TL_messageActionStarGift)) {
@@ -1905,7 +2073,15 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
 
         drawBackground(canvas, false);
 
-        if (isButtonLayout(messageObject) || (messageObject != null && messageObject.type == MessageObject.TYPE_ACTION_PHOTO)) {
+        if (starGiftLayout.has()) {
+            canvas.save();
+            canvas.translate(starGiftLayoutX = (getWidth() - starGiftLayout.getWidth()) / 2.0f, starGiftLayoutY = starGiftLayout.repost ? dp(4) : textY + textHeight + dp(4 + 6 + 6));
+            starGiftLayout.draw(canvas);
+            if (delegate == null || delegate.canDrawOutboundsContent()) {
+                starGiftLayout.drawOutbounds(canvas);
+            }
+            canvas.restore();
+        } else if (isButtonLayout(messageObject) || (messageObject != null && messageObject.type == MessageObject.TYPE_ACTION_PHOTO)) {
             if (wallpaperPreviewDrawable != null) {
                 canvas.save();
                 canvas.translate(imageReceiver.getImageX(), imageReceiver.getImageY());
@@ -1984,7 +2160,7 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
             canvas.restore();
         }
 
-        if (isButtonLayout(messageObject)) {
+        if (!starGiftLayout.has() && isButtonLayout(messageObject)) {
             canvas.save();
             float x = (previousWidth - giftRectSize) / 2f + dp(8);
             float y;
@@ -2192,7 +2368,6 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
                     }
                     canvas.restore();
                 } else {
-                    //TODO optimize
                     invalidate();
                 }
             }
@@ -2297,6 +2472,10 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
                 canvas.restore();
             }
         }
+
+        drawReactions(canvas, false, null);
+
+        transitionParams.recordDrawingState();
     }
 
     @Override
@@ -2503,21 +2682,37 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
             backgroundPaint.setAlpha((int) (oldAlpha * (isFloating() ? .75f : 1f)));
             darkenBackgroundPaint.setAlpha((int) (oldAlpha2 * (isFloating() ? .75f : 1f)));
         }
-        canvas.drawPath(backgroundPath, backgroundPaint);
-        if (hasGradientService()) {
-            canvas.drawPath(backgroundPath, darkenBackgroundPaint);
-        }
-        if (dimAmount > 0) {
-            int wasAlpha = dimPaint.getAlpha();
-            if (fromParent) {
-                dimPaint.setAlpha((int) (wasAlpha * getAlpha()));
+        if (currentMessageObject == null || !currentMessageObject.isRepostPreview) {
+            canvas.drawPath(backgroundPath, backgroundPaint);
+            if (hasGradientService()) {
+                canvas.drawPath(backgroundPath, darkenBackgroundPaint);
             }
-            canvas.drawPath(backgroundPath, dimPaint);
-            dimPaint.setAlpha(wasAlpha);
+            if (dimAmount > 0) {
+                int wasAlpha = dimPaint.getAlpha();
+                if (fromParent) {
+                    dimPaint.setAlpha((int) (wasAlpha * getAlpha()));
+                }
+                canvas.drawPath(backgroundPath, dimPaint);
+                dimPaint.setAlpha(wasAlpha);
+            }
         }
 
         MessageObject messageObject = currentMessageObject;
-        if (isButtonLayout(messageObject)) {
+        if (starGiftLayout.has()) {
+            float w = starGiftLayout.getWidth() + dp(4 + 4);
+            float x = (getWidth() - w) / 2f;
+            float y = starGiftLayout.repost ? 0 : textY + textHeight + dp(12);
+            AndroidUtilities.rectTmp.set(x, y, x + w, y + starGiftLayout.getHeight() + dp(4 + 4));
+            if (backgroundRect == null) {
+                backgroundRect = new RectF();
+            }
+            backgroundRect.set(AndroidUtilities.rectTmp);
+            canvas.drawRoundRect(backgroundRect, dp(16), dp(16), backgroundPaint);
+
+            if (hasGradientService()) {
+                canvas.drawRoundRect(backgroundRect, dp(16), dp(16), darkenBackgroundPaint);
+            }
+        } else if (isButtonLayout(messageObject)) {
             float x = (getWidth() - giftRectSize) / 2f;
             float y = textY + textHeight;
             if (isNewStyleButtonLayout()) {
@@ -2547,8 +2742,65 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
         }
     }
 
+    public void drawReactions(Canvas canvas, boolean fromParent, Integer only) {
+        if (canDrawInParent) {
+            if (hasGradientService() && !fromParent) {
+                return;
+            }
+            if (!hasGradientService() && fromParent) {
+                return;
+            }
+        }
+        drawReactionsLayout(canvas, fromParent, only);
+    }
+
+    public void drawReactionsLayout(Canvas canvas, boolean fromParent, Integer only) {
+        final float alpha = fromParent ? getAlpha() : 1.0f;
+        if (themeDelegate != null) {
+            themeDelegate.applyServiceShaderMatrix(getMeasuredWidth(), backgroundHeight, viewTranslationX, viewTop + dp(4));
+        } else {
+            Theme.applyServiceShaderMatrix(getMeasuredWidth(), backgroundHeight, viewTranslationX, viewTop + dp(4));
+        }
+        if (currentMessageObject != null && currentMessageObject.shouldDrawReactions() && (!reactionsLayoutInBubble.isSmall || transitionParams.animateChange && reactionsLayoutInBubble.animateHeight)) {
+            reactionsLayoutInBubble.drawServiceShaderBackground = 1.0f;
+            if (alpha < 1) {
+                canvas.saveLayerAlpha(0, 0, getWidth(), getHeight(), (int) (0xFF * alpha), Canvas.ALL_SAVE_FLAG);
+            }
+            reactionsLayoutInBubble.draw(canvas, transitionParams.animateChange ? transitionParams.animateChangeProgress : 1f, only);
+            if (alpha < 1) {
+                canvas.restore();
+            }
+        }
+    }
+
+    public void drawReactionsLayoutOverlay(Canvas canvas, boolean fromParent) {
+        final float alpha = fromParent ? getAlpha() : 1.0f;
+        if (themeDelegate != null) {
+            themeDelegate.applyServiceShaderMatrix(getMeasuredWidth(), backgroundHeight, viewTranslationX, viewTop + dp(4));
+        } else {
+            Theme.applyServiceShaderMatrix(getMeasuredWidth(), backgroundHeight, viewTranslationX, viewTop + dp(4));
+        }
+        if (currentMessageObject != null && currentMessageObject.shouldDrawReactions() && (!reactionsLayoutInBubble.isSmall || transitionParams.animateChange && reactionsLayoutInBubble.animateHeight)) {
+            reactionsLayoutInBubble.drawServiceShaderBackground = 1.0f;
+            if (alpha < 1) {
+                canvas.saveLayerAlpha(0, 0, getWidth(), getHeight(), (int) (0xFF * alpha), Canvas.ALL_SAVE_FLAG);
+            }
+            reactionsLayoutInBubble.drawOverlay(canvas, transitionParams.animateChange ? transitionParams.animateChangeProgress : 1f);
+            if (alpha < 1) {
+                canvas.restore();
+            }
+        }
+    }
+
     @Override
     public int getBoundsLeft() {
+        if (starGiftLayout.has()) {
+            final int giftLayoutLeft = (int) (getWidth() - (starGiftLayout.getWidth() + dp(8))) / 2;
+            if (starGiftLayout.repost) {
+                return giftLayoutLeft;
+            }
+            return Math.min(backgroundLeft, giftLayoutLeft);
+        }
         if (isButtonLayout(currentMessageObject)) {
             return (getWidth() - giftRectSize) / 2;
         }
@@ -2561,6 +2813,13 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
 
     @Override
     public int getBoundsRight() {
+        if (starGiftLayout.has()) {
+            final int giftLayoutRight = (int) (getWidth() + (starGiftLayout.getWidth() + dp(8))) / 2;
+            if (starGiftLayout.repost) {
+                return giftLayoutRight;
+            }
+            return Math.max(backgroundRight, giftLayoutRight);
+        }
         if (isButtonLayout(currentMessageObject)) {
             return (getWidth() + giftRectSize) / 2;
         }
@@ -2672,6 +2931,13 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
         canvas.translate(textXLeft, textY);
         AnimatedEmojiSpan.drawAnimatedEmojis(canvas, textLayout, animatedEmojiStack, 0, spoilers, 0, 0, 0, 1f, textLayout != null ? getAdaptiveEmojiColorFilter(textLayout.getPaint().getColor()) : null);
         canvas.restore();
+
+        if (starGiftLayout.has()) {
+            canvas.save();
+            canvas.translate((getWidth() - starGiftLayout.getWidth()) / 2.0f, starGiftLayout.repost ? dp(4) : textY + textHeight + dp(4 + 6 + 6));
+            starGiftLayout.drawOutbounds(canvas);
+            canvas.restore();
+        }
     }
 
     private boolean isButtonLayout(MessageObject messageObject) {
@@ -2682,11 +2948,42 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
         return messageObject != null && messageObject.type == MessageObject.TYPE_GIFT_PREMIUM_CHANNEL;
     }
 
+    private boolean invalidatesParent;
+    public void setInvalidatesParent(boolean value) {
+        invalidatesParent = value;
+    }
+
+    private Runnable invalidateListener;
+    public void setInvalidateListener(Runnable listener) {
+        invalidateListener = listener;
+    }
+
     @Override
     public void invalidate() {
         super.invalidate();
         if (invalidateWithParent != null) {
             invalidateWithParent.invalidate();
+        }
+        if (invalidateListener != null) {
+            invalidateListener.run();
+        }
+        if (invalidatesParent && getParent() != null) {
+            View parent = (View) getParent();
+            if (parent.getParent() != null) {
+                parent.invalidate();
+                parent = (View) parent.getParent();
+                parent.invalidate();
+            }
+        }
+    }
+
+    public void invalidateOutbounds() {
+        if (delegate == null || !delegate.canDrawOutboundsContent()) {
+            if (getParent() instanceof View) {
+                ((View) getParent()).invalidate();
+            }
+        } else {
+            super.invalidate();
         }
     }
 
@@ -2696,6 +2993,14 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
         if (invalidateWithParent != null) {
             invalidateWithParent.invalidate();
         }
+        if (invalidatesParent && getParent() != null) {
+            View parent = (View) getParent();
+            if (parent.getParent() != null) {
+                parent.invalidate();
+                parent = (View) parent.getParent();
+                parent.invalidate();
+            }
+        }
     }
 
     @Override
@@ -2703,6 +3008,14 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
         super.invalidate(l, t, r, b);
         if (invalidateWithParent != null) {
             invalidateWithParent.invalidate();
+        }
+        if (invalidatesParent && getParent() != null) {
+            View parent = (View) getParent();
+            if (parent.getParent() != null) {
+                parent.invalidate();
+                parent = (View) parent.getParent();
+                parent.invalidate();
+            }
         }
     }
 
@@ -2726,5 +3039,99 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
 
     public int measuredWidth() {
         return getMeasuredWidth();
+    }
+
+    public ReactionsLayoutInBubble.ReactionButton getReactionButton(ReactionsLayoutInBubble.VisibleReaction visibleReaction) {
+        return reactionsLayoutInBubble.getReactionButton(visibleReaction);
+    }
+
+    public final TransitionParams transitionParams = new TransitionParams();
+    public class TransitionParams {
+
+        public boolean wasDraw;
+
+        public boolean animateChange;
+        public float animateChangeProgress = 1f;
+
+        public void recordDrawingState() {
+            wasDraw = true;
+            reactionsLayoutInBubble.recordDrawingState();
+        }
+
+        public boolean animateChange() {
+            if (!wasDraw) {
+                return false;
+            }
+            boolean changed = false;
+            if (reactionsLayoutInBubble.animateChange()) {
+                changed = true;
+            }
+            return changed;
+        }
+
+        public void onDetach() {
+            wasDraw = false;
+        }
+
+        public boolean supportChangeAnimation() {
+            return true;
+        }
+
+        public void resetAnimation() {
+            animateChange = false;
+            animateChangeProgress = 1f;
+        }
+    }
+
+    public TransitionParams getTransitionParams() {
+        return transitionParams;
+    }
+
+
+    public void setScrimReaction(Integer scrimViewReaction) {
+        reactionsLayoutInBubble.setScrimReaction(scrimViewReaction);
+    }
+
+    public void drawScrimReaction(Canvas canvas, Integer scrimViewReaction, float progress, boolean direction) {
+        if (!reactionsLayoutInBubble.isSmall) {
+            if (themeDelegate != null) {
+                themeDelegate.applyServiceShaderMatrix(getMeasuredWidth(), backgroundHeight, viewTranslationX, viewTop + dp(4));
+            } else {
+                Theme.applyServiceShaderMatrix(getMeasuredWidth(), backgroundHeight, viewTranslationX, viewTop + dp(4));
+            }
+            reactionsLayoutInBubble.setScrimProgress(progress, direction);
+            reactionsLayoutInBubble.draw(canvas, transitionParams.animateChangeProgress, scrimViewReaction);
+        }
+    }
+
+    public void drawScrimReactionPreview(View view, Canvas canvas, int offset, Integer scrimViewReaction, float progress) {
+        if (!reactionsLayoutInBubble.isSmall) {
+            if (themeDelegate != null) {
+                themeDelegate.applyServiceShaderMatrix(getMeasuredWidth(), backgroundHeight, viewTranslationX, viewTop + dp(4));
+            } else {
+                Theme.applyServiceShaderMatrix(getMeasuredWidth(), backgroundHeight, viewTranslationX, viewTop + dp(4));
+            }
+            reactionsLayoutInBubble.setScrimProgress(progress);
+            reactionsLayoutInBubble.drawPreview(view, canvas, offset, scrimViewReaction);
+        }
+    }
+
+    public boolean checkUnreadReactions(float clipTop, int clipBottom) {
+        if (!reactionsLayoutInBubble.hasUnreadReactions) {
+            return false;
+        }
+        float y = getY() + reactionsLayoutInBubble.y;
+        if (y > clipTop && y + reactionsLayoutInBubble.height - AndroidUtilities.dp(16) < clipBottom) {
+            return true;
+        }
+        return false;
+    }
+
+    public void markReactionsAsRead() {
+        reactionsLayoutInBubble.hasUnreadReactions = false;
+        if (currentMessageObject == null) {
+            return;
+        }
+        currentMessageObject.markReactionsAsRead();
     }
 }

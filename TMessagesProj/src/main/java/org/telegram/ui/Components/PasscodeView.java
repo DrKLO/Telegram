@@ -1373,7 +1373,11 @@ public class PasscodeView extends FrameLayout implements NotificationCenter.Noti
                     imageView.getAnimatedDrawable().setCustomEndFrame(37);
                     imageView.playAnimation();
                     showPin(true);
-                    AndroidUtilities.runOnUIThread(() -> imageView.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING), 350);
+                    AndroidUtilities.runOnUIThread(() -> {
+                        try {
+                            imageView.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
+                        } catch (Exception ignore) {}
+                    }, 350);
                     AnimatorSet animatorSet = new AnimatorSet();
                     ArrayList<Animator> animators = new ArrayList<>();
                     int w = AndroidUtilities.displaySize.x;

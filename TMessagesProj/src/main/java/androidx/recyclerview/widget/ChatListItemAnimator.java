@@ -439,12 +439,16 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
     public boolean animateMove(RecyclerView.ViewHolder holder, ItemHolderInfo info, int fromX, int fromY, int toX, int toY) {
         final View view = holder.itemView;
         ChatMessageCell chatMessageCell = null;
+        ChatActionCell chatActionCell = null;
         if (holder.itemView instanceof ChatMessageCell) {
             chatMessageCell = ((ChatMessageCell) holder.itemView);
             fromX += (int) chatMessageCell.getAnimationOffsetX();
             if (chatMessageCell.getTransitionParams().lastTopOffset != chatMessageCell.getTopMediaOffset()) {
                 fromY += chatMessageCell.getTransitionParams().lastTopOffset - chatMessageCell.getTopMediaOffset();
             }
+        } else if (holder.itemView instanceof ChatActionCell) {
+            chatActionCell = ((ChatActionCell) holder.itemView);
+            fromX += (int) holder.itemView.getTranslationX();
         } else {
             fromX += (int) holder.itemView.getTranslationX();
         }
@@ -689,13 +693,43 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
                 params.changePinnedBottomProgress = 0;
             }
 
-            moveInfo.animateChangeInternal = chatMessageCell.getTransitionParams().animateChange();
+            moveInfo.animateChangeInternal = params.animateChange();
             if (moveInfo.animateChangeInternal) {
-                chatMessageCell.getTransitionParams().animateChange = true;
-                chatMessageCell.getTransitionParams().animateChangeProgress = 0f;
+                params.animateChange = true;
+                params.animateChangeProgress = 0f;
             }
 
             if (deltaX == 0 && deltaY == 0 && !moveInfo.animateImage && !moveInfo.animateRemoveGroup && !moveInfo.animateChangeGroupBackground && !moveInfo.animatePinnedBottom && !moveInfo.animateBackgroundOnly && !moveInfo.animateChangeInternal) {
+                dispatchMoveFinished(holder);
+                return false;
+            }
+        } else if (chatActionCell != null) {
+            ChatActionCell.TransitionParams params = chatActionCell.getTransitionParams();
+
+            if (!params.supportChangeAnimation()) {
+                if (deltaX == 0 && deltaY == 0) {
+                    dispatchMoveFinished(holder);
+                    return false;
+                }
+                if (deltaX != 0) {
+                    view.setTranslationX(-deltaX);
+                }
+                mPendingMoves.add(moveInfo);
+                checkIsRunning();
+                return true;
+            }
+
+            if (deltaX != 0) {
+                view.setTranslationX(-deltaX);
+            }
+
+            moveInfo.animateChangeInternal = params.animateChange();
+            if (moveInfo.animateChangeInternal) {
+                params.animateChange = true;
+                params.animateChangeProgress = 0f;
+            }
+
+            if (deltaX == 0 && deltaY == 0 && !moveInfo.animateChangeInternal) {
                 dispatchMoveFinished(holder);
                 return false;
             }
@@ -899,6 +933,19 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
                 valueAnimator.addUpdateListener(animation -> {
                     params.animateChangeProgress = (float) animation.getAnimatedValue();
                     chatMessageCell.invalidate();
+                });
+                animatorSet.playTogether(valueAnimator);
+            }
+        } else if (holder.itemView instanceof ChatActionCell) {
+            ChatActionCell chatActionCell = (ChatActionCell) holder.itemView;
+            ChatActionCell.TransitionParams params = chatActionCell.getTransitionParams();
+
+            if (moveInfoExtended.animateChangeInternal) {
+                ValueAnimator valueAnimator = ValueAnimator.ofFloat(0, 1f);
+                params.animateChange = true;
+                valueAnimator.addUpdateListener(animation -> {
+                    params.animateChangeProgress = (float) animation.getAnimatedValue();
+                    chatActionCell.invalidate();
                 });
                 animatorSet.playTogether(valueAnimator);
             }
@@ -1141,6 +1188,8 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
         } else if (view instanceof ChatMessageCell) {
             ((ChatMessageCell) view).getTransitionParams().resetAnimation();
             ((ChatMessageCell) view).setAnimationOffsetX(0f);
+        } else if (view instanceof ChatActionCell) {
+            ((ChatActionCell) view).getTransitionParams().resetAnimation();
         } else {
             view.setTranslationX(0f);
         }

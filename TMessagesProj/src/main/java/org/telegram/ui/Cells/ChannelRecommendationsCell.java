@@ -32,6 +32,7 @@ import androidx.core.graphics.ColorUtils;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ChatObject;
+import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.Emoji;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageReceiver;
@@ -40,7 +41,9 @@ import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
+import org.telegram.messenger.UserObject;
 import org.telegram.messenger.Utilities;
+import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.AnimatedFloat;
@@ -126,18 +129,15 @@ public class ChannelRecommendationsCell {
 
         cell.totalHeight = dp(4 + 3.33f + 3.33f + 4) + serviceTextHeight;
 
-        if (headerText == null) {
-            headerText = new Text(getString(R.string.SimilarChannels), 14, AndroidUtilities.bold()).hackClipBounds();
-        }
-
         for (int i = 0; i < channels.size(); ++i) {
             channels.get(i).detach();
         }
         channels.clear();
         MessagesController.ChannelRecommendations rec = MessagesController.getInstance(currentAccount).getChannelRecommendations(-dialogId);
-        ArrayList<TLRPC.Chat> chats = rec == null || rec.chats == null ? new ArrayList<>() : new ArrayList<>(rec.chats);
+        ArrayList<TLObject> chats = rec == null || rec.chats == null ? new ArrayList<>() : new ArrayList<>(rec.chats);
         for (int i = 0; i < chats.size(); ++i) {
-            if (!ChatObject.isNotInChat(chats.get(i))) {
+            final TLObject obj = chats.get(i);
+            if (obj instanceof TLRPC.Chat && !ChatObject.isNotInChat((TLRPC.Chat) obj)) {
                 chats.remove(i);
                 i--;
             }
@@ -153,12 +153,16 @@ public class ChannelRecommendationsCell {
                 channels.add(new ChannelBlock(currentAccount, cell, chats.get(i)));
             }
             if (count < chats.size()) {
-                TLRPC.Chat[] _chats = new TLRPC.Chat[3];
+                TLObject[] _chats = new TLObject[3];
                 _chats[0] = count >= 0 && count < chats.size() ? chats.get(count) : null;
                 _chats[1] = count >= 0 && count + 1 < chats.size() ? chats.get(count + 1) : null;
                 _chats[2] = count >= 0 && count + 2 < chats.size() ? chats.get(count + 2) : null;
                 channels.add(new ChannelBlock(currentAccount, cell, _chats, (chats.size() + rec.more) - count));
             }
+        }
+
+        if (headerText == null) {
+            headerText = new Text(getString(dialogId > 0 ? R.string.SimilarBots : R.string.SimilarChannels), 14, AndroidUtilities.bold()).hackClipBounds();
         }
 
         if (isExpanded()) {
@@ -426,9 +430,9 @@ public class ChannelRecommendationsCell {
         private boolean subscribersColorSet;
 
         public final ButtonBounce bounce;
-        public final TLRPC.Chat chat;
+        public final TLObject chat;
 
-        public ChannelBlock(int currentAccount, ChatMessageCell cell, TLRPC.Chat[] chats, int moreCount) {
+        public ChannelBlock(int currentAccount, ChatMessageCell cell, TLObject[] chats, int moreCount) {
             this.cell = cell;
             this.chat = chats[0];
             this.bounce = new ButtonBounce(cell) {
@@ -486,11 +490,24 @@ public class ChannelRecommendationsCell {
             subscribersStrokePaint.setStyle(Paint.Style.STROKE);
             isLock = true;
             subscribersDrawable = isPremium ? null : cell.getContext().getResources().getDrawable(R.drawable.mini_switch_lock).mutate();
-            if (chat == null || chat.participants_count <= 1) {
+            if (getSubscribersCount(chat) == null) {
                 subscribersText = null;
             } else {
                 subscribersText = new Text("+" + moreCount, 9.33f, AndroidUtilities.bold());
             }
+        }
+
+        private String getSubscribersCount(TLObject obj) {
+            if (obj instanceof TLRPC.Chat) {
+                final TLRPC.Chat chat = (TLRPC.Chat) obj;
+                if (chat.participants_count <= 1) return null;
+                return LocaleController.formatShortNumber(chat.participants_count, null);
+            } else if (obj instanceof TLRPC.User) {
+                final TLRPC.User user = (TLRPC.User) obj;
+                if (user.bot_active_users <= 1) return null;
+                return LocaleController.formatShortNumber(user.bot_active_users, null);
+            }
+            return null;
         }
 
         private void checkNameText(int width) {
@@ -508,7 +525,7 @@ public class ChannelRecommendationsCell {
             }
         }
 
-        public ChannelBlock(int currentAccount, ChatMessageCell cell, TLRPC.Chat chat) {
+        public ChannelBlock(int currentAccount, ChatMessageCell cell, TLObject chat) {
             this.cell = cell;
             this.chat = chat;
             this.bounce = new ButtonBounce(cell) {
@@ -531,7 +548,14 @@ public class ChannelRecommendationsCell {
             avatarImageReceiver[0].setForUserOrChat(chat, avatarDrawable[0]);
 
             nameTextPaint.setTextSize(dp(11));
-            CharSequence title = chat != null ? chat.title : "";
+            CharSequence title;
+            if (chat instanceof TLRPC.Chat) {
+                title = ((TLRPC.Chat) chat).title;
+            } else if (chat instanceof TLRPC.User) {
+                title = UserObject.getUserName((TLRPC.User) chat);
+            } else {
+                title = "";
+            }
             try {
                 title = Emoji.replaceEmoji(title, nameTextPaint.getFontMetricsInt(), false);
             } catch (Exception ignore) {}
@@ -540,10 +564,10 @@ public class ChannelRecommendationsCell {
             subscribersStrokePaint.setStyle(Paint.Style.STROKE);
             isLock = false;
             subscribersDrawable = cell.getContext().getResources().getDrawable(R.drawable.mini_reply_user).mutate();
-            if (chat == null || chat.participants_count <= 1) {
+            if (getSubscribersCount(chat) == null) {
                 subscribersText = null;
             } else {
-                subscribersText = new Text(chat != null ? LocaleController.formatShortNumber(chat.participants_count, null) : "", 9.33f, AndroidUtilities.bold());
+                subscribersText = new Text(getSubscribersCount(chat), 9.33f, AndroidUtilities.bold());
             }
         }
 
@@ -838,7 +862,7 @@ public class ChannelRecommendationsCell {
         }
     }
 
-    public void didClickChannel(TLRPC.Chat chat, boolean longPress) {
+    public void didClickChannel(TLObject chat, boolean longPress) {
         if (cell.getDelegate() != null) {
             cell.getDelegate().didPressChannelRecommendation(cell, chat, longPress);
         }

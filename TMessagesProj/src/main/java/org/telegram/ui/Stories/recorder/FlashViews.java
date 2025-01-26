@@ -66,7 +66,7 @@ public class FlashViews {
     @Nullable
     private final WindowManager.LayoutParams windowViewParams;
 
-    public FlashViews(Context context, @Nullable WindowManager windowManager, View windowView, @Nullable WindowManager.LayoutParams windowViewParams) {
+    public FlashViews(Context context, @Nullable WindowManager windowManager, @Nullable View windowView, @Nullable WindowManager.LayoutParams windowViewParams) {
         this.context = context;
         this.windowManager = windowManager;
         this.windowView = windowView;
@@ -113,7 +113,7 @@ public class FlashViews {
     }
 
     private void setScreenBrightness(float value) {
-        if (windowViewParams != null) {
+        if (windowView != null && windowViewParams != null) {
             windowViewParams.screenBrightness = value;
             if (windowManager != null) {
                 windowManager.updateViewLayout(windowView, windowViewParams);

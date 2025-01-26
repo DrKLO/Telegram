@@ -390,15 +390,20 @@ public class EmbedBottomSheet extends BottomSheet {
         webView.setWebViewClient(new WebViewClient() {
             @Override
             public boolean onRenderProcessGone(WebView view, RenderProcessGoneDetail detail) {
-                if (!AndroidUtilities.isSafeToShow(getContext())) {
+                try {
+                    if (!AndroidUtilities.isSafeToShow(getContext())) {
+                        return true;
+                    }
+                    new AlertDialog.Builder(getContext(), resourcesProvider)
+                            .setTitle(getString(R.string.ChromeCrashTitle))
+                            .setMessage(AndroidUtilities.replaceSingleTag(getString(R.string.ChromeCrashMessage), () -> Browser.openUrl(getContext(), "https://play.google.com/store/apps/details?id=com.google.android.webview")))
+                            .setPositiveButton(getString(R.string.OK), null)
+                            .show();
                     return true;
+                } catch (Exception e) {
+                    FileLog.e(e);
+                    return false;
                 }
-                new AlertDialog.Builder(getContext(), resourcesProvider)
-                        .setTitle(getString(R.string.ChromeCrashTitle))
-                        .setMessage(AndroidUtilities.replaceSingleTag(getString(R.string.ChromeCrashMessage), () -> Browser.openUrl(getContext(), "https://play.google.com/store/apps/details?id=com.google.android.webview")))
-                        .setPositiveButton(getString(R.string.OK), null)
-                        .show();
-                return true;
             }
 
             @Override

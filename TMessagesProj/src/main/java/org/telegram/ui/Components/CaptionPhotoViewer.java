@@ -446,9 +446,9 @@ public class CaptionPhotoViewer extends CaptionContainerView {
     @Override
     public boolean dispatchTouchEvent(MotionEvent event) {
         if (event.getAction() == MotionEvent.ACTION_DOWN) {
-            moveButtonBounce.setPressed(moveButtonBounds.contains(event.getX(), event.getY()));
+            moveButtonBounce.setPressed(moveButtonAnimated.get() > 0 && moveButtonBounds.contains(event.getX(), event.getY()));
         } else if (event.getAction() == MotionEvent.ACTION_MOVE) {
-            if (moveButtonBounce.isPressed() && !moveButtonBounds.contains(event.getX(), event.getY())) {
+            if (moveButtonBounce.isPressed() && (moveButtonAnimated.get() <= 0 || !moveButtonBounds.contains(event.getX(), event.getY()))) {
                 moveButtonBounce.setPressed(false);
             }
         } else if (event.getAction() == MotionEvent.ACTION_UP || event.getAction() == MotionEvent.ACTION_CANCEL) {

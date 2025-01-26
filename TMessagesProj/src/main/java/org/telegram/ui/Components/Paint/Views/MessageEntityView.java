@@ -81,10 +81,10 @@ public class MessageEntityView extends EntityView {
         setScale(scale);
         int date = 0;
         for (int i = 0; i < thisMessageObjects.size(); ++i) {
-            MessageObject msg = thisMessageObjects.get(i);
+            final MessageObject msg = thisMessageObjects.get(i);
             date = msg.messageOwner.date;
-            TLRPC.Message messageOwner = copyMessage(msg.messageOwner);
-            Boolean b = StoryEntry.useForwardForRepost(msg);
+            final TLRPC.Message messageOwner = copyMessage(msg.messageOwner);
+            final Boolean b = StoryEntry.useForwardForRepost(msg);
             if (b != null && b && messageOwner.fwd_from != null && messageOwner.fwd_from.from_id != null) {
                 messageOwner.from_id = messageOwner.fwd_from.from_id;
                 messageOwner.peer_id = messageOwner.fwd_from.from_id;
@@ -92,7 +92,8 @@ public class MessageEntityView extends EntityView {
                 messageOwner.fwd_from = null;
             }
             messageOwner.voiceTranscriptionOpen = false;
-            MessageObject newMsg = new MessageObject(msg.currentAccount, messageOwner, msg.replyMessageObject, MessagesController.getInstance(msg.currentAccount).getUsers(), MessagesController.getInstance(msg.currentAccount).getChats(), null, null, true, true, 0, true, isRepostVideoPreview, false);
+            final MessageObject newMsg = new MessageObject(msg.currentAccount, messageOwner, msg.replyMessageObject, MessagesController.getInstance(msg.currentAccount).getUsers(), MessagesController.getInstance(msg.currentAccount).getChats(), null, null, true, true, 0, true, isRepostVideoPreview, false);
+            newMsg.setType();
             messageObjects.add(newMsg);
         }
 //        dateCell = new ChatActionCell(context, false, resourcesProvider) {
@@ -149,6 +150,9 @@ public class MessageEntityView extends EntityView {
                     if (child instanceof ChatMessageCell) {
                         childleft = child.getLeft() + ((ChatMessageCell) child).getBoundsLeft();
                         childright = child.getLeft() + ((ChatMessageCell) child).getBoundsRight();
+                    } else if (child instanceof ChatActionCell) {
+                        childleft = child.getLeft() + ((ChatActionCell) child).getBoundsLeft();
+                        childright = child.getLeft() + ((ChatActionCell) child).getBoundsRight();
                     }
                     left = Math.min(childleft, left);
                     right = Math.max(childright, right);
@@ -166,6 +170,9 @@ public class MessageEntityView extends EntityView {
                     if (child instanceof ChatMessageCell) {
                         childleft = child.getLeft() + ((ChatMessageCell) child).getBoundsLeft();
                         childright = child.getLeft() + ((ChatMessageCell) child).getBoundsRight();
+                    } else if (child instanceof ChatActionCell) {
+                        childleft = child.getLeft() + ((ChatActionCell) child).getBoundsLeft();
+                        childright = child.getLeft() + ((ChatActionCell) child).getBoundsRight();
                     }
                     cleft = Math.min(childleft, cleft);
                     cright = Math.max(childright, cright);
@@ -402,6 +409,7 @@ public class MessageEntityView extends EntityView {
                             canvas.translate(cell.getX(), cell.getY());
                             canvas.scale(cell.getScaleX(), cell.getScaleY(), cell.getMeasuredWidth() / 2f, cell.getMeasuredHeight() / 2f);
                             cell.drawBackground(canvas, true);
+                            cell.drawReactions(canvas, true, null);
                             canvas.restore();
                         }
                     }
@@ -750,6 +758,32 @@ public class MessageEntityView extends EntityView {
             @NonNull
             @Override
             public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+                if (viewType == 1) {
+                    final ChatActionCell cell = new ChatActionCell(context, false, resourcesProvider) {
+                        public final BlurringShader.StoryBlurDrawer blurDrawer = new BlurringShader.StoryBlurDrawer(blurManager, this, BlurringShader.StoryBlurDrawer.BLUR_TYPE_ACTION_BACKGROUND);
+                        private final TextPaint textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG); {
+                            textPaint.setTypeface(AndroidUtilities.bold());
+                            textPaint.setTextSize(AndroidUtilities.dp(Math.max(16, SharedConfig.fontSize) - 2));
+                            textPaint.setColor(0xffffffff);
+                        }
+
+                        @Override
+                        protected Paint getThemedPaint(String paintKey) {
+                            if (Theme.key_paint_chatActionText.equals(paintKey) || Theme.key_paint_chatActionText2.equals(paintKey)) {
+                                return textPaint;
+                            }
+                            if (Theme.key_paint_chatActionBackground.equals(paintKey)) {
+                                usesBackgroundPaint = true;
+                                Paint paint = blurDrawer.adapt(isDark).getPaint(1f);
+                                if (paint != null) {
+                                    return paint;
+                                }
+                            }
+                            return super.getThemedPaint(paintKey);
+                        }
+                    };
+                    return new RecyclerListView.Holder(cell);
+                }
                 ChatMessageCell cell = new ChatMessageCell(context, UserConfig.selectedAccount, false, null, resourcesProvider) {
                     public BlurringShader.StoryBlurDrawer blurDrawer = new BlurringShader.StoryBlurDrawer(blurManager, this, BlurringShader.StoryBlurDrawer.BLUR_TYPE_ACTION_BACKGROUND);
 
@@ -831,14 +865,27 @@ public class MessageEntityView extends EntityView {
             public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
                 position = messageObjects.size() - 1 - position;
                 MessageObject message = messageObjects.get(position);
-                boolean pinnedTop = false;
-                if (groupedMessages != null) {
-                    MessageObject.GroupedMessagePosition p = groupedMessages.getPosition(message);
-                    if (p != null) {
-                        pinnedTop = p.minY != 0;
+                if (holder.itemView instanceof ChatMessageCell) {
+                    final ChatMessageCell cell = (ChatMessageCell) holder.itemView;
+                    boolean pinnedTop = false;
+                    if (groupedMessages != null) {
+                        MessageObject.GroupedMessagePosition p = groupedMessages.getPosition(message);
+                        if (p != null) {
+                            pinnedTop = p.minY != 0;
+                        }
                     }
+                    cell.setMessageObject(message, groupedMessages, groupedMessages != null, pinnedTop);
+                } else if (holder.itemView instanceof ChatActionCell) {
+                    final ChatActionCell cell = (ChatActionCell) holder.itemView;
+                    cell.setMessageObject(message);
                 }
-                ((ChatMessageCell) holder.itemView).setMessageObject(message, groupedMessages, groupedMessages != null, pinnedTop);
+            }
+
+            @Override
+            public int getItemViewType(int position) {
+                position = messageObjects.size() - 1 - position;
+                MessageObject message = messageObjects.get(position);
+                return message.contentType;
             }
 
             @Override
@@ -994,6 +1041,26 @@ public class MessageEntityView extends EntityView {
                 top = Math.min(top, cbottom);
                 bottom = Math.max(bottom, ctop);
                 bottom = Math.max(bottom, cbottom);
+            } else if (child instanceof ChatActionCell) {
+                ChatActionCell cell = (ChatActionCell) child;
+                float cleft, ctop, cright, cbottom;
+                if (cell.starGiftLayout.has()) {
+                    cleft = container.getX() + cell.getX() + cell.getBoundsLeft();
+                    cright = container.getX() + cell.getX() + cell.getBoundsRight();
+                    ctop = container.getY() + cell.getY();
+                    cbottom = container.getY() + cell.getY() + cell.getMeasuredHeight();
+                } else {
+                    // TODO
+                    continue;
+                }
+                left = Math.min(left, cleft);
+                left = Math.min(left, cright);
+                right = Math.max(right, cleft);
+                right = Math.max(right, cright);
+                top = Math.min(top, ctop);
+                top = Math.min(top, cbottom);
+                bottom = Math.max(bottom, ctop);
+                bottom = Math.max(bottom, cbottom);
             }
         }
         rect.set(left, top, right, bottom);
@@ -1040,18 +1107,22 @@ public class MessageEntityView extends EntityView {
         setMeasuredDimension(container.getMeasuredWidth(), container.getMeasuredHeight());
         updatePosition();
         if (firstMeasure) {
-            int maxWidth = MeasureSpec.getSize(widthMeasureSpec) - dp(22 * 2);
-            int maxHeight = MeasureSpec.getSize(heightMeasureSpec) - dp(96 * 2);
+            final boolean isAction = messageObjects != null && messageObjects.size() == 1 && messageObjects.get(0).contentType == 1;
 
-            int width = getMeasuredWidth();
-            int height = getMeasuredHeight();
+            final int maxWidth = MeasureSpec.getSize(widthMeasureSpec) - dp(isAction ? 0 : 22 * 2);
+            final int maxHeight = MeasureSpec.getSize(heightMeasureSpec) - dp(isAction ? 0 : 96 * 2);
 
-            float scale = Math.min((float) maxWidth / width, (float) maxHeight / height);
+            final int width = getMeasuredWidth();
+            final int height = getMeasuredHeight();
+
+            final float scale = Math.min((float) maxWidth / width, (float) maxHeight / height);
             if (scale < 1) {
                 setScale(scale);
             }
-            Point p = getPosition();
-            p.x -= dp(19) * Math.min(1, scale);
+            final Point p = getPosition();
+            if (!isAction) {
+                p.x -= dp(19) * Math.min(1, scale);
+            }
             setPosition(p);
 
             firstMeasure = false;
@@ -1331,8 +1402,13 @@ public class MessageEntityView extends EntityView {
         invalidateAll();
     }
 
-    public TLRPC.TL_message copyMessage(TLRPC.Message msg) {
-        TLRPC.TL_message newmsg = new TLRPC.TL_message();
+    public TLRPC.Message copyMessage(TLRPC.Message msg) {
+        TLRPC.Message newmsg;
+        if (msg instanceof TLRPC.TL_message) {
+            newmsg = new TLRPC.TL_message();
+        } else if (msg instanceof TLRPC.TL_messageService) {
+            newmsg = new TLRPC.TL_messageService();
+        } else return msg;
         newmsg.id = msg.id;
         newmsg.from_id = msg.from_id;
         newmsg.peer_id = msg.peer_id;

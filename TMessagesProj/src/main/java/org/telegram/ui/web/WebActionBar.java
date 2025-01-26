@@ -1003,7 +1003,9 @@ public class WebActionBar extends FrameLayout {
         if (getParent() != null) {
             getParent().requestDisallowInterceptTouchEvent(true);
         }
-        performHapticFeedback(HapticFeedbackConstants.LONG_PRESS, HapticFeedbackConstants.FLAG_IGNORE_VIEW_SETTING);
+        try {
+            performHapticFeedback(HapticFeedbackConstants.LONG_PRESS, HapticFeedbackConstants.FLAG_IGNORE_VIEW_SETTING);
+        } catch (Exception ignored) {}
     };
 
     public boolean longClicked = false;

@@ -55,7 +55,9 @@ public class BackSpaceButtonView extends FrameLayout {
                     if (!backspaceOnce) {
                         if (onBackspace != null) {
                             onBackspace.run(false);
-                            backspaceButton.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
+                            try {
+                                backspaceButton.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
+                            } catch (Exception ignored) {}
                         }
                     }
                 }
@@ -112,7 +114,9 @@ public class BackSpaceButtonView extends FrameLayout {
             }
             if (onBackspace != null) {
                 onBackspace.run(time < 300);
-                backspaceButton.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
+                try {
+                    backspaceButton.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
+                } catch (Exception ignored) {}
             }
             backspaceOnce = true;
             postBackspaceRunnable(Math.max(50, time - 100));

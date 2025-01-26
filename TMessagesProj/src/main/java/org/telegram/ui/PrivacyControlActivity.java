@@ -54,6 +54,7 @@ import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.tgnet.tl.TL_account;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.AlertDialog;
@@ -256,7 +257,7 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
     }
 
     @Override
-    public void didStartUpload(boolean isVideo) {
+    public void didStartUpload(boolean fromAvatarConstructor, boolean isVideo) {
 
     }
 
@@ -719,7 +720,7 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
 
     private void applyCurrentPrivacySettings() {
         if (rulesType == PRIVACY_RULES_TYPE_MESSAGES) {
-            TLRPC.TL_account_setGlobalPrivacySettings req2 = new TLRPC.TL_account_setGlobalPrivacySettings();
+            TL_account.setGlobalPrivacySettings req2 = new TL_account.setGlobalPrivacySettings();
             req2.settings = new TLRPC.TL_globalPrivacySettings();
             TLRPC.TL_globalPrivacySettings settings = getContactsController().getGlobalPrivacySettings();
             if (settings != null) {
@@ -742,11 +743,11 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
             }));
             return;
         }
-        TLRPC.TL_account_setPrivacy req = new TLRPC.TL_account_setPrivacy();
+        TL_account.setPrivacy req = new TL_account.setPrivacy();
         if (rulesType == PRIVACY_RULES_TYPE_PHONE) {
             req.key = new TLRPC.TL_inputPrivacyKeyPhoneNumber();
             if (currentType == TYPE_NOBODY) {
-                TLRPC.TL_account_setPrivacy req2 = new TLRPC.TL_account_setPrivacy();
+                TL_account.setPrivacy req2 = new TL_account.setPrivacy();
                 req2.key = new TLRPC.TL_inputPrivacyKeyAddedByPhone();
                 if (currentSubType == 0) {
                     req2.rules.add(new TLRPC.TL_inputPrivacyValueAllowAll());
@@ -755,7 +756,7 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
                 }
                 ConnectionsManager.getInstance(currentAccount).sendRequest(req2, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
                     if (error == null) {
-                        TLRPC.TL_account_privacyRules privacyRules = (TLRPC.TL_account_privacyRules) response;
+                        TL_account.privacyRules privacyRules = (TL_account.privacyRules) response;
                         ContactsController.getInstance(currentAccount).setPrivacyRules(privacyRules.rules, PRIVACY_RULES_TYPE_ADDED_BY_PHONE);
                     }
                 }), ConnectionsManager.RequestFlagFailOnServerErrors);
@@ -854,7 +855,7 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
                 FileLog.e(e);
             }
             if (error == null) {
-                TLRPC.TL_account_privacyRules privacyRules = (TLRPC.TL_account_privacyRules) response;
+                TL_account.privacyRules privacyRules = (TL_account.privacyRules) response;
                 MessagesController.getInstance(currentAccount).putUsers(privacyRules.users, false);
                 MessagesController.getInstance(currentAccount).putChats(privacyRules.chats, false);
                 ContactsController.getInstance(currentAccount).setPrivacyRules(privacyRules.rules, rulesType);
@@ -865,7 +866,7 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
         }), ConnectionsManager.RequestFlagFailOnServerErrors);
 
         if (rulesType == PRIVACY_RULES_TYPE_LASTSEEN && selectedReadValue != currentReadValue) {
-            TLRPC.TL_account_setGlobalPrivacySettings req2 = new TLRPC.TL_account_setGlobalPrivacySettings();
+            TL_account.setGlobalPrivacySettings req2 = new TL_account.setGlobalPrivacySettings();
             req2.settings = new TLRPC.TL_globalPrivacySettings();
             TLRPC.TL_globalPrivacySettings settings = getContactsController().getGlobalPrivacySettings();
             req2.settings.archive_and_mute_new_noncontact_peers = settings.archive_and_mute_new_noncontact_peers;
@@ -1474,11 +1475,11 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
                     } else if (position == setBirthdayRow) {
                         privacyCell.setText(AndroidUtilities.replaceArrows(AndroidUtilities.replaceSingleTag(LocaleController.getString(R.string.PrivacyBirthdaySet), () -> {
                             showDialog(AlertsCreator.createBirthdayPickerDialog(getContext(), getString(R.string.EditProfileBirthdayTitle), getString(R.string.EditProfileBirthdayButton), null, birthday -> {
-                                TLRPC.TL_account_updateBirthday req = new TLRPC.TL_account_updateBirthday();
+                                TL_account.updateBirthday req = new TL_account.updateBirthday();
                                 req.flags |= 1;
                                 req.birthday = birthday;
                                 TLRPC.UserFull userFull = getMessagesController().getUserFull(getUserConfig().getClientUserId());
-                                TLRPC.TL_birthday oldBirthday = userFull != null ? userFull.birthday : null;
+                                TL_account.TL_birthday oldBirthday = userFull != null ? userFull.birthday : null;
                                 if (userFull != null) {
                                     userFull.flags2 |= 32;
                                     userFull.birthday = birthday;

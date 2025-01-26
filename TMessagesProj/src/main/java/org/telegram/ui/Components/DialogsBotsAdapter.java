@@ -26,6 +26,7 @@ import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.MessagesStorage;
 import org.telegram.messenger.R;
+import org.telegram.messenger.Utilities;
 import org.telegram.messenger.browser.Browser;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
@@ -106,20 +107,20 @@ public class DialogsBotsAdapter extends UniversalAdapter {
         HashSet<Long> uids = new HashSet<>();
 
         if (!TextUtils.isEmpty(query)) {
-            ArrayList<TLRPC.User> foundChannels = new ArrayList<>();
-            foundChannels.addAll(searchMine);
-            foundChannels.addAll(searchGlobal);
-            if (!foundChannels.isEmpty()) {
-                if (foundChannels.size() > 5 && (!searchMessages.isEmpty() && !showOnlyPopular)) {
+            ArrayList<TLRPC.User> foundBots = new ArrayList<>();
+            foundBots.addAll(searchMine);
+            foundBots.addAll(searchGlobal);
+            if (!foundBots.isEmpty()) {
+                if (foundBots.size() > 5 && (!searchMessages.isEmpty() && !showOnlyPopular)) {
                     items.add(UItem.asGraySection(getString(R.string.SearchApps), getString(expandedSearchBots ? R.string.ShowLess : R.string.ShowMore), this::toggleExpandedSearchBots));
                 } else {
                     items.add(UItem.asGraySection(getString(R.string.SearchApps)));
                 }
-                int count = foundChannels.size();
+                int count = foundBots.size();
                 if (!expandedSearchBots && (!searchMessages.isEmpty() && !showOnlyPopular))
                     count = Math.min(5, count);
                 for (int i = 0; i < count; ++i) {
-                    items.add(UItem.asProfileCell(foundChannels.get(i)));
+                    items.add(UItem.asProfileCell(foundBots.get(i)).withOpenButton(openBotCallback));
                 }
             }
             if (!searchMessages.isEmpty() && !showOnlyPopular) {
@@ -156,9 +157,10 @@ public class DialogsBotsAdapter extends UniversalAdapter {
                     final TLRPC.User user = top_peers_bots.get(i);
                     if (uids.contains(user.id)) continue;
                     uids.add(user.id);
-                    items.add(UItem.asProfileCell(user).accent());
+                    items.add(UItem.asProfileCell(user).accent().withOpenButton(openBotCallback));
                 }
             }
+            uids.clear();
             topPeersEnd = items.size();
             if (!popular.bots.isEmpty()) {
                 if (!showOnlyPopular) items.add(UItem.asGraySection(getString(R.string.SearchAppsPopular)));
@@ -166,15 +168,15 @@ public class DialogsBotsAdapter extends UniversalAdapter {
                     final TLRPC.User user = popular.bots.get(i);
                     if (uids.contains(user.id)) continue;
                     uids.add(user.id);
-                    items.add(UItem.asProfileCell(user).accent().red());
+                    items.add(UItem.asProfileCell(user).accent().red().withOpenButton(openBotCallback));
                     hasAdded = true;
                 }
-                if (popular.loading) {
+                if (popular.loading || !popular.endReached) {
                     items.add(UItem.asFlicker(FlickerLoadingView.PROFILE_SEARCH_CELL));
                     items.add(UItem.asFlicker(FlickerLoadingView.PROFILE_SEARCH_CELL));
                     items.add(UItem.asFlicker(FlickerLoadingView.PROFILE_SEARCH_CELL));
                 }
-            } else if (popular.loading) {
+            } else if (popular.loading || !popular.endReached) {
                 if (!showOnlyPopular) items.add(UItem.asFlicker(FlickerLoadingView.GRAY_SECTION));
                 items.add(UItem.asFlicker(FlickerLoadingView.PROFILE_SEARCH_CELL));
                 items.add(UItem.asFlicker(FlickerLoadingView.PROFILE_SEARCH_CELL));
@@ -456,14 +458,28 @@ public class DialogsBotsAdapter extends UniversalAdapter {
                 final SQLiteDatabase db = storage.getDatabase();
                 SQLiteCursor cursor = null;
                 try {
-                    cursor = db.queryFinalized("SELECT uid, time, offset FROM popular_bots");
+                    cursor = db.queryFinalized("SELECT uid, time, offset FROM popular_bots ORDER BY pos");
                     while (cursor.next()) {
                         userIds.add(cursor.longValue(0));
                         time = Math.max(time, cursor.longValue(1));
                         offset = cursor.stringValue(2);
                     }
                     cursor.dispose();
-                    users.addAll(storage.getUsers(userIds));
+                    ArrayList<TLRPC.User> usersByIds = storage.getUsers(userIds);
+                    if (usersByIds != null) {
+                        for (long userId : userIds) {
+                            TLRPC.User user = null;
+                            for (TLRPC.User u : usersByIds) {
+                                if (u != null && u.id == userId) {
+                                    user = u;
+                                    break;
+                                }
+                            }
+                            if (user != null) {
+                                users.add(user);
+                            }
+                        }
+                    }
                 } catch (Exception e) {
                     FileLog.e(e);
                 } finally {
@@ -480,6 +496,7 @@ public class DialogsBotsAdapter extends UniversalAdapter {
                     bots.addAll(users);
                     this.cacheTime = finalTime;
                     this.lastOffset = finalOffset;
+                    this.endReached = TextUtils.isEmpty(finalOffset);
                     this.cacheLoaded = true;
 
                     whenDone.run();
@@ -493,7 +510,7 @@ public class DialogsBotsAdapter extends UniversalAdapter {
             savingCache = true;
 
             final long time = cacheTime;
-            final String offset = lastOffset;
+            final String offset = lastOffset == null ? "" : lastOffset;
             final ArrayList<Long> ids = new ArrayList<>();
             for (int i = 0; i < bots.size(); ++i) {
                 ids.add(bots.get(i).id);
@@ -505,12 +522,13 @@ public class DialogsBotsAdapter extends UniversalAdapter {
                 SQLitePreparedStatement state = null;
                 try {
                     db.executeFast("DELETE FROM popular_bots").stepThis().dispose();
-                    state = db.executeFast("REPLACE INTO popular_bots VALUES(?, ?, ?)");
+                    state = db.executeFast("REPLACE INTO popular_bots VALUES(?, ?, ?, ?)");
                     for (int i = 0; i < ids.size(); i++) {
                         state.requery();
                         state.bindLong(1, ids.get(i));
                         state.bindLong(2, time);
                         state.bindString(3, offset);
+                        state.bindInteger(4, i);
                         state.step();
                     }
                 } catch (Exception e) {
@@ -536,7 +554,7 @@ public class DialogsBotsAdapter extends UniversalAdapter {
                     loading = false;
                     whenUpdated.run();
 
-                    if (System.currentTimeMillis() - cacheTime > 60 * 60 * 1000) {
+                    if (bots.isEmpty() || System.currentTimeMillis() - cacheTime > 60 * 60 * 1000) {
                         bots.clear();
                         lastOffset = null;
                         load();
@@ -545,7 +563,7 @@ public class DialogsBotsAdapter extends UniversalAdapter {
                 return;
             }
 
-            TL_bots.getPopularAppBots req = new TL_bots.getPopularAppBots();
+            final TL_bots.getPopularAppBots req = new TL_bots.getPopularAppBots();
             req.limit = 20;
             req.offset = lastOffset == null ? "" : lastOffset;
             ConnectionsManager.getInstance(currentAccount).sendRequest(req, (res, err) -> AndroidUtilities.runOnUIThread(() -> {
@@ -570,6 +588,10 @@ public class DialogsBotsAdapter extends UniversalAdapter {
         }
     }
 
+    private final Utilities.Callback<TLRPC.User> openBotCallback = this::openBot;
+    public void openBot(TLRPC.User user) {
+        MessagesController.getInstance(currentAccount).openApp(user, 0);
+    }
 
 
 }

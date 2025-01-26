@@ -272,7 +272,7 @@ public class ManageChatUserCell extends FrameLayout {
                 nameTextView.setText(currentName);
             } else {
                 lastName = newName == null ? UserObject.getUserName(currentUser) : newName;
-                nameTextView.setText(Emoji.replaceEmoji(lastName, nameTextView.getPaint().getFontMetricsInt(), AndroidUtilities.dp(15), false));
+                nameTextView.setText(Emoji.replaceEmoji(lastName, nameTextView.getPaint().getFontMetricsInt(), false));
             }
             if (currentStatus != null) {
                 statusTextView.setTextColor(statusColor);

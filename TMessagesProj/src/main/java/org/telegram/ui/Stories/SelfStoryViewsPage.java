@@ -394,8 +394,7 @@ public class SelfStoryViewsPage extends FrameLayout implements NotificationCente
 
                 try {
                     performHapticFeedback(HapticFeedbackConstants.LONG_PRESS, HapticFeedbackConstants.FLAG_IGNORE_VIEW_SETTING);
-                } catch (Exception ignore) {
-                }
+                } catch (Exception ignore) {}
 
                 return true;
             }

@@ -858,7 +858,7 @@ public class QrActivity extends BaseFragment {
                 shareUsernameLayoutPaint.setTypeface(AndroidUtilities.getTypeface("fonts/rcondensedbold.ttf"));
                 shareUsernameLayoutPaint.setTextSize(AndroidUtilities.dp(25));
                 CharSequence text = this.username == null ? "" : this.username;
-                text = Emoji.replaceEmoji(text, shareUsernameLayoutPaint.getFontMetricsInt(), AndroidUtilities.dp(20), false);
+                text = Emoji.replaceEmoji(text, shareUsernameLayoutPaint.getFontMetricsInt(), false);
                 shareUsernameLayout = StaticLayoutEx.createStaticLayout(text, shareUsernameLayoutPaint, getWidth(), Layout.Alignment.ALIGN_CENTER, 1f, 0, false, TextUtils.TruncateAt.END, getWidth() - AndroidUtilities.dp(60), 1);
             } else {
                 shareUsernameLayout = null;

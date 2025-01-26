@@ -107,7 +107,9 @@ public class SwipeGestureSettingsView extends FrameLayout {
 
             SharedConfig.updateChatListSwipeSetting(newVal);
             invalidate();
-            picker.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
+            try {
+                picker.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
+            } catch (Exception ignored) {}
         });
         picker.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
         picker.setValue(SharedConfig.getChatSwipeAction(currentAccount));

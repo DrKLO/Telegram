@@ -778,12 +778,18 @@ public class RecyclerView extends ViewGroup implements ScrollingView,
         sb.append(" ").append(super.toString())
           .append(", adapter:").append(mAdapter)
           .append(", layout:").append(mLayout)
-          .append(", context:").append(getContext());
+          .append(", context:").append(getContext())
+          .append(", ainfo:").append(moreInfo);
         final String lastNotifies = mAdapterHelper.getLastNotifies();
         if (lastNotifies != null) {
             sb.append(", last notifies:\n").append(lastNotifies);
         }
         return sb.toString();
+    }
+
+    private String moreInfo;
+    public void setAdditionalDebugInfo(String moreInfo) {
+        this.moreInfo = moreInfo;
     }
 
     /**

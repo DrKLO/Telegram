@@ -49,6 +49,8 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.AbstractSerializedData;
+import org.telegram.tgnet.InputSerializedData;
+import org.telegram.tgnet.OutputSerializedData;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.BubbleActivity;
 import org.telegram.ui.Cells.PhotoEditRadioCell;
@@ -250,7 +252,7 @@ public class PhotoFilterView extends FrameLayout implements FilterShaders.Filter
             return Math.abs(blacksLevel - 0) < 0.00001 && Math.abs(shadowsLevel - 25) < 0.00001 && Math.abs(midtonesLevel - 50) < 0.00001 && Math.abs(highlightsLevel - 75) < 0.00001 && Math.abs(whitesLevel - 100) < 0.00001;
         }
 
-        public void serializeToStream(AbstractSerializedData stream) {
+        public void serializeToStream(OutputSerializedData stream) {
             stream.writeFloat(blacksLevel);
             stream.writeFloat(shadowsLevel);
             stream.writeFloat(midtonesLevel);
@@ -258,7 +260,7 @@ public class PhotoFilterView extends FrameLayout implements FilterShaders.Filter
             stream.writeFloat(whitesLevel);
         }
 
-        public void readParams(AbstractSerializedData stream, boolean exception) {
+        public void readParams(InputSerializedData stream, boolean exception) {
             blacksLevel = previousBlacksLevel = stream.readFloat(exception);
             shadowsLevel = previousShadowsLevel = stream.readFloat(exception);
             midtonesLevel = previousMidtonesLevel = stream.readFloat(exception);
@@ -306,14 +308,14 @@ public class PhotoFilterView extends FrameLayout implements FilterShaders.Filter
             return luminanceCurve.isDefault() && redCurve.isDefault() && greenCurve.isDefault() && blueCurve.isDefault();
         }
 
-        public void serializeToStream(AbstractSerializedData stream) {
+        public void serializeToStream(OutputSerializedData stream) {
             luminanceCurve.serializeToStream(stream);
             redCurve.serializeToStream(stream);
             greenCurve.serializeToStream(stream);
             blueCurve.serializeToStream(stream);
         }
 
-        public void readParams(AbstractSerializedData stream, boolean exception) {
+        public void readParams(InputSerializedData stream, boolean exception) {
             luminanceCurve.readParams(stream, exception);
             redCurve.readParams(stream, exception);
             greenCurve.readParams(stream, exception);

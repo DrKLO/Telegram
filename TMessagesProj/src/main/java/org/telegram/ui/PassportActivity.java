@@ -94,6 +94,8 @@ import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.RequestDelegate;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.tgnet.Vector;
+import org.telegram.tgnet.tl.TL_account;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.ActionBarMenuItem;
@@ -205,14 +207,14 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
     private String currentResidence = "";
     private String currentGender;
     private int[] currentExpireDate = new int[3];
-    private TLRPC.TL_account_authorizationForm currentForm;
+    private TL_account.authorizationForm currentForm;
 
     private TLRPC.TL_secureRequiredType currentType;
     private TLRPC.TL_secureRequiredType currentDocumentsType;
     private ArrayList<TLRPC.TL_secureRequiredType> availableDocumentTypes;
     private TLRPC.TL_secureValue currentTypeValue;
     private TLRPC.TL_secureValue currentDocumentsTypeValue;
-    private TLRPC.account_Password currentPassword;
+    private TL_account.Password currentPassword;
     private TLRPC.TL_auth_sentCode currentPhoneVerification;
 
     private ActionBarMenuItem doneItem;
@@ -348,7 +350,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
     private PhotoViewer.PhotoViewerProvider provider = new PhotoViewer.EmptyPhotoViewerProvider() {
 
         @Override
-        public PhotoViewer.PlaceProviderObject getPlaceForPhoto(MessageObject messageObject, TLRPC.FileLocation fileLocation, int index, boolean needPreview) {
+        public PhotoViewer.PlaceProviderObject getPlaceForPhoto(MessageObject messageObject, TLRPC.FileLocation fileLocation, int index, boolean needPreview, boolean closing) {
             if (index < 0 || index >= currentPhotoViewerLayout.getChildCount()) {
                 return null;
             }
@@ -668,7 +670,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
         }
     }
 
-    public PassportActivity(int type, long botId, String scope, String publicKey, String payload, String nonce, String callbackUrl, TLRPC.TL_account_authorizationForm form, TLRPC.account_Password accountPassword) {
+    public PassportActivity(int type, long botId, String scope, String publicKey, String payload, String nonce, String callbackUrl, TL_account.authorizationForm form, TL_account.Password accountPassword) {
         this(type, form, accountPassword, null, null, null, null, null, null);
         currentBotId = botId;
         currentPayload = payload;
@@ -846,7 +848,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
         }
     }
 
-    public PassportActivity(int type, TLRPC.TL_account_authorizationForm form, TLRPC.account_Password accountPassword, TLRPC.TL_secureRequiredType secureType, TLRPC.TL_secureValue secureValue, TLRPC.TL_secureRequiredType secureDocumentsType, TLRPC.TL_secureValue secureDocumentsValue, HashMap<String, String> values, HashMap<String, String> documentValues) {
+    public PassportActivity(int type, TL_account.authorizationForm form, TL_account.Password accountPassword, TLRPC.TL_secureRequiredType secureType, TLRPC.TL_secureValue secureValue, TLRPC.TL_secureRequiredType secureDocumentsType, TLRPC.TL_secureValue secureDocumentsValue, HashMap<String, String> values, HashMap<String, String> documentValues) {
         super();
         currentActivityType = type;
         currentForm = form;
@@ -1217,7 +1219,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                                 return;
                             }
                         } else if (currentActivityType == TYPE_EMAIL_VERIFICATION) {
-                            TLRPC.TL_account_verifyEmail req = new TLRPC.TL_account_verifyEmail();
+                            TL_account.verifyEmail req = new TL_account.verifyEmail();
                             req.purpose = new TLRPC.TL_emailVerifyPurposePassport();
                             TLRPC.TL_emailVerificationCode code = new TLRPC.TL_emailVerificationCode();
                             code.code = inputFields[FIELD_EMAIL].getText().toString();
@@ -1412,10 +1414,10 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
     }
 
     private void loadPasswordInfo() {
-        TLRPC.TL_account_getPassword req = new TLRPC.TL_account_getPassword();
+        TL_account.getPassword req = new TL_account.getPassword();
         int reqId = ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
             if (response != null) {
-                currentPassword = (TLRPC.account_Password) response;
+                currentPassword = (TL_account.Password) response;
                 if (!TwoStepVerificationActivity.canHandleCurrentPassword(currentPassword, false)) {
                     AlertsCreator.showUpdateAppAlert(getParentActivity(), LocaleController.getString(R.string.UpdateAppAlert), true);
                     return;
@@ -1697,7 +1699,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
         }
 
         Utilities.globalQueue.postRunnable(() -> {
-            TLRPC.TL_account_getPasswordSettings req = new TLRPC.TL_account_getPasswordSettings();
+            TL_account.getPasswordSettings req = new TL_account.getPasswordSettings();
 
             final byte[] x_bytes;
             if (saved) {
@@ -1743,12 +1745,12 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                 }
 
                 private void resetSecret() {
-                    TLRPC.TL_account_updatePasswordSettings req2 = new TLRPC.TL_account_updatePasswordSettings();
+                    TL_account.updatePasswordSettings req2 = new TL_account.updatePasswordSettings();
                     if (currentPassword.current_algo instanceof TLRPC.TL_passwordKdfAlgoSHA256SHA256PBKDF2HMACSHA512iter100000SHA256ModPow) {
                         TLRPC.TL_passwordKdfAlgoSHA256SHA256PBKDF2HMACSHA512iter100000SHA256ModPow algo = (TLRPC.TL_passwordKdfAlgoSHA256SHA256PBKDF2HMACSHA512iter100000SHA256ModPow) currentPassword.current_algo;
                         req2.password = SRPHelper.startCheck(x_bytes, currentPassword.srp_id, currentPassword.srp_B, algo);
                     }
-                    req2.new_settings = new TLRPC.TL_account_passwordInputSettings();
+                    req2.new_settings = new TL_account.passwordInputSettings();
                     req2.new_settings.new_secure_settings = new TLRPC.TL_secureSecretSettings();
                     req2.new_settings.new_secure_settings.secure_secret = new byte[0];
                     req2.new_settings.new_secure_settings.secure_algo = new TLRPC.TL_securePasswordKdfAlgoUnknown();
@@ -1756,10 +1758,10 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                     req2.new_settings.flags |= 4;
                     ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
                         if (error != null && "SRP_ID_INVALID".equals(error.text)) {
-                            TLRPC.TL_account_getPassword getPasswordReq = new TLRPC.TL_account_getPassword();
+                            TL_account.getPassword getPasswordReq = new TL_account.getPassword();
                             ConnectionsManager.getInstance(currentAccount).sendRequest(getPasswordReq, (response2, error2) -> AndroidUtilities.runOnUIThread(() -> {
                                 if (error2 == null) {
-                                    currentPassword = (TLRPC.account_Password) response2;
+                                    currentPassword = (TL_account.Password) response2;
                                     TwoStepVerificationActivity.initPasswordNewAlgo(currentPassword);
                                     resetSecret();
                                 }
@@ -1774,12 +1776,12 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                     Utilities.globalQueue.postRunnable(() -> {
                         Utilities.random.setSeed(currentPassword.secure_random);
 
-                        TLRPC.TL_account_updatePasswordSettings req1 = new TLRPC.TL_account_updatePasswordSettings();
+                        TL_account.updatePasswordSettings req1 = new TL_account.updatePasswordSettings();
                         if (currentPassword.current_algo instanceof TLRPC.TL_passwordKdfAlgoSHA256SHA256PBKDF2HMACSHA512iter100000SHA256ModPow) {
                             TLRPC.TL_passwordKdfAlgoSHA256SHA256PBKDF2HMACSHA512iter100000SHA256ModPow algo = (TLRPC.TL_passwordKdfAlgoSHA256SHA256PBKDF2HMACSHA512iter100000SHA256ModPow) currentPassword.current_algo;
                             req1.password = SRPHelper.startCheck(x_bytes, currentPassword.srp_id, currentPassword.srp_B, algo);
                         }
-                        req1.new_settings = new TLRPC.TL_account_passwordInputSettings();
+                        req1.new_settings = new TL_account.passwordInputSettings();
 
                         secureSecret = getRandomSecret();
                         secureSecretId = Utilities.bytesToLong(Utilities.computeSHA256(secureSecret));
@@ -1802,10 +1804,10 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                         }
                         ConnectionsManager.getInstance(currentAccount).sendRequest(req1, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
                             if (error != null && "SRP_ID_INVALID".equals(error.text)) {
-                                TLRPC.TL_account_getPassword getPasswordReq = new TLRPC.TL_account_getPassword();
+                                TL_account.getPassword getPasswordReq = new TL_account.getPassword();
                                 ConnectionsManager.getInstance(currentAccount).sendRequest(getPasswordReq, (response2, error2) -> AndroidUtilities.runOnUIThread(() -> {
                                     if (error2 == null) {
-                                        currentPassword = (TLRPC.account_Password) response2;
+                                        currentPassword = (TL_account.Password) response2;
                                         TwoStepVerificationActivity.initPasswordNewAlgo(currentPassword);
                                         generateNewSecret();
                                     }
@@ -1813,7 +1815,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                                 return;
                             }
                             if (currentForm == null) {
-                                currentForm = new TLRPC.TL_account_authorizationForm();
+                                currentForm = new TL_account.authorizationForm();
                             }
                             openRequestInterface();
                         }));
@@ -1823,10 +1825,10 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                 @Override
                 public void run(final TLObject response, final TLRPC.TL_error error) {
                     if (error != null && "SRP_ID_INVALID".equals(error.text)) {
-                        TLRPC.TL_account_getPassword getPasswordReq = new TLRPC.TL_account_getPassword();
+                        TL_account.getPassword getPasswordReq = new TL_account.getPassword();
                         ConnectionsManager.getInstance(currentAccount).sendRequest(getPasswordReq, (response2, error2) -> AndroidUtilities.runOnUIThread(() -> {
                             if (error2 == null) {
-                                currentPassword = (TLRPC.account_Password) response2;
+                                currentPassword = (TL_account.Password) response2;
                                 TwoStepVerificationActivity.initPasswordNewAlgo(currentPassword);
                                 onPasswordDone(saved);
                             }
@@ -1835,7 +1837,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                     }
                     if (error == null) {
                         Utilities.globalQueue.postRunnable(() -> {
-                            TLRPC.TL_account_passwordSettings settings = (TLRPC.TL_account_passwordSettings) response;
+                            TL_account.passwordSettings settings = (TL_account.passwordSettings) response;
                             byte[] secure_salt;
                             if (settings.secure_settings != null) {
                                 secureSecret = settings.secure_settings.secure_secret;
@@ -1888,13 +1890,13 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                                         }
                                     }
                                 } else if (currentBotId == 0) {
-                                    TLRPC.TL_account_getAllSecureValues req12 = new TLRPC.TL_account_getAllSecureValues();
+                                    TL_account.getAllSecureValues req12 = new TL_account.getAllSecureValues();
                                     ConnectionsManager.getInstance(currentAccount).sendRequest(req12, (response1, error1) -> AndroidUtilities.runOnUIThread(() -> {
-                                        if (response1 != null) {
-                                            currentForm = new TLRPC.TL_account_authorizationForm();
-                                            TLRPC.Vector vector = (TLRPC.Vector) response1;
+                                        if (response1 instanceof Vector) {
+                                            currentForm = new TL_account.authorizationForm();
+                                            Vector<TLRPC.TL_secureValue> vector = (Vector<TLRPC.TL_secureValue>) response1;
                                             for (int a = 0, size = vector.objects.size(); a < size; a++) {
-                                                currentForm.values.add((TLRPC.TL_secureValue) vector.objects.get(a));
+                                                currentForm.values.add(vector.objects.get(a));
                                             }
                                             openRequestInterface();
                                         } else {
@@ -2251,7 +2253,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                 valuesToSend.add(new ValueToSend(value, requiredType.selfie_required, requiredType.translation_required));
             }
             showEditDoneProgress(false, true);
-            TLRPC.TL_account_acceptAuthorization req = new TLRPC.TL_account_acceptAuthorization();
+            TL_account.acceptAuthorization req = new TL_account.acceptAuthorization();
             req.bot_id = currentBotId;
             req.scope = currentScope;
             req.public_key = currentPublicKey;
@@ -2450,7 +2452,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
             builder.setTitle(LocaleController.getString(R.string.TelegramPassportDeleteTitle));
             builder.setMessage(LocaleController.getString(R.string.TelegramPassportDeleteAlert));
             builder.setPositiveButton(LocaleController.getString(R.string.Delete), (dialog, which) -> {
-                TLRPC.TL_account_deleteSecureValue req = new TLRPC.TL_account_deleteSecureValue();
+                TL_account.deleteSecureValue req = new TL_account.deleteSecureValue();
                 for (int a = 0; a < currentForm.values.size(); a++) {
                     req.types.add(currentForm.values.get(a).type);
                 }
@@ -5627,7 +5629,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                     final PassportActivityDelegate currentDelegate = this;
                     final TLRPC.TL_inputSecureValue finalFileInputSecureValue = fileInputSecureValue;
 
-                    final TLRPC.TL_account_saveSecureValue req = new TLRPC.TL_account_saveSecureValue();
+                    final TL_account.saveSecureValue req = new TL_account.saveSecureValue();
                     req.value = inputSecureValue;
                     req.secure_secret_id = secureSecretId;
                     ConnectionsManager.getInstance(currentAccount).sendRequest(req, new RequestDelegate() {
@@ -5721,12 +5723,12 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                         public void run(final TLObject response, final TLRPC.TL_error error) {
                             if (error != null) {
                                 if (error.text.equals("EMAIL_VERIFICATION_NEEDED")) {
-                                    TLRPC.TL_account_sendVerifyEmailCode req = new TLRPC.TL_account_sendVerifyEmailCode();
+                                    TL_account.sendVerifyEmailCode req = new TL_account.sendVerifyEmailCode();
                                     req.purpose = new TLRPC.TL_emailVerifyPurposePassport();
                                     req.email = text;
                                     ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response1, error1) -> AndroidUtilities.runOnUIThread(() -> {
                                         if (response1 != null) {
-                                            TLRPC.TL_account_sentEmailCode res = (TLRPC.TL_account_sentEmailCode) response1;
+                                            TL_account.sentEmailCode res = (TL_account.sentEmailCode) response1;
                                             HashMap<String, String> values = new HashMap<>();
                                             values.put("email", text);
                                             values.put("pattern", res.email_pattern);
@@ -5752,7 +5754,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                             }
                             if (error == null && finalFileInputSecureValue != null) {
                                 final TLRPC.TL_secureValue pendingValue = (TLRPC.TL_secureValue) response;
-                                final TLRPC.TL_account_saveSecureValue req = new TLRPC.TL_account_saveSecureValue();
+                                final TL_account.saveSecureValue req = new TL_account.saveSecureValue();
                                 req.value = finalFileInputSecureValue;
                                 req.secure_secret_id = secureSecretId;
                                 ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response12, error12) -> onResult(error12, (TLRPC.TL_secureValue) response12, pendingValue));
@@ -5807,7 +5809,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
         if (requiredType == null) {
             return;
         }
-        TLRPC.TL_account_deleteSecureValue req = new TLRPC.TL_account_deleteSecureValue();
+        TL_account.deleteSecureValue req = new TL_account.deleteSecureValue();
         if (documentOnly && documentRequiredType != null) {
             req.types.add(documentRequiredType.type);
         } else {
@@ -6298,7 +6300,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                 }
             }
         }
-        final TLRPC.TL_account_sendVerifyPhoneCode req = new TLRPC.TL_account_sendVerifyPhoneCode();
+        final TL_account.sendVerifyPhoneCode req = new TL_account.sendVerifyPhoneCode();
         req.phone_number = phone;
         req.settings = new TLRPC.TL_codeSettings();
         req.settings.allow_flashcall = simcardAvailable && allowCall;
@@ -6539,7 +6541,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                     inputFields[FIELD_PASSWORD].setText((String) args[7]);
                 }
                 if (args[6] == null) {
-                    currentPassword = new TLRPC.TL_account_password();
+                    currentPassword = new TL_account.TL_password();
                     currentPassword.current_algo = (TLRPC.PasswordKdfAlgo) args[1];
                     currentPassword.new_secure_algo = (TLRPC.SecurePasswordKdfAlgo) args[2];
                     currentPassword.secure_random = (byte[]) args[3];
@@ -7790,7 +7792,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
             }
             waitingForEvent = false;
             showEditDoneProgress(true, true);
-            final TLRPC.TL_account_verifyPhone req = new TLRPC.TL_account_verifyPhone();
+            final TL_account.verifyPhone req = new TL_account.verifyPhone();
             req.phone_number = phone;
             req.phone_code = code;
             req.phone_code_hash = phoneHash;

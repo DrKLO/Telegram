@@ -50,6 +50,7 @@ import org.telegram.messenger.browser.Browser;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.tgnet.Vector;
 import org.telegram.tgnet.tl.TL_stars;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
@@ -409,7 +410,7 @@ public class InviteLinkBottomSheet extends BottomSheet {
         }
         if (!TextUtils.isEmpty(invite.title)) {
             SpannableStringBuilder builder = new SpannableStringBuilder(invite.title);
-            Emoji.replaceEmoji(builder, titleTextView.getPaint().getFontMetricsInt(), (int) titleTextView.getPaint().getTextSize(), false);
+            Emoji.replaceEmoji(builder, titleTextView.getPaint().getFontMetricsInt(), false);
             titleTextView.setText(builder);
         }
 
@@ -499,15 +500,13 @@ public class InviteLinkBottomSheet extends BottomSheet {
         TLRPC.TL_users_getUsers req = new TLRPC.TL_users_getUsers();
         req.id.add(MessagesController.getInstance(UserConfig.selectedAccount).getInputUser(invite.admin_id));
         ConnectionsManager.getInstance(UserConfig.selectedAccount).sendRequest(req, (response, error) -> {
-            AndroidUtilities.runOnUIThread(new Runnable() {
-                @Override
-                public void run() {
-                    if (error == null) {
-                        TLRPC.Vector vector = (TLRPC.Vector) response;
-                        TLRPC.User user = (TLRPC.User) vector.objects.get(0);
-                        users.put(invite.admin_id, user);
-                        adapter.notifyDataSetChanged();
-                    }
+            AndroidUtilities.runOnUIThread(() -> {
+                if (response instanceof Vector) {
+                    Vector<TLRPC.User> vector = (Vector<TLRPC.User>) response;
+                    if (vector.objects.isEmpty()) return;
+                    TLRPC.User user = vector.objects.get(0);
+                    users.put(invite.admin_id, user);
+                    adapter.notifyDataSetChanged();
                 }
             });
         });

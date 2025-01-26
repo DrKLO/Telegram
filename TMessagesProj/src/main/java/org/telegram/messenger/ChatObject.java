@@ -21,6 +21,7 @@ import com.google.android.exoplayer2.util.Log;
 import org.telegram.messenger.voip.Instance;
 import org.telegram.messenger.voip.VoIPService;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.tgnet.tl.TL_phone;
 import org.telegram.ui.GroupCallActivity;
 
 import java.lang.annotation.Retention;
@@ -270,7 +271,7 @@ public class ChatObject {
             }
         };
 
-        public void setCall(AccountInstance account, long chatId, TLRPC.TL_phone_groupCall groupCall) {
+        public void setCall(AccountInstance account, long chatId, TL_phone.groupCall groupCall) {
             this.chatId = chatId;
             currentAccount = account;
             call = groupCall.call;
@@ -308,7 +309,7 @@ public class ChatObject {
 //            }, ConnectionsManager.RequestFlagFailOnServerErrors, ConnectionsManager.ConnectionTypeDownload, call.stream_dc_id);
 //        }
 
-        public void createRtmpStreamParticipant(List<TLRPC.TL_groupCallStreamChannel> channels) {
+        public void createRtmpStreamParticipant(List<TL_phone.TL_groupCallStreamChannel> channels) {
             if (loadedRtmpStreamParticipant && rtmpStreamParticipant != null) {
                 return;
             }
@@ -318,7 +319,7 @@ public class ChatObject {
             participant.video = new TLRPC.TL_groupCallParticipantVideo();
             TLRPC.TL_groupCallParticipantVideoSourceGroup sourceGroup = new TLRPC.TL_groupCallParticipantVideoSourceGroup();
             sourceGroup.semantics = "SIM";
-            for (TLRPC.TL_groupCallStreamChannel channel : channels) {
+            for (TL_phone.TL_groupCallStreamChannel channel : channels) {
                 sourceGroup.sources.add(channel.channel);
             }
             participant.video.source_groups.add(sourceGroup);
@@ -504,7 +505,7 @@ public class ChatObject {
                 reloadingMembers = true;
             }
             loadingMembers = true;
-            TLRPC.TL_phone_getGroupParticipants req = new TLRPC.TL_phone_getGroupParticipants();
+            TL_phone.getGroupParticipants req = new TL_phone.getGroupParticipants();
             req.call = getInputGroupCall();
             req.offset = nextLoadOffset != null ? nextLoadOffset : "";
             req.limit = 20;
@@ -514,7 +515,7 @@ public class ChatObject {
                     reloadingMembers = false;
                 }
                 if (response != null) {
-                    TLRPC.TL_phone_groupParticipants groupParticipants = (TLRPC.TL_phone_groupParticipants) response;
+                    TL_phone.groupParticipants groupParticipants = (TL_phone.groupParticipants) response;
                     currentAccount.getMessagesController().putUsers(groupParticipants.users, false);
                     currentAccount.getMessagesController().putChats(groupParticipants.chats, false);
                     onParticipantsLoad(groupParticipants.participants, fromBegin, req.offset, groupParticipants.next_offset, groupParticipants.version, groupParticipants.count);
@@ -530,7 +531,7 @@ public class ChatObject {
         }
 
         public void setTitle(String title) {
-            TLRPC.TL_phone_editGroupCallTitle req = new TLRPC.TL_phone_editGroupCallTitle();
+            TL_phone.editGroupCallTitle req = new TL_phone.editGroupCallTitle();
             req.call = getInputGroupCall();
             req.title = title;
             currentAccount.getConnectionsManager().sendRequest(req, (response, error) -> {
@@ -596,7 +597,7 @@ public class ChatObject {
             int guid = ++lastLoadGuid;
             loadingGuids.add(guid);
             set.addAll(participantsToLoad);
-            TLRPC.TL_phone_getGroupParticipants req = new TLRPC.TL_phone_getGroupParticipants();
+            TL_phone.getGroupParticipants req = new TL_phone.getGroupParticipants();
             req.call = getInputGroupCall();
             for (int a = 0, N = participantsToLoad.size(); a < N; a++) {
                 long uid = participantsToLoad.get(a);
@@ -628,7 +629,7 @@ public class ChatObject {
                     return;
                 }
                 if (response != null) {
-                    TLRPC.TL_phone_groupParticipants groupParticipants = (TLRPC.TL_phone_groupParticipants) response;
+                    TL_phone.groupParticipants groupParticipants = (TL_phone.groupParticipants) response;
                     currentAccount.getMessagesController().putUsers(groupParticipants.users, false);
                     currentAccount.getMessagesController().putChats(groupParticipants.chats, false);
                     for (int a = 0, N = groupParticipants.participants.size(); a < N; a++) {
@@ -915,12 +916,12 @@ public class ChatObject {
         }
 
         public void reloadGroupCall() {
-            TLRPC.TL_phone_getGroupCall req = new TLRPC.TL_phone_getGroupCall();
+            TL_phone.getGroupCall req = new TL_phone.getGroupCall();
             req.call = getInputGroupCall();
             req.limit = 100;
             currentAccount.getConnectionsManager().sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
-                if (response instanceof TLRPC.TL_phone_groupCall) {
-                    TLRPC.TL_phone_groupCall phoneGroupCall = (TLRPC.TL_phone_groupCall) response;
+                if (response instanceof TL_phone.groupCall) {
+                    TL_phone.groupCall phoneGroupCall = (TL_phone.groupCall) response;
                     call = phoneGroupCall.call;
                     currentAccount.getMessagesController().putUsers(phoneGroupCall.users, false);
                     currentAccount.getMessagesController().putChats(phoneGroupCall.chats, false);
@@ -934,7 +935,7 @@ public class ChatObject {
                 return;
             }
             loadingGroupCall = true;
-            TLRPC.TL_phone_getGroupParticipants req = new TLRPC.TL_phone_getGroupParticipants();
+            TL_phone.getGroupParticipants req = new TL_phone.getGroupParticipants();
             req.call = getInputGroupCall();
             req.offset = "";
             req.limit = 1;
@@ -942,7 +943,7 @@ public class ChatObject {
                 lastGroupCallReloadTime = SystemClock.elapsedRealtime();
                 loadingGroupCall = false;
                 if (response != null) {
-                    TLRPC.TL_phone_groupParticipants res = (TLRPC.TL_phone_groupParticipants) response;
+                    TL_phone.groupParticipants res = (TL_phone.groupParticipants) response;
                     currentAccount.getMessagesController().putUsers(res.users, false);
                     currentAccount.getMessagesController().putChats(res.chats, false);
                     if (call.participants_count != res.count) {
@@ -1468,7 +1469,7 @@ public class ChatObject {
 
         public void toggleRecord(String title, @RecordType int type) {
             recording = !recording;
-            TLRPC.TL_phone_toggleGroupCallRecord req = new TLRPC.TL_phone_toggleGroupCallRecord();
+            TL_phone.toggleGroupCallRecord req = new TL_phone.toggleGroupCallRecord();
             req.call = getInputGroupCall();
             req.start = recording;
             if (title != null) {
@@ -2275,7 +2276,17 @@ public class ChatObject {
     }
 
     public static long getProfileEmojiId(TLRPC.Chat chat) {
+        if (chat != null && chat.emoji_status instanceof TLRPC.TL_emojiStatusCollectible) {
+            return ((TLRPC.TL_emojiStatusCollectible) chat.emoji_status).pattern_document_id;
+        }
         if (chat != null && chat.profile_color != null && (chat.profile_color.flags & 2) != 0) return chat.profile_color.background_emoji_id;
+        return 0;
+    }
+
+    public static long getProfileCollectibleId(TLRPC.Chat chat) {
+        if (chat != null && chat.emoji_status instanceof TLRPC.TL_emojiStatusCollectible) {
+            return ((TLRPC.TL_emojiStatusCollectible) chat.emoji_status).collectible_id;
+        }
         return 0;
     }
 

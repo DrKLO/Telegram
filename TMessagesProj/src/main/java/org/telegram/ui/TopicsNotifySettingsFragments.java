@@ -17,6 +17,7 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.tgnet.tl.TL_account;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BackDrawable;
@@ -154,7 +155,7 @@ public class TopicsNotifySettingsFragments extends BaseFragment {
 
     private void removeException(int topicId) {
         getNotificationsController().getNotificationsSettingsFacade().clearPreference(dialogId, topicId);
-        TLRPC.TL_account_updateNotifySettings req = new TLRPC.TL_account_updateNotifySettings();
+        TL_account.updateNotifySettings req = new TL_account.updateNotifySettings();
         req.settings = new TLRPC.TL_inputPeerNotifySettings();
         TLRPC.TL_inputNotifyForumTopic topicPeer = new TLRPC.TL_inputNotifyForumTopic();
         topicPeer.peer = getMessagesController().getInputPeer(dialogId);
