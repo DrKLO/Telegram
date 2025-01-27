@@ -34,7 +34,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class Utilities {
-    public static Pattern pattern = Pattern.compile("[\\-0-9]+");
+    public static Pattern pattern = Pattern.compile("-?[0-9]+");
     public static SecureRandom random = new SecureRandom();
     public static Random fastRandom = new Xoroshiro128PlusRandom(random.nextLong());
 
@@ -156,32 +156,9 @@ public class Utilities {
         if (value == null) {
             return 0;
         }
-        if (BuildConfig.BUILD_HOST_IS_WINDOWS) {
-            Matcher matcher = pattern.matcher(value);
-            if (matcher.find()) {
-                return Integer.valueOf(matcher.group());
-            }
-        } else {
-            int val = 0;
-            try {
-                int start = -1, end;
-                for (end = 0; end < value.length(); ++end) {
-                    char character = value.charAt(end);
-                    boolean allowedChar = character == '-' || character >= '0' && character <= '9';
-                    if (allowedChar && start < 0) {
-                        start = end;
-                    } else if (!allowedChar && start >= 0) {
-                        end++;
-                        break;
-                    }
-                }
-                if (start >= 0) {
-                    String str = value.subSequence(start, end).toString();
-//                val = parseInt(str);
-                    val = Integer.parseInt(str);
-                }
-            } catch (Exception ignore) {}
-            return val;
+        Matcher matcher = pattern.matcher(value);
+        if (matcher.find()) {
+            return Integer.valueOf(matcher.group());
         }
         return 0;
     }
