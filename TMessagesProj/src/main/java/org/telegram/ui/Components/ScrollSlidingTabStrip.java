@@ -136,7 +136,9 @@ public class ScrollSlidingTabStrip extends HorizontalScrollView {
                 return;
             }
             if (p >= 0 && p < tabsContainer.getChildCount()) {
-                performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
+                try {
+                    performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
+                } catch (Exception ignored) {}
                 draggindViewDxOnScreen = 0f;
                 draggingViewOutProgress = 0f;
                 draggingView = tabsContainer.getChildAt(p);

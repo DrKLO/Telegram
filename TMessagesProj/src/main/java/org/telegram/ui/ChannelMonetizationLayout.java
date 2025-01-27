@@ -59,6 +59,7 @@ import org.telegram.messenger.browser.Browser;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.tgnet.tl.TL_account;
 import org.telegram.tgnet.tl.TL_stars;
 import org.telegram.tgnet.tl.TL_stats;
 import org.telegram.tgnet.tl.TL_stories;
@@ -614,10 +615,10 @@ public class ChannelMonetizationLayout extends SizeNotifierFrameLayout implement
                         fragment.showDialog(builder.create());
                     }
                 } else if ("SRP_ID_INVALID".equals(error.text)) {
-                    TLRPC.TL_account_getPassword getPasswordReq = new TLRPC.TL_account_getPassword();
+                    TL_account.getPassword getPasswordReq = new TL_account.getPassword();
                     ConnectionsManager.getInstance(currentAccount).sendRequest(getPasswordReq, (response2, error2) -> AndroidUtilities.runOnUIThread(() -> {
                         if (error2 == null) {
-                            TLRPC.account_Password currentPassword = (TLRPC.account_Password) response2;
+                            TL_account.Password currentPassword = (TL_account.Password) response2;
                             passwordFragment.setCurrentPasswordInfo(null, currentPassword);
                             TwoStepVerificationActivity.initPasswordNewAlgo(currentPassword);
                             initWithdraw(stars, passwordFragment.getNewSrpPassword(), passwordFragment);
@@ -991,14 +992,18 @@ public class ChannelMonetizationLayout extends SizeNotifierFrameLayout implement
         TLRPC.TL_channels_restrictSponsoredMessages req = new TLRPC.TL_channels_restrictSponsoredMessages();
         req.channel = MessagesController.getInstance(currentAccount).getInputChannel(-dialogId);
         req.restricted = switchOffValue;
-        ConnectionsManager.getInstance(currentAccount).sendRequest(req, (res, err) -> AndroidUtilities.runOnUIThread(() -> {
+        ConnectionsManager.getInstance(currentAccount).sendRequest(req, (res, err) -> {
             if (err != null) {
-                BulletinFactory.showError(err);
+                AndroidUtilities.runOnUIThread(() -> {
+                    BulletinFactory.showError(err);
+                });
             } else if (res instanceof TLRPC.Updates) {
-                initialSwitchOffValue = switchOffValue;
+                AndroidUtilities.runOnUIThread(() -> {
+                    initialSwitchOffValue = switchOffValue;
+                });
                 MessagesController.getInstance(currentAccount).processUpdates((TLRPC.Updates) res, false);
             }
-        }));
+        });
     }
 
     private boolean onLongClick(UItem item, View view, int position, float x, float y) {
@@ -1065,7 +1070,7 @@ public class ChannelMonetizationLayout extends SizeNotifierFrameLayout implement
             setOrientation(VERTICAL);
 
             layout = new LinearLayout(context);
-            layout.setOrientation(HORIZONTAL);
+            layout.setOrientation(VERTICAL);
             addView(layout, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 22, 9, 22, 0));
 
             for (int i = 0; i < 2; ++i) {
@@ -1080,7 +1085,7 @@ public class ChannelMonetizationLayout extends SizeNotifierFrameLayout implement
                 amountContainer[i].addView(cryptoAmountView[i], LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM, 0, 0, 5, 0));
 
                 amountView[i] = new AnimatedEmojiSpan.TextViewEmojis(context);
-                amountView[i].setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
+                amountView[i].setTextSize(TypedValue.COMPLEX_UNIT_DIP, 11.5f);
                 amountView[i].setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText, resourcesProvider));
                 amountContainer[i].addView(amountView[i], LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM));
             }
@@ -1122,15 +1127,22 @@ public class ChannelMonetizationLayout extends SizeNotifierFrameLayout implement
                 SpannableStringBuilder s = new SpannableStringBuilder(crypto_currency + " ");
                 CharSequence finalS;
                 if ("TON".equalsIgnoreCase(crypto_currency)) {
-                    s.append(formatter.format(value.crypto_amount / 1_000_000_000.0));
-                    finalS = replaceTON(s, cryptoAmountView[i].getPaint(), .87f, true);
+                    String formatted = formatter.format(value.crypto_amount / 1_000_000_000.0);
+                    int index = formatted.indexOf('.');
+                    if (index >= 0) {
+                        s.append(LocaleController.formatNumber((long) Math.floor(value.crypto_amount / 1_000_000_000.0), ' '));
+                        s.append(formatted.substring(index));
+                    } else {
+                        s.append(formatted);
+                    }
+                    finalS = replaceTON(s, cryptoAmountView[i].getPaint(), 1.05f, true);
                 } else if ("XTR".equalsIgnoreCase(crypto_currency)) {
                     if (i == 0) {
                         s.append(LocaleController.formatNumber(value.crypto_amount, ' '));
                     } else {
                         s.append(StarsIntroActivity.formatStarsAmount(value.crypto_amount2, .8f, ' '));
                     }
-                    finalS = StarsIntroActivity.replaceStarsWithPlain(s, .8f);
+                    finalS = StarsIntroActivity.replaceStarsWithPlain(s, .7f);
                 } else {
                     s.append(Long.toString(value.crypto_amount));
                     finalS = s;

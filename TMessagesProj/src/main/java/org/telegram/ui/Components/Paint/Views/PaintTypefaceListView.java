@@ -3,6 +3,7 @@ package org.telegram.ui.Components.Paint.Views;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Path;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 
@@ -102,5 +103,15 @@ public class PaintTypefaceListView extends RecyclerListView implements Notificat
     public void setMaskProvider(Consumer<Path> maskProvider) {
         this.maskProvider = maskProvider;
         invalidate();
+    }
+
+    @Override
+    public boolean dispatchTouchEvent(MotionEvent ev) {
+        return super.dispatchTouchEvent(ev);
+    }
+
+    @Override
+    public boolean onTouchEvent(MotionEvent e) {
+        return super.onTouchEvent(e);
     }
 }

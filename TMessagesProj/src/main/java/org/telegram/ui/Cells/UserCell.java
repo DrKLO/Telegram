@@ -69,7 +69,8 @@ public class UserCell extends FrameLayout implements NotificationCenter.Notifica
     private TextView adminTextView;
     private TextView addButton;
     private Drawable premiumDrawable;
-    private AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable emojiStatus;
+    private final AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable botVerification;
+    private final AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable emojiStatus;
     private ImageView closeView;
     protected Theme.ResourcesProvider resourcesProvider;
 
@@ -179,6 +180,7 @@ public class UserCell extends FrameLayout implements NotificationCenter.Notifica
         nameTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
         addView(nameTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 20, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 28 + (checkbox == 2 ? 18 : 0) + additionalPadding : (64 + padding), 10, LocaleController.isRTL ? (64 + padding) : 28 + (checkbox == 2 ? 18 : 0) + additionalPadding, 0));
 
+        botVerification = new AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable(nameTextView, dp(20));
         emojiStatus = new AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable(nameTextView, dp(20));
 
         statusTextView = new SimpleTextView(context);
@@ -296,7 +298,7 @@ public class UserCell extends FrameLayout implements NotificationCenter.Notifica
         currentStatus = status;
         try {
             if (name != null && nameTextView != null) {
-                name = Emoji.replaceEmoji(name, nameTextView.getPaint().getFontMetricsInt(), dp(18), false);
+                name = Emoji.replaceEmoji(name, nameTextView.getPaint().getFontMetricsInt(), false);
             }
         } catch (Exception ignore) {}
         currentName = name;
@@ -565,18 +567,28 @@ public class UserCell extends FrameLayout implements NotificationCenter.Notifica
             CharSequence name = lastName;
             if (name != null) {
                 try {
-                    name = Emoji.replaceEmoji(lastName, nameTextView.getPaint().getFontMetricsInt(), dp(18), false);
+                    name = Emoji.replaceEmoji(lastName, nameTextView.getPaint().getFontMetricsInt(), false);
                 } catch (Exception ignore) {}
             }
             nameTextView.setText(name);
         }
+        long botVerificationIcon = 0;
+        if (currentUser != null) {
+            botVerificationIcon = DialogObject.getBotVerificationIcon(currentUser);
+        } else if (currentChat != null) {
+            botVerificationIcon = DialogObject.getBotVerificationIcon(currentChat);
+        }
+        if (botVerificationIcon == 0) {
+            botVerification.set((Drawable) null, false);
+            nameTextView.setLeftDrawable(null);
+        } else {
+            botVerification.set(botVerificationIcon, false);
+            botVerification.setColor(Theme.getColor(Theme.key_chats_verifiedBackground, resourcesProvider));
+            nameTextView.setLeftDrawable(botVerification);
+        }
         if (currentUser != null && MessagesController.getInstance(currentAccount).isPremiumUser(currentUser) && !MessagesController.getInstance(currentAccount).premiumFeaturesBlocked()) {
-            if (currentUser.emoji_status instanceof TLRPC.TL_emojiStatusUntil && ((TLRPC.TL_emojiStatusUntil) currentUser.emoji_status).until > (int) (System.currentTimeMillis() / 1000)) {
-                emojiStatus.set(((TLRPC.TL_emojiStatusUntil) currentUser.emoji_status).document_id, false);
-                emojiStatus.setColor(Theme.getColor(Theme.key_chats_verifiedBackground, resourcesProvider));
-                nameTextView.setRightDrawable(emojiStatus);
-            } else if (currentUser.emoji_status instanceof TLRPC.TL_emojiStatus) {
-                emojiStatus.set(((TLRPC.TL_emojiStatus) currentUser.emoji_status).document_id, false);
+            if (DialogObject.getEmojiStatusDocumentId(currentUser.emoji_status) != 0) {
+                emojiStatus.set(DialogObject.getEmojiStatusDocumentId(currentUser.emoji_status), false);
                 emojiStatus.setColor(Theme.getColor(Theme.key_chats_verifiedBackground, resourcesProvider));
                 nameTextView.setRightDrawable(emojiStatus);
             } else {
@@ -686,6 +698,7 @@ public class UserCell extends FrameLayout implements NotificationCenter.Notifica
         super.onAttachedToWindow();
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.emojiLoaded);
         emojiStatus.attach();
+        botVerification.attach();
     }
 
     @Override
@@ -693,6 +706,7 @@ public class UserCell extends FrameLayout implements NotificationCenter.Notifica
         super.onDetachedFromWindow();
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.emojiLoaded);
         emojiStatus.detach();
+        botVerification.detach();
         storyParams.onDetachFromWindow();
     }
 

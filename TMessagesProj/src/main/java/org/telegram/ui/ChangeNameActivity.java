@@ -26,6 +26,7 @@ import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
+import org.telegram.tgnet.tl.TL_account;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.BaseFragment;
@@ -177,7 +178,7 @@ public class ChangeNameActivity extends BaseFragment {
         if (currentUser.first_name != null && currentUser.first_name.equals(newFirst) && currentUser.last_name != null && currentUser.last_name.equals(newLast)) {
             return;
         }
-        TLRPC.TL_account_updateProfile req = new TLRPC.TL_account_updateProfile();
+        TL_account.updateProfile req = new TL_account.updateProfile();
         req.flags = 3;
         currentUser.first_name = req.first_name = newFirst;
         currentUser.last_name = req.last_name = newLast;

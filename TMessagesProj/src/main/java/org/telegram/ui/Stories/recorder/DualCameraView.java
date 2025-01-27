@@ -215,11 +215,13 @@ public class DualCameraView extends CameraView {
                 AndroidUtilities.runOnUIThread(longpressRunnable = () -> {
                     if (tapTime > 0) {
                         this.dualToggleShape();
-                        performHapticFeedback(HapticFeedbackConstants.LONG_PRESS, HapticFeedbackConstants.FLAG_IGNORE_VIEW_SETTING);
+                        try {
+                            performHapticFeedback(HapticFeedbackConstants.LONG_PRESS, HapticFeedbackConstants.FLAG_IGNORE_VIEW_SETTING);
+                        } catch (Exception ignored) {}
                     }
                 }, ViewConfiguration.getLongPressTimeout());
+                return true;
             }
-            return true;
         } else if (ev.getAction() == MotionEvent.ACTION_UP) {
             if (System.currentTimeMillis() - tapTime <= ViewConfiguration.getTapTimeout() && MathUtils.distance(tapX, tapY, ev.getX(), ev.getY()) < AndroidUtilities.dp(10)) {
                 if (isAtDual(tapX, tapY)) {

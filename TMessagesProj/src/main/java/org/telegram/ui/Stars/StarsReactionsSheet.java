@@ -4,6 +4,7 @@ import static org.telegram.messenger.AndroidUtilities.dp;
 import static org.telegram.messenger.AndroidUtilities.lerp;
 import static org.telegram.messenger.AndroidUtilities.rectTmp;
 import static org.telegram.messenger.LocaleController.getString;
+import static org.telegram.ui.ActionBar.Theme.key_dialogBackgroundGray;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
@@ -32,6 +33,7 @@ import android.view.View;
 import android.view.ViewConfiguration;
 import android.view.animation.Interpolator;
 import android.widget.FrameLayout;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -43,6 +45,7 @@ import com.google.zxing.common.detector.MathUtils;
 
 import org.checkerframework.checker.units.qual.A;
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.LocaleController;
@@ -56,20 +59,24 @@ import org.telegram.messenger.UserObject;
 import org.telegram.messenger.Utilities;
 import org.telegram.messenger.browser.Browser;
 import org.telegram.tgnet.ConnectionsManager;
+import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Cells.ChatActionCell;
 import org.telegram.ui.Cells.ChatMessageCell;
 import org.telegram.ui.ChatActivity;
 import org.telegram.ui.Components.AnimatedFloat;
 import org.telegram.ui.Components.AnimatedTextView;
 import org.telegram.ui.Components.AvatarDrawable;
+import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.ButtonBounce;
 import org.telegram.ui.Components.CheckBox2;
 import org.telegram.ui.Components.ColoredImageSpan;
 import org.telegram.ui.Components.CubicBezierInterpolator;
+import org.telegram.ui.Components.ItemOptions;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.LinkSpanDrawable;
 import org.telegram.ui.Components.Premium.GLIcon.GLIconRenderer;
@@ -92,9 +99,16 @@ public class StarsReactionsSheet extends BottomSheet {
     private final Theme.ResourcesProvider resourcesProvider;
     private final int currentAccount;
 
+    private long selectedDialogId;
+
     private final LinearLayout layout;
     private final FrameLayout topLayout;
     private final StarsSlider slider;
+//    private final FrameLayout dialogSelectorLayout;
+//    private final FrameLayout dialogSelectorInnerLayout;
+//    private final AvatarDrawable dialogAvatarDrawable;
+//    private final BackupImageView dialogImageView;
+//    private final ImageView dialogSelectorIconView;
     private final TextView titleView;
     private final StarsIntroActivity.StarsBalanceView balanceView;
     private final TextView statusView;
@@ -131,6 +145,7 @@ public class StarsReactionsSheet extends BottomSheet {
         this.currentAccount = currentAccount;
         this.messageObject = messageObject;
         this.reactors = reactors;
+        this.selectedDialogId = UserConfig.getInstance(currentAccount).getClientUserId();
 
         TLRPC.MessageReactor me = null;
         final long selfId = UserConfig.getInstance(currentAccount).getClientUserId();
@@ -183,6 +198,71 @@ public class StarsReactionsSheet extends BottomSheet {
             topLayout.addView(slider, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
         }
 
+        LinearLayout toptopLayout = new LinearLayout(context);
+        toptopLayout.setOrientation(LinearLayout.HORIZONTAL);
+        topLayout.addView(toptopLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.FILL_HORIZONTAL, 0, 0, 0, 0));
+
+        balanceView = new StarsIntroActivity.StarsBalanceView(context, currentAccount);
+        balanceView.setDialogId(selectedDialogId);
+
+//        dialogSelectorLayout = new FrameLayout(context);
+//        dialogSelectorInnerLayout = new FrameLayout(context);
+//        dialogSelectorInnerLayout.setBackground(Theme.createRoundRectDrawable(dp(14), Theme.getColor(Theme.key_dialogBackgroundGray, resourcesProvider)));
+//        dialogImageView = new BackupImageView(context);
+//        dialogImageView.setRoundRadius(dp(14));
+//        TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(UserConfig.getInstance(currentAccount).getClientUserId());
+//        dialogAvatarDrawable = new AvatarDrawable();
+//        dialogAvatarDrawable.setInfo(user);
+//        dialogImageView.setForUserOrChat(user, dialogAvatarDrawable);
+//        dialogSelectorInnerLayout.addView(dialogImageView, LayoutHelper.createFrame(28, 28, Gravity.LEFT | Gravity.FILL_VERTICAL));
+//        dialogSelectorIconView = new ImageView(context);
+//        dialogSelectorIconView.setScaleType(ImageView.ScaleType.CENTER);
+//        dialogSelectorIconView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_dialogTextGray3, resourcesProvider), PorterDuff.Mode.SRC_IN));
+//        dialogSelectorIconView.setImageResource(R.drawable.arrows_select);
+//        dialogSelectorInnerLayout.addView(dialogSelectorIconView, LayoutHelper.createFrame(18, 18, Gravity.RIGHT | Gravity.CENTER_VERTICAL, 0, 0, 4, 0));
+//        dialogSelectorLayout.addView(dialogSelectorInnerLayout, LayoutHelper.createFrame(52, 28));
+//        dialogSelectorLayout.setPadding(dp(8), dp(8), dp(8), dp(8));
+//        toptopLayout.addView(dialogSelectorLayout, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0, Gravity.TOP | Gravity.LEFT, 6, 4, 6, 0));
+//        ScaleStateListAnimator.apply(dialogSelectorLayout);
+//        BotStarsController.getInstance(currentAccount).loadAdmined();
+//        dialogSelectorLayout.setOnClickListener(v -> {
+//            final ArrayList<TLObject> chats = BotStarsController.getInstance(currentAccount).getAdmined();
+//            chats.add(0, UserConfig.getInstance(currentAccount).getCurrentUser());
+//
+//            ItemOptions i = ItemOptions.makeOptions(containerView, resourcesProvider, dialogSelectorInnerLayout);
+//            for (TLObject obj : chats) {
+//                long did;
+//                if (obj instanceof TLRPC.User) {
+//                    did = ((TLRPC.User) obj).id;
+//                } else if (obj instanceof TLRPC.Chat) {
+//                    TLRPC.Chat chat = (TLRPC.Chat) obj;
+//                    if (!ChatObject.isChannelAndNotMegaGroup(chat))
+//                        continue;
+//                    did = -chat.id;
+//                } else continue;
+//                if (did == dialogId) continue;
+//                i.addChat(obj, did == selectedDialogId, () -> {
+//                    selectedDialogId = did;
+//                    if (did >= 0) {
+//                        TLRPC.User _user = MessagesController.getInstance(currentAccount).getUser(did);
+//                        dialogAvatarDrawable.setInfo(_user);
+//                        dialogImageView.setForUserOrChat(_user, dialogAvatarDrawable);
+//                    } else {
+//                        TLRPC.Chat _chat = MessagesController.getInstance(currentAccount).getChat(-did);
+//                        dialogAvatarDrawable.setInfo(_chat);
+//                        dialogImageView.setForUserOrChat(_chat, dialogAvatarDrawable);
+//                    }
+//                    balanceView.setDialogId(selectedDialogId);
+//                });
+//            }
+//            i
+//                .setDrawScrim(false)
+//                .setOnTopOfScrim()
+//                .setDimAlpha(0)
+//                .setGravity(Gravity.RIGHT)
+//                .show();
+//        });
+
         titleView = new TextView(context) {
             @Override
             protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
@@ -191,12 +271,14 @@ public class StarsReactionsSheet extends BottomSheet {
         };
         titleView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
         titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
+//        titleView.setText(getString(R.string.StarsReactionTitle2));
+//        titleView.setGravity(Gravity.CENTER);
+        titleView.setGravity(Gravity.LEFT);
         titleView.setText(getString(R.string.StarsReactionTitle));
-        titleView.setGravity(Gravity.CENTER_VERTICAL);
         titleView.setTypeface(AndroidUtilities.bold());
-        topLayout.addView(titleView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.LEFT, 22, 0, 22,0));
+        titleView.setMaxLines(2);
+        toptopLayout.addView(titleView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 1, Gravity.TOP | Gravity.LEFT, 6, 0, 6, 0));
 
-        balanceView = new StarsIntroActivity.StarsBalanceView(context, currentAccount);
         ScaleStateListAnimator.apply(balanceView);
         balanceView.setOnClickListener(v -> {
             dismiss();
@@ -210,7 +292,7 @@ public class StarsReactionsSheet extends BottomSheet {
                 }
             });
         });
-        topLayout.addView(balanceView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.RIGHT, 6, 0, 6, 0));
+        toptopLayout.addView(balanceView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0, Gravity.TOP | Gravity.RIGHT, 6, 0, 6, 0));
 
         LinearLayout topLayoutTextLayout = new LinearLayout(context);
         topLayoutTextLayout.setOrientation(LinearLayout.VERTICAL);
@@ -460,9 +542,9 @@ public class StarsReactionsSheet extends BottomSheet {
 
     private ChatActivity chatActivity;
     private int messageId;
-    private ChatMessageCell messageCell;
+    private View messageCell;
 
-    public void setMessageCell(ChatActivity chatActivity, int id, ChatMessageCell cell) {
+    public void setMessageCell(ChatActivity chatActivity, int id, View cell) {
         this.chatActivity = chatActivity;
         this.messageId = id;
         this.messageCell = cell;
@@ -479,8 +561,16 @@ public class StarsReactionsSheet extends BottomSheet {
     private ValueAnimator iconAnimator;
     private void animate3dIcon(Runnable pushed) {
         if (messageObject == null || chatActivity.fragmentView == null || !chatActivity.fragmentView.isAttachedToWindow()) return;
-        ChatMessageCell _cell = messageCell;
-        ReactionsLayoutInBubble.ReactionButton _button = _cell != null ? _cell.reactionsLayoutInBubble.getReactionButton(ReactionsLayoutInBubble.VisibleReaction.asStar()) : null;
+        View _cell = messageCell;
+        ReactionsLayoutInBubble.ReactionButton _button = null;
+        ReactionsLayoutInBubble reactionsLayoutInBubble;
+        if (_cell instanceof ChatMessageCell) {
+            reactionsLayoutInBubble = ((ChatMessageCell) _cell).reactionsLayoutInBubble;
+            _button = reactionsLayoutInBubble.getReactionButton(ReactionsLayoutInBubble.VisibleReaction.asStar());
+        } else if (_cell instanceof ChatActionCell) {
+            reactionsLayoutInBubble = ((ChatActionCell) _cell).reactionsLayoutInBubble;
+            _button = reactionsLayoutInBubble.getReactionButton(ReactionsLayoutInBubble.VisibleReaction.asStar());
+        } else return;
         if (_button == null) {
             MessageObject.GroupedMessages group = chatActivity.getValidGroupedMessage(messageObject);
             if (group != null && !group.posArray.isEmpty()) {
@@ -497,12 +587,16 @@ public class StarsReactionsSheet extends BottomSheet {
                 }
             }
             if (_cell == null) return;
-            _button = _cell.reactionsLayoutInBubble.getReactionButton(ReactionsLayoutInBubble.VisibleReaction.asStar());
+            if (_cell instanceof ChatMessageCell) {
+                reactionsLayoutInBubble = ((ChatMessageCell) _cell).reactionsLayoutInBubble;
+                _button = reactionsLayoutInBubble.getReactionButton(ReactionsLayoutInBubble.VisibleReaction.asStar());
+            }
         }
         if (_button == null) {
             return;
         }
-        final ChatMessageCell cell = _cell;
+        final View cell = _cell;
+        final ReactionsLayoutInBubble reactionsLayout = reactionsLayoutInBubble;
         final ReactionsLayoutInBubble.ReactionButton button = _button;
 
         final int[] loc = new int[2];
@@ -523,10 +617,10 @@ public class StarsReactionsSheet extends BottomSheet {
         final Runnable updateTo = () -> {
             cell.getLocationInWindow(loc);
             to.set(
-            loc[0] + cell.reactionsLayoutInBubble.x + button.x + dp(4),
-            loc[1] + cell.reactionsLayoutInBubble.y + button.y + (button.height - dp(22)) / 2f,
-            loc[0] + cell.reactionsLayoutInBubble.x + button.x + dp(4 + 22),
-            loc[1] + cell.reactionsLayoutInBubble.y + button.y + (button.height + dp(22)) / 2f
+            loc[0] + reactionsLayout.x + button.x + dp(4),
+            loc[1] + reactionsLayout.y + button.y + (button.height - dp(22)) / 2f,
+            loc[0] + reactionsLayout.x + button.x + dp(4 + 22),
+            loc[1] + reactionsLayout.y + button.y + (button.height + dp(22)) / 2f
             );
         };
         updateTo.run();
@@ -629,7 +723,7 @@ public class StarsReactionsSheet extends BottomSheet {
         private final Paint textBackgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
         private final Particles sliderParticles = new Particles(Particles.TYPE_RIGHT, 300);
-        private final Particles textParticles = new Particles(Particles.TYPE_RADIAL, 30);
+        private final Particles textParticles = new Particles(Particles.TYPE_RADIAL_INSIDE, 30);
 
         private final LinearGradient gradient = new LinearGradient(0, 0, 255, 0, new int[] {0xFFEEAC0D, 0xFFF9D316}, new float[] {0, 1}, Shader.TileMode.CLAMP);
         private final Matrix gradientMatrix = new Matrix();
@@ -988,6 +1082,7 @@ public class StarsReactionsSheet extends BottomSheet {
 
         public static final int TYPE_RIGHT = 0;
         public static final int TYPE_RADIAL = 1;
+        public static final int TYPE_RADIAL_INSIDE = 2;
 
         public final int type;
         public final ArrayList<Particle> particles;
@@ -1039,11 +1134,25 @@ public class StarsReactionsSheet extends BottomSheet {
 
         public void setBounds(RectF bounds) {
             this.bounds.set(bounds);
-            if (type == TYPE_RADIAL) {
+            removeParticlesOutside();
+        }
+
+        public void setBounds(Rect bounds) {
+            this.bounds.set(bounds);
+            removeParticlesOutside();
+        }
+
+        public void setBounds(int l, int t, int r, int b) {
+            this.bounds.set(l, t, r, b);
+            removeParticlesOutside();
+        }
+
+        public void removeParticlesOutside() {
+            if (type == TYPE_RADIAL_INSIDE) {
                 final long now = System.currentTimeMillis();
                 for (int i = 0; i < particles.size(); ++i) {
                     final Particle p = particles.get(i);
-                    if (!bounds.contains(p.x, p.y)) gen(p, now, firstDraw);
+                    if (!bounds.contains((int) p.x, (int) p.y)) gen(p, now, firstDraw);
                 }
             }
         }

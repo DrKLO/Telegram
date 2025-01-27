@@ -220,6 +220,9 @@ public class FileStreamLoadOperation extends BaseDataSource implements FileLoadO
                     bytesTransferred += bytesRead;
                     bytesTransferred(bytesRead);
                 }
+            } catch (InterruptedException e) {
+                FileLog.e(e);
+                return C.RESULT_NOTHING_READ;
             } catch (Exception e) {
                 throw new IOException(e);
             }

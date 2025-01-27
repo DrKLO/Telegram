@@ -3,6 +3,7 @@ package org.telegram.ui.Components.Premium.boosts.adapters;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Paint;
+import android.graphics.drawable.Drawable;
 import android.text.TextUtils;
 import android.view.View;
 import android.view.ViewGroup;
@@ -148,8 +149,14 @@ public class SelectorAdapter extends AdapterWithDiffUtils {
         final int viewType = holder.getItemViewType();
         if (viewType == VIEW_TYPE_USER) {
             SelectorUserCell userCell = (SelectorUserCell) holder.itemView;
-            if (item.user != null) {
+            if (item.icon != null) {
+                userCell.setCustomUser(item.icon, item.text, item.subtext);
+            } else if (item.user != null) {
                 userCell.setUser(item.user);
+                if (item.subtext != null) {
+                    userCell.setSubtitle(item.subtext);
+                    userCell.subtitleTextView.setTextColor(Theme.getColor(Theme.key_dialogTextGray3, resourcesProvider));
+                }
             } else if (item.chat != null) {
                 userCell.setChat(item.chat, getParticipantsCount(item.chat));
             } else if (item.peer != null) {
@@ -307,6 +314,7 @@ public class SelectorAdapter extends AdapterWithDiffUtils {
         public View.OnClickListener callback;
         public View.OnClickListener options;
         public View view;
+        public Drawable icon;
 
         private Item(int viewType, boolean selectable) {
             super(viewType, selectable);
@@ -329,6 +337,15 @@ public class SelectorAdapter extends AdapterWithDiffUtils {
         public static Item asCustom(View view) {
             Item item = new Item(VIEW_TYPE_CUSTOM, false);
             item.view = view;
+            return item;
+        }
+
+        public static Item asCustomUser(int id, Drawable icon, CharSequence title, CharSequence subtitle) {
+            Item item = new Item(VIEW_TYPE_USER, true);
+            item.id = id;
+            item.icon = icon;
+            item.text = title;
+            item.subtext = subtitle;
             return item;
         }
 

@@ -52,8 +52,10 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.BotWebViewVibrationEffect;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.DialogObject;
+import org.telegram.messenger.Emoji;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserObject;
@@ -73,6 +75,7 @@ import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.DialogCell;
 import org.telegram.ui.Cells.GroupCreateUserCell;
 import org.telegram.ui.Cells.TextInfoPrivacyCell;
+import org.telegram.ui.Components.AnimatedEmojiDrawable;
 import org.telegram.ui.Components.Bulletin;
 import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.CircularProgressDrawable;
@@ -87,6 +90,7 @@ import org.telegram.ui.Components.QRCodeBottomSheet;
 import org.telegram.ui.Components.RLottieImageView;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.TextStyleSpan;
+import org.telegram.ui.Components.spoilers.SpoilersTextView;
 
 import java.util.ArrayList;
 
@@ -410,9 +414,13 @@ public class FilterChatlistActivity extends BaseFragment {
         }
 
         if (invite == null) {
-            hintCountCell.setText(LocaleController.getString(R.string.FilterInviteHeaderNo), animated);
+            hintCountCell.setText(LocaleController.getString(R.string.FilterInviteHeaderNo), false);
         } else {
-            hintCountCell.setText(AndroidUtilities.replaceTags(LocaleController.formatPluralString("FilterInviteHeader", selectedPeers.size(), filter.name)), animated);
+            final Paint.FontMetricsInt fontMetricsInt = hintCountCell.getSubtitleTextView().getPaint().getFontMetricsInt();
+            CharSequence name = filter.name;
+            name = Emoji.replaceEmoji(name, fontMetricsInt, false);
+            name = MessageObject.replaceAnimatedEmoji(name, filter.entities, fontMetricsInt);
+            hintCountCell.setText(AndroidUtilities.replaceTags(LocaleController.formatPluralSpannable("FilterInviteHeader", selectedPeers.size(), name)), filter.title_noanimate);
         }
     }
 
@@ -580,7 +588,9 @@ public class FilterChatlistActivity extends BaseFragment {
                                     ignoreTextChange = true;
                                     s.delete(MAX_NAME_LENGTH, s.length());
                                     AndroidUtilities.shakeView(editText);
-                                    editText.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
+                                    try {
+                                        editText.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
+                                    } catch (Exception ignored) {}
                                     ignoreTextChange = false;
                                 }
                             }
@@ -789,7 +799,7 @@ public class FilterChatlistActivity extends BaseFragment {
     public static class HintInnerCell extends FrameLayout {
 
         private RLottieImageView imageView;
-        private TextView subtitleTextView;
+        private SpoilersTextView subtitleTextView;
 
         public HintInnerCell(Context context, int resId) {
             super(context);
@@ -801,7 +811,7 @@ public class FilterChatlistActivity extends BaseFragment {
             imageView.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
             addView(imageView, LayoutHelper.createFrame(90, 90, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 0, 14, 0, 0));
 
-            subtitleTextView = new TextView(context);
+            subtitleTextView = new SpoilersTextView(context);
             subtitleTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText4));
             subtitleTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             subtitleTextView.setGravity(Gravity.CENTER);
@@ -809,8 +819,13 @@ public class FilterChatlistActivity extends BaseFragment {
             addView(subtitleTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 40, 121, 40, 24));
         }
 
-        public void setText(CharSequence text, boolean animated) {
+        public void setText(CharSequence text, boolean noanimate) {
             subtitleTextView.setText(text);
+            subtitleTextView.cacheType = noanimate ? AnimatedEmojiDrawable.CACHE_TYPE_NOANIMATE_FOLDER : AnimatedEmojiDrawable.CACHE_TYPE_MESSAGES;
+        }
+
+        public SpoilersTextView getSubtitleTextView() {
+            return subtitleTextView;
         }
 
         @Override

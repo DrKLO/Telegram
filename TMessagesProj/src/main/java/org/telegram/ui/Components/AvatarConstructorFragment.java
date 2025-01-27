@@ -46,6 +46,7 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.SvgHelper;
 import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.tgnet.tl.TL_stars;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.ActionBarMenuItem;
@@ -95,13 +96,13 @@ public class AvatarConstructorFragment extends BaseFragment {
     private int gradientBackgroundItemWidth;
 
     public static final int[][] defaultColors = new int[][]{
-            new int[]{0xFF4D8DFF, 0xFF2BBFFF, 0xFF20E2CD, 0xFF0EE1F1},
-            new int[]{0xFF5EB6FB, 0xFF1FCEEB, 0xFF45F7B7, 0xFF1FF1D9},
-            new int[]{0xFF09D260, 0xFF5EDC40, 0xFFC1E526, 0xFF80DF2B},
-            new int[]{0xFFF5694E, 0xFFF5772C, 0xFFFFD412, 0xFFFFA743},
-            new int[]{0xFFF64884, 0xFFEF5B41, 0xFFF6A730, 0xFFFF7742},
-            new int[]{0xFFF94BA0, 0xFFFB5C80, 0xFFFFB23A, 0xFFFE7E62},
-            new int[]{0xFF837CFF, 0xFFB063FF, 0xFFFF72A9, 0xFFE269FF}
+            new int[]{ 0xFF5387DB, 0xFF4F90DB, 0xFF60D6BB, 0xFF50D2D9 },
+            new int[]{ 0xFF54A5E3, 0xFF48ADC7, 0xFF63D695, 0xFF5AE6BC },
+            new int[]{ 0xFF3ABD86, 0xFF55BD4A, 0xFFCCCC52, 0xFFB0C756 },
+            new int[]{ 0xFF836CEB, 0xFFAF68E8, 0xFFDE6D9A, 0xFFD974ED },
+            new int[]{ 0xFFEC5BA1, 0xFFEB6577, 0xFFEB9744, 0xFFF27E64 },
+            new int[]{ 0xFFEA5877, 0xFFE2724D, 0xFFF4AA49, 0xFFF08550 },
+            new int[]{ 0xFFF07854, 0xFFED7E39, 0xFFF0C241, 0xFFF0B04A }
     };
     public boolean finishOnDone = true;
     private ActionBarMenuItem setPhotoItem;
@@ -414,7 +415,7 @@ public class AvatarConstructorFragment extends BaseFragment {
                 }
             }
 
-            protected void onEmojiSelected(View view, Long documentId, TLRPC.Document document, Integer until) {
+            protected void onEmojiSelected(View view, Long documentId, TLRPC.Document document, TL_stars.TL_starGiftUnique gift, Integer until) {
                 long docId = documentId == null ? 0 : documentId;
                 setPreview(docId, document);
             }

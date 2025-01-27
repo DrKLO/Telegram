@@ -7,7 +7,6 @@ import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
-import android.text.TextUtils;
 import android.view.View;
 import android.widget.FrameLayout;
 
@@ -17,6 +16,7 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.tgnet.tl.TL_account;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenuItem;
 import org.telegram.ui.ActionBar.AlertDialog;
@@ -176,9 +176,9 @@ public class GreetMessagesActivity extends BaseFragment implements NotificationC
 
         doneButtonDrawable.animateToProgress(1f);
         TLRPC.UserFull userFull = getMessagesController().getUserFull(getUserConfig().getClientUserId());
-        TLRPC.TL_account_updateBusinessGreetingMessage req = new TLRPC.TL_account_updateBusinessGreetingMessage();
+        TL_account.updateBusinessGreetingMessage req = new TL_account.updateBusinessGreetingMessage();
         if (enabled) {
-            req.message = new TLRPC.TL_inputBusinessGreetingMessage();
+            req.message = new TL_account.TL_inputBusinessGreetingMessage();
             req.message.shortcut_id = reply.id;
             req.message.recipients = recipientsHelper.getInputValue();
             req.message.no_activity_days = inactivityDays;
@@ -186,7 +186,7 @@ public class GreetMessagesActivity extends BaseFragment implements NotificationC
 
             if (userFull != null) {
                 userFull.flags2 |= 4;
-                userFull.business_greeting_message = new TLRPC.TL_businessGreetingMessage();
+                userFull.business_greeting_message = new TL_account.TL_businessGreetingMessage();
                 userFull.business_greeting_message.shortcut_id = reply.id;
                 userFull.business_greeting_message.recipients = recipientsHelper.getValue();
                 userFull.business_greeting_message.no_activity_days = inactivityDays;
@@ -231,7 +231,7 @@ public class GreetMessagesActivity extends BaseFragment implements NotificationC
     }
 
 
-    public TLRPC.TL_businessGreetingMessage currentValue;
+    public TL_account.TL_businessGreetingMessage currentValue;
 
     public boolean enabled;
     public boolean exclude;

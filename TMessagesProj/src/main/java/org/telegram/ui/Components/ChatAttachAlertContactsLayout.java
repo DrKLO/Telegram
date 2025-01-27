@@ -118,7 +118,7 @@ public class ChatAttachAlertContactsLayout extends ChatAttachAlert.AttachAlertLa
             nameTextView = new SimpleTextView(context) {
                 @Override
                 public boolean setText(CharSequence value, boolean force) {
-                    value = Emoji.replaceEmoji(value, getPaint().getFontMetricsInt(), AndroidUtilities.dp(14), false);
+                    value = Emoji.replaceEmoji(value, getPaint().getFontMetricsInt(), false);
                     return super.setText(value, force);
                 }
             };

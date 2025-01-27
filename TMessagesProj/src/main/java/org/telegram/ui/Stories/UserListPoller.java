@@ -11,6 +11,7 @@ import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.support.LongSparseLongArray;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.tgnet.Vector;
 import org.telegram.tgnet.tl.TL_stories;
 import org.telegram.ui.Cells.DialogCell;
 import org.telegram.ui.Cells.UserCell;
@@ -52,8 +53,8 @@ public class UserListPoller {
                     request.id.add(MessagesController.getInstance(currentAccount).getInputPeer(dialogsFinal.get(i)));
                 }
                 ConnectionsManager.getInstance(currentAccount).sendRequest(request, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
-                    if (response != null) {
-                        TLRPC.Vector vector = (TLRPC.Vector) response;
+                    if (response instanceof Vector) {
+                        Vector vector = (Vector) response;
                         ArrayList<TLRPC.User> usersToUpdate = new ArrayList<>();
                         ArrayList<TLRPC.Chat> chatsToUpdate = new ArrayList<>();
                         for (int i = 0; i < vector.objects.size(); i++) {
@@ -62,7 +63,7 @@ public class UserListPoller {
                                 if (user == null) {
                                     continue;
                                 }
-                                user.stories_max_id = (int) vector.objects.get(i);
+                                user.stories_max_id = ((Vector.Int) vector.objects.get(i)).value;
                                 if (user.stories_max_id != 0) {
                                     user.flags2 |= 32;
                                 } else {
@@ -74,7 +75,7 @@ public class UserListPoller {
                                 if (chat == null) {
                                     continue;
                                 }
-                                chat.stories_max_id = (int) vector.objects.get(i);
+                                chat.stories_max_id = ((Vector.Int) vector.objects.get(i)).value;
                                 if (chat.stories_max_id != 0) {
                                     chat.flags2 |= 16;
                                 } else {

@@ -24,6 +24,7 @@ import org.telegram.SQLite.SQLiteCursor;
 import org.telegram.SQLite.SQLitePreparedStatement;
 import org.telegram.tgnet.NativeByteBuffer;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.tgnet.tl.TL_account;
 import org.telegram.tgnet.tl.TL_stories;
 import org.telegram.ui.Components.Bulletin;
 import org.telegram.ui.LaunchActivity;
@@ -352,13 +353,13 @@ public class DownloadController extends BaseController implements NotificationCe
             return;
         }
         loadingAutoDownloadConfig = true;
-        TLRPC.TL_account_getAutoDownloadSettings req = new TLRPC.TL_account_getAutoDownloadSettings();
+        TL_account.getAutoDownloadSettings req = new TL_account.getAutoDownloadSettings();
         getConnectionsManager().sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
             loadingAutoDownloadConfig = false;
             getUserConfig().autoDownloadConfigLoadTime = System.currentTimeMillis();
             getUserConfig().saveConfig(false);
             if (response != null) {
-                TLRPC.TL_account_autoDownloadSettings res = (TLRPC.TL_account_autoDownloadSettings) response;
+                TL_account.autoDownloadSettings res = (TL_account.autoDownloadSettings) response;
                 lowPreset.set(res.low);
                 lowPreset.preloadStories = false;
                 mediumPreset.set(res.medium);
@@ -666,6 +667,24 @@ public class DownloadController extends BaseController implements NotificationCe
         return canDownloadMediaInternal(messageObject);
     }
 
+    public int canDownloadMediaType(MessageObject messageObject, long overrideSize) {
+        if (messageObject.type == MessageObject.TYPE_STORY) {
+            if (!SharedConfig.isAutoplayVideo()) return 0;
+            TLRPC.TL_messageMediaStory mediaStory = (TLRPC.TL_messageMediaStory) MessageObject.getMedia(messageObject);
+            TL_stories.StoryItem storyItem = mediaStory.storyItem;
+            if (storyItem == null || storyItem.media == null || storyItem.media.document == null || !storyItem.isPublic) {
+                return 0;
+            }
+            return 2;
+        }
+        if (messageObject.sponsoredMedia != null) {
+            return 2;
+        }
+        if (messageObject.isHiddenSensitive())
+            return 0;
+        return canDownloadMediaInternal(messageObject, overrideSize);
+    }
+
     private int canDownloadMediaInternal(MessageObject message) {
         if (message == null || message.messageOwner == null) return 0;
         if (message.messageOwner.media instanceof TLRPC.TL_messageMediaStory) {
@@ -749,6 +768,89 @@ public class DownloadController extends BaseController implements NotificationCe
         } else {
             size = MessageObject.getMessageSize(msg);
         }
+        if (isVideo && preset.preloadVideo && size > maxSize && maxSize > 2 * 1024 * 1024) {
+            return (mask & type) != 0 ? 2 : 0;
+        } else {
+            return (type == AUTODOWNLOAD_TYPE_PHOTO || size != 0 && size <= maxSize) && (type == AUTODOWNLOAD_TYPE_AUDIO || (mask & type) != 0) ? 1 : 0;
+        }
+    }
+
+    private int canDownloadMediaInternal(MessageObject message, long overrideSize) {
+        if (message == null || message.messageOwner == null) return 0;
+        if (message.messageOwner.media instanceof TLRPC.TL_messageMediaStory) {
+            return canPreloadStories() ? 2 : 0;
+        }
+        TLRPC.Message msg = message.messageOwner;
+        int type;
+        boolean isVideo;
+        if ((isVideo = MessageObject.isVideoMessage(msg)) || MessageObject.isGifMessage(msg) || MessageObject.isRoundVideoMessage(msg) || MessageObject.isGameMessage(msg)) {
+            type = AUTODOWNLOAD_TYPE_VIDEO;
+        } else if (MessageObject.isVoiceMessage(msg)) {
+            type = AUTODOWNLOAD_TYPE_AUDIO;
+        } else if (MessageObject.isPhoto(msg) || MessageObject.isStickerMessage(msg) || MessageObject.isAnimatedStickerMessage(msg)) {
+            type = AUTODOWNLOAD_TYPE_PHOTO;
+        } else if (MessageObject.getDocument(msg) != null) {
+            type = AUTODOWNLOAD_TYPE_DOCUMENT;
+        } else {
+            return 0;
+        }
+        int index;
+        TLRPC.Peer peer = msg.peer_id;
+        if (peer != null) {
+            if (peer.user_id != 0) {
+                if (getContactsController().contactsDict.containsKey(peer.user_id)) {
+                    index = 0;
+                } else {
+                    index = 1;
+                }
+            } else if (peer.chat_id != 0) {
+                if (msg.from_id instanceof TLRPC.TL_peerUser && getContactsController().contactsDict.containsKey(msg.from_id.user_id)) {
+                    index = 0;
+                } else {
+                    index = 2;
+                }
+            } else {
+                TLRPC.Chat chat = msg.peer_id.channel_id != 0 ? getMessagesController().getChat(msg.peer_id.channel_id) : null;
+                if (ChatObject.isChannel(chat) && chat.megagroup) {
+                    if (msg.from_id instanceof TLRPC.TL_peerUser && getContactsController().contactsDict.containsKey(msg.from_id.user_id)) {
+                        index = 0;
+                    } else {
+                        index = 2;
+                    }
+                } else {
+                    index = 3;
+                }
+            }
+        } else {
+            index = 1;
+        }
+        Preset preset;
+        int networkType = ApplicationLoader.getAutodownloadNetworkType();
+        if (networkType == StatsController.TYPE_WIFI) {
+            if (!wifiPreset.enabled) {
+                return 0;
+            }
+            preset = getCurrentWiFiPreset();
+
+        } else if (networkType == StatsController.TYPE_ROAMING) {
+            if (!roamingPreset.enabled) {
+                return 0;
+            }
+            preset = getCurrentRoamingPreset();
+        } else {
+            if (!mobilePreset.enabled) {
+                return 0;
+            }
+            preset = getCurrentMobilePreset();
+        }
+        final int mask = preset.mask[index];
+        final long maxSize;
+        if (type == AUTODOWNLOAD_TYPE_AUDIO) {
+            maxSize = Math.max(512 * 1024, preset.sizes[typeToIndex(type)]);
+        } else {
+            maxSize = preset.sizes[typeToIndex(type)];
+        }
+        final long size = overrideSize;
         if (isVideo && preset.preloadVideo && size > maxSize && maxSize > 2 * 1024 * 1024) {
             return (mask & type) != 0 ? 2 : 0;
         } else {
@@ -963,7 +1065,7 @@ public class DownloadController extends BaseController implements NotificationCe
     }
 
     public void savePresetToServer(int type) {
-        TLRPC.TL_account_saveAutoDownloadSettings req = new TLRPC.TL_account_saveAutoDownloadSettings();
+        TL_account.saveAutoDownloadSettings req = new TL_account.saveAutoDownloadSettings();
         Preset preset;
         boolean enabled;
         if (type == 0) {

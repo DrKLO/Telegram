@@ -215,6 +215,7 @@ public class ChatEditTypeActivity extends BaseFragment implements NotificationCe
 //            }
         }
         getNotificationCenter().addObserver(this, NotificationCenter.chatInfoDidLoad);
+        getNotificationCenter().addObserver(this, NotificationCenter.dialogDeleted);
         return super.onFragmentCreate();
     }
 
@@ -222,6 +223,7 @@ public class ChatEditTypeActivity extends BaseFragment implements NotificationCe
     public void onFragmentDestroy() {
         super.onFragmentDestroy();
         getNotificationCenter().removeObserver(this, NotificationCenter.chatInfoDidLoad);
+        getNotificationCenter().removeObserver(this, NotificationCenter.dialogDeleted);
         AndroidUtilities.removeAdjustResize(getParentActivity(), classGuid);
     }
 
@@ -669,6 +671,15 @@ public class ChatEditTypeActivity extends BaseFragment implements NotificationCe
                 info = chatFull;
                 invite = chatFull.exported_invite;
                 updatePrivatePublic();
+            }
+        } else if (id == NotificationCenter.dialogDeleted) {
+            long dialogId = (long) args[0];
+            if (-this.chatId == dialogId) {
+                if (parentLayout != null && parentLayout.getLastFragment() == this) {
+                    finishFragment();
+                } else {
+                    removeSelfFromStack();
+                }
             }
         }
     }

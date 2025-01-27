@@ -1,6 +1,5 @@
 package org.telegram.ui.Components.Premium.boosts.cells;
 
-import static org.telegram.messenger.AndroidUtilities.dp;
 import static org.telegram.tgnet.tl.TL_stories.Boost.NO_USER_ID;
 
 import android.annotation.SuppressLint;
@@ -232,12 +231,12 @@ public class TableCell extends FrameLayout {
             builder.append(fromChat.title);
             builder.append("**");
             builder = AndroidUtilities.replaceSingleTag(builder.toString(), Theme.key_chat_messageLinkIn, 0, () -> onObjectClicked.run(fromChat), resourcesProvider);
-            fromTextView.setText(Emoji.replaceEmoji(builder, fromTextView.getPaint().getFontMetricsInt(), dp(12), false));
+            fromTextView.setText(Emoji.replaceEmoji(builder, fromTextView.getPaint().getFontMetricsInt(), false));
             fromImageView.setForUserOrChat(fromChat, new AvatarDrawable(fromChat));
             fromFrameLayout.setOnClickListener(v -> onObjectClicked.run(fromChat));
         } else {
             TLRPC.User fromUser = MessagesController.getInstance(UserConfig.selectedAccount).getUser(giftCode.from_id.user_id);
-            fromTextView.setText(Emoji.replaceEmoji(UserObject.getFirstName(fromUser), fromTextView.getPaint().getFontMetricsInt(), dp(12), false));
+            fromTextView.setText(Emoji.replaceEmoji(UserObject.getFirstName(fromUser), fromTextView.getPaint().getFontMetricsInt(), false));
             fromImageView.setForUserOrChat(fromUser, new AvatarDrawable(fromUser));
             fromFrameLayout.setOnClickListener(v -> onObjectClicked.run(fromUser));
         }
@@ -262,7 +261,7 @@ public class TableCell extends FrameLayout {
                 builder.append(UserObject.getFirstName(toUser));
                 builder.append("**");
                 builder = AndroidUtilities.replaceSingleTag(builder.toString(), Theme.key_chat_messageLinkIn, 0, () -> onObjectClicked.run(toUser), resourcesProvider);
-                toTextView.setText(Emoji.replaceEmoji(builder, toTextView.getPaint().getFontMetricsInt(), dp(12), false));
+                toTextView.setText(Emoji.replaceEmoji(builder, toTextView.getPaint().getFontMetricsInt(), false));
                 toImageView.setForUserOrChat(toUser, new AvatarDrawable(toUser));
                 toFrameLayout.setOnClickListener(v -> onObjectClicked.run(toUser));
             }

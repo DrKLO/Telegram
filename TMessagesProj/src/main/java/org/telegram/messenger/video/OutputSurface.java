@@ -42,68 +42,12 @@ public class OutputSurface implements SurfaceTexture.OnFrameAvailableListener {
     private boolean mFrameAvailable;
     private TextureRenderer mTextureRender;
 
-    private android.opengl.EGLContext parentContext;
-    private Handler handler;
-
-    public OutputSurface(android.opengl.EGLContext context, MediaController.SavedFilterState savedFilterState, String imagePath, String paintPath, String blurPath, ArrayList<VideoEditedInfo.MediaEntity> mediaEntities, MediaController.CropState cropState, int w, int h, int originalW, int originalH, int rotation, float fps, boolean photo, Integer gradientTopColor, Integer gradientBottomColor, StoryEntry.HDRInfo hdrInfo, MediaCodecVideoConvertor.ConvertVideoParams params, Handler handler) {
-        this.parentContext = context;
-        this.handler = handler;
-        final CountDownLatch latch = new CountDownLatch(1);
-        handler.post(() -> {
-            setupBackground(context);
-            latch.countDown();
-        });
-        try {
-            latch.await();
-        } catch (Exception e) {
-            FileLog.e(e);
-        }
-        mTextureRender = new TextureRenderer(savedFilterState, imagePath, paintPath, blurPath, mediaEntities, cropState, w, h, originalW, originalH, rotation, fps, photo, gradientTopColor, gradientBottomColor, hdrInfo, params, handler, bgEGLContext);
+    public OutputSurface(MediaController.SavedFilterState savedFilterState, String imagePath, String paintPath, String blurPath, ArrayList<VideoEditedInfo.MediaEntity> mediaEntities, MediaController.CropState cropState, int w, int h, int originalW, int originalH, int rotation, float fps, boolean photo, Integer gradientTopColor, Integer gradientBottomColor, StoryEntry.HDRInfo hdrInfo, MediaCodecVideoConvertor.ConvertVideoParams params) {
+        mTextureRender = new TextureRenderer(savedFilterState, imagePath, paintPath, blurPath, mediaEntities, cropState, w, h, originalW, originalH, rotation, fps, photo, gradientTopColor, gradientBottomColor, hdrInfo, params);
         mTextureRender.surfaceCreated();
         mSurfaceTexture = new SurfaceTexture(mTextureRender.getTextureId());
         mSurfaceTexture.setOnFrameAvailableListener(this);
         mSurface = new Surface(mSurfaceTexture);
-    }
-
-    private EGLDisplay bgEGLDisplay;
-    private EGLContext bgEGLContext;
-    private void setupBackground(EGLContext ctx) {
-        bgEGLDisplay = EGL14.eglGetDisplay(EGL14.EGL_DEFAULT_DISPLAY);
-        if (bgEGLDisplay == EGL14.EGL_NO_DISPLAY) {
-            throw new RuntimeException("unable to get EGL14 display");
-        }
-        int[] version = new int[2];
-        if (!EGL14.eglInitialize(bgEGLDisplay, version, 0, version, 1)) {
-            bgEGLDisplay = null;
-            throw new RuntimeException("unable to initialize EGL14");
-        }
-
-        int[] attribList = {
-            EGL14.EGL_RED_SIZE, 8,
-            EGL14.EGL_GREEN_SIZE, 8,
-            EGL14.EGL_BLUE_SIZE, 8,
-            EGL14.EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
-            EGL14.EGL_NONE
-        };
-        EGLConfig[] configs = new EGLConfig[1];
-        int[] numConfigs = new int[1];
-        if (!EGL14.eglChooseConfig(bgEGLDisplay, attribList, 0, configs, 0, configs.length,
-                numConfigs, 0)) {
-            throw new RuntimeException("unable to find RGB888+recordable ES2 EGL config");
-        }
-        int[] attrib_list = {
-                EGL14.EGL_CONTEXT_CLIENT_VERSION, 2,
-                EGL14.EGL_NONE
-        };
-        bgEGLContext = EGL14.eglCreateContext(bgEGLDisplay, configs[0], ctx, attrib_list, 0);
-        checkEglError("eglCreateContext");
-        if (bgEGLContext == null) {
-            throw new RuntimeException("null context");
-        }
-        checkEglError("before makeCurrent");
-        if (!EGL14.eglMakeCurrent(bgEGLDisplay, EGL14.EGL_NO_SURFACE, EGL14.EGL_NO_SURFACE, bgEGLContext)) {
-            throw new RuntimeException("eglMakeCurrent failed");
-        }
     }
 
 //    private void eglSetup(int width, int height) {

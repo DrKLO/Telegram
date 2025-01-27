@@ -31,6 +31,8 @@ import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.web.R;
 import org.telegram.tgnet.AbstractSerializedData;
 import org.telegram.tgnet.ConnectionsManager;
+import org.telegram.tgnet.InputSerializedData;
+import org.telegram.tgnet.OutputSerializedData;
 import org.telegram.tgnet.SerializedData;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TL_smsjobs;
@@ -441,7 +443,7 @@ public class SMSJobController implements NotificationCenter.NotificationCenterDe
         }
 
         @Override
-        public void serializeToStream(AbstractSerializedData stream) {
+        public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(0x8384213);
             stream.writeInt32(id);
             stream.writeInt32(currentAccount);
@@ -459,7 +461,7 @@ public class SMSJobController implements NotificationCenter.NotificationCenterDe
         }
 
         @Override
-        public void readParams(AbstractSerializedData stream, boolean exception) {
+        public void readParams(InputSerializedData stream, boolean exception) {
             id = stream.readInt32(exception);
             currentAccount = stream.readInt32(exception);
             jobId = stream.readString(exception);

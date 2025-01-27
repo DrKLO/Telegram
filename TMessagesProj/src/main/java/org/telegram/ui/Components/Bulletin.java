@@ -1,6 +1,7 @@
 package org.telegram.ui.Components;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
+import static org.telegram.messenger.AndroidUtilities.dpf2;
 import static java.lang.annotation.RetentionPolicy.SOURCE;
 
 import android.animation.Animator;
@@ -239,6 +240,12 @@ public class Bulletin {
         return show(false);
     }
 
+    private boolean skipShowAnimation;
+    public Bulletin skipShowAnimation() {
+        skipShowAnimation = true;
+        return this;
+    }
+
     public Bulletin show(boolean top) {
         if (!showing && containerLayout != null) {
             showing = true;
@@ -302,7 +309,7 @@ public class Bulletin {
                         if (currentDelegate != null) {
                             currentDelegate.onShow(Bulletin.this);
                         }
-                        if (isTransitionsEnabled()) {
+                        if (isTransitionsEnabled() && !skipShowAnimation) {
                             ensureLayoutTransitionCreated();
                             layout.transitionRunningEnter = true;
                             layout.delegate = currentDelegate;
@@ -1578,6 +1585,95 @@ public class Bulletin {
         }
     }
 
+    public static class ProgressLayout extends ButtonLayout {
+
+        public float progress;
+        public FrameLayout progressView;
+        public BackupImageView imageView;
+        public AnimatedTextView textView;
+
+        public ProgressLayout(@NonNull Context context, Theme.ResourcesProvider resourcesProvider) {
+            super(context, resourcesProvider);
+
+            progressView = new FrameLayout(context) {
+                private final AnimatedFloat animatedProgress = new AnimatedFloat(this, 320, CubicBezierInterpolator.EASE_OUT_QUINT);
+                private final AnimatedFloat animatedDone = new AnimatedFloat(this, 320, CubicBezierInterpolator.EASE_OUT_QUINT);
+                private final Paint strokePaint = new Paint(Paint.ANTI_ALIAS_FLAG); {
+                    strokePaint.setStyle(Paint.Style.STROKE);
+                    strokePaint.setColor(0xFFFFFFF);
+                    strokePaint.setStrokeWidth(dp(1.66f));
+                    strokePaint.setStrokeCap(Paint.Cap.ROUND);
+                    strokePaint.setStrokeJoin(Paint.Join.ROUND);
+                }
+                private final RectF rect = new RectF();
+                private final long start = System.currentTimeMillis();
+                @Override
+                protected void onDraw(@NonNull Canvas canvas) {
+                    final float progress = animatedProgress.set(ProgressLayout.this.progress);
+                    final float done = animatedDone.set(ProgressLayout.this.progress >= 1);
+
+                    final float cx = getWidth() / 2.0f, cy = getHeight() / 2.0f;
+                    rect.set(cx - dpf2(13), cy - dpf2(13), cx + dpf2(13), cy + dpf2(13));
+
+                    float t = ((System.currentTimeMillis() - start) * .45f) % 5400;
+                    float segment0 = Math.max(0, 1520 * t / 5400f - 20);
+                    float segment1 = 1520 * t / 5400f;
+                    for (int i = 0; i < 4; ++i) {
+                        segment1 += CircularProgressDrawable.interpolator.getInterpolation((t - i * 1350) / 667f) * 250;
+                        segment0 += CircularProgressDrawable.interpolator.getInterpolation((t - (667 + i * 1350)) / 667f) * 250;
+                    }
+                    strokePaint.setColor(Theme.multAlpha(0xFFFFFFFF, 1.0f * (1.0f - done)));
+                    canvas.drawArc(rect, -90 - segment0, -360 * Math.max(.02f, progress), false, strokePaint);
+
+                    if (progress < 1 && done < 1) {
+                        invalidate();
+                    }
+
+                    super.onDraw(canvas);
+                }
+            };
+            progressView.setWillNotDraw(false);
+            addView(progressView, LayoutHelper.createFrameRelatively(32, 32, Gravity.START | Gravity.CENTER_VERTICAL, 12, 8, 12, 8));
+
+            imageView = new BackupImageView(context);
+            imageView.setRoundRadius(dp(14));
+            progressView.addView(imageView, LayoutHelper.createFrame(28, 28, Gravity.CENTER));
+
+            textView = new AnimatedTextView(context);
+            textView.setTypeface(Typeface.SANS_SERIF);
+            textView.setTextSize(dp(15));
+            textView.setPadding(0, dp(8), 0, dp(8));
+            addView(textView, LayoutHelper.createFrameRelatively(LayoutHelper.WRAP_CONTENT, 18, Gravity.START | Gravity.CENTER_VERTICAL, 56, 0, 8, 0));
+
+            setTextColor(getThemedColor(Theme.key_undo_infoColor));
+            setBackground(getThemedColor(Theme.key_undo_background));
+        }
+
+        public ProgressLayout(@NonNull Context context, Theme.ResourcesProvider resourcesProvider, int backgroundColor, int textColor) {
+            this(context, resourcesProvider);
+            setBackground(backgroundColor);
+            setTextColor(textColor);
+        }
+
+        public void setTextColor(int textColor) {
+            textView.setTextColor(textColor);
+        }
+
+        public CharSequence getAccessibilityText() {
+            return textView.getText();
+        }
+
+        private boolean inprogress;
+        public void setProgress(float progress) {
+            if (inprogress != progress < 1) {
+                inprogress = progress < 1;
+                imageView.animate().scaleX(inprogress ? 0.78f : 1.0f).scaleY(inprogress ? 0.78f : 1.0f).setDuration(320).setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT).start();
+            }
+            this.progress = progress;
+            progressView.invalidate();
+        }
+    }
+
     public static class LottieLayout extends ButtonLayout {
 
         public RLottieImageView imageView;
@@ -1599,7 +1695,7 @@ public class Bulletin {
 
                 @Override
                 public void setText(CharSequence text, BufferType type) {
-                    text = Emoji.replaceEmoji(text, getPaint().getFontMetricsInt(), dp(13), false);
+                    text = Emoji.replaceEmoji(text, getPaint().getFontMetricsInt(), false);
                     super.setText(text, type);
                 }
             };
@@ -1725,7 +1821,7 @@ public class Bulletin {
                 textView = new LinkSpanDrawable.LinksTextView(context) {
                     @Override
                     public void setText(CharSequence text, BufferType type) {
-                        text = Emoji.replaceEmoji(text, getPaint().getFontMetricsInt(), dp(13), false);
+                        text = Emoji.replaceEmoji(text, getPaint().getFontMetricsInt(), false);
                         super.setText(text, type);
                     }
                 };
@@ -1744,7 +1840,7 @@ public class Bulletin {
                 textView = new LinkSpanDrawable.LinksTextView(context) {
                     @Override
                     public void setText(CharSequence text, BufferType type) {
-                        text = Emoji.replaceEmoji(text, getPaint().getFontMetricsInt(), dp(13), false);
+                        text = Emoji.replaceEmoji(text, getPaint().getFontMetricsInt(), false);
                         super.setText(text, type);
                     }
                 };

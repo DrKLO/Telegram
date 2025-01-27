@@ -740,7 +740,7 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
     }
 
     @Override
-    public void didStartUpload(boolean isVideo) {
+    public void didStartUpload(boolean fromAvatarConstructor, boolean isVideo) {
         if (avatarProgressView == null) {
             return;
         }

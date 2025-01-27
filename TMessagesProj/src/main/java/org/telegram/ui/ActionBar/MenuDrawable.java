@@ -8,6 +8,9 @@
 
 package org.telegram.ui.ActionBar;
 
+import static org.telegram.messenger.AndroidUtilities.dp;
+import static org.telegram.messenger.AndroidUtilities.dpf2;
+
 import android.graphics.Canvas;
 import android.graphics.ColorFilter;
 import android.graphics.Paint;
@@ -22,8 +25,8 @@ import org.telegram.ui.Components.MediaActionDrawable;
 
 public class MenuDrawable extends Drawable {
 
-    private Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
-    private Paint backPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint backPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private boolean reverseAngle;
     private long lastFrameTime;
     private boolean animationInProgress;
@@ -61,7 +64,7 @@ public class MenuDrawable extends Drawable {
 
     public MenuDrawable(int type) {
         super();
-        paint.setStrokeWidth(AndroidUtilities.dp(2));
+        paint.setStrokeWidth(dp(2));
         backPaint.setStrokeWidth(AndroidUtilities.density * 1.66f);
         backPaint.setStrokeCap(Paint.Cap.ROUND);
         backPaint.setStyle(Paint.Style.STROKE);
@@ -144,7 +147,7 @@ public class MenuDrawable extends Drawable {
 
         canvas.save();
 
-        canvas.translate(getIntrinsicWidth() / 2 - AndroidUtilities.dp(9) - AndroidUtilities.dp(1) * currentRotation, getIntrinsicHeight() / 2);
+        canvas.translate(getIntrinsicWidth() / 2 - dp(9) - dp(1) * currentRotation, getIntrinsicHeight() / 2);
         float endYDiff;
         float endXDiff;
         float startYDiff;
@@ -156,55 +159,55 @@ public class MenuDrawable extends Drawable {
         float diffMiddle = 0;
         if (type == TYPE_DEFAULT) {
             if (previousType != TYPE_DEFAULT) {
-                diffUp = AndroidUtilities.dp(9) * (1.0f - typeAnimationProgress);
-                diffMiddle = AndroidUtilities.dp(7) * (1.0f - typeAnimationProgress);
+                diffUp = dp(9) * (1.0f - typeAnimationProgress);
+                diffMiddle = dp(7) * (1.0f - typeAnimationProgress);
             }
         } else {
             if (previousType == TYPE_DEFAULT) {
-                diffUp = AndroidUtilities.dp(9) * typeAnimationProgress * (1.0f - currentRotation);
-                diffMiddle = AndroidUtilities.dp(7) * typeAnimationProgress * (1.0f - currentRotation);
+                diffUp = dp(9) * typeAnimationProgress * (1.0f - currentRotation);
+                diffMiddle = dp(7) * typeAnimationProgress * (1.0f - currentRotation);
             } else {
-                diffUp = AndroidUtilities.dp(9) * (1.0f - currentRotation);
-                diffMiddle = AndroidUtilities.dp(7) * (1.0f - currentRotation);
+                diffUp = dp(9) * (1.0f - currentRotation);
+                diffMiddle = dp(7) * (1.0f - currentRotation);
             }
         }
         if (rotateToBack) {
-            canvas.rotate(currentRotation * (reverseAngle ? -180 : 180), AndroidUtilities.dp(9), 0);
+            canvas.rotate(currentRotation * (reverseAngle ? -180 : 180), dp(9), 0);
             paint.setColor(color1);
             paint.setAlpha(alpha);
-            canvas.drawLine((roundCap ? AndroidUtilities.dp(.5f) * currentRotation + (paint.getStrokeWidth() / 2f) * (1f - currentRotation) : 0), 0, AndroidUtilities.dp(18) - AndroidUtilities.dp(3.0f) * currentRotation - diffMiddle - (roundCap ? (paint.getStrokeWidth() / 2f) * (1f - currentRotation) : 0), 0, paint);
-            endYDiff = AndroidUtilities.dp(5) * (1 - Math.abs(currentRotation)) - AndroidUtilities.dp(0.5f) * Math.abs(currentRotation);
-            endXDiff = AndroidUtilities.dp(18) - AndroidUtilities.dp(2.5f) * Math.abs(currentRotation);
-            startYDiff = AndroidUtilities.dp(5) + AndroidUtilities.dp(2.0f) * Math.abs(currentRotation);
-            startXDiff = AndroidUtilities.dp(7.5f) * Math.abs(currentRotation);
+            canvas.drawLine((roundCap ? dp(.5f) * currentRotation + (paint.getStrokeWidth() / 2f) * (1f - currentRotation) : 0), 0, dp(18) - dp(3.0f) * currentRotation - diffMiddle - (roundCap ? (paint.getStrokeWidth() / 2f) * (1f - currentRotation) : 0), 0, paint);
+            endYDiff = dp(5) * (1 - Math.abs(currentRotation)) - dp(0.5f) * Math.abs(currentRotation);
+            endXDiff = dp(18) - dp(2.5f) * Math.abs(currentRotation);
+            startYDiff = dp(5) + dp(2.0f) * Math.abs(currentRotation);
+            startXDiff = dp(7.5f) * Math.abs(currentRotation);
             if (roundCap) {
                 startXDiff += (paint.getStrokeWidth() / 2f) * (1f - currentRotation);
-                endYDiff += AndroidUtilities.dp(.5f) * currentRotation;
-                endXDiff -= AndroidUtilities.dp(.5f) * currentRotation + (paint.getStrokeWidth() / 2f) * (1f - currentRotation);
-                startYDiff -= AndroidUtilities.dp(.75f) * currentRotation;
-                endYDiff += AndroidUtilities.dp(.25f) * currentRotation;
+                endYDiff += dp(.5f) * currentRotation;
+                endXDiff -= dp(.5f) * currentRotation + (paint.getStrokeWidth() / 2f) * (1f - currentRotation);
+                startYDiff -= dp(.25f) * currentRotation;
+                endYDiff += dp(.25f) * currentRotation;
             }
         } else {
-            canvas.rotate(currentRotation * (reverseAngle ? -225 : 135), AndroidUtilities.dp(9), 0);
+            canvas.rotate(currentRotation * (reverseAngle ? -225 : 135), dp(9), 0);
             if (miniIcon) {
                 paint.setColor(color1);
                 paint.setAlpha(alpha);
-                canvas.drawLine(AndroidUtilities.dpf2(2) * (1 - Math.abs(currentRotation)) + AndroidUtilities.dp(1) * currentRotation, 0, AndroidUtilities.dpf2(16) * (1f - currentRotation) + AndroidUtilities.dp(17) * currentRotation - diffMiddle, 0, paint);
-                endYDiff = AndroidUtilities.dpf2(5) * (1 - Math.abs(currentRotation)) - AndroidUtilities.dpf2(0.5f) * Math.abs(currentRotation);
-                endXDiff = AndroidUtilities.dpf2(16) * (1 - Math.abs(currentRotation)) + (AndroidUtilities.dpf2(9)) * Math.abs(currentRotation);
-                startYDiff = AndroidUtilities.dpf2(5) + AndroidUtilities.dpf2(3.0f) * Math.abs(currentRotation);
-                startXDiff = AndroidUtilities.dpf2(2) + AndroidUtilities.dpf2(7) * Math.abs(currentRotation);
+                canvas.drawLine(dpf2(2) * (1 - Math.abs(currentRotation)) + dp(1) * currentRotation, 0, dpf2(16) * (1f - currentRotation) + dp(17) * currentRotation - diffMiddle, 0, paint);
+                endYDiff = dpf2(5) * (1 - Math.abs(currentRotation)) - dpf2(0.5f) * Math.abs(currentRotation);
+                endXDiff = dpf2(16) * (1 - Math.abs(currentRotation)) + (dpf2(9)) * Math.abs(currentRotation);
+                startYDiff = dpf2(5) + dpf2(3.0f) * Math.abs(currentRotation);
+                startXDiff = dpf2(2) + dpf2(7) * Math.abs(currentRotation);
             } else {
                 int color2 = Theme.getColor(Theme.key_actionBarActionModeDefaultIcon);
                 int backColor2 = Theme.getColor(Theme.key_actionBarActionModeDefault);
                 backColor1 = AndroidUtilities.getOffsetColor(backColor1, backColor2, currentRotation, 1.0f);
                 paint.setColor(AndroidUtilities.getOffsetColor(color1, color2, currentRotation, 1.0f));
                 paint.setAlpha(alpha);
-                canvas.drawLine(AndroidUtilities.dp(1) * currentRotation, 0, AndroidUtilities.dp(18) - AndroidUtilities.dp(1) * currentRotation - diffMiddle, 0, paint);
-                endYDiff = AndroidUtilities.dp(5) * (1 - Math.abs(currentRotation)) - AndroidUtilities.dp(0.5f) * Math.abs(currentRotation);
-                endXDiff = AndroidUtilities.dp(18) - AndroidUtilities.dp(9) * Math.abs(currentRotation);
-                startYDiff = AndroidUtilities.dp(5) + AndroidUtilities.dp(3.0f) * Math.abs(currentRotation);
-                startXDiff = AndroidUtilities.dp(9) * Math.abs(currentRotation);
+                canvas.drawLine(dp(1) * currentRotation, 0, dp(18) - dp(1) * currentRotation - diffMiddle, 0, paint);
+                endYDiff = dp(5) * (1 - Math.abs(currentRotation)) - dp(0.5f) * Math.abs(currentRotation);
+                endXDiff = dp(18) - dp(9) * Math.abs(currentRotation);
+                startYDiff = dp(5) + dp(3) * Math.abs(currentRotation);
+                startXDiff = dp(9) * Math.abs(currentRotation);
             }
         }
         if (miniIcon) {
@@ -215,8 +218,8 @@ public class MenuDrawable extends Drawable {
             canvas.drawLine(startXDiff, startYDiff, endXDiff, endYDiff, paint);
         }
         if (type != TYPE_DEFAULT && currentRotation != 1.0f || previousType != TYPE_DEFAULT && typeAnimationProgress != 1.0f) {
-            float cx = AndroidUtilities.dp(9 + 8);
-            float cy = -AndroidUtilities.dp(4.5f);
+            float cx = dp(9 + 8);
+            float cy = -dp(4.5f);
             float rad = AndroidUtilities.density * 5.5f;
             canvas.scale(1.0f - currentRotation, 1.0f - currentRotation, cx, cy);
             if (type == TYPE_DEFAULT) {
@@ -232,18 +235,18 @@ public class MenuDrawable extends Drawable {
                 } else {
                     backPaint.setAlpha(alpha);
                 }
-                canvas.drawLine(cx, cy - AndroidUtilities.dp(2), cx, cy, backPaint);
-                canvas.drawPoint(cx, cy + AndroidUtilities.dp(2.5f), backPaint);
+                canvas.drawLine(cx, cy - dp(2), cx, cy, backPaint);
+                canvas.drawPoint(cx, cy + dp(2.5f), backPaint);
             }
             if (type == TYPE_UDPATE_DOWNLOADING || previousType == TYPE_UDPATE_DOWNLOADING) {
-                backPaint.setStrokeWidth(AndroidUtilities.dp(2));
+                backPaint.setStrokeWidth(dp(2));
                 if (previousType == TYPE_UDPATE_DOWNLOADING) {
                     backPaint.setAlpha((int) (alpha * (1.0f - typeAnimationProgress)));
                 } else {
                     backPaint.setAlpha(alpha);
                 }
                 float arcRad = Math.max(4, 360 * animatedDownloadProgress);
-                rect.set(cx - AndroidUtilities.dp(3), cy - AndroidUtilities.dp(3), cx + AndroidUtilities.dp(3), cy + AndroidUtilities.dp(3));
+                rect.set(cx - dp(3), cy - dp(3), cx + dp(3), cy + dp(3));
                 canvas.drawArc(rect, downloadRadOffset, arcRad, false, backPaint);
 
                 downloadRadOffset += 360 * dt / 2500.0f;
@@ -303,12 +306,12 @@ public class MenuDrawable extends Drawable {
 
     @Override
     public int getIntrinsicWidth() {
-        return AndroidUtilities.dp(24);
+        return dp(24);
     }
 
     @Override
     public int getIntrinsicHeight() {
-        return AndroidUtilities.dp(24);
+        return dp(24);
     }
 
     public void setIconColor(int iconColor) {

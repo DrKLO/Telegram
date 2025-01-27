@@ -44,8 +44,9 @@ public class PreviewButtons extends FrameLayout {
     public static final int BUTTON_PAINT = 0;
     public static final int BUTTON_TEXT = 1;
     public static final int BUTTON_STICKER = 2;
-    public static final int BUTTON_ADJUST = 3;
-    public static final int BUTTON_SHARE = 4;
+    public static final int BUTTON_CROP = 3;
+    public static final int BUTTON_ADJUST = 4;
+    public static final int BUTTON_SHARE = 5;
 
     private View shadowView;
 
@@ -65,6 +66,7 @@ public class PreviewButtons extends FrameLayout {
         addButton(BUTTON_PAINT, R.drawable.media_draw, LocaleController.getString(R.string.AccDescrPaint));
         addButton(BUTTON_STICKER, R.drawable.msg_photo_sticker, LocaleController.getString(R.string.AccDescrStickers));
         addButton(BUTTON_TEXT, R.drawable.msg_photo_text2, LocaleController.getString(R.string.AccDescrPlaceText));
+        addButton(BUTTON_CROP, R.drawable.media_crop, LocaleController.getString(R.string.Crop));
         addButton(BUTTON_ADJUST, R.drawable.msg_photo_settings, LocaleController.getString(R.string.AccDescrPhotoAdjust));
 
         shareButton = new ShareButtonView(context, shareText = LocaleController.getString(R.string.Send), shareArrow = true);
@@ -74,19 +76,19 @@ public class PreviewButtons extends FrameLayout {
         updateAppearT();
     }
 
-    public void setFiltersVisible(boolean visible) {
+    public void setButtonVisible(int btn, boolean visible) {
         for (int i = 0; i < buttons.size(); ++i) {
             ButtonView button = buttons.get(i);
-            if (button.id == BUTTON_ADJUST) {
+            if (button.id == btn) {
                 button.setVisibility(visible ? View.VISIBLE : View.GONE);
             }
         }
     }
 
-    private boolean isFiltersVisible() {
+    private boolean isButtonVisible(int btn) {
         for (int i = 0; i < buttons.size(); ++i) {
             ButtonView button = buttons.get(i);
-            if (button.id == BUTTON_ADJUST) {
+            if (button.id == btn) {
                 return button.getVisibility() == View.VISIBLE;
             }
         }
@@ -128,10 +130,10 @@ public class PreviewButtons extends FrameLayout {
             }
         }
         int maxPossibleMargin = visibleButtons < 2 ? 0 : (W - visibleButtons * dp(40)) / (visibleButtons - 1);
-        int margin = Math.min(dp(isFiltersVisible() ? 20 : 30), maxPossibleMargin);
+        int margin = Math.min(dp(isButtonVisible(BUTTON_ADJUST) ? 20 : 30), maxPossibleMargin);
 
         int t = (h - dp(40)) / 2, b = (h + dp(40)) / 2;
-        for (int i = 0, x = dp(12.33f) + (!isFiltersVisible() ? (W - visibleButtons * dp(40) - (visibleButtons - 1) * margin) / 2 : 0); i < buttons.size(); ++i) {
+        for (int i = 0, x = dp(12.33f) + (!isButtonVisible(BUTTON_ADJUST) ? (W - visibleButtons * dp(40) - (visibleButtons - 1) * margin) / 2 : 0); i < buttons.size(); ++i) {
             if (buttons.get(i).getVisibility() != View.VISIBLE) continue;
             buttons.get(i).layout(x, t, x + dp(40), b);
             x += dp(40) + margin;

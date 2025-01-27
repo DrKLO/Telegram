@@ -5,7 +5,6 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
-import android.graphics.Typeface;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
@@ -33,8 +32,6 @@ import org.telegram.ui.Components.Paint.Views.PaintTextOptionsView;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
 
 public class PaintingOverlay extends FrameLayout {
 
@@ -226,7 +223,7 @@ public class PaintingOverlay extends FrameLayout {
                     editText.setPadding(AndroidUtilities.dp(7), AndroidUtilities.dp(7), AndroidUtilities.dp(7), AndroidUtilities.dp(7));
                     editText.setTextSize(TypedValue.COMPLEX_UNIT_PX, entity.fontSize);
                     editText.setTypeface(entity.textTypeface.getTypeface());
-                    SpannableString text = new SpannableString(Emoji.replaceEmoji(entity.text, editText.getPaint().getFontMetricsInt(), (int) (editText.getTextSize() * .8f), false));
+                    SpannableString text = new SpannableString(Emoji.replaceEmoji(entity.text, editText.getPaint().getFontMetricsInt(), false));
                     for (VideoEditedInfo.EmojiEntity e : entity.entities) {
                         text.setSpan(new AnimatedEmojiSpan(e.document_id, editText.getPaint().getFontMetricsInt()), e.offset, e.offset + e.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                     }

@@ -197,14 +197,11 @@ public class MediaActivity extends BaseFragment implements SharedMediaLayout.Sha
                             AlertDialog.Builder builder = new AlertDialog.Builder(getContext(), getResourceProvider());
                             builder.setTitle(storyItems.size() > 1 ? LocaleController.getString(R.string.DeleteStoriesTitle) : LocaleController.getString(R.string.DeleteStoryTitle));
                             builder.setMessage(LocaleController.formatPluralString("DeleteStoriesSubtitle", storyItems.size()));
-                            builder.setPositiveButton(LocaleController.getString(R.string.Delete), new DialogInterface.OnClickListener() {
-                                @Override
-                                public void onClick(DialogInterface dialog, int which) {
-                                    getMessagesController().getStoriesController().deleteStories(dialogId, storyItems);
-                                    sharedMediaLayout.closeActionMode(false);
-                                }
+                            builder.setPositiveButton(LocaleController.getString(R.string.Delete), (dialog, which) -> {
+                                getMessagesController().getStoriesController().deleteStories(dialogId, storyItems);
+                                sharedMediaLayout.closeActionMode(false);
                             });
-                            builder.setNegativeButton(LocaleController.getString(R.string.Cancel), (DialogInterface.OnClickListener) (dialog, which) -> {
+                            builder.setNegativeButton(LocaleController.getString(R.string.Cancel), (dialog, which) -> {
                                 dialog.dismiss();
                             });
                             AlertDialog dialog = builder.create();

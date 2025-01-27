@@ -112,4 +112,13 @@ public class CircularProgressDrawable extends Drawable {
         return PixelFormat.TRANSPARENT;
     }
 
+    @Override
+    public int getIntrinsicWidth() {
+        return (int) (size + thickness);
+    }
+
+    @Override
+    public int getIntrinsicHeight() {
+        return (int) (size + thickness);
+    }
 }

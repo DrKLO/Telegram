@@ -52,7 +52,9 @@ public abstract class BaseCell extends ViewGroup implements SizeNotifierFrameLay
             if (checkingForLongPress && getParent() != null && currentPressCount == pressCount) {
                 checkingForLongPress = false;
                 if (onLongPress()) {
-                    performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
+                    try {
+                        performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
+                    } catch (Exception ignore) {}
                     MotionEvent event = MotionEvent.obtain(0, 0, MotionEvent.ACTION_CANCEL, 0, 0, 0);
                     onTouchEvent(event);
                     event.recycle();

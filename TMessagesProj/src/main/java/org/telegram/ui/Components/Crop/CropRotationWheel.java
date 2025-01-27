@@ -41,7 +41,7 @@ public class CropRotationWheel extends FrameLayout {
 
     private ImageView aspectRatioButton;
     private ImageView rotation90Button;
-    private ImageView mirrorButton;
+    private ImageView  mirrorButton;
 //    private TextView degreesLabel;
     private String degreesText;
     private TextPaint degreesTextPaint;
@@ -192,7 +192,9 @@ public class CropRotationWheel extends FrameLayout {
                 try {
                     if (Math.abs(newAngle - MAX_ANGLE) < 0.001f && Math.abs(this.rotation - MAX_ANGLE) >= 0.001f ||
                         Math.abs(newAngle - -MAX_ANGLE) < 0.001f && Math.abs(this.rotation - -MAX_ANGLE) >= 0.001f) {
-                        performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_VIEW_SETTING);
+                        try {
+                            performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_VIEW_SETTING);
+                        } catch (Exception ignored) {}
                     } else if (Math.floor(this.rotation / 2.5f) != Math.floor(newAngle / 2.5f)) {
                         AndroidUtilities.vibrateCursor(this);
                     }

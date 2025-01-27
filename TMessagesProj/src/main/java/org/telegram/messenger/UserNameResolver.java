@@ -27,18 +27,18 @@ public class UserNameResolver {
     LruCache<String, CachedPeer> resolvedCache = new LruCache<>(100);
     HashMap<String, ArrayList<Consumer<Long>>> resolvingConsumers = new HashMap<>();
 
-    public int resolve(String username, Consumer<Long> resolveConsumer) {
+    public Runnable resolve(String username, Consumer<Long> resolveConsumer) {
         return resolve(username, null, resolveConsumer);
     }
 
-    public int resolve(String username, String referrer, Consumer<Long> resolveConsumer) {
+    public Runnable resolve(String username, String referrer, Consumer<Long> resolveConsumer) {
         if (TextUtils.isEmpty(referrer)) {
             CachedPeer cachedPeer = resolvedCache.get(username);
             if (cachedPeer != null) {
                 if (System.currentTimeMillis() - cachedPeer.time < CACHE_TIME) {
                     resolveConsumer.accept(cachedPeer.peerId);
                     FileLog.d("resolve username from cache " + username + " " + cachedPeer.peerId);
-                    return -1;
+                    return null;
                 } else {
                     resolvedCache.remove(username);
                 }
@@ -48,7 +48,7 @@ public class UserNameResolver {
         ArrayList<Consumer<Long>> consumers = resolvingConsumers.get(username);
         if (consumers != null) {
             consumers.add(resolveConsumer);
-            return -1;
+            return null;
         }
         consumers = new ArrayList<>();
         consumers.add(resolveConsumer);
@@ -69,7 +69,7 @@ public class UserNameResolver {
             }
             req = resolveUsername;
         }
-        return ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+        final int reqId = ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
             ArrayList<Consumer<Long>> finalConsumers = resolvingConsumers.remove(username);
             if (finalConsumers == null) {
                 return;
@@ -105,6 +105,10 @@ public class UserNameResolver {
                 finalConsumers.get(i).accept(peerId);
             }
         }, ConnectionsManager.RequestFlagFailOnServerErrors));
+        return () -> {
+            resolvingConsumers.remove(username);
+            ConnectionsManager.getInstance(currentAccount).cancelRequest(reqId, true);
+        };
     };
 
     public void update(TLRPC.User oldUser, TLRPC.User user) {

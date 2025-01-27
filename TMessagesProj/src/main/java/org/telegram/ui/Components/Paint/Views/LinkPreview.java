@@ -29,6 +29,8 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
 import org.telegram.tgnet.AbstractSerializedData;
+import org.telegram.tgnet.InputSerializedData;
+import org.telegram.tgnet.OutputSerializedData;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
@@ -492,7 +494,7 @@ public class LinkPreview extends View {
 
         public int photoSize;
 
-        public static WebPagePreview TLdeserialize(AbstractSerializedData stream, int constructor, boolean exception) {
+        public static WebPagePreview TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
             if (WebPagePreview.constructor != constructor) {
                 if (exception) {
                     throw new RuntimeException(String.format("can't parse magic %x in WebPagePreview", constructor));
@@ -506,7 +508,7 @@ public class LinkPreview extends View {
         }
 
         @Override
-        public void serializeToStream(AbstractSerializedData stream) {
+        public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
             flags = (webpage != null) ? flags | 1 : flags &~ 1;
             flags = !TextUtils.isEmpty(name) ? flags | 2 : flags &~ 2;
@@ -526,7 +528,7 @@ public class LinkPreview extends View {
         }
 
         @Override
-        public void readParams(AbstractSerializedData stream, boolean exception) {
+        public void readParams(InputSerializedData stream, boolean exception) {
             flags = stream.readInt32(exception);
             largePhoto = (flags & 8) != 0;
             captionAbove = (flags & 16) != 0;

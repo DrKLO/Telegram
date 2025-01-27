@@ -7,8 +7,6 @@ import android.media.MediaExtractor;
 import android.media.MediaFormat;
 import android.media.MediaMuxer;
 import android.os.Build;
-import android.os.Handler;
-import android.os.Looper;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
@@ -52,12 +50,12 @@ public class MediaCodecVideoConvertor {
     private static final int MEDIACODEC_TIMEOUT_INCREASED = 22000;
     private String outputMimeType;
 
-    public boolean convertVideo(ConvertVideoParams convertVideoParams, Handler handler) {
+    public boolean convertVideo(ConvertVideoParams convertVideoParams) {
         if (convertVideoParams.isSticker) {
             return WebmEncoder.convert(convertVideoParams, 0);
         }
         this.callback = convertVideoParams.callback;
-        return convertVideoInternal(convertVideoParams, false, 0, handler);
+        return convertVideoInternal(convertVideoParams, false, 0);
     }
 
     public long getLastFrameTimestamp() {
@@ -68,8 +66,7 @@ public class MediaCodecVideoConvertor {
     private boolean convertVideoInternal(
         ConvertVideoParams convertVideoParams,
         boolean increaseTimeout,
-        int triesCount,
-        Handler handler
+        int triesCount
     ) {
         String videoPath = convertVideoParams.videoPath;
         File cacheFile = convertVideoParams.cacheFile;
@@ -185,7 +182,7 @@ public class MediaCodecVideoConvertor {
                     inputSurface.makeCurrent();
                     encoder.start();
 
-                    outputSurface = new OutputSurface(inputSurface.getContext(), savedFilterState, videoPath, paintPath, blurPath, mediaEntities, cropState != null && cropState.useMatrix != null ? cropState : null, resultWidth, resultHeight, originalWidth, originalHeight, rotationValue, framerate, true, gradientTopColor, gradientBottomColor, null, convertVideoParams, handler);
+                    outputSurface = new OutputSurface(savedFilterState, videoPath, paintPath, blurPath, mediaEntities, cropState != null && cropState.useMatrix != null ? cropState : null, resultWidth, resultHeight, originalWidth, originalHeight, rotationValue, framerate, true, gradientTopColor, gradientBottomColor, null, convertVideoParams);
 
                     ByteBuffer[] encoderOutputBuffers = null;
                     ByteBuffer[] encoderInputBuffers = null;
@@ -518,7 +515,7 @@ public class MediaCodecVideoConvertor {
                                 }
                             }
 
-                            outputSurface = new OutputSurface(inputSurface.getContext(), savedFilterState, null, paintPath, blurPath, mediaEntities, cropState, resultWidth, resultHeight, originalWidth, originalHeight, rotationValue, framerate, false, gradientTopColor, gradientBottomColor, hdrInfo, convertVideoParams, handler);
+                            outputSurface = new OutputSurface(savedFilterState, null, paintPath, blurPath, mediaEntities, cropState, resultWidth, resultHeight, originalWidth, originalHeight, rotationValue, framerate, false, gradientTopColor, gradientBottomColor, hdrInfo, convertVideoParams);
                             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && hdrInfo != null && hdrInfo.getHDRType() != 0) {
                                 outputSurface.changeFragmentShader(
                                         hdrFragmentShader(originalWidth, originalHeight, resultWidth, resultHeight, true, hdrInfo),
@@ -963,11 +960,11 @@ public class MediaCodecVideoConvertor {
         }
 
         if (repeatWithIncreasedTimeout) {
-            return convertVideoInternal(convertVideoParams, true, triesCount + 1, handler);
+            return convertVideoInternal(convertVideoParams, true, triesCount + 1);
         }
 
         if (error && canBeBrokenEncoder && triesCount < 3) {
-            return convertVideoInternal(convertVideoParams, increaseTimeout, triesCount + 1, handler);
+            return convertVideoInternal(convertVideoParams, increaseTimeout, triesCount + 1);
         }
 
         long timeLeft = System.currentTimeMillis() - time;

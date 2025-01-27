@@ -276,52 +276,52 @@ public class DoubledLimitsBottomSheet extends BottomSheetWithRecyclerListView im
             MessagesController messagesController = MessagesController.getInstance(currentAccount);
             limits.add(new Limit(
                     LocaleController.getString(R.string.GroupsAndChannelsLimitTitle),
-                    LocaleController.formatString("GroupsAndChannelsLimitSubtitle", R.string.GroupsAndChannelsLimitSubtitle, messagesController.channelsLimitPremium),
+                    LocaleController.formatString(R.string.GroupsAndChannelsLimitSubtitle, messagesController.channelsLimitPremium),
                     messagesController.channelsLimitDefault, messagesController.channelsLimitPremium
             ));
             limits.add(new Limit(
                     LocaleController.getString(R.string.PinChatsLimitTitle),
-                    LocaleController.formatString("PinChatsLimitSubtitle", R.string.PinChatsLimitSubtitle, messagesController.dialogFiltersPinnedLimitPremium),
+                    LocaleController.formatString(R.string.PinChatsLimitSubtitle, messagesController.dialogFiltersPinnedLimitPremium),
                     messagesController.dialogFiltersPinnedLimitDefault, messagesController.dialogFiltersPinnedLimitPremium
             ));
             limits.add(new Limit(
                     LocaleController.getString(R.string.PublicLinksLimitTitle),
-                    LocaleController.formatString("PublicLinksLimitSubtitle", R.string.PublicLinksLimitSubtitle, messagesController.publicLinksLimitPremium),
+                    LocaleController.formatString(R.string.PublicLinksLimitSubtitle, messagesController.publicLinksLimitPremium),
                     messagesController.publicLinksLimitDefault, messagesController.publicLinksLimitPremium
             ));
             limits.add(new Limit(
                     LocaleController.getString(R.string.SavedGifsLimitTitle),
-                    LocaleController.formatString("SavedGifsLimitSubtitle", R.string.SavedGifsLimitSubtitle, messagesController.savedGifsLimitPremium),
+                    LocaleController.formatString(R.string.SavedGifsLimitSubtitle, messagesController.savedGifsLimitPremium),
                     messagesController.savedGifsLimitDefault, messagesController.savedGifsLimitPremium
             ));
             limits.add(new Limit(
                     LocaleController.getString(R.string.FavoriteStickersLimitTitle),
-                    LocaleController.formatString("FavoriteStickersLimitSubtitle", R.string.FavoriteStickersLimitSubtitle, messagesController.stickersFavedLimitPremium),
+                    LocaleController.formatString(R.string.FavoriteStickersLimitSubtitle, messagesController.stickersFavedLimitPremium),
                     messagesController.stickersFavedLimitDefault, messagesController.stickersFavedLimitPremium
             ));
             limits.add(new Limit(
                     LocaleController.getString(R.string.BioLimitTitle),
-                    LocaleController.formatString("BioLimitSubtitle", R.string.BioLimitSubtitle, messagesController.stickersFavedLimitPremium),
+                    LocaleController.formatString(R.string.BioLimitSubtitle, messagesController.stickersFavedLimitPremium),
                     messagesController.aboutLengthLimitDefault, messagesController.aboutLengthLimitPremium
             ));
             limits.add(new Limit(
                     LocaleController.getString(R.string.CaptionsLimitTitle),
-                    LocaleController.formatString("CaptionsLimitSubtitle", R.string.CaptionsLimitSubtitle, messagesController.stickersFavedLimitPremium),
+                    LocaleController.formatString(R.string.CaptionsLimitSubtitle, messagesController.stickersFavedLimitPremium),
                     messagesController.captionLengthLimitDefault, messagesController.captionLengthLimitPremium
             ));
             limits.add(new Limit(
                     LocaleController.getString(R.string.FoldersLimitTitle),
-                    LocaleController.formatString("FoldersLimitSubtitle", R.string.FoldersLimitSubtitle, messagesController.dialogFiltersLimitPremium),
+                    LocaleController.formatString(R.string.FoldersLimitSubtitle, messagesController.dialogFiltersLimitPremium),
                     messagesController.dialogFiltersLimitDefault, messagesController.dialogFiltersLimitPremium
             ));
             limits.add(new Limit(
                     LocaleController.getString(R.string.ChatPerFolderLimitTitle),
-                    LocaleController.formatString("ChatPerFolderLimitSubtitle", R.string.ChatPerFolderLimitSubtitle, messagesController.dialogFiltersChatsLimitPremium),
+                    LocaleController.formatString(R.string.ChatPerFolderLimitSubtitle, messagesController.dialogFiltersChatsLimitPremium),
                     messagesController.dialogFiltersChatsLimitDefault, messagesController.dialogFiltersChatsLimitPremium
             ));
             limits.add(new Limit(
                     LocaleController.getString(R.string.ConnectedAccountsLimitTitle),
-                    LocaleController.formatString("ConnectedAccountsLimitSubtitle", R.string.ConnectedAccountsLimitSubtitle, 4),
+                    LocaleController.formatString(R.string.ConnectedAccountsLimitSubtitle, 4),
                     UserConfig.MAX_ACCOUNT_DEFAULT_COUNT, UserConfig.MAX_ACCOUNT_COUNT
             ));
             limits.add(new Limit(

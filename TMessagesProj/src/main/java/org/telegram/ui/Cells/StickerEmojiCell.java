@@ -220,7 +220,7 @@ public class StickerEmojiCell extends FrameLayout implements NotificationCenter.
                 imageView.setImage(null, null, null, null, DocumentObject.getSvgRectThumb(Theme.key_dialogBackgroundGray, 1.0f), 0, path.animated ? "tgs" : null, 0, 1);
             }
             if (emoji != null) {
-                emojiTextView.setText(Emoji.replaceEmoji(emoji, emojiTextView.getPaint().getFontMetricsInt(), AndroidUtilities.dp(16), false));
+                emojiTextView.setText(Emoji.replaceEmoji(emoji, emojiTextView.getPaint().getFontMetricsInt(), false));
                 emojiTextView.setVisibility(VISIBLE);
             } else {
                 emojiTextView.setVisibility(INVISIBLE);
@@ -262,7 +262,7 @@ public class StickerEmojiCell extends FrameLayout implements NotificationCenter.
             }
 
             if (emoji != null) {
-                emojiTextView.setText(Emoji.replaceEmoji(emoji, emojiTextView.getPaint().getFontMetricsInt(), AndroidUtilities.dp(16), false));
+                emojiTextView.setText(Emoji.replaceEmoji(emoji, emojiTextView.getPaint().getFontMetricsInt(), false));
                 emojiTextView.setVisibility(VISIBLE);
             } else if (showEmoji) {
                 boolean set = false;
@@ -270,14 +270,14 @@ public class StickerEmojiCell extends FrameLayout implements NotificationCenter.
                     TLRPC.DocumentAttribute attribute = document.attributes.get(a);
                     if (attribute instanceof TLRPC.TL_documentAttributeSticker) {
                         if (attribute.alt != null && attribute.alt.length() > 0) {
-                            emojiTextView.setText(Emoji.replaceEmoji(attribute.alt, emojiTextView.getPaint().getFontMetricsInt(), AndroidUtilities.dp(16), false));
+                            emojiTextView.setText(Emoji.replaceEmoji(attribute.alt, emojiTextView.getPaint().getFontMetricsInt(), false));
                             set = true;
                         }
                         break;
                     }
                 }
                 if (!set) {
-                    emojiTextView.setText(Emoji.replaceEmoji(MediaDataController.getInstance(currentAccount).getEmojiForSticker(sticker.id), emojiTextView.getPaint().getFontMetricsInt(), AndroidUtilities.dp(16), false));
+                    emojiTextView.setText(Emoji.replaceEmoji(MediaDataController.getInstance(currentAccount).getEmojiForSticker(sticker.id), emojiTextView.getPaint().getFontMetricsInt(), false));
                 }
                 emojiTextView.setVisibility(VISIBLE);
             } else {
@@ -366,7 +366,7 @@ public class StickerEmojiCell extends FrameLayout implements NotificationCenter.
                 TLRPC.DocumentAttribute attribute = sticker.attributes.get(a);
                 if (attribute instanceof TLRPC.TL_documentAttributeSticker) {
                     if (attribute.alt != null && attribute.alt.length() > 0) {
-                        emojiTextView.setText(Emoji.replaceEmoji(attribute.alt, emojiTextView.getPaint().getFontMetricsInt(), AndroidUtilities.dp(16), false));
+                        emojiTextView.setText(Emoji.replaceEmoji(attribute.alt, emojiTextView.getPaint().getFontMetricsInt(), false));
                         descr = attribute.alt + " " + descr;
                     }
                     break;

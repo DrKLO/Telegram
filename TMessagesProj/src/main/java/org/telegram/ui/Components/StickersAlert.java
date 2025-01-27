@@ -80,6 +80,7 @@ import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.RequestDelegate;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.tgnet.Vector;
 import org.telegram.ui.ActionBar.ActionBarMenuItem;
 import org.telegram.ui.ActionBar.ActionBarMenuSubItem;
 import org.telegram.ui.ActionBar.ActionBarPopupWindow;
@@ -421,21 +422,19 @@ public class StickersAlert extends BottomSheet implements NotificationCenter.Not
         }
         RequestDelegate requestDelegate = (response, error) -> AndroidUtilities.runOnUIThread(() -> {
             reqId = 0;
-            if (error == null) {
-                TLRPC.Vector vector = (TLRPC.Vector) response;
+            if (error == null && response instanceof Vector) {
+                Vector<TLRPC.StickerSetCovered> vector = (Vector<TLRPC.StickerSetCovered>) response;
                 if (vector.objects.isEmpty()) {
                     dismiss();
                 } else if (vector.objects.size() == 1) {
-                    TLRPC.StickerSetCovered set = (TLRPC.StickerSetCovered) vector.objects.get(0);
+                    TLRPC.StickerSetCovered set = vector.objects.get(0);
                     inputStickerSet = new TLRPC.TL_inputStickerSetID();
                     inputStickerSet.id = set.set.id;
                     inputStickerSet.access_hash = set.set.access_hash;
                     loadStickerSet(false);
                 } else {
                     stickerSetCovereds = new ArrayList<>();
-                    for (int a = 0; a < vector.objects.size(); a++) {
-                        stickerSetCovereds.add((TLRPC.StickerSetCovered) vector.objects.get(a));
-                    }
+                    stickerSetCovereds.addAll(vector.objects);
                     gridView.setLayoutParams(LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT, 0, 0, 0, 48));
                     titleTextView.setVisibility(View.GONE);
                     shadow[0].setVisibility(View.GONE);
@@ -456,7 +455,7 @@ public class StickersAlert extends BottomSheet implements NotificationCenter.Not
         init(context);
     }
 
-    public StickersAlert(Context context, TLRPC.Vector vector, Theme.ResourcesProvider resourcesProvider) {
+    public StickersAlert(Context context, Vector<TLRPC.StickerSetCovered> vector, Theme.ResourcesProvider resourcesProvider) {
         super(context, false, resourcesProvider);
         this.resourcesProvider = resourcesProvider;
         fixNavigationBar();
@@ -464,7 +463,7 @@ public class StickersAlert extends BottomSheet implements NotificationCenter.Not
         if (vector.objects.isEmpty()) {
             return;
         } else if (vector.objects.size() == 1) {
-            TLRPC.StickerSetCovered set = (TLRPC.StickerSetCovered) vector.objects.get(0);
+            final TLRPC.StickerSetCovered set = vector.objects.get(0);
             inputStickerSet = new TLRPC.TL_inputStickerSetID();
             inputStickerSet.id = set.set.id;
             inputStickerSet.access_hash = set.set.access_hash;
@@ -472,9 +471,7 @@ public class StickersAlert extends BottomSheet implements NotificationCenter.Not
             init(context);
         } else {
             stickerSetCovereds = new ArrayList<>();
-            for (int a = 0; a < vector.objects.size(); a++) {
-                stickerSetCovereds.add((TLRPC.StickerSetCovered) vector.objects.get(a));
-            }
+            stickerSetCovereds.addAll(vector.objects);
             init(context);
             gridView.setLayoutParams(LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT, 0, 0, 0, 48));
             titleTextView.setVisibility(View.GONE);
@@ -1036,7 +1033,7 @@ public class StickersAlert extends BottomSheet implements NotificationCenter.Not
                 if (!selectedStickerPath.validated) {
                     return;
                 }
-                stickerEmojiTextView.setText(Emoji.replaceEmoji(selectedStickerPath.emoji, stickerEmojiTextView.getPaint().getFontMetricsInt(), dp(30), false));
+                stickerEmojiTextView.setText(Emoji.replaceEmoji(selectedStickerPath.emoji, stickerEmojiTextView.getPaint().getFontMetricsInt(), false));
                 stickerImageView.setImage(ImageLocation.getForPath(selectedStickerPath.path), null, null, null, null, null, selectedStickerPath.animated ? "tgs" : null, 0, null);
                 FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) stickerPreviewLayout.getLayoutParams();
                 layoutParams.topMargin = scrollOffsetY;
@@ -1057,14 +1054,14 @@ public class StickersAlert extends BottomSheet implements NotificationCenter.Not
                     TLRPC.DocumentAttribute attribute = selectedSticker.attributes.get(a);
                     if (attribute instanceof TLRPC.TL_documentAttributeSticker) {
                         if (attribute.alt != null && attribute.alt.length() > 0) {
-                            stickerEmojiTextView.setText(Emoji.replaceEmoji(attribute.alt, stickerEmojiTextView.getPaint().getFontMetricsInt(), dp(30), false));
+                            stickerEmojiTextView.setText(Emoji.replaceEmoji(attribute.alt, stickerEmojiTextView.getPaint().getFontMetricsInt(), false));
                             set = true;
                         }
                         break;
                     }
                 }
                 if (!set) {
-                    stickerEmojiTextView.setText(Emoji.replaceEmoji(MediaDataController.getInstance(currentAccount).getEmojiForSticker(selectedSticker.id), stickerEmojiTextView.getPaint().getFontMetricsInt(), dp(30), false));
+                    stickerEmojiTextView.setText(Emoji.replaceEmoji(MediaDataController.getInstance(currentAccount).getEmojiForSticker(selectedSticker.id), stickerEmojiTextView.getPaint().getFontMetricsInt(), false));
                 }
 
                 if ((stickerSet == null || stickerSet.set == null || !stickerSet.set.emojis) && !ContentPreviewViewer.getInstance().showMenuFor(view)) {
@@ -1427,7 +1424,7 @@ public class StickersAlert extends BottomSheet implements NotificationCenter.Not
         if (stickerSet != null && stickerSet.documents != null && !stickerSet.documents.isEmpty()) {
             SpannableStringBuilder stringBuilder = null;
             CharSequence title = stickerSet.set.title;
-            title = Emoji.replaceEmoji(title, titleTextView.getPaint().getFontMetricsInt(), dp(18), false);
+            title = Emoji.replaceEmoji(title, titleTextView.getPaint().getFontMetricsInt(), false);
             try {
                 if (urlPattern == null) {
                     urlPattern = Pattern.compile("@[a-zA-Z\\d_]{1,32}");
@@ -1757,7 +1754,9 @@ public class StickersAlert extends BottomSheet implements NotificationCenter.Not
                 state[0] = 3;
                 if (!lastNameAvailable) {
                     AndroidUtilities.shakeView(editText);
-                    editText.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
+                    try {
+                        editText.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
+                    } catch (Exception ignored) {}
                 }
                 AndroidUtilities.hideKeyboard(editText);
                 SendMessagesHelper.getInstance(currentAccount).prepareImportStickers(setTitle, lastCheckName, importingSoftware, importingStickersPaths, (param) -> {

@@ -470,6 +470,7 @@ public class DraftsController {
 
         public int orientation, invert;
         public int width, height;
+        public MediaController.CropState crop;
         public int resultWidth, resultHeight;
         public long duration;
 
@@ -542,6 +543,7 @@ public class DraftsController {
             this.invert = entry.invert;
             this.width = entry.width;
             this.height = entry.height;
+            this.crop = entry.crop;
             this.resultWidth = entry.resultWidth;
             this.resultHeight = entry.resultHeight;
             this.duration = entry.duration;
@@ -620,6 +622,7 @@ public class DraftsController {
             entry.invert = invert;
             entry.width = width;
             entry.height = height;
+            entry.crop = crop;
             entry.resultWidth = resultWidth;
             entry.resultHeight = resultHeight;
             entry.matrix.setValues(matrixValues);
@@ -833,6 +836,12 @@ public class DraftsController {
                     part.serializeToStream(stream);
                 }
             }
+
+            if (crop == null) {
+                stream.writeInt32(TLRPC.TL_null.constructor);
+            } else {
+                crop.serializeToStream(stream);
+            }
         }
 
         public int getObjectSize() {
@@ -1037,6 +1046,13 @@ public class DraftsController {
                         part.part = collage.parts.get(i);
                         collageParts.add(part);
                     }
+                }
+            }
+            if (stream.remaining() > 0) {
+                magic = stream.readInt32(exception);
+                if (magic == MediaController.CropState.constructor) {
+                    crop = new MediaController.CropState();
+                    crop.readParams(stream, exception);
                 }
             }
         }

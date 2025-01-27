@@ -25,6 +25,7 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.tgnet.tl.TL_account;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.BottomSheet;
@@ -278,7 +279,7 @@ public class SessionBottomSheet extends BottomSheet {
     }
 
     private void uploadSessionSettings() {
-        TLRPC.TL_account_changeAuthorizationSettings req = new TLRPC.TL_account_changeAuthorizationSettings();
+        TL_account.changeAuthorizationSettings req = new TL_account.changeAuthorizationSettings();
         req.encrypted_requests_disabled = session.encrypted_requests_disabled;
         req.call_requests_disabled = session.call_requests_disabled;
         req.flags = 1 | 2;

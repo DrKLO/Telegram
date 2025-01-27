@@ -380,7 +380,11 @@ public class SessionCell extends FrameLayout {
         Drawable iconDrawable = ContextCompat.getDrawable(ApplicationLoader.applicationContext, iconId).mutate();
         iconDrawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_avatar_text), PorterDuff.Mode.SRC_IN));
         Drawable bgDrawable = new CircleGradientDrawable(dp(sz), colorKey == -1 ? 0xFF000000 : Theme.getColor(colorKey), colorKey2 == -1 ? 0xFF000000 : Theme.getColor(colorKey2));
-        return new CombinedDrawable(bgDrawable, iconDrawable);
+        CombinedDrawable drawable = new CombinedDrawable(bgDrawable, iconDrawable);
+        if (platform != null && platform.contains("fragment")) {
+            drawable.setIconSize((int) (iconDrawable.getIntrinsicWidth() / 44.0f * sz), (int) (iconDrawable.getIntrinsicHeight() / 44.0f * sz));
+        }
+        return drawable;
     }
 
     public static class CircleGradientDrawable extends Drawable {

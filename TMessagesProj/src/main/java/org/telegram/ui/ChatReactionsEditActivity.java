@@ -89,6 +89,7 @@ public class ChatReactionsEditActivity extends BaseFragment implements Notificat
             }
         }
         getNotificationCenter().addObserver(this, NotificationCenter.reactionsDidLoad);
+        getNotificationCenter().addObserver(this, NotificationCenter.dialogDeleted);
         return super.onFragmentCreate();
     }
 
@@ -325,6 +326,7 @@ public class ChatReactionsEditActivity extends BaseFragment implements Notificat
         super.onFragmentDestroy();
         getMessagesController().setChatReactions(chatId, selectedType, chatReactions);
         getNotificationCenter().removeObserver(this, NotificationCenter.reactionsDidLoad);
+        getNotificationCenter().removeObserver(this, NotificationCenter.dialogDeleted);
     }
 
 
@@ -393,6 +395,15 @@ public class ChatReactionsEditActivity extends BaseFragment implements Notificat
             availableReactions.clear();
             availableReactions.addAll(getMediaDataController().getEnabledReactionsList());
             listAdapter.notifyDataSetChanged();
+        } else if (id == NotificationCenter.dialogDeleted) {
+            long dialogId = (long) args[0];
+            if (dialogId == -this.chatId) {
+                if (parentLayout != null && parentLayout.getLastFragment() == this) {
+                    finishFragment();
+                } else {
+                    removeSelfFromStack();
+                }
+            }
         }
     }
 }

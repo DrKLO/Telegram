@@ -78,7 +78,9 @@ public class FloatingDebugView extends FrameLayout implements NotificationCenter
     private boolean inLongPress;
     private Runnable onLongPress = () -> {
         inLongPress = true;
-        performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
+        try {
+            performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
+        } catch (Exception ignored) {}
     };
 
     private boolean isBigMenuShown;

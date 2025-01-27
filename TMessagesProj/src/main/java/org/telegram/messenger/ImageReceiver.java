@@ -290,7 +290,7 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
     private boolean allowLottieVibration = true;
     private boolean allowStartAnimation = true;
     private boolean allowStartLottieAnimation = true;
-    private boolean useSharedAnimationQueue;
+    public boolean useSharedAnimationQueue;
     private boolean allowDecodeSingleFrame;
     private int autoRepeat = 1;
     private int autoRepeatCount = -1;

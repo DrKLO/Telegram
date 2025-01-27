@@ -28,6 +28,7 @@ import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.tgnet.tl.TL_account;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenuItem;
 import org.telegram.ui.ActionBar.AlertDialog;
@@ -433,10 +434,10 @@ public class BusinessIntroActivity extends UniversalFragment implements Notifica
 
         doneButtonDrawable.animateToProgress(1f);
         TLRPC.UserFull userFull = getMessagesController().getUserFull(getUserConfig().getClientUserId());
-        TLRPC.TL_account_updateBusinessIntro req = new TLRPC.TL_account_updateBusinessIntro();
+        TL_account.updateBusinessIntro req = new TL_account.updateBusinessIntro();
         if (!isEmpty()) {
             req.flags |= 1;
-            req.intro = new TLRPC.TL_inputBusinessIntro();
+            req.intro = new TL_account.TL_inputBusinessIntro();
             req.intro.title = titleEdit.getText().toString();
             req.intro.description = messageEdit.getText().toString();
             if (!stickerRandom && (sticker != null || inputSticker != null)) {
@@ -450,7 +451,7 @@ public class BusinessIntroActivity extends UniversalFragment implements Notifica
 
             if (userFull != null) {
                 userFull.flags2 |= 16;
-                userFull.business_intro = new TLRPC.TL_businessIntro();
+                userFull.business_intro = new TL_account.TL_businessIntro();
                 userFull.business_intro.title = req.intro.title;
                 userFull.business_intro.description = req.intro.description;
                 if (!stickerRandom && sticker != null) {

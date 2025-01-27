@@ -39,6 +39,7 @@ public class BackupImageView extends View {
     protected int width = -1;
     protected int height = -1;
     public AnimatedEmojiDrawable animatedEmojiDrawable;
+    public ColorFilter animatedEmojiDrawableColorFilter;
     private AvatarDrawable avatarDrawable;
     boolean attached;
 
@@ -316,6 +317,9 @@ public class BackupImageView extends View {
         if (imageReceiver == null) {
             return;
         }
+        if (animatedEmojiDrawable != null && animatedEmojiDrawableColorFilter != null) {
+            animatedEmojiDrawable.setColorFilter(animatedEmojiDrawableColorFilter);
+        }
         if (width != -1 && height != -1) {
             if (drawFromStart) {
                 imageReceiver.setImageCoords(0, 0, width, height);
@@ -355,6 +359,11 @@ public class BackupImageView extends View {
         if (attached && animatedEmojiDrawable != null) {
             animatedEmojiDrawable.addView(this);
         }
+        invalidate();
+    }
+
+    public void setEmojiColorFilter(ColorFilter colorFilter) {
+        animatedEmojiDrawableColorFilter = colorFilter;
         invalidate();
     }
 

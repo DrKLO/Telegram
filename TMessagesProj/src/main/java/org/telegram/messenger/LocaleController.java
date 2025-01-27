@@ -17,6 +17,7 @@ import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.os.Build;
 import android.telephony.TelephonyManager;
+import android.text.SpannableStringBuilder;
 import android.text.TextUtils;
 import android.text.format.DateFormat;
 import android.util.Xml;
@@ -24,6 +25,7 @@ import android.util.Xml;
 import androidx.annotation.StringRes;
 
 import org.telegram.messenger.time.FastDateFormat;
+import org.telegram.tgnet.Vector;
 import org.telegram.ui.Stars.StarsController;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLObject;
@@ -1456,6 +1458,20 @@ public class LocaleController {
         return formatString(param, key + "_other", resourceId, fallbackResourceId, argsWithPlural);
     }
 
+    public static CharSequence formatPluralSpannable(String key, int plural, CharSequence... args) {
+        if (key == null || key.length() == 0 || getInstance().currentPluralRules == null) {
+            return "LOC_ERR:" + key;
+        }
+        String param = getInstance().stringForQuantity(getInstance().currentPluralRules.quantityForNumber(plural));
+        param = key + "_" + param;
+        int resourceId = ApplicationLoader.applicationContext.getResources().getIdentifier(param, "string", ApplicationLoader.applicationContext.getPackageName());
+        int fallbackResourceId = ApplicationLoader.applicationContext.getResources().getIdentifier(key + "_other", "string", ApplicationLoader.applicationContext.getPackageName());
+        Object[] argsWithPlural = new Object[args.length + 1];
+        argsWithPlural[0] = plural;
+        System.arraycopy(args, 0, argsWithPlural, 1, args.length);
+        return formatSpannable(param, key + "_other", resourceId, fallbackResourceId, argsWithPlural);
+    }
+
     public static String getStringParamForNumber(int number) {
         return getInstance().stringForQuantity(getInstance().currentPluralRules.quantityForNumber(number));
     }
@@ -1561,15 +1577,13 @@ public class LocaleController {
                             if (fallbackRes != 0) {
                                 try {
                                     value = ApplicationLoader.applicationContext.getString(fallbackRes);
-                                } catch (Exception ignored) {
-                                }
+                                } catch (Exception ignored) {}
                             }
                         }
                     } else if (fallbackRes != 0) {
                         try {
                             value = ApplicationLoader.applicationContext.getString(fallbackRes);
-                        } catch (Exception ignored) {
-                        }
+                        } catch (Exception ignored) {}
                     }
                 }
             }
@@ -1579,6 +1593,75 @@ public class LocaleController {
             } else {
                 return String.format(value, args);
             }
+        } catch (Exception e) {
+            FileLog.e(e);
+            return "LOC_ERR: " + key;
+        }
+    }
+
+    public static CharSequence formatSpannable(@StringRes int res, Object... args) {
+        String key = resourcesCacheMap.get(res);
+        if (key == null) {
+            resourcesCacheMap.put(res, key = ApplicationLoader.applicationContext.getResources().getResourceEntryName(res));
+        }
+        return formatSpannable(key, res, args);
+    }
+
+    public static CharSequence formatSpannable(String key, int res, Object... args) {
+        return formatSpannable(key, null, res, 0, args);
+    }
+
+    public static CharSequence formatSpannable(String key, String fallback, int res, int fallbackRes, Object... args) {
+        try {
+            String value = BuildVars.USE_CLOUD_STRINGS ? getInstance().localeValues.get(key) : null;
+            if (value == null) {
+                if (BuildVars.USE_CLOUD_STRINGS && fallback != null) {
+                    value = getInstance().localeValues.get(fallback);
+                }
+                if (value == null) {
+                    if (res != 0) {
+                        try {
+                            value = ApplicationLoader.applicationContext.getString(res);
+                        } catch (Exception e) {
+                            if (fallbackRes != 0) {
+                                try {
+                                    value = ApplicationLoader.applicationContext.getString(fallbackRes);
+                                } catch (Exception ignored) {}
+                            }
+                        }
+                    } else if (fallbackRes != 0) {
+                        try {
+                            value = ApplicationLoader.applicationContext.getString(fallbackRes);
+                        } catch (Exception ignored) {}
+                    }
+                }
+            }
+
+            SpannableStringBuilder builder = new SpannableStringBuilder(value);
+            for (int i = 0; i < args.length; i++) {
+                String formatter = "s";
+                CharSequence replaceWith = "";
+                if (args[i] instanceof CharSequence) {
+                    replaceWith = (CharSequence) args[i];
+                } else if (args[i] instanceof Integer) {
+                    formatter = "d";
+                    replaceWith = "" + (Integer) args[i];
+                } else if (args[i] == null) {
+                    replaceWith = "null";
+                }
+                final String placeholder = "%" + (i + 1) + "$" + formatter;
+                int start = builder.toString().indexOf(placeholder);
+                if (start != -1) {
+                    builder.replace(start, start + placeholder.length(), replaceWith);
+                } else {
+                    final String placeholder2 = "%" + formatter;
+                    start = builder.toString().indexOf(placeholder2);
+                    if (start != -1) {
+                        builder.replace(start, start + placeholder2.length(), replaceWith);
+                    }
+                }
+            }
+            return builder;
         } catch (Exception e) {
             FileLog.e(e);
             return "LOC_ERR: " + key;
@@ -2843,10 +2926,10 @@ public class LocaleController {
         loadingRemoteLanguages = true;
         TLRPC.TL_langpack_getLanguages req = new TLRPC.TL_langpack_getLanguages();
         ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> {
-            if (response != null) {
+            if (response instanceof Vector) {
                 AndroidUtilities.runOnUIThread(() -> {
                     loadingRemoteLanguages = false;
-                    TLRPC.Vector res = (TLRPC.Vector) response;
+                    Vector res = (Vector) response;
                     for (int a = 0, size = remoteLanguages.size(); a < size; a++) {
                         remoteLanguages.get(a).serverIndex = Integer.MAX_VALUE;
                     }

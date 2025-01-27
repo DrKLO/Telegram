@@ -1775,9 +1775,9 @@ public class CacheControlActivity extends BaseFragment implements NotificationCe
             );
             if (hasCache) {
                 if (percent < 0.01f) {
-                    subtitle[1].setText(LocaleController.formatString("StorageUsageTelegramLess", R.string.StorageUsageTelegramLess, formatPercent(percent)));
+                    subtitle[1].setText(LocaleController.formatString(R.string.StorageUsageTelegramLess, formatPercent(percent)));
                 } else {
-                    subtitle[1].setText(LocaleController.formatString("StorageUsageTelegram", R.string.StorageUsageTelegram, formatPercent(percent)));
+                    subtitle[1].setText(LocaleController.formatString(R.string.StorageUsageTelegram, formatPercent(percent)));
                 }
                 switchSubtitle(1);
             } else {
@@ -2892,7 +2892,7 @@ public class CacheControlActivity extends BaseFragment implements NotificationCe
         }
 
         public void setText(CharSequence text, boolean divider) {
-            text = Emoji.replaceEmoji(text, textView.getPaint().getFontMetricsInt(), AndroidUtilities.dp(16), false);
+            text = Emoji.replaceEmoji(text, textView.getPaint().getFontMetricsInt(), false);
             textView.setText(text);
             valueTextView.setVisibility(INVISIBLE);
             needDivider = divider;
@@ -2904,7 +2904,7 @@ public class CacheControlActivity extends BaseFragment implements NotificationCe
         }
 
         public void setTextAndValue(CharSequence text, CharSequence value, boolean animated, boolean divider) {
-            text = Emoji.replaceEmoji(text, textView.getPaint().getFontMetricsInt(), AndroidUtilities.dp(16), false);
+            text = Emoji.replaceEmoji(text, textView.getPaint().getFontMetricsInt(), false);
             textView.setText(text);
             if (value != null) {
                 valueTextView.setText(value, animated);

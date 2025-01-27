@@ -116,7 +116,7 @@ public class SharedPhotoVideoCell2 extends FrameLayout {
     static boolean lastAutoDownload;
 
     private Path path = new Path();
-    private SpoilerEffect mediaSpoilerEffect = new SpoilerEffect();
+    private SpoilerEffect mediaSpoilerEffect;
     private float spoilerRevealProgress;
     private float spoilerRevealX;
     private float spoilerRevealY;
@@ -546,6 +546,9 @@ public class SharedPhotoVideoCell2 extends FrameLayout {
                     canvas.clipRect(imageReceiver.getImageX(), imageReceiver.getImageY(), imageReceiver.getImageX2(), imageReceiver.getImageY2());
                     mediaSpoilerEffect2.draw(canvas, this, (int) imageReceiver.getImageWidth(), (int) imageReceiver.getImageHeight());
                 } else {
+                    if (mediaSpoilerEffect == null) {
+                        mediaSpoilerEffect = new SpoilerEffect();
+                    }
                     int sColor = Color.WHITE;
                     mediaSpoilerEffect.setColor(ColorUtils.setAlphaComponent(sColor, (int) (Color.alpha(sColor) * 0.325f)));
                     mediaSpoilerEffect.setBounds((int) imageReceiver.getImageX(), (int) imageReceiver.getImageY(), (int) imageReceiver.getImageX2(), (int) imageReceiver.getImageY2());

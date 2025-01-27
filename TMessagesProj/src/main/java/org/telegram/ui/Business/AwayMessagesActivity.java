@@ -15,8 +15,8 @@ import org.telegram.messenger.BotWebViewVibrationEffect;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
-import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.tgnet.tl.TL_account;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenuItem;
 import org.telegram.ui.ActionBar.AlertDialog;
@@ -109,16 +109,16 @@ public class AwayMessagesActivity extends BaseFragment implements NotificationCe
         if (recipientsHelper != null) {
             recipientsHelper.setValue(currentValue == null ? null : currentValue.recipients);
         }
-        if (currentValue != null && currentValue.schedule instanceof TLRPC.TL_businessAwayMessageScheduleCustom) {
+        if (currentValue != null && currentValue.schedule instanceof TL_account.TL_businessAwayMessageScheduleCustom) {
             schedule = currentValueScheduleType = SCHEDULE_CUSTOM;
-            scheduleCustomStart = currentScheduleCustomStart = ((TLRPC.TL_businessAwayMessageScheduleCustom) currentValue.schedule).start_date;
-            scheduleCustomEnd =currentScheduleCustomEnd = ((TLRPC.TL_businessAwayMessageScheduleCustom) currentValue.schedule).end_date;
+            scheduleCustomStart = currentScheduleCustomStart = ((TL_account.TL_businessAwayMessageScheduleCustom) currentValue.schedule).start_date;
+            scheduleCustomEnd =currentScheduleCustomEnd = ((TL_account.TL_businessAwayMessageScheduleCustom) currentValue.schedule).end_date;
         } else {
             scheduleCustomStart = getConnectionsManager().getCurrentTime();
             scheduleCustomEnd = getConnectionsManager().getCurrentTime() + 60 * 60 * 24;
-            if (currentValue != null && currentValue.schedule instanceof TLRPC.TL_businessAwayMessageScheduleAlways) {
+            if (currentValue != null && currentValue.schedule instanceof TL_account.TL_businessAwayMessageScheduleAlways) {
                 schedule = currentValueScheduleType = SCHEDULE_ALWAYS;
-            } else if (currentValue != null && currentValue.schedule instanceof TLRPC.TL_businessAwayMessageScheduleOutsideWorkHours) {
+            } else if (currentValue != null && currentValue.schedule instanceof TL_account.TL_businessAwayMessageScheduleOutsideWorkHours) {
                 schedule = currentValueScheduleType = SCHEDULE_OUTSIDE_HOURS;
             } else {
                 schedule = currentValueScheduleType = SCHEDULE_ALWAYS;
@@ -193,18 +193,18 @@ public class AwayMessagesActivity extends BaseFragment implements NotificationCe
 
         doneButtonDrawable.animateToProgress(1f);
         TLRPC.UserFull userFull = getMessagesController().getUserFull(getUserConfig().getClientUserId());
-        TLRPC.TL_account_updateBusinessAwayMessage req = new TLRPC.TL_account_updateBusinessAwayMessage();
+        TL_account.updateBusinessAwayMessage req = new TL_account.updateBusinessAwayMessage();
         if (enabled) {
-            req.message = new TLRPC.TL_inputBusinessAwayMessage();
+            req.message = new TL_account.TL_inputBusinessAwayMessage();
             req.message.offline_only = offline_only;
             req.message.shortcut_id = reply.id;
             req.message.recipients = recipientsHelper.getInputValue();
             if (schedule == SCHEDULE_ALWAYS) {
-                req.message.schedule = new TLRPC.TL_businessAwayMessageScheduleAlways();
+                req.message.schedule = new TL_account.TL_businessAwayMessageScheduleAlways();
             } else if (schedule == SCHEDULE_OUTSIDE_HOURS) {
-                req.message.schedule = new TLRPC.TL_businessAwayMessageScheduleOutsideWorkHours();
+                req.message.schedule = new TL_account.TL_businessAwayMessageScheduleOutsideWorkHours();
             } else if (schedule == SCHEDULE_CUSTOM) {
-                TLRPC.TL_businessAwayMessageScheduleCustom custom = new TLRPC.TL_businessAwayMessageScheduleCustom();
+                TL_account.TL_businessAwayMessageScheduleCustom custom = new TL_account.TL_businessAwayMessageScheduleCustom();
                 custom.start_date = scheduleCustomStart;
                 custom.end_date = scheduleCustomEnd;
                 req.message.schedule = custom;
@@ -213,7 +213,7 @@ public class AwayMessagesActivity extends BaseFragment implements NotificationCe
 
             if (userFull != null) {
                 userFull.flags2 |= 8;
-                userFull.business_away_message = new TLRPC.TL_businessAwayMessage();
+                userFull.business_away_message = new TL_account.TL_businessAwayMessage();
                 userFull.business_away_message.offline_only = offline_only;
                 userFull.business_away_message.shortcut_id = reply.id;
                 userFull.business_away_message.recipients = recipientsHelper.getValue();
@@ -258,7 +258,7 @@ public class AwayMessagesActivity extends BaseFragment implements NotificationCe
         return super.onBackPressed();
     }
 
-    public TLRPC.TL_businessAwayMessage currentValue;
+    public TL_account.TL_businessAwayMessage currentValue;
     public int currentValueScheduleType;
 
     public boolean enabled;

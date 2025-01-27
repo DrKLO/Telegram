@@ -35,6 +35,7 @@ import android.text.TextUtils;
 import android.util.Pair;
 import android.util.SparseArray;
 
+import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
 import androidx.core.graphics.ColorUtils;
 
@@ -4071,6 +4072,62 @@ public class ImageLoader {
         } catch (Throwable e) {
             FileLog.e(e);
         }
+    }
+
+    @Nullable
+    public static TLRPC.PhotoSize fileToSize(String path, boolean forceCacheDir) {
+        if (path == null) {
+            return null;
+        }
+
+        int w, h;
+        try {
+            BitmapFactory.Options o = new BitmapFactory.Options();
+            o.inJustDecodeBounds = true;
+            BitmapFactory.decodeFile(path, o);
+            w = o.outWidth;
+            h = o.outHeight;
+        } catch (Exception e) {
+            FileLog.e(e);
+            return null;
+        }
+
+        TLRPC.TL_fileLocationToBeDeprecated location = new TLRPC.TL_fileLocationToBeDeprecated();
+        location.volume_id = Integer.MIN_VALUE;
+        location.dc_id = Integer.MIN_VALUE;
+        location.local_id = SharedConfig.getLastLocalId();
+        location.file_reference = new byte[0];
+
+        TLRPC.TL_photoSize_layer127 photoSize = new TLRPC.TL_photoSize_layer127();
+        photoSize.location = location;
+        photoSize.w = w;
+        photoSize.h = h;
+        if (photoSize.w <= 100 && photoSize.h <= 100) {
+            photoSize.type = "s";
+        } else if (photoSize.w <= 320 && photoSize.h <= 320) {
+            photoSize.type = "m";
+        } else if (photoSize.w <= 800 && photoSize.h <= 800) {
+            photoSize.type = "x";
+        } else if (photoSize.w <= 1280 && photoSize.h <= 1280) {
+            photoSize.type = "y";
+        } else {
+            photoSize.type = "w";
+        }
+
+        String external = ".jpg";
+
+        String fileName = location.volume_id + "_" + location.local_id + external;
+        File fileDir;
+        if (forceCacheDir) {
+            fileDir = FileLoader.getDirectory(FileLoader.MEDIA_DIR_CACHE);
+        } else {
+            fileDir = location.volume_id != Integer.MIN_VALUE ? FileLoader.getDirectory(FileLoader.MEDIA_DIR_IMAGE) : FileLoader.getDirectory(FileLoader.MEDIA_DIR_CACHE);
+        }
+        final File cacheFile = new File(fileDir, fileName);
+        new File(path).renameTo(cacheFile);
+        photoSize.size = (int) cacheFile.length();
+
+        return photoSize;
     }
 
     private static TLRPC.PhotoSize scaleAndSaveImageInternal(TLRPC.PhotoSize photoSize, Bitmap bitmap, Bitmap.CompressFormat compressFormat, boolean progressive, int w, int h, float photoW, float photoH, float scaleFactor, int quality, boolean cache, boolean scaleAnyway, boolean forceCacheDir) throws Exception {

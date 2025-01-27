@@ -112,6 +112,11 @@ public class ButtonWithCounterView extends FrameLayout implements Loadable {
         }
     }
 
+    public void updateColors(Theme.ResourcesProvider resourcesProvider) {
+        this.resourcesProvider = resourcesProvider;
+        updateColors();
+    }
+
     public void updateColors() {
         text.setTextColor(Theme.getColor(filled ? Theme.key_featuredStickers_buttonText : Theme.key_featuredStickers_addButton, resourcesProvider));
         if (filled) {

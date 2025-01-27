@@ -63,12 +63,15 @@ public class ThemeColors {
         defaultColors[key_dialogEmptyText] = 0xff8c9094;
         defaultColors[key_dialogSwipeRemove] = 0xffe56555;
         defaultColors[key_dialogReactionMentionBackground] = 0xffF05459;
-        defaultColors[key_dialogCardShadow] = 0x30999999;
+        defaultColors[key_dialogCardShadow] = 0x17000000;
         defaultColors[key_dialogGiftsBackground] = 0xffF5F6F7;
         defaultColors[key_dialogGiftsTabText] = 0xFF56595C;
         defaultColors[key_bot_loadingIcon] = 0xFFF2F2F2;
         defaultColors[key_gift_ribbon] = 0xFF46A4F2;
         defaultColors[key_gift_ribbon_soldout] = 0xffcc4747;
+        defaultColors[key_share_icon] = 0xFF6E7275;
+        defaultColors[key_share_linkText] = 0xFF222222;
+        defaultColors[key_share_linkBackground] = 0x0F000000;
 
         defaultColors[key_windowBackgroundWhite] = 0xffffffff;
         defaultColors[key_windowBackgroundUnchecked] = 0xff9da7b1;
@@ -148,21 +151,21 @@ public class ThemeColors {
         defaultColors[key_avatar_backgroundArchived] = 0xffB8C2CC;
         defaultColors[key_avatar_backgroundArchivedHidden] = 0xff66bffa;
         defaultColors[key_avatar_backgroundRed] = 0xffFF845E;
+        defaultColors[key_avatar_background2Red] = 0xffD45246;
         defaultColors[key_avatar_backgroundOrange] = 0xffFEBB5B;
+        defaultColors[key_avatar_background2Orange] = 0xffF68136;
         defaultColors[key_avatar_backgroundViolet] = 0xffB694F9;
+        defaultColors[key_avatar_background2Violet] = 0xff6C61DF;
         defaultColors[key_avatar_backgroundGreen] = 0xff9AD164;
+        defaultColors[key_avatar_background2Green] = 0xff46BA43;
         defaultColors[key_avatar_backgroundCyan] = 0xff5BCBE3;
+        defaultColors[key_avatar_background2Cyan] = 0xff359AD4;
         defaultColors[key_avatar_backgroundBlue] = 0xff5CAFFA;
+        defaultColors[key_avatar_background2Blue] = 0xff408ACF;
         defaultColors[key_avatar_backgroundPink] = 0xffFF8AAC;
+        defaultColors[key_avatar_background2Pink] = 0xffD95574;
         defaultColors[key_avatar_backgroundGray] = 0xffA1ABB5;
 
-        defaultColors[key_avatar_background2Red] = 0xffD45246;
-        defaultColors[key_avatar_background2Orange] = 0xffF68136;
-        defaultColors[key_avatar_background2Violet] = 0xff6C61DF;
-        defaultColors[key_avatar_background2Green] = 0xff46BA43;
-        defaultColors[key_avatar_background2Cyan] = 0xff359AD4;
-        defaultColors[key_avatar_background2Blue] = 0xff408ACF;
-        defaultColors[key_avatar_background2Pink] = 0xffD95574;
 
         defaultColors[key_avatar_backgroundInProfileBlue] = 0xff5085b1;
         defaultColors[key_avatar_backgroundActionBarBlue] = 0xff598fba;
@@ -754,6 +757,8 @@ public class ThemeColors {
         defaultColors[key_chat_outReactionButtonText] = 0xff55ab4f;
         defaultColors[key_chat_inReactionButtonTextSelected] = 0xffffffff;
         defaultColors[key_chat_outReactionButtonTextSelected] = 0xffffffff;
+        defaultColors[key_chat_reactionServiceButtonBackgroundSelected] = 0xffffffff;
+        defaultColors[key_chat_reactionServiceButtonTextSelected] = 0xFF000000;
 
         defaultColors[key_premiumGradient0] = 0xff4ACD43;
         defaultColors[key_premiumGradient1] = 0xff55A5FF;
@@ -1520,6 +1525,8 @@ public class ThemeColors {
         colorKeysMap.put(key_chat_inReactionButtonText, "chat_inReactionButtonText");
         colorKeysMap.put(key_chat_inReactionButtonTextSelected, "chat_inReactionButtonTextSelected");
         colorKeysMap.put(key_chat_outReactionButtonTextSelected, "chat_outReactionButtonTextSelected");
+        colorKeysMap.put(key_chat_reactionServiceButtonBackgroundSelected, "chat_reactionServiceButtonBackgroundSelected");
+        colorKeysMap.put(key_chat_reactionServiceButtonTextSelected, "chat_reactionServiceButtonTextSelected");
         colorKeysMap.put(key_premiumGradient0, "premiumGradient0");
         colorKeysMap.put(key_premiumGradient1, "premiumGradient1");
         colorKeysMap.put(key_premiumGradient2, "premiumGradient2");
@@ -1564,6 +1571,10 @@ public class ThemeColors {
         colorKeysMap.put(key_dialogCardShadow, "dialogCardShadow");
         colorKeysMap.put(key_dialogGiftsBackground, "dialogGiftsBackground");
         colorKeysMap.put(key_dialogGiftsTabText, "dialogGiftsTabText");
+        colorKeysMap.put(key_share_icon, "share_icon");
+        colorKeysMap.put(key_share_linkText, "share_linkText");
+        colorKeysMap.put(key_share_linkBackground, "share_linkBackground");
+
         return colorKeysMap;
     }
 

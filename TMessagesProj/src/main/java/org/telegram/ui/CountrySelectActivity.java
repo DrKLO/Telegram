@@ -392,7 +392,7 @@ public class CountrySelectActivity extends BaseFragment {
                 ArrayList<Country> arr = countries.get(sortedCountries.get(section));
                 Country c = arr.get(position);
                 TextSettingsCell settingsCell = (TextSettingsCell) holder.itemView;
-                settingsCell.setTextAndValue(Emoji.replaceEmoji(getCountryNameWithFlag(c), settingsCell.getTextView().getPaint().getFontMetricsInt(), AndroidUtilities.dp(20), false), needPhoneCode ? "+" + c.code : null, false);
+                settingsCell.setTextAndValue(Emoji.replaceEmoji(getCountryNameWithFlag(c), settingsCell.getTextView().getPaint().getFontMetricsInt(), false), needPhoneCode ? "+" + c.code : null, false);
             }
         }
 
@@ -532,7 +532,7 @@ public class CountrySelectActivity extends BaseFragment {
         public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
             Country c = searchResult.get(position);
             TextSettingsCell settingsCell = (TextSettingsCell) holder.itemView;
-            settingsCell.setTextAndValue(Emoji.replaceEmoji(getCountryNameWithFlag(c), settingsCell.getTextView().getPaint().getFontMetricsInt(), AndroidUtilities.dp(20), false), needPhoneCode ? "+" + c.code : null, false);
+            settingsCell.setTextAndValue(Emoji.replaceEmoji(getCountryNameWithFlag(c), settingsCell.getTextView().getPaint().getFontMetricsInt(), false), needPhoneCode ? "+" + c.code : null, false);
         }
 
         @Override

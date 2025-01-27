@@ -23,7 +23,6 @@ import android.text.StaticLayout;
 import android.text.TextPaint;
 import android.text.TextUtils;
 import android.util.Pair;
-import android.view.HapticFeedbackConstants;
 import android.view.MotionEvent;
 import android.view.View;
 
@@ -324,7 +323,7 @@ public class VideoPlayerSeekBar {
                     float position = seconds * 1000L / (float) videoDuration;
                     String label = link.label;
                     SpannableStringBuilder builder = new SpannableStringBuilder(label);
-                    Emoji.replaceEmoji(builder, timestampLabelPaint.getFontMetricsInt(), AndroidUtilities.dp(14), false);
+                    Emoji.replaceEmoji(builder, timestampLabelPaint.getFontMetricsInt(), false);
                     timestamps.add(new Pair<>(position, builder));
                 }
             }

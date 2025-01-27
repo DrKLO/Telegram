@@ -394,6 +394,17 @@ public class AvatarDrawable extends Drawable {
         return text.substring(0, text.offsetByCodePoints(0, Math.min(text.codePointCount(0, text.length()), 1)));
     }
 
+    public void setInfo(long id) {
+        invalidateTextLayout = true;
+        hasGradient = true;
+        hasAdvancedGradient = false;
+        color = getThemedColor(Theme.keys_avatar_background[getColorIndex(id)]);
+        color2 = getThemedColor(Theme.keys_avatar_background2[getColorIndex(id)]);
+        avatarType = AVATAR_TYPE_NORMAL;
+        drawDeleted = false;
+        getAvatarSymbols("", "", "", stringBuilder);
+    }
+
     public void setInfo(long id, String firstName, String lastName, String custom) {
         setInfo(id, firstName, lastName, custom, null, null);
     }
@@ -529,6 +540,11 @@ public class AvatarDrawable extends Drawable {
         }
     }
 
+    private Drawable customIconDrawable;
+    public void setCustomIcon(Drawable drawable) {
+        customIconDrawable = drawable;
+    }
+
     @Override
     public void draw(Canvas canvas) {
         Rect bounds = getBounds();
@@ -600,10 +616,12 @@ public class AvatarDrawable extends Drawable {
             Theme.dialogs_archiveAvatarDrawable.setBounds(x, y, x + w, y + h);
             Theme.dialogs_archiveAvatarDrawable.draw(canvas);
             canvas.restore();
-        } else if (avatarType != 0) {
+        } else if (avatarType != 0 || customIconDrawable != null) {
             Drawable drawable;
 
-            if (avatarType == AVATAR_TYPE_SAVED) {
+            if (customIconDrawable != null) {
+                drawable = customIconDrawable;
+            } else if (avatarType == AVATAR_TYPE_SAVED) {
                 drawable = Theme.avatarDrawables[0];
             } else if (avatarType == AVATAR_TYPE_FILTER_CONTACTS) {
                 drawable = Theme.avatarDrawables[2];
@@ -681,7 +699,7 @@ public class AvatarDrawable extends Drawable {
                 invalidateTextLayout = false;
                 if (stringBuilder.length() > 0) {
                     CharSequence text = stringBuilder.toString().toUpperCase();
-                    text = Emoji.replaceEmoji(text, namePaint.getFontMetricsInt(), dp(16), true);
+                    text = Emoji.replaceEmoji(text, namePaint.getFontMetricsInt(), true);
                     if (textLayout == null || !TextUtils.equals(text, textLayout.getText())) {
                         try {
                             textLayout = new StaticLayout(text, namePaint, dp(100), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);

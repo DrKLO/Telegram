@@ -62,6 +62,9 @@ import org.telegram.ui.ProfileActivity;
 import org.telegram.ui.Stories.recorder.HintView2;
 import org.telegram.ui.Stories.recorder.ToggleButton;
 
+import java.util.Arrays;
+import java.util.Collections;
+
 public class ItemOptions {
 
     public static ItemOptions makeOptions(@NonNull BaseFragment fragment, @NonNull View scrimView) {
@@ -672,6 +675,12 @@ public class ItemOptions {
         return this;
     }
 
+    public boolean onTopOfScrim;
+    public ItemOptions setOnTopOfScrim() {
+        this.onTopOfScrim = true;
+        return this;
+    }
+
     public ActionBarMenuSubItem getLast() {
         if (linearLayout != null) {
             if (linearLayout.getChildCount() <= 0) return null;
@@ -825,12 +834,15 @@ public class ItemOptions {
             container.addView(dimView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
             dimView.setAlpha(0);
             dimView.animate().alpha(1f).setUpdateListener(anm -> {
-                if (dimView != null && (scrimViewRoundRadius > 0 || scrimViewPadding > 0)) {
+                if (dimView != null && (scrimViewRoundRadius > 0 || scrimViewPadding > 0 || (blur && dimView instanceof DimView && ((DimView) dimView).clipTop < 1))) {
                     dimView.invalidate();
                 }
             }).setDuration(150);
         }
         layout.measure(View.MeasureSpec.makeMeasureSpec(container.getMeasuredWidth(), View.MeasureSpec.AT_MOST), View.MeasureSpec.makeMeasureSpec(container.getMeasuredHeight(), View.MeasureSpec.AT_MOST));
+        final RectF layoutBounds = new RectF();
+        final android.graphics.Rect layoutPadding = lastLayout.getPadding();
+        layoutBounds.set(layoutPadding.left, layoutPadding.top, layout.getMeasuredWidth() - layoutPadding.right, layout.getMeasuredHeight() - layoutPadding.bottom);
 
         actionBarPopupWindow = new ActionBarPopupWindow(layout, LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT) {
             @Override
@@ -870,28 +882,33 @@ public class ItemOptions {
         int X;
         if (scrimView != null) {
             if (gravity == Gravity.RIGHT) {
-                X = (int) (container.getX() + x + scrimViewBounds.width() - layout.getMeasuredWidth());
+                X = (int) (container.getX() + x + scrimViewBounds.width() - layoutBounds.right);
             } else if (gravity == Gravity.CENTER_HORIZONTAL) {
                 X = (int) (container.getX() + x + scrimViewBounds.width() / 2.0f - layout.getMeasuredWidth() / 2.0f);
             } else {
-                X = (int) (container.getX() + x);
+                if (x + layoutBounds.width() > container.getWidth()) {
+                    X = (int) (container.getX() + x + scrimViewBounds.width() - layoutBounds.right);
+                } else {
+                    X = (int) (container.getX() + x - layoutBounds.left);
+                }
             }
         } else {
             X = (container.getWidth() - layout.getMeasuredWidth()) / 2; // at the center
         }
         int Y;
+        float scrimHeight = onTopOfScrim ? 0 : scrimViewBounds.height();
         if (forceBottom) {
-            Y = (int) (Math.min(y + scrimViewBounds.height(), AndroidUtilities.displaySize.y) - layout.getMeasuredHeight() + container.getY());
+            Y = (int) (Math.min(y + scrimHeight, AndroidUtilities.displaySize.y) - layout.getMeasuredHeight() + container.getY());
         } else if (scrimView != null) {
-            if (forceTop || y + scrimViewBounds.height() + layout.getMeasuredHeight() + dp(16) > AndroidUtilities.displaySize.y - AndroidUtilities.navigationBarHeight) {
+            if (forceTop || y + scrimHeight + layout.getMeasuredHeight() + dp(16) > AndroidUtilities.displaySize.y - AndroidUtilities.navigationBarHeight) {
                 // put above scrimView
-                y -= scrimViewBounds.height();
+                y -= scrimHeight;
                 y -= layout.getMeasuredHeight();
-                if (allowCenter && Math.max(0, y + scrimViewBounds.height()) + layout.getMeasuredHeight() > point[1] + scrimViewBounds.top && scrimViewBounds.height() == scrimView.getHeight()) {
-                    y = (container.getHeight() - layout.getMeasuredHeight()) / 2f - scrimViewBounds.height() - container.getY();
+                if (allowCenter && Math.max(0, y + scrimHeight) + layout.getMeasuredHeight() > point[1] + scrimViewBounds.top && scrimViewBounds.height() == scrimView.getHeight()) {
+                    y = (container.getHeight() - layout.getMeasuredHeight()) / 2f - scrimHeight - container.getY();
                 }
             }
-            Y = (int) (y + scrimViewBounds.height() + container.getY()); // under scrimView
+            Y = (int) (y + scrimHeight + container.getY()); // under scrimView
         } else {
             Y = (container.getHeight() - layout.getMeasuredHeight()) / 2; // at the center
         }
@@ -1074,7 +1091,7 @@ public class ItemOptions {
         private Bitmap blurBitmap;
         private Paint blurPaint;
 
-        private final float clipTop;
+        public final float clipTop;
         private final int dim;
 
         private final Path clipPath = new Path();
@@ -1103,7 +1120,9 @@ public class ItemOptions {
 
             if (blur) {
                 blurPaint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
+                scrimView.setAlpha(0.0f);
                 AndroidUtilities.makeGlobalBlurBitmap(b -> {
+                    scrimView.setAlpha(1.0f);
                     blurBitmap = b;
                 }, 12.0f);
             }
@@ -1127,7 +1146,7 @@ public class ItemOptions {
             } else if (cachedBitmap != null && scrimView.getParent() instanceof View) {
                 canvas.save();
                 if (clipTop < 1) {
-                    canvas.clipRect(-viewAdditionalOffsets.left, -viewAdditionalOffsets.top + point[1] - clipTop + 1, getMeasuredWidth() + viewAdditionalOffsets.right, getMeasuredHeight() + viewAdditionalOffsets.bottom);
+                    canvas.clipRect(-viewAdditionalOffsets.left, -viewAdditionalOffsets.top + point[1] - clipTop * (blur ? 1.0f - getAlpha() : 1.0f) + 1, getMeasuredWidth() + viewAdditionalOffsets.right, getMeasuredHeight() + viewAdditionalOffsets.bottom);
                 }
                 canvas.translate(point[0], point[1]);
 
@@ -1160,7 +1179,7 @@ public class ItemOptions {
             } else if (scrimView != null && scrimView.getParent() instanceof View) {
                 canvas.save();
                 if (clipTop < 1) {
-                    canvas.clipRect(-viewAdditionalOffsets.left, -viewAdditionalOffsets.top + point[1] - clipTop + 1, getMeasuredWidth() + viewAdditionalOffsets.right, getMeasuredHeight() + viewAdditionalOffsets.bottom);
+                    canvas.clipRect(-viewAdditionalOffsets.left, -viewAdditionalOffsets.top + point[1] - clipTop * (blur ? 1.0f - getAlpha() : 1.0f) + 1, getMeasuredWidth() + viewAdditionalOffsets.right, getMeasuredHeight() + viewAdditionalOffsets.bottom);
                 }
                 canvas.translate(point[0], point[1]);
 

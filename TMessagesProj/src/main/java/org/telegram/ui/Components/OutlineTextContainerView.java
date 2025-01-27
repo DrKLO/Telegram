@@ -47,18 +47,18 @@ public class OutlineTextContainerView extends FrameLayout {
                 obj.updateColor();
             }).setMultiplier(SPRING_MULTIPLIER);
 
-    private RectF rect = new RectF();
+    private final RectF rect = new RectF();
     private String mText = "";
-    private Paint outlinePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-    private TextPaint textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint outlinePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final TextPaint textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
 
-    private SpringAnimation selectionSpring = new SpringAnimation(this, SELECTION_PROGRESS_PROPERTY);
+    private final SpringAnimation selectionSpring = new SpringAnimation(this, SELECTION_PROGRESS_PROPERTY);
     private float selectionProgress;
 
-    private SpringAnimation titleSpring = new SpringAnimation(this, TITLE_PROGRESS_PROPERTY);
+    private final SpringAnimation titleSpring = new SpringAnimation(this, TITLE_PROGRESS_PROPERTY);
     private float titleProgress;
 
-    private SpringAnimation errorSpring = new SpringAnimation(this, ERROR_PROGRESS_PROPERTY);
+    private final SpringAnimation errorSpring = new SpringAnimation(this, ERROR_PROGRESS_PROPERTY);
     private float errorProgress;
 
     private float strokeWidthRegular = Math.max(2, AndroidUtilities.dp(0.5f));

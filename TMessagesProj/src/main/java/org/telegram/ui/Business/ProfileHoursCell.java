@@ -1,7 +1,6 @@
 package org.telegram.ui.Business;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
-import static org.telegram.messenger.AndroidUtilities.dpf2;
 import static org.telegram.messenger.LocaleController.formatPluralString;
 import static org.telegram.messenger.LocaleController.formatString;
 import static org.telegram.messenger.LocaleController.getString;
@@ -11,7 +10,6 @@ import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
-import android.text.StaticLayout;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.MotionEvent;
@@ -22,27 +20,20 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
-import com.google.android.exoplayer2.source.dash.manifest.Period;
-
-import org.checkerframework.checker.units.qual.A;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.tgnet.tl.TL_account;
 import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Components.AnimatedTextView;
 import org.telegram.ui.Components.ClickableAnimatedTextView;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
 
 import java.time.DayOfWeek;
-import java.time.Instant;
-import java.time.ZoneId;
 import java.time.format.TextStyle;
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Map;
-import java.util.TimeZone;
 
 public class ProfileHoursCell extends LinearLayout {
 
@@ -187,7 +178,7 @@ public class ProfileHoursCell extends LinearLayout {
     private boolean firstAfterAttach = true;
     private boolean needDivider;
     private boolean expanded;
-    public void set(TLRPC.TL_businessWorkHours value, boolean expanded, boolean showInMyTimezone, boolean divider) {
+    public void set(TL_account.TL_businessWorkHours value, boolean expanded, boolean showInMyTimezone, boolean divider) {
         this.expanded = expanded;
         this.needDivider = divider;
 
@@ -238,18 +229,18 @@ public class ProfileHoursCell extends LinearLayout {
         }
         firstAfterAttach = false;
 
-        ArrayList<TLRPC.TL_businessWeeklyOpen> weekly_open = new ArrayList<>(value.weekly_open);
+        ArrayList<TL_account.TL_businessWeeklyOpen> weekly_open = new ArrayList<>(value.weekly_open);
         ArrayList<OpeningHoursActivity.Period>[] localDays = OpeningHoursActivity.getDaysHours(weekly_open);
 
         int nowWeekday = (7 + calendar.get(Calendar.DAY_OF_WEEK) - 2) % 7;
         int nowHours = calendar.get(Calendar.HOUR_OF_DAY);
         int nowMinutes = calendar.get(Calendar.MINUTE);
 
-        ArrayList<TLRPC.TL_businessWeeklyOpen> adapted_weekly_open = OpeningHoursActivity.adaptWeeklyOpen(value.weekly_open, utcOffset);
+        ArrayList<TL_account.TL_businessWeeklyOpen> adapted_weekly_open = OpeningHoursActivity.adaptWeeklyOpen(value.weekly_open, utcOffset);
         boolean open_now = false;
         int nowPeriodTime = nowMinutes + nowHours * 60 + nowWeekday * (24 * 60);
         for (int i = 0; i < adapted_weekly_open.size(); ++i) {
-            TLRPC.TL_businessWeeklyOpen weeklyPeriod = adapted_weekly_open.get(i);
+            TL_account.TL_businessWeeklyOpen weeklyPeriod = adapted_weekly_open.get(i);
             if (
                 nowPeriodTime >= weeklyPeriod.start_minute && nowPeriodTime <= weeklyPeriod.end_minute ||
                 nowPeriodTime + (7 * 24 * 60) >= weeklyPeriod.start_minute && nowPeriodTime + (7 * 24 * 60) <= weeklyPeriod.end_minute ||
@@ -288,7 +279,7 @@ public class ProfileHoursCell extends LinearLayout {
                     if (i == 0 && !open_now && k == 1) {
                         int opensPeriodTime = -1;
                         for (int j = 0; j < adapted_weekly_open.size(); ++j) {
-                            TLRPC.TL_businessWeeklyOpen weekly = adapted_weekly_open.get(j);
+                            TL_account.TL_businessWeeklyOpen weekly = adapted_weekly_open.get(j);
                             if (nowPeriodTime < weekly.start_minute) {
                                 opensPeriodTime = weekly.start_minute;
                                 break;

@@ -8,6 +8,8 @@
 
 package org.telegram.ui.Cells;
 
+import static org.telegram.messenger.AndroidUtilities.dp;
+
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.RectF;
@@ -18,6 +20,7 @@ import android.widget.FrameLayout;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ContactsController;
+import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.Emoji;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.MessagesStorage;
@@ -25,6 +28,7 @@ import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.NotificationsController;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
+import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
@@ -37,27 +41,28 @@ import org.telegram.ui.Components.Premium.PremiumGradient;
 
 public class DrawerUserCell extends FrameLayout implements NotificationCenter.NotificationCenterDelegate {
 
-    private SimpleTextView textView;
-    private BackupImageView imageView;
-    private AvatarDrawable avatarDrawable;
-    private GroupCreateCheckBox checkBox;
-    private AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable status;
+    private final SimpleTextView textView;
+    private final BackupImageView imageView;
+    private final AvatarDrawable avatarDrawable;
+    private final GroupCreateCheckBox checkBox;
+    private final AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable botVerification;
+    private final AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable status;
 
     private int accountNumber;
-    private RectF rect = new RectF();
+    private final RectF rect = new RectF();
 
     public DrawerUserCell(Context context) {
         super(context);
 
         avatarDrawable = new AvatarDrawable();
-        avatarDrawable.setTextSize(AndroidUtilities.dp(20));
+        avatarDrawable.setTextSize(dp(20));
 
         imageView = new BackupImageView(context);
-        imageView.setRoundRadius(AndroidUtilities.dp(18));
+        imageView.setRoundRadius(dp(18));
         addView(imageView, LayoutHelper.createFrame(36, 36, Gravity.LEFT | Gravity.TOP, 14, 6, 0, 0));
 
         textView = new SimpleTextView(context);
-        textView.setPadding(0, AndroidUtilities.dp(4), 0, AndroidUtilities.dp(4));
+        textView.setPadding(0, dp(4), 0, dp(4));
         textView.setTextColor(Theme.getColor(Theme.key_chats_menuItemText));
         textView.setTextSize(15);
         textView.setTypeface(AndroidUtilities.bold());
@@ -66,13 +71,14 @@ public class DrawerUserCell extends FrameLayout implements NotificationCenter.No
         textView.setEllipsizeByGradient(24);
         addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.CENTER_VERTICAL, 72, 0, 14, 0));
 
-        status = new AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable(textView, AndroidUtilities.dp(20));
+        botVerification = new AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable(textView, dp(18));
+        status = new AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable(textView, dp(20));
         textView.setRightDrawable(status);
 
         checkBox = new GroupCreateCheckBox(context);
         checkBox.setChecked(true, false);
         checkBox.setCheckScale(0.9f);
-        checkBox.setInnerRadDiff(AndroidUtilities.dp(1.5f));
+        checkBox.setInnerRadDiff(dp(1.5f));
         checkBox.setColorKeysOverrides(Theme.key_chats_unreadCounterText, Theme.key_chats_unreadCounter, Theme.key_chats_menuBackground);
         addView(checkBox, LayoutHelper.createFrame(18, 18, Gravity.LEFT | Gravity.TOP, 37, 27, 0, 0));
 
@@ -81,7 +87,7 @@ public class DrawerUserCell extends FrameLayout implements NotificationCenter.No
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(48), MeasureSpec.EXACTLY));
+        super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(dp(48), MeasureSpec.EXACTLY));
     }
 
     @Override
@@ -89,6 +95,7 @@ public class DrawerUserCell extends FrameLayout implements NotificationCenter.No
         super.onAttachedToWindow();
         textView.setTextColor(Theme.getColor(Theme.key_chats_menuItemText));
         status.attach();
+        botVerification.attach();
         for (int i = 0; i < UserConfig.MAX_ACCOUNT_COUNT; i++){
             NotificationCenter.getInstance(i).addObserver(this, NotificationCenter.currentUserPremiumStatusChanged);
             NotificationCenter.getInstance(i).addObserver(this, NotificationCenter.updateInterfaces);
@@ -100,6 +107,7 @@ public class DrawerUserCell extends FrameLayout implements NotificationCenter.No
     protected void onDetachedFromWindow() {
         super.onDetachedFromWindow();
         status.detach();
+        botVerification.detach();
         for (int i = 0; i < UserConfig.MAX_ACCOUNT_COUNT; i++){
             NotificationCenter.getInstance(i).removeObserver(this, NotificationCenter.currentUserPremiumStatusChanged);
             NotificationCenter.getInstance(i).removeObserver(this, NotificationCenter.updateInterfaces);
@@ -131,28 +139,40 @@ public class DrawerUserCell extends FrameLayout implements NotificationCenter.No
 
     public void setAccount(int account) {
         accountNumber = account;
-        TLRPC.User user = UserConfig.getInstance(accountNumber).getCurrentUser();
+        final TLRPC.User user = UserConfig.getInstance(accountNumber).getCurrentUser();
         if (user == null) {
             return;
         }
         avatarDrawable.setInfo(account, user);
         CharSequence text = ContactsController.formatName(user.first_name, user.last_name);
         try {
-            text = Emoji.replaceEmoji(text, textView.getPaint().getFontMetricsInt(), AndroidUtilities.dp(20), false);
+            text = Emoji.replaceEmoji(text, textView.getPaint().getFontMetricsInt(), false);
         } catch (Exception ignore) {}
         textView.setText(text);
-        Long emojiStatusId = UserObject.getEmojiStatusDocumentId(user);
+        final Long emojiStatusId = UserObject.getEmojiStatusDocumentId(user);
         if (emojiStatusId != null) {
-            textView.setDrawablePadding(AndroidUtilities.dp(4));
+            textView.setDrawablePadding(dp(4));
             status.set(emojiStatusId, true);
+            status.setParticles(DialogObject.isEmojiStatusCollectible(user.emoji_status), true);
             textView.setRightDrawableOutside(true);
         } else if (MessagesController.getInstance(account).isPremiumUser(user)) {
-            textView.setDrawablePadding(AndroidUtilities.dp(6));
+            textView.setDrawablePadding(dp(6));
             status.set(PremiumGradient.getInstance().premiumStarDrawableMini, true);
+            status.setParticles(false, true);
             textView.setRightDrawableOutside(true);
         } else {
             status.set((Drawable) null, true);
+            status.setParticles(false, true);
             textView.setRightDrawableOutside(false);
+        }
+        final long botVerificationId = DialogObject.getBotVerificationIcon(user);
+        if (botVerificationId == 0 || ConnectionsManager.getInstance(account).isTestBackend() != ConnectionsManager.getInstance(UserConfig.selectedAccount).isTestBackend()) {
+            botVerification.set((Drawable) null, false);
+            textView.setLeftDrawable(null);
+        } else {
+            botVerification.set(botVerificationId, false);
+            botVerification.setColor(Theme.getColor(Theme.key_featuredStickers_addButton));
+            textView.setLeftDrawable(botVerification);
         }
         status.setColor(Theme.getColor(Theme.key_chats_verifiedBackground));
         imageView.getImageReceiver().setCurrentAccount(account);
@@ -170,25 +190,25 @@ public class DrawerUserCell extends FrameLayout implements NotificationCenter.No
             textView.setRightPadding(0);
             return;
         }
-        int counter = MessagesStorage.getInstance(accountNumber).getMainUnreadCount();
+        final int counter = MessagesStorage.getInstance(accountNumber).getMainUnreadCount();
         if (counter <= 0) {
             textView.setRightPadding(0);
             return;
         }
 
-        String text = String.format("%d", counter);
-        int countTop = AndroidUtilities.dp(12.5f);
-        int textWidth = (int) Math.ceil(Theme.dialogs_countTextPaint.measureText(text));
-        int countWidth = Math.max(AndroidUtilities.dp(10), textWidth);
-        int countLeft = getMeasuredWidth() - countWidth - AndroidUtilities.dp(25);
+        final String text = String.format("%d", counter);
+        final int countTop = dp(12.5f);
+        final int textWidth = (int) Math.ceil(Theme.dialogs_countTextPaint.measureText(text));
+        final int countWidth = Math.max(dp(10), textWidth);
+        final int countLeft = getMeasuredWidth() - countWidth - dp(25);
 
-        int x = countLeft - AndroidUtilities.dp(5.5f);
-        rect.set(x, countTop, x + countWidth + AndroidUtilities.dp(14), countTop + AndroidUtilities.dp(23));
+        final int x = countLeft - dp(5.5f);
+        rect.set(x, countTop, x + countWidth + dp(14), countTop + dp(23));
         canvas.drawRoundRect(rect, 11.5f * AndroidUtilities.density, 11.5f * AndroidUtilities.density, Theme.dialogs_countPaint);
 
-        canvas.drawText(text, rect.left + (rect.width() - textWidth) / 2, countTop + AndroidUtilities.dp(16), Theme.dialogs_countTextPaint);
+        canvas.drawText(text, rect.left + (rect.width() - textWidth) / 2, countTop + dp(16), Theme.dialogs_countTextPaint);
 
-        textView.setRightPadding(countWidth + AndroidUtilities.dp(14 + 12));
+        textView.setRightPadding(countWidth + dp(14 + 12));
     }
 
     @Override

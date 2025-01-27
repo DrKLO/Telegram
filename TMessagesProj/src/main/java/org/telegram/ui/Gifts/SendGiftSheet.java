@@ -5,29 +5,14 @@ import static org.telegram.messenger.AndroidUtilities.lerp;
 import static org.telegram.messenger.LocaleController.formatString;
 import static org.telegram.messenger.LocaleController.getString;
 
-import android.animation.Animator;
-import android.animation.AnimatorListenerAdapter;
-import android.animation.ValueAnimator;
 import android.app.Activity;
 import android.content.Context;
 import android.graphics.Canvas;
-import android.graphics.Color;
-import android.graphics.LinearGradient;
-import android.graphics.Matrix;
-import android.graphics.Paint;
-import android.graphics.Path;
-import android.graphics.PorterDuff;
-import android.graphics.PorterDuffColorFilter;
-import android.graphics.RectF;
-import android.graphics.Shader;
-import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.util.TypedValue;
 import android.view.Gravity;
-import android.view.MotionEvent;
 import android.view.View;
-import android.view.ViewConfiguration;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -38,7 +23,6 @@ import androidx.recyclerview.widget.DefaultItemAnimator;
 import com.android.billingclient.api.BillingClient;
 import com.android.billingclient.api.BillingFlowParams;
 import com.android.billingclient.api.ProductDetails;
-import com.google.zxing.common.detector.MathUtils;
 
 import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
@@ -66,8 +50,6 @@ import org.telegram.ui.Cells.ChatActionCell;
 import org.telegram.ui.Cells.EditEmojiTextCell;
 import org.telegram.ui.ChatActivity;
 import org.telegram.ui.Components.AlertsCreator;
-import org.telegram.ui.Components.AnimatedFloat;
-import org.telegram.ui.Components.AnimatedTextView;
 import org.telegram.ui.Components.BottomSheetWithRecyclerListView;
 import org.telegram.ui.Components.ColoredImageSpan;
 import org.telegram.ui.Components.CubicBezierInterpolator;
@@ -80,15 +62,13 @@ import org.telegram.ui.Components.Premium.boosts.BoostRepository;
 import org.telegram.ui.Components.Premium.boosts.PremiumPreviewGiftSentBottomSheet;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.SizeNotifierFrameLayout;
-import org.telegram.ui.Components.Text;
 import org.telegram.ui.Components.UItem;
 import org.telegram.ui.Components.UniversalAdapter;
 import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.ProfileActivity;
+import org.telegram.ui.Stars.StarGiftSheet;
 import org.telegram.ui.Stars.StarsController;
 import org.telegram.ui.Stars.StarsIntroActivity;
-import org.telegram.ui.Stars.StarsReactionsSheet;
-import org.telegram.ui.Stories.bots.BotPreviewsEditContainer;
 import org.telegram.ui.Stories.recorder.ButtonWithCounterView;
 import org.telegram.ui.Stories.recorder.PreviewView;
 
@@ -100,6 +80,7 @@ import java.util.List;
 
 public class SendGiftSheet extends BottomSheetWithRecyclerListView {
 
+    private final boolean self;
     private final int currentAccount;
     private final long dialogId;
     private final TL_stars.StarGift starGift;
@@ -123,6 +104,7 @@ public class SendGiftSheet extends BottomSheetWithRecyclerListView {
     private final TextView leftTextView, leftTextView2;
 
     public boolean anonymous;
+    public boolean upgrade = false;
 
     private EditEmojiTextCell messageEdit;
 
@@ -141,11 +123,15 @@ public class SendGiftSheet extends BottomSheetWithRecyclerListView {
     private SendGiftSheet(Context context, int currentAccount, TL_stars.StarGift starGift, GiftPremiumBottomSheet.GiftTier premiumTier, long dialogId, Runnable closeParentSheet) {
         super(context, null, true, false, false, false, ActionBarType.SLIDING, null);
 
+        self = dialogId == UserConfig.getInstance(currentAccount).getClientUserId();
         setImageReceiverNumLevel(0, 4);
         fixNavigationBar();
 //        setSlidingActionBar();
         headerPaddingTop = dp(4);
         headerPaddingBottom = dp(-10);
+        if (self) {
+            anonymous = true;
+        }
 
         this.currentAccount = currentAccount;
         this.dialogId = dialogId;
@@ -155,8 +141,13 @@ public class SendGiftSheet extends BottomSheetWithRecyclerListView {
 
         topPadding = 0.2f;
 
-        final TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(dialogId);
-        this.name = UserObject.getForcedFirstName((TLRPC.User) user);
+        if (dialogId >= 0) {
+            final TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(dialogId);
+            this.name = UserObject.getForcedFirstName(user);
+        } else {
+            final TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-dialogId);
+            this.name = chat == null ? "" : chat.title;
+        }
 
         actionCell = new ChatActionCell(context, false, resourcesProvider);
         actionCell.setDelegate(new ChatActionCell.ChatActionCellDelegate() {});
@@ -233,6 +224,12 @@ public class SendGiftSheet extends BottomSheetWithRecyclerListView {
         } else {
             throw new RuntimeException("SendGiftSheet with no star gift and no premium tier");
         }
+        if (action instanceof TLRPC.TL_messageActionStarGift) {
+            TLRPC.TL_messageActionStarGift thisAction = (TLRPC.TL_messageActionStarGift) action;
+            thisAction.can_upgrade = upgrade || self && starGift != null && starGift.can_upgrade;
+            thisAction.upgrade_stars = self ? 0 : upgrade ? this.starGift.upgrade_stars : 0;
+            thisAction.convert_stars = upgrade ? 0 : this.starGift.convert_stars;
+        }
 
         TLRPC.TL_messageService message = new TLRPC.TL_messageService();
         message.id = 1;
@@ -296,20 +293,6 @@ public class SendGiftSheet extends BottomSheetWithRecyclerListView {
         recyclerListView.setItemAnimator(itemAnimator);
         recyclerListView.setPadding(backgroundPaddingLeft, 0, backgroundPaddingLeft, dp(48 + 10 + 10 + (starGift != null && starGift.limited ? 30 + 10 : 0)));
         adapter.update(false);
-
-        recyclerListView.setOnItemClickListener((view, position) -> {
-            final UItem item = adapter.getItem(reverseLayout ? position : position - 1);
-            if (item == null) return;
-            if (item.id == 1) {
-                anonymous = !anonymous;
-                if (action instanceof TLRPC.TL_messageActionStarGift) {
-                    ((TLRPC.TL_messageActionStarGift) action).name_hidden = anonymous;
-                }
-                messageObject.updateMessageText();
-                actionCell.setMessageObject(messageObject, true);
-                adapter.update(true);
-            }
-        });
 
         buttonContainer = new LinearLayout(context);
         buttonContainer.setOrientation(LinearLayout.VERTICAL);
@@ -394,7 +377,7 @@ public class SendGiftSheet extends BottomSheetWithRecyclerListView {
 
         button = new ButtonWithCounterView(context, resourcesProvider);
         if (starGift != null) {
-            button.setText(StarsIntroActivity.replaceStars(LocaleController.formatPluralStringComma("Gift2Send", (int) this.starGift.stars)), false);
+            button.setText(StarsIntroActivity.replaceStars(LocaleController.formatPluralStringComma(self ? "Gift2SendSelf" : "Gift2Send", (int) (this.starGift.stars + (upgrade ? this.starGift.upgrade_stars : 0))), cachedStarSpan), false);
         } else if (premiumTier != null) {
             button.setText(LocaleController.formatString(R.string.Gift2SendPremium, premiumTier.getFormattedPrice()), false);
         }
@@ -417,7 +400,36 @@ public class SendGiftSheet extends BottomSheetWithRecyclerListView {
         layoutManager.setReverseLayout(reverseLayout = true);
         adapter.update(false);
         layoutManager.scrollToPositionWithOffset(adapter.getItemCount(), dp(200));
+
+        recyclerListView.setOnItemClickListener((view, position) -> {
+            final UItem item = adapter.getItem(reverseLayout ? position : position - 1);
+            if (item == null) return;
+            if (item.id == 1) {
+                anonymous = !anonymous;
+                if (action instanceof TLRPC.TL_messageActionStarGift) {
+                    ((TLRPC.TL_messageActionStarGift) action).name_hidden = anonymous;
+                }
+                messageObject.updateMessageText();
+                actionCell.setMessageObject(messageObject, true);
+                adapter.update(true);
+            } else if (item.id == 2) {
+                upgrade = !upgrade;
+                if (action instanceof TLRPC.TL_messageActionStarGift) {
+                    TLRPC.TL_messageActionStarGift thisAction = (TLRPC.TL_messageActionStarGift) action;
+                    thisAction.can_upgrade = upgrade || self && starGift != null && starGift.can_upgrade;
+                    thisAction.upgrade_stars = self ? 0 : upgrade ? this.starGift.upgrade_stars : 0;
+                    thisAction.convert_stars = upgrade ? 0 : this.starGift.convert_stars;
+                }
+                messageObject.updateMessageText();
+                actionCell.setMessageObject(messageObject, true);
+                adapter.update(true);
+                button.setText(StarsIntroActivity.replaceStars(LocaleController.formatPluralStringComma(self ? "Gift2SendSelf" : "Gift2Send", (int) (this.starGift.stars + (upgrade ? this.starGift.upgrade_stars : 0))), cachedStarSpan), true);
+            }
+        });
+        actionBar.setTitle(getTitle());
     }
+
+    private final ColoredImageSpan[] cachedStarSpan = new ColoredImageSpan[1];
 
     private TLRPC.TL_textWithEntities getMessage() {
         if (action instanceof TLRPC.TL_messageActionStarGift) {
@@ -433,9 +445,9 @@ public class SendGiftSheet extends BottomSheetWithRecyclerListView {
 
     private void buyStarGift() {
         StarsController.getInstance(currentAccount).buyStarGift(
-            AndroidUtilities.getActivity(getContext()),
             this.starGift,
             anonymous,
+            upgrade,
             dialogId,
             getMessage(),
             (status, err) -> {
@@ -580,7 +592,7 @@ public class SendGiftSheet extends BottomSheetWithRecyclerListView {
 
     @Override
     protected CharSequence getTitle() {
-        return getString(R.string.Gift2Title);
+        return getString(self ? R.string.Gift2TitleSelf2 : R.string.Gift2Title);
     }
 
     @Override
@@ -594,9 +606,18 @@ public class SendGiftSheet extends BottomSheetWithRecyclerListView {
         items.add(UItem.asCustom(-1, chatView));
         items.add(UItem.asCustom(-2, messageEdit));
         if (starGift != null) {
-            items.add(UItem.asShadow(-3, null));
-            items.add(UItem.asCheck(1, getString(R.string.Gift2Hide)).setChecked(anonymous));
-            items.add(UItem.asShadow(-4, formatString(R.string.Gift2HideInfo, name)));
+            if (starGift.can_upgrade && !self) {
+                items.add(UItem.asShadow(-3, null));
+                items.add(UItem.asCheck(2, StarsIntroActivity.replaceStarsWithPlain(formatString(self ? R.string.Gift2UpgradeSelf : R.string.Gift2Upgrade, (int) starGift.upgrade_stars), .78f)).setChecked(upgrade));
+                items.add(UItem.asShadow(-5, AndroidUtilities.replaceArrows(AndroidUtilities.replaceSingleTag(self ? getString(R.string.Gift2UpgradeSelfInfo) : formatString(dialogId >= 0 ? R.string.Gift2UpgradeInfo : R.string.Gift2UpgradeChannelInfo, name), () -> {
+                    new StarGiftSheet(getContext(), currentAccount, dialogId, resourcesProvider)
+                        .openAsLearnMore(starGift.id, name);
+                }), true)));
+            } else {
+                items.add(UItem.asShadow(-5, null));
+            }
+            items.add(UItem.asCheck(1, getString(self ? R.string.Gift2HideSelf : R.string.Gift2Hide)).setChecked(anonymous));
+            items.add(UItem.asShadow(-6, self ? getString(R.string.Gift2HideSelfInfo) : dialogId < 0 ? getString(R.string.Gift2HideChannelInfo) : formatString(R.string.Gift2HideInfo, name)));
         } else {
             items.add(UItem.asShadow(-3, formatString(R.string.Gift2MessagePremiumInfo, name)));
         }

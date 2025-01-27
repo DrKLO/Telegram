@@ -42,8 +42,10 @@ import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.NativeByteBuffer;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.tgnet.Vector;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.SelectAnimatedEmojiDialog;
+import org.telegram.ui.Stars.StarsReactionsSheet;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -74,12 +76,13 @@ public class AnimatedEmojiDrawable extends Drawable {
     public static final int CACHE_TYPE_EMOJI_CALL = 17;
     public static final int CACHE_TYPE_SAVED_REACTION = 18;
     public static final int CACHE_TYPE_COLORABLE = 19;
-    // taken from RestrictedEmoji, using thumb as regular emojis
-    public static final int CACHE_TYPE_STANDARD_EMOJI = 20;
+    public static final int CACHE_TYPE_STANDARD_EMOJI = 20; // taken from RestrictedEmoji, using thumb as regular emojis
     public static final int CACHE_TYPE_ALERT_STANDARD_EMOJI = 21;
     public static final int CACHE_TYPE_FORUM_TOPIC_PULL_DOWN = 22;
     public static final int CACHE_TYPE_MESSAGE_EFFECT_MINI = 23;
     public static final int CACHE_TYPE_ALERT_PREVIEW_LARGE_140 = 24;
+    public static final int CACHE_TYPE_TOGGLEABLE_EDIT = 25;
+    public static final int CACHE_TYPE_NOANIMATE_FOLDER = 26;
 
     public int rawDrawIndex;
 
@@ -306,8 +309,8 @@ public class AnimatedEmojiDrawable extends Drawable {
             req.document_id = loadFromServerIds;
             ConnectionsManager.getInstance(currentAccount).sendRequest(req, (res, err) -> NotificationCenter.getInstance(currentAccount).doOnIdle(() -> AndroidUtilities.runOnUIThread(() -> {
                 HashSet<Long> loadedFromServer = new HashSet<>(loadFromServerIds);
-                if (res instanceof TLRPC.Vector) {
-                    ArrayList<Object> objects = ((TLRPC.Vector) res).objects;
+                if (res instanceof Vector) {
+                    ArrayList<Object> objects = ((Vector) res).objects;
                     putToStorage(objects);
                     processDocuments(objects);
                     for (int i = 0; i < objects.size(); i++) {
@@ -497,18 +500,18 @@ public class AnimatedEmojiDrawable extends Drawable {
     }
 
     private void updateSize() {
-        if (this.cacheType == CACHE_TYPE_MESSAGES) {
+        if (this.cacheType == CACHE_TYPE_MESSAGES || this.cacheType == CACHE_TYPE_NOANIMATE_FOLDER) {
             sizedp = (int) ((Math.abs(Theme.chat_msgTextPaint.ascent()) + Math.abs(Theme.chat_msgTextPaint.descent())) * 1.15f / AndroidUtilities.density);
-        } else if (this.cacheType == CACHE_TYPE_MESSAGES_LARGE || this.cacheType == CACHE_TYPE_ALERT_PREVIEW_LARGE || this.cacheType == CACHE_TYPE_COLORABLE || this.cacheType == CACHE_TYPE_STANDARD_EMOJI) {
+        } else if (Theme.chat_msgTextPaintEmoji != null && (this.cacheType == CACHE_TYPE_MESSAGES_LARGE || this.cacheType == CACHE_TYPE_ALERT_PREVIEW_LARGE || this.cacheType == CACHE_TYPE_COLORABLE || this.cacheType == CACHE_TYPE_STANDARD_EMOJI)) {
             sizedp = (int) ((Math.abs(Theme.chat_msgTextPaintEmoji[2].ascent()) + Math.abs(Theme.chat_msgTextPaintEmoji[2].descent())) * 1.15f / AndroidUtilities.density);
-        } else if (this.cacheType == STANDARD_LOTTIE_FRAME) {
+        } else if (Theme.chat_msgTextPaintEmoji != null && this.cacheType == STANDARD_LOTTIE_FRAME) {
             sizedp = (int) ((Math.abs(Theme.chat_msgTextPaintEmoji[0].ascent()) + Math.abs(Theme.chat_msgTextPaintEmoji[0].descent())) * 1.15f / AndroidUtilities.density);
         } else if (cacheType == CACHE_TYPE_AVATAR_CONSTRUCTOR_PREVIEW || cacheType == CACHE_TYPE_AVATAR_CONSTRUCTOR_PREVIEW2 || cacheType == CACHE_TYPE_EMOJI_CALL) {
             sizedp = 100;
         } else if (cacheType == CACHE_TYPE_FORUM_TOPIC_LARGE || cacheType == CACHE_TYPE_FORUM_TOPIC_PULL_DOWN) {
             sizedp = 56;
         } else if (cacheType == CACHE_TYPE_ALERT_PREVIEW_LARGE_140) {
-          sizedp = 140;
+            sizedp = 140;
         } else if (this.cacheType == CACHE_TYPE_MESSAGE_EFFECT_MINI) {
             sizedp = 14;
         } else {
@@ -570,7 +573,7 @@ public class AnimatedEmojiDrawable extends Drawable {
             imageReceiver.setUniqKeyPrefix(cacheType + "_");
         }
         imageReceiver.setVideoThumbIsSame(true);
-        boolean onlyStaticPreview = SharedConfig.getDevicePerformanceClass() == SharedConfig.PERFORMANCE_CLASS_LOW && cacheType == CACHE_TYPE_ALERT_PREVIEW_TAB_STRIP || cacheType == CACHE_TYPE_KEYBOARD && !liteModeKeyboard || cacheType == CACHE_TYPE_ALERT_PREVIEW && !liteModeReactions;
+        boolean onlyStaticPreview = SharedConfig.getDevicePerformanceClass() == SharedConfig.PERFORMANCE_CLASS_LOW && cacheType == CACHE_TYPE_ALERT_PREVIEW_TAB_STRIP || (cacheType == CACHE_TYPE_KEYBOARD || cacheType == CACHE_TYPE_TOGGLEABLE_EDIT) && !liteModeKeyboard || cacheType == CACHE_TYPE_ALERT_PREVIEW && !liteModeReactions;
         if (cacheType == CACHE_TYPE_ALERT_PREVIEW_STATIC || cacheType == CACHE_TYPE_ALERT_PREVIEW_STATIC_WITH_THUMB) {
             onlyStaticPreview = true;
         }
@@ -584,7 +587,7 @@ public class AnimatedEmojiDrawable extends Drawable {
         if (cacheType != CACHE_TYPE_EMOJI_CALL && cacheType != CACHE_TYPE_AVATAR_CONSTRUCTOR_PREVIEW2 && cacheType != CACHE_TYPE_AVATAR_CONSTRUCTOR_PREVIEW && cacheType != STANDARD_LOTTIE_FRAME && (cacheType != CACHE_TYPE_MESSAGES_LARGE || SharedConfig.getDevicePerformanceClass() < SharedConfig.PERFORMANCE_CLASS_HIGH) && cacheType != CACHE_TYPE_RENDERING_VIDEO) {
             filter += "_pcache";
         }
-        if (cacheType != CACHE_TYPE_EMOJI_CALL && cacheType != CACHE_TYPE_MESSAGES && cacheType != CACHE_TYPE_MESSAGES_LARGE && cacheType != CACHE_TYPE_AVATAR_CONSTRUCTOR_PREVIEW && cacheType != CACHE_TYPE_AVATAR_CONSTRUCTOR_PREVIEW2 && cacheType != CACHE_TYPE_COLORABLE && cacheType != CACHE_TYPE_STANDARD_EMOJI && cacheType != CACHE_TYPE_ALERT_STANDARD_EMOJI) {
+        if (cacheType != CACHE_TYPE_EMOJI_CALL && cacheType != CACHE_TYPE_MESSAGES && cacheType != CACHE_TYPE_NOANIMATE_FOLDER && cacheType != CACHE_TYPE_MESSAGES_LARGE && cacheType != CACHE_TYPE_AVATAR_CONSTRUCTOR_PREVIEW && cacheType != CACHE_TYPE_AVATAR_CONSTRUCTOR_PREVIEW2 && cacheType != CACHE_TYPE_COLORABLE && cacheType != CACHE_TYPE_STANDARD_EMOJI && cacheType != CACHE_TYPE_ALERT_STANDARD_EMOJI) {
             filter += "_compress";
         }
         if (cacheType == STANDARD_LOTTIE_FRAME) {
@@ -602,7 +605,7 @@ public class AnimatedEmojiDrawable extends Drawable {
             thumbDrawable = svgThumb;
         } else if ("application/x-tgsticker".equals(document.mime_type)) {
             String probableCacheKey = (cacheType != 0 ? cacheType + "_" : "") + documentId + "@" + filter;
-            if (SharedConfig.getDevicePerformanceClass() != SharedConfig.PERFORMANCE_CLASS_LOW || (cacheType == CACHE_TYPE_KEYBOARD || cacheType == CACHE_TYPE_FORUM_TOPIC_PULL_DOWN || !ImageLoader.getInstance().hasLottieMemCache(probableCacheKey))) {
+            if (SharedConfig.getDevicePerformanceClass() != SharedConfig.PERFORMANCE_CLASS_LOW || ((cacheType == CACHE_TYPE_KEYBOARD || cacheType == CACHE_TYPE_TOGGLEABLE_EDIT) || cacheType == CACHE_TYPE_FORUM_TOPIC_PULL_DOWN || !ImageLoader.getInstance().hasLottieMemCache(probableCacheKey))) {
                 float thumbAlpha = cacheType == CACHE_TYPE_FORUM_TOPIC_PULL_DOWN ? 0.8f : 0.2f;
                 SvgHelper.SvgDrawable svgThumb = DocumentObject.getSvgThumb(document.thumbs, Theme.key_windowBackgroundWhiteGrayIcon, thumbAlpha);
                 if (svgThumb != null && MessageObject.isAnimatedStickerDocument(document, true)) {
@@ -663,7 +666,7 @@ public class AnimatedEmojiDrawable extends Drawable {
             imageReceiver.setLayerNum(6656);
         }
         imageReceiver.setAspectFit(true);
-        if (cacheType == CACHE_TYPE_RENDERING_VIDEO || cacheType == CACHE_TYPE_SAVED_REACTION || cacheType == STANDARD_LOTTIE_FRAME || cacheType == CACHE_TYPE_TAB_STRIP || cacheType == CACHE_TYPE_ALERT_PREVIEW_TAB_STRIP) {
+        if (cacheType == CACHE_TYPE_RENDERING_VIDEO || cacheType == CACHE_TYPE_NOANIMATE_FOLDER || cacheType == CACHE_TYPE_SAVED_REACTION || cacheType == STANDARD_LOTTIE_FRAME || cacheType == CACHE_TYPE_TAB_STRIP || cacheType == CACHE_TYPE_ALERT_PREVIEW_TAB_STRIP || cacheType == CACHE_TYPE_TOGGLEABLE_EDIT && disabledToggleableAnimations) {
             imageReceiver.setAllowStartAnimation(false);
             imageReceiver.setAllowStartLottieAnimation(false);
             imageReceiver.setAutoRepeat(0);
@@ -682,6 +685,43 @@ public class AnimatedEmojiDrawable extends Drawable {
         imageReceiver.setRoundRadius(roundRadius);
         updateAttachState();
         invalidate();
+    }
+
+    private static boolean disabledToggleableAnimations;
+    public static void toggleAnimations(int currentAccount, boolean enabled) {
+        if (disabledToggleableAnimations == (!enabled)) return;
+        disabledToggleableAnimations = !enabled;
+        if (globalEmojiCache == null) return;
+        final int key = Objects.hash(currentAccount, CACHE_TYPE_TOGGLEABLE_EDIT);
+        LongSparseArray<AnimatedEmojiDrawable> emojis = globalEmojiCache.get(key);
+        if (emojis != null) {
+            for (int i = 0; i < emojis.size(); ++i) {
+                AnimatedEmojiDrawable drawable = emojis.valueAt(i);
+                if (drawable == null) continue;
+                ImageReceiver imageReceiver = drawable.getImageReceiver();
+                if (imageReceiver == null) continue;
+                if (enabled) {
+                    imageReceiver.setAllowStartLottieAnimation(true);
+                    imageReceiver.setAllowStartAnimation(true);
+                    imageReceiver.setAutoRepeat(1);
+                    AnimatedFileDrawable animation = imageReceiver.getAnimation();
+                    if (animation != null) {
+                        animation.setUseSharedQueue(imageReceiver.useSharedAnimationQueue);
+                        animation.start();
+                    } else {
+                        RLottieDrawable rLottieDrawable = imageReceiver.getLottieAnimation();
+                        if (rLottieDrawable != null) {
+                            rLottieDrawable.start();
+                        }
+                    }
+                } else {
+                    imageReceiver.setAllowStartAnimation(false);
+                    imageReceiver.setAllowStartLottieAnimation(false);
+                    imageReceiver.setAutoRepeat(0);
+                    imageReceiver.stopAnimation();
+                }
+            }
+        }
     }
 
     public boolean preloading;
@@ -1001,9 +1041,10 @@ public class AnimatedEmojiDrawable extends Drawable {
         public boolean center = false;
 
         private int cacheType;
-        private OvershootInterpolator overshootInterpolator = new OvershootInterpolator(2f);
-        private AnimatedFloat changeProgress = new AnimatedFloat((View) null, 300, CubicBezierInterpolator.EASE_OUT);
-        private Drawable[] drawables = new Drawable[2];
+        private final OvershootInterpolator overshootInterpolator = new OvershootInterpolator(2f);
+        private final AnimatedFloat changeProgress = new AnimatedFloat((View) null, 300, CubicBezierInterpolator.EASE_OUT);
+        private final AnimatedFloat particlesAlpha = new AnimatedFloat((View) null, 300, CubicBezierInterpolator.EASE_OUT);
+        private final Drawable[] drawables = new Drawable[2];
         private View parentView;
         private View secondParent;
         private boolean invalidateParent;
@@ -1026,6 +1067,7 @@ public class AnimatedEmojiDrawable extends Drawable {
 
         public SwapAnimatedEmojiDrawable(View parentView, boolean invalidateParent, int size, int cacheType) {
             changeProgress.setParent(this.parentView = parentView);
+            particlesAlpha.setParent(this.parentView = parentView);
             this.size = size;
             this.cacheType = cacheType;
             this.invalidateParent = invalidateParent;
@@ -1033,6 +1075,7 @@ public class AnimatedEmojiDrawable extends Drawable {
 
         public void setParentView(View parentView) {
             changeProgress.setParent(parentView);
+            particlesAlpha.setParent(parentView);
             this.parentView = parentView;
         }
 
@@ -1044,6 +1087,28 @@ public class AnimatedEmojiDrawable extends Drawable {
                     drawable.updateAutoRepeat(imageReceiver);
                     imageReceiver.startAnimation();
                 }
+            }
+        }
+
+        private boolean hasParticles;
+        private StarsReactionsSheet.Particles particles;
+        public void setParticles(boolean show, boolean animated) {
+            if (hasParticles == show) return;
+            if (animated) {
+                if (particles == null) {
+                    particles = new StarsReactionsSheet.Particles(StarsReactionsSheet.Particles.TYPE_RADIAL, 8);
+                }
+                hasParticles = show;
+                invalidate();
+            } else {
+                hasParticles = show;
+                if (show && particles == null) {
+                    particles = new StarsReactionsSheet.Particles(StarsReactionsSheet.Particles.TYPE_RADIAL, 8);
+                } else if (!show && particles != null) {
+                    particles = null;
+                }
+                particlesAlpha.set(show, true);
+                invalidate();
             }
         }
 
@@ -1061,14 +1126,29 @@ public class AnimatedEmojiDrawable extends Drawable {
             }
         }
 
+        private int offsetX, offsetY;
+        public void offset(int ox, int oy) {
+            offsetX = ox;
+            offsetY = oy;
+        }
+
         public Integer getColor() {
             return lastColor;
         }
 
+        private final Rect bounds = new Rect();
         @Override
         public void draw(@NonNull Canvas canvas) {
             float progress = changeProgress.set(1);
-            Rect bounds = getBounds();
+            bounds.set(getBounds());
+            bounds.offset(offsetX, offsetY);
+            final float particlesAlpha = this.particlesAlpha.set(hasParticles);
+            if (particlesAlpha > 0) {
+                particles.setBounds(bounds);
+                particles.process();
+                particles.draw(canvas, Theme.multAlpha(lastColor == null ? 0xFFFFFFFF : lastColor, particlesAlpha));
+                invalidate();
+            }
             if (drawables[1] != null && progress < 1) {
                 drawables[1].setAlpha((int) (alpha * (1f - progress)));
                 int dw = drawables[1].getIntrinsicWidth() < 0 ? getIntrinsicWidth() : drawables[1].getIntrinsicWidth();
@@ -1077,17 +1157,17 @@ public class AnimatedEmojiDrawable extends Drawable {
                     drawables[1].setBounds(bounds);
                 } else if (center) {
                     drawables[1].setBounds(
-                            bounds.centerX() - dw / 2,
-                            bounds.centerY() - dh / 2,
-                            bounds.centerX() + dw / 2,
-                            bounds.centerY() + dh / 2
+                        bounds.centerX() - dw / 2,
+                        bounds.centerY() - dh / 2,
+                        bounds.centerX() + dw / 2,
+                        bounds.centerY() + dh / 2
                     );
                 } else { // left
                     drawables[1].setBounds(
-                            bounds.left,
-                            bounds.centerY() - dh / 2,
-                            bounds.left + dw,
-                            bounds.centerY() + dh / 2
+                        bounds.left,
+                        bounds.centerY() - dh / 2,
+                        bounds.left + dw,
+                        bounds.centerY() + dh / 2
                     );
                 }
                 drawables[1].setColorFilter(colorFilter);
@@ -1158,7 +1238,7 @@ public class AnimatedEmojiDrawable extends Drawable {
         }
 
         public boolean isEmpty() {
-            return drawables[0] != null;
+            return drawables[0] == null;
         }
 
         public boolean set(long documentId, int cacheType, boolean animated) {

@@ -14,9 +14,7 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;
-import android.text.Spannable;
 import android.text.TextUtils;
-import android.text.style.ClickableSpan;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.HapticFeedbackConstants;
@@ -27,11 +25,9 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.Emoji;
 import org.telegram.messenger.LocaleController;
 import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Components.AnimatedEmojiSpan;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.LinkSpanDrawable;
 
@@ -199,7 +195,7 @@ public class TextDetailCell extends FrameLayout {
     }
 
     public void setTextWithEmojiAndValue(CharSequence text, CharSequence value, boolean divider) {
-        textView.setText(Emoji.replaceEmoji(text, textView.getPaint().getFontMetricsInt(), dp(14), false));
+        textView.setText(Emoji.replaceEmoji(text, textView.getPaint().getFontMetricsInt(), false));
         valueTextView.setText(value);
         needDivider = divider;
         setWillNotDraw(!divider);

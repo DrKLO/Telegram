@@ -1,6 +1,6 @@
 package org.telegram.tgnet;
 
-public abstract class AbstractSerializedData {
+public abstract class AbstractSerializedData implements InputSerializedData, OutputSerializedData {
 
     public abstract void writeInt32(int x);
 

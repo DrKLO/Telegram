@@ -7,6 +7,8 @@ import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.AbstractSerializedData;
+import org.telegram.tgnet.InputSerializedData;
+import org.telegram.tgnet.OutputSerializedData;
 import org.telegram.tgnet.SerializedData;
 import org.telegram.tgnet.TLObject;
 
@@ -23,7 +25,7 @@ public class BrowserHistory {
         public WebMetadataCache.WebMetadata meta;
 
         @Override
-        public void serializeToStream(AbstractSerializedData stream) {
+        public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt64(id);
             stream.writeInt64(time);
             stream.writeString(url == null ? "" : url);
@@ -31,7 +33,7 @@ public class BrowserHistory {
         }
 
         @Override
-        public void readParams(AbstractSerializedData stream, boolean exception) {
+        public void readParams(InputSerializedData stream, boolean exception) {
             id = stream.readInt64(exception);
             time = stream.readInt64(exception);
             url = stream.readString(exception);

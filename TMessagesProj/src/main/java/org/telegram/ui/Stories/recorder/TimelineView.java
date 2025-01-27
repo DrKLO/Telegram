@@ -48,7 +48,6 @@ import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.ItemOptions;
 import org.telegram.ui.Components.Scroller;
 import org.telegram.ui.Components.Text;
-import org.telegram.ui.Stories.StoriesViewPager;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -69,12 +68,12 @@ public class TimelineView extends View {
     // maximum allowed duration to select
     public static final long MAX_SELECT_DURATION = (long) (59 * 1000L);
 
-    interface TimelineDelegate {
+    public interface TimelineDelegate {
         default void onProgressDragChange(boolean dragging) {};
         default void onProgressChange(long progress, boolean fast) {};
 
-        default void onVideoLeftChange(float left) {};
-        default void onVideoRightChange(float right) {};
+        default void onVideoLeftChange(boolean released, float left) {};
+        default void onVideoRightChange(boolean released, float right) {};
         default void onVideoVolumeChange(float volume) {};
 
         default void onVideoLeftChange(int i, float left) {};
@@ -264,7 +263,6 @@ public class TimelineView extends View {
 
     private final Scroller scroller = new Scroller(getContext());
 
-    private final ViewGroup container;
     private final View previewContainer;
     private final Theme.ResourcesProvider resourcesProvider;
 
@@ -278,7 +276,6 @@ public class TimelineView extends View {
     public TimelineView(Context context, ViewGroup container, View previewContainer, Theme.ResourcesProvider resourcesProvider, BlurringShader.BlurManager blurManager) {
         super(context);
 
-        this.container = container;
         this.previewContainer = previewContainer;
         this.resourcesProvider = resourcesProvider;
 
@@ -992,23 +989,23 @@ public class TimelineView extends View {
                     if (pressHandle == HANDLE_VIDEO_LEFT) {
                         videoTrack.left = Utilities.clamp(videoTrack.left + d, videoTrack.right - MIN_SELECT_DURATION / (float) videoTrack.duration, 0);
                         if (delegate != null) {
-                            delegate.onVideoLeftChange(videoTrack.left);
+                            delegate.onVideoLeftChange(false, videoTrack.left);
                         }
                         if (videoTrack.right - videoTrack.left > MAX_SELECT_DURATION / (float) videoTrack.duration) {
                             videoTrack.right = Math.min(1, videoTrack.left + MAX_SELECT_DURATION / (float) videoTrack.duration);
                             if (delegate != null) {
-                                delegate.onVideoRightChange(videoTrack.right);
+                                delegate.onVideoRightChange(false, videoTrack.right);
                             }
                         }
                     } else if (pressHandle == HANDLE_VIDEO_RIGHT) {
                         videoTrack.right = Utilities.clamp(videoTrack.right + d, 1, videoTrack.left + MIN_SELECT_DURATION / (float) videoTrack.duration);
                         if (delegate != null) {
-                            delegate.onVideoRightChange(videoTrack.right);
+                            delegate.onVideoRightChange(false, videoTrack.right);
                         }
                         if (videoTrack.right - videoTrack.left > MAX_SELECT_DURATION / (float) videoTrack.duration) {
                             videoTrack.left = Math.max(0, videoTrack.right - MAX_SELECT_DURATION / (float) videoTrack.duration);
                             if (delegate != null) {
-                                delegate.onVideoLeftChange(videoTrack.left);
+                                delegate.onVideoLeftChange(false, videoTrack.left);
                             }
                         }
                     } else if (pressHandle == HANDLE_VIDEO_REGION) {
@@ -1020,8 +1017,8 @@ public class TimelineView extends View {
                         videoTrack.left += d;
                         videoTrack.right += d;
                         if (delegate != null) {
-                            delegate.onVideoLeftChange(videoTrack.left);
-                            delegate.onVideoRightChange(videoTrack.right);
+                            delegate.onVideoLeftChange(false, videoTrack.left);
+                            delegate.onVideoRightChange(false, videoTrack.right);
                         }
                     }
                     if (progress / (float) videoTrack.duration < videoTrack.left || progress / (float) videoTrack.duration > videoTrack.right) {
@@ -1330,8 +1327,8 @@ public class TimelineView extends View {
                         videoTrack.left = (event.getX() - px - ph) / sw * (1 - d);
                         videoTrack.right = videoTrack.left + d;
                         if (delegate != null) {
-                            delegate.onVideoLeftChange(videoTrack.left);
-                            delegate.onVideoRightChange(videoTrack.right);
+                            delegate.onVideoLeftChange(true, videoTrack.left);
+                            delegate.onVideoRightChange(true, videoTrack.right);
                         }
                         invalidate();
                     } else if (pressType == 3 && (audioSelected || roundSelected ? -1 : collageSelected) != pressCollageIndex) {
@@ -2537,8 +2534,8 @@ public class TimelineView extends View {
                 videoTrack.left = Utilities.clamp(videoTrack.left + d, 1, 0);
                 videoTrack.right = Utilities.clamp(videoTrack.right + d, 1, 0);
                 if (delegate != null) {
-                    delegate.onVideoLeftChange(videoTrack.left);
-                    delegate.onVideoRightChange(videoTrack.right);
+                    delegate.onVideoLeftChange(false, videoTrack.left);
+                    delegate.onVideoRightChange(false, videoTrack.right);
                 }
                 invalidate();
             } else if (pressHandle == HANDLE_AUDIO_REGION) {

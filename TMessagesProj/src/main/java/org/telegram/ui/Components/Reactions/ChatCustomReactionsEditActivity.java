@@ -35,7 +35,6 @@ import android.widget.ScrollView;
 
 import androidx.annotation.NonNull;
 
-import org.checkerframework.checker.units.qual.A;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
@@ -44,6 +43,7 @@ import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.browser.Browser;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.tgnet.tl.TL_stars;
 import org.telegram.tgnet.tl.TL_stories;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.AdjustPanLayoutHelper;
@@ -55,17 +55,12 @@ import org.telegram.ui.Cells.HeaderCell;
 import org.telegram.ui.Cells.SlideIntChooseView;
 import org.telegram.ui.Cells.TextCheckCell;
 import org.telegram.ui.Cells.TextInfoPrivacyCell;
-import org.telegram.ui.ChannelAdminLogActivity;
 import org.telegram.ui.Components.AnimatedEmojiDrawable;
 import org.telegram.ui.Components.AnimatedEmojiSpan;
 import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.CubicBezierInterpolator;
-import org.telegram.ui.Components.HideViewAfterAnimation;
 import org.telegram.ui.Components.LayoutHelper;
-import org.telegram.ui.DialogsActivity;
-import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.SelectAnimatedEmojiDialog;
-import org.telegram.ui.Stories.recorder.KeyboardNotifier;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -145,6 +140,7 @@ public class ChatCustomReactionsEditActivity extends BaseFragment implements Not
         getNotificationCenter().addObserver(this, NotificationCenter.reactionsDidLoad);
         allAvailableReactions.addAll(getMediaDataController().getEnabledReactionsList());
         NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.stopAllHeavyOperations, 512);
+        getNotificationCenter().addObserver(this, NotificationCenter.dialogDeleted);
         return super.onFragmentCreate();
     }
 
@@ -491,7 +487,7 @@ public class ChatCustomReactionsEditActivity extends BaseFragment implements Not
                 }
             }
 
-            protected void onEmojiSelected(View view, Long documentId, TLRPC.Document document, Integer until) {
+            protected void onEmojiSelected(View view, Long documentId, TLRPC.Document document, TL_stars.TL_starGiftUnique gift, Integer until) {
                 if (selectedEmojisMap.containsKey(documentId)) {
                     selectedEmojisIds.remove(documentId);
                     AnimatedEmojiSpan removedSpan = selectedEmojisMap.remove(documentId);
@@ -727,6 +723,7 @@ public class ChatCustomReactionsEditActivity extends BaseFragment implements Not
         if (selectedType == SELECT_TYPE_NONE && reactionsCount != currentReactionsCount) {
             getMessagesController().setCustomChatReactions(chatId, selectedType, grabReactions(false), reactionsCount, null, null, null);
         }
+        getNotificationCenter().removeObserver(this, NotificationCenter.dialogDeleted);
     }
 
     @Override
@@ -896,7 +893,16 @@ public class ChatCustomReactionsEditActivity extends BaseFragment implements Not
 
     @Override
     public void didReceivedNotification(int id, int account, Object... args) {
-
+        if (id == NotificationCenter.dialogDeleted) {
+            long dialogId = (long) args[0];
+            if (dialogId == -this.chatId) {
+                if (parentLayout != null && parentLayout.getLastFragment() == this) {
+                    finishFragment();
+                } else {
+                    removeSelfFromStack();
+                }
+            }
+        }
     }
 
     public void toggleStarsEnabled() {

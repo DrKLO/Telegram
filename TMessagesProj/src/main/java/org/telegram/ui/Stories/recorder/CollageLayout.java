@@ -36,6 +36,21 @@ public class CollageLayout {
         return layouts;
     }
 
+    public static CollageLayout of(int count) {
+        for (CollageLayout layout : getLayouts()) {
+            if (layout.parts.size() >= count)
+                return layout;
+        }
+        return null;
+    }
+
+    public static int getMaxCount() {
+        int max = 0;
+        for (CollageLayout layout : getLayouts())
+            max = Math.max(max, layout.parts.size());
+        return max;
+    }
+
     private final String src;
     public final int w, h;
     public final int[] columns;

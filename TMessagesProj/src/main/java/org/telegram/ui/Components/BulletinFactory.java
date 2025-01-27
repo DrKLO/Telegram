@@ -9,10 +9,6 @@ import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
-import android.net.Uri;
-import android.os.Bundle;
-import android.os.Environment;
-import android.provider.MediaStore;
 import android.text.Spannable;
 import android.text.SpannableString;
 import android.text.SpannableStringBuilder;
@@ -20,7 +16,6 @@ import android.text.Spanned;
 import android.text.TextPaint;
 import android.text.TextUtils;
 import android.text.style.ClickableSpan;
-import android.util.Log;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.HapticFeedbackConstants;
@@ -30,14 +25,10 @@ import android.widget.FrameLayout;
 
 import androidx.annotation.CheckResult;
 import androidx.annotation.NonNull;
-import androidx.core.content.FileProvider;
 import androidx.core.graphics.ColorUtils;
-
-import com.google.common.collect.Lists;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
-import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.FileLoader;
@@ -57,12 +48,10 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.ChatActivity;
 import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.PremiumPreviewFragment;
 import org.telegram.ui.Stories.recorder.HintView2;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -107,9 +96,13 @@ public final class BulletinFactory {
     public void showForError(TLRPC.TL_error error) {
         if (!LaunchActivity.isActive) return;
         if (error == null) {
-            createErrorBulletin(LocaleController.formatString(R.string.UnknownError)).show();
+            Bulletin b = createErrorBulletin(LocaleController.formatString(R.string.UnknownError));
+            b.hideAfterBottomSheet = false;
+            b.show();
         } else {
-            createErrorBulletin(LocaleController.formatString(R.string.UnknownErrorCode, error.text)).show();
+            Bulletin b = createErrorBulletin(LocaleController.formatString(R.string.UnknownErrorCode, error.text));
+            b.hideAfterBottomSheet = false;
+            b.show();
         }
     }
 
@@ -478,6 +471,10 @@ public final class BulletinFactory {
         return createUsersBulletin(Arrays.asList(user), text, subtitle, null);
     }
 
+    public Bulletin createUsersBulletin(TLObject user, CharSequence text) {
+        return createUsersBulletin(Arrays.asList(user), text, null, null);
+    }
+
     public Bulletin createUsersBulletin(List<? extends TLObject> users, CharSequence text, CharSequence subtitle) {
         return createUsersBulletin(users, text, subtitle, null);
     }
@@ -527,7 +524,7 @@ public final class BulletinFactory {
             }
         } else {
             layout.textView.setSingleLine(false);
-            layout.textView.setMaxLines(2);
+            layout.textView.setMaxLines(4);
             layout.textView.setText(text);
             if (layout.textView.getLayoutParams() instanceof ViewGroup.MarginLayoutParams) {
                 int margin = dp(12 + 56 + 2 - (3 - count) * 12);
@@ -929,7 +926,7 @@ public final class BulletinFactory {
 
     @CheckResult
     public Bulletin createCopyLinkBulletin() {
-        return createCopyLinkBulletin(false, resourcesProvider);
+        return createCopyLinkBulletin(false);
     }
 
     @CheckResult
@@ -949,7 +946,7 @@ public final class BulletinFactory {
     }
 
     @CheckResult
-    public Bulletin createCopyLinkBulletin(boolean isPrivate, Theme.ResourcesProvider resourcesProvider) {
+    public Bulletin createCopyLinkBulletin(boolean isPrivate) {
         if (!AndroidUtilities.shouldShowClipboardToast()) {
             return new Bulletin.EmptyBulletin();
         }

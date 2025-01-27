@@ -83,7 +83,7 @@ public class UserCell2 extends FrameLayout {
         nameTextView = new SimpleTextView(context) {
             @Override
             public boolean setText(CharSequence value) {
-                value = Emoji.replaceEmoji(value, getPaint().getFontMetricsInt(), AndroidUtilities.dp(15), false);
+                value = Emoji.replaceEmoji(value, getPaint().getFontMetricsInt(), false);
                 return super.setText(value);
             }
         };

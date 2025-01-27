@@ -100,6 +100,9 @@ public class PremiumLockIconView extends ImageView {
 
     public void setColor(int color) {
         colorRetrieved = true;
+        if (blendColor != null) {
+            color = Theme.blendOver(color, blendColor);
+        }
         if (currentColor != color) {
             currentColor = color;
             if (type == TYPE_REACTIONS || type == TYPE_REACTIONS_LOCK) {
@@ -273,6 +276,11 @@ public class PremiumLockIconView extends ImageView {
         waitingImage = true;
         wasDrawn = false;
         invalidate();
+    }
+
+    private Integer blendColor;
+    public void setBlendWithColor(Integer color) {
+        blendColor = color;
     }
 
     public boolean done() {

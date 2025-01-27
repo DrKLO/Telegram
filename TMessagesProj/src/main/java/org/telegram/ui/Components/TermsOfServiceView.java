@@ -22,6 +22,7 @@ import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.tgnet.tl.TL_account;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.Theme;
 
@@ -103,7 +104,7 @@ public class TermsOfServiceView extends FrameLayout {
                     final AlertDialog progressDialog = new AlertDialog(getContext(), AlertDialog.ALERT_TYPE_SPINNER);
                     progressDialog.setCanCancel(false);
 
-                    TLRPC.TL_account_deleteAccount req = new TLRPC.TL_account_deleteAccount();
+                    TL_account.deleteAccount req = new TL_account.deleteAccount();
                     req.reason = "Decline ToS update";
                     ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
                         try {

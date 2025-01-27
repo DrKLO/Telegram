@@ -224,6 +224,7 @@ public class ChatLinkActivity extends BaseFragment implements NotificationCenter
         super.onFragmentCreate();
         getNotificationCenter().addObserver(this, NotificationCenter.chatInfoDidLoad);
         getNotificationCenter().addObserver(this, NotificationCenter.updateInterfaces);
+        getNotificationCenter().addObserver(this, NotificationCenter.dialogDeleted);
         loadChats();
         return true;
     }
@@ -233,6 +234,7 @@ public class ChatLinkActivity extends BaseFragment implements NotificationCenter
         super.onFragmentDestroy();
         getNotificationCenter().removeObserver(this, NotificationCenter.chatInfoDidLoad);
         getNotificationCenter().removeObserver(this, NotificationCenter.updateInterfaces);
+        getNotificationCenter().removeObserver(this, NotificationCenter.dialogDeleted);
     }
 
     private boolean joinToSendProgress = false;
@@ -277,6 +279,15 @@ public class ChatLinkActivity extends BaseFragment implements NotificationCenter
                     if (!joinToSendProgress) {
                         joinToSendSettings.setJoinToSend(chat.join_to_send);
                     }
+                }
+            }
+        } else if (id == NotificationCenter.dialogDeleted) {
+            long dialogId = (long) args[0];
+            if (-this.currentChatId == dialogId) {
+                if (parentLayout != null && parentLayout.getLastFragment() == this) {
+                    finishFragment();
+                } else {
+                    removeSelfFromStack();
                 }
             }
         }
