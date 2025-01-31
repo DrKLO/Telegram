@@ -38,9 +38,11 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.widget.FrameLayout;
+import android.widget.ImageView;
 import android.widget.ScrollView;
 import android.widget.TextView;
 
+import androidx.annotation.DrawableRes;
 import androidx.annotation.NonNull;
 import androidx.core.graphics.ColorUtils;
 import androidx.viewpager.widget.PagerAdapter;
@@ -84,7 +86,7 @@ import javax.microedition.khronos.opengles.GL10;
 
 public class IntroActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
     private final static int ICON_WIDTH_DP = 200, ICON_HEIGHT_DP = 150;
-
+    private final static int IMAGE_HEIGHT = 300;
     private final Object pagerHeaderTag = new Object(),
             pagerMessageTag = new Object();
 
@@ -104,6 +106,8 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
     private boolean startPressed = false;
     private String[] titles;
     private String[] messages;
+    @DrawableRes
+    private Integer[] drawables;
     private int currentViewPagerPage;
     private EGLThread eglThread;
     private long currentDate;
@@ -122,20 +126,34 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
         MessagesController.getGlobalMainSettings().edit().putLong("intro_crashed_time", System.currentTimeMillis()).apply();
 
         titles = new String[]{
-                LocaleController.getString(R.string.Page1Title),
-                LocaleController.getString(R.string.Page2Title),
-                LocaleController.getString(R.string.Page3Title),
-                LocaleController.getString(R.string.Page5Title),
-                LocaleController.getString(R.string.Page4Title),
-                LocaleController.getString(R.string.Page6Title)
+                LocaleController.getString(R.string.DahlAppName),
+                LocaleController.getString(R.string.Slide2Title),
+                LocaleController.getString(R.string.Slide3Title),
+                LocaleController.getString(R.string.Slide4Title),
+                LocaleController.getString(R.string.Slide5Title),
+                LocaleController.getString(R.string.Slide6Title),
+                LocaleController.getString(R.string.Slide7Title),
+                LocaleController.getString(R.string.DahlAppName)
         };
         messages = new String[]{
-                LocaleController.getString(R.string.Page1Message),
-                LocaleController.getString(R.string.Page2Message),
-                LocaleController.getString(R.string.Page3Message),
-                LocaleController.getString(R.string.Page5Message),
-                LocaleController.getString(R.string.Page4Message),
-                LocaleController.getString(R.string.Page6Message)
+                LocaleController.getString(R.string.Slide1Message),
+                LocaleController.getString(R.string.Slide2Message),
+                LocaleController.getString(R.string.Slide3Message),
+                LocaleController.getString(R.string.Slide4Message),
+                LocaleController.getString(R.string.Slide5Message),
+                LocaleController.getString(R.string.Slide6Message),
+                LocaleController.getString(R.string.Slide7Message),
+                LocaleController.getString(R.string.Slide8Message)
+        };
+        drawables = new Integer[]{
+            R.drawable.slide1,
+            R.drawable.slide2,
+            R.drawable.slide3,
+            R.drawable.slide4,
+            R.drawable.slide5,
+            R.drawable.slide6,
+            R.drawable.slide7,
+            R.drawable.slide8
         };
         return true;
     }
@@ -151,7 +169,6 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
         FrameLayout themeFrameLayout = new FrameLayout(context);
         themeFrameLayout.addView(themeIconView, LayoutHelper.createFrame(28, 28, Gravity.CENTER));
 
-        int themeMargin = 4;
         frameContainerView = new FrameLayout(context) {
 
             @Override
@@ -162,8 +179,7 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
 
                 int y = (oneFourth * 3 - AndroidUtilities.dp(275)) / 2;
                 frameLayout2.layout(0, y, frameLayout2.getMeasuredWidth(), y + frameLayout2.getMeasuredHeight());
-                y += AndroidUtilities.dp(ICON_HEIGHT_DP);
-                y += AndroidUtilities.dp(122);
+                y += AndroidUtilities.dp(IMAGE_HEIGHT);
                 int x = (getMeasuredWidth() - bottomPages.getMeasuredWidth()) / 2;
                 bottomPages.layout(x, y, x + bottomPages.getMeasuredWidth(), y + bottomPages.getMeasuredHeight());
                 viewPager.layout(0, 0, viewPager.getMeasuredWidth(), viewPager.getMeasuredHeight());
@@ -174,16 +190,9 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
                 y -= AndroidUtilities.dp(30);
                 x = (getMeasuredWidth() - switchLanguageTextView.getMeasuredWidth()) / 2;
                 switchLanguageTextView.layout(x, y - switchLanguageTextView.getMeasuredHeight(), x + switchLanguageTextView.getMeasuredWidth(), y);
-
-                MarginLayoutParams marginLayoutParams = (MarginLayoutParams) themeFrameLayout.getLayoutParams();
-                int newTopMargin = AndroidUtilities.dp(themeMargin) + (AndroidUtilities.isTablet() ? 0 : AndroidUtilities.statusBarHeight);
-                if (marginLayoutParams.topMargin != newTopMargin) {
-                    marginLayoutParams.topMargin = newTopMargin;
-                    themeFrameLayout.requestLayout();
-                }
             }
         };
-        scrollView.addView(frameContainerView, LayoutHelper.createScroll(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP));
+        scrollView.addView(frameContainerView, LayoutHelper.createScroll(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 0f, 0f, 0f, 0f));
 
         darkThemeDrawable = new RLottieDrawable(R.raw.sun, String.valueOf(R.raw.sun), AndroidUtilities.dp(28), AndroidUtilities.dp(28), true, null);
         darkThemeDrawable.setPlayInDirectionOfCustomEndFrame(true);
@@ -195,90 +204,58 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
         themeIconView.setContentDescription(LocaleController.getString(Theme.getCurrentTheme().isDark() ? R.string.AccDescrSwitchToDayTheme : R.string.AccDescrSwitchToNightTheme));
 
         themeIconView.setAnimation(darkThemeDrawable);
-        themeFrameLayout.setOnClickListener(v -> {
-            if (DrawerProfileCell.switchingTheme) return;
-            DrawerProfileCell.switchingTheme = true;
 
-            // TODO: Generify this part, currently it's a clone of another theme switch toggle
-            String dayThemeName = "Blue";
-            String nightThemeName = "Night";
 
-            Theme.ThemeInfo themeInfo;
-            boolean toDark;
-            if (toDark = !Theme.isCurrentThemeDark()) {
-                themeInfo = Theme.getTheme(nightThemeName);
-            } else {
-                themeInfo = Theme.getTheme(dayThemeName);
-            }
-
-            Theme.selectedAutoNightType = Theme.AUTO_NIGHT_TYPE_NONE;
-            Theme.saveAutoNightThemeConfig();
-            Theme.cancelAutoNightThemeCallbacks();
-
-            darkThemeDrawable.setCustomEndFrame(toDark ? darkThemeDrawable.getFramesCount() - 1 : 0);
-            themeIconView.playAnimation();
-
-            int[] pos = new int[2];
-            themeIconView.getLocationInWindow(pos);
-            pos[0] += themeIconView.getMeasuredWidth() / 2;
-            pos[1] += themeIconView.getMeasuredHeight() / 2;
-            NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.needSetDayNightTheme, themeInfo, false, pos, -1, toDark, themeIconView);
-            themeIconView.setContentDescription(LocaleController.getString(toDark ? R.string.AccDescrSwitchToDayTheme : R.string.AccDescrSwitchToNightTheme));
-        });
-
-        frameLayout2 = new FrameLayout(context);
-        frameContainerView.addView(frameLayout2, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 0, 78, 0, 0));
-
-        TextureView textureView = new TextureView(context);
-        frameLayout2.addView(textureView, LayoutHelper.createFrame(ICON_WIDTH_DP, ICON_HEIGHT_DP, Gravity.CENTER));
-        textureView.setSurfaceTextureListener(new TextureView.SurfaceTextureListener() {
-            @Override
-            public void onSurfaceTextureAvailable(SurfaceTexture surface, int width, int height) {
-                if (eglThread == null && surface != null) {
-                    eglThread = new EGLThread(surface);
-                    eglThread.setSurfaceTextureSize(width, height);
-                    eglThread.postRunnable(()->{
-                        float time = (System.currentTimeMillis() - currentDate) / 1000.0f;
-                        Intro.setPage(currentViewPagerPage);
-                        Intro.setDate(time);
-                        Intro.onDrawFrame(0);
-                        if (eglThread != null && eglThread.isAlive() && eglThread.eglDisplay != null && eglThread.eglSurface != null) {
-                            try {
-                                eglThread.egl10.eglSwapBuffers(eglThread.eglDisplay, eglThread.eglSurface);
-                            } catch (Exception ignored) {} // If display or surface already destroyed
-                        }
-                    });
-                    eglThread.postRunnable(eglThread.drawRunnable);
-                }
-            }
-
-            @Override
-            public void onSurfaceTextureSizeChanged(SurfaceTexture surface, final int width, final int height) {
-                if (eglThread != null) {
-                    eglThread.setSurfaceTextureSize(width, height);
-                }
-            }
-
-            @Override
-            public boolean onSurfaceTextureDestroyed(SurfaceTexture surface) {
-                if (eglThread != null) {
-                    eglThread.shutdown();
-                    eglThread = null;
-                }
-                return true;
-            }
-
-            @Override
-            public void onSurfaceTextureUpdated(SurfaceTexture surface) {
-
-            }
-        });
+//        TextureView textureView = new TextureView(context);
+//        frameLayout2.addView(textureView, LayoutHelper.createFrame(ICON_WIDTH_DP, ICON_HEIGHT_DP, Gravity.CENTER));
+//        textureView.setSurfaceTextureListener(new TextureView.SurfaceTextureListener() {
+//            @Override
+//            public void onSurfaceTextureAvailable(SurfaceTexture surface, int width, int height) {
+//                if (eglThread == null && surface != null) {
+//                    eglThread = new EGLThread(surface);
+//                    eglThread.setSurfaceTextureSize(width, height);
+//                    eglThread.postRunnable(()->{
+//                        float time = (System.currentTimeMillis() - currentDate) / 1000.0f;
+//                        Intro.setPage(currentViewPagerPage);
+//                        Intro.setDate(time);
+//                        Intro.onDrawFrame(0);
+//                        if (eglThread != null && eglThread.isAlive() && eglThread.eglDisplay != null && eglThread.eglSurface != null) {
+//                            try {
+//                                eglThread.egl10.eglSwapBuffers(eglThread.eglDisplay, eglThread.eglSurface);
+//                            } catch (Exception ignored) {} // If display or surface already destroyed
+//                        }
+//                    });
+//                    eglThread.postRunnable(eglThread.drawRunnable);
+//                }
+//            }
+//
+//            @Override
+//            public void onSurfaceTextureSizeChanged(SurfaceTexture surface, final int width, final int height) {
+//                if (eglThread != null) {
+//                    eglThread.setSurfaceTextureSize(width, height);
+//                }
+//            }
+//
+//            @Override
+//            public boolean onSurfaceTextureDestroyed(SurfaceTexture surface) {
+//                if (eglThread != null) {
+//                    eglThread.shutdown();
+//                    eglThread = null;
+//                }
+//                return true;
+//            }
+//
+//            @Override
+//            public void onSurfaceTextureUpdated(SurfaceTexture surface) {
+//
+//            }
+//        });
 
         viewPager = new ViewPager(context);
         viewPager.setAdapter(new IntroAdapter());
         viewPager.setPageMargin(0);
         viewPager.setOffscreenPageLimit(1);
-        frameContainerView.addView(viewPager, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+        frameContainerView.addView(viewPager, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT | Gravity.TOP, 0f, 0f, 0f, 0f));
         viewPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
             @Override
             public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
@@ -357,8 +334,8 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
             destroyed = true;
         });
 
-        bottomPages = new BottomPagesView(context, viewPager, 6);
-        frameContainerView.addView(bottomPages, LayoutHelper.createFrame(66, 5, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 0, ICON_HEIGHT_DP + 200, 0, 0));
+        bottomPages = new BottomPagesView(context, viewPager, titles.length);
+        frameContainerView.addView(bottomPages, LayoutHelper.createFrame(90, 5, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 0, IMAGE_HEIGHT + 200, 0, 0));
 
         switchLanguageTextView = new TextView(context);
         switchLanguageTextView.setGravity(Gravity.CENTER);
@@ -391,9 +368,37 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
             LocaleController.getInstance().applyLanguage(localeInfo, true, false, currentAccount);
         });
 
-        frameContainerView.addView(themeFrameLayout, LayoutHelper.createFrame(64, 64, Gravity.TOP | Gravity.RIGHT, 0, themeMargin, themeMargin, 0));
+        frameContainerView.addView(themeFrameLayout, LayoutHelper.createFrame(64, 64, Gravity.TOP | Gravity.RIGHT, 0, 0, 0, 0));
 
         fragmentView = scrollView;
+        DrawerProfileCell.switchingTheme = true;
+
+        String nightThemeName = "Dahl";
+
+        Theme.ThemeInfo themeInfo;
+        boolean toDark = true;
+        themeInfo = Theme.getTheme(nightThemeName);
+
+        Theme.selectedAutoNightType = Theme.AUTO_NIGHT_TYPE_NONE;
+        Theme.saveAutoNightThemeConfig();
+        Theme.cancelAutoNightThemeCallbacks();
+
+        darkThemeDrawable.setCustomEndFrame(toDark ? darkThemeDrawable.getFramesCount() - 1 : 0);
+        themeIconView.playAnimation();
+
+        int[] pos = new int[2];
+        themeIconView.getLocationInWindow(pos);
+        pos[0] += themeIconView.getMeasuredWidth() / 2;
+        pos[1] += themeIconView.getMeasuredHeight() / 2;
+        NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.needSetDayNightTheme, themeInfo, false, pos, -1, toDark, themeIconView);
+        themeIconView.setContentDescription(LocaleController.getString(toDark ? R.string.AccDescrSwitchToDayTheme : R.string.AccDescrSwitchToNightTheme));
+
+        frameLayout2 = new FrameLayout(context);
+        frameContainerView.addView(frameLayout2, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 0, 78, 0, 0));
+        frameLayout2.setVisibility(View.INVISIBLE);
+        themeFrameLayout.setVisibility(View.INVISIBLE);
+
+        DrawerProfileCell.switchingTheme = false;
 
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.suggestedLangpack);
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.configLoaded);
@@ -404,6 +409,9 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
 
         updateColors(false);
 
+//        Theme.ThemeInfo themeInfo = Theme.getTheme("Night");
+//        NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.needSetDayNightTheme, themeInfo, true, null, Theme.DEFALT_THEME_ACCENT_ID);
+
         return fragmentView;
     }
 
@@ -413,8 +421,8 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
         super.onResume();
         if (justCreated) {
             if (LocaleController.isRTL) {
-                viewPager.setCurrentItem(6);
-                lastPage = 6;
+                viewPager.setCurrentItem(titles.length);
+                lastPage = titles.length;
             } else {
                 viewPager.setCurrentItem(0);
                 lastPage = 0;
@@ -547,15 +555,19 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
         public Object instantiateItem(ViewGroup container, int position) {
             TextView headerTextView = new TextView(container.getContext());
             headerTextView.setTag(pagerHeaderTag);
+            headerTextView.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_PLAYFAIR_DISPLAY));
             TextView messageTextView = new TextView(container.getContext());
             messageTextView.setTag(pagerMessageTag);
+            messageTextView.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+            messageTextView.setAlpha(0.5f);
+            ImageView imageView = new ImageView(container.getContext());
 
             FrameLayout frameLayout = new FrameLayout(container.getContext()) {
                 @Override
                 protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
-                    int oneFourth = (bottom - top) / 4;
-                    int y = (oneFourth * 3 - AndroidUtilities.dp(275)) / 2;
-                    y += AndroidUtilities.dp(ICON_HEIGHT_DP);
+                    int y;
+                    imageView.layout(0, -100, AndroidUtilities.getRealScreenSize().x, imageView.getMeasuredHeight());
+                    y = imageView.getMeasuredHeight();
                     y += AndroidUtilities.dp(16);
                     int x = AndroidUtilities.dp(18);
                     headerTextView.layout(x, y, x + headerTextView.getMeasuredWidth(), y + headerTextView.getMeasuredHeight());
@@ -566,6 +578,9 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
                     messageTextView.layout(x, y, x + messageTextView.getMeasuredWidth(), y + messageTextView.getMeasuredHeight());
                 }
             };
+
+            imageView.setImageResource(drawables[position]);
+            frameLayout.addView(imageView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.LEFT, 0, 0, 0, 0));
 
             headerTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
             headerTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 26);
@@ -945,7 +960,7 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
         fragmentView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
         switchLanguageTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText4));
         startMessagingButton.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText));
-        startMessagingButton.setBackground(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(6), Theme.getColor(Theme.key_changephoneinfo_image2), Theme.getColor(Theme.key_chats_actionPressedBackground)));
+        startMessagingButton.setBackground(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(6), Theme.DAHL_ACTION_COLOR, Theme.getColor(Theme.key_chats_actionPressedBackground)));
         darkThemeDrawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_changephoneinfo_image2), PorterDuff.Mode.SRC_IN));
         bottomPages.invalidate();
         if (fromTheme) {

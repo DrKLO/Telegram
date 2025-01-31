@@ -1,0 +1,7 @@
+package ru.tusco.messenger
+
+object Extra {
+    // https://core.telegram.org/api/obtaining_api_id
+    const val APP_ID = 12345678
+    const val APP_HASH = "abcdefg"
+}

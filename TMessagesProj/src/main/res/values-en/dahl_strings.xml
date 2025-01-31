@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="DahlAppName">Dahl</string>
+    <string name="DahlAppNameBeta">Dahl Beta</string>
+
+    <string name="Slide2Title">Communication</string>
+    <string name="Slide3Title">Simplicity and Convenience</string>
+    <string name="Slide4Title">Privacy</string>
+    <string name="Slide5Title">Speed</string>
+    <string name="Slide6Title">Collaboration</string>
+    <string name="Slide7Title">Creativity</string>
+
+    <string name="Slide1Message">A messenger **designed and tailored to the needs** of the Russian-speaking audience.</string>
+    <string name="Slide2Message">Start a conversation on one device and seamlessly continue it on another with **instant data sync**.</string>
+    <string name="Slide3Message">**We’ve simplified everything** so you can focus on what matters most—your conversations  and ideas.</string>
+    <string name="Slide4Message">**Your data is yours and yours alone.**  Dahl doesn’t use it for advertising or share it with third parties.</string>
+    <string name="Slide5Message">Fast message delivery, **even with a weak internet connection.**</string>
+    <string name="Slide6Message">**Create** groups, **organize** projects,  and **share** ideas.</string>
+    <string name="Slide7Message">**Express yourself freely** with emojis, stickers, and GIFs.</string>
+    <string name="Slide8Message">**Read** with Dahl. **Write** with Dahl.
+**Stay connected** with Dahl.</string>
+
+    <string name="ThemeDahl">Dahl</string>
+</resources>

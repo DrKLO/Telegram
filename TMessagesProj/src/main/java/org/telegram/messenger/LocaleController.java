@@ -1344,6 +1344,20 @@ public class LocaleController {
     }
 
     private String getStringInternal(String key, int res) {
+        if (key.equals("AppName")) {
+            try {
+                return ApplicationLoader.applicationContext.getString(R.string.DahlAppName);
+            } catch (Exception e) {
+                FileLog.e(e);
+            }
+        }
+        if (key.equals("AppNameBeta")) {
+            try {
+                return ApplicationLoader.applicationContext.getString(R.string.DahlAppNameBeta);
+            } catch (Exception e) {
+                FileLog.e(e);
+            }
+        }
         return getStringInternal(key, null, 0, res);
     }
 

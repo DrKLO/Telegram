@@ -11,8 +11,7 @@ configurations {
     compile.exclude module: 'support-v4'
 }
 
-configurations.all {
-    exclude group: 'com.google.firebase', module: 'firebase-core'
+configurations.configureEach {
     exclude group: 'androidx.recyclerview', module: 'recyclerview'
 }
 
@@ -205,7 +204,7 @@ def getProps(String propName) {
         return "";
     }
 }
-apply plugin: 'com.google.gms.google-services'
+//apply plugin: 'com.google.gms.google-services'
 
 task checkVisibility {
     doFirst {

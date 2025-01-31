@@ -1,5 +1,7 @@
 .idea/
 .gradle/
+.cxx/
+afat/
 build/
 obj/
 *.iml
@@ -13,3 +15,6 @@ TMessagesProj_App/afat/
 TMessagesProj_AppHockeyApp/afat/
 TMessagesProj_AppStandalone/afat/
 TMessagesProj_AppHuawei/afat/
+/TMessagesProj/src/main/java/ru/tusco/messenger/Extra.kt
+/keystore.properties
+/TMessagesProj/config/release.keystore

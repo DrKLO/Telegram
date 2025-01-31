@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="DahlAppName">Даль</string>
+    <string name="DahlAppNameBeta">Даль Beta</string>
+
+    <string name="Slide2Title">Общение</string>
+    <string name="Slide3Title">Простота и удобство</string>
+    <string name="Slide4Title">Приватность</string>
+    <string name="Slide5Title">Скорость</string>
+    <string name="Slide6Title">Коллаборация</string>
+    <string name="Slide7Title">Творчество</string>
+
+    <string name="Slide1Message">Мессенджер, **созданный с пониманием** потребностей русскоговорящей аудитории.</string>
+    <string name="Slide2Message">Мгновенная **синхронизация данных** — можете начать разговор на одном устройстве, а продолжить на другом.</string>
+    <string name="Slide3Message">**Убрали всё лишнее**, чтобы вы могли сосредоточиться на важном —  разговорах и идеях.</string>
+    <string name="Slide4Message">Ваши данные **принадлежат только вам**. "Даль" не использует их для рекламы и не передаёт третьим лицам. </string>
+    <string name="Slide5Message">Высокая скорость передачи сообщений **даже при слабом подключении**.</string>
+    <string name="Slide6Message">**Создавайте** группы, **организовывайте** проекты, **делитесь** важными идеями.</string>
+    <string name="Slide7Message">**Расширяйте свои границы** самовыражения с помощью эмодзи, стикеров и GIF.</string>
+    <string name="Slide8Message">**Читайте** в Даль. **Пишите** в Даль.  **Смотрите** в Даль.</string>
+
+    <string name="ThemeDahl">Даль</string>
+</resources>

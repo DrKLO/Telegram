@@ -1084,7 +1084,7 @@ public class Theme {
                 return;
             }
             ArrayList<ThemeAccent> accentsToLoad = null;
-            for (int b = 0; b < 5; b++) {
+            for (int b = 0; b < 6; b++) {
                 String key;
                 switch (b) {
                     case 0:
@@ -1100,8 +1100,11 @@ public class Theme {
                         key = "Day";
                         break;
                     case 4:
-                    default:
                         key = "Night";
+                        break;
+                    case 5:
+                    default:
+                        key = "Dahl";
                         break;
                 }
                 ThemeInfo info = themesDict.get(key);
@@ -2380,6 +2383,8 @@ public class Theme {
                 return getString(R.string.ThemeDay);
             } else if ("Night".equals(name)) {
                 return getString(R.string.ThemeNight);
+            } else if ("Dahl".equals(name)) {
+                return getString(R.string.ThemeDahl);
             }
             return info != null ? info.title : name;
         }
@@ -2496,7 +2501,7 @@ public class Theme {
             if (isDark != UNKNOWN) {
                 return isDark == DARK;
             }
-            if ("Dark Blue".equals(name) || "Night".equals(name)) {
+            if ("Dark Blue".equals(name) || "Night".equals(name) || "Dahl".equals(name)) {
                 isDark = DARK;
             } else if ("Blue".equals(name) || "Arctic Blue".equals(name) || "Day".equals(name)) {
                 isDark = LIGHT;
@@ -2623,12 +2628,12 @@ public class Theme {
                 }
 
                 //override default themes
-                if (isHome(themeAccent) && name.equals("Dark Blue") || name.equals("Night")) {
+                if (isHome(themeAccent) && name.equals("Dark Blue") || name.equals("Night") || name.equals("Dahl")) {
                     themeAccent.myMessagesAccentColor = 0xff6573f8;
                     themeAccent.myMessagesGradientAccentColor1 = 0xff7644cb;
                     themeAccent.myMessagesGradientAccentColor2 = 0xff8849b4;
                     themeAccent.myMessagesGradientAccentColor3 = 0xffa751a8;
-                    if (name.equals("Night")) {
+                    if (name.equals("Night") || name.equals("Dahl")) {
                         themeAccent.patternIntensity = -0.57f;
                         themeAccent.backgroundOverrideColor = 0xff6c7fa6;
                         themeAccent.backgroundGradientOverrideColor1 = 0xff2e344b;
@@ -3010,6 +3015,7 @@ public class Theme {
     public static final int ACTION_BAR_WHITE_SELECTOR_COLOR = 0x40ffffff;
     public static final int ACTION_BAR_AUDIO_SELECTOR_COLOR = 0x2f000000;
     public static final int ARTICLE_VIEWER_MEDIA_PROGRESS_COLOR = 0xffffffff;
+    public static final int DAHL_ACTION_COLOR = 0xff7b86c3;
 
     public static final int AUTO_NIGHT_TYPE_NONE = 0;
     public static final int AUTO_NIGHT_TYPE_SCHEDULED = 1;
@@ -4556,14 +4562,46 @@ public class Theme {
         SharedPreferences themeConfig = ApplicationLoader.applicationContext.getSharedPreferences("themeconfig", Activity.MODE_PRIVATE);
 
         ThemeInfo themeInfo = new ThemeInfo();
+        themeInfo.name = "Dahl";
+        themeInfo.assetName = "dahl.attheme";
+        themeInfo.currentAccentId = DEFALT_THEME_ACCENT_ID;
+        themeInfo.sortIndex = 1;
+        themeInfo.setAccentColorOptions(
+            new int[]    {                    0xFF6ABE3F,                    0xFF8D78E3,                    0xFFDE5E7E,                    0xFF5977E8,                    0xFFDBC11A,                    0xff3e88f7,                    0xff4ab5d3,                    0xff4ab841,                    0xffd95576,                    0xffe27d2b,                    0xff936cda,                    0xffd04336,                    0xffe8ae1c,                    0xff7988a3 },
+            new int[]    {                    0xFF8A5294,                    0xFFB46C1B,                    0xFFAF4F6F,                    0xFF266E8D,                    0xFF744EB7,                    0x00000000,                    0x00000000,                    0x00000000,                    0x00000000,                    0x00000000,                    0x00000000,                    0x00000000,                    0x00000000,                    0x00000000 },
+            new int[]    {                    0xFF6855BB,                    0xFFA53B4A,                    0xFF62499C,                    0xFF2F919D,                    0xFF298B95,                    0x00000000,                    0x00000000,                    0x00000000,                    0x00000000,                    0x00000000,                    0x00000000,                    0x00000000,                    0x00000000,                    0x00000000 },
+            new int[]    {                    0xFF16131c,                    0xFF1e1118,                    0xFF0f0b10,                    0xFF090c0c,                    0xFF071519,                    0xff0d0e17,                    0xff111b1c,                    0xff0c110c,                    0xff0e0b0d,                    0xff1d160f,                    0xff09090a,                    0xff1c1210,                    0xff1d1b18,                    0xff0e1012 },
+            new int[]    {                    0xFF201827,                    0xFF100f13,                    0xFF1b151a,                    0xFF141f22,                    0xFF0c0c0f,                    0xff090a0c,                    0xff0a0e0e,                    0xff080908,                    0xff1a1618,                    0xff13100d,                    0xff1e1a21,                    0xff0f0d0c,                    0xff0c0b08,                    0xff070707 },
+            new int[]    {                    0xFF0e0b13,                    0xFF211623,                    0xFF130e12,                    0xFF0d0f11,                    0xFF10191f,                    0xff181c28,                    0xff142121,                    0xff121812,                    0xff130e11,                    0xff1a130f,                    0xff0b0a0b,                    0xff120d0b,                    0xff15140f,                    0xff101214 },
+            new int[]    {                    0xFF1e192a,                    0xFF111016,                    0xFF21141a,                    0xFF111a1b,                    0xFF0a0d13,                    0xff0e0f12,                    0xff070c0b,                    0xff0b0d0b,                    0xff22121e,                    0xff0f0c0c,                    0xff110f17,                    0xff070606,                    0xff0c0a0a,                    0xff09090b },
+            new int[]    {                             9,                            10,                            11,                            12,                            13,                             0,                             1,                             2,                             3,                             4,                             5,                             6,                             7,                             8 },
+            new String[] { "0QDN0fTSsEg-EQAAW_Q-fsh4r3U&id=5237918312045744446", "0QDN0fTSsEg-EQAAW_Q-fsh4r3U&id=5237918312045744446", "0QDN0fTSsEg-EQAAW_Q-fsh4r3U&id=5237918312045744446", "0QDN0fTSsEg-EQAAW_Q-fsh4r3U&id=5237918312045744446", "0QDN0fTSsEg-EQAAW_Q-fsh4r3U&id=5237918312045744446", "0QDN0fTSsEg-EQAAW_Q-fsh4r3U&id=5237918312045744446", "0QDN0fTSsEg-EQAAW_Q-fsh4r3U&id=5237918312045744446", "0QDN0fTSsEg-EQAAW_Q-fsh4r3U&id=5237918312045744446", "0QDN0fTSsEg-EQAAW_Q-fsh4r3U&id=5237918312045744446", "0QDN0fTSsEg-EQAAW_Q-fsh4r3U&id=5237918312045744446", "0QDN0fTSsEg-EQAAW_Q-fsh4r3U&id=5237918312045744446", "0QDN0fTSsEg-EQAAW_Q-fsh4r3U&id=5237918312045744446", "0QDN0fTSsEg-EQAAW_Q-fsh4r3U&id=5237918312045744446", "0QDN0fTSsEg-EQAAW_Q-fsh4r3U&id=5237918312045744446" },
+            new int[]    {                            45,                           135,                             0,                           180,                             0,                             0,                             0,                             0,                             0,                             0,                             0,                             0,                             0,                             0 },
+            new int[]    {                            34,                            47,                            52,                            48,                            54,                            50,                            37,                            56,                            48,                            49,                            40,                            64,                            38,                            48 }
+        );
+        OverrideWallpaperInfo overrideWallpaperInfo = new OverrideWallpaperInfo();
+        overrideWallpaperInfo.color = 0xFF16131c;
+        overrideWallpaperInfo.gradientColor1 = 0xFF0f0b10;
+        overrideWallpaperInfo.gradientColor2 = 0xff0e1012;
+        overrideWallpaperInfo.gradientColor3 = 0xff1d1b18;
+        overrideWallpaperInfo.slug = THEME_BACKGROUND_SLUG;
+        themeInfo.overrideWallpaper = overrideWallpaperInfo;
+        sortAccents(themeInfo);
+        currentTheme = themeInfo;
+        defaultTheme = themeInfo;
+        currentNightTheme = themeInfo;
+
+        themes.add(themeInfo);
+        themesDict.put("Dahl", themeInfo);
+
+        themeInfo = new ThemeInfo();
         themeInfo.name = "Blue";
         themeInfo.assetName = "bluebubbles.attheme";
         themeInfo.previewBackgroundColor = 0xff95beec;
         themeInfo.previewInColor = 0xffffffff;
         themeInfo.previewOutColor = 0xffd0e6ff;
-        themeInfo.firstAccentIsDefault = true;
-        themeInfo.currentAccentId = DEFALT_THEME_ACCENT_ID;
-        themeInfo.sortIndex = 1;
+        themeInfo.currentAccentId = 999;
+        themeInfo.sortIndex = 6;
         themeInfo.setAccentColorOptions(
                 new int[]    { 0xFF5890C5,                     0xFF239853,                    0xFFCE5E82,                    0xFF7F63C3,                    0xFF2491AD,                    0xFF299C2F,                    0xFF8854B4,                    0xFF328ACF,                    0xFF43ACC7,                    0xFF52AC44,                    0xFFCD5F93,                    0xFFD28036,                    0xFF8366CC,                    0xFFCE4E57,                    0xFFD3AE40,                    0xFF7B88AB },
                 new int[]    { 0xFFB8E18D,                     0xFFFAFBCC,                    0xFFFFF9DC,                    0xFFC14F6E,                    0xFFD1BD1B,                    0xFFFFFAC9,                    0xFFFCF6D8,                    0x00000000,                    0x00000000,                    0x00000000,                    0x00000000,                    0x00000000,                    0x00000000,                    0x00000000,                    0x00000000,                    0x00000000 },
@@ -4578,7 +4616,7 @@ public class Theme {
                 new int[]    {          0,                             52,                            46,                            57,                            45,                            64,                            52,                            35,                            36,                            41,                            50,                            50,                            35,                            38,                            37,                            30 }
                 );
         sortAccents(themeInfo);
-        themes.add(currentDayTheme = defaultTheme = themeInfo);
+        themes.add(themeInfo);
         themesDict.put("Blue", themeInfo);
 
         themeInfo = new ThemeInfo();
@@ -4603,7 +4641,7 @@ public class Theme {
                 );
         sortAccents(themeInfo);
         themes.add(themeInfo);
-        themesDict.put("Dark Blue", currentNightTheme = themeInfo);
+        themesDict.put("Dark Blue", themeInfo);
 
         themeInfo = new ThemeInfo();
         themeInfo.name = "Arctic Blue";
@@ -4725,11 +4763,11 @@ public class Theme {
         ThemeInfo applyingTheme = null;
         SharedPreferences preferences = MessagesController.getGlobalMainSettings();
         try {
-            final ThemeInfo themeDarkBlue = themesDict.get("Dark Blue");
+            final ThemeInfo themeDarkBlue = themesDict.get("Dahl");
 
             String theme = preferences.getString("theme", null);
             if ("Default".equals(theme)) {
-                applyingTheme = themesDict.get("Blue");
+                applyingTheme = themesDict.get("Dahl");
                 applyingTheme.currentAccentId = DEFALT_THEME_ACCENT_ID;
             } else if ("Dark".equals(theme)) {
                 applyingTheme = themeDarkBlue;
@@ -4745,8 +4783,9 @@ public class Theme {
 
             theme = preferences.getString("nighttheme", null);
             if ("Default".equals(theme)) {
-                applyingTheme = themesDict.get("Blue");
+                applyingTheme = themesDict.get("Dahl");
                 applyingTheme.currentAccentId = DEFALT_THEME_ACCENT_ID;
+
             } else if ("Dark".equals(theme)) {
                 currentNightTheme = themeDarkBlue;
                 themeDarkBlue.currentAccentId = 9;
@@ -6378,7 +6417,7 @@ public class Theme {
                 }
                 String[] wallpaperLink = new String[1];
                 if (themeInfo.assetName != null) {
-                    currentColorsNoAccent = getThemeFileValues(null, themeInfo.assetName, null);
+                    currentColorsNoAccent = getThemeFileValues(null, themeInfo.assetName, wallpaperLink);
                 } else {
                     currentColorsNoAccent = getThemeFileValues(new File(themeInfo.pathToFile), null, wallpaperLink);
                 }
@@ -6951,7 +6990,7 @@ public class Theme {
         editor.commit();
 
         if (full) {
-            for (int b = 0; b < 5; b++) {
+            for (int b = 0; b < 6; b++) {
                 String key;
                 switch (b) {
                     case 0:
@@ -6967,8 +7006,11 @@ public class Theme {
                         key = "Day";
                         break;
                     case 4:
-                    default:
                         key = "Night";
+                        break;
+                    case 5:
+                    default:
+                        key = "Dahl";
                         break;
                 }
                 ThemeInfo info = themesDict.get(key);
@@ -7683,6 +7725,8 @@ public class Theme {
             return "Arctic Blue";
         } else if (settings.base_theme instanceof TLRPC.TL_baseThemeNight) {
             return "Night";
+        } else if (settings.base_theme instanceof TLRPC.TL_baseThemeNight) {
+            return "Dahl";
         }
         return null;
     }
@@ -7697,6 +7741,8 @@ public class Theme {
         } else if ("Arctic Blue".equals(key)) {
             return new TLRPC.TL_baseThemeArctic();
         } else if ("Night".equals(key)) {
+            return new TLRPC.TL_baseThemeNight();
+        } else if ("Dahl".equals(key)) {
             return new TLRPC.TL_baseThemeNight();
         }
         return null;
@@ -10011,7 +10057,8 @@ public class Theme {
                             File f = FileLoader.getInstance(UserConfig.selectedAccount).getPathToAttach(wallpaperDocument, true);
                             patternBitmap = SvgHelper.getBitmap(f, dp(360), dp(640), false);
                         } else {
-                            patternBitmap = SvgHelper.getBitmap(R.raw.default_pattern, dp(360), dp(640), Color.WHITE);
+                            patternBitmap = SvgHelper.getBitmap(R.raw.dahl_wallpaper, dp(360), dp(640), Color.WHITE);
+                            //patternBitmap = SvgHelper.getBitmap(R.raw.default_pattern, dp(360), dp(640), Color.WHITE);
                         }
                         if (patternBitmap != null) {
                             FileOutputStream stream = null;
@@ -10185,7 +10232,8 @@ public class Theme {
             w = Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y);
             h = Math.max(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y);
         }
-        motionBackgroundDrawable.setPatternBitmap(34, SvgHelper.getBitmap(R.raw.default_pattern, w, h, Color.BLACK));
+        //motionBackgroundDrawable.setPatternBitmap(34, SvgHelper.getBitmap(R.raw.default_pattern, w, h, Color.BLACK));
+        motionBackgroundDrawable.setPatternBitmap(50, SvgHelper.getBitmap(R.raw.dahl_wallpaper, w, h, Color.WHITE));
         motionBackgroundDrawable.setPatternColorFilter(motionBackgroundDrawable.getPatternColor());
         return motionBackgroundDrawable;
     }
@@ -10564,7 +10612,7 @@ public class Theme {
             if (accent.parentTheme.getKey().equals("Day") && accent.id == 9) {
                 return true;
             }
-            if ((accent.parentTheme.getKey().equals("Night") || accent.parentTheme.getKey().equals("Dark Blue")) && accent.id == 0) {
+            if ((accent.parentTheme.getKey().equals("Night") || accent.parentTheme.getKey().equals("Dahl")  || accent.parentTheme.getKey().equals("Dark Blue")) && accent.id == 0) {
                 return true;
             }
         }
