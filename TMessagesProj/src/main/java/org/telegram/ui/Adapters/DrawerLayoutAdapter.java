@@ -9,13 +9,15 @@
 package org.telegram.ui.Adapters;
 
 import android.content.Context;
-import android.content.pm.PackageManager;
 import android.view.View;
 import android.view.ViewGroup;
 
 import androidx.annotation.Keep;
+import androidx.annotation.Nullable;
+import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.RecyclerView;
 
+import org.jetbrains.annotations.NotNull;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.LocaleController;
@@ -26,6 +28,7 @@ import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.DrawerLayoutContainer;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Adapters.diffUtils.DrawerLayoutAdapterDiffCallback;
 import org.telegram.ui.Cells.DividerCell;
 import org.telegram.ui.Cells.DrawerActionCell;
 import org.telegram.ui.Cells.DrawerAddCell;
@@ -39,7 +42,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 
 public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter {
-
+    private ArrayList<Item> lastItems = new ArrayList<>();
     private Context mContext;
     private DrawerLayoutContainer mDrawerLayoutContainer;
     private ArrayList<Item> items = new ArrayList<>(11);
@@ -100,14 +103,23 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter {
     }
 
     private View.OnClickListener onPremiumDrawableClick;
+
     public void setOnPremiumDrawableClick(View.OnClickListener listener) {
         onPremiumDrawableClick = listener;
     }
 
+    /**
+     * Updates the RecyclerView's data set and efficiently refreshes the view using DiffUtil to calculate the minimal set of changes
+     * based on the differences between the previous and current data. After the update, the current data set is saved as the previous data set
+     * for the next DiffUtil comparison.
+     */
     @Override
     public void notifyDataSetChanged() {
         resetItems();
-        super.notifyDataSetChanged();
+        DrawerLayoutAdapterDiffCallback diffCallback = new DrawerLayoutAdapterDiffCallback(lastItems, items);
+        DiffUtil.DiffResult diff = DiffUtil.calculateDiff(diffCallback);
+        diff.dispatchUpdatesTo(this);
+        lastItems = (ArrayList<Item>) items.clone();
     }
 
     @Override
@@ -190,7 +202,7 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter {
                 return 4;
             } else {
                 if (accountNumbers.size() < UserConfig.MAX_ACCOUNT_COUNT) {
-                    if (i == accountNumbers.size()){
+                    if (i == accountNumbers.size()) {
                         return 5;
                     } else if (i == accountNumbers.size() + 1) {
                         return 2;
@@ -411,6 +423,33 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter {
             this.icon = icon;
             this.id = id;
             this.text = text;
+        }
+
+        /**
+         * Compares the contents of this Item with another Item to determine if they are visually the same.
+         * This method is used by DiffUtil to determine if an item in the RecyclerView has been modified
+         * and needs to be updated.
+         *
+         * @param obj The Item to compare this Item to.  Returns false if obj is null.
+         * @return True if the contents of both Items are the same, false otherwise.
+         */
+        public boolean areContentsTheSame(Item obj) {
+            if (obj == null) {
+                return false;
+            }
+            if (this.icon != obj.icon) {
+                return false;
+            }
+            if (this.text != obj.text) {
+                return false;
+            }
+            if (this.error != obj.error) {
+                return false;
+            }
+            if (this.bot != obj.bot) {
+                return false;
+            }
+            return true;
         }
 
         public Item(TLRPC.TL_attachMenuBot bot) {
