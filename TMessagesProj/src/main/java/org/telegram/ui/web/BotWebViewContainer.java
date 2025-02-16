@@ -746,13 +746,17 @@ public abstract class BotWebViewContainer extends FrameLayout implements Notific
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (requestCode == REQUEST_CODE_WEB_VIEW_FILE && mFilePathCallback != null) {
             Uri[] results = null;
-
-            if (resultCode == Activity.RESULT_OK) {
-                if (data != null && data.getDataString() != null) {
-                    results = new Uri[] {Uri.parse(data.getDataString())};
+            if (resultCode == Activity.RESULT_OK && data != null) {
+                if (data.getClipData() != null) {
+                    ClipData clipData = data.getClipData();
+                    results = new Uri[clipData.getItemCount()];
+                    for (int i = 0; i < clipData.getItemCount(); i++) {
+                        results[i] = clipData.getItemAt(i).getUri();
+                    }
+                } else if (data.getData() != null) {
+                    results = new Uri[]{data.getData()};
                 }
             }
-
             mFilePathCallback.onReceiveValue(results);
             mFilePathCallback = null;
         }
@@ -3854,21 +3858,22 @@ public abstract class BotWebViewContainer extends FrameLayout implements Notific
                         d("onShowFileChooser: no container, false");
                         return false;
                     }
-
                     if (botWebViewContainer.mFilePathCallback != null) {
                         botWebViewContainer.mFilePathCallback.onReceiveValue(null);
                     }
-
                     botWebViewContainer.mFilePathCallback = filePathCallback;
+
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                        activity.startActivityForResult(fileChooserParams.createIntent(), REQUEST_CODE_WEB_VIEW_FILE);
+                        Intent intent = fileChooserParams.createIntent();
+                        intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
+                        activity.startActivityForResult(intent, REQUEST_CODE_WEB_VIEW_FILE);
                     } else {
                         Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
                         intent.addCategory(Intent.CATEGORY_OPENABLE);
                         intent.setType("*/*");
+                        intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
                         activity.startActivityForResult(Intent.createChooser(intent, getString(R.string.BotWebViewFileChooserTitle)), REQUEST_CODE_WEB_VIEW_FILE);
                     }
-
                     d("onShowFileChooser: true");
                     return true;
                 }
