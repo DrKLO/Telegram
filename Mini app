@@ -1,0 +1,105 @@
+const TelegramBot = require('node-telegram-bot-api');
+const sqlite3 = require('better-sqlite3');
+
+// Your BotFather token
+const TOKEN = '7330387048:AAHZeYhoI1Z5Ur7fE5syR4HmajAa5B-rFEY';
+const bot = new TelegramBot(TOKEN, { polling: true });
+
+// SQLite database setup
+const db = sqlite3('doge_miner.db');
+db.exec(`
+  CREATE TABLE IF NOT EXISTS users (
+    user_id INTEGER PRIMARY KEY,
+    doge_bucks INTEGER DEFAULT 0,
+    energy INTEGER DEFAULT 100,
+    last_energy_update INTEGER,
+    referrer_id INTEGER
+  )
+`);
+
+// Utility functions
+function updateEnergy(user_id) {
+  const row = db.prepare('SELECT energy, last_energy_update FROM users WHERE user_id = ?').get(user_id);
+  const currentTime = Math.floor(Date.now() / 1000); // Current time in seconds
+  if (row) {
+    const { energy, last_energy_update } = row;
+    const elapsedMinutes = Math.floor((currentTime - last_energy_update) / 60);
+    const newEnergy = Math.min(100, energy + elapsedMinutes);
+    db.prepare('UPDATE users SET energy = ?, last_energy_update = ? WHERE user_id = ?')
+      .run(newEnergy, currentTime, user_id);
+    return newEnergy;
+  }
+  return 100;
+}
+
+function getUserData(user_id) {
+  const row = db.prepare('SELECT doge_bucks, energy FROM users WHERE user_id = ?').get(user_id);
+  return row ? [row.doge_bucks, row.energy] : [0, 100];
+}
+
+// Start command with referral handling
+bot.onText(/\/start(?:\s+(\d+))?/, (msg, match) => {
+  const user_id = msg.from.id;
+  const referrer_id = match[1] ? parseInt(match[1]) : null;
+
+  // Insert user if not exists
+  db.prepare('INSERT OR IGNORE INTO users (user_id, last_energy_update) VALUES (?, ?)')
+    .run(user_id, Math.floor(Date.now() / 1000));
+
+  if (referrer_id && referrer_id !== user_id) {
+    db.prepare('UPDATE users SET doge_bucks = doge_bucks + 5000 WHERE user_id = ?').run(referrer_id);
+    db.prepare('UPDATE users SET referrer_id = ? WHERE user_id = ?').run(referrer_id, user_id);
+    bot.sendMessage(referrer_id, "Woof! A friend joined with your link—here’s 5,000 DogeBucks!");
+  }
+
+  const welcome_msg = (
+    "Woof! Welcome to CryptoDoge Miner! I’m your mining pup—tap me to start earning DogeBucks " +
+    "and build your crypto empire!"
+  );
+  const markup = {
+    inline_keyboard: [
+      [{ text: "Start Mining", callback_data: "mine" }],
+      [{ text: "Friends", callback_data: "friends" }]
+    ]
+  };
+  bot.sendMessage(user_id, welcome_msg, { reply_markup: markup });
+});
+
+// Callback handler for buttons
+bot.on('callback_query', (call) => {
+  const user_id = call.from.user.id;
+  const energy = updateEnergy(user_id);
+  const [doge_bucks] = getUserData(user_id);
+
+  if (call.data === "mine") {
+    if (energy > 0) {
+      db.prepare('UPDATE users SET doge_bucks = doge_bucks + 1, energy = energy - 1 WHERE user_id = ?')
+        .run(user_id);
+      bot.answerCallbackQuery(call.id, { text: "Mined 1 DogeBuck!" });
+      const status = `DogeBucks: ${doge_bucks + 1}\nEnergy: ${energy - 1}/100`;
+      const markup = {
+        inline_keyboard: [[{ text: "Tap to Mine", callback_data: "mine" }]]
+      };
+      bot.editMessageText(status, {
+        chat_id: call.message.chat.id,
+        message_id: call.message.message_id,
+        reply_markup: markup
+      });
+    } else {
+      bot.answerCallbackQuery(call.id, { text: "Out of energy! Wait for it to recharge." });
+    }
+  } else if (call.data === "friends") {
+    const referral_link = `https://t.me/CryptoDogeMinerBot?start=${user_id}`;
+    const msg = `Invite friends and earn 5,000 DogeBucks per referral!\nYour link: ${referral_link}`;
+    const markup = {
+      inline_keyboard: [[{ text: "Back to Mining", callback_data: "mine" }]]
+    };
+    bot.editMessageText(msg, {
+      chat_id: call.message.chat.id,
+      message_id: call.message.message_id,
+      reply_markup: markup
+    });
+  }
+});
+
+console.log("Bot is running...");
