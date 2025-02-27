@@ -24,6 +24,7 @@ import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.TransitionDrawable;
 import android.os.Build;
+import android.os.Bundle;
 import android.os.SystemClock;
 import android.text.Layout;
 import android.text.SpannableStringBuilder;
@@ -49,6 +50,7 @@ import androidx.core.content.ContextCompat;
 import androidx.core.graphics.ColorUtils;
 import androidx.core.util.Consumer;
 import androidx.recyclerview.widget.DiffUtil;
+import androidx.recyclerview.widget.GridLayoutManagerFixed;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -2988,8 +2990,49 @@ public class RecyclerListView extends RecyclerView {
     public void setAllowStopHeaveOperations(boolean allowStopHeaveOperations) {
         this.allowStopHeaveOperations = allowStopHeaveOperations;
     }
-
     public void setDrawSelection(boolean drawSelection) {
         this.drawSelection = drawSelection;
+	}
+    @Override
+    public boolean performAccessibilityAction(int action, Bundle arguments) {
+        //This code works not always correct,because i dont know,how to get correct coordinate,to scroll to next/previous item,to scroll to it. item.
+        /*
+        if(action==AccessibilityNodeInfo.ACTION_SCROLL_BACKWARD ||action==AccessibilityNodeInfo.ACTION_SCROLL_FORWARD) {
+if(getLayoutManager() instanceof GridLayoutManagerFixed) {
+    GridLayoutManagerFixed g=(GridLayoutManagerFixed) getLayoutManager();
+int pos=action==AccessibilityNodeInfo.ACTION_SCROLL_BACKWARD? g.findLastVisibleItemPosition(): g.findFirstVisibleItemPosition();
+int inc=action==AccessibilityNodeInfo.ACTION_SCROLL_BACKWARD?1:-1; //We use reverse scrolling,so for backward scrolling we use 1 instead of -1 and -1 instead of 1.
+    if(findViewHolderForLayoutPosition(pos                                                                                                                                                                                                                                                                                                                                                                      ) !=null &&findViewHolderForLayoutPosition(pos).itemView instanceof ChatMessageCell) { //It would be very good,if we will get view by position,which invisible on screen,so now it's known issue,because for invisible position we have null,so we will haven't focus on virtual nodes.
+ChatMessageCell c=(ChatMessageCell) findViewHolderForLayoutPosition(pos).itemView;
+if(arguments==null) arguments = new Bundle();
+arguments.putBoolean(ChatMessageCell.actionInList,true);
+boolean back =action==AccessibilityNodeInfo.ACTION_SCROLL_BACKWARD;
+    int[] coords = c.getCoords(back);
+    if(coords!=null) {
+        scrollBy(coords[0],coords[1]);
+return true;
+    }
+//if(c.performAccessibilityAction(action,arguments)) return true;
+pos+=inc;
+if(pos>=0 &&pos<getAdapter().getItemCount()) {
+if(findViewHolderForLayoutPosition(pos)!=null &&findViewHolderForLayoutPosition(pos).itemView instanceof ChatMessageCell) {
+            c = (ChatMessageCell) findViewHolderForLayoutPosition(pos).itemView;
+            coords=c.getCoords(back,true);
+            if (coords != null) {
+                scrollBy(-(coords[0]),-(coords[1]));
+                    return true;
+            }
+                   }
+    scrollToPosition(pos);
+    return true;
+                                  }
+    if (pos <= 0) scrollToPosition(0);
+    else scrollToPosition(getAdapter().getItemCount()-1);
+        return true;
+    }
+}
+        }
+        */
+return super.performAccessibilityAction(action,arguments);
     }
 }

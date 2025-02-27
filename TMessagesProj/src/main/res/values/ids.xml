@@ -27,6 +27,8 @@
     <item name="acc_action_open_forwarded_origin" type="id"/>
     <item name="shake_animation" type="id"/>
 
+    <item name="acc_action_user_or_channel" type="id"/>
+
     <item name="timeout_callback" type="id"/>
 
     <item name="menu_open_bot" type="id"/>

@@ -93,6 +93,7 @@ public class SlideChooseView extends View {
                 return selectedIndex < optionsStr.length ? optionsStr[selectedIndex] : null;
             }
         };
+        setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_YES);
     }
 
     public void setCallback(Callback callback) {

@@ -519,6 +519,7 @@ public class AcceptDeclineView extends View {
             } else {
                 if (action == AccessibilityNodeInfo.ACTION_ACCESSIBILITY_FOCUS) {
                     sendAccessibilityEventForVirtualView(virtualViewId, AccessibilityEvent.TYPE_VIEW_ACCESSIBILITY_FOCUSED);
+                    return true;
                 } else if (action == AccessibilityNodeInfo.ACTION_CLICK) {
                     onVirtualViewClick(virtualViewId);
                     return true;

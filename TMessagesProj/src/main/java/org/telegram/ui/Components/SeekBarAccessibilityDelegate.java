@@ -95,6 +95,11 @@ public abstract class SeekBarAccessibilityDelegate extends View.AccessibilityDel
         onInitializeAccessibilityNodeInfoInternal(null, info);
     }
 
+    @Override
+    public void onInitializeAccessibilityEvent(View host, AccessibilityEvent event) {
+event.setClassName(SEEK_BAR_CLASS_NAME);
+    }
+
     protected CharSequence getContentDescription(@Nullable View host) {
         return null;
     }

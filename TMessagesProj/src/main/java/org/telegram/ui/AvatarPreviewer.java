@@ -80,7 +80,8 @@ public class AvatarPreviewer {
     private Layout layout;
     private boolean visible;
 
-    public void show(ViewGroup parentContainer, Theme.ResourcesProvider resourcesProvider, Data data, Callback callback) {
+    public void show(ViewGroup parentContainer, Theme.ResourcesProvider resourcesProvider, Data data, Callback callback,boolean accessibility) {
+
         Objects.requireNonNull(parentContainer);
         Objects.requireNonNull(data);
         Objects.requireNonNull(callback);
@@ -125,13 +126,19 @@ public class AvatarPreviewer {
                         WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN |
                         WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM;
             }
+            if(!accessibility) {
             AndroidUtilities.setPreferredMaxRefreshRate(windowManager, layout, layoutParams);
-            windowManager.addView(layout, layoutParams);
-            parentContainer.requestDisallowInterceptTouchEvent(true);
-            visible = true;
+                windowManager.addView(layout, layoutParams);
+                parentContainer.requestDisallowInterceptTouchEvent(true);
+                visible = true;
+            }
+            else layout.showContextMenu();
         }
     }
 
+    public void show(ViewGroup parentContainer, Theme.ResourcesProvider resourcesProvider, Data data, Callback callback) {
+        show(parentContainer,resourcesProvider,data,callback,false);
+    }
     public void close() {
         if (visible) {
             this.layout.setShowing(false);
@@ -453,9 +460,9 @@ public class AvatarPreviewer {
             } else if (id == NotificationCenter.fileLoadProgressChanged) {
                 String fileName = (String) args[0];
                 if (TextUtils.equals(fileName, videoFileName)) {
-                        Long loadedSize = (Long) args[1];
-                        Long totalSize = (Long) args[2];
-                        float progress = Math.min(1f, loadedSize / (float) totalSize);
+                    Long loadedSize = (Long) args[1];
+                    Long totalSize = (Long) args[2];
+                    float progress = Math.min(1f, loadedSize / (float) totalSize);
                     avatarView.setProgress(progress);
                 }
             }

@@ -2,6 +2,7 @@
 .gradle/
 build/
 obj/
+TMessagesProj/.cxx
 *.iml
 local.properties
 TMessagesProj/.cxx/
