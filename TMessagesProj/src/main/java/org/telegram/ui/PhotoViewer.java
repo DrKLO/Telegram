@@ -10135,6 +10135,32 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                     if (!menuItem.isSubItemVisible(gallery_menu_openin)) {
                         return;
                     }
+
+                    //Excluding formats that may be displayed in a browser.
+                    //But it is better to check if the extension is within a whitelist of video extensions."
+                    String fileName = currentMessageObject.getFileName();
+                    if (fileName != null && fileName.length() > 0) {
+                        int idx = fileName.lastIndexOf('.');
+                        if (idx != -1) {
+                            String ext = fileName.substring(idx + 1).toLowerCase();
+                            if (ext.equals("htm")
+                                    || ext.equals("svg")
+                                    || ext.equals("php")
+                                    || ext.equals("asp")
+                                    || ext.equals("aspx")
+                                    || ext.equals("xml")
+                                    || ext.equals("json")
+                                    || ext.equals("jsp")
+                                    || ext.equals("xhtml")
+                                    || ext.equals("html")
+                                    || ext.equals("md")) {
+                                Toast toast = Toast.makeText(parentActivity, "Unable to open the video", Toast.LENGTH_LONG);
+                                toast.show();
+                                return;
+                            }
+                        }
+                    }
+
                     AlertDialog.Builder builder = new AlertDialog.Builder(parentActivity, resourcesProvider);
                     builder.setTitle(getString("AppName", R.string.AppName));
                     builder.setMessage(getString("CantPlayVideo", R.string.CantPlayVideo));
