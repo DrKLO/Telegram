@@ -120,7 +120,10 @@ public class ChatGreetingsView extends LinearLayout {
     private TextView premiumButtonView;
 
     private boolean premiumLock;
-    public void setPremiumLock(boolean lock, long dialogId) {
+    public void resetPremiumLock() {
+        setPremiumLock(false, null, null, null);
+    }
+    public void setPremiumLock(boolean lock, CharSequence text, CharSequence buttonText, View.OnClickListener onButtonClick) {
         if (premiumLock == lock) return;
         premiumLock = lock;
         if (premiumLock) {
@@ -142,20 +145,7 @@ public class ChatGreetingsView extends LinearLayout {
                 premiumTextView.setGravity(Gravity.CENTER);
                 premiumTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
             }
-            String username = "";
-            if (dialogId >= 0) {
-                TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(dialogId);
-                if (user != null) {
-                    username = UserObject.getUserName(user);
-                }
-            }
-            String text;
-            if (MessagesController.getInstance(currentAccount).premiumFeaturesBlocked()) {
-                text = formatString(R.string.MessageLockedPremiumLocked, username);
-            } else {
-                text = formatString(R.string.MessageLockedPremium, username);
-            }
-            premiumTextView.setText(AndroidUtilities.replaceTags(text));
+            premiumTextView.setText(text);
             premiumTextView.setMaxWidth(HintView2.cutInFancyHalf(premiumTextView.getText(), premiumTextView.getPaint()));
             premiumTextView.setTextColor(getThemedColor(Theme.key_chat_serviceText));
             premiumTextView.setLineSpacing(dp(2f), 1f);
@@ -207,19 +197,14 @@ public class ChatGreetingsView extends LinearLayout {
                 premiumButtonView.setGravity(Gravity.CENTER);
                 premiumButtonView.setTypeface(AndroidUtilities.bold());
                 premiumButtonView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-                premiumButtonView.setPadding(dp(13), dp(6.66f), dp(13), dp(7));
+                premiumButtonView.setPadding(dp(13), dp(5), dp(13), dp(8));
                 premiumButtonView.setBackground(Theme.createSimpleSelectorRoundRectDrawable(dp(15), 0x1e000000, 0x33000000));
 
                 ScaleStateListAnimator.apply(premiumButtonView);
             }
-            premiumButtonView.setText(LocaleController.getString(R.string.MessagePremiumUnlock));
+            premiumButtonView.setText(buttonText);
             premiumButtonView.setTextColor(getThemedColor(Theme.key_chat_serviceText));
-            premiumButtonView.setOnClickListener(v -> {
-                BaseFragment fragment = LaunchActivity.getLastFragment();
-                if (fragment != null) {
-                    fragment.presentFragment(new PremiumPreviewFragment("contact"));
-                }
-            });
+            premiumButtonView.setOnClickListener(onButtonClick);
         }
         updateLayout();
     }

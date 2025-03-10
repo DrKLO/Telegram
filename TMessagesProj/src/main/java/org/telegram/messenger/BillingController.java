@@ -25,6 +25,7 @@ import com.android.billingclient.api.PurchasesUpdatedListener;
 import com.android.billingclient.api.QueryProductDetailsParams;
 import com.android.billingclient.api.QueryPurchasesParams;
 
+import org.checkerframework.checker.units.qual.A;
 import org.telegram.messenger.utils.BillingUtilities;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
@@ -39,6 +40,8 @@ import java.util.Currency;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class BillingController implements PurchasesUpdatedListener, BillingClientStateListener {
@@ -56,7 +59,7 @@ public class BillingController implements PurchasesUpdatedListener, BillingClien
     public static boolean billingClientEmpty;
 
     private final Map<String, Consumer<BillingResult>> resultListeners = new HashMap<>();
-    private final List<String> requestingTokens = Collections.synchronizedList(new ArrayList<>());
+    private final Set<String> requestingTokens = Collections.newSetFromMap(new ConcurrentHashMap<>());
     private final Map<String, Integer> currencyExpMap = new HashMap<>();
     private final BillingClient billingClient;
     private String lastPremiumTransaction;
@@ -105,6 +108,9 @@ public class BillingController implements PurchasesUpdatedListener, BillingClien
         }
         if ("TON".equalsIgnoreCase(currency)) {
             return "TON " + (amount / 1_000_000_000.0);
+        }
+        if ("XTR".equalsIgnoreCase(currency)) {
+            return "XTR " + LocaleController.formatNumber(amount, ',');
         }
         Currency cur = Currency.getInstance(currency);
         if (cur != null) {
@@ -197,8 +203,10 @@ public class BillingController implements PurchasesUpdatedListener, BillingClien
         }
 
         if ((paymentPurpose instanceof TLRPC.TL_inputStorePaymentGiftPremium || paymentPurpose instanceof TLRPC.TL_inputStorePaymentStarsTopup || paymentPurpose instanceof TLRPC.TL_inputStorePaymentStarsGift) && !checkedConsume) {
+            FileLog.d("BillingController.launchBillingFlow, checking consumables");
             queryPurchases(BillingClient.ProductType.INAPP, (billingResult, list) -> {
                 if (billingResult.getResponseCode() == BillingClient.BillingResponseCode.OK) {
+                    FileLog.d("BillingController.launchBillingFlow, checked consumables: OK");
                     Runnable callback = () -> launchBillingFlow(activity, accountInstance, paymentPurpose, productDetails, subscriptionUpdateParams, true);
 
                     AtomicInteger productsToBeConsumed = new AtomicInteger(0);
@@ -209,32 +217,53 @@ public class BillingController implements PurchasesUpdatedListener, BillingClien
                                 String productId = params.zza().getProductId();
                                 if (purchase.getProducts().contains(productId)) {
                                     productsToBeConsumed.incrementAndGet();
-                                    billingClient.consumeAsync(ConsumeParams.newBuilder()
+                                    FileLog.d("BillingController.launchBillingFlow, consuming " + purchase.getPurchaseToken());
+                                    billingClient.consumeAsync(
+                                        ConsumeParams.newBuilder()
                                             .setPurchaseToken(purchase.getPurchaseToken())
-                                            .build(), (billingResult1, s) -> {
-                                        if (billingResult1.getResponseCode() == BillingClient.BillingResponseCode.OK) {
-                                            productsConsumed.add(productId);
-
-                                            if (productsToBeConsumed.get() == productsConsumed.size()) {
-                                                callback.run();
+                                            .build(),
+                                        (billingResult1, s) -> {
+                                            if (billingResult1.getResponseCode() == BillingClient.BillingResponseCode.OK) {
+                                                FileLog.d("BillingController.launchBillingFlow, consumed " + purchase.getPurchaseToken() + ": OK");
+                                                productsConsumed.add(productId);
+                                                if (productsToBeConsumed.get() == productsConsumed.size()) {
+                                                    callback.run();
+                                                }
+                                            } else {
+                                                FileLog.d("BillingController.launchBillingFlow, consumed " + purchase.getPurchaseToken() + ": " + billingResult1.getResponseCode() + " " + billingResult1.getDebugMessage());
+                                                productsConsumed.add(null);
+                                                if (productsToBeConsumed.get() == productsConsumed.size()) {
+                                                    callback.run();
+                                                }
                                             }
                                         }
-                                    });
+                                    );
                                     break;
                                 }
                             }
                         } else {
-                            onPurchasesUpdated(BillingResult.newBuilder().setResponseCode(BillingClient.BillingResponseCode.OK).build(), Collections.singletonList(purchase));
-                            return;
+                            productsToBeConsumed.incrementAndGet();
+                            onPurchasesUpdatedInternal(BillingResult.newBuilder().setResponseCode(BillingClient.BillingResponseCode.OK).build(), Collections.singletonList(purchase), () -> {
+                                productsConsumed.add(null);
+                                if (productsToBeConsumed.get() == productsConsumed.size()) {
+                                    callback.run();
+                                }
+                            });
                         }
                     }
 
                     if (productsToBeConsumed.get() == 0) {
                         callback.run();
                     }
+                } else {
+                    FileLog.d("BillingController.launchBillingFlow, checked consumables: " + billingResult.getResponseCode() + " " + billingResult.getDebugMessage());
+                    launchBillingFlow(activity, accountInstance, paymentPurpose, productDetails, subscriptionUpdateParams, false);
                 }
             });
             return;
+        }
+        if (checkedConsume) {
+            FileLog.d("BillingController.launchBillingFlow, consumables checked, launching flow...");
         }
 
         Pair<String, String> payload = BillingUtilities.createDeveloperPayload(paymentPurpose, accountInstance);
@@ -257,6 +286,10 @@ public class BillingController implements PurchasesUpdatedListener, BillingClien
 
     @Override
     public void onPurchasesUpdated(@NonNull BillingResult billing, @Nullable List<Purchase> list) {
+        onPurchasesUpdatedInternal(billing, list, null);
+    }
+
+    public void onPurchasesUpdatedInternal(@NonNull BillingResult billing, @Nullable List<Purchase> list, @Nullable Runnable onDone) {
         FileLog.d("Billing: Purchases updated: " + billing + ", " + list);
         if (billing.getResponseCode() != BillingClient.BillingResponseCode.OK) {
             if (billing.getResponseCode() == BillingClient.BillingResponseCode.USER_CANCELED) {
@@ -266,11 +299,19 @@ public class BillingController implements PurchasesUpdatedListener, BillingClien
                 onCanceled.run();
                 onCanceled = null;
             }
+            if (onDone != null) {
+                onDone.run();
+            }
             return;
         }
         if (list == null || list.isEmpty()) {
+            if (onDone != null) {
+                onDone.run();
+            }
             return;
         }
+        AtomicInteger awaitingCount = new AtomicInteger(0);
+        AtomicInteger doneCount = new AtomicInteger(0);
         lastPremiumTransaction = null;
         for (Purchase purchase : list) {
             if (purchase.getProducts().contains(PREMIUM_PRODUCT_ID)) {
@@ -278,52 +319,93 @@ public class BillingController implements PurchasesUpdatedListener, BillingClien
                 lastPremiumToken = purchase.getPurchaseToken();
             }
 
-            if (!requestingTokens.contains(purchase.getPurchaseToken()) && purchase.getPurchaseState() == Purchase.PurchaseState.PURCHASED) {
-                Pair<AccountInstance, TLRPC.InputStorePaymentPurpose> opayload = BillingUtilities.extractDeveloperPayload(purchase);
-                if (opayload == null || opayload.first == null) {
-                    continue;
-                }
-                if (!purchase.isAcknowledged()) {
-                    requestingTokens.add(purchase.getPurchaseToken());
+            if (!requestingTokens.contains(purchase.getPurchaseToken())) {
+                if (purchase.getPurchaseState() == Purchase.PurchaseState.PURCHASED) {
+                    Pair<AccountInstance, TLRPC.InputStorePaymentPurpose> opayload = BillingUtilities.extractDeveloperPayload(purchase);
+                    if (opayload == null || opayload.first == null || opayload.second == null) {
+                        FileLog.d("BillingController.onPurchasesUpdatedInternal: " + purchase.getOrderId() + " purchase is purchased, but failed to extract saved payload");
+                        continue;
+                    }
+                    if (!purchase.isAcknowledged()) {
+                        FileLog.d("BillingController.onPurchasesUpdatedInternal: " + purchase.getOrderId() + " purchase is purchased and not acknowledged: assigning (accountId=" + opayload.first.getCurrentAccount() + ") (purpose=" + opayload.second + ")");
+                        requestingTokens.add(purchase.getPurchaseToken());
 
-                    TLRPC.TL_payments_assignPlayMarketTransaction req = new TLRPC.TL_payments_assignPlayMarketTransaction();
-                    req.receipt = new TLRPC.TL_dataJSON();
-                    req.receipt.data = purchase.getOriginalJson();
-                    req.purpose = opayload.second;
+                        TLRPC.TL_payments_assignPlayMarketTransaction req = new TLRPC.TL_payments_assignPlayMarketTransaction();
+                        req.receipt = new TLRPC.TL_dataJSON();
+                        req.receipt.data = purchase.getOriginalJson();
+                        req.purpose = opayload.second;
 
-                    final AlertDialog progressDialog = new AlertDialog(ApplicationLoader.applicationContext, AlertDialog.ALERT_TYPE_SPINNER);
-                    AndroidUtilities.runOnUIThread(() -> progressDialog.showDelayed(500));
+                        final AlertDialog[] progressDialog = new AlertDialog[1];
+                        AndroidUtilities.runOnUIThread(() -> {
+                            progressDialog[0] = new AlertDialog(ApplicationLoader.applicationContext, AlertDialog.ALERT_TYPE_SPINNER);
+                            progressDialog[0].showDelayed(500);
+                        });
 
-                    AccountInstance acc = opayload.first;
-                    acc.getConnectionsManager().sendRequest(req, (response, error) -> {
-                        AndroidUtilities.runOnUIThread(progressDialog::dismiss);
-
-                        requestingTokens.remove(purchase.getPurchaseToken());
-
-                        if (response instanceof TLRPC.Updates) {
-                            acc.getMessagesController().processUpdates((TLRPC.Updates) response, false);
-
-                            for (String productId : purchase.getProducts()) {
-                                Consumer<BillingResult> listener = resultListeners.remove(productId);
-                                if (listener != null) {
-                                    listener.accept(billing);
+                        awaitingCount.incrementAndGet();
+                        AccountInstance acc = opayload.first;
+                        acc.getConnectionsManager().sendRequest(req, (response, error) -> {
+                            AndroidUtilities.runOnUIThread(() -> {
+                                if (progressDialog[0] != null) {
+                                    progressDialog[0].dismiss();
                                 }
-                            }
+                            });
 
-                            consumeGiftPurchase(purchase, req.purpose);
-                            BillingUtilities.cleanupPurchase(purchase);
-                        } else if (error != null) {
-                            if (onCanceled != null) {
-                                onCanceled.run();
-                                onCanceled = null;
+                            requestingTokens.remove(purchase.getPurchaseToken());
+
+                            if (response instanceof TLRPC.Updates) {
+                                FileLog.d("BillingController.onPurchasesUpdatedInternal: " + purchase.getOrderId() + " purchase is purchased and now assigned");
+
+                                acc.getMessagesController().processUpdates((TLRPC.Updates) response, false);
+
+                                for (String productId : purchase.getProducts()) {
+                                    Consumer<BillingResult> listener = resultListeners.remove(productId);
+                                    if (listener != null) {
+                                        listener.accept(billing);
+                                    }
+                                }
+
+                                consumeGiftPurchase(purchase, req.purpose, () -> {
+                                    if (doneCount.incrementAndGet() == awaitingCount.get() && onDone != null) {
+                                        onDone.run();
+                                    }
+                                });
+                                BillingUtilities.cleanupPurchase(purchase);
+                            } else {
+                                FileLog.d("BillingController.onPurchasesUpdatedInternal: " + purchase.getOrderId() + " purchase is purchased and failed to assign: " + (error == null ? null : error.text));
+
+                                if (onCanceled != null) {
+                                    onCanceled.run();
+                                    onCanceled = null;
+                                }
+                                if (error != null) {
+                                    NotificationCenter.getGlobalInstance().postNotificationNameOnUIThread(NotificationCenter.billingConfirmPurchaseError, req, error);
+                                }
+
+                                AndroidUtilities.runOnUIThread(() -> {
+                                    if (doneCount.incrementAndGet() == awaitingCount.get() && onDone != null) {
+                                        onDone.run();
+                                    }
+                                });
                             }
-                            NotificationCenter.getGlobalInstance().postNotificationNameOnUIThread(NotificationCenter.billingConfirmPurchaseError, req, error);
-                        }
-                    }, ConnectionsManager.RequestFlagFailOnServerErrors | ConnectionsManager.RequestFlagFailOnServerErrorsExceptFloodWait | ConnectionsManager.RequestFlagInvokeAfter);
+                        }, ConnectionsManager.RequestFlagFailOnServerErrorsExceptFloodWait | ConnectionsManager.RequestFlagInvokeAfter);
+                    } else {
+                        FileLog.d("BillingController.onPurchasesUpdatedInternal: " + purchase.getOrderId() + " purchase is purchased and acknowledged: consuming");
+                        awaitingCount.incrementAndGet();
+                        consumeGiftPurchase(purchase, opayload.second, () -> {
+                            if (doneCount.incrementAndGet() == awaitingCount.get() && onDone != null) {
+                                onDone.run();
+                            }
+                        });
+                    }
                 } else {
-                    consumeGiftPurchase(purchase, opayload.second);
+                    FileLog.d("BillingController.onPurchasesUpdatedInternal: " + purchase.getOrderId() + " purchase is (state=" + purchase.getPurchaseState() + "), (isAcknowledged=" + purchase.isAcknowledged() + ")");
                 }
+            } else {
+                FileLog.d("BillingController.onPurchasesUpdatedInternal: " + purchase.getOrderId() + " purchase is already requesting...");
             }
+        }
+        if (awaitingCount.get() == 0 && onDone != null) {
+            onDone.run();
         }
     }
 
@@ -331,18 +413,25 @@ public class BillingController implements PurchasesUpdatedListener, BillingClien
      * All consumable purchases must be consumed. For us it is a gift.
      * Without confirmation the user will not be able to buy the product again.
      */
-    private void consumeGiftPurchase(Purchase purchase, TLRPC.InputStorePaymentPurpose purpose) {
+    private void consumeGiftPurchase(Purchase purchase, TLRPC.InputStorePaymentPurpose purpose, Runnable onDone) {
         if (purpose instanceof TLRPC.TL_inputStorePaymentGiftPremium
                 || purpose instanceof TLRPC.TL_inputStorePaymentPremiumGiftCode
                 || purpose instanceof TLRPC.TL_inputStorePaymentStarsTopup
                 || purpose instanceof TLRPC.TL_inputStorePaymentStarsGift
                 || purpose instanceof TLRPC.TL_inputStorePaymentPremiumGiveaway
                 || purpose instanceof TLRPC.TL_inputStorePaymentStarsGiveaway) {
+            FileLog.d("BillingController consumeGiftPurchase " + purpose + " " + purchase.getOrderId() + " " + purchase.getPurchaseToken());
             billingClient.consumeAsync(
-                    ConsumeParams.newBuilder()
-                            .setPurchaseToken(purchase.getPurchaseToken())
-                            .build(), (r, s) -> {
-                    });
+                ConsumeParams.newBuilder()
+                    .setPurchaseToken(purchase.getPurchaseToken())
+                    .build(),
+                (r, s) -> {
+                    FileLog.d("BillingController consumeGiftPurchase " + purpose + " " + purchase.getOrderId() + " " + purchase.getPurchaseToken() + " done: " + (r.getResponseCode() == BillingClient.BillingResponseCode.OK ? "OK" : r.getResponseCode()) + " " + r.getDebugMessage());
+                    if (onDone != null) {
+                        onDone.run();
+                    }
+                }
+            );
         }
     }
 

@@ -9,6 +9,7 @@
 package org.telegram.ui.Components;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
+import static org.telegram.messenger.AndroidUtilities.lerp;
 import static org.telegram.messenger.LocaleController.getString;
 
 import android.Manifest;
@@ -118,9 +119,13 @@ import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.LoginActivity;
 import org.telegram.ui.NotificationsCustomSettingsActivity;
 import org.telegram.ui.NotificationsSettingsActivity;
+import org.telegram.ui.PhotoViewer;
 import org.telegram.ui.PrivacyControlActivity;
 import org.telegram.ui.ProfileActivity;
 import org.telegram.ui.ProfileNotificationsActivity;
+import org.telegram.ui.Stars.StarsController;
+import org.telegram.ui.Stars.StarsIntroActivity;
+import org.telegram.ui.Stories.DarkThemeResourceProvider;
 import org.telegram.ui.Stories.recorder.ButtonWithCounterView;
 import org.telegram.ui.ThemePreviewActivity;
 import org.telegram.ui.TooManyCommunitiesActivity;
@@ -132,6 +137,7 @@ import java.util.Calendar;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -251,7 +257,21 @@ public class AlertsCreator {
         if (error == null || error.code == 406 || error.text == null) {
             return null;
         }
-        if (request instanceof TLRPC.TL_messages_sendMessage && error.text.contains("PRIVACY_PREMIUM_REQUIRED")) {
+        if ("BALANCE_TOO_LOW".equalsIgnoreCase(error.text)) {
+            final long price = StarsController.getAllowedPaidStars(request);
+            final long dialogId = StarsController.getPeer(request);
+            if (price > 0) {
+                StarsController.getInstance(currentAccount).getBalance(true, () -> {
+                    final Activity activity = AndroidUtilities.getActivity();
+                    final BaseFragment lastFragment = LaunchActivity.getSafeLastFragment();
+                    final Theme.ResourcesProvider resourcesProvider = PhotoViewer.getInstance().isVisible() || lastFragment != null && lastFragment.hasShownSheet() ? new DarkThemeResourceProvider() : (lastFragment != null ? lastFragment.getResourceProvider() : null);
+
+                    new StarsIntroActivity.StarsNeededSheet(activity, resourcesProvider, price, StarsIntroActivity.StarsNeededSheet.TYPE_PRIVATE_MESSAGE, DialogObject.getShortName(currentAccount, dialogId), () -> {
+
+                    }).show();
+                }, true);
+            }
+        } else if (request instanceof TLRPC.TL_messages_sendMessage && error.text.contains("PRIVACY_PREMIUM_REQUIRED")) {
             TLRPC.TL_messages_sendMessage req = (TLRPC.TL_messages_sendMessage) request;
             long dialogId = DialogObject.getPeerDialogId(req.peer);
             String username = "";
@@ -1688,6 +1708,255 @@ public class AlertsCreator {
         }));
     }
 
+    public static boolean ensurePaidMessagesMultiConfirmationTopicKeys(int currentAccount, ArrayList<MessagesStorage.TopicKey> topicKeys, int messagesCount, Utilities.Callback<HashMap<Long, Long>> confirmed) {
+        HashSet<Long> dialogIds = new HashSet<>();
+        if (topicKeys != null) {
+            for (MessagesStorage.TopicKey key : topicKeys) {
+                dialogIds.add(key.dialogId);
+            }
+        }
+        return ensurePaidMessagesMultiConfirmation(currentAccount, new ArrayList<>(dialogIds), messagesCount, confirmed);
+    }
+
+    public static boolean ensurePaidMessagesMultiConfirmation(int currentAccount, ArrayList<Long> dialogIds, int messagesCount, Utilities.Callback<HashMap<Long, Long>> confirmed) {
+        if (confirmed == null) return false;
+        if (dialogIds == null || dialogIds.isEmpty()) {
+            confirmed.run(new HashMap<>());
+            return false;
+        }
+
+        boolean allDontAsk = true;
+        long _totalPrice = 0;
+        HashMap<Long, Long> prices = new HashMap<>();
+        int _totalChatsCount = 0;
+        for (long did : dialogIds) {
+            long price = MessagesController.getInstance(currentAccount).getSendPaidMessagesStars(did);
+            if (price <= 0 && did > 0) {
+                price = DialogObject.getMessagesStarsPrice(MessagesController.getInstance(currentAccount).isUserContactBlocked(did));
+            }
+            prices.put(did, price);
+            _totalPrice += price;
+            StarsController.getInstance(currentAccount).sendingMessagesCount.put(did, messagesCount);
+
+            if (price > 0) {
+                _totalChatsCount++;
+            }
+            if (price > 0 && allDontAsk) {
+                long askedPrice = MessagesController.getInstance(currentAccount).getMainSettings().getLong("ask_paid_message_" + did + "_price", 0L);
+                if (askedPrice < price) {
+                    allDontAsk = false;
+                }
+            }
+        }
+        final long totalPrice = _totalPrice * Math.max(1, messagesCount);
+        final int totalChats = _totalChatsCount;
+
+        if (allDontAsk || totalPrice <= 0) {
+            confirmed.run(prices);
+            return false;
+        }
+
+        final Activity activity = AndroidUtilities.getActivity();
+        final BaseFragment lastFragment = LaunchActivity.getSafeLastFragment();
+        final Theme.ResourcesProvider resourcesProvider = PhotoViewer.getInstance().isVisible() || lastFragment != null && lastFragment.hasShownSheet() ? new DarkThemeResourceProvider() : (lastFragment != null ? lastFragment.getResourceProvider() : null);
+
+        SpannableStringBuilder sb = new SpannableStringBuilder();
+        sb.append(AndroidUtilities.replaceTags(LocaleController.formatPluralStringComma("MessageLockedStarsConfirmMessageMulti1", totalChats)));
+        sb.append(" ");
+        sb.append(AndroidUtilities.replaceTags(LocaleController.formatPluralStringComma("MessageLockedStarsConfirmMessageMulti2", (int) totalPrice, LocaleController.formatPluralStringComma("MessageLockedStarsConfirmMessageMulti2Messages", messagesCount * Math.max(1, totalChats)))));
+        showAlertWithCheckbox(activity, getString(R.string.MessageLockedStarsConfirmTitle), sb, getString(R.string.MessageLockedStarsConfirmMessageDontAsk), LocaleController.formatPluralStringComma("MessageLockedStarsConfirmMessagePay", messagesCount), dontAsk -> {
+            if (dontAsk) {
+                SharedPreferences.Editor e = MessagesController.getInstance(currentAccount).getMainSettings().edit();
+                for (long dialogId : dialogIds) {
+                    long price = MessagesController.getInstance(currentAccount).getSendPaidMessagesStars(dialogId);
+                    if (price <= 0 && dialogId > 0) {
+                        price = DialogObject.getMessagesStarsPrice(MessagesController.getInstance(currentAccount).isUserContactBlocked(dialogId));
+                    }
+                    e.putLong("ask_paid_message_" + dialogId + "_price", price);
+                    StarsController.getInstance(currentAccount).justAgreedToNotAskDialogs.put(dialogId, System.currentTimeMillis());
+                }
+                e.apply();
+            }
+            final Runnable gotBalance = () -> {
+                final long balance = StarsController.getInstance(currentAccount).getBalance().amount;
+                if (balance < totalPrice) {
+                    new StarsIntroActivity.StarsNeededSheet(activity, resourcesProvider, totalPrice, StarsIntroActivity.StarsNeededSheet.TYPE_PRIVATE_MESSAGE, DialogObject.getShortName(currentAccount, dialogIds.get(0)), () -> {
+                        confirmed.run(prices);
+                    }).show();
+                } else {
+                    confirmed.run(prices);
+                }
+            };
+            if (!StarsController.getInstance(currentAccount).balanceAvailable()) {
+                StarsController.getInstance(currentAccount).invalidateBalance(gotBalance);
+            } else {
+                gotBalance.run();
+            }
+        }, resourcesProvider);
+        return true;
+    }
+
+    public static boolean needsPaidMessageAlert(int currentAccount, long dialogId) {
+        long _send_paid_messages_stars = MessagesController.getInstance(currentAccount).getSendPaidMessagesStars(dialogId);
+        if (_send_paid_messages_stars <= 0 && dialogId > 0) {
+            _send_paid_messages_stars = DialogObject.getMessagesStarsPrice(MessagesController.getInstance(currentAccount).isUserContactBlocked(dialogId));
+        }
+        final long send_paid_messages_stars = _send_paid_messages_stars;
+        return (
+            send_paid_messages_stars > 0 &&
+            send_paid_messages_stars > MessagesController.getInstance(currentAccount).getMainSettings().getLong("ask_paid_message_" + dialogId + "_price", 0L)
+        );
+    }
+
+    public static boolean ensurePaidMessageConfirmation(int currentAccount, long dialogId, int count, Utilities.Callback<Long> confirmedPrice) {
+        return ensurePaidMessageConfirmation(currentAccount, dialogId, count, confirmedPrice, 0);
+    }
+
+    public static boolean ensurePaidMessageConfirmation(int currentAccount, long dialogId, int count, Utilities.Callback<Long> confirmedPrice, long stars) {
+        if (confirmedPrice == null) return false;
+
+        long _send_paid_messages_stars = MessagesController.getInstance(currentAccount).getSendPaidMessagesStars(dialogId);
+        if (_send_paid_messages_stars <= 0 && dialogId > 0) {
+            _send_paid_messages_stars = DialogObject.getMessagesStarsPrice(MessagesController.getInstance(currentAccount).isUserContactBlocked(dialogId));
+        }
+        final long send_paid_messages_stars = _send_paid_messages_stars;
+        final long price = count * send_paid_messages_stars;
+
+        StarsController.getInstance(currentAccount).sendingMessagesCount.put(dialogId, count);
+        if (price <= 0 || stars == price) {
+            confirmedPrice.run(price);
+            return false;
+        }
+
+        showPayForMessageAlert(currentAccount, dialogId, send_paid_messages_stars, count, () -> {
+            final Runnable gotBalance = () -> {
+                final long balance = StarsController.getInstance(currentAccount).getBalance().amount;
+                if (balance < price) {
+                    final Activity activity = AndroidUtilities.getActivity();
+                    final BaseFragment lastFragment = LaunchActivity.getSafeLastFragment();
+                    final Theme.ResourcesProvider resourcesProvider = PhotoViewer.getInstance().isVisible() || lastFragment != null && lastFragment.hasShownSheet() ? new DarkThemeResourceProvider() : (lastFragment != null ? lastFragment.getResourceProvider() : null);
+
+                    new StarsIntroActivity.StarsNeededSheet(activity, resourcesProvider, price, StarsIntroActivity.StarsNeededSheet.TYPE_PRIVATE_MESSAGE, DialogObject.getShortName(currentAccount, dialogId), () -> {
+                        confirmedPrice.run(send_paid_messages_stars);
+                    }).show();
+                } else {
+                    confirmedPrice.run(send_paid_messages_stars);
+                }
+            };
+            if (!StarsController.getInstance(currentAccount).balanceAvailable()) {
+                StarsController.getInstance(currentAccount).invalidateBalance(gotBalance);
+            } else {
+                gotBalance.run();
+            }
+        });
+        return true;
+    }
+
+    public static void showPayForMessageAlert(int currentAccount, long dialogId, long stars, int messagesCount, Runnable confirmed) {
+        if (confirmed == null) return;
+
+        if (stars <= MessagesController.getInstance(currentAccount).getMainSettings().getLong("ask_paid_message_" + dialogId + "_price", 0L)) {
+            confirmed.run();
+            return;
+        }
+
+        final Activity activity = AndroidUtilities.getActivity();
+        final BaseFragment lastFragment = LaunchActivity.getSafeLastFragment();
+        final Theme.ResourcesProvider resourcesProvider = PhotoViewer.getInstance().isVisible() || lastFragment != null && lastFragment.hasShownSheet() ? new DarkThemeResourceProvider() : (lastFragment != null ? lastFragment.getResourceProvider() : null);
+
+        String chatName = DialogObject.getShortName(currentAccount, dialogId);
+        if (lastFragment instanceof ChatActivity) {
+            ChatActivity chatActivity = (ChatActivity) lastFragment;
+            if (chatActivity.isComments && chatActivity.getDialogId() == dialogId && chatActivity.replyOriginalChat != null) {
+                chatName = DialogObject.getShortName(currentAccount, -chatActivity.replyOriginalChat.id);
+            }
+        }
+
+        SpannableStringBuilder sb = new SpannableStringBuilder();
+        sb.append(AndroidUtilities.replaceTags(LocaleController.formatPluralStringComma("MessageLockedStarsConfirmMessage1", (int) stars, chatName)));
+        sb.append(" ");
+        if (messagesCount == 1) {
+            sb.append(AndroidUtilities.replaceTags(LocaleController.formatPluralStringComma("MessageLockedStarsConfirmMessage2One", (int) stars)));
+        } else {
+            sb.append(AndroidUtilities.replaceTags(LocaleController.formatPluralStringComma("MessageLockedStarsConfirmMessage2Many1", (int) (stars * messagesCount))));
+            sb.append(" ");
+            sb.append(AndroidUtilities.replaceTags(LocaleController.formatPluralStringComma("MessageLockedStarsConfirmMessage2Many2", messagesCount)));
+        }
+        showAlertWithCheckbox(activity, getString(R.string.MessageLockedStarsConfirmTitle), sb, getString(R.string.MessageLockedStarsConfirmMessageDontAsk), LocaleController.formatPluralStringComma("MessageLockedStarsConfirmMessagePay", messagesCount), dontAsk -> {
+            if (dontAsk) {
+                MessagesController.getInstance(currentAccount).getMainSettings().edit().putLong("ask_paid_message_" + dialogId + "_price", stars).apply();
+                StarsController.getInstance(currentAccount).justAgreedToNotAskDialogs.put(dialogId, System.currentTimeMillis());
+            }
+            AndroidUtilities.runOnUIThread(confirmed);
+        }, resourcesProvider);
+    }
+
+    public static void showAlertWithCheckbox(Context context, CharSequence title, CharSequence message, CharSequence check, CharSequence button, Utilities.Callback<Boolean> onAction, Theme.ResourcesProvider resourcesProvider) {
+        final AlertDialog.Builder builder = new AlertDialog.Builder(context, resourcesProvider);
+
+        final CheckBoxCell[] cell = new CheckBoxCell[1];
+        final boolean[] value = new boolean[1];
+
+        final TextView messageTextView = new TextView(context) {
+            @Override
+            public void setText(CharSequence text, BufferType type) {
+                text = Emoji.replaceEmoji(text, getPaint().getFontMetricsInt(), false);
+                super.setText(text, type);
+            }
+        };
+        NotificationCenter.listenEmojiLoading(messageTextView);
+        messageTextView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
+        messageTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+        messageTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
+        messageTextView.setText(message);
+
+        final FrameLayout frameLayout = new FrameLayout(context) {
+            @Override
+            protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+                super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+                if (cell[0] != null) {
+                    setMeasuredDimension(getMeasuredWidth(), getMeasuredHeight() + cell[0].getMeasuredHeight() + dp(7));
+                }
+            }
+        };
+        builder.setCustomViewOffset(6);
+        builder.setView(frameLayout);
+
+        final TextView textView = new TextView(context);
+        textView.setTextColor(Theme.getColor(Theme.key_actionBarDefaultSubmenuItem, resourcesProvider));
+        textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
+        textView.setTypeface(AndroidUtilities.bold());
+        textView.setLines(1);
+        textView.setMaxLines(1);
+        textView.setSingleLine(true);
+        textView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL);
+        textView.setEllipsize(TextUtils.TruncateAt.END);
+        textView.setText(title);
+        frameLayout.addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, 24, 8, 24, 0));
+        frameLayout.addView(messageTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, 24, 48, 24, 6));
+
+        if (!TextUtils.isEmpty(check)) {
+            cell[0] = new CheckBoxCell(context, 1, resourcesProvider);
+            cell[0].setBackground(Theme.getSelectorDrawable(false));
+            cell[0].setText(check, "", false, false);
+            cell[0].setPadding(LocaleController.isRTL ? dp(16) : dp(8), 0, LocaleController.isRTL ? dp(8) : dp(16), 0);
+            frameLayout.addView(cell[0], LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.BOTTOM | Gravity.LEFT, 0, 0, 0, 0));
+            cell[0].setOnClickListener(v -> {
+                CheckBoxCell cell1 = (CheckBoxCell) v;
+                value[0] = !value[0];
+                cell1.setChecked(value[0], true);
+            });
+        }
+
+        builder.setPositiveButton(button, (dialogInterface, i) -> {
+            onAction.run(value[0]);
+        });
+        builder.setNegativeButton(LocaleController.getString(R.string.Cancel), null);
+        AlertDialog d = builder.create();
+        d.setShowStarsBalance(true);
+        d.show();
+    }
+
     public static void createClearOrDeleteDialogAlert(BaseFragment fragment, boolean clear, TLRPC.Chat chat, TLRPC.User user, boolean secret, boolean canDeleteHistory, MessagesStorage.BooleanCallback onProcessRunnable) {
         createClearOrDeleteDialogAlert(fragment, clear, false, false, chat, user, secret, false, canDeleteHistory, onProcessRunnable, null);
     }
@@ -2640,9 +2909,9 @@ public class AlertsCreator {
         if (invitedUsers == null || invitedUsers.missing_invitees.isEmpty() || currentChat == null) {
             return;
         }
-        ArrayList<TLRPC.User> users = new ArrayList<>();
-        ArrayList<Long> pmLockedUsers = new ArrayList<>();
-        ArrayList<Long> inviteLockedUsers = new ArrayList<>();
+        final ArrayList<TLRPC.User> users = new ArrayList<>();
+        final ArrayList<Long> pmLockedUsers = new ArrayList<>();
+        final ArrayList<Long> inviteLockedUsers = new ArrayList<>();
         for (TLRPC.TL_missingInvitee missing_invitee : invitedUsers.missing_invitees) {
             TLRPC.User user = null;
             if (invitedUsers.updates != null) {
@@ -4852,6 +5121,97 @@ public class AlertsCreator {
                 }
         );
         return builder.create();
+    }
+
+    public final static int REPORT_TYPE_SPAM = 0;
+    public final static int REPORT_TYPE_VIOLENCE = 1;
+    public final static int REPORT_TYPE_CHILD_ABUSE = 2;
+    public final static int REPORT_TYPE_ILLEGAL_DRUGS = 3;
+    public final static int REPORT_TYPE_PERSONAL_DETAILS = 4;
+    public final static int REPORT_TYPE_PORNOGRAPHY = 5;
+    public final static int REPORT_TYPE_FAKE_ACCOUNT = 6;
+    public final static int REPORT_TYPE_OTHER = 100;
+
+    public static void createReportPhotoAlert(final int currentAccount, final Context context, final long dialog_id, TLRPC.Photo photo, Theme.ResourcesProvider resourcesProvider) {
+        if (context == null || photo == null) {
+            return;
+        }
+
+        final Utilities.Callback2<Integer, String> report = (type, message) -> {
+            TL_account.reportProfilePhoto request = new TL_account.reportProfilePhoto();
+            request.peer = MessagesController.getInstance(currentAccount).getInputPeer(dialog_id);
+            TLRPC.TL_inputPhoto inputPhoto = new TLRPC.TL_inputPhoto();
+            inputPhoto.id = photo.id;
+            inputPhoto.file_reference = photo.file_reference;
+            inputPhoto.access_hash = photo.access_hash;
+            request.photo_id = inputPhoto;
+            request.message = "";
+            if (type == REPORT_TYPE_SPAM) {
+                request.reason = new TLRPC.TL_inputReportReasonSpam();
+            } else if (type == REPORT_TYPE_VIOLENCE) {
+                request.reason = new TLRPC.TL_inputReportReasonViolence();
+            } else if (type == REPORT_TYPE_CHILD_ABUSE) {
+                request.reason = new TLRPC.TL_inputReportReasonChildAbuse();
+            } else if (type == REPORT_TYPE_PORNOGRAPHY) {
+                request.reason = new TLRPC.TL_inputReportReasonPornography();
+            } else if (type == REPORT_TYPE_ILLEGAL_DRUGS) {
+                request.reason = new TLRPC.TL_inputReportReasonIllegalDrugs();
+            } else if (type == REPORT_TYPE_PERSONAL_DETAILS) {
+                request.reason = new TLRPC.TL_inputReportReasonPersonalDetails();
+            }
+            ConnectionsManager.getInstance(currentAccount).sendRequest(request, null);
+            BulletinFactory.of(Bulletin.BulletinWindow.make(context), resourcesProvider).createReportSent(resourcesProvider).show();
+        };
+
+        BottomSheet.Builder builder = new BottomSheet.Builder(context, true, resourcesProvider);
+        builder.setTitle(LocaleController.getString(R.string.ReportProfilePhoto), true);
+        CharSequence[] items;
+        int[] icons;
+        int[] types;
+        items = new CharSequence[]{
+            getString(R.string.ReportChatSpam),
+            getString(R.string.ReportChatFakeAccount),
+            getString(R.string.ReportChatViolence),
+            getString(R.string.ReportChatChild),
+            getString(R.string.ReportChatIllegalDrugs),
+            getString(R.string.ReportChatPersonalDetails),
+            getString(R.string.ReportChatPornography),
+            getString(R.string.ReportChatOther)
+        };
+        icons = new int[]{
+            R.drawable.msg_clearcache,
+            R.drawable.msg_report_fake,
+            R.drawable.msg_report_violence,
+            R.drawable.msg_block2,
+            R.drawable.msg_report_drugs,
+            R.drawable.msg_report_personal,
+            R.drawable.msg_report_xxx,
+            R.drawable.msg_report_other
+        };
+        types = new int[]{
+            REPORT_TYPE_SPAM,
+            REPORT_TYPE_FAKE_ACCOUNT,
+            REPORT_TYPE_VIOLENCE,
+            REPORT_TYPE_CHILD_ABUSE,
+            REPORT_TYPE_ILLEGAL_DRUGS,
+            REPORT_TYPE_PERSONAL_DETAILS,
+            REPORT_TYPE_PORNOGRAPHY,
+            REPORT_TYPE_OTHER
+        };
+        builder.setItems(items, icons, (dialogInterface, i) -> {
+            int type = types[i];
+            if (type == REPORT_TYPE_OTHER) {
+                new ReportAlert(context, type, resourcesProvider) {
+                    @Override
+                    protected void onSend(int type, String message) {
+                        report.run(type, message);
+                    }
+                }.show();
+            } else {
+                report.run(type, "");
+            }
+        });
+        builder.show();
     }
 
     private static String getFloodWaitString(String error) {

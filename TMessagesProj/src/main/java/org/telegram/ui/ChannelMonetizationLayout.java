@@ -190,6 +190,8 @@ public class ChannelMonetizationLayout extends SizeNotifierFrameLayout implement
         this.dialogId = dialogId;
         initLevel();
 
+        final TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-dialogId);
+
         titleInfo = AndroidUtilities.replaceArrows(AndroidUtilities.replaceSingleTag(formatString(R.string.MonetizationInfo, 50), -1, REPLACING_TAG_TYPE_LINK_NBSP, () -> {
             fragment.showDialog(makeLearnSheet(context, false, resourcesProvider));
         }, resourcesProvider), true);
@@ -201,7 +203,7 @@ public class ChannelMonetizationLayout extends SizeNotifierFrameLayout implement
         proceedsInfo = AndroidUtilities.replaceArrows(AndroidUtilities.replaceSingleTag(getString(proceedsInfoText), -1, REPLACING_TAG_TYPE_LINK_NBSP, () -> {
             Browser.openUrl(getContext(), getString(proceedsInfoLink));
         }, resourcesProvider), true);
-        starsBalanceInfo = AndroidUtilities.replaceArrows(AndroidUtilities.replaceSingleTag(getString(R.string.MonetizationStarsInfo), () -> {
+        starsBalanceInfo = AndroidUtilities.replaceArrows(AndroidUtilities.replaceSingleTag(getString(ChatObject.isChannelAndNotMegaGroup(chat) ? R.string.MonetizationStarsInfo : R.string.MonetizationStarsInfoGroup), () -> {
             Browser.openUrl(getContext(), getString(R.string.MonetizationStarsInfoLink));
         }), true);
 
@@ -430,8 +432,10 @@ public class ChannelMonetizationLayout extends SizeNotifierFrameLayout implement
         });
 
         starsBalanceButtonsLayout.addView(starsBalanceButton, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48, 1, Gravity.FILL));
-        starsBalanceButtonsLayout.addView(new Space(context), LayoutHelper.createLinear(8, 48, 0, Gravity.FILL));
-        starsBalanceButtonsLayout.addView(starsAdsButton, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48, 1, Gravity.FILL));
+        if (ChatObject.isChannelAndNotMegaGroup(chat)) {
+            starsBalanceButtonsLayout.addView(new Space(context), LayoutHelper.createLinear(8, 48, 0, Gravity.FILL));
+            starsBalanceButtonsLayout.addView(starsAdsButton, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48, 1, Gravity.FILL));
+        }
         starsBalanceLayout.addView(starsBalanceButtonsLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.TOP | Gravity.FILL_HORIZONTAL, 18, 13, 18, 0));
 
         starsBalanceEditText.setOnEditorActionListener((textView, i, keyEvent) -> {
@@ -502,7 +506,7 @@ public class ChannelMonetizationLayout extends SizeNotifierFrameLayout implement
         loadingSubtitle.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
         loadingSubtitle.setTextColor(Theme.getColor(Theme.key_player_actionBarSubtitle));
         loadingSubtitle.setTag(Theme.key_player_actionBarSubtitle);
-        loadingSubtitle.setText(getString("LoadingStatsDescription", R.string.LoadingStatsDescription));
+        loadingSubtitle.setText(getString(R.string.LoadingStatsDescription));
         loadingSubtitle.setGravity(Gravity.CENTER_HORIZONTAL);
 
         progressLayout.addView(imageView, LayoutHelper.createLinear(120, 120, Gravity.CENTER_HORIZONTAL, 0, 0, 0, 20));
@@ -737,7 +741,8 @@ public class ChannelMonetizationLayout extends SizeNotifierFrameLayout implement
         }
 
         if (listView != null) {
-            listView.adapter.update(true);
+            listView.adapter.update(false);
+            listView.scrollToPosition(0);
         }
     }
 
@@ -759,15 +764,9 @@ public class ChannelMonetizationLayout extends SizeNotifierFrameLayout implement
         loadStarsStats();
 
         if (tonRevenueAvailable) {
-            TLObject req;
-            if (ChatObject.isMegagroup(chat)) {
-                return;
-            } else {
-                TL_stats.TL_getBroadcastRevenueStats getBroadcastStats = new TL_stats.TL_getBroadcastRevenueStats();
-                getBroadcastStats.dark = Theme.isCurrentThemeDark();
-                getBroadcastStats.peer = MessagesController.getInstance(currentAccount).getInputPeer(dialogId);
-                req = getBroadcastStats;
-            }
+            TL_stats.TL_getBroadcastRevenueStats req = new TL_stats.TL_getBroadcastRevenueStats();
+            req.dark = Theme.isCurrentThemeDark();
+            req.peer = MessagesController.getInstance(currentAccount).getInputPeer(dialogId);
             int stats_dc = -1;
             TLRPC.ChatFull chatFull = MessagesController.getInstance(currentAccount).getChatFull(-dialogId);
             if (chatFull != null) {
@@ -949,7 +948,7 @@ public class ChannelMonetizationLayout extends SizeNotifierFrameLayout implement
                 items.add(UItem.asShadow(-6, starsBalanceInfo));
             }
         }
-        if (MessagesController.getInstance(currentAccount).starrefConnectAllowed) {
+        if (ChatObject.isChannelAndNotMegaGroup(MessagesController.getInstance(currentAccount).getChat(-dialogId)) && MessagesController.getInstance(currentAccount).starrefConnectAllowed) {
             items.add(AffiliateProgramFragment.ColorfulTextCell.Factory.as(BUTTON_AFFILIATE, Theme.getColor(Theme.key_color_green, resourcesProvider), R.drawable.filled_earn_stars, applyNewSpan(getString(R.string.ChannelAffiliateProgramRowTitle)), getString(R.string.ChannelAffiliateProgramRowText)));
             items.add(UItem.asShadow(-7, null));
         }

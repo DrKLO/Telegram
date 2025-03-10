@@ -104,8 +104,8 @@ public class GalleryListView extends FrameLayout implements NotificationCenter.N
     private final StickerEmptyView searchEmptyView;
     private final KeyboardNotifier keyboardNotifier;
 
-    private boolean actionBarShown;
-    private final ActionBar actionBar;
+    public boolean actionBarShown;
+    public final ActionBar actionBar;
 
     private final TextView dropDown;
     private final Drawable dropDownDrawable;

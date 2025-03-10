@@ -83,6 +83,7 @@ public class BottomSheet extends Dialog implements BaseFragment.AttachedSheet {
 
     protected int currentAccount = UserConfig.selectedAccount;
     protected ViewGroup containerView;
+
     public ContainerView container;
     protected boolean keyboardVisible;
     private int lastKeyboardHeight;
@@ -460,7 +461,7 @@ public class BottomSheet extends Dialog implements BaseFragment.AttachedSheet {
                 if (canDismissWithTouchOutside() && ev != null && (ev.getAction() == MotionEvent.ACTION_DOWN || ev.getAction() == MotionEvent.ACTION_MOVE) && (!startedTracking && !maybeStartTracking && ev.getPointerCount() == 1)) {
                     startedTrackingX = (int) ev.getX();
                     startedTrackingY = (int) ev.getY();
-                    if (startedTrackingY < containerView.getTop() || startedTrackingX < containerView.getLeft() || startedTrackingX > containerView.getRight()) {
+                    if (isTouchOutside(startedTrackingX, startedTrackingY)) {
                         onDismissWithTouchOutside();
                         return true;
                     }
@@ -1536,6 +1537,10 @@ public class BottomSheet extends Dialog implements BaseFragment.AttachedSheet {
         return canDismissWithTouchOutside;
     }
 
+    protected boolean isTouchOutside(float x, float y) {
+        return y < containerView.getTop() || x < containerView.getLeft() || x > containerView.getRight();
+    }
+
     public void setCanDismissWithTouchOutside(boolean value) {
         canDismissWithTouchOutside = value;
     }
@@ -1593,13 +1598,14 @@ public class BottomSheet extends Dialog implements BaseFragment.AttachedSheet {
                 }
             });
             currentSheetAnimation = new AnimatorSet();
-            currentSheetAnimation.playTogether(
-                    ObjectAnimator.ofFloat(containerView, View.TRANSLATION_X, 0),
-                    ObjectAnimator.ofFloat(containerView, View.ALPHA, 1f),
-                    ObjectAnimator.ofFloat(containerView, View.TRANSLATION_Y, 0),
-                    ObjectAnimator.ofInt(backDrawable, AnimationProperties.COLOR_DRAWABLE_ALPHA, dimBehind ? dimBehindAlpha : 0),
-                    navigationBarAnimation
-            );
+            ArrayList<Animator> animators = new ArrayList<>();
+            animators.add(ObjectAnimator.ofFloat(containerView, View.TRANSLATION_X, 0));
+            animators.add(ObjectAnimator.ofFloat(containerView, View.ALPHA, 1f));
+            animators.add(ObjectAnimator.ofFloat(containerView, View.TRANSLATION_Y, 0));
+            animators.add(ObjectAnimator.ofInt(backDrawable, AnimationProperties.COLOR_DRAWABLE_ALPHA, dimBehind ? dimBehindAlpha : 0));
+            animators.add(navigationBarAnimation);
+            appendOpenAnimator(true, animators);
+            currentSheetAnimation.playTogether(animators);
             if (transitionFromRight) {
                 currentSheetAnimation.setDuration(250);
                 currentSheetAnimation.setInterpolator(CubicBezierInterpolator.DEFAULT);
@@ -1820,6 +1826,10 @@ public class BottomSheet extends Dialog implements BaseFragment.AttachedSheet {
         return !dismissed;
     }
 
+    protected void appendOpenAnimator(boolean opening, ArrayList<Animator> animators) {
+
+    }
+
     @Override
     public void dismiss() {
         if (delegate != null && !delegate.canDismiss()) {
@@ -1868,6 +1878,7 @@ public class BottomSheet extends Dialog implements BaseFragment.AttachedSheet {
                 }
                 animators.add(ObjectAnimator.ofInt(backDrawable, AnimationProperties.COLOR_DRAWABLE_ALPHA, 0));
                 animators.add(navigationBarAnimation);
+                appendOpenAnimator(false, animators);
                 currentSheetAnimation.playTogether(animators);
 
                 if (transitionFromRight) {

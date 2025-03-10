@@ -135,6 +135,11 @@ public class BirthdayController {
         return state != null && !state.isTodayEmpty();
     }
 
+    public boolean contains(long dialogId) {
+        final BirthdayState state = getState();
+        return state != null && state.contains(dialogId);
+    }
+
     public BirthdayState getState() {
         if (state == null)
             return null;

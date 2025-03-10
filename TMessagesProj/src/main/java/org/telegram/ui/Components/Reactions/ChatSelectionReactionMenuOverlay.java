@@ -311,7 +311,7 @@ public class ChatSelectionReactionMenuOverlay extends FrameLayout {
 
         boolean visible = false;
 
-        if (parentFragment.isSecretChat() || parentFragment.getCurrentChatInfo() != null && parentFragment.getCurrentChatInfo().available_reactions instanceof TLRPC.TL_chatReactionsNone) {
+        if (parentFragment.isReport() || parentFragment.isSecretChat() || parentFragment.getCurrentChatInfo() != null && parentFragment.getCurrentChatInfo().available_reactions instanceof TLRPC.TL_chatReactionsNone) {
             visible = false;
         } else if (!messages.isEmpty()) {
             visible = true;

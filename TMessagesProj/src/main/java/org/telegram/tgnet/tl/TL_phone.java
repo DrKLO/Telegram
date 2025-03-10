@@ -909,7 +909,7 @@ public class TL_phone {
     }
 
     public static class joinGroupCall extends TLObject {
-        public static final int constructor = 0xb132ff7b;
+        public static final int constructor = 0xd61e1df3;
 
         public int flags;
         public boolean muted;
@@ -917,6 +917,7 @@ public class TL_phone {
         public TLRPC.TL_inputGroupCall call;
         public TLRPC.InputPeer join_as;
         public String invite_hash;
+        public long key_fingerprint;
         public TLRPC.TL_dataJSON params;
 
         public TLObject deserializeResponse(InputSerializedData stream, int constructor, boolean exception) {
@@ -932,6 +933,9 @@ public class TL_phone {
             join_as.serializeToStream(stream);
             if ((flags & 2) != 0) {
                 stream.writeString(invite_hash);
+            }
+            if ((flags & 8) != 0) {
+                stream.writeInt64(key_fingerprint);
             }
             params.serializeToStream(stream);
         }
@@ -1456,12 +1460,12 @@ public class TL_phone {
     public static class createConferenceCall extends TLObject {
         public static final int constructor = 0xdfc909ab;
 
-        public TLRPC.TL_inputGroupCall peer;
+        public TLRPC.TL_inputPhoneCall peer;
         public long key_fingerprint;
 
         @Override
         public TLObject deserializeResponse(InputSerializedData stream, int constructor, boolean exception) {
-            return PhoneCall.TLdeserialize(stream, constructor, exception);
+            return TL_phone_phoneCall.TLdeserialize(stream, constructor, exception);
         }
 
         @Override

@@ -176,7 +176,7 @@ public class PinchToZoomHelper {
             setFullImage(messageObject);
 
             imageX = image.getImageX();
-            imageY = image.getImageY();
+            imageY = image.getImageY() + child.getPaddingTop();
             imageHeight = image.getImageHeight();
             imageWidth = image.getImageWidth();
             fullImageHeight = image.getBitmapHeight();
@@ -813,13 +813,10 @@ public class PinchToZoomHelper {
                 pinchTranslationY = 0f;
                 child.getParent().requestDisallowInterceptTouchEvent(true);
                 startZoom(child, image, textureViewContainer, textureView, messageObject, spoilerEffect2Index);
-
             }
 
             float newPinchCenterX = (ev.getX(index1) + ev.getX(index2)) / 2.0f;
             float newPinchCenterY = (ev.getY(index1) + ev.getY(index2)) / 2.0f;
-
-
 
             float moveDx = pinchStartCenterX - newPinchCenterX;
             float moveDy = pinchStartCenterY - newPinchCenterY;

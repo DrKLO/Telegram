@@ -515,6 +515,15 @@ public class MessageStatisticActivity extends BaseFragment implements Notificati
 
         setAvatarAndTitle();
 
+        avatarContainer.setTitleColors(Theme.getColor(Theme.key_player_actionBarTitle, getResourceProvider()), Theme.getColor(Theme.key_player_actionBarSubtitle, getResourceProvider()));
+        View subtitleTextView = avatarContainer.getSubtitleTextView();
+        if (subtitleTextView instanceof SimpleTextView) {
+            ((SimpleTextView) subtitleTextView).setLinkTextColor(Theme.getColor(Theme.key_player_actionBarSubtitle, getResourceProvider()));
+        }
+        actionBar.setItemsColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, getResourceProvider()), false);
+        actionBar.setItemsBackgroundColor(Theme.getColor(Theme.key_actionBarActionModeDefaultSelector, getResourceProvider()), false);
+        actionBar.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundWhite));
+
         actionBar.setBackButtonDrawable(new BackDrawable(false));
         actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
             @Override
@@ -528,15 +537,6 @@ public class MessageStatisticActivity extends BaseFragment implements Notificati
                 }
             }
         });
-
-        avatarContainer.setTitleColors(Theme.getColor(Theme.key_player_actionBarTitle, getResourceProvider()), Theme.getColor(Theme.key_player_actionBarSubtitle, getResourceProvider()));
-        View subtitleTextView = avatarContainer.getSubtitleTextView();
-        if (subtitleTextView instanceof SimpleTextView) {
-            ((SimpleTextView) subtitleTextView).setLinkTextColor(Theme.getColor(Theme.key_player_actionBarSubtitle, getResourceProvider()));
-        }
-        actionBar.setItemsColor(Theme.getColor(Theme.key_player_actionBarTitle, getResourceProvider()), false);
-        actionBar.setItemsBackgroundColor(Theme.getColor(Theme.key_actionBarActionModeDefaultSelector, getResourceProvider()), false);
-        actionBar.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite, getResourceProvider()));
 
         avatarContainer.setOnClickListener(view -> {
             if (messageObject.isStory()) {

@@ -69,6 +69,7 @@ import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ArticleViewer;
 import org.telegram.ui.Cells.ChatActionCell;
+import org.telegram.ui.Cells.ChatMessageCell;
 import org.telegram.ui.Components.Bulletin;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
@@ -1960,6 +1961,9 @@ public class StoryViewer implements NotificationCenter.NotificationCenterDelegat
                 if (transitionViewHolder.view != null) {
                     int[] loc = new int[2];
                     transitionViewHolder.view.getLocationOnScreen(loc);
+                    if (transitionViewHolder.view instanceof ChatMessageCell) {
+                        loc[1] += transitionViewHolder.view.getPaddingTop();
+                    }
                     fromXCell = loc[0];
                     fromYCell = loc[1];
                     if (transitionViewHolder.view instanceof StoriesListPlaceProvider.AvatarOverlaysView) {

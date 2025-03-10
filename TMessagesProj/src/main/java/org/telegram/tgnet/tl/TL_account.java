@@ -3775,4 +3775,155 @@ public class TL_account {
             settings.serializeToStream(stream);
         }
     }
+
+    public static class paidMessagesRevenue extends TLObject {
+        public static final int constructor = 0x1e109708;
+
+        public long stars_amount;
+
+        public static paidMessagesRevenue TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
+            if (constructor != paidMessagesRevenue.constructor) {
+                if (exception) {
+                    throw new RuntimeException(String.format("can't parse magic %x in paidMessagesRevenue", constructor));
+                }
+                return null;
+            }
+            paidMessagesRevenue result = new paidMessagesRevenue();
+            result.readParams(stream, exception);
+            return result;
+        }
+
+        @Override
+        public void readParams(InputSerializedData stream, boolean exception) {
+            stars_amount = stream.readInt64(exception);
+        }
+
+        @Override
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+            stream.writeInt64(stars_amount);
+        }
+    }
+
+    public static class addNoPaidMessagesException extends TLObject {
+        public static final int constructor = 0x6f688aa7;
+
+        public int flags;
+        public boolean refund_charged;
+        public TLRPC.InputUser user_id;
+
+        @Override
+        public TLObject deserializeResponse(InputSerializedData stream, int constructor, boolean exception) {
+            return TLRPC.Bool.TLdeserialize(stream, constructor, exception);
+        }
+
+        @Override
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+            flags = refund_charged ? flags | 1 : flags &~ 1;
+            stream.writeInt32(flags);
+            user_id.serializeToStream(stream);
+        }
+    }
+
+    public static class getPaidMessagesRevenue extends TLObject {
+        public static final int constructor = 0xf1266f38;
+
+        public TLRPC.InputUser user_id;
+
+        @Override
+        public TLObject deserializeResponse(InputSerializedData stream, int constructor, boolean exception) {
+            return paidMessagesRevenue.TLdeserialize(stream, constructor, exception);
+        }
+
+        @Override
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+            user_id.serializeToStream(stream);
+        }
+    }
+
+    public static class RequirementToContact extends TLObject {
+        public static RequirementToContact TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
+            RequirementToContact result = null;
+            switch (constructor) {
+                case requirementToContactEmpty.constructor:
+                    result = new requirementToContactEmpty();
+                    break;
+                case requirementToContactPremium.constructor:
+                    result = new requirementToContactPremium();
+                    break;
+                case requirementToContactPaidMessages.constructor:
+                    result = new requirementToContactPaidMessages();
+                    break;
+            }
+            if (result == null && exception) {
+                throw new RuntimeException(String.format("can't parse magic %x in RequirementToContact", constructor));
+            }
+            if (result != null) {
+                result.readParams(stream, exception);
+            }
+            return result;
+        }
+    }
+
+    public static class requirementToContactEmpty extends RequirementToContact {
+        public static final int constructor = 0x50a9839;
+
+        @Override
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+        }
+    }
+
+    public static class requirementToContactPremium extends RequirementToContact {
+        public static final int constructor = 0xe581e4e9;
+
+        @Override
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+        }
+    }
+
+    public static class requirementToContactPaidMessages extends RequirementToContact {
+        public static final int constructor = 0xb4f67e93;
+
+        public long stars_amount;
+
+        @Override
+        public void readParams(InputSerializedData stream, boolean exception) {
+            stars_amount = stream.readInt64(exception);
+        }
+
+        @Override
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+            stream.writeInt64(stars_amount);
+        }
+    }
+
+    public static class getRequirementsToContact extends TLObject {
+        public static final int constructor = 0xd89a83a3;
+
+        public ArrayList<TLRPC.InputUser> id = new ArrayList<>();
+
+        @Override
+        public TLObject deserializeResponse(InputSerializedData stream, int constructor, boolean exception) {
+            return Vector.TLDeserialize(stream, constructor, exception, RequirementToContact::TLdeserialize);
+        }
+
+        @Override
+        public void readParams(InputSerializedData stream, boolean exception) {
+            id = Vector.deserialize(stream, TLRPC.InputUser::TLdeserialize, exception);
+        }
+
+        @Override
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+            Vector.serialize(stream, id);
+        }
+    }
+
+
+
 }

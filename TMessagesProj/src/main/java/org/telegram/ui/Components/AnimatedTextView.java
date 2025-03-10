@@ -1231,6 +1231,10 @@ public class AnimatedTextView extends View {
         return getPaddingLeft() + (int) Math.ceil(drawable.getCurrentWidth()) + getPaddingRight();
     }
 
+    public int finalWidth() {
+        return getPaddingLeft() + (int) Math.ceil(drawable.getAnimateToWidth()) + getPaddingRight();
+    }
+
     public CharSequence getText() {
         return drawable.getText();
     }

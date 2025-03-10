@@ -14,6 +14,7 @@ import androidx.annotation.NonNull;
 
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.tgnet.tl.TL_account;
 import org.telegram.tgnet.tl.TL_bots;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.BackupImageView;
@@ -157,7 +158,12 @@ public class DialogObject {
 
     @NonNull
     public static String getName(long dialogId) {
-        return getName(MessagesController.getInstance(UserConfig.selectedAccount).getUserOrChat(dialogId));
+        return getName(UserConfig.selectedAccount, dialogId);
+    }
+
+    @NonNull
+    public static String getName(int currentAccount, long dialogId) {
+        return getName(MessagesController.getInstance(currentAccount).getUserOrChat(dialogId));
     }
 
     @NonNull
@@ -170,6 +176,11 @@ public class DialogObject {
         } else {
             return "";
         }
+    }
+
+    @NonNull
+    public static String getShortName(int currentAccount, long dialogId) {
+        return getShortName(MessagesController.getInstance(currentAccount).getUserOrChat(dialogId));
     }
 
     @NonNull
@@ -450,4 +461,18 @@ public class DialogObject {
         }
     }
 
+    public static boolean isEmpty(TL_account.RequirementToContact value) {
+        return value == null || value instanceof TL_account.requirementToContactEmpty;
+    }
+
+    public static boolean isPremiumBlocked(TL_account.RequirementToContact value) {
+        return value instanceof TL_account.requirementToContactPremium;
+    }
+
+    public static long getMessagesStarsPrice(TL_account.RequirementToContact value) {
+        if (value instanceof TL_account.requirementToContactPaidMessages) {
+            return ((TL_account.requirementToContactPaidMessages) value).stars_amount;
+        }
+        return 0;
+    }
 }

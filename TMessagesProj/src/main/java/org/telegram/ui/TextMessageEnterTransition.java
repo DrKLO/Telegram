@@ -443,7 +443,7 @@ public class TextMessageEnterTransition implements MessageEnterTransitionContain
             return;
         } else {
             messageViewX = messageView.getX() + listView.getX() - container.getX();
-            messageViewY = messageView.getTop() + listView.getTop() - container.getY();
+            messageViewY = messageView.getTop() + messageView.getPaddingTop() + listView.getTop() - container.getY();
             messageViewY += enterView.getTopViewHeight();
 
             lastMessageX = messageViewX;

@@ -1413,14 +1413,18 @@ public class ReactionsLayoutInBubble {
         if (isEmpty || isSmall || messageObject == null || messageObject.messageOwner == null || messageObject.messageOwner.reactions == null) {
             return false;
         }
+        float eventY = event.getY();
+        if (parentView instanceof ChatMessageCell) {
+            eventY -= parentView.getPaddingTop();
+        }
         float x = event.getX() - this.x;
-        float y = event.getY() - this.y;
+        float y = eventY - this.y;
         if (event.getAction() == MotionEvent.ACTION_DOWN) {
             for (int i = 0, n = reactionButtons.size(); i < n; i++) {
                 if (x > reactionButtons.get(i).x && x < reactionButtons.get(i).x + reactionButtons.get(i).width &&
                     y > reactionButtons.get(i).y && y < reactionButtons.get(i).y + reactionButtons.get(i).height) {
                     lastX = event.getX();
-                    lastY = event.getY();
+                    lastY = eventY;
                     lastSelectedButton = reactionButtons.get(i);
                     if (longPressRunnable != null) {
                         AndroidUtilities.cancelRunOnUIThread(longPressRunnable);
@@ -1442,7 +1446,7 @@ public class ReactionsLayoutInBubble {
                 }
             }
         } else if (event.getAction() == MotionEvent.ACTION_MOVE) {
-            if (pressed && Math.abs(event.getX() - lastX) > touchSlop || Math.abs(event.getY() - lastY) > touchSlop) {
+            if (pressed && Math.abs(event.getX() - lastX) > touchSlop || Math.abs(eventY - lastY) > touchSlop) {
                 pressed = false;
                 if (lastSelectedButton != null) {
                     lastSelectedButton.bounce.setPressed(false);
@@ -1459,7 +1463,7 @@ public class ReactionsLayoutInBubble {
                 longPressRunnable = null;
             }
             if (pressed && lastSelectedButton != null && event.getAction() == MotionEvent.ACTION_UP) {
-                didPressReaction(lastSelectedButton.reactionCount, false, event.getX(), event.getY());
+                didPressReaction(lastSelectedButton.reactionCount, false, event.getX(), eventY);
             }
             pressed = false;
             if (lastSelectedButton != null) {

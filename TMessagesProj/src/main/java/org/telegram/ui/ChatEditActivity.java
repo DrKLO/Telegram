@@ -897,7 +897,7 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
                     if (info != null && info.location instanceof TLRPC.TL_channelLocation) {
                         fragment.setInitialLocation((TLRPC.TL_channelLocation) info.location);
                     }
-                    fragment.setDelegate((location, live, notify, scheduleDate) -> {
+                    fragment.setDelegate((location, live, notify, scheduleDate, payStars) -> {
                         TLRPC.TL_channelLocation channelLocation = new TLRPC.TL_channelLocation();
                         channelLocation.address = location.address;
                         channelLocation.geo_point = location.geo;
@@ -2141,7 +2141,7 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
                         } else {
                             count = forum ? 14 : 13;
                         }
-                        blockCell.setTextAndValueAndIcon(getString("ChannelPermissions", R.string.ChannelPermissions), String.format("%d/%d", count, forum ? 14 : 13), animated, R.drawable.msg_permissions, true);
+                        blockCell.setTextAndValueAndIcon(getString(R.string.ChannelPermissions), String.format("%d/%d", count, forum ? 14 : 13), animated, R.drawable.msg_permissions, true);
                     }
                     if (memberRequestsCell != null) {
                         memberRequestsCell.setTextAndValueAndIcon(getString("MemberRequests", R.string.MemberRequests), String.format("%d", info.requests_pending), R.drawable.msg_requests, logCell != null && logCell.getVisibility() == View.VISIBLE);
@@ -2157,7 +2157,7 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
                     if (currentChat.gigagroup) {
                         blockCell.setTextAndIcon(getString("ChannelBlacklist", R.string.ChannelBlacklist), R.drawable.msg_chats_remove, logCell != null && logCell.getVisibility() == View.VISIBLE);
                     } else {
-                        blockCell.setTextAndIcon(getString("ChannelPermissions", R.string.ChannelPermissions), R.drawable.msg_permissions, true);
+                        blockCell.setTextAndIcon(getString(R.string.ChannelPermissions), R.drawable.msg_permissions, true);
                     }
                 }
                 adminCell.setTextAndIcon(getString("ChannelAdministrators", R.string.ChannelAdministrators), R.drawable.msg_admins, true);

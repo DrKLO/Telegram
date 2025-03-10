@@ -83,7 +83,7 @@ public class FileLog {
     private static HashSet<String> excludeRequests;
 
     public static void dumpResponseAndRequest(int account, TLObject request, TLObject response, TLRPC.TL_error error, long requestMsgId, long startRequestTimeInMillis, int requestToken) {
-        if (!BuildVars.DEBUG_PRIVATE_VERSION || !BuildVars.LOGS_ENABLED || request == null) {
+        if (/*!BuildVars.DEBUG_PRIVATE_VERSION || !BuildVars.LOGS_ENABLED || */request == null) {
             return;
         }
         String requestSimpleName = request.getClass().getSimpleName();
@@ -127,7 +127,7 @@ public class FileLog {
     }
 
     public static void dumpUnparsedMessage(TLObject message, long messageId, int account) {
-        if (!BuildVars.DEBUG_PRIVATE_VERSION || !BuildVars.LOGS_ENABLED || message == null) {
+        if (/*!BuildVars.DEBUG_PRIVATE_VERSION || !BuildVars.LOGS_ENABLED || */message == null) {
             return;
         }
         try {
@@ -190,7 +190,7 @@ public class FileLog {
 
                 @Override
                 public boolean shouldSkipField(FieldAttributes f) {
-                    if (privateFields.contains(f.getName())) {
+                    if (privateFields.contains(f.getName()) || "message".equalsIgnoreCase(f.getName()) && String.class.equals(f.getDeclaredType())) {
                         return true;
                     }
                     return false;

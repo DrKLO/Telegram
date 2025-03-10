@@ -3106,7 +3106,7 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
                     }
 
                     @Override
-                    public void didPressImage(ChatMessageCell cell, float x, float y) {
+                    public void didPressImage(ChatMessageCell cell, float x, float y, boolean fullPreview) {
                         MessageObject message = cell.getMessageObject();
                         if (message.getInputStickerSet() != null) {
                             showDialog(new StickersAlert(getParentActivity(), ChannelAdminLogActivity.this, message.getInputStickerSet(), null, null, false));

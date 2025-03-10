@@ -120,6 +120,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
     private LongSparseArray<TLObject> ignoreUsers;
 
     private int maxCount = getMessagesController().maxMegagroupCount;
+    private String customTitle;
     private int chatType = ChatObject.CHAT_TYPE_CHAT;
     private boolean forImport;
     private boolean isAlwaysShare;
@@ -135,6 +136,10 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
     private LongSparseArray<GroupCreateSpan> selectedContacts = new LongSparseArray<>();
     private ArrayList<GroupCreateSpan> allSpans = new ArrayList<>();
     private GroupCreateSpan currentDeletingSpan;
+
+    public void setTitle(String title) {
+        this.customTitle = title;
+    }
 
     private int fieldY;
 
@@ -535,7 +540,9 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
 
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
         actionBar.setAllowOverlayTitle(true);
-        if (chatType == ChatObject.CHAT_TYPE_CHANNEL) {
+        if (!TextUtils.isEmpty(customTitle)) {
+            actionBar.setTitle(customTitle);
+        } else if (chatType == ChatObject.CHAT_TYPE_CHANNEL) {
             actionBar.setTitle(LocaleController.getString(R.string.ChannelAddSubscribers));
         } else {
             if (addToGroup) {

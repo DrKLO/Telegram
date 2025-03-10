@@ -1558,6 +1558,8 @@ public class LocaleController {
         return formatString(key, res, args);
     }
 
+    // deprecated: String key is no longer necessary
+    @Deprecated
     public static String formatString(String key, int res, Object... args) {
         return formatString(key, null, res, 0, args);
     }
@@ -2288,6 +2290,53 @@ public class LocaleController {
                 return LocaleController.formatString("formatDateAtTime", R.string.formatDateAtTime, getInstance().getFormatterDayMonth().format(new Date(date)), getInstance().getFormatterDay().format(new Date(date)));
             } else {
                 return LocaleController.formatString("formatDateAtTime", R.string.formatDateAtTime, getInstance().getFormatterYear().format(new Date(date)), getInstance().getFormatterDay().format(new Date(date)));
+            }
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+        return "LOC_ERR";
+    }
+
+    public static String formatRelativeDate(long dateDiffSeconds) {
+        try {
+            final long min = dateDiffSeconds / 60;
+            final long hours = min / 60;
+            final long days = hours / 24;
+            final long months = days / 30;
+            final long years = days / 365;
+
+            if (years >= 1) {
+                if (years == 1) {
+                    return getString(R.string.YearAgo);
+                } else {
+                    return formatPluralStringComma("YearsAgo", (int) years);
+                }
+            } else if (months >= 1) {
+                if (months == 1) {
+                    return getString(R.string.MonthAgo);
+                } else {
+                    return formatPluralStringComma("MonthsAgo", (int) months);
+                }
+            } else if (days >= 1) {
+                if (days == 1) {
+                    return getString(R.string.DayAgo);
+                } else {
+                    return formatPluralStringComma("DaysAgo", (int) days);
+                }
+            } else if (hours >= 1) {
+                if (hours == 1) {
+                    return getString(R.string.HourAgo);
+                } else {
+                    return formatPluralStringComma("HoursAgo", (int) hours);
+                }
+            } else if (min >= 1) {
+                if (min == 1) {
+                    return getString(R.string.MinuteAgo);
+                } else {
+                    return formatPluralStringComma("MinutesAgo", (int) min);
+                }
+            } else {
+                return getString(R.string.LessMinuteAgo);
             }
         } catch (Exception e) {
             FileLog.e(e);

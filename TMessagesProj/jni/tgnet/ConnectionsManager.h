@@ -84,6 +84,7 @@ public:
     void reconnect(int32_t datacentrId, int32_t connectionType);
     void failNotRunningRequest(int32_t token);
     void receivedIntegrityCheckClassic(int32_t requestToken, std::string nonce, std::string token);
+    void receivedCaptchaResult(int32_t requestTokensCount, int32_t* requestTokens, std::string token);
 
 private:
     static void *ThreadProc(void *data);

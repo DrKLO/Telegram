@@ -575,7 +575,7 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
         TLRPC.ChatFull chatFull = MessagesController.getInstance(currentAccount).getChatFull(chatId);
         final boolean hasStats = chatFull != null && chatFull.can_view_stats;
         boolean isBoostSupported = ChatObject.isBoostSupported(currentChat);
-        final boolean hasMonetization = ChatObject.isChannelAndNotMegaGroup(currentChat) && chatFull != null && (chatFull.can_view_revenue || chatFull.can_view_stars_revenue);
+        final boolean hasMonetization = chatFull != null && (chatFull.can_view_revenue || chatFull.can_view_stars_revenue);
         BottomPagerTabs storiesTabsView = new BottomPagerTabs(context, getResourceProvider()) {
             @Override
             public Tab[] createTabs() {
@@ -614,7 +614,7 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
             boostLayout = new ChannelBoostLayout(StatisticActivity.this, -chatId, getResourceProvider());
         }
         if (hasMonetization) {
-            monetizationLayout = new ChannelMonetizationLayout(getContext(), StatisticActivity.this, currentAccount, -chatId, getResourceProvider(), chatFull.can_view_revenue, chatFull.can_view_stars_revenue);
+            monetizationLayout = new ChannelMonetizationLayout(getContext(), StatisticActivity.this, currentAccount, -chatId, getResourceProvider(), ChatObject.isChannelAndNotMegaGroup(currentChat) && chatFull.can_view_revenue, chatFull.can_view_stars_revenue);
             monetizationLayout.setActionBar(actionBar);
         }
         viewPagerFixed.setAdapter(new ViewPagerFixed.Adapter() {

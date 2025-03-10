@@ -420,7 +420,9 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
                 if (photoEntry == null) {
                     return;
                 }
-                if (photoEntry.thumbPath != null) {
+                if (photoEntry.coverPath != null) {
+                    cell.getImageView().setImage(photoEntry.coverPath, null, Theme.chat_attachEmptyDrawable);
+                } else if (photoEntry.thumbPath != null) {
                     cell.getImageView().setImage(photoEntry.thumbPath, null, Theme.chat_attachEmptyDrawable);
                 } else if (photoEntry.path != null) {
                     cell.getImageView().setOrientation(photoEntry.orientation, photoEntry.invert, true);
@@ -533,11 +535,27 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
                     }
                 }
             }
-            parentAlert.delegate.didPressedButton(7, true, notify, scheduleDate, 0, parentAlert.isCaptionAbove(), forceDocument);
-            selectedPhotos.clear();
-            cameraPhotos.clear();
-            selectedPhotosOrder.clear();
-            selectedPhotos.clear();
+            if (parentAlert != null) {
+                parentAlert.setButtonPressed(false);
+            }
+            if (PhotoViewer.getInstance() != null) {
+                PhotoViewer.getInstance().closePhotoAfterSelect = false;
+                PhotoViewer.getInstance().doneButtonPressed = false;
+            }
+            AlertsCreator.ensurePaidMessageConfirmation(parentAlert.currentAccount, parentAlert.getDialogId(), getSelectedPhotos().size() + parentAlert.getAdditionalMessagesCount(), payStars -> {
+                if (parentAlert != null) {
+                    parentAlert.setButtonPressed(true);
+                }
+                parentAlert.delegate.didPressedButton(7, true, notify, scheduleDate, 0, parentAlert.isCaptionAbove(), forceDocument, payStars);
+                selectedPhotos.clear();
+                cameraPhotos.clear();
+                selectedPhotosOrder.clear();
+                selectedPhotos.clear();
+                if (PhotoViewer.getInstance() != null) {
+                    PhotoViewer.getInstance().closePhoto(PhotoViewer.getInstance().closePhotoAfterSelectWithAnimation, false);
+                    PhotoViewer.getInstance().doneButtonPressed = true;
+                }
+            });
         }
 
         @Override
@@ -565,6 +583,11 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
             if (parentAlert == null || parentAlert.captionAbove == above) return;
             parentAlert.setCaptionAbove(above);
             captionItem.setState(!parentAlert.captionAbove, true);
+        }
+
+        @Override
+        public boolean isEditingMessage() {
+            return parentAlert != null && parentAlert.editingMessageObject != null;
         }
     };
 
@@ -897,7 +920,7 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
                         addToSelectedPhotos(photoEntry, -1);
                     }
                     parentAlert.applyCaption();
-                    parentAlert.delegate.didPressedButton(7, true, true, 0, 0, parentAlert.isCaptionAbove(), false);
+                    parentAlert.delegate.didPressedButton(7, true, true, 0, 0, parentAlert.isCaptionAbove(), false, 0);
                     selectedPhotos.clear();
                     cameraPhotos.clear();
                     selectedPhotosOrder.clear();
@@ -992,7 +1015,7 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
                     openCamera(true);
                 } else {
                     if (parentAlert.delegate != null) {
-                        parentAlert.delegate.didPressedButton(0, false, true, 0, 0, parentAlert.isCaptionAbove(), false);
+                        parentAlert.delegate.didPressedButton(0, false, true, 0, 0, parentAlert.isCaptionAbove(), false, 0);
                     }
                 }
             }
@@ -1003,7 +1026,7 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
             }
             if (position == 0 && selectedAlbumEntry == galleryAlbumEntry) {
                 if (parentAlert.delegate != null) {
-                    parentAlert.delegate.didPressedButton(0, false, true, 0, 0, parentAlert.isCaptionAbove(), false);
+                    parentAlert.delegate.didPressedButton(0, false, true, 0, 0, parentAlert.isCaptionAbove(), false, 0);
                 }
                 return true;
             } else if (view instanceof PhotoAttachPhotoCell) {
@@ -1599,7 +1622,7 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
             }
             selectedPhotos.put(-1, photoEntry);
             selectedPhotosOrder.add(-1);
-            parentAlert.delegate.didPressedButton(7, true, false, 0, 0, parentAlert.isCaptionAbove(), false);
+            parentAlert.delegate.didPressedButton(7, true, false, 0, 0, parentAlert.isCaptionAbove(), false, 0);
             if (!avatarConstructorFragment.finishOnDone) {
                 if (parentAlert.baseFragment != null) {
                     parentAlert.baseFragment.removeSelfFromStack();
@@ -2056,7 +2079,7 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
             public void needAddMorePhotos() {
                 cancelTakingPhotos = false;
                 if (mediaFromExternalCamera) {
-                    parentAlert.delegate.didPressedButton(0, true, true, 0, 0, parentAlert.isCaptionAbove(), false);
+                    parentAlert.delegate.didPressedButton(0, true, true, 0, 0, parentAlert.isCaptionAbove(), false, 0);
                     return;
                 }
                 if (!cameraOpened) {
@@ -2070,7 +2093,6 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
 
             @Override
             public void sendButtonPressed(int index, VideoEditedInfo videoEditedInfo, boolean notify, int scheduleDate, boolean forceDocument) {
-                parentAlert.sent = true;
                 if (cameraPhotos.isEmpty() || parentAlert.destroyed) {
                     return;
                 }
@@ -2088,14 +2110,32 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
                     }
                 }
                 parentAlert.applyCaption();
-                closeCamera(false);
-                parentAlert.delegate.didPressedButton(forceDocument ? 4 : 8, true, notify, scheduleDate, 0, parentAlert.isCaptionAbove(), forceDocument);
-                cameraPhotos.clear();
-                selectedPhotosOrder.clear();
-                selectedPhotos.clear();
-                adapter.notifyDataSetChanged();
-                cameraAttachAdapter.notifyDataSetChanged();
-                parentAlert.dismiss(true);
+                if (PhotoViewer.getInstance() != null) {
+                    PhotoViewer.getInstance().closePhotoAfterSelect = false;
+                    PhotoViewer.getInstance().doneButtonPressed = false;
+                }
+                AlertsCreator.ensurePaidMessageConfirmation(parentAlert.currentAccount, parentAlert.getDialogId(), getSelectedCount() + parentAlert.getAdditionalMessagesCount(), payStars -> {
+                    if (PhotoViewer.getInstance() != null) {
+                        PhotoViewer.getInstance().closePhotoAfterSelect = false;
+                        PhotoViewer.getInstance().doneButtonPressed = false;
+                    }
+                    parentAlert.sent = true;
+                    if (parentAlert != null) {
+                        parentAlert.setButtonPressed(true);
+                    }
+                    closeCamera(false);
+                    parentAlert.delegate.didPressedButton(forceDocument ? 4 : 8, true, notify, scheduleDate, 0, parentAlert.isCaptionAbove(), forceDocument, payStars);
+                    cameraPhotos.clear();
+                    selectedPhotosOrder.clear();
+                    selectedPhotos.clear();
+                    adapter.notifyDataSetChanged();
+                    cameraAttachAdapter.notifyDataSetChanged();
+                    parentAlert.dismiss(true);
+                    if (PhotoViewer.getInstance() != null) {
+                        PhotoViewer.getInstance().closePhoto(PhotoViewer.getInstance().closePhotoAfterSelectWithAnimation, false);
+                        PhotoViewer.getInstance().doneButtonPressed = true;
+                    }
+                });
             }
 
             @Override
@@ -3231,21 +3271,21 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
             if (parentAlert.editingMessageObject == null && parentAlert.baseFragment instanceof ChatActivity && ((ChatActivity) parentAlert.baseFragment).isInScheduleMode()) {
                 AlertsCreator.createScheduleDatePickerDialog(getContext(), ((ChatActivity) parentAlert.baseFragment).getDialogId(), (notify, scheduleDate) -> {
                     parentAlert.applyCaption();
-                    parentAlert.delegate.didPressedButton(7, false, notify, scheduleDate, 0, parentAlert.isCaptionAbove(), false);
+                    parentAlert.delegate.didPressedButton(7, false, notify, scheduleDate, 0, parentAlert.isCaptionAbove(), false, 0);
                 }, resourcesProvider);
             } else {
                 parentAlert.applyCaption();
-                parentAlert.delegate.didPressedButton(7, false, true, 0, 0, parentAlert.isCaptionAbove(), false);
+                parentAlert.delegate.didPressedButton(7, false, true, 0, 0, parentAlert.isCaptionAbove(), false, 0);
             }
         } else if (id == compress) {
             if (parentAlert.editingMessageObject == null && parentAlert.baseFragment instanceof ChatActivity && ((ChatActivity) parentAlert.baseFragment).isInScheduleMode()) {
                 AlertsCreator.createScheduleDatePickerDialog(getContext(), ((ChatActivity) parentAlert.baseFragment).getDialogId(), (notify, scheduleDate) -> {
                     parentAlert.applyCaption();
-                    parentAlert.delegate.didPressedButton(4, true, notify, scheduleDate, 0, parentAlert.isCaptionAbove(), false);
+                    parentAlert.delegate.didPressedButton(4, true, notify, scheduleDate, 0, parentAlert.isCaptionAbove(), false, 0);
                 }, resourcesProvider);
             } else {
                 parentAlert.applyCaption();
-                parentAlert.delegate.didPressedButton(4, true, true, 0, 0, parentAlert.isCaptionAbove(), false);
+                parentAlert.delegate.didPressedButton(4, true, true, 0, 0, parentAlert.isCaptionAbove(), false, 0);
             }
         } else if (id == spoiler) {
             if (parentAlert.getPhotoPreviewLayout() != null) {

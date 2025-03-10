@@ -27,6 +27,7 @@ public class PremiumLockIconView extends ImageView {
     public static int TYPE_STICKERS_PREMIUM_LOCKED = 1;
     public static int TYPE_REACTIONS_LOCK = 2;
     public static int TYPE_GIFT_LOCK = 3;
+    public static int TYPE_GIFT_PIN = 4;
 
     private final int type;
     public boolean isEnter;
@@ -60,6 +61,9 @@ public class PremiumLockIconView extends ImageView {
         } else if (type == TYPE_GIFT_LOCK) {
             setScaleType(ScaleType.CENTER);
             setImageResource(R.drawable.msg_archive_hide);
+        } else if (type == TYPE_GIFT_PIN) {
+            setScaleType(ScaleType.CENTER);
+            setImageResource(R.drawable.msg_limit_pin);
         }
     }
 

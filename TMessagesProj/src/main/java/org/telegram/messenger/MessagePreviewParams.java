@@ -437,6 +437,11 @@ public class MessagePreviewParams {
         }
     }
 
+    public int getForwardedMessagesCount() {
+        if (forwardMessages == null) return 0;
+        return forwardMessages.selectedIds.size();
+    }
+
     private MessageObject toPreviewMessage(MessageObject messageObject, Boolean out, final int msgtype) {
         TLRPC.Message message = new TLRPC.TL_message();
         if (msgtype != 1) {

@@ -2,6 +2,7 @@ package org.telegram.ui.Stars;
 
 import static org.telegram.messenger.AndroidUtilities.REPLACING_TAG_TYPE_LINK_NBSP;
 import static org.telegram.messenger.AndroidUtilities.dp;
+import static org.telegram.messenger.LocaleController.formatPluralStringComma;
 import static org.telegram.messenger.LocaleController.formatString;
 import static org.telegram.messenger.LocaleController.getString;
 import static org.telegram.ui.ChannelMonetizationLayout.replaceTON;
@@ -92,6 +93,7 @@ public class BotStarsActivity extends BaseFragment implements NotificationCenter
 
     public final int type;
     public final long bot_id;
+    public final boolean self;
 
     private ChatAvatarContainer avatarContainer;
     private UniversalRecyclerView listView;
@@ -138,15 +140,18 @@ public class BotStarsActivity extends BaseFragment implements NotificationCenter
     public BotStarsActivity(int type, long botId) {
         this.type = type;
         this.bot_id = botId;
+        this.self = botId == getUserConfig().getClientUserId();
 
         if (type == TYPE_STARS) {
             BotStarsController.getInstance(currentAccount).preloadStarsStats(bot_id);
-            BotStarsController.getInstance(currentAccount).invalidateTransactions(bot_id, true);
+            if (!self) {
+                BotStarsController.getInstance(currentAccount).invalidateTransactions(bot_id, true);
+            }
         } else if (type == TYPE_TON) {
             BotStarsController.getInstance(currentAccount).preloadTonStats(bot_id);
         }
 
-        withdrawInfo = AndroidUtilities.replaceArrows(AndroidUtilities.replaceSingleTag(getString(R.string.BotStarsWithdrawInfo), () -> {
+        withdrawInfo = AndroidUtilities.replaceArrows(AndroidUtilities.replaceSingleTag(self ? formatPluralStringComma("SelfStarsWithdrawInfo", (int) getMessagesController().starsRevenueWithdrawalMin) : getString(R.string.BotStarsWithdrawInfo), () -> {
             Browser.openUrl(getContext(), getString(R.string.BotStarsWithdrawInfoLink));
         }), true);
     }
@@ -333,8 +338,10 @@ public class BotStarsActivity extends BaseFragment implements NotificationCenter
         });
 
         balanceButtonsLayout.addView(balanceButton, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48, 1, Gravity.FILL));
-        balanceButtonsLayout.addView(new Space(context), LayoutHelper.createLinear(8, 48, 0, Gravity.FILL));
-        balanceButtonsLayout.addView(adsButton, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48, 1, Gravity.FILL));
+        if (!self) {
+            balanceButtonsLayout.addView(new Space(context), LayoutHelper.createLinear(8, 48, 0, Gravity.FILL));
+            balanceButtonsLayout.addView(adsButton, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48, 1, Gravity.FILL));
+        }
         balanceLayout.addView(balanceButtonsLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.TOP | Gravity.FILL_HORIZONTAL, 18, 13, 18, 0));
 
         tonBalanceLayout = new LinearLayout(context) {
@@ -388,7 +395,7 @@ public class BotStarsActivity extends BaseFragment implements NotificationCenter
         listView.setOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
             public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
-                if (!listView.canScrollVertically(1) || isLoadingVisible()) {
+                if (type == TYPE_TON && (!listView.canScrollVertically(1) || isLoadingVisible())) {
                     loadTonTransactions();
                 }
             }
@@ -485,15 +492,17 @@ public class BotStarsActivity extends BaseFragment implements NotificationCenter
             items.add(UItem.asProceedOverview(availableValue));
             items.add(UItem.asProceedOverview(totalValue));
             items.add(UItem.asProceedOverview(totalProceedsValue));
-            items.add(UItem.asShadow(-2, getString(R.string.BotStarsOverviewInfo)));
+            items.add(UItem.asShadow(-2, getString(self ? R.string.SelfStarsOverviewInfo : R.string.BotStarsOverviewInfo)));
             items.add(UItem.asBlackHeader(getString(R.string.BotStarsAvailableBalance)));
             items.add(UItem.asCustom(BALANCE, balanceLayout));
             items.add(UItem.asShadow(-3, withdrawInfo));
-            if (getMessagesController().starrefConnectAllowed) {
-                items.add(AffiliateProgramFragment.ColorfulTextCell.Factory.as(BUTTON_AFFILIATE, Theme.getColor(Theme.key_color_green, resourceProvider), R.drawable.filled_earn_stars, applyNewSpan(getString(R.string.BotAffiliateProgramRowTitle)), getString(R.string.BotAffiliateProgramRowText)));
-                items.add(UItem.asShadow(-4, null));
+            if (!self) {
+                if (getMessagesController().starrefConnectAllowed) {
+                    items.add(AffiliateProgramFragment.ColorfulTextCell.Factory.as(BUTTON_AFFILIATE, Theme.getColor(Theme.key_color_green, resourceProvider), R.drawable.filled_earn_stars, applyNewSpan(getString(R.string.BotAffiliateProgramRowTitle)), getString(R.string.BotAffiliateProgramRowText)));
+                    items.add(UItem.asShadow(-4, null));
+                }
+                items.add(UItem.asFullscreenCustom(transactionsLayout, 0));
             }
-            items.add(UItem.asFullscreenCustom(transactionsLayout, 0));
         } else if (type == TYPE_TON) {
             TL_stats.TL_broadcastRevenueStats stats = s.getTONRevenueStats(bot_id, true);
             if (titleInfo == null) {
@@ -1018,10 +1027,10 @@ public class BotStarsActivity extends BaseFragment implements NotificationCenter
                 passwordFragment.needHideProgress();
                 passwordFragment.finishFragment();
                 if (response instanceof TL_stats.TL_broadcastRevenueWithdrawalUrl) {
-                    Browser.openUrl(getContext(), ((TL_stats.TL_broadcastRevenueWithdrawalUrl) response).url);
+                    Browser.openUrlInSystemBrowser(getContext(), ((TL_stats.TL_broadcastRevenueWithdrawalUrl) response).url);
                 } else if (response instanceof TLRPC.TL_payments_starsRevenueWithdrawalUrl) {
                     balanceEditTextAll = true;
-                    Browser.openUrl(getContext(), ((TLRPC.TL_payments_starsRevenueWithdrawalUrl) response).url);
+                    Browser.openUrlInSystemBrowser(getContext(), ((TLRPC.TL_payments_starsRevenueWithdrawalUrl) response).url);
                 }
             }
         }));

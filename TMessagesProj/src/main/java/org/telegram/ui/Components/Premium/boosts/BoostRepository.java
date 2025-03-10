@@ -759,7 +759,7 @@ public class BoostRepository {
                 List<TLRPC.InputPeer> result = new ArrayList<>();
                 for (int a = 0; a < res.participants.size(); a++) {
                     TLRPC.Peer peer = res.participants.get(a).peer;
-                    if (MessageObject.getPeerId(peer) != selfId) {
+                    if (peer != null && MessageObject.getPeerId(peer) != selfId) {
                         TLRPC.User user = controller.getUser(peer.user_id);
                         if (user != null && !UserObject.isDeleted(user) && !user.bot) {
                             result.add(controller.getInputPeer(peer));

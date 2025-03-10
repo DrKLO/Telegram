@@ -95,6 +95,9 @@ public class ItemOptions {
     private int gravity = Gravity.RIGHT;
     private boolean ignoreX;
 
+    private Drawable scrimViewDrawable;
+    private int scrimViewDrawableWidth, scrimViewDrawableHeight;
+
     private int scrimViewPadding;
     private int scrimViewRoundRadius;
 
@@ -218,6 +221,13 @@ public class ItemOptions {
         return this;
     }
 
+    public ItemOptions setScrimViewDrawable(Drawable drawable, int width, int height) {
+        scrimViewDrawable = drawable;
+        scrimViewDrawableWidth = width;
+        scrimViewDrawableHeight = height;
+        return this;
+    }
+
     public ItemOptions addIf(boolean condition, int iconResId, CharSequence text, boolean isRed, Runnable onClickListener) {
         if (!condition) {
             return this;
@@ -279,7 +289,7 @@ public class ItemOptions {
             if (onClickListener != null) {
                 onClickListener.run();
             }
-            dismiss();
+            if (dismissWithButtons) dismiss();
         });
         if (minWidthDp > 0) {
             subItem.setMinimumWidth(dp(minWidthDp));
@@ -291,7 +301,40 @@ public class ItemOptions {
         return this;
     }
 
+    public ActionBarMenuSubItem add() {
+
+        ActionBarMenuSubItem subItem = new ActionBarMenuSubItem(context, false, false, resourcesProvider);
+        subItem.setPadding(dp(18), 0, dp(18), 0);
+
+        subItem.setColors(textColor != null ? textColor : Theme.getColor(Theme.key_actionBarDefaultSubmenuItem, resourcesProvider), iconColor != null ? iconColor : Theme.getColor(Theme.key_actionBarDefaultSubmenuItemIcon, resourcesProvider));
+        subItem.setSelectorColor(selectorColor != null ? selectorColor : Theme.multAlpha(Theme.getColor(Theme.key_actionBarDefaultSubmenuItem, resourcesProvider), .12f));
+
+        if (minWidthDp > 0) {
+            subItem.setMinimumWidth(dp(minWidthDp));
+            addView(subItem, LayoutHelper.createLinear(minWidthDp, LayoutHelper.WRAP_CONTENT));
+        } else {
+            addView(subItem, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+        }
+
+        return subItem;
+    }
+
+    public ItemOptions addCheckedIf(boolean condition, boolean checked, CharSequence text, Runnable onClickListener) {
+        if (!condition) return this;
+        return addChecked(checked, text, onClickListener);
+    }
+
     public ItemOptions addChecked(boolean checked, CharSequence text, Runnable onClickListener) {
+        return addChecked(checked, text, onClickListener, null);
+    }
+
+
+    public ItemOptions addCheckedIf(boolean condition, boolean checked, CharSequence text, Runnable onClickListener, Runnable onLongClickRunnable) {
+        if (!condition) return this;
+        return addChecked(checked, text, onClickListener, onLongClickRunnable);
+    }
+
+    public ItemOptions addChecked(boolean checked, CharSequence text, Runnable onClickListener, Runnable onLongClickRunnable) {
         if (context == null) {
             return this;
         }
@@ -311,8 +354,17 @@ public class ItemOptions {
             if (onClickListener != null) {
                 onClickListener.run();
             }
-            dismiss();
+            if (dismissWithButtons) dismiss();
         });
+        if (onLongClickRunnable != null) {
+            subItem.setOnLongClickListener(view1 -> {
+                if (onLongClickRunnable != null) {
+                    onLongClickRunnable.run();
+                }
+                if (dismissWithButtons) dismiss();
+                return true;
+            });
+        }
         if (minWidthDp > 0) {
             subItem.setMinimumWidth(dp(minWidthDp));
             addView(subItem, LayoutHelper.createLinear(minWidthDp, LayoutHelper.WRAP_CONTENT));
@@ -320,6 +372,33 @@ public class ItemOptions {
             addView(subItem, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
         }
 
+        return this;
+    }
+
+    public ActionBarMenuSubItem addChecked() {
+
+        final int textColorKey = Theme.key_actionBarDefaultSubmenuItem;
+        final int iconColorKey = Theme.key_actionBarDefaultSubmenuItemIcon;
+
+        ActionBarMenuSubItem subItem = new ActionBarMenuSubItem(context, true, false, false, resourcesProvider);
+        subItem.setPadding(dp(18), 0, dp(18), 0);
+
+        subItem.setColors(textColor != null ? textColor : Theme.getColor(textColorKey, resourcesProvider), iconColor != null ? iconColor : Theme.getColor(iconColorKey, resourcesProvider));
+        subItem.setSelectorColor(selectorColor != null ? selectorColor : Theme.multAlpha(Theme.getColor(textColorKey, resourcesProvider), .12f));
+
+        if (minWidthDp > 0) {
+            subItem.setMinimumWidth(dp(minWidthDp));
+            addView(subItem, LayoutHelper.createLinear(minWidthDp, LayoutHelper.WRAP_CONTENT));
+        } else {
+            addView(subItem, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+        }
+
+        return subItem;
+    }
+
+    public boolean dismissWithButtons = true;
+    public ItemOptions setDismissWithButtons(boolean enable) {
+        this.dismissWithButtons = enable;
         return this;
     }
 
@@ -372,7 +451,7 @@ public class ItemOptions {
             if (onClickListener != null) {
                 onClickListener.run();
             }
-            dismiss();
+            if (dismissWithButtons) dismiss();
         });
         if (minWidthDp > 0) {
             subItem.setMinimumWidth(dp(minWidthDp));
@@ -401,7 +480,7 @@ public class ItemOptions {
             if (onClickListener != null) {
                 onClickListener.run();
             }
-            dismiss();
+            if (dismissWithButtons) dismiss();
         });
         if (minWidthDp > 0) {
             subItem.setMinimumWidth(dp(minWidthDp));
@@ -477,6 +556,11 @@ public class ItemOptions {
         lastSubItem.getRightIcon().setScaleX(.85f);
         lastSubItem.getRightIcon().setScaleY(.85f);
         return this;
+    }
+
+    public ItemOptions addGapIf(boolean condition) {
+        if (!condition) return this;
+        return addGap();
     }
 
     public ItemOptions addGap() {
@@ -815,6 +899,8 @@ public class ItemOptions {
         RectF scrimViewBounds = new RectF();
         if (scrimView instanceof ScrimView) {
             ((ScrimView) scrimView).getBounds(scrimViewBounds);
+        } else if (scrimViewDrawable != null) {
+            scrimViewBounds.set(0, 0, scrimViewDrawableWidth, scrimViewDrawableHeight);
         } else {
             scrimViewBounds.set(0, 0, scrimView.getMeasuredWidth(), scrimView.getMeasuredHeight());
         }
@@ -1208,12 +1294,25 @@ public class ItemOptions {
                     } else {
                         bounds.set(0, 0, getWidth(), getHeight());
                     }
-                    AndroidUtilities.rectTmp.set(-viewAdditionalOffsets.left + bounds.left + scrimViewPadding * getAlpha(), -viewAdditionalOffsets.top + bounds.top + scrimViewPadding * getAlpha(), -viewAdditionalOffsets.left + bounds.right - scrimViewPadding * getAlpha(), -viewAdditionalOffsets.top + bounds.bottom - scrimViewPadding * getAlpha());
+                    AndroidUtilities.rectTmp.set(
+                        -viewAdditionalOffsets.left + bounds.left + scrimViewPadding * getAlpha(),
+                        -viewAdditionalOffsets.top + bounds.top + scrimViewPadding * getAlpha(),
+                        -viewAdditionalOffsets.left + bounds.right - scrimViewPadding * getAlpha(),
+                        -viewAdditionalOffsets.top + bounds.bottom - scrimViewPadding * getAlpha()
+                    );
                     clipPath.addRoundRect(AndroidUtilities.rectTmp, scrimViewRoundRadius * getAlpha(), scrimViewRoundRadius * getAlpha(), Path.Direction.CW);
                     canvas.clipPath(clipPath);
                 }
                 if (scrimView instanceof ScrimView) {
                     ((ScrimView) scrimView).drawScrim(canvas, getAlpha());
+                } else if (scrimViewDrawable != null) {
+                    bounds.set(0, 0, scrimView.getWidth(), scrimView.getHeight());
+                    bounds.offset(-viewAdditionalOffsets.left, -viewAdditionalOffsets.top);
+                    AndroidUtilities.rectTmp.set(0, 0, scrimViewDrawableWidth, scrimViewDrawableHeight);
+                    AndroidUtilities.rectTmp.offset(-viewAdditionalOffsets.left, -viewAdditionalOffsets.top);
+                    AndroidUtilities.lerp(AndroidUtilities.rectTmp, bounds, getAlpha(), bounds);
+                    scrimViewDrawable.setBounds((int) bounds.left, (int) bounds.top, (int) bounds.right, (int) bounds.bottom);
+                    scrimViewDrawable.draw(canvas);
                 } else {
                     scrimView.draw(canvas);
                 }

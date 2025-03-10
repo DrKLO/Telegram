@@ -21,6 +21,7 @@ import com.google.android.exoplayer2.util.Log;
 import org.telegram.messenger.voip.Instance;
 import org.telegram.messenger.voip.VoIPService;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.tgnet.tl.TL_account;
 import org.telegram.tgnet.tl.TL_phone;
 import org.telegram.ui.GroupCallActivity;
 
@@ -2290,4 +2291,14 @@ public class ChatObject {
         return 0;
     }
 
+    public static TL_account.RequirementToContact getRequirementToContact(TLRPC.Chat chat) {
+        if (chat == null) return null;
+        if (chat.send_paid_messages_stars != 0) {
+            final TL_account.requirementToContactPaidMessages r = new TL_account.requirementToContactPaidMessages();
+            r.stars_amount = chat.send_paid_messages_stars;
+            return r;
+        } else {
+            return null;
+        }
+    }
 }

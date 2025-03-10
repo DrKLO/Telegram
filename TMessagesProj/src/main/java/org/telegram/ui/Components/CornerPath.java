@@ -43,7 +43,7 @@ public class CornerPath extends Path {
     @Override
     public void addRect(@NonNull RectF rect, @NonNull Direction dir) {
         if (Build.VERSION.SDK_INT < 34 || !useCornerPathImplementation) {
-            super.addRect(rect.left, rect.top, rect.right, rect.bottom, dir);
+            super.addRect(rect.left - paddingX, rect.top - paddingY, rect.right + paddingX, rect.bottom + paddingY, dir);
         } else {
             if (rects.size() > 0 && rects.get(rects.size() - 1).contains(rect)) {
                 return;
@@ -69,7 +69,7 @@ public class CornerPath extends Path {
     @Override
     public void addRect(float left, float top, float right, float bottom, @NonNull Direction dir) {
         if (Build.VERSION.SDK_INT < 34 || !useCornerPathImplementation) {
-            super.addRect(left, top, right, bottom, dir);
+            super.addRect(left - paddingX, top - paddingY, right + paddingX, bottom + paddingY, dir);
         } else {
             if (rects.size() > 0 && rects.get(rects.size() - 1).contains(left, top, right, bottom)) {
                 return;
@@ -151,7 +151,7 @@ public class CornerPath extends Path {
             if (current.width() == 0) {
                 continue;
             }
-            if (prev.bottom < current.top || prev.left > current.right || prev.right < current.left) {
+            if (prev.bottom + paddingY < current.top - paddingY || prev.left > current.right || prev.right < current.left) {
                 // end of the current contour
                 hasGap = true;
                 lastContourIndex = i;

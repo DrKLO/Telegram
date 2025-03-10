@@ -265,6 +265,9 @@ public class NotificationCenter {
     public static final int botDownloadsUpdate = totalEvents++;
     public static final int channelSuggestedBotsUpdate = totalEvents++;
     public static final int channelConnectedBotsUpdate = totalEvents++;
+    public static final int adminedChannelsLoaded = totalEvents++;
+    public static final int messagesFeeUpdated = totalEvents++;
+    public static final int commonChatsLoaded = totalEvents++;
 
     //global
     public static final int pushMessagesUpdated = totalEvents++;

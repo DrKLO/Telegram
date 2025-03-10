@@ -600,7 +600,7 @@ public class AndroidUtilities {
         return spannableStringBuilder;
     }
 
-    public static SpannableStringBuilder makeClickable(String str, int type, Runnable runnable, Theme.ResourcesProvider resourcesProvider) {
+    public static SpannableStringBuilder makeClickable(CharSequence str, int type, Runnable runnable, Theme.ResourcesProvider resourcesProvider) {
         SpannableStringBuilder spannableStringBuilder = new SpannableStringBuilder(str);
         if (type == REPLACING_TAG_TYPE_LINK || type == REPLACING_TAG_TYPE_LINK_NBSP || type == REPLACING_TAG_TYPE_LINKBOLD || type == REPLACING_TAG_TYPE_UNDERLINE) {
             spannableStringBuilder.setSpan(new ClickableSpan() {
@@ -633,7 +633,7 @@ public class AndroidUtilities {
         return spannableStringBuilder;
     }
 
-    public static SpannableStringBuilder makeClickable(String str, Runnable runnable) {
+    public static SpannableStringBuilder makeClickable(CharSequence str, Runnable runnable) {
         return makeClickable(str, 0, runnable, null);
     }
 
@@ -711,12 +711,14 @@ public class AndroidUtilities {
     }
 
     public static CharSequence replaceArrows(CharSequence text, boolean link) {
-        return replaceArrows(text, link, dp(8f / 3f), 0);
+        return replaceArrows(text, link, dp(8f / 3f), 0, 1.0f);
     }
-
     public static CharSequence replaceArrows(CharSequence text, boolean link, float translateX, float translateY) {
+        return replaceArrows(text, link, translateX, translateY, 1.0f);
+    }
+    public static CharSequence replaceArrows(CharSequence text, boolean link, float translateX, float translateY, float scale) {
         ColoredImageSpan span = new ColoredImageSpan(R.drawable.msg_mini_forumarrow, DynamicDrawableSpan.ALIGN_BOTTOM);
-        span.setScale(.88f, .88f);
+        span.setScale(scale * .88f, scale * .88f);
         span.translate(-translateX, translateY);
         span.spaceScaleX = .8f;
         if (link) {
@@ -732,7 +734,7 @@ public class AndroidUtilities {
         text = AndroidUtilities.replaceMultipleCharSequence(">", text, rightArrow);
 
         span = new ColoredImageSpan(R.drawable.msg_mini_forumarrow, DynamicDrawableSpan.ALIGN_BOTTOM);
-        span.setScale(.88f, .88f);
+        span.setScale(scale * .88f, scale * .88f);
         span.translate(translateX, translateY);
         span.rotate(180f);
         span.spaceScaleX = .8f;
@@ -3798,17 +3800,15 @@ public class AndroidUtilities {
         int h = duration / 3600;
         int m = duration / 60 % 60;
         int s = duration % 60;
+        String str = "";
         if (h > 0) {
-            return String.format(Locale.US, "%dh%02dm%02ds", h, m, s);
+            str += String.format(Locale.US, "%dh", h);
         }
         if (m > 0) {
-            if (s > 0) {
-                return String.format(Locale.US, "%dm%02ds", m, s);
-            } else {
-                return String.format(Locale.US, "%dm", m);
-            }
+            str += String.format(Locale.US, h > 0 ? "%02dm" : "%dm", m);
         }
-        return String.format(Locale.US, "%d", s);
+        str += String.format(Locale.US, h > 0 || m > 0 ? "%02ds" : "%ds", s);
+        return str;
     }
 
     public static String formatLongDuration(int duration) {
@@ -4240,6 +4240,18 @@ public class AndroidUtilities {
                 }
             }
             return original;
+        } else if (original instanceof SpannableString) {
+            if (TextUtils.indexOf(original, "\n\n") < 0) return original;
+            SpannableStringBuilder stringBuilder = new SpannableStringBuilder(original);
+            for (int a = 0, N = original.length(); a < N - 2; a++) {
+                stringBuilder.getChars(a, a + 2, buf, 0);
+                if (buf[0] == '\n' && buf[1] == '\n') {
+                    stringBuilder = stringBuilder.replace(a, a + 2, "\n");
+                    a--;
+                    N--;
+                }
+            }
+            return stringBuilder;
         }
         return original.toString().replace("\n\n", "\n");
     }
@@ -5382,6 +5394,27 @@ public class AndroidUtilities {
             if (p >= 0) {
                 RecyclerView.ViewHolder holder = listView.getChildViewHolder(child);
                 if (holder == null || holder.shouldIgnore()) {
+                    continue;
+                }
+                adapter.onBindViewHolder(holder, p);
+            }
+        }
+    }
+
+    public static void updateVisibleRow(RecyclerListView listView, int position) {
+        if (listView == null) {
+            return;
+        }
+        RecyclerView.Adapter adapter = listView.getAdapter();
+        if (adapter == null) {
+            return;
+        }
+        for (int i = 0; i < listView.getChildCount(); i++) {
+            View child = listView.getChildAt(i);
+            int p = listView.getChildAdapterPosition(child);
+            if (p >= 0) {
+                RecyclerView.ViewHolder holder = listView.getChildViewHolder(child);
+                if (holder == null || holder.shouldIgnore() || holder.getAdapterPosition() != position) {
                     continue;
                 }
                 adapter.onBindViewHolder(holder, p);

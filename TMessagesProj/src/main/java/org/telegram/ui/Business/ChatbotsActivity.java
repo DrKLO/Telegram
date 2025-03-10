@@ -181,6 +181,7 @@ public class ChatbotsActivity extends BaseFragment {
                 return (int) (size + thickness * 2);
             }
         };
+        emptyViewLoading.setScaleType(ImageView.ScaleType.CENTER);
         emptyViewLoading.setImageDrawable(progressDrawable);
         emptyView.addView(emptyViewLoading, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER));
         emptyViewLoading.setAlpha(0f);

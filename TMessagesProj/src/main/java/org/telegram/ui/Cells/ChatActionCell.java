@@ -531,6 +531,7 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
     }
 
     public void setMessageObject(MessageObject messageObject, boolean force) {
+        if (messageObject == null) return;
         if (currentMessageObject == messageObject && (textLayout == null || TextUtils.equals(textLayout.getText(), messageObject.messageText)) && (hasReplyMessage || messageObject.replyMessageObject == null) && !force && messageObject.type != MessageObject.TYPE_SUGGEST_PHOTO && !messageObject.forceUpdate) {
             return;
         }
@@ -1251,8 +1252,8 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
     }
 
     private void openPremiumGiftPreview() {
-        TLRPC.TL_premiumGiftOption giftOption = new TLRPC.TL_premiumGiftOption();
-        TLRPC.MessageAction action = currentMessageObject.messageOwner.action;
+        final TLRPC.TL_premiumGiftOption giftOption = new TLRPC.TL_premiumGiftOption();
+        final TLRPC.MessageAction action = currentMessageObject.messageOwner.action;
         giftOption.amount = action.amount;
         giftOption.months = action.months;
         giftOption.currency = action.currency;
@@ -1532,7 +1533,7 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
                 }
             }
         }
-        if (!reactionsLayoutInBubble.isEmpty) {
+        if (currentMessageObject != null && !reactionsLayoutInBubble.isEmpty) {
             reactionsLayoutInBubble.totalHeight = reactionsLayoutInBubble.height + dp(8);
             additionalHeight += reactionsLayoutInBubble.totalHeight;
         }

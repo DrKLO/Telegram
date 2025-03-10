@@ -4,14 +4,18 @@ import android.content.Context;
 import android.content.res.Resources;
 import android.icu.text.Collator;
 import android.text.TextUtils;
-import android.util.Log;
+import android.util.Pair;
 import android.view.inputmethod.InputMethodInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.view.inputmethod.InputMethodSubtype;
 
 import androidx.annotation.Nullable;
 
+import org.telegram.tgnet.InputSerializedData;
+import org.telegram.tgnet.OutputSerializedData;
+import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.tgnet.Vector;
 import org.telegram.tgnet.tl.TL_stories;
 import org.telegram.ui.Components.Bulletin;
 import org.telegram.ui.Components.TranslateAlert2;
@@ -106,8 +110,12 @@ public class TranslateController extends BaseController {
                 messageObject.type == MessageObject.TYPE_PHOTO ||
                 messageObject.type == MessageObject.TYPE_VOICE ||
                 messageObject.type == MessageObject.TYPE_FILE ||
-                messageObject.type == MessageObject.TYPE_MUSIC
-            ) && !TextUtils.isEmpty(messageObject.messageOwner.message)
+                messageObject.type == MessageObject.TYPE_MUSIC ||
+                messageObject.type == MessageObject.TYPE_POLL
+            ) && (
+                !TextUtils.isEmpty(messageObject.messageOwner.message) ||
+                MessageObject.getMedia(messageObject) instanceof TLRPC.TL_messageMediaPoll
+            )
         );
     }
 
@@ -289,11 +297,11 @@ public class TranslateController extends BaseController {
         }
     }
 
-    private static List<String> languagesOrder = Arrays.asList(
+    private static final List<String> languagesOrder = Arrays.asList(
         "en", "ar", "zh", "fr", "de", "it", "ja", "ko", "pt", "ru", "es", "uk"
     );
 
-    private static List<String> allLanguages = Arrays.asList(
+    private static final List<String> allLanguages = Arrays.asList(
         "af", "sq", "am", "ar", "hy", "az", "eu", "be", "bn", "bs", "bg", "ca", "ceb", "zh-cn", "zh", "zh-tw", "co", "hr", "cs", "da", "nl", "en", "eo", "et", "fi", "fr", "fy", "gl", "ka", "de", "el", "gu", "ht", "ha", "haw", "he", "iw", "hi", "hmn", "hu", "is", "ig", "id", "ga", "it", "ja", "jv", "kn", "kk", "km", "rw", "ko", "ku", "ky", "lo", "la", "lv", "lt", "lb", "mk", "mg", "ms", "ml", "mt", "mi", "mr", "mn", "my", "ne", "no", "ny", "or", "ps", "fa", "pl", "pt", "pa", "ro", "ru", "sm", "gd", "sr", "st", "sn", "sd", "si", "sk", "sl", "so", "es", "su", "sw", "sv", "tl", "tg", "ta", "tt", "te", "th", "tr", "tk", "uk", "ur", "ug", "uz", "vi", "cy", "xh", "yi", "yo", "zu"
     );
 
@@ -507,44 +515,80 @@ public class TranslateController extends BaseController {
 
         final String language = getDialogTranslateTo(dialogId);
         MessageObject potentialReplyMessageObject;
-        if (!keepReply && (messageObject.messageOwner.translatedText == null || !language.equals(messageObject.messageOwner.translatedToLanguage)) && (potentialReplyMessageObject = findReplyMessageObject(dialogId, messageObject.getId())) != null) {
+        if (!keepReply && (messageObject.messageOwner.translatedText == null && messageObject.messageOwner.translatedPoll == null || messageObject.messageOwner.translatedPoll != null && !PollText.isFullyTranslated(messageObject, messageObject.messageOwner.translatedPoll) || !language.equals(messageObject.messageOwner.translatedToLanguage)) && (potentialReplyMessageObject = findReplyMessageObject(dialogId, messageObject.getId())) != null) {
             messageObject.messageOwner.translatedToLanguage = potentialReplyMessageObject.messageOwner.translatedToLanguage;
             messageObject.messageOwner.translatedText = potentialReplyMessageObject.messageOwner.translatedText;
+            messageObject.messageOwner.translatedPoll = potentialReplyMessageObject.messageOwner.translatedPoll;
             messageObject = potentialReplyMessageObject;
         }
 
         if (onScreen && isTranslatingDialog(dialogId)) {
             final MessageObject finalMessageObject = messageObject;
-            if (finalMessageObject.messageOwner.translatedText == null || !language.equals(finalMessageObject.messageOwner.translatedToLanguage)) {
+            if (finalMessageObject.messageOwner.translatedText == null && finalMessageObject.messageOwner.translatedPoll == null || finalMessageObject.messageOwner.translatedPoll != null && !PollText.isFullyTranslated(finalMessageObject, finalMessageObject.messageOwner.translatedPoll) || !language.equals(finalMessageObject.messageOwner.translatedToLanguage)) {
                 NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.messageTranslating, finalMessageObject);
-                pushToTranslate(finalMessageObject, language, (id, text, lang) -> {
-                    if (finalMessageObject.getId() != id) {
-                        FileLog.e("wtf, asked to translate " + finalMessageObject.getId() + " but got " + id + "!");
-                    }
-                    finalMessageObject.messageOwner.translatedToLanguage = lang;
-                    finalMessageObject.messageOwner.translatedText = text;
-                    if (keepReply) {
-                        keepReplyMessage(finalMessageObject);
-                    }
+                if (MessageObject.getMedia(finalMessageObject) instanceof TLRPC.TL_messageMediaPoll) {
+                    pushPollToTranslate(finalMessageObject, language, (id, poll, lang) -> {
+                        if (finalMessageObject.getId() != id) {
+                            FileLog.e("wtf, asked to translate " + finalMessageObject.getId() + " poll but got " + id + "!");
+                        }
+                        finalMessageObject.messageOwner.translatedToLanguage = lang;
+                        finalMessageObject.messageOwner.translatedText = null;
+                        finalMessageObject.messageOwner.translatedPoll = poll;
+                        if (keepReply) {
+                            keepReplyMessage(finalMessageObject);
+                        }
 
-                    getMessagesStorage().updateMessageCustomParams(dialogId, finalMessageObject.messageOwner);
-                    NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.messageTranslated, finalMessageObject);
+                        getMessagesStorage().updateMessageCustomParams(dialogId, finalMessageObject.messageOwner);
+                        NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.messageTranslated, finalMessageObject);
 
-                    ArrayList<MessageObject> dialogMessages = messagesController.dialogMessage.get(dialogId);
-                    if (dialogMessages != null) {
-                        for (int i = 0; i < dialogMessages.size(); ++i) {
-                            MessageObject dialogMessage = dialogMessages.get(i);
-                            if (dialogMessage != null && dialogMessage.getId() == finalMessageObject.getId()) {
-                                dialogMessage.messageOwner.translatedToLanguage = lang;
-                                dialogMessage.messageOwner.translatedText = text;
-                                if (dialogMessage.updateTranslation()) {
-                                    NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.updateInterfaces, 0);
+                        ArrayList<MessageObject> dialogMessages = messagesController.dialogMessage.get(dialogId);
+                        if (dialogMessages != null) {
+                            for (int i = 0; i < dialogMessages.size(); ++i) {
+                                MessageObject dialogMessage = dialogMessages.get(i);
+                                if (dialogMessage != null && dialogMessage.getId() == finalMessageObject.getId()) {
+                                    dialogMessage.messageOwner.translatedToLanguage = lang;
+                                    dialogMessage.messageOwner.translatedText = null;
+                                    dialogMessage.messageOwner.translatedPoll = poll;
+                                    if (dialogMessage.updateTranslation()) {
+                                        NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.updateInterfaces, 0);
+                                    }
+                                    break;
                                 }
-                                break;
                             }
                         }
-                    }
-                });
+                    });
+                } else {
+                    pushToTranslate(finalMessageObject, language, (id, text, lang) -> {
+                        if (finalMessageObject.getId() != id) {
+                            FileLog.e("wtf, asked to translate " + finalMessageObject.getId() + " but got " + id + "!");
+                        }
+                        finalMessageObject.messageOwner.translatedToLanguage = lang;
+                        finalMessageObject.messageOwner.translatedText = text;
+                        finalMessageObject.messageOwner.translatedPoll = null;
+                        if (keepReply) {
+                            keepReplyMessage(finalMessageObject);
+                        }
+
+                        getMessagesStorage().updateMessageCustomParams(dialogId, finalMessageObject.messageOwner);
+                        NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.messageTranslated, finalMessageObject);
+
+                        ArrayList<MessageObject> dialogMessages = messagesController.dialogMessage.get(dialogId);
+                        if (dialogMessages != null) {
+                            for (int i = 0; i < dialogMessages.size(); ++i) {
+                                MessageObject dialogMessage = dialogMessages.get(i);
+                                if (dialogMessage != null && dialogMessage.getId() == finalMessageObject.getId()) {
+                                    dialogMessage.messageOwner.translatedToLanguage = lang;
+                                    dialogMessage.messageOwner.translatedText = text;
+                                    dialogMessage.messageOwner.translatedPoll = null;
+                                    if (dialogMessage.updateTranslation()) {
+                                        NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.updateInterfaces, 0);
+                                    }
+                                    break;
+                                }
+                            }
+                        }
+                    });
+                }
             } else if (keepReply) {
                 keepReplyMessage(messageObject);
             }
@@ -561,6 +605,7 @@ public class TranslateController extends BaseController {
         final long dialogId = messageObject.getDialogId();
         messageObject.messageOwner.translatedToLanguage = null;
         messageObject.messageOwner.translatedText = null;
+        messageObject.messageOwner.translatedPoll = null;
         getMessagesStorage().updateMessageCustomParams(dialogId, messageObject.messageOwner);
         AndroidUtilities.runOnUIThread(() -> {
             NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.messageTranslated, messageObject, isTranslatingDialog(dialogId));
@@ -600,6 +645,7 @@ public class TranslateController extends BaseController {
                         continue;
                     }
                     dialogMessage.messageOwner.translatedText = props.translatedText;
+                    dialogMessage.messageOwner.translatedPoll = props.translatedPoll;
                     dialogMessage.messageOwner.translatedToLanguage = props.translatedToLanguage;
                     if (dialogMessage.updateTranslation(false)) {
                         updated = true;
@@ -827,6 +873,180 @@ public class TranslateController extends BaseController {
                         final int count = Math.min(callbacks.size(), translated.size());
                         for (int i = 0; i < count; ++i) {
                             callbacks.get(i).run(ids.get(i), TranslateAlert2.preprocess(texts.get(i), translated.get(i)), pendingTranslation1.language);
+                        }
+                    } else if (err != null && "TO_LANG_INVALID".equals(err.text)) {
+                        toggleTranslatingDialog(dialogId, false);
+                        NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.showBulletin, Bulletin.TYPE_ERROR, LocaleController.getString(R.string.TranslationFailedAlert2));
+                    } else {
+                        if (err != null && "QUOTA_EXCEEDED".equals(err.text)) {
+                            NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.showBulletin, Bulletin.TYPE_ERROR, LocaleController.getString(R.string.TranslationFailedAlert1));
+                        }
+                        for (int i = 0; i < callbacks.size(); ++i) {
+                            callbacks.get(i).run(ids.get(i), null, pendingTranslation1.language);
+                        }
+                    }
+                    synchronized (TranslateController.this) {
+                        for (int i = 0; i < ids.size(); ++i) {
+                            loadingTranslations.remove(ids.get(i));
+                        }
+                    }
+                }));
+                synchronized (TranslateController.this) {
+                    pendingTranslation1.reqId = reqId;
+                }
+            };
+            AndroidUtilities.runOnUIThread(pendingTranslation.runnable, pendingTranslation.delay);
+            pendingTranslation.delay /= 2;
+        }
+    }
+
+
+    private final HashMap<Long, ArrayList<PendingPollTranslation>> pendingPollTranslations = new HashMap<>();
+
+    private static class PendingPollTranslation {
+        Runnable runnable;
+        ArrayList<Integer> messageIds = new ArrayList<>();
+        ArrayList<Pair<PollText, PollText>> messageTexts = new ArrayList<>();
+        ArrayList<Utilities.Callback3<Integer, PollText, String>> callbacks = new ArrayList<>();
+        String language;
+
+        int delay = GROUPING_TRANSLATIONS_TIMEOUT;
+        int symbolsCount;
+
+        int reqId = -1;
+    }
+
+    private void pushPollToTranslate(
+        MessageObject message,
+        String language,
+        Utilities.Callback3<Integer, PollText, String> callback
+    ) {
+        if (message == null || message.getId() < 0 || callback == null) {
+            return;
+        }
+
+        long dialogId = message.getDialogId();
+
+        PendingPollTranslation pendingTranslation;
+        synchronized (this) {
+            ArrayList<PendingPollTranslation> dialogPendingTranslations = pendingPollTranslations.get(dialogId);
+            if (dialogPendingTranslations == null) {
+                pendingPollTranslations.put(dialogId, dialogPendingTranslations = new ArrayList<>());
+            }
+
+            if (dialogPendingTranslations.isEmpty()) {
+                dialogPendingTranslations.add(pendingTranslation = new PendingPollTranslation());
+            } else {
+                pendingTranslation = dialogPendingTranslations.get(dialogPendingTranslations.size() - 1);
+            }
+
+            if (pendingTranslation.messageIds.contains(message.getId())) {
+                return;
+            }
+
+            final TLRPC.MessageMedia media = MessageObject.getMedia(message);
+            if (!(media instanceof TLRPC.TL_messageMediaPoll)) {
+                return;
+            }
+            final TLRPC.TL_messageMediaPoll mediaPoll = (TLRPC.TL_messageMediaPoll) media;
+            final PollText pollText = PollText.fromPoll(mediaPoll);
+            final PollText translatedText = message.messageOwner.translatedPoll;
+            final int messageSymbolsCount = pollText.length();
+
+            if (pendingTranslation.symbolsCount + messageSymbolsCount >= MAX_SYMBOLS_PER_REQUEST ||
+                    pendingTranslation.messageIds.size() + 1 >= MAX_MESSAGES_PER_REQUEST) {
+                AndroidUtilities.cancelRunOnUIThread(pendingTranslation.runnable);
+                AndroidUtilities.runOnUIThread(pendingTranslation.runnable); // without timeout
+                dialogPendingTranslations.add(pendingTranslation = new PendingPollTranslation());
+            }
+
+            if (pendingTranslation.runnable != null) {
+                AndroidUtilities.cancelRunOnUIThread(pendingTranslation.runnable);
+            }
+            loadingTranslations.add(message.getId());
+            pendingTranslation.messageIds.add(message.getId());
+            FileLog.d("pending translation +" + message.getId() + " poll message");
+            pendingTranslation.messageTexts.add(new Pair<>(pollText, translatedText));
+            pendingTranslation.callbacks.add(callback);
+            pendingTranslation.language = language;
+            pendingTranslation.symbolsCount += messageSymbolsCount;
+            final PendingPollTranslation pendingTranslation1 = pendingTranslation;
+            pendingTranslation.runnable = () -> {
+                synchronized (TranslateController.this) {
+                    ArrayList<PendingTranslation> dialogPendingTranslations1 = pendingTranslations.get(dialogId);
+                    if (dialogPendingTranslations1 != null) {
+                        dialogPendingTranslations1.remove(pendingTranslation1);
+                        if (dialogPendingTranslations1.isEmpty()) {
+                            pendingTranslations.remove(dialogId);
+                        }
+                    }
+                }
+
+                final TLRPC.TL_messages_translateText req = new TLRPC.TL_messages_translateText();
+                req.flags |= 2;
+                for (Pair<PollText, PollText> pair : pendingTranslation1.messageTexts) {
+                    final PollText src = pair.first;
+                    final PollText alreadyTranslated = pair.second;
+                    if (src.question != null && (alreadyTranslated == null || alreadyTranslated.question == null)) {
+                        req.text.add(src.question);
+                    }
+                    if (src.answers.size() != (alreadyTranslated == null ? 0 : alreadyTranslated.answers.size())) {
+                        for (TLRPC.PollAnswer answer : src.answers) {
+                            req.text.add(answer.text);
+                        }
+                    }
+                    if (src.solution != null && (alreadyTranslated == null || alreadyTranslated.solution == null)) {
+                        req.text.add(src.solution);
+                    }
+                }
+                req.to_lang = pendingTranslation1.language;
+
+                final int reqId = getConnectionsManager().sendRequest(req, (res, err) -> AndroidUtilities.runOnUIThread(() -> {
+                    final ArrayList<Integer> ids;
+                    final ArrayList<Utilities.Callback3<Integer, PollText, String>> callbacks;
+                    final ArrayList<Pair<PollText, PollText>> texts;
+                    synchronized (TranslateController.this) {
+                        ids = pendingTranslation1.messageIds;
+                        callbacks = pendingTranslation1.callbacks;
+                        texts = pendingTranslation1.messageTexts;
+                    }
+                    if (res instanceof TLRPC.TL_messages_translateResult) {
+                        final ArrayList<TLRPC.TL_textWithEntities> translated = ((TLRPC.TL_messages_translateResult) res).result;
+                        final ArrayList<PollText> result = new ArrayList<>();
+                        int i = 0;
+                        for (Pair<PollText, PollText> pair : texts) {
+                            final PollText src = pair.first;
+                            final PollText alreadyTranslated = pair.second;
+
+                            final PollText dst = new PollText();
+                            if (alreadyTranslated != null && alreadyTranslated.question != null) {
+                                dst.question = alreadyTranslated.question;
+                            } else if (src.question != null) {
+                                final TLRPC.TL_textWithEntities text = i >= translated.size() ? new TLRPC.TL_textWithEntities() : translated.get(i++);
+                                dst.question = TranslateAlert2.preprocess(src.question, text);
+                            }
+                            if (src.answers.size() != (alreadyTranslated == null ? 0 : alreadyTranslated.answers.size())) {
+                                for (TLRPC.PollAnswer answer : src.answers) {
+                                    final TLRPC.TL_textWithEntities text = i >= translated.size() ? new TLRPC.TL_textWithEntities() : translated.get(i++);
+                                    TLRPC.PollAnswer dstAnswer = new TLRPC.TL_pollAnswer();
+                                    dstAnswer.text = text;
+                                    dstAnswer.option = answer.option;
+                                    dst.answers.add(dstAnswer);
+                                }
+                            } else if (alreadyTranslated != null) {
+                                dst.answers = alreadyTranslated.answers;
+                            }
+                            if (alreadyTranslated != null && alreadyTranslated.solution != null) {
+                                dst.solution = alreadyTranslated.solution;
+                            } else if (src.solution != null) {
+                                final TLRPC.TL_textWithEntities text = i >= translated.size() ? new TLRPC.TL_textWithEntities() : translated.get(i++);
+                                dst.solution = TranslateAlert2.preprocess(src.solution, text);
+                            }
+                            result.add(dst);
+                        }
+                        final int count = Math.min(callbacks.size(), result.size());
+                        for (int j = 0; j < count; ++j) {
+                            callbacks.get(j).run(ids.get(j), result.get(j), pendingTranslation1.language);
                         }
                     } else if (err != null && "TO_LANG_INVALID".equals(err.text)) {
                         toggleTranslatingDialog(dialogId, false);
@@ -1281,6 +1501,128 @@ public class TranslateController extends BaseController {
         public MessageKey(MessageObject msg) {
             dialogId = msg.getDialogId();
             id = msg.getId();
+        }
+    }
+
+    public static class PollText extends TLObject {
+        public static final int constructor = 0x24953ab8;
+
+        public TLRPC.TL_textWithEntities question;
+        public ArrayList<TLRPC.PollAnswer> answers = new ArrayList<>();
+        public TLRPC.TL_textWithEntities solution;
+
+        public static PollText TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
+            if (PollText.constructor != constructor) {
+                if (exception) {
+                    throw new RuntimeException(String.format("can't parse magic %x in TranslatedPoll", constructor));
+                } else {
+                    return null;
+                }
+            }
+            PollText result = new PollText();
+            result.readParams(stream, exception);
+            return result;
+        }
+
+        @Override
+        public void readParams(InputSerializedData stream, boolean exception) {
+            int flags = stream.readInt32(exception);
+            if ((flags & 1) != 0) {
+                question = TLRPC.TL_textWithEntities.TLdeserialize(stream, stream.readInt32(exception), exception);
+            }
+            if ((flags & 2) != 0) {
+                answers = Vector.deserialize(stream, TLRPC.PollAnswer::TLdeserialize, exception);
+            }
+            if ((flags & 4) != 0) {
+                solution = TLRPC.TL_textWithEntities.TLdeserialize(stream, stream.readInt32(exception), exception);
+            }
+        }
+
+        @Override
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+            int flags = 0;
+            if (question != null) {
+                flags |= 1;
+            }
+            if (answers != null && !answers.isEmpty()) {
+                flags |= 2;
+            }
+            if (solution != null) {
+                flags |= 4;
+            }
+            stream.writeInt32(flags);
+            if ((flags & 1) != 0) {
+                question.serializeToStream(stream);
+            }
+            if ((flags & 2) != 0) {
+                Vector.serialize(stream, answers);
+            }
+            if ((flags & 4) != 0) {
+                solution.serializeToStream(stream);
+            }
+        }
+
+        public int length() {
+            int length = 0;
+            if (question != null) {
+                length += question.text.length();
+            }
+            for (int i = 0; i < answers.size(); ++i) {
+                length += answers.get(i).text.text.length();
+            }
+            if (solution != null) {
+                length += solution.text.length();
+            }
+            return length;
+        }
+
+
+        public static PollText fromMessage(MessageObject messageObject) {
+            final TLRPC.MessageMedia media = MessageObject.getMedia(messageObject);
+            if (media instanceof TLRPC.TL_messageMediaPoll) {
+                return PollText.fromPoll((TLRPC.TL_messageMediaPoll) media);
+            }
+            return null;
+        }
+
+        public static PollText fromPoll(TLRPC.TL_messageMediaPoll mediaPoll) {
+            final TLRPC.Poll poll = mediaPoll.poll;
+            final PollText pollText = new PollText();
+            pollText.question = poll.question;
+            for (int i = 0; i < poll.answers.size(); ++i) {
+                TLRPC.PollAnswer answer = poll.answers.get(i);
+                TLRPC.TL_pollAnswer answerText = new TLRPC.TL_pollAnswer();
+                answerText.text = answer.text;
+                answerText.option = answer.option;
+                pollText.answers.add(answerText);
+            }
+            if (mediaPoll.results != null && !TextUtils.isEmpty(mediaPoll.results.solution)) {
+                pollText.solution = new TLRPC.TL_textWithEntities();
+                pollText.solution.text = mediaPoll.results.solution;
+                pollText.solution.entities = mediaPoll.results.solution_entities;
+            }
+            return pollText;
+        }
+
+        public static boolean isFullyTranslated(MessageObject messageObject, PollText b) {
+            final TLRPC.MessageMedia media = MessageObject.getMedia(messageObject);
+            final TLRPC.TL_messageMediaPoll poll;
+            if (media instanceof TLRPC.TL_messageMediaPoll) {
+                poll = (TLRPC.TL_messageMediaPoll) media;
+            } else {
+                return true;
+            }
+            if (poll.poll == null) {
+                return true;
+            }
+
+            if ((poll.poll.question != null) != (b.question != null)) return false;
+            if ((poll.results != null && poll.results.solution != null) != (b.solution != null)) return false;
+
+            if (poll.poll.answers.size() != b.answers.size()) return false;
+
+            return true;
         }
     }
 }

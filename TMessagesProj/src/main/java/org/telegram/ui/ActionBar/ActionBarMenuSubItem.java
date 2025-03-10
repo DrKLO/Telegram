@@ -258,6 +258,29 @@ public class ActionBarMenuSubItem extends FrameLayout {
         enabledAnimator.start();
     }
 
+    public void setEnabledByColor(boolean enabled, int textColorDisabled, int iconColorDisabled, int colorEnabled) {
+        if (enabledAnimator != null) {
+            enabledAnimator.cancel();
+        }
+        enabledAnimator = ValueAnimator.ofFloat(this.enabled ? 1.0f : 0.0f, enabled ? 1.0f : 0.0f);
+        this.enabled = enabled;
+        enabledAnimator.addUpdateListener(anm -> {
+            final float t = (float) anm.getAnimatedValue();
+            setTextColor(ColorUtils.blendARGB(textColorDisabled, colorEnabled, t));
+            setIconColor(ColorUtils.blendARGB(iconColorDisabled, colorEnabled, t));
+        });
+        enabledAnimator.addListener(new AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationEnd(Animator animation) {
+                final float t = enabled ? 1.0f : 0.0f;
+                setTextColor(ColorUtils.blendARGB(textColorDisabled, colorEnabled, t));
+                setIconColor(ColorUtils.blendARGB(iconColorDisabled, colorEnabled, t));
+            }
+        });
+        enabledAnimator.setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT);
+        enabledAnimator.start();
+    }
+
     private int iconResId;
     public int getIconResId() {
         return iconResId;

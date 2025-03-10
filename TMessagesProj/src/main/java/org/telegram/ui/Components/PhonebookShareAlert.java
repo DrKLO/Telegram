@@ -929,12 +929,18 @@ public class PhonebookShareAlert extends BottomSheet {
                 if (parentFragment instanceof ChatActivity && ((ChatActivity) parentFragment).isInScheduleMode()) {
                     ChatActivity chatActivity = (ChatActivity) parentFragment;
                     AlertsCreator.createScheduleDatePickerDialog(getContext(), chatActivity.getDialogId(), (notify, scheduleDate) -> {
-                        delegate.didSelectContact(currentUser, notify, scheduleDate, 0, false);
+                        delegate.didSelectContact(currentUser, notify, scheduleDate, 0, false, 0);
                         dismiss();
                     }, resourcesProvider);
                 } else {
-                    delegate.didSelectContact(currentUser, true, 0, 0, false);
-                    dismiss();
+                    long dialogId = 0;
+                    if (parentFragment instanceof ChatActivity) {
+                        dialogId = ((ChatActivity) parentFragment).getDialogId();
+                    }
+                    AlertsCreator.ensurePaidMessageConfirmation(currentAccount, dialogId, 1, payStars -> {
+                        delegate.didSelectContact(currentUser, true, 0, 0, false, payStars);
+                        dismiss();
+                    });
                 }
             }
         });

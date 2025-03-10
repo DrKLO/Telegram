@@ -452,7 +452,9 @@ public class PhotoAttachPhotoCell extends FrameLayout {
         } else {
             videoInfoContainer.setVisibility(INVISIBLE);
         }
-        if (photoEntry.thumbPath != null) {
+        if (photoEntry.coverPath != null) {
+            imageView.setImage(photoEntry.coverPath, null, Theme.chat_attachEmptyDrawable);
+        } else if (photoEntry.thumbPath != null) {
             imageView.setImage(photoEntry.thumbPath, null, Theme.chat_attachEmptyDrawable);
         } else if (photoEntry.path != null) {
             if (photoEntry.isVideo) {

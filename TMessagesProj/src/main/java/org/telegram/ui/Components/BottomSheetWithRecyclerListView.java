@@ -523,7 +523,7 @@ public abstract class BottomSheetWithRecyclerListView extends BottomSheet {
         recyclerListView.setAdapter(wrapperAdapter);
     }
 
-    private void postDrawInternal(Canvas canvas, View parentView) {
+    protected void postDrawInternal(Canvas canvas, View parentView) {
         if (actionBarType == ActionBarType.FADING) {
             if (showShadow && shadowAlpha != 1f) {
                 shadowAlpha += 16 / 150f;
@@ -555,24 +555,28 @@ public abstract class BottomSheetWithRecyclerListView extends BottomSheet {
         }
     }
 
+    protected int getActionBarProgressHeight() {
+        return dp(56);
+    }
+
     private boolean restore;
-    private void preDrawInternal(Canvas canvas, View parent) {
+    protected void preDrawInternal(Canvas canvas, View parent) {
         restore = false;
         if (!hasFixedSize) {
             int top;
             if (reverseLayout) {
                 top = recyclerListView.getHeight();
                 for (int i = 0; i < recyclerListView.getChildCount(); i++) {
-                    View child = recyclerListView.getChildAt(i);
-                    int pos = recyclerListView.getChildAdapterPosition(child);
+                    final View child = recyclerListView.getChildAt(i);
+                    final int pos = recyclerListView.getChildAdapterPosition(child);
                     if (pos != RecyclerView.NO_POSITION && pos != recyclerListView.getAdapter().getItemCount() - 1) {
                         top = Math.min(top, child.getTop() + (takeTranslationIntoAccount ? (int) child.getTranslationY() : 0));
                     }
                 }
-                top -= AndroidUtilities.dp(16);
+                top -= dp(16);
             } else {
-                RecyclerView.ViewHolder holder = recyclerListView.findViewHolderForAdapterPosition(0);
-                top = -AndroidUtilities.dp(16);
+                final RecyclerView.ViewHolder holder = recyclerListView.findViewHolderForAdapterPosition(0);
+                top = -dp(16);
                 if (holder != null) {
                     top = holder.itemView.getBottom() - AndroidUtilities.dp(16);
                     if (takeTranslationIntoAccount) {
@@ -588,7 +592,7 @@ public abstract class BottomSheetWithRecyclerListView extends BottomSheet {
             float handleAlpha = 1.0f;
             float progressToFullView = 0.0f;
             if (actionBarType == ActionBarType.FADING) {
-                progressToFullView = 1f - (top + AndroidUtilities.dp(16)) / (float) AndroidUtilities.dp(56);
+                progressToFullView = 1f - (top + dp(16)) / (float) getActionBarProgressHeight();
                 if (progressToFullView < 0) {
                     progressToFullView = 0;
                 }
@@ -628,25 +632,31 @@ public abstract class BottomSheetWithRecyclerListView extends BottomSheet {
                 }
             }
 
-            if (needPaddingShadow()) {
-                shadowDrawable.setBounds(0, top, parent.getMeasuredWidth(), parent.getMeasuredHeight());
-            } else {
-                shadowDrawable.setBounds(-AndroidUtilities.dp(6), top, parent.getMeasuredWidth() + AndroidUtilities.dp(6), parent.getMeasuredHeight());
-            }
-            shadowDrawable.draw(canvas);
+            if (shouldDrawBackground()) {
+                if (needPaddingShadow()) {
+                    shadowDrawable.setBounds(0, top, parent.getMeasuredWidth(), parent.getMeasuredHeight());
+                } else {
+                    shadowDrawable.setBounds(-AndroidUtilities.dp(6), top, parent.getMeasuredWidth() + AndroidUtilities.dp(6), parent.getMeasuredHeight());
+                }
+                shadowDrawable.draw(canvas);
 
-            if (showHandle && handleAlpha > 0) {
-                int w = dp(36);
-                int y = top + AndroidUtilities.dp(20);
-                handleRect.set((parent.getMeasuredWidth() - w) / 2.0f, y, (parent.getMeasuredWidth() + w) / 2.0f, y + dp(4));
-                int color = getThemedColor(Theme.key_sheet_scrollUp);
-                Theme.dialogs_onlineCirclePaint.setColor(color);
-                Theme.dialogs_onlineCirclePaint.setAlpha((int) (Theme.dialogs_onlineCirclePaint.getAlpha() * handleAlpha));
-                canvas.drawRoundRect(handleRect, dp(2), dp(2), Theme.dialogs_onlineCirclePaint);
+                if (showHandle && handleAlpha > 0) {
+                    int w = dp(36);
+                    int y = top + AndroidUtilities.dp(20);
+                    handleRect.set((parent.getMeasuredWidth() - w) / 2.0f, y, (parent.getMeasuredWidth() + w) / 2.0f, y + dp(4));
+                    int color = getThemedColor(Theme.key_sheet_scrollUp);
+                    Theme.dialogs_onlineCirclePaint.setColor(color);
+                    Theme.dialogs_onlineCirclePaint.setAlpha((int) (Theme.dialogs_onlineCirclePaint.getAlpha() * handleAlpha));
+                    canvas.drawRoundRect(handleRect, dp(2), dp(2), Theme.dialogs_onlineCirclePaint);
+                }
             }
 
             onPreDraw(canvas, top, progressToFullView);
         }
+    }
+
+    protected boolean shouldDrawBackground() {
+        return true;
     }
 
     protected boolean needPaddingShadow() {

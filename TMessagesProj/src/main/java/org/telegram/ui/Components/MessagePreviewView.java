@@ -489,8 +489,8 @@ public class MessagePreviewView extends FrameLayout {
 
                                 int left = (cell.getLeft() + cell.getBackgroundDrawableLeft());
                                 int right = (cell.getLeft() + cell.getBackgroundDrawableRight());
-                                int top = (cell.getTop() + cell.getBackgroundDrawableTop());
-                                int bottom = (cell.getTop() + cell.getBackgroundDrawableBottom());
+                                int top = (cell.getTop() + cell.getPaddingTop() + cell.getBackgroundDrawableTop());
+                                int bottom = (cell.getTop() + cell.getPaddingTop() + cell.getBackgroundDrawableBottom());
 
                                 if ((cell.getCurrentPosition().flags & MessageObject.POSITION_FLAG_TOP) == 0) {
                                     top -= dp(10);

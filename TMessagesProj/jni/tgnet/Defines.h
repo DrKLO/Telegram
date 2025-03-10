@@ -155,6 +155,7 @@ typedef struct ConnectiosManagerDelegate {
     virtual int32_t getInitFlags(int32_t instanceNum) = 0;
     virtual void onPremiumFloodWait(int32_t instanceNum, int32_t requestToken, bool isUpload) = 0;
     virtual void onIntegrityCheckClassic(int32_t instanceNum, int32_t requestToken, std::string project, std::string nonce) = 0;
+    virtual void onCaptchaCheck(int32_t instanceNum, int32_t requestToken, std::string action, std::string key_id) = 0;
 } ConnectiosManagerDelegate;
 
 typedef struct HandshakeDelegate {

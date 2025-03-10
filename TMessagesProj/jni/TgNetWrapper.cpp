@@ -38,6 +38,7 @@ jmethodID jclass_ConnectionsManager_getHostByName;
 jmethodID jclass_ConnectionsManager_getInitFlags;
 jmethodID jclass_ConnectionsManager_onPremiumFloodWait;
 jmethodID jclass_ConnectionsManager_onIntegrityCheckClassic;
+jmethodID jclass_ConnectionsManager_onCaptchaCheck;
 
 bool check_utf8(const char *data, size_t len);
 
@@ -153,6 +154,24 @@ void receivedIntegrityCheckClassic(JNIEnv *env, jclass c, jint instanceNum, jint
     if (nonceStr != nullptr) {
         env->ReleaseStringUTFChars(nonce, nonceStr);
     }
+    if (tokenStr != nullptr) {
+        env->ReleaseStringUTFChars(token, tokenStr);
+    }
+}
+
+void receivedCaptchaResult(JNIEnv *env, jclass c, jint instanceNum, jintArray requestTokens, jstring token) {
+    const char* tokenStr = env->GetStringUTFChars(token, 0);
+    jsize requestTokensLength = env->GetArrayLength(requestTokens);
+    jint *requestTokensJArr = env->GetIntArrayElements(requestTokens, NULL);
+    int* requestTokensArr = new int[requestTokensLength];
+    for (int i = 0; i < requestTokensLength; ++i) {
+        requestTokensArr[i] = requestTokensJArr[i];
+    }
+    if (requestTokensJArr != nullptr) {
+        env->ReleaseIntArrayElements(requestTokens, requestTokensJArr, 0);
+    }
+    std::string tokenString = tokenStr;
+    ConnectionsManager::getInstance(instanceNum).receivedCaptchaResult(requestTokensLength, requestTokensArr, tokenString);
     if (tokenStr != nullptr) {
         env->ReleaseStringUTFChars(token, tokenStr);
     }
@@ -378,6 +397,14 @@ class Delegate : public ConnectiosManagerDelegate {
         jniEnv[instanceNum]->DeleteLocalRef(nonceStr);
     }
 
+    void onCaptchaCheck(int32_t instanceNum, int32_t requestToken, std::string action, std::string key_id) {
+        jstring actionStr = jniEnv[instanceNum]->NewStringUTF(action.c_str());
+        jstring keyIdStr = jniEnv[instanceNum]->NewStringUTF(key_id.c_str());
+        jniEnv[instanceNum]->CallStaticVoidMethod(jclass_ConnectionsManager, jclass_ConnectionsManager_onCaptchaCheck, instanceNum, requestToken, actionStr, keyIdStr);
+        jniEnv[instanceNum]->DeleteLocalRef(actionStr);
+        jniEnv[instanceNum]->DeleteLocalRef(keyIdStr);
+    }
+
 };
 
 void onHostNameResolved(JNIEnv *env, jclass c, jstring host, jlong address, jstring ip) {
@@ -521,6 +548,7 @@ static JNINativeMethod ConnectionsManagerMethods[] = {
         {"native_discardConnection", "(III)V", (void *) discardConnection},
         {"native_failNotRunningRequest", "(II)V", (void *) failNotRunningRequest},
         {"native_receivedIntegrityCheckClassic", "(IILjava/lang/String;Ljava/lang/String;)V", (void *) receivedIntegrityCheckClassic},
+        {"native_receivedCaptchaResult", "(I[ILjava/lang/String;)V", (void *) receivedCaptchaResult},
         {"native_isGoodPrime", "([BI)Z", (void *) isGoodPrime},
 };
 
@@ -636,6 +664,10 @@ extern "C" int registerNativeTgNetFunctions(JavaVM *vm, JNIEnv *env) {
     }
     jclass_ConnectionsManager_onIntegrityCheckClassic = env->GetStaticMethodID(jclass_ConnectionsManager, "onIntegrityCheckClassic", "(IILjava/lang/String;Ljava/lang/String;)V");
     if (jclass_ConnectionsManager_onIntegrityCheckClassic == 0) {
+        return JNI_FALSE;
+    }
+    jclass_ConnectionsManager_onCaptchaCheck = env->GetStaticMethodID(jclass_ConnectionsManager, "onCaptchaCheck", "(IILjava/lang/String;Ljava/lang/String;)V");
+    if (jclass_ConnectionsManager_onCaptchaCheck == 0) {
         return JNI_FALSE;
     }
 

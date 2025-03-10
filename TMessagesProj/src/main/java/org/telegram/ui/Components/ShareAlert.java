@@ -22,7 +22,6 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.LinearGradient;
-import android.graphics.Outline;
 import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
@@ -44,11 +43,9 @@ import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.ViewOutlineProvider;
 import android.view.WindowManager;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.view.animation.DecelerateInterpolator;
-import android.view.animation.OvershootInterpolator;
 import android.view.inputmethod.EditorInfo;
 import android.widget.Button;
 import android.widget.FrameLayout;
@@ -113,6 +110,7 @@ import org.telegram.ui.ChatActivity;
 import org.telegram.ui.DialogsActivity;
 import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.MessageStatisticActivity;
+import org.telegram.ui.PhotoViewer;
 import org.telegram.ui.PremiumPreviewFragment;
 import org.telegram.ui.Stories.DarkThemeResourceProvider;
 
@@ -129,8 +127,8 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
     private FrameLayout frameLayout;
     private BlurredFrameLayout frameLayout2;
     private EditTextEmoji commentTextView;
+    private ChatActivityEnterView.SendButton writeButton;
     private FrameLayout writeButtonContainer;
-    private View selectedCountView;
     private FrameLayout pickerBottom;
     private BlurredFrameLayout pickerBottomLayout;
     private LinearLayout linkContainer;
@@ -524,6 +522,16 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
         isFullscreen = fullScreen;
         linkToCopy[0] = copyLink;
         linkToCopy[1] = copyLink2;
+        if (copyLink == null && copyLink2 == null && messages != null && messages.size() > 0) {
+            final MessageObject message = messages.get(0);
+            final String username = DialogObject.getPublicUsername(MessagesController.getInstance(currentAccount).getUserOrChat(message.getDialogId()));
+            if (!TextUtils.isEmpty(username)) {
+                linkToCopy[0] = "https://" + MessagesController.getInstance(currentAccount).linkPrefix + "/" + username + "/" + message.getId();
+                if (messages.size() == 1 && message.hasValidGroupId()) {
+                    linkToCopy[0] += "?single";
+                }
+            }
+        }
         sendingMessageObjects = messages;
         searchAdapter = new ShareSearchAdapter(context);
         isChannel = channel;
@@ -638,7 +646,7 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
                         super.onPanTranslationUpdate(y, progress, keyboardVisible);
                         for (int i = 0; i < containerView.getChildCount(); i++) {
                             final View child = containerView.getChildAt(i);
-                            if (child != pickerBottom && child != bulletinContainer && child != shadow[1] && child != sharesCountLayout && child != frameLayout2 && child != timestampFrameLayout && child != writeButtonContainer && child != selectedCountView && child != navigationBar) {
+                            if (child != pickerBottom && child != bulletinContainer && child != shadow[1] && child != sharesCountLayout && child != frameLayout2 && child != timestampFrameLayout && child != writeButtonContainer && child != navigationBar) {
                                 child.setTranslationY(y);
                             }
                         }
@@ -747,11 +755,12 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
                         contentSize = AndroidUtilities.lerp(contentSize, topicsSize, topicsGridView.getAlpha());
                     }
                 }
-                int padding = (contentSize < availableHeight ? 0 : availableHeight - (availableHeight / 5 * 3)) + dp(8);
-                if (gridView.getPaddingTop() != padding) {
+                int padding = (contentSize < availableHeight ? 0 : availableHeight - (availableHeight / 5 * 3));
+                int bottomPadding = dp(100 + (timestampFrameLayout != null ? 48 : 0)) + navigationBarHeight;
+                if (gridView.getPaddingTop() != padding || gridView.getPaddingBottom() != bottomPadding) {
                     ignoreLayout = true;
-                    gridView.setPadding(0, padding, 0, dp(60 + (timestampFrameLayout != null ? 48 : 0)) + navigationBarHeight);
-                    topicsGridView.setPadding(0, padding, 0, dp(60 + (timestampFrameLayout != null ? 48 : 0)) + navigationBarHeight);
+                    gridView.setPadding(0, padding, 0, bottomPadding);
+                    topicsGridView.setPadding(0, padding, 0, bottomPadding);
                     ignoreLayout = false;
                 }
 
@@ -1318,89 +1327,173 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
         containerView.addView(shadow[1], frameLayoutParams);
 
         if (isChannel || linkToCopy[0] != null) {
-            pickerBottom = new FrameLayout(context);
+            if (darkTheme) {
+                pickerBottom = new FrameLayout(context);
 
-            pickerBottomLayout = new BlurredFrameLayout(context, sizeNotifierFrameLayout);
-            pickerBottomLayout.isTopView = false;
-            pickerBottomLayout.setBackgroundColor(backgroundColor);
-            pickerBottom.addView(pickerBottomLayout);
+                pickerBottomLayout = new BlurredFrameLayout(context, sizeNotifierFrameLayout);
+                pickerBottomLayout.isTopView = false;
+                pickerBottomLayout.setBackgroundColor(backgroundColor);
+                pickerBottom.addView(pickerBottomLayout);
 
-            LinearLayout pickerBottomLinearLayout = new LinearLayout(context);
-            pickerBottomLinearLayout.setOrientation(LinearLayout.HORIZONTAL);
-            pickerBottomLayout.addView(pickerBottomLinearLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.FILL));
+                LinearLayout pickerBottomLinearLayout = new LinearLayout(context);
+                pickerBottomLinearLayout.setOrientation(LinearLayout.HORIZONTAL);
+                pickerBottomLayout.addView(pickerBottomLinearLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.FILL));
 
-            linkContainer = new LinearLayout(context);
-            linkContainer.setOrientation(LinearLayout.HORIZONTAL);
-            linkContainer.setBackground(Theme.createSimpleSelectorRoundRectDrawable(dp(8), getThemedColor(Theme.key_share_linkBackground), Theme.blendOver(getThemedColor(Theme.key_share_linkBackground), getThemedColor(Theme.key_listSelector))));
-            ScaleStateListAnimator.apply(linkContainer, 0.015f, 1.2f);
-            pickerBottomLinearLayout.addView(linkContainer, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 42, 1, Gravity.FILL_HORIZONTAL | Gravity.BOTTOM, 11, 11, 11, 0));
-            linkContainer.setOnClickListener(v -> {
-                if (selectedDialogs.size() == 0 && (isChannel || linkToCopy[0] != null)) {
-                    dismiss();
-                    if (linkToCopy[0] == null && loadingLink) {
-                        copyLinkOnEnd = true;
-                        Toast.makeText(ShareAlert.this.getContext(), LocaleController.getString(R.string.Loading), Toast.LENGTH_SHORT).show();
-                    } else {
-                        copyLink(ShareAlert.this.getContext());
+                linkContainer = new LinearLayout(context);
+                linkContainer.setOrientation(LinearLayout.HORIZONTAL);
+                linkContainer.setBackground(Theme.createSimpleSelectorRoundRectDrawable(dp(8), getThemedColor(Theme.key_share_linkBackground), Theme.blendOver(getThemedColor(Theme.key_share_linkBackground), getThemedColor(Theme.key_listSelector))));
+                ScaleStateListAnimator.apply(linkContainer, 0.015f, 1.2f);
+                linkContainer.setOnClickListener(v -> {
+                    if (selectedDialogs.size() == 0 && (isChannel || linkToCopy[0] != null)) {
+                        dismiss();
+                        PhotoViewer.getInstance().closePhoto(true, false);
+                        if (linkToCopy[0] == null && loadingLink) {
+                            copyLinkOnEnd = true;
+                            Toast.makeText(ShareAlert.this.getContext(), LocaleController.getString(R.string.Loading), Toast.LENGTH_SHORT).show();
+                        } else {
+                            copyLink(ShareAlert.this.getContext());
+                        }
+                    }
+                });
+
+                linkTextView = new SimpleTextView(context);
+                linkTextView.setTextSize(15);
+                linkTextView.setTextColor(getThemedColor(Theme.key_share_linkText));
+                linkTextView.setEllipsizeByGradient(true);
+                updateLinkTextView();
+                linkContainer.addView(linkTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 20, 1, Gravity.FILL_HORIZONTAL | Gravity.CENTER_VERTICAL, 16, 0, 16, 0));
+
+                linkCopyButton = new TextView(context);
+                linkCopyButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+                linkCopyButton.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText));
+                linkCopyButton.setText(LocaleController.getString(R.string.Copy).toUpperCase());
+                linkCopyButton.setPadding(dp(9), 0, dp(9), 0);
+                linkCopyButton.setTypeface(AndroidUtilities.bold());
+                linkCopyButton.setGravity(Gravity.CENTER);
+                linkCopyButton.setBackground(Theme.createRadSelectorDrawable(getThemedColor(Theme.key_listSelector), 4, 4));
+                linkContainer.addView(linkCopyButton, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, 28, 0, Gravity.RIGHT | Gravity.CENTER_VERTICAL, 0, 0, 7, 0));
+                linkCopyButton.setOnClickListener(v -> {
+                    if (selectedDialogs.size() == 0 && (isChannel || linkToCopy[0] != null)) {
+                        dismiss();
+                        if (linkToCopy[0] == null && loadingLink) {
+                            copyLinkOnEnd = true;
+                            Toast.makeText(ShareAlert.this.getContext(), LocaleController.getString(R.string.Loading), Toast.LENGTH_SHORT).show();
+                        } else {
+                            copyLink(ShareAlert.this.getContext());
+                        }
+                    }
+                });
+                ScaleStateListAnimator.apply(linkCopyButton);
+
+                final View shadow = new View(context);
+                shadow.setBackgroundColor(getThemedColor(Theme.key_divider));
+                pickerBottomLayout.addView(shadow, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, darkTheme ? 0.66f : 1.0f / AndroidUtilities.density, Gravity.FILL_HORIZONTAL | Gravity.TOP));
+                containerView.addView(pickerBottom, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 53 + (video_timestamp != null ? 0 : 11), Gravity.LEFT | Gravity.BOTTOM));
+
+                LinearLayout sharesLayout = null;
+                int rightMargin = 11;
+                if (sendingMessageObjects != null && sendingMessageObjects.size() > 0 && sendingMessageObjects.get(0).messageOwner != null && sendingMessageObjects.get(0).messageOwner.forwards > 0) {
+                    final MessageObject messageObject = sendingMessageObjects.get(0);
+                    final TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-messageObject.getDialogId());
+                    if (ChatObject.hasAdminRights(chat) && !messageObject.isForwarded()) {
+                        sharesLayout = new LinearLayout(context);
+                        sharesLayout.setOrientation(LinearLayout.HORIZONTAL);
+                        sharesLayout.setOnClickListener(v -> {
+                            BaseFragment fragment2 = parentFragment;
+                            if (fragment2 == null) fragment2 = LaunchActivity.getSafeLastFragment();
+                            if (fragment2 == null) return;
+                            dismiss();
+                            fragment2.presentFragment(new MessageStatisticActivity(messageObject));
+                        });
+                        sharesLayout.setPadding(dp(8), dp(4), dp(8), dp(4));
+                        sharesLayout.setBackground(Theme.createRadSelectorDrawable(getThemedColor(Theme.key_listSelector), 6, 6));
+                        ScaleStateListAnimator.apply(sharesLayout);
+
+                        final ImageView imageView = new ImageView(context);
+                        imageView.setImageResource(R.drawable.mini_stats_shares);
+                        imageView.setScaleType(ImageView.ScaleType.CENTER);
+                        imageView.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_share_icon), PorterDuff.Mode.SRC_IN));
+                        sharesLayout.addView(imageView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0, Gravity.CENTER_VERTICAL));
+
+                        final TextView textView = new TextView(context);
+                        textView.setTextColor(getThemedColor(Theme.key_share_icon));
+                        textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
+                        textView.setGravity(Gravity.CENTER);
+                        textView.setText(LocaleController.formatNumber(messageObject.messageOwner.forwards, ','));
+                        sharesLayout.addView(textView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0, Gravity.CENTER_VERTICAL, 4, -1, 0, 0));
+
+                        rightMargin = 8;
                     }
                 }
-            });
 
-            linkTextView = new SimpleTextView(context);
-            linkTextView.setTextSize(15);
-            linkTextView.setTextColor(getThemedColor(Theme.key_share_linkText));
-            linkTextView.setEllipsizeByGradient(true);
-            updateLinkTextView();
-            linkContainer.addView(linkTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 1, Gravity.FILL_HORIZONTAL | Gravity.CENTER_VERTICAL, 16, 0, 16, 0));
-
-            linkCopyButton = new TextView(context);
-            linkCopyButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-            linkCopyButton.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText));
-            linkCopyButton.setText(LocaleController.getString(R.string.Copy).toUpperCase());
-            linkCopyButton.setPadding(dp(9), 0, dp(9), 0);
-            linkCopyButton.setTypeface(AndroidUtilities.bold());
-            linkCopyButton.setGravity(Gravity.CENTER);
-            linkCopyButton.setBackground(Theme.createRadSelectorDrawable(getThemedColor(Theme.key_listSelector), 4, 4));
-            linkContainer.addView(linkCopyButton, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, 28, 0, Gravity.RIGHT | Gravity.CENTER_VERTICAL, 0, 0, 7, 0));
-            linkCopyButton.setOnClickListener(v -> {
-                if (selectedDialogs.size() == 0 && (isChannel || linkToCopy[0] != null)) {
-                    dismiss();
-                    if (linkToCopy[0] == null && loadingLink) {
-                        copyLinkOnEnd = true;
-                        Toast.makeText(ShareAlert.this.getContext(), LocaleController.getString(R.string.Loading), Toast.LENGTH_SHORT).show();
-                    } else {
-                        copyLink(ShareAlert.this.getContext());
-                    }
+                pickerBottomLinearLayout.addView(linkContainer, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 42, 1, Gravity.FILL_HORIZONTAL | Gravity.BOTTOM, 11, 11, rightMargin, video_timestamp != null ? 0 : 11));
+                if (sharesLayout != null) {
+                    pickerBottomLinearLayout.addView(sharesLayout, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0, Gravity.CENTER_VERTICAL, 0, 5, 8, 0));
                 }
-            });
-            ScaleStateListAnimator.apply(linkCopyButton);
+            } else {
+                pickerBottom = new FrameLayout(context);
 
-            final View shadow = new View(context);
-            shadow.setBackgroundColor(getThemedColor(Theme.key_divider));
-            pickerBottomLayout.addView(shadow, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, darkTheme ? 0.66f : 1.0f / AndroidUtilities.density, Gravity.FILL_HORIZONTAL | Gravity.TOP));
-            containerView.addView(pickerBottom, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 53, Gravity.LEFT | Gravity.BOTTOM));
+                pickerBottomLayout = new BlurredFrameLayout(context, sizeNotifierFrameLayout);
+                pickerBottomLayout.isTopView = false;
+                pickerBottomLayout.setBackgroundColor(backgroundColor);
+                pickerBottom.addView(pickerBottomLayout);
 
-            if (sendingMessageObjects != null && sendingMessageObjects.size() > 0 && sendingMessageObjects.get(0).messageOwner != null && sendingMessageObjects.get(0).messageOwner.forwards > 0) {
-                final MessageObject messageObject = sendingMessageObjects.get(0);
-                final TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-messageObject.getDialogId());
-                if (ChatObject.hasAdminRights(chat) && !messageObject.isForwarded()) {
-                    final LinearLayout sharesLayout = new LinearLayout(context);
-                    sharesLayout.setOrientation(LinearLayout.HORIZONTAL);
+                TextView pickerTextView = new TextView(context);
+                pickerTextView.setBackgroundDrawable(Theme.createSelectorWithBackgroundDrawable(getThemedColor(darkTheme ? Theme.key_voipgroup_inviteMembersBackground : Theme.key_dialogBackground), getThemedColor(darkTheme ? Theme.key_voipgroup_listSelector : Theme.key_listSelector)));
+                pickerTextView.setTextColor(getThemedColor(darkTheme ? Theme.key_voipgroup_listeningText : Theme.key_dialogTextBlue2));
+                pickerTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+                pickerTextView.setPadding(dp(18), 0, dp(18), 0);
+                pickerTextView.setTypeface(AndroidUtilities.bold());
+                pickerTextView.setGravity(Gravity.CENTER);
+                if (darkTheme && linkToCopy[1] != null) {
+                    pickerTextView.setText(LocaleController.getString(R.string.VoipGroupCopySpeakerLink).toUpperCase());
+                } else {
+                    pickerTextView.setText(LocaleController.getString(R.string.CopyLink).toUpperCase());
+                }
+                pickerTextView.setOnClickListener(v -> {
+                    if (selectedDialogs.size() == 0 && (isChannel || linkToCopy[0] != null)) {
+                        dismiss();
+                        if (linkToCopy[0] == null && loadingLink) {
+                            copyLinkOnEnd = true;
+                            Toast.makeText(ShareAlert.this.getContext(), LocaleController.getString(R.string.Loading), Toast.LENGTH_SHORT).show();
+                        } else {
+                            copyLink(ShareAlert.this.getContext());
+                        }
+                    }
+                });
+                pickerBottomLayout.addView(pickerTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.FILL));
+                containerView.addView(pickerBottom, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.FILL_HORIZONTAL | Gravity.BOTTOM));
 
-                    final ImageView imageView = new ImageView(context);
-                    imageView.setImageResource(R.drawable.mini_stats_shares);
-                    imageView.setScaleType(ImageView.ScaleType.CENTER);
-                    imageView.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_share_icon), PorterDuff.Mode.SRC_IN));
-                    sharesLayout.addView(imageView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0, Gravity.CENTER_VERTICAL));
+                if (sendingMessageObjects != null && sendingMessageObjects.size() > 0 && sendingMessageObjects.get(0).messageOwner != null && sendingMessageObjects.get(0).messageOwner.forwards > 0) {
+                    final MessageObject messageObject = sendingMessageObjects.get(0);
+                    final TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-messageObject.getDialogId());
+                    if (ChatObject.hasAdminRights(chat) && !messageObject.isForwarded()) {
+                        sharesCountLayout = new LinearLayout(context);
+                        sharesCountLayout.setOrientation(LinearLayout.HORIZONTAL);
+                        sharesCountLayout.setGravity(Gravity.CENTER_VERTICAL);
+                        sharesCountLayout.setBackgroundDrawable(Theme.createSelectorDrawable(getThemedColor(darkTheme ? Theme.key_voipgroup_listSelector : Theme.key_listSelector), 2));
+                        pickerBottomLayout.addView(sharesCountLayout, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 48, Gravity.RIGHT | Gravity.BOTTOM, 6, 0, -6, 0));
+                        sharesCountLayout.setOnClickListener(v -> {
+                            BaseFragment fragment2 = parentFragment;
+                            if (fragment2 == null) fragment2 = LaunchActivity.getSafeLastFragment();
+                            if (fragment2 == null) return;
+                            dismiss();
+                            fragment2.presentFragment(new MessageStatisticActivity(messageObject));
+                        });
 
-                    final TextView textView = new TextView(context);
-                    textView.setTextColor(getThemedColor(Theme.key_share_icon));
-                    textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
-                    textView.setGravity(Gravity.CENTER);
-                    textView.setText(LocaleController.formatNumber(messageObject.messageOwner.forwards, ','));
-                    sharesLayout.addView(textView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0, Gravity.CENTER_VERTICAL, 4, -1, 0, 0));
+                        ImageView imageView = new ImageView(context);
+                        imageView.setImageResource(R.drawable.share_arrow);
+                        imageView.setColorFilter(new PorterDuffColorFilter(getThemedColor(darkTheme ? Theme.key_voipgroup_listeningText : Theme.key_dialogTextBlue2), PorterDuff.Mode.MULTIPLY));
+                        sharesCountLayout.addView(imageView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.CENTER_VERTICAL, 20, 0, 0, 0));
 
-                    pickerBottomLinearLayout.addView(sharesLayout, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0, Gravity.CENTER_VERTICAL, 5, 5, 16, 0));
+                        TextView textView = new TextView(context);
+                        textView.setText(String.format("%d", messageObject.messageOwner.forwards));
+                        textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+                        textView.setTextColor(getThemedColor(darkTheme ? Theme.key_voipgroup_listeningText : Theme.key_dialogTextBlue2));
+                        textView.setGravity(Gravity.CENTER_VERTICAL);
+                        textView.setTypeface(AndroidUtilities.bold());
+                        sharesCountLayout.addView(textView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.CENTER_VERTICAL, 8, 0, 20, 0));
+                    }
                 }
             }
         } else {
@@ -1566,9 +1659,6 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
                 if (writeButtonContainer != null) {
                     writeButtonContainer.bringToFront();
                 }
-                if (selectedCountView != null) {
-                    selectedCountView.bringToFront();
-                }
             }
         };
         if (darkTheme) {
@@ -1583,6 +1673,24 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
         frameLayout2.setClipChildren(false);
         frameLayout2.setClipToPadding(false);
         commentTextView.setClipChildren(false);
+        commentTextView.getEditText().addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                AndroidUtilities.runOnUIThread(() -> {
+                    updateSelectedCount(1);
+                });
+            }
+        });
 
         writeButtonContainer = new FrameLayout(context) {
             @Override
@@ -1600,32 +1708,36 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
         writeButtonContainer.setScaleX(0.2f);
         writeButtonContainer.setScaleY(0.2f);
         writeButtonContainer.setAlpha(0.0f);
-        containerView.addView(writeButtonContainer, LayoutHelper.createFrame(60, 60, Gravity.RIGHT | Gravity.BOTTOM, 0, 0, 6, 10));
+        containerView.addView(writeButtonContainer, LayoutHelper.createFrame(100, 100, Gravity.RIGHT | Gravity.BOTTOM, 0, 0, 0, 0));
 
-        ImageView writeButton = new ImageView(context);
-        Drawable drawable = Theme.createSimpleSelectorCircleDrawable(dp(56), getThemedColor(Theme.key_dialogFloatingButton), getThemedColor(Build.VERSION.SDK_INT >= 21 ? Theme.key_dialogFloatingButtonPressed : Theme.key_dialogFloatingButton));
-        if (Build.VERSION.SDK_INT < 21) {
-            Drawable shadowDrawable = context.getResources().getDrawable(R.drawable.floating_shadow_profile).mutate();
-            shadowDrawable.setColorFilter(new PorterDuffColorFilter(0xff000000, PorterDuff.Mode.MULTIPLY));
-            CombinedDrawable combinedDrawable = new CombinedDrawable(shadowDrawable, drawable, 0, 0);
-            combinedDrawable.setIconSize(dp(56), dp(56));
-            drawable = combinedDrawable;
-        }
-        writeButton.setBackground(drawable);
-        writeButton.setImageResource(R.drawable.attach_send);
-        writeButton.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
-        writeButton.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_dialogFloatingIcon), PorterDuff.Mode.MULTIPLY));
-        writeButton.setScaleType(ImageView.ScaleType.CENTER);
-        if (Build.VERSION.SDK_INT >= 21) {
-            writeButton.setOutlineProvider(new ViewOutlineProvider() {
-                @SuppressLint("NewApi")
-                @Override
-                public void getOutline(View view, Outline outline) {
-                    outline.setOval(0, 0, dp(56), dp(56));
-                }
-            });
-        }
-        writeButtonContainer.addView(writeButton, LayoutHelper.createFrame(Build.VERSION.SDK_INT >= 21 ? 56 : 60, Build.VERSION.SDK_INT >= 21 ? 56 : 60, Gravity.LEFT | Gravity.TOP, Build.VERSION.SDK_INT >= 21 ? 2 : 0, 0, 0, 0));
+        writeButton = new ChatActivityEnterView.SendButton(context, R.drawable.attach_send, resourcesProvider) {
+            @Override
+            public boolean isOpen() {
+                return true;
+            }
+
+            @Override
+            public boolean isInScheduleMode() {
+                return false;
+            }
+
+            @Override
+            public boolean isInactive() {
+                return false;
+            }
+
+            @Override
+            public boolean shouldDrawBackground() {
+                return true;
+            }
+
+            @Override
+            public int getFillColor() {
+                return getThemedColor(Theme.key_dialogFloatingButton);
+            }
+        };
+        writeButton.setCircleSize(dp(64));
+        writeButtonContainer.addView(writeButton, LayoutHelper.createFrame(100, 100, Gravity.RIGHT | Gravity.BOTTOM, 0, 0, 0, 0));
         writeButton.setOnClickListener(v -> sendInternal(true));
         writeButton.setOnLongClickListener(v -> {
             return onSendLongClick(writeButton);
@@ -1633,32 +1745,6 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
 
         textPaint.setTextSize(dp(12));
         textPaint.setTypeface(AndroidUtilities.bold());
-
-        selectedCountView = new View(context) {
-            @Override
-            protected void onDraw(Canvas canvas) {
-                String text = String.format("%d", Math.max(1, selectedDialogs.size()));
-                int textSize = (int) Math.ceil(textPaint.measureText(text));
-                int size = Math.max(dp(16) + textSize, dp(24));
-                int cx = getMeasuredWidth() / 2;
-                int cy = getMeasuredHeight() / 2;
-
-                textPaint.setColor(getThemedColor(Theme.key_dialogRoundCheckBoxCheck));
-                paint.setColor(getThemedColor(Theme.key_dialogBackground));
-                rect.set(cx - size / 2, 0, cx + size / 2, getMeasuredHeight());
-                canvas.drawRoundRect(rect, dp(12), dp(12), paint);
-
-                paint.setColor(getThemedColor(Theme.key_dialogFloatingButton));
-                rect.set(cx - size / 2 + dp(2), dp(2), cx + size / 2 - dp(2), getMeasuredHeight() - dp(2));
-                canvas.drawRoundRect(rect, dp(10), dp(10), paint);
-
-                canvas.drawText(text, cx - textSize / 2, dp(16.2f), textPaint);
-            }
-        };
-        selectedCountView.setAlpha(0.0f);
-        selectedCountView.setScaleX(0.2f);
-        selectedCountView.setScaleY(0.2f);
-        containerView.addView(selectedCountView, LayoutHelper.createFrame(42, 24, Gravity.RIGHT | Gravity.BOTTOM, 0, 0, -8, 9));
 
         if (video_timestamp != null) {
             timestamp = video_timestamp;
@@ -2220,58 +2306,32 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
 
         CharSequence[] text = new CharSequence[] { commentTextView.getText() };
         ArrayList<TLRPC.MessageEntity> entities = MediaDataController.getInstance(currentAccount).getEntities(text, true);
-        int video_timestamp = -1;
+        final int video_timestamp;
         if (timestampCheckbox != null && timestampCheckbox.isChecked()) {
             video_timestamp = timestamp;
+        } else {
+            video_timestamp = -1;
         }
-//        String finalText = null;
-//        if (linkContainer != null && !TextUtils.isEmpty(getLink())) {
-//            finalText = getLink();
-//            if (frameLayout2.getTag() != null && commentTextView.length() > 0) {
-//                finalText += "\n\n";
-//                MediaDataController.offsetEntities(entities, finalText.length());
-//                finalText += text[0];
-//            }
-//        }
-        if (sendingMessageObjects != null) {
-            List<Long> removeKeys = new ArrayList<>();
-            for (int a = 0; a < selectedDialogs.size(); a++) {
-                long key = selectedDialogs.keyAt(a);
-                TLRPC.TL_forumTopic topic = selectedDialogTopics.get(selectedDialogs.get(key));
-                MessageObject replyTopMsg = topic != null ? new MessageObject(currentAccount, topic.topicStartMessage, false, false) : null;
-                if (replyTopMsg != null) {
-                    replyTopMsg.isTopicMainMessage = true;
-                }
-                int result;
-//                if (finalText != null) {
-//                    SendMessagesHelper.getInstance(currentAccount).sendMessage(SendMessagesHelper.SendMessageParams.of(finalText, key, replyTopMsg, replyTopMsg, null, true, entities, null, null, withSound, 0, null, false));
-//                    result = 0;
-//                } else {
-                    if (frameLayout2.getTag() != null && commentTextView.length() > 0) {
-                        SendMessagesHelper.getInstance(currentAccount).sendMessage(SendMessagesHelper.SendMessageParams.of(text[0] == null ? null : text[0].toString(), key, replyTopMsg, replyTopMsg, null, true, entities, null, null, withSound, 0, null, false));
-                    }
-                    result = SendMessagesHelper.getInstance(currentAccount).sendMessage(sendingMessageObjects, key, !showSendersName,false, withSound, 0, replyTopMsg, video_timestamp);
-//                }
-                if (result != 0) {
-                    removeKeys.add(key);
-                }
-                if (selectedDialogs.size() == 1) {
-                    AlertsCreator.showSendMediaAlert(result, parentFragment, null);
 
-                    if (result != 0) {
-                        break;
-                    }
+        long totalPrice = 0;
+        int messagesCount = 0;
+        ArrayList<Long> paidDialogIds = new ArrayList<>();
+        if (sendingMessageObjects != null) {
+            for (int a = 0; a < selectedDialogs.size(); a++) {
+                final long did = selectedDialogs.keyAt(a);
+                long thisPrice = MessagesController.getInstance(currentAccount).getSendPaidMessagesStars(did);
+                if (thisPrice <= 0) {
+                    thisPrice = DialogObject.getMessagesStarsPrice(MessagesController.getInstance(currentAccount).isUserContactBlocked(did));
                 }
-            }
-            for (long key : removeKeys) {
-                TLRPC.Dialog dialog = selectedDialogs.get(key);
-                selectedDialogs.remove(key);
-                if (dialog != null) {
-                    selectedDialogTopics.remove(dialog);
+                if (frameLayout2.getTag() != null && commentTextView.length() > 0) {
+                    if (thisPrice > 0) messagesCount++;
+                    totalPrice += thisPrice;
                 }
-            }
-            if (!selectedDialogs.isEmpty()) {
-                onSend(selectedDialogs, sendingMessageObjects.size(), selectedDialogs.size() == 1 ? selectedDialogTopics.get(selectedDialogs.valueAt(0)) : null);
+                if (thisPrice > 0) messagesCount++;
+                totalPrice += thisPrice;
+                if (thisPrice > 0 && !paidDialogIds.contains(did)) {
+                    paidDialogIds.add(did);
+                }
             }
         } else {
             int num;
@@ -2282,47 +2342,144 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
             }
             if (storyItem != null) {
                 for (int a = 0; a < selectedDialogs.size(); a++) {
-                    long key = selectedDialogs.keyAt(a);
-                    TLRPC.TL_forumTopic topic = selectedDialogTopics.get(selectedDialogs.get(key));
-                    MessageObject replyTopMsg = topic != null ? new MessageObject(currentAccount, topic.topicStartMessage, false, false) : null;
-
-                    SendMessagesHelper.SendMessageParams params;
-                    if (storyItem == null) {
-                        if (frameLayout2.getTag() != null && commentTextView.length() > 0) {
-                            params = SendMessagesHelper.SendMessageParams.of(text[0] == null ? null : text[0].toString(), key, replyTopMsg, replyTopMsg, null, true, entities, null, null, withSound, 0, null, false);
-                        } else {
-                            params = SendMessagesHelper.SendMessageParams.of(sendingText[num], key, replyTopMsg, replyTopMsg, null, true, null, null, null, withSound, 0, null, false);
-                        }
-                    } else {
-                        if (frameLayout2.getTag() != null && commentTextView.length() > 0 && text[0] != null) {
-                            SendMessagesHelper.getInstance(currentAccount).sendMessage(SendMessagesHelper.SendMessageParams.of(text[0].toString(), key, null, replyTopMsg, null, true, null, null, null, withSound, 0, null, false));
-                        }
-                        params = SendMessagesHelper.SendMessageParams.of(null, key, replyTopMsg, replyTopMsg, null, true, null, null, null, withSound, 0, null, false);
-                        params.sendingStory = storyItem;
+                    final long did = selectedDialogs.keyAt(a);
+                    long thisPrice = MessagesController.getInstance(currentAccount).getSendPaidMessagesStars(did);
+                    if (thisPrice <= 0) {
+                        thisPrice = DialogObject.getMessagesStarsPrice(MessagesController.getInstance(currentAccount).isUserContactBlocked(did));
                     }
-                    SendMessagesHelper.getInstance(currentAccount).sendMessage(params);
+                    if (storyItem != null) {
+                        if (frameLayout2.getTag() != null && commentTextView.length() > 0 && text[0] != null) {
+                            if (thisPrice > 0) messagesCount++;
+                            totalPrice += thisPrice;
+                        }
+                    }
+                    if (thisPrice > 0) messagesCount++;
+                    totalPrice += thisPrice;
+                    if (thisPrice > 0 && !paidDialogIds.contains(did)) {
+                        paidDialogIds.add(did);
+                    }
                 }
             } else if (sendingText[num] != null) {
                 for (int a = 0; a < selectedDialogs.size(); a++) {
-                    long key = selectedDialogs.keyAt(a);
-                    TLRPC.TL_forumTopic topic = selectedDialogTopics.get(selectedDialogs.get(key));
-                    MessageObject replyTopMsg = topic != null ? new MessageObject(currentAccount, topic.topicStartMessage, false, false) : null;
-
-                    if (frameLayout2.getTag() != null && commentTextView.length() > 0) {
-                        SendMessagesHelper.getInstance(currentAccount).sendMessage(SendMessagesHelper.SendMessageParams.of(text[0] == null ? null : text[0].toString(), key, replyTopMsg, replyTopMsg, null, true, entities, null, null, withSound, 0, null, false));
+                    final long did = selectedDialogs.keyAt(a);
+                    long thisPrice = MessagesController.getInstance(currentAccount).getSendPaidMessagesStars(did);
+                    if (thisPrice <= 0) {
+                        thisPrice = DialogObject.getMessagesStarsPrice(MessagesController.getInstance(currentAccount).isUserContactBlocked(did));
                     }
-                    SendMessagesHelper.getInstance(currentAccount).sendMessage(SendMessagesHelper.SendMessageParams.of(sendingText[num], key, replyTopMsg, replyTopMsg, null, true, null, null, null, withSound, 0, null, false));
+                    if (frameLayout2.getTag() != null && commentTextView.length() > 0) {
+                        if (thisPrice > 0) messagesCount++;
+                        totalPrice += thisPrice;
+                    }
+                    if (thisPrice > 0) messagesCount++;
+                    totalPrice += thisPrice;
+                    if (thisPrice > 0 && !paidDialogIds.contains(did)) {
+                        paidDialogIds.add(did);
+                    }
                 }
             }
-            onSend(selectedDialogs, 1, selectedDialogTopics.get(selectedDialogs.valueAt(0)));
         }
-        if (delegate != null) {
-            delegate.didShare();
-        }
-        dismiss();
+
+        AlertsCreator.ensurePaidMessagesMultiConfirmation(currentAccount, paidDialogIds, messagesCount, prices -> {
+            boolean hadPaid = false;
+            if (sendingMessageObjects != null) {
+                List<Long> removeKeys = new ArrayList<>();
+                for (int a = 0; a < selectedDialogs.size(); a++) {
+                    long key = selectedDialogs.keyAt(a);
+                    final Long price = prices == null ? (Long) 0L : prices.get(key);
+                    if (price != null && price > 0) hadPaid = true;
+                    TLRPC.TL_forumTopic topic = selectedDialogTopics.get(selectedDialogs.get(key));
+                    MessageObject replyTopMsg = topic != null ? new MessageObject(currentAccount, topic.topicStartMessage, false, false) : null;
+                    if (replyTopMsg != null) {
+                        replyTopMsg.isTopicMainMessage = true;
+                    }
+                    int result;
+                    if (frameLayout2.getTag() != null && commentTextView.length() > 0) {
+                        SendMessagesHelper.SendMessageParams params = SendMessagesHelper.SendMessageParams.of(text[0] == null ? null : text[0].toString(), key, replyTopMsg, replyTopMsg, null, true, entities, null, null, withSound, 0, null, false);
+                        params.payStars = price == null ? 0 : price;
+                        SendMessagesHelper.getInstance(currentAccount).sendMessage(params);
+                    }
+                    result = SendMessagesHelper.getInstance(currentAccount).sendMessage(sendingMessageObjects, key, !showSendersName,false, withSound, 0, replyTopMsg, video_timestamp, price == null ? 0 : price);
+                    if (result != 0) {
+                        removeKeys.add(key);
+                    }
+                    if (selectedDialogs.size() == 1) {
+                        AlertsCreator.showSendMediaAlert(result, parentFragment, null);
+
+                        if (result != 0) {
+                            break;
+                        }
+                    }
+                }
+                for (long key : removeKeys) {
+                    TLRPC.Dialog dialog = selectedDialogs.get(key);
+                    selectedDialogs.remove(key);
+                    if (dialog != null) {
+                        selectedDialogTopics.remove(dialog);
+                    }
+                }
+                if (!selectedDialogs.isEmpty()) {
+                    onSend(selectedDialogs, sendingMessageObjects.size(), selectedDialogs.size() == 1 ? selectedDialogTopics.get(selectedDialogs.valueAt(0)) : null, !hadPaid);
+                }
+            } else {
+                int num;
+                if (switchView != null) {
+                    num = switchView.currentTab;
+                } else {
+                    num = 0;
+                }
+                if (storyItem != null) {
+                    for (int a = 0; a < selectedDialogs.size(); a++) {
+                        long key = selectedDialogs.keyAt(a);
+                        final Long price = prices == null ? (Long) 0L : prices.get(key);
+                        if (price != null && price > 0) hadPaid = true;
+                        TLRPC.TL_forumTopic topic = selectedDialogTopics.get(selectedDialogs.get(key));
+                        MessageObject replyTopMsg = topic != null ? new MessageObject(currentAccount, topic.topicStartMessage, false, false) : null;
+
+                        SendMessagesHelper.SendMessageParams params;
+                        if (storyItem == null) {
+                            if (frameLayout2.getTag() != null && commentTextView.length() > 0) {
+                                params = SendMessagesHelper.SendMessageParams.of(text[0] == null ? null : text[0].toString(), key, replyTopMsg, replyTopMsg, null, true, entities, null, null, withSound, 0, null, false);
+                            } else {
+                                params = SendMessagesHelper.SendMessageParams.of(sendingText[num], key, replyTopMsg, replyTopMsg, null, true, null, null, null, withSound, 0, null, false);
+                            }
+                        } else {
+                            if (frameLayout2.getTag() != null && commentTextView.length() > 0 && text[0] != null) {
+                                SendMessagesHelper.getInstance(currentAccount).sendMessage(SendMessagesHelper.SendMessageParams.of(text[0].toString(), key, null, replyTopMsg, null, true, null, null, null, withSound, 0, null, false));
+                            }
+                            params = SendMessagesHelper.SendMessageParams.of(null, key, replyTopMsg, replyTopMsg, null, true, null, null, null, withSound, 0, null, false);
+                            params.sendingStory = storyItem;
+                        }
+                        params.payStars = price == null ? 0 : price;
+                        SendMessagesHelper.getInstance(currentAccount).sendMessage(params);
+                    }
+                } else if (sendingText[num] != null) {
+                    for (int a = 0; a < selectedDialogs.size(); a++) {
+                        long key = selectedDialogs.keyAt(a);
+                        final Long price = prices == null ? (Long) 0L : prices.get(key);
+                        if (price != null && price > 0) hadPaid = true;
+                        TLRPC.TL_forumTopic topic = selectedDialogTopics.get(selectedDialogs.get(key));
+                        MessageObject replyTopMsg = topic != null ? new MessageObject(currentAccount, topic.topicStartMessage, false, false) : null;
+
+                        if (frameLayout2.getTag() != null && commentTextView.length() > 0) {
+                            SendMessagesHelper.SendMessageParams params = SendMessagesHelper.SendMessageParams.of(text[0] == null ? null : text[0].toString(), key, replyTopMsg, replyTopMsg, null, true, entities, null, null, withSound, 0, null, false);
+                            params.payStars = price == null ? 0 : price;
+                            SendMessagesHelper.getInstance(currentAccount).sendMessage(params);
+                        }
+                        SendMessagesHelper.SendMessageParams params2 = SendMessagesHelper.SendMessageParams.of(sendingText[num], key, replyTopMsg, replyTopMsg, null, true, null, null, null, withSound, 0, null, false);
+                        params2.payStars = price == null ? 0 : price;
+                        SendMessagesHelper.getInstance(currentAccount).sendMessage(params2);
+                    }
+                }
+                onSend(selectedDialogs, 1, selectedDialogTopics.get(selectedDialogs.valueAt(0)), !hadPaid);
+            }
+            if (delegate != null) {
+                delegate.didShare();
+            }
+            dismiss();
+        });
     }
 
-    protected void onSend(LongSparseArray<TLRPC.Dialog> dids, int count, TLRPC.TL_forumTopic topic) {
+    protected void onSend(LongSparseArray<TLRPC.Dialog> dids, int count, TLRPC.TL_forumTopic topic, boolean showToast) {
 
     }
 
@@ -2546,14 +2703,11 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
         animators.add(ObjectAnimator.ofFloat(writeButtonContainer, View.SCALE_X, show ? 1.0f : 0.2f));
         animators.add(ObjectAnimator.ofFloat(writeButtonContainer, View.SCALE_Y, show ? 1.0f : 0.2f));
         animators.add(ObjectAnimator.ofFloat(writeButtonContainer, View.ALPHA, show ? 1.0f : 0.0f));
-        animators.add(ObjectAnimator.ofFloat(selectedCountView, View.SCALE_X, show ? 1.0f : 0.2f));
-        animators.add(ObjectAnimator.ofFloat(selectedCountView, View.SCALE_Y, show ? 1.0f : 0.2f));
-        animators.add(ObjectAnimator.ofFloat(selectedCountView, View.ALPHA, show ? 1.0f : 0.0f));
         if (pickerBottom == null || pickerBottom.getVisibility() != View.VISIBLE) {
             animators.add(ObjectAnimator.ofFloat(shadow[1], View.ALPHA, show ? 1.0f : 0.0f));
         }
         if (pickerBottomLayout != null) {
-            animators.add(ObjectAnimator.ofFloat(pickerBottomLayout, View.TRANSLATION_Y, show ? dp(5) : 0.0f));
+            animators.add(ObjectAnimator.ofFloat(pickerBottomLayout, View.TRANSLATION_Y, darkTheme ? (show ? dp(timestampLayout != null ? 5 : 16) : 0.0f) : 0));
         }
 
         animatorSet.playTogether(animators);
@@ -2591,25 +2745,26 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
 
     public void updateSelectedCount(int animated) {
         if (selectedDialogs.size() == 0) {
-            selectedCountView.setPivotX(0);
-            selectedCountView.setPivotY(0);
             showCommentTextView(false);
         } else {
-            selectedCountView.invalidate();
-            if (!showCommentTextView(true) && animated != 0) {
-                selectedCountView.setPivotX(dp(21));
-                selectedCountView.setPivotY(dp(12));
-                AnimatorSet animatorSet = new AnimatorSet();
-                animatorSet.playTogether(
-                        ObjectAnimator.ofFloat(selectedCountView, View.SCALE_X, animated == 1 ? 1.1f : 0.9f, 1.0f),
-                        ObjectAnimator.ofFloat(selectedCountView, View.SCALE_Y, animated == 1 ? 1.1f : 0.9f, 1.0f));
-                animatorSet.setInterpolator(new OvershootInterpolator());
-                animatorSet.setDuration(180);
-                animatorSet.start();
-            } else {
-                selectedCountView.setPivotX(0);
-                selectedCountView.setPivotY(0);
+            int messagesCount = sendingMessageObjects == null ? 1 : sendingMessageObjects.size();
+            if (frameLayout2.getTag() != null && commentTextView.length() > 0) {
+                messagesCount++;
             }
+            long price = 0;
+            for (int i = 0; i < selectedDialogs.size(); ++i) {
+                final long did = selectedDialogs.valueAt(i).id;
+                long thisPrice = MessagesController.getInstance(currentAccount).getSendPaidMessagesStars(did);
+                if (thisPrice <= 0) {
+                    thisPrice = DialogObject.getMessagesStarsPrice(MessagesController.getInstance(currentAccount).isUserContactBlocked(did));
+                }
+                price += thisPrice;
+            }
+            writeButton.setCount(Math.max(1, selectedDialogs.size()), animated != 0);
+            writeButton.setStarsPrice(price, messagesCount, animated != 0);
+            showCommentTextView(true);
+
+            commentTextView.setPadding(0, 0, Math.max(dp(84), writeButton.width()), 0);
         }
     }
 
@@ -3538,7 +3693,7 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
                 searchAdapter.searchDialogs(searchView.searchEditText.getText().toString());
             } else {
                 if (lastOffset == Integer.MAX_VALUE) {
-                    layoutManager.scrollToPositionWithOffset(0,  0);
+                    layoutManager.scrollToPositionWithOffset(0, 0);
                 } else {
                     layoutManager.scrollToPositionWithOffset(0, 0);
                 }
@@ -3547,14 +3702,16 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
     }
 
     private String getLink() {
-        String link;
+        String link = null;
         if (switchView != null) {
             link = linkToCopy[switchView.currentTab];
         } else {
-            link = linkToCopy[0];
-        }
-        if (link == null && exportedMessageLink != null) {
-            link = exportedMessageLink.link;
+            if (exportedMessageLink != null) {
+                link = exportedMessageLink.link;
+            }
+            if (link == null) {
+                link = linkToCopy[0];
+            }
         }
         if (timestampCheckbox != null && timestampCheckbox.isChecked()) {
             try {
@@ -3611,6 +3768,5 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
         }
         frameLayout2.setTranslationY(-bottomMargin);
         writeButtonContainer.setTranslationY(-bottomMargin);
-        selectedCountView.setTranslationY(-bottomMargin);
     }
 }

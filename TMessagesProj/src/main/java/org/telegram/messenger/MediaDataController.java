@@ -6861,6 +6861,7 @@ public class MediaDataController extends BaseController {
     }
 
     public static final int MAX_STYLE_RUNS_COUNT = 1000;
+    public static final int MAX_LINKS_COUNT = 250;
 
     public static void addAnimatedEmojiSpans(ArrayList<TLRPC.MessageEntity> entities, CharSequence messageText, Paint.FontMetricsInt fontMetricsInt) {
         if (!(messageText instanceof Spannable) || entities == null) {

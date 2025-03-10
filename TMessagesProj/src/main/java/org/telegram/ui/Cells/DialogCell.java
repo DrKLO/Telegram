@@ -80,6 +80,7 @@ import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.tgnet.tl.TL_account;
 import org.telegram.tgnet.tl.TL_stories;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Adapters.DialogsAdapter;
@@ -438,9 +439,14 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
 
     private final AnimatedFloat premiumBlockedT = new AnimatedFloat(this, 0, 350, CubicBezierInterpolator.EASE_OUT_QUINT);
     private boolean premiumBlocked;
+    private final AnimatedFloat starsBlockedT = new AnimatedFloat(this, 0, 350, CubicBezierInterpolator.EASE_OUT_QUINT);
+    private long starsPriceBlocked;
 
     public boolean isBlocked() {
         return premiumBlocked;
+    }
+    public long getStarsPrice() {
+        return starsPriceBlocked;
     }
 
     protected CheckBox2 checkBox;
@@ -1799,7 +1805,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                 }
             }
 
-            if (!drawForwardIcon && !isFolderCell() && !isForumCell() && !isDialogFolder() && message != null && message.messageOwner != null && message.messageOwner.action instanceof TLRPC.TL_messageActionStarGift) {
+            if (!drawForwardIcon && !isFolderCell() && !isForumCell() && !isDialogFolder() && draftMessage == null && message != null && message.messageOwner != null && message.messageOwner.action instanceof TLRPC.TL_messageActionStarGift) {
                 drawGiftIcon = true;
                 SpannableStringBuilder builder = new SpannableStringBuilder(messageString);
                 builder.insert(0, "d ");
@@ -2071,6 +2077,9 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
             if (LocaleController.isRTL) {
                 nameLeft += w;
             }
+        }
+        if (drawBotVerified) {
+            nameWidth -= dp(21);
         }
         try {
             int ellipsizeWidth = nameWidth - dp(12);
@@ -5836,11 +5845,13 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
     }
 
     private void updatePremiumBlocked(boolean animated) {
-        final boolean wasPremiumBlocked = premiumBlocked;
-        premiumBlocked = (unsubscribePremiumBlocked != null) && user != null && MessagesController.getInstance(currentAccount).isUserPremiumBlocked(user.id);
-        if (wasPremiumBlocked != premiumBlocked) {
+        final TL_account.RequirementToContact r = (unsubscribePremiumBlocked != null) && user != null ? MessagesController.getInstance(currentAccount).isUserContactBlocked(user.id) : null;
+        if (premiumBlocked != DialogObject.isPremiumBlocked(r) || starsPriceBlocked != DialogObject.getMessagesStarsPrice(r)) {
+            premiumBlocked = DialogObject.isPremiumBlocked(r);
+            starsPriceBlocked = DialogObject.getMessagesStarsPrice(r);
             if (!animated) {
                 premiumBlockedT.set(premiumBlocked, true);
+                starsBlockedT.set(starsPriceBlocked > 0, true);
             }
             invalidate();
         }

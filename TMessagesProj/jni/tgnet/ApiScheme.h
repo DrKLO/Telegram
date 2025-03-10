@@ -423,7 +423,7 @@ public:
 
 class TL_emojiStatusCollectible : public EmojiStatus {
 public:
-    static const uint32_t constructor = 0x7141dbf;
+    static const uint32_t constructor = 0x7184603b;
 
     int32_t flags;
     int64_t collectible_id;
@@ -465,6 +465,7 @@ public:
     std::unique_ptr<TL_peerColor> profile_color;
     int32_t bot_active_users;
     int64_t bot_verification_icon;
+    int64_t send_paid_messages_stars;
 
     static User *TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, int32_t instanceNum, bool &error);
 };
@@ -479,6 +480,15 @@ public:
 };
 
 class TL_user : public User {
+
+public:
+    static const uint32_t constructor = 0x20b1422;
+
+    void readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error);
+    void serializeToStream(NativeByteBuffer *stream);
+};
+
+class TL_user_layer199 : public TL_user {
 
 public:
     static const uint32_t constructor = 0x4b46c37e;

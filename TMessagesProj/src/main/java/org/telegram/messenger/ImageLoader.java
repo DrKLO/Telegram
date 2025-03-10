@@ -55,6 +55,7 @@ import org.telegram.ui.Components.Point;
 import org.telegram.ui.Components.RLottieDrawable;
 import org.telegram.ui.Components.SlotsDrawable;
 import org.telegram.ui.Components.ThemePreviewDrawable;
+import org.telegram.ui.PhotoViewer;
 import org.telegram.ui.web.WebInstantView;
 
 import java.io.BufferedReader;
@@ -3118,7 +3119,7 @@ public class ImageLoader {
                             String location = imageLocation.path;
                             if (!location.startsWith("vthumb") && !location.startsWith("thumb")) {
                                 String trueExt = getHttpUrlExtension(location, "jpg");
-                                if (trueExt.equals("webm") || trueExt.equals("mp4") || trueExt.equals("gif")) {
+                                if (trueExt.equalsIgnoreCase("webm") || trueExt.equalsIgnoreCase("mp4") || trueExt.equalsIgnoreCase("gif")) {
                                     img.imageType = FileLoader.IMAGE_TYPE_ANIMATION;
                                 } else if ("tgs".equals(ext)) {
                                     img.imageType = FileLoader.IMAGE_TYPE_LOTTIE;
@@ -4128,6 +4129,19 @@ public class ImageLoader {
         photoSize.size = (int) cacheFile.length();
 
         return photoSize;
+    }
+
+    public static class PhotoSizeFromPhoto extends TLRPC.PhotoSize {
+        public final TLRPC.Photo photo;
+        public final TLRPC.InputPhoto inputPhoto;
+        public PhotoSizeFromPhoto(TLRPC.Photo photo) {
+            this.photo = photo;
+            final TLRPC.TL_inputPhoto i = new TLRPC.TL_inputPhoto();
+            i.id = photo.id;
+            i.file_reference = photo.file_reference;
+            i.access_hash = photo.access_hash;
+            this.inputPhoto = i;
+        }
     }
 
     private static TLRPC.PhotoSize scaleAndSaveImageInternal(TLRPC.PhotoSize photoSize, Bitmap bitmap, Bitmap.CompressFormat compressFormat, boolean progressive, int w, int h, float photoW, float photoH, float scaleFactor, int quality, boolean cache, boolean scaleAnyway, boolean forceCacheDir) throws Exception {

@@ -29,6 +29,7 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.voip.VoIPService;
+import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.voip.VoIPButtonsLayout;
 import org.telegram.ui.Components.voip.VoIPToggleButton;
@@ -281,18 +282,23 @@ public class GroupCallPipAlertView extends LinearLayout implements VoIPService.S
         VoIPService service = VoIPService.getSharedInstance();
         if (service != null && service.groupCall != null) {
             AvatarDrawable avatarDrawable = new AvatarDrawable();
+            final TLRPC.Chat chat = service.getChat();
             avatarDrawable.setColor(
-                Theme.getColor(Theme.keys_avatar_background[AvatarDrawable.getColorIndex(service.getChat().id)]),
-                Theme.getColor(Theme.keys_avatar_background2[AvatarDrawable.getColorIndex(service.getChat().id)])
+                Theme.getColor(Theme.keys_avatar_background[AvatarDrawable.getColorIndex(chat != null ? chat.id : 0)]),
+                Theme.getColor(Theme.keys_avatar_background2[AvatarDrawable.getColorIndex(chat != null ? chat.id : 0)])
             );
-            avatarDrawable.setInfo(currentAccount, service.getChat());
-            avatarImageView.setImage(ImageLocation.getForLocal(service.getChat().photo.photo_small), "50_50", avatarDrawable, null);
+            avatarDrawable.setInfo(currentAccount, chat);
+            if (chat != null) {
+                avatarImageView.setImage(ImageLocation.getForLocal(chat.photo.photo_small), "50_50", avatarDrawable, null);
+            }
 
             String titleStr;
             if (!TextUtils.isEmpty(service.groupCall.call.title)) {
                 titleStr = service.groupCall.call.title;
+            } else if (chat != null) {
+                titleStr = chat.title;
             } else {
-                titleStr = service.getChat().title;
+                titleStr = "";
             }
             if (titleStr != null) {
                 titleStr = titleStr.replace("\n", " ").replaceAll(" +", " ").trim();

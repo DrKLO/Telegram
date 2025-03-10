@@ -981,6 +981,9 @@ public class FileRefController extends BaseController {
                                         } else if (media.webpage != null) {
                                             result = getFileReference(media.webpage, requester.location, needReplacement, locationReplacement);
                                         }
+                                        if (result == null && media.video_cover != null) {
+                                            result = getFileReference(media.video_cover, requester.location, needReplacement, locationReplacement);
+                                        }
                                     }
                                 }
                                 if (result != null) {
@@ -999,6 +1002,9 @@ public class FileRefController extends BaseController {
                                 result = getFileReference(message.media.photo, requester.location, needReplacement, locationReplacement);
                             } else if (message.media.webpage != null) {
                                 result = getFileReference(message.media.webpage, requester.location, needReplacement, locationReplacement);
+                            }
+                            if (result == null && message.media.video_cover != null) {
+                                result = getFileReference(message.media.video_cover, requester.location, needReplacement, locationReplacement);
                             }
                         } else if (message.action instanceof TLRPC.TL_messageActionChatEditPhoto || message.action instanceof TLRPC.TL_messageActionSuggestProfilePhoto) {
                             result = getFileReference(message.action.photo, requester.location, needReplacement, locationReplacement);
@@ -1276,6 +1282,9 @@ public class FileRefController extends BaseController {
                         newStoryItem = storyItem;
                         if (result == null && storyItem.media.photo != null) {
                             result = getFileReference(storyItem.media.photo, requester.location, needReplacement, locationReplacement);
+                        }
+                        if (result == null && storyItem.media.video_cover != null) {
+                            result = getFileReference(storyItem.media.video_cover, requester.location, needReplacement, locationReplacement);
                         }
                         if (result == null && storyItem.media.document != null) {
                             result = getFileReference(storyItem.media.document, storyItem.media.alt_documents, requester.location, needReplacement, locationReplacement);
@@ -1589,5 +1598,9 @@ public class FileRefController extends BaseController {
         } catch (Exception e) {
             return -1;
         }
+    }
+
+    public static boolean isFileRefErrorCover(String error) {
+        return error != null && isFileRefError(error) && error.endsWith("COVER_EXPIRED");
     }
 }

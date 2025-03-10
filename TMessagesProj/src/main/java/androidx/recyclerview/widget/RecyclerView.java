@@ -5535,6 +5535,10 @@ public class RecyclerView extends ViewGroup implements ScrollingView,
             assertNotInLayoutOrScroll(null);
             mState.mStructureChanged = true;
 
+            if (BuildVars.DEBUG_VERSION) {
+                mAdapterHelper.logNotify("notifyDataSetChanged()");
+            }
+
             processDataSetCompletelyChanged(true);
             if (!mAdapterHelper.hasPendingUpdates()) {
                 requestLayout();

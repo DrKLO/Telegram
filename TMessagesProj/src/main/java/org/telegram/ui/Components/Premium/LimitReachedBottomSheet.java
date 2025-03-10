@@ -48,6 +48,7 @@ import org.telegram.messenger.BotWebViewVibrationEffect;
 import org.telegram.messenger.ChannelBoostsController;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.ContactsController;
+import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
@@ -58,6 +59,7 @@ import org.telegram.messenger.UserObject;
 import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.tgnet.tl.TL_account;
 import org.telegram.tgnet.tl.TL_stories;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
@@ -71,6 +73,7 @@ import org.telegram.ui.Cells.ShadowSectionCell;
 import org.telegram.ui.ChannelColorActivity;
 import org.telegram.ui.ChatActivity;
 import org.telegram.ui.ChatEditActivity;
+import org.telegram.ui.Components.AlertsCreator;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.AvatarsImageView;
 import org.telegram.ui.Components.BackupImageView;
@@ -108,6 +111,7 @@ import org.telegram.ui.Stories.recorder.StoryRecorder;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 
@@ -661,7 +665,7 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView imp
                     dismiss();
                     return;
                 }
-                sendInviteMessages();
+                sendInviteMessages(null);
                 return;
             }
             if (selectedChats.isEmpty()) {
@@ -817,7 +821,7 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView imp
         return true;
     }
 
-    private void sendInviteMessages() {
+    private void sendInviteMessages(HashMap<Long, Long> prices) {
         String link = null;
         TLRPC.ChatFull chatFull = MessagesController.getInstance(currentAccount).getChatFull(fromChat.id);
         if (chatFull == null) {
@@ -832,25 +836,53 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView imp
             dismiss();
             return;
         }
+        ArrayList<TLRPC.User> paidChats = new ArrayList<>();
+        ArrayList<TLRPC.User> freeChats = new ArrayList<>();
         for (Object obj : selectedChats) {
             TLRPC.User user = (TLRPC.User) obj;
-            SendMessagesHelper.getInstance(currentAccount).sendMessage(SendMessagesHelper.SendMessageParams.of(link, user.id, null, null, null, true, null, null, null, false, 0, null, false));
-        }
-        AndroidUtilities.runOnUIThread(() -> {
-            BulletinFactory factory = BulletinFactory.global();
-            if (factory != null) {
-                if (selectedChats.size() == 1) {
-                    TLRPC.User user = (TLRPC.User) selectedChats.iterator().next();
-                    factory.createSimpleBulletin(R.raw.voip_invite,
-                            AndroidUtilities.replaceTags(LocaleController.formatString("InviteLinkSentSingle", R.string.InviteLinkSentSingle, ContactsController.formatName(user)))
-                    ).show();
-                } else {
-                    factory.createSimpleBulletin(R.raw.voip_invite,
-                            AndroidUtilities.replaceTags(LocaleController.formatPluralString("InviteLinkSent", selectedChats.size(), selectedChats.size()))
-                    ).show();
-                }
+            long price = MessagesController.getInstance(currentAccount).getSendPaidMessagesStars(user.id);
+            if (price <= 0) {
+                price = DialogObject.getMessagesStarsPrice(MessagesController.getInstance(currentAccount).isUserContactBlocked(user.id));
             }
-        });
+            (price >= 0 ? paidChats : freeChats).add(user);
+        }
+        if (prices == null && !paidChats.isEmpty()) {
+            ArrayList<Long> dialogIds = new ArrayList<>();
+            for (TLRPC.User user : paidChats) {
+                dialogIds.add(user.id);
+            }
+            AlertsCreator.ensurePaidMessagesMultiConfirmation(currentAccount, dialogIds, 1, this::sendInviteMessages);
+            return;
+        }
+        boolean _hadPaid = false;
+        for (Object obj : selectedChats) {
+            TLRPC.User user = (TLRPC.User) obj;
+            final Long price = prices == null ? 0 : prices.get(user.id);
+            final SendMessagesHelper.SendMessageParams params = SendMessagesHelper.SendMessageParams.of(link, user.id, null, null, null, true, null, null, null, false, 0, null, false);
+            params.payStars = price == null ? 0 : price;
+            SendMessagesHelper.getInstance(currentAccount).sendMessage(params);
+            if (params.payStars > 0) {
+                _hadPaid = true;
+            }
+        }
+        final boolean hadPaid = _hadPaid;
+        if (!hadPaid) {
+            AndroidUtilities.runOnUIThread(() -> {
+                BulletinFactory factory = BulletinFactory.global();
+                if (factory != null) {
+                    if (selectedChats.size() == 1) {
+                        TLRPC.User user = (TLRPC.User) selectedChats.iterator().next();
+                        factory.createSimpleBulletin(R.raw.voip_invite,
+                                AndroidUtilities.replaceTags(LocaleController.formatString(R.string.InviteLinkSentSingle, ContactsController.formatName(user)))
+                        ).show();
+                    } else {
+                        factory.createSimpleBulletin(R.raw.voip_invite,
+                                AndroidUtilities.replaceTags(LocaleController.formatPluralString("InviteLinkSent", selectedChats.size(), selectedChats.size()))
+                        ).show();
+                    }
+                }
+            });
+        }
         dismiss();
     }
 
@@ -1379,7 +1411,7 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView imp
                         } else if (type == TYPE_ADD_MEMBERS_RESTRICTED) {
                             TLRPC.User user = restrictedUsers.get(position - chatStartRow);
                             final boolean premiumBlocked = premiumMessagingBlockedUsers != null && premiumMessagingBlockedUsers.contains(user.id);
-                            cell.overridePremiumBlocked(premiumBlocked, false);
+                            cell.overridePremiumBlocked(premiumBlocked ? new TL_account.requirementToContactPremium() : null, false);
                             String signature;
                             if (premiumBlocked) {
                                 signature = LocaleController.getString(R.string.InvitePremiumBlockedUser);

@@ -27,7 +27,6 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
-import org.telegram.messenger.UserObject;
 import org.telegram.messenger.Utilities;
 import org.telegram.messenger.browser.Browser;
 import org.telegram.tgnet.ConnectionsManager;
@@ -324,7 +323,7 @@ public class ReportBottomSheet extends BottomSheet {
                     }
                 } else if (error != null) {
                     if (!sponsored && "MESSAGE_ID_REQUIRED".equals(error.text)) {
-                        ChatActivity.openReportChat(dialogId, optionText.toString(), option);
+                        ChatActivity.openReportChat(dialogId, optionText.toString(), option, comment);
                     } else if ("PREMIUM_ACCOUNT_REQUIRED".equals(error.text)) {
                         if (listener != null) {
                             listener.onPremiumRequired();
@@ -754,7 +753,7 @@ public class ReportBottomSheet extends BottomSheet {
         Context context,
         long dialogId
     ) {
-        open(currentAccount, context, dialogId, false, new ArrayList<>(), null, null, new byte[]{}, null);
+        open(currentAccount, context, dialogId, false, new ArrayList<>(), null, null, new byte[]{}, null, null);
     }
 
     public static void openChat(
@@ -766,7 +765,7 @@ public class ReportBottomSheet extends BottomSheet {
         final long dialogId = fragment.getDialogId();
         if (context == null) return;
 
-        open(currentAccount, context, dialogId, false, new ArrayList<>(), null, null, new byte[]{}, null);
+        open(currentAccount, context, dialogId, false, new ArrayList<>(), null, null, new byte[]{}, null, null);
     }
 
     public static void openChat(
@@ -778,7 +777,7 @@ public class ReportBottomSheet extends BottomSheet {
         final Context context = fragment.getContext();
         if (context == null) return;
 
-        open(currentAccount, context, dialogId, false, new ArrayList<>(), null, null, new byte[]{}, null);
+        open(currentAccount, context, dialogId, false, new ArrayList<>(), null, null, new byte[]{}, null, null);
     }
 
     public static void openMessage(
@@ -791,7 +790,7 @@ public class ReportBottomSheet extends BottomSheet {
         if (context == null) return;
 
         final ArrayList<Integer> messageIds = new ArrayList<>(Collections.singleton(message.getId()));
-        open(currentAccount, context,  message.getDialogId(), false, messageIds, BulletinFactory.of(fragment), fragment == null ? null : fragment.getResourceProvider(), new byte[]{}, null);
+        open(currentAccount, context,  message.getDialogId(), false, messageIds, BulletinFactory.of(fragment), fragment == null ? null : fragment.getResourceProvider(), new byte[]{}, null, null);
     }
 
     public static void openMessages(
@@ -804,12 +803,13 @@ public class ReportBottomSheet extends BottomSheet {
         final long dialogId = fragment.getDialogId();
         if (context == null) return;
 
-        open(currentAccount, context, dialogId, false, ids, BulletinFactory.of(fragment), fragment == null ? null : fragment.getResourceProvider(), new byte[]{}, null);
+        open(currentAccount, context, dialogId, false, ids, BulletinFactory.of(fragment), fragment == null ? null : fragment.getResourceProvider(), new byte[]{}, null, null);
     }
 
     public static void continueReport(
         ChatActivity fragment,
         byte[] option,
+        String message,
         ArrayList<Integer> ids,
         Utilities.Callback<Boolean> whenDone
     ) {
@@ -819,7 +819,7 @@ public class ReportBottomSheet extends BottomSheet {
         final long dialogId = fragment.getDialogId();
         if (context == null) return;
 
-        open(currentAccount, context, dialogId, false, ids, BulletinFactory.of(fragment), fragment == null ? null : fragment.getResourceProvider(), option, whenDone);
+        open(currentAccount, context, dialogId, false, ids, BulletinFactory.of(fragment), fragment == null ? null : fragment.getResourceProvider(), option, message, whenDone);
     }
 
     public static void openStory(
@@ -831,7 +831,7 @@ public class ReportBottomSheet extends BottomSheet {
         Utilities.Callback<Boolean> whenDone
     ) {
         final ArrayList<Integer> storyIds = new ArrayList<>(Collections.singleton(storyItem.id));
-        open(currentAccount, context, storyItem.dialogId, true, storyIds, bulletinFactory, resourceProvider, new byte[]{}, whenDone);
+        open(currentAccount, context, storyItem.dialogId, true, storyIds, bulletinFactory, resourceProvider, new byte[]{}, null, whenDone);
     }
 
     public static void open(
@@ -843,6 +843,7 @@ public class ReportBottomSheet extends BottomSheet {
         BulletinFactory bulletinFactory,
         Theme.ResourcesProvider resourceProvider,
         final byte[] option,
+        String message,
         Utilities.Callback<Boolean> whenDone
     ) {
         if (context == null || messageIds == null) return;
@@ -853,14 +854,14 @@ public class ReportBottomSheet extends BottomSheet {
             req.peer = MessagesController.getInstance(currentAccount).getInputPeer(dialogId);
             req.id.addAll(messageIds);
             req.option = option;
-            req.message = "";
+            req.message = TextUtils.isEmpty(message) ? "" : message;
             request = req;
         } else {
             TLRPC.TL_messages_report req = new TLRPC.TL_messages_report();
             req.peer = MessagesController.getInstance(currentAccount).getInputPeer(dialogId);
             req.id.addAll(messageIds);
             req.option = option;
-            req.message = "";
+            req.message = TextUtils.isEmpty(message) ? "" : message;
             request = req;
         }
         ConnectionsManager.getInstance(currentAccount).sendRequest(request, (response, error) -> {
@@ -909,17 +910,21 @@ public class ReportBottomSheet extends BottomSheet {
                             done[0] = true;
                             whenDone.run(true);
                         }
-                        if (LaunchActivity.getSafeLastFragment() == null) return;
-                        final BulletinFactory bf = bulletinFactory == null ? BulletinFactory.of(LaunchActivity.getSafeLastFragment()) : bulletinFactory;
-                        if (bf == null) return;
-                        bf
-                            .createSimpleBulletin(
-                                    R.raw.msg_antispam,
-                                    LocaleController.getString(R.string.ReportChatSent),
-                                    LocaleController.getString(R.string.Reported2)
-                            )
-                            .setDuration(Bulletin.DURATION_PROLONG)
-                            .show();
+                        Runnable showToast = () -> {
+                            BaseFragment fragment = LaunchActivity.getSafeLastFragment();
+                            if (fragment == null) return;
+                            final BulletinFactory bf = BulletinFactory.of(fragment);
+                            if (bf == null) return;
+                            bf
+                                .createSimpleBulletin(
+                                        R.raw.msg_antispam,
+                                        LocaleController.getString(R.string.ReportChatSent),
+                                        LocaleController.getString(R.string.Reported2)
+                                )
+                                .setDuration(Bulletin.DURATION_PROLONG)
+                                .show();
+                        };
+                        AndroidUtilities.runOnUIThread(showToast, 220);
                     }, 200);
                 }
             }

@@ -546,7 +546,12 @@ public class AnimatedEmojiDrawable extends Drawable {
                 @Override
                 protected boolean setImageBitmapByKey(Drawable drawable, String key, int type, boolean memCache, int guid) {
                     AnimatedEmojiDrawable.this.invalidate();
-                    return super.setImageBitmapByKey(drawable, key, type, memCache, guid);
+                    boolean r = super.setImageBitmapByKey(drawable, key, type, memCache, guid);
+                    if (preloading && hasImageLoaded()) {
+                        preloading = false;
+                        AndroidUtilities.runOnUIThread(AnimatedEmojiDrawable.this::updateAttachState);
+                    }
+                    return r;
                 }
             };
             imageReceiver.setAllowLoadingOnAttachedOnly(true);

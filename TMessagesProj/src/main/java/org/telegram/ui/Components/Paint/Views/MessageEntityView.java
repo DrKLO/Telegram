@@ -454,8 +454,8 @@ public class MessageEntityView extends EntityView {
 
                             int left = (cell.getLeft() + cell.getBackgroundDrawableLeft());
                             int right = (cell.getLeft() + cell.getBackgroundDrawableRight());
-                            int top = (cell.getTop() + cell.getBackgroundDrawableTop());
-                            int bottom = (cell.getTop() + cell.getBackgroundDrawableBottom());
+                            int top = (cell.getTop() + cell.getPaddingTop() + cell.getBackgroundDrawableTop());
+                            int bottom = (cell.getTop() + cell.getPaddingTop() + cell.getBackgroundDrawableBottom());
 
                             if ((cell.getCurrentPosition().flags & MessageObject.POSITION_FLAG_TOP) == 0) {
                                 top -= AndroidUtilities.dp(10);
@@ -537,7 +537,7 @@ public class MessageEntityView extends EntityView {
                 boolean result = super.drawChild(canvas, child, drawingTime);
                 if (cell != null && cell.hasOutboundsContent()) {
                     canvas.save();
-                    canvas.translate(cell.getX(), cell.getY());
+                    canvas.translate(cell.getX(), cell.getY() + cell.getPaddingTop());
                     cell.drawOutboundsContent(canvas);
                     canvas.restore();
                 } else if (actionCell != null) {

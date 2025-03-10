@@ -902,6 +902,7 @@ public class ChangeUsernameActivity extends BaseFragment {
 
             loadingView = new ImageView(getContext());
             loadingDrawable = new CircularProgressDrawable(AndroidUtilities.dp(7), AndroidUtilities.dp(1.35f), Theme.getColor(Theme.key_windowBackgroundWhiteBlueText, resourcesProvider));
+            loadingView.setScaleType(ImageView.ScaleType.CENTER);
             loadingView.setImageDrawable(loadingDrawable);
             loadingView.setAlpha(0f);
             loadingView.setVisibility(View.VISIBLE);

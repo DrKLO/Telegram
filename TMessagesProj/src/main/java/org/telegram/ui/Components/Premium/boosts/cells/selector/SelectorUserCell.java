@@ -177,6 +177,7 @@ public class SelectorUserCell extends BaseCell {
         imageView.setForUserOrChat(chat, avatarDrawable);
 
         titleTextView.setText(chat.title);
+        titleTextView.setRightDrawable(null);
 
         String subtitle;
         if (participants_count <= 0) {

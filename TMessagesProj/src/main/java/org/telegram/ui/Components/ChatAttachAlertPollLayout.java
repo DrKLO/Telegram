@@ -128,7 +128,7 @@ public class ChatAttachAlertPollLayout extends ChatAttachAlert.AttachAlertLayout
     private static final int done_button = 40;
 
     public interface PollCreateActivityDelegate {
-        void sendPoll(TLRPC.TL_messageMediaPoll poll, HashMap<String, String> params, boolean notify, int scheduleDate);
+        void sendPoll(TLRPC.TL_messageMediaPoll poll, HashMap<String, String> params, boolean notify, int scheduleDate, long payStars);
     }
 
     private static class EmptyView extends View {
@@ -549,15 +549,17 @@ public class ChatAttachAlertPollLayout extends ChatAttachAlert.AttachAlertLayout
                 }
             }
             ChatActivity chatActivity = (ChatActivity) parentAlert.baseFragment;
-            if (chatActivity.isInScheduleMode()) {
-                AlertsCreator.createScheduleDatePickerDialog(chatActivity.getParentActivity(), chatActivity.getDialogId(), (notify, scheduleDate) -> {
-                    delegate.sendPoll(poll, params, notify, scheduleDate);
+            AlertsCreator.ensurePaidMessageConfirmation(parentAlert.currentAccount, parentAlert.getDialogId(), 1 + parentAlert.getAdditionalMessagesCount(), payStars -> {
+                if (chatActivity.isInScheduleMode()) {
+                    AlertsCreator.createScheduleDatePickerDialog(chatActivity.getParentActivity(), chatActivity.getDialogId(), (notify, scheduleDate) -> {
+                        delegate.sendPoll(poll, params, notify, scheduleDate, payStars);
+                        parentAlert.dismiss(true);
+                    });
+                } else {
+                    delegate.sendPoll(poll, params, true, 0, payStars);
                     parentAlert.dismiss(true);
-                });
-            } else {
-                delegate.sendPoll(poll, params, true, 0);
-                parentAlert.dismiss(true);
-            }
+                }
+            });
         }
     }
 

@@ -241,7 +241,7 @@ public class BillingUtilities {
 
             AccountInstance acc = findAccountById(accountId);
             if (acc == null) {
-                FileLog.d("Billing: Extract payload. AccountInstance not found");
+                FileLog.d("Billing: Extract payload. AccountInstance not found, accountId=" + accountId);
                 return null;
             }
             return Pair.create(acc, purpose);

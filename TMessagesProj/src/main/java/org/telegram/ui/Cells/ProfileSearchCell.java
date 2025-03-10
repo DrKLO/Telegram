@@ -45,6 +45,7 @@ import org.telegram.messenger.UserObject;
 import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.tgnet.tl.TL_account;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.AnimatedEmojiDrawable;
 import org.telegram.ui.Components.AnimatedFloat;
@@ -112,9 +113,11 @@ public class ProfileSearchCell extends BaseCell implements NotificationCenter.No
     private boolean drawCheck;
     private boolean drawPremium;
 
-    private final AnimatedFloat premiumBlockedT = new AnimatedFloat(this, 0, 350, CubicBezierInterpolator.EASE_OUT_QUINT);
     private boolean showPremiumBlocked;
+    private final AnimatedFloat premiumBlockedT = new AnimatedFloat(this, 0, 350, CubicBezierInterpolator.EASE_OUT_QUINT);
     private boolean premiumBlocked;
+    private final AnimatedFloat starsBlockedT = new AnimatedFloat(this, 0, 350, CubicBezierInterpolator.EASE_OUT_QUINT);
+    private long starsPriceBlocked;
     private boolean openBot;
 
     private int statusLeft;
@@ -183,19 +186,25 @@ public class ProfileSearchCell extends BaseCell implements NotificationCenter.No
             user = (TLRPC.User) object;
             chat = null;
             contact = null;
-            premiumBlocked = showPremiumBlocked && user != null && MessagesController.getInstance(currentAccount).isUserPremiumBlocked(user.id);
+            final TL_account.RequirementToContact r = showPremiumBlocked && user != null ? MessagesController.getInstance(currentAccount).isUserContactBlocked(user.id) : null;
+            premiumBlocked = DialogObject.isPremiumBlocked(r);
+            starsPriceBlocked = DialogObject.getMessagesStarsPrice(r);
             setOpenBotButton(allowBotOpenButton && user.bot_has_main_app);
         } else if (object instanceof TLRPC.Chat) {
             chat = (TLRPC.Chat) object;
             user = null;
             contact = null;
-            premiumBlocked = false;
+            final TL_account.RequirementToContact r = ChatObject.getRequirementToContact(chat);
+            premiumBlocked = DialogObject.isPremiumBlocked(r);
+            starsPriceBlocked = DialogObject.getMessagesStarsPrice(r);
             setOpenBotButton(false);
         } else if (object instanceof ContactsController.Contact) {
             contact = (ContactsController.Contact) object;
             chat = null;
             user = null;
-            premiumBlocked = showPremiumBlocked && contact != null && contact.user != null && MessagesController.getInstance(currentAccount).isUserPremiumBlocked(contact.user.id);
+            final TL_account.RequirementToContact r = showPremiumBlocked && contact != null && contact.user != null ? MessagesController.getInstance(currentAccount).isUserContactBlocked(contact.user.id) : null;
+            premiumBlocked = DialogObject.isPremiumBlocked(r);
+            starsPriceBlocked = DialogObject.getMessagesStarsPrice(r);
             setOpenBotButton(false);
         } else {
             setOpenBotButton(false);
@@ -315,9 +324,17 @@ public class ProfileSearchCell extends BaseCell implements NotificationCenter.No
         if (id == NotificationCenter.emojiLoaded) {
             invalidate();
         } else if (id == NotificationCenter.userIsPremiumBlockedUpadted) {
-            final boolean wasPremiumBlocked = premiumBlocked;
-            premiumBlocked = showPremiumBlocked && (user != null && MessagesController.getInstance(currentAccount).isUserPremiumBlocked(user.id) || contact != null && contact.user != null && MessagesController.getInstance(currentAccount).isUserPremiumBlocked(contact.user.id));
-            if (premiumBlocked != wasPremiumBlocked) {
+            final TL_account.RequirementToContact r;
+            if (user != null) {
+                r = showPremiumBlocked ? MessagesController.getInstance(currentAccount).isUserContactBlocked(user.id) : null;
+            } else if (chat != null) {
+                r = ChatObject.getRequirementToContact(chat);
+            } else if (contact != null) {
+                r = showPremiumBlocked && contact.user != null ? MessagesController.getInstance(currentAccount).isUserContactBlocked(contact.user.id) : null;
+            } else return;
+            if (premiumBlocked != DialogObject.isPremiumBlocked(r) || starsPriceBlocked != DialogObject.getMessagesStarsPrice(r)) {
+                premiumBlocked = DialogObject.isPremiumBlocked(r);
+                starsPriceBlocked = DialogObject.getMessagesStarsPrice(r);
                 invalidate();
             }
         }

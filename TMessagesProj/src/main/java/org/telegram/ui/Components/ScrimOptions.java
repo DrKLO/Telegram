@@ -568,9 +568,9 @@ public class ScrimOptions extends Dialog {
                         canvas.restore();
                     } else {
                         canvas.translate(-pos2[0], -pos2[1]);
-                        canvas.translate(pos[0], pos[1]);
+                        canvas.translate(pos[0], pos[1] + cell.getPaddingTop());
                         cell.drawBackgroundInternal(canvas, true);
-                        canvas.translate(-pos[0], -pos[1]);
+                        canvas.translate(-pos[0], -pos[1] - cell.getPaddingTop());
                         canvas.translate(pos2[0], pos2[1]);
                     }
                     if (finalBitmap != null) {

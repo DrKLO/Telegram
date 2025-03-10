@@ -139,6 +139,7 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
     private boolean newSuggest;
     private boolean archiveChats;
     private boolean noncontactsValue;
+    private boolean feeValue;
 
     private boolean[] clear = new boolean[2];
     private SessionsActivity devicesActivityPreload;
@@ -156,6 +157,7 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
         if (privacySettings != null) {
             archiveChats = privacySettings.archive_and_mute_new_noncontact_peers;
             noncontactsValue = privacySettings.new_noncontact_peers_require_premium;
+            feeValue = (privacySettings.flags & 32) != 0;
         }
 
         updateRows();
@@ -626,6 +628,7 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
             if (privacySettings != null) {
                 archiveChats = privacySettings.archive_and_mute_new_noncontact_peers;
                 noncontactsValue = privacySettings.new_noncontact_peers_require_premium;
+                feeValue = (privacySettings.flags & 32) != 0;
             }
             if (listAdapter != null) {
                 listAdapter.notifyDataSetChanged();
@@ -1097,8 +1100,8 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
                         ImageView imageView = textCell.getValueImageView();
                         imageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteGrayIcon), PorterDuff.Mode.MULTIPLY));
                     } else if (position == noncontactsRow) {
-                        value = getString(noncontactsValue ? R.string.ContactsAndPremium : R.string.P2PEverybody);
-                        textCell.setTextAndValue(getMessagesController().newNoncontactPeersRequirePremiumWithoutOwnpremium ? getString(R.string.PrivacyMessages) : addPremiumStar(getString(R.string.PrivacyMessages)), value, bioRow != -1);
+                        value = getString(feeValue ? R.string.ContactsAndFee : noncontactsValue ? R.string.ContactsAndPremium : R.string.P2PEverybody);
+                        textCell.setTextAndValue(getMessagesController().newNoncontactPeersRequirePremiumWithoutOwnpremium && !getMessagesController().starsPaidMessagesAvailable ? getString(R.string.PrivacyMessages) : addPremiumStar(getString(R.string.PrivacyMessages)), value, bioRow != -1);
                     } else if (position == passportRow) {
                         textCell.setText(getString("TelegramPassport", R.string.TelegramPassport), true);
                     } else if (position == deleteAccountRow) {

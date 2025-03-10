@@ -93,8 +93,8 @@ import java.util.StringTokenizer;
 public class ChatAttachAlertDocumentLayout extends ChatAttachAlert.AttachAlertLayout {
 
     public interface DocumentSelectActivityDelegate {
-        void didSelectFiles(ArrayList<String> files, String caption, ArrayList<MessageObject> fmessages, boolean notify, int scheduleDate, long effectId, boolean invertMedia);
-        default void didSelectPhotos(ArrayList<SendMessagesHelper.SendingMediaInfo> photos, boolean notify, int scheduleDate) {
+        void didSelectFiles(ArrayList<String> files, String caption, ArrayList<MessageObject> fmessages, boolean notify, int scheduleDate, long effectId, boolean invertMedia, long payStars);
+        default void didSelectPhotos(ArrayList<SendMessagesHelper.SendingMediaInfo> photos, boolean notify, int scheduleDate, long payStars) {
 
         }
 
@@ -752,11 +752,10 @@ public class ChatAttachAlertDocumentLayout extends ChatAttachAlert.AttachAlertLa
     }
 
     @Override
-    public void sendSelectedItems(boolean notify, int scheduleDate, long effectId, boolean invertMedia) {
+    public boolean sendSelectedItems(boolean notify, int scheduleDate, long effectId, boolean invertMedia) {
         if (selectedFiles.size() == 0 && selectedMessages.size() == 0 || delegate == null || sendPressed) {
-            return;
+            return false;
         }
-        sendPressed = true;
         ArrayList<MessageObject> fmessages = new ArrayList<>();
         Iterator<FilteredSearchView.MessageHashId> idIterator = selectedMessages.keySet().iterator();
         while (idIterator.hasNext()) {
@@ -764,9 +763,13 @@ public class ChatAttachAlertDocumentLayout extends ChatAttachAlert.AttachAlertLa
             fmessages.add(selectedMessages.get(hashId));
         }
         ArrayList<String> files = new ArrayList<>(selectedFilesOrder);
-        delegate.didSelectFiles(files, parentAlert.getCommentView().getText().toString(), fmessages, notify, scheduleDate, effectId, invertMedia);
+        String caption = parentAlert.getCommentView().getText().toString();
 
-        parentAlert.dismiss(true);
+        return AlertsCreator.ensurePaidMessageConfirmation(parentAlert.currentAccount, parentAlert.getDialogId(), (!TextUtils.isEmpty(caption) ? 1 : 0) + files.size() + parentAlert.getAdditionalMessagesCount(), payStars -> {
+            sendPressed = true;
+            delegate.didSelectFiles(files, caption, fmessages, notify, scheduleDate, effectId, invertMedia, payStars);
+            parentAlert.dismiss(true);
+        });
     }
 
     private boolean onItemClick(View view, Object object) {
@@ -896,6 +899,7 @@ public class ChatAttachAlertDocumentLayout extends ChatAttachAlert.AttachAlertLa
                     info.path = photoEntry.path;
                 }
                 info.thumbPath = photoEntry.thumbPath;
+                info.coverPath = photoEntry.coverPath;
                 info.videoEditedInfo = photoEntry.editedInfo;
                 info.isVideo = photoEntry.isVideo;
                 info.caption = photoEntry.caption != null ? photoEntry.caption.toString() : null;
@@ -904,7 +908,9 @@ public class ChatAttachAlertDocumentLayout extends ChatAttachAlert.AttachAlertLa
                 info.ttl = photoEntry.ttl;
             }
         }
-        delegate.didSelectPhotos(media, notify, scheduleDate);
+        AlertsCreator.ensurePaidMessageConfirmation(parentAlert.currentAccount, parentAlert.getDialogId(), media.size() + parentAlert.getAdditionalMessagesCount(), payStars -> {
+            delegate.didSelectPhotos(media, notify, scheduleDate, payStars);
+        });
     }
 
     public void loadRecentFiles() {

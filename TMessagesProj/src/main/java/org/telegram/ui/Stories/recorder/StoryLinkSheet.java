@@ -95,7 +95,7 @@ public class StoryLinkSheet extends BottomSheetWithRecyclerListView implements N
         ScaleStateListAnimator.apply(pasteTextView, .1f, 1.5f);
         urlEditText.addView(pasteTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 26, Gravity.RIGHT | Gravity.CENTER_VERTICAL, 0, 4, 24, 3));
 
-        Runnable checkPaste = () -> {
+        final Runnable checkPaste = () -> {
             ClipboardManager clipboardManager = (ClipboardManager) getContext().getSystemService(Context.CLIPBOARD_SERVICE);
             final boolean show = (TextUtils.isEmpty(urlEditText.editText.getText()) || TextUtils.equals(urlEditText.editText.getText(), def) || TextUtils.isEmpty(urlEditText.editText.getText().toString())) && clipboardManager != null && clipboardManager.hasPrimaryClip();
             pasteTextView.animate()

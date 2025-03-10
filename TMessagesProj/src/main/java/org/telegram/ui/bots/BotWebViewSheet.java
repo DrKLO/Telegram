@@ -383,25 +383,25 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
             webViewContainer.replaceWebView(currentAccount, tab.webView, tab.proxy);
             webViewContainer.setState(tab.ready || tab.webView.isPageLoaded(), tab.lastUrl);
             if (Theme.isCurrentThemeDark() != tab.themeIsDark) {
-//                webViewContainer.notifyThemeChanged();
-                if (webViewContainer.getWebView() != null) {
-                    webViewContainer.getWebView().animate().cancel();
-                    webViewContainer.getWebView().animate().alpha(0).start();
-                }
-
-                progressView.setLoadProgress(0);
-                progressView.setAlpha(1f);
-                progressView.setVisibility(View.VISIBLE);
-
-                webViewContainer.setBotUser(MessagesController.getInstance(currentAccount).getUser(botId));
-                webViewContainer.loadFlickerAndSettingsItem(currentAccount, botId, null);
-                webViewContainer.setState(false, null);
-                if (webViewContainer.getWebView() != null) {
-                    webViewContainer.getWebView().loadUrl("about:blank");
-                }
-
-                tab.props.response = null;
-                tab.props.responseTime = 0;
+                webViewContainer.notifyThemeChanged();
+//                if (webViewContainer.getWebView() != null) {
+//                    webViewContainer.getWebView().animate().cancel();
+//                    webViewContainer.getWebView().animate().alpha(0).start();
+//                }
+//
+//                progressView.setLoadProgress(0);
+//                progressView.setAlpha(1f);
+//                progressView.setVisibility(View.VISIBLE);
+//
+//                webViewContainer.setBotUser(MessagesController.getInstance(currentAccount).getUser(botId));
+//                webViewContainer.loadFlickerAndSettingsItem(currentAccount, botId, null);
+//                webViewContainer.setState(false, null);
+//                if (webViewContainer.getWebView() != null) {
+//                    webViewContainer.getWebView().loadUrl("about:blank");
+//                }
+//
+//                tab.props.response = null;
+//                tab.props.responseTime = 0;
             }
         } else {
             tab.props.response = null;
@@ -1248,24 +1248,35 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
     }
 
     public static JSONObject makeThemeParams(Theme.ResourcesProvider resourcesProvider) {
+        return makeThemeParams(resourcesProvider, false);
+    }
+
+    public static JSONObject makeThemeParams(Theme.ResourcesProvider resourcesProvider, boolean hexify) {
         try {
-            JSONObject jsonObject = new JSONObject();
-            final int backgroundColor = Theme.getColor(Theme.key_dialogBackground, resourcesProvider);
-            jsonObject.put("bg_color", backgroundColor);
-            jsonObject.put("section_bg_color", Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider));
-            jsonObject.put("secondary_bg_color", Theme.getColor(Theme.key_windowBackgroundGray, resourcesProvider));
-            jsonObject.put("text_color", Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
-            jsonObject.put("hint_color", Theme.getColor(Theme.key_windowBackgroundWhiteHintText, resourcesProvider));
-            jsonObject.put("link_color", Theme.getColor(Theme.key_windowBackgroundWhiteLinkText, resourcesProvider));
-            jsonObject.put("button_color", Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider));
-            jsonObject.put("button_text_color", Theme.getColor(Theme.key_featuredStickers_buttonText, resourcesProvider));
-            jsonObject.put("header_bg_color", Theme.getColor(Theme.key_actionBarDefault, resourcesProvider));
-            jsonObject.put("accent_text_color", Theme.blendOver(backgroundColor, Theme.getColor(Theme.key_windowBackgroundWhiteBlueText4, resourcesProvider)));
-            jsonObject.put("section_header_text_color", Theme.blendOver(backgroundColor, Theme.getColor(Theme.key_windowBackgroundWhiteBlueHeader, resourcesProvider)));
-            jsonObject.put("subtitle_text_color", Theme.blendOver(backgroundColor, Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2, resourcesProvider)));
-            jsonObject.put("destructive_text_color", Theme.blendOver(backgroundColor, Theme.getColor(Theme.key_text_RedRegular, resourcesProvider)));
-            jsonObject.put("section_separator_color", Theme.blendOver(backgroundColor, Theme.getColor(Theme.key_divider, resourcesProvider)));
-            jsonObject.put("bottom_bar_bg_color", Theme.getColor(Theme.key_windowBackgroundGray, resourcesProvider));
+            final JSONObject jsonObject = new JSONObject();
+            final int backgroundColor = Theme.blendOver(0xFF000000, Theme.getColor(Theme.key_dialogBackground, resourcesProvider));
+            final Utilities.CallbackReturn<Integer, Object> wrap = color -> {
+                color = Theme.blendOver(backgroundColor, color);
+                if (hexify) {
+                    return String.format(Locale.US, "#%02X%02X%02X", Color.red(color), Color.green(color), Color.blue(color));
+                }
+                return color;
+            };
+            jsonObject.put("bg_color", wrap.run(backgroundColor));
+            jsonObject.put("section_bg_color", wrap.run(Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider)));
+            jsonObject.put("secondary_bg_color", wrap.run(Theme.getColor(Theme.key_windowBackgroundGray, resourcesProvider)));
+            jsonObject.put("text_color", wrap.run(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider)));
+            jsonObject.put("hint_color", wrap.run(Theme.getColor(Theme.key_windowBackgroundWhiteHintText, resourcesProvider)));
+            jsonObject.put("link_color", wrap.run(Theme.getColor(Theme.key_windowBackgroundWhiteLinkText, resourcesProvider)));
+            jsonObject.put("button_color", wrap.run(Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider)));
+            jsonObject.put("button_text_color", wrap.run(Theme.getColor(Theme.key_featuredStickers_buttonText, resourcesProvider)));
+            jsonObject.put("header_bg_color", wrap.run(Theme.getColor(Theme.key_actionBarDefault, resourcesProvider)));
+            jsonObject.put("accent_text_color", wrap.run(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText4, resourcesProvider)));
+            jsonObject.put("section_header_text_color", wrap.run(Theme.getColor(Theme.key_windowBackgroundWhiteBlueHeader, resourcesProvider)));
+            jsonObject.put("subtitle_text_color", wrap.run(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2, resourcesProvider)));
+            jsonObject.put("destructive_text_color", wrap.run(Theme.getColor(Theme.key_text_RedRegular, resourcesProvider)));
+            jsonObject.put("section_separator_color", wrap.run(Theme.getColor(Theme.key_divider, resourcesProvider)));
+            jsonObject.put("bottom_bar_bg_color", wrap.run(Theme.getColor(Theme.key_windowBackgroundGray, resourcesProvider)));
             return jsonObject;
         } catch (Exception e) {
             FileLog.e(e);

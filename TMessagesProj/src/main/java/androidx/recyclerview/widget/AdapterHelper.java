@@ -73,7 +73,7 @@ class AdapterHelper implements OpReorderer.Callback {
     private int mExistingUpdateTypes = 0;
 
     private final ArrayList<String> lastNotifies = BuildVars.DEBUG_VERSION ? new ArrayList<String>() : null;
-    private void logNotify(String name) {
+    public void logNotify(String name) {
         if (lastNotifies == null) return;
         while (lastNotifies.size() > 5) lastNotifies.remove(0);
         final StringBuilder sb = new StringBuilder();
@@ -92,7 +92,14 @@ class AdapterHelper implements OpReorderer.Callback {
 
     public String getLastNotifies() {
         if (lastNotifies == null) return null;
-        return TextUtils.join("\n\n", lastNotifies);
+        StringBuilder sb = new StringBuilder();
+        for (int i = lastNotifies.size() - 1; i >= 0; i--) {
+            if (i < lastNotifies.size() - 1) {
+                sb.append("\n\n");
+            }
+            sb.append(lastNotifies.get(i));
+        }
+        return sb.toString();
     }
 
     AdapterHelper(Callback callback) {

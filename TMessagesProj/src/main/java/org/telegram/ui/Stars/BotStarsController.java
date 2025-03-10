@@ -554,8 +554,8 @@ public class BotStarsController {
     private boolean loadingAdminedChannels;
     public ArrayList<TLRPC.Chat> adminedChannels;
 
-    public void loadAdmined() {
-        if (!loadingAdminedBots || adminedBots != null) {
+    public void loadAdminedBots() {
+        if (!loadingAdminedBots && adminedBots == null) {
             loadingAdminedBots = true;
             TL_bots.getAdminedBots req1 = new TL_bots.getAdminedBots();
             ConnectionsManager.getInstance(currentAccount).sendRequest(req1, (res, err) -> AndroidUtilities.runOnUIThread(() -> {
@@ -570,28 +570,41 @@ public class BotStarsController {
                 }
             }));
         }
+    }
 
-        if (!loadingAdminedChannels || adminedChannels != null) {
+    public void loadAdminedChannels() {
+        if (!loadingAdminedChannels && adminedChannels == null) {
             loadingAdminedChannels = true;
             TLRPC.TL_channels_getAdminedPublicChannels req2 = new TLRPC.TL_channels_getAdminedPublicChannels();
             ConnectionsManager.getInstance(currentAccount).sendRequest(req2, (res, err) -> AndroidUtilities.runOnUIThread(() -> {
                 adminedChannels = new ArrayList<>();
-                loadingAdminedBots = false;
+                loadingAdminedChannels = false;
                 if (res instanceof TLRPC.messages_Chats) {
                     TLRPC.messages_Chats chats = (TLRPC.messages_Chats) res;
                     MessagesController.getInstance(currentAccount).putChats(chats.chats, false);
                     adminedChannels.addAll(chats.chats);
                 }
+                NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.adminedChannelsLoaded);
             }));
         }
     }
 
     public ArrayList<TLObject> getAdmined() {
-        loadAdmined();
+        loadAdminedBots();
+        loadAdminedChannels();
         ArrayList<TLObject> list = new ArrayList<>();
         if (adminedBots != null) {
             list.addAll(adminedBots);
         }
+        if (adminedChannels != null) {
+            list.addAll(adminedChannels);
+        }
+        return list;
+    }
+
+    public ArrayList<TLObject> getAdminedChannels() {
+        loadAdminedChannels();
+        ArrayList<TLObject> list = new ArrayList<>();
         if (adminedChannels != null) {
             list.addAll(adminedChannels);
         }

@@ -89,6 +89,8 @@ import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.Utilities;
+import org.telegram.messenger.chromecast.ChromecastMedia;
+import org.telegram.messenger.chromecast.ChromecastMediaVariations;
 import org.telegram.messenger.secretmedia.ExtendedDefaultDataSourceFactory;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.Stories.recorder.StoryEntry;
@@ -1450,6 +1452,13 @@ public class VideoPlayer implements Player.Listener, VideoListener, AnalyticsLis
         }
     }
 
+    public float getPlaybackSpeed() {
+        if (player == null) return 1.0f;
+        final PlaybackParameters params = player.getPlaybackParameters();
+        if (params == null) return 1.0f;
+        return params.speed;
+    }
+
     public void setPlayWhenReady(boolean playWhenReady) {
         mixedPlayWhenReady = playWhenReady;
         if (playWhenReady && mixedAudio) {
@@ -1966,6 +1975,49 @@ public class VideoPlayer implements Player.Listener, VideoListener, AnalyticsLis
         if (onQualityChangeListener != null) {
             AndroidUtilities.runOnUIThread(onQualityChangeListener);
         }
+    }
+
+    public ChromecastMediaVariations getCurrentChromecastMedia(String defaultId, String title, String subtitle) {
+        if (videoQualities == null) {
+            if (videoUri == null) {
+                return null;
+            }
+
+            final String path = "/mtproto_" + defaultId;
+            String mime = videoUri.getQueryParameter("mime");
+            if (TextUtils.isEmpty(mime)) {
+                mime = ChromecastMedia.VIDEO_MP4;
+            }
+            final ChromecastMedia media = ChromecastMedia.Builder.fromUri(videoUri, path, mime)
+                    .setTitle(title)
+                    .setSubtitle(subtitle)
+                    .build();
+
+            return ChromecastMediaVariations.of(media);
+        }
+
+        final ChromecastMediaVariations.Builder builder = new ChromecastMediaVariations.Builder();
+        for (Quality quality : videoQualities) {
+            for (VideoUri vUri : quality.uris) {
+                final String path = "/mtproto_" + vUri.docId;
+                String mime = null;
+                if (vUri.document != null) {
+                    mime = vUri.document.mime_type;
+                }
+                if (TextUtils.isEmpty(mime)) {
+                    mime = ChromecastMedia.VIDEO_MP4;
+                }
+                final ChromecastMedia media = ChromecastMedia.Builder.fromUri(vUri.uri, path, mime)
+                        .setTitle(title)
+                        .setSubtitle(subtitle)
+                        .setSize(vUri.width, vUri.height)
+                        .build();
+
+                builder.add(media);
+            }
+        }
+
+        return builder.build();
     }
 
 }
