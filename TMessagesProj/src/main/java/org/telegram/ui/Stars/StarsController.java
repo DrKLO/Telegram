@@ -3393,7 +3393,7 @@ public class StarsController {
         } else if (req instanceof TLRPC.TL_messages_sendInlineBotResult) {
             return ((TLRPC.TL_messages_sendInlineBotResult) req).allow_paid_stars;
         } else if (req instanceof TLRPC.TL_messages_forwardMessages) {
-            return ((TLRPC.TL_messages_forwardMessages) req).allow_paid_stars;
+            return ((TLRPC.TL_messages_forwardMessages) req).allow_paid_stars / ((TLRPC.TL_messages_forwardMessages) req).id.size();
         } else if (req instanceof TLRPC.TL_messages_sendMedia) {
             return ((TLRPC.TL_messages_sendMedia) req).allow_paid_stars;
         }

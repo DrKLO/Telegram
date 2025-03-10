@@ -122,6 +122,9 @@ public class UserInfoCell extends View implements NotificationCenter.Notificatio
         } catch (Exception e) {
             FileLog.e(e);
         }
+        if (countryCode != null && countryCode.equalsIgnoreCase("ft")) {
+            countryName = LocaleController.getString(R.string.ContactInfoPhoneFragment);
+        }
         if (!TextUtils.isEmpty(countryName)) {
             sb.append(countryName);
         } else {

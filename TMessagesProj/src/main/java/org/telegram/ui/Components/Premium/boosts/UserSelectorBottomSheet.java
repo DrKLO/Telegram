@@ -405,7 +405,9 @@ public class UserSelectorBottomSheet extends BottomSheetWithRecyclerListView imp
                 if (type == TYPE_PREMIUM || type == TYPE_STAR_GIFT) {
                     List<TLRPC.TL_premiumGiftCodeOption> options = BoostRepository.filterGiftOptions(paymentOptions, 1);
                     options = BoostRepository.filterGiftOptionsByBilling(options);
-                    new GiftSheet(getContext(), currentAccount, id, options, this::dismiss).show();
+                    new GiftSheet(getContext(), currentAccount, id, options, this::dismiss)
+                        .setBirthday(birthdays != null && birthdays.contains(id))
+                        .show();
                     return;
                 }
                 if (selectedIds.contains(id)) {
@@ -660,6 +662,7 @@ public class UserSelectorBottomSheet extends BottomSheetWithRecyclerListView imp
     }
 
     private int addSection(ArrayList<SelectorAdapter.Item> items, CharSequence title, ArrayList<TLRPC.User> users, boolean addSelectAll) {
+        addSelectAll = false;
         int h = 0;
         if (users.isEmpty()) {
             return h;

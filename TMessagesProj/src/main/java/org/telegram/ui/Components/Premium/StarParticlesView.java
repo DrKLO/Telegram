@@ -257,7 +257,7 @@ public class StarParticlesView extends View {
                     stars[i] = SvgHelper.getBitmap(res, size, size, ColorUtils.setAlphaComponent(Theme.getColor(colorKey, resourcesProvider), 30));
                     svg[i] = true;
                     continue;
-                } else if (type == PremiumPreviewFragment.PREMIUM_FEATURE_PAID_MESSAGES) {
+                } else if (type == PremiumPreviewFragment.PREMIUM_FEATURE_MESSAGE_PRIVACY) {
                     int res;
                     if (i == 0) {
                         res = R.raw.filled_messages_paid;

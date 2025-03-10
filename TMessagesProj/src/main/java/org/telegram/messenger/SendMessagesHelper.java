@@ -2392,7 +2392,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                     }
                     if (payStars > 0) {
                         req.flags |= 2097152;
-                        req.allow_paid_stars = payStars;
+                        req.allow_paid_stars = req.id.size() * payStars;
                     }
 
                     final ArrayList<TLRPC.Message> newMsgObjArr = arr;
@@ -2543,7 +2543,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                                 getMessagesStorage().markMessageAsSendError(newMsgObj1, scheduleDate != 0 ? 1 : 0);
                                 if (error != null && error.text != null && error.text.startsWith("ALLOW_PAYMENT_REQUIRED_")) {
                                     newMsgObj1.errorAllowedPriceStars = StarsController.getInstance(currentAccount).getAllowedPaidStars(req);
-                                    newMsgObj1.errorNewPriceStars = Long.parseLong(error.text.substring("ALLOW_PAYMENT_REQUIRED_".length()));
+                                    newMsgObj1.errorNewPriceStars = Long.parseLong(error.text.substring("ALLOW_PAYMENT_REQUIRED_".length())) / req.id.size();
                                     getMessagesStorage().updateMessageCustomParams(MessageObject.getDialogId(newMsgObj1), newMsgObj1);
                                 }
                                 AndroidUtilities.runOnUIThread(() -> {

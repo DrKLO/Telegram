@@ -94,6 +94,7 @@ import org.telegram.ui.Stories.recorder.ButtonWithCounterView;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Locale;
 
 public class StarsReactionsSheet extends BottomSheet implements NotificationCenter.NotificationCenterDelegate {
 
@@ -158,7 +159,7 @@ public class StarsReactionsSheet extends BottomSheet implements NotificationCent
             textView2.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
             textView2.setTextColor(Theme.getColor(Theme.key_undo_cancelColor, resourcesProvider));
             textView2.setLinkTextColor(Theme.getColor(Theme.key_undo_cancelColor, resourcesProvider));
-            textView2.setText(AndroidUtilities.replaceArrows(premiumText("Get More Stars >", () -> {
+            textView2.setText(AndroidUtilities.replaceArrows(AndroidUtilities.replaceSingleTag(LocaleController.getString(R.string.Gift2MessageStarsInfoLink), () -> {
                 new StarsIntroActivity.StarsOptionsSheet(context, resourcesProvider).show();
             }), true, dp(8f / 3f), dp(1)));
             textView2.setGravity(Gravity.CENTER);
@@ -170,7 +171,7 @@ public class StarsReactionsSheet extends BottomSheet implements NotificationCent
         private void updateBalance(boolean animated) {
             final StarsController c = StarsController.getInstance(currentAccount);
             final long stars = c.getBalance().amount;
-            textView1.setText(StarsIntroActivity.replaceStarsWithPlain("Your balance is ⭐️" + LocaleController.formatNumber(stars, ','), .60f));
+            textView1.setText(StarsIntroActivity.replaceStarsWithPlain(LocaleController.formatString(R.string.Gift2MessageStarsInfo, LocaleController.formatNumber(stars, ',')), .60f));
         }
 
         @Override

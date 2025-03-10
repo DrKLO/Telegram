@@ -8365,6 +8365,7 @@
     <string name="ProfileGiftsCount_other">%d gifts</string>
     <string name="ProfileGiftsSend">Send Gifts to Friends</string>
     <string name="ProfileGiftsSendChannel">Send Gifts to Channel</string>
+    <string name="ProfileGiftsSendUser">Send a Gift to %s</string>
     <string name="Gift2TabAll">All Gifts</string>
     <string name="Gift2TabInStock">In Stock</string>
     <string name="Gift2TabLimited">Limited</string>
@@ -8909,6 +8910,7 @@
     <string name="ContactInfoIsNotContact">Not a contact</string>
     <string name="ContactInfoIsContact">Contact</string>
     <string name="ContactInfoPhone">Phone number</string>
+    <string name="ContactInfoPhoneFragment">Anonymous</string>
     <string name="ContactInfoLocation">Location</string>
     <string name="ContactInfoRegistration">Registration</string>
     <string name="ContactInfoCommonGroups">Common groups</string>

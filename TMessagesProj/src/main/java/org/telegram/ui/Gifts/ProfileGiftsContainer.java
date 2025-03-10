@@ -1,6 +1,7 @@
 package org.telegram.ui.Gifts;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
+import static org.telegram.messenger.LocaleController.formatString;
 import static org.telegram.messenger.LocaleController.getString;
 import static org.telegram.ui.Stars.StarGiftSheet.isMineWithActions;
 
@@ -29,6 +30,7 @@ import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SavedMessagesController;
 import org.telegram.messenger.UserConfig;
+import org.telegram.messenger.UserObject;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.tl.TL_stars;
@@ -292,15 +294,19 @@ public class ProfileGiftsContainer extends FrameLayout implements NotificationCe
             checkbox.setChecked(list.chat_notifications_enabled, false);
         }
 
+        final TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(dialogId);
+        final boolean sendToSpecificDialog = dialogId < 0 || user != null && !UserObject.isUserSelf(user) && !UserObject.isBot(user);
         button = new ButtonWithCounterView(context, resourcesProvider);
-        final SpannableStringBuilder sb = new SpannableStringBuilder("G " + LocaleController.getString(dialogId < 0 ? R.string.ProfileGiftsSendChannel : R.string.ProfileGiftsSend));
+        final SpannableStringBuilder sb = new SpannableStringBuilder("G " + (sendToSpecificDialog ? (dialogId < 0 ? getString(R.string.ProfileGiftsSendChannel) : formatString(R.string.ProfileGiftsSendUser, DialogObject.getShortName(dialogId))) : getString(R.string.ProfileGiftsSend)));
         final ColoredImageSpan span = new ColoredImageSpan(R.drawable.filled_gift_simple);
         sb.setSpan(span, 0, 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         button.setText(sb, false);
         buttonContainer.addView(button, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.FILL, 10, 10 + 1f / AndroidUtilities.density, 10, 10));
         button.setOnClickListener(v -> {
-            if (dialogId < 0) {
-                new GiftSheet(getContext(), currentAccount, dialogId, null, null).show();
+            if (sendToSpecificDialog) {
+                new GiftSheet(getContext(), currentAccount, dialogId, null, null)
+                    .setBirthday(BirthdayController.getInstance(currentAccount).isToday(dialogId))
+                    .show();
             } else {
                 UserSelectorBottomSheet.open(UserSelectorBottomSheet.TYPE_STAR_GIFT, 0, BirthdayController.getInstance(currentAccount).getState());
             }

@@ -3644,7 +3644,7 @@ public class StarsIntroActivity extends GradientHeaderActivity implements Notifi
                 text.append(AndroidUtilities.replaceArrows(AndroidUtilities.replaceSingleTag(getString(R.string.StarsTransactionMessageFeeInfoLink).replace(' ', ' '), () -> {
                     BaseFragment lastFragment = LaunchActivity.getSafeLastFragment();
                     if (lastFragment != null) {
-                        if (dialogId > 0) {
+                        if (dialogId >= 0) {
                             lastFragment.presentFragment(new PrivacyControlActivity(ContactsController.PRIVACY_RULES_TYPE_MESSAGES));
                         } else {
                             final Bundle args = new Bundle();

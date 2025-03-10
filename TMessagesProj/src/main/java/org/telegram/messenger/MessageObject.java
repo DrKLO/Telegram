@@ -8923,13 +8923,6 @@ public class MessageObject {
     public static boolean isV(String ext) {
         if (ext == null) return true;
         switch (ext.toLowerCase().hashCode()) {
-            case 0xb549144c: case 0x1b274:
-            case 0x2e06d4: case 0xa473e8a5: case 0xebd32e77:
-            case 0x3107ab: case 0x18417: case 0x194e1: case 0xeac:
-            case 0xc22: case 0x18538: case 0xab2f7e36: case 0xedc:
-            case 0x1c1d9: case 0x3498c3: case 0x1b0f2: case 0xd49:
-            case 0xdfd: case 0xd1075a44: case 0x383059: case 0xc8f:
-            case 0x1c270: case 0x1ba8b: case 0xe30: case 0x21bd7bf:
             case 0x17890: case 0x1794a: case 0x17a1c: case 0x17a21:
             case 0x17af5: case 0x17c14: case 0x17c15: case 0x17d07:
             case 0x18085: case 0x180a8: case 0x1813a: case 0x18181:
@@ -8956,10 +8949,19 @@ public class MessageObject {
             case 0x1c739: case 0x1c747: case 0x1c781: case 0x1c9e2:
             case 0x1cb21: case 0x1cc50: case 0x1ccb2: case 0x1cd07:
             case 0x1cd0a: case 0x1cd0c: case 0x1cea7: case 0x1d09b:
+            case 0x18538: case 0x18417: case 0x194e1: case 0x1b178:
+            case 0x17a7e: case 0x1b274: case 0x1c1d9: case 0x1d017:
+            case 0x1c270: case 0x1ba8b: case 0xe30: case 0x21bd7bf:
             case 0x1d77f: case 0x333e3f: case 0x348d4c: case 0xe55:
+            case 0x349c84: case 0xc9e5d0cb: case 0xe09: case 0xda6:
+            case 0x2e06d4: case 0xa473e8a5: case 0xeac: case 0xd97:
+            case 0x2dd5ba: case 0x3498c3: case 0x1b0f2: case 0xd49:
             case 0x35c854: case 0x35ce71: case 0xc70: case 0x18203:
-            case 0x1cfff: case 0xdfc: case 0x35c681: case 0x2f2240:
-            case 0xc9e5d0cb: case 0xe09: case 0x349c84: case 0xda6:
+            case 0x2f2240: case 0x1cfff: case 0xdfc: case 0x35c681:
+            case 0x383059: case 0xdfd: case 0xd1075a44: case 0xc8f:
+            case 0x31ece8: case 0xc22: case 0xab2f7e36: case 0xedc:
+            case 0x3107ab: case 0xb549144c: case 0x1be64:
+            case 0xebd32e77: case 0x6cc0c23:
                 return true;
             default:
                 return false;

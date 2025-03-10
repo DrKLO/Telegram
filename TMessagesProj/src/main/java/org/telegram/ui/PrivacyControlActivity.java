@@ -1416,7 +1416,7 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
         }
 
         if (rulesType == PRIVACY_RULES_TYPE_MESSAGES && currentType == TYPE_PAY && !getUserConfig().isPremium()) {
-            showDialog(new PremiumFeatureBottomSheet(PrivacyControlActivity.this, PremiumPreviewFragment.PREMIUM_FEATURE_PAID_MESSAGES, true));
+            showDialog(new PremiumFeatureBottomSheet(PrivacyControlActivity.this, PremiumPreviewFragment.PREMIUM_FEATURE_MESSAGE_PRIVACY, true));
             return;
         }
         if (currentType != 0 && rulesType == PRIVACY_RULES_TYPE_LASTSEEN && !getUserConfig().isPremium()) {
@@ -1578,7 +1578,7 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
                     ssb.setSpan(lockSpan, ssb.length() - 1, ssb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                     button.setText(ssb, false);
                     button.setOnClickListener(v -> {
-                        showDialog(new PremiumFeatureBottomSheet(PrivacyControlActivity.this, PremiumPreviewFragment.PREMIUM_FEATURE_PAID_MESSAGES, false));
+                        showDialog(new PremiumFeatureBottomSheet(PrivacyControlActivity.this, PremiumPreviewFragment.PREMIUM_FEATURE_MESSAGE_PRIVACY, false));
                     });
                     frameLayout.addView(button, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.FILL, 18, 0, 18, 16));
                     frameLayout.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
