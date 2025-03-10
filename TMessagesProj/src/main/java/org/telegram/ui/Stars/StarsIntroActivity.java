@@ -405,7 +405,8 @@ public class StarsIntroActivity extends GradientHeaderActivity implements Notifi
         }
 
         BotStarsController.getInstance(currentAccount).preloadStarsStats(getUserConfig().getClientUserId());
-        updateButtonsLayouts(s.getBalance().amount > 0 && BotStarsController.getInstance(currentAccount).getStarsRevenueStats(getUserConfig().getClientUserId()) != null, false);
+        final TLRPC.TL_payments_starsRevenueStats stats = BotStarsController.getInstance(currentAccount).getStarsRevenueStats(getUserConfig().getClientUserId());
+        updateButtonsLayouts(s.getBalance().amount > 0 && stats != null && stats.status != null && stats.status.overall_revenue.positive(), false);
 
         return fragmentView;
     }
@@ -447,6 +448,8 @@ public class StarsIntroActivity extends GradientHeaderActivity implements Notifi
                 })
                 .start();
         } else {
+            oneButtonsLayout.animate().cancel();
+            twoButtonsLayout.animate().cancel();
             twoButtonsLayout.setAlpha(two ? 1.0f : 0.0f);
             oneButtonsLayout.setAlpha(two ? 0.0f : 1.0f);
             twoButtonsLayout.setVisibility(two ? View.VISIBLE : View.GONE);
@@ -3635,7 +3638,7 @@ public class StarsIntroActivity extends GradientHeaderActivity implements Notifi
             textView.setLinkTextColor(Theme.getColor(Theme.key_chat_messageLinkIn, resourcesProvider));
             ((LinkSpanDrawable.LinksTextView) textView).setDisablePaddingsOffsetY(true);
             SpannableStringBuilder text = new SpannableStringBuilder();
-            text.append(AndroidUtilities.replaceTags(formatString(R.string.StarsTransactionMessageFeeInfo, percents(transaction.starref_commission_permille))));
+            text.append(AndroidUtilities.replaceTags(formatString(R.string.StarsTransactionMessageFeeInfo, percents(1000 - transaction.starref_commission_permille))));
             if (dialogId == UserConfig.getInstance(currentAccount).getClientUserId() || ChatObject.canUserDoAction(MessagesController.getInstance(currentAccount).getChat(-dialogId), ChatObject.ACTION_BLOCK_USERS)) {
                 text.append(" ");
                 text.append(AndroidUtilities.replaceArrows(AndroidUtilities.replaceSingleTag(getString(R.string.StarsTransactionMessageFeeInfoLink).replace(' ', ' '), () -> {
@@ -3821,8 +3824,8 @@ public class StarsIntroActivity extends GradientHeaderActivity implements Notifi
                         lastFragment.presentFragment(ChatActivity.of(did));
                     }
                 });
-                if (transaction.starref_commission_permille > 0) {
-                    final long fullPrice = Math.abs(Math.round(transaction.stars.toDouble() / (transaction.starref_commission_permille / 1000.0)));
+                if (transaction.starref_amount != null && transaction.starref_commission_permille > 0) {
+                    final long fullPrice = Math.abs(Math.round(transaction.stars.toDouble() + transaction.starref_amount.toDouble()));
                     tableView.addRow(getString(R.string.StarsTransactionFullPrice), replaceStarsWithPlain("⭐️ " + LocaleController.formatNumber(fullPrice, ','), .8f));
                 }
             } else if (affiliate_to_bot) {

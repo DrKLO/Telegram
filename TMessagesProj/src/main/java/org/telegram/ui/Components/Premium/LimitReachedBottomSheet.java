@@ -2405,9 +2405,9 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView imp
             limitParams.defaultLimit = MessagesController.getInstance(currentAccount).storyExpiringLimitDefault;
             limitParams.premiumLimit = MessagesController.getInstance(currentAccount).storyExpiringLimitPremium;
             limitParams.icon = R.drawable.msg_limit_stories;
-            limitParams.descriptionStr = LocaleController.formatString("LimitReachedStoriesCount", R.string.LimitReachedStoriesCount, limitParams.defaultLimit, limitParams.premiumLimit);
-            limitParams.descriptionStrPremium = LocaleController.formatString("LimitReachedStoriesCountPremium", R.string.LimitReachedStoriesCountPremium, limitParams.premiumLimit);
-            limitParams.descriptionStrLocked = LocaleController.formatString("LimitReachedStoriesCountPremium", R.string.LimitReachedStoriesCountPremium, limitParams.defaultLimit);
+            limitParams.descriptionStr = LocaleController.formatPluralStringComma("LimitReachedStoriesCount2First", limitParams.defaultLimit) + "\n" + LocaleController.formatPluralStringComma("LimitReachedStoriesCount2Second", limitParams.premiumLimit);
+            limitParams.descriptionStrPremium = LocaleController.formatPluralStringComma("LimitReachedStoriesCount2Premium", limitParams.premiumLimit);
+            limitParams.descriptionStrLocked = LocaleController.formatPluralStringComma("LimitReachedStoriesCount2Premium", limitParams.defaultLimit);
         } else if (type == TYPE_STORIES_WEEK) {
             limitParams.defaultLimit = MessagesController.getInstance(currentAccount).storiesSentWeeklyLimitDefault;
             limitParams.premiumLimit = MessagesController.getInstance(currentAccount).storiesSentWeeklyLimitPremium;

@@ -6497,8 +6497,12 @@
     <string name="Reposts_other">%d reposts</string>
     <string name="Reactions_one">%d reaction</string>
     <string name="Reactions_other">%d reactions</string>
-    <string name="LimitReachedStoriesCount">You can post **%1$d** stories in **24** hours.\nSubscribe to **Telegram Premium** to increase this limit to **%2$d**.</string>
-    <string name="LimitReachedStoriesCountPremium">Sorry, you can’t post more than **%1$d** stories in **24** hours.</string>
+    <string name="LimitReachedStoriesCount2First_one">You can post **%d** story in **24** hours.</string>
+    <string name="LimitReachedStoriesCount2First_other">You can post **%d** stories in **24** hours.</string>
+    <string name="LimitReachedStoriesCount2Second_one">Subscribe to **Telegram Premium** to increase this limit to **%d**.</string>
+    <string name="LimitReachedStoriesCount2Second_other">Subscribe to **Telegram Premium** to increase this limit to **%d**.</string>
+    <string name="LimitReachedStoriesCount2Premium_one">Sorry, you can’t post more than **%d** story in **24** hours.</string>
+    <string name="LimitReachedStoriesCount2Premium_other">Sorry, you can’t post more than **%d** stories in **24** hours.</string>
     <string name="LimitReachedStoriesWeekly">You can post **%1$d** stories in a week.\nSubscribe to **Telegram Premium** to increase this limit to **%2$d**.</string>
     <string name="LimitReachedStoriesWeeklyPremium">Sorry, you can’t post more than **%1$d** stories in a week.</string>
     <string name="LimitReachedStoriesMonthly">You can post **%1$d** stories in a month.\nSubscribe to **Telegram Premium** to increase this limit to **%2$d**.</string>

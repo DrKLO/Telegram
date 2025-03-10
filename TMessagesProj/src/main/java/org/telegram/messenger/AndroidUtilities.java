@@ -4131,8 +4131,7 @@ public class AndroidUtilities {
             int idx = fileName.lastIndexOf('.');
             if (idx != -1) {
                 String ext = fileName.substring(idx + 1);
-                int h = ext.toLowerCase().hashCode();
-                if (restrict && (h == 0x17a1c || h == 0x3107ab || h == 0x19a1b || h == 0xe55 || h == 0x18417)) {
+                if (restrict && MessageObject.isV(ext)) {
                     return true;
                 }
                 realMimeType = myMime.getMimeTypeFromExtension(ext.toLowerCase());

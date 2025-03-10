@@ -642,8 +642,9 @@ public class ChannelMonetizationLayout extends SizeNotifierFrameLayout implement
                     Browser.openUrl(getContext(), ((TL_stats.TL_broadcastRevenueWithdrawalUrl) response).url);
                 } else if (response instanceof TLRPC.TL_payments_starsRevenueWithdrawalUrl) {
                     Browser.openUrl(getContext(), ((TLRPC.TL_payments_starsRevenueWithdrawalUrl) response).url);
-                    loadStarsStats();
+                    loadStarsStats(true);
                 }
+                reloadTransactions();
             }
         }));
     }
@@ -704,10 +705,10 @@ public class ChannelMonetizationLayout extends SizeNotifierFrameLayout implement
     private double ton_rate;
     private double stars_rate;
 
-    private void loadStarsStats() {
+    private void loadStarsStats(boolean force) {
         if (!starsRevenueAvailable) return;
 
-        TLRPC.TL_payments_starsRevenueStats cachedStats = BotStarsController.getInstance(currentAccount).getStarsRevenueStats(dialogId);
+        TLRPC.TL_payments_starsRevenueStats cachedStats = BotStarsController.getInstance(currentAccount).getStarsRevenueStats(dialogId, force);
         if (cachedStats != null) {
             AndroidUtilities.runOnUIThread(() -> {
                 applyStarsStats(cachedStats);
@@ -726,6 +727,7 @@ public class ChannelMonetizationLayout extends SizeNotifierFrameLayout implement
     }
 
     private void applyStarsStats(TLRPC.TL_payments_starsRevenueStats stats) {
+        final boolean first = starsRevenueChart == null;
         stars_rate = stats.usd_rate;
         starsRevenueChart = StatisticActivity.createViewData(stats.revenue_graph, getString(R.string.MonetizationGraphStarsRevenue), 2);
         if (starsRevenueChart != null && starsRevenueChart.chartData != null && starsRevenueChart.chartData.lines != null && !starsRevenueChart.chartData.lines.isEmpty() && starsRevenueChart.chartData.lines.get(0) != null) {
@@ -741,8 +743,10 @@ public class ChannelMonetizationLayout extends SizeNotifierFrameLayout implement
         }
 
         if (listView != null) {
-            listView.adapter.update(false);
-            listView.scrollToPosition(0);
+            listView.adapter.update(!first);
+            if (first) {
+                listView.scrollToPosition(0);
+            }
         }
     }
 
@@ -761,7 +765,7 @@ public class ChannelMonetizationLayout extends SizeNotifierFrameLayout implement
             }
         }));
 
-        loadStarsStats();
+        loadStarsStats(false);
 
         if (tonRevenueAvailable) {
             TL_stats.TL_getBroadcastRevenueStats req = new TL_stats.TL_getBroadcastRevenueStats();

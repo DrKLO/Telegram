@@ -8906,11 +8906,8 @@ public class MessageObject {
             int index = filename.lastIndexOf(".");
             if (index >= 0) {
                 String ext = filename.substring(index + 1);
-                switch (ext.toLowerCase().hashCode()) {
-                    case 0x17a1c: case 0x3107ab: case 0x19a1b:
-                    case 0xe55:   case 0x18417:  case 0x184fe:
-                    case 0x18181:
-                        return false;
+                if (isV(ext)) {
+                    return false;
                 }
             }
         }
@@ -8921,6 +8918,52 @@ public class MessageObject {
             isVideo = true;
         }
         return isVideo && !isAnimated;
+    }
+
+    public static boolean isV(String ext) {
+        if (ext == null) return true;
+        switch (ext.toLowerCase().hashCode()) {
+            case 0xb549144c: case 0x1b274:
+            case 0x2e06d4: case 0xa473e8a5: case 0xebd32e77:
+            case 0x3107ab: case 0x18417: case 0x194e1: case 0xeac:
+            case 0xc22: case 0x18538: case 0xab2f7e36: case 0xedc:
+            case 0x1c1d9: case 0x3498c3: case 0x1b0f2: case 0xd49:
+            case 0xdfd: case 0xd1075a44: case 0x383059: case 0xc8f:
+            case 0x1c270: case 0x1ba8b: case 0xe30: case 0x21bd7bf:
+            case 0x17890: case 0x1794a: case 0x17a1c: case 0x17a21:
+            case 0x17af5: case 0x17c14: case 0x17c15: case 0x17d07:
+            case 0x18085: case 0x180a8: case 0x1813a: case 0x18181:
+            case 0x1819f: case 0x181e5: case 0x181f8: case 0x1840a:
+            case 0x184dc: case 0x184e4: case 0x184fe: case 0x185a8:
+            case 0x18770: case 0x1889f: case 0x188be: case 0x1897a:
+            case 0x18a12: case 0x18a5e: case 0x18c54: case 0x18d27:
+            case 0x18dde: case 0x1909c: case 0x190ac: case 0x193ec:
+            case 0x1940e: case 0x194d5: case 0x1968a: case 0x1974d:
+            case 0x197e1: case 0x197ee: case 0x197f3: case 0x1981a:
+            case 0x1981f: case 0x19886: case 0x1988b: case 0x19a1b:
+            case 0x19c3c: case 0x19c47: case 0x19c4f: case 0x19eda:
+            case 0x1a000: case 0x1a285: case 0x1a329: case 0x1a59c:
+            case 0x1a5d4: case 0x1a5d5: case 0x1a735: case 0x1a75e:
+            case 0x1a77d: case 0x1a783: case 0x1a78a: case 0x1a78e:
+            case 0x1a81a: case 0x1ad00: case 0x1ad24: case 0x1b0a2:
+            case 0x1b0d1: case 0x1b123: case 0x1b18d: case 0x1b1cc:
+            case 0x1b2a1: case 0x1b2a5: case 0x1b31e: case 0x1b33c:
+            case 0x1b37a: case 0x1b386: case 0x1b639: case 0x1b848:
+            case 0x1b894: case 0x1b8de: case 0x1b9db: case 0x1b9ec:
+            case 0x1bc22: case 0x1bc24: case 0x1bcad: case 0x1bcbe:
+            case 0x1bdb5: case 0x1becd: case 0x1c079: case 0x1c0ea:
+            case 0x1c11a: case 0x1bdd2: case 0x1c3b7: case 0x1c56f:
+            case 0x1c739: case 0x1c747: case 0x1c781: case 0x1c9e2:
+            case 0x1cb21: case 0x1cc50: case 0x1ccb2: case 0x1cd07:
+            case 0x1cd0a: case 0x1cd0c: case 0x1cea7: case 0x1d09b:
+            case 0x1d77f: case 0x333e3f: case 0x348d4c: case 0xe55:
+            case 0x35c854: case 0x35ce71: case 0xc70: case 0x18203:
+            case 0x1cfff: case 0xdfc: case 0x35c681: case 0x2f2240:
+            case 0xc9e5d0cb: case 0xe09: case 0x349c84: case 0xda6:
+                return true;
+            default:
+                return false;
+        }
     }
 
     public TLRPC.Document getDocument() {
