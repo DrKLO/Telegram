@@ -1,3 +1,23 @@
+pluginManagement {
+    repositories {
+        gradlePluginPortal()
+        google()
+        mavenCentral()
+        maven {
+            url 'https://developer.huawei.com/repo/'
+        }
+    }
+}
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositories {
+        google()
+        mavenCentral()
+        maven {
+            url 'https://developer.huawei.com/repo/'
+        }
+    }
+}
 include ':TMessagesProj'
 include ':TMessagesProj_App'
 include ':TMessagesProj_AppHuawei'
