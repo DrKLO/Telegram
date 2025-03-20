@@ -950,6 +950,7 @@ public class BotWebViewAttachedSheet implements NotificationCenter.NotificationC
         if (userbot != null && userbot.verified || userInfo != null && userInfo.user != null && userInfo.user.verified) {
             verifiedDrawable = getContext().getResources().getDrawable(R.drawable.verified_profile).mutate();
             verifiedDrawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_featuredStickers_addButton), PorterDuff.Mode.SRC_IN));
+            verifiedDrawable.setAlpha(0xFF);
             actionBar.getTitleTextView().setDrawablePadding(dp(2));
             actionBar.getTitleTextView().setRightDrawable(new Drawable() {
                 @Override

@@ -1512,7 +1512,11 @@ public class AlertsCreator {
         textView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL);
         textView.setEllipsizeByGradient(true);
         textView.setText(user.first_name);
-        if (user.verified) {
+        if (user.scam) {
+            textView.setRightDrawable(Theme.dialogs_scamDrawable);
+        } else if (user.fake) {
+            textView.setRightDrawable(Theme.dialogs_fakeDrawable);
+        } else if (user.verified) {
             Drawable verifiedBackground = context.getResources().getDrawable(R.drawable.verified_area).mutate();
             verifiedBackground.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_chats_verifiedBackground), PorterDuff.Mode.MULTIPLY));
             Drawable verifiedCheck = context.getResources().getDrawable(R.drawable.verified_check).mutate();
@@ -1629,7 +1633,11 @@ public class AlertsCreator {
         titleView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL);
         titleView.setEllipsizeByGradient(true);
         titleView.setText(user.first_name);
-        if (user.verified) {
+        if (user.scam) {
+            titleView.setRightDrawable(Theme.dialogs_scamDrawable);
+        } else if (user.fake) {
+            titleView.setRightDrawable(Theme.dialogs_fakeDrawable);
+        } else if (user.verified) {
             Drawable verifiedBackground = context.getResources().getDrawable(R.drawable.verified_area).mutate();
             verifiedBackground.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_chats_verifiedBackground), PorterDuff.Mode.MULTIPLY));
             Drawable verifiedCheck = context.getResources().getDrawable(R.drawable.verified_check).mutate();

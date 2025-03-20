@@ -11988,7 +11988,7 @@ public class MessagesStorage extends BaseController {
                             long id = 0;
                             TLRPC.MessageMedia object = null;
                             TLRPC.Document document = MessageObject.getDocument(message);
-                            ArrayList<VideoPlayer.Quality> qualities = VideoPlayer.getQualities(currentAccount, message.media);
+                            ArrayList<VideoPlayer.Quality> qualities = VideoPlayer.getQualities(currentAccount, message.media, true);
                             if (qualities != null) {
                                 VideoPlayer.VideoUri v = VideoPlayer.getQualityForThumb(qualities);
                                 if (v != null) {

@@ -75,6 +75,7 @@ import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SendMessagesHelper;
+import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
 import org.telegram.messenger.Utilities;
@@ -1347,7 +1348,8 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
         final TLRPC.UserFull userInfo = MessagesController.getInstance(currentAccount).getUserFull(botId);
         if (userbot != null && userbot.verified || userInfo != null && userInfo.user != null && userInfo.user.verified) {
             verifiedDrawable = getContext().getResources().getDrawable(R.drawable.verified_profile).mutate();
-            verifiedDrawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_featuredStickers_addButton), PorterDuff.Mode.SRC_IN));
+            verifiedDrawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider), PorterDuff.Mode.SRC_IN));
+            verifiedDrawable.setAlpha(0xFF);
             actionBar.getTitleTextView().setDrawablePadding(dp(2));
             actionBar.getTitleTextView().setRightDrawable(new Drawable() {
                 @Override
@@ -1673,11 +1675,29 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
             })
             .addIf(currentBot != null && (currentBot.show_in_side_menu || currentBot.show_in_attach_menu), R.drawable.msg_delete, LocaleController.getString(R.string.BotWebViewDeleteBot), () -> {
                 deleteBot(currentAccount, botId, () -> dismiss());
-            })
+            });
+
+        if (actionBarColor != Theme.getColor(Theme.key_windowBackgroundWhite)) {
+            final int backgroundColor = AndroidUtilities.computePerceivedBrightness(actionBarColor) >= .721f ? 0xFF181819 : 0xffffffff;
+            final int textColor = AndroidUtilities.computePerceivedBrightness(backgroundColor) >= .721f ? Color.BLACK : Color.WHITE;
+            final int iconColor = Theme.multAlpha(textColor, .85f);
+            final int selectorColor = Theme.multAlpha(textColor, .10f);
+
+            o.setBackgroundColor(backgroundColor);
+            for (int i = 0; i < o.getItemsCount(); ++i) {
+                View item = o.getItemAt(i);
+                if (item instanceof ActionBarMenuSubItem) {
+                    ((ActionBarMenuSubItem) item).setColors(textColor, iconColor);
+                    ((ActionBarMenuSubItem) item).setSelectorColor(selectorColor);
+                }
+            }
+        }
+        o
             .setGravity(Gravity.RIGHT)
             .translate(-insets.right, 0)
             .forceTop(true)
             .setDrawScrim(false)
+            .setDimAlpha(0)
             .show();
     }
 

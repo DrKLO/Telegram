@@ -440,6 +440,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
     private SelectAnimatedEmojiDialog.SelectAnimatedEmojiDialogWindow selectAnimatedEmojiDialog;
 
     public boolean isReplyTo, isQuote;
+    public long replyMessageAuthor;
     private int initialDialogsType;
 
     private boolean checkingImportDialog;
@@ -2688,6 +2689,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             initialDialogsType = arguments.getInt("dialogsType", DIALOGS_TYPE_DEFAULT);
             isQuote = arguments.getBoolean("quote", false);
             isReplyTo = arguments.getBoolean("reply_to", false);
+            replyMessageAuthor = arguments.getLong("reply_to_author", 0L);
             selectAlertString = arguments.getString("selectAlertString");
             selectAlertStringGroup = arguments.getString("selectAlertStringGroup");
             addToGroupAlertString = arguments.getString("addToGroupAlertString");
@@ -2766,6 +2768,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
 
             NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.didSetPasscode);
             NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.appUpdateAvailable);
+            NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.appUpdateLoading);
         }
         getNotificationCenter().addObserver(this, NotificationCenter.messagesDeleted);
 
@@ -2932,6 +2935,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
 
             NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.didSetPasscode);
             NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.appUpdateAvailable);
+            NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.appUpdateLoading);
         }
         getNotificationCenter().removeObserver(this, NotificationCenter.messagesDeleted);
 
@@ -4153,6 +4157,8 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             viewPage.listView.setVerticalScrollbarPosition(LocaleController.isRTL ? RecyclerListView.SCROLLBAR_POSITION_LEFT : RecyclerListView.SCROLLBAR_POSITION_RIGHT);
             viewPage.addView(viewPage.listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
             viewPage.listView.setOnItemClickListener((view, position, x, y) -> {
+                if (view instanceof GraySectionCell)
+                    return;
                 if (view instanceof DialogCell && ((DialogCell) view).isBlocked()) {
                     showPremiumBlockedToast(view, ((DialogCell) view).getDialogId());
                     return;
@@ -10685,7 +10691,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 }
             }
             SuggestClearDatabaseBottomSheet.dismissDialog();
-        } else if (id == NotificationCenter.appUpdateAvailable) {
+        } else if (id == NotificationCenter.appUpdateAvailable || id == NotificationCenter.appUpdateLoading) {
             updateMenuButton(true);
         } else if (id == NotificationCenter.fileLoaded || id == NotificationCenter.fileLoadFailed || id == NotificationCenter.fileLoadProgressChanged) {
             String name = (String) args[0];
@@ -10792,7 +10798,20 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         }
         int type;
         float downloadProgress;
-        if (SharedConfig.isAppUpdateAvailable()) {
+        if (ApplicationLoader.applicationLoaderInstance.isCustomUpdate()) {
+            if (ApplicationLoader.applicationLoaderInstance.getUpdate() != null) {
+                if (ApplicationLoader.applicationLoaderInstance.isDownloadingUpdate()) {
+                    type = MenuDrawable.TYPE_UDPATE_DOWNLOADING;
+                    downloadProgress = ApplicationLoader.applicationLoaderInstance.getDownloadingUpdateProgress();
+                } else {
+                    type = MenuDrawable.TYPE_UDPATE_AVAILABLE;
+                    downloadProgress = 0.0f;
+                }
+            } else {
+                type = MenuDrawable.TYPE_DEFAULT;
+                downloadProgress = 0.0f;
+            }
+        } else if (SharedConfig.isAppUpdateAvailable()) {
             String fileName = FileLoader.getAttachFileName(SharedConfig.pendingAppUpdate.document);
             if (getFileLoader().isLoadingFile(fileName)) {
                 type = MenuDrawable.TYPE_UDPATE_DOWNLOADING;

@@ -983,7 +983,6 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
             super(context);
             int resId = R.raw.chat_audio_record_delete_2;
             drawable = new RLottieDrawable(resId, "" + resId, dp(28), dp(28), false, null);
-            drawable.setCurrentParentView(this);
             drawable.setInvalidateOnProgressSet(true);
             updateColors();
         }
@@ -7882,23 +7881,13 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
         }
         FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) messageEditText.getLayoutParams();
         int oldRightMargin = layoutParams.rightMargin;
-        if (attachVisible == 1) {
+        if (attachVisible == 1 || attachVisible == 2/* && layoutParams.rightMargin != dp(2)*/) {
             if (botButton != null && botButton.getVisibility() == VISIBLE && scheduledButton != null && scheduledButton.getVisibility() == VISIBLE && attachLayout != null && attachLayout.getVisibility() == VISIBLE) {
                 layoutParams.rightMargin = dp(146);
             } else if (botButton != null && botButton.getVisibility() == VISIBLE || notifyButton != null && notifyButton.getVisibility() == VISIBLE || scheduledButton != null && scheduledButton.getTag() != null) {
                 layoutParams.rightMargin = dp(98);
             } else {
                 layoutParams.rightMargin = dp(50);
-            }
-        } else if (attachVisible == 2) {
-            if (layoutParams.rightMargin != dp(2)) {
-                if (botButton != null && botButton.getVisibility() == VISIBLE && scheduledButton != null && scheduledButton.getVisibility() == VISIBLE && attachLayout != null && attachLayout.getVisibility() == VISIBLE) {
-                    layoutParams.rightMargin = dp(146);
-                } else if (botButton != null && botButton.getVisibility() == VISIBLE || notifyButton != null && notifyButton.getVisibility() == VISIBLE || scheduledButton != null && scheduledButton.getTag() != null) {
-                    layoutParams.rightMargin = dp(98);
-                } else {
-                    layoutParams.rightMargin = dp(50);
-                }
             }
         } else {
             if (scheduledButton != null && scheduledButton.getTag() != null) {

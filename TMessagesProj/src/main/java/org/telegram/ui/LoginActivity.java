@@ -48,6 +48,8 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Looper;
 import android.telephony.PhoneNumberUtils;
+import android.telephony.SubscriptionInfo;
+import android.telephony.SubscriptionManager;
 import android.telephony.TelephonyManager;
 import android.text.Editable;
 import android.text.InputType;
@@ -166,6 +168,7 @@ import org.telegram.ui.Components.ScaleStateListAnimator;
 import org.telegram.ui.Components.SimpleThemeDescription;
 import org.telegram.ui.Components.SizeNotifierFrameLayout;
 import org.telegram.ui.Components.SlideView;
+import org.telegram.ui.Components.Text;
 import org.telegram.ui.Components.TextStyleSpan;
 import org.telegram.ui.Components.TextViewSwitcher;
 import org.telegram.ui.Components.TransformableLoginButtonView;
@@ -182,6 +185,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -637,6 +641,11 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
         }
 
         Bundle savedInstanceState = activityMode == MODE_LOGIN ? loadCurrentState(newAccount, currentAccount) : null;
+        if (savedInstanceState != null) {
+            int viewNum = savedInstanceState.getInt("currentViewNum", 0);
+            if (viewNum < 0 || viewNum >= views.length)
+                savedInstanceState = null;
+        }
         if (savedInstanceState != null) {
             currentViewNum = savedInstanceState.getInt("currentViewNum", 0);
             syncContacts = savedInstanceState.getInt("syncContacts", 1) == 1;
@@ -3054,10 +3063,10 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             }
             if (settings.allow_flashcall) {
                 try {
-                    String number = tm.getLine1Number();
-                    if (!TextUtils.isEmpty(number)) {
+                    final Set<String> numbers = getUserPhoneNumbers();
+                    if (!numbers.isEmpty()) {
                         settings.unknown_number = false;
-                        settings.current_number = PhoneNumberUtils.compare(phone, number);
+                        settings.current_number = numbers.stream().anyMatch(number -> PhoneNumberUtils.compare(phone, number));
                     } else {
                         settings.unknown_number = true;
                         if (UserConfig.getActivatedAccountsCount() > 0) {
@@ -3354,6 +3363,45 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                 countryButton.getCurrentView().invalidate();
             }
         }
+    }
+
+    private HashSet<String> getUserPhoneNumbers() {
+        final HashSet<String> numbers = new HashSet<>();
+        try {
+            final TelephonyManager tm = (TelephonyManager) ApplicationLoader.applicationContext.getSystemService(Context.TELEPHONY_SERVICE);
+            final String number = tm.getLine1Number();
+            if (!TextUtils.isEmpty(number)) {
+                numbers.add(number);
+            }
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+        try {
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP_MR1) {
+                final SubscriptionManager subscriptionManager = SubscriptionManager.from(getContext());
+                List<SubscriptionInfo> infos = null;
+                if (Build.VERSION.SDK_INT >= 30) {
+                    infos = subscriptionManager.getCompleteActiveSubscriptionInfoList();
+                }
+                if ((infos == null || infos.isEmpty()) && Build.VERSION.SDK_INT >= 28) {
+                    infos = subscriptionManager.getAccessibleSubscriptionInfoList();
+                }
+                if (infos == null || infos.isEmpty()) {
+                    infos = subscriptionManager.getActiveSubscriptionInfoList();
+                }
+                if (infos != null) {
+                    for (int i = 0; i < infos.size(); ++i) {
+                        final String number = infos.get(i).getNumber();
+                        if (!TextUtils.isEmpty(number)) {
+                            numbers.add(number);
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+        return numbers;
     }
 
     public class LoginActivitySmsView extends SlideView implements NotificationCenter.NotificationCenterDelegate {

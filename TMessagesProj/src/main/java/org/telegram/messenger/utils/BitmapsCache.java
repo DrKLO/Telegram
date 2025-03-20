@@ -46,7 +46,7 @@ public class BitmapsCache {
     ArrayList<FrameOffset> frameOffsets = new ArrayList<>();
 
     final boolean useSharedBuffers;
-    static ConcurrentHashMap<Thread, byte[]> sharedBuffers = new ConcurrentHashMap();
+    final static ConcurrentHashMap<Thread, byte[]> sharedBuffers = new ConcurrentHashMap<>();
     static volatile boolean cleanupScheduled;
     byte[] bufferTmp;
 

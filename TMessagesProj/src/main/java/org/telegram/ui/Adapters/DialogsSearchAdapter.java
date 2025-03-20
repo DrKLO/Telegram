@@ -1694,16 +1694,19 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
                 boolean isRecent = false;
                 boolean isGlobal = isGlobalSearch(position);
                 String un = null;
+                ArrayList<TLRPC.TL_username> usernames = null;
                 Object obj = getItem(position);
 
                 if (obj instanceof TLRPC.User) {
                     user = (TLRPC.User) obj;
+                    usernames = user.usernames;
                     un = DialogObject.getPublicUsername(user, currentMessagesQuery);
                 } else if (obj instanceof TLRPC.Chat) {
                     chat = MessagesController.getInstance(currentAccount).getChat(((TLRPC.Chat) obj).id);
                     if (chat == null) {
                         chat = (TLRPC.Chat) obj;
                     }
+                    usernames = chat.usernames;
                     un = DialogObject.getPublicUsername(chat, currentMessagesQuery);
                 } else if (obj instanceof TLRPC.EncryptedChat) {
                     encryptedChat = MessagesController.getInstance(currentAccount).getEncryptedChat(((TLRPC.EncryptedChat) obj).id);
@@ -1769,6 +1772,31 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
                             SpannableStringBuilder spannableStringBuilder = new SpannableStringBuilder(nameSearch);
                             spannableStringBuilder.setSpan(new ForegroundColorSpanThemable(Theme.key_windowBackgroundWhiteBlueText4), index, index + foundUserName.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                             name = spannableStringBuilder;
+                        }
+                        if (usernames != null && usernames.size() > 1) {
+                            String query = foundUserName;
+                            if (query.startsWith("@"))
+                                query = query.substring(1);
+                            String matchedUsername = null;
+                            for (TLRPC.TL_username u : usernames) {
+                                if (!u.active) continue;
+                                if (u.username.startsWith(query)) {
+                                    matchedUsername = u.username;
+                                    break;
+                                }
+                            }
+                            if (matchedUsername == null) {
+                                for (TLRPC.TL_username u : usernames) {
+                                    if (!u.active) continue;
+                                    if (u.username.contains(query)) {
+                                        matchedUsername = u.username;
+                                        break;
+                                    }
+                                }
+                            }
+                            if (matchedUsername != null) {
+                                un = matchedUsername;
+                            }
                         }
                         if (un != null && (user == null || isGlobal)) {
                             if (foundUserName.startsWith("@")) {

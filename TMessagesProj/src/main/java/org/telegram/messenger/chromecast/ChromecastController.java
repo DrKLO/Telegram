@@ -44,6 +44,10 @@ public class ChromecastController implements SessionManagerListener<CastSession>
         tryInitClient(sessionManager.getCurrentCastSession());
     }
 
+    public boolean isCasting() {
+        return state.getClient() != null;
+    }
+
     public void setCurrentMediaAndCastIfNeeded(ChromecastMediaVariations newMedia) {
         Log.d(CAST_CONTROLLER, "set current media");
         ChromecastMediaVariations currentMedia = state.getMedia();

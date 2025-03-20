@@ -2267,7 +2267,7 @@ public abstract class BotWebViewContainer extends FrameLayout implements Notific
                             AndroidUtilities.runOnUIThread(open);
                         });
                     });
-                }).execute(media_url);
+                }, null).execute(media_url);
                 progressDialog.showDelayed(250);
 
                 break;

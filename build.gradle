@@ -9,6 +9,7 @@ buildscript {
         classpath 'com.android.tools.build:gradle:8.4.2'
         classpath 'com.google.gms:google-services:4.3.15'
         classpath 'com.huawei.agconnect:agcp:1.9.1.301'
+        classpath 'com.google.firebase:firebase-crashlytics-gradle:2.9.0'
     }
 }
 repositories {

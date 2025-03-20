@@ -3886,7 +3886,9 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
         try {
             CastSync.check(CastSync.TYPE_MUSIC);
             if (!ignorePlayerUpdate) {
-                ChromecastController.getInstance().setCurrentMediaAndCastIfNeeded(getCurrentChromecastMedia());
+                if (ChromecastController.getInstance().isCasting()) {
+                    ChromecastController.getInstance().setCurrentMediaAndCastIfNeeded(getCurrentChromecastMedia());
+                }
                 CastSync.setPlaying(true);
             }
         } catch (Exception e) {
@@ -3925,7 +3927,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
         return getProgressMs(playingMessageObject);
     }
 
-    private ChromecastMediaVariations getCurrentChromecastMedia() {
+    public ChromecastMediaVariations getCurrentChromecastMedia() {
         if (playingMessageObject == null) {
             return null;
         }
@@ -4112,7 +4114,9 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
         try {
             CastSync.check(CastSync.TYPE_MUSIC);
             if (!ignorePlayerUpdate) {
-                ChromecastController.getInstance().setCurrentMediaAndCastIfNeeded(getCurrentChromecastMedia());
+                if (ChromecastController.getInstance().isCasting()) {
+                    ChromecastController.getInstance().setCurrentMediaAndCastIfNeeded(getCurrentChromecastMedia());
+                }
                 CastSync.setPlaying(false);
             }
         } catch (Exception e) {

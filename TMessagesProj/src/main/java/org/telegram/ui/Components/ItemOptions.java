@@ -823,6 +823,25 @@ public class ItemOptions {
         }
     }
 
+    public View getItemAt(int index) {
+        if (lastLayout == null && layout == null)
+            return null;
+        if (lastLayout == layout) {
+            return lastLayout.getItemAt(index);
+        } else {
+            for (int j = 0; j < layout.getChildCount() - 1; ++j) {
+                View child = j == layout.getChildCount() - 1 ? lastLayout : layout.getChildAt(j);
+                if (child instanceof ActionBarPopupWindow.ActionBarPopupWindowLayout) {
+                    ActionBarPopupWindow.ActionBarPopupWindowLayout popupLayout = (ActionBarPopupWindow.ActionBarPopupWindowLayout) child;
+                    View item = popupLayout.getItemAt(index);
+                    if (item != null) return item;
+                    index -= popupLayout.getItemsCount();
+                }
+            }
+            return null;
+        }
+    }
+
     private float offsetX, offsetY;
 
     public void setupSelectors() {

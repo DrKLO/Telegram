@@ -4214,7 +4214,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                                 getString("DebugMenuClearMediaCache", R.string.DebugMenuClearMediaCache),
                                 getString("DebugMenuCallSettings", R.string.DebugMenuCallSettings),
                                 null,
-                                BuildVars.DEBUG_PRIVATE_VERSION || ApplicationLoader.isStandaloneBuild() ? getString("DebugMenuCheckAppUpdate", R.string.DebugMenuCheckAppUpdate) : null,
+                                BuildVars.DEBUG_PRIVATE_VERSION || ApplicationLoader.isStandaloneBuild() || ApplicationLoader.isBetaBuild() ? getString("DebugMenuCheckAppUpdate", R.string.DebugMenuCheckAppUpdate) : null,
                                 getString("DebugMenuReadAllDialogs", R.string.DebugMenuReadAllDialogs),
                                 BuildVars.DEBUG_PRIVATE_VERSION ? (SharedConfig.disableVoiceAudioEffects ? "Enable voip audio effects" : "Disable voip audio effects") : null,
                                 BuildVars.DEBUG_PRIVATE_VERSION ? "Clean app update" : null,
@@ -4254,11 +4254,6 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                                 getMessagesController().forceResetDialogs();
                             } else if (which == 4) { // Logs
                                 BuildVars.LOGS_ENABLED = !BuildVars.LOGS_ENABLED;
-                                Thread.setDefaultUncaughtExceptionHandler(BuildVars.LOGS_ENABLED ? (thread, exception) -> {
-                                    if (thread == Looper.getMainLooper().getThread()) {
-                                        FileLog.fatal(exception, true);
-                                    }
-                                } : null);
                                 SharedPreferences sharedPreferences = ApplicationLoader.applicationContext.getSharedPreferences("systemConfig", Context.MODE_PRIVATE);
                                 sharedPreferences.edit().putBoolean("logsEnabled", BuildVars.LOGS_ENABLED).commit();
                                 updateRowsIds();
@@ -9258,7 +9253,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             infoSectionRow = rowCount++;
 
             if (ChatObject.isChannel(currentChat) && !currentChat.megagroup) {
-                if (chatInfo != null && (currentChat.creator || chatInfo.can_view_participants) || BuildVars.DEBUG_PRIVATE_VERSION) {
+                if (chatInfo != null && (currentChat.creator || chatInfo.can_view_participants)) {
                     membersHeaderRow = rowCount++;
                     subscribersRow = rowCount++;
                     if (chatInfo != null && chatInfo.requests_pending > 0) {
@@ -14413,6 +14408,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 collectibleHint.setAlpha(0.0f);
             }
             updateCollectibleHint();
+            AndroidUtilities.runOnUIThread(collectibleHint::hide, 6 * 1000);
         }
     }
 

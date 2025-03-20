@@ -7049,7 +7049,7 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
                         storyItem.close_friends = privacy.type == StoryPrivacyBottomSheet.TYPE_CLOSE_FRIENDS;
                         storyItem.contacts = privacy.type == StoryPrivacyBottomSheet.TYPE_CONTACTS;
                         storyItem.selected_contacts = privacy.type == StoryPrivacyBottomSheet.TYPE_SELECTED_CONTACTS;
-                        MessagesController.getInstance(currentAccount).getStoriesController().updateStoryItem(storyItem.dialogId, storyItem);
+                        MessagesController.getInstance(currentAccount).getStoriesController().updateStoryItem(storyItem.dialogId, storyItem, true, true);
                         editedPrivacy = true;
 
                         if (privacy.type == StoryPrivacyBottomSheet.TYPE_EVERYONE) {

@@ -2572,7 +2572,9 @@
     <string name="QRCodePermissionNoCameraWithHint">**Telegram** needs camera access so that you can scan QR codes. Tap Settings -> Permissions, and turn **Camera** on.</string>
     <string name="SetProfilePhoto">Set Profile Photo</string>
     <string name="AppUpdate">Update Telegram</string>
+    <string name="AppUpdateBeta">Update Telegram Beta</string>
     <string name="AppUpdateVersionAndSize">Version %1$s • %2$s</string>
+    <string name="AppBetaUpdateVersion">Version %1$s (%2$s)</string>
     <string name="AppUpdateDownloading">Downloading %1$d%%...</string>
     <string name="AppUpdateNow">Update Now</string>
     <string name="AppUpdateDownloadNow">Download Now</string>
@@ -5435,6 +5437,7 @@
     <string name="TelegramPremiumUserDialogTitle">**%s** is a subscriber of Telegram Premium.</string>
     <string name="TelegramPremiumUserDialogSubtitle">Owners of **Telegram Premium** accounts have exclusive access to multiple additional features.</string>
     <string name="TelegramPremiumUserStatusDialogTitle">%1$s set this emoji from **%2$s** as their current status.</string>
+    <string name="TelegramPremiumUserStatusCollectibleDialogTitle">%1$s set this emoji from **%2$s** collection as their current status.</string>
     <string name="TelegramPremiumUserStatusDialogSubtitle">Emoji status is a premium feature. Other features included in **Telegram Premium**:</string>
     <string name="TelegramPremiumUserStatusDefaultDialogTitle">This is %1$s\'s current status.</string>
     <string name="TelegramPremiumUserGiftedPremiumDialogTitleWithPlural">**%1$s** has gifted you a %2$s subscription for Telegram Premium.</string>
@@ -7623,6 +7626,13 @@
     <string name="PrivacyGifts">Gifts</string>
     <string name="PrivacyGiftsTitle">Automatically display gifts from</string>
     <string name="PrivacyGiftsInfo">Choose whether gifts from specific senders need your approval before they’re visible to others on your profile.</string>
+    <string name="PrivacyGiftsShowIcon">Show Gift Icon in Chats</string>
+    <string name="PrivacyGiftsShowIconInfo">Display the %s Gift in the message input field for both participants in all chats.</string>
+    <string name="PrivacyGiftsTypeHeader">Accepted gift types</string>
+    <string name="PrivacyGiftsTypeUnlimited">Unlimited</string>
+    <string name="PrivacyGiftsTypeLimited">Limited-Edition</string>
+    <string name="PrivacyGiftsTypeUnique">Unique</string>
+    <string name="PrivacyGiftsTypeInfo">Choose the types of gifts that you allow others to send you.</string>
     <string name="PrivacyBirthday">Date of Birth</string>
     <string name="PrivacyBirthdayTitle">Who can see my birthday?</string>
     <string name="PrivacyBirthdayInfo">You can restrict who can see you birthday with granular precision.</string>
@@ -8321,6 +8331,8 @@
     <string name="Gift2Upgrade">Make Unique for ⭐️%d</string>
     <string name="Gift2UpgradeInfo">Enable this to let %s turn your gift into a unique collectible. **Learn More >**</string>
     <string name="Gift2UpgradeChannelInfo">Enable this to let the admins of %s to turn your gift into a unique collectible. **Learn More >**</string>
+    <string name="Gift2UpgradeForcedInfo">%s only accepts unique gifts.</string>
+    <string name="Gift2UpgradeChannelForcedInfo">%s only accepts unique gifts.</string>
     <string name="Gift2UpgradeSelf">Make Unique for ⭐️%d</string>
     <string name="Gift2UpgradeSelfInfo">Enable this to turn your gift into a unique collectible. **Learn More >**</string>
     <string name="Gift2Send_one">Send a Gift for ⭐️%d</string>
@@ -8926,6 +8938,7 @@
     <string name="GiftsPinLimit_other">You can\'t pin more than %d gifts.</string>
     <string name="Gift2PinnedTitle">Gift pinned</string>
     <string name="Gift2PinnedSubtitle">Now it will always be shown on top.</string>
+    <string name="Gift2Unpinned">Gift unpinned</string>
     <string name="StarsTopUp">Top Up</string>
     <string name="StarsWithdraw">Withdraw</string>
     <string name="StarsStats">Stats</string>
@@ -8941,4 +8954,6 @@
     <string name="ContactInfoUserUpdatedName">User updated name %s</string>
     <string name="StarsTransactionPremiumGift">Telegram Premium</string>
     <string name="StarsTransactionPremiumGiftDuration">Duration</string>
+    <string name="ReplyDialogMessageAuthor">Message Author</string>
+    <string name="ReplyDialogYourChats">Your Chats</string>
 </resources>

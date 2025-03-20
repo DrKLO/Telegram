@@ -750,6 +750,9 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
         contentView.addView(backgroundView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
         listView.setOnItemClickListener((view, position) -> {
+            if (!getUserConfig().isClientActivated()) {
+                return;
+            }
             if (position == showAdsRow) {
                 TLRPC.UserFull userFull = getMessagesController().getUserFull(getUserConfig().getClientUserId());
                 if (userFull == null) return;

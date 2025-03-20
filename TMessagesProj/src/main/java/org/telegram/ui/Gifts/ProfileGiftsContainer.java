@@ -597,6 +597,10 @@ public class ProfileGiftsContainer extends FrameLayout implements NotificationCe
                             BulletinFactory.of(fragment)
                                     .createSimpleBulletin(R.raw.ic_pin, getString(R.string.Gift2PinnedTitle), getString(R.string.Gift2PinnedSubtitle))
                                     .show();
+                        } else {
+                            BulletinFactory.of(fragment)
+                                    .createSimpleBulletin(R.raw.ic_unpin, getString(R.string.Gift2Unpinned))
+                                    .show();
                         }
                         listView.smoothScrollToPosition(0);
                     });

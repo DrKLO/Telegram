@@ -620,6 +620,31 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
     private void onMenuPressed(View btn) {
         final String link = getLink();
         ItemOptions.makeOptions(container, resourcesProvider, btn)
+            .addIf(getUniqueGift() != null && isMineWithActions(currentAccount, DialogObject.getPeerDialogId(getUniqueGift().owner_id)) && giftsList != null && savedStarGift != null && getInputStarGift() != null, (savedStarGift != null && savedStarGift.pinned_to_top) ? R.drawable.msg_unpin : R.drawable.msg_pin, getString((savedStarGift != null && savedStarGift.pinned_to_top) ? R.string.Gift2Unpin : R.string.Gift2Pin), () -> {
+                if (savedStarGift.unsaved) {
+                    savedStarGift.unsaved = false;
+
+                    final TL_stars.saveStarGift req = new TL_stars.saveStarGift();
+                    req.stargift = getInputStarGift();
+                    req.unsave = savedStarGift.unsaved;
+                    ConnectionsManager.getInstance(currentAccount).sendRequest(req, null, ConnectionsManager.RequestFlagInvokeAfter);
+                }
+
+                final boolean newPinned = !savedStarGift.pinned_to_top;
+                if (giftsList.togglePinned(savedStarGift, newPinned)) {
+                    getBulletinFactory()
+                        .createSimpleBulletin(R.raw.chats_infotip, LocaleController.formatPluralStringComma("GiftsPinLimit", MessagesController.getInstance(currentAccount).stargiftsPinnedToTopLimit))
+                        .show();
+                } else if (newPinned) {
+                    getBulletinFactory()
+                        .createSimpleBulletin(R.raw.ic_pin, getString(R.string.Gift2PinnedTitle), getString(R.string.Gift2PinnedSubtitle))
+                        .show();
+                } else {
+                    getBulletinFactory()
+                        .createSimpleBulletin(R.raw.ic_unpin, getString(R.string.Gift2Unpinned))
+                        .show();
+                }
+            })
             .addIf(link != null, R.drawable.msg_link, getString(R.string.CopyLink), () -> {
                 AndroidUtilities.addToClipboard(link);
                 getBulletinFactory()

@@ -322,12 +322,12 @@ public class GiftSheet extends BottomSheetWithRecyclerListView implements Notifi
                 if (emojiDocuments.size() > 0) {
                     final SpannableStringBuilder link = new SpannableStringBuilder();
                     link.append(formatString(R.string.Gift2StarsInfoProfileLink, DialogObject.getShortName(dialogId)));
-                    link.append(" ");
+                    link.append(" ");
                     for (final TLRPC.Document document : emojiDocuments) {
-                        link.append("e");
+                        link.append("\u2060e");
                         link.setSpan(new AnimatedEmojiSpan(document, subtitleStarsView.getPaint().getFontMetricsInt()), link.length() - 1, link.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                     }
-                    link.append(" >");
+                    link.append(" >");
                     subtitle.append(AndroidUtilities.replaceArrows(AndroidUtilities.makeClickable(link, () -> {
                         BaseFragment lastFragment = LaunchActivity.getSafeLastFragment();
                         if (lastFragment == null) return;

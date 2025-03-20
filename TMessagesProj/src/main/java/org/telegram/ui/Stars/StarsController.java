@@ -1999,7 +1999,7 @@ public class StarsController {
             req.count = (int) amount;
             req.flags |= 1;
             final long privacyDialogId = getPeerId();
-            if (privacyDialogId == 0) {
+            if (privacyDialogId == 0 || privacyDialogId == UserConfig.getInstance(currentAccount).getClientUserId()) {
                 req.privacy = new TL_stars.paidReactionPrivacyDefault();
             } else if (privacyDialogId == UserObject.ANONYMOUS) {
                 req.privacy = new TL_stars.paidReactionPrivacyAnonymous();
@@ -2392,7 +2392,7 @@ public class StarsController {
         inputInvoice.user_id = MessagesController.getInstance(currentAccount).getInputUser(dialogId);
         inputInvoice.months = months;
         if (text != null && !TextUtils.isEmpty(text.text)) {
-            inputInvoice.flags |= 2;
+            inputInvoice.flags |= 1;
             inputInvoice.message = text;
         }
 
@@ -3146,7 +3146,7 @@ public class StarsController {
                     bulletinButton.animate().alpha(0.0f).scaleX(0.3f).scaleY(0.3f).start();
                 } else {
                     bulletinButton.setAlpha(0.0f);
-                    bulletinButton.setVisibility(View.INVISIBLE);
+                    bulletinButton.setVisibility(View.GONE);
                 }
             }
 

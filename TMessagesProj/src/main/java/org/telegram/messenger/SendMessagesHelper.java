@@ -2424,10 +2424,6 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                                 for (int a1 = 0; a1 < updates.updates.size(); a1++) {
                                     TLRPC.Update update = updates.updates.get(a1);
                                     if (update instanceof TLRPC.TL_updateNewMessage || update instanceof TLRPC.TL_updateNewChannelMessage || update instanceof TLRPC.TL_updateNewScheduledMessage || update instanceof TLRPC.TL_updateQuickReplyMessage) {
-                                        if (getMessageFromUpdate(update) != null && getMessageFromUpdate(update).action instanceof TLRPC.TL_messageActionPaidMessage) {
-                                            continue;
-                                        }
-
                                         boolean currentSchedule = false;
                                         boolean scheduled = scheduleDate != 0;
 

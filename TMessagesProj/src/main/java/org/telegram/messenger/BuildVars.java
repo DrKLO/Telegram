@@ -44,8 +44,12 @@ public class BuildVars {
             SharedPreferences sharedPreferences = ApplicationLoader.applicationContext.getSharedPreferences("systemConfig", Context.MODE_PRIVATE);
             LOGS_ENABLED = DEBUG_VERSION || sharedPreferences.getBoolean("logsEnabled", DEBUG_VERSION);
             if (LOGS_ENABLED) {
+                final Thread.UncaughtExceptionHandler pastHandler = Thread.getDefaultUncaughtExceptionHandler();
                 Thread.setDefaultUncaughtExceptionHandler((thread, exception) -> {
-                    FileLog.fatal(exception, true);
+                    FileLog.fatal(exception, false);
+                    if (pastHandler != null) {
+                        pastHandler.uncaughtException(thread, exception);
+                    }
                 });
             }
         }

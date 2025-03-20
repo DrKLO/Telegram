@@ -324,7 +324,7 @@ public class SimpleTextView extends View implements Drawable.Callback {
             return;
         }
         if (layout.getLineCount() > 0) {
-            textWidth = (int) Math.max(Math.ceil(layout.getLineWidth(0)), Math.ceil(layout.getLineRight(0)));
+            textWidth = (int) Math.max(Math.ceil(layout.getLineWidth(0)), Math.ceil(layout.getLineRight(0) - layout.getLineLeft(0)));
             if (fullLayout != null) {
                 textHeight = fullLayout.getLineBottom(fullLayout.getLineCount() - 1);
             } else if (maxLines > 1 && layout.getLineCount() > 0) {

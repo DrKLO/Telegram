@@ -58,7 +58,6 @@ public class ReactionsEffectOverlay {
     private final AnimationView emojiImageView;
     private final AnimationView emojiStaticImageView;
     private final FrameLayout container;
-    private final BaseFragment fragment;
     private final int currentAccount;
     private ReactionsEffectOverlay nextReactionOverlay;
     boolean animateIn;
@@ -92,7 +91,6 @@ public class ReactionsEffectOverlay {
     boolean isFinished;
 
     public ReactionsEffectOverlay(Context context, BaseFragment fragment, ReactionsContainerLayout reactionsLayout, View cell, View fromAnimationView, float x, float y, ReactionsLayoutInBubble.VisibleReaction visibleReaction, int currentAccount, int animationType, boolean isStories) {
-        this.fragment = fragment;
         this.isStories = isStories;
         final MessageObject messageObject;
         if (cell instanceof ChatMessageCell) {

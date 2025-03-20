@@ -1874,7 +1874,7 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView imp
                 final int blockedMessaging = premiumMessagingBlockedUsers == null ? 0 : premiumMessagingBlockedUsers.size();
 
                 if ((blockedInviting - blockedMessaging) > 0 && !(blockedInviting == 1 && blockedMessaging == 1) && canSendLink) {
-                    SimpleTextView or = new SimpleTextView(context) {
+                    TextView or = new TextView(context) {
                         private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
                         @Override
                         protected void dispatchDraw(Canvas canvas) {
@@ -1882,14 +1882,17 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView imp
                             paint.setStyle(Paint.Style.STROKE);
                             paint.setStrokeWidth(1);
                             final float cy = getHeight() / 2f;
-                            canvas.drawLine(0, cy, getWidth() / 2f - getTextWidth() / 2f - dp(8), cy, paint);
-                            canvas.drawLine(getWidth() / 2f + getTextWidth() / 2f + dp(8), cy, getWidth(), cy, paint);
-
+                            int textWidth = 0;
+                            final Layout layout = getLayout();
+                            for (int i = 0; i < layout.getLineCount(); ++i) {
+                                textWidth = Math.max(textWidth, (int) layout.getLineWidth(i));
+                            }
+                            canvas.drawLine(0, cy, getWidth() / 2f - textWidth / 2f - dp(8), cy, paint);
+                            canvas.drawLine(getWidth() / 2f + textWidth / 2f + dp(8), cy, getWidth(), cy, paint);
                             super.dispatchDraw(canvas);
                         }
                     };
                     or.setGravity(Gravity.CENTER);
-                    or.setAlignment(Layout.Alignment.ALIGN_CENTER);
                     or.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2, resourcesProvider));
                     or.setText(" " + LocaleController.getString(R.string.InvitePremiumBlockedOr) + " ");
                     or.setTextSize(14);
