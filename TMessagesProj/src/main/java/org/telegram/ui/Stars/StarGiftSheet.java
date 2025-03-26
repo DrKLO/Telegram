@@ -83,6 +83,7 @@ import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.tl.TL_account;
 import org.telegram.tgnet.tl.TL_stars;
+import org.telegram.ui.AccountFrozenAlert;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.SimpleTextView;
@@ -117,6 +118,7 @@ import org.telegram.ui.Components.TableView;
 import org.telegram.ui.Components.ViewPagerFixed;
 import org.telegram.ui.Components.spoilers.SpoilersTextView;
 import org.telegram.ui.Gifts.GiftSheet;
+import org.telegram.ui.Gifts.ProfileGiftsContainer;
 import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.PremiumPreviewFragment;
 import org.telegram.ui.ProfileActivity;
@@ -631,10 +633,8 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
                 }
 
                 final boolean newPinned = !savedStarGift.pinned_to_top;
-                if (giftsList.togglePinned(savedStarGift, newPinned)) {
-                    getBulletinFactory()
-                        .createSimpleBulletin(R.raw.chats_infotip, LocaleController.formatPluralStringComma("GiftsPinLimit", MessagesController.getInstance(currentAccount).stargiftsPinnedToTopLimit))
-                        .show();
+                if (giftsList.togglePinned(savedStarGift, newPinned, false)) {
+                    new ProfileGiftsContainer.UnpinSheet(getContext(), dialogId, savedStarGift, resourcesProvider, this::getBulletinFactory).show();
                 } else if (newPinned) {
                     getBulletinFactory()
                         .createSimpleBulletin(R.raw.ic_pin, getString(R.string.Gift2PinnedTitle), getString(R.string.Gift2PinnedSubtitle))
@@ -2061,6 +2061,7 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
         final long fromId = (savedStarGift.flags & 2) != 0 ? from_id : UserObject.ANONYMOUS;
         final boolean isForChannel = dialogId < 0;
         final String owner_address, gift_address;
+        final TLRPC.TL_textWithEntities message = savedStarGift.message;
 
         boolean refunded = savedStarGift.refunded, self = false;
 
@@ -2152,7 +2153,9 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
             beforeTableTextView.setTextColor(Theme.getColor(Theme.key_text_RedBold, resourcesProvider));
         } else if (TextUtils.isEmpty(owner_address) && TextUtils.isEmpty(gift_address) && myProfile && savedStarGift.gift instanceof TL_stars.TL_starGift && savedStarGift.name_hidden) {
             beforeTableTextView.setVisibility(View.VISIBLE);
-            beforeTableTextView.setText(getString(R.string.Gift2SenderHidden));
+            beforeTableTextView.setText(getString(
+                (message != null && !TextUtils.isEmpty(message.text)) ? R.string.Gift2InSenderMessageHidden2 : R.string.Gift2InSenderHidden2)
+            );
             beforeTableTextView.setTextColor(Theme.getColor(Theme.key_dialogTextGray2, resourcesProvider));
         } else {
             beforeTableTextView.setVisibility(View.GONE);
@@ -2203,6 +2206,14 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
         return "";
     }
 
+    public static String getGiftName(TL_stars.StarGift gift) {
+        if (gift instanceof TL_stars.TL_starGiftUnique) {
+            final TL_stars.TL_starGiftUnique uniqueGift = (TL_stars.TL_starGiftUnique) gift;
+            return uniqueGift.title + " #" + LocaleController.formatNumber(uniqueGift.num, ',');
+        }
+        return "";
+    }
+
     public TL_stars.StarGift getGift() {
         if (messageObject != null) {
             if (messageObject.messageOwner == null) return null;
@@ -2233,6 +2244,7 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
         final long selfId = UserConfig.getInstance(currentAccount).getClientUserId();
         final boolean self = messageObject.getDialogId() == selfId;
         TL_stars.StarGift stargift;
+        TLRPC.TL_textWithEntities message;
         if (messageObject.messageOwner.action instanceof TLRPC.TL_messageActionStarGift || messageObject.messageOwner.action instanceof TLRPC.TL_messageActionStarGiftUnique && ((TLRPC.TL_messageActionStarGiftUnique) messageObject.messageOwner.action).gift instanceof TL_stars.TL_starGift) {
             out = messageObject.isOutOwner();
             if (self) {
@@ -2241,7 +2253,6 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
             final int date = messageObject.messageOwner.date;
             boolean can_upgrade, upgraded;
             long convert_stars, upgrade_stars;
-            TLRPC.TL_textWithEntities message;
             TLRPC.Peer from_id, peer;
             if (messageObject.messageOwner.action instanceof TLRPC.TL_messageActionStarGift) {
                 final TLRPC.TL_messageActionStarGift action = (TLRPC.TL_messageActionStarGift) messageObject.messageOwner.action;
@@ -2297,12 +2308,12 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
                     title = getString(out ? R.string.Gift2TitleSent : R.string.Gift2TitleReceived),
                     0,
                     refunded ? null : TextUtils.concat(
-                        AndroidUtilities.replaceTags(fromBot || !canConvert() ? (
+                        AndroidUtilities.replaceTags(fromBot || !canSomeoneConvert() ? (
                             out ?
                                 formatString(can_upgrade && upgrade_stars > 0 ? R.string.Gift2Info2OutUpgrade : R.string.Gift2Info2OutExpired, name) :
                                 getString(!saved ? (isForChannel ? R.string.Gift2Info2ChannelKeep : R.string.Gift2Info2BotKeep) : (isForChannel ? R.string.Gift2Info2ChannelRemove : R.string.Gift2Info2BotRemove))
                         ) : out ?
-                            saved && !converted ? formatString(R.string.Gift2InfoOutPinned, name) : formatPluralStringComma(converted ? "Gift2InfoOutConverted" : "Gift2InfoOut", (int) convert_stars, name) :
+                            can_upgrade && upgrade_stars > 0 ? formatString(R.string.Gift2Info2OutUpgrade, name) : saved && !converted ? formatString(R.string.Gift2InfoOutPinned, name) : formatPluralStringComma(converted ? "Gift2InfoOutConverted" : "Gift2InfoOut", (int) convert_stars, name) :
                             formatPluralStringComma(converted ? (isForChannel ? "Gift2InfoChannelConverted" : "Gift2InfoConverted") : (isForChannel ? "Gift2Info3Channel" : "Gift2Info3"), (int) convert_stars)
                         ),
                         " ",
@@ -2383,6 +2394,7 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
             if (!(action.gift instanceof TL_stars.TL_starGiftUnique)) {
                 return this;
             }
+            message = null;
             set((TL_stars.TL_starGiftUnique) action.gift, (action.flags & 16) != 0, refunded = action.refunded);
             converted = false;
             saved = action.saved;
@@ -2404,9 +2416,13 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
             beforeTableTextView.setVisibility(View.VISIBLE);
             beforeTableTextView.setText(getString(R.string.Gift2Refunded));
             beforeTableTextView.setTextColor(Theme.getColor(Theme.key_text_RedBold, resourcesProvider));
-        } else if (TextUtils.isEmpty(owner_address) && TextUtils.isEmpty(gift_address) && !out && name_hidden && !self) {
+        } else if (TextUtils.isEmpty(owner_address) && TextUtils.isEmpty(gift_address) && name_hidden && !self) {
             beforeTableTextView.setVisibility(View.VISIBLE);
-            beforeTableTextView.setText(getString(R.string.Gift2SenderHidden));
+            beforeTableTextView.setText(
+                out ?
+                    formatString((message != null && !TextUtils.isEmpty(message.text)) ? R.string.Gift2OutSenderMessageHidden2 : R.string.Gift2OutSenderHidden2, DialogObject.getShortName(messageObject.getDialogId())) :
+                    getString((message != null && !TextUtils.isEmpty(message.text)) ? R.string.Gift2InSenderMessageHidden2 : R.string.Gift2InSenderHidden2)
+            );
             beforeTableTextView.setTextColor(Theme.getColor(Theme.key_dialogTextGray2, resourcesProvider));
         } else {
             beforeTableTextView.setVisibility(View.GONE);
@@ -2601,6 +2617,26 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
             args.putBoolean("open_gifts", true);
             lastFragment.presentFragment(new ProfileActivity(args));
         }
+    }
+
+    private boolean canSomeoneConvert() {
+        if (getInputStarGift() == null) return false;
+        if (messageObject != null) {
+            if (messageObject.messageOwner.action instanceof TLRPC.TL_messageActionStarGift) {
+                final TLRPC.TL_messageActionStarGift action = (TLRPC.TL_messageActionStarGift) messageObject.messageOwner.action;
+                final boolean isForChannel = action.peer != null;
+                final boolean out = messageObject.isOutOwner();
+                final boolean self = messageObject.getDialogId() == UserConfig.getInstance(currentAccount).getClientUserId();
+                final int date = messageObject.messageOwner.date;
+                final int within = MessagesController.getInstance(currentAccount).stargiftsConvertPeriodMax - (ConnectionsManager.getInstance(currentAccount).getCurrentTime() - date);
+                return (!isForChannel || action.peer != null && isMineWithActions(currentAccount, DialogObject.getPeerDialogId(action.peer))) && !action.converted && action.convert_stars > 0 && within > 0;
+            }
+        } else if (savedStarGift != null) {
+            final int date = savedStarGift.date;
+            final int within = MessagesController.getInstance(currentAccount).stargiftsConvertPeriodMax - (ConnectionsManager.getInstance(currentAccount).getCurrentTime() - date);
+            return isMineWithActions(currentAccount, dialogId) && (savedStarGift.flags & (dialogId < 0 ? 2048 : 8)) != 0 && (savedStarGift.flags & 16) != 0 && (savedStarGift.flags & 2) != 0 && within > 0;
+        }
+        return false;
     }
 
     private boolean canConvert() {
@@ -2811,6 +2847,10 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
 
     @Override
     public void show() {
+        if (MessagesController.getInstance(currentAccount).isFrozen()) {
+            AccountFrozenAlert.show(currentAccount);
+            return;
+        }
         if (slug != null && slugStarGift == null) {
             final AlertDialog progressDialog = new AlertDialog(getContext(), AlertDialog.ALERT_TYPE_SPINNER);
             progressDialog.showDelayed(500);
@@ -3367,6 +3407,33 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
                         .setMessage(getString(R.string.Gift2ChannelDoesntSupportGiftsText))
                         .setPositiveButton(getString(R.string.OK), null)
                         .show();
+                    return;
+                }
+            } else if (dialogId >= 0) {
+                final TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(dialogId);
+                final TLRPC.UserFull userFull = MessagesController.getInstance(currentAccount).getUserFull(dialogId);
+                if (userFull != null && userFull.disallowed_stargifts != null && userFull.disallowed_stargifts.disallow_unique_stargifts) {
+                    BulletinFactory.of(sheet[0].container, resourcesProvider).createSimpleBulletin(R.raw.error, AndroidUtilities.replaceTags(LocaleController.formatString(R.string.UserDisallowedGifts, DialogObject.getShortName(dialogId)))).show();
+                    return;
+                }
+
+                if (userFull == null && user != null) {
+                    final TLRPC.TL_users_getFullUser req = new TLRPC.TL_users_getFullUser();
+                    req.id = MessagesController.getInstance(currentAccount).getInputUser(user);
+                    ConnectionsManager.getInstance(currentAccount).sendRequest(req, (res, err) -> AndroidUtilities.runOnUIThread(() -> {
+                        if (res instanceof TLRPC.TL_users_userFull) {
+                            final TLRPC.TL_users_userFull r = (TLRPC.TL_users_userFull) res;
+                            MessagesController.getInstance(currentAccount).putUsers(r.users, false);
+                            MessagesController.getInstance(currentAccount).putChats(r.chats, false);
+                            if (r.full_user != null && r.full_user.disallowed_stargifts != null && r.full_user.disallowed_stargifts.disallow_unique_stargifts) {
+                                BulletinFactory.of(sheet[0].container, resourcesProvider).createSimpleBulletin(R.raw.error, AndroidUtilities.replaceTags(LocaleController.formatString(R.string.UserDisallowedGifts, DialogObject.getShortName(dialogId)))).show();
+                                return;
+                            }
+                            showAlert.run();
+                        } else {
+                            getBulletinFactory().makeForError(err).ignoreDetach().show();
+                        }
+                    }));
                     return;
                 }
             }

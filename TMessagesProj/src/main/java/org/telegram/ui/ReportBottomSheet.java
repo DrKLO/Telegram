@@ -254,7 +254,6 @@ public class ReportBottomSheet extends BottomSheet {
         TLObject request;
         if (sponsored) {
             TLRPC.TL_messages_reportSponsoredMessage req = new TLRPC.TL_messages_reportSponsoredMessage();
-            req.peer = MessagesController.getInstance(currentAccount).getInputPeer(dialogId);
             req.random_id = sponsoredId;
             req.option = option;
             request = req;
@@ -943,7 +942,6 @@ public class ReportBottomSheet extends BottomSheet {
         if (context == null) return;
 
         TLRPC.TL_messages_reportSponsoredMessage req = new TLRPC.TL_messages_reportSponsoredMessage();
-        req.peer = MessagesController.getInstance(currentAccount).getInputPeer(dialogId);
         final byte[] sponsoredId = req.random_id = message.sponsoredId;
         req.option = new byte[]{};
         ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> {
@@ -1032,6 +1030,107 @@ public class ReportBottomSheet extends BottomSheet {
                         .show();
                     fragment.removeFromSponsored(message);
                     fragment.removeMessageWithThanos(message);
+                }, 200);
+            }
+        });
+    }
+
+
+    public static void openSponsoredPeer(
+        BaseFragment fragment,
+        byte[] random_id,
+        Theme.ResourcesProvider resourceProvider,
+        Runnable remove
+    ) {
+        if (fragment == null) return;
+        final int currentAccount = fragment.getCurrentAccount();
+        final Context context = fragment.getContext();
+        if (context == null) return;
+
+        final TLRPC.TL_messages_reportSponsoredMessage req = new TLRPC.TL_messages_reportSponsoredMessage();
+        final byte[] sponsoredId = req.random_id = random_id;
+        req.option = new byte[]{};
+        ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> {
+            if (response != null) {
+                if (response instanceof TLRPC.TL_channels_sponsoredMessageReportResultChooseOption) {
+                    AndroidUtilities.runOnUIThread(() -> {
+                        TLRPC.TL_channels_sponsoredMessageReportResultChooseOption result = (TLRPC.TL_channels_sponsoredMessageReportResultChooseOption) response;
+                        new ReportBottomSheet(context, resourceProvider, 0, sponsoredId)
+                            .setReportChooseOption(result)
+                            .setListener(new ReportBottomSheet.Listener() {
+                                @Override
+                                public void onReported() {
+                                    AndroidUtilities.runOnUIThread(() -> {
+                                        BulletinFactory.of(fragment)
+                                            .createAdReportedBulletin(
+                                                AndroidUtilities.replaceSingleTag(
+                                                    LocaleController.getString(R.string.AdReported),
+                                                    -1,
+                                                    AndroidUtilities.REPLACING_TAG_TYPE_LINKBOLD,
+                                                    () -> Browser.openUrl(context, "https://promote.telegram.org/guidelines"),
+                                                    resourceProvider
+                                                )
+                                            )
+                                            .show();
+                                            AndroidUtilities.runOnUIThread(remove);
+                                    }, 200);
+                                }
+
+                                @Override
+                                public void onHidden() {
+                                    AndroidUtilities.runOnUIThread(() -> {
+                                        BulletinFactory.of(fragment)
+                                            .createAdReportedBulletin(LocaleController.getString(R.string.AdHidden))
+                                            .show();
+                                        AndroidUtilities.runOnUIThread(remove);
+                                    }, 200);
+                                }
+
+                                @Override
+                                public void onPremiumRequired() {
+                                    fragment.showDialog(new PremiumFeatureBottomSheet(fragment, PremiumPreviewFragment.PREMIUM_FEATURE_ADS, true));
+                                }
+                            })
+                            .show();
+                    });
+                } else if (response instanceof TLRPC.TL_channels_sponsoredMessageReportResultReported) {
+                    AndroidUtilities.runOnUIThread(() -> {
+                        BulletinFactory.of(fragment)
+                            .createAdReportedBulletin(
+                                AndroidUtilities.replaceSingleTag(
+                                    LocaleController.getString(R.string.AdReported),
+                                    -1,
+                                    AndroidUtilities.REPLACING_TAG_TYPE_LINKBOLD,
+                                    () -> Browser.openUrl(context, "https://promote.telegram.org/guidelines"),
+                                    resourceProvider
+                                )
+                            )
+                            .show();
+                        AndroidUtilities.runOnUIThread(remove);
+                    }, 200);
+                } else if (response instanceof TLRPC.TL_channels_sponsoredMessageReportResultAdsHidden) {
+                    AndroidUtilities.runOnUIThread(() -> {
+                        BulletinFactory.of(fragment)
+                            .createAdReportedBulletin(LocaleController.getString(R.string.AdHidden))
+                            .show();
+                        MessagesController.getInstance(currentAccount).disableAds(false);
+                        AndroidUtilities.runOnUIThread(remove);
+                    }, 200);
+                }
+            } else if (error != null && "AD_EXPIRED".equalsIgnoreCase(error.text)) {
+                AndroidUtilities.runOnUIThread(() -> {
+                    BulletinFactory.of(fragment)
+                        .createAdReportedBulletin(
+                            AndroidUtilities.replaceSingleTag(
+                                LocaleController.getString(R.string.AdReported),
+                                -1,
+                                AndroidUtilities.REPLACING_TAG_TYPE_LINKBOLD,
+                                () -> Browser.openUrl(context, "https://promote.telegram.org/guidelines"),
+                                resourceProvider
+                            )
+                        )
+                        .show();
+                    AndroidUtilities.runOnUIThread(remove);
                 }, 200);
             }
         });

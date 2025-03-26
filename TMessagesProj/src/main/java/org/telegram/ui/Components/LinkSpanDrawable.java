@@ -594,13 +594,21 @@ public class LinkSpanDrawable<S extends CharacterStyle> {
             onLongPressListener = listener;
         }
 
+        public int getTextPaddingTop() {
+            int y = getPaddingTop();
+            if (getGravity() == Gravity.CENTER && getLayout() != null) {
+                y += Math.max(0, ((getHeight() - getPaddingTop() - getPaddingBottom()) - getLayout().getHeight()) / 2);
+            }
+            return y;
+        }
+
         public ClickableSpan hit(int x, int y) {
             Layout textLayout = getLayout();
             if (textLayout == null) {
                 return null;
             }
             x -= getPaddingLeft();
-            y -= getPaddingTop();
+            y -= getTextPaddingTop();
             final int line = textLayout.getLineForVertical(y);
             final int off = textLayout.getOffsetForHorizontal(line, x);
             final float left = textLayout.getLineLeft(line);
@@ -673,7 +681,7 @@ public class LinkSpanDrawable<S extends CharacterStyle> {
             if (!isCustomLinkCollector) {
                 canvas.save();
                 if (!disablePaddingsOffset) {
-                    canvas.translate(disablePaddingsOffsetX ? 0 : getPaddingLeft(), disablePaddingsOffsetY ? 0 : getPaddingTop());
+                    canvas.translate(disablePaddingsOffsetX ? 0 : getPaddingLeft(), disablePaddingsOffsetY ? 0 : getTextPaddingTop());
                 }
                 if (links != null && links.draw(canvas)) {
                     invalidate();

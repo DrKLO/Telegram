@@ -93,6 +93,7 @@ import org.telegram.ui.Components.VerticalPositionAutoAnimator;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 
 public class GroupCreateActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate, View.OnClickListener {
 
@@ -165,10 +166,22 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
         }
     }
 
+    private boolean showDiscardConfirm;
+    public void setShowDiscardConfirm(boolean show) {
+        this.showDiscardConfirm = show;
+    }
+
+    private final HashSet<Long> initialIds = new HashSet<>();
+    private boolean initialPremium, initialMiniapps;
+
     private ArrayList<Long> toSelectIds;
     private boolean toSelectPremium;
     private boolean toSelectMiniapps;
     public void select(ArrayList<Long> ids, boolean premium, boolean miniapps) {
+        initialIds.clear();
+        initialIds.addAll(ids);
+        initialPremium = premium;
+        initialMiniapps = miniapps;
         if (spansContainer == null) {
             toSelectIds = ids;
             toSelectPremium = premium;
@@ -576,7 +589,9 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
             @Override
             public void onItemClick(int id) {
                 if (id == -1) {
-                    finishFragment();
+                    if (checkDiscard()) {
+                        finishFragment();
+                    }
                 } else if (id == done_button) {
                     onDonePressed(true);
                 }
@@ -1165,6 +1180,43 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
             delegate2.didSelectUsers(result, count);
         }
         finishFragment();
+    }
+
+    @Override
+    public boolean canBeginSlide() {
+        return checkDiscard();
+    }
+
+    @Override
+    public boolean onBackPressed() {
+        return checkDiscard();
+    }
+
+    private boolean checkDiscard() {
+        if (!showDiscardConfirm) return true;
+        final HashSet<Long> current = new HashSet<>();
+        for (int a = 0; a < selectedContacts.size(); a++) {
+            current.add(selectedContacts.keyAt(a));
+        }
+        boolean hasChanges = initialPremium != (selectedPremium != null) || initialMiniapps != (selectedMiniapps != null) || current.size() != initialIds.size();
+        if (!hasChanges) {
+            for (long id : current) {
+                if (!initialIds.contains(id)) {
+                    hasChanges = true;
+                    break;
+                }
+            }
+        }
+        if (hasChanges) {
+            AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+            builder.setTitle(LocaleController.getString(R.string.UserRestrictionsApplyChanges));
+            builder.setMessage(LocaleController.getString(R.string.PrivacySettingsChangedAlert));
+            builder.setPositiveButton(LocaleController.getString(R.string.ApplyTheme), (dialogInterface, i) -> onDonePressed(true));
+            builder.setNegativeButton(LocaleController.getString(R.string.PassportDiscard), (dialog, which) -> finishFragment());
+            showDialog(builder.create());
+            return false;
+        }
+        return true;
     }
 
     private boolean onDonePressed(boolean alert) {

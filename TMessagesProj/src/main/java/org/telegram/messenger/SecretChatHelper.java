@@ -24,6 +24,7 @@ import org.telegram.tgnet.OutputSerializedData;
 import org.telegram.tgnet.TLClassStore;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.ui.AccountFrozenAlert;
 import org.telegram.ui.ActionBar.AlertDialog;
 
 import java.io.File;
@@ -1919,6 +1920,10 @@ public class SecretChatHelper extends BaseController {
 
     public void startSecretChat(Context context, TLRPC.User user) {
         if (user == null || context == null) {
+            return;
+        }
+        if (getMessagesController().isFrozen()) {
+            AccountFrozenAlert.show(currentAccount);
             return;
         }
         startingSecretChat = true;

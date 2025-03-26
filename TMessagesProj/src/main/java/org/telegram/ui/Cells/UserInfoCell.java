@@ -1,6 +1,7 @@
 package org.telegram.ui.Cells;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
+import static org.telegram.messenger.LocaleController.getCountryWithFlag;
 import static org.telegram.messenger.LocaleController.getString;
 
 import android.content.Context;
@@ -108,35 +109,6 @@ public class UserInfoCell extends View implements NotificationCenter.Notificatio
         return row;
     }
 
-    private CharSequence countryText(String countryCode) {
-        final SpannableStringBuilder sb = new SpannableStringBuilder();
-        final String flag = LocaleController.getLanguageFlag(countryCode);
-
-        if (!TextUtils.isEmpty(flag)) {
-            sb.append(flag).append(" ");
-        }
-
-        String countryName = null;
-        try {
-            countryName = new Locale("", countryCode).getDisplayCountry(LocaleController.getInstance().getCurrentLocale());
-        } catch (Exception e) {
-            FileLog.e(e);
-        }
-        if (countryCode != null && countryCode.equalsIgnoreCase("ft")) {
-            countryName = LocaleController.getString(R.string.ContactInfoPhoneFragment);
-        }
-        if (!TextUtils.isEmpty(countryName)) {
-            sb.append(countryName);
-        } else {
-            sb.append(countryCode);
-        }
-
-        final TextPaint paint = new TextPaint();
-        paint.setTextSize(dp(14));
-        paint.setTypeface(AndroidUtilities.bold());
-        return Emoji.replaceEmoji(sb, paint.getFontMetricsInt(), true);
-    }
-
     public static String displayDate(String date) {
         final String[] parts = date.split("\\.");
         if (parts.length != 2) return date;
@@ -183,7 +155,7 @@ public class UserInfoCell extends View implements NotificationCenter.Notificatio
         rowsValuesWidth = 0;
         rows.clear();
 
-        final int maxWidth = (int) (AndroidUtilities.displaySize.x * .70f);
+        final int maxWidth = (int) (AndroidUtilities.displaySize.x * .95f);
 
         height += dp(14);
         title = new Text(DialogObject.getName(dialogId), 14, AndroidUtilities.bold());
@@ -192,7 +164,7 @@ public class UserInfoCell extends View implements NotificationCenter.Notificatio
         height += subtitle.getHeight() + dp(11);
 
         if (settings != null && settings.phone_country != null) {
-            addRow(getString(R.string.ContactInfoPhone), countryText(settings.phone_country), false);
+            addRow(getString(R.string.ContactInfoPhone), getCountryWithFlag(settings.phone_country, 12, R.string.ContactInfoPhoneFragment), false);
         }
         if (settings != null && settings.registration_month != null) {
             addRow(getString(R.string.ContactInfoRegistration), displayDate(settings.registration_month), false);
@@ -357,7 +329,11 @@ public class UserInfoCell extends View implements NotificationCenter.Notificatio
             }
             canvas.save();
             final Row row = rows.get(i);
-            row.key.draw(canvas, cx - width / 2.0f + dp(16) + rowsKeysWidth - row.key.getCurrentWidth(), row.key.getHeight() / 2.0f, Color.WHITE, 0.7f);
+            final float keyX = cx - width / 2.0f + dp(16) + rowsKeysWidth - row.key.getCurrentWidth();
+            final float valueX = cx - width / 2.0f + dp(16) + rowsKeysWidth + dp(7.66f);
+            row.key
+                .ellipsize(valueX - keyX - dp(7.66f))
+                .draw(canvas, keyX, row.key.getHeight() / 2.0f, Color.WHITE, 0.7f);
             row.bounds.set(
                 cx - width / 2.0f + dp(16) + rowsKeysWidth + dp(7.66f),
                 Y,
@@ -374,7 +350,9 @@ public class UserInfoCell extends View implements NotificationCenter.Notificatio
                     groupsRipple.draw(canvas);
                 }
             }
-            row.value.draw(canvas, cx - width / 2.0f + dp(16) + rowsKeysWidth + dp(7.66f), row.value.getHeight() / 2.0f, Color.WHITE, 1.0f);
+            row.value
+                .ellipsize(cx + width / 2.0f - dp(8) - valueX)
+                .draw(canvas, valueX, row.value.getHeight() / 2.0f, Color.WHITE, 1.0f);
             if (row.avatars) {
                 canvas.save();
                 canvas.translate(cx - width / 2.0f + dp(16) + rowsKeysWidth + dp(7.66f) + row.value.getCurrentWidth() + dp(4), dp(1));

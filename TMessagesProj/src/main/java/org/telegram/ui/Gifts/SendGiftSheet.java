@@ -1,6 +1,5 @@
 package org.telegram.ui.Gifts;
 
-import static org.telegram.messenger.AndroidUtilities.bufferLocal;
 import static org.telegram.messenger.AndroidUtilities.dp;
 import static org.telegram.messenger.AndroidUtilities.lerp;
 import static org.telegram.messenger.LocaleController.formatSpannable;
@@ -10,7 +9,6 @@ import static org.telegram.messenger.LocaleController.getString;
 import android.app.Activity;
 import android.content.Context;
 import android.graphics.Canvas;
-import android.graphics.Typeface;
 import android.net.Uri;
 import android.os.Bundle;
 import android.text.SpannableStringBuilder;
@@ -91,6 +89,7 @@ public class SendGiftSheet extends BottomSheetWithRecyclerListView implements No
     private final boolean self;
     private final int currentAccount;
     private final long dialogId;
+    private final boolean forceUpgrade, forceNotUpgrade;
     private final TL_stars.StarGift starGift;
     private final GiftPremiumBottomSheet.GiftTier premiumTier;
     private final String name;
@@ -123,17 +122,19 @@ public class SendGiftSheet extends BottomSheetWithRecyclerListView implements No
 
     private UniversalAdapter adapter;
 
+    private int shakeDp = -2;
+
     public final AnimationNotificationsLocker animationsLock = new AnimationNotificationsLocker();
 
-    public SendGiftSheet(Context context, int currentAccount, TL_stars.StarGift gift, long dialogId, Runnable closeParentSheet) {
-        this(context, currentAccount, gift, null, dialogId, closeParentSheet);
+    public SendGiftSheet(Context context, int currentAccount, TL_stars.StarGift gift, long dialogId, Runnable closeParentSheet, boolean forceUpgrade, boolean forceNotUpgrade) {
+        this(context, currentAccount, gift, null, dialogId, closeParentSheet, forceUpgrade, forceNotUpgrade);
     }
 
     public SendGiftSheet(Context context, int currentAccount, GiftPremiumBottomSheet.GiftTier premiumTier, long dialogId, Runnable closeParentSheet) {
-        this(context, currentAccount, null, premiumTier, dialogId, closeParentSheet);
+        this(context, currentAccount, null, premiumTier, dialogId, closeParentSheet, false, false);
     }
 
-    private SendGiftSheet(Context context, int currentAccount, TL_stars.StarGift starGift, GiftPremiumBottomSheet.GiftTier premiumTier, long dialogId, Runnable closeParentSheet) {
+    private SendGiftSheet(Context context, int currentAccount, TL_stars.StarGift starGift, GiftPremiumBottomSheet.GiftTier premiumTier, long dialogId, Runnable closeParentSheet, boolean forceUpgrade, boolean forceNotUpgrade) {
         super(context, null, true, false, false, false, ActionBarType.SLIDING, null);
 
         self = dialogId == UserConfig.getInstance(currentAccount).getClientUserId();
@@ -151,6 +152,13 @@ public class SendGiftSheet extends BottomSheetWithRecyclerListView implements No
         this.starGift = starGift;
         this.premiumTier = premiumTier;
         this.closeParentSheet = closeParentSheet;
+        this.forceUpgrade = forceUpgrade;
+        this.forceNotUpgrade = forceNotUpgrade;
+        if (forceUpgrade) {
+            upgrade = true;
+        } else if (forceNotUpgrade) {
+            upgrade = false;
+        }
 
         topPadding = 0.2f;
 
@@ -429,6 +437,10 @@ public class SendGiftSheet extends BottomSheetWithRecyclerListView implements No
                 actionCell.setMessageObject(messageObject, true);
                 adapter.update(true);
             } else if (item.id == 2) {
+                if (forceUpgrade || forceNotUpgrade) {
+                    AndroidUtilities.shakeViewSpring(view, shakeDp = -shakeDp);
+                    return;
+                }
                 upgrade = !upgrade;
                 if (action instanceof TLRPC.TL_messageActionStarGift) {
                     TLRPC.TL_messageActionStarGift thisAction = (TLRPC.TL_messageActionStarGift) action;
@@ -679,7 +691,7 @@ public class SendGiftSheet extends BottomSheetWithRecyclerListView implements No
                         }
                     });
 
-                    TLRPC.TL_payments_canPurchasePremium req = new TLRPC.TL_payments_canPurchasePremium();
+                    TLRPC.TL_payments_canPurchaseStore req = new TLRPC.TL_payments_canPurchaseStore();
                     req.purpose = giftPremium;
                     ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
                         if (response instanceof TLRPC.TL_boolTrue) {
@@ -757,10 +769,10 @@ public class SendGiftSheet extends BottomSheetWithRecyclerListView implements No
             if (starGift.can_upgrade && !self) {
                 items.add(UItem.asShadow(-3, null));
                 items.add(UItem.asCheck(2, StarsIntroActivity.replaceStarsWithPlain(formatString(self ? R.string.Gift2UpgradeSelf : R.string.Gift2Upgrade, (int) starGift.upgrade_stars), .78f)).setChecked(upgrade));
-                items.add(UItem.asShadow(-5, AndroidUtilities.replaceArrows(AndroidUtilities.replaceSingleTag(self ? getString(R.string.Gift2UpgradeSelfInfo) : formatString(dialogId >= 0 ? R.string.Gift2UpgradeInfo : R.string.Gift2UpgradeChannelInfo, name), () -> {
+                items.add(UItem.asShadow(-5, forceNotUpgrade ? formatString(dialogId < 0 ? R.string.Gift2NoUpgradeChannelForcedInfo : R.string.Gift2NoUpgradeForcedInfo, name) : forceUpgrade ? formatString(dialogId < 0 ? R.string.Gift2UpgradeChannelForcedInfo : R.string.Gift2UpgradeForcedInfo, name) : AndroidUtilities.replaceArrows(AndroidUtilities.replaceSingleTag(self ? getString(R.string.Gift2UpgradeSelfInfo) : formatString(dialogId >= 0 ? R.string.Gift2UpgradeInfo : R.string.Gift2UpgradeChannelInfo, name), () -> {
                     new StarGiftSheet(getContext(), currentAccount, dialogId, resourcesProvider)
                         .openAsLearnMore(starGift.id, name);
-                }), true)));
+                }), true)).setEnabled(!forceUpgrade && !forceNotUpgrade));
             } else {
                 items.add(UItem.asShadow(-5, null));
             }

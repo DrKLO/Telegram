@@ -7,6 +7,8 @@ import android.os.Build;
 import android.webkit.MimeTypeMap;
 import android.webkit.URLUtil;
 
+import androidx.annotation.Keep;
+
 import com.google.android.exoplayer2.util.MimeTypes;
 
 import org.telegram.messenger.AndroidUtilities;
@@ -27,12 +29,15 @@ import java.net.ProtocolException;
 import java.net.URL;
 import java.nio.channels.FileChannel;
 
+@Keep
 public class HttpGetFileTask extends AsyncTask<String, Void, File> {
 
     private File file;
 
     private Utilities.Callback<File> doneCallback;
     private Utilities.Callback<Float> progressCallback;
+
+    private String overrideExt;
 
     private Exception exception;
     private long max_size = -1;
@@ -45,11 +50,19 @@ public class HttpGetFileTask extends AsyncTask<String, Void, File> {
         this.progressCallback = progressCallback;
     }
 
+    @Keep
+    public HttpGetFileTask setOverrideExtension(String ext) {
+        this.overrideExt = ext;
+        return this;
+    }
+
+    @Keep
     public HttpGetFileTask setDestFile(File file) {
         this.file = file;
         return this;
     }
 
+    @Keep
     public HttpGetFileTask setMaxSize(long max_size) {
         this.max_size = max_size;
         return this;
@@ -104,7 +117,7 @@ public class HttpGetFileTask extends AsyncTask<String, Void, File> {
                 }
 
                 if (file == null) {
-                    final String ext = MimeTypeMap.getSingleton().getExtensionFromMimeType(urlConnection.getContentType());
+                    final String ext = overrideExt != null ? overrideExt : MimeTypeMap.getSingleton().getExtensionFromMimeType(urlConnection.getContentType());
                     file = StoryEntry.makeCacheFile(UserConfig.selectedAccount, ext);
                 }
 

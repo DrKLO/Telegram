@@ -268,6 +268,7 @@ public class NotificationCenter {
     public static final int adminedChannelsLoaded = totalEvents++;
     public static final int messagesFeeUpdated = totalEvents++;
     public static final int commonChatsLoaded = totalEvents++;
+    public static final int appConfigUpdated = totalEvents++;
 
     //global
     public static final int pushMessagesUpdated = totalEvents++;

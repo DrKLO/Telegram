@@ -130,7 +130,7 @@ public class PhotoView extends EntityView {
         this.orientation = orientation;
         this.invert = invert;
 
-        bitmap = BitmapFactory.decodeFile(path);
+        bitmap = StoryEntry.getScaledBitmap(opts -> BitmapFactory.decodeFile(path, opts), 1920, 1920, false, false);
         if (bitmap != null) {
             segmentImage(bitmap);
         }

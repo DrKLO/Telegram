@@ -8,6 +8,8 @@
 
 package org.telegram.messenger;
 
+import static org.telegram.messenger.AndroidUtilities.dp;
+
 import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -18,6 +20,7 @@ import android.content.res.Configuration;
 import android.os.Build;
 import android.telephony.TelephonyManager;
 import android.text.SpannableStringBuilder;
+import android.text.TextPaint;
 import android.text.TextUtils;
 import android.text.format.DateFormat;
 import android.util.Xml;
@@ -2147,13 +2150,13 @@ public class LocaleController {
             int dateYear = rightNow.get(Calendar.YEAR);
 
             if (dateDay == day && year == dateYear) {
-                return LocaleController.formatString("TodayAtFormattedWithToday", R.string.TodayAtFormattedWithToday, getInstance().getFormatterDay().format(new Date(date)));
+                return LocaleController.formatString(R.string.TodayAtFormattedWithToday, getInstance().getFormatterDay().format(new Date(date)));
             } else if (dateDay + 1 == day && year == dateYear) {
-                return LocaleController.formatString("YesterdayAtFormatted", R.string.YesterdayAtFormatted, getInstance().getFormatterDay().format(new Date(date)));
+                return LocaleController.formatString(R.string.YesterdayAtFormatted, getInstance().getFormatterDay().format(new Date(date)));
             } else if (Math.abs(System.currentTimeMillis() - date) < 31536000000L) {
-                return LocaleController.formatString("formatDateAtTime", R.string.formatDateAtTime, getInstance().getFormatterDayMonth().format(new Date(date)), getInstance().getFormatterDay().format(new Date(date)));
+                return LocaleController.formatString(R.string.formatDateAtTime, getInstance().getFormatterDayMonth().format(new Date(date)), getInstance().getFormatterDay().format(new Date(date)));
             } else {
-                return LocaleController.formatString("formatDateAtTime", R.string.formatDateAtTime, getInstance().getFormatterYear().format(new Date(date)), getInstance().getFormatterDay().format(new Date(date)));
+                return LocaleController.formatString(R.string.formatDateAtTime, getInstance().getFormatterYear().format(new Date(date)), getInstance().getFormatterDay().format(new Date(date)));
             }
         } catch (Exception e) {
             FileLog.e(e);
@@ -2264,7 +2267,7 @@ public class LocaleController {
             } else if (Math.abs(System.currentTimeMillis() - date) < 31536000000L) {
                 return getInstance().getFormatterDayMonth().format(new Date(date));
             } else {
-                return LocaleController.formatString("formatDateAtTime", R.string.formatDateAtTime, getInstance().getFormatterYear().format(new Date(date)), getInstance().getFormatterDay().format(new Date(date)));
+                return LocaleController.formatString(R.string.formatDateAtTime, getInstance().getFormatterYear().format(new Date(date)), getInstance().getFormatterDay().format(new Date(date)));
             }
         } catch (Exception e) {
             FileLog.e(e);
@@ -2289,13 +2292,13 @@ public class LocaleController {
                 int minutesAgo = (int) ((timeInMillis - date) / (1000 * 60));
                 return LocaleController.formatPluralString("MinutesAgo", minutesAgo, minutesAgo);
             } else if (dateDay == day && year == dateYear) {
-                return LocaleController.formatString("TodayAtFormattedWithToday", R.string.TodayAtFormattedWithToday, getInstance().getFormatterDay().format(new Date(date)));
+                return LocaleController.formatString(R.string.TodayAtFormattedWithToday, getInstance().getFormatterDay().format(new Date(date)));
             } else if (dateDay + 1 == day && year == dateYear) {
-                return LocaleController.formatString("YesterdayAtFormatted", R.string.YesterdayAtFormatted, getInstance().getFormatterDay().format(new Date(date)));
+                return LocaleController.formatString(R.string.YesterdayAtFormatted, getInstance().getFormatterDay().format(new Date(date)));
             } else if (Math.abs(System.currentTimeMillis() - date) < 31536000000L) {
-                return LocaleController.formatString("formatDateAtTime", R.string.formatDateAtTime, getInstance().getFormatterDayMonth().format(new Date(date)), getInstance().getFormatterDay().format(new Date(date)));
+                return LocaleController.formatString(R.string.formatDateAtTime, getInstance().getFormatterDayMonth().format(new Date(date)), getInstance().getFormatterDay().format(new Date(date)));
             } else {
-                return LocaleController.formatString("formatDateAtTime", R.string.formatDateAtTime, getInstance().getFormatterYear().format(new Date(date)), getInstance().getFormatterDay().format(new Date(date)));
+                return LocaleController.formatString(R.string.formatDateAtTime, getInstance().getFormatterYear().format(new Date(date)), getInstance().getFormatterDay().format(new Date(date)));
             }
         } catch (Exception e) {
             FileLog.e(e);
@@ -2363,11 +2366,11 @@ public class LocaleController {
             if (dateDay == day && year == dateYear) {
                 return getInstance().getFormatterDay().format(new Date(date));
             } else if (dateDay + 1 == day && year == dateYear) {
-                return LocaleController.formatString("YesterdayAtFormatted", R.string.YesterdayAtFormatted, getInstance().getFormatterDay().format(new Date(date)));
+                return LocaleController.formatString(R.string.YesterdayAtFormatted, getInstance().getFormatterDay().format(new Date(date)));
             } else if (Math.abs(System.currentTimeMillis() - date) < 31536000000L) {
-                return LocaleController.formatString("formatDateAtTime", R.string.formatDateAtTime, getInstance().getChatDate().format(new Date(date)), getInstance().getFormatterDay().format(new Date(date)));
+                return LocaleController.formatString(R.string.formatDateAtTime, getInstance().getChatDate().format(new Date(date)), getInstance().getFormatterDay().format(new Date(date)));
             } else {
-                return LocaleController.formatString("formatDateAtTime", R.string.formatDateAtTime, getInstance().getChatFullDate().format(new Date(date)), getInstance().getFormatterDay().format(new Date(date)));
+                return LocaleController.formatString(R.string.formatDateAtTime, getInstance().getChatFullDate().format(new Date(date)), getInstance().getFormatterDay().format(new Date(date)));
             }
         } catch (Exception e) {
             FileLog.e(e);
@@ -2386,7 +2389,7 @@ public class LocaleController {
             int dateYear = rightNow.get(Calendar.YEAR);
 
             if (dateDay == day && year == dateYear) {
-                return LocaleController.formatString("TodayAtFormatted", R.string.TodayAtFormatted, getInstance().getFormatterDay().format(new Date(date)));
+                return LocaleController.formatString(R.string.TodayAtFormatted, getInstance().getFormatterDay().format(new Date(date)));
             } else if (Math.abs(System.currentTimeMillis() - date) < 31536000000L) {
                 return getInstance().getFormatterScheduleDay().format(new Date(date));
             } else {
@@ -2454,15 +2457,15 @@ public class LocaleController {
                 } else if (diff < 60) {
                     return LocaleController.formatPluralString("UpdatedMinutes", diff);
                 }
-                return LocaleController.formatString("LocationUpdatedFormatted", R.string.LocationUpdatedFormatted, LocaleController.formatString("TodayAtFormatted", R.string.TodayAtFormatted, getInstance().getFormatterDay().format(new Date(date))));
+                return LocaleController.formatString(R.string.LocationUpdatedFormatted, LocaleController.formatString("TodayAtFormatted", R.string.TodayAtFormatted, getInstance().getFormatterDay().format(new Date(date))));
             } else if (dateDay + 1 == day && year == dateYear) {
-                return LocaleController.formatString("LocationUpdatedFormatted", R.string.LocationUpdatedFormatted, LocaleController.formatString("YesterdayAtFormatted", R.string.YesterdayAtFormatted, getInstance().getFormatterDay().format(new Date(date))));
+                return LocaleController.formatString(R.string.LocationUpdatedFormatted, LocaleController.formatString("YesterdayAtFormatted", R.string.YesterdayAtFormatted, getInstance().getFormatterDay().format(new Date(date))));
             } else if (Math.abs(System.currentTimeMillis() - date) < 31536000000L) {
-                String format = LocaleController.formatString("formatDateAtTime", R.string.formatDateAtTime, getInstance().getFormatterDayMonth().format(new Date(date)), getInstance().getFormatterDay().format(new Date(date)));
-                return LocaleController.formatString("LocationUpdatedFormatted", R.string.LocationUpdatedFormatted, format);
+                String format = LocaleController.formatString(R.string.formatDateAtTime, getInstance().getFormatterDayMonth().format(new Date(date)), getInstance().getFormatterDay().format(new Date(date)));
+                return LocaleController.formatString(R.string.LocationUpdatedFormatted, format);
             } else {
-                String format = LocaleController.formatString("formatDateAtTime", R.string.formatDateAtTime, getInstance().getFormatterYear().format(new Date(date)), getInstance().getFormatterDay().format(new Date(date)));
-                return LocaleController.formatString("LocationUpdatedFormatted", R.string.LocationUpdatedFormatted, format);
+                String format = LocaleController.formatString(R.string.formatDateAtTime, getInstance().getFormatterYear().format(new Date(date)), getInstance().getFormatterDay().format(new Date(date)));
+                return LocaleController.formatString(R.string.LocationUpdatedFormatted, format);
             }
         } catch (Exception e) {
             FileLog.e(e);
@@ -2499,7 +2502,7 @@ public class LocaleController {
             int dateHour = rightNow.get(Calendar.HOUR_OF_DAY);
 
             if (dateDay == day && year == dateYear) {
-                return LocaleController.formatString("LastSeenFormatted", R.string.LastSeenFormatted, LocaleController.formatString("TodayAtFormatted", R.string.TodayAtFormatted, getInstance().getFormatterDay().format(new Date(date))));
+                return LocaleController.formatString(R.string.LastSeenFormatted, LocaleController.formatString("TodayAtFormatted", R.string.TodayAtFormatted, getInstance().getFormatterDay().format(new Date(date))));
                 /*int diff = (int) (ConnectionsManager.getInstance().getCurrentTime() - date) / 60;
                 if (diff < 1) {
                     return LocaleController.getString(R.string.LastSeenNow);
@@ -2512,11 +2515,11 @@ public class LocaleController {
                 if (madeShorter != null) {
                     madeShorter[0] = true;
                     if (hour <= 6 && dateHour > 18 && is24HourFormat) {
-                        return LocaleController.formatString("LastSeenFormatted", R.string.LastSeenFormatted, getInstance().getFormatterDay().format(new Date(date)));
+                        return LocaleController.formatString(R.string.LastSeenFormatted, getInstance().getFormatterDay().format(new Date(date)));
                     }
-                    return LocaleController.formatString("YesterdayAtFormatted", R.string.YesterdayAtFormatted, getInstance().getFormatterDay().format(new Date(date)));
+                    return LocaleController.formatString(R.string.YesterdayAtFormatted, getInstance().getFormatterDay().format(new Date(date)));
                 } else {
-                    return LocaleController.formatString("LastSeenFormatted", R.string.LastSeenFormatted, LocaleController.formatString("YesterdayAtFormatted", R.string.YesterdayAtFormatted, getInstance().getFormatterDay().format(new Date(date))));
+                    return LocaleController.formatString(R.string.LastSeenFormatted, LocaleController.formatString("YesterdayAtFormatted", R.string.YesterdayAtFormatted, getInstance().getFormatterDay().format(new Date(date))));
                 }
             } else if (Math.abs(System.currentTimeMillis() - date) < 31536000000L) {
                 String format = LocaleController.formatString("formatDateAtTime", R.string.formatDateAtTime, getInstance().getFormatterDayMonth().format(new Date(date)), getInstance().getFormatterDay().format(new Date(date)));
@@ -2628,6 +2631,40 @@ public class LocaleController {
         return formatYearMont(date, false);
     }
 
+    public static String formatYearMonthDay(long date, boolean alwaysShowYear) {
+        try {
+            date *= 1000;
+            Calendar rightNow = Calendar.getInstance();
+            int year = rightNow.get(Calendar.YEAR);
+            rightNow.setTimeInMillis(date);
+            int dateYear = rightNow.get(Calendar.YEAR);
+            int month = rightNow.get(Calendar.MONTH);
+            int day = rightNow.get(Calendar.DAY_OF_MONTH);
+
+            final String[] months = new String[]{
+                    LocaleController.getString(R.string.January),
+                    LocaleController.getString(R.string.February),
+                    LocaleController.getString(R.string.March),
+                    LocaleController.getString(R.string.April),
+                    LocaleController.getString(R.string.May),
+                    LocaleController.getString(R.string.June),
+                    LocaleController.getString(R.string.July),
+                    LocaleController.getString(R.string.August),
+                    LocaleController.getString(R.string.September),
+                    LocaleController.getString(R.string.October),
+                    LocaleController.getString(R.string.November),
+                    LocaleController.getString(R.string.December)
+            };
+            if (year == dateYear && !alwaysShowYear) {
+                return months[month] + " " + day;
+            } else {
+                return months[month] + " " + day + ", " + dateYear;
+            }
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+        return "LOC_ERR";
+    }
 
     public static String formatYearMont(long date, boolean alwaysShowYear) {
         try {
@@ -4113,5 +4150,45 @@ public class LocaleController {
             }
         }
         return name;
+    }
+
+    public static CharSequence getCountryWithFlag(String code, int textSizeDp) {
+        return getCountryWithFlag(code, textSizeDp, R.string.Fragment);
+    }
+
+    public static CharSequence getCountryWithFlag(String code, int textSizeDp, int fragmentResId) {
+        final SpannableStringBuilder sb = new SpannableStringBuilder();
+        final String flag = LocaleController.getLanguageFlag(code);
+
+        if (!TextUtils.isEmpty(flag)) {
+            sb.append(flag).append(" ");
+        }
+
+        String countryName = getCountryName(code, fragmentResId);
+        if (!TextUtils.isEmpty(countryName)) {
+            sb.append(countryName);
+        } else {
+            sb.append(code);
+        }
+
+        final TextPaint paint = new TextPaint();
+        paint.setTextSize(dp(textSizeDp));
+        return Emoji.replaceEmoji(sb, paint.getFontMetricsInt(), true);
+    }
+
+    public static String getCountryName(String code) {
+        return getCountryName(code, R.string.Fragment);
+    }
+
+    public static String getCountryName(String code, int fragmentResId) {
+        if (code != null && code.equalsIgnoreCase("ft")) {
+            return LocaleController.getString(fragmentResId);
+        }
+        try {
+            return new Locale("", code).getDisplayCountry(LocaleController.getInstance().getCurrentLocale());
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+        return null;
     }
 }

@@ -1156,6 +1156,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
     private boolean timePressed;
 
     private float timeAlpha = 1.0f;
+    private float actionAlpha = 1.0f;
     private float controlsAlpha = 1.0f;
     private long lastControlsAlphaChangeTime;
     private long totalChangeTime;
@@ -16258,7 +16259,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         }
         final long starsPrice = currentMessageObject.getDialogId() < 0 ? getStarsPrice() : 0;
         if (starsPrice > 0) {
-            currentTimeString = TextUtils.concat("⭐️", AndroidUtilities.formatWholeNumber((int) starsPrice, 0), " ", currentTimeString);
+            currentTimeString = TextUtils.concat("⭐️", AndroidUtilities.formatWholeNumber((int) starsPrice, 0), "  ", currentTimeString);
             currentTimeString = StarsIntroActivity.replaceStars(currentTimeString, 0.8f, null, 0, dp(-.33f), 0.94f);
         }
         timeTextWidth = timeWidth = (int) Math.ceil(Theme.chat_timePaint.measureText(currentTimeString, 0, currentTimeString == null ? 0 : currentTimeString.length()));
@@ -18398,6 +18399,9 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         if (channelRecommendationsCell != null && currentMessageObject != null && currentMessageObject.type == MessageObject.TYPE_JOINED_CHANNEL) {
             return true;
         }
+        if (starsPriceText != null && (currentPosition == null || (currentPosition.flags & MessageObject.POSITION_FLAG_TOP) != 0 && (currentPosition.flags & MessageObject.POSITION_FLAG_LEFT) != 0)) {
+            return true;
+        }
         if (getAlpha() != 1f) {
             return false;
         }
@@ -18406,7 +18410,6 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             (!transitionParams.transitionBotButtons.isEmpty() && transitionParams.animateBotButtonsChanged) ||
             !botButtons.isEmpty() ||
             drawSideButton != 0 ||
-            starsPriceText != null && (currentPosition == null || (currentPosition.flags & MessageObject.POSITION_FLAG_TOP) != 0 && (currentPosition.flags & MessageObject.POSITION_FLAG_LEFT) != 0) ||
             drawNameLayout && nameLayout != null && currentNameEmojiStatusDrawable != null && !currentNameEmojiStatusDrawable.isEmpty() ||
             animatedEmojiStack != null && !animatedEmojiStack.holders.isEmpty() ||
             drawTopic && topicButton != null && (currentPosition == null || currentPosition.minY == 0 && currentPosition.minX == 0) ||
@@ -18434,13 +18437,14 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         }
 
         if (starsPriceText != null && (currentPosition == null || (currentPosition.flags & MessageObject.POSITION_FLAG_TOP) != 0 && (currentPosition.flags & MessageObject.POSITION_FLAG_LEFT) != 0)) {
+            final float alpha = transitionParams.ignoreAlpha ? timeAlpha : getAlpha();
             canvas.save();
             canvas.translate((getParentWidth() - starsPriceText.getWidth()) / 2.0f, -starsPriceTopPadding + dp(4.5f) + dp(3.33f));
             applyServiceShaderMatrix(getMeasuredWidth(), backgroundHeight, getX(), viewTop - starsPriceTopPadding + dp(4.5f) + dp(3.33f));
             final Paint backgroundPaint = getThemedPaint(Theme.key_paint_chatActionBackground);
             int oldAlpha = backgroundPaint.getAlpha();
             backgroundPaint.setPathEffect(starsPriceTextPathEffect);
-            backgroundPaint.setAlpha((int) (oldAlpha * getAlpha()));
+            backgroundPaint.setAlpha((int) (oldAlpha * alpha));
             canvas.drawPath(starsPriceTextPath, backgroundPaint);
             backgroundPaint.setPathEffect(null);
             backgroundPaint.setAlpha(oldAlpha);
@@ -18448,13 +18452,13 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 final Paint darkenPaint = getThemedPaint(Theme.key_paint_chatActionBackgroundDarken);
                 oldAlpha = darkenPaint.getAlpha();
                 darkenPaint.setPathEffect(starsPriceTextPathEffect);
-                darkenPaint.setAlpha((int) (oldAlpha * getAlpha()));
+                darkenPaint.setAlpha((int) (oldAlpha * alpha));
                 canvas.drawPath(starsPriceTextPath, darkenPaint);
                 darkenPaint.setPathEffect(null);
                 darkenPaint.setAlpha(oldAlpha);
             }
             canvas.restore();
-            starsPriceText.draw(canvas, (getParentWidth() - starsPriceText.getWidth()) / 2.0f, -starsPriceTopPadding + dp(6.83f), getThemedColor(Theme.key_chat_serviceText), getAlpha());
+            starsPriceText.draw(canvas, (getParentWidth() - starsPriceText.getWidth()) / 2.0f, -starsPriceTopPadding + dp(6.83f), getThemedColor(Theme.key_chat_serviceText), alpha);
         }
 
         if (currentMessagesGroup != null) {

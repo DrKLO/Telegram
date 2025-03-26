@@ -601,7 +601,7 @@ public class StarParticlesView extends View {
                 if (type == PremiumPreviewFragment.PREMIUM_FEATURE_BUSINESS) {
                     final float rand = Utilities.fastRandom.nextFloat();
                     if (rand < .13f) starIndex = 0;
-                    else starIndex = (int) Math.floor(1 + rand * (stars.length - 1));
+                    else starIndex = (int) Math.floor(1 + rand * (stars.length - 2));
                 } else {
                     starIndex = Math.abs(Utilities.fastRandom.nextInt() % stars.length);
                 }

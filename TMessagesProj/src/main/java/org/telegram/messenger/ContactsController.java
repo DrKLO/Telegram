@@ -37,7 +37,6 @@ import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.Vector;
 import org.telegram.tgnet.tl.TL_account;
-import org.telegram.tgnet.tl.TL_stars;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.Components.Bulletin;
 
@@ -87,7 +86,7 @@ public class ContactsController extends BaseController {
     private ArrayList<TLRPC.PrivacyRule> birthdayPrivacyRules;
     private ArrayList<TLRPC.PrivacyRule> giftsPrivacyRules;
     private ArrayList<TLRPC.PrivacyRule> noPaidMessagesPrivacyRules;
-    private TLRPC.TL_globalPrivacySettings globalPrivacySettings;
+    private TLRPC.GlobalPrivacySettings globalPrivacySettings;
 
     public final static int PRIVACY_RULES_TYPE_LASTSEEN = 0;
     public final static int PRIVACY_RULES_TYPE_INVITE = 1;
@@ -2630,7 +2629,7 @@ public class ContactsController extends BaseController {
             TL_account.getGlobalPrivacySettings req = new TL_account.getGlobalPrivacySettings();
             getConnectionsManager().sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
                 if (error == null) {
-                    globalPrivacySettings = (TLRPC.TL_globalPrivacySettings) response;
+                    globalPrivacySettings = (TLRPC.GlobalPrivacySettings) response;
                     loadingGlobalSettings = 2;
                 } else {
                     loadingGlobalSettings = 0;
@@ -2790,7 +2789,7 @@ public class ContactsController extends BaseController {
         return loadingPrivacyInfo[type] != 2;
     }
 
-    public TLRPC.TL_globalPrivacySettings getGlobalPrivacySettings() {
+    public TLRPC.GlobalPrivacySettings getGlobalPrivacySettings() {
         return globalPrivacySettings;
     }
 

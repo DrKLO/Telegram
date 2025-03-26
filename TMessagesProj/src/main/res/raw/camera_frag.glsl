@@ -3,6 +3,7 @@
 precision lowp float;
 
 varying vec2 uv;
+varying vec2 auv;
 uniform samplerExternalOES sTexture;
 uniform vec2 pixelWH;
 uniform float roundRadius;
@@ -38,7 +39,7 @@ float opSmoothUnion(float d1, float d2, float k) {
   return min(d1, d2) - h*h*0.25/k;
 }
 float scene() {
-  vec2 p = (uv - vec2(.5)) * vec2(1., pixelWH.x / pixelWH.y);
+  vec2 p = (auv - vec2(.5)) * vec2(1., pixelWH.x / pixelWH.y);
   vec2 r = .5 * vec2(1., pixelWH.x / pixelWH.y) * scale;
   float R = min(r.x, r.y), rr = roundRadius / pixelWH.y;
   float a = modI(shapeFrom, 3.), b = modI(shapeTo, 3.);

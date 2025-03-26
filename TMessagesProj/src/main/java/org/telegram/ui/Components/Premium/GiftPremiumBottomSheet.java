@@ -325,7 +325,7 @@ public class GiftPremiumBottomSheet extends BottomSheetWithRecyclerListView impl
                     }
                 });
 
-                TLRPC.TL_payments_canPurchasePremium req = new TLRPC.TL_payments_canPurchasePremium();
+                TLRPC.TL_payments_canPurchaseStore req = new TLRPC.TL_payments_canPurchaseStore();
                 req.purpose = giftPremium;
                 ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(()->{
                     if (response instanceof TLRPC.TL_boolTrue) {

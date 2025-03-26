@@ -403,6 +403,10 @@ public class UserSelectorBottomSheet extends BottomSheetWithRecyclerListView imp
                     return;
                 }
                 if (type == TYPE_PREMIUM || type == TYPE_STAR_GIFT) {
+                    if (UserObject.areGiftsDisabled(id)) {
+                        BulletinFactory.of(container, resourcesProvider).createSimpleBulletin(R.raw.error, AndroidUtilities.replaceTags(LocaleController.formatString(R.string.UserDisallowedGifts, DialogObject.getShortName(id)))).show();
+                        return;
+                    }
                     List<TLRPC.TL_premiumGiftCodeOption> options = BoostRepository.filterGiftOptions(paymentOptions, 1);
                     options = BoostRepository.filterGiftOptionsByBilling(options);
                     new GiftSheet(getContext(), currentAccount, id, options, this::dismiss)
@@ -534,6 +538,10 @@ public class UserSelectorBottomSheet extends BottomSheetWithRecyclerListView imp
         options = BoostRepository.filterGiftOptionsByBilling(options);
         if (selectedUsers.size() == 1) {
             final long userId = selectedUsers.get(0).id;
+            if (UserObject.areGiftsDisabled(userId)) {
+                BulletinFactory.of(container, resourcesProvider).createSimpleBulletin(R.raw.error, AndroidUtilities.replaceTags(LocaleController.formatString(R.string.UserDisallowedGifts, DialogObject.getShortName(userId)))).show();
+                return;
+            }
             new GiftSheet(getContext(), currentAccount, userId, options, this::dismiss)
                 .setBirthday(birthdays != null && birthdays.contains(userId))
                 .show();

@@ -5056,6 +5056,21 @@ public class MessageObject {
                     } else {
                         messageText = replaceWithLink(getString(R.string.UserAcceptedToGroupAction), "un1", fromObject);
                     }
+                } else if (messageOwner.action instanceof TLRPC.TL_messageActionPaidMessagesPrice) {
+                    final TLRPC.TL_messageActionPaidMessagesPrice action = (TLRPC.TL_messageActionPaidMessagesPrice) messageOwner.action;
+                    if (isOutOwner()) {
+                        messageText = formatPluralStringComma("PaidMessagesPriceUpdatedOut", (int) action.stars);
+                    } else {
+                        messageText = replaceWithLink(formatPluralStringComma("PaidMessagesPriceUpdated", (int) action.stars), "un1", fromObject);
+                    }
+                } else if (messageOwner.action instanceof TLRPC.TL_messageActionPaidMessagesRefunded) {
+                    final TLRPC.TL_messageActionPaidMessagesRefunded action = (TLRPC.TL_messageActionPaidMessagesRefunded) messageOwner.action;
+                    if (isOutOwner()) {
+                        final TLRPC.User user = getUser(users, sUsers, DialogObject.getPeerDialogId(messageOwner.peer_id));
+                        messageText = replaceWithLink(formatPluralStringComma("PaidMessagesRefundedOut", (int) action.stars), "un1", user);
+                    } else {
+                        messageText = replaceWithLink(formatPluralStringComma("PaidMessagesRefunded", (int) action.stars), "un1", fromObject);
+                    }
                 }
             }
         } else {

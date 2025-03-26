@@ -206,6 +206,12 @@ public class UItem extends AdapterWithDiffUtils.Item {
         return i;
     }
 
+    public static UItem asCheck(CharSequence text) {
+        UItem i = new UItem(UniversalAdapter.VIEW_TYPE_CHECK, false);
+        i.text = text;
+        return i;
+    }
+
     public static UItem asCheck(int id, CharSequence text) {
         UItem i = new UItem(UniversalAdapter.VIEW_TYPE_CHECK, false);
         i.id = id;
@@ -358,6 +364,12 @@ public class UItem extends AdapterWithDiffUtils.Item {
     public static UItem asSpace(int height) {
         UItem item = new UItem(UniversalAdapter.VIEW_TYPE_SPACE, false);
         item.intValue = height;
+        return item;
+    }
+
+    public static UItem asRoundCheckbox(CharSequence text) {
+        UItem item = new UItem(UniversalAdapter.VIEW_TYPE_ROUND_CHECKBOX, false);
+        item.text = text;
         return item;
     }
 

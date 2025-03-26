@@ -25,7 +25,9 @@ import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
+import org.telegram.messenger.Utilities;
 import org.telegram.messenger.browser.Browser;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
@@ -36,7 +38,9 @@ import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Adapters.SearchAdapterHelper;
+import org.telegram.ui.Cells.CheckBoxCell;
 import org.telegram.ui.Cells.TextCheckCell;
+import org.telegram.ui.Cells.TextCheckCell2;
 import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.CircularProgressDrawable;
 import org.telegram.ui.Components.ColoredImageSpan;
@@ -263,15 +267,43 @@ public class ChatbotsActivity extends BaseFragment {
     public TL_account.TL_connectedBot currentBot;
 
     public boolean exclude;
-    public boolean allowReply = true;
+    public TL_account.TL_businessBotRights rights = TL_account.TL_businessBotRights.all();
 
     private TLRPC.User selectedBot = null;
     private LongSparseArray<TLRPC.User> foundBots = new LongSparseArray<>();
 
-    private static final int RADIO_EXCLUDE = -1;
-    private static final int RADIO_INCLUDE = -2;
-    private static final int CHECK_PERMISSIONS_REPLY = -5;
-    private static final int BUTTON_DELETE = -6;
+    private static int ids = 0;
+    private static final int RADIO_EXCLUDE = --ids;
+    private static final int RADIO_INCLUDE = --ids;
+    private static final int BUTTON_DELETE = --ids;
+
+    private static final int PERMISSION_MESSAGES = --ids;
+    private static final int PERMISSION_MESSAGES_READ = --ids;
+    private static final int PERMISSION_MESSAGES_REPLY = --ids;
+    private static final int PERMISSION_MESSAGES_MARK_AS_READ = --ids;
+    private static final int PERMISSION_MESSAGES_DELETE_SENT = --ids;
+    private static final int PERMISSION_MESSAGES_DELETE_RECEIVED = --ids;
+
+    private static final int PERMISSION_PROFILE = --ids;
+    private static final int PERMISSION_PROFILE_NAME = --ids;
+    private static final int PERMISSION_PROFILE_BIO = --ids;
+    private static final int PERMISSION_PROFILE_PICTURE = --ids;
+    private static final int PERMISSION_PROFILE_USERNAME = --ids;
+
+    private static final int PERMISSION_GIFTS = --ids;
+    private static final int PERMISSION_GIFTS_VIEW = --ids;
+    private static final int PERMISSION_GIFTS_SELL = --ids;
+    private static final int PERMISSION_GIFTS_SETTINGS = --ids;
+    private static final int PERMISSION_GIFTS_TRANSFER = --ids;
+    private static final int PERMISSION_GIFTS_TRANSFER_STARS = --ids;
+
+    private static final int PERMISSION_STORIES = --ids;
+
+    private int shakeDp = -4;
+
+    private boolean expandedMessagesSection = true;
+    private boolean expandedProfileSection = false;
+    private boolean expandedGiftsSection = false;
 
     private void fillItems(ArrayList<UItem> items, UniversalAdapter adapter) {
         items.add(UItem.asTopView(introText, "RestrictedEmoji", "🤖"));
@@ -309,16 +341,153 @@ public class ChatbotsActivity extends BaseFragment {
             adapter.whiteSectionEnd();
         }
         items.add(UItem.asShadow(getString(R.string.BusinessBotLinkInfo)));
-        items.add(UItem.asHeader(getString(R.string.BusinessBotChats)));
-        items.add(UItem.asRadio(RADIO_EXCLUDE, getString(R.string.BusinessChatsAllPrivateExcept)).setChecked(exclude));
-        items.add(UItem.asRadio(RADIO_INCLUDE, getString(R.string.BusinessChatsOnlySelected)).setChecked(!exclude));
-        items.add(UItem.asShadow(null));
-        recipientsHelper.fillItems(items);
-        items.add(UItem.asShadow(getString(R.string.BusinessBotChatsInfo)));
-        items.add(UItem.asHeader(getString(R.string.BusinessBotPermissions)));
-        items.add(UItem.asCheck(CHECK_PERMISSIONS_REPLY, getString(R.string.BusinessBotPermissionsReply)).setChecked(allowReply));
-        items.add(UItem.asShadow(getString(R.string.BusinessBotPermissionsInfo)));
-        items.add(UItem.asShadow(null));
+        if (selectedBot != null) {
+            items.add(UItem.asHeader(getString(R.string.BusinessBotChats)));
+            items.add(UItem.asRadio(RADIO_EXCLUDE, getString(R.string.BusinessChatsAllPrivateExcept)).setChecked(exclude));
+            items.add(UItem.asRadio(RADIO_INCLUDE, getString(R.string.BusinessChatsOnlySelected)).setChecked(!exclude));
+            items.add(UItem.asShadow(null));
+            recipientsHelper.fillItems(items);
+            items.add(UItem.asShadow(getString(R.string.BusinessBotChatsInfo)));
+            items.add(UItem.asHeader(getString(R.string.BusinessBotPermissions)));
+            items.add(
+                UItem.asExpandableSwitch(PERMISSION_MESSAGES, getString(R.string.BusinessBotPermissionsMessagesSection),
+                        (1 + (rights.reply ? 1 : 0) + (rights.read_messages ? 1 : 0) + (rights.delete_sent_messages ? 1 : 0) + (rights.delete_received_messages ? 1 : 0)) + "/5"
+                    )
+                    .setChecked(rights.reply && rights.read_messages && rights.delete_received_messages && rights.delete_sent_messages)
+                    .setCollapsed(!expandedMessagesSection)
+                    .setClickCallback(v -> {
+                        if (rights.reply && rights.read_messages && rights.delete_received_messages && rights.delete_sent_messages) {
+                            rights.reply = rights.read_messages = rights.delete_received_messages = rights.delete_sent_messages = false;
+                        } else {
+                            rights.reply = rights.read_messages = rights.delete_received_messages = rights.delete_sent_messages = true;
+                        }
+                        listView.adapter.update(true);
+                        checkDone(true);
+                    })
+            );
+            if (expandedMessagesSection) {
+                items.add(
+                    UItem.asRoundCheckbox(PERMISSION_MESSAGES_READ, getString(R.string.BusinessBotPermissionsMessagesRead))
+                        .setChecked(true)
+                        .setEnabled(false)
+                        .setPad(1)
+                );
+                items.add(
+                    UItem.asRoundCheckbox(PERMISSION_MESSAGES_REPLY, getString(R.string.BusinessBotPermissionsMessagesReply))
+                        .setChecked(rights.reply)
+                        .setPad(1)
+                );
+                items.add(
+                    UItem.asRoundCheckbox(PERMISSION_MESSAGES_MARK_AS_READ, getString(R.string.BusinessBotPermissionsMessagesMarkAsRead))
+                        .setChecked(rights.read_messages)
+                        .setPad(1)
+                );
+                items.add(
+                    UItem.asRoundCheckbox(PERMISSION_MESSAGES_DELETE_SENT, getString(R.string.BusinessBotPermissionsMessagesDeleteSent))
+                        .setChecked(rights.delete_sent_messages)
+                        .setPad(1)
+                );
+                items.add(
+                    UItem.asRoundCheckbox(PERMISSION_MESSAGES_DELETE_RECEIVED, getString(R.string.BusinessBotPermissionsMessagesDeleteReceived))
+                        .setChecked(rights.delete_received_messages)
+                        .setPad(1)
+                );
+            }
+            items.add(
+                UItem.asExpandableSwitch(PERMISSION_PROFILE, getString(R.string.BusinessBotPermissionsProfileSection),
+                        ((rights.edit_name ? 1 : 0) + (rights.edit_bio ? 1 : 0) + (rights.edit_profile_photo ? 1 : 0) + (rights.edit_username ? 1 : 0)) + "/4"
+                    )
+                    .setChecked(rights.edit_name && rights.edit_bio && rights.edit_profile_photo && rights.edit_username)
+                    .setCollapsed(!expandedProfileSection)
+                    .setClickCallback(v -> {
+                        if (rights.edit_name && rights.edit_bio && rights.edit_profile_photo && rights.edit_username) {
+                            rights.edit_name = rights.edit_bio = rights.edit_profile_photo = rights.edit_username = false;
+                        } else {
+                            rights.edit_name = rights.edit_bio = rights.edit_profile_photo = rights.edit_username = true;
+                        }
+                        listView.adapter.update(true);
+                        checkDone(true);
+                    })
+            );
+            if (expandedProfileSection) {
+                items.add(
+                    UItem.asRoundCheckbox(PERMISSION_PROFILE_NAME, getString(R.string.BusinessBotPermissionsProfileName))
+                        .setChecked(rights.edit_name)
+                        .setPad(1)
+                );
+                items.add(
+                    UItem.asRoundCheckbox(PERMISSION_PROFILE_BIO, getString(R.string.BusinessBotPermissionsProfileBio))
+                        .setChecked(rights.edit_bio)
+                        .setPad(1)
+                );
+                items.add(
+                    UItem.asRoundCheckbox(PERMISSION_PROFILE_PICTURE, getString(R.string.BusinessBotPermissionsProfilePicture))
+                        .setChecked(rights.edit_profile_photo)
+                        .setPad(1)
+                );
+                items.add(
+                    UItem.asRoundCheckbox(PERMISSION_PROFILE_USERNAME, getString(R.string.BusinessBotPermissionsProfileUsername))
+                        .setChecked(rights.edit_username)
+                        .setPad(1)
+                );
+            }
+            items.add(
+                UItem.asExpandableSwitch(PERMISSION_GIFTS, getString(R.string.BusinessBotPermissionsGiftsSection),
+                        ((rights.view_gifts ? 1 : 0) + (rights.sell_gifts ? 1 : 0) + (rights.change_gift_settings ? 1 : 0) + (rights.transfer_and_upgrade_gifts ? 1 : 0) + (rights.transfer_stars ? 1 : 0)) + "/5"
+                    )
+                    .setChecked(rights.view_gifts && rights.sell_gifts && rights.change_gift_settings && rights.transfer_and_upgrade_gifts && rights.transfer_stars)
+                    .setCollapsed(!expandedGiftsSection)
+                    .setClickCallback(v -> {
+                        if (rights.view_gifts && rights.sell_gifts && rights.change_gift_settings && rights.transfer_and_upgrade_gifts && rights.transfer_stars) {
+                            rights.view_gifts = rights.sell_gifts = rights.change_gift_settings = rights.transfer_and_upgrade_gifts = rights.transfer_stars = false;
+                        } else {
+                            rights.view_gifts = rights.sell_gifts = rights.change_gift_settings = rights.transfer_and_upgrade_gifts = rights.transfer_stars = true;
+                        }
+                        listView.adapter.update(true);
+                        checkDone(true);
+                    })
+            );
+            if (expandedGiftsSection) {
+                items.add(
+                    UItem.asRoundCheckbox(PERMISSION_GIFTS_VIEW, getString(R.string.BusinessBotPermissionsGiftsView))
+                        .setChecked(rights.view_gifts)
+                        .setPad(1)
+                );
+                items.add(
+                    UItem.asRoundCheckbox(PERMISSION_GIFTS_SELL, getString(R.string.BusinessBotPermissionsGiftsSell))
+                        .setChecked(rights.sell_gifts)
+                        .setPad(1)
+                );
+                items.add(
+                    UItem.asRoundCheckbox(PERMISSION_GIFTS_SETTINGS, getString(R.string.BusinessBotPermissionsGiftsSettings))
+                        .setChecked(rights.change_gift_settings)
+                        .setPad(1)
+                );
+                items.add(
+                    UItem.asRoundCheckbox(PERMISSION_GIFTS_TRANSFER, getString(R.string.BusinessBotPermissionsGiftsTransfer))
+                        .setChecked(rights.transfer_and_upgrade_gifts)
+                        .setPad(1)
+                );
+                items.add(
+                    UItem.asRoundCheckbox(PERMISSION_GIFTS_TRANSFER_STARS, getString(R.string.BusinessBotPermissionsGiftsTransferStars))
+                        .setChecked(rights.transfer_stars)
+                        .setPad(1)
+                );
+            }
+            items.add(
+                UItem.asExpandableSwitch(PERMISSION_STORIES, getString(R.string.BusinessBotPermissionsStories), "")
+                    .setChecked(rights.manage_stories)
+                    .setClickCallback(v -> {
+                        rights.manage_stories = !rights.manage_stories;
+                        listView.adapter.update(true);
+                        checkDone(true);
+                    })
+            );
+            items.add(UItem.asShadow(-4, null));
+            items.add(UItem.asShadow(-5, null));
+            items.add(UItem.asShadow(-6, null));
+            items.add(UItem.asShadow(-7, null));
+        }
     }
 
     private void onClick(UItem item, View view, int position, float x, float y) {
@@ -332,9 +501,6 @@ public class ChatbotsActivity extends BaseFragment {
         } else if (item.id == RADIO_INCLUDE) {
             recipientsHelper.setExclude(exclude = false);
             listView.adapter.update(true);
-            checkDone(true);
-        } else if (item.id == CHECK_PERMISSIONS_REPLY) {
-            ((TextCheckCell) view).setChecked(allowReply = !allowReply);
             checkDone(true);
         } else if (item.id == BUTTON_DELETE) {
             selectedBot = null;
@@ -355,6 +521,76 @@ public class ChatbotsActivity extends BaseFragment {
             }
             selectedBot = bot;
             AndroidUtilities.hideKeyboard(editText);
+            listView.adapter.update(true);
+            checkDone(true);
+        } else if (item.id == PERMISSION_MESSAGES) {
+            ((TextCheckCell2) view).setChecked(expandedMessagesSection = !expandedMessagesSection);
+            listView.adapter.update(true);
+//            listView.smoothScrollBy(0, dp(200));
+        } else if (item.id == PERMISSION_MESSAGES_READ) {
+            AndroidUtilities.shakeViewSpring(view, shakeDp = -shakeDp);
+        } else if (item.id == PERMISSION_MESSAGES_REPLY) {
+            ((CheckBoxCell) view).setChecked(rights.reply = !rights.reply, true);
+            listView.adapter.update(true);
+            checkDone(true);
+        } else if (item.id == PERMISSION_MESSAGES_MARK_AS_READ) {
+            ((CheckBoxCell) view).setChecked(rights.read_messages = !rights.read_messages, true);
+            listView.adapter.update(true);
+            checkDone(true);
+        } else if (item.id == PERMISSION_MESSAGES_DELETE_SENT) {
+            ((CheckBoxCell) view).setChecked(rights.delete_sent_messages = !rights.delete_sent_messages, true);
+            listView.adapter.update(true);
+            checkDone(true);
+        } else if (item.id == PERMISSION_MESSAGES_DELETE_RECEIVED) {
+            ((CheckBoxCell) view).setChecked(rights.delete_received_messages = !rights.delete_received_messages, true);
+            listView.adapter.update(true);
+            checkDone(true);
+        } else if (item.id == PERMISSION_PROFILE) {
+            ((TextCheckCell2) view).setChecked(expandedProfileSection = !expandedProfileSection);
+            listView.adapter.update(true);
+//            listView.smoothScrollBy(0, dp(200));
+        } else if (item.id == PERMISSION_PROFILE_NAME) {
+            ((CheckBoxCell) view).setChecked(rights.edit_name = !rights.edit_name, true);
+            listView.adapter.update(true);
+            checkDone(true);
+        } else if (item.id == PERMISSION_PROFILE_BIO) {
+            ((CheckBoxCell) view).setChecked(rights.edit_bio = !rights.edit_bio, true);
+            listView.adapter.update(true);
+            checkDone(true);
+        } else if (item.id == PERMISSION_PROFILE_PICTURE) {
+            ((CheckBoxCell) view).setChecked(rights.edit_profile_photo = !rights.edit_profile_photo, true);
+            listView.adapter.update(true);
+            checkDone(true);
+        } else if (item.id == PERMISSION_PROFILE_USERNAME) {
+            ((CheckBoxCell) view).setChecked(rights.edit_username = !rights.edit_username, true);
+            listView.adapter.update(true);
+            checkDone(true);
+        } else if (item.id == PERMISSION_GIFTS) {
+            ((TextCheckCell2) view).setChecked(expandedGiftsSection = !expandedGiftsSection);
+            listView.adapter.update(true);
+//            listView.smoothScrollBy(0, dp(200));
+        } else if (item.id == PERMISSION_GIFTS_VIEW) {
+            ((CheckBoxCell) view).setChecked(rights.view_gifts = !rights.view_gifts, true);
+            listView.adapter.update(true);
+            checkDone(true);
+        } else if (item.id == PERMISSION_GIFTS_SELL) {
+            ((CheckBoxCell) view).setChecked(rights.sell_gifts = !rights.sell_gifts, true);
+            listView.adapter.update(true);
+            checkDone(true);
+        } else if (item.id == PERMISSION_GIFTS_SETTINGS) {
+            ((CheckBoxCell) view).setChecked(rights.change_gift_settings = !rights.change_gift_settings, true);
+            listView.adapter.update(true);
+            checkDone(true);
+        } else if (item.id == PERMISSION_GIFTS_TRANSFER) {
+            ((CheckBoxCell) view).setChecked(rights.transfer_and_upgrade_gifts = !rights.transfer_and_upgrade_gifts, true);
+            listView.adapter.update(true);
+            checkDone(true);
+        } else if (item.id == PERMISSION_GIFTS_TRANSFER_STARS) {
+            ((CheckBoxCell) view).setChecked(rights.transfer_stars = !rights.transfer_stars, true);
+            listView.adapter.update(true);
+            checkDone(true);
+        } else if (item.id == PERMISSION_STORIES) {
+            rights.manage_stories = !rights.manage_stories;
             listView.adapter.update(true);
             checkDone(true);
         }
@@ -391,7 +627,7 @@ public class ChatbotsActivity extends BaseFragment {
         if (selectedBot != null) {
             TL_account.updateConnectedBot req = new TL_account.updateConnectedBot();
             req.deleted = false;
-            req.can_reply = allowReply;
+            req.rights = rights;
             req.bot = getMessagesController().getInputUser(selectedBot);
             req.recipients = recipientsHelper.getBotInputValue();
             requests.add(req);
@@ -399,7 +635,7 @@ public class ChatbotsActivity extends BaseFragment {
             if (currentBot != null) {
                 currentBot.bot_id = selectedBot.id;
                 currentBot.recipients = recipientsHelper.getBotValue();
-                currentBot.can_reply = allowReply;
+                currentBot.rights = rights;
             }
         }
 
@@ -418,6 +654,11 @@ public class ChatbotsActivity extends BaseFragment {
                     doneButtonDrawable.animateToProgress(0f);
                     BulletinFactory.of(this).createErrorBulletin(LocaleController.getString(R.string.UnknownError)).show();
                 } else {
+                    if (res instanceof TLRPC.Updates) {
+                        Utilities.stageQueue.postRunnable(() -> {
+                            MessagesController.getInstance(currentAccount).processUpdates((TLRPC.Updates) res, false);
+                        });
+                    }
                     requestsReceived[0]++;
                     if (requestsReceived[0] == requests.size()) {
                         BusinessChatbotController.getInstance(currentAccount).invalidate(true);
@@ -438,7 +679,7 @@ public class ChatbotsActivity extends BaseFragment {
             currentValue = bots;
             currentBot = currentValue == null || currentValue.connected_bots.isEmpty() ? null : currentValue.connected_bots.get(0);
             selectedBot = currentBot == null ? null : getMessagesController().getUser(currentBot.bot_id);
-            allowReply = currentBot != null ? currentBot.can_reply : true;
+            rights = currentBot != null ? TL_account.TL_businessBotRights.clone(currentBot.rights) : TL_account.TL_businessBotRights.all();
             exclude = currentBot != null ? currentBot.recipients.exclude_selected : true;
             if (recipientsHelper != null) {
                 recipientsHelper.setValue(currentBot == null ? null : currentBot.recipients);
@@ -456,7 +697,7 @@ public class ChatbotsActivity extends BaseFragment {
         if ((selectedBot != null) != (currentBot != null)) return true;
         if ((selectedBot == null ? 0 : selectedBot.id) != (currentBot == null ? 0 : currentBot.bot_id)) return true;
         if (selectedBot != null) {
-            if (allowReply != currentBot.can_reply) {
+            if (!rights.equals(currentBot.rights)) {
                 return true;
             }
             if (recipientsHelper != null && recipientsHelper.hasChanges()) {

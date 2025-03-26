@@ -295,14 +295,14 @@ public class BirthdayController {
         if (state != null && state.contains(userId))
             return true;
         final TLRPC.UserFull userFull = MessagesController.getInstance(currentAccount).getUserFull(userId);
-        if (userFull != null && isToday(userFull.birthday))
+        if (userFull != null && isToday(userFull.birthday) && !UserObject.areGiftsDisabled(userFull))
             return true;
         return false;
     }
 
     public static boolean isToday(TLRPC.UserFull userFull) {
         if (userFull == null) return false;
-        return isToday(userFull.birthday);
+        return isToday(userFull.birthday) && !UserObject.areGiftsDisabled(userFull);
     }
 
     public static boolean isToday(TL_account.TL_birthday birthday) {

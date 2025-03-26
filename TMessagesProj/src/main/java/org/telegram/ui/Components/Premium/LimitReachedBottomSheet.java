@@ -193,6 +193,7 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView imp
 
     final int type;
     ArrayList<TLRPC.Chat> chats = new ArrayList<>();
+    boolean premiumButtonSetSubscribe;
 
     int rowCount;
     int headerRow = -1;
@@ -458,6 +459,8 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView imp
         }
         containerView.addView(premiumButtonView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.BOTTOM, 16 + backgroundPaddingLeft / AndroidUtilities.density, 0, 16 + backgroundPaddingLeft / AndroidUtilities.density, 12));
         recyclerListView.setPadding(0, 0, 0, AndroidUtilities.dp(72));
+        recyclerListView.setClipToPadding(false);
+        recyclerListView.setClipChildren(false);
         recyclerListView.setOnItemClickListener((view, position) -> {
             if (view instanceof AdminedChannelCell) {
                 AdminedChannelCell adminedChannelCell = ((AdminedChannelCell) view);
@@ -642,7 +645,13 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView imp
             dismiss();
         });
         premiumButtonView.overlayTextView.setOnClickListener(v -> {
-            if (type == TYPE_BOOSTS_FOR_USERS || type == TYPE_BOOSTS_FOR_REMOVE_RESTRICTIONS || isMiniBoostBtnForAdminAvailable()) {
+            if (premiumButtonSetSubscribe) {
+                if (parentFragment == null) return;
+                BaseFragment.BottomSheetParams params = new BaseFragment.BottomSheetParams();
+                params.transitionFromLeft = true;
+                params.allowNestedScroll = false;
+                parentFragment.showAsSheet(new PremiumPreviewFragment("invite_privacy"), params);
+            } else if (type == TYPE_BOOSTS_FOR_USERS || type == TYPE_BOOSTS_FOR_REMOVE_RESTRICTIONS || isMiniBoostBtnForAdminAvailable()) {
                 if (canApplyBoost.canApply) {
                     premiumButtonView.buttonLayout.callOnClick();
                     if (canApplyBoost.alreadyActive && canApplyBoost.boostedNow) {
@@ -891,7 +900,9 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView imp
     }
 
     public void updatePremiumButtonText() {
-        if (type == TYPE_BOOSTS_FOR_USERS || type == TYPE_BOOSTS_FOR_REMOVE_RESTRICTIONS || isMiniBoostBtnForAdminAvailable()) {
+        if (premiumButtonSetSubscribe) {
+            premiumButtonView.setOverlayText(LocaleController.getString(R.string.InvitePremiumBlockedSubscribe), false, false);
+        } else if (type == TYPE_BOOSTS_FOR_USERS || type == TYPE_BOOSTS_FOR_REMOVE_RESTRICTIONS || isMiniBoostBtnForAdminAvailable()) {
             if (BoostRepository.isMultiBoostsAvailable()) {
                 premiumButtonView.buttonTextView.setText(canApplyBoost != null && canApplyBoost.alreadyActive ?
                         LocaleController.getString(R.string.BoostingBoostAgain)
@@ -975,7 +986,9 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView imp
     }
 
     private void updateButton() {
-        if (type == TYPE_BOOSTS_FOR_USERS || type == TYPE_BOOSTS_FOR_REMOVE_RESTRICTIONS || isMiniBoostBtnForAdminAvailable()) {
+        if (premiumButtonSetSubscribe) {
+            premiumButtonView.setOverlayText(LocaleController.getString(R.string.InvitePremiumBlockedSubscribe), false, false);
+        } else if (type == TYPE_BOOSTS_FOR_USERS || type == TYPE_BOOSTS_FOR_REMOVE_RESTRICTIONS || isMiniBoostBtnForAdminAvailable()) {
             if (!canApplyBoost.canApply && !canApplyBoost.empty || canApplyBoost.boostedNow || canApplyBoost.alreadyActive) {
                 if (canApplyBoost.canApply) {
                     if (BoostRepository.isMultiBoostsAvailable()) {
@@ -1859,21 +1872,21 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView imp
                 }
                 description.setText(AndroidUtilities.replaceTags(string));
 
-                PremiumButtonView premiumButtonView = new PremiumButtonView(context, false, resourcesProvider);
-                ScaleStateListAnimator.apply(premiumButtonView, .02f, 1.2f);
-                premiumButtonView.setButton(LocaleController.getString(R.string.InvitePremiumBlockedSubscribe), v -> {
-                    if (parentFragment == null) return;
-                    BaseFragment.BottomSheetParams params = new BaseFragment.BottomSheetParams();
-                    params.transitionFromLeft = true;
-                    params.allowNestedScroll = false;
-                    parentFragment.showAsSheet(new PremiumPreviewFragment("invite_privacy"), params);
-                });
-                addView(premiumButtonView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48, 4 + backgroundPaddingLeft / AndroidUtilities.density, 0, 4 + backgroundPaddingLeft / AndroidUtilities.density, 18));
-
                 final int blockedInviting = premiumInviteBlockedUsers == null ? 0 : premiumInviteBlockedUsers.size();
                 final int blockedMessaging = premiumMessagingBlockedUsers == null ? 0 : premiumMessagingBlockedUsers.size();
 
                 if ((blockedInviting - blockedMessaging) > 0 && !(blockedInviting == 1 && blockedMessaging == 1) && canSendLink) {
+                    PremiumButtonView premiumButtonView = new PremiumButtonView(context, false, resourcesProvider);
+                    ScaleStateListAnimator.apply(premiumButtonView, .02f, 1.2f);
+                    premiumButtonView.setButton(LocaleController.getString(R.string.InvitePremiumBlockedSubscribe), v -> {
+                        if (parentFragment == null) return;
+                        BaseFragment.BottomSheetParams params = new BaseFragment.BottomSheetParams();
+                        params.transitionFromLeft = true;
+                        params.allowNestedScroll = false;
+                        parentFragment.showAsSheet(new PremiumPreviewFragment("invite_privacy"), params);
+                    });
+                    addView(premiumButtonView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48, 4 + backgroundPaddingLeft / AndroidUtilities.density, 0, 4 + backgroundPaddingLeft / AndroidUtilities.density, 18));
+
                     TextView or = new TextView(context) {
                         private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
                         @Override
@@ -1916,6 +1929,9 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView imp
                         description.setText(LocaleController.getString(R.string.InviteBlockedManyMessage));
                     }
                     addView(description, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 32, 0, 32, 19));
+                } else {
+                    ((MarginLayoutParams) description.getLayoutParams()).bottomMargin = dp(8);
+                    premiumButtonSetSubscribe = true;
                 }
 
                 updatePremiumButtonText();
@@ -2523,7 +2539,7 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView imp
             }
             if (loading) {
                 loadingRow = rowCount++;
-            } else {
+            } else if (!(type == TYPE_ADD_MEMBERS_RESTRICTED && !canSendLink)) {
                 if (
                     !(type == TYPE_ADD_MEMBERS_RESTRICTED && !MessagesController.getInstance(currentAccount).premiumFeaturesBlocked() && (premiumInviteBlockedUsers != null && !premiumInviteBlockedUsers.isEmpty() || premiumMessagingBlockedUsers != null && premiumMessagingBlockedUsers.size() >= restrictedUsers.size())) ||
                     !(premiumInviteBlockedUsers != null && premiumInviteBlockedUsers.size() == 1 && premiumMessagingBlockedUsers != null && premiumMessagingBlockedUsers.size() == 1 && canSendLink)

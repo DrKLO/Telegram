@@ -17,6 +17,8 @@ import static org.telegram.ui.bots.AffiliateProgramFragment.percents;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.graphics.Canvas;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffColorFilter;
 import android.graphics.Shader;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.ColorDrawable;
@@ -42,12 +44,10 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
-import org.telegram.messenger.BillingController;
 import org.telegram.messenger.BotWebViewVibrationEffect;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.FileLoader;
-import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageLoader;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.LocaleController;
@@ -81,8 +81,10 @@ import org.telegram.ui.Components.BackgroundGradientDrawable;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.Bulletin;
 import org.telegram.ui.Components.BulletinFactory;
+import org.telegram.ui.Components.CircularProgressDrawable;
 import org.telegram.ui.Components.ColoredImageSpan;
 import org.telegram.ui.Components.CombinedDrawable;
+import org.telegram.ui.Components.CrossfadeDrawable;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.HintView;
 import org.telegram.ui.Components.ImageUpdater;
@@ -98,10 +100,12 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Locale;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class PrivacyControlActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate, ImageUpdater.ImageUpdaterDelegate {
 
     private ListAdapter listAdapter;
+    private CrossfadeDrawable doneButtonDrawable;
     private View doneButton;
     private RecyclerListView listView;
     private MessageCell messageCell;
@@ -158,6 +162,14 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
     private int priceRow;
     private int priceButtonRow;
     private int priceInfoRow;
+    private int showGiftIconRow;
+    private int showGiftIconInfoRow;
+    private int giftTypesHeaderRow;
+    private int giftTypeUnlimitedRow;
+    private int giftTypeLimitedRow;
+    private int giftTypeUniqueRow;
+    private int giftTypePremiumRow;
+    private int giftTypesInfoRow;
     private int rowCount;
 
     private final static int done_button = 1;
@@ -193,6 +205,18 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
 
     private boolean currentReadValue;
     private boolean selectedReadValue;
+
+    private boolean currentGiftIconValue;
+    private boolean selectedGiftIconValue;
+
+    private boolean currentGiftUnlimitedValue;
+    private boolean selectedGiftUnlimitedValue;
+    private boolean currentGiftLimitedValue;
+    private boolean selectedGiftLimitedValue;
+    private boolean currentGiftUniqueValue;
+    private boolean selectedGiftUniqueValue;
+    private boolean currentGiftPremiumValue;
+    private boolean selectedGiftPremiumValue;
 
     @Override
     public void didUploadPhoto(TLRPC.InputFile photo, TLRPC.InputFile video, double videoStartTimestamp, String videoPath, TLRPC.PhotoSize bigSize, TLRPC.PhotoSize smallSize, boolean isVideo, TLRPC.VideoSize emojiMarkup) {
@@ -523,7 +547,11 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
         });
 
         ActionBarMenu menu = actionBar.createMenu();
-        doneButton = menu.addItemWithWidth(done_button, R.drawable.ic_ab_done, dp(56), LocaleController.getString(R.string.Done));
+
+        final Drawable checkmark = context.getResources().getDrawable(R.drawable.ic_ab_done).mutate();
+        checkmark.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_actionBarDefaultIcon), PorterDuff.Mode.MULTIPLY));
+        doneButtonDrawable = new CrossfadeDrawable(checkmark, new CircularProgressDrawable(Theme.getColor(Theme.key_actionBarDefaultIcon)));
+        doneButton = menu.addItemWithWidth(done_button, doneButtonDrawable, dp(56), LocaleController.getString(R.string.Done));
         boolean hasChanges = hasChanges();
         doneButton.setAlpha(hasChanges ? 1.0f : 0.0f);
         doneButton.setScaleX(hasChanges ? 1.0f : 0.0f);
@@ -623,6 +651,10 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
                 BotWebViewVibrationEffect.APP_ERROR.vibrate();
                 AndroidUtilities.shakeViewSpring(view, shakeDp = -shakeDp);
             } else if (position == nobodyRow || position == everybodyRow || position == myContactsRow || position == payRow) {
+                if (rulesType == PRIVACY_RULES_TYPE_GIFTS && areAllStarGiftsDisabled()) {
+                    AndroidUtilities.shakeViewSpring(view, shakeDp = -shakeDp);
+                    return;
+                }
                 int newType;
                 if (position == nobodyRow) {
                     newType = TYPE_NOBODY;
@@ -654,6 +686,10 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
                 updateDoneButton();
                 updateRows(true);
             } else if (position == neverShareRow || position == alwaysShareRow) {
+                if (rulesType == PRIVACY_RULES_TYPE_GIFTS && areAllStarGiftsDisabled()) {
+                    AndroidUtilities.shakeViewSpring(view, shakeDp = -shakeDp);
+                    return;
+                }
                 ArrayList<Long> createFromArray;
                 if (position == neverShareRow) {
                     createFromArray = currentMinus;
@@ -700,6 +736,7 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
                     updateDoneButton();
                     listAdapter.notifyDataSetChanged();
                 });
+                fragment.setShowDiscardConfirm(true);
                 presentFragment(fragment);
             } else if (position == p2pRow) {
                 presentFragment(new PrivacyControlActivity(ContactsController.PRIVACY_RULES_TYPE_P2P));
@@ -709,6 +746,78 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
                 ((TextCheckCell) view).setChecked(selectedReadValue);
             } else if (position == readPremiumRow) {
                 presentFragment(new PremiumPreviewFragment("lastseen"));
+            } else if (position == showGiftIconRow) {
+                selectedGiftIconValue = !selectedGiftIconValue;
+                updateDoneButton();
+                ((TextCheckCell) view).setChecked(selectedGiftIconValue);
+            } else if (position == giftTypeLimitedRow) {
+                if (selectedGiftLimitedValue && !getUserConfig().isPremium()) {
+                    AndroidUtilities.shakeViewSpring(view, shakeDp = -shakeDp);
+                    showPremiumBulletin();
+                    return;
+                }
+                final boolean wereDisabled = areAllStarGiftsDisabled();
+                selectedGiftLimitedValue = !selectedGiftLimitedValue;
+                updateDoneButton();
+                ((TextCheckCell) view).setChecked(selectedGiftLimitedValue);
+                if (selectedGiftLimitedValue && !getUserConfig().isPremium()) {
+                    ((TextCheckCell) view).setCheckBoxIcon(R.drawable.permission_locked);
+                }
+                if (wereDisabled != areAllStarGiftsDisabled()) {
+                    updateRows(true);
+                    AndroidUtilities.updateVisibleRows(listView);
+                }
+            } else if (position == giftTypeUnlimitedRow) {
+                if (selectedGiftUnlimitedValue && !getUserConfig().isPremium()) {
+                    AndroidUtilities.shakeViewSpring(view, shakeDp = -shakeDp);
+                    showPremiumBulletin();
+                    return;
+                }
+                final boolean wereDisabled = areAllStarGiftsDisabled();
+                selectedGiftUnlimitedValue = !selectedGiftUnlimitedValue;
+                updateDoneButton();
+                ((TextCheckCell) view).setChecked(selectedGiftUnlimitedValue);
+                if (selectedGiftUnlimitedValue && !getUserConfig().isPremium()) {
+                    ((TextCheckCell) view).setCheckBoxIcon(R.drawable.permission_locked);
+                }
+                if (wereDisabled != areAllStarGiftsDisabled()) {
+                    updateRows(true);
+                    AndroidUtilities.updateVisibleRows(listView);
+                }
+            } else if (position == giftTypeUniqueRow) {
+                if (selectedGiftUniqueValue && !getUserConfig().isPremium()) {
+                    AndroidUtilities.shakeViewSpring(view, shakeDp = -shakeDp);
+                    showPremiumBulletin();
+                    return;
+                }
+                final boolean wereDisabled = areAllStarGiftsDisabled();
+                selectedGiftUniqueValue = !selectedGiftUniqueValue;
+                updateDoneButton();
+                ((TextCheckCell) view).setChecked(selectedGiftUniqueValue);
+                if (selectedGiftUniqueValue && !getUserConfig().isPremium()) {
+                    ((TextCheckCell) view).setCheckBoxIcon(R.drawable.permission_locked);
+                }
+                if (wereDisabled != areAllStarGiftsDisabled()) {
+                    updateRows(true);
+                    AndroidUtilities.updateVisibleRows(listView);
+                }
+            } else if (position == giftTypePremiumRow) {
+                if (selectedGiftPremiumValue && !getUserConfig().isPremium()) {
+                    AndroidUtilities.shakeViewSpring(view, shakeDp = -shakeDp);
+                    showPremiumBulletin();
+                    return;
+                }
+                final boolean wereDisabled = areAllStarGiftsDisabled();
+                selectedGiftPremiumValue = !selectedGiftPremiumValue;
+                updateDoneButton();
+                ((TextCheckCell) view).setChecked(selectedGiftPremiumValue);
+                if (selectedGiftPremiumValue && !getUserConfig().isPremium()) {
+                    ((TextCheckCell) view).setCheckBoxIcon(R.drawable.permission_locked);
+                }
+                if (wereDisabled != areAllStarGiftsDisabled()) {
+                    updateRows(true);
+                    AndroidUtilities.updateVisibleRows(listView);
+                }
             }
         });
         DefaultItemAnimator itemAnimator = new DefaultItemAnimator() {
@@ -726,6 +835,16 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
         setMessageText();
 
         return fragmentView;
+    }
+
+    private void showPremiumBulletin() {
+        BulletinFactory.of(this).createSimpleBulletin(
+            R.raw.star_premium_2,
+            getString(R.string.OptionPremiumRequiredTitle),
+            AndroidUtilities.replaceTags(getString(R.string.OptionPremiumRequiredMessage)),
+            getString(R.string.OptionPremiumRequiredButton),
+            () -> presentFragment(new PremiumPreviewFragment("noncontacts"))
+        ).show();
     }
 
     @Override
@@ -748,8 +867,9 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
     }
 
     private void finished() {
+        doneButtonDrawable.animateToProgress(0.0f);
         if ((rulesType == PRIVACY_RULES_TYPE_MESSAGES || rulesType == PRIVACY_RULES_TYPE_INVITE || rulesType == PRIVACY_RULES_TYPE_CALLS) && currentType != TYPE_EVERYBODY) {
-            final TLRPC.TL_globalPrivacySettings globalSettings = ContactsController.getInstance(currentAccount).getGlobalPrivacySettings();
+            final TLRPC.GlobalPrivacySettings globalSettings = ContactsController.getInstance(currentAccount).getGlobalPrivacySettings();
             if (globalSettings != null && (globalSettings.new_noncontact_peers_require_premium || globalSettings.noncontact_peers_paid_stars > 0)) {
                 final int[] checkTypes = new int[] { PRIVACY_RULES_TYPE_INVITE, PRIVACY_RULES_TYPE_CALLS };
                 for (int type : checkTypes) {
@@ -825,9 +945,10 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
 
             final TL_account.setGlobalPrivacySettings req2 = new TL_account.setGlobalPrivacySettings();
             req2.settings = new TLRPC.TL_globalPrivacySettings();
-            TLRPC.TL_globalPrivacySettings settings = getContactsController().getGlobalPrivacySettings();
+            TLRPC.GlobalPrivacySettings settings = getContactsController().getGlobalPrivacySettings();
             if (settings != null) {
                 req2.settings.flags = settings.flags;
+                req2.settings.disallowed_stargifts = settings.disallowed_stargifts;
                 req2.settings.archive_and_mute_new_noncontact_peers = settings.archive_and_mute_new_noncontact_peers;
                 req2.settings.noncontact_peers_paid_stars = settings.noncontact_peers_paid_stars;
                 req2.settings.keep_archived_folders = settings.keep_archived_folders;
@@ -851,6 +972,7 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
                     if (settings != null) {
                         settings.new_noncontact_peers_require_premium = req2.settings.new_noncontact_peers_require_premium;
                         settings.flags = req2.settings.flags;
+                        settings.disallowed_stargifts = req2.settings.disallowed_stargifts;
                         if (req2.settings.noncontact_peers_paid_stars > 0) {
                             settings.flags |= 32;
                             settings.noncontact_peers_paid_stars = req2.settings.noncontact_peers_paid_stars;
@@ -868,6 +990,9 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
 
             return;
         }
+
+        final AtomicInteger pendingRequests = new AtomicInteger(0);
+
         TL_account.setPrivacy req = new TL_account.setPrivacy();
         if (rulesType == PRIVACY_RULES_TYPE_PHONE) {
             req.key = new TLRPC.TL_inputPrivacyKeyPhoneNumber();
@@ -879,10 +1004,16 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
                 } else {
                     req2.rules.add(new TLRPC.TL_inputPrivacyValueAllowContacts());
                 }
+                pendingRequests.incrementAndGet();
                 ConnectionsManager.getInstance(currentAccount).sendRequest(req2, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
                     if (error == null) {
                         TL_account.privacyRules privacyRules = (TL_account.privacyRules) response;
                         ContactsController.getInstance(currentAccount).setPrivacyRules(privacyRules.rules, PRIVACY_RULES_TYPE_ADDED_BY_PHONE);
+                        if (pendingRequests.decrementAndGet() == 0) {
+                            finished();
+                        }
+                    } else {
+                        BulletinFactory.of(this).showForError(error);
                     }
                 }), ConnectionsManager.RequestFlagFailOnServerErrors);
             }
@@ -964,44 +1095,89 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
                 req.rules.add(new TLRPC.TL_inputPrivacyValueAllowBots());
             }
         }
-        AlertDialog progressDialog = null;
-        if (getParentActivity() != null) {
-            progressDialog = new AlertDialog(getParentActivity(), AlertDialog.ALERT_TYPE_SPINNER);
-            progressDialog.setCanCancel(false);
-            progressDialog.show();
-        }
-        final AlertDialog progressDialogFinal = progressDialog;
+
+        pendingRequests.incrementAndGet();
         ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
-            try {
-                if (progressDialogFinal != null) {
-                    progressDialogFinal.dismiss();
-                }
-            } catch (Exception e) {
-                FileLog.e(e);
-            }
             if (error == null) {
                 TL_account.privacyRules privacyRules = (TL_account.privacyRules) response;
                 MessagesController.getInstance(currentAccount).putUsers(privacyRules.users, false);
                 MessagesController.getInstance(currentAccount).putChats(privacyRules.chats, false);
                 ContactsController.getInstance(currentAccount).setPrivacyRules(privacyRules.rules, rulesType);
-                finished();
+                if (pendingRequests.decrementAndGet() == 0) {
+                    finished();
+                }
             } else {
                 showErrorAlert();
             }
         }), ConnectionsManager.RequestFlagFailOnServerErrors);
 
         if (rulesType == PRIVACY_RULES_TYPE_LASTSEEN && selectedReadValue != currentReadValue) {
-            TL_account.setGlobalPrivacySettings req2 = new TL_account.setGlobalPrivacySettings();
+            pendingRequests.incrementAndGet();
+            final TL_account.setGlobalPrivacySettings req2 = new TL_account.setGlobalPrivacySettings();
             req2.settings = new TLRPC.TL_globalPrivacySettings();
-            TLRPC.TL_globalPrivacySettings settings = getContactsController().getGlobalPrivacySettings();
+            final TLRPC.GlobalPrivacySettings settings = getContactsController().getGlobalPrivacySettings();
             req2.settings.archive_and_mute_new_noncontact_peers = settings.archive_and_mute_new_noncontact_peers;
             req2.settings.keep_archived_folders = settings.keep_archived_folders;
             req2.settings.keep_archived_unmuted = settings.keep_archived_unmuted;
             req2.settings.new_noncontact_peers_require_premium = settings.new_noncontact_peers_require_premium;
+            req2.settings.noncontact_peers_paid_stars = settings.noncontact_peers_paid_stars;
             req2.settings.hide_read_marks = selectedReadValue;
+            req2.settings.display_gifts_button = settings.display_gifts_button;
             getConnectionsManager().sendRequest(req2, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
                 settings.hide_read_marks = currentReadValue = req2.settings.hide_read_marks;
+                if (pendingRequests.decrementAndGet() == 0) {
+                    finished();
+                }
             }));
+        }
+
+        if (rulesType == PRIVACY_RULES_TYPE_GIFTS && (selectedGiftIconValue != currentGiftIconValue || selectedGiftLimitedValue != currentGiftLimitedValue || selectedGiftUnlimitedValue != currentGiftUnlimitedValue || selectedGiftUniqueValue != currentGiftUniqueValue || selectedGiftPremiumValue != currentGiftPremiumValue)) {
+            pendingRequests.incrementAndGet();
+            final TL_account.setGlobalPrivacySettings req2 = new TL_account.setGlobalPrivacySettings();
+            req2.settings = new TLRPC.TL_globalPrivacySettings();
+            final TLRPC.GlobalPrivacySettings settings = getContactsController().getGlobalPrivacySettings();
+            req2.settings.archive_and_mute_new_noncontact_peers = settings.archive_and_mute_new_noncontact_peers;
+            req2.settings.keep_archived_folders = settings.keep_archived_folders;
+            req2.settings.keep_archived_unmuted = settings.keep_archived_unmuted;
+            req2.settings.new_noncontact_peers_require_premium = settings.new_noncontact_peers_require_premium;
+            req2.settings.noncontact_peers_paid_stars = settings.noncontact_peers_paid_stars;
+            req2.settings.hide_read_marks = settings.hide_read_marks;
+            req2.settings.display_gifts_button = selectedGiftIconValue;
+            if (getUserConfig().isPremium()) {
+                req2.settings.flags |= 64;
+                req2.settings.disallowed_stargifts = new TLRPC.DisallowedGiftsSettings();
+                req2.settings.disallowed_stargifts.disallow_unlimited_stargifts = !selectedGiftUnlimitedValue;
+                req2.settings.disallowed_stargifts.disallow_limited_stargifts = !selectedGiftLimitedValue;
+                req2.settings.disallowed_stargifts.disallow_unique_stargifts = !selectedGiftUniqueValue;
+                req2.settings.disallowed_stargifts.disallow_premium_gifts = !selectedGiftPremiumValue;
+            }
+            getConnectionsManager().sendRequest(req2, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+                if (settings.display_gifts_button != req2.settings.display_gifts_button) {
+                    final TLRPC.UserFull userFull = getMessagesController().getUserFull(getUserConfig().getClientUserId());
+                    if (userFull != null) {
+                        userFull.display_gifts_button = req2.settings.display_gifts_button;
+                        getMessagesStorage().updateUserInfo(userFull, false);
+                    }
+                }
+                settings.display_gifts_button = currentGiftIconValue = req2.settings.display_gifts_button;
+                if (settings.disallowed_stargifts == null) {
+                    settings.disallowed_stargifts = new TLRPC.DisallowedGiftsSettings();
+                }
+                if (req2.settings.disallowed_stargifts != null) {
+                    settings.flags |= 64;
+                    currentGiftUnlimitedValue = !(settings.disallowed_stargifts.disallow_unlimited_stargifts = req2.settings.disallowed_stargifts.disallow_unlimited_stargifts);
+                    currentGiftLimitedValue = !(settings.disallowed_stargifts.disallow_limited_stargifts = req2.settings.disallowed_stargifts.disallow_limited_stargifts);
+                    currentGiftUniqueValue = !(settings.disallowed_stargifts.disallow_unique_stargifts = req2.settings.disallowed_stargifts.disallow_unique_stargifts);
+                    currentGiftPremiumValue = !(settings.disallowed_stargifts.disallow_premium_gifts = req2.settings.disallowed_stargifts.disallow_premium_gifts);
+                }
+                if (pendingRequests.decrementAndGet() == 0) {
+                    finished();
+                }
+            }));
+        }
+
+        if (pendingRequests.get() > 0) {
+            doneButtonDrawable.animateToProgress(1.0f);
         }
     }
 
@@ -1016,9 +1192,13 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
         showDialog(builder.create());
     }
 
+    private boolean areAllStarGiftsDisabled() {
+        return !selectedGiftUniqueValue && !selectedGiftUnlimitedValue && !selectedGiftLimitedValue;
+    }
+
     private void checkPrivacy() {
         if (rulesType == PRIVACY_RULES_TYPE_MESSAGES) {
-            TLRPC.TL_globalPrivacySettings settings = ContactsController.getInstance(currentAccount).getGlobalPrivacySettings();
+            TLRPC.GlobalPrivacySettings settings = ContactsController.getInstance(currentAccount).getGlobalPrivacySettings();
             initialRulesType = currentType = settings != null && settings.new_noncontact_peers_require_premium ? TYPE_CONTACTS : TYPE_EVERYBODY;
             currentMinus = new ArrayList<>();
             currentPlus = new ArrayList<>();
@@ -1152,14 +1332,34 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
         }
 
         if (rulesType == PRIVACY_RULES_TYPE_LASTSEEN) {
-            TLRPC.TL_globalPrivacySettings privacySettings = getContactsController().getGlobalPrivacySettings();
+            TLRPC.GlobalPrivacySettings privacySettings = getContactsController().getGlobalPrivacySettings();
             selectedReadValue = currentReadValue = privacySettings != null && privacySettings.hide_read_marks;
         }
+        if (rulesType == PRIVACY_RULES_TYPE_GIFTS) {
+            TLRPC.GlobalPrivacySettings privacySettings = getContactsController().getGlobalPrivacySettings();
+            selectedGiftIconValue = currentGiftIconValue = privacySettings != null && privacySettings.display_gifts_button;
+
+            if (privacySettings != null && privacySettings.disallowed_stargifts != null) {
+                currentGiftUnlimitedValue = selectedGiftUnlimitedValue = !privacySettings.disallowed_stargifts.disallow_unlimited_stargifts;
+                currentGiftLimitedValue = selectedGiftLimitedValue = !privacySettings.disallowed_stargifts.disallow_limited_stargifts;
+                currentGiftUniqueValue = selectedGiftUniqueValue = !privacySettings.disallowed_stargifts.disallow_unique_stargifts;
+                currentGiftPremiumValue = selectedGiftPremiumValue = !privacySettings.disallowed_stargifts.disallow_premium_gifts;
+            } else {
+                currentGiftUnlimitedValue = selectedGiftUnlimitedValue = true;
+                currentGiftLimitedValue = selectedGiftLimitedValue = true;
+                currentGiftUniqueValue = selectedGiftUniqueValue = true;
+                currentGiftPremiumValue = selectedGiftPremiumValue = true;
+            }
+        }
         updateRows(false);
+        AndroidUtilities.updateVisibleRows(listView);
     }
 
     private boolean hasChanges() {
         if (rulesType == PRIVACY_RULES_TYPE_LASTSEEN && (currentType != TYPE_EVERYBODY || currentMinus != null && !currentMinus.isEmpty()) && currentReadValue != selectedReadValue) {
+            return true;
+        }
+        if (rulesType == PRIVACY_RULES_TYPE_GIFTS && (currentGiftIconValue != selectedGiftIconValue || currentGiftLimitedValue != selectedGiftLimitedValue || currentGiftUnlimitedValue != selectedGiftUnlimitedValue || currentGiftUniqueValue != selectedGiftUniqueValue || currentGiftPremiumValue != selectedGiftPremiumValue)) {
             return true;
         }
         if (initialRulesType != currentType) {
@@ -1232,8 +1432,20 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
         priceButtonRow = -1;
         readPremiumRow = -1;
         readPremiumDetailRow = -1;
+        showGiftIconRow = -1;
+        showGiftIconInfoRow = -1;
+        giftTypesHeaderRow = -1;
+        giftTypeUnlimitedRow = -1;
+        giftTypeLimitedRow = -1;
+        giftTypeUniqueRow = -1;
+        giftTypePremiumRow = -1;
+        giftTypesInfoRow = -1;
 
         rowCount = 0;
+        if (rulesType == PRIVACY_RULES_TYPE_GIFTS) {
+            showGiftIconRow = rowCount++;
+            showGiftIconInfoRow = rowCount++;
+        }
         if (rulesType == PRIVACY_RULES_TYPE_BIRTHDAY) {
             TLRPC.UserFull userFull = getMessagesController().getUserFull(getUserConfig().getClientUserId());
             if (userFull != null && userFull.birthday == null) {
@@ -1320,6 +1532,15 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
                 readPremiumRow = rowCount++;
                 readPremiumDetailRow = rowCount++;
             }
+        }
+
+        if (rulesType == PRIVACY_RULES_TYPE_GIFTS) {
+            giftTypesHeaderRow = rowCount++;
+            giftTypeLimitedRow = rowCount++;
+            giftTypeUnlimitedRow = rowCount++;
+            giftTypeUniqueRow = rowCount++;
+            giftTypePremiumRow = rowCount++;
+            giftTypesInfoRow = rowCount++;
         }
 
         setMessageText();
@@ -1470,9 +1691,10 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
         @Override
         public boolean isEnabled(RecyclerView.ViewHolder holder) {
             int position = holder.getAdapterPosition();
-            return position == nobodyRow || position == payRow || position == everybodyRow || position == myContactsRow || position == neverShareRow || position == alwaysShareRow ||
-                    position == p2pRow && !ContactsController.getInstance(currentAccount).getLoadingPrivacyInfo(ContactsController.PRIVACY_RULES_TYPE_P2P) ||
-                    position == currentPhotoForRestRow || position == photoForRestDescriptionRow || position == photoForRestRow || position == readRow || position == readPremiumRow;
+            return position == p2pRow && !ContactsController.getInstance(currentAccount).getLoadingPrivacyInfo(ContactsController.PRIVACY_RULES_TYPE_P2P) ||
+                    position == currentPhotoForRestRow || position == photoForRestDescriptionRow || position == photoForRestRow || position == readRow || position == showGiftIconRow || position == readPremiumRow ||
+                    position == giftTypeUniqueRow || position == giftTypePremiumRow || position == giftTypeLimitedRow || position == giftTypeUnlimitedRow ||
+                    (rulesType != PRIVACY_RULES_TYPE_GIFTS || !areAllStarGiftsDisabled()) && (position == nobodyRow || position == myContactsRow || position == payRow || position == everybodyRow || position == neverShareRow || position == alwaysShareRow);
         }
 
         @Override
@@ -1486,6 +1708,7 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
             switch (viewType) {
                 case 0:
                     view = new TextSettingsCell(mContext);
+                    ((TextSettingsCell) view).setCanDisable(true);
                     view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
                     break;
                 case 1:
@@ -1640,6 +1863,9 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
                         } else {
                             textCell.setTextAndValue(LocaleController.getString(R.string.AlwaysShareWith), value, neverShareRow != -1);
                         }
+                        if (rulesType == PRIVACY_RULES_TYPE_GIFTS) {
+                            textCell.setEnabled(!areAllStarGiftsDisabled());
+                        }
                     } else if (position == neverShareRow) {
                         String value;
                         int count = 0;
@@ -1659,6 +1885,9 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
                             textCell.setTextAndValue(LocaleController.getString(R.string.NeverAllow), value, false);
                         } else {
                             textCell.setTextAndValue(LocaleController.getString(R.string.NeverShareWith), value, false);
+                        }
+                        if (rulesType == PRIVACY_RULES_TYPE_GIFTS) {
+                            textCell.setEnabled(!areAllStarGiftsDisabled());
                         }
                     } else if (position == p2pRow) {
                         String value;
@@ -1843,6 +2072,16 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
                         final String income = String.valueOf((int) ((currentStars * revenuePercent / 1000.0 * getMessagesController().starsUsdWithdrawRate1000)) / 100.0);
                         privacyCell.setText(formatString(R.string.PrivateMessagesPriceInfo, percents(getMessagesController().starsPaidMessageCommissionPermille), income));
                         backgroundResId = R.drawable.greydivider;
+                    } else if (position == showGiftIconInfoRow) {
+                        final SpannableString giftIcon = new SpannableString("g");
+                        final ColoredImageSpan span = new ColoredImageSpan(R.drawable.msg_input_gift);
+                        span.setScale(0.583f, 0.583f);
+                        giftIcon.setSpan(span, 0, 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                        privacyCell.setText(LocaleController.formatSpannable(R.string.PrivacyGiftsShowIconInfo, giftIcon));
+                        backgroundResId = R.drawable.greydivider;
+                    } else if (position == giftTypesInfoRow) {
+                        privacyCell.setText(LocaleController.getString(R.string.PrivacyGiftsTypeInfo));
+                        backgroundResId = R.drawable.greydivider_bottom;
                     }
                     if (backgroundResId != 0) {
                         Drawable drawable = Theme.getThemedDrawableByKey(mContext, backgroundResId, Theme.key_windowBackgroundGrayShadow);
@@ -1891,6 +2130,8 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
                         headerCell.setText(LocaleController.getString(R.string.PrivacyPhoneTitle2));
                     } else if (position == priceHeaderRow) {
                         headerCell.setText(getString(R.string.PrivateMessagesPriceHeader));
+                    } else if (position == giftTypesHeaderRow) {
+                        headerCell.setText(getString(R.string.PrivacyGiftsTypeHeader));
                     }
                     break;
                 case 3:
@@ -1936,11 +2177,29 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
                             radioCell.setText(LocaleController.getString(R.string.LastSeenEverybody), currentSubType == 0, true);
                         }
                     }
+                    if (rulesType == PRIVACY_RULES_TYPE_GIFTS) {
+                        radioCell.setEnabled(!areAllStarGiftsDisabled(), null);
+                    }
                     break;
                 case 8:
-                    TextCheckCell checkCell = (TextCheckCell) holder.itemView;
+                    final TextCheckCell checkCell = (TextCheckCell) holder.itemView;
+                    checkCell.setCheckBoxIcon(0);
                     if (position == readRow) {
                         checkCell.setTextAndCheck(LocaleController.getString(R.string.HideReadTime), selectedReadValue, false);
+                    } else if (position == showGiftIconRow) {
+                        checkCell.setTextAndCheck(getString(R.string.PrivacyGiftsShowIcon), selectedGiftIconValue, false);
+                    } else if (position == giftTypeUnlimitedRow) {
+                        checkCell.setTextAndCheck(getString(R.string.PrivacyGiftsTypeUnlimited), selectedGiftUnlimitedValue, true);
+                        checkCell.setCheckBoxIcon(!getUserConfig().isPremium() && selectedGiftUnlimitedValue ? R.drawable.permission_locked : 0);
+                    } else if (position == giftTypeLimitedRow) {
+                        checkCell.setTextAndCheck(getString(R.string.PrivacyGiftsTypeLimited), selectedGiftLimitedValue, true);
+                        checkCell.setCheckBoxIcon(!getUserConfig().isPremium() && selectedGiftLimitedValue ? R.drawable.permission_locked : 0);
+                    } else if (position == giftTypeUniqueRow) {
+                        checkCell.setTextAndCheck(getString(R.string.PrivacyGiftsTypeUnique), selectedGiftUniqueValue, true);
+                        checkCell.setCheckBoxIcon(!getUserConfig().isPremium() && selectedGiftUniqueValue ? R.drawable.permission_locked : 0);
+                    } else if (position == giftTypePremiumRow) {
+                        checkCell.setTextAndCheck(getString(R.string.PrivacyGiftsTypePremium), selectedGiftPremiumValue, false);
+                        checkCell.setCheckBoxIcon(!getUserConfig().isPremium() && selectedGiftPremiumValue ? R.drawable.permission_locked : 0);
                     }
                     break;
                 case 9:
@@ -1982,9 +2241,9 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
         public int getItemViewType(int position) {
             if (position == alwaysShareRow || position == neverShareRow || position == p2pRow || position == readPremiumRow) {
                 return 0;
-            } else if (position == shareDetailRow || position == detailRow || position == detailRow2 || position == priceInfoRow || position == p2pDetailRow || position == photoForRestDescriptionRow || position == readDetailRow || position == readPremiumDetailRow || position == setBirthdayRow) {
+            } else if (position == shareDetailRow || position == detailRow || position == detailRow2 || position == priceInfoRow || position == p2pDetailRow || position == photoForRestDescriptionRow || position == readDetailRow || position == readPremiumDetailRow || position == setBirthdayRow || position == showGiftIconInfoRow || position == giftTypesInfoRow) {
                 return 1;
-            } else if (position == sectionRow || position == priceHeaderRow || position == shareSectionRow || position == p2pSectionRow || position == phoneSectionRow) {
+            } else if (position == sectionRow || position == priceHeaderRow || position == shareSectionRow || position == p2pSectionRow || position == phoneSectionRow || position == giftTypesHeaderRow) {
                 return 2;
             } else if (position == everybodyRow || position == myContactsRow || position == nobodyRow || position == payRow || position == phoneEverybodyRow || position == phoneContactsRow) {
                 return 3;
@@ -1996,7 +2255,7 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
                 return 6;
             } else if (position == currentPhotoForRestRow) {
                 return 7;
-            } else if (position == readRow) {
+            } else if (position == readRow || position == showGiftIconRow || position == giftTypeUniqueRow || position == giftTypePremiumRow || position == giftTypeUnlimitedRow || position == giftTypeLimitedRow) {
                 return 8;
             } else if (position == priceRow) {
                 return 9;
@@ -2067,6 +2326,14 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
             put(++pointer, priceHeaderRow, sparseIntArray);
             put(++pointer, priceRow, sparseIntArray);
             put(++pointer, priceInfoRow, sparseIntArray);
+            put(++pointer, showGiftIconRow, sparseIntArray);
+            put(++pointer, showGiftIconInfoRow, sparseIntArray);
+            put(++pointer, giftTypesHeaderRow, sparseIntArray);
+            put(++pointer, giftTypeLimitedRow, sparseIntArray);
+            put(++pointer, giftTypeUnlimitedRow, sparseIntArray);
+            put(++pointer, giftTypeUniqueRow, sparseIntArray);
+            put(++pointer, giftTypePremiumRow, sparseIntArray);
+            put(++pointer, giftTypesInfoRow, sparseIntArray);
         }
 
         private void put(int id, int position, SparseIntArray sparseIntArray) {

@@ -58,6 +58,7 @@ import androidx.annotation.Nullable;
 import androidx.core.graphics.ColorUtils;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LiteMode;
 import org.telegram.messenger.LocaleController;
@@ -78,6 +79,7 @@ import org.telegram.ui.Components.RLottieImageView;
 import org.telegram.ui.Components.RadialProgressView;
 import org.telegram.ui.Components.ScaleStateListAnimator;
 import org.telegram.ui.Components.spoilers.SpoilersTextView;
+import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.Stars.StarsIntroActivity;
 import org.telegram.ui.Stars.StarsReactionsSheet;
 
@@ -1631,6 +1633,10 @@ public class AlertDialog extends Dialog implements Drawable.Callback, Notificati
         }
 
         public Builder(Context context, int progressViewStyle, Theme.ResourcesProvider resourcesProvider) {
+            if (context == null) {
+                context = AndroidUtilities.findActivity(LaunchActivity.instance);
+                if (context == null) context = ApplicationLoader.applicationContext;
+            }
             alertDialog = createAlertDialog(context, progressViewStyle, resourcesProvider);
         }
 

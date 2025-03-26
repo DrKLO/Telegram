@@ -28,14 +28,14 @@ public class GallerySheet extends BottomSheet {
 
     private final GalleryListView listView;
 
-    public GallerySheet(Context context, Theme.ResourcesProvider resourcesProvider, float aspectRatio) {
+    public GallerySheet(Context context, Theme.ResourcesProvider resourcesProvider, String title, boolean onlyPhotos, float aspectRatio) {
         super(context, false, resourcesProvider);
 
         fixNavigationBar(0xff1f1f1f);
-        listView = new GalleryListView(UserConfig.selectedAccount, context, new DarkThemeResourceProvider(), null, true, aspectRatio) {
+        listView = new GalleryListView(UserConfig.selectedAccount, context, new DarkThemeResourceProvider(), null, onlyPhotos, aspectRatio) {
             @Override
             public String getTitle() {
-                return LocaleController.getString(R.string.VideoChooseCover);
+                return title;
             }
         };
         listView.allowSearch(false);

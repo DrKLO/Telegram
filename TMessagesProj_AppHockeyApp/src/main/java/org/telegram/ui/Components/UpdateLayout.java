@@ -158,7 +158,7 @@ public class UpdateLayout extends IUpdateLayout {
                 setUpdateText(LocaleController.getString(R.string.AppUpdateNow), animated);
             } else if (ApplicationLoader.applicationLoaderInstance.isDownloadingUpdate()) {
                 updateLayoutIcon.setIcon(MediaActionDrawable.ICON_CANCEL, true, animated);
-                updateLayoutIcon.setProgress(0, false);
+                updateLayoutIcon.setProgress(ApplicationLoader.applicationLoaderInstance.getDownloadingUpdateProgress(), true);
                 final float progress = ApplicationLoader.applicationLoaderInstance.getDownloadingUpdateProgress();
                 setUpdateText(LocaleController.formatString(R.string.AppUpdateDownloading, (int) (progress * 100)), animated);
             } else {

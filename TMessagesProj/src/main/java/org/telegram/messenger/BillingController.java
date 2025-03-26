@@ -343,6 +343,10 @@ public class BillingController implements PurchasesUpdatedListener, BillingClien
 
                         awaitingCount.incrementAndGet();
                         AccountInstance acc = opayload.first;
+                        int requestFlags = ConnectionsManager.RequestFlagFailOnServerErrorsExceptFloodWait | ConnectionsManager.RequestFlagInvokeAfter;
+                        if (req.purpose instanceof TLRPC.TL_inputStorePaymentAuthCode) {
+                            requestFlags |= ConnectionsManager.RequestFlagWithoutLogin;
+                        }
                         acc.getConnectionsManager().sendRequest(req, (response, error) -> {
                             AndroidUtilities.runOnUIThread(() -> {
                                 if (progressDialog[0] != null) {
@@ -387,7 +391,7 @@ public class BillingController implements PurchasesUpdatedListener, BillingClien
                                     }
                                 });
                             }
-                        }, ConnectionsManager.RequestFlagFailOnServerErrorsExceptFloodWait | ConnectionsManager.RequestFlagInvokeAfter);
+                        }, requestFlags);
                     } else {
                         FileLog.d("BillingController.onPurchasesUpdatedInternal: " + purchase.getOrderId() + " purchase is purchased and acknowledged: consuming");
                         awaitingCount.incrementAndGet();
@@ -413,13 +417,15 @@ public class BillingController implements PurchasesUpdatedListener, BillingClien
      * All consumable purchases must be consumed. For us it is a gift.
      * Without confirmation the user will not be able to buy the product again.
      */
-    private void consumeGiftPurchase(Purchase purchase, TLRPC.InputStorePaymentPurpose purpose, Runnable onDone) {
-        if (purpose instanceof TLRPC.TL_inputStorePaymentGiftPremium
-                || purpose instanceof TLRPC.TL_inputStorePaymentPremiumGiftCode
-                || purpose instanceof TLRPC.TL_inputStorePaymentStarsTopup
-                || purpose instanceof TLRPC.TL_inputStorePaymentStarsGift
-                || purpose instanceof TLRPC.TL_inputStorePaymentPremiumGiveaway
-                || purpose instanceof TLRPC.TL_inputStorePaymentStarsGiveaway) {
+    public void consumeGiftPurchase(Purchase purchase, TLRPC.InputStorePaymentPurpose purpose, Runnable onDone) {
+        if (purpose instanceof TLRPC.TL_inputStorePaymentGiftPremium ||
+            purpose instanceof TLRPC.TL_inputStorePaymentPremiumGiftCode ||
+            purpose instanceof TLRPC.TL_inputStorePaymentStarsTopup ||
+            purpose instanceof TLRPC.TL_inputStorePaymentStarsGift ||
+            purpose instanceof TLRPC.TL_inputStorePaymentPremiumGiveaway ||
+            purpose instanceof TLRPC.TL_inputStorePaymentStarsGiveaway ||
+            purpose instanceof TLRPC.TL_inputStorePaymentAuthCode
+        ) {
             FileLog.d("BillingController consumeGiftPurchase " + purpose + " " + purchase.getOrderId() + " " + purchase.getPurchaseToken());
             billingClient.consumeAsync(
                 ConsumeParams.newBuilder()
@@ -532,6 +538,6 @@ public class BillingController implements PurchasesUpdatedListener, BillingClien
             case BillingClient.BillingResponseCode.ITEM_NOT_OWNED:        return "ITEM_NOT_OWNED";
             case BillingClient.BillingResponseCode.NETWORK_ERROR:         return "NETWORK_ERROR";
         }
-        return null;
+        return "BILLING_UNKNOWN_ERROR";
     }
 }

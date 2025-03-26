@@ -25,6 +25,7 @@ import android.graphics.RectF;
 import android.graphics.Shader;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
+import android.text.TextUtils;
 import android.transition.ChangeBounds;
 import android.transition.TransitionManager;
 import android.util.TypedValue;
@@ -64,6 +65,7 @@ import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.tl.TL_stars;
+import org.telegram.ui.AccountFrozenAlert;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.Theme;
@@ -109,7 +111,7 @@ public class StarsReactionsSheet extends BottomSheet implements NotificationCent
     private final FrameLayout dialogSelectorInnerLayout;
     private final BackupImageView dialogImageView;
     private final ImageView dialogSelectorIconView;
-    private final Space beforeTitleSpace;
+//    private final Space beforeTitleSpace;
     private final TextView titleView;
 //    private final StarsIntroActivity.StarsBalanceView balanceView;
     private final ImageView closeView;
@@ -324,13 +326,13 @@ public class StarsReactionsSheet extends BottomSheet implements NotificationCent
         };
         titleView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
         titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
-        titleView.setGravity(Gravity.LEFT | Gravity.CENTER_VERTICAL);
+        titleView.setGravity(Gravity.CENTER);
         titleView.setText(getString(R.string.StarsReactionTitle2));
         titleView.setTypeface(AndroidUtilities.bold());
-        titleView.setMaxLines(2);
-        toptopLayout.addView(beforeTitleSpace = new Space(context), LayoutHelper.createLinear(0, 0, 1, Gravity.FILL));
-        toptopLayout.addView(titleView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0, Gravity.CENTER_VERTICAL | Gravity.LEFT, 12 + 6, 0, 6, 0));
-        toptopLayout.addView(new Space(context), LayoutHelper.createLinear(0, 0, 1, Gravity.FILL));
+        titleView.setEllipsize(TextUtils.TruncateAt.END);
+//        toptopLayout.addView(beforeTitleSpace = new Space(context), LayoutHelper.createLinear(0, 0, 1, Gravity.FILL));
+        toptopLayout.addView(titleView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 1, Gravity.FILL, 2, 0, 2, 0));
+//        toptopLayout.addView(new Space(context), LayoutHelper.createLinear(0, 0, 1, Gravity.FILL));
         updateCanSwitchPeer(false);
 
         closeView = new ImageView(context);
@@ -354,7 +356,7 @@ public class StarsReactionsSheet extends BottomSheet implements NotificationCent
 //            });
 //        });
 //        toptopLayout.addView(balanceView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0, Gravity.TOP | Gravity.RIGHT, 6, 0, 6, 0));
-        toptopLayout.addView(closeView, LayoutHelper.createLinear(48, 48, 0, Gravity.TOP | Gravity.RIGHT, 48, 6, 6, 0));
+        toptopLayout.addView(closeView, LayoutHelper.createLinear(48, 48, 0, Gravity.TOP | Gravity.RIGHT, 0, 6, 6, 0));
 
         LinearLayout topLayoutTextLayout = new LinearLayout(context);
         topLayoutTextLayout.setOrientation(LinearLayout.VERTICAL);
@@ -487,6 +489,11 @@ public class StarsReactionsSheet extends BottomSheet implements NotificationCent
             if (messageObject == null || chatActivity == null || iconAnimator != null) {
                 return;
             }
+            if (MessagesController.getInstance(currentAccount).isFrozen()) {
+                AccountFrozenAlert.show(currentAccount);
+                return;
+            }
+
             final long totalStars = slider.getValue();
             final StarsController starsController = StarsController.getInstance(currentAccount);
 
@@ -634,7 +641,7 @@ public class StarsReactionsSheet extends BottomSheet implements NotificationCent
 
     private void updateCanSwitchPeer(boolean animated) {
         if ((dialogSelectorLayout.getVisibility() == View.VISIBLE) != canSwitchPeer()) {
-            beforeTitleSpace.setVisibility(canSwitchPeer() ? View.VISIBLE : View.GONE);
+//            beforeTitleSpace.setVisibility(canSwitchPeer() ? View.VISIBLE : View.GONE);
             dialogSelectorLayout.setVisibility(canSwitchPeer() ? View.VISIBLE : View.GONE);
             if (animated) {
                 if (canSwitchPeer()) {

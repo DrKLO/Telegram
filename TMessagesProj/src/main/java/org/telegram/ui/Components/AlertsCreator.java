@@ -130,7 +130,9 @@ import org.telegram.ui.Stories.recorder.ButtonWithCounterView;
 import org.telegram.ui.ThemePreviewActivity;
 import org.telegram.ui.TooManyCommunitiesActivity;
 
+import java.time.LocalDate;
 import java.time.YearMonth;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
@@ -1788,6 +1790,7 @@ public class AlertsCreator {
             final Runnable gotBalance = () -> {
                 final long balance = StarsController.getInstance(currentAccount).getBalance().amount;
                 if (balance < totalPrice) {
+                    if (activity == null) return;
                     new StarsIntroActivity.StarsNeededSheet(activity, resourcesProvider, totalPrice, StarsIntroActivity.StarsNeededSheet.TYPE_PRIVATE_MESSAGE, DialogObject.getShortName(currentAccount, dialogIds.get(0)), () -> {
                         confirmed.run(prices);
                     }).show();
@@ -1844,6 +1847,7 @@ public class AlertsCreator {
                     final BaseFragment lastFragment = LaunchActivity.getSafeLastFragment();
                     final Theme.ResourcesProvider resourcesProvider = PhotoViewer.getInstance().isVisible() || lastFragment != null && lastFragment.hasShownSheet() ? new DarkThemeResourceProvider() : (lastFragment != null ? lastFragment.getResourceProvider() : null);
 
+                    if (activity == null) return;
                     new StarsIntroActivity.StarsNeededSheet(activity, resourcesProvider, price, StarsIntroActivity.StarsNeededSheet.TYPE_PRIVATE_MESSAGE, DialogObject.getShortName(currentAccount, dialogId), () -> {
                         confirmedPrice.run(send_paid_messages_stars);
                     }).show();
@@ -1946,9 +1950,14 @@ public class AlertsCreator {
         if (!TextUtils.isEmpty(check)) {
             cell[0] = new CheckBoxCell(context, 1, resourcesProvider);
             cell[0].setBackground(Theme.getSelectorDrawable(false));
+            cell[0].setMultiline(true);
+            FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) cell[0].getCheckBoxView().getLayoutParams();
+            lp.topMargin = 0;
+            lp.gravity = (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL;
+            cell[0].getCheckBoxView().setLayoutParams(lp);
             cell[0].setText(check, "", false, false);
-            cell[0].setPadding(LocaleController.isRTL ? dp(16) : dp(8), 0, LocaleController.isRTL ? dp(8) : dp(16), 0);
-            frameLayout.addView(cell[0], LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.BOTTOM | Gravity.LEFT, 0, 0, 0, 0));
+            cell[0].setPadding(LocaleController.isRTL ? dp(16) : dp(8), dp(8), LocaleController.isRTL ? dp(8) : dp(16), dp(8));
+            frameLayout.addView(cell[0], LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM | Gravity.LEFT));
             cell[0].setOnClickListener(v -> {
                 CheckBoxCell cell1 = (CheckBoxCell) v;
                 value[0] = !value[0];
@@ -3708,9 +3717,9 @@ public class AlertsCreator {
             if (value == 0) {
                 return LocaleController.getString(R.string.MessageScheduleToday);
             } else {
-                long date = currentTime + (long) value * 86400000L;
-                calendar.setTimeInMillis(date);
-                int year = calendar.get(Calendar.YEAR);
+                final LocalDate thisDate = LocalDate.now().plusDays(value);
+                final int year = thisDate.getYear();
+                final long date = thisDate.atStartOfDay().toInstant(ZoneOffset.UTC).toEpochMilli();
                 if (year == currentYear) {
                     return (
                         LocaleController.getInstance().getFormatterWeek().format(date) +
@@ -3769,7 +3778,8 @@ public class AlertsCreator {
         buttonTextView.setOnClickListener(v -> {
             canceled[0] = false;
             boolean setSeconds = checkScheduleDate(null, null, selfUserId == dialogId ? 1 : 0, dayPicker, hourPicker, minutePicker);
-            calendar.setTimeInMillis(System.currentTimeMillis() + (long) dayPicker.getValue() * 24 * 3600 * 1000);
+            final long date = LocalDate.now().plusDays(dayPicker.getValue()).atStartOfDay(ZoneOffset.systemDefault()).toInstant().toEpochMilli();
+            calendar.setTimeInMillis(date);
             calendar.set(Calendar.HOUR_OF_DAY, hourPicker.getValue());
             calendar.set(Calendar.MINUTE, minutePicker.getValue());
             if (setSeconds) {

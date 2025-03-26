@@ -1678,7 +1678,7 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
             });
 
         if (actionBarColor != Theme.getColor(Theme.key_windowBackgroundWhite)) {
-            final int backgroundColor = AndroidUtilities.computePerceivedBrightness(actionBarColor) >= .721f ? 0xFF181819 : 0xffffffff;
+            final int backgroundColor = AndroidUtilities.computePerceivedBrightness(actionBarColor) >= .721f ? 0xffffffff : 0xFF181819;
             final int textColor = AndroidUtilities.computePerceivedBrightness(backgroundColor) >= .721f ? Color.BLACK : Color.WHITE;
             final int iconColor = Theme.multAlpha(textColor, .85f);
             final int selectorColor = Theme.multAlpha(textColor, .10f);

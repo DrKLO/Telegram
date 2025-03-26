@@ -1,5 +1,7 @@
 package org.telegram.ui.Components;
 
+import static org.telegram.messenger.LocaleController.getString;
+
 import android.content.Context;
 import android.util.Log;
 import android.view.Gravity;
@@ -36,7 +38,7 @@ public class PhotoViewerCoverEditor extends FrameLayout {
 
         actionBar = new ActionBar(context, resourcesProvider);
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
-        actionBar.setTitle(LocaleController.getString(R.string.EditorSetCoverTitle));
+        actionBar.setTitle(getString(R.string.EditorSetCoverTitle));
         actionBar.setItemsColor(0xFFFFFFFF, false);
         actionBar.setItemsBackgroundColor(0x22ffffff, false);
         actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
@@ -54,13 +56,13 @@ public class PhotoViewerCoverEditor extends FrameLayout {
         addView(timelineView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, TimelineView.heightDp(), Gravity.FILL_HORIZONTAL | Gravity.BOTTOM, 0, 0, 0, 16 + 48 + 10));
 
         button = new ButtonWithCounterView(context, resourcesProvider);
-        button.setText(LocaleController.getString(R.string.EditorSetCoverSave), false);
+        button.setText(getString(R.string.EditorSetCoverSave), false);
         addView(button, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.FILL_HORIZONTAL | Gravity.BOTTOM, 10, 10, 10, 10));
 
-        openGalleryButton = new EditCoverButton(context, photoViewer, LocaleController.getString(R.string.EditorSetCoverGallery), true);
+        openGalleryButton = new EditCoverButton(context, photoViewer, getString(R.string.EditorSetCoverGallery), true);
         openGalleryButton.setOnClickListener(v -> {
             if (gallerySheet == null) {
-                gallerySheet = new GallerySheet(context, resourcesProvider, aspectRatio);
+                gallerySheet = new GallerySheet(context, resourcesProvider, getString(R.string.VideoChooseCover), true, aspectRatio);
                 gallerySheet.setOnDismissListener(() -> {
                     gallerySheet = null;
                 });

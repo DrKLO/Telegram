@@ -1806,6 +1806,8 @@ public class NotificationsController extends BaseController {
                         return messageObject.messageText.toString();
                     } else if (messageObject.messageOwner.action instanceof TLRPC.TL_messageActionStarGift || messageObject.messageOwner.action instanceof TLRPC.TL_messageActionGiftPremium) {
                         return messageObject.messageText.toString();
+                    } else if (messageObject.messageOwner.action instanceof TLRPC.TL_messageActionPaidMessagesPrice || messageObject.messageOwner.action instanceof TLRPC.TL_messageActionPaidMessagesRefunded) {
+                        return messageObject.messageText.toString();
                     } else if (messageObject.messageOwner.action instanceof TLRPC.TL_messageActionPhoneCall) {
                         if (messageObject.messageOwner.action.video) {
                             return LocaleController.getString(R.string.CallMessageVideoIncomingMissed);
@@ -2436,6 +2438,8 @@ public class NotificationsController extends BaseController {
                         } else if (messageObject.messageOwner.action instanceof TLRPC.TL_messageActionStarGift || messageObject.messageOwner.action instanceof TLRPC.TL_messageActionGiftPremium) {
                             msg = messageObject.messageText.toString();
                         } else if (messageObject.messageOwner.action instanceof TLRPC.TL_messageActionStarGiftUnique) {
+                            msg = messageObject.messageText.toString();
+                        } else if (messageObject.messageOwner.action instanceof TLRPC.TL_messageActionPaidMessagesRefunded || messageObject.messageOwner.action instanceof TLRPC.TL_messageActionPaidMessagesPrice) {
                             msg = messageObject.messageText.toString();
                         } else if (messageObject.messageOwner.action instanceof TLRPC.TL_messageActionPhoneCall) {
                             if (messageObject.messageOwner.action.video) {

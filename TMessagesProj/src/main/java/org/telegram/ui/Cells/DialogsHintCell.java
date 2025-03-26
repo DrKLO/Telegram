@@ -29,6 +29,7 @@ import org.telegram.ui.Components.AvatarsImageView;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.BlurredFrameLayout;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.LinkSpanDrawable;
 import org.telegram.ui.Components.SizeNotifierFrameLayout;
 
 import java.util.ArrayList;
@@ -38,11 +39,13 @@ public class DialogsHintCell extends BlurredFrameLayout {
     private final LinearLayout parentView;
     private final LinearLayout contentView;
     public final AnimatedEmojiSpan.TextViewEmojis titleView;
-    private final TextView messageView;
+    private final LinkSpanDrawable.LinksTextView messageView;
     private final ImageView chevronView;
     private final ImageView closeView;
     public final BackupImageView imageView;
     private final AvatarsImageView avatarsImageView;
+
+    public boolean titleIsError;
 
     public DialogsHintCell(@NonNull Context context, SizeNotifierFrameLayout parentFrameLayout) {
         super(context, parentFrameLayout);
@@ -69,9 +72,8 @@ public class DialogsHintCell extends BlurredFrameLayout {
         titleView.setSingleLine();
         contentView.addView(titleView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP));
 
-        messageView = new TextView(context);
+        messageView = new LinkSpanDrawable.LinksTextView(context);
         messageView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-        messageView.setMaxLines(2);
         messageView.setEllipsize(TextUtils.TruncateAt.END);
         contentView.addView(messageView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, Gravity.TOP));
 
@@ -115,8 +117,9 @@ public class DialogsHintCell extends BlurredFrameLayout {
     }
 
     public void updateColors() {
-        titleView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+        titleView.setTextColor(Theme.getColor(titleIsError ? Theme.key_text_RedBold : Theme.key_windowBackgroundWhiteBlackText));
         messageView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
+        messageView.setLinkTextColor(Theme.getColor(Theme.key_chat_messageLinkIn));
         chevronView.setColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText), PorterDuff.Mode.SRC_IN);
         closeView.setColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText), PorterDuff.Mode.SRC_IN);
         closeView.setBackground(Theme.AdaptiveRipple.filledCircle());
@@ -157,11 +160,19 @@ public class DialogsHintCell extends BlurredFrameLayout {
     }
 
     public void setText(CharSequence title, CharSequence subtitle) {
+        setText(title, subtitle, true, false);
+    }
+    public void setText(CharSequence title, CharSequence subtitle, boolean showChevron, boolean error) {
+        titleIsError = error;
+        titleView.setVisibility(TextUtils.isEmpty(title) ? GONE : VISIBLE);
         titleView.setText(title);
         titleView.setCompoundDrawables(null, null, null, null);
         messageView.setText(subtitle);
-        chevronView.setVisibility(VISIBLE);
+        chevronView.setVisibility(showChevron ? VISIBLE : GONE);
         closeView.setVisibility(GONE);
+        final int padding = showChevron ? dp(24) : 0;
+        contentView.setPadding(LocaleController.isRTL ? padding : 0, 0, LocaleController.isRTL ? 0 : padding, 0);
+        updateColors();
     }
 
     public void setOnCloseListener(OnClickListener closeListener) {

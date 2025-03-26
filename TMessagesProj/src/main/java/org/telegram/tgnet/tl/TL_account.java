@@ -1,6 +1,7 @@
 package org.telegram.tgnet.tl;
 
-import org.telegram.tgnet.AbstractSerializedData;
+import androidx.annotation.Nullable;
+
 import org.telegram.tgnet.InputSerializedData;
 import org.telegram.tgnet.OutputSerializedData;
 import org.telegram.tgnet.TLObject;
@@ -1300,7 +1301,7 @@ public class TL_account {
 
 
         public TLObject deserializeResponse(InputSerializedData stream, int constructor, boolean exception) {
-            return TLRPC.TL_globalPrivacySettings.TLdeserialize(stream, constructor, exception);
+            return TLRPC.GlobalPrivacySettings.TLdeserialize(stream, constructor, exception);
         }
 
         public void serializeToStream(OutputSerializedData stream) {
@@ -1311,10 +1312,10 @@ public class TL_account {
     public static class setGlobalPrivacySettings extends TLObject {
         public static final int constructor = 0x1edaaac2;
 
-        public TLRPC.TL_globalPrivacySettings settings;
+        public TLRPC.GlobalPrivacySettings settings;
 
         public TLObject deserializeResponse(InputSerializedData stream, int constructor, boolean exception) {
-            return TLRPC.TL_globalPrivacySettings.TLdeserialize(stream, constructor, exception);
+            return TLRPC.GlobalPrivacySettings.TLdeserialize(stream, constructor, exception);
         }
 
         public void serializeToStream(OutputSerializedData stream) {
@@ -2983,13 +2984,145 @@ public class TL_account {
         }
     }
 
-    public static class TL_connectedBot extends TLObject {
-        public static final int constructor = 0xbd068601;
+    public static class TL_businessBotRights extends TLObject {
+        public static final int constructor = 0xa0624cf7;
 
         public int flags;
-        public boolean can_reply;
+        public boolean reply;
+        public boolean read_messages;
+        public boolean delete_sent_messages;
+        public boolean delete_received_messages;
+        public boolean edit_name;
+        public boolean edit_bio;
+        public boolean edit_profile_photo;
+        public boolean edit_username;
+        public boolean view_gifts;
+        public boolean sell_gifts;
+        public boolean change_gift_settings;
+        public boolean transfer_and_upgrade_gifts;
+        public boolean transfer_stars;
+        public boolean manage_stories;
+
+        public static TL_businessBotRights TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
+            if (constructor != TL_businessBotRights.constructor) {
+                if (exception) {
+                    throw new RuntimeException(String.format("can't parse magic %x in TL_businessBotRights", constructor));
+                }
+                return null;
+            }
+            TL_businessBotRights result = new TL_businessBotRights();
+            result.readParams(stream, exception);
+            return result;
+        }
+
+        @Override
+        public void readParams(InputSerializedData stream, boolean exception) {
+            flags = stream.readInt32(exception);
+            reply = (flags & 1) != 0;
+            read_messages = (flags & 2) != 0;
+            delete_sent_messages = (flags & 4) != 0;
+            delete_received_messages = (flags & 8) != 0;
+            edit_name = (flags & 16) != 0;
+            edit_bio = (flags & 32) != 0;
+            edit_profile_photo = (flags & 64) != 0;
+            edit_username = (flags & 128) != 0;
+            view_gifts = (flags & 256) != 0;
+            sell_gifts = (flags & 512) != 0;
+            change_gift_settings = (flags & 1024) != 0;
+            transfer_and_upgrade_gifts = (flags & 2048) != 0;
+            transfer_stars = (flags & 4096) != 0;
+            manage_stories = (flags & 8192) != 0;
+        }
+
+        @Override
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+            flags = reply ? flags | 1 : flags &~ 1;
+            flags = read_messages ? flags | 2 : flags &~ 2;
+            flags = delete_sent_messages ? flags | 4 : flags &~ 4;
+            flags = delete_received_messages ? flags | 8 : flags &~ 8;
+            flags = edit_name ? flags | 16 : flags &~ 16;
+            flags = edit_bio ? flags | 32 : flags &~ 32;
+            flags = edit_profile_photo ? flags | 64 : flags &~ 64;
+            flags = edit_username ? flags | 128 : flags &~ 128;
+            flags = view_gifts ? flags | 256 : flags &~ 256;
+            flags = sell_gifts ? flags | 512 : flags &~ 512;
+            flags = change_gift_settings ? flags | 1024 : flags &~ 1024;
+            flags = transfer_and_upgrade_gifts ? flags | 2048 : flags &~ 2048;
+            flags = transfer_stars ? flags | 4096 : flags &~ 4096;
+            flags = manage_stories ? flags | 8192 : flags &~ 8192;
+            stream.writeInt32(flags);
+        }
+
+        public static TL_businessBotRights all() {
+            final TL_businessBotRights rights = new TL_businessBotRights();
+            rights.reply = true;
+            rights.read_messages = true;
+            rights.delete_sent_messages = true;
+            rights.delete_received_messages = true;
+            rights.edit_name = true;
+            rights.edit_bio = true;
+            rights.edit_profile_photo = true;
+            rights.edit_username = true;
+            rights.view_gifts = true;
+            rights.sell_gifts = true;
+            rights.change_gift_settings = true;
+            rights.transfer_and_upgrade_gifts = true;
+            rights.transfer_stars = true;
+            rights.manage_stories = true;
+            return rights;
+        }
+
+        public static TL_businessBotRights clone(TL_businessBotRights a) {
+            final TL_businessBotRights rights = new TL_businessBotRights();
+            rights.reply = a.reply;
+            rights.read_messages = a.read_messages;
+            rights.delete_sent_messages = a.delete_sent_messages;
+            rights.delete_received_messages = a.delete_received_messages;
+            rights.edit_name = a.edit_name;
+            rights.edit_bio = a.edit_bio;
+            rights.edit_profile_photo = a.edit_profile_photo;
+            rights.edit_username = a.edit_username;
+            rights.view_gifts = a.view_gifts;
+            rights.sell_gifts = a.sell_gifts;
+            rights.change_gift_settings = a.change_gift_settings;
+            rights.transfer_and_upgrade_gifts = a.transfer_and_upgrade_gifts;
+            rights.transfer_stars = a.transfer_stars;
+            rights.manage_stories = a.manage_stories;
+            return rights;
+        }
+
+        @Override
+        public boolean equals(@Nullable Object obj) {
+            if (!(obj instanceof TL_businessBotRights))
+                return false;
+            final TL_businessBotRights b = (TL_businessBotRights) obj;
+            return (
+                reply == b.reply &&
+                read_messages == b.read_messages &&
+                delete_sent_messages == b.delete_sent_messages &&
+                delete_received_messages == b.delete_received_messages &&
+                edit_name == b.edit_name &&
+                edit_bio == b.edit_bio &&
+                edit_profile_photo == b.edit_profile_photo &&
+                edit_username == b.edit_username &&
+                view_gifts == b.view_gifts &&
+                sell_gifts == b.sell_gifts &&
+                change_gift_settings == b.change_gift_settings &&
+                transfer_and_upgrade_gifts == b.transfer_and_upgrade_gifts &&
+                transfer_stars == b.transfer_stars &&
+                manage_stories == b.manage_stories
+            );
+        }
+    }
+
+    public static class TL_connectedBot extends TLObject {
+        public static final int constructor = 0xcd64636c;
+
+        public int flags;
         public long bot_id;
         public TL_businessBotRecipients recipients;
+        public TL_businessBotRights rights;
 
         public static TL_connectedBot TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
             if (constructor != TL_connectedBot.constructor) {
@@ -3006,18 +3139,18 @@ public class TL_account {
         @Override
         public void readParams(InputSerializedData stream, boolean exception) {
             flags = stream.readInt32(exception);
-            can_reply = (flags & 1) != 0;
             bot_id = stream.readInt64(exception);
             recipients = TL_businessBotRecipients.TLdeserialize(stream, stream.readInt32(exception), exception);
+            rights = TL_businessBotRights.TLdeserialize(stream, stream.readInt32(exception), exception);
         }
 
         @Override
         public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
-            flags = can_reply ? (flags | 1) : (flags &~ 1);
             stream.writeInt32(flags);
             stream.writeInt64(bot_id);
             recipients.serializeToStream(stream);
+            rights.serializeToStream(stream);
         }
     }
 
@@ -3054,11 +3187,11 @@ public class TL_account {
     }
 
     public static class updateConnectedBot extends TLObject {
-        public static final int constructor = 0x43d8521d;
+        public static final int constructor = 0x66a08c7e;
 
         public int flags;
-        public boolean can_reply;
         public boolean deleted;
+        public TL_businessBotRights rights;
         public TLRPC.InputUser bot;
         public TL_inputBusinessBotRecipients recipients;
 
@@ -3070,9 +3203,12 @@ public class TL_account {
         @Override
         public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
-            flags = can_reply ? (flags | 1) : (flags &~ 1);
             flags = deleted ? (flags | 2) : (flags &~ 2);
+            flags = rights != null ? (flags | 1) : (flags &~ 2);
             stream.writeInt32(flags);
+            if ((flags & 1) != 0) {
+                rights.serializeToStream(stream);
+            }
             bot.serializeToStream(stream);
             recipients.serializeToStream(stream);
         }

@@ -250,7 +250,7 @@ public class BetaUpdaterController {
                 downloadingProgress = progress;
                 NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.appUpdateLoading);
             }
-        );
+        ).setOverrideExtension("apk");
         downloadingTask.execute(fileUrl);
     }
     public void cancelDownloadingUpdate() {

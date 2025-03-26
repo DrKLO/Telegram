@@ -737,10 +737,10 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
         checkCamera(false);
 
         captionItem = new MessagePreviewView.ToggleButton(
-                context,
-                R.raw.position_below, getString(R.string.CaptionAbove),
-                R.raw.position_above, getString(R.string.CaptionBelow),
-                resourcesProvider
+            context,
+            R.raw.position_below, getString(R.string.CaptionAbove),
+            R.raw.position_above, getString(R.string.CaptionBelow),
+            resourcesProvider
         );
         captionItem.setState(!parentAlert.captionAbove, false);
 
@@ -1393,10 +1393,10 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
                 setCameraFlashModeIcon(nextImage, next);
                 AnimatorSet animatorSet = new AnimatorSet();
                 animatorSet.playTogether(
-                        ObjectAnimator.ofFloat(currentImage, View.TRANSLATION_Y, 0, dp(48)),
-                        ObjectAnimator.ofFloat(nextImage, View.TRANSLATION_Y, -dp(48), 0),
-                        ObjectAnimator.ofFloat(currentImage, View.ALPHA, 1.0f, 0.0f),
-                        ObjectAnimator.ofFloat(nextImage, View.ALPHA, 0.0f, 1.0f));
+                    ObjectAnimator.ofFloat(currentImage, View.TRANSLATION_Y, 0, dp(48)),
+                    ObjectAnimator.ofFloat(nextImage, View.TRANSLATION_Y, -dp(48), 0),
+                    ObjectAnimator.ofFloat(currentImage, View.ALPHA, 1.0f, 0.0f),
+                    ObjectAnimator.ofFloat(nextImage, View.ALPHA, 0.0f, 1.0f));
                 animatorSet.setDuration(220);
                 animatorSet.setInterpolator(CubicBezierInterpolator.DEFAULT);
                 animatorSet.addListener(new AnimatorListenerAdapter() {
@@ -1638,7 +1638,7 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
                 return true;
             }
             BulletinFactory.of(parentAlert.sizeNotifierFrameLayout, resourcesProvider).createErrorBulletin(
-                    LocaleController.getString(R.string.GlobalAttachVideoRestricted)
+                LocaleController.getString(R.string.GlobalAttachVideoRestricted)
             ).show();
             return true;
         } else if (!photoEnabled && !photoEntry.isVideo) {
@@ -1646,7 +1646,7 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
                 return true;
             }
             BulletinFactory.of(parentAlert.sizeNotifierFrameLayout, resourcesProvider).createErrorBulletin(
-                    LocaleController.getString(R.string.GlobalAttachPhotoRestricted)
+                LocaleController.getString(R.string.GlobalAttachPhotoRestricted)
             ).show();
             return true;
         }
@@ -1889,12 +1889,12 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
                                 cameraPanel.setTag(1);
                                 AnimatorSet animatorSet = new AnimatorSet();
                                 animatorSet.playTogether(
-                                        ObjectAnimator.ofFloat(cameraPanel, View.ALPHA, 0.0f),
-                                        ObjectAnimator.ofFloat(zoomControlView, View.ALPHA, 0.0f),
-                                        ObjectAnimator.ofFloat(counterTextView, View.ALPHA, 0.0f),
-                                        ObjectAnimator.ofFloat(flashModeButton[0], View.ALPHA, 0.0f),
-                                        ObjectAnimator.ofFloat(flashModeButton[1], View.ALPHA, 0.0f),
-                                        ObjectAnimator.ofFloat(cameraPhotoRecyclerView, View.ALPHA, 0.0f));
+                                    ObjectAnimator.ofFloat(cameraPanel, View.ALPHA, 0.0f),
+                                    ObjectAnimator.ofFloat(zoomControlView, View.ALPHA, 0.0f),
+                                    ObjectAnimator.ofFloat(counterTextView, View.ALPHA, 0.0f),
+                                    ObjectAnimator.ofFloat(flashModeButton[0], View.ALPHA, 0.0f),
+                                    ObjectAnimator.ofFloat(flashModeButton[1], View.ALPHA, 0.0f),
+                                    ObjectAnimator.ofFloat(cameraPhotoRecyclerView, View.ALPHA, 0.0f));
                                 animatorSet.setDuration(220);
                                 animatorSet.setInterpolator(CubicBezierInterpolator.DEFAULT);
                                 animatorSet.start();
@@ -1915,12 +1915,12 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
                         } else {
                             AnimatorSet animatorSet = new AnimatorSet();
                             animatorSet.playTogether(
-                                    ObjectAnimator.ofFloat(cameraView, View.TRANSLATION_Y, 0.0f),
-                                    ObjectAnimator.ofFloat(cameraPanel, View.ALPHA, 1.0f),
-                                    ObjectAnimator.ofFloat(counterTextView, View.ALPHA, 1.0f),
-                                    ObjectAnimator.ofFloat(flashModeButton[0], View.ALPHA, 1.0f),
-                                    ObjectAnimator.ofFloat(flashModeButton[1], View.ALPHA, 1.0f),
-                                    ObjectAnimator.ofFloat(cameraPhotoRecyclerView, View.ALPHA, 1.0f));
+                                ObjectAnimator.ofFloat(cameraView, View.TRANSLATION_Y, 0.0f),
+                                ObjectAnimator.ofFloat(cameraPanel, View.ALPHA, 1.0f),
+                                ObjectAnimator.ofFloat(counterTextView, View.ALPHA, 1.0f),
+                                ObjectAnimator.ofFloat(flashModeButton[0], View.ALPHA, 1.0f),
+                                ObjectAnimator.ofFloat(flashModeButton[1], View.ALPHA, 1.0f),
+                                ObjectAnimator.ofFloat(cameraPhotoRecyclerView, View.ALPHA, 1.0f));
                             animatorSet.setDuration(250);
                             animatorSet.setInterpolator(interpolator);
                             animatorSet.start();
@@ -2557,8 +2557,8 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
                     if (!cameraOpened) {
                         cameraInitAnimation = new AnimatorSet();
                         cameraInitAnimation.playTogether(
-                                ObjectAnimator.ofFloat(cameraView, View.ALPHA, 0.0f, 1.0f),
-                                ObjectAnimator.ofFloat(cameraIcon, View.ALPHA, 0.0f, 1.0f));
+                            ObjectAnimator.ofFloat(cameraView, View.ALPHA, 0.0f, 1.0f),
+                            ObjectAnimator.ofFloat(cameraIcon, View.ALPHA, 0.0f, 1.0f));
                         cameraInitAnimation.setDuration(180);
                         cameraInitAnimation.addListener(new AnimatorListenerAdapter() {
                             @Override
@@ -3219,12 +3219,12 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
             activity = parentAlert.baseFragment.getParentActivity();
         }
         return Build.VERSION.SDK_INT >= 23 && (
-                activity == null ||
-                        Build.VERSION.SDK_INT >= 33 && (
-                                activity.checkSelfPermission(Manifest.permission.READ_MEDIA_IMAGES) != PackageManager.PERMISSION_GRANTED ||
-                                        activity.checkSelfPermission(Manifest.permission.READ_MEDIA_VIDEO) != PackageManager.PERMISSION_GRANTED
-                        ) ||
-                        Build.VERSION.SDK_INT < 33 && activity.checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED
+            activity == null ||
+                Build.VERSION.SDK_INT >= 33 && (
+                    activity.checkSelfPermission(Manifest.permission.READ_MEDIA_IMAGES) != PackageManager.PERMISSION_GRANTED ||
+                        activity.checkSelfPermission(Manifest.permission.READ_MEDIA_VIDEO) != PackageManager.PERMISSION_GRANTED
+                ) ||
+                Build.VERSION.SDK_INT < 33 && activity.checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED
         );
     }
 
@@ -3769,7 +3769,7 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
         if (previousLayout instanceof ChatAttachAlertPhotoLayoutPreview) {
             Runnable setScrollY = () -> {
                 int currentItemTop = previousLayout.getCurrentItemTop(),
-                        paddingTop = previousLayout.getListTopPadding();
+                    paddingTop = previousLayout.getListTopPadding();
                 gridView.scrollBy(0, (currentItemTop > dp(8) ? paddingTop - currentItemTop : paddingTop));
             };
             gridView.post(setScrollY);

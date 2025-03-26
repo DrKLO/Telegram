@@ -217,7 +217,7 @@ public class BoostRepository {
             payload.currency = offerDetails.getPriceCurrencyCode();
             payload.amount = (long) ((offerDetails.getPriceAmountMicros() / Math.pow(10, 6)) * Math.pow(10, BillingController.getInstance().getCurrencyExp(option.currency)));
 
-            TLRPC.TL_payments_canPurchasePremium req = new TLRPC.TL_payments_canPurchasePremium();
+            TLRPC.TL_payments_canPurchaseStore req = new TLRPC.TL_payments_canPurchaseStore();
             req.purpose = payload;
             connection.sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
                 if (error != null) {
@@ -457,7 +457,7 @@ public class BoostRepository {
             payload.currency = offerDetails.getPriceCurrencyCode();
             payload.amount = (long) ((offerDetails.getPriceAmountMicros() / Math.pow(10, 6)) * Math.pow(10, BillingController.getInstance().getCurrencyExp(option.currency)));
 
-            TLRPC.TL_payments_canPurchasePremium req = new TLRPC.TL_payments_canPurchasePremium();
+            TLRPC.TL_payments_canPurchaseStore req = new TLRPC.TL_payments_canPurchaseStore();
             req.purpose = payload;
             connection.sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
                 if (error != null) {

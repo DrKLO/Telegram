@@ -5559,7 +5559,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                     putToUploadingMessages(message.obj);
                 } else {
                     String location = FileLoader.getInstance(currentAccount).getPathToAttach(message.photoSize).toString();
-                    if (message.sendEncryptedRequest != null && message.photoSize.location.dc_id != 0) {
+                    if (message.sendEncryptedRequest != null && message.photoSize != null && message.photoSize.location.dc_id != 0) {
                         File file = new File(location);
                         if (!file.exists()) {
                             location = FileLoader.getInstance(currentAccount).getPathToAttach(message.photoSize, true).toString();

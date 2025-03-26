@@ -90,6 +90,7 @@ import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.tl.TL_stars;
 import org.telegram.tgnet.tl.TL_stories;
+import org.telegram.ui.AccountFrozenAlert;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.BottomSheet;
@@ -351,6 +352,10 @@ public class StarsIntroActivity extends GradientHeaderActivity implements Notifi
         buyButton = new ButtonWithCounterView(getContext(), resourceProvider);
         buyButton.setText("", false);
         buyButton.setOnClickListener(v -> {
+            if (MessagesController.getInstance(currentAccount).isFrozen()) {
+                AccountFrozenAlert.show(currentAccount);
+                return;
+            }
             new StarsOptionsSheet(context, resourceProvider).show();
         });
         oneButtonsLayout.addView(buyButton, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.FILL));
@@ -734,6 +739,10 @@ public class StarsIntroActivity extends GradientHeaderActivity implements Notifi
             StarsController.getInstance(currentAccount).loadSubscriptions();
             adapter.update(true);
         } else if (item.id == BUTTON_AFFILIATE) {
+            if (MessagesController.getInstance(currentAccount).isFrozen()) {
+                AccountFrozenAlert.show(currentAccount);
+                return;
+            }
             presentFragment(new ChannelAffiliateProgramsFragment(getUserConfig().getClientUserId()));
         } else if (item.instanceOf(StarTierView.Factory.class)) {
             if (item.object instanceof TL_stars.TL_starsTopupOption) {
@@ -3148,7 +3157,7 @@ public class StarsIntroActivity extends GradientHeaderActivity implements Notifi
         } else {
             ssb = (SpannableStringBuilder) cs;
         }
-        SpannableString spacedStar = new SpannableString("⭐ ");
+        SpannableString spacedStar = new SpannableString("⭐ ");
         ColoredImageSpan span;
         if (cache != null && cache[0] != null) {
             span = cache[0];
@@ -3770,7 +3779,7 @@ public class StarsIntroActivity extends GradientHeaderActivity implements Notifi
                                     lastFragment.presentFragment(ChatActivity.of(did));
                                 }
                             }
-                        }, didUser != null && !UserObject.isDeleted(didUser) ? getString(R.string.Gift2ButtonSendGift) : null, () -> {
+                        }, didUser != null && !UserObject.isDeleted(didUser) && !UserObject.areGiftsDisabled(did) ? getString(R.string.Gift2ButtonSendGift) : null, () -> {
                             new GiftSheet(context, currentAccount, did, sheet[0]::dismiss).show();
                         });
                     }
@@ -3809,7 +3818,7 @@ public class StarsIntroActivity extends GradientHeaderActivity implements Notifi
                                 lastFragment.presentFragment(ChatActivity.of(did));
                             }
                         }
-                    }, didUser != null && !UserObject.isDeleted(didUser) ? getString(R.string.Gift2ButtonSendGift) : null, () -> {
+                    }, didUser != null && !UserObject.isDeleted(didUser) && !UserObject.areGiftsDisabled(did) ? getString(R.string.Gift2ButtonSendGift) : null, () -> {
                         new GiftSheet(context, currentAccount, did, sheet[0]::dismiss).show();
                     });
                 }

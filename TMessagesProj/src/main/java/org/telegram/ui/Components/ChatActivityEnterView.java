@@ -2658,7 +2658,7 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
             attachButton.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_chat_messagePanelIcons), PorterDuff.Mode.MULTIPLY));
             attachButton.setImageResource(R.drawable.msg_input_attach2);
             if (Build.VERSION.SDK_INT >= 21) {
-                attachButton.setBackgroundDrawable(Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector)));
+                attachButton.setBackground(Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector)));
             }
             attachLayout.addView(attachButton, LayoutHelper.createLinear(48, 48));
             attachButton.setOnClickListener(v -> {
@@ -2668,6 +2668,7 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
                 delegate.didPressAttachButton();
             });
             attachButton.setContentDescription(getString("AccDescrAttachButton", R.string.AccDescrAttachButton));
+            updateFieldRight(1);
         }
 
         if (audioToSend != null) {
@@ -3354,7 +3355,10 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
             }
             edit.apply();
 
-            AndroidUtilities.updateViewVisibilityAnimated(giftButton, false);
+            final TLRPC.UserFull myUserInfo = MessagesController.getInstance(currentAccount).getUserFull(UserConfig.getInstance(currentAccount).getClientUserId());
+            if (!(getParentFragment().getCurrentUserInfo() != null && getParentFragment().getCurrentUserInfo().display_gifts_button || myUserInfo != null && myUserInfo.display_gifts_button)) {
+                AndroidUtilities.updateViewVisibilityAnimated(giftButton, false);
+            }
 
             TLRPC.User user = getParentFragment().getCurrentUser();
             if (user == null) return;
@@ -3465,22 +3469,6 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
 //        doneButtonProgress = new ContextProgressView(getContext(), 0);
 //        doneButtonProgress.setVisibility(View.INVISIBLE);
 //        doneButtonContainer.addView(doneButtonProgress, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
-    }
-
-    public void createReactionsButton(View.OnClickListener onClickListener) {
-        if (reactionsButton != null) {
-            return;
-        }
-        reactionsButton = new ImageView(getContext());
-        reactionsButton.setImageDrawable(ContextCompat.getDrawable(getContext(), R.drawable.msg_input_like));
-        reactionsButton.setScaleType(ImageView.ScaleType.CENTER);
-        if (Build.VERSION.SDK_INT >= 21) {
-            reactionsButton.setBackgroundDrawable(Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector)));
-        }
-        //reactionsButton.setVisibility(GONE);
-        AndroidUtilities.updateViewVisibilityAnimated(reactionsButton, true, 0.1f, false);
-        attachLayout.addView(reactionsButton, 0, LayoutHelper.createLinear(48, 48));
-        reactionsButton.setOnClickListener(onClickListener);
     }
 
     private void createExpandStickersButton() {
@@ -6584,7 +6572,7 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
     }
 
     private boolean premiumEmojiBulletin = true;
-    private boolean sendMessageInternal(boolean notify, int scheduleDate, long payStars, boolean allowConfirm) {
+    protected boolean sendMessageInternal(boolean notify, int scheduleDate, long payStars, boolean allowConfirm) {
         final Runnable send = () -> {
             if (slowModeTimer == Integer.MAX_VALUE && !isInScheduleMode()) {
                 if (delegate != null) {
@@ -9558,23 +9546,33 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
 
     public void updateGiftButton(boolean animated) {
 
+        final TLRPC.UserFull userInfo = getParentFragment() == null ? null : getParentFragment().getCurrentUserInfo();
+        final TLRPC.UserFull myUserInfo = MessagesController.getInstance(currentAccount).getUserFull(UserConfig.getInstance(currentAccount).getClientUserId());
+        final TLRPC.User user = getParentFragment() == null ? null : getParentFragment().getCurrentUser();
         final boolean visible =
             !MessagesController.getInstance(currentAccount).premiumPurchaseBlocked() &&
-            getParentFragment() != null && getParentFragment().getCurrentUser() != null &&
+            getParentFragment() != null && user != null &&
             !BuildVars.IS_BILLING_UNAVAILABLE &&
-            !UserObject.isUserSelf(getParentFragment().getCurrentUser()) &&
-            !UserObject.isBot(getParentFragment().getCurrentUser()) &&
-            !MessagesController.isSupportUser(getParentFragment().getCurrentUser()) &&
-            getParentFragment().getCurrentUserInfo() != null &&
+            !UserObject.isUserSelf(user) &&
+            !UserObject.isBot(user) &&
+            !MessagesController.isSupportUser(user) &&
+            userInfo != null &&
             (
                 (
-                    !getParentFragment().getCurrentUser().premium &&
+                    !user.premium &&
                     MessagesController.getInstance(currentAccount).giftAttachMenuIcon &&
                     MessagesController.getInstance(currentAccount).giftTextFieldIcon &&
                     MessagesController.getInstance(currentAccount).getMainSettings().getBoolean("show_gift_for_" + parentFragment.getDialogId(), true)
                 ) || (
-                    BirthdayController.isToday(getParentFragment().getCurrentUserInfo().birthday) &&
+                    BirthdayController.isToday(userInfo.birthday) &&
                     MessagesController.getInstance(currentAccount).getMainSettings().getBoolean(Calendar.getInstance().get(Calendar.YEAR) + "show_gift_for_" + parentFragment.getDialogId(), true)
+                ) ||
+                (userInfo.display_gifts_button || myUserInfo != null && myUserInfo.display_gifts_button) && !(
+                    userInfo.disallowed_stargifts != null &&
+                    userInfo.disallowed_stargifts.disallow_premium_gifts &&
+                    userInfo.disallowed_stargifts.disallow_limited_stargifts &&
+                    userInfo.disallowed_stargifts.disallow_unlimited_stargifts &&
+                    userInfo.disallowed_stargifts.disallow_unique_stargifts
                 )
             ) &&
             parentFragment != null && parentFragment.getChatMode() == 0;
@@ -9951,7 +9949,7 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
                 AndroidUtilities.updateViewVisibilityAnimated(botButton, show, 0.1f, true);
             }
         }
-        updateFieldRight(2);
+        updateFieldRight(botButton != null && botButton.getVisibility() == VISIBLE ? 2 : lastAttachVisible);
         attachLayout.setPivotX(dp((botButton == null || botButton.getVisibility() == GONE) && (notifyButton == null || notifyButton.getVisibility() == GONE) ? 48 : 96));
     }
 
