@@ -201,7 +201,7 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
             DrawerProfileCell.switchingTheme = true;
 
             // TODO: Generify this part, currently it's a clone of another theme switch toggle
-            String dayThemeName = "Blue";
+            String dayThemeName = "Dark Blue";
             String nightThemeName = "Night";
 
             Theme.ThemeInfo themeInfo;
