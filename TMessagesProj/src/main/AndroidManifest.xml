@@ -130,8 +130,8 @@
             android:enabled="false"
             android:name="org.telegram.messenger.VintageIcon"
             android:targetActivity="org.telegram.ui.LaunchActivity"
-            android:icon="@mipmap/icon_6_launcher"
-            android:roundIcon="@mipmap/icon_6_launcher_round"
+            android:icon="@mipmap/ic_milliy_launcher"
+            android:roundIcon="@mipmap/ic_milliy_launcher_round"
             android:exported="true">
 
             <intent-filter>
