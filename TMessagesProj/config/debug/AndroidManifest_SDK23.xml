@@ -36,7 +36,7 @@
 
     <application
         android:hardwareAccelerated="@bool/useHardwareAcceleration"
-        android:icon="@mipmap/ic_milliy_launcher"
+        android:icon="@mipmap/ic_launcher"
         android:label="@string/AppNameBeta"
         android:largeHeap="true"
         android:requestLegacyExternalStorage="true"

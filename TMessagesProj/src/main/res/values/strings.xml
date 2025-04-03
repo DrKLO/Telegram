@@ -2040,6 +2040,7 @@
     <!--theme view-->
     <string name="Theme">Theme</string>
     <string name="AutoNightTheme">Auto-Night Mode</string>
+    <string name="LocalPrem">Local Telegram Premium</string>
     <string name="AutoNightThemeOff">Off</string>
     <string name="AutoNightDisabled">Disabled</string>
     <string name="AutoNightScheduled">Scheduled</string>
@@ -2161,6 +2162,7 @@
     <string name="EnableAnimations">Enable Animations</string>
     <string name="ChatSettings">Chat Settings</string>
     <string name="Devices">Devices</string>
+    <string name="SettingsMilliy">Milliy Gram Settings</string>
     <string name="SettingsHelp">Help</string>
     <string name="SettingsDebug">Debug</string>
     <string name="Account">Account</string>
@@ -5407,6 +5409,7 @@
     <string name="AppIconPremium">Premium</string>
     <string name="AppIconTurbo">Turbo</string>
     <string name="AppIconNox">Nox</string>
+    <string name="AppIconMilliy">Milliy</string>
     <string name="AppIconChangedTo">App icon has been changed to %1$s</string>
     <string name="FileTooLarge">File Too Large</string>
     <string name="PremiumPreviewAppIcon">Premium App Icon</string>

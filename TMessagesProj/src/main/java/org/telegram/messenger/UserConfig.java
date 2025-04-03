@@ -14,6 +14,7 @@ import android.os.SystemClock;
 import android.util.Base64;
 import android.util.LongSparseArray;
 
+import org.telegram.messenger.utils.LocalPremiumUtils;
 import org.telegram.tgnet.SerializedData;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.tl.TL_account;
@@ -80,6 +81,7 @@ public class UserConfig extends BaseController {
 
 
     private static volatile UserConfig[] Instance = new UserConfig[UserConfig.MAX_ACCOUNT_COUNT];
+
     public static UserConfig getInstance(int num) {
         UserConfig localInstance = Instance[num];
         if (localInstance == null) {
@@ -117,7 +119,7 @@ public class UserConfig extends BaseController {
     }
 
     public static int getMaxAccountCount() {
-        return hasPremiumOnAccounts() ? 5 : 3;
+        return hasPremiumOnAccounts() ? 99 : 3;
     }
 
     public int getNewMessageId() {
@@ -224,7 +226,7 @@ public class UserConfig extends BaseController {
     }
 
     public static boolean isValidAccount(int num) {
-         return num >= 0 && num < UserConfig.MAX_ACCOUNT_COUNT && getInstance(num).isClientActivated();
+        return num >= 0 && num < UserConfig.MAX_ACCOUNT_COUNT && getInstance(num).isClientActivated();
     }
 
     public boolean isClientActivated() {
@@ -261,7 +263,7 @@ public class UserConfig extends BaseController {
     }
 
     private void checkPremiumSelf(TLRPC.User oldUser, TLRPC.User newUser) {
-        if (oldUser != null && newUser != null && oldUser.premium != newUser.premium) {
+        if (oldUser == null || (newUser != null && oldUser.premium != newUser.premium)) {
             AndroidUtilities.runOnUIThread(() -> {
                 getMessagesController().updatePremium(newUser.premium);
                 NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.currentUserPremiumStatusChanged);
@@ -269,13 +271,6 @@ public class UserConfig extends BaseController {
 
                 getMediaDataController().loadPremiumPromo(false);
                 getMediaDataController().loadReactions(false, null);
-                getMessagesController().getStoriesController().invalidateStoryLimit();
-            });
-        } else if (oldUser == null) {
-            AndroidUtilities.runOnUIThread(() -> {
-                getMessagesController().updatePremium(newUser.premium);
-                NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.currentUserPremiumStatusChanged);
-                getMediaDataController().loadPremiumPromo(true);
             });
         }
     }
@@ -418,7 +413,7 @@ public class UserConfig extends BaseController {
                 groupsSaveGalleryExceptions = SaveToGallerySettingsHelper.loadExceptions(ApplicationLoader.applicationContext.getSharedPreferences(SaveToGallerySettingsHelper.GROUPS_PREF_NAME + "_" + currentAccount, Context.MODE_PRIVATE));
             }
             return groupsSaveGalleryExceptions;
-        } else  if (type == SharedConfig.SAVE_TO_GALLERY_FLAG_CHANNELS) {
+        } else if (type == SharedConfig.SAVE_TO_GALLERY_FLAG_CHANNELS) {
             if (chanelSaveGalleryExceptions == null) {
                 chanelSaveGalleryExceptions = SaveToGallerySettingsHelper.loadExceptions(ApplicationLoader.applicationContext.getSharedPreferences(SaveToGallerySettingsHelper.CHANNELS_PREF_NAME + "_" + currentAccount, Context.MODE_PRIVATE));
             }
@@ -440,7 +435,7 @@ public class UserConfig extends BaseController {
                     ApplicationLoader.applicationContext.getSharedPreferences(SaveToGallerySettingsHelper.GROUPS_PREF_NAME + "_" + currentAccount, Context.MODE_PRIVATE),
                     groupsSaveGalleryExceptions
             );
-        } else  if (type == SharedConfig.SAVE_TO_GALLERY_FLAG_CHANNELS) {
+        } else if (type == SharedConfig.SAVE_TO_GALLERY_FLAG_CHANNELS) {
             chanelSaveGalleryExceptions = exceptions;
             SaveToGallerySettingsHelper.saveExceptions(
                     ApplicationLoader.applicationContext.getSharedPreferences(SaveToGallerySettingsHelper.CHANNELS_PREF_NAME + "_" + currentAccount, Context.MODE_PRIVATE),
@@ -554,6 +549,9 @@ public class UserConfig extends BaseController {
     }
 
     public boolean isPremium() {
+        if (LocalPremiumUtils.readData("local_prem")) {
+            return true;
+        }
         TLRPC.User user = currentUser;
         if (user == null) {
             return false;
@@ -561,6 +559,13 @@ public class UserConfig extends BaseController {
         return user.premium;
     }
 
+
+    //
+//    TLRPC.User user = currentUser;
+//        if (user == null) {
+//        return false;
+//    }
+//        return user.premium;
     public Long getEmojiStatus() {
         return UserObject.getEmojiStatusDocumentId(currentUser);
     }

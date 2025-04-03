@@ -238,7 +238,7 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
                 if (eglThread == null && surface != null) {
                     eglThread = new EGLThread(surface);
                     eglThread.setSurfaceTextureSize(width, height);
-                    eglThread.postRunnable(()->{
+                    eglThread.postRunnable(() -> {
                         float time = (System.currentTimeMillis() - currentDate) / 1000.0f;
                         Intro.setPage(currentViewPagerPage);
                         Intro.setDate(time);
@@ -246,7 +246,8 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
                         if (eglThread != null && eglThread.isAlive() && eglThread.eglDisplay != null && eglThread.eglSurface != null) {
                             try {
                                 eglThread.egl10.eglSwapBuffers(eglThread.eglDisplay, eglThread.eglSurface);
-                            } catch (Exception ignored) {} // If display or surface already destroyed
+                            } catch (Exception ignored) {
+                            } // If display or surface already destroyed
                         }
                     });
                     eglThread.postRunnable(eglThread.drawRunnable);
@@ -382,7 +383,7 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
                         loaderDialog.dismiss();
 
                         NotificationCenter.getGlobalInstance().removeObserver(this, id);
-                        AndroidUtilities.runOnUIThread(()->{
+                        AndroidUtilities.runOnUIThread(() -> {
                             presentFragment(new LoginActivity().setIntroView(frameContainerView, startMessagingButton), true);
                             destroyed = true;
                         }, 100);
@@ -677,7 +678,7 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
             EGLConfig[] configs = new EGLConfig[1];
             int[] configSpec;
             if (EmuDetector.with(getParentActivity()).detect()) {
-                configSpec = new int[] {
+                configSpec = new int[]{
                         EGL10.EGL_RED_SIZE, 8,
                         EGL10.EGL_GREEN_SIZE, 8,
                         EGL10.EGL_BLUE_SIZE, 8,
@@ -686,7 +687,7 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
                         EGL10.EGL_NONE
                 };
             } else {
-                configSpec = new int[] {
+                configSpec = new int[]{
                         EGL10.EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
                         EGL10.EGL_RED_SIZE, 8,
                         EGL10.EGL_GREEN_SIZE, 8,
