@@ -201,7 +201,7 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
             DrawerProfileCell.switchingTheme = true;
 
             // TODO: Generify this part, currently it's a clone of another theme switch toggle
-            String dayThemeName = "Dark Blue";
+            String dayThemeName = "Light";
             String nightThemeName = "Night";
 
             Theme.ThemeInfo themeInfo;
@@ -770,7 +770,7 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
             loadTexture(R.drawable.intro_powerful_star, 18);
             loadTexture(R.drawable.intro_private_door, 19);
             loadTexture(R.drawable.intro_private_screw, 20);
-            loadTexture(R.drawable.splash_logo, 21);
+            loadTexture(R.drawable.intro_milliy_plane, 21);
             loadTexture(v -> {
                 Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
                 paint.setColor(0xFF2CA5E0); // It's logo color, it should not be colored by the theme

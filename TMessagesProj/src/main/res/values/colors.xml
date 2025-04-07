@@ -4,6 +4,7 @@
     <color name="widget_name">#212121</color>
     <color name="widget_badge">#ffffff</color>
     <color name="widget_time">#96999C</color>
+    <color name="lol_color">#FFA500FF</color>
     <color name="widget_text">#8B8D8F</color>
     <color name="widget_divider">#d9d9d9</color>
     <color name="widget_action_text">#8B8D8F</color>
