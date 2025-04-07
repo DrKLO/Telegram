@@ -1075,11 +1075,14 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
                 if (view instanceof TextCheckCell) {
                     ((TextCheckCell) view).setChecked(!animations);
                 }
-            } else if (position == backgroundRow) {
+            }
+            else if (position == backgroundRow) {
                 presentFragment(new WallpapersListActivity(WallpapersListActivity.TYPE_ALL));
-            } else if (position == changeUserColor) {
+            }
+            else if (position == changeUserColor) {
                 presentFragment(new PeerColorActivity(0).setOnApplied(this));
-            } else if (position == sendByEnterRow) {
+            }
+            else if (position == sendByEnterRow) {
                 SharedPreferences preferences = MessagesController.getGlobalMainSettings();
                 boolean send = preferences.getBoolean("send_by_enter", false);
                 SharedPreferences.Editor editor = preferences.edit();
@@ -1088,17 +1091,20 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
                 if (view instanceof TextCheckCell) {
                     ((TextCheckCell) view).setChecked(!send);
                 }
-            } else if (position == raiseToSpeakRow) {
+            }
+            else if (position == raiseToSpeakRow) {
                 SharedConfig.toggleRaiseToSpeak();
                 if (view instanceof TextCheckCell) {
                     ((TextCheckCell) view).setChecked(SharedConfig.raiseToSpeak);
                 }
-            } else if (position == nextMediaTapRow) {
+            }
+            else if (position == nextMediaTapRow) {
                 SharedConfig.toggleNextMediaTap();
                 if (view instanceof TextCheckCell) {
                     ((TextCheckCell) view).setChecked(SharedConfig.nextMediaTap);
                 }
-            } else if (position == raiseToListenRow) {
+            }
+            else if (position == raiseToListenRow) {
                 SharedConfig.toggleRaiseToListen();
                 if (view instanceof TextCheckCell) {
                     ((TextCheckCell) view).setChecked(SharedConfig.raiseToListen);
@@ -1112,12 +1118,14 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
                     }
                 }
                 updateRows(false);
-            } else if (position == pauseOnRecordRow) {
+            }
+            else if (position == pauseOnRecordRow) {
                 SharedConfig.togglePauseMusicOnRecord();
                 if (view instanceof TextCheckCell) {
                     ((TextCheckCell) view).setChecked(SharedConfig.pauseMusicOnRecord);
                 }
-            } else if (position == pauseOnMediaRow) {
+            }
+            else if (position == pauseOnMediaRow) {
                 SharedConfig.togglePauseMusicOnMedia();
                 if (view instanceof TextCheckCell) {
                     ((TextCheckCell) view).setChecked(SharedConfig.pauseMusicOnMedia);

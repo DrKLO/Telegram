@@ -160,11 +160,11 @@ public class ThemeColors {
         defaultColors[key_avatar_background2Green] = 0xff46BA43;
         defaultColors[key_avatar_backgroundCyan] = 0xff5BCBE3;
         defaultColors[key_avatar_background2Cyan] = 0xff359AD4;
-        defaultColors[key_avatar_backgroundBlue] = 0xff5CAFFA;
+        defaultColors[key_avatar_backgroundBlue] = 0xff252525;
         defaultColors[key_avatar_background2Blue] = 0xff408ACF;
         defaultColors[key_avatar_backgroundPink] = 0xffFF8AAC;
         defaultColors[key_avatar_background2Pink] = 0xffD95574;
-        defaultColors[key_avatar_backgroundGray] = 0xffA1ABB5;
+        defaultColors[key_avatar_backgroundGray] = 0xff212121;
 
 
         defaultColors[key_avatar_backgroundInProfileBlue] = 0xff5085b1;

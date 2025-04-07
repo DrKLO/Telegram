@@ -34,6 +34,7 @@ import android.os.Build;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.style.ReplacementSpan;
+import android.util.Log;
 import android.util.SparseIntArray;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -190,6 +191,7 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
         private static final int VIEW_TYPE_FLICKER = 9;
 
         private final int type;
+
         public Page(Context context, int type) {
             super(context);
             this.type = type;
@@ -323,10 +325,13 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
                             view = cell;
                             break;
                         case VIEW_TYPE_COLOR_PICKER:
+                            Log.d("GGG", "setOnColorClick: " + currentColors);
                             PeerColorGrid colorPicker = peerColorPicker = new PeerColorGrid(getContext(), type, currentAccount, resourceProvider);
+                            Log.d("GGG", "setOnColorClick: " + MessagesController.PeerColor.fromString("#000000"));
                             colorPicker.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundWhite));
                             colorPicker.setSelected(selectedColor, false);
                             colorPicker.setOnColorClick(colorId -> {
+                                Log.d("GGG", "setOnColorClick: " + colorId);
                                 selectedColor = colorId;
                                 selectedEmojiCollectible = null;
                                 updateProfilePreview(true);
@@ -676,10 +681,10 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
 
             public void updateImageBounds() {
                 imageDrawable.setBounds(
-                    LocaleController.isRTL ? dp(21) : getWidth() - imageDrawable.getIntrinsicWidth() - dp(21),
-                    (getHeight() - imageDrawable.getIntrinsicHeight()) / 2,
-                    LocaleController.isRTL ? dp(21) + imageDrawable.getIntrinsicWidth() : getWidth() - dp(21),
-                    (getHeight() + imageDrawable.getIntrinsicHeight()) / 2
+                        LocaleController.isRTL ? dp(21) : getWidth() - imageDrawable.getIntrinsicWidth() - dp(21),
+                        (getHeight() - imageDrawable.getIntrinsicHeight()) / 2,
+                        LocaleController.isRTL ? dp(21) + imageDrawable.getIntrinsicWidth() : getWidth() - dp(21),
+                        (getHeight() + imageDrawable.getIntrinsicHeight()) / 2
                 );
             }
 
@@ -740,6 +745,7 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
         }
 
         private SelectAnimatedEmojiDialog.SelectAnimatedEmojiDialogWindow selectAnimatedEmojiDialog;
+
         public void showSelectStatusDialog(SetReplyIconCell cell) {
             if (selectAnimatedEmojiDialog != null || cell == null) {
                 return;
@@ -1110,12 +1116,14 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
     }
 
     private boolean startAtProfile;
+
     public PeerColorActivity startOnProfile() {
         this.startAtProfile = true;
         return this;
     }
 
     private BaseFragment bulletinFragment;
+
     public PeerColorActivity setOnApplied(BaseFragment bulletinFragment) {
         this.bulletinFragment = bulletinFragment;
         return this;
@@ -1185,6 +1193,7 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
             }
 
             private int lastBtnColor = 0;
+
             public void updateActionBarButtonsColor() {
                 final int btnColor = getActionBarButtonColor();
                 if (lastBtnColor != btnColor) {
@@ -1354,15 +1363,15 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
             return;
         }
         AlertDialog alertDialog = new AlertDialog.Builder(getContext(), getResourceProvider())
-            .setTitle(getString(isChannel ? R.string.ChannelColorUnsaved : R.string.UserColorUnsaved))
-            .setMessage(getString(isChannel ? R.string.ChannelColorUnsavedMessage : R.string.UserColorUnsavedMessage))
-            .setNegativeButton(getString(R.string.Dismiss), (di, w) -> {
-                finishFragment();
-            })
-            .setPositiveButton(getString(R.string.ApplyTheme), (di, w) -> {
-                buttonClick();
-            })
-            .create();
+                .setTitle(getString(isChannel ? R.string.ChannelColorUnsaved : R.string.UserColorUnsaved))
+                .setMessage(getString(isChannel ? R.string.ChannelColorUnsavedMessage : R.string.UserColorUnsavedMessage))
+                .setNegativeButton(getString(R.string.Dismiss), (di, w) -> {
+                    finishFragment();
+                })
+                .setPositiveButton(getString(R.string.ApplyTheme), (di, w) -> {
+                    buttonClick();
+                })
+                .create();
         showDialog(alertDialog);
         ((TextView) alertDialog.getButton(DialogInterface.BUTTON_NEGATIVE)).setTextColor(getThemedColor(Theme.key_text_RedBold));
     }
@@ -1387,6 +1396,7 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
 
     private boolean applyingName, applyingProfile;
     private boolean applying;
+
     private void apply() {
         if (applying || !isChannel && !getUserConfig().isPremium()) {
             return;
@@ -1412,13 +1422,14 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
                     me.color.flags |= 2;
                     req.background_emoji_id = me.color.background_emoji_id = namePage.selectedEmoji;
                 } else {
-                    me.color.flags &=~ 2;
+                    me.color.flags &= ~2;
                     me.color.background_emoji_id = 0;
                 }
                 getConnectionsManager().sendRequest(req, null);
             }
             if (profilePage.selectedColor != UserObject.getProfileColorId(me) || profilePage.selectedEmoji != UserObject.getProfileEmojiId(me)) {
                 applyingProfile = true;
+                Log.d("GGG", "apply:USerPRofileColorME: " + UserObject.getProfileColorId(me));
                 if (me.profile_color == null) {
                     me.profile_color = new TLRPC.TL_peerColor();
                 }
@@ -1426,7 +1437,7 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
                 req.for_profile = true;
                 me.flags2 |= 512;
                 if (profilePage.selectedColor < 0) {
-                    me.profile_color.flags &=~ 1;
+                    me.profile_color.flags &= ~1;
                 } else {
                     me.profile_color.flags |= 1;
                     req.flags |= 4;
@@ -1437,7 +1448,7 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
                     me.profile_color.flags |= 2;
                     req.background_emoji_id = me.profile_color.background_emoji_id = profilePage.selectedEmoji;
                 } else {
-                    me.profile_color.flags &=~ 2;
+                    me.profile_color.flags &= ~2;
                     me.profile_color.background_emoji_id = 0;
                 }
                 getConnectionsManager().sendRequest(req, null);
@@ -1475,26 +1486,26 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
         if (bulletinFragment != null) {
             if (applyingName && (!applyingProfile || getCurrentPage() == namePage)) {
                 BulletinFactory.of(bulletinFragment).createSimpleBulletin(
-                    PeerColorDrawable.from(currentAccount, namePage.selectedColor),
-                    getString(isChannel ? R.string.ChannelColorApplied : R.string.UserColorApplied)
+                        PeerColorDrawable.from(currentAccount, namePage.selectedColor),
+                        getString(isChannel ? R.string.ChannelColorApplied : R.string.UserColorApplied)
                 ).show();
             } else if (applyingProfile && (!applyingName || getCurrentPage() == profilePage)) {
                 if (profilePage.selectedColor < 0) {
                     if (profilePage.selectedEmoji != 0) {
                         BulletinFactory.of(bulletinFragment).createStaticEmojiBulletin(
-                            AnimatedEmojiDrawable.findDocument(currentAccount, profilePage.selectedEmoji),
-                            getString(isChannel ? R.string.ChannelProfileColorEmojiApplied : R.string.UserProfileColorEmojiApplied)
+                                AnimatedEmojiDrawable.findDocument(currentAccount, profilePage.selectedEmoji),
+                                getString(isChannel ? R.string.ChannelProfileColorEmojiApplied : R.string.UserProfileColorEmojiApplied)
                         ).show();
                     } else {
                         BulletinFactory.of(bulletinFragment).createSimpleBulletin(
-                            R.raw.contact_check,
-                            getString(isChannel ? R.string.ChannelProfileColorResetApplied : R.string.UserProfileColorResetApplied)
+                                R.raw.contact_check,
+                                getString(isChannel ? R.string.ChannelProfileColorResetApplied : R.string.UserProfileColorResetApplied)
                         ).show();
                     }
                 } else {
                     BulletinFactory.of(bulletinFragment).createSimpleBulletin(
-                        PeerColorDrawable.fromProfile(currentAccount, profilePage.selectedColor),
-                        getString(isChannel ? R.string.ChannelProfileColorApplied : R.string.UserProfileColorApplied)
+                            PeerColorDrawable.fromProfile(currentAccount, profilePage.selectedColor),
+                            getString(isChannel ? R.string.ChannelProfileColorApplied : R.string.UserProfileColorApplied)
                     ).show();
                 }
             }
@@ -1594,10 +1605,10 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
             canvas.drawRoundRect(AndroidUtilities.rectTmp, dp(10), dp(10), gradientTools.paint);
 
             lock.setBounds(
-                left + dp(3.33f),
-                (int) (cy - lock.getIntrinsicHeight() * lockScale / 2f),
-                (int) (left + dp(3.33f) + lock.getIntrinsicWidth() * lockScale),
-                (int) (cy + lock.getIntrinsicHeight() * lockScale / 2f)
+                    left + dp(3.33f),
+                    (int) (cy - lock.getIntrinsicHeight() * lockScale / 2f),
+                    (int) (left + dp(3.33f) + lock.getIntrinsicWidth() * lockScale),
+                    (int) (cy + lock.getIntrinsicHeight() * lockScale / 2f)
             );
             lock.draw(canvas);
 
@@ -1605,9 +1616,12 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
         }
 
         @Override
-        public void setAlpha(int alpha) {}
+        public void setAlpha(int alpha) {
+        }
+
         @Override
-        public void setColorFilter(@Nullable ColorFilter colorFilter) {}
+        public void setColorFilter(@Nullable ColorFilter colorFilter) {
+        }
 
         @Override
         public int getOpacity() {
@@ -1741,6 +1755,7 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
             userTextBackgroundPaint.setColor(Theme.multAlpha(color, .10f));
 
             color1Drawable = PeerColorDrawable.from(currentAccount, colorId).setRadius(dp(11));
+
             color2Drawable = ChatObject.getProfileColorId(chat) >= 0 ? PeerColorDrawable.fromProfile(currentAccount, ChatObject.getProfileColorId(chat)).setRadius(dp(11)) : null;
         }
 
@@ -1785,6 +1800,7 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
         private int rtl(int x) {
             return LocaleController.isRTL ? getMeasuredWidth() - x : x;
         }
+
         private float rtl(float x) {
             return LocaleController.isRTL ? getMeasuredWidth() - x : x;
         }
@@ -1792,10 +1808,10 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
         @Override
         protected void dispatchDraw(Canvas canvas) {
             drawable.setBounds(
-                rtl(dp(64) / 2) - drawable.getIntrinsicWidth() / 2,
-                getMeasuredHeight() / 2 - drawable.getIntrinsicHeight() / 2,
-                rtl(dp(64) / 2) + drawable.getIntrinsicWidth() / 2,
-                getMeasuredHeight() / 2 + drawable.getIntrinsicHeight() / 2
+                    rtl(dp(64) / 2) - drawable.getIntrinsicWidth() / 2,
+                    getMeasuredHeight() / 2 - drawable.getIntrinsicHeight() / 2,
+                    rtl(dp(64) / 2) + drawable.getIntrinsicWidth() / 2,
+                    getMeasuredHeight() / 2 + drawable.getIntrinsicHeight() / 2
             );
             drawable.draw(canvas);
             buttonText.ellipsize(getMeasuredWidth() - dp(64 + 7 + 100) - (lock != null ? lock.getIntrinsicWidth() + dp(8) : 0));
@@ -1837,8 +1853,8 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
                 canvas.drawRoundRect(AndroidUtilities.rectTmp, dp(12), dp(12), userTextBackgroundPaint);
 
                 userText
-                    .ellipsize(maxWidth)
-                    .draw(canvas, LocaleController.isRTL ? dp(15 + 9) : getMeasuredWidth() - dp(15 + 9) - w, getMeasuredHeight() / 2f);
+                        .ellipsize(maxWidth)
+                        .draw(canvas, LocaleController.isRTL ? dp(15 + 9) : getMeasuredWidth() - dp(15 + 9) - w, getMeasuredHeight() / 2f);
             }
 
             if (needDivider) {
@@ -1854,7 +1870,10 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
     public static class PeerColorGrid extends View {
         private final Theme.ResourcesProvider resourcesProvider;
         private final Paint backgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        { backgroundPaint.setStyle(Paint.Style.STROKE); }
+
+        {
+            backgroundPaint.setStyle(Paint.Style.STROKE);
+        }
 
         public static final int TYPE_FOLDER_TAG = 2;
 
@@ -1873,7 +1892,8 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
 
             private final ButtonBounce bounce = new ButtonBounce(PeerColorGrid.this);
 
-            public ColorButton() {}
+            public ColorButton() {
+            }
 
             public void set(int color) {
                 hasColor2 = hasColor3 = false;
@@ -1917,6 +1937,7 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
 
             private boolean selected;
             private final AnimatedFloat selectedT = new AnimatedFloat(PeerColorGrid.this, 0, 320, CubicBezierInterpolator.EASE_OUT_QUINT);
+
             public void setSelected(boolean selected, boolean animated) {
                 this.selected = selected;
                 if (!animated) {
@@ -1928,9 +1949,11 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
             public int id;
             private final RectF bounds = new RectF();
             public final RectF clickBounds = new RectF();
+
             public void layout(RectF bounds) {
                 this.bounds.set(bounds);
             }
+
             public void layoutClickBounds(RectF bounds) {
                 this.clickBounds.set(bounds);
             }
@@ -1959,10 +1982,10 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
                     canvas.save();
                     final float color3Size = (bounds.width() * .315f);
                     AndroidUtilities.rectTmp.set(
-                        bounds.centerX() - color3Size / 2f,
-                        bounds.centerY() - color3Size / 2f,
-                        bounds.centerX() + color3Size / 2f,
-                        bounds.centerY() + color3Size / 2f
+                            bounds.centerX() - color3Size / 2f,
+                            bounds.centerY() - color3Size / 2f,
+                            bounds.centerX() + color3Size / 2f,
+                            bounds.centerY() + color3Size / 2f
                     );
                     canvas.rotate(45f, bounds.centerX(), bounds.centerY());
                     canvas.drawRoundRect(AndroidUtilities.rectTmp, dp(2.33f), dp(2.33f), paint3);
@@ -1975,9 +1998,9 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
                     backgroundPaint.setStrokeWidth(dpf2(2));
                     backgroundPaint.setColor(Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider));
                     canvas.drawCircle(
-                        bounds.centerX(), bounds.centerY(),
-                        Math.min(bounds.height() / 2f, bounds.width() / 2f) + backgroundPaint.getStrokeWidth() * lerp(.5f, -2f, selectT),
-                        backgroundPaint
+                            bounds.centerX(), bounds.centerY(),
+                            Math.min(bounds.height() / 2f, bounds.width() / 2f) + backgroundPaint.getStrokeWidth() * lerp(.5f, -2f, selectT),
+                            backgroundPaint
                     );
                 }
 
@@ -1988,10 +2011,10 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
                             lockDrawable.setColorFilter(new PorterDuffColorFilter(Color.WHITE, PorterDuff.Mode.SRC_IN));
                         }
                         lockDrawable.setBounds(
-                            (int) (bounds.centerX() - lockDrawable.getIntrinsicWidth() / 2f * 1.2f),
-                            (int) (bounds.centerY() - lockDrawable.getIntrinsicHeight() / 2f * 1.2f),
-                            (int) (bounds.centerX() + lockDrawable.getIntrinsicWidth() / 2f * 1.2f),
-                            (int) (bounds.centerY() + lockDrawable.getIntrinsicHeight() / 2f * 1.2f)
+                                (int) (bounds.centerX() - lockDrawable.getIntrinsicWidth() / 2f * 1.2f),
+                                (int) (bounds.centerY() - lockDrawable.getIntrinsicHeight() / 2f * 1.2f),
+                                (int) (bounds.centerX() + lockDrawable.getIntrinsicWidth() / 2f * 1.2f),
+                                (int) (bounds.centerY() + lockDrawable.getIntrinsicHeight() / 2f * 1.2f)
                         );
                         lockDrawable.draw(canvas);
                     } else {
@@ -2019,6 +2042,7 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
             }
 
             private boolean pressed;
+
             public boolean isPressed() {
                 return pressed;
             }
@@ -2067,7 +2091,8 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
             }
             invalidate();
         }
-        final int[] order = new int[] { 5, 3, 1, 0, 2, 4, 6, -1 };
+
+        final int[] order = new int[]{5, 3, 1, 0, 2, 4, 6, -1};
 
         @Override
         protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
@@ -2134,6 +2159,7 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
 
         private final Paint dividerPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         private boolean needDivider = true;
+
         public void setDivider(boolean needDivider) {
             this.needDivider = needDivider;
             invalidate();
@@ -2153,6 +2179,7 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
         }
 
         private int selectedColorId = 0;
+
         public void setSelected(int colorId, boolean animated) {
             selectedColorId = colorId;
             if (buttons != null) {
@@ -2161,16 +2188,19 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
                 }
             }
         }
+
         public int getColorId() {
             return selectedColorId;
         }
 
         private Utilities.Callback<Integer> onColorClick;
+
         public void setOnColorClick(Utilities.Callback<Integer> onColorClick) {
             this.onColorClick = onColorClick;
         }
 
         private ColorButton pressedButton;
+
         @Override
         public boolean dispatchTouchEvent(MotionEvent event) {
             ColorButton button = null;
@@ -2341,10 +2371,12 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
         }
 
         @Override
-        public void setAlpha(int alpha) {}
+        public void setAlpha(int alpha) {
+        }
 
         @Override
-        public void setColorFilter(@Nullable ColorFilter colorFilter) {}
+        public void setColorFilter(@Nullable ColorFilter colorFilter) {
+        }
 
         @Override
         public int getOpacity() {
@@ -2406,6 +2438,7 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
         }
 
         private float progressToGradient = 0;
+
         public void setProgressToGradient(float progress) {
             if (Math.abs(progressToGradient - progress) > 0.001f) {
                 progressToGradient = progress;
@@ -2432,7 +2465,7 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
             final int color1 = color1Animated.set(this.color1);
             final int color2 = color2Animated.set(this.color2);
             if (backgroundGradient == null || backgroundGradientColor1 != color1 || backgroundGradientColor2 != color2 || backgroundGradientHeight != getHeight()) {
-                backgroundGradient = new LinearGradient(0, 0, 0, backgroundGradientHeight = getHeight(), new int[] { backgroundGradientColor2 = color2, backgroundGradientColor1 = color1 }, new float[] { 0, 1 }, Shader.TileMode.CLAMP);
+                backgroundGradient = new LinearGradient(0, 0, 0, backgroundGradientHeight = getHeight(), new int[]{backgroundGradientColor2 = color2, backgroundGradientColor1 = color1}, new float[]{0, 1}, Shader.TileMode.CLAMP);
                 backgroundPaint.setShader(backgroundGradient);
                 onUpdateColor();
             }
@@ -2468,15 +2501,15 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
 
         public int getTabsViewBackgroundColor() {
             return (
-                ColorUtils.blendARGB(
-                    AndroidUtilities.computePerceivedBrightness(Theme.getColor(Theme.key_actionBarDefault, resourcesProvider)) > .721f ?
-                        Theme.getColor(Theme.key_actionBarDefaultIcon, resourcesProvider) :
-                        Theme.adaptHSV(Theme.getColor(Theme.key_actionBarDefault, resourcesProvider), +.08f, -.08f),
-                    AndroidUtilities.computePerceivedBrightness(ColorUtils.blendARGB(color1Animated.get(), color2Animated.get(), .75f)) > .721f ?
-                        Theme.getColor(Theme.key_windowBackgroundWhiteBlueIcon, resourcesProvider) :
-                        Theme.adaptHSV(ColorUtils.blendARGB(color1Animated.get(), color2Animated.get(), .75f), +.08f, -.08f),
-                    progressToGradient
-                )
+                    ColorUtils.blendARGB(
+                            AndroidUtilities.computePerceivedBrightness(Theme.getColor(Theme.key_actionBarDefault, resourcesProvider)) > .721f ?
+                                    Theme.getColor(Theme.key_actionBarDefaultIcon, resourcesProvider) :
+                                    Theme.adaptHSV(Theme.getColor(Theme.key_actionBarDefault, resourcesProvider), +.08f, -.08f),
+                            AndroidUtilities.computePerceivedBrightness(ColorUtils.blendARGB(color1Animated.get(), color2Animated.get(), .75f)) > .721f ?
+                                    Theme.getColor(Theme.key_windowBackgroundWhiteBlueIcon, resourcesProvider) :
+                                    Theme.adaptHSV(ColorUtils.blendARGB(color1Animated.get(), color2Animated.get(), .75f), +.08f, -.08f),
+                            progressToGradient
+                    )
             );
         }
     }
@@ -2563,7 +2596,8 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
             }
             try {
                 title = Emoji.replaceEmoji(title, null, false);
-            } catch (Exception ignore) {}
+            } catch (Exception ignore) {
+            }
 
             titleView.setText(title);
             if (botVerificationId != 0) {
@@ -2633,6 +2667,7 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
             }
             isForum = forum;
         }
+
         @Override
         protected void onAttachedToWindow() {
             super.onAttachedToWindow();
@@ -2652,6 +2687,7 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
         }
 
         private MessagesController.PeerColor peerColor;
+
         public void setColor(int colorId, boolean animated) {
             MessagesController.PeerColors peerColors = MessagesController.getInstance(currentAccount).profilePeerColors;
             MessagesController.PeerColor peerColor = peerColors == null ? null : peerColors.getColor(colorId);
@@ -2738,6 +2774,7 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
         }
 
         private final RectF rectF = new RectF();
+
         @Override
         protected void dispatchDraw(Canvas canvas) {
             rectF.set(dp(20.33f), getHeight() - dp(25.33f + 53.33f), dp(20.33f) + dp(53.33f), getHeight() - dp(25.33f));
@@ -2748,12 +2785,12 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
             final float r = rectF.width() / 2f + dp(4);
             final float rr = dp(isForum ? 22 : 58);
             canvas.drawRoundRect(
-                rectF.centerX() - r,
-                rectF.centerY() - r,
-                rectF.centerX() + r,
-                rectF.centerY() + r,
-                rr, rr,
-                storyGradient.getPaint(rectF)
+                    rectF.centerX() - r,
+                    rectF.centerY() - r,
+                    rectF.centerX() + r,
+                    rectF.centerY() + r,
+                    rr, rr,
+                    storyGradient.getPaint(rectF)
             );
 
             final float patternFull = emojiCollectible.set(isEmojiCollectible);
@@ -2788,27 +2825,28 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
     }
 
     private final static float[] particles = {
-        -18, -24.66f, 24, .4f,
-        5.33f, -53, 28, .38f,
-        -4, -86, 19, .18f,
-        31, -30, 21, .35f,
-        12, -3, 24, .18f,
-        30, -73, 19, .3f,
-        43, -101, 16, .1f,
-        -50, 1.33f, 20, .22f,
-        -58, -33, 24, .22f,
-        -35, -62, 25, .22f,
-        -59, -88, 19, .18f,
-        -86, -61, 19, .1f,
-        -90, -14.33f, 19.66f, .18f
+            -18, -24.66f, 24, .4f,
+            5.33f, -53, 28, .38f,
+            -4, -86, 19, .18f,
+            31, -30, 21, .35f,
+            12, -3, 24, .18f,
+            30, -73, 19, .3f,
+            43, -101, 16, .1f,
+            -50, 1.33f, 20, .22f,
+            -58, -33, 24, .22f,
+            -35, -62, 25, .22f,
+            -59, -88, 19, .18f,
+            -86, -61, 19, .1f,
+            -90, -14.33f, 19.66f, .18f
     };
+
     public static void drawProfileIconPattern(float cx, float cy, float scale, Utilities.Callback4<Float, Float, Float, Float> draw) {
         for (int i = 0; i < particles.length; i += 4) {
             draw.run(
-                cx + dp(particles[i]) * scale,
-                cy + dp(particles[i + 1]) * scale,
-                dpf2(particles[i + 2]),
-                particles[i + 3]
+                    cx + dp(particles[i]) * scale,
+                    cy + dp(particles[i + 1]) * scale,
+                    dpf2(particles[i + 2]),
+                    particles[i + 3]
             );
         }
     }
@@ -2917,6 +2955,7 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
     }
 
     private boolean forceDark = isDark;
+
     public void setForceDark(boolean isDark, boolean playAnimation) {
         if (forceDark == isDark) {
             return;
@@ -3020,6 +3059,7 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
 
         private TLRPC.Document lastDocument;
         private long lastDocumentId;
+
         private void setSticker(TLRPC.Document document, Object parentObject) {
             if (document == null) {
                 imageView.clearImage();
@@ -3036,15 +3076,17 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
             final SvgHelper.SvgDrawable svgThumb = DocumentObject.getSvgThumb(document, Theme.key_windowBackgroundGray, 0.3f);
 
             imageView.setImage(
-                ImageLocation.getForDocument(document), "100_100",
-                ImageLocation.getForDocument(photoSize, document), "100_100",
-                svgThumb,
-                parentObject
+                    ImageLocation.getForDocument(document), "100_100",
+                    ImageLocation.getForDocument(photoSize, document), "100_100",
+                    svgThumb,
+                    parentObject
             );
         }
 
         public static class Factory extends UItem.UItemFactory<GiftCell> {
-            static { setup(new Factory()); }
+            static {
+                setup(new Factory());
+            }
 
             @Override
             public GiftCell createView(Context context, int currentAccount, int classGuid, Theme.ResourcesProvider resourcesProvider) {

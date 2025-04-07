@@ -31,6 +31,7 @@ import android.os.SystemClock;
 import android.telephony.TelephonyManager;
 import android.text.TextUtils;
 import android.util.Base64;
+import android.util.Log;
 import android.util.Pair;
 import android.util.SparseArray;
 import android.util.SparseBooleanArray;
@@ -1598,6 +1599,7 @@ public class MessagesController extends BaseController implements NotificationCe
         giveawayGiftsPurchaseAvailable = mainPreferences.getBoolean("giveawayGiftsPurchaseAvailable", false);
         peerColors = PeerColors.fromString(PeerColors.TYPE_NAME, mainPreferences.getString("peerColors", ""));
         profilePeerColors = PeerColors.fromString(PeerColors.TYPE_PROFILE, mainPreferences.getString("profilePeerColors", ""));
+        Log.d("GGG", "MessagesController:ProfilePeerColors: "+profilePeerColors.colors);
         transcribeAudioTrialWeeklyNumber = mainPreferences.getInt("transcribeAudioTrialWeeklyNumber", BuildVars.DEBUG_PRIVATE_VERSION ? 2 : 0);
         transcribeAudioTrialCurrentNumber = mainPreferences.getInt("transcribeAudioTrialCurrentNumber", transcribeAudioTrialWeeklyNumber);
         transcribeAudioTrialDurationMax = mainPreferences.getInt("transcribeAudioTrialDurationMax", 300);
@@ -4866,6 +4868,7 @@ public class MessagesController extends BaseController implements NotificationCe
             final PeerColors peerColors = new PeerColors(type, hash);
             final String[] colorParts = str.split(";");
             for (int i = 0; i < colorParts.length; ++i) {
+                Log.d("GGG", "fromString: "+PeerColor.fromString(colorParts[i]));
                 PeerColor peerColor = PeerColor.fromString(colorParts[i]);
                 if (peerColor == null)
                     continue;
@@ -5161,7 +5164,7 @@ public class MessagesController extends BaseController implements NotificationCe
             if ((tl.flags & 16) != 0) {
                 peerColor.groupLvl = tl.group_min_level;
             }
-
+            Log.d("GGGG", "fromTL: " + peerColor);
             System.arraycopy(optionToColors(tl.colors), 0, peerColor.colors, 0, 6);
             System.arraycopy(optionToColors(tl.dark_colors), 0, peerColor.darkColors, 0, 6);
             return peerColor;
