@@ -45,6 +45,10 @@ struct CreateRelayPortArgs {
   std::string password;
   webrtc::TurnCustomizer* turn_customizer = nullptr;
   const webrtc::FieldTrialsView* field_trials = nullptr;
+  // Relative priority of candidates from this TURN server in relation
+  // to the candidates from other servers. Required because ICE priorities
+  // need to be unique.
+  int relative_priority = 0;
 };
 
 // A factory for creating RelayPort's.

@@ -73,6 +73,8 @@ constexpr bool DenormalsEnabled(int status_word) {
 }  // namespace
 
 #if defined(WEBRTC_DENORMAL_DISABLER_SUPPORTED)
+DenormalDisabler::DenormalDisabler() : DenormalDisabler(/*enabled=*/true) {}
+
 DenormalDisabler::DenormalDisabler(bool enabled)
     : status_word_(enabled ? ReadStatusWord() : kUnspecifiedStatusWord),
       disabling_activated_(enabled && DenormalsEnabled(status_word_)) {
@@ -94,6 +96,8 @@ DenormalDisabler::~DenormalDisabler() {
   }
 }
 #else
+DenormalDisabler::DenormalDisabler() : DenormalDisabler(/*enabled=*/false) {}
+
 DenormalDisabler::DenormalDisabler(bool enabled)
     : status_word_(kUnspecifiedStatusWord), disabling_activated_(false) {}
 

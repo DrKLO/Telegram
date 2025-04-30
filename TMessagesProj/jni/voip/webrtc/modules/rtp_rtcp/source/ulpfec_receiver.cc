@@ -24,12 +24,10 @@ namespace webrtc {
 UlpfecReceiver::UlpfecReceiver(uint32_t ssrc,
                                int ulpfec_payload_type,
                                RecoveredPacketReceiver* callback,
-                               rtc::ArrayView<const RtpExtension> extensions,
                                Clock* clock)
     : ssrc_(ssrc),
       ulpfec_payload_type_(ulpfec_payload_type),
       clock_(clock),
-      extensions_(extensions),
       recovered_packet_callback_(callback),
       fec_(ForwardErrorCorrection::CreateUlpfec(ssrc_)) {
   // TODO(tommi, brandtr): Once considerations for red have been split
@@ -73,12 +71,6 @@ UlpfecReceiver::~UlpfecReceiver() {
 FecPacketCounter UlpfecReceiver::GetPacketCounter() const {
   RTC_DCHECK_RUN_ON(&sequence_checker_);
   return packet_counter_;
-}
-
-void UlpfecReceiver::SetRtpExtensions(
-    rtc::ArrayView<const RtpExtension> extensions) {
-  RTC_DCHECK_RUN_ON(&sequence_checker_);
-  extensions_.Reset(extensions);
 }
 
 //     0                   1                    2                   3
@@ -143,6 +135,7 @@ bool UlpfecReceiver::AddReceivedRedPacket(const RtpPacketReceived& rtp_packet) {
   received_packet->is_recovered = rtp_packet.recovered();
   received_packet->ssrc = rtp_packet.Ssrc();
   received_packet->seq_num = rtp_packet.SequenceNumber();
+  received_packet->extensions = rtp_packet.extension_manager();
 
   if (rtp_packet.payload()[0] & 0x80) {
     // f bit set in RED header, i.e. there are more than one RED header blocks.
@@ -198,36 +191,42 @@ void UlpfecReceiver::ProcessReceivedFec() {
   std::vector<std::unique_ptr<ForwardErrorCorrection::ReceivedPacket>>
       received_packets;
   received_packets.swap(received_packets_);
+  RtpHeaderExtensionMap* last_recovered_extension_map = nullptr;
+  size_t num_recovered_packets = 0;
 
   for (const auto& received_packet : received_packets) {
     // Send received media packet to VCM.
     if (!received_packet->is_fec) {
       ForwardErrorCorrection::Packet* packet = received_packet->pkt.get();
-      recovered_packet_callback_->OnRecoveredPacket(packet->data.data(),
-                                                    packet->data.size());
-      // Create a packet with the buffer to modify it.
-      RtpPacketReceived rtp_packet;
-      const uint8_t* const original_data = packet->data.cdata();
-      if (!rtp_packet.Parse(packet->data)) {
+
+      RtpPacketReceived rtp_packet(&received_packet->extensions);
+      if (!rtp_packet.Parse(std::move(packet->data))) {
         RTC_LOG(LS_WARNING) << "Corrupted media packet";
-      } else {
-        rtp_packet.IdentifyExtensions(extensions_);
-        // Reset buffer reference, so zeroing would work on a buffer with a
-        // single reference.
-        packet->data = rtc::CopyOnWriteBuffer(0);
-        rtp_packet.ZeroMutableExtensions();
-        packet->data = rtp_packet.Buffer();
-        // Ensure that zeroing of extensions was done in place.
-        RTC_DCHECK_EQ(packet->data.cdata(), original_data);
+        continue;
       }
+      recovered_packet_callback_->OnRecoveredPacket(rtp_packet);
+      // Some header extensions need to be zeroed in `received_packet` since
+      // they are written to the packet after FEC encoding. We try to do it
+      // without a copy of the underlying Copy-On-Write buffer, but if a
+      // reference is held by `recovered_packet_callback_->OnRecoveredPacket` a
+      // copy will still be made in 'rtp_packet.ZeroMutableExtensions()'.
+      rtp_packet.ZeroMutableExtensions();
+      packet->data = rtp_packet.Buffer();
     }
     if (!received_packet->is_recovered) {
       // Do not pass recovered packets to FEC. Recovered packet might have
       // different set of the RTP header extensions and thus different byte
       // representation than the original packet, That will corrupt
       // FEC calculation.
-      fec_->DecodeFec(*received_packet, &recovered_packets_);
+      ForwardErrorCorrection::DecodeFecResult decode_result =
+          fec_->DecodeFec(*received_packet, &recovered_packets_);
+      last_recovered_extension_map = &received_packet->extensions;
+      num_recovered_packets += decode_result.num_recovered_packets;
     }
+  }
+
+  if (num_recovered_packets == 0) {
+    return;
   }
 
   // Send any recovered media packets to VCM.
@@ -241,8 +240,12 @@ void UlpfecReceiver::ProcessReceivedFec() {
     // Set this flag first; in case the recovered packet carries a RED
     // header, OnRecoveredPacket will recurse back here.
     recovered_packet->returned = true;
-    recovered_packet_callback_->OnRecoveredPacket(packet->data.data(),
-                                                  packet->data.size());
+    RtpPacketReceived parsed_packet(last_recovered_extension_map);
+    if (!parsed_packet.Parse(packet->data)) {
+      continue;
+    }
+    parsed_packet.set_recovered(true);
+    recovered_packet_callback_->OnRecoveredPacket(parsed_packet);
   }
 }
 

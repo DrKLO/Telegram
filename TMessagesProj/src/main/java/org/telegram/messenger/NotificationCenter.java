@@ -269,6 +269,7 @@ public class NotificationCenter {
     public static final int messagesFeeUpdated = totalEvents++;
     public static final int commonChatsLoaded = totalEvents++;
     public static final int appConfigUpdated = totalEvents++;
+    public static final int conferenceEmojiUpdated = totalEvents++;
 
     //global
     public static final int pushMessagesUpdated = totalEvents++;

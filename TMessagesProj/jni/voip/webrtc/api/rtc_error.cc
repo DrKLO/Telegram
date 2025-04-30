@@ -10,11 +10,13 @@
 
 #include "api/rtc_error.h"
 
-#include "rtc_base/arraysize.h"
+#include <iterator>
+
+#include "absl/strings/string_view.h"
 
 namespace {
 
-const char* kRTCErrorTypeNames[] = {
+absl::string_view kRTCErrorTypeNames[] = {
     "NONE",
     "UNSUPPORTED_OPERATION",
     "UNSUPPORTED_PARAMETER",
@@ -30,11 +32,11 @@ const char* kRTCErrorTypeNames[] = {
 };
 static_assert(
     static_cast<int>(webrtc::RTCErrorType::OPERATION_ERROR_WITH_DATA) ==
-        (arraysize(kRTCErrorTypeNames) - 1),
+        (std::size(kRTCErrorTypeNames) - 1),
     "kRTCErrorTypeNames must have as many strings as RTCErrorType "
     "has values.");
 
-const char* kRTCErrorDetailTypeNames[] = {
+absl::string_view kRTCErrorDetailTypeNames[] = {
     "NONE",
     "DATA_CHANNEL_FAILURE",
     "DTLS_FAILURE",
@@ -46,7 +48,7 @@ const char* kRTCErrorDetailTypeNames[] = {
 };
 static_assert(
     static_cast<int>(webrtc::RTCErrorDetailType::HARDWARE_ENCODER_ERROR) ==
-        (arraysize(kRTCErrorDetailTypeNames) - 1),
+        (std::size(kRTCErrorDetailTypeNames) - 1),
     "kRTCErrorDetailTypeNames must have as many strings as "
     "RTCErrorDetailType has values.");
 
@@ -63,16 +65,16 @@ const char* RTCError::message() const {
   return message_.c_str();
 }
 
-void RTCError::set_message(std::string message) {
-  message_ = std::move(message);
+void RTCError::set_message(absl::string_view message) {
+  message_ = std::string(message);
 }
 
-const char* ToString(RTCErrorType error) {
+absl::string_view ToString(RTCErrorType error) {
   int index = static_cast<int>(error);
   return kRTCErrorTypeNames[index];
 }
 
-const char* ToString(RTCErrorDetailType error) {
+absl::string_view ToString(RTCErrorDetailType error) {
   int index = static_cast<int>(error);
   return kRTCErrorDetailTypeNames[index];
 }

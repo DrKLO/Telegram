@@ -31,6 +31,6 @@ WebRtcIlbcfix_GainQuant(               /* (o) quantized gain value */
                         int16_t maxIn, /* (i) maximum of gain value Q14 */
                         int16_t stage, /* (i) The stage of the search */
                         int16_t* index /* (o) quantization index */
-                        );
+);
 
 #endif

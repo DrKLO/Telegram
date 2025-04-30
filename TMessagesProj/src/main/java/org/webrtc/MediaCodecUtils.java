@@ -13,15 +13,8 @@ package org.webrtc;
 import android.annotation.TargetApi;
 import android.media.MediaCodecInfo;
 import android.media.MediaCodecInfo.CodecCapabilities;
-import android.media.MediaCodecList;
 import android.os.Build;
-
 import androidx.annotation.Nullable;
-
-import org.telegram.messenger.FileLog;
-
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -33,11 +26,9 @@ class MediaCodecUtils {
 
   // Prefixes for supported hardware encoder/decoder component names.
   static final String EXYNOS_PREFIX = "OMX.Exynos.";
-  static final String EXYNOS_PREFIX_C2 = "c2.exynos.";
   static final String INTEL_PREFIX = "OMX.Intel.";
   static final String NVIDIA_PREFIX = "OMX.Nvidia.";
   static final String QCOM_PREFIX = "OMX.qcom.";
-  static final String HISI_PREFIX = "OMX.hisi.";
   static final String[] SOFTWARE_IMPLEMENTATION_PREFIXES = {
       "OMX.google.", "OMX.SEC.", "c2.android"};
 
@@ -65,33 +56,8 @@ class MediaCodecUtils {
       MediaCodecUtils.COLOR_QCOM_FORMATYUV420PackedSemiPlanar32m};
 
   // Color formats supported by texture mode encoding - in order of preference.
-  static final int[] TEXTURE_COLOR_FORMATS = getTextureColorFormats();
-
-  private static int[] getTextureColorFormats() {
-    if (Build.VERSION.SDK_INT >= 18) {
-      return new int[] {MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface};
-    } else {
-      return new int[] {};
-    }
-  }
-
-  public static ArrayList<MediaCodecInfo> getSortedCodecsList() {
-    ArrayList<MediaCodecInfo> result = new ArrayList<>();
-    try {
-      int numberOfCodecs = MediaCodecList.getCodecCount();
-      for (int a = 0; a < numberOfCodecs; a++) {
-        try {
-          result.add(MediaCodecList.getCodecInfoAt(a));
-        } catch (IllegalArgumentException e) {
-          Logging.e(TAG, "Cannot retrieve codec info", e);
-        }
-      }
-      Collections.sort(result, (o1, o2) -> o1.getName().compareTo(o2.getName()));
-    } catch (Exception e) {
-      FileLog.e(e);
-    }
-    return result;
-  }
+  static final int[] TEXTURE_COLOR_FORMATS =
+      new int[] {MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface};
 
   static @Nullable Integer selectColorFormat(
       int[] supportedColorFormats, CodecCapabilities capabilities) {
@@ -118,8 +84,8 @@ class MediaCodecUtils {
     switch (type) {
       case VP8:
       case VP9:
-      case H265:
       case AV1:
+      case H265:
         return new HashMap<String, String>();
       case H264:
         return H264Utils.getDefaultH264Params(highProfile);

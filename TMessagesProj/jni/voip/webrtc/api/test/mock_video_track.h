@@ -20,7 +20,7 @@
 
 namespace webrtc {
 
-class MockVideoTrack final
+class MockVideoTrack
     : public rtc::RefCountedObject<webrtc::VideoTrackInterface> {
  public:
   static rtc::scoped_refptr<MockVideoTrack> Create() {

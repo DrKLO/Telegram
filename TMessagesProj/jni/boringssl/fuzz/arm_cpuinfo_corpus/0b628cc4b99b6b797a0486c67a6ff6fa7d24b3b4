@@ -1,0 +1,17 @@
+Processor: ARMv7 Processory rev 0 (v71)
+processor: 0
+BogoMIPS: 13.50
+
+Processor: 1
+BogoMIPS: 13.50
+
+Features: swp half thumb fastmult vfp edsp neon vfpv3 tls vfpv4 idiva idivt
+CPU implementer : 0x51
+CPU architecture: 7
+CPU variant: 0x1
+CPU part: 0x04d
+CPU revision: 0
+
+Hardware: SAMSUNG M2
+Revision: 0010
+Serial: 00001e030000354e

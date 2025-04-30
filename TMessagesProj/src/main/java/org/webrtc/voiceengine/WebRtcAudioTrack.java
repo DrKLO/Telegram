@@ -158,7 +158,7 @@ public class WebRtcAudioTrack {
 
       targetTimeNs = System.nanoTime();
 
-      while (keepAlive) {
+      while (keepAlive && audioTrack != null) {
         // Get 10ms of PCM data from the native WebRTC client. Audio data is
         // written into the common ByteBuffer using the address that was
         // cached at construction.
@@ -196,7 +196,7 @@ public class WebRtcAudioTrack {
         writtenFrames += bytesWritten / bytesPerFrame;
 
         // Calculate the playback delay
-        long playbackHeadPosition = audioTrack.getPlaybackHeadPosition();
+        long playbackHeadPosition = audioTrack == null ? 0 : audioTrack.getPlaybackHeadPosition();
         long delayInFrames = writtenFrames - playbackHeadPosition;
         long delayInMs = (delayInFrames * 1000) / sampleRate;
 
@@ -237,6 +237,7 @@ public class WebRtcAudioTrack {
     }
 
     private int writeBytes(AudioTrack audioTrack, ByteBuffer byteBuffer, int sizeInBytes) {
+      if (audioTrack == null) return 0;
       if (Build.VERSION.SDK_INT >= 21) {
         return audioTrack.write(byteBuffer, sizeInBytes, AudioTrack.WRITE_BLOCKING);
       } else {
@@ -551,14 +552,15 @@ public class WebRtcAudioTrack {
 
   // Releases the native AudioTrack resources.
   private void releaseAudioResources() {
-    Logging.d(TAG, "releaseAudioResources");
+    Logging.e(TAG, "releaseAudioResources", new Exception());
     if (audioTrack != null) {
+      AudioTrack track = audioTrack;
+      audioTrack = null;
       try {
-        audioTrack.release();
+        track.release();
       } catch (Throwable e) {
         FileLog.e(e);
       }
-      audioTrack = null;
     }
   }
 

@@ -16,7 +16,6 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Outline;
 import android.graphics.Path;
-import android.graphics.PixelFormat;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Build;
 import android.view.GestureDetector;
@@ -48,6 +47,8 @@ import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
+import org.telegram.messenger.pip.PictureInPictureContentViewProvider;
+import org.telegram.messenger.pip.PipSource;
 import org.telegram.messenger.voip.VideoCapturerDevice;
 import org.telegram.messenger.voip.VoIPService;
 import org.telegram.tgnet.TLRPC;
@@ -56,6 +57,7 @@ import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.messenger.pip.PipNativeApiController;
 import org.telegram.ui.Components.SimpleFloatPropertyCompat;
 import org.telegram.ui.LaunchActivity;
 import org.webrtc.RendererCommon;
@@ -63,7 +65,7 @@ import org.webrtc.RendererCommon;
 import java.util.ArrayList;
 import java.util.List;
 
-public class RTMPStreamPipOverlay implements NotificationCenter.NotificationCenterDelegate {
+public class RTMPStreamPipOverlay implements NotificationCenter.NotificationCenterDelegate, PictureInPictureContentViewProvider {
     private final static float ROUNDED_CORNERS_DP = 10;
     private final static float SIDE_PADDING_DP = 16;
     private final static FloatPropertyCompat<RTMPStreamPipOverlay> PIP_X_PROPERTY = new SimpleFloatPropertyCompat<>("pipX", obj -> obj.pipX, (obj, value) -> {
@@ -89,7 +91,7 @@ public class RTMPStreamPipOverlay implements NotificationCenter.NotificationCent
     private CellFlickerDrawable cellFlickerDrawable = new CellFlickerDrawable();
     private BackupImageView avatarImageView;
     private View flickerView;
-    private TLRPC.TL_groupCallParticipant boundParticipant;
+    private TLRPC.GroupCallParticipant boundParticipant;
     private boolean placeholderShown = true;
     private boolean firstFrameRendered;
     private boolean boundPresentation;
@@ -105,6 +107,7 @@ public class RTMPStreamPipOverlay implements NotificationCenter.NotificationCent
     private ValueAnimator scaleAnimator;
 
     private int pipWidth, pipHeight;
+    private PipSource pipSource;
     private float scaleFactor = 1f;
     private float pipX, pipY;
     private SpringAnimation pipXSpring, pipYSpring;
@@ -212,13 +215,17 @@ public class RTMPStreamPipOverlay implements NotificationCenter.NotificationCent
             }
         });
         set.start();
+        if (pipSource != null) {
+            pipSource.destroy();
+            pipSource = null;
+        }
     }
 
-    public static void show() {
-        instance.showInternal();
+    public static void show(Activity activity) {
+        instance.showInternal(activity);
     }
 
-    private void showInternal() {
+    private void showInternal(Activity activity) {
         if (VoIPService.getSharedInstance() == null || VoIPService.getSharedInstance().groupCall == null || isVisible) {
             return;
         }
@@ -244,7 +251,7 @@ public class RTMPStreamPipOverlay implements NotificationCenter.NotificationCent
                         .setDampingRatio(SpringForce.DAMPING_RATIO_LOW_BOUNCY)
                         .setStiffness(stiffness));
 
-        Context context = ApplicationLoader.applicationContext;
+        Context context = activity != null ? activity : ApplicationLoader.applicationContext;
         int touchSlop = ViewConfiguration.get(context).getScaledTouchSlop();
         scaleGestureDetector = new ScaleGestureDetector(context, new ScaleGestureDetector.OnScaleGestureListener() {
             @Override
@@ -490,13 +497,17 @@ public class RTMPStreamPipOverlay implements NotificationCenter.NotificationCent
         contentView = new ViewGroup(context) {
             @Override
             protected void onLayout(boolean changed, int l, int t, int r, int b) {
-                contentFrameLayout.layout(0, 0, pipWidth, pipHeight);
+                if (contentFrameLayout.getParent() == this) {
+                    contentFrameLayout.layout(0, 0, pipWidth, pipHeight);
+                }
             }
 
             @Override
             protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
                 setMeasuredDimension(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.getSize(heightMeasureSpec));
-                contentFrameLayout.measure(MeasureSpec.makeMeasureSpec(pipWidth, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(pipHeight, MeasureSpec.EXACTLY));
+                if (contentFrameLayout.getParent() == this) {
+                    contentFrameLayout.measure(MeasureSpec.makeMeasureSpec(pipWidth, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(pipHeight, MeasureSpec.EXACTLY));
+                }
             }
         };
         contentView.addView(contentFrameLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
@@ -533,7 +544,12 @@ public class RTMPStreamPipOverlay implements NotificationCenter.NotificationCent
                 } else {
                     aspectRatio = (float) videoWidth / videoHeight;
                 }
-                AndroidUtilities.runOnUIThread(()-> bindTextureView());
+                AndroidUtilities.runOnUIThread(()-> {
+                    if (pipSource != null) {
+                        pipSource.setContentRatio(videoWidth, videoHeight);
+                    }
+                    bindTextureView();
+                });
             }
         });
         contentFrameLayout.addView(textureView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
@@ -600,9 +616,8 @@ public class RTMPStreamPipOverlay implements NotificationCenter.NotificationCent
 
         contentFrameLayout.addView(controlsView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
-        windowManager = (WindowManager) ApplicationLoader.applicationContext.getSystemService(Context.WINDOW_SERVICE);
-
-        windowLayoutParams = createWindowLayoutParams();
+        windowManager = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
+        windowLayoutParams = PipNativeApiController.createWindowLayoutParams(context, false);
         windowLayoutParams.width = pipWidth;
         windowLayoutParams.height = pipHeight;
         windowLayoutParams.x = (int) (pipX = AndroidUtilities.displaySize.x - pipWidth - AndroidUtilities.dp(SIDE_PADDING_DP));
@@ -628,12 +643,30 @@ public class RTMPStreamPipOverlay implements NotificationCenter.NotificationCent
 
         bindTextureView();
         NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.groupCallVisibilityChanged);
+
+        if (pipSource != null) {
+            pipSource.destroy();
+            pipSource = null;
+        }
+        if (activity != null) {
+            if (PipNativeApiController.checkPermissions(activity) == PipNativeApiController.PIP_GRANTED_PIP) {
+                pipSource = new PipSource.Builder(activity, this)
+                    .setTagPrefix("pip-rtmp-video")
+                    .setPriority(1)
+                    .setContentView(contentView)
+                    .build();
+            }
+        }
     }
 
     private void bindTextureView() {
+        bindTextureView(false);
+    }
+
+    private void bindTextureView(boolean forced) {
         if (VoIPService.getSharedInstance() != null && VoIPService.getSharedInstance().groupCall != null && !VoIPService.getSharedInstance().groupCall.visibleVideoParticipants.isEmpty()) {
-            TLRPC.TL_groupCallParticipant participant = VoIPService.getSharedInstance().groupCall.visibleVideoParticipants.get(0).participant;
-            if (boundParticipant == null || MessageObject.getPeerId(boundParticipant.peer) != MessageObject.getPeerId(participant.peer)) {
+            TLRPC.GroupCallParticipant participant = VoIPService.getSharedInstance().groupCall.visibleVideoParticipants.get(0).participant;
+            if (forced || boundParticipant == null || MessageObject.getPeerId(boundParticipant.peer) != MessageObject.getPeerId(participant.peer)) {
                 if (boundParticipant != null) {
                     VoIPService.getSharedInstance().removeRemoteSink(boundParticipant, boundPresentation);
                 }
@@ -700,27 +733,6 @@ public class RTMPStreamPipOverlay implements NotificationCenter.NotificationCent
         }
     }
 
-    @SuppressLint("WrongConstant")
-    private WindowManager.LayoutParams createWindowLayoutParams() {
-        WindowManager.LayoutParams windowLayoutParams = new WindowManager.LayoutParams();
-        windowLayoutParams.gravity = Gravity.TOP | Gravity.LEFT;
-        windowLayoutParams.format = PixelFormat.TRANSLUCENT;
-
-        if (AndroidUtilities.checkInlinePermissions(ApplicationLoader.applicationContext)) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                windowLayoutParams.type = WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY;
-            } else {
-                windowLayoutParams.type = WindowManager.LayoutParams.TYPE_SYSTEM_ALERT;
-            }
-        } else {
-            windowLayoutParams.type = WindowManager.LayoutParams.LAST_SYSTEM_WINDOW;
-        }
-
-        windowLayoutParams.flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE | WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS;
-
-        return windowLayoutParams;
-    }
-
     @Override
     public void didReceivedNotification(int id, int account, Object... args) {
         if (id == NotificationCenter.didEndCall) {
@@ -728,6 +740,38 @@ public class RTMPStreamPipOverlay implements NotificationCenter.NotificationCent
         } else if (id == NotificationCenter.groupCallUpdated) {
             bindTextureView();
         }
+    }
+
+
+
+    /* * */
+
+    @Override
+    public View detachContentFromWindow() {
+        controlsView.setVisibility(View.GONE);
+        contentView.setVisibility(View.GONE);
+        contentView.removeView(contentFrameLayout);
+
+        return contentFrameLayout;
+    }
+
+    @Override
+    public void onAttachContentToPip() {
+        bindTextureView(true);
+    }
+
+    @Override
+    public void prepareDetachContentFromPip() {
+
+    }
+
+    @Override
+    public void attachContentToWindow() {
+        contentView.addView(contentFrameLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+        controlsView.setVisibility(View.VISIBLE);
+        contentView.setVisibility(View.VISIBLE);
+
+        bindTextureView(true);
     }
 }
 

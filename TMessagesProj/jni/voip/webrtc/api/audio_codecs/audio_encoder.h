@@ -20,6 +20,7 @@
 #include "absl/types/optional.h"
 #include "api/array_view.h"
 #include "api/call/bitrate_allocation.h"
+#include "api/units/data_rate.h"
 #include "api/units/time_delta.h"
 #include "rtc_base/buffer.h"
 
@@ -240,11 +241,19 @@ class AudioEncoder {
   // Get statistics related to audio network adaptation.
   virtual ANAStats GetANAStats() const;
 
-  // The range of frame lengths that are supported or nullopt if there's no sch
-  // information. This is used to calculated the full bitrate range, including
-  // overhead.
+  // The range of frame lengths that are supported or nullopt if there's no such
+  // information. This is used together with the bitrate range to calculate the
+  // full bitrate range, including overhead.
   virtual absl::optional<std::pair<TimeDelta, TimeDelta>> GetFrameLengthRange()
       const = 0;
+
+  // The range of payload bitrates that are supported. This is used together
+  // with the frame length range to calculate the full bitrate range, including
+  // overhead.
+  virtual absl::optional<std::pair<DataRate, DataRate>> GetBitrateRange()
+      const {
+    return absl::nullopt;
+  }
 
   // The maximum number of audio channels supported by WebRTC encoders.
   static constexpr int kMaxNumberOfChannels = 24;

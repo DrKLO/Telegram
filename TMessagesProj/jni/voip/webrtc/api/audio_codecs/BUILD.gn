@@ -1,0 +1,147 @@
+# Copyright (c) 2017 The WebRTC project authors. All Rights Reserved.
+#
+# Use of this source code is governed by a BSD-style license
+# that can be found in the LICENSE file in the root of the source
+# tree. An additional intellectual property rights grant can be found
+# in the file PATENTS.  All contributing project authors may
+# be found in the AUTHORS file in the root of the source tree.
+
+import("../../webrtc.gni")
+if (is_android) {
+  import("//build/config/android/config.gni")
+  import("//build/config/android/rules.gni")
+}
+
+rtc_library("audio_codecs_api") {
+  visibility = [ "*" ]
+  sources = [
+    "audio_codec_pair_id.cc",
+    "audio_codec_pair_id.h",
+    "audio_decoder.cc",
+    "audio_decoder.h",
+    "audio_decoder_factory.h",
+    "audio_decoder_factory_template.h",
+    "audio_encoder.cc",
+    "audio_encoder.h",
+    "audio_encoder_factory.h",
+    "audio_encoder_factory_template.h",
+    "audio_format.cc",
+    "audio_format.h",
+  ]
+  deps = [
+    "..:array_view",
+    "..:bitrate_allocation",
+    "..:make_ref_counted",
+    "..:ref_count",
+    "..:scoped_refptr",
+    "../../api:field_trials_view",
+    "../../api:rtp_parameters",
+    "../../rtc_base:buffer",
+    "../../rtc_base:checks",
+    "../../rtc_base:event_tracer",
+    "../../rtc_base:refcount",
+    "../../rtc_base:sanitizer",
+    "../../rtc_base/system:rtc_export",
+    "../units:data_rate",
+    "../units:time_delta",
+  ]
+  absl_deps = [
+    "//third_party/abseil-cpp/absl/base:core_headers",
+    "//third_party/abseil-cpp/absl/strings",
+    "//third_party/abseil-cpp/absl/types:optional",
+  ]
+}
+
+rtc_library("builtin_audio_decoder_factory") {
+  visibility = [ "*" ]
+  allow_poison = [ "audio_codecs" ]
+  sources = [
+    "builtin_audio_decoder_factory.cc",
+    "builtin_audio_decoder_factory.h",
+  ]
+  deps = [
+    ":audio_codecs_api",
+    "..:scoped_refptr",
+    "L16:audio_decoder_L16",
+    "g711:audio_decoder_g711",
+    "g722:audio_decoder_g722",
+  ]
+  defines = []
+  if (rtc_include_ilbc) {
+    deps += [ "ilbc:audio_decoder_ilbc" ]
+    defines += [ "WEBRTC_USE_BUILTIN_ILBC=1" ]
+  } else {
+    defines += [ "WEBRTC_USE_BUILTIN_ILBC=0" ]
+  }
+  if (rtc_include_opus) {
+    deps += [
+      "opus:audio_decoder_multiopus",
+      "opus:audio_decoder_opus",
+    ]
+    defines += [ "WEBRTC_USE_BUILTIN_OPUS=1" ]
+  } else {
+    defines += [ "WEBRTC_USE_BUILTIN_OPUS=0" ]
+  }
+}
+
+rtc_library("builtin_audio_encoder_factory") {
+  visibility = [ "*" ]
+  allow_poison = [ "audio_codecs" ]
+  sources = [
+    "builtin_audio_encoder_factory.cc",
+    "builtin_audio_encoder_factory.h",
+  ]
+  deps = [
+    ":audio_codecs_api",
+    "..:scoped_refptr",
+    "L16:audio_encoder_L16",
+    "g711:audio_encoder_g711",
+    "g722:audio_encoder_g722",
+  ]
+  defines = []
+  if (rtc_include_ilbc) {
+    deps += [ "ilbc:audio_encoder_ilbc" ]
+    defines += [ "WEBRTC_USE_BUILTIN_ILBC=1" ]
+  } else {
+    defines += [ "WEBRTC_USE_BUILTIN_ILBC=0" ]
+  }
+  if (rtc_include_opus) {
+    deps += [
+      "opus:audio_encoder_multiopus",
+      "opus:audio_encoder_opus",
+    ]
+    defines += [ "WEBRTC_USE_BUILTIN_OPUS=1" ]
+  } else {
+    defines += [ "WEBRTC_USE_BUILTIN_OPUS=0" ]
+  }
+}
+
+rtc_library("opus_audio_decoder_factory") {
+  visibility = [ "*" ]
+  allow_poison = [ "audio_codecs" ]
+  sources = [
+    "opus_audio_decoder_factory.cc",
+    "opus_audio_decoder_factory.h",
+  ]
+  deps = [
+    ":audio_codecs_api",
+    "..:scoped_refptr",
+    "opus:audio_decoder_multiopus",
+    "opus:audio_decoder_opus",
+  ]
+}
+
+rtc_library("opus_audio_encoder_factory") {
+  visibility = [ "*" ]
+  allow_poison = [ "audio_codecs" ]
+  sources = [
+    "opus_audio_encoder_factory.cc",
+    "opus_audio_encoder_factory.h",
+  ]
+  deps = [
+    ":audio_codecs_api",
+    "..:scoped_refptr",
+    "opus:audio_encoder_multiopus",
+    "opus:audio_encoder_opus",
+  ]
+}

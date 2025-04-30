@@ -25,6 +25,7 @@
 #include "rtc_base/checks.h"
 #include "rtc_base/memory/always_valid_pointer.h"
 #include "rtc_base/network.h"
+#include "rtc_base/network/received_packet.h"
 #include "rtc_base/system/rtc_export.h"
 #include "rtc_base/thread.h"
 #include "rtc_base/thread_annotations.h"
@@ -41,15 +42,6 @@ class RTC_EXPORT BasicPortAllocator : public PortAllocator {
                      webrtc::TurnCustomizer* customizer = nullptr,
                      RelayPortFactoryInterface* relay_port_factory = nullptr,
                      const webrtc::FieldTrialsView* field_trials = nullptr);
-  BasicPortAllocator(
-      rtc::NetworkManager* network_manager,
-      std::unique_ptr<rtc::PacketSocketFactory> owned_socket_factory,
-      const webrtc::FieldTrialsView* field_trials = nullptr);
-  BasicPortAllocator(
-      rtc::NetworkManager* network_manager,
-      std::unique_ptr<rtc::PacketSocketFactory> owned_socket_factory,
-      const ServerAddresses& stun_servers,
-      const webrtc::FieldTrialsView* field_trials = nullptr);
   BasicPortAllocator(rtc::NetworkManager* network_manager,
                      rtc::PacketSocketFactory* socket_factory,
                      const ServerAddresses& stun_servers,
@@ -69,7 +61,7 @@ class RTC_EXPORT BasicPortAllocator : public PortAllocator {
   // creates its own socket factory.
   rtc::PacketSocketFactory* socket_factory() {
     CheckRunOnValidThreadIfInitialized();
-    return socket_factory_.get();
+    return socket_factory_;
   }
 
   PortAllocatorSession* CreateSessionInternal(
@@ -79,7 +71,7 @@ class RTC_EXPORT BasicPortAllocator : public PortAllocator {
       absl::string_view ice_pwd) override;
 
   // Convenience method that adds a TURN server to the configuration.
-  void AddTurnServer(const RelayServerConfig& turn_server);
+  void AddTurnServerForTesting(const RelayServerConfig& turn_server);
 
   RelayPortFactoryInterface* relay_port_factory() {
     CheckRunOnValidThreadIfInitialized();
@@ -93,27 +85,20 @@ class RTC_EXPORT BasicPortAllocator : public PortAllocator {
   }
 
  private:
-  void OnIceRegathering(PortAllocatorSession* session,
-                        IceRegatheringReason reason);
-
-  // This function makes sure that relay_port_factory_ is set properly.
-  void Init(RelayPortFactoryInterface* relay_port_factory);
-
   bool MdnsObfuscationEnabled() const override;
 
   webrtc::AlwaysValidPointer<const webrtc::FieldTrialsView,
                              webrtc::FieldTrialBasedConfig>
       field_trials_;
   rtc::NetworkManager* network_manager_;
-  const webrtc::AlwaysValidPointerNoDefault<rtc::PacketSocketFactory>
-      socket_factory_;
+  // Always externally-owned pointer to a socket factory.
+  rtc::PacketSocketFactory* const socket_factory_;
   int network_ignore_mask_ = rtc::kDefaultNetworkIgnoreMask;
 
-  // This is the factory being used.
-  RelayPortFactoryInterface* relay_port_factory_;
-
   // This instance is created if caller does pass a factory.
-  std::unique_ptr<RelayPortFactoryInterface> default_relay_port_factory_;
+  const std::unique_ptr<RelayPortFactoryInterface> default_relay_port_factory_;
+  // This is the factory being used.
+  RelayPortFactoryInterface* const relay_port_factory_;
 };
 
 struct PortConfiguration;
@@ -343,7 +328,7 @@ class TurnPort;
 // Performs the allocation of ports, in a sequenced (timed) manner, for a given
 // network and IP address.
 // This class is thread-compatible.
-class AllocationSequence : public sigslot::has_slots<> {
+class AllocationSequence {
  public:
   enum State {
     kInit,       // Initial state.
@@ -386,11 +371,9 @@ class AllocationSequence : public sigslot::has_slots<> {
   void Start();
   void Stop();
 
- protected:
-  // For testing.
-  void CreateTurnPort(const RelayServerConfig& config);
-
  private:
+  void CreateTurnPort(const RelayServerConfig& config, int relative_priority);
+
   typedef std::vector<ProtocolType> ProtocolList;
 
   void Process(int epoch);
@@ -401,10 +384,7 @@ class AllocationSequence : public sigslot::has_slots<> {
   void CreateRelayPorts();
 
   void OnReadPacket(rtc::AsyncPacketSocket* socket,
-                    const char* data,
-                    size_t size,
-                    const rtc::SocketAddress& remote_addr,
-                    const int64_t& packet_time_us);
+                    const rtc::ReceivedPacket& packet);
 
   void OnPortDestroyed(PortInterface* port);
 

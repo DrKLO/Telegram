@@ -1,11 +1,16 @@
 {
-  "algorithm" : "AES-GCM",
-  "generatorVersion" : "0.4.12",
+  "algorithm" : "AES-GCM-SIV",
+  "generatorVersion" : "0.8r12",
+  "numberOfTests" : 155,
+  "header" : [
+    "Test vectors of type AeadTest test authenticated encryption with",
+    "additional data. The test vectors are intended for testing both",
+    "encryption and decryption."
+  ],
   "notes" : {
     "ConstructedIv" : "The counter for AES-GCM-SIV is reduced modulo 2**32. This test vector was constructed to test for correct wrapping of the counter."
   },
-  "numberOfTests" : 143,
-  "header" : [],
+  "schema" : "aead_test_schema.json",
   "testGroups" : [
     {
       "ivSize" : 96,
@@ -15,7 +20,7 @@
       "tests" : [
         {
           "tcId" : 1,
-          "comment" : "draft-irtf-cfrg-gcmsiv-06",
+          "comment" : "draft-irtf-cfrg-gcmsiv-09",
           "key" : "01000000000000000000000000000000",
           "iv" : "030000000000000000000000",
           "aad" : "",
@@ -27,7 +32,7 @@
         },
         {
           "tcId" : 2,
-          "comment" : "draft-irtf-cfrg-gcmsiv-06",
+          "comment" : "draft-irtf-cfrg-gcmsiv-09",
           "key" : "01000000000000000000000000000000",
           "iv" : "030000000000000000000000",
           "aad" : "",
@@ -39,7 +44,7 @@
         },
         {
           "tcId" : 3,
-          "comment" : "draft-irtf-cfrg-gcmsiv-06",
+          "comment" : "draft-irtf-cfrg-gcmsiv-09",
           "key" : "01000000000000000000000000000000",
           "iv" : "030000000000000000000000",
           "aad" : "",
@@ -51,7 +56,7 @@
         },
         {
           "tcId" : 4,
-          "comment" : "draft-irtf-cfrg-gcmsiv-06",
+          "comment" : "draft-irtf-cfrg-gcmsiv-09",
           "key" : "01000000000000000000000000000000",
           "iv" : "030000000000000000000000",
           "aad" : "",
@@ -63,7 +68,7 @@
         },
         {
           "tcId" : 5,
-          "comment" : "draft-irtf-cfrg-gcmsiv-06",
+          "comment" : "draft-irtf-cfrg-gcmsiv-09",
           "key" : "01000000000000000000000000000000",
           "iv" : "030000000000000000000000",
           "aad" : "",
@@ -75,7 +80,7 @@
         },
         {
           "tcId" : 6,
-          "comment" : "draft-irtf-cfrg-gcmsiv-06",
+          "comment" : "draft-irtf-cfrg-gcmsiv-09",
           "key" : "01000000000000000000000000000000",
           "iv" : "030000000000000000000000",
           "aad" : "",
@@ -87,7 +92,7 @@
         },
         {
           "tcId" : 7,
-          "comment" : "draft-irtf-cfrg-gcmsiv-06",
+          "comment" : "draft-irtf-cfrg-gcmsiv-09",
           "key" : "01000000000000000000000000000000",
           "iv" : "030000000000000000000000",
           "aad" : "",
@@ -99,7 +104,7 @@
         },
         {
           "tcId" : 8,
-          "comment" : "draft-irtf-cfrg-gcmsiv-06",
+          "comment" : "draft-irtf-cfrg-gcmsiv-09",
           "key" : "01000000000000000000000000000000",
           "iv" : "030000000000000000000000",
           "aad" : "01",
@@ -111,7 +116,7 @@
         },
         {
           "tcId" : 9,
-          "comment" : "draft-irtf-cfrg-gcmsiv-06",
+          "comment" : "draft-irtf-cfrg-gcmsiv-09",
           "key" : "01000000000000000000000000000000",
           "iv" : "030000000000000000000000",
           "aad" : "01",
@@ -123,7 +128,7 @@
         },
         {
           "tcId" : 10,
-          "comment" : "draft-irtf-cfrg-gcmsiv-06",
+          "comment" : "draft-irtf-cfrg-gcmsiv-09",
           "key" : "01000000000000000000000000000000",
           "iv" : "030000000000000000000000",
           "aad" : "01",
@@ -135,7 +140,7 @@
         },
         {
           "tcId" : 11,
-          "comment" : "draft-irtf-cfrg-gcmsiv-06",
+          "comment" : "draft-irtf-cfrg-gcmsiv-09",
           "key" : "01000000000000000000000000000000",
           "iv" : "030000000000000000000000",
           "aad" : "01",
@@ -147,7 +152,7 @@
         },
         {
           "tcId" : 12,
-          "comment" : "draft-irtf-cfrg-gcmsiv-06",
+          "comment" : "draft-irtf-cfrg-gcmsiv-09",
           "key" : "01000000000000000000000000000000",
           "iv" : "030000000000000000000000",
           "aad" : "01",
@@ -159,7 +164,7 @@
         },
         {
           "tcId" : 13,
-          "comment" : "draft-irtf-cfrg-gcmsiv-06",
+          "comment" : "draft-irtf-cfrg-gcmsiv-09",
           "key" : "01000000000000000000000000000000",
           "iv" : "030000000000000000000000",
           "aad" : "01",
@@ -171,7 +176,7 @@
         },
         {
           "tcId" : 14,
-          "comment" : "draft-irtf-cfrg-gcmsiv-06",
+          "comment" : "draft-irtf-cfrg-gcmsiv-09",
           "key" : "01000000000000000000000000000000",
           "iv" : "030000000000000000000000",
           "aad" : "010000000000000000000000",
@@ -183,7 +188,7 @@
         },
         {
           "tcId" : 15,
-          "comment" : "draft-irtf-cfrg-gcmsiv-06",
+          "comment" : "draft-irtf-cfrg-gcmsiv-09",
           "key" : "01000000000000000000000000000000",
           "iv" : "030000000000000000000000",
           "aad" : "010000000000000000000000000000000200",
@@ -195,7 +200,7 @@
         },
         {
           "tcId" : 16,
-          "comment" : "draft-irtf-cfrg-gcmsiv-06",
+          "comment" : "draft-irtf-cfrg-gcmsiv-09",
           "key" : "01000000000000000000000000000000",
           "iv" : "030000000000000000000000",
           "aad" : "0100000000000000000000000000000002000000",
@@ -207,7 +212,7 @@
         },
         {
           "tcId" : 17,
-          "comment" : "draft-irtf-cfrg-gcmsiv-06",
+          "comment" : "draft-irtf-cfrg-gcmsiv-09",
           "key" : "e66021d5eb8e4f4066d4adb9c33560e4",
           "iv" : "f46e44bb3da0015c94f70887",
           "aad" : "",
@@ -219,7 +224,7 @@
         },
         {
           "tcId" : 18,
-          "comment" : "draft-irtf-cfrg-gcmsiv-06",
+          "comment" : "draft-irtf-cfrg-gcmsiv-09",
           "key" : "36864200e0eaf5284d884a0e77d31646",
           "iv" : "bae8e37fc83441b16034566b",
           "aad" : "46bb91c3c5",
@@ -231,7 +236,7 @@
         },
         {
           "tcId" : 19,
-          "comment" : "draft-irtf-cfrg-gcmsiv-06",
+          "comment" : "draft-irtf-cfrg-gcmsiv-09",
           "key" : "aedb64a6c590bc84d1a5e269e4b47801",
           "iv" : "afc0577e34699b9e671fdd4f",
           "aad" : "fc880c94a95198874296",
@@ -243,7 +248,7 @@
         },
         {
           "tcId" : 20,
-          "comment" : "draft-irtf-cfrg-gcmsiv-06",
+          "comment" : "draft-irtf-cfrg-gcmsiv-09",
           "key" : "d5cc1fd161320b6920ce07787f86743b",
           "iv" : "275d1ab32f6d1f0434d8848c",
           "aad" : "046787f3ea22c127aaf195d1894728",
@@ -255,7 +260,7 @@
         },
         {
           "tcId" : 21,
-          "comment" : "draft-irtf-cfrg-gcmsiv-06",
+          "comment" : "draft-irtf-cfrg-gcmsiv-09",
           "key" : "b3fed1473c528b8426a582995929a149",
           "iv" : "9e9ad8780c8d63d0ab4149c0",
           "aad" : "c9882e5386fd9f92ec489c8fde2be2cf97e74e93",
@@ -267,7 +272,7 @@
         },
         {
           "tcId" : 22,
-          "comment" : "draft-irtf-cfrg-gcmsiv-06",
+          "comment" : "draft-irtf-cfrg-gcmsiv-09",
           "key" : "2d4ed87da44102952ef94b02b805249b",
           "iv" : "ac80e6f61455bfac8308a2d4",
           "aad" : "2950a70d5a1db2316fd568378da107b52b0da55210cc1c1b0a",
@@ -279,7 +284,7 @@
         },
         {
           "tcId" : 23,
-          "comment" : "draft-irtf-cfrg-gcmsiv-06",
+          "comment" : "draft-irtf-cfrg-gcmsiv-09",
           "key" : "bde3b2f204d1e9f8b06bc47f9745b3d1",
           "iv" : "ae06556fb6aa7890bebc18fe",
           "aad" : "1860f762ebfbd08284e421702de0de18baa9c9596291b08466f37de21c7f",
@@ -291,7 +296,7 @@
         },
         {
           "tcId" : 24,
-          "comment" : "draft-irtf-cfrg-gcmsiv-06",
+          "comment" : "draft-irtf-cfrg-gcmsiv-09",
           "key" : "f901cfe8a69615a93fdf7a98cad48179",
           "iv" : "6245709fb18853f68d833640",
           "aad" : "7576f7028ec6eb5ea7e298342a94d4b202b370ef9768ec6561c4fe6b7e7296fa859c21",
@@ -661,6 +666,30 @@
         },
         {
           "tcId" : 54,
+          "comment" : "Flipped bit 56 in tag",
+          "key" : "00112233445566778899aabbccddeeff",
+          "iv" : "000000000000000000000000",
+          "aad" : "3955107da2e9938c6b19bb19ae9fc09f",
+          "msg" : "",
+          "ct" : "",
+          "tag" : "0987e35e40981a2730c1740c7201731f",
+          "result" : "invalid",
+          "flags" : []
+        },
+        {
+          "tcId" : 55,
+          "comment" : "Flipped bit 56 in tag",
+          "key" : "00112233445566778899aabbccddeeff",
+          "iv" : "000000000000000000000000",
+          "aad" : "b1385d46a8accd7022c142442a0b13e9",
+          "msg" : "63995888995b338c",
+          "ct" : "0000000000000000",
+          "tag" : "00000000000000000000000000000000",
+          "result" : "invalid",
+          "flags" : []
+        },
+        {
+          "tcId" : 56,
           "comment" : "Flipped bit 63 in tag",
           "key" : "00112233445566778899aabbccddeeff",
           "iv" : "000000000000000000000000",
@@ -672,7 +701,7 @@
           "flags" : []
         },
         {
-          "tcId" : 55,
+          "tcId" : 57,
           "comment" : "Flipped bit 63 in tag",
           "key" : "00112233445566778899aabbccddeeff",
           "iv" : "000000000000000000000000",
@@ -684,7 +713,7 @@
           "flags" : []
         },
         {
-          "tcId" : 56,
+          "tcId" : 58,
           "comment" : "Flipped bit 64 in tag",
           "key" : "00112233445566778899aabbccddeeff",
           "iv" : "000000000000000000000000",
@@ -696,7 +725,55 @@
           "flags" : []
         },
         {
-          "tcId" : 57,
+          "tcId" : 59,
+          "comment" : "Flipped bit 88 in tag",
+          "key" : "00112233445566778899aabbccddeeff",
+          "iv" : "000000000000000000000000",
+          "aad" : "4e79aa30003226402245893e91f2024c",
+          "msg" : "03c0e39b77bd62d32568f4c86c90bfdb",
+          "ct" : "00000000000000000000000000000000",
+          "tag" : "13a1883272188b4c8d2727178198fe95",
+          "result" : "invalid",
+          "flags" : []
+        },
+        {
+          "tcId" : 60,
+          "comment" : "Flipped bit 88 in tag",
+          "key" : "00112233445566778899aabbccddeeff",
+          "iv" : "000000000000000000000000",
+          "aad" : "9312e1813a05b8682555061b05edcef1",
+          "msg" : "0fed395814f1750a",
+          "ct" : "ffffffffffffffff",
+          "tag" : "ffffffffffffffffffffffffffffffff",
+          "result" : "invalid",
+          "flags" : []
+        },
+        {
+          "tcId" : 61,
+          "comment" : "Flipped bit 96 in tag",
+          "key" : "00112233445566778899aabbccddeeff",
+          "iv" : "000000000000000000000000",
+          "aad" : "643684185211af58061022efa360d54b",
+          "msg" : "63995888995b338c",
+          "ct" : "0000000000000000",
+          "tag" : "00000000000000000000000000000000",
+          "result" : "invalid",
+          "flags" : []
+        },
+        {
+          "tcId" : 62,
+          "comment" : "Flipped bit 96 in tag",
+          "key" : "00112233445566778899aabbccddeeff",
+          "iv" : "000000000000000000000000",
+          "aad" : "786d8056e26150918e3cbe520cafeb50",
+          "msg" : "0fed395814f1750a",
+          "ct" : "ffffffffffffffff",
+          "tag" : "ffffffffffffffffffffffffffffffff",
+          "result" : "invalid",
+          "flags" : []
+        },
+        {
+          "tcId" : 63,
           "comment" : "Flipped bit 97 in tag",
           "key" : "00112233445566778899aabbccddeeff",
           "iv" : "000000000000000000000000",
@@ -708,7 +785,7 @@
           "flags" : []
         },
         {
-          "tcId" : 58,
+          "tcId" : 64,
           "comment" : "Flipped bit 97 in tag",
           "key" : "00112233445566778899aabbccddeeff",
           "iv" : "000000000000000000000000",
@@ -720,7 +797,7 @@
           "flags" : []
         },
         {
-          "tcId" : 59,
+          "tcId" : 65,
           "comment" : "Flipped bit 120 in tag",
           "key" : "00112233445566778899aabbccddeeff",
           "iv" : "000000000000000000000000",
@@ -732,7 +809,7 @@
           "flags" : []
         },
         {
-          "tcId" : 60,
+          "tcId" : 66,
           "comment" : "Flipped bit 120 in tag",
           "key" : "00112233445566778899aabbccddeeff",
           "iv" : "000000000000000000000000",
@@ -744,7 +821,7 @@
           "flags" : []
         },
         {
-          "tcId" : 61,
+          "tcId" : 67,
           "comment" : "Flipped bit 120 in tag",
           "key" : "00112233445566778899aabbccddeeff",
           "iv" : "000000000000000000000000",
@@ -756,7 +833,7 @@
           "flags" : []
         },
         {
-          "tcId" : 62,
+          "tcId" : 68,
           "comment" : "Flipped bit 121 in tag",
           "key" : "00112233445566778899aabbccddeeff",
           "iv" : "000000000000000000000000",
@@ -768,7 +845,7 @@
           "flags" : []
         },
         {
-          "tcId" : 63,
+          "tcId" : 69,
           "comment" : "Flipped bit 121 in tag",
           "key" : "00112233445566778899aabbccddeeff",
           "iv" : "000000000000000000000000",
@@ -780,7 +857,7 @@
           "flags" : []
         },
         {
-          "tcId" : 64,
+          "tcId" : 70,
           "comment" : "Flipped bit 121 in tag",
           "key" : "00112233445566778899aabbccddeeff",
           "iv" : "000000000000000000000000",
@@ -792,7 +869,7 @@
           "flags" : []
         },
         {
-          "tcId" : 65,
+          "tcId" : 71,
           "comment" : "Flipped bit 126 in tag",
           "key" : "00112233445566778899aabbccddeeff",
           "iv" : "000000000000000000000000",
@@ -804,7 +881,7 @@
           "flags" : []
         },
         {
-          "tcId" : 66,
+          "tcId" : 72,
           "comment" : "Flipped bit 127 in tag",
           "key" : "00112233445566778899aabbccddeeff",
           "iv" : "000000000000000000000000",
@@ -816,7 +893,7 @@
           "flags" : []
         },
         {
-          "tcId" : 67,
+          "tcId" : 73,
           "comment" : "Flipped bit 127 in tag",
           "key" : "00112233445566778899aabbccddeeff",
           "iv" : "000000000000000000000000",
@@ -828,7 +905,7 @@
           "flags" : []
         },
         {
-          "tcId" : 68,
+          "tcId" : 74,
           "comment" : "Flipped bit 127 in tag",
           "key" : "00112233445566778899aabbccddeeff",
           "iv" : "000000000000000000000000",
@@ -840,7 +917,7 @@
           "flags" : []
         },
         {
-          "tcId" : 69,
+          "tcId" : 75,
           "comment" : "Flipped bit 0..127 in tag",
           "key" : "00112233445566778899aabbccddeeff",
           "iv" : "000000000000000000000000",
@@ -860,8 +937,8 @@
       "type" : "AeadTest",
       "tests" : [
         {
-          "tcId" : 70,
-          "comment" : "draft-irtf-cfrg-gcmsiv-06",
+          "tcId" : 76,
+          "comment" : "draft-irtf-cfrg-gcmsiv-09",
           "key" : "0100000000000000000000000000000000000000000000000000000000000000",
           "iv" : "030000000000000000000000",
           "aad" : "",
@@ -872,8 +949,8 @@
           "flags" : []
         },
         {
-          "tcId" : 71,
-          "comment" : "draft-irtf-cfrg-gcmsiv-06",
+          "tcId" : 77,
+          "comment" : "draft-irtf-cfrg-gcmsiv-09",
           "key" : "0100000000000000000000000000000000000000000000000000000000000000",
           "iv" : "030000000000000000000000",
           "aad" : "",
@@ -884,8 +961,8 @@
           "flags" : []
         },
         {
-          "tcId" : 72,
-          "comment" : "draft-irtf-cfrg-gcmsiv-06",
+          "tcId" : 78,
+          "comment" : "draft-irtf-cfrg-gcmsiv-09",
           "key" : "0100000000000000000000000000000000000000000000000000000000000000",
           "iv" : "030000000000000000000000",
           "aad" : "",
@@ -896,8 +973,8 @@
           "flags" : []
         },
         {
-          "tcId" : 73,
-          "comment" : "draft-irtf-cfrg-gcmsiv-06",
+          "tcId" : 79,
+          "comment" : "draft-irtf-cfrg-gcmsiv-09",
           "key" : "0100000000000000000000000000000000000000000000000000000000000000",
           "iv" : "030000000000000000000000",
           "aad" : "",
@@ -908,8 +985,8 @@
           "flags" : []
         },
         {
-          "tcId" : 74,
-          "comment" : "draft-irtf-cfrg-gcmsiv-06",
+          "tcId" : 80,
+          "comment" : "draft-irtf-cfrg-gcmsiv-09",
           "key" : "0100000000000000000000000000000000000000000000000000000000000000",
           "iv" : "030000000000000000000000",
           "aad" : "",
@@ -920,8 +997,8 @@
           "flags" : []
         },
         {
-          "tcId" : 75,
-          "comment" : "draft-irtf-cfrg-gcmsiv-06",
+          "tcId" : 81,
+          "comment" : "draft-irtf-cfrg-gcmsiv-09",
           "key" : "0100000000000000000000000000000000000000000000000000000000000000",
           "iv" : "030000000000000000000000",
           "aad" : "",
@@ -932,8 +1009,8 @@
           "flags" : []
         },
         {
-          "tcId" : 76,
-          "comment" : "draft-irtf-cfrg-gcmsiv-06",
+          "tcId" : 82,
+          "comment" : "draft-irtf-cfrg-gcmsiv-09",
           "key" : "0100000000000000000000000000000000000000000000000000000000000000",
           "iv" : "030000000000000000000000",
           "aad" : "",
@@ -944,8 +1021,8 @@
           "flags" : []
         },
         {
-          "tcId" : 77,
-          "comment" : "draft-irtf-cfrg-gcmsiv-06",
+          "tcId" : 83,
+          "comment" : "draft-irtf-cfrg-gcmsiv-09",
           "key" : "0100000000000000000000000000000000000000000000000000000000000000",
           "iv" : "030000000000000000000000",
           "aad" : "01",
@@ -956,8 +1033,8 @@
           "flags" : []
         },
         {
-          "tcId" : 78,
-          "comment" : "draft-irtf-cfrg-gcmsiv-06",
+          "tcId" : 84,
+          "comment" : "draft-irtf-cfrg-gcmsiv-09",
           "key" : "0100000000000000000000000000000000000000000000000000000000000000",
           "iv" : "030000000000000000000000",
           "aad" : "01",
@@ -968,8 +1045,8 @@
           "flags" : []
         },
         {
-          "tcId" : 79,
-          "comment" : "draft-irtf-cfrg-gcmsiv-06",
+          "tcId" : 85,
+          "comment" : "draft-irtf-cfrg-gcmsiv-09",
           "key" : "0100000000000000000000000000000000000000000000000000000000000000",
           "iv" : "030000000000000000000000",
           "aad" : "01",
@@ -980,8 +1057,8 @@
           "flags" : []
         },
         {
-          "tcId" : 80,
-          "comment" : "draft-irtf-cfrg-gcmsiv-06",
+          "tcId" : 86,
+          "comment" : "draft-irtf-cfrg-gcmsiv-09",
           "key" : "0100000000000000000000000000000000000000000000000000000000000000",
           "iv" : "030000000000000000000000",
           "aad" : "01",
@@ -992,8 +1069,8 @@
           "flags" : []
         },
         {
-          "tcId" : 81,
-          "comment" : "draft-irtf-cfrg-gcmsiv-06",
+          "tcId" : 87,
+          "comment" : "draft-irtf-cfrg-gcmsiv-09",
           "key" : "0100000000000000000000000000000000000000000000000000000000000000",
           "iv" : "030000000000000000000000",
           "aad" : "01",
@@ -1004,8 +1081,8 @@
           "flags" : []
         },
         {
-          "tcId" : 82,
-          "comment" : "draft-irtf-cfrg-gcmsiv-06",
+          "tcId" : 88,
+          "comment" : "draft-irtf-cfrg-gcmsiv-09",
           "key" : "0100000000000000000000000000000000000000000000000000000000000000",
           "iv" : "030000000000000000000000",
           "aad" : "01",
@@ -1016,8 +1093,8 @@
           "flags" : []
         },
         {
-          "tcId" : 83,
-          "comment" : "draft-irtf-cfrg-gcmsiv-06",
+          "tcId" : 89,
+          "comment" : "draft-irtf-cfrg-gcmsiv-09",
           "key" : "0100000000000000000000000000000000000000000000000000000000000000",
           "iv" : "030000000000000000000000",
           "aad" : "010000000000000000000000",
@@ -1028,8 +1105,8 @@
           "flags" : []
         },
         {
-          "tcId" : 84,
-          "comment" : "draft-irtf-cfrg-gcmsiv-06",
+          "tcId" : 90,
+          "comment" : "draft-irtf-cfrg-gcmsiv-09",
           "key" : "0100000000000000000000000000000000000000000000000000000000000000",
           "iv" : "030000000000000000000000",
           "aad" : "010000000000000000000000000000000200",
@@ -1040,8 +1117,8 @@
           "flags" : []
         },
         {
-          "tcId" : 85,
-          "comment" : "draft-irtf-cfrg-gcmsiv-06",
+          "tcId" : 91,
+          "comment" : "draft-irtf-cfrg-gcmsiv-09",
           "key" : "0100000000000000000000000000000000000000000000000000000000000000",
           "iv" : "030000000000000000000000",
           "aad" : "0100000000000000000000000000000002000000",
@@ -1052,8 +1129,8 @@
           "flags" : []
         },
         {
-          "tcId" : 86,
-          "comment" : "draft-irtf-cfrg-gcmsiv-06",
+          "tcId" : 92,
+          "comment" : "draft-irtf-cfrg-gcmsiv-09",
           "key" : "e66021d5eb8e4f4066d4adb9c33560e4f46e44bb3da0015c94f7088736864200",
           "iv" : "e0eaf5284d884a0e77d31646",
           "aad" : "",
@@ -1064,8 +1141,8 @@
           "flags" : []
         },
         {
-          "tcId" : 87,
-          "comment" : "draft-irtf-cfrg-gcmsiv-06",
+          "tcId" : 93,
+          "comment" : "draft-irtf-cfrg-gcmsiv-09",
           "key" : "bae8e37fc83441b16034566b7a806c46bb91c3c5aedb64a6c590bc84d1a5e269",
           "iv" : "e4b47801afc0577e34699b9e",
           "aad" : "4fbdc66f14",
@@ -1076,8 +1153,8 @@
           "flags" : []
         },
         {
-          "tcId" : 88,
-          "comment" : "draft-irtf-cfrg-gcmsiv-06",
+          "tcId" : 94,
+          "comment" : "draft-irtf-cfrg-gcmsiv-09",
           "key" : "6545fc880c94a95198874296d5cc1fd161320b6920ce07787f86743b275d1ab3",
           "iv" : "2f6d1f0434d8848c1177441f",
           "aad" : "6787f3ea22c127aaf195",
@@ -1088,8 +1165,8 @@
           "flags" : []
         },
         {
-          "tcId" : 89,
-          "comment" : "draft-irtf-cfrg-gcmsiv-06",
+          "tcId" : 95,
+          "comment" : "draft-irtf-cfrg-gcmsiv-09",
           "key" : "d1894728b3fed1473c528b8426a582995929a1499e9ad8780c8d63d0ab4149c0",
           "iv" : "9f572c614b4745914474e7c7",
           "aad" : "489c8fde2be2cf97e74e932d4ed87d",
@@ -1100,8 +1177,8 @@
           "flags" : []
         },
         {
-          "tcId" : 90,
-          "comment" : "draft-irtf-cfrg-gcmsiv-06",
+          "tcId" : 96,
+          "comment" : "draft-irtf-cfrg-gcmsiv-09",
           "key" : "a44102952ef94b02b805249bac80e6f61455bfac8308a2d40d8c845117808235",
           "iv" : "5c9e940fea2f582950a70d5a",
           "aad" : "0da55210cc1c1b0abde3b2f204d1e9f8b06bc47f",
@@ -1112,8 +1189,8 @@
           "flags" : []
         },
         {
-          "tcId" : 91,
-          "comment" : "draft-irtf-cfrg-gcmsiv-06",
+          "tcId" : 97,
+          "comment" : "draft-irtf-cfrg-gcmsiv-09",
           "key" : "9745b3d1ae06556fb6aa7890bebc18fe6b3db4da3d57aa94842b9803a96e07fb",
           "iv" : "6de71860f762ebfbd08284e4",
           "aad" : "f37de21c7ff901cfe8a69615a93fdf7a98cad481796245709f",
@@ -1124,8 +1201,8 @@
           "flags" : []
         },
         {
-          "tcId" : 92,
-          "comment" : "draft-irtf-cfrg-gcmsiv-06",
+          "tcId" : 98,
+          "comment" : "draft-irtf-cfrg-gcmsiv-09",
           "key" : "b18853f68d833640e42a3c02c25b64869e146d7b233987bddfc240871d7576f7",
           "iv" : "028ec6eb5ea7e298342a94d4",
           "aad" : "9c2159058b1f0fe91433a5bdc20e214eab7fecef4454a10ef0657df21ac7",
@@ -1136,8 +1213,8 @@
           "flags" : []
         },
         {
-          "tcId" : 93,
-          "comment" : "draft-irtf-cfrg-gcmsiv-06",
+          "tcId" : 99,
+          "comment" : "draft-irtf-cfrg-gcmsiv-09",
           "key" : "3c535de192eaed3822a2fbbe2ca9dfc88255e14a661b8aa82cc54236093bbc23",
           "iv" : "688089e55540db1872504e1c",
           "aad" : "734320ccc9d9bbbb19cb81b2af4ecbc3e72834321f7aa0f70b7282b4f33df23f167541",
@@ -1148,8 +1225,8 @@
           "flags" : []
         },
         {
-          "tcId" : 94,
-          "comment" : "draft-irtf-cfrg-gcmsiv-06",
+          "tcId" : 100,
+          "comment" : "draft-irtf-cfrg-gcmsiv-09",
           "key" : "0000000000000000000000000000000000000000000000000000000000000000",
           "iv" : "000000000000000000000000",
           "aad" : "",
@@ -1160,8 +1237,8 @@
           "flags" : []
         },
         {
-          "tcId" : 95,
-          "comment" : "draft-irtf-cfrg-gcmsiv-06",
+          "tcId" : 101,
+          "comment" : "draft-irtf-cfrg-gcmsiv-09",
           "key" : "0000000000000000000000000000000000000000000000000000000000000000",
           "iv" : "000000000000000000000000",
           "aad" : "",
@@ -1172,7 +1249,7 @@
           "flags" : []
         },
         {
-          "tcId" : 96,
+          "tcId" : 102,
           "comment" : "",
           "key" : "80ba3192c803ce965ea371d5ff073cf0f43b6a2ab576b208426e11409c09b9b0",
           "iv" : "4da5bf8dfd5852c1ea12379d",
@@ -1184,7 +1261,7 @@
           "flags" : []
         },
         {
-          "tcId" : 97,
+          "tcId" : 103,
           "comment" : "",
           "key" : "cc56b680552eb75008f5484b4cb803fa5063ebd6eab91f6ab6aef4916a766273",
           "iv" : "99e23ec48985bccdeeab60f1",
@@ -1196,7 +1273,7 @@
           "flags" : []
         },
         {
-          "tcId" : 98,
+          "tcId" : 104,
           "comment" : "",
           "key" : "51e4bf2bad92b7aff1a4bc05550ba81df4b96fabf41c12c7b00e60e48db7e152",
           "iv" : "4f07afedfdc3b6c2361823d3",
@@ -1208,7 +1285,7 @@
           "flags" : []
         },
         {
-          "tcId" : 99,
+          "tcId" : 105,
           "comment" : "",
           "key" : "67119627bd988eda906219e08c0d0d779a07d208ce8a4fe0709af755eeec6dcb",
           "iv" : "68ab7fdbf61901dad461d23c",
@@ -1220,7 +1297,7 @@
           "flags" : []
         },
         {
-          "tcId" : 100,
+          "tcId" : 106,
           "comment" : "",
           "key" : "59d4eafb4de0cfc7d3db99a8f54b15d7b39f0acc8da69763b019c1699f87674a",
           "iv" : "2fcb1b38a99e71b84740ad9b",
@@ -1232,7 +1309,7 @@
           "flags" : []
         },
         {
-          "tcId" : 101,
+          "tcId" : 107,
           "comment" : "",
           "key" : "3b2458d8176e1621c0cc24c0c0e24c1e80d72f7ee9149a4b166176629616d011",
           "iv" : "45aaa3e5d16d2d42dc03445d",
@@ -1244,7 +1321,7 @@
           "flags" : []
         },
         {
-          "tcId" : 102,
+          "tcId" : 108,
           "comment" : "",
           "key" : "0212a8de5007ed87b33f1a7090b6114f9e08cefd9607f2c276bdcfdbc5ce9cd7",
           "iv" : "e6b1adf2fd58a8762c65f31b",
@@ -1256,7 +1333,7 @@
           "flags" : []
         },
         {
-          "tcId" : 103,
+          "tcId" : 109,
           "comment" : "",
           "key" : "e1731d5854e1b70cb3ffe8b786a2b3ebf0994370954757b9dc8c7bc5354634a3",
           "iv" : "72cfd90ef3026ca22b7e6e6a",
@@ -1268,7 +1345,7 @@
           "flags" : []
         },
         {
-          "tcId" : 104,
+          "tcId" : 110,
           "comment" : "",
           "key" : "7d00b48095adfa3272050607b264185002ba99957c498be022770f2ce2f3143c",
           "iv" : "87345f1055fd9e2102d50656",
@@ -1280,7 +1357,7 @@
           "flags" : []
         },
         {
-          "tcId" : 105,
+          "tcId" : 111,
           "comment" : "",
           "key" : "6432717f1db85e41ac7836bce25185a080d5762b9e2b18444b6ec72c3bd8e4dc",
           "iv" : "87a3163ec0598ad95b3aa713",
@@ -1292,7 +1369,7 @@
           "flags" : []
         },
         {
-          "tcId" : 106,
+          "tcId" : 112,
           "comment" : "",
           "key" : "8e34cf73d245a1082a920b86364eb896c4946467bcb3d58929fcb36690e6394f",
           "iv" : "6f573aa86baa492ba46596df",
@@ -1304,7 +1381,7 @@
           "flags" : []
         },
         {
-          "tcId" : 107,
+          "tcId" : 113,
           "comment" : "",
           "key" : "cb5575f5c7c45c91cf320b139fb594237560d0a3e6f865a67d4f633f2c08f016",
           "iv" : "1a6518f02ede1da6809266d9",
@@ -1316,7 +1393,7 @@
           "flags" : []
         },
         {
-          "tcId" : 108,
+          "tcId" : 114,
           "comment" : "",
           "key" : "a5569e729a69b24ba6e0ff15c4627897436824c941e9d00b2e93fddc4ba77657",
           "iv" : "564dee49ab00d240fc1068c3",
@@ -1328,7 +1405,7 @@
           "flags" : []
         },
         {
-          "tcId" : 109,
+          "tcId" : 115,
           "comment" : "",
           "key" : "3937986af86dafc1ba0c4672d8abc46c207062682d9c264ab06d6c5807205130",
           "iv" : "8df4b15a888c33286a7b7651",
@@ -1340,7 +1417,7 @@
           "flags" : []
         },
         {
-          "tcId" : 110,
+          "tcId" : 116,
           "comment" : "Testing for ctr overflow",
           "key" : "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
           "iv" : "010101010101010101010101",
@@ -1354,7 +1431,7 @@
           ]
         },
         {
-          "tcId" : 111,
+          "tcId" : 117,
           "comment" : "Testing for ctr overflow",
           "key" : "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
           "iv" : "000000000000000000000000",
@@ -1368,7 +1445,7 @@
           ]
         },
         {
-          "tcId" : 112,
+          "tcId" : 118,
           "comment" : "Testing for ctr overflow",
           "key" : "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
           "iv" : "010101010101010101010101",
@@ -1382,7 +1459,7 @@
           ]
         },
         {
-          "tcId" : 113,
+          "tcId" : 119,
           "comment" : "Testing for ctr overflow",
           "key" : "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
           "iv" : "000000000000000000000000",
@@ -1396,7 +1473,7 @@
           ]
         },
         {
-          "tcId" : 114,
+          "tcId" : 120,
           "comment" : "Testing for ctr overflow",
           "key" : "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
           "iv" : "010101010101010101010101",
@@ -1410,7 +1487,7 @@
           ]
         },
         {
-          "tcId" : 115,
+          "tcId" : 121,
           "comment" : "Flipped bit 0 in tag",
           "key" : "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
           "iv" : "000000000000000000000000",
@@ -1422,7 +1499,7 @@
           "flags" : []
         },
         {
-          "tcId" : 116,
+          "tcId" : 122,
           "comment" : "Flipped bit 0 in tag",
           "key" : "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
           "iv" : "000000000000000000000000",
@@ -1434,7 +1511,7 @@
           "flags" : []
         },
         {
-          "tcId" : 117,
+          "tcId" : 123,
           "comment" : "Flipped bit 1 in tag",
           "key" : "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
           "iv" : "000000000000000000000000",
@@ -1446,7 +1523,7 @@
           "flags" : []
         },
         {
-          "tcId" : 118,
+          "tcId" : 124,
           "comment" : "Flipped bit 7 in tag",
           "key" : "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
           "iv" : "000000000000000000000000",
@@ -1458,7 +1535,7 @@
           "flags" : []
         },
         {
-          "tcId" : 119,
+          "tcId" : 125,
           "comment" : "Flipped bit 7 in tag",
           "key" : "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
           "iv" : "000000000000000000000000",
@@ -1470,7 +1547,7 @@
           "flags" : []
         },
         {
-          "tcId" : 120,
+          "tcId" : 126,
           "comment" : "Flipped bit 7 in tag",
           "key" : "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
           "iv" : "000000000000000000000000",
@@ -1482,7 +1559,7 @@
           "flags" : []
         },
         {
-          "tcId" : 121,
+          "tcId" : 127,
           "comment" : "Flipped bit 8 in tag",
           "key" : "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
           "iv" : "000000000000000000000000",
@@ -1494,7 +1571,7 @@
           "flags" : []
         },
         {
-          "tcId" : 122,
+          "tcId" : 128,
           "comment" : "Flipped bit 8 in tag",
           "key" : "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
           "iv" : "000000000000000000000000",
@@ -1506,7 +1583,7 @@
           "flags" : []
         },
         {
-          "tcId" : 123,
+          "tcId" : 129,
           "comment" : "Flipped bit 31 in tag",
           "key" : "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
           "iv" : "000000000000000000000000",
@@ -1518,7 +1595,7 @@
           "flags" : []
         },
         {
-          "tcId" : 124,
+          "tcId" : 130,
           "comment" : "Flipped bit 31 in tag",
           "key" : "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
           "iv" : "000000000000000000000000",
@@ -1530,7 +1607,7 @@
           "flags" : []
         },
         {
-          "tcId" : 125,
+          "tcId" : 131,
           "comment" : "Flipped bit 32 in tag",
           "key" : "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
           "iv" : "000000000000000000000000",
@@ -1542,7 +1619,43 @@
           "flags" : []
         },
         {
-          "tcId" : 126,
+          "tcId" : 132,
+          "comment" : "Flipped bit 56 in tag",
+          "key" : "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
+          "iv" : "000000000000000000000000",
+          "aad" : "46c788111083d8913153a6e37e5506a3",
+          "msg" : "",
+          "ct" : "",
+          "tag" : "0987e35e40981a2730c1740c7201731f",
+          "result" : "invalid",
+          "flags" : []
+        },
+        {
+          "tcId" : 133,
+          "comment" : "Flipped bit 56 in tag",
+          "key" : "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
+          "iv" : "000000000000000000000000",
+          "aad" : "1ed7665962378cec4039c793a8f744d0",
+          "msg" : "759dfbbb8a251ccc",
+          "ct" : "0000000000000000",
+          "tag" : "00000000000000000000000000000000",
+          "result" : "invalid",
+          "flags" : []
+        },
+        {
+          "tcId" : 134,
+          "comment" : "Flipped bit 56 in tag",
+          "key" : "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
+          "iv" : "000000000000000000000000",
+          "aad" : "a0f7587c5862609c6dc983780bcda180",
+          "msg" : "49861b1fb6bcf8e4",
+          "ct" : "ffffffffffffffff",
+          "tag" : "ffffffffffffffffffffffffffffffff",
+          "result" : "invalid",
+          "flags" : []
+        },
+        {
+          "tcId" : 135,
           "comment" : "Flipped bit 63 in tag",
           "key" : "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
           "iv" : "000000000000000000000000",
@@ -1554,7 +1667,7 @@
           "flags" : []
         },
         {
-          "tcId" : 127,
+          "tcId" : 136,
           "comment" : "Flipped bit 63 in tag",
           "key" : "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
           "iv" : "000000000000000000000000",
@@ -1566,7 +1679,7 @@
           "flags" : []
         },
         {
-          "tcId" : 128,
+          "tcId" : 137,
           "comment" : "Flipped bit 64 in tag",
           "key" : "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
           "iv" : "000000000000000000000000",
@@ -1578,7 +1691,43 @@
           "flags" : []
         },
         {
-          "tcId" : 129,
+          "tcId" : 138,
+          "comment" : "Flipped bit 88 in tag",
+          "key" : "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
+          "iv" : "000000000000000000000000",
+          "aad" : "90a992a8443d65870b4d8bca85e4a698",
+          "msg" : "f663044a4e7dd822aba0b7de2d869981",
+          "ct" : "00000000000000000000000000000000",
+          "tag" : "13a1883272188b4c8d2727178198fe95",
+          "result" : "invalid",
+          "flags" : []
+        },
+        {
+          "tcId" : 139,
+          "comment" : "Flipped bit 88 in tag",
+          "key" : "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
+          "iv" : "000000000000000000000000",
+          "aad" : "e1737a834410e5fba6cdc1d1f7d12c12",
+          "msg" : "49861b1fb6bcf8e4",
+          "ct" : "ffffffffffffffff",
+          "tag" : "ffffffffffffffffffffffffffffffff",
+          "result" : "invalid",
+          "flags" : []
+        },
+        {
+          "tcId" : 140,
+          "comment" : "Flipped bit 96 in tag",
+          "key" : "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
+          "iv" : "000000000000000000000000",
+          "aad" : "445c8fffa3d960e39ca86260c66418d8",
+          "msg" : "",
+          "ct" : "",
+          "tag" : "0987e35e40981a2730c1740c7201731f",
+          "result" : "invalid",
+          "flags" : []
+        },
+        {
+          "tcId" : 141,
           "comment" : "Flipped bit 97 in tag",
           "key" : "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
           "iv" : "000000000000000000000000",
@@ -1590,7 +1739,7 @@
           "flags" : []
         },
         {
-          "tcId" : 130,
+          "tcId" : 142,
           "comment" : "Flipped bit 97 in tag",
           "key" : "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
           "iv" : "000000000000000000000000",
@@ -1602,7 +1751,7 @@
           "flags" : []
         },
         {
-          "tcId" : 131,
+          "tcId" : 143,
           "comment" : "Flipped bit 97 in tag",
           "key" : "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
           "iv" : "000000000000000000000000",
@@ -1614,7 +1763,7 @@
           "flags" : []
         },
         {
-          "tcId" : 132,
+          "tcId" : 144,
           "comment" : "Flipped bit 120 in tag",
           "key" : "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
           "iv" : "000000000000000000000000",
@@ -1626,7 +1775,7 @@
           "flags" : []
         },
         {
-          "tcId" : 133,
+          "tcId" : 145,
           "comment" : "Flipped bit 120 in tag",
           "key" : "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
           "iv" : "000000000000000000000000",
@@ -1638,7 +1787,7 @@
           "flags" : []
         },
         {
-          "tcId" : 134,
+          "tcId" : 146,
           "comment" : "Flipped bit 120 in tag",
           "key" : "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
           "iv" : "000000000000000000000000",
@@ -1650,7 +1799,7 @@
           "flags" : []
         },
         {
-          "tcId" : 135,
+          "tcId" : 147,
           "comment" : "Flipped bit 121 in tag",
           "key" : "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
           "iv" : "000000000000000000000000",
@@ -1662,7 +1811,7 @@
           "flags" : []
         },
         {
-          "tcId" : 136,
+          "tcId" : 148,
           "comment" : "Flipped bit 121 in tag",
           "key" : "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
           "iv" : "000000000000000000000000",
@@ -1674,7 +1823,7 @@
           "flags" : []
         },
         {
-          "tcId" : 137,
+          "tcId" : 149,
           "comment" : "Flipped bit 126 in tag",
           "key" : "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
           "iv" : "000000000000000000000000",
@@ -1686,7 +1835,7 @@
           "flags" : []
         },
         {
-          "tcId" : 138,
+          "tcId" : 150,
           "comment" : "Flipped bit 126 in tag",
           "key" : "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
           "iv" : "000000000000000000000000",
@@ -1698,7 +1847,7 @@
           "flags" : []
         },
         {
-          "tcId" : 139,
+          "tcId" : 151,
           "comment" : "Flipped bit 126 in tag",
           "key" : "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
           "iv" : "000000000000000000000000",
@@ -1710,7 +1859,7 @@
           "flags" : []
         },
         {
-          "tcId" : 140,
+          "tcId" : 152,
           "comment" : "Flipped bit 127 in tag",
           "key" : "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
           "iv" : "000000000000000000000000",
@@ -1722,7 +1871,7 @@
           "flags" : []
         },
         {
-          "tcId" : 141,
+          "tcId" : 153,
           "comment" : "Flipped bit 127 in tag",
           "key" : "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
           "iv" : "000000000000000000000000",
@@ -1734,7 +1883,7 @@
           "flags" : []
         },
         {
-          "tcId" : 142,
+          "tcId" : 154,
           "comment" : "Flipped bit 127 in tag",
           "key" : "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
           "iv" : "000000000000000000000000",
@@ -1746,7 +1895,7 @@
           "flags" : []
         },
         {
-          "tcId" : 143,
+          "tcId" : 155,
           "comment" : "Flipped bit 0..127 in tag",
           "key" : "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
           "iv" : "000000000000000000000000",

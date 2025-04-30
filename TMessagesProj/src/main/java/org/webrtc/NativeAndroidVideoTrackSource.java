@@ -22,7 +22,7 @@ import org.webrtc.VideoProcessor;
  * sent to adaptFrame(), the adapted frames adaptedA, adaptedB, ..., needs to be passed in the same
  * order to onFrameCaptured().
  */
-public class NativeAndroidVideoTrackSource {
+class NativeAndroidVideoTrackSource {
   // Pointer to webrtc::jni::AndroidVideoTrackSource.
   private final long nativeAndroidVideoTrackSource;
 

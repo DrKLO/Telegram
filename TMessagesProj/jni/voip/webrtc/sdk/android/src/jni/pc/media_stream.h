@@ -12,6 +12,7 @@
 #define SDK_ANDROID_SRC_JNI_PC_MEDIA_STREAM_H_
 
 #include <jni.h>
+
 #include <memory>
 
 #include "api/media_stream_interface.h"

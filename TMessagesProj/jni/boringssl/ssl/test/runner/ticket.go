@@ -10,147 +10,154 @@ import (
 	"crypto/hmac"
 	"crypto/sha256"
 	"crypto/subtle"
-	"encoding/binary"
 	"errors"
 	"io"
 	"time"
+
+	"golang.org/x/crypto/cryptobyte"
 )
 
 // sessionState contains the information that is serialized into a session
 // ticket in order to later resume a connection.
 type sessionState struct {
-	vers                 uint16
-	cipherSuite          uint16
-	masterSecret         []byte
-	handshakeHash        []byte
-	certificates         [][]byte
-	extendedMasterSecret bool
-	earlyALPN            []byte
-	ticketCreationTime   time.Time
-	ticketExpiration     time.Time
-	ticketFlags          uint32
-	ticketAgeAdd         uint32
+	vers                        uint16
+	cipherSuite                 uint16
+	secret                      []byte
+	handshakeHash               []byte
+	certificates                [][]byte
+	extendedMasterSecret        bool
+	earlyALPN                   []byte
+	ticketCreationTime          time.Time
+	ticketExpiration            time.Time
+	ticketFlags                 uint32
+	ticketAgeAdd                uint32
+	hasApplicationSettings      bool
+	localApplicationSettings    []byte
+	peerApplicationSettings     []byte
+	hasApplicationSettingsOld   bool
+	localApplicationSettingsOld []byte
+	peerApplicationSettingsOld  []byte
 }
 
 func (s *sessionState) marshal() []byte {
-	msg := newByteBuilder()
-	msg.addU16(s.vers)
-	msg.addU16(s.cipherSuite)
-	masterSecret := msg.addU16LengthPrefixed()
-	masterSecret.addBytes(s.masterSecret)
-	handshakeHash := msg.addU16LengthPrefixed()
-	handshakeHash.addBytes(s.handshakeHash)
-	msg.addU16(uint16(len(s.certificates)))
+	msg := cryptobyte.NewBuilder(nil)
+	msg.AddUint16(s.vers)
+	msg.AddUint16(s.cipherSuite)
+	addUint16LengthPrefixedBytes(msg, s.secret)
+	addUint16LengthPrefixedBytes(msg, s.handshakeHash)
+	msg.AddUint16(uint16(len(s.certificates)))
 	for _, cert := range s.certificates {
-		certMsg := msg.addU32LengthPrefixed()
-		certMsg.addBytes(cert)
+		addUint24LengthPrefixedBytes(msg, cert)
 	}
 
 	if s.extendedMasterSecret {
-		msg.addU8(1)
+		msg.AddUint8(1)
 	} else {
-		msg.addU8(0)
+		msg.AddUint8(0)
 	}
 
 	if s.vers >= VersionTLS13 {
-		msg.addU64(uint64(s.ticketCreationTime.UnixNano()))
-		msg.addU64(uint64(s.ticketExpiration.UnixNano()))
-		msg.addU32(s.ticketFlags)
-		msg.addU32(s.ticketAgeAdd)
+		msg.AddUint64(uint64(s.ticketCreationTime.UnixNano()))
+		msg.AddUint64(uint64(s.ticketExpiration.UnixNano()))
+		msg.AddUint32(s.ticketFlags)
+		msg.AddUint32(s.ticketAgeAdd)
 	}
 
-	earlyALPN := msg.addU16LengthPrefixed()
-	earlyALPN.addBytes(s.earlyALPN)
+	addUint16LengthPrefixedBytes(msg, s.earlyALPN)
 
-	return msg.finish()
+	if s.hasApplicationSettings {
+		msg.AddUint8(1)
+		addUint16LengthPrefixedBytes(msg, s.localApplicationSettings)
+		addUint16LengthPrefixedBytes(msg, s.peerApplicationSettings)
+	} else {
+		msg.AddUint8(0)
+	}
+
+	if s.hasApplicationSettingsOld {
+		msg.AddUint8(1)
+		addUint16LengthPrefixedBytes(msg, s.localApplicationSettingsOld)
+		addUint16LengthPrefixedBytes(msg, s.peerApplicationSettingsOld)
+	} else {
+		msg.AddUint8(0)
+	}
+
+	return msg.BytesOrPanic()
+}
+
+func readBool(reader *cryptobyte.String, out *bool) bool {
+	var value uint8
+	if !reader.ReadUint8(&value) {
+		return false
+	}
+	if value == 0 {
+		*out = false
+		return true
+	}
+	if value == 1 {
+		*out = true
+		return true
+	}
+	return false
 }
 
 func (s *sessionState) unmarshal(data []byte) bool {
-	if len(data) < 8 {
+	reader := cryptobyte.String(data)
+	var numCerts uint16
+	if !reader.ReadUint16(&s.vers) ||
+		!reader.ReadUint16(&s.cipherSuite) ||
+		!readUint16LengthPrefixedBytes(&reader, &s.secret) ||
+		!readUint16LengthPrefixedBytes(&reader, &s.handshakeHash) ||
+		!reader.ReadUint16(&numCerts) {
 		return false
 	}
 
-	s.vers = uint16(data[0])<<8 | uint16(data[1])
-	s.cipherSuite = uint16(data[2])<<8 | uint16(data[3])
-	masterSecretLen := int(data[4])<<8 | int(data[5])
-	data = data[6:]
-	if len(data) < masterSecretLen {
-		return false
-	}
-
-	s.masterSecret = data[:masterSecretLen]
-	data = data[masterSecretLen:]
-
-	if len(data) < 2 {
-		return false
-	}
-
-	handshakeHashLen := int(data[0])<<8 | int(data[1])
-	data = data[2:]
-	if len(data) < handshakeHashLen {
-		return false
-	}
-
-	s.handshakeHash = data[:handshakeHashLen]
-	data = data[handshakeHashLen:]
-
-	if len(data) < 2 {
-		return false
-	}
-
-	numCerts := int(data[0])<<8 | int(data[1])
-	data = data[2:]
-
-	s.certificates = make([][]byte, numCerts)
+	s.certificates = make([][]byte, int(numCerts))
 	for i := range s.certificates {
-		if len(data) < 4 {
+		if !readUint24LengthPrefixedBytes(&reader, &s.certificates[i]) {
 			return false
 		}
-		certLen := int(data[0])<<24 | int(data[1])<<16 | int(data[2])<<8 | int(data[3])
-		data = data[4:]
-		if certLen < 0 {
-			return false
-		}
-		if len(data) < certLen {
-			return false
-		}
-		s.certificates[i] = data[:certLen]
-		data = data[certLen:]
 	}
 
-	if len(data) < 1 {
+	if !readBool(&reader, &s.extendedMasterSecret) {
 		return false
 	}
-
-	s.extendedMasterSecret = false
-	if data[0] == 1 {
-		s.extendedMasterSecret = true
-	}
-	data = data[1:]
 
 	if s.vers >= VersionTLS13 {
-		if len(data) < 24 {
+		var ticketCreationTime, ticketExpiration uint64
+		if !reader.ReadUint64(&ticketCreationTime) ||
+			!reader.ReadUint64(&ticketExpiration) ||
+			!reader.ReadUint32(&s.ticketFlags) ||
+			!reader.ReadUint32(&s.ticketAgeAdd) {
 			return false
 		}
-		s.ticketCreationTime = time.Unix(0, int64(binary.BigEndian.Uint64(data)))
-		data = data[8:]
-		s.ticketExpiration = time.Unix(0, int64(binary.BigEndian.Uint64(data)))
-		data = data[8:]
-		s.ticketFlags = binary.BigEndian.Uint32(data)
-		data = data[4:]
-		s.ticketAgeAdd = binary.BigEndian.Uint32(data)
-		data = data[4:]
+		s.ticketCreationTime = time.Unix(0, int64(ticketCreationTime))
+		s.ticketExpiration = time.Unix(0, int64(ticketExpiration))
 	}
 
-	earlyALPNLen := int(data[0])<<8 | int(data[1])
-	data = data[2:]
-	if len(data) < earlyALPNLen {
+	if !readUint16LengthPrefixedBytes(&reader, &s.earlyALPN) ||
+		!readBool(&reader, &s.hasApplicationSettings) {
 		return false
 	}
-	s.earlyALPN = data[:earlyALPNLen]
-	data = data[earlyALPNLen:]
 
-	if len(data) > 0 {
+	if s.hasApplicationSettings {
+		if !readUint16LengthPrefixedBytes(&reader, &s.localApplicationSettings) ||
+			!readUint16LengthPrefixedBytes(&reader, &s.peerApplicationSettings) {
+			return false
+		}
+	}
+
+	if !readBool(&reader, &s.hasApplicationSettingsOld) {
+		return false
+	}
+
+	if s.hasApplicationSettingsOld {
+		if !readUint16LengthPrefixedBytes(&reader, &s.localApplicationSettingsOld) ||
+			!readUint16LengthPrefixedBytes(&reader, &s.peerApplicationSettingsOld) {
+			return false
+		}
+	}
+
+	if len(reader) > 0 {
 		return false
 	}
 
@@ -158,6 +165,11 @@ func (s *sessionState) unmarshal(data []byte) bool {
 }
 
 func (c *Conn) encryptTicket(state *sessionState) ([]byte, error) {
+	key := c.config.SessionTicketKey[:]
+	if c.config.Bugs.EncryptSessionTicketKey != nil {
+		key = c.config.Bugs.EncryptSessionTicketKey[:]
+	}
+
 	serialized := state.marshal()
 	encrypted := make([]byte, aes.BlockSize+len(serialized)+sha256.Size)
 	iv := encrypted[:aes.BlockSize]
@@ -166,13 +178,13 @@ func (c *Conn) encryptTicket(state *sessionState) ([]byte, error) {
 	if _, err := io.ReadFull(c.config.rand(), iv); err != nil {
 		return nil, err
 	}
-	block, err := aes.NewCipher(c.config.SessionTicketKey[:16])
+	block, err := aes.NewCipher(key[:16])
 	if err != nil {
 		return nil, errors.New("tls: failed to create cipher while encrypting ticket: " + err.Error())
 	}
 	cipher.NewCTR(block, iv).XORKeyStream(encrypted[aes.BlockSize:], serialized)
 
-	mac := hmac.New(sha256.New, c.config.SessionTicketKey[16:32])
+	mac := hmac.New(sha256.New, key[16:32])
 	mac.Write(encrypted[:len(encrypted)-sha256.Size])
 	mac.Sum(macBytes[:0])
 

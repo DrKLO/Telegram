@@ -13,12 +13,14 @@
 
 #include <utility>
 
+#include "absl/base/nullability.h"
 #include "absl/functional/any_invocable.h"
 #include "api/ref_counted_base.h"
 #include "api/scoped_refptr.h"
 #include "api/sequence_checker.h"
 #include "rtc_base/checks.h"
 #include "rtc_base/system/no_unique_address.h"
+#include "rtc_base/system/rtc_export.h"
 
 namespace webrtc {
 
@@ -58,7 +60,7 @@ namespace webrtc {
 //
 //   my_task_queue_->PostTask(SafeTask(safety_flag_, [this] { MyMethod(); }));
 //
-class PendingTaskSafetyFlag final
+class RTC_EXPORT PendingTaskSafetyFlag final
     : public rtc::RefCountedNonVirtual<PendingTaskSafetyFlag> {
  public:
   static rtc::scoped_refptr<PendingTaskSafetyFlag> Create();
@@ -66,6 +68,12 @@ class PendingTaskSafetyFlag final
   // Creates a flag, but with its SequenceChecker initially detached. Hence, it
   // may be created on a different thread than the flag will be used on.
   static rtc::scoped_refptr<PendingTaskSafetyFlag> CreateDetached();
+
+  // Creates a flag, but with its SequenceChecker explicitly initialized for
+  // a given task queue and the `alive()` flag specified.
+  static rtc::scoped_refptr<PendingTaskSafetyFlag> CreateAttachedToTaskQueue(
+      bool alive,
+      absl::Nonnull<TaskQueueBase*> attached_queue);
 
   // Same as `CreateDetached()` except the initial state of the returned flag
   // will be `!alive()`.
@@ -94,6 +102,9 @@ class PendingTaskSafetyFlag final
 
  protected:
   explicit PendingTaskSafetyFlag(bool alive) : alive_(alive) {}
+  PendingTaskSafetyFlag(bool alive,
+                        absl::Nonnull<TaskQueueBase*> attached_queue)
+      : alive_(alive), main_sequence_(attached_queue) {}
 
  private:
   static rtc::scoped_refptr<PendingTaskSafetyFlag> CreateInternal(bool alive);
@@ -116,7 +127,7 @@ class PendingTaskSafetyFlag final
 // This should be used by the class that wants tasks dropped after destruction.
 // The requirement is that the instance has to be constructed and destructed on
 // the same thread as the potentially dropped tasks would be running on.
-class ScopedTaskSafety final {
+class RTC_EXPORT ScopedTaskSafety final {
  public:
   ScopedTaskSafety() = default;
   explicit ScopedTaskSafety(rtc::scoped_refptr<PendingTaskSafetyFlag> flag)
@@ -140,7 +151,7 @@ class ScopedTaskSafety final {
 
 // Like ScopedTaskSafety, but allows construction on a different thread than
 // where the flag will be used.
-class ScopedTaskSafetyDetached final {
+class RTC_EXPORT ScopedTaskSafetyDetached final {
  public:
   ScopedTaskSafetyDetached() = default;
   ~ScopedTaskSafetyDetached() { flag_->SetNotAlive(); }

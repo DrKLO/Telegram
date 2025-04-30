@@ -44,14 +44,17 @@ class UniqueNumberGenerator {
   // If there are no available numbers to generate, this method will fail
   // with an `RTC_CHECK`.
   TIntegral GenerateNumber();
-  TIntegral operator()() { return GenerateNumber(); }
+
+  // Alias for GenerateId, used for allowing typed testing
+  TIntegral Generate() { return GenerateNumber(); }
 
   // Adds an id that this generator should no longer generate.
   // Return value indicates whether the ID was hitherto unknown.
   bool AddKnownId(TIntegral value);
 
  private:
-  RTC_NO_UNIQUE_ADDRESS webrtc::SequenceChecker sequence_checker_;
+  RTC_NO_UNIQUE_ADDRESS webrtc::SequenceChecker sequence_checker_{
+      webrtc::SequenceChecker::kDetached};
   static_assert(std::is_integral<TIntegral>::value, "Must be integral type.");
   TIntegral counter_ RTC_GUARDED_BY(sequence_checker_);
   std::set<TIntegral> known_ids_ RTC_GUARDED_BY(sequence_checker_);
@@ -74,7 +77,9 @@ class UniqueRandomIdGenerator {
   // This method becomes more expensive with each use, as the probability of
   // collision for the randomly generated numbers increases.
   uint32_t GenerateId();
-  uint32_t operator()() { return GenerateId(); }
+
+  // Alias for GenerateId, used for allowing typed testing
+  uint32_t Generate() { return GenerateId(); }
 
   // Adds an id that this generator should no longer generate.
   // Return value indicates whether the ID was hitherto unknown.
@@ -100,7 +105,8 @@ class UniqueStringGenerator {
   ~UniqueStringGenerator();
 
   std::string GenerateString();
-  std::string operator()() { return GenerateString(); }
+  // Alias for GenerateString, used for allowing typed testing
+  std::string Generate() { return GenerateString(); }
 
   // Adds an id that this generator should no longer generate.
   // Return value indicates whether the ID was hitherto unknown.
@@ -112,16 +118,12 @@ class UniqueStringGenerator {
 };
 
 template <typename TIntegral>
-UniqueNumberGenerator<TIntegral>::UniqueNumberGenerator() : counter_(0) {
-  sequence_checker_.Detach();
-}
+UniqueNumberGenerator<TIntegral>::UniqueNumberGenerator() : counter_(0) {}
 
 template <typename TIntegral>
 UniqueNumberGenerator<TIntegral>::UniqueNumberGenerator(
     ArrayView<TIntegral> known_ids)
-    : counter_(0), known_ids_(known_ids.begin(), known_ids.end()) {
-  sequence_checker_.Detach();
-}
+    : counter_(0), known_ids_(known_ids.begin(), known_ids.end()) {}
 
 template <typename TIntegral>
 UniqueNumberGenerator<TIntegral>::~UniqueNumberGenerator() {}

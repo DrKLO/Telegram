@@ -27,6 +27,6 @@
 
 void WebRtcIlbcfix_Poly2Lsf(int16_t* lsf, /* (o) lsf coefficients (Q13) */
                             int16_t* a    /* (i) A coefficients (Q12) */
-                            );
+);
 
 #endif

@@ -7163,7 +7163,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             int messagesCount = getMessagesController().getSavedMessagesController().getMessagesCount(getDialogId());
             mediaCounterTextView.setText(LocaleController.formatPluralString("SavedMessagesCount", Math.max(1, messagesCount)));
         } else if (id == SharedMediaLayout.TAB_GIFTS) {
-            mediaCounterTextView.setText(LocaleController.formatPluralStringComma("ProfileGiftsCount", sharedMediaLayout.giftsContainer.getGiftsCount()));
+            mediaCounterTextView.setText(LocaleController.formatPluralStringComma("ProfileGiftsCount", sharedMediaLayout.giftsContainer == null ? 0 : sharedMediaLayout.giftsContainer.getGiftsCount()));
         }
     }
 

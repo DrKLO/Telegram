@@ -17,6 +17,7 @@
 #include <string.h>
 
 #include <algorithm>
+#include <array>
 #include <cassert>
 #include <cmath>
 #include <limits>
@@ -159,7 +160,7 @@ class BinaryToDecimal {
 
   // See the current block of digits.
   absl::string_view CurrentDigits() const {
-    return absl::string_view(digits_ + kDigitsPerChunk - size_, size_);
+    return absl::string_view(&digits_[kDigitsPerChunk - size_], size_);
   }
 
   // Advance the current view of digits.
@@ -234,7 +235,7 @@ class BinaryToDecimal {
   size_t decimal_start_;
   size_t decimal_end_;
 
-  char digits_[kDigitsPerChunk];
+  std::array<char, kDigitsPerChunk> digits_;
   size_t size_ = 0;
 
   absl::Span<uint32_t> data_;
@@ -711,12 +712,12 @@ bool IncrementNibble(size_t nibble_index, Int* n) {
   constexpr size_t kShift = sizeof(Int) * 8 - 1;
   constexpr size_t kNumNibbles = sizeof(Int) * 8 / 4;
   Int before = *n >> kShift;
-  // Here we essentially want to take the number 1 and move it into the requsted
-  // nibble, then add it to *n to effectively increment the nibble. However,
-  // ASan will complain if we try to shift the 1 beyond the limits of the Int,
-  // i.e., if the nibble_index is out of range. So therefore we check for this
-  // and if we are out of range we just add 0 which leaves *n unchanged, which
-  // seems like the reasonable thing to do in that case.
+  // Here we essentially want to take the number 1 and move it into the
+  // requested nibble, then add it to *n to effectively increment the nibble.
+  // However, ASan will complain if we try to shift the 1 beyond the limits of
+  // the Int, i.e., if the nibble_index is out of range. So therefore we check
+  // for this and if we are out of range we just add 0 which leaves *n
+  // unchanged, which seems like the reasonable thing to do in that case.
   *n += ((nibble_index >= kNumNibbles)
              ? 0
              : (Int{1} << static_cast<int>(nibble_index * 4)));
@@ -937,7 +938,7 @@ void FormatA(const HexFloatTypeParams float_traits, Int mantissa, int exp,
 
   // =============== Exponent ==================
   constexpr size_t kBufSizeForExpDecRepr =
-      numbers_internal::kFastToBufferSize  // requred for FastIntToBuffer
+      numbers_internal::kFastToBufferSize  // required for FastIntToBuffer
       + 1                                  // 'p' or 'P'
       + 1;                                 // '+' or '-'
   char exp_buffer[kBufSizeForExpDecRepr];
@@ -1015,7 +1016,7 @@ struct Buffer {
     --end;
   }
 
-  char &back() {
+  char &back() const {
     assert(begin < end);
     return end[-1];
   }
@@ -1102,7 +1103,7 @@ void PrintExponent(int exp, char e, Buffer *out) {
 template <typename Float, typename Int>
 constexpr bool CanFitMantissa() {
   return
-#if defined(__clang__) && !defined(__SSE3__)
+#if defined(__clang__) && (__clang_major__ < 9) && !defined(__SSE3__)
       // Workaround for clang bug: https://bugs.llvm.org/show_bug.cgi?id=38289
       // Casting from long double to uint64_t is miscompiled and drops bits.
       (!std::is_same<Float, long double>::value ||

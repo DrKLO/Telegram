@@ -31,12 +31,8 @@ struct FecProtectionParams;
 class RtpVideoSenderInterface : public EncodedImageCallback,
                                 public FecControllerOverride {
  public:
-  // RtpVideoSender will only route packets if being active, all
-  // packets will be dropped otherwise.
-  virtual void SetActive(bool active) = 0;
-  // Sets the sending status of the rtp modules and appropriately sets the
-  // RtpVideoSender to active if any rtp modules are active.
-  virtual void SetActiveModules(std::vector<bool> active_modules) = 0;
+  // Sets weather or not RTP packets is allowed to be sent on this sender.
+  virtual void SetSending(bool enabled) = 0;
   virtual bool IsActive() = 0;
 
   virtual void OnNetworkAvailability(bool network_available) = 0;

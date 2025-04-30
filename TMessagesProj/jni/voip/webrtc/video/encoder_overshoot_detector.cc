@@ -11,6 +11,9 @@
 #include "video/encoder_overshoot_detector.h"
 
 #include <algorithm>
+#include <string>
+
+#include "system_wrappers/include/metrics.h"
 
 namespace webrtc {
 namespace {
@@ -20,7 +23,9 @@ namespace {
 static constexpr double kMaxMediaUnderrunFrames = 5.0;
 }  // namespace
 
-EncoderOvershootDetector::EncoderOvershootDetector(int64_t window_size_ms)
+EncoderOvershootDetector::EncoderOvershootDetector(int64_t window_size_ms,
+                                                   VideoCodecType codec,
+                                                   bool is_screenshare)
     : window_size_ms_(window_size_ms),
       time_last_update_ms_(-1),
       sum_network_utilization_factors_(0.0),
@@ -28,9 +33,16 @@ EncoderOvershootDetector::EncoderOvershootDetector(int64_t window_size_ms)
       target_bitrate_(DataRate::Zero()),
       target_framerate_fps_(0),
       network_buffer_level_bits_(0),
-      media_buffer_level_bits_(0) {}
+      media_buffer_level_bits_(0),
+      codec_(codec),
+      is_screenshare_(is_screenshare),
+      frame_count_(0),
+      sum_diff_kbps_squared_(0),
+      sum_overshoot_percent_(0) {}
 
-EncoderOvershootDetector::~EncoderOvershootDetector() = default;
+EncoderOvershootDetector::~EncoderOvershootDetector() {
+  UpdateHistograms();
+}
 
 void EncoderOvershootDetector::SetTargetRate(DataRate target_bitrate,
                                              double target_framerate_fps,
@@ -57,6 +69,7 @@ void EncoderOvershootDetector::OnEncodedFrame(size_t bytes, int64_t time_ms) {
   // bitrate.
   LeakBits(time_ms);
 
+  const int64_t frame_size_bits = bytes * 8;
   // Ideal size of a frame given the current rates.
   const int64_t ideal_frame_size_bits = IdealFrameSizeBits();
   if (ideal_frame_size_bits == 0) {
@@ -64,13 +77,21 @@ void EncoderOvershootDetector::OnEncodedFrame(size_t bytes, int64_t time_ms) {
     return;
   }
 
-  const double network_utilization_factor = HandleEncodedFrame(
-      bytes * 8, ideal_frame_size_bits, time_ms, &network_buffer_level_bits_);
-  const double media_utilization_factor = HandleEncodedFrame(
-      bytes * 8, ideal_frame_size_bits, time_ms, &media_buffer_level_bits_);
+  const double network_utilization_factor =
+      HandleEncodedFrame(frame_size_bits, ideal_frame_size_bits, time_ms,
+                         &network_buffer_level_bits_);
+  const double media_utilization_factor =
+      HandleEncodedFrame(frame_size_bits, ideal_frame_size_bits, time_ms,
+                         &media_buffer_level_bits_);
 
   sum_network_utilization_factors_ += network_utilization_factor;
   sum_media_utilization_factors_ += media_utilization_factor;
+
+  // Calculate the bitrate diff in kbps
+  int64_t diff_kbits = (frame_size_bits - ideal_frame_size_bits) / 1000;
+  sum_diff_kbps_squared_ += diff_kbits * diff_kbits;
+  sum_overshoot_percent_ += diff_kbits * 100 * 1000 / ideal_frame_size_bits;
+  ++frame_count_;
 
   utilization_factors_.emplace_back(network_utilization_factor,
                                     media_utilization_factor, time_ms);
@@ -142,6 +163,10 @@ absl::optional<double> EncoderOvershootDetector::GetMediaRateUtilizationFactor(
 }
 
 void EncoderOvershootDetector::Reset() {
+  UpdateHistograms();
+  sum_diff_kbps_squared_ = 0;
+  frame_count_ = 0;
+  sum_overshoot_percent_ = 0;
   time_last_update_ms_ = -1;
   utilization_factors_.clear();
   target_bitrate_ = DataRate::Zero();
@@ -198,6 +223,58 @@ void EncoderOvershootDetector::CullOldUpdates(int64_t time_ms) {
         0.0, sum_media_utilization_factors_ -
                  utilization_factors_.front().media_utilization_factor);
     utilization_factors_.pop_front();
+  }
+}
+
+void EncoderOvershootDetector::UpdateHistograms() {
+  if (frame_count_ == 0)
+    return;
+
+  int64_t bitrate_rmse = std::sqrt(sum_diff_kbps_squared_ / frame_count_);
+  int64_t average_overshoot_percent = sum_overshoot_percent_ / frame_count_;
+  const std::string rmse_histogram_prefix =
+      is_screenshare_ ? "WebRTC.Video.Screenshare.RMSEOfEncodingBitrateInKbps."
+                      : "WebRTC.Video.RMSEOfEncodingBitrateInKbps.";
+  const std::string overshoot_histogram_prefix =
+      is_screenshare_ ? "WebRTC.Video.Screenshare.EncodingBitrateOvershoot."
+                      : "WebRTC.Video.EncodingBitrateOvershoot.";
+  // index = 1 represents screensharing histograms recording.
+  // index = 0 represents normal video histograms recording.
+  const int index = is_screenshare_ ? 1 : 0;
+  switch (codec_) {
+    case VideoCodecType::kVideoCodecAV1:
+      RTC_HISTOGRAMS_COUNTS_10000(index, rmse_histogram_prefix + "Av1",
+                                  bitrate_rmse);
+      RTC_HISTOGRAMS_COUNTS_10000(index, overshoot_histogram_prefix + "Av1",
+                                  average_overshoot_percent);
+      break;
+    case VideoCodecType::kVideoCodecVP9:
+      RTC_HISTOGRAMS_COUNTS_10000(index, rmse_histogram_prefix + "Vp9",
+                                  bitrate_rmse);
+      RTC_HISTOGRAMS_COUNTS_10000(index, overshoot_histogram_prefix + "Vp9",
+                                  average_overshoot_percent);
+      break;
+    case VideoCodecType::kVideoCodecVP8:
+      RTC_HISTOGRAMS_COUNTS_10000(index, rmse_histogram_prefix + "Vp8",
+                                  bitrate_rmse);
+      RTC_HISTOGRAMS_COUNTS_10000(index, overshoot_histogram_prefix + "Vp8",
+                                  average_overshoot_percent);
+      break;
+    case VideoCodecType::kVideoCodecH264:
+      RTC_HISTOGRAMS_COUNTS_10000(index, rmse_histogram_prefix + "H264",
+                                  bitrate_rmse);
+      RTC_HISTOGRAMS_COUNTS_10000(index, overshoot_histogram_prefix + "H264",
+                                  average_overshoot_percent);
+      break;
+    case VideoCodecType::kVideoCodecH265:
+      RTC_HISTOGRAMS_COUNTS_10000(index, rmse_histogram_prefix + "H265",
+                                  bitrate_rmse);
+      RTC_HISTOGRAMS_COUNTS_10000(index, overshoot_histogram_prefix + "H265",
+                                  average_overshoot_percent);
+      break;
+    case VideoCodecType::kVideoCodecGeneric:
+    case VideoCodecType::kVideoCodecMultiplex:
+      break;
   }
 }
 

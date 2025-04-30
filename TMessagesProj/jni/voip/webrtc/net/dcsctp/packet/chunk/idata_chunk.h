@@ -42,7 +42,7 @@ class IDataChunk : public AnyDataChunk, public TLVTrait<IDataChunkConfig> {
   static constexpr size_t kHeaderSize = IDataChunkConfig::kHeaderSize;
   IDataChunk(TSN tsn,
              StreamID stream_id,
-             MID message_id,
+             MID mid,
              PPID ppid,
              FSN fsn,
              std::vector<uint8_t> payload,
@@ -50,7 +50,7 @@ class IDataChunk : public AnyDataChunk, public TLVTrait<IDataChunkConfig> {
       : AnyDataChunk(tsn,
                      stream_id,
                      SSN(0),
-                     message_id,
+                     mid,
                      fsn,
                      ppid,
                      std::move(payload),

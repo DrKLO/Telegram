@@ -2,9 +2,11 @@ Name: Fiat-Crypto: Synthesizing Correct-by-Construction Code for Cryptographic P
 Short Name: fiat-crypto
 URL: https://github.com/mit-plv/fiat-crypto
 Version: git (see METADATA)
-License: MIT
+Revision: 6ccc6638716d4632304baf1adbb5c47c3a12ea6f
+License: Apache 2.0
 License File: LICENSE
 Security Critical: yes
+Shipped: yes
 
 Description:
 See README.md and METADATA.

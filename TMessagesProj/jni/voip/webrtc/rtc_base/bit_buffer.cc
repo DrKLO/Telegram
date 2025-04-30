@@ -14,6 +14,7 @@
 #include <limits>
 
 #include "absl/numeric/bits.h"
+#include "absl/strings/string_view.h"
 #include "rtc_base/checks.h"
 
 namespace {
@@ -203,6 +204,27 @@ bool BitBufferWriter::WriteSignedExponentialGolomb(int32_t val) {
     uint32_t signed_val = -val;
     return WriteExponentialGolomb(signed_val * 2);
   }
+}
+
+bool BitBufferWriter::WriteLeb128(uint64_t val) {
+  bool success = true;
+  do {
+    uint8_t byte = static_cast<uint8_t>(val & 0x7f);
+    val >>= 7;
+    if (val > 0) {
+      byte |= 0x80;
+    }
+    success &= WriteUInt8(byte);
+  } while (val > 0);
+  return success;
+}
+
+bool BitBufferWriter::WriteString(absl::string_view data) {
+  bool success = true;
+  for (char c : data) {
+    success &= WriteUInt8(c);
+  }
+  return success;
 }
 
 }  // namespace rtc

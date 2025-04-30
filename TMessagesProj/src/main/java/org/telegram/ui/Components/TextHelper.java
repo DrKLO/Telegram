@@ -22,16 +22,16 @@ public class TextHelper {
         return textView;
     }
 
-    public static TextView makeLinkTextView(Context context, float textSizeDp, int colorKey, boolean bold) {
+    public static LinkSpanDrawable.LinksTextView makeLinkTextView(Context context, float textSizeDp, int colorKey, boolean bold) {
         return makeLinkTextView(context, textSizeDp, colorKey, Theme.key_chat_messageLinkIn, bold, null);
     }
-    public static TextView makeLinkTextView(Context context, float textSizeDp, int colorKey, boolean bold, Theme.ResourcesProvider resourcesProvider) {
+    public static LinkSpanDrawable.LinksTextView makeLinkTextView(Context context, float textSizeDp, int colorKey, boolean bold, Theme.ResourcesProvider resourcesProvider) {
         return makeLinkTextView(context, textSizeDp, colorKey, Theme.key_chat_messageLinkIn, bold, resourcesProvider);
     }
-    public static TextView makeLinkTextView(Context context, float textSizeDp, int colorKey, int linkColorKey, boolean bold) {
+    public static LinkSpanDrawable.LinksTextView makeLinkTextView(Context context, float textSizeDp, int colorKey, int linkColorKey, boolean bold) {
         return makeLinkTextView(context, textSizeDp, colorKey, linkColorKey, bold, null);
     }
-    public static TextView makeLinkTextView(Context context, float textSizeDp, int colorKey, int linkColorKey, boolean bold, Theme.ResourcesProvider resourcesProvider) {
+    public static LinkSpanDrawable.LinksTextView makeLinkTextView(Context context, float textSizeDp, int colorKey, int linkColorKey, boolean bold, Theme.ResourcesProvider resourcesProvider) {
         final LinkSpanDrawable.LinksTextView textView = new LinkSpanDrawable.LinksTextView(context);
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, textSizeDp);
         textView.setTextColor(Theme.getColor(colorKey, resourcesProvider));

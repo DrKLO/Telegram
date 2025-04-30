@@ -54,7 +54,7 @@ absl::optional<VP9Profile> StringToVP9Profile(const std::string& str) {
 }
 
 absl::optional<VP9Profile> ParseSdpForVP9Profile(
-    const SdpVideoFormat::Parameters& params) {
+    const CodecParameterMap& params) {
   const auto profile_it = params.find(kVP9FmtpProfileId);
   if (profile_it == params.end())
     return VP9Profile::kProfile0;
@@ -62,8 +62,8 @@ absl::optional<VP9Profile> ParseSdpForVP9Profile(
   return StringToVP9Profile(profile_str);
 }
 
-bool VP9IsSameProfile(const SdpVideoFormat::Parameters& params1,
-                      const SdpVideoFormat::Parameters& params2) {
+bool VP9IsSameProfile(const CodecParameterMap& params1,
+                      const CodecParameterMap& params2) {
   const absl::optional<VP9Profile> profile = ParseSdpForVP9Profile(params1);
   const absl::optional<VP9Profile> other_profile =
       ParseSdpForVP9Profile(params2);

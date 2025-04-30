@@ -15,6 +15,7 @@
 #include "absl/types/optional.h"
 #include "logging/rtc_event_log/encoder/var_int.h"
 #include "logging/rtc_event_log/events/rtc_event_field_encoding.h"
+#include "logging/rtc_event_log/events/rtc_event_log_parse_status.h"
 #include "rtc_base/bitstream_reader.h"
 #include "rtc_base/checks.h"
 

@@ -1,16 +1,16 @@
-/* Copyright (c) 2018, Google Inc.
- *
- * Permission to use, copy, modify, and/or distribute this software for any
- * purpose with or without fee is hereby granted, provided that the above
- * copyright notice and this permission notice appear in all copies.
- *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
- * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY
- * SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION
- * OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
- * CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE. */
+// Copyright 2018 The BoringSSL Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 #include <gtest/gtest.h>
 #include <gtest/gtest-spi.h>
@@ -58,9 +58,10 @@ TEST(ABITest, SanityCheck) {
 #if defined(OPENSSL_WINDOWS)
     // The invalid epilog makes Windows believe the epilog starts later than it
     // actually does. As a result, immediately after the popq, it does not
-    // realize the stack has been unwound and repeats the work.
-    EXPECT_NONFATAL_FAILURE(CHECK_ABI_SEH(abi_test_bad_unwind_epilog),
-                            "unwound past starting frame");
+    // realize the stack has been unwound and repeats the popq. This will result
+    // in reading the wrong return address and fail to unwind. The exact failure
+    // may vary depending on what was on the stack before.
+    EXPECT_NONFATAL_FAILURE(CHECK_ABI_SEH(abi_test_bad_unwind_epilog), "");
     CHECK_ABI_NO_UNWIND(abi_test_bad_unwind_epilog);
 #endif  // OPENSSL_WINDOWS
   }
@@ -340,7 +341,6 @@ TEST(ABITest, ARM) {
                           "d15 was not restored after return");
 }
 #endif   // OPENSSL_ARM && SUPPORTS_ABI_TEST
-
 
 #if defined(OPENSSL_AARCH64) && defined(SUPPORTS_ABI_TEST)
 extern "C" {

@@ -15,21 +15,36 @@
 
 #include <errno.h>
 
-#include <cassert>
-#include <utility>
+#include <atomic>
+#include <cstddef>
+#include <cstdint>
+#include <cstring>
+#include <memory>
+#include <ostream>
+#include <string>
 
+#include "absl/base/attributes.h"
+#include "absl/base/config.h"
 #include "absl/base/internal/raw_logging.h"
 #include "absl/base/internal/strerror.h"
+#include "absl/base/macros.h"
+#include "absl/base/no_destructor.h"
+#include "absl/base/nullability.h"
 #include "absl/debugging/stacktrace.h"
 #include "absl/debugging/symbolize.h"
-#include "absl/status/status_payload_printer.h"
-#include "absl/strings/escaping.h"
+#include "absl/status/internal/status_internal.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_split.h"
+#include "absl/strings/string_view.h"
+#include "absl/types/optional.h"
 
 namespace absl {
 ABSL_NAMESPACE_BEGIN
+
+static_assert(
+    alignof(status_internal::StatusRep) >= 4,
+    "absl::Status assumes it can use the bottom 2 bits of a StatusRep*.");
 
 std::string StatusCodeToString(StatusCode code) {
   switch (code) {
@@ -76,149 +91,18 @@ std::ostream& operator<<(std::ostream& os, StatusCode code) {
   return os << StatusCodeToString(code);
 }
 
-namespace status_internal {
-
-static absl::optional<size_t> FindPayloadIndexByUrl(
-    const Payloads* payloads,
-    absl::string_view type_url) {
-  if (payloads == nullptr)
-    return absl::nullopt;
-
-  for (size_t i = 0; i < payloads->size(); ++i) {
-    if ((*payloads)[i].type_url == type_url) return i;
-  }
-
-  return absl::nullopt;
-}
-
-// Convert canonical code to a value known to this binary.
-absl::StatusCode MapToLocalCode(int value) {
-  absl::StatusCode code = static_cast<absl::StatusCode>(value);
-  switch (code) {
-    case absl::StatusCode::kOk:
-    case absl::StatusCode::kCancelled:
-    case absl::StatusCode::kUnknown:
-    case absl::StatusCode::kInvalidArgument:
-    case absl::StatusCode::kDeadlineExceeded:
-    case absl::StatusCode::kNotFound:
-    case absl::StatusCode::kAlreadyExists:
-    case absl::StatusCode::kPermissionDenied:
-    case absl::StatusCode::kResourceExhausted:
-    case absl::StatusCode::kFailedPrecondition:
-    case absl::StatusCode::kAborted:
-    case absl::StatusCode::kOutOfRange:
-    case absl::StatusCode::kUnimplemented:
-    case absl::StatusCode::kInternal:
-    case absl::StatusCode::kUnavailable:
-    case absl::StatusCode::kDataLoss:
-    case absl::StatusCode::kUnauthenticated:
-      return code;
-    default:
-      return absl::StatusCode::kUnknown;
-  }
-}
-}  // namespace status_internal
-
-absl::optional<absl::Cord> Status::GetPayload(
-    absl::string_view type_url) const {
-  const auto* payloads = GetPayloads();
-  absl::optional<size_t> index =
-      status_internal::FindPayloadIndexByUrl(payloads, type_url);
-  if (index.has_value())
-    return (*payloads)[index.value()].payload;
-
-  return absl::nullopt;
-}
-
-void Status::SetPayload(absl::string_view type_url, absl::Cord payload) {
-  if (ok()) return;
-
-  PrepareToModify();
-
-  status_internal::StatusRep* rep = RepToPointer(rep_);
-  if (!rep->payloads) {
-    rep->payloads = absl::make_unique<status_internal::Payloads>();
-  }
-
-  absl::optional<size_t> index =
-      status_internal::FindPayloadIndexByUrl(rep->payloads.get(), type_url);
-  if (index.has_value()) {
-    (*rep->payloads)[index.value()].payload = std::move(payload);
-    return;
-  }
-
-  rep->payloads->push_back({std::string(type_url), std::move(payload)});
-}
-
-bool Status::ErasePayload(absl::string_view type_url) {
-  absl::optional<size_t> index =
-      status_internal::FindPayloadIndexByUrl(GetPayloads(), type_url);
-  if (index.has_value()) {
-    PrepareToModify();
-    GetPayloads()->erase(GetPayloads()->begin() + index.value());
-    if (GetPayloads()->empty() && message().empty()) {
-      // Special case: If this can be represented inlined, it MUST be
-      // inlined (EqualsSlow depends on this behavior).
-      StatusCode c = static_cast<StatusCode>(raw_code());
-      Unref(rep_);
-      rep_ = CodeToInlinedRep(c);
-    }
-    return true;
-  }
-
-  return false;
-}
-
-void Status::ForEachPayload(
-    absl::FunctionRef<void(absl::string_view, const absl::Cord&)> visitor)
-    const {
-  if (auto* payloads = GetPayloads()) {
-    bool in_reverse =
-        payloads->size() > 1 && reinterpret_cast<uintptr_t>(payloads) % 13 > 6;
-
-    for (size_t index = 0; index < payloads->size(); ++index) {
-      const auto& elem =
-          (*payloads)[in_reverse ? payloads->size() - 1 - index : index];
-
-#ifdef NDEBUG
-      visitor(elem.type_url, elem.payload);
-#else
-      // In debug mode invalidate the type url to prevent users from relying on
-      // this string lifetime.
-
-      // NOLINTNEXTLINE intentional extra conversion to force temporary.
-      visitor(std::string(elem.type_url), elem.payload);
-#endif  // NDEBUG
-    }
-  }
-}
-
-const std::string* Status::EmptyString() {
-  static union EmptyString {
-    std::string str;
-    ~EmptyString() {}
-  } empty = {{}};
-  return &empty.str;
+absl::Nonnull<const std::string*> Status::EmptyString() {
+  static const absl::NoDestructor<std::string> kEmpty;
+  return kEmpty.get();
 }
 
 #ifdef ABSL_INTERNAL_NEED_REDUNDANT_CONSTEXPR_DECL
 constexpr const char Status::kMovedFromString[];
 #endif
 
-const std::string* Status::MovedFromString() {
-  static std::string* moved_from_string = new std::string(kMovedFromString);
-  return moved_from_string;
-}
-
-void Status::UnrefNonInlined(uintptr_t rep) {
-  status_internal::StatusRep* r = RepToPointer(rep);
-  // Fast path: if ref==1, there is no need for a RefCountDec (since
-  // this is the only reference and therefore no other thread is
-  // allowed to be mucking with r).
-  if (r->ref.load(std::memory_order_acquire) == 1 ||
-      r->ref.fetch_sub(1, std::memory_order_acq_rel) - 1 == 0) {
-    delete r;
-  }
+absl::Nonnull<const std::string*> Status::MovedFromString() {
+  static const absl::NoDestructor<std::string> kMovedFrom(kMovedFromString);
+  return kMovedFrom.get();
 }
 
 Status::Status(absl::StatusCode code, absl::string_view msg)
@@ -228,97 +112,20 @@ Status::Status(absl::StatusCode code, absl::string_view msg)
   }
 }
 
-int Status::raw_code() const {
-  if (IsInlined(rep_)) {
-    return static_cast<int>(InlinedRepToCode(rep_));
+absl::Nonnull<status_internal::StatusRep*> Status::PrepareToModify(
+    uintptr_t rep) {
+  if (IsInlined(rep)) {
+    return new status_internal::StatusRep(InlinedRepToCode(rep),
+                                          absl::string_view(), nullptr);
   }
-  status_internal::StatusRep* rep = RepToPointer(rep_);
-  return static_cast<int>(rep->code);
+  return RepToPointer(rep)->CloneAndUnref();
 }
 
-absl::StatusCode Status::code() const {
-  return status_internal::MapToLocalCode(raw_code());
-}
-
-void Status::PrepareToModify() {
-  ABSL_RAW_CHECK(!ok(), "PrepareToModify shouldn't be called on OK status.");
-  if (IsInlined(rep_)) {
-    rep_ = PointerToRep(new status_internal::StatusRep(
-        static_cast<absl::StatusCode>(raw_code()), absl::string_view(),
-        nullptr));
-    return;
+std::string Status::ToStringSlow(uintptr_t rep, StatusToStringMode mode) {
+  if (IsInlined(rep)) {
+    return absl::StrCat(absl::StatusCodeToString(InlinedRepToCode(rep)), ": ");
   }
-
-  uintptr_t rep_i = rep_;
-  status_internal::StatusRep* rep = RepToPointer(rep_);
-  if (rep->ref.load(std::memory_order_acquire) != 1) {
-    std::unique_ptr<status_internal::Payloads> payloads;
-    if (rep->payloads) {
-      payloads = absl::make_unique<status_internal::Payloads>(*rep->payloads);
-    }
-    status_internal::StatusRep* const new_rep = new status_internal::StatusRep(
-        rep->code, message(), std::move(payloads));
-    rep_ = PointerToRep(new_rep);
-    UnrefNonInlined(rep_i);
-  }
-}
-
-bool Status::EqualsSlow(const absl::Status& a, const absl::Status& b) {
-  if (IsInlined(a.rep_) != IsInlined(b.rep_)) return false;
-  if (a.message() != b.message()) return false;
-  if (a.raw_code() != b.raw_code()) return false;
-  if (a.GetPayloads() == b.GetPayloads()) return true;
-
-  const status_internal::Payloads no_payloads;
-  const status_internal::Payloads* larger_payloads =
-      a.GetPayloads() ? a.GetPayloads() : &no_payloads;
-  const status_internal::Payloads* smaller_payloads =
-      b.GetPayloads() ? b.GetPayloads() : &no_payloads;
-  if (larger_payloads->size() < smaller_payloads->size()) {
-    std::swap(larger_payloads, smaller_payloads);
-  }
-  if ((larger_payloads->size() - smaller_payloads->size()) > 1) return false;
-  // Payloads can be ordered differently, so we can't just compare payload
-  // vectors.
-  for (const auto& payload : *larger_payloads) {
-
-    bool found = false;
-    for (const auto& other_payload : *smaller_payloads) {
-      if (payload.type_url == other_payload.type_url) {
-        if (payload.payload != other_payload.payload) {
-          return false;
-        }
-        found = true;
-        break;
-      }
-    }
-    if (!found) return false;
-  }
-  return true;
-}
-
-std::string Status::ToStringSlow(StatusToStringMode mode) const {
-  std::string text;
-  absl::StrAppend(&text, absl::StatusCodeToString(code()), ": ", message());
-
-  const bool with_payload = (mode & StatusToStringMode::kWithPayload) ==
-                      StatusToStringMode::kWithPayload;
-
-  if (with_payload) {
-    status_internal::StatusPayloadPrinter printer =
-        status_internal::GetStatusPayloadPrinter();
-    this->ForEachPayload([&](absl::string_view type_url,
-                             const absl::Cord& payload) {
-      absl::optional<std::string> result;
-      if (printer) result = printer(type_url, payload);
-      absl::StrAppend(
-          &text, " [", type_url, "='",
-          result.has_value() ? *result : absl::CHexEscape(std::string(payload)),
-          "']");
-    });
-  }
-
-  return text;
+  return RepToPointer(rep)->ToString(mode);
 }
 
 std::ostream& operator<<(std::ostream& os, const Status& x) {
@@ -466,14 +273,12 @@ StatusCode ErrnoToStatusCode(int error_number) {
     case EFAULT:        // Bad address
     case EILSEQ:        // Illegal byte sequence
     case ENOPROTOOPT:   // Protocol not available
-    case ENOSTR:        // Not a STREAM
     case ENOTSOCK:      // Not a socket
     case ENOTTY:        // Inappropriate I/O control operation
     case EPROTOTYPE:    // Protocol wrong type for socket
     case ESPIPE:        // Invalid seek
       return StatusCode::kInvalidArgument;
     case ETIMEDOUT:  // Connection timed out
-    case ETIME:      // Timer expired
       return StatusCode::kDeadlineExceeded;
     case ENODEV:  // No such device
     case ENOENT:  // No such file or directory
@@ -532,9 +337,7 @@ StatusCode ErrnoToStatusCode(int error_number) {
     case EMLINK:   // Too many links
     case ENFILE:   // Too many open files in system
     case ENOBUFS:  // No buffer space available
-    case ENODATA:  // No message is available on the STREAM read queue
     case ENOMEM:   // Not enough space
-    case ENOSR:    // No STREAM resources
 #ifdef EUSERS
     case EUSERS:  // Too many users
 #endif
@@ -607,16 +410,12 @@ Status ErrnoToStatus(int error_number, absl::string_view message) {
                 MessageForErrnoToStatus(error_number, message));
 }
 
-namespace status_internal {
-
-std::string* MakeCheckFailString(const absl::Status* status,
-                                 const char* prefix) {
-  return new std::string(
-      absl::StrCat(prefix, " (",
-                   status->ToString(StatusToStringMode::kWithEverything), ")"));
+absl::Nonnull<const char*> StatusMessageAsCStr(const Status& status) {
+  // As an internal implementation detail, we guarantee that if status.message()
+  // is non-empty, then the resulting string_view is null terminated.
+  auto sv_message = status.message();
+  return sv_message.empty() ? "" : sv_message.data();
 }
-
-}  // namespace status_internal
 
 ABSL_NAMESPACE_END
 }  // namespace absl

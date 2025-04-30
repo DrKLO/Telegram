@@ -93,6 +93,7 @@ TEST(StrFormatChecker, ValidFormat) {
       ValidFormat<void (*)(), volatile int*>("%p %p"),  //
       ValidFormat<string_view, const char*, double, void*>(
           "string_view=%s const char*=%s double=%f void*=%p)"),
+      ValidFormat<int>("%v"),  //
 
       ValidFormat<int>("%% %1$d"),               //
       ValidFormat<int>("%1$ld"),                 //
@@ -109,7 +110,9 @@ TEST(StrFormatChecker, ValidFormat) {
       ValidFormat<int, double>("%2$.*1$f"),      //
       ValidFormat<void*, string_view, const char*, double>(
           "string_view=%2$s const char*=%3$s double=%4$f void*=%1$p "
-          "repeat=%3$s)")};
+          "repeat=%3$s)"),
+      ValidFormat<std::string>("%1$v"),
+  };
 
   for (Case c : trues) {
     EXPECT_TRUE(c.result) << c.format;
@@ -130,6 +133,8 @@ TEST(StrFormatChecker, ValidFormat) {
       ValidFormat<int>("%*d"),               //
       ValidFormat<std::string>("%p"),        //
       ValidFormat<int (*)(int)>("%d"),       //
+      ValidFormat<int>("%1v"),               //
+      ValidFormat<int>("%.1v"),              //
 
       ValidFormat<>("%3$d"),                     //
       ValidFormat<>("%1$r"),                     //
@@ -138,13 +143,14 @@ TEST(StrFormatChecker, ValidFormat) {
       ValidFormat<int>("%1$*2$1d"),              //
       ValidFormat<int>("%1$1-d"),                //
       ValidFormat<std::string, int>("%2$*1$s"),  //
-      ValidFormat<std::string>("%1$p"),
+      ValidFormat<std::string>("%1$p"),          //
+      ValidFormat<int>("%1$*2$v"),               //
 
       ValidFormat<int, int>("%d %2$d"),  //
   };
 
   for (Case c : falses) {
-    EXPECT_FALSE(c.result) << c.format;
+    EXPECT_FALSE(c.result) << "format<" << c.format << ">";
   }
 }
 

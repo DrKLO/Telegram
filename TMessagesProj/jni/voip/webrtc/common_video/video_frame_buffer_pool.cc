@@ -44,6 +44,10 @@ bool HasOneRef(const rtc::scoped_refptr<VideoFrameBuffer>& buffer) {
       return static_cast<rtc::RefCountedObject<I210Buffer>*>(buffer.get())
           ->HasOneRef();
     }
+    case VideoFrameBuffer::Type::kI410: {
+      return static_cast<rtc::RefCountedObject<I410Buffer>*>(buffer.get())
+          ->HasOneRef();
+    }
     case VideoFrameBuffer::Type::kNV12: {
       return static_cast<rtc::RefCountedObject<NV12Buffer>*>(buffer.get())
           ->HasOneRef();
@@ -276,6 +280,33 @@ rtc::scoped_refptr<I210Buffer> VideoFrameBufferPool::CreateI210Buffer(
     return nullptr;
   // Allocate new buffer.
   rtc::scoped_refptr<I210Buffer> buffer = I210Buffer::Create(width, height);
+
+  buffers_.push_back(buffer);
+  return buffer;
+}
+
+rtc::scoped_refptr<I410Buffer> VideoFrameBufferPool::CreateI410Buffer(
+    int width,
+    int height) {
+  RTC_DCHECK_RUNS_SERIALIZED(&race_checker_);
+
+  rtc::scoped_refptr<VideoFrameBuffer> existing_buffer =
+      GetExistingBuffer(width, height, VideoFrameBuffer::Type::kI410);
+  if (existing_buffer) {
+    // Cast is safe because the only way kI410 buffer is created is
+    // in the same function below, where |RefCountedObject<I410Buffer>|
+    // is created.
+    rtc::RefCountedObject<I410Buffer>* raw_buffer =
+        static_cast<rtc::RefCountedObject<I410Buffer>*>(existing_buffer.get());
+    // Creates a new scoped_refptr, which is also pointing to the same
+    // RefCountedObject as buffer, increasing ref count.
+    return rtc::scoped_refptr<I410Buffer>(raw_buffer);
+  }
+
+  if (buffers_.size() >= max_number_of_buffers_)
+    return nullptr;
+  // Allocate new buffer.
+  rtc::scoped_refptr<I410Buffer> buffer = I410Buffer::Create(width, height);
 
   buffers_.push_back(buffer);
   return buffer;

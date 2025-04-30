@@ -61,9 +61,6 @@ class RtcpTransceiverImpl {
 
   void SetRemb(int64_t bitrate_bps, std::vector<uint32_t> ssrcs);
   void UnsetRemb();
-  // Temporary helpers to send pre-built TransportFeedback rtcp packet.
-  uint32_t sender_ssrc() const { return config_.feedback_ssrc; }
-  void SendRawPacket(rtc::ArrayView<const uint8_t> packet);
 
   void SendNack(uint32_t ssrc, std::vector<uint16_t> sequence_numbers);
 
@@ -92,17 +89,20 @@ class RtcpTransceiverImpl {
 
   void HandleReceivedPacket(const rtcp::CommonHeader& rtcp_packet_header,
                             Timestamp now,
-                            std::vector<rtcp::ReportBlock>& report_blocks);
+                            std::vector<ReportBlockData>& report_blocks);
   // Individual rtcp packet handlers.
   void HandleBye(const rtcp::CommonHeader& rtcp_packet_header);
   void HandleSenderReport(const rtcp::CommonHeader& rtcp_packet_header,
                           Timestamp now,
-                          std::vector<rtcp::ReportBlock>& report_blocks);
+                          std::vector<ReportBlockData>& report_blocks);
   void HandleReceiverReport(const rtcp::CommonHeader& rtcp_packet_header,
-                            std::vector<rtcp::ReportBlock>& report_blocks);
-  void CallbackOnReportBlocks(
+                            Timestamp now,
+                            std::vector<ReportBlockData>& report_blocks);
+  void HandleReportBlocks(
       uint32_t sender_ssrc,
-      rtc::ArrayView<const rtcp::ReportBlock> report_blocks);
+      Timestamp now,
+      rtc::ArrayView<const rtcp::ReportBlock> rtcp_report_blocks,
+      std::vector<ReportBlockData>& report_blocks);
   void HandlePayloadSpecificFeedback(
       const rtcp::CommonHeader& rtcp_packet_header,
       Timestamp now);
@@ -120,9 +120,8 @@ class RtcpTransceiverImpl {
   void HandleDlrr(const rtcp::Dlrr& dlrr, Timestamp now);
   void HandleTargetBitrate(const rtcp::TargetBitrate& target_bitrate,
                            uint32_t remote_ssrc);
-  void ProcessReportBlocks(
-      Timestamp now,
-      rtc::ArrayView<const rtcp::ReportBlock> report_blocks);
+  void ProcessReportBlocks(Timestamp now,
+                           rtc::ArrayView<const ReportBlockData> report_blocks);
 
   void ReschedulePeriodicCompoundPackets();
   void SchedulePeriodicCompoundPackets(TimeDelta delay);
@@ -152,11 +151,12 @@ class RtcpTransceiverImpl {
                                                     size_t num_max_blocks);
 
   const RtcpTransceiverConfig config_;
+  std::function<void(rtc::ArrayView<const uint8_t>)> rtcp_transport_;
 
   bool ready_to_send_;
   absl::optional<rtcp::Remb> remb_;
-  // TODO(danilchap): Remove entries from remote_senders_ that are no longer
-  // needed.
+  // TODO(bugs.webrtc.org/8239): Remove entries from remote_senders_ that are no
+  // longer needed.
   flat_map<uint32_t, RemoteSenderState> remote_senders_;
   std::list<LocalSenderState> local_senders_;
   flat_map<uint32_t, std::list<LocalSenderState>::iterator>

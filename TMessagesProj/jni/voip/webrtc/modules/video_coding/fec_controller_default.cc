@@ -15,30 +15,28 @@
 #include <algorithm>
 #include <string>
 
+#include "api/environment/environment.h"
+#include "api/field_trials_view.h"
 #include "modules/include/module_fec_types.h"
 #include "rtc_base/logging.h"
-#include "system_wrappers/include/field_trial.h"
+#include "system_wrappers/include/clock.h"
 
 namespace webrtc {
 
 const float kProtectionOverheadRateThreshold = 0.5;
 
 FecControllerDefault::FecControllerDefault(
-    Clock* clock,
+    const Environment& env,
     VCMProtectionCallback* protection_callback)
-    : clock_(clock),
+    : env_(env),
       protection_callback_(protection_callback),
       loss_prot_logic_(new media_optimization::VCMLossProtectionLogic(
-          clock_->TimeInMilliseconds())),
+          env_.clock().TimeInMilliseconds())),
       max_payload_size_(1460),
       overhead_threshold_(GetProtectionOverheadRateThreshold()) {}
 
-FecControllerDefault::FecControllerDefault(Clock* clock)
-    : clock_(clock),
-      loss_prot_logic_(new media_optimization::VCMLossProtectionLogic(
-          clock_->TimeInMilliseconds())),
-      max_payload_size_(1460),
-      overhead_threshold_(GetProtectionOverheadRateThreshold()) {}
+FecControllerDefault::FecControllerDefault(const Environment& env)
+    : FecControllerDefault(env, nullptr) {}
 
 FecControllerDefault::~FecControllerDefault(void) {
   loss_prot_logic_->Release();
@@ -61,8 +59,8 @@ void FecControllerDefault::SetEncodingData(size_t width,
 
 float FecControllerDefault::GetProtectionOverheadRateThreshold() {
   float overhead_threshold =
-      strtof(webrtc::field_trial::FindFullName(
-                 "WebRTC-ProtectionOverheadRateThreshold")
+      strtof(env_.field_trials()
+                 .Lookup("WebRTC-ProtectionOverheadRateThreshold")
                  .c_str(),
              nullptr);
   if (overhead_threshold > 0 && overhead_threshold <= 1) {
@@ -107,7 +105,7 @@ uint32_t FecControllerDefault::UpdateFecRates(
     media_optimization::FilterPacketLossMode filter_mode =
         media_optimization::kMaxFilter;
     uint8_t packet_loss_enc = loss_prot_logic_->FilteredLoss(
-        clock_->TimeInMilliseconds(), filter_mode, fraction_lost);
+        env_.clock().TimeInMilliseconds(), filter_mode, fraction_lost);
     // For now use the filtered loss for computing the robustness settings.
     loss_prot_logic_->UpdateFilteredLossPr(packet_loss_enc);
     if (loss_prot_logic_->SelectedType() == media_optimization::kNone) {
@@ -191,11 +189,11 @@ void FecControllerDefault::UpdateWithEncodedData(
       const float min_packets_per_frame =
           encoded_length / static_cast<float>(max_payload_size_);
       if (delta_frame) {
-        loss_prot_logic_->UpdatePacketsPerFrame(min_packets_per_frame,
-                                                clock_->TimeInMilliseconds());
+        loss_prot_logic_->UpdatePacketsPerFrame(
+            min_packets_per_frame, env_.clock().TimeInMilliseconds());
       } else {
         loss_prot_logic_->UpdatePacketsPerFrameKey(
-            min_packets_per_frame, clock_->TimeInMilliseconds());
+            min_packets_per_frame, env_.clock().TimeInMilliseconds());
       }
     }
     if (!delta_frame && encoded_length > 0) {

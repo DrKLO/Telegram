@@ -18,9 +18,10 @@
 #include <algorithm>
 #include <cinttypes>
 #include <cstdlib>
-#include <iostream>
+#include <istream>
 #include <iterator>
 #include <limits>
+#include <ostream>
 #include <type_traits>
 
 #include "absl/base/internal/endian.h"
@@ -142,7 +143,7 @@ class alignas(8) randen_engine {
       // The Randen paper suggests preferentially initializing even-numbered
       // 128-bit vectors of the randen state (there are 16 such vectors).
       // The seed data is merged into the state offset by 128-bits, which
-      // implies prefering seed bytes [16..31, ..., 208..223]. Since the
+      // implies preferring seed bytes [16..31, ..., 208..223]. Since the
       // buffer is 32-bit values, we swap the corresponding buffer positions in
       // 128-bit chunks.
       size_t dst = kBufferSize;

@@ -59,6 +59,10 @@ class VectorMath {
           x[j] = sqrtf(x[j]);
         }
       } break;
+      // TODO(@dkaraush): compile with avx support
+    /*case Aec3Optimization::kAvx2:
+        SqrtAVX2(x);
+        break; */
 #endif
 #if defined(WEBRTC_HAS_NEON)
       case Aec3Optimization::kNeon: {

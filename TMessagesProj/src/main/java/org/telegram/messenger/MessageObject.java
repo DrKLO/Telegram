@@ -889,6 +889,10 @@ public class MessageObject {
         public Drawable copySelector;
         public Paint copySeparator;
 
+        public int heightCollapsed() {
+            return quoteCollapse ? collapsedHeight : height;
+        }
+
         public int height() {
             return quoteCollapse && collapsed() ? collapsedHeight : height;
         }
@@ -4888,8 +4892,35 @@ public class MessageObject {
                     }
                 } else if (messageOwner.action instanceof TLRPC.TL_messageActionGameScore) {
                     generateGameMessageText(fromUser);
+                } else if (messageOwner.action instanceof TLRPC.TL_messageActionConferenceCall) {
+                    final TLRPC.TL_messageActionConferenceCall call = (TLRPC.TL_messageActionConferenceCall) messageOwner.action;
+                    if (isOutOwner()) {
+                        messageText = getString(R.string.ConferenceCallOutgoing);
+                    } else if (call.missed) {
+                        messageText = getString(R.string.ConferenceCallMissed);
+                    } else {
+                        messageText = getString(R.string.ConferenceCallIncoming);
+                    }
+                    if (call.duration > 0) {
+                        String duration = LocaleController.formatCallDuration(call.duration);
+                        messageText = formatString(R.string.CallMessageWithDuration, messageText, duration);
+                        String _messageText = messageText.toString();
+                        int start = _messageText.indexOf(duration);
+                        if (start != -1) {
+                            SpannableString sp = new SpannableString(messageText);
+                            int end = start + duration.length();
+                            if (start > 0 && _messageText.charAt(start - 1) == '(') {
+                                start--;
+                            }
+                            if (end < _messageText.length() && _messageText.charAt(end) == ')') {
+                                end++;
+                            }
+                            sp.setSpan(new TypefaceSpan(Typeface.DEFAULT), start, end, 0);
+                            messageText = sp;
+                        }
+                    }
                 } else if (messageOwner.action instanceof TLRPC.TL_messageActionPhoneCall) {
-                    TLRPC.TL_messageActionPhoneCall call = (TLRPC.TL_messageActionPhoneCall) messageOwner.action;
+                    final TLRPC.TL_messageActionPhoneCall call = (TLRPC.TL_messageActionPhoneCall) messageOwner.action;
                     boolean isMissed = call.reason instanceof TLRPC.TL_phoneCallDiscardReasonMissed;
                     if (isFromUser() && messageOwner.from_id.user_id == UserConfig.getInstance(currentAccount).getClientUserId()) {
                         if (isMissed) {
@@ -5543,7 +5574,7 @@ public class MessageObject {
             } else if (messageOwner.action instanceof TLRPC.TL_messageActionHistoryClear) {
                 contentType = -1;
                 type = -1;
-            } else if (messageOwner.action instanceof TLRPC.TL_messageActionPhoneCall) {
+            } else if (messageOwner.action instanceof TLRPC.TL_messageActionPhoneCall || messageOwner.action instanceof TLRPC.TL_messageActionConferenceCall) {
                 type = TYPE_PHONE_CALL;
             } else {
                 contentType = 1;
@@ -7668,6 +7699,16 @@ public class MessageObject {
         factCheckText = null;
     }
 
+    private Integer cachedTextHeight;
+    public int textHeightCached() {
+        if (cachedTextHeight != null) return cachedTextHeight;
+        if (textLayoutBlocks == null) return cachedTextHeight = 0;
+        int h = 0;
+        for (int i = 0; i < textLayoutBlocks.size(); ++i) {
+            h += textLayoutBlocks.get(i).padTop + textLayoutBlocks.get(i).heightCollapsed() + textLayoutBlocks.get(i).padBottom;
+        }
+        return cachedTextHeight = h;
+    }
     public int textHeight() {
         if (textLayoutBlocks == null) return 0;
         int h = 0;
@@ -8555,6 +8596,10 @@ public class MessageObject {
         return false;
     }
 
+    public boolean isSecret() {
+        return messageOwner instanceof TLRPC.TL_message_secret;
+    }
+
     public boolean isSecretMedia() {
         if (messageOwner instanceof TLRPC.TL_message_secret) {
             return (((getMedia(messageOwner) instanceof TLRPC.TL_messageMediaPhoto) || isGif()) && messageOwner.ttl > 0 && messageOwner.ttl <= 60 || isVoice() || isRoundVideo() || isVideo());
@@ -9339,9 +9384,14 @@ public class MessageObject {
         return getApproximateHeight(false);
     }
 
+    private Integer cachedApproximateHeight;
+    public int getApproximateHeightCached() {
+        if (cachedApproximateHeight != null) return cachedApproximateHeight;
+        return cachedApproximateHeight = getApproximateHeight(true);
+    }
     public int getApproximateHeight(boolean fast) {
         if (type == TYPE_TEXT) {
-            int height = textHeight() + (getMedia(messageOwner) instanceof TLRPC.TL_messageMediaWebPage && getMedia(messageOwner).webpage instanceof TLRPC.TL_webPage ? dp(100) : 0);
+            int height = (fast ? textHeightCached() : textHeight()) + (getMedia(messageOwner) instanceof TLRPC.TL_messageMediaWebPage && getMedia(messageOwner).webpage instanceof TLRPC.TL_webPage ? dp(100) : 0);
             if (isReply()) {
                 height += dp(42);
             }
@@ -9365,7 +9415,7 @@ public class MessageObject {
         } else if (type == TYPE_ROUND_VIDEO) {
             return AndroidUtilities.roundMessageSize;
         } else if (type == TYPE_EMOJIS) {
-            return textHeight() + dp(30);
+            return (fast ? textHeightCached() : textHeight()) + dp(30);
         } else if (type == TYPE_STICKER || type == TYPE_ANIMATED_STICKER) {
             float maxHeight = AndroidUtilities.displaySize.y * 0.4f;
             float maxWidth;
@@ -9466,8 +9516,15 @@ public class MessageObject {
         return null;
     }
 
+    public boolean isConferenceCall() {
+        return messageOwner.action instanceof TLRPC.TL_messageActionConferenceCall;
+    }
+
     public boolean isVideoCall() {
-        return messageOwner.action instanceof TLRPC.TL_messageActionPhoneCall && messageOwner.action.video;
+        return (
+            messageOwner.action instanceof TLRPC.TL_messageActionPhoneCall && messageOwner.action.video ||
+            messageOwner.action instanceof TLRPC.TL_messageActionConferenceCall && messageOwner.action.video
+        );
     }
 
     public boolean isAnimatedEmoji() {

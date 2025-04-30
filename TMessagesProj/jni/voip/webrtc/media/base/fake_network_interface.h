@@ -20,6 +20,7 @@
 #include "api/task_queue/task_queue_base.h"
 #include "media/base/media_channel.h"
 #include "media/base/rtp_utils.h"
+#include "modules/rtp_rtcp/source/rtp_packet_received.h"
 #include "modules/rtp_rtcp/source/rtp_util.h"
 #include "rtc_base/byte_order.h"
 #include "rtc_base/checks.h"
@@ -27,11 +28,12 @@
 #include "rtc_base/dscp.h"
 #include "rtc_base/synchronization/mutex.h"
 #include "rtc_base/thread.h"
+#include "rtc_base/time_utils.h"
 
 namespace cricket {
 
 // Fake NetworkInterface that sends/receives RTP/RTCP packets.
-class FakeNetworkInterface : public MediaChannel::NetworkInterface {
+class FakeNetworkInterface : public MediaChannelNetworkInterface {
  public:
   FakeNetworkInterface()
       : thread_(rtc::Thread::Current()),
@@ -41,7 +43,7 @@ class FakeNetworkInterface : public MediaChannel::NetworkInterface {
         recvbuf_size_(-1),
         dscp_(rtc::DSCP_NO_CHANGE) {}
 
-  void SetDestination(MediaChannel* dest) { dest_ = dest; }
+  void SetDestination(MediaReceiveChannelInterface* dest) { dest_ = dest; }
 
   // Conference mode is a mode where instead of simply forwarding the packets,
   // the transport will send multiple copies of the packet with the specified
@@ -167,7 +169,14 @@ class FakeNetworkInterface : public MediaChannel::NetworkInterface {
     thread_->PostTask(
         SafeTask(safety_.flag(), [this, packet = std::move(packet)]() mutable {
           if (dest_) {
-            dest_->OnPacketReceived(std::move(packet), rtc::TimeMicros());
+            webrtc::RtpPacketReceived parsed_packet;
+            if (parsed_packet.Parse(packet)) {
+              parsed_packet.set_arrival_time(
+                  webrtc::Timestamp::Micros(rtc::TimeMicros()));
+              dest_->OnPacketReceived(std::move(parsed_packet));
+            } else {
+              RTC_DCHECK_NOTREACHED();
+            }
           }
         }));
   }
@@ -198,7 +207,7 @@ class FakeNetworkInterface : public MediaChannel::NetworkInterface {
   }
 
   webrtc::TaskQueueBase* thread_;
-  MediaChannel* dest_;
+  MediaReceiveChannelInterface* dest_;
   bool conf_;
   // The ssrcs used in sending out packets in conference mode.
   std::vector<uint32_t> conf_sent_ssrcs_;

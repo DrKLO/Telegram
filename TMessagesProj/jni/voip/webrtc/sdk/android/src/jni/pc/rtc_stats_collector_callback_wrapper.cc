@@ -26,8 +26,13 @@ namespace jni {
 namespace {
 
 ScopedJavaLocalRef<jobject> NativeToJavaBigInteger(JNIEnv* env, uint64_t u) {
+#ifdef RTC_JNI_GENERATOR_LEGACY_SYMBOLS
   return JNI_BigInteger::Java_BigInteger_ConstructorJMBI_JLS(
       env, NativeToJavaString(env, rtc::ToString(u)));
+#else
+  return JNI_BigInteger::Java_BigInteger_Constructor__String(
+      env, NativeToJavaString(env, rtc::ToString(u)));
+#endif
 }
 
 ScopedJavaLocalRef<jobjectArray> NativeToJavaBigIntegerArray(
@@ -37,80 +42,53 @@ ScopedJavaLocalRef<jobjectArray> NativeToJavaBigIntegerArray(
       env, container, java_math_BigInteger_clazz(env), &NativeToJavaBigInteger);
 }
 
-ScopedJavaLocalRef<jobject> MemberToJava(
-    JNIEnv* env,
-    const RTCStatsMemberInterface& member) {
-  switch (member.type()) {
-    case RTCStatsMemberInterface::kBool:
-      return NativeToJavaBoolean(env, *member.cast_to<RTCStatsMember<bool>>());
-
-    case RTCStatsMemberInterface::kInt32:
-      return NativeToJavaInteger(env,
-                                 *member.cast_to<RTCStatsMember<int32_t>>());
-
-    case RTCStatsMemberInterface::kUint32:
-      return NativeToJavaLong(env, *member.cast_to<RTCStatsMember<uint32_t>>());
-
-    case RTCStatsMemberInterface::kInt64:
-      return NativeToJavaLong(env, *member.cast_to<RTCStatsMember<int64_t>>());
-
-    case RTCStatsMemberInterface::kUint64:
-      return NativeToJavaBigInteger(
-          env, *member.cast_to<RTCStatsMember<uint64_t>>());
-
-    case RTCStatsMemberInterface::kDouble:
-      return NativeToJavaDouble(env, *member.cast_to<RTCStatsMember<double>>());
-
-    case RTCStatsMemberInterface::kString:
-      return NativeToJavaString(env,
-                                *member.cast_to<RTCStatsMember<std::string>>());
-
-    case RTCStatsMemberInterface::kSequenceBool:
-      return NativeToJavaBooleanArray(
-          env, *member.cast_to<RTCStatsMember<std::vector<bool>>>());
-
-    case RTCStatsMemberInterface::kSequenceInt32:
-      return NativeToJavaIntegerArray(
-          env, *member.cast_to<RTCStatsMember<std::vector<int32_t>>>());
-
-    case RTCStatsMemberInterface::kSequenceUint32: {
-      const std::vector<uint32_t>& v =
-          *member.cast_to<RTCStatsMember<std::vector<uint32_t>>>();
-      return NativeToJavaLongArray(env,
-                                   std::vector<int64_t>(v.begin(), v.end()));
-    }
-    case RTCStatsMemberInterface::kSequenceInt64:
-      return NativeToJavaLongArray(
-          env, *member.cast_to<RTCStatsMember<std::vector<int64_t>>>());
-
-    case RTCStatsMemberInterface::kSequenceUint64:
-      return NativeToJavaBigIntegerArray(
-          env, *member.cast_to<RTCStatsMember<std::vector<uint64_t>>>());
-
-    case RTCStatsMemberInterface::kSequenceDouble:
-      return NativeToJavaDoubleArray(
-          env, *member.cast_to<RTCStatsMember<std::vector<double>>>());
-
-    case RTCStatsMemberInterface::kSequenceString:
-      return NativeToJavaStringArray(
-          env, *member.cast_to<RTCStatsMember<std::vector<std::string>>>());
-
-    case RTCStatsMemberInterface::kMapStringUint64:
-      return NativeToJavaMap(
-          env,
-          *member.cast_to<RTCStatsMember<std::map<std::string, uint64_t>>>(),
-          [](JNIEnv* env, const auto& entry) {
-            return std::make_pair(NativeToJavaString(env, entry.first),
-                                  NativeToJavaBigInteger(env, entry.second));
-          });
-
-    case RTCStatsMemberInterface::kMapStringDouble:
-      return NativeToJavaMap(
-          env, *member.cast_to<RTCStatsMember<std::map<std::string, double>>>(),
-          [](JNIEnv* env, const auto& entry) {
-            return std::make_pair(NativeToJavaString(env, entry.first),
-                                  NativeToJavaDouble(env, entry.second));
-          });
+ScopedJavaLocalRef<jobject> AttributeToJava(JNIEnv* env,
+                                            const Attribute& attribute) {
+  if (attribute.holds_alternative<bool>()) {
+    return NativeToJavaBoolean(env, attribute.get<bool>());
+  } else if (attribute.holds_alternative<int32_t>()) {
+    return NativeToJavaInteger(env, attribute.get<int32_t>());
+  } else if (attribute.holds_alternative<uint32_t>()) {
+    return NativeToJavaLong(env, attribute.get<uint32_t>());
+  } else if (attribute.holds_alternative<int64_t>()) {
+    return NativeToJavaLong(env, attribute.get<int64_t>());
+  } else if (attribute.holds_alternative<uint64_t>()) {
+    return NativeToJavaBigInteger(env, attribute.get<uint64_t>());
+  } else if (attribute.holds_alternative<double>()) {
+    return NativeToJavaDouble(env, attribute.get<double>());
+  } else if (attribute.holds_alternative<std::string>()) {
+    return NativeToJavaString(env, attribute.get<std::string>());
+  } else if (attribute.holds_alternative<std::vector<bool>>()) {
+    return NativeToJavaBooleanArray(env, attribute.get<std::vector<bool>>());
+  } else if (attribute.holds_alternative<std::vector<int32_t>>()) {
+    return NativeToJavaIntegerArray(env, attribute.get<std::vector<int32_t>>());
+  } else if (attribute.holds_alternative<std::vector<uint32_t>>()) {
+    const std::vector<uint32_t>& v = attribute.get<std::vector<uint32_t>>();
+    return NativeToJavaLongArray(env, std::vector<int64_t>(v.begin(), v.end()));
+  } else if (attribute.holds_alternative<std::vector<int64_t>>()) {
+    return NativeToJavaLongArray(env, attribute.get<std::vector<int64_t>>());
+  } else if (attribute.holds_alternative<std::vector<uint64_t>>()) {
+    return NativeToJavaBigIntegerArray(env,
+                                       attribute.get<std::vector<uint64_t>>());
+  } else if (attribute.holds_alternative<std::vector<double>>()) {
+    return NativeToJavaDoubleArray(env, attribute.get<std::vector<double>>());
+  } else if (attribute.holds_alternative<std::vector<std::string>>()) {
+    return NativeToJavaStringArray(env,
+                                   attribute.get<std::vector<std::string>>());
+  } else if (attribute.holds_alternative<std::map<std::string, uint64_t>>()) {
+    return NativeToJavaMap(
+        env, attribute.get<std::map<std::string, uint64_t>>(),
+        [](JNIEnv* env, const auto& entry) {
+          return std::make_pair(NativeToJavaString(env, entry.first),
+                                NativeToJavaBigInteger(env, entry.second));
+        });
+  } else if (attribute.holds_alternative<std::map<std::string, double>>()) {
+    return NativeToJavaMap(env, attribute.get<std::map<std::string, double>>(),
+                           [](JNIEnv* env, const auto& entry) {
+                             return std::make_pair(
+                                 NativeToJavaString(env, entry.first),
+                                 NativeToJavaDouble(env, entry.second));
+                           });
   }
   RTC_DCHECK_NOTREACHED();
   return nullptr;
@@ -119,14 +97,14 @@ ScopedJavaLocalRef<jobject> MemberToJava(
 ScopedJavaLocalRef<jobject> NativeToJavaRtcStats(JNIEnv* env,
                                                  const RTCStats& stats) {
   JavaMapBuilder builder(env);
-  for (auto* const member : stats.Members()) {
-    if (!member->is_defined())
+  for (const auto& attribute : stats.Attributes()) {
+    if (!attribute.has_value())
       continue;
-    builder.put(NativeToJavaString(env, member->name()),
-                MemberToJava(env, *member));
+    builder.put(NativeToJavaString(env, attribute.name()),
+                AttributeToJava(env, attribute));
   }
   return Java_RTCStats_create(
-      env, stats.timestamp_us(), NativeToJavaString(env, stats.type()),
+      env, stats.timestamp().us(), NativeToJavaString(env, stats.type()),
       NativeToJavaString(env, stats.id()), builder.GetJavaMap());
 }
 
@@ -138,7 +116,7 @@ ScopedJavaLocalRef<jobject> NativeToJavaRtcStatsReport(
         return std::make_pair(NativeToJavaString(env, stats.id()),
                               NativeToJavaRtcStats(env, stats));
       });
-  return Java_RTCStatsReport_create(env, report->timestamp_us(), j_stats_map);
+  return Java_RTCStatsReport_create(env, report->timestamp().us(), j_stats_map);
 }
 
 }  // namespace

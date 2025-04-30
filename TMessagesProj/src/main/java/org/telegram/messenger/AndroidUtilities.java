@@ -16,7 +16,9 @@ import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.app.AppOpsManager;
 import android.app.KeyguardManager;
+import android.app.PictureInPictureParams;
 import android.content.ContentResolver;
 import android.content.ContentUris;
 import android.content.Context;
@@ -112,6 +114,8 @@ import android.widget.ScrollView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.annotation.RawRes;
 import androidx.annotation.RequiresApi;
 import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
@@ -1114,6 +1118,25 @@ public class AndroidUtilities {
         }
 
         return new String(readBuffer, 0, totalRead);
+    }
+
+    @Nullable
+    public static Bitmap getBitmapFromRaw(@RawRes int rawRes) {
+        InputStream is = null;
+        Bitmap bitmap = null;
+        try {
+            is = ApplicationLoader.applicationContext.getResources().openRawResource(rawRes);
+            bitmap = BitmapFactory.decodeStream(is);
+        } catch (Throwable e) {
+            FileLog.e(e);
+        } finally {
+            try {
+                is.close();
+            } catch (IOException e) {
+
+            }
+        }
+        return bitmap;
     }
 
     private static class LinkSpec {
@@ -5017,6 +5040,15 @@ public class AndroidUtilities {
         to.set(cx - hw, cy - hh, cx + hw, cy + hh);
     }
 
+    public static void lerpCentered(Rect a, Rect b, float f, Rect to) {
+        if (to == null) return;
+        final float cx = lerp(a.centerX(), b.centerX(), f);
+        final float cy = lerp(a.centerY(), b.centerY(), f);
+        final float hw = lerp(a.width(), b.width(), Math.min(1, f)) / 2f;
+        final float hh = lerp(a.height(), b.height(), Math.min(1, f)) / 2f;
+        to.set((int) (cx - hw), (int) (cy - hh), (int) (cx + hw), (int) (cy + hh));
+    }
+
     public static void lerp(int[] a, int[] b, float f, int[] to) {
         if (to == null) return;
         for (int i = 0; i < to.length; ++i) {
@@ -5384,6 +5416,38 @@ public class AndroidUtilities {
 
     public static boolean checkInlinePermissions(Context context) {
         return Build.VERSION.SDK_INT < Build.VERSION_CODES.M || Settings.canDrawOverlays(context);
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.O)
+    public static boolean checkPipPermissions(Context context) {
+        if (!context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_PICTURE_IN_PICTURE)) {
+            return false;
+        }
+        AppOpsManager appOps = (AppOpsManager) context.getSystemService(Context.APP_OPS_SERVICE);
+        int mode = appOps.checkOpNoThrow(AppOpsManager.OPSTR_PICTURE_IN_PICTURE, android.os.Process.myUid(), context.getPackageName());
+
+        return mode == AppOpsManager.MODE_ALLOWED;
+    }
+
+    public static boolean isInPictureInPictureMode(Activity activity) {
+        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && activity.isInPictureInPictureMode();
+    }
+
+    public static void resetPictureInPictureParams(Activity activity) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && activity != null && !activity.isDestroyed()) {
+            final PictureInPictureParams.Builder builder = new PictureInPictureParams.Builder();
+            builder.setSourceRectHint(null);
+            builder.setAspectRatio(null);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                builder.setSeamlessResizeEnabled(false);
+                builder.setAutoEnterEnabled(false);
+            }
+            try {
+                activity.setPictureInPictureParams(builder.build());
+            } catch (Throwable e) {
+                FileLog.e(e);
+            }
+        }
     }
 
     public static void updateVisibleRows(RecyclerListView listView) {

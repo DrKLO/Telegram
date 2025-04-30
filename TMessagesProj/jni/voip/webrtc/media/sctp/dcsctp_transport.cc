@@ -59,11 +59,11 @@ enum class WebrtcPPID : dcsctp::PPID::UnderlyingType {
 
 WebrtcPPID ToPPID(DataMessageType message_type, size_t size) {
   switch (message_type) {
-    case webrtc::DataMessageType::kControl:
+    case DataMessageType::kControl:
       return WebrtcPPID::kDCEP;
-    case webrtc::DataMessageType::kText:
+    case DataMessageType::kText:
       return size > 0 ? WebrtcPPID::kString : WebrtcPPID::kStringEmpty;
-    case webrtc::DataMessageType::kBinary:
+    case DataMessageType::kBinary:
       return size > 0 ? WebrtcPPID::kBinary : WebrtcPPID::kBinaryEmpty;
   }
 }
@@ -71,15 +71,15 @@ WebrtcPPID ToPPID(DataMessageType message_type, size_t size) {
 absl::optional<DataMessageType> ToDataMessageType(dcsctp::PPID ppid) {
   switch (static_cast<WebrtcPPID>(ppid.value())) {
     case WebrtcPPID::kDCEP:
-      return webrtc::DataMessageType::kControl;
+      return DataMessageType::kControl;
     case WebrtcPPID::kString:
     case WebrtcPPID::kStringPartial:
     case WebrtcPPID::kStringEmpty:
-      return webrtc::DataMessageType::kText;
+      return DataMessageType::kText;
     case WebrtcPPID::kBinary:
     case WebrtcPPID::kBinaryPartial:
     case WebrtcPPID::kBinaryEmpty:
-      return webrtc::DataMessageType::kBinary;
+      return DataMessageType::kBinary;
   }
   return absl::nullopt;
 }
@@ -257,10 +257,9 @@ bool DcSctpTransport::ResetStream(int sid) {
   return true;
 }
 
-bool DcSctpTransport::SendData(int sid,
-                               const SendDataParams& params,
-                               const rtc::CopyOnWriteBuffer& payload,
-                               cricket::SendDataResult* result) {
+RTCError DcSctpTransport::SendData(int sid,
+                                   const SendDataParams& params,
+                                   const rtc::CopyOnWriteBuffer& payload) {
   RTC_DCHECK_RUN_ON(network_thread_);
   RTC_DLOG(LS_VERBOSE) << debug_name_ << "->SendData(sid=" << sid
                        << ", type=" << static_cast<int>(params.type)
@@ -269,8 +268,7 @@ bool DcSctpTransport::SendData(int sid,
   if (!socket_) {
     RTC_LOG(LS_ERROR) << debug_name_
                       << "->SendData(...): Transport is not started.";
-    *result = cricket::SDR_ERROR;
-    return false;
+    return RTCError(RTCErrorType::INVALID_STATE);
   }
 
   // It is possible for a message to be sent from the signaling thread at the
@@ -284,8 +282,7 @@ bool DcSctpTransport::SendData(int sid,
   if (stream_state == stream_states_.end()) {
     RTC_LOG(LS_VERBOSE) << "Skipping message on non-open stream with sid: "
                         << sid;
-    *result = cricket::SDR_ERROR;
-    return false;
+    return RTCError(RTCErrorType::INVALID_STATE);
   }
 
   if (stream_state->second.closure_initiated ||
@@ -293,8 +290,7 @@ bool DcSctpTransport::SendData(int sid,
       stream_state->second.outgoing_reset_done) {
     RTC_LOG(LS_VERBOSE) << "Skipping message on closing stream with sid: "
                         << sid;
-    *result = cricket::SDR_ERROR;
-    return false;
+    return RTCError(RTCErrorType::INVALID_STATE);
   }
 
   auto max_message_size = socket_->options().max_message_size;
@@ -304,8 +300,7 @@ bool DcSctpTransport::SendData(int sid,
                            "Trying to send packet bigger "
                            "than the max message size: "
                         << payload.size() << " vs max of " << max_message_size;
-    *result = cricket::SDR_ERROR;
-    return false;
+    return RTCError(RTCErrorType::INVALID_RANGE);
   }
 
   std::vector<uint8_t> message_payload(payload.cdata(),
@@ -337,27 +332,24 @@ bool DcSctpTransport::SendData(int sid,
     send_options.max_retransmissions = *params.max_rtx_count;
   }
 
-  auto error = socket_->Send(std::move(message), send_options);
+  dcsctp::SendStatus error = socket_->Send(std::move(message), send_options);
   switch (error) {
     case dcsctp::SendStatus::kSuccess:
-      *result = cricket::SDR_SUCCESS;
-      break;
+      return RTCError::OK();
     case dcsctp::SendStatus::kErrorResourceExhaustion:
-      *result = cricket::SDR_BLOCK;
       ready_to_send_data_ = false;
-      break;
+      return RTCError(RTCErrorType::RESOURCE_EXHAUSTED);
     default:
+      absl::string_view message = dcsctp::ToString(error);
       RTC_LOG(LS_ERROR) << debug_name_
                         << "->SendData(...): send() failed with error "
-                        << dcsctp::ToString(error) << ".";
-      *result = cricket::SDR_ERROR;
-      break;
+                        << message << ".";
+      return RTCError(RTCErrorType::NETWORK_ERROR, message);
   }
-
-  return *result == cricket::SDR_SUCCESS;
 }
 
 bool DcSctpTransport::ReadyToSendData() {
+  RTC_DCHECK_RUN_ON(network_thread_);
   return ready_to_send_data_;
 }
 
@@ -425,7 +417,7 @@ SendPacketStatus DcSctpTransport::SendPacketWithStatus(
 }
 
 std::unique_ptr<dcsctp::Timeout> DcSctpTransport::CreateTimeout(
-    webrtc::TaskQueueBase::DelayPrecision precision) {
+    TaskQueueBase::DelayPrecision precision) {
   return task_queue_timeout_factory_.CreateTimeout(precision);
 }
 
@@ -453,26 +445,22 @@ void DcSctpTransport::OnMessageReceived(dcsctp::DcSctpMessage message) {
                        << message.stream_id().value()
                        << ", ppid=" << message.ppid().value()
                        << ", length=" << message.payload().size() << ").";
-  cricket::ReceiveDataParams receive_data_params;
-  receive_data_params.sid = message.stream_id().value();
   auto type = ToDataMessageType(message.ppid());
   if (!type.has_value()) {
     RTC_LOG(LS_VERBOSE) << debug_name_
                         << "->OnMessageReceived(): Received an unknown PPID "
                         << message.ppid().value()
                         << " on an SCTP packet. Dropping.";
+    return;
   }
-  receive_data_params.type = *type;
-  // No seq_num available from dcSCTP
-  receive_data_params.seq_num = 0;
   receive_buffer_.Clear();
   if (!IsEmptyPPID(message.ppid()))
     receive_buffer_.AppendData(message.payload().data(),
                                message.payload().size());
 
   if (data_channel_sink_) {
-    data_channel_sink_->OnDataReceived(
-        receive_data_params.sid, receive_data_params.type, receive_buffer_);
+    data_channel_sink_->OnDataReceived(message.stream_id().value(), *type,
+                                       receive_buffer_);
   }
 }
 
@@ -524,6 +512,7 @@ void DcSctpTransport::OnConnected() {
 }
 
 void DcSctpTransport::OnClosed() {
+  RTC_DCHECK_RUN_ON(network_thread_);
   RTC_DLOG(LS_INFO) << debug_name_ << "->OnClosed().";
   ready_to_send_data_ = false;
 }

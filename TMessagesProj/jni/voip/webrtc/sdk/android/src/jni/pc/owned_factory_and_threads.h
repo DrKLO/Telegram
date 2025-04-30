@@ -12,6 +12,7 @@
 #define SDK_ANDROID_SRC_JNI_PC_OWNED_FACTORY_AND_THREADS_H_
 
 #include <jni.h>
+
 #include <memory>
 #include <utility>
 

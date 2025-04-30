@@ -17,6 +17,7 @@
 #include <string>
 #include <utility>  // For std::move.
 
+#include "absl/strings/string_view.h"
 #include "absl/types/optional.h"
 #include "rtc_base/checks.h"
 #include "rtc_base/logging.h"
@@ -108,8 +109,8 @@ class RTC_EXPORT RTCError {
   RTCError() {}
   explicit RTCError(RTCErrorType type) : type_(type) {}
 
-  RTCError(RTCErrorType type, std::string message)
-      : type_(type), message_(std::move(message)) {}
+  RTCError(RTCErrorType type, absl::string_view message)
+      : type_(type), message_(message) {}
 
   // In many use cases, it is better to use move than copy,
   // but copy and assignment are provided for those cases that need it.
@@ -133,7 +134,7 @@ class RTC_EXPORT RTCError {
   // stable.
   const char* message() const;
 
-  void set_message(std::string message);
+  void set_message(absl::string_view message);
 
   RTCErrorDetailType error_detail() const { return error_detail_; }
   void set_error_detail(RTCErrorDetailType detail) { error_detail_ = detail; }
@@ -158,8 +159,8 @@ class RTC_EXPORT RTCError {
 //
 // Only intended to be used for logging/diagnostics. The returned char* points
 // to literal string that lives for the whole duration of the program.
-RTC_EXPORT const char* ToString(RTCErrorType error);
-RTC_EXPORT const char* ToString(RTCErrorDetailType error);
+RTC_EXPORT absl::string_view ToString(RTCErrorType error);
+RTC_EXPORT absl::string_view ToString(RTCErrorDetailType error);
 
 #ifdef WEBRTC_UNIT_TEST
 inline std::ostream& operator<<(  // no-presubmit-check TODO(webrtc:8982)
@@ -307,23 +308,23 @@ class RTCErrorOr {
   // the stack.
   const T& value() const {
     RTC_DCHECK(ok());
-    return value_;
+    return *value_;
   }
   T& value() {
     RTC_DCHECK(ok());
-    return value_;
+    return *value_;
   }
 
   // Moves our current value out of this object and returns it, or DCHECK-fails
   // if !this->ok().
   T MoveValue() {
     RTC_DCHECK(ok());
-    return std::move(value_);
+    return std::move(*value_);
   }
 
  private:
   RTCError error_;
-  T value_;
+  absl::optional<T> value_;
 };
 
 }  // namespace webrtc

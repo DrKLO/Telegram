@@ -3296,32 +3296,7 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
         final int now = ConnectionsManager.getInstance(currentAccount).getCurrentTime();
 
         final UserSelectorBottomSheet[] sheet = new UserSelectorBottomSheet[1];
-        sheet[0] = new UserSelectorBottomSheet(new BaseFragment() {
-            @Override
-            public Context getContext() {
-                return StarGiftSheet.this.getContext();
-            }
-            @Override
-            public Activity getParentActivity() {
-                Activity activity = LaunchActivity.instance;
-                if (activity == null) activity = AndroidUtilities.findActivity(StarGiftSheet.this.getContext());
-                return activity;
-            }
-            @Override
-            public Theme.ResourcesProvider getResourceProvider() {
-                return StarGiftSheet.this.resourcesProvider;
-            }
-            @Override
-            public boolean presentFragment(BaseFragment fragment) {
-                sheet[0].dismiss();
-                dismiss();
-                BaseFragment baseFragment = LaunchActivity.getSafeLastFragment();
-                if (baseFragment != null) {
-                    return baseFragment.presentFragment(baseFragment);
-                }
-                return false;
-            }
-        }, 0, BirthdayController.getInstance(currentAccount).getState(), UserSelectorBottomSheet.TYPE_TRANSFER, true);
+        sheet[0] = new UserSelectorBottomSheet(getContext(), currentAccount, 0, BirthdayController.getInstance(currentAccount).getState(), UserSelectorBottomSheet.TYPE_TRANSFER, true, resourcesProvider);
 //        sheet[0].setTitle(LocaleController.formatString(R.string.Gift2Transfer, getGiftName()));
         sheet[0].setTitle(getString(R.string.Gift2TransferShort));
         final int days = now > can_export_at ? 0 : (int) Math.max(1, Math.round((float) Math.max(0, can_export_at - now) / (60 * 60 * 24f)));

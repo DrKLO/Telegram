@@ -11,18 +11,34 @@ import android.content.Intent;
 public class VoIPActionsReceiver extends BroadcastReceiver {
 	@Override
 	public void onReceive(Context context, Intent intent) {
-		if (VoIPService.getSharedInstance() != null) {
+		if (!intent.hasExtra("group_call_invite_msg_id") && VoIPService.getSharedInstance() != null) {
 			VoIPService.getSharedInstance().handleNotificationAction(intent);
 		} else {
 			final String packageName = context.getPackageName();
 			if ((packageName + ".END_CALL").equals(intent.getAction())) {
-				VoIPPreNotificationService.decline(context, VoIPService.DISCARD_REASON_HANGUP);
+				if (intent.hasExtra("group_call_invite_msg_id")) {
+					VoIPGroupNotification.decline(context, intent.getIntExtra("currentAccount", 0), intent.getIntExtra("group_call_invite_msg_id", 0));
+				} else {
+					VoIPPreNotificationService.decline(context, VoIPService.DISCARD_REASON_HANGUP);
+				}
 			} else if ((packageName + ".DECLINE_CALL").equals(intent.getAction())) {
-				VoIPPreNotificationService.decline(context, VoIPService.DISCARD_REASON_LINE_BUSY);
+				if (intent.hasExtra("group_call_invite_msg_id")) {
+					VoIPGroupNotification.decline(context, intent.getIntExtra("currentAccount", 0), intent.getIntExtra("group_call_invite_msg_id", 0));
+				} else {
+					VoIPPreNotificationService.decline(context, VoIPService.DISCARD_REASON_LINE_BUSY);
+				}
 			} else if ((packageName + ".ANSWER_CALL").equals(intent.getAction())) {
-				VoIPPreNotificationService.answer(context);
+				if (intent.hasExtra("group_call_invite_msg_id")) {
+					VoIPGroupNotification.answer(context, intent.getIntExtra("currentAccount", 0), intent.getIntExtra("group_call_invite_msg_id", 0));
+				} else {
+					VoIPPreNotificationService.answer(context);
+				}
 			} else if ((packageName + ".HIDE_CALL").equals(intent.getAction())) {
-				VoIPPreNotificationService.dismiss(context, false);
+				if (intent.hasExtra("group_call_invite_msg_id")) {
+					VoIPGroupNotification.hide(context, intent.getIntExtra("currentAccount", 0), intent.getIntExtra("group_call_invite_msg_id", 0));
+				} else {
+					VoIPPreNotificationService.dismiss(context, false);
+				}
 			}
 		}
 	}

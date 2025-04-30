@@ -13,10 +13,13 @@
 
 #include <stddef.h>
 
+#include <cstdint>
 #include <map>
 #include <memory>
 #include <set>
 
+#include "api/array_view.h"
+#include "rtc_base/buffer.h"
 #include "rtc_base/nat_server.h"
 #include "rtc_base/nat_types.h"
 #include "rtc_base/socket.h"
@@ -102,6 +105,7 @@ class NATSocketServer : public SocketServer, public NATInternalSocketFactory {
     Translator(NATSocketServer* server,
                NATType type,
                const SocketAddress& int_addr,
+               Thread& external_socket_thread,
                SocketFactory* ext_factory,
                const SocketAddress& ext_addr);
     ~Translator();
@@ -171,8 +175,7 @@ class NATSocketServer : public SocketServer, public NATInternalSocketFactory {
 size_t PackAddressForNAT(char* buf,
                          size_t buf_size,
                          const SocketAddress& remote_addr);
-size_t UnpackAddressFromNAT(const char* buf,
-                            size_t buf_size,
+size_t UnpackAddressFromNAT(rtc::ArrayView<const uint8_t> buf,
                             SocketAddress* remote_addr);
 }  // namespace rtc
 

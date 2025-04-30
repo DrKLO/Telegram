@@ -38,8 +38,26 @@ constexpr float kDefaultMinBitratebps = 30000;
 std::vector<VideoEncoder::ResolutionBitrateLimits>
 EncoderInfoSettings::GetDefaultSinglecastBitrateLimits(
     VideoCodecType codec_type) {
-  // Specific limits for VP9. Other codecs use VP8 limits.
+  if (codec_type == kVideoCodecAV1) {
+    // AV1 singlecast max bitrate limits are higher than AV1 SVC max limits.
+    // This is because in singlecast we normally have just one receiver, BWE is
+    // known end-to-end and the encode target bitrate guarantees delivery of
+    // video.
+    // The min bitrate limits are not used in singlecast (used in SVC/simulcast
+    // to de-/activate spatial layers) and are set to zero. Send resolution in
+    // singlecast is assumed to be regulated by QP-based quality scaler.
+    return {{320 * 180, 0, 0, 256000},
+            {480 * 270, 176000, 0, 384000},
+            {640 * 360, 256000, 0, 512000},
+            {960 * 540, 384000, 0, 1024000},
+            {1280 * 720, 576000, 0, 1536000}};
+  }
+
   if (codec_type == kVideoCodecVP9) {
+    // VP9 singlecast bitrate limits are derived ~directly from VP9 SVC bitrate
+    // limits. The current max limits are unnecessarily too strict for
+    // singlecast, where BWE is known end-to-end, especially for low
+    // resolutions.
     return {{320 * 180, 0, 30000, 150000},
             {480 * 270, 120000, 30000, 300000},
             {640 * 360, 190000, 30000, 420000},
@@ -47,6 +65,7 @@ EncoderInfoSettings::GetDefaultSinglecastBitrateLimits(
             {1280 * 720, 480000, 30000, 1500000}};
   }
 
+  // VP8 and other codecs.
   return {{320 * 180, 0, 30000, 300000},
           {480 * 270, 200000, 30000, 500000},
           {640 * 360, 300000, 30000, 800000},
@@ -188,7 +207,7 @@ EncoderInfoSettings::EncoderInfoSettings(absl::string_view name)
   resolution_bitrate_limits_ = ToResolutionBitrateLimits(bitrate_limits.Get());
 }
 
-absl::optional<int> EncoderInfoSettings::requested_resolution_alignment()
+absl::optional<uint32_t> EncoderInfoSettings::requested_resolution_alignment()
     const {
   if (requested_resolution_alignment_ &&
       requested_resolution_alignment_.Value() < 1) {
@@ -210,5 +229,8 @@ LibvpxVp8EncoderInfoSettings::LibvpxVp8EncoderInfoSettings()
 
 LibvpxVp9EncoderInfoSettings::LibvpxVp9EncoderInfoSettings()
     : EncoderInfoSettings("WebRTC-VP9-GetEncoderInfoOverride") {}
+
+LibaomAv1EncoderInfoSettings::LibaomAv1EncoderInfoSettings()
+    : EncoderInfoSettings("WebRTC-Av1-GetEncoderInfoOverride") {}
 
 }  // namespace webrtc

@@ -15,7 +15,7 @@
 #include <vector>
 
 #include "api/test/metrics/metrics_exporter.h"
-#include "api/test/metrics/metrics_logger_and_exporter.h"
+#include "api/test/metrics/metrics_logger.h"
 
 namespace webrtc {
 namespace test {

@@ -13,6 +13,7 @@
 
 #include "absl/strings/string_view.h"
 #include "absl/types/optional.h"
+#include "api/video_codecs/scalability_mode.h"
 
 namespace webrtc {
 
@@ -24,6 +25,11 @@ absl::optional<int> ScalabilityModeStringToNumSpatialLayers(
 // Returns the number of temporal layers from the `scalability_mode_string`
 // or nullopt if the given mode is unknown.
 absl::optional<int> ScalabilityModeStringToNumTemporalLayers(
+    absl::string_view scalability_mode_string);
+
+// Convert the `scalability_mode_string` to the scalability mode enum value
+// or nullopt if the given mode is unknown.
+absl::optional<ScalabilityMode> ScalabilityModeStringToEnum(
     absl::string_view scalability_mode_string);
 
 }  // namespace webrtc

@@ -12,18 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <cstdint>
+#include <cstddef>
+#include <cstring>
+#include <ostream>
 #include <string>
+#include <utility>
 
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "absl/base/config.h"
-#include "absl/base/internal/raw_logging.h"
-#include "absl/base/macros.h"
 #include "absl/strings/cord.h"
+#include "absl/strings/cord_buffer.h"
 #include "absl/strings/cord_test_helpers.h"
 #include "absl/strings/cordz_test_helpers.h"
-#include "absl/strings/internal/cordz_functions.h"
+#include "absl/strings/internal/cord_internal.h"
 #include "absl/strings/internal/cordz_info.h"
 #include "absl/strings/internal/cordz_sample_token.h"
 #include "absl/strings/internal/cordz_statistics.h"

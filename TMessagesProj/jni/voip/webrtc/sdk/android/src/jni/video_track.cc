@@ -40,8 +40,7 @@ static jlong JNI_VideoTrack_WrapSink(JNIEnv* jni,
   return jlongFromPointer(new VideoSinkWrapper(jni, sink));
 }
 
-static void JNI_VideoTrack_FreeSink(JNIEnv* jni,
-                                    jlong j_native_sink) {
+static void JNI_VideoTrack_FreeSink(JNIEnv* jni, jlong j_native_sink) {
   delete reinterpret_cast<rtc::VideoSinkInterface<VideoFrame>*>(j_native_sink);
 }
 

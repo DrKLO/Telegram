@@ -130,7 +130,6 @@ H264SpsPpsTracker::FixedBitstream H264SpsPpsTracker::CopyAndFixBitstream(
   if (h264_header.packetization_type == kH264StapA) {
     const uint8_t* nalu_ptr = bitstream.data() + 1;
     while (nalu_ptr < bitstream.data() + bitstream.size() - 1) {
-      RTC_DCHECK(video_header->is_first_packet_in_frame);
       required_size += sizeof(start_code_h264);
 
       // The first two bytes describe the length of a segment.

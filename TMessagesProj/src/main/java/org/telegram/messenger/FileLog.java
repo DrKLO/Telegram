@@ -23,6 +23,9 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
+import com.google.gson.TypeAdapter;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
 
 import org.telegram.messenger.time.FastDateFormat;
 import org.telegram.messenger.video.MediaCodecVideoConvertor;
@@ -53,8 +56,6 @@ public class FileLog {
     private File tonlibFile = null;
     private boolean initied;
     public static boolean databaseIsMalformed = false;
-
-    public static final boolean LOG_ANRS = BuildVars.DEBUG_VERSION;
 
     private OutputStreamWriter tlStreamWriter = null;
     private File tlRequestsFile = null;
@@ -89,7 +90,7 @@ public class FileLog {
     private static HashSet<String> excludeRequests;
 
     public static void dumpResponseAndRequest(int account, TLObject request, TLObject response, TLRPC.TL_error error, long requestMsgId, long startRequestTimeInMillis, int requestToken) {
-        if (/*!BuildVars.DEBUG_PRIVATE_VERSION || !BuildVars.LOGS_ENABLED || */request == null) {
+        if (!BuildVars.DEBUG_PRIVATE_VERSION || !BuildVars.LOGS_ENABLED || request == null) {
             return;
         }
         String requestSimpleName = request.getClass().getSimpleName();
@@ -133,7 +134,7 @@ public class FileLog {
     }
 
     public static void dumpUnparsedMessage(TLObject message, long messageId, int account) {
-        if (/*!BuildVars.DEBUG_PRIVATE_VERSION || !BuildVars.LOGS_ENABLED || */message == null) {
+        if (!BuildVars.DEBUG_PRIVATE_VERSION || !BuildVars.LOGS_ENABLED || message == null) {
             return;
         }
         try {
@@ -209,9 +210,40 @@ public class FileLog {
             };
             gson = new GsonBuilder()
                 .addSerializationExclusionStrategy(exclusionStrategy)
+                .registerTypeAdapter(byte[].class, new ByteArrayHexAdapter())
                 .registerTypeAdapterFactory(RuntimeClassNameTypeAdapterFactory.of(TLObject.class, "type_", exclusionStrategy))
                 .registerTypeHierarchyAdapter(TLObject.class, new TLObjectDeserializer())
                 .create();
+        }
+    }
+
+    public static class ByteArrayHexAdapter extends TypeAdapter<byte[]> {
+
+        @Override
+        public void write(JsonWriter out, byte[] value) throws IOException {
+            if (value == null) {
+                out.nullValue();
+                return;
+            }
+
+            StringBuilder hex = new StringBuilder(2 + value.length * 2);
+            hex.append("0x");
+            for (byte b : value) {
+                hex.append(String.format("%02x", b & 0xFF));
+            }
+            out.value(hex.toString());
+        }
+
+        @Override
+        public byte[] read(JsonReader in) throws IOException {
+            String hex = in.nextString();
+            int len = hex.length();
+            byte[] result = new byte[len / 2];
+            for (int i = 0; i < len; i += 2) {
+                result[i / 2] = (byte) ((Character.digit(hex.charAt(i), 16) << 4)
+                    + Character.digit(hex.charAt(i+1), 16));
+            }
+            return result;
         }
     }
 
@@ -284,7 +316,7 @@ public class FileLog {
         } catch (Exception e) {
             e.printStackTrace();
         }
-        if (LOG_ANRS) {
+        if (BuildVars.DEBUG_VERSION) {
             new ANRDetector(this::dumpANR);
         }
         initied = true;

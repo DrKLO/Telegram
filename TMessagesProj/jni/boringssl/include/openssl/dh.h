@@ -1,65 +1,22 @@
-/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
- * All rights reserved.
- *
- * This package is an SSL implementation written
- * by Eric Young (eay@cryptsoft.com).
- * The implementation was written so as to conform with Netscapes SSL.
- *
- * This library is free for commercial and non-commercial use as long as
- * the following conditions are aheared to.  The following conditions
- * apply to all code found in this distribution, be it the RC4, RSA,
- * lhash, DES, etc., code; not just the SSL code.  The SSL documentation
- * included with this distribution is covered by the same copyright terms
- * except that the holder is Tim Hudson (tjh@cryptsoft.com).
- *
- * Copyright remains Eric Young's, and as such any Copyright notices in
- * the code are not to be removed.
- * If this package is used in a product, Eric Young should be given attribution
- * as the author of the parts of the library used.
- * This can be in the form of a textual message at program startup or
- * in documentation (online or textual) provided with the package.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- * 1. Redistributions of source code must retain the copyright
- *    notice, this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
- * 3. All advertising materials mentioning features or use of this software
- *    must display the following acknowledgement:
- *    "This product includes cryptographic software written by
- *     Eric Young (eay@cryptsoft.com)"
- *    The word 'cryptographic' can be left out if the rouines from the library
- *    being used are not cryptographic related :-).
- * 4. If you include any Windows specific code (or a derivative thereof) from
- *    the apps directory (application code) you must include an acknowledgement:
- *    "This product includes software written by Tim Hudson (tjh@cryptsoft.com)"
- *
- * THIS SOFTWARE IS PROVIDED BY ERIC YOUNG ``AS IS'' AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
- * SUCH DAMAGE.
- *
- * The licence and distribution terms for any publically available version or
- * derivative of this code cannot be changed.  i.e. this code cannot simply be
- * copied and put under another distribution licence
- * [including the GNU Public Licence.] */
+// Copyright 1995-2016 The OpenSSL Project Authors. All Rights Reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 #ifndef OPENSSL_HEADER_DH_H
 #define OPENSSL_HEADER_DH_H
 
-#include <openssl/base.h>
+#include <openssl/base.h>   // IWYU pragma: export
 
-#include <openssl/ex_data.h>
 #include <openssl/thread.h>
 
 #if defined(__cplusplus)
@@ -69,9 +26,19 @@ extern "C" {
 
 // DH contains functions for performing Diffie-Hellman key agreement in
 // multiplicative groups.
+//
+// This module is deprecated and retained for legacy reasons only. It is not
+// considered a priority for performance or hardening work. Do not use it in
+// new code. Use X25519 or ECDH with P-256 instead.
 
 
 // Allocation and destruction.
+//
+// A |DH| object represents a Diffie-Hellman key or group parameters. A given
+// object may be used concurrently on multiple threads by non-mutating
+// functions, provided no other thread is concurrently calling a mutating
+// function. Unless otherwise documented, functions which take a |const| pointer
+// are non-mutating and functions which take a non-|const| pointer are mutating.
 
 // DH_new returns a new, empty DH object or NULL on error.
 OPENSSL_EXPORT DH *DH_new(void);
@@ -80,11 +47,34 @@ OPENSSL_EXPORT DH *DH_new(void);
 // count drops to zero.
 OPENSSL_EXPORT void DH_free(DH *dh);
 
-// DH_up_ref increments the reference count of |dh| and returns one.
+// DH_up_ref increments the reference count of |dh| and returns one. It does not
+// mutate |dh| for thread-safety purposes and may be used concurrently.
 OPENSSL_EXPORT int DH_up_ref(DH *dh);
 
 
 // Properties.
+
+// OPENSSL_DH_MAX_MODULUS_BITS is the maximum supported Diffie-Hellman group
+// modulus, in bits.
+#define OPENSSL_DH_MAX_MODULUS_BITS 10000
+
+// DH_bits returns the size of |dh|'s group modulus, in bits.
+OPENSSL_EXPORT unsigned DH_bits(const DH *dh);
+
+// DH_get0_pub_key returns |dh|'s public key.
+OPENSSL_EXPORT const BIGNUM *DH_get0_pub_key(const DH *dh);
+
+// DH_get0_priv_key returns |dh|'s private key, or NULL if |dh| is a public key.
+OPENSSL_EXPORT const BIGNUM *DH_get0_priv_key(const DH *dh);
+
+// DH_get0_p returns |dh|'s group modulus.
+OPENSSL_EXPORT const BIGNUM *DH_get0_p(const DH *dh);
+
+// DH_get0_q returns the size of |dh|'s subgroup, or NULL if it is unset.
+OPENSSL_EXPORT const BIGNUM *DH_get0_q(const DH *dh);
+
+// DH_get0_g returns |dh|'s group generator.
+OPENSSL_EXPORT const BIGNUM *DH_get0_g(const DH *dh);
 
 // DH_get0_key sets |*out_pub_key| and |*out_priv_key|, if non-NULL, to |dh|'s
 // public and private key, respectively. If |dh| is a public key, the private
@@ -108,13 +98,48 @@ OPENSSL_EXPORT void DH_get0_pqg(const DH *dh, const BIGNUM **out_p,
 // |p| and |g| must either be specified or already configured on |dh|.
 OPENSSL_EXPORT int DH_set0_pqg(DH *dh, BIGNUM *p, BIGNUM *q, BIGNUM *g);
 
+// DH_set_length sets the number of bits to use for the secret exponent when
+// calling |DH_generate_key| on |dh| and returns one. If unset,
+// |DH_generate_key| will use the bit length of p.
+OPENSSL_EXPORT int DH_set_length(DH *dh, unsigned priv_length);
+
 
 // Standard parameters.
+
+// DH_get_rfc7919_2048 returns the group `ffdhe2048` from
+// https://tools.ietf.org/html/rfc7919#appendix-A.1. It returns NULL if out
+// of memory.
+OPENSSL_EXPORT DH *DH_get_rfc7919_2048(void);
 
 // BN_get_rfc3526_prime_1536 sets |*ret| to the 1536-bit MODP group from RFC
 // 3526 and returns |ret|. If |ret| is NULL then a fresh |BIGNUM| is allocated
 // and returned. It returns NULL on allocation failure.
 OPENSSL_EXPORT BIGNUM *BN_get_rfc3526_prime_1536(BIGNUM *ret);
+
+// BN_get_rfc3526_prime_2048 sets |*ret| to the 2048-bit MODP group from RFC
+// 3526 and returns |ret|. If |ret| is NULL then a fresh |BIGNUM| is allocated
+// and returned. It returns NULL on allocation failure.
+OPENSSL_EXPORT BIGNUM *BN_get_rfc3526_prime_2048(BIGNUM *ret);
+
+// BN_get_rfc3526_prime_3072 sets |*ret| to the 3072-bit MODP group from RFC
+// 3526 and returns |ret|. If |ret| is NULL then a fresh |BIGNUM| is allocated
+// and returned. It returns NULL on allocation failure.
+OPENSSL_EXPORT BIGNUM *BN_get_rfc3526_prime_3072(BIGNUM *ret);
+
+// BN_get_rfc3526_prime_4096 sets |*ret| to the 4096-bit MODP group from RFC
+// 3526 and returns |ret|. If |ret| is NULL then a fresh |BIGNUM| is allocated
+// and returned. It returns NULL on allocation failure.
+OPENSSL_EXPORT BIGNUM *BN_get_rfc3526_prime_4096(BIGNUM *ret);
+
+// BN_get_rfc3526_prime_6144 sets |*ret| to the 6144-bit MODP group from RFC
+// 3526 and returns |ret|. If |ret| is NULL then a fresh |BIGNUM| is allocated
+// and returned. It returns NULL on allocation failure.
+OPENSSL_EXPORT BIGNUM *BN_get_rfc3526_prime_6144(BIGNUM *ret);
+
+// BN_get_rfc3526_prime_8192 sets |*ret| to the 8192-bit MODP group from RFC
+// 3526 and returns |ret|. If |ret| is NULL then a fresh |BIGNUM| is allocated
+// and returned. It returns NULL on allocation failure.
+OPENSSL_EXPORT BIGNUM *BN_get_rfc3526_prime_8192(BIGNUM *ret);
 
 
 // Parameter generation.
@@ -137,15 +162,48 @@ OPENSSL_EXPORT int DH_generate_parameters_ex(DH *dh, int prime_bits,
 // Diffie-Hellman operations.
 
 // DH_generate_key generates a new, random, private key and stores it in
-// |dh|. It returns one on success and zero on error.
+// |dh|, if |dh| does not already have a private key. Otherwise, it updates
+// |dh|'s public key to match the private key. It returns one on success and
+// zero on error.
 OPENSSL_EXPORT int DH_generate_key(DH *dh);
 
-// DH_compute_key calculates the shared key between |dh| and |peers_key| and
-// writes it as a big-endian integer into |out|, which must have |DH_size|
-// bytes of space. It returns the number of bytes written, or a negative number
-// on error.
-OPENSSL_EXPORT int DH_compute_key(uint8_t *out, const BIGNUM *peers_key,
-                                  DH *dh);
+// DH_compute_key_padded calculates the shared key between |dh| and |peers_key|
+// and writes it as a big-endian integer into |out|, padded up to |DH_size|
+// bytes. It returns the number of bytes written, which is always |DH_size|, or
+// a negative number on error. |out| must have |DH_size| bytes of space.
+//
+// WARNING: this differs from the usual BoringSSL return-value convention.
+//
+// Note this function differs from |DH_compute_key| in that it preserves leading
+// zeros in the secret. This function is the preferred variant. It matches PKCS
+// #3 and avoids some side channel attacks. However, the two functions are not
+// drop-in replacements for each other. Using a different variant than the
+// application expects will result in sporadic key mismatches.
+//
+// Callers that expect a fixed-width secret should use this function over
+// |DH_compute_key|. Callers that use either function should migrate to a modern
+// primitive such as X25519 or ECDH with P-256 instead.
+//
+// This function does not mutate |dh| for thread-safety purposes and may be used
+// concurrently.
+OPENSSL_EXPORT int DH_compute_key_padded(uint8_t *out, const BIGNUM *peers_key,
+                                         DH *dh);
+
+// DH_compute_key_hashed calculates the shared key between |dh| and |peers_key|
+// and hashes it with the given |digest|. If the hash output is less than
+// |max_out_len| bytes then it writes the hash output to |out| and sets
+// |*out_len| to the number of bytes written. Otherwise it signals an error. It
+// returns one on success or zero on error.
+//
+// NOTE: this follows the usual BoringSSL return-value convention, but that's
+// different from |DH_compute_key| and |DH_compute_key_padded|.
+//
+// This function does not mutate |dh| for thread-safety purposes and may be used
+// concurrently.
+OPENSSL_EXPORT int DH_compute_key_hashed(DH *dh, uint8_t *out, size_t *out_len,
+                                         size_t max_out_len,
+                                         const BIGNUM *peers_key,
+                                         const EVP_MD *digest);
 
 
 // Utility functions.
@@ -163,7 +221,6 @@ OPENSSL_EXPORT unsigned DH_num_bits(const DH *dh);
 #define DH_CHECK_NOT_SUITABLE_GENERATOR 0x08
 #define DH_CHECK_Q_NOT_PRIME 0x10
 #define DH_CHECK_INVALID_Q_VALUE 0x20
-#define DH_CHECK_INVALID_J_VALUE 0x40
 
 // These are compatibility defines.
 #define DH_NOT_SUITABLE_GENERATOR DH_CHECK_NOT_SUITABLE_GENERATOR
@@ -205,18 +262,6 @@ OPENSSL_EXPORT DH *DH_parse_parameters(CBS *cbs);
 OPENSSL_EXPORT int DH_marshal_parameters(CBB *cbb, const DH *dh);
 
 
-// ex_data functions.
-//
-// See |ex_data.h| for details.
-
-OPENSSL_EXPORT int DH_get_ex_new_index(long argl, void *argp,
-                                       CRYPTO_EX_unused *unused,
-                                       CRYPTO_EX_dup *dup_unused,
-                                       CRYPTO_EX_free *free_func);
-OPENSSL_EXPORT int DH_set_ex_data(DH *d, int idx, void *arg);
-OPENSSL_EXPORT void *DH_get_ex_data(DH *d, int idx);
-
-
 // Deprecated functions.
 
 // DH_generate_parameters behaves like |DH_generate_parameters_ex|, which is
@@ -226,51 +271,42 @@ OPENSSL_EXPORT DH *DH_generate_parameters(int prime_len, int generator,
                                           void (*callback)(int, int, void *),
                                           void *cb_arg);
 
-// d2i_DHparams parses an ASN.1, DER encoded Diffie-Hellman parameters structure
-// from |len| bytes at |*inp|. If |ret| is not NULL then, on exit, a pointer to
-// the result is in |*ret|. Note that, even if |*ret| is already non-NULL on
-// entry, it will not be written to. Rather, a fresh |DH| is allocated and the
-// previous one is freed.
-//
-// On successful exit, |*inp| is advanced past the DER structure. It
-// returns the result or NULL on error.
+// d2i_DHparams parses a DER-encoded DHParameter structure (PKCS #3) from |len|
+// bytes at |*inp|, as in |d2i_SAMPLE|.
 //
 // Use |DH_parse_parameters| instead.
 OPENSSL_EXPORT DH *d2i_DHparams(DH **ret, const unsigned char **inp, long len);
 
-// i2d_DHparams marshals |in| to an ASN.1, DER structure. If |outp| is not NULL
-// then the result is written to |*outp| and |*outp| is advanced just past the
-// output. It returns the number of bytes in the result, whether written or
-// not, or a negative value on error.
+// i2d_DHparams marshals |in| to a DER-encoded DHParameter structure (PKCS #3),
+// as described in |i2d_SAMPLE|.
 //
 // Use |DH_marshal_parameters| instead.
 OPENSSL_EXPORT int i2d_DHparams(const DH *in, unsigned char **outp);
 
-
-struct dh_st {
-  BIGNUM *p;
-  BIGNUM *g;
-  BIGNUM *pub_key;   // g^x mod p
-  BIGNUM *priv_key;  // x
-
-  // priv_length contains the length, in bits, of the private value. If zero,
-  // the private value will be the same length as |p|.
-  unsigned priv_length;
-
-  CRYPTO_MUTEX method_mont_p_lock;
-  BN_MONT_CTX *method_mont_p;
-
-  // Place holders if we want to do X9.42 DH
-  BIGNUM *q;
-  BIGNUM *j;
-  unsigned char *seed;
-  int seedlen;
-  BIGNUM *counter;
-
-  int flags;
-  CRYPTO_refcount_t references;
-  CRYPTO_EX_DATA ex_data;
-};
+// DH_compute_key behaves like |DH_compute_key_padded| but, contrary to PKCS #3,
+// returns a variable-length shared key with leading zeros. It returns the
+// number of bytes written, or a negative number on error. |out| must have
+// |DH_size| bytes of space.
+//
+// WARNING: this differs from the usual BoringSSL return-value convention.
+//
+// Note this function's running time and memory access pattern leaks information
+// about the shared secret. Particularly if |dh| is reused, this may result in
+// side channel attacks such as https://raccoon-attack.com/.
+//
+// |DH_compute_key_padded| is the preferred variant and avoids the above
+// attacks. However, the two functions are not drop-in replacements for each
+// other. Using a different variant than the application expects will result in
+// sporadic key mismatches.
+//
+// Callers that expect a fixed-width secret should use |DH_compute_key_padded|
+// instead. Callers that use either function should migrate to a modern
+// primitive such as X25519 or ECDH with P-256 instead.
+//
+// This function does not mutate |dh| for thread-safety purposes and may be used
+// concurrently.
+OPENSSL_EXPORT int DH_compute_key(uint8_t *out, const BIGNUM *peers_key,
+                                  DH *dh);
 
 
 #if defined(__cplusplus)
@@ -295,5 +331,6 @@ BSSL_NAMESPACE_END
 #define DH_R_NO_PRIVATE_VALUE 103
 #define DH_R_DECODE_ERROR 104
 #define DH_R_ENCODE_ERROR 105
+#define DH_R_INVALID_PARAMETERS 106
 
 #endif  // OPENSSL_HEADER_DH_H

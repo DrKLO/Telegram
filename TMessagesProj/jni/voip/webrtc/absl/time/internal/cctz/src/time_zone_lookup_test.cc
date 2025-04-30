@@ -45,7 +45,6 @@ const char* const kTimeZoneNames[] = {"Africa/Abidjan",
                                       "Africa/Addis_Ababa",
                                       "Africa/Algiers",
                                       "Africa/Asmara",
-                                      "Africa/Asmera",
                                       "Africa/Bamako",
                                       "Africa/Bangui",
                                       "Africa/Banjul",
@@ -101,7 +100,6 @@ const char* const kTimeZoneNames[] = {"Africa/Abidjan",
                                       "America/Araguaina",
                                       "America/Argentina/Buenos_Aires",
                                       "America/Argentina/Catamarca",
-                                      "America/Argentina/ComodRivadavia",
                                       "America/Argentina/Cordoba",
                                       "America/Argentina/Jujuy",
                                       "America/Argentina/La_Rioja",
@@ -125,18 +123,16 @@ const char* const kTimeZoneNames[] = {"Africa/Abidjan",
                                       "America/Boa_Vista",
                                       "America/Bogota",
                                       "America/Boise",
-                                      "America/Buenos_Aires",
                                       "America/Cambridge_Bay",
                                       "America/Campo_Grande",
                                       "America/Cancun",
                                       "America/Caracas",
-                                      "America/Catamarca",
                                       "America/Cayenne",
                                       "America/Cayman",
                                       "America/Chicago",
                                       "America/Chihuahua",
+                                      "America/Ciudad_Juarez",
                                       "America/Coral_Harbour",
-                                      "America/Cordoba",
                                       "America/Costa_Rica",
                                       "America/Creston",
                                       "America/Cuiaba",
@@ -152,7 +148,6 @@ const char* const kTimeZoneNames[] = {"Africa/Abidjan",
                                       "America/El_Salvador",
                                       "America/Ensenada",
                                       "America/Fort_Nelson",
-                                      "America/Fort_Wayne",
                                       "America/Fortaleza",
                                       "America/Glace_Bay",
                                       "America/Godthab",
@@ -174,20 +169,16 @@ const char* const kTimeZoneNames[] = {"Africa/Abidjan",
                                       "America/Indiana/Vevay",
                                       "America/Indiana/Vincennes",
                                       "America/Indiana/Winamac",
-                                      "America/Indianapolis",
                                       "America/Inuvik",
                                       "America/Iqaluit",
                                       "America/Jamaica",
-                                      "America/Jujuy",
                                       "America/Juneau",
                                       "America/Kentucky/Louisville",
                                       "America/Kentucky/Monticello",
-                                      "America/Knox_IN",
                                       "America/Kralendijk",
                                       "America/La_Paz",
                                       "America/Lima",
                                       "America/Los_Angeles",
-                                      "America/Louisville",
                                       "America/Lower_Princes",
                                       "America/Maceio",
                                       "America/Managua",
@@ -196,7 +187,6 @@ const char* const kTimeZoneNames[] = {"Africa/Abidjan",
                                       "America/Martinique",
                                       "America/Matamoros",
                                       "America/Mazatlan",
-                                      "America/Mendoza",
                                       "America/Menominee",
                                       "America/Merida",
                                       "America/Metlakatla",
@@ -233,7 +223,6 @@ const char* const kTimeZoneNames[] = {"Africa/Abidjan",
                                       "America/Regina",
                                       "America/Resolute",
                                       "America/Rio_Branco",
-                                      "America/Rosario",
                                       "America/Santa_Isabel",
                                       "America/Santarem",
                                       "America/Santiago",
@@ -269,7 +258,6 @@ const char* const kTimeZoneNames[] = {"Africa/Abidjan",
                                       "Antarctica/McMurdo",
                                       "Antarctica/Palmer",
                                       "Antarctica/Rothera",
-                                      "Antarctica/South_Pole",
                                       "Antarctica/Syowa",
                                       "Antarctica/Troll",
                                       "Antarctica/Vostok",
@@ -281,7 +269,6 @@ const char* const kTimeZoneNames[] = {"Africa/Abidjan",
                                       "Asia/Aqtau",
                                       "Asia/Aqtobe",
                                       "Asia/Ashgabat",
-                                      "Asia/Ashkhabad",
                                       "Asia/Atyrau",
                                       "Asia/Baghdad",
                                       "Asia/Bahrain",
@@ -291,13 +278,10 @@ const char* const kTimeZoneNames[] = {"Africa/Abidjan",
                                       "Asia/Beirut",
                                       "Asia/Bishkek",
                                       "Asia/Brunei",
-                                      "Asia/Calcutta",
                                       "Asia/Chita",
                                       "Asia/Choibalsan",
                                       "Asia/Chongqing",
-                                      "Asia/Chungking",
                                       "Asia/Colombo",
-                                      "Asia/Dacca",
                                       "Asia/Damascus",
                                       "Asia/Dhaka",
                                       "Asia/Dili",
@@ -320,14 +304,12 @@ const char* const kTimeZoneNames[] = {"Africa/Abidjan",
                                       "Asia/Karachi",
                                       "Asia/Kashgar",
                                       "Asia/Kathmandu",
-                                      "Asia/Katmandu",
                                       "Asia/Khandyga",
                                       "Asia/Kolkata",
                                       "Asia/Krasnoyarsk",
                                       "Asia/Kuala_Lumpur",
                                       "Asia/Kuching",
                                       "Asia/Kuwait",
-                                      "Asia/Macao",
                                       "Asia/Macau",
                                       "Asia/Magadan",
                                       "Asia/Makassar",
@@ -344,9 +326,7 @@ const char* const kTimeZoneNames[] = {"Africa/Abidjan",
                                       "Asia/Qatar",
                                       "Asia/Qostanay",
                                       "Asia/Qyzylorda",
-                                      "Asia/Rangoon",
                                       "Asia/Riyadh",
-                                      "Asia/Saigon",
                                       "Asia/Sakhalin",
                                       "Asia/Samarkand",
                                       "Asia/Seoul",
@@ -358,13 +338,10 @@ const char* const kTimeZoneNames[] = {"Africa/Abidjan",
                                       "Asia/Tbilisi",
                                       "Asia/Tehran",
                                       "Asia/Tel_Aviv",
-                                      "Asia/Thimbu",
                                       "Asia/Thimphu",
                                       "Asia/Tokyo",
                                       "Asia/Tomsk",
-                                      "Asia/Ujung_Pandang",
                                       "Asia/Ulaanbaatar",
-                                      "Asia/Ulan_Bator",
                                       "Asia/Urumqi",
                                       "Asia/Ust-Nera",
                                       "Asia/Vientiane",
@@ -377,7 +354,6 @@ const char* const kTimeZoneNames[] = {"Africa/Abidjan",
                                       "Atlantic/Bermuda",
                                       "Atlantic/Canary",
                                       "Atlantic/Cape_Verde",
-                                      "Atlantic/Faeroe",
                                       "Atlantic/Faroe",
                                       "Atlantic/Jan_Mayen",
                                       "Atlantic/Madeira",
@@ -385,7 +361,6 @@ const char* const kTimeZoneNames[] = {"Africa/Abidjan",
                                       "Atlantic/South_Georgia",
                                       "Atlantic/St_Helena",
                                       "Atlantic/Stanley",
-                                      "Australia/ACT",
                                       "Australia/Adelaide",
                                       "Australia/Brisbane",
                                       "Australia/Broken_Hill",
@@ -394,42 +369,12 @@ const char* const kTimeZoneNames[] = {"Africa/Abidjan",
                                       "Australia/Darwin",
                                       "Australia/Eucla",
                                       "Australia/Hobart",
-                                      "Australia/LHI",
                                       "Australia/Lindeman",
                                       "Australia/Lord_Howe",
                                       "Australia/Melbourne",
-                                      "Australia/NSW",
-                                      "Australia/North",
                                       "Australia/Perth",
-                                      "Australia/Queensland",
-                                      "Australia/South",
                                       "Australia/Sydney",
-                                      "Australia/Tasmania",
-                                      "Australia/Victoria",
-                                      "Australia/West",
                                       "Australia/Yancowinna",
-                                      "Brazil/Acre",
-                                      "Brazil/DeNoronha",
-                                      "Brazil/East",
-                                      "Brazil/West",
-                                      "CET",
-                                      "CST6CDT",
-                                      "Canada/Atlantic",
-                                      "Canada/Central",
-                                      "Canada/Eastern",
-                                      "Canada/Mountain",
-                                      "Canada/Newfoundland",
-                                      "Canada/Pacific",
-                                      "Canada/Saskatchewan",
-                                      "Canada/Yukon",
-                                      "Chile/Continental",
-                                      "Chile/EasterIsland",
-                                      "Cuba",
-                                      "EET",
-                                      "EST",
-                                      "EST5EDT",
-                                      "Egypt",
-                                      "Eire",
                                       "Etc/GMT",
                                       "Etc/GMT+0",
                                       "Etc/GMT+1",
@@ -487,7 +432,6 @@ const char* const kTimeZoneNames[] = {"Africa/Abidjan",
                                       "Europe/Istanbul",
                                       "Europe/Jersey",
                                       "Europe/Kaliningrad",
-                                      "Europe/Kiev",
                                       "Europe/Kirov",
                                       "Europe/Kyiv",
                                       "Europe/Lisbon",
@@ -519,7 +463,6 @@ const char* const kTimeZoneNames[] = {"Africa/Abidjan",
                                       "Europe/Tirane",
                                       "Europe/Tiraspol",
                                       "Europe/Ulyanovsk",
-                                      "Europe/Uzhgorod",
                                       "Europe/Vaduz",
                                       "Europe/Vatican",
                                       "Europe/Vienna",
@@ -527,19 +470,8 @@ const char* const kTimeZoneNames[] = {"Africa/Abidjan",
                                       "Europe/Volgograd",
                                       "Europe/Warsaw",
                                       "Europe/Zagreb",
-                                      "Europe/Zaporozhye",
                                       "Europe/Zurich",
                                       "Factory",
-                                      "GB",
-                                      "GB-Eire",
-                                      "GMT",
-                                      "GMT+0",
-                                      "GMT-0",
-                                      "GMT0",
-                                      "Greenwich",
-                                      "HST",
-                                      "Hongkong",
-                                      "Iceland",
                                       "Indian/Antananarivo",
                                       "Indian/Chagos",
                                       "Indian/Christmas",
@@ -551,23 +483,6 @@ const char* const kTimeZoneNames[] = {"Africa/Abidjan",
                                       "Indian/Mauritius",
                                       "Indian/Mayotte",
                                       "Indian/Reunion",
-                                      "Iran",
-                                      "Israel",
-                                      "Jamaica",
-                                      "Japan",
-                                      "Kwajalein",
-                                      "Libya",
-                                      "MET",
-                                      "MST",
-                                      "MST7MDT",
-                                      "Mexico/BajaNorte",
-                                      "Mexico/BajaSur",
-                                      "Mexico/General",
-                                      "NZ",
-                                      "NZ-CHAT",
-                                      "Navajo",
-                                      "PRC",
-                                      "PST8PDT",
                                       "Pacific/Apia",
                                       "Pacific/Auckland",
                                       "Pacific/Bougainville",
@@ -575,7 +490,6 @@ const char* const kTimeZoneNames[] = {"Africa/Abidjan",
                                       "Pacific/Chuuk",
                                       "Pacific/Easter",
                                       "Pacific/Efate",
-                                      "Pacific/Enderbury",
                                       "Pacific/Fakaofo",
                                       "Pacific/Fiji",
                                       "Pacific/Funafuti",
@@ -600,7 +514,6 @@ const char* const kTimeZoneNames[] = {"Africa/Abidjan",
                                       "Pacific/Palau",
                                       "Pacific/Pitcairn",
                                       "Pacific/Pohnpei",
-                                      "Pacific/Ponape",
                                       "Pacific/Port_Moresby",
                                       "Pacific/Rarotonga",
                                       "Pacific/Saipan",
@@ -608,34 +521,10 @@ const char* const kTimeZoneNames[] = {"Africa/Abidjan",
                                       "Pacific/Tahiti",
                                       "Pacific/Tarawa",
                                       "Pacific/Tongatapu",
-                                      "Pacific/Truk",
                                       "Pacific/Wake",
                                       "Pacific/Wallis",
                                       "Pacific/Yap",
-                                      "Poland",
-                                      "Portugal",
-                                      "ROC",
-                                      "ROK",
-                                      "Singapore",
-                                      "Turkey",
-                                      "UCT",
-                                      "US/Alaska",
-                                      "US/Aleutian",
-                                      "US/Arizona",
-                                      "US/Central",
-                                      "US/East-Indiana",
-                                      "US/Eastern",
-                                      "US/Hawaii",
-                                      "US/Indiana-Starke",
-                                      "US/Michigan",
-                                      "US/Mountain",
-                                      "US/Pacific",
-                                      "US/Samoa",
                                       "UTC",
-                                      "Universal",
-                                      "W-SU",
-                                      "WET",
-                                      "Zulu",
                                       nullptr};
 
 // Helper to return a loaded time zone by value (UTC on error).
@@ -734,6 +623,10 @@ TEST(TimeZone, UTC) {
   time_zone loaded_utc0;
   EXPECT_TRUE(load_time_zone("UTC0", &loaded_utc0));
   EXPECT_EQ(loaded_utc0, utc);
+
+  time_zone loaded_bad;
+  EXPECT_FALSE(load_time_zone("Invalid/TimeZone", &loaded_bad));
+  EXPECT_EQ(loaded_bad, utc);
 }
 
 TEST(TimeZone, NamedTimeZones) {
@@ -911,19 +804,19 @@ TEST(MakeTime, TimePointResolution) {
   const time_zone utc = utc_time_zone();
   const time_point<chrono::nanoseconds> tp_ns =
       convert(civil_second(2015, 1, 2, 3, 4, 5), utc);
-  EXPECT_EQ("04:05", format("%M:%E*S", tp_ns, utc));
+  EXPECT_EQ("04:05", absl::time_internal::cctz::format("%M:%E*S", tp_ns, utc));
   const time_point<chrono::microseconds> tp_us =
       convert(civil_second(2015, 1, 2, 3, 4, 5), utc);
-  EXPECT_EQ("04:05", format("%M:%E*S", tp_us, utc));
+  EXPECT_EQ("04:05", absl::time_internal::cctz::format("%M:%E*S", tp_us, utc));
   const time_point<chrono::milliseconds> tp_ms =
       convert(civil_second(2015, 1, 2, 3, 4, 5), utc);
-  EXPECT_EQ("04:05", format("%M:%E*S", tp_ms, utc));
+  EXPECT_EQ("04:05", absl::time_internal::cctz::format("%M:%E*S", tp_ms, utc));
   const time_point<chrono::seconds> tp_s =
       convert(civil_second(2015, 1, 2, 3, 4, 5), utc);
-  EXPECT_EQ("04:05", format("%M:%E*S", tp_s, utc));
+  EXPECT_EQ("04:05", absl::time_internal::cctz::format("%M:%E*S", tp_s, utc));
   const time_point<absl::time_internal::cctz::seconds> tp_s64 =
       convert(civil_second(2015, 1, 2, 3, 4, 5), utc);
-  EXPECT_EQ("04:05", format("%M:%E*S", tp_s64, utc));
+  EXPECT_EQ("04:05", absl::time_internal::cctz::format("%M:%E*S", tp_s64, utc));
 
   // These next two require chrono::time_point_cast because the conversion
   // from a resolution of seconds (the return value of convert()) to a
@@ -931,10 +824,10 @@ TEST(MakeTime, TimePointResolution) {
   const time_point<chrono::minutes> tp_m =
       chrono::time_point_cast<chrono::minutes>(
           convert(civil_second(2015, 1, 2, 3, 4, 5), utc));
-  EXPECT_EQ("04:00", format("%M:%E*S", tp_m, utc));
+  EXPECT_EQ("04:00", absl::time_internal::cctz::format("%M:%E*S", tp_m, utc));
   const time_point<chrono::hours> tp_h = chrono::time_point_cast<chrono::hours>(
       convert(civil_second(2015, 1, 2, 3, 4, 5), utc));
-  EXPECT_EQ("00:00", format("%M:%E*S", tp_h, utc));
+  EXPECT_EQ("00:00", absl::time_internal::cctz::format("%M:%E*S", tp_h, utc));
 }
 
 TEST(MakeTime, Normalization) {
@@ -960,9 +853,11 @@ TEST(MakeTime, SysSecondsLimits) {
 
   // Approach the maximal time_point<cctz::seconds> value from below.
   tp = convert(civil_second(292277026596, 12, 4, 15, 30, 6), utc);
-  EXPECT_EQ("292277026596-12-04T15:30:06+00:00", format(RFC3339, tp, utc));
+  EXPECT_EQ("292277026596-12-04T15:30:06+00:00",
+            absl::time_internal::cctz::format(RFC3339, tp, utc));
   tp = convert(civil_second(292277026596, 12, 4, 15, 30, 7), utc);
-  EXPECT_EQ("292277026596-12-04T15:30:07+00:00", format(RFC3339, tp, utc));
+  EXPECT_EQ("292277026596-12-04T15:30:07+00:00",
+            absl::time_internal::cctz::format(RFC3339, tp, utc));
   EXPECT_EQ(time_point<absl::time_internal::cctz::seconds>::max(), tp);
   tp = convert(civil_second(292277026596, 12, 4, 15, 30, 8), utc);
   EXPECT_EQ(time_point<absl::time_internal::cctz::seconds>::max(), tp);
@@ -971,7 +866,8 @@ TEST(MakeTime, SysSecondsLimits) {
 
   // Checks that we can also get the maximal value for a far-east zone.
   tp = convert(civil_second(292277026596, 12, 5, 5, 30, 7), east);
-  EXPECT_EQ("292277026596-12-05T05:30:07+14:00", format(RFC3339, tp, east));
+  EXPECT_EQ("292277026596-12-05T05:30:07+14:00",
+            absl::time_internal::cctz::format(RFC3339, tp, east));
   EXPECT_EQ(time_point<absl::time_internal::cctz::seconds>::max(), tp);
   tp = convert(civil_second(292277026596, 12, 5, 5, 30, 8), east);
   EXPECT_EQ(time_point<absl::time_internal::cctz::seconds>::max(), tp);
@@ -980,7 +876,8 @@ TEST(MakeTime, SysSecondsLimits) {
 
   // Checks that we can also get the maximal value for a far-west zone.
   tp = convert(civil_second(292277026596, 12, 4, 1, 30, 7), west);
-  EXPECT_EQ("292277026596-12-04T01:30:07-14:00", format(RFC3339, tp, west));
+  EXPECT_EQ("292277026596-12-04T01:30:07-14:00",
+            absl::time_internal::cctz::format(RFC3339, tp, west));
   EXPECT_EQ(time_point<absl::time_internal::cctz::seconds>::max(), tp);
   tp = convert(civil_second(292277026596, 12, 4, 7, 30, 8), west);
   EXPECT_EQ(time_point<absl::time_internal::cctz::seconds>::max(), tp);
@@ -989,9 +886,11 @@ TEST(MakeTime, SysSecondsLimits) {
 
   // Approach the minimal time_point<cctz::seconds> value from above.
   tp = convert(civil_second(-292277022657, 1, 27, 8, 29, 53), utc);
-  EXPECT_EQ("-292277022657-01-27T08:29:53+00:00", format(RFC3339, tp, utc));
+  EXPECT_EQ("-292277022657-01-27T08:29:53+00:00",
+            absl::time_internal::cctz::format(RFC3339, tp, utc));
   tp = convert(civil_second(-292277022657, 1, 27, 8, 29, 52), utc);
-  EXPECT_EQ("-292277022657-01-27T08:29:52+00:00", format(RFC3339, tp, utc));
+  EXPECT_EQ("-292277022657-01-27T08:29:52+00:00",
+            absl::time_internal::cctz::format(RFC3339, tp, utc));
   EXPECT_EQ(time_point<absl::time_internal::cctz::seconds>::min(), tp);
   tp = convert(civil_second(-292277022657, 1, 27, 8, 29, 51), utc);
   EXPECT_EQ(time_point<absl::time_internal::cctz::seconds>::min(), tp);
@@ -1000,7 +899,8 @@ TEST(MakeTime, SysSecondsLimits) {
 
   // Checks that we can also get the minimal value for a far-east zone.
   tp = convert(civil_second(-292277022657, 1, 27, 22, 29, 52), east);
-  EXPECT_EQ("-292277022657-01-27T22:29:52+14:00", format(RFC3339, tp, east));
+  EXPECT_EQ("-292277022657-01-27T22:29:52+14:00",
+            absl::time_internal::cctz::format(RFC3339, tp, east));
   EXPECT_EQ(time_point<absl::time_internal::cctz::seconds>::min(), tp);
   tp = convert(civil_second(-292277022657, 1, 27, 22, 29, 51), east);
   EXPECT_EQ(time_point<absl::time_internal::cctz::seconds>::min(), tp);
@@ -1009,7 +909,8 @@ TEST(MakeTime, SysSecondsLimits) {
 
   // Checks that we can also get the minimal value for a far-west zone.
   tp = convert(civil_second(-292277022657, 1, 26, 18, 29, 52), west);
-  EXPECT_EQ("-292277022657-01-26T18:29:52-14:00", format(RFC3339, tp, west));
+  EXPECT_EQ("-292277022657-01-26T18:29:52-14:00",
+            absl::time_internal::cctz::format(RFC3339, tp, west));
   EXPECT_EQ(time_point<absl::time_internal::cctz::seconds>::min(), tp);
   tp = convert(civil_second(-292277022657, 1, 26, 18, 29, 51), west);
   EXPECT_EQ(time_point<absl::time_internal::cctz::seconds>::min(), tp);
@@ -1026,17 +927,19 @@ TEST(MakeTime, SysSecondsLimits) {
     const time_zone cut = LoadZone("libc:UTC");
     const year_t max_tm_year = year_t{std::numeric_limits<int>::max()} + 1900;
     tp = convert(civil_second(max_tm_year, 12, 31, 23, 59, 59), cut);
-#if defined(__FreeBSD__) || defined(__OpenBSD__)
-    // The BSD gmtime_r() fails on extreme positive tm_year values.
+#if defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__EMSCRIPTEN__)
+    // Some gmtime_r() impls fail on extreme positive values.
 #else
-    EXPECT_EQ("2147485547-12-31T23:59:59+00:00", format(RFC3339, tp, cut));
+    EXPECT_EQ("2147485547-12-31T23:59:59+00:00",
+              absl::time_internal::cctz::format(RFC3339, tp, cut));
 #endif
     const year_t min_tm_year = year_t{std::numeric_limits<int>::min()} + 1900;
     tp = convert(civil_second(min_tm_year, 1, 1, 0, 0, 0), cut);
-#if defined(__Fuchsia__)
-    // Fuchsia's gmtime_r() fails on extreme negative values (fxbug.dev/78527).
+#if defined(__Fuchsia__) || defined(__EMSCRIPTEN__)
+    // Some gmtime_r() impls fail on extreme negative values (fxbug.dev/78527).
 #else
-    EXPECT_EQ("-2147481748-01-01T00:00:00+00:00", format(RFC3339, tp, cut));
+    EXPECT_EQ("-2147481748-01-01T00:00:00+00:00",
+              absl::time_internal::cctz::format(RFC3339, tp, cut));
 #endif
 #endif
   }
@@ -1062,7 +965,7 @@ TEST(MakeTime, LocalTimeLibC) {
          tp = zi.lookup(transition.to).trans) {
       const auto fcl = zi.lookup(transition.from);
       const auto tcl = zi.lookup(transition.to);
-      civil_second cs;  // compare cs in zi and lc
+      civil_second cs, us;  // compare cs and us in zi and lc
       if (fcl.kind == time_zone::civil_lookup::UNIQUE) {
         if (tcl.kind == time_zone::civil_lookup::UNIQUE) {
           // Both unique; must be an is_dst or abbr change.
@@ -1078,12 +981,14 @@ TEST(MakeTime, LocalTimeLibC) {
         }
         ASSERT_EQ(time_zone::civil_lookup::REPEATED, tcl.kind);
         cs = transition.to;
+        us = transition.from;
       } else {
         ASSERT_EQ(time_zone::civil_lookup::UNIQUE, tcl.kind);
         ASSERT_EQ(time_zone::civil_lookup::SKIPPED, fcl.kind);
         cs = transition.from;
+        us = transition.to;
       }
-      if (cs.year() > 2037) break;  // limit test time (and to 32-bit time_t)
+      if (us.year() > 2037) break;  // limit test time (and to 32-bit time_t)
       const auto cl_zi = zi.lookup(cs);
       if (zi.lookup(cl_zi.pre).is_dst == zi.lookup(cl_zi.post).is_dst) {
         // The "libc" implementation cannot correctly classify transitions
@@ -1115,6 +1020,13 @@ TEST(MakeTime, LocalTimeLibC) {
       EXPECT_EQ(cl_zi.pre, cl_lc.pre);
       EXPECT_EQ(cl_zi.trans, cl_lc.trans);
       EXPECT_EQ(cl_zi.post, cl_lc.post);
+      const auto ucl_zi = zi.lookup(us);
+      const auto ucl_lc = lc.lookup(us);
+      SCOPED_TRACE(testing::Message() << "For " << us << " in " << *np);
+      EXPECT_EQ(ucl_zi.kind, ucl_lc.kind);
+      EXPECT_EQ(ucl_zi.pre, ucl_lc.pre);
+      EXPECT_EQ(ucl_zi.trans, ucl_lc.trans);
+      EXPECT_EQ(ucl_zi.post, ucl_lc.post);
     }
   }
   if (ep == nullptr) {
@@ -1418,35 +1330,24 @@ TEST(TimeZoneEdgeCase, AmericaJamaica) {
   ExpectTime(tp, tz, 1983, 12, 31, 23, 59, 59, -5 * 3600, false, "EST");
 }
 
-TEST(TimeZoneEdgeCase, WET) {
-  // Cover some non-existent times within forward transitions.
-  const time_zone tz = LoadZone("WET");
+TEST(TimeZoneEdgeCase, EuropeLisbon) {
+  // Cover a non-existent time within a forward transition.
+  const time_zone tz = LoadZone("Europe/Lisbon");
 
-  // Before the first transition.
-  auto tp = convert(civil_second(1977, 1, 1, 0, 0, 0), tz);
-  ExpectTime(tp, tz, 1977, 1, 1, 0, 0, 0, 0, false, "WET");
-
-  // Over the first transition.
-  //     228877199 == Sun,  3 Apr 1977 00:59:59 +0000 (WET)
-  //     228877200 == Sun,  3 Apr 1977 02:00:00 +0100 (WEST)
-  tp = convert(civil_second(1977, 4, 3, 0, 59, 59), tz);
-  ExpectTime(tp, tz, 1977, 4, 3, 0, 59, 59, 0, false, "WET");
+  // Over a forward transition.
+  //     354671999 == Sat, 28 Mar 1981 23:59:59 +0000 (WET)
+  //     354672000 == Sun, 29 Mar 1981 01:00:00 +0100 (WEST)
+  auto tp = convert(civil_second(1981, 3, 28, 23, 59, 59), tz);
+  ExpectTime(tp, tz, 1981, 3, 28, 23, 59, 59, 0, false, "WET");
   tp += absl::time_internal::cctz::seconds(1);
-  ExpectTime(tp, tz, 1977, 4, 3, 2, 0, 0, 1 * 3600, true, "WEST");
+  ExpectTime(tp, tz, 1981, 3, 29, 1, 0, 0, 1 * 3600, true, "WEST");
 
-  // A non-existent time within the first transition.
-  time_zone::civil_lookup cl1 = tz.lookup(civil_second(1977, 4, 3, 1, 15, 0));
+  // A non-existent time within the transition.
+  time_zone::civil_lookup cl1 = tz.lookup(civil_second(1981, 3, 29, 0, 15, 0));
   EXPECT_EQ(time_zone::civil_lookup::SKIPPED, cl1.kind);
-  ExpectTime(cl1.pre, tz, 1977, 4, 3, 2, 15, 0, 1 * 3600, true, "WEST");
-  ExpectTime(cl1.trans, tz, 1977, 4, 3, 2, 0, 0, 1 * 3600, true, "WEST");
-  ExpectTime(cl1.post, tz, 1977, 4, 3, 0, 15, 0, 0 * 3600, false, "WET");
-
-  // A non-existent time within the second forward transition.
-  time_zone::civil_lookup cl2 = tz.lookup(civil_second(1978, 4, 2, 1, 15, 0));
-  EXPECT_EQ(time_zone::civil_lookup::SKIPPED, cl2.kind);
-  ExpectTime(cl2.pre, tz, 1978, 4, 2, 2, 15, 0, 1 * 3600, true, "WEST");
-  ExpectTime(cl2.trans, tz, 1978, 4, 2, 2, 0, 0, 1 * 3600, true, "WEST");
-  ExpectTime(cl2.post, tz, 1978, 4, 2, 0, 15, 0, 0 * 3600, false, "WET");
+  ExpectTime(cl1.pre, tz, 1981, 3, 29, 1, 15, 0, 1 * 3600, true, "WEST");
+  ExpectTime(cl1.trans, tz, 1981, 3, 29, 1, 0, 0, 1 * 3600, true, "WEST");
+  ExpectTime(cl1.post, tz, 1981, 3, 28, 23, 15, 0, 0 * 3600, false, "WET");
 }
 
 TEST(TimeZoneEdgeCase, FixedOffsets) {

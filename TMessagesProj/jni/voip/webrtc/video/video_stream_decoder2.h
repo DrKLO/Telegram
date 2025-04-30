@@ -43,7 +43,8 @@ class VideoStreamDecoder : public VCMReceiveCallback {
   int32_t FrameToRender(VideoFrame& video_frame,
                         absl::optional<uint8_t> qp,
                         TimeDelta decode_time,
-                        VideoContentType content_type) override;
+                        VideoContentType content_type,
+                        VideoFrameType frame_type) override;
   void OnDroppedFrames(uint32_t frames_dropped) override;
   void OnIncomingPayloadType(int payload_type) override;
   void OnDecoderInfoChanged(

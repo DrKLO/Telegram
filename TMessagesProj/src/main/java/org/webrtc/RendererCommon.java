@@ -125,9 +125,9 @@ public class RendererCommon {
   //    clipped.
   // SCALE_ASPECT_BALANCED - Compromise between FIT and FILL. Video frame will fill as much as
   // possible of the view while maintaining aspect ratio, under the constraint that at least
-  // |BALANCED_VISIBLE_FRACTION| of the frame content will be shown.
+  // `BALANCED_VISIBLE_FRACTION` of the frame content will be shown.
   public static enum ScalingType { SCALE_ASPECT_FIT, SCALE_ASPECT_FILL, SCALE_ASPECT_BALANCED }
-  // The minimum fraction of the frame content that will be shown for |SCALE_ASPECT_BALANCED|.
+  // The minimum fraction of the frame content that will be shown for `SCALE_ASPECT_BALANCED`.
   // This limits excessive cropping when adjusting display size.
   private static float BALANCED_VISIBLE_FRACTION = 0.5625f;
 
@@ -211,7 +211,7 @@ public class RendererCommon {
   }
 
   /**
-   * Move |matrix| transformation origin to (0.5, 0.5). This is the origin for texture coordinates
+   * Move `matrix` transformation origin to (0.5, 0.5). This is the origin for texture coordinates
    * that are in the range 0 to 1.
    */
   private static void adjustOrigin(float[] matrix) {

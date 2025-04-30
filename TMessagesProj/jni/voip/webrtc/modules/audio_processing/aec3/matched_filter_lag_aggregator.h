@@ -64,10 +64,12 @@ class MatchedFilterLagAggregator {
 
    private:
     const int block_size_log2_;
+    const bool penalize_high_delays_initial_phase_;
     std::array<int, 250> histogram_data_;
     std::vector<int> histogram_;
     int histogram_data_index_ = 0;
     int pre_echo_candidate_ = 0;
+    int number_updates_ = 0;
   };
 
   class HighestPeakAggregator {

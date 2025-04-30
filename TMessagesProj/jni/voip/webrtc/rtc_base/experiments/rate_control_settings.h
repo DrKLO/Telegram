@@ -38,7 +38,6 @@ struct VideoRateControlConfig {
   absl::optional<int> vp8_min_pixels;
   bool trust_vp8 = true;
   bool trust_vp9 = true;
-  bool probe_max_allocation = true;
   bool bitrate_adjuster = true;
   bool adjuster_use_headroom = true;
   bool vp8_s0_boost = false;
@@ -79,7 +78,6 @@ class RateControlSettings final {
 
   bool Vp8BaseHeavyTl3RateAllocation() const;
 
-  bool TriggerProbeOnMaxAllocatedBitrateChange() const;
   bool UseEncoderBitrateAdjuster() const;
   bool BitrateAdjusterCanUseNetworkHeadroom() const;
 

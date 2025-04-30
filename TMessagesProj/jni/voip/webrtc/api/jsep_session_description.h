@@ -71,9 +71,6 @@ class JsepSessionDescription : public SessionDescriptionInterface {
       size_t mediasection_index) const;
   virtual bool ToString(std::string* out) const;
 
-  static const int kDefaultVideoCodecId;
-  static const char kDefaultVideoCodecName[];
-
  private:
   std::unique_ptr<cricket::SessionDescription> description_;
   std::string session_id_;

@@ -47,6 +47,8 @@ struct LoggedRtpPacket {
   Timestamp timestamp;
   // TODO(terelius): This allocates space for 15 CSRCs even if none are used.
   RTPHeader header;
+  // RTPHeader::extension is a mess, save DD wire format instead.
+  std::vector<uint8_t> dependency_descriptor_wire_format;
   size_t header_length;
   size_t total_length;
 };
@@ -214,8 +216,7 @@ struct LoggedRtcpPacketPli {
 
 struct LoggedRtcpPacketTransportFeedback {
   LoggedRtcpPacketTransportFeedback()
-      : transport_feedback(/*include_timestamps=*/true, /*include_lost*/ true) {
-  }
+      : transport_feedback(/*include_timestamps=*/true) {}
   LoggedRtcpPacketTransportFeedback(
       Timestamp timestamp,
       const rtcp::TransportFeedback& transport_feedback)

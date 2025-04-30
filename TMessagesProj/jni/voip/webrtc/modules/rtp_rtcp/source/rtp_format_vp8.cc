@@ -63,7 +63,9 @@ RtpPacketizerVp8::RtpPacketizerVp8(rtc::ArrayView<const uint8_t> payload,
                                    const RTPVideoHeaderVP8& hdr_info)
     : hdr_(BuildHeader(hdr_info)), remaining_payload_(payload) {
   limits.max_payload_len -= hdr_.size();
-  payload_sizes_ = SplitAboutEqually(payload.size(), limits);
+  if (!payload.empty()) {
+    payload_sizes_ = SplitAboutEqually(payload.size(), limits);
+  }
   current_packet_ = payload_sizes_.begin();
 }
 

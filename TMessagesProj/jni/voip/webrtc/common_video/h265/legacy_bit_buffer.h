@@ -14,8 +14,6 @@
 #include <stddef.h>  // For size_t.
 #include <stdint.h>  // For integer types.
 
-#include "rtc_base/constructor_magic.h"
-
 namespace rtc {
 
 // A class, similar to ByteBuffer, that can parse bit-sized data out of a set of
@@ -28,6 +26,9 @@ namespace rtc {
 class BitBuffer {
  public:
   BitBuffer(const uint8_t* bytes, size_t byte_count);
+    
+  BitBuffer(const BitBuffer&) = delete;
+  BitBuffer& operator=(const BitBuffer&) = delete;
 
   // Gets the current offset, in bytes/bits, from the start of the buffer. The
   // bit offset is the offset into the current byte, in the range [0,7].
@@ -96,8 +97,6 @@ class BitBuffer {
   size_t byte_offset_;
   // The current offset, in bits, into the current byte.
   size_t bit_offset_;
-
-  RTC_DISALLOW_COPY_AND_ASSIGN(BitBuffer);
 };
 
 }  // namespace rtc

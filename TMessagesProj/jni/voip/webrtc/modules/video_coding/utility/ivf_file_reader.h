@@ -70,7 +70,7 @@ class IvfFileReader {
   size_t num_read_frames_;
   uint16_t width_;
   uint16_t height_;
-  bool using_capture_timestamps_;
+  uint32_t time_scale_;
   FileWrapper file_;
 
   absl::optional<FrameHeader> next_frame_header_;

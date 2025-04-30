@@ -93,7 +93,7 @@ public class ProfileGalleryView extends CircularViewPager implements Notificatio
     private boolean hasActiveVideo;
     private int customAvatarIndex = -1;
     private int fallbackPhotoIndex = -1;
-    private TLRPC.TL_groupCallParticipant participant;
+    private TLRPC.GroupCallParticipant participant;
 
     private int imagesLayerNum;
 

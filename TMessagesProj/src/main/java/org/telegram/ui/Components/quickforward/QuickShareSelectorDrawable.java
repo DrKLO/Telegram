@@ -156,8 +156,8 @@ public class QuickShareSelectorDrawable extends Drawable implements Animator.Ani
             globalBlurBitmapPaint.setShader(bitmapShader);
 
             ColorMatrix colorMatrix = new ColorMatrix();
-            AndroidUtilities.adjustSaturationColorMatrix(colorMatrix, Theme.isCurrentThemeDark() ? .08f : +.25f);
-            AndroidUtilities.adjustBrightnessColorMatrix(colorMatrix, Theme.isCurrentThemeDark() ? -.02f : -.07f);
+            AndroidUtilities.adjustSaturationColorMatrix(colorMatrix, Theme.isCurrentThemeDark() ? .08f : +1.25f);
+            AndroidUtilities.adjustBrightnessColorMatrix(colorMatrix, Theme.isCurrentThemeDark() ? +.02f : -.15f);
             globalBlurBitmapPaint.setColorFilter(new ColorMatrixColorFilter(colorMatrix));
 
             bitmapMatrix.reset();
@@ -223,7 +223,8 @@ public class QuickShareSelectorDrawable extends Drawable implements Animator.Ani
         final float x = touchX - bubbleCurrent.left + offsetX;
         final float y = touchY - bubbleCurrent.top + offsetY;
         final int indexH = (int) Math.floor((x - ((dp(Sizes.PADDING_H) - dp(Sizes.GAP) / 2f))) / dp(Sizes.AVATAR + Sizes.GAP));
-        final int index = y < bubbleCurrent.height() ? MathUtils.clamp(indexH, 0, avatarCells.length - 1) : -1;
+        final int index = (-dp(21 + Sizes.TEXT_PADDING_EXTERNAL)) < y && y < bubbleCurrent.height() ?
+            MathUtils.clamp(indexH, 0, avatarCells.length - 1) : -1;
 
         setIndex(index);
     }
@@ -818,8 +819,8 @@ public class QuickShareSelectorDrawable extends Drawable implements Animator.Ani
 
     /* Animations */
 
-    private static final int OPEN_DURATION = 650;
-    private static final int CLOSE_DURATION = 280;
+    private static final int OPEN_DURATION = 560;
+    private static final int CLOSE_DURATION = 240;
 
     public static class Interpolators {
         public static final Interpolator DECELERATE_INTERPOLATOR = new DecelerateInterpolator();
@@ -833,17 +834,17 @@ public class QuickShareSelectorDrawable extends Drawable implements Animator.Ani
         public static final Interpolator buttonRotationDown = interpolator(new CubicBezierInterpolator(.7f,-0.6f,.4f,1), 200, 400, OPEN_DURATION, true);
         public static final Interpolator buttonJumpUp = interpolator(new DecelerateInterpolator(), 0, 150, OPEN_DURATION);
         public static final Interpolator buttonJumpDown = interpolator(new DecelerateInterpolator(), 210, 425, OPEN_DURATION);
-        public static final Interpolator bgOpacity = interpolator(new LinearInterpolator(), 0, 100, OPEN_DURATION);
-        public static final Interpolator bgScale = interpolator(new LinearInterpolator(), 80, 200, OPEN_DURATION);
+        public static final Interpolator bgOpacity = interpolator(CubicBezierInterpolator.EASE_OUT_QUINT, 0, 320, OPEN_DURATION);
+        public static final Interpolator bgScale = interpolator(CubicBezierInterpolator.EASE_OUT_QUINT, 40, 320, OPEN_DURATION);
         public static final Interpolator heightExpansion = interpolator(new DecelerateInterpolator(), 0, 250, OPEN_DURATION);
-        public static final Interpolator widthExpansion = interpolator(new DecelerateInterpolator(), 120, 425, OPEN_DURATION);
-        public static final Interpolator bubbleY = interpolator(new DecelerateInterpolator(), 0, 325, OPEN_DURATION);
+        public static final Interpolator widthExpansion = interpolator(CubicBezierInterpolator.EASE_OUT_QUINT, 0, 460, OPEN_DURATION);
+        public static final Interpolator bubbleY = interpolator(CubicBezierInterpolator.EASE_OUT_QUINT, 0, 325, OPEN_DURATION);
         public static final Interpolator ballsRadius = interpolator(new DecelerateInterpolator(), 150, 250, OPEN_DURATION);
-        public static final Interpolator overshootCancel = interpolator(new DecelerateInterpolator(), 350, 550, OPEN_DURATION);
-        public static final Interpolator avatar1 = interpolator(new DecelerateInterpolator(), 150, 550, OPEN_DURATION);
-        public static final Interpolator avatar2 = interpolator(new DecelerateInterpolator(), 200, 550, OPEN_DURATION);
-        public static final Interpolator avatar3 = interpolator(new DecelerateInterpolator(), 280, 550, OPEN_DURATION);
-        public static final Interpolator avatarOvershootCancel = interpolator(new DecelerateInterpolator(), 500, 650, OPEN_DURATION);
+        public static final Interpolator overshootCancel = interpolator(new DecelerateInterpolator(), 200, 480, OPEN_DURATION);
+        public static final Interpolator avatar1 = interpolator(CubicBezierInterpolator.EASE_OUT_QUINT, 60, 320, OPEN_DURATION);
+        public static final Interpolator avatar2 = interpolator(CubicBezierInterpolator.EASE_OUT_QUINT, 90, 380, OPEN_DURATION);
+        public static final Interpolator avatar3 = interpolator(CubicBezierInterpolator.EASE_OUT_QUINT, 110, 440, OPEN_DURATION);
+        public static final Interpolator avatarOvershootCancel = interpolator(new DecelerateInterpolator(), 200, 460, OPEN_DURATION);
     }
 
     private final static Property<QuickShareSelectorDrawable, Float> OPEN_FACTOR = new AnimationProperties.FloatProperty<QuickShareSelectorDrawable>("openFactor") {
@@ -861,7 +862,7 @@ public class QuickShareSelectorDrawable extends Drawable implements Animator.Ani
     };
 
     private final ObjectAnimator openAnimation = ObjectAnimator.ofFloat(this, OPEN_FACTOR, 1)
-            .setDuration(OPEN_DURATION);
+            .setDuration((long) (OPEN_DURATION));
 
     private final static Property<QuickShareSelectorDrawable, Float> CLOSE_FACTOR = new AnimationProperties.FloatProperty<QuickShareSelectorDrawable>("openFactor") {
         @Override

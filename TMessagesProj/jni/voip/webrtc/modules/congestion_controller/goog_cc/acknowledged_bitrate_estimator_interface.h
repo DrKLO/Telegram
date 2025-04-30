@@ -11,7 +11,6 @@
 #ifndef MODULES_CONGESTION_CONTROLLER_GOOG_CC_ACKNOWLEDGED_BITRATE_ESTIMATOR_INTERFACE_H_
 #define MODULES_CONGESTION_CONTROLLER_GOOG_CC_ACKNOWLEDGED_BITRATE_ESTIMATOR_INTERFACE_H_
 
-#include <stddef.h>
 
 #include <memory>
 #include <vector>
@@ -33,7 +32,9 @@ struct RobustThroughputEstimatorSettings {
   explicit RobustThroughputEstimatorSettings(
       const FieldTrialsView* key_value_config);
 
-  bool enabled = false;  // Set to true to use RobustThroughputEstimator.
+  // Set `enabled` to true to use the RobustThroughputEstimator, false to use
+  // the AcknowledgedBitrateEstimator.
+  bool enabled = true;
 
   // The estimator keeps the smallest window containing at least
   // `window_packets` and at least the packets received during the last

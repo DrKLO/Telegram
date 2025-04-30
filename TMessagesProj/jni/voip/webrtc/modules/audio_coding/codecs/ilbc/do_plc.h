@@ -39,6 +39,6 @@ void WebRtcIlbcfix_DoThePlc(
     size_t inlag,         /* (i) pitch lag */
     IlbcDecoder* iLBCdec_inst
     /* (i/o) decoder instance */
-    );
+);
 
 #endif

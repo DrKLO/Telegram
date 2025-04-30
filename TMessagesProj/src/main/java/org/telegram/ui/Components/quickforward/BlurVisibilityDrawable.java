@@ -117,7 +117,7 @@ public class BlurVisibilityDrawable extends Drawable {
             canvas.save();
             canvas.translate(left - blurRadius, top - blurRadius);
             canvas.scale(bitmapScale, bitmapScale);
-            canvas.drawBitmap(bitmap , 0, 0, emptyPaint);
+            canvas.drawBitmap(bitmap, 0, 0, emptyPaint);
             canvas.restore();
         }
     }

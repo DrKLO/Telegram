@@ -50,6 +50,16 @@ constexpr absl::string_view MetricNamePrefix(
   }
 }
 
+metrics::Histogram* CreateVolumeHistogram(InputVolumeType input_volume_type) {
+  char buffer[64];
+  rtc::SimpleStringBuilder builder(buffer);
+  builder << MetricNamePrefix(input_volume_type) << "OnChange";
+  return metrics::HistogramFactoryGetCountsLinear(/*name=*/builder.str(),
+                                                  /*min=*/1,
+                                                  /*max=*/kMaxInputVolume,
+                                                  /*bucket_count=*/50);
+}
+
 metrics::Histogram* CreateRateHistogram(InputVolumeType input_volume_type,
                                         absl::string_view name) {
   char buffer[64];
@@ -76,7 +86,8 @@ metrics::Histogram* CreateAverageHistogram(InputVolumeType input_volume_type,
 
 InputVolumeStatsReporter::InputVolumeStatsReporter(InputVolumeType type)
     : histograms_(
-          {.decrease_rate = CreateRateHistogram(type, "DecreaseRate"),
+          {.on_volume_change = CreateVolumeHistogram(type),
+           .decrease_rate = CreateRateHistogram(type, "DecreaseRate"),
            .decrease_average = CreateAverageHistogram(type, "DecreaseAverage"),
            .increase_rate = CreateRateHistogram(type, "IncreaseRate"),
            .increase_average = CreateAverageHistogram(type, "IncreaseAverage"),
@@ -101,6 +112,9 @@ void InputVolumeStatsReporter::UpdateStatistics(int input_volume) {
   RTC_DCHECK_LE(input_volume, kMaxInputVolume);
   if (previous_input_volume_.has_value() &&
       input_volume != previous_input_volume_.value()) {
+    // Update stats when the input volume changes.
+    metrics::HistogramAdd(histograms_.on_volume_change, input_volume);
+    // Update stats that are periodically logged.
     const int volume_change = input_volume - previous_input_volume_.value();
     if (volume_change < 0) {
       ++volume_update_stats_.num_decreases;
@@ -146,6 +160,12 @@ void InputVolumeStatsReporter::LogVolumeUpdateStats() const {
         num_updates);
     metrics::HistogramAdd(histograms_.update_average, average_update);
   }
+}
+
+void UpdateHistogramOnRecommendedInputVolumeChangeToMatchTarget(int volume) {
+  RTC_HISTOGRAM_COUNTS_LINEAR(
+      "WebRTC.Audio.Apm.RecommendedInputVolume.OnChangeToMatchTarget", volume,
+      1, kMaxInputVolume, 50);
 }
 
 }  // namespace webrtc

@@ -67,7 +67,7 @@ public class VideoFrameDrawer {
     @Nullable private int[] yuvTextures;
 
     /**
-     * Upload |planes| into OpenGL textures, taking stride into consideration.
+     * Upload `planes` into OpenGL textures, taking stride into consideration.
      *
      * @return Array of three texture indices corresponding to Y-, U-, and V-plane respectively.
      */
@@ -151,8 +151,8 @@ public class VideoFrameDrawer {
   private int renderWidth;
   private int renderHeight;
 
-  // Calculate the frame size after |renderMatrix| is applied. Stores the output in member variables
-  // |renderWidth| and |renderHeight| to avoid allocations since this function is called for every
+  // Calculate the frame size after `renderMatrix` is applied. Stores the output in member variables
+  // `renderWidth` and `renderHeight` to avoid allocations since this function is called for every
   // frame.
   private void calculateTransformedRenderSize(
       int frameWidth, int frameHeight, @Nullable Matrix renderMatrix) {
@@ -161,7 +161,7 @@ public class VideoFrameDrawer {
       renderHeight = frameHeight;
       return;
     }
-    // Transform the texture coordinates (in the range [0, 1]) according to |renderMatrix|.
+    // Transform the texture coordinates (in the range [0, 1]) according to `renderMatrix`.
     renderMatrix.mapPoints(dstPoints, srcPoints);
 
     // Multiply with the width and height to get the positions in terms of pixels.
@@ -211,7 +211,6 @@ public class VideoFrameDrawer {
     }
     renderMatrix.preRotate(frame.getRotation());
     renderMatrix.preTranslate(-0.5f, -0.5f);
-    renderRotateMatrix.set(renderMatrix);
     if (additionalRenderMatrix != null) {
       renderMatrix.preConcat(additionalRenderMatrix);
     }

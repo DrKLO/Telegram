@@ -14,6 +14,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "api/array_view.h"
 #include "api/ref_counted_base.h"
 #include "api/scoped_refptr.h"
 
@@ -36,14 +37,17 @@ struct PacketOptions {
   bool is_retransmit = false;
   bool included_in_feedback = false;
   bool included_in_allocation = false;
+  // Whether this packet can be part of a packet batch at lower levels.
+  bool batchable = false;
+  // Whether this packet is the last of a batch.
+  bool last_packet_in_batch = false;
 };
 
 class Transport {
  public:
-  virtual bool SendRtp(const uint8_t* packet,
-                       size_t length,
+  virtual bool SendRtp(rtc::ArrayView<const uint8_t> packet,
                        const PacketOptions& options) = 0;
-  virtual bool SendRtcp(const uint8_t* packet, size_t length) = 0;
+  virtual bool SendRtcp(rtc::ArrayView<const uint8_t> packet) = 0;
 
  protected:
   virtual ~Transport() {}

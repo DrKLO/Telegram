@@ -36,6 +36,9 @@ import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
+import org.telegram.messenger.pip.PictureInPictureContentViewProvider;
+import org.telegram.messenger.pip.PipNativeApiController;
+import org.telegram.messenger.pip.PipSource;
 import org.telegram.messenger.voip.Instance;
 import org.telegram.messenger.voip.VideoCapturerDevice;
 import org.telegram.messenger.voip.VoIPService;
@@ -44,7 +47,7 @@ import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.VoIPFragment;
 
-public class VoIPPiPView implements VoIPService.StateListener, NotificationCenter.NotificationCenterDelegate {
+public class VoIPPiPView implements VoIPService.StateListener, PictureInPictureContentViewProvider, NotificationCenter.NotificationCenterDelegate {
 
     public final static int ANIMATION_ENTER_TYPE_SCALE = 0;
     public final static int ANIMATION_ENTER_TYPE_TRANSITION = 1;
@@ -63,6 +66,7 @@ public class VoIPPiPView implements VoIPService.StateListener, NotificationCente
     private boolean expandedAnimationInProgress;
     private WindowManager windowManager;
     public WindowManager.LayoutParams windowLayoutParams;
+    private PipSource pipSource;
 
     public final int parentWidth;
     public final int parentHeight;
@@ -177,6 +181,14 @@ public class VoIPPiPView implements VoIPService.StateListener, NotificationCente
             if (VoIPService.getSharedInstance() != null) {
                 VoIPService.getSharedInstance().setBackgroundSinks(instance.currentUserTextureView.renderer, instance.callingUserTextureView.renderer);
             }
+        }
+
+        if (PipNativeApiController.checkPermissions(activity) == PipNativeApiController.PIP_GRANTED_PIP) {
+            instance.pipSource = new PipSource.Builder(activity, instance)
+                .setTagPrefix("voip-pip")
+                .setPriority(1)
+                .setContentView(instance.windowView)
+                .build();
         }
     }
 
@@ -381,6 +393,10 @@ public class VoIPPiPView implements VoIPService.StateListener, NotificationCente
                 FileLog.e(e);
             }
         }
+        if (pipSource != null) {
+            pipSource.destroy();
+            pipSource = null;
+        }
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.didEndCall);
     }
 
@@ -495,6 +511,37 @@ public class VoIPPiPView implements VoIPService.StateListener, NotificationCente
     public void didReceivedNotification(int id, int account, Object... args) {
         if (id == NotificationCenter.didEndCall) {
             finish();
+        }
+    }
+
+    @Override
+    public View detachContentFromWindow() {
+        windowView.setVisibility(View.GONE);
+        floatingView.removeView(callingUserTextureView);
+
+        return callingUserTextureView;
+    }
+
+    @Override
+    public void onAttachContentToPip() {
+        if (VoIPService.getSharedInstance() != null) {
+            VoIPService.getSharedInstance().setSinks(currentUserTextureView.renderer, callingUserTextureView.renderer);
+        }
+    }
+
+    @Override
+    public void prepareDetachContentFromPip() {
+
+    }
+
+    @Override
+    public void attachContentToWindow() {
+        windowView.setVisibility(View.VISIBLE);
+        floatingView.addView(callingUserTextureView, 0);
+
+        final VoIPService voip = VoIPService.getSharedInstance();
+        if (voip != null) {
+            voip.setSinks(currentUserTextureView.renderer, callingUserTextureView.renderer);
         }
     }
 

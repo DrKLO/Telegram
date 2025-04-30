@@ -40,6 +40,10 @@ class VoiceActivityDetectorWrapper {
     virtual float Analyze(rtc::ArrayView<const float> frame) = 0;
   };
 
+  // Ctor. Uses `cpu_features` to instantiate the default VAD.
+  VoiceActivityDetectorWrapper(const AvailableCpuFeatures& cpu_features,
+                               int sample_rate_hz);
+
   // Ctor. `vad_reset_period_ms` indicates the period in milliseconds to call
   // `MonoVad::Reset()`; it must be equal to or greater than the duration of two
   // frames. Uses `cpu_features` to instantiate the default VAD.

@@ -254,7 +254,6 @@ class MonoAgc {
   bool capture_output_used_ = true;
   bool check_volume_on_next_process_ = true;
   bool startup_ = true;
-  int calls_since_last_gain_log_ = 0;
 
   // TODO(bugs.webrtc.org/7494): Create a separate member for the applied
   // input volume.

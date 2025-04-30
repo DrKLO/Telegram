@@ -12,21 +12,29 @@
 
 #include <algorithm>
 #include <cstdint>
-#include <cstdio>
 #include <memory>
-#include <string>
 #include <utility>
+#include <vector>
 
-#include "absl/strings/match.h"
-#include "api/rtc_event_log/rtc_event.h"
+#include "absl/types/optional.h"
+#include "api/field_trials_view.h"
+#include "api/network_state_predictor.h"
 #include "api/rtc_event_log/rtc_event_log.h"
+#include "api/transport/network_types.h"
+#include "api/units/data_rate.h"
+#include "api/units/data_size.h"
 #include "api/units/time_delta.h"
+#include "api/units/timestamp.h"
 #include "logging/rtc_event_log/events/rtc_event_bwe_update_delay_based.h"
+#include "modules/congestion_controller/goog_cc/delay_increase_detector_interface.h"
+#include "modules/congestion_controller/goog_cc/inter_arrival_delta.h"
 #include "modules/congestion_controller/goog_cc/trendline_estimator.h"
 #include "modules/remote_bitrate_estimator/include/bwe_defines.h"
 #include "modules/remote_bitrate_estimator/test/bwe_test_logging.h"
 #include "rtc_base/checks.h"
+#include "rtc_base/experiments/struct_parameters_parser.h"
 #include "rtc_base/logging.h"
+#include "rtc_base/race_checker.h"
 #include "system_wrappers/include/metrics.h"
 
 namespace webrtc {
@@ -59,7 +67,8 @@ DelayBasedBwe::Result::Result()
     : updated(false),
       probe(false),
       target_bitrate(DataRate::Zero()),
-      recovered_from_overuse(false) {}
+      recovered_from_overuse(false),
+      delay_detector_state(BandwidthUsage::kBwNormal) {}
 
 DelayBasedBwe::DelayBasedBwe(const FieldTrialsView* key_value_config,
                              RtcEventLog* event_log,
@@ -77,7 +86,7 @@ DelayBasedBwe::DelayBasedBwe(const FieldTrialsView* key_value_config,
       active_delay_detector_(video_delay_detector_.get()),
       last_seen_packet_(Timestamp::MinusInfinity()),
       uma_recorded_(false),
-      rate_control_(key_value_config, /*send_side=*/true),
+      rate_control_(*key_value_config, /*send_side=*/true),
       prev_bitrate_(DataRate::Zero()),
       prev_state_(BandwidthUsage::kBwNormal) {
   RTC_LOG(LS_INFO)
@@ -197,7 +206,7 @@ void DelayBasedBwe::IncomingPacketFeedback(const PacketResult& packet_feedback,
 DataRate DelayBasedBwe::TriggerOveruse(Timestamp at_time,
                                        absl::optional<DataRate> link_capacity) {
   RateControlInput input(BandwidthUsage::kBwOverusing, link_capacity);
-  return rate_control_.Update(&input, at_time);
+  return rate_control_.Update(input, at_time);
 }
 
 DelayBasedBwe::Result DelayBasedBwe::MaybeUpdateEstimate(
@@ -262,7 +271,7 @@ bool DelayBasedBwe::UpdateEstimate(Timestamp at_time,
                                    absl::optional<DataRate> acked_bitrate,
                                    DataRate* target_rate) {
   const RateControlInput input(active_delay_detector_->State(), acked_bitrate);
-  *target_rate = rate_control_.Update(&input, at_time);
+  *target_rate = rate_control_.Update(input, at_time);
   return rate_control_.ValidEstimate();
 }
 

@@ -2,67 +2,54 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from __future__ import print_function
+
 import json
 import os
-import pipes
-import shutil
+import os.path
 import subprocess
 import sys
 
 
 script_dir = os.path.dirname(os.path.realpath(__file__))
-sys.path.insert(0, os.path.join(script_dir, 'gyp', 'pylib'))
+toolchain_dir = os.path.join(script_dir, 'win_toolchain')
 json_data_file = os.path.join(script_dir, 'win_toolchain.json')
 
 
-import gyp
+def SetEnvironmentForCPU(cpu):
+  """Sets the environment to build with the selected toolchain for |cpu|."""
+  with open(json_data_file, 'r') as tempf:
+    toolchain_data = json.load(tempf)
+  sdk_dir = toolchain_data['win_sdk']
+  os.environ['WINDOWSSDKDIR'] = sdk_dir
+  os.environ['WDK_DIR'] = toolchain_data['wdk']
+  # Include the VS runtime in the PATH in case it's not machine-installed.
+  vs_runtime_dll_dirs = toolchain_data['runtime_dirs']
+  runtime_path = os.pathsep.join(vs_runtime_dll_dirs)
+  os.environ['PATH'] = runtime_path + os.pathsep + os.environ['PATH']
 
+  # Set up the architecture-specific environment from the SetEnv files. See
+  # _LoadToolchainEnv() from setup_toolchain.py in Chromium.
+  assert cpu in ('x86', 'x64', 'arm', 'arm64')
+  with open(os.path.join(sdk_dir, 'bin', 'SetEnv.%s.json' % cpu)) as f:
+    env = json.load(f)['env']
+  if env['VSINSTALLDIR'] == [["..", "..\\"]]:
+    # Old-style paths were relative to the win_sdk\bin directory.
+    json_relative_dir = os.path.join(sdk_dir, 'bin')
+  else:
+    # New-style paths are relative to the toolchain directory.
+    json_relative_dir = toolchain_data['path']
+  for k in env:
+    entries = [os.path.join(*([json_relative_dir] + e)) for e in env[k]]
+    # clang-cl wants INCLUDE to be ;-separated even on non-Windows,
+    # lld-link wants LIB to be ;-separated even on non-Windows.  Path gets :.
+    sep = os.pathsep if k == 'PATH' else ';'
+    env[k] = sep.join(entries)
+  # PATH is a bit of a special case, it's in addition to the current PATH.
+  env['PATH'] = env['PATH'] + os.pathsep + os.environ['PATH']
 
-# Use MSVS2015 as the default toolchain.
-CURRENT_DEFAULT_TOOLCHAIN_VERSION = '2015'
-
-
-def SetEnvironmentAndGetRuntimeDllDirs():
-  """Sets up os.environ to use the depot_tools VS toolchain with gyp, and
-  returns the location of the VS runtime DLLs so they can be copied into
-  the output directory after gyp generation.
-  """
-  vs_runtime_dll_dirs = None
-  depot_tools_win_toolchain = \
-      bool(int(os.environ.get('DEPOT_TOOLS_WIN_TOOLCHAIN', '1')))
-  if sys.platform in ('win32', 'cygwin') and depot_tools_win_toolchain:
-    if not os.path.exists(json_data_file):
-      Update()
-    with open(json_data_file, 'r') as tempf:
-      toolchain_data = json.load(tempf)
-
-    toolchain = toolchain_data['path']
-    version = toolchain_data['version']
-    win_sdk = toolchain_data.get('win_sdk')
-    if not win_sdk:
-      win_sdk = toolchain_data['win8sdk']
-    wdk = toolchain_data['wdk']
-    # TODO(scottmg): The order unfortunately matters in these. They should be
-    # split into separate keys for x86 and x64. (See CopyVsRuntimeDlls call
-    # below). http://crbug.com/345992
-    vs_runtime_dll_dirs = toolchain_data['runtime_dirs']
-
-    os.environ['GYP_MSVS_OVERRIDE_PATH'] = toolchain
-    os.environ['GYP_MSVS_VERSION'] = version
-    # We need to make sure windows_sdk_path is set to the automated
-    # toolchain values in GYP_DEFINES, but don't want to override any
-    # otheroptions.express
-    # values there.
-    gyp_defines_dict = gyp.NameValueListToDict(gyp.ShlexEnv('GYP_DEFINES'))
-    gyp_defines_dict['windows_sdk_path'] = win_sdk
-    os.environ['GYP_DEFINES'] = ' '.join('%s=%s' % (k, pipes.quote(str(v)))
-        for k, v in gyp_defines_dict.iteritems())
-    os.environ['WINDOWSSDKDIR'] = win_sdk
-    os.environ['WDK_DIR'] = wdk
-    # Include the VS runtime in the PATH in case it's not machine-installed.
-    runtime_path = ';'.join(vs_runtime_dll_dirs)
-    os.environ['PATH'] = runtime_path + ';' + os.environ['PATH']
-  return vs_runtime_dll_dirs
+  for k, v in env.items():
+    os.environ[k] = v
 
 
 def FindDepotTools():
@@ -73,48 +60,32 @@ def FindDepotTools():
   raise Exception("depot_tools not found!")
 
 
-def GetVisualStudioVersion():
-  """Return GYP_MSVS_VERSION of Visual Studio.
-  """
-  return os.environ.get('GYP_MSVS_VERSION', CURRENT_DEFAULT_TOOLCHAIN_VERSION)
-
-
-def _GetDesiredVsToolchainHashes():
+def _GetDesiredVsToolchainHashes(version):
   """Load a list of SHA1s corresponding to the toolchains that we want installed
   to build with."""
-  env_version = GetVisualStudioVersion()
-  if env_version == '2015':
-    # Update 3 final with 10.0.15063.468 SDK and no vctip.exe.
-    return ['f53e4598951162bad6330f7a167486c7ae5db1e5']
-  if env_version == '2017':
-    # VS 2017 Update 9 (15.9.12) with 10.0.18362 SDK, 10.0.17763 version of
-    # Debuggers, and 10.0.17134 version of d3dcompiler_47.dll, with ARM64
-    # libraries.
-    return ['418b3076791776573a815eb298c8aa590307af63']
-  raise Exception('Unsupported VS version %s' % env_version)
+  if version == '2022':
+    # VS 2022 17.9.2 with 10.0.22621.2428 SDK with ARM64 libraries and UWP
+    # support.
+    return ['7393122652']
+  raise Exception('Unsupported VS version %s' % version)
 
 
-def Update():
+def Update(version):
   """Requests an update of the toolchain to the specific hashes we have at
   this revision. The update outputs a .json of the various configuration
-  information required to pass to gyp which we use in |GetToolchainDir()|.
+  information required to pass to vs_env.py which we use in
+  |SetEnvironmentForCPU()|.
   """
-  depot_tools_win_toolchain = \
-      bool(int(os.environ.get('DEPOT_TOOLS_WIN_TOOLCHAIN', '1')))
-  if sys.platform in ('win32', 'cygwin') and depot_tools_win_toolchain:
-    depot_tools_path = FindDepotTools()
-    # Necessary so that get_toolchain_if_necessary.py will put the VS toolkit
-    # in the correct directory.
-    os.environ['GYP_MSVS_VERSION'] = GetVisualStudioVersion()
-    get_toolchain_args = [
-        sys.executable,
-        os.path.join(depot_tools_path,
-                    'win_toolchain',
-                    'get_toolchain_if_necessary.py'),
-        '--output-json', json_data_file,
-      ] + _GetDesiredVsToolchainHashes()
-    subprocess.check_call(get_toolchain_args)
-
+  depot_tools_path = FindDepotTools()
+  get_toolchain_args = [
+      sys.executable,
+      os.path.join(depot_tools_path,
+                  'win_toolchain',
+                  'get_toolchain_if_necessary.py'),
+      '--output-json', json_data_file,
+      '--toolchain-dir', toolchain_dir,
+    ] + _GetDesiredVsToolchainHashes(version)
+  subprocess.check_call(get_toolchain_args)
   return 0
 
 
@@ -125,7 +96,7 @@ def main():
       'update': Update,
   }
   if len(sys.argv) < 2 or sys.argv[1] not in commands:
-    print >>sys.stderr, 'Expected one of: %s' % ', '.join(commands)
+    print('Expected one of: %s' % ', '.join(commands), file=sys.stderr)
     return 1
   return commands[sys.argv[1]](*sys.argv[2:])
 

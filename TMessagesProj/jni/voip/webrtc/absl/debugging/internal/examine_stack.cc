@@ -24,6 +24,9 @@
 
 #ifdef ABSL_HAVE_MMAP
 #include <sys/mman.h>
+#if defined(MAP_ANON) && !defined(MAP_ANONYMOUS)
+#define MAP_ANONYMOUS MAP_ANON
+#endif
 #endif
 
 #if defined(__linux__) || defined(__APPLE__)

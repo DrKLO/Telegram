@@ -1,0 +1,110 @@
+# Copyright (c) 2017 The WebRTC project authors. All Rights Reserved.
+#
+# Use of this source code is governed by a BSD-style license
+# that can be found in the LICENSE file in the root of the source
+# tree. An additional intellectual property rights grant can be found
+# in the file PATENTS.  All contributing project authors may
+# be found in the AUTHORS file in the root of the source tree.
+
+import("../../../webrtc.gni")
+if (is_android) {
+  import("//build/config/android/config.gni")
+  import("//build/config/android/rules.gni")
+}
+
+rtc_library("audio_encoder_opus_config") {
+  visibility = [ "*" ]
+  sources = [
+    "audio_encoder_multi_channel_opus_config.cc",
+    "audio_encoder_multi_channel_opus_config.h",
+    "audio_encoder_opus_config.cc",
+    "audio_encoder_opus_config.h",
+  ]
+  deps = [ "../../../rtc_base/system:rtc_export" ]
+  absl_deps = [ "//third_party/abseil-cpp/absl/types:optional" ]
+  defines = []
+  if (rtc_opus_variable_complexity) {
+    defines += [ "WEBRTC_OPUS_VARIABLE_COMPLEXITY=1" ]
+  } else {
+    defines += [ "WEBRTC_OPUS_VARIABLE_COMPLEXITY=0" ]
+  }
+}
+
+rtc_source_set("audio_decoder_opus_config") {
+  visibility = [ "*" ]
+  sources = [ "audio_decoder_multi_channel_opus_config.h" ]
+  deps = [ "..:audio_codecs_api" ]
+}
+
+rtc_library("audio_encoder_opus") {
+  visibility = [ "*" ]
+  poisonous = [ "audio_codecs" ]
+  public = [ "audio_encoder_opus.h" ]
+  sources = [ "audio_encoder_opus.cc" ]
+  deps = [
+    ":audio_encoder_opus_config",
+    "..:audio_codecs_api",
+    "../../../api:field_trials_view",
+    "../../../modules/audio_coding:webrtc_opus",
+    "../../../rtc_base/system:rtc_export",
+  ]
+  absl_deps = [
+    "//third_party/abseil-cpp/absl/strings",
+    "//third_party/abseil-cpp/absl/types:optional",
+  ]
+}
+
+rtc_library("audio_decoder_opus") {
+  visibility = [ "*" ]
+  poisonous = [ "audio_codecs" ]
+  sources = [
+    "audio_decoder_opus.cc",
+    "audio_decoder_opus.h",
+  ]
+  deps = [
+    "..:audio_codecs_api",
+    "../../../api:field_trials_view",
+    "../../../modules/audio_coding:webrtc_opus",
+    "../../../rtc_base/system:rtc_export",
+  ]
+  absl_deps = [
+    "//third_party/abseil-cpp/absl/strings",
+    "//third_party/abseil-cpp/absl/types:optional",
+  ]
+}
+
+rtc_library("audio_encoder_multiopus") {
+  visibility = [ "*" ]
+  poisonous = [ "audio_codecs" ]
+  public = [ "audio_encoder_multi_channel_opus.h" ]
+  sources = [ "audio_encoder_multi_channel_opus.cc" ]
+  deps = [
+    "..:audio_codecs_api",
+    "../../../api:field_trials_view",
+    "../../../modules/audio_coding:webrtc_multiopus",
+    "../../../rtc_base/system:rtc_export",
+    "../opus:audio_encoder_opus_config",
+  ]
+  absl_deps = [ "//third_party/abseil-cpp/absl/types:optional" ]
+}
+
+rtc_library("audio_decoder_multiopus") {
+  visibility = [ "*" ]
+  poisonous = [ "audio_codecs" ]
+  sources = [
+    "audio_decoder_multi_channel_opus.cc",
+    "audio_decoder_multi_channel_opus.h",
+  ]
+  deps = [
+    ":audio_decoder_opus_config",
+    "..:audio_codecs_api",
+    "../../../api:field_trials_view",
+    "../../../modules/audio_coding:webrtc_multiopus",
+    "../../../rtc_base/system:rtc_export",
+  ]
+  absl_deps = [
+    "//third_party/abseil-cpp/absl/memory",
+    "//third_party/abseil-cpp/absl/strings",
+    "//third_party/abseil-cpp/absl/types:optional",
+  ]
+}

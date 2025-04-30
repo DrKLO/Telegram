@@ -104,6 +104,12 @@ public class PremiumFeatureCell extends FrameLayout {
 
     private Drawable premiumStar;
     public void setEmoji(long documentId, boolean animated) {
+        if (imageDrawable == null) {
+            imageDrawable = new AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable(this, false, dp(24), AnimatedEmojiDrawable.CACHE_TYPE_ALERT_PREVIEW_STATIC);
+            if (isAttachedToWindow()) {
+                imageDrawable.attach();
+            }
+        }
         if (documentId == 0) {
             if (premiumStar == null) {
                 premiumStar = getContext().getResources().getDrawable(R.drawable.msg_premium_prolfilestar).mutate();

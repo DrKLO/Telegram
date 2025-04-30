@@ -25,6 +25,7 @@ import android.widget.FrameLayout;
 
 import androidx.annotation.CheckResult;
 import androidx.annotation.NonNull;
+import androidx.annotation.StringRes;
 import androidx.core.graphics.ColorUtils;
 
 import org.telegram.messenger.AndroidUtilities;
@@ -1224,10 +1225,22 @@ public final class BulletinFactory {
 
     @CheckResult
     public static Bulletin createForwardedBulletin(Context context, BaseFragment fragment, FrameLayout containerLayout, int dialogsCount, long did, int messagesCount, int backgroundColor, int textColor, int duration) {
+        return createForwardedBulletin(context, fragment, containerLayout, dialogsCount, did, messagesCount, backgroundColor, textColor, duration, null, null);
+    }
+
+    public static Bulletin createForwardedBulletin(Context context, BaseFragment fragment, FrameLayout containerLayout, int dialogsCount, long did, int messagesCount, int backgroundColor, int textColor, int duration, Runnable undoAction, Runnable delayedAction) {
         final Bulletin.LottieLayout layout = UserConfig.getInstance(UserConfig.selectedAccount).isPremium() && fragment != null && dialogsCount <= 1 && did == UserConfig.getInstance(UserConfig.selectedAccount).clientUserId ?
             new Bulletin.LottieLayoutWithReactions(fragment, messagesCount) :
             new Bulletin.LottieLayout(context, fragment != null ? fragment.getResourceProvider() : null, backgroundColor, textColor);
         final CharSequence text;
+        final boolean hasUndoButton = delayedAction != null || undoAction != null;
+        final boolean[] isCanceled = new boolean[]{ false };
+        final Runnable delayedActionOnce = delayedAction != null ? () -> {
+            if (!isCanceled[0]) {
+                isCanceled[0] = true;
+                delayedAction.run();
+            }
+        } : null;
 
         int hapticDelay = -1;
         if (dialogsCount <= 1) {
@@ -1241,6 +1254,9 @@ public final class BulletinFactory {
                 hapticDelay = 300;
             } else {
                 final Runnable onClick = () -> {
+                    if (delayedActionOnce != null) {
+                        delayedActionOnce.run();
+                    }
                     if (fragment != null) {
                         fragment.presentFragment(ChatActivity.of(did));
                     }
@@ -1262,18 +1278,20 @@ public final class BulletinFactory {
                         }
                     }
                 } else {
-                    TLRPC.User user = MessagesController.getInstance(UserConfig.selectedAccount).getUser(did);
+                    final TLRPC.User user = MessagesController.getInstance(UserConfig.selectedAccount).getUser(did);
                     if (messagesCount <= 1) {
+                        final @StringRes int res = hasUndoButton ? R.string.FwdMessageToUserShort : R.string.FwdMessageToUser;
                         if (fragment != null) {
-                            text = AndroidUtilities.replaceSingleTag(LocaleController.formatString(R.string.FwdMessageToUser, UserObject.getFirstName(user)), -1, AndroidUtilities.REPLACING_TAG_TYPE_LINKBOLD, onClick);
+                            text = AndroidUtilities.replaceSingleTag(LocaleController.formatString(res, UserObject.getFirstName(user)), -1, AndroidUtilities.REPLACING_TAG_TYPE_LINKBOLD, onClick);
                         } else {
-                            text = AndroidUtilities.replaceTags(LocaleController.formatString(R.string.FwdMessageToUser, UserObject.getFirstName(user)));
+                            text = AndroidUtilities.replaceTags(LocaleController.formatString(res, UserObject.getFirstName(user)));
                         }
                     } else {
+                        final @StringRes int res = hasUndoButton ? R.string.FwdMessagesToUserShort : R.string.FwdMessagesToUser;
                         if (fragment != null) {
-                            text = AndroidUtilities.replaceSingleTag(LocaleController.formatString(R.string.FwdMessagesToUser, UserObject.getFirstName(user)), -1, AndroidUtilities.REPLACING_TAG_TYPE_LINKBOLD, onClick);
+                            text = AndroidUtilities.replaceSingleTag(LocaleController.formatString(res, UserObject.getFirstName(user)), -1, AndroidUtilities.REPLACING_TAG_TYPE_LINKBOLD, onClick);
                         } else {
-                            text = AndroidUtilities.replaceTags(LocaleController.formatString(R.string.FwdMessagesToUser, UserObject.getFirstName(user)));
+                            text = AndroidUtilities.replaceTags(LocaleController.formatString(res, UserObject.getFirstName(user)));
                         }
                     }
                 }
@@ -1290,6 +1308,13 @@ public final class BulletinFactory {
             hapticDelay = 300;
         }
         layout.textView.setText(text);
+        if (hasUndoButton) {
+            layout.setButton(new Bulletin.UndoButton(layout.getContext(), true, true, fragment != null ? fragment.getResourceProvider() : null)
+                .setUndoAction(undoAction)
+                .setDelayedAction(delayedActionOnce)
+            );
+        }
+
         if (hapticDelay > 0) {
             layout.postDelayed(() -> {
                 layout.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);

@@ -1,16 +1,16 @@
-/* Copyright (c) 2018, Google Inc.
- *
- * Permission to use, copy, modify, and/or distribute this software for any
- * purpose with or without fee is hereby granted, provided that the above
- * copyright notice and this permission notice appear in all copies.
- *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
- * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY
- * SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION
- * OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
- * CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE. */
+// Copyright 2018 The BoringSSL Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 #include "abi_test.h"
 
@@ -20,7 +20,6 @@
 #include <algorithm>
 #include <array>
 
-#include <openssl/buf.h>
 #include <openssl/mem.h>
 #include <openssl/rand.h>
 #include <openssl/span.h>
@@ -41,10 +40,8 @@
 #include <unistd.h>
 #elif defined(OPENSSL_WINDOWS)
 #define SUPPORTS_UNWIND_TEST
-OPENSSL_MSVC_PRAGMA(warning(push, 3))
 #include <windows.h>
 #include <dbghelp.h>
-OPENSSL_MSVC_PRAGMA(warning(pop))
 #endif
 #endif  // X86_64 && SUPPORTS_ABI_TEST
 
@@ -87,43 +84,6 @@ static void ForEachMismatch(const CallerState &a, const CallerState &b,
   }
   LOOP_CALLER_STATE_REGISTERS()
 #undef CALLER_STATE_REGISTER
-}
-
-// ReadUnwindResult adds the results of the most recent unwind test to |out|.
-static void ReadUnwindResult(Result *out);
-
-crypto_word_t RunTrampoline(Result *out, crypto_word_t func,
-                            const crypto_word_t *argv, size_t argc,
-                            bool unwind) {
-  CallerState state;
-  RAND_bytes(reinterpret_cast<uint8_t *>(&state), sizeof(state));
-
-  unwind &= g_unwind_tests_enabled;
-  CallerState state2 = state;
-  crypto_word_t ret = abi_test_trampoline(func, &state2, argv, argc, unwind);
-#if defined(OPENSSL_X86_64) || defined(OPENSSL_X86)
-  // Query and clear the direction flag early, so negative tests do not
-  // interfere with |malloc|.
-  bool direction_flag = abi_test_get_and_clear_direction_flag();
-#endif  // OPENSSL_X86_64 || OPENSSL_X86
-
-  *out = Result();
-  ForEachMismatch(state, state2, [&](const char *reg) {
-    out->errors.push_back(std::string(reg) + " was not restored after return");
-  });
-#if defined(OPENSSL_X86_64) || defined(OPENSSL_X86)
-  // Linux and Windows ABIs for x86 require the direction flag be cleared on
-  // return. (Some OpenSSL assembly preserves it, which is stronger, but we only
-  // require what is specified by the ABI so |CHECK_ABI| works with C compiler
-  // output.)
-  if (direction_flag) {
-    out->errors.emplace_back("Direction flag set after return");
-  }
-#endif  // OPENSSL_X86_64 || OPENSSL_X86
-  if (unwind) {
-    ReadUnwindResult(out);
-  }
-  return ret;
 }
 #endif  // SUPPORTS_ABI_TEST
 
@@ -184,7 +144,7 @@ static void StrCatSignalSafeImpl(bssl::Span<char> out) {}
 template <typename... Args>
 static void StrCatSignalSafeImpl(bssl::Span<char> out, const char *str,
                                  Args... args) {
-  BUF_strlcat(out.data(), str, out.size());
+  OPENSSL_strlcat(out.data(), str, out.size());
   StrCatSignalSafeImpl(out, args...);
 }
 
@@ -209,7 +169,10 @@ template <typename... Args>
     WriteFile(stderr_handle, buf, strlen(buf), &unused, nullptr);
   }
 #else
-  write(STDERR_FILENO, buf, strlen(buf));
+  ssize_t ret = write(STDERR_FILENO, buf, strlen(buf));
+  // We'll abort soon anyway, so if we fail to write the message, there's
+  // nothing to do.
+  (void)ret;
 #endif
   abort();
 }
@@ -337,7 +300,7 @@ class UnwindCursor {
 class UnwindCursor {
  public:
   explicit UnwindCursor(unw_context_t *ctx) : ctx_(ctx) {
-    int ret = InitAtSignalFrame(&cursor_);
+    int ret = unw_init_local2(&cursor_, ctx_, UNW_INIT_SIGNAL_FRAME);
     if (ret < 0) {
       FatalError("Error getting unwind context: ", unw_strerror(ret));
     }
@@ -402,7 +365,7 @@ class UnwindCursor {
     // constructor.
     unw_cursor_t cursor;
     unw_word_t off;
-    if (InitAtSignalFrame(&cursor) != 0 ||
+    if (unw_init_local2(&cursor, ctx_, UNW_INIT_SIGNAL_FRAME) != 0 ||
         unw_get_proc_name(&cursor, starting_ip_buf_, sizeof(starting_ip_buf_),
                           &off) != 0) {
       StrCatSignalSafe(starting_ip_buf_, "0x", WordToHex(starting_ip_).data());
@@ -422,30 +385,6 @@ class UnwindCursor {
     assert(ret < 0);
     const char *msg = unw_strerror(ret);
     return UnwindStatus(msg == nullptr ? "unknown error" : msg);
-  }
-
-  int InitAtSignalFrame(unw_cursor_t *cursor) {
-    // Work around a bug in libunwind which breaks rax and rdx recovery. This
-    // breaks functions which temporarily use rax as the CFA register. See
-    // https://git.savannah.gnu.org/gitweb/?p=libunwind.git;a=commit;h=819bf51bbd2da462c2ec3401e8ac9153b6e725e3
-    OPENSSL_memset(cursor, 0, sizeof(*cursor));
-    int ret = unw_init_local(cursor, ctx_);
-    if (ret < 0) {
-      return ret;
-    }
-    for (;;) {
-      ret = unw_is_signal_frame(cursor);
-      if (ret < 0) {
-        return ret;
-      }
-      if (ret != 0) {
-        return 0;  // Found the signal frame.
-      }
-      ret = unw_step(cursor);
-      if (ret < 0) {
-        return ret;
-      }
-    }
   }
 
   int GetReg(crypto_word_t *out, unw_regnum_t reg) {
@@ -472,8 +411,8 @@ static bool g_in_trampoline = false;
 // g_unwind_function_done, if |g_in_trampoline| is true, is whether the function
 // under test has returned. It is undefined otherwise.
 static bool g_unwind_function_done;
-// g_trampoline_state, if |g_in_trampoline| is true, is the state the function
-// under test must preserve. It is undefined otherwise.
+// g_trampoline_state, during an unwind-enabled ABI test, is the state the
+// function under test must preserve. It is undefined otherwise.
 static CallerState g_trampoline_state;
 // g_trampoline_sp, if |g_in_trampoline| is true, is the stack pointer of the
 // trampoline frame. It is undefined otherwise.
@@ -534,8 +473,6 @@ static void CheckUnwind(UnwindCursor *cursor) {
     g_in_trampoline = true;
     g_unwind_function_done = false;
     g_trampoline_sp = sp;
-    g_trampoline_state = cursor->GetCallerState().ValueOrDie(
-        "Error getting initial caller state");
   } else {
     if (sp == g_trampoline_sp || g_unwind_function_done) {
       // |g_unwind_function_done| should imply |sp| is |g_trampoline_sp|, but
@@ -606,6 +543,7 @@ static void CheckUnwind(UnwindCursor *cursor) {
   }
 }
 
+// ReadUnwindResult adds the results of the most recent unwind test to |out|.
 static void ReadUnwindResult(Result *out) {
   for (size_t i = 0; i < g_num_unwind_errors; i++) {
 #if defined(OPENSSL_WINDOWS)
@@ -730,10 +668,11 @@ static bool IsBeingDebugged() {
 
 static pthread_t g_main_thread;
 
-static void TrapHandler(int sig) {
+static void TrapHandler(int sig, siginfo_t *info, void *ucontext_v) {
   // Note this is a signal handler, so only async-signal-safe functions may be
   // used here. See signal-safety(7). libunwind promises local unwind is
   // async-signal-safe.
+  ucontext_t *ucontext = static_cast<ucontext_t*>(ucontext_v);
 
   // |pthread_equal| is not listed as async-signal-safe, but this is clearly an
   // oversight.
@@ -741,13 +680,7 @@ static void TrapHandler(int sig) {
     FatalError("SIGTRAP on background thread");
   }
 
-  unw_context_t ctx;
-  int ret = unw_getcontext(&ctx);
-  if (ret < 0) {
-    FatalError("Error getting unwind context: ", unw_strerror(ret));
-  }
-
-  UnwindCursor cursor(&ctx);
+  UnwindCursor cursor(ucontext);
   CheckUnwind(&cursor);
 }
 
@@ -763,7 +696,8 @@ static void EnableUnwindTestsImpl() {
   struct sigaction trap_action;
   OPENSSL_memset(&trap_action, 0, sizeof(trap_action));
   sigemptyset(&trap_action.sa_mask);
-  trap_action.sa_handler = TrapHandler;
+  trap_action.sa_flags = SA_SIGINFO;
+  trap_action.sa_sigaction = TrapHandler;
   if (sigaction(SIGTRAP, &trap_action, NULL) != 0) {
     perror("sigaction");
     abort();
@@ -781,6 +715,48 @@ static void ReadUnwindResult(Result *) {}
 static void EnableUnwindTestsImpl() {}
 
 #endif  // SUPPORTS_UNWIND_TEST
+
+#if defined(SUPPORTS_ABI_TEST)
+crypto_word_t RunTrampoline(Result *out, crypto_word_t func,
+                            const crypto_word_t *argv, size_t argc,
+                            bool unwind) {
+  CallerState state;
+  RAND_bytes(reinterpret_cast<uint8_t *>(&state), sizeof(state));
+
+  unwind &= g_unwind_tests_enabled;
+#if defined(SUPPORTS_UNWIND_TEST)
+  if (unwind) {
+    // Save the caller state for the unwind tester to check for.
+    g_trampoline_state = state;
+  }
+#endif
+  CallerState state2 = state;
+  crypto_word_t ret = abi_test_trampoline(func, &state2, argv, argc, unwind);
+#if defined(OPENSSL_X86_64) || defined(OPENSSL_X86)
+  // Query and clear the direction flag early, so negative tests do not
+  // interfere with |malloc|.
+  bool direction_flag = abi_test_get_and_clear_direction_flag();
+#endif  // OPENSSL_X86_64 || OPENSSL_X86
+
+  *out = Result();
+  ForEachMismatch(state, state2, [&](const char *reg) {
+    out->errors.push_back(std::string(reg) + " was not restored after return");
+  });
+#if defined(OPENSSL_X86_64) || defined(OPENSSL_X86)
+  // Linux and Windows ABIs for x86 require the direction flag be cleared on
+  // return. (Some OpenSSL assembly preserves it, which is stronger, but we only
+  // require what is specified by the ABI so |CHECK_ABI| works with C compiler
+  // output.)
+  if (direction_flag) {
+    out->errors.emplace_back("Direction flag set after return");
+  }
+#endif  // OPENSSL_X86_64 || OPENSSL_X86
+  if (unwind) {
+    ReadUnwindResult(out);
+  }
+  return ret;
+}
+#endif  // SUPPORTS_ABI_TEST
 
 }  // namespace internal
 

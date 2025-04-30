@@ -17,13 +17,29 @@
 #include <algorithm>
 #include <string>
 
+#include "absl/base/attributes.h"
 #include "absl/strings/string_view.h"
 #include "rtc_base/checks.h"
 #include "rtc_base/network_constants.h"
 #include "rtc_base/socket_address.h"
 #include "rtc_base/system/rtc_export.h"
 
+namespace webrtc {
+enum class IceCandidateType : int { kHost, kSrflx, kPrflx, kRelay };
+}  // namespace webrtc
+
 namespace cricket {
+
+// TODO(tommi): These are temporarily here, moved from `port.h` and will
+// eventually be removed once we use enums instead of strings for these values.
+RTC_EXPORT extern const absl::string_view LOCAL_PORT_TYPE;
+RTC_EXPORT extern const absl::string_view STUN_PORT_TYPE;
+RTC_EXPORT extern const absl::string_view PRFLX_PORT_TYPE;
+RTC_EXPORT extern const absl::string_view RELAY_PORT_TYPE;
+
+// TURN servers are limited to 32 in accordance with
+// https://w3c.github.io/webrtc-pc/#dom-rtcconfiguration-iceservers
+static constexpr size_t kMaxTurnServers = 32;
 
 // Candidate for ICE based connection discovery.
 // TODO(phoglund): remove things in here that are not needed in the public API.
@@ -39,7 +55,7 @@ class RTC_EXPORT Candidate {
             uint32_t priority,
             absl::string_view username,
             absl::string_view password,
-            absl::string_view type,
+            absl::string_view type ABSL_ATTRIBUTE_LIFETIME_BOUND,
             uint32_t generation,
             absl::string_view foundation,
             uint16_t network_id = 0,
@@ -47,8 +63,12 @@ class RTC_EXPORT Candidate {
   Candidate(const Candidate&);
   ~Candidate();
 
+  // 8 character long randomized ID string for logging purposes.
   const std::string& id() const { return id_; }
-  void set_id(absl::string_view id) { Assign(id_, id); }
+  // Generates a new, 8 character long, id.
+  void generate_id();
+  // TODO(tommi): Callers should use generate_id(). Remove.
+  [[deprecated]] void set_id(absl::string_view id) { Assign(id_, id); }
 
   int component() const { return component_; }
   void set_component(int component) { component_ = component; }
@@ -68,27 +88,6 @@ class RTC_EXPORT Candidate {
   uint32_t priority() const { return priority_; }
   void set_priority(const uint32_t priority) { priority_ = priority; }
 
-  // TODO(pthatcher): Remove once Chromium's jingle/glue/utils.cc
-  // doesn't use it.
-  // Maps old preference (which was 0.0-1.0) to match priority (which
-  // is 0-2^32-1) to to match RFC 5245, section 4.1.2.1.  Also see
-  // https://docs.google.com/a/google.com/document/d/
-  // 1iNQDiwDKMh0NQOrCqbj3DKKRT0Dn5_5UJYhmZO-t7Uc/edit
-  float preference() const {
-    // The preference value is clamped to two decimal precision.
-    return static_cast<float>(((priority_ >> 24) * 100 / 127) / 100.0);
-  }
-
-  // TODO(pthatcher): Remove once Chromium's jingle/glue/utils.cc
-  // doesn't use it.
-  void set_preference(float preference) {
-    // Limiting priority to UINT_MAX when value exceeds uint32_t max.
-    // This can happen for e.g. when preference = 3.
-    uint64_t prio_val = static_cast<uint64_t>(preference * 127) << 24;
-    priority_ = static_cast<uint32_t>(
-        std::min(prio_val, static_cast<uint64_t>(UINT_MAX)));
-  }
-
   // TODO(honghaiz): Change to usernameFragment or ufrag.
   const std::string& username() const { return username_; }
   void set_username(absl::string_view username) { Assign(username_, username); }
@@ -97,7 +96,44 @@ class RTC_EXPORT Candidate {
   void set_password(absl::string_view password) { Assign(password_, password); }
 
   const std::string& type() const { return type_; }
-  void set_type(absl::string_view type) { Assign(type_, type); }
+
+  // Returns the name of the candidate type as specified in
+  // https://datatracker.ietf.org/doc/html/rfc5245#section-15.1
+  absl::string_view type_name() const;
+
+  // Setting the type requires a constant string (e.g.
+  // cricket::LOCAL_PORT_TYPE). The type should really be an enum rather than a
+  // string, but until we make that change the lifetime attribute helps us lock
+  // things down. See also the `Port` class.
+  void set_type(absl::string_view type ABSL_ATTRIBUTE_LIFETIME_BOUND) {
+    Assign(type_, type);
+  }
+
+  // Provide these simple checkers to abstract away dependency on the port types
+  // that are currently defined outside of Candidate. This will ease the change
+  // from the string type to an enum.
+  bool is_local() const;
+  bool is_stun() const;
+  bool is_prflx() const;
+  bool is_relay() const;
+
+  // Returns the type preference, a value between 0-126 inclusive, with 0 being
+  // the lowest preference value, as described in RFC 5245.
+  // https://datatracker.ietf.org/doc/html/rfc5245#section-4.1.2.1
+  int type_preference() const {
+    // From https://datatracker.ietf.org/doc/html/rfc5245#section-4.1.4 :
+    // It is RECOMMENDED that default candidates be chosen based on the
+    // likelihood of those candidates to work with the peer that is being
+    // contacted.
+    // I.e. it is recommended that relayed > reflexive > host.
+    if (is_local())
+      return 1;  // Host.
+    if (is_stun())
+      return 2;  // Reflexive.
+    if (is_relay())
+      return 3;  // Relayed.
+    return 0;    // Unknown, lowest preference.
+  }
 
   const std::string& network_name() const { return network_name_; }
   void set_network_name(absl::string_view network_name) {
@@ -169,7 +205,8 @@ class RTC_EXPORT Candidate {
 
   uint32_t GetPriority(uint32_t type_preference,
                        int network_adapter_preference,
-                       int relay_preference) const;
+                       int relay_preference,
+                       bool adjust_local_preference) const;
 
   bool operator==(const Candidate& o) const;
   bool operator!=(const Candidate& o) const;

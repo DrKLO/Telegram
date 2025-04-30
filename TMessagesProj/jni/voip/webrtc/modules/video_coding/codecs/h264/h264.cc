@@ -121,6 +121,10 @@ std::vector<SdpVideoFormat> SupportedH264DecoderCodecs() {
   return supportedCodecs;
 }
 
+std::unique_ptr<H264Encoder> H264Encoder::Create() {
+  return Create(cricket::CreateVideoCodec(cricket::kH264CodecName));
+}
+
 std::unique_ptr<H264Encoder> H264Encoder::Create(
     const cricket::VideoCodec& codec) {
   RTC_DCHECK(H264Encoder::IsSupported());

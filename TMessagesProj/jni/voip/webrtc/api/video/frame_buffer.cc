@@ -50,7 +50,7 @@ int64_t GetFrameId(const FrameIteratorT& it) {
 
 template <typename FrameIteratorT>
 uint32_t GetTimestamp(const FrameIteratorT& it) {
-  return it->second.encoded_frame->Timestamp();
+  return it->second.encoded_frame->RtpTimestamp();
 }
 
 template <typename FrameIteratorT>
@@ -76,7 +76,7 @@ bool FrameBuffer::InsertFrame(std::unique_ptr<EncodedFrame> frame) {
 
   if (frame->Id() <= decoded_frame_history_.GetLastDecodedFrameId()) {
     if (legacy_frame_id_jump_behavior_ && frame->is_keyframe() &&
-        AheadOf(frame->Timestamp(),
+        AheadOf(frame->RtpTimestamp(),
                 *decoded_frame_history_.GetLastDecodedFrameTimestamp())) {
       RTC_DLOG(LS_WARNING)
           << "Keyframe " << frame->Id()

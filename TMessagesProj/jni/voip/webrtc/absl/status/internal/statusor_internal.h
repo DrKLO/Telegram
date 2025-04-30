@@ -14,12 +14,15 @@
 #ifndef ABSL_STATUS_INTERNAL_STATUSOR_INTERNAL_H_
 #define ABSL_STATUS_INTERNAL_STATUSOR_INTERNAL_H_
 
+#include <cstdint>
 #include <type_traits>
 #include <utility>
 
 #include "absl/base/attributes.h"
+#include "absl/base/nullability.h"
 #include "absl/meta/type_traits.h"
 #include "absl/status/status.h"
+#include "absl/strings/string_view.h"
 #include "absl/utility/utility.h"
 
 namespace absl {
@@ -69,11 +72,8 @@ using IsConstructibleOrConvertibleOrAssignableFromStatusOr =
 template <typename T, typename U>
 struct IsDirectInitializationAmbiguous
     : public absl::conditional_t<
-          std::is_same<absl::remove_cv_t<absl::remove_reference_t<U>>,
-                       U>::value,
-          std::false_type,
-          IsDirectInitializationAmbiguous<
-              T, absl::remove_cv_t<absl::remove_reference_t<U>>>> {};
+          std::is_same<absl::remove_cvref_t<U>, U>::value, std::false_type,
+          IsDirectInitializationAmbiguous<T, absl::remove_cvref_t<U>>> {};
 
 template <typename T, typename V>
 struct IsDirectInitializationAmbiguous<T, absl::StatusOr<V>>
@@ -84,14 +84,11 @@ struct IsDirectInitializationAmbiguous<T, absl::StatusOr<V>>
 template <typename T, typename U>
 using IsDirectInitializationValid = absl::disjunction<
     // Short circuits if T is basically U.
-    std::is_same<T, absl::remove_cv_t<absl::remove_reference_t<U>>>,
+    std::is_same<T, absl::remove_cvref_t<U>>,
     absl::negation<absl::disjunction<
-        std::is_same<absl::StatusOr<T>,
-                     absl::remove_cv_t<absl::remove_reference_t<U>>>,
-        std::is_same<absl::Status,
-                     absl::remove_cv_t<absl::remove_reference_t<U>>>,
-        std::is_same<absl::in_place_t,
-                     absl::remove_cv_t<absl::remove_reference_t<U>>>,
+        std::is_same<absl::StatusOr<T>, absl::remove_cvref_t<U>>,
+        std::is_same<absl::Status, absl::remove_cvref_t<U>>,
+        std::is_same<absl::in_place_t, absl::remove_cvref_t<U>>,
         IsDirectInitializationAmbiguous<T, U>>>>;
 
 // This trait detects whether `StatusOr<T>::operator=(U&&)` is ambiguous, which
@@ -107,11 +104,8 @@ using IsDirectInitializationValid = absl::disjunction<
 template <typename T, typename U>
 struct IsForwardingAssignmentAmbiguous
     : public absl::conditional_t<
-          std::is_same<absl::remove_cv_t<absl::remove_reference_t<U>>,
-                       U>::value,
-          std::false_type,
-          IsForwardingAssignmentAmbiguous<
-              T, absl::remove_cv_t<absl::remove_reference_t<U>>>> {};
+          std::is_same<absl::remove_cvref_t<U>, U>::value, std::false_type,
+          IsForwardingAssignmentAmbiguous<T, absl::remove_cvref_t<U>>> {};
 
 template <typename T, typename U>
 struct IsForwardingAssignmentAmbiguous<T, absl::StatusOr<U>>
@@ -122,28 +116,85 @@ struct IsForwardingAssignmentAmbiguous<T, absl::StatusOr<U>>
 template <typename T, typename U>
 using IsForwardingAssignmentValid = absl::disjunction<
     // Short circuits if T is basically U.
-    std::is_same<T, absl::remove_cv_t<absl::remove_reference_t<U>>>,
+    std::is_same<T, absl::remove_cvref_t<U>>,
     absl::negation<absl::disjunction<
-        std::is_same<absl::StatusOr<T>,
-                     absl::remove_cv_t<absl::remove_reference_t<U>>>,
-        std::is_same<absl::Status,
-                     absl::remove_cv_t<absl::remove_reference_t<U>>>,
-        std::is_same<absl::in_place_t,
-                     absl::remove_cv_t<absl::remove_reference_t<U>>>,
+        std::is_same<absl::StatusOr<T>, absl::remove_cvref_t<U>>,
+        std::is_same<absl::Status, absl::remove_cvref_t<U>>,
+        std::is_same<absl::in_place_t, absl::remove_cvref_t<U>>,
         IsForwardingAssignmentAmbiguous<T, U>>>>;
+
+template <bool Value, typename T>
+using Equality = std::conditional_t<Value, T, absl::negation<T>>;
+
+template <bool Explicit, typename T, typename U, bool Lifetimebound>
+using IsConstructionValid = absl::conjunction<
+    Equality<Lifetimebound,
+             type_traits_internal::IsLifetimeBoundAssignment<T, U>>,
+    IsDirectInitializationValid<T, U&&>, std::is_constructible<T, U&&>,
+    Equality<!Explicit, std::is_convertible<U&&, T>>,
+    absl::disjunction<
+        std::is_same<T, absl::remove_cvref_t<U>>,
+        absl::conjunction<
+            std::conditional_t<
+                Explicit,
+                absl::negation<std::is_constructible<absl::Status, U&&>>,
+                absl::negation<std::is_convertible<U&&, absl::Status>>>,
+            absl::negation<
+                internal_statusor::HasConversionOperatorToStatusOr<T, U&&>>>>>;
+
+template <typename T, typename U, bool Lifetimebound>
+using IsAssignmentValid = absl::conjunction<
+    Equality<Lifetimebound,
+             type_traits_internal::IsLifetimeBoundAssignment<T, U>>,
+    std::is_constructible<T, U&&>, std::is_assignable<T&, U&&>,
+    absl::disjunction<
+        std::is_same<T, absl::remove_cvref_t<U>>,
+        absl::conjunction<
+            absl::negation<std::is_convertible<U&&, absl::Status>>,
+            absl::negation<HasConversionOperatorToStatusOr<T, U&&>>>>,
+    IsForwardingAssignmentValid<T, U&&>>;
+
+template <bool Explicit, typename T, typename U>
+using IsConstructionFromStatusValid = absl::conjunction<
+    absl::negation<std::is_same<absl::StatusOr<T>, absl::remove_cvref_t<U>>>,
+    absl::negation<std::is_same<T, absl::remove_cvref_t<U>>>,
+    absl::negation<std::is_same<absl::in_place_t, absl::remove_cvref_t<U>>>,
+    Equality<!Explicit, std::is_convertible<U, absl::Status>>,
+    std::is_constructible<absl::Status, U>,
+    absl::negation<HasConversionOperatorToStatusOr<T, U>>>;
+
+template <bool Explicit, typename T, typename U, bool Lifetimebound,
+          typename UQ>
+using IsConstructionFromStatusOrValid = absl::conjunction<
+    absl::negation<std::is_same<T, U>>,
+    Equality<Lifetimebound,
+             type_traits_internal::IsLifetimeBoundAssignment<T, U>>,
+    std::is_constructible<T, UQ>,
+    Equality<!Explicit, std::is_convertible<UQ, T>>,
+    absl::negation<IsConstructibleOrConvertibleFromStatusOr<T, U>>>;
+
+template <typename T, typename U, bool Lifetimebound>
+using IsStatusOrAssignmentValid = absl::conjunction<
+    absl::negation<std::is_same<T, absl::remove_cvref_t<U>>>,
+    Equality<Lifetimebound,
+             type_traits_internal::IsLifetimeBoundAssignment<T, U>>,
+    std::is_constructible<T, U>, std::is_assignable<T, U>,
+    absl::negation<IsConstructibleOrConvertibleOrAssignableFromStatusOr<
+        T, absl::remove_cvref_t<U>>>>;
 
 class Helper {
  public:
   // Move type-agnostic error handling to the .cc.
-  static void HandleInvalidStatusCtorArg(Status*);
-  ABSL_ATTRIBUTE_NORETURN static void Crash(const absl::Status& status);
+  static void HandleInvalidStatusCtorArg(absl::Nonnull<Status*>);
+  [[noreturn]] static void Crash(const absl::Status& status);
 };
 
 // Construct an instance of T in `p` through placement new, passing Args... to
 // the constructor.
 // This abstraction is here mostly for the gcc performance fix.
 template <typename T, typename... Args>
-ABSL_ATTRIBUTE_NONNULL(1) void PlacementNew(void* p, Args&&... args) {
+ABSL_ATTRIBUTE_NONNULL(1)
+void PlacementNew(absl::Nonnull<void*> p, Args&&... args) {
   new (p) T(std::forward<Args>(args)...);
 }
 
@@ -387,7 +438,54 @@ struct MoveAssignBase<T, false> {
   MoveAssignBase& operator=(MoveAssignBase&&) = delete;
 };
 
-ABSL_ATTRIBUTE_NORETURN void ThrowBadStatusOrAccess(absl::Status status);
+[[noreturn]] void ThrowBadStatusOrAccess(absl::Status status);
+
+// Used to introduce jitter into the output of printing functions for
+// `StatusOr` (i.e. `AbslStringify` and `operator<<`).
+class StringifyRandom {
+  enum BracesType {
+    kBareParens = 0,
+    kSpaceParens,
+    kBareBrackets,
+    kSpaceBrackets,
+  };
+
+  // Returns a random `BracesType` determined once per binary load.
+  static BracesType RandomBraces() {
+    static const BracesType kRandomBraces = static_cast<BracesType>(
+        (reinterpret_cast<uintptr_t>(&kRandomBraces) >> 4) % 4);
+    return kRandomBraces;
+  }
+
+ public:
+  static inline absl::string_view OpenBrackets() {
+    switch (RandomBraces()) {
+      case kBareParens:
+        return "(";
+      case kSpaceParens:
+        return "( ";
+      case kBareBrackets:
+        return "[";
+      case kSpaceBrackets:
+        return "[ ";
+    }
+    return "(";
+  }
+
+  static inline absl::string_view CloseBrackets() {
+    switch (RandomBraces()) {
+      case kBareParens:
+        return ")";
+      case kSpaceParens:
+        return " )";
+      case kBareBrackets:
+        return "]";
+      case kSpaceBrackets:
+        return " ]";
+    }
+    return ")";
+  }
+};
 
 }  // namespace internal_statusor
 ABSL_NAMESPACE_END

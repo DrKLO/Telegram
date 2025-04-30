@@ -1,17 +1,22 @@
 #! /usr/bin/env perl
 # Copyright 2007-2016 The OpenSSL Project Authors. All Rights Reserved.
 #
-# Licensed under the OpenSSL license (the "License").  You may not use
-# this file except in compliance with the License.  You can obtain a copy
-# in the file LICENSE in the source distribution or at
-# https://www.openssl.org/source/license.html
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 #
 # ====================================================================
 # Written by Andy Polyakov <appro@openssl.org> for the OpenSSL
-# project. The module is, however, dual licensed under OpenSSL and
-# CRYPTOGAMS licenses depending on where you obtain it. For further
-# details see http://www.openssl.org/~appro/cryptogams/.
+# project.
 # ====================================================================
 #
 # SHA512 block transform for x86. September 2007.
@@ -62,12 +67,9 @@ require "x86asm.pl";
 $output=pop;
 open STDOUT,">$output";
 
-&asm_init($ARGV[0],$ARGV[$#ARGV] eq "386");
+&asm_init($ARGV[0]);
 
-$sse2=0;
-for (@ARGV) { $sse2=1 if (/-DOPENSSL_IA32_SSE2/); }
-
-&external_label("OPENSSL_ia32cap_P") if ($sse2);
+$sse2=1;
 
 $Tlo=&DWP(0,"esp");	$Thi=&DWP(4,"esp");
 $Alo=&DWP(8,"esp");	$Ahi=&DWP(8+4,"esp");
@@ -291,8 +293,9 @@ sub BODY_00_15_x86 {
 	&lea	($K512,&DWP(8,$K512));		# K++
 }
 
+&static_label("K512");
 
-&function_begin("sha512_block_data_order");
+&function_begin("sha512_block_data_order_nohw");
 	&mov	("esi",wparam(0));	# ctx
 	&mov	("edi",wparam(1));	# inp
 	&mov	("eax",wparam(2));	# num
@@ -314,29 +317,23 @@ sub BODY_00_15_x86 {
 	&mov	(&DWP(12,"esp"),"ebx");	# saved sp
 
 if ($sse2) {
-	&picmeup("edx","OPENSSL_ia32cap_P",$K512,&label("K512"));
-	&mov	("ecx",&DWP(0,"edx"));
-	&test	("ecx",1<<26);
-	&jz	(&label("loop_x86"));
-
-	&mov	("edx",&DWP(4,"edx"));
-
 	# load ctx->h[0-7]
 	&movq	($A,&QWP(0,"esi"));
-	 &and	("ecx",1<<24);		# XMM registers availability
 	&movq	("mm1",&QWP(8,"esi"));
-	 &and	("edx",1<<9);		# SSSE3 bit
 	&movq	($BxC,&QWP(16,"esi"));
-	 &or	("ecx","edx");
 	&movq	("mm3",&QWP(24,"esi"));
 	&movq	($E,&QWP(32,"esi"));
 	&movq	("mm5",&QWP(40,"esi"));
 	&movq	("mm6",&QWP(48,"esi"));
 	&movq	("mm7",&QWP(56,"esi"));
-	&cmp	("ecx",1<<24|1<<9);
-	&je	(&label("SSSE3"));
 	&sub	("esp",8*10);
 	&jmp	(&label("loop_sse2"));
+
+	# TODO(davidben): The preamble above this point comes from the original
+	# merged sha512_block_data_order function, which performed some common
+	# setup and then jumped to the particular SHA-512 implementation. The
+	# parts of the preamble that do not apply to this function can be
+	# removed.
 
 &set_label("loop_sse2",16);
 	#&movq	($Asse2,$A);
@@ -462,13 +459,49 @@ if ($sse2) {
 
 	&mov	("esp",&DWP(8*10+12,"esp"));	# restore sp
 	&emms	();
-&function_end_A();
+&function_end("sha512_block_data_order_nohw");
 
-&set_label("SSSE3",32);
 { my ($cnt,$frame)=("ecx","edx");
   my @X=map("xmm$_",(0..7));
   my $j;
   my $i=0;
+
+&function_begin("sha512_block_data_order_ssse3");
+	&mov	("esi",wparam(0));	# ctx
+	&mov	("edi",wparam(1));	# inp
+	&mov	("eax",wparam(2));	# num
+	&mov	("ebx","esp");		# saved sp
+
+	&call	(&label("pic_point"));	# make it PIC!
+&set_label("pic_point");
+	&blindpop($K512);
+	&lea	($K512,&DWP(&label("K512")."-".&label("pic_point"),$K512));
+
+	&sub	("esp",16);
+	&and	("esp",-64);
+
+	&shl	("eax",7);
+	&add	("eax","edi");
+	&mov	(&DWP(0,"esp"),"esi");	# ctx
+	&mov	(&DWP(4,"esp"),"edi");	# inp
+	&mov	(&DWP(8,"esp"),"eax");	# inp+num*128
+	&mov	(&DWP(12,"esp"),"ebx");	# saved sp
+
+	# load ctx->h[0-7]
+	&movq	($A,&QWP(0,"esi"));
+	&movq	("mm1",&QWP(8,"esi"));
+	&movq	($BxC,&QWP(16,"esi"));
+	&movq	("mm3",&QWP(24,"esi"));
+	&movq	($E,&QWP(32,"esi"));
+	&movq	("mm5",&QWP(40,"esi"));
+	&movq	("mm6",&QWP(48,"esi"));
+	&movq	("mm7",&QWP(56,"esi"));
+
+	# TODO(davidben): The preamble above this point comes from the original
+	# merged sha512_block_data_order function, which performed some common
+	# setup and then jumped to the particular SHA-512 implementation. The
+	# parts of the preamble that do not apply to this function can be
+	# removed.
 
 	&lea	($frame,&DWP(-64,"esp"));
 	&sub	("esp",256);
@@ -687,151 +720,8 @@ sub BODY_00_15_ssse3 {		# "phase-less" copy of BODY_00_15_sse2
 	&mov	("esp",&DWP(64+12,$frame));	# restore sp
 	&emms	();
 }
-&function_end_A();
+&function_end("sha512_block_data_order_ssse3");
 }
-&set_label("loop_x86",16);
-    # copy input block to stack reversing byte and qword order
-    for ($i=0;$i<8;$i++) {
-	&mov	("eax",&DWP($i*16+0,"edi"));
-	&mov	("ebx",&DWP($i*16+4,"edi"));
-	&mov	("ecx",&DWP($i*16+8,"edi"));
-	&mov	("edx",&DWP($i*16+12,"edi"));
-	&bswap	("eax");
-	&bswap	("ebx");
-	&bswap	("ecx");
-	&bswap	("edx");
-	&push	("eax");
-	&push	("ebx");
-	&push	("ecx");
-	&push	("edx");
-    }
-	&add	("edi",128);
-	&sub	("esp",9*8);		# place for T,A,B,C,D,E,F,G,H
-	&mov	(&DWP(8*(9+16)+4,"esp"),"edi");
-
-	# copy ctx->h[0-7] to A,B,C,D,E,F,G,H on stack
-	&lea	("edi",&DWP(8,"esp"));
-	&mov	("ecx",16);
-	&data_word(0xA5F3F689);		# rep movsd
-
-&set_label("00_15_x86",16);
-	&BODY_00_15_x86();
-
-	&cmp	(&LB("edx"),0x94);
-	&jne	(&label("00_15_x86"));
-
-&set_label("16_79_x86",16);
-	#define sigma0(x)	(ROTR((x),1)  ^ ROTR((x),8)  ^ ((x)>>7))
-	#	LO		lo>>1^hi<<31  ^ lo>>8^hi<<24 ^ lo>>7^hi<<25
-	#	HI		hi>>1^lo<<31  ^ hi>>8^lo<<24 ^ hi>>7
-	&mov	("ecx",&DWP(8*(9+15+16-1)+0,"esp"));
-	&mov	("edx",&DWP(8*(9+15+16-1)+4,"esp"));
-	&mov	("esi","ecx");
-
-	&shr	("ecx",1);	# lo>>1
-	&mov	("edi","edx");
-	&shr	("edx",1);	# hi>>1
-	&mov	("eax","ecx");
-	&shl	("esi",24);	# lo<<24
-	&mov	("ebx","edx");
-	&shl	("edi",24);	# hi<<24
-	&xor	("ebx","esi");
-
-	&shr	("ecx",7-1);	# lo>>7
-	&xor	("eax","edi");
-	&shr	("edx",7-1);	# hi>>7
-	&xor	("eax","ecx");
-	&shl	("esi",31-24);	# lo<<31
-	&xor	("ebx","edx");
-	&shl	("edi",25-24);	# hi<<25
-	&xor	("ebx","esi");
-
-	&shr	("ecx",8-7);	# lo>>8
-	&xor	("eax","edi");
-	&shr	("edx",8-7);	# hi>>8
-	&xor	("eax","ecx");
-	&shl	("edi",31-25);	# hi<<31
-	&xor	("ebx","edx");
-	&xor	("eax","edi");			# T1 = sigma0(X[-15])
-
-	&mov	(&DWP(0,"esp"),"eax");
-	&mov	(&DWP(4,"esp"),"ebx");		# put T1 away
-
-	#define sigma1(x)	(ROTR((x),19) ^ ROTR((x),61) ^ ((x)>>6))
-	#	LO		lo>>19^hi<<13 ^ hi>>29^lo<<3 ^ lo>>6^hi<<26
-	#	HI		hi>>19^lo<<13 ^ lo>>29^hi<<3 ^ hi>>6
-	&mov	("ecx",&DWP(8*(9+15+16-14)+0,"esp"));
-	&mov	("edx",&DWP(8*(9+15+16-14)+4,"esp"));
-	&mov	("esi","ecx");
-
-	&shr	("ecx",6);	# lo>>6
-	&mov	("edi","edx");
-	&shr	("edx",6);	# hi>>6
-	&mov	("eax","ecx");
-	&shl	("esi",3);	# lo<<3
-	&mov	("ebx","edx");
-	&shl	("edi",3);	# hi<<3
-	&xor	("eax","esi");
-
-	&shr	("ecx",19-6);	# lo>>19
-	&xor	("ebx","edi");
-	&shr	("edx",19-6);	# hi>>19
-	&xor	("eax","ecx");
-	&shl	("esi",13-3);	# lo<<13
-	&xor	("ebx","edx");
-	&shl	("edi",13-3);	# hi<<13
-	&xor	("ebx","esi");
-
-	&shr	("ecx",29-19);	# lo>>29
-	&xor	("eax","edi");
-	&shr	("edx",29-19);	# hi>>29
-	&xor	("ebx","ecx");
-	&shl	("edi",26-13);	# hi<<26
-	&xor	("eax","edx");
-	&xor	("eax","edi");			# sigma1(X[-2])
-
-	&mov	("ecx",&DWP(8*(9+15+16)+0,"esp"));
-	&mov	("edx",&DWP(8*(9+15+16)+4,"esp"));
-	&add	("eax",&DWP(0,"esp"));
-	&adc	("ebx",&DWP(4,"esp"));		# T1 = sigma1(X[-2])+T1
-	&mov	("esi",&DWP(8*(9+15+16-9)+0,"esp"));
-	&mov	("edi",&DWP(8*(9+15+16-9)+4,"esp"));
-	&add	("eax","ecx");
-	&adc	("ebx","edx");			# T1 += X[-16]
-	&add	("eax","esi");
-	&adc	("ebx","edi");			# T1 += X[-7]
-	&mov	(&DWP(8*(9+15)+0,"esp"),"eax");
-	&mov	(&DWP(8*(9+15)+4,"esp"),"ebx");	# save X[0]
-
-	&BODY_00_15_x86();
-
-	&cmp	(&LB("edx"),0x17);
-	&jne	(&label("16_79_x86"));
-
-	&mov	("esi",&DWP(8*(9+16+80)+0,"esp"));# ctx
-	&mov	("edi",&DWP(8*(9+16+80)+4,"esp"));# inp
-    for($i=0;$i<4;$i++) {
-	&mov	("eax",&DWP($i*16+0,"esi"));
-	&mov	("ebx",&DWP($i*16+4,"esi"));
-	&mov	("ecx",&DWP($i*16+8,"esi"));
-	&mov	("edx",&DWP($i*16+12,"esi"));
-	&add	("eax",&DWP(8+($i*16)+0,"esp"));
-	&adc	("ebx",&DWP(8+($i*16)+4,"esp"));
-	&mov	(&DWP($i*16+0,"esi"),"eax");
-	&mov	(&DWP($i*16+4,"esi"),"ebx");
-	&add	("ecx",&DWP(8+($i*16)+8,"esp"));
-	&adc	("edx",&DWP(8+($i*16)+12,"esp"));
-	&mov	(&DWP($i*16+8,"esi"),"ecx");
-	&mov	(&DWP($i*16+12,"esi"),"edx");
-    }
-	&add	("esp",8*(9+16+80));		# destroy frame
-	&sub	($K512,8*80);			# rewind K
-
-	&cmp	("edi",&DWP(8,"esp"));		# are we done yet?
-	&jb	(&label("loop_x86"));
-
-	&mov	("esp",&DWP(12,"esp"));		# restore sp
-&function_end_A();
 
 &set_label("K512",64);	# Yes! I keep it in the code segment!
 	&data_word(0xd728ae22,0x428a2f98);	# u64
@@ -917,9 +807,8 @@ sub BODY_00_15_ssse3 {		# "phase-less" copy of BODY_00_15_sse2
 
 	&data_word(0x04050607,0x00010203);	# byte swap
 	&data_word(0x0c0d0e0f,0x08090a0b);	# mask
-&function_end_B("sha512_block_data_order");
 &asciz("SHA512 block transform for x86, CRYPTOGAMS by <appro\@openssl.org>");
 
 &asm_finish();
 
-close STDOUT or die "error closing STDOUT";
+close STDOUT or die "error closing STDOUT: $!";

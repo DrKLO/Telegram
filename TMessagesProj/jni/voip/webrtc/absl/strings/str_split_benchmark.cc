@@ -14,6 +14,7 @@
 
 #include "absl/strings/str_split.h"
 
+#include <cstddef>
 #include <iterator>
 #include <string>
 #include <unordered_map>

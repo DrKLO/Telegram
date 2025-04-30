@@ -18,33 +18,47 @@
 #include <string>
 
 #include "absl/base/config.h"
+#include "absl/types/optional.h"  // IWYU pragma: keep
 
 #if defined(__aarch64__) && defined(__linux__)
 #include <asm/hwcap.h>
 #include <sys/auxv.h>
 #endif
 
+#if defined(__aarch64__) && defined(__APPLE__)
+#if defined(__has_include) && __has_include(<arm/cpu_capabilities_public.h>)
+#include <arm/cpu_capabilities_public.h>
+#endif
+#include <sys/sysctl.h>
+#include <sys/types.h>
+#endif
+
+#if defined(_WIN32) || defined(_WIN64)
+#include <intrin.h>
+#endif
+
+#if defined(__x86_64__) || defined(_M_X64)
+#if ABSL_HAVE_BUILTIN(__cpuid)
+// MSVC-equivalent __cpuid intrinsic declaration for clang-like compilers
+// for non-Windows build environments.
+extern void __cpuid(int[4], int);
+#elif !defined(_WIN32) && !defined(_WIN64)
+// MSVC defines this function for us.
+// https://learn.microsoft.com/en-us/cpp/intrinsics/cpuid-cpuidex
+static void __cpuid(int cpu_info[4], int info_type) {
+  __asm__ volatile("cpuid \n\t"
+                   : "=a"(cpu_info[0]), "=b"(cpu_info[1]), "=c"(cpu_info[2]),
+                     "=d"(cpu_info[3])
+                   : "a"(info_type), "c"(0));
+}
+#endif  // !defined(_WIN32) && !defined(_WIN64)
+#endif  // defined(__x86_64__) || defined(_M_X64)
+
 namespace absl {
 ABSL_NAMESPACE_BEGIN
 namespace crc_internal {
 
-#if defined(__x86_64__)
-
-// Inline cpuid instruction. %rbx is occasionally used to address stack
-// variables in presence of dynamic allocas. Preserve the %rbx register via
-// %rdi to work around a clang bug https://bugs.llvm.org/show_bug.cgi?id=17907
-// (%rbx in an output constraint is not considered a clobbered register).
-//
-// a_inp and c_inp are the input parameters eax and ecx of the CPUID
-// instruction.
-// a, b, c, and d contain the contents of eax, ebx, ecx, and edx as returned by
-// the CPUID instruction
-#define ABSL_INTERNAL_GETCPUID(a, b, c, d, a_inp, c_inp) \
-  asm("mov %%rbx, %%rdi\n"                               \
-      "cpuid\n"                                          \
-      "xchg %%rdi, %%rbx\n"                              \
-      : "=a"(a), "=D"(b), "=c"(c), "=d"(d)               \
-      : "a"(a_inp), "2"(c_inp))
+#if defined(__x86_64__) || defined(_M_X64)
 
 namespace {
 
@@ -55,17 +69,17 @@ enum class Vendor {
 };
 
 Vendor GetVendor() {
-  uint32_t eax, ebx, ecx, edx;
+  // Get the vendor string (issue CPUID with eax = 0).
+  int cpu_info[4];
+  __cpuid(cpu_info, 0);
 
-  // Get vendor string (issue CPUID with eax = 0)
-  ABSL_INTERNAL_GETCPUID(eax, ebx, ecx, edx, 0, 0);
   std::string vendor;
-  vendor.append(reinterpret_cast<char*>(&ebx), 4);
-  vendor.append(reinterpret_cast<char*>(&edx), 4);
-  vendor.append(reinterpret_cast<char*>(&ecx), 4);
+  vendor.append(reinterpret_cast<char*>(&cpu_info[1]), 4);
+  vendor.append(reinterpret_cast<char*>(&cpu_info[3]), 4);
+  vendor.append(reinterpret_cast<char*>(&cpu_info[2]), 4);
   if (vendor == "GenuineIntel") {
     return Vendor::kIntel;
-  } else if (vendor == "AuthenticAmd") {
+  } else if (vendor == "AuthenticAMD") {
     return Vendor::kAmd;
   } else {
     return Vendor::kUnknown;
@@ -73,13 +87,14 @@ Vendor GetVendor() {
 }
 
 CpuType GetIntelCpuType() {
-  uint32_t eax, ebx, ecx, edx;
-  // to get general information and extended features we send eax = 1 and
+  // To get general information and extended features we send eax = 1 and
   // ecx = 0 to cpuid.  The response is returned in eax, ebx, ecx and edx.
   // (See Intel 64 and IA-32 Architectures Software Developer's Manual
   // Volume 2A: Instruction Set Reference, A-M CPUID).
   // https://www.intel.com/content/www/us/en/architecture-and-technology/64-ia-32-architectures-software-developer-vol-2a-manual.html
-  ABSL_INTERNAL_GETCPUID(eax, ebx, ecx, edx, 1, 0);
+  // https://learn.microsoft.com/en-us/cpp/intrinsics/cpuid-cpuidex
+  int cpu_info[4];
+  __cpuid(cpu_info, 1);
 
   // Response in eax bits as follows:
   // 0-3 (stepping id)
@@ -89,12 +104,12 @@ CpuType GetIntelCpuType() {
   // 16-19 (extended model)
   // 20-27 (extended family)
 
-  int family = (eax >> 8) & 0x0f;
-  int model_num = (eax >> 4) & 0x0f;
-  int ext_family = (eax >> 20) & 0xff;
-  int ext_model_num = (eax >> 16) & 0x0f;
+  int family = (cpu_info[0] >> 8) & 0x0f;
+  int model_num = (cpu_info[0] >> 4) & 0x0f;
+  int ext_family = (cpu_info[0] >> 20) & 0xff;
+  int ext_model_num = (cpu_info[0] >> 16) & 0x0f;
 
-  int brand_id = ebx & 0xff;
+  int brand_id = cpu_info[1] & 0xff;
 
   // Process the extended family and model info if necessary
   if (family == 0x0f) {
@@ -123,7 +138,7 @@ CpuType GetIntelCpuType() {
             case 0x56:  // BroadwellDE
               return CpuType::kIntelBroadwell;
             case 0x55:                 // Skylake Xeon
-              if ((eax & 0x0f) < 5) {  // stepping < 5 is skylake
+              if ((cpu_info[0] & 0x0f) < 5) {  // stepping < 5 is skylake
                 return CpuType::kIntelSkylakeXeon;
               } else {  // stepping >= 5 is cascadelake
                 return CpuType::kIntelCascadelakeXeon;
@@ -142,12 +157,13 @@ CpuType GetIntelCpuType() {
 }
 
 CpuType GetAmdCpuType() {
-  uint32_t eax, ebx, ecx, edx;
-  // to get general information and extended features we send eax = 1 and
+  // To get general information and extended features we send eax = 1 and
   // ecx = 0 to cpuid.  The response is returned in eax, ebx, ecx and edx.
   // (See Intel 64 and IA-32 Architectures Software Developer's Manual
   // Volume 2A: Instruction Set Reference, A-M CPUID).
-  ABSL_INTERNAL_GETCPUID(eax, ebx, ecx, edx, 1, 0);
+  // https://learn.microsoft.com/en-us/cpp/intrinsics/cpuid-cpuidex
+  int cpu_info[4];
+  __cpuid(cpu_info, 1);
 
   // Response in eax bits as follows:
   // 0-3 (stepping id)
@@ -157,10 +173,10 @@ CpuType GetAmdCpuType() {
   // 16-19 (extended model)
   // 20-27 (extended family)
 
-  int family = (eax >> 8) & 0x0f;
-  int model_num = (eax >> 4) & 0x0f;
-  int ext_family = (eax >> 20) & 0xff;
-  int ext_model_num = (eax >> 16) & 0x0f;
+  int family = (cpu_info[0] >> 8) & 0x0f;
+  int model_num = (cpu_info[0] >> 4) & 0x0f;
+  int ext_family = (cpu_info[0] >> 20) & 0xff;
+  int ext_model_num = (cpu_info[0] >> 16) & 0x0f;
 
   if (family == 0x0f) {
     family += ext_family;
@@ -182,8 +198,14 @@ CpuType GetAmdCpuType() {
       break;
     case 0x19:
       switch (model_num) {
+        case 0x0:  // Stepping Ax
         case 0x1:  // Stepping B0
           return CpuType::kAmdMilan;
+        case 0x10:  // Stepping A0
+        case 0x11:  // Stepping B0
+          return CpuType::kAmdGenoa;
+        case 0x44:  // Stepping A0
+          return CpuType::kAmdRyzenV3000;
         default:
           return CpuType::kUnknown;
       }
@@ -210,6 +232,10 @@ bool SupportsArmCRC32PMULL() { return false; }
 
 #elif defined(__aarch64__) && defined(__linux__)
 
+#ifndef HWCAP_CPUID
+#define HWCAP_CPUID (1 << 11)
+#endif
+
 #define ABSL_INTERNAL_AARCH64_ID_REG_READ(id, val) \
   asm("mrs %0, " #id : "=r"(val))
 
@@ -226,16 +252,81 @@ CpuType GetCpuType() {
     ABSL_INTERNAL_AARCH64_ID_REG_READ(MIDR_EL1, midr);
     uint32_t implementer = (midr >> 24) & 0xff;
     uint32_t part_number = (midr >> 4) & 0xfff;
-    if (implementer == 0x41 && part_number == 0xd0c) {
-      return CpuType::kArmNeoverseN1;
+    switch (implementer) {
+      case 0x41:
+        switch (part_number) {
+          case 0xd0c: return CpuType::kArmNeoverseN1;
+          case 0xd40: return CpuType::kArmNeoverseV1;
+          case 0xd49: return CpuType::kArmNeoverseN2;
+          case 0xd4f: return CpuType::kArmNeoverseV2;
+          default:
+            return CpuType::kUnknown;
+        }
+        break;
+      case 0xc0:
+        switch (part_number) {
+          case 0xac3: return CpuType::kAmpereSiryn;
+          default:
+            return CpuType::kUnknown;
+        }
+        break;
+      default:
+        return CpuType::kUnknown;
     }
   }
   return CpuType::kUnknown;
 }
 
 bool SupportsArmCRC32PMULL() {
+#if defined(HWCAP_CRC32) && defined(HWCAP_PMULL)
   uint64_t hwcaps = getauxval(AT_HWCAP);
   return (hwcaps & HWCAP_CRC32) && (hwcaps & HWCAP_PMULL);
+#else
+  return false;
+#endif
+}
+
+#elif defined(__aarch64__) && defined(__APPLE__)
+
+CpuType GetCpuType() { return CpuType::kUnknown; }
+
+template <typename T>
+static absl::optional<T> ReadSysctlByName(const char* name) {
+  T val;
+  size_t val_size = sizeof(T);
+  int ret = sysctlbyname(name, &val, &val_size, nullptr, 0);
+  if (ret == -1) {
+    return absl::nullopt;
+  }
+  return val;
+}
+
+bool SupportsArmCRC32PMULL() {
+  // Newer XNU kernels support querying all capabilities in a single
+  // sysctlbyname.
+#if defined(CAP_BIT_CRC32) && defined(CAP_BIT_FEAT_PMULL)
+  static const absl::optional<uint64_t> caps =
+      ReadSysctlByName<uint64_t>("hw.optional.arm.caps");
+  if (caps.has_value()) {
+    constexpr uint64_t kCrc32AndPmullCaps =
+        (uint64_t{1} << CAP_BIT_CRC32) | (uint64_t{1} << CAP_BIT_FEAT_PMULL);
+    return (*caps & kCrc32AndPmullCaps) == kCrc32AndPmullCaps;
+  }
+#endif
+
+  // https://developer.apple.com/documentation/kernel/1387446-sysctlbyname/determining_instruction_set_characteristics#3915619
+  static const absl::optional<int> armv8_crc32 =
+      ReadSysctlByName<int>("hw.optional.armv8_crc32");
+  if (armv8_crc32.value_or(0) == 0) {
+    return false;
+  }
+  // https://developer.apple.com/documentation/kernel/1387446-sysctlbyname/determining_instruction_set_characteristics#3918855
+  static const absl::optional<int> feat_pmull =
+      ReadSysctlByName<int>("hw.optional.arm.FEAT_PMULL");
+  if (feat_pmull.value_or(0) == 0) {
+    return false;
+  }
+  return true;
 }
 
 #else

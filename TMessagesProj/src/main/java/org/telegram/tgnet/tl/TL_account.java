@@ -3204,7 +3204,7 @@ public class TL_account {
         public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
             flags = deleted ? (flags | 2) : (flags &~ 2);
-            flags = rights != null ? (flags | 1) : (flags &~ 2);
+            flags = rights != null ? (flags | 1) : (flags &~ 1);
             stream.writeInt32(flags);
             if ((flags & 1) != 0) {
                 rights.serializeToStream(stream);

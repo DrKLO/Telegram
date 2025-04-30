@@ -32,7 +32,6 @@ AudioState::AudioState(const AudioState::Config& config)
       audio_transport_(config_.audio_mixer.get(),
                        config_.audio_processing.get(),
                        config_.async_audio_processing_factory.get()) {
-  process_thread_checker_.Detach();
   RTC_DCHECK(config_.audio_mixer);
   RTC_DCHECK(config_.audio_device_module);
 }

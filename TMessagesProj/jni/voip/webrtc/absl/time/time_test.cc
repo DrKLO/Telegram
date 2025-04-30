@@ -13,21 +13,36 @@
 // limitations under the License.
 
 #include "absl/time/time.h"
+#include "absl/time/civil_time.h"
 
 #if defined(_MSC_VER)
 #include <winsock2.h>  // for timeval
 #endif
 
+#include "absl/base/config.h"
+
+// For feature testing and determining which headers can be included.
+#if ABSL_INTERNAL_CPLUSPLUS_LANG >= 202002L
+#include <version>
+#endif
+
 #include <chrono>  // NOLINT(build/c++11)
+#ifdef __cpp_lib_three_way_comparison
+#include <compare>
+#endif  // __cpp_lib_three_way_comparison
+#include <cstdint>
 #include <cstring>
 #include <ctime>
 #include <iomanip>
+#include <ios>
 #include <limits>
 #include <string>
+#include <type_traits>
 
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "absl/numeric/int128.h"
+#include "absl/strings/str_format.h"
 #include "absl/time/clock.h"
 #include "absl/time/internal/test_util.h"
 
@@ -75,22 +90,24 @@ MATCHER_P(TimevalMatcher, tv, "") {
 }
 
 TEST(Time, ConstExpr) {
+  static_assert(std::is_trivially_destructible<absl::Time>::value,
+                "Time is documented as being trivially destructible");
   constexpr absl::Time t0 = absl::UnixEpoch();
-  static_assert(t0 == absl::Time(), "UnixEpoch");
+  static_assert(t0 == absl::UnixEpoch(), "UnixEpoch");
   constexpr absl::Time t1 = absl::InfiniteFuture();
-  static_assert(t1 != absl::Time(), "InfiniteFuture");
+  static_assert(t1 != absl::UnixEpoch(), "InfiniteFuture");
   constexpr absl::Time t2 = absl::InfinitePast();
-  static_assert(t2 != absl::Time(), "InfinitePast");
+  static_assert(t2 != absl::UnixEpoch(), "InfinitePast");
   constexpr absl::Time t3 = absl::FromUnixNanos(0);
-  static_assert(t3 == absl::Time(), "FromUnixNanos");
+  static_assert(t3 == absl::UnixEpoch(), "FromUnixNanos");
   constexpr absl::Time t4 = absl::FromUnixMicros(0);
-  static_assert(t4 == absl::Time(), "FromUnixMicros");
+  static_assert(t4 == absl::UnixEpoch(), "FromUnixMicros");
   constexpr absl::Time t5 = absl::FromUnixMillis(0);
-  static_assert(t5 == absl::Time(), "FromUnixMillis");
+  static_assert(t5 == absl::UnixEpoch(), "FromUnixMillis");
   constexpr absl::Time t6 = absl::FromUnixSeconds(0);
-  static_assert(t6 == absl::Time(), "FromUnixSeconds");
+  static_assert(t6 == absl::UnixEpoch(), "FromUnixSeconds");
   constexpr absl::Time t7 = absl::FromTimeT(0);
-  static_assert(t7 == absl::Time(), "FromTimeT");
+  static_assert(t7 == absl::UnixEpoch(), "FromTimeT");
 }
 
 TEST(Time, ValueSemantics) {
@@ -175,7 +192,7 @@ TEST(Time, RelationalOperators) {
   constexpr absl::Time t2 = absl::FromUnixNanos(1);
   constexpr absl::Time t3 = absl::FromUnixNanos(2);
 
-  static_assert(absl::Time() == t1, "");
+  static_assert(absl::UnixEpoch() == t1, "");
   static_assert(t1 == t1, "");
   static_assert(t2 == t2, "");
   static_assert(t3 == t3, "");
@@ -201,6 +218,22 @@ TEST(Time, RelationalOperators) {
   static_assert(t3 >= t2, "");
   static_assert(t1 >= t1, "");
   static_assert(t3 >= t1, "");
+
+#ifdef ABSL_INTERNAL_TIME_HAS_THREE_WAY_COMPARISON
+
+  static_assert((t1 <=> t1) == std::strong_ordering::equal, "");
+  static_assert((t2 <=> t2) == std::strong_ordering::equal, "");
+  static_assert((t3 <=> t3) == std::strong_ordering::equal, "");
+
+  static_assert((t1 <=> t2) == std::strong_ordering::less, "");
+  static_assert((t2 <=> t3) == std::strong_ordering::less, "");
+  static_assert((t1 <=> t3) == std::strong_ordering::less, "");
+
+  static_assert((t2 <=> t1) == std::strong_ordering::greater, "");
+  static_assert((t3 <=> t2) == std::strong_ordering::greater, "");
+  static_assert((t3 <=> t1) == std::strong_ordering::greater, "");
+
+#endif  // ABSL_INTERNAL_TIME_HAS_THREE_WAY_COMPARISON
 }
 
 TEST(Time, Infinity) {
@@ -211,6 +244,15 @@ TEST(Time, Infinity) {
   static_assert(ipast == ipast, "");
   static_assert(ipast < ifuture, "");
   static_assert(ifuture > ipast, "");
+
+#ifdef ABSL_INTERNAL_TIME_HAS_THREE_WAY_COMPARISON
+
+  static_assert((ifuture <=> ifuture) == std::strong_ordering::equal, "");
+  static_assert((ipast <=> ipast) == std::strong_ordering::equal, "");
+  static_assert((ipast <=> ifuture) == std::strong_ordering::less, "");
+  static_assert((ifuture <=> ipast) == std::strong_ordering::greater, "");
+
+#endif  // ABSL_INTERNAL_TIME_HAS_THREE_WAY_COMPARISON
 
   // Arithmetic saturates
   EXPECT_EQ(ifuture, ifuture + absl::Seconds(1));
@@ -226,6 +268,15 @@ TEST(Time, Infinity) {
   constexpr absl::Time t = absl::UnixEpoch();  // Any finite time.
   static_assert(t < ifuture, "");
   static_assert(t > ipast, "");
+
+#ifdef ABSL_INTERNAL_TIME_HAS_THREE_WAY_COMPARISON
+
+  static_assert((t <=> ifuture) == std::strong_ordering::less, "");
+  static_assert((t <=> ipast) == std::strong_ordering::greater, "");
+  static_assert((ipast <=> t) == std::strong_ordering::less, "");
+  static_assert((ifuture <=> t) == std::strong_ordering::greater, "");
+
+#endif  // ABSL_INTERNAL_TIME_HAS_THREE_WAY_COMPARISON
 
   EXPECT_EQ(ifuture, t + absl::InfiniteDuration());
   EXPECT_EQ(ipast, t - absl::InfiniteDuration());
@@ -254,7 +305,7 @@ TEST(Time, FloorConversion) {
   EXPECT_EQ(1, absl::ToUnixNanos(absl::UnixEpoch() + absl::Nanoseconds(3) / 2));
   EXPECT_EQ(1, absl::ToUnixNanos(absl::UnixEpoch() + absl::Nanoseconds(1)));
   EXPECT_EQ(0, absl::ToUnixNanos(absl::UnixEpoch() + absl::Nanoseconds(1) / 2));
-  EXPECT_EQ(0, absl::ToUnixNanos(absl::UnixEpoch() + absl::Nanoseconds(0)));
+  EXPECT_EQ(0, absl::ToUnixNanos(absl::UnixEpoch() + absl::ZeroDuration()));
   EXPECT_EQ(-1,
             absl::ToUnixNanos(absl::UnixEpoch() - absl::Nanoseconds(1) / 2));
   EXPECT_EQ(-1, absl::ToUnixNanos(absl::UnixEpoch() - absl::Nanoseconds(1)));
@@ -271,7 +322,7 @@ TEST(Time, FloorConversion) {
   EXPECT_EQ(0,
             absl::ToUniversal(absl::UniversalEpoch() + absl::Nanoseconds(1)));
   EXPECT_EQ(0,
-            absl::ToUniversal(absl::UniversalEpoch() + absl::Nanoseconds(0)));
+            absl::ToUniversal(absl::UniversalEpoch() + absl::ZeroDuration()));
   EXPECT_EQ(-1,
             absl::ToUniversal(absl::UniversalEpoch() + absl::Nanoseconds(-1)));
   EXPECT_EQ(-1,
@@ -288,13 +339,13 @@ TEST(Time, FloorConversion) {
   } to_ts[] = {
       {absl::FromUnixSeconds(1) + absl::Nanoseconds(1), {1, 1}},
       {absl::FromUnixSeconds(1) + absl::Nanoseconds(1) / 2, {1, 0}},
-      {absl::FromUnixSeconds(1) + absl::Nanoseconds(0), {1, 0}},
-      {absl::FromUnixSeconds(0) + absl::Nanoseconds(0), {0, 0}},
+      {absl::FromUnixSeconds(1) + absl::ZeroDuration(), {1, 0}},
+      {absl::FromUnixSeconds(0) + absl::ZeroDuration(), {0, 0}},
       {absl::FromUnixSeconds(0) - absl::Nanoseconds(1) / 2, {-1, 999999999}},
       {absl::FromUnixSeconds(0) - absl::Nanoseconds(1), {-1, 999999999}},
       {absl::FromUnixSeconds(-1) + absl::Nanoseconds(1), {-1, 1}},
       {absl::FromUnixSeconds(-1) + absl::Nanoseconds(1) / 2, {-1, 0}},
-      {absl::FromUnixSeconds(-1) + absl::Nanoseconds(0), {-1, 0}},
+      {absl::FromUnixSeconds(-1) + absl::ZeroDuration(), {-1, 0}},
       {absl::FromUnixSeconds(-1) - absl::Nanoseconds(1) / 2, {-2, 999999999}},
   };
   for (const auto& test : to_ts) {
@@ -305,12 +356,12 @@ TEST(Time, FloorConversion) {
     absl::Time t;
   } from_ts[] = {
       {{1, 1}, absl::FromUnixSeconds(1) + absl::Nanoseconds(1)},
-      {{1, 0}, absl::FromUnixSeconds(1) + absl::Nanoseconds(0)},
-      {{0, 0}, absl::FromUnixSeconds(0) + absl::Nanoseconds(0)},
+      {{1, 0}, absl::FromUnixSeconds(1) + absl::ZeroDuration()},
+      {{0, 0}, absl::FromUnixSeconds(0) + absl::ZeroDuration()},
       {{0, -1}, absl::FromUnixSeconds(0) - absl::Nanoseconds(1)},
       {{-1, 999999999}, absl::FromUnixSeconds(0) - absl::Nanoseconds(1)},
       {{-1, 1}, absl::FromUnixSeconds(-1) + absl::Nanoseconds(1)},
-      {{-1, 0}, absl::FromUnixSeconds(-1) + absl::Nanoseconds(0)},
+      {{-1, 0}, absl::FromUnixSeconds(-1) + absl::ZeroDuration()},
       {{-1, -1}, absl::FromUnixSeconds(-1) - absl::Nanoseconds(1)},
       {{-2, 999999999}, absl::FromUnixSeconds(-1) - absl::Nanoseconds(1)},
   };
@@ -318,36 +369,36 @@ TEST(Time, FloorConversion) {
     EXPECT_EQ(test.t, absl::TimeFromTimespec(test.ts));
   }
 
-  // Tests ToTimeval()/TimeFromTimeval() (same as timespec above)
+  // Tests  absl::ToTimeval()/TimeFromTimeval() (same as timespec above)
   const struct {
     absl::Time t;
     timeval tv;
   } to_tv[] = {
       {absl::FromUnixSeconds(1) + absl::Microseconds(1), {1, 1}},
       {absl::FromUnixSeconds(1) + absl::Microseconds(1) / 2, {1, 0}},
-      {absl::FromUnixSeconds(1) + absl::Microseconds(0), {1, 0}},
-      {absl::FromUnixSeconds(0) + absl::Microseconds(0), {0, 0}},
+      {absl::FromUnixSeconds(1) + absl::ZeroDuration(), {1, 0}},
+      {absl::FromUnixSeconds(0) + absl::ZeroDuration(), {0, 0}},
       {absl::FromUnixSeconds(0) - absl::Microseconds(1) / 2, {-1, 999999}},
       {absl::FromUnixSeconds(0) - absl::Microseconds(1), {-1, 999999}},
       {absl::FromUnixSeconds(-1) + absl::Microseconds(1), {-1, 1}},
       {absl::FromUnixSeconds(-1) + absl::Microseconds(1) / 2, {-1, 0}},
-      {absl::FromUnixSeconds(-1) + absl::Microseconds(0), {-1, 0}},
+      {absl::FromUnixSeconds(-1) + absl::ZeroDuration(), {-1, 0}},
       {absl::FromUnixSeconds(-1) - absl::Microseconds(1) / 2, {-2, 999999}},
   };
   for (const auto& test : to_tv) {
-    EXPECT_THAT(ToTimeval(test.t), TimevalMatcher(test.tv));
+    EXPECT_THAT(absl::ToTimeval(test.t), TimevalMatcher(test.tv));
   }
   const struct {
     timeval tv;
     absl::Time t;
   } from_tv[] = {
       {{1, 1}, absl::FromUnixSeconds(1) + absl::Microseconds(1)},
-      {{1, 0}, absl::FromUnixSeconds(1) + absl::Microseconds(0)},
-      {{0, 0}, absl::FromUnixSeconds(0) + absl::Microseconds(0)},
+      {{1, 0}, absl::FromUnixSeconds(1) + absl::ZeroDuration()},
+      {{0, 0}, absl::FromUnixSeconds(0) + absl::ZeroDuration()},
       {{0, -1}, absl::FromUnixSeconds(0) - absl::Microseconds(1)},
       {{-1, 999999}, absl::FromUnixSeconds(0) - absl::Microseconds(1)},
       {{-1, 1}, absl::FromUnixSeconds(-1) + absl::Microseconds(1)},
-      {{-1, 0}, absl::FromUnixSeconds(-1) + absl::Microseconds(0)},
+      {{-1, 0}, absl::FromUnixSeconds(-1) + absl::ZeroDuration()},
       {{-1, -1}, absl::FromUnixSeconds(-1) - absl::Microseconds(1)},
       {{-2, 999999}, absl::FromUnixSeconds(-1) - absl::Microseconds(1)},
   };
@@ -377,11 +428,6 @@ TEST(Time, FloorConversion) {
 }
 
 TEST(Time, RoundtripConversion) {
-#if defined(ABSL_SKIP_TIME_TESTS_BROKEN_ON_MSVC_OPT) && \
-    ABSL_SKIP_TIME_TESTS_BROKEN_ON_MSVC_OPT
-  GTEST_SKIP();
-#endif
-
 #define TEST_CONVERSION_ROUND_TRIP(SOURCE, FROM, TO, MATCHER) \
   EXPECT_THAT(TO(FROM(SOURCE)), MATCHER(SOURCE))
 
@@ -442,7 +488,7 @@ TEST(Time, RoundtripConversion) {
                              testing::Eq)
       << now_time_t;
 
-  // TimeFromTimeval() and ToTimeval()
+  // TimeFromTimeval() and  absl::ToTimeval()
   timeval tv;
   tv.tv_sec = -1;
   tv.tv_usec = 0;
@@ -563,11 +609,6 @@ TEST(Time, FromChrono) {
 }
 
 TEST(Time, ToChronoTime) {
-#if defined(ABSL_SKIP_TIME_TESTS_BROKEN_ON_MSVC_OPT) && \
-    ABSL_SKIP_TIME_TESTS_BROKEN_ON_MSVC_OPT
-  GTEST_SKIP();
-#endif
-
   EXPECT_EQ(std::chrono::system_clock::from_time_t(-1),
             absl::ToChronoTime(absl::FromTimeT(-1)));
   EXPECT_EQ(std::chrono::system_clock::from_time_t(0),
@@ -732,14 +773,14 @@ TEST(Time, FromCivilUTC) {
 TEST(Time, ToTM) {
   const absl::TimeZone utc = absl::UTCTimeZone();
 
-  // Compares the results of ToTM() to gmtime_r() for lots of times over the
-  // course of a few days.
+  // Compares the results of absl::ToTM() to gmtime_r() for lots of times over
+  // the course of a few days.
   const absl::Time start =
       absl::FromCivil(absl::CivilSecond(2014, 1, 2, 3, 4, 5), utc);
   const absl::Time end =
       absl::FromCivil(absl::CivilSecond(2014, 1, 5, 3, 4, 5), utc);
   for (absl::Time t = start; t < end; t += absl::Seconds(30)) {
-    const struct tm tm_bt = ToTM(t, utc);
+    const struct tm tm_bt = absl::ToTM(t, utc);
     const time_t tt = absl::ToTimeT(t);
     struct tm tm_lc;
 #ifdef _WIN32
@@ -764,16 +805,16 @@ TEST(Time, ToTM) {
   const absl::TimeZone nyc =
       absl::time_internal::LoadTimeZone("America/New_York");
   absl::Time t = absl::FromCivil(absl::CivilSecond(2014, 3, 1, 0, 0, 0), nyc);
-  struct tm tm = ToTM(t, nyc);
+  struct tm tm = absl::ToTM(t, nyc);
   EXPECT_FALSE(tm.tm_isdst);
 
   // Checks that the tm_isdst field is correct when in daylight time.
   t = absl::FromCivil(absl::CivilSecond(2014, 4, 1, 0, 0, 0), nyc);
-  tm = ToTM(t, nyc);
+  tm = absl::ToTM(t, nyc);
   EXPECT_TRUE(tm.tm_isdst);
 
   // Checks overflow.
-  tm = ToTM(absl::InfiniteFuture(), nyc);
+  tm = absl::ToTM(absl::InfiniteFuture(), nyc);
   EXPECT_EQ(std::numeric_limits<int>::max() - 1900, tm.tm_year);
   EXPECT_EQ(11, tm.tm_mon);
   EXPECT_EQ(31, tm.tm_mday);
@@ -785,7 +826,7 @@ TEST(Time, ToTM) {
   EXPECT_FALSE(tm.tm_isdst);
 
   // Checks underflow.
-  tm = ToTM(absl::InfinitePast(), nyc);
+  tm = absl::ToTM(absl::InfinitePast(), nyc);
   EXPECT_EQ(std::numeric_limits<int>::min(), tm.tm_year);
   EXPECT_EQ(0, tm.tm_mon);
   EXPECT_EQ(1, tm.tm_mday);
@@ -811,13 +852,13 @@ TEST(Time, FromTM) {
   tm.tm_min = 2;
   tm.tm_sec = 3;
   tm.tm_isdst = -1;
-  absl::Time t = FromTM(tm, nyc);
+  absl::Time t = absl::FromTM(tm, nyc);
   EXPECT_EQ("2014-06-28T01:02:03-04:00", absl::FormatTime(t, nyc));  // DST
   tm.tm_isdst = 0;
-  t = FromTM(tm, nyc);
+  t = absl::FromTM(tm, nyc);
   EXPECT_EQ("2014-06-28T01:02:03-04:00", absl::FormatTime(t, nyc));  // DST
   tm.tm_isdst = 1;
-  t = FromTM(tm, nyc);
+  t = absl::FromTM(tm, nyc);
   EXPECT_EQ("2014-06-28T01:02:03-04:00", absl::FormatTime(t, nyc));  // DST
 
   // Adjusts tm to refer to an ambiguous time.
@@ -828,13 +869,13 @@ TEST(Time, FromTM) {
   tm.tm_min = 30;
   tm.tm_sec = 42;
   tm.tm_isdst = -1;
-  t = FromTM(tm, nyc);
+  t = absl::FromTM(tm, nyc);
   EXPECT_EQ("2014-11-02T01:30:42-04:00", absl::FormatTime(t, nyc));  // DST
   tm.tm_isdst = 0;
-  t = FromTM(tm, nyc);
+  t = absl::FromTM(tm, nyc);
   EXPECT_EQ("2014-11-02T01:30:42-05:00", absl::FormatTime(t, nyc));  // STD
   tm.tm_isdst = 1;
-  t = FromTM(tm, nyc);
+  t = absl::FromTM(tm, nyc);
   EXPECT_EQ("2014-11-02T01:30:42-04:00", absl::FormatTime(t, nyc));  // DST
 
   // Adjusts tm to refer to a skipped time.
@@ -845,13 +886,13 @@ TEST(Time, FromTM) {
   tm.tm_min = 30;
   tm.tm_sec = 42;
   tm.tm_isdst = -1;
-  t = FromTM(tm, nyc);
+  t = absl::FromTM(tm, nyc);
   EXPECT_EQ("2014-03-09T03:30:42-04:00", absl::FormatTime(t, nyc));  // DST
   tm.tm_isdst = 0;
-  t = FromTM(tm, nyc);
+  t = absl::FromTM(tm, nyc);
   EXPECT_EQ("2014-03-09T01:30:42-05:00", absl::FormatTime(t, nyc));  // STD
   tm.tm_isdst = 1;
-  t = FromTM(tm, nyc);
+  t = absl::FromTM(tm, nyc);
   EXPECT_EQ("2014-03-09T03:30:42-04:00", absl::FormatTime(t, nyc));  // DST
 
   // Adjusts tm to refer to a time with a year larger than 2147483647.
@@ -862,7 +903,7 @@ TEST(Time, FromTM) {
   tm.tm_min = 2;
   tm.tm_sec = 3;
   tm.tm_isdst = -1;
-  t = FromTM(tm, absl::UTCTimeZone());
+  t = absl::FromTM(tm, absl::UTCTimeZone());
   EXPECT_EQ("2147483648-06-28T01:02:03+00:00",
             absl::FormatTime(t, absl::UTCTimeZone()));
 
@@ -874,7 +915,7 @@ TEST(Time, FromTM) {
   tm.tm_min = 2;
   tm.tm_sec = 3;
   tm.tm_isdst = -1;
-  t = FromTM(tm, absl::UTCTimeZone());
+  t = absl::FromTM(tm, absl::UTCTimeZone());
   EXPECT_EQ("178958989-08-28T01:02:03+00:00",
             absl::FormatTime(t, absl::UTCTimeZone()));
 }
@@ -887,8 +928,8 @@ TEST(Time, TMRoundTrip) {
   absl::Time start = absl::FromCivil(absl::CivilHour(2014, 3, 9, 0), nyc);
   absl::Time end = absl::FromCivil(absl::CivilHour(2014, 3, 9, 4), nyc);
   for (absl::Time t = start; t < end; t += absl::Minutes(1)) {
-    struct tm tm = ToTM(t, nyc);
-    absl::Time rt = FromTM(tm, nyc);
+    struct tm tm = absl::ToTM(t, nyc);
+    absl::Time rt = absl::FromTM(tm, nyc);
     EXPECT_EQ(rt, t);
   }
 
@@ -896,8 +937,8 @@ TEST(Time, TMRoundTrip) {
   start = absl::FromCivil(absl::CivilHour(2014, 11, 2, 0), nyc);
   end = absl::FromCivil(absl::CivilHour(2014, 11, 2, 4), nyc);
   for (absl::Time t = start; t < end; t += absl::Minutes(1)) {
-    struct tm tm = ToTM(t, nyc);
-    absl::Time rt = FromTM(tm, nyc);
+    struct tm tm = absl::ToTM(t, nyc);
+    absl::Time rt = absl::FromTM(tm, nyc);
     EXPECT_EQ(rt, t);
   }
 
@@ -905,8 +946,8 @@ TEST(Time, TMRoundTrip) {
   start = absl::FromCivil(absl::CivilHour(2014, 6, 27, 22), nyc);
   end = absl::FromCivil(absl::CivilHour(2014, 6, 28, 4), nyc);
   for (absl::Time t = start; t < end; t += absl::Minutes(1)) {
-    struct tm tm = ToTM(t, nyc);
-    absl::Time rt = FromTM(tm, nyc);
+    struct tm tm = absl::ToTM(t, nyc);
+    absl::Time rt = absl::FromTM(tm, nyc);
     EXPECT_EQ(rt, t);
   }
 }
@@ -994,30 +1035,30 @@ TEST(Time, ConversionSaturation) {
   tv.tv_sec = max_timeval_sec;
   tv.tv_usec = 999998;
   t = absl::TimeFromTimeval(tv);
-  tv = ToTimeval(t);
+  tv = absl::ToTimeval(t);
   EXPECT_EQ(max_timeval_sec, tv.tv_sec);
   EXPECT_EQ(999998, tv.tv_usec);
   t += absl::Microseconds(1);
-  tv = ToTimeval(t);
+  tv = absl::ToTimeval(t);
   EXPECT_EQ(max_timeval_sec, tv.tv_sec);
   EXPECT_EQ(999999, tv.tv_usec);
   t += absl::Microseconds(1);  // no effect
-  tv = ToTimeval(t);
+  tv = absl::ToTimeval(t);
   EXPECT_EQ(max_timeval_sec, tv.tv_sec);
   EXPECT_EQ(999999, tv.tv_usec);
 
   tv.tv_sec = min_timeval_sec;
   tv.tv_usec = 1;
   t = absl::TimeFromTimeval(tv);
-  tv = ToTimeval(t);
+  tv = absl::ToTimeval(t);
   EXPECT_EQ(min_timeval_sec, tv.tv_sec);
   EXPECT_EQ(1, tv.tv_usec);
   t -= absl::Microseconds(1);
-  tv = ToTimeval(t);
+  tv = absl::ToTimeval(t);
   EXPECT_EQ(min_timeval_sec, tv.tv_sec);
   EXPECT_EQ(0, tv.tv_usec);
   t -= absl::Microseconds(1);  // no effect
-  tv = ToTimeval(t);
+  tv = absl::ToTimeval(t);
   EXPECT_EQ(min_timeval_sec, tv.tv_sec);
   EXPECT_EQ(0, tv.tv_usec);
 
@@ -1285,6 +1326,13 @@ TEST(Time, PrevTransitionNYC) {
   t = absl::InfiniteFuture();
   EXPECT_TRUE(tz.PrevTransition(t, &trans));
   // We have a transition but we don't know which one.
+}
+
+TEST(Time, AbslStringify) {
+  // FormatTime is already well tested, so just use one test case here to
+  // verify that StrFormat("%v", t) works as expected.
+  absl::Time t = absl::Now();
+  EXPECT_EQ(absl::StrFormat("%v", t), absl::FormatTime(t));
 }
 
 }  // namespace

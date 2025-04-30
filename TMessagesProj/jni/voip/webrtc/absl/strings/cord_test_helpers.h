@@ -51,7 +51,7 @@ enum class TestCordSize {
   // existing inputs rather than copying contents of the input.
   kMedium = cord_internal::kMaxFlatLength / 2 + 1,
 
-  // A string value large enough to cause it to be stored in mutliple flats.
+  // A string value large enough to cause it to be stored in multiple flats.
   kLarge = cord_internal::kMaxFlatLength * 4
 };
 

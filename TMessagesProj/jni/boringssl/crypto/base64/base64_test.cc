@@ -1,16 +1,16 @@
-/* Copyright (c) 2014, Google Inc.
- *
- * Permission to use, copy, modify, and/or distribute this software for any
- * purpose with or without fee is hereby granted, provided that the above
- * copyright notice and this permission notice appear in all copies.
- *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
- * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY
- * SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION
- * OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
- * CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE. */
+// Copyright 2014 The BoringSSL Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 #include <stdio.h>
 #include <string.h>
@@ -45,8 +45,8 @@ struct Base64TestVector {
   const char *encoded;
 };
 
-// Test vectors from RFC 4648.
 static const Base64TestVector kTestVectors[] = {
+    // Test vectors from RFC 4648, section 10.
     {canonical, "", ""},
     {canonical, "f", "Zg==\n"},
     {canonical, "fo", "Zm8=\n"},
@@ -54,12 +54,31 @@ static const Base64TestVector kTestVectors[] = {
     {canonical, "foob", "Zm9vYg==\n"},
     {canonical, "fooba", "Zm9vYmE=\n"},
     {canonical, "foobar", "Zm9vYmFy\n"},
-    {valid, "foobar", "Zm9vYmFy\n\n"},
-    {valid, "foobar", " Zm9vYmFy\n\n"},
-    {valid, "foobar", " Z m 9 v Y m F y\n\n"},
+
     {invalid, "", "Zm9vYmFy=\n"},
     {invalid, "", "Zm9vYmFy==\n"},
     {invalid, "", "Zm9vYmFy===\n"},
+
+    // valid non-canonical encodings due to arbitrary whitespace
+    {valid, "foobar", "Zm9vYmFy\n\n"},
+    {valid, "foobar", " Zm9vYmFy\n\n"},
+    {valid, "foobar", " Z m 9 v Y m F y\n\n"},
+    {valid, "foobar", "Zm9vYmFy\r\n"},
+
+    // The following "valid" encodings are arguably invalid, but they are
+    // commonly accepted by parsers, in particular by OpenSSL.
+    {valid, "v", "dv==\n"},
+    {canonical, "w", "dw==\n"},
+    {valid, "w", "dx==\n"},
+    {valid, "w", "d+==\n"},
+    {valid, "w", "d/==\n"},
+    {invalid, "", "d===\n"},
+    {canonical, "w`", "d2A=\n"},
+    {valid, "w`", "d2B=\n"},
+    {valid, "w`", "d2C=\n"},
+    {valid, "w`", "d2D=\n"},
+    {canonical, "wa", "d2E=\n"},
+
     {invalid, "", "Z"},
     {invalid, "", "Z\n"},
     {invalid, "", "ab!c"},
@@ -105,7 +124,7 @@ static const Base64TestVector kTestVectors[] = {
 
 class Base64Test : public testing::TestWithParam<Base64TestVector> {};
 
-INSTANTIATE_TEST_SUITE_P(, Base64Test, testing::ValuesIn(kTestVectors));
+INSTANTIATE_TEST_SUITE_P(All, Base64Test, testing::ValuesIn(kTestVectors));
 
 // RemoveNewlines returns a copy of |in| with all '\n' characters removed.
 static std::string RemoveNewlines(const char *in) {

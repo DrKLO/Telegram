@@ -780,8 +780,10 @@ public class Bulletin {
         }
 
         public void setTop(boolean top) {
-            this.top = top;
-            updateSize();
+            if (this.top != top) {
+                this.top = top;
+                updateSize();
+            }
         }
 
         private void updateSize() {
@@ -931,7 +933,10 @@ public class Bulletin {
             if (bulletin != null && (delegate == null || delegate.bottomOffsetAnimated()) && bulletin.bottomOffsetSpring != null && bulletin.bottomOffsetSpring.isRunning()) {
                 return bulletin.lastBottomOffset;
             }
-            return delegate.getBottomOffset(bulletin != null ? bulletin.tag : 0);
+            if (delegate != null) {
+                return delegate.getBottomOffset(bulletin != null ? bulletin.tag : 0);
+            }
+            return 0;
         }
 
         public interface Callback {

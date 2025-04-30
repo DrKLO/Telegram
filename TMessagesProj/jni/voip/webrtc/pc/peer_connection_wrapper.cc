@@ -15,6 +15,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/types/optional.h"
 #include "api/function_view.h"
 #include "api/set_remote_description_observer_interface.h"
 #include "pc/sdp_utils.h"
@@ -276,8 +277,7 @@ rtc::scoped_refptr<AudioTrackInterface> PeerConnectionWrapper::CreateAudioTrack(
 
 rtc::scoped_refptr<VideoTrackInterface> PeerConnectionWrapper::CreateVideoTrack(
     const std::string& label) {
-  return pc_factory()->CreateVideoTrack(label,
-                                        FakeVideoTrackSource::Create().get());
+  return pc_factory()->CreateVideoTrack(FakeVideoTrackSource::Create(), label);
 }
 
 rtc::scoped_refptr<RtpSenderInterface> PeerConnectionWrapper::AddTrack(
@@ -312,8 +312,11 @@ rtc::scoped_refptr<RtpSenderInterface> PeerConnectionWrapper::AddVideoTrack(
 }
 
 rtc::scoped_refptr<DataChannelInterface>
-PeerConnectionWrapper::CreateDataChannel(const std::string& label) {
-  auto result = pc()->CreateDataChannelOrError(label, nullptr);
+PeerConnectionWrapper::CreateDataChannel(
+    const std::string& label,
+    const absl::optional<DataChannelInit>& config) {
+  const DataChannelInit* config_ptr = config.has_value() ? &(*config) : nullptr;
+  auto result = pc()->CreateDataChannelOrError(label, config_ptr);
   if (!result.ok()) {
     RTC_LOG(LS_ERROR) << "CreateDataChannel failed: "
                       << ToString(result.error().type()) << " "
@@ -336,8 +339,7 @@ bool PeerConnectionWrapper::IsIceConnected() {
   return observer()->ice_connected_;
 }
 
-rtc::scoped_refptr<const webrtc::RTCStatsReport>
-PeerConnectionWrapper::GetStats() {
+rtc::scoped_refptr<const RTCStatsReport> PeerConnectionWrapper::GetStats() {
   auto callback = rtc::make_ref_counted<MockRTCStatsCollectorCallback>();
   pc()->GetStats(callback.get());
   EXPECT_TRUE_WAIT(callback->called(), kDefaultTimeout);

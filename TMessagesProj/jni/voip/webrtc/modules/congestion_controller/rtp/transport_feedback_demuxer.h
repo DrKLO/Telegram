@@ -17,6 +17,7 @@
 #include "api/sequence_checker.h"
 #include "modules/include/module_common_types_public.h"
 #include "modules/rtp_rtcp/include/rtp_rtcp_defines.h"
+#include "rtc_base/numerics/sequence_number_unwrapper.h"
 #include "rtc_base/system/no_unique_address.h"
 
 namespace webrtc {
@@ -45,7 +46,8 @@ class TransportFeedbackDemuxer final : public StreamFeedbackProvider {
 
  private:
   RTC_NO_UNIQUE_ADDRESS SequenceChecker observer_checker_;
-  SequenceNumberUnwrapper seq_num_unwrapper_ RTC_GUARDED_BY(&observer_checker_);
+  RtpSequenceNumberUnwrapper seq_num_unwrapper_
+      RTC_GUARDED_BY(&observer_checker_);
   std::map<int64_t, StreamFeedbackObserver::StreamPacketInfo> history_
       RTC_GUARDED_BY(&observer_checker_);
 

@@ -52,11 +52,13 @@ class RepeatingTaskHandle {
   // TaskQueue deletes it. It's perfectly fine to destroy the handle while the
   // task is running, since the repeated task is owned by the TaskQueue.
   // The tasks are scheduled onto the task queue using the specified precision.
-  static RepeatingTaskHandle Start(TaskQueueBase* task_queue,
-                                   absl::AnyInvocable<TimeDelta()> closure,
-                                   TaskQueueBase::DelayPrecision precision =
-                                       TaskQueueBase::DelayPrecision::kLow,
-                                   Clock* clock = Clock::GetRealTimeClock());
+  static RepeatingTaskHandle Start(
+      TaskQueueBase* task_queue,
+      absl::AnyInvocable<TimeDelta()> closure,
+      TaskQueueBase::DelayPrecision precision =
+          TaskQueueBase::DelayPrecision::kLow,
+      Clock* clock = Clock::GetRealTimeClock(),
+      const Location& location = Location::Current());
 
   // DelayedStart is equivalent to Start except that the first invocation of the
   // closure will be delayed by the given amount.
@@ -66,7 +68,8 @@ class RepeatingTaskHandle {
       absl::AnyInvocable<TimeDelta()> closure,
       TaskQueueBase::DelayPrecision precision =
           TaskQueueBase::DelayPrecision::kLow,
-      Clock* clock = Clock::GetRealTimeClock());
+      Clock* clock = Clock::GetRealTimeClock(),
+      const Location& location = Location::Current());
 
   // Stops future invocations of the repeating task closure. Can only be called
   // from the TaskQueue where the task is running. The closure is guaranteed to

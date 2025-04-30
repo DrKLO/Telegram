@@ -12,17 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-// This header file contains C++11 versions of standard <utility> header
-// abstractions available within C++14 and C++17, and are designed to be drop-in
+// This header file contains C++14 versions of standard <utility> header
+// abstractions available within C++17, and are designed to be drop-in
 // replacement for code compliant with C++14 and C++17.
 //
 // The following abstractions are defined:
 //
-//   * integer_sequence<T, Ints...>  == std::integer_sequence<T, Ints...>
-//   * index_sequence<Ints...>       == std::index_sequence<Ints...>
-//   * make_integer_sequence<T, N>   == std::make_integer_sequence<T, N>
-//   * make_index_sequence<N>        == std::make_index_sequence<N>
-//   * index_sequence_for<Ts...>     == std::index_sequence_for<Ts...>
 //   * apply<Functor, Tuple>         == std::apply<Functor, Tuple>
 //   * exchange<T>                   == std::exchange<T>
 //   * make_from_tuple<T>            == std::make_from_tuple<T>
@@ -33,7 +28,6 @@
 //
 // References:
 //
-//  https://en.cppreference.com/w/cpp/utility/integer_sequence
 //  https://en.cppreference.com/w/cpp/utility/apply
 //  http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2013/n3658.html
 
@@ -53,67 +47,20 @@
 namespace absl {
 ABSL_NAMESPACE_BEGIN
 
-// integer_sequence
-//
-// Class template representing a compile-time integer sequence. An instantiation
-// of `integer_sequence<T, Ints...>` has a sequence of integers encoded in its
-// type through its template arguments (which is a common need when
-// working with C++11 variadic templates). `absl::integer_sequence` is designed
-// to be a drop-in replacement for C++14's `std::integer_sequence`.
-//
-// Example:
-//
-//   template< class T, T... Ints >
-//   void user_function(integer_sequence<T, Ints...>);
-//
-//   int main()
-//   {
-//     // user_function's `T` will be deduced to `int` and `Ints...`
-//     // will be deduced to `0, 1, 2, 3, 4`.
-//     user_function(make_integer_sequence<int, 5>());
-//   }
-template <typename T, T... Ints>
-struct integer_sequence {
-  using value_type = T;
-  static constexpr size_t size() noexcept { return sizeof...(Ints); }
-};
-
-// index_sequence
-//
-// A helper template for an `integer_sequence` of `size_t`,
-// `absl::index_sequence` is designed to be a drop-in replacement for C++14's
-// `std::index_sequence`.
-template <size_t... Ints>
-using index_sequence = integer_sequence<size_t, Ints...>;
+// Historical note: Abseil once provided implementations of these
+// abstractions for platforms that had not yet provided them. Those
+// platforms are no longer supported. New code should simply use the
+// the ones from std directly.
+using std::exchange;
+using std::forward;
+using std::index_sequence;
+using std::index_sequence_for;
+using std::integer_sequence;
+using std::make_index_sequence;
+using std::make_integer_sequence;
+using std::move;
 
 namespace utility_internal {
-
-template <typename Seq, size_t SeqSize, size_t Rem>
-struct Extend;
-
-// Note that SeqSize == sizeof...(Ints). It's passed explicitly for efficiency.
-template <typename T, T... Ints, size_t SeqSize>
-struct Extend<integer_sequence<T, Ints...>, SeqSize, 0> {
-  using type = integer_sequence<T, Ints..., (Ints + SeqSize)...>;
-};
-
-template <typename T, T... Ints, size_t SeqSize>
-struct Extend<integer_sequence<T, Ints...>, SeqSize, 1> {
-  using type = integer_sequence<T, Ints..., (Ints + SeqSize)..., 2 * SeqSize>;
-};
-
-// Recursion helper for 'make_integer_sequence<T, N>'.
-// 'Gen<T, N>::type' is an alias for 'integer_sequence<T, 0, 1, ... N-1>'.
-template <typename T, size_t N>
-struct Gen {
-  using type =
-      typename Extend<typename Gen<T, N / 2>::type, N / 2, N % 2>::type;
-};
-
-template <typename T>
-struct Gen<T, 0> {
-  using type = integer_sequence<T>;
-};
 
 template <typename T>
 struct InPlaceTypeTag {
@@ -130,32 +77,6 @@ struct InPlaceIndexTag {
 };
 
 }  // namespace utility_internal
-
-// Compile-time sequences of integers
-
-// make_integer_sequence
-//
-// This template alias is equivalent to
-// `integer_sequence<int, 0, 1, ..., N-1>`, and is designed to be a drop-in
-// replacement for C++14's `std::make_integer_sequence`.
-template <typename T, T N>
-using make_integer_sequence = typename utility_internal::Gen<T, N>::type;
-
-// make_index_sequence
-//
-// This template alias is equivalent to `index_sequence<0, 1, ..., N-1>`,
-// and is designed to be a drop-in replacement for C++14's
-// `std::make_index_sequence`.
-template <size_t N>
-using make_index_sequence = make_integer_sequence<size_t, N>;
-
-// index_sequence_for
-//
-// Converts a typename pack into an index sequence of the same length, and
-// is designed to be a drop-in replacement for C++14's
-// `std::index_sequence_for()`
-template <typename... Ts>
-using index_sequence_for = make_index_sequence<sizeof...(Ts)>;
 
 // Tag types
 
@@ -210,27 +131,6 @@ using in_place_index_t = void (*)(utility_internal::InPlaceIndexTag<I>);
 template <size_t I>
 void in_place_index(utility_internal::InPlaceIndexTag<I>) {}
 #endif  // ABSL_USES_STD_VARIANT
-
-// Constexpr move and forward
-
-// move()
-//
-// A constexpr version of `std::move()`, designed to be a drop-in replacement
-// for C++14's `std::move()`.
-template <typename T>
-constexpr absl::remove_reference_t<T>&& move(T&& t) noexcept {
-  return static_cast<absl::remove_reference_t<T>&&>(t);
-}
-
-// forward()
-//
-// A constexpr version of `std::forward()`, designed to be a drop-in replacement
-// for C++14's `std::forward()`.
-template <typename T>
-constexpr T&& forward(
-    absl::remove_reference_t<T>& t) noexcept {  // NOLINT(runtime/references)
-  return static_cast<T&&>(t);
-}
 
 namespace utility_internal {
 // Helper method for expanding tuple into a called method.
@@ -295,26 +195,6 @@ auto apply(Functor&& functor, Tuple&& t)
       absl::forward<Functor>(functor), absl::forward<Tuple>(t),
       absl::make_index_sequence<std::tuple_size<
           typename std::remove_reference<Tuple>::type>::value>{});
-}
-
-// exchange
-//
-// Replaces the value of `obj` with `new_value` and returns the old value of
-// `obj`.  `absl::exchange` is designed to be a drop-in replacement for C++14's
-// `std::exchange`.
-//
-// Example:
-//
-//   Foo& operator=(Foo&& other) {
-//     ptr1_ = absl::exchange(other.ptr1_, nullptr);
-//     int1_ = absl::exchange(other.int1_, -1);
-//     return *this;
-//   }
-template <typename T, typename U = T>
-T exchange(T& obj, U&& new_value) {
-  T old_value = absl::move(obj);
-  obj = absl::forward<U>(new_value);
-  return old_value;
 }
 
 namespace utility_internal {

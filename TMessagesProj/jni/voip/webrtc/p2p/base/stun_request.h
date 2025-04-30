@@ -115,6 +115,12 @@ class StunRequest {
   // Time elapsed since last send (in ms)
   int Elapsed() const;
 
+  // Add method to explitly allow requests w/o password.
+  // - STUN_BINDINGs from StunPort to a stun server
+  // - The initial TURN_ALLOCATE_REQUEST
+  void SetAuthenticationRequired(bool val) { authentication_required_ = val; }
+  bool AuthenticationRequired() const { return authentication_required_; }
+
  protected:
   friend class StunRequestManager;
 
@@ -155,6 +161,7 @@ class StunRequest {
   bool timeout_ RTC_GUARDED_BY(network_thread());
   webrtc::ScopedTaskSafety task_safety_{
       webrtc::PendingTaskSafetyFlag::CreateDetachedInactive()};
+  bool authentication_required_ = true;
 };
 
 }  // namespace cricket

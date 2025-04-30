@@ -40,9 +40,6 @@ class CRC {
  public:
   virtual ~CRC();
 
-  // Place the CRC of the empty string in "*crc"
-  virtual void Empty(uint32_t* crc) const = 0;
-
   // If "*crc" is the CRC of bytestring A, place the CRC of
   // the bytestring formed from the concatenation of A and the "length"
   // bytes at "bytes" into "*crc".
@@ -53,22 +50,17 @@ class CRC {
   // points to an array of "length" zero bytes.
   virtual void ExtendByZeroes(uint32_t* crc, size_t length) const = 0;
 
-  // Inverse opration of ExtendByZeroes.  If `crc` is the CRC value of a string
+  // Inverse operation of ExtendByZeroes.  If `crc` is the CRC value of a string
   // ending in `length` zero bytes, this returns a CRC value of that string
   // with those zero bytes removed.
   virtual void UnextendByZeroes(uint32_t* crc, size_t length) const = 0;
-
-  // If *px is the CRC (as defined by *crc) of some string X,
-  // and y is the CRC of some string Y that is ylen bytes long, set
-  // *px to the CRC of the concatenation of X followed by Y.
-  virtual void Concat(uint32_t* px, uint32_t y, size_t ylen);
 
   // Apply a non-linear transformation to "*crc" so that
   // it is safe to CRC the result with the same polynomial without
   // any reduction of error-detection ability in the outer CRC.
   // Unscramble() performs the inverse transformation.
   // It is strongly recommended that CRCs be scrambled before storage or
-  // transmission, and unscrambled at the other end before futher manipulation.
+  // transmission, and unscrambled at the other end before further manipulation.
   virtual void Scramble(uint32_t* crc) const = 0;
   virtual void Unscramble(uint32_t* crc) const = 0;
 

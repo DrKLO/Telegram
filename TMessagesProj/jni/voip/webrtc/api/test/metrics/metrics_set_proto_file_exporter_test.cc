@@ -146,6 +146,27 @@ TEST_F(MetricsSetProtoFileExporterTest, MetricsAreExportedCorrectly) {
   EXPECT_THAT(actual_metrics_set.metrics(1).stats().max(), Eq(40.0));
 }
 
+TEST_F(MetricsSetProtoFileExporterTest, NoMetricsSetMetadata) {
+  MetricsSetProtoFileExporter::Options options(temp_filename_);
+  MetricsSetProtoFileExporter exporter(options);
+  ASSERT_TRUE(exporter.Export(std::vector<Metric>{}));
+  webrtc::test_metrics::MetricsSet actual_metrics_set;
+  actual_metrics_set.ParseFromString(ReadFileAsString(temp_filename_));
+  EXPECT_EQ(actual_metrics_set.metadata_size(), 0);
+}
+
+TEST_F(MetricsSetProtoFileExporterTest, MetricsSetMetadata) {
+  MetricsSetProtoFileExporter::Options options(
+      temp_filename_, {{"a_metadata_key", "a_metadata_value"}});
+  MetricsSetProtoFileExporter exporter(options);
+  ASSERT_TRUE(exporter.Export(std::vector<Metric>{}));
+  webrtc::test_metrics::MetricsSet actual_metrics_set;
+  actual_metrics_set.ParseFromString(ReadFileAsString(temp_filename_));
+  EXPECT_EQ(actual_metrics_set.metadata_size(), 1);
+  EXPECT_EQ(actual_metrics_set.metadata().at("a_metadata_key"),
+            "a_metadata_value");
+}
+
 }  // namespace
 }  // namespace test
 }  // namespace webrtc

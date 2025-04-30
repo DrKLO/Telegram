@@ -18,6 +18,7 @@
 #include "absl/types/optional.h"
 #include "api/array_view.h"
 #include "modules/audio_processing/aec3/aec3_common.h"
+#include "rtc_base/gtest_prod_util.h"
 #include "rtc_base/system/arch.h"
 
 namespace webrtc {
@@ -105,6 +106,11 @@ class MatchedFilter {
     size_t pre_echo_lag = 0;
   };
 
+  struct PreEchoConfiguration {
+    const float threshold;
+    const int mode;
+  };
+
   MatchedFilter(ApmDataDumper* data_dumper,
                 Aec3Optimization optimization,
                 size_t sub_block_size,
@@ -129,7 +135,7 @@ class MatchedFilter {
               bool use_slow_smoothing);
 
   // Resets the matched filter.
-  void Reset();
+  void Reset(bool full_reset);
 
   // Returns the current lag estimates.
   absl::optional<const MatchedFilter::LagEstimate> GetBestLagEstimate() const {
@@ -147,6 +153,15 @@ class MatchedFilter {
                            size_t downsampling_factor) const;
 
  private:
+  FRIEND_TEST_ALL_PREFIXES(MatchedFilterFieldTrialTest,
+                           PreEchoConfigurationTest);
+  FRIEND_TEST_ALL_PREFIXES(MatchedFilterFieldTrialTest,
+                           WrongPreEchoConfigurationTest);
+
+  // Only for testing. Gets the pre echo detection configuration.
+  const PreEchoConfiguration& GetPreEchoConfiguration() const {
+    return pre_echo_config_;
+  }
   void Dump();
 
   ApmDataDumper* const data_dumper_;
@@ -161,11 +176,13 @@ class MatchedFilter {
   absl::optional<size_t> winner_lag_;
   int last_detected_best_lag_filter_ = -1;
   std::vector<size_t> filters_offsets_;
+  int number_pre_echo_updates_ = 0;
   const float excitation_limit_;
   const float smoothing_fast_;
   const float smoothing_slow_;
   const float matching_filter_threshold_;
   const bool detect_pre_echo_;
+  const PreEchoConfiguration pre_echo_config_;
 };
 
 }  // namespace webrtc

@@ -53,6 +53,13 @@ class MonoVadImpl : public VoiceActivityDetectorWrapper::MonoVad {
 }  // namespace
 
 VoiceActivityDetectorWrapper::VoiceActivityDetectorWrapper(
+    const AvailableCpuFeatures& cpu_features,
+    int sample_rate_hz)
+    : VoiceActivityDetectorWrapper(kVadResetPeriodMs,
+                                   cpu_features,
+                                   sample_rate_hz) {}
+
+VoiceActivityDetectorWrapper::VoiceActivityDetectorWrapper(
     int vad_reset_period_ms,
     const AvailableCpuFeatures& cpu_features,
     int sample_rate_hz)

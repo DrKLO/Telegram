@@ -1,0 +1,10 @@
+chain: target_only.pem
+last_cert_trust: TRUSTED_LEAF
+utc_time: DEFAULT
+key_purpose: SERVER_AUTH
+expected_errors:
+----- Certificate i=0 (CN=Target) -----
+ERROR: Unconsumed critical extension
+  oid: 2A0304
+  value: 01020304
+

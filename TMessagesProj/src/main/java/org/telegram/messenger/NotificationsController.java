@@ -65,6 +65,7 @@ import androidx.core.graphics.ColorUtils;
 import androidx.core.graphics.drawable.IconCompat;
 
 import org.telegram.messenger.support.LongSparseIntArray;
+import org.telegram.messenger.voip.VoIPGroupNotification;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.tl.TL_account;
@@ -917,9 +918,25 @@ public class NotificationsController extends BaseController {
     }
 
     public void processEditedMessages(LongSparseArray<ArrayList<MessageObject>> editedMessages) {
-        if (editedMessages.size() == 0) {
+        if (editedMessages == null || editedMessages.size() == 0) {
             return;
         }
+
+        for (int i = 0; i < editedMessages.size(); ++i) {
+            final ArrayList<MessageObject> messageObjects = editedMessages.valueAt(i);
+            if (messageObjects != null) {
+                for (int j = 0; j < messageObjects.size(); ++j) {
+                    final MessageObject messageObject = messageObjects.get(j);
+                    if (messageObject != null && messageObject.messageOwner != null && messageObject.messageOwner.action instanceof TLRPC.TL_messageActionConferenceCall) {
+                        final TLRPC.TL_messageActionConferenceCall action = (TLRPC.TL_messageActionConferenceCall) messageObject.messageOwner.action;
+                        if (action.active || action.missed) {
+                            VoIPGroupNotification.hide(ApplicationLoader.applicationContext, currentAccount, messageObject.getId());
+                        }
+                    }
+                }
+            }
+        }
+
         ArrayList<MessageObject> popupArrayAdd = new ArrayList<>(0);
         notificationsQueue.postRunnable(() -> {
             boolean updated = false;
@@ -966,6 +983,33 @@ public class NotificationsController extends BaseController {
 
     public void processNewMessages(ArrayList<MessageObject> messageObjects, boolean isLast, boolean isFcm, CountDownLatch countDownLatch) {
         FileLog.d("NotificationsController: processNewMessages msgs.size()=" + (messageObjects == null ? "null" : messageObjects.size()) + " isLast=" + isLast + " isFcm=" + isFcm + ")");
+
+        if (messageObjects != null) {
+            for (int i = 0; i < messageObjects.size(); ++i) {
+                final MessageObject messageObject = messageObjects.get(i);
+                if (messageObject != null && messageObject.messageOwner != null&& !messageObject.isOutOwner() && messageObject.messageOwner.action instanceof TLRPC.TL_messageActionConferenceCall) {
+                    final TLRPC.TL_messageActionConferenceCall action = (TLRPC.TL_messageActionConferenceCall) messageObject.messageOwner.action;
+                    if (!action.active && !action.missed && (getConnectionsManager().getCurrentTime() - messageObject.messageOwner.date) < getMessagesController().callRingTimeout / 1000L) {
+                        final HashSet<Long> ids = new HashSet<>();
+                        ids.add(messageObject.getDialogId());
+                        for (final TLRPC.Peer peer : action.other_participants) {
+                            ids.add(DialogObject.getPeerDialogId(peer));
+                        }
+                        final StringBuilder names = new StringBuilder();
+                        for (final long id : ids) {
+                            if (names.length() > 0) names.append(", ");
+                            names.append(DialogObject.getShortName(currentAccount, id));
+                        }
+                        VoIPGroupNotification.request(ApplicationLoader.applicationContext, currentAccount, messageObject.getDialogId(), names.toString(), action.call_id, messageObject.getId(), action.video);
+                        messageObjects.remove(i);
+                        i--;
+                    } else {
+                        VoIPGroupNotification.hide(ApplicationLoader.applicationContext, currentAccount, messageObject.getId());
+                    }
+                }
+            }
+        }
+
         if (messageObjects.isEmpty()) {
             if (countDownLatch != null) {
                 countDownLatch.countDown();
@@ -1814,6 +1858,12 @@ public class NotificationsController extends BaseController {
                         } else {
                             return LocaleController.getString(R.string.CallMessageIncomingMissed);
                         }
+                    } else if (messageObject.messageOwner.action instanceof TLRPC.TL_messageActionConferenceCall) {
+                        if (messageObject.messageOwner.action.video) {
+                            return LocaleController.getString(R.string.CallMessageVideoIncomingConferenceMissed);
+                        } else {
+                            return LocaleController.getString(R.string.CallMessageIncomingConferenceMissed);
+                        }
                     } else if (messageObject.messageOwner.action instanceof TLRPC.TL_messageActionChatAddUser) {
                         long singleUserId = messageObject.messageOwner.action.user_id;
                         if (singleUserId == 0 && messageObject.messageOwner.action.users.size() == 1) {
@@ -2446,6 +2496,12 @@ public class NotificationsController extends BaseController {
                                 msg = LocaleController.getString(R.string.CallMessageVideoIncomingMissed);
                             } else {
                                 msg = LocaleController.getString(R.string.CallMessageIncomingMissed);
+                            }
+                        } else if (messageObject.messageOwner.action instanceof TLRPC.TL_messageActionConferenceCall) {
+                            if (messageObject.messageOwner.action.video) {
+                                msg = LocaleController.getString(R.string.CallMessageVideoIncomingConferenceMissed);
+                            } else {
+                                msg = LocaleController.getString(R.string.CallMessageIncomingConferenceMissed);
                             }
                         } else if (messageObject.messageOwner.action instanceof TLRPC.TL_messageActionSetChatTheme) {
                             String emoticon = ((TLRPC.TL_messageActionSetChatTheme) messageObject.messageOwner.action).emoticon;

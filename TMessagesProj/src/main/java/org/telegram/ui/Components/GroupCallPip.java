@@ -125,7 +125,7 @@ public class GroupCallPip implements NotificationCenter.NotificationCenterDelega
                     VoIPService voIPService = VoIPService.getSharedInstance();
                     if (voIPService != null && voIPService.isMicMute()) {
                         ChatObject.Call call = voIPService.groupCall;
-                        TLRPC.TL_groupCallParticipant participant = call.participants.get(voIPService.getSelfId());
+                        TLRPC.GroupCallParticipant participant = call.participants.get(voIPService.getSelfId());
                         if (participant != null && !participant.can_self_unmute && participant.muted && !ChatObject.canManageCalls(voIPService.getChat())) {
                             return;
                         }
@@ -691,7 +691,7 @@ public class GroupCallPip implements NotificationCenter.NotificationCenterDelega
                 long selfId = voIPService.getSelfId();
                 for (int a = 0, N = call.sortedParticipants.size(), k = 0; k < 2; a++) {
                     if (a < N) {
-                        TLRPC.TL_groupCallParticipant participant = call.sortedParticipants.get(a);
+                        TLRPC.GroupCallParticipant participant = call.sortedParticipants.get(a);
                         if (MessageObject.getPeerId(participant.peer) == selfId || (SystemClock.uptimeMillis() - participant.lastSpeakTime > 500)) {
                             continue;
                         }

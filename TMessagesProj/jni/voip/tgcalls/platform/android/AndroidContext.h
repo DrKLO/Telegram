@@ -10,14 +10,16 @@ namespace tgcalls {
 
 class AndroidContext final : public PlatformContext {
 public:
-    AndroidContext(JNIEnv *env, jobject instance, bool screencast);
+    AndroidContext(JNIEnv *env, jobject peerInstance, jobject groupInstance, bool screencast);
     ~AndroidContext() override;
 
     jobject getJavaCapturer();
-    jobject getJavaInstance();
+    jobject getJavaPeerInstance();
+    jobject getJavaGroupInstance();
     jclass getJavaCapturerClass();
 
-    void setJavaInstance(JNIEnv *env, jobject instance);
+    void setJavaPeerInstance(JNIEnv *env, jobject instance);
+    void setJavaGroupInstance(JNIEnv *env, jobject instance);
 
     std::vector<std::shared_ptr<BroadcastPartTask>> audioStreamTasks;
     std::vector<std::shared_ptr<BroadcastPartTask>> videoStreamTasks;
@@ -26,7 +28,9 @@ public:
 private:
     jclass VideoCapturerDeviceClass = nullptr;
     jobject javaCapturer = nullptr;
-    jobject javaInstance = nullptr;
+
+    jobject javaPeerInstance = nullptr;
+    jobject javaGroupInstance = nullptr;
 
 };
 

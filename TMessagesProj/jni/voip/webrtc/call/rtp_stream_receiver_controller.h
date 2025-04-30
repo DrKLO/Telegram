@@ -15,6 +15,7 @@
 #include "api/sequence_checker.h"
 #include "call/rtp_demuxer.h"
 #include "call/rtp_stream_receiver_controller_interface.h"
+#include "modules/rtp_rtcp/include/recovered_packet_receiver.h"
 
 namespace webrtc {
 
@@ -24,8 +25,8 @@ class RtpPacketReceived;
 // single RTP session.
 // TODO(bugs.webrtc.org/7135): Add RTCP processing, we should aim to terminate
 // RTCP and not leave any RTCP processing to individual receive streams.
-class RtpStreamReceiverController
-    : public RtpStreamReceiverControllerInterface {
+class RtpStreamReceiverController : public RtpStreamReceiverControllerInterface,
+                                    public RecoveredPacketReceiver {
  public:
   RtpStreamReceiverController();
   ~RtpStreamReceiverController() override;
@@ -37,6 +38,10 @@ class RtpStreamReceiverController
 
   // TODO(bugs.webrtc.org/7135): Not yet responsible for parsing.
   bool OnRtpPacket(const RtpPacketReceived& packet);
+
+  // Implements RecoveredPacketReceiver.
+  // Responsible for demuxing recovered FLEXFEC packets.
+  void OnRecoveredPacket(const RtpPacketReceived& packet) override;
 
  private:
   class Receiver : public RtpStreamReceiverInterface {

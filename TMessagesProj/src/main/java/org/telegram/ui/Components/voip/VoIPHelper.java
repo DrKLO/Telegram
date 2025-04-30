@@ -28,6 +28,7 @@ import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.ContactsController;
+import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.DownloadController;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
@@ -39,6 +40,7 @@ import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.voip.Instance;
 import org.telegram.messenger.voip.VoIPService;
 import org.telegram.tgnet.ConnectionsManager;
+import org.telegram.tgnet.SerializedData;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.tl.TL_phone;
 import org.telegram.ui.AccountFrozenAlert;
@@ -61,6 +63,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Locale;
 import java.util.Set;
 
@@ -161,12 +164,37 @@ public class VoIPHelper {
 		VoIPService voIPService = VoIPService.getSharedInstance();
 		if (voIPService != null) {
 			long newId = user != null ? user.id : -chat.id;
-			long callerId = VoIPService.getSharedInstance().getCallerId();
+			long callerId = voIPService.getCallerId();
 			if (callerId != newId || voIPService.getAccount() != accountInstance.getCurrentAccount()) {
 				String newName;
 				String oldName;
 				int key2;
-				if (callerId > 0) {
+				if (voIPService.isConference()) {
+					StringBuilder sb = new StringBuilder();
+					if (voIPService.groupCall != null) {
+						final int account = voIPService.getAccount();
+						int count = 0;
+						for (int i = 0; i < voIPService.groupCall.participants.size(); ++i) {
+							final TLRPC.GroupCallParticipant participant = voIPService.groupCall.participants.valueAt(i);
+							final long dialogId = DialogObject.getPeerDialogId(participant.peer);
+							if (dialogId != UserConfig.getInstance(account).getClientUserId()) {
+								count++;
+								if (sb.length() > 0) sb.append(", ");
+								sb.append(DialogObject.getShortName(account, dialogId));
+								if (count >= 2) break;
+							}
+						}
+						if (count < voIPService.groupCall.participants.size() - 1) {
+							sb.append(LocaleController.formatPluralString("AndOther", voIPService.groupCall.participants.size() - 1 - count));
+						}
+					}
+					if (newId > 0) {
+						key2 = R.string.VoipOngoingConferenceChatAlert;
+					} else {
+						key2 = R.string.VoipOngoingConferenceChatAlert2;
+					}
+					oldName = sb.toString();
+				} else if (callerId > 0) {
 					TLRPC.User callUser = voIPService.getUser();
 					oldName = ContactsController.formatName(callUser.first_name, callUser.last_name);
 					if (newId > 0) {
@@ -221,6 +249,58 @@ public class VoIPHelper {
 
 	private static void doInitiateCall(TLRPC.User user, TLRPC.Chat chat, String hash, TLRPC.InputPeer peer, boolean hasFewPeers, boolean videoCall, boolean canVideoCall, boolean createCall, Activity activity, BaseFragment fragment, AccountInstance accountInstance, boolean checkJoiner, boolean checkAnonymous) {
 		doInitiateCall(user, chat, hash, peer, hasFewPeers, videoCall, canVideoCall, createCall, activity, fragment, accountInstance,checkJoiner, checkAnonymous, false);
+	}
+
+	public static void joinConference(Activity activity, int account, TLRPC.InputGroupCall inputGroupCall, boolean videoCall, TLRPC.GroupCall preloadedCall) {
+		joinConference(activity, account, inputGroupCall, videoCall, preloadedCall, null);
+	}
+	public static void joinConference(Activity activity, int account, TLRPC.InputGroupCall inputGroupCall, boolean videoCall, TLRPC.GroupCall preloadedCall, HashSet<Long> inviteUsers) {
+		if (activity == null) {
+			return;
+		}
+
+		if (VoIPService.getSharedInstance() != null) {
+			VoIPService.getSharedInstance().hangUp(() -> {
+				lastCallTime = 0;
+				joinConference(activity, account, inputGroupCall, videoCall, preloadedCall, inviteUsers);
+			});
+			return;
+		}
+
+		lastCallTime = SystemClock.elapsedRealtime();
+		Intent intent = new Intent(activity, VoIPService.class);
+		intent.putExtra("chat_id", 0L);
+		intent.putExtra("createGroupCall", false);
+		intent.putExtra("hasFewPeers", false);
+		intent.putExtra("isRtmpStream", false);
+		intent.putExtra("hash", (String) null);
+		intent.putExtra("is_outgoing", true);
+		intent.putExtra("start_incall_activity", true);
+		intent.putExtra("video_call", false);
+		SerializedData data = new SerializedData(inputGroupCall.getObjectSize());
+		inputGroupCall.serializeToStream(data);
+		intent.putExtra("joinConference", data.toByteArray());
+		if (preloadedCall != null) {
+			data = new SerializedData(preloadedCall.getObjectSize());
+			preloadedCall.serializeToStream(data);
+			intent.putExtra("joinConferenceCall", data.toByteArray());
+		}
+		if (inviteUsers != null) {
+			long[] array = new long[inviteUsers.size()];
+			int i = 0;
+			for (long id : inviteUsers) {
+				array[i++] = id;
+			}
+			intent.putExtra("inviteUsers", array);
+		}
+		intent.putExtra("account", account);
+		intent.putExtra("video_call", Build.VERSION.SDK_INT >= 18 && videoCall);
+		intent.putExtra("can_video_call", Build.VERSION.SDK_INT >= 18 && /*canVideoCall*/ true);
+		try {
+			activity.startService(intent);
+		} catch (Throwable e) {
+			FileLog.e(e);
+		}
 	}
 
 	private static void doInitiateCall(TLRPC.User user, TLRPC.Chat chat, String hash, TLRPC.InputPeer peer, boolean hasFewPeers, boolean videoCall, boolean canVideoCall, boolean createCall, Activity activity, BaseFragment fragment, AccountInstance accountInstance, boolean checkJoiner, boolean checkAnonymous, boolean isRtmpStream) {
@@ -717,7 +797,7 @@ public class VoIPHelper {
 				c.get(Calendar.MINUTE), c.get(Calendar.SECOND), name)).getAbsolutePath();
 	}
 
-	public static String getLogFilePath(long callId, boolean stats) {
+	public static String getLogFilePath(String callId, boolean stats) {
 		final File logsDir = getLogsDir();
 		if (!BuildVars.DEBUG_VERSION) {
 			final File[] _logs = logsDir.listFiles();

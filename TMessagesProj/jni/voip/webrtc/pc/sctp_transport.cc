@@ -78,22 +78,7 @@ RTCError SctpTransport::SendData(int channel_id,
                                  const SendDataParams& params,
                                  const rtc::CopyOnWriteBuffer& buffer) {
   RTC_DCHECK_RUN_ON(owner_thread_);
-  RTC_DCHECK(internal_sctp_transport_);
-  cricket::SendDataResult result;
-  internal_sctp_transport_->SendData(channel_id, params, buffer, &result);
-
-  // TODO(mellem):  See about changing the interfaces to not require mapping
-  // SendDataResult to RTCError and back again.
-  switch (result) {
-    case cricket::SendDataResult::SDR_SUCCESS:
-      return RTCError::OK();
-    case cricket::SendDataResult::SDR_BLOCK:
-      // Send buffer is full.
-      return RTCError(RTCErrorType::RESOURCE_EXHAUSTED);
-    case cricket::SendDataResult::SDR_ERROR:
-      return RTCError(RTCErrorType::NETWORK_ERROR);
-  }
-  return RTCError(RTCErrorType::NETWORK_ERROR);
+  return internal_sctp_transport_->SendData(channel_id, params, buffer);
 }
 
 RTCError SctpTransport::CloseChannel(int channel_id) {

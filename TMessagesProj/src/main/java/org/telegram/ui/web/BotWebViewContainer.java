@@ -2594,38 +2594,44 @@ public abstract class BotWebViewContainer extends FrameLayout implements Notific
             }
             case "web_app_device_storage_save_key": {
                 if (botUser == null) return;
-                if (storage == null) storage = new BotStorage(getContext(), botUser.id, false);
+                if (storage == null) storage = new BotStorage(getContext(), currentAccount, UserConfig.getInstance(currentAccount).getClientUserId(), botUser.id, false);
                 setStorageKey(storage, eventData, "device_storage_key_saved", "device_storage_failed");
                 break;
             }
             case "web_app_device_storage_get_key": {
                 if (botUser == null) return;
-                if (storage == null) storage = new BotStorage(getContext(), botUser.id, false);
+                if (storage == null) storage = new BotStorage(getContext(), currentAccount, UserConfig.getInstance(currentAccount).getClientUserId(), botUser.id, false);
                 getStorageKey(storage, eventData, "device_storage_key_received", "device_storage_failed");
                 break;
             }
             case "web_app_device_storage_clear": {
                 if (botUser == null) return;
-                if (storage == null) storage = new BotStorage(getContext(), botUser.id, false);
+                if (storage == null) storage = new BotStorage(getContext(), currentAccount, UserConfig.getInstance(currentAccount).getClientUserId(), botUser.id, false);
                 clearStorageKey(storage, eventData, "device_storage_cleared", "device_storage_failed");
                 break;
             }
             case "web_app_secure_storage_save_key": {
                 if (botUser == null) return;
-                if (secureStorage == null) secureStorage = new BotStorage(getContext(), botUser.id, true);
+                if (secureStorage == null) secureStorage = new BotStorage(getContext(), currentAccount, UserConfig.getInstance(currentAccount).getClientUserId(), botUser.id, true);
                 setStorageKey(secureStorage, eventData, "secure_storage_key_saved", "secure_storage_failed");
                 break;
             }
             case "web_app_secure_storage_get_key": {
                 if (botUser == null) return;
-                if (secureStorage == null) secureStorage = new BotStorage(getContext(), botUser.id, true);
+                if (secureStorage == null) secureStorage = new BotStorage(getContext(), currentAccount, UserConfig.getInstance(currentAccount).getClientUserId(), botUser.id, true);
                 getStorageKey(secureStorage, eventData, "secure_storage_key_received", "secure_storage_failed");
                 break;
             }
             case "web_app_secure_storage_clear": {
                 if (botUser == null) return;
-                if (secureStorage == null) secureStorage = new BotStorage(getContext(), botUser.id, true);
+                if (secureStorage == null) secureStorage = new BotStorage(getContext(), currentAccount, UserConfig.getInstance(currentAccount).getClientUserId(), botUser.id, true);
                 clearStorageKey(secureStorage, eventData, "secure_storage_cleared", "secure_storage_cleared");
+                break;
+            }
+            case "web_app_secure_storage_restore_key": {
+                if (botUser == null) return;
+                if (secureStorage == null) secureStorage = new BotStorage(getContext(), currentAccount, UserConfig.getInstance(currentAccount).getClientUserId(), botUser.id, true);
+                restoreStorageKey(secureStorage, eventData, "secure_storage_key_restored", "secure_storage_cleared");
                 break;
             }
             default: {
@@ -2653,6 +2659,10 @@ public abstract class BotWebViewContainer extends FrameLayout implements Notific
         try {
             key = o.optString("key");
         } catch (Exception e) {
+            notifyEvent(eventFail, obj("req_id", req_id, "error", "KEY_INVALID"));
+            return;
+        }
+        if (key == null) {
             notifyEvent(eventFail, obj("req_id", req_id, "error", "KEY_INVALID"));
             return;
         }
@@ -2693,12 +2703,74 @@ public abstract class BotWebViewContainer extends FrameLayout implements Notific
             notifyEvent(eventFail, obj("req_id", req_id, "error", "KEY_INVALID"));
             return;
         }
+        if (key == null) {
+            notifyEvent(eventFail, obj("req_id", req_id, "error", "KEY_INVALID"));
+            return;
+        }
         try {
-            String value = storage.getKey(key);
-            notifyEvent(eventSuccess, obj("req_id", req_id, "value", value));
+            Pair<String, Boolean> pair = storage.getKey(key);
+            if (storage.secured && pair.first == null) {
+                notifyEvent(eventSuccess, obj("req_id", req_id, "value", pair.first, "can_restore", pair.second));
+            } else {
+                notifyEvent(eventSuccess, obj("req_id", req_id, "value", pair.first));
+            }
         } catch (RuntimeException e) {
             notifyEvent(eventFail, obj("req_id", req_id, "error", e.getMessage()));
         }
+    }
+
+    private void restoreStorageKey(BotStorage storage, String eventData, String eventSuccess, String eventFail) {
+        if (storage == null || botUser == null) return;
+        String req_id = "";
+        JSONObject o;
+        try {
+            o = new JSONObject(eventData);
+            req_id = o.getString("req_id");
+        } catch (Exception e) {
+            FileLog.e(e);
+            if (!TextUtils.isEmpty(req_id)) {
+                notifyEvent(eventFail, obj("req_id", req_id, "error", "UNKNOWN_ERROR"));
+            }
+            return;
+        }
+        String key;
+        try {
+            key = o.optString("key");
+        } catch (Exception e) {
+            notifyEvent(eventFail, obj("req_id", req_id, "error", "KEY_INVALID"));
+            return;
+        }
+        if (key == null) {
+            notifyEvent(eventFail, obj("req_id", req_id, "error", "KEY_INVALID"));
+            return;
+        }
+        final List<BotStorage.StorageConfig> storages;
+        try {
+            storages = storage.getStoragesWithKey(key);
+        } catch (Exception e) {
+            notifyEvent(eventFail, obj("req_id", req_id, "error", e.getMessage()));
+            return;
+        }
+        if (storages.isEmpty()) {
+            notifyEvent(eventFail, obj("req_id", req_id, "error", "RESTORE_UNAVAILABLE"));
+            return;
+        }
+        final String f_req_id = req_id;
+        storage.showChooseStorage(getContext(), storages, selected -> {
+            if (selected == null) {
+                notifyEvent(eventFail, obj("req_id", f_req_id, "error", "RESTORE_CANCELLED"));
+                return;
+            }
+            final String restoredValue;
+            try {
+                storage.restoreFrom(selected);
+                restoredValue = storage.getKey(key).first;
+            } catch (Exception e) {
+                notifyEvent(eventFail, obj("req_id", f_req_id, "error", e.getMessage()));
+                return;
+            }
+            notifyEvent(eventSuccess, obj("req_id", f_req_id, "value", restoredValue));
+        });
     }
 
     private void clearStorageKey(BotStorage storage, String eventData, String eventSuccess, String eventFail) {

@@ -28,7 +28,7 @@ import org.telegram.ui.Cells.ChatMessageCell;
 import org.telegram.ui.Components.AvatarDrawable;
 
 class QuickShareAvatarCell implements ValueAnimator.AnimatorUpdateListener {
-    private static final long DURATION = 200L;
+    private static final long DURATION = 180L;
 
     private final QuickShareSelectorDrawable parent;
     private final ChatMessageCell cell;

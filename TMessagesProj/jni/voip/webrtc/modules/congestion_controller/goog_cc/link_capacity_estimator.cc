@@ -10,7 +10,9 @@
 #include "modules/congestion_controller/goog_cc/link_capacity_estimator.h"
 
 #include <algorithm>
+#include <cmath>
 
+#include "api/units/data_rate.h"
 #include "rtc_base/numerics/safe_minmax.h"
 
 namespace webrtc {

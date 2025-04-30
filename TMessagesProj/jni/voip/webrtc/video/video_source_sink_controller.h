@@ -75,7 +75,7 @@ class VideoSourceSinkController {
   // downstream implementations were designed for.
   // In practice, this represent's libjingle's worker thread.
   RTC_NO_UNIQUE_ADDRESS SequenceChecker sequence_checker_;
-
+ int a;
   rtc::VideoSinkInterface<VideoFrame>* const sink_;
   rtc::VideoSourceInterface<VideoFrame>* source_
       RTC_GUARDED_BY(&sequence_checker_);

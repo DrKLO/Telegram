@@ -18,12 +18,12 @@
 #include "absl/types/optional.h"
 #include "api/array_view.h"
 #include "api/media_types.h"
+#include "api/ref_count.h"
 #include "api/rtp_parameters.h"
 #include "api/rtp_receiver_interface.h"
 #include "api/rtp_sender_interface.h"
 #include "api/rtp_transceiver_direction.h"
 #include "api/scoped_refptr.h"
-#include "rtc_base/ref_count.h"
 #include "rtc_base/system/rtc_export.h"
 
 namespace webrtc {
@@ -41,7 +41,6 @@ struct RTC_EXPORT RtpTransceiverInit final {
   // The added RtpTransceiver will be added to these streams.
   std::vector<std::string> stream_ids;
 
-  // TODO(bugs.webrtc.org/7600): Not implemented.
   std::vector<RtpEncodingParameters> send_encodings;
 };
 
@@ -59,7 +58,7 @@ struct RTC_EXPORT RtpTransceiverInit final {
 //
 // WebRTC specification for RTCRtpTransceiver, the JavaScript analog:
 // https://w3c.github.io/webrtc-pc/#dom-rtcrtptransceiver
-class RTC_EXPORT RtpTransceiverInterface : public rtc::RefCountInterface {
+class RTC_EXPORT RtpTransceiverInterface : public webrtc::RefCountInterface {
  public:
   // Media type of the transceiver. Any sender(s)/receiver(s) will have this
   // type as well.
@@ -149,25 +148,24 @@ class RTC_EXPORT RtpTransceiverInterface : public rtc::RefCountInterface {
       rtc::ArrayView<RtpCodecCapability> codecs) = 0;
   virtual std::vector<RtpCodecCapability> codec_preferences() const = 0;
 
-  // Readonly attribute which contains the set of header extensions that was set
-  // with SetOfferedRtpHeaderExtensions, or a default set if it has not been
+  // Returns the set of header extensions that was set
+  // with SetHeaderExtensionsToNegotiate, or a default set if it has not been
   // called.
   // https://w3c.github.io/webrtc-extensions/#rtcrtptransceiver-interface
-  virtual std::vector<RtpHeaderExtensionCapability> HeaderExtensionsToOffer()
-      const = 0;
+  virtual std::vector<RtpHeaderExtensionCapability>
+  GetHeaderExtensionsToNegotiate() const = 0;
 
-  // Readonly attribute which is either empty if negotation has not yet
+  // Returns either the empty set if negotation has not yet
   // happened, or a vector of the negotiated header extensions.
   // https://w3c.github.io/webrtc-extensions/#rtcrtptransceiver-interface
-  virtual std::vector<RtpHeaderExtensionCapability> HeaderExtensionsNegotiated()
-      const = 0;
+  virtual std::vector<RtpHeaderExtensionCapability>
+  GetNegotiatedHeaderExtensions() const = 0;
 
-  // The SetOfferedRtpHeaderExtensions method modifies the next SDP negotiation
+  // The SetHeaderExtensionsToNegotiate method modifies the next SDP negotiation
   // so that it negotiates use of header extensions which are not kStopped.
   // https://w3c.github.io/webrtc-extensions/#rtcrtptransceiver-interface
-  virtual webrtc::RTCError SetOfferedRtpHeaderExtensions(
-      rtc::ArrayView<const RtpHeaderExtensionCapability>
-          header_extensions_to_offer) = 0;
+  virtual webrtc::RTCError SetHeaderExtensionsToNegotiate(
+      rtc::ArrayView<const RtpHeaderExtensionCapability> header_extensions) = 0;
 
  protected:
   ~RtpTransceiverInterface() override = default;

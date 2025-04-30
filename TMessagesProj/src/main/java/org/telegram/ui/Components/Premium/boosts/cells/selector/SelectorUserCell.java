@@ -24,10 +24,12 @@ import org.telegram.messenger.UserObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.tl.TL_stories;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Adapters.MessagesSearchAdapter;
 import org.telegram.ui.Components.CheckBox2;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.Premium.boosts.cells.BaseCell;
 import org.telegram.ui.Components.StatusBadgeComponent;
+import org.telegram.ui.Components.UItem;
 
 import java.util.Date;
 
@@ -38,18 +40,34 @@ public class SelectorUserCell extends BaseCell {
     @Nullable
     private final CheckBox2 checkBox;
     private final ImageView optionsView;
+    private boolean hasAudioView;
+    private final ImageView audioView;
+    private boolean hasVideoView;
+    private final ImageView videoView;
+    private boolean showCallButtons = true;
     private TLRPC.User user;
     private TLRPC.Chat chat;
     private TL_stories.TL_myBoost boost;
     StatusBadgeComponent statusBadgeComponent;
 
     public SelectorUserCell(Context context, boolean needCheck, Theme.ResourcesProvider resourcesProvider, boolean isGreen) {
+        this(context, needCheck, false, resourcesProvider, isGreen);
+    }
+    public SelectorUserCell(Context context, boolean needCheck, boolean needCheck2, Theme.ResourcesProvider resourcesProvider, boolean isGreen) {
         super(context, resourcesProvider);
         statusBadgeComponent = new StatusBadgeComponent(this);
         titleTextView.setTypeface(AndroidUtilities.bold());
 
         radioButton.setVisibility(View.GONE);
-        if (needCheck) {
+        if (needCheck2) {
+            checkBox = new CheckBox2(context, 21, resourcesProvider);
+            checkBox.setColor(Theme.key_dialogRoundCheckBox, Theme.key_dialogBackground, Theme.key_checkboxCheck);
+            checkBox.setDrawUnchecked(false);
+            checkBox.setDrawBackgroundAsArc(3);
+            final int padding = 0;
+            addView(checkBox, LayoutHelper.createFrame(24, 24, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 0 : 40 + padding, 33, LocaleController.isRTL ? 39 + padding : 0, 0));
+            updateLayouts();
+        } else if (needCheck) {
             checkBox = new CheckBox2(context, 21, resourcesProvider);
             if (isGreen) {
                 checkBox.setColor(Theme.key_checkbox, Theme.key_checkboxDisabled, Theme.key_dialogRoundCheckBoxCheck);
@@ -71,6 +89,20 @@ public class SelectorUserCell extends BaseCell {
         optionsView.setImageResource(R.drawable.ic_ab_other);
         optionsView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_chat_inMenu, resourcesProvider), PorterDuff.Mode.SRC_IN));
         addView(optionsView, LayoutHelper.createFrame(32, 32, Gravity.CENTER_VERTICAL | (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT), 12, 0, 12, 0));
+
+        audioView = new ImageView(context);
+        audioView.setScaleType(ImageView.ScaleType.CENTER);
+        audioView.setImageResource(R.drawable.menu_phone);
+        audioView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider), PorterDuff.Mode.SRC_IN));
+        addView(audioView, LayoutHelper.createFrame(32, 32, Gravity.CENTER_VERTICAL | (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT), LocaleController.isRTL ? 52 : 12, 0, LocaleController.isRTL ? 12 : 52, 0));
+        audioView.setVisibility(View.GONE);
+
+        videoView = new ImageView(context);
+        videoView.setScaleType(ImageView.ScaleType.CENTER);
+        videoView.setImageResource(R.drawable.menu_videocall);
+        videoView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider), PorterDuff.Mode.SRC_IN));
+        addView(videoView, LayoutHelper.createFrame(32, 32, Gravity.CENTER_VERTICAL | (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT), 12, 0, 12, 0));
+        videoView.setVisibility(View.GONE);
     }
 
     public void setOptions(View.OnClickListener listener) {
@@ -79,6 +111,35 @@ public class SelectorUserCell extends BaseCell {
             optionsView.setOnClickListener(listener);
         } else {
             optionsView.setVisibility(View.GONE);
+        }
+    }
+
+    public void setCallButtons(View.OnClickListener audio, View.OnClickListener video) {
+        hasAudioView = audio != null;
+        audioView.setVisibility(hasAudioView && showCallButtons ? View.VISIBLE : View.GONE);
+//        audioView.setAlpha(hasAudioView && showCallButtons ? 1.0f : 0.0f);
+        audioView.setOnClickListener(audio);
+        hasVideoView = video != null;
+        videoView.setVisibility(hasVideoView && showCallButtons ? View.VISIBLE : View.GONE);
+//        videoView.setAlpha(hasVideoView && showCallButtons ? 1.0f : 0.0f);
+        videoView.setOnClickListener(video);
+    }
+
+    public void setCallButtonsVisible(boolean visible, boolean animated) {
+        if (showCallButtons == visible) return;
+        showCallButtons = visible;
+        if (animated) {
+            audioView.setVisibility(View.VISIBLE);
+            audioView.animate().alpha(visible && hasAudioView ? 1f : 0f).withEndAction(!visible || !hasAudioView ? () -> audioView.setVisibility(View.GONE) : null).start();
+            videoView.setVisibility(View.VISIBLE);
+            videoView.animate().alpha(visible && hasVideoView ? 1f : 0f).withEndAction(!visible || !hasVideoView ? () -> videoView.setVisibility(View.GONE) : null).start();
+        } else {
+            audioView.animate().cancel();
+            audioView.setAlpha(visible && hasAudioView ? 1.0f : 0.0f);
+            audioView.setVisibility(visible && hasAudioView ? View.VISIBLE : View.GONE);
+            videoView.animate().cancel();
+            videoView.setAlpha(visible && hasVideoView ? 1.0f : 0.0f);
+            videoView.setVisibility(visible && hasVideoView ? View.VISIBLE : View.GONE);
         }
     }
 
@@ -207,11 +268,11 @@ public class SelectorUserCell extends BaseCell {
         titleTextView.setText(chat.title);
 
         subtitleTextView.setTextColor(Theme.getColor(Theme.key_dialogTextGray3, resourcesProvider));
-        setSubtitle(LocaleController.formatString("BoostExpireOn", R.string.BoostExpireOn, LocaleController.getInstance().getFormatterBoostExpired().format(new Date(boost.expires * 1000L))));
+        setSubtitle(LocaleController.formatString(R.string.BoostExpireOn, LocaleController.getInstance().getFormatterBoostExpired().format(new Date(boost.expires * 1000L))));
 
         if (boost.cooldown_until_date > 0) {
             long diff = boost.cooldown_until_date * 1000L - System.currentTimeMillis();
-            setSubtitle(LocaleController.formatString("BoostingAvailableIn", R.string.BoostingAvailableIn, buildCountDownTime(diff)));
+            setSubtitle(LocaleController.formatString(R.string.BoostingAvailableIn, buildCountDownTime(diff)));
             titleTextView.setAlpha(0.65f);
             subtitleTextView.setAlpha(0.65f);
             setCheckboxAlpha(0.3f, false);
@@ -225,12 +286,12 @@ public class SelectorUserCell extends BaseCell {
     public void updateTimer() {
         if (boost.cooldown_until_date > 0) {
             long diff = boost.cooldown_until_date * 1000L - System.currentTimeMillis();
-            setSubtitle(LocaleController.formatString("BoostingAvailableIn", R.string.BoostingAvailableIn, buildCountDownTime(diff)));
+            setSubtitle(LocaleController.formatString(R.string.BoostingAvailableIn, buildCountDownTime(diff)));
             titleTextView.setAlpha(0.65f);
             subtitleTextView.setAlpha(0.65f);
             setCheckboxAlpha(0.3f, false);
         } else {
-            setSubtitle(LocaleController.formatString("BoostExpireOn", R.string.BoostExpireOn, LocaleController.getInstance().getFormatterBoostExpired().format(new Date(boost.expires * 1000L))));
+            setSubtitle(LocaleController.formatString(R.string.BoostExpireOn, LocaleController.getInstance().getFormatterBoostExpired().format(new Date(boost.expires * 1000L))));
             if (titleTextView.getAlpha() < 1f) {
                 titleTextView.animate().alpha(1f).start();
                 subtitleTextView.animate().alpha(1f).start();
@@ -264,6 +325,29 @@ public class SelectorUserCell extends BaseCell {
 
     @Override
     protected boolean needCheck() {
-        return checkBox != null;
+        return checkBox != null && checkBox.getDrawUnchecked();
+    }
+
+    public static class Factory extends UItem.UItemFactory<SelectorUserCell> {
+        static { setup(new Factory()); }
+
+        @Override
+        public SelectorUserCell createView(Context context, int currentAccount, int classGuid, Theme.ResourcesProvider resourcesProvider) {
+            return new SelectorUserCell(context, true, false, resourcesProvider, false);
+        }
+
+        @Override
+        public void bindView(View view, UItem item, boolean divider) {
+            final SelectorUserCell cell = (SelectorUserCell) view;
+            cell.setUser((TLRPC.User) item.object);
+            cell.setChecked(item.checked, false);
+            cell.setDivider(divider);
+        }
+
+        public static UItem make(TLRPC.User user) {
+            final UItem item = UItem.ofFactory(Factory.class);
+            item.object = user;
+            return item;
+        }
     }
 }

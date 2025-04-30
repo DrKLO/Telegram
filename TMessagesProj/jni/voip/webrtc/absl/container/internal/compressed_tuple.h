@@ -64,19 +64,6 @@ struct Elem<CompressedTuple<B...>, I>
 template <typename D, size_t I>
 using ElemT = typename Elem<D, I>::type;
 
-// Use the __is_final intrinsic if available. Where it's not available, classes
-// declared with the 'final' specifier cannot be used as CompressedTuple
-// elements.
-// TODO(sbenza): Replace this with std::is_final in C++14.
-template <typename T>
-constexpr bool IsFinal() {
-#if defined(__clang__) || defined(__GNUC__)
-  return __is_final(T);
-#else
-  return false;
-#endif
-}
-
 // We can't use EBCO on other CompressedTuples because that would mean that we
 // derive from multiple Storage<> instantiations with the same I parameter,
 // and potentially from multiple identical Storage<> instantiations.  So anytime
@@ -86,30 +73,25 @@ struct uses_inheritance {};
 
 template <typename T>
 constexpr bool ShouldUseBase() {
-  return std::is_class<T>::value && std::is_empty<T>::value && !IsFinal<T>() &&
+  return std::is_class<T>::value && std::is_empty<T>::value &&
+         !std::is_final<T>::value &&
          !std::is_base_of<uses_inheritance, T>::value;
 }
 
 // The storage class provides two specializations:
 //  - For empty classes, it stores T as a base class.
 //  - For everything else, it stores T as a member.
-template <typename T, size_t I,
-#if defined(_MSC_VER)
-          bool UseBase =
-              ShouldUseBase<typename std::enable_if<true, T>::type>()>
-#else
-          bool UseBase = ShouldUseBase<T>()>
-#endif
+template <typename T, size_t I, bool UseBase = ShouldUseBase<T>()>
 struct Storage {
   T value;
   constexpr Storage() = default;
   template <typename V>
   explicit constexpr Storage(absl::in_place_t, V&& v)
-      : value(absl::forward<V>(v)) {}
+      : value(std::forward<V>(v)) {}
   constexpr const T& get() const& { return value; }
-  T& get() & { return value; }
-  constexpr const T&& get() const&& { return absl::move(*this).value; }
-  T&& get() && { return std::move(*this).value; }
+  constexpr T& get() & { return value; }
+  constexpr const T&& get() const&& { return std::move(*this).value; }
+  constexpr T&& get() && { return std::move(*this).value; }
 };
 
 template <typename T, size_t I>
@@ -117,13 +99,12 @@ struct ABSL_INTERNAL_COMPRESSED_TUPLE_DECLSPEC Storage<T, I, true> : T {
   constexpr Storage() = default;
 
   template <typename V>
-  explicit constexpr Storage(absl::in_place_t, V&& v)
-      : T(absl::forward<V>(v)) {}
+  explicit constexpr Storage(absl::in_place_t, V&& v) : T(std::forward<V>(v)) {}
 
   constexpr const T& get() const& { return *this; }
-  T& get() & { return *this; }
-  constexpr const T&& get() const&& { return absl::move(*this); }
-  T&& get() && { return std::move(*this); }
+  constexpr T& get() & { return *this; }
+  constexpr const T&& get() const&& { return std::move(*this); }
+  constexpr T&& get() && { return std::move(*this); }
 };
 
 template <typename D, typename I, bool ShouldAnyUseBase>
@@ -141,7 +122,7 @@ struct ABSL_INTERNAL_COMPRESSED_TUPLE_DECLSPEC CompressedTupleImpl<
   constexpr CompressedTupleImpl() = default;
   template <typename... Vs>
   explicit constexpr CompressedTupleImpl(absl::in_place_t, Vs&&... args)
-      : Storage<Ts, I>(absl::in_place, absl::forward<Vs>(args))... {}
+      : Storage<Ts, I>(absl::in_place, std::forward<Vs>(args))... {}
   friend CompressedTuple<Ts...>;
 };
 
@@ -153,7 +134,7 @@ struct ABSL_INTERNAL_COMPRESSED_TUPLE_DECLSPEC CompressedTupleImpl<
   constexpr CompressedTupleImpl() = default;
   template <typename... Vs>
   explicit constexpr CompressedTupleImpl(absl::in_place_t, Vs&&... args)
-      : Storage<Ts, I, false>(absl::in_place, absl::forward<Vs>(args))... {}
+      : Storage<Ts, I, false>(absl::in_place, std::forward<Vs>(args))... {}
   friend CompressedTuple<Ts...>;
 };
 
@@ -252,11 +233,11 @@ class ABSL_INTERNAL_COMPRESSED_TUPLE_DECLSPEC CompressedTuple
                 bool> = true>
   explicit constexpr CompressedTuple(First&& first, Vs&&... base)
       : CompressedTuple::CompressedTupleImpl(absl::in_place,
-                                             absl::forward<First>(first),
-                                             absl::forward<Vs>(base)...) {}
+                                             std::forward<First>(first),
+                                             std::forward<Vs>(base)...) {}
 
   template <int I>
-  ElemT<I>& get() & {
+  constexpr ElemT<I>& get() & {
     return StorageT<I>::get();
   }
 
@@ -266,13 +247,13 @@ class ABSL_INTERNAL_COMPRESSED_TUPLE_DECLSPEC CompressedTuple
   }
 
   template <int I>
-  ElemT<I>&& get() && {
+  constexpr ElemT<I>&& get() && {
     return std::move(*this).StorageT<I>::get();
   }
 
   template <int I>
   constexpr const ElemT<I>&& get() const&& {
-    return absl::move(*this).StorageT<I>::get();
+    return std::move(*this).StorageT<I>::get();
   }
 };
 

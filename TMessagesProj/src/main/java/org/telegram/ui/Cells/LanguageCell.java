@@ -8,6 +8,8 @@
 
 package org.telegram.ui.Cells;
 
+import static org.telegram.messenger.AndroidUtilities.dp;
+
 import android.content.Context;
 import android.graphics.Canvas;
 import android.text.TextUtils;
@@ -40,7 +42,7 @@ public class LanguageCell extends FrameLayout {
         setWillNotDraw(false);
 
         radioButton = new RadioButton(context);
-        radioButton.setSize(AndroidUtilities.dp(20));
+        radioButton.setSize(dp(20));
         radioButton.setColor(Theme.getColor(Theme.key_dialogRadioBackground), Theme.getColor(Theme.key_dialogRadioBackgroundChecked));
         addView(radioButton, LayoutHelper.createFrame(22, 22, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL, (LocaleController.isRTL ? 0 : 20), 0, (LocaleController.isRTL ? 20 : 0), 0));
 
@@ -63,7 +65,7 @@ public class LanguageCell extends FrameLayout {
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(60) + (needDivider ? 1 : 0), MeasureSpec.EXACTLY));
+        super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(dp(60) + (needDivider ? 1 : 0), MeasureSpec.EXACTLY));
     }
 
     public void setLanguage(LocaleController.LocaleInfo language, String desc, boolean divider) {
@@ -92,7 +94,7 @@ public class LanguageCell extends FrameLayout {
     @Override
     protected void onDraw(Canvas canvas) {
         if (needDivider) {
-            canvas.drawLine(LocaleController.isRTL ? 0 : AndroidUtilities.dp(marginStartDp - 3), getMeasuredHeight() - 1, getMeasuredWidth() - (LocaleController.isRTL ? AndroidUtilities.dp(marginStartDp - 3) : 0), getMeasuredHeight() - 1, Theme.dividerPaint);
+            canvas.drawLine(LocaleController.isRTL ? 0 : dp(marginStartDp - 3), getMeasuredHeight() - 1, getMeasuredWidth() - (LocaleController.isRTL ? dp(marginStartDp - 3) : 0), getMeasuredHeight() - 1, Theme.dividerPaint);
         }
     }
 }

@@ -25,30 +25,31 @@ namespace {
 
 constexpr int kClippingPredictorMaxGainChange = 15;
 
-// Estimates the new level from the gain error; a copy of the function
-// `LevelFromGainError` in agc_manager_direct.cc.
-int LevelFromGainError(int gain_error,
-                       int level,
-                       int min_mic_level,
-                       int max_mic_level) {
-  RTC_DCHECK_GE(level, 0);
-  RTC_DCHECK_LE(level, max_mic_level);
-  if (gain_error == 0) {
-    return level;
+// Returns an input volume in the [`min_input_volume`, `max_input_volume`] range
+// that reduces `gain_error_db`, which is a gain error estimated when
+// `input_volume` was applied, according to a fixed gain map.
+int ComputeVolumeUpdate(int gain_error_db,
+                        int input_volume,
+                        int min_input_volume,
+                        int max_input_volume) {
+  RTC_DCHECK_GE(input_volume, 0);
+  RTC_DCHECK_LE(input_volume, max_input_volume);
+  if (gain_error_db == 0) {
+    return input_volume;
   }
-  int new_level = level;
-  if (gain_error > 0) {
-    while (kGainMap[new_level] - kGainMap[level] < gain_error &&
-           new_level < max_mic_level) {
-      ++new_level;
+  int new_volume = input_volume;
+  if (gain_error_db > 0) {
+    while (kGainMap[new_volume] - kGainMap[input_volume] < gain_error_db &&
+           new_volume < max_input_volume) {
+      ++new_volume;
     }
   } else {
-    while (kGainMap[new_level] - kGainMap[level] > gain_error &&
-           new_level > min_mic_level) {
-      --new_level;
+    while (kGainMap[new_volume] - kGainMap[input_volume] > gain_error_db &&
+           new_volume > min_input_volume) {
+      --new_volume;
     }
   }
-  return new_level;
+  return new_volume;
 }
 
 float ComputeCrestFactor(const ClippingPredictorLevelBuffer::Level& level) {
@@ -298,8 +299,8 @@ class ClippingPeakPredictor : public ClippingPredictor {
             rtc::SafeClamp(-static_cast<int>(std::ceil(estimate_db.value())),
                            -kClippingPredictorMaxGainChange, 0);
         step =
-            std::max(level - LevelFromGainError(estimated_gain_change, level,
-                                                min_mic_level, max_mic_level),
+            std::max(level - ComputeVolumeUpdate(estimated_gain_change, level,
+                                                 min_mic_level, max_mic_level),
                      default_step);
       }
       const int new_level =
@@ -354,10 +355,10 @@ std::unique_ptr<ClippingPredictor> CreateClippingPredictor(
     const AudioProcessing::Config::GainController1::AnalogGainController::
         ClippingPredictor& config) {
   if (!config.enabled) {
-    RTC_LOG(LS_INFO) << "[agc] Clipping prediction disabled.";
+    RTC_LOG(LS_INFO) << "[AGC2] Clipping prediction disabled.";
     return nullptr;
   }
-  RTC_LOG(LS_INFO) << "[agc] Clipping prediction enabled.";
+  RTC_LOG(LS_INFO) << "[AGC2] Clipping prediction enabled.";
   using ClippingPredictorMode = AudioProcessing::Config::GainController1::
       AnalogGainController::ClippingPredictor::Mode;
   switch (config.mode) {

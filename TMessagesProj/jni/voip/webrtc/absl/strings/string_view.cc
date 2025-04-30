@@ -21,12 +21,39 @@
 #include <cstring>
 #include <ostream>
 
-#include "absl/strings/internal/memutil.h"
+#include "absl/base/nullability.h"
 
 namespace absl {
 ABSL_NAMESPACE_BEGIN
 
 namespace {
+
+// This is significantly faster for case-sensitive matches with very
+// few possible matches.
+absl::Nullable<const char*> memmatch(absl::Nullable<const char*> phaystack,
+                                     size_t haylen,
+                                     absl::Nullable<const char*> pneedle,
+                                     size_t neelen) {
+  if (0 == neelen) {
+    return phaystack;  // even if haylen is 0
+  }
+  if (haylen < neelen) return nullptr;
+
+  const char* match;
+  const char* hayend = phaystack + haylen - neelen + 1;
+  // A static cast is used here as memchr returns a const void *, and pointer
+  // arithmetic is not allowed on pointers to void.
+  while (
+      (match = static_cast<const char*>(memchr(
+           phaystack, pneedle[0], static_cast<size_t>(hayend - phaystack))))) {
+    if (memcmp(match, pneedle, neelen) == 0)
+      return match;
+    else
+      phaystack = match + 1;
+  }
+  return nullptr;
+}
+
 void WritePadding(std::ostream& o, size_t pad) {
   char fill_buf[32];
   memset(fill_buf, o.fill(), sizeof(fill_buf));
@@ -84,8 +111,7 @@ string_view::size_type string_view::find(string_view s,
     if (empty() && pos == 0 && s.empty()) return 0;
     return npos;
   }
-  const char* result =
-      strings_internal::memmatch(ptr_ + pos, length_ - pos, s.ptr_, s.length_);
+  const char* result = memmatch(ptr_ + pos, length_ - pos, s.ptr_, s.length_);
   return result ? static_cast<size_type>(result - ptr_) : npos;
 }
 
@@ -207,7 +233,6 @@ string_view::size_type string_view::find_last_not_of(
   return npos;
 }
 
-
 #ifdef ABSL_INTERNAL_NEED_REDUNDANT_CONSTEXPR_DECL
 constexpr string_view::size_type string_view::npos;
 constexpr string_view::size_type string_view::kMaxSize;
@@ -215,5 +240,23 @@ constexpr string_view::size_type string_view::kMaxSize;
 
 ABSL_NAMESPACE_END
 }  // namespace absl
+
+#else
+
+// https://github.com/abseil/abseil-cpp/issues/1465
+// CMake builds on Apple platforms error when libraries are empty.
+// Our CMake configuration can avoid this error on header-only libraries,
+// but since this library is conditionally empty, including a single
+// variable is an easy workaround.
+#ifdef __APPLE__
+namespace absl {
+ABSL_NAMESPACE_BEGIN
+namespace strings_internal {
+extern const char kAvoidEmptyStringViewLibraryWarning;
+const char kAvoidEmptyStringViewLibraryWarning = 0;
+}  // namespace strings_internal
+ABSL_NAMESPACE_END
+}  // namespace absl
+#endif  // __APPLE__
 
 #endif  // ABSL_USES_STD_STRING_VIEW

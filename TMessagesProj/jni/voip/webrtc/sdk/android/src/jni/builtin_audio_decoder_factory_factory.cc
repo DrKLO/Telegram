@@ -8,11 +8,10 @@
  *  be found in the AUTHORS file in the root of the source tree.
  */
 
+#include "api/audio_codecs/builtin_audio_decoder_factory.h"
 #include "sdk/android/generated_builtin_audio_codecs_jni/BuiltinAudioDecoderFactoryFactory_jni.h"
 #include "sdk/android/native_api/jni/java_types.h"
 #include "sdk/android/src/jni/jni_helpers.h"
-
-#include "api/audio_codecs/builtin_audio_decoder_factory.h"
 
 namespace webrtc {
 namespace jni {

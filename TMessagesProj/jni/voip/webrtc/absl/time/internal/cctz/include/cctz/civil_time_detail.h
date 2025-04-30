@@ -401,11 +401,11 @@ class civil_time {
       : civil_time(ct.f_) {}
 
   // Factories for the maximum/minimum representable civil_time.
-  static CONSTEXPR_F civil_time(max)() {
+  static CONSTEXPR_F auto(max)() -> civil_time {
     const auto max_year = (std::numeric_limits<std::int_least64_t>::max)();
     return civil_time(max_year, 12, 31, 23, 59, 59);
   }
-  static CONSTEXPR_F civil_time(min)() {
+  static CONSTEXPR_F auto(min)() -> civil_time {
     const auto min_year = (std::numeric_limits<std::int_least64_t>::min)();
     return civil_time(min_year, 1, 1, 0, 0, 0);
   }

@@ -17,9 +17,9 @@
 #include "rtc_base/logging.h"
 #include "rtc_base/numerics/safe_conversions.h"
 #include "rtc_base/strings/string_builder.h"
+#include "tgnet/FileLog.h"
 
 namespace webrtc {
-
 VideoSourceSinkController::VideoSourceSinkController(
     rtc::VideoSinkInterface<VideoFrame>* sink,
     rtc::VideoSourceInterface<VideoFrame>* source)
@@ -37,6 +37,7 @@ void VideoSourceSinkController::SetSource(
 
   rtc::VideoSourceInterface<VideoFrame>* old_source = source_;
   source_ = source;
+    DEBUG_D("$%d: SetSource(): new source as %ld", a, source_);
 
   if (old_source != source && old_source)
     old_source->RemoveSink(sink_);
@@ -60,10 +61,14 @@ void VideoSourceSinkController::RequestRefreshFrame() {
 
 void VideoSourceSinkController::PushSourceSinkSettings() {
   RTC_DCHECK_RUN_ON(&sequence_checker_);
+  DEBUG_D("$%d: PushSourceSinkSettings(): 1", a);
   if (!source_)
     return;
+    DEBUG_D("$%d: PushSourceSinkSettings(): 2 src=%ld", a, source_);
   rtc::VideoSinkWants wants = CurrentSettingsToSinkWants();
+    DEBUG_D("$%d: PushSourceSinkSettings(): 3", a);
   source_->AddOrUpdateSink(sink_, wants);
+    DEBUG_D("$%d: PushSourceSinkSettings(): 4", a);
 }
 
 VideoSourceRestrictions VideoSourceSinkController::restrictions() const {

@@ -23,7 +23,7 @@
 #include "api/units/frequency.h"
 #include "api/units/time_delta.h"
 #include "rtc_base/checks.h"
-#include "rtc_base/units/unit_base.h"
+#include "rtc_base/units/unit_base.h"  // IWYU pragma: export
 
 namespace webrtc {
 // DataRate is a class that represents a given data rate. This can be used to

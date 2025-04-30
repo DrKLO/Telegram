@@ -22,6 +22,7 @@
 #include "api/video_codecs/video_encoder.h"
 #include "call/adaptation/video_source_restrictions.h"
 #include "call/adaptation/video_stream_input_state.h"
+#include "modules/video_coding/svc/scalability_mode_util.h"
 #include "rtc_base/checks.h"
 #include "rtc_base/logging.h"
 #include "rtc_base/numerics/safe_conversions.h"
@@ -720,7 +721,17 @@ absl::optional<uint32_t> VideoStreamAdapter::GetSingleActiveLayerPixels(
     const VideoCodec& codec) {
   int num_active = 0;
   absl::optional<uint32_t> pixels;
-  if (codec.codecType == VideoCodecType::kVideoCodecVP9) {
+  if (codec.codecType == VideoCodecType::kVideoCodecAV1 &&
+      codec.GetScalabilityMode().has_value()) {
+    for (int i = 0;
+         i < ScalabilityModeToNumSpatialLayers(*(codec.GetScalabilityMode()));
+         ++i) {
+      if (codec.spatialLayers[i].active) {
+        ++num_active;
+        pixels = codec.spatialLayers[i].width * codec.spatialLayers[i].height;
+      }
+    }
+  } else if (codec.codecType == VideoCodecType::kVideoCodecVP9) {
     for (int i = 0; i < codec.VP9().numberOfSpatialLayers; ++i) {
       if (codec.spatialLayers[i].active) {
         ++num_active;

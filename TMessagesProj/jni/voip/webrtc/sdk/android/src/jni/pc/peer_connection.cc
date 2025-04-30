@@ -260,8 +260,6 @@ void JavaToNativeRTCConfiguration(
       Java_RTCConfiguration_getSuspendBelowMinBitrate(jni, j_rtc_config);
   rtc_config->screencast_min_bitrate = JavaToNativeOptionalInt(
       jni, Java_RTCConfiguration_getScreencastMinBitrate(jni, j_rtc_config));
-  rtc_config->combined_audio_video_bwe = JavaToNativeOptionalBool(
-      jni, Java_RTCConfiguration_getCombinedAudioVideoBwe(jni, j_rtc_config));
   rtc_config->network_preference =
       JavaToNativeNetworkPreference(jni, j_network_preference);
   rtc_config->sdp_semantics = JavaToNativeSdpSemantics(jni, j_sdp_semantics);
@@ -269,10 +267,6 @@ void JavaToNativeRTCConfiguration(
       Java_RTCConfiguration_getActiveResetSrtpParams(jni, j_rtc_config);
   rtc_config->crypto_options =
       JavaToNativeOptionalCryptoOptions(jni, j_crypto_options);
-
-  rtc_config->allow_codec_switching = JavaToNativeOptionalBool(
-      jni, Java_RTCConfiguration_getAllowCodecSwitching(jni, j_rtc_config));
-
   rtc_config->offer_extmap_allow_mixed =
       Java_RTCConfiguration_getOfferExtmapAllowMixed(jni, j_rtc_config);
   rtc_config->enable_implicit_rollback =

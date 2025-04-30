@@ -56,7 +56,7 @@ class AudioTransport {
       uint32_t currentMicLevel,
       bool keyPressed,
       uint32_t& newMicLevel,
-      int64_t estimatedCaptureTimeNS) {  // NOLINT
+      absl::optional<int64_t> estimatedCaptureTimeNS) {  // NOLINT
     // TODO(webrtc:13620) Make the default behaver of the new API to behave as
     // the old API. This can be pure virtual if all uses of the old API is
     // removed.

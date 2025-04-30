@@ -8,9 +8,10 @@
  *  be found in the AUTHORS file in the root of the source tree.
  */
 
+#include "modules/video_coding/codecs/av1/libaom_av1_encoder.h"
+
 #include <jni.h>
 
-#include "modules/video_coding/codecs/av1/libaom_av1_encoder.h"
 #include "sdk/android/generated_libaom_av1_encoder_jni/LibaomAv1Encoder_jni.h"
 #include "sdk/android/src/jni/jni_helpers.h"
 

@@ -18,7 +18,10 @@
 #include <string>
 
 #include "absl/types/optional.h"
+#include "api/environment/environment.h"
+#include "api/field_trials_view.h"
 #include "api/scoped_refptr.h"
+#include "api/transport/field_trial_based_config.h"
 #include "api/video/i420_buffer.h"
 #include "api/video/video_frame.h"
 #include "api/video/video_frame_buffer.h"
@@ -28,7 +31,6 @@
 #include "rtc_base/checks.h"
 #include "rtc_base/numerics/exp_filter.h"
 #include "rtc_base/time_utils.h"
-#include "system_wrappers/include/field_trial.h"
 #include "system_wrappers/include/metrics.h"
 #include "third_party/libyuv/include/libyuv/convert.h"
 #include <libvpx/vp8.h>
@@ -37,7 +39,6 @@
 
 namespace webrtc {
 namespace {
-constexpr int kVp8ErrorPropagationTh = 30;
 // vpx_decoder.h documentation indicates decode deadline is time in us, with
 // "Set to zero for unlimited.", but actual implementation requires this to be
 // a mode with 0 meaning allow delay and 1 not allowing it.
@@ -60,9 +61,9 @@ absl::optional<LibvpxVp8Decoder::DeblockParams> DefaultDeblockParams() {
 }
 
 absl::optional<LibvpxVp8Decoder::DeblockParams>
-GetPostProcParamsFromFieldTrialGroup() {
-  std::string group = webrtc::field_trial::FindFullName(
-      kIsArm ? kVp8PostProcArmFieldTrial : kVp8PostProcFieldTrial);
+GetPostProcParamsFromFieldTrialGroup(const FieldTrialsView& field_trials) {
+  std::string group = field_trials.Lookup(kIsArm ? kVp8PostProcArmFieldTrial
+                                                 : kVp8PostProcFieldTrial);
   if (group.empty()) {
     return DefaultDeblockParams();
   }
@@ -90,6 +91,10 @@ std::unique_ptr<VideoDecoder> VP8Decoder::Create() {
   return std::make_unique<LibvpxVp8Decoder>();
 }
 
+std::unique_ptr<VideoDecoder> CreateVp8Decoder(const Environment& env) {
+  return std::make_unique<LibvpxVp8Decoder>(env);
+}
+
 class LibvpxVp8Decoder::QpSmoother {
  public:
   QpSmoother() : last_sample_ms_(rtc::TimeMillis()), smoother_(kAlpha) {}
@@ -115,19 +120,24 @@ class LibvpxVp8Decoder::QpSmoother {
 };
 
 LibvpxVp8Decoder::LibvpxVp8Decoder()
-    : use_postproc_(
-          kIsArm ? webrtc::field_trial::IsEnabled(kVp8PostProcArmFieldTrial)
-                 : true),
+    : LibvpxVp8Decoder(FieldTrialBasedConfig()) {}
+
+LibvpxVp8Decoder::LibvpxVp8Decoder(const Environment& env)
+    : LibvpxVp8Decoder(env.field_trials()) {}
+
+LibvpxVp8Decoder::LibvpxVp8Decoder(const FieldTrialsView& field_trials)
+    : use_postproc_(kIsArm ? field_trials.IsEnabled(kVp8PostProcArmFieldTrial)
+                           : true),
       buffer_pool_(false, 300 /* max_number_of_buffers*/),
       decode_complete_callback_(NULL),
       inited_(false),
       decoder_(NULL),
-      propagation_cnt_(-1),
       last_frame_width_(0),
       last_frame_height_(0),
       key_frame_required_(true),
-      deblock_params_(use_postproc_ ? GetPostProcParamsFromFieldTrialGroup()
-                                    : absl::nullopt),
+      deblock_params_(use_postproc_
+                          ? GetPostProcParamsFromFieldTrialGroup(field_trials)
+                          : absl::nullopt),
       qp_smoother_(use_postproc_ ? new QpSmoother() : nullptr) {}
 
 LibvpxVp8Decoder::~LibvpxVp8Decoder() {
@@ -156,7 +166,6 @@ bool LibvpxVp8Decoder::Configure(const Settings& settings) {
     return false;
   }
 
-  propagation_cnt_ = -1;
   inited_ = true;
 
   // Always start with a complete key frame.
@@ -170,7 +179,12 @@ bool LibvpxVp8Decoder::Configure(const Settings& settings) {
 }
 
 int LibvpxVp8Decoder::Decode(const EncodedImage& input_image,
-                             bool missing_frames,
+                             int64_t render_time_ms) {
+  return Decode(input_image, /*missing_frames=*/false, render_time_ms);
+}
+
+int LibvpxVp8Decoder::Decode(const EncodedImage& input_image,
+                             bool /*missing_frames*/,
                              int64_t /*render_time_ms*/) {
   if (!inited_) {
     return WEBRTC_VIDEO_CODEC_UNINITIALIZED;
@@ -179,9 +193,6 @@ int LibvpxVp8Decoder::Decode(const EncodedImage& input_image,
     return WEBRTC_VIDEO_CODEC_UNINITIALIZED;
   }
   if (input_image.data() == NULL && input_image.size() > 0) {
-    // Reset to avoid requesting key frames too often.
-    if (propagation_cnt_ > 0)
-      propagation_cnt_ = 0;
     return WEBRTC_VIDEO_CODEC_ERR_PARAMETER;
   }
 
@@ -234,34 +245,6 @@ int LibvpxVp8Decoder::Decode(const EncodedImage& input_image,
       return WEBRTC_VIDEO_CODEC_ERROR;
     key_frame_required_ = false;
   }
-  // Restrict error propagation using key frame requests.
-  // Reset on a key frame refresh.
-  if (input_image._frameType == VideoFrameType::kVideoFrameKey) {
-    propagation_cnt_ = -1;
-    // Start count on first loss.
-  } else if (missing_frames && propagation_cnt_ == -1) {
-    propagation_cnt_ = 0;
-  }
-  if (propagation_cnt_ >= 0) {
-    propagation_cnt_++;
-  }
-
-  vpx_codec_iter_t iter = NULL;
-  vpx_image_t* img;
-  int ret;
-
-  // Check for missing frames.
-  if (missing_frames) {
-    // Call decoder with zero data length to signal missing frames.
-    if (vpx_codec_decode(decoder_, NULL, 0, 0, kDecodeDeadlineRealtime)) {
-      // Reset to avoid requesting key frames too often.
-      if (propagation_cnt_ > 0)
-        propagation_cnt_ = 0;
-      return WEBRTC_VIDEO_CODEC_ERROR;
-    }
-    img = vpx_codec_get_frame(decoder_, &iter);
-    iter = NULL;
-  }
 
   const uint8_t* buffer = input_image.data();
   if (input_image.size() == 0) {
@@ -269,30 +252,19 @@ int LibvpxVp8Decoder::Decode(const EncodedImage& input_image,
   }
   if (vpx_codec_decode(decoder_, buffer, input_image.size(), 0,
                        kDecodeDeadlineRealtime)) {
-    // Reset to avoid requesting key frames too often.
-    if (propagation_cnt_ > 0) {
-      propagation_cnt_ = 0;
-    }
     return WEBRTC_VIDEO_CODEC_ERROR;
   }
 
-  img = vpx_codec_get_frame(decoder_, &iter);
+  vpx_codec_iter_t iter = NULL;
+  vpx_image_t* img = vpx_codec_get_frame(decoder_, &iter);
   int qp;
   vpx_codec_err_t vpx_ret =
       vpx_codec_control(decoder_, VPXD_GET_LAST_QUANTIZER, &qp);
   RTC_DCHECK_EQ(vpx_ret, VPX_CODEC_OK);
-  ret = ReturnFrame(img, input_image.Timestamp(), qp, input_image.ColorSpace());
+  int ret = ReturnFrame(img, input_image.RtpTimestamp(), qp,
+                        input_image.ColorSpace());
   if (ret != 0) {
-    // Reset to avoid requesting key frames too often.
-    if (ret < 0 && propagation_cnt_ > 0)
-      propagation_cnt_ = 0;
     return ret;
-  }
-  // Check Vs. threshold
-  if (propagation_cnt_ > kVp8ErrorPropagationTh) {
-    // Reset to avoid requesting key frames too often.
-    propagation_cnt_ = 0;
-    return WEBRTC_VIDEO_CODEC_ERROR;
   }
   return WEBRTC_VIDEO_CODEC_OK;
 }

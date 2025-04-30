@@ -17,8 +17,10 @@
 #include <string>
 #include <vector>
 
+#include "absl/container/inlined_vector.h"
 #include "api/adaptation/resource.h"
 #include "api/field_trials_view.h"
+#include "api/rtp_sender_interface.h"
 #include "api/sequence_checker.h"
 #include "api/task_queue/pending_task_safety_flag.h"
 #include "api/units/data_rate.h"
@@ -40,7 +42,6 @@
 #include "rtc_base/numerics/exp_filter.h"
 #include "rtc_base/race_checker.h"
 #include "rtc_base/rate_statistics.h"
-#include "rtc_base/task_queue.h"
 #include "rtc_base/thread_annotations.h"
 #include "system_wrappers/include/clock.h"
 #include "video/adaptation/video_stream_encoder_resource_manager.h"
@@ -106,12 +107,15 @@ class VideoStreamEncoder : public VideoStreamEncoderInterface,
 
   void ConfigureEncoder(VideoEncoderConfig config,
                         size_t max_data_payload_length) override;
+  void ConfigureEncoder(VideoEncoderConfig config,
+                        size_t max_data_payload_length,
+                        SetParametersCallback callback) override;
 
   // Permanently stop encoding. After this method has returned, it is
   // guaranteed that no encoded frames will be delivered to the sink.
   void Stop() override;
 
-  void SendKeyFrame() override;
+  void SendKeyFrame(const std::vector<VideoFrameType>& layers = {}) override;
 
   void OnLossNotification(
       const VideoEncoder::LossNotification& loss_notification) override;
@@ -127,9 +131,11 @@ class VideoStreamEncoder : public VideoStreamEncoderInterface,
                                double cwnd_reduce_ratio);
 
  protected:
+  friend class VideoStreamEncoderFrameCadenceRestrictionTest;
+
   // Used for testing. For example the `ScalingObserverInterface` methods must
   // be called on `encoder_queue_`.
-  TaskQueueBase* encoder_queue() { return encoder_queue_.Get(); }
+  TaskQueueBase* encoder_queue() { return encoder_queue_.get(); }
 
   void OnVideoSourceRestrictionsUpdated(
       VideoSourceRestrictions restrictions,
@@ -155,10 +161,9 @@ class VideoStreamEncoder : public VideoStreamEncoderInterface,
         : video_stream_encoder_(video_stream_encoder) {}
     // FrameCadenceAdapterInterface::Callback overrides.
     void OnFrame(Timestamp post_time,
-                 int frames_scheduled_for_processing,
+                 bool queue_overload,
                  const VideoFrame& frame) override {
-      video_stream_encoder_.OnFrame(post_time, frames_scheduled_for_processing,
-                                    frame);
+      video_stream_encoder_.OnFrame(post_time, queue_overload, frame);
     }
     void OnDiscardedFrame() override {
       video_stream_encoder_.OnDiscardedFrame();
@@ -204,10 +209,10 @@ class VideoStreamEncoder : public VideoStreamEncoderInterface,
 
   class DegradationPreferenceManager;
 
-  void ReconfigureEncoder() RTC_RUN_ON(&encoder_queue_);
-  void OnEncoderSettingsChanged() RTC_RUN_ON(&encoder_queue_);
+  void ReconfigureEncoder() RTC_RUN_ON(encoder_queue_);
+  void OnEncoderSettingsChanged() RTC_RUN_ON(encoder_queue_);
   void OnFrame(Timestamp post_time,
-               int frames_scheduled_for_processing,
+               bool queue_overload,
                const VideoFrame& video_frame);
   void OnDiscardedFrame();
   void RequestRefreshFrame();
@@ -219,7 +224,7 @@ class VideoStreamEncoder : public VideoStreamEncoderInterface,
                         int64_t time_when_posted_in_ms);
   // Indicates whether frame should be dropped because the pixel count is too
   // large for the current bitrate configuration.
-  bool DropDueToSize(uint32_t pixel_count) const RTC_RUN_ON(&encoder_queue_);
+  bool DropDueToSize(uint32_t pixel_count) const RTC_RUN_ON(encoder_queue_);
 
   // Implements EncodedImageCallback.
   EncodedImageCallback::Result OnEncodedImage(
@@ -235,25 +240,25 @@ class VideoStreamEncoder : public VideoStreamEncoderInterface,
   // Returns a copy of `rate_settings` with the `bitrate` field updated using
   // the current VideoBitrateAllocator.
   EncoderRateSettings UpdateBitrateAllocation(
-      const EncoderRateSettings& rate_settings) RTC_RUN_ON(&encoder_queue_);
+      const EncoderRateSettings& rate_settings) RTC_RUN_ON(encoder_queue_);
 
-  uint32_t GetInputFramerateFps() RTC_RUN_ON(&encoder_queue_);
+  uint32_t GetInputFramerateFps() RTC_RUN_ON(encoder_queue_);
   void SetEncoderRates(const EncoderRateSettings& rate_settings)
-      RTC_RUN_ON(&encoder_queue_);
+      RTC_RUN_ON(encoder_queue_);
 
   void RunPostEncode(const EncodedImage& encoded_image,
                      int64_t time_sent_us,
                      int temporal_index,
                      DataSize frame_size);
-  void ReleaseEncoder() RTC_RUN_ON(&encoder_queue_);
+  void ReleaseEncoder() RTC_RUN_ON(encoder_queue_);
   // After calling this function `resource_adaptation_processor_` will be null.
   void ShutdownResourceAdaptationQueue();
 
   void CheckForAnimatedContent(const VideoFrame& frame,
                                int64_t time_when_posted_in_ms)
-      RTC_RUN_ON(&encoder_queue_);
+      RTC_RUN_ON(encoder_queue_);
 
-  void RequestEncoderSwitch() RTC_RUN_ON(&encoder_queue_);
+  void RequestEncoderSwitch() RTC_RUN_ON(encoder_queue_);
 
   // Augments an EncodedImage received from an encoder with parsable
   // information.
@@ -261,12 +266,16 @@ class VideoStreamEncoder : public VideoStreamEncoderInterface,
       const EncodedImage& encoded_image,
       const CodecSpecificInfo* codec_specific_info);
 
+  void ProcessDroppedFrame(const VideoFrame& frame,
+                           VideoStreamEncoderObserver::DropReason reason)
+      RTC_RUN_ON(encoder_queue_);
+int b;
   const FieldTrialsView& field_trials_;
   TaskQueueBase* const worker_queue_;
 
   const int number_of_cores_;
 
-  EncoderSink* sink_;
+  EncoderSink* sink_ = nullptr;
   const VideoStreamEncoderSettings settings_;
   const BitrateAllocationCallbackType allocation_cb_type_;
   const RateControlSettings rate_control_settings_;
@@ -282,115 +291,115 @@ class VideoStreamEncoder : public VideoStreamEncoderInterface,
   VideoStreamEncoderObserver* const encoder_stats_observer_;
   // Adapter that avoids public inheritance of the cadence adapter's callback
   // interface.
-  CadenceCallback cadence_callback_;
+  CadenceCallback cadence_callback_{*this};
   // Frame cadence encoder adapter. Frames enter this adapter first, and it then
   // forwards them to our OnFrame method.
   std::unique_ptr<FrameCadenceAdapterInterface> frame_cadence_adapter_
-      RTC_GUARDED_BY(&encoder_queue_) RTC_PT_GUARDED_BY(&encoder_queue_);
+      RTC_GUARDED_BY(encoder_queue_) RTC_PT_GUARDED_BY(encoder_queue_);
 
-  VideoEncoderConfig encoder_config_ RTC_GUARDED_BY(&encoder_queue_);
-  std::unique_ptr<VideoEncoder> encoder_ RTC_GUARDED_BY(&encoder_queue_)
-      RTC_PT_GUARDED_BY(&encoder_queue_);
-  bool encoder_initialized_;
+  VideoEncoderConfig encoder_config_ RTC_GUARDED_BY(encoder_queue_);
+  std::unique_ptr<VideoEncoder> encoder_ RTC_GUARDED_BY(encoder_queue_)
+      RTC_PT_GUARDED_BY(encoder_queue_);
+  bool encoder_initialized_ = false;
   std::unique_ptr<VideoBitrateAllocator> rate_allocator_
-      RTC_GUARDED_BY(&encoder_queue_) RTC_PT_GUARDED_BY(&encoder_queue_);
-  int max_framerate_ RTC_GUARDED_BY(&encoder_queue_);
+      RTC_GUARDED_BY(encoder_queue_) RTC_PT_GUARDED_BY(encoder_queue_);
+  int max_framerate_ RTC_GUARDED_BY(encoder_queue_) = -1;
 
   // Set when ConfigureEncoder has been called in order to lazy reconfigure the
   // encoder on the next frame.
-  bool pending_encoder_reconfiguration_ RTC_GUARDED_BY(&encoder_queue_);
+  bool pending_encoder_reconfiguration_ RTC_GUARDED_BY(encoder_queue_) = false;
   // Set when configuration must create a new encoder object, e.g.,
   // because of a codec change.
-  bool pending_encoder_creation_ RTC_GUARDED_BY(&encoder_queue_);
+  bool pending_encoder_creation_ RTC_GUARDED_BY(encoder_queue_) = false;
+  absl::InlinedVector<SetParametersCallback, 2> encoder_configuration_callbacks_
+      RTC_GUARDED_BY(encoder_queue_);
 
   absl::optional<VideoFrameInfo> last_frame_info_
-      RTC_GUARDED_BY(&encoder_queue_);
-  int crop_width_ RTC_GUARDED_BY(&encoder_queue_);
-  int crop_height_ RTC_GUARDED_BY(&encoder_queue_);
+      RTC_GUARDED_BY(encoder_queue_);
+  int crop_width_ RTC_GUARDED_BY(encoder_queue_) = 0;
+  int crop_height_ RTC_GUARDED_BY(encoder_queue_) = 0;
   absl::optional<uint32_t> encoder_target_bitrate_bps_
-      RTC_GUARDED_BY(&encoder_queue_);
-  size_t max_data_payload_length_ RTC_GUARDED_BY(&encoder_queue_);
+      RTC_GUARDED_BY(encoder_queue_);
+  size_t max_data_payload_length_ RTC_GUARDED_BY(encoder_queue_) = 0;
   absl::optional<EncoderRateSettings> last_encoder_rate_settings_
-      RTC_GUARDED_BY(&encoder_queue_);
-  bool encoder_paused_and_dropped_frame_ RTC_GUARDED_BY(&encoder_queue_);
+      RTC_GUARDED_BY(encoder_queue_);
+  bool encoder_paused_and_dropped_frame_ RTC_GUARDED_BY(encoder_queue_) = false;
 
   // Set to true if at least one frame was sent to encoder since last encoder
   // initialization.
   bool was_encode_called_since_last_initialization_
-      RTC_GUARDED_BY(&encoder_queue_);
+      RTC_GUARDED_BY(encoder_queue_) = false;
 
-  bool encoder_failed_ RTC_GUARDED_BY(&encoder_queue_);
+  bool encoder_failed_ RTC_GUARDED_BY(encoder_queue_) = false;
   Clock* const clock_;
 
   // Used to make sure incoming time stamp is increasing for every frame.
-  int64_t last_captured_timestamp_ RTC_GUARDED_BY(&encoder_queue_);
+  int64_t last_captured_timestamp_ RTC_GUARDED_BY(encoder_queue_) = 0;
   // Delta used for translating between NTP and internal timestamps.
-  const int64_t delta_ntp_internal_ms_ RTC_GUARDED_BY(&encoder_queue_);
+  const int64_t delta_ntp_internal_ms_ RTC_GUARDED_BY(encoder_queue_);
 
-  int64_t last_frame_log_ms_ RTC_GUARDED_BY(&encoder_queue_);
-  int captured_frame_count_ RTC_GUARDED_BY(&encoder_queue_);
-  int dropped_frame_cwnd_pushback_count_ RTC_GUARDED_BY(&encoder_queue_);
-  int dropped_frame_encoder_block_count_ RTC_GUARDED_BY(&encoder_queue_);
-  absl::optional<VideoFrame> pending_frame_ RTC_GUARDED_BY(&encoder_queue_);
-  int64_t pending_frame_post_time_us_ RTC_GUARDED_BY(&encoder_queue_);
+  int64_t last_frame_log_ms_ RTC_GUARDED_BY(encoder_queue_);
+  int captured_frame_count_ RTC_GUARDED_BY(encoder_queue_) = 0;
+  int dropped_frame_cwnd_pushback_count_ RTC_GUARDED_BY(encoder_queue_) = 0;
+  int dropped_frame_encoder_block_count_ RTC_GUARDED_BY(encoder_queue_) = 0;
+  absl::optional<VideoFrame> pending_frame_ RTC_GUARDED_BY(encoder_queue_);
+  int64_t pending_frame_post_time_us_ RTC_GUARDED_BY(encoder_queue_) = 0;
 
   VideoFrame::UpdateRect accumulated_update_rect_
-      RTC_GUARDED_BY(&encoder_queue_);
-  bool accumulated_update_rect_is_valid_ RTC_GUARDED_BY(&encoder_queue_);
+      RTC_GUARDED_BY(encoder_queue_);
+  bool accumulated_update_rect_is_valid_ RTC_GUARDED_BY(encoder_queue_) = true;
 
   // Used for automatic content type detection.
   absl::optional<VideoFrame::UpdateRect> last_update_rect_
-      RTC_GUARDED_BY(&encoder_queue_);
-  Timestamp animation_start_time_ RTC_GUARDED_BY(&encoder_queue_);
-  bool cap_resolution_due_to_video_content_ RTC_GUARDED_BY(&encoder_queue_);
+      RTC_GUARDED_BY(encoder_queue_);
+  Timestamp animation_start_time_ RTC_GUARDED_BY(encoder_queue_) =
+      Timestamp::PlusInfinity();
+  bool cap_resolution_due_to_video_content_ RTC_GUARDED_BY(encoder_queue_) =
+      false;
   // Used to correctly ignore changes in update_rect introduced by
   // resize triggered by animation detection.
   enum class ExpectResizeState {
     kNoResize,              // Normal operation.
     kResize,                // Resize was triggered by the animation detection.
     kFirstFrameAfterResize  // Resize observed.
-  } expect_resize_state_ RTC_GUARDED_BY(&encoder_queue_);
+  } expect_resize_state_ RTC_GUARDED_BY(encoder_queue_) =
+      ExpectResizeState::kNoResize;
 
   FecControllerOverride* fec_controller_override_
-      RTC_GUARDED_BY(&encoder_queue_);
+      RTC_GUARDED_BY(encoder_queue_) = nullptr;
   absl::optional<int64_t> last_parameters_update_ms_
-      RTC_GUARDED_BY(&encoder_queue_);
-  absl::optional<int64_t> last_encode_info_ms_ RTC_GUARDED_BY(&encoder_queue_);
+      RTC_GUARDED_BY(encoder_queue_);
+  absl::optional<int64_t> last_encode_info_ms_ RTC_GUARDED_BY(encoder_queue_);
 
-  VideoEncoder::EncoderInfo encoder_info_ RTC_GUARDED_BY(&encoder_queue_);
-  VideoCodec send_codec_ RTC_GUARDED_BY(&encoder_queue_);
+  VideoEncoder::EncoderInfo encoder_info_ RTC_GUARDED_BY(encoder_queue_);
+  VideoCodec send_codec_ RTC_GUARDED_BY(encoder_queue_);
 
-  FrameDropper frame_dropper_ RTC_GUARDED_BY(&encoder_queue_);
+  FrameDropper frame_dropper_ RTC_GUARDED_BY(encoder_queue_);
   // If frame dropper is not force disabled, frame dropping might still be
   // disabled if VideoEncoder::GetEncoderInfo() indicates that the encoder has a
   // trusted rate controller. This is determined on a per-frame basis, as the
   // encoder behavior might dynamically change.
-  bool force_disable_frame_dropper_ RTC_GUARDED_BY(&encoder_queue_);
+  bool force_disable_frame_dropper_ RTC_GUARDED_BY(encoder_queue_) = false;
   // Incremented on worker thread whenever `frame_dropper_` determines that a
   // frame should be dropped. Decremented on whichever thread runs
   // OnEncodedImage(), which is only called by one thread but not necessarily
   // the worker thread.
-  std::atomic<int> pending_frame_drops_;
+  std::atomic<int> pending_frame_drops_{0};
 
   // Congestion window frame drop ratio (drop 1 in every
   // cwnd_frame_drop_interval_ frames).
-  absl::optional<int> cwnd_frame_drop_interval_ RTC_GUARDED_BY(&encoder_queue_);
+  absl::optional<int> cwnd_frame_drop_interval_ RTC_GUARDED_BY(encoder_queue_);
   // Frame counter for congestion window frame drop.
-  int cwnd_frame_counter_ RTC_GUARDED_BY(&encoder_queue_);
+  int cwnd_frame_counter_ RTC_GUARDED_BY(encoder_queue_) = 0;
 
   std::unique_ptr<EncoderBitrateAdjuster> bitrate_adjuster_
-      RTC_GUARDED_BY(&encoder_queue_);
+      RTC_GUARDED_BY(encoder_queue_);
 
   // TODO(sprang): Change actually support keyframe per simulcast stream, or
   // turn this into a simple bool `pending_keyframe_request_`.
-  std::vector<VideoFrameType> next_frame_types_ RTC_GUARDED_BY(&encoder_queue_);
+  std::vector<VideoFrameType> next_frame_types_ RTC_GUARDED_BY(encoder_queue_);
 
-  FrameEncodeMetadataWriter frame_encode_metadata_writer_;
-
-  // Experiment groups parsed from field trials for realtime video ([0]) and
-  // screenshare ([1]). 0 means no group specified. Positive values are
-  // experiment group numbers incremented by 1.
-  const std::array<uint8_t, 2> experiment_groups_;
+  FrameEncodeMetadataWriter frame_encode_metadata_writer_{this};
 
   struct AutomaticAnimationDetectionExperiment {
     bool enabled = false;
@@ -410,22 +419,22 @@ class VideoStreamEncoder : public VideoStreamEncoderInterface,
   ParseAutomatincAnimationDetectionFieldTrial() const;
 
   AutomaticAnimationDetectionExperiment
-      automatic_animation_detection_experiment_ RTC_GUARDED_BY(&encoder_queue_);
+      automatic_animation_detection_experiment_ RTC_GUARDED_BY(encoder_queue_);
 
   // Provides video stream input states: current resolution and frame rate.
   VideoStreamInputStateProvider input_state_provider_;
 
   const std::unique_ptr<VideoStreamAdapter> video_stream_adapter_
-      RTC_GUARDED_BY(&encoder_queue_);
+      RTC_GUARDED_BY(encoder_queue_);
   // Responsible for adapting input resolution or frame rate to ensure resources
   // (e.g. CPU or bandwidth) are not overused. Adding resources can occur on any
   // thread.
   std::unique_ptr<ResourceAdaptationProcessorInterface>
-      resource_adaptation_processor_ RTC_GUARDED_BY(&encoder_queue_);
+      resource_adaptation_processor_ RTC_GUARDED_BY(encoder_queue_);
   std::unique_ptr<DegradationPreferenceManager> degradation_preference_manager_
-      RTC_GUARDED_BY(&encoder_queue_);
+      RTC_GUARDED_BY(encoder_queue_);
   std::vector<AdaptationConstraint*> adaptation_constraints_
-      RTC_GUARDED_BY(&encoder_queue_);
+      RTC_GUARDED_BY(encoder_queue_);
   // Handles input, output and stats reporting related to VideoStreamEncoder
   // specific resources, such as "encode usage percent" measurements and "QP
   // scaling". Also involved with various mitigations such as initial frame
@@ -434,9 +443,9 @@ class VideoStreamEncoder : public VideoStreamEncoderInterface,
   // tied to the VideoStreamEncoder (which is destroyed off the encoder queue)
   // and its resource list is accessible from any thread.
   VideoStreamEncoderResourceManager stream_resource_manager_
-      RTC_GUARDED_BY(&encoder_queue_);
+      RTC_GUARDED_BY(encoder_queue_);
   std::vector<rtc::scoped_refptr<Resource>> additional_resources_
-      RTC_GUARDED_BY(&encoder_queue_);
+      RTC_GUARDED_BY(encoder_queue_);
   // Carries out the VideoSourceRestrictions provided by the
   // ResourceAdaptationProcessor, i.e. reconfigures the source of video frames
   // to provide us with different resolution or frame rate.
@@ -456,6 +465,7 @@ class VideoStreamEncoder : public VideoStreamEncoderInterface,
   bool switch_encoder_on_init_failures_;
 
   const absl::optional<int> vp9_low_tier_core_threshold_;
+  const absl::optional<int> experimental_encoder_thread_limit_;
 
   // These are copies of restrictions (glorified max_pixel_count) set by
   // a) OnVideoSourceRestrictionsUpdated
@@ -467,9 +477,9 @@ class VideoStreamEncoder : public VideoStreamEncoderInterface,
   // so that ownership on restrictions/wants is kept on &encoder_queue_, that
   // these extra copies would not be needed.
   absl::optional<VideoSourceRestrictions> latest_restrictions_
-      RTC_GUARDED_BY(&encoder_queue_);
+      RTC_GUARDED_BY(encoder_queue_);
   absl::optional<VideoSourceRestrictions> animate_restrictions_
-      RTC_GUARDED_BY(&encoder_queue_);
+      RTC_GUARDED_BY(encoder_queue_);
 
   // Used to cancel any potentially pending tasks to the worker thread.
   // Refrenced by tasks running on `encoder_queue_` so need to be destroyed
@@ -477,9 +487,7 @@ class VideoStreamEncoder : public VideoStreamEncoderInterface,
   // `worker_queue_`.
   ScopedTaskSafety task_safety_;
 
-  // Public methods are proxied to the task queues. The queues must be destroyed
-  // first to make sure no tasks run that use other members.
-  rtc::TaskQueue encoder_queue_;
+  std::unique_ptr<TaskQueueBase, TaskQueueDeleter> encoder_queue_;
 };
 
 }  // namespace webrtc

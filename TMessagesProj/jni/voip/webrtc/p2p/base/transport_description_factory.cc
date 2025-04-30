@@ -23,7 +23,7 @@ namespace cricket {
 
 TransportDescriptionFactory::TransportDescriptionFactory(
     const webrtc::FieldTrialsView& field_trials)
-    : secure_(SEC_DISABLED), field_trials_(field_trials) {}
+    : field_trials_(field_trials) {}
 
 TransportDescriptionFactory::~TransportDescriptionFactory() = default;
 
@@ -47,13 +47,15 @@ std::unique_ptr<TransportDescription> TransportDescriptionFactory::CreateOffer(
     desc->AddOption(ICE_OPTION_RENOMINATION);
   }
 
-  // If we are trying to establish a secure transport, add a fingerprint.
-  if (secure_ == SEC_ENABLED || secure_ == SEC_REQUIRED) {
-    // Fail if we can't create the fingerprint.
-    // If we are the initiator set role to "actpass".
-    if (!SetSecurityInfo(desc.get(), CONNECTIONROLE_ACTPASS)) {
-      return NULL;
-    }
+  // If we are not trying to establish a secure transport, don't add a
+  // fingerprint.
+  if (insecure_ && !certificate_) {
+    return desc;
+  }
+  // Fail if we can't create the fingerprint.
+  // If we are the initiator set role to "actpass".
+  if (!SetSecurityInfo(desc.get(), CONNECTIONROLE_ACTPASS)) {
+    return NULL;
   }
 
   return desc;
@@ -87,43 +89,49 @@ std::unique_ptr<TransportDescription> TransportDescriptionFactory::CreateAnswer(
   if (options.enable_ice_renomination) {
     desc->AddOption(ICE_OPTION_RENOMINATION);
   }
-
-  // Negotiate security params.
-  if (offer && offer->identity_fingerprint.get()) {
-    // The offer supports DTLS, so answer with DTLS, as long as we support it.
-    if (secure_ == SEC_ENABLED || secure_ == SEC_REQUIRED) {
-      ConnectionRole role = CONNECTIONROLE_NONE;
-      // If the offer does not constrain the role, go with preference.
-      if (offer->connection_role == CONNECTIONROLE_ACTPASS) {
-        role = (options.prefer_passive_role) ? CONNECTIONROLE_PASSIVE
-                                             : CONNECTIONROLE_ACTIVE;
-      } else if (offer->connection_role == CONNECTIONROLE_ACTIVE) {
-        role = CONNECTIONROLE_PASSIVE;
-      } else if (offer->connection_role == CONNECTIONROLE_PASSIVE) {
-        role = CONNECTIONROLE_ACTIVE;
-      } else if (offer->connection_role == CONNECTIONROLE_NONE) {
-        // This case may be reached if a=setup is not present in the SDP.
-        RTC_LOG(LS_WARNING) << "Remote offer connection role is NONE, which is "
-                               "a protocol violation";
-        role = (options.prefer_passive_role) ? CONNECTIONROLE_PASSIVE
-                                             : CONNECTIONROLE_ACTIVE;
-      } else {
-        RTC_LOG(LS_ERROR) << "Remote offer connection role is " << role
-                          << " which is a protocol violation";
-        RTC_DCHECK_NOTREACHED();
-      }
-
-      if (!SetSecurityInfo(desc.get(), role)) {
-        return NULL;
-      }
+  // Special affordance for testing: Answer without DTLS params
+  // if we are insecure without a certificate, or if we are
+  // insecure with a non-DTLS offer.
+  if ((!certificate_ || !offer->identity_fingerprint.get()) && insecure()) {
+    return desc;
+  }
+  if (!offer->identity_fingerprint.get()) {
+    if (require_transport_attributes) {
+      // We require DTLS, but the other side didn't offer it. Fail.
+      RTC_LOG(LS_WARNING) << "Failed to create TransportDescription answer "
+                             "because of incompatible security settings";
+      return NULL;
     }
-  } else if (require_transport_attributes && secure_ == SEC_REQUIRED) {
-    // We require DTLS, but the other side didn't offer it. Fail.
-    RTC_LOG(LS_WARNING) << "Failed to create TransportDescription answer "
-                           "because of incompatible security settings";
+    // This may be a bundled section, fingerprint may legitimately be missing.
+    return desc;
+  }
+  // Negotiate security params.
+  // The offer supports DTLS, so answer with DTLS.
+  RTC_CHECK(certificate_);
+  ConnectionRole role = CONNECTIONROLE_NONE;
+  // If the offer does not constrain the role, go with preference.
+  if (offer->connection_role == CONNECTIONROLE_ACTPASS) {
+    role = (options.prefer_passive_role) ? CONNECTIONROLE_PASSIVE
+                                         : CONNECTIONROLE_ACTIVE;
+  } else if (offer->connection_role == CONNECTIONROLE_ACTIVE) {
+    role = CONNECTIONROLE_PASSIVE;
+  } else if (offer->connection_role == CONNECTIONROLE_PASSIVE) {
+    role = CONNECTIONROLE_ACTIVE;
+  } else if (offer->connection_role == CONNECTIONROLE_NONE) {
+    // This case may be reached if a=setup is not present in the SDP.
+    RTC_LOG(LS_WARNING) << "Remote offer connection role is NONE, which is "
+                           "a protocol violation";
+    role = (options.prefer_passive_role) ? CONNECTIONROLE_PASSIVE
+                                         : CONNECTIONROLE_ACTIVE;
+  } else {
+    RTC_LOG(LS_ERROR) << "Remote offer connection role is " << role
+                      << " which is a protocol violation";
+    RTC_DCHECK_NOTREACHED();
     return NULL;
   }
-
+  if (!SetSecurityInfo(desc.get(), role)) {
+    return NULL;
+  }
   return desc;
 }
 

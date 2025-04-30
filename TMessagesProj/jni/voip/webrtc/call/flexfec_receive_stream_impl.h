@@ -59,38 +59,25 @@ class FlexfecReceiveStreamImpl : public FlexfecReceiveStream {
   void SetPayloadType(int payload_type) override;
   int payload_type() const override;
 
-  // ReceiveStreamInterface impl.
-  void SetRtpExtensions(std::vector<RtpExtension> extensions) override;
-  RtpHeaderExtensionMap GetRtpExtensionMap() const override;
-
   // Updates the `rtp_video_stream_receiver_`'s `local_ssrc` when the default
   // sender has been created, changed or removed.
   void SetLocalSsrc(uint32_t local_ssrc);
 
   uint32_t remote_ssrc() const { return remote_ssrc_; }
 
-  bool transport_cc() const override {
-    RTC_DCHECK_RUN_ON(&packet_sequence_checker_);
-    return transport_cc_;
-  }
-
-  void SetTransportCc(bool transport_cc) override {
-    RTC_DCHECK_RUN_ON(&packet_sequence_checker_);
-    transport_cc_ = transport_cc;
-  }
-
   void SetRtcpMode(RtcpMode mode) override {
     RTC_DCHECK_RUN_ON(&packet_sequence_checker_);
     rtp_rtcp_->SetRTCPStatus(mode);
   }
 
+  const ReceiveStatistics* GetStats() const override {
+    return rtp_receive_statistics_.get();
+  }
+
  private:
   RTC_NO_UNIQUE_ADDRESS SequenceChecker packet_sequence_checker_;
 
-  RtpHeaderExtensionMap extension_map_;
-
   const uint32_t remote_ssrc_;
-  bool transport_cc_ RTC_GUARDED_BY(packet_sequence_checker_);
 
   // `payload_type_` is initially set to -1, indicating that FlexFec is
   // disabled.

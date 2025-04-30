@@ -1,112 +1,16 @@
-/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
- * All rights reserved.
- *
- * This package is an SSL implementation written
- * by Eric Young (eay@cryptsoft.com).
- * The implementation was written so as to conform with Netscapes SSL.
- *
- * This library is free for commercial and non-commercial use as long as
- * the following conditions are aheared to.  The following conditions
- * apply to all code found in this distribution, be it the RC4, RSA,
- * lhash, DES, etc., code; not just the SSL code.  The SSL documentation
- * included with this distribution is covered by the same copyright terms
- * except that the holder is Tim Hudson (tjh@cryptsoft.com).
- *
- * Copyright remains Eric Young's, and as such any Copyright notices in
- * the code are not to be removed.
- * If this package is used in a product, Eric Young should be given attribution
- * as the author of the parts of the library used.
- * This can be in the form of a textual message at program startup or
- * in documentation (online or textual) provided with the package.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- * 1. Redistributions of source code must retain the copyright
- *    notice, this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
- * 3. All advertising materials mentioning features or use of this software
- *    must display the following acknowledgement:
- *    "This product includes cryptographic software written by
- *     Eric Young (eay@cryptsoft.com)"
- *    The word 'cryptographic' can be left out if the rouines from the library
- *    being used are not cryptographic related :-).
- * 4. If you include any Windows specific code (or a derivative thereof) from
- *    the apps directory (application code) you must include an acknowledgement:
- *    "This product includes software written by Tim Hudson (tjh@cryptsoft.com)"
- *
- * THIS SOFTWARE IS PROVIDED BY ERIC YOUNG ``AS IS'' AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
- * SUCH DAMAGE.
- *
- * The licence and distribution terms for any publically available version or
- * derivative of this code cannot be changed.  i.e. this code cannot simply be
- * copied and put under another distribution licence
- * [including the GNU Public Licence.]
- */
-/* ====================================================================
- * Copyright (c) 1998-2007 The OpenSSL Project.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- *
- * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- *
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- *
- * 3. All advertising materials mentioning features or use of this
- *    software must display the following acknowledgment:
- *    "This product includes software developed by the OpenSSL Project
- *    for use in the OpenSSL Toolkit. (http://www.openssl.org/)"
- *
- * 4. The names "OpenSSL Toolkit" and "OpenSSL Project" must not be used to
- *    endorse or promote products derived from this software without
- *    prior written permission. For written permission, please contact
- *    openssl-core@openssl.org.
- *
- * 5. Products derived from this software may not be called "OpenSSL"
- *    nor may "OpenSSL" appear in their names without prior written
- *    permission of the OpenSSL Project.
- *
- * 6. Redistributions of any form whatsoever must retain the following
- *    acknowledgment:
- *    "This product includes software developed by the OpenSSL Project
- *    for use in the OpenSSL Toolkit (http://www.openssl.org/)"
- *
- * THIS SOFTWARE IS PROVIDED BY THE OpenSSL PROJECT ``AS IS'' AND ANY
- * EXPRESSED OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
- * PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE OpenSSL PROJECT OR
- * ITS CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
- * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
- * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
- * OF THE POSSIBILITY OF SUCH DAMAGE.
- * ====================================================================
- *
- * This product includes cryptographic software written by Eric Young
- * (eay@cryptsoft.com).  This product includes software written by Tim
- * Hudson (tjh@cryptsoft.com).
- *
- */
+// Copyright 1995-2016 The OpenSSL Project Authors. All Rights Reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 #include <openssl/ssl.h>
 
@@ -124,129 +28,106 @@
 #include "internal.h"
 
 
-static int xname_cmp(const X509_NAME **a, const X509_NAME **b) {
+static int xname_cmp(const X509_NAME *const *a, const X509_NAME *const *b) {
   return X509_NAME_cmp(*a, *b);
 }
 
-// TODO(davidben): Is there any reason this doesn't call
-// |SSL_add_file_cert_subjects_to_stack|?
-STACK_OF(X509_NAME) *SSL_load_client_CA_file(const char *file) {
-  BIO *in;
-  X509 *x = NULL;
-  X509_NAME *xn = NULL;
-  STACK_OF(X509_NAME) *ret = NULL, *sk;
-
-  sk = sk_X509_NAME_new(xname_cmp);
-  in = BIO_new(BIO_s_file());
-
-  if (sk == NULL || in == NULL) {
-    OPENSSL_PUT_ERROR(SSL, ERR_R_MALLOC_FAILURE);
-    goto err;
+static int add_bio_cert_subjects_to_stack(STACK_OF(X509_NAME) *out, BIO *bio,
+                                          bool allow_empty) {
+  // This function historically sorted |out| after every addition and skipped
+  // duplicates. This implementation preserves that behavior, but only sorts at
+  // the end, to avoid a quadratic running time. Existing duplicates in |out|
+  // are preserved, but do not introduce new duplicates.
+  bssl::UniquePtr<STACK_OF(X509_NAME)> to_append(sk_X509_NAME_new(xname_cmp));
+  if (to_append == nullptr) {
+    return 0;
   }
 
-  if (!BIO_read_filename(in, file)) {
-    goto err;
-  }
+  // Temporarily switch the comparison function for |out|.
+  struct RestoreCmpFunc {
+    ~RestoreCmpFunc() { sk_X509_NAME_set_cmp_func(stack, old_cmp); }
+    STACK_OF(X509_NAME) *stack;
+    int (*old_cmp)(const X509_NAME *const *, const X509_NAME *const *);
+  };
+  RestoreCmpFunc restore = {out, sk_X509_NAME_set_cmp_func(out, xname_cmp)};
 
+  sk_X509_NAME_sort(out);
+  bool first = true;
   for (;;) {
-    if (PEM_read_bio_X509(in, &x, NULL, NULL) == NULL) {
+    bssl::UniquePtr<X509> x509(
+        PEM_read_bio_X509(bio, nullptr, nullptr, nullptr));
+    if (x509 == nullptr) {
+      if (first && !allow_empty) {
+        return 0;
+      }
+      // TODO(davidben): This ignores PEM syntax errors. It should only succeed
+      // on |PEM_R_NO_START_LINE|.
+      ERR_clear_error();
       break;
     }
-    if (ret == NULL) {
-      ret = sk_X509_NAME_new_null();
-      if (ret == NULL) {
-        OPENSSL_PUT_ERROR(SSL, ERR_R_MALLOC_FAILURE);
-        goto err;
-      }
-    }
-    xn = X509_get_subject_name(x);
-    if (xn == NULL) {
-      goto err;
-    }
+    first = false;
 
-    // Check for duplicates.
-    sk_X509_NAME_sort(sk);
-    if (sk_X509_NAME_find(sk, NULL, xn)) {
+    X509_NAME *subject = X509_get_subject_name(x509.get());
+    // Skip if already present in |out|. Duplicates in |to_append| will be
+    // handled separately.
+    if (sk_X509_NAME_find(out, /*out_index=*/NULL, subject)) {
       continue;
     }
 
-    xn = X509_NAME_dup(xn);
-    if (xn == NULL ||
-        !sk_X509_NAME_push(sk /* non-owning */, xn) ||
-        !sk_X509_NAME_push(ret /* owning */, xn)) {
-      X509_NAME_free(xn);
-      goto err;
+    bssl::UniquePtr<X509_NAME> copy(X509_NAME_dup(subject));
+    if (copy == nullptr ||
+        !bssl::PushToStack(to_append.get(), std::move(copy))) {
+      return 0;
     }
   }
 
-  if (0) {
-  err:
-    sk_X509_NAME_pop_free(ret, X509_NAME_free);
-    ret = NULL;
+  // Append |to_append| to |stack|, skipping any duplicates.
+  sk_X509_NAME_sort(to_append.get());
+  size_t num = sk_X509_NAME_num(to_append.get());
+  for (size_t i = 0; i < num; i++) {
+    bssl::UniquePtr<X509_NAME> name(sk_X509_NAME_value(to_append.get(), i));
+    sk_X509_NAME_set(to_append.get(), i, nullptr);
+    if (i + 1 < num &&
+        X509_NAME_cmp(name.get(), sk_X509_NAME_value(to_append.get(), i + 1)) ==
+            0) {
+      continue;
+    }
+    if (!bssl::PushToStack(out, std::move(name))) {
+      return 0;
+    }
   }
 
-  sk_X509_NAME_free(sk);
-  BIO_free(in);
-  X509_free(x);
-  if (ret != NULL) {
-    ERR_clear_error();
-  }
-  return ret;
+  // Sort |out| one last time, to preserve the historical behavior of
+  // maintaining the sorted list.
+  sk_X509_NAME_sort(out);
+  return 1;
 }
 
-int SSL_add_file_cert_subjects_to_stack(STACK_OF(X509_NAME) *stack,
+int SSL_add_bio_cert_subjects_to_stack(STACK_OF(X509_NAME) *out, BIO *bio) {
+  return add_bio_cert_subjects_to_stack(out, bio, /*allow_empty=*/true);
+}
+
+STACK_OF(X509_NAME) *SSL_load_client_CA_file(const char *file) {
+  bssl::UniquePtr<BIO> in(BIO_new_file(file, "rb"));
+  if (in == nullptr) {
+    return nullptr;
+  }
+  bssl::UniquePtr<STACK_OF(X509_NAME)> ret(sk_X509_NAME_new_null());
+  if (ret == nullptr ||  //
+      !add_bio_cert_subjects_to_stack(ret.get(), in.get(),
+                                      /*allow_empty=*/false)) {
+    return nullptr;
+  }
+  return ret.release();
+}
+
+int SSL_add_file_cert_subjects_to_stack(STACK_OF(X509_NAME) *out,
                                         const char *file) {
-  BIO *in;
-  X509 *x = NULL;
-  X509_NAME *xn = NULL;
-  int ret = 0;
-  int (*oldcmp)(const X509_NAME **a, const X509_NAME **b);
-
-  oldcmp = sk_X509_NAME_set_cmp_func(stack, xname_cmp);
-  in = BIO_new(BIO_s_file());
-
-  if (in == NULL) {
-    OPENSSL_PUT_ERROR(SSL, ERR_R_MALLOC_FAILURE);
-    goto err;
+  bssl::UniquePtr<BIO> in(BIO_new_file(file, "rb"));
+  if (in == nullptr) {
+    return 0;
   }
-
-  if (!BIO_read_filename(in, file)) {
-    goto err;
-  }
-
-  for (;;) {
-    if (PEM_read_bio_X509(in, &x, NULL, NULL) == NULL) {
-      break;
-    }
-    xn = X509_get_subject_name(x);
-    if (xn == NULL) {
-      goto err;
-    }
-
-    // Check for duplicates.
-    sk_X509_NAME_sort(stack);
-    if (sk_X509_NAME_find(stack, NULL, xn)) {
-      continue;
-    }
-
-    xn = X509_NAME_dup(xn);
-    if (xn == NULL ||
-        !sk_X509_NAME_push(stack, xn)) {
-      X509_NAME_free(xn);
-      goto err;
-    }
-  }
-
-  ERR_clear_error();
-  ret = 1;
-
-err:
-  BIO_free(in);
-  X509_free(x);
-
-  (void) sk_X509_NAME_set_cmp_func(stack, oldcmp);
-
-  return ret;
+  return SSL_add_bio_cert_subjects_to_stack(out, in.get());
 }
 
 int SSL_use_certificate_file(SSL *ssl, const char *file, int type) {

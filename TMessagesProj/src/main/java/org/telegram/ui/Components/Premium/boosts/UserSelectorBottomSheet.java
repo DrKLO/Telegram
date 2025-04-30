@@ -2,9 +2,11 @@ package org.telegram.ui.Components.Premium.boosts;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
 import static org.telegram.messenger.LocaleController.formatPluralString;
+import static org.telegram.messenger.LocaleController.formatPluralStringComma;
 import static org.telegram.messenger.LocaleController.getString;
 
 import android.annotation.SuppressLint;
+import android.content.Context;
 import android.content.Intent;
 import android.content.res.Configuration;
 import android.graphics.Canvas;
@@ -17,11 +19,13 @@ import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.TextUtils;
 import android.text.style.ReplacementSpan;
+import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.HapticFeedbackConstants;
 import android.view.View;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -57,8 +61,10 @@ import org.telegram.ui.Components.AlertsCreator;
 import org.telegram.ui.Components.BottomSheetWithRecyclerListView;
 import org.telegram.ui.Components.Bulletin;
 import org.telegram.ui.Components.BulletinFactory;
+import org.telegram.ui.Components.CheckBox2;
 import org.telegram.ui.Components.CombinedDrawable;
 import org.telegram.ui.Components.CubicBezierInterpolator;
+import org.telegram.ui.Components.HideViewAfterAnimation;
 import org.telegram.ui.Components.ItemOptions;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.Premium.boosts.adapters.SelectorAdapter;
@@ -68,6 +74,7 @@ import org.telegram.ui.Components.Premium.boosts.cells.selector.SelectorHeaderCe
 import org.telegram.ui.Components.Premium.boosts.cells.selector.SelectorSearchCell;
 import org.telegram.ui.Components.Premium.boosts.cells.selector.SelectorUserCell;
 import org.telegram.ui.Components.RecyclerListView;
+import org.telegram.ui.Components.ScaleStateListAnimator;
 import org.telegram.ui.Gifts.GiftSheet;
 import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.PrivacyControlActivity;
@@ -77,6 +84,7 @@ import org.telegram.ui.Stars.StarsIntroActivity;
 import org.telegram.ui.Stories.recorder.ButtonWithCounterView;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -112,7 +120,7 @@ public class UserSelectorBottomSheet extends BottomSheetWithRecyclerListView imp
             return instance;
         }
         final int finalType = type;
-        UserSelectorBottomSheet sheet = new UserSelectorBottomSheet(fragment, userId, birthdayState, type, true) {
+        UserSelectorBottomSheet sheet = new UserSelectorBottomSheet(fragment.getContext(), fragment.getCurrentAccount(), userId, birthdayState, type, true, fragment.getResourceProvider()) {
             @Override
             protected int getType() {
                 return finalType;
@@ -163,6 +171,7 @@ public class UserSelectorBottomSheet extends BottomSheetWithRecyclerListView imp
     private final SelectorSearchCell searchField;
     private final View sectionCell;
     private final SelectorHeaderCell headerView;
+    private CheckBox2 videoCheckbox;
     private final SelectorBtnCell buttonContainer;
     private final FrameLayout bulletinContainer;
 
@@ -268,11 +277,17 @@ public class UserSelectorBottomSheet extends BottomSheetWithRecyclerListView imp
         };
     }
 
-    public UserSelectorBottomSheet(BaseFragment fragment, long userId, BirthdayController.BirthdayState state, int type, boolean needFocus) {
-        super(fragment, needFocus, false, false, fragment == null ? null : fragment.getResourceProvider());
+    public UserSelectorBottomSheet(Context context, int currentAccount, long userId, BirthdayController.BirthdayState state, int type, boolean needFocus, Theme.ResourcesProvider resourcesProvider) {
+        super(context, null, needFocus, false, false, resourcesProvider);
+        this.currentAccount = currentAccount;
+        fixNavigationBar(Theme.getColor(Theme.key_dialogBackground, resourcesProvider));
+        drawDoubleNavigationBar = false;
 
         this.type = type;
         this.birthdays = state;
+        if (selectorAdapter != null) {
+            selectorAdapter.setNeedChecks2(needChecks());
+        }
 //        if (birthdays != null && !birthdays.today.isEmpty() && type == TYPE_PREMIUM) {
 //            for (TLRPC.User user : birthdays.today) {
 //                selectedIds.add(user.id);
@@ -280,8 +295,8 @@ public class UserSelectorBottomSheet extends BottomSheetWithRecyclerListView imp
 //            }
 //        }
         this.userId = userId;
-        if (userId != 0 && fragment != null && !selectedIds.contains(userId)) {
-            TLRPC.User user = fragment.getMessagesController().getUser(userId);
+        if (userId != 0 && !selectedIds.contains(userId)) {
+            TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(userId);
             selectedIds.add(user.id);
             allSelectedObjects.put(user.id, user);
         }
@@ -339,6 +354,29 @@ public class UserSelectorBottomSheet extends BottomSheetWithRecyclerListView imp
         buttonContainer.setOrientation(LinearLayout.VERTICAL);
         buttonContainer.setPadding(dp(10), dp(10), dp(10), dp(10));
         buttonContainer.setBackgroundColor(Theme.getColor(Theme.key_dialogBackground, resourcesProvider));
+        if (type == TYPE_CALL) {
+            LinearLayout videoLayout = new LinearLayout(context);
+            videoLayout.setPadding(dp(12), dp(4), dp(12), dp(4));
+            videoLayout.setClipToPadding(false);
+            videoLayout.setOrientation(LinearLayout.HORIZONTAL);
+            videoLayout.setBackground(Theme.createRadSelectorDrawable(getThemedColor(Theme.key_listSelector), 6, 6));
+            videoCheckbox = new CheckBox2(context, 24, resourcesProvider);
+            videoCheckbox.setColor(Theme.key_featuredStickers_addButton, Theme.key_checkboxDisabled, Theme.key_checkboxCheck);
+            videoCheckbox.setDrawUnchecked(true);
+            videoCheckbox.setChecked(false, false);
+            videoCheckbox.setDrawBackgroundAsArc(10);
+            videoLayout.addView(videoCheckbox, LayoutHelper.createLinear(26, 26, Gravity.CENTER_VERTICAL, 0, 0, 0, 0));
+            TextView videoTextView = new TextView(context);
+            videoTextView.setTextColor(getThemedColor(Theme.key_dialogTextBlack));
+            videoTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+            videoTextView.setText(LocaleController.getString(R.string.ConferenceCallWithVideo));
+            videoLayout.addView(videoTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL, 9, 0, 0, 0));
+            ScaleStateListAnimator.apply(videoLayout, 0.025f, 1.5f);
+            videoLayout.setOnClickListener(v -> {
+                videoCheckbox.setChecked(!videoCheckbox.isChecked(), true);
+            });
+            buttonContainer.addView(videoLayout, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER, 0, 0, 0, 8));
+        }
         actionButton = new ButtonWithCounterView(getContext(), resourcesProvider) {
             @Override
             protected float calculateCounterWidth(float width, float percent) {
@@ -351,6 +389,10 @@ public class UserSelectorBottomSheet extends BottomSheetWithRecyclerListView imp
                 return width;
             }
         };
+        if (type == TYPE_CALL) {
+            buttonContainer.setAlpha(0.0f);
+            buttonContainer.setVisibility(View.GONE);
+        }
         actionButton.setOnClickListener(v -> next());
         buttonContainer.addView(actionButton, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48, Gravity.BOTTOM | Gravity.FILL_HORIZONTAL));
         if (type == TYPE_CALL) {
@@ -372,7 +414,14 @@ public class UserSelectorBottomSheet extends BottomSheetWithRecyclerListView imp
         });
         recyclerListView.setOnItemClickListener((view, position, x, y) -> {
             if (view instanceof TextCell) {
-                openBirthdaySetup();
+                if (type == TYPE_CALL) {
+                    if (onShareCallLinkListener != null) {
+                        onShareCallLinkListener.run();
+                        dismiss();
+                    }
+                } else {
+                    openBirthdaySetup();
+                }
                 return;
             }
             if (view instanceof SelectorUserCell) {
@@ -414,16 +463,38 @@ public class UserSelectorBottomSheet extends BottomSheetWithRecyclerListView imp
                         .show();
                     return;
                 }
+                if (type == TYPE_CALL && selectedIds.isEmpty()) {
+                    selectedIds.add(id);
+                    if (onUsersSelectedListener != null) {
+                        onUsersSelectedListener.run(videoCheckbox != null && videoCheckbox.isChecked(), selectedIds);
+                        onUsersSelectedListener = null;
+                    }
+                    dismiss();
+                    return;
+                }
+                final boolean wasButtonVisible = type != TYPE_CALL || !selectedIds.isEmpty();
                 if (selectedIds.contains(id)) {
                     selectedIds.remove(id);
                 } else {
                     selectedIds.add(id);
                     allSelectedObjects.put(id, user);
                 }
-                if (selectedIds.size() == 11) {
+                if (selectedIds.size() == getLimit() + 1) {
                     selectedIds.remove(id);
                     showMaximumUsersToast();
                     return;
+                }
+                final boolean isButtonVisible = type != TYPE_CALL || !selectedIds.isEmpty();
+                if (wasButtonVisible != isButtonVisible) {
+                    buttonContainer.setVisibility(View.VISIBLE);
+                    buttonContainer.animate()
+                        .alpha(isButtonVisible ? 1.0f : 0.0f)
+                        .translationY(isButtonVisible ? 0 : dp(12))
+                        .setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT)
+                        .setDuration(320)
+                        .withEndAction(!isButtonVisible ? () -> buttonContainer.setVisibility(View.GONE) : null)
+                        .start();
+                    selectorAdapter.setCallButtonsVisible(!isButtonVisible);
                 }
                 checkEditTextHint();
                 searchField.updateSpans(true, selectedIds, () -> {
@@ -434,6 +505,48 @@ public class UserSelectorBottomSheet extends BottomSheetWithRecyclerListView imp
                 clearSearchAfterSelect();
             }
         });
+        if (type == TYPE_CALL) {
+            recyclerListView.setOnItemLongClickListener((view, position, x, y) -> {
+                if (view instanceof SelectorUserCell) {
+                    TLRPC.User user = ((SelectorUserCell) view).getUser();
+                    TLRPC.Chat chat = ((SelectorUserCell) view).getChat();
+                    long id = user != null ? user.id : -chat.id;
+                    final boolean wasButtonVisible = type != TYPE_CALL || !selectedIds.isEmpty();
+                    if (selectedIds.contains(id)) {
+                        selectedIds.remove(id);
+                    } else {
+                        selectedIds.add(id);
+                        allSelectedObjects.put(id, user);
+                    }
+                    if (selectedIds.size() == getLimit() + 1) {
+                        selectedIds.remove(id);
+                        showMaximumUsersToast();
+                        return true;
+                    }
+                    final boolean isButtonVisible = type != TYPE_CALL || !selectedIds.isEmpty();
+                    if (wasButtonVisible != isButtonVisible) {
+                        buttonContainer.setVisibility(View.VISIBLE);
+                        buttonContainer.animate()
+                            .alpha(isButtonVisible ? 1.0f : 0.0f)
+                            .translationY(isButtonVisible ? 0 : dp(12))
+                            .setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT)
+                            .setDuration(320)
+                            .withEndAction(!isButtonVisible ? () -> buttonContainer.setVisibility(View.GONE) : null)
+                            .start();
+                        selectorAdapter.setCallButtonsVisible(!isButtonVisible);
+                    }
+                    checkEditTextHint();
+                    searchField.updateSpans(true, selectedIds, () -> {
+                        checkEditTextHint();
+                        updateList(true, false);
+                    }, null);
+                    updateList(true, true);
+                    clearSearchAfterSelect();
+                    return true;
+                }
+                return false;
+            });
+        }
         DefaultItemAnimator itemAnimator = new DefaultItemAnimator();
         itemAnimator.setDurations(350);
         itemAnimator.setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT);
@@ -465,7 +578,6 @@ public class UserSelectorBottomSheet extends BottomSheetWithRecyclerListView imp
         initContacts(false);
         initHints(false);
         updateList(false, true);
-        fixNavigationBar();
         if (type == TYPE_PREMIUM || type == TYPE_STAR_GIFT) {
             BoostRepository.loadGiftOptions(currentAccount, null, arg -> {
                 paymentOptions.clear();
@@ -505,8 +617,8 @@ public class UserSelectorBottomSheet extends BottomSheetWithRecyclerListView imp
 
     @Override
     protected void onPreDraw(Canvas canvas, int top, float progressToFullView) {
-        float minTop = AndroidUtilities.statusBarHeight + (headerView.getMeasuredHeight() - AndroidUtilities.statusBarHeight - AndroidUtilities.dp(40)) / 2f;
-        float fromY = Math.max(top, minTop) + AndroidUtilities.dp(8);
+        final float minTop = AndroidUtilities.statusBarHeight - dp(8);
+        final float fromY = Math.max(top, minTop) + dp(8);
         headerView.setTranslationY(fromY);
         searchField.setTranslationY(headerView.getTranslationY() + headerView.getMeasuredHeight());
         sectionCell.setTranslationY(searchField.getTranslationY() + searchField.getMeasuredHeight());
@@ -529,9 +641,10 @@ public class UserSelectorBottomSheet extends BottomSheetWithRecyclerListView imp
         }
         if (type == TYPE_CALL) {
             if (onUsersSelectedListener != null) {
-                onUsersSelectedListener.run(selectedIds);
+                onUsersSelectedListener.run(videoCheckbox != null && videoCheckbox.isChecked(), selectedIds);
                 onUsersSelectedListener = null;
             }
+            dismiss();
             return;
         }
         List<TLRPC.TL_premiumGiftCodeOption> options = BoostRepository.filterGiftOptions(paymentOptions, selectedUsers.size());
@@ -545,7 +658,6 @@ public class UserSelectorBottomSheet extends BottomSheetWithRecyclerListView imp
             new GiftSheet(getContext(), currentAccount, userId, options, this::dismiss)
                 .setBirthday(birthdays != null && birthdays.contains(userId))
                 .show();
-            return;
         }
     }
 
@@ -553,7 +665,7 @@ public class UserSelectorBottomSheet extends BottomSheetWithRecyclerListView imp
         if (animate) {
             LinearSmoothScrollerCustom linearSmoothScroller = new LinearSmoothScrollerCustom(getContext(), LinearSmoothScrollerCustom.POSITION_TOP, .6f);
             linearSmoothScroller.setTargetPosition(1);
-            linearSmoothScroller.setOffset(AndroidUtilities.dp(36));
+            linearSmoothScroller.setOffset(dp(36));
             recyclerListView.getLayoutManager().startSmoothScroll(linearSmoothScroller);
         } else {
             recyclerListView.scrollToPosition(0);
@@ -585,8 +697,21 @@ public class UserSelectorBottomSheet extends BottomSheetWithRecyclerListView imp
         AndroidUtilities.cancelRunOnUIThread(remoteSearchRunnable);
     }
 
+    protected int getLimit() {
+        if (type == TYPE_CALL) {
+            return Math.max(0, MessagesController.getInstance(currentAccount).conferenceCallSizeLimit - excludeUserIds.size() - 1);
+        } else {
+            return 10;
+        }
+    }
+
     private void showMaximumUsersToast() {
-        String text = getString("BoostingSelectUpToWarningUsers", R.string.BoostingSelectUpToWarningUsers);
+        String text;
+        if (type == TYPE_CALL) {
+            text = formatPluralStringComma("UserSelectorLimit", getLimit());
+        } else {
+            text = getString(R.string.BoostingSelectUpToWarningUsers);
+        }
         BulletinFactory.of(container, resourcesProvider).createSimpleBulletin(R.raw.chats_infotip, text).show(true);
         try {
             container.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
@@ -669,6 +794,30 @@ public class UserSelectorBottomSheet extends BottomSheetWithRecyclerListView imp
         return !TextUtils.isEmpty(query);
     }
 
+    private Item decorate(Item item) {
+        if (type == TYPE_CALL) {
+            if (item.user == null) return item;
+            final long userId = item.user.id;
+            return item.withCall(v -> {
+                selectedIds.add(userId);
+                if (onUsersSelectedListener != null) {
+                    onUsersSelectedListener.run(false, selectedIds);
+                    onUsersSelectedListener = null;
+                }
+                dismiss();
+            }, v -> {
+                selectedIds.add(userId);
+                if (onUsersSelectedListener != null) {
+                    onUsersSelectedListener.run(true, selectedIds);
+                    onUsersSelectedListener = null;
+                }
+                dismiss();
+            });
+        } else {
+            return item.withOptions(openOptions(item.user));
+        }
+    }
+
     private int addSection(ArrayList<SelectorAdapter.Item> items, CharSequence title, ArrayList<TLRPC.User> users, boolean addSelectAll) {
         addSelectAll = false;
         int h = 0;
@@ -683,12 +832,13 @@ public class UserSelectorBottomSheet extends BottomSheetWithRecyclerListView imp
             if (user.id == userId) {
                 continue;
             }
+            if (excludeUserIds.contains(user.id)) continue;
             if (!selectedIds.contains(user.id)) {
                 allSelected = false;
             }
             count++;
             h += dp(56);
-            userItems.add(Item.asUser(user, selectedIds.contains(user.id)).withOptions(openOptions(user)));
+            userItems.add(decorate(Item.asUser(user, selectedIds.contains(user.id))));
         }
         if (userItems.isEmpty()) {
             return h;
@@ -742,13 +892,15 @@ public class UserSelectorBottomSheet extends BottomSheetWithRecyclerListView imp
                     if (user.bot || UserObject.isService(user.id)) continue;
                     did = user.id;
                     h += dp(56);
-                    items.add(Item.asUser(user, selectedIds.contains(did)).withOptions(openOptions(user)));
+                    if (excludeUserIds.contains(user.id)) continue;
+                    items.add(decorate(Item.asUser(user, selectedIds.contains(did))));
                 } else if (peer instanceof TLRPC.Chat) {
                     final TLRPC.Chat chat = (TLRPC.Chat) peer;
                     if (type != TYPE_TRANSFER) continue;
                     if (!ChatObject.isChannelAndNotMegaGroup(chat)) continue;
                     did = -chat.id;
                     h += dp(56);
+                    if (excludeUserIds.contains(-chat.id)) continue;
                     items.add(Item.asChat(chat, selectedIds.contains(did)));
                 }
             }
@@ -771,6 +923,9 @@ public class UserSelectorBottomSheet extends BottomSheetWithRecyclerListView imp
             if ((type == TYPE_PREMIUM || type == TYPE_STAR_GIFT) && userFull != null && userFull.birthday == null) {
                 h += dp(50);
                 items.add(Item.asButton(1, R.drawable.menu_birthday, getString(R.string.GiftsBirthdaySetup)));
+            }
+            if (onShareCallLinkListener != null && type == TYPE_CALL) {
+                items.add(Item.asButton(3, R.drawable.msg2_link2, getString(R.string.VoipConferenceShareLink)));
             }
             if (birthdays != null) {
                 h += addSection(items, getString(R.string.BirthdayToday), birthdays.today, true);
@@ -798,9 +953,10 @@ public class UserSelectorBottomSheet extends BottomSheetWithRecyclerListView imp
                     if (birthdays != null && birthdays.contains(user.id)) {
                         continue;
                     }
+                    if (excludeUserIds.contains(user.id)) continue;
                     if (selectedIds.contains(user.id)) selected.add(user.id);
                     h += dp(56);
-                    userItems.add(Item.asUser(user, selectedIds.contains(user.id)).withOptions(openOptions(user)));
+                    userItems.add(decorate(Item.asUser(user, selectedIds.contains(user.id))));
                 }
                 if (!userItems.isEmpty()) {
                     h += dp(32);
@@ -819,11 +975,12 @@ public class UserSelectorBottomSheet extends BottomSheetWithRecyclerListView imp
                     if (birthdays != null && birthdays.contains(contact.user_id)) {
                         continue;
                     }
+                    if (excludeUserIds.contains(contact.user_id)) continue;
                     final TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(contact.user_id);
                     if (user == null || user.bot || UserObject.isService(user.id)) continue;
                     h += dp(56);
                     if (selectedIds.contains(user.id)) selected.add(user.id);
-                    userItems.add(Item.asUser(user, selectedIds.contains(user.id)).withOptions(openOptions(user)));
+                    userItems.add(decorate(Item.asUser(user, selectedIds.contains(user.id))));
                 }
 
                 if (!userItems.isEmpty()) {
@@ -915,13 +1072,33 @@ public class UserSelectorBottomSheet extends BottomSheetWithRecyclerListView imp
         }
     }
 
+    private Runnable onShareCallLinkListener;
+    public UserSelectorBottomSheet setOnShareCallLinkListener(Runnable listener) {
+        onShareCallLinkListener = listener;
+        updateItems(false, true);
+        return this;
+    }
+
     private Utilities.Callback<Long> onUserSelectedListener;
     public void setOnUserSelector(Utilities.Callback<Long> listener) {
         onUserSelectedListener = listener;
     }
 
-    private Utilities.Callback<HashSet<Long>> onUsersSelectedListener;
-    public UserSelectorBottomSheet setOnUsersSelector(Utilities.Callback<HashSet<Long>> listener) {
+    private final HashSet<Long> excludeUserIds = new HashSet<>();
+    public UserSelectorBottomSheet exceptUsers(long ...ids) {
+        for (long id : ids)
+            excludeUserIds.add(id);
+        updateItems(false, true);
+        return this;
+    }
+    public UserSelectorBottomSheet exceptUsers(Collection<Long> ids) {
+        excludeUserIds.addAll(ids);
+        updateItems(false, true);
+        return this;
+    }
+
+    private Utilities.Callback2<Boolean, HashSet<Long>> onUsersSelectedListener;
+    public UserSelectorBottomSheet setOnUsersSelector(Utilities.Callback2<Boolean, HashSet<Long>> listener) {
         onUsersSelectedListener = listener;
         return this;
     }
@@ -942,7 +1119,7 @@ public class UserSelectorBottomSheet extends BottomSheetWithRecyclerListView imp
         }
         switch (type) {
             case TYPE_CALL:
-                return getString(R.string.CallInviteMembers);
+                return getString(R.string.VoipConferenceAddPeople);
             case TYPE_STARS:
                 return getString(R.string.GiftStarsTitle);
             case TYPE_STAR_GIFT:
@@ -954,13 +1131,13 @@ public class UserSelectorBottomSheet extends BottomSheetWithRecyclerListView imp
 
     @Override
     protected RecyclerListView.SelectionAdapter createAdapter(RecyclerListView listView) {
-        selectorAdapter = new SelectorAdapter(getContext(), needChecks(), resourcesProvider);
+        selectorAdapter = new SelectorAdapter(getContext(), false, resourcesProvider);
         selectorAdapter.setGreenSelector(true);
         return selectorAdapter;
     }
 
     protected boolean needChecks() {
-        return false;
+        return type == TYPE_CALL;
     }
 
     protected int getType() {

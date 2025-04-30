@@ -519,13 +519,22 @@ class StunByteStringAttribute : public StunAttribute {
 
   StunAttributeValueType value_type() const override;
 
-  const char* bytes() const { return bytes_; }
+  [[deprecated("Use array_view")]] const char* bytes() const {
+    return reinterpret_cast<const char*>(bytes_);
+  }
+  // Returns the attribute value as a string.
+  // Use this for attributes that are text or text-compatible.
   absl::string_view string_view() const {
-    return absl::string_view(bytes_, length());
+    return absl::string_view(reinterpret_cast<const char*>(bytes_), length());
+  }
+  // Returns the attribute value as an uint8_t view.
+  // Use this function for values that are not text.
+  rtc::ArrayView<uint8_t> array_view() const {
+    return rtc::MakeArrayView(bytes_, length());
   }
 
   [[deprecated]] std::string GetString() const {
-    return std::string(bytes_, length());
+    return std::string(reinterpret_cast<const char*>(bytes_), length());
   }
 
   void CopyBytes(const void* bytes, size_t length);
@@ -538,9 +547,9 @@ class StunByteStringAttribute : public StunAttribute {
   bool Write(rtc::ByteBufferWriter* buf) const override;
 
  private:
-  void SetBytes(char* bytes, size_t length);
+  void SetBytes(uint8_t* bytes, size_t length);
 
-  char* bytes_;
+  uint8_t* bytes_;
 };
 
 // Implements STUN attributes that record an error code.
@@ -756,9 +765,10 @@ enum IceAttributeType {
   STUN_ATTR_GOOG_MISC_INFO = 0xC059,
   // Obsolete.
   STUN_ATTR_GOOG_OBSOLETE_1 = 0xC05A,
-  STUN_ATTR_GOOG_CONNECTION_ID = 0xC05B,  // Not yet implemented.
-  STUN_ATTR_GOOG_DELTA = 0xC05C,          // Not yet implemented.
-  STUN_ATTR_GOOG_DELTA_ACK = 0xC05D,      // Not yet implemented.
+  STUN_ATTR_GOOG_CONNECTION_ID = 0xC05B,   // Not yet implemented.
+  STUN_ATTR_GOOG_DELTA = 0xC05C,           // Not yet implemented.
+  STUN_ATTR_GOOG_DELTA_ACK = 0xC05D,       // Not yet implemented.
+  STUN_ATTR_GOOG_DELTA_SYNC_REQ = 0xC05E,  // Not yet implemented.
   // MESSAGE-INTEGRITY truncated to 32-bit.
   STUN_ATTR_GOOG_MESSAGE_INTEGRITY_32 = 0xC060,
 };

@@ -1,17 +1,22 @@
 #! /usr/bin/env perl
 # Copyright 2015-2016 The OpenSSL Project Authors. All Rights Reserved.
 #
-# Licensed under the OpenSSL license (the "License").  You may not use
-# this file except in compliance with the License.  You can obtain a copy
-# in the file LICENSE in the source distribution or at
-# https://www.openssl.org/source/license.html
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 
 # ====================================================================
 # Written by Andy Polyakov <appro@openssl.org> for the OpenSSL
-# project. The module is, however, dual licensed under OpenSSL and
-# CRYPTOGAMS licenses depending on where you obtain it. For further
-# details see http://www.openssl.org/~appro/cryptogams/.
+# project.
 # ====================================================================
 
 # March 2015
@@ -48,14 +53,14 @@ $0 =~ m/(.*[\/\\])[^\/\\]+$/; $dir=$1;
 ( $xlate="${dir}../../../perlasm/arm-xlate.pl" and -f $xlate) or
 die "can't locate arm-xlate.pl";
 
-open OUT,"| \"$^X\" $xlate $flavour $output";
+open OUT,"| \"$^X\" \"$xlate\" $flavour \"$output\"";
 *STDOUT=*OUT;
 
 ($lo0,$hi0,$aj,$m0,$alo,$ahi,
  $lo1,$hi1,$nj,$m1,$nlo,$nhi,
  $ovf, $i,$j,$tp,$tj) = map("x$_",6..17,19..24);
 
-# int bn_mul_mont(
+# void bn_mul_mont(
 $rp="x0";	# BN_ULONG *rp,
 $ap="x1";	# const BN_ULONG *ap,
 $bp="x2";	# const BN_ULONG *bp,
@@ -70,6 +75,7 @@ $code.=<<___;
 .type	bn_mul_mont,%function
 .align	5
 bn_mul_mont:
+	AARCH64_SIGN_LINK_REGISTER
 	tst	$num,#7
 	b.eq	__bn_sqr8x_mont
 	tst	$num,#3
@@ -264,9 +270,10 @@ bn_mul_mont:
 	ldp	x19,x20,[x29,#16]
 	mov	sp,x29
 	ldp	x21,x22,[x29,#32]
-	mov	x0,#1
+	// No return value
 	ldp	x23,x24,[x29,#48]
 	ldr	x29,[sp],#64
+	AARCH64_VALIDATE_LINK_REGISTER
 	ret
 .size	bn_mul_mont,.-bn_mul_mont
 ___
@@ -284,6 +291,8 @@ $code.=<<___;
 .type	__bn_sqr8x_mont,%function
 .align	5
 __bn_sqr8x_mont:
+	// Not adding AARCH64_SIGN_LINK_REGISTER here because __bn_sqr8x_mont is jumped to
+	// only from bn_mul_mont which has already signed the return address.
 	cmp	$ap,$bp
 	b.ne	__bn_mul4x_mont
 .Lsqr8x_mont:
@@ -1035,11 +1044,13 @@ $code.=<<___;
 	ldp	x19,x20,[x29,#16]
 	mov	sp,x29
 	ldp	x21,x22,[x29,#32]
-	mov	x0,#1
+	// No return value
 	ldp	x23,x24,[x29,#48]
 	ldp	x25,x26,[x29,#64]
 	ldp	x27,x28,[x29,#80]
 	ldr	x29,[sp],#128
+	// x30 is popped earlier
+	AARCH64_VALIDATE_LINK_REGISTER
 	ret
 .size	__bn_sqr8x_mont,.-__bn_sqr8x_mont
 ___
@@ -1063,6 +1074,9 @@ $code.=<<___;
 .type	__bn_mul4x_mont,%function
 .align	5
 __bn_mul4x_mont:
+	// Not adding AARCH64_SIGN_LINK_REGISTER here because __bn_mul4x_mont is jumped to
+	// only from bn_mul_mont or __bn_mul8x_mont which have already signed the
+	// return address.
 	stp	x29,x30,[sp,#-128]!
 	add	x29,sp,#0
 	stp	x19,x20,[sp,#16]
@@ -1491,11 +1505,13 @@ __bn_mul4x_mont:
 	ldp	x19,x20,[x29,#16]
 	mov	sp,x29
 	ldp	x21,x22,[x29,#32]
-	mov	x0,#1
+	// No return value
 	ldp	x23,x24,[x29,#48]
 	ldp	x25,x26,[x29,#64]
 	ldp	x27,x28,[x29,#80]
 	ldr	x29,[sp],#128
+	// x30 is popped earlier
+	AARCH64_VALIDATE_LINK_REGISTER
 	ret
 .size	__bn_mul4x_mont,.-__bn_mul4x_mont
 ___
@@ -1507,4 +1523,4 @@ ___
 
 print $code;
 
-close STDOUT or die "error closing STDOUT";
+close STDOUT or die "error closing STDOUT: $!";

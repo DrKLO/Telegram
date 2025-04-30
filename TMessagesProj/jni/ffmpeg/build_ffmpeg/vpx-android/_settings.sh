@@ -15,7 +15,7 @@ ABIS=("armeabi-v7a" "arm64-v8a" "x86" "x86_64")
 
 BASEDIR=`pwd`
 NDK=${ANDROID_NDK}
-HOST_NUM_CORES=$(nproc)
+HOST_NUM_CORES=$(sysctl -n hw.physicalcpu)
 
 CFLAGS_="-DANDROID -fpic -fpie"
 LDFLAGS_=""
@@ -68,7 +68,7 @@ configure() {
       rm -rf ${TOOLCHAIN_PREFIX}
   fi
 
-  [[ -d ${TOOLCHAIN_PREFIX} ]] || python ${NDK}/build/tools/make_standalone_toolchain.py \
+  [[ -d ${TOOLCHAIN_PREFIX} ]] || python3 ${NDK}/build/tools/make_standalone_toolchain.py \
      --arch ${NDK_ARCH} \
      --api ${ANDROID_API} \
      --stl libc++ \

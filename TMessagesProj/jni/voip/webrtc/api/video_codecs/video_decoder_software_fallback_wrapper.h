@@ -13,6 +13,7 @@
 
 #include <memory>
 
+#include "api/environment/environment.h"
 #include "api/video_codecs/video_decoder.h"
 #include "rtc_base/system/rtc_export.h"
 
@@ -21,6 +22,13 @@ namespace webrtc {
 // Used to wrap external VideoDecoders to provide a fallback option on
 // software decoding when a hardware decoder fails to decode a stream due to
 // hardware restrictions, such as max resolution.
+RTC_EXPORT std::unique_ptr<VideoDecoder>
+CreateVideoDecoderSoftwareFallbackWrapper(
+    const Environment& env,
+    std::unique_ptr<VideoDecoder> sw_fallback_decoder,
+    std::unique_ptr<VideoDecoder> hw_decoder);
+
+// TODO: bugs.webrtc.org/15791 - Deprecated, remove when not used by chromium.
 RTC_EXPORT std::unique_ptr<VideoDecoder>
 CreateVideoDecoderSoftwareFallbackWrapper(
     std::unique_ptr<VideoDecoder> sw_fallback_decoder,

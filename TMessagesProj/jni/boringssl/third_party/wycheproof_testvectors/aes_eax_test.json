@@ -1,11 +1,18 @@
 {
   "algorithm" : "AES-EAX",
-  "generatorVersion" : "0.4.12",
+  "generatorVersion" : "0.8r12",
+  "numberOfTests" : 171,
+  "header" : [
+    "Test vectors of type AeadTest test authenticated encryption with",
+    "additional data. The test vectors are intended for testing both",
+    "encryption and decryption."
+  ],
   "notes" : {
-    "CounterWrap" : "AES-EAX reduces the counter value modulo 2**128. This test vector was constructed for testing the wrapping of the counter value."
+    "CounterWrap" : "AES-EAX reduces the counter value modulo 2**128. This test vector was constructed for testing the wrapping of the counter value.",
+    "LongIv" : "CVE-2017-18330: Overflow with large IVs",
+    "SmallIv" : "AES-EAX allows arbitrary sizes for the nonce. This test vector uses an IV smaller than 12 bytes."
   },
-  "numberOfTests" : 162,
-  "header" : [],
+  "schema" : "aead_test_schema.json",
   "testGroups" : [
     {
       "ivSize" : 128,
@@ -1935,7 +1942,9 @@
           "ct" : "d324ca1530c68ed86c775ed9bb1d8490",
           "tag" : "30062eb9cedbaddf36f93e4219620afa",
           "result" : "acceptable",
-          "flags" : []
+          "flags" : [
+            "SmallIv"
+          ]
         }
       ]
     },
@@ -1955,7 +1964,9 @@
           "ct" : "3064cf4883703f170bf01e6c2d67259f",
           "tag" : "09471c09f897d46216fbb52436e3c4fc",
           "result" : "acceptable",
-          "flags" : []
+          "flags" : [
+            "SmallIv"
+          ]
         }
       ]
     },
@@ -1975,7 +1986,9 @@
           "ct" : "bc3c8eb10b6cfa8fa1758ce9358753fe",
           "tag" : "db1ae0ef0315046b5358bff4629880c5",
           "result" : "acceptable",
-          "flags" : []
+          "flags" : [
+            "SmallIv"
+          ]
         }
       ]
     },
@@ -1995,7 +2008,9 @@
           "ct" : "33ca3171ec118e72cc29950f6c129227",
           "tag" : "737967a2501f14ce84d9981c89be1785",
           "result" : "acceptable",
-          "flags" : []
+          "flags" : [
+            "SmallIv"
+          ]
         }
       ]
     },
@@ -2015,7 +2030,9 @@
           "ct" : "5aca28621e2bd92d7f182ff653b1e8eb",
           "tag" : "8a89a0db74a55f907f8ba115e2e15853",
           "result" : "acceptable",
-          "flags" : []
+          "flags" : [
+            "SmallIv"
+          ]
         }
       ]
     },
@@ -2035,7 +2052,9 @@
           "ct" : "df32c13a2278326a3c966dee321a42f6",
           "tag" : "b1798b8e4b95df6c620a5cbcbe1238d1",
           "result" : "acceptable",
-          "flags" : []
+          "flags" : [
+            "SmallIv"
+          ]
         }
       ]
     },
@@ -2055,7 +2074,9 @@
           "ct" : "",
           "tag" : "5adbeefc8fa9cae2b9a6db3f5f6c82e9",
           "result" : "acceptable",
-          "flags" : []
+          "flags" : [
+            "SmallIv"
+          ]
         },
         {
           "tcId" : 158,
@@ -2067,7 +2088,9 @@
           "ct" : "73b4716f7e44f3bb22a2648069ebbc1e",
           "tag" : "3f6ac9672db499324ead0c234b544054",
           "result" : "acceptable",
-          "flags" : []
+          "flags" : [
+            "SmallIv"
+          ]
         }
       ]
     },
@@ -2087,7 +2110,9 @@
           "ct" : "",
           "tag" : "1bd7ab03a24e07b57f9d173c8e6d57a1",
           "result" : "acceptable",
-          "flags" : []
+          "flags" : [
+            "SmallIv"
+          ]
         },
         {
           "tcId" : 160,
@@ -2099,7 +2124,9 @@
           "ct" : "87ac7db89a1f4bf772534003ad82d75d",
           "tag" : "b6974b88fb44fabe8c10c693f788a068",
           "result" : "acceptable",
-          "flags" : []
+          "flags" : [
+            "SmallIv"
+          ]
         }
       ]
     },
@@ -2119,7 +2146,9 @@
           "ct" : "",
           "tag" : "b17f6100882e6b419d9fed0c8b7c8d9a",
           "result" : "acceptable",
-          "flags" : []
+          "flags" : [
+            "SmallIv"
+          ]
         },
         {
           "tcId" : 162,
@@ -2131,7 +2160,207 @@
           "ct" : "8187621069d3c07b7861bb40e8a56b3a",
           "tag" : "c1f0897558300e979ba29b36336a0d06",
           "result" : "acceptable",
-          "flags" : []
+          "flags" : [
+            "SmallIv"
+          ]
+        }
+      ]
+    },
+    {
+      "ivSize" : 512,
+      "keySize" : 128,
+      "tagSize" : 128,
+      "type" : "AeadTest",
+      "tests" : [
+        {
+          "tcId" : 163,
+          "comment" : "very large IV size",
+          "key" : "228437ab28e69a4319f2d6d505c9a411",
+          "iv" : "fa3ef369cf29e9e088393c357ff160cbdb8fd97b7ea2b11fe3df763c5e928b6b5f6e87625bf7c88a56154474defdb61f71b12f7bc0169857f5964b8ef162ba25",
+          "aad" : "",
+          "msg" : "dc0583f633b1e1ce666c2ccfb6dc084f",
+          "ct" : "51cf50ea2d71d0efd3a9ddc3092f9b8b",
+          "tag" : "2ee385a31b716f325d3b59f67eab2cbb",
+          "result" : "valid",
+          "flags" : [
+            "LongIv"
+          ]
+        }
+      ]
+    },
+    {
+      "ivSize" : 1024,
+      "keySize" : 128,
+      "tagSize" : 128,
+      "type" : "AeadTest",
+      "tests" : [
+        {
+          "tcId" : 164,
+          "comment" : "very large IV size",
+          "key" : "21a7eb9f06bfa7cbb42726569f70eaeb",
+          "iv" : "731258b46c074a64b3cfff5a2a411a98a46a1dcfde32e01268ca5542951289f1882462d9bdfc0f887ec797b6268cd97086cb847e332719a18e81fe2bc53e82d878971b1c1bedfb6d31f97fe9d3fb7f7d0f639fb4877fa191ea39bfbf6d474a82611beae9889fbc3f1c85a8aefdea3bc83ac5b44a997e53b934bd29dd8a3ef873",
+          "aad" : "",
+          "msg" : "47e162ce2c3bfd85fa1b8e1fae5215ed",
+          "ct" : "60388395837d5ded6b6bcc0223738340",
+          "tag" : "3a9806509e47a57429e37410f6baaf69",
+          "result" : "valid",
+          "flags" : [
+            "LongIv"
+          ]
+        }
+      ]
+    },
+    {
+      "ivSize" : 2056,
+      "keySize" : 128,
+      "tagSize" : 128,
+      "type" : "AeadTest",
+      "tests" : [
+        {
+          "tcId" : 165,
+          "comment" : "very large IV size",
+          "key" : "5700338fcb7c61bfc8ad8b15cbe66104",
+          "iv" : "39480a40a8af403e7cd81f5d7e2f522f7dd2a111ca300d118e6950cba47bdda5afe4defc0c81e09cea24f7013f9d9fdee8a3df58632c25d0abeed9b6245043f992f3b915449ca4c92325b91307e0b3e99ff9cb79de06e8a376c5cd85640c75bd5bed56381097c4219f38268b7f0e12746f09d88d1b113ca9b6bc28c6b9af60bc9648ed311f290a496575dbc8233bfb429df3847cc146b4cf5b721fc0c72185ad90f5543bb63799d29b4e3f07324569c791202e4a50afa4e2cb4cd6ba5bad0b6c3ea216737b3de6b74a17d68b46d63e9574a5c3a872128e73dae8331d0eb4cdec38a602f9d662ce42256a4379ec2543e17c562ade2af57255a28874918a4dfe6f5a",
+          "aad" : "",
+          "msg" : "d30598f6680810efc94ea10d0c079203",
+          "ct" : "8156f78835c1168440e211718a704e36",
+          "tag" : "b9e93a071921e0e91d098bcb41744dc8",
+          "result" : "valid",
+          "flags" : [
+            "LongIv"
+          ]
+        }
+      ]
+    },
+    {
+      "ivSize" : 512,
+      "keySize" : 192,
+      "tagSize" : 128,
+      "type" : "AeadTest",
+      "tests" : [
+        {
+          "tcId" : 166,
+          "comment" : "very large IV size",
+          "key" : "b8dc7be3ca28f7a81ea63d47d305dcb984e40fbb9b31be2a",
+          "iv" : "8880fc62c2b96aa6ed7459661d5ab48ce2c06e3f2d00c943edfd7b703842f98ade9cab33f4deb269e2d3b92cdae369a7584b80ebbae91ebd42be789d5bae2afd",
+          "aad" : "",
+          "msg" : "59ed5441aae067b2b27d2ff62a0bea11",
+          "ct" : "be9ada6a7f996d98cb97970c1a072133",
+          "tag" : "f8ce4f9c5ddacbd2eae3bc1c69554363",
+          "result" : "valid",
+          "flags" : [
+            "LongIv"
+          ]
+        }
+      ]
+    },
+    {
+      "ivSize" : 1024,
+      "keySize" : 192,
+      "tagSize" : 128,
+      "type" : "AeadTest",
+      "tests" : [
+        {
+          "tcId" : 167,
+          "comment" : "very large IV size",
+          "key" : "10944c59fda6a9087b1af7b8afaedf78b190c1ef7854e3db",
+          "iv" : "23943437572aa0b193774b3604e8007143de793cad75b76dec8da9200c087d03ced977405b188e373de32b5046b7d1b9a61c21d94a3fa609a183ce74fbdd4da4b647708ee72ddb4aa306a40278ba705aa4021abdef36ea609b2380446c211cf49747c72b6738d6edc9f2c9a9dec940febdb275c02295f40de1621006f1025604",
+          "aad" : "",
+          "msg" : "091ecded07b8f7d35ad122bced57cae7",
+          "ct" : "cbf7d083fa4f22e3ce887ee08f2ae9f9",
+          "tag" : "57abc1d1b5f0be8962a346696a1e43ac",
+          "result" : "valid",
+          "flags" : [
+            "LongIv"
+          ]
+        }
+      ]
+    },
+    {
+      "ivSize" : 2056,
+      "keySize" : 192,
+      "tagSize" : 128,
+      "type" : "AeadTest",
+      "tests" : [
+        {
+          "tcId" : 168,
+          "comment" : "very large IV size",
+          "key" : "2e5faa81df5196d2185db4ca51bf96222062163ad60d6f3f",
+          "iv" : "cf0e233cbc2a2267f67e51c629d1ec1e9278c56737980be7aa58c61b9b995a13be21e686842e2cedf6bf19f7067140f3d276e7b227993832639459400c6a651b1ba326d003351d0f21bc28e54ba68e3e03d16196efbab5cf487a57670e6af785025b08e2d2b710cdfa277c80d5a0f6b88a809b708e26e2d68eacdf190a0e84213b9fcb72d619f2976850bdaa1a7fe6a53d581472ed77f333fe32dda9917bc1c8e3a4e963930a60b2d336433c85bab9d5c6d8e7dd857c75516cc64a0ad9c3006576da7694a7f37c80cc803adf8b8884b4133b2478f78157578da088ca1a010aa21d2c67aed174943bdba2e90c748726bb3d1642939cc22157102e4ea4441c39ff09",
+          "aad" : "",
+          "msg" : "eb4d8ea0c45eb5af2958965bf1c687a3",
+          "ct" : "280fdd4ae81fe81775efc2c835079a1b",
+          "tag" : "25a97647be49ace070733aecc9aad041",
+          "result" : "valid",
+          "flags" : [
+            "LongIv"
+          ]
+        }
+      ]
+    },
+    {
+      "ivSize" : 512,
+      "keySize" : 256,
+      "tagSize" : 128,
+      "type" : "AeadTest",
+      "tests" : [
+        {
+          "tcId" : 169,
+          "comment" : "very large IV size",
+          "key" : "37a2093a9f4418787905d53b7eb8e0c8d6d0a3c00417bd57ab12aad04fafc438",
+          "iv" : "e04e25476d6cd5193094c5812e50ca0cf61430ae52d50637ab78e97b37bb652e79db4319747eba111fabb26737061ab837f4e54c860c74dcefa9f1d8ffec8e0c",
+          "aad" : "",
+          "msg" : "7229459dcc3c431339a4347bcb5e0c76",
+          "ct" : "6726cff4f3fd9adc019b622b2eb66ee8",
+          "tag" : "73eea2d201558afd2302183d2dbd33e4",
+          "result" : "valid",
+          "flags" : [
+            "LongIv"
+          ]
+        }
+      ]
+    },
+    {
+      "ivSize" : 1024,
+      "keySize" : 256,
+      "tagSize" : 128,
+      "type" : "AeadTest",
+      "tests" : [
+        {
+          "tcId" : 170,
+          "comment" : "very large IV size",
+          "key" : "32954d52a3dce6483c65090e74186e8223491872fd8a5bd36301d3a430228840",
+          "iv" : "aded3859f2705fbe7ea4baf459d4fe6d5f852f858e0b357fddf53eca1fe1ab25c39bef65dd901ac029c4d190cebfaea9045dc24a53f4f8a50f5eea70af1633eac6c2bd4a2cc9f8118dfa60b2b09a192ed33f2cb100401bac924e5bdc8ca14fa72c549f340e7afd4aab34059c03887e0c02bdba17d822be775cae0d22a1a5c453",
+          "aad" : "",
+          "msg" : "f36a508e286787ea108dc01340de0351",
+          "ct" : "63e20d0f564d87952fca8a8e00d29616",
+          "tag" : "33ccd9822664234c7c7954ba585a08cf",
+          "result" : "valid",
+          "flags" : [
+            "LongIv"
+          ]
+        }
+      ]
+    },
+    {
+      "ivSize" : 2056,
+      "keySize" : 256,
+      "tagSize" : 128,
+      "type" : "AeadTest",
+      "tests" : [
+        {
+          "tcId" : 171,
+          "comment" : "very large IV size",
+          "key" : "f386e46fec6925e4344f03147f04fbcba04a27ae8f8cb552ab0ff5c8658ddcd2",
+          "iv" : "b08c7387cfce5f892357b91653cfc73330cee7bd0aad33f3276b015e035ee543e8edfea70074ffeced2459d8acfc765c7f65fdec8f5c44480ae388d3afe42915c94363690ff20625f81ddffeceb9f95984824256a4ce4ce482a3e0234d111ec95162f80f6c0285d56de68a8c114df82b9742e9b2e2603967a44ec1d9bd64758cea894dd9d6fb8a8421853ad06579e1f4ab615215f39d6e35f0bda6e1ab0a587cec79be65e56557b160f879e58105e5e19b47d8848fd953ad0cfa1c7b116cf5fcab3981cb23846ab9f6eb4172e6706ec0d37e2a4f7dab02c1795b6dc79c78fdb964dd336e4b05243feb56fece8c01def9542205fadc977eb4861ea384235628e992",
+          "aad" : "",
+          "msg" : "5bfb8243b2c0bc1101180d58f7647ad1",
+          "ct" : "523697a212c183f2c6873baff910229f",
+          "tag" : "3cce18521559d42c0527be6d49ef6d77",
+          "result" : "valid",
+          "flags" : [
+            "LongIv"
+          ]
         }
       ]
     }

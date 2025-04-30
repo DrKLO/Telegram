@@ -10,7 +10,6 @@
 
 #include "modules/audio_coding/neteq/audio_vector.h"
 
-
 #include <algorithm>
 #include <memory>
 

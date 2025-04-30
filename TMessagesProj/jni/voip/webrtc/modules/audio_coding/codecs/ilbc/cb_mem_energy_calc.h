@@ -31,6 +31,6 @@ void WebRtcIlbcfix_CbMemEnergyCalc(
     int16_t* energyShifts, /* (o) Shift value of the energy */
     int scale,             /* (i) The scaling of all energy values */
     size_t base_size /* (i) Index to where energy values should be stored */
-    );
+);
 
 #endif

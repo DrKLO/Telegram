@@ -13,6 +13,8 @@
 
 #include <stdint.h>
 
+#include <cstring>
+
 #if defined(WEBRTC_POSIX) && !defined(__native_client__)
 #include <arpa/inet.h>
 #endif
@@ -107,51 +109,69 @@ inline uint8_t Get8(const void* memory, size_t offset) {
 }
 
 inline void SetBE16(void* memory, uint16_t v) {
-  *static_cast<uint16_t*>(memory) = htobe16(v);
+  uint16_t val = htobe16(v);
+  memcpy(memory, &val, sizeof(val));
 }
 
 inline void SetBE32(void* memory, uint32_t v) {
-  *static_cast<uint32_t*>(memory) = htobe32(v);
+  uint32_t val = htobe32(v);
+  memcpy(memory, &val, sizeof(val));
 }
 
 inline void SetBE64(void* memory, uint64_t v) {
-  *static_cast<uint64_t*>(memory) = htobe64(v);
+  uint64_t val = htobe64(v);
+  memcpy(memory, &val, sizeof(val));
 }
 
 inline uint16_t GetBE16(const void* memory) {
-  return be16toh(*static_cast<const uint16_t*>(memory));
+  uint16_t val;
+  memcpy(&val, memory, sizeof(val));
+  return be16toh(val);
 }
 
 inline uint32_t GetBE32(const void* memory) {
-  return be32toh(*static_cast<const uint32_t*>(memory));
+  uint32_t val;
+  memcpy(&val, memory, sizeof(val));
+  return be32toh(val);
 }
 
 inline uint64_t GetBE64(const void* memory) {
-  return be64toh(*static_cast<const uint64_t*>(memory));
+  uint64_t val;
+  memcpy(&val, memory, sizeof(val));
+  return be64toh(val);
 }
 
 inline void SetLE16(void* memory, uint16_t v) {
-  *static_cast<uint16_t*>(memory) = htole16(v);
+  uint16_t val = htole16(v);
+  memcpy(memory, &val, sizeof(val));
 }
 
 inline void SetLE32(void* memory, uint32_t v) {
-  *static_cast<uint32_t*>(memory) = htole32(v);
+  uint32_t val = htole32(v);
+  memcpy(memory, &val, sizeof(val));
 }
 
 inline void SetLE64(void* memory, uint64_t v) {
-  *static_cast<uint64_t*>(memory) = htole64(v);
+  uint64_t val = htole64(v);
+  memcpy(memory, &val, sizeof(val));
 }
 
 inline uint16_t GetLE16(const void* memory) {
-  return le16toh(*static_cast<const uint16_t*>(memory));
+  uint16_t val;
+  memcpy(&val, memory, sizeof(val));
+  return le16toh(val);
 }
 
 inline uint32_t GetLE32(const void* memory) {
-  return le32toh(*static_cast<const uint32_t*>(memory));
+  uint32_t val;
+  memcpy(&val, memory, sizeof(val));
+  return le32toh(val);
 }
 
 inline uint64_t GetLE64(const void* memory) {
-  return le64toh(*static_cast<const uint64_t*>(memory));
+  uint64_t val;
+  memcpy(&val, memory, sizeof(val));
+  return le64toh(val);
 }
 
 // Check if the current host is big endian.

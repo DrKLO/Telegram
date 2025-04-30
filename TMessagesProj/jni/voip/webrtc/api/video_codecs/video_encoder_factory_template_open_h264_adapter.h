@@ -31,7 +31,7 @@ struct OpenH264EncoderTemplateAdapter {
   static std::unique_ptr<VideoEncoder> CreateEncoder(
       const SdpVideoFormat& format) {
 #if defined(WEBRTC_USE_H264)
-    return H264Encoder::Create(cricket::VideoCodec(format));
+    return H264Encoder::Create(cricket::CreateVideoCodec(format));
 #else
     return nullptr;
 #endif

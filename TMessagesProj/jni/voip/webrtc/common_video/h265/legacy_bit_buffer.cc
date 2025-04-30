@@ -32,33 +32,6 @@ uint8_t HighestBits(uint8_t byte, size_t bit_count) {
   return (byte & mask) >> shift;
 }
 
-// Returns the highest byte of |val| in a uint8_t.
-uint8_t HighestByte(uint64_t val) {
-  return static_cast<uint8_t>(val >> 56);
-}
-
-// Returns the result of writing partial data from |source|, of
-// |source_bit_count| size in the highest bits, to |target| at
-// |target_bit_offset| from the highest bit.
-uint8_t WritePartialByte(uint8_t source,
-                         size_t source_bit_count,
-                         uint8_t target,
-                         size_t target_bit_offset) {
-  RTC_DCHECK(target_bit_offset < 8);
-  RTC_DCHECK(source_bit_count < 9);
-  RTC_DCHECK(source_bit_count <= (8 - target_bit_offset));
-  // Generate a mask for just the bits we're going to overwrite, so:
-  uint8_t mask =
-      // The number of bits we want, in the most significant bits...
-      static_cast<uint8_t>(0xFF << (8 - source_bit_count))
-      // ...shifted over to the target offset from the most signficant bit.
-      >> target_bit_offset;
-
-  // We want the target, with the bits we'll overwrite masked off, or'ed with
-  // the bits from the source we want.
-  return (target & ~mask) | (source >> target_bit_offset);
-}
-
 // Counts the number of bits used in the binary representation of val.
 size_t CountBits(uint64_t val) {
   size_t bit_count = 0;

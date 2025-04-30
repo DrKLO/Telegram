@@ -1,18 +1,21 @@
 #! /usr/bin/env perl
-# Copyright 2014-2016 The OpenSSL Project Authors. All Rights Reserved.
+# Copyright 2014-2020 The OpenSSL Project Authors. All Rights Reserved.
 #
-# Licensed under the OpenSSL license (the "License").  You may not use
-# this file except in compliance with the License.  You can obtain a copy
-# in the file LICENSE in the source distribution or at
-# https://www.openssl.org/source/license.html
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 # ====================================================================
 # Written by Andy Polyakov <appro@openssl.org> for the OpenSSL
-# project. The module is, however, dual licensed under OpenSSL and
-# CRYPTOGAMS licenses depending on where you obtain it. For further
-# details see http://www.openssl.org/~appro/cryptogams/.
-#
-# Permission to use under GPLv2 terms is granted.
+# project.
 # ====================================================================
 #
 # SHA256/512 for ARMv8.
@@ -27,6 +30,7 @@
 # Denver	2.01		10.5 (+26%)	6.70 (+8%)
 # X-Gene			20.0 (+100%)	12.8 (+300%(***))
 # Mongoose	2.36		13.0 (+50%)	8.36 (+33%)
+# Kryo		1.92		17.4 (+30%)	11.2 (+8%)
 #
 # (*)	Software SHA256 results are of lesser relevance, presented
 #	mostly for informational purposes.
@@ -35,26 +39,12 @@
 #	on Cortex-A53 (or by 4 cycles per round).
 # (***)	Super-impressive coefficients over gcc-generated code are
 #	indication of some compiler "pathology", most notably code
-#	generated with -mgeneral-regs-only is significanty faster
+#	generated with -mgeneral-regs-only is significantly faster
 #	and the gap is only 40-90%.
 
-$output=pop;
-$flavour=pop;
+my ($flavour, $hash, $output) = @ARGV;
 
-if ($flavour && $flavour ne "void") {
-    $0 =~ m/(.*[\/\\])[^\/\\]+$/; $dir=$1;
-    ( $xlate="${dir}arm-xlate.pl" and -f $xlate ) or
-    ( $xlate="${dir}../../../perlasm/arm-xlate.pl" and -f $xlate) or
-    die "can't locate arm-xlate.pl";
-
-    open OUT,"| \"$^X\" $xlate $flavour $output";
-    *STDOUT=*OUT;
-} else {
-    open OUT,">$output";
-    *STDOUT=*OUT;
-}
-
-if ($output =~ /512/) {
+if ($hash eq "sha512") {
 	$BITS=512;
 	$SZ=8;
 	@Sigma0=(28,34,39);
@@ -63,7 +53,7 @@ if ($output =~ /512/) {
 	@sigma1=(19,61, 6);
 	$rounds=80;
 	$reg_t="x";
-} else {
+} elsif ($hash eq "sha256") {
 	$BITS=256;
 	$SZ=4;
 	@Sigma0=( 2,13,22);
@@ -72,9 +62,24 @@ if ($output =~ /512/) {
 	@sigma1=(17,19,10);
 	$rounds=64;
 	$reg_t="w";
+} else {
+	die "unknown hash: $hash";
 }
 
-$func="sha${BITS}_block_data_order";
+if ($flavour && $flavour ne "void") {
+    $0 =~ m/(.*[\/\\])[^\/\\]+$/; $dir=$1;
+    ( $xlate="${dir}arm-xlate.pl" and -f $xlate ) or
+    ( $xlate="${dir}../../../perlasm/arm-xlate.pl" and -f $xlate) or
+    die "can't locate arm-xlate.pl";
+
+    open OUT,"| \"$^X\" \"$xlate\" $flavour \"$output\"";
+    *STDOUT=*OUT;
+} else {
+    open OUT,">$output";
+    *STDOUT=*OUT;
+}
+
+$func="sha${BITS}_block_data_order_nohw";
 
 ($ctx,$inp,$num,$Ktbl)=map("x$_",(0..2,30));
 
@@ -89,7 +94,7 @@ my ($T0,$T1,$T2)=(@X[($i-8)&15],@X[($i-9)&15],@X[($i-10)&15]);
    $T0=@X[$i+3] if ($i<11);
 
 $code.=<<___	if ($i<16);
-#ifndef	__ARMEB__
+#ifndef	__AARCH64EB__
 	rev	@X[$i],@X[$i]			// $i
 #endif
 ___
@@ -172,31 +177,13 @@ ___
 }
 
 $code.=<<___;
-#ifndef	__KERNEL__
-# include <openssl/arm_arch.h>
-#endif
-
 .text
 
-.extern	OPENSSL_armcap_P
 .globl	$func
 .type	$func,%function
 .align	6
 $func:
-___
-$code.=<<___	if ($SZ==4);
-#ifndef	__KERNEL__
-#if __has_feature(hwaddress_sanitizer) && __clang_major__ >= 10
-	adrp	x16,:pg_hi21_nc:OPENSSL_armcap_P
-#else
-	adrp	x16,:pg_hi21:OPENSSL_armcap_P
-#endif
-	ldr	w16,[x16,:lo12:OPENSSL_armcap_P]
-	tst	w16,#ARMV8_SHA256
-	b.ne	.Lv8_entry
-#endif
-___
-$code.=<<___;
+	AARCH64_SIGN_LINK_REGISTER
 	stp	x29,x30,[sp,#-128]!
 	add	x29,sp,#0
 
@@ -259,6 +246,7 @@ $code.=<<___;
 	ldp	x25,x26,[x29,#64]
 	ldp	x27,x28,[x29,#80]
 	ldp	x29,x30,[sp],#128
+	AARCH64_VALIDATE_LINK_REGISTER
 	ret
 .size	$func,.-$func
 
@@ -346,10 +334,12 @@ my ($ABCD_SAVE,$EFGH_SAVE)=("v18.16b","v19.16b");
 $code.=<<___;
 .text
 #ifndef	__KERNEL__
-.type	sha256_block_armv8,%function
+.globl	sha256_block_data_order_hw
+.type	sha256_block_data_order_hw,%function
 .align	6
-sha256_block_armv8:
-.Lv8_entry:
+sha256_block_data_order_hw:
+	// Armv8.3-A PAuth: even though x30 is pushed to stack it is not popped later.
+	AARCH64_VALID_CALL_TARGET
 	stp		x29,x30,[sp,#-16]!
 	add		x29,sp,#0
 
@@ -414,23 +404,137 @@ $code.=<<___;
 
 	ldr		x29,[sp],#16
 	ret
-.size	sha256_block_armv8,.-sha256_block_armv8
+.size	sha256_block_data_order_hw,.-sha256_block_data_order_hw
 #endif
 ___
 }
 
+if ($SZ==8) {
+my $Ktbl="x3";
+
+my @H = map("v$_.16b",(0..4));
+my ($fg,$de,$m9_10)=map("v$_.16b",(5..7));
+my @MSG=map("v$_.16b",(16..23));
+my ($W0,$W1)=("v24.2d","v25.2d");
+my ($AB,$CD,$EF,$GH)=map("v$_.16b",(26..29));
+
 $code.=<<___;
+.text
 #ifndef	__KERNEL__
-.comm	OPENSSL_armcap_P,4,4
-.hidden	OPENSSL_armcap_P
+.globl	sha512_block_data_order_hw
+.type	sha512_block_data_order_hw,%function
+.align	6
+sha512_block_data_order_hw:
+	// Armv8.3-A PAuth: even though x30 is pushed to stack it is not popped later.
+	AARCH64_VALID_CALL_TARGET
+	stp		x29,x30,[sp,#-16]!
+	add		x29,sp,#0
+
+	ld1		{@MSG[0]-@MSG[3]},[$inp],#64	// load input
+	ld1		{@MSG[4]-@MSG[7]},[$inp],#64
+
+	ld1.64		{@H[0]-@H[3]},[$ctx]		// load context
+	adrp		$Ktbl,:pg_hi21:.LK512
+	add		$Ktbl,$Ktbl,:lo12:.LK512
+
+	rev64		@MSG[0],@MSG[0]
+	rev64		@MSG[1],@MSG[1]
+	rev64		@MSG[2],@MSG[2]
+	rev64		@MSG[3],@MSG[3]
+	rev64		@MSG[4],@MSG[4]
+	rev64		@MSG[5],@MSG[5]
+	rev64		@MSG[6],@MSG[6]
+	rev64		@MSG[7],@MSG[7]
+	b		.Loop_hw
+
+.align	4
+.Loop_hw:
+	ld1.64		{$W0},[$Ktbl],#16
+	subs		$num,$num,#1
+	sub		x4,$inp,#128
+	orr		$AB,@H[0],@H[0]			// offload
+	orr		$CD,@H[1],@H[1]
+	orr		$EF,@H[2],@H[2]
+	orr		$GH,@H[3],@H[3]
+	csel		$inp,$inp,x4,ne			// conditional rewind
+___
+for($i=0;$i<32;$i++) {
+$code.=<<___;
+	add.i64		$W0,$W0,@MSG[0]
+	ld1.64		{$W1},[$Ktbl],#16
+	ext		$W0,$W0,$W0,#8
+	ext		$fg,@H[2],@H[3],#8
+	ext		$de,@H[1],@H[2],#8
+	add.i64		@H[3],@H[3],$W0			// "T1 + H + K512[i]"
+	 sha512su0	@MSG[0],@MSG[1]
+	 ext		$m9_10,@MSG[4],@MSG[5],#8
+	sha512h		@H[3],$fg,$de
+	 sha512su1	@MSG[0],@MSG[7],$m9_10
+	add.i64		@H[4],@H[1],@H[3]		// "D + T1"
+	sha512h2	@H[3],$H[1],@H[0]
+___
+	($W0,$W1)=($W1,$W0);	push(@MSG,shift(@MSG));
+	@H = (@H[3],@H[0],@H[4],@H[2],@H[1]);
+}
+for(;$i<40;$i++) {
+$code.=<<___	if ($i<39);
+	ld1.64		{$W1},[$Ktbl],#16
+___
+$code.=<<___	if ($i==39);
+	sub		$Ktbl,$Ktbl,#$rounds*$SZ	// rewind
+___
+$code.=<<___;
+	add.i64		$W0,$W0,@MSG[0]
+	 ld1		{@MSG[0]},[$inp],#16		// load next input
+	ext		$W0,$W0,$W0,#8
+	ext		$fg,@H[2],@H[3],#8
+	ext		$de,@H[1],@H[2],#8
+	add.i64		@H[3],@H[3],$W0			// "T1 + H + K512[i]"
+	sha512h		@H[3],$fg,$de
+	 rev64		@MSG[0],@MSG[0]
+	add.i64		@H[4],@H[1],@H[3]		// "D + T1"
+	sha512h2	@H[3],$H[1],@H[0]
+___
+	($W0,$W1)=($W1,$W0);	push(@MSG,shift(@MSG));
+	@H = (@H[3],@H[0],@H[4],@H[2],@H[1]);
+}
+$code.=<<___;
+	add.i64		@H[0],@H[0],$AB			// accumulate
+	add.i64		@H[1],@H[1],$CD
+	add.i64		@H[2],@H[2],$EF
+	add.i64		@H[3],@H[3],$GH
+
+	cbnz		$num,.Loop_hw
+
+	st1.64		{@H[0]-@H[3]},[$ctx]		// store context
+
+	ldr		x29,[sp],#16
+	ret
+.size	sha512_block_data_order_hw,.-sha512_block_data_order_hw
 #endif
 ___
+}
 
 {   my  %opcode = (
 	"sha256h"	=> 0x5e004000,	"sha256h2"	=> 0x5e005000,
 	"sha256su0"	=> 0x5e282800,	"sha256su1"	=> 0x5e006000	);
 
     sub unsha256 {
+	my ($mnemonic,$arg)=@_;
+
+	$arg =~ m/[qv]([0-9]+)[^,]*,\s*[qv]([0-9]+)[^,]*(?:,\s*[qv]([0-9]+))?/o
+	&&
+	sprintf ".inst\t0x%08x\t//%s %s",
+			$opcode{$mnemonic}|$1|($2<<5)|($3<<16),
+			$mnemonic,$arg;
+    }
+}
+
+{   my  %opcode = (
+	"sha512h"	=> 0xce608000,	"sha512h2"	=> 0xce608400,
+	"sha512su0"	=> 0xcec08000,	"sha512su1"	=> 0xce608800	);
+
+    sub unsha512 {
 	my ($mnemonic,$arg)=@_;
 
 	$arg =~ m/[qv]([0-9]+)[^,]*,\s*[qv]([0-9]+)[^,]*(?:,\s*[qv]([0-9]+))?/o
@@ -451,14 +555,20 @@ close SELF;
 
 foreach(split("\n",$code)) {
 
-	s/\`([^\`]*)\`/eval($1)/geo;
+	s/\`([^\`]*)\`/eval($1)/ge;
 
-	s/\b(sha256\w+)\s+([qv].*)/unsha256($1,$2)/geo;
+	s/\b(sha512\w+)\s+([qv].*)/unsha512($1,$2)/ge	or
+	s/\b(sha256\w+)\s+([qv].*)/unsha256($1,$2)/ge;
 
-	s/\.\w?32\b//o		and s/\.16b/\.4s/go;
-	m/(ld|st)1[^\[]+\[0\]/o	and s/\.4s/\.s/go;
+	s/\bq([0-9]+)\b/v$1.16b/g;		# old->new registers
+
+	s/\.[ui]?8(\s)/$1/;
+	s/\.\w?64\b//		and s/\.16b/\.2d/g	or
+	s/\.\w?32\b//		and s/\.16b/\.4s/g;
+	m/\bext\b/		and s/\.2d/\.16b/g	or
+	m/(ld|st)1[^\[]+\[0\]/	and s/\.4s/\.s/g;
 
 	print $_,"\n";
 }
 
-close STDOUT or die "error closing STDOUT";
+close STDOUT or die "error closing STDOUT: $!";

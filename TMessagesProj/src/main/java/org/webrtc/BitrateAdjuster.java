@@ -15,7 +15,7 @@ interface BitrateAdjuster {
   /**
    * Sets the target bitrate in bits per second and framerate in frames per second.
    */
-  void setTargets(int targetBitrateBps, int targetFps);
+  void setTargets(int targetBitrateBps, double targetFramerateFps);
 
   /**
    * Should be used to report the size of an encoded frame to the bitrate adjuster. Use
@@ -26,6 +26,6 @@ interface BitrateAdjuster {
   /** Gets the current bitrate. */
   int getAdjustedBitrateBps();
 
-  /** Gets the framerate for initial codec configuration. */
-  int getCodecConfigFramerate();
+  /** Gets the current framerate. */
+  double getAdjustedFramerateFps();
 }

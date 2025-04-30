@@ -51,9 +51,6 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable, 
     public boolean skipFrameUpdate;
     public long currentTime;
 
-    private static int A = 0;
-    private int a = A++;
-
     // canvas.drawPath lead to glitches
     // clipPath not use antialias
     private final boolean USE_BITMAP_SHADER = Build.VERSION.SDK_INT < 29;

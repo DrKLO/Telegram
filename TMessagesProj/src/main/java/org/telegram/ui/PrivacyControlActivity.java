@@ -93,7 +93,6 @@ import org.telegram.ui.Components.MotionBackgroundDrawable;
 import org.telegram.ui.Components.Premium.PremiumFeatureBottomSheet;
 import org.telegram.ui.Components.RLottieDrawable;
 import org.telegram.ui.Components.RecyclerListView;
-import org.telegram.ui.Stars.StarsIntroActivity;
 import org.telegram.ui.Stories.recorder.ButtonWithCounterView;
 
 import java.io.File;
@@ -2219,10 +2218,10 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
                                     SpannableStringBuilder ssb = new SpannableStringBuilder();
                                     ssb.append(lockSpan);
                                     ssb.append(" ");
-                                    ssb.append(StarsIntroActivity.replaceStars(LocaleController.formatPluralStringComma("Stars", val)));
+                                    ssb.append(LocaleController.formatPluralStringComma("Stars", val));
                                     return ssb;
                                 }
-                                return StarsIntroActivity.replaceStars(LocaleController.formatPluralStringComma("Stars", val));
+                                return LocaleController.formatPluralStringComma("Stars", val);
                             }
                             return LocaleController.formatNumber(val, ',');
                         });

@@ -159,6 +159,8 @@ absl::optional<VideoEncoder::QpThresholds> GetThresholds(
       low = config.vp9.GetQpLow();
       high = config.vp9.GetQpHigh();
       break;
+    case kVideoCodecH265:
+    //  TODO(bugs.webrtc.org/13485): Use H264 QP thresholds for now.
     case kVideoCodecH264:
       low = config.h264.GetQpLow();
       high = config.h264.GetQpHigh();
@@ -194,6 +196,8 @@ int GetFps(VideoCodecType type,
     case kVideoCodecVP8:
       fps = config->vp8.GetFps();
       break;
+    case kVideoCodecH265:
+    //  TODO(bugs.webrtc.org/13485): Use VP9 bitrate limits for now.
     case kVideoCodecVP9:
       fps = config->vp9.GetFps();
       break;
@@ -226,6 +230,8 @@ absl::optional<int> GetKbps(
     case kVideoCodecVP8:
       kbps = config->vp8.GetKbps();
       break;
+    case kVideoCodecH265:
+    //  TODO(bugs.webrtc.org/13485): Use VP9 bitrate limits for now.
     case kVideoCodecVP9:
       kbps = config->vp9.GetKbps();
       break;
@@ -259,6 +265,8 @@ absl::optional<int> GetKbpsRes(
     case kVideoCodecVP8:
       kbps_res = config->vp8.GetKbpsRes();
       break;
+    case kVideoCodecH265:
+    //  TODO(bugs.webrtc.org/13485): Use VP9 bitrate limits for now.
     case kVideoCodecVP9:
       kbps_res = config->vp9.GetKbpsRes();
       break;

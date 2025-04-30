@@ -16,6 +16,7 @@
 #include "absl/types/optional.h"
 #include "api/field_trials_view.h"
 #include "api/units/data_rate.h"
+#include "api/units/data_size.h"
 #include "api/units/timestamp.h"
 #include "rtc_base/experiments/field_trial_parser.h"
 

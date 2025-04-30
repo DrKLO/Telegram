@@ -15,20 +15,24 @@
 #include "absl/strings/string_view.h"
 
 #include <stdlib.h>
+
+#include <cstddef>
+#include <cstdlib>
+#include <cstring>
 #include <iomanip>
+#include <ios>
 #include <iterator>
 #include <limits>
 #include <map>
+#include <memory>
 #include <sstream>
-#include <stdexcept>
 #include <string>
 #include <type_traits>
 #include <utility>
 
 #include "gtest/gtest.h"
 #include "absl/base/config.h"
-#include "absl/base/dynamic_annotations.h"
-#include "absl/base/options.h"
+#include "absl/meta/type_traits.h"
 
 #if defined(ABSL_HAVE_STD_STRING_VIEW) || defined(__ANDROID__)
 // We don't control the death messaging when using std::string_view.
@@ -42,6 +46,14 @@
 #endif
 
 namespace {
+
+static_assert(!absl::type_traits_internal::IsOwner<absl::string_view>::value &&
+                  absl::type_traits_internal::IsView<absl::string_view>::value,
+              "string_view is a view, not an owner");
+
+static_assert(absl::type_traits_internal::IsLifetimeBoundAssignment<
+                  absl::string_view, std::string>::value,
+              "lifetimebound assignment not detected");
 
 // A minimal allocator that uses malloc().
 template <typename T>
@@ -882,7 +894,11 @@ TEST(StringViewTest, NULLInput) {
   EXPECT_EQ(s.size(), 0u);
 
 #ifdef ABSL_HAVE_STRING_VIEW_FROM_NULLPTR
-  s = absl::string_view(nullptr);
+  // The `str` parameter is annotated nonnull, but we want to test the defensive
+  // null check. Use a variable instead of passing nullptr directly to avoid a
+  // `-Wnonnull` warning.
+  char* null_str = nullptr;
+  s = absl::string_view(null_str);
   EXPECT_EQ(s.data(), nullptr);
   EXPECT_EQ(s.size(), 0u);
 
@@ -948,6 +964,76 @@ TEST(StringViewTest, At) {
 #endif
 }
 
+#if ABSL_INTERNAL_CPLUSPLUS_LANG >= 202002L
+TEST(StringViewTest, StartsWith) {
+  const absl::string_view a("foobar");
+  const absl::string_view b("123\0abc", 7);
+  const absl::string_view e;
+  EXPECT_TRUE(a.starts_with(a));
+  EXPECT_TRUE(a.starts_with("foo"));
+  EXPECT_TRUE(a.starts_with('f'));
+  EXPECT_TRUE(a.starts_with(e));
+  EXPECT_TRUE(b.starts_with(b));
+  EXPECT_TRUE(b.starts_with('1'));
+  EXPECT_TRUE(b.starts_with(e));
+  EXPECT_TRUE(e.starts_with(""));
+  EXPECT_FALSE(a.starts_with(b));
+  EXPECT_FALSE(b.starts_with(a));
+  EXPECT_FALSE(e.starts_with(a));
+  EXPECT_FALSE(a.starts_with('r'));
+  EXPECT_FALSE(a.starts_with('\0'));
+  EXPECT_FALSE(e.starts_with('r'));
+  EXPECT_FALSE(e.starts_with('\0'));
+
+  // Test that constexpr compiles.
+  constexpr absl::string_view kFooBar("foobar");
+  constexpr absl::string_view kFoo("foo");
+  constexpr absl::string_view kBar("bar");
+  constexpr bool k1 = kFooBar.starts_with(kFoo);
+  EXPECT_TRUE(k1);
+  constexpr bool k2 = kFooBar.starts_with(kBar);
+  EXPECT_FALSE(k2);
+  constexpr bool k3 = kFooBar.starts_with('f');
+  EXPECT_TRUE(k3);
+  constexpr bool k4 = kFooBar.starts_with("fo");
+  EXPECT_TRUE(k4);
+}
+
+TEST(StringViewTest, EndsWith) {
+  const absl::string_view a("foobar");
+  const absl::string_view b("123\0abc", 7);
+  const absl::string_view e;
+  EXPECT_TRUE(a.ends_with(a));
+  EXPECT_TRUE(a.ends_with('r'));
+  EXPECT_TRUE(a.ends_with("bar"));
+  EXPECT_TRUE(a.ends_with(e));
+  EXPECT_TRUE(b.ends_with(b));
+  EXPECT_TRUE(b.ends_with('c'));
+  EXPECT_TRUE(b.ends_with(e));
+  EXPECT_TRUE(e.ends_with(""));
+  EXPECT_FALSE(a.ends_with(b));
+  EXPECT_FALSE(b.ends_with(a));
+  EXPECT_FALSE(e.ends_with(a));
+  EXPECT_FALSE(a.ends_with('f'));
+  EXPECT_FALSE(a.ends_with('\0'));
+  EXPECT_FALSE(e.ends_with('r'));
+  EXPECT_FALSE(e.ends_with('\0'));
+
+  // Test that constexpr compiles.
+  constexpr absl::string_view kFooBar("foobar");
+  constexpr absl::string_view kFoo("foo");
+  constexpr absl::string_view kBar("bar");
+  constexpr bool k1 = kFooBar.ends_with(kFoo);
+  EXPECT_FALSE(k1);
+  constexpr bool k2 = kFooBar.ends_with(kBar);
+  EXPECT_TRUE(k2);
+  constexpr bool k3 = kFooBar.ends_with('r');
+  EXPECT_TRUE(k3);
+  constexpr bool k4 = kFooBar.ends_with("ar");
+  EXPECT_TRUE(k4);
+}
+#endif  // ABSL_INTERNAL_CPLUSPLUS_LANG >= 202002L
+
 struct MyCharAlloc : std::allocator<char> {};
 
 TEST(StringViewTest, ExplicitConversionOperator) {
@@ -978,9 +1064,6 @@ TEST(StringViewTest, ConstexprNullSafeStringView) {
     EXPECT_EQ(0u, s.size());
     EXPECT_EQ(absl::string_view(), s);
   }
-#if !defined(_MSC_VER) || _MSC_VER >= 1910
-  // MSVC 2017+ is required for good constexpr string_view support.
-  // See the implementation of `absl::string_view::StrlenInternal()`.
   {
     static constexpr char kHi[] = "hi";
     absl::string_view s = absl::NullSafeStringView(kHi);
@@ -993,13 +1076,25 @@ TEST(StringViewTest, ConstexprNullSafeStringView) {
     EXPECT_EQ(s.size(), 5u);
     EXPECT_EQ("hello", s);
   }
-#endif
 }
 
 TEST(StringViewTest, ConstexprCompiles) {
   constexpr absl::string_view sp;
+  // With `-Wnonnull` turned on, there is no way to test the defensive null
+  // check in the `string_view(const char*)` constructor in a constexpr context,
+  // as the argument needs to be constexpr. The compiler will therefore always
+  // know at compile time that the argument is nullptr and complain because the
+  // parameter is annotated nonnull. We hence turn the warning off for this
+  // test.
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wnonnull"
+#endif
 #ifdef ABSL_HAVE_STRING_VIEW_FROM_NULLPTR
   constexpr absl::string_view cstr(nullptr);
+#endif
+#if defined(__clang__)
+#pragma clang diagnostic pop
 #endif
   constexpr absl::string_view cstr_len("cstr", 4);
 
@@ -1028,7 +1123,7 @@ TEST(StringViewTest, ConstexprCompiles) {
 #endif
 
 // MSVC 2017+ should be able to construct a constexpr string_view from a cstr.
-#if defined(_MSC_VER) && _MSC_VER >= 1910
+#if defined(_MSC_VER)
 #define ABSL_HAVE_CONSTEXPR_STRING_VIEW_FROM_CSTR 1
 #endif
 
@@ -1064,10 +1159,6 @@ TEST(StringViewTest, ConstexprCompiles) {
 #endif
 #endif
 
-#if !defined(__clang__) || 3 < __clang_major__ || \
-  (3 == __clang_major__ && 4 < __clang_minor__)
-  // older clang versions (< 3.5) complain that:
-  //   "cannot perform pointer arithmetic on null pointer"
   constexpr absl::string_view::iterator const_begin_empty = sp.begin();
   constexpr absl::string_view::iterator const_end_empty = sp.end();
   EXPECT_EQ(const_begin_empty, const_end_empty);
@@ -1077,7 +1168,6 @@ TEST(StringViewTest, ConstexprCompiles) {
   constexpr absl::string_view::iterator const_end_nullptr = cstr.end();
   EXPECT_EQ(const_begin_nullptr, const_end_nullptr);
 #endif  // ABSL_HAVE_STRING_VIEW_FROM_NULLPTR
-#endif  // !defined(__clang__) || ...
 
   constexpr absl::string_view::iterator const_begin = cstr_len.begin();
   constexpr absl::string_view::iterator const_end = cstr_len.end();

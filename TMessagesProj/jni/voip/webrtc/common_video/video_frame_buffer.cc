@@ -227,6 +227,22 @@ rtc::scoped_refptr<I420BufferInterface> I210BufferBase::ToI420() {
   return i420_buffer;
 }
 
+class I410BufferBase : public I410BufferInterface {
+ public:
+  rtc::scoped_refptr<I420BufferInterface> ToI420() final;
+};
+
+rtc::scoped_refptr<I420BufferInterface> I410BufferBase::ToI420() {
+  rtc::scoped_refptr<I420Buffer> i420_buffer =
+      I420Buffer::Create(width(), height());
+  libyuv::I410ToI420(DataY(), StrideY(), DataU(), StrideU(), DataV(), StrideV(),
+                     i420_buffer->MutableDataY(), i420_buffer->StrideY(),
+                     i420_buffer->MutableDataU(), i420_buffer->StrideU(),
+                     i420_buffer->MutableDataV(), i420_buffer->StrideV(),
+                     width(), height());
+  return i420_buffer;
+}
+
 }  // namespace
 
 rtc::scoped_refptr<I420BufferInterface> WrapI420Buffer(
@@ -349,6 +365,22 @@ rtc::scoped_refptr<I210BufferInterface> WrapI210Buffer(
     std::function<void()> no_longer_used) {
   return rtc::scoped_refptr<I210BufferInterface>(
       rtc::make_ref_counted<WrappedYuv16BBuffer<I210BufferBase>>(
+          width, height, y_plane, y_stride, u_plane, u_stride, v_plane,
+          v_stride, no_longer_used));
+}
+
+rtc::scoped_refptr<I410BufferInterface> WrapI410Buffer(
+    int width,
+    int height,
+    const uint16_t* y_plane,
+    int y_stride,
+    const uint16_t* u_plane,
+    int u_stride,
+    const uint16_t* v_plane,
+    int v_stride,
+    std::function<void()> no_longer_used) {
+  return rtc::scoped_refptr<I410BufferInterface>(
+      rtc::make_ref_counted<WrappedYuv16BBuffer<I410BufferBase>>(
           width, height, y_plane, y_stride, u_plane, u_stride, v_plane,
           v_stride, no_longer_used));
 }

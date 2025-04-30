@@ -13,6 +13,7 @@
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
+
 #include <algorithm>
 
 #include "modules/audio_processing/ns/fast_math.h"

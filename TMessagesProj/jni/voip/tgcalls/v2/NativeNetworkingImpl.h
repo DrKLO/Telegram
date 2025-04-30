@@ -87,17 +87,20 @@ private:
     void OnRtcpPacketReceived_n(rtc::CopyOnWriteBuffer *packet, int64_t packet_time_us);
 
     void sctpReadyToSendData();
-    void sctpDataReceived(const cricket::ReceiveDataParams& params, const rtc::CopyOnWriteBuffer& buffer);
     
     void notifyStateUpdated();
+    
+    void processPendingLocalStandaloneReflectorCandidates();
 
     std::shared_ptr<Threads> _threads;
     bool _isOutgoing = false;
+    EncryptionKey _encryptionKey;
     bool _enableStunMarking = false;
     bool _enableTCP = false;
     bool _enableP2P = false;
     std::vector<RtcServer> _rtcServers;
     absl::optional<Proxy> _proxy;
+    std::map<std::string, json11::Json> _customParameters;
 
     std::function<void(const InstanceNetworking::State &)> _stateUpdated;
     std::function<void(const cricket::Candidate &)> _candidateGathered;
@@ -107,19 +110,21 @@ private:
     std::function<void(std::string const &)> _dataChannelMessageReceived;
 
     std::unique_ptr<rtc::NetworkMonitorFactory> _networkMonitorFactory;
-    std::unique_ptr<rtc::BasicPacketSocketFactory> _socketFactory;
-    std::unique_ptr<rtc::BasicNetworkManager> _networkManager;
+    rtc::SocketFactory *_underlyingSocketFactory = nullptr;
+    std::unique_ptr<rtc::PacketSocketFactory> _socketFactory;
+    std::unique_ptr<rtc::NetworkManager> _networkManager;
     std::unique_ptr<webrtc::TurnCustomizer> _turnCustomizer;
     std::unique_ptr<cricket::RelayPortFactoryInterface> _relayPortFactory;
     std::unique_ptr<cricket::BasicPortAllocator> _portAllocator;
     std::unique_ptr<webrtc::AsyncDnsResolverFactoryInterface> _asyncResolverFactory;
     std::unique_ptr<cricket::P2PTransportChannel> _transportChannel;
+    std::unique_ptr<webrtc::RtpTransport> _mtProtoRtpTransport;
     std::unique_ptr<cricket::DtlsTransport> _dtlsTransport;
     std::unique_ptr<webrtc::DtlsSrtpTransport> _dtlsSrtpTransport;
 
     std::unique_ptr<SctpDataChannelProviderInterfaceImpl> _dataChannelInterface;
 
-    rtc::scoped_refptr<rtc::RTCCertificate> _localCertificate;
+    webrtc::scoped_refptr<rtc::RTCCertificate> _localCertificate;
     PeerIceParameters _localIceParameters;
     absl::optional<PeerIceParameters> _remoteIceParameters;
 
@@ -128,6 +133,8 @@ private:
     int64_t _lastDisconnectedTimestamp = 0;
     absl::optional<RouteDescription> _currentRouteDescription;
     absl::optional<ConnectionDescription> _currentConnectionDescription;
+    
+    std::vector<cricket::Candidate> _pendingLocalStandaloneReflectorCandidates;
 };
 
 } // namespace tgcalls

@@ -32,20 +32,30 @@ namespace webrtc {
 // parameters that are used when negotiating are the level part of
 // profile-level-id and level-asymmetry-allowed.
 void H264GenerateProfileLevelIdForAnswer(
-    const SdpVideoFormat::Parameters& local_supported_params,
-    const SdpVideoFormat::Parameters& remote_offered_params,
-    SdpVideoFormat::Parameters* answer_params);
+    const CodecParameterMap& local_supported_params,
+    const CodecParameterMap& remote_offered_params,
+    CodecParameterMap* answer_params);
+
+#ifdef RTC_ENABLE_H265
+// Works similarly as H264GenerateProfileLevelIdForAnswer, but generates codec
+// parameters that will be used as answer for H.265.
+// Media configuration parameters, except level-id, must be used symmetrically.
+// For level-id, the highest level indicated by the answer must not be higher
+// than that indicated by the offer.
+void H265GenerateProfileTierLevelForAnswer(
+    const CodecParameterMap& local_supported_params,
+    const CodecParameterMap& remote_offered_params,
+    CodecParameterMap* answer_params);
+#endif
 
 // Parse max frame rate from SDP FMTP line. absl::nullopt is returned if the
 // field is missing or not a number.
-absl::optional<int> ParseSdpForVPxMaxFrameRate(
-    const SdpVideoFormat::Parameters& params);
+absl::optional<int> ParseSdpForVPxMaxFrameRate(const CodecParameterMap& params);
 
 // Parse max frame size from SDP FMTP line. absl::nullopt is returned if the
 // field is missing or not a number. Please note that the value is stored in sub
 // blocks but the returned value is in total number of pixels.
-absl::optional<int> ParseSdpForVPxMaxFrameSize(
-    const SdpVideoFormat::Parameters& params);
+absl::optional<int> ParseSdpForVPxMaxFrameSize(const CodecParameterMap& params);
 
 }  // namespace webrtc
 

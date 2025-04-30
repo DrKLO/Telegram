@@ -1,0 +1,93 @@
+# Copyright (c) 2018 The WebRTC project authors. All Rights Reserved.
+#
+# Use of this source code is governed by a BSD-style license
+# that can be found in the LICENSE file in the root of the source
+# tree. An additional intellectual property rights grant can be found
+# in the file PATENTS.  All contributing project authors may
+# be found in the AUTHORS file in the root of the source tree.
+
+import("../../webrtc.gni")
+
+rtc_library("audio_frame_api") {
+  visibility = [ "*" ]
+  sources = [
+    "audio_frame.cc",
+    "audio_frame.h",
+    "channel_layout.cc",
+    "channel_layout.h",
+  ]
+
+  deps = [
+    "..:rtp_packet_info",
+    "../../rtc_base:checks",
+    "../../rtc_base:logging",
+    "../../rtc_base:macromagic",
+    "../../rtc_base:timeutils",
+  ]
+}
+
+rtc_source_set("audio_frame_processor") {
+  visibility = [ "*" ]
+  sources = [ "audio_frame_processor.h" ]
+}
+
+rtc_source_set("audio_mixer_api") {
+  visibility = [ "*" ]
+  sources = [ "audio_mixer.h" ]
+
+  deps = [
+    ":audio_frame_api",
+    "..:make_ref_counted",
+    "../../rtc_base:refcount",
+  ]
+}
+
+rtc_library("aec3_config") {
+  visibility = [ "*" ]
+  sources = [
+    "echo_canceller3_config.cc",
+    "echo_canceller3_config.h",
+  ]
+  deps = [
+    "../../rtc_base:checks",
+    "../../rtc_base:safe_minmax",
+    "../../rtc_base/system:rtc_export",
+  ]
+}
+
+rtc_library("aec3_factory") {
+  visibility = [ "*" ]
+  configs += [ "../../modules/audio_processing:apm_debug_dump" ]
+  sources = [
+    "echo_canceller3_factory.cc",
+    "echo_canceller3_factory.h",
+  ]
+
+  deps = [
+    ":aec3_config",
+    ":echo_control",
+    "../../modules/audio_processing/aec3",
+    "../../rtc_base/system:rtc_export",
+  ]
+}
+
+rtc_source_set("echo_control") {
+  visibility = [ "*" ]
+  sources = [ "echo_control.h" ]
+  deps = [ "../../rtc_base:checks" ]
+}
+
+rtc_source_set("echo_detector_creator") {
+  visibility = [ "*" ]
+  allow_poison = [ "default_echo_detector" ]
+  sources = [
+    "echo_detector_creator.cc",
+    "echo_detector_creator.h",
+  ]
+  deps = [
+    "..:make_ref_counted",
+    "../../api:scoped_refptr",
+    "../../modules/audio_processing:api",
+    "../../modules/audio_processing:residual_echo_detector",
+  ]
+}

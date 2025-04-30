@@ -9949,7 +9949,7 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
                 AndroidUtilities.updateViewVisibilityAnimated(botButton, show, 0.1f, true);
             }
         }
-        updateFieldRight(botButton != null && botButton.getVisibility() == VISIBLE ? 2 : lastAttachVisible);
+        updateFieldRight(botButton != null && botButton.getVisibility() == VISIBLE && TextUtils.isEmpty(messageEditText == null ? "" : AndroidUtilities.getTrimmedString(messageEditText.getTextToUse())) ? 2 : lastAttachVisible);
         attachLayout.setPivotX(dp((botButton == null || botButton.getVisibility() == GONE) && (notifyButton == null || notifyButton.getVisibility() == GONE) ? 48 : 96));
     }
 

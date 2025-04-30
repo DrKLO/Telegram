@@ -29,10 +29,10 @@ PROXY_METHOD2(RTCErrorOr<rtc::scoped_refptr<PeerConnectionInterface>>,
               CreatePeerConnectionOrError,
               const PeerConnectionInterface::RTCConfiguration&,
               PeerConnectionDependencies)
-PROXY_CONSTMETHOD1(webrtc::RtpCapabilities,
+PROXY_CONSTMETHOD1(RtpCapabilities,
                    GetRtpSenderCapabilities,
                    cricket::MediaType)
-PROXY_CONSTMETHOD1(webrtc::RtpCapabilities,
+PROXY_CONSTMETHOD1(RtpCapabilities,
                    GetRtpReceiverCapabilities,
                    cricket::MediaType)
 PROXY_METHOD1(rtc::scoped_refptr<MediaStreamInterface>,
@@ -43,8 +43,8 @@ PROXY_METHOD1(rtc::scoped_refptr<AudioSourceInterface>,
               const cricket::AudioOptions&)
 PROXY_METHOD2(rtc::scoped_refptr<VideoTrackInterface>,
               CreateVideoTrack,
-              const std::string&,
-              VideoTrackSourceInterface*)
+              rtc::scoped_refptr<VideoTrackSourceInterface>,
+              absl::string_view)
 PROXY_METHOD2(rtc::scoped_refptr<AudioTrackInterface>,
               CreateAudioTrack,
               const std::string&,

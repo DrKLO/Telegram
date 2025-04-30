@@ -10,6 +10,8 @@
 
 #include "api/data_channel_interface.h"
 
+#include "rtc_base/checks.h"
+
 namespace webrtc {
 
 bool DataChannelInterface::ordered() const {
@@ -42,6 +44,19 @@ bool DataChannelInterface::negotiated() const {
 
 uint64_t DataChannelInterface::MaxSendQueueSize() {
   return 16 * 1024 * 1024;  // 16 MiB
+}
+
+// TODO(tommi): Remove method once downstream implementations have been removed.
+bool DataChannelInterface::Send(const DataBuffer& buffer) {
+  RTC_DCHECK_NOTREACHED();
+  return false;
+}
+
+// TODO(tommi): Remove implementation once method is pure virtual.
+void DataChannelInterface::SendAsync(
+    DataBuffer buffer,
+    absl::AnyInvocable<void(RTCError) &&> on_complete) {
+  RTC_DCHECK_NOTREACHED();
 }
 
 }  // namespace webrtc

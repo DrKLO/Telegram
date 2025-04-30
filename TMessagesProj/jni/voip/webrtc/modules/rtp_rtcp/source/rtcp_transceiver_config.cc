@@ -46,10 +46,6 @@ bool RtcpTransceiverConfig::Validate() const {
     RTC_LOG(LS_ERROR) << debug_id << "clock must be set";
     return false;
   }
-  if (!outgoing_transport) {
-    RTC_LOG(LS_ERROR) << debug_id << "outgoing transport must be set";
-    return false;
-  }
   if (initial_report_delay < TimeDelta::Zero()) {
     RTC_LOG(LS_ERROR) << debug_id << "delay " << initial_report_delay.ms()
                       << "ms before first report shouldn't be negative.";

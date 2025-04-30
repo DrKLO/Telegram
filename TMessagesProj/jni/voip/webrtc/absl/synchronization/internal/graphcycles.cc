@@ -37,6 +37,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cinttypes>
 #include <limits>
 #include "absl/base/internal/hide_ptr.h"
 #include "absl/base/internal/raw_logging.h"
@@ -114,7 +115,7 @@ class Vec {
     if (src->ptr_ == src->space_) {
       // Need to actually copy
       resize(src->size_);
-      std::copy(src->ptr_, src->ptr_ + src->size_, ptr_);
+      std::copy_n(src->ptr_, src->size_, ptr_);
       src->size_ = 0;
     } else {
       Discard();
@@ -148,7 +149,7 @@ class Vec {
     size_t request = static_cast<size_t>(capacity_) * sizeof(T);
     T* copy = static_cast<T*>(
         base_internal::LowLevelAlloc::AllocWithArena(request, arena));
-    std::copy(ptr_, ptr_ + size_, copy);
+    std::copy_n(ptr_, size_, copy);
     Discard();
     ptr_ = copy;
   }
@@ -210,7 +211,7 @@ class NodeSet {
   Vec<int32_t> table_;
   uint32_t occupied_;     // Count of non-empty slots (includes deleted slots)
 
-  static uint32_t Hash(int32_t a) { return static_cast<uint32_t>(a * 41); }
+  static uint32_t Hash(int32_t a) { return static_cast<uint32_t>(a) * 41; }
 
   // Return index for storing v.  May return an empty index or deleted index
   uint32_t FindIndex(int32_t v) const {
@@ -332,7 +333,7 @@ class PointerMap {
 
  private:
   // Number of buckets in hash table for pointer lookups.
-  static constexpr uint32_t kHashTableSize = 8171;  // should be prime
+  static constexpr uint32_t kHashTableSize = 262139;  // should be prime
 
   const Vec<Node*>* nodes_;
   std::array<int32_t, kHashTableSize> table_;
@@ -364,6 +365,14 @@ static Node* FindNode(GraphCycles::Rep* rep, GraphId id) {
   return (n->version == NodeVersion(id)) ? n : nullptr;
 }
 
+void GraphCycles::TestOnlyAddNodes(uint32_t n) {
+  uint32_t old_size = rep_->nodes_.size();
+  rep_->nodes_.resize(n);
+  for (auto i = old_size; i < n; ++i) {
+    rep_->nodes_[i] = nullptr;
+  }
+}
+
 GraphCycles::GraphCycles() {
   InitArenaIfNecessary();
   rep_ = new (base_internal::LowLevelAlloc::AllocWithArena(sizeof(Rep), arena))
@@ -372,6 +381,7 @@ GraphCycles::GraphCycles() {
 
 GraphCycles::~GraphCycles() {
   for (auto* node : rep_->nodes_) {
+    if (node == nullptr) { continue; }
     node->Node::~Node();
     base_internal::LowLevelAlloc::Free(node);
   }
@@ -386,19 +396,22 @@ bool GraphCycles::CheckInvariants() const {
     Node* nx = r->nodes_[x];
     void* ptr = base_internal::UnhidePtr<void>(nx->masked_ptr);
     if (ptr != nullptr && static_cast<uint32_t>(r->ptrmap_.Find(ptr)) != x) {
-      ABSL_RAW_LOG(FATAL, "Did not find live node in hash table %u %p", x, ptr);
+      ABSL_RAW_LOG(FATAL, "Did not find live node in hash table %" PRIu32 " %p",
+                   x, ptr);
     }
     if (nx->visited) {
-      ABSL_RAW_LOG(FATAL, "Did not clear visited marker on node %u", x);
+      ABSL_RAW_LOG(FATAL, "Did not clear visited marker on node %" PRIu32, x);
     }
     if (!ranks.insert(nx->rank)) {
-      ABSL_RAW_LOG(FATAL, "Duplicate occurrence of rank %d", nx->rank);
+      ABSL_RAW_LOG(FATAL, "Duplicate occurrence of rank %" PRId32, nx->rank);
     }
     HASH_FOR_EACH(y, nx->out) {
       Node* ny = r->nodes_[static_cast<uint32_t>(y)];
       if (nx->rank >= ny->rank) {
-        ABSL_RAW_LOG(FATAL, "Edge %u->%d has bad rank assignment %d->%d", x, y,
-                     nx->rank, ny->rank);
+        ABSL_RAW_LOG(FATAL,
+                     "Edge %" PRIu32 " ->%" PRId32
+                     " has bad rank assignment %" PRId32 "->%" PRId32,
+                     x, y, nx->rank, ny->rank);
       }
     }
   }

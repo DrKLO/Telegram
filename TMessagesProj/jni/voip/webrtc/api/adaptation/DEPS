@@ -1,0 +1,7 @@
+specific_include_rules = {
+  "resource\.h": [
+    # ref_count.h is a public_deps of rtc_base:refcount. Necessary because of
+    # rtc::RefCountInterface.
+    "+rtc_base/ref_count.h",
+  ],
+}

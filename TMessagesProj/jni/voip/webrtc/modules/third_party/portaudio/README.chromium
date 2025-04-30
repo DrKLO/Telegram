@@ -6,6 +6,7 @@ Date: 2022-04-12
 License: Custom license
 License File: LICENSE
 Security Critical: yes
+Shipped: yes
 
 Description:
 Part of portaudio library to operate with memory barriers and ring buffer.

@@ -14,10 +14,10 @@
 #include <memory>
 #include <string>
 #include <utility>
+#include <vector>
 
 #include "absl/strings/string_view.h"
 #include "api/array_view.h"
-#include "api/sequence_checker.h"
 #include "net/dcsctp/packet/chunk/abort_chunk.h"
 #include "net/dcsctp/packet/chunk/chunk.h"
 #include "net/dcsctp/packet/chunk/cookie_ack_chunk.h"
@@ -91,6 +91,8 @@ class DcSctpSocket : public DcSctpSocketInterface {
   void Close() override;
   SendStatus Send(DcSctpMessage message,
                   const SendOptions& send_options) override;
+  std::vector<SendStatus> SendMany(rtc::ArrayView<DcSctpMessage> messages,
+                                   const SendOptions& send_options) override;
   ResetStreamsStatus ResetStreams(
       rtc::ArrayView<const StreamID> outgoing_streams) override;
   SocketState state() const override;
@@ -148,16 +150,14 @@ class DcSctpSocket : public DcSctpSocketInterface {
 
   // Changes the socket state, given a `reason` (for debugging/logging).
   void SetState(State state, absl::string_view reason);
-  // Fills in `connect_params` with random verification tag and initial TSN.
-  void MakeConnectionParameters();
   // Closes the association. Note that the TCB will not be valid past this call.
   void InternalClose(ErrorKind error, absl::string_view message);
   // Closes the association, because of too many retransmission errors.
   void CloseConnectionBecauseOfTooManyTransmissionErrors();
   // Timer expiration handlers
-  absl::optional<DurationMs> OnInitTimerExpiry();
-  absl::optional<DurationMs> OnCookieTimerExpiry();
-  absl::optional<DurationMs> OnShutdownTimerExpiry();
+  webrtc::TimeDelta OnInitTimerExpiry();
+  webrtc::TimeDelta OnCookieTimerExpiry();
+  webrtc::TimeDelta OnShutdownTimerExpiry();
   void OnSentPacket(rtc::ArrayView<const uint8_t> packet,
                     SendPacketStatus status);
   // Sends SHUTDOWN or SHUTDOWN-ACK if the socket is shutting down and if all
@@ -167,6 +167,9 @@ class DcSctpSocket : public DcSctpSocketInterface {
   void MaybeSendShutdownOnPacketReceived(const SctpPacket& packet);
   // If there are streams pending to be reset, send a request to reset them.
   void MaybeSendResetStreamsRequest();
+  // Performs internal processing shared between Send and SendMany.
+  SendStatus InternalSend(const DcSctpMessage& message,
+                          const SendOptions& send_options);
   // Sends a INIT chunk.
   void SendInit();
   // Sends a SHUTDOWN chunk.
@@ -179,8 +182,9 @@ class DcSctpSocket : public DcSctpSocketInterface {
   // Parses `payload`, which is a serialized packet that is just going to be
   // sent and prints all chunks.
   void DebugPrintOutgoing(rtc::ArrayView<const uint8_t> payload);
-  // Called whenever there may be reassembled messages, and delivers those.
-  void DeliverReassembledMessages();
+  // Called whenever data has been received, or the cumulative acknowledgment
+  // TSN has moved, that may result in delivering messages.
+  void MaybeDeliverMessages();
   // Returns true if there is a TCB, and false otherwise (and reports an error).
   bool ValidateHasTCB();
 
@@ -266,7 +270,6 @@ class DcSctpSocket : public DcSctpSocketInterface {
 
   const std::string log_prefix_;
   const std::unique_ptr<PacketObserver> packet_observer_;
-  RTC_NO_UNIQUE_ADDRESS webrtc::SequenceChecker thread_checker_;
   Metrics metrics_;
   DcSctpOptions options_;
 

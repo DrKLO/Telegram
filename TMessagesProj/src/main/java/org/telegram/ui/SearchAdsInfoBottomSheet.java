@@ -97,7 +97,7 @@ public class SearchAdsInfoBottomSheet extends BottomSheetWithRecyclerListView {
         topSubtitle.setGravity(Gravity.CENTER_HORIZONTAL);
         linearLayout.addView(topSubtitle, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 22, 8, 22, 0));
 
-        FrameLayout info1 = new FeatureCell(context, R.drawable.menu_privacy, LocaleController.getString(R.string.SearchAdsAbout1Title), LocaleController.getString(R.string.RevenueSharingAdsInfo1Subtitle));
+        FrameLayout info1 = new FeatureCell(context, R.drawable.menu_privacy, LocaleController.getString(R.string.SearchAdsAbout1Title), LocaleController.getString(R.string.SearchAdsAbout1Subtitle));
         linearLayout.addView(info1, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 20, 0, 0));
 
         final boolean premium = UserConfig.getInstance(currentAccount).isPremium();

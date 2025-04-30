@@ -52,17 +52,18 @@ class AudioTransportImpl : public AudioTransport {
                                   bool keyPressed,
                                   uint32_t& newMicLevel) override;
 
-  int32_t RecordedDataIsAvailable(const void* audioSamples,
-                                  size_t nSamples,
-                                  size_t nBytesPerSample,
-                                  size_t nChannels,
-                                  uint32_t samplesPerSec,
-                                  uint32_t totalDelayMS,
-                                  int32_t clockDrift,
-                                  uint32_t currentMicLevel,
-                                  bool keyPressed,
-                                  uint32_t& newMicLevel,
-                                  int64_t estimated_capture_time_ns) override;
+  int32_t RecordedDataIsAvailable(
+      const void* audioSamples,
+      size_t nSamples,
+      size_t nBytesPerSample,
+      size_t nChannels,
+      uint32_t samplesPerSec,
+      uint32_t totalDelayMS,
+      int32_t clockDrift,
+      uint32_t currentMicLevel,
+      bool keyPressed,
+      uint32_t& newMicLevel,
+      absl::optional<int64_t> estimated_capture_time_ns) override;
 
   int32_t NeedMorePlayData(size_t nSamples,
                            size_t nBytesPerSample,

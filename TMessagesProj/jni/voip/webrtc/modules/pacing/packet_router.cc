@@ -19,12 +19,10 @@
 #include "absl/types/optional.h"
 #include "modules/rtp_rtcp/include/rtp_rtcp_defines.h"
 #include "modules/rtp_rtcp/source/rtcp_packet.h"
-#include "modules/rtp_rtcp/source/rtcp_packet/transport_feedback.h"
 #include "modules/rtp_rtcp/source/rtp_rtcp_interface.h"
 #include "rtc_base/checks.h"
 #include "rtc_base/logging.h"
 #include "rtc_base/system/unused.h"
-#include "rtc_base/time_utils.h"
 #include "rtc_base/trace_event.h"
 
 namespace webrtc {
@@ -37,6 +35,7 @@ PacketRouter::PacketRouter(uint16_t start_transport_seq)
       transport_seq_(start_transport_seq) {}
 
 PacketRouter::~PacketRouter() {
+  RTC_DCHECK_RUN_ON(&thread_checker_);
   RTC_DCHECK(send_modules_map_.empty());
   RTC_DCHECK(send_modules_list_.empty());
   RTC_DCHECK(rtcp_feedback_senders_.empty());
@@ -47,7 +46,7 @@ PacketRouter::~PacketRouter() {
 
 void PacketRouter::AddSendRtpModule(RtpRtcpInterface* rtp_module,
                                     bool remb_candidate) {
-  MutexLock lock(&modules_mutex_);
+  RTC_DCHECK_RUN_ON(&thread_checker_);
 
   AddSendRtpModuleToMap(rtp_module, rtp_module->SSRC());
   if (absl::optional<uint32_t> rtx_ssrc = rtp_module->RtxSsrc()) {
@@ -66,9 +65,20 @@ void PacketRouter::AddSendRtpModule(RtpRtcpInterface* rtp_module,
   }
 }
 
+bool PacketRouter::SupportsRtxPayloadPadding() const {
+  RTC_DCHECK_RUN_ON(&thread_checker_);
+  for (RtpRtcpInterface* rtp_module : send_modules_list_) {
+    if (rtp_module->SupportsRtxPayloadPadding()) {
+      return true;
+    }
+  }
+  return false;
+}
+
 void PacketRouter::AddSendRtpModuleToMap(RtpRtcpInterface* rtp_module,
                                          uint32_t ssrc) {
-  RTC_DCHECK(send_modules_map_.find(ssrc) == send_modules_map_.end());
+  RTC_DCHECK_RUN_ON(&thread_checker_);
+  RTC_CHECK(send_modules_map_.find(ssrc) == send_modules_map_.end());
 
   // Signal to module that the pacer thread is attached and can send packets.
   rtp_module->OnPacketSendingThreadSwitched();
@@ -86,14 +96,19 @@ void PacketRouter::AddSendRtpModuleToMap(RtpRtcpInterface* rtp_module,
 }
 
 void PacketRouter::RemoveSendRtpModuleFromMap(uint32_t ssrc) {
+  RTC_DCHECK_RUN_ON(&thread_checker_);
   auto it = send_modules_map_.find(ssrc);
-  RTC_DCHECK(it != send_modules_map_.end());
+  if (it == send_modules_map_.end()) {
+    RTC_LOG(LS_ERROR) << "No send module found for ssrc " << ssrc;
+    return;
+  }
   send_modules_list_.remove(it->second);
+  RTC_CHECK(modules_used_in_current_batch_.empty());
   send_modules_map_.erase(it);
 }
 
 void PacketRouter::RemoveSendRtpModule(RtpRtcpInterface* rtp_module) {
-  MutexLock lock(&modules_mutex_);
+  RTC_DCHECK_RUN_ON(&thread_checker_);
   MaybeRemoveRembModuleCandidate(rtp_module, /* media_sender = */ true);
 
   RemoveSendRtpModuleFromMap(rtp_module->SSRC());
@@ -112,7 +127,7 @@ void PacketRouter::RemoveSendRtpModule(RtpRtcpInterface* rtp_module) {
 
 void PacketRouter::AddReceiveRtpModule(RtcpFeedbackSenderInterface* rtcp_sender,
                                        bool remb_candidate) {
-  MutexLock lock(&modules_mutex_);
+  RTC_DCHECK_RUN_ON(&thread_checker_);
   RTC_DCHECK(std::find(rtcp_feedback_senders_.begin(),
                        rtcp_feedback_senders_.end(),
                        rtcp_sender) == rtcp_feedback_senders_.end());
@@ -126,7 +141,7 @@ void PacketRouter::AddReceiveRtpModule(RtcpFeedbackSenderInterface* rtcp_sender,
 
 void PacketRouter::RemoveReceiveRtpModule(
     RtcpFeedbackSenderInterface* rtcp_sender) {
-  MutexLock lock(&modules_mutex_);
+  RTC_DCHECK_RUN_ON(&thread_checker_);
   MaybeRemoveRembModuleCandidate(rtcp_sender, /* media_sender = */ false);
   auto it = std::find(rtcp_feedback_senders_.begin(),
                       rtcp_feedback_senders_.end(), rtcp_sender);
@@ -136,11 +151,11 @@ void PacketRouter::RemoveReceiveRtpModule(
 
 void PacketRouter::SendPacket(std::unique_ptr<RtpPacketToSend> packet,
                               const PacedPacketInfo& cluster_info) {
+  RTC_DCHECK_RUN_ON(&thread_checker_);
   TRACE_EVENT2(TRACE_DISABLED_BY_DEFAULT("webrtc"), "PacketRouter::SendPacket",
                "sequence_number", packet->SequenceNumber(), "rtp_timestamp",
                packet->Timestamp());
 
-  MutexLock lock(&modules_mutex_);
   // With the new pacer code path, transport sequence numbers are only set here,
   // on the pacer thread. Therefore we don't need atomics/synchronization.
   bool assign_transport_sequence_number =
@@ -161,10 +176,11 @@ void PacketRouter::SendPacket(std::unique_ptr<RtpPacketToSend> packet,
   }
 
   RtpRtcpInterface* rtp_module = it->second;
-  if (!rtp_module->TrySendPacket(packet.get(), cluster_info)) {
+  if (!rtp_module->TrySendPacket(std::move(packet), cluster_info)) {
     RTC_LOG(LS_WARNING) << "Failed to send packet, rejected by RTP module.";
     return;
   }
+  modules_used_in_current_batch_.insert(rtp_module);
 
   // Sending succeeded.
 
@@ -183,8 +199,18 @@ void PacketRouter::SendPacket(std::unique_ptr<RtpPacketToSend> packet,
   }
 }
 
+void PacketRouter::OnBatchComplete() {
+  RTC_DCHECK_RUN_ON(&thread_checker_);
+  TRACE_EVENT0(TRACE_DISABLED_BY_DEFAULT("webrtc"),
+               "PacketRouter::OnBatchComplete");
+  for (auto& module : modules_used_in_current_batch_) {
+    module->OnBatchComplete();
+  }
+  modules_used_in_current_batch_.clear();
+}
+
 std::vector<std::unique_ptr<RtpPacketToSend>> PacketRouter::FetchFec() {
-  MutexLock lock(&modules_mutex_);
+  RTC_DCHECK_RUN_ON(&thread_checker_);
   std::vector<std::unique_ptr<RtpPacketToSend>> fec_packets =
       std::move(pending_fec_packets_);
   pending_fec_packets_.clear();
@@ -193,10 +219,10 @@ std::vector<std::unique_ptr<RtpPacketToSend>> PacketRouter::FetchFec() {
 
 std::vector<std::unique_ptr<RtpPacketToSend>> PacketRouter::GeneratePadding(
     DataSize size) {
+  RTC_DCHECK_RUN_ON(&thread_checker_);
   TRACE_EVENT1(TRACE_DISABLED_BY_DEFAULT("webrtc"),
                "PacketRouter::GeneratePadding", "bytes", size.bytes());
 
-  MutexLock lock(&modules_mutex_);
   // First try on the last rtp module to have sent media. This increases the
   // the chance that any payload based padding will be useful as it will be
   // somewhat distributed over modules according the packet rate, even if it
@@ -238,7 +264,7 @@ std::vector<std::unique_ptr<RtpPacketToSend>> PacketRouter::GeneratePadding(
 void PacketRouter::OnAbortedRetransmissions(
     uint32_t ssrc,
     rtc::ArrayView<const uint16_t> sequence_numbers) {
-  MutexLock lock(&modules_mutex_);
+  RTC_DCHECK_RUN_ON(&thread_checker_);
   auto it = send_modules_map_.find(ssrc);
   if (it != send_modules_map_.end()) {
     it->second->OnAbortedRetransmissions(sequence_numbers);
@@ -246,7 +272,7 @@ void PacketRouter::OnAbortedRetransmissions(
 }
 
 absl::optional<uint32_t> PacketRouter::GetRtxSsrcForMedia(uint32_t ssrc) const {
-  MutexLock lock(&modules_mutex_);
+  RTC_DCHECK_RUN_ON(&thread_checker_);
   auto it = send_modules_map_.find(ssrc);
   if (it != send_modules_map_.end() && it->second->SSRC() == ssrc) {
     // A module is registered with the given SSRC, and that SSRC is the main
@@ -257,12 +283,12 @@ absl::optional<uint32_t> PacketRouter::GetRtxSsrcForMedia(uint32_t ssrc) const {
 }
 
 uint16_t PacketRouter::CurrentTransportSequenceNumber() const {
-  MutexLock lock(&modules_mutex_);
+  RTC_DCHECK_RUN_ON(&thread_checker_);
   return transport_seq_ & 0xFFFF;
 }
 
 void PacketRouter::SendRemb(int64_t bitrate_bps, std::vector<uint32_t> ssrcs) {
-  MutexLock lock(&modules_mutex_);
+  RTC_DCHECK_RUN_ON(&thread_checker_);
 
   if (!active_remb_module_) {
     return;
@@ -275,7 +301,7 @@ void PacketRouter::SendRemb(int64_t bitrate_bps, std::vector<uint32_t> ssrcs) {
 
 void PacketRouter::SendCombinedRtcpPacket(
     std::vector<std::unique_ptr<rtcp::RtcpPacket>> packets) {
-  MutexLock lock(&modules_mutex_);
+  RTC_DCHECK_RUN_ON(&thread_checker_);
 
   // Prefer send modules.
   for (RtpRtcpInterface* rtp_module : send_modules_list_) {
@@ -308,6 +334,7 @@ void PacketRouter::AddRembModuleCandidate(
 void PacketRouter::MaybeRemoveRembModuleCandidate(
     RtcpFeedbackSenderInterface* candidate_module,
     bool media_sender) {
+  RTC_DCHECK_RUN_ON(&thread_checker_);
   RTC_DCHECK(candidate_module);
   std::vector<RtcpFeedbackSenderInterface*>& candidates =
       media_sender ? sender_remb_candidates_ : receiver_remb_candidates_;
@@ -325,12 +352,14 @@ void PacketRouter::MaybeRemoveRembModuleCandidate(
 }
 
 void PacketRouter::UnsetActiveRembModule() {
+  RTC_DCHECK_RUN_ON(&thread_checker_);
   RTC_CHECK(active_remb_module_);
   active_remb_module_->UnsetRemb();
   active_remb_module_ = nullptr;
 }
 
 void PacketRouter::DetermineActiveRembModule() {
+  RTC_DCHECK_RUN_ON(&thread_checker_);
   // Sender modules take precedence over receiver modules, because SRs (sender
   // reports) are sent more frequently than RR (receiver reports).
   // When adding the first sender module, we should change the active REMB

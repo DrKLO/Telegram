@@ -51,21 +51,19 @@ class VadAudioProc {
   // For every 30 ms we compute 3 spectral peak there for 3 LPC analysis.
   // LPC is computed over 15 ms of windowed audio. For every 10 ms sub-frame
   // we need 5 ms of past signal to create the input of LPC analysis.
-  static constexpr size_t kNumPastSignalSamples =
-      static_cast<size_t>(kSampleRateHz / 200);
+  static constexpr size_t kNumPastSignalSamples = size_t{kSampleRateHz / 200};
 
   // TODO(turajs): maybe defining this at a higher level (maybe enum) so that
   // all the code recognize it as "no-error."
   static constexpr int kNoError = 0;
 
   static constexpr size_t kNum10msSubframes = 3;
-  static constexpr size_t kNumSubframeSamples =
-      static_cast<size_t>(kSampleRateHz / 100);
+  static constexpr size_t kNumSubframeSamples = size_t{kSampleRateHz / 100};
   // Samples in 30 ms @ given sampling rate.
   static constexpr size_t kNumSamplesToProcess =
-      size_t{kNum10msSubframes} * kNumSubframeSamples;
+      kNum10msSubframes * kNumSubframeSamples;
   static constexpr size_t kBufferLength =
-      size_t{kNumPastSignalSamples} + kNumSamplesToProcess;
+      kNumPastSignalSamples + kNumSamplesToProcess;
   static constexpr size_t kIpLength = kDftSize >> 1;
   static constexpr size_t kWLength = kDftSize >> 1;
   static constexpr size_t kLpcOrder = 16;

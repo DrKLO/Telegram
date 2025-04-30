@@ -48,7 +48,7 @@ public class TL_phone {
         public static final int constructor = 0x9e727aad;
 
         public TLRPC.GroupCall call;
-        public ArrayList<TLRPC.TL_groupCallParticipant> participants = new ArrayList<>();
+        public ArrayList<TLRPC.GroupCallParticipant> participants = new ArrayList<>();
         public String participants_next_offset;
         public ArrayList<TLRPC.Chat> chats = new ArrayList<>();
         public ArrayList<TLRPC.User> users = new ArrayList<>();
@@ -68,7 +68,7 @@ public class TL_phone {
 
         public void readParams(InputSerializedData stream, boolean exception) {
             call = TLRPC.GroupCall.TLdeserialize(stream, stream.readInt32(exception), exception);
-            participants = Vector.deserialize(stream, TLRPC.TL_groupCallParticipant::TLdeserialize, exception);
+            participants = Vector.deserialize(stream, TLRPC.GroupCallParticipant::TLdeserialize, exception);
             participants_next_offset = stream.readString(exception);
             chats = Vector.deserialize(stream, TLRPC.Chat::TLdeserialize, exception);
             users = Vector.deserialize(stream, TLRPC.User::TLdeserialize, exception);
@@ -101,13 +101,13 @@ public class TL_phone {
         public boolean need_rating;
         public boolean need_debug;
         public boolean video;
+        public boolean conference_supported;
         public TLRPC.PhoneCallDiscardReason reason;
         public int duration;
         public byte[] g_a_hash;
         public byte[] g_b;
         public int receive_date;
         public TLRPC.TL_dataJSON custom_parameters;
-        public TLRPC.TL_inputGroupCall conference_call;
 
         public static PhoneCall TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
             PhoneCall result = null;
@@ -115,14 +115,8 @@ public class TL_phone {
                 case phoneCallRequested.constructor:
                     result = new phoneCallRequested();
                     break;
-                case phoneCallRequested_layer195.constructor:
-                    result = new phoneCallRequested_layer195();
-                    break;
                 case TL_phoneCall.constructor:
                     result = new TL_phoneCall();
-                    break;
-                case TL_phoneCall_layer195.constructor:
-                    result = new TL_phoneCall_layer195();
                     break;
                 case TL_phoneCall_layer176.constructor:
                     result = new TL_phoneCall_layer176();
@@ -135,12 +129,6 @@ public class TL_phone {
                     break;
                 case TL_phoneCallWaiting.constructor:
                     result = new TL_phoneCallWaiting();
-                    break;
-                case TL_phoneCallWaiting_layer195.constructor:
-                    result = new TL_phoneCallWaiting_layer195();
-                    break;
-                case TL_phoneCallDiscarded_layer195.constructor:
-                    result = new TL_phoneCallDiscarded_layer195();
                     break;
                 case TL_phoneCallDiscarded.constructor:
                     result = new TL_phoneCallDiscarded();
@@ -157,41 +145,6 @@ public class TL_phone {
     }
 
     public static class phoneCallRequested extends PhoneCall {
-        public static final int constructor = 0x45361c63;
-
-        public void readParams(InputSerializedData stream, boolean exception) {
-            flags = stream.readInt32(exception);
-            video = (flags & 64) != 0;
-            id = stream.readInt64(exception);
-            access_hash = stream.readInt64(exception);
-            date = stream.readInt32(exception);
-            admin_id = stream.readInt64(exception);
-            participant_id = stream.readInt64(exception);
-            g_a_hash = stream.readByteArray(exception);
-            protocol = PhoneCallProtocol.TLdeserialize(stream, stream.readInt32(exception), exception);
-            if ((flags & 256) != 0) {
-                conference_call = TLRPC.TL_inputGroupCall.TLdeserialize(stream, stream.readInt32(exception), exception);
-            }
-        }
-
-        public void serializeToStream(OutputSerializedData stream) {
-            stream.writeInt32(constructor);
-            flags = video ? (flags | 64) : (flags &~ 64);
-            stream.writeInt32(flags);
-            stream.writeInt64(id);
-            stream.writeInt64(access_hash);
-            stream.writeInt32(date);
-            stream.writeInt64(admin_id);
-            stream.writeInt64(participant_id);
-            stream.writeByteArray(g_a_hash);
-            protocol.serializeToStream(stream);
-            if ((flags & 256) != 0) {
-                conference_call.serializeToStream(stream);
-            }
-        }
-    }
-
-    public static class phoneCallRequested_layer195 extends phoneCallRequested {
         public static final int constructor = 0x14b0ed0c;
 
         public void readParams(InputSerializedData stream, boolean exception) {
@@ -221,61 +174,13 @@ public class TL_phone {
     }
 
     public static class TL_phoneCall extends PhoneCall {
-        public static final int constructor = 0x3ba5940c;
-
-        public void readParams(InputSerializedData stream, boolean exception) {
-            flags = stream.readInt32(exception);
-            p2p_allowed = (flags & 32) != 0;
-            video = (flags & 64) != 0;
-            id = stream.readInt64(exception);
-            access_hash = stream.readInt64(exception);
-            date = stream.readInt32(exception);
-            admin_id = stream.readInt64(exception);
-            participant_id = stream.readInt64(exception);
-            g_a_or_b = stream.readByteArray(exception);
-            key_fingerprint = stream.readInt64(exception);
-            protocol = PhoneCallProtocol.TLdeserialize(stream, stream.readInt32(exception), exception);
-            connections = Vector.deserialize(stream, TLRPC.PhoneConnection::TLdeserialize, exception);
-            start_date = stream.readInt32(exception);
-            if ((flags & 128) != 0) {
-                custom_parameters = TLRPC.TL_dataJSON.TLdeserialize(stream, stream.readInt32(exception), exception);
-            }
-            if ((flags & 256) != 0) {
-                conference_call = TLRPC.TL_inputGroupCall.TLdeserialize(stream, stream.readInt32(exception), exception);
-            }
-        }
-
-        public void serializeToStream(OutputSerializedData stream) {
-            stream.writeInt32(constructor);
-            flags = p2p_allowed ? (flags | 32) : (flags &~ 32);
-            flags = video ? (flags | 64) : (flags &~ 64);
-            stream.writeInt32(flags);
-            stream.writeInt64(id);
-            stream.writeInt64(access_hash);
-            stream.writeInt32(date);
-            stream.writeInt64(admin_id);
-            stream.writeInt64(participant_id);
-            stream.writeByteArray(g_a_or_b);
-            stream.writeInt64(key_fingerprint);
-            protocol.serializeToStream(stream);
-            Vector.serialize(stream, connections);
-            stream.writeInt32(start_date);
-            if ((flags & 128) != 0) {
-                custom_parameters.serializeToStream(stream);
-            }
-            if ((flags & 256) != 0) {
-                conference_call.serializeToStream(stream);
-            }
-        }
-    }
-
-    public static class TL_phoneCall_layer195 extends TL_phoneCall {
         public static final int constructor = 0x30535af5;
 
         public void readParams(InputSerializedData stream, boolean exception) {
             flags = stream.readInt32(exception);
             p2p_allowed = (flags & 32) != 0;
             video = (flags & 64) != 0;
+            conference_supported = (flags & 256) != 0;
             id = stream.readInt64(exception);
             access_hash = stream.readInt64(exception);
             date = stream.readInt32(exception);
@@ -295,6 +200,7 @@ public class TL_phone {
             stream.writeInt32(constructor);
             flags = p2p_allowed ? (flags | 32) : (flags &~ 32);
             flags = video ? (flags | 64) : (flags &~ 64);
+            flags = conference_supported ? (flags | 256) : (flags &~ 256);
             stream.writeInt32(flags);
             stream.writeInt64(id);
             stream.writeInt64(access_hash);
@@ -363,41 +269,6 @@ public class TL_phone {
     }
 
     public static class TL_phoneCallAccepted extends PhoneCall {
-        public static final int constructor = 0x22fd7181;
-
-        public void readParams(InputSerializedData stream, boolean exception) {
-            flags = stream.readInt32(exception);
-            video = (flags & 64) != 0;
-            id = stream.readInt64(exception);
-            access_hash = stream.readInt64(exception);
-            date = stream.readInt32(exception);
-            admin_id = stream.readInt64(exception);
-            participant_id = stream.readInt64(exception);
-            g_b = stream.readByteArray(exception);
-            protocol = PhoneCallProtocol.TLdeserialize(stream, stream.readInt32(exception), exception);
-            if ((flags & 256) != 0) {
-                conference_call = TLRPC.TL_inputGroupCall.TLdeserialize(stream, stream.readInt32(exception), exception);
-            }
-        }
-
-        public void serializeToStream(OutputSerializedData stream) {
-            stream.writeInt32(constructor);
-            flags = video ? (flags | 64) : (flags &~ 64);
-            stream.writeInt32(flags);
-            stream.writeInt64(id);
-            stream.writeInt64(access_hash);
-            stream.writeInt32(date);
-            stream.writeInt64(admin_id);
-            stream.writeInt64(participant_id);
-            stream.writeByteArray(g_b);
-            protocol.serializeToStream(stream);
-            if ((flags & 256) != 0) {
-                conference_call.serializeToStream(stream);
-            }
-        }
-    }
-
-    public static class TL_phoneCallAccepted_layer195 extends TL_phoneCallAccepted {
         public static final int constructor = 0x3660c311;
 
         public void readParams(InputSerializedData stream, boolean exception) {
@@ -427,45 +298,6 @@ public class TL_phone {
     }
 
     public static class TL_phoneCallWaiting extends PhoneCall {
-        public static final int constructor = 0xeed42858;
-
-        public void readParams(InputSerializedData stream, boolean exception) {
-            flags = stream.readInt32(exception);
-            video = (flags & 64) != 0;
-            id = stream.readInt64(exception);
-            access_hash = stream.readInt64(exception);
-            date = stream.readInt32(exception);
-            admin_id = stream.readInt64(exception);
-            participant_id = stream.readInt64(exception);
-            protocol = PhoneCallProtocol.TLdeserialize(stream, stream.readInt32(exception), exception);
-            if ((flags & 1) != 0) {
-                receive_date = stream.readInt32(exception);
-            }
-            if ((flags & 256) != 0) {
-                conference_call = TLRPC.TL_inputGroupCall.TLdeserialize(stream, stream.readInt32(exception), exception);
-            }
-        }
-
-        public void serializeToStream(OutputSerializedData stream) {
-            stream.writeInt32(constructor);
-            flags = video ? (flags | 64) : (flags &~ 64);
-            stream.writeInt32(flags);
-            stream.writeInt64(id);
-            stream.writeInt64(access_hash);
-            stream.writeInt32(date);
-            stream.writeInt64(admin_id);
-            stream.writeInt64(participant_id);
-            protocol.serializeToStream(stream);
-            if ((flags & 1) != 0) {
-                stream.writeInt32(receive_date);
-            }
-            if ((flags & 256) != 0) {
-                conference_call.serializeToStream(stream);
-            }
-        }
-    }
-
-    public static class TL_phoneCallWaiting_layer195 extends TL_phoneCallWaiting {
         public static final int constructor = 0xc5226f17;
 
         public void readParams(InputSerializedData stream, boolean exception) {
@@ -499,45 +331,6 @@ public class TL_phone {
     }
 
     public static class TL_phoneCallDiscarded extends PhoneCall {
-        public static final int constructor = 0xf9d25503;
-
-        public void readParams(InputSerializedData stream, boolean exception) {
-            flags = stream.readInt32(exception);
-            need_rating = (flags & 4) != 0;
-            need_debug = (flags & 8) != 0;
-            video = (flags & 64) != 0;
-            id = stream.readInt64(exception);
-            if ((flags & 1) != 0) {
-                reason = TLRPC.PhoneCallDiscardReason.TLdeserialize(stream, stream.readInt32(exception), exception);
-            }
-            if ((flags & 2) != 0) {
-                duration = stream.readInt32(exception);
-            }
-            if ((flags & 256) != 0) {
-                conference_call = TLRPC.TL_inputGroupCall.TLdeserialize(stream, stream.readInt32(exception), exception);
-            }
-        }
-
-        public void serializeToStream(OutputSerializedData stream) {
-            stream.writeInt32(constructor);
-            flags = need_rating ? (flags | 4) : (flags &~ 4);
-            flags = need_debug ? (flags | 8) : (flags &~ 8);
-            flags = video ? (flags | 64) : (flags &~ 64);
-            stream.writeInt32(flags);
-            stream.writeInt64(id);
-            if ((flags & 1) != 0) {
-                reason.serializeToStream(stream);
-            }
-            if ((flags & 2) != 0) {
-                stream.writeInt32(duration);
-            }
-            if ((flags & 256) != 0) {
-                conference_call.serializeToStream(stream);
-            }
-        }
-    }
-
-    public static class TL_phoneCallDiscarded_layer195 extends TL_phoneCallDiscarded {
         public static final int constructor = 0x50ca4de1;
 
         public void readParams(InputSerializedData stream, boolean exception) {
@@ -636,7 +429,7 @@ public class TL_phone {
         public static final int constructor = 0xf47751b6;
 
         public int count;
-        public ArrayList<TLRPC.TL_groupCallParticipant> participants = new ArrayList<>();
+        public ArrayList<TLRPC.GroupCallParticipant> participants = new ArrayList<>();
         public String next_offset;
         public ArrayList<TLRPC.Chat> chats = new ArrayList<>();
         public ArrayList<TLRPC.User> users = new ArrayList<>();
@@ -657,7 +450,7 @@ public class TL_phone {
 
         public void readParams(InputSerializedData stream, boolean exception) {
             count = stream.readInt32(exception);
-            participants = Vector.deserialize(stream, TLRPC.TL_groupCallParticipant::TLdeserialize, exception);
+            participants = Vector.deserialize(stream, TLRPC.GroupCallParticipant::TLdeserialize, exception);
             next_offset = stream.readString(exception);
             chats = Vector.deserialize(stream, TLRPC.Chat::TLdeserialize, exception);
             users = Vector.deserialize(stream, TLRPC.User::TLdeserialize, exception);
@@ -716,12 +509,11 @@ public class TL_phone {
     }
 
     public static class requestCall extends TLObject {
-        public static final int constructor = 0xa6c4600c;
+        public static final int constructor = 0x42ff96ed;
 
         public int flags;
         public boolean video;
         public TLRPC.InputUser user_id;
-        public TLRPC.TL_inputGroupCall conference_call;
         public int random_id;
         public byte[] g_a_hash;
         public TL_phoneCallProtocol protocol;
@@ -735,9 +527,6 @@ public class TL_phone {
             flags = video ? (flags | 1) : (flags &~ 1);
             stream.writeInt32(flags);
             user_id.serializeToStream(stream);
-            if ((flags & 2) != 0) {
-                conference_call.serializeToStream(stream);
-            }
             stream.writeInt32(random_id);
             stream.writeByteArray(g_a_hash);
             protocol.serializeToStream(stream);
@@ -909,15 +698,16 @@ public class TL_phone {
     }
 
     public static class joinGroupCall extends TLObject {
-        public static final int constructor = 0xd61e1df3;
+        public static final int constructor = 0x8fb53057;
 
         public int flags;
         public boolean muted;
         public boolean video_stopped;
-        public TLRPC.TL_inputGroupCall call;
+        public TLRPC.InputGroupCall call;
         public TLRPC.InputPeer join_as;
         public String invite_hash;
-        public long key_fingerprint;
+        public byte[] public_key;
+        public byte[] block;
         public TLRPC.TL_dataJSON params;
 
         public TLObject deserializeResponse(InputSerializedData stream, int constructor, boolean exception) {
@@ -935,7 +725,8 @@ public class TL_phone {
                 stream.writeString(invite_hash);
             }
             if ((flags & 8) != 0) {
-                stream.writeInt64(key_fingerprint);
+                stream.writeBytes(public_key);
+                stream.writeByteArray(block);
             }
             params.serializeToStream(stream);
         }
@@ -944,7 +735,7 @@ public class TL_phone {
     public static class leaveGroupCall extends TLObject {
         public static final int constructor = 0x500377f9;
 
-        public TLRPC.TL_inputGroupCall call;
+        public TLRPC.InputGroupCall call;
         public int source;
 
         public TLObject deserializeResponse(InputSerializedData stream, int constructor, boolean exception) {
@@ -961,7 +752,7 @@ public class TL_phone {
     public static class inviteToGroupCall extends TLObject {
         public static final int constructor = 0x7b393160;
 
-        public TLRPC.TL_inputGroupCall call;
+        public TLRPC.InputGroupCall call;
         public ArrayList<TLRPC.InputUser> users = new ArrayList<>();
 
         public TLObject deserializeResponse(InputSerializedData stream, int constructor, boolean exception) {
@@ -978,7 +769,7 @@ public class TL_phone {
     public static class discardGroupCall extends TLObject {
         public static final int constructor = 0x7a777135;
 
-        public TLRPC.TL_inputGroupCall call;
+        public TLRPC.InputGroupCall call;
 
         public TLObject deserializeResponse(InputSerializedData stream, int constructor, boolean exception) {
             return TLRPC.Updates.TLdeserialize(stream, constructor, exception);
@@ -995,7 +786,7 @@ public class TL_phone {
 
         public int flags;
         public boolean reset_invite_hash;
-        public TLRPC.TL_inputGroupCall call;
+        public TLRPC.InputGroupCall call;
         public boolean join_muted;
 
         public TLObject deserializeResponse(InputSerializedData stream, int constructor, boolean exception) {
@@ -1016,7 +807,7 @@ public class TL_phone {
     public static class getGroupCall extends TLObject {
         public static final int constructor = 0x41845db;
 
-        public TLRPC.TL_inputGroupCall call;
+        public TLRPC.InputGroupCall call;
         public int limit;
 
         public TLObject deserializeResponse(InputSerializedData stream, int constructor, boolean exception) {
@@ -1033,7 +824,7 @@ public class TL_phone {
     public static class getGroupParticipants extends TLObject {
         public static final int constructor = 0xc558d8ab;
 
-        public TLRPC.TL_inputGroupCall call;
+        public TLRPC.InputGroupCall call;
         public ArrayList<TLRPC.InputPeer> ids = new ArrayList<>();
         public ArrayList<Integer> sources = new ArrayList<>();
         public String offset;
@@ -1056,7 +847,7 @@ public class TL_phone {
     public static class checkGroupCall extends TLObject {
         public static final int constructor = 0xb59cf977;
 
-        public TLRPC.TL_inputGroupCall call;
+        public TLRPC.InputGroupCall call;
         public ArrayList<Integer> sources = new ArrayList<>();
 
         public TLObject deserializeResponse(InputSerializedData stream, int constructor, boolean exception) {
@@ -1076,7 +867,7 @@ public class TL_phone {
         public int flags;
         public boolean start;
         public boolean video;
-        public TLRPC.TL_inputGroupCall call;
+        public TLRPC.InputGroupCall call;
         public String title;
         public boolean video_portrait;
 
@@ -1103,7 +894,7 @@ public class TL_phone {
         public static final int constructor = 0xa5273abf;
 
         public int flags;
-        public TLRPC.TL_inputGroupCall call;
+        public TLRPC.InputGroupCall call;
         public TLRPC.InputPeer participant;
         public boolean muted;
         public int volume;
@@ -1145,7 +936,7 @@ public class TL_phone {
     public static class editGroupCallTitle extends TLObject {
         public static final int constructor = 0x1ca6ac0a;
 
-        public TLRPC.TL_inputGroupCall call;
+        public TLRPC.InputGroupCall call;
         public String title;
 
         public TLObject deserializeResponse(InputSerializedData stream, int constructor, boolean exception) {
@@ -1179,7 +970,7 @@ public class TL_phone {
 
         public int flags;
         public boolean can_self_unmute;
-        public TLRPC.TL_inputGroupCall call;
+        public TLRPC.InputGroupCall call;
 
         public TLObject deserializeResponse(InputSerializedData stream, int constructor, boolean exception) {
             return exportedGroupCallInvite.TLdeserialize(stream, constructor, exception);
@@ -1196,7 +987,7 @@ public class TL_phone {
     public static class toggleGroupCallStartSubscription extends TLObject {
         public static final int constructor = 0x219c34e6;
 
-        public TLRPC.TL_inputGroupCall call;
+        public TLRPC.InputGroupCall call;
         public boolean subscribed;
 
         public TLObject deserializeResponse(InputSerializedData stream, int constructor, boolean exception) {
@@ -1213,7 +1004,7 @@ public class TL_phone {
     public static class startScheduledGroupCall extends TLObject {
         public static final int constructor = 0x5680e342;
 
-        public TLRPC.TL_inputGroupCall call;
+        public TLRPC.InputGroupCall call;
 
         public TLObject deserializeResponse(InputSerializedData stream, int constructor, boolean exception) {
             return TLRPC.Updates.TLdeserialize(stream, constructor, exception);
@@ -1245,7 +1036,7 @@ public class TL_phone {
     public static class joinGroupCallPresentation extends TLObject {
         public static final int constructor = 0xcbea6bc4;
 
-        public TLRPC.TL_inputGroupCall call;
+        public TLRPC.InputGroupCall call;
         public TLRPC.TL_dataJSON params;
 
         public TLObject deserializeResponse(InputSerializedData stream, int constructor, boolean exception) {
@@ -1324,7 +1115,7 @@ public class TL_phone {
     public static class leaveGroupCallPresentation extends TLObject {
         public static final int constructor = 0x1c50d144;
 
-        public TLRPC.TL_inputGroupCall call;
+        public TLRPC.InputGroupCall call;
 
         public TLObject deserializeResponse(InputSerializedData stream, int constructor, boolean exception) {
             return TLRPC.Updates.TLdeserialize(stream, constructor, exception);
@@ -1339,7 +1130,7 @@ public class TL_phone {
     public static class getGroupCallStreamChannels extends TLObject {
         public static final int constructor = 0x1ab21940;
 
-        public TLRPC.TL_inputGroupCall call;
+        public TLRPC.InputGroupCall call;
 
         public TLObject deserializeResponse(InputSerializedData stream, int constructor, boolean exception) {
             return groupCallStreamChannels.TLdeserialize(stream, constructor, exception);
@@ -1458,21 +1249,144 @@ public class TL_phone {
     }
 
     public static class createConferenceCall extends TLObject {
-        public static final int constructor = 0xdfc909ab;
+        public static final int constructor = 0x7d0444bb;
 
-        public TLRPC.TL_inputPhoneCall peer;
-        public long key_fingerprint;
+        public int flags;
+        public boolean muted;
+        public boolean video_stopped;
+        public boolean join;
+        public int random_id;
+        public byte[] public_key;
+        public byte[] block;
+        public TLRPC.TL_dataJSON params;
 
         @Override
         public TLObject deserializeResponse(InputSerializedData stream, int constructor, boolean exception) {
-            return TL_phone_phoneCall.TLdeserialize(stream, constructor, exception);
+            return TLRPC.Updates.TLdeserialize(stream, constructor, exception);
         }
 
         @Override
         public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
-            peer.serializeToStream(stream);
-            stream.writeInt64(key_fingerprint);
+            flags = muted ? flags | 1 : flags &~ 1;
+            flags = video_stopped ? flags | 4 : flags &~ 4;
+            flags = join ? flags | 8 : flags &~ 8;
+            stream.writeInt32(flags);
+            stream.writeInt32(random_id);
+            if ((flags & 8) != 0) {
+                stream.writeBytes(public_key);
+                stream.writeByteArray(block);
+                params.serializeToStream(stream);
+            }
+        }
+    }
+
+    public static class deleteConferenceCallParticipants extends TLObject {
+        public static final int constructor = 0x8ca60525;
+
+        public int flags;
+        public boolean only_left;
+        public boolean kick;
+        public TLRPC.InputGroupCall call;
+        public ArrayList<Long> ids = new ArrayList<>();
+        public byte[] block;
+
+        @Override
+        public TLObject deserializeResponse(InputSerializedData stream, int constructor, boolean exception) {
+            return TLRPC.Updates.TLdeserialize(stream, constructor, exception);
+        }
+
+        @Override
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+            flags = only_left ? (flags | 1) : (flags &~ 1);
+            flags = kick ? (flags | 2) : (flags &~ 2);
+            stream.writeInt32(flags);
+            call.serializeToStream(stream);
+            Vector.serializeLong(stream, ids);
+            stream.writeByteArray(block);
+        }
+    }
+
+    public static class sendConferenceCallBroadcast extends TLObject {
+        public static final int constructor = 0xc6701900;
+
+        public TLRPC.InputGroupCall call;
+        public byte[] block;
+
+        @Override
+        public TLObject deserializeResponse(InputSerializedData stream, int constructor, boolean exception) {
+            return TLRPC.Updates.TLdeserialize(stream, constructor, exception);
+        }
+
+        @Override
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+            call.serializeToStream(stream);
+            stream.writeByteArray(block);
+        }
+    }
+
+    public static class inviteConferenceCallParticipant extends TLObject {
+        public static final int constructor = 0xbcf22685;
+
+        public int flags;
+        public boolean video;
+        public TLRPC.InputGroupCall call;
+        public TLRPC.InputUser user_id;
+
+        @Override
+        public TLObject deserializeResponse(InputSerializedData stream, int constructor, boolean exception) {
+            return TLRPC.Updates.TLdeserialize(stream, constructor, exception);
+        }
+
+        @Override
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+            flags = video ? flags | 1 : flags &~ 1;
+            stream.writeInt32(flags);
+            call.serializeToStream(stream);
+            user_id.serializeToStream(stream);
+        }
+    }
+
+    public static class declineConferenceCallInvite extends TLObject {
+        public static final int constructor = 0x3c479971;
+
+        public int msg_id;
+
+        @Override
+        public TLObject deserializeResponse(InputSerializedData stream, int constructor, boolean exception) {
+            return TLRPC.Updates.TLdeserialize(stream, constructor, exception);
+        }
+
+        @Override
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+            stream.writeInt32(msg_id);
+        }
+    }
+
+    public static class getGroupCallChainBlocks extends TLObject {
+        public static final int constructor = 0xee9f88a6;
+
+        public TLRPC.InputGroupCall call;
+        public int sub_chain_id;
+        public int offset;
+        public int limit;
+
+        @Override
+        public TLObject deserializeResponse(InputSerializedData stream, int constructor, boolean exception) {
+            return TLRPC.Updates.TLdeserialize(stream, constructor, exception);
+        }
+
+        @Override
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+            call.serializeToStream(stream);
+            stream.writeInt32(sub_chain_id);
+            stream.writeInt32(offset);
+            stream.writeInt32(limit);
         }
     }
 

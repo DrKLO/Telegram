@@ -10,7 +10,7 @@
 
 #include "modules/audio_processing/agc2/agc2_testing_common.h"
 
-#include <cmath>
+#include <math.h>
 
 #include "rtc_base/checks.h"
 
@@ -61,7 +61,8 @@ float SineGenerator::operator()() {
   if (x_radians_ >= 2 * kPi) {
     x_radians_ -= 2 * kPi;
   }
-  return amplitude_ * std::sinf(x_radians_);
+  // Use sinf instead of std::sinf for libstdc++ compatibility.
+  return amplitude_ * sinf(x_radians_);
 }
 
 PulseGenerator::PulseGenerator(float pulse_amplitude,

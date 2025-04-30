@@ -13,11 +13,7 @@ package org.webrtc;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.SystemClock;
-
 import androidx.annotation.Nullable;
-
-import org.telegram.messenger.BuildVars;
-
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -47,7 +43,7 @@ public class ThreadUtils {
    * Throws exception if called from other than main thread.
    */
   public static void checkIsOnMainThread() {
-    if (BuildVars.DEBUG_PRIVATE_VERSION && Thread.currentThread() != Looper.getMainLooper().getThread()) {
+    if (Thread.currentThread() != Looper.getMainLooper().getThread()) {
       throw new IllegalStateException("Not on main thread!");
     }
   }
@@ -149,7 +145,7 @@ public class ThreadUtils {
   }
 
   /**
-   * Post |callable| to |handler| and wait for the result.
+   * Post `callable` to `handler` and wait for the result.
    */
   public static <V> V invokeAtFrontUninterruptibly(
       final Handler handler, final Callable<V> callable) {
@@ -194,7 +190,7 @@ public class ThreadUtils {
   }
 
   /**
-   * Post |runner| to |handler|, at the front, and wait for completion.
+   * Post `runner` to `handler`, at the front, and wait for completion.
    */
   public static void invokeAtFrontUninterruptibly(final Handler handler, final Runnable runner) {
     invokeAtFrontUninterruptibly(handler, new Callable<Void>() {

@@ -89,7 +89,7 @@ private:
     std::shared_ptr<Threads> _threads;
     bool _isOutgoing = false;
     
-    rtc::scoped_refptr<rtc::RTCCertificate> _localCertificate;
+    webrtc::scoped_refptr<rtc::RTCCertificate> _localCertificate;
     std::vector<RtcServer> _rtcServers;
     PeerIceParameters _localIceParameters;
     

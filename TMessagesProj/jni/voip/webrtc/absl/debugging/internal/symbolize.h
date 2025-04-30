@@ -115,7 +115,7 @@ bool RemoveSymbolDecorator(int ticket);
 
 // Remove all installed decorators.  Returns true if successful, false if
 // symbolization is currently in progress.
-bool RemoveAllSymbolDecorators(void);
+bool RemoveAllSymbolDecorators();
 
 // Registers an address range to a file mapping.
 //

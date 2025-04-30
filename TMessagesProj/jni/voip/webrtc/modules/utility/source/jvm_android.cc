@@ -71,23 +71,22 @@ jclass LookUpClass(const char* name) {
 }
 
 // JvmThreadConnector implementation.
-JvmThreadConnector::JvmThreadConnector() : attached_(false) {
+JvmThreadConnector::JvmThreadConnector() {
   RTC_LOG(LS_INFO) << "JvmThreadConnector::ctor";
   JavaVM* jvm = JVM::GetInstance()->jvm();
   RTC_CHECK(jvm);
   JNIEnv* jni = GetEnv(jvm);
-  if (!jni) {
+  if (JVM::GetInstance()->attachThread(std::this_thread::get_id())) {
     RTC_LOG(LS_INFO) << "Attaching thread to JVM";
     JNIEnv* env = nullptr;
     jint ret = jvm->AttachCurrentThread(&env, nullptr);
-    attached_ = (ret == JNI_OK);
   }
 }
 
 JvmThreadConnector::~JvmThreadConnector() {
   RTC_LOG(LS_INFO) << "JvmThreadConnector::dtor";
   RTC_DCHECK(thread_checker_.IsCurrent());
-  if (attached_) {
+  if (JVM::GetInstance()->detachThread(std::this_thread::get_id())) {
     RTC_LOG(LS_INFO) << "Detaching thread from JVM";
     jint res = JVM::GetInstance()->jvm()->DetachCurrentThread();
     RTC_CHECK(res == JNI_OK) << "DetachCurrentThread failed: " << res;
@@ -98,12 +97,14 @@ JvmThreadConnector::~JvmThreadConnector() {
 GlobalRef::GlobalRef(JNIEnv* jni, jobject object)
     : jni_(jni), j_object_(NewGlobalRef(jni, object)) {
   DEBUG_REF("webrtc jvm globalref");
+    DEBUG_D("GLOBAL REF IN WEBRTC CREATED");
   RTC_LOG(LS_INFO) << "GlobalRef::ctor";
 }
 
 GlobalRef::~GlobalRef() {
   RTC_LOG(LS_INFO) << "GlobalRef::dtor";
   DEBUG_DELREF("webrtc jvm globalref");
+  DEBUG_D("GLOBAL REF IN WEBRTC DELETED");
   DeleteGlobalRef(jni_, j_object_);
 }
 
@@ -141,7 +142,7 @@ NativeRegistration::NativeRegistration(JNIEnv* jni, jclass clazz)
 
 NativeRegistration::~NativeRegistration() {
   RTC_LOG(LS_INFO) << "NativeRegistration::dtor";
-  //jni_->UnregisterNatives(j_class_);
+  // jni_->UnregisterNatives(j_class_);
   CHECK_EXCEPTION(jni_) << "Error during UnregisterNatives";
 }
 
@@ -284,6 +285,20 @@ JavaClass JVM::GetClass(const char* name) {
   RTC_LOG(LS_INFO) << "JVM::GetClass: " << name;
   RTC_DCHECK(thread_checker_.IsCurrent());
   return JavaClass(jni(), LookUpClass(name));
+}
+
+bool JVM::attachThread(std::thread::id id) {
+    auto& count = threadAttachCounts[id];
+    bool first = count == 0;
+    ++count;
+    return first;
+}
+
+bool JVM::detachThread(std::thread::id id) {
+    auto& count = threadAttachCounts[id];
+    count = count - 1;
+    if (count < 0) count = 0;
+    return count == 0;
 }
 
 }  // namespace webrtc

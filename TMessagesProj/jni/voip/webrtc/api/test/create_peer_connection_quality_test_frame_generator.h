@@ -15,7 +15,7 @@
 
 #include "absl/types/optional.h"
 #include "api/test/frame_generator_interface.h"
-#include "api/test/peerconnection_quality_test_fixture.h"
+#include "api/test/pclf/media_configuration.h"
 
 namespace webrtc {
 namespace webrtc_pc_e2e {
@@ -25,19 +25,18 @@ namespace webrtc_pc_e2e {
 // FrameGeneratorInterface::OutputType::I420. video_config specifies frame
 // weight and height.
 std::unique_ptr<test::FrameGeneratorInterface> CreateSquareFrameGenerator(
-    const PeerConnectionE2EQualityTestFixture::VideoConfig& video_config,
+    const VideoConfig& video_config,
     absl::optional<test::FrameGeneratorInterface::OutputType> type);
 
 // Creates a frame generator that plays frames from the yuv file.
 std::unique_ptr<test::FrameGeneratorInterface> CreateFromYuvFileFrameGenerator(
-    const PeerConnectionE2EQualityTestFixture::VideoConfig& video_config,
+    const VideoConfig& video_config,
     std::string filename);
 
 // Creates a proper frame generator for testing screen sharing.
 std::unique_ptr<test::FrameGeneratorInterface> CreateScreenShareFrameGenerator(
-    const PeerConnectionE2EQualityTestFixture::VideoConfig& video_config,
-    const PeerConnectionE2EQualityTestFixture::ScreenShareConfig&
-        screen_share_config);
+    const VideoConfig& video_config,
+    const ScreenShareConfig& screen_share_config);
 
 }  // namespace webrtc_pc_e2e
 }  // namespace webrtc

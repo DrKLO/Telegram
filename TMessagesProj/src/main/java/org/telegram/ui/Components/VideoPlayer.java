@@ -109,7 +109,7 @@ import java.util.HashSet;
 public class VideoPlayer implements Player.Listener, VideoListener, AnalyticsListener, NotificationCenter.NotificationCenterDelegate {
 
     private static int lastPlayerId = 0;
-    private int playerId = lastPlayerId++;
+    public final int playerId = lastPlayerId++;
     public static final HashSet<Integer> activePlayers = new HashSet<>();
 
     private DispatchQueue workerQueue;

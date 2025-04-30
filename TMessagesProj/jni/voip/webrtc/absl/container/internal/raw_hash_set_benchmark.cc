@@ -12,16 +12,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <algorithm>
 #include <array>
 #include <cmath>
+#include <cstddef>
+#include <cstdint>
+#include <limits>
 #include <numeric>
 #include <random>
+#include <string>
+#include <tuple>
 #include <utility>
 #include <vector>
 
 #include "absl/base/internal/raw_logging.h"
+#include "absl/container/internal/container_memory.h"
 #include "absl/container/internal/hash_function_defaults.h"
 #include "absl/container/internal/raw_hash_set.h"
+#include "absl/random/random.h"
 #include "absl/strings/str_format.h"
 #include "benchmark/benchmark.h"
 
@@ -54,6 +62,11 @@ struct IntPolicy {
   template <class F>
   static auto apply(F&& f, int64_t x) -> decltype(std::forward<F>(f)(x, x)) {
     return std::forward<F>(f)(x, x);
+  }
+
+  template <class Hash>
+  static constexpr HashSlotFn get_hash_slot_fn() {
+    return nullptr;
   }
 };
 
@@ -113,6 +126,11 @@ class StringPolicy {
     return apply_impl(std::forward<F>(f),
                       PairArgs(std::forward<Args>(args)...));
   }
+
+  template <class Hash>
+  static constexpr HashSlotFn get_hash_slot_fn() {
+    return nullptr;
+  }
 };
 
 struct StringHash : container_internal::hash_default_hash<absl::string_view> {
@@ -141,7 +159,7 @@ struct string_generator {
   template <class RNG>
   std::string operator()(RNG& rng) const {
     std::string res;
-    res.resize(12);
+    res.resize(size);
     std::uniform_int_distribution<uint32_t> printable_ascii(0x20, 0x7E);
     std::generate(res.begin(), res.end(), [&] { return printable_ascii(rng); });
     return res;
@@ -203,6 +221,22 @@ void CacheInSteadyStateArgs(Benchmark* bm) {
         capacity * (max_load_factor + i * max_load_factor / kNumPoints) / 2));
 }
 BENCHMARK(BM_CacheInSteadyState)->Apply(CacheInSteadyStateArgs);
+
+void BM_EraseEmplace(benchmark::State& state) {
+  IntTable t;
+  int64_t size = state.range(0);
+  for (int64_t i = 0; i < size; ++i) {
+    t.emplace(i);
+  }
+  while (state.KeepRunningBatch(size)) {
+    for (int64_t i = 0; i < size; ++i) {
+      benchmark::DoNotOptimize(t);
+      t.erase(i);
+      t.emplace(i);
+    }
+  }
+}
+BENCHMARK(BM_EraseEmplace)->Arg(1)->Arg(2)->Arg(4)->Arg(8)->Arg(16)->Arg(100);
 
 void BM_EndComparison(benchmark::State& state) {
   StringTable t = {{"a", "a"}, {"b", "b"}};
@@ -275,7 +309,7 @@ void BM_CopyCtorSparseInt(benchmark::State& state) {
     benchmark::DoNotOptimize(t2);
   }
 }
-BENCHMARK(BM_CopyCtorSparseInt)->Range(128, 4096);
+BENCHMARK(BM_CopyCtorSparseInt)->Range(1, 4096);
 
 void BM_CopyCtorInt(benchmark::State& state) {
   std::random_device rd;
@@ -293,7 +327,7 @@ void BM_CopyCtorInt(benchmark::State& state) {
     benchmark::DoNotOptimize(t2);
   }
 }
-BENCHMARK(BM_CopyCtorInt)->Range(128, 4096);
+BENCHMARK(BM_CopyCtorInt)->Range(0, 4096);
 
 void BM_CopyCtorString(benchmark::State& state) {
   std::random_device rd;
@@ -311,7 +345,7 @@ void BM_CopyCtorString(benchmark::State& state) {
     benchmark::DoNotOptimize(t2);
   }
 }
-BENCHMARK(BM_CopyCtorString)->Range(128, 4096);
+BENCHMARK(BM_CopyCtorString)->Range(0, 4096);
 
 void BM_CopyAssign(benchmark::State& state) {
   std::random_device rd;
@@ -368,28 +402,42 @@ void BM_NoOpReserveStringTable(benchmark::State& state) {
 BENCHMARK(BM_NoOpReserveStringTable);
 
 void BM_ReserveIntTable(benchmark::State& state) {
-  int reserve_size = state.range(0);
-  for (auto _ : state) {
+  constexpr size_t kBatchSize = 1024;
+  size_t reserve_size = static_cast<size_t>(state.range(0));
+
+  std::vector<IntTable> tables;
+  while (state.KeepRunningBatch(kBatchSize)) {
     state.PauseTiming();
-    IntTable t;
+    tables.clear();
+    tables.resize(kBatchSize);
     state.ResumeTiming();
-    benchmark::DoNotOptimize(t);
-    t.reserve(reserve_size);
+    for (auto& t : tables) {
+      benchmark::DoNotOptimize(t);
+      t.reserve(reserve_size);
+      benchmark::DoNotOptimize(t);
+    }
   }
 }
-BENCHMARK(BM_ReserveIntTable)->Range(128, 4096);
+BENCHMARK(BM_ReserveIntTable)->Range(1, 64);
 
 void BM_ReserveStringTable(benchmark::State& state) {
-  int reserve_size = state.range(0);
-  for (auto _ : state) {
+  constexpr size_t kBatchSize = 1024;
+  size_t reserve_size = static_cast<size_t>(state.range(0));
+
+  std::vector<StringTable> tables;
+  while (state.KeepRunningBatch(kBatchSize)) {
     state.PauseTiming();
-    StringTable t;
+    tables.clear();
+    tables.resize(kBatchSize);
     state.ResumeTiming();
-    benchmark::DoNotOptimize(t);
-    t.reserve(reserve_size);
+    for (auto& t : tables) {
+      benchmark::DoNotOptimize(t);
+      t.reserve(reserve_size);
+      benchmark::DoNotOptimize(t);
+    }
   }
 }
-BENCHMARK(BM_ReserveStringTable)->Range(128, 4096);
+BENCHMARK(BM_ReserveStringTable)->Range(1, 64);
 
 // Like std::iota, except that ctrl_t doesn't support operator++.
 template <typename CtrlIter>
@@ -411,6 +459,19 @@ void BM_Group_Match(benchmark::State& state) {
   }
 }
 BENCHMARK(BM_Group_Match);
+
+void BM_GroupPortable_Match(benchmark::State& state) {
+  std::array<ctrl_t, GroupPortableImpl::kWidth> group;
+  Iota(group.begin(), group.end(), -4);
+  GroupPortableImpl g{group.data()};
+  h2_t h = 1;
+  for (auto _ : state) {
+    ::benchmark::DoNotOptimize(h);
+    ::benchmark::DoNotOptimize(g);
+    ::benchmark::DoNotOptimize(g.Match(h));
+  }
+}
+BENCHMARK(BM_GroupPortable_Match);
 
 void BM_Group_MaskEmpty(benchmark::State& state) {
   std::array<ctrl_t, Group::kWidth> group;
@@ -434,6 +495,17 @@ void BM_Group_MaskEmptyOrDeleted(benchmark::State& state) {
 }
 BENCHMARK(BM_Group_MaskEmptyOrDeleted);
 
+void BM_Group_MaskNonFull(benchmark::State& state) {
+  std::array<ctrl_t, Group::kWidth> group;
+  Iota(group.begin(), group.end(), -4);
+  Group g{group.data()};
+  for (auto _ : state) {
+    ::benchmark::DoNotOptimize(g);
+    ::benchmark::DoNotOptimize(g.MaskNonFull());
+  }
+}
+BENCHMARK(BM_Group_MaskNonFull);
+
 void BM_Group_CountLeadingEmptyOrDeleted(benchmark::State& state) {
   std::array<ctrl_t, Group::kWidth> group;
   Iota(group.begin(), group.end(), -2);
@@ -456,6 +528,17 @@ void BM_Group_MatchFirstEmptyOrDeleted(benchmark::State& state) {
 }
 BENCHMARK(BM_Group_MatchFirstEmptyOrDeleted);
 
+void BM_Group_MatchFirstNonFull(benchmark::State& state) {
+  std::array<ctrl_t, Group::kWidth> group;
+  Iota(group.begin(), group.end(), -2);
+  Group g{group.data()};
+  for (auto _ : state) {
+    ::benchmark::DoNotOptimize(g);
+    ::benchmark::DoNotOptimize(g.MaskNonFull().LowestBitSet());
+  }
+}
+BENCHMARK(BM_Group_MatchFirstNonFull);
+
 void BM_DropDeletes(benchmark::State& state) {
   constexpr size_t capacity = (1 << 20) - 1;
   std::vector<ctrl_t> ctrl(capacity + 1 + Group::kWidth);
@@ -477,6 +560,85 @@ void BM_DropDeletes(benchmark::State& state) {
 }
 BENCHMARK(BM_DropDeletes);
 
+void BM_Resize(benchmark::State& state) {
+  // For now just measure a small cheap hash table since we
+  // are mostly interested in the overhead of type-erasure
+  // in resize().
+  constexpr int kElements = 64;
+  const int kCapacity = kElements * 2;
+
+  IntTable table;
+  for (int i = 0; i < kElements; i++) {
+    table.insert(i);
+  }
+  for (auto unused : state) {
+    table.rehash(0);
+    table.rehash(kCapacity);
+  }
+}
+BENCHMARK(BM_Resize);
+
+void BM_EraseIf(benchmark::State& state) {
+  int64_t num_elements = state.range(0);
+  size_t num_erased = static_cast<size_t>(state.range(1));
+
+  constexpr size_t kRepetitions = 64;
+
+  absl::BitGen rng;
+
+  std::vector<std::vector<int64_t>> keys(kRepetitions);
+  std::vector<IntTable> tables;
+  std::vector<int64_t> threshold;
+  for (auto& k : keys) {
+    tables.push_back(IntTable());
+    auto& table = tables.back();
+    for (int64_t i = 0; i < num_elements; i++) {
+      // We use random keys to reduce noise.
+      k.push_back(
+          absl::Uniform<int64_t>(rng, 0, std::numeric_limits<int64_t>::max()));
+      if (!table.insert(k.back()).second) {
+        k.pop_back();
+        --i;  // duplicated value, retrying
+      }
+    }
+    std::sort(k.begin(), k.end());
+    threshold.push_back(static_cast<int64_t>(num_erased) < num_elements
+                            ? k[num_erased]
+                            : std::numeric_limits<int64_t>::max());
+  }
+
+  while (state.KeepRunningBatch(static_cast<int64_t>(kRepetitions) *
+                                std::max(num_elements, int64_t{1}))) {
+    benchmark::DoNotOptimize(tables);
+    for (size_t t_id = 0; t_id < kRepetitions; t_id++) {
+      auto& table = tables[t_id];
+      benchmark::DoNotOptimize(num_erased);
+      auto pred = [t = threshold[t_id]](int64_t key) { return key < t; };
+      benchmark::DoNotOptimize(pred);
+      benchmark::DoNotOptimize(table);
+      absl::container_internal::EraseIf(pred, &table);
+    }
+    state.PauseTiming();
+    for (size_t t_id = 0; t_id < kRepetitions; t_id++) {
+      auto& k = keys[t_id];
+      auto& table = tables[t_id];
+      for (size_t i = 0; i < num_erased; i++) {
+        table.insert(k[i]);
+      }
+    }
+    state.ResumeTiming();
+  }
+}
+
+BENCHMARK(BM_EraseIf)
+    ->ArgNames({"num_elements", "num_erased"})
+    ->ArgPair(10, 0)
+    ->ArgPair(1000, 0)
+    ->ArgPair(10, 5)
+    ->ArgPair(1000, 500)
+    ->ArgPair(10, 10)
+    ->ArgPair(1000, 1000);
+
 }  // namespace
 }  // namespace container_internal
 ABSL_NAMESPACE_END
@@ -491,6 +653,12 @@ auto CodegenAbslRawHashSetInt64Find(absl::container_internal::IntTable* table,
 
 bool CodegenAbslRawHashSetInt64FindNeEnd(
     absl::container_internal::IntTable* table, int64_t key) {
+  return table->find(key) != table->end();
+}
+
+// This is useful because the find isn't inlined but the iterator comparison is.
+bool CodegenAbslRawHashSetStringFindNeEnd(
+    absl::container_internal::StringTable* table, const std::string& key) {
   return table->find(key) != table->end();
 }
 
@@ -513,6 +681,7 @@ void CodegenAbslRawHashSetInt64Iterate(
 int odr =
     (::benchmark::DoNotOptimize(std::make_tuple(
          &CodegenAbslRawHashSetInt64Find, &CodegenAbslRawHashSetInt64FindNeEnd,
+         &CodegenAbslRawHashSetStringFindNeEnd,
          &CodegenAbslRawHashSetInt64Insert, &CodegenAbslRawHashSetInt64Contains,
          &CodegenAbslRawHashSetInt64Iterate)),
      1);

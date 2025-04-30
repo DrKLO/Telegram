@@ -1,0 +1,12 @@
+chain: chain.pem
+last_cert_trust: TRUSTED_ANCHOR
+utc_time: DEFAULT
+key_purpose: MLS_CLIENT_AUTH
+expected_errors:
+----- Certificate i=0 (CN=Target) -----
+ERROR: KeyUsage must have only the digitalSignature bit set for rcsMlsClient auth
+ERROR: Certificate does not have extended key usage
+
+----- Certificate i=1 (CN=Intermediate) -----
+ERROR: Certificate does not have extended key usage
+

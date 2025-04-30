@@ -34,6 +34,6 @@ void WebRtcIlbcfix_CompCorr(int32_t* corr,   /* (o) cross correlation */
                             size_t bLen,     /* (i) length of buffer */
                             size_t sRange,   /* (i) correlation search length */
                             int16_t scale /* (i) number of rightshifts to use */
-                            );
+);
 
 #endif

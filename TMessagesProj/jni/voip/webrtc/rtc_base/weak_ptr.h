@@ -104,7 +104,8 @@ class WeakReference {
 
     ~Flag() override;
 
-    RTC_NO_UNIQUE_ADDRESS ::webrtc::SequenceChecker checker_;
+    RTC_NO_UNIQUE_ADDRESS ::webrtc::SequenceChecker checker_{
+        webrtc::SequenceChecker::kDetached};
     bool is_valid_;
   };
 

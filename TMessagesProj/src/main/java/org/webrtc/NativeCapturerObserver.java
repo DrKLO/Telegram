@@ -16,7 +16,7 @@ import org.webrtc.VideoFrame;
  * Used from native api and implements a simple VideoCapturer.CapturerObserver that feeds frames to
  * a webrtc::jni::AndroidVideoTrackSource.
  */
-public class NativeCapturerObserver implements CapturerObserver {
+class NativeCapturerObserver implements CapturerObserver {
   private final NativeAndroidVideoTrackSource nativeAndroidVideoTrackSource;
 
   @CalledByNative
@@ -34,15 +34,11 @@ public class NativeCapturerObserver implements CapturerObserver {
     nativeAndroidVideoTrackSource.setState(/* isLive= */ false);
   }
 
-  public NativeAndroidVideoTrackSource getNativeAndroidVideoTrackSource() {
-    return nativeAndroidVideoTrackSource;
-  }
-
   @Override
   public void onFrameCaptured(VideoFrame frame) {
     final VideoProcessor.FrameAdaptationParameters parameters =
         nativeAndroidVideoTrackSource.adaptFrame(frame);
-    if (parameters == null || parameters.cropWidth == 0 || parameters.cropHeight == 0) {
+    if (parameters == null) {
       // Drop frame.
       return;
     }

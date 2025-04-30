@@ -1,5 +1,7 @@
 package org.telegram.ui.Components;
 
+import static org.telegram.messenger.AndroidUtilities.dp;
+
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
@@ -59,7 +61,7 @@ public class AvatarsDrawable {
     public int count;
     public int height;
     public int width;
-    public int strokeWidth = AndroidUtilities.dp(1.67f);
+    public int strokeWidth = dp(1.67f);
 
     View parent;
     private int overrideSize;
@@ -252,7 +254,7 @@ public class AvatarsDrawable {
         private long lastUpdateTime;
         private long lastSpeakTime;
         private ImageReceiver imageReceiver;
-        TLRPC.TL_groupCallParticipant participant;
+        TLRPC.GroupCallParticipant participant;
 
         private long id;
         private TLObject object;
@@ -269,16 +271,16 @@ public class AvatarsDrawable {
             currentStates[a] = new DrawingState();
             currentStates[a].imageReceiver = new ImageReceiver(parent);
             currentStates[a].imageReceiver.setInvalidateAll(true);
-            currentStates[a].imageReceiver.setRoundRadius(AndroidUtilities.dp(12));
+            currentStates[a].imageReceiver.setRoundRadius(dp(12));
             currentStates[a].avatarDrawable = new AvatarDrawable();
-            currentStates[a].avatarDrawable.setTextSize(AndroidUtilities.dp(12));
+            currentStates[a].avatarDrawable.setTextSize(dp(12));
 
             animatingStates[a] = new DrawingState();
             animatingStates[a].imageReceiver = new ImageReceiver(parent);
             animatingStates[a].imageReceiver.setInvalidateAll(true);
-            animatingStates[a].imageReceiver.setRoundRadius(AndroidUtilities.dp(12));
+            animatingStates[a].imageReceiver.setRoundRadius(dp(12));
             animatingStates[a].avatarDrawable = new AvatarDrawable();
-            animatingStates[a].avatarDrawable.setTextSize(AndroidUtilities.dp(12));
+            animatingStates[a].avatarDrawable.setTextSize(dp(12));
         }
         isInCall = inCall;
         xRefP.setColor(0);
@@ -308,8 +310,8 @@ public class AvatarsDrawable {
         TLRPC.Chat currentChat = null;
         animatingStates[index].lastSpeakTime = -1;
         animatingStates[index].object = object;
-        if (object instanceof TLRPC.TL_groupCallParticipant) {
-            TLRPC.TL_groupCallParticipant participant = (TLRPC.TL_groupCallParticipant) object;
+        if (object instanceof TLRPC.GroupCallParticipant) {
+            TLRPC.GroupCallParticipant participant = (TLRPC.GroupCallParticipant) object;
             animatingStates[index].participant = participant;
             long id = MessageObject.getPeerId(participant.peer);
             if (DialogObject.isUserDialog(id)) {
@@ -388,17 +390,15 @@ public class AvatarsDrawable {
 
     public float maxX;
 
-    public void onDraw(Canvas canvas) {
-        wasDraw = true;
+    public float getUsedWidth() {
         boolean bigAvatars = currentStyle == 4 || currentStyle == STYLE_GROUP_CALL_TOOLTIP;
-        int size = getSize();
         int toAdd;
         if (currentStyle == STYLE_MESSAGE_SEEN) {
-            toAdd = AndroidUtilities.dp(12);
+            toAdd = dp(12);
         } else if (overrideSize != 0) {
             toAdd = (int) (overrideSize * overrideSizeStepFactor);
         } else {
-            toAdd = AndroidUtilities.dp(bigAvatars ? 24 : 20);
+            toAdd = dp(bigAvatars ? 24 : 20);
         }
         int drawCount = 0;
         for (int i = 0; i < 3; i++) {
@@ -406,8 +406,29 @@ public class AvatarsDrawable {
                 drawCount++;
             }
         }
-        int startPadding = (currentStyle == 0 || currentStyle == STYLE_GROUP_CALL_TOOLTIP || currentStyle == STYLE_MESSAGE_SEEN) ? 0 : AndroidUtilities.dp(10);
-        int ax = centered ? (width - drawCount * toAdd - AndroidUtilities.dp(bigAvatars ? 8 : 4)) / 2 : startPadding;
+        return Math.max(0, drawCount - 1) * toAdd + (drawCount > 0 ? getSize() : 0);
+    }
+
+    public void onDraw(Canvas canvas) {
+        wasDraw = true;
+        boolean bigAvatars = currentStyle == 4 || currentStyle == STYLE_GROUP_CALL_TOOLTIP;
+        int size = getSize();
+        int toAdd;
+        if (currentStyle == STYLE_MESSAGE_SEEN) {
+            toAdd = dp(12);
+        } else if (overrideSize != 0) {
+            toAdd = (int) (overrideSize * overrideSizeStepFactor);
+        } else {
+            toAdd = dp(bigAvatars ? 24 : 20);
+        }
+        int drawCount = 0;
+        for (int i = 0; i < 3; i++) {
+            if (currentStates[i].id != 0) {
+                drawCount++;
+            }
+        }
+        int startPadding = (currentStyle == 0 || currentStyle == STYLE_GROUP_CALL_TOOLTIP || currentStyle == STYLE_MESSAGE_SEEN) ? 0 : dp(10);
+        int ax = centered ? (width - (int) getUsedWidth()) / 2 : startPadding;
         boolean isMuted = VoIPService.getSharedInstance() != null && VoIPService.getSharedInstance().isMicMute();
         if (currentStyle == 4) {
             paint.setColor(Theme.getColor(Theme.key_inappPlayerBackground));
@@ -423,9 +444,9 @@ public class AvatarsDrawable {
         }
         boolean useAlphaLayer = currentStyle == 0 || currentStyle == 1 || currentStyle == 3 || currentStyle == 4 || currentStyle == 5 || currentStyle == STYLE_GROUP_CALL_TOOLTIP || currentStyle == STYLE_MESSAGE_SEEN;
         if (useAlphaLayer) {
-            float padding = currentStyle == STYLE_GROUP_CALL_TOOLTIP ? AndroidUtilities.dp(16) : 0;
+            float padding = currentStyle == STYLE_GROUP_CALL_TOOLTIP ? dp(16) : 0;
             if (drawStoriesCircle) {
-                padding += AndroidUtilities.dp(20);
+                padding += dp(20);
             }
             canvas.saveLayerAlpha(-padding, -padding, width + padding, height + padding, 255, Canvas.ALL_SAVE_FLAG);
         }
@@ -446,7 +467,7 @@ public class AvatarsDrawable {
                         continue;
                     }
                     if (k == 0) {
-                        int toAx = centered ? (width - animateToDrawCount * toAdd - AndroidUtilities.dp(bigAvatars ? 8 : 4)) / 2 : startPadding;
+                        int toAx = centered ? (width - animateToDrawCount * toAdd - dp(bigAvatars ? 8 : 4)) / 2 : startPadding;
                         imageReceiver.setImageX(toAx + toAdd * a);
                     } else {
                         imageReceiver.setImageX(ax + toAdd * a);
@@ -455,7 +476,7 @@ public class AvatarsDrawable {
                     if (currentStyle == 0 || currentStyle == STYLE_GROUP_CALL_TOOLTIP || currentStyle == STYLE_MESSAGE_SEEN) {
                         imageReceiver.setImageY((height - size) / 2f);
                     } else {
-                        imageReceiver.setImageY(AndroidUtilities.dp(currentStyle == 4 ? 8 : 6));
+                        imageReceiver.setImageY(dp(currentStyle == 4 ? 8 : 6));
                     }
 
                     boolean needRestore = false;
@@ -472,23 +493,23 @@ public class AvatarsDrawable {
                             alpha = transitionProgress;
                             needRestore = true;
                         } else if (states[a].animationType == DrawingState.ANIMATION_TYPE_MOVE) {
-                            int toAx = centered ? (width - animateToDrawCount * toAdd - AndroidUtilities.dp(bigAvatars ? 8 : 4)) / 2 : startPadding;
+                            int toAx = centered ? (width - animateToDrawCount * toAdd - dp(bigAvatars ? 8 : 4)) / 2 : startPadding;
                             int toX = toAx + toAdd * a;
                             int fromX = ax + toAdd * states[a].moveFromIndex;
                             imageReceiver.setImageX((int) (toX * transitionProgress + fromX * (1f - transitionProgress)));
                         } else if (states[a].animationType == DrawingState.ANIMATION_TYPE_NONE && centered) {
-                            int toAx = (width - animateToDrawCount * toAdd - AndroidUtilities.dp(bigAvatars ? 8 : 4)) / 2;
+                            int toAx = (width - animateToDrawCount * toAdd - dp(bigAvatars ? 8 : 4)) / 2;
                             int toX = toAx + toAdd * a;
                             int fromX = ax + toAdd * a;
                             imageReceiver.setImageX((int) (toX * transitionProgress + fromX * (1f - transitionProgress)));
                         }
                     }
                     alpha *= overrideAlpha;
-                    float rad = getSize() / 2f + AndroidUtilities.dp(4);
+                    float rad = getSize() / 2f + dp(4);
                     if (storiesTools == null) {
                         storiesTools = new StoriesGradientTools();
                     }
-                    storiesTools.setBounds(0, 0, parent.getMeasuredHeight(), AndroidUtilities.dp(40));
+                    storiesTools.setBounds(0, 0, parent.getMeasuredHeight(), dp(40));
                     storiesTools.paint.setAlpha((int) (255 * alpha));
                     canvas.drawCircle(imageReceiver.getCenterX(), imageReceiver.getCenterY(), rad, storiesTools.paint);
                     if (needRestore) {
@@ -512,7 +533,7 @@ public class AvatarsDrawable {
                     continue;
                 }
                 if (k == 0) {
-                    int toAx = centered ? (width - animateToDrawCount * toAdd - AndroidUtilities.dp(bigAvatars ? 8 : 4)) / 2 : startPadding;
+                    int toAx = centered ? (width - animateToDrawCount * toAdd - dp(bigAvatars ? 8 : 4)) / 2 : startPadding;
                     imageReceiver.setImageX(toAx + toAdd * a);
                 } else {
                     imageReceiver.setImageX(ax + toAdd * a);
@@ -521,7 +542,7 @@ public class AvatarsDrawable {
                 if (currentStyle == 0 || currentStyle == STYLE_GROUP_CALL_TOOLTIP || currentStyle == STYLE_MESSAGE_SEEN) {
                     imageReceiver.setImageY((height - size) / 2f);
                 } else {
-                    imageReceiver.setImageY(AndroidUtilities.dp(currentStyle == 4 ? 8 : 6));
+                    imageReceiver.setImageY(dp(currentStyle == 4 ? 8 : 6));
                 }
 
                 boolean needRestore = false;
@@ -538,12 +559,12 @@ public class AvatarsDrawable {
                         alpha = transitionProgress;
                         needRestore = true;
                     } else if (states[a].animationType == DrawingState.ANIMATION_TYPE_MOVE) {
-                        int toAx = centered ? (width - animateToDrawCount * toAdd - AndroidUtilities.dp(bigAvatars ? 8 : 4)) / 2 : startPadding;
+                        int toAx = centered ? (width - animateToDrawCount * toAdd - dp(bigAvatars ? 8 : 4)) / 2 : startPadding;
                         int toX = toAx + toAdd * a;
                         int fromX = ax + toAdd * states[a].moveFromIndex;
                         imageReceiver.setImageX((int) (toX * transitionProgress + fromX * (1f - transitionProgress)));
                     } else if (states[a].animationType == DrawingState.ANIMATION_TYPE_NONE && centered) {
-                        int toAx = (width - animateToDrawCount * toAdd - AndroidUtilities.dp(bigAvatars ? 8 : 4)) / 2;
+                        int toAx = (width - animateToDrawCount * toAdd - dp(bigAvatars ? 8 : 4)) / 2;
                         int toX = toAx + toAdd * a;
                         int fromX = ax + toAdd * a;
                         imageReceiver.setImageX((int) (toX * transitionProgress + fromX * (1f - transitionProgress)));
@@ -554,12 +575,12 @@ public class AvatarsDrawable {
                 float avatarScale = 1f;
                 if (a != states.length - 1 || drawStoriesCircle) {
                     if (currentStyle == 1 || currentStyle == 3 || currentStyle == 5) {
-                        canvas.drawCircle(imageReceiver.getCenterX(), imageReceiver.getCenterY(), AndroidUtilities.dp(13), xRefP);
+                        canvas.drawCircle(imageReceiver.getCenterX(), imageReceiver.getCenterY(), dp(13), xRefP);
                         if (states[a].wavesDrawable == null) {
                             if (currentStyle == 5) {
-                                states[a].wavesDrawable = new GroupCallUserCell.AvatarWavesDrawable(AndroidUtilities.dp(14), AndroidUtilities.dp(16));
+                                states[a].wavesDrawable = new GroupCallUserCell.AvatarWavesDrawable(dp(14), dp(16));
                             } else {
-                                states[a].wavesDrawable = new GroupCallUserCell.AvatarWavesDrawable(AndroidUtilities.dp(17), AndroidUtilities.dp(21));
+                                states[a].wavesDrawable = new GroupCallUserCell.AvatarWavesDrawable(dp(17), dp(21));
                             }
                         }
                         if (currentStyle == 5) {
@@ -582,9 +603,9 @@ public class AvatarsDrawable {
                         }
                         avatarScale = states[a].wavesDrawable.getAvatarScale();
                     } else if (currentStyle == 4 || currentStyle == STYLE_GROUP_CALL_TOOLTIP) {
-                        canvas.drawCircle(imageReceiver.getCenterX(), imageReceiver.getCenterY(), AndroidUtilities.dp(17), xRefP);
+                        canvas.drawCircle(imageReceiver.getCenterX(), imageReceiver.getCenterY(), dp(17), xRefP);
                         if (states[a].wavesDrawable == null) {
-                            states[a].wavesDrawable = new GroupCallUserCell.AvatarWavesDrawable(AndroidUtilities.dp(17), AndroidUtilities.dp(21));
+                            states[a].wavesDrawable = new GroupCallUserCell.AvatarWavesDrawable(dp(17), dp(21));
                         }
                         if (currentStyle == STYLE_GROUP_CALL_TOOLTIP) {
                             states[a].wavesDrawable.setColor(ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_voipgroup_speakingText), (int) (255 * 0.3f * alpha)));
@@ -660,7 +681,7 @@ public class AvatarsDrawable {
             return overrideSize;
         }
         boolean bigAvatars = currentStyle == 4 || currentStyle == STYLE_GROUP_CALL_TOOLTIP;
-        return AndroidUtilities.dp(bigAvatars ? 32 : 24);
+        return dp(bigAvatars ? 32 : 24);
     }
 
     private boolean attached;

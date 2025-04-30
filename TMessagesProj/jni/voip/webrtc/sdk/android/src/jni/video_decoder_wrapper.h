@@ -19,6 +19,9 @@
 #include "api/sequence_checker.h"
 #include "api/video_codecs/video_decoder.h"
 #include "common_video/h264/h264_bitstream_parser.h"
+#ifdef RTC_ENABLE_H265
+#include "common_video/h265/h265_bitstream_parser.h"
+#endif
 #include "rtc_base/race_checker.h"
 #include "rtc_base/synchronization/mutex.h"
 #include "sdk/android/src/jni/jni_helpers.h"
@@ -47,6 +50,8 @@ class VideoDecoderWrapper : public VideoDecoder {
   int32_t Release() override RTC_NO_THREAD_SAFETY_ANALYSIS;
 
   const char* ImplementationName() const override;
+
+  DecoderInfo GetDecoderInfo() const override;
 
   // Wraps the frame to a AndroidVideoBuffer and passes it to the callback.
   void OnDecodedFrame(JNIEnv* env,
@@ -94,6 +99,10 @@ class VideoDecoderWrapper : public VideoDecoder {
   bool initialized_ RTC_GUARDED_BY(decoder_thread_checker_);
   H264BitstreamParser h264_bitstream_parser_
       RTC_GUARDED_BY(decoder_thread_checker_);
+#ifdef RTC_ENABLE_H265
+  H265BitstreamParser h265_bitstream_parser_
+      RTC_GUARDED_BY(decoder_thread_checker_);
+#endif
 
   DecodedImageCallback* callback_ RTC_GUARDED_BY(callback_race_checker_);
 
@@ -109,7 +118,8 @@ class VideoDecoderWrapper : public VideoDecoder {
  */
 std::unique_ptr<VideoDecoder> JavaToNativeVideoDecoder(
     JNIEnv* jni,
-    const JavaRef<jobject>& j_decoder);
+    const JavaRef<jobject>& j_decoder,
+    jlong webrtcEnvRef);
 
 }  // namespace jni
 }  // namespace webrtc

@@ -18,17 +18,18 @@
 #include <utility>
 #include <vector>
 
+#include "absl/types/optional.h"
 #include "api/function_view.h"
 #include "api/units/time_delta.h"
 #include "api/units/timestamp.h"
 #include "modules/rtp_rtcp/include/rtp_rtcp_defines.h"
+#include "modules/rtp_rtcp/source/rtp_packet_to_send.h"
 #include "rtc_base/synchronization/mutex.h"
 #include "rtc_base/thread_annotations.h"
 
 namespace webrtc {
 
 class Clock;
-class RtpPacketToSend;
 
 class RtpPacketHistory {
  public:
@@ -36,6 +37,16 @@ class RtpPacketHistory {
     kDisabled,     // Don't store any packets.
     kStoreAndCull  // Store up to `number_to_store` packets, but try to remove
                    // packets as they time out or as signaled as received.
+  };
+
+  enum class PaddingMode {
+    kDefault,   // Last packet stored in the history that has not yet been
+                // culled.
+    kPriority,  // Selects padding packets based on
+    // heuristics such as send time, retransmission count etc, in order to
+    // make padding potentially more useful.
+    kRecentLargePacket  // Use the most recent large packet. Packet is kept for
+                        // padding even after it has been culled from history.
   };
 
   // Maximum number of packets we ever allow in the history.
@@ -48,7 +59,11 @@ class RtpPacketHistory {
   // With kStoreAndCull, always remove packets after 3x max(1000ms, 3x rtt).
   static constexpr int kPacketCullingDelayFactor = 3;
 
-  RtpPacketHistory(Clock* clock, bool enable_padding_prio);
+  RtpPacketHistory(Clock* clock, bool enable_padding_prio)
+      : RtpPacketHistory(clock,
+                         enable_padding_prio ? PaddingMode::kPriority
+                                             : PaddingMode::kDefault) {}
+  RtpPacketHistory(Clock* clock, PaddingMode padding_mode);
 
   RtpPacketHistory() = delete;
   RtpPacketHistory(const RtpPacketHistory&) = delete;
@@ -157,6 +172,8 @@ class RtpPacketHistory {
     bool operator()(StoredPacket* lhs, StoredPacket* rhs) const;
   };
 
+  bool padding_priority_enabled() const;
+
   // Helper method to check if packet has too recently been sent.
   bool VerifyRtt(const StoredPacket& packet) const
       RTC_EXCLUSIVE_LOCKS_REQUIRED(lock_);
@@ -172,7 +189,7 @@ class RtpPacketHistory {
       RTC_EXCLUSIVE_LOCKS_REQUIRED(lock_);
 
   Clock* const clock_;
-  const bool enable_padding_prio_;
+  const PaddingMode padding_mode_;
   mutable Mutex lock_;
   size_t number_to_store_ RTC_GUARDED_BY(lock_);
   StorageMode mode_ RTC_GUARDED_BY(lock_);
@@ -191,6 +208,8 @@ class RtpPacketHistory {
   // Objects from `packet_history_` ordered by "most likely to be useful", used
   // in GetPayloadPaddingPacket().
   PacketPrioritySet padding_priority_ RTC_GUARDED_BY(lock_);
+
+  absl::optional<RtpPacketToSend> large_payload_packet_ RTC_GUARDED_BY(lock_);
 };
 }  // namespace webrtc
 #endif  // MODULES_RTP_RTCP_SOURCE_RTP_PACKET_HISTORY_H_

@@ -147,6 +147,16 @@ public class UniversalRecyclerView extends RecyclerListView {
         setItemAnimator(itemAnimator);
     }
 
+    public void makeHorizontal() {
+        setLayoutManager(layoutManager = new LinearLayoutManager(getContext(), LinearLayoutManager.HORIZONTAL, false) {
+            @Override
+            protected int getExtraLayoutSpace(State state) {
+                if (doNotDetachViews) return AndroidUtilities.displaySize.y;
+                return super.getExtraLayoutSpace(state);
+            }
+        });
+    }
+
     public void setSpanCount(int spanCount) {
         if (layoutManager instanceof ExtendedGridLayoutManager) {
             ((ExtendedGridLayoutManager) layoutManager).setSpanCount(spanCount);

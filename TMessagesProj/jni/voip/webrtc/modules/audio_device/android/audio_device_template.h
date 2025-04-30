@@ -103,13 +103,13 @@ class AudioDeviceTemplate : public AudioDeviceGeneric {
   int32_t PlayoutDeviceName(uint16_t index,
                             char name[kAdmMaxDeviceNameSize],
                             char guid[kAdmMaxGuidSize]) override {
-    RTC_CHECK_NOTREACHED();
+    return 0;
   }
 
   int32_t RecordingDeviceName(uint16_t index,
                               char name[kAdmMaxDeviceNameSize],
                               char guid[kAdmMaxGuidSize]) override {
-    RTC_CHECK_NOTREACHED();
+    return 0;
   }
 
   int32_t SetPlayoutDevice(uint16_t index) override {
@@ -121,7 +121,10 @@ class AudioDeviceTemplate : public AudioDeviceGeneric {
 
   int32_t SetPlayoutDevice(
       AudioDeviceModule::WindowsDeviceType device) override {
-    RTC_CHECK_NOTREACHED();
+      // OK to use but it has no effect currently since device selection is
+      // done using Andoid APIs instead.
+      RTC_DLOG(LS_INFO) << __FUNCTION__;
+      return 0;
   }
 
   int32_t SetRecordingDevice(uint16_t index) override {
@@ -133,7 +136,10 @@ class AudioDeviceTemplate : public AudioDeviceGeneric {
 
   int32_t SetRecordingDevice(
       AudioDeviceModule::WindowsDeviceType device) override {
-    RTC_CHECK_NOTREACHED();
+      // OK to use but it has no effect currently since device selection is
+      // done using Andoid APIs instead.
+      RTC_DLOG(LS_INFO) << __FUNCTION__;
+      return 0;
   }
 
   int32_t PlayoutIsAvailable(bool& available) override {
@@ -279,7 +285,7 @@ class AudioDeviceTemplate : public AudioDeviceGeneric {
   }
 
   int32_t SpeakerMuteIsAvailable(bool& available) override {
-    RTC_CHECK_NOTREACHED();
+    return false;
   }
 
   int32_t SetSpeakerMute(bool enable) override { RTC_CHECK_NOTREACHED(); }
@@ -287,7 +293,7 @@ class AudioDeviceTemplate : public AudioDeviceGeneric {
   int32_t SpeakerMute(bool& enabled) const override { RTC_CHECK_NOTREACHED(); }
 
   int32_t MicrophoneMuteIsAvailable(bool& available) override {
-    RTC_CHECK_NOTREACHED();
+    return false;
   }
 
   int32_t SetMicrophoneMute(bool enable) override { RTC_CHECK_NOTREACHED(); }

@@ -16,6 +16,7 @@
 
 #include "api/array_view.h"
 #include "api/video/video_frame_type.h"
+#include "modules/rtp_rtcp/source/leb128.h"
 #include "modules/rtp_rtcp/source/rtp_packet_to_send.h"
 #include "rtc_base/byte_buffer.h"
 #include "rtc_base/checks.h"
@@ -23,8 +24,6 @@
 
 namespace webrtc {
 namespace {
-// TODO(danilchap): Some of the helpers/constants are same as in
-// rtp_depacketizer_av1. Move them to common av1 file.
 constexpr int kAggregationHeaderSize = 1;
 // when there are 3 or less OBU (fragments) in a packet, size of the last one
 // can be omited.
@@ -45,29 +44,6 @@ bool ObuHasSize(uint8_t obu_header) {
 
 int ObuType(uint8_t obu_header) {
   return (obu_header & 0b0'1111'000) >> 3;
-}
-
-int Leb128Size(int value) {
-  RTC_DCHECK_GE(value, 0);
-  int size = 0;
-  while (value >= 0x80) {
-    ++size;
-    value >>= 7;
-  }
-  return size + 1;
-}
-
-// Returns number of bytes consumed.
-int WriteLeb128(uint32_t value, uint8_t* buffer) {
-  int size = 0;
-  while (value >= 0x80) {
-    buffer[size] = 0x80 | (value & 0x7F);
-    ++size;
-    value >>= 7;
-  }
-  buffer[size] = value;
-  ++size;
-  return size;
 }
 
 // Given `remaining_bytes` free bytes left in a packet, returns max size of an
@@ -98,8 +74,7 @@ RtpPacketizerAv1::RtpPacketizerAv1(rtc::ArrayView<const uint8_t> payload,
 std::vector<RtpPacketizerAv1::Obu> RtpPacketizerAv1::ParseObus(
     rtc::ArrayView<const uint8_t> payload) {
   std::vector<Obu> result;
-  rtc::ByteBufferReader payload_reader(
-      reinterpret_cast<const char*>(payload.data()), payload.size());
+  rtc::ByteBufferReader payload_reader(payload);
   while (payload_reader.Length() > 0) {
     Obu obu;
     payload_reader.ReadUInt8(&obu.header);

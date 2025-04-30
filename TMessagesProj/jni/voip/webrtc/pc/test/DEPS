@@ -1,0 +1,5 @@
+include_rules = [
+  # Allow include of sdk/android to allow accessing the JVM and Env in tests.
+  "+sdk/android",
+  "+modules/utility/include/jvm_android.h",
+]

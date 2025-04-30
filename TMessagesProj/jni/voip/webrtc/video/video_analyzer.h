@@ -25,9 +25,9 @@
 #include "modules/rtp_rtcp/source/video_rtp_depacketizer.h"
 #include "rtc_base/event.h"
 #include "rtc_base/numerics/running_statistics.h"
+#include "rtc_base/numerics/sequence_number_unwrapper.h"
 #include "rtc_base/platform_thread.h"
 #include "rtc_base/synchronization/mutex.h"
-#include "rtc_base/time_utils.h"
 #include "test/layer_filtering_transport.h"
 #include "test/rtp_file_writer.h"
 
@@ -67,18 +67,19 @@ class VideoAnalyzer : public PacketReceiver,
   rtc::VideoSinkInterface<VideoFrame>* InputInterface();
   rtc::VideoSourceInterface<VideoFrame>* OutputInterface();
 
-  DeliveryStatus DeliverPacket(MediaType media_type,
-                               rtc::CopyOnWriteBuffer packet,
-                               int64_t packet_time_us) override;
+  void DeliverRtcpPacket(rtc::CopyOnWriteBuffer packet) override;
+  void DeliverRtpPacket(MediaType media_type,
+                        RtpPacketReceived packet,
+                        PacketReceiver::OnUndemuxablePacketHandler
+                            undemuxable_packet_handler) override;
 
   void PreEncodeOnFrame(const VideoFrame& video_frame);
   void PostEncodeOnFrame(size_t stream_id, uint32_t timestamp);
 
-  bool SendRtp(const uint8_t* packet,
-               size_t length,
+  bool SendRtp(rtc::ArrayView<const uint8_t> packet,
                const PacketOptions& options) override;
 
-  bool SendRtcp(const uint8_t* packet, size_t length) override;
+  bool SendRtcp(rtc::ArrayView<const uint8_t> packet) override;
   void OnFrame(const VideoFrame& video_frame) override;
   void Wait();
 
@@ -263,8 +264,8 @@ class VideoAnalyzer : public PacketReceiver,
   SamplesStatsCounter time_between_freezes_ RTC_GUARDED_BY(comparison_lock_);
   uint32_t freeze_count_ RTC_GUARDED_BY(comparison_lock_);
   uint32_t total_freezes_duration_ms_ RTC_GUARDED_BY(comparison_lock_);
-  uint32_t total_frames_duration_ms_ RTC_GUARDED_BY(comparison_lock_);
-  double sum_squared_frame_durations_ RTC_GUARDED_BY(comparison_lock_);
+  double total_inter_frame_delay_ RTC_GUARDED_BY(comparison_lock_);
+  double total_squared_inter_frame_delay_ RTC_GUARDED_BY(comparison_lock_);
 
   double decode_frame_rate_ RTC_GUARDED_BY(comparison_lock_);
   double render_frame_rate_ RTC_GUARDED_BY(comparison_lock_);
@@ -292,7 +293,7 @@ class VideoAnalyzer : public PacketReceiver,
 
   std::deque<VideoFrame> frames_ RTC_GUARDED_BY(lock_);
   absl::optional<VideoFrame> last_rendered_frame_ RTC_GUARDED_BY(lock_);
-  rtc::TimestampWrapAroundHandler wrap_handler_ RTC_GUARDED_BY(lock_);
+  RtpTimestampUnwrapper wrap_handler_ RTC_GUARDED_BY(lock_);
   std::map<int64_t, int64_t> send_times_ RTC_GUARDED_BY(lock_);
   std::map<int64_t, int64_t> recv_times_ RTC_GUARDED_BY(lock_);
   std::map<int64_t, size_t> encoded_frame_sizes_ RTC_GUARDED_BY(lock_);

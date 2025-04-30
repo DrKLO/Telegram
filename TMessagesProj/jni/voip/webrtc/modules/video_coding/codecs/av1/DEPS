@@ -1,0 +1,4 @@
+include_rules = [
+  "+third_party/libaom",
+  "+third_party/dav1d",
+]

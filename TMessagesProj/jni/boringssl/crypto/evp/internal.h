@@ -1,61 +1,19 @@
-/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
- * All rights reserved.
- *
- * This package is an SSL implementation written
- * by Eric Young (eay@cryptsoft.com).
- * The implementation was written so as to conform with Netscapes SSL.
- *
- * This library is free for commercial and non-commercial use as long as
- * the following conditions are aheared to.  The following conditions
- * apply to all code found in this distribution, be it the RC4, RSA,
- * lhash, DES, etc., code; not just the SSL code.  The SSL documentation
- * included with this distribution is covered by the same copyright terms
- * except that the holder is Tim Hudson (tjh@cryptsoft.com).
- *
- * Copyright remains Eric Young's, and as such any Copyright notices in
- * the code are not to be removed.
- * If this package is used in a product, Eric Young should be given attribution
- * as the author of the parts of the library used.
- * This can be in the form of a textual message at program startup or
- * in documentation (online or textual) provided with the package.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- * 1. Redistributions of source code must retain the copyright
- *    notice, this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
- * 3. All advertising materials mentioning features or use of this software
- *    must display the following acknowledgement:
- *    "This product includes cryptographic software written by
- *     Eric Young (eay@cryptsoft.com)"
- *    The word 'cryptographic' can be left out if the rouines from the library
- *    being used are not cryptographic related :-).
- * 4. If you include any Windows specific code (or a derivative thereof) from
- *    the apps directory (application code) you must include an acknowledgement:
- *    "This product includes software written by Tim Hudson (tjh@cryptsoft.com)"
- *
- * THIS SOFTWARE IS PROVIDED BY ERIC YOUNG ``AS IS'' AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
- * SUCH DAMAGE.
- *
- * The licence and distribution terms for any publically available version or
- * derivative of this code cannot be changed.  i.e. this code cannot simply be
- * copied and put under another distribution licence
- * [including the GNU Public Licence.] */
+// Copyright 2000-2016 The OpenSSL Project Authors. All Rights Reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
-#ifndef OPENSSL_HEADER_EVP_INTERNAL_H
-#define OPENSSL_HEADER_EVP_INTERNAL_H
+#ifndef OPENSSL_HEADER_CRYPTO_EVP_INTERNAL_H
+#define OPENSSL_HEADER_CRYPTO_EVP_INTERNAL_H
 
 #include <openssl/base.h>
 
@@ -66,10 +24,15 @@ extern "C" {
 #endif
 
 
+typedef struct evp_pkey_asn1_method_st EVP_PKEY_ASN1_METHOD;
+typedef struct evp_pkey_method_st EVP_PKEY_METHOD;
+
 struct evp_pkey_asn1_method_st {
   int pkey_id;
   uint8_t oid[9];
   uint8_t oid_len;
+
+  const EVP_PKEY_METHOD *pkey_method;
 
   // pub_decode decodes |params| and |key| as a SubjectPublicKeyInfo
   // and writes the result into |out|. It returns one on success and zero on
@@ -101,6 +64,17 @@ struct evp_pkey_asn1_method_st {
   int (*get_priv_raw)(const EVP_PKEY *pkey, uint8_t *out, size_t *out_len);
   int (*get_pub_raw)(const EVP_PKEY *pkey, uint8_t *out, size_t *out_len);
 
+  // TODO(davidben): Can these be merged with the functions above? OpenSSL does
+  // not implement |EVP_PKEY_get_raw_public_key|, etc., for |EVP_PKEY_EC|, but
+  // the distinction seems unimportant. OpenSSL 3.0 has since renamed
+  // |EVP_PKEY_get1_tls_encodedpoint| to |EVP_PKEY_get1_encoded_public_key|, and
+  // what is the difference between "raw" and an "encoded" public key.
+  //
+  // One nuisance is the notion of "raw" is slightly ambiguous for EC keys. Is
+  // it a DER ECPrivateKey or just the scalar?
+  int (*set1_tls_encodedpoint)(EVP_PKEY *pkey, const uint8_t *in, size_t len);
+  size_t (*get1_tls_encodedpoint)(const EVP_PKEY *pkey, uint8_t **out_ptr);
+
   // pkey_opaque returns 1 if the |pk| is opaque. Opaque keys are backed by
   // custom implementations which do not expose key material and parameters.
   int (*pkey_opaque)(const EVP_PKEY *pk);
@@ -115,6 +89,20 @@ struct evp_pkey_asn1_method_st {
   void (*pkey_free)(EVP_PKEY *pkey);
 } /* EVP_PKEY_ASN1_METHOD */;
 
+struct evp_pkey_st {
+  CRYPTO_refcount_t references;
+
+  // type contains one of the EVP_PKEY_* values or NID_undef and determines
+  // the type of |pkey|.
+  int type;
+
+  // pkey contains a pointer to a structure dependent on |type|.
+  void *pkey;
+
+  // ameth contains a pointer to a method table that contains many ASN.1
+  // methods for the key type.
+  const EVP_PKEY_ASN1_METHOD *ameth;
+} /* EVP_PKEY */;
 
 #define EVP_PKEY_OP_UNDEFINED 0
 #define EVP_PKEY_OP_KEYGEN (1 << 2)
@@ -178,6 +166,12 @@ OPENSSL_EXPORT int EVP_PKEY_CTX_ctrl(EVP_PKEY_CTX *ctx, int keytype, int optype,
 #define EVP_PKEY_CTRL_RSA_OAEP_LABEL (EVP_PKEY_ALG_CTRL + 11)
 #define EVP_PKEY_CTRL_GET_RSA_OAEP_LABEL (EVP_PKEY_ALG_CTRL + 12)
 #define EVP_PKEY_CTRL_EC_PARAMGEN_CURVE_NID (EVP_PKEY_ALG_CTRL + 13)
+#define EVP_PKEY_CTRL_HKDF_MODE (EVP_PKEY_ALG_CTRL + 14)
+#define EVP_PKEY_CTRL_HKDF_MD (EVP_PKEY_ALG_CTRL + 15)
+#define EVP_PKEY_CTRL_HKDF_KEY (EVP_PKEY_ALG_CTRL + 16)
+#define EVP_PKEY_CTRL_HKDF_SALT (EVP_PKEY_ALG_CTRL + 17)
+#define EVP_PKEY_CTRL_HKDF_INFO (EVP_PKEY_ALG_CTRL + 18)
+#define EVP_PKEY_CTRL_DH_PAD (EVP_PKEY_ALG_CTRL + 19)
 
 struct evp_pkey_ctx_st {
   // Method associated with this operation
@@ -232,17 +226,15 @@ struct evp_pkey_method_st {
 } /* EVP_PKEY_METHOD */;
 
 typedef struct {
-  union {
-    uint8_t priv[64];
-    struct {
-      // Shift the location of the public key to align with where it is in the
-      // private key representation.
-      uint8_t pad[32];
-      uint8_t value[32];
-    } pub;
-  } key;
+  // key is the concatenation of the private seed and public key. It is stored
+  // as a single 64-bit array to allow passing to |ED25519_sign|. If
+  // |has_private| is false, the first 32 bytes are uninitialized and the public
+  // key is in the last 32 bytes.
+  uint8_t key[64];
   char has_private;
 } ED25519_KEY;
+
+#define ED25519_PUBLIC_KEY_OFFSET 32
 
 typedef struct {
   uint8_t pub[32];
@@ -255,15 +247,22 @@ extern const EVP_PKEY_ASN1_METHOD ec_asn1_meth;
 extern const EVP_PKEY_ASN1_METHOD rsa_asn1_meth;
 extern const EVP_PKEY_ASN1_METHOD ed25519_asn1_meth;
 extern const EVP_PKEY_ASN1_METHOD x25519_asn1_meth;
+extern const EVP_PKEY_ASN1_METHOD dh_asn1_meth;
 
 extern const EVP_PKEY_METHOD rsa_pkey_meth;
 extern const EVP_PKEY_METHOD ec_pkey_meth;
 extern const EVP_PKEY_METHOD ed25519_pkey_meth;
 extern const EVP_PKEY_METHOD x25519_pkey_meth;
+extern const EVP_PKEY_METHOD hkdf_pkey_meth;
+extern const EVP_PKEY_METHOD dh_pkey_meth;
+
+// evp_pkey_set_method behaves like |EVP_PKEY_set_type|, but takes a pointer to
+// a method table. This avoids depending on every |EVP_PKEY_ASN1_METHOD|.
+void evp_pkey_set_method(EVP_PKEY *pkey, const EVP_PKEY_ASN1_METHOD *method);
 
 
 #if defined(__cplusplus)
 }  // extern C
 #endif
 
-#endif  // OPENSSL_HEADER_EVP_INTERNAL_H
+#endif  // OPENSSL_HEADER_CRYPTO_EVP_INTERNAL_H

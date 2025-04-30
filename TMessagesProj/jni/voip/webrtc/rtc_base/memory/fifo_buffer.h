@@ -37,14 +37,12 @@ class FifoBuffer final : public StreamInterface {
 
   // StreamInterface methods
   StreamState GetState() const override;
-  StreamResult Read(void* buffer,
-                    size_t bytes,
-                    size_t* bytes_read,
-                    int* error) override;
-  StreamResult Write(const void* buffer,
-                     size_t bytes,
-                     size_t* bytes_written,
-                     int* error) override;
+  StreamResult Read(rtc::ArrayView<uint8_t> buffer,
+                    size_t& bytes_read,
+                    int& error) override;
+  StreamResult Write(rtc::ArrayView<const uint8_t> buffer,
+                     size_t& bytes_written,
+                     int& error) override;
   void Close() override;
 
   // Seek to a byte offset from the beginning of the stream.  Returns false if

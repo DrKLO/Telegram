@@ -1,142 +1,18 @@
-/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
- * All rights reserved.
- *
- * This package is an SSL implementation written
- * by Eric Young (eay@cryptsoft.com).
- * The implementation was written so as to conform with Netscapes SSL.
- *
- * This library is free for commercial and non-commercial use as long as
- * the following conditions are aheared to.  The following conditions
- * apply to all code found in this distribution, be it the RC4, RSA,
- * lhash, DES, etc., code; not just the SSL code.  The SSL documentation
- * included with this distribution is covered by the same copyright terms
- * except that the holder is Tim Hudson (tjh@cryptsoft.com).
- *
- * Copyright remains Eric Young's, and as such any Copyright notices in
- * the code are not to be removed.
- * If this package is used in a product, Eric Young should be given attribution
- * as the author of the parts of the library used.
- * This can be in the form of a textual message at program startup or
- * in documentation (online or textual) provided with the package.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- * 1. Redistributions of source code must retain the copyright
- *    notice, this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
- * 3. All advertising materials mentioning features or use of this software
- *    must display the following acknowledgement:
- *    "This product includes cryptographic software written by
- *     Eric Young (eay@cryptsoft.com)"
- *    The word 'cryptographic' can be left out if the rouines from the library
- *    being used are not cryptographic related :-).
- * 4. If you include any Windows specific code (or a derivative thereof) from
- *    the apps directory (application code) you must include an acknowledgement:
- *    "This product includes software written by Tim Hudson (tjh@cryptsoft.com)"
- *
- * THIS SOFTWARE IS PROVIDED BY ERIC YOUNG ``AS IS'' AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
- * SUCH DAMAGE.
- *
- * The licence and distribution terms for any publically available version or
- * derivative of this code cannot be changed.  i.e. this code cannot simply be
- * copied and put under another distribution licence
- * [including the GNU Public Licence.]
- */
-/* ====================================================================
- * Copyright (c) 1998-2007 The OpenSSL Project.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- *
- * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- *
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- *
- * 3. All advertising materials mentioning features or use of this
- *    software must display the following acknowledgment:
- *    "This product includes software developed by the OpenSSL Project
- *    for use in the OpenSSL Toolkit. (http://www.openssl.org/)"
- *
- * 4. The names "OpenSSL Toolkit" and "OpenSSL Project" must not be used to
- *    endorse or promote products derived from this software without
- *    prior written permission. For written permission, please contact
- *    openssl-core@openssl.org.
- *
- * 5. Products derived from this software may not be called "OpenSSL"
- *    nor may "OpenSSL" appear in their names without prior written
- *    permission of the OpenSSL Project.
- *
- * 6. Redistributions of any form whatsoever must retain the following
- *    acknowledgment:
- *    "This product includes software developed by the OpenSSL Project
- *    for use in the OpenSSL Toolkit (http://www.openssl.org/)"
- *
- * THIS SOFTWARE IS PROVIDED BY THE OpenSSL PROJECT ``AS IS'' AND ANY
- * EXPRESSED OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
- * PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE OpenSSL PROJECT OR
- * ITS CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
- * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
- * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
- * OF THE POSSIBILITY OF SUCH DAMAGE.
- * ====================================================================
- *
- * This product includes cryptographic software written by Eric Young
- * (eay@cryptsoft.com).  This product includes software written by Tim
- * Hudson (tjh@cryptsoft.com).
- *
- */
-/* ====================================================================
- * Copyright 2002 Sun Microsystems, Inc. ALL RIGHTS RESERVED.
- * ECC cipher suite support in OpenSSL originally developed by
- * SUN MICROSYSTEMS, INC., and contributed to the OpenSSL project.
- */
-/* ====================================================================
- * Copyright 2005 Nokia. All rights reserved.
- *
- * The portions of the attached software ("Contribution") is developed by
- * Nokia Corporation and is licensed pursuant to the OpenSSL open source
- * license.
- *
- * The Contribution, originally written by Mika Kousa and Pasi Eronen of
- * Nokia Corporation, consists of the "PSK" (Pre-Shared Key) ciphersuites
- * support (see RFC 4279) to OpenSSL.
- *
- * No patent licenses or other rights except those expressly stated in
- * the OpenSSL open source license shall be deemed granted or received
- * expressly, by implication, estoppel, or otherwise.
- *
- * No assurances are provided by Nokia that the Contribution does not
- * infringe the patent or other intellectual property rights of any third
- * party or that the license provides you with all the necessary rights
- * to make use of the Contribution.
- *
- * THE SOFTWARE IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND. IN
- * ADDITION TO THE DISCLAIMERS INCLUDED IN THE LICENSE, NOKIA
- * SPECIFICALLY DISCLAIMS ANY LIABILITY FOR CLAIMS BROUGHT BY YOU OR ANY
- * OTHER ENTITY BASED ON INFRINGEMENT OF INTELLECTUAL PROPERTY RIGHTS OR
- * OTHERWISE. */
+// Copyright 1995-2016 The OpenSSL Project Authors. All Rights Reserved.
+// Copyright (c) 2002, Oracle and/or its affiliates. All rights reserved.
+// Copyright 2005 Nokia. All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 #include <openssl/ssl.h>
 
@@ -148,11 +24,9 @@
 #include <openssl/pem.h>
 #include <openssl/stack.h>
 #include <openssl/x509.h>
-#include <openssl/x509v3.h>
-#include <openssl/x509_vfy.h>
 
-#include "internal.h"
 #include "../crypto/internal.h"
+#include "internal.h"
 
 
 BSSL_NAMESPACE_BEGIN
@@ -185,56 +59,6 @@ static UniquePtr<CRYPTO_BUFFER> x509_to_buffer(X509 *x509) {
   return buffer;
 }
 
-// new_leafless_chain returns a fresh stack of buffers set to {NULL}.
-static UniquePtr<STACK_OF(CRYPTO_BUFFER)> new_leafless_chain(void) {
-  UniquePtr<STACK_OF(CRYPTO_BUFFER)> chain(sk_CRYPTO_BUFFER_new_null());
-  if (!chain ||
-      !sk_CRYPTO_BUFFER_push(chain.get(), nullptr)) {
-    return nullptr;
-  }
-
-  return chain;
-}
-
-// ssl_cert_set_chain sets elements 1.. of |cert->chain| to the serialised
-// forms of elements of |chain|. It returns one on success or zero on error, in
-// which case no change to |cert->chain| is made. It preverses the existing
-// leaf from |cert->chain|, if any.
-static bool ssl_cert_set_chain(CERT *cert, STACK_OF(X509) *chain) {
-  UniquePtr<STACK_OF(CRYPTO_BUFFER)> new_chain;
-
-  if (cert->chain != nullptr) {
-    new_chain.reset(sk_CRYPTO_BUFFER_new_null());
-    if (!new_chain) {
-      return false;
-    }
-
-    // |leaf| might be NULL if it's a “leafless” chain.
-    CRYPTO_BUFFER *leaf = sk_CRYPTO_BUFFER_value(cert->chain.get(), 0);
-    if (!PushToStack(new_chain.get(), UpRef(leaf))) {
-      return false;
-    }
-  }
-
-  for (X509 *x509 : chain) {
-    if (!new_chain) {
-      new_chain = new_leafless_chain();
-      if (!new_chain) {
-        return false;
-      }
-    }
-
-    UniquePtr<CRYPTO_BUFFER> buffer = x509_to_buffer(x509);
-    if (!buffer ||
-        !PushToStack(new_chain.get(), std::move(buffer))) {
-      return false;
-    }
-  }
-
-  cert->chain = std::move(new_chain);
-  return true;
-}
-
 static void ssl_crypto_x509_cert_flush_cached_leaf(CERT *cert) {
   X509_free(cert->x509_leaf);
   cert->x509_leaf = nullptr;
@@ -243,6 +67,24 @@ static void ssl_crypto_x509_cert_flush_cached_leaf(CERT *cert) {
 static void ssl_crypto_x509_cert_flush_cached_chain(CERT *cert) {
   sk_X509_pop_free(cert->x509_chain, X509_free);
   cert->x509_chain = nullptr;
+}
+
+// ssl_cert_set1_chain sets elements 1.. of |cert->chain| to the serialised
+// forms of elements of |chain|. It returns one on success or zero on error, in
+// which case no change to |cert->chain| is made. It preverses the existing
+// leaf from |cert->chain|, if any.
+static bool ssl_cert_set1_chain(CERT *cert, STACK_OF(X509) *chain) {
+  cert->legacy_credential->ClearIntermediateCerts();
+  for (X509 *x509 : chain) {
+    UniquePtr<CRYPTO_BUFFER> buffer = x509_to_buffer(x509);
+    if (!buffer ||
+        !cert->legacy_credential->AppendIntermediateCert(std::move(buffer))) {
+      return false;
+    }
+  }
+
+  ssl_crypto_x509_cert_flush_cached_chain(cert);
+  return true;
 }
 
 static bool ssl_crypto_x509_check_client_CA_list(
@@ -285,7 +127,6 @@ static bool ssl_crypto_x509_session_cache_objects(SSL_SESSION *sess) {
   if (sk_CRYPTO_BUFFER_num(sess->certs.get()) > 0) {
     chain.reset(sk_X509_new_null());
     if (!chain) {
-      OPENSSL_PUT_ERROR(SSL, ERR_R_MALLOC_FAILURE);
       return false;
     }
     if (sess->is_server) {
@@ -293,7 +134,6 @@ static bool ssl_crypto_x509_session_cache_objects(SSL_SESSION *sess) {
       // |SSL_get_peer_cert_chain|.
       chain_without_leaf.reset(sk_X509_new_null());
       if (!chain_without_leaf) {
-        OPENSSL_PUT_ERROR(SSL, ERR_R_MALLOC_FAILURE);
         return false;
       }
     }
@@ -310,11 +150,9 @@ static bool ssl_crypto_x509_session_cache_objects(SSL_SESSION *sess) {
       leaf = UpRef(x509);
     } else if (chain_without_leaf &&
                !PushToStack(chain_without_leaf.get(), UpRef(x509))) {
-      OPENSSL_PUT_ERROR(SSL, ERR_R_MALLOC_FAILURE);
       return false;
     }
     if (!PushToStack(chain.get(), std::move(x509))) {
-      OPENSSL_PUT_ERROR(SSL, ERR_R_MALLOC_FAILURE);
       return false;
     }
   }
@@ -368,25 +206,35 @@ static bool ssl_crypto_x509_session_verify_cert_chain(SSL_SESSION *session,
     return false;
   }
 
-  SSL_CTX *ssl_ctx = hs->ssl->ctx.get();
+  SSL *const ssl = hs->ssl;
+  SSL_CTX *ssl_ctx = ssl->ctx.get();
   X509_STORE *verify_store = ssl_ctx->cert_store;
   if (hs->config->cert->verify_store != nullptr) {
     verify_store = hs->config->cert->verify_store;
   }
 
   X509 *leaf = sk_X509_value(cert_chain, 0);
-  ScopedX509_STORE_CTX ctx;
-  if (!X509_STORE_CTX_init(ctx.get(), verify_store, leaf, cert_chain) ||
+  const char *name;
+  size_t name_len;
+  SSL_get0_ech_name_override(ssl, &name, &name_len);
+  UniquePtr<X509_STORE_CTX> ctx(X509_STORE_CTX_new());
+  if (!ctx ||                                                             //
+      !X509_STORE_CTX_init(ctx.get(), verify_store, leaf, cert_chain) ||  //
       !X509_STORE_CTX_set_ex_data(
-          ctx.get(), SSL_get_ex_data_X509_STORE_CTX_idx(), hs->ssl) ||
+          ctx.get(), SSL_get_ex_data_X509_STORE_CTX_idx(), ssl) ||  //
       // We need to inherit the verify parameters. These can be determined by
       // the context: if its a server it will verify SSL client certificates or
       // vice versa.
       !X509_STORE_CTX_set_default(
-          ctx.get(), hs->ssl->server ? "ssl_client" : "ssl_server") ||
+          ctx.get(),
+          ssl->server ? "ssl_client" : "ssl_server") ||  //
       // Anything non-default in "param" should overwrite anything in the ctx.
       !X509_VERIFY_PARAM_set1(X509_STORE_CTX_get0_param(ctx.get()),
-                              hs->config->param)) {
+                              hs->config->param) ||  //
+      // ClientHelloOuter connections use a different name.
+      (name_len != 0 &&  //
+       !X509_VERIFY_PARAM_set1_host(X509_STORE_CTX_get0_param(ctx.get()), name,
+                                    name_len))) {
     OPENSSL_PUT_ERROR(SSL, ERR_R_X509_LIB);
     return false;
   }
@@ -403,11 +251,11 @@ static bool ssl_crypto_x509_session_verify_cert_chain(SSL_SESSION *session,
     verify_ret = X509_verify_cert(ctx.get());
   }
 
-  session->verify_result = ctx->error;
+  session->verify_result = X509_STORE_CTX_get_error(ctx.get());
 
   // If |SSL_VERIFY_NONE|, the error is non-fatal, but we keep the result.
   if (verify_ret <= 0 && hs->config->verify_mode != SSL_VERIFY_NONE) {
-    *out_alert = SSL_alert_from_verify_result(ctx->error);
+    *out_alert = SSL_alert_from_verify_result(session->verify_result);
     return false;
   }
 
@@ -441,24 +289,25 @@ static void ssl_crypto_x509_ssl_config_free(SSL_CONFIG *cfg) {
 }
 
 static bool ssl_crypto_x509_ssl_auto_chain_if_needed(SSL_HANDSHAKE *hs) {
-  // Only build a chain if there are no intermediates configured and the feature
-  // isn't disabled.
-  if ((hs->ssl->mode & SSL_MODE_NO_AUTO_CHAIN) ||
-      !ssl_has_certificate(hs) || hs->config->cert->chain == NULL ||
-      sk_CRYPTO_BUFFER_num(hs->config->cert->chain.get()) > 1) {
+  // Only build a chain if the feature isn't disabled, the legacy credential
+  // exists but has no intermediates configured.
+  SSL *ssl = hs->ssl;
+  SSL_CREDENTIAL *cred = hs->config->cert->legacy_credential.get();
+  if ((ssl->mode & SSL_MODE_NO_AUTO_CHAIN) || !cred->IsComplete() ||
+      sk_CRYPTO_BUFFER_num(cred->chain.get()) != 1) {
     return true;
   }
 
-  UniquePtr<X509> leaf(X509_parse_from_buffer(
-      sk_CRYPTO_BUFFER_value(hs->config->cert->chain.get(), 0)));
+  UniquePtr<X509> leaf(
+      X509_parse_from_buffer(sk_CRYPTO_BUFFER_value(cred->chain.get(), 0)));
   if (!leaf) {
     OPENSSL_PUT_ERROR(SSL, ERR_R_X509_LIB);
     return false;
   }
 
-  ScopedX509_STORE_CTX ctx;
-  if (!X509_STORE_CTX_init(ctx.get(), hs->ssl->ctx->cert_store, leaf.get(),
-                           NULL)) {
+  UniquePtr<X509_STORE_CTX> ctx(X509_STORE_CTX_new());
+  if (!ctx || !X509_STORE_CTX_init(ctx.get(), ssl->ctx->cert_store, leaf.get(),
+                                   nullptr)) {
     OPENSSL_PUT_ERROR(SSL, ERR_R_X509_LIB);
     return false;
   }
@@ -468,15 +317,13 @@ static bool ssl_crypto_x509_ssl_auto_chain_if_needed(SSL_HANDSHAKE *hs) {
   ERR_clear_error();
 
   // Remove the leaf from the generated chain.
-  X509_free(sk_X509_shift(ctx->chain));
-
-  if (!ssl_cert_set_chain(hs->config->cert.get(), ctx->chain)) {
+  UniquePtr<STACK_OF(X509)> chain(X509_STORE_CTX_get1_chain(ctx.get()));
+  if (!chain) {
     return false;
   }
+  X509_free(sk_X509_shift(chain.get()));
 
-  ssl_crypto_x509_cert_flush_cached_chain(hs->config->cert.get());
-
-  return true;
+  return SSL_set1_chain(ssl, chain.get());
 }
 
 static void ssl_crypto_x509_ssl_ctx_flush_cached_client_CA(SSL_CTX *ctx) {
@@ -497,24 +344,24 @@ static void ssl_crypto_x509_ssl_ctx_free(SSL_CTX *ctx) {
 }
 
 const SSL_X509_METHOD ssl_crypto_x509_method = {
-  ssl_crypto_x509_check_client_CA_list,
-  ssl_crypto_x509_cert_clear,
-  ssl_crypto_x509_cert_free,
-  ssl_crypto_x509_cert_dup,
-  ssl_crypto_x509_cert_flush_cached_chain,
-  ssl_crypto_x509_cert_flush_cached_leaf,
-  ssl_crypto_x509_session_cache_objects,
-  ssl_crypto_x509_session_dup,
-  ssl_crypto_x509_session_clear,
-  ssl_crypto_x509_session_verify_cert_chain,
-  ssl_crypto_x509_hs_flush_cached_ca_names,
-  ssl_crypto_x509_ssl_new,
-  ssl_crypto_x509_ssl_config_free,
-  ssl_crypto_x509_ssl_flush_cached_client_CA,
-  ssl_crypto_x509_ssl_auto_chain_if_needed,
-  ssl_crypto_x509_ssl_ctx_new,
-  ssl_crypto_x509_ssl_ctx_free,
-  ssl_crypto_x509_ssl_ctx_flush_cached_client_CA,
+    ssl_crypto_x509_check_client_CA_list,
+    ssl_crypto_x509_cert_clear,
+    ssl_crypto_x509_cert_free,
+    ssl_crypto_x509_cert_dup,
+    ssl_crypto_x509_cert_flush_cached_chain,
+    ssl_crypto_x509_cert_flush_cached_leaf,
+    ssl_crypto_x509_session_cache_objects,
+    ssl_crypto_x509_session_dup,
+    ssl_crypto_x509_session_clear,
+    ssl_crypto_x509_session_verify_cert_chain,
+    ssl_crypto_x509_hs_flush_cached_ca_names,
+    ssl_crypto_x509_ssl_new,
+    ssl_crypto_x509_ssl_config_free,
+    ssl_crypto_x509_ssl_flush_cached_client_CA,
+    ssl_crypto_x509_ssl_auto_chain_if_needed,
+    ssl_crypto_x509_ssl_ctx_new,
+    ssl_crypto_x509_ssl_ctx_free,
+    ssl_crypto_x509_ssl_ctx_flush_cached_client_CA,
 };
 
 BSSL_NAMESPACE_END
@@ -666,10 +513,8 @@ void SSL_set_verify_depth(SSL *ssl, int depth) {
   X509_VERIFY_PARAM_set_depth(ssl->config->param, depth);
 }
 
-void SSL_CTX_set_cert_verify_callback(SSL_CTX *ctx,
-                                      int (*cb)(X509_STORE_CTX *store_ctx,
-                                                void *arg),
-                                      void *arg) {
+void SSL_CTX_set_cert_verify_callback(
+    SSL_CTX *ctx, int (*cb)(X509_STORE_CTX *store_ctx, void *arg), void *arg) {
   check_ssl_ctx_x509_method(ctx);
   ctx->app_verify_callback = cb;
   ctx->app_verify_arg = arg;
@@ -696,13 +541,6 @@ int SSL_CTX_load_verify_locations(SSL_CTX *ctx, const char *ca_file,
                                   const char *ca_dir) {
   check_ssl_ctx_x509_method(ctx);
   return X509_STORE_load_locations(ctx->cert_store, ca_file, ca_dir);
-}
-
-void SSL_set_verify_result(SSL *ssl, long result) {
-  check_ssl_x509_method(ssl);
-  if (result != X509_V_OK) {
-    abort();
-  }
 }
 
 long SSL_get_verify_result(const SSL *ssl) {
@@ -757,12 +595,12 @@ int SSL_CTX_use_certificate(SSL_CTX *ctx, X509 *x) {
 static int ssl_cert_cache_leaf_cert(CERT *cert) {
   assert(cert->x509_method);
 
-  if (cert->x509_leaf != NULL ||
-      cert->chain == NULL) {
+  const SSL_CREDENTIAL *cred = cert->legacy_credential.get();
+  if (cert->x509_leaf != NULL || cred->chain == NULL) {
     return 1;
   }
 
-  CRYPTO_BUFFER *leaf = sk_CRYPTO_BUFFER_value(cert->chain.get(), 0);
+  CRYPTO_BUFFER *leaf = sk_CRYPTO_BUFFER_value(cred->chain.get(), 0);
   if (!leaf) {
     return 1;
   }
@@ -772,7 +610,7 @@ static int ssl_cert_cache_leaf_cert(CERT *cert) {
 }
 
 static X509 *ssl_cert_get0_leaf(CERT *cert) {
-  if (cert->x509_leaf == NULL &&
+  if (cert->x509_leaf == NULL &&  //
       !ssl_cert_cache_leaf_cert(cert)) {
     return NULL;
   }
@@ -791,74 +629,40 @@ X509 *SSL_get_certificate(const SSL *ssl) {
 
 X509 *SSL_CTX_get0_certificate(const SSL_CTX *ctx) {
   check_ssl_ctx_x509_method(ctx);
-  MutexWriteLock lock(const_cast<CRYPTO_MUTEX*>(&ctx->lock));
+  MutexWriteLock lock(const_cast<CRYPTO_MUTEX *>(&ctx->lock));
   return ssl_cert_get0_leaf(ctx->cert.get());
 }
 
-static int ssl_cert_set0_chain(CERT *cert, STACK_OF(X509) *chain) {
-  if (!ssl_cert_set_chain(cert, chain)) {
-    return 0;
-  }
-
-  sk_X509_pop_free(chain, X509_free);
-  ssl_crypto_x509_cert_flush_cached_chain(cert);
-  return 1;
-}
-
-static int ssl_cert_set1_chain(CERT *cert, STACK_OF(X509) *chain) {
-  if (!ssl_cert_set_chain(cert, chain)) {
-    return 0;
-  }
-
-  ssl_crypto_x509_cert_flush_cached_chain(cert);
-  return 1;
-}
-
-static int ssl_cert_append_cert(CERT *cert, X509 *x509) {
+static int ssl_cert_add1_chain_cert(CERT *cert, X509 *x509) {
   assert(cert->x509_method);
 
   UniquePtr<CRYPTO_BUFFER> buffer = x509_to_buffer(x509);
-  if (!buffer) {
+  if (!buffer ||
+      !cert->legacy_credential->AppendIntermediateCert(std::move(buffer))) {
     return 0;
   }
 
-  if (cert->chain != NULL) {
-    return PushToStack(cert->chain.get(), std::move(buffer));
-  }
-
-  cert->chain = new_leafless_chain();
-  if (!cert->chain ||
-      !PushToStack(cert->chain.get(), std::move(buffer))) {
-    cert->chain.reset();
-    return 0;
-  }
-
+  ssl_crypto_x509_cert_flush_cached_chain(cert);
   return 1;
 }
 
 static int ssl_cert_add0_chain_cert(CERT *cert, X509 *x509) {
-  if (!ssl_cert_append_cert(cert, x509)) {
+  if (!ssl_cert_add1_chain_cert(cert, x509)) {
     return 0;
   }
 
   X509_free(cert->x509_stash);
   cert->x509_stash = x509;
-  ssl_crypto_x509_cert_flush_cached_chain(cert);
-  return 1;
-}
-
-static int ssl_cert_add1_chain_cert(CERT *cert, X509 *x509) {
-  if (!ssl_cert_append_cert(cert, x509)) {
-    return 0;
-  }
-
-  ssl_crypto_x509_cert_flush_cached_chain(cert);
   return 1;
 }
 
 int SSL_CTX_set0_chain(SSL_CTX *ctx, STACK_OF(X509) *chain) {
   check_ssl_ctx_x509_method(ctx);
-  return ssl_cert_set0_chain(ctx->cert.get(), chain);
+  if (!ssl_cert_set1_chain(ctx->cert.get(), chain)) {
+    return 0;
+  }
+  sk_X509_pop_free(chain, X509_free);
+  return 1;
 }
 
 int SSL_CTX_set1_chain(SSL_CTX *ctx, STACK_OF(X509) *chain) {
@@ -871,7 +675,11 @@ int SSL_set0_chain(SSL *ssl, STACK_OF(X509) *chain) {
   if (!ssl->config) {
     return 0;
   }
-  return ssl_cert_set0_chain(ssl->config->cert.get(), chain);
+  if (!ssl_cert_set1_chain(ssl->config->cert.get(), chain)) {
+    return 0;
+  }
+  sk_X509_pop_free(chain, X509_free);
+  return 1;
 }
 
 int SSL_set1_chain(SSL *ssl, STACK_OF(X509) *chain) {
@@ -933,9 +741,9 @@ int SSL_clear_chain_certs(SSL *ssl) {
 static int ssl_cert_cache_chain_certs(CERT *cert) {
   assert(cert->x509_method);
 
-  if (cert->x509_chain != nullptr ||
-      cert->chain == nullptr ||
-      sk_CRYPTO_BUFFER_num(cert->chain.get()) < 2) {
+  const SSL_CREDENTIAL *cred = cert->legacy_credential.get();
+  if (cert->x509_chain != nullptr || cred->chain == nullptr ||
+      sk_CRYPTO_BUFFER_num(cred->chain.get()) < 2) {
     return 1;
   }
 
@@ -944,10 +752,10 @@ static int ssl_cert_cache_chain_certs(CERT *cert) {
     return 0;
   }
 
-  for (size_t i = 1; i < sk_CRYPTO_BUFFER_num(cert->chain.get()); i++) {
-    CRYPTO_BUFFER *buffer = sk_CRYPTO_BUFFER_value(cert->chain.get(), i);
+  for (size_t i = 1; i < sk_CRYPTO_BUFFER_num(cred->chain.get()); i++) {
+    CRYPTO_BUFFER *buffer = sk_CRYPTO_BUFFER_value(cred->chain.get(), i);
     UniquePtr<X509> x509(X509_parse_from_buffer(buffer));
-    if (!x509 ||
+    if (!x509 ||  //
         !PushToStack(chain.get(), std::move(x509))) {
       return 0;
     }
@@ -959,7 +767,7 @@ static int ssl_cert_cache_chain_certs(CERT *cert) {
 
 int SSL_CTX_get0_chain_certs(const SSL_CTX *ctx, STACK_OF(X509) **out_chain) {
   check_ssl_ctx_x509_method(ctx);
-  MutexWriteLock lock(const_cast<CRYPTO_MUTEX*>(&ctx->lock));
+  MutexWriteLock lock(const_cast<CRYPTO_MUTEX *>(&ctx->lock));
   if (!ssl_cert_cache_chain_certs(ctx->cert.get())) {
     *out_chain = NULL;
     return 0;
@@ -1036,7 +844,11 @@ SSL_SESSION *d2i_SSL_SESSION(SSL_SESSION **a, const uint8_t **pp, long length) {
 }
 
 STACK_OF(X509_NAME) *SSL_dup_CA_list(STACK_OF(X509_NAME) *list) {
-  return sk_X509_NAME_deep_copy(list, X509_NAME_dup, X509_NAME_free);
+  // TODO(https://crbug.com/boringssl/407): |X509_NAME_dup| should be const.
+  auto name_dup = [](const X509_NAME *name) {
+    return X509_NAME_dup(const_cast<X509_NAME *>(name));
+  };
+  return sk_X509_NAME_deep_copy(list, name_dup, X509_NAME_free);
 }
 
 static void set_client_CA_list(UniquePtr<STACK_OF(CRYPTO_BUFFER)> *ca_list,
@@ -1056,8 +868,7 @@ static void set_client_CA_list(UniquePtr<STACK_OF(CRYPTO_BUFFER)> *ca_list,
 
     UniquePtr<CRYPTO_BUFFER> buffer(CRYPTO_BUFFER_new(outp, len, pool));
     OPENSSL_free(outp);
-    if (!buffer ||
-        !PushToStack(buffers.get(), std::move(buffer))) {
+    if (!buffer || !PushToStack(buffers.get(), std::move(buffer))) {
       return;
     }
   }
@@ -1082,9 +893,8 @@ void SSL_CTX_set_client_CA_list(SSL_CTX *ctx, STACK_OF(X509_NAME) *name_list) {
   sk_X509_NAME_pop_free(name_list, X509_NAME_free);
 }
 
-static STACK_OF(X509_NAME) *
-    buffer_names_to_x509(const STACK_OF(CRYPTO_BUFFER) *names,
-                         STACK_OF(X509_NAME) **cached) {
+static STACK_OF(X509_NAME) *buffer_names_to_x509(
+    const STACK_OF(CRYPTO_BUFFER) *names, STACK_OF(X509_NAME) **cached) {
   if (names == NULL) {
     return NULL;
   }
@@ -1095,7 +905,6 @@ static STACK_OF(X509_NAME) *
 
   UniquePtr<STACK_OF(X509_NAME)> new_cache(sk_X509_NAME_new_null());
   if (!new_cache) {
-    OPENSSL_PUT_ERROR(SSL, ERR_R_MALLOC_FAILURE);
     return NULL;
   }
 
@@ -1215,13 +1024,10 @@ int SSL_CTX_add_client_CA(SSL_CTX *ctx, X509 *x509) {
 
 static int do_client_cert_cb(SSL *ssl, void *arg) {
   // Should only be called during handshake, but check to be sure.
-  if (!ssl->config) {
-    assert(ssl->config);
-    return -1;
-  }
+  BSSL_CHECK(ssl->config);
 
-  if (ssl_has_certificate(ssl->s3->hs.get()) ||
-      ssl->ctx->client_cert_cb == NULL) {
+  if (ssl->config->cert->legacy_credential->IsComplete() ||
+      ssl->ctx->client_cert_cb == nullptr) {
     return 1;
   }
 
@@ -1235,7 +1041,7 @@ static int do_client_cert_cb(SSL *ssl, void *arg) {
   UniquePtr<EVP_PKEY> free_pkey(pkey);
 
   if (ret != 0) {
-    if (!SSL_use_certificate(ssl, x509) ||
+    if (!SSL_use_certificate(ssl, x509) ||  //
         !SSL_use_PrivateKey(ssl, pkey)) {
       return 0;
     }
@@ -1244,9 +1050,9 @@ static int do_client_cert_cb(SSL *ssl, void *arg) {
   return 1;
 }
 
-void SSL_CTX_set_client_cert_cb(SSL_CTX *ctx, int (*cb)(SSL *ssl,
-                                                        X509 **out_x509,
-                                                        EVP_PKEY **out_pkey)) {
+void SSL_CTX_set_client_cert_cb(SSL_CTX *ctx,
+                                int (*cb)(SSL *ssl, X509 **out_x509,
+                                          EVP_PKEY **out_pkey)) {
   check_ssl_ctx_x509_method(ctx);
   // Emulate the old client certificate callback with the new one.
   SSL_CTX_set_cert_cb(ctx, do_client_cert_cb, NULL);
@@ -1297,6 +1103,23 @@ int SSL_set1_verify_cert_store(SSL *ssl, X509_STORE *store) {
     return 0;
   }
   return set_cert_store(&ssl->config->cert->verify_store, store, 1);
+}
+
+int SSL_set1_host(SSL *ssl, const char *hostname) {
+  check_ssl_x509_method(ssl);
+  if (!ssl->config) {
+    return 0;
+  }
+  return X509_VERIFY_PARAM_set1_host(ssl->config->param, hostname,
+                                     strlen(hostname));
+}
+
+void SSL_set_hostflags(SSL *ssl, unsigned flags) {
+  check_ssl_x509_method(ssl);
+  if (!ssl->config) {
+    return;
+  }
+  X509_VERIFY_PARAM_set_hostflags(ssl->config->param, flags);
 }
 
 int SSL_alert_from_verify_result(long result) {

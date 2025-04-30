@@ -1,0 +1,8 @@
+chain: chain.pem
+last_cert_trust: TRUSTED_ANCHOR
+utc_time: DEFAULT
+key_purpose: CLIENT_AUTH
+expected_errors:
+----- Certificate i=0 (CN=Target) -----
+WARNING: The extended key usage does not include client auth but instead includes anyExtendedKeyUsage
+

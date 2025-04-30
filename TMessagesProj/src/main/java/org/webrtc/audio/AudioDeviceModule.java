@@ -35,4 +35,22 @@ public interface AudioDeviceModule {
 
   /** Control muting/unmuting the microphone. */
   void setMicrophoneMute(boolean mute);
+
+  /**
+   * Enable or disable built in noise suppressor. Returns true if the enabling was successful,
+   * otherwise false is returned.
+   */
+  default boolean setNoiseSuppressorEnabled(boolean enabled) {
+    return false;
+  }
+
+  /**
+   * Sets the preferred field dimension for the built-in microphone. Returns
+   * true if setting was successful, otherwise false is returned.
+   * This functionality can be implemented with
+   * {@code android.media.MicrophoneDirection.setPreferredMicrophoneFieldDimension}.
+   */
+  default boolean setPreferredMicrophoneFieldDimension(float dimension) {
+    return false;
+  }
 }

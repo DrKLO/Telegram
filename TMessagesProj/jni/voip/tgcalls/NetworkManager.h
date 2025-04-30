@@ -11,6 +11,7 @@
 #include "rtc_base/copy_on_write_buffer.h"
 #include "api/candidate.h"
 #include "rtc_base/network_monitor_factory.h"
+#include "api/async_dns_resolver.h"
 
 #include <functional>
 #include <memory>
@@ -101,7 +102,7 @@ private:
     std::unique_ptr<webrtc::TurnCustomizer> _turnCustomizer;
     std::unique_ptr<cricket::RelayPortFactoryInterface> _relayPortFactory;
 	std::unique_ptr<cricket::BasicPortAllocator> _portAllocator;
-	std::unique_ptr<webrtc::BasicAsyncResolverFactory> _asyncResolverFactory;
+	std::unique_ptr<webrtc::AsyncDnsResolverFactoryInterface> _asyncResolverFactory;
 	std::unique_ptr<cricket::P2PTransportChannel> _transportChannel;
 
     PeerIceParameters _localIceParameters;

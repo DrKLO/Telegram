@@ -66,7 +66,7 @@
 #include <memory>
 #include <utility>
 
-namespace rtc {
+namespace webrtc {
 
 template <class T>
 class scoped_refptr {
@@ -162,61 +162,66 @@ class scoped_refptr {
 };
 
 template <typename T, typename U>
-bool operator==(const rtc::scoped_refptr<T>& a,
-                const rtc::scoped_refptr<U>& b) {
+bool operator==(const scoped_refptr<T>& a, const scoped_refptr<U>& b) {
   return a.get() == b.get();
 }
 template <typename T, typename U>
-bool operator!=(const rtc::scoped_refptr<T>& a,
-                const rtc::scoped_refptr<U>& b) {
+bool operator!=(const scoped_refptr<T>& a, const scoped_refptr<U>& b) {
   return !(a == b);
 }
 
 template <typename T>
-bool operator==(const rtc::scoped_refptr<T>& a, std::nullptr_t) {
+bool operator==(const scoped_refptr<T>& a, std::nullptr_t) {
   return a.get() == nullptr;
 }
 
 template <typename T>
-bool operator!=(const rtc::scoped_refptr<T>& a, std::nullptr_t) {
+bool operator!=(const scoped_refptr<T>& a, std::nullptr_t) {
   return !(a == nullptr);
 }
 
 template <typename T>
-bool operator==(std::nullptr_t, const rtc::scoped_refptr<T>& a) {
+bool operator==(std::nullptr_t, const scoped_refptr<T>& a) {
   return a.get() == nullptr;
 }
 
 template <typename T>
-bool operator!=(std::nullptr_t, const rtc::scoped_refptr<T>& a) {
+bool operator!=(std::nullptr_t, const scoped_refptr<T>& a) {
   return !(a == nullptr);
 }
 
 // Comparison with raw pointer.
 template <typename T, typename U>
-bool operator==(const rtc::scoped_refptr<T>& a, const U* b) {
+bool operator==(const scoped_refptr<T>& a, const U* b) {
   return a.get() == b;
 }
 template <typename T, typename U>
-bool operator!=(const rtc::scoped_refptr<T>& a, const U* b) {
+bool operator!=(const scoped_refptr<T>& a, const U* b) {
   return !(a == b);
 }
 
 template <typename T, typename U>
-bool operator==(const T* a, const rtc::scoped_refptr<U>& b) {
+bool operator==(const T* a, const scoped_refptr<U>& b) {
   return a == b.get();
 }
 template <typename T, typename U>
-bool operator!=(const T* a, const rtc::scoped_refptr<U>& b) {
+bool operator!=(const T* a, const scoped_refptr<U>& b) {
   return !(a == b);
 }
 
 // Ordered comparison, needed for use as a std::map key.
 template <typename T, typename U>
-bool operator<(const rtc::scoped_refptr<T>& a, const rtc::scoped_refptr<U>& b) {
+bool operator<(const scoped_refptr<T>& a, const scoped_refptr<U>& b) {
   return a.get() < b.get();
 }
 
+}  // namespace webrtc
+
+namespace rtc {
+// Backwards compatible alias.
+// TODO(bugs.webrtc.org/15622): Deprecate and remove.
+template <typename T>
+using scoped_refptr = webrtc::scoped_refptr<T>;
 }  // namespace rtc
 
 #endif  // API_SCOPED_REFPTR_H_

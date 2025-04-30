@@ -34,4 +34,9 @@ absl::optional<int> ScalabilityModeStringToNumTemporalLayers(
   return ScalabilityModeToNumTemporalLayers(*scalability_mode);
 }
 
+absl::optional<ScalabilityMode> ScalabilityModeStringToEnum(
+    absl::string_view scalability_mode_string) {
+  return ScalabilityModeFromString(scalability_mode_string);
+}
+
 }  // namespace webrtc

@@ -17,6 +17,7 @@
 #include <memory>
 
 #include "absl/types/optional.h"
+#include "api/field_trials_view.h"
 #include "api/scoped_refptr.h"
 #include "api/sequence_checker.h"
 #include "api/video_codecs/video_encoder.h"
@@ -40,7 +41,8 @@ class QualityScaler {
   // This starts the quality scaler periodically checking what the average QP
   // has been recently.
   QualityScaler(QualityScalerQpUsageHandlerInterface* handler,
-                VideoEncoder::QpThresholds thresholds);
+                VideoEncoder::QpThresholds thresholds,
+                const FieldTrialsView& field_trials);
   virtual ~QualityScaler();
   // Should be called each time a frame is dropped at encoding.
   void ReportDroppedFrameByMediaOpt();
@@ -55,6 +57,7 @@ class QualityScaler {
  protected:
   QualityScaler(QualityScalerQpUsageHandlerInterface* handler,
                 VideoEncoder::QpThresholds thresholds,
+                const FieldTrialsView& field_trials,
                 int64_t sampling_period_ms);
 
  private:

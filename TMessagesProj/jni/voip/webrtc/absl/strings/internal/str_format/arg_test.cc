@@ -14,9 +14,10 @@
 
 #include "absl/strings/internal/str_format/arg.h"
 
-#include <ostream>
+#include <limits>
 #include <string>
 #include "gtest/gtest.h"
+#include "absl/base/config.h"
 #include "absl/strings/str_format.h"
 
 namespace absl {
@@ -93,6 +94,21 @@ TEST_F(FormatArgImplTest, CharArraysDecayToCharPtr) {
             FormatArgImplFriend::GetVTablePtrForTest(FormatArgImpl(kMyArray)));
 }
 
+extern const wchar_t kMyWCharTArray[];
+
+TEST_F(FormatArgImplTest, WCharTArraysDecayToWCharTPtr) {
+  const wchar_t* a = L"";
+  EXPECT_EQ(FormatArgImplFriend::GetVTablePtrForTest(FormatArgImpl(a)),
+            FormatArgImplFriend::GetVTablePtrForTest(FormatArgImpl(L"")));
+  EXPECT_EQ(FormatArgImplFriend::GetVTablePtrForTest(FormatArgImpl(a)),
+            FormatArgImplFriend::GetVTablePtrForTest(FormatArgImpl(L"A")));
+  EXPECT_EQ(FormatArgImplFriend::GetVTablePtrForTest(FormatArgImpl(a)),
+            FormatArgImplFriend::GetVTablePtrForTest(FormatArgImpl(L"ABC")));
+  EXPECT_EQ(
+      FormatArgImplFriend::GetVTablePtrForTest(FormatArgImpl(a)),
+      FormatArgImplFriend::GetVTablePtrForTest(FormatArgImpl(kMyWCharTArray)));
+}
+
 TEST_F(FormatArgImplTest, OtherPtrDecayToVoidPtr) {
   auto expected = FormatArgImplFriend::GetVTablePtrForTest(
       FormatArgImpl(static_cast<void *>(nullptr)));
@@ -123,6 +139,22 @@ TEST_F(FormatArgImplTest, WorksWithCharArraysOfUnknownSize) {
   EXPECT_EQ("ABCDE", s);
 }
 const char kMyArray[] = "ABCDE";
+
+TEST_F(FormatArgImplTest, WorksWithWCharTArraysOfUnknownSize) {
+  std::string s;
+  FormatSinkImpl sink(&s);
+  FormatConversionSpecImpl conv;
+  FormatConversionSpecImplFriend::SetConversionChar(
+      FormatConversionCharInternal::s, &conv);
+  FormatConversionSpecImplFriend::SetFlags(Flags(), &conv);
+  FormatConversionSpecImplFriend::SetWidth(-1, &conv);
+  FormatConversionSpecImplFriend::SetPrecision(-1, &conv);
+  EXPECT_TRUE(
+      FormatArgImplFriend::Convert(FormatArgImpl(kMyWCharTArray), conv, &sink));
+  sink.Flush();
+  EXPECT_EQ("ABCDE", s);
+}
+const wchar_t kMyWCharTArray[] = L"ABCDE";
 
 }  // namespace
 }  // namespace str_format_internal

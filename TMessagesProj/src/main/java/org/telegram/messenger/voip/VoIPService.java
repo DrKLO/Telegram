@@ -8,6 +8,9 @@
 
 package org.telegram.messenger.voip;
 
+import static org.telegram.messenger.MessagesController.findUpdates;
+import static org.telegram.messenger.MessagesController.findUpdatesAndRemove;
+
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
@@ -96,6 +99,7 @@ import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.ContactsController;
+import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageLoader;
@@ -114,16 +118,23 @@ import org.telegram.messenger.UserObject;
 import org.telegram.messenger.Utilities;
 import org.telegram.messenger.XiaomiUtilities;
 import org.telegram.tgnet.ConnectionsManager;
+import org.telegram.tgnet.SerializedData;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.Vector;
+import org.telegram.tgnet.tl.TL_account;
 import org.telegram.tgnet.tl.TL_phone;
+import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.AvatarDrawable;
+import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.JoinCallAlert;
 import org.telegram.ui.Components.PermissionRequest;
+import org.telegram.ui.Components.Premium.LimitReachedBottomSheet;
 import org.telegram.ui.Components.voip.VoIPHelper;
+import org.telegram.ui.DarkBlueThemeResourcesProvider;
+import org.telegram.ui.GroupCallActivity;
 import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.VoIPFeedbackActivity;
 import org.telegram.ui.VoIPFragment;
@@ -151,6 +162,7 @@ import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @SuppressLint("NewApi")
 public class VoIPService extends Service implements SensorEventListener, AudioManager.OnAudioFocusChangeListener, VoIPController.ConnectionStateListener, NotificationCenter.NotificationCenterDelegate, VoIPServiceState {
@@ -189,6 +201,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 	public static final int DISCARD_REASON_DISCONNECT = 2;
 	public static final int DISCARD_REASON_MISSED = 3;
 	public static final int DISCARD_REASON_LINE_BUSY = 4;
+	public static final int DISCARD_REASON_CONVERT = 5;
 
 	public static final int AUDIO_ROUTE_EARPIECE = 0;
 	public static final int AUDIO_ROUTE_SPEAKER = 1;
@@ -270,15 +283,46 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 	public boolean hasFewPeers;
 	public boolean isRtmpStream;
 	private String joinHash;
+	private TLRPC.InputGroupCall joinConference;
+	private TLRPC.GroupCall joinConferenceCall;
+	private long[] inviteUsers;
 
 	private int remoteVideoState = Instance.VIDEO_STATE_INACTIVE;
 	private TLRPC.TL_dataJSON myParams;
 
 	private int[] mySource = new int[2];
+	private NativeInstance convertingVoip;
 	private NativeInstance[] tgVoip = new NativeInstance[2];
 	private long[] captureDevice = new long[2];
 	private boolean[] destroyCaptureDevice = {true, true};
 	private int[] videoState = {Instance.VIDEO_STATE_INACTIVE, Instance.VIDEO_STATE_INACTIVE};
+	public boolean isConverting() {
+		return convertingVoip != null;
+	}
+
+	public ConferenceCall conference;
+	@Override
+	public boolean isConference() {
+		return joinConference != null || conference != null;
+	}
+
+	@Override
+	public boolean isCallingVideo() {
+		if (privateCall != null) {
+			return privateCall.video;
+		}
+		return false;
+	}
+
+	@Override
+	public TLRPC.GroupCall getGroupCall() {
+		return groupCall != null ? groupCall.call : null;
+	}
+
+	@Override
+	public ArrayList<TLRPC.GroupCallParticipant> getGroupParticipants() {
+		return groupCall != null ? groupCall.sortedParticipants : null;
+	}
 
 	private long callStartTime;
 	private boolean playingSound;
@@ -501,7 +545,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 		micMute = mute;
 		if (groupCall != null) {
 			if (!send) {
-				TLRPC.TL_groupCallParticipant self = groupCall.participants.get(getSelfId());
+				TLRPC.GroupCallParticipant self = groupCall.participants.get(getSelfId());
 				if (self != null && self.muted && !self.can_self_unmute) {
 					send = true;
 				}
@@ -513,12 +557,14 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 						return;
 					}
 					updateNotificationRunnable = null;
-					showNotification(chat.title, getRoundAvatarBitmap(this, currentAccount, chat));
+					showNotification(getTitle(), getRoundAvatarBitmap(this, currentAccount, chat));
 				});
 			}
 		}
 		unmutedByHold = !micMute && hold;
-		if (tgVoip[CAPTURE_DEVICE_CAMERA] != null) {
+		if (convertingVoip != null) {
+			convertingVoip.setMuteMicrophone(mute);
+		} else if (tgVoip[CAPTURE_DEVICE_CAMERA] != null) {
 			tgVoip[CAPTURE_DEVICE_CAMERA].setMuteMicrophone(mute);
 		}
 		for (StateListener l : stateListeners) {
@@ -526,11 +572,17 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 		}
 	}
 
+	public String getTitle() {
+		if (user != null) return ContactsController.formatName(user.first_name, user.last_name);
+		if (chat != null) return chat.title;
+		return ""; // TODO
+	}
+
 	public boolean mutedByAdmin() {
 		ChatObject.Call call = groupCall;
 		if (call != null) {
 			long selfId = getSelfId();
-			TLRPC.TL_groupCallParticipant participant = call.participants.get(selfId);
+			TLRPC.GroupCallParticipant participant = call.participants.get(selfId);
 			if (participant != null && !participant.can_self_unmute && participant.muted && !ChatObject.canManageCalls(chat)) {
 				return true;
 			}
@@ -538,7 +590,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 		return false;
 	}
 
-	private final HashMap<String, TLRPC.TL_groupCallParticipant> waitingFrameParticipant = new HashMap<>();
+	private final HashMap<String, TLRPC.GroupCallParticipant> waitingFrameParticipant = new HashMap<>();
 	private final LruCache<String, ProxyVideoSink> proxyVideoSinkLruCache = new LruCache<String, ProxyVideoSink>(6) {
 		@Override
 		protected void entryRemoved(boolean evicted, String key, ProxyVideoSink oldValue, ProxyVideoSink newValue) {
@@ -551,7 +603,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 		return captureDevice[CAPTURE_DEVICE_CAMERA] != 0;
 	}
 
-	public void checkVideoFrame(TLRPC.TL_groupCallParticipant participant, boolean screencast) {
+	public void checkVideoFrame(TLRPC.GroupCallParticipant participant, boolean screencast) {
 		String endpointId = screencast ? participant.presentationEndpoint : participant.videoEndpoint;
 		if (endpointId == null) {
 			return;
@@ -589,8 +641,8 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 				VideoSink thisSink = this;
 				if (frame != null && frame.getBuffer().getHeight() != 0 && frame.getBuffer().getWidth() != 0) {
 					AndroidUtilities.runOnUIThread(() -> {
-						TLRPC.TL_groupCallParticipant currentParticipant = waitingFrameParticipant.remove(endpointId);
-						ProxyVideoSink proxyVideoSink = remoteSinks.get(endpointId);
+						final TLRPC.GroupCallParticipant currentParticipant = waitingFrameParticipant.remove(endpointId);
+						final ProxyVideoSink proxyVideoSink = remoteSinks.get(endpointId);
 						if (proxyVideoSink != null && proxyVideoSink.target == thisSink) {
 							proxyVideoSinkLruCache.put(endpointId, proxyVideoSink);
 							remoteSinks.remove(endpointId);
@@ -715,6 +767,18 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 		long userID = intent.getLongExtra("user_id", 0);
 		long chatID = intent.getLongExtra("chat_id", 0);
 		createGroupCall = intent.getBooleanExtra("createGroupCall", false);
+		byte[] joinConferenceBytes = intent.getByteArrayExtra("joinConference");
+		if (joinConferenceBytes != null) {
+			SerializedData buffer = new SerializedData(joinConferenceBytes);
+			joinConference = TLRPC.InputGroupCall.TLdeserialize(buffer, buffer.readInt32(true), true);
+		}
+		byte[]
+			joinConferenceCallBytes = intent.getByteArrayExtra("joinConferenceCall");
+		if (joinConferenceCallBytes != null) {
+			SerializedData buffer = new SerializedData(joinConferenceCallBytes);
+			joinConferenceCall = TLRPC.GroupCall.TLdeserialize(buffer, buffer.readInt32(true), true);
+		}
+		inviteUsers = intent.getLongArrayExtra("inviteUsers");
 		hasFewPeers = intent.getBooleanExtra("hasFewPeers", false);
 		isRtmpStream = intent.getBooleanExtra("isRtmpStream", false);
 		joinHash = intent.getStringExtra("hash");
@@ -787,7 +851,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 			}
 		}
 
-		if (user == null && chat == null) {
+		if (user == null && chat == null && joinConference == null) {
 			if (BuildVars.LOGS_ENABLED) {
 				FileLog.w("VoIPService: user == null AND chat == null");
 			}
@@ -802,8 +866,22 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 				setModeRunnable = null;
 			}
 		}
+		VoIPGroupNotification.hide(this);
 
-		if (isOutgoing) {
+		if (joinConference != null) {
+			if (!PermissionRequest.hasPermission(Manifest.permission.RECORD_AUDIO)) {
+				micMute = true;
+				PermissionRequest.requestPermission(Manifest.permission.RECORD_AUDIO, granted -> {
+					if (sharedInstance == null) return;
+					if (!granted) return;
+					setMicMute(false, false, true);
+				});
+			}
+			startConferenceGroupCall(false, 0, null, false);
+			if (!isBtHeadsetConnected && !isHeadsetPlugged) {
+				setAudioOutput(0);
+			}
+		} else if (isOutgoing) {
 			if (user != null) {
 				dispatchStateChanged(STATE_REQUESTING);
 				if (USE_CONNECTION_SERVICE) {
@@ -880,8 +958,11 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
         if (sharedInstance != null) {
             return sharedInstance;
         }
+		if (VoIPGroupNotification.currentState != null) {
+			return VoIPGroupNotification.currentState;
+		}
         if (Build.VERSION.SDK_INT >= 33) {
-            return VoIPPreNotificationService.getState();
+			return VoIPPreNotificationService.getState();
         }
         return null;
     }
@@ -910,14 +991,16 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 			return;
 		}
 		joinHash = hash;
-		createGroupInstance(CAPTURE_DEVICE_CAMERA, false);
+		createGroupInstance(CAPTURE_DEVICE_CAMERA, false, true);
 	}
 
 	public long getCallerId() {
 		if (user != null) {
 			return user.id;
-		} else {
+		} else if (chat != null) {
 			return -chat.id;
+		} else {
+			return 0;
 		}
 	}
 
@@ -928,13 +1011,15 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 				return;
 			}
 			if (discard == 1) {
-				TLRPC.ChatFull chatFull = MessagesController.getInstance(currentAccount).getChatFull(chat.id);
-				if (chatFull != null) {
-					chatFull.flags &=~ 2097152;
-					chatFull.call = null;
-					NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.groupCallUpdated, chat.id, groupCall.call.id, false);
+				if (chat != null) {
+					TLRPC.ChatFull chatFull = MessagesController.getInstance(currentAccount).getChatFull(chat.id);
+					if (chatFull != null) {
+						chatFull.flags &= ~2097152;
+						chatFull.call = null;
+						NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.groupCallUpdated, chat.id, groupCall.call.id, false);
+					}
 				}
-				TL_phone.discardGroupCall req = new TL_phone.discardGroupCall();
+				final TL_phone.discardGroupCall req = new TL_phone.discardGroupCall();
 				req.call = groupCall.getInputGroupCall();
 				ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> {
 					if (response instanceof TLRPC.TL_updates) {
@@ -943,7 +1028,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 					}
 				});
 			} else {
-				TL_phone.leaveGroupCall req = new TL_phone.leaveGroupCall();
+				final TL_phone.leaveGroupCall req = new TL_phone.leaveGroupCall();
 				req.call = groupCall.getInputGroupCall();
 				req.source = mySource[CAPTURE_DEVICE_CAMERA];
 				ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> {
@@ -1049,7 +1134,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 									}
 								}
 								AndroidUtilities.runOnUIThread(VoIPService.this::callFailed);
-							}, ConnectionsManager.RequestFlagFailOnServerErrors);
+							}, ConnectionsManager.RequestFlagFailOnServerErrorsExceptFloodWait);
 						};
 						AndroidUtilities.runOnUIThread(timeoutRunnable, MessagesController.getInstance(currentAccount).callReceiveTimeout);
 					} else {
@@ -1066,14 +1151,14 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 							callFailed();
 						}
 					}
-				}), ConnectionsManager.RequestFlagFailOnServerErrors);
+				}), ConnectionsManager.RequestFlagFailOnServerErrorsExceptFloodWait);
 			} else {
 				if (BuildVars.LOGS_ENABLED) {
 					FileLog.e("Error on getDhConfig " + error);
 				}
 				callFailed();
 			}
-		}, ConnectionsManager.RequestFlagFailOnServerErrors);
+		}, ConnectionsManager.RequestFlagFailOnServerErrorsExceptFloodWait);
 	}
 
 	private void acknowledgeCall(final boolean startRinging) {
@@ -1128,7 +1213,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 					startRinging();
 				}
 			}
-		}), ConnectionsManager.RequestFlagFailOnServerErrors);
+		}), ConnectionsManager.RequestFlagFailOnServerErrorsExceptFloodWait);
 	}
 
 	private boolean isRinging() {
@@ -1188,6 +1273,10 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 			if (tgVoip[CAPTURE_DEVICE_CAMERA] != null) {
 				tgVoip[CAPTURE_DEVICE_CAMERA].clearVideoCapturer();
 			}
+			if (captureDevice[CAPTURE_DEVICE_CAMERA] != 0) {
+				NativeInstance.destroyVideoCapturer(captureDevice[CAPTURE_DEVICE_CAMERA]);
+				captureDevice[CAPTURE_DEVICE_CAMERA] = 0;
+			}
 		}
 		if (index == CAPTURE_DEVICE_SCREEN) {
 			if (groupCall != null) {
@@ -1195,7 +1284,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 					return;
 				}
 				captureDevice[index] = NativeInstance.createVideoCapturer(localSink[index], deviceType);
-				createGroupInstance(CAPTURE_DEVICE_SCREEN, false);
+				createGroupInstance(CAPTURE_DEVICE_SCREEN, false, true);
 				setVideoState(true, Instance.VIDEO_STATE_ACTIVE);
 				AccountInstance.getInstance(currentAccount).getNotificationCenter().postNotificationName(NotificationCenter.groupCallScreencastStateChanged);
 			} else {
@@ -1241,6 +1330,10 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 		if (tgVoip[CAPTURE_DEVICE_CAMERA] != null) {
 			tgVoip[CAPTURE_DEVICE_CAMERA].clearVideoCapturer();
 		}
+		if (captureDevice[CAPTURE_DEVICE_CAMERA] != 0) {
+			NativeInstance.destroyVideoCapturer(captureDevice[CAPTURE_DEVICE_CAMERA]);
+			captureDevice[CAPTURE_DEVICE_CAMERA] = 0;
+		}
 	}
 
 	public void setVideoState(boolean screencast, int state) {
@@ -1251,7 +1344,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 				videoState[trueIndex] = state;
 				NativeInstance.setVideoStateCapturer(captureDevice[index], videoState[trueIndex]);
 			} else if (state == Instance.VIDEO_STATE_ACTIVE && currentState != STATE_BUSY && currentState != STATE_ENDED) {
-				captureDevice[index] = NativeInstance.createVideoCapturer(localSink[trueIndex], isFrontFaceCamera ? 1 : 0);
+				captureDevice[index] = NativeInstance.createVideoCapturer(localSink[trueIndex], screencast ? 2 : isFrontFaceCamera ? 1 : 0);
 				videoState[trueIndex] = Instance.VIDEO_STATE_ACTIVE;
 			}
 			return;
@@ -1324,7 +1417,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 		remoteSink[screencast ? CAPTURE_DEVICE_SCREEN : CAPTURE_DEVICE_CAMERA].setTarget(remote);
 	}
 
-	public ProxyVideoSink addRemoteSink(TLRPC.TL_groupCallParticipant participant, boolean screencast, VideoSink remote, VideoSink background) {
+	public ProxyVideoSink addRemoteSink(TLRPC.GroupCallParticipant participant, boolean screencast, VideoSink remote, VideoSink background) {
 		if (tgVoip[CAPTURE_DEVICE_CAMERA] == null) {
 			return null;
 		}
@@ -1349,7 +1442,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 			sink.setBackground(background);
 		}
 		remoteSinks.put(endpointId, sink);
-		sink.nativeInstance = tgVoip[CAPTURE_DEVICE_CAMERA].addIncomingVideoOutput(QUALITY_MEDIUM, endpointId, createSsrcGroups(screencast ? participant.presentation : participant.video), sink);
+		sink.nativeInstance = tgVoip[CAPTURE_DEVICE_CAMERA].addIncomingVideoOutput(QUALITY_MEDIUM, endpointId, createSsrcGroups(screencast ? participant.presentation : participant.video), sink, DialogObject.getPeerDialogId(participant.peer));
 		return sink;
 	}
 
@@ -1370,7 +1463,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 		return result;
 	}
 
-	public void requestFullScreen(TLRPC.TL_groupCallParticipant participant, boolean full, boolean screencast) {
+	public void requestFullScreen(TLRPC.GroupCallParticipant participant, boolean full, boolean screencast) {
 		String endpointId = screencast ? participant.presentationEndpoint : participant.videoEndpoint;
 		if (endpointId == null) {
 			return;
@@ -1382,7 +1475,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 		}
 	}
 
-	public void removeRemoteSink(TLRPC.TL_groupCallParticipant participant, boolean presentation) {
+	public void removeRemoteSink(TLRPC.GroupCallParticipant participant, boolean presentation) {
 		if (presentation) {
 			ProxyVideoSink sink = remoteSinks.remove(participant.presentationEndpoint);
 			if (sink != null) {
@@ -1396,7 +1489,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 		}
 	}
 
-	public boolean isFullscreen(TLRPC.TL_groupCallParticipant participant, boolean screencast) {
+	public boolean isFullscreen(TLRPC.GroupCallParticipant participant, boolean screencast) {
 		return currentBackgroundSink[screencast ? CAPTURE_DEVICE_SCREEN : CAPTURE_DEVICE_CAMERA] != null && TextUtils.equals(currentBackgroundEndpointId[screencast ? CAPTURE_DEVICE_SCREEN : CAPTURE_DEVICE_CAMERA], screencast ? participant.presentationEndpoint : participant.videoEndpoint);
 	}
 
@@ -1435,18 +1528,31 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 	}
 
 	public void onGroupCallParticipantsUpdate(TLRPC.TL_updateGroupCallParticipants update) {
-		if (chat == null || groupCall == null || groupCall.call.id != update.call.id) {
+		if (groupCall == null || groupCall.call.id != update.call.id) {
 			return;
 		}
-		long selfId = getSelfId();
+		groupCall.shadyLeftParticipants.clear();
+		groupCall.shadyJoinParticipants.clear();
+		if (conference != null) {
+			groupCall.processParticipantsUpdate(update, false);
+			conference.updateParticipants(groupCall.sortedParticipants, true);
+			for (int a = 0; a < stateListeners.size(); a++) {
+				StateListener l = stateListeners.get(a);
+				l.onStateChanged(getCallState());
+			}
+			groupCall.shadyLeftParticipants.addAll(conference.getShadyLeftParticipants(groupCall.sortedParticipants));
+			groupCall.shadyJoinParticipants.addAll(conference.getShadyJoiningParticipants(groupCall.sortedParticipants));
+			NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.groupCallUpdated, 0L, groupCall.call.id, false);
+		}
+		final long selfId = getSelfId();
 		for (int a = 0, N = update.participants.size(); a < N; a++) {
-			TLRPC.TL_groupCallParticipant participant = update.participants.get(a);
+			TLRPC.GroupCallParticipant participant = update.participants.get(a);
 			if (participant.left) {
 				if (participant.source != 0) {
 					if (participant.source == mySource[CAPTURE_DEVICE_CAMERA]) {
 						int selfCount = 0;
 						for (int b = 0; b < N; b++) {
-							TLRPC.TL_groupCallParticipant p = update.participants.get(b);
+							TLRPC.GroupCallParticipant p = update.participants.get(b);
 							if (p.self || p.source == mySource[CAPTURE_DEVICE_CAMERA]) {
 								selfCount++;
 							}
@@ -1466,7 +1572,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 					return;
 				} else if (ChatObject.isChannel(chat) && currentGroupModeStreaming && participant.can_self_unmute) {
 					switchingStream = true;
-					createGroupInstance(CAPTURE_DEVICE_CAMERA, false);
+					createGroupInstance(CAPTURE_DEVICE_CAMERA, false, true);
 				}
 				if (participant.muted) {
 					setMicMute(true, false, false);
@@ -1475,11 +1581,10 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 		}
 	}
 
+	private TLRPC.GroupCall lastGroupCallUpdate;
 	public void onGroupCallUpdated(TLRPC.GroupCall call) {
-		if (chat == null) {
-			return;
-		}
 		if (groupCall == null || groupCall.call.id != call.id) {
+			lastGroupCallUpdate = call;
 			return;
 		}
 		if (groupCall.call instanceof TLRPC.TL_groupCallDiscarded) {
@@ -1496,6 +1601,10 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 			}
 		}
 		if ((currentState == STATE_WAIT_INIT || newModeStreaming != currentGroupModeStreaming) && myParams != null) {
+			if (tgVoip[CAPTURE_DEVICE_CAMERA] == null) {
+				lastGroupCallUpdate = call;
+				return;
+			}
 			if (playedConnectedSound && newModeStreaming != currentGroupModeStreaming) {
 				switchingStream = true;
 			}
@@ -1525,6 +1634,28 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 			return;
 		}
 		if (phoneCall.id != privateCall.id) {
+//			if (invitingCall != null && invitingCall.call != null && invitingCall.call.id == phoneCall.id) {
+//				if (invitingCall.accepting) {
+//					if (phoneCall.reason instanceof TLRPC.TL_phoneCallDiscardReasonAllowGroupCall) {
+//						convertInstanceToGroup(phoneCall.key_fingerprint, phoneCall.conference_call, new Instance.EncryptionKey(phoneCall.reason.encrypted_key, false), null);
+//					}
+//				} else {
+//					final byte[] authKey = invitingCall.computeAuthKey(phoneCall);
+//					if (authKey != null) {
+//						final TL_phone.discardCall req2 = new TL_phone.discardCall();
+//						req2.peer = new TLRPC.TL_inputPhoneCall();
+//						req2.peer.access_hash = phoneCall.access_hash;
+//						req2.peer.id = phoneCall.id;
+//						req2.reason = new TLRPC.TL_phoneCallDiscardReasonAllowGroupCall();
+//						req2.reason.encrypted_key = this.authKey;
+//						ConnectionsManager.getInstance(currentAccount).sendRequest(req2, (res2, err2) -> {
+//
+//						});
+//					}
+//				}
+//				invitingCall = null;
+//				return;
+//			}
 			if (BuildVars.LOGS_ENABLED) {
 				FileLog.w("onCallUpdated called with wrong call id (got " + phoneCall.id + ", expected " + this.privateCall.id + ")");
 			}
@@ -1536,6 +1667,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 		if (BuildVars.LOGS_ENABLED) {
 			FileLog.d("Call updated: " + phoneCall);
 		}
+		final long key_fingerprint = privateCall.key_fingerprint;
 		privateCall = phoneCall;
 		if (phoneCall instanceof TL_phone.TL_phoneCallDiscarded) {
 			needSendDebugLog = phoneCall.need_debug;
@@ -1543,7 +1675,20 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 			if (BuildVars.LOGS_ENABLED) {
 				FileLog.d("call discarded, stopping service");
 			}
-			if (phoneCall.reason instanceof TLRPC.TL_phoneCallDiscardReasonBusy) {
+			if (phoneCall.reason instanceof TLRPC.TL_phoneCallDiscardReasonMigrateConferenceCall) {
+				final TLRPC.TL_phoneCallDiscardReasonMigrateConferenceCall reason = (TLRPC.TL_phoneCallDiscardReasonMigrateConferenceCall) phoneCall.reason;
+				joinConference = new TLRPC.TL_inputGroupCallSlug();
+				joinConference.slug = reason.slug;
+
+				stopRinging();
+				if (tgVoip[CAPTURE_DEVICE_CAMERA] != null) {
+					prevTrafficStats = null;
+					convertingVoip = tgVoip[CAPTURE_DEVICE_CAMERA];
+					tgVoip[CAPTURE_DEVICE_CAMERA] = null;
+				}
+
+				startConferenceGroupCall(false, 0, null, false);
+			} else if (phoneCall.reason instanceof TLRPC.TL_phoneCallDiscardReasonBusy) {
 				dispatchStateChanged(STATE_BUSY);
 				playingSound = true;
 				Utilities.globalQueue.postRunnable(() -> soundPool.play(spBusyId, 1, 1, 0, -1, 1));
@@ -1612,6 +1757,9 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 		} else if (phoneCall instanceof TL_phone.TL_phoneCallAccepted && authKey == null) {
 			processAcceptedCall();
 		} else {
+//			if (phoneCall.conference_call != null) {
+////				convertInstanceToGroup(1, phoneCall.conference_call, null, null);
+//			} else
 			if (currentState == STATE_WAITING && phoneCall.receive_date != 0) {
 				dispatchStateChanged(STATE_RINGING);
 				if (BuildVars.LOGS_ENABLED) {
@@ -1752,9 +1900,9 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 				}
 			}
 		}
-		createGroupInstance(CAPTURE_DEVICE_CAMERA, true);
+		createGroupInstance(CAPTURE_DEVICE_CAMERA, true, true);
 		if (videoState[CAPTURE_DEVICE_SCREEN] == Instance.VIDEO_STATE_ACTIVE) {
-			createGroupInstance(CAPTURE_DEVICE_SCREEN, true);
+			createGroupInstance(CAPTURE_DEVICE_SCREEN, true, true);
 		}
 	}
 
@@ -1818,13 +1966,13 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 						hangUp(0);
 					});
 				}
-			}, ConnectionsManager.RequestFlagFailOnServerErrors);
+			}, ConnectionsManager.RequestFlagFailOnServerErrorsExceptFloodWait);
 			createGroupCall = false;
 			return;
 		}
 
 		if (json == null) {
-			if (groupCall == null) {
+			if (groupCall == null && chat != null) {
 				groupCall = MessagesController.getInstance(currentAccount).getGroupCall(chat.id, false);
 				if (groupCall != null) {
 					groupCall.setSelfPeer(groupCallPeer);
@@ -1833,7 +1981,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 			configureDeviceForCall();
 			showNotification();
 			AndroidUtilities.runOnUIThread(() -> NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.didStartedCall));
-			createGroupInstance(CAPTURE_DEVICE_CAMERA, false);
+			createGroupInstance(CAPTURE_DEVICE_CAMERA, false, true);
 		} else {
 			if (getSharedInstance() == null || groupCall == null) {
 				return;
@@ -1842,8 +1990,8 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 			if (BuildVars.LOGS_ENABLED) {
 				FileLog.d("initital source = " + ssrc);
 			}
-			TL_phone.joinGroupCall req = new TL_phone.joinGroupCall();
-			req.muted = true;
+			final TL_phone.joinGroupCall req = new TL_phone.joinGroupCall();
+			req.muted = micMute;
 			req.video_stopped = videoState[CAPTURE_DEVICE_CAMERA] != Instance.VIDEO_STATE_ACTIVE;
 			req.call = groupCall.getInputGroupCall();
 			req.params = new TLRPC.TL_dataJSON();
@@ -1868,7 +2016,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 						if (update instanceof TLRPC.TL_updateGroupCallParticipants) {
 							TLRPC.TL_updateGroupCallParticipants updateGroupCallParticipants = (TLRPC.TL_updateGroupCallParticipants) update;
 							for (int b = 0, N2 = updateGroupCallParticipants.participants.size(); b < N2; b++) {
-								TLRPC.TL_groupCallParticipant participant = updateGroupCallParticipants.participants.get(b);
+								TLRPC.GroupCallParticipant participant = updateGroupCallParticipants.participants.get(b);
 								if (MessageObject.getPeerId(participant.peer) == selfId) {
 									AndroidUtilities.runOnUIThread(() -> mySource[CAPTURE_DEVICE_CAMERA] = participant.source);
 									if (BuildVars.LOGS_ENABLED) {
@@ -1890,21 +2038,23 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 				} else {
 					AndroidUtilities.runOnUIThread(() -> {
 						if ("JOIN_AS_PEER_INVALID".equals(error.text)) {
-							TLRPC.ChatFull chatFull = MessagesController.getInstance(currentAccount).getChatFull(chat.id);
-							if (chatFull != null) {
-								if (chatFull instanceof TLRPC.TL_chatFull) {
-									chatFull.flags &=~ 32768;
-								} else {
-									chatFull.flags &=~ 67108864;
+							if (chat != null) {
+								TLRPC.ChatFull chatFull = MessagesController.getInstance(currentAccount).getChatFull(chat.id);
+								if (chatFull != null) {
+									if (chatFull instanceof TLRPC.TL_chatFull) {
+										chatFull.flags &= ~32768;
+									} else {
+										chatFull.flags &= ~67108864;
+									}
+									chatFull.groupcall_default_join_as = null;
+									JoinCallAlert.resetCache();
 								}
-								chatFull.groupcall_default_join_as = null;
-								JoinCallAlert.resetCache();
 							}
 							hangUp(2);
 						} else if ("GROUPCALL_SSRC_DUPLICATE_MUCH".equals(error.text)) {
-							createGroupInstance(CAPTURE_DEVICE_CAMERA, false);
+							createGroupInstance(CAPTURE_DEVICE_CAMERA, false, false);
 						} else {
-							if ("GROUPCALL_INVALID".equals(error.text)) {
+							if ("GROUPCALL_INVALID".equals(error.text) && chat != null) {
 								MessagesController.getInstance(currentAccount).loadFullChat(chat.id, 0, true);
 							}
 							NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.needShowAlert, 6, error.text);
@@ -1916,12 +2066,585 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 		}
 	}
 
+	public long convertingFromCallWithUserId;
+	private boolean inviteUsersToConferenceVideo;
+	private HashSet<Long> inviteUsersToConference;
+	public void convertToConferenceCall(boolean video, HashSet<Long> inviteUserIds) {
+		convertingFromCallWithUserId = user != null ? user.id : 0;
+		inviteUsersToConferenceVideo = video;
+		inviteUsersToConference = inviteUserIds;
+		stopRinging();
+		if (tgVoip[CAPTURE_DEVICE_CAMERA] != null) {
+			prevTrafficStats = null;
+			convertingVoip = tgVoip[CAPTURE_DEVICE_CAMERA];
+			tgVoip[CAPTURE_DEVICE_CAMERA] = null;
+		}
+		AndroidUtilities.runOnUIThread(() -> {
+			startConferenceGroupCall(true, 0, null, false);
+		});
+	}
+
+	private void startConferenceGroupCall(boolean create, int ssrc, String json, boolean reconnect) {
+		if (sharedInstance != this) {
+			return;
+		}
+		if (groupCallPeer == null) {
+			groupCallPeer = MessagesController.getInputPeer(UserConfig.getInstance(currentAccount).getCurrentUser());
+		}
+		if (create) {
+			final AccountInstance account = AccountInstance.getInstance(currentAccount);
+			conference = new ConferenceCall(currentAccount, account.getUserConfig().getClientUserId()) {
+				@Override
+				protected void gotCallId(long call_id) {
+					for (int a = 0; a < 2; ++a) {
+						if (tgVoip[a] != null) {
+							tgVoip[a].setConferenceCallId(call_id);
+						}
+					}
+				}
+			};
+
+			chat = null;
+			groupCall = new ChatObject.Call();
+			groupCall.call = new TLRPC.TL_groupCall();
+			groupCall.call.participants_count = 0;
+			groupCall.call.version = 1;
+			groupCall.call.can_start_video = true;
+			groupCall.call.can_change_join_muted = true;
+			groupCall.call.rtmp_stream = isRtmpStream;
+			groupCall.chatId = 0;
+			groupCall.currentAccount = AccountInstance.getInstance(currentAccount);
+			groupCall.setSelfPeer(groupCallPeer);
+			groupCall.createNoVideoParticipant();
+
+			dispatchStateChanged(STATE_CREATING);
+
+			final TL_phone.createConferenceCall req = new TL_phone.createConferenceCall();
+			req.random_id = Utilities.random.nextInt();
+			groupCallBottomSheetLatch = new CountDownLatch(1);
+			ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+				if (response instanceof TLRPC.Updates) {
+					final TLRPC.Updates updates = (TLRPC.Updates) response;
+					MessagesController.getInstance(currentAccount).putUsers(updates.users, false);
+					MessagesController.getInstance(currentAccount).putChats(updates.chats, false);
+
+					TLRPC.GroupCall groupCall1 = null;
+					for (TLRPC.TL_updateGroupCall u : findUpdatesAndRemove(updates, TLRPC.TL_updateGroupCall.class)) {
+						groupCall1 = u.call;
+					}
+
+					if (groupCall1 == null) {
+						return;
+					}
+
+					try {
+						groupCallBottomSheetLatch.await(800, TimeUnit.MILLISECONDS);
+					} catch (InterruptedException e) {
+						FileLog.e(e);
+					}
+					groupCall.setCall(account, 0, groupCall1);
+					groupCall.loadMembers(true);
+					MessagesController.getInstance(currentAccount).putGroupCall(0, groupCall);
+					conference.inputGroupCall = new TLRPC.TL_inputGroupCall();
+					conference.inputGroupCall.id = groupCall1.id;
+					conference.inputGroupCall.access_hash = groupCall1.access_hash;
+					conference.groupCall = groupCall1;
+					startConferenceGroupCall(false, 0, null, false);
+					if (inviteUsersToConference != null) {
+						for (long userId : inviteUsersToConference) {
+							if (groupCall != null) {
+								groupCall.addInvitedUser(userId);
+							}
+						}
+					}
+					if (VoIPFragment.getInstance() != null) {
+						VoIPFragment.getInstance().finish();
+					}
+					GroupCallActivity.create(LaunchActivity.instance, AccountInstance.getInstance(currentAccount), null, null, false, null);
+				} else if (response instanceof TL_phone.groupCall) {
+					try {
+						groupCallBottomSheetLatch.await(800, TimeUnit.MILLISECONDS);
+					} catch (InterruptedException e) {
+						FileLog.e(e);
+					}
+					final TL_phone.groupCall r = (TL_phone.groupCall) response;
+					groupCall.setCall(account, 0, r);
+					groupCall.loadMembers(true);
+					MessagesController.getInstance(currentAccount).putGroupCall(0, groupCall);
+					conference.inputGroupCall = new TLRPC.TL_inputGroupCall();
+					conference.inputGroupCall.id = r.call.id;
+					conference.inputGroupCall.access_hash = r.call.access_hash;
+					conference.groupCall = r.call;
+					startConferenceGroupCall(false, 0, null, false);
+					if (inviteUsersToConference != null) {
+						for (long userId : inviteUsersToConference) {
+							if (groupCall != null) {
+								groupCall.addInvitedUser(userId);
+							}
+						}
+					}
+					if (VoIPFragment.getInstance() != null) {
+						VoIPFragment.getInstance().finish();
+					}
+					GroupCallActivity.create(LaunchActivity.instance, AccountInstance.getInstance(currentAccount), null, null, false, null);
+				} else {
+					NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.needShowAlert, 6, error.text);
+					hangUp(0);
+				}
+			}), ConnectionsManager.RequestFlagFailOnServerErrorsExceptFloodWait);
+			return;
+		}
+
+		if (conference == null) {
+			conference = new ConferenceCall(currentAccount, UserConfig.getInstance(currentAccount).getClientUserId()) {
+				@Override
+				protected void gotCallId(long call_id) {
+					for (int a = 0; a < 2; ++a) {
+						if (tgVoip[a] != null) {
+							tgVoip[a].setConferenceCallId(call_id);
+						}
+					}
+				}
+			};
+			conference.inputGroupCall = joinConference;
+		}
+		if (groupCall == null) {
+			groupCall = new ChatObject.Call();
+			groupCall.isConference = true;
+			groupCall.call = new TLRPC.TL_groupCall();
+			groupCall.call.participants_count = 0;
+			groupCall.call.version = 1;
+			groupCall.call.can_start_video = true;
+			groupCall.call.can_change_join_muted = true;
+			groupCall.call.rtmp_stream = isRtmpStream;
+			if (joinConference instanceof TLRPC.TL_inputGroupCallSlug) {
+				groupCall.call.invite_link = "https://t.me/call/" + joinConference.slug;
+			}
+			groupCall.chatId = 0;
+			groupCall.currentAccount = AccountInstance.getInstance(currentAccount);
+			groupCall.setSelfPeer(groupCallPeer);
+			groupCall.createNoVideoParticipant();
+			if (joinConferenceCall != null) {
+				conference.groupCall = joinConferenceCall;
+				groupCall.setCall(AccountInstance.getInstance(currentAccount), 0, joinConferenceCall);
+				joinConferenceCall = null;
+			}
+		}
+		if (conference.groupCall == null) {
+			final TL_phone.getGroupCall req = new TL_phone.getGroupCall();
+			req.call = joinConference;
+			req.limit = 10;
+			ConnectionsManager.getInstance(currentAccount).sendRequest(req, (res, err) -> AndroidUtilities.runOnUIThread(() -> {
+				if (res instanceof TL_phone.groupCall) {
+					final TL_phone.groupCall r = (TL_phone.groupCall) res;
+					MessagesController.getInstance(currentAccount).putUsers(r.users, false);
+					MessagesController.getInstance(currentAccount).putChats(r.chats, false);
+					groupCall.setCall(AccountInstance.getInstance(currentAccount), 0, r);
+					conference.groupCall = r.call;
+					conference.inputGroupCall = joinConference;
+					startConferenceGroupCall(false, ssrc, json, false);
+				} else if (err != null) {
+					NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.needShowAlert, 6, err.text);
+					hangUp(0);
+				}
+			}));
+			return;
+		}
+
+		if (json == null) {
+			configureDeviceForCall();
+			showNotification();
+			AndroidUtilities.runOnUIThread(() -> NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.didStartedCall));
+			if (convertingVoip != null && isPrivateScreencast) {
+				captureDevice[CAPTURE_DEVICE_SCREEN] = captureDevice[CAPTURE_DEVICE_CAMERA];
+				captureDevice[CAPTURE_DEVICE_CAMERA] = 0;
+
+				destroyCaptureDevice[CAPTURE_DEVICE_SCREEN] = true; // destroyCaptureDevice[CAPTURE_DEVICE_CAMERA];
+				destroyCaptureDevice[CAPTURE_DEVICE_CAMERA] = true;
+
+				setVideoState(true, videoState[CAPTURE_DEVICE_CAMERA]);
+				setVideoState(false, Instance.VIDEO_STATE_INACTIVE);
+				videoState[CAPTURE_DEVICE_CAMERA] = Instance.VIDEO_STATE_INACTIVE;
+			}
+			createGroupInstance(CAPTURE_DEVICE_CAMERA, false, true);
+
+			if (inviteUsers != null) {
+				for (long userId : inviteUsers) {
+					groupCall.addInvitedUser(userId);
+				}
+			}
+			if (VoIPFragment.getInstance() != null) {
+				VoIPFragment.getInstance().finish();
+			}
+			GroupCallActivity.create(LaunchActivity.instance, AccountInstance.getInstance(UserConfig.selectedAccount), null, null, false, null);
+		} else {
+			if (getSharedInstance() == null || groupCall == null && conference == null) {
+				return;
+			}
+			dispatchStateChanged(STATE_WAIT_INIT);
+			if (BuildVars.LOGS_ENABLED) {
+				FileLog.d("initital source = " + ssrc);
+			}
+			final Runnable join = () -> {
+				final TL_phone.joinGroupCall req = new TL_phone.joinGroupCall();
+				req.muted = micMute;
+				req.video_stopped = videoState[CAPTURE_DEVICE_CAMERA] != Instance.VIDEO_STATE_ACTIVE;
+				if (conference != null) {
+					req.call = conference.inputGroupCall;
+					req.flags |= 8;
+					req.public_key = conference.getMyPublicKey();
+					req.block = conference.getLastBlock();
+				} else if (groupCall != null) {
+					req.call = groupCall.getInputGroupCall();
+				}
+				req.params = new TLRPC.TL_dataJSON();
+				req.params.data = json;
+				if (!TextUtils.isEmpty(joinHash)) {
+					req.invite_hash = joinHash;
+					req.flags |= 2;
+				}
+				if (groupCallPeer != null) {
+					req.join_as = groupCallPeer;
+				} else {
+					req.join_as = new TLRPC.TL_inputPeerUser();
+					req.join_as.user_id = AccountInstance.getInstance(currentAccount).getUserConfig().getClientUserId();
+				}
+				ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> {
+					if (response != null) {
+						AndroidUtilities.runOnUIThread(() -> mySource[CAPTURE_DEVICE_CAMERA] = ssrc);
+						TLRPC.Updates updates = (TLRPC.Updates) response;
+						long selfId = getSelfId();
+
+						final ArrayList<TLRPC.TL_updateGroupCallChainBlocks> blockUpdates = findUpdatesAndRemove(updates, TLRPC.TL_updateGroupCallChainBlocks.class);
+
+						for (TLRPC.TL_updateGroupCall upd : findUpdates(updates, TLRPC.TL_updateGroupCall.class)) {
+							final TLRPC.GroupCall groupCall1 = upd.call;
+							if (groupCall != null) {
+								groupCall.setCall(AccountInstance.getInstance(currentAccount), 0, groupCall1);
+							}
+							if (conference != null) {
+								conference.groupCall = groupCall1;
+							}
+						}
+
+						for (TLRPC.TL_updateGroupCallParticipants upd : findUpdates(updates, TLRPC.TL_updateGroupCallParticipants.class)) {
+							for (int b = 0, N2 = upd.participants.size(); b < N2; b++) {
+								TLRPC.GroupCallParticipant participant = upd.participants.get(b);
+								if (MessageObject.getPeerId(participant.peer) == selfId) {
+									AndroidUtilities.runOnUIThread(() -> mySource[CAPTURE_DEVICE_CAMERA] = participant.source);
+									if (BuildVars.LOGS_ENABLED) {
+										FileLog.d("join source = " + participant.source);
+									}
+									break;
+								}
+							}
+						}
+
+						for (TLRPC.TL_updateGroupCallConnection upd : findUpdates(updates, TLRPC.TL_updateGroupCallConnection.class)) {
+							if (!upd.presentation) {
+								myParams = upd.params;
+							}
+						}
+
+						MessagesController.getInstance(currentAccount).processUpdates(updates, false);
+						AndroidUtilities.runOnUIThread(() -> {
+							if (conference == null) return;
+							conference.joined();
+							for (TLRPC.TL_updateGroupCallChainBlocks upd : blockUpdates) {
+								conference.applyUpdate(0, upd, true, null);
+							}
+							conference.forcePoll();
+							groupCall.loadMembers(create);
+							startGroupCheckShortpoll();
+							if (captureDevice[CAPTURE_DEVICE_SCREEN] != 0) {
+								createGroupInstance(CAPTURE_DEVICE_SCREEN, false, true);
+							}
+							for (int a = 0; a < 2; ++a) {
+								if (tgVoip[a] != null) {
+									tgVoip[a].setConferenceCallId(conference.getCallId());
+								}
+							}
+
+//							destroyConverting();
+							AndroidUtilities.runOnUIThread(destroyConvertingRunnable, 5000);
+
+							if (inviteUsersToConference != null && privateCall != null && groupCall != null) {
+								final TL_phone.PhoneCall phoneCall = privateCall;
+								final TL_phone.exportGroupCallInvite req2 = new TL_phone.exportGroupCallInvite();
+								req2.call = new TLRPC.TL_inputGroupCall();
+								req2.call.id = groupCall.call.id;
+								req2.call.access_hash = groupCall.call.access_hash;
+								ConnectionsManager.getInstance(currentAccount).sendRequest(req2, (res2, err2) -> AndroidUtilities.runOnUIThread(() -> {
+									if (res2 instanceof TL_phone.exportedGroupCallInvite) {
+										final TL_phone.exportedGroupCallInvite r2 = (TL_phone.exportedGroupCallInvite) res2;
+										final Uri uri = Uri.parse(r2.link);
+										final String slug = uri.getPathSegments().get(uri.getPathSegments().size() - 1);
+
+										final TL_phone.discardCall dreq = new TL_phone.discardCall();
+										dreq.peer = new TLRPC.TL_inputPhoneCall();
+										dreq.peer.access_hash = phoneCall.access_hash;
+										dreq.peer.id = phoneCall.id;
+										dreq.reason = new TLRPC.TL_phoneCallDiscardReasonMigrateConferenceCall();
+										dreq.reason.slug = slug;
+										dreq.duration = (int) (getCallDuration() / 1000);
+										dreq.connection_id = 0;
+										dreq.video = inviteUsersToConferenceVideo;
+										ConnectionsManager.getInstance(currentAccount).sendRequest(dreq, null);
+
+										final String link = r2.link;
+										final int totalCount = inviteUsersToConference.size();
+										final AtomicInteger invitedCount = new AtomicInteger(0);
+										final HashSet<Long> restrictedUsers = new HashSet<>();
+										for (long userId : inviteUsersToConference) {
+											final TL_phone.inviteConferenceCallParticipant ireq = new TL_phone.inviteConferenceCallParticipant();
+											ireq.user_id = MessagesController.getInstance(currentAccount).getInputUser(userId);
+											ireq.call = req2.call;
+											ConnectionsManager.getInstance(currentAccount).sendRequest(ireq, (ires, ierr) -> {
+												if (ires instanceof TLRPC.Updates) {
+													final TLRPC.Updates updates2 = (TLRPC.Updates) ires;
+													MessagesController.getInstance(currentAccount).processUpdates(updates2, false);
+													AndroidUtilities.runOnUIThread(() -> {
+														int msg_id = 0;
+														if (updates2.update instanceof TLRPC.TL_updateNewMessage) {
+															final TLRPC.TL_updateNewMessage updateNewMessage = (TLRPC.TL_updateNewMessage) updates2.update;
+															if (updateNewMessage.message != null && updateNewMessage.message.action instanceof TLRPC.TL_messageActionConferenceCall) {
+																msg_id = updateNewMessage.message.id;
+															}
+														} else if (updates2.update instanceof TLRPC.TL_updateMessageID) {
+															final TLRPC.TL_updateMessageID u = (TLRPC.TL_updateMessageID) updates2.update;
+															msg_id = u.id;
+														} else if (updates2.updates != null) {
+															for (int i = 0; i < updates2.updates.size(); ++i) {
+																final TLRPC.Update u = updates2.updates.get(i);
+																if (u instanceof TLRPC.TL_updateNewMessage) {
+																	final TLRPC.TL_updateNewMessage updateNewMessage = (TLRPC.TL_updateNewMessage) u;
+																	if (updateNewMessage.message != null && updateNewMessage.message.action instanceof TLRPC.TL_messageActionConferenceCall) {
+																		msg_id = updateNewMessage.message.id;
+																		break;
+																	}
+																} else if (u instanceof TLRPC.TL_updateMessageID) {
+																	msg_id = ((TLRPC.TL_updateMessageID) u).id;
+																	break;
+																}
+															}
+														}
+														if (groupCall != null && msg_id != 0) {
+															groupCall.invitedUsersMessageIds.put(userId, ChatObject.Call.InvitedUser.make(msg_id));
+															NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.groupCallUpdated, 0L, groupCall.call.id, false);
+														}
+													});
+												} else if (ierr != null && "USER_PRIVACY_RESTRICTED".equalsIgnoreCase(ierr.text)) {
+													restrictedUsers.add(userId);
+												}
+												if (invitedCount.incrementAndGet() == totalCount && !restrictedUsers.isEmpty()) {
+													AndroidUtilities.runOnUIThread(() -> {
+														final TL_account.getRequirementsToContact req3 = new TL_account.getRequirementsToContact();
+														ArrayList<TLRPC.User> users2 = new ArrayList<>();
+														ArrayList<Long> premiumBlockedUsers = new ArrayList<>();
+														ArrayList<Long> premiumInviteBlockedUsers = new ArrayList<>();
+														for (long userId1 : restrictedUsers) {
+															if (groupCall != null) {
+																groupCall.removeInvitedUser(userId1);
+															}
+															users2.add(MessagesController.getInstance(currentAccount).getUser(userId1));
+															req3.id.add(MessagesController.getInstance(currentAccount).getInputUser(userId1));
+														}
+														final Runnable showLimitSheet = () -> {
+															BaseFragment fragment = LaunchActivity.getSafeLastFragment();
+															if (fragment == null) return;
+															final LimitReachedBottomSheet restricterdUsersBottomSheet = new LimitReachedBottomSheet(fragment, fragment.getContext(), LimitReachedBottomSheet.TYPE_CALL_RESTRICTED, currentAccount, new DarkBlueThemeResourcesProvider());
+															restricterdUsersBottomSheet.setRestrictedUsers(null, users2, premiumBlockedUsers, premiumInviteBlockedUsers, link);
+															restricterdUsersBottomSheet.show();
+														};
+														if (UserConfig.getInstance(currentAccount).isPremium()) {
+															showLimitSheet.run();
+														} else {
+															ConnectionsManager.getInstance(currentAccount).sendRequest(req3, (res3, err3) -> AndroidUtilities.runOnUIThread(() -> {
+																if (res3 instanceof Vector) {
+																	Vector<TL_account.RequirementToContact> result = (Vector<TL_account.RequirementToContact>) res3;
+																	for (int i = 0; i < Math.min(users2.size(), result.objects.size()); ++i) {
+																		if (result.objects.get(i) instanceof TL_account.requirementToContactPremium) {
+																			premiumBlockedUsers.add(users2.get(i).id);
+																		}
+																	}
+																}
+																showLimitSheet.run();
+															}));
+														}
+													});
+												}
+											});
+										}
+										privateCall = null;
+
+										NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.groupCallUpdated, 0L, groupCall.call.id, false);
+									}
+								}));
+							}
+							if (inviteUsers != null) {
+								final String link = groupCall.call.invite_link;
+								final int totalCount = inviteUsers.length;
+								final AtomicInteger invitedCount = new AtomicInteger(0);
+								final HashSet<Long> restrictedUsers = new HashSet<>();
+								for (long userId : inviteUsers) {
+									groupCall.addInvitedUser(userId);
+
+									final TL_phone.inviteConferenceCallParticipant req2 = new TL_phone.inviteConferenceCallParticipant();
+									req2.call = groupCall.getInputGroupCall();
+									req2.user_id = MessagesController.getInstance(currentAccount).getInputUser(userId);
+									req2.video = videoCall;
+									ConnectionsManager.getInstance(currentAccount).sendRequest(req2, (res, err) -> {
+										if (res instanceof TLRPC.Updates) {
+											final TLRPC.Updates updates2 = (TLRPC.Updates) res;
+											MessagesController.getInstance(currentAccount).processUpdates(updates2, false);
+											AndroidUtilities.runOnUIThread(() -> {
+												int msg_id = 0;
+												if (updates2.update instanceof TLRPC.TL_updateNewMessage) {
+													final TLRPC.TL_updateNewMessage updateNewMessage = (TLRPC.TL_updateNewMessage) updates2.update;
+													if (updateNewMessage.message != null && updateNewMessage.message.action instanceof TLRPC.TL_messageActionConferenceCall) {
+														msg_id = updateNewMessage.message.id;
+													}
+												} else if (updates2.update instanceof TLRPC.TL_updateMessageID) {
+													final TLRPC.TL_updateMessageID u = (TLRPC.TL_updateMessageID) updates2.update;
+													msg_id = u.id;
+												} else if (updates2.updates != null) {
+													for (int i = 0; i < updates2.updates.size(); ++i) {
+														final TLRPC.Update u = updates2.updates.get(i);
+														if (u instanceof TLRPC.TL_updateNewMessage) {
+															final TLRPC.TL_updateNewMessage updateNewMessage = (TLRPC.TL_updateNewMessage) u;
+															if (updateNewMessage.message != null && updateNewMessage.message.action instanceof TLRPC.TL_messageActionConferenceCall) {
+																msg_id = updateNewMessage.message.id;
+																break;
+															}
+														} else if (u instanceof TLRPC.TL_updateMessageID) {
+															msg_id = ((TLRPC.TL_updateMessageID) u).id;
+															break;
+														}
+													}
+												}
+												if (groupCall != null && msg_id != 0) {
+													groupCall.invitedUsersMessageIds.put(userId, ChatObject.Call.InvitedUser.make(msg_id));
+													NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.groupCallUpdated, 0L, groupCall.call.id, false);
+												}
+											});
+										} else if (err != null && "USER_PRIVACY_RESTRICTED".equalsIgnoreCase(err.text)) {
+											restrictedUsers.add(userId);
+										}
+										if (invitedCount.incrementAndGet() == totalCount && !restrictedUsers.isEmpty()) {
+											AndroidUtilities.runOnUIThread(() -> {
+												final TL_account.getRequirementsToContact req3 = new TL_account.getRequirementsToContact();
+												ArrayList<TLRPC.User> users2 = new ArrayList<>();
+												ArrayList<Long> premiumBlockedUsers = new ArrayList<>();
+												ArrayList<Long> premiumInviteBlockedUsers = new ArrayList<>();
+												for (long userId1 : restrictedUsers) {
+													if (groupCall != null) {
+														groupCall.removeInvitedUser(userId1);
+													}
+													users2.add(MessagesController.getInstance(currentAccount).getUser(userId1));
+													req3.id.add(MessagesController.getInstance(currentAccount).getInputUser(userId1));
+												}
+												final Runnable showLimitSheet = () -> {
+													BaseFragment fragment = LaunchActivity.getSafeLastFragment();
+													if (fragment == null) return;
+													final LimitReachedBottomSheet restricterdUsersBottomSheet = new LimitReachedBottomSheet(fragment, fragment.getContext(), LimitReachedBottomSheet.TYPE_CALL_RESTRICTED, currentAccount, new DarkBlueThemeResourcesProvider());
+													restricterdUsersBottomSheet.setRestrictedUsers(null, users2, premiumBlockedUsers, premiumInviteBlockedUsers, link);
+													restricterdUsersBottomSheet.show();
+												};
+												if (UserConfig.getInstance(currentAccount).isPremium()) {
+													showLimitSheet.run();
+												} else {
+													ConnectionsManager.getInstance(currentAccount).sendRequest(req3, (res3, err3) -> AndroidUtilities.runOnUIThread(() -> {
+														if (res3 instanceof Vector) {
+															Vector<TL_account.RequirementToContact> result = (Vector<TL_account.RequirementToContact>) res3;
+															for (int i = 0; i < Math.min(users2.size(), result.objects.size()); ++i) {
+																if (result.objects.get(i) instanceof TL_account.requirementToContactPremium) {
+																	premiumBlockedUsers.add(users2.get(i).id);
+																}
+															}
+														}
+														showLimitSheet.run();
+													}));
+												}
+											});
+										}
+									});
+								}
+								inviteUsers = null;
+								NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.groupCallUpdated, 0L, groupCall.call.id, false);
+							}
+						});
+					} else {
+						AndroidUtilities.runOnUIThread(() -> {
+							if ("JOIN_AS_PEER_INVALID".equals(error.text)) {
+								hangUp(2);
+							} else if ("GROUPCALL_SSRC_DUPLICATE_MUCH".equals(error.text)) {
+								startConferenceGroupCall(false, CAPTURE_DEVICE_CAMERA, json, false);
+							} else if (error.text.startsWith("CONF_WRITE_CHAIN_INVALID")) {
+								stopSelf();
+							} else if ("GROUPCALL_INVALID".equals(error.text)) {
+								BaseFragment lastFragment = LaunchActivity.getSafeLastFragment();
+								if (lastFragment != null) {
+									BulletinFactory.of(lastFragment)
+										.createSimpleBulletin(R.raw.linkbroken, getString(R.string.ConferenceClosed))
+										.show()
+										.hideAfterBottomSheet = false;
+								}
+								hangUp(0);
+							} else {
+								NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.needShowAlert, 6, error.text);
+								hangUp(0);
+							}
+						});
+					}
+				});
+			};
+			if (reconnect) {
+				conference.reset();
+			}
+			conference.requestLastBlock(() -> {
+				if (conference == null) {
+					return;
+				}
+				conference.generateAddSelfBlock();
+				join.run();
+				for (int a = 0; a < 2; ++a) {
+					if (tgVoip[a] != null) {
+						tgVoip[a].setConferenceCallId(conference.getCallId());
+					}
+				}
+			});
+		}
+	}
+
+	private final Runnable destroyConvertingRunnable = this::destroyConverting;
+	private void destroyConverting() {
+		AndroidUtilities.cancelRunOnUIThread(destroyConvertingRunnable);
+		if (convertingVoip == null) return;
+
+		FileLog.e("destroyConverting!!", new Exception());
+		callStartTime = 0;
+		StatsController.getInstance(currentAccount).incrementTotalCallsTime(getStatsNetworkType(), (int) (getCallDuration() / 1000) % 5);
+		onTgVoipPreStop();
+		Instance.FinalState state = convertingVoip.stop();
+		updateTrafficStats(convertingVoip, state.trafficStats);
+		onTgVoipStop(state);
+		Instance.destroyInstance();
+		convertingVoip = null;
+		for (int a = 0; a < stateListeners.size(); a++) {
+			StateListener l = stateListeners.get(a);
+			l.onStateChanged(getCallState());
+		}
+		if (tgVoip[CAPTURE_DEVICE_CAMERA] != null) {
+			tgVoip[CAPTURE_DEVICE_CAMERA].setMuteMicrophone(micMute);
+		}
+	}
+
 	private void startScreenCapture(int ssrc, String json) {
 		if (getSharedInstance() == null || groupCall == null) {
 			return;
 		}
 		mySource[CAPTURE_DEVICE_SCREEN] = 0;
-		TL_phone.joinGroupCallPresentation req = new TL_phone.joinGroupCallPresentation();
+		final TL_phone.joinGroupCallPresentation req = new TL_phone.joinGroupCallPresentation();
 		req.call = groupCall.getInputGroupCall();
 		req.params = new TLRPC.TL_dataJSON();
 		req.params.data = json;
@@ -1942,7 +2665,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 							} else if (update instanceof TLRPC.TL_updateGroupCallParticipants) {
 								TLRPC.TL_updateGroupCallParticipants updateGroupCallParticipants = (TLRPC.TL_updateGroupCallParticipants) update;
 								for (int b = 0, N2 = updateGroupCallParticipants.participants.size(); b < N2; b++) {
-									TLRPC.TL_groupCallParticipant participant = updateGroupCallParticipants.participants.get(b);
+									TLRPC.GroupCallParticipant participant = updateGroupCallParticipants.participants.get(b);
 									if (MessageObject.getPeerId(participant.peer) == selfId) {
 										if (participant.presentation != null) {
 											if ((participant.presentation.flags & 2) != 0) {
@@ -1970,21 +2693,23 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 					if ("GROUPCALL_VIDEO_TOO_MUCH".equals(error.text)) {
 						groupCall.reloadGroupCall();
 					} else if ("JOIN_AS_PEER_INVALID".equals(error.text)) {
-						TLRPC.ChatFull chatFull = MessagesController.getInstance(currentAccount).getChatFull(chat.id);
-						if (chatFull != null) {
-							if (chatFull instanceof TLRPC.TL_chatFull) {
-								chatFull.flags &=~ 32768;
-							} else {
-								chatFull.flags &=~ 67108864;
+						if (chat != null) {
+							TLRPC.ChatFull chatFull = MessagesController.getInstance(currentAccount).getChatFull(chat.id);
+							if (chatFull != null) {
+								if (chatFull instanceof TLRPC.TL_chatFull) {
+									chatFull.flags &= ~32768;
+								} else {
+									chatFull.flags &= ~67108864;
+								}
+								chatFull.groupcall_default_join_as = null;
+								JoinCallAlert.resetCache();
 							}
-							chatFull.groupcall_default_join_as = null;
-							JoinCallAlert.resetCache();
 						}
 						hangUp(2);
 					} else if ("GROUPCALL_SSRC_DUPLICATE_MUCH".equals(error.text)) {
-						createGroupInstance(CAPTURE_DEVICE_SCREEN, false);
+						createGroupInstance(CAPTURE_DEVICE_SCREEN, false, false);
 					} else {
-						if ("GROUPCALL_INVALID".equals(error.text)) {
+						if ("GROUPCALL_INVALID".equals(error.text) && chat != null) {
 							MessagesController.getInstance(currentAccount).loadFullChat(chat.id, 0, true);
 						}
 					}
@@ -2005,7 +2730,11 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 				return;
 			}
 			TL_phone.checkGroupCall req = new TL_phone.checkGroupCall();
-			req.call = groupCall.getInputGroupCall();
+			if (groupCall.getInputGroupCall(true) != null) {
+				req.call = groupCall.getInputGroupCall(true);
+			} else {
+				req.call = groupCall.getInputGroupCall(false);
+			}
 			for (int a = 0; a < mySource.length; a++) {
 				if (mySource[a] != 0) {
 					req.sources.add(mySource[a]);
@@ -2013,6 +2742,32 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 			}
 			checkRequestId = ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
 				if (shortPollRunnable == null || sharedInstance == null || groupCall == null) {
+					return;
+				}
+				if (conference != null && error != null && "GROUPCALL_INVALID".equalsIgnoreCase(error.text) && groupCall.getInputGroupCall(true) != null && groupCall.getInputGroupCall(false) != null) {
+					// link was probably changed
+					TL_phone.getGroupCall req2 = new TL_phone.getGroupCall();
+					req2.call = groupCall.getInputGroupCall(false);
+					ConnectionsManager.getInstance(currentAccount).sendRequest(req2, (response2, error2) -> AndroidUtilities.runOnUIThread(() -> {
+						if (shortPollRunnable == null || sharedInstance == null || groupCall == null) {
+							return;
+						}
+						if (response2 instanceof TL_phone.groupCall) {
+							final TL_phone.groupCall r = (TL_phone.groupCall) response2;
+							MessagesController.getInstance(currentAccount).putUsers(r.users, false);
+							MessagesController.getInstance(currentAccount).putChats(r.chats, false);
+
+							groupCall.setCall(AccountInstance.getInstance(currentAccount), 0, r.call);
+							groupCall.loadMembers(true);
+
+							shortPollRunnable = null;
+							checkRequestId = 0;
+							startGroupCheckShortpoll();
+						} else if (error2 != null && "GROUPCALL_INVALID".equalsIgnoreCase(error2.text)) {
+							// can't join group anymore
+							stopSelf();
+						}
+					}));
 					return;
 				}
 				shortPollRunnable = null;
@@ -2039,10 +2794,10 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 					}
 				}
 				if (recreateCamera) {
-					createGroupInstance(CAPTURE_DEVICE_CAMERA, false);
+					createGroupInstance(CAPTURE_DEVICE_CAMERA, false, false);
 				}
 				if (recreateScreenCapture) {
-					createGroupInstance(CAPTURE_DEVICE_SCREEN, false);
+					createGroupInstance(CAPTURE_DEVICE_SCREEN, false, false);
 				}
 				if (mySource[CAPTURE_DEVICE_SCREEN] != 0 || mySource[CAPTURE_DEVICE_CAMERA] != 0 || (groupCall.call != null && groupCall.call.rtmp_stream)) {
 					startGroupCheckShortpoll();
@@ -2065,13 +2820,15 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 		}
 	}
 
-	private static class RequestedParticipant {
+	public static class RequestedParticipant {
 		public int audioSsrc;
-		public TLRPC.TL_groupCallParticipant participant;
+		public long userId;
+		public TLRPC.GroupCallParticipant participant;
 
-		public RequestedParticipant(TLRPC.TL_groupCallParticipant p, int ssrc) {
+		public RequestedParticipant(TLRPC.GroupCallParticipant p, int ssrc) {
 			participant = p;
 			audioSsrc = ssrc;
+			userId = p == null ? 0 : DialogObject.getPeerDialogId(p.peer);
 		}
 	}
 
@@ -2082,7 +2839,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 		long selfId = getSelfId();
 		ArrayList<RequestedParticipant> participants = null;
 		for (int a = 0, N = unknown.length; a < N; a++) {
-			TLRPC.TL_groupCallParticipant p = groupCall.participantsBySources.get(unknown[a]);
+			TLRPC.GroupCallParticipant p = groupCall.participantsBySources.get(unknown[a]);
 			if (p == null) {
 				p = groupCall.participantsByVideoSources.get(unknown[a]);
 				if (p == null) {
@@ -2098,12 +2855,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 			participants.add(new RequestedParticipant(p, unknown[a]));
 		}
 		if (participants != null) {
-			int[] ssrcs = new int[participants.size()];
-			for (int a = 0, N = participants.size(); a < N; a++) {
-				RequestedParticipant p = participants.get(a);
-				ssrcs[a] = p.audioSsrc;
-			}
-			tgVoip[CAPTURE_DEVICE_CAMERA].onMediaDescriptionAvailable(taskPtr, ssrcs);
+			tgVoip[CAPTURE_DEVICE_CAMERA].onMediaDescriptionAvailable(taskPtr, participants.toArray(new RequestedParticipant[0]));
 
 			for (int a = 0, N = participants.size(); a < N; a++) {
 				RequestedParticipant p = participants.get(a);
@@ -2116,7 +2868,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 		}
 	}
 
-	private void createGroupInstance(int type, boolean switchAccount) {
+	private void createGroupInstance(int type, boolean switchAccount, boolean isFirst) {
 		if (switchAccount) {
 			mySource[type] = 0;
 			if (type == CAPTURE_DEVICE_CAMERA) {
@@ -2133,10 +2885,26 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 		boolean created = false;
 		if (tgVoip[type] == null) {
 			created = true;
-			final String logFilePath = BuildVars.DEBUG_VERSION ? VoIPHelper.getLogFilePath("voip_" + type + "_" + groupCall.call.id) : VoIPHelper.getLogFilePath(groupCall.call.id, false);
+			final String logId;
+			if (groupCall != null) {
+				logId = "" + groupCall.call.id;
+			} else if (joinConference instanceof TLRPC.TL_inputGroupCallSlug) {
+				logId = joinConference.slug;
+			} else if (joinConference instanceof TLRPC.TL_inputGroupCall) {
+				logId = "" + joinConference.id;
+			} else {
+				logId = "0";
+			}
+			final boolean[] first = new boolean[] { isFirst };
+			final String logFilePath = BuildVars.DEBUG_VERSION ? VoIPHelper.getLogFilePath("voip_" + type + "_" + logId) : VoIPHelper.getLogFilePath(logId, false);
 			tgVoip[type] = NativeInstance.makeGroup(logFilePath, captureDevice[type], type == CAPTURE_DEVICE_SCREEN, type == CAPTURE_DEVICE_CAMERA && SharedConfig.noiseSupression, (ssrc, json) -> {
 				if (type == CAPTURE_DEVICE_CAMERA) {
-					startGroupCall(ssrc, json, true);
+					if (conference != null) {
+						startConferenceGroupCall(false, ssrc, json, !first[0]);
+					} else {
+						startGroupCall(ssrc, json, true);
+					}
+					first[0] = false;
 				} else {
 					startScreenCapture(ssrc, json);
 				}
@@ -2149,7 +2917,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 				boolean hasOther = false;
 				for (int a = 0; a < uids.length; a++) {
 					if (uids[a] == 0) {
-						if (lastTypingTimeSend < SystemClock.uptimeMillis() - 5000 && levels[a] > 0.1f && voice[a]) {
+						if (chat != null && lastTypingTimeSend < SystemClock.uptimeMillis() - 5000 && levels[a] > 0.1f && voice[a]) {
 							lastTypingTimeSend = SystemClock.uptimeMillis();
 							TLRPC.TL_messages_setTyping req = new TLRPC.TL_messages_setTyping();
 							req.action = new TLRPC.TL_speakingInGroupCallAction();
@@ -2209,7 +2977,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 						tgVoip[type].onStreamPartAvailable(timestamp, res.bytes.buffer, res.bytes.limit(), responseTime, videoChannel, quality);
 					} else {
 						if ("GROUPCALL_JOIN_MISSING".equals(error.text)) {
-							AndroidUtilities.runOnUIThread(() -> createGroupInstance(type, false));
+							AndroidUtilities.runOnUIThread(() -> createGroupInstance(type, false, true));
 						} else {
 							int status;
 							if ("TIME_TOO_BIG".equals(error.text) || error.text.startsWith("FLOOD_WAIT")) {
@@ -2220,7 +2988,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 							tgVoip[type].onStreamPartAvailable(timestamp, null, status, responseTime, videoChannel, quality);
 						}
 					}
-				}, ConnectionsManager.RequestFlagFailOnServerErrors, ConnectionsManager.ConnectionTypeDownload, groupCall.call.stream_dc_id);
+				}, ConnectionsManager.RequestFlagFailOnServerErrorsExceptFloodWait, ConnectionsManager.ConnectionTypeDownload, groupCall.call.stream_dc_id);
 				AndroidUtilities.runOnUIThread(() -> currentStreamRequestTimestamp.put(key, reqId));
 			}, (timestamp, duration, videoChannel, quality) -> {
 				if (type != CAPTURE_DEVICE_CAMERA) {
@@ -2259,16 +3027,22 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 						if (tgVoip[type] != null) {
 							tgVoip[type].onRequestTimeComplete(taskPtr, currentTime);
 						}
-					}, ConnectionsManager.RequestFlagFailOnServerErrors, ConnectionsManager.ConnectionTypeDownload, groupCall.call.stream_dc_id);
+					}, ConnectionsManager.RequestFlagFailOnServerErrorsExceptFloodWait, ConnectionsManager.ConnectionTypeDownload, groupCall.call.stream_dc_id);
 				} else {
 					if (tgVoip[type] != null) {
 						tgVoip[type].onRequestTimeComplete(taskPtr, ConnectionsManager.getInstance(currentAccount).getCurrentTimeMillis());
 					}
 				}
-			});
+			}, conference != null);
 			tgVoip[type].setOnStateUpdatedListener((state, inTransition) -> updateConnectionState(type, state, inTransition));
+//			if (captureDevice[type] != 0 && type == 0 && convertingVoip != null && convertingVoip.hasVideoCapturer()) {
+//				tgVoip[type].setupOutgoingVideoCreated(captureDevice[type]);
+//			}
 		}
 		tgVoip[type].resetGroupInstance(!created, false);
+		if (conference != null && conference.getCallId() != -1) {
+			tgVoip[type].setConferenceCallId(conference.getCallId());
+		}
 		if (captureDevice[type] != 0) {
 			destroyCaptureDevice[type] = false;
 		}
@@ -2276,6 +3050,189 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 			dispatchStateChanged(STATE_WAIT_INIT);
 		}
 	}
+
+//	private boolean convertingToConference;
+//	private void convertInstanceToGroup(long id, Utilities.CallbackReturn<String, Runnable> done) {
+//		if (convertingToConference) return;
+//		convertingToConference = true;
+//
+//		if (tgVoip[CAPTURE_DEVICE_CAMERA] != null) {
+//			StatsController.getInstance(currentAccount).incrementTotalCallsTime(getStatsNetworkType(), (int) (getCallDuration() / 1000) % 5);
+//			onTgVoipPreStop();
+//			if (tgVoip[CAPTURE_DEVICE_CAMERA].isGroup()) {
+//				NativeInstance instance = tgVoip[CAPTURE_DEVICE_CAMERA];
+//				Utilities.globalQueue.postRunnable(instance::stopGroup);
+//				for (HashMap.Entry<String, Integer> entry : currentStreamRequestTimestamp.entrySet()) {
+//					AccountInstance.getInstance(currentAccount).getConnectionsManager().cancelRequest(entry.getValue(), true);
+//				}
+//				currentStreamRequestTimestamp.clear();
+//			} else {
+//				Instance.FinalState state = tgVoip[CAPTURE_DEVICE_CAMERA].stop();
+//				updateTrafficStats(tgVoip[CAPTURE_DEVICE_CAMERA], state.trafficStats);
+//				onTgVoipStop(state);
+//			}
+//			prevTrafficStats = null;
+//			callStartTime = 0;
+//			tgVoip[CAPTURE_DEVICE_CAMERA] = null;
+//			Instance.destroyInstance();
+//		}
+//		if (tgVoip[CAPTURE_DEVICE_SCREEN] != null) {
+//			NativeInstance instance = tgVoip[CAPTURE_DEVICE_SCREEN];
+//			Utilities.globalQueue.postRunnable(instance::stopGroup);
+//			tgVoip[CAPTURE_DEVICE_SCREEN] = null;
+//		}
+//		privateCall = null;
+//
+//		AndroidUtilities.runOnUIThread(() -> {
+//
+//			final int type = CAPTURE_DEVICE_CAMERA;
+//			final String logFilePath = BuildVars.DEBUG_VERSION ? VoIPHelper.getLogFilePath("voip_" + type + "_" + id) : VoIPHelper.getLogFilePath(id, false);
+//
+//			final NativeInstance[] groupInstance = new NativeInstance[1];
+//			final NativeInstance.PayloadCallback gotParams = (ssrc, json) -> {
+//				currentState = STATE_WAIT_INIT;
+//				done.run(json, () -> {
+//					convertingToConference = false;
+//					tgVoip[CAPTURE_DEVICE_CAMERA] = groupInstance[0];
+//					mySource[CAPTURE_DEVICE_CAMERA] = ssrc;
+//					groupCall.loadMembers(true);
+//					if (VoIPFragment.getInstance() != null) {
+//						VoIPFragment.getInstance().finish();
+//					}
+//					GroupCallActivity.create(LaunchActivity.instance, AccountInstance.getInstance(currentAccount), null, null, false, null);
+//
+//					if (lastGroupCallUpdate != null && groupCall.call != null && lastGroupCallUpdate.id == groupCall.call.id) {
+//						onGroupCallUpdated(lastGroupCallUpdate);
+//					}
+//				});
+//			};
+//			groupInstance[0] = NativeInstance.makeGroup(logFilePath, captureDevice[type], type == CAPTURE_DEVICE_SCREEN, type == CAPTURE_DEVICE_CAMERA && SharedConfig.noiseSupression, gotParams, (uids, levels, voice) -> {
+//				if (sharedInstance == null || groupCall == null || type != CAPTURE_DEVICE_CAMERA) {
+//					return;
+//				}
+//				groupCall.processVoiceLevelsUpdate(uids, levels, voice);
+//				float maxAmplitude = 0;
+//				boolean hasOther = false;
+//				for (int a = 0; a < uids.length; a++) {
+//					if (uids[a] == 0) {
+////						if (chat != null && lastTypingTimeSend < SystemClock.uptimeMillis() - 5000 && levels[a] > 0.1f && voice[a]) {
+////							lastTypingTimeSend = SystemClock.uptimeMillis();
+////							TLRPC.TL_messages_setTyping req = new TLRPC.TL_messages_setTyping();
+////							req.action = new TLRPC.TL_speakingInGroupCallAction();
+////							req.peer = MessagesController.getInputPeer(chat);
+////							ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> {
+////
+////							});
+////						}
+//						NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.webRtcMicAmplitudeEvent, levels[a]);
+//						continue;
+//					}
+//					hasOther = true;
+//					maxAmplitude = Math.max(maxAmplitude, levels[a]);
+//				}
+//				if (hasOther) {
+//					NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.webRtcSpeakerAmplitudeEvent, maxAmplitude);
+//					if (audioLevelsCallback != null) {
+//						audioLevelsCallback.run(uids, levels, voice);
+//					}
+//				}
+//			}, (taskPtr, unknown) -> {
+//				if (sharedInstance == null || groupCall == null || type != CAPTURE_DEVICE_CAMERA) {
+//					return;
+//				}
+//				groupCall.processUnknownVideoParticipants(unknown, (ssrcs) -> {
+//					if (sharedInstance == null || groupCall == null) {
+//						return;
+//					}
+//					broadcastUnknownParticipants(taskPtr, unknown);
+//				});
+//			}, (timestamp, duration, videoChannel, quality) -> {
+//				if (type != CAPTURE_DEVICE_CAMERA) {
+//					return;
+//				}
+//				TLRPC.TL_upload_getFile req = new TLRPC.TL_upload_getFile();
+//				req.limit = 128 * 1024;
+//				TLRPC.TL_inputGroupCallStream inputGroupCallStream = new TLRPC.TL_inputGroupCallStream();
+//				inputGroupCallStream.call = groupCall.getInputGroupCall();
+//				inputGroupCallStream.time_ms = timestamp;
+//				if (duration == 500) {
+//					inputGroupCallStream.scale = 1;
+//				}
+//				if (videoChannel != 0) {
+//					inputGroupCallStream.flags |= 1;
+//					inputGroupCallStream.video_channel = videoChannel;
+//					inputGroupCallStream.video_quality = quality;
+//				}
+//				req.location = inputGroupCallStream;
+//				String key = videoChannel == 0 ? ("" + timestamp) : (videoChannel + "_" + timestamp + "_" + quality);
+//				int reqId = AccountInstance.getInstance(currentAccount).getConnectionsManager().sendRequest(req, (response, error, responseTime) -> {
+//					AndroidUtilities.runOnUIThread(() -> currentStreamRequestTimestamp.remove(key));
+//					if (tgVoip[type] == null) {
+//						return;
+//					}
+//					if (response != null) {
+//						final TLRPC.TL_upload_file res = (TLRPC.TL_upload_file) response;
+//						tgVoip[type].onStreamPartAvailable(timestamp, res.bytes.buffer, res.bytes.limit(), responseTime, videoChannel, quality);
+//					} else {
+//						int status;
+//						if ("TIME_TOO_BIG".equals(error.text) || error.text.startsWith("FLOOD_WAIT")) {
+//							status = 0;
+//						} else {
+//							status = -1;
+//						}
+//						tgVoip[type].onStreamPartAvailable(timestamp, null, status, responseTime, videoChannel, quality);
+//					}
+//				}, ConnectionsManager.RequestFlagFailOnServerErrorsExceptFloodWait, ConnectionsManager.ConnectionTypeDownload, groupCall.call.stream_dc_id);
+//				AndroidUtilities.runOnUIThread(() -> currentStreamRequestTimestamp.put(key, reqId));
+//			}, (timestamp, duration, videoChannel, quality) -> {
+//				if (type != CAPTURE_DEVICE_CAMERA) {
+//					return;
+//				}
+//				AndroidUtilities.runOnUIThread(() -> {
+//					String key = videoChannel == 0 ? ("" + timestamp) : (videoChannel + "_" + timestamp + "_" + quality);
+//					Integer reqId = currentStreamRequestTimestamp.get(key);
+//					if (reqId != null) {
+//						AccountInstance.getInstance(currentAccount).getConnectionsManager().cancelRequest(reqId, true);
+//						currentStreamRequestTimestamp.remove(key);
+//					}
+//				});
+//			}, taskPtr -> {
+//				if (groupCall != null && groupCall.call != null && groupCall.call.rtmp_stream) {
+//					TL_phone.getGroupCallStreamChannels req = new TL_phone.getGroupCallStreamChannels();
+//					req.call = groupCall.getInputGroupCall();
+//					if (groupCall == null || groupCall.call == null || tgVoip[type] == null) {
+//						if (tgVoip[type] != null) {
+//							tgVoip[type].onRequestTimeComplete(taskPtr, 0);
+//						}
+//						return;
+//					}
+//					ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error, responseTime) -> {
+//						long currentTime = 0;
+//						if (error == null) {
+//							TL_phone.groupCallStreamChannels res = (TL_phone.groupCallStreamChannels) response;
+//							if (!res.channels.isEmpty()) {
+//								currentTime = res.channels.get(0).last_timestamp_ms;
+//							}
+//							if (!groupCall.loadedRtmpStreamParticipant) {
+//								groupCall.createRtmpStreamParticipant(res.channels);
+//								groupCall.loadedRtmpStreamParticipant = true;
+//							}
+//						}
+//						if (tgVoip[type] != null) {
+//							tgVoip[type].onRequestTimeComplete(taskPtr, currentTime);
+//						}
+//					}, ConnectionsManager.RequestFlagFailOnServerErrorsExceptFloodWait, ConnectionsManager.ConnectionTypeDownload, groupCall.call.stream_dc_id);
+//				} else {
+//					if (tgVoip[type] != null) {
+//						tgVoip[type].onRequestTimeComplete(taskPtr, ConnectionsManager.getInstance(currentAccount).getCurrentTimeMillis());
+//					}
+//				}
+//			}, null);
+//			groupInstance[0].setOnStateUpdatedListener((state, inTransition) -> updateConnectionState(type, state, inTransition));
+//			cancelGroupCheckShortPoll();
+//			groupInstance[0].resetGroupInstance(false, false);
+//		}, 3000);
+//	}
 
 	private void updateConnectionState(int type, int state, boolean inTransition) {
 		if (type != CAPTURE_DEVICE_CAMERA) {
@@ -2329,7 +3286,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 			if (!wasConnected) {
 				wasConnected = true;
 				if (reconnectScreenCapture) {
-					createGroupInstance(CAPTURE_DEVICE_SCREEN, false);
+					createGroupInstance(CAPTURE_DEVICE_SCREEN, false, true);
 					reconnectScreenCapture = false;
 				}
 				NativeInstance instance = tgVoip[CAPTURE_DEVICE_CAMERA];
@@ -2347,7 +3304,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 		NativeInstance instance = tgVoip[CAPTURE_DEVICE_CAMERA];
 		if (instance != null) {
 			for (int a = 0, N = groupCall.participants.size(); a < N; a++) {
-				TLRPC.TL_groupCallParticipant participant = groupCall.participants.valueAt(a);
+				TLRPC.GroupCallParticipant participant = groupCall.participants.valueAt(a);
 				if (participant.self || participant.source == 0 || !participant.can_self_unmute && participant.muted) {
 					continue;
 				}
@@ -2360,7 +3317,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 		}
 	}
 
-	public void setParticipantVolume(TLRPC.TL_groupCallParticipant participant, int volume) {
+	public void setParticipantVolume(TLRPC.GroupCallParticipant participant, int volume) {
 		tgVoip[CAPTURE_DEVICE_CAMERA].setVolume(participant.source, volume / 10000.0);
 		if (participant.presentation != null && participant.presentation.audio_source != 0) {
 			tgVoip[CAPTURE_DEVICE_CAMERA].setVolume(participant.presentation.audio_source, volume / 10000.0);
@@ -2438,8 +3395,8 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 			final Instance.ServerConfig serverConfig = Instance.getGlobalServerConfig();
 			final boolean enableAec = !(sysAecAvailable && serverConfig.useSystemAec);
 			final boolean enableNs = !(sysNsAvailable && serverConfig.useSystemNs);
-			final String logFilePath = BuildVars.DEBUG_VERSION ? VoIPHelper.getLogFilePath("voip" + privateCall.id) : VoIPHelper.getLogFilePath(privateCall.id, false);
-			final String statsLogFilePath = VoIPHelper.getLogFilePath(privateCall.id, true);
+			final String logFilePath = BuildVars.DEBUG_VERSION ? VoIPHelper.getLogFilePath("voip" + privateCall.id) : VoIPHelper.getLogFilePath("" + privateCall.id, false);
+			final String statsLogFilePath = VoIPHelper.getLogFilePath("" + privateCall.id, true);
 			final Instance.Config config = new Instance.Config(initializationTimeout, receiveTimeout, voipDataSaving, privateCall.p2p_allowed, enableAec, enableNs, true, false, serverConfig.enableStunMarking, logFilePath, statsLogFilePath, privateCall.protocol.max_layer);
 
 			// persistent state
@@ -3015,7 +3972,10 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 		Notification.Builder builder = new Notification.Builder(this)
 				.setContentText(name)
 				.setContentIntent(PendingIntent.getActivity(this, 50, intent, PendingIntent.FLAG_MUTABLE));
-		if (groupCall != null) {
+		if (isConference()) {
+			builder.setContentTitle(LocaleController.getString(R.string.VoipConference));
+			builder.setSmallIcon(isMicMute() ? R.drawable.voicechat_muted : R.drawable.voicechat_active);
+		} else if (groupCall != null) {
 			builder.setContentTitle(ChatObject.isChannelOrGiga(chat) ? LocaleController.getString(R.string.VoipLiveStream) : LocaleController.getString(R.string.VoipVoiceChat));
 			builder.setSmallIcon(isMicMute() ? R.drawable.voicechat_muted : R.drawable.voicechat_active);
 		} else {
@@ -3026,7 +3986,9 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
 			Intent endIntent = new Intent(this, VoIPActionsReceiver.class);
 			endIntent.setAction(getPackageName() + ".END_CALL");
-			if (groupCall != null) {
+			if (isConference()) {
+				builder.addAction(R.drawable.ic_call_end_white_24dp, LocaleController.getString(R.string.VoipConferenceLeave), PendingIntent.getBroadcast(this, 0, endIntent, PendingIntent.FLAG_MUTABLE | PendingIntent.FLAG_UPDATE_CURRENT));
+			} else if (groupCall != null) {
 				builder.addAction(R.drawable.ic_call_end_white_24dp, ChatObject.isChannelOrGiga(chat) ? LocaleController.getString(R.string.VoipChannelLeaveAlertTitle) : LocaleController.getString(R.string.VoipGroupLeaveAlertTitle), PendingIntent.getBroadcast(this, 0, endIntent, PendingIntent.FLAG_MUTABLE | PendingIntent.FLAG_UPDATE_CURRENT));
 			} else {
 				builder.addAction(R.drawable.ic_call_end_white_24dp, LocaleController.getString(R.string.VoipEndCall), PendingIntent.getBroadcast(this, 0, endIntent, PendingIntent.FLAG_MUTABLE | PendingIntent.FLAG_UPDATE_CURRENT));
@@ -3046,7 +4008,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 			NotificationsController.checkOtherNotificationsChannel();
 			builder.setChannelId(NotificationsController.OTHER_NOTIFICATIONS_CHANNEL);
 		}
-		if (photo != null) {
+		if (!isConference() && photo != null) {
 			builder.setLargeIcon(photo);
 		}
 		try {
@@ -3185,6 +4147,9 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 			AndroidUtilities.cancelRunOnUIThread(timeoutRunnable);
 			timeoutRunnable = null;
 		}
+		if (conference != null) {
+			conference.destroy();
+		}
 		super.onDestroy();
 		sharedInstance = null;
 		FileLog.e("(5) set sharedInstance = null");
@@ -3211,6 +4176,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 			tgVoip[CAPTURE_DEVICE_CAMERA] = null;
 			Instance.destroyInstance();
 		}
+		destroyConverting();
 		if (tgVoip[CAPTURE_DEVICE_SCREEN] != null) {
 			NativeInstance instance = tgVoip[CAPTURE_DEVICE_SCREEN];
 			Utilities.globalQueue.postRunnable(instance::stopGroup);
@@ -3392,7 +4358,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 						}
 						callFailed();
 					}
-				}), ConnectionsManager.RequestFlagFailOnServerErrors);
+				}), ConnectionsManager.RequestFlagFailOnServerErrorsExceptFloodWait);
 			} else {
 				callFailed();
 			}
@@ -3449,6 +4415,10 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 			case DISCARD_REASON_LINE_BUSY:
 				req.reason = new TLRPC.TL_phoneCallDiscardReasonBusy();
 				break;
+			case DISCARD_REASON_CONVERT:
+				req.reason = new TLRPC.TL_phoneCallDiscardReasonMigrateConferenceCall();
+				req.reason.slug = "";
+				break;
 			case DISCARD_REASON_HANGUP:
 			default:
 				req.reason = new TLRPC.TL_phoneCallDiscardReasonHangup();
@@ -3469,7 +4439,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 					FileLog.d("phone.discardCall " + response);
 				}
 			}
-		}, ConnectionsManager.RequestFlagFailOnServerErrors);
+		}, ConnectionsManager.RequestFlagFailOnServerErrorsExceptFloodWait);
 		onDestroyRunnable = onDone;
 		callEnded();
 	}
@@ -3555,9 +4525,9 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 
 	private void showNotification() {
 		if (user != null) {
-			showNotification(ContactsController.formatName(user.first_name, user.last_name), getRoundAvatarBitmap(this, currentAccount, user));
+			showNotification(getTitle(), getRoundAvatarBitmap(this, currentAccount, user));
 		} else {
-			showNotification(chat.title, getRoundAvatarBitmap(this, currentAccount, chat));
+			showNotification(getTitle(), getRoundAvatarBitmap(this, currentAccount, chat));
 		}
 	}
 
@@ -3610,7 +4580,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 		}
 		if (TextUtils.isEmpty(finalState.debugLog)) {
 			try {
-				finalState.debugLog = getStringFromFile(VoIPHelper.getLogFilePath(privateCall.id, true));
+				finalState.debugLog = getStringFromFile(VoIPHelper.getLogFilePath("" + privateCall.id, true));
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
@@ -3790,6 +4760,9 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 			FileLog.d("== Call " + getCallID() + " state changed to " + state + " ==");
 		}
 		currentState = state;
+		if (currentState == STATE_ESTABLISHED) {
+			destroyConverting();
+		}
 		if (USE_CONNECTION_SERVICE && state == STATE_ESTABLISHED /*&& !wasEstablished*/ && systemCallConnection != null) {
 			systemCallConnection.setActive();
 		}
@@ -3800,9 +4773,11 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 	}
 
 	private void updateTrafficStats(NativeInstance instance, Instance.TrafficStats trafficStats) {
+		if (instance == null) return;
 		if (trafficStats == null) {
 			trafficStats = instance.getTrafficStats();
 		}
+		if (trafficStats == null) return;
 		final long wifiSentDiff = trafficStats.bytesSentWifi - (prevTrafficStats != null ? prevTrafficStats.bytesSentWifi : 0);
 		final long wifiRecvdDiff = trafficStats.bytesReceivedWifi - (prevTrafficStats != null ? prevTrafficStats.bytesReceivedWifi : 0);
 		final long mobileSentDiff = trafficStats.bytesSentMobile - (prevTrafficStats != null ? prevTrafficStats.bytesSentMobile : 0);
@@ -4135,7 +5110,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 				}
 			} else {
 				TLRPC.Chat chat = (TLRPC.Chat) userOrChat;
-				if (chat.photo != null && chat.photo.photo_small != null) {
+				if (chat != null && chat.photo != null && chat.photo.photo_small != null) {
 					BitmapDrawable img = ImageLoader.getInstance().getImageFromMemory(chat.photo.photo_small, null, "50_50");
 					if (img != null) {
 						bitmap = img.getBitmap().copy(Bitmap.Config.ARGB_8888, true);
@@ -4374,7 +5349,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 			if (BuildVars.LOGS_ENABLED) {
 				FileLog.d("Discarding failed call");
 			}
-			TL_phone.discardCall req = new TL_phone.discardCall();
+			final TL_phone.discardCall req = new TL_phone.discardCall();
 			req.peer = new TLRPC.TL_inputPhoneCall();
 			req.peer.access_hash = privateCall.access_hash;
 			req.peer.id = privateCall.id;
@@ -4425,6 +5400,9 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 	@Override
 	public void onConnectionStateChanged(int newState, boolean inTransition) {
 		AndroidUtilities.runOnUIThread(() -> {
+			if (convertingVoip != null) {
+				return;
+			}
 			if (newState == STATE_ESTABLISHED) {
 				if (callStartTime == 0) {
 					callStartTime = SystemClock.elapsedRealtime();
@@ -4628,18 +5606,18 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 		if (hasRtmpStream()) {
 			return;
 		}
-		if (tgVoip[CAPTURE_DEVICE_CAMERA] != null) {
-			if (!USE_CONNECTION_SERVICE) {
-				final AudioManager am = (AudioManager) getSystemService(AUDIO_SERVICE);
-				boolean isSpeakerPhoneOn = VoipAudioManager.get().isSpeakerphoneOn();
-				tgVoip[CAPTURE_DEVICE_CAMERA].setAudioOutputGainControlEnabled(hasEarpiece() && !isSpeakerPhoneOn && !am.isBluetoothScoOn() && !isHeadsetPlugged);
-				tgVoip[CAPTURE_DEVICE_CAMERA].setEchoCancellationStrength(isHeadsetPlugged || (hasEarpiece() && !isSpeakerPhoneOn && !am.isBluetoothScoOn() && !isHeadsetPlugged) ? 0 : 1);
-			} else {
-				final boolean isEarpiece = systemCallConnection.getCallAudioState().getRoute() == CallAudioState.ROUTE_EARPIECE;
-				tgVoip[CAPTURE_DEVICE_CAMERA].setAudioOutputGainControlEnabled(isEarpiece);
-				tgVoip[CAPTURE_DEVICE_CAMERA].setEchoCancellationStrength(isEarpiece ? 0 : 1);
-			}
-		}
+//		if (tgVoip[CAPTURE_DEVICE_CAMERA] != null) {
+//			if (!USE_CONNECTION_SERVICE) {
+//				final AudioManager am = (AudioManager) getSystemService(AUDIO_SERVICE);
+//				boolean isSpeakerPhoneOn = VoipAudioManager.get().isSpeakerphoneOn();
+//				tgVoip[CAPTURE_DEVICE_CAMERA].setAudioOutputGainControlEnabled(hasEarpiece() && !isSpeakerPhoneOn && !am.isBluetoothScoOn() && !isHeadsetPlugged);
+//				tgVoip[CAPTURE_DEVICE_CAMERA].setEchoCancellationStrength(isHeadsetPlugged || (hasEarpiece() && !isSpeakerPhoneOn && !am.isBluetoothScoOn() && !isHeadsetPlugged) ? 0 : 1);
+//			} else {
+//				final boolean isEarpiece = systemCallConnection.getCallAudioState().getRoute() == CallAudioState.ROUTE_EARPIECE;
+//				tgVoip[CAPTURE_DEVICE_CAMERA].setAudioOutputGainControlEnabled(isEarpiece);
+//				tgVoip[CAPTURE_DEVICE_CAMERA].setEchoCancellationStrength(isEarpiece ? 0 : 1);
+//			}
+//		}
 	}
 
 	public int getAccount() {
@@ -4806,6 +5784,28 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 				FileLog.d("onSlience");
 			}
 			stopRinging();
+		}
+	}
+
+	public void processMessageUpdate(MessageObject messageObject) {
+		if (messageObject == null) return;
+		if (messageObject.messageOwner == null) return;
+		if (messageObject.messageOwner.action instanceof TLRPC.TL_messageActionConferenceCall) {
+			final long dialogId = messageObject.getDialogId();
+			final int msg_id = messageObject.getId();
+			final TLRPC.TL_messageActionConferenceCall action = (TLRPC.TL_messageActionConferenceCall) messageObject.messageOwner.action;
+
+			if (groupCall != null) {
+				final ChatObject.Call.InvitedUser invited = groupCall.invitedUsersMessageIds.get(dialogId);
+				if (invited != null && invited.msg_id == msg_id) {
+					final boolean calling = !action.missed && !action.active;
+					if (invited.isCalling() != calling) {
+						invited.calling = calling;
+						groupCall.invitedUsersMessageIds.put(dialogId, invited);
+						NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.groupCallUpdated, 0L, groupCall.call.id, false);
+					}
+				}
+			}
 		}
 	}
 

@@ -14,8 +14,6 @@
 #if defined(WEBRTC_POSIX)
 
 #include <pthread.h>
-#include <android/api-level.h>
-
 #if defined(WEBRTC_MAC)
 #include <pthread_spis.h>
 #endif
@@ -25,14 +23,6 @@
 #include "rtc_base/thread_annotations.h"
 
 namespace webrtc {
-
-    struct pthread_mutex_internal_t {
-        std::atomic<uint16_t> state;
-    } __attribute__((aligned(4)));
-
-    static inline pthread_mutex_internal_t* __get_internal_mutex(pthread_mutex_t* mutex_interface) {
-        return reinterpret_cast<pthread_mutex_internal_t*>(mutex_interface);
-    }
 
 class RTC_LOCKABLE MutexImpl final {
  public:
@@ -48,22 +38,13 @@ class RTC_LOCKABLE MutexImpl final {
   }
   MutexImpl(const MutexImpl&) = delete;
   MutexImpl& operator=(const MutexImpl&) = delete;
-  ~MutexImpl() {
-      if (mutexEnabled()) {
-          pthread_mutex_destroy(&mutex_);
-      }
-  }
+  ~MutexImpl() { pthread_mutex_destroy(&mutex_); }
 
   void Lock() RTC_EXCLUSIVE_LOCK_FUNCTION() {
-      if (mutexEnabled()) {
-          pthread_mutex_lock(&mutex_);
-      }
+    pthread_mutex_lock(&mutex_);
     owner_.SetOwner();
   }
   ABSL_MUST_USE_RESULT bool TryLock() RTC_EXCLUSIVE_TRYLOCK_FUNCTION(true) {
-      if (!mutexEnabled()) {
-          return false;
-      }
     if (pthread_mutex_trylock(&mutex_) != 0) {
       return false;
     }
@@ -73,21 +54,10 @@ class RTC_LOCKABLE MutexImpl final {
   void AssertHeld() const RTC_ASSERT_EXCLUSIVE_LOCK() { owner_.AssertOwned(); }
   void Unlock() RTC_UNLOCK_FUNCTION() {
     owner_.ClearOwner();
-      if (mutexEnabled()) {
-          pthread_mutex_unlock(&mutex_);
-      }
+    pthread_mutex_unlock(&mutex_);
   }
 
  private:
-    // pthread mutex lead to crash when try use destroyed instance on android 9 and above
-    bool mutexEnabled() {
-        if (android_get_device_api_level() >= 28) {
-            pthread_mutex_internal_t *mutex = __get_internal_mutex(&mutex_);
-            uint16_t mutex_state = std::atomic_load_explicit(&mutex->state, std::memory_order_relaxed);
-            return mutex_state != 0xffff;
-        }
-        return true;
-    }
   class OwnerRecord {
    public:
 #if !RTC_DCHECK_IS_ON

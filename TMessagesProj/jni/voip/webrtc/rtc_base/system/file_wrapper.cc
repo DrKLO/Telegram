@@ -10,15 +10,19 @@
 
 #include "rtc_base/system/file_wrapper.h"
 
+#include <stddef.h>
+
 #include <cerrno>
+#include <cstdint>
+#include <string>
 
 #include "absl/strings/string_view.h"
+#include "rtc_base/checks.h"
 #include "rtc_base/numerics/safe_conversions.h"
 
 #ifdef _WIN32
 #include <Windows.h>
 #else
-#include <string.h>
 #endif
 
 #include <utility>

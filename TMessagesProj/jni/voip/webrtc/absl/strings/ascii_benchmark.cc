@@ -14,7 +14,9 @@
 
 #include "absl/strings/ascii.h"
 
+#include <algorithm>
 #include <cctype>
+#include <cstddef>
 #include <string>
 #include <array>
 #include <random>
@@ -100,21 +102,59 @@ BENCHMARK_TEMPLATE(BM_Ascii, std::toupper);
 BENCHMARK_TEMPLATE(BM_Ascii, absl::ascii_toupper);
 
 static void BM_StrToLower(benchmark::State& state) {
-  const int size = state.range(0);
+  const size_t size = static_cast<size_t>(state.range(0));
   std::string s(size, 'X');
   for (auto _ : state) {
-    benchmark::DoNotOptimize(absl::AsciiStrToLower(s));
+    benchmark::DoNotOptimize(s);
+    std::string res = absl::AsciiStrToLower(s);
+    benchmark::DoNotOptimize(res);
   }
 }
-BENCHMARK(BM_StrToLower)->Range(1, 1 << 20);
+BENCHMARK(BM_StrToLower)
+    ->DenseRange(0, 32)
+    ->RangeMultiplier(2)
+    ->Range(64, 1 << 26);
 
 static void BM_StrToUpper(benchmark::State& state) {
-  const int size = state.range(0);
+  const size_t size = static_cast<size_t>(state.range(0));
   std::string s(size, 'x');
   for (auto _ : state) {
-    benchmark::DoNotOptimize(absl::AsciiStrToUpper(s));
+    benchmark::DoNotOptimize(s);
+    std::string res = absl::AsciiStrToUpper(s);
+    benchmark::DoNotOptimize(res);
   }
 }
-BENCHMARK(BM_StrToUpper)->Range(1, 1 << 20);
+BENCHMARK(BM_StrToUpper)
+    ->DenseRange(0, 32)
+    ->RangeMultiplier(2)
+    ->Range(64, 1 << 26);
+
+static void BM_StrToUpperFromRvalref(benchmark::State& state) {
+  const size_t size = static_cast<size_t>(state.range(0));
+  std::string s(size, 'X');
+  for (auto _ : state) {
+    benchmark::DoNotOptimize(s);
+    std::string res = absl::AsciiStrToUpper(std::string(s));
+    benchmark::DoNotOptimize(res);
+  }
+}
+BENCHMARK(BM_StrToUpperFromRvalref)
+    ->DenseRange(0, 32)
+    ->RangeMultiplier(2)
+    ->Range(64, 1 << 26);
+
+static void BM_StrToLowerFromRvalref(benchmark::State& state) {
+  const size_t size = static_cast<size_t>(state.range(0));
+  std::string s(size, 'x');
+  for (auto _ : state) {
+    benchmark::DoNotOptimize(s);
+    std::string res = absl::AsciiStrToLower(std::string(s));
+    benchmark::DoNotOptimize(res);
+  }
+}
+BENCHMARK(BM_StrToLowerFromRvalref)
+    ->DenseRange(0, 32)
+    ->RangeMultiplier(2)
+    ->Range(64, 1 << 26);
 
 }  // namespace

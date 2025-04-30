@@ -1,0 +1,7 @@
+1.2.840.113554.4.1.72585.2 = ASN1:SEQ:seq1
+
+[seq1]
+val = SEQ:seq2
+[seq2]
+val = SEQ:seq1
+

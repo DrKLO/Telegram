@@ -1,117 +1,23 @@
-/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
- * All rights reserved.
- *
- * This package is an SSL implementation written
- * by Eric Young (eay@cryptsoft.com).
- * The implementation was written so as to conform with Netscapes SSL.
- *
- * This library is free for commercial and non-commercial use as long as
- * the following conditions are aheared to.  The following conditions
- * apply to all code found in this distribution, be it the RC4, RSA,
- * lhash, DES, etc., code; not just the SSL code.  The SSL documentation
- * included with this distribution is covered by the same copyright terms
- * except that the holder is Tim Hudson (tjh@cryptsoft.com).
- *
- * Copyright remains Eric Young's, and as such any Copyright notices in
- * the code are not to be removed.
- * If this package is used in a product, Eric Young should be given attribution
- * as the author of the parts of the library used.
- * This can be in the form of a textual message at program startup or
- * in documentation (online or textual) provided with the package.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- * 1. Redistributions of source code must retain the copyright
- *    notice, this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
- * 3. All advertising materials mentioning features or use of this software
- *    must display the following acknowledgement:
- *    "This product includes cryptographic software written by
- *     Eric Young (eay@cryptsoft.com)"
- *    The word 'cryptographic' can be left out if the rouines from the library
- *    being used are not cryptographic related :-).
- * 4. If you include any Windows specific code (or a derivative thereof) from
- *    the apps directory (application code) you must include an acknowledgement:
- *    "This product includes software written by Tim Hudson (tjh@cryptsoft.com)"
- *
- * THIS SOFTWARE IS PROVIDED BY ERIC YOUNG ``AS IS'' AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
- * SUCH DAMAGE.
- *
- * The licence and distribution terms for any publically available version or
- * derivative of this code cannot be changed.  i.e. this code cannot simply be
- * copied and put under another distribution licence
- * [including the GNU Public Licence.]
- */
-/* ====================================================================
- * Copyright (c) 1998-2006 The OpenSSL Project.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- *
- * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- *
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- *
- * 3. All advertising materials mentioning features or use of this
- *    software must display the following acknowledgment:
- *    "This product includes software developed by the OpenSSL Project
- *    for use in the OpenSSL Toolkit. (http://www.openssl.org/)"
- *
- * 4. The names "OpenSSL Toolkit" and "OpenSSL Project" must not be used to
- *    endorse or promote products derived from this software without
- *    prior written permission. For written permission, please contact
- *    openssl-core@openssl.org.
- *
- * 5. Products derived from this software may not be called "OpenSSL"
- *    nor may "OpenSSL" appear in their names without prior written
- *    permission of the OpenSSL Project.
- *
- * 6. Redistributions of any form whatsoever must retain the following
- *    acknowledgment:
- *    "This product includes software developed by the OpenSSL Project
- *    for use in the OpenSSL Toolkit (http://www.openssl.org/)"
- *
- * THIS SOFTWARE IS PROVIDED BY THE OpenSSL PROJECT ``AS IS'' AND ANY
- * EXPRESSED OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
- * PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE OpenSSL PROJECT OR
- * ITS CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
- * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
- * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
- * OF THE POSSIBILITY OF SUCH DAMAGE.
- * ====================================================================
- *
- * This product includes cryptographic software written by Eric Young
- * (eay@cryptsoft.com).  This product includes software written by Tim
- * Hudson (tjh@cryptsoft.com). */
+// Copyright 1995-2016 The OpenSSL Project Authors. All Rights Reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 #ifndef OPENSSL_HEADER_ERR_H
 #define OPENSSL_HEADER_ERR_H
 
 #include <stdio.h>
 
-#include <openssl/base.h>
+#include <openssl/base.h>   // IWYU pragma: export
 
 #if defined(__cplusplus)
 extern "C" {
@@ -163,12 +69,16 @@ OPENSSL_EXPORT void ERR_free_strings(void);
 
 // ERR_GET_LIB returns the library code for the error. This is one of
 // the |ERR_LIB_*| values.
-#define ERR_GET_LIB(packed_error) ((int)(((packed_error) >> 24) & 0xff))
+OPENSSL_INLINE int ERR_GET_LIB(uint32_t packed_error) {
+  return (int)((packed_error >> 24) & 0xff);
+}
 
 // ERR_GET_REASON returns the reason code for the error. This is one of
 // library-specific |LIB_R_*| values where |LIB| is the library (see
 // |ERR_GET_LIB|). Note that reason codes are specific to the library.
-#define ERR_GET_REASON(packed_error) ((int)((packed_error) & 0xfff))
+OPENSSL_INLINE int ERR_GET_REASON(uint32_t packed_error) {
+  return (int)(packed_error & 0xfff);
+}
 
 // ERR_get_error gets the packed error code for the least recent error and
 // removes that error from the queue. If there are no errors in the queue then
@@ -182,6 +92,15 @@ OPENSSL_EXPORT uint32_t ERR_get_error_line(const char **file, int *line);
 // ERR_FLAG_STRING means that the |data| member is a NUL-terminated string that
 // can be printed. This is always set if |data| is non-NULL.
 #define ERR_FLAG_STRING 1
+
+// ERR_FLAG_MALLOCED is passed into |ERR_set_error_data| to indicate that |data|
+// was allocated with |OPENSSL_malloc|.
+//
+// It is, separately, returned in |*flags| from |ERR_get_error_line_data| to
+// indicate that |*data| has a non-static lifetime, but this lifetime is still
+// managed by the library. The caller must not call |OPENSSL_free| or |free| on
+// |data|.
+#define ERR_FLAG_MALLOCED 2
 
 // ERR_get_error_line_data acts like |ERR_get_error_line|, but also returns the
 // error-specific data pointer and flags. The flags are a bitwise-OR of
@@ -209,9 +128,9 @@ OPENSSL_EXPORT uint32_t ERR_peek_last_error_line_data(const char **file,
                                                       int *flags);
 
 // ERR_error_string_n generates a human-readable string representing
-// |packed_error| and places it at |buf|. It writes at most |len| bytes
-// (including the terminating NUL) and truncates the string if necessary. If
-// |len| is greater than zero then |buf| is always NUL terminated.
+// |packed_error|, places it at |buf|, and returns |buf|. It writes at most
+// |len| bytes (including the terminating NUL) and truncates the string if
+// necessary. If |len| is greater than zero then |buf| is always NUL terminated.
 //
 // The string will have the following format:
 //
@@ -219,16 +138,30 @@ OPENSSL_EXPORT uint32_t ERR_peek_last_error_line_data(const char **file,
 //
 // error code is an 8 digit hexadecimal number; library name and reason string
 // are ASCII text.
-OPENSSL_EXPORT void ERR_error_string_n(uint32_t packed_error, char *buf,
-                                       size_t len);
+OPENSSL_EXPORT char *ERR_error_string_n(uint32_t packed_error, char *buf,
+                                        size_t len);
 
 // ERR_lib_error_string returns a string representation of the library that
-// generated |packed_error|.
+// generated |packed_error|, or a placeholder string is the library is
+// unrecognized.
 OPENSSL_EXPORT const char *ERR_lib_error_string(uint32_t packed_error);
 
 // ERR_reason_error_string returns a string representation of the reason for
-// |packed_error|.
+// |packed_error|, or a placeholder string if the reason is unrecognized.
 OPENSSL_EXPORT const char *ERR_reason_error_string(uint32_t packed_error);
+
+// ERR_lib_symbol_name returns the symbol name of library that generated
+// |packed_error|, or NULL if unrecognized. For example, an error from
+// |ERR_LIB_EVP| would return "EVP".
+OPENSSL_EXPORT const char *ERR_lib_symbol_name(uint32_t packed_error);
+
+// ERR_reason_symbol_name returns the symbol name of the reason for
+// |packed_error|, or NULL if unrecognized. For example, |ERR_R_INTERNAL_ERROR|
+// would return "INTERNAL_ERROR".
+//
+// Errors from the |ERR_LIB_SYS| library are typically |errno| values and will
+// return NULL. User-defined errors will also return NULL.
+OPENSSL_EXPORT const char *ERR_reason_symbol_name(uint32_t packed_error);
 
 // ERR_print_errors_callback_t is the type of a function used by
 // |ERR_print_errors_cb|. It takes a pointer to a human readable string (and
@@ -319,6 +252,7 @@ enum {
   ERR_LIB_DIGEST,
   ERR_LIB_CIPHER,
   ERR_LIB_HKDF,
+  ERR_LIB_TRUST_TOKEN,
   ERR_LIB_USER,
   ERR_NUM_LIBS
 };
@@ -362,6 +296,7 @@ enum {
 #define ERR_R_DIGEST_LIB ERR_LIB_DIGEST
 #define ERR_R_CIPHER_LIB ERR_LIB_CIPHER
 #define ERR_R_HKDF_LIB ERR_LIB_HKDF
+#define ERR_R_TRUST_TOKEN_LIB ERR_LIB_TRUST_TOKEN
 
 // The following values are global reason codes. They may occur in any library.
 #define ERR_R_FATAL 64
@@ -389,10 +324,12 @@ OPENSSL_EXPORT void ERR_remove_thread_state(const CRYPTO_THREADID *tid);
 OPENSSL_EXPORT const char *ERR_func_error_string(uint32_t packed_error);
 
 // ERR_error_string behaves like |ERR_error_string_n| but |len| is implicitly
-// |ERR_ERROR_STRING_BUF_LEN| and it returns |buf|. If |buf| is NULL, the error
-// string is placed in a static buffer which is returned. (The static buffer may
-// be overridden by concurrent calls in other threads so this form should not be
-// used.)
+// |ERR_ERROR_STRING_BUF_LEN|.
+//
+// Additionally, if |buf| is NULL, the error string is placed in a static buffer
+// which is returned. This is not thread-safe and only exists for backwards
+// compatibility with legacy callers. The static buffer will be overridden by
+// calls in other threads.
 //
 // Use |ERR_error_string_n| instead.
 //
@@ -401,11 +338,15 @@ OPENSSL_EXPORT char *ERR_error_string(uint32_t packed_error, char *buf);
 #define ERR_ERROR_STRING_BUF_LEN 120
 
 // ERR_GET_FUNC returns zero. BoringSSL errors do not report a function code.
-#define ERR_GET_FUNC(packed_error) 0
+OPENSSL_INLINE int ERR_GET_FUNC(uint32_t packed_error) {
+  (void)packed_error;
+  return 0;
+}
 
-// ERR_TXT_STRING is provided for compatibility with code that assumes that
-// it's using OpenSSL.
+// ERR_TXT_* are provided for compatibility with code that assumes that it's
+// using OpenSSL.
 #define ERR_TXT_STRING ERR_FLAG_STRING
+#define ERR_TXT_MALLOCED ERR_FLAG_MALLOCED
 
 
 // Private functions.
@@ -438,6 +379,17 @@ OPENSSL_EXPORT void ERR_add_error_data(unsigned count, ...);
 // result as the data on the most recent error.
 OPENSSL_EXPORT void ERR_add_error_dataf(const char *format, ...)
     OPENSSL_PRINTF_FORMAT_FUNC(1, 2);
+
+// ERR_set_error_data sets the data on the most recent error to |data|, which
+// must be a NUL-terminated string. |flags| must contain |ERR_FLAG_STRING|. If
+// |flags| contains |ERR_FLAG_MALLOCED|, this function takes ownership of
+// |data|, which must have been allocated with |OPENSSL_malloc|. Otherwise, it
+// saves a copy of |data|.
+//
+// Note this differs from OpenSSL which, when |ERR_FLAG_MALLOCED| is unset,
+// saves the pointer as-is and requires it remain valid for the lifetime of the
+// address space.
+OPENSSL_EXPORT void ERR_set_error_data(char *data, int flags);
 
 // ERR_NUM_ERRORS is one more than the limit of the number of errors in the
 // queue.

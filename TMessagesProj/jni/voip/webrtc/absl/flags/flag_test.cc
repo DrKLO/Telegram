@@ -19,27 +19,30 @@
 #include <stdint.h>
 
 #include <atomic>
-#include <cmath>
-#include <new>
 #include <string>
 #include <thread>  // NOLINT
 #include <vector>
 
 #include "gtest/gtest.h"
 #include "absl/base/attributes.h"
+#include "absl/base/internal/raw_logging.h"
 #include "absl/base/macros.h"
 #include "absl/flags/config.h"
 #include "absl/flags/declare.h"
 #include "absl/flags/internal/flag.h"
 #include "absl/flags/marshalling.h"
+#include "absl/flags/parse.h"
 #include "absl/flags/reflection.h"
 #include "absl/flags/usage_config.h"
+#include "absl/numeric/int128.h"
 #include "absl/strings/match.h"
 #include "absl/strings/numbers.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
+#include "absl/time/clock.h"
 #include "absl/time/time.h"
+#include "absl/types/optional.h"
 
 ABSL_DECLARE_FLAG(int64_t, mistyped_int_flag);
 ABSL_DECLARE_FLAG(std::vector<std::string>, mistyped_string_flag);
@@ -124,9 +127,14 @@ TEST_F(FlagTest, Traits) {
 #endif
 
   EXPECT_EQ(flags::StorageKind<std::string>(),
-            flags::FlagValueStorageKind::kAlignedBuffer);
+            flags::FlagValueStorageKind::kHeapAllocated);
   EXPECT_EQ(flags::StorageKind<std::vector<std::string>>(),
-            flags::FlagValueStorageKind::kAlignedBuffer);
+            flags::FlagValueStorageKind::kHeapAllocated);
+
+  EXPECT_EQ(flags::StorageKind<absl::int128>(),
+            flags::FlagValueStorageKind::kSequenceLocked);
+  EXPECT_EQ(flags::StorageKind<absl::uint128>(),
+            flags::FlagValueStorageKind::kSequenceLocked);
 }
 
 // --------------------------------------------------------------------
@@ -135,30 +143,21 @@ constexpr flags::FlagHelpArg help_arg{flags::FlagHelpMsg("literal help"),
                                       flags::FlagHelpKind::kLiteral};
 
 using String = std::string;
+using int128 = absl::int128;
+using uint128 = absl::uint128;
 
-#if !defined(_MSC_VER) || defined(__clang__)
 #define DEFINE_CONSTRUCTED_FLAG(T, dflt, dflt_kind)                        \
   constexpr flags::FlagDefaultArg f1default##T{                            \
       flags::FlagDefaultSrc{dflt}, flags::FlagDefaultKind::dflt_kind};     \
-  constexpr absl::Flag<T> f1##T{"f1", "file", help_arg, f1default##T};     \
+  constexpr absl::Flag<T> f1##T{"f1", #T, "file", help_arg, f1default##T}; \
   ABSL_CONST_INIT absl::Flag<T> f2##T {                                    \
-    "f2", "file",                                                          \
+    "f2", #T, "file",                                                      \
         {flags::FlagHelpMsg(&TestHelpMsg), flags::FlagHelpKind::kGenFunc}, \
         flags::FlagDefaultArg {                                            \
       flags::FlagDefaultSrc(&TestMakeDflt<T>),                             \
           flags::FlagDefaultKind::kGenFunc                                 \
     }                                                                      \
   }
-#else
-#define DEFINE_CONSTRUCTED_FLAG(T, dflt, dflt_kind)                    \
-  constexpr flags::FlagDefaultArg f1default##T{                        \
-      flags::FlagDefaultSrc{dflt}, flags::FlagDefaultKind::dflt_kind}; \
-  constexpr absl::Flag<T> f1##T{"f1", "file", &TestLiteralHelpMsg,     \
-                                &TestMakeDflt<T>};                     \
-  ABSL_CONST_INIT absl::Flag<T> f2##T {                                \
-    "f2", "file", &TestHelpMsg, &TestMakeDflt<T>                       \
-  }
-#endif
 
 DEFINE_CONSTRUCTED_FLAG(bool, true, kOneWord);
 DEFINE_CONSTRUCTED_FLAG(int16_t, 1, kOneWord);
@@ -171,6 +170,8 @@ DEFINE_CONSTRUCTED_FLAG(float, 7.8, kOneWord);
 DEFINE_CONSTRUCTED_FLAG(double, 9.10, kOneWord);
 DEFINE_CONSTRUCTED_FLAG(String, &TestMakeDflt<String>, kGenFunc);
 DEFINE_CONSTRUCTED_FLAG(UDT, &TestMakeDflt<UDT>, kGenFunc);
+DEFINE_CONSTRUCTED_FLAG(int128, 13, kGenFunc);
+DEFINE_CONSTRUCTED_FLAG(uint128, 14, kGenFunc);
 
 template <typename T>
 bool TestConstructionFor(const absl::Flag<T>& f1, absl::Flag<T>& f2) {
@@ -202,6 +203,8 @@ TEST_F(FlagTest, TestConstruction) {
   TEST_CONSTRUCTED_FLAG(double);
   TEST_CONSTRUCTED_FLAG(String);
   TEST_CONSTRUCTED_FLAG(UDT);
+  TEST_CONSTRUCTED_FLAG(int128);
+  TEST_CONSTRUCTED_FLAG(uint128);
 }
 
 // --------------------------------------------------------------------
@@ -220,12 +223,15 @@ ABSL_DECLARE_FLAG(double, test_flag_09);
 ABSL_DECLARE_FLAG(float, test_flag_10);
 ABSL_DECLARE_FLAG(std::string, test_flag_11);
 ABSL_DECLARE_FLAG(absl::Duration, test_flag_12);
+ABSL_DECLARE_FLAG(absl::int128, test_flag_13);
+ABSL_DECLARE_FLAG(absl::uint128, test_flag_14);
 
 namespace {
 
-#if !ABSL_FLAGS_STRIP_NAMES
-
 TEST_F(FlagTest, TestFlagDeclaration) {
+#if ABSL_FLAGS_STRIP_NAMES
+  GTEST_SKIP() << "This test requires flag names to be present";
+#endif
   // test that we can access flag objects.
   EXPECT_EQ(absl::GetFlagReflectionHandle(FLAGS_test_flag_01).Name(),
             "test_flag_01");
@@ -251,12 +257,31 @@ TEST_F(FlagTest, TestFlagDeclaration) {
             "test_flag_11");
   EXPECT_EQ(absl::GetFlagReflectionHandle(FLAGS_test_flag_12).Name(),
             "test_flag_12");
+  EXPECT_EQ(absl::GetFlagReflectionHandle(FLAGS_test_flag_13).Name(),
+            "test_flag_13");
+  EXPECT_EQ(absl::GetFlagReflectionHandle(FLAGS_test_flag_14).Name(),
+            "test_flag_14");
 }
-#endif  // !ABSL_FLAGS_STRIP_NAMES
-
-// --------------------------------------------------------------------
 
 }  // namespace
+
+#if ABSL_FLAGS_STRIP_NAMES
+// The intent of this helper struct and an expression below is to make sure that
+// in the configuration where ABSL_FLAGS_STRIP_NAMES=1 registrar construction
+// (in cases of no Tail calls like OnUpdate) is constexpr and thus can and
+// should be completely optimized away, thus avoiding the cost/overhead of
+// static initializers.
+struct VerifyConsteval {
+  friend consteval flags::FlagRegistrarEmpty operator+(
+      flags::FlagRegistrarEmpty, VerifyConsteval) {
+    return {};
+  }
+};
+
+ABSL_FLAG(int, test_registrar_const_init, 0, "") + VerifyConsteval();
+#endif
+
+// --------------------------------------------------------------------
 
 ABSL_FLAG(bool, test_flag_01, true, "test flag 01");
 ABSL_FLAG(int, test_flag_02, 1234, "test flag 02");
@@ -270,11 +295,16 @@ ABSL_FLAG(double, test_flag_09, -9.876e-50, "test flag 09");
 ABSL_FLAG(float, test_flag_10, 1.234e12f, "test flag 10");
 ABSL_FLAG(std::string, test_flag_11, "", "test flag 11");
 ABSL_FLAG(absl::Duration, test_flag_12, absl::Minutes(10), "test flag 12");
+ABSL_FLAG(absl::int128, test_flag_13, absl::MakeInt128(-1, 0), "test flag 13");
+ABSL_FLAG(absl::uint128, test_flag_14, absl::MakeUint128(0, 0xFFFAAABBBCCCDDD),
+          "test flag 14");
 
 namespace {
 
-#if !ABSL_FLAGS_STRIP_NAMES
 TEST_F(FlagTest, TestFlagDefinition) {
+#if ABSL_FLAGS_STRIP_NAMES
+  GTEST_SKIP() << "This test requires flag names to be present";
+#endif
   absl::string_view expected_file_name = "absl/flags/flag_test.cc";
 
   EXPECT_EQ(absl::GetFlagReflectionHandle(FLAGS_test_flag_01).Name(),
@@ -384,8 +414,25 @@ TEST_F(FlagTest, TestFlagDefinition) {
       absl::GetFlagReflectionHandle(FLAGS_test_flag_12).Filename(),
       expected_file_name))
       << absl::GetFlagReflectionHandle(FLAGS_test_flag_12).Filename();
+
+  EXPECT_EQ(absl::GetFlagReflectionHandle(FLAGS_test_flag_13).Name(),
+            "test_flag_13");
+  EXPECT_EQ(absl::GetFlagReflectionHandle(FLAGS_test_flag_13).Help(),
+            "test flag 13");
+  EXPECT_TRUE(absl::EndsWith(
+      absl::GetFlagReflectionHandle(FLAGS_test_flag_13).Filename(),
+      expected_file_name))
+      << absl::GetFlagReflectionHandle(FLAGS_test_flag_13).Filename();
+
+  EXPECT_EQ(absl::GetFlagReflectionHandle(FLAGS_test_flag_14).Name(),
+            "test_flag_14");
+  EXPECT_EQ(absl::GetFlagReflectionHandle(FLAGS_test_flag_14).Help(),
+            "test flag 14");
+  EXPECT_TRUE(absl::EndsWith(
+      absl::GetFlagReflectionHandle(FLAGS_test_flag_14).Filename(),
+      expected_file_name))
+      << absl::GetFlagReflectionHandle(FLAGS_test_flag_14).Filename();
 }
-#endif  // !ABSL_FLAGS_STRIP_NAMES
 
 // --------------------------------------------------------------------
 
@@ -414,6 +461,10 @@ TEST_F(FlagTest, TestDefault) {
             "");
   EXPECT_EQ(absl::GetFlagReflectionHandle(FLAGS_test_flag_12).DefaultValue(),
             "10m");
+  EXPECT_EQ(absl::GetFlagReflectionHandle(FLAGS_test_flag_13).DefaultValue(),
+            "-18446744073709551616");
+  EXPECT_EQ(absl::GetFlagReflectionHandle(FLAGS_test_flag_14).DefaultValue(),
+            "1152827684197027293");
 
   EXPECT_EQ(absl::GetFlagReflectionHandle(FLAGS_test_flag_01).CurrentValue(),
             "true");
@@ -439,6 +490,10 @@ TEST_F(FlagTest, TestDefault) {
             "");
   EXPECT_EQ(absl::GetFlagReflectionHandle(FLAGS_test_flag_12).CurrentValue(),
             "10m");
+  EXPECT_EQ(absl::GetFlagReflectionHandle(FLAGS_test_flag_13).CurrentValue(),
+            "-18446744073709551616");
+  EXPECT_EQ(absl::GetFlagReflectionHandle(FLAGS_test_flag_14).CurrentValue(),
+            "1152827684197027293");
 
   EXPECT_EQ(absl::GetFlag(FLAGS_test_flag_01), true);
   EXPECT_EQ(absl::GetFlag(FLAGS_test_flag_02), 1234);
@@ -452,14 +507,19 @@ TEST_F(FlagTest, TestDefault) {
   EXPECT_NEAR(absl::GetFlag(FLAGS_test_flag_10), 1.234e12f, 1e5f);
   EXPECT_EQ(absl::GetFlag(FLAGS_test_flag_11), "");
   EXPECT_EQ(absl::GetFlag(FLAGS_test_flag_12), absl::Minutes(10));
+  EXPECT_EQ(absl::GetFlag(FLAGS_test_flag_13), absl::MakeInt128(-1, 0));
+  EXPECT_EQ(absl::GetFlag(FLAGS_test_flag_14),
+            absl::MakeUint128(0, 0xFFFAAABBBCCCDDD));
 }
 
 // --------------------------------------------------------------------
 
 struct NonTriviallyCopyableAggregate {
   NonTriviallyCopyableAggregate() = default;
+  // NOLINTNEXTLINE
   NonTriviallyCopyableAggregate(const NonTriviallyCopyableAggregate& rhs)
       : value(rhs.value) {}
+  // NOLINTNEXTLINE
   NonTriviallyCopyableAggregate& operator=(
       const NonTriviallyCopyableAggregate& rhs) {
     value = rhs.value;
@@ -553,11 +613,21 @@ TEST_F(FlagTest, TestGetSet) {
 
   absl::SetFlag(&FLAGS_test_flag_12, absl::Seconds(110));
   EXPECT_EQ(absl::GetFlag(FLAGS_test_flag_12), absl::Seconds(110));
+
+  absl::SetFlag(&FLAGS_test_flag_13, absl::MakeInt128(-1, 0));
+  EXPECT_EQ(absl::GetFlag(FLAGS_test_flag_13), absl::MakeInt128(-1, 0));
+
+  absl::SetFlag(&FLAGS_test_flag_14, absl::MakeUint128(0, 0xFFFAAABBBCCCDDD));
+  EXPECT_EQ(absl::GetFlag(FLAGS_test_flag_14),
+            absl::MakeUint128(0, 0xFFFAAABBBCCCDDD));
 }
 
 // --------------------------------------------------------------------
 
 TEST_F(FlagTest, TestGetViaReflection) {
+#if ABSL_FLAGS_STRIP_NAMES
+  GTEST_SKIP() << "This test requires flag names to be present";
+#endif
   auto* handle = absl::FindCommandLineFlag("test_flag_01");
   EXPECT_EQ(*handle->TryGet<bool>(), true);
   handle = absl::FindCommandLineFlag("test_flag_02");
@@ -582,11 +652,19 @@ TEST_F(FlagTest, TestGetViaReflection) {
   EXPECT_EQ(*handle->TryGet<std::string>(), "");
   handle = absl::FindCommandLineFlag("test_flag_12");
   EXPECT_EQ(*handle->TryGet<absl::Duration>(), absl::Minutes(10));
+  handle = absl::FindCommandLineFlag("test_flag_13");
+  EXPECT_EQ(*handle->TryGet<absl::int128>(), absl::MakeInt128(-1, 0));
+  handle = absl::FindCommandLineFlag("test_flag_14");
+  EXPECT_EQ(*handle->TryGet<absl::uint128>(),
+            absl::MakeUint128(0, 0xFFFAAABBBCCCDDD));
 }
 
 // --------------------------------------------------------------------
 
 TEST_F(FlagTest, ConcurrentSetAndGet) {
+#if ABSL_FLAGS_STRIP_NAMES
+  GTEST_SKIP() << "This test requires flag names to be present";
+#endif
   static constexpr int kNumThreads = 8;
   // Two arbitrary durations. One thread will concurrently flip the flag
   // between these two values, while the other threads read it and verify
@@ -734,10 +812,12 @@ TEST_F(FlagTest, TestCustomUDT) {
 // MSVC produces link error on the type mismatch.
 // Linux does not have build errors and validations work as expected.
 #if !defined(_WIN32) && GTEST_HAS_DEATH_TEST
-
 using FlagDeathTest = FlagTest;
 
 TEST_F(FlagDeathTest, TestTypeMismatchValidations) {
+#if ABSL_FLAGS_STRIP_NAMES
+  GTEST_SKIP() << "This test requires flag names to be present";
+#endif
 #if !defined(NDEBUG)
   EXPECT_DEATH_IF_SUPPORTED(
       static_cast<void>(absl::GetFlag(FLAGS_mistyped_int_flag)),
@@ -898,31 +978,15 @@ bool AbslParseFlag(absl::string_view, SmallAlignUDT*, std::string*) {
 }
 std::string AbslUnparseFlag(const SmallAlignUDT&) { return ""; }
 
-// User-defined type with small size, but not trivially copyable.
-struct NonTriviallyCopyableUDT {
-  NonTriviallyCopyableUDT() : c('A') {}
-  NonTriviallyCopyableUDT(const NonTriviallyCopyableUDT& rhs) : c(rhs.c) {}
-  NonTriviallyCopyableUDT& operator=(const NonTriviallyCopyableUDT& rhs) {
-    c = rhs.c;
-    return *this;
-  }
-
-  char c;
-};
-
-bool AbslParseFlag(absl::string_view, NonTriviallyCopyableUDT*, std::string*) {
-  return true;
-}
-std::string AbslUnparseFlag(const NonTriviallyCopyableUDT&) { return ""; }
-
 }  // namespace
 
 ABSL_FLAG(SmallAlignUDT, test_flag_sa_udt, {}, "help");
-ABSL_FLAG(NonTriviallyCopyableUDT, test_flag_ntc_udt, {}, "help");
 
 namespace {
 
 TEST_F(FlagTest, TestSmallAlignUDT) {
+  EXPECT_EQ(flags::StorageKind<SmallAlignUDT>(),
+            flags::FlagValueStorageKind::kSequenceLocked);
   SmallAlignUDT value = absl::GetFlag(FLAGS_test_flag_sa_udt);
   EXPECT_EQ(value.c, 'A');
   EXPECT_EQ(value.s, 12);
@@ -934,15 +998,174 @@ TEST_F(FlagTest, TestSmallAlignUDT) {
   EXPECT_EQ(value.c, 'B');
   EXPECT_EQ(value.s, 45);
 }
+}  // namespace
 
-TEST_F(FlagTest, TestNonTriviallyCopyableUDT) {
-  NonTriviallyCopyableUDT value = absl::GetFlag(FLAGS_test_flag_ntc_udt);
-  EXPECT_EQ(value.c, 'A');
+// --------------------------------------------------------------------
 
-  value.c = 'B';
-  absl::SetFlag(&FLAGS_test_flag_ntc_udt, value);
-  value = absl::GetFlag(FLAGS_test_flag_ntc_udt);
-  EXPECT_EQ(value.c, 'B');
+namespace {
+
+// User-defined not trivially copyable type.
+template <int id>
+struct NonTriviallyCopyableUDT {
+  NonTriviallyCopyableUDT() : c('A') { s_num_instance++; }
+  NonTriviallyCopyableUDT(const NonTriviallyCopyableUDT& rhs) : c(rhs.c) {
+    s_num_instance++;
+  }
+  NonTriviallyCopyableUDT& operator=(const NonTriviallyCopyableUDT& rhs) {
+    c = rhs.c;
+    return *this;
+  }
+  ~NonTriviallyCopyableUDT() { s_num_instance--; }
+
+  static uint64_t s_num_instance;
+  char c;
+};
+
+template <int id>
+uint64_t NonTriviallyCopyableUDT<id>::s_num_instance = 0;
+
+template <int id>
+bool AbslParseFlag(absl::string_view txt, NonTriviallyCopyableUDT<id>* f,
+                   std::string*) {
+  f->c = txt.empty() ? '\0' : txt[0];
+  return true;
+}
+template <int id>
+std::string AbslUnparseFlag(const NonTriviallyCopyableUDT<id>&) {
+  return "";
+}
+
+template <int id, typename F>
+void TestExpectedLeaks(
+    F&& f, uint64_t num_leaks,
+    absl::optional<uint64_t> num_new_instances = absl::nullopt) {
+  if (!num_new_instances.has_value()) num_new_instances = num_leaks;
+
+  auto num_leaked_before = flags::NumLeakedFlagValues();
+  auto num_instances_before = NonTriviallyCopyableUDT<id>::s_num_instance;
+  f();
+  EXPECT_EQ(num_leaked_before + num_leaks, flags::NumLeakedFlagValues());
+  EXPECT_EQ(num_instances_before + num_new_instances.value(),
+            NonTriviallyCopyableUDT<id>::s_num_instance);
+}
+}  // namespace
+
+ABSL_FLAG(NonTriviallyCopyableUDT<1>, test_flag_ntc_udt1, {}, "help");
+ABSL_FLAG(NonTriviallyCopyableUDT<2>, test_flag_ntc_udt2, {}, "help");
+ABSL_FLAG(NonTriviallyCopyableUDT<3>, test_flag_ntc_udt3, {}, "help");
+ABSL_FLAG(NonTriviallyCopyableUDT<4>, test_flag_ntc_udt4, {}, "help");
+ABSL_FLAG(NonTriviallyCopyableUDT<5>, test_flag_ntc_udt5, {}, "help");
+
+namespace {
+
+TEST_F(FlagTest, TestNonTriviallyCopyableGetSetSet) {
+  EXPECT_EQ(flags::StorageKind<NonTriviallyCopyableUDT<1>>(),
+            flags::FlagValueStorageKind::kHeapAllocated);
+
+  TestExpectedLeaks<1>(
+      [&] {
+        NonTriviallyCopyableUDT<1> value =
+            absl::GetFlag(FLAGS_test_flag_ntc_udt1);
+        EXPECT_EQ(value.c, 'A');
+      },
+      0);
+
+  TestExpectedLeaks<1>(
+      [&] {
+        NonTriviallyCopyableUDT<1> value;
+        value.c = 'B';
+        absl::SetFlag(&FLAGS_test_flag_ntc_udt1, value);
+        EXPECT_EQ(value.c, 'B');
+      },
+      1);
+
+  TestExpectedLeaks<1>(
+      [&] {
+        NonTriviallyCopyableUDT<1> value;
+        value.c = 'C';
+        absl::SetFlag(&FLAGS_test_flag_ntc_udt1, value);
+      },
+      0);
+}
+
+TEST_F(FlagTest, TestNonTriviallyCopyableParseSet) {
+  TestExpectedLeaks<2>(
+      [&] {
+        const char* in_argv[] = {"testbin", "--test_flag_ntc_udt2=A"};
+        absl::ParseCommandLine(2, const_cast<char**>(in_argv));
+      },
+      0);
+
+  TestExpectedLeaks<2>(
+      [&] {
+        NonTriviallyCopyableUDT<2> value;
+        value.c = 'B';
+        absl::SetFlag(&FLAGS_test_flag_ntc_udt2, value);
+        EXPECT_EQ(value.c, 'B');
+      },
+      0);
+}
+
+TEST_F(FlagTest, TestNonTriviallyCopyableSet) {
+  TestExpectedLeaks<3>(
+      [&] {
+        NonTriviallyCopyableUDT<3> value;
+        value.c = 'B';
+        absl::SetFlag(&FLAGS_test_flag_ntc_udt3, value);
+        EXPECT_EQ(value.c, 'B');
+      },
+      0);
+}
+
+// One new instance created during initialization and stored in the flag.
+auto premain_utd4_get =
+    (TestExpectedLeaks<4>([] { (void)absl::GetFlag(FLAGS_test_flag_ntc_udt4); },
+                          0, 1),
+     false);
+
+TEST_F(FlagTest, TestNonTriviallyCopyableGetBeforeMainParseGet) {
+  TestExpectedLeaks<4>(
+      [&] {
+        const char* in_argv[] = {"testbin", "--test_flag_ntc_udt4=C"};
+        absl::ParseCommandLine(2, const_cast<char**>(in_argv));
+      },
+      1);
+
+  TestExpectedLeaks<4>(
+      [&] {
+        NonTriviallyCopyableUDT<4> value =
+            absl::GetFlag(FLAGS_test_flag_ntc_udt4);
+        EXPECT_EQ(value.c, 'C');
+      },
+      0);
+}
+
+// One new instance created during initialization, which is reused since it was
+// never read.
+auto premain_utd5_set = (TestExpectedLeaks<5>(
+                             [] {
+                               NonTriviallyCopyableUDT<5> value;
+                               value.c = 'B';
+                               absl::SetFlag(&FLAGS_test_flag_ntc_udt5, value);
+                             },
+                             0, 1),
+                         false);
+
+TEST_F(FlagTest, TestNonTriviallyCopyableSetParseGet) {
+  TestExpectedLeaks<5>(
+      [&] {
+        const char* in_argv[] = {"testbin", "--test_flag_ntc_udt5=C"};
+        absl::ParseCommandLine(2, const_cast<char**>(in_argv));
+      },
+      0);
+
+  TestExpectedLeaks<5>(
+      [&] {
+        NonTriviallyCopyableUDT<5> value =
+            absl::GetFlag(FLAGS_test_flag_ntc_udt5);
+        EXPECT_EQ(value.c, 'C');
+      },
+      0);
 }
 
 }  // namespace
@@ -980,7 +1203,7 @@ TEST_F(FlagTest, TesTypeWrappingEnum) {
 
 // This is a compile test to ensure macros are expanded within ABSL_FLAG and
 // ABSL_DECLARE_FLAG.
-#define FLAG_NAME_MACRO(name) prefix_ ## name
+#define FLAG_NAME_MACRO(name) prefix_##name
 ABSL_DECLARE_FLAG(int, FLAG_NAME_MACRO(test_macro_named_flag));
 ABSL_FLAG(int, FLAG_NAME_MACRO(test_macro_named_flag), 0,
           "Testing macro expansion within ABSL_FLAG");
@@ -993,13 +1216,7 @@ TEST_F(FlagTest, MacroWithinAbslFlag) {
 
 // --------------------------------------------------------------------
 
-#if defined(__GNUC__) && !defined(__clang__) && __GNUC__ <= 5
-#define ABSL_SKIP_OPTIONAL_BOOL_TEST_DUE_TO_GCC_BUG
-#endif
-
-#ifndef ABSL_SKIP_OPTIONAL_BOOL_TEST_DUE_TO_GCC_BUG
 ABSL_FLAG(absl::optional<bool>, optional_bool, absl::nullopt, "help");
-#endif
 ABSL_FLAG(absl::optional<int>, optional_int, {}, "help");
 ABSL_FLAG(absl::optional<double>, optional_double, 9.3, "help");
 ABSL_FLAG(absl::optional<std::string>, optional_string, absl::nullopt, "help");
@@ -1013,7 +1230,6 @@ ABSL_FLAG(std::optional<int64_t>, std_optional_int64, std::nullopt, "help");
 
 namespace {
 
-#ifndef ABSL_SKIP_OPTIONAL_BOOL_TEST_DUE_TO_GCC_BUG
 TEST_F(FlagTest, TestOptionalBool) {
   EXPECT_FALSE(absl::GetFlag(FLAGS_optional_bool).has_value());
   EXPECT_EQ(absl::GetFlag(FLAGS_optional_bool), absl::nullopt);
@@ -1032,7 +1248,6 @@ TEST_F(FlagTest, TestOptionalBool) {
 }
 
 // --------------------------------------------------------------------
-#endif
 
 TEST_F(FlagTest, TestOptionalInt) {
   EXPECT_FALSE(absl::GetFlag(FLAGS_optional_int).has_value());

@@ -40,11 +40,6 @@
 namespace webrtc {
 namespace {
 
-bool UpdateCaptureCallCounterOnSkippedBlocks() {
-  return !field_trial::IsEnabled(
-      "WebRTC-Aec3RenderBufferCallCounterUpdateKillSwitch");
-}
-
 class RenderDelayBufferImpl final : public RenderDelayBuffer {
  public:
   RenderDelayBufferImpl(const EchoCanceller3Config& config,
@@ -78,7 +73,6 @@ class RenderDelayBufferImpl final : public RenderDelayBuffer {
   std::unique_ptr<ApmDataDumper> data_dumper_;
   const Aec3Optimization optimization_;
   const EchoCanceller3Config config_;
-  const bool update_capture_call_counter_on_skipped_blocks_;
   const float render_linear_amplitude_gain_;
   const rtc::LoggingSeverity delay_log_level_;
   size_t down_sampling_factor_;
@@ -127,8 +121,6 @@ RenderDelayBufferImpl::RenderDelayBufferImpl(const EchoCanceller3Config& config,
     : data_dumper_(new ApmDataDumper(instance_count_.fetch_add(1) + 1)),
       optimization_(DetectOptimization()),
       config_(config),
-      update_capture_call_counter_on_skipped_blocks_(
-          UpdateCaptureCallCounterOnSkippedBlocks()),
       render_linear_amplitude_gain_(
           std::pow(10.0f, config_.render_levels.render_power_gain_db / 20.f)),
       delay_log_level_(config_.delay.log_warning_on_delay_changes
@@ -251,9 +243,7 @@ RenderDelayBuffer::BufferingEvent RenderDelayBufferImpl::Insert(
 }
 
 void RenderDelayBufferImpl::HandleSkippedCaptureProcessing() {
-  if (update_capture_call_counter_on_skipped_blocks_) {
-    ++capture_call_counter_;
-  }
+  ++capture_call_counter_;
 }
 
 // Prepares the render buffers for processing another capture block.

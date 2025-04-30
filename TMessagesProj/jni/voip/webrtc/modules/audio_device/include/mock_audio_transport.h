@@ -48,7 +48,7 @@ class MockAudioTransport : public AudioTransport {
                uint32_t currentMicLevel,
                bool keyPressed,
                uint32_t& newMicLevel,
-               int64_t estimated_capture_time_ns),
+               absl::optional<int64_t> estimated_capture_time_ns),
               (override));
 
   MOCK_METHOD(int32_t,

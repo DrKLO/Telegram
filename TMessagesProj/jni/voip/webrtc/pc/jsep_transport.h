@@ -19,7 +19,6 @@
 
 #include "absl/types/optional.h"
 #include "api/candidate.h"
-#include "api/crypto_params.h"
 #include "api/ice_transport_interface.h"
 #include "api/jsep.h"
 #include "api/rtc_error.h"
@@ -40,7 +39,6 @@
 #include "pc/rtp_transport_internal.h"
 #include "pc/sctp_transport.h"
 #include "pc/session_description.h"
-#include "pc/srtp_filter.h"
 #include "pc/srtp_transport.h"
 #include "pc/transport_stats.h"
 #include "rtc_base/checks.h"
@@ -59,7 +57,6 @@ struct JsepTransportDescription {
   JsepTransportDescription();
   JsepTransportDescription(
       bool rtcp_mux_enabled,
-      const std::vector<CryptoParams>& cryptos,
       const std::vector<int>& encrypted_header_extension_ids,
       int rtp_abs_sendtime_extn_id,
       const TransportDescription& transport_description);
@@ -69,7 +66,6 @@ struct JsepTransportDescription {
   JsepTransportDescription& operator=(const JsepTransportDescription& from);
 
   bool rtcp_mux_enabled = true;
-  std::vector<CryptoParams> cryptos;
   std::vector<int> encrypted_header_extension_ids;
   int rtp_abs_sendtime_extn_id = -1;
   // TODO(zhihuang): Add the ICE and DTLS related variables and methods from
@@ -243,11 +239,6 @@ class JsepTransport {
 
   void ActivateRtcpMux() RTC_RUN_ON(network_thread_);
 
-  bool SetSdes(const std::vector<CryptoParams>& cryptos,
-               const std::vector<int>& encrypted_extension_ids,
-               webrtc::SdpType type,
-               ContentSource source);
-
   // Negotiates and sets the DTLS parameters based on the current local and
   // remote transport description, such as the DTLS role to use, and whether
   // DTLS should be activated.
@@ -310,7 +301,6 @@ class JsepTransport {
 
   const rtc::scoped_refptr<webrtc::SctpTransport> sctp_transport_;
 
-  SrtpFilter sdes_negotiator_ RTC_GUARDED_BY(network_thread_);
   RtcpMuxFilter rtcp_mux_negotiator_ RTC_GUARDED_BY(network_thread_);
 
   // Cache the encrypted header extension IDs for SDES negoitation.

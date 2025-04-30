@@ -126,9 +126,9 @@ class RTC_EXPORT SocketAddress {
   // Same as ToString but anonymizes it by hiding the last part.
   std::string ToSensitiveString() const;
 
-  // Returns hostname:port string if address is resolved, otherwise returns
-  // empty string.
-  std::string ToResolvedSensitiveString() const;
+  // Returns sensitive description of address in a form which both includes
+  // resolved and unresolved addresses based on their availability.
+  std::string ToSensitiveNameAndAddressString() const;
 
   // Parses hostname:port and [hostname]:port.
   bool FromString(absl::string_view str);

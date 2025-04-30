@@ -187,6 +187,7 @@ import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.tl.TL_account;
 import org.telegram.tgnet.tl.TL_bots;
+import org.telegram.tgnet.tl.TL_phone;
 import org.telegram.tgnet.tl.TL_stories;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarLayout;
@@ -1737,7 +1738,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             } else {
                 return;
             }
-            if (messageObject.isSecretMedia() || !messageObject.canSetReaction() || messageObject.isExpiredStory() || messageObject.type == MessageObject.TYPE_JOINED_CHANNEL) {
+            if (messageObject.isSecret() || !messageObject.canSetReaction() || messageObject.isExpiredStory() || messageObject.type == MessageObject.TYPE_JOINED_CHANNEL) {
                 return;
             }
             ReactionsEffectOverlay.removeCurrent(false);
@@ -27727,6 +27728,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 final ColoredImageSpan[] span = new ColoredImageSpan[1];
                 totalText.append(StarsIntroActivity.replaceStars(AndroidUtilities.replaceSingleTag(formatString(R.string.MessageLockedStarsRemoveFee, DialogObject.getShortName(dialog_id), LocaleController.formatNumber(showCost, ',')), () -> {
                     StarsController.getInstance(currentAccount).getPaidRevenue(dialog_id, revenue -> {
+                        if (getContext() == null) return;
                         AlertsCreator.showAlertWithCheckbox(
                                 getContext(),
                                 getString(R.string.RemoveMessageFeeTitle),
@@ -36841,17 +36843,23 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 arrayList.add(messageObject);
             }
 
-            int result = SendMessagesHelper.getInstance(currentAccount).sendMessage(arrayList, did, false, false, true, 0, null, -1, 0);
-            AlertsCreator.showSendMediaAlert(result, ChatActivity.this, null);
-            if (result != 0) {
-                return null;
+            final boolean isSavedMessages = did == UserConfig.getInstance(UserConfig.selectedAccount).clientUserId;
+            final ArrayList<MessageObject> finalArrayList = arrayList;
+            Runnable delayedRunnalble = () -> {
+                int result = SendMessagesHelper.getInstance(currentAccount).sendMessage(finalArrayList, did, false, false, true, 0, null, -1, 0);
+                AlertsCreator.showSendMediaAlert(result, ChatActivity.this, null);
+            };
+
+            if (isSavedMessages) {
+                delayedRunnalble.run();
+                delayedRunnalble = null;
             }
 
             final Bulletin bulletin = BulletinFactory.createForwardedBulletin(getContext(),
                     ChatActivity.this, null, 1, did, 1,
                     getThemedColor(Theme.key_undo_background),
                     getThemedColor(Theme.key_undo_infoColor),
-                    Bulletin.DURATION_LONG
+                    Bulletin.DURATION_PROLONG, null, delayedRunnalble
             );
 
             return bulletin.allowBlur().show(bulletin.getLayout() instanceof Bulletin.LottieLayoutWithReactions);
@@ -37050,7 +37058,42 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         public void didPressOther(ChatMessageCell cell, float otherX, float otherY) {
             MessageObject messageObject = cell.getMessageObject();
             if (messageObject.type == MessageObject.TYPE_PHONE_CALL) {
-                if (currentUser != null) {
+                if (messageObject.messageOwner.action instanceof TLRPC.TL_messageActionConferenceCall) {
+                    final TLRPC.TL_messageActionConferenceCall action = (TLRPC.TL_messageActionConferenceCall) messageObject.messageOwner.action;
+                    final HashSet<Long> participants = new HashSet<>();
+                    participants.add(getDialogId());
+                    for (TLRPC.Peer peer : action.other_participants) {
+                        participants.add(DialogObject.getPeerDialogId(peer));
+                    }
+
+                    final TLRPC.TL_inputGroupCallInviteMessage inputGroupCall = new TLRPC.TL_inputGroupCallInviteMessage();
+                    inputGroupCall.msg_id = messageObject.getId();
+
+                    final AlertDialog progressDialog = new AlertDialog(getContext(), AlertDialog.ALERT_TYPE_SPINNER);
+
+                    final TL_phone.getGroupCall req = new TL_phone.getGroupCall();
+                    req.call = inputGroupCall;
+                    req.limit = getMessagesController().conferenceCallSizeLimit;
+                    final int reqId = getConnectionsManager().sendRequest(req, (res, err) -> AndroidUtilities.runOnUIThread(() -> {
+                        progressDialog.dismiss();
+                        if (res instanceof TL_phone.groupCall) {
+                            final TL_phone.groupCall r = (TL_phone.groupCall) res;
+                            getMessagesController().putUsers(r.users, false);
+                            getMessagesController().putChats(r.chats, false);
+                            if (r.participants.isEmpty()) {
+                                showDialog(new CreateGroupCallSheet(getContext(), participants));
+                            } else {
+                                VoIPHelper.joinConference(getParentActivity(), currentAccount, inputGroupCall, messageObject.messageOwner.action.video, r.call);
+                            }
+                        } else if (err != null && "GROUPCALL_INVALID".equalsIgnoreCase(err.text)) {
+                            showDialog(new CreateGroupCallSheet(getContext(), participants));
+                        } else if (err != null) {
+                            BulletinFactory.of(ChatActivity.this).showForError(err);
+                        }
+                    }));
+                    progressDialog.setOnCancelListener(di -> getConnectionsManager().cancelRequest(reqId, true));
+                    progressDialog.showDelayed(600);
+                } else if (currentUser != null) {
                     VoIPHelper.startCall(currentUser, messageObject.isVideoCall(), userInfo != null && userInfo.video_calls_available, getParentActivity(), getMessagesController().getUserFull(currentUser.id), getAccountInstance());
                 }
             } else {
@@ -40210,7 +40253,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 setupChatTheme(chatTheme, newWallpaper, animated, true);
                 initServiceMessageColors(backgroundDrawable);
                 //updateBackground();
-                contentView.invalidateBackground();
+                if (contentView != null) {
+                    contentView.invalidateBackground();
+                }
             };
             if (animated) {
                 animationSettings.animationProgress = new ActionBarLayout.ThemeAnimationSettings.onAnimationProgress() {
@@ -41973,7 +42018,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         int y = 0, o = 0;
         for (int i = 0; i < messages.size(); ++i) {
             final MessageObject msg = messages.get(i);
-            final int h = msg.getApproximateHeight(true);
+            final int h = msg.getApproximateHeightCached();
             cachedApproximateHeight.add(h);
             if (msg.isSponsored() || i == unreadRow) {
                 if (i == unreadRow) {

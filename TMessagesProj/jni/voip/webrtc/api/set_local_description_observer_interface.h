@@ -11,15 +11,15 @@
 #ifndef API_SET_LOCAL_DESCRIPTION_OBSERVER_INTERFACE_H_
 #define API_SET_LOCAL_DESCRIPTION_OBSERVER_INTERFACE_H_
 
+#include "api/ref_count.h"
 #include "api/rtc_error.h"
-#include "rtc_base/ref_count.h"
 
 namespace webrtc {
 
 // OnSetLocalDescriptionComplete() invokes as soon as
 // PeerConnectionInterface::SetLocalDescription() operation completes, allowing
 // the observer to examine the effects of the operation without delay.
-class SetLocalDescriptionObserverInterface : public rtc::RefCountInterface {
+class SetLocalDescriptionObserverInterface : public webrtc::RefCountInterface {
  public:
   // On success, `error.ok()` is true.
   virtual void OnSetLocalDescriptionComplete(RTCError error) = 0;

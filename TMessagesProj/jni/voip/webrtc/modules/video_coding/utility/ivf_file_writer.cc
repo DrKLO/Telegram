@@ -10,13 +10,20 @@
 
 #include "modules/video_coding/utility/ivf_file_writer.h"
 
+#include <cstddef>
+#include <cstdint>
+#include <memory>
 #include <utility>
 
+#include "absl/strings/string_view.h"
+#include "api/video/encoded_image.h"
+#include "api/video/video_codec_type.h"
 #include "api/video_codecs/video_codec.h"
 #include "modules/rtp_rtcp/source/byte_io.h"
 #include "modules/video_coding/utility/ivf_defines.h"
 #include "rtc_base/checks.h"
 #include "rtc_base/logging.h"
+#include "rtc_base/system/file_wrapper.h"
 
 // TODO(palmkvist): make logging more informative in the absence of a file name
 // (or get one)
@@ -51,6 +58,12 @@ std::unique_ptr<IvfFileWriter> IvfFileWriter::Wrap(FileWrapper file,
                                                    size_t byte_limit) {
   return std::unique_ptr<IvfFileWriter>(
       new IvfFileWriter(std::move(file), byte_limit));
+}
+
+std::unique_ptr<IvfFileWriter> IvfFileWriter::Wrap(absl::string_view filename,
+                                                   size_t byte_limit) {
+  return std::unique_ptr<IvfFileWriter>(
+      new IvfFileWriter(FileWrapper::OpenWriteOnly(filename), byte_limit));
 }
 
 bool IvfFileWriter::WriteHeader() {
@@ -91,6 +104,12 @@ bool IvfFileWriter::WriteHeader() {
       ivf_header[9] = '2';
       ivf_header[10] = '6';
       ivf_header[11] = '4';
+      break;
+    case kVideoCodecH265:
+      ivf_header[8] = 'H';
+      ivf_header[9] = '2';
+      ivf_header[10] = '6';
+      ivf_header[11] = '5';
       break;
     default:
       // For unknown codec type use **** code. You can specify actual payload
@@ -135,7 +154,7 @@ bool IvfFileWriter::InitFromFirstFrame(const EncodedImage& encoded_image,
     height_ = encoded_image._encodedHeight;
   }
 
-  using_capture_timestamps_ = encoded_image.Timestamp() == 0;
+  using_capture_timestamps_ = encoded_image.RtpTimestamp() == 0;
 
   codec_type_ = codec_type;
 
@@ -160,20 +179,11 @@ bool IvfFileWriter::WriteFrame(const EncodedImage& encoded_image,
     return false;
   RTC_DCHECK_EQ(codec_type_, codec_type);
 
-  if ((encoded_image._encodedWidth > 0 || encoded_image._encodedHeight > 0) &&
-      (encoded_image._encodedHeight != height_ ||
-       encoded_image._encodedWidth != width_)) {
-    RTC_LOG(LS_WARNING)
-        << "Incoming frame has resolution different from previous: (" << width_
-        << "x" << height_ << ") -> (" << encoded_image._encodedWidth << "x"
-        << encoded_image._encodedHeight << ")";
-  }
-
   int64_t timestamp = using_capture_timestamps_
                           ? encoded_image.capture_time_ms_
-                          : wrap_handler_.Unwrap(encoded_image.Timestamp());
-  if (last_timestamp_ != -1 && timestamp <= last_timestamp_) {
-    RTC_LOG(LS_WARNING) << "Timestamp no increasing: " << last_timestamp_
+                          : wrap_handler_.Unwrap(encoded_image.RtpTimestamp());
+  if (last_timestamp_ != -1 && timestamp < last_timestamp_) {
+    RTC_LOG(LS_WARNING) << "Timestamp not increasing: " << last_timestamp_
                         << " -> " << timestamp;
   }
   last_timestamp_ = timestamp;

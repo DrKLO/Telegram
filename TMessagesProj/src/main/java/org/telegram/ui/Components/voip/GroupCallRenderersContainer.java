@@ -53,6 +53,7 @@ import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.GroupCallFullscreenAdapter;
 import org.telegram.ui.Components.GroupCallPip;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.messenger.pip.PipNativeApiController;
 import org.telegram.ui.Components.TypefaceSpan;
 import org.telegram.ui.Components.UndoView;
 import org.telegram.ui.GroupCallActivity;
@@ -287,11 +288,11 @@ public class GroupCallRenderersContainer extends FrameLayout {
         pipView.setBackground(Theme.createSelectorDrawable(ColorUtils.setAlphaComponent(Color.WHITE, 55)));
         pipView.setOnClickListener(v -> {
             if (isRtmpStream()) {
-                if (AndroidUtilities.checkInlinePermissions(groupCallActivity.getParentActivity())) {
-                    RTMPStreamPipOverlay.show();
+                if (PipNativeApiController.checkAnyPipPermissions(groupCallActivity.getParentActivity())) {
+                    RTMPStreamPipOverlay.show(groupCallActivity.getParentActivity());
                     groupCallActivity.dismiss();
-                } else {
-                    AlertsCreator.createDrawOverlayPermissionDialog(groupCallActivity.getParentActivity(), null).show();
+                } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                    AlertsCreator.createDrawOverlayPermissionDialog(groupCallActivity.getParentActivity(), null, true).show();
                 }
                 return;
             }
@@ -1118,7 +1119,7 @@ public class GroupCallRenderersContainer extends FrameLayout {
                         }
                     }
                     if (!found) {
-                        TLRPC.TL_groupCallParticipant participant = call.participants.get(speakingToastPeerId);
+                        TLRPC.GroupCallParticipant participant = call.participants.get(speakingToastPeerId);
                         groupCallActivity.fullscreenFor(new ChatObject.VideoParticipant(participant, false, false));
                         confirmAction = true;
                     }
@@ -1322,7 +1323,7 @@ public class GroupCallRenderersContainer extends FrameLayout {
         }
     }
 
-    public void setAmplitude(TLRPC.TL_groupCallParticipant participant, float v) {
+    public void setAmplitude(TLRPC.GroupCallParticipant participant, float v) {
         for (int i = 0; i < attachedRenderers.size(); i++) {
             if (MessageObject.getPeerId(attachedRenderers.get(i).participant.participant.peer) == MessageObject.getPeerId(participant.peer)) {
                 attachedRenderers.get(i).setAmplitude(v);
@@ -1393,7 +1394,7 @@ public class GroupCallRenderersContainer extends FrameLayout {
         SpannableStringBuilder spannableStringBuilder = null;
         for (int i = 0; i < call.currentSpeakingPeers.size(); i++) {
             long key = call.currentSpeakingPeers.keyAt(i);
-            TLRPC.TL_groupCallParticipant participant = call.currentSpeakingPeers.get(key);
+            TLRPC.GroupCallParticipant participant = call.currentSpeakingPeers.get(key);
             if (participant.self || participant.muted_by_you || MessageObject.getPeerId(fullscreenParticipant.participant.peer) == MessageObject.getPeerId(participant.peer)) {
                 continue;
             }
@@ -1504,7 +1505,7 @@ public class GroupCallRenderersContainer extends FrameLayout {
         return undoView[0];
     }
 
-    public boolean isVisible(TLRPC.TL_groupCallParticipant participant) {
+    public boolean isVisible(TLRPC.GroupCallParticipant participant) {
         long peerId = MessageObject.getPeerId(participant.peer);
         return attachedPeerIds.get(peerId) > 0;
     }

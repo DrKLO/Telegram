@@ -62,6 +62,9 @@ struct MediaConfig {
 
     // Time interval between RTCP report for video
     int rtcp_report_interval_ms = 1000;
+
+    // Enables send packet batching from the egress RTP sender.
+    bool enable_send_packet_batching = false;
   } video;
 
   // Audio-specific config.
@@ -82,6 +85,8 @@ struct MediaConfig {
            video.experiment_cpu_load_estimator ==
                o.video.experiment_cpu_load_estimator &&
            video.rtcp_report_interval_ms == o.video.rtcp_report_interval_ms &&
+           video.enable_send_packet_batching ==
+               o.video.enable_send_packet_batching &&
            audio.rtcp_report_interval_ms == o.audio.rtcp_report_interval_ms;
   }
 

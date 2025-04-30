@@ -215,6 +215,14 @@ public class VoIPTextureView extends FrameLayout {
         }
     }
 
+    @Override
+    protected boolean drawChild(@NonNull Canvas canvas, View child, long drawingTime) {
+        if (AndroidUtilities.makingGlobalBlurBitmap && (child == renderer || child == blurRenderer)) {
+            return false;
+        }
+        return super.drawChild(canvas, child, drawingTime);
+    }
+
     public void setScreenshareMiniProgress(float progress, boolean value) {
         if (!screencast) {
             return;
@@ -263,6 +271,30 @@ public class VoIPTextureView extends FrameLayout {
     @Override
     protected void dispatchDraw(Canvas canvas) {
         super.dispatchDraw(canvas);
+
+        if (AndroidUtilities.makingGlobalBlurBitmap) {
+            if (blurRenderer != null) {
+                canvas.save();
+                canvas.translate(blurRenderer.getX(), blurRenderer.getY());
+                Bitmap bitmap = blurRenderer.getBitmap();
+                if (bitmap != null) {
+                    canvas.scale((float) blurRenderer.getWidth() / bitmap.getWidth(), (float) blurRenderer.getHeight() / bitmap.getHeight());
+                    canvas.drawBitmap(bitmap, 0, 0, null);
+                }
+                canvas.restore();
+            }
+
+            if (renderer != null) {
+                canvas.save();
+                canvas.translate(renderer.getX(), renderer.getY());
+                Bitmap bitmap = renderer.getBitmap();
+                if (bitmap != null) {
+                    canvas.scale((float) renderer.getWidth() / bitmap.getWidth(), (float) renderer.getHeight() / bitmap.getHeight());
+                    canvas.drawBitmap(bitmap, 0, 0, null);
+                }
+                canvas.restore();
+            }
+        }
 
         if (imageView.getVisibility() == View.VISIBLE && renderer.isFirstFrameRendered()) {
             stubVisibleProgress -= 16f / 150f;

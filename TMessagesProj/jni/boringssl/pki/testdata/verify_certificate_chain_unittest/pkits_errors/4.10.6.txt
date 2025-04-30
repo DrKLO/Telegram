@@ -1,0 +1,3 @@
+----- Certificate i=0 (CN=Valid Policy Mapping EE Certificate Test6,O=Test Certificates 2011,C=US) -----
+ERROR: No valid policy
+

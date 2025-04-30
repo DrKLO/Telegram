@@ -29,12 +29,14 @@
 #ifndef ABSL_FLAGS_FLAG_H_
 #define ABSL_FLAGS_FLAG_H_
 
+#include <cstdint>
 #include <string>
 #include <type_traits>
 
 #include "absl/base/attributes.h"
 #include "absl/base/config.h"
 #include "absl/base/optimization.h"
+#include "absl/flags/commandlineflag.h"
 #include "absl/flags/config.h"
 #include "absl/flags/internal/flag.h"
 #include "absl/flags/internal/registry.h"
@@ -71,12 +73,9 @@ ABSL_NAMESPACE_BEGIN
 // For type support of Abseil Flags, see the marshalling.h header file, which
 // discusses supported standard types, optional flags, and additional Abseil
 // type support.
-#if !defined(_MSC_VER) || defined(__clang__)
+
 template <typename T>
 using Flag = flags_internal::Flag<T>;
-#else
-#include "absl/flags/internal/flag_msvc.inc"
-#endif
 
 // GetFlag()
 //
@@ -196,27 +195,23 @@ ABSL_NAMESPACE_END
 // -----------------------------------------------------------------------------
 
 // ABSL_FLAG_IMPL macro definition conditional on ABSL_FLAGS_STRIP_NAMES
-#if !defined(_MSC_VER) || defined(__clang__)
 #define ABSL_FLAG_IMPL_FLAG_PTR(flag) flag
 #define ABSL_FLAG_IMPL_HELP_ARG(name)                      \
   absl::flags_internal::HelpArg<AbslFlagHelpGenFor##name>( \
       FLAGS_help_storage_##name)
 #define ABSL_FLAG_IMPL_DEFAULT_ARG(Type, name) \
   absl::flags_internal::DefaultArg<Type, AbslFlagDefaultGenFor##name>(0)
-#else
-#define ABSL_FLAG_IMPL_FLAG_PTR(flag) flag.GetImpl()
-#define ABSL_FLAG_IMPL_HELP_ARG(name) &AbslFlagHelpGenFor##name::NonConst
-#define ABSL_FLAG_IMPL_DEFAULT_ARG(Type, name) &AbslFlagDefaultGenFor##name::Gen
-#endif
 
 #if ABSL_FLAGS_STRIP_NAMES
 #define ABSL_FLAG_IMPL_FLAGNAME(txt) ""
+#define ABSL_FLAG_IMPL_TYPENAME(txt) ""
 #define ABSL_FLAG_IMPL_FILENAME() ""
 #define ABSL_FLAG_IMPL_REGISTRAR(T, flag)                                      \
   absl::flags_internal::FlagRegistrar<T, false>(ABSL_FLAG_IMPL_FLAG_PTR(flag), \
                                                 nullptr)
 #else
 #define ABSL_FLAG_IMPL_FLAGNAME(txt) txt
+#define ABSL_FLAG_IMPL_TYPENAME(txt) txt
 #define ABSL_FLAG_IMPL_FILENAME() __FILE__
 #define ABSL_FLAG_IMPL_REGISTRAR(T, flag)                                     \
   absl::flags_internal::FlagRegistrar<T, true>(ABSL_FLAG_IMPL_FLAG_PTR(flag), \
@@ -268,16 +263,17 @@ ABSL_NAMESPACE_END
 // Note: Name of registrar object is not arbitrary. It is used to "grab"
 // global name for FLAGS_no<flag_name> symbol, thus preventing the possibility
 // of defining two flags with names foo and nofoo.
-#define ABSL_FLAG_IMPL(Type, name, default_value, help)                       \
-  extern ::absl::Flag<Type> FLAGS_##name;                                     \
-  namespace absl /* block flags in namespaces */ {}                           \
-  ABSL_FLAG_IMPL_DECLARE_DEF_VAL_WRAPPER(name, Type, default_value)           \
-  ABSL_FLAG_IMPL_DECLARE_HELP_WRAPPER(name, help)                             \
-  ABSL_CONST_INIT absl::Flag<Type> FLAGS_##name{                              \
-      ABSL_FLAG_IMPL_FLAGNAME(#name), ABSL_FLAG_IMPL_FILENAME(),              \
-      ABSL_FLAG_IMPL_HELP_ARG(name), ABSL_FLAG_IMPL_DEFAULT_ARG(Type, name)}; \
-  extern absl::flags_internal::FlagRegistrarEmpty FLAGS_no##name;             \
-  absl::flags_internal::FlagRegistrarEmpty FLAGS_no##name =                   \
+#define ABSL_FLAG_IMPL(Type, name, default_value, help)               \
+  extern ::absl::Flag<Type> FLAGS_##name;                             \
+  namespace absl /* block flags in namespaces */ {}                   \
+  ABSL_FLAG_IMPL_DECLARE_DEF_VAL_WRAPPER(name, Type, default_value)   \
+  ABSL_FLAG_IMPL_DECLARE_HELP_WRAPPER(name, help)                     \
+  ABSL_CONST_INIT absl::Flag<Type> FLAGS_##name{                      \
+      ABSL_FLAG_IMPL_FLAGNAME(#name), ABSL_FLAG_IMPL_TYPENAME(#Type), \
+      ABSL_FLAG_IMPL_FILENAME(), ABSL_FLAG_IMPL_HELP_ARG(name),       \
+      ABSL_FLAG_IMPL_DEFAULT_ARG(Type, name)};                        \
+  extern absl::flags_internal::FlagRegistrarEmpty FLAGS_no##name;     \
+  absl::flags_internal::FlagRegistrarEmpty FLAGS_no##name =           \
       ABSL_FLAG_IMPL_REGISTRAR(Type, FLAGS_##name)
 
 // ABSL_RETIRED_FLAG
@@ -297,8 +293,7 @@ ABSL_NAMESPACE_END
 // arguments unchanged (unless of course you actually want to retire the flag
 // type at this time as well).
 //
-// `default_value` is only used as a double check on the type. `explanation` is
-// unused.
+// `default_value` and `explanation` are unused.
 // TODO(rogeeff): replace RETIRED_FLAGS with FLAGS once forward declarations of
 // retired flags are cleaned up.
 #define ABSL_RETIRED_FLAG(type, name, default_value, explanation)      \

@@ -1,0 +1,8 @@
+chain: toomany-dns-permitted.pem
+last_cert_trust: TRUSTED_ANCHOR
+utc_time: DEFAULT
+key_purpose: SERVER_AUTH
+expected_errors:
+----- Certificate i=0 (CN=t0) -----
+ERROR: Too many name constraints checks
+

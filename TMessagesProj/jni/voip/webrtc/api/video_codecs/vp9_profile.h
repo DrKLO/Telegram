@@ -42,12 +42,12 @@ absl::optional<VP9Profile> StringToVP9Profile(const std::string& str);
 // profile key is missing. Nothing will be returned if the key is present but
 // the string is invalid.
 RTC_EXPORT absl::optional<VP9Profile> ParseSdpForVP9Profile(
-    const SdpVideoFormat::Parameters& params);
+    const CodecParameterMap& params);
 
 // Returns true if the parameters have the same VP9 profile, or neither contains
 // VP9 profile.
-bool VP9IsSameProfile(const SdpVideoFormat::Parameters& params1,
-                      const SdpVideoFormat::Parameters& params2);
+bool VP9IsSameProfile(const CodecParameterMap& params1,
+                      const CodecParameterMap& params2);
 
 }  // namespace webrtc
 

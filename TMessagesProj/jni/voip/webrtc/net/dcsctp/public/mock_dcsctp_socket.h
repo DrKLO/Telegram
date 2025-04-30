@@ -10,6 +10,8 @@
 #ifndef NET_DCSCTP_PUBLIC_MOCK_DCSCTP_SOCKET_H_
 #define NET_DCSCTP_PUBLIC_MOCK_DCSCTP_SOCKET_H_
 
+#include <vector>
+
 #include "net/dcsctp/public/dcsctp_socket.h"
 #include "test/gmock.h"
 
@@ -54,6 +56,12 @@ class MockDcSctpSocket : public DcSctpSocketInterface {
   MOCK_METHOD(SendStatus,
               Send,
               (DcSctpMessage message, const SendOptions& send_options),
+              (override));
+
+  MOCK_METHOD(std::vector<SendStatus>,
+              SendMany,
+              (rtc::ArrayView<DcSctpMessage> messages,
+               const SendOptions& send_options),
               (override));
 
   MOCK_METHOD(ResetStreamsStatus,

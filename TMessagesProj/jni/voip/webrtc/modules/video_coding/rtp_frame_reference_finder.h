@@ -13,7 +13,7 @@
 
 #include <memory>
 
-#include "modules/video_coding/frame_object.h"
+#include "modules/rtp_rtcp/source/frame_object.h"
 
 namespace webrtc {
 namespace internal {

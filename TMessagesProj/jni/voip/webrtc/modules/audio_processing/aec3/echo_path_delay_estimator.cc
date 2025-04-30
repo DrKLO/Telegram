@@ -120,7 +120,7 @@ void EchoPathDelayEstimator::Reset(bool reset_lag_aggregator,
   if (reset_lag_aggregator) {
     matched_filter_lag_aggregator_.Reset(reset_delay_confidence);
   }
-  matched_filter_.Reset();
+  matched_filter_.Reset(/*full_reset=*/reset_lag_aggregator);
   old_aggregated_lag_ = absl::nullopt;
   consistent_estimate_counter_ = 0;
 }

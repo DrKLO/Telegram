@@ -17,26 +17,37 @@
 
 namespace webrtc {
 
-constexpr int64_t SourceTracker::kTimeoutMs;
+SourceTracker::SourceTracker(Clock* clock)
+    : worker_thread_(TaskQueueBase::Current()), clock_(clock) {
+  RTC_DCHECK(worker_thread_);
+  RTC_DCHECK(clock_);
+}
 
-SourceTracker::SourceTracker(Clock* clock) : clock_(clock) {}
-
-void SourceTracker::OnFrameDelivered(const RtpPacketInfos& packet_infos) {
+void SourceTracker::OnFrameDelivered(RtpPacketInfos packet_infos) {
   if (packet_infos.empty()) {
     return;
   }
 
-  TRACE_EVENT0("webrtc", "SourceTracker::OnFrameDelivered");
+  Timestamp now = clock_->CurrentTime();
+  worker_thread_->PostTask(
+      SafeTask(worker_safety_.flag(),
+               [this, packet_infos = std::move(packet_infos), now]() {
+                 RTC_DCHECK_RUN_ON(worker_thread_);
+                 OnFrameDeliveredInternal(now, packet_infos);
+               }));
+}
 
-  int64_t now_ms = clock_->TimeInMilliseconds();
-  MutexLock lock_scope(&lock_);
+void SourceTracker::OnFrameDeliveredInternal(
+    Timestamp now,
+    const RtpPacketInfos& packet_infos) {
+  TRACE_EVENT0("webrtc", "SourceTracker::OnFrameDelivered");
 
   for (const RtpPacketInfo& packet_info : packet_infos) {
     for (uint32_t csrc : packet_info.csrcs()) {
       SourceKey key(RtpSourceType::CSRC, csrc);
       SourceEntry& entry = UpdateEntry(key);
 
-      entry.timestamp_ms = now_ms;
+      entry.timestamp = now;
       entry.audio_level = packet_info.audio_level();
       entry.absolute_capture_time = packet_info.absolute_capture_time();
       entry.local_capture_clock_offset =
@@ -47,30 +58,28 @@ void SourceTracker::OnFrameDelivered(const RtpPacketInfos& packet_infos) {
     SourceKey key(RtpSourceType::SSRC, packet_info.ssrc());
     SourceEntry& entry = UpdateEntry(key);
 
-    entry.timestamp_ms = now_ms;
+    entry.timestamp = now;
     entry.audio_level = packet_info.audio_level();
     entry.absolute_capture_time = packet_info.absolute_capture_time();
     entry.local_capture_clock_offset = packet_info.local_capture_clock_offset();
     entry.rtp_timestamp = packet_info.rtp_timestamp();
   }
 
-  PruneEntries(now_ms);
+  PruneEntries(now);
 }
 
 std::vector<RtpSource> SourceTracker::GetSources() const {
+  RTC_DCHECK_RUN_ON(worker_thread_);
+
+  PruneEntries(clock_->CurrentTime());
+
   std::vector<RtpSource> sources;
-
-  int64_t now_ms = clock_->TimeInMilliseconds();
-  MutexLock lock_scope(&lock_);
-
-  PruneEntries(now_ms);
-
   for (const auto& pair : list_) {
     const SourceKey& key = pair.first;
     const SourceEntry& entry = pair.second;
 
     sources.emplace_back(
-        entry.timestamp_ms, key.source, key.source_type, entry.rtp_timestamp,
+        entry.timestamp, key.source, key.source_type, entry.rtp_timestamp,
         RtpSource::Extensions{
             .audio_level = entry.audio_level,
             .absolute_capture_time = entry.absolute_capture_time,
@@ -97,10 +106,9 @@ SourceTracker::SourceEntry& SourceTracker::UpdateEntry(const SourceKey& key) {
   return list_.front().second;
 }
 
-void SourceTracker::PruneEntries(int64_t now_ms) const {
-  int64_t prune_ms = now_ms - kTimeoutMs;
-
-  while (!list_.empty() && list_.back().second.timestamp_ms < prune_ms) {
+void SourceTracker::PruneEntries(Timestamp now) const {
+  Timestamp prune = now - kTimeout;
+  while (!list_.empty() && list_.back().second.timestamp < prune) {
     map_.erase(list_.back().first);
     list_.pop_back();
   }

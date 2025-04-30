@@ -119,10 +119,9 @@ void SignalingSctpConnection::OnReadyToSend() {
         rtc::CopyOnWriteBuffer payload;
         payload.AppendData(data.data(), data.size());
         
-        cricket::SendDataResult result;
-        _sctpTransport->SendData(0, params, payload, &result);
+        webrtc::RTCError sendError = _sctpTransport->SendData(0, params, payload);
             
-        if (result == cricket::SendDataResult::SDR_SUCCESS) {
+        if (sendError.ok()) {
             RTC_LOG(LS_INFO) << "SignalingSctpConnection: sent data of " << data.size() << " bytes";
         } else {
             _isReadyToSend = false;
@@ -169,10 +168,9 @@ void SignalingSctpConnection::send(const std::vector<uint8_t> &data) {
             rtc::CopyOnWriteBuffer payload;
             payload.AppendData(data.data(), data.size());
             
-            cricket::SendDataResult result;
-            _sctpTransport->SendData(0, params, payload, &result);
+            webrtc::RTCError sendError = _sctpTransport->SendData(0, params, payload);
             
-            if (result == cricket::SendDataResult::SDR_ERROR) {
+            if (!sendError.ok()) {
                 _isReadyToSend = false;
                 _pendingData.push_back(data);
                 RTC_LOG(LS_INFO) << "SignalingSctpConnection: send error, storing data until ready to send (" << _pendingData.size() << " items)";

@@ -52,4 +52,17 @@ bool RtpDependencyDescriptorExtension::Write(
   return writer.Write();
 }
 
+bool RtpDependencyDescriptorExtensionMandatory::Parse(
+    rtc::ArrayView<const uint8_t> data,
+    DependencyDescriptorMandatory* descriptor) {
+  if (data.size() < 3) {
+    return false;
+  }
+  descriptor->set_first_packet_in_frame(data[0] & 0b1000'0000);
+  descriptor->set_last_packet_in_frame(data[0] & 0b0100'0000);
+  descriptor->set_template_id(data[0] & 0b0011'1111);
+  descriptor->set_frame_number((uint16_t{data[1]} << 8) | data[2]);
+  return true;
+}
+
 }  // namespace webrtc

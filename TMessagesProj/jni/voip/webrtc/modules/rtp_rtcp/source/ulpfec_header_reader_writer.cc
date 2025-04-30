@@ -71,10 +71,10 @@ bool UlpfecHeaderReader::ReadFecHeader(
       l_bit ? kUlpfecPacketMaskSizeLBitSet : kUlpfecPacketMaskSizeLBitClear;
   fec_packet->fec_header_size = UlpfecHeaderSize(packet_mask_size);
   uint16_t seq_num_base = ByteReader<uint16_t>::ReadBigEndian(&data[2]);
-  fec_packet->protected_ssrc = fec_packet->ssrc;  // Due to RED.
-  fec_packet->seq_num_base = seq_num_base;
-  fec_packet->packet_mask_offset = kPacketMaskOffset;
-  fec_packet->packet_mask_size = packet_mask_size;
+  fec_packet->protected_streams = {{.ssrc = fec_packet->ssrc,  // Due to RED.
+                                    .seq_num_base = seq_num_base,
+                                    .packet_mask_offset = kPacketMaskOffset,
+                                    .packet_mask_size = packet_mask_size}};
   fec_packet->protection_length =
       ByteReader<uint16_t>::ReadBigEndian(&data[10]);
 
@@ -108,12 +108,14 @@ size_t UlpfecHeaderWriter::FecHeaderSize(size_t packet_mask_size) const {
 }
 
 void UlpfecHeaderWriter::FinalizeFecHeader(
-    uint32_t /* media_ssrc */,
-    uint16_t seq_num_base,
-    const uint8_t* packet_mask,
-    size_t packet_mask_size,
-    ForwardErrorCorrection::Packet* fec_packet) const {
-  uint8_t* data = fec_packet->data.MutableData();
+    rtc::ArrayView<const ProtectedStream> protected_streams,
+    ForwardErrorCorrection::Packet& fec_packet) const {
+  RTC_CHECK_EQ(protected_streams.size(), 1);
+  uint16_t seq_num_base = protected_streams[0].seq_num_base;
+  const uint8_t* packet_mask = protected_streams[0].packet_mask.data();
+  size_t packet_mask_size = protected_streams[0].packet_mask.size();
+
+  uint8_t* data = fec_packet.data.MutableData();
   // Set E bit to zero.
   data[0] &= 0x7f;
   // Set L bit based on packet mask size. (Note that the packet mask
@@ -133,7 +135,7 @@ void UlpfecHeaderWriter::FinalizeFecHeader(
   // required in general.)
   const size_t fec_header_size = FecHeaderSize(packet_mask_size);
   ByteWriter<uint16_t>::WriteBigEndian(
-      &data[10], fec_packet->data.size() - fec_header_size);
+      &data[10], fec_packet.data.size() - fec_header_size);
   // Copy the packet mask.
   memcpy(&data[12], packet_mask, packet_mask_size);
 }

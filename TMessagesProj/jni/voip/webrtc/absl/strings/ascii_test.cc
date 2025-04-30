@@ -14,6 +14,7 @@
 
 #include "absl/strings/ascii.h"
 
+#include <algorithm>
 #include <cctype>
 #include <clocale>
 #include <cstring>
@@ -21,7 +22,7 @@
 
 #include "gtest/gtest.h"
 #include "absl/base/macros.h"
-#include "absl/base/port.h"
+#include "absl/strings/string_view.h"
 
 namespace {
 
@@ -189,14 +190,22 @@ TEST(AsciiStrTo, Lower) {
   const std::string str("GHIJKL");
   const std::string str2("MNOPQR");
   const absl::string_view sp(str2);
-  std::string mutable_str("STUVWX");
+  const std::string long_str("ABCDEFGHIJKLMNOPQRSTUVWXYZ1!a");
+  std::string mutable_str("_`?@[{AMNOPQRSTUVWXYZ");
+  auto fun = []() -> std::string { return "PQRSTU"; };
 
   EXPECT_EQ("abcdef", absl::AsciiStrToLower(buf));
   EXPECT_EQ("ghijkl", absl::AsciiStrToLower(str));
   EXPECT_EQ("mnopqr", absl::AsciiStrToLower(sp));
+  EXPECT_EQ("abcdefghijklmnopqrstuvwxyz1!a", absl::AsciiStrToLower(long_str));
+  EXPECT_EQ("pqrstu", absl::AsciiStrToLower(fun()));
+
+  // An empty `string_view` specifically exercises the case where a null data
+  // pointer is passed to internal functions.
+  EXPECT_EQ("", absl::AsciiStrToLower(absl::string_view()));
 
   absl::AsciiStrToLower(&mutable_str);
-  EXPECT_EQ("stuvwx", mutable_str);
+  EXPECT_EQ("_`?@[{amnopqrstuvwxyz", mutable_str);
 
   char mutable_buf[] = "Mutable";
   std::transform(mutable_buf, mutable_buf + strlen(mutable_buf),
@@ -207,12 +216,20 @@ TEST(AsciiStrTo, Lower) {
 TEST(AsciiStrTo, Upper) {
   const char buf[] = "abcdef";
   const std::string str("ghijkl");
-  const std::string str2("mnopqr");
+  const std::string str2("_`?@[{amnopqrstuvwxyz");
   const absl::string_view sp(str2);
+  const std::string long_str("abcdefghijklmnopqrstuvwxyz1!A");
+  auto fun = []() -> std::string { return "pqrstu"; };
 
   EXPECT_EQ("ABCDEF", absl::AsciiStrToUpper(buf));
   EXPECT_EQ("GHIJKL", absl::AsciiStrToUpper(str));
-  EXPECT_EQ("MNOPQR", absl::AsciiStrToUpper(sp));
+  EXPECT_EQ("_`?@[{AMNOPQRSTUVWXYZ", absl::AsciiStrToUpper(sp));
+  EXPECT_EQ("ABCDEFGHIJKLMNOPQRSTUVWXYZ1!A", absl::AsciiStrToUpper(long_str));
+  EXPECT_EQ("PQRSTU", absl::AsciiStrToUpper(fun()));
+
+  // An empty `string_view` specifically exercises the case where a null data
+  // pointer is passed to internal functions.
+  EXPECT_EQ("", absl::AsciiStrToUpper(absl::string_view()));
 
   char mutable_buf[] = "Mutable";
   std::transform(mutable_buf, mutable_buf + strlen(mutable_buf),

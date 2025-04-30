@@ -10,9 +10,13 @@
 
 #include "logging/rtc_event_log/encoder/rtc_event_log_encoder_new_format.h"
 
+#include <type_traits>
+
 #include "absl/types/optional.h"
 #include "api/array_view.h"
+#include "api/field_trials_view.h"
 #include "api/network_state_predictor.h"
+#include "logging/rtc_event_log/dependency_descriptor_encoder_decoder.h"
 #include "logging/rtc_event_log/encoder/blob_encoding.h"
 #include "logging/rtc_event_log/encoder/delta_encoding.h"
 #include "logging/rtc_event_log/encoder/rtc_event_log_encoder_common.h"
@@ -31,6 +35,7 @@
 #include "logging/rtc_event_log/events/rtc_event_generic_packet_sent.h"
 #include "logging/rtc_event_log/events/rtc_event_ice_candidate_pair.h"
 #include "logging/rtc_event_log/events/rtc_event_ice_candidate_pair_config.h"
+#include "logging/rtc_event_log/events/rtc_event_neteq_set_minimum_delay.h"
 #include "logging/rtc_event_log/events/rtc_event_probe_cluster_created.h"
 #include "logging/rtc_event_log/events/rtc_event_probe_result_failure.h"
 #include "logging/rtc_event_log/events/rtc_event_probe_result_success.h"
@@ -55,20 +60,18 @@
 #include "modules/rtp_rtcp/source/rtcp_packet/rtpfb.h"
 #include "modules/rtp_rtcp/source/rtcp_packet/sdes.h"
 #include "modules/rtp_rtcp/source/rtcp_packet/sender_report.h"
+#include "modules/rtp_rtcp/source/rtp_dependency_descriptor_extension.h"
 #include "modules/rtp_rtcp/source/rtp_header_extensions.h"
 #include "modules/rtp_rtcp/source/rtp_packet.h"
 #include "rtc_base/checks.h"
-#include "rtc_base/ignore_wundef.h"
 #include "rtc_base/logging.h"
 
 // *.pb.h files are generated at build-time by the protobuf compiler.
-RTC_PUSH_IGNORING_WUNDEF()
 #ifdef WEBRTC_ANDROID_PLATFORM_BUILD
 #include "external/webrtc/webrtc/logging/rtc_event_log/rtc_event_log2.pb.h"
 #else
 #include "logging/rtc_event_log/rtc_event_log2.pb.h"
 #endif
-RTC_POP_IGNORING_WUNDEF()
 
 using webrtc_event_logging::ToUnsigned;
 
@@ -103,11 +106,11 @@ rtclog2::FrameDecodedEvents::Codec ConvertToProtoFormat(VideoCodecType codec) {
       return rtclog2::FrameDecodedEvents::CODEC_AV1;
     case VideoCodecType::kVideoCodecH264:
       return rtclog2::FrameDecodedEvents::CODEC_H264;
-    case VideoCodecType::kVideoCodecH265:
-      return rtclog2::FrameDecodedEvents::CODEC_H265;
     case VideoCodecType::kVideoCodecMultiplex:
       // This codec type is afaik not used.
       return rtclog2::FrameDecodedEvents::CODEC_UNKNOWN;
+    case VideoCodecType::kVideoCodecH265:
+      return rtclog2::FrameDecodedEvents::CODEC_H265;
   }
   RTC_DCHECK_NOTREACHED();
   return rtclog2::FrameDecodedEvents::CODEC_UNKNOWN;
@@ -147,6 +150,8 @@ bool ConvertToProtoFormat(const std::vector<RtpExtension>& extensions,
       proto_config->set_transport_sequence_number_id(extension.id);
     } else if (extension.uri == RtpExtension::kVideoRotationUri) {
       proto_config->set_video_rotation_id(extension.id);
+    } else if (extension.uri == RtpExtension::kDependencyDescriptorUri) {
+      proto_config->set_dependency_descriptor_id(extension.id);
     } else {
       ++unknown_extensions;
     }
@@ -195,18 +200,14 @@ ConvertToProtoFormat(IceCandidatePairConfigType type) {
 rtclog2::IceCandidatePairConfig::IceCandidateType ConvertToProtoFormat(
     IceCandidateType type) {
   switch (type) {
-    case IceCandidateType::kUnknown:
-      return rtclog2::IceCandidatePairConfig::UNKNOWN_CANDIDATE_TYPE;
-    case IceCandidateType::kLocal:
+    case IceCandidateType::kHost:
       return rtclog2::IceCandidatePairConfig::LOCAL;
-    case IceCandidateType::kStun:
+    case IceCandidateType::kSrflx:
       return rtclog2::IceCandidatePairConfig::STUN;
     case IceCandidateType::kPrflx:
       return rtclog2::IceCandidatePairConfig::PRFLX;
     case IceCandidateType::kRelay:
       return rtclog2::IceCandidatePairConfig::RELAY;
-    case IceCandidateType::kNumValues:
-      RTC_DCHECK_NOTREACHED();
   }
   RTC_DCHECK_NOTREACHED();
   return rtclog2::IceCandidatePairConfig::UNKNOWN_CANDIDATE_TYPE;
@@ -382,10 +383,12 @@ void EncodeRtcpPacket(rtc::ArrayView<const EventType*> batch,
   }
   proto_batch->set_raw_packet_blobs(EncodeBlobs(scrubed_packets));
 }
+}  // namespace
 
-template <typename EventType, typename ProtoType>
-void EncodeRtpPacket(const std::vector<const EventType*>& batch,
-                     ProtoType* proto_batch) {
+template <typename Batch, typename ProtoType>
+void RtcEventLogEncoderNewFormat::EncodeRtpPacket(const Batch& batch,
+                                                  ProtoType* proto_batch) {
+  using EventType = std::remove_pointer_t<typename Batch::value_type>;
   if (batch.empty()) {
     return;
   }
@@ -454,6 +457,28 @@ void EncodeRtpPacket(const std::vector<const EventType*>& batch,
 
       base_voice_activity = voice_activity;
       proto_batch->set_voice_activity(voice_activity);
+    }
+  }
+
+  {
+    // TODO(webrtc:14975) Remove this kill switch after DD in RTC event log has
+    //                    been rolled out.
+    if (encode_dependency_descriptor_) {
+      std::vector<rtc::ArrayView<const uint8_t>> raw_dds(batch.size());
+      bool has_dd = false;
+      for (size_t i = 0; i < batch.size(); ++i) {
+        raw_dds[i] =
+            batch[i]
+                ->template GetRawExtension<RtpDependencyDescriptorExtension>();
+        has_dd |= !raw_dds[i].empty();
+      }
+      if (has_dd) {
+        if (auto dd_encoded =
+                RtcEventLogDependencyDescriptorEncoderDecoder::Encode(
+                    raw_dds)) {
+          *proto_batch->mutable_dependency_descriptor() = *dd_encoded;
+        }
+      }
     }
   }
 
@@ -652,7 +677,13 @@ void EncodeRtpPacket(const std::vector<const EventType*>& batch,
     proto_batch->set_voice_activity_deltas(encoded_deltas);
   }
 }
-}  // namespace
+
+RtcEventLogEncoderNewFormat::RtcEventLogEncoderNewFormat(
+    const FieldTrialsView& field_trials)
+    : encode_neteq_set_minimum_delay_kill_switch_(field_trials.IsEnabled(
+          "WebRTC-RtcEventLogEncodeNetEqSetMinimumDelayKillSwitch")),
+      encode_dependency_descriptor_(!field_trials.IsDisabled(
+          "WebRTC-RtcEventLogEncodeDependencyDescriptor")) {}
 
 std::string RtcEventLogEncoderNewFormat::EncodeLogStart(int64_t timestamp_us,
                                                         int64_t utc_time_us) {
@@ -682,6 +713,8 @@ std::string RtcEventLogEncoderNewFormat::EncodeBatch(
     std::vector<const RtcEventAudioNetworkAdaptation*>
         audio_network_adaptation_events;
     std::vector<const RtcEventAudioPlayout*> audio_playout_events;
+    std::vector<const RtcEventNetEqSetMinimumDelay*>
+        neteq_set_minimum_delay_events;
     std::vector<const RtcEventAudioReceiveStreamConfig*>
         audio_recv_stream_configs;
     std::vector<const RtcEventAudioSendStreamConfig*> audio_send_stream_configs;
@@ -879,10 +912,20 @@ std::string RtcEventLogEncoderNewFormat::EncodeBatch(
           frames_decoded[rtc_event->ssrc()].emplace_back(rtc_event);
           break;
         }
+        case RtcEvent::Type::NetEqSetMinimumDelay: {
+          auto* rtc_event =
+              static_cast<const RtcEventNetEqSetMinimumDelay* const>(it->get());
+          neteq_set_minimum_delay_events.push_back(rtc_event);
+          break;
+        }
         case RtcEvent::Type::BeginV3Log:
         case RtcEvent::Type::EndV3Log:
           // These special events are written as part of starting
           // and stopping the log, and only as part of version 3 of the format.
+          RTC_DCHECK_NOTREACHED();
+          break;
+        case RtcEvent::Type::FakeEvent:
+          // Fake event used for unit test.
           RTC_DCHECK_NOTREACHED();
           break;
       }
@@ -894,6 +937,7 @@ std::string RtcEventLogEncoderNewFormat::EncodeBatch(
     EncodeAudioPlayout(audio_playout_events, &event_stream);
     EncodeAudioRecvStreamConfig(audio_recv_stream_configs, &event_stream);
     EncodeAudioSendStreamConfig(audio_send_stream_configs, &event_stream);
+    EncodeNetEqSetMinimumDelay(neteq_set_minimum_delay_events, &event_stream);
     EncodeBweUpdateDelayBased(bwe_delay_based_updates, &event_stream);
     EncodeBweUpdateLossBased(bwe_loss_based_updates, &event_stream);
     EncodeDtlsTransportState(dtls_transport_states, &event_stream);
@@ -1124,6 +1168,64 @@ void RtcEventLogEncoderNewFormat::EncodeAudioPlayout(
   encoded_deltas = EncodeDeltas(base_event->ssrc(), values);
   if (!encoded_deltas.empty()) {
     proto_batch->set_local_ssrc_deltas(encoded_deltas);
+  }
+}
+
+void RtcEventLogEncoderNewFormat::EncodeNetEqSetMinimumDelay(
+    rtc::ArrayView<const RtcEventNetEqSetMinimumDelay*> batch,
+    rtclog2::EventStream* event_stream) {
+  if (encode_neteq_set_minimum_delay_kill_switch_) {
+    return;
+  }
+  if (batch.empty()) {
+    return;
+  }
+
+  const RtcEventNetEqSetMinimumDelay* base_event = batch[0];
+
+  rtclog2::NetEqSetMinimumDelay* proto_batch =
+      event_stream->add_neteq_set_minimum_delay();
+  proto_batch->set_timestamp_ms(base_event->timestamp_ms());
+  proto_batch->set_remote_ssrc(base_event->remote_ssrc());
+  proto_batch->set_minimum_delay_ms(base_event->minimum_delay_ms());
+
+  if (batch.size() == 1)
+    return;
+
+  // Delta encoding
+  proto_batch->set_number_of_deltas(batch.size() - 1);
+  std::vector<absl::optional<uint64_t>> values(batch.size() - 1);
+  std::string encoded_deltas;
+
+  // timestamp_ms
+  for (size_t i = 0; i < values.size(); ++i) {
+    const RtcEventNetEqSetMinimumDelay* event = batch[i + 1];
+    values[i] = ToUnsigned(event->timestamp_ms());
+  }
+  encoded_deltas = EncodeDeltas(ToUnsigned(base_event->timestamp_ms()), values);
+  if (!encoded_deltas.empty()) {
+    proto_batch->set_timestamp_ms_deltas(encoded_deltas);
+  }
+
+  // remote_ssrc
+  for (size_t i = 0; i < values.size(); ++i) {
+    const RtcEventNetEqSetMinimumDelay* event = batch[i + 1];
+    values[i] = event->remote_ssrc();
+  }
+  encoded_deltas = EncodeDeltas(base_event->remote_ssrc(), values);
+  if (!encoded_deltas.empty()) {
+    proto_batch->set_remote_ssrc_deltas(encoded_deltas);
+  }
+
+  // minimum_delay_ms
+  for (size_t i = 0; i < values.size(); ++i) {
+    const RtcEventNetEqSetMinimumDelay* event = batch[i + 1];
+    values[i] = ToUnsigned(event->minimum_delay_ms());
+  }
+  encoded_deltas =
+      EncodeDeltas(ToUnsigned(base_event->minimum_delay_ms()), values);
+  if (!encoded_deltas.empty()) {
+    proto_batch->set_minimum_delay_ms_deltas(encoded_deltas);
   }
 }
 

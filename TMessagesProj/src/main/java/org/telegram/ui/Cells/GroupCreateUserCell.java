@@ -166,7 +166,7 @@ public class GroupCreateUserCell extends FrameLayout {
         addView(statusTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 20, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, (LocaleController.isRTL ? 28 : 72) + padding, 32, (LocaleController.isRTL ? 72 : 28) + padding, 0));
 
         if (checkBoxType == 1) {
-            checkBox = new CheckBox2(context, 21);
+            checkBox = new CheckBox2(context, 21, resourcesProvider);
             checkBox.setColor(-1, Theme.key_windowBackgroundWhite, Theme.key_checkboxCheck);
             checkBox.setDrawUnchecked(false);
             checkBox.setDrawBackgroundAsArc(3);
@@ -574,7 +574,7 @@ public class GroupCreateUserCell extends FrameLayout {
                 Theme.dividerExtraPaint.setColor(Theme.getColor(Theme.key_voipgroup_actionBar, resourcesProvider));
                 canvas.drawRect(start, getMeasuredHeight() - 1, end, getMeasuredHeight(), Theme.dividerExtraPaint);
             } else {
-                canvas.drawRect(start, getMeasuredHeight() - 1, end, getMeasuredHeight(), Theme.dividerPaint);
+                canvas.drawRect(start, getMeasuredHeight() - 1, end, getMeasuredHeight(), Theme.getThemePaint(Theme.key_paint_divider, resourcesProvider));
             }
         }
     }

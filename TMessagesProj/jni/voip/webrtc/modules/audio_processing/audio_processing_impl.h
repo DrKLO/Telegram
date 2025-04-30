@@ -19,10 +19,12 @@
 #include <string>
 #include <vector>
 
+#include "absl/base/nullability.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/optional.h"
 #include "api/array_view.h"
 #include "api/function_view.h"
+#include "api/task_queue/task_queue_base.h"
 #include "modules/audio_processing/aec3/echo_canceller3.h"
 #include "modules/audio_processing/agc/agc_manager_direct.h"
 #include "modules/audio_processing/agc/gain_control.h"
@@ -43,7 +45,6 @@
 #include "modules/audio_processing/rms_level.h"
 #include "modules/audio_processing/transient/transient_suppressor.h"
 #include "rtc_base/gtest_prod_util.h"
-#include "rtc_base/ignore_wundef.h"
 #include "rtc_base/swap_queue.h"
 #include "rtc_base/synchronization/mutex.h"
 #include "rtc_base/thread_annotations.h"
@@ -72,12 +73,14 @@ class AudioProcessingImpl : public AudioProcessing {
   int Initialize() override;
   int Initialize(const ProcessingConfig& processing_config) override;
   void ApplyConfig(const AudioProcessing::Config& config) override;
-  bool CreateAndAttachAecDump(absl::string_view file_name,
-                              int64_t max_log_size_bytes,
-                              rtc::TaskQueue* worker_queue) override;
-  bool CreateAndAttachAecDump(FILE* handle,
-                              int64_t max_log_size_bytes,
-                              rtc::TaskQueue* worker_queue) override;
+  bool CreateAndAttachAecDump(
+      absl::string_view file_name,
+      int64_t max_log_size_bytes,
+      absl::Nonnull<TaskQueueBase*> worker_queue) override;
+  bool CreateAndAttachAecDump(
+      FILE* handle,
+      int64_t max_log_size_bytes,
+      absl::Nonnull<TaskQueueBase*> worker_queue) override;
   // TODO(webrtc:5298) Deprecated variant.
   void AttachAecDump(std::unique_ptr<AecDump> aec_dump) override;
   void DetachAecDump() override;
@@ -160,6 +163,9 @@ class AudioProcessingImpl : public AudioProcessing {
                            ReinitializeTransientSuppressor);
   FRIEND_TEST_ALL_PREFIXES(ApmWithSubmodulesExcludedTest,
                            BitexactWithDisabledModules);
+  FRIEND_TEST_ALL_PREFIXES(
+      AudioProcessingImplGainController2FieldTrialParametrizedTest,
+      ConfigAdjustedWhenExperimentEnabled);
 
   void set_stream_analog_level_locked(int level)
       RTC_EXCLUSIVE_LOCKS_REQUIRED(mutex_capture_);
@@ -188,9 +194,48 @@ class AudioProcessingImpl : public AudioProcessing {
   static std::atomic<int> instance_count_;
   const bool use_setup_specific_default_aec3_config_;
 
-  const bool use_denormal_disabler_;
+  // Parameters for the "GainController2" experiment which determines whether
+  // the following APM sub-modules are created and, if so, their configurations:
+  // AGC2 (`gain_controller2`), AGC1 (`gain_control`, `agc_manager`) and TS
+  // (`transient_suppressor`).
+  // TODO(bugs.webrtc.org/7494): Remove when the "WebRTC-Audio-GainController2"
+  // field trial is removed.
+  struct GainController2ExperimentParams {
+    struct Agc2Config {
+      InputVolumeController::Config input_volume_controller;
+      AudioProcessing::Config::GainController2::AdaptiveDigital
+          adaptive_digital_controller;
+    };
+    // When `agc2_config` is specified, all gain control switches to AGC2 and
+    // the configuration is overridden.
+    absl::optional<Agc2Config> agc2_config;
+    // When true, the transient suppressor submodule is never created regardless
+    // of the APM configuration.
+    bool disallow_transient_suppressor_usage;
+  };
+  // Specified when the "WebRTC-Audio-GainController2" field trial is specified.
+  // TODO(bugs.webrtc.org/7494): Remove when the "WebRTC-Audio-GainController2"
+  // field trial is removed.
+  const absl::optional<GainController2ExperimentParams>
+      gain_controller2_experiment_params_;
 
-  const TransientSuppressor::VadMode transient_suppressor_vad_mode_;
+  // Parses the "WebRTC-Audio-GainController2" field trial. If disabled, returns
+  // an unspecified value.
+  static absl::optional<GainController2ExperimentParams>
+  GetGainController2ExperimentParams();
+
+  // When `experiment_params` is specified, returns an APM configuration
+  // modified according to the experiment parameters. Otherwise returns
+  // `config`.
+  static AudioProcessing::Config AdjustConfig(
+      const AudioProcessing::Config& config,
+      const absl::optional<GainController2ExperimentParams>& experiment_params);
+  // Returns true if the APM VAD sub-module should be used.
+  static bool UseApmVadSubModule(
+      const AudioProcessing::Config& config,
+      const absl::optional<GainController2ExperimentParams>& experiment_params);
+
+  TransientSuppressor::VadMode transient_suppressor_vad_mode_;
 
   SwapQueue<RuntimeSetting> capture_runtime_settings_;
   SwapQueue<RuntimeSetting> render_runtime_settings_;
@@ -248,12 +293,13 @@ class AudioProcessingImpl : public AudioProcessing {
   // capture thread blocks the render thread.
   // Called by render: Holds the render lock when reading the format struct and
   // acquires both locks if reinitialization is required.
-  int MaybeInitializeRender(const ProcessingConfig& processing_config)
+  void MaybeInitializeRender(const StreamConfig& input_config,
+                             const StreamConfig& output_config)
       RTC_EXCLUSIVE_LOCKS_REQUIRED(mutex_render_);
-  // Called by capture: Holds the capture lock when reading the format struct
-  // and acquires both locks if reinitialization is needed.
-  int MaybeInitializeCapture(const StreamConfig& input_config,
-                             const StreamConfig& output_config);
+  // Called by capture: Acquires and releases the capture lock to read the
+  // format struct and acquires both locks if reinitialization is needed.
+  void MaybeInitializeCapture(const StreamConfig& input_config,
+                              const StreamConfig& output_config);
 
   // Method for updating the state keeping track of the active submodules.
   // Returns a bool indicating whether the state has changed.
@@ -262,7 +308,7 @@ class AudioProcessingImpl : public AudioProcessing {
 
   // Methods requiring APM running in a single-threaded manner, requiring both
   // the render and capture lock to be acquired.
-  int InitializeLocked(const ProcessingConfig& config)
+  void InitializeLocked(const ProcessingConfig& config)
       RTC_EXCLUSIVE_LOCKS_REQUIRED(mutex_render_, mutex_capture_);
   void InitializeResidualEchoDetector()
       RTC_EXCLUSIVE_LOCKS_REQUIRED(mutex_render_, mutex_capture_);
@@ -276,14 +322,15 @@ class AudioProcessingImpl : public AudioProcessing {
   void InitializeGainController1() RTC_EXCLUSIVE_LOCKS_REQUIRED(mutex_capture_);
   void InitializeTransientSuppressor()
       RTC_EXCLUSIVE_LOCKS_REQUIRED(mutex_capture_);
-  // Initializes the `GainController2` sub-module. If the sub-module is enabled
-  // and `config_has_changed` is true, recreates the sub-module.
-  void InitializeGainController2(bool config_has_changed)
-      RTC_EXCLUSIVE_LOCKS_REQUIRED(mutex_capture_);
+  // Initializes the `GainController2` sub-module. If the sub-module is enabled,
+  // recreates it.
+  void InitializeGainController2() RTC_EXCLUSIVE_LOCKS_REQUIRED(mutex_capture_);
   // Initializes the `VoiceActivityDetectorWrapper` sub-module. If the
-  // sub-module is enabled and `config_has_changed` is true, recreates the
-  // sub-module.
-  void InitializeVoiceActivityDetector(bool config_has_changed)
+  // sub-module is enabled, recreates it. Call `InitializeGainController2()`
+  // first.
+  // TODO(bugs.webrtc.org/13663): Remove if TS is removed otherwise remove call
+  // order requirement - i.e., decouple from `InitializeGainController2()`.
+  void InitializeVoiceActivityDetector()
       RTC_EXCLUSIVE_LOCKS_REQUIRED(mutex_capture_);
   void InitializeNoiseSuppressor() RTC_EXCLUSIVE_LOCKS_REQUIRED(mutex_capture_);
   void InitializeCaptureLevelsAdjuster()
@@ -321,7 +368,6 @@ class AudioProcessingImpl : public AudioProcessing {
 
   // Render-side exclusive methods possibly running APM in a multi-threaded
   // manner that are called with the render lock already acquired.
-  // TODO(ekm): Remove once all clients updated to new interface.
   int AnalyzeReverseStreamLocked(const float* const* src,
                                  const StreamConfig& input_config,
                                  const StreamConfig& output_config)

@@ -35,26 +35,20 @@ cricket::StreamParams CreateSimWithRtxStreamParams(
     const std::vector<uint32_t>& rtx_ssrcs) {
   cricket::StreamParams sp = CreateSimStreamParams(cname, ssrcs);
   for (size_t i = 0; i < ssrcs.size(); ++i) {
-    sp.ssrcs.push_back(rtx_ssrcs[i]);
-    std::vector<uint32_t> fid_ssrcs;
-    fid_ssrcs.push_back(ssrcs[i]);
-    fid_ssrcs.push_back(rtx_ssrcs[i]);
-    cricket::SsrcGroup fid_group(cricket::kFidSsrcGroupSemantics, fid_ssrcs);
-    sp.ssrc_groups.push_back(fid_group);
+    sp.AddFidSsrc(ssrcs[i], rtx_ssrcs[i]);
   }
   return sp;
 }
 
+// There should be one fec ssrc per ssrc.
 cricket::StreamParams CreatePrimaryWithFecFrStreamParams(
     const std::string& cname,
     uint32_t primary_ssrc,
     uint32_t flexfec_ssrc) {
   cricket::StreamParams sp;
-  cricket::SsrcGroup sg(cricket::kFecFrSsrcGroupSemantics,
-                        {primary_ssrc, flexfec_ssrc});
   sp.ssrcs = {primary_ssrc};
-  sp.ssrc_groups.push_back(sg);
   sp.cname = cname;
+  sp.AddFecFrSsrc(primary_ssrc, flexfec_ssrc);
   return sp;
 }
 

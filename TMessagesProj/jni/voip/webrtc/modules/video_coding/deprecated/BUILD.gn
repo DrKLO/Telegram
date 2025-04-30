@@ -1,0 +1,186 @@
+# Copyright (c) 2023 The WebRTC project authors. All Rights Reserved.
+#
+# Use of this source code is governed by a BSD-style license
+# that can be found in the LICENSE file in the root of the source
+# tree. An additional intellectual property rights grant can be found
+# in the file PATENTS.  All contributing project authors may
+# be found in the AUTHORS file in the root of the source tree.
+
+import("../../../webrtc.gni")
+
+visibility = [
+  ":*",
+  "../:video_coding_legacy",
+  "../:video_coding_unittests",
+]
+
+rtc_library("deprecated_decoding_state") {
+  sources = [
+    "decoding_state.cc",
+    "decoding_state.h",
+  ]
+  deps = [
+    ":deprecated_frame_buffer",
+    ":deprecated_jitter_buffer_common",
+    ":deprecated_packet",
+    "../../../common_video",
+    "../../../modules:module_api_public",
+    "../../../rtc_base:logging",
+  ]
+}
+
+rtc_library("deprecated_event_wrapper") {
+  sources = [
+    "event_wrapper.cc",
+    "event_wrapper.h",
+  ]
+  deps = [ "../../../rtc_base:rtc_event" ]
+}
+
+rtc_library("deprecated_jitter_buffer_common") {
+  sources = [ "jitter_buffer_common.h" ]
+}
+
+rtc_library("deprecated_jitter_buffer") {
+  sources = [
+    "jitter_buffer.cc",
+    "jitter_buffer.h",
+  ]
+  deps = [
+    ":deprecated_decoding_state",
+    ":deprecated_event_wrapper",
+    ":deprecated_frame_buffer",
+    ":deprecated_jitter_buffer_common",
+    ":deprecated_packet",
+    "../../../api:field_trials_view",
+    "../../../api/units:timestamp",
+    "../../../modules:module_api",
+    "../../../modules:module_api_public",
+    "../../../modules/video_coding:video_codec_interface",
+    "../../../modules/video_coding/timing:inter_frame_delay_variation_calculator",
+    "../../../modules/video_coding/timing:jitter_estimator",
+    "../../../rtc_base:checks",
+    "../../../rtc_base:logging",
+    "../../../rtc_base:macromagic",
+    "../../../rtc_base/synchronization:mutex",
+    "../../../system_wrappers",
+  ]
+  absl_deps = [ "//third_party/abseil-cpp/absl/memory" ]
+}
+
+rtc_library("deprecated_frame_buffer") {
+  sources = [
+    "frame_buffer.cc",
+    "frame_buffer.h",
+  ]
+  deps = [
+    ":deprecated_jitter_buffer_common",
+    ":deprecated_packet",
+    ":deprecated_session_info",
+    "../../../api/video:encoded_image",
+    "../../../api/video:video_rtp_headers",
+    "../../../modules/video_coding:codec_globals_headers",
+    "../../../modules/video_coding:encoded_frame",
+    "../../../rtc_base:checks",
+    "../../../rtc_base:event_tracer",
+    "../../../rtc_base:logging",
+  ]
+}
+
+rtc_library("deprecated_packet") {
+  sources = [
+    "packet.cc",
+    "packet.h",
+  ]
+  deps = [
+    "../../../api:rtp_headers",
+    "../../../api:rtp_packet_info",
+    "../../../api/units:timestamp",
+    "../../../api/video:video_frame_type",
+    "../../../modules/rtp_rtcp:rtp_rtcp_format",
+    "../../../modules/rtp_rtcp:rtp_video_header",
+  ]
+  absl_deps = [ "//third_party/abseil-cpp/absl/types:optional" ]
+}
+
+rtc_library("deprecated_receiver") {
+  sources = [
+    "receiver.cc",
+    "receiver.h",
+  ]
+  deps = [
+    ":deprecated_event_wrapper",
+    ":deprecated_jitter_buffer",
+    ":deprecated_jitter_buffer_common",
+    ":deprecated_packet",
+    "../../../api:field_trials_view",
+    "../../../api/video:encoded_image",
+    "../../../modules/video_coding",
+    "../../../modules/video_coding:encoded_frame",
+    "../../../modules/video_coding:video_codec_interface",
+    "../../../modules/video_coding/timing:timing_module",
+    "../../../rtc_base:event_tracer",
+    "../../../rtc_base:logging",
+    "../../../rtc_base:safe_conversions",
+    "../../../system_wrappers",
+  ]
+  absl_deps = [ "//third_party/abseil-cpp/absl/memory" ]
+}
+
+rtc_library("deprecated_session_info") {
+  deps = [
+    ":deprecated_jitter_buffer_common",
+    ":deprecated_packet",
+    "../../../modules:module_api",
+    "../../../modules:module_api_public",
+    "../../../modules/video_coding:codec_globals_headers",
+    "../../../rtc_base:logging",
+  ]
+  sources = [
+    "session_info.cc",
+    "session_info.h",
+  ]
+  absl_deps = [ "//third_party/abseil-cpp/absl/types:variant" ]
+}
+
+rtc_library("deprecated_stream_generator") {
+  deps = [
+    ":deprecated_packet",
+    "../../../rtc_base:checks",
+  ]
+  sources = [
+    "stream_generator.cc",
+    "stream_generator.h",
+  ]
+}
+
+rtc_library("deprecated_unittests") {
+  testonly = true
+  sources = [
+    "decoding_state_unittest.cc",
+    "jitter_buffer_unittest.cc",
+    "receiver_unittest.cc",
+    "session_info_unittest.cc",
+  ]
+  visibility += [ "../../../modules/*" ]
+  deps = [
+    ":deprecated_decoding_state",
+    ":deprecated_frame_buffer",
+    ":deprecated_jitter_buffer",
+    ":deprecated_jitter_buffer_common",
+    ":deprecated_packet",
+    ":deprecated_receiver",
+    ":deprecated_session_info",
+    ":deprecated_stream_generator",
+    "../../../common_video",
+    "../../../modules/rtp_rtcp:rtp_video_header",
+    "../../../modules/video_coding:codec_globals_headers",
+    "../../../modules/video_coding:encoded_frame",
+    "../../../modules/video_coding/timing:timing_module",
+    "../../../rtc_base:checks",
+    "../../../system_wrappers",
+    "../../../test:scoped_key_value_config",
+    "../../../test:test_support",
+  ]
+  absl_deps = [ "//third_party/abseil-cpp/absl/memory" ]
+}

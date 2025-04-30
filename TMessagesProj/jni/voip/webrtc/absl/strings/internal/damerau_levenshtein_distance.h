@@ -15,8 +15,7 @@
 #ifndef ABSL_STRINGS_INTERNAL_DAMERAU_LEVENSHTEIN_DISTANCE_H_
 #define ABSL_STRINGS_INTERNAL_DAMERAU_LEVENSHTEIN_DISTANCE_H_
 
-#include <numeric>
-#include <vector>
+#include <cstdint>
 
 #include "absl/strings/string_view.h"
 

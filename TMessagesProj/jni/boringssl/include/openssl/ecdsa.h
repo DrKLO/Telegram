@@ -1,59 +1,21 @@
-/* ====================================================================
- * Copyright (c) 1998-2005 The OpenSSL Project.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- *
- * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- *
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- *
- * 3. All advertising materials mentioning features or use of this
- *    software must display the following acknowledgment:
- *    "This product includes software developed by the OpenSSL Project
- *    for use in the OpenSSL Toolkit. (http://www.OpenSSL.org/)"
- *
- * 4. The names "OpenSSL Toolkit" and "OpenSSL Project" must not be used to
- *    endorse or promote products derived from this software without
- *    prior written permission. For written permission, please contact
- *    openssl-core@OpenSSL.org.
- *
- * 5. Products derived from this software may not be called "OpenSSL"
- *    nor may "OpenSSL" appear in their names without prior written
- *    permission of the OpenSSL Project.
- *
- * 6. Redistributions of any form whatsoever must retain the following
- *    acknowledgment:
- *    "This product includes software developed by the OpenSSL Project
- *    for use in the OpenSSL Toolkit (http://www.OpenSSL.org/)"
- *
- * THIS SOFTWARE IS PROVIDED BY THE OpenSSL PROJECT ``AS IS'' AND ANY
- * EXPRESSED OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
- * PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE OpenSSL PROJECT OR
- * ITS CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
- * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
- * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
- * OF THE POSSIBILITY OF SUCH DAMAGE.
- * ====================================================================
- *
- * This product includes cryptographic software written by Eric Young
- * (eay@cryptsoft.com).  This product includes software written by Tim
- * Hudson (tjh@cryptsoft.com). */
+// Copyright 2002-2016 The OpenSSL Project Authors. All Rights Reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 #ifndef OPENSSL_HEADER_ECDSA_H
 #define OPENSSL_HEADER_ECDSA_H
 
-#include <openssl/base.h>
+#include <openssl/base.h>   // IWYU pragma: export
 
 #include <openssl/ec_key.h>
 
@@ -73,6 +35,9 @@ extern "C" {
 // space. On successful exit, |*sig_len| is set to the actual number of bytes
 // written. The |type| argument should be zero. It returns one on success and
 // zero otherwise.
+//
+// WARNING: |digest| must be the output of some hash function on the data to be
+// signed. Passing unhashed inputs will not result in a secure signature scheme.
 OPENSSL_EXPORT int ECDSA_sign(int type, const uint8_t *digest,
                               size_t digest_len, uint8_t *sig,
                               unsigned int *sig_len, const EC_KEY *key);
@@ -81,6 +46,10 @@ OPENSSL_EXPORT int ECDSA_sign(int type, const uint8_t *digest,
 // signature by |key| of |digest|. (The |type| argument should be zero.) It
 // returns one on success or zero if the signature is invalid or an error
 // occurred.
+//
+// WARNING: |digest| must be the output of some hash function on the data to be
+// verified. Passing unhashed inputs will not result in a secure signature
+// scheme.
 OPENSSL_EXPORT int ECDSA_verify(int type, const uint8_t *digest,
                                 size_t digest_len, const uint8_t *sig,
                                 size_t sig_len, const EC_KEY *key);
@@ -106,6 +75,12 @@ OPENSSL_EXPORT ECDSA_SIG *ECDSA_SIG_new(void);
 // ECDSA_SIG_free frees |sig| its member |BIGNUM|s.
 OPENSSL_EXPORT void ECDSA_SIG_free(ECDSA_SIG *sig);
 
+// ECDSA_SIG_get0_r returns the r component of |sig|.
+OPENSSL_EXPORT const BIGNUM *ECDSA_SIG_get0_r(const ECDSA_SIG *sig);
+
+// ECDSA_SIG_get0_s returns the s component of |sig|.
+OPENSSL_EXPORT const BIGNUM *ECDSA_SIG_get0_s(const ECDSA_SIG *sig);
+
 // ECDSA_SIG_get0 sets |*out_r| and |*out_s|, if non-NULL, to the two
 // components of |sig|.
 OPENSSL_EXPORT void ECDSA_SIG_get0(const ECDSA_SIG *sig, const BIGNUM **out_r,
@@ -118,12 +93,19 @@ OPENSSL_EXPORT int ECDSA_SIG_set0(ECDSA_SIG *sig, BIGNUM *r, BIGNUM *s);
 
 // ECDSA_do_sign signs |digest_len| bytes from |digest| with |key| and returns
 // the resulting signature structure, or NULL on error.
+//
+// WARNING: |digest| must be the output of some hash function on the data to be
+// signed. Passing unhashed inputs will not result in a secure signature scheme.
 OPENSSL_EXPORT ECDSA_SIG *ECDSA_do_sign(const uint8_t *digest,
                                         size_t digest_len, const EC_KEY *key);
 
 // ECDSA_do_verify verifies that |sig| constitutes a valid signature by |key|
 // of |digest|. It returns one on success or zero if the signature is invalid
 // or on error.
+//
+// WARNING: |digest| must be the output of some hash function on the data to be
+// verified. Passing unhashed inputs will not result in a secure signature
+// scheme.
 OPENSSL_EXPORT int ECDSA_do_verify(const uint8_t *digest, size_t digest_len,
                                    const ECDSA_SIG *sig, const EC_KEY *key);
 
@@ -156,21 +138,38 @@ OPENSSL_EXPORT int ECDSA_SIG_to_bytes(uint8_t **out_bytes, size_t *out_len,
 OPENSSL_EXPORT size_t ECDSA_SIG_max_len(size_t order_len);
 
 
+// Testing-only functions.
+
+// ECDSA_sign_with_nonce_and_leak_private_key_for_testing behaves like
+// |ECDSA_do_sign| but uses |nonce| for the ECDSA nonce 'k', instead of a random
+// value. |nonce| is interpreted as a big-endian integer. It must be reduced
+// modulo the group order and padded with zeros up to |BN_num_bytes(order)|
+// bytes.
+//
+// WARNING: This function is only exported for testing purposes, when using test
+// vectors or fuzzing strategies. It must not be used outside tests and may leak
+// any private keys it is used with.
+OPENSSL_EXPORT ECDSA_SIG *
+ECDSA_sign_with_nonce_and_leak_private_key_for_testing(const uint8_t *digest,
+                                                       size_t digest_len,
+                                                       const EC_KEY *eckey,
+                                                       const uint8_t *nonce,
+                                                       size_t nonce_len);
+
+
 // Deprecated functions.
 
-// d2i_ECDSA_SIG parses an ASN.1, DER-encoded, signature from |len| bytes at
-// |*inp|. If |out| is not NULL then, on exit, a pointer to the result is in
-// |*out|. Note that, even if |*out| is already non-NULL on entry, it will not
-// be written to. Rather, a fresh |ECDSA_SIG| is allocated and the previous one
-// is freed. On successful exit, |*inp| is advanced past the DER structure. It
-// returns the result or NULL on error.
+// d2i_ECDSA_SIG parses aa DER-encoded ECDSA-Sig-Value structure from |len|
+// bytes at |*inp|, as described in |d2i_SAMPLE|.
+//
+// Use |ECDSA_SIG_parse| instead.
 OPENSSL_EXPORT ECDSA_SIG *d2i_ECDSA_SIG(ECDSA_SIG **out, const uint8_t **inp,
                                         long len);
 
-// i2d_ECDSA_SIG marshals a signature from |sig| to an ASN.1, DER
-// structure. If |outp| is not NULL then the result is written to |*outp| and
-// |*outp| is advanced just past the output. It returns the number of bytes in
-// the result, whether written or not, or a negative value on error.
+// i2d_ECDSA_SIG marshals |sig| as a DER-encoded ECDSA-Sig-Value, as described
+// in |i2d_SAMPLE|.
+//
+// Use |ECDSA_SIG_marshal| instead.
 OPENSSL_EXPORT int i2d_ECDSA_SIG(const ECDSA_SIG *sig, uint8_t **outp);
 
 
@@ -195,5 +194,6 @@ BSSL_NAMESPACE_END
 #define ECDSA_R_NOT_IMPLEMENTED 103
 #define ECDSA_R_RANDOM_NUMBER_GENERATION_FAILED 104
 #define ECDSA_R_ENCODE_ERROR 105
+#define ECDSA_R_TOO_MANY_ITERATIONS 106
 
 #endif  // OPENSSL_HEADER_ECDSA_H

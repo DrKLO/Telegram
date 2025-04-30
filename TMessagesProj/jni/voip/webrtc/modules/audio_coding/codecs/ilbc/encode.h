@@ -29,10 +29,10 @@
  *---------------------------------------------------------------*/
 
 void WebRtcIlbcfix_EncodeImpl(
-    uint16_t* bytes,      /* (o) encoded data bits iLBC */
-    const int16_t* block, /* (i) speech vector to encode */
+    uint16_t* bytes,          /* (o) encoded data bits iLBC */
+    const int16_t* block,     /* (i) speech vector to encode */
     IlbcEncoder* iLBCenc_inst /* (i/o) the general encoder
                                            state */
-    );
+);
 
 #endif

@@ -21,7 +21,7 @@ public:
     explicit GroupInstanceCustomImpl(GroupInstanceDescriptor &&descriptor);
     ~GroupInstanceCustomImpl();
 
-    void stop();
+    void stop(std::function<void()> completion);
     
     void setConnectionMode(GroupConnectionMode connectionMode, bool keepBroadcastIfWasEnabled, bool isUnifiedBroadcast);
 
@@ -33,7 +33,7 @@ public:
     void setIsMuted(bool isMuted);
     void setIsNoiseSuppressionEnabled(bool isNoiseSuppressionEnabled);
     void setVideoCapture(std::shared_ptr<VideoCaptureInterface> videoCapture);
-    void setVideoSource(std::function<rtc::scoped_refptr<webrtc::VideoTrackSourceInterface>()> getVideoSource);
+    void setVideoSource(std::function<webrtc::scoped_refptr<webrtc::VideoTrackSourceInterface>()> getVideoSource);
     void setAudioOutputDevice(std::string id);
     void setAudioInputDevice(std::string id);
     void addExternalAudioSamples(std::vector<uint8_t> &&samples);
@@ -45,6 +45,7 @@ public:
     void setRequestedVideoChannels(std::vector<VideoChannelDescription> &&requestedVideoChannels);
 
     void getStats(std::function<void(GroupInstanceStats)> completion);
+    void internal_addCustomNetworkEvent(bool isRemoteConnected);
 
 private:
     std::shared_ptr<Threads> _threads;

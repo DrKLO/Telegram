@@ -119,7 +119,7 @@ public:
             
             rtc::ByteBufferWriter bufferWriter;
             bufferWriter.WriteUInt32((uint32_t)prepared->bytes.size());
-            bufferWriter.WriteBytes(reinterpret_cast<const char *>(prepared->bytes.data()), prepared->bytes.size());
+            bufferWriter.WriteBytes(reinterpret_cast<const uint8_t *>(prepared->bytes.data()), prepared->bytes.size());
             while (bufferWriter.Length() % 4 != 0) {
                 bufferWriter.WriteUInt8(0);
             }
@@ -265,7 +265,7 @@ private:
     }
     
     void processIncomingPacket(std::shared_ptr<std::vector<uint8_t>> const &packet) {
-        rtc::ByteBufferReader reader(reinterpret_cast<const char *>(packet->data()), packet->size());
+        rtc::ByteBufferReader reader(rtc::ArrayView<const uint8_t>(reinterpret_cast<const uint8_t *>(packet->data()), packet->size()));
         
         uint32_t header = 0;
         if (!reader.ReadUInt32(&header)) {
@@ -300,7 +300,7 @@ private:
             }
             
             if (!isSpecialPacket) {
-                rtc::ByteBufferReader dataPacketReader(reinterpret_cast<const char *>(packet->data()), packet->size());
+                rtc::ByteBufferReader dataPacketReader(rtc::ArrayView<const uint8_t>(reinterpret_cast<const uint8_t *>(packet->data()), packet->size()));
                 uint32_t dataSize = 0;
                 if (!dataPacketReader.ReadUInt32(&dataSize)) {
                     return;
@@ -400,8 +400,12 @@ _dataChannelMessageReceived(configuration.dataChannelMessageReceived) {
     
     _rtpTransport = std::make_unique<DirectRtpTransport>();
     
-    _rtpTransport->SignalReadyToSend.connect(this, &DirectNetworkingImpl::DtlsReadyToSend);
-    _rtpTransport->SignalRtcpPacketReceived.connect(this, &DirectNetworkingImpl::OnRtcpPacketReceived_n);
+    _rtpTransport->SubscribeReadyToSend(this, [this](bool value) {
+        this->DtlsReadyToSend(value);
+    });
+    _rtpTransport->SubscribeRtcpPacketReceived(this, [this](rtc::CopyOnWriteBuffer *packet, int64_t timestamp) {
+        this->OnRtcpPacketReceived_n(packet, timestamp);
+    });
     
     _directConnectionChannel = configuration.directConnectionChannel;
     _packetTransport = std::make_shared<DirectPacketTransport>(
@@ -470,8 +474,7 @@ void DirectNetworkingImpl::start() {
 }
 
 void DirectNetworkingImpl::stop() {
-    _rtpTransport->SignalWritableState.disconnect(this);
-    //_rtpTransport->SignalReceivingState.disconnect(this);
+    _rtpTransport->UnsubscribeReadyToSend(this);
     
     _dataChannelInterface.reset();
     _rtpTransport.reset();

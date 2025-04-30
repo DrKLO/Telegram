@@ -73,9 +73,6 @@ class WebRtcSessionDescriptionFactory {
   void CreateAnswer(CreateSessionDescriptionObserver* observer,
                     const cricket::MediaSessionOptions& session_options);
 
-  void SetSdesPolicy(cricket::SecurePolicy secure_policy);
-  cricket::SecurePolicy SdesPolicy() const;
-
   void set_enable_encrypted_rtp_header_extensions(bool enable) {
     session_desc_factory_.set_enable_encrypted_rtp_header_extensions(enable);
   }
@@ -87,6 +84,9 @@ class WebRtcSessionDescriptionFactory {
   // For testing.
   bool waiting_for_certificate_for_testing() const {
     return certificate_request_state_ == CERTIFICATE_WAITING;
+  }
+  void SetInsecureForTesting() {
+    transport_desc_factory_.SetInsecureForTesting();
   }
 
  private:
@@ -119,7 +119,7 @@ class WebRtcSessionDescriptionFactory {
   void FailPendingRequests(const std::string& reason);
   void PostCreateSessionDescriptionFailed(
       CreateSessionDescriptionObserver* observer,
-      const std::string& error);
+      RTCError error);
   void PostCreateSessionDescriptionSucceeded(
       CreateSessionDescriptionObserver* observer,
       std::unique_ptr<SessionDescriptionInterface> description);
@@ -144,6 +144,7 @@ class WebRtcSessionDescriptionFactory {
 
   std::function<void(const rtc::scoped_refptr<rtc::RTCCertificate>&)>
       on_certificate_ready_;
+
   rtc::WeakPtrFactory<WebRtcSessionDescriptionFactory> weak_factory_{this};
 };
 }  // namespace webrtc

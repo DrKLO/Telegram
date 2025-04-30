@@ -12,6 +12,7 @@
 
 #include <stddef.h>
 
+#include <atomic>
 #include <utility>
 #include <vector>
 
@@ -22,8 +23,10 @@
 namespace webrtc {
 
 // This function is only expected to be called on the signalling thread.
+// On the other hand, some test or even production setups may use
+// several signaling threads.
 int RtpReceiverInternal::GenerateUniqueId() {
-  static int g_unique_id = 0;
+  static std::atomic<int> g_unique_id{0};
 
   return ++g_unique_id;
 }

@@ -36,6 +36,9 @@ std::string IceSwitchReasonToString(IceSwitchReason reason) {
       return "selected candidate pair destroyed";
     case IceSwitchReason::ICE_CONTROLLER_RECHECK:
       return "ice-controller-request-recheck";
+    case IceSwitchReason::APPLICATION_REQUESTED:
+      return "application requested";
+    case IceSwitchReason::UNKNOWN:
     default:
       return "unknown";
   }

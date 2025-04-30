@@ -63,10 +63,10 @@ class MediaCodecVideoDecoderFactory implements VideoDecoderFactory {
   public VideoCodecInfo[] getSupportedCodecs() {
     List<VideoCodecInfo> supportedCodecInfos = new ArrayList<VideoCodecInfo>();
     // Generate a list of supported codecs in order of preference:
-    // VP8, VP9, H.265(optional), H264 (high profile), and H264 (baseline profile).
-    for (VideoCodecMimeType type : new VideoCodecMimeType[] {
-             VideoCodecMimeType.VP8, VideoCodecMimeType.VP9, VideoCodecMimeType.H264,
-			     VideoCodecMimeType.H265}) {
+    // VP8, VP9, H264 (high profile), H264 (baseline profile), AV1 and H265.
+    for (VideoCodecMimeType type :
+        new VideoCodecMimeType[] {VideoCodecMimeType.VP8, VideoCodecMimeType.VP9,
+            VideoCodecMimeType.H264, VideoCodecMimeType.AV1, VideoCodecMimeType.H265}) {
       MediaCodecInfo codec = findCodecForType(type);
       if (codec != null) {
         String name = type.name();
@@ -84,18 +84,18 @@ class MediaCodecVideoDecoderFactory implements VideoDecoderFactory {
   }
 
   private @Nullable MediaCodecInfo findCodecForType(VideoCodecMimeType type) {
-    // HW decoding is not supported on builds before KITKAT.
-    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.KITKAT) {
-      return null;
-    }
+    for (int i = 0; i < MediaCodecList.getCodecCount(); ++i) {
+      MediaCodecInfo info = null;
+      try {
+        info = MediaCodecList.getCodecInfoAt(i);
+      } catch (IllegalArgumentException e) {
+        Logging.e(TAG, "Cannot retrieve decoder codec info", e);
+      }
 
-    ArrayList<MediaCodecInfo> infos = MediaCodecUtils.getSortedCodecsList();
-    int codecCount = infos.size();
-    for (int i = 0; i < codecCount; ++i) {
-      MediaCodecInfo info = infos.get(i);
       if (info == null || info.isEncoder()) {
         continue;
       }
+
       if (isSupportedCodec(info, type)) {
         return info;
       }
@@ -106,7 +106,6 @@ class MediaCodecVideoDecoderFactory implements VideoDecoderFactory {
 
   // Returns true if the given MediaCodecInfo indicates a supported encoder for the given type.
   private boolean isSupportedCodec(MediaCodecInfo info, VideoCodecMimeType type) {
-    String name = info.getName();
     if (!MediaCodecUtils.codecSupportsType(info, type)) {
       return false;
     }
@@ -128,8 +127,8 @@ class MediaCodecVideoDecoderFactory implements VideoDecoderFactory {
 
   private boolean isH264HighProfileSupported(MediaCodecInfo info) {
     String name = info.getName();
-    // Support H.264 HP decoding on QCOM chips for Android L and above.
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && name.startsWith(QCOM_PREFIX)) {
+    // Support H.264 HP decoding on QCOM chips.
+    if (name.startsWith(QCOM_PREFIX)) {
       return true;
     }
     // Support H.264 HP decoding on Exynos chips for Android M and above.

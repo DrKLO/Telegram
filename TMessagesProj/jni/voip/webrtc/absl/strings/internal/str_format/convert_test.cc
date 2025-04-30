@@ -12,23 +12,43 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <errno.h>
+#include <assert.h>
+#include <locale.h>
 #include <stdarg.h>
 #include <stdio.h>
 
-#include <cctype>
+#include <algorithm>
+#include <climits>
 #include <cmath>
+#include <cstdlib>
+#include <cstring>
+#include <cwctype>
 #include <limits>
+#include <set>
+#include <sstream>
 #include <string>
 #include <thread>  // NOLINT
+#include <type_traits>
+#include <vector>
 
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "absl/base/attributes.h"
 #include "absl/base/internal/raw_logging.h"
+#include "absl/log/log.h"
+#include "absl/numeric/int128.h"
+#include "absl/strings/ascii.h"
+#include "absl/strings/internal/str_format/arg.h"
 #include "absl/strings/internal/str_format/bind.h"
 #include "absl/strings/match.h"
+#include "absl/strings/str_format.h"
+#include "absl/strings/string_view.h"
 #include "absl/types/optional.h"
+#include "absl/types/span.h"
+
+#if defined(ABSL_HAVE_STD_STRING_VIEW)
+#include <string_view>
+#endif
 
 namespace absl {
 ABSL_NAMESPACE_BEGIN
@@ -47,35 +67,102 @@ size_t ArraySize(T (&)[N]) {
   return N;
 }
 
-std::string LengthModFor(float) { return ""; }
-std::string LengthModFor(double) { return ""; }
-std::string LengthModFor(long double) { return "L"; }
-std::string LengthModFor(char) { return "hh"; }
-std::string LengthModFor(signed char) { return "hh"; }
-std::string LengthModFor(unsigned char) { return "hh"; }
-std::string LengthModFor(short) { return "h"; }           // NOLINT
-std::string LengthModFor(unsigned short) { return "h"; }  // NOLINT
-std::string LengthModFor(int) { return ""; }
-std::string LengthModFor(unsigned) { return ""; }
-std::string LengthModFor(long) { return "l"; }                 // NOLINT
-std::string LengthModFor(unsigned long) { return "l"; }        // NOLINT
-std::string LengthModFor(long long) { return "ll"; }           // NOLINT
-std::string LengthModFor(unsigned long long) { return "ll"; }  // NOLINT
+template <typename T>
+struct AlwaysFalse : std::false_type {};
+
+template <typename T>
+std::string LengthModFor() {
+  static_assert(AlwaysFalse<T>::value, "Unsupported type");
+  return "";
+}
+template <>
+std::string LengthModFor<char>() {
+  return "hh";
+}
+template <>
+std::string LengthModFor<signed char>() {
+  return "hh";
+}
+template <>
+std::string LengthModFor<unsigned char>() {
+  return "hh";
+}
+template <>
+std::string LengthModFor<short>() {  // NOLINT
+  return "h";
+}
+template <>
+std::string LengthModFor<unsigned short>() {  // NOLINT
+  return "h";
+}
+template <>
+std::string LengthModFor<int>() {
+  return "";
+}
+template <>
+std::string LengthModFor<unsigned>() {
+  return "";
+}
+template <>
+std::string LengthModFor<long>() {  // NOLINT
+  return "l";
+}
+template <>
+std::string LengthModFor<unsigned long>() {  // NOLINT
+  return "l";
+}
+template <>
+std::string LengthModFor<long long>() {  // NOLINT
+  return "ll";
+}
+template <>
+std::string LengthModFor<unsigned long long>() {  // NOLINT
+  return "ll";
+}
+
+// An integral type of the same rank and signedness as `wchar_t`, that isn't
+// `wchar_t`.
+using IntegralTypeForWCharT =
+    std::conditional_t<std::is_signed<wchar_t>::value,
+                       // Some STLs are broken and return `wchar_t` from
+                       // `std::make_[un]signed_t<wchar_t>` when the signedness
+                       // matches. Work around by round-tripping through the
+                       // opposite signedness.
+                       std::make_signed_t<std::make_unsigned_t<wchar_t>>,
+                       std::make_unsigned_t<std::make_signed_t<wchar_t>>>;
+
+// Given an integral type `T`, returns a type of the same rank and signedness
+// that is guaranteed to not be `wchar_t`.
+template <typename T>
+using MatchingIntegralType = std::conditional_t<std::is_same<T, wchar_t>::value,
+                                                IntegralTypeForWCharT, T>;
 
 std::string EscCharImpl(int v) {
-  if (std::isprint(static_cast<unsigned char>(v))) {
-    return std::string(1, static_cast<char>(v));
-  }
   char buf[64];
-  int n = snprintf(buf, sizeof(buf), "\\%#.2x",
-                   static_cast<unsigned>(v & 0xff));
-  assert(n > 0 && n < sizeof(buf));
-  return std::string(buf, n);
+  int n = absl::ascii_isprint(static_cast<unsigned char>(v))
+              ? snprintf(buf, sizeof(buf), "'%c'", v)
+              : snprintf(buf, sizeof(buf), "'\\x%.*x'", CHAR_BIT / 4,
+                         static_cast<unsigned>(
+                             static_cast<std::make_unsigned_t<char>>(v)));
+  assert(n > 0 && static_cast<size_t>(n) < sizeof(buf));
+  return std::string(buf, static_cast<size_t>(n));
 }
 
 std::string Esc(char v) { return EscCharImpl(v); }
 std::string Esc(signed char v) { return EscCharImpl(v); }
 std::string Esc(unsigned char v) { return EscCharImpl(v); }
+
+std::string Esc(wchar_t v) {
+  char buf[64];
+  int n = std::iswprint(static_cast<wint_t>(v))
+              ? snprintf(buf, sizeof(buf), "L'%lc'", static_cast<wint_t>(v))
+              : snprintf(buf, sizeof(buf), "L'\\x%.*llx'",
+                         static_cast<int>(sizeof(wchar_t) * CHAR_BIT / 4),
+                         static_cast<unsigned long long>(
+                             static_cast<std::make_unsigned_t<wchar_t>>(v)));
+  assert(n > 0 && static_cast<size_t>(n) < sizeof(buf));
+  return std::string(buf, static_cast<size_t>(n));
+}
 
 template <typename T>
 std::string Esc(const T &v) {
@@ -99,7 +186,7 @@ void StrAppendV(std::string *dst, const char *format, va_list ap) {
   if (result < kSpaceLength) {
     if (result >= 0) {
       // Normal case -- everything fit.
-      dst->append(space, result);
+      dst->append(space, static_cast<size_t>(result));
       return;
     }
     if (result < 0) {
@@ -110,7 +197,7 @@ void StrAppendV(std::string *dst, const char *format, va_list ap) {
 
   // Increase the buffer size to the size requested by vsnprintf,
   // plus one for the closing \0.
-  int length = result + 1;
+  size_t length = static_cast<size_t>(result) + 1;
   char *buf = new char[length];
 
   // Restore the va_list before we use it again
@@ -118,9 +205,9 @@ void StrAppendV(std::string *dst, const char *format, va_list ap) {
   result = vsnprintf(buf, length, format, backup_ap);
   va_end(backup_ap);
 
-  if (result >= 0 && result < length) {
+  if (result >= 0 && static_cast<size_t>(result) < length) {
     // It fit
-    dst->append(buf, result);
+    dst->append(buf, static_cast<size_t>(result));
   }
   delete[] buf;
 }
@@ -229,11 +316,15 @@ void TestStringConvert(const T& str) {
 
 TEST_F(FormatConvertTest, BasicString) {
   TestStringConvert("hello");  // As char array.
+  TestStringConvert(L"hello");
   TestStringConvert(static_cast<const char*>("hello"));
+  TestStringConvert(static_cast<const wchar_t*>(L"hello"));
   TestStringConvert(std::string("hello"));
+  TestStringConvert(std::wstring(L"hello"));
   TestStringConvert(string_view("hello"));
 #if defined(ABSL_HAVE_STD_STRING_VIEW)
   TestStringConvert(std::string_view("hello"));
+  TestStringConvert(std::wstring_view(L"hello"));
 #endif  // ABSL_HAVE_STD_STRING_VIEW
 }
 
@@ -241,6 +332,10 @@ TEST_F(FormatConvertTest, NullString) {
   const char* p = nullptr;
   UntypedFormatSpecImpl format("%s");
   EXPECT_EQ("", FormatPack(format, {FormatArgImpl(p)}));
+
+  const wchar_t* wp = nullptr;
+  UntypedFormatSpecImpl wformat("%ls");
+  EXPECT_EQ("", FormatPack(wformat, {FormatArgImpl(wp)}));
 }
 
 TEST_F(FormatConvertTest, StringPrecision) {
@@ -250,10 +345,19 @@ TEST_F(FormatConvertTest, StringPrecision) {
   UntypedFormatSpecImpl format("%.1s");
   EXPECT_EQ("a", FormatPack(format, {FormatArgImpl(p)}));
 
+  wchar_t wc = L'a';
+  const wchar_t* wp = &wc;
+  UntypedFormatSpecImpl wformat("%.1ls");
+  EXPECT_EQ("a", FormatPack(wformat, {FormatArgImpl(wp)}));
+
   // We cap at the NUL-terminator.
   p = "ABC";
   UntypedFormatSpecImpl format2("%.10s");
   EXPECT_EQ("ABC", FormatPack(format2, {FormatArgImpl(p)}));
+
+  wp = L"ABC";
+  UntypedFormatSpecImpl wformat2("%.10ls");
+  EXPECT_EQ("ABC", FormatPack(wformat2, {FormatArgImpl(wp)}));
 }
 
 // Pointer formatting is implementation defined. This checks that the argument
@@ -264,7 +368,7 @@ MATCHER_P(MatchesPointerString, ptr, "") {
   }
   void* parsed = nullptr;
   if (sscanf(arg.c_str(), "%p", &parsed) != 1) {
-    ABSL_RAW_LOG(FATAL, "Could not parse %s", arg.c_str());
+    LOG(FATAL) << "Could not parse " << arg;
   }
   return ptr == parsed;
 }
@@ -276,16 +380,25 @@ TEST_F(FormatConvertTest, Pointer) {
   char *mcp = &c;
   const char *cp = "hi";
   const char *cnil = nullptr;
+  wchar_t wc = L'h';
+  wchar_t *mwcp = &wc;
+  const wchar_t *wcp = L"hi";
+  const wchar_t *wcnil = nullptr;
   const int *inil = nullptr;
   using VoidF = void (*)();
   VoidF fp = [] {}, fnil = nullptr;
   volatile char vc;
   volatile char *vcp = &vc;
   volatile char *vcnil = nullptr;
+  volatile wchar_t vwc;
+  volatile wchar_t *vwcp = &vwc;
+  volatile wchar_t *vwcnil = nullptr;
   const FormatArgImpl args_array[] = {
-      FormatArgImpl(xp),   FormatArgImpl(cp),  FormatArgImpl(inil),
-      FormatArgImpl(cnil), FormatArgImpl(mcp), FormatArgImpl(fp),
-      FormatArgImpl(fnil), FormatArgImpl(vcp), FormatArgImpl(vcnil),
+      FormatArgImpl(xp),    FormatArgImpl(cp),     FormatArgImpl(wcp),
+      FormatArgImpl(inil),  FormatArgImpl(cnil),   FormatArgImpl(wcnil),
+      FormatArgImpl(mcp),   FormatArgImpl(mwcp),   FormatArgImpl(fp),
+      FormatArgImpl(fnil),  FormatArgImpl(vcp),    FormatArgImpl(vwcp),
+      FormatArgImpl(vcnil), FormatArgImpl(vwcnil),
   };
   auto args = absl::MakeConstSpan(args_array);
 
@@ -311,30 +424,49 @@ TEST_F(FormatConvertTest, Pointer) {
   EXPECT_THAT(FormatPack(UntypedFormatSpecImpl("%-30.20p"), args),
               MatchesPointerString(&x));
 
+  // const int*
+  EXPECT_THAT(FormatPack(UntypedFormatSpecImpl("%1$p"), args),
+              MatchesPointerString(xp));
   // const char*
   EXPECT_THAT(FormatPack(UntypedFormatSpecImpl("%2$p"), args),
               MatchesPointerString(cp));
-  // null const int*
+  // const wchar_t*
   EXPECT_THAT(FormatPack(UntypedFormatSpecImpl("%3$p"), args),
-              MatchesPointerString(nullptr));
-  // null const char*
+              MatchesPointerString(wcp));
+  // null const int*
   EXPECT_THAT(FormatPack(UntypedFormatSpecImpl("%4$p"), args),
               MatchesPointerString(nullptr));
-  // nonconst char*
+  // null const char*
   EXPECT_THAT(FormatPack(UntypedFormatSpecImpl("%5$p"), args),
-              MatchesPointerString(mcp));
-
-  // function pointers
-  EXPECT_THAT(FormatPack(UntypedFormatSpecImpl("%6$p"), args),
-              MatchesPointerString(reinterpret_cast<const void*>(fp)));
-  EXPECT_THAT(
-      FormatPack(UntypedFormatSpecImpl("%8$p"), args),
-      MatchesPointerString(reinterpret_cast<volatile const void *>(vcp)));
-
-  // null function pointers
-  EXPECT_THAT(FormatPack(UntypedFormatSpecImpl("%7$p"), args),
               MatchesPointerString(nullptr));
+  // null const wchar_t*
+  EXPECT_THAT(FormatPack(UntypedFormatSpecImpl("%6$p"), args),
+              MatchesPointerString(nullptr));
+  // nonconst char*
+  EXPECT_THAT(FormatPack(UntypedFormatSpecImpl("%7$p"), args),
+              MatchesPointerString(mcp));
+  // nonconst wchar_t*
+  EXPECT_THAT(FormatPack(UntypedFormatSpecImpl("%8$p"), args),
+              MatchesPointerString(mwcp));
+  // function pointer
   EXPECT_THAT(FormatPack(UntypedFormatSpecImpl("%9$p"), args),
+              MatchesPointerString(reinterpret_cast<const void *>(fp)));
+  // null function pointer
+  EXPECT_THAT(FormatPack(UntypedFormatSpecImpl("%10$p"), args),
+              MatchesPointerString(nullptr));
+  // volatile char*
+  EXPECT_THAT(
+      FormatPack(UntypedFormatSpecImpl("%11$p"), args),
+      MatchesPointerString(reinterpret_cast<volatile const void *>(vcp)));
+  // volatile wchar_t*
+  EXPECT_THAT(
+      FormatPack(UntypedFormatSpecImpl("%12$p"), args),
+      MatchesPointerString(reinterpret_cast<volatile const void *>(vwcp)));
+  // null volatile char*
+  EXPECT_THAT(FormatPack(UntypedFormatSpecImpl("%13$p"), args),
+              MatchesPointerString(nullptr));
+  // null volatile wchar_t*
+  EXPECT_THAT(FormatPack(UntypedFormatSpecImpl("%14$p"), args),
               MatchesPointerString(nullptr));
 }
 
@@ -434,12 +566,15 @@ TYPED_TEST_P(TypedFormatConvertTest, AllIntsWithFlags) {
               // as printf can't do that conversion properly. For those
               // cases, we do expect agreement with printf with a "%u"
               // and the unsigned equivalent of 'val'.
-              UnsignedT uval = val;
-              old_fmt += LengthModFor(uval);
+              UnsignedT uval =
+                  static_cast<std::remove_volatile_t<UnsignedT>>(val);
+              old_fmt += LengthModFor<
+                  MatchingIntegralType<std::remove_cv_t<decltype(uval)>>>();
               old_fmt += "u";
               old_result = StrPrint(old_fmt.c_str(), uval);
             } else {
-              old_fmt += LengthModFor(val);
+              old_fmt += LengthModFor<
+                  MatchingIntegralType<std::remove_cv_t<decltype(val)>>>();
               old_fmt += conv_char;
               old_result = StrPrint(old_fmt.c_str(), val);
             }
@@ -455,6 +590,47 @@ TYPED_TEST_P(TypedFormatConvertTest, AllIntsWithFlags) {
       }
     }
   }
+}
+
+template <typename T>
+absl::optional<std::string> StrPrintChar(T c) {
+  return StrPrint("%c", static_cast<int>(c));
+}
+template <>
+absl::optional<std::string> StrPrintChar(wchar_t c) {
+  // musl libc has a bug where ("%lc", 0) writes no characters, and Android
+  // doesn't support forcing UTF-8 via setlocale(). Hardcode the expected
+  // answers for ASCII inputs to maximize test coverage on these platforms.
+  if (static_cast<std::make_unsigned_t<wchar_t>>(c) < 0x80) {
+    return std::string(1, static_cast<char>(c));
+  }
+
+  // Force a UTF-8 locale to match the expected `StrFormat()` behavior.
+  // It's important to copy the string returned by `old_locale` here, because
+  // its contents are not guaranteed to be valid after the next `setlocale()`
+  // call.
+  std::string old_locale = setlocale(LC_CTYPE, nullptr);
+  if (!setlocale(LC_CTYPE, "en_US.UTF-8")) {
+    return absl::nullopt;
+  }
+  const std::string output = StrPrint("%lc", static_cast<wint_t>(c));
+  setlocale(LC_CTYPE, old_locale.c_str());
+  return output;
+}
+
+template <typename T>
+typename std::remove_volatile<T>::type GetMaxForConversion() {
+  return static_cast<typename std::remove_volatile<T>::type>(
+      std::numeric_limits<int>::max());
+}
+
+template <>
+wchar_t GetMaxForConversion<wchar_t>() {
+  // Don't return values that aren't legal Unicode. For wchar_t conversions in a
+  // UTF-8 locale, conversion behavior for such values is unspecified, and we
+  // don't care about matching it.
+  return (sizeof(wchar_t) * CHAR_BIT <= 16) ? wchar_t{0xffff}
+                                            : static_cast<wchar_t>(0x10ffff);
 }
 
 TYPED_TEST_P(TypedFormatConvertTest, Char) {
@@ -473,28 +649,50 @@ TYPED_TEST_P(TypedFormatConvertTest, Char) {
   // std::numeric_limits::max(), too, but vsnprintf("%c", ...) can't handle
   // anything larger than an int. Add in the most extreme values we can without
   // exceeding that range.
+  // Special case: Formatting a wchar_t should behave like vsnprintf("%lc").
+  // Technically vsnprintf can accept a wint_t in this case, but since we must
+  // pass a wchar_t to FormatPack, the largest type we can use here is wchar_t.
+  using ArgType =
+      std::conditional_t<std::is_same<T, wchar_t>::value, wchar_t, int>;
   static const T kMin =
-      static_cast<remove_volatile_t>(std::numeric_limits<int>::min());
-  static const T kMax =
-      static_cast<remove_volatile_t>(std::numeric_limits<int>::max());
-  vals.insert(vals.end(), {kMin + 1, kMin, kMax - 1, kMax});
+      static_cast<remove_volatile_t>(std::numeric_limits<ArgType>::min());
+  static const T kMax = GetMaxForConversion<T>();
+  vals.insert(vals.end(), {static_cast<remove_volatile_t>(kMin + 1), kMin,
+                           static_cast<remove_volatile_t>(kMax - 1), kMax});
 
+  static const auto kMaxWCharT =
+      static_cast<remove_volatile_t>(GetMaxForConversion<wchar_t>());
   for (const T c : vals) {
+    SCOPED_TRACE(Esc(c));
     const FormatArgImpl args[] = {FormatArgImpl(c)};
     UntypedFormatSpecImpl format("%c");
-    EXPECT_EQ(StrPrint("%c", static_cast<int>(c)),
-              FormatPack(format, absl::MakeSpan(args)));
+    absl::optional<std::string> result = StrPrintChar(c);
+    if (result.has_value()) {
+      EXPECT_EQ(result.value(), FormatPack(format, absl::MakeSpan(args)));
+    }
+
+    // Also test that if the format specifier is "%lc", the argument is treated
+    // as if it's a `wchar_t`.
+    const T wc =
+        std::max(remove_volatile_t{0},
+                 std::min(static_cast<remove_volatile_t>(c), kMaxWCharT));
+    SCOPED_TRACE(Esc(wc));
+    const FormatArgImpl wide_args[] = {FormatArgImpl(wc)};
+    UntypedFormatSpecImpl wide_format("%lc");
+    result = StrPrintChar(static_cast<wchar_t>(wc));
+    if (result.has_value()) {
+      EXPECT_EQ(result.value(),
+                FormatPack(wide_format, absl::MakeSpan(wide_args)));
+    }
   }
 }
 
 REGISTER_TYPED_TEST_SUITE_P(TypedFormatConvertTest, AllIntsWithFlags, Char);
 
-typedef ::testing::Types<
-    int, unsigned, volatile int,
-    short, unsigned short,
-    long, unsigned long,
-    long long, unsigned long long,
-    signed char, unsigned char, char>
+typedef ::testing::Types<int, unsigned, volatile int, short,   // NOLINT
+                         unsigned short, long, unsigned long,  // NOLINT
+                         long long, unsigned long long,        // NOLINT
+                         signed char, unsigned char, char, wchar_t>
     AllIntTypes;
 INSTANTIATE_TYPED_TEST_SUITE_P(TypedFormatConvertTestWithAllIntTypes,
                                TypedFormatConvertTest, AllIntTypes);
@@ -509,6 +707,22 @@ TEST_F(FormatConvertTest, VectorBool) {
                             FormatArgImpl(cv[0]), FormatArgImpl(cv[1])})));
 }
 
+TEST_F(FormatConvertTest, UnicodeWideString) {
+  // StrFormat() should be able to convert wide strings containing Unicode
+  // characters (to UTF-8).
+  const FormatArgImpl args[] = {FormatArgImpl(L"\u47e3 \U00011112")};
+  // `u8""` forces UTF-8 encoding; MSVC will default to e.g. CP1252 (and warn)
+  // without it. However, the resulting character type differs between pre-C++20
+  // (`char`) and C++20 (`char8_t`). So deduce the right character type for all
+  // C++ versions, init it with UTF-8, then `memcpy()` to get the result as a
+  // `char*`.
+  using ConstChar8T = std::remove_reference_t<decltype(*u8"a")>;
+  ConstChar8T kOutputUtf8[] = u8"\u47e3 \U00011112";
+  char output[sizeof kOutputUtf8];
+  std::memcpy(output, kOutputUtf8, sizeof kOutputUtf8);
+  EXPECT_EQ(output,
+            FormatPack(UntypedFormatSpecImpl("%ls"), absl::MakeSpan(args)));
+}
 
 TEST_F(FormatConvertTest, Int128) {
   absl::int128 positive = static_cast<absl::int128>(0x1234567890abcdef) * 1979;
@@ -571,8 +785,7 @@ TEST_F(FormatConvertTest, Uint128) {
 }
 
 template <typename Floating>
-void TestWithMultipleFormatsHelper(const std::vector<Floating> &floats,
-                                   const std::set<Floating> &skip_verify) {
+void TestWithMultipleFormatsHelper(Floating tested_float) {
   const NativePrintfTraits &native_traits = VerifyNativeImplementation();
   // Reserve the space to ensure we don't allocate memory in the output itself.
   std::string str_format_result;
@@ -603,41 +816,41 @@ void TestWithMultipleFormatsHelper(const std::vector<Floating> &floats,
         continue;
       }
 
-      for (Floating d : floats) {
-        if (!native_traits.hex_float_prefers_denormal_repr &&
-            (f == 'a' || f == 'A') && std::fpclassify(d) == FP_SUBNORMAL) {
-          continue;
-        }
+      if (!native_traits.hex_float_prefers_denormal_repr &&
+          (f == 'a' || f == 'A') &&
+          std::fpclassify(tested_float) == FP_SUBNORMAL) {
+        continue;
+      }
         int i = -10;
-        FormatArgImpl args[2] = {FormatArgImpl(d), FormatArgImpl(i)};
+        FormatArgImpl args[2] = {FormatArgImpl(tested_float), FormatArgImpl(i)};
         UntypedFormatSpecImpl format(fmt_str);
 
         string_printf_result.clear();
-        StrAppend(&string_printf_result, fmt_str.c_str(), d, i);
+        StrAppend(&string_printf_result, fmt_str.c_str(), tested_float, i);
         str_format_result.clear();
 
         {
           AppendPack(&str_format_result, format, absl::MakeSpan(args));
         }
 
+        // For values that we know won't match the standard library
+        // implementation we skip verification, but still run the algorithm to
+        // catch asserts/sanitizer bugs.
 #ifdef _MSC_VER
         // MSVC has a different rounding policy than us so we can't test our
         // implementation against the native one there.
         continue;
 #elif defined(__APPLE__)
         // Apple formats NaN differently (+nan) vs. (nan)
-        if (std::isnan(d)) continue;
+        if (std::isnan(tested_float)) continue;
 #endif
-        if (string_printf_result != str_format_result &&
-            skip_verify.find(d) == skip_verify.end()) {
-          // We use ASSERT_EQ here because failures are usually correlated and a
-          // bug would print way too many failed expectations causing the test
-          // to time out.
-          ASSERT_EQ(string_printf_result, str_format_result)
-              << fmt_str << " " << StrPrint("%.18g", d) << " "
-              << StrPrint("%a", d) << " " << StrPrint("%.50f", d);
-        }
-      }
+        // We use ASSERT_EQ here because failures are usually correlated and a
+        // bug would print way too many failed expectations causing the test
+        // to time out.
+        ASSERT_EQ(string_printf_result, str_format_result)
+            << fmt_str << " " << StrPrint("%.18g", tested_float) << " "
+            << StrPrint("%a", tested_float) << " "
+            << StrPrint("%.50f", tested_float);
     }
   }
 }
@@ -683,17 +896,19 @@ TEST_F(FormatConvertTest, Float) {
   }
 
   // Remove duplicates to speed up the logic below.
-  std::sort(floats.begin(), floats.end());
+  std::sort(floats.begin(), floats.end(), [](const float a, const float b) {
+    if (std::isnan(a)) return false;
+    if (std::isnan(b)) return true;
+    return a < b;
+  });
   floats.erase(std::unique(floats.begin(), floats.end()), floats.end());
 
-  TestWithMultipleFormatsHelper(floats, {});
+  for (float f : floats) {
+    TestWithMultipleFormatsHelper(f);
+  }
 }
 
 TEST_F(FormatConvertTest, Double) {
-  // For values that we know won't match the standard library implementation we
-  // skip verification, but still run the algorithm to catch asserts/sanitizer
-  // bugs.
-  std::set<double> skip_verify;
   std::vector<double> doubles = {0.0,
                                  -0.0,
                                  .99999999999999,
@@ -728,39 +943,22 @@ TEST_F(FormatConvertTest, Double) {
     }
   }
 
-  // Workaround libc bug.
-  // https://sourceware.org/bugzilla/show_bug.cgi?id=22142
-  const bool gcc_bug_22142 =
-      StrPrint("%f", std::numeric_limits<double>::max()) !=
-      "1797693134862315708145274237317043567980705675258449965989174768031"
-      "5726078002853876058955863276687817154045895351438246423432132688946"
-      "4182768467546703537516986049910576551282076245490090389328944075868"
-      "5084551339423045832369032229481658085593321233482747978262041447231"
-      "68738177180919299881250404026184124858368.000000";
-
   for (int exp = -300; exp <= 300; ++exp) {
     const double all_ones_mantissa = 0x1fffffffffffff;
     doubles.push_back(std::ldexp(all_ones_mantissa, exp));
-    if (gcc_bug_22142) {
-      skip_verify.insert(doubles.back());
-    }
-  }
-
-  if (gcc_bug_22142) {
-    using L = std::numeric_limits<double>;
-    skip_verify.insert(L::max());
-    skip_verify.insert(L::min());  // NOLINT
-    skip_verify.insert(L::denorm_min());
-    skip_verify.insert(-L::max());
-    skip_verify.insert(-L::min());  // NOLINT
-    skip_verify.insert(-L::denorm_min());
   }
 
   // Remove duplicates to speed up the logic below.
-  std::sort(doubles.begin(), doubles.end());
+  std::sort(doubles.begin(), doubles.end(), [](const double a, const double b) {
+    if (std::isnan(a)) return false;
+    if (std::isnan(b)) return true;
+    return a < b;
+  });
   doubles.erase(std::unique(doubles.begin(), doubles.end()), doubles.end());
 
-  TestWithMultipleFormatsHelper(doubles, skip_verify);
+  for (double d : doubles) {
+    TestWithMultipleFormatsHelper(d);
+  }
 }
 
 TEST_F(FormatConvertTest, DoubleRound) {
@@ -1058,7 +1256,7 @@ TEST_F(FormatConvertTest, LongDoubleRoundA) {
 // We don't actually store the results. This is just to exercise the rest of the
 // machinery.
 struct NullSink {
-  friend void AbslFormatFlush(NullSink *sink, string_view str) {}
+  friend void AbslFormatFlush(NullSink *, string_view) {}
 };
 
 template <typename... T>
@@ -1235,15 +1433,22 @@ TEST_F(FormatConvertTest, ExpectedFailures) {
 // Sanity check to make sure that we are testing what we think we're testing on
 // e.g. the x86_64+glibc platform.
 TEST_F(FormatConvertTest, GlibcHasCorrectTraits) {
-#if !defined(__GLIBC__) || !defined(__x86_64__)
-  return;
+#if defined(__GLIBC__) && defined(__x86_64__)
+  constexpr bool kIsSupportedGlibc = true;
+#else
+  constexpr bool kIsSupportedGlibc = false;
 #endif
+
+  if (!kIsSupportedGlibc) {
+    GTEST_SKIP() << "Test does not support this platform";
+  }
+
   const NativePrintfTraits &native_traits = VerifyNativeImplementation();
   // If one of the following tests break then it is either because the above PP
   // macro guards failed to exclude a new platform (likely) or because something
-  // has changed in the implemention of glibc sprintf float formatting behavior.
-  // If the latter, then the code that computes these flags needs to be
-  // revisited and/or possibly the StrFormat implementation.
+  // has changed in the implementation of glibc sprintf float formatting
+  // behavior.  If the latter, then the code that computes these flags needs to
+  // be revisited and/or possibly the StrFormat implementation.
   EXPECT_TRUE(native_traits.hex_float_has_glibc_rounding);
   EXPECT_TRUE(native_traits.hex_float_prefers_denormal_repr);
   EXPECT_TRUE(

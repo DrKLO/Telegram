@@ -19,6 +19,7 @@
 
 #include "absl/container/inlined_vector.h"
 #include "absl/types/optional.h"
+#include "modules/rtp_rtcp/source/frame_object.h"
 #include "modules/rtp_rtcp/source/rtp_dependency_descriptor_extension.h"
 #include "modules/rtp_rtcp/source/rtp_generic_frame_descriptor_extension.h"
 #include "modules/rtp_rtcp/source/rtp_packet_received.h"
@@ -28,10 +29,10 @@
 #include "modules/rtp_rtcp/source/video_rtp_depacketizer_raw.h"
 #include "modules/rtp_rtcp/source/video_rtp_depacketizer_vp8.h"
 #include "modules/rtp_rtcp/source/video_rtp_depacketizer_vp9.h"
-#include "modules/video_coding/frame_object.h"
 #include "modules/video_coding/packet_buffer.h"
 #include "modules/video_coding/rtp_frame_reference_finder.h"
 #include "rtc_base/logging.h"
+#include "rtc_base/numerics/sequence_number_unwrapper.h"
 
 namespace webrtc {
 namespace {
@@ -50,6 +51,10 @@ std::unique_ptr<VideoRtpDepacketizer> CreateDepacketizer(
       return std::make_unique<VideoRtpDepacketizerAv1>();
     case RtpVideoFrameAssembler::kGeneric:
       return std::make_unique<VideoRtpDepacketizerGeneric>();
+    case RtpVideoFrameAssembler::kH265:
+      // TODO(bugs.webrtc.org/13485): Implement VideoRtpDepacketizerH265
+      RTC_DCHECK_NOTREACHED();
+      return nullptr;
   }
   RTC_DCHECK_NOTREACHED();
   return nullptr;

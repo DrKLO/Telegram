@@ -58,15 +58,17 @@ struct AddrCmp {
 const int NAT_SERVER_UDP_PORT = 4237;
 const int NAT_SERVER_TCP_PORT = 4238;
 
-class NATServer : public sigslot::has_slots<> {
+class NATServer {
  public:
   NATServer(NATType type,
+            rtc::Thread& internal_socket_thread,
             SocketFactory* internal,
             const SocketAddress& internal_udp_addr,
             const SocketAddress& internal_tcp_addr,
+            rtc::Thread& external_socket_thread,
             SocketFactory* external,
             const SocketAddress& external_ip);
-  ~NATServer() override;
+  ~NATServer();
 
   NATServer(const NATServer&) = delete;
   NATServer& operator=(const NATServer&) = delete;
@@ -81,15 +83,9 @@ class NATServer : public sigslot::has_slots<> {
 
   // Packets received on one of the networks.
   void OnInternalUDPPacket(AsyncPacketSocket* socket,
-                           const char* buf,
-                           size_t size,
-                           const SocketAddress& addr,
-                           const int64_t& packet_time_us);
+                           const rtc::ReceivedPacket& packet);
   void OnExternalUDPPacket(AsyncPacketSocket* socket,
-                           const char* buf,
-                           size_t size,
-                           const SocketAddress& remote_addr,
-                           const int64_t& packet_time_us);
+                           const rtc::ReceivedPacket& packet);
 
  private:
   typedef std::set<SocketAddress, AddrCmp> AddressSet;
@@ -118,6 +114,8 @@ class NATServer : public sigslot::has_slots<> {
   bool ShouldFilterOut(TransEntry* entry, const SocketAddress& ext_addr);
 
   NAT* nat_;
+  rtc::Thread& internal_socket_thread_;
+  rtc::Thread& external_socket_thread_;
   SocketFactory* external_;
   SocketAddress external_ip_;
   AsyncUDPSocket* udp_server_socket_;

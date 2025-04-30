@@ -18,6 +18,7 @@
 #include <vector>
 
 #include "absl/strings/string_view.h"
+#include "absl/types/variant.h"
 #include "api/array_view.h"
 #include "api/ref_counted_base.h"
 #include "api/scoped_refptr.h"
@@ -65,6 +66,7 @@ class CallbackDeferrer : public DcSctpSocketCallbacks {
   std::unique_ptr<Timeout> CreateTimeout(
       webrtc::TaskQueueBase::DelayPrecision precision) override;
   TimeMs TimeMillis() override;
+  webrtc::Timestamp Now() override { return underlying_.Now(); }
   uint32_t GetRandomInt(uint32_t low, uint32_t high) override;
   void OnMessageReceived(DcSctpMessage message) override;
   void OnError(ErrorKind error, absl::string_view message) override;
@@ -88,12 +90,26 @@ class CallbackDeferrer : public DcSctpSocketCallbacks {
   void OnLifecycleEnd(LifecycleId lifecycle_id) override;
 
  private:
+  struct Error {
+    ErrorKind error;
+    std::string message;
+  };
+  struct StreamReset {
+    std::vector<StreamID> streams;
+    std::string message;
+  };
+  // Use a pre-sized variant for storage to avoid double heap allocation. This
+  // variant can hold all cases of stored data.
+  using CallbackData = absl::
+      variant<absl::monostate, DcSctpMessage, Error, StreamReset, StreamID>;
+  using Callback = void (*)(CallbackData, DcSctpSocketCallbacks&);
+
   void Prepare();
   void TriggerDeferred();
 
   DcSctpSocketCallbacks& underlying_;
   bool prepared_ = false;
-  std::vector<std::function<void(DcSctpSocketCallbacks& cb)>> deferred_;
+  std::vector<std::pair<Callback, CallbackData>> deferred_;
 };
 }  // namespace dcsctp
 

@@ -61,4 +61,22 @@ void Rethrow() {
 ABSL_NAMESPACE_END
 }  // namespace absl
 
+#else
+
+// https://github.com/abseil/abseil-cpp/issues/1465
+// CMake builds on Apple platforms error when libraries are empty.
+// Our CMake configuration can avoid this error on header-only libraries,
+// but since this library is conditionally empty, including a single
+// variable is an easy workaround.
+#ifdef __APPLE__
+namespace absl {
+ABSL_NAMESPACE_BEGIN
+namespace types_internal {
+extern const char kAvoidEmptyBadVariantAccessLibraryWarning;
+const char kAvoidEmptyBadVariantAccessLibraryWarning = 0;
+}  // namespace types_internal
+ABSL_NAMESPACE_END
+}  // namespace absl
+#endif  // __APPLE__
+
 #endif  // ABSL_USES_STD_VARIANT

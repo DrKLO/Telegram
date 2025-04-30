@@ -159,6 +159,9 @@ struct RtpConfig {
   // RTCP CNAME, see RFC 3550.
   std::string c_name;
 
+  // Enables send packet batching from the egress RTP sender.
+  bool enable_send_packet_batching = false;
+
   bool IsMediaSsrc(uint32_t ssrc) const;
   bool IsRtxSsrc(uint32_t ssrc) const;
   bool IsFlexfecSsrc(uint32_t ssrc) const;

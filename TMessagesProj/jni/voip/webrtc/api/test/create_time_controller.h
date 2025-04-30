@@ -12,7 +12,7 @@
 
 #include <memory>
 
-#include "api/call/call_factory_interface.h"
+#include "api/peer_connection_interface.h"
 #include "api/test/time_controller.h"
 
 namespace webrtc {
@@ -24,10 +24,12 @@ std::unique_ptr<TimeController> CreateTimeController(
 // Creates a time controller that runs in simulated time.
 std::unique_ptr<TimeController> CreateSimulatedTimeController();
 
-// This is creates a call factory that creates Call instances that are backed by
-// a time controller.
-std::unique_ptr<CallFactoryInterface> CreateTimeControllerBasedCallFactory(
-    TimeController* time_controller);
+// Adjusts media `deps` to use clock `time_controller` provides, fills media
+// related dependencies, and enables media support for a PeerConnectionFactory
+// created from `deps`.
+void EnableMediaWithDefaultsAndTimeController(
+    TimeController& time_controller,
+    PeerConnectionFactoryDependencies& deps);
 
 }  // namespace webrtc
 

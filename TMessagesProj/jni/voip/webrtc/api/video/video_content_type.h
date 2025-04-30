@@ -15,18 +15,15 @@
 
 namespace webrtc {
 
+// VideoContentType stored as a single byte, which is sent over the network
+// in the rtp-hdrext/video-content-type extension.
+// Only the lowest bit is used, per the enum.
 enum class VideoContentType : uint8_t {
   UNSPECIFIED = 0,
   SCREENSHARE = 1,
 };
 
 namespace videocontenttypehelpers {
-bool SetExperimentId(VideoContentType* content_type, uint8_t experiment_id);
-bool SetSimulcastId(VideoContentType* content_type, uint8_t simulcast_id);
-
-uint8_t GetExperimentId(const VideoContentType& content_type);
-uint8_t GetSimulcastId(const VideoContentType& content_type);
-
 bool IsScreenshare(const VideoContentType& content_type);
 
 bool IsValidContentType(uint8_t value);

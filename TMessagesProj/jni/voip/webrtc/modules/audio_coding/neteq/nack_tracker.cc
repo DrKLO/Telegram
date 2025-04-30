@@ -145,43 +145,22 @@ uint32_t NackTracker::EstimateTimestamp(uint16_t sequence_num,
   return sequence_num_diff * samples_per_packet + timestamp_last_received_rtp_;
 }
 
-void NackTracker::UpdateEstimatedPlayoutTimeBy10ms() {
-  while (!nack_list_.empty() &&
-         nack_list_.begin()->second.time_to_play_ms <= 10)
-    nack_list_.erase(nack_list_.begin());
-
-  for (NackList::iterator it = nack_list_.begin(); it != nack_list_.end(); ++it)
-    it->second.time_to_play_ms -= 10;
-}
-
 void NackTracker::UpdateLastDecodedPacket(uint16_t sequence_number,
                                           uint32_t timestamp) {
-  if (IsNewerSequenceNumber(sequence_number, sequence_num_last_decoded_rtp_) ||
-      !any_rtp_decoded_) {
-    sequence_num_last_decoded_rtp_ = sequence_number;
-    timestamp_last_decoded_rtp_ = timestamp;
-    // Packets in the list with sequence numbers less than the
-    // sequence number of the decoded RTP should be removed from the lists.
-    // They will be discarded by the jitter buffer if they arrive.
-    nack_list_.erase(nack_list_.begin(),
-                     nack_list_.upper_bound(sequence_num_last_decoded_rtp_));
-
-    // Update estimated time-to-play.
-    for (NackList::iterator it = nack_list_.begin(); it != nack_list_.end();
-         ++it)
-      it->second.time_to_play_ms = TimeToPlay(it->second.estimated_timestamp);
-  } else {
-    RTC_DCHECK_EQ(sequence_number, sequence_num_last_decoded_rtp_);
-
-    // Same sequence number as before. 10 ms is elapsed, update estimations for
-    // time-to-play.
-    UpdateEstimatedPlayoutTimeBy10ms();
-
-    // Update timestamp for better estimate of time-to-play, for packets which
-    // are added to NACK list later on.
-    timestamp_last_decoded_rtp_ += sample_rate_khz_ * 10;
-  }
   any_rtp_decoded_ = true;
+  sequence_num_last_decoded_rtp_ = sequence_number;
+  timestamp_last_decoded_rtp_ = timestamp;
+  // Packets in the list with sequence numbers less than the
+  // sequence number of the decoded RTP should be removed from the lists.
+  // They will be discarded by the jitter buffer if they arrive.
+  nack_list_.erase(nack_list_.begin(),
+                   nack_list_.upper_bound(sequence_num_last_decoded_rtp_));
+
+  // Update estimated time-to-play.
+  for (NackList::iterator it = nack_list_.begin(); it != nack_list_.end();
+       ++it) {
+    it->second.time_to_play_ms = TimeToPlay(it->second.estimated_timestamp);
+  }
 }
 
 NackTracker::NackList NackTracker::GetNackList() const {

@@ -12,6 +12,7 @@
 #define SDK_ANDROID_SRC_JNI_PC_MEDIA_CONSTRAINTS_H_
 
 #include <jni.h>
+
 #include <memory>
 
 #include "sdk/android/native_api/jni/scoped_java_ref.h"

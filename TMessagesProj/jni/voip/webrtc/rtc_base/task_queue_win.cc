@@ -160,11 +160,15 @@ class TaskQueueWin : public TaskQueueBase {
   ~TaskQueueWin() override = default;
 
   void Delete() override;
-  void PostTask(absl::AnyInvocable<void() &&> task) override;
-  void PostDelayedTask(absl::AnyInvocable<void() &&> task,
-                       TimeDelta delay) override;
-  void PostDelayedHighPrecisionTask(absl::AnyInvocable<void() &&> task,
-                                    TimeDelta delay) override;
+
+ protected:
+  void PostTaskImpl(absl::AnyInvocable<void() &&> task,
+                    const PostTaskTraits& traits,
+                    const Location& location) override;
+  void PostDelayedTaskImpl(absl::AnyInvocable<void() &&> task,
+                           TimeDelta delay,
+                           const PostDelayedTaskTraits& traits,
+                           const Location& location) override;
   void RunPendingTasks();
 
  private:
@@ -217,14 +221,18 @@ void TaskQueueWin::Delete() {
   delete this;
 }
 
-void TaskQueueWin::PostTask(absl::AnyInvocable<void() &&> task) {
+void TaskQueueWin::PostTaskImpl(absl::AnyInvocable<void() &&> task,
+                                const PostTaskTraits& traits,
+                                const Location& location) {
   MutexLock lock(&pending_lock_);
   pending_.push(std::move(task));
   ::SetEvent(in_queue_);
 }
 
-void TaskQueueWin::PostDelayedTask(absl::AnyInvocable<void() &&> task,
-                                   TimeDelta delay) {
+void TaskQueueWin::PostDelayedTaskImpl(absl::AnyInvocable<void() &&> task,
+                                       TimeDelta delay,
+                                       const PostDelayedTaskTraits& traits,
+                                       const Location& location) {
   if (delay <= TimeDelta::Zero()) {
     PostTask(std::move(task));
     return;
@@ -237,12 +245,6 @@ void TaskQueueWin::PostDelayedTask(absl::AnyInvocable<void() &&> task,
                            reinterpret_cast<LPARAM>(task_info))) {
     delete task_info;
   }
-}
-
-void TaskQueueWin::PostDelayedHighPrecisionTask(
-    absl::AnyInvocable<void() &&> task,
-    TimeDelta delay) {
-  PostDelayedTask(std::move(task), delay);
 }
 
 void TaskQueueWin::RunPendingTasks() {
@@ -290,6 +292,18 @@ void TaskQueueWin::RunThreadMain() {
       RunPendingTasks();
     }
   }
+  // Ensure remaining deleted tasks are destroyed with Current() set up to this
+  // task queue.
+  std::queue<absl::AnyInvocable<void() &&>> pending;
+  {
+    MutexLock lock(&pending_lock_);
+    pending_.swap(pending);
+  }
+  pending = {};
+#if RTC_DCHECK_IS_ON
+  MutexLock lock(&pending_lock_);
+  RTC_DCHECK(pending_.empty());
+#endif
 }
 
 bool TaskQueueWin::ProcessQueuedMessages() {

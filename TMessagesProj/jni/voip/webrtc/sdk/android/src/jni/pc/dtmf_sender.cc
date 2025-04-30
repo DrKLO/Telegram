@@ -39,8 +39,7 @@ static ScopedJavaLocalRef<jstring> JNI_DtmfSender_Tones(
       reinterpret_cast<DtmfSenderInterface*>(j_dtmf_sender_pointer)->tones());
 }
 
-static jint JNI_DtmfSender_Duration(JNIEnv* jni,
-                                    jlong j_dtmf_sender_pointer) {
+static jint JNI_DtmfSender_Duration(JNIEnv* jni, jlong j_dtmf_sender_pointer) {
   return reinterpret_cast<DtmfSenderInterface*>(j_dtmf_sender_pointer)
       ->duration();
 }

@@ -2,10 +2,17 @@
 # Copyright 2013-2016 The OpenSSL Project Authors. All Rights Reserved.
 # Copyright (c) 2012, Intel Corporation. All Rights Reserved.
 #
-# Licensed under the OpenSSL license (the "License").  You may not use
-# this file except in compliance with the License.  You can obtain a copy
-# in the file LICENSE in the source distribution or at
-# https://www.openssl.org/source/license.html
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 #
 # Originally written by Shay Gueron (1, 2), and Vlad Krasnov (1)
 # (1) Intel Corporation, Israel Development Center, Haifa, Israel
@@ -112,6 +119,7 @@ $code.=<<___;
 .align	64
 rsaz_1024_sqr_avx2:		# 702 cycles, 14% faster than rsaz_1024_mul_avx2
 .cfi_startproc
+	_CET_ENDBR
 	lea	(%rsp), %rax
 .cfi_def_cfa_register	%rax
 	push	%rbx
@@ -863,6 +871,7 @@ $code.=<<___;
 .align	64
 rsaz_1024_mul_avx2:
 .cfi_startproc
+	_CET_ENDBR
 	lea	(%rsp), %rax
 .cfi_def_cfa_register	%rax
 	push	%rbx
@@ -1474,6 +1483,7 @@ $code.=<<___;
 .align	32
 rsaz_1024_red2norm_avx2:
 .cfi_startproc
+	_CET_ENDBR
 	sub	\$-128,$inp	# size optimization
 	xor	%rax,%rax
 ___
@@ -1515,6 +1525,7 @@ $code.=<<___;
 .align	32
 rsaz_1024_norm2red_avx2:
 .cfi_startproc
+	_CET_ENDBR
 	sub	\$-128,$out	# size optimization
 	mov	($inp),@T[0]
 	mov	\$0x1fffffff,%eax
@@ -1559,6 +1570,7 @@ $code.=<<___;
 .align	32
 rsaz_1024_scatter5_avx2:
 .cfi_startproc
+	_CET_ENDBR
 	vzeroupper
 	vmovdqu	.Lscatter_permd(%rip),%ymm5
 	shl	\$4,$power
@@ -1586,6 +1598,7 @@ rsaz_1024_scatter5_avx2:
 .align	32
 rsaz_1024_gather5_avx2:
 .cfi_startproc
+	_CET_ENDBR
 	vzeroupper
 	mov	%rsp,%r11
 .cfi_def_cfa_register	%r11
@@ -1738,6 +1751,7 @@ ___
 }
 
 $code.=<<___;
+.section .rodata
 .align	64
 .Land_mask:
 	.quad	0x1fffffff,0x1fffffff,0x1fffffff,0x1fffffff
@@ -1750,6 +1764,7 @@ $code.=<<___;
 	.long	2,2,2,2, 3,3,3,3
 	.long	4,4,4,4, 4,4,4,4
 .align	64
+.text
 ___
 
 if ($win64) {
@@ -1940,4 +1955,4 @@ rsaz_1024_gather5_avx2:
 ___
 }}}
 
-close STDOUT or die "error closing STDOUT";
+close STDOUT or die "error closing STDOUT: $!";

@@ -18,6 +18,7 @@
 
 #include "api/field_trials_view.h"
 #include "api/sequence_checker.h"
+#include "api/video/encoded_frame.h"
 #include "api/video_codecs/video_decoder.h"
 #include "modules/video_coding/encoded_frame.h"
 #include "modules/video_coding/timing/timing.h"
@@ -46,6 +47,7 @@ struct FrameInfo {
   int64_t ntp_time_ms;
   RtpPacketInfos packet_infos;
   // ColorSpace is not stored here, as it might be modified by decoders.
+  VideoFrameType frame_type;
 };
 
 class VCMDecodedFrameCallback : public DecodedImageCallback {
@@ -101,7 +103,10 @@ class VCMGenericDecoder {
    *
    * inputVideoBuffer reference to encoded video frame
    */
+  // TODO(https://bugs.webrtc.org/9378): Remove VCMEncodedFrame variant
+  // once the usage from code in deprecated/ is gone.
   int32_t Decode(const VCMEncodedFrame& inputFrame, Timestamp now);
+  int32_t Decode(const EncodedFrame& inputFrame, Timestamp now);
 
   /**
    * Set decode callback. Deregistering while decoding is illegal.
@@ -113,6 +118,9 @@ class VCMGenericDecoder {
   }
 
  private:
+  int32_t Decode(const EncodedImage& frame,
+                 Timestamp now,
+                 int64_t render_time_ms);
   VCMDecodedFrameCallback* _callback = nullptr;
   VideoDecoder* const decoder_;
   VideoContentType _last_keyframe_content_type;

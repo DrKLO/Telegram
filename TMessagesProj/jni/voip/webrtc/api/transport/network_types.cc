@@ -97,7 +97,7 @@ PacedPacketInfo::PacedPacketInfo(int probe_cluster_id,
       probe_cluster_min_bytes(probe_cluster_min_bytes) {}
 
 bool PacedPacketInfo::operator==(const PacedPacketInfo& rhs) const {
-  return send_bitrate_bps == rhs.send_bitrate_bps &&
+  return send_bitrate == rhs.send_bitrate &&
          probe_cluster_id == rhs.probe_cluster_id &&
          probe_cluster_min_probes == rhs.probe_cluster_min_probes &&
          probe_cluster_min_bytes == rhs.probe_cluster_min_bytes;

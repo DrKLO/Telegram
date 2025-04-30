@@ -1,0 +1,52 @@
+# Copyright (c) 2019 The WebRTC project authors. All Rights Reserved.
+#
+# Use of this source code is governed by a BSD-style license
+# that can be found in the LICENSE file in the root of the source
+# tree. An additional intellectual property rights grant can be found
+# in the file PATENTS.  All contributing project authors may
+# be found in the AUTHORS file in the root of the source tree.
+
+import("../../webrtc.gni")
+
+rtc_library("rtc_event_log") {
+  visibility = [ "*" ]
+  sources = [
+    "rtc_event.cc",
+    "rtc_event.h",
+    "rtc_event_log.cc",
+    "rtc_event_log.h",
+    "rtc_event_log_factory_interface.h",
+  ]
+
+  deps = [
+    "..:libjingle_logging_api",
+    "../../rtc_base:checks",
+    "../../rtc_base:timeutils",
+    "../environment",
+    "../task_queue",
+  ]
+  absl_deps = [ "//third_party/abseil-cpp/absl/base:nullability" ]
+}
+
+rtc_library("rtc_event_log_factory") {
+  visibility = [ "*" ]
+  sources = [
+    "rtc_event_log_factory.cc",
+    "rtc_event_log_factory.h",
+  ]
+
+  deps = [
+    ":rtc_event_log",
+    "..:field_trials_view",
+    "../../rtc_base/system:rtc_export",
+    "../environment",
+    "../task_queue",
+  ]
+
+  absl_deps = [ "//third_party/abseil-cpp/absl/base:nullability" ]
+
+  if (rtc_enable_protobuf) {
+    defines = [ "WEBRTC_ENABLE_RTC_EVENT_LOG" ]
+    deps += [ "../../logging:rtc_event_log_impl" ]
+  }
+}

@@ -78,7 +78,7 @@ inline RealType GenerateRealFromBits(uint64_t bits, int exp_bias = 0) {
       "GenerateRealFromBits must be parameterized by either float or double.");
 
   static_assert(sizeof(uint_type) == sizeof(real_type),
-                "Mismatched unsinged and real types.");
+                "Mismatched unsigned and real types.");
 
   static_assert((std::numeric_limits<real_type>::is_iec559 &&
                  std::numeric_limits<real_type>::radix == 2),

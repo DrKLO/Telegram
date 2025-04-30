@@ -62,7 +62,7 @@ SctpPacket::Builder& SctpPacket::Builder::Add(const Chunk& chunk) {
     buffer.Store16<0>(source_port_);
     buffer.Store16<2>(dest_port_);
     buffer.Store32<4>(*verification_tag_);
-    // Checksum is at offset 8 - written when calling Build();
+    // Checksum is at offset 8 - written when calling Build(), if configured.
   }
   RTC_DCHECK(IsDivisibleBy4(out_.size()));
 
@@ -89,11 +89,11 @@ size_t SctpPacket::Builder::bytes_remaining() const {
   return max_packet_size_ - out_.size();
 }
 
-std::vector<uint8_t> SctpPacket::Builder::Build() {
+std::vector<uint8_t> SctpPacket::Builder::Build(bool write_checksum) {
   std::vector<uint8_t> out;
   out_.swap(out);
 
-  if (!out.empty()) {
+  if (!out.empty() && write_checksum) {
     uint32_t crc = GenerateCrc32C(out);
     BoundedByteWriter<kHeaderSize>(out).Store32<8>(crc);
   }
@@ -105,9 +105,8 @@ std::vector<uint8_t> SctpPacket::Builder::Build() {
   return out;
 }
 
-absl::optional<SctpPacket> SctpPacket::Parse(
-    rtc::ArrayView<const uint8_t> data,
-    bool disable_checksum_verification) {
+absl::optional<SctpPacket> SctpPacket::Parse(rtc::ArrayView<const uint8_t> data,
+                                             const DcSctpOptions& options) {
   if (data.size() < kHeaderSize + kChunkTlvHeaderSize ||
       data.size() > kMaxUdpPacketSize) {
     RTC_DLOG(LS_WARNING) << "Invalid packet size";
@@ -126,19 +125,30 @@ absl::optional<SctpPacket> SctpPacket::Parse(
   std::vector<uint8_t> data_copy =
       std::vector<uint8_t>(data.begin(), data.end());
 
-  // Verify the checksum. The checksum field must be zero when that's done.
-  BoundedByteWriter<kHeaderSize>(data_copy).Store32<8>(0);
-  uint32_t calculated_checksum = GenerateCrc32C(data_copy);
-  if (!disable_checksum_verification &&
-      calculated_checksum != common_header.checksum) {
-    RTC_DLOG(LS_WARNING) << rtc::StringFormat(
-        "Invalid packet checksum, packet_checksum=0x%08x, "
-        "calculated_checksum=0x%08x",
-        common_header.checksum, calculated_checksum);
-    return absl::nullopt;
+  if (options.disable_checksum_verification ||
+      (options.zero_checksum_alternate_error_detection_method !=
+           ZeroChecksumAlternateErrorDetectionMethod::None() &&
+       common_header.checksum == 0u)) {
+    // https://www.ietf.org/archive/id/draft-tuexen-tsvwg-sctp-zero-checksum-01.html#section-4.3:
+    // If an end point has sent the Zero Checksum Acceptable Chunk Parameter in
+    // an INIT or INIT ACK chunk, it MUST accept SCTP packets using an incorrect
+    // checksum value of zero in addition to SCTP packets containing the correct
+    // CRC32c checksum value for this association.
+  } else {
+    // Verify the checksum. The checksum field must be zero when that's done.
+    BoundedByteWriter<kHeaderSize>(data_copy).Store32<8>(0);
+    uint32_t calculated_checksum = GenerateCrc32C(data_copy);
+    if (calculated_checksum != common_header.checksum) {
+      RTC_DLOG(LS_WARNING) << rtc::StringFormat(
+          "Invalid packet checksum, packet_checksum=0x%08x, "
+          "calculated_checksum=0x%08x",
+          common_header.checksum, calculated_checksum);
+      return absl::nullopt;
+    }
+    // Restore the checksum in the header.
+    BoundedByteWriter<kHeaderSize>(data_copy).Store32<8>(
+        common_header.checksum);
   }
-  // Restore the checksum in the header.
-  BoundedByteWriter<kHeaderSize>(data_copy).Store32<8>(common_header.checksum);
 
   // Validate and parse the chunk headers in the message.
   /*

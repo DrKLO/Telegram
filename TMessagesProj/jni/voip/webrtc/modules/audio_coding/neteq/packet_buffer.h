@@ -21,14 +21,6 @@ namespace webrtc {
 class DecoderDatabase;
 class StatisticsCalculator;
 class TickTimer;
-struct SmartFlushingConfig {
-  // When calculating the flushing threshold, the maximum between the target
-  // level and this value is used.
-  int target_level_threshold_ms = 500;
-  // A smart flush is triggered when the packet buffer contains a multiple of
-  // the target level.
-  int target_level_multiplier = 3;
-};
 
 // This is the actual buffer holding the packets before decoding.
 class PacketBuffer {
@@ -36,7 +28,6 @@ class PacketBuffer {
   enum BufferReturnCodes {
     kOK = 0,
     kFlushed,
-    kPartialFlush,
     kNotFound,
     kBufferEmpty,
     kInvalidPacket,
@@ -45,7 +36,9 @@ class PacketBuffer {
 
   // Constructor creates a buffer which can hold a maximum of
   // `max_number_of_packets` packets.
-  PacketBuffer(size_t max_number_of_packets, const TickTimer* tick_timer);
+  PacketBuffer(size_t max_number_of_packets,
+               const TickTimer* tick_timer,
+               StatisticsCalculator* stats);
 
   // Deletes all packets in the buffer before destroying the buffer.
   virtual ~PacketBuffer();
@@ -54,13 +47,7 @@ class PacketBuffer {
   PacketBuffer& operator=(const PacketBuffer&) = delete;
 
   // Flushes the buffer and deletes all packets in it.
-  virtual void Flush(StatisticsCalculator* stats);
-
-  // Partial flush. Flush packets but leave some packets behind.
-  virtual void PartialFlush(int target_level_ms,
-                            size_t sample_rate,
-                            size_t last_decoded_length,
-                            StatisticsCalculator* stats);
+  virtual void Flush();
 
   // Returns true for an empty buffer.
   virtual bool Empty() const;
@@ -69,30 +56,7 @@ class PacketBuffer {
   // the packet object.
   // Returns PacketBuffer::kOK on success, PacketBuffer::kFlushed if the buffer
   // was flushed due to overfilling.
-  virtual int InsertPacket(Packet&& packet,
-                           StatisticsCalculator* stats,
-                           size_t last_decoded_length,
-                           size_t sample_rate,
-                           int target_level_ms,
-                           const DecoderDatabase& decoder_database);
-
-  // Inserts a list of packets into the buffer. The buffer will take over
-  // ownership of the packet objects.
-  // Returns PacketBuffer::kOK if all packets were inserted successfully.
-  // If the buffer was flushed due to overfilling, only a subset of the list is
-  // inserted, and PacketBuffer::kFlushed is returned.
-  // The last three parameters are included for legacy compatibility.
-  // TODO(hlundin): Redesign to not use current_*_payload_type and
-  // decoder_database.
-  virtual int InsertPacketList(
-      PacketList* packet_list,
-      const DecoderDatabase& decoder_database,
-      absl::optional<uint8_t>* current_rtp_payload_type,
-      absl::optional<uint8_t>* current_cng_rtp_payload_type,
-      StatisticsCalculator* stats,
-      size_t last_decoded_length,
-      size_t sample_rate,
-      int target_level_ms);
+  virtual int InsertPacket(Packet&& packet);
 
   // Gets the timestamp for the first packet in the buffer and writes it to the
   // output variable `next_timestamp`.
@@ -119,7 +83,7 @@ class PacketBuffer {
   // Discards the first packet in the buffer. The packet is deleted.
   // Returns PacketBuffer::kBufferEmpty if the buffer is empty,
   // PacketBuffer::kOK otherwise.
-  virtual int DiscardNextPacket(StatisticsCalculator* stats);
+  virtual int DiscardNextPacket();
 
   // Discards all packets that are (strictly) older than timestamp_limit,
   // but newer than timestamp_limit - horizon_samples. Setting horizon_samples
@@ -127,16 +91,13 @@ class PacketBuffer {
   // is, if a packet is more than 2^31 timestamps into the future compared with
   // timestamp_limit (including wrap-around), it is considered old.
   virtual void DiscardOldPackets(uint32_t timestamp_limit,
-                                 uint32_t horizon_samples,
-                                 StatisticsCalculator* stats);
+                                 uint32_t horizon_samples);
 
   // Discards all packets that are (strictly) older than timestamp_limit.
-  virtual void DiscardAllOldPackets(uint32_t timestamp_limit,
-                                    StatisticsCalculator* stats);
+  virtual void DiscardAllOldPackets(uint32_t timestamp_limit);
 
   // Removes all packets with a specific payload type from the buffer.
-  virtual void DiscardPacketsWithPayloadType(uint8_t payload_type,
-                                             StatisticsCalculator* stats);
+  virtual void DiscardPacketsWithPayloadType(uint8_t payload_type);
 
   // Returns the number of packets in the buffer, including duplicates and
   // redundant packets.
@@ -150,7 +111,7 @@ class PacketBuffer {
   // across.
   virtual size_t GetSpanSamples(size_t last_decoded_length,
                                 size_t sample_rate,
-                                bool count_dtx_waiting_time) const;
+                                bool count_waiting_time) const;
 
   // Returns true if the packet buffer contains any DTX or CNG packets.
   virtual bool ContainsDtxOrCngPacket(
@@ -171,10 +132,12 @@ class PacketBuffer {
   }
 
  private:
-  absl::optional<SmartFlushingConfig> smart_flushing_config_;
+  void LogPacketDiscarded(int codec_level);
+
   size_t max_number_of_packets_;
   PacketList buffer_;
   const TickTimer* tick_timer_;
+  StatisticsCalculator* stats_;
 };
 
 }  // namespace webrtc

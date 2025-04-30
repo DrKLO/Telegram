@@ -220,7 +220,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
     public final static boolean ENABLE_PASTED_TEXT_PROCESSING = false;
     private final static int SHOW_DELAY = SharedConfig.getDevicePerformanceClass() <= SharedConfig.PERFORMANCE_CLASS_AVERAGE ? 150 : 100;
 
-    public static final boolean TEST_BACKEND_IN_STORE = false;
+    public static final boolean TEST_BACKEND_IN_STORE = true;
 
     public final static int AUTH_TYPE_MESSAGE = 1,
             AUTH_TYPE_SMS = 2,

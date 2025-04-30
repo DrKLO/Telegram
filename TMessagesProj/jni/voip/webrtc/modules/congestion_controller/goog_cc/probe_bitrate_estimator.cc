@@ -13,12 +13,17 @@
 #include <algorithm>
 #include <memory>
 
+#include "absl/types/optional.h"
 #include "api/rtc_event_log/rtc_event_log.h"
+#include "api/transport/network_types.h"
+#include "api/units/data_rate.h"
+#include "api/units/data_size.h"
+#include "api/units/time_delta.h"
+#include "api/units/timestamp.h"
 #include "logging/rtc_event_log/events/rtc_event_probe_result_failure.h"
 #include "logging/rtc_event_log/events/rtc_event_probe_result_success.h"
 #include "rtc_base/checks.h"
 #include "rtc_base/logging.h"
-#include "rtc_base/numerics/safe_conversions.h"
 
 namespace webrtc {
 namespace {

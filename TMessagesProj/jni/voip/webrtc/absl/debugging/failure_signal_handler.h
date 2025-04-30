@@ -33,7 +33,7 @@
 // }
 //
 // Any program that raises a fatal signal (such as `SIGSEGV`, `SIGILL`,
-// `SIGFPE`, `SIGABRT`, `SIGTERM`, `SIGBUG`, and `SIGTRAP`) will call the
+// `SIGFPE`, `SIGABRT`, `SIGTERM`, `SIGBUS`, and `SIGTRAP`) will call the
 // installed failure signal handler and provide debugging information to stderr.
 //
 // Note that you should *not* install the Abseil failure signal handler more
@@ -62,7 +62,7 @@ struct FailureSignalHandlerOptions {
   // If true, try to run signal handlers on an alternate stack (if supported on
   // the given platform). An alternate stack is useful for program crashes due
   // to a stack overflow; by running on a alternate stack, the signal handler
-  // may run even when normal stack space has been exausted. The downside of
+  // may run even when normal stack space has been exhausted. The downside of
   // using an alternate stack is that extra memory for the alternate stack needs
   // to be pre-allocated.
   bool use_alternate_stack = true;

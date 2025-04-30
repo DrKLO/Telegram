@@ -1,0 +1,38 @@
+#ifndef BORINGSSL_LIBCXX_CONFIG_SITE_
+#define BORINGSSL_LIBCXX_CONFIG_SITE_
+
+#if defined(__APPLE__)
+#define _LIBCPP_PSTL_BACKEND_LIBDISPATCH 1
+#else
+#define _LIBCPP_PSTL_BACKEND_STD_THREAD 1
+#endif
+
+// We only use our custom libc++ for testing, so enable all checks.
+#define _LIBCPP_HARDENING_MODE _LIBCPP_HARDENING_MODE_DEBUG
+
+// libc++ headers disable std::string ASan annotations if this is not defined.
+// This is to avoid false positives when libc++'s runtime components are
+// uninstrumented. When building our custom libc++, libc++ will be as
+// instrumented as the caller, so we can safely enable this.
+#define _LIBCPP_INSTRUMENTED_WITH_ASAN 1
+
+#define _LIBCPP_HAS_FILESYSTEM 1
+#define _LIBCPP_HAS_LOCALIZATION 1
+#define _LIBCPP_HAS_MONOTONIC_CLOCK 1
+#define _LIBCPP_HAS_RANDOM_DEVICE 1
+#define _LIBCPP_HAS_THREADS 1
+#define _LIBCPP_HAS_VENDOR_AVAILABILITY_ANNOTATIONS 0
+#define _LIBCPP_HAS_UNICODE 1
+#define _LIBCPP_HAS_WIDE_CHARACTERS 1
+
+#ifdef _WIN32
+#define _LIBCPP_HAS_THREAD_API_PTHREAD 0
+#define _LIBCPP_HAS_THREAD_API_EXTERNAL 0
+#define _LIBCPP_HAS_THREAD_API_WIN32 1
+#else
+#define _LIBCPP_HAS_THREAD_API_PTHREAD 1
+#define _LIBCPP_HAS_THREAD_API_EXTERNAL 0
+#define _LIBCPP_HAS_THREAD_API_WIN32 0
+#endif
+
+#endif  // BORINGSSL_LIBCXX_CONFIG_SITE_

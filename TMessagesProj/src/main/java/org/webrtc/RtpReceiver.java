@@ -49,6 +49,12 @@ public class RtpReceiver {
     return nativeGetId(nativeRtpReceiver);
   }
 
+  /** Returns a pointer to webrtc::RtpReceiverInterface. */
+  long getNativeRtpReceiver() {
+    checkRtpReceiverExists();
+    return nativeRtpReceiver;
+  }
+
   @CalledByNative
   public void dispose() {
     checkRtpReceiverExists();

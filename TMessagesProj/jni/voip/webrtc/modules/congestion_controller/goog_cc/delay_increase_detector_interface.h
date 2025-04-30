@@ -12,6 +12,8 @@
 
 #include <stdint.h>
 
+#include <cstddef>
+
 #include "api/network_state_predictor.h"
 
 namespace webrtc {

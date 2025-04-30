@@ -70,6 +70,10 @@ struct IceFieldTrials {
 
   bool piggyback_ice_check_acknowledgement = false;
   bool extra_ice_ping = false;
+
+  // Announce/enable GOOG_DELTA
+  bool enable_goog_delta = true;  // send GOOG DELTA
+  bool answer_goog_delta = true;  // answer GOOG DELTA
 };
 
 }  // namespace cricket

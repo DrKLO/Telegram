@@ -15,9 +15,7 @@
 namespace webrtc {
 
 VideoTrackSource::VideoTrackSource(bool remote)
-    : state_(kInitializing), remote_(remote) {
-  worker_thread_checker_.Detach();
-}
+    : state_(kInitializing), remote_(remote) {}
 
 void VideoTrackSource::SetState(SourceState new_state) {
   RTC_DCHECK_RUN_ON(&signaling_thread_checker_);

@@ -35,6 +35,7 @@ class SimulcastTestFixtureImpl final : public SimulcastTestFixture {
 
   // Implements SimulcastTestFixture.
   void TestKeyFrameRequestsOnAllStreams() override;
+  void TestKeyFrameRequestsOnSpecificStreams() override;
   void TestPaddingAllStreams() override;
   void TestPaddingTwoStreams() override;
   void TestPaddingTwoStreamsOneMaxedOut() override;
@@ -66,6 +67,7 @@ class SimulcastTestFixtureImpl final : public SimulcastTestFixture {
   void SetRates(uint32_t bitrate_kbps, uint32_t fps);
   void RunActiveStreamsTest(std::vector<bool> active_streams);
   void UpdateActiveStreams(std::vector<bool> active_streams);
+  void ExpectStream(VideoFrameType frame_type, int scaleResolutionDownBy);
   void ExpectStreams(VideoFrameType frame_type,
                      std::vector<bool> expected_streams_active);
   void ExpectStreams(VideoFrameType frame_type, int expected_video_streams);

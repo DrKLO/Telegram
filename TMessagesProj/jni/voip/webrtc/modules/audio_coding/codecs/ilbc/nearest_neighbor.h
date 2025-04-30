@@ -32,6 +32,6 @@ void WebRtcIlbcfix_NearestNeighbor(
     const size_t* array, /* (i) data array (Q2) */
     size_t value,        /* (i) value (Q2) */
     size_t arlength      /* (i) dimension of data array (==ENH_NBLOCKS_TOT) */
-    );
+);
 
 #endif

@@ -55,7 +55,7 @@ class DataTracker {
   DataTracker(absl::string_view log_prefix,
               Timer* delayed_ack_timer,
               TSN peer_initial_tsn)
-      : log_prefix_(std::string(log_prefix) + "dtrack: "),
+      : log_prefix_(log_prefix),
         seen_packet_(false),
         delayed_ack_timer_(*delayed_ack_timer),
         last_cumulative_acked_tsn_(
@@ -74,8 +74,9 @@ class DataTracker {
   // Called at the end of processing an SCTP packet.
   void ObservePacketEnd();
 
-  // Called for incoming FORWARD-TSN/I-FORWARD-TSN chunks
-  void HandleForwardTsn(TSN new_cumulative_ack);
+  // Called for incoming FORWARD-TSN/I-FORWARD-TSN chunks. Indicates if the
+  // chunk had any effect.
+  bool HandleForwardTsn(TSN new_cumulative_ack);
 
   // Indicates if a SACK should be sent. There may be other reasons to send a
   // SACK, but if this function indicates so, it should be sent as soon as
@@ -90,6 +91,10 @@ class DataTracker {
   // value before any packet loss was detected.
   TSN last_cumulative_acked_tsn() const {
     return TSN(last_cumulative_acked_tsn_.Wrap());
+  }
+
+  bool IsLaterThanCumulativeAckedTsn(TSN tsn) const {
+    return tsn_unwrapper_.PeekUnwrap(tsn) > last_cumulative_acked_tsn_;
   }
 
   // Returns true if the received `tsn` would increase the cumulative ack TSN.
@@ -172,7 +177,7 @@ class DataTracker {
   void UpdateAckState(AckState new_state, absl::string_view reason);
   static absl::string_view ToString(AckState ack_state);
 
-  const std::string log_prefix_;
+  const absl::string_view log_prefix_;
   // If a packet has ever been seen.
   bool seen_packet_;
   Timer& delayed_ack_timer_;

@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2020 The WebRTC project authors. All Rights Reserved.
+ *  Copyright (c) 2024 The WebRTC project authors. All Rights Reserved.
  *
  *  Use of this source code is governed by a BSD-style license
  *  that can be found in the LICENSE file in the root of the source
@@ -125,7 +125,7 @@ absl::optional<VideoRtpDepacketizer::ParsedRtpPayload> ProcessApOrSingleNalu(
   const size_t nalu_length = rtp_payload.size() - kHevcNalHeaderSize;
   uint8_t nal_type = (payload_data[0] & kHevcTypeMask) >> 1;
   std::vector<size_t> nalu_start_offsets;
-  if (nal_type == H265::NaluType::kAP) {
+  if (nal_type == H265::NaluType::kAp) {
     // Skip the StapA header (StapA NAL type + length).
     if (rtp_payload.size() <= kHevcApHeaderSize) {
       RTC_LOG(LS_ERROR) << "AP header truncated.";
@@ -216,7 +216,7 @@ absl::optional<VideoRtpDepacketizer::ParsedRtpPayload> ProcessApOrSingleNalu(
       case H265::NaluType::kIdrNLp:
       case H265::NaluType::kCra:
         parsed_payload->video_header.frame_type =
-		    VideoFrameType::kVideoFrameKey;
+            VideoFrameType::kVideoFrameKey;
         ABSL_FALLTHROUGH_INTENDED;
       case H265::NaluType::kTrailN:
       case H265::NaluType::kTrailR: {
@@ -245,8 +245,8 @@ absl::optional<VideoRtpDepacketizer::ParsedRtpPayload> ProcessApOrSingleNalu(
       case H265::NaluType::kPrefixSei:
       case H265::NaluType::kSuffixSei:
         break;
-      case H265::NaluType::kAP:
-      case H265::NaluType::kFU:
+      case H265::NaluType::kAp:
+      case H265::NaluType::kFu:
         RTC_LOG(LS_WARNING) << "Unexpected AP or FU received.";
         return absl::nullopt;
     }
@@ -270,7 +270,7 @@ absl::optional<VideoRtpDepacketizer::ParsedRtpPayload> ParseFuNalu(
   }
   absl::optional<VideoRtpDepacketizer::ParsedRtpPayload> parsed_payload(
       absl::in_place);
-	  
+      
   uint8_t f = rtp_payload.cdata()[0] & kHevcFBit;
   uint8_t layer_id_h = rtp_payload.cdata()[0] & kHevcLayerIDHMask;
   uint8_t layer_id_l_unshifted = rtp_payload.cdata()[1] & kHevcLayerIDLMask;
@@ -296,16 +296,15 @@ absl::optional<VideoRtpDepacketizer::ParsedRtpPayload> ParseFuNalu(
              "unit with original type: "
           << static_cast<int>(nalu.type);
     }
-	rtp_payload =
-	    rtp_payload.Slice(1, rtp_payload.size() - 1);
-    RTC_DCHECK_LT(1, rtp_payload.size());
+    rtp_payload =
+        rtp_payload.Slice(1, rtp_payload.size() - 1);
     rtp_payload.MutableData()[0] = f | original_nal_type << 1 | layer_id_h;
     rtp_payload.MutableData()[1] = layer_id_l_unshifted | tid;
-	parsed_payload->video_payload = std::move(rtp_payload);
+    parsed_payload->video_payload = std::move(rtp_payload);
   } else {
-	 parsed_payload->video_payload =
+     parsed_payload->video_payload =
         rtp_payload.Slice(kHevcNalHeaderSize + kHevcFuHeaderSize,
-		rtp_payload.size() - kHevcNalHeaderSize - kHevcFuHeaderSize);
+        rtp_payload.size() - kHevcNalHeaderSize - kHevcFuHeaderSize);
   }
 
   if (original_nal_type == H265::NaluType::kIdrWRadl
@@ -341,7 +340,7 @@ VideoRtpDepacketizerH265::Parse(rtc::CopyOnWriteBuffer rtp_payload) {
 
   uint8_t nal_type = (rtp_payload.cdata()[0] & kHevcTypeMask) >> 1;
 
-  if (nal_type == H265::NaluType::kFU) {
+  if (nal_type == H265::NaluType::kFu) {
     // Fragmented NAL units (FU-A).
     return ParseFuNalu(std::move(rtp_payload));
   } else {
@@ -351,5 +350,4 @@ VideoRtpDepacketizerH265::Parse(rtc::CopyOnWriteBuffer rtp_payload) {
     return ProcessApOrSingleNalu(std::move(rtp_payload));
   }
 }
-
 }  // namespace webrtc

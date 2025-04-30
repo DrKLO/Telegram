@@ -30,6 +30,21 @@ struct RTPVideoHeaderVP8 {
     beginningOfPartition = false;
   }
 
+  friend bool operator==(const RTPVideoHeaderVP8& lhs,
+                         const RTPVideoHeaderVP8& rhs) {
+    return lhs.nonReference == rhs.nonReference &&
+           lhs.pictureId == rhs.pictureId && lhs.tl0PicIdx == rhs.tl0PicIdx &&
+           lhs.temporalIdx == rhs.temporalIdx &&
+           lhs.layerSync == rhs.layerSync && lhs.keyIdx == rhs.keyIdx &&
+           lhs.partitionId == rhs.partitionId &&
+           lhs.beginningOfPartition == rhs.beginningOfPartition;
+  }
+
+  friend bool operator!=(const RTPVideoHeaderVP8& lhs,
+                         const RTPVideoHeaderVP8& rhs) {
+    return !(lhs == rhs);
+  }
+
   bool nonReference;          // Frame is discardable.
   int16_t pictureId;          // Picture ID index, 15 bits;
                               // kNoPictureId if PictureID does not exist.

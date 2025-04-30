@@ -33,9 +33,9 @@ void WebRtcIlbcfix_CbSearchCore(
     size_t* bestIndex,           /* (o) Index that corresponds to
                                            maximum criteria (in this
                                            vector) */
-    int32_t* bestCrit, /* (o) Value of critera for the
-                                chosen index */
-    int16_t* bestCritSh); /* (o) The domain of the chosen
-                                   criteria */
+    int32_t* bestCrit,           /* (o) Value of critera for the
+                                          chosen index */
+    int16_t* bestCritSh);        /* (o) The domain of the chosen
+                                          criteria */
 
 #endif

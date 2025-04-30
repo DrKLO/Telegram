@@ -11,6 +11,7 @@
 #ifndef MODULES_AUDIO_PROCESSING_TRANSIENT_WPD_NODE_H_
 #define MODULES_AUDIO_PROCESSING_TRANSIENT_WPD_NODE_H_
 
+#include <cstddef>
 #include <memory>
 
 namespace webrtc {

@@ -1,0 +1,38 @@
+# Copyright (c) 2019 The WebRTC project authors. All Rights Reserved.
+#
+# Use of this source code is governed by a BSD-style license
+# that can be found in the LICENSE file in the root of the source
+# tree. An additional intellectual property rights grant can be found
+# in the file PATENTS.  All contributing project authors may
+# be found in the AUTHORS file in the root of the source tree.
+
+import("../../../webrtc.gni")
+
+rtc_source_set("rtp_source") {
+  visibility = [ "*" ]
+  sources = [ "rtp_source.h" ]
+  deps = [
+    "../../../api:rtp_headers",
+    "../../../api/units:time_delta",
+    "../../../api/units:timestamp",
+    "../../../rtc_base:checks",
+  ]
+  absl_deps = [ "//third_party/abseil-cpp/absl/types:optional" ]
+}
+
+rtc_source_set("dependency_descriptor") {
+  visibility = [ "*" ]
+  sources = [
+    "dependency_descriptor.cc",
+    "dependency_descriptor.h",
+  ]
+  deps = [
+    "../../../rtc_base:checks",
+    "../../video:render_resolution",
+  ]
+  absl_deps = [
+    "//third_party/abseil-cpp/absl/container:inlined_vector",
+    "//third_party/abseil-cpp/absl/strings",
+    "//third_party/abseil-cpp/absl/types:optional",
+  ]
+}

@@ -24,11 +24,6 @@ namespace absl {
 ABSL_NAMESPACE_BEGIN
 namespace cord_internal {
 
-// Functor for the Consume() and ReverseConsume() functions:
-//   void ConsumeFunc(CordRep* rep, size_t offset, size_t length);
-// See the Consume() and ReverseConsume() function comments for documentation.
-using ConsumeFn = FunctionRef<void(CordRep*, size_t, size_t)>;
-
 // Consume() and ReverseConsume() consume CONCAT based trees and invoke the
 // provided functor with the contained nodes in the proper forward or reverse
 // order, which is used to convert CONCAT trees into other tree or cord data.
@@ -40,8 +35,10 @@ using ConsumeFn = FunctionRef<void(CordRep*, size_t, size_t)>;
 // violations, we can not 100% guarantee that all code respects 'new format'
 // settings and flags, so we need to be able to parse old data on the fly until
 // all old code is deprecated / no longer the default format.
-void Consume(CordRep* rep, ConsumeFn consume_fn);
-void ReverseConsume(CordRep* rep, ConsumeFn consume_fn);
+void Consume(CordRep* rep,
+             FunctionRef<void(CordRep*, size_t, size_t)> consume_fn);
+void ReverseConsume(CordRep* rep,
+                    FunctionRef<void(CordRep*, size_t, size_t)> consume_fn);
 
 }  // namespace cord_internal
 ABSL_NAMESPACE_END

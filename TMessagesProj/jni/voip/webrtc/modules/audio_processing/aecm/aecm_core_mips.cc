@@ -569,8 +569,8 @@ static void InverseFFTAndWindow(AecmCore* aecm,
         [paecm_buf] "+r"(paecm_buf), [i] "=&r"(i),
         [pp_kSqrtHanning] "+r"(pp_kSqrtHanning),
         [p_kSqrtHanning] "+r"(p_kSqrtHanning)
-      : [out_aecm] "r"(out_aecm),
-        [WebRtcAecm_kSqrtHanning] "r"(WebRtcAecm_kSqrtHanning)
+      : [out_aecm] "r"(out_aecm), [WebRtcAecm_kSqrtHanning] "r"(
+                                      WebRtcAecm_kSqrtHanning)
       : "hi", "lo", "memory");
 
   // Copy the current block to the old position
@@ -1334,10 +1334,10 @@ int WebRtcAecm_ProcessBlock(AecmCore* aecm,
   } else {
     // multiply with Wiener coefficients
     for (i = 0; i < PART_LEN1; i++) {
-      efw[i].real = (int16_t)(
-          WEBRTC_SPL_MUL_16_16_RSFT_WITH_ROUND(dfw[i].real, hnl[i], 14));
-      efw[i].imag = (int16_t)(
-          WEBRTC_SPL_MUL_16_16_RSFT_WITH_ROUND(dfw[i].imag, hnl[i], 14));
+      efw[i].real = (int16_t)(WEBRTC_SPL_MUL_16_16_RSFT_WITH_ROUND(dfw[i].real,
+                                                                   hnl[i], 14));
+      efw[i].imag = (int16_t)(WEBRTC_SPL_MUL_16_16_RSFT_WITH_ROUND(dfw[i].imag,
+                                                                   hnl[i], 14));
     }
   }
 
@@ -1424,8 +1424,8 @@ static void ComfortNoise(AecmCore* aecm,
             "srav   %[tmp32],       %[tmp32],       %[minTrackShift]    \n\t"
             "subu   %[tnoise],      %[tnoise],      %[tmp32]            \n\t"
             : [tmp32] "=&r"(tmp32), [tnoise] "+r"(tnoise)
-            :
-            [outLShift32] "r"(outLShift32), [minTrackShift] "r"(minTrackShift));
+            : [outLShift32] "r"(outLShift32), [minTrackShift] "r"(
+                                                  minTrackShift));
       }
     } else {
       // Reset "too high" counter
@@ -1497,8 +1497,8 @@ static void ComfortNoise(AecmCore* aecm,
             "srav   %[tmp32],       %[tmp32],       %[minTrackShift]    \n\t"
             "subu   %[tnoise1],     %[tnoise1],     %[tmp32]            \n\t"
             : [tmp32] "=&r"(tmp32), [tnoise1] "+r"(tnoise1)
-            :
-            [outLShift32] "r"(outLShift32), [minTrackShift] "r"(minTrackShift));
+            : [outLShift32] "r"(outLShift32), [minTrackShift] "r"(
+                                                  minTrackShift));
       }
     } else {
       // Reset "too high" counter

@@ -14,16 +14,26 @@
 #include <sys/time.h>
 #endif
 
-#if defined(WEBRTC_WIN)
-#include <sys/timeb.h>
-#endif
-
 #include "rtc_base/checks.h"
 #include "rtc_base/numerics/safe_conversions.h"
 #include "rtc_base/system_time.h"
 #include "rtc_base/time_utils.h"
+#if defined(WEBRTC_WIN)
+#include "rtc_base/win32.h"
+#endif
+#if defined(WEBRTC_WIN)
+#include <minwinbase.h>
+#endif
 
 namespace rtc {
+
+#if defined(WEBRTC_WIN) || defined(WINUWP)
+// FileTime (January 1st 1601) to Unix time (January 1st 1970)
+// offset in units of 100ns.
+static constexpr uint64_t kFileTimeToUnixTimeEpochOffset =
+    116444736000000000ULL;
+static constexpr uint64_t kFileTimeToMicroSeconds = 10LL;
+#endif
 
 ClockInterface* g_clock = nullptr;
 
@@ -115,8 +125,6 @@ class TimeHelper final {
   }
 
  private:
-  static constexpr uint64_t kFileTimeToUnixTimeEpochOffset =
-      116444736000000000ULL;
   static constexpr uint64_t kNTPTimeToUnixTimeEpochOffset = 2208988800000L;
 
   // The number of nanoseconds since unix system epoch
@@ -175,28 +183,6 @@ int64_t TimeDiff(int64_t later, int64_t earlier) {
   return later - earlier;
 }
 
-TimestampWrapAroundHandler::TimestampWrapAroundHandler()
-    : last_ts_(0), num_wrap_(-1) {}
-
-int64_t TimestampWrapAroundHandler::Unwrap(uint32_t ts) {
-  if (num_wrap_ == -1) {
-    last_ts_ = ts;
-    num_wrap_ = 0;
-    return ts;
-  }
-
-  if (ts < last_ts_) {
-    if (last_ts_ >= 0xf0000000 && ts < 0x0fffffff)
-      ++num_wrap_;
-  } else if ((ts - last_ts_) > 0xf0000000) {
-    // Backwards wrap. Unwrap with last wrap count and don't update last_ts_.
-    return ts + (num_wrap_ - 1) * (int64_t{1} << 32);
-  }
-
-  last_ts_ = ts;
-  return ts + (num_wrap_ << 32);
-}
-
 int64_t TmToSeconds(const tm& tm) {
   static short int mdays[12] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
   static short int cumul_mdays[12] = {0,   31,  59,  90,  120, 151,
@@ -253,13 +239,15 @@ int64_t TimeUTCMicros() {
   // Convert from second (1.0) and microsecond (1e-6).
   return (static_cast<int64_t>(time.tv_sec) * rtc::kNumMicrosecsPerSec +
           time.tv_usec);
-
 #elif defined(WEBRTC_WIN)
-  struct _timeb time;
-  _ftime(&time);
-  // Convert from second (1.0) and milliseconds (1e-3).
-  return (static_cast<int64_t>(time.time) * rtc::kNumMicrosecsPerSec +
-          static_cast<int64_t>(time.millitm) * rtc::kNumMicrosecsPerMillisec);
+  FILETIME ft;
+  // This will give us system file in UTC format in multiples of 100ns.
+  GetSystemTimeAsFileTime(&ft);
+  LARGE_INTEGER li;
+  li.HighPart = ft.dwHighDateTime;
+  li.LowPart = ft.dwLowDateTime;
+  return (li.QuadPart - kFileTimeToUnixTimeEpochOffset) /
+         kFileTimeToMicroSeconds;
 #endif
 }
 

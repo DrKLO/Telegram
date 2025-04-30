@@ -14,6 +14,7 @@
 
 #include <limits>
 
+#include "absl/base/no_destructor.h"
 #include "absl/synchronization/blocking_counter.h"
 #include "absl/synchronization/internal/thread_pool.h"
 #include "benchmark/benchmark.h"
@@ -39,8 +40,8 @@ BENCHMARK(BM_BlockingCounter_SingleThread)
     ->Arg(256);
 
 void BM_BlockingCounter_DecrementCount(benchmark::State& state) {
-  static absl::BlockingCounter* counter =
-      new absl::BlockingCounter{std::numeric_limits<int>::max()};
+  static absl::NoDestructor<absl::BlockingCounter> counter(
+      std::numeric_limits<int>::max());
   for (auto _ : state) {
     counter->DecrementCount();
   }

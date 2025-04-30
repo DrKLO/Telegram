@@ -103,6 +103,9 @@ int GetCPUInfo(CPUFeature feature) {
            (cpu_info7[1] & 0x00000100) != 0 /* BMI2 */;
   }
 #endif  // WEBRTC_ENABLE_AVX2
+  if (feature == kFMA3) {
+    return 0 != (cpu_info[2] & 0x00001000);
+  }
   return 0;
 }
 #else

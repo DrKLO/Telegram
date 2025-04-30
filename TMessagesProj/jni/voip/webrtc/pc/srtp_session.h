@@ -43,23 +43,23 @@ class SrtpSession {
   SrtpSession& operator=(const SrtpSession&) = delete;
 
   // Configures the session for sending data using the specified
-  // cipher-suite and key. Receiving must be done by a separate session.
-  bool SetSend(int cs,
+  // crypto suite and key. Receiving must be done by a separate session.
+  bool SetSend(int crypto_suite,
                const uint8_t* key,
                size_t len,
                const std::vector<int>& extension_ids);
-  bool UpdateSend(int cs,
+  bool UpdateSend(int crypto_suite,
                   const uint8_t* key,
                   size_t len,
                   const std::vector<int>& extension_ids);
 
   // Configures the session for receiving data using the specified
-  // cipher-suite and key. Sending must be done by a separate session.
-  bool SetRecv(int cs,
+  // crypto suite and key. Sending must be done by a separate session.
+  bool SetRecv(int crypto_suite,
                const uint8_t* key,
                size_t len,
                const std::vector<int>& extension_ids);
-  bool UpdateRecv(int cs,
+  bool UpdateRecv(int crypto_suite,
                   const uint8_t* key,
                   size_t len,
                   const std::vector<int>& extension_ids);
@@ -97,19 +97,27 @@ class SrtpSession {
   // been set.
   bool IsExternalAuthActive() const;
 
+  // Removes a SSRC from the underlying libSRTP session.
+  // Note: this should only be done for SSRCs that are received.
+  // Removing SSRCs that were sent and then reusing them leads to
+  // cryptographic weaknesses described in
+  // https://www.rfc-editor.org/rfc/rfc3711#section-8
+  // https://www.rfc-editor.org/rfc/rfc7714#section-8.4
+  bool RemoveSsrcFromSession(uint32_t ssrc);
+
  private:
   bool DoSetKey(int type,
-                int cs,
+                int crypto_suite,
                 const uint8_t* key,
                 size_t len,
                 const std::vector<int>& extension_ids);
   bool SetKey(int type,
-              int cs,
+              int crypto_suite,
               const uint8_t* key,
               size_t len,
               const std::vector<int>& extension_ids);
   bool UpdateKey(int type,
-                 int cs,
+                 int crypto_suite,
                  const uint8_t* key,
                  size_t len,
                  const std::vector<int>& extension_ids);

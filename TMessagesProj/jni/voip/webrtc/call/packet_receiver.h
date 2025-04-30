@@ -10,22 +10,31 @@
 #ifndef CALL_PACKET_RECEIVER_H_
 #define CALL_PACKET_RECEIVER_H_
 
+#include "absl/functional/any_invocable.h"
 #include "api/media_types.h"
+#include "modules/rtp_rtcp/source/rtp_packet_received.h"
+#include "rtc_base/checks.h"
 #include "rtc_base/copy_on_write_buffer.h"
 
 namespace webrtc {
 
 class PacketReceiver {
  public:
-  enum DeliveryStatus {
-    DELIVERY_OK,
-    DELIVERY_UNKNOWN_SSRC,
-    DELIVERY_PACKET_ERROR,
-  };
+  // Demux RTCP packets. Must be called on the worker thread.
+  virtual void DeliverRtcpPacket(rtc::CopyOnWriteBuffer packet) = 0;
 
-  virtual DeliveryStatus DeliverPacket(MediaType media_type,
-                                       rtc::CopyOnWriteBuffer packet,
-                                       int64_t packet_time_us) = 0;
+  // Invoked once when a packet packet is received that can not be demuxed.
+  // If the method returns true, a new attempt is made to demux the packet.
+  using OnUndemuxablePacketHandler =
+      absl::AnyInvocable<bool(const RtpPacketReceived& parsed_packet)>;
+
+  // Must be called on the worker thread.
+  // If `media_type` is not Audio or Video, packets may be used for BWE
+  // calculations but are not demuxed.
+  virtual void DeliverRtpPacket(
+      MediaType media_type,
+      RtpPacketReceived packet,
+      OnUndemuxablePacketHandler undemuxable_packet_handler) = 0;
 
  protected:
   virtual ~PacketReceiver() {}
