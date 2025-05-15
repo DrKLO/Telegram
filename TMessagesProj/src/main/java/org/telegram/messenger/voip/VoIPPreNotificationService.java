@@ -316,74 +316,100 @@ public class VoIPPreNotificationService { // } extends Service implements AudioM
         AudioManager am = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
         boolean needRing = am.getRingerMode() != AudioManager.RINGER_MODE_SILENT;
         final boolean isHeadsetPlugged = am.isWiredHeadsetOn();
-        if (needRing) {
+
+        if (!needRing) {
+            return;
+        }
+        if (ringtonePlayer != null) {
+            return;
+        }
+
+        synchronized (sync) {
             if (ringtonePlayer != null) {
                 return;
             }
-            synchronized (sync) {
-                if (ringtonePlayer != null) {
-                    return;
-                }
-                ringtonePlayer = new MediaPlayer();
-                ringtonePlayer.setOnPreparedListener(mediaPlayer -> {
-                    try {
-                        ringtonePlayer.start();
-                    } catch (Throwable e) {
-                        FileLog.e(e);
-                    }
-                });
-                ringtonePlayer.setLooping(true);
-                if (isHeadsetPlugged) {
-                    ringtonePlayer.setAudioStreamType(AudioManager.STREAM_VOICE_CALL);
-                } else {
-                    ringtonePlayer.setAudioStreamType(AudioManager.STREAM_RING);
-                }
+
+            /* ---------- original ringtone code unchanged ---------- */
+            ringtonePlayer = new MediaPlayer();
+            ringtonePlayer.setOnPreparedListener(mp -> {
                 try {
-                    String notificationUri;
-                    if (prefs.getBoolean("custom_" + user_id, false)) {
-                        notificationUri = prefs.getString("ringtone_path_" + user_id, null);
-                    } else {
-                        notificationUri = prefs.getString("CallsRingtonePath", null);
-                    }
-                    Uri ringtoneUri;
-                    boolean isDafaultUri = false;
-                    if (notificationUri == null) {
-                        ringtoneUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE);
-                        isDafaultUri = true;
-                    } else {
-                        Uri defaultUri = Settings.System.DEFAULT_RINGTONE_URI;
-                        if (defaultUri != null && notificationUri.equalsIgnoreCase(defaultUri.getPath())) {
-                            ringtoneUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE);
-                            isDafaultUri = true;
-                        } else {
-                            ringtoneUri = Uri.parse(notificationUri);
-                        }
-                    }
-                    FileLog.d("start ringtone with " + isDafaultUri + " " + ringtoneUri);
-                    ringtonePlayer.setDataSource(context, ringtoneUri);
-                    ringtonePlayer.prepareAsync();
-                } catch (Exception e) {
+                    mp.start();
+                } catch (Throwable e) {
                     FileLog.e(e);
-                    if (ringtonePlayer != null) {
-                        ringtonePlayer.release();
-                        ringtonePlayer = null;
-                    }
                 }
-                int vibrate;
-                if (prefs.getBoolean("custom_" + user_id, false)) {
-                    vibrate = prefs.getInt("calls_vibrate_" + user_id, 0);
+            });
+            ringtonePlayer.setLooping(true);
+            ringtonePlayer.setAudioStreamType(isHeadsetPlugged
+                    ? AudioManager.STREAM_VOICE_CALL
+                    : AudioManager.STREAM_RING);
+
+            try {
+                String notificationUri = prefs.getBoolean("custom_" + user_id, false)
+                        ? prefs.getString("ringtone_path_" + user_id, null)
+                        : prefs.getString("CallsRingtonePath", null);
+
+                Uri ringtoneUri;
+                boolean isDefaultUri = false;
+                if (notificationUri == null) {
+                    ringtoneUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE);
+                    isDefaultUri = true;
                 } else {
-                    vibrate = prefs.getInt("vibrate_calls", 0);
-                }
-                if ((vibrate != 2 && vibrate != 4 && (am.getRingerMode() == AudioManager.RINGER_MODE_VIBRATE || am.getRingerMode() == AudioManager.RINGER_MODE_NORMAL)) || (vibrate == 4 && am.getRingerMode() == AudioManager.RINGER_MODE_VIBRATE)) {
-                    vibrator = (Vibrator) context.getSystemService(Context.VIBRATOR_SERVICE);
-                    long duration = 700;
-                    if (vibrate == 1) {
-                        duration /= 2;
-                    } else if (vibrate == 3) {
-                        duration *= 2;
+                    Uri defUri = Settings.System.DEFAULT_RINGTONE_URI;
+                    if (defUri != null && notificationUri.equalsIgnoreCase(defUri.getPath())) {
+                        ringtoneUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE);
+                        isDefaultUri = true;
+                    } else {
+                        ringtoneUri = Uri.parse(notificationUri);
                     }
-                    vibrator.vibrate(new long[]{0, duration, 500}, 0);
+                }
+                FileLog.d("start ringtone with " + isDefaultUri + " " + ringtoneUri);
+                ringtonePlayer.setDataSource(context, ringtoneUri);
+                ringtonePlayer.prepareAsync();
+            } catch (Exception e) {
+                FileLog.e(e);
+                if (ringtonePlayer != null) {
+                    ringtonePlayer.release();
+                    ringtonePlayer = null;
+                }
+            }
+
+            /* ---------- 🔔 NEW vibration logic ---------- */
+            int vibrate = prefs.getBoolean("custom_" + user_id, false)
+                    ? prefs.getInt("calls_vibrate_" + user_id, 0)
+                    : prefs.getInt("vibrate_calls", 0);
+
+            if ((vibrate != 2 && vibrate != 4 &&
+                 (am.getRingerMode() == AudioManager.RINGER_MODE_VIBRATE ||
+                  am.getRingerMode() == AudioManager.RINGER_MODE_NORMAL)) ||
+                (vibrate == 4 && am.getRingerMode() == AudioManager.RINGER_MODE_VIBRATE)) {
+
+                vibrator = (Vibrator) context.getSystemService(Context.VIBRATOR_SERVICE);
+                long duration = 700;
+                if (vibrate == 1)      duration /= 2;
+                else if (vibrate == 3) duration *= 2;
+
+                long[] pattern = {0, duration, 500};
+
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    // SDK 33+ (e.g., Samsung S23) — amplitude-controlled waveform
+                    int[] amplitudes = {0, VibrationEffect.DEFAULT_AMPLITUDE, 0};
+                    VibrationEffect effect =
+                            VibrationEffect.createWaveform(pattern, amplitudes, 0);
+
+                    vibrator.vibrate(
+                            effect,
+                            new VibrationAttributes.Builder()
+                                    .setUsage(VibrationAttributes.USAGE_NOTIFICATION_RINGTONE)
+                                    .build()
+                    );
+                } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    // SDK 26–32
+                    vibrator.vibrate(
+                            VibrationEffect.createWaveform(pattern, 0)
+                    );
+                } else {
+                    // Legacy fallback
+                    vibrator.vibrate(pattern, 0);
                 }
             }
         }
