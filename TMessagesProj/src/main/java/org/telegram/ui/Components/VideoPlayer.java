@@ -1450,9 +1450,11 @@ public class VideoPlayer implements Player.Listener, VideoListener, AnalyticsLis
     }
 
     public void setPlaybackSpeed(float speed) {
-        if (player != null) {
-            player.setPlaybackParameters(new PlaybackParameters(speed, speed > 1.0f ? 0.98f : 1.0f));
-        }
+        try {
+            if (player != null) {
+                player.setPlaybackParameters(new PlaybackParameters(speed, speed > 1.0f ? 0.98f : 1.0f));
+            }
+        } catch (Exception ignore) {}
     }
 
     public float getPlaybackSpeed() {

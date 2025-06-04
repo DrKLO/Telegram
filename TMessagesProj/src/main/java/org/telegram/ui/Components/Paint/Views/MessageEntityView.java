@@ -406,7 +406,7 @@ public class MessageEntityView extends EntityView {
                         ChatActionCell cell = (ChatActionCell) child;
                         if (cell.hasGradientService()) {
                             canvas.save();
-                            canvas.translate(cell.getX(), cell.getY());
+                            canvas.translate(cell.getX(), cell.getY() + cell.getPaddingTop());
                             canvas.scale(cell.getScaleX(), cell.getScaleY(), cell.getMeasuredWidth() / 2f, cell.getMeasuredHeight() / 2f);
                             cell.drawBackground(canvas, true);
                             cell.drawReactions(canvas, true, null);
@@ -874,7 +874,7 @@ public class MessageEntityView extends EntityView {
                             pinnedTop = p.minY != 0;
                         }
                     }
-                    cell.setMessageObject(message, groupedMessages, groupedMessages != null, pinnedTop);
+                    cell.setMessageObject(message, groupedMessages, groupedMessages != null, pinnedTop, false);
                 } else if (holder.itemView instanceof ChatActionCell) {
                     final ChatActionCell cell = (ChatActionCell) holder.itemView;
                     cell.setMessageObject(message);

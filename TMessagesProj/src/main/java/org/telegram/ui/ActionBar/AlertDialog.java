@@ -605,8 +605,9 @@ public class AlertDialog extends Dialog implements Drawable.Callback, Notificati
     }
 
     private boolean needStarsBalance;
-    public void setShowStarsBalance(boolean show) {
+    public AlertDialog setShowStarsBalance(boolean show) {
         needStarsBalance = show;
+        return this;
     }
 
     private FrameLayout fullscreenContainerView;

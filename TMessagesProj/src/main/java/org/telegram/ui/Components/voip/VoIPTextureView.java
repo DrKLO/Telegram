@@ -52,6 +52,7 @@ public class VoIPTextureView extends FrameLayout {
     public TextureView blurRenderer;
     public final ImageView imageView;
     public View backgroundView;
+    private View placeholderView;
     private FrameLayout screencastView;
     private ImageView screencastImage;
     private TextView screencastText;
@@ -221,6 +222,15 @@ public class VoIPTextureView extends FrameLayout {
             return false;
         }
         return super.drawChild(canvas, child, drawingTime);
+    }
+
+    public View getPlaceholderView() {
+        if (placeholderView == null) {
+            placeholderView = new View(getContext());
+            addView(placeholderView, LayoutHelper.createFrameMatchParent());
+        }
+
+        return placeholderView;
     }
 
     public void setScreenshareMiniProgress(float progress, boolean value) {

@@ -115,7 +115,7 @@ public class UserListPoller {
                 }
             } else {
                 TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-dialogId);
-                if (ChatObject.isChannel(chat)) {
+                if (ChatObject.isChannel(chat) && !ChatObject.isMonoForum(chat)) {
                     long lastPollTime = userPollLastTime.get(dialogId, 0);
                     if (currentTime - lastPollTime > 60 * 60 * 1000) {
                         userPollLastTime.put(dialogId, currentTime);

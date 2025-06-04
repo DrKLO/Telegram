@@ -52,20 +52,6 @@ typedef struct {
     int copy_comments;
 } oe_enc_opt;
 
-typedef struct {
-    ogg_int32_t _packetId;
-    opus_int64 bytes_written;
-    opus_int64 pages_out;
-    opus_int64 total_samples;
-    ogg_int64_t enc_granulepos;
-    int size_segments;
-    int last_segments;
-    ogg_int64_t last_granulepos;
-    opus_int32 min_bytes;
-    int max_frame_bytes;
-    int serialno;
-} resume_data;
-
 static int write_uint32(Packet *p, ogg_uint32_t val) {
     if (p->pos > p->maxlen - 4) {
         return 0;
@@ -265,8 +251,14 @@ int last_segments;
 int serialno;
 
 void cleanupRecorder() {
-    
-    ogg_stream_flush(&os, &og);
+
+    if (_fileOs) {
+        while (ogg_stream_flush(&os, &og)) {
+            writeOggPage(&og, _fileOs);
+        }
+    } else {
+        ogg_stream_flush(&os, &og);
+    }
     
     if (_encoder) {
         opus_encoder_destroy(_encoder);
@@ -441,146 +433,13 @@ int initRecorder(const char *path, opus_int32 sampleRate) {
     return 1;
 }
 
-void saveResumeData() {
-    if (_filePath == NULL) {
-        return;
-    }
-    const char* ext = ".resume";
-    char* _resumeFilePath = (char*) malloc(strlen(_filePath) + strlen(ext) + 1);
-    strcpy(_resumeFilePath, _filePath);
-    strcat(_resumeFilePath, ext);
-
-    FILE* resumeFile = fopen(_resumeFilePath, "wb");
-    if (!resumeFile) {
-        LOGE("error cannot open resume file to write: %s", _resumeFilePath);
-        free(_resumeFilePath);
-        return;
-    }
-    resume_data data;
-    data._packetId = _packetId;
-    data.bytes_written = bytes_written;
-    data.pages_out = pages_out;
-    data.total_samples = total_samples;
-    data.enc_granulepos = enc_granulepos;
-    data.size_segments = size_segments;
-    data.last_segments = last_segments;
-    data.last_granulepos = last_granulepos;
-    data.min_bytes = min_bytes;
-    data.max_frame_bytes = max_frame_bytes;
-    data.serialno = serialno;
-
-    if (fwrite(&data, sizeof(resume_data), 1, resumeFile) != 1) {
-        LOGE("error writing resume data to file: %s", _resumeFilePath);
-    }
-    fclose(resumeFile);
-
-    free(_resumeFilePath);
-}
-
-resume_data readResumeData(const char* filePath) {
-
-    const char* ext = ".resume";
-    char* _resumeFilePath = (char*) malloc(strlen(filePath) + strlen(ext) + 1);
-    strcpy(_resumeFilePath, filePath);
-    strcat(_resumeFilePath, ext);
-
-    resume_data data;
-
-    FILE* resumeFile = fopen(_resumeFilePath, "rb");
-    if (!resumeFile) {
-        LOGE("error cannot open resume file to read: %s", _resumeFilePath);
-        memset(&data, 0, sizeof(resume_data));
-        return data;
-    }
-
-    if (fread(&data, sizeof(resume_data), 1, resumeFile) != 1) {
-        LOGE("error cannot read resume file: %s", _resumeFilePath);
-        memset(&data, 0, sizeof(resume_data));
-    }
-
-    fclose(resumeFile);
-    free(_resumeFilePath);
-
-    return data;
-}
-
-int resumeRecorder(const char *path, opus_int32 sampleRate) {
-    cleanupRecorder();
-
-    coding_rate = sampleRate;
-    rate = sampleRate;
-
-    if (!path) {
-        LOGE("path is null");
-        return 0;
-    }
-
-    int length = strlen(path);
-    _filePath = (char*) malloc(length + 1);
-    strcpy(_filePath, path);
-
-    resume_data resumeData = readResumeData(path);
-    _packetId = resumeData._packetId;
-    bytes_written = resumeData.bytes_written;
-    pages_out = resumeData.pages_out;
-    total_samples = resumeData.total_samples;
-    enc_granulepos = resumeData.enc_granulepos;
-    size_segments = resumeData.size_segments;
-    last_segments = resumeData.last_segments;
-    last_granulepos = resumeData.last_granulepos;
-    min_bytes = resumeData.min_bytes;
-    max_frame_bytes = resumeData.max_frame_bytes;
-    serialno = resumeData.serialno;
-
-    _fileOs = fopen(path, "a");
-    if (!_fileOs) {
-        LOGE("error cannot open resume file: %s", path);
-        return 0;
-    }
-
-    int result = OPUS_OK;
-    _encoder = opus_encoder_create(coding_rate, 1, OPUS_APPLICATION_VOIP, &result);
-    if (result != OPUS_OK) {
-        LOGE("Error cannot create encoder: %s", opus_strerror(result));
-        return 0;
-    }
-
-    _packet = malloc(max_frame_bytes);
-
-    result = opus_encoder_ctl(_encoder, OPUS_SET_BITRATE(bitrate));
-    //result = opus_encoder_ctl(_encoder, OPUS_SET_COMPLEXITY(10));
-    if (result != OPUS_OK) {
-        LOGE("Error OPUS_SET_BITRATE returned: %s", opus_strerror(result));
-        return 0;
-    }
-
-#ifdef OPUS_SET_LSB_DEPTH
-    result = opus_encoder_ctl(_encoder, OPUS_SET_LSB_DEPTH(MAX(8, MIN(24, 16))));
-    if (result != OPUS_OK) {
-        LOGE("Warning OPUS_SET_LSB_DEPTH returned: %s", opus_strerror(result));
-    }
-#endif
-
-    if (ogg_stream_init(&os, serialno) == -1) {
-        LOGE("Error: stream init failed");
-        return 0;
-    }
-
-    return 1;
-}
-
-
-int writeFrame(uint8_t *framePcmBytes, uint32_t frameByteCount) {
+int writeFrame(uint8_t *framePcmBytes, uint32_t frameByteCount, int end) {
     size_t cur_frame_size = frame_size;
     _packetId++;
     
     opus_int32 nb_samples = frameByteCount / 2;
     total_samples += nb_samples;
-    if (nb_samples < frame_size) {
-        op.e_o_s = 1;
-    } else {
-        op.e_o_s = 0;
-    }
+    op.e_o_s = end;
     
     int nbBytes = 0;
     
@@ -665,27 +524,12 @@ JNIEXPORT jint Java_org_telegram_messenger_MediaController_startRecord(JNIEnv *e
     return result;
 }
 
-JNIEXPORT jint Java_org_telegram_messenger_MediaController_resumeRecord(JNIEnv *env, jclass class, jstring path, jint sampleRate) {
-    const char *pathStr = (*env)->GetStringUTFChars(env, path, 0);
-
-    int32_t result = resumeRecorder(pathStr, sampleRate);
-    
-    if (pathStr != 0) {
-        (*env)->ReleaseStringUTFChars(env, path, pathStr);
-    }
-    
-    return result;
-}
-
 JNIEXPORT jint Java_org_telegram_messenger_MediaController_writeFrame(JNIEnv *env, jclass class, jobject frame, jint len) {
     jbyte *frameBytes = (*env)->GetDirectBufferAddress(env, frame);
-    return writeFrame((uint8_t *) frameBytes, (uint32_t) len);
+    return writeFrame((uint8_t *) frameBytes, (uint32_t) len, len / 2 < frame_size);
 }
 
-JNIEXPORT void Java_org_telegram_messenger_MediaController_stopRecord(JNIEnv *env, jclass class, jboolean allowResuming) {
-    if (allowResuming && _filePath != NULL) {
-        saveResumeData();
-    }
+JNIEXPORT void Java_org_telegram_messenger_MediaController_stopRecord(JNIEnv *env, jclass class) {
     cleanupRecorder();
 }
 
@@ -1032,4 +876,179 @@ JNIEXPORT void JNICALL Java_org_telegram_ui_Stories_recorder_FfmpegAudioWaveform
     avformat_close_input(&formatContext);
 
     (*env)->ReleaseStringUTFChars(env, pathJStr, path);
+}
+
+int cropOpusAudio(const char *inputPath, const char *outputPath, float startTimeMs, float endTimeMs) {
+    int error;
+    OggOpusFile *opusFile = op_open_file(inputPath, &error);
+    if (!opusFile || error != OPUS_OK) {
+        LOGE("Failed to open input opus file: %s", opus_strerror(error));
+        return 0;
+    }
+
+    const OpusHead *head = op_head(opusFile, -1);
+    if (!head) {
+        LOGE("Failed to read Opus header");
+        op_free(opusFile);
+        return 0;
+    }
+
+    int channels = head->channel_count;
+    opus_int64 total_source_samples = op_pcm_total(opusFile, -1);
+    opus_int32 rate = 48000;
+
+    opus_int64 start_sample = MAX(0, MIN(total_source_samples, (opus_int64) ((startTimeMs / 1000.0) * rate)));
+    opus_int64 end_sample = MAX(0, MIN(total_source_samples, (opus_int64) ((endTimeMs / 1000.0) * rate)));
+    opus_int64 crop_length = end_sample - start_sample;
+
+    if (start_sample >= total_source_samples || end_sample > total_source_samples || start_sample >= end_sample) {
+        LOGE("Invalid crop range");
+        op_free(opusFile);
+        return 0;
+    }
+
+    if (op_pcm_seek(opusFile, start_sample) != 0) {
+        LOGE("Failed to seek to start sample");
+        op_free(opusFile);
+        return 0;
+    }
+
+    if (!initRecorder(outputPath, rate)) {
+        LOGE("Failed to init recorder");
+        op_free(opusFile);
+        return 0;
+    }
+
+    int16_t *buffer = malloc(sizeof(int16_t) * frame_size * channels);
+    if (!buffer) {
+        LOGE("Out of memory");
+        cleanupRecorder();
+        op_free(opusFile);
+        return 0;
+    }
+
+    opus_int64 remaining_samples = crop_length;
+    while (remaining_samples > 0) {
+        int max_samples = (int) MIN(960, remaining_samples / channels);
+        if (max_samples <= 0) break;
+
+        int samples_read = op_read(opusFile, buffer, max_samples * channels, NULL);
+        if (samples_read <= 0) break;
+        remaining_samples -= samples_read;
+
+        int end = remaining_samples <= 0;
+
+        size_t byte_count = samples_read * sizeof(int16_t);
+        if (!writeFrame((uint8_t *)buffer, byte_count, end)) {
+            LOGE("Failed to write frame");
+            free(buffer);
+            cleanupRecorder();
+            op_free(opusFile);
+            return 0;
+        }
+    }
+
+    free(buffer);
+    cleanupRecorder();
+    op_free(opusFile);
+    return 1;
+}
+
+int append_stream(OggOpusFile *of, int16_t* buffer, int channels, int is_last) {
+    opus_int64 total_source_samples = op_pcm_total(of, -1);
+    while (total_source_samples > 0) {
+        int samples_read = op_read(of, buffer, frame_size, NULL);
+        if (samples_read < 0) {
+            LOGE("Decoding error from op_read(): %d", samples_read);
+            return 0;
+        }
+        if (samples_read == 0) {
+            break;
+        }
+        total_source_samples -= samples_read;
+        size_t byte_count = (size_t) samples_read * channels * sizeof(int16_t);
+        if (!writeFrame((uint8_t*) buffer, byte_count, is_last && total_source_samples <= 0)) {
+            LOGE("Failed to write encoded frame");
+            return 0;
+        }
+    }
+    return 1;
+}
+
+int joinOpusAudios(const char* file1, const char* file2, const char* dest) {
+    int error;
+    OggOpusFile *opusFile1 = op_open_file(file1, &error);
+    if (!opusFile1 || error != OPUS_OK) {
+        LOGE("Failed to open input opus file1: %s", opus_strerror(error));
+        return 0;
+    }
+    OggOpusFile *opusFile2 = op_open_file(file2, &error);
+    if (!opusFile2 || error != OPUS_OK) {
+        LOGE("Failed to open input opus file2: %s", opus_strerror(error));
+        return 0;
+    }
+
+    const OpusHead *head1 = op_head(opusFile1, -1);
+    if (!head1) {
+        LOGE("Failed to read Opus header");
+        op_free(opusFile1);
+        op_free(opusFile2);
+        return 0;
+    }
+    const OpusHead *head2 = op_head(opusFile2, -1);
+    if (!head2) {
+        LOGE("Failed to read Opus header");
+        op_free(opusFile1);
+        op_free(opusFile2);
+        return 0;
+    }
+
+    int channels = MIN(head1->channel_count, head2->channel_count);
+    opus_int32 rate = 48000;
+
+    if (!initRecorder(dest, rate)) {
+        LOGE("Failed to init recorder");
+        op_free(opusFile1);
+        op_free(opusFile2);
+        return 0;
+    }
+
+    int16_t *buffer = malloc(sizeof(int16_t) * frame_size * channels);
+    if (!buffer) {
+        LOGE("Out of memory");
+        cleanupRecorder();
+        op_free(opusFile1);
+        op_free(opusFile2);
+        return 0;
+    }
+
+    append_stream(opusFile1, buffer, channels, 0);
+    append_stream(opusFile2, buffer, channels, 1);
+
+    free(buffer);
+    cleanupRecorder();
+    op_free(opusFile1);
+    op_free(opusFile2);
+
+    return 1;
+}
+
+JNIEXPORT jboolean Java_org_telegram_messenger_MediaController_cropOpusFile(JNIEnv *env, jclass class, jstring src, jstring dst, jlong startMs, jlong endMs) {
+    const char* srcStr = (*env)->GetStringUTFChars(env, src, 0);
+    const char* dstStr = (*env)->GetStringUTFChars(env, dst, 0);
+    int result = cropOpusAudio(srcStr, dstStr, startMs, endMs);
+    (*env)->ReleaseStringUTFChars(env, src, srcStr);
+    (*env)->ReleaseStringUTFChars(env, dst, dstStr);
+    return result == 1;
+}
+
+JNIEXPORT jboolean Java_org_telegram_messenger_MediaController_joinOpusFiles(JNIEnv* env, jclass class, jstring file1, jstring file2, jstring dest) {
+    const char* file1Str = (*env)->GetStringUTFChars(env, file1, 0);
+    const char* file2Str = (*env)->GetStringUTFChars(env, file2, 0);
+    const char* destStr = (*env)->GetStringUTFChars(env, dest, 0);
+    int result = joinOpusAudios(file1Str, file2Str, destStr);
+    (*env)->ReleaseStringUTFChars(env, file1, file1Str);
+    (*env)->ReleaseStringUTFChars(env, file2, file2Str);
+    (*env)->ReleaseStringUTFChars(env, dest, destStr);
+    return result == 1;
 }

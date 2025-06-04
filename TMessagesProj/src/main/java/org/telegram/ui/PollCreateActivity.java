@@ -89,8 +89,9 @@ public class PollCreateActivity extends BaseFragment implements NotificationCent
     private ChatActivity parentFragment;
     private HintView hintView;
 
-    private CharSequence[] answers = new CharSequence[10];
-    private boolean[] answersChecks = new boolean[10];
+    private final int maxAnswersCount = getMessagesController().pollAnswersMax;
+    private CharSequence[] answers = new CharSequence[maxAnswersCount];
+    private boolean[] answersChecks = new boolean[maxAnswersCount];
     private int answersCount = 1;
     private CharSequence questionString;
     private CharSequence solutionString;
@@ -274,7 +275,7 @@ public class PollCreateActivity extends BaseFragment implements NotificationCent
                     poll.poll.question = new TLRPC.TL_textWithEntities();
                     poll.poll.question.text = questionText.toString();
                     poll.poll.question.entities = questionEntities;
-                    SerializedData serializedData = new SerializedData(10);
+                    SerializedData serializedData = new SerializedData(maxAnswersCount);
                     for (int a = 0; a < answers.length; a++) {
                         if (TextUtils.isEmpty(ChatAttachAlertPollLayout.getFixedString(answers[a]))) {
                             continue;
@@ -1308,10 +1309,10 @@ public class PollCreateActivity extends BaseFragment implements NotificationCent
                         } else {
                             cell.setText(LocaleController.getString(R.string.QuizInfo));
                         }
-                    } else if (10 - answersCount <= 0) {
+                    } else if (maxAnswersCount - answersCount <= 0) {
                         cell.setText(LocaleController.getString(R.string.AddAnOptionInfoMax));
                     } else {
-                        cell.setText(LocaleController.formatString("AddAnOptionInfo", R.string.AddAnOptionInfo, LocaleController.formatPluralString("Option", 10 - answersCount)));
+                        cell.setText(LocaleController.formatString("AddAnOptionInfo", R.string.AddAnOptionInfo, LocaleController.formatPluralString("Option", maxAnswersCount - answersCount)));
                     }
                     break;
                 }
@@ -1607,7 +1608,7 @@ public class PollCreateActivity extends BaseFragment implements NotificationCent
                             RecyclerView.ViewHolder holder = listView.findContainingViewHolder(this);
                             if (holder != null) {
                                 int position = holder.getAdapterPosition();
-                                if (answersCount == 10 && position == answerStartRow + answersCount - 1) {
+                                if (answersCount == maxAnswersCount && position == answerStartRow + answersCount - 1) {
                                     return false;
                                 }
                             }
@@ -1717,7 +1718,7 @@ public class PollCreateActivity extends BaseFragment implements NotificationCent
                                 int position = holder.getAdapterPosition();
                                 if (position != RecyclerView.NO_POSITION) {
                                     int index = position - answerStartRow;
-                                    if (index == answersCount - 1 && answersCount < 10) {
+                                    if (index == answersCount - 1 && answersCount < maxAnswersCount) {
                                         addNewField();
                                     } else {
                                         if (index == answersCount - 1) {

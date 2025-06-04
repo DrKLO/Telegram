@@ -2688,6 +2688,170 @@ public class StarsController {
         }));
     }
 
+    public void getResellingGiftForm(TL_stars.StarGift gift, long dialogId, Utilities.Callback<TLRPC.TL_payments_paymentFormStarGift> whenDone) {
+        final Context context = LaunchActivity.instance != null ? LaunchActivity.instance : ApplicationLoader.applicationContext;
+        final Theme.ResourcesProvider resourcesProvider = getResourceProvider();
+
+        if (gift == null || context == null) {
+            return;
+        }
+
+        if (!balanceAvailable()) {
+            getBalance(() -> {
+                if (!balanceAvailable()) {
+                    bulletinError("NO_BALANCE");
+                    if (whenDone != null) {
+                        whenDone.run(null);
+                    }
+                    return;
+                }
+                getResellingGiftForm(gift, dialogId, whenDone);
+            });
+            return;
+        }
+
+        final TLRPC.TL_inputInvoiceStarGiftResale inputInvoice = new TLRPC.TL_inputInvoiceStarGiftResale();
+        inputInvoice.slug = gift.slug;
+        inputInvoice.to_id = MessagesController.getInstance(currentAccount).getInputPeer(dialogId);
+
+        final TLRPC.TL_payments_getPaymentForm req = new TLRPC.TL_payments_getPaymentForm();
+        final JSONObject themeParams = BotWebViewSheet.makeThemeParams(resourcesProvider);
+        if (themeParams != null) {
+            req.theme_params = new TLRPC.TL_dataJSON();
+            req.theme_params.data = themeParams.toString();
+            req.flags |= 1;
+        }
+        req.invoice = inputInvoice;
+
+        final int reqId = ConnectionsManager.getInstance(currentAccount).sendRequest(req, (res, err) -> AndroidUtilities.runOnUIThread(() -> {
+            if (!(res instanceof TLRPC.TL_payments_paymentFormStarGift)) {
+                bulletinError(err, "NO_PAYMENT_FORM");
+                whenDone.run(null);
+            } else {
+                whenDone.run((TLRPC.TL_payments_paymentFormStarGift) res);
+            }
+        }));
+    }
+
+    public static long getFormStarsPrice(TLRPC.PaymentForm form) {
+        long stars = 0;
+        if (form != null) {
+            for (TLRPC.TL_labeledPrice price : form.invoice.prices) {
+                stars += price.amount;
+            }
+        }
+        return stars;
+    }
+
+    public void buyResellingGift(TLRPC.TL_payments_paymentFormStarGift form, TL_stars.StarGift gift, long dialogId, Utilities.Callback2<Boolean, String> whenDone) {
+        final Context context = LaunchActivity.instance != null ? LaunchActivity.instance : ApplicationLoader.applicationContext;
+        final Theme.ResourcesProvider resourcesProvider = getResourceProvider();
+
+        if (gift == null || context == null) {
+            return;
+        }
+
+        if (!balanceAvailable()) {
+            getBalance(() -> {
+                if (!balanceAvailable()) {
+                    bulletinError("NO_BALANCE");
+                    if (whenDone != null) {
+                        whenDone.run(false, null);
+                    }
+                    return;
+                }
+                buyResellingGift(form, gift, dialogId, whenDone);
+            });
+            return;
+        }
+
+        final String name = DialogObject.getName(currentAccount, dialogId);
+
+        final TLRPC.TL_inputInvoiceStarGiftResale inputInvoice = new TLRPC.TL_inputInvoiceStarGiftResale();
+        inputInvoice.slug = gift.slug;
+        inputInvoice.to_id = MessagesController.getInstance(currentAccount).getInputPeer(dialogId);
+
+        final TLRPC.TL_payments_getPaymentForm req = new TLRPC.TL_payments_getPaymentForm();
+        final JSONObject themeParams = BotWebViewSheet.makeThemeParams(resourcesProvider);
+        if (themeParams != null) {
+            req.theme_params = new TLRPC.TL_dataJSON();
+            req.theme_params.data = themeParams.toString();
+            req.flags |= 1;
+        }
+        req.invoice = inputInvoice;
+
+        TL_stars.TL_payments_sendStarsForm req2 = new TL_stars.TL_payments_sendStarsForm();
+        req2.form_id = form.form_id;
+        req2.invoice = inputInvoice;
+        long _stars = 0;
+        for (TLRPC.TL_labeledPrice price : form.invoice.prices) {
+            _stars += price.amount;
+        }
+        final long stars = _stars;
+        ConnectionsManager.getInstance(currentAccount).sendRequest(req2, (res2, err2) -> AndroidUtilities.runOnUIThread(() -> {
+            final BaseFragment fragment = LaunchActivity.getLastFragment();
+            BulletinFactory b = fragment != null && fragment.visibleDialog == null ? BulletinFactory.of(fragment) : BulletinFactory.global();
+
+            if (!(res2 instanceof TLRPC.TL_payments_paymentResult)) {
+                if (err2 != null && "BALANCE_TOO_LOW".equals(err2.text)) {
+                    if (!MessagesController.getInstance(currentAccount).starsPurchaseAvailable()) {
+                        if (whenDone != null) {
+                            whenDone.run(false, null);
+                        }
+                        showNoSupportDialog(context, resourcesProvider);
+                        return;
+                    }
+                    final boolean[] purchased = new boolean[] { false };
+                    StarsIntroActivity.StarsNeededSheet sheet = new StarsIntroActivity.StarsNeededSheet(context, resourcesProvider, stars, StarsIntroActivity.StarsNeededSheet.TYPE_STAR_GIFT_BUY, name, () -> {
+                        purchased[0] = true;
+                        buyResellingGift(form, gift, dialogId, whenDone);
+                    });
+                    sheet.setOnDismissListener(d -> {
+                        if (whenDone != null && !purchased[0]) {
+                            whenDone.run(false, null);
+                        }
+                    });
+                    sheet.show();
+                } else if (err2 != null && "STARGIFT_USAGE_LIMITED".equals(err2.text)) {
+                    if (whenDone != null) {
+                        whenDone.run(false, "STARGIFT_USAGE_LIMITED");
+                    }
+                } else {
+                    if (whenDone != null) {
+                        whenDone.run(false, null);
+                    }
+                    b.createSimpleBulletin(R.raw.error, formatString(R.string.UnknownErrorCode, err2 != null ? err2.text : "FAILED_SEND_STARS")).show();
+                }
+                return;
+            }
+
+            final TLRPC.TL_payments_paymentResult result = (TLRPC.TL_payments_paymentResult) res2;
+            Utilities.stageQueue.postRunnable(() -> {
+                MessagesController.getInstance(currentAccount).processUpdates(result.updates, false);
+            });
+
+            invalidateStarGifts();
+            invalidateProfileGifts(dialogId);
+            invalidateTransactions(true);
+
+            if (whenDone != null) {
+                whenDone.run(true, null);
+            }
+
+            if (BirthdayController.getInstance(currentAccount).contains(dialogId)) {
+                MessagesController.getInstance(currentAccount).getMainSettings().edit().putBoolean(Calendar.getInstance().get(Calendar.YEAR) + "bdayhint_" + dialogId, false).apply();
+            }
+
+            MessagesController.getInstance(currentAccount).getMainSettings().edit()
+                .putBoolean("show_gift_for_" + dialogId, true)
+                .putBoolean(Calendar.getInstance().get(Calendar.YEAR) + "show_gift_for_" + dialogId, true)
+                .apply();
+            if (LaunchActivity.instance != null && LaunchActivity.instance.getFireworksOverlay() != null) {
+                LaunchActivity.instance.getFireworksOverlay().start(true);
+            }
+        }));
+    }
+
     public final LongSparseArray<GiftsList> giftLists = new LongSparseArray<>();
     public GiftsList getProfileGiftsList(long dialogId) {
         return getProfileGiftsList(dialogId, true);
@@ -2716,7 +2880,15 @@ public class StarsController {
         }
     }
 
-    public static class GiftsList {
+    public interface IGiftsList {
+        int getLoadedCount();
+        Object get(int index);
+        int indexOf(Object object);
+        int getTotalCount();
+        void load();
+    }
+
+    public static class GiftsList implements IGiftsList {
 
         public final int currentAccount;
         public final long dialogId;
@@ -2762,6 +2934,24 @@ public class StarsController {
         public ArrayList<TL_stars.SavedStarGift> gifts = new ArrayList<>();
         public int currentRequestId = -1;
         public int totalCount;
+
+        public int getTotalCount() {
+            return totalCount;
+        }
+
+        public int getLoadedCount() {
+            return gifts.size();
+        }
+
+        public Object get(int index) {
+            if (index < 0 || index >= gifts.size())
+                return null;
+            return gifts.get(index);
+        }
+
+        public int indexOf(Object object) {
+            return gifts.indexOf(object);
+        }
 
         public boolean shown;
 

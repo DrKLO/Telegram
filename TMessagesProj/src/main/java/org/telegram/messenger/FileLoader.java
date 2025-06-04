@@ -11,6 +11,7 @@ package org.telegram.messenger;
 import android.text.TextUtils;
 import android.util.SparseArray;
 
+import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.tl.TL_stories;
@@ -1237,7 +1238,7 @@ public class FileLoader extends BaseController {
             } else if (MessageObject.getMedia(message) instanceof TLRPC.TL_messageMediaPhoto) {
                 ArrayList<TLRPC.PhotoSize> sizes = MessageObject.getMedia(message).photo.sizes;
                 if (sizes.size() > 0) {
-                    TLRPC.PhotoSize sizeFull = getClosestPhotoSizeWithSize(sizes, AndroidUtilities.getPhotoSize(), false, null, true);
+                    TLRPC.PhotoSize sizeFull = getClosestPhotoSizeWithSize(sizes, AndroidUtilities.getPhotoSize(true), false, null, true);
                     if (sizeFull != null) {
                         return getAttachFileName(sizeFull);
                     }
@@ -1292,7 +1293,7 @@ public class FileLoader extends BaseController {
             } else if (MessageObject.getMedia(message) instanceof TLRPC.TL_messageMediaPhoto) {
                 ArrayList<TLRPC.PhotoSize> sizes = MessageObject.getMedia(message).photo.sizes;
                 if (sizes.size() > 0) {
-                    TLRPC.PhotoSize sizeFull = getClosestPhotoSizeWithSize(sizes, AndroidUtilities.getPhotoSize(), false, null, true);
+                    TLRPC.PhotoSize sizeFull = getClosestPhotoSizeWithSize(sizes, AndroidUtilities.getPhotoSize(true), false, null, true);
                     if (sizeFull != null) {
                         return getPathToAttach(sizeFull, null, forceCache || MessageObject.getMedia(message).ttl_seconds != 0, useFileDatabaseQueue);
                     }
@@ -1363,7 +1364,7 @@ public class FileLoader extends BaseController {
                 dcId = document.dc_id;
                 dir = getDirectory(type);
             } else if (attach instanceof TLRPC.Photo) {
-                TLRPC.PhotoSize photoSize = getClosestPhotoSizeWithSize(((TLRPC.Photo) attach).sizes, AndroidUtilities.getPhotoSize());
+                TLRPC.PhotoSize photoSize = getClosestPhotoSizeWithSize(((TLRPC.Photo) attach).sizes, AndroidUtilities.getPhotoSize(true));
                 return getPathToAttach(photoSize, ext, false, useFileDatabaseQueue);
             } else if (attach instanceof TLRPC.PhotoSize) {
                 TLRPC.PhotoSize photoSize = (TLRPC.PhotoSize) attach;
@@ -1937,5 +1938,29 @@ public class FileLoader extends BaseController {
         }
         fileLoaderQueue.cancelRunnable(dumpFilesQueueRunnable);
         fileLoaderQueue.postRunnable(dumpFilesQueueRunnable, 10000);
+    }
+
+    public void uploadFile(final String path, Utilities.Callback<TLRPC.InputFile> done) {
+        NotificationCenter.NotificationCenterDelegate[] observer = new NotificationCenter.NotificationCenterDelegate[1];
+        final Runnable unlisten = () -> {
+            getNotificationCenter().removeObserver(observer[0], NotificationCenter.fileUploaded);
+            getNotificationCenter().removeObserver(observer[0], NotificationCenter.fileUploadFailed);
+        };
+        observer[0] = (id, account, args) -> {
+            if (id == NotificationCenter.fileUploaded) {
+                if (args[0] == path) {
+                    done.run((TLRPC.InputFile) args[1]);
+                    unlisten.run();
+                }
+            } else if (id == NotificationCenter.fileUploadFailed) {
+                if (args[0] == path) {
+                    done.run(null);
+                    unlisten.run();
+                }
+            }
+        };
+        getNotificationCenter().addObserver(observer[0], NotificationCenter.fileUploaded);
+        getNotificationCenter().addObserver(observer[0], NotificationCenter.fileUploadFailed);
+        uploadFile(path, false, false, ConnectionsManager.FileTypeFile);
     }
 }

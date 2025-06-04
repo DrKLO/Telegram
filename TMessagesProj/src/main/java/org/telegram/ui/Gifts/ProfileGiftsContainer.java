@@ -10,30 +10,28 @@ import android.content.Context;
 import android.graphics.Paint;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
+import android.util.Pair;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.ViewParent;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.ItemTouchHelper;
+import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.BirthdayController;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.DialogObject;
-import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
-import org.telegram.messenger.SavedMessagesController;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
 import org.telegram.messenger.Utilities;
@@ -52,7 +50,6 @@ import org.telegram.ui.Components.FlickerLoadingView;
 import org.telegram.ui.Components.ItemOptions;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.LinkSpanDrawable;
-import org.telegram.ui.Components.Premium.boosts.BoostRepository;
 import org.telegram.ui.Components.Premium.boosts.UserSelectorBottomSheet;
 import org.telegram.ui.Components.RLottieDrawable;
 import org.telegram.ui.Components.RecyclerListView;
@@ -61,6 +58,7 @@ import org.telegram.ui.Components.TextHelper;
 import org.telegram.ui.Components.UItem;
 import org.telegram.ui.Components.UniversalAdapter;
 import org.telegram.ui.Components.UniversalRecyclerView;
+import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.PeerColorActivity;
 import org.telegram.ui.ProfileActivity;
 import org.telegram.ui.Stars.StarGiftSheet;
@@ -68,8 +66,8 @@ import org.telegram.ui.Stars.StarsController;
 import org.telegram.ui.Stories.recorder.ButtonWithCounterView;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Objects;
 
 public class ProfileGiftsContainer extends FrameLayout implements NotificationCenter.NotificationCenterDelegate {
@@ -130,7 +128,7 @@ public class ProfileGiftsContainer extends FrameLayout implements NotificationCe
             Theme.multAlpha(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider), 0.04f)
         ));
 
-        listView = new UniversalRecyclerView(context, currentAccount, 0, false, this::fillItems, this::onItemClick, this::onItemLongPress, resourcesProvider, 3);
+        listView = new UniversalRecyclerView(context, currentAccount, 0, false, this::fillItems, this::onItemClick, this::onItemLongPress, resourcesProvider, 3, LinearLayoutManager.VERTICAL);
         listView.adapter.setApplyBackground(false);
         listView.setSelectorType(9);
         listView.setSelectorDrawableColor(0);
@@ -467,8 +465,19 @@ public class ProfileGiftsContainer extends FrameLayout implements NotificationCe
         }
     }
 
+    private final static HashMap<Pair<Integer, Long>, CharSequence> cachedLastEmojis = new HashMap<>();
     public CharSequence getLastEmojis(Paint.FontMetricsInt fontMetricsInt) {
-        if (list == null || list.gifts.isEmpty()) return "";
+        if (list == null) return "";
+        final Pair<Integer, Long> key = new Pair<>(UserConfig.selectedAccount, dialogId);
+        if (list.gifts.isEmpty()) {
+            if (list.loading) {
+                final CharSequence cached = cachedLastEmojis.get(key);
+                if (cached != null) {
+                    return cached;
+                }
+            }
+            return "";
+        }
 
         final HashSet<Long> giftsIds = new HashSet<>();
         final ArrayList<TLRPC.Document> gifts = new ArrayList<>();
@@ -490,6 +499,8 @@ public class ProfileGiftsContainer extends FrameLayout implements NotificationCe
             emoji.setSpan(span, 0, 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
             ssb.append(emoji);
         }
+
+        cachedLastEmojis.put(key, ssb);
         return ssb;
     }
 
@@ -580,6 +591,30 @@ public class ProfileGiftsContainer extends FrameLayout implements NotificationCe
                 }
             } else {
                 new StarGiftSheet(getContext(), currentAccount, dialogId, resourcesProvider)
+                    .setOnGiftUpdatedListener(() -> {
+                        if (listView != null && listView.adapter != null) {
+                            listView.adapter.update(false);
+                        }
+                    })
+                    .setOnBoughtGift((boughtGift, dialogId) -> {
+                        list.gifts.remove(userGift);
+                        listView.adapter.update(true);
+
+                        if (dialogId == UserConfig.getInstance(currentAccount).getClientUserId()) {
+                            BulletinFactory.of(fragment)
+                                .createSimpleBulletin(boughtGift.getDocument(), getString(R.string.BoughtResoldGiftTitle), formatString(R.string.BoughtResoldGiftText, boughtGift.title + " #" + LocaleController.formatNumber(boughtGift.num, ',')))
+                                .hideAfterBottomSheet(false)
+                                .show();
+                        } else {
+                            BulletinFactory.of(fragment)
+                                .createSimpleBulletin(boughtGift.getDocument(), getString(R.string.BoughtResoldGiftToTitle), formatString(R.string.BoughtResoldGiftToText, DialogObject.getShortName(currentAccount, dialogId)))
+                                .hideAfterBottomSheet(false)
+                                .show();
+                        }
+                        if (LaunchActivity.instance != null) {
+                            LaunchActivity.instance.getFireworksOverlay().start(true);
+                        }
+                    })
                     .set(userGift, list)
                     .show();
             }
@@ -642,7 +677,7 @@ public class ProfileGiftsContainer extends FrameLayout implements NotificationCe
                     o.add(worn ? R.drawable.menu_takeoff : R.drawable.menu_wear, getString(worn ? R.string.Gift2Unwear : R.string.Gift2Wear), () -> {
                         new StarGiftSheet(getContext(), currentAccount, dialogId, resourcesProvider) {
                             @Override
-                            protected BulletinFactory getBulletinFactory() {
+                            public BulletinFactory getBulletinFactory() {
                                 return BulletinFactory.of(fragment);
                             }
                         }
@@ -659,7 +694,7 @@ public class ProfileGiftsContainer extends FrameLayout implements NotificationCe
                 o.addIf(link != null, R.drawable.msg_share, getString(R.string.ShareFile), () -> {
                     new StarGiftSheet(getContext(), currentAccount, dialogId, resourcesProvider) {
                         @Override
-                        protected BulletinFactory getBulletinFactory() {
+                        public BulletinFactory getBulletinFactory() {
                             return BulletinFactory.of(fragment);
                         }
                     }
@@ -690,7 +725,7 @@ public class ProfileGiftsContainer extends FrameLayout implements NotificationCe
                 o.addIf(canTransfer, R.drawable.menu_transfer, getString(R.string.Gift2TransferOption), () -> {
                     new StarGiftSheet(getContext(), currentAccount, dialogId, resourcesProvider) {
                         @Override
-                        protected BulletinFactory getBulletinFactory() {
+                        public BulletinFactory getBulletinFactory() {
                             return BulletinFactory.of(fragment);
                         }
                     }
@@ -736,7 +771,7 @@ public class ProfileGiftsContainer extends FrameLayout implements NotificationCe
         }
 
         @Override
-        public void bindView(View view, UItem item, boolean divider) {
+        public void bindView(View view, UItem item, boolean divider, UniversalAdapter adapter, UniversalRecyclerView listView) {
             final LinkSpanDrawable.LinksTextView textView = (LinkSpanDrawable.LinksTextView) view;
             textView.setGravity(item.intValue);
             textView.setTextColor((int) item.longValue);

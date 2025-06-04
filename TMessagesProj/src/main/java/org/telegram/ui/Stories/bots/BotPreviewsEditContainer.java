@@ -70,6 +70,7 @@ import org.telegram.ui.Components.StickerEmptyView;
 import org.telegram.ui.Components.TranslateAlert2;
 import org.telegram.ui.Components.UItem;
 import org.telegram.ui.Components.UniversalAdapter;
+import org.telegram.ui.Components.UniversalRecyclerView;
 import org.telegram.ui.Components.ViewPagerFixed;
 import org.telegram.ui.ProfileActivity;
 import org.telegram.ui.Stories.StoriesController;
@@ -1978,7 +1979,7 @@ public class BotPreviewsEditContainer extends FrameLayout implements Notificatio
                     return new LanguageView(context);
                 }
                 @Override
-                public void bindView(View view, UItem item, boolean divider) {
+                public void bindView(View view, UItem item, boolean divider, UniversalAdapter adapter, UniversalRecyclerView listView) {
                     ((LanguageView) view).set((TranslateController.Language) item.object, divider);
                 }
                 public static UItem of(TranslateController.Language l) {

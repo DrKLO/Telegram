@@ -24,12 +24,13 @@ import org.telegram.messenger.UserObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.tl.TL_stories;
 import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Adapters.MessagesSearchAdapter;
 import org.telegram.ui.Components.CheckBox2;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.Premium.boosts.cells.BaseCell;
 import org.telegram.ui.Components.StatusBadgeComponent;
 import org.telegram.ui.Components.UItem;
+import org.telegram.ui.Components.UniversalAdapter;
+import org.telegram.ui.Components.UniversalRecyclerView;
 
 import java.util.Date;
 
@@ -337,7 +338,7 @@ public class SelectorUserCell extends BaseCell {
         }
 
         @Override
-        public void bindView(View view, UItem item, boolean divider) {
+        public void bindView(View view, UItem item, boolean divider, UniversalAdapter adapter, UniversalRecyclerView listView) {
             final SelectorUserCell cell = (SelectorUserCell) view;
             cell.setUser((TLRPC.User) item.object);
             cell.setChecked(item.checked, false);

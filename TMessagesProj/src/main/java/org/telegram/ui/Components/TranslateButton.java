@@ -25,6 +25,7 @@ import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.TranslateController;
 import org.telegram.messenger.UserConfig;
+import org.telegram.messenger.UserObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBarMenuSubItem;
 import org.telegram.ui.ActionBar.ActionBarPopupWindow;
@@ -84,7 +85,8 @@ public class TranslateButton extends FrameLayout {
         menuView.setScaleType(ImageView.ScaleType.CENTER);
         menuView.setImageResource(R.drawable.msg_mini_customize);
         menuView.setOnClickListener(e -> {
-            if (UserConfig.getInstance(currentAccount).isPremium()) {
+            final TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-dialogId);
+            if (UserConfig.getInstance(currentAccount).isPremium() || chat != null && chat.autotranslation) {
                 onMenuClick();
             } else {
                 onCloseClick();
@@ -101,6 +103,10 @@ public class TranslateButton extends FrameLayout {
         menuView.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_chat_addContact, resourcesProvider) & 0x19ffffff, Theme.RIPPLE_MASK_ROUNDRECT_6DP));
         menuView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_chat_addContact, resourcesProvider), PorterDuff.Mode.MULTIPLY));
         translateDrawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_chat_addContact, resourcesProvider), PorterDuff.Mode.MULTIPLY));
+    }
+
+    public void setLeftMargin(float leftMargin) {
+        textView.setTranslationX(leftMargin / 2f);
     }
 
     protected void onButtonClick() {
@@ -239,13 +245,13 @@ public class TranslateButton extends FrameLayout {
 
         popupLayout.addView(new ActionBarPopupWindow.GapView(getContext(), resourcesProvider), LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 8));
 
-        if (detectedLanguageNameAccusative != null) {
-            ActionBarMenuSubItem dontTranslateButton = new ActionBarMenuSubItem(getContext(), true, false, resourcesProvider);
+        if (UserConfig.getInstance(currentAccount).isPremium() && detectedLanguageNameAccusative != null) {
+            final ActionBarMenuSubItem dontTranslateButton = new ActionBarMenuSubItem(getContext(), true, false, resourcesProvider);
             String text;
             if (accusative[0]) {
-                text = LocaleController.formatString("DoNotTranslateLanguage", R.string.DoNotTranslateLanguage, detectedLanguageNameAccusative);
+                text = LocaleController.formatString(R.string.DoNotTranslateLanguage, detectedLanguageNameAccusative);
             } else {
-                text = LocaleController.formatString("DoNotTranslateLanguageOther", R.string.DoNotTranslateLanguageOther, detectedLanguageNameAccusative);
+                text = LocaleController.formatString(R.string.DoNotTranslateLanguageOther, detectedLanguageNameAccusative);
             }
             dontTranslateButton.setTextAndIcon(text, R.drawable.msg_block2);
             dontTranslateButton.setOnClickListener(e -> {
@@ -303,9 +309,16 @@ public class TranslateButton extends FrameLayout {
     }
 
     public void updateText() {
-        TranslateController translateController = MessagesController.getInstance(currentAccount).getTranslateController();
+        final TranslateController translateController = MessagesController.getInstance(currentAccount).getTranslateController();
+        final TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-dialogId);
         if (translateController.isTranslatingDialog(dialogId)) {
-            textView.setText(TextUtils.concat(translateIcon, " ", LocaleController.getString(R.string.ShowOriginalButton)));
+            String detectedLanguage = translateController.getDialogDetectedLanguage(dialogId);
+            detectedLanguage = TranslateAlert2.languageName(detectedLanguage);
+            if (!TextUtils.isEmpty(detectedLanguage)) {
+                textView.setText(TextUtils.concat(translateIcon, " ", LocaleController.formatString(R.string.ShowOriginalButtonLanguage, detectedLanguage)));
+            } else {
+                textView.setText(TextUtils.concat(translateIcon, " ", LocaleController.getString(R.string.ShowOriginalButton)));
+            }
         } else {
             String lng = translateController.getDialogTranslateTo(dialogId);
             if (lng == null) {
@@ -314,12 +327,12 @@ public class TranslateButton extends FrameLayout {
             String text;
             String lang = TranslateAlert2.languageName(lng, accusative);
             if (accusative[0]) {
-                text = LocaleController.formatString("TranslateToButton", R.string.TranslateToButton, lang);
+                text = LocaleController.formatString(R.string.TranslateToButton, lang);
             } else {
-                text = LocaleController.formatString("TranslateToButtonOther", R.string.TranslateToButtonOther, lang);
+                text = LocaleController.formatString(R.string.TranslateToButtonOther, lang);
             }
             textView.setText(TextUtils.concat(translateIcon, " ", text));
         }
-        menuView.setImageResource(UserConfig.getInstance(currentAccount).isPremium() ? R.drawable.msg_mini_customize : R.drawable.msg_close);
+        menuView.setImageResource(UserConfig.getInstance(currentAccount).isPremium() || chat != null && chat.autotranslation ? R.drawable.msg_mini_customize : R.drawable.msg_close);
     }
 }

@@ -120,23 +120,36 @@ public class ChatGreetingsView extends LinearLayout {
     private TextView premiumButtonView;
 
     private boolean premiumLock;
+    private boolean isSuggest;
+
     public void resetPremiumLock() {
         setPremiumLock(false, null, null, null);
     }
     public void setPremiumLock(boolean lock, CharSequence text, CharSequence buttonText, View.OnClickListener onButtonClick) {
+        setPremiumLock(lock, false, text, buttonText, onButtonClick);
+    }
+
+
+    public void setPremiumLock(boolean lock, boolean isSuggestion, CharSequence text, CharSequence buttonText, View.OnClickListener onButtonClick) {
         if (premiumLock == lock) return;
         premiumLock = lock;
+        isSuggest = isSuggestion;
         if (premiumLock) {
             if (premiumIconView == null) {
                 premiumIconView = new RLottieImageView(getContext());
                 premiumIconView.setScaleType(ImageView.ScaleType.CENTER);
                 premiumIconView.setColorFilter(new PorterDuffColorFilter(Color.WHITE, PorterDuff.Mode.SRC_IN));
                 premiumIconView.setBackground(Theme.createCircleDrawable(dp(78), 0x1c000000));
-                premiumIconView.setAnimation(R.raw.large_message_lock, 80, 80);
-                premiumIconView.setOnClickListener(v -> {
-                    premiumIconView.setProgress(0);
-                    premiumIconView.playAnimation();
-                });
+
+                if (isSuggestion) {
+                    premiumIconView.setImageResource(R.drawable.filled_chatlist2);
+                } else {
+                    premiumIconView.setAnimation(R.raw.large_message_lock, 80, 80);
+                    premiumIconView.setOnClickListener(v -> {
+                        premiumIconView.setProgress(0);
+                        premiumIconView.playAnimation();
+                    });
+                }
             }
             premiumIconView.playAnimation();
             if (premiumTextView == null) {
@@ -216,7 +229,9 @@ public class ChatGreetingsView extends LinearLayout {
             final boolean premiumLocked = MessagesController.getInstance(currentAccount).premiumFeaturesBlocked();
             addView(premiumTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 20, 0, 20, premiumLocked ? 13 : 9));
             if (!premiumLocked) {
-                addView(premiumButtonView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, 30, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 20, 2, 20, 13));
+                if (premiumButtonView != null && !TextUtils.isEmpty(premiumButtonView.getText()) || !isSuggest) {
+                    addView(premiumButtonView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, 30, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 20, 2, 20, 13));
+                }
             }
         } else {
             addView(titleView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 20, 6, 20, 6));

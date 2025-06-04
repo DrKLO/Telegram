@@ -34,6 +34,7 @@ public class NotificationCenter {
     public static final int historyCleared = totalEvents++;
     public static final int messagesRead = totalEvents++;
     public static final int threadMessagesRead = totalEvents++;
+    public static final int monoForumMessagesRead = totalEvents++;
     public static final int commentsRead = totalEvents++;
     public static final int changeRepliesCounter = totalEvents++;
     public static final int messagesDidLoad = totalEvents++;
@@ -337,7 +338,7 @@ public class NotificationCenter {
     public static final int permissionsGranted = totalEvents++;
     public static final int activityPermissionsGranted = totalEvents++;
     public static final int topicsDidLoaded = totalEvents++;
-    public static final int chatSwithcedToForum = totalEvents++;
+    public static final int chatSwitchedForum = totalEvents++;
     public static final int didUpdateGlobalAutoDeleteTimer = totalEvents++;
     public static final int onDatabaseReset = totalEvents++;
     public static final int wallpaperSettedToUser = totalEvents++;

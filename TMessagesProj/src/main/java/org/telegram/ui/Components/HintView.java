@@ -240,9 +240,6 @@ public class HintView extends FrameLayout {
                 if (!messageObject.isOutOwner() && cell.isDrawNameLayout()) {
                     top += AndroidUtilities.dp(20);
                 }
-                if (!messageObject.shouldDrawWithoutBackground() && cell.isDrawTopic()) {
-                    top += AndroidUtilities.dp(5) + cell.getDrawTopicHeight();
-                }
             }
             if (!isTopArrow && top <= getMeasuredHeight() + AndroidUtilities.dp(10)) {
                 return false;

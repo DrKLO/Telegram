@@ -38,6 +38,7 @@ import androidx.dynamicanimation.animation.SpringAnimation;
 import androidx.dynamicanimation.animation.SpringForce;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.Emoji;
@@ -202,6 +203,7 @@ public class ShareDialogCell extends FrameLayout implements NotificationCenter.N
     }
 
     public void setDialog(long uid, boolean checked, CharSequence name) {
+        avatarDrawable.setScaleSize(1f);
         if (uid == Long.MAX_VALUE) {
             nameTextView.setText(repostToCustomName());
             if (repostStoryDrawable == null) {
@@ -247,13 +249,21 @@ public class ShareDialogCell extends FrameLayout implements NotificationCenter.N
             if (name != null) {
                 nameTextView.setText(name);
             } else if (chat != null) {
-                nameTextView.setText(chat.title);
+                if (chat.monoforum) {
+                    nameTextView.setText(ForumUtilities.getMonoForumTitle(currentAccount, chat));
+                } else {
+                    nameTextView.setText(chat.title);
+                }
             } else {
                 nameTextView.setText("");
             }
-            avatarDrawable.setInfo(currentAccount, chat);
-            imageView.setForUserOrChat(chat, avatarDrawable);
-            imageView.setRoundRadius(chat != null && chat.forum ? dp(16) : dp(28));
+            if (ChatObject.isMonoForum(chat)) {
+                ForumUtilities.setMonoForumAvatar(currentAccount, chat, avatarDrawable, imageView);
+            } else {
+                avatarDrawable.setInfo(currentAccount, chat);
+                imageView.setForUserOrChat(chat, avatarDrawable);
+            }
+            imageView.setRoundRadius(chat != null && (chat.forum || chat.monoforum)? dp(16) : dp(28));
         }
         currentDialog = uid;
         checkBox.setChecked(checked, false);
@@ -271,6 +281,10 @@ public class ShareDialogCell extends FrameLayout implements NotificationCenter.N
     }
 
     public void setTopic(TLRPC.TL_forumTopic topic, boolean animate) {
+        setTopic(topic, false, animate);
+    }
+
+    public void setTopic(TLRPC.TL_forumTopic topic, boolean mono, boolean animate) {
         boolean wasVisible = topicWasVisible;
         boolean visible = topic != null;
         if (wasVisible != visible || !animate) {
@@ -280,7 +294,11 @@ public class ShareDialogCell extends FrameLayout implements NotificationCenter.N
             }
 
             if (visible) {
-                topicTextView.setText(ForumUtilities.getTopicSpannedName(topic, topicTextView.getTextPaint(), false));
+                if (mono) {
+                    topicTextView.setText(MessagesController.getInstance(currentAccount).getPeerName(DialogObject.getPeerDialogId(topic.from_id)));
+                } else {
+                    topicTextView.setText(ForumUtilities.getTopicSpannedName(topic, topicTextView.getTextPaint(), false));
+                }
                 topicTextView.requestLayout();
             }
             if (animate) {

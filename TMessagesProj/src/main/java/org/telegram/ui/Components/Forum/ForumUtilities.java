@@ -16,19 +16,23 @@ import android.text.TextUtils;
 import android.text.style.DynamicDrawableSpan;
 import android.text.style.ImageSpan;
 import android.util.SparseArray;
+import android.view.View;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
+import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.DialogObject;
+import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.MessagesStorage;
 import org.telegram.messenger.R;
+import org.telegram.messenger.SavedMessagesController;
 import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.BaseFragment;
@@ -37,6 +41,7 @@ import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ChatActivity;
 import org.telegram.ui.Components.AnimatedEmojiDrawable;
 import org.telegram.ui.Components.AnimatedEmojiSpan;
+import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.ColoredImageSpan;
 import org.telegram.ui.Components.CombinedDrawable;
@@ -49,6 +54,46 @@ public class ForumUtilities {
 
     static Drawable dialogGeneralIcon;
     static SparseArray<Drawable> dialogForumDrawables = new SparseArray();
+
+    public static String getMonoForumTitle(int currentAccount, long dialogId, boolean showChannelName) {
+        return getMonoForumTitle(currentAccount, MessagesController.getInstance(currentAccount).getChat(-dialogId), showChannelName);
+    }
+
+    public static String getMonoForumTitle(int currentAccount, TLRPC.Chat chat) {
+        return getMonoForumTitle(currentAccount, chat, false);
+    }
+
+    public static String getMonoForumTitle(int currentAccount, TLRPC.Chat chat, boolean showChannelName) {
+        if (ChatObject.isMonoForum(chat)) {
+            TLRPC.Chat mfChat = MessagesController.getInstance(currentAccount).getChat(chat.linked_monoforum_id);
+            if (mfChat != null) {
+                return showChannelName ? mfChat.title : LocaleController.formatString(R.string.MonoforumTitle, mfChat.title);
+            }
+        }
+
+        return chat != null ? chat.title : null;
+    }
+
+    public static void setMonoForumAvatar(int currentAccount, TLRPC.Chat chat, AvatarDrawable avatarDrawable, BackupImageView imageView) {
+        TLRPC.Chat mfChat = null;
+        if (ChatObject.isMonoForum(chat)) {
+            mfChat = MessagesController.getInstance(currentAccount).getChat(chat.linked_monoforum_id);
+        }
+        avatarDrawable.setInfo(currentAccount, mfChat != null ? mfChat : chat);
+        imageView.setForUserOrChat(mfChat, avatarDrawable);
+    }
+
+    public static void setMonoForumAvatar(int currentAccount, TLRPC.Chat chat, AvatarDrawable avatarDrawable, ImageReceiver imageView) {
+        TLRPC.Chat mfChat = null;
+        if (ChatObject.isMonoForum(chat)) {
+            mfChat = MessagesController.getInstance(currentAccount).getChat(chat.linked_monoforum_id);
+        }
+        avatarDrawable.setInfo(currentAccount, mfChat != null ? mfChat : chat);
+        imageView.setForUserOrChat(mfChat, avatarDrawable);
+    }
+
+
+
 
     public static void setTopicIcon(BackupImageView backupImageView, TLRPC.TL_forumTopic forumTopic) {
         setTopicIcon(backupImageView, forumTopic, false, false, null);
@@ -307,9 +352,21 @@ public class ForumUtilities {
             return;
         }
         TLRPC.Chat chatLocal = chatActivity.getMessagesController().getChat(-topicKey.dialogId);
-        ArrayList<MessageObject> messageObjects = new ArrayList<>();
-        messageObjects.add(new MessageObject(chatActivity.getCurrentAccount(), topic.topicStartMessage, false, false));
-        chatActivity.setThreadMessages(messageObjects, chatLocal, topic.id, topic.read_inbox_max_id, topic.read_outbox_max_id, topic);
+        if (chatLocal == null) {
+            return;
+        }
+
+        if (ChatObject.isMonoForum(chatLocal)) {
+            if (ChatObject.canManageMonoForum(UserConfig.selectedAccount, chatLocal)) {
+                chatActivity.setMonoForumThreadMessages(topic.read_inbox_max_id, topic.read_outbox_max_id, topic);
+            }
+        } else {
+            ArrayList<MessageObject> messageObjects = new ArrayList<>();
+            messageObjects.add(new MessageObject(chatActivity.getCurrentAccount(), topic.topicStartMessage, false, false));
+            chatActivity.setThreadMessages(messageObjects, chatLocal, topic.id, topic.read_inbox_max_id, topic.read_outbox_max_id, topic);
+        }
+
+        chatActivity.getMessagesController().setForumLastTopicId(-topicKey.dialogId, topicKey.topicId);
     }
 
     public static CharSequence createActionTextWithTopic(TLRPC.TL_forumTopic topic, MessageObject messageObject) {
@@ -436,5 +493,39 @@ public class ForumUtilities {
                 }
             }
         }
+    }
+
+
+    public static int monoForumTopicIdToTopicId(long id) {
+        return Long.hashCode(id);
+    }
+
+    public static ArrayList<TLRPC.TL_forumTopic> monoForumTopicToTopic(ArrayList<TLRPC.savedDialog> dialogs) {
+        ArrayList<TLRPC.TL_forumTopic> result = new ArrayList<>(dialogs.size());
+        for (TLRPC.savedDialog dialog : dialogs) {
+            if (dialog instanceof TLRPC.TL_monoForumDialog) {
+                result.add(monoForumTopicToTopic((TLRPC.TL_monoForumDialog) dialog));
+            }
+        }
+        return result;
+    }
+
+    public static TLRPC.TL_forumTopic monoForumTopicToTopic(TLRPC.TL_monoForumDialog tlMonoForumDialog) {
+        final long topicId = DialogObject.getPeerDialogId(tlMonoForumDialog.peer);
+
+        TLRPC.TL_forumTopic result = new TLRPC.TL_forumTopic();
+        result.id = monoForumTopicIdToTopicId(topicId);
+        result.title = Long.toString(topicId);
+
+        result.top_message = tlMonoForumDialog.top_message;
+        result.read_inbox_max_id = tlMonoForumDialog.read_inbox_max_id;
+        result.read_outbox_max_id = tlMonoForumDialog.read_outbox_max_id;
+        result.unread_reactions_count = tlMonoForumDialog.unread_reactions_count;
+        result.unread_count = tlMonoForumDialog.unread_count;
+        result.draft = tlMonoForumDialog.draft;
+        result.notify_settings = new TLRPC.TL_peerNotifySettings();
+        result.from_id = tlMonoForumDialog.peer;
+
+        return result;
     }
 }

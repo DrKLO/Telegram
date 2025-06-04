@@ -17,6 +17,7 @@ import android.widget.TextView;
 import androidx.core.content.ContextCompat;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
@@ -61,7 +62,7 @@ public class BackButtonMenu {
             return null;
         }
         ArrayList<PulledDialog> dialogs;
-        if (topicId != 0) {
+        if (topicId != 0 && !ChatObject.isMonoForum(thisFragment.getCurrentAccount(), currentDialogId)) {
             dialogs = getStackedHistoryForTopic(thisFragment, currentDialogId, topicId);
         } else {
             dialogs = getStackedHistoryDialogs(thisFragment, currentDialogId);

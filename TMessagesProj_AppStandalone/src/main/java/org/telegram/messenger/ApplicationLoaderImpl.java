@@ -1,5 +1,6 @@
 package org.telegram.messenger;
 
+import static org.telegram.messenger.AndroidUtilities.isInAirplaneMode;
 import static org.telegram.ui.PremiumPreviewFragment.applyNewSpan;
 
 import android.app.Activity;
@@ -23,7 +24,6 @@ import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.Adapters.DrawerLayoutAdapter;
 import org.telegram.ui.Components.AlertsCreator;
 import org.telegram.ui.Components.BulletinFactory;
-import org.telegram.ui.Components.SpannableStringLight;
 import org.telegram.ui.Components.UpdateAppAlertDialog;
 import org.telegram.ui.Components.UpdateButton;
 import org.telegram.ui.Components.UpdateLayout;
@@ -195,7 +195,7 @@ public class ApplicationLoaderImpl extends ApplicationLoader {
                     lastFragment.presentFragment(new SMSStatsActivity());
                 }
             });
-            if (SMSStatsActivity.isAirplaneMode(LaunchActivity.instance) || SMSJobController.getInstance(UserConfig.selectedAccount).hasError()) {
+            if (isInAirplaneMode(LaunchActivity.instance) || SMSJobController.getInstance(UserConfig.selectedAccount).hasError()) {
                 item.withError();
             }
             items.add(item);

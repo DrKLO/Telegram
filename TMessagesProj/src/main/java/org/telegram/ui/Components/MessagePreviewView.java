@@ -906,7 +906,7 @@ public class MessagePreviewView extends FrameLayout {
                     menu.addView(btn1, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48));
                 }
 
-                if (!messagePreviewParams.noforwards && !messagePreviewParams.hasSecretMessages) {
+                if (!messagePreviewParams.monoforum && !messagePreviewParams.noforwards && !messagePreviewParams.hasSecretMessages) {
                     FrameLayout btn2 = new FrameLayout(context);
                     replyAnotherChatButton = new ActionBarMenuSubItem(context, true, false, false, resourcesProvider);
                     replyAnotherChatButton.setTextAndIcon(LocaleController.getString(R.string.ReplyToAnotherChat), R.drawable.msg_forward_replace);
@@ -1511,8 +1511,8 @@ public class MessagePreviewView extends FrameLayout {
                     }
 
                     @Override
-                    public void setMessageObject(MessageObject messageObject, MessageObject.GroupedMessages groupedMessages, boolean bottomNear, boolean topNear) {
-                        super.setMessageObject(messageObject, groupedMessages, bottomNear, topNear);
+                    public void setMessageObject(MessageObject messageObject, MessageObject.GroupedMessages groupedMessages, boolean bottomNear, boolean topNear, boolean firstInChat) {
+                        super.setMessageObject(messageObject, groupedMessages, bottomNear, topNear, firstInChat);
                         updateLinkHighlight(this);
                     }
 
@@ -1595,7 +1595,7 @@ public class MessagePreviewView extends FrameLayout {
                 if (currentTab == TAB_LINK) {
                     messagePreviewParams.checkCurrentLink(messages.previewMessages.get(position));
                 }
-                cell.setMessageObject(messages.previewMessages.get(position), messages.groupedMessagesMap.get(messages.previewMessages.get(position).getGroupId()), true, true);
+                cell.setMessageObject(messages.previewMessages.get(position), messages.groupedMessagesMap.get(messages.previewMessages.get(position).getGroupId()), true, true, false);
                 if (currentTab == TAB_FORWARD) {
                     cell.setDelegate(new ChatMessageCell.ChatMessageCellDelegate() {
 

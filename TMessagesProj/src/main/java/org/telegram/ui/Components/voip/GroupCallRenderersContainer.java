@@ -39,6 +39,7 @@ import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserObject;
+import org.telegram.messenger.pip.utils.PipUtils;
 import org.telegram.messenger.support.LongSparseIntArray;
 import org.telegram.messenger.voip.VoIPService;
 import org.telegram.tgnet.TLRPC;
@@ -53,7 +54,6 @@ import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.GroupCallFullscreenAdapter;
 import org.telegram.ui.Components.GroupCallPip;
 import org.telegram.ui.Components.LayoutHelper;
-import org.telegram.messenger.pip.PipNativeApiController;
 import org.telegram.ui.Components.TypefaceSpan;
 import org.telegram.ui.Components.UndoView;
 import org.telegram.ui.GroupCallActivity;
@@ -288,7 +288,7 @@ public class GroupCallRenderersContainer extends FrameLayout {
         pipView.setBackground(Theme.createSelectorDrawable(ColorUtils.setAlphaComponent(Color.WHITE, 55)));
         pipView.setOnClickListener(v -> {
             if (isRtmpStream()) {
-                if (PipNativeApiController.checkAnyPipPermissions(groupCallActivity.getParentActivity())) {
+                if (PipUtils.checkAnyPipPermissions(groupCallActivity.getParentActivity())) {
                     RTMPStreamPipOverlay.show(groupCallActivity.getParentActivity());
                     groupCallActivity.dismiss();
                 } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {

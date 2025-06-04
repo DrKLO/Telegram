@@ -47,7 +47,7 @@ public class ActionBarMenuSubItem extends FrameLayout {
     boolean bottom;
 
     private int itemHeight = 48;
-    private final Theme.ResourcesProvider resourcesProvider;
+    protected final Theme.ResourcesProvider resourcesProvider;
     public Runnable openSwipeBackLayout;
 
     public ActionBarMenuSubItem(Context context, boolean top, boolean bottom) {
@@ -95,8 +95,12 @@ public class ActionBarMenuSubItem extends FrameLayout {
         addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL));
 
         checkViewLeft = LocaleController.isRTL;
+        makeCheckView(needCheck);
+    }
+
+    public void makeCheckView(int needCheck) {
         if (needCheck > 0) {
-            checkView = new CheckBox2(context, 26, resourcesProvider);
+            checkView = new CheckBox2(getContext(), 26, resourcesProvider);
             checkView.setDrawUnchecked(false);
             checkView.setColor(-1, -1, Theme.key_radioBackgroundChecked);
             checkView.setDrawBackgroundAsArc(-1);

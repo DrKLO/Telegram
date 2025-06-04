@@ -3073,6 +3073,25 @@ public class TL_account {
             return rights;
         }
 
+        public static TL_businessBotRights makeDefault() {
+            final TL_businessBotRights rights = new TL_businessBotRights();
+            rights.reply = true;
+            rights.read_messages = true;
+            rights.delete_sent_messages = true;
+            rights.delete_received_messages = true;
+            rights.edit_name = false;
+            rights.edit_bio = false;
+            rights.edit_profile_photo = false;
+            rights.edit_username = false;
+            rights.view_gifts = false;
+            rights.sell_gifts = false;
+            rights.change_gift_settings = false;
+            rights.transfer_and_upgrade_gifts = false;
+            rights.transfer_stars = false;
+            rights.manage_stories = false;
+            return rights;
+        }
+
         public static TL_businessBotRights clone(TL_businessBotRights a) {
             final TL_businessBotRights rights = new TL_businessBotRights();
             rights.reply = a.reply;

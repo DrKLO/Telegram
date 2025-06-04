@@ -1,6 +1,7 @@
 package org.telegram.ui.Business;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
+import static org.telegram.messenger.LocaleController.formatString;
 import static org.telegram.messenger.LocaleController.getString;
 
 import android.content.Context;
@@ -24,9 +25,11 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
+import org.telegram.messenger.UserObject;
 import org.telegram.messenger.Utilities;
 import org.telegram.messenger.browser.Browser;
 import org.telegram.tgnet.TLObject;
@@ -267,7 +270,10 @@ public class ChatbotsActivity extends BaseFragment {
     public TL_account.TL_connectedBot currentBot;
 
     public boolean exclude;
-    public TL_account.TL_businessBotRights rights = TL_account.TL_businessBotRights.all();
+    public TL_account.TL_businessBotRights rights = TL_account.TL_businessBotRights.makeDefault();
+
+    private boolean shownUsernamePermissionsAlert;
+    private boolean shownGiftsPermissionsAlert;
 
     private TLRPC.User selectedBot = null;
     private LongSparseArray<TLRPC.User> foundBots = new LongSparseArray<>();
@@ -298,6 +304,43 @@ public class ChatbotsActivity extends BaseFragment {
     private static final int PERMISSION_GIFTS_TRANSFER_STARS = --ids;
 
     private static final int PERMISSION_STORIES = --ids;
+
+    private void checkAlert(int id, boolean newValue, Runnable toggle) {
+        if (!shownUsernamePermissionsAlert && id == PERMISSION_PROFILE_USERNAME && newValue) {
+            new AlertDialog.Builder(getContext(), getResourceProvider())
+                .setTitle(getString(R.string.BusinessBotPermissionsWarning))
+                .setMessage(AndroidUtilities.replaceTags(formatString(R.string.BusinessBotPermissionsUsernamesWarningText, UserObject.getPublicUsername(selectedBot))))
+                .setNegativeButton(getString(R.string.Cancel), null)
+                .setPositiveButton(getString(R.string.Allow), (di, w) -> {
+                    shownUsernamePermissionsAlert = true;
+                    toggle.run();
+                })
+                .makeRed(AlertDialog.BUTTON_POSITIVE)
+                .show();
+            return;
+        }
+        if (
+            !shownGiftsPermissionsAlert && newValue && (
+                id == PERMISSION_GIFTS_SELL ||
+                id == PERMISSION_GIFTS_SETTINGS ||
+                id == PERMISSION_GIFTS_TRANSFER ||
+                id == PERMISSION_GIFTS_TRANSFER_STARS
+            )
+        ) {
+            new AlertDialog.Builder(getContext(), getResourceProvider())
+                .setTitle(getString(R.string.BusinessBotPermissionsWarning))
+                .setMessage(AndroidUtilities.replaceTags(formatString(R.string.BusinessBotPermissionsGiftsWarningText, UserObject.getPublicUsername(selectedBot))))
+                .setNegativeButton(getString(R.string.Cancel), null)
+                .setPositiveButton(getString(R.string.Allow), (di, w) -> {
+                    shownGiftsPermissionsAlert = true;
+                    toggle.run();
+                })
+                .makeRed(AlertDialog.BUTTON_POSITIVE)
+                .show();
+            return;
+        }
+        toggle.run();
+    }
 
     private int shakeDp = -4;
 
@@ -402,11 +445,15 @@ public class ChatbotsActivity extends BaseFragment {
                     .setClickCallback(v -> {
                         if (rights.edit_name && rights.edit_bio && rights.edit_profile_photo && rights.edit_username) {
                             rights.edit_name = rights.edit_bio = rights.edit_profile_photo = rights.edit_username = false;
+                            listView.adapter.update(true);
+                            checkDone(true);
                         } else {
-                            rights.edit_name = rights.edit_bio = rights.edit_profile_photo = rights.edit_username = true;
+                            checkAlert(PERMISSION_PROFILE_USERNAME, true, () -> {
+                                rights.edit_name = rights.edit_bio = rights.edit_profile_photo = rights.edit_username = true;
+                                listView.adapter.update(true);
+                                checkDone(true);
+                            });
                         }
-                        listView.adapter.update(true);
-                        checkDone(true);
                     })
             );
             if (expandedProfileSection) {
@@ -440,11 +487,15 @@ public class ChatbotsActivity extends BaseFragment {
                     .setClickCallback(v -> {
                         if (rights.view_gifts && rights.sell_gifts && rights.change_gift_settings && rights.transfer_and_upgrade_gifts && rights.transfer_stars) {
                             rights.view_gifts = rights.sell_gifts = rights.change_gift_settings = rights.transfer_and_upgrade_gifts = rights.transfer_stars = false;
+                            listView.adapter.update(true);
+                            checkDone(true);
                         } else {
-                            rights.view_gifts = rights.sell_gifts = rights.change_gift_settings = rights.transfer_and_upgrade_gifts = rights.transfer_stars = true;
+                            checkAlert(PERMISSION_GIFTS_SELL, true, () -> {
+                                rights.view_gifts = rights.sell_gifts = rights.change_gift_settings = rights.transfer_and_upgrade_gifts = rights.transfer_stars = true;
+                                listView.adapter.update(true);
+                                checkDone(true);
+                            });
                         }
-                        listView.adapter.update(true);
-                        checkDone(true);
                     })
             );
             if (expandedGiftsSection) {
@@ -562,37 +613,51 @@ public class ChatbotsActivity extends BaseFragment {
             listView.adapter.update(true);
             checkDone(true);
         } else if (item.id == PERMISSION_PROFILE_USERNAME) {
-            ((CheckBoxCell) view).setChecked(rights.edit_username = !rights.edit_username, true);
-            listView.adapter.update(true);
-            checkDone(true);
+            checkAlert(item.id, !rights.edit_username, () -> {
+                ((CheckBoxCell) view).setChecked(rights.edit_username = !rights.edit_username, true);
+                listView.adapter.update(true);
+                checkDone(true);
+            });
         } else if (item.id == PERMISSION_GIFTS) {
             ((TextCheckCell2) view).setChecked(expandedGiftsSection = !expandedGiftsSection);
             listView.adapter.update(true);
 //            listView.smoothScrollBy(0, dp(200));
         } else if (item.id == PERMISSION_GIFTS_VIEW) {
-            ((CheckBoxCell) view).setChecked(rights.view_gifts = !rights.view_gifts, true);
-            listView.adapter.update(true);
-            checkDone(true);
+            checkAlert(item.id, !rights.view_gifts, () -> {
+                ((CheckBoxCell) view).setChecked(rights.view_gifts = !rights.view_gifts, true);
+                listView.adapter.update(true);
+                checkDone(true);
+            });
         } else if (item.id == PERMISSION_GIFTS_SELL) {
-            ((CheckBoxCell) view).setChecked(rights.sell_gifts = !rights.sell_gifts, true);
-            listView.adapter.update(true);
-            checkDone(true);
+            checkAlert(item.id, !rights.sell_gifts, () -> {
+                ((CheckBoxCell) view).setChecked(rights.sell_gifts = !rights.sell_gifts, true);
+                listView.adapter.update(true);
+                checkDone(true);
+            });
         } else if (item.id == PERMISSION_GIFTS_SETTINGS) {
-            ((CheckBoxCell) view).setChecked(rights.change_gift_settings = !rights.change_gift_settings, true);
-            listView.adapter.update(true);
-            checkDone(true);
+            checkAlert(item.id, !rights.change_gift_settings, () -> {
+                ((CheckBoxCell) view).setChecked(rights.change_gift_settings = !rights.change_gift_settings, true);
+                listView.adapter.update(true);
+                checkDone(true);
+            });
         } else if (item.id == PERMISSION_GIFTS_TRANSFER) {
-            ((CheckBoxCell) view).setChecked(rights.transfer_and_upgrade_gifts = !rights.transfer_and_upgrade_gifts, true);
-            listView.adapter.update(true);
-            checkDone(true);
+            checkAlert(item.id, !rights.transfer_and_upgrade_gifts, () -> {
+                ((CheckBoxCell) view).setChecked(rights.transfer_and_upgrade_gifts = !rights.transfer_and_upgrade_gifts, true);
+                listView.adapter.update(true);
+                checkDone(true);
+            });
         } else if (item.id == PERMISSION_GIFTS_TRANSFER_STARS) {
-            ((CheckBoxCell) view).setChecked(rights.transfer_stars = !rights.transfer_stars, true);
-            listView.adapter.update(true);
-            checkDone(true);
+            checkAlert(item.id, !rights.transfer_stars, () -> {
+                ((CheckBoxCell) view).setChecked(rights.transfer_stars = !rights.transfer_stars, true);
+                listView.adapter.update(true);
+                checkDone(true);
+            });
         } else if (item.id == PERMISSION_STORIES) {
-            rights.manage_stories = !rights.manage_stories;
-            listView.adapter.update(true);
-            checkDone(true);
+            checkAlert(item.id, !rights.manage_stories, () -> {
+                rights.manage_stories = !rights.manage_stories;
+                listView.adapter.update(true);
+                checkDone(true);
+            });
         }
     }
 
@@ -679,7 +744,7 @@ public class ChatbotsActivity extends BaseFragment {
             currentValue = bots;
             currentBot = currentValue == null || currentValue.connected_bots.isEmpty() ? null : currentValue.connected_bots.get(0);
             selectedBot = currentBot == null ? null : getMessagesController().getUser(currentBot.bot_id);
-            rights = currentBot != null ? TL_account.TL_businessBotRights.clone(currentBot.rights) : TL_account.TL_businessBotRights.all();
+            rights = currentBot != null ? TL_account.TL_businessBotRights.clone(currentBot.rights) : TL_account.TL_businessBotRights.makeDefault();
             exclude = currentBot != null ? currentBot.recipients.exclude_selected : true;
             if (recipientsHelper != null) {
                 recipientsHelper.setValue(currentBot == null ? null : currentBot.recipients);

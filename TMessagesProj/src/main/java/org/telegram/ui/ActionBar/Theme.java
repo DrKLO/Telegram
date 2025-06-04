@@ -3108,7 +3108,7 @@ public class Theme {
     public static Paint avatar_backgroundPaint;
 
     public static Drawable listSelector;
-    public static Drawable[] avatarDrawables = new Drawable[24];
+    public static Drawable[] avatarDrawables = new Drawable[25];
 
     public static Drawable moveUpDrawable;
 
@@ -3906,6 +3906,7 @@ public class Theme {
     public static final int key_chat_recordedVoiceProgressInner = colorsCount++;
     public static final int key_chat_recordedVoiceDot = colorsCount++;
     public static final int key_chat_recordedVoiceBackground = colorsCount++;
+    public static final int key_chat_recordedVoiceDarkerBackground = colorsCount++;
     public static final int key_chat_recordVoiceCancel = colorsCount++;
     public static final int key_chat_recordTime = colorsCount++;
     public static final int key_chat_messagePanelCancelInlineBot = colorsCount++;
@@ -5402,6 +5403,12 @@ public class Theme {
 
     public static ShapeDrawable createRoundRectDrawable(int rad, int defaultColor) {
         ShapeDrawable defaultDrawable = new ShapeDrawable(new RoundRectShape(new float[]{rad, rad, rad, rad, rad, rad, rad, rad}, null, null));
+        defaultDrawable.getPaint().setColor(defaultColor);
+        return defaultDrawable;
+    }
+
+    public static ShapeDrawable createRoundRectDrawable(int topLeftRed, int topRightRad, int bottomRightRad, int bottomLeftRad, int defaultColor) {
+        ShapeDrawable defaultDrawable = new ShapeDrawable(new RoundRectShape(new float[]{topLeftRed, topLeftRed, topRightRad, topRightRad, bottomRightRad, bottomRightRad, bottomLeftRad, bottomLeftRad}, null, null));
         defaultDrawable.getPaint().setColor(defaultColor);
         return defaultDrawable;
     }
@@ -8278,6 +8285,7 @@ public class Theme {
             avatarDrawables[21] = resources.getDrawable(R.drawable.filled_folder_existing);
             avatarDrawables[22] = resources.getDrawable(R.drawable.filled_giveaway_premium);
             avatarDrawables[23] = resources.getDrawable(R.drawable.filled_giveaway_stars);
+            avatarDrawables[24] = resources.getDrawable(R.drawable.filled_suggest_chat_avatar);
 
             if (dialogs_archiveAvatarDrawable != null) {
                 dialogs_archiveAvatarDrawable.setCallback(null);

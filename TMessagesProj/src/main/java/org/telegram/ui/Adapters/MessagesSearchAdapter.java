@@ -31,6 +31,7 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.HashtagSearchController;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaDataController;
@@ -50,6 +51,8 @@ import org.telegram.ui.Components.FlickerLoadingView;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.UItem;
+import org.telegram.ui.Components.UniversalAdapter;
+import org.telegram.ui.Components.UniversalRecyclerView;
 import org.telegram.ui.Stories.StoriesController;
 import org.telegram.ui.Stories.StoriesListPlaceProvider;
 
@@ -247,7 +250,7 @@ public class MessagesSearchAdapter extends RecyclerListView.SelectionAdapter imp
                     date = messageObject.messageOwner.date;
                 }
             } else {
-                if (messageObject.isOutOwner()) {
+                if (messageObject.isOutOwner() || ChatObject.isMonoForum(currentAccount, did)) {
                     did = messageObject.getFromChatId();
                 }
                 useMe = true;
@@ -473,7 +476,7 @@ public class MessagesSearchAdapter extends RecyclerListView.SelectionAdapter imp
             }
 
             @Override
-            public void bindView(View view, UItem item, boolean divider) {
+            public void bindView(View view, UItem item, boolean divider, UniversalAdapter adapter, UniversalRecyclerView listView) {
                 ((StoriesView) view).set((StoriesController.SearchStoriesList) item.object);
             }
 

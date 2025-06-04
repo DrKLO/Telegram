@@ -27,6 +27,8 @@ import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.provider.MediaStore;
 import android.text.Layout;
+import android.text.SpannableStringBuilder;
+import android.text.Spanned;
 import android.text.StaticLayout;
 import android.text.TextPaint;
 import android.text.TextUtils;
@@ -42,9 +44,11 @@ import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.LinearSmoothScrollerCustom;
 import androidx.recyclerview.widget.RecyclerView;
@@ -74,6 +78,7 @@ import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.AnimatedFloat;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.CheckBox2;
+import org.telegram.ui.Components.ColoredImageSpan;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.EditTextBoldCursor;
 import org.telegram.ui.Components.FlickerLoadingView;
@@ -112,24 +117,42 @@ public class GalleryListView extends FrameLayout implements NotificationCenter.N
     private final ActionBarMenuItem dropDownContainer;
     private final ActionBarMenuItem searchItem;
 
+    @Nullable
     private final ImageView selectButton;
+
+    @Nullable
+    private final LinearLayout buttonsLayout;
+    @Nullable
+    private final ButtonWithCounterView button1View;
+    @Nullable
+    private final ButtonWithCounterView button2View;
 
     public boolean ignoreScroll;
     public final boolean onlyPhotos;
+    public final boolean collaging;
     private int shiftDp = -2;
 
     private final float ASPECT_RATIO;
+    public final boolean onlyCollaging;
 
-    public GalleryListView(int currentAccount, Context context, Theme.ResourcesProvider resourcesProvider, MediaController.AlbumEntry startAlbum, boolean onlyPhotos) {
-        this(currentAccount, context, resourcesProvider, startAlbum, onlyPhotos, 1.39f);
-    }
-    public GalleryListView(int currentAccount, Context context, Theme.ResourcesProvider resourcesProvider, MediaController.AlbumEntry startAlbum, boolean onlyPhotos, float aspectRatio) {
+    public GalleryListView(
+        int currentAccount,
+        Context context,
+        Theme.ResourcesProvider resourcesProvider,
+        MediaController.AlbumEntry startAlbum,
+        boolean onlyPhotos,
+        float aspectRatio,
+        boolean collaging,
+        boolean onlyCollaging
+    ) {
         super(context);
 
         this.ASPECT_RATIO = aspectRatio;
         this.currentAccount = currentAccount;
         this.resourcesProvider = resourcesProvider;
         this.onlyPhotos = onlyPhotos;
+        this.collaging = collaging;
+        this.onlyCollaging = onlyCollaging;
 
         backgroundPaint.setColor(0xff1f1f1f);
         backgroundPaint.setShadowLayer(dp(2.33f), 0, dp(-.4f), 0x08000000);
@@ -510,27 +533,57 @@ public class GalleryListView extends FrameLayout implements NotificationCenter.N
             }
         }
 
-        selectButton = new ImageView(context);
-        selectButton.setScaleType(ImageView.ScaleType.CENTER);
-        selectButton.setImageResource(R.drawable.floating_check);
-        selectButton.setBackground(Theme.createCircleDrawable(dp(56), Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider)));
-        ScaleStateListAnimator.apply(selectButton, 0.1f, 1.5f);
-        addView(selectButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM | Gravity.RIGHT, 0, 0, 14, 14));
-        selectButton.setOnClickListener(v -> {
-            if (onSelectMultipleListener != null && !selectedPhotos.isEmpty()) {
-                ArrayList<Bitmap> blurredBitmaps = new ArrayList<>();
-                for (MediaController.PhotoEntry entry : selectedPhotos) {
-                    blurredBitmaps.add(entry.isVideo ? prepareBlurredThumb(findCell(entry)) : null);
-                }
-                onSelectMultipleListener.run(new ArrayList<>(selectedPhotos), blurredBitmaps);
-                selectedPhotos.clear();
-                AndroidUtilities.updateVisibleRows(listView);
-                updateSelectButtonVisible();
+        if (collaging) {
+            selectButton = null;
+
+            buttonsLayout = new LinearLayout(context);
+            buttonsLayout.setOrientation(LinearLayout.VERTICAL);
+            buttonsLayout.setBackgroundColor(Theme.getColor(Theme.key_dialogBackground, resourcesProvider));
+            buttonsLayout.setPadding(dp(10), dp(10), dp(10), dp(AndroidUtilities.navigationBarHeight > 0 ? 0 : 10) + AndroidUtilities.navigationBarHeight);
+            addView(buttonsLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM | Gravity.FILL_HORIZONTAL, 0, 0, 0, 0));
+            buttonsLayout.setAlpha(0.0f);
+            buttonsLayout.setTranslationY(dp(32));
+            buttonsLayout.setVisibility(View.GONE);
+
+            button1View = new ButtonWithCounterView(context, true, resourcesProvider);
+            button1View.setText(LocaleController.formatPluralStringComma("StoriesCreate", 1), false);
+            if (!onlyCollaging) {
+                buttonsLayout.addView(button1View, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48, 0, 0, 0, 8));
+                button1View.setOnClickListener(v -> {
+                    if (buttonsLayout.getAlpha() < 0.25f) return;
+                    selectMultiple(false);
+                });
             }
-        });
-        selectButton.setAlpha(0.0f);
-        selectButton.setScaleX(0.7f);
-        selectButton.setScaleY(0.7f);
+
+            button2View = new ButtonWithCounterView(context, onlyCollaging, resourcesProvider);
+            final SpannableStringBuilder sb = new SpannableStringBuilder("v");
+            final ColoredImageSpan span = new ColoredImageSpan(R.drawable.mini_collage);
+            span.translate(-dp(1.33f), dp(.66f));
+            sb.setSpan(span, 0, 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            sb.append(" ").append(getString(R.string.StoriesCollage));
+            button2View.setText(sb, false);
+            buttonsLayout.addView(button2View, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48, 0, 0, 0, 0));
+            button2View.setOnClickListener(v -> {
+                if (buttonsLayout.getAlpha() < 0.25f) return;
+                selectMultiple(true);
+            });
+
+        } else {
+            buttonsLayout = null;
+            button1View = null;
+            button2View = null;
+
+            selectButton = new ImageView(context);
+            selectButton.setScaleType(ImageView.ScaleType.CENTER);
+            selectButton.setImageResource(R.drawable.floating_check);
+            selectButton.setBackground(Theme.createCircleDrawable(dp(56), Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider)));
+            ScaleStateListAnimator.apply(selectButton, 0.1f, 1.5f);
+            addView(selectButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM | Gravity.RIGHT, 0, 0, 14, 14));
+            selectButton.setOnClickListener(v -> selectMultiple(false));
+            selectButton.setAlpha(0.0f);
+            selectButton.setScaleX(0.7f);
+            selectButton.setScaleY(0.7f);
+        }
 
         updateAlbumsDropDown();
         if (startAlbum != null && (startAlbum != draftsAlbum || drafts.size() > 0)) {
@@ -606,6 +659,25 @@ public class GalleryListView extends FrameLayout implements NotificationCenter.N
         return false;
     }
 
+    private void selectMultiple(boolean collage) {
+        if (onSelectMultipleListener == null || selectedPhotos.isEmpty()) {
+            return;
+        }
+        if (selectedPhotos.size() == 1) {
+            final MediaController.PhotoEntry entry = selectedPhotos.get(0);
+            onSelectListener.run(entry, null);
+            return;
+        }
+        final ArrayList<Bitmap> blurredBitmaps = new ArrayList<>();
+        for (MediaController.PhotoEntry entry : selectedPhotos) {
+            blurredBitmaps.add(entry.isVideo ? prepareBlurredThumb(findCell(entry)) : null);
+        }
+        onSelectMultipleListener.run(collage, new ArrayList<>(selectedPhotos), blurredBitmaps);
+        selectedPhotos.clear();
+        AndroidUtilities.updateVisibleRows(listView);
+        updateSelectButtonVisible();
+    }
+
     private final AnimatedFloat actionBarT = new AnimatedFloat(this, 0, 350, CubicBezierInterpolator.EASE_OUT_QUINT);
 
     @Override
@@ -643,8 +715,13 @@ public class GalleryListView extends FrameLayout implements NotificationCenter.N
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         listView.setPinnedSectionOffsetY(AndroidUtilities.statusBarHeight + ActionBar.getCurrentActionBarHeight());
-        listView.setPadding(dp(6), AndroidUtilities.statusBarHeight + ActionBar.getCurrentActionBarHeight(), dp(1), AndroidUtilities.navigationBarHeight);
-        selectButton.setTranslationY(-AndroidUtilities.navigationBarHeight);
+        listView.setPadding(dp(6), AndroidUtilities.statusBarHeight + ActionBar.getCurrentActionBarHeight(), dp(1), (buttonsLayout == null ? 0 : dp(48 + 8 + 48 + 10 + (AndroidUtilities.navigationBarHeight > 0 ? 0 : 10))) + AndroidUtilities.navigationBarHeight);
+        if (selectButton != null) {
+            selectButton.setTranslationY(-AndroidUtilities.navigationBarHeight);
+        }
+        if (buttonsLayout != null) {
+            buttonsLayout.setPadding(dp(10), dp(10), dp(10), dp(AndroidUtilities.navigationBarHeight > 0 ? 0 : 10) + AndroidUtilities.navigationBarHeight);
+        }
         FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) searchContainer.getLayoutParams();
         lp.leftMargin = 0;
         lp.topMargin = AndroidUtilities.statusBarHeight + ActionBar.getCurrentActionBarHeight();
@@ -655,16 +732,44 @@ public class GalleryListView extends FrameLayout implements NotificationCenter.N
         super.onMeasure(widthMeasureSpec, heightMeasureSpec);
     }
 
+    private boolean buttonsLayoutVisible;
     public void updateSelectButtonVisible() {
         final boolean visible = !selectedPhotos.isEmpty();
-        selectButton.animate()
-            .alpha(visible ? 1.0f : 0.0f)
-            .scaleX(visible ? 1.0f : 0.7f)
-            .scaleY(visible ? 1.0f : 0.7f)
-            .translationY(visible ? -AndroidUtilities.navigationBarHeight : +dp(8))
-            .setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT)
-            .setDuration(320)
-            .start();
+        if (selectButton != null) {
+            selectButton.animate()
+                .alpha(visible ? 1.0f : 0.0f)
+                .scaleX(visible ? 1.0f : 0.7f)
+                .scaleY(visible ? 1.0f : 0.7f)
+                .translationY(visible ? -AndroidUtilities.navigationBarHeight : +dp(8))
+                .setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT)
+                .setDuration(320)
+                .start();
+        }
+        if (buttonsLayout != null) {
+            if (button1View != null) {
+                button1View.setText(LocaleController.formatPluralStringComma("StoriesCreate", Math.max(1, selectedPhotos.size())), true);
+            }
+
+            buttonsLayout.setPadding(dp(10), dp(10), dp(10), dp(AndroidUtilities.navigationBarHeight > 0 ? 0 : 10) + AndroidUtilities.navigationBarHeight);
+            if (buttonsLayoutVisible != visible) {
+                buttonsLayoutVisible = visible;
+                buttonsLayout.setVisibility(View.VISIBLE);
+                buttonsLayout.animate()
+                    .alpha(visible ? 1.0f : 0.0f)
+                    .translationY(visible ? 0 : dp(32))
+                    .setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT)
+                    .setDuration(320)
+                    .setListener(new AnimatorListenerAdapter() {
+                        @Override
+                        public void onAnimationEnd(Animator animation) {
+                            if (!visible) {
+                                buttonsLayout.setVisibility(View.GONE);
+                            }
+                        }
+                    })
+                    .start();
+            }
+        }
     }
 
     private Cell findCell(MediaController.PhotoEntry entry) {
@@ -702,8 +807,8 @@ public class GalleryListView extends FrameLayout implements NotificationCenter.N
         this.onSelectListener = listener;
     }
 
-    private Utilities.Callback2<ArrayList<MediaController.PhotoEntry>, ArrayList<Bitmap>> onSelectMultipleListener;
-    public void setOnSelectMultipleListener(Utilities.Callback2<ArrayList<MediaController.PhotoEntry>, ArrayList<Bitmap>> listener) {
+    private Utilities.Callback3<Boolean, ArrayList<MediaController.PhotoEntry>, ArrayList<Bitmap>> onSelectMultipleListener;
+    public void setOnSelectMultipleListener(Utilities.Callback3<Boolean, ArrayList<MediaController.PhotoEntry>, ArrayList<Bitmap>> listener) {
         this.onSelectMultipleListener = listener;
     }
 
@@ -814,12 +919,15 @@ public class GalleryListView extends FrameLayout implements NotificationCenter.N
         private StaticLayout draftLayout;
         private float draftLayoutWidth, draftLayoutLeft;
 
-        private CheckBox2 checkBox;
+        public FrameLayout checkBoxContainer;
+        public CheckBox2 checkBox;
         private float aspectRatio;
+        private final boolean alwaysShowCheckbox;
 
-        public Cell(Context context, Theme.ResourcesProvider resourcesProvider, float ratio) {
+        public Cell(Context context, Theme.ResourcesProvider resourcesProvider, float ratio, boolean alwaysShowCheckbox) {
             super(context);
             aspectRatio = ratio;
+            this.alwaysShowCheckbox = alwaysShowCheckbox;
 
             bgPaint.setColor(0x10ffffff);
 
@@ -838,11 +946,17 @@ public class GalleryListView extends FrameLayout implements NotificationCenter.N
                     Cell.this.invalidate();
                 }
             };
-            checkBox.setDrawBackgroundAsArc(6);
+            if (!alwaysShowCheckbox) {
+                checkBox.setDrawBackgroundAsArc(6);
+            } else {
+                checkBox.setDrawBackgroundAsArc(7);
+            }
             checkBox.setColor(Theme.key_chat_attachCheckBoxBackground, Theme.key_chat_attachPhotoBackground, Theme.key_chat_attachCheckBoxCheck);
             checkBox.getCheckBoxBase().setStrokeBackgroundColor(Theme.key_windowBackgroundWhiteBlackText);
-            addView(checkBox, LayoutHelper.createFrame(26, 26, Gravity.RIGHT | Gravity.TOP, 0, 5, 5, 0));
-            checkBox.setVisibility(VISIBLE);
+            checkBoxContainer = new FrameLayout(context);
+            checkBoxContainer.addView(checkBox, LayoutHelper.createFrame(26, 26, Gravity.CENTER));
+            addView(checkBoxContainer, LayoutHelper.createFrame(5 + 26 + 5, 5 + 26 + 5, Gravity.RIGHT | Gravity.TOP, 0, 0, 0, 0));
+            checkBoxContainer.setVisibility(VISIBLE);
 
             setWillNotDraw(false);
         }
@@ -886,17 +1000,21 @@ public class GalleryListView extends FrameLayout implements NotificationCenter.N
         }
 
         public void setCheckbox(boolean visible, int checked, boolean animated) {
+            if (alwaysShowCheckbox) {
+                visible = true;
+            }
             if (!animated) {
-                checkBox.setVisibility(visible ? VISIBLE : GONE);
+                checkBoxContainer.setVisibility(visible ? VISIBLE : GONE);
             } else {
-                checkBox.setVisibility(VISIBLE);
+                final boolean finalVisible = visible;
+                checkBoxContainer.setVisibility(VISIBLE);
                 checkBox.animate()
                     .alpha(visible ? 1.0f : 0.0f)
                     .scaleX(visible ? 1.0f : 0.7f)
                     .scaleY(visible ? 1.0f : 0.7f)
                     .withEndAction(() -> {
-                        if (!visible) {
-                            checkBox.setVisibility(GONE);
+                        if (!finalVisible) {
+                            checkBoxContainer.setVisibility(GONE);
                         }
                     })
                     .setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT)
@@ -1392,7 +1510,7 @@ public class GalleryListView extends FrameLayout implements NotificationCenter.N
             } else if (viewType == VIEW_TYPE_HEADER) {
                 view = headerView = new HeaderView(getContext(), onlyPhotos);
             } else {
-                view = new Cell(getContext(), resourcesProvider, ASPECT_RATIO);
+                view = new Cell(getContext(), resourcesProvider, ASPECT_RATIO, collaging);
             }
             return new RecyclerListView.Holder(view);
         }
@@ -1429,6 +1547,23 @@ public class GalleryListView extends FrameLayout implements NotificationCenter.N
                 final MediaController.PhotoEntry photo = photos.get(index);
                 cell.setCheckbox(isMultiple(), selectedPhotos.indexOf(photo), cell.currentObject == photo);
                 cell.set(photo);
+
+                if (collaging) {
+                    cell.checkBoxContainer.setOnClickListener(v -> {
+                        if (selectedPhotos.contains(photo)) {
+                            selectedPhotos.remove(photo);
+                        } else {
+                            if (selectedPhotos.size() + 1 > maxCount) {
+                                AndroidUtilities.shakeViewSpring(cell, shiftDp = -shiftDp);
+                                BotWebViewVibrationEffect.APP_ERROR.vibrate();
+                                return;
+                            }
+                            selectedPhotos.add(photo);
+                        }
+                        AndroidUtilities.updateVisibleRows(listView);
+                        updateSelectButtonVisible();
+                    });
+                }
             }
         }
 

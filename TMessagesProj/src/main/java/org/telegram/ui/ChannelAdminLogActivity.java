@@ -3426,7 +3426,7 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
                     } else {
                         pinnedTop = false;
                     }
-                    messageCell.setMessageObject(message, null, pinnedBotton, pinnedTop);
+                    messageCell.setMessageObject(message, null, pinnedBotton, pinnedTop, false);
                     messageCell.setHighlighted(false);
                     messageCell.setHighlightedText(searchQuery);
                 } else if (view instanceof ChatActionCell) {

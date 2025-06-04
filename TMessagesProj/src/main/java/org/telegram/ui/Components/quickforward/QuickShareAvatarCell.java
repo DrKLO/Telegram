@@ -97,7 +97,7 @@ class QuickShareAvatarCell implements ValueAnimator.AnimatorUpdateListener {
             c.scale(s, s, cx, cy);
 
             final float textAlpha = selectedFactor * alpha;
-            final float textBubbleWidth = textLayout.getLineWidth(0) + dp(QuickShareSelectorDrawable.Sizes.TEXT_PADDING_INTERNAL) * 2;
+            final float textBubbleWidth = textLayout.getWidth() + dp(QuickShareSelectorDrawable.Sizes.TEXT_PADDING_INTERNAL) * 2;
             final float textBubbleCx = fixX(fixX(cx, textBubbleWidth, softMinX, softMaxX), textBubbleWidth, hardMinX, hardMaxX);
 
             bgX1 = textBubbleCx - textBubbleWidth / 2f;
@@ -178,7 +178,7 @@ class QuickShareAvatarCell implements ValueAnimator.AnimatorUpdateListener {
         final float r = dp(21) / 2f;
         int cachedAlpha;
 
-        tmpRectF.set(x, y, x + textLayout.getLineWidth(0) + dp(QuickShareSelectorDrawable.Sizes.TEXT_PADDING_INTERNAL) * 2, y + dp(21));
+        tmpRectF.set(x, y, x + textLayout.getWidth() + dp(QuickShareSelectorDrawable.Sizes.TEXT_PADDING_INTERNAL) * 2, y + dp(21));
 
         final boolean hasGradientService = cell.hasGradientService();
         final Paint blurPaint = blurredTextPaint;
@@ -330,8 +330,8 @@ class QuickShareAvatarCell implements ValueAnimator.AnimatorUpdateListener {
             final TextPaint textPaint = new TextPaint(p);
 
             final CharSequence title = TextUtils.ellipsize(displayName, textPaint, maxWidth, TextUtils.TruncateAt.END);
-            // int width = (int) Math.ceil(textPaint.measureText(displayName.toString())) + dp(16);
-            textLayout = new StaticLayout(title, textPaint, maxWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
+            final int width = (int) Math.ceil(textPaint.measureText(title, 0, title.length()));
+            textLayout = new StaticLayout(title, textPaint, width, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
         }
     }
 }

@@ -101,6 +101,14 @@ public class ChatObject {
         return false;
     }
 
+    public static boolean isMonoForum(int currentAccount, long dialogId) {
+        TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-dialogId);
+        if (chat != null) {
+            return chat.monoforum;
+        }
+        return false;
+    }
+
     public static boolean canSendAnyMedia(TLRPC.Chat currentChat) {
         return canSendPhoto(currentChat) || canSendVideo(currentChat) || canSendRoundVideo(currentChat) || canSendVoice(currentChat) || canSendDocument(currentChat) || canSendMusic(currentChat) || canSendStickers(currentChat);
     }
@@ -1744,6 +1752,23 @@ public class ChatObject {
         return false;
     }
 
+    public static boolean canManageMonoForum(int currentAccount, long dialogId) {
+        return canManageMonoForum(currentAccount, MessagesController.getInstance(currentAccount).getChat(-dialogId));
+    }
+
+    public static boolean canManageMonoForum(int currentAccount, TLRPC.Chat chat) {
+        if (chat == null || chat.linked_monoforum_id == 0) {
+            return false;
+        }
+
+        if (chat.monoforum) {
+            TLRPC.Chat mfChat = MessagesController.getInstance(currentAccount).getChat(chat.linked_monoforum_id);
+            return canUserDoAdminAction(mfChat, ACTION_POST);
+        }
+
+        return canUserDoAdminAction(chat, ACTION_POST);
+    }
+
     public static boolean canUserDoAdminAction(TLRPC.Chat chat, int action) {
         if (chat == null) {
             return false;
@@ -1918,7 +1943,7 @@ public class ChatObject {
     }
 
     public static boolean isBoostSupported(TLRPC.Chat chat) {
-        return isChannelAndNotMegaGroup(chat) || isMegagroup(chat);
+        return (isChannelAndNotMegaGroup(chat) || isMegagroup(chat)) && !isMonoForum(chat);
     }
 
     public static boolean isBoosted(TLRPC.ChatFull chatFull) {
@@ -1927,6 +1952,10 @@ public class ChatObject {
 
     public static boolean isForum(TLRPC.Chat chat) {
         return chat != null && chat.forum;
+    }
+
+    public static boolean isMonoForum(TLRPC.Chat chat) {
+        return chat != null && chat.monoforum;
     }
 
     public static boolean hasStories(TLRPC.Chat chat) {
@@ -2015,6 +2044,9 @@ public class ChatObject {
     }
 
     public static boolean canSendPolls(TLRPC.Chat chat) {
+        if (ChatObject.isMonoForum(chat)) {
+            return false;
+        }
         if (isIgnoredChatRestrictionsForBoosters(chat)) {
             return true;
         }
@@ -2082,7 +2114,7 @@ public class ChatObject {
     }
 
     public static boolean canPinMessages(TLRPC.Chat chat) {
-        return canUserDoAction(chat, ACTION_PIN) || ChatObject.isChannel(chat) && !chat.megagroup && chat.admin_rights != null && chat.admin_rights.edit_messages;
+        return (canUserDoAction(chat, ACTION_PIN) || ChatObject.isChannel(chat) && !chat.megagroup && chat.admin_rights != null && chat.admin_rights.edit_messages);
     }
 
     public static boolean canCreateTopic(TLRPC.Chat chat) {
@@ -2405,5 +2437,9 @@ public class ChatObject {
         } else {
             return null;
         }
+    }
+
+    public static boolean areTabsEnabled(TLRPC.Chat chat) {
+        return SharedConfig.forceForumTabs || chat != null && chat.forum_tabs;
     }
 }

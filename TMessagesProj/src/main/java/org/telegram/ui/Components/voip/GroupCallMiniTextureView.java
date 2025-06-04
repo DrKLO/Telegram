@@ -49,6 +49,7 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
+import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
 import org.telegram.messenger.Utilities;
@@ -785,6 +786,11 @@ public class GroupCallMiniTextureView extends FrameLayout implements GroupCallSt
         nameView.setPivotY(nameView.getMeasuredHeight() / 2f);
     }
 
+    @Override
+    public void setVisibility(int visibility) {
+        super.setVisibility(visibility);
+    }
+
     public static GroupCallMiniTextureView getOrCreate(ArrayList<GroupCallMiniTextureView> attachedRenderers, GroupCallRenderersContainer renderersContainer, GroupCallGridCell primaryView, GroupCallFullscreenAdapter.GroupCallUserCell secondaryView, GroupCallGridCell tabletGridView, ChatObject.VideoParticipant participant, ChatObject.Call call, GroupCallActivity activity) {
         GroupCallMiniTextureView renderer = null;
         for (int i = 0; i < attachedRenderers.size(); i++) {
@@ -813,6 +819,10 @@ public class GroupCallMiniTextureView extends FrameLayout implements GroupCallSt
             this.tabletGridView = tabletGridView;
             updateAttachState(true);
         }
+    }
+
+    public GroupCallGridCell getPrimaryView() {
+        return primaryView;
     }
 
     public void setPrimaryView(GroupCallGridCell primaryView) {
@@ -851,6 +861,7 @@ public class GroupCallMiniTextureView extends FrameLayout implements GroupCallSt
         }
     }
 
+    private Runnable hideRunnable;
     public void updateAttachState(boolean animated) {
         if (forceDetached) {
             return;
@@ -879,28 +890,49 @@ public class GroupCallMiniTextureView extends FrameLayout implements GroupCallSt
 
                 saveThumb();
 
+                final boolean full = SharedConfig.getDevicePerformanceClass() <= SharedConfig.PERFORMANCE_CLASS_LOW;
                 if (textureView.currentAnimation == null && needDetach) {
                     GroupCallMiniTextureView viewToRemove = this;
-                    parentContainer.detach(viewToRemove);
+                    if (full) {
+                        parentContainer.detach(viewToRemove);
+                    }
                     animate().scaleX(0.5f).scaleY(0.5f).alpha(0).setListener(new AnimatorListenerAdapter() {
                         @Override
                         public void onAnimationEnd(Animator animation) {
                             viewToRemove.setScaleX(1f);
                             viewToRemove.setScaleY(1f);
                             viewToRemove.setAlpha(1f);
-                            parentContainer.removeView(viewToRemove);
-                            release();
+                            if (full) {
+                                parentContainer.removeView(viewToRemove);
+                                release();
+                            }
+                            viewToRemove.setVisibility(View.GONE);
                         }
                     }).setDuration(150).start();
                 } else {
                     if (parentContainer.inLayout) {
                         View viewToRemove = this;
-                        AndroidUtilities.runOnUIThread(() -> parentContainer.removeView(viewToRemove));
+                        if (hideRunnable != null) {
+                            AndroidUtilities.cancelRunOnUIThread(hideRunnable);
+                            hideRunnable = null;
+                        }
+                        AndroidUtilities.runOnUIThread(hideRunnable = () -> {
+                            if (full) {
+                                parentContainer.removeView(viewToRemove);
+                            }
+                            viewToRemove.setVisibility(View.GONE);
+                            hideRunnable = null;
+                        });
                     } else {
-                        parentContainer.removeView(this);
+                        if (full) {
+                            parentContainer.removeView(this);
+                        }
+                        this.setVisibility(View.GONE);
                     }
-                    parentContainer.detach(this);
-                    release();
+                    if (full) {
+                        parentContainer.detach(this);
+                        release();
+                    }
                 }
 
                 if (participant.participant.self) {
@@ -940,13 +972,13 @@ public class GroupCallMiniTextureView extends FrameLayout implements GroupCallSt
                     videoActive = (call.canStreamVideo || participant == call.videoNotAvailableParticipant) && ChatObject.Call.videoIsActive(participant.participant, participant.presentation, call);
                 }
                 if (showingInFullscreen || (!VoIPService.getSharedInstance().isFullscreen(participant.participant, participant.presentation) && !VoIPService.getSharedInstance().isFullscreen(participant.participant, participant.presentation) && videoActive)) {
-                    if (BuildVars.DEBUG_PRIVATE_VERSION) {
-                        for (int i = 0; i < attachedRenderers.size(); i++) {
-                            if (attachedRenderers.get(i).participant.equals(participant)) {
-                                throw new RuntimeException("try add two same renderers");
-                            }
-                        }
-                    }
+//                    if (BuildVars.DEBUG_PRIVATE_VERSION) {
+//                        for (int i = 0; i < attachedRenderers.size(); i++) {
+//                            if (attachedRenderers.get(i).participant.equals(participant)) {
+//                                throw new RuntimeException("try add two same renderers");
+//                            }
+//                        }
+//                    }
                     forceRequestLayout = true;
                     attached = true;
 
@@ -959,9 +991,16 @@ public class GroupCallMiniTextureView extends FrameLayout implements GroupCallSt
                     statusIcon.setImageView(micIconView);
                     updateIconColor(false);
 
+                    if (hideRunnable != null) {
+                        AndroidUtilities.cancelRunOnUIThread(hideRunnable);
+                        hideRunnable = null;
+                    }
                     if (getParent() == null) {
                         parentContainer.addView(this, LayoutHelper.createFrame(46, 46, Gravity.LEFT | Gravity.TOP));
                         parentContainer.attach(this);
+                        setVisibility(View.VISIBLE);
+                    } else if (getVisibility() == View.GONE) {
+                        setVisibility(View.VISIBLE);
                     }
 
                     checkScale = true;

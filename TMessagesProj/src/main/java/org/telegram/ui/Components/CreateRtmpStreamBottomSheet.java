@@ -161,7 +161,7 @@ public class CreateRtmpStreamBottomSheet extends BottomSheetWithRecyclerListView
         }
 
         @Override
-        public void bindView(View view, UItem item, boolean divider) {
+        public void bindView(View view, UItem item, boolean divider, UniversalAdapter adapter, UniversalRecyclerView listView) {
             ((TextDetailCell) view).setTextAndValue(item.text, item.textValue, !item.hideDivider);
         }
 

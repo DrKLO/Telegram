@@ -50,6 +50,7 @@ import com.google.zxing.common.detector.MathUtils;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.DialogObject;
+import org.telegram.messenger.Emoji;
 import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
@@ -369,7 +370,7 @@ public class StarsReactionsSheet extends BottomSheet implements NotificationCent
         statusView.setGravity(Gravity.CENTER);
         statusView.setSingleLine(false);
         statusView.setMaxLines(3);
-        statusView.setText(AndroidUtilities.replaceTags(me != null ? LocaleController.formatPluralStringComma("StarsReactionTextSent", me.count) : LocaleController.formatString(R.string.StarsReactionText, chat == null ? "" : chat.title)));
+        statusView.setText(Emoji.replaceEmoji(AndroidUtilities.replaceTags(me != null ? LocaleController.formatPluralStringComma("StarsReactionTextSent", me.count) : LocaleController.formatString(R.string.StarsReactionText, chat == null ? "" : chat.title)), statusView.getPaint().getFontMetricsInt(), false));
         if (sendEnabled) {
             topLayoutTextLayout.addView(statusView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.FILL_HORIZONTAL, 40,  0, 40, 0));
         }
@@ -1188,6 +1189,10 @@ public class StarsReactionsSheet extends BottomSheet implements NotificationCent
         private long pressTime;
         private int pointerId;
         private boolean tracking;
+
+        public boolean isTracking() {
+            return tracking;
+        }
 
         @Override
         public boolean dispatchTouchEvent(MotionEvent event) {

@@ -3,7 +3,6 @@ package org.telegram.ui.Stars;
 import static org.telegram.messenger.AndroidUtilities.dp;
 import static org.telegram.messenger.LocaleController.getString;
 
-import android.app.Dialog;
 import android.content.Context;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
@@ -15,19 +14,12 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
-import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.google.android.exoplayer2.scheduler.RequirementsWatcher;
-
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.MessagesController;
-import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
-import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.BottomSheetWithRecyclerListView;
-import org.telegram.ui.Components.DialogsBotsAdapter;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.LinkSpanDrawable;
 import org.telegram.ui.Components.Premium.GLIcon.GLIconRenderer;
@@ -39,9 +31,7 @@ import org.telegram.ui.Components.StarAppsSheet;
 import org.telegram.ui.Components.UItem;
 import org.telegram.ui.Components.UniversalAdapter;
 import org.telegram.ui.Components.UniversalRecyclerView;
-import org.telegram.ui.Gifts.GiftSheet;
 import org.telegram.ui.Stories.recorder.ButtonWithCounterView;
-import org.telegram.ui.Stories.recorder.HintView2;
 
 import java.util.ArrayList;
 
@@ -188,7 +178,7 @@ public class ExplainStarsSheet extends BottomSheetWithRecyclerListView {
             }
 
             @Override
-            public void bindView(View view, UItem item, boolean divider) {
+            public void bindView(View view, UItem item, boolean divider, UniversalAdapter adapter, UniversalRecyclerView listView) {
                 ((FeatureCell) view).set(
                     item.intValue, item.text, item.subtext
                 );

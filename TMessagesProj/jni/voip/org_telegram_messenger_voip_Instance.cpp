@@ -678,7 +678,20 @@ JNIEXPORT void JNICALL Java_org_telegram_messenger_voip_NativeInstance_setVideoE
 }
 
 extern "C"
-JNIEXPORT jlong JNICALL Java_org_telegram_messenger_voip_NativeInstance_makeNativeInstance(JNIEnv *env, jclass clazz, jstring version, jobject instanceObj, jobject config, jstring persistentStateFilePath, jobjectArray endpoints, jobject proxyClass, jint networkType, jobject encryptionKey, jobject remoteSink, jlong videoCapturer, jfloat aspectRatio) {
+JNIEXPORT jlong JNICALL Java_org_telegram_messenger_voip_NativeInstance_makeNativeInstance(
+    JNIEnv *env, jclass clazz,
+    jstring version,
+    jobject instanceObj,
+    jobject config,
+    jstring persistentStateFilePath,
+    jobjectArray endpoints,
+    jobject proxyClass,
+    jint networkType,
+    jobject encryptionKey,
+    jobject remoteSink,
+    jlong videoCapturer,
+    jfloat aspectRatio
+) {
     initWebRTC(env);
 
     JavaObject configObject(env, config);
@@ -720,7 +733,8 @@ JNIEXPORT jlong JNICALL Java_org_telegram_messenger_voip_NativeInstance_makeNati
                     .statsLogPath = {tgvoip::jni::JavaStringToStdString(env, configObject.getStringField("statsLogPath"))},
                     .maxApiLayer = configObject.getIntField("maxApiLayer"),
                     .enableHighBitrateVideo = true,
-                    .preferredVideoCodecs = {cricket::kVp9CodecName}
+                    .preferredVideoCodecs = {cricket::kVp9CodecName},
+                    .customParameters = tgvoip::jni::JavaStringToStdString(env, configObject.getStringField("customParameters"))
             },
             .encryptionKey = EncryptionKey(
                     std::move(encryptionKeyValue),
@@ -1053,6 +1067,12 @@ JNIEXPORT void JNICALL Java_org_telegram_messenger_voip_NativeInstance_clearVide
     InstanceHolder *instance = getInstanceHolder(env, obj);
     if (instance->nativeInstance) {
         instance->nativeInstance->setVideoCapture(nullptr);
+        if (instance->_screenVideoCapture != nullptr) {
+            instance->_screenVideoCapture = nullptr;
+        }
+        if (instance->_videoCapture != nullptr) {
+            instance->_videoCapture = nullptr;
+        }
     } else if (instance->groupNativeInstance) {
         instance->groupNativeInstance->setVideoSource(nullptr);
     }
@@ -1191,4 +1211,24 @@ Java_org_telegram_messenger_voip_NativeInstance_setConferenceCallId(JNIEnv *env,
     }
     DEBUG_D("setConferenceCallId %d", call_id);
     *instance->conferenceCallId = (long) call_id;
+}
+
+extern "C"
+JNIEXPORT jobjectArray JNICALL
+Java_org_telegram_messenger_voip_NativeInstance_getAllVersions(JNIEnv* env) {
+    std::vector<std::string> v = tgcalls::Meta::Versions();
+    jclass stringClass = env->FindClass("java/lang/String");
+    if (!stringClass) {
+        return nullptr;
+    }
+    jobjectArray result = env->NewObjectArray(v.size(), stringClass, nullptr);
+    if (!result) {
+        return nullptr;
+    }
+    for (size_t i = 0; i < v.size(); ++i) {
+        jstring str = env->NewStringUTF(v[i].c_str());
+        env->SetObjectArrayElement(result, i, str);
+        env->DeleteLocalRef(str);
+    }
+    return result;
 }

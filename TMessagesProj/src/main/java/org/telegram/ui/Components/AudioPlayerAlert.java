@@ -577,8 +577,11 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
 
             @Override
             protected void onImageUpdated(ImageReceiver imageReceiver) {
+                final Bitmap b = imageReceiver.getBitmap();
+                final int padding = (b != null && imageReceiver.hasImageLoaded() || imageReceiver.hasBitmapImage()) ? AndroidUtilities.dp(64) : 0;
+                setCustomPaddingRight(padding, true);
                 if (blurredView.getTag() != null) {
-                    bigAlbumConver.setImageBitmap(imageReceiver.getBitmap());
+                    bigAlbumConver.setImageBitmap(b);
                 }
             }
         };
@@ -587,7 +590,7 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
         titleTextView = new ClippingTextViewSwitcher(context) {
             @Override
             protected TextView createTextView() {
-                final TextView textView = new TextView(context);
+                final TextView textView = new MarqueeTextView(context);
                 textView.setTextColor(getThemedColor(Theme.key_player_actionBarTitle));
                 textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 17);
                 textView.setTypeface(AndroidUtilities.bold());
@@ -596,12 +599,12 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
                 return textView;
             }
         };
-        playerLayout.addView(titleTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.LEFT, 20, 20, 72, 0));
+        playerLayout.addView(titleTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.LEFT, 20, 20, 20, 0));
 
         authorTextView = new ClippingTextViewSwitcher(context) {
             @Override
             protected TextView createTextView() {
-                final TextView textView = new TextView(context);
+                final TextView textView = new MarqueeTextView(context);
                 textView.setTextColor(getThemedColor(Theme.key_player_time));
                 textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
                 textView.setEllipsize(TextUtils.TruncateAt.END);
@@ -632,7 +635,7 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
                 return textView;
             }
         };
-        playerLayout.addView(authorTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.LEFT, 14, 47, 72, 0));
+        playerLayout.addView(authorTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.LEFT, 14, 47, 20, 0));
 
         seekBarView = new SeekBarView(context, resourcesProvider) {
             @Override
@@ -2122,6 +2125,9 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
     private void updateCover(MessageObject messageObject, boolean animated) {
         final BackupImageView imageView = animated ? coverContainer.getNextImageView() : coverContainer.getImageView();
         final AudioInfo audioInfo = MediaController.getInstance().getAudioInfo();
+        if (animated) {
+            coverContainer.switchImageViews();
+        }
         if (audioInfo != null && audioInfo.getCover() != null) {
             imageView.setImageBitmap(audioInfo.getCover());
             currentFile = null;
@@ -2140,9 +2146,6 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
                 imageView.setImageDrawable(null);
             }
             imageView.invalidate();
-        }
-        if (animated) {
-            coverContainer.switchImageViews();
         }
     }
 
@@ -2583,6 +2586,7 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
         private LinearGradient gradientShader;
         private int stableOffest = -1;
         private final RectF rectF = new RectF();
+        private int rightPadding;
 
         public ClippingTextViewSwitcher(@NonNull Context context) {
             super(context);
@@ -2608,11 +2612,46 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
             gradientPaint.setShader(gradientShader);
         }
 
+        private boolean isCenter;
+
+        public void setIsCenter() {
+            isCenter = true;
+        }
+
+        @Override
+        protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
+            super.onLayout(changed, left, top, right, bottom);
+            if (isCenter) {
+                for (int a = 0; a < textViews.length; a++) {
+                    View v = textViews[a];
+                    if (v == null) continue;
+                    if (v.getMeasuredWidth() < getMeasuredWidth()) {
+                        int l = (getMeasuredWidth() - v.getMeasuredWidth()) / 2;
+                        v.layout(l, 0, l + v.getMeasuredWidth(), v.getMeasuredHeight());
+                    }
+                }
+            }
+        }
+
         @Override
         protected boolean drawChild(Canvas canvas, View child, long drawingTime) {
             final int index = child == textViews[0] ? 0 : 1;
             final boolean result;
             boolean hasStableRect = false;
+
+            if (isCenter) {
+                stableOffest = -1;
+            }
+
+            if (stableOffest > 0) {
+                for (TextView tv : textViews) {
+                    if (tv instanceof MarqueeTextView && ((MarqueeTextView) tv).isNeedMarquee()) {
+                        stableOffest = -1;
+                        break;
+                    }
+                }
+            }
+
             if (stableOffest > 0 && textViews[activeIndex].getAlpha() != 1f && textViews[activeIndex].getLayout() != null) {
                 float x1 = textViews[activeIndex].getLayout().getPrimaryHorizontal(0);
                 float x2 = textViews[activeIndex].getLayout().getPrimaryHorizontal(stableOffest);
@@ -2633,10 +2672,10 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
                 }
             }
             if (clipProgress[index] > 0f || hasStableRect) {
-                final int width = child.getWidth();
-                final int height = child.getHeight();
+                final int width = Math.min(child.getWidth(), getWidth()); // - rightPadding;
+                final int height = Math.min(child.getHeight(), getHeight());
                 final int saveCount = canvas.saveLayer(0, 0, width, height, null, Canvas.ALL_SAVE_FLAG);
-                result = super. drawChild(canvas, child, drawingTime);
+                result = super.drawChild(canvas, child, drawingTime);
                 final float gradientStart = width * (1f - clipProgress[index]);
                 final float gradientEnd = gradientStart + gradientSize;
                 gradientMatrix.setTranslate(gradientStart, 0);
@@ -2737,6 +2776,53 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
             return textViews[activeIndex == 0 ? 1 : 0];
         }
 
+        public int getCustomPaddingRight() {
+            return rightPadding;
+        }
+
+        public void setCustomPaddingRight(int padding) {
+            rightPadding = padding;
+            for (TextView tv : textViews) {
+                if (tv instanceof MarqueeTextView) {
+                    ((MarqueeTextView) tv).setCustomPaddingRight(padding);
+                }
+            }
+            invalidate();
+        }
+
         protected abstract TextView createTextView();
+    }
+
+
+    private ValueAnimator rightPaddingAnimator;
+
+    private void setCustomPaddingRight(int padding, boolean animated) {
+        if (rightPaddingAnimator != null) {
+            rightPaddingAnimator.cancel();
+            rightPaddingAnimator = null;
+        }
+        if (titleTextView.getCustomPaddingRight() == padding) {
+            return;
+        }
+
+        if (!animated) {
+            titleTextView.setCustomPaddingRight(padding);
+            authorTextView.setCustomPaddingRight(padding);
+            return;
+        }
+
+        rightPaddingAnimator = ValueAnimator.ofInt(titleTextView.getCustomPaddingRight(), padding);
+        if (padding == 0) {
+            rightPaddingAnimator.setStartDelay(200L);
+            rightPaddingAnimator.setDuration(100L);
+        } else {
+            rightPaddingAnimator.setDuration(200L);
+        }
+        rightPaddingAnimator.setInterpolator(new android.view.animation.DecelerateInterpolator());
+        rightPaddingAnimator.addUpdateListener(animation -> {
+            titleTextView.setCustomPaddingRight((int) animation.getAnimatedValue());
+            authorTextView.setCustomPaddingRight((int) animation.getAnimatedValue());
+        });
+        rightPaddingAnimator.start();
     }
 }

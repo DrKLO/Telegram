@@ -39,7 +39,6 @@ import com.google.android.exoplayer2.trackselection.TrackSelectionParameters;
 import com.google.android.exoplayer2.util.FlagSet;
 import com.google.android.exoplayer2.util.Size;
 import com.google.android.exoplayer2.util.Util;
-import com.google.android.exoplayer2.video.VideoListener;
 import com.google.android.exoplayer2.video.VideoSize;
 import com.google.common.base.Objects;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
@@ -3071,14 +3070,4 @@ public interface Player {
    * #getAvailableCommands() available}.
    */
   void setDeviceMuted(boolean muted);
-
-  ArrayList<VideoListener> videoListeners = new ArrayList<>();
-
-  default void addVideoListener(com.google.android.exoplayer2.video.VideoListener listener) {
-    videoListeners.add(listener);
-  }
-
-  default void removeVideoListener(com.google.android.exoplayer2.video.VideoListener listener) {
-    videoListeners.remove(listener);
-  }
 }

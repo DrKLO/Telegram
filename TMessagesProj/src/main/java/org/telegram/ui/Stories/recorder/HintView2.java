@@ -796,7 +796,7 @@ public class HintView2 extends View {
         float alpha = useAlpha ? showT : 1;
         canvas.save();
         if (showT < 1 && useScale) {
-            final float scale = lerp(.5f, 1f, showT);
+            final float scale = lerp(.75f, 1f, showT);
             canvas.scale(scale, scale, arrowX, arrowY);
         }
         float bounceScale = bounce.getScale(.025f);
@@ -1178,7 +1178,7 @@ public class HintView2 extends View {
         blurBitmapMatrix.postScale(AndroidUtilities.displaySize.x / (float) blurBitmapWidth, (AndroidUtilities.displaySize.y + AndroidUtilities.statusBarHeight) / (float) blurBitmapHeight);
         blurBitmapMatrix.postTranslate(-blurPos[0], -blurPos[1]);
         if (show.get() < 1 && useScale) {
-            final float scale = 1f / lerp(.5f, 1f, show.get());
+            final float scale = 1f / lerp(.75f, 1f, show.get());
             blurBitmapMatrix.postScale(scale, scale, arrowX, arrowY);
         }
         blurBitmapShader.setLocalMatrix(blurBitmapMatrix);

@@ -236,4 +236,5 @@ public class NativeInstance {
     public native boolean hasVideoCapturer();
     public native void onRequestTimeComplete(long taskPtr, long time);
     public native void setConferenceCallId(long call_id);
+    public static native String[] getAllVersions();
 }

@@ -4,8 +4,6 @@ import android.content.SharedPreferences;
 import android.graphics.drawable.Drawable;
 import android.text.TextPaint;
 import android.text.TextUtils;
-import android.util.Log;
-import android.util.SparseArray;
 
 import androidx.collection.LongSparseArray;
 
@@ -42,6 +40,7 @@ public class TopicsController extends BaseController {
     public static final int LOAD_TYPE_PRELOAD = 0;
     public static final int LOAD_TYPE_LOAD_NEXT = 1;
     public static final int LOAD_TYPE_LOAD_UNKNOWN = 2;
+    public static final int LOAD_TYPE_HASH_CHECK = 3;
 
     LongSparseArray<ArrayList<TLRPC.TL_forumTopic>> topicsByChatId = new LongSparseArray<>();
     LongSparseArray<LongSparseArray<TLRPC.TL_forumTopic>> topicsMapByChatId = new LongSparseArray<>();
@@ -50,7 +49,7 @@ public class TopicsController extends BaseController {
     LongSparseArray<TLRPC.TL_forumTopic> topicsByTopMsgId = new LongSparseArray<>();
 
     LongSparseIntArray currentOpenTopicsCounter = new LongSparseIntArray();
-    LongSparseIntArray openedTopicsBuChatId = new LongSparseIntArray();
+    LongSparseIntArray openedTopicsByChatId = new LongSparseIntArray();
 
     public TopicsController(int num) {
         super(num);
@@ -89,25 +88,121 @@ public class TopicsController extends BaseController {
             return;
         }
 
-        TLRPC.TL_channels_getForumTopics getForumTopics = new TLRPC.TL_channels_getForumTopics();
-        getForumTopics.channel = getMessagesController().getInputChannel(chatId);
-        if (loadType == LOAD_TYPE_PRELOAD) {
-            getForumTopics.limit = MAX_PRELOAD_COUNT;
-        } else if (loadType == LOAD_TYPE_LOAD_NEXT) {
-            getForumTopics.limit = 100;
-            TopicsLoadOffset loadOffsets = getLoadOffset(chatId);
-            getForumTopics.offset_date = loadOffsets.lastMessageDate;
-            getForumTopics.offset_id = loadOffsets.lastMessageId;
-            getForumTopics.offset_topic = loadOffsets.lastTopicId;
+        final boolean isMonoForum = getMessagesController().isMonoForum(-chatId);
+        TLObject request;
+        if (isMonoForum) {
+            TLRPC.TL_messages_getSavedDialogs getForumTopics = new TLRPC.TL_messages_getSavedDialogs();
 
-            if (BuildVars.LOGS_ENABLED) {
-                FileLog.d("offset_date=" + loadOffsets.lastMessageDate + " offset_id=" + loadOffsets.lastMessageId + " offset_topic=" + loadOffsets.lastTopicId);
+            getForumTopics.parent_peer = MessagesController.getInstance(currentAccount).getInputPeer(-chatId);
+            getForumTopics.flags |= 2;
+            TopicsLoadOffset loadOffsets = getLoadOffset(chatId);
+            if (loadType == LOAD_TYPE_PRELOAD || loadType == LOAD_TYPE_HASH_CHECK || loadType != LOAD_TYPE_LOAD_NEXT && loadOffsets.lastTopicId == 0) {
+                final ArrayList<TLRPC.TL_forumTopic> expected = getTopics(chatId);
+                getForumTopics.limit = MAX_PRELOAD_COUNT;
+                getForumTopics.offset_id = Integer.MAX_VALUE;
+                getForumTopics.offset_date = 0;
+                getForumTopics.offset_peer = new TLRPC.TL_inputPeerEmpty();
+                getForumTopics.hash = expected != null ?
+                    calculateHashSavedDialogs(expected, 0, Math.min(expected.size(), MAX_PRELOAD_COUNT)): 0;
+            } else if (loadType == LOAD_TYPE_LOAD_NEXT) {
+                getForumTopics.limit = 100;
+                getForumTopics.offset_date = loadOffsets.lastMessageDate;
+                getForumTopics.offset_id = loadOffsets.lastMessageId;
+                getForumTopics.offset_peer = MessagesController.getInstance(currentAccount).getInputPeer(loadOffsets.lastTopicId);
+
+                if (BuildVars.LOGS_ENABLED) {
+                    FileLog.d("offset_date=" + loadOffsets.lastMessageDate + " offset_id=" + loadOffsets.lastMessageId + " offset_topic=" + loadOffsets.lastTopicId);
+                }
             }
+
+            request = getForumTopics;
+        } else {
+            TLRPC.TL_channels_getForumTopics getForumTopics = new TLRPC.TL_channels_getForumTopics();
+            getForumTopics.channel = getMessagesController().getInputChannel(chatId);
+            if (loadType == LOAD_TYPE_PRELOAD) {
+                getForumTopics.limit = MAX_PRELOAD_COUNT;
+            } else if (loadType == LOAD_TYPE_LOAD_NEXT) {
+                getForumTopics.limit = 100;
+                TopicsLoadOffset loadOffsets = getLoadOffset(chatId);
+                getForumTopics.offset_date = loadOffsets.lastMessageDate;
+                getForumTopics.offset_id = loadOffsets.lastMessageId;
+                getForumTopics.offset_topic = (int) loadOffsets.lastTopicId;
+
+                if (BuildVars.LOGS_ENABLED) {
+                    FileLog.d("offset_date=" + loadOffsets.lastMessageDate + " offset_id=" + loadOffsets.lastMessageId + " offset_topic=" + loadOffsets.lastTopicId);
+                }
+            }
+            request = getForumTopics;
         }
 
-        getConnectionsManager().sendRequest(getForumTopics, (response, error) -> {
-            if (response != null) {
-                SparseArray<TLRPC.Message> messagesMap = new SparseArray<>();
+        getConnectionsManager().sendRequest(request, (response, error) -> {
+            LongSparseArray<TLRPC.Message> messagesMap = new LongSparseArray<>();
+            if (response instanceof TLRPC.TL_messages_savedDialogs) {
+                TLRPC.TL_messages_savedDialogs topics = (TLRPC.TL_messages_savedDialogs) response;
+                for (int i = 0; i < topics.messages.size(); i++) {
+                    messagesMap.put(topics.messages.get(i).id, topics.messages.get(i));
+                }
+
+                AndroidUtilities.runOnUIThread(() -> {
+                    getMessagesStorage().putUsersAndChats(topics.users, topics.chats, true, true);
+                    getMessagesController().putUsers(topics.users, false);
+                    getMessagesController().putChats(topics.chats, false);
+
+                    topicsIsLoading.put(chatId, 0);
+                    processTopics(chatId, ForumUtilities.monoForumTopicToTopic(topics.dialogs), messagesMap, false, loadType, topics.dialogs.size());
+                    sortTopics(chatId);
+                    getMessagesStorage().saveTopics(-chatId, topicsByChatId.get(chatId), true, true, getConnectionsManager().getCurrentTime());
+                    getMessagesStorage().putMessages(topics.messages, false, true, false, 0, false, 0, 0);
+
+                    if (!topics.dialogs.isEmpty() && loadType == LOAD_TYPE_LOAD_NEXT) {
+                        TLRPC.TL_monoForumDialog lastTopic = (TLRPC.TL_monoForumDialog) topics.dialogs.get(topics.dialogs.size() - 1);
+                        TLRPC.Message lastTopicMessage = messagesMap.get(lastTopic.top_message);
+                        saveLoadOffset(chatId, lastTopic.top_message, lastTopicMessage == null ? 0 : lastTopicMessage.date, DialogObject.getPeerDialogId(lastTopic.peer));
+                    } else if (getTopics(chatId) == null || getTopics(chatId).size() < topics.dialogs.size()) {
+                        clearLoadingOffset(chatId);
+                        loadTopics(chatId);
+                    }
+                });
+            } else if (response instanceof TLRPC.TL_messages_savedDialogsSlice) {
+                TLRPC.TL_messages_savedDialogsSlice topics = (TLRPC.TL_messages_savedDialogsSlice) response;
+                for (int i = 0; i < topics.messages.size(); i++) {
+                    messagesMap.put(topics.messages.get(i).id, topics.messages.get(i));
+                }
+
+                AndroidUtilities.runOnUIThread(() -> {
+                    getMessagesStorage().putUsersAndChats(topics.users, topics.chats, true, true);
+                    getMessagesController().putUsers(topics.users, false);
+                    getMessagesController().putChats(topics.chats, false);
+
+                    topicsIsLoading.put(chatId, 0);
+                    processTopics(chatId, ForumUtilities.monoForumTopicToTopic(topics.dialogs), messagesMap, false, loadType, topics.count);
+                    sortTopics(chatId);
+                    getMessagesStorage().saveTopics(-chatId, topicsByChatId.get(chatId), true, true, getConnectionsManager().getCurrentTime());
+                    getMessagesStorage().putMessages(topics.messages, false, true, false, 0, false, 0, 0);
+
+                    if (!topics.dialogs.isEmpty() && loadType == LOAD_TYPE_LOAD_NEXT) {
+                        TLRPC.TL_monoForumDialog lastTopic = (TLRPC.TL_monoForumDialog) topics.dialogs.get(topics.dialogs.size() - 1);
+                        TLRPC.Message lastTopicMessage = messagesMap.get(lastTopic.top_message);
+                        saveLoadOffset(chatId, lastTopic.top_message, lastTopicMessage == null ? 0 : lastTopicMessage.date, DialogObject.getPeerDialogId(lastTopic.peer));
+                    } else if (getTopics(chatId) == null || getTopics(chatId).size() < topics.count) {
+                        clearLoadingOffset(chatId);
+                        loadTopics(chatId);
+                    }
+                });
+            } else if (response instanceof TLRPC.TL_messages_savedDialogsNotModified) {
+                TLRPC.TL_messages_savedDialogsNotModified res = (TLRPC.TL_messages_savedDialogsNotModified) response;
+                AndroidUtilities.runOnUIThread(() -> {
+                    topicsIsLoading.put(chatId, 0);
+                    ArrayList<TLRPC.TL_forumTopic> topics = getTopics(chatId);
+                    long count = topics != null ? topics.size() : 0;
+                    if (count >= res.count) {
+                        endIsReached.put(chatId, 1);
+                        getUserConfig().getPreferences().edit().putBoolean("topics_end_reached_" + chatId, true).apply();
+                    }
+
+                    getNotificationCenter().postNotificationName(NotificationCenter.topicsDidLoaded, chatId, false);
+                });
+            } else if (response instanceof TLRPC.TL_messages_forumTopics) {
                 TLRPC.TL_messages_forumTopics topics = (TLRPC.TL_messages_forumTopics) response;
                 for (int i = 0; i < topics.messages.size(); i++) {
                     messagesMap.put(topics.messages.get(i).id, topics.messages.get(i));
@@ -142,13 +237,21 @@ public class TopicsController extends BaseController {
         });
     }
 
-    public void processTopics(long chatId, ArrayList<TLRPC.TL_forumTopic> newTopics, SparseArray<TLRPC.Message> messagesMap, boolean fromCache, int loadType, int totalCount) {
+    public void processTopics(long chatId, ArrayList<TLRPC.TL_forumTopic> newTopics, LongSparseArray<TLRPC.Message> messagesMap, boolean fromCache, int loadType, int totalCount) {
+        if (loadType == LOAD_TYPE_HASH_CHECK) {
+            getUserConfig().getPreferences().edit().remove("topics_end_reached_" + chatId).apply();
+            topicsByChatId.remove(chatId);
+            topicsMapByChatId.remove(chatId);
+            endIsReached.delete(chatId);
+            clearLoadingOffset(chatId);
+        }
+
         if (BuildVars.LOGS_ENABLED) {
             FileLog.d("processTopics=" + "new_topics_size=" + (newTopics == null ? 0 : newTopics.size()) + " fromCache=" + fromCache + " load_type=" + loadType + " totalCount=" + totalCount);
         }
         ArrayList<TLRPC.TL_forumTopic> topics = topicsByChatId.get(chatId);
         ArrayList<TLRPC.TL_forumTopic> topicsToReload = null;
-        ArrayList<Integer> deletedTopics = null;
+        ArrayList<Long> deletedTopics = null;
         LongSparseArray<TLRPC.TL_forumTopic> topicsMap = topicsMapByChatId.get(chatId);
 
         if (topics == null) {
@@ -168,7 +271,7 @@ public class TopicsController extends BaseController {
                     if (deletedTopics == null) {
                         deletedTopics = new ArrayList<>();
                     }
-                    deletedTopics.add(newTopic.id);
+                    deletedTopics.add((long) newTopic.id);
                     continue;
                 }
                 if (!topicsMap.containsKey(newTopic.id)) {
@@ -238,6 +341,25 @@ public class TopicsController extends BaseController {
             changed = true;
         }
 
+        if (topicsMap.size() > topics.size()) {
+            FileLog.e("[TopicsController]: cache desynchronization");
+
+            final HashSet<Long> keys = new HashSet<>(topicsMap.size());
+            for (int a = 0; a < topicsMap.size(); a++) {
+                keys.add(topicsMap.keyAt(a));
+            }
+            for (TLRPC.TL_forumTopic topic: topics) {
+                if (topic == null) {
+                    continue;
+                }
+                keys.remove((long) topic.id);
+            }
+            for (long key: keys) {
+                topicsMap.remove(key);
+            }
+            changed = true;
+        }
+
         if (changed) {
             sortTopics(chatId);
         }
@@ -267,7 +389,7 @@ public class TopicsController extends BaseController {
     public void sortTopics(long chatId, boolean notify) {
         ArrayList<TLRPC.TL_forumTopic> topics = topicsByChatId.get(chatId);
         if (topics != null) {
-            if (openedTopicsBuChatId.get(chatId, 0) > 0) {
+            if (openedTopicsByChatId.get(chatId, 0) > 0) {
                 Collections.sort(topics, (a, b) -> {
                     if (a.hidden != b.hidden) {
                         return a.hidden ? -1 : 1;
@@ -292,6 +414,7 @@ public class TopicsController extends BaseController {
             return;
         }
         long chatId = -dialogId;
+        final boolean monoforum = ChatObject.isMonoForum(getMessagesController().getChat(chatId));
         AndroidUtilities.runOnUIThread(() -> {
             getMessagesStorage().getStorageQueue().postRunnable(() -> {
                 ArrayList<TLRPC.TL_forumTopic> topicsToUpdate = null;
@@ -305,7 +428,11 @@ public class TopicsController extends BaseController {
                         TLRPC.TL_forumTopic topic = new TLRPC.TL_forumTopic();
                         topic.id = cursor.intValue(0);
                         topic.top_message = cursor.intValue(1);
-                        topic.from_id = getMessagesController().getPeer(getUserConfig().clientUserId);
+                        if (monoforum) {
+                            topic.from_id = getMessagesController().getPeer(topic.id);
+                        } else {
+                            topic.from_id = getMessagesController().getPeer(getUserConfig().getClientUserId());
+                        }
                         topic.notify_settings = new TLRPC.TL_peerNotifySettings();
                         topicsToUpdate.add(topic);
                     }
@@ -383,14 +510,59 @@ public class TopicsController extends BaseController {
     }
 
     public void reloadTopics(long chatId, ArrayList<TLRPC.TL_forumTopic> topicsToReload, Runnable callback) {
-        TLRPC.TL_channels_getForumTopicsByID req = new TLRPC.TL_channels_getForumTopicsByID();
-        for (int i = 0; i < topicsToReload.size(); i++) {
-            req.topics.add(topicsToReload.get(i).id);
+        final boolean isMonoForum = getMessagesController().isMonoForum(-chatId);
+        TLObject request;
+
+        HashSet<Long> ids = new HashSet<>();
+        if (isMonoForum) {
+            TLRPC.TL_messages_getSavedDialogsByID req = new TLRPC.TL_messages_getSavedDialogsByID();
+            for (int i = 0; i < topicsToReload.size(); i++) {
+                long topicId = DialogObject.getPeerDialogId(topicsToReload.get(i).from_id);
+                ids.add(topicId);
+                req.ids.add(getMessagesController().getInputPeer(topicId));
+            }
+            req.parent_peer = getMessagesController().getInputPeer(-chatId);
+            request = req;
+        } else {
+            TLRPC.TL_channels_getForumTopicsByID req = new TLRPC.TL_channels_getForumTopicsByID();
+            for (int i = 0; i < topicsToReload.size(); i++) {
+                req.topics.add(topicsToReload.get(i).id);
+            }
+            req.channel = getMessagesController().getInputChannel(chatId);
+            request = req;
         }
-        req.channel = getMessagesController().getInputChannel(chatId);
-        getConnectionsManager().sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
-            if (response != null) {
-                SparseArray<TLRPC.Message> messagesMap = new SparseArray<>();
+        getConnectionsManager().sendRequest(request, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+            if (response != null && isMonoForum) {
+                LongSparseArray<TLRPC.Message> messagesMap = new LongSparseArray<>();
+                TLRPC.TL_messages_savedDialogs dialogs = (TLRPC.TL_messages_savedDialogs) response;
+                ArrayList<TLRPC.TL_forumTopic> topics = ForumUtilities.monoForumTopicToTopic(dialogs.dialogs);
+                for (int i = 0; i < dialogs.messages.size(); i++) {
+                    messagesMap.put(dialogs.messages.get(i).id, dialogs.messages.get(i));
+                }
+
+                AndroidUtilities.runOnUIThread(() -> {
+                    getMessagesController().putUsers(dialogs.users, false);
+                    getMessagesController().putChats(dialogs.chats, false);
+
+                    processTopics(chatId, topics, messagesMap, false, LOAD_TYPE_LOAD_UNKNOWN, -1);
+                    getMessagesStorage().saveTopics(-chatId, topicsByChatId.get(chatId), true, true, getConnectionsManager().getCurrentTime());
+                    getMessagesStorage().putMessages(dialogs.messages, false, true, false, 0, false, 0, 0);
+
+                    for (TLRPC.TL_forumTopic topic: topics) {
+                        ids.remove(DialogObject.getPeerDialogId(topic.from_id));
+                    }
+                    for (long topicId: ids) {
+                        getMessagesStorage().removeTopic(-chatId, topicId);
+                        onTopicsDeletedServerSide(chatId, topicId);
+                    }
+
+
+                    if (callback != null) {
+                        callback.run();
+                    }
+                });
+            } else if (response != null) {
+                LongSparseArray<TLRPC.Message> messagesMap = new LongSparseArray<>();
                 TLRPC.TL_messages_forumTopics topics = (TLRPC.TL_messages_forumTopics) response;
                 for (int i = 0; i < topics.messages.size(); i++) {
                     messagesMap.put(topics.messages.get(i).id, topics.messages.get(i));
@@ -425,7 +597,12 @@ public class TopicsController extends BaseController {
     public TLRPC.TL_forumTopic findTopic(long chatId, long topicId) {
         LongSparseArray<TLRPC.TL_forumTopic> topicsMap = topicsMapByChatId.get(chatId);
         if (topicsMap != null) {
-            return topicsMap.get(topicId);
+            TLRPC.TL_forumTopic topic = topicsMap.get(topicId);
+            if (topic == null && getMessagesController().isMonoForum(-chatId)) {
+                topic = topicsMap.get(ForumUtilities.monoForumTopicIdToTopicId(topicId));
+            }
+
+            return topic;
         }
         return null;
     }
@@ -759,6 +936,20 @@ public class TopicsController extends BaseController {
         }
     }
 
+    public void markAllReactionsAsRead(long chatId) {
+        ArrayList<TLRPC.TL_forumTopic> topics = getTopics(chatId);
+        if (topics != null) {
+            for (int i = 0; i < topics.size(); ++i) {
+                TLRPC.TL_forumTopic topic = topics.get(i);
+                if (topic == null) {
+                    continue;
+                }
+                topic.unread_reactions_count = 0;
+            }
+            sortTopics(chatId);
+        }
+    }
+
     LongSparseArray<TopicsLoadOffset> offsets = new LongSparseArray<>();
 
     public TopicsLoadOffset getLoadOffset(long chatId) {
@@ -775,7 +966,7 @@ public class TopicsController extends BaseController {
 //        return topicsLoadOffset;
     }
 
-    public void saveLoadOffset(long chatId, int lastMessageId, int lastMessageDate, int lastTopicId) {
+    public void saveLoadOffset(long chatId, int lastMessageId, int lastMessageDate, long lastTopicId) {
         TopicsLoadOffset offset = new TopicsLoadOffset();
         offset.lastMessageId = lastMessageId;
         offset.lastMessageDate = lastMessageDate;
@@ -817,7 +1008,12 @@ public class TopicsController extends BaseController {
                         topicsToReload.put(update.dialogId, arrayList);
                     }
                     TLRPC.TL_forumTopic forumTopic = new TLRPC.TL_forumTopic();
-                    forumTopic.id = (int) update.topicId;
+                    if (ChatObject.isMonoForum(currentAccount, update.dialogId)) {
+                        forumTopic.from_id = new TLRPC.TL_peerUser();
+                        forumTopic.from_id.user_id = update.topicId;
+                    } else {
+                        forumTopic.id = (int) update.topicId;
+                    }
                     arrayList.add(forumTopic);
                 } else {
                     TLRPC.TL_forumTopic topic = findTopic(-update.dialogId, update.topicId);
@@ -843,6 +1039,10 @@ public class TopicsController extends BaseController {
                         }
                         changedDialogs.add(-update.dialogId);
                     }
+                    if (topic != null && update.checkForDelete) {
+                        topic.totalMessagesCount = 0;
+                        getTopicRepliesCount(update.dialogId, update.topicId);
+                    }
                 }
             }
             for (Long changedDialog : changedDialogs) {
@@ -864,6 +1064,12 @@ public class TopicsController extends BaseController {
         return topicsIsLoading.get(chatId, 0) == 1 && (topicsByChatId.get(chatId) == null || topicsByChatId.get(chatId).isEmpty());
     }
 
+    public void onTopicsDeletedServerSide(long chatId, long topicId) {
+        ArrayList<MessagesStorage.TopicKey> key = new ArrayList<>(1);
+        key.add(MessagesStorage.TopicKey.of(-chatId, topicId));
+        onTopicsDeletedServerSide(key);
+    }
+
     public void onTopicsDeletedServerSide(ArrayList<MessagesStorage.TopicKey> topicsToDelete) {
         AndroidUtilities.runOnUIThread(() -> {
             HashSet<Long> changedChatId = new HashSet<>();
@@ -877,7 +1083,7 @@ public class TopicsController extends BaseController {
                 ArrayList<TLRPC.TL_forumTopic> topics = topicsByChatId.get(chatId);
                 if (topics != null) {
                     for (int k = 0; k < topics.size(); k++) {
-                        if (topics.get(k).id == topicKey.topicId) {
+                        if ((getMessagesController().isMonoForum(topicKey.dialogId) ? DialogObject.getPeerDialogId(topics.get(k).from_id) : topics.get(k).id) == topicKey.topicId) {
                             topics.remove(k);
                             getNotificationCenter().postNotificationName(NotificationCenter.dialogDeleted, -chatId, topicKey.topicId);
                             changedChatId.add(chatId);
@@ -906,7 +1112,7 @@ public class TopicsController extends BaseController {
             clearLoadingOffset(chatId);
 
             TLRPC.Chat chat = getMessagesController().getChat(chatId);
-            if (chat != null && chat.forum) {
+            if (chat != null && (chat.forum || chat.monoforum)) {
                 loadTopics(chatId, fromCache, LOAD_TYPE_PRELOAD);
             }
             sortTopics(chatId);
@@ -1031,7 +1237,7 @@ public class TopicsController extends BaseController {
     private class TopicsLoadOffset {
         int lastMessageId;
         int lastMessageDate;
-        int lastTopicId;
+        long lastTopicId;
     }
 
     public static class TopicUpdate {
@@ -1045,41 +1251,93 @@ public class TopicsController extends BaseController {
         ArrayList<MessageObject> groupedMessages;
         boolean reloadTopic;
         boolean onlyCounters;
+        boolean checkForDelete;
     }
 
 
     public void onTopicFragmentResume(long chatId) {
-        int v = openedTopicsBuChatId.get(chatId, 0);
-        openedTopicsBuChatId.put(chatId, v + 1);
+        int v = openedTopicsByChatId.get(chatId, 0);
+        openedTopicsByChatId.put(chatId, v + 1);
         sortTopics(chatId);
     }
 
     public void onTopicFragmentPause(long chatId) {
-        int v = openedTopicsBuChatId.get(chatId, 0);
+        int v = openedTopicsByChatId.get(chatId, 0);
         v--;
         if (v < 0) {
             v = 0;
         }
-        openedTopicsBuChatId.put(chatId, v);
+        openedTopicsByChatId.put(chatId, v);
     }
 
     public void getTopicRepliesCount(long dialogId, long topicId) {
         TLRPC.TL_forumTopic topic = findTopic(-dialogId, topicId);
         if (topic != null) {
             if (topic.totalMessagesCount == 0) {
-                TLRPC.TL_messages_getReplies req = new TLRPC.TL_messages_getReplies();
-                req.peer = getMessagesController().getInputPeer(dialogId);
-                req.msg_id = (int) topicId;
-                req.limit = 1;
-                getConnectionsManager().sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+                TLObject request;
+                if (getMessagesController().isMonoForum(dialogId)) {
+                    TLRPC.TL_messages_getSavedHistory req = new TLRPC.TL_messages_getSavedHistory();
+                    req.peer = getMessagesController().getInputPeer(topicId);
+                    req.parent_peer = getMessagesController().getInputPeer(dialogId);
+                    req.limit = 1;
+                    request = req;
+                } else {
+                    TLRPC.TL_messages_getReplies req = new TLRPC.TL_messages_getReplies();
+                    req.peer = getMessagesController().getInputPeer(dialogId);
+                    req.msg_id = (int) topicId;
+                    req.limit = 1;
+                    request = req;
+                }
+                getConnectionsManager().sendRequest(request, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
                     if (response != null) {
                         TLRPC.messages_Messages messages = (TLRPC.messages_Messages) response;
                         topic.totalMessagesCount = messages.count;
                         getMessagesStorage().updateTopicData(dialogId, topic, TOPIC_FLAG_TOTAL_MESSAGES_COUNT);
+                        if (messages.count == 0 && getMessagesController().isMonoForum(dialogId)) {
+                            getMessagesStorage().removeTopic(dialogId, topicId);
+                            onTopicsDeletedServerSide(-dialogId, topicId);
+                        }
+
                         NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.topicsDidLoaded, -dialogId, true);
                     }
                 }));
             }
         }
+    }
+
+    public int getTopicsCount(long chatId) {
+        if (endIsReached(chatId)) {
+            ArrayList<TLRPC.TL_forumTopic> topics = getTopics(chatId);
+            return topics != null ? topics.size() : 0;
+        }
+        return 0;
+    }
+
+
+    public static long calculateHashSavedDialogs(ArrayList<TLRPC.TL_forumTopic> topics, int start, int limit) {
+        if (topics == null) {
+            return 0;
+        }
+        if (topics.size() < start + limit) {
+            return 0;
+        }
+
+        long hash = 0;
+        for (int i = start; i < (start + limit); i++) {
+            final TLRPC.TL_forumTopic topic = topics.get(i);
+            final TLRPC.Message message = topic.topMessage;
+            if (message == null || message.id != topic.top_message) {
+                return 0;
+            }
+
+            final long date = (message.flags & TLRPC.MESSAGE_FLAG_EDITED) != 0 ? message.edit_date : message.date;
+
+            hash = MediaDataController.calcHash(hash, topic.pinned ? 1 : 0);
+            hash = MediaDataController.calcHash(hash, Math.abs(DialogObject.getPeerDialogId(topic.from_id)));
+            hash = MediaDataController.calcHash(hash, topic.top_message);
+            hash = MediaDataController.calcHash(hash, date);
+        }
+
+        return hash;
     }
 }

@@ -70,10 +70,13 @@ import java.util.Collections;
 public class ItemOptions {
 
     public static ItemOptions makeOptions(@NonNull BaseFragment fragment, @NonNull View scrimView) {
-        return new ItemOptions(fragment, scrimView, false);
+        return new ItemOptions(fragment, scrimView, false, true);
     }
     public static ItemOptions makeOptions(@NonNull BaseFragment fragment, @NonNull View scrimView, boolean swipeback) {
-        return new ItemOptions(fragment, scrimView, swipeback);
+        return new ItemOptions(fragment, scrimView, swipeback, true);
+    }
+    public static ItemOptions makeOptions(@NonNull BaseFragment fragment, @NonNull View scrimView, boolean swipeback, boolean withoutScrollView) {
+        return new ItemOptions(fragment, scrimView, swipeback, !withoutScrollView);
     }
 
     public static ItemOptions makeOptions(@NonNull ViewGroup container, @NonNull View scrimView) {
@@ -111,7 +114,7 @@ public class ItemOptions {
         return this;
     }
 
-    private ActionBarPopupWindow actionBarPopupWindow;
+    public ActionBarPopupWindow actionBarPopupWindow;
     private final float[] point = new float[2];
 
     private Runnable dismissListener;
@@ -127,6 +130,10 @@ public class ItemOptions {
         return this;
     }
 
+    public Context getContext() {
+        return context;
+    }
+
     private DimView dimView;
     private ViewTreeObserver.OnPreDrawListener preDrawListener;
 
@@ -136,9 +143,9 @@ public class ItemOptions {
     private int foregroundIndex;
     private ActionBarPopupWindow.ActionBarPopupWindowLayout lastLayout;
 
-    public boolean swipeback;
+    public boolean swipeback, useScrollView;
 
-    private ItemOptions(BaseFragment fragment, View scrimView, boolean swipeback) {
+    private ItemOptions(BaseFragment fragment, View scrimView, boolean swipeback, boolean useScrollView) {
         if (fragment.getContext() == null) {
             return;
         }
@@ -149,6 +156,7 @@ public class ItemOptions {
         this.scrimView = scrimView;
         this.dimAlpha = AndroidUtilities.computePerceivedBrightness(Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider)) > .705 ? 0x66 : 0x33;
         this.swipeback = swipeback;
+        this.useScrollView = useScrollView;
 
         init();
     }
@@ -177,7 +185,7 @@ public class ItemOptions {
     }
 
     private void init() {
-        lastLayout = new ActionBarPopupWindow.ActionBarPopupWindowLayout(context, R.drawable.popup_fixed_alert2, resourcesProvider, swipeback ? ActionBarPopupWindow.ActionBarPopupWindowLayout.FLAG_USE_SWIPEBACK : 0) {
+        lastLayout = new ActionBarPopupWindow.ActionBarPopupWindowLayout(context, R.drawable.popup_fixed_alert2, resourcesProvider, (swipeback ? ActionBarPopupWindow.ActionBarPopupWindowLayout.FLAG_USE_SWIPEBACK : 0) | (!useScrollView ? ActionBarPopupWindow.ActionBarPopupWindowLayout.FLAG_DONT_USE_SCROLLVIEW : 0)) {
             @Override
             protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
                 if (this == layout && maxHeight > 0) {
@@ -210,7 +218,9 @@ public class ItemOptions {
         lastLayout.getSwipeBack().closeForeground();
     }
 
+    private boolean overridenSwipebackGravity;
     public ItemOptions setSwipebackGravity(boolean right, boolean bottom) {
+        overridenSwipebackGravity = true;
         lastLayout.swipeBackGravityRight = right;
         lastLayout.swipeBackGravityBottom = bottom;
         return this;
@@ -248,6 +258,10 @@ public class ItemOptions {
 
     public ItemOptions add(int iconResId, CharSequence text, Runnable onClickListener) {
         return add(iconResId, text, false, onClickListener);
+    }
+
+    public ItemOptions add(Drawable icon, CharSequence text, Runnable onClickListener) {
+        return add(0, icon, text, Theme.key_actionBarDefaultSubmenuItemIcon, Theme.key_actionBarDefaultSubmenuItem, onClickListener);
     }
 
     public ItemOptions add(int iconResId, CharSequence text, boolean isRed, Runnable onClickListener) {
@@ -724,6 +738,12 @@ public class ItemOptions {
         return this;
     }
 
+    public boolean needsFocus;
+    public ItemOptions needsFocus() {
+        this.needsFocus = true;
+        return this;
+    }
+
     private int minWidthDp;
     private int fixedWidthDp;
 
@@ -1022,8 +1042,13 @@ public class ItemOptions {
         actionBarPopupWindow.setFocusable(true);
         actionBarPopupWindow.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
         actionBarPopupWindow.setAnimationStyle(R.style.PopupContextAnimation);
-        actionBarPopupWindow.setInputMethodMode(ActionBarPopupWindow.INPUT_METHOD_NOT_NEEDED);
-        actionBarPopupWindow.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_UNSPECIFIED);
+        if (needsFocus) {
+            actionBarPopupWindow.setInputMethodMode(ActionBarPopupWindow.INPUT_METHOD_NEEDED);
+            actionBarPopupWindow.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_PAN);
+        } else {
+            actionBarPopupWindow.setInputMethodMode(ActionBarPopupWindow.INPUT_METHOD_NOT_NEEDED);
+            actionBarPopupWindow.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_UNSPECIFIED);
+        }
 
         if (AndroidUtilities.isTablet()) {
             y += container.getPaddingTop();
@@ -1047,6 +1072,7 @@ public class ItemOptions {
         }
         int Y;
         float scrimHeight = onTopOfScrim ? 0 : scrimViewBounds.height();
+        boolean above = false;
         if (forceBottom) {
             if (allowMoveScrim) {
                 Y = (int) (y + scrimHeight);
@@ -1055,16 +1081,21 @@ public class ItemOptions {
             }
         } else if (scrimView != null) {
             if (forceTop || y + scrimHeight + layout.getMeasuredHeight() + dp(16) > AndroidUtilities.displaySize.y - AndroidUtilities.navigationBarHeight) {
+                above = true;
                 // put above scrimView
                 y -= scrimHeight;
                 y -= layout.getMeasuredHeight();
                 if (allowCenter && Math.max(0, y + scrimHeight) + layout.getMeasuredHeight() > point[1] + scrimViewBounds.top && scrimViewBounds.height() == scrimView.getHeight()) {
+                    above = false;
                     y = (container.getHeight() - layout.getMeasuredHeight()) / 2f - scrimHeight - container.getY();
                 }
             }
             Y = (int) (y + scrimHeight + container.getY()); // under scrimView
         } else {
             Y = (container.getHeight() - layout.getMeasuredHeight()) / 2; // at the center
+        }
+        if (swipeback && above && !overridenSwipebackGravity && lastLayout != null) {
+            lastLayout.swipeBackGravityBottom = true;
         }
 
         if (allowMoveScrim && dimView != null) {

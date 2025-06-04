@@ -5471,7 +5471,7 @@ public class ThemePreviewActivity extends BaseFragment implements DownloadContro
                     }
                     messageCell.isChat = showSecretMessages || dialogId < 0;
                     messageCell.setFullyDraw(true);
-                    messageCell.setMessageObject(message, null, pinnedBotton, pinnedTop);
+                    messageCell.setMessageObject(message, null, pinnedBotton, pinnedTop, false);
                 } else if (view instanceof ChatActionCell) {
                     ChatActionCell actionCell = (ChatActionCell) view;
                     actionCell.setMessageObject(message);

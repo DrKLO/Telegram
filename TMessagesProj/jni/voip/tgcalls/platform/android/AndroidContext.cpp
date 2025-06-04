@@ -6,7 +6,6 @@
 namespace tgcalls {
 
 AndroidContext::AndroidContext(JNIEnv *env, jobject peerInstance, jobject groupInstance, bool screencast) {
-    DEBUG_D("new AndroidContext");
     VideoCapturerDeviceClass = (jclass) env->NewGlobalRef(env->FindClass("org/telegram/messenger/voip/VideoCapturerDevice"));
     jmethodID initMethodId = env->GetMethodID(VideoCapturerDeviceClass, "<init>", "(Z)V");
     javaCapturer = env->NewGlobalRef(env->NewObject(VideoCapturerDeviceClass, initMethodId, screencast));
@@ -19,7 +18,6 @@ AndroidContext::AndroidContext(JNIEnv *env, jobject peerInstance, jobject groupI
 }
 
 AndroidContext::~AndroidContext() {
-    DEBUG_D("~AndroidContext");
     JNIEnv *env = webrtc::AttachCurrentThreadIfNeeded();
 
     jmethodID onDestroyMethodId = env->GetMethodID(VideoCapturerDeviceClass, "onDestroy", "()V");

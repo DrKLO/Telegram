@@ -529,7 +529,7 @@ public class AnimatedEmojiSpan extends ReplacementSpan {
                     if (clone && textLayout.getText() instanceof Spannable) {
                         int start = spanned.getSpanStart(span), end = spanned.getSpanEnd(span);
                         ((Spannable) spanned).removeSpan(span);
-                        ((Spannable) spanned).setSpan(span = cloneSpan(span, null), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                        ((Spannable) spanned).setSpan(spans[i] = span = cloneSpan(span, null), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                     }
                     AnimatedEmojiHolder holder = null;
                     if (prev == null) {

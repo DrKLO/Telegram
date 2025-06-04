@@ -240,6 +240,28 @@ public final class BulletinFactory {
         return create(layout, text.length() < 20 ? Bulletin.DURATION_SHORT : Bulletin.DURATION_LONG);
     }
 
+    public Bulletin createSimpleBulletin(TLRPC.Document document, CharSequence title, CharSequence text) {
+        if (document == null) return new Bulletin.EmptyBulletin();
+        final Bulletin.TwoLineLayout layout = new Bulletin.TwoLineLayout(getContext(), resourcesProvider);
+        TLRPC.PhotoSize thumbSize = FileLoader.getClosestPhotoSizeWithSize(document.thumbs, dp(28), true, null, false);
+        TLRPC.PhotoSize photoSize = FileLoader.getClosestPhotoSizeWithSize(document.thumbs, dp(28), true, thumbSize, true);
+        layout.imageView.setImage(
+            ImageLocation.getForDocument(photoSize, document), "28_28",
+            ImageLocation.getForDocument(thumbSize, document), "28_28",
+            null, 0, 0, null
+        );
+        layout.imageView.getImageReceiver().setRoundRadius(dp(5));
+        layout.titleTextView.setText(title);
+        layout.titleTextView.setSingleLine(true);
+        layout.titleTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
+        layout.titleTextView.setMaxLines(1);
+        layout.titleTextView.setTypeface(AndroidUtilities.bold());
+        layout.subtitleTextView.setText(text);
+        layout.subtitleTextView.setSingleLine(false);
+        layout.subtitleTextView.setMaxLines(5);
+        return create(layout, text.length() < 20 ? Bulletin.DURATION_SHORT : Bulletin.DURATION_LONG);
+    }
+
     public Bulletin createSimpleBulletin(TLRPC.Photo photo, CharSequence text) {
         if (photo == null) return new Bulletin.EmptyBulletin();
         final Bulletin.TwoLineLayout layout = new Bulletin.TwoLineLayout(getContext(), resourcesProvider);

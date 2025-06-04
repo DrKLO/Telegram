@@ -32,7 +32,7 @@ public class GallerySheet extends BottomSheet {
         super(context, false, resourcesProvider);
 
         fixNavigationBar(0xff1f1f1f);
-        listView = new GalleryListView(UserConfig.selectedAccount, context, new DarkThemeResourceProvider(), null, onlyPhotos, aspectRatio) {
+        listView = new GalleryListView(UserConfig.selectedAccount, context, new DarkThemeResourceProvider(), null, onlyPhotos, aspectRatio, false, false) {
             @Override
             public String getTitle() {
                 return title;

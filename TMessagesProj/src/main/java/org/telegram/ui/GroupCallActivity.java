@@ -113,6 +113,7 @@ import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
 import org.telegram.messenger.Utilities;
 import org.telegram.messenger.pip.PipSource;
+import org.telegram.messenger.pip.utils.PipUtils;
 import org.telegram.messenger.support.LongSparseIntArray;
 import org.telegram.messenger.voip.Instance;
 import org.telegram.messenger.voip.VoIPService;
@@ -165,7 +166,6 @@ import org.telegram.ui.Components.JoinCallAlert;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.NumberPicker;
 import org.telegram.ui.Components.PermissionRequest;
-import org.telegram.messenger.pip.PipNativeApiController;
 import org.telegram.ui.Components.Premium.LimitReachedBottomSheet;
 import org.telegram.ui.Components.Premium.boosts.UserSelectorBottomSheet;
 import org.telegram.ui.Components.ProfileGalleryView;
@@ -505,7 +505,7 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
             try {
                 if (renderersContainer == null || renderersContainer.inFullscreenMode) return;
                 final GroupCallGridCell cell = findGroupCallGridCell();
-                if (cell == null) return;
+                if (cell == null || !cell.isAttachedToWindow()) return;
                 final GroupCallMiniTextureView rendered = cell.getRenderer();
                 if (rendered == null) return;
                 final VoIPTextureView textureView = rendered.textureView;
@@ -529,7 +529,7 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
     private GroupCallGridCell findGroupCallGridCell() {
         for (int i = 0; i < listView.getChildCount(); i++) {
             View view = listView.getChildAt(i);
-            if (view instanceof GroupCallGridCell && listView.getChildAdapterPosition(view) >= 0) {
+            if (view.isAttachedToWindow() && view instanceof GroupCallGridCell && listView.getChildAdapterPosition(view) >= 0) {
                 return (GroupCallGridCell) view;
             }
         }
@@ -2941,6 +2941,9 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
                         listCells.clear();
                         for (int i = 0; i < listView.getChildCount(); i++) {
                             View view = listView.getChildAt(i);
+                            if (!view.isAttachedToWindow()) {
+                                continue;
+                            }
                             if (view instanceof GroupCallGridCell && listView.getChildAdapterPosition(view) >= 0) {
                                 GroupCallGridCell cell = (GroupCallGridCell) view;
                                 if (cell.getRenderer() != renderersContainer.fullscreenTextureView) {
@@ -3457,7 +3460,7 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
                     for (int i = 0; i < getChildCount(); i++) {
                         View child = getChildAt(i);
                         if (child instanceof GroupCallGridCell) {
-                            attachRenderer((GroupCallGridCell) child, visibility == View.VISIBLE);
+                            attachRenderer((GroupCallGridCell) child, child.isAttachedToWindow() && visibility == View.VISIBLE);
                         }
                     }
                 }
@@ -4963,10 +4966,10 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
         pipItem.setLongClickEnabled(false);
         pipItem.setIcon(R.drawable.msg_voice_pip);
         pipItem.setContentDescription(getString(R.string.AccDescrPipMode));
-        pipItem.setBackgroundDrawable(Theme.createSelectorDrawable(Theme.getColor(Theme.key_voipgroup_actionBarItemsSelector), 6));
+        pipItem.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_voipgroup_actionBarItemsSelector), 6));
         pipItem.setOnClickListener(v -> {
             if (isRtmpStream()) {
-                if (PipNativeApiController.checkAnyPipPermissions(parentActivity)) {
+                if (PipUtils.checkAnyPipPermissions(parentActivity)) {
                     RTMPStreamPipOverlay.show(parentActivity);
                     dismiss();
                 } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
@@ -6415,8 +6418,8 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
                     titleTextView.setText(getString(R.string.VoipGroupVoiceChat), animated);
                 }
             } else if (currentChat == null) {
-                actionBar.setTitle("Group call");
-                titleTextView.setText("Group call", animated);
+                actionBar.setTitle(getString(R.string.ConferenceChat));
+                titleTextView.setText(getString(R.string.ConferenceChat), animated);
             }
         }
         SimpleTextView textView = actionBar.getTitleTextView();
@@ -8984,9 +8987,9 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
                     textView.setGravity(Gravity.CENTER_HORIZONTAL);
                     textView.setPadding(0, 0, 0, dp(10));
                     if (ChatObject.isChannelOrGiga(currentChat)) {
-                        textView.setText(formatString("VoipChannelVideoNotAvailableAdmin", R.string.VoipChannelVideoNotAvailableAdmin, LocaleController.formatPluralString("Participants", accountInstance.getMessagesController().groupCallVideoMaxParticipants)));
+                        textView.setText(formatString(R.string.VoipChannelVideoNotAvailableAdmin, LocaleController.formatPluralString("Participants", accountInstance.getMessagesController().groupCallVideoMaxParticipants)));
                     } else {
-                        textView.setText(formatString("VoipVideoNotAvailableAdmin", R.string.VoipVideoNotAvailableAdmin, LocaleController.formatPluralString("Members", accountInstance.getMessagesController().groupCallVideoMaxParticipants)));
+                        textView.setText(formatString(R.string.VoipVideoNotAvailableAdmin, LocaleController.formatPluralString("Members", accountInstance.getMessagesController().groupCallVideoMaxParticipants)));
                     }
                     view = textView;
                     break;

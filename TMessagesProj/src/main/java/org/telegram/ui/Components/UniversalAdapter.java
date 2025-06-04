@@ -573,7 +573,7 @@ public class UniversalAdapter extends AdapterWithDiffUtils {
         if (viewType >= UItem.factoryViewTypeStartsWith) {
             UItem.UItemFactory<?> factory = UItem.findFactory(viewType);
             if (factory != null) {
-                factory.bindView(holder.itemView, item, divider);
+                factory.bindView(holder.itemView, item, divider, this, listView instanceof UniversalRecyclerView ? (UniversalRecyclerView) listView : null);
             }
         } else switch (viewType) {
             case VIEW_TYPE_HEADER:
@@ -589,7 +589,11 @@ public class UniversalAdapter extends AdapterWithDiffUtils {
             case VIEW_TYPE_TOPVIEW:
                 TopViewCell topCell = (TopViewCell) holder.itemView;
                 if (item.iconResId != 0) {
-                    topCell.setEmoji(item.iconResId);
+                    if (item.accent) {
+                        topCell.setEmojiStatic(item.iconResId);
+                    } else {
+                        topCell.setEmoji(item.iconResId);
+                    }
                 } else {
                     topCell.setEmoji(item.subtext.toString(), item.textValue.toString());
                 }

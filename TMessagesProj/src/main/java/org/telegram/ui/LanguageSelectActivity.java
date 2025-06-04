@@ -260,6 +260,7 @@ public class LanguageSelectActivity extends BaseFragment implements Notification
                     if (!sameLang) {
                         progressDialog.showDelayed(500);
                     }
+                    getMessagesController().getTranslateController().reset();
                     int reqId = LocaleController.getInstance().applyLanguage(localeInfo, true, false, false, true, currentAccount, () -> {
                         progressDialog.dismiss();
                         if (!sameLang) {

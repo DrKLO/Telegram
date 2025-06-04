@@ -49,7 +49,7 @@ public class ChatUnreadCell extends FrameLayout {
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         textView.setTextColor(getColor(Theme.key_chat_unreadMessagesStartText));
         textView.setTypeface(AndroidUtilities.bold());
-        addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER));
+        addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER, 32, 0, 32, 0));
     }
 
     public void setText(String text) {

@@ -21,6 +21,7 @@ import android.graphics.RectF;
 import android.media.AudioManager;
 import android.net.Uri;
 import android.os.Build;
+import android.text.TextUtils;
 import android.util.LongSparseArray;
 import android.util.SparseArray;
 import android.view.GestureDetector;
@@ -1337,9 +1338,7 @@ public class StoryViewer implements NotificationCenter.NotificationCenterDelegat
                         scope.player = null;
                         return;
                     }
-                    String lastAutority = lastUri == null ? null : lastUri.getAuthority();
-                    String autority = uri == null ? null : uri.getAuthority();
-                    boolean sameUri = Objects.equals(lastAutority, autority);
+                    boolean sameUri = TextUtils.equals(lastUri == null ? null : lastUri.toString(), uri == null ? null : uri.toString());
                     if (!sameUri || playerHolder == null) {
                         lastUri = uri;
                         if (playerHolder != null) {

@@ -2911,7 +2911,7 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
             @Override
             public void onStickerSelected(TLRPC.TL_document document, String query, Object parent) {
                 AlertsCreator.ensurePaidMessageConfirmation(currentAccount, dialogId, 1, payStars -> {
-                    SendMessagesHelper.getInstance(currentAccount).sendSticker(document, query, dialogId, null, null, currentStory.storyItem, null, null, true, 0, false, parent, null, 0, payStars);
+                    SendMessagesHelper.getInstance(currentAccount).sendSticker(document, query, dialogId, null, null, currentStory.storyItem, null, null, true, 0, false, parent, null, 0, payStars, chatActivityEnterView.getSendMonoForumPeerId());
                     chatActivityEnterView.addStickerToRecent(document);
                     chatActivityEnterView.setFieldText("");
                     afterMessageSend(payStars <= 0);
@@ -3085,7 +3085,7 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
                                 if (i == 0) {
                                     updateStickersOrder = photos.get(0).updateStickersOrder;
                                 }
-                                SendMessagesHelper.prepareSendingMedia(getAccountInstance(), photos, dialogId, null, null, storyItem, null, button == 4 || forceDocument, arg, null, notify, scheduleDate, 0, updateStickersOrder, null, null, 0, 0, false, 0);
+                                SendMessagesHelper.prepareSendingMedia(getAccountInstance(), photos, dialogId, null, null, storyItem, null, button == 4 || forceDocument, arg, null, notify, scheduleDate, 0, updateStickersOrder, null, null, 0, 0, false, 0, chatActivityEnterView.getSendMonoForumPeerId());
                             }
                             chatActivityEnterView.setFieldText("");
                             afterMessageSend(payStars <= 0);
@@ -5846,7 +5846,7 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
             if (currentStory.uploadingStory != null) {
                 caption = currentStory.uploadingStory.entry.caption;
                 caption = Emoji.replaceEmoji(caption, storyCaptionView.captionTextview.getPaint().getFontMetricsInt(), false);
-                SpannableStringBuilder spannableStringBuilder = SpannableStringBuilder.valueOf(caption);
+                SpannableStringBuilder spannableStringBuilder = caption == null ? new SpannableStringBuilder() : SpannableStringBuilder.valueOf(caption);
                 TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(dialogId);
                 if (dialogId < 0 || MessagesController.getInstance(currentAccount).storyEntitiesAllowed(user)) {
                     MessageObject.addLinks(true, spannableStringBuilder);

@@ -356,7 +356,7 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
             });
             cell.isChat = false;
             cell.setFullyDraw(true);
-            cell.setMessageObject(messageObject, null, false, false);
+            cell.setMessageObject(messageObject, null, false, false, false);
             addView(cell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
             hintView = new HintView(context, 1, true);

@@ -82,8 +82,9 @@ public class ChatAttachAlertPollLayout extends ChatAttachAlert.AttachAlertLayout
     private boolean destroyed;
     private boolean isPremium;
 
-    private CharSequence[] answers = new CharSequence[10];
-    private boolean[] answersChecks = new boolean[10];
+    private final int maxAnswersCount = getAnswersMaxCount();
+    private CharSequence[] answers = new CharSequence[maxAnswersCount];
+    private boolean[] answersChecks = new boolean[maxAnswersCount];
     private int answersCount = 1;
     private CharSequence questionString;
     private CharSequence solutionString;
@@ -506,7 +507,7 @@ public class ChatAttachAlertPollLayout extends ChatAttachAlert.AttachAlertLayout
             poll.poll.question.text = questionText.toString();
             poll.poll.question.entities = questionEntities;
 
-            SerializedData serializedData = new SerializedData(10);
+            SerializedData serializedData = new SerializedData(maxAnswersCount);
             for (int a = 0; a < answers.length; a++) {
                 if (TextUtils.isEmpty(getFixedString(answers[a]))) {
                     continue;
@@ -1373,10 +1374,10 @@ public class ChatAttachAlertPollLayout extends ChatAttachAlert.AttachAlertLayout
                         } else {
                             cell.setText(LocaleController.getString(R.string.QuizInfo));
                         }
-                    } else if (10 - answersCount <= 0) {
+                    } else if (maxAnswersCount - answersCount <= 0) {
                         cell.setText(LocaleController.getString(R.string.AddAnOptionInfoMax));
                     } else {
-                        cell.setText(LocaleController.formatString("AddAnOptionInfo", R.string.AddAnOptionInfo, LocaleController.formatPluralString("Option", 10 - answersCount)));
+                        cell.setText(LocaleController.formatString(R.string.AddAnOptionInfo, LocaleController.formatPluralString("Option", maxAnswersCount - answersCount)));
                     }
                     break;
                 }
@@ -1473,23 +1474,23 @@ public class ChatAttachAlertPollLayout extends ChatAttachAlert.AttachAlertLayout
             View view;
             switch (viewType) {
                 case 0:
-                    view = new HeaderCell(mContext, Theme.key_windowBackgroundWhiteBlueHeader, 21, 15, false);
+                    view = new HeaderCell(mContext, Theme.key_windowBackgroundWhiteBlueHeader, 21, 15, false, resourcesProvider);
                     break;
                 case 1:
-                    view = new ShadowSectionCell(mContext);
+                    view = new ShadowSectionCell(mContext, resourcesProvider);
                     Drawable drawable = Theme.getThemedDrawableByKey(mContext, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow);
                     CombinedDrawable combinedDrawable = new CombinedDrawable(new ColorDrawable(getThemedColor(Theme.key_windowBackgroundGray)), drawable);
                     combinedDrawable.setFullsize(true);
                     view.setBackgroundDrawable(combinedDrawable);
                     break;
                 case 2:
-                    view = new TextInfoPrivacyCell(mContext);
+                    view = new TextInfoPrivacyCell(mContext, resourcesProvider);
                     break;
                 case 3:
-                    view = new TextCell(mContext);
+                    view = new TextCell(mContext, resourcesProvider);
                     break;
                 case 4: {
-                    PollEditTextCell cell = new PollEditTextCell(mContext, false, isPremium ? PollEditTextCell.TYPE_EMOJI : PollEditTextCell.TYPE_DEFAULT, null) {
+                    PollEditTextCell cell = new PollEditTextCell(mContext, false, isPremium ? PollEditTextCell.TYPE_EMOJI : PollEditTextCell.TYPE_DEFAULT, null, resourcesProvider) {
                         @Override
                         protected void onFieldTouchUp(EditTextBoldCursor editText) {
                             parentAlert.makeFocusable(editText, true);
@@ -1559,7 +1560,7 @@ public class ChatAttachAlertPollLayout extends ChatAttachAlert.AttachAlertLayout
                     break;
                 }
                 case 6:
-                    view = new TextCheckCell(mContext);
+                    view = new TextCheckCell(mContext, resourcesProvider);
                     break;
                 case 7: {
                     PollEditTextCell cell = new PollEditTextCell(mContext, false, isPremium ? PollEditTextCell.TYPE_EMOJI : PollEditTextCell.TYPE_DEFAULT, null) {
@@ -1695,7 +1696,7 @@ public class ChatAttachAlertPollLayout extends ChatAttachAlert.AttachAlertLayout
                             RecyclerView.ViewHolder holder = listView.findContainingViewHolder(this);
                             if (holder != null) {
                                 int position = holder.getAdapterPosition();
-                                if (answersCount == 10 && position == answerStartRow + answersCount - 1) {
+                                if (answersCount == maxAnswersCount && position == answerStartRow + answersCount - 1) {
                                     return false;
                                 }
                             }
@@ -1814,7 +1815,7 @@ public class ChatAttachAlertPollLayout extends ChatAttachAlert.AttachAlertLayout
                                 int position = holder.getAdapterPosition();
                                 if (position != RecyclerView.NO_POSITION) {
                                     int index = position - answerStartRow;
-                                    if (index == answersCount - 1 && answersCount < 10) {
+                                    if (index == answersCount - 1 && answersCount < maxAnswersCount) {
                                         addNewField();
                                     } else {
                                         if (index == answersCount - 1) {
@@ -1932,5 +1933,15 @@ public class ChatAttachAlertPollLayout extends ChatAttachAlert.AttachAlertLayout
         themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{TextCell.class}, new String[]{"imageView"}, null, null, null, Theme.key_checkboxCheck));
 
         return themeDescriptions;
+    }
+
+    private int getAnswersMaxCount() {
+        final int currentAccount;
+        if (parentAlert != null) {
+            currentAccount = parentAlert.currentAccount;
+        } else {
+            currentAccount = UserConfig.selectedAccount;
+        }
+        return MessagesController.getInstance(currentAccount).pollAnswersMax;
     }
 }

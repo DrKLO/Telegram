@@ -9190,7 +9190,7 @@ public class RecyclerView extends ViewGroup implements ScrollingView,
 
         private void scrapOrRecycleView(Recycler recycler, int index, View view) {
             final ViewHolder viewHolder = getChildViewHolderInt(view);
-            if (viewHolder.shouldIgnore()) {
+            if (viewHolder == null || viewHolder.shouldIgnore()) {
                 if (DEBUG) {
                     Log.d(TAG, "ignoring view " + viewHolder);
                 }
