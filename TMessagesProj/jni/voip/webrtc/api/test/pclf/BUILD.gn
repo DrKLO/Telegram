@@ -1,0 +1,123 @@
+# Copyright (c) 2022 The WebRTC project authors. All Rights Reserved.
+#
+# Use of this source code is governed by a BSD-style license
+# that can be found in the LICENSE file in the root of the source
+# tree. An additional intellectual property rights grant can be found
+# in the file PATENTS.  All contributing project authors may
+# be found in the AUTHORS file in the root of the source tree.
+
+import("../../../webrtc.gni")
+
+rtc_source_set("media_configuration") {
+  visibility = [ "*" ]
+  testonly = true
+  sources = [
+    "media_configuration.cc",
+    "media_configuration.h",
+  ]
+
+  deps = [
+    "../..:array_view",
+    "../..:audio_options_api",
+    "../..:audio_quality_analyzer_api",
+    "../..:fec_controller_api",
+    "../..:frame_generator_api",
+    "../..:function_view",
+    "../..:libjingle_peerconnection_api",
+    "../..:media_stream_interface",
+    "../..:packet_socket_factory",
+    "../..:peer_network_dependencies",
+    "../..:rtp_parameters",
+    "../..:simulated_network_api",
+    "../..:stats_observer_interface",
+    "../..:track_id_stream_info_map",
+    "../..:video_quality_analyzer_api",
+    "../../../modules/audio_processing:api",
+    "../../../rtc_base:checks",
+    "../../../rtc_base:network",
+    "../../../rtc_base:rtc_certificate_generator",
+    "../../../rtc_base:ssl",
+    "../../../rtc_base:stringutils",
+    "../../../rtc_base:threading",
+    "../../../test:fileutils",
+    "../../../test:video_test_support",
+    "../../../test/pc/e2e/analyzer/video:video_dumping",
+    "../../audio:audio_mixer_api",
+    "../../rtc_event_log",
+    "../../task_queue",
+    "../../transport:network_control",
+    "../../units:time_delta",
+    "../../video_codecs:video_codecs_api",
+    "../video:video_frame_writer",
+  ]
+  absl_deps = [
+    "//third_party/abseil-cpp/absl/memory",
+    "//third_party/abseil-cpp/absl/strings",
+    "//third_party/abseil-cpp/absl/types:optional",
+  ]
+}
+
+rtc_library("media_quality_test_params") {
+  visibility = [ "*" ]
+  testonly = true
+  sources = [ "media_quality_test_params.h" ]
+
+  deps = [
+    ":media_configuration",
+    "../..:async_dns_resolver",
+    "../../../api:fec_controller_api",
+    "../../../api:field_trials_view",
+    "../../../api:libjingle_peerconnection_api",
+    "../../../api:packet_socket_factory",
+    "../../../api/audio:audio_mixer_api",
+    "../../../api/rtc_event_log",
+    "../../../api/transport:network_control",
+    "../../../api/video_codecs:video_codecs_api",
+    "../../../modules/audio_processing:api",
+    "../../../p2p:connection",
+    "../../../p2p:port_allocator",
+    "../../../p2p:rtc_p2p",
+    "../../../rtc_base:network",
+    "../../../rtc_base:rtc_certificate_generator",
+    "../../../rtc_base:ssl",
+    "../../../rtc_base:threading",
+  ]
+}
+
+rtc_library("peer_configurer") {
+  visibility = [ "*" ]
+  testonly = true
+  sources = [
+    "peer_configurer.cc",
+    "peer_configurer.h",
+  ]
+  deps = [
+    ":media_configuration",
+    ":media_quality_test_params",
+    "../..:async_dns_resolver",
+    "../../../api:create_peer_connection_quality_test_frame_generator",
+    "../../../api:fec_controller_api",
+    "../../../api:field_trials_view",
+    "../../../api:frame_generator_api",
+    "../../../api:ice_transport_interface",
+    "../../../api:libjingle_peerconnection_api",
+    "../../../api:peer_network_dependencies",
+    "../../../api:scoped_refptr",
+    "../../../api/audio:audio_mixer_api",
+    "../../../api/audio_codecs:audio_codecs_api",
+    "../../../api/neteq:neteq_api",
+    "../../../api/rtc_event_log",
+    "../../../api/transport:bitrate_settings",
+    "../../../api/transport:network_control",
+    "../../../api/video_codecs:video_codecs_api",
+    "../../../modules/audio_processing:api",
+    "../../../rtc_base:checks",
+    "../../../rtc_base:rtc_certificate_generator",
+    "../../../rtc_base:ssl",
+  ]
+  absl_deps = [
+    "//third_party/abseil-cpp/absl/strings",
+    "//third_party/abseil-cpp/absl/types:optional",
+    "//third_party/abseil-cpp/absl/types:variant",
+  ]
+}

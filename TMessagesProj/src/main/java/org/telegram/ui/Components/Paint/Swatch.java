@@ -11,4 +11,8 @@ public class Swatch {
         this.colorLocation = colorLocation;
         this.brushWeight = brushWeight;
     }
+
+    public Swatch clone() {
+        return new Swatch(color, colorLocation, brushWeight);
+    }
 }

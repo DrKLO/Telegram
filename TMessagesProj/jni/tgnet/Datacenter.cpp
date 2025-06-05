@@ -414,6 +414,7 @@ void Datacenter::nextAddressOrPort(uint32_t flags) {
         if (currentAddressNum + 1 < addresses->size()) {
             currentAddressNum++;
         } else {
+            repeatCheckingAddresses = true;
             currentAddressNum = 0;
         }
         currentPortNum = 0;
@@ -592,14 +593,26 @@ void Datacenter::serializeToStream(NativeByteBuffer *stream) {
     }
     stream->writeInt64(authKeyMediaTempId);
     stream->writeInt32(authorized ? 1 : 0);
-    stream->writeInt32((int32_t) (size = serverSalts.size()));
-    for (uint32_t a = 0; a < size; a++) {
+
+    size = 0;
+    for (uint32_t a = 0; a < serverSalts.size(); a++) {
+        if (serverSalts[a] != nullptr) size++;
+    }
+    stream->writeInt32((int32_t) size);
+    for (uint32_t a = 0; a < serverSalts.size(); a++) {
+        if (serverSalts[a] == nullptr) continue;
         stream->writeInt32(serverSalts[a]->valid_since);
         stream->writeInt32(serverSalts[a]->valid_until);
         stream->writeInt64(serverSalts[a]->salt);
     }
-    stream->writeInt32((int32_t) (size = mediaServerSalts.size()));
-    for (uint32_t a = 0; a < size; a++) {
+
+    size = 0;
+    for (uint32_t a = 0; a < mediaServerSalts.size(); a++) {
+        if (mediaServerSalts[a] != nullptr) size++;
+    }
+    stream->writeInt32((int32_t) size);
+    for (uint32_t a = 0; a < mediaServerSalts.size(); a++) {
+        if (mediaServerSalts[a] == nullptr) continue;
         stream->writeInt32(mediaServerSalts[a]->valid_since);
         stream->writeInt32(mediaServerSalts[a]->valid_until);
         stream->writeInt64(mediaServerSalts[a]->salt);
@@ -1434,14 +1447,14 @@ void Datacenter::exportAuthorization() {
     auto request = new TL_auth_exportAuthorization();
     request->dc_id = datacenterId;
     if (LOGS_ENABLED) DEBUG_D("dc%u begin export authorization", datacenterId);
-    ConnectionsManager::getInstance(instanceNum).sendRequest(request, [&](TLObject *response, TL_error *error, int32_t networkType, int64_t responseTime) {
+    ConnectionsManager::getInstance(instanceNum).sendRequest(request, [&](TLObject *response, TL_error *error, int32_t networkType, int64_t responseTime, int64_t msgId, int32_t dcId) {
         if (error == nullptr) {
             auto res = (TL_auth_exportedAuthorization *) response;
             auto request2 = new TL_auth_importAuthorization();
             request2->bytes = std::move(res->bytes);
             request2->id = res->id;
             if (LOGS_ENABLED) DEBUG_D("dc%u begin import authorization", datacenterId);
-            ConnectionsManager::getInstance(instanceNum).sendRequest(request2, [&](TLObject *response2, TL_error *error2, int32_t networkType, int64_t responseTime) {
+            ConnectionsManager::getInstance(instanceNum).sendRequest(request2, [&](TLObject *response2, TL_error *error2, int32_t networkType, int64_t responseTime, int64_t msgId, int32_t dcId) {
                 if (error2 == nullptr) {
                     authorized = true;
                     ConnectionsManager::getInstance(instanceNum).onDatacenterExportAuthorizationComplete(this);
@@ -1449,12 +1462,12 @@ void Datacenter::exportAuthorization() {
                     if (LOGS_ENABLED) DEBUG_D("dc%u failed import authorization", datacenterId);
                 }
                 exportingAuthorization = false;
-            }, nullptr, RequestFlagEnableUnauthorized | RequestFlagWithoutLogin, datacenterId, ConnectionTypeGeneric, true);
+            }, nullptr, nullptr, RequestFlagEnableUnauthorized | RequestFlagWithoutLogin, datacenterId, ConnectionTypeGeneric, true);
         } else {
             if (LOGS_ENABLED) DEBUG_D("dc%u failed export authorization", datacenterId);
             exportingAuthorization = false;
         }
-    }, nullptr, 0, DEFAULT_DATACENTER_ID, ConnectionTypeGeneric, true);
+    }, nullptr, nullptr, 0, DEFAULT_DATACENTER_ID, ConnectionTypeGeneric, true);
 }
 
 bool Datacenter::isExportingAuthorization() {
@@ -1475,6 +1488,12 @@ bool Datacenter::hasMediaAddress() {
 void Datacenter::resetInitVersion() {
     lastInitVersion = 0;
     lastInitMediaVersion = 0;
+}
+
+bool Datacenter::isRepeatCheckingAddresses() {
+    bool b = repeatCheckingAddresses;
+    repeatCheckingAddresses = false;
+    return b;
 }
 
 TL_help_configSimple *Datacenter::decodeSimpleConfig(NativeByteBuffer *buffer) {
@@ -1512,7 +1531,11 @@ TL_help_configSimple *Datacenter::decodeSimpleConfig(NativeByteBuffer *buffer) {
     BN_init(&y);
     BN_bin2bn(bytes, 256, &x);
 
-    if (BN_mod_exp(&y, &x, rsaKey->e, rsaKey->n, bnContext) == 1) {
+    const BIGNUM *n = NULL;
+    const BIGNUM *e = NULL;
+    RSA_get0_key(rsaKey, &n, &e, nullptr);
+
+    if (BN_mod_exp(&y, &x, e, n, bnContext) == 1) {
         unsigned l = 256 - BN_num_bytes(&y);
         memset(bytes, 0, l);
         if (BN_bn2bin(&y, bytes + l) == 256 - l) {

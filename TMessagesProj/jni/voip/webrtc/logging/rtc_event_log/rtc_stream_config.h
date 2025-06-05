@@ -16,6 +16,7 @@
 #include <string>
 #include <vector>
 
+#include "absl/strings/string_view.h"
 #include "api/rtp_headers.h"
 #include "api/rtp_parameters.h"
 
@@ -41,7 +42,7 @@ struct StreamConfig {
   RtcpMode rtcp_mode = RtcpMode::kReducedSize;
 
   struct Codec {
-    Codec(const std::string& payload_name,
+    Codec(absl::string_view payload_name,
           int payload_type,
           int rtx_payload_type);
 

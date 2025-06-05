@@ -20,7 +20,7 @@
 
 #include "absl/base/config.h"
 
-#if ABSL_HAVE_MMAP
+#ifdef ABSL_HAVE_MMAP
 
 #include <sys/mman.h>
 
@@ -41,13 +41,13 @@
 
 #ifdef __mips__
 // Include definitions of the ABI currently in use.
-#ifdef __BIONIC__
+#if defined(__BIONIC__) || !defined(__GLIBC__)
 // Android doesn't have sgidefs.h, but does have asm/sgidefs.h, which has the
 // definitions we need.
 #include <asm/sgidefs.h>
 #else
 #include <sgidefs.h>
-#endif  // __BIONIC__
+#endif  // __BIONIC__ || !__GLIBC__
 #endif  // __mips__
 
 // SYS_mmap and SYS_munmap are not defined in Android.
@@ -61,6 +61,10 @@ extern "C" void* __mmap2(void*, size_t, int, int, int, size_t);
 #endif
 #endif  // __BIONIC__
 
+#if defined(__NR_mmap2) && !defined(SYS_mmap2)
+#define SYS_mmap2 __NR_mmap2
+#endif
+
 namespace absl {
 ABSL_NAMESPACE_BEGIN
 namespace base_internal {
@@ -68,11 +72,15 @@ namespace base_internal {
 // Platform specific logic extracted from
 // https://chromium.googlesource.com/linux-syscall-support/+/master/linux_syscall_support.h
 inline void* DirectMmap(void* start, size_t length, int prot, int flags, int fd,
-                        off64_t offset) noexcept {
+                        off_t offset) noexcept {
 #if defined(__i386__) || defined(__ARM_ARCH_3__) || defined(__ARM_EABI__) || \
+    defined(__m68k__) || defined(__sh__) ||                                  \
+    (defined(__hppa__) && !defined(__LP64__)) ||                             \
     (defined(__mips__) && _MIPS_SIM == _MIPS_SIM_ABI32) ||                   \
     (defined(__PPC__) && !defined(__PPC64__)) ||                             \
-    (defined(__s390__) && !defined(__s390x__))
+    (defined(__riscv) && __riscv_xlen == 32) ||                              \
+    (defined(__s390__) && !defined(__s390x__)) ||                            \
+    (defined(__sparc__) && !defined(__arch64__))
   // On these architectures, implement mmap with mmap2.
   static int pagesize = 0;
   if (pagesize == 0) {
@@ -89,11 +97,12 @@ inline void* DirectMmap(void* start, size_t length, int prot, int flags, int fd,
 #ifdef __BIONIC__
   // SYS_mmap2 has problems on Android API level <= 16.
   // Workaround by invoking __mmap2() instead.
-  return __mmap2(start, length, prot, flags, fd, offset / pagesize);
+  return __mmap2(start, length, prot, flags, fd,
+                 static_cast<size_t>(offset / pagesize));
 #else
   return reinterpret_cast<void*>(
       syscall(SYS_mmap2, start, length, prot, flags, fd,
-              static_cast<off_t>(offset / pagesize)));
+              static_cast<unsigned long>(offset / pagesize)));  // NOLINT
 #endif
 #elif defined(__s390x__)
   // On s390x, mmap() arguments are passed in memory.

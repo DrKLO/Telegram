@@ -8,16 +8,16 @@
  *  be found in the AUTHORS file in the root of the source tree.
  */
 
-#include <memory>
+#include "sdk/android/src/jni/pc/data_channel.h"
 
 #include <limits>
+#include <memory>
 
 #include "api/data_channel_interface.h"
 #include "rtc_base/logging.h"
 #include "sdk/android/generated_peerconnection_jni/DataChannel_jni.h"
 #include "sdk/android/native_api/jni/java_types.h"
 #include "sdk/android/src/jni/jni_helpers.h"
-#include "sdk/android/src/jni/pc/data_channel.h"
 
 namespace webrtc {
 namespace jni {

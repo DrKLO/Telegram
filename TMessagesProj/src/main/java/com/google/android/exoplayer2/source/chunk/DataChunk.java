@@ -17,16 +17,18 @@ package com.google.android.exoplayer2.source.chunk;
 
 import androidx.annotation.Nullable;
 import com.google.android.exoplayer2.C;
+import com.google.android.exoplayer2.C.DataType;
 import com.google.android.exoplayer2.Format;
 import com.google.android.exoplayer2.upstream.DataSource;
+import com.google.android.exoplayer2.upstream.DataSourceUtil;
 import com.google.android.exoplayer2.upstream.DataSpec;
 import com.google.android.exoplayer2.util.Util;
 import java.io.IOException;
 import java.util.Arrays;
 
 /**
- * A base class for {@link Chunk} implementations where the data should be loaded into a
- * {@code byte[]} before being consumed.
+ * A base class for {@link Chunk} implementations where the data should be loaded into a {@code
+ * byte[]} before being consumed.
  */
 public abstract class DataChunk extends Chunk {
 
@@ -48,20 +50,27 @@ public abstract class DataChunk extends Chunk {
   public DataChunk(
       DataSource dataSource,
       DataSpec dataSpec,
-      int type,
+      @DataType int type,
       Format trackFormat,
-      int trackSelectionReason,
+      @C.SelectionReason int trackSelectionReason,
       @Nullable Object trackSelectionData,
-      byte[] data) {
-    super(dataSource, dataSpec, type, trackFormat, trackSelectionReason, trackSelectionData,
-        C.TIME_UNSET, C.TIME_UNSET);
-    this.data = data;
+      @Nullable byte[] data) {
+    super(
+        dataSource,
+        dataSpec,
+        type,
+        trackFormat,
+        trackSelectionReason,
+        trackSelectionData,
+        C.TIME_UNSET,
+        C.TIME_UNSET);
+    this.data = data == null ? Util.EMPTY_BYTE_ARRAY : data;
   }
 
   /**
    * Returns the array in which the data is held.
-   * <p>
-   * This method should be used for recycling the holder only, and not for reading the data.
+   *
+   * <p>This method should be used for recycling the holder only, and not for reading the data.
    *
    * @return The array in which the data is held.
    */
@@ -77,7 +86,7 @@ public abstract class DataChunk extends Chunk {
   }
 
   @Override
-  public final void load() throws IOException, InterruptedException {
+  public final void load() throws IOException {
     try {
       dataSource.open(dataSpec);
       int limit = 0;
@@ -93,7 +102,7 @@ public abstract class DataChunk extends Chunk {
         consume(data, limit);
       }
     } finally {
-      Util.closeQuietly(dataSource);
+      DataSourceUtil.closeQuietly(dataSource);
     }
   }
 
@@ -108,9 +117,7 @@ public abstract class DataChunk extends Chunk {
   protected abstract void consume(byte[] data, int limit) throws IOException;
 
   private void maybeExpandData(int limit) {
-    if (data == null) {
-      data = new byte[READ_GRANULARITY];
-    } else if (data.length < limit + READ_GRANULARITY) {
+    if (data.length < limit + READ_GRANULARITY) {
       // The new length is calculated as (data.length + READ_GRANULARITY) rather than
       // (limit + READ_GRANULARITY) in order to avoid small increments in the length.
       data = Arrays.copyOf(data, data.length + READ_GRANULARITY);

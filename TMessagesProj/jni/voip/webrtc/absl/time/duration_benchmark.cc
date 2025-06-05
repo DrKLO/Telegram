@@ -18,8 +18,13 @@
 #include <string>
 
 #include "absl/base/attributes.h"
+#include "absl/flags/flag.h"
 #include "absl/time/time.h"
 #include "benchmark/benchmark.h"
+
+ABSL_FLAG(absl::Duration, absl_duration_flag_for_benchmark,
+          absl::Milliseconds(1),
+          "Flag to use for benchmarking duration flag access speed.");
 
 namespace {
 
@@ -285,6 +290,26 @@ void BM_Duration_IDivDuration_Hours(benchmark::State& state) {
 }
 BENCHMARK(BM_Duration_IDivDuration_Hours);
 
+void BM_Duration_Modulo(benchmark::State& state) {
+  int i = 0;
+  while (state.KeepRunning()) {
+    auto mod = absl::Seconds(i) % absl::Nanoseconds(12345);
+    benchmark::DoNotOptimize(mod);
+    ++i;
+  }
+}
+BENCHMARK(BM_Duration_Modulo);
+
+void BM_Duration_Modulo_FastPath(benchmark::State& state) {
+  int i = 0;
+  while (state.KeepRunning()) {
+    auto mod = absl::Seconds(i) % absl::Milliseconds(1);
+    benchmark::DoNotOptimize(mod);
+    ++i;
+  }
+}
+BENCHMARK(BM_Duration_Modulo_FastPath);
+
 void BM_Duration_ToInt64Nanoseconds(benchmark::State& state) {
   absl::Duration d = absl::Seconds(100000);
   while (state.KeepRunning()) {
@@ -424,5 +449,16 @@ void BM_Duration_ParseDuration(benchmark::State& state) {
   }
 }
 BENCHMARK(BM_Duration_ParseDuration)->DenseRange(0, kNumDurations - 1);
+
+//
+// Flag access
+//
+void BM_Duration_GetFlag(benchmark::State& state) {
+  while (state.KeepRunning()) {
+    benchmark::DoNotOptimize(
+        absl::GetFlag(FLAGS_absl_duration_flag_for_benchmark));
+  }
+}
+BENCHMARK(BM_Duration_GetFlag);
 
 }  // namespace

@@ -11,17 +11,17 @@
 #ifndef PC_DTLS_SRTP_TRANSPORT_H_
 #define PC_DTLS_SRTP_TRANSPORT_H_
 
+#include <functional>
 #include <string>
 #include <vector>
 
 #include "absl/types/optional.h"
-#include "api/crypto_params.h"
+#include "api/dtls_transport_interface.h"
 #include "api/rtc_error.h"
 #include "p2p/base/dtls_transport_internal.h"
 #include "p2p/base/packet_transport_internal.h"
 #include "pc/srtp_transport.h"
 #include "rtc_base/buffer.h"
-#include "rtc_base/third_party/sigslot/sigslot.h"
 
 namespace webrtc {
 
@@ -30,10 +30,10 @@ namespace webrtc {
 // configures the SrtpSessions in the base class.
 class DtlsSrtpTransport : public SrtpTransport {
  public:
-  explicit DtlsSrtpTransport(bool rtcp_mux_enabled);
+  DtlsSrtpTransport(bool rtcp_mux_enabled, const FieldTrialsView& field_trials);
 
   // Set P2P layer RTP/RTCP DtlsTransports. When using RTCP-muxing,
-  // |rtcp_dtls_transport| is null.
+  // `rtcp_dtls_transport` is null.
   void SetDtlsTransports(cricket::DtlsTransportInternal* rtp_dtls_transport,
                          cricket::DtlsTransportInternal* rtcp_dtls_transport);
 
@@ -48,16 +48,7 @@ class DtlsSrtpTransport : public SrtpTransport {
 
   void SetOnDtlsStateChange(std::function<void(void)> callback);
 
-  RTCError SetSrtpSendKey(const cricket::CryptoParams& params) override {
-    return RTCError(RTCErrorType::UNSUPPORTED_OPERATION,
-                    "Set SRTP keys for DTLS-SRTP is not supported.");
-  }
-  RTCError SetSrtpReceiveKey(const cricket::CryptoParams& params) override {
-    return RTCError(RTCErrorType::UNSUPPORTED_OPERATION,
-                    "Set SRTP keys for DTLS-SRTP is not supported.");
-  }
-
-  // If |active_reset_srtp_params_| is set to be true, the SRTP parameters will
+  // If `active_reset_srtp_params_` is set to be true, the SRTP parameters will
   // be reset whenever the DtlsTransports are reset.
   void SetActiveResetSrtpParams(bool active_reset_srtp_params) {
     active_reset_srtp_params_ = active_reset_srtp_params;
@@ -82,7 +73,7 @@ class DtlsSrtpTransport : public SrtpTransport {
       cricket::DtlsTransportInternal* rtcp_dtls_transport);
 
   void OnDtlsState(cricket::DtlsTransportInternal* dtls_transport,
-                   cricket::DtlsTransportState state);
+                   DtlsTransportState state);
 
   // Override the SrtpTransport::OnWritableState.
   void OnWritableState(rtc::PacketTransportInternal* packet_transport) override;

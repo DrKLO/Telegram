@@ -14,23 +14,18 @@
 #include <vector>
 
 #include "api/test/create_frame_generator.h"
-#include "api/test/peerconnection_quality_test_fixture.h"
+#include "api/test/pclf/media_configuration.h"
 #include "rtc_base/checks.h"
 #include "test/testsupport/file_utils.h"
 
 namespace webrtc {
 namespace webrtc_pc_e2e {
 
-using VideoConfig =
-    ::webrtc::webrtc_pc_e2e::PeerConnectionE2EQualityTestFixture::VideoConfig;
-using ScreenShareConfig = ::webrtc::webrtc_pc_e2e::
-    PeerConnectionE2EQualityTestFixture::ScreenShareConfig;
-
 void ValidateScreenShareConfig(const VideoConfig& video_config,
                                const ScreenShareConfig& screen_share_config) {
   if (screen_share_config.slides_yuv_file_names.empty()) {
     if (screen_share_config.scrolling_params) {
-      // If we have scrolling params, then its |source_width| and |source_heigh|
+      // If we have scrolling params, then its `source_width` and `source_heigh`
       // will be used as width and height of video input, so we have to validate
       // it against width and height of default input.
       RTC_CHECK_EQ(screen_share_config.scrolling_params->source_width,

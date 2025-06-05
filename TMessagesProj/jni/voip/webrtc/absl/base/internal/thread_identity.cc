@@ -14,15 +14,20 @@
 
 #include "absl/base/internal/thread_identity.h"
 
-#ifndef _WIN32
+#if !defined(_WIN32) || defined(__MINGW32__)
 #include <pthread.h>
+#ifndef __wasi__
+// WASI does not provide this header, either way we disable use
+// of signals with it below.
 #include <signal.h>
+#endif
 #endif
 
 #include <atomic>
 #include <cassert>
 #include <memory>
 
+#include "absl/base/attributes.h"
 #include "absl/base/call_once.h"
 #include "absl/base/internal/raw_logging.h"
 #include "absl/base/internal/spinlock.h"
@@ -53,19 +58,23 @@ void AllocateThreadIdentityKey(ThreadIdentityReclaimerFunction reclaimer) {
 // exist within a process (via dlopen() or similar), references to
 // thread_identity_ptr from each instance of the code will refer to
 // *different* instances of this ptr.
-#ifdef __GNUC__
-__attribute__((visibility("protected")))
-#endif  // __GNUC__
+// Apple platforms have the visibility attribute, but issue a compile warning
+// that protected visibility is unsupported.
+ABSL_CONST_INIT  // Must come before __attribute__((visibility("protected")))
+#if ABSL_HAVE_ATTRIBUTE(visibility) && !defined(__APPLE__)
+    __attribute__((visibility("protected")))
+#endif  // ABSL_HAVE_ATTRIBUTE(visibility) && !defined(__APPLE__)
 #if ABSL_PER_THREAD_TLS
-// Prefer __thread to thread_local as benchmarks indicate it is a bit faster.
-ABSL_PER_THREAD_TLS_KEYWORD ThreadIdentity* thread_identity_ptr = nullptr;
+    // Prefer __thread to thread_local as benchmarks indicate it is a bit
+    // faster.
+    ABSL_PER_THREAD_TLS_KEYWORD ThreadIdentity* thread_identity_ptr = nullptr;
 #elif defined(ABSL_HAVE_THREAD_LOCAL)
-thread_local ThreadIdentity* thread_identity_ptr = nullptr;
+    thread_local ThreadIdentity* thread_identity_ptr = nullptr;
 #endif  // ABSL_PER_THREAD_TLS
 #endif  // TLS or CPP11
 
-void SetCurrentThreadIdentity(
-    ThreadIdentity* identity, ThreadIdentityReclaimerFunction reclaimer) {
+void SetCurrentThreadIdentity(ThreadIdentity* identity,
+                              ThreadIdentityReclaimerFunction reclaimer) {
   assert(CurrentThreadIdentityIfPresent() == nullptr);
   // Associate our destructor.
   // NOTE: This call to pthread_setspecific is currently the only immovable
@@ -75,10 +84,12 @@ void SetCurrentThreadIdentity(
   absl::call_once(init_thread_identity_key_once, AllocateThreadIdentityKey,
                   reclaimer);
 
-#if defined(__EMSCRIPTEN__) || defined(__MINGW32__)
-  // Emscripten and MinGW pthread implementations does not support signals.
-  // See https://kripken.github.io/emscripten-site/docs/porting/pthreads.html
-  // for more information.
+#if defined(__wasi__) || defined(__EMSCRIPTEN__) || defined(__MINGW32__) || \
+    defined(__hexagon__)
+  // Emscripten, WASI and MinGW pthread implementations does not support
+  // signals. See
+  // https://kripken.github.io/emscripten-site/docs/porting/pthreads.html for
+  // more information.
   pthread_setspecific(thread_identity_pthread_key,
                       reinterpret_cast<void*>(identity));
 #else
@@ -117,10 +128,10 @@ void SetCurrentThreadIdentity(
     ABSL_THREAD_IDENTITY_MODE == ABSL_THREAD_IDENTITY_MODE_USE_CPP11
 
 // Please see the comment on `CurrentThreadIdentityIfPresent` in
-// thread_identity.h. Because DLLs cannot expose thread_local variables in
-// headers, we opt for the correct-but-slower option of placing the definition
-// of this function only in a translation unit inside DLL.
-#if defined(ABSL_BUILD_DLL) || defined(ABSL_CONSUME_DLL)
+// thread_identity.h. When we cannot expose thread_local variables in
+// headers, we opt for the correct-but-slower option of not inlining this
+// function.
+#ifndef ABSL_INTERNAL_INLINE_CURRENT_THREAD_IDENTITY_IF_PRESENT
 ThreadIdentity* CurrentThreadIdentityIfPresent() { return thread_identity_ptr; }
 #endif
 #endif
@@ -130,7 +141,7 @@ void ClearCurrentThreadIdentity() {
     ABSL_THREAD_IDENTITY_MODE == ABSL_THREAD_IDENTITY_MODE_USE_CPP11
   thread_identity_ptr = nullptr;
 #elif ABSL_THREAD_IDENTITY_MODE == \
-      ABSL_THREAD_IDENTITY_MODE_USE_POSIX_SETSPECIFIC
+    ABSL_THREAD_IDENTITY_MODE_USE_POSIX_SETSPECIFIC
   // pthread_setspecific expected to clear value on destruction
   assert(CurrentThreadIdentityIfPresent() == nullptr);
 #endif

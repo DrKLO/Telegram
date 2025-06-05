@@ -38,7 +38,7 @@ public class MemberRequestsBottomSheet extends UsersAlertBase {
                     if (membersEmptyView.getVisibility() != View.INVISIBLE) {
                         membersEmptyView.setVisibility(View.INVISIBLE);
                     }
-                    dismiss();
+//                    dismiss();
                 } else if (fromHide) {
                     searchView.searchEditText.setText("");
                 } else {
@@ -49,7 +49,7 @@ public class MemberRequestsBottomSheet extends UsersAlertBase {
         this.delegate.setShowLastItemDivider(false);
         setDimBehindAlpha(75);
 
-        searchView.searchEditText.setHint(LocaleController.getString("SearchMemberRequests", R.string.SearchMemberRequests));
+        searchView.searchEditText.setHint(LocaleController.getString(R.string.SearchMemberRequests));
 
         searchListViewAdapter = listViewAdapter = delegate.getAdapter();
         listView.setAdapter(listViewAdapter);
@@ -86,11 +86,6 @@ public class MemberRequestsBottomSheet extends UsersAlertBase {
 
     public boolean isNeedRestoreDialog() {
         return delegate.isNeedRestoreList;
-    }
-
-    @Override
-    protected boolean isAllowSelectChildAtPosition(float x, float y) {
-        return y >= scrollOffsetY + frameLayout.getMeasuredHeight();
     }
 
     @Override
@@ -132,7 +127,7 @@ public class MemberRequestsBottomSheet extends UsersAlertBase {
                 Activity activity = AndroidUtilities.findActivity(getContext());
                 BaseFragment fragment = null;
                 if (activity instanceof LaunchActivity) {
-                    fragment = ((LaunchActivity) activity).getActionBarLayout().fragmentsStack.get(((LaunchActivity) activity).getActionBarLayout().fragmentsStack.size() - 1);
+                    fragment = ((LaunchActivity) activity).getActionBarLayout().getFragmentStack().get(((LaunchActivity) activity).getActionBarLayout().getFragmentStack().size() - 1);
                 }
                 if (fragment instanceof ChatActivity) {
                     boolean keyboardVisible = ((ChatActivity) fragment).needEnterText();

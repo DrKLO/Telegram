@@ -32,22 +32,20 @@
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifdef __FreeBSD__
+#if defined(__FreeBSD__) && !defined(__Userspace__)
 #include <sys/cdefs.h>
-__FBSDID("$FreeBSD: head/sys/netinet/sctp.h 356357 2020-01-04 20:33:12Z tuexen $");
+__FBSDID("$FreeBSD: head/sys/netinet/sctp.h 366750 2020-10-16 10:44:48Z tuexen $");
 #endif
 
 #ifndef _NETINET_SCTP_H_
 #define _NETINET_SCTP_H_
 
-#if (defined(__APPLE__) || defined(__Userspace_os_Linux) || defined(__Userspace_os_Darwin))
+#if defined(__APPLE__) || defined(__linux__)
 #include <stdint.h>
 #endif
-
 #include <sys/types.h>
 
-
-#if !defined(__Userspace_os_Windows)
+#if !defined(_WIN32)
 #define SCTP_PACKED __attribute__((packed))
 #else
 #pragma pack (push, 1)
@@ -191,7 +189,6 @@ struct sctp_paramhdr {
 #define SCTP_STREAM_RESET_INCOMING	0x00000001
 #define SCTP_STREAM_RESET_OUTGOING	0x00000002
 
-
 /* here on down are more implementation specific */
 #define SCTP_SET_DEBUG_LEVEL		0x00001005
 #define SCTP_CLR_STAT_LOG               0x00001007
@@ -212,7 +209,6 @@ struct sctp_paramhdr {
 #define SCTP_GET_STAT_LOG		0x00001103
 #define SCTP_PCB_STATUS			0x00001104
 #define SCTP_GET_NONCE_VALUES           0x00001105
-
 
 /* Special hook for dynamically setting primary for all assoc's,
  * this is a write only option that requires root privilege.
@@ -286,11 +282,11 @@ struct sctp_paramhdr {
 #define SCTP_PEELOFF                    0x0000800a
 /* the real worker for sctp_getaddrlen() */
 #define SCTP_GET_ADDR_LEN               0x0000800b
-#if defined(__APPLE__)
+#if defined(__APPLE__) && !defined(__Userspace__)
 /* temporary workaround for Apple listen() issue, no args used */
 #define SCTP_LISTEN_FIX			0x0000800c
 #endif
-#if defined(__Windows__)
+#if defined(_WIN32) && !defined(__Userspace__)
 /* workaround for Cygwin on Windows: returns the SOCKET handle */
 #define SCTP_GET_HANDLE			0x0000800d
 #endif
@@ -335,7 +331,6 @@ struct sctp_paramhdr {
 #define SCTP_SS_FAIR_BANDWITH		0x00000004
 /* First-come, first-serve */
 #define SCTP_SS_FIRST_COME		0x00000005
-
 
 /* fragment interleave constants
  * setting must be one of these or
@@ -607,13 +602,12 @@ struct sctp_error_auth_invalid_hmac {
 #define SCTP_MOBILITY_FASTHANDOFF        0x00000002
 #define SCTP_MOBILITY_PRIM_DELETED       0x00000004
 
-
 /* Smallest PMTU allowed when disabling PMTU discovery */
 #define SCTP_SMALLEST_PMTU 512
 /* Largest PMTU allowed when disabling PMTU discovery */
 #define SCTP_LARGEST_PMTU  65536
 
-#if defined(__Userspace_os_Windows)
+#if defined(_WIN32)
 #pragma pack(pop)
 #endif
 #undef SCTP_PACKED
@@ -632,8 +626,8 @@ struct sctp_error_auth_invalid_hmac {
  */
 #define SCTP_MAX_SACK_DELAY 500 /* per RFC4960 */
 #define SCTP_MAX_HB_INTERVAL 14400000 /* 4 hours in ms */
+#define SCTP_MIN_COOKIE_LIFE     1000 /* 1 second in ms */
 #define SCTP_MAX_COOKIE_LIFE  3600000 /* 1 hour in ms */
-
 
 /* Types of logging/KTR tracing  that can be enabled via the
  * sysctl net.inet.sctp.sctp_logging. You must also enable

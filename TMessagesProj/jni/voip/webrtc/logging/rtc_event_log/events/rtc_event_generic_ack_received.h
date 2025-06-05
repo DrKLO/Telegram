@@ -12,12 +12,37 @@
 #define LOGGING_RTC_EVENT_LOG_EVENTS_RTC_EVENT_GENERIC_ACK_RECEIVED_H_
 
 #include <memory>
+#include <string>
 #include <vector>
 
+#include "absl/strings/string_view.h"
 #include "absl/types/optional.h"
 #include "api/rtc_event_log/rtc_event.h"
+#include "api/units/timestamp.h"
+#include "logging/rtc_event_log/events/rtc_event_field_encoding_parser.h"
 
 namespace webrtc {
+
+struct LoggedGenericAckReceived {
+  LoggedGenericAckReceived() = default;
+  LoggedGenericAckReceived(Timestamp timestamp,
+                           int64_t packet_number,
+                           int64_t acked_packet_number,
+                           absl::optional<int64_t> receive_acked_packet_time_ms)
+      : timestamp(timestamp),
+        packet_number(packet_number),
+        acked_packet_number(acked_packet_number),
+        receive_acked_packet_time_ms(receive_acked_packet_time_ms) {}
+
+  int64_t log_time_us() const { return timestamp.us(); }
+  int64_t log_time_ms() const { return timestamp.ms(); }
+  Timestamp log_time() const { return timestamp; }
+
+  Timestamp timestamp = Timestamp::MinusInfinity();
+  int64_t packet_number;
+  int64_t acked_packet_number;
+  absl::optional<int64_t> receive_acked_packet_time_ms;
+};
 
 struct AckedPacket {
   // The packet number that was acked.
@@ -51,18 +76,31 @@ class RtcEventGenericAckReceived final : public RtcEvent {
   // An identifier of the acked packet.
   int64_t acked_packet_number() const { return acked_packet_number_; }
 
-  // Timestamp when the |acked_packet_number| was received by the remote side.
+  // Timestamp when the `acked_packet_number` was received by the remote side.
   absl::optional<int64_t> receive_acked_packet_time_ms() const {
     return receive_acked_packet_time_ms_;
+  }
+
+  static std::string Encode(rtc::ArrayView<const RtcEvent*> batch) {
+    // TODO(terelius): Implement
+    return "";
+  }
+
+  static RtcEventLogParseStatus Parse(
+      absl::string_view encoded_bytes,
+      bool batched,
+      std::vector<LoggedGenericAckReceived>& output) {
+    // TODO(terelius): Implement
+    return RtcEventLogParseStatus::Error("Not Implemented", __FILE__, __LINE__);
   }
 
  private:
   RtcEventGenericAckReceived(const RtcEventGenericAckReceived& packet);
 
-  // When the ack is received, |packet_number| identifies the packet which
-  // contained an ack for |acked_packet_number|, and contains the
-  // |receive_acked_packet_time_ms| on which the |acked_packet_number| was
-  // received on the remote side. The |receive_acked_packet_time_ms| may be
+  // When the ack is received, `packet_number` identifies the packet which
+  // contained an ack for `acked_packet_number`, and contains the
+  // `receive_acked_packet_time_ms` on which the `acked_packet_number` was
+  // received on the remote side. The `receive_acked_packet_time_ms` may be
   // null.
   RtcEventGenericAckReceived(
       int64_t timestamp_us,
@@ -73,26 +111,6 @@ class RtcEventGenericAckReceived final : public RtcEvent {
   const int64_t packet_number_;
   const int64_t acked_packet_number_;
   const absl::optional<int64_t> receive_acked_packet_time_ms_;
-};
-
-struct LoggedGenericAckReceived {
-  LoggedGenericAckReceived() = default;
-  LoggedGenericAckReceived(int64_t timestamp_us,
-                           int64_t packet_number,
-                           int64_t acked_packet_number,
-                           absl::optional<int64_t> receive_acked_packet_time_ms)
-      : timestamp_us(timestamp_us),
-        packet_number(packet_number),
-        acked_packet_number(acked_packet_number),
-        receive_acked_packet_time_ms(receive_acked_packet_time_ms) {}
-
-  int64_t log_time_us() const { return timestamp_us; }
-  int64_t log_time_ms() const { return timestamp_us / 1000; }
-
-  int64_t timestamp_us;
-  int64_t packet_number;
-  int64_t acked_packet_number;
-  absl::optional<int64_t> receive_acked_packet_time_ms;
 };
 
 }  // namespace webrtc

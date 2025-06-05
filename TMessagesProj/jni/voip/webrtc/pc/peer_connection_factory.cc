@@ -10,45 +10,44 @@
 
 #include "pc/peer_connection_factory.h"
 
-#include <memory>
+#include <type_traits>
 #include <utility>
 
 #include "absl/strings/match.h"
-#include "api/async_resolver_factory.h"
-#include "api/call/call_factory_interface.h"
+#include "api/environment/environment.h"
+#include "api/environment/environment_factory.h"
 #include "api/fec_controller.h"
 #include "api/ice_transport_interface.h"
-#include "api/media_stream_proxy.h"
-#include "api/media_stream_track_proxy.h"
 #include "api/network_state_predictor.h"
 #include "api/packet_socket_factory.h"
-#include "api/peer_connection_factory_proxy.h"
-#include "api/peer_connection_proxy.h"
 #include "api/rtc_event_log/rtc_event_log.h"
 #include "api/sequence_checker.h"
 #include "api/transport/bitrate_settings.h"
 #include "api/units/data_rate.h"
 #include "call/audio_state.h"
+#include "call/rtp_transport_controller_send_factory.h"
 #include "media/base/media_engine.h"
-#include "p2p/base/basic_async_resolver_factory.h"
 #include "p2p/base/basic_packet_socket_factory.h"
 #include "p2p/base/default_ice_transport_factory.h"
 #include "p2p/base/port_allocator.h"
 #include "p2p/client/basic_port_allocator.h"
 #include "pc/audio_track.h"
 #include "pc/local_audio_source.h"
+#include "pc/media_factory.h"
 #include "pc/media_stream.h"
+#include "pc/media_stream_proxy.h"
+#include "pc/media_stream_track_proxy.h"
 #include "pc/peer_connection.h"
+#include "pc/peer_connection_factory_proxy.h"
+#include "pc/peer_connection_proxy.h"
 #include "pc/rtp_parameters_conversion.h"
 #include "pc/session_description.h"
 #include "pc/video_track.h"
 #include "rtc_base/checks.h"
 #include "rtc_base/experiments/field_trial_parser.h"
 #include "rtc_base/experiments/field_trial_units.h"
-#include "rtc_base/location.h"
 #include "rtc_base/logging.h"
 #include "rtc_base/numerics/safe_conversions.h"
-#include "rtc_base/ref_counted_object.h"
 #include "rtc_base/rtc_certificate_generator.h"
 #include "rtc_base/system/file_wrapper.h"
 
@@ -60,12 +59,9 @@ CreateModularPeerConnectionFactory(
   // The PeerConnectionFactory must be created on the signaling thread.
   if (dependencies.signaling_thread &&
       !dependencies.signaling_thread->IsCurrent()) {
-    return dependencies.signaling_thread
-        ->Invoke<rtc::scoped_refptr<PeerConnectionFactoryInterface>>(
-            RTC_FROM_HERE, [&dependencies] {
-              return CreateModularPeerConnectionFactory(
-                  std::move(dependencies));
-            });
+    return dependencies.signaling_thread->BlockingCall([&dependencies] {
+      return CreateModularPeerConnectionFactory(std::move(dependencies));
+    });
   }
 
   auto pc_factory = PeerConnectionFactory::Create(std::move(dependencies));
@@ -82,7 +78,10 @@ CreateModularPeerConnectionFactory(
 // Static
 rtc::scoped_refptr<PeerConnectionFactory> PeerConnectionFactory::Create(
     PeerConnectionFactoryDependencies dependencies) {
-  auto context = ConnectionContext::Create(&dependencies);
+  auto context = ConnectionContext::Create(
+      CreateEnvironment(std::move(dependencies.trials),
+                        std::move(dependencies.task_queue_factory)),
+      &dependencies);
   if (!context) {
     return nullptr;
   }
@@ -93,22 +92,36 @@ PeerConnectionFactory::PeerConnectionFactory(
     rtc::scoped_refptr<ConnectionContext> context,
     PeerConnectionFactoryDependencies* dependencies)
     : context_(context),
-      task_queue_factory_(std::move(dependencies->task_queue_factory)),
       event_log_factory_(std::move(dependencies->event_log_factory)),
       fec_controller_factory_(std::move(dependencies->fec_controller_factory)),
       network_state_predictor_factory_(
           std::move(dependencies->network_state_predictor_factory)),
       injected_network_controller_factory_(
           std::move(dependencies->network_controller_factory)),
-      neteq_factory_(std::move(dependencies->neteq_factory)) {}
+      neteq_factory_(std::move(dependencies->neteq_factory)),
+      transport_controller_send_factory_(
+          (dependencies->transport_controller_send_factory)
+              ? std::move(dependencies->transport_controller_send_factory)
+              : std::make_unique<RtpTransportControllerSendFactory>()),
+      decode_metronome_(std::move(dependencies->decode_metronome)),
+      encode_metronome_(std::move(dependencies->encode_metronome)) {}
 
 PeerConnectionFactory::PeerConnectionFactory(
     PeerConnectionFactoryDependencies dependencies)
-    : PeerConnectionFactory(ConnectionContext::Create(&dependencies),
-                            &dependencies) {}
+    : PeerConnectionFactory(
+          ConnectionContext::Create(
+              CreateEnvironment(std::move(dependencies.trials),
+                                std::move(dependencies.task_queue_factory)),
+              &dependencies),
+          &dependencies) {}
 
 PeerConnectionFactory::~PeerConnectionFactory() {
   RTC_DCHECK_RUN_ON(signaling_thread());
+  worker_thread()->BlockingCall([this] {
+    RTC_DCHECK_RUN_ON(worker_thread());
+    decode_metronome_ = nullptr;
+    encode_metronome_ = nullptr;
+  });
 }
 
 void PeerConnectionFactory::SetOptions(const Options& options) {
@@ -122,17 +135,17 @@ RtpCapabilities PeerConnectionFactory::GetRtpSenderCapabilities(
   switch (kind) {
     case cricket::MEDIA_TYPE_AUDIO: {
       cricket::AudioCodecs cricket_codecs;
-      channel_manager()->GetSupportedAudioSendCodecs(&cricket_codecs);
-      return ToRtpCapabilities(
-          cricket_codecs,
-          channel_manager()->GetDefaultEnabledAudioRtpHeaderExtensions());
+      cricket_codecs = media_engine()->voice().send_codecs();
+      auto extensions =
+          GetDefaultEnabledRtpHeaderExtensions(media_engine()->voice());
+      return ToRtpCapabilities(cricket_codecs, extensions);
     }
     case cricket::MEDIA_TYPE_VIDEO: {
       cricket::VideoCodecs cricket_codecs;
-      channel_manager()->GetSupportedVideoSendCodecs(&cricket_codecs);
-      return ToRtpCapabilities(
-          cricket_codecs,
-          channel_manager()->GetDefaultEnabledVideoRtpHeaderExtensions());
+      cricket_codecs = media_engine()->video().send_codecs(context_->use_rtx());
+      auto extensions =
+          GetDefaultEnabledRtpHeaderExtensions(media_engine()->video());
+      return ToRtpCapabilities(cricket_codecs, extensions);
     }
     case cricket::MEDIA_TYPE_DATA:
       return RtpCapabilities();
@@ -149,17 +162,17 @@ RtpCapabilities PeerConnectionFactory::GetRtpReceiverCapabilities(
   switch (kind) {
     case cricket::MEDIA_TYPE_AUDIO: {
       cricket::AudioCodecs cricket_codecs;
-      channel_manager()->GetSupportedAudioReceiveCodecs(&cricket_codecs);
-      return ToRtpCapabilities(
-          cricket_codecs,
-          channel_manager()->GetDefaultEnabledAudioRtpHeaderExtensions());
+      cricket_codecs = media_engine()->voice().recv_codecs();
+      auto extensions =
+          GetDefaultEnabledRtpHeaderExtensions(media_engine()->voice());
+      return ToRtpCapabilities(cricket_codecs, extensions);
     }
     case cricket::MEDIA_TYPE_VIDEO: {
-      cricket::VideoCodecs cricket_codecs;
-      channel_manager()->GetSupportedVideoReceiveCodecs(&cricket_codecs);
-      return ToRtpCapabilities(
-          cricket_codecs,
-          channel_manager()->GetDefaultEnabledVideoRtpHeaderExtensions());
+      cricket::VideoCodecs cricket_codecs =
+          media_engine()->video().recv_codecs(context_->use_rtx());
+      auto extensions =
+          GetDefaultEnabledRtpHeaderExtensions(media_engine()->video());
+      return ToRtpCapabilities(cricket_codecs, extensions);
     }
     case cricket::MEDIA_TYPE_DATA:
       return RtpCapabilities();
@@ -180,12 +193,18 @@ PeerConnectionFactory::CreateAudioSource(const cricket::AudioOptions& options) {
 
 bool PeerConnectionFactory::StartAecDump(FILE* file, int64_t max_size_bytes) {
   RTC_DCHECK_RUN_ON(worker_thread());
-  return channel_manager()->StartAecDump(FileWrapper(file), max_size_bytes);
+  return media_engine()->voice().StartAecDump(FileWrapper(file),
+                                              max_size_bytes);
 }
 
 void PeerConnectionFactory::StopAecDump() {
   RTC_DCHECK_RUN_ON(worker_thread());
-  channel_manager()->StopAecDump();
+  media_engine()->voice().StopAecDump();
+}
+
+cricket::MediaEngineInterface* PeerConnectionFactory::media_engine() const {
+  RTC_DCHECK(context_);
+  return context_->media_engine();
 }
 
 RTCErrorOr<rtc::scoped_refptr<PeerConnectionInterface>>
@@ -193,9 +212,23 @@ PeerConnectionFactory::CreatePeerConnectionOrError(
     const PeerConnectionInterface::RTCConfiguration& configuration,
     PeerConnectionDependencies dependencies) {
   RTC_DCHECK_RUN_ON(signaling_thread());
-  RTC_DCHECK(!(dependencies.allocator && dependencies.packet_socket_factory))
-      << "You can't set both allocator and packet_socket_factory; "
-         "the former is going away (see bugs.webrtc.org/7447";
+
+  EnvironmentFactory env_factory(context_->env());
+
+  // Field trials active for this PeerConnection is the first of:
+  // a) Specified in the PeerConnectionDependencies
+  // b) Specified in the PeerConnectionFactoryDependencies
+  // c) Created as default by the EnvironmentFactory.
+  env_factory.Set(std::move(dependencies.trials));
+
+  if (event_log_factory_ != nullptr) {
+    worker_thread()->BlockingCall([&] {
+      Environment env_for_rtc_event_log = env_factory.Create();
+      env_factory.Set(event_log_factory_->Create(env_for_rtc_event_log));
+    });
+  }
+
+  const Environment env = env_factory.Create();
 
   // Set internal defaults if optional dependencies are not set.
   if (!dependencies.cert_generator) {
@@ -204,20 +237,15 @@ PeerConnectionFactory::CreatePeerConnectionOrError(
                                                        network_thread());
   }
   if (!dependencies.allocator) {
-    rtc::PacketSocketFactory* packet_socket_factory;
-    if (dependencies.packet_socket_factory)
-      packet_socket_factory = dependencies.packet_socket_factory.get();
-    else
-      packet_socket_factory = context_->default_socket_factory();
-
     dependencies.allocator = std::make_unique<cricket::BasicPortAllocator>(
-        context_->default_network_manager(), packet_socket_factory,
-        configuration.turn_customizer);
-  }
-
-  if (!dependencies.async_resolver_factory) {
-    dependencies.async_resolver_factory =
-        std::make_unique<webrtc::BasicAsyncResolverFactory>();
+        context_->default_network_manager(), context_->default_socket_factory(),
+        configuration.turn_customizer, /*relay_port_factory=*/nullptr,
+        &env.field_trials());
+    dependencies.allocator->SetPortRange(
+        configuration.port_allocator_config.min_port,
+        configuration.port_allocator_config.max_port);
+    dependencies.allocator->set_flags(
+        configuration.port_allocator_config.flags);
   }
 
   if (!dependencies.ice_transport_factory) {
@@ -226,24 +254,21 @@ PeerConnectionFactory::CreatePeerConnectionOrError(
   }
 
   dependencies.allocator->SetNetworkIgnoreMask(options().network_ignore_mask);
+  dependencies.allocator->SetVpnList(configuration.vpn_list);
 
-  std::unique_ptr<RtcEventLog> event_log =
-      worker_thread()->Invoke<std::unique_ptr<RtcEventLog>>(
-          RTC_FROM_HERE, [this] { return CreateRtcEventLog_w(); });
+  std::unique_ptr<Call> call =
+      worker_thread()->BlockingCall([this, &env, &configuration] {
+        return CreateCall_w(env, configuration);
+      });
 
-  std::unique_ptr<Call> call = worker_thread()->Invoke<std::unique_ptr<Call>>(
-      RTC_FROM_HERE,
-      [this, &event_log] { return CreateCall_w(event_log.get()); });
-
-  auto result = PeerConnection::Create(context_, options_, std::move(event_log),
-                                       std::move(call), configuration,
-                                       std::move(dependencies));
+  auto result = PeerConnection::Create(env, context_, options_, std::move(call),
+                                       configuration, std::move(dependencies));
   if (!result.ok()) {
     return result.MoveError();
   }
   // We configure the proxy with a pointer to the network thread for methods
   // that need to be invoked there rather than on the signaling thread.
-  // Internally, the proxy object has a member variable named |worker_thread_|
+  // Internally, the proxy object has a member variable named `worker_thread_`
   // which will point to the network thread (and not the factory's
   // worker_thread()).  All such methods have thread checks though, so the code
   // should still be clear (outside of macro expansion).
@@ -261,11 +286,11 @@ PeerConnectionFactory::CreateLocalMediaStream(const std::string& stream_id) {
 }
 
 rtc::scoped_refptr<VideoTrackInterface> PeerConnectionFactory::CreateVideoTrack(
-    const std::string& id,
-    VideoTrackSourceInterface* source) {
+    rtc::scoped_refptr<VideoTrackSourceInterface> source,
+    absl::string_view id) {
   RTC_DCHECK(signaling_thread()->IsCurrent());
-  rtc::scoped_refptr<VideoTrackInterface> track(
-      VideoTrack::Create(id, source, worker_thread()));
+  rtc::scoped_refptr<VideoTrackInterface> track =
+      VideoTrack::Create(id, source, worker_thread());
   return VideoTrackProxy::Create(signaling_thread(), worker_thread(), track);
 }
 
@@ -273,35 +298,21 @@ rtc::scoped_refptr<AudioTrackInterface> PeerConnectionFactory::CreateAudioTrack(
     const std::string& id,
     AudioSourceInterface* source) {
   RTC_DCHECK(signaling_thread()->IsCurrent());
-  rtc::scoped_refptr<AudioTrackInterface> track(AudioTrack::Create(id, source));
+  rtc::scoped_refptr<AudioTrackInterface> track =
+      AudioTrack::Create(id, rtc::scoped_refptr<AudioSourceInterface>(source));
   return AudioTrackProxy::Create(signaling_thread(), track);
 }
 
-cricket::ChannelManager* PeerConnectionFactory::channel_manager() {
-  return context_->channel_manager();
-}
-
-std::unique_ptr<RtcEventLog> PeerConnectionFactory::CreateRtcEventLog_w() {
-  RTC_DCHECK_RUN_ON(worker_thread());
-
-  auto encoding_type = RtcEventLog::EncodingType::Legacy;
-  if (IsTrialEnabled("WebRTC-RtcEventLogNewFormat"))
-    encoding_type = RtcEventLog::EncodingType::NewFormat;
-  return event_log_factory_
-             ? event_log_factory_->CreateRtcEventLog(encoding_type)
-             : std::make_unique<RtcEventLogNull>();
-}
-
 std::unique_ptr<Call> PeerConnectionFactory::CreateCall_w(
-    RtcEventLog* event_log) {
+    const Environment& env,
+    const PeerConnectionInterface::RTCConfiguration& configuration) {
   RTC_DCHECK_RUN_ON(worker_thread());
 
-  webrtc::Call::Config call_config(event_log, network_thread());
-  if (!channel_manager()->media_engine() || !context_->call_factory()) {
+  CallConfig call_config(env, network_thread());
+  if (!media_engine() || !context_->call_factory()) {
     return nullptr;
   }
-  call_config.audio_state =
-      channel_manager()->media_engine()->voice().GetAudioState();
+  call_config.audio_state = media_engine()->voice().GetAudioState();
 
   FieldTrialParameter<DataRate> min_bandwidth("min",
                                               DataRate::KilobitsPerSec(30));
@@ -310,7 +321,7 @@ std::unique_ptr<Call> PeerConnectionFactory::CreateCall_w(
   FieldTrialParameter<DataRate> max_bandwidth("max",
                                               DataRate::KilobitsPerSec(2000));
   ParseFieldTrial({&min_bandwidth, &start_bandwidth, &max_bandwidth},
-                  trials().Lookup("WebRTC-PcFactoryDefaultBitrates"));
+                  env.field_trials().Lookup("WebRTC-PcFactoryDefaultBitrates"));
 
   call_config.bitrate_config.min_bitrate_bps =
       rtc::saturated_cast<int>(min_bandwidth->bps());
@@ -320,7 +331,6 @@ std::unique_ptr<Call> PeerConnectionFactory::CreateCall_w(
       rtc::saturated_cast<int>(max_bandwidth->bps());
 
   call_config.fec_controller_factory = fec_controller_factory_.get();
-  call_config.task_queue_factory = task_queue_factory_.get();
   call_config.network_state_predictor_factory =
       network_state_predictor_factory_.get();
   call_config.neteq_factory = neteq_factory_.get();
@@ -333,14 +343,16 @@ std::unique_ptr<Call> PeerConnectionFactory::CreateCall_w(
     RTC_LOG(LS_INFO) << "Using default network controller factory";
   }
 
-  call_config.trials = &trials();
-
-  return std::unique_ptr<Call>(
-      context_->call_factory()->CreateCall(call_config));
+  call_config.rtp_transport_controller_send_factory =
+      transport_controller_send_factory_.get();
+  call_config.decode_metronome = decode_metronome_.get();
+  call_config.encode_metronome = encode_metronome_.get();
+  call_config.pacer_burst_interval = configuration.pacer_burst_interval;
+  return context_->call_factory()->CreateCall(call_config);
 }
 
 bool PeerConnectionFactory::IsTrialEnabled(absl::string_view key) const {
-  return absl::StartsWith(trials().Lookup(key), "Enabled");
+  return absl::StartsWith(field_trials().Lookup(key), "Enabled");
 }
 
 }  // namespace webrtc

@@ -114,7 +114,7 @@ void LoudnessHistogram::RemoveOldestEntryAndUpdate() {
 
 void LoudnessHistogram::RemoveTransient() {
   // Don't expect to be here if high-activity region is longer than
-  // |kTransientWidthThreshold| or there has not been any transient.
+  // `kTransientWidthThreshold` or there has not been any transient.
   RTC_DCHECK_LE(len_high_activity_, kTransientWidthThreshold);
   int index =
       (buffer_index_ > 0) ? (buffer_index_ - 1) : len_circular_buffer_ - 1;

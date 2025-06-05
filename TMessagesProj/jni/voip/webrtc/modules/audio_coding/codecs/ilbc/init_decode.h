@@ -33,6 +33,6 @@ int WebRtcIlbcfix_InitDecode(/* (o) Number of decoded samples */
                              int16_t mode,     /* (i) frame size mode */
                              int use_enhancer  /* (i) 1 to use enhancer
                                                   0 to run without enhancer */
-                             );
+);
 
 #endif

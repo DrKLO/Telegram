@@ -65,8 +65,8 @@ public final class AtomicFile {
   /**
    * Start a new write operation on the file. This returns an {@link OutputStream} to which you can
    * write the new file data. If the whole data is written successfully you <em>must</em> call
-   * {@link #endWrite(OutputStream)}. On failure you should call {@link OutputStream#close()}
-   * only to free up resources used by it.
+   * {@link #endWrite(OutputStream)}. On failure you should call {@link OutputStream#close()} only
+   * to free up resources used by it.
    *
    * <p>Example usage:
    *

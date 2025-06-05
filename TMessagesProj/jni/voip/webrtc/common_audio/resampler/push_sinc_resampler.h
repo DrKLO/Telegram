@@ -17,7 +17,6 @@
 #include <memory>
 
 #include "common_audio/resampler/sinc_resampler.h"
-#include "rtc_base/constructor_magic.h"
 
 namespace webrtc {
 
@@ -33,11 +32,14 @@ class PushSincResampler : public SincResamplerCallback {
   PushSincResampler(size_t source_frames, size_t destination_frames);
   ~PushSincResampler() override;
 
-  // Perform the resampling. |source_frames| must always equal the
-  // |source_frames| provided at construction. |destination_capacity| must be
-  // at least as large as |destination_frames|. Returns the number of samples
+  PushSincResampler(const PushSincResampler&) = delete;
+  PushSincResampler& operator=(const PushSincResampler&) = delete;
+
+  // Perform the resampling. `source_frames` must always equal the
+  // `source_frames` provided at construction. `destination_capacity` must be
+  // at least as large as `destination_frames`. Returns the number of samples
   // provided in destination (for convenience, since this will always be equal
-  // to |destination_frames|).
+  // to `destination_frames`).
   size_t Resample(const int16_t* source,
                   size_t source_frames,
                   int16_t* destination,
@@ -72,8 +74,6 @@ class PushSincResampler : public SincResamplerCallback {
 
   // Used to assert we are only requested for as much data as is available.
   size_t source_available_;
-
-  RTC_DISALLOW_COPY_AND_ASSIGN(PushSincResampler);
 };
 
 }  // namespace webrtc

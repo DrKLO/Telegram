@@ -38,7 +38,7 @@ public class LinearChartView extends BaseChartView<ChartData, LineViewData> {
                 } else {
                     p = chartData.xPercentage[1] * fullWidth;
                 }
-                int[] y = line.line.y;
+                final long[] y = line.line.y;
                 int additionalPoints = (int) (HORIZONTAL_PADDING / p) + 1;
 
                 line.chartPath.reset();
@@ -122,7 +122,7 @@ public class LinearChartView extends BaseChartView<ChartData, LineViewData> {
                 int n = chartData.xPercentage.length;
                 int j = 0;
 
-                int[] y = line.line.y;
+                final long[] y = line.line.y;
 
                 line.chartPath.reset();
                 for (int i = 0; i < n; i++) {
@@ -166,6 +166,6 @@ public class LinearChartView extends BaseChartView<ChartData, LineViewData> {
 
     @Override
     public LineViewData createLineViewData(ChartData.Line line) {
-        return new LineViewData(line);
+        return new LineViewData(line, false);
     }
 }

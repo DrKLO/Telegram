@@ -116,7 +116,7 @@ MultiplexImageComponentHeader UnpackFrameHeader(const uint8_t* buffer) {
       ByteReader<uint32_t>::ReadBigEndian(buffer + offset);
   offset += sizeof(uint32_t);
 
-  // TODO(nisse): This makes the wire format depend on the numeric values of the
+  // This makes the wire format depend on the numeric values of the
   // VideoCodecType and VideoFrameType enum constants.
   frame_header.codec_type = static_cast<VideoCodecType>(
       ByteReader<uint8_t>::ReadBigEndian(buffer + offset));
@@ -260,7 +260,7 @@ MultiplexImage MultiplexEncodedImagePacker::Unpack(
     image_component.codec_type = frame_headers[i].codec_type;
 
     EncodedImage encoded_image = combined_image;
-    encoded_image.SetTimestamp(combined_image.Timestamp());
+    encoded_image.SetRtpTimestamp(combined_image.RtpTimestamp());
     encoded_image._frameType = frame_headers[i].frame_type;
     encoded_image.SetEncodedData(EncodedImageBuffer::Create(
         combined_image.data() + frame_headers[i].bitstream_offset,

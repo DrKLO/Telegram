@@ -61,6 +61,10 @@ void AdaptedVideoTrackSource::OnFrame(const webrtc::VideoFrame& frame) {
   }
 }
 
+void AdaptedVideoTrackSource::OnFrameDropped() {
+  broadcaster_.OnDiscardedFrame();
+}
+
 void AdaptedVideoTrackSource::AddOrUpdateSink(
     rtc::VideoSinkInterface<webrtc::VideoFrame>* sink,
     const rtc::VideoSinkWants& wants) {
@@ -112,6 +116,11 @@ bool AdaptedVideoTrackSource::AdaptFrame(int width,
   *crop_x = (width - *crop_width) / 2;
   *crop_y = (height - *crop_height) / 2;
   return true;
+}
+
+void AdaptedVideoTrackSource::ProcessConstraints(
+    const webrtc::VideoTrackSourceConstraints& constraints) {
+  broadcaster_.ProcessConstraints(constraints);
 }
 
 }  // namespace rtc

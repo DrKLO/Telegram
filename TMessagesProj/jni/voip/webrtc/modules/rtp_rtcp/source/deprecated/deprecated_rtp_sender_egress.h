@@ -20,11 +20,12 @@
 #include "api/rtc_event_log/rtc_event_log.h"
 #include "api/units/data_rate.h"
 #include "modules/rtp_rtcp/include/rtp_rtcp_defines.h"
+#include "modules/rtp_rtcp/source/packet_sequencer.h"
 #include "modules/rtp_rtcp/source/rtp_packet_history.h"
 #include "modules/rtp_rtcp/source/rtp_packet_to_send.h"
 #include "modules/rtp_rtcp/source/rtp_rtcp_interface.h"
 #include "modules/rtp_rtcp/source/rtp_sequence_number_map.h"
-#include "rtc_base/rate_statistics.h"
+#include "rtc_base/bitrate_tracker.h"
 #include "rtc_base/synchronization/mutex.h"
 #include "rtc_base/thread_annotations.h"
 
@@ -36,15 +37,18 @@ class DEPRECATED_RtpSenderEgress {
   // without passing through an actual paced sender.
   class NonPacedPacketSender : public RtpPacketSender {
    public:
-    explicit NonPacedPacketSender(DEPRECATED_RtpSenderEgress* sender);
+    NonPacedPacketSender(DEPRECATED_RtpSenderEgress* sender,
+                         PacketSequencer* sequence_number_assigner);
     virtual ~NonPacedPacketSender();
 
     void EnqueuePackets(
         std::vector<std::unique_ptr<RtpPacketToSend>> packets) override;
+    void RemovePacketsForSsrc(uint32_t ssrc) override {}
 
    private:
     uint16_t transport_sequence_number_;
     DEPRECATED_RtpSenderEgress* const sender_;
+    PacketSequencer* sequence_number_assigner_;
   };
 
   DEPRECATED_RtpSenderEgress(const RtpRtcpInterface::Configuration& config,
@@ -69,7 +73,7 @@ class DEPRECATED_RtpSenderEgress {
   void SetMediaHasBeenSent(bool media_sent) RTC_LOCKS_EXCLUDED(lock_);
   void SetTimestampOffset(uint32_t timestamp) RTC_LOCKS_EXCLUDED(lock_);
 
-  // For each sequence number in |sequence_number|, recall the last RTP packet
+  // For each sequence number in `sequence_number`, recall the last RTP packet
   // which bore it - its timestamp and whether it was the first and/or last
   // packet in that frame. If all of the given sequence numbers could be
   // recalled, return a vector with all of them (in corresponding order).
@@ -79,24 +83,15 @@ class DEPRECATED_RtpSenderEgress {
       RTC_LOCKS_EXCLUDED(lock_);
 
  private:
-  // Maps capture time in milliseconds to send-side delay in milliseconds.
-  // Send-side delay is the difference between transmission time and capture
-  // time.
-  typedef std::map<int64_t, int> SendDelayMap;
-
   RtpSendRates GetSendRatesLocked() const RTC_EXCLUSIVE_LOCKS_REQUIRED(lock_);
   bool HasCorrectSsrc(const RtpPacketToSend& packet) const;
   void AddPacketToTransportFeedback(uint16_t packet_id,
                                     const RtpPacketToSend& packet,
                                     const PacedPacketInfo& pacing_info);
-  void UpdateDelayStatistics(int64_t capture_time_ms,
-                             int64_t now_ms,
-                             uint32_t ssrc);
-  void RecomputeMaxSendDelay() RTC_EXCLUSIVE_LOCKS_REQUIRED(lock_);
   void UpdateOnSendPacket(int packet_id,
                           int64_t capture_time_ms,
                           uint32_t ssrc);
-  // Sends packet on to |transport_|, leaving the RTP module.
+  // Sends packet on to `transport_`, leaving the RTP module.
   bool SendPacketToNetwork(const RtpPacketToSend& packet,
                            const PacketOptions& options,
                            const PacedPacketInfo& pacing_info);
@@ -107,7 +102,6 @@ class DEPRECATED_RtpSenderEgress {
   const absl::optional<uint32_t> rtx_ssrc_;
   const absl::optional<uint32_t> flexfec_ssrc_;
   const bool populate_network2_timestamp_;
-  const bool send_side_bwe_with_overhead_;
   Clock* const clock_;
   RtpPacketHistory* const packet_history_;
   Transport* const transport_;
@@ -116,7 +110,6 @@ class DEPRECATED_RtpSenderEgress {
   const bool need_rtp_packet_infos_;
 
   TransportFeedbackObserver* const transport_feedback_observer_;
-  SendSideDelayObserver* const send_side_delay_observer_;
   SendPacketObserver* const send_packet_observer_;
   StreamDataCountersCallback* const rtp_stats_callback_;
   BitrateStatisticsObserver* const bitrate_callback_;
@@ -126,15 +119,10 @@ class DEPRECATED_RtpSenderEgress {
   bool force_part_of_allocation_ RTC_GUARDED_BY(lock_);
   uint32_t timestamp_offset_ RTC_GUARDED_BY(lock_);
 
-  SendDelayMap send_delays_ RTC_GUARDED_BY(lock_);
-  SendDelayMap::const_iterator max_delay_it_ RTC_GUARDED_BY(lock_);
-  // The sum of delays over a kSendSideDelayWindowMs sliding window.
-  int64_t sum_delays_ms_ RTC_GUARDED_BY(lock_);
-  uint64_t total_packet_send_delay_ms_ RTC_GUARDED_BY(lock_);
   StreamDataCounters rtp_stats_ RTC_GUARDED_BY(lock_);
   StreamDataCounters rtx_rtp_stats_ RTC_GUARDED_BY(lock_);
   // One element per value in RtpPacketMediaType, with index matching value.
-  std::vector<RateStatistics> send_rates_ RTC_GUARDED_BY(lock_);
+  std::vector<BitrateTracker> send_rates_ RTC_GUARDED_BY(lock_);
 
   // Maps sent packets' sequence numbers to a tuple consisting of:
   // 1. The timestamp, without the randomizing offset mandated by the RFC.

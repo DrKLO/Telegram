@@ -33,6 +33,7 @@
 // * `double`
 // * `std::string`
 // * `std::vector<std::string>`
+// * `std::optional<T>`
 // * `absl::LogSeverity` (provided natively for layering reasons)
 //
 // Note that support for integral types is implemented using overloads for
@@ -65,6 +66,42 @@
 // below.)
 //
 // -----------------------------------------------------------------------------
+// Optional Flags
+// -----------------------------------------------------------------------------
+//
+// The Abseil flags library supports flags of type `std::optional<T>` where
+// `T` is a type of one of the supported flags. We refer to this flag type as
+// an "optional flag." An optional flag is either "valueless", holding no value
+// of type `T` (indicating that the flag has not been set) or a value of type
+// `T`. The valueless state in C++ code is represented by a value of
+// `std::nullopt` for the optional flag.
+//
+// Using `std::nullopt` as an optional flag's default value allows you to check
+// whether such a flag was ever specified on the command line:
+//
+//   if (absl::GetFlag(FLAGS_foo).has_value()) {
+//     // flag was set on command line
+//   } else {
+//     // flag was not passed on command line
+//   }
+//
+// Using an optional flag in this manner avoids common workarounds for
+// indicating such an unset flag (such as using sentinel values to indicate this
+// state).
+//
+// An optional flag also allows a developer to pass a flag in an "unset"
+// valueless state on the command line, allowing the flag to later be set in
+// binary logic. An optional flag's valueless state is indicated by the special
+// notation of passing the value as an empty string through the syntax `--flag=`
+// or `--flag ""`.
+//
+//   $ binary_with_optional --flag_in_unset_state=
+//   $ binary_with_optional --flag_in_unset_state ""
+//
+// Note: as a result of the above syntax requirements, an optional flag cannot
+// be set to a `T` of any value which unparses to the empty string.
+//
+// -----------------------------------------------------------------------------
 // Adding Type Support for Abseil Flags
 // -----------------------------------------------------------------------------
 //
@@ -83,7 +120,7 @@
 //   // AbslParseFlag converts from a string to OutputMode.
 //   // Must be in same namespace as OutputMode.
 //
-//   // Parses an OutputMode from the command line flag value `text. Returns
+//   // Parses an OutputMode from the command line flag value `text`. Returns
 //   // `true` and sets `*mode` on success; returns `false` and sets `*error`
 //   // on failure.
 //   bool AbslParseFlag(absl::string_view text,
@@ -139,7 +176,7 @@
 //
 //   // Within the implementation, `AbslParseFlag()` will, in turn invoke
 //   // `absl::ParseFlag()` on its constituent `int` and `std::string` types
-//   // (which have built-in Abseil flag support.
+//   // (which have built-in Abseil flag support).
 //
 //   bool AbslParseFlag(absl::string_view text, MyFlagType* flag,
 //                      std::string* err) {
@@ -162,14 +199,28 @@
 #ifndef ABSL_FLAGS_MARSHALLING_H_
 #define ABSL_FLAGS_MARSHALLING_H_
 
+#include "absl/base/config.h"
+#include "absl/numeric/int128.h"
+
+#if defined(ABSL_HAVE_STD_OPTIONAL) && !defined(ABSL_USES_STD_OPTIONAL)
+#include <optional>
+#endif
 #include <string>
 #include <vector>
 
-#include "absl/base/config.h"
 #include "absl/strings/string_view.h"
+#include "absl/types/optional.h"
 
 namespace absl {
 ABSL_NAMESPACE_BEGIN
+
+// Forward declaration to be used inside composable flag parse/unparse
+// implementations
+template <typename T>
+inline bool ParseFlag(absl::string_view input, T* dst, std::string* error);
+template <typename T>
+inline std::string UnparseFlag(const T& v);
+
 namespace flags_internal {
 
 // Overloads of `AbslParseFlag()` and `AbslUnparseFlag()` for fundamental types.
@@ -183,10 +234,42 @@ bool AbslParseFlag(absl::string_view, unsigned long*, std::string*);   // NOLINT
 bool AbslParseFlag(absl::string_view, long long*, std::string*);       // NOLINT
 bool AbslParseFlag(absl::string_view, unsigned long long*,             // NOLINT
                    std::string*);
+bool AbslParseFlag(absl::string_view, absl::int128*, std::string*);    // NOLINT
+bool AbslParseFlag(absl::string_view, absl::uint128*, std::string*);   // NOLINT
 bool AbslParseFlag(absl::string_view, float*, std::string*);
 bool AbslParseFlag(absl::string_view, double*, std::string*);
 bool AbslParseFlag(absl::string_view, std::string*, std::string*);
 bool AbslParseFlag(absl::string_view, std::vector<std::string>*, std::string*);
+
+template <typename T>
+bool AbslParseFlag(absl::string_view text, absl::optional<T>* f,
+                   std::string* err) {
+  if (text.empty()) {
+    *f = absl::nullopt;
+    return true;
+  }
+  T value;
+  if (!absl::ParseFlag(text, &value, err)) return false;
+
+  *f = std::move(value);
+  return true;
+}
+
+#if defined(ABSL_HAVE_STD_OPTIONAL) && !defined(ABSL_USES_STD_OPTIONAL)
+template <typename T>
+bool AbslParseFlag(absl::string_view text, std::optional<T>* f,
+                   std::string* err) {
+  if (text.empty()) {
+    *f = std::nullopt;
+    return true;
+  }
+  T value;
+  if (!absl::ParseFlag(text, &value, err)) return false;
+
+  *f = std::move(value);
+  return true;
+}
+#endif
 
 template <typename T>
 bool InvokeParseFlag(absl::string_view input, T* dst, std::string* err) {
@@ -200,6 +283,18 @@ bool InvokeParseFlag(absl::string_view input, T* dst, std::string* err) {
 // can avoid the need for additional specializations of Unparse (below).
 std::string AbslUnparseFlag(absl::string_view v);
 std::string AbslUnparseFlag(const std::vector<std::string>&);
+
+template <typename T>
+std::string AbslUnparseFlag(const absl::optional<T>& f) {
+  return f.has_value() ? absl::UnparseFlag(*f) : "";
+}
+
+#if defined(ABSL_HAVE_STD_OPTIONAL) && !defined(ABSL_USES_STD_OPTIONAL)
+template <typename T>
+std::string AbslUnparseFlag(const std::optional<T>& f) {
+  return f.has_value() ? absl::UnparseFlag(*f) : "";
+}
+#endif
 
 template <typename T>
 std::string Unparse(const T& v) {
@@ -218,6 +313,8 @@ std::string Unparse(long v);                // NOLINT
 std::string Unparse(unsigned long v);       // NOLINT
 std::string Unparse(long long v);           // NOLINT
 std::string Unparse(unsigned long long v);  // NOLINT
+std::string Unparse(absl::int128 v);
+std::string Unparse(absl::uint128 v);
 std::string Unparse(float v);
 std::string Unparse(double v);
 

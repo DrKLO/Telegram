@@ -13,6 +13,7 @@ import android.view.ViewGroup;
 public class MessageBackgroundDrawable extends Drawable {
 
     private Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private Paint customPaint = null;
     private long lastAnimationTime;
     private float currentAnimationProgress;
     private boolean isSelected;
@@ -31,6 +32,10 @@ public class MessageBackgroundDrawable extends Drawable {
 
     public void setColor(int color) {
         paint.setColor(color);
+    }
+
+    public void setCustomPaint(Paint paint) {
+        this.customPaint = paint;
     }
 
     public void setSelected(boolean selected, boolean animated) {
@@ -125,7 +130,7 @@ public class MessageBackgroundDrawable extends Drawable {
     @Override
     public void draw(Canvas canvas) {
         if (currentAnimationProgress == 1.0f) {
-            canvas.drawRect(getBounds(), paint);
+            canvas.drawRect(getBounds(), customPaint != null ? customPaint : paint);
         } else if (currentAnimationProgress != 0.0f) {
             float interpolatedProgress;
             if (isSelected) {
@@ -150,7 +155,7 @@ public class MessageBackgroundDrawable extends Drawable {
             }
             x1 = centerX + (1.0f - interpolatedProgress) * (x1 - centerX);
             y1 = centerY + (1.0f - interpolatedProgress) * (y1 - centerY);
-            canvas.drawCircle(x1, y1, finalRadius * interpolatedProgress, paint);
+            canvas.drawCircle(x1, y1, finalRadius * interpolatedProgress, customPaint != null ? customPaint : paint);
         }
         if (animationInProgress) {
             long newTime = SystemClock.elapsedRealtime();

@@ -15,6 +15,8 @@
  */
 package com.google.android.exoplayer2.extractor;
 
+import static java.lang.Math.min;
+
 import com.google.android.exoplayer2.util.Assertions;
 
 /**
@@ -41,9 +43,7 @@ public final class VorbisBitArray {
     byteLimit = data.length;
   }
 
-  /**
-   * Resets the reading position to zero.
-   */
+  /** Resets the reading position to zero. */
   public void reset() {
     byteOffset = 0;
     bitOffset = 0;
@@ -68,7 +68,7 @@ public final class VorbisBitArray {
    */
   public int readBits(int numBits) {
     int tempByteOffset = byteOffset;
-    int bitsRead = Math.min(numBits, 8 - bitOffset);
+    int bitsRead = min(numBits, 8 - bitOffset);
     int returnValue = ((data[tempByteOffset++] & 0xFF) >> bitOffset) & (0xFF >> (8 - bitsRead));
     while (bitsRead < numBits) {
       returnValue |= (data[tempByteOffset++] & 0xFF) << bitsRead;
@@ -95,9 +95,7 @@ public final class VorbisBitArray {
     assertValidOffset();
   }
 
-  /**
-   * Returns the reading position in bits.
-   */
+  /** Returns the reading position in bits. */
   public int getPosition() {
     return byteOffset * 8 + bitOffset;
   }
@@ -113,17 +111,14 @@ public final class VorbisBitArray {
     assertValidOffset();
   }
 
-  /**
-   * Returns the number of remaining bits.
-   */
+  /** Returns the number of remaining bits. */
   public int bitsLeft() {
     return (byteLimit - byteOffset) * 8 - bitOffset;
   }
 
   private void assertValidOffset() {
     // It is fine for position to be at the end of the array, but no further.
-    Assertions.checkState(byteOffset >= 0
-        && (byteOffset < byteLimit || (byteOffset == byteLimit && bitOffset == 0)));
+    Assertions.checkState(
+        byteOffset >= 0 && (byteOffset < byteLimit || (byteOffset == byteLimit && bitOffset == 0)));
   }
-
 }

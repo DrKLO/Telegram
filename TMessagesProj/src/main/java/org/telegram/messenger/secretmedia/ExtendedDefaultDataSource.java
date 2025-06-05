@@ -10,6 +10,8 @@ package org.telegram.messenger.secretmedia;
 
 import android.content.Context;
 import android.net.Uri;
+import android.util.LongSparseArray;
+
 import androidx.annotation.Nullable;
 
 import com.google.android.exoplayer2.upstream.AssetDataSource;
@@ -21,17 +23,24 @@ import com.google.android.exoplayer2.upstream.DefaultHttpDataSource;
 import com.google.android.exoplayer2.upstream.FileDataSource;
 import com.google.android.exoplayer2.upstream.RawResourceDataSource;
 import com.google.android.exoplayer2.upstream.TransferListener;
+import com.google.android.exoplayer2.upstream.cache.Cache;
+import com.google.android.exoplayer2.upstream.cache.CacheSpan;
+import com.google.android.exoplayer2.upstream.cache.ContentMetadata;
+import com.google.android.exoplayer2.upstream.cache.ContentMetadataMutations;
 import com.google.android.exoplayer2.util.Assertions;
 import com.google.android.exoplayer2.util.Log;
 import com.google.android.exoplayer2.util.Util;
 
 import org.telegram.messenger.FileStreamLoadOperation;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.NavigableSet;
+import java.util.Set;
 
 public final class ExtendedDefaultDataSource implements DataSource {
 
@@ -94,14 +103,15 @@ public final class ExtendedDefaultDataSource implements DataSource {
             int readTimeoutMillis,
             boolean allowCrossProtocolRedirects) {
         this(
-                context,
-                new DefaultHttpDataSource(
-                        userAgent,
-                        /* contentTypePredicate= */ null,
-                        connectTimeoutMillis,
-                        readTimeoutMillis,
-                        allowCrossProtocolRedirects,
-                        /* defaultRequestProperties= */ null));
+            context,
+            new DefaultHttpDataSource(
+                    userAgent,
+                    connectTimeoutMillis,
+                    readTimeoutMillis,
+                    allowCrossProtocolRedirects,
+                    /* defaultRequestProperties= */ null),
+            null
+        );
     }
 
     /**
@@ -112,68 +122,14 @@ public final class ExtendedDefaultDataSource implements DataSource {
      * @param baseDataSource A {@link DataSource} to use for URI schemes other than file, asset and
      *     content. This {@link DataSource} should normally support at least http(s).
      */
-    public ExtendedDefaultDataSource(Context context, DataSource baseDataSource) {
+    public ExtendedDefaultDataSource(Context context, DataSource baseDataSource, LongSparseArray<Uri> mtprotoUris) {
         this.context = context.getApplicationContext();
         this.baseDataSource = Assertions.checkNotNull(baseDataSource);
         transferListeners = new ArrayList<>();
+        this.mtprotoUris = mtprotoUris;
     }
 
-    /**
-     * Constructs a new instance, optionally configured to follow cross-protocol redirects.
-     *
-     * @param context A context.
-     * @param listener An optional listener.
-     * @param userAgent The User-Agent to use when requesting remote data.
-     * @param allowCrossProtocolRedirects Whether cross-protocol redirects (i.e. redirects from HTTP
-     *     to HTTPS and vice versa) are enabled when fetching remote data.
-     * @deprecated Use {@link #DefaultDataSource(Context, String, boolean)} and {@link
-     *     #addTransferListener(TransferListener)}.
-     */
-    @Deprecated
-    @SuppressWarnings("deprecation")
-    public ExtendedDefaultDataSource(
-            Context context,
-            @Nullable TransferListener listener,
-            String userAgent,
-            boolean allowCrossProtocolRedirects) {
-        this(context, listener, userAgent, DefaultHttpDataSource.DEFAULT_CONNECT_TIMEOUT_MILLIS,
-                DefaultHttpDataSource.DEFAULT_READ_TIMEOUT_MILLIS, allowCrossProtocolRedirects);
-    }
-
-    /**
-     * Constructs a new instance, optionally configured to follow cross-protocol redirects.
-     *
-     * @param context A context.
-     * @param listener An optional listener.
-     * @param userAgent The User-Agent to use when requesting remote data.
-     * @param connectTimeoutMillis The connection timeout that should be used when requesting remote
-     *     data, in milliseconds. A timeout of zero is interpreted as an infinite timeout.
-     * @param readTimeoutMillis The read timeout that should be used when requesting remote data, in
-     *     milliseconds. A timeout of zero is interpreted as an infinite timeout.
-     * @param allowCrossProtocolRedirects Whether cross-protocol redirects (i.e. redirects from HTTP
-     *     to HTTPS and vice versa) are enabled when fetching remote data.
-     * @deprecated Use {@link #DefaultDataSource(Context, String, int, int, boolean)} and {@link
-     *     #addTransferListener(TransferListener)}.
-     */
-    @Deprecated
-    @SuppressWarnings("deprecation")
-    public ExtendedDefaultDataSource(
-            Context context,
-            @Nullable TransferListener listener,
-            String userAgent,
-            int connectTimeoutMillis,
-            int readTimeoutMillis,
-            boolean allowCrossProtocolRedirects) {
-        this(
-                context,
-                listener,
-                new DefaultHttpDataSource(
-                        userAgent,
-                        connectTimeoutMillis,
-                        readTimeoutMillis,
-                        allowCrossProtocolRedirects,
-                        /* defaultRequestProperties= */ null));
-    }
+    private final LongSparseArray<Uri> mtprotoUris;
 
     /**
      * Constructs a new instance that delegates to a provided {@link DataSource} for URI schemes other
@@ -188,8 +144,8 @@ public final class ExtendedDefaultDataSource implements DataSource {
      */
     @Deprecated
     public ExtendedDefaultDataSource(
-            Context context, @Nullable TransferListener listener, DataSource baseDataSource) {
-        this(context, baseDataSource);
+            Context context, @Nullable TransferListener listener, DataSource baseDataSource, LongSparseArray<Uri> mtprotoUris) {
+        this(context, baseDataSource, mtprotoUris);
         if (listener != null) {
             transferListeners.add(listener);
             baseDataSource.addTransferListener(listener);
@@ -211,14 +167,19 @@ public final class ExtendedDefaultDataSource implements DataSource {
     @Override
     public long open(DataSpec dataSpec) throws IOException {
         Assertions.checkState(dataSource == null);
+        Uri uri = dataSpec.uri;
+        if ("mtproto".equals(uri.getScheme())) {
+            final long docId = Long.parseLong(dataSpec.uri.toString().substring("mtproto:".length()));
+            dataSpec.uri = uri = mtprotoUris.get(docId);
+        }
         // Choose the correct source for the scheme.
-        String scheme = dataSpec.uri.getScheme();
-        if (Util.isLocalFileUri(dataSpec.uri)) {
-            String uriPath = dataSpec.uri.getPath();
+        String scheme = uri.getScheme();
+        if (Util.isLocalFileUri(uri)) {
+            String uriPath = uri.getPath();
             if (uriPath != null && uriPath.startsWith("/android_asset/")) {
                 dataSource = getAssetDataSource();
             } else {
-                if (dataSpec.uri.getPath().endsWith(".enc")) {
+                if (uri.getPath().endsWith(".enc")) {
                     dataSource = getEncryptedFileDataSource();
                 } else {
                     dataSource = getFileDataSource();
@@ -293,9 +254,12 @@ public final class ExtendedDefaultDataSource implements DataSource {
         return encryptedFileDataSource;
     }
 
+    private FileStreamLoadOperation streamLoadOperation;
     private DataSource getStreamDataSource() {
-        FileStreamLoadOperation streamLoadOperation = new FileStreamLoadOperation();
-        addListenersToDataSource(streamLoadOperation);
+        if (streamLoadOperation == null) {
+            streamLoadOperation = new FileStreamLoadOperation();
+            addListenersToDataSource(streamLoadOperation);
+        }
         return streamLoadOperation;
     }
 

@@ -10,7 +10,6 @@
 
 #include "modules/remote_bitrate_estimator/overuse_estimator.h"
 
-#include <assert.h>
 #include <math.h>
 #include <string.h>
 
@@ -21,29 +20,14 @@
 #include "rtc_base/logging.h"
 
 namespace webrtc {
+namespace {
 
-enum { kMinFramePeriodHistoryLength = 60 };
-enum { kDeltaCounterMax = 1000 };
+constexpr int kMinFramePeriodHistoryLength = 60;
+constexpr int kDeltaCounterMax = 1000;
 
-OveruseEstimator::OveruseEstimator(const OverUseDetectorOptions& options)
-    : options_(options),
-      num_of_deltas_(0),
-      slope_(options_.initial_slope),
-      offset_(options_.initial_offset),
-      prev_offset_(options_.initial_offset),
-      E_(),
-      process_noise_(),
-      avg_noise_(options_.initial_avg_noise),
-      var_noise_(options_.initial_var_noise),
-      ts_delta_hist_() {
-  memcpy(E_, options_.initial_e, sizeof(E_));
-  memcpy(process_noise_, options_.initial_process_noise,
-         sizeof(process_noise_));
-}
+}  // namespace
 
-OveruseEstimator::~OveruseEstimator() {
-  ts_delta_hist_.clear();
-}
+OveruseEstimator::OveruseEstimator() = default;
 
 void OveruseEstimator::Update(int64_t t_delta,
                               double ts_delta,
@@ -110,7 +94,7 @@ void OveruseEstimator::Update(int64_t t_delta,
   bool positive_semi_definite =
       E_[0][0] + E_[1][1] >= 0 &&
       E_[0][0] * E_[1][1] - E_[0][1] * E_[1][0] >= 0 && E_[0][0] >= 0;
-  assert(positive_semi_definite);
+  RTC_DCHECK(positive_semi_definite);
   if (!positive_semi_definite) {
     RTC_LOG(LS_ERROR)
         << "The over-use estimator's covariance matrix is no longer "
@@ -146,13 +130,13 @@ void OveruseEstimator::UpdateNoiseEstimate(double residual,
     return;
   }
   // Faster filter during startup to faster adapt to the jitter level
-  // of the network. |alpha| is tuned for 30 frames per second, but is scaled
-  // according to |ts_delta|.
+  // of the network. `alpha` is tuned for 30 frames per second, but is scaled
+  // according to `ts_delta`.
   double alpha = 0.01;
   if (num_of_deltas_ > 10 * 30) {
     alpha = 0.002;
   }
-  // Only update the noise estimate if we're not over-using. |beta| is a
+  // Only update the noise estimate if we're not over-using. `beta` is a
   // function of alpha and the time delta since the previous update.
   const double beta = pow(1 - alpha, ts_delta * 30.0 / 1000.0);
   avg_noise_ = beta * avg_noise_ + (1 - beta) * residual;

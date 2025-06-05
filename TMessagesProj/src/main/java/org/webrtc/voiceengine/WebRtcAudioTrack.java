@@ -18,13 +18,16 @@ import android.media.AudioManager;
 import android.media.AudioTrack;
 import android.os.Build;
 import android.os.Process;
-import androidx.annotation.Nullable;
-import java.lang.Thread;
-import java.nio.ByteBuffer;
+import android.util.Log;
 
+import androidx.annotation.Nullable;
+
+import org.telegram.messenger.FileLog;
 import org.webrtc.ContextUtils;
 import org.webrtc.Logging;
 import org.webrtc.ThreadUtils;
+
+import java.nio.ByteBuffer;
 
 public class WebRtcAudioTrack {
   private static final boolean DEBUG = false;
@@ -132,6 +135,11 @@ public class WebRtcAudioTrack {
   private class AudioTrackThread extends Thread {
     private volatile boolean keepAlive = true;
 
+    private long writtenFrames = 0;
+    private long lastPlaybackHeadPosition = 0;
+    private long lastTimestamp = System.nanoTime();
+    private long targetTimeNs;
+
     public AudioTrackThread(String name) {
       super(name);
     }
@@ -145,8 +153,12 @@ public class WebRtcAudioTrack {
       // Fixed size in bytes of each 10ms block of audio data that we ask for
       // using callbacks to the native WebRTC client.
       final int sizeInBytes = byteBuffer.capacity();
+      final int bytesPerFrame = audioTrack.getChannelCount() * (BITS_PER_SAMPLE / 8);
+      final int sampleRate = audioTrack.getSampleRate();
 
-      while (keepAlive) {
+      targetTimeNs = System.nanoTime();
+
+      while (keepAlive && audioTrack != null) {
         // Get 10ms of PCM data from the native WebRTC client. Audio data is
         // written into the common ByteBuffer using the address that was
         // cached at construction.
@@ -180,9 +192,34 @@ public class WebRtcAudioTrack {
         // next call to AudioTrack.write() will fail.
         byteBuffer.rewind();
 
-        // TODO(henrika): it is possible to create a delay estimate here by
-        // counting number of written frames and subtracting the result from
-        // audioTrack.getPlaybackHeadPosition().
+        // Update the number of written frames
+        writtenFrames += bytesWritten / bytesPerFrame;
+
+        // Calculate the playback delay
+        long playbackHeadPosition = audioTrack == null ? 0 : audioTrack.getPlaybackHeadPosition();
+        long delayInFrames = writtenFrames - playbackHeadPosition;
+        long delayInMs = (delayInFrames * 1000) / sampleRate;
+
+        // The byte buffer must be rewinded since byteBuffer.position() is
+        // increased at each call to AudioTrack.write(). If we don't do this,
+        // next call to AudioTrack.write() will fail.
+        byteBuffer.rewind();
+
+        // Calculate the time to sleep to maintain a steady playback rate
+        targetTimeNs += CALLBACK_BUFFER_SIZE_MS * 1_000_000L; // 10ms in nanoseconds
+        long currentTimeNs = System.nanoTime();
+        long sleepTimeNs = targetTimeNs - currentTimeNs;
+        if (sleepTimeNs > 0) {
+          try {
+            Thread.sleep(sleepTimeNs / 1_000_000L, (int) (sleepTimeNs % 1_000_000L));
+          } catch (InterruptedException e) {
+            FileLog.e(e);
+          }
+        } else {
+          // Missed deadline
+          targetTimeNs = System.nanoTime(); // Reset target time to current time
+        }
+
       }
 
       // Stops playing the audio data. Since the instance was created in
@@ -200,6 +237,7 @@ public class WebRtcAudioTrack {
     }
 
     private int writeBytes(AudioTrack audioTrack, ByteBuffer byteBuffer, int sizeInBytes) {
+      if (audioTrack == null) return 0;
       if (Build.VERSION.SDK_INT >= 21) {
         return audioTrack.write(byteBuffer, sizeInBytes, AudioTrack.WRITE_BLOCKING);
       } else {
@@ -333,21 +371,30 @@ public class WebRtcAudioTrack {
   }
 
   private boolean stopPlayout() {
-    threadChecker.checkIsOnValidThread();
-    Logging.d(TAG, "stopPlayout");
-    assertTrue(audioThread != null);
-    logUnderrunCount();
-    audioThread.stopThread();
+    try {
+      threadChecker.checkIsOnValidThread();
+      Logging.d(TAG, "stopPlayout");
+      assertTrue(audioThread != null);
+      logUnderrunCount();
+      audioThread.stopThread();
 
-    Logging.d(TAG, "Stopping the AudioTrackThread...");
-    audioThread.interrupt();
-    if (!ThreadUtils.joinUninterruptibly(audioThread, AUDIO_TRACK_THREAD_JOIN_TIMEOUT_MS)) {
-      Logging.e(TAG, "Join of AudioTrackThread timed out.");
-      WebRtcAudioUtils.logAudioState(TAG);
+      Logging.d(TAG, "Stopping the AudioTrackThread...");
+      audioThread.interrupt();
+      if (!ThreadUtils.joinUninterruptibly(audioThread, AUDIO_TRACK_THREAD_JOIN_TIMEOUT_MS)) {
+        Logging.e(TAG, "Join of AudioTrackThread timed out.");
+        WebRtcAudioUtils.logAudioState(TAG);
+      }
+      Logging.d(TAG, "AudioTrackThread has now been stopped.");
+    } catch (Throwable e) {
+      FileLog.e(e);
+    } finally {
+      audioThread = null;
     }
-    Logging.d(TAG, "AudioTrackThread has now been stopped.");
-    audioThread = null;
-    releaseAudioResources();
+    try {
+      releaseAudioResources();
+    } catch (Throwable e) {
+      FileLog.e(e);
+    }
     return true;
   }
 
@@ -505,10 +552,15 @@ public class WebRtcAudioTrack {
 
   // Releases the native AudioTrack resources.
   private void releaseAudioResources() {
-    Logging.d(TAG, "releaseAudioResources");
+    Logging.e(TAG, "releaseAudioResources", new Exception());
     if (audioTrack != null) {
-      audioTrack.release();
+      AudioTrack track = audioTrack;
       audioTrack = null;
+      try {
+        track.release();
+      } catch (Throwable e) {
+        FileLog.e(e);
+      }
     }
   }
 

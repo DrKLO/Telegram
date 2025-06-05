@@ -1,0 +1,62 @@
+# Copyright (c) 2017 The WebRTC project authors. All Rights Reserved.
+#
+# Use of this source code is governed by a BSD-style license
+# that can be found in the LICENSE file in the root of the source
+# tree. An additional intellectual property rights grant can be found
+# in the file PATENTS.  All contributing project authors may
+# be found in the AUTHORS file in the root of the source tree.
+
+import("../../../webrtc.gni")
+if (is_android) {
+  import("//build/config/android/config.gni")
+  import("//build/config/android/rules.gni")
+}
+
+rtc_source_set("audio_encoder_g722_config") {
+  visibility = [ "*" ]
+  sources = [ "audio_encoder_g722_config.h" ]
+  deps = [ "..:audio_codecs_api" ]
+}
+
+rtc_library("audio_encoder_g722") {
+  visibility = [ "*" ]
+  poisonous = [ "audio_codecs" ]
+  sources = [
+    "audio_encoder_g722.cc",
+    "audio_encoder_g722.h",
+  ]
+  deps = [
+    ":audio_encoder_g722_config",
+    "..:audio_codecs_api",
+    "../../../api:field_trials_view",
+    "../../../modules/audio_coding:g722",
+    "../../../rtc_base:safe_conversions",
+    "../../../rtc_base:safe_minmax",
+    "../../../rtc_base:stringutils",
+    "../../../rtc_base/system:rtc_export",
+  ]
+  absl_deps = [
+    "//third_party/abseil-cpp/absl/strings",
+    "//third_party/abseil-cpp/absl/types:optional",
+  ]
+}
+
+rtc_library("audio_decoder_g722") {
+  visibility = [ "*" ]
+  poisonous = [ "audio_codecs" ]
+  sources = [
+    "audio_decoder_g722.cc",
+    "audio_decoder_g722.h",
+  ]
+  deps = [
+    "..:audio_codecs_api",
+    "../../../api:field_trials_view",
+    "../../../modules/audio_coding:g722",
+    "../../../rtc_base:safe_conversions",
+    "../../../rtc_base/system:rtc_export",
+  ]
+  absl_deps = [
+    "//third_party/abseil-cpp/absl/strings",
+    "//third_party/abseil-cpp/absl/types:optional",
+  ]
+}

@@ -24,39 +24,30 @@ constexpr int kFrameDurationMs = 10;
 constexpr int kSubFramesInFrame = 20;
 constexpr int kMaximalNumberOfSamplesPerChannel = 480;
 
-// Adaptive digital gain applier settings below.
-constexpr float kHeadroomDbfs = 1.0f;
-constexpr float kMaxGainDb = 30.0f;
-constexpr float kInitialAdaptiveDigitalGainDb = 8.0f;
-// At what limiter levels should we start decreasing the adaptive digital gain.
-constexpr float kLimiterThresholdForAgcGainDbfs = -kHeadroomDbfs;
+// Adaptive digital gain applier settings.
 
-// This is the threshold for speech. Speech frames are used for updating the
-// speech level, measuring the amount of speech, and decide when to allow target
-// gain reduction.
+// At what limiter levels should we start decreasing the adaptive digital gain.
+constexpr float kLimiterThresholdForAgcGainDbfs = -1.0f;
+
+// Number of milliseconds to wait to periodically reset the VAD.
+constexpr int kVadResetPeriodMs = 1500;
+
+// Speech probability threshold to detect speech activity.
 constexpr float kVadConfidenceThreshold = 0.95f;
 
-// Adaptive digital level estimator parameters.
+// Minimum number of adjacent speech frames having a sufficiently high speech
+// probability to reliably detect speech activity.
+constexpr int kAdjacentSpeechFramesThreshold = 12;
+
 // Number of milliseconds of speech frames to observe to make the estimator
 // confident.
 constexpr float kLevelEstimatorTimeToConfidenceMs = 400;
 constexpr float kLevelEstimatorLeakFactor =
     1.0f - 1.0f / kLevelEstimatorTimeToConfidenceMs;
 
-// Robust VAD probability and speech decisions.
-constexpr int kDefaultLevelEstimatorAdjacentSpeechFramesThreshold = 12;
-
 // Saturation Protector settings.
 constexpr float kSaturationProtectorInitialHeadroomDb = 20.0f;
-constexpr float kSaturationProtectorExtraHeadroomDb = 5.0f;
 constexpr int kSaturationProtectorBufferSize = 4;
-
-// Set the initial speech level estimate so that `kInitialAdaptiveDigitalGainDb`
-// is applied at the beginning of the call.
-constexpr float kInitialSpeechLevelEstimateDbfs =
-    -kSaturationProtectorExtraHeadroomDb -
-    kSaturationProtectorInitialHeadroomDb - kInitialAdaptiveDigitalGainDb -
-    kHeadroomDbfs;
 
 // Number of interpolation points for each region of the limiter.
 // These values have been tuned to limit the interpolated gain curve error given

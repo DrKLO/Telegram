@@ -123,8 +123,7 @@ const int16_t WebRtcAecm_kSinTable[] = {
     -2667, -2531, -2395, -2258, -2120, -1981, -1842, -1703, -1563, -1422, -1281,
     -1140, -998,  -856,  -713,  -571,  -428,  -285,  -142};
 
-
-// Moves the pointer to the next entry and inserts |far_spectrum| and
+// Moves the pointer to the next entry and inserts `far_spectrum` and
 // corresponding Q-domain in its buffer.
 //
 // Inputs:
@@ -574,7 +573,7 @@ int WebRtcAecm_ProcessFrame(AecmCore* aecm,
   // Obtain an output frame.
   WebRtc_ReadBuffer(aecm->outFrameBuf, (void**)&out_ptr, out, FRAME_LEN);
   if (out_ptr != out) {
-    // ReadBuffer() hasn't copied to |out| in this case.
+    // ReadBuffer() hasn't copied to `out` in this case.
     memcpy(out, out_ptr, FRAME_LEN * sizeof(int16_t));
   }
 
@@ -616,22 +615,22 @@ int16_t WebRtcAecm_AsymFilt(const int16_t filtOld,
 
 // ExtractFractionPart(a, zeros)
 //
-// returns the fraction part of |a|, with |zeros| number of leading zeros, as an
-// int16_t scaled to Q8. There is no sanity check of |a| in the sense that the
+// returns the fraction part of `a`, with `zeros` number of leading zeros, as an
+// int16_t scaled to Q8. There is no sanity check of `a` in the sense that the
 // number of zeros match.
 static int16_t ExtractFractionPart(uint32_t a, int zeros) {
   return (int16_t)(((a << zeros) & 0x7FFFFFFF) >> 23);
 }
 
-// Calculates and returns the log of |energy| in Q8. The input |energy| is
-// supposed to be in Q(|q_domain|).
+// Calculates and returns the log of `energy` in Q8. The input `energy` is
+// supposed to be in Q(`q_domain`).
 static int16_t LogOfEnergyInQ8(uint32_t energy, int q_domain) {
   static const int16_t kLogLowValue = PART_LEN_SHIFT << 7;
   int16_t log_energy_q8 = kLogLowValue;
   if (energy > 0) {
     int zeros = WebRtcSpl_NormU32(energy);
     int16_t frac = ExtractFractionPart(energy, zeros);
-    // log2 of |energy| in Q8.
+    // log2 of `energy` in Q8.
     log_energy_q8 += ((31 - zeros) << 8) + frac - (q_domain << 8);
   }
   return log_energy_q8;

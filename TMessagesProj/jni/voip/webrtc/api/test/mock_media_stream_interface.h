@@ -18,11 +18,10 @@
 
 namespace webrtc {
 
-class MockAudioSource final
-    : public rtc::RefCountedObject<AudioSourceInterface> {
+class MockAudioSource : public rtc::RefCountedObject<AudioSourceInterface> {
  public:
   static rtc::scoped_refptr<MockAudioSource> Create() {
-    return new MockAudioSource();
+    return rtc::scoped_refptr<MockAudioSource>(new MockAudioSource());
   }
 
   MOCK_METHOD(void,
@@ -52,10 +51,10 @@ class MockAudioSource final
   MockAudioSource() = default;
 };
 
-class MockAudioTrack final : public rtc::RefCountedObject<AudioTrackInterface> {
+class MockAudioTrack : public rtc::RefCountedObject<AudioTrackInterface> {
  public:
   static rtc::scoped_refptr<MockAudioTrack> Create() {
-    return new MockAudioTrack();
+    return rtc::scoped_refptr<MockAudioTrack>(new MockAudioTrack());
   }
 
   MOCK_METHOD(void,
@@ -67,7 +66,7 @@ class MockAudioTrack final : public rtc::RefCountedObject<AudioTrackInterface> {
               (ObserverInterface * observer),
               (override));
   MOCK_METHOD(std::string, kind, (), (const, override));
-  MOCK_METHOD(std::string, id, (), (const override));
+  MOCK_METHOD(std::string, id, (), (const, override));
   MOCK_METHOD(bool, enabled, (), (const, override));
   MOCK_METHOD(bool, set_enabled, (bool enable), (override));
   MOCK_METHOD(TrackState, state, (), (const, override));
@@ -83,6 +82,52 @@ class MockAudioTrack final : public rtc::RefCountedObject<AudioTrackInterface> {
  private:
   MockAudioTrack() = default;
 };
+
+class MockMediaStream : public MediaStreamInterface {
+ public:
+  MOCK_METHOD(std::string, id, (), (const override));
+  MOCK_METHOD(AudioTrackVector, GetAudioTracks, (), (override));
+  MOCK_METHOD(VideoTrackVector, GetVideoTracks, (), (override));
+  MOCK_METHOD(rtc::scoped_refptr<AudioTrackInterface>,
+              FindAudioTrack,
+              (const std::string& track_id),
+              (override));
+  MOCK_METHOD(rtc::scoped_refptr<VideoTrackInterface>,
+              FindVideoTrack,
+              (const std::string& track_id),
+              (override));
+  MOCK_METHOD(bool,
+              AddTrack,
+              (rtc::scoped_refptr<AudioTrackInterface> track),
+              (override));
+  MOCK_METHOD(bool,
+              AddTrack,
+              (rtc::scoped_refptr<VideoTrackInterface> track),
+              (override));
+  MOCK_METHOD(bool,
+              RemoveTrack,
+              (rtc::scoped_refptr<AudioTrackInterface> track),
+              (override));
+  MOCK_METHOD(bool,
+              RemoveTrack,
+              (rtc::scoped_refptr<VideoTrackInterface> track),
+              (override));
+  // Old AddTrack/RemoveTrack methods - slated for removal
+  MOCK_METHOD(bool, AddTrack, (AudioTrackInterface * track), (override));
+  MOCK_METHOD(bool, AddTrack, (VideoTrackInterface * track), (override));
+  MOCK_METHOD(bool, RemoveTrack, (AudioTrackInterface * track), (override));
+  MOCK_METHOD(bool, RemoveTrack, (VideoTrackInterface * track), (override));
+  MOCK_METHOD(void,
+              RegisterObserver,
+              (ObserverInterface * observer),
+              (override));
+  MOCK_METHOD(void,
+              UnregisterObserver,
+              (ObserverInterface * observer),
+              (override));
+};
+
+static_assert(!std::is_abstract_v<rtc::RefCountedObject<MockMediaStream>>, "");
 
 }  // namespace webrtc
 

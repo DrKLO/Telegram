@@ -22,7 +22,7 @@
 #include "common_video/h265/h265_vps_parser.h"
 #include "modules/video_coding/codecs/h264/include/h264_globals.h"
 #include "modules/video_coding/codecs/h265/include/h265_globals.h"
-#include "modules/video_coding/frame_object.h"
+#include "modules/rtp_rtcp/source/frame_object.h"
 #include "modules/video_coding/packet_buffer.h"
 #include "rtc_base/checks.h"
 #include "rtc_base/logging.h"
@@ -262,8 +262,10 @@ void H265VpsSpsPpsTracker::InsertVpsSpsPpsNalus(
       vps.data() + kNaluHeaderOffset, vps.size() - kNaluHeaderOffset);
   absl::optional<H265SpsParser::SpsState> parsed_sps = H265SpsParser::ParseSps(
       sps.data() + kNaluHeaderOffset, sps.size() - kNaluHeaderOffset);
-  absl::optional<H265PpsParser::PpsState> parsed_pps = H265PpsParser::ParsePps(
-      pps.data() + kNaluHeaderOffset, pps.size() - kNaluHeaderOffset);
+  absl::optional<H265PpsParser::PpsState> parsed_pps;
+  if (parsed_sps) {
+    parsed_pps = H265PpsParser::ParsePps(pps.data() + kNaluHeaderOffset, pps.size() - kNaluHeaderOffset);
+  }
 
   if (!parsed_vps) {
     RTC_LOG(LS_WARNING) << "Failed to parse VPS.";

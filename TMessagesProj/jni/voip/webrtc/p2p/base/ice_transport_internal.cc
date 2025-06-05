@@ -10,6 +10,7 @@
 
 #include "p2p/base/ice_transport_internal.h"
 
+#include "absl/strings/string_view.h"
 #include "p2p/base/p2p_constants.h"
 
 namespace cricket {
@@ -122,17 +123,23 @@ int IceConfig::stun_keepalive_interval_or_default() const {
   return stun_keepalive_interval.value_or(STUN_KEEPALIVE_INTERVAL);
 }
 
-IceTransportInternal::IceTransportInternal() = default;
+IceTransportInternal::IceTransportInternal() {
+  // Set up detector for use of SignalGatheringState rather than
+  // SetGatheringStateCallback, and behave accordingly
+  // TODO(bugs.webrtc.org/11943): remove when Signal removed
+  SignalGatheringState.connect(
+      this, &IceTransportInternal::SignalGatheringStateFired);
+}
 
 IceTransportInternal::~IceTransportInternal() = default;
 
-void IceTransportInternal::SetIceCredentials(const std::string& ice_ufrag,
-                                             const std::string& ice_pwd) {
+void IceTransportInternal::SetIceCredentials(absl::string_view ice_ufrag,
+                                             absl::string_view ice_pwd) {
   SetIceParameters(IceParameters(ice_ufrag, ice_pwd, false));
 }
 
-void IceTransportInternal::SetRemoteIceCredentials(const std::string& ice_ufrag,
-                                                   const std::string& ice_pwd) {
+void IceTransportInternal::SetRemoteIceCredentials(absl::string_view ice_ufrag,
+                                                   absl::string_view ice_pwd) {
   SetRemoteIceParameters(IceParameters(ice_ufrag, ice_pwd, false));
 }
 

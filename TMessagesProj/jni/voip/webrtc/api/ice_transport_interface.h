@@ -14,23 +14,25 @@
 #include <string>
 
 #include "api/async_dns_resolver.h"
-#include "api/async_resolver_factory.h"
+#include "api/ref_count.h"
 #include "api/rtc_error.h"
 #include "api/rtc_event_log/rtc_event_log.h"
 #include "api/scoped_refptr.h"
-#include "rtc_base/ref_count.h"
 
 namespace cricket {
 class IceTransportInternal;
 class PortAllocator;
+class IceControllerFactoryInterface;
+class ActiveIceControllerFactoryInterface;
 }  // namespace cricket
 
 namespace webrtc {
+class FieldTrialsView;
 
 // An ICE transport, as represented to the outside world.
 // This object is refcounted, and is therefore alive until the
 // last holder has released it.
-class IceTransportInterface : public rtc::RefCountInterface {
+class IceTransportInterface : public webrtc::RefCountInterface {
  public:
   // Accessor for the internal representation of an ICE transport.
   // The returned object can only be safely used on the signalling thread.
@@ -58,28 +60,54 @@ struct IceTransportInit final {
   }
   void set_async_dns_resolver_factory(
       AsyncDnsResolverFactoryInterface* async_dns_resolver_factory) {
-    RTC_DCHECK(!async_resolver_factory_);
     async_dns_resolver_factory_ = async_dns_resolver_factory;
-  }
-  AsyncResolverFactory* async_resolver_factory() {
-    return async_resolver_factory_;
-  }
-  ABSL_DEPRECATED("bugs.webrtc.org/12598")
-  void set_async_resolver_factory(
-      AsyncResolverFactory* async_resolver_factory) {
-    RTC_DCHECK(!async_dns_resolver_factory_);
-    async_resolver_factory_ = async_resolver_factory;
   }
 
   RtcEventLog* event_log() { return event_log_; }
   void set_event_log(RtcEventLog* event_log) { event_log_ = event_log; }
 
+  void set_ice_controller_factory(
+      cricket::IceControllerFactoryInterface* ice_controller_factory) {
+    ice_controller_factory_ = ice_controller_factory;
+  }
+  cricket::IceControllerFactoryInterface* ice_controller_factory() {
+    return ice_controller_factory_;
+  }
+
+  // An active ICE controller actively manages the connection used by an ICE
+  // transport, in contrast with a legacy ICE controller that only picks the
+  // best connection to use or ping, and lets the transport decide when and
+  // whether to switch.
+  //
+  // Which ICE controller is used is determined as follows:
+  //
+  //   1. If an active ICE controller factory is supplied, it is used and
+  //      the legacy ICE controller factory is not used.
+  //   2. If not, a default active ICE controller is used, wrapping over the
+  //      supplied or the default legacy ICE controller.
+  void set_active_ice_controller_factory(
+      cricket::ActiveIceControllerFactoryInterface*
+          active_ice_controller_factory) {
+    active_ice_controller_factory_ = active_ice_controller_factory;
+  }
+  cricket::ActiveIceControllerFactoryInterface*
+  active_ice_controller_factory() {
+    return active_ice_controller_factory_;
+  }
+
+  const FieldTrialsView* field_trials() { return field_trials_; }
+  void set_field_trials(const FieldTrialsView* field_trials) {
+    field_trials_ = field_trials;
+  }
+
  private:
   cricket::PortAllocator* port_allocator_ = nullptr;
   AsyncDnsResolverFactoryInterface* async_dns_resolver_factory_ = nullptr;
-  // For backwards compatibility. Only one resolver factory can be set.
-  AsyncResolverFactory* async_resolver_factory_ = nullptr;
   RtcEventLog* event_log_ = nullptr;
+  cricket::IceControllerFactoryInterface* ice_controller_factory_ = nullptr;
+  cricket::ActiveIceControllerFactoryInterface* active_ice_controller_factory_ =
+      nullptr;
+  const FieldTrialsView* field_trials_ = nullptr;
   // TODO(https://crbug.com/webrtc/12657): Redesign to have const members.
 };
 

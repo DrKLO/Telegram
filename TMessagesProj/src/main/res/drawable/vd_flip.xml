@@ -1,0 +1,53 @@
+<vector
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:name="vector"
+    android:width="36dp"
+    android:height="36dp"
+    android:viewportWidth="36"
+    android:viewportHeight="36">
+    <group
+        android:name="group"
+        android:pivotX="18"
+        android:pivotY="18">
+        <path
+            android:name="path_3"
+            android:pathData="M 25.778 13.05 L 25.778 7.393 L 31.435 7.393 M 10.222 22.95 L 10.222 28.607 L 4.565 28.607 M 13.84 30.319 C 18.373 31.846 23.581 30.804 27.192 27.192 C 32.269 22.116 32.269 13.884 27.192 8.808 M 22.163 5.681 C 17.629 4.153 12.42 5.195 8.808 8.808 C 3.731 13.884 3.731 22.116 8.808 27.192"
+            android:fillAlpha="0"
+            android:strokeColor="#000000"
+            android:strokeAlpha="0.2"
+            android:strokeWidth="2.66"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round"/>
+        <path
+            android:name="path"
+            android:pathData="M 25.778 13.05 L 25.778 7.393 L 31.435 7.393 M 10.222 22.95 L 10.222 28.607 L 4.565 28.607"
+            android:fillAlpha="0"
+            android:strokeColor="#ffffff"
+            android:strokeWidth="2"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round"/>
+        <path
+            android:name="path_1"
+            android:pathData="M 13.84 30.319 C 18.373 31.846 23.581 30.804 27.192 27.192 C 32.269 22.116 32.269 13.884 27.192 8.808 M 22.163 5.681 C 17.629 4.153 12.42 5.195 8.808 8.808 C 3.731 13.884 3.731 22.116 8.808 27.192"
+            android:strokeColor="#ffffff"
+            android:strokeWidth="2"
+            android:strokeLineCap="round"/>
+        <group
+            android:name="group_1"
+            android:pivotX="18"
+            android:pivotY="18">
+            <path
+                android:name="path_4"
+                android:pathData="M 14.818 21.182 C 16.575 22.939 19.425 22.939 21.182 21.182 C 22.939 19.425 22.939 16.575 21.182 14.818 C 19.425 13.061 16.575 13.061 14.818 14.818 C 13.061 16.575 13.061 19.425 14.818 21.182 Z"
+                android:fillAlpha="0"
+                android:strokeColor="#000000"
+                android:strokeAlpha="0.2"
+                android:strokeWidth="2.66"/>
+            <path
+                android:name="path_2"
+                android:pathData="M 14.818 21.182 C 16.575 22.939 19.425 22.939 21.182 21.182 C 22.939 19.425 22.939 16.575 21.182 14.818 C 19.425 13.061 16.575 13.061 14.818 14.818 C 13.061 16.575 13.061 19.425 14.818 21.182 Z"
+                android:strokeColor="#ffffff"
+                android:strokeWidth="2"/>
+        </group>
+    </group>
+</vector>

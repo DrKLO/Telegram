@@ -26,6 +26,7 @@ class Thread;
 
 namespace webrtc {
 class TurnCustomizer;
+class FieldTrialsView;
 }  // namespace webrtc
 
 namespace cricket {
@@ -35,19 +36,20 @@ struct RelayServerConfig;
 
 // A struct containing arguments to RelayPortFactory::Create()
 struct CreateRelayPortArgs {
-  CreateRelayPortArgs();
   rtc::Thread* network_thread;
   rtc::PacketSocketFactory* socket_factory;
-  rtc::Network* network;
+  const rtc::Network* network;
   const ProtocolAddress* server_address;
   const RelayServerConfig* config;
   std::string username;
   std::string password;
-  std::string origin;
-  webrtc::TurnCustomizer* turn_customizer;
+  webrtc::TurnCustomizer* turn_customizer = nullptr;
+  const webrtc::FieldTrialsView* field_trials = nullptr;
+  // Relative priority of candidates from this TURN server in relation
+  // to the candidates from other servers. Required because ICE priorities
+  // need to be unique.
+  int relative_priority = 0;
 };
-
-inline CreateRelayPortArgs::CreateRelayPortArgs() {}
 
 // A factory for creating RelayPort's.
 class RelayPortFactoryInterface {

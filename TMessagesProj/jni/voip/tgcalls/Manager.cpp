@@ -62,7 +62,7 @@ void dumpStatsLog(const FilePath &path, const CallStats &stats) {
 
 } // namespace
 
-bool Manager::ResolvedNetworkStatus::operator==(const ResolvedNetworkStatus &rhs) {
+bool Manager::ResolvedNetworkStatus::operator==(const ResolvedNetworkStatus &rhs) const {
     if (rhs.isLowCost != isLowCost) {
         return false;
     }
@@ -72,7 +72,7 @@ bool Manager::ResolvedNetworkStatus::operator==(const ResolvedNetworkStatus &rhs
     return true;
 }
 
-bool Manager::ResolvedNetworkStatus::operator!=(const ResolvedNetworkStatus &rhs) {
+bool Manager::ResolvedNetworkStatus::operator!=(const ResolvedNetworkStatus &rhs) const {
     return !(*this == rhs);
 }
 
@@ -98,12 +98,11 @@ _remoteBatteryLevelIsLowUpdated(std::move(descriptor.remoteBatteryLevelIsLowUpda
 _remotePrefferedAspectRatioUpdated(std::move(descriptor.remotePrefferedAspectRatioUpdated)),
 _signalingDataEmitted(std::move(descriptor.signalingDataEmitted)),
 _signalBarsUpdated(std::move(descriptor.signalBarsUpdated)),
-_audioLevelUpdated(std::move(descriptor.audioLevelUpdated)),
+_audioLevelsUpdated(std::move(descriptor.audioLevelsUpdated)),
 _createAudioDeviceModule(std::move(descriptor.createAudioDeviceModule)),
 _enableHighBitrateVideo(descriptor.config.enableHighBitrateVideo),
 _dataSaving(descriptor.config.dataSaving),
 _platformContext(descriptor.platformContext) {
-
 	assert(_thread->IsCurrent());
 	assert(_stateUpdated != nullptr);
 	assert(_signalingDataEmitted != nullptr);
@@ -118,7 +117,7 @@ _platformContext(descriptor.platformContext) {
 		return uint32_t(0);
 	};
 	_sendTransportMessage = [=](Message &&message) {
-		_networkManager->perform(RTC_FROM_HERE, [message = std::move(message)](NetworkManager *networkManager) {
+		_networkManager->perform([message = std::move(message)](NetworkManager *networkManager) {
 			networkManager->sendMessage(message);
 		});
 	};
@@ -139,9 +138,9 @@ void Manager::sendSignalingAsync(int delayMs, int cause) {
 		}
 	};
 	if (delayMs) {
-		_thread->PostDelayedTask(RTC_FROM_HERE, std::move(task), delayMs);
+		_thread->PostDelayedTask(std::move(task), webrtc::TimeDelta::Millis(delayMs));
 	} else {
-		_thread->PostTask(RTC_FROM_HERE, std::move(task));
+		_thread->PostTask(std::move(task));
 	}
 }
 
@@ -149,7 +148,7 @@ void Manager::start() {
 	const auto weak = std::weak_ptr<Manager>(shared_from_this());
 	const auto thread = _thread;
 	const auto sendSignalingMessage = [=](Message &&message) {
-		thread->PostTask(RTC_FROM_HERE, [=, message = std::move(message)]() mutable {
+		thread->PostTask([=, message = std::move(message)]() mutable {
 			const auto strong = weak.lock();
 			if (!strong) {
 				return;
@@ -158,16 +157,16 @@ void Manager::start() {
 		});
 	};
 	_networkManager.reset(new ThreadLocalObject<NetworkManager>(StaticThreads::getNetworkThread(), [weak, thread, sendSignalingMessage, encryptionKey = _encryptionKey, enableP2P = _enableP2P, enableTCP = _enableTCP, enableStunMarking = _enableStunMarking, rtcServers = _rtcServers, proxy = std::move(_proxy)] () mutable {
-		return new NetworkManager(
+		return std::make_shared<NetworkManager>(
             StaticThreads::getNetworkThread(),
 			encryptionKey,
 			enableP2P,
             enableTCP,
             enableStunMarking,
 			rtcServers,
-			std::move(proxy),
+            std::move(proxy),
 			[=](const NetworkManager::State &state) {
-				thread->PostTask(RTC_FROM_HERE, [=] {
+				thread->PostTask([=] {
 					const auto strong = weak.lock();
 					if (!strong) {
 						return;
@@ -190,7 +189,7 @@ void Manager::start() {
 					strong->_state = mappedState;
 					strong->_stateUpdated(mappedState);
 
-					strong->_mediaManager->perform(RTC_FROM_HERE, [=](MediaManager *mediaManager) {
+					strong->_mediaManager->perform([=](MediaManager *mediaManager) {
 						mediaManager->setIsConnected(state.isReadyToSendData);
 					});
 
@@ -200,7 +199,7 @@ void Manager::start() {
 				});
 			},
 			[=](DecryptedMessage &&message) {
-				thread->PostTask(RTC_FROM_HERE, [=, message = std::move(message)]() mutable {
+				thread->PostTask([=, message = std::move(message)]() mutable {
 					if (const auto strong = weak.lock()) {
 						strong->receiveMessage(std::move(message));
 					}
@@ -210,21 +209,21 @@ void Manager::start() {
 			[=](int delayMs, int cause) {
 				const auto task = [=] {
 					if (const auto strong = weak.lock()) {
-						strong->_networkManager->perform(RTC_FROM_HERE, [=](NetworkManager *networkManager) {
+						strong->_networkManager->perform([=](NetworkManager *networkManager) {
 							networkManager->sendTransportService(cause);
 							});
 					}
 				};
 				if (delayMs) {
-					thread->PostDelayedTask(RTC_FROM_HERE, task, delayMs);
+					thread->PostDelayedTask(task, webrtc::TimeDelta::Millis(delayMs));
 				} else {
-					thread->PostTask(RTC_FROM_HERE, task);
+					thread->PostTask(task);
 				}
 			});
 	}));
 	bool isOutgoing = _encryptionKey.isOutgoing;
-	_mediaManager.reset(new ThreadLocalObject<MediaManager>(StaticThreads::getMediaThread(), [weak, isOutgoing, protocolVersion = _protocolVersion, thread, sendSignalingMessage, videoCapture = _videoCapture, mediaDevicesConfig = _mediaDevicesConfig, enableHighBitrateVideo = _enableHighBitrateVideo, signalBarsUpdated = _signalBarsUpdated, audioLevelUpdated = _audioLevelUpdated, preferredCodecs = _preferredCodecs, createAudioDeviceModule = _createAudioDeviceModule, platformContext = _platformContext]() {
-		return new MediaManager(
+	_mediaManager.reset(new ThreadLocalObject<MediaManager>(StaticThreads::getMediaThread(), [weak, isOutgoing, protocolVersion = _protocolVersion, thread, sendSignalingMessage, videoCapture = _videoCapture, mediaDevicesConfig = _mediaDevicesConfig, enableHighBitrateVideo = _enableHighBitrateVideo, signalBarsUpdated = _signalBarsUpdated, audioLevelsUpdated = _audioLevelsUpdated, preferredCodecs = _preferredCodecs, createAudioDeviceModule = _createAudioDeviceModule, platformContext = _platformContext]() {
+		return std::make_shared<MediaManager>(
             StaticThreads::getMediaThread(),
 			isOutgoing,
             protocolVersion,
@@ -232,7 +231,7 @@ void Manager::start() {
 			videoCapture,
 			sendSignalingMessage,
 			[=](Message &&message) {
-				thread->PostTask(RTC_FROM_HERE, [=, message = std::move(message)]() mutable {
+				thread->PostTask([=, message = std::move(message)]() mutable {
 					const auto strong = weak.lock();
 					if (!strong) {
 						return;
@@ -241,16 +240,16 @@ void Manager::start() {
 				});
 			},
             signalBarsUpdated,
-            audioLevelUpdated,
+            audioLevelsUpdated,
 			createAudioDeviceModule,
 			enableHighBitrateVideo,
             preferredCodecs,
             platformContext);
 	}));
-    _networkManager->perform(RTC_FROM_HERE, [](NetworkManager *networkManager) {
+    _networkManager->perform([](NetworkManager *networkManager) {
         networkManager->start();
     });
-	_mediaManager->perform(RTC_FROM_HERE, [](MediaManager *mediaManager) {
+	_mediaManager->perform([](MediaManager *mediaManager) {
 		mediaManager->start();
 	});
 }
@@ -267,11 +266,11 @@ void Manager::receiveSignalingData(const std::vector<uint8_t> &data) {
 void Manager::receiveMessage(DecryptedMessage &&message) {
 	const auto data = &message.message.data;
 	if (const auto candidatesList = absl::get_if<CandidatesListMessage>(data)) {
-		_networkManager->perform(RTC_FROM_HERE, [message = std::move(message)](NetworkManager *networkManager) mutable {
+		_networkManager->perform([message = std::move(message)](NetworkManager *networkManager) mutable {
 			networkManager->receiveSignalingMessage(std::move(message));
 		});
 	} else if (const auto videoFormats = absl::get_if<VideoFormatsMessage>(data)) {
-		_mediaManager->perform(RTC_FROM_HERE, [message = std::move(message)](MediaManager *mediaManager) mutable {
+		_mediaManager->perform([message = std::move(message)](MediaManager *mediaManager) mutable {
 			mediaManager->receiveMessage(std::move(message));
 		});
     } else if (const auto remoteMediaState = absl::get_if<RemoteMediaStateMessage>(data)) {
@@ -280,7 +279,7 @@ void Manager::receiveMessage(DecryptedMessage &&message) {
 				remoteMediaState->audio,
 				remoteMediaState->video);
 		}
-        _mediaManager->perform(RTC_FROM_HERE, [video = remoteMediaState->video](MediaManager *mediaManager) {
+        _mediaManager->perform([video = remoteMediaState->video](MediaManager *mediaManager) {
             mediaManager->remoteVideoStateUpdated(video);
         });
 	} else if (const auto remoteBatteryLevelIsLow = absl::get_if<RemoteBatteryLevelIsLowMessage>(data)) {
@@ -298,7 +297,7 @@ void Manager::receiveMessage(DecryptedMessage &&message) {
 				_remotePrefferedAspectRatioUpdated(value);
 			}
         }
-		_mediaManager->perform(RTC_FROM_HERE, [=, message = std::move(message)](MediaManager *mediaManager) mutable {
+		_mediaManager->perform([=, message = std::move(message)](MediaManager *mediaManager) mutable {
 			mediaManager->receiveMessage(std::move(message));
 		});
 	}
@@ -311,31 +310,31 @@ void Manager::setVideoCapture(std::shared_ptr<VideoCaptureInterface> videoCaptur
 		return;
 	}
     _videoCapture = videoCapture;
-    _mediaManager->perform(RTC_FROM_HERE, [videoCapture](MediaManager *mediaManager) {
+    _mediaManager->perform([videoCapture](MediaManager *mediaManager) {
         mediaManager->setSendVideo(videoCapture);
     });
 }
 
 void Manager::sendVideoDeviceUpdated() {
-    _mediaManager->perform(RTC_FROM_HERE, [](MediaManager *mediaManager) {
+    _mediaManager->perform([](MediaManager *mediaManager) {
         mediaManager->sendVideoDeviceUpdated();
     });
 }
 
 void Manager::setRequestedVideoAspect(float aspect) {
-    _mediaManager->perform(RTC_FROM_HERE, [aspect](MediaManager *mediaManager) {
+    _mediaManager->perform([aspect](MediaManager *mediaManager) {
         mediaManager->setRequestedVideoAspect(aspect);
     });
 }
 
 void Manager::setMuteOutgoingAudio(bool mute) {
-	_mediaManager->perform(RTC_FROM_HERE, [mute](MediaManager *mediaManager) {
+	_mediaManager->perform([mute](MediaManager *mediaManager) {
 		mediaManager->setMuteOutgoingAudio(mute);
 	});
 }
 
-void Manager::setIncomingVideoOutput(std::shared_ptr<rtc::VideoSinkInterface<webrtc::VideoFrame>> sink) {
-	_mediaManager->perform(RTC_FROM_HERE, [sink](MediaManager *mediaManager) {
+void Manager::setIncomingVideoOutput(std::weak_ptr<rtc::VideoSinkInterface<webrtc::VideoFrame>> sink) {
+	_mediaManager->perform([sink](MediaManager *mediaManager) {
 		mediaManager->setIncomingVideoOutput(sink);
 	});
 }
@@ -346,7 +345,7 @@ void Manager::setIsLowBatteryLevel(bool isLowBatteryLevel) {
 
 void Manager::setIsLocalNetworkLowCost(bool isLocalNetworkLowCost) {
     if (isLocalNetworkLowCost != _localNetworkIsLowCost) {
-        _networkManager->perform(RTC_FROM_HERE, [isLocalNetworkLowCost](NetworkManager *networkManager) {
+        _networkManager->perform([isLocalNetworkLowCost](NetworkManager *networkManager) {
             networkManager->setIsLocalNetworkLowCost(isLocalNetworkLowCost);
         });
 
@@ -356,19 +355,19 @@ void Manager::setIsLocalNetworkLowCost(bool isLocalNetworkLowCost) {
 }
 
 void Manager::getNetworkStats(std::function<void (TrafficStats, CallStats)> completion) {
-    _networkManager->perform(RTC_FROM_HERE, [thread = _thread, weak = std::weak_ptr<Manager>(shared_from_this()), completion = std::move(completion), statsLogPath = _statsLogPath](NetworkManager *networkManager) {
+    _networkManager->perform([thread = _thread, weak = std::weak_ptr<Manager>(shared_from_this()), completion = std::move(completion), statsLogPath = _statsLogPath](NetworkManager *networkManager) {
         auto networkStats = networkManager->getNetworkStats();
 
         CallStats callStats;
         networkManager->fillCallStats(callStats);
 
-        thread->PostTask(RTC_FROM_HERE, [weak, networkStats, completion = std::move(completion), callStats = std::move(callStats), statsLogPath = statsLogPath] {
+        thread->PostTask([weak, networkStats, completion = std::move(completion), callStats = std::move(callStats), statsLogPath = statsLogPath] {
             const auto strong = weak.lock();
             if (!strong) {
                 return;
             }
 
-            strong->_mediaManager->perform(RTC_FROM_HERE, [networkStats, completion = std::move(completion), callStatsValue = std::move(callStats), statsLogPath = statsLogPath](MediaManager *mediaManager) {
+            strong->_mediaManager->perform([networkStats, completion = std::move(completion), callStatsValue = std::move(callStats), statsLogPath = statsLogPath](MediaManager *mediaManager) {
                 CallStats callStats = std::move(callStatsValue);
                 mediaManager->fillCallStats(callStats);
                 dumpStatsLog(statsLogPath, callStats);
@@ -417,7 +416,7 @@ void Manager::updateCurrentResolvedNetworkStatus() {
 
     if (!_currentResolvedNetworkStatus.has_value() || *_currentResolvedNetworkStatus != status) {
         _currentResolvedNetworkStatus = status;
-        _mediaManager->perform(RTC_FROM_HERE, [status](MediaManager *mediaManager) {
+        _mediaManager->perform([status](MediaManager *mediaManager) {
             mediaManager->setNetworkParameters(status.isLowCost, status.isLowDataRequested);
         });
     }
@@ -436,31 +435,31 @@ void Manager::sendInitialSignalingMessages() {
 }
 
 void Manager::setAudioInputDevice(std::string id) {
-	_mediaManager->perform(RTC_FROM_HERE, [id](MediaManager *mediaManager) {
+	_mediaManager->perform([id](MediaManager *mediaManager) {
 		mediaManager->setAudioInputDevice(id);
 	});
 }
 
 void Manager::setAudioOutputDevice(std::string id) {
-	_mediaManager->perform(RTC_FROM_HERE, [id](MediaManager *mediaManager) {
+	_mediaManager->perform([id](MediaManager *mediaManager) {
 		mediaManager->setAudioOutputDevice(id);
 	});
 }
 
 void Manager::setInputVolume(float level) {
-	_mediaManager->perform(RTC_FROM_HERE, [level](MediaManager *mediaManager) {
+	_mediaManager->perform([level](MediaManager *mediaManager) {
 		mediaManager->setInputVolume(level);
 	});
 }
 
 void Manager::setOutputVolume(float level) {
-	_mediaManager->perform(RTC_FROM_HERE, [level](MediaManager *mediaManager) {
+	_mediaManager->perform([level](MediaManager *mediaManager) {
 		mediaManager->setOutputVolume(level);
 	});
 }
 
 void Manager::addExternalAudioSamples(std::vector<uint8_t> &&samples) {
-    _mediaManager->perform(RTC_FROM_HERE, [samples = std::move(samples)](MediaManager *mediaManager) mutable {
+    _mediaManager->perform([samples = std::move(samples)](MediaManager *mediaManager) mutable {
         mediaManager->addExternalAudioSamples(std::move(samples));
     });
 }

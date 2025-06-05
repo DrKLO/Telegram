@@ -24,6 +24,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include "attributes.h"
+#include "version.h"
 
 /**
  * @addtogroup lavu_string
@@ -155,10 +156,14 @@ static inline size_t av_strnlen(const char *s, size_t len)
  */
 char *av_asprintf(const char *fmt, ...) av_printf_format(1, 2);
 
+#if FF_API_D2STR
 /**
  * Convert a number to an av_malloced string.
+ * @deprecated  use av_asprintf() with "%f" or a more specific format
  */
+attribute_deprecated
 char *av_d2str(double d);
+#endif
 
 /**
  * Unescape the given string until a non escaped terminating char,
@@ -319,6 +324,7 @@ enum AVEscapeMode {
     AV_ESCAPE_MODE_AUTO,      ///< Use auto-selected escaping mode.
     AV_ESCAPE_MODE_BACKSLASH, ///< Use backslash escaping.
     AV_ESCAPE_MODE_QUOTE,     ///< Use single-quote escaping.
+    AV_ESCAPE_MODE_XML,       ///< Use XML non-markup character data escaping.
 };
 
 /**
@@ -337,6 +343,19 @@ enum AVEscapeMode {
  * special by av_get_token(), such as the single quote.
  */
 #define AV_ESCAPE_FLAG_STRICT (1 << 1)
+
+/**
+ * Within AV_ESCAPE_MODE_XML, additionally escape single quotes for single
+ * quoted attributes.
+ */
+#define AV_ESCAPE_FLAG_XML_SINGLE_QUOTES (1 << 2)
+
+/**
+ * Within AV_ESCAPE_MODE_XML, additionally escape double quotes for double
+ * quoted attributes.
+ */
+#define AV_ESCAPE_FLAG_XML_DOUBLE_QUOTES (1 << 3)
+
 
 /**
  * Escape string in src, and put the escaped string in an allocated

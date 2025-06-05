@@ -14,9 +14,9 @@
 #include <utility>
 
 #include "absl/types/optional.h"
+#include "api/dtls_transport_interface.h"
 #include "api/sequence_checker.h"
 #include "rtc_base/checks.h"
-#include "rtc_base/location.h"
 #include "rtc_base/logging.h"
 
 namespace webrtc {
@@ -27,9 +27,8 @@ SctpTransport::SctpTransport(
       info_(SctpTransportState::kNew),
       internal_sctp_transport_(std::move(internal)) {
   RTC_DCHECK(internal_sctp_transport_.get());
-  internal_sctp_transport_->SignalAssociationChangeCommunicationUp.connect(
-      this, &SctpTransport::OnAssociationChangeCommunicationUp);
-  // TODO(https://bugs.webrtc.org/10360): Add handlers for transport closing.
+  internal_sctp_transport_->SetOnConnectedCallback(
+      [this]() { OnAssociationChangeCommunicationUp(); });
 
   if (dtls_transport_) {
     UpdateInformation(SctpTransportState::kConnecting);
@@ -50,8 +49,7 @@ SctpTransportInformation SctpTransport::Information() const {
   // expected thread. Chromium currently calls this method from
   // TransceiverStateSurfacer.
   if (!owner_thread_->IsCurrent()) {
-    return owner_thread_->Invoke<SctpTransportInformation>(
-        RTC_FROM_HERE, [this] { return Information(); });
+    return owner_thread_->BlockingCall([this] { return Information(); });
   }
   RTC_DCHECK_RUN_ON(owner_thread_);
   return info_;
@@ -67,6 +65,39 @@ void SctpTransport::RegisterObserver(SctpTransportObserverInterface* observer) {
 void SctpTransport::UnregisterObserver() {
   RTC_DCHECK_RUN_ON(owner_thread_);
   observer_ = nullptr;
+}
+
+RTCError SctpTransport::OpenChannel(int channel_id) {
+  RTC_DCHECK_RUN_ON(owner_thread_);
+  RTC_DCHECK(internal_sctp_transport_);
+  internal_sctp_transport_->OpenStream(channel_id);
+  return RTCError::OK();
+}
+
+RTCError SctpTransport::SendData(int channel_id,
+                                 const SendDataParams& params,
+                                 const rtc::CopyOnWriteBuffer& buffer) {
+  RTC_DCHECK_RUN_ON(owner_thread_);
+  return internal_sctp_transport_->SendData(channel_id, params, buffer);
+}
+
+RTCError SctpTransport::CloseChannel(int channel_id) {
+  RTC_DCHECK_RUN_ON(owner_thread_);
+  RTC_DCHECK(internal_sctp_transport_);
+  internal_sctp_transport_->ResetStream(channel_id);
+  return RTCError::OK();
+}
+
+void SctpTransport::SetDataSink(DataChannelSink* sink) {
+  RTC_DCHECK_RUN_ON(owner_thread_);
+  RTC_DCHECK(internal_sctp_transport_);
+  internal_sctp_transport_->SetDataChannelSink(sink);
+}
+
+bool SctpTransport::IsReadyToSend() const {
+  RTC_DCHECK_RUN_ON(owner_thread_);
+  RTC_DCHECK(internal_sctp_transport_);
+  return internal_sctp_transport_->ReadyToSendData();
 }
 
 rtc::scoped_refptr<DtlsTransportInterface> SctpTransport::dtls_transport()
@@ -95,9 +126,9 @@ void SctpTransport::SetDtlsTransport(
     if (transport) {
       internal_sctp_transport_->SetDtlsTransport(transport->internal());
 
-      transport->internal()->SubscribeDtlsState(
+      transport->internal()->SubscribeDtlsTransportState(
           [this](cricket::DtlsTransportInternal* transport,
-                 cricket::DtlsTransportState state) {
+                 DtlsTransportState state) {
             OnDtlsStateChange(transport, state);
           });
       if (info_.state() == SctpTransportState::kNew) {
@@ -159,11 +190,11 @@ void SctpTransport::OnAssociationChangeCommunicationUp() {
 }
 
 void SctpTransport::OnDtlsStateChange(cricket::DtlsTransportInternal* transport,
-                                      cricket::DtlsTransportState state) {
+                                      DtlsTransportState state) {
   RTC_DCHECK_RUN_ON(owner_thread_);
   RTC_CHECK(transport == dtls_transport_->internal());
-  if (state == cricket::DTLS_TRANSPORT_CLOSED ||
-      state == cricket::DTLS_TRANSPORT_FAILED) {
+  if (state == DtlsTransportState::kClosed ||
+      state == DtlsTransportState::kFailed) {
     UpdateInformation(SctpTransportState::kClosed);
     // TODO(http://bugs.webrtc.org/11090): Close all the data channels
   }

@@ -15,6 +15,7 @@
  */
 package com.google.android.exoplayer2.util;
 
+import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 

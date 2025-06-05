@@ -16,59 +16,16 @@
 #include "absl/algorithm/container.h"
 #include "api/video/video_layers_allocation.h"
 #include "modules/rtp_rtcp/source/byte_io.h"
+#include "modules/rtp_rtcp/source/leb128.h"
 #include "rtc_base/checks.h"
 
 namespace webrtc {
 
 constexpr RTPExtensionType RtpVideoLayersAllocationExtension::kId;
-constexpr const char RtpVideoLayersAllocationExtension::kUri[];
 
 namespace {
 
 constexpr int kMaxNumRtpStreams = 4;
-
-// TODO(bugs.webrtc.org/12000): share Leb128 functions with av1 packetizer.
-// Returns minimum number of bytes required to store `value`.
-int Leb128Size(uint32_t value) {
-  int size = 0;
-  while (value >= 0x80) {
-    ++size;
-    value >>= 7;
-  }
-  return size + 1;
-}
-
-// Returns number of bytes consumed.
-int WriteLeb128(uint32_t value, uint8_t* buffer) {
-  int size = 0;
-  while (value >= 0x80) {
-    buffer[size] = 0x80 | (value & 0x7F);
-    ++size;
-    value >>= 7;
-  }
-  buffer[size] = value;
-  ++size;
-  return size;
-}
-
-// Reads leb128 encoded value and advance read_at by number of bytes consumed.
-// Sets read_at to nullptr on error.
-uint64_t ReadLeb128(const uint8_t*& read_at, const uint8_t* end) {
-  uint64_t value = 0;
-  int fill_bits = 0;
-  while (read_at != end && fill_bits < 64 - 7) {
-    uint8_t leb128_byte = *read_at;
-    value |= uint64_t{leb128_byte & 0x7Fu} << fill_bits;
-    ++read_at;
-    fill_bits += 7;
-    if ((leb128_byte & 0x80) == 0) {
-      return value;
-    }
-  }
-  // Failed to find terminator leb128 byte.
-  read_at = nullptr;
-  return 0;
-}
 
 bool AllocationIsValid(const VideoLayersAllocation& allocation) {
   // Since all multivalue fields are stored in (rtp_stream_id, spatial_id) order
@@ -101,9 +58,6 @@ bool AllocationIsValid(const VideoLayersAllocation& allocation) {
       max_rtp_stream_idx = spatial_layer.rtp_stream_index;
     }
     if (allocation.resolution_and_frame_rate_is_valid) {
-      // TODO(danilchap): Add check width and height are no more than 0x10000
-      // when width and height become larger type and thus would support maximum
-      // resolution.
       if (spatial_layer.width <= 0) {
         return false;
       }
@@ -151,59 +105,8 @@ SpatialLayersBitmasks SpatialLayersBitmasksPerRtpStream(
 
 }  // namespace
 
-//                           +-+-+-+-+-+-+-+-+
-//                           |RID| NS| sl_bm |
-//                           +-+-+-+-+-+-+-+-+
-// Spatial layer bitmask     |sl0_bm |sl1_bm |
-//   up to 2 bytes           |---------------|
-//   when sl_bm == 0         |sl2_bm |sl3_bm |
-//                           +-+-+-+-+-+-+-+-+
-//   Number of temporal      |#tl|#tl|#tl|#tl|
-// layers per spatial layer  :---------------:
-//    up to 4 bytes          |      ...      |
-//                           +-+-+-+-+-+-+-+-+
-//  Target bitrate in kpbs   |               |
-//   per temporal layer      :      ...      :
-//    leb128 encoded         |               |
-//                           +-+-+-+-+-+-+-+-+
-// Resolution and framerate  |               |
-// 5 bytes per spatial layer + width-1 for   +
-//      (optional)           | rid=0, sid=0  |
-//                           +---------------+
-//                           |               |
-//                           + height-1 for  +
-//                           | rid=0, sid=0  |
-//                           +---------------+
-//                           | max framerate |
-//                           +-+-+-+-+-+-+-+-+
-//                           :      ...      :
-//                           +-+-+-+-+-+-+-+-+
-//
-// RID: RTP stream index this allocation is sent on, numbered from 0. 2 bits.
-// NS: Number of RTP streams - 1. 2 bits, thus allowing up-to 4 RTP streams.
-// sl_bm: BitMask of the active Spatial Layers when same for all RTP streams or
-//     0 otherwise. 4 bits thus allows up to 4 spatial layers per RTP streams.
-// slX_bm: BitMask of the active Spatial Layers for RTP stream with index=X.
-//     byte-aligned. When NS < 2, takes ones byte, otherwise uses two bytes.
-// #tl: 2-bit value of number of temporal layers-1, thus allowing up-to 4
-//     temporal layer per spatial layer. One per spatial layer per RTP stream.
-//     values are stored in (RTP stream id, spatial id) ascending order.
-//     zero-padded to byte alignment.
-// Target bitrate in kbps. Values are stored using leb128 encoding.
-//     one value per temporal layer.  values are stored in
-//     (RTP stream id, spatial id, temporal id) ascending order.
-//     All bitrates are total required bitrate to receive the corresponding
-//     layer, i.e. in simulcast mode they include only corresponding spatial
-//     layer, in full-svc all lower spatial layers are included. All lower
-//     temporal layers are also included.
-// Resolution and framerate.
-//     Optional. Presense is infered from the rtp header extension size.
-//     Encoded (width - 1), 16-bit, (height - 1), 16-bit,  max frame rate 8-bit
-//     per spatial layer per RTP stream.
-//     Values are stored in (RTP stream id, spatial id) ascending order.
-//
-// An empty layer allocation (i.e nothing sent on ssrc) is encoded as
-// special case with a single 0 byte.
+// See /docs/native-code/rtp-rtpext/video-layers-allocation00/README.md
+// for the description of the format.
 
 bool RtpVideoLayersAllocationExtension::Write(
     rtc::ArrayView<uint8_t> data,
@@ -289,7 +192,7 @@ bool RtpVideoLayersAllocationExtension::Parse(
   if (data.size() == 1 && *read_at == 0) {
     allocation->rtp_stream_index = 0;
     allocation->resolution_and_frame_rate_is_valid = true;
-    return true;
+    return AllocationIsValid(*allocation);
   }
 
   // Header byte.
@@ -354,16 +257,19 @@ bool RtpVideoLayersAllocationExtension::Parse(
   // Target bitrates.
   for (auto& layer : allocation->active_spatial_layers) {
     for (DataRate& rate : layer.target_bitrate_per_temporal_layer) {
-      rate = DataRate::KilobitsPerSec(ReadLeb128(read_at, end));
-      if (read_at == nullptr) {
+      uint64_t bitrate_kbps = ReadLeb128(read_at, end);
+      // bitrate_kbps might represent larger values than DataRate type,
+      // discard unreasonably large values.
+      if (read_at == nullptr || bitrate_kbps > 1'000'000) {
         return false;
       }
+      rate = DataRate::KilobitsPerSec(bitrate_kbps);
     }
   }
 
   if (read_at == end) {
     allocation->resolution_and_frame_rate_is_valid = false;
-    return true;
+    return AllocationIsValid(*allocation);
   }
 
   if (read_at + 5 * allocation->active_spatial_layers.size() != end) {
@@ -380,7 +286,8 @@ bool RtpVideoLayersAllocationExtension::Parse(
     layer.frame_rate_fps = *read_at;
     ++read_at;
   }
-  return true;
+
+  return AllocationIsValid(*allocation);
 }
 
 size_t RtpVideoLayersAllocationExtension::ValueSize(

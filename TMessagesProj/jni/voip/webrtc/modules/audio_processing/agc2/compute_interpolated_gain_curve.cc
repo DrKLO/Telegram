@@ -105,7 +105,7 @@ std::vector<double> SampleLimiterRegion(const LimiterDbGainCurve* limiter) {
     const auto interval = q.top();
     q.pop();
 
-    // Split |interval| and enqueue.
+    // Split `interval` and enqueue.
     double x_split = (interval.x0 + interval.x1) / 2.0;
     q.emplace(interval.x0, x_split,
               LimiterUnderApproximationNegativeError(limiter, interval.x0,
@@ -135,7 +135,7 @@ std::vector<double> SampleLimiterRegion(const LimiterDbGainCurve* limiter) {
 void PrecomputeKneeApproxParams(const LimiterDbGainCurve* limiter,
                                 test::InterpolatedParameters* parameters) {
   static_assert(kInterpolatedGainCurveKneePoints > 2, "");
-  // Get |kInterpolatedGainCurveKneePoints| - 1 equally spaced points.
+  // Get `kInterpolatedGainCurveKneePoints` - 1 equally spaced points.
   const std::vector<double> points = test::LinSpace(
       limiter->knee_start_linear(), limiter->limiter_start_linear(),
       kInterpolatedGainCurveKneePoints - 1);

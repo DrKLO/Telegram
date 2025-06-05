@@ -18,10 +18,11 @@
 #include <memory>
 
 #include "absl/algorithm/container.h"
+#include "absl/memory/memory.h"
 #include "rtc_base/async_packet_socket.h"
-#include "rtc_base/async_socket.h"
 #include "rtc_base/async_tcp_socket.h"
-#include "rtc_base/constructor_magic.h"
+#include "rtc_base/network/received_packet.h"
+#include "rtc_base/socket.h"
 #include "rtc_base/socket_address.h"
 #include "rtc_base/third_party/sigslot/sigslot.h"
 #include "rtc_base/thread.h"
@@ -35,36 +36,39 @@ class TestEchoServer : public sigslot::has_slots<> {
   TestEchoServer(Thread* thread, const SocketAddress& addr);
   ~TestEchoServer() override;
 
+  TestEchoServer(const TestEchoServer&) = delete;
+  TestEchoServer& operator=(const TestEchoServer&) = delete;
+
   SocketAddress address() const { return server_socket_->GetLocalAddress(); }
 
  private:
-  void OnAccept(AsyncSocket* socket) {
-    AsyncSocket* raw_socket = socket->Accept(nullptr);
+  void OnAccept(Socket* socket) {
+    Socket* raw_socket = socket->Accept(nullptr);
     if (raw_socket) {
-      AsyncTCPSocket* packet_socket = new AsyncTCPSocket(raw_socket, false);
-      packet_socket->SignalReadPacket.connect(this, &TestEchoServer::OnPacket);
-      packet_socket->SignalClose.connect(this, &TestEchoServer::OnClose);
+      AsyncTCPSocket* packet_socket = new AsyncTCPSocket(raw_socket);
+      packet_socket->RegisterReceivedPacketCallback(
+          [&](rtc::AsyncPacketSocket* socket,
+              const rtc::ReceivedPacket& packet) { OnPacket(socket, packet); });
+      packet_socket->SubscribeCloseEvent(
+          this, [this](AsyncPacketSocket* s, int err) { OnClose(s, err); });
       client_sockets_.push_back(packet_socket);
     }
   }
-  void OnPacket(AsyncPacketSocket* socket,
-                const char* buf,
-                size_t size,
-                const SocketAddress& remote_addr,
-                const int64_t& /* packet_time_us */) {
+  void OnPacket(AsyncPacketSocket* socket, const rtc::ReceivedPacket& packet) {
     rtc::PacketOptions options;
-    socket->Send(buf, size, options);
+    socket->Send(packet.payload().data(), packet.payload().size(), options);
   }
   void OnClose(AsyncPacketSocket* socket, int err) {
     ClientList::iterator it = absl::c_find(client_sockets_, socket);
     client_sockets_.erase(it);
-    Thread::Current()->Dispose(socket);
+    // `OnClose` is triggered by socket Close callback, deleting `socket` while
+    // processing that callback might be unsafe.
+    Thread::Current()->PostTask([socket = absl::WrapUnique(socket)] {});
   }
 
   typedef std::list<AsyncTCPSocket*> ClientList;
-  std::unique_ptr<AsyncSocket> server_socket_;
+  std::unique_ptr<Socket> server_socket_;
   ClientList client_sockets_;
-  RTC_DISALLOW_COPY_AND_ASSIGN(TestEchoServer);
 };
 
 }  // namespace rtc

@@ -18,6 +18,7 @@
 #include "api/audio_codecs/audio_codec_pair_id.h"
 #include "api/audio_codecs/audio_encoder.h"
 #include "api/audio_codecs/audio_format.h"
+#include "api/field_trials_view.h"
 #include "rtc_base/system/rtc_export.h"
 
 namespace webrtc {
@@ -29,7 +30,9 @@ struct RTC_EXPORT AudioEncoderG711 {
     enum class Type { kPcmU, kPcmA };
     bool IsOk() const {
       return (type == Type::kPcmU || type == Type::kPcmA) &&
-             frame_size_ms > 0 && frame_size_ms % 10 == 0 && num_channels >= 1;
+             frame_size_ms > 0 && frame_size_ms % 10 == 0 &&
+             num_channels >= 1 &&
+             num_channels <= AudioEncoder::kMaxNumberOfChannels;
     }
     Type type = Type::kPcmU;
     int num_channels = 1;
@@ -42,7 +45,8 @@ struct RTC_EXPORT AudioEncoderG711 {
   static std::unique_ptr<AudioEncoder> MakeAudioEncoder(
       const Config& config,
       int payload_type,
-      absl::optional<AudioCodecPairId> codec_pair_id = absl::nullopt);
+      absl::optional<AudioCodecPairId> codec_pair_id = absl::nullopt,
+      const FieldTrialsView* field_trials = nullptr);
 };
 
 }  // namespace webrtc

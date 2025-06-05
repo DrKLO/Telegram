@@ -8,26 +8,38 @@
 
 package org.telegram.ui.Cells;
 
+import android.animation.ValueAnimator;
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.Paint;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffColorFilter;
+import android.graphics.drawable.Drawable;
 import android.graphics.drawable.ShapeDrawable;
+import android.os.SystemClock;
 import android.text.TextUtils;
-import android.util.TypedValue;
 import android.view.Gravity;
+import android.view.ViewGroup;
 import android.widget.FrameLayout;
-import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.Emoji;
 import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.NotificationCenter;
+import org.telegram.messenger.R;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Components.AnimatedTextView;
 import org.telegram.ui.Components.BackupImageView;
+import org.telegram.ui.Components.CombinedDrawable;
+import org.telegram.ui.Components.CubicBezierInterpolator;
+import org.telegram.ui.Components.FlickerLoadingView;
 import org.telegram.ui.Components.LayoutHelper;
 
 public class LocationCell extends FrameLayout {
 
-    private TextView nameTextView;
-    private TextView addressTextView;
+    private AnimatedTextView nameTextView;
+    private AnimatedTextView addressTextView;
     private BackupImageView imageView;
     private ShapeDrawable circleDrawable;
     private boolean needDivider;
@@ -44,24 +56,30 @@ public class LocationCell extends FrameLayout {
         imageView.setSize(AndroidUtilities.dp(30), AndroidUtilities.dp(30));
         addView(imageView, LayoutHelper.createFrame(42, 42, Gravity.TOP | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT), LocaleController.isRTL ? 0 : 15, 11, LocaleController.isRTL ? 15 : 0, 0));
 
-        nameTextView = new TextView(context);
-        nameTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
-        nameTextView.setMaxLines(1);
-        nameTextView.setEllipsize(TextUtils.TruncateAt.END);
-        nameTextView.setSingleLine(true);
+        nameTextView = new AnimatedTextView(context, true, true, true);
+        nameTextView.setAnimationProperties(0.4f, 0, 350, CubicBezierInterpolator.EASE_OUT_QUINT);
+        nameTextView.setScaleProperty(.6f);
+        nameTextView.setTextSize(AndroidUtilities.dp(16));
+        nameTextView.setEllipsizeByGradient(true);
         nameTextView.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText));
-        nameTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        nameTextView.setTypeface(AndroidUtilities.bold());
         nameTextView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
-        addView(nameTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT), (LocaleController.isRTL ? 16 : 73), 10, (LocaleController.isRTL ? 73 : 16), 0));
+        nameTextView.getDrawable().setOverrideFullWidth(AndroidUtilities.displaySize.x);
+        NotificationCenter.listenEmojiLoading(nameTextView);
+        addView(nameTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 22, Gravity.TOP | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT), (LocaleController.isRTL ? 16 : 73), 10, (LocaleController.isRTL ? 73 : 16), 0));
 
-        addressTextView = new TextView(context);
-        addressTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-        addressTextView.setMaxLines(1);
-        addressTextView.setEllipsize(TextUtils.TruncateAt.END);
-        addressTextView.setSingleLine(true);
+        addressTextView = new AnimatedTextView(context, true, true, true);
+        addressTextView.setScaleProperty(.6f);
+        addressTextView.setAnimationProperties(0.4f, 0, 350, CubicBezierInterpolator.EASE_OUT_QUINT);
+        addressTextView.setTextSize(AndroidUtilities.dp(14));
+        addressTextView.setEllipsizeByGradient(true);
         addressTextView.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteGrayText3));
         addressTextView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
-        addView(addressTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT), (LocaleController.isRTL ? 16 : 73), 35, (LocaleController.isRTL ? 73 : 16), 0));
+        addView(addressTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 20, Gravity.TOP | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT), (LocaleController.isRTL ? 16 : 73), 35, (LocaleController.isRTL ? 73 : 16), 0));
+
+        imageView.setAlpha(enterAlpha);
+        nameTextView.setAlpha(enterAlpha);
+        addressTextView.setAlpha(enterAlpha);
     }
 
     @Override
@@ -77,8 +95,13 @@ public class LocationCell extends FrameLayout {
         return imageView;
     }
 
-    public void setLocation(TLRPC.TL_messageMediaVenue location, String icon, int pos, boolean divider) {
-        setLocation(location, icon, null, pos, divider);
+    public void setLocation(TLRPC.TL_messageMediaVenue location, int pos, boolean divider) {
+        setLocation(location, null, pos, divider, false);
+    }
+
+    private boolean allowTextAnimation;
+    public void setAllowTextAnimation(boolean allow) {
+        allowTextAnimation = allow;
     }
 
     public static int getColorForIndex(int index) {
@@ -101,28 +124,119 @@ public class LocationCell extends FrameLayout {
         }
     }
 
-    public void setLocation(TLRPC.TL_messageMediaVenue location, String icon, String label, int pos, boolean divider) {
-        needDivider = divider;
-        circleDrawable.getPaint().setColor(getColorForIndex(pos));
-        nameTextView.setText(location.title);
-        if (label != null) {
-            addressTextView.setText(label);
-        } else {
-            addressTextView.setText(location.address);
+    private CharSequence lastCompleteTitle;
+    private String lastEmoji, lastTitle;
+    private CharSequence getTitle(TLRPC.TL_messageMediaVenue location) {
+        if (location == null) {
+            return "";
         }
-        imageView.setImage(icon, null, null);
-        setWillNotDraw(!divider);
+        if (TextUtils.equals(lastEmoji, location.emoji) && TextUtils.equals(lastTitle, location.title)) {
+            return lastCompleteTitle;
+        }
+        CharSequence title = location.title;
+        if (!TextUtils.isEmpty(location.emoji)) {
+            title = location.emoji + " " + title;
+            title = Emoji.replaceEmoji(title, nameTextView.getPaint().getFontMetricsInt(), false);
+        }
+        lastEmoji = location.emoji;
+        lastTitle = location.title;
+        return lastCompleteTitle = title;
     }
+
+    private float enterAlpha = 0f;
+    private ValueAnimator enterAnimator;
+    public void setLocation(TLRPC.TL_messageMediaVenue location, String label, int pos, boolean divider, boolean animated) {
+        needDivider = divider;
+        if (location != null) {
+            nameTextView.setText(getTitle(location), allowTextAnimation && !LocaleController.isRTL && animated);
+        }
+        if (label != null) {
+            addressTextView.setText(label, allowTextAnimation && !LocaleController.isRTL);
+        } else if (location != null) {
+            addressTextView.setText(location.address, allowTextAnimation && !LocaleController.isRTL && animated);
+        }
+        int color = getColorForIndex(pos);
+        if (location != null && location.icon != null) {
+            if ("pin".equals(location.icon) || location.icon.startsWith("emoji")) {
+                Drawable drawable = getResources().getDrawable(R.drawable.pin).mutate();
+                drawable.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_location_sendLocationIcon), PorterDuff.Mode.MULTIPLY));
+                CombinedDrawable combinedDrawable = new CombinedDrawable(Theme.createCircleDrawable(AndroidUtilities.dp(42), 0), drawable);
+                combinedDrawable.setCustomSize(AndroidUtilities.dp(42), AndroidUtilities.dp(42));
+                combinedDrawable.setIconSize(AndroidUtilities.dp(24), AndroidUtilities.dp(24));
+                imageView.setImageDrawable(combinedDrawable);
+            } else {
+                imageView.setImage(location.icon, null, null);
+            }
+        }
+        circleDrawable.getPaint().setColor(color);
+        setWillNotDraw(false);
+        setClickable(location == null);
+
+        if (enterAnimator != null)
+            enterAnimator.cancel();
+
+        boolean loading = location == null;
+        float fromEnterAlpha = enterAlpha,
+                toEnterAlpha = loading ? 0f : 1f;
+        long duration = (long) (Math.abs(fromEnterAlpha - toEnterAlpha) * 150);
+        enterAnimator = ValueAnimator.ofFloat(fromEnterAlpha, toEnterAlpha);
+        final long start = SystemClock.elapsedRealtime();
+        enterAnimator.addUpdateListener(a -> {
+            float t = Math.min(Math.max((float) (SystemClock.elapsedRealtime() - start) / duration, 0), 1);
+            if (duration <= 0)
+                t = 1f;
+            enterAlpha = AndroidUtilities.lerp(fromEnterAlpha, toEnterAlpha, t);
+            imageView.setAlpha(enterAlpha);
+            nameTextView.setAlpha(enterAlpha);
+            addressTextView.setAlpha(enterAlpha);
+            invalidate();
+        });
+        enterAnimator.setDuration(loading ? Long.MAX_VALUE : duration);
+        enterAnimator.start();
+
+        imageView.setAlpha(fromEnterAlpha);
+        nameTextView.setAlpha(fromEnterAlpha);
+        addressTextView.setAlpha(fromEnterAlpha);
+        invalidate();
+    }
+
+    private static FlickerLoadingView globalGradientView;
 
     @Override
     protected void onDraw(Canvas canvas) {
+        if (globalGradientView == null) {
+            globalGradientView = new FlickerLoadingView(getContext(), resourcesProvider);
+            globalGradientView.setIsSingleCell(true);
+        }
+
+        int index = getParent() instanceof ViewGroup ? ((ViewGroup) getParent()).indexOfChild(this) : 0;
+        globalGradientView.setParentSize(getMeasuredWidth(), getMeasuredHeight(), -index * AndroidUtilities.dp(56));
+        globalGradientView.setViewType(FlickerLoadingView.AUDIO_TYPE);
+        globalGradientView.updateColors();
+        globalGradientView.updateGradient();
+
+        canvas.saveLayerAlpha(0, 0, getWidth(), getHeight(), (int) ((1f - enterAlpha) * 255), Canvas.ALL_SAVE_FLAG);
+        canvas.translate(AndroidUtilities.dp(2), (getMeasuredHeight() - AndroidUtilities.dp(56)) / 2);
+        globalGradientView.draw(canvas);
+        canvas.restore();
+        super.onDraw(canvas);
+
         if (needDivider) {
-            canvas.drawLine(AndroidUtilities.dp(72), getHeight() - 1, getWidth(), getHeight() - 1, Theme.dividerPaint);
+            Paint dividerPaint = resourcesProvider == null ? null : resourcesProvider.getPaint(Theme.key_paint_divider);
+            if (dividerPaint == null) {
+                dividerPaint = Theme.dividerPaint;
+            }
+            canvas.drawLine(
+                LocaleController.isRTL ? 0 : AndroidUtilities.dp(72),
+                getHeight() - 1,
+                LocaleController.isRTL ? getWidth() - AndroidUtilities.dp(72) : getWidth(),
+                getHeight() - 1,
+                dividerPaint
+            );
         }
     }
 
-    private int getThemedColor(String key) {
-        Integer color = resourcesProvider != null ? resourcesProvider.getColor(key) : null;
-        return color != null ? color : Theme.getColor(key);
+    private int getThemedColor(int key) {
+        return Theme.getColor(key, resourcesProvider);
     }
 }

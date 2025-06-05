@@ -14,6 +14,7 @@
 #include <string>
 #include <vector>
 
+#include "absl/strings/string_view.h"
 #include "absl/types/optional.h"
 #include "api/video_codecs/video_encoder.h"
 #include "rtc_base/experiments/field_trial_parser.h"
@@ -32,7 +33,7 @@ class EncoderInfoSettings {
     int max_bitrate_bps = 0;        // The maximum bitrate.
   };
 
-  absl::optional<int> requested_resolution_alignment() const;
+  absl::optional<uint32_t> requested_resolution_alignment() const;
   bool apply_alignment_to_all_simulcast_layers() const {
     return apply_alignment_to_all_simulcast_layers_.Get();
   }
@@ -48,11 +49,20 @@ class EncoderInfoSettings {
   GetDefaultSinglecastBitrateLimitsForResolution(VideoCodecType codec_type,
                                                  int frame_size_pixels);
 
+  static std::vector<VideoEncoder::ResolutionBitrateLimits>
+  GetDefaultSinglecastBitrateLimitsWhenQpIsUntrusted();
+
+  static absl::optional<VideoEncoder::ResolutionBitrateLimits>
+  GetSinglecastBitrateLimitForResolutionWhenQpIsUntrusted(
+      absl::optional<int> frame_size_pixels,
+      const std::vector<VideoEncoder::ResolutionBitrateLimits>&
+          resolution_bitrate_limits);
+
  protected:
-  explicit EncoderInfoSettings(std::string name);
+  explicit EncoderInfoSettings(absl::string_view name);
 
  private:
-  FieldTrialOptional<int> requested_resolution_alignment_;
+  FieldTrialOptional<uint32_t> requested_resolution_alignment_;
   FieldTrialFlag apply_alignment_to_all_simulcast_layers_;
   std::vector<VideoEncoder::ResolutionBitrateLimits> resolution_bitrate_limits_;
 };
@@ -76,6 +86,13 @@ class LibvpxVp9EncoderInfoSettings : public EncoderInfoSettings {
  public:
   LibvpxVp9EncoderInfoSettings();
   ~LibvpxVp9EncoderInfoSettings() override {}
+};
+
+// EncoderInfo settings for LibaomAv1Encoder.
+class LibaomAv1EncoderInfoSettings : public EncoderInfoSettings {
+ public:
+  LibaomAv1EncoderInfoSettings();
+  ~LibaomAv1EncoderInfoSettings() override {}
 };
 
 }  // namespace webrtc

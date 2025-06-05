@@ -13,6 +13,9 @@
 
 #include <functional>
 #include <string>
+#if !defined(WEBRTC_WIN)
+#include <pthread.h>
+#endif
 
 #include "absl/strings/string_view.h"
 #include "absl/types/optional.h"
@@ -50,12 +53,16 @@ class PlatformThread final {
   // removed.
   PlatformThread() = default;
 
-  // Moves |rhs| into this, storing an empty state in |rhs|.
+  // Moves `rhs` into this, storing an empty state in `rhs`.
   // TODO(bugs.webrtc.org/12727) Look into if default and move support can be
   // removed.
   PlatformThread(PlatformThread&& rhs);
 
-  // Moves |rhs| into this, storing an empty state in |rhs|.
+  // Copies won't work since we'd have problems with joinable threads.
+  PlatformThread(const PlatformThread&) = delete;
+  PlatformThread& operator=(const PlatformThread&) = delete;
+
+  // Moves `rhs` into this, storing an empty state in `rhs`.
   // TODO(bugs.webrtc.org/12727) Look into if default and move support can be
   // removed.
   PlatformThread& operator=(PlatformThread&& rhs);

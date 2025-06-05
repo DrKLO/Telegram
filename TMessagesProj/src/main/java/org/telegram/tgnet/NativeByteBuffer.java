@@ -2,6 +2,7 @@ package org.telegram.tgnet;
 
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.FileLog;
+import org.telegram.messenger.Utilities;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -136,6 +137,21 @@ public class NativeByteBuffer extends AbstractSerializedData {
         }
     }
 
+    public void writeFloat(float f) {
+        try {
+            if (!justCalc) {
+                buffer.putInt(Float.floatToIntBits(f));
+            } else {
+                len += 4;
+            }
+        } catch (Exception e) {
+            if (BuildVars.LOGS_ENABLED) {
+                FileLog.e("write float error");
+                FileLog.e(e);
+            }
+        }
+    }
+
     public void writeBool(boolean value) {
         if (!justCalc) {
             if (value) {
@@ -198,6 +214,13 @@ public class NativeByteBuffer extends AbstractSerializedData {
     }
 
     public void writeString(String s) {
+        if (s == null) {
+            if (BuildVars.LOGS_ENABLED) {
+                FileLog.e("write string null");
+                FileLog.e(new Throwable());
+            }
+            s = "";
+        }
         try {
             writeByteArray(s.getBytes("UTF-8"));
         } catch (Exception e) {
@@ -373,6 +396,22 @@ public class NativeByteBuffer extends AbstractSerializedData {
         return buffer.position();
     }
 
+    public byte readByte(boolean exception) {
+        try {
+            return buffer.get();
+        } catch (Exception e) {
+            if (exception) {
+                throw new RuntimeException("read byte error", e);
+            } else {
+                if (BuildVars.LOGS_ENABLED) {
+                    FileLog.e("read byte error");
+                    FileLog.e(e);
+                }
+            }
+        }
+        return 0;
+    }
+
     public int readInt32(boolean exception) {
         try {
             return buffer.getInt();
@@ -382,6 +421,22 @@ public class NativeByteBuffer extends AbstractSerializedData {
             } else {
                 if (BuildVars.LOGS_ENABLED) {
                     FileLog.e("read int32 error");
+                    FileLog.e(e);
+                }
+            }
+        }
+        return 0;
+    }
+
+    public float readFloat(boolean exception) {
+        try {
+            return Float.intBitsToFloat(buffer.getInt());
+        } catch (Exception e) {
+            if (exception) {
+                throw new RuntimeException("read float error", e);
+            } else {
+                if (BuildVars.LOGS_ENABLED) {
+                    FileLog.e("read float error");
                     FileLog.e(e);
                 }
             }
@@ -449,6 +504,16 @@ public class NativeByteBuffer extends AbstractSerializedData {
                     FileLog.e(e);
                 }
             }
+        }
+    }
+
+    public String hex() {
+        try {
+            byte[] bytes = readData(Math.min(limit(), 1024), true);
+            return Utilities.bytesToHex(bytes);
+        } catch (Exception e) {
+            FileLog.e(e);
+            return "<err>";
         }
     }
 
@@ -578,6 +643,14 @@ public class NativeByteBuffer extends AbstractSerializedData {
     @Override
     public int remaining() {
         return buffer.remaining();
+    }
+
+    @Override
+    protected void finalize() throws Throwable {
+        if (!reused) {
+            reuse();
+        }
+        super.finalize();
     }
 
     public static native long native_getFreeBuffer(int length);

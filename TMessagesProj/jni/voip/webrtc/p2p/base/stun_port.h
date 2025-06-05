@@ -11,16 +11,19 @@
 #ifndef P2P_BASE_STUN_PORT_H_
 #define P2P_BASE_STUN_PORT_H_
 
+#include <functional>
 #include <map>
 #include <memory>
 #include <string>
 
 #include "absl/memory/memory.h"
+#include "absl/strings/string_view.h"
+#include "api/task_queue/pending_task_safety_flag.h"
 #include "p2p/base/port.h"
 #include "p2p/base/stun_request.h"
 #include "rtc_base/async_packet_socket.h"
-
-// TODO(mallinath) - Rename stunport.cc|h to udpport.cc|h.
+#include "rtc_base/network/received_packet.h"
+#include "rtc_base/system/rtc_export.h"
 
 namespace cricket {
 
@@ -30,22 +33,22 @@ static const int INFINITE_LIFETIME = -1;
 static const int HIGH_COST_PORT_KEEPALIVE_LIFETIME = 2 * 60 * 1000;
 
 // Communicates using the address on the outside of a NAT.
-class UDPPort : public Port {
+class RTC_EXPORT UDPPort : public Port {
  public:
   static std::unique_ptr<UDPPort> Create(
       rtc::Thread* thread,
       rtc::PacketSocketFactory* factory,
-      rtc::Network* network,
+      const rtc::Network* network,
       rtc::AsyncPacketSocket* socket,
-      const std::string& username,
-      const std::string& password,
-      const std::string& origin,
+      absl::string_view username,
+      absl::string_view password,
       bool emit_local_for_anyaddress,
-      absl::optional<int> stun_keepalive_interval) {
+      absl::optional<int> stun_keepalive_interval,
+      const webrtc::FieldTrialsView* field_trials = nullptr) {
     // Using `new` to access a non-public constructor.
-    auto port = absl::WrapUnique(new UDPPort(thread, factory, network, socket,
-                                             username, password, origin,
-                                             emit_local_for_anyaddress));
+    auto port = absl::WrapUnique(
+        new UDPPort(thread, LOCAL_PORT_TYPE, factory, network, socket, username,
+                    password, emit_local_for_anyaddress, field_trials));
     port->set_stun_keepalive_delay(stun_keepalive_interval);
     if (!port->Init()) {
       return nullptr;
@@ -56,18 +59,18 @@ class UDPPort : public Port {
   static std::unique_ptr<UDPPort> Create(
       rtc::Thread* thread,
       rtc::PacketSocketFactory* factory,
-      rtc::Network* network,
+      const rtc::Network* network,
       uint16_t min_port,
       uint16_t max_port,
-      const std::string& username,
-      const std::string& password,
-      const std::string& origin,
+      absl::string_view username,
+      absl::string_view password,
       bool emit_local_for_anyaddress,
-      absl::optional<int> stun_keepalive_interval) {
+      absl::optional<int> stun_keepalive_interval,
+      const webrtc::FieldTrialsView* field_trials = nullptr) {
     // Using `new` to access a non-public constructor.
-    auto port = absl::WrapUnique(
-        new UDPPort(thread, factory, network, min_port, max_port, username,
-                    password, origin, emit_local_for_anyaddress));
+    auto port = absl::WrapUnique(new UDPPort(
+        thread, LOCAL_PORT_TYPE, factory, network, min_port, max_port, username,
+        password, emit_local_for_anyaddress, field_trials));
     port->set_stun_keepalive_delay(stun_keepalive_interval);
     if (!port->Init()) {
       return nullptr;
@@ -95,12 +98,9 @@ class UDPPort : public Port {
   int GetError() override;
 
   bool HandleIncomingPacket(rtc::AsyncPacketSocket* socket,
-                            const char* data,
-                            size_t size,
-                            const rtc::SocketAddress& remote_addr,
-                            int64_t packet_time_us) override;
+                            const rtc::ReceivedPacket& packet) override;
 
-  bool SupportsProtocol(const std::string& protocol) const override;
+  bool SupportsProtocol(absl::string_view protocol) const override;
   ProtocolType GetProtocol() const override;
 
   void GetStunStats(absl::optional<StunStats>* stats) override;
@@ -113,30 +113,30 @@ class UDPPort : public Port {
   void set_stun_keepalive_lifetime(int lifetime) {
     stun_keepalive_lifetime_ = lifetime;
   }
-  // Returns true if there is a pending request with type |msg_type|.
-  bool HasPendingRequest(int msg_type) {
-    return requests_.HasRequest(msg_type);
-  }
+
+  StunRequestManager& request_manager() { return request_manager_; }
 
  protected:
   UDPPort(rtc::Thread* thread,
+          absl::string_view type,
           rtc::PacketSocketFactory* factory,
-          rtc::Network* network,
+          const rtc::Network* network,
           uint16_t min_port,
           uint16_t max_port,
-          const std::string& username,
-          const std::string& password,
-          const std::string& origin,
-          bool emit_local_for_anyaddress);
+          absl::string_view username,
+          absl::string_view password,
+          bool emit_local_for_anyaddress,
+          const webrtc::FieldTrialsView* field_trials);
 
   UDPPort(rtc::Thread* thread,
+          absl::string_view type,
           rtc::PacketSocketFactory* factory,
-          rtc::Network* network,
+          const rtc::Network* network,
           rtc::AsyncPacketSocket* socket,
-          const std::string& username,
-          const std::string& password,
-          const std::string& origin,
-          bool emit_local_for_anyaddress);
+          absl::string_view username,
+          absl::string_view password,
+          bool emit_local_for_anyaddress,
+          const webrtc::FieldTrialsView* field_trials);
 
   bool Init();
 
@@ -156,10 +156,7 @@ class UDPPort : public Port {
   void PostAddAddress(bool is_final) override;
 
   void OnReadPacket(rtc::AsyncPacketSocket* socket,
-                    const char* data,
-                    size_t size,
-                    const rtc::SocketAddress& remote_addr,
-                    const int64_t& packet_time_us);
+                    const rtc::ReceivedPacket& packet);
 
   void OnSentPacket(rtc::AsyncPacketSocket* socket,
                     const rtc::SentPacket& sent_packet) override;
@@ -171,38 +168,41 @@ class UDPPort : public Port {
 
   void SendStunBindingRequests();
 
-  // Helper function which will set |addr|'s IP to the default local address if
-  // |addr| is the "any" address and |emit_local_for_anyaddress_| is true. When
+  // Helper function which will set `addr`'s IP to the default local address if
+  // `addr` is the "any" address and `emit_local_for_anyaddress_` is true. When
   // returning false, it indicates that the operation has failed and the
   // address shouldn't be used by any candidate.
   bool MaybeSetDefaultLocalAddress(rtc::SocketAddress* addr) const;
 
  private:
   // A helper class which can be called repeatedly to resolve multiple
-  // addresses, as opposed to rtc::AsyncResolverInterface, which can only
+  // addresses, as opposed to rtc::AsyncDnsResolverInterface, which can only
   // resolve one address per instance.
-  class AddressResolver : public sigslot::has_slots<> {
+  class AddressResolver {
    public:
-    explicit AddressResolver(rtc::PacketSocketFactory* factory);
-    ~AddressResolver() override;
+    explicit AddressResolver(
+        rtc::PacketSocketFactory* factory,
+        std::function<void(const rtc::SocketAddress&, int)> done_callback);
 
-    void Resolve(const rtc::SocketAddress& address);
+    void Resolve(const rtc::SocketAddress& address,
+                 int family,
+                 const webrtc::FieldTrialsView& field_trials);
     bool GetResolvedAddress(const rtc::SocketAddress& input,
                             int family,
                             rtc::SocketAddress* output) const;
 
-    // The signal is sent when resolving the specified address is finished. The
-    // first argument is the input address, the second argument is the error
-    // or 0 if it succeeded.
-    sigslot::signal2<const rtc::SocketAddress&, int> SignalDone;
-
    private:
-    typedef std::map<rtc::SocketAddress, rtc::AsyncResolverInterface*>
+    typedef std::map<rtc::SocketAddress,
+                     std::unique_ptr<webrtc::AsyncDnsResolverInterface>>
         ResolverMap;
 
-    void OnResolveResult(rtc::AsyncResolverInterface* resolver);
-
     rtc::PacketSocketFactory* socket_factory_;
+    // The function is called when resolving the specified address is finished.
+    // The first argument is the input address, the second argument is the error
+    // or 0 if it succeeded.
+    std::function<void(const rtc::SocketAddress&, int)> done_;
+    // Resolver may fire callbacks that refer to done_, so ensure
+    // that all resolvers are destroyed first.
     ResolverMap resolvers_;
   };
 
@@ -210,6 +210,9 @@ class UDPPort : public Port {
   void ResolveStunAddress(const rtc::SocketAddress& stun_addr);
   void OnResolveResult(const rtc::SocketAddress& input, int error);
 
+  // Send a STUN binding request to the given address. Calling this method may
+  // cause the set of known server addresses to be modified, eg. by replacing an
+  // unresolved server address with a resolved address.
   void SendStunBindingRequest(const rtc::SocketAddress& stun_addr);
 
   // Below methods handles binding request responses.
@@ -220,7 +223,7 @@ class UDPPort : public Port {
   void OnStunBindingOrResolveRequestFailed(
       const rtc::SocketAddress& stun_server_addr,
       int error_code,
-      const std::string& reason);
+      absl::string_view reason);
 
   // Sends STUN requests to the server.
   void OnSendPacket(const void* data, size_t size, StunRequest* req);
@@ -229,7 +232,7 @@ class UDPPort : public Port {
   // changed to SignalPortReady.
   void MaybeSetPortCompleteOrError();
 
-  bool HasCandidateWithAddress(const rtc::SocketAddress& addr) const;
+  bool HasStunCandidateWithAddress(const rtc::SocketAddress& addr) const;
 
   // If this is a low-cost network, it will keep on sending STUN binding
   // requests indefinitely to keep the NAT binding alive. Otherwise, stop
@@ -243,7 +246,7 @@ class UDPPort : public Port {
   ServerAddresses server_addresses_;
   ServerAddresses bind_request_succeeded_servers_;
   ServerAddresses bind_request_failed_servers_;
-  StunRequestManager requests_;
+  StunRequestManager request_manager_;
   rtc::AsyncPacketSocket* socket_;
   int error_;
   int send_error_count_ = 0;
@@ -267,27 +270,27 @@ class StunPort : public UDPPort {
   static std::unique_ptr<StunPort> Create(
       rtc::Thread* thread,
       rtc::PacketSocketFactory* factory,
-      rtc::Network* network,
+      const rtc::Network* network,
       uint16_t min_port,
       uint16_t max_port,
-      const std::string& username,
-      const std::string& password,
+      absl::string_view username,
+      absl::string_view password,
       const ServerAddresses& servers,
-      const std::string& origin,
-      absl::optional<int> stun_keepalive_interval);
+      absl::optional<int> stun_keepalive_interval,
+      const webrtc::FieldTrialsView* field_trials);
 
   void PrepareAddress() override;
 
  protected:
   StunPort(rtc::Thread* thread,
            rtc::PacketSocketFactory* factory,
-           rtc::Network* network,
+           const rtc::Network* network,
            uint16_t min_port,
            uint16_t max_port,
-           const std::string& username,
-           const std::string& password,
+           absl::string_view username,
+           absl::string_view password,
            const ServerAddresses& servers,
-           const std::string& origin);
+           const webrtc::FieldTrialsView* field_trials);
 };
 
 }  // namespace cricket

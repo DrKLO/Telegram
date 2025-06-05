@@ -98,7 +98,7 @@ static void ComfortNoise(AecmCore* aecm,
       // Track the minimum.
       if (aecm->noiseEst[i] < (1 << minTrackShift)) {
         // For small values, decrease noiseEst[i] every
-        // |kNoiseEstIncCount| block. The regular approach below can not
+        // `kNoiseEstIncCount` block. The regular approach below can not
         // go further down due to truncation.
         aecm->noiseEstTooHighCtr[i]++;
         if (aecm->noiseEstTooHighCtr[i] >= kNoiseEstIncCount) {
@@ -125,7 +125,7 @@ static void ComfortNoise(AecmCore* aecm,
         aecm->noiseEst[i] >>= 11;
       } else {
         // Make incremental increases based on size every
-        // |kNoiseEstIncCount| block
+        // `kNoiseEstIncCount` block
         aecm->noiseEstTooLowCtr[i]++;
         if (aecm->noiseEstTooLowCtr[i] >= kNoiseEstIncCount) {
           aecm->noiseEst[i] += (aecm->noiseEst[i] >> 9) + 1;
@@ -181,12 +181,13 @@ static void WindowAndFFT(AecmCore* aecm,
   // FFT of signal
   for (i = 0; i < PART_LEN; i++) {
     // Window time domain signal and insert into real part of
-    // transformation array |fft|
+    // transformation array `fft`
     int16_t scaled_time_signal = time_signal[i] * (1 << time_signal_scaling);
     fft[i] = (int16_t)((scaled_time_signal * WebRtcAecm_kSqrtHanning[i]) >> 14);
     scaled_time_signal = time_signal[i + PART_LEN] * (1 << time_signal_scaling);
-    fft[PART_LEN + i] = (int16_t)(
-        (scaled_time_signal * WebRtcAecm_kSqrtHanning[PART_LEN - i]) >> 14);
+    fft[PART_LEN + i] = (int16_t)((scaled_time_signal *
+                                   WebRtcAecm_kSqrtHanning[PART_LEN - i]) >>
+                                  14);
   }
 
   // Do forward FFT, then take only the first PART_LEN complex samples,
@@ -204,8 +205,8 @@ static void InverseFFTAndWindow(AecmCore* aecm,
                                 const int16_t* nearendClean) {
   int i, j, outCFFT;
   int32_t tmp32no1;
-  // Reuse |efw| for the inverse FFT output after transferring
-  // the contents to |fft|.
+  // Reuse `efw` for the inverse FFT output after transferring
+  // the contents to `fft`.
   int16_t* ifft_out = (int16_t*)efw;
 
   // Synthesis
@@ -312,7 +313,7 @@ static int TimeToFrequencyDomain(AecmCore* aecm,
     } else {
       // Approximation for magnitude of complex fft output
       // magn = sqrt(real^2 + imag^2)
-      // magn ~= alpha * max(|imag|,|real|) + beta * min(|imag|,|real|)
+      // magn ~= alpha * max(`imag`,`real`) + beta * min(`imag`,`real`)
       //
       // The parameters alpha and beta are stored in Q15
 
@@ -541,7 +542,7 @@ int RTC_NO_SANITIZE("signed-integer-overflow")  // bugs.webrtc.org/8200
     }
 
     zeros16 = WebRtcSpl_NormW16(aecm->nearFilt[i]);
-    RTC_DCHECK_GE(zeros16, 0);  // |zeros16| is a norm, hence non-negative.
+    RTC_DCHECK_GE(zeros16, 0);  // `zeros16` is a norm, hence non-negative.
     dfa_clean_q_domain_diff = aecm->dfaCleanQDomain - aecm->dfaCleanQDomainOld;
     if (zeros16 < dfa_clean_q_domain_diff && aecm->nearFilt[i]) {
       tmp16no1 = aecm->nearFilt[i] * (1 << zeros16);
@@ -644,18 +645,18 @@ int RTC_NO_SANITIZE("signed-integer-overflow")  // bugs.webrtc.org/8200
       }
 
       // multiply with Wiener coefficients
-      efw[i].real = (int16_t)(
-          WEBRTC_SPL_MUL_16_16_RSFT_WITH_ROUND(dfw[i].real, hnl[i], 14));
-      efw[i].imag = (int16_t)(
-          WEBRTC_SPL_MUL_16_16_RSFT_WITH_ROUND(dfw[i].imag, hnl[i], 14));
+      efw[i].real = (int16_t)(WEBRTC_SPL_MUL_16_16_RSFT_WITH_ROUND(dfw[i].real,
+                                                                   hnl[i], 14));
+      efw[i].imag = (int16_t)(WEBRTC_SPL_MUL_16_16_RSFT_WITH_ROUND(dfw[i].imag,
+                                                                   hnl[i], 14));
     }
   } else {
     // multiply with Wiener coefficients
     for (i = 0; i < PART_LEN1; i++) {
-      efw[i].real = (int16_t)(
-          WEBRTC_SPL_MUL_16_16_RSFT_WITH_ROUND(dfw[i].real, hnl[i], 14));
-      efw[i].imag = (int16_t)(
-          WEBRTC_SPL_MUL_16_16_RSFT_WITH_ROUND(dfw[i].imag, hnl[i], 14));
+      efw[i].real = (int16_t)(WEBRTC_SPL_MUL_16_16_RSFT_WITH_ROUND(dfw[i].real,
+                                                                   hnl[i], 14));
+      efw[i].imag = (int16_t)(WEBRTC_SPL_MUL_16_16_RSFT_WITH_ROUND(dfw[i].imag,
+                                                                   hnl[i], 14));
     }
   }
 

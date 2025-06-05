@@ -21,8 +21,8 @@
 #include "modules/include/module_fec_types.h"
 #include "modules/rtp_rtcp/source/forward_error_correction.h"
 #include "modules/rtp_rtcp/source/video_fec_generator.h"
+#include "rtc_base/bitrate_tracker.h"
 #include "rtc_base/race_checker.h"
-#include "rtc_base/rate_statistics.h"
 #include "rtc_base/synchronization/mutex.h"
 
 namespace webrtc {
@@ -81,14 +81,14 @@ class UlpfecGenerator : public VideoFecGenerator {
   int Overhead() const;
 
   // Returns true if the excess overhead (actual - target) for the FEC is below
-  // the amount |kMaxExcessOverhead|. This effects the lower protection level
+  // the amount `kMaxExcessOverhead`. This effects the lower protection level
   // cases and low number of media packets/frame. The target overhead is given
-  // by |params_.fec_rate|, and is only achievable in the limit of large number
+  // by `params_.fec_rate`, and is only achievable in the limit of large number
   // of media packets.
   bool ExcessOverheadBelowMax() const;
 
   // Returns true if the number of added media packets is at least
-  // |min_num_media_packets_|. This condition tries to capture the effect
+  // `min_num_media_packets_`. This condition tries to capture the effect
   // that, for the same amount of protection/overhead, longer codes
   // (e.g. (2k,2m) vs (k,m)) are generally more effective at recovering losses.
   bool MinimumMediaPacketsReached() const;
@@ -115,7 +115,7 @@ class UlpfecGenerator : public VideoFecGenerator {
 
   mutable Mutex mutex_;
   absl::optional<Params> pending_params_ RTC_GUARDED_BY(mutex_);
-  RateStatistics fec_bitrate_ RTC_GUARDED_BY(mutex_);
+  BitrateTracker fec_bitrate_ RTC_GUARDED_BY(mutex_);
 };
 
 }  // namespace webrtc

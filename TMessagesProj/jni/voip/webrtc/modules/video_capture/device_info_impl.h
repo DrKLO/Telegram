@@ -29,7 +29,7 @@ class DeviceInfoImpl : public VideoCaptureModule::DeviceInfo {
   ~DeviceInfoImpl(void) override;
   int32_t NumberOfCapabilities(const char* deviceUniqueIdUTF8) override;
   int32_t GetCapability(const char* deviceUniqueIdUTF8,
-                        const uint32_t deviceCapabilityNumber,
+                        uint32_t deviceCapabilityNumber,
                         VideoCaptureCapability& capability) override;
 
   int32_t GetBestMatchedCapability(const char* deviceUniqueIdUTF8,

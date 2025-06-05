@@ -26,6 +26,6 @@
  *---------------------------------------------------------------*/
 
 void WebRtcIlbcfix_IndexConvEnc(int16_t* index /* (i/o) Codebook indexes */
-                                );
+);
 
 #endif

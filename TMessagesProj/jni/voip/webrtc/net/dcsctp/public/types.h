@@ -14,29 +14,41 @@
 #include <cstdint>
 #include <limits>
 
-#include "net/dcsctp/public/strong_alias.h"
+#include "api/units/time_delta.h"
+#include "rtc_base/strong_alias.h"
 
 namespace dcsctp {
 
 // Stream Identifier
-using StreamID = StrongAlias<class StreamIDTag, uint16_t>;
+using StreamID = webrtc::StrongAlias<class StreamIDTag, uint16_t>;
 
 // Payload Protocol Identifier (PPID)
-using PPID = StrongAlias<class PPIDTag, uint32_t>;
+using PPID = webrtc::StrongAlias<class PPIDTag, uint32_t>;
 
 // Timeout Identifier
-using TimeoutID = StrongAlias<class TimeoutTag, uint64_t>;
+using TimeoutID = webrtc::StrongAlias<class TimeoutTag, uint64_t>;
 
 // Indicates if a message is allowed to be received out-of-order compared to
 // other messages on the same stream.
-using IsUnordered = StrongAlias<class IsUnorderedTag, bool>;
+using IsUnordered = webrtc::StrongAlias<class IsUnorderedTag, bool>;
+
+// Stream priority, where higher values indicate higher priority. The meaning of
+// this value and how it's used depends on the stream scheduler.
+using StreamPriority = webrtc::StrongAlias<class StreamPriorityTag, uint16_t>;
 
 // Duration, as milliseconds. Overflows after 24 days.
-class DurationMs : public StrongAlias<class DurationMsTag, int32_t> {
+class DurationMs : public webrtc::StrongAlias<class DurationMsTag, int32_t> {
  public:
   constexpr explicit DurationMs(const UnderlyingType& v)
-      : StrongAlias<class DurationMsTag, int32_t>(v) {}
+      : webrtc::StrongAlias<class DurationMsTag, int32_t>(v) {}
 
+  constexpr explicit DurationMs(webrtc::TimeDelta v)
+      : webrtc::StrongAlias<class DurationMsTag, int32_t>(
+            v.IsInfinite() ? InfiniteDuration() : DurationMs(v.ms())) {}
+
+  static constexpr DurationMs InfiniteDuration() {
+    return DurationMs(std::numeric_limits<int32_t>::max());
+  }
   // Convenience methods for working with time.
   constexpr DurationMs& operator+=(DurationMs d) {
     value_ += d.value_;
@@ -50,6 +62,11 @@ class DurationMs : public StrongAlias<class DurationMsTag, int32_t> {
   constexpr DurationMs& operator*=(T factor) {
     value_ *= factor;
     return *this;
+  }
+  constexpr webrtc::TimeDelta ToTimeDelta() const {
+    return *this == DurationMs::InfiniteDuration()
+               ? webrtc::TimeDelta::PlusInfinity()
+               : webrtc::TimeDelta::Millis(value_);
   }
 };
 
@@ -72,10 +89,10 @@ constexpr inline int32_t operator/(DurationMs lhs, DurationMs rhs) {
 }
 
 // Represents time, in milliseconds since a client-defined epoch.
-class TimeMs : public StrongAlias<class TimeMsTag, int64_t> {
+class TimeMs : public webrtc::StrongAlias<class TimeMsTag, int64_t> {
  public:
   constexpr explicit TimeMs(const UnderlyingType& v)
-      : StrongAlias<class TimeMsTag, int64_t>(v) {}
+      : webrtc::StrongAlias<class TimeMsTag, int64_t>(v) {}
 
   // Convenience methods for working with time.
   constexpr TimeMs& operator+=(DurationMs d) {
@@ -105,6 +122,56 @@ constexpr inline DurationMs operator-(TimeMs lhs, TimeMs rhs) {
   return DurationMs(*lhs - *rhs);
 }
 
+// The maximum number of times the socket should attempt to retransmit a
+// message which fails the first time in unreliable mode.
+class MaxRetransmits
+    : public webrtc::StrongAlias<class MaxRetransmitsTag, uint16_t> {
+ public:
+  constexpr explicit MaxRetransmits(const UnderlyingType& v)
+      : webrtc::StrongAlias<class MaxRetransmitsTag, uint16_t>(v) {}
+
+  // There should be no limit - the message should be sent reliably.
+  static constexpr MaxRetransmits NoLimit() {
+    return MaxRetransmits(std::numeric_limits<uint16_t>::max());
+  }
+};
+
+// An identifier that can be set on sent messages, and picked by the sending
+// client. If different from `::NotSet()`, lifecycle events will be generated,
+// and eventually `DcSctpSocketCallbacks::OnLifecycleEnd` will be called to
+// indicate that the lifecycle isn't tracked any longer. The value zero (0) is
+// not a valid lifecycle identifier, and will be interpreted as not having it
+// set.
+class LifecycleId : public webrtc::StrongAlias<class LifecycleIdTag, uint64_t> {
+ public:
+  constexpr explicit LifecycleId(const UnderlyingType& v)
+      : webrtc::StrongAlias<class LifecycleIdTag, uint64_t>(v) {}
+
+  constexpr bool IsSet() const { return value_ != 0; }
+
+  static constexpr LifecycleId NotSet() { return LifecycleId(0); }
+};
+
+// To enable zero checksum feature, both peers must agree on which alternate
+// error detection method that is used. See
+// https://www.ietf.org/archive/id/draft-ietf-tsvwg-sctp-zero-checksum-06.html.
+class ZeroChecksumAlternateErrorDetectionMethod
+    : public webrtc::StrongAlias<
+          class ZeroChecksumAlternateErrorDetectionMethodTag,
+          uint32_t> {
+ public:
+  constexpr explicit ZeroChecksumAlternateErrorDetectionMethod(
+      const UnderlyingType& v)
+      : webrtc::StrongAlias<class ZeroChecksumAlternateErrorDetectionMethodTag,
+                            uint32_t>(v) {}
+
+  static constexpr ZeroChecksumAlternateErrorDetectionMethod None() {
+    return ZeroChecksumAlternateErrorDetectionMethod(0);
+  }
+  static constexpr ZeroChecksumAlternateErrorDetectionMethod LowerLayerDtls() {
+    return ZeroChecksumAlternateErrorDetectionMethod(1);
+  }
+};
 }  // namespace dcsctp
 
 #endif  // NET_DCSCTP_PUBLIC_TYPES_H_

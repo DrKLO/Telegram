@@ -314,7 +314,7 @@ static inline void skip_remaining(GetBitContext *s, unsigned n)
  */
 static inline unsigned int get_bits(GetBitContext *s, int n)
 {
-    register unsigned int tmp;
+    unsigned int tmp;
 #if CACHED_BITSTREAM_READER
 
     av_assert2(n>0 && n<=32);

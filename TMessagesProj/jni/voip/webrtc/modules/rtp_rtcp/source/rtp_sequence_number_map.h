@@ -22,7 +22,7 @@ namespace webrtc {
 // Records the association of RTP sequence numbers to timestamps and to whether
 // the packet was first and/or last in the frame.
 //
-// 1. Limits number of entries. Whenever |max_entries| is about to be exceeded,
+// 1. Limits number of entries. Whenever `max_entries` is about to be exceeded,
 //    the size is reduced by approximately 25%.
 // 2. RTP sequence numbers wrap around relatively infrequently.
 //    This class therefore only remembers at most the last 2^15 RTP packets,

@@ -6,7 +6,6 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.graphics.BitmapShader;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -33,6 +32,10 @@ import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.Button;
 import android.widget.FrameLayout;
 
+import androidx.annotation.Keep;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLoader;
@@ -44,9 +47,11 @@ import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.tgnet.tl.TL_account;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.EmojiThemes;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeColors;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.MotionBackgroundDrawable;
 import org.telegram.ui.Components.RadioButton;
@@ -58,10 +63,6 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
-
-import androidx.annotation.Keep;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
 
 public class ThemesHorizontalListCell extends RecyclerListView implements NotificationCenter.NotificationCenterDelegate {
 
@@ -78,6 +79,7 @@ public class ThemesHorizontalListCell extends RecyclerListView implements Notifi
     private ArrayList<Theme.ThemeInfo> defaultThemes;
     private int currentType;
     private int prevCount;
+    private BaseFragment fragment;
 
     private class ThemesListAdapter extends RecyclerListView.SelectionAdapter {
 
@@ -195,7 +197,9 @@ public class ThemesHorizontalListCell extends RecyclerListView implements Notifi
                     if (action == MotionEvent.ACTION_DOWN) {
                         pressed = true;
                     } else {
-                        performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
+                        try {
+                            performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
+                        } catch (Exception ignored) {}
                         showOptionsForTheme(themeInfo);
                     }
                 }
@@ -285,8 +289,8 @@ public class ThemesHorizontalListCell extends RecyclerListView implements Notifi
                                 break;
                             } else {
                                 if ((idx = line.indexOf('=')) != -1) {
-                                    String key = line.substring(0, idx);
-                                    if (key.equals(Theme.key_chat_inBubble) || key.equals(Theme.key_chat_outBubble) || key.equals(Theme.key_chat_wallpaper) || key.equals(Theme.key_chat_wallpaper_gradient_to1) || key.equals(Theme.key_chat_wallpaper_gradient_to2) || key.equals(Theme.key_chat_wallpaper_gradient_to3)) {
+                                    int key = ThemeColors.stringKeyToInt(line.substring(0, idx));
+                                    if (key == Theme.key_chat_inBubble || key == Theme.key_chat_outBubble || key == Theme.key_chat_wallpaper || key == Theme.key_chat_wallpaper_gradient_to1 || key == Theme.key_chat_wallpaper_gradient_to2 || key == Theme.key_chat_wallpaper_gradient_to3) {
                                         String param = line.substring(idx + 1);
                                         int value;
                                         if (param.length() > 0 && param.charAt(0) == '#') {
@@ -298,25 +302,18 @@ public class ThemesHorizontalListCell extends RecyclerListView implements Notifi
                                         } else {
                                             value = Utilities.parseInt(param);
                                         }
-                                        switch (key) {
-                                            case Theme.key_chat_inBubble:
-                                                themeInfo.setPreviewInColor(value);
-                                                break;
-                                            case Theme.key_chat_outBubble:
-                                                themeInfo.setPreviewOutColor(value);
-                                                break;
-                                            case Theme.key_chat_wallpaper:
-                                                themeInfo.setPreviewBackgroundColor(value);
-                                                break;
-                                            case Theme.key_chat_wallpaper_gradient_to1:
-                                                themeInfo.previewBackgroundGradientColor1 = value;
-                                                break;
-                                            case Theme.key_chat_wallpaper_gradient_to2:
-                                                themeInfo.previewBackgroundGradientColor2 = value;
-                                                break;
-                                            case Theme.key_chat_wallpaper_gradient_to3:
-                                                themeInfo.previewBackgroundGradientColor3 = value;
-                                                break;
+                                        if (key == Theme.key_chat_inBubble) {
+                                            themeInfo.setPreviewInColor(value);
+                                        } else if (key == Theme.key_chat_outBubble){
+                                            themeInfo.setPreviewOutColor(value);
+                                        } else if (key == Theme.key_chat_wallpaper) {
+                                            themeInfo.setPreviewBackgroundColor(value);
+                                        } else if (key == Theme.key_chat_wallpaper_gradient_to1) {
+                                            themeInfo.previewBackgroundGradientColor1 = value;
+                                        } else if (key == Theme.key_chat_wallpaper_gradient_to2) {
+                                            themeInfo.previewBackgroundGradientColor2 = value;
+                                        } else if (key == Theme.key_chat_wallpaper_gradient_to3) {
+                                            themeInfo.previewBackgroundGradientColor3 = value;
                                         }
                                     }
                                 }
@@ -339,7 +336,7 @@ public class ThemesHorizontalListCell extends RecyclerListView implements Notifi
                 if (!file.exists()) {
                     if (!loadingWallpapers.containsKey(themeInfo)) {
                         loadingWallpapers.put(themeInfo, themeInfo.slug);
-                        TLRPC.TL_account_getWallPaper req = new TLRPC.TL_account_getWallPaper();
+                        TL_account.getWallPaper req = new TL_account.getWallPaper();
                         TLRPC.TL_inputWallPaperSlug inputWallPaperSlug = new TLRPC.TL_inputWallPaperSlug();
                         inputWallPaperSlug.slug = themeInfo.slug;
                         req.wallpaper = inputWallPaperSlug;
@@ -349,7 +346,7 @@ public class ThemesHorizontalListCell extends RecyclerListView implements Notifi
                                 String name = FileLoader.getAttachFileName(wallPaper.document);
                                 if (!loadingThemes.containsKey(name)) {
                                     loadingThemes.put(name, themeInfo);
-                                    FileLoader.getInstance(themeInfo.account).loadFile(wallPaper.document, wallPaper, 1, 1);
+                                    FileLoader.getInstance(themeInfo.account).loadFile(wallPaper.document, wallPaper, FileLoader.PRIORITY_NORMAL, 1);
                                 }
                             } else {
                                 themeInfo.badWallpaper = true;
@@ -388,7 +385,7 @@ public class ThemesHorizontalListCell extends RecyclerListView implements Notifi
                 backgroundDrawable = drawable;
                 hsv = AndroidUtilities.rgbToHsv(Color.red(themeInfo.getPreviewBackgroundColor()), Color.green(themeInfo.getPreviewBackgroundColor()), Color.blue(themeInfo.getPreviewBackgroundColor()));
             } else if (themeInfo.previewWallpaperOffset > 0 || themeInfo.pathToWallpaper != null) {
-                Bitmap wallpaper = getScaledBitmap(AndroidUtilities.dp(76), AndroidUtilities.dp(97), themeInfo.pathToWallpaper, themeInfo.pathToFile, themeInfo.previewWallpaperOffset);
+                Bitmap wallpaper = AndroidUtilities.getScaledBitmap(AndroidUtilities.dp(76), AndroidUtilities.dp(97), themeInfo.pathToWallpaper, themeInfo.pathToFile, themeInfo.previewWallpaperOffset);
                 if (wallpaper != null) {
                     backgroundDrawable = new BitmapDrawable(wallpaper);
                     bitmapShader = new BitmapShader(wallpaper, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP);
@@ -439,7 +436,7 @@ public class ThemesHorizontalListCell extends RecyclerListView implements Notifi
                             String name = FileLoader.getAttachFileName(themeInfo.info.document);
                             if (!loadingThemes.containsKey(name)) {
                                 loadingThemes.put(name, themeInfo);
-                                FileLoader.getInstance(themeInfo.account).loadFile(themeInfo.info.document, themeInfo.info, 1, 1);
+                                FileLoader.getInstance(themeInfo.account).loadFile(themeInfo.info.document, themeInfo.info, FileLoader.PRIORITY_NORMAL, 1);
                             }
                         }
                     } else {
@@ -679,17 +676,18 @@ public class ThemesHorizontalListCell extends RecyclerListView implements Notifi
             info.setEnabled(true);
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                 info.addAction(AccessibilityNodeInfo.AccessibilityAction.ACTION_CLICK);
-                info.addAction(new AccessibilityNodeInfo.AccessibilityAction(AccessibilityNodeInfo.ACTION_LONG_CLICK, LocaleController.getString("AccDescrMoreOptions", R.string.AccDescrMoreOptions)));
+                info.addAction(new AccessibilityNodeInfo.AccessibilityAction(AccessibilityNodeInfo.ACTION_LONG_CLICK, LocaleController.getString(R.string.AccDescrMoreOptions)));
             }
         }
     }
 
-    public ThemesHorizontalListCell(Context context, int type, ArrayList<Theme.ThemeInfo> def, ArrayList<Theme.ThemeInfo> custom) {
+    public ThemesHorizontalListCell(Context context, BaseFragment fragment, int type, ArrayList<Theme.ThemeInfo> def, ArrayList<Theme.ThemeInfo> custom) {
         super(context);
 
         customThemes = custom;
         defaultThemes = def;
         currentType = type;
+        this.fragment = fragment;
 
         if (type == ThemeActivity.THEME_TYPE_OTHER) {
             setBackgroundColor(Theme.getColor(Theme.key_dialogBackground));
@@ -732,7 +730,9 @@ public class ThemesHorizontalListCell extends RecyclerListView implements Notifi
                 return;
             }
             if (themeInfo.info.document == null) {
-                presentFragment(new ThemeSetUrlActivity(themeInfo, null, true));
+                if (fragment != null) {
+                    fragment.presentFragment(new ThemeSetUrlActivity(themeInfo, null, true));
+                }
                 return;
             }
         }
@@ -765,6 +765,10 @@ public class ThemesHorizontalListCell extends RecyclerListView implements Notifi
             }
         }
         EmojiThemes.saveCustomTheme(themeInfo, themeInfo.currentAccentId);
+
+        if (currentType != ThemeActivity.THEME_TYPE_NIGHT) {
+            Theme.turnOffAutoNight(fragment);
+        }
     }
 
     public void setDrawDivider(boolean draw) {
@@ -796,56 +800,6 @@ public class ThemesHorizontalListCell extends RecyclerListView implements Notifi
         if (drawDivider) {
             canvas.drawLine(LocaleController.isRTL ? 0 : AndroidUtilities.dp(20), getMeasuredHeight() - 1, getMeasuredWidth() - (LocaleController.isRTL ? AndroidUtilities.dp(20) : 0), getMeasuredHeight() - 1, Theme.dividerPaint);
         }
-    }
-
-    public static Bitmap getScaledBitmap(float w, float h, String path, String streamPath, int streamOffset) {
-        FileInputStream stream = null;
-        try {
-            BitmapFactory.Options options = new BitmapFactory.Options();
-            options.inJustDecodeBounds = true;
-
-            if (path != null) {
-                BitmapFactory.decodeFile(path, options);
-            } else {
-                stream = new FileInputStream(streamPath);
-                stream.getChannel().position(streamOffset);
-                BitmapFactory.decodeStream(stream, null, options);
-            }
-            if (options.outWidth > 0 && options.outHeight > 0) {
-                if (w > h && options.outWidth < options.outHeight) {
-                    float temp = w;
-                    w = h;
-                    h = temp;
-                }
-                float scale = Math.min(options.outWidth / w, options.outHeight / h);
-                options.inSampleSize = 1;
-                if (scale > 1.0f) {
-                    do {
-                        options.inSampleSize *= 2;
-                    } while (options.inSampleSize < scale);
-                }
-                options.inJustDecodeBounds = false;
-                Bitmap wallpaper;
-                if (path != null) {
-                    wallpaper = BitmapFactory.decodeFile(path, options);
-                } else {
-                    stream.getChannel().position(streamOffset);
-                    wallpaper = BitmapFactory.decodeStream(stream, null, options);
-                }
-                return wallpaper;
-            }
-        } catch (Throwable e) {
-            FileLog.e(e);
-        } finally {
-            try {
-                if (stream != null) {
-                    stream.close();
-                }
-            } catch (Exception e2) {
-                FileLog.e(e2);
-            }
-        }
-        return null;
     }
 
     @Override
@@ -937,10 +891,6 @@ public class ThemesHorizontalListCell extends RecyclerListView implements Notifi
     }
 
     protected void showOptionsForTheme(Theme.ThemeInfo themeInfo) {
-
-    }
-
-    protected void presentFragment(BaseFragment fragment) {
 
     }
 

@@ -1,18 +1,18 @@
 #!/usr/bin/env perl
 
-# Copyright (c) 2015, Google Inc.
+# Copyright 2015 The BoringSSL Authors
 #
-# Permission to use, copy, modify, and/or distribute this software for any
-# purpose with or without fee is hereby granted, provided that the above
-# copyright notice and this permission notice appear in all copies.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-# THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-# WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
-# MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY
-# SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-# WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION
-# OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
-# CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE. */
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 use strict;
 
@@ -29,7 +29,7 @@ my $xlate;
 ( $xlate="${dir}../../../perlasm/x86_64-xlate.pl" and -f $xlate) or
 die "can't locate x86_64-xlate.pl";
 
-open OUT,"| \"$^X\" $xlate $flavour $output";
+open OUT,"| \"$^X\" \"$xlate\" $flavour \"$output\"";
 *STDOUT=*OUT;
 
 my ($out, $len, $tmp1, $tmp2) = $win64 ? ("%rcx", "%rdx", "%r8", "%r9")
@@ -46,6 +46,7 @@ print<<___;
 .align	16
 CRYPTO_rdrand:
 .cfi_startproc
+	_CET_ENDBR
 	xorq %rax, %rax
 	rdrand $tmp1
 	# An add-with-carry of zero effectively sets %rax to the carry flag.
@@ -64,6 +65,7 @@ CRYPTO_rdrand:
 .align 16
 CRYPTO_rdrand_multiple8_buf:
 .cfi_startproc
+	_CET_ENDBR
 	test $len, $len
 	jz .Lout
 	movq \$8, $tmp1
@@ -84,4 +86,4 @@ CRYPTO_rdrand_multiple8_buf:
 .size CRYPTO_rdrand_multiple8_buf,.-CRYPTO_rdrand_multiple8_buf
 ___
 
-close STDOUT or die "error closing STDOUT";	# flush
+close STDOUT or die "error closing STDOUT: $!";	# flush

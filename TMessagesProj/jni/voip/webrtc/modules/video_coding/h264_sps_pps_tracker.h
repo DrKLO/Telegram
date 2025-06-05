@@ -35,7 +35,7 @@ class H264SpsPpsTracker {
   H264SpsPpsTracker();
   ~H264SpsPpsTracker();
 
-  // Returns fixed bitstream and modifies |video_header|.
+  // Returns fixed bitstream and modifies `video_header`.
   FixedBitstream CopyAndFixBitstream(rtc::ArrayView<const uint8_t> bitstream,
                                      RTPVideoHeader* video_header);
 

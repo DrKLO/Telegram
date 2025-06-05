@@ -102,7 +102,7 @@ H264SpsPpsTracker::FixedBitstream H264SpsPpsTracker::CopyAndFixBitstream(
           video_header->height = sps->second.height;
 
           // If the SPS/PPS was supplied out of band then we will have saved
-          // the actual bitstream in |data|.
+          // the actual bitstream in `data`.
           if (sps->second.data && pps->second.data) {
             RTC_DCHECK_GT(sps->second.size, 0);
             RTC_DCHECK_GT(pps->second.size, 0);
@@ -130,7 +130,6 @@ H264SpsPpsTracker::FixedBitstream H264SpsPpsTracker::CopyAndFixBitstream(
   if (h264_header.packetization_type == kH264StapA) {
     const uint8_t* nalu_ptr = bitstream.data() + 1;
     while (nalu_ptr < bitstream.data() + bitstream.size() - 1) {
-      RTC_DCHECK(video_header->is_first_packet_in_frame);
       required_size += sizeof(start_code_h264);
 
       // The first two bytes describe the length of a segment.

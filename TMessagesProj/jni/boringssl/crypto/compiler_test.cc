@@ -1,16 +1,16 @@
-/* Copyright (c) 2017, Google Inc.
- *
- * Permission to use, copy, modify, and/or distribute this software for any
- * purpose with or without fee is hereby granted, provided that the above
- * copyright notice and this permission notice appear in all copies.
- *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
- * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY
- * SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION
- * OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
- * CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE. */
+// Copyright 2017 The BoringSSL Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 #include <limits.h>
 #include <stdint.h>
@@ -21,6 +21,26 @@
 
 #include "test/test_util.h"
 
+
+// C and C++ have two forms of unspecified behavior: undefined behavior and
+// implementation-defined behavior.
+//
+// Programs that exhibit undefined behavior are invalid. Compilers are
+// permitted to, and often do, arbitrarily miscompile them. BoringSSL thus aims
+// to avoid undefined behavior.
+//
+// Implementation-defined behavior is left up to the compiler to define (or
+// leave undefined). These are often platform-specific details, such as how big
+// |int| is or how |uintN_t| is implemented. Programs that depend on
+// implementation-defined behavior are not necessarily invalid, merely less
+// portable. A compiler that provides some implementation-defined behavior is
+// not permitted to miscompile code that depends on it.
+//
+// C allows a much wider range of platform behaviors than would be practical
+// for us to support, so we make some assumptions on implementation-defined
+// behavior. Platforms that violate those assumptions are not supported. This
+// file aims to document and test these assumptions, so that platforms outside
+// our scope are flagged.
 
 template <typename T>
 static void CheckRepresentation(T value) {
@@ -57,27 +77,49 @@ static void CheckRepresentation(T value) {
 }
 
 TEST(CompilerTest, IntegerRepresentation) {
-  EXPECT_EQ(8, CHAR_BIT);
-  EXPECT_EQ(0xff, static_cast<int>(UCHAR_MAX));
+  static_assert(CHAR_BIT == 8, "BoringSSL only supports 8-bit chars");
+  static_assert(UCHAR_MAX == 0xff, "BoringSSL only supports 8-bit chars");
 
-  // uint8_t is assumed to be unsigned char. I.e., casting to uint8_t should be
-  // as good as unsigned char for strict aliasing purposes.
+  // Require that |unsigned char| and |uint8_t| be the same type. We require
+  // that type-punning through |uint8_t| is not a strict aliasing violation. In
+  // principle, type-punning should be done with |memcpy|, which would make this
+  // moot.
+  //
+  // However, C made too many historical mistakes with the types and signedness
+  // of character strings. As a result, aliasing between all variations on 8-bit
+  // chars are a practical necessity for all real C code. We do not support
+  // toolchains that break this assumption.
+  static_assert(
+      std::is_same<unsigned char, uint8_t>::value,
+      "BoringSSL requires uint8_t and unsigned char be the same type");
   uint8_t u8 = 0;
   unsigned char *ptr = &u8;
   (void)ptr;
 
   // Sized integers have the expected size.
-  EXPECT_EQ(1u, sizeof(uint8_t));
-  EXPECT_EQ(2u, sizeof(uint16_t));
-  EXPECT_EQ(4u, sizeof(uint32_t));
-  EXPECT_EQ(8u, sizeof(uint64_t));
+  static_assert(sizeof(uint8_t) == 1u, "uint8_t has the wrong size");
+  static_assert(sizeof(uint16_t) == 2u, "uint16_t has the wrong size");
+  static_assert(sizeof(uint32_t) == 4u, "uint32_t has the wrong size");
+  static_assert(sizeof(uint64_t) == 8u, "uint64_t has the wrong size");
 
   // size_t does not exceed uint64_t.
-  EXPECT_LE(sizeof(size_t), 8u);
+  static_assert(sizeof(size_t) <= 8u, "size_t must not exceed uint64_t");
 
-  // int must be 32-bit or larger.
-  EXPECT_LE(0x7fffffff, INT_MAX);
-  EXPECT_LE(0xffffffffu, UINT_MAX);
+  // Require that |int| be exactly 32 bits. OpenSSL historically mixed up
+  // |unsigned| and |uint32_t|, so we require it be at least 32 bits. Requiring
+  // at most 32-bits is a bit more subtle. C promotes arithemetic operands to
+  // |int| when they fit. But this means, if |int| is 2N bits wide, multiplying
+  // two maximum-sized |uintN_t|s is undefined by integer overflow!
+  //
+  // We attempt to handle this for |uint16_t|, assuming a 32-bit |int|, but we
+  // make no attempts to correct for this with |uint32_t| for a 64-bit |int|.
+  // Thus BoringSSL does not support ILP64 platforms.
+  //
+  // This test is on |INT_MAX| and |INT32_MAX| rather than sizeof because it is
+  // theoretically allowed for sizeof(int) to be 4 but include padding bits.
+  static_assert(INT_MAX == INT32_MAX, "BoringSSL requires int be 32-bit");
+  static_assert(UINT_MAX == UINT32_MAX,
+                "BoringSSL requires unsigned be 32-bit");
 
   CheckRepresentation(static_cast<signed char>(127));
   CheckRepresentation(static_cast<signed char>(1));

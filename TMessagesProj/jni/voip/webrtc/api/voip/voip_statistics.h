@@ -75,17 +75,17 @@ struct ChannelStatistics {
 // the jitter buffer (NetEq) performance.
 class VoipStatistics {
  public:
-  // Gets the audio ingress statistics by |ingress_stats| reference.
+  // Gets the audio ingress statistics by `ingress_stats` reference.
   // Returns following VoipResult;
   //  kOk - successfully set provided IngressStatistics reference.
-  //  kInvalidArgument - |channel_id| is invalid.
+  //  kInvalidArgument - `channel_id` is invalid.
   virtual VoipResult GetIngressStatistics(ChannelId channel_id,
                                           IngressStatistics& ingress_stats) = 0;
 
-  // Gets the channel statistics by |channel_stats| reference.
+  // Gets the channel statistics by `channel_stats` reference.
   // Returns following VoipResult;
   //  kOk - successfully set provided ChannelStatistics reference.
-  //  kInvalidArgument - |channel_id| is invalid.
+  //  kInvalidArgument - `channel_id` is invalid.
   virtual VoipResult GetChannelStatistics(ChannelId channel_id,
                                           ChannelStatistics& channel_stats) = 0;
 

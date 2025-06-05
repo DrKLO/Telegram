@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2018 The WebRTC project authors. All Rights Reserved.
+ *  Copyright (c) 2023 The WebRTC project authors. All Rights Reserved.
  *
  *  Use of this source code is governed by a BSD-style license
  *  that can be found in the LICENSE file in the root of the source
@@ -14,6 +14,7 @@
 #include <memory>
 #include <vector>
 
+#include "common_video/h265/h265_inline.h"
 #include "rtc_base/buffer.h"
 
 namespace webrtc {
@@ -21,15 +22,20 @@ namespace webrtc {
 namespace H265 {
 // The size of a full NALU start sequence {0 0 0 1}, used for the first NALU
 // of an access unit, and for SPS and PPS blocks.
-const size_t kNaluLongStartSequenceSize = 4;
+constexpr size_t kNaluLongStartSequenceSize = 4;
 
 // The size of a shortened NALU start sequence {0 0 1}, that may be used if
 // not the first NALU of an access unit or an SPS or PPS block.
-const size_t kNaluShortStartSequenceSize = 3;
+constexpr size_t kNaluShortStartSequenceSize = 3;
+
+// The size of the NALU header byte (2).
+constexpr size_t kNaluHeaderSize = 2;
 
 // The size of the NALU type byte (2).
 const size_t kNaluTypeSize = 2;
 
+// Type description of 0-40 is defined in Table7-1 of the H.265 spec
+// Type desciption of 48-49 is defined in section 4.4.2 and 4.4.3 of RFC7798
 enum NaluType : uint8_t {
   kTrailN = 0,
   kTrailR = 1,
@@ -52,19 +58,24 @@ enum NaluType : uint8_t {
   kAud = 35,
   kPrefixSei = 39,
   kSuffixSei = 40,
-  kAP = 48,
-  kFU = 49
+  // Aggregation packets, refer to section 4.4.2 in RFC 7798.
+  kAp = 48,
+  // Fragmentation units, refer to section 4.4.3 in RFC 7798.
+  kFu = 49,
+  // PACI packets, refer to section 4.4.4 in RFC 7798.
+  kPaci = 50
 };
 
+// Slice type definition. See table 7-7 of the H.265 spec
 enum SliceType : uint8_t { kB = 0, kP = 1, kI = 2 };
 
 struct NaluIndex {
   // Start index of NALU, including start sequence.
-  size_t start_offset;
+  size_t start_offset = 0;
   // Start index of NALU payload, typically type header.
-  size_t payload_start_offset;
+  size_t payload_start_offset = 0;
   // Length of NALU payload, in bytes, counting from payload_start_offset.
-  size_t payload_size;
+  size_t payload_size = 0;
 };
 
 // Returns a vector of the NALU indices in the given buffer.
@@ -74,7 +85,7 @@ std::vector<NaluIndex> FindNaluIndices(const uint8_t* buffer,
 // Get the NAL type from the header byte immediately following start sequence.
 NaluType ParseNaluType(uint8_t data);
 
-// Methods for parsing and writing RBSP. See section 7.4.2 of the H265 spec.
+// Methods for parsing and writing RBSP. See section 7.4.2 of the H.265 spec.
 //
 // The following sequences are illegal, and need to be escaped when encoding:
 // 00 00 00 -> 00 00 03 00
@@ -95,7 +106,9 @@ std::vector<uint8_t> ParseRbsp(const uint8_t* data, size_t length);
 // sequence.
 void WriteRbsp(const uint8_t* bytes, size_t length, rtc::Buffer* destination);
 
+uint32_t Log2Ceiling(uint32_t value);
 uint32_t Log2(uint32_t value);
+
 }  // namespace H265
 }  // namespace webrtc
 

@@ -13,34 +13,15 @@
 #include <utility>
 
 #include "absl/types/optional.h"
+#include "api/dtls_transport_interface.h"
+#include "api/make_ref_counted.h"
 #include "api/sequence_checker.h"
 #include "pc/ice_transport.h"
 #include "rtc_base/checks.h"
 #include "rtc_base/logging.h"
-#include "rtc_base/ref_counted_object.h"
-#include "rtc_base/ssl_certificate.h"
+#include "rtc_base/ssl_stream_adapter.h"
 
 namespace webrtc {
-
-namespace {
-
-DtlsTransportState TranslateState(cricket::DtlsTransportState internal_state) {
-  switch (internal_state) {
-    case cricket::DTLS_TRANSPORT_NEW:
-      return DtlsTransportState::kNew;
-    case cricket::DTLS_TRANSPORT_CONNECTING:
-      return DtlsTransportState::kConnecting;
-    case cricket::DTLS_TRANSPORT_CONNECTED:
-      return DtlsTransportState::kConnected;
-    case cricket::DTLS_TRANSPORT_CLOSED:
-      return DtlsTransportState::kClosed;
-    case cricket::DTLS_TRANSPORT_FAILED:
-      return DtlsTransportState::kFailed;
-  }
-  RTC_CHECK_NOTREACHED();
-}
-
-}  // namespace
 
 // Implementation of DtlsTransportInterface
 DtlsTransport::DtlsTransport(
@@ -51,17 +32,27 @@ DtlsTransport::DtlsTransport(
       ice_transport_(rtc::make_ref_counted<IceTransportWithPointer>(
           internal_dtls_transport_->ice_transport())) {
   RTC_DCHECK(internal_dtls_transport_.get());
-  internal_dtls_transport_->SubscribeDtlsState(
+  internal_dtls_transport_->SubscribeDtlsTransportState(
       [this](cricket::DtlsTransportInternal* transport,
-             cricket::DtlsTransportState state) {
+             DtlsTransportState state) {
         OnInternalDtlsState(transport, state);
       });
   UpdateInformation();
 }
 
 DtlsTransport::~DtlsTransport() {
+  // TODO(tommi): Due to a reference being held by the RtpSenderBase
+  // implementation, the last reference to the `DtlsTransport` instance can
+  // be released on the signaling thread.
+  // RTC_DCHECK_RUN_ON(owner_thread_);
+
   // We depend on the signaling thread to call Clear() before dropping
   // its last reference to this object.
+
+  // If there are non `owner_thread_` references outstanding, and those
+  // references are the last ones released, we depend on Clear() having been
+  // called from the owner_thread before the last reference is deleted.
+  // `Clear()` is currently called from `JsepTransport::~JsepTransport`.
   RTC_DCHECK(owner_thread_->IsCurrent() || !internal_dtls_transport_);
 }
 
@@ -90,15 +81,9 @@ void DtlsTransport::Clear() {
   RTC_DCHECK_RUN_ON(owner_thread_);
   RTC_DCHECK(internal());
   bool must_send_event =
-      (internal()->dtls_state() != cricket::DTLS_TRANSPORT_CLOSED);
-  // The destructor of cricket::DtlsTransportInternal calls back
-  // into DtlsTransport, so we can't hold the lock while releasing.
-  std::unique_ptr<cricket::DtlsTransportInternal> transport_to_release;
-  {
-    MutexLock lock(&lock_);
-    transport_to_release = std::move(internal_dtls_transport_);
-    ice_transport_->Clear();
-  }
+      (internal()->dtls_state() != DtlsTransportState::kClosed);
+  internal_dtls_transport_.reset();
+  ice_transport_->Clear();
   UpdateInformation();
   if (observer_ && must_send_event) {
     observer_->OnStateChange(Information());
@@ -107,7 +92,7 @@ void DtlsTransport::Clear() {
 
 void DtlsTransport::OnInternalDtlsState(
     cricket::DtlsTransportInternal* transport,
-    cricket::DtlsTransportState state) {
+    DtlsTransportState state) {
   RTC_DCHECK_RUN_ON(owner_thread_);
   RTC_DCHECK(transport == internal());
   RTC_DCHECK(state == internal()->dtls_state());
@@ -119,36 +104,48 @@ void DtlsTransport::OnInternalDtlsState(
 
 void DtlsTransport::UpdateInformation() {
   RTC_DCHECK_RUN_ON(owner_thread_);
-  MutexLock lock(&lock_);
   if (internal_dtls_transport_) {
     if (internal_dtls_transport_->dtls_state() ==
-        cricket::DTLS_TRANSPORT_CONNECTED) {
+        DtlsTransportState::kConnected) {
       bool success = true;
+      rtc::SSLRole internal_role;
+      absl::optional<DtlsTransportTlsRole> role;
       int ssl_cipher_suite;
       int tls_version;
       int srtp_cipher;
+      success &= internal_dtls_transport_->GetDtlsRole(&internal_role);
+      if (success) {
+        switch (internal_role) {
+          case rtc::SSL_CLIENT:
+            role = DtlsTransportTlsRole::kClient;
+            break;
+          case rtc::SSL_SERVER:
+            role = DtlsTransportTlsRole::kServer;
+            break;
+        }
+      }
       success &= internal_dtls_transport_->GetSslVersionBytes(&tls_version);
       success &= internal_dtls_transport_->GetSslCipherSuite(&ssl_cipher_suite);
       success &= internal_dtls_transport_->GetSrtpCryptoSuite(&srtp_cipher);
       if (success) {
-        info_ = DtlsTransportInformation(
-            TranslateState(internal_dtls_transport_->dtls_state()), tls_version,
+        set_info(DtlsTransportInformation(
+            internal_dtls_transport_->dtls_state(), role, tls_version,
             ssl_cipher_suite, srtp_cipher,
-            internal_dtls_transport_->GetRemoteSSLCertChain());
+            internal_dtls_transport_->GetRemoteSSLCertChain()));
       } else {
         RTC_LOG(LS_ERROR) << "DtlsTransport in connected state has incomplete "
                              "TLS information";
-        info_ = DtlsTransportInformation(
-            TranslateState(internal_dtls_transport_->dtls_state()),
-            absl::nullopt, absl::nullopt, absl::nullopt,
-            internal_dtls_transport_->GetRemoteSSLCertChain());
+        set_info(DtlsTransportInformation(
+            internal_dtls_transport_->dtls_state(), role, absl::nullopt,
+            absl::nullopt, absl::nullopt,
+            internal_dtls_transport_->GetRemoteSSLCertChain()));
       }
     } else {
-      info_ = DtlsTransportInformation(
-          TranslateState(internal_dtls_transport_->dtls_state()));
+      set_info(
+          DtlsTransportInformation(internal_dtls_transport_->dtls_state()));
     }
   } else {
-    info_ = DtlsTransportInformation(DtlsTransportState::kClosed);
+    set_info(DtlsTransportInformation(DtlsTransportState::kClosed));
   }
 }
 

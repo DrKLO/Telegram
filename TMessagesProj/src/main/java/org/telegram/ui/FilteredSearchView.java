@@ -1,5 +1,7 @@
 package org.telegram.ui;
 
+import static org.telegram.messenger.LocaleController.getString;
+
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
@@ -12,6 +14,7 @@ import android.graphics.Paint;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.text.SpannableStringBuilder;
+import android.text.TextPaint;
 import android.text.TextUtils;
 import android.util.SparseArray;
 import android.view.Gravity;
@@ -27,9 +30,11 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.AnimationNotificationsLocker;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.ChatObject;
-import org.telegram.messenger.ContactsController;
+import org.telegram.messenger.Emoji;
+import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.LocaleController;
@@ -40,6 +45,7 @@ import org.telegram.messenger.MessagesStorage;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
+import org.telegram.messenger.UserObject;
 import org.telegram.messenger.browser.Browser;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLObject;
@@ -49,6 +55,7 @@ import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Adapters.FiltersView;
+import org.telegram.ui.Business.QuickRepliesController;
 import org.telegram.ui.Cells.ChatActionCell;
 import org.telegram.ui.Cells.ContextLinkCell;
 import org.telegram.ui.Cells.DialogCell;
@@ -62,10 +69,12 @@ import org.telegram.ui.Cells.SharedMediaSectionCell;
 import org.telegram.ui.Cells.SharedPhotoVideoCell;
 import org.telegram.ui.Components.AlertsCreator;
 import org.telegram.ui.Components.BackupImageView;
+import org.telegram.ui.Components.BlurredRecyclerView;
 import org.telegram.ui.Components.ColoredImageSpan;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.EmbedBottomSheet;
 import org.telegram.ui.Components.FlickerLoadingView;
+import org.telegram.ui.Components.Forum.ForumUtilities;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.SearchViewPager;
@@ -110,7 +119,7 @@ public class FilteredSearchView extends FrameLayout implements NotificationCente
 
     private String currentDataQuery;
 
-    private static SpannableStringBuilder arrowSpan;
+    private static SpannableStringBuilder[] arrowSpan = new SpannableStringBuilder[3];
 
     private int photoViewerClassGuid;
 
@@ -158,7 +167,7 @@ public class FilteredSearchView extends FrameLayout implements NotificationCente
         }
 
         @Override
-        public PhotoViewer.PlaceProviderObject getPlaceForPhoto(MessageObject messageObject, TLRPC.FileLocation fileLocation, int index, boolean needPreview) {
+        public PhotoViewer.PlaceProviderObject getPlaceForPhoto(MessageObject messageObject, TLRPC.FileLocation fileLocation, int index, boolean needPreview, boolean closing) {
             if (messageObject == null) {
                 return null;
             }
@@ -205,7 +214,7 @@ public class FilteredSearchView extends FrameLayout implements NotificationCente
                     object.animatingImageViewYOffset = -coords[1];
                     object.imageReceiver = imageReceiver;
                     object.allowTakeAnimation = false;
-                    object.radius = object.imageReceiver.getRoundRadius();
+                    object.radius = object.imageReceiver.getRoundRadius(true);
                     object.thumb = object.imageReceiver.getBitmapSafe();
                     object.parentView.getLocationInWindow(coords);
                     object.clipTopAddition = 0;
@@ -240,7 +249,7 @@ public class FilteredSearchView extends FrameLayout implements NotificationCente
 
         @Override
         public CharSequence getTitleFor(int i) {
-            return createFromInfoString(messages.get(i));
+            return createFromInfoString(messages.get(i), 0);
         }
 
         @Override
@@ -254,7 +263,7 @@ public class FilteredSearchView extends FrameLayout implements NotificationCente
     public final LinearLayoutManager layoutManager;
     private final FlickerLoadingView loadingView;
     private boolean firstLoading = true;
-    private int animationIndex = -1;
+    private AnimationNotificationsLocker notificationsLocker = new AnimationNotificationsLocker();
     public int keyboardHeight;
     private final ChatActionCell floatingDateView;
 
@@ -268,7 +277,7 @@ public class FilteredSearchView extends FrameLayout implements NotificationCente
         parentFragment = fragment;
         Context context = parentActivity = fragment.getParentActivity();
         setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
-        recyclerListView = new RecyclerListView(context) {
+        recyclerListView = new BlurredRecyclerView(context) {
 
             @Override
             protected void dispatchDraw(Canvas canvas) {
@@ -323,7 +332,7 @@ public class FilteredSearchView extends FrameLayout implements NotificationCente
                 } else if (view instanceof DialogCell) {
                     if (!uiCallback.actionModeShowing()) {
                         if (((DialogCell) view).isPointInsideAvatar(x, y)) {
-                            chatPreviewDelegate.startChatPreview((DialogCell) view);
+                            chatPreviewDelegate.startChatPreview(recyclerListView, (DialogCell) view);
                             return true;
                         }
                     }
@@ -354,7 +363,7 @@ public class FilteredSearchView extends FrameLayout implements NotificationCente
         });
         addView(recyclerListView);
 
-        recyclerListView.setSectionsType(2);
+        recyclerListView.setSectionsType(RecyclerListView.SECTIONS_TYPE_DATE);
         recyclerListView.setOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
             public void onScrollStateChanged(RecyclerView recyclerView, int newState) {
@@ -373,7 +382,9 @@ public class FilteredSearchView extends FrameLayout implements NotificationCente
                 int visibleItemCount = Math.abs(lastVisibleItem - firstVisibleItem) + 1;
                 int totalItemCount = recyclerView.getAdapter().getItemCount();
                 if (!isLoading && visibleItemCount > 0 && lastVisibleItem >= totalItemCount - 10 && !endReached) {
-                    search(currentSearchDialogId, currentSearchMinDate, currentSearchMaxDate, currentSearchFilter, currentIncludeFolder, lastMessagesSearchString, false);
+                    AndroidUtilities.runOnUIThread(() -> {
+                        search(currentSearchDialogId, currentSearchMinDate, currentSearchMaxDate, currentSearchFilter, currentIncludeFolder, lastMessagesSearchString, false);
+                    });
                 }
 
                 if (adapter == sharedPhotoVideoAdapter) {
@@ -414,37 +425,114 @@ public class FilteredSearchView extends FrameLayout implements NotificationCente
         emptyView.setVisibility(View.GONE);
     }
 
-    public static CharSequence createFromInfoString(MessageObject messageObject) {
-        if (arrowSpan == null) {
-            arrowSpan = new SpannableStringBuilder("-");
-            arrowSpan.setSpan(new ColoredImageSpan(ContextCompat.getDrawable(ApplicationLoader.applicationContext, R.drawable.search_arrow).mutate()), 0, 1, 0);
+    public static CharSequence createFromInfoString(MessageObject messageObject, int arrowType) {
+        return createFromInfoString(messageObject, true, arrowType);
+    }
+
+    public static CharSequence createFromInfoString(MessageObject messageObject, boolean includeChat, int arrowType) {
+        return createFromInfoString(messageObject, includeChat, arrowType, null);
+    }
+
+    public static CharSequence createFromInfoString(MessageObject messageObject, boolean includeChat, int arrowType, TextPaint textPaint) {
+        if (messageObject == null || messageObject.messageOwner == null) {
+            return "";
+        }
+        if (messageObject.isQuickReply()) {
+            QuickRepliesController.QuickReply reply = QuickRepliesController.getInstance(messageObject.currentAccount).findReply(messageObject.getQuickReplyId());
+            return reply == null ? "" : reply.name;
+        }
+        if (messageObject.isSponsored()) {
+            if (messageObject.sponsoredCanReport) {
+                return getString(R.string.SponsoredMessageAd);
+            } else if (messageObject.sponsoredRecommended) {
+                return getString(R.string.SponsoredMessage2Recommended);
+            } else {
+                return getString(R.string.SponsoredMessage2);
+            }
+        }
+        if (arrowSpan[arrowType] == null) {
+            arrowSpan[arrowType] = new SpannableStringBuilder(">");
+            int resId;
+            if (arrowType == 0) {
+                resId = R.drawable.attach_arrow_right;
+            } else if (arrowType == 1) {
+                resId = R.drawable.msg_mini_arrow_mediathin;
+            } else if (arrowType == 2) {
+                resId = R.drawable.msg_mini_arrow_mediabold;
+            } else {
+                return "";
+            }
+            Drawable arrowDrawable = ContextCompat.getDrawable(ApplicationLoader.applicationContext, resId).mutate();
+            ColoredImageSpan span = new ColoredImageSpan(arrowDrawable, arrowType == 0 ? ColoredImageSpan.ALIGN_CENTER : ColoredImageSpan.ALIGN_BASELINE);
+//            arrowDrawable.setBounds(0, 0, AndroidUtilities.dp(13), AndroidUtilities.dp(13));
+            if (arrowType == 1 || arrowType == 2) {
+                span.setScale(.85f);
+            }
+            arrowSpan[arrowType].setSpan(span, 0, arrowSpan[arrowType].length(), 0);
         }
         CharSequence fromName = null;
-        TLRPC.User user = messageObject.messageOwner.from_id.user_id != 0 ? MessagesController.getInstance(UserConfig.selectedAccount).getUser(messageObject.messageOwner.from_id.user_id) : null;
-        TLRPC.Chat chatFrom = messageObject.messageOwner.from_id.chat_id != 0 ? MessagesController.getInstance(UserConfig.selectedAccount).getChat(messageObject.messageOwner.peer_id.chat_id) : null;
-        if (chatFrom == null) {
-            chatFrom = messageObject.messageOwner.from_id.channel_id != 0 ? MessagesController.getInstance(UserConfig.selectedAccount).getChat(messageObject.messageOwner.peer_id.channel_id) : null;
-        }
-        TLRPC.Chat chatTo = messageObject.messageOwner.peer_id.channel_id != 0 ? MessagesController.getInstance(UserConfig.selectedAccount).getChat(messageObject.messageOwner.peer_id.channel_id) : null;
-        if (chatTo == null) {
-            chatTo = messageObject.messageOwner.peer_id.chat_id != 0 ? MessagesController.getInstance(UserConfig.selectedAccount).getChat(messageObject.messageOwner.peer_id.chat_id) : null;
+        TLRPC.User user = null;
+        TLRPC.Chat chatFrom = null, chatTo = null;
+        if (messageObject.messageOwner.saved_peer_id != null) {
+            if (messageObject.getSavedDialogId() >= 0) {
+                user = MessagesController.getInstance(UserConfig.selectedAccount).getUser(messageObject.getSavedDialogId());
+            } else if (messageObject.getSavedDialogId() < 0) {
+                chatFrom = MessagesController.getInstance(UserConfig.selectedAccount).getChat(-messageObject.getSavedDialogId());
+            }
+        } else {
+            if (messageObject.messageOwner.from_id.user_id != 0) {
+                user = MessagesController.getInstance(UserConfig.selectedAccount).getUser(messageObject.messageOwner.from_id.user_id);
+            }
+            if (messageObject.messageOwner.from_id.chat_id != 0) {
+                chatFrom = MessagesController.getInstance(UserConfig.selectedAccount).getChat(messageObject.messageOwner.peer_id.chat_id);
+            }
+            if (chatFrom == null) {
+                chatFrom = messageObject.messageOwner.from_id.channel_id != 0 ? MessagesController.getInstance(UserConfig.selectedAccount).getChat(messageObject.messageOwner.peer_id.channel_id) : null;
+            }
+            chatTo = messageObject.messageOwner.peer_id.channel_id != 0 ? MessagesController.getInstance(UserConfig.selectedAccount).getChat(messageObject.messageOwner.peer_id.channel_id) : null;
+            if (chatTo == null) {
+                chatTo = messageObject.messageOwner.peer_id.chat_id != 0 ? MessagesController.getInstance(UserConfig.selectedAccount).getChat(messageObject.messageOwner.peer_id.chat_id) : null;
+            }
+            if (!ChatObject.isChannelAndNotMegaGroup(chatTo) && !includeChat) {
+                chatTo = null;
+            }
         }
         if (user != null && chatTo != null) {
+            CharSequence chatTitle = chatTo.title;
+            if (ChatObject.isForum(chatTo)) {
+                TLRPC.TL_forumTopic topic = MessagesController.getInstance(UserConfig.selectedAccount).getTopicsController().findTopic(chatTo.id, MessageObject.getTopicId(messageObject.currentAccount, messageObject.messageOwner, true));
+                if (topic != null) {
+                    chatTitle = ForumUtilities.getTopicSpannedName(topic, null, false);
+                }
+            }
+            chatTitle = Emoji.replaceEmoji(chatTitle, textPaint == null ? null : textPaint.getFontMetricsInt(), false);
             SpannableStringBuilder spannableStringBuilder = new SpannableStringBuilder();
             spannableStringBuilder
-                    .append(ContactsController.formatName(user.first_name, user.last_name))
-                    .append(' ').append(arrowSpan).append(' ')
-                    .append(chatTo.title);
+                    .append(Emoji.replaceEmoji(UserObject.getFirstName(user), textPaint == null ? null : textPaint.getFontMetricsInt(), false))
+                    .append(' ')
+                    .append(arrowSpan[arrowType])
+                    .append(' ')
+                    .append(chatTitle);
             fromName = spannableStringBuilder;
         } else if (user != null) {
-            fromName = ContactsController.formatName(user.first_name, user.last_name);
+            fromName = Emoji.replaceEmoji(UserObject.getUserName(user), textPaint == null ? null : textPaint.getFontMetricsInt(), false);
         } else if (chatFrom != null) {
-            fromName = chatFrom.title;
+            CharSequence chatTitle = chatFrom.title;
+            if (ChatObject.isForum(chatFrom)) {
+                TLRPC.TL_forumTopic topic = MessagesController.getInstance(UserConfig.selectedAccount).getTopicsController().findTopic(chatFrom.id, MessageObject.getTopicId(messageObject.currentAccount, messageObject.messageOwner, true));
+                if (topic != null) {
+                    chatTitle = ForumUtilities.getTopicSpannedName(topic, null, false);
+                }
+            }
+            chatTitle = Emoji.replaceEmoji(chatTitle, textPaint == null ? null : textPaint.getFontMetricsInt(),  false);
+            fromName = chatTitle;
         }
         return fromName == null ? "" : fromName;
     }
 
     public void search(long dialogId, long minDate, long maxDate, FiltersView.MediaFilterData currentSearchFilter, boolean includeFolder, String query, boolean clearOldResults) {
+        if (query == null) query = "";
+        final String finalQuery = query;
         String currentSearchFilterQueryString = String.format(Locale.ENGLISH, "%d%d%d%d%s%s", dialogId, minDate, maxDate, currentSearchFilter == null ? -1 : currentSearchFilter.filterType, query, includeFolder);
         boolean filterAndQueryIsSame = lastSearchFilterQueryString != null && lastSearchFilterQueryString.equals(currentSearchFilterQueryString);
         boolean forceClear = !filterAndQueryIsSame && clearOldResults;
@@ -510,7 +598,7 @@ public class FilteredSearchView extends FrameLayout implements NotificationCente
             ArrayList<Object> resultArray = null;
             if (dialogId != 0) {
                 final TLRPC.TL_messages_search req = new TLRPC.TL_messages_search();
-                req.q = query;
+                req.q = finalQuery;
                 req.limit = 20;
                 req.filter = currentSearchFilter == null ? new TLRPC.TL_inputMessagesFilterEmpty() : currentSearchFilter.filter;
                 req.peer = AccountInstance.getInstance(currentAccount).getMessagesController().getInputPeer(dialogId);
@@ -520,7 +608,7 @@ public class FilteredSearchView extends FrameLayout implements NotificationCente
                 if (maxDate > 0) {
                     req.max_date = (int) (maxDate / 1000);
                 }
-                if (filterAndQueryIsSame && query.equals(lastMessagesSearchString) && !messages.isEmpty()) {
+                if (filterAndQueryIsSame && finalQuery.equals(lastMessagesSearchString) && !messages.isEmpty()) {
                     MessageObject lastMessage = messages.get(messages.size() - 1);
                     req.offset_id = lastMessage.getId();
                 } else {
@@ -528,16 +616,16 @@ public class FilteredSearchView extends FrameLayout implements NotificationCente
                 }
                 request = req;
             } else {
-                if (!TextUtils.isEmpty(query)) {
+                if (!TextUtils.isEmpty(finalQuery)) {
                     resultArray = new ArrayList<>();
                     ArrayList<CharSequence> resultArrayNames = new ArrayList<>();
                     ArrayList<TLRPC.User> encUsers = new ArrayList<>();
-                    MessagesStorage.getInstance(currentAccount).localSearch(0, query, resultArray, resultArrayNames, encUsers, includeFolder ? 1 : 0);
+                    MessagesStorage.getInstance(currentAccount).localSearch(0, finalQuery, resultArray, resultArrayNames, encUsers, null, includeFolder ? 1 : 0);
                 }
 
                 final TLRPC.TL_messages_searchGlobal req = new TLRPC.TL_messages_searchGlobal();
                 req.limit = 20;
-                req.q = query;
+                req.q = finalQuery;
                 req.filter = currentSearchFilter == null ? new TLRPC.TL_inputMessagesFilterEmpty() : currentSearchFilter.filter;
                 if (minDate > 0) {
                     req.min_date = (int) (minDate / 1000);
@@ -545,7 +633,7 @@ public class FilteredSearchView extends FrameLayout implements NotificationCente
                 if (maxDate > 0) {
                     req.max_date = (int) (maxDate / 1000);
                 }
-                if (filterAndQueryIsSame && query.equals(lastMessagesSearchString) && !messages.isEmpty()) {
+                if (filterAndQueryIsSame && finalQuery.equals(lastMessagesSearchString) && !messages.isEmpty()) {
                     MessageObject lastMessage = messages.get(messages.size() - 1);
                     req.offset_id = lastMessage.getId();
                     req.offset_rate = nextSearchRate;
@@ -561,7 +649,7 @@ public class FilteredSearchView extends FrameLayout implements NotificationCente
                 request = req;
             }
 
-            lastMessagesSearchString = query;
+            lastMessagesSearchString = finalQuery;
             lastSearchFilterQueryString = currentSearchFilterQueryString;
 
             ArrayList<Object> finalResultArray = resultArray;
@@ -574,7 +662,7 @@ public class FilteredSearchView extends FrameLayout implements NotificationCente
                     int n = res.messages.size();
                     for (int i = 0; i < n; i++) {
                         MessageObject messageObject = new MessageObject(currentAccount, res.messages.get(i), false, true);
-                        messageObject.setQuery(query);
+                        messageObject.setQuery(finalQuery);
                         messageObjects.add(messageObject);
                     }
                 }
@@ -585,9 +673,9 @@ public class FilteredSearchView extends FrameLayout implements NotificationCente
                     }
                     isLoading = false;
                     if (error != null) {
-                        emptyView.title.setText(LocaleController.getString("SearchEmptyViewTitle2", R.string.SearchEmptyViewTitle2));
+                        emptyView.title.setText(LocaleController.getString(R.string.SearchEmptyViewTitle2));
                         emptyView.subtitle.setVisibility(View.VISIBLE);
-                        emptyView.subtitle.setText(LocaleController.getString("SearchEmptyViewFilteredSubtitle2", R.string.SearchEmptyViewFilteredSubtitle2));
+                        emptyView.subtitle.setText(LocaleController.getString(R.string.SearchEmptyViewFilteredSubtitle2));
                         emptyView.showProgress(false, true);
                         return;
                     }
@@ -606,7 +694,7 @@ public class FilteredSearchView extends FrameLayout implements NotificationCente
                         sectionArrays.clear();
                     }
                     totalCount = res.count;
-                    currentDataQuery = query;
+                    currentDataQuery = finalQuery;
                     int n = messageObjects.size();
                     for (int i = 0; i < n; i++) {
                         MessageObject messageObject = messageObjects.get(i);
@@ -632,28 +720,28 @@ public class FilteredSearchView extends FrameLayout implements NotificationCente
                     if (messages.isEmpty()) {
                         if (currentSearchFilter != null) {
                             if (TextUtils.isEmpty(currentDataQuery) && dialogId == 0 && minDate == 0) {
-                                emptyView.title.setText(LocaleController.getString("SearchEmptyViewTitle", R.string.SearchEmptyViewTitle));
+                                emptyView.title.setText(LocaleController.getString(R.string.SearchEmptyViewTitle));
                                 String str;
                                 if (currentSearchFilter.filterType == FiltersView.FILTER_TYPE_FILES) {
-                                    str = LocaleController.getString("SearchEmptyViewFilteredSubtitleFiles", R.string.SearchEmptyViewFilteredSubtitleFiles);
+                                    str = LocaleController.getString(R.string.SearchEmptyViewFilteredSubtitleFiles);
                                 } else if (currentSearchFilter.filterType == FiltersView.FILTER_TYPE_MEDIA) {
-                                    str = LocaleController.getString("SearchEmptyViewFilteredSubtitleMedia", R.string.SearchEmptyViewFilteredSubtitleMedia);
+                                    str = LocaleController.getString(R.string.SearchEmptyViewFilteredSubtitleMedia);
                                 } else if (currentSearchFilter.filterType == FiltersView.FILTER_TYPE_LINKS) {
-                                    str = LocaleController.getString("SearchEmptyViewFilteredSubtitleLinks", R.string.SearchEmptyViewFilteredSubtitleLinks);
+                                    str = LocaleController.getString(R.string.SearchEmptyViewFilteredSubtitleLinks);
                                 } else if (currentSearchFilter.filterType == FiltersView.FILTER_TYPE_MUSIC) {
-                                    str = LocaleController.getString("SearchEmptyViewFilteredSubtitleMusic", R.string.SearchEmptyViewFilteredSubtitleMusic);
+                                    str = LocaleController.getString(R.string.SearchEmptyViewFilteredSubtitleMusic);
                                 } else {
-                                    str = LocaleController.getString("SearchEmptyViewFilteredSubtitleVoice", R.string.SearchEmptyViewFilteredSubtitleVoice);
+                                    str = LocaleController.getString(R.string.SearchEmptyViewFilteredSubtitleVoice);
                                 }
                                 emptyView.subtitle.setVisibility(View.VISIBLE);
                                 emptyView.subtitle.setText(str);
                             } else {
-                                emptyView.title.setText(LocaleController.getString("SearchEmptyViewTitle2", R.string.SearchEmptyViewTitle2));
+                                emptyView.title.setText(LocaleController.getString(R.string.SearchEmptyViewTitle2));
                                 emptyView.subtitle.setVisibility(View.VISIBLE);
-                                emptyView.subtitle.setText(LocaleController.getString("SearchEmptyViewFilteredSubtitle2", R.string.SearchEmptyViewFilteredSubtitle2));
+                                emptyView.subtitle.setText(LocaleController.getString(R.string.SearchEmptyViewFilteredSubtitle2));
                             }
                         } else {
-                            emptyView.title.setText(LocaleController.getString("SearchEmptyViewTitle2", R.string.SearchEmptyViewTitle2));
+                            emptyView.title.setText(LocaleController.getString(R.string.SearchEmptyViewTitle2));
                             emptyView.subtitle.setVisibility(View.GONE);
                         }
                     }
@@ -692,8 +780,8 @@ public class FilteredSearchView extends FrameLayout implements NotificationCente
                         if (finalResultArray != null) {
                             localTipChats.addAll(finalResultArray);
                         }
-                        if (query.length() >= 3 && (LocaleController.getString("SavedMessages", R.string.SavedMessages).toLowerCase().startsWith(query) ||
-                                "saved messages".startsWith(query))) {
+                        if (finalQuery != null && finalQuery.length() >= 3 && (LocaleController.getString(R.string.SavedMessages).toLowerCase().startsWith(finalQuery) ||
+                                "saved messages".startsWith(finalQuery))) {
                             boolean found = false;
                             for (int i = 0; i < localTipChats.size(); i++) {
                                 if (localTipChats.get(i) instanceof TLRPC.User)
@@ -709,8 +797,8 @@ public class FilteredSearchView extends FrameLayout implements NotificationCente
                         localTipDates.clear();
                         localTipDates.addAll(dateData);
                         localTipArchive = false;
-                        if (query.length() >= 3 && (LocaleController.getString("ArchiveSearchFilter", R.string.ArchiveSearchFilter).toLowerCase().startsWith(query) ||
-                                "archive".startsWith(query))) {
+                        if (finalQuery != null && finalQuery.length() >= 3 && (LocaleController.getString(R.string.ArchiveSearchFilter).toLowerCase().startsWith(finalQuery) ||
+                                "archive".startsWith(finalQuery))) {
                             localTipArchive = true;
                         }
                         if (delegate != null) {
@@ -757,10 +845,10 @@ public class FilteredSearchView extends FrameLayout implements NotificationCente
                                 animatorSet.addListener(new AnimatorListenerAdapter() {
                                     @Override
                                     public void onAnimationEnd(Animator animation) {
-                                        NotificationCenter.getInstance(currentAccount).onAnimationFinish(animationIndex);
+                                        notificationsLocker.unlock();
                                     }
                                 });
-                                animationIndex = NotificationCenter.getInstance(currentAccount).setAnimationInProgress(animationIndex, null);
+                                notificationsLocker.lock();
                                 animatorSet.start();
 
                                 if (finalProgressView != null && finalProgressView.getParent() == null) {
@@ -939,7 +1027,8 @@ public class FilteredSearchView extends FrameLayout implements NotificationCente
                 cell.useSeparator = (position != getItemCount() - 1);
                 MessageObject messageObject = messages.get(position);
                 boolean animated = cell.getMessage() != null && cell.getMessage().getId() == messageObject.getId();
-                cell.setDialog(messageObject.getDialogId(), messageObject, messageObject.messageOwner.date, false);
+                cell.useFromUserAsAvatar = useFromUserAsAvatar;
+                cell.setDialog(messageObject.getDialogId(), messageObject, messageObject.messageOwner.date, false, false);
                 if (uiCallback.actionModeShowing()) {
                     messageHashIdTmp.set(messageObject.getId(), messageObject.getDialogId());
                     cell.setChecked(uiCallback.isSelected(messageHashIdTmp), animated);
@@ -963,6 +1052,10 @@ public class FilteredSearchView extends FrameLayout implements NotificationCente
         }
     }
 
+    private boolean useFromUserAsAvatar;
+    public void setUseFromUserAsAvatar(boolean value) {
+        useFromUserAsAvatar = value;
+    }
 
     private void onItemClick(int index, View view, MessageObject message, int a) {
         if (message == null) {
@@ -977,10 +1070,9 @@ public class FilteredSearchView extends FrameLayout implements NotificationCente
             return;
         }
         if (currentSearchFilter.filterType == FiltersView.FILTER_TYPE_MEDIA) {
-            PhotoViewer.getInstance().setParentActivity(parentActivity);
-            PhotoViewer.getInstance().openPhoto(messages, index, 0, 0, provider);
+            PhotoViewer.getInstance().setParentActivity(parentFragment);
+            PhotoViewer.getInstance().openPhoto(messages, index, 0, 0, 0, provider);
             photoViewerClassGuid = PhotoViewer.getInstance().getClassGuid();
-
         } else if (currentSearchFilter.filterType == FiltersView.FILTER_TYPE_MUSIC || currentSearchFilter.filterType == FiltersView.FILTER_TYPE_VOICE) {
             if (view instanceof SharedAudioCell) {
                 ((SharedAudioCell) view).didPressedButton();
@@ -991,17 +1083,17 @@ public class FilteredSearchView extends FrameLayout implements NotificationCente
                 TLRPC.Document document = message.getDocument();
                 if (cell.isLoaded()) {
                     if (message.canPreviewDocument()) {
-                        PhotoViewer.getInstance().setParentActivity(parentActivity);
+                        PhotoViewer.getInstance().setParentActivity(parentFragment);
                         index = messages.indexOf(message);
                         if (index < 0) {
                             ArrayList<MessageObject> documents = new ArrayList<>();
                             documents.add(message);
-                            PhotoViewer.getInstance().setParentActivity(parentActivity);
-                            PhotoViewer.getInstance().openPhoto(documents, 0, 0, 0, provider);
+                            PhotoViewer.getInstance().setParentActivity(parentFragment);
+                            PhotoViewer.getInstance().openPhoto(documents, 0, 0, 0, 0, provider);
                             photoViewerClassGuid = PhotoViewer.getInstance().getClassGuid();
                         } else {
-                            PhotoViewer.getInstance().setParentActivity(parentActivity);
-                            PhotoViewer.getInstance().openPhoto(messages, index, 0, 0, provider);
+                            PhotoViewer.getInstance().setParentActivity(parentFragment);
+                            PhotoViewer.getInstance().openPhoto(messages, index, 0, 0, 0, provider);
                             photoViewerClassGuid = PhotoViewer.getInstance().getClassGuid();
                         }
                         return;
@@ -1009,7 +1101,8 @@ public class FilteredSearchView extends FrameLayout implements NotificationCente
                     AndroidUtilities.openDocument(message, parentActivity, parentFragment);
                 } else if (!cell.isLoading()) {
                     MessageObject messageObject = cell.getMessage();
-                    AccountInstance.getInstance(UserConfig.selectedAccount).getFileLoader().loadFile(document, messageObject, 0, 0);
+                    messageObject.putInDownloadsStore = true;
+                    AccountInstance.getInstance(UserConfig.selectedAccount).getFileLoader().loadFile(document, messageObject, FileLoader.PRIORITY_LOW, 0);
                     cell.updateFileExistIcon(true);
                 } else {
                     AccountInstance.getInstance(UserConfig.selectedAccount).getFileLoader().cancelLoadFile(document);
@@ -1022,8 +1115,10 @@ public class FilteredSearchView extends FrameLayout implements NotificationCente
                 String link = null;
                 if (webPage != null && !(webPage instanceof TLRPC.TL_webPageEmpty)) {
                     if (webPage.cached_page != null) {
-                        ArticleViewer.getInstance().setParentActivity(parentActivity, parentFragment);
-                        ArticleViewer.getInstance().open(message);
+                        if (LaunchActivity.instance != null && LaunchActivity.instance.getBottomSheetTabs() != null && LaunchActivity.instance.getBottomSheetTabs().tryReopenTab(message) != null) {
+                            return;
+                        }
+                        parentFragment.createArticleViewer(false).open(message);
                         return;
                     } else if (webPage.embed_url != null && webPage.embed_url.length() != 0) {
                         openWebView(webPage, message);
@@ -1065,7 +1160,7 @@ public class FilteredSearchView extends FrameLayout implements NotificationCente
                 if (longPress) {
                     BottomSheet.Builder builder = new BottomSheet.Builder(parentActivity);
                     builder.setTitle(urlFinal);
-                    builder.setItems(new CharSequence[]{LocaleController.getString("Open", R.string.Open), LocaleController.getString("Copy", R.string.Copy)}, (dialog, which) -> {
+                    builder.setItems(new CharSequence[]{LocaleController.getString(R.string.Open), LocaleController.getString(R.string.Copy)}, (dialog, which) -> {
                         if (which == 0) {
                             openUrl(urlFinal);
                         } else if (which == 1) {
@@ -1426,7 +1521,7 @@ public class FilteredSearchView extends FrameLayout implements NotificationCente
     }
 
     private void openWebView(TLRPC.WebPage webPage, MessageObject message) {
-        EmbedBottomSheet.show(parentActivity, message, provider, webPage.site_name, webPage.description, webPage.url, webPage.embed_url, webPage.embed_width, webPage.embed_height, false);
+        EmbedBottomSheet.show(parentFragment, message, provider, webPage.site_name, webPage.description, webPage.url, webPage.embed_url, webPage.embed_width, webPage.embed_height, false);
     }
 
     int lastAccount;
@@ -1507,7 +1602,12 @@ public class FilteredSearchView extends FrameLayout implements NotificationCente
             View view;
             switch (viewType) {
                 case 0:
-                    view = new DialogCell(null, parent.getContext(), true, false);
+                    view = new DialogCell(null, parent.getContext(), true, true) {
+                        @Override
+                        public boolean isForumCell() {
+                            return false;
+                        }
+                    };
                     break;
                 case 3:
                     FlickerLoadingView flickerLoadingView = new FlickerLoadingView(parent.getContext());
@@ -1518,7 +1618,7 @@ public class FilteredSearchView extends FrameLayout implements NotificationCente
                 default:
                 case 2:
                     GraySectionCell cell = new GraySectionCell(parent.getContext());
-                    cell.setText(LocaleController.getString("SearchMessages", R.string.SearchMessages));
+                    cell.setText(LocaleController.getString(R.string.SearchMessages));
                     view = cell;
                     break;
             }
@@ -1531,8 +1631,8 @@ public class FilteredSearchView extends FrameLayout implements NotificationCente
             if (holder.getItemViewType() == 0) {
                 DialogCell cell = ((DialogCell) holder.itemView);
                 MessageObject messageObject = messages.get(position);
-
-                cell.setDialog(messageObject.getDialogId(), messageObject, messageObject.messageOwner.date, false);
+                cell.useFromUserAsAvatar = useFromUserAsAvatar;
+                cell.setDialog(messageObject.getDialogId(), messageObject, messageObject.messageOwner.date, false, false);
                 cell.useSeparator = position != getItemCount() - 1;
                 boolean animated = cell.getMessage() != null && cell.getMessage().getId() == messageObject.getId();
                 cell.getViewTreeObserver().addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
@@ -1687,6 +1787,7 @@ public class FilteredSearchView extends FrameLayout implements NotificationCente
         this.chatPreviewDelegate = chatPreviewDelegate;
     }
 
+
     public ArrayList<ThemeDescription> getThemeDescriptions() {
         ArrayList<ThemeDescription> arrayList = new ArrayList<>();
         arrayList.add(new ThemeDescription(this, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundWhite));
@@ -1726,7 +1827,6 @@ public class FilteredSearchView extends FrameLayout implements NotificationCente
         arrayList.add(new ThemeDescription(recyclerListView, 0, new Class[]{DialogCell.class}, Theme.dialogs_countGrayPaint, null, null, Theme.key_chats_unreadCounterMuted));
         arrayList.add(new ThemeDescription(recyclerListView, 0, new Class[]{DialogCell.class}, Theme.dialogs_countTextPaint, null, null, Theme.key_chats_unreadCounterText));
         arrayList.add(new ThemeDescription(recyclerListView, 0, new Class[]{DialogCell.class, ProfileSearchCell.class}, null, new Drawable[]{Theme.dialogs_lockDrawable}, null, Theme.key_chats_secretIcon));
-        arrayList.add(new ThemeDescription(recyclerListView, 0, new Class[]{DialogCell.class, ProfileSearchCell.class}, null, new Drawable[]{Theme.dialogs_groupDrawable, Theme.dialogs_broadcastDrawable, Theme.dialogs_botDrawable}, null, Theme.key_chats_nameIcon));
         arrayList.add(new ThemeDescription(recyclerListView, 0, new Class[]{DialogCell.class, ProfileSearchCell.class}, null, new Drawable[]{Theme.dialogs_scamDrawable, Theme.dialogs_fakeDrawable}, null, Theme.key_chats_draft));
         arrayList.add(new ThemeDescription(recyclerListView, 0, new Class[]{DialogCell.class}, null, new Drawable[]{Theme.dialogs_pinnedDrawable, Theme.dialogs_reorderDrawable}, null, Theme.key_chats_pinnedIcon));
         arrayList.add(new ThemeDescription(recyclerListView, 0, new Class[]{DialogCell.class, ProfileSearchCell.class}, null, new Paint[]{Theme.dialogs_namePaint[0], Theme.dialogs_namePaint[1], Theme.dialogs_searchNamePaint}, null, null, Theme.key_chats_name));

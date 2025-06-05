@@ -15,15 +15,26 @@
  */
 package com.google.android.exoplayer2.upstream;
 
-/**
- * A source of allocations.
- */
+import androidx.annotation.Nullable;
+
+/** A source of allocations. */
 public interface Allocator {
+
+  /** A node in a chain of {@link Allocation Allocations}. */
+  interface AllocationNode {
+
+    /** Returns the {@link Allocation} associated to this chain node. */
+    Allocation getAllocation();
+
+    /** Returns the next chain node, or {@code null} if this is the last node in the chain. */
+    @Nullable
+    AllocationNode next();
+  }
 
   /**
    * Obtain an {@link Allocation}.
-   * <p>
-   * When the caller has finished with the {@link Allocation}, it should be returned by calling
+   *
+   * <p>When the caller has finished with the {@link Allocation}, it should be returned by calling
    * {@link #release(Allocation)}.
    *
    * @return The {@link Allocation}.
@@ -38,26 +49,22 @@ public interface Allocator {
   void release(Allocation allocation);
 
   /**
-   * Releases an array of {@link Allocation}s back to the allocator.
+   * Releases all {@link Allocation Allocations} in the chain starting at the given {@link
+   * AllocationNode}.
    *
-   * @param allocations The array of {@link Allocation}s being released.
+   * <p>Implementations must not make memory allocations.
    */
-  void release(Allocation[] allocations);
+  void release(AllocationNode allocationNode);
 
   /**
-   * Hints to the allocator that it should make a best effort to release any excess
-   * {@link Allocation}s.
+   * Hints to the allocator that it should make a best effort to release any excess {@link
+   * Allocation Allocations}.
    */
   void trim();
 
-  /**
-   * Returns the total number of bytes currently allocated.
-   */
+  /** Returns the total number of bytes currently allocated. */
   int getTotalBytesAllocated();
 
-  /**
-   * Returns the length of each individual {@link Allocation}.
-   */
+  /** Returns the length of each individual {@link Allocation}. */
   int getIndividualAllocationLength();
-
 }

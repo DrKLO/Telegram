@@ -28,5 +28,4 @@ package com.google.android.exoplayer2.extractor.mp4;
     this.size = size;
     this.flags = flags;
   }
-
 }

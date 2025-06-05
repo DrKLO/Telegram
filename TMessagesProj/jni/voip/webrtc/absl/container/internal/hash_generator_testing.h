@@ -21,11 +21,13 @@
 #include <stdint.h>
 
 #include <algorithm>
+#include <cassert>
 #include <iosfwd>
 #include <random>
 #include <tuple>
 #include <type_traits>
 #include <utility>
+#include <vector>
 
 #include "absl/container/internal/hash_policy_testing.h"
 #include "absl/memory/memory.h"
@@ -152,6 +154,25 @@ using GeneratedType = decltype(
         typename std::conditional<generator_internal::IsMap<Container>::value,
                                   typename Container::value_type,
                                   typename Container::key_type>::type>&>()());
+
+// Naive wrapper that performs a linear search of previous values.
+// Beware this is O(SQR), which is reasonable for smaller kMaxValues.
+template <class T, size_t kMaxValues = 64, class E = void>
+struct UniqueGenerator {
+  Generator<T, E> gen;
+  std::vector<T> values;
+
+  T operator()() {
+    assert(values.size() < kMaxValues);
+    for (;;) {
+      T value = gen();
+      if (std::find(values.begin(), values.end(), value) == values.end()) {
+        values.push_back(value);
+        return value;
+      }
+    }
+  }
+};
 
 }  // namespace hash_internal
 }  // namespace container_internal

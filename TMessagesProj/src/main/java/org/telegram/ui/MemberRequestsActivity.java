@@ -44,7 +44,7 @@ public class MemberRequestsActivity extends BaseFragment {
             }
         });
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
-        actionBar.setTitle(delegate.isChannel ? LocaleController.getString("SubscribeRequests", R.string.SubscribeRequests) : LocaleController.getString("MemberRequests", R.string.MemberRequests));
+        actionBar.setTitle(delegate.isChannel ? LocaleController.getString(R.string.SubscribeRequests) : LocaleController.getString(R.string.MemberRequests));
 
         ActionBarMenu menu = actionBar.createMenu();
         ActionBarMenuItem searchItem = menu.addItem(searchMenuItem, R.drawable.ic_ab_search)
@@ -67,7 +67,7 @@ public class MemberRequestsActivity extends BaseFragment {
                         delegate.setQuery(editText.getText().toString());
                     }
                 });
-        searchItem.setSearchFieldHint(LocaleController.getString("Search", R.string.Search));
+        searchItem.setSearchFieldHint(LocaleController.getString(R.string.Search));
         searchItem.setVisibility(View.GONE);
 
         FrameLayout rootLayout = delegate.getRootLayout();

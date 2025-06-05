@@ -10,6 +10,7 @@
 
 #include "sdk/android/src/jni/video_decoder_factory_wrapper.h"
 
+#include "api/environment/environment.h"
 #include "api/video_codecs/sdp_video_format.h"
 #include "api/video_codecs/video_decoder.h"
 #include "rtc_base/logging.h"
@@ -27,7 +28,8 @@ VideoDecoderFactoryWrapper::VideoDecoderFactoryWrapper(
     : decoder_factory_(jni, decoder_factory) {}
 VideoDecoderFactoryWrapper::~VideoDecoderFactoryWrapper() = default;
 
-std::unique_ptr<VideoDecoder> VideoDecoderFactoryWrapper::CreateVideoDecoder(
+std::unique_ptr<VideoDecoder> VideoDecoderFactoryWrapper::Create(
+    const Environment& env,
     const SdpVideoFormat& format) {
   JNIEnv* jni = AttachCurrentThreadIfNeeded();
   ScopedJavaLocalRef<jobject> j_codec_info =
@@ -36,7 +38,7 @@ std::unique_ptr<VideoDecoder> VideoDecoderFactoryWrapper::CreateVideoDecoder(
       jni, decoder_factory_, j_codec_info);
   if (!decoder.obj())
     return nullptr;
-  return JavaToNativeVideoDecoder(jni, decoder);
+  return JavaToNativeVideoDecoder(jni, decoder, NativeToJavaPointer(&env));
 }
 
 std::vector<SdpVideoFormat> VideoDecoderFactoryWrapper::GetSupportedFormats()

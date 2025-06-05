@@ -15,6 +15,7 @@
 #include <vector>
 
 #include "api/video_codecs/sdp_video_format.h"
+#include "api/video_codecs/video_encoder.h"
 #include "api/video_codecs/video_encoder_factory.h"
 #include "test/gmock.h"
 
@@ -27,10 +28,6 @@ class MockVideoEncoderFactory : public webrtc::VideoEncoderFactory {
   MOCK_METHOD(std::vector<SdpVideoFormat>,
               GetSupportedFormats,
               (),
-              (const, override));
-  MOCK_METHOD(CodecInfo,
-              QueryVideoEncoder,
-              (const SdpVideoFormat&),
               (const, override));
   MOCK_METHOD(std::unique_ptr<VideoEncoder>,
               CreateVideoEncoder,

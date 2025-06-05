@@ -22,8 +22,8 @@ struct RtpExtensionSize {
 };
 
 // Calculates rtp header extension size in bytes assuming packet contain
-// all |extensions| with provided |value_size|.
-// Counts only extensions present among |registered_extensions|.
+// all `extensions` with provided `value_size`.
+// Counts only extensions present among `registered_extensions`.
 int RtpHeaderExtensionSize(rtc::ArrayView<const RtpExtensionSize> extensions,
                            const RtpHeaderExtensionMap& registered_extensions);
 

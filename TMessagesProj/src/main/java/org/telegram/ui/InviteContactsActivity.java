@@ -17,12 +17,9 @@ import android.content.Intent;
 import android.graphics.Canvas;
 import android.graphics.Rect;
 import android.net.Uri;
-import androidx.annotation.Keep;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
-
 import android.text.Editable;
 import android.text.InputType;
+import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.util.TypedValue;
 import android.view.ActionMode;
@@ -38,6 +35,10 @@ import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
+
+import androidx.annotation.Keep;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ContactsController;
@@ -55,11 +56,12 @@ import org.telegram.ui.Cells.GroupCreateSectionCell;
 import org.telegram.ui.Cells.InviteTextCell;
 import org.telegram.ui.Cells.InviteUserCell;
 import org.telegram.ui.Components.EditTextBoldCursor;
-import org.telegram.ui.Components.EmptyTextProgressView;
+import org.telegram.ui.Components.FlickerLoadingView;
 import org.telegram.ui.Components.GroupCreateDividerItemDecoration;
 import org.telegram.ui.Components.GroupCreateSpan;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RecyclerListView;
+import org.telegram.ui.Components.StickerEmptyView;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -73,7 +75,7 @@ public class InviteContactsActivity extends BaseFragment implements Notification
     private SpansContainer spansContainer;
     private EditTextBoldCursor editText;
     private RecyclerListView listView;
-    private EmptyTextProgressView emptyView;
+    private StickerEmptyView emptyView;
     private InviteAdapter adapter;
     private TextView infoTextView;
     private FrameLayout counterView;
@@ -210,7 +212,7 @@ public class InviteContactsActivity extends BaseFragment implements Notification
             allSpans.add(span);
             selectedContacts.put(span.getKey(), span);
 
-            editText.setHintVisible(false);
+            editText.setHintVisible(false, TextUtils.isEmpty(editText.getText()));
             if (currentAnimation != null) {
                 currentAnimation.setupEndValues();
                 currentAnimation.cancel();
@@ -241,7 +243,7 @@ public class InviteContactsActivity extends BaseFragment implements Notification
             allSpans.remove(span);
             span.setOnClickListener(null);
 
-            if (currentAnimation != null) {
+            if (currentAnimation != null && currentAnimation.isRunning()) {
                 currentAnimation.setupEndValues();
                 currentAnimation.cancel();
             }
@@ -256,7 +258,7 @@ public class InviteContactsActivity extends BaseFragment implements Notification
                     animationStarted = false;
                     editText.setAllowDrawCursor(true);
                     if (allSpans.isEmpty()) {
-                        editText.setHintVisible(true);
+                        editText.setHintVisible(true, true);
                     }
                 }
             });
@@ -277,6 +279,7 @@ public class InviteContactsActivity extends BaseFragment implements Notification
     @Override
     public boolean onFragmentCreate() {
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.contactsImported);
+        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.contactsDidLoad);
         fetchContacts();
         if (!UserConfig.getInstance(currentAccount).contactsReimported) {
             ContactsController.getInstance(currentAccount).forceImportContacts();
@@ -290,6 +293,7 @@ public class InviteContactsActivity extends BaseFragment implements Notification
     public void onFragmentDestroy() {
         super.onFragmentDestroy();
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.contactsImported);
+        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.contactsDidLoad);
     }
 
     @Override
@@ -319,7 +323,7 @@ public class InviteContactsActivity extends BaseFragment implements Notification
 
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
         actionBar.setAllowOverlayTitle(true);
-        actionBar.setTitle(LocaleController.getString("InviteFriends", R.string.InviteFriends));
+        actionBar.setTitle(LocaleController.getString(R.string.InviteFriends));
 
         actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
             @Override
@@ -352,14 +356,14 @@ public class InviteContactsActivity extends BaseFragment implements Notification
                 }
                 scrollView.measure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(maxSize, MeasureSpec.AT_MOST));
                 listView.measure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(height - scrollView.getMeasuredHeight() - h, MeasureSpec.EXACTLY));
-                emptyView.measure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(height - scrollView.getMeasuredHeight() - AndroidUtilities.dp(72), MeasureSpec.EXACTLY));
+                emptyView.measure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(height - scrollView.getMeasuredHeight() - h, MeasureSpec.EXACTLY));
             }
 
             @Override
             protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
                 scrollView.layout(0, 0, scrollView.getMeasuredWidth(), scrollView.getMeasuredHeight());
                 listView.layout(0, scrollView.getMeasuredHeight(), listView.getMeasuredWidth(), scrollView.getMeasuredHeight() + listView.getMeasuredHeight());
-                emptyView.layout(0, scrollView.getMeasuredHeight() + AndroidUtilities.dp(72), emptyView.getMeasuredWidth(), scrollView.getMeasuredHeight() + emptyView.getMeasuredHeight());
+                emptyView.layout(0, scrollView.getMeasuredHeight() + (searching ? 0 : AndroidUtilities.dp(72)), emptyView.getMeasuredWidth(), scrollView.getMeasuredHeight() + emptyView.getMeasuredHeight());
                 int y = bottom - top - infoTextView.getMeasuredHeight();
                 infoTextView.layout(0, y, infoTextView.getMeasuredWidth(), y + infoTextView.getMeasuredHeight());
                 y = bottom - top - counterView.getMeasuredHeight();
@@ -428,7 +432,7 @@ public class InviteContactsActivity extends BaseFragment implements Notification
         editText.setImeOptions(EditorInfo.IME_ACTION_DONE | EditorInfo.IME_FLAG_NO_EXTRACT_UI);
         editText.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL);
         spansContainer.addView(editText);
-        editText.setHintText(LocaleController.getString("SearchFriends", R.string.SearchFriends));
+        editText.setHintText(LocaleController.getString(R.string.SearchFriends));
         editText.setCustomSelectionActionModeCallback(new ActionMode.Callback() {
             public boolean onPrepareActionMode(ActionMode mode, Menu menu) {
                 return false;
@@ -489,27 +493,49 @@ public class InviteContactsActivity extends BaseFragment implements Notification
                     adapter.searchDialogs(editText.getText().toString());
                     listView.setFastScrollVisible(false);
                     listView.setVerticalScrollBarEnabled(true);
-                    emptyView.setText(LocaleController.getString("NoResult", R.string.NoResult));
+                    emptyView.showProgress(true);
+                    emptyView.setStickerType(StickerEmptyView.STICKER_TYPE_SEARCH);
+                    emptyView.title.setText(LocaleController.getString(R.string.NoResult));
+                    emptyView.subtitle.setText(LocaleController.getString(R.string.SearchEmptyViewFilteredSubtitle2));
                 } else {
                     closeSearch();
                 }
             }
         });
 
-        emptyView = new EmptyTextProgressView(context);
-        if (ContactsController.getInstance(currentAccount).isLoadingContacts()) {
-            emptyView.showProgress();
-        } else {
-            emptyView.showTextView();
-        }
-        emptyView.setText(LocaleController.getString("NoContacts", R.string.NoContacts));
+        FlickerLoadingView flickerLoadingView = new FlickerLoadingView(context);
+        flickerLoadingView.setViewType(FlickerLoadingView.USERS_TYPE);
+        flickerLoadingView.showDate(false);
+
+        emptyView = new StickerEmptyView(context, flickerLoadingView, StickerEmptyView.STICKER_TYPE_NO_CONTACTS);
+        emptyView.addView(flickerLoadingView, 0);
+        emptyView.setAnimateLayoutChange(true);
+        emptyView.title.setText(LocaleController.getString(R.string.NoContacts));
+        emptyView.subtitle.setText("");
+        emptyView.showProgress(ContactsController.getInstance(currentAccount).isLoadingContacts());
+
         frameLayout.addView(emptyView);
 
         LinearLayoutManager linearLayoutManager = new LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false);
 
-        listView = new RecyclerListView(context);
+        adapter = new InviteAdapter(context) {
+            @Override
+            protected void onSearchFinished() {
+                emptyView.showProgress(false);
+            }
+        };
+
+        listView = new RecyclerListView(context) {
+            @Override
+            public void setPadding(int left, int top, int right, int bottom) {
+                super.setPadding(left, top, right, bottom);
+                if (emptyView != null) {
+                    emptyView.setPadding(left, top, right, bottom);
+                }
+            }
+        };
         listView.setEmptyView(emptyView);
-        listView.setAdapter(adapter = new InviteAdapter(context));
+        listView.setAdapter(adapter);
         listView.setLayoutManager(linearLayoutManager);
         listView.setVerticalScrollBarEnabled(true);
         listView.setVerticalScrollbarPosition(LocaleController.isRTL ? View.SCROLLBAR_POSITION_LEFT : View.SCROLLBAR_POSITION_RIGHT);
@@ -568,9 +594,9 @@ public class InviteContactsActivity extends BaseFragment implements Notification
         infoTextView.setBackgroundColor(Theme.getColor(Theme.key_contacts_inviteBackground));
         infoTextView.setTextColor(Theme.getColor(Theme.key_contacts_inviteText));
         infoTextView.setGravity(Gravity.CENTER);
-        infoTextView.setText(LocaleController.getString("InviteFriendsHelp", R.string.InviteFriendsHelp));
+        infoTextView.setText(LocaleController.getString(R.string.InviteFriendsHelp));
         infoTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
-        infoTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        infoTextView.setTypeface(AndroidUtilities.bold());
         infoTextView.setPadding(AndroidUtilities.dp(17), AndroidUtilities.dp(9), AndroidUtilities.dp(17), AndroidUtilities.dp(9));
         frameLayout.addView(infoTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.BOTTOM));
 
@@ -606,7 +632,7 @@ public class InviteContactsActivity extends BaseFragment implements Notification
         counterView.addView(linearLayout, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.CENTER));
 
         counterTextView = new TextView(context);
-        counterTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        counterTextView.setTypeface(AndroidUtilities.bold());
         counterTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         counterTextView.setTextColor(Theme.getColor(Theme.key_contacts_inviteBackground));
         counterTextView.setGravity(Gravity.CENTER);
@@ -620,8 +646,8 @@ public class InviteContactsActivity extends BaseFragment implements Notification
         textView.setTextColor(Theme.getColor(Theme.key_contacts_inviteText));
         textView.setGravity(Gravity.CENTER);
         textView.setCompoundDrawablePadding(AndroidUtilities.dp(8));
-        textView.setText(LocaleController.getString("InviteToTelegram", R.string.InviteToTelegram).toUpperCase());
-        textView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        textView.setText(LocaleController.getString(R.string.InviteToTelegram).toUpperCase());
+        textView.setTypeface(AndroidUtilities.bold());
         linearLayout.addView(textView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL));
 
         updateHint();
@@ -642,6 +668,10 @@ public class InviteContactsActivity extends BaseFragment implements Notification
     public void didReceivedNotification(int id, int account, Object... args) {
         if (id == NotificationCenter.contactsImported) {
             fetchContacts();
+        } else if (id == NotificationCenter.contactsDidLoad) {
+            if (emptyView != null) {
+                emptyView.showProgress(false);
+            }
         }
     }
 
@@ -690,7 +720,10 @@ public class InviteContactsActivity extends BaseFragment implements Notification
         adapter.searchDialogs(null);
         listView.setFastScrollVisible(true);
         listView.setVerticalScrollBarEnabled(false);
-        emptyView.setText(LocaleController.getString("NoContacts", R.string.NoContacts));
+        emptyView.showProgress(false);
+        emptyView.setStickerType(StickerEmptyView.STICKER_TYPE_NO_CONTACTS);
+        emptyView.title.setText(LocaleController.getString(R.string.NoContacts));
+        emptyView.subtitle.setText("");
     }
 
     private void fetchContacts() {
@@ -704,7 +737,7 @@ public class InviteContactsActivity extends BaseFragment implements Notification
             return 0;
         });
         if (emptyView != null) {
-            emptyView.showTextView();
+            emptyView.showProgress(false);
         }
         if (adapter != null) {
             adapter.notifyDataSetChanged();
@@ -745,7 +778,7 @@ public class InviteContactsActivity extends BaseFragment implements Notification
             switch (viewType) {
                 case 1:
                     view = new InviteTextCell(context);
-                    ((InviteTextCell) view).setTextAndIcon(LocaleController.getString("ShareTelegram", R.string.ShareTelegram), R.drawable.share);
+                    ((InviteTextCell) view).setTextAndIcon(LocaleController.getString(R.string.ShareTelegram), R.drawable.share);
                     break;
                 default:
                     view = new InviteUserCell(context, true);
@@ -878,14 +911,21 @@ public class InviteContactsActivity extends BaseFragment implements Notification
                 searchResult = users;
                 searchResultNames = names;
                 notifyDataSetChanged();
+                onSearchFinished();
             });
+        }
+
+        protected void onSearchFinished() {
+
         }
 
         @Override
         public void notifyDataSetChanged() {
             super.notifyDataSetChanged();
             int count = getItemCount();
-            emptyView.setVisibility(count == 1 ? View.VISIBLE : View.INVISIBLE);
+            if (!searching) {
+                emptyView.setVisibility(count == 1 ? View.VISIBLE : View.INVISIBLE);
+            }
             decoration.setSingle(count == 1);
         }
     }
@@ -923,9 +963,6 @@ public class InviteContactsActivity extends BaseFragment implements Notification
         themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_FASTSCROLL, null, null, null, null, Theme.key_fastScrollText));
 
         themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{View.class}, Theme.dividerPaint, null, null, Theme.key_divider));
-
-        themeDescriptions.add(new ThemeDescription(emptyView, ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_emptyListPlaceholder));
-        themeDescriptions.add(new ThemeDescription(emptyView, ThemeDescription.FLAG_PROGRESSBAR, null, null, null, null, Theme.key_progressCircle));
 
         themeDescriptions.add(new ThemeDescription(editText, ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteBlackText));
         themeDescriptions.add(new ThemeDescription(editText, ThemeDescription.FLAG_HINTTEXTCOLOR, null, null, null, null, Theme.key_groupcreate_hintText));

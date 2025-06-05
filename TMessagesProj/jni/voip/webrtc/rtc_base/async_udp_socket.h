@@ -13,13 +13,18 @@
 
 #include <stddef.h>
 
+#include <cstdint>
 #include <memory>
 
+#include "absl/types/optional.h"
+#include "api/sequence_checker.h"
+#include "api/units/time_delta.h"
 #include "rtc_base/async_packet_socket.h"
-#include "rtc_base/async_socket.h"
 #include "rtc_base/socket.h"
 #include "rtc_base/socket_address.h"
 #include "rtc_base/socket_factory.h"
+#include "rtc_base/system/no_unique_address.h"
+#include "rtc_base/thread_annotations.h"
 
 namespace rtc {
 
@@ -27,17 +32,17 @@ namespace rtc {
 // buffered since it is acceptable to drop packets under high load.
 class AsyncUDPSocket : public AsyncPacketSocket {
  public:
-  // Binds |socket| and creates AsyncUDPSocket for it. Takes ownership
-  // of |socket|. Returns null if bind() fails (|socket| is destroyed
+  // Binds `socket` and creates AsyncUDPSocket for it. Takes ownership
+  // of `socket`. Returns null if bind() fails (`socket` is destroyed
   // in that case).
-  static AsyncUDPSocket* Create(AsyncSocket* socket,
+  static AsyncUDPSocket* Create(Socket* socket,
                                 const SocketAddress& bind_address);
   // Creates a new socket for sending asynchronous UDP packets using an
   // asynchronous socket from the given factory.
   static AsyncUDPSocket* Create(SocketFactory* factory,
                                 const SocketAddress& bind_address);
-  explicit AsyncUDPSocket(AsyncSocket* socket);
-  ~AsyncUDPSocket() override;
+  explicit AsyncUDPSocket(Socket* socket);
+  ~AsyncUDPSocket() = default;
 
   SocketAddress GetLocalAddress() const override;
   SocketAddress GetRemoteAddress() const override;
@@ -58,13 +63,15 @@ class AsyncUDPSocket : public AsyncPacketSocket {
 
  private:
   // Called when the underlying socket is ready to be read from.
-  void OnReadEvent(AsyncSocket* socket);
+  void OnReadEvent(Socket* socket);
   // Called when the underlying socket is ready to send.
-  void OnWriteEvent(AsyncSocket* socket);
+  void OnWriteEvent(Socket* socket);
 
-  std::unique_ptr<AsyncSocket> socket_;
-  char* buf_;
-  size_t size_;
+  RTC_NO_UNIQUE_ADDRESS webrtc::SequenceChecker sequence_checker_;
+  std::unique_ptr<Socket> socket_;
+  rtc::Buffer buffer_ RTC_GUARDED_BY(sequence_checker_);
+  absl::optional<webrtc::TimeDelta> socket_time_offset_
+      RTC_GUARDED_BY(sequence_checker_);
 };
 
 }  // namespace rtc

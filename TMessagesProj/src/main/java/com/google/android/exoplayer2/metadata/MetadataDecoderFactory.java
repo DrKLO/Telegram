@@ -17,15 +17,14 @@ package com.google.android.exoplayer2.metadata;
 
 import androidx.annotation.Nullable;
 import com.google.android.exoplayer2.Format;
+import com.google.android.exoplayer2.metadata.dvbsi.AppInfoTableDecoder;
 import com.google.android.exoplayer2.metadata.emsg.EventMessageDecoder;
 import com.google.android.exoplayer2.metadata.icy.IcyDecoder;
 import com.google.android.exoplayer2.metadata.id3.Id3Decoder;
 import com.google.android.exoplayer2.metadata.scte35.SpliceInfoDecoder;
 import com.google.android.exoplayer2.util.MimeTypes;
 
-/**
- * A factory for {@link MetadataDecoder} instances.
- */
+/** A factory for {@link MetadataDecoder} instances. */
 public interface MetadataDecoderFactory {
 
   /**
@@ -67,7 +66,8 @@ public interface MetadataDecoderFactory {
           return MimeTypes.APPLICATION_ID3.equals(mimeType)
               || MimeTypes.APPLICATION_EMSG.equals(mimeType)
               || MimeTypes.APPLICATION_SCTE35.equals(mimeType)
-              || MimeTypes.APPLICATION_ICY.equals(mimeType);
+              || MimeTypes.APPLICATION_ICY.equals(mimeType)
+              || MimeTypes.APPLICATION_AIT.equals(mimeType);
         }
 
         @Override
@@ -83,6 +83,8 @@ public interface MetadataDecoderFactory {
                 return new SpliceInfoDecoder();
               case MimeTypes.APPLICATION_ICY:
                 return new IcyDecoder();
+              case MimeTypes.APPLICATION_AIT:
+                return new AppInfoTableDecoder();
               default:
                 break;
             }

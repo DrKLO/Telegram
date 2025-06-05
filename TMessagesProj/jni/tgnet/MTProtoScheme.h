@@ -730,6 +730,29 @@ public:
     void serializeToStream(NativeByteBuffer *stream);
 };
 
+class invokeWithGooglePlayIntegrity : public TLObject {
+
+public:
+    static const uint32_t constructor = 0x1df92984;
+
+    std::string nonce;
+    std::string token;
+    std::unique_ptr<TLObject> query;
+
+    void serializeToStream(NativeByteBuffer *stream);
+};
+
+class invokeWithReCaptcha : public TLObject {
+
+public:
+    static const uint32_t constructor = 0xadbb0f94;
+
+    std::string token;
+    std::unique_ptr<TLObject> query;
+
+    void serializeToStream(NativeByteBuffer *stream);
+};
+
 class TL_inputClientProxy : public TLObject {
 
 public:

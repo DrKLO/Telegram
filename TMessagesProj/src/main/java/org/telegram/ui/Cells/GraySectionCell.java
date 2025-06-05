@@ -8,6 +8,8 @@
 
 package org.telegram.ui.Cells;
 
+import static org.telegram.messenger.AndroidUtilities.dp;
+
 import android.content.Context;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -21,16 +23,21 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeDescription;
+import org.telegram.ui.Components.AnimatedEmojiSpan;
+import org.telegram.ui.Components.AnimatedTextView;
+import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RecyclerListView;
 
 import java.util.List;
 
-public class GraySectionCell extends FrameLayout {
+public class GraySectionCell extends FrameLayout implements Theme.Colorable {
 
-    private TextView textView;
-    private TextView rightTextView;
+    private AnimatedEmojiSpan.TextViewEmojis textView;
+    private AnimatedTextView rightTextView;
+    private FrameLayout.LayoutParams rightTextViewLayoutParams;
     private final Theme.ResourcesProvider resourcesProvider;
+    private int layerHeight = 32;
 
     public GraySectionCell(Context context) {
         this(context, null);
@@ -42,46 +49,93 @@ public class GraySectionCell extends FrameLayout {
 
         setBackgroundColor(getThemedColor(Theme.key_graySection));
 
-        textView = new TextView(getContext());
+        textView = new AnimatedEmojiSpan.TextViewEmojis(getContext());
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-        textView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        textView.setTypeface(AndroidUtilities.bold());
         textView.setTextColor(getThemedColor(Theme.key_graySectionText));
         textView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL);
         addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, 16, 0, 16, 0));
 
-        rightTextView = new TextView(getContext()) {
+        rightTextView = new AnimatedTextView(getContext(), true, true, true) {
             @Override
             public CharSequence getAccessibilityClassName() {
                 return Button.class.getName();
             }
         };
-        rightTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+        rightTextView.setPadding(dp(2), 0, dp(2), 0);
+        rightTextView.setAnimationProperties(.9f, 0, 420, CubicBezierInterpolator.EASE_OUT_QUINT);
+        rightTextView.setTextSize(dp(14));
         rightTextView.setTextColor(getThemedColor(Theme.key_graySectionText));
-        rightTextView.setGravity((LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.CENTER_VERTICAL);
-        addView(rightTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.TOP, 16, 0, 16, 0));
+        rightTextView.setGravity(LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT);
+        addView(rightTextView, rightTextViewLayoutParams = LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.TOP, 16, 0, 16, 0));
 
         ViewCompat.setAccessibilityHeading(this, true);
     }
 
-    @Override
-    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(32), MeasureSpec.EXACTLY));
+    public void updateColors() {
+        setBackgroundColor(getThemedColor(Theme.key_graySection));
+        textView.setTextColor(getThemedColor(Theme.key_graySectionText));
+        rightTextView.setTextColor(getThemedColor(Theme.key_graySectionText));
     }
 
-    public void setTextColor(String key) {
+    @Override
+    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+        super.onMeasure(
+                MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY),
+                MeasureSpec.makeMeasureSpec(dp(layerHeight), MeasureSpec.EXACTLY));
+    }
+
+    public void setLayerHeight(int dp){
+        layerHeight = dp;
+        requestLayout();
+    }
+
+    public void setTextColor(int key) {
         int color = getThemedColor(key);
         textView.setTextColor(color);
         rightTextView.setTextColor(color);
     }
 
-    public void setText(String text) {
-        textView.setText(text);
-        rightTextView.setVisibility(GONE);
+    public CharSequence getText() {
+        return textView.getText();
     }
 
-    public void setText(String left, String right, OnClickListener onClickListener) {
+    public void setText(CharSequence text) {
+        textView.setText(text);
+        rightTextView.setVisibility(GONE);
+        rightTextView.setOnClickListener(null);
+    }
+
+    public void setText(CharSequence left, CharSequence right, OnClickListener onClickListener) {
         textView.setText(left);
-        rightTextView.setText(right);
+        rightTextView.setText(right, false);
+        rightTextView.setOnClickListener(onClickListener);
+        rightTextView.setVisibility(VISIBLE);
+    }
+
+    public void setRightText(CharSequence right) {
+        setRightText(right, true);
+    }
+
+    public void setRightTextMargin(int marginDp) {
+        rightTextViewLayoutParams.leftMargin = dp(marginDp);
+        rightTextViewLayoutParams.rightMargin = dp(marginDp);
+        rightTextView.setLayoutParams(rightTextViewLayoutParams);
+    }
+
+    public void setRightText(CharSequence right, boolean moveDown) {
+        rightTextView.setText(right, true, moveDown);
+        rightTextView.setVisibility(VISIBLE);
+    }
+
+    public void setRightText(CharSequence right, OnClickListener onClickListener) {
+        rightTextView.setText(right, false);
+        rightTextView.setOnClickListener(onClickListener);
+        rightTextView.setVisibility(VISIBLE);
+    }
+
+    public void setRightText(CharSequence right, boolean moveDown, OnClickListener onClickListener) {
+        rightTextView.setText(right, true, moveDown);
         rightTextView.setOnClickListener(onClickListener);
         rightTextView.setVisibility(VISIBLE);
     }
@@ -96,8 +150,7 @@ public class GraySectionCell extends FrameLayout {
         return textView;
     }
 
-    private int getThemedColor(String key) {
-        Integer color = resourcesProvider != null ? resourcesProvider.getColor(key) : null;
-        return color != null ? color : Theme.getColor(key);
+    private int getThemedColor(int key) {
+        return Theme.getColor(key, resourcesProvider);
     }
 }

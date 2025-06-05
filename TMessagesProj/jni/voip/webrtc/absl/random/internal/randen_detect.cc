@@ -1,13 +1,13 @@
 // Copyright 2017 The Abseil Authors.
 //
-// Licensed under the Apache License, Version 2.0 (the"License");
+// Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
 //      https://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an"AS IS" BASIS,
+// distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
@@ -19,10 +19,26 @@
 
 #include "absl/random/internal/randen_detect.h"
 
+#if defined(__APPLE__) && defined(__aarch64__)
+#if defined(__has_include)
+#if __has_include(<arm/cpu_capabilities_public.h>)
+#include <arm/cpu_capabilities_public.h>
+#endif
+#endif
+#include <sys/sysctl.h>
+#include <sys/types.h>
+#endif
+
 #include <cstdint>
 #include <cstring>
 
 #include "absl/random/internal/platform.h"
+#include "absl/types/optional.h"  // IWYU pragma: keep
+
+#if !defined(__UCLIBC__) && defined(__GLIBC__) && \
+    (__GLIBC__ > 2 || (__GLIBC__ == 2 && __GLIBC_MINOR__ >= 16))
+#define ABSL_HAVE_GETAUXVAL
+#endif
 
 #if defined(ABSL_ARCH_X86_64)
 #define ABSL_INTERNAL_USE_X86_CPUID
@@ -31,7 +47,7 @@
 #if defined(__ANDROID__)
 #define ABSL_INTERNAL_USE_ANDROID_GETAUXVAL
 #define ABSL_INTERNAL_USE_GETAUXVAL
-#elif defined(__linux__)
+#elif defined(__linux__) && defined(ABSL_HAVE_GETAUXVAL)
 #define ABSL_INTERNAL_USE_LINUX_GETAUXVAL
 #define ABSL_INTERNAL_USE_GETAUXVAL
 #endif
@@ -40,7 +56,10 @@
 #if defined(ABSL_INTERNAL_USE_X86_CPUID)
 #if defined(_WIN32) || defined(_WIN64)
 #include <intrin.h>  // NOLINT(build/include_order)
-#pragma intrinsic(__cpuid)
+#elif ABSL_HAVE_BUILTIN(__cpuid)
+// MSVC-equivalent __cpuid intrinsic declaration for clang-like compilers
+// for non-Windows build environments.
+extern void __cpuid(int[4], int);
 #else
 // MSVC-equivalent __cpuid intrinsic function.
 static void __cpuid(int cpu_info[4], int info_type) {
@@ -55,7 +74,7 @@ static void __cpuid(int cpu_info[4], int info_type) {
 // On linux, just use the c-library getauxval call.
 #if defined(ABSL_INTERNAL_USE_LINUX_GETAUXVAL)
 
-extern "C" unsigned long getauxval(unsigned long type);  // NOLINT(runtime/int)
+#include <sys/auxv.h>
 
 static uint32_t GetAuxval(uint32_t hwcap_type) {
   return static_cast<uint32_t>(getauxval(hwcap_type));
@@ -94,6 +113,19 @@ static uint32_t GetAuxval(uint32_t hwcap_type) {
 
 #endif
 
+#if defined(__APPLE__) && defined(ABSL_ARCH_AARCH64)
+template <typename T>
+static absl::optional<T> ReadSysctlByName(const char* name) {
+  T val;
+  size_t val_size = sizeof(T);
+  int ret = sysctlbyname(name, &val, &val_size, nullptr, 0);
+  if (ret == -1) {
+    return absl::nullopt;
+  }
+  return val;
+}
+#endif
+
 namespace absl {
 ABSL_NAMESPACE_BEGIN
 namespace random_internal {
@@ -121,7 +153,9 @@ namespace random_internal {
 //    cpu capabilities, and should allow us to enable crypto in the android
 //    builds where it is supported.
 //
-// 3. Use the default for the compiler architecture.
+// 3. When __APPLE__ is defined on AARCH64, use sysctlbyname().
+//
+// 4. Use the default for the compiler architecture.
 //
 
 bool CPUSupportsRandenHwAes() {
@@ -170,8 +204,36 @@ bool CPUSupportsRandenHwAes() {
   return ((hwcap & kNEON) != 0) && ((hwcap & kAES) != 0);
 #endif
 
+#elif defined(__APPLE__) && defined(ABSL_ARCH_AARCH64)
+  // 3. Use sysctlbyname.
+
+  // Newer XNU kernels support querying all capabilities in a single
+  // sysctlbyname.
+#if defined(CAP_BIT_AdvSIMD) && defined(CAP_BIT_FEAT_AES)
+  static const absl::optional<uint64_t> caps =
+      ReadSysctlByName<uint64_t>("hw.optional.arm.caps");
+  if (caps.has_value()) {
+    constexpr uint64_t kNeonAndAesCaps =
+        (uint64_t{1} << CAP_BIT_AdvSIMD) | (uint64_t{1} << CAP_BIT_FEAT_AES);
+    return (*caps & kNeonAndAesCaps) == kNeonAndAesCaps;
+  }
+#endif
+
+  // https://developer.apple.com/documentation/kernel/1387446-sysctlbyname/determining_instruction_set_characteristics#overview
+  static const absl::optional<int> adv_simd =
+      ReadSysctlByName<int>("hw.optional.AdvSIMD");
+  if (adv_simd.value_or(0) == 0) {
+    return false;
+  }
+  // https://developer.apple.com/documentation/kernel/1387446-sysctlbyname/determining_instruction_set_characteristics#3918855
+  static const absl::optional<int> feat_aes =
+      ReadSysctlByName<int>("hw.optional.arm.FEAT_AES");
+  if (feat_aes.value_or(0) == 0) {
+    return false;
+  }
+  return true;
 #else  // ABSL_INTERNAL_USE_GETAUXVAL
-  // 3. By default, assume that the compiler default.
+  // 4. By default, assume that the compiler default.
   return ABSL_HAVE_ACCELERATED_AES ? true : false;
 
 #endif
@@ -207,9 +269,6 @@ bool CPUSupportsRandenHwAes() {
   //   __asm __volatile("mrs %0, id_aa64isar0_el1" :"=&r" (val));
   //
   // * Use a CPUID-style heuristic database.
-  //
-  // * On Apple (__APPLE__), AES is available on Arm v8.
-  //   https://stackoverflow.com/questions/45637888/how-to-determine-armv8-features-at-runtime-on-ios
 }
 
 #if defined(__clang__)

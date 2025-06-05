@@ -16,6 +16,7 @@
 #include "absl/types/optional.h"
 #include "api/sequence_checker.h"
 #include "rtc_base/system/no_unique_address.h"
+#include "rtc_base/thread_annotations.h"
 
 namespace webrtc {
 
@@ -24,13 +25,14 @@ namespace webrtc {
 // the start of media_channel by caching its request.
 class JitterBufferDelay {
  public:
-  JitterBufferDelay();
+  JitterBufferDelay() = default;
 
   void Set(absl::optional<double> delay_seconds);
   int GetMs() const;
 
  private:
-  RTC_NO_UNIQUE_ADDRESS SequenceChecker worker_thread_checker_;
+  RTC_NO_UNIQUE_ADDRESS SequenceChecker worker_thread_checker_{
+      SequenceChecker::kDetached};
   absl::optional<double> cached_delay_seconds_
       RTC_GUARDED_BY(&worker_thread_checker_);
 };

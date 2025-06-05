@@ -30,29 +30,31 @@
 #include "modules/rtp_rtcp/source/rtp_format.h"
 #include "modules/rtp_rtcp/source/rtp_packet_to_send.h"
 #include "modules/video_coding/codecs/vp9/include/vp9_globals.h"
-#include "rtc_base/constructor_magic.h"
 
 namespace webrtc {
 
 class RtpPacketizerVp9 : public RtpPacketizer {
  public:
-  // The |payload| must be one encoded VP9 layer frame.
+  // The `payload` must be one encoded VP9 layer frame.
   RtpPacketizerVp9(rtc::ArrayView<const uint8_t> payload,
                    PayloadSizeLimits limits,
                    const RTPVideoHeaderVP9& hdr);
 
   ~RtpPacketizerVp9() override;
 
+  RtpPacketizerVp9(const RtpPacketizerVp9&) = delete;
+  RtpPacketizerVp9& operator=(const RtpPacketizerVp9&) = delete;
+
   size_t NumPackets() const override;
 
   // Gets the next payload with VP9 payload header.
-  // Write payload and set marker bit of the |packet|.
+  // Write payload and set marker bit of the `packet`.
   // Returns true on success, false otherwise.
   bool NextPacket(RtpPacketToSend* packet) override;
 
  private:
   // Writes the payload descriptor header.
-  // |layer_begin| and |layer_end| indicates the postision of the packet in
+  // `layer_begin` and `layer_end` indicates the postision of the packet in
   // the layer frame. Returns false on failure.
   bool WriteHeader(bool layer_begin,
                    bool layer_end,
@@ -64,8 +66,6 @@ class RtpPacketizerVp9 : public RtpPacketizer {
   rtc::ArrayView<const uint8_t> remaining_payload_;
   std::vector<int> payload_sizes_;
   std::vector<int>::const_iterator current_packet_;
-
-  RTC_DISALLOW_COPY_AND_ASSIGN(RtpPacketizerVp9);
 };
 
 }  // namespace webrtc

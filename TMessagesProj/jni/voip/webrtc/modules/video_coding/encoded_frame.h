@@ -34,12 +34,6 @@ class RTC_EXPORT VCMEncodedFrame : public EncodedImage {
     _renderTimeMs = renderTimeMs;
   }
 
-  VideoPlayoutDelay PlayoutDelay() const { return playout_delay_; }
-
-  void SetPlayoutDelay(VideoPlayoutDelay playout_delay) {
-    playout_delay_ = playout_delay;
-  }
-
   /**
    *   Get the encoded image
    */
@@ -52,45 +46,22 @@ class RTC_EXPORT VCMEncodedFrame : public EncodedImage {
   using EncodedImage::GetEncodedData;
   using EncodedImage::NtpTimeMs;
   using EncodedImage::PacketInfos;
+  using EncodedImage::RtpTimestamp;
   using EncodedImage::set_size;
   using EncodedImage::SetColorSpace;
   using EncodedImage::SetEncodedData;
   using EncodedImage::SetPacketInfos;
+  using EncodedImage::SetRtpTimestamp;
   using EncodedImage::SetSpatialIndex;
   using EncodedImage::SetSpatialLayerFrameSize;
-  using EncodedImage::SetTimestamp;
   using EncodedImage::size;
   using EncodedImage::SpatialIndex;
   using EncodedImage::SpatialLayerFrameSize;
-  using EncodedImage::Timestamp;
 
   /**
    *   Get render time in milliseconds
    */
   int64_t RenderTimeMs() const { return _renderTimeMs; }
-  /**
-   *   Get frame type
-   */
-  webrtc::VideoFrameType FrameType() const { return _frameType; }
-  /**
-   *   Set frame type
-   */
-  void SetFrameType(webrtc::VideoFrameType frame_type) {
-    _frameType = frame_type;
-  }
-  /**
-   *   Get frame rotation
-   */
-  VideoRotation rotation() const { return rotation_; }
-  /**
-   *  Get video content type
-   */
-  VideoContentType contentType() const { return content_type_; }
-  /**
-   * Get video timing
-   */
-  EncodedImage::Timing video_timing() const { return timing_; }
-  EncodedImage::Timing* video_timing_mutable() { return &timing_; }
   /**
    *   True if there's a frame missing before this frame
    */

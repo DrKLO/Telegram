@@ -14,7 +14,9 @@ import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.content.Context;
 import android.graphics.Canvas;
+import android.net.Uri;
 import android.os.Build;
+import android.provider.ContactsContract;
 import android.text.TextUtils;
 import android.view.Gravity;
 import android.view.MotionEvent;
@@ -22,9 +24,14 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
 
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.LinearSmoothScroller;
+import androidx.recyclerview.widget.RecyclerView;
+
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ContactsController;
+import org.telegram.messenger.Emoji;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
@@ -34,22 +41,24 @@ import org.telegram.messenger.UserObject;
 import org.telegram.messenger.Utilities;
 import org.telegram.messenger.support.LongSparseIntArray;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeDescription;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.LinearSmoothScroller;
-import androidx.recyclerview.widget.RecyclerView;
+import java.util.Locale;
+import java.util.Objects;
 
 public class ChatAttachAlertContactsLayout extends ChatAttachAlert.AttachAlertLayout implements NotificationCenter.NotificationCenterDelegate {
 
     private FrameLayout frameLayout;
     private RecyclerListView listView;
-    private LinearLayoutManager layoutManager;
+    private FillLastLinearLayoutManager layoutManager;
+    private HashMap<ListItemID, Object> selectedContacts = new HashMap<>();
+    private ArrayList<ListItemID> selectedContactsOrder = new ArrayList<>();
+    private boolean sendPressed = false;
     private ShareAdapter listAdapter;
     private ShareSearchAdapter searchAdapter;
     private EmptyTextProgressView emptyView;
@@ -61,8 +70,14 @@ public class ChatAttachAlertContactsLayout extends ChatAttachAlert.AttachAlertLa
 
     private PhonebookShareAlertDelegate delegate;
 
+    private boolean multipleSelectionAllowed;
+
     public interface PhonebookShareAlertDelegate {
-        void didSelectContact(TLRPC.User user, boolean notify, int scheduleDate);
+        void didSelectContact(TLRPC.User user, boolean notify, int scheduleDate, long effectId, boolean invertMedia, long payStars);
+
+        default void didSelectContacts(ArrayList<TLRPC.User> users, String caption, boolean notify, int scheduleDate, long effectId, boolean invertMedia, long payStars) {
+
+        }
     }
 
     public static class UserCell extends FrameLayout {
@@ -71,6 +86,7 @@ public class ChatAttachAlertContactsLayout extends ChatAttachAlert.AttachAlertLa
         private BackupImageView avatarImageView;
         private SimpleTextView nameTextView;
         private SimpleTextView statusTextView;
+        private CheckBox2 checkBox;
 
         private AvatarDrawable avatarDrawable;
         private TLRPC.User currentUser;
@@ -78,6 +94,8 @@ public class ChatAttachAlertContactsLayout extends ChatAttachAlert.AttachAlertLa
 
         private CharSequence currentName;
         private CharSequence currentStatus;
+        private TLRPC.User formattedPhoneNumberUser;
+        private CharSequence formattedPhoneNumber;
 
         private String lastName;
         private int lastStatus;
@@ -97,9 +115,16 @@ public class ChatAttachAlertContactsLayout extends ChatAttachAlert.AttachAlertLa
             avatarImageView.setRoundRadius(AndroidUtilities.dp(23));
             addView(avatarImageView, LayoutHelper.createFrame(46, 46, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 0 : 14, 9, LocaleController.isRTL ? 14 : 0, 0));
 
-            nameTextView = new SimpleTextView(context);
+            nameTextView = new SimpleTextView(context) {
+                @Override
+                public boolean setText(CharSequence value, boolean force) {
+                    value = Emoji.replaceEmoji(value, getPaint().getFontMetricsInt(), false);
+                    return super.setText(value, force);
+                }
+            };
+            NotificationCenter.listenEmojiLoading(nameTextView);
             nameTextView.setTextColor(getThemedColor(Theme.key_dialogTextBlack));
-            nameTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            nameTextView.setTypeface(AndroidUtilities.bold());
             nameTextView.setTextSize(16);
             nameTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
             addView(nameTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 20, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 28 : 72, 12, LocaleController.isRTL ? 72 : 28, 0));
@@ -109,6 +134,12 @@ public class ChatAttachAlertContactsLayout extends ChatAttachAlert.AttachAlertLa
             statusTextView.setTextColor(getThemedColor(Theme.key_dialogTextGray2));
             statusTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
             addView(statusTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 20, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 28 : 72, 36, LocaleController.isRTL ? 72 : 28, 0));
+
+            checkBox = new CheckBox2(context, 21, resourcesProvider);
+            checkBox.setColor(-1, Theme.key_windowBackgroundWhite, Theme.key_checkboxCheck);
+            checkBox.setDrawUnchecked(false);
+            checkBox.setDrawBackgroundAsArc(3);
+            addView(checkBox, LayoutHelper.createFrame(24, 24, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 0 : 44, 37, LocaleController.isRTL ? 44 : 0, 0));
         }
 
         public void setCurrentId(int id) {
@@ -132,9 +163,57 @@ public class ChatAttachAlertContactsLayout extends ChatAttachAlert.AttachAlertLa
             update(0);
         }
 
+        public interface CharSequenceCallback {
+            CharSequence run();
+        }
+
+        public void setData(TLRPC.User user, CharSequence name, CharSequenceCallback status, boolean divider) {
+            setData(user, name, (CharSequence) null, divider);
+            Utilities.globalQueue.postRunnable(() -> {
+                final CharSequence newCurrentStatus = status.run();
+                AndroidUtilities.runOnUIThread(() -> {
+                    setStatus(newCurrentStatus);
+                });
+            });
+        }
+
+        public void setChecked(boolean checked, boolean animated) {
+            if (checkBox.getVisibility() != VISIBLE) {
+                checkBox.setVisibility(VISIBLE);
+            }
+            checkBox.setChecked(checked, animated);
+        }
+
+        public void setStatus(CharSequence status) {
+            currentStatus = status;
+            if (currentStatus != null) {
+                statusTextView.setText(currentStatus);
+            } else if (currentUser != null) {
+                if (TextUtils.isEmpty(currentUser.phone)) {
+                    statusTextView.setText(LocaleController.getString(R.string.NumberUnknown));
+                } else {
+                    if (formattedPhoneNumberUser != currentUser && formattedPhoneNumber != null) {
+                        statusTextView.setText(formattedPhoneNumber);
+                    } else {
+                        statusTextView.setText("");
+                        Utilities.globalQueue.postRunnable(() -> {
+                            if (currentUser != null) {
+                                formattedPhoneNumber = PhoneFormat.getInstance().format("+" + currentUser.phone);
+                                formattedPhoneNumberUser = currentUser;
+                                AndroidUtilities.runOnUIThread(() -> statusTextView.setText(formattedPhoneNumber));
+                            }
+                        });
+                    }
+                }
+            }
+        }
+
         @Override
         protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-            super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(64) + (needDivider ? 1 : 0), MeasureSpec.EXACTLY));
+            super.onMeasure(
+                MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY),
+                MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(64) + (needDivider ? 1 : 0), MeasureSpec.EXACTLY)
+            );
         }
 
         public void update(int mask) {
@@ -174,7 +253,7 @@ public class ChatAttachAlertContactsLayout extends ChatAttachAlert.AttachAlertLa
             }
 
             if (currentUser != null) {
-                avatarDrawable.setInfo(currentUser);
+                avatarDrawable.setInfo(currentAccount, currentUser);
                 if (currentUser.status != null) {
                     lastStatus = currentUser.status.expires;
                 } else {
@@ -197,15 +276,8 @@ public class ChatAttachAlertContactsLayout extends ChatAttachAlert.AttachAlertLa
                 }
                 nameTextView.setText(lastName);
             }
-            if (currentStatus != null) {
-                statusTextView.setText(currentStatus);
-            } else if (currentUser != null) {
-                if (TextUtils.isEmpty(currentUser.phone)) {
-                    statusTextView.setText(LocaleController.getString("NumberUnknown", R.string.NumberUnknown));
-                } else {
-                    statusTextView.setText(PhoneFormat.getInstance().format("+" + currentUser.phone));
-                }
-            }
+
+            setStatus(currentStatus);
 
             lastAvatar = photo;
             if (currentUser != null) {
@@ -227,9 +299,53 @@ public class ChatAttachAlertContactsLayout extends ChatAttachAlert.AttachAlertLa
             }
         }
 
-        private int getThemedColor(String key) {
-            Integer color = resourcesProvider != null ? resourcesProvider.getColor(key) : null;
-            return color != null ? color : Theme.getColor(key);
+        protected int getThemedColor(int key) {
+            return Theme.getColor(key, resourcesProvider);
+        }
+    }
+
+    private static class ListItemID {
+        public enum Type {
+            USER,
+            CONTACT
+        }
+
+        private final Type type;
+        private final long id;
+
+        public static ListItemID of(Object object) {
+            if (object instanceof ContactsController.Contact) {
+                return new ListItemID(Type.CONTACT, ((ContactsController.Contact) object).contact_id);
+            } else if (object instanceof TLRPC.User) {
+                return new ListItemID(Type.USER, ((TLRPC.User) object).id);
+            }
+            return null;
+        }
+
+        public ListItemID(Type type, long id) {
+            this.type = type;
+            this.id = id;
+        }
+
+        public Type getType() {
+            return type;
+        }
+
+        public long getId() {
+            return id;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            ListItemID listItemID = (ListItemID) o;
+            return id == listItemID.id && type == listItemID.type;
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(type, id);
         }
     }
 
@@ -246,12 +362,12 @@ public class ChatAttachAlertContactsLayout extends ChatAttachAlert.AttachAlertLa
             public void onTextChange(String text) {
                 if (text.length() != 0) {
                     if (emptyView != null) {
-                        emptyView.setText(LocaleController.getString("NoResult", R.string.NoResult));
+                        emptyView.setText(LocaleController.getString(R.string.NoResult));
                     }
                 } else {
                     if (listView.getAdapter() != listAdapter) {
                         int top = getCurrentTop();
-                        emptyView.setText(LocaleController.getString("NoContacts", R.string.NoContacts));
+                        emptyView.setText(LocaleController.getString(R.string.NoContacts));
                         emptyView.showTextView();
                         listView.setAdapter(listAdapter);
                         listAdapter.notifyDataSetChanged();
@@ -284,12 +400,12 @@ public class ChatAttachAlertContactsLayout extends ChatAttachAlert.AttachAlertLa
                 parentAlert.makeFocusable(editText, true);
             }
         };
-        searchField.setHint(LocaleController.getString("SearchFriends", R.string.SearchFriends));
+        searchField.setHint(LocaleController.getString(R.string.SearchFriends));
         frameLayout.addView(searchField, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT));
 
         emptyView = new EmptyTextProgressView(context, null, resourcesProvider);
         emptyView.showTextView();
-        emptyView.setText(LocaleController.getString("NoContacts", R.string.NoContacts));
+        emptyView.setText(LocaleController.getString(R.string.NoContacts));
         addView(emptyView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT, 0, 52, 0, 0));
 
         listView = new RecyclerListView(context, resourcesProvider) {
@@ -319,8 +435,11 @@ public class ChatAttachAlertContactsLayout extends ChatAttachAlert.AttachAlertLa
                 startSmoothScroll(linearSmoothScroller);
             }
         });
+        layoutManager.setBind(false);
         listView.setHorizontalScrollBarEnabled(false);
         listView.setVerticalScrollBarEnabled(false);
+        listView.setClipToPadding(false);
+        listView.setPadding(0, 0, 0, AndroidUtilities.dp(48));
         addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT, 0, 0, 0, 0));
         listView.setAdapter(listAdapter = new ShareAdapter(context));
         listView.setGlowColor(getThemedColor(Theme.key_dialogScrollGlow));
@@ -338,6 +457,11 @@ public class ChatAttachAlertContactsLayout extends ChatAttachAlert.AttachAlertLa
 
             }
             if (object != null) {
+                if (!selectedContacts.isEmpty()) {
+                    addOrRemoveSelectedContact((UserCell) view, object);
+                    return;
+                }
+
                 ContactsController.Contact contact;
                 String firstName;
                 String lastName;
@@ -360,9 +484,9 @@ public class ChatAttachAlertContactsLayout extends ChatAttachAlert.AttachAlertLa
                 }
 
                 PhonebookShareAlert phonebookShareAlert = new PhonebookShareAlert(parentAlert.baseFragment, contact, null, null, null, firstName, lastName, resourcesProvider);
-                phonebookShareAlert.setDelegate((user, notify, scheduleDate) -> {
-                    parentAlert.dismiss();
-                    delegate.didSelectContact(user, notify, scheduleDate);
+                phonebookShareAlert.setDelegate((user, notify, scheduleDate, effectId, invertMedia, payStars) -> {
+                    parentAlert.dismiss(true);
+                    delegate.didSelectContact(user, notify, scheduleDate, effectId, invertMedia, payStars);
                 });
                 phonebookShareAlert.show();
             }
@@ -373,6 +497,22 @@ public class ChatAttachAlertContactsLayout extends ChatAttachAlert.AttachAlertLa
                 parentAlert.updateLayout(ChatAttachAlertContactsLayout.this, true, dy);
                 updateEmptyViewPosition();
             }
+        });
+
+        listView.setOnItemLongClickListener((view, position) -> {
+            Object object;
+            if (listView.getAdapter() == searchAdapter) {
+                object = searchAdapter.getItem(position);
+            } else {
+                object = listAdapter.getItem(position);
+            }
+
+            if (object != null) {
+                addOrRemoveSelectedContact((UserCell) view, object);
+                return true;
+            }
+
+            return false;
         });
 
         FrameLayout.LayoutParams frameLayoutParams = new FrameLayout.LayoutParams(LayoutHelper.MATCH_PARENT, AndroidUtilities.getShadowHeight(), Gravity.TOP | Gravity.LEFT);
@@ -389,13 +529,201 @@ public class ChatAttachAlertContactsLayout extends ChatAttachAlert.AttachAlertLa
         updateEmptyView();
     }
 
+    public void addOrRemoveSelectedContact(UserCell cell, Object object) {
+        if (selectedContacts.isEmpty() && !multipleSelectionAllowed) {
+            showErrorBox(LocaleController.formatString("AttachContactsSlowMode", R.string.AttachContactsSlowMode));
+            return;
+        }
+
+        boolean checked;
+        ListItemID id = ListItemID.of(object);
+        if (selectedContacts.containsKey(id)) {
+            selectedContacts.remove(id);
+            selectedContactsOrder.remove(id);
+            checked = false;
+        } else {
+            selectedContacts.put(id, object);
+            selectedContactsOrder.add(id);
+            checked = true;
+        }
+        cell.setChecked(checked, true);
+        parentAlert.updateCountButton(checked ? 1 : 2);
+    }
+
+    public void setMultipleSelectionAllowed(boolean multipleSelectionAllowed) {
+        this.multipleSelectionAllowed = multipleSelectionAllowed;
+    }
+
     @Override
-    void scrollToTop() {
+    public int getSelectedItemsCount() {
+        return selectedContacts.size();
+    }
+
+    private void showErrorBox(String error) {
+        new AlertDialog.Builder(getContext(), resourcesProvider).setTitle(LocaleController.getString(R.string.AppName)).setMessage(error).setPositiveButton(LocaleController.getString(R.string.OK), null).show();
+    }
+
+    private TLRPC.User prepareContact(Object object) {
+        ContactsController.Contact contact;
+        String firstName;
+        String lastName;
+        if (object instanceof ContactsController.Contact) {
+            contact = (ContactsController.Contact) object;
+            if (contact.user != null) {
+                firstName = contact.user.first_name;
+                lastName = contact.user.last_name;
+            } else {
+                firstName = contact.first_name;
+                lastName = contact.last_name;
+            }
+        } else {
+            TLRPC.User user = (TLRPC.User) object;
+            contact = new ContactsController.Contact();
+            firstName = contact.first_name = user.first_name;
+            lastName = contact.last_name = user.last_name;
+            contact.phones.add(user.phone);
+            contact.user = user;
+        }
+
+        String name = ContactsController.formatName(firstName, lastName);
+        ArrayList<TLRPC.User> result = null;
+        ArrayList<AndroidUtilities.VcardItem> items = new ArrayList<>();
+        ArrayList<AndroidUtilities.VcardItem> phones = new ArrayList<>();
+        ArrayList<AndroidUtilities.VcardItem> other = new ArrayList<>();
+        ArrayList<TLRPC.RestrictionReason> vcard = null;
+        if (contact.key != null) {
+            Uri uri = Uri.withAppendedPath(ContactsContract.Contacts.CONTENT_VCARD_URI, contact.key);
+            result = AndroidUtilities.loadVCardFromStream(uri, parentAlert.currentAccount, true, items, name);
+        } else {
+            AndroidUtilities.VcardItem item = new AndroidUtilities.VcardItem();
+            item.type = 0;
+            item.vcardData.add(item.fullData = "TEL;MOBILE:+" + contact.user.phone);
+            phones.add(item);
+        }
+        TLRPC.User user = contact.user;
+        if (result != null) {
+            for (int a = 0; a < items.size(); a++) {
+                AndroidUtilities.VcardItem item = items.get(a);
+                if (item.type == 0) {
+                    boolean exists = false;
+                    for (int b = 0; b < phones.size(); b++) {
+                        if (phones.get(b).getValue(false).equals(item.getValue(false))) {
+                            exists = true;
+                            break;
+                        }
+                    }
+                    if (exists) {
+                        item.checked = false;
+                        continue;
+                    }
+                    phones.add(item);
+                } else {
+                    other.add(item);
+                }
+            }
+            if (!result.isEmpty()) {
+                TLRPC.User u = result.get(0);
+                vcard = u.restriction_reason;
+                if (TextUtils.isEmpty(firstName)) {
+                    firstName = u.first_name;
+                    lastName = u.last_name;
+                }
+            }
+        }
+
+        TLRPC.User currentUser = new TLRPC.TL_userContact_old2();
+
+        if (user != null) {
+            currentUser.id = user.id;
+            currentUser.access_hash = user.access_hash;
+            currentUser.photo = user.photo;
+            currentUser.status = user.status;
+            currentUser.first_name = user.first_name;
+            currentUser.last_name = user.last_name;
+            currentUser.phone = user.phone;
+            if (vcard != null) {
+                currentUser.restriction_reason = vcard;
+            }
+        } else {
+            currentUser.first_name = firstName;
+            currentUser.last_name = lastName;
+        }
+
+        StringBuilder builder;
+        if (!currentUser.restriction_reason.isEmpty()) {
+            builder = new StringBuilder(currentUser.restriction_reason.get(0).text);
+        } else {
+            builder = new StringBuilder(String.format(Locale.US, "BEGIN:VCARD\nVERSION:3.0\nFN:%1$s\nEND:VCARD", ContactsController.formatName(currentUser.first_name, currentUser.last_name)));
+        }
+        int idx = builder.lastIndexOf("END:VCARD");
+        if (idx >= 0) {
+            currentUser.phone = null;
+            for (int a = phones.size() - 1; a >= 0; a--) {
+                AndroidUtilities.VcardItem item = phones.get(a);
+                if (!item.checked) {
+                    continue;
+                }
+                if (currentUser.phone == null) {
+                    currentUser.phone = item.getValue(false);
+                }
+                for (int b = 0; b < item.vcardData.size(); b++) {
+                    builder.insert(idx, item.vcardData.get(b) + "\n");
+                }
+            }
+            for (int a = other.size() - 1; a >= 0; a--) {
+                AndroidUtilities.VcardItem item = other.get(a);
+                if (!item.checked) {
+                    continue;
+                }
+                for (int b = item.vcardData.size() - 1; b >= 0; b--) {
+                    builder.insert(idx, item.vcardData.get(b) + "\n");
+                }
+            }
+            currentUser.restriction_reason.clear();
+            TLRPC.RestrictionReason reason = new TLRPC.RestrictionReason();
+            reason.text = builder.toString();
+            reason.reason = "";
+            reason.platform = "";
+            currentUser.restriction_reason.add(reason);
+        }
+
+        return currentUser;
+    }
+
+    @Override
+    public boolean sendSelectedItems(boolean notify, int scheduleDate, long effectId, boolean invertMedia) {
+        if (selectedContacts.size() == 0 && delegate == null || sendPressed) {
+            return false;
+        }
+        sendPressed = true;
+
+        ArrayList<TLRPC.User> users = new ArrayList<>(selectedContacts.size());
+        for (ListItemID id : selectedContactsOrder) {
+            Object object = selectedContacts.get(id);
+            users.add(prepareContact(object));
+        }
+        return AlertsCreator.ensurePaidMessageConfirmation(parentAlert.currentAccount, parentAlert.getDialogId(), users.size() + parentAlert.getAdditionalMessagesCount(), payStars -> {
+            delegate.didSelectContacts(users, parentAlert.getCommentView().getText().toString(), notify, scheduleDate, effectId, invertMedia, payStars);
+            parentAlert.dismiss();
+        });
+    }
+
+    public ArrayList<TLRPC.User> getSelected() {
+        ArrayList<TLRPC.User> users = new ArrayList<>(selectedContacts.size());
+        for (ListItemID id : selectedContactsOrder) {
+            Object object = selectedContacts.get(id);
+            users.add(prepareContact(object));
+        }
+        return users;
+    }
+
+    @Override
+    public void scrollToTop() {
         listView.smoothScrollToPosition(0);
     }
 
     @Override
-    int getCurrentItemTop() {
+    public int getCurrentItemTop() {
         if (listView.getChildCount() <= 0) {
             return Integer.MAX_VALUE;
         }
@@ -414,7 +742,7 @@ public class ChatAttachAlertContactsLayout extends ChatAttachAlert.AttachAlertLa
     }
 
     @Override
-    int getFirstOffset() {
+    public int getFirstOffset() {
         return getListTopPadding() + AndroidUtilities.dp(4);
     }
 
@@ -425,12 +753,12 @@ public class ChatAttachAlertContactsLayout extends ChatAttachAlert.AttachAlertLa
     }
 
     @Override
-    int getListTopPadding() {
+    public int getListTopPadding() {
         return listView.getPaddingTop();
     }
 
     @Override
-    void onPreMeasure(int availableWidth, int availableHeight) {
+    public void onPreMeasure(int availableWidth, int availableHeight) {
         int padding;
         if (parentAlert.sizeNotifierFrameLayout.measureKeyboardHeight() > AndroidUtilities.dp(20)) {
             padding = AndroidUtilities.dp(8);
@@ -445,7 +773,7 @@ public class ChatAttachAlertContactsLayout extends ChatAttachAlert.AttachAlertLa
         }
         if (listView.getPaddingTop() != padding) {
             ignoreLayout = true;
-            listView.setPadding(0, padding, 0, 0);
+            listView.setPadding(0, padding, 0, AndroidUtilities.dp(48));
             ignoreLayout = false;
         }
     }
@@ -517,12 +845,12 @@ public class ChatAttachAlertContactsLayout extends ChatAttachAlert.AttachAlertLa
     }
 
     @Override
-    void onDestroy() {
+    public void onDestroy() {
         NotificationCenter.getInstance(parentAlert.currentAccount).removeObserver(this, NotificationCenter.contactsDidLoad);
     }
 
     @Override
-    void onShow() {
+    public void onShow(ChatAttachAlert.AttachAlertLayout previousLayout) {
         layoutManager.scrollToPositionWithOffset(0, 0);
     }
 
@@ -645,14 +973,17 @@ public class ChatAttachAlertContactsLayout extends ChatAttachAlert.AttachAlertLa
                         user = contact.user;
                     } else {
                         userCell.setCurrentId(contact.contact_id);
-                        userCell.setData(null, ContactsController.formatName(contact.first_name, contact.last_name), contact.phones.isEmpty() ? "" : PhoneFormat.getInstance().format(contact.phones.get(0)), divider);
+                        userCell.setData(null, ContactsController.formatName(contact.first_name, contact.last_name), () -> contact.phones.isEmpty() ? "" : PhoneFormat.getInstance().format(contact.phones.get(0)), divider);
                     }
                 } else {
                     user = (TLRPC.User) object;
                 }
                 if (user != null) {
-                    userCell.setData(user, null, PhoneFormat.getInstance().format("+" + user.phone), divider);
+                    final TLRPC.User finalUser = user;
+                    userCell.setData(user, null, () -> PhoneFormat.getInstance().format("+" + finalUser.phone), divider);
                 }
+
+                userCell.setChecked(selectedContacts.containsKey(ListItemID.of(object)), false);
             }
         }
 
@@ -755,21 +1086,22 @@ public class ChatAttachAlertContactsLayout extends ChatAttachAlert.AttachAlertLa
                         }
 
                         int found = 0;
+                        String username;
                         for (String q : search) {
                             if (name2 != null && (name2.startsWith(q) || name2.contains(" " + q)) || tName2 != null && (tName2.startsWith(q) || tName2.contains(" " + q))) {
                                 found = 1;
-                            } else if (contact.user != null && contact.user.username != null && contact.user.username.startsWith(q)) {
+                            } else if (contact.user != null && (username = UserObject.getPublicUsername(contact.user)) != null && username.startsWith(q)) {
                                 found = 2;
                             } else if (name.startsWith(q) || name.contains(" " + q) || tName != null && (tName.startsWith(q) || tName.contains(" " + q))) {
                                 found = 3;
                             }
-                            if (found != 0) {
+                            if (found != 0 && (!contact.phones.isEmpty() || !contact.shortPhones.isEmpty())) {
                                 if (found == 3) {
                                     resultArrayNames.add(AndroidUtilities.generateSearchName(contact.first_name, contact.last_name, q));
                                 } else if (found == 1) {
                                     resultArrayNames.add(AndroidUtilities.generateSearchName(contact.user.first_name, contact.user.last_name, q));
                                 } else {
-                                    resultArrayNames.add(AndroidUtilities.generateSearchName("@" + contact.user.username, null, "@" + q));
+                                    resultArrayNames.add(AndroidUtilities.generateSearchName("@" + UserObject.getPublicUsername(contact.user), null, "@" + q));
                                 }
                                 if (contact.user != null) {
                                     foundUids.put(contact.user.id, 1);
@@ -793,18 +1125,19 @@ public class ChatAttachAlertContactsLayout extends ChatAttachAlert.AttachAlertLa
                         }
 
                         int found = 0;
+                        String username;
                         for (String q : search) {
                             if (name.startsWith(q) || name.contains(" " + q) || tName != null && (tName.startsWith(q) || tName.contains(" " + q))) {
                                 found = 1;
-                            } else if (user.username != null && user.username.startsWith(q)) {
+                            } else if ((username = UserObject.getPublicUsername(user)) != null && username.startsWith(q)) {
                                 found = 2;
                             }
 
-                            if (found != 0) {
+                            if (found != 0 && user.phone != null) {
                                 if (found == 1) {
                                     resultArrayNames.add(AndroidUtilities.generateSearchName(user.first_name, user.last_name, q));
                                 } else {
-                                    resultArrayNames.add(AndroidUtilities.generateSearchName("@" + user.username, null, "@" + q));
+                                    resultArrayNames.add(AndroidUtilities.generateSearchName("@" + UserObject.getPublicUsername(user), null, "@" + q));
                                 }
                                 resultArray.add(user);
                                 break;
@@ -877,14 +1210,17 @@ public class ChatAttachAlertContactsLayout extends ChatAttachAlert.AttachAlertLa
                         user = contact.user;
                     } else {
                         userCell.setCurrentId(contact.contact_id);
-                        userCell.setData(null, searchResultNames.get(position - 1), contact.phones.isEmpty() ? "" : PhoneFormat.getInstance().format(contact.phones.get(0)), divider);
+                        userCell.setData(null, searchResultNames.get(position - 1), () -> contact.phones.isEmpty() ? "" : PhoneFormat.getInstance().format(contact.phones.get(0)), divider);
                     }
                 } else {
                     user = (TLRPC.User) object;
                 }
                 if (user != null) {
-                    userCell.setData(user, searchResultNames.get(position - 1), PhoneFormat.getInstance().format("+" + user.phone), divider);
+                    final TLRPC.User finalUser = user;
+                    userCell.setData(user, searchResultNames.get(position - 1), () -> PhoneFormat.getInstance().format("+" + finalUser.phone), divider);
                 }
+
+                userCell.setChecked(selectedContacts.containsKey(ListItemID.of(object)), false);
             }
         }
 

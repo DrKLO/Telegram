@@ -42,6 +42,8 @@ import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.ProgressButton;
 import org.telegram.ui.Components.ViewHelper;
 
+import java.util.ArrayList;
+
 @SuppressLint("ViewConstructor")
 public class ArchivedStickerSetCell extends FrameLayout implements Checkable {
 
@@ -65,7 +67,7 @@ public class ArchivedStickerSetCell extends FrameLayout implements Checkable {
 
         if (this.checkable = checkable) {
             currentButton = addButton = new ProgressButton(context);
-            addButton.setText(LocaleController.getString("Add", R.string.Add));
+            addButton.setText(LocaleController.getString(R.string.Add));
             addButton.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText));
             addButton.setProgressColor(Theme.getColor(Theme.key_featuredStickers_buttonProgress));
             addButton.setBackgroundRoundRect(Theme.getColor(Theme.key_featuredStickers_addButton), Theme.getColor(Theme.key_featuredStickers_addButtonPressed));
@@ -78,9 +80,9 @@ public class ArchivedStickerSetCell extends FrameLayout implements Checkable {
             deleteButton.setMinimumWidth(minWidth);
             deleteButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             deleteButton.setTextColor(Theme.getColor(Theme.key_featuredStickers_removeButtonText));
-            deleteButton.setText(LocaleController.getString("StickersRemove", R.string.StickersRemove));
+            deleteButton.setText(LocaleController.getString(R.string.StickersRemove));
             deleteButton.setBackground(Theme.getRoundRectSelectorDrawable(Theme.getColor(Theme.key_featuredStickers_removeButtonText)));
-            deleteButton.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            deleteButton.setTypeface(AndroidUtilities.bold());
             ViewHelper.setPadding(deleteButton, 8, 0, 8, 0);
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                 deleteButton.setOutlineProvider(null);
@@ -154,15 +156,33 @@ public class ArchivedStickerSetCell extends FrameLayout implements Checkable {
         setWillNotDraw(!needDivider);
 
         textView.setText(stickersSet.set.title);
-        valueTextView.setText(LocaleController.formatPluralString("Stickers", set.set.count));
+        if (set.set.emojis) {
+            valueTextView.setText(LocaleController.formatPluralString("EmojiCount", set.set.count));
+        } else {
+            valueTextView.setText(LocaleController.formatPluralString("Stickers", set.set.count));
+        }
 
-        TLRPC.Document sticker;
-        if (set.cover != null) {
+        TLRPC.Document sticker = null;
+        if (set instanceof TLRPC.TL_stickerSetFullCovered) {
+            ArrayList<TLRPC.Document> documents = ((TLRPC.TL_stickerSetFullCovered) set).documents;
+            if (documents == null) {
+                return;
+            }
+            long thumb_document_id = set.set.thumb_document_id;
+            for (int i = 0; i < documents.size(); ++i) {
+                TLRPC.Document d = documents.get(i);
+                if (d != null && d.id == thumb_document_id) {
+                    sticker = d;
+                    break;
+                }
+            }
+            if (sticker == null && !documents.isEmpty()) {
+                sticker = documents.get(0);
+            }
+        } else if (set.cover != null) {
             sticker = set.cover;
         } else if (!set.covers.isEmpty()) {
             sticker = set.covers.get(0);
-        } else {
-            sticker = null;
         }
         if (sticker != null) {
             TLObject object = FileLoader.getClosestPhotoSizeWithSize(set.set.thumbs, 90);
@@ -180,7 +200,7 @@ public class ArchivedStickerSetCell extends FrameLayout implements Checkable {
                 imageLocation = ImageLocation.getForSticker(thumb, sticker, set.set.thumb_version);
             }
 
-            if (object instanceof TLRPC.Document && MessageObject.isAnimatedStickerDocument(sticker, true)) {
+            if (object instanceof TLRPC.Document && (MessageObject.isAnimatedStickerDocument(sticker, true) || MessageObject.isVideoSticker(sticker))) {
                 if (svgThumb != null) {
                     imageView.setImage(ImageLocation.getForDocument(sticker), "50_50", svgThumb, 0, set);
                 } else {

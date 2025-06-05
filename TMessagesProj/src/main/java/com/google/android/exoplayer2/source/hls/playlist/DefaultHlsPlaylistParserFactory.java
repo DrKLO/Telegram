@@ -15,6 +15,7 @@
  */
 package com.google.android.exoplayer2.source.hls.playlist;
 
+import androidx.annotation.Nullable;
 import com.google.android.exoplayer2.upstream.ParsingLoadable;
 
 /** Default implementation for {@link HlsPlaylistParserFactory}. */
@@ -27,7 +28,8 @@ public final class DefaultHlsPlaylistParserFactory implements HlsPlaylistParserF
 
   @Override
   public ParsingLoadable.Parser<HlsPlaylist> createPlaylistParser(
-      HlsMasterPlaylist masterPlaylist) {
-    return new HlsPlaylistParser(masterPlaylist);
+      HlsMultivariantPlaylist multivariantPlaylist,
+      @Nullable HlsMediaPlaylist previousMediaPlaylist) {
+    return new HlsPlaylistParser(multivariantPlaylist, previousMediaPlaylist);
   }
 }

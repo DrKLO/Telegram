@@ -1,17 +1,22 @@
 #! /usr/bin/env perl
 # Copyright 2016 The OpenSSL Project Authors. All Rights Reserved.
 #
-# Licensed under the OpenSSL license (the "License").  You may not use
-# this file except in compliance with the License.  You can obtain a copy
-# in the file LICENSE in the source distribution or at
-# https://www.openssl.org/source/license.html
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 #
 # ====================================================================
 # Written by Andy Polyakov <appro@openssl.org> for the OpenSSL
-# project. The module is, however, dual licensed under OpenSSL and
-# CRYPTOGAMS licenses depending on where you obtain it. For further
-# details see http://www.openssl.org/~appro/cryptogams/.
+# project.
 # ====================================================================
 #
 # December 2014
@@ -44,7 +49,7 @@ if ($flavour && $flavour ne "void") {
     ( $xlate="${dir}../../perlasm/arm-xlate.pl" and -f $xlate) or
     die "can't locate arm-xlate.pl";
 
-    open OUT,"| \"$^X\" $xlate $flavour $output";
+    open OUT,"| \"$^X\" \"$xlate\" $flavour \"$output\"";
     *STDOUT=*OUT;
 } else {
     open OUT,">$output";
@@ -171,8 +176,6 @@ my @ret;
 }
 
 $code.=<<___;
-#include <openssl/arm_arch.h>
-
 @ Silence ARMv8 deprecated IT instruction warnings. This file is used by both
 @ ARMv7 and ARMv8 processors and does not use ARMv8 instructions.
 .arch  armv7-a
@@ -196,46 +199,16 @@ $code.=<<___;
 .long	0x61707865,0x3320646e,0x79622d32,0x6b206574	@ endian-neutral
 .Lone:
 .long	1,0,0,0
-#if __ARM_MAX_ARCH__>=7
-.LOPENSSL_armcap:
-.word   OPENSSL_armcap_P-.LChaCha20_ctr32
-#else
-.word	-1
-#endif
 
-.globl	ChaCha20_ctr32
-.type	ChaCha20_ctr32,%function
+.globl	ChaCha20_ctr32_nohw
+.type	ChaCha20_ctr32_nohw,%function
 .align	5
-ChaCha20_ctr32:
-.LChaCha20_ctr32:
+ChaCha20_ctr32_nohw:
 	ldr	r12,[sp,#0]		@ pull pointer to counter and nonce
 	stmdb	sp!,{r0-r2,r4-r11,lr}
-#if __ARM_ARCH__<7 && !defined(__thumb2__)
-	sub	r14,pc,#16		@ ChaCha20_ctr32
-#else
-	adr	r14,.LChaCha20_ctr32
-#endif
-	cmp	r2,#0			@ len==0?
-#ifdef	__thumb2__
-	itt	eq
-#endif
-	addeq	sp,sp,#4*3
-	beq	.Lno_data
-#if __ARM_MAX_ARCH__>=7
-	cmp	r2,#192			@ test len
-	bls	.Lshort
-	ldr	r4,[r14,#-32]
-	ldr	r4,[r14,r4]
-# ifdef	__APPLE__
-	ldr	r4,[r4]
-# endif
-	tst	r4,#ARMV7_NEON
-	bne	.LChaCha20_neon
-.Lshort:
-#endif
+	adr	r14,.Lsigma
 	ldmia	r12,{r4-r7}		@ load counter and nonce
 	sub	sp,sp,#4*(16)		@ off-load area
-	sub	r14,r14,#64		@ .Lsigma
 	stmdb	sp!,{r4-r7}		@ copy counter and nonce
 	ldmia	r3,{r4-r11}		@ load key
 	ldmia	r14,{r0-r3}		@ load sigma
@@ -292,8 +265,8 @@ $code.=<<___;
 	ldr	@t[0],[sp,#4*(0)]	@ load key material
 	ldr	@t[1],[sp,#4*(1)]
 
-#if __ARM_ARCH__>=6 || !defined(__ARMEB__)
-# if __ARM_ARCH__<7
+#if __ARM_ARCH>=6 || !defined(__ARMEB__)
+# if __ARM_ARCH<7
 	orr	@t[2],r12,r14
 	tst	@t[2],#3		@ are input and output aligned?
 	ldr	@t[2],[sp,#4*(2)]
@@ -319,7 +292,7 @@ $code.=<<___;
 # endif
 	ldrhs	@t[2],[r12,#-8]
 	ldrhs	@t[3],[r12,#-4]
-# if __ARM_ARCH__>=6 && defined(__ARMEB__)
+# if __ARM_ARCH>=6 && defined(__ARMEB__)
 	rev	@x[0],@x[0]
 	rev	@x[1],@x[1]
 	rev	@x[2],@x[2]
@@ -356,7 +329,7 @@ $code.=<<___;
 # endif
 	ldrhs	@t[2],[r12,#-8]
 	ldrhs	@t[3],[r12,#-4]
-# if __ARM_ARCH__>=6 && defined(__ARMEB__)
+# if __ARM_ARCH>=6 && defined(__ARMEB__)
 	rev	@x[4],@x[4]
 	rev	@x[5],@x[5]
 	rev	@x[6],@x[6]
@@ -401,7 +374,7 @@ $code.=<<___;
 # endif
 	ldrhs	@t[2],[r12,#-8]
 	ldrhs	@t[3],[r12,#-4]
-# if __ARM_ARCH__>=6 && defined(__ARMEB__)
+# if __ARM_ARCH>=6 && defined(__ARMEB__)
 	rev	@x[0],@x[0]
 	rev	@x[1],@x[1]
 	rev	@x[2],@x[2]
@@ -443,7 +416,7 @@ $code.=<<___;
 # endif
 	ldrhs	@t[2],[r12,#-8]
 	ldrhs	@t[3],[r12,#-4]
-# if __ARM_ARCH__>=6 && defined(__ARMEB__)
+# if __ARM_ARCH>=6 && defined(__ARMEB__)
 	rev	@x[4],@x[4]
 	rev	@x[5],@x[5]
 	rev	@x[6],@x[6]
@@ -474,7 +447,7 @@ $code.=<<___;
 	bhi	.Loop_outer
 
 	beq	.Ldone
-# if __ARM_ARCH__<7
+# if __ARM_ARCH<7
 	b	.Ltail
 
 .align	4
@@ -482,7 +455,7 @@ $code.=<<___;
 	cmp	@t[3],#64		@ restore flags
 # endif
 #endif
-#if __ARM_ARCH__<7
+#if __ARM_ARCH<7
 	ldr	@t[3],[sp,#4*(3)]
 ___
 for ($i=0;$i<16;$i+=4) {
@@ -626,9 +599,8 @@ $code.=<<___;
 
 .Ldone:
 	add	sp,sp,#4*(32+3)
-.Lno_data:
 	ldmia	sp!,{r4-r11,pc}
-.size	ChaCha20_ctr32,.-ChaCha20_ctr32
+.size	ChaCha20_ctr32_nohw,.-ChaCha20_ctr32_nohw
 ___
 
 {{{
@@ -670,12 +642,12 @@ $code.=<<___;
 .arch	armv7-a
 .fpu	neon
 
-.type	ChaCha20_neon,%function
+.globl	ChaCha20_ctr32_neon
+.type	ChaCha20_ctr32_neon,%function
 .align	5
-ChaCha20_neon:
+ChaCha20_ctr32_neon:
 	ldr		r12,[sp,#0]		@ pull pointer to counter and nonce
 	stmdb		sp!,{r0-r2,r4-r11,lr}
-.LChaCha20_neon:
 	adr		r14,.Lsigma
 	vstmdb		sp!,{d8-d15}		@ ABI spec says so
 	stmdb		sp!,{r0-r3}
@@ -1150,8 +1122,7 @@ $code.=<<___;
 	vldmia		sp,{d8-d15}
 	add		sp,sp,#4*(16+3)
 	ldmia		sp!,{r4-r11,pc}
-.size	ChaCha20_neon,.-ChaCha20_neon
-.comm	OPENSSL_armcap_P,4,4
+.size	ChaCha20_ctr32_neon,.-ChaCha20_ctr32_neon
 #endif
 ___
 }}}
@@ -1163,4 +1134,4 @@ foreach (split("\n",$code)) {
 
 	print $_,"\n";
 }
-close STDOUT or die "error closing STDOUT";
+close STDOUT or die "error closing STDOUT: $!";

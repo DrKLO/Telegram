@@ -64,19 +64,19 @@ extern "C" {
 #elif defined(SCTP_STDINT_INCLUDE)
 #include SCTP_STDINT_INCLUDE
 #else
-#define uint8_t   unsigned __int8
-#define uint16_t  unsigned __int16
-#define uint32_t  unsigned __int32
-#define uint64_t  unsigned __int64
-#define int16_t   __int16
-#define int32_t   __int32
+typedef unsigned __int8  uint8_t;
+typedef unsigned __int16 uint16_t;
+typedef unsigned __int32 uint32_t;
+typedef unsigned __int64 uint64_t;
+typedef          __int16 int16_t;
+typedef          __int32 int32_t;
 #endif
 
 #ifndef ssize_t
 #ifdef _WIN64
-#define ssize_t __int64
+typedef __int64 ssize_t;
 #elif defined _WIN32
-#define ssize_t int
+typedef int ssize_t;
 #else
 #error "Unknown platform!"
 #endif
@@ -281,12 +281,13 @@ struct sctp_assoc_change {
 #define SCTP_CANT_STR_ASSOC 0x0005
 
 /* sac_info values */
-#define SCTP_ASSOC_SUPPORTS_PR        0x01
-#define SCTP_ASSOC_SUPPORTS_AUTH      0x02
-#define SCTP_ASSOC_SUPPORTS_ASCONF    0x03
-#define SCTP_ASSOC_SUPPORTS_MULTIBUF  0x04
-#define SCTP_ASSOC_SUPPORTS_RE_CONFIG 0x05
-#define SCTP_ASSOC_SUPPORTS_MAX       0x05
+#define SCTP_ASSOC_SUPPORTS_PR           0x01
+#define SCTP_ASSOC_SUPPORTS_AUTH         0x02
+#define SCTP_ASSOC_SUPPORTS_ASCONF       0x03
+#define SCTP_ASSOC_SUPPORTS_MULTIBUF     0x04
+#define SCTP_ASSOC_SUPPORTS_RE_CONFIG    0x05
+#define SCTP_ASSOC_SUPPORTS_INTERLEAVING 0x06
+#define SCTP_ASSOC_SUPPORTS_MAX          0x06
 
 /* Address event */
 struct sctp_paddr_change {
@@ -903,7 +904,7 @@ struct socket *
 usrsctp_socket(int domain, int type, int protocol,
                int (*receive_cb)(struct socket *sock, union sctp_sockstore addr, void *data,
                                  size_t datalen, struct sctp_rcvinfo, int flags, void *ulp_info),
-               int (*send_cb)(struct socket *sock, uint32_t sb_free),
+               int (*send_cb)(struct socket *sock, uint32_t sb_free, void *ulp_info),
                uint32_t sb_threshold,
                void *ulp_info);
 
@@ -1033,6 +1034,9 @@ int
 usrsctp_set_ulpinfo(struct socket *, void *);
 
 int
+usrsctp_get_ulpinfo(struct socket *, void **);
+
+int
 usrsctp_set_upcall(struct socket *so,
                    void (*upcall)(struct socket *, void *, int),
                    void *arg);
@@ -1042,7 +1046,7 @@ usrsctp_get_events(struct socket *so);
 
 
 void
-usrsctp_handle_timers(uint32_t delta);
+usrsctp_handle_timers(uint32_t elapsed_milliseconds);
 
 #define SCTP_DUMP_OUTBOUND 1
 #define SCTP_DUMP_INBOUND  0

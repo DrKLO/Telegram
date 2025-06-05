@@ -1,10 +1,6 @@
 cmake_minimum_required(VERSION 3.6.0)
 
-#libvpx_yasm
-if (${ANDROID_ABI} STREQUAL "x86" OR ${ANDROID_ABI} STREQUAL "x86_64")
-add_library(libvpx_yasm STATIC IMPORTED)
-set_target_properties(libvpx_yasm PROPERTIES IMPORTED_LOCATION ${CMAKE_HOME_DIRECTORY}/third_party/libvpx/source/libvpx/vpx_dsp/x86/libvpx_${ANDROID_ABI}_yasm.a)
-endif()
+set(CMAKE_CXX_FLAGS "-std=c++17 -DANDROID -g")
 
 #tgvoip
 add_library(tgvoip STATIC
@@ -45,9 +41,9 @@ target_compile_options(tgvoip PUBLIC
 set_target_properties(tgvoip PROPERTIES
         ANDROID_ARM_MODE arm)
 target_compile_definitions(tgvoip PUBLIC
-        HAVE_PTHREAD __STDC_LIMIT_MACROS BSD=1 USE_KISS_FFT TGVOIP_NO_VIDEO NULL=0 SOCKLEN_T=socklen_t LOCALE_NOT_USED _LARGEFILE_SOURCE=1 _FILE_OFFSET_BITS=64 restrict= __EMX__ OPUS_BUILD FIXED_POINT USE_ALLOCA HAVE_LRINT HAVE_LRINTF)
+        HAVE_PTHREAD __STDC_LIMIT_MACROS BSD=1 USE_KISS_FFT TGVOIP_NO_VIDEO NULL=0 SOCKLEN_T=socklen_t LOCALE_NOT_USED _LARGEFILE_SOURCE=1 _FILE_OFFSET_BITS=64 restrict= __EMX__ OPUS_BUILD FIXED_POINT USE_ALLOCA HAVE_LRINT HAVE_LRINTF TGVOIP_NO_DSP)
 target_compile_definitions(tgvoip PUBLIC
-        RTC_DISABLE_TRACE_EVENTS WEBRTC_OPUS_SUPPORT_120MS_PTIME=1 BWE_TEST_LOGGING_COMPILE_TIME_ENABLE=0 ABSL_ALLOCATOR_NOTHROW=1 RTC_ENABLE_VP9 WEBRTC_POSIX WEBRTC_LINUX WEBRTC_ANDROID WEBRTC_USE_H264 NDEBUG WEBRTC_HAVE_USRSCTP WEBRTC_HAVE_SCTP WEBRTC_APM_DEBUG_DUMP=0 WEBRTC_USE_BUILTIN_ISAC_FLOAT WEBRTC_OPUS_VARIABLE_COMPLEXITY=0 HAVE_NETINET_IN_H WEBRTC_INCLUDE_INTERNAL_AUDIO_DEVICE __Userspace__ SCTP_SIMPLE_ALLOCATOR SCTP_PROCESS_LEVEL_LOCKS __Userspace_os_Linux)
+        WEBRTC_HAVE_DCSCTP RTC_DISABLE_TRACE_EVENTS WEBRTC_OPUS_SUPPORT_120MS_PTIME=1 BWE_TEST_LOGGING_COMPILE_TIME_ENABLE=0 ABSL_ALLOCATOR_NOTHROW=1 RTC_ENABLE_VP9 RTC_ENABLE_H265 WEBRTC_POSIX WEBRTC_LINUX WEBRTC_ANDROID WEBRTC_USE_H264 NDEBUG WEBRTC_HAVE_USRSCTP WEBRTC_HAVE_SCTP WEBRTC_APM_DEBUG_DUMP=0 WEBRTC_USE_BUILTIN_ISAC_FLOAT WEBRTC_OPUS_VARIABLE_COMPLEXITY=0 HAVE_NETINET_IN_H WEBRTC_INCLUDE_INTERNAL_AUDIO_DEVICE __Userspace__ SCTP_SIMPLE_ALLOCATOR SCTP_PROCESS_LEVEL_LOCKS __Userspace_os_Linux)
 target_include_directories(tgvoip PUBLIC
         ./
         voip
@@ -60,7 +56,10 @@ target_include_directories(tgvoip PUBLIC
         boringssl/include
         voip/webrtc
         voip/tgcalls
-        voip/libtgvoip)
+        voip/libtgvoip
+        voip/webrtc/third_party/crc32c/src/include
+        voip/webrtc/third_party/jni_zero
+)
 
 if (${ANDROID_ABI} STREQUAL "armeabi-v7a")
     target_compile_definitions(tgvoip PUBLIC
@@ -244,7 +243,7 @@ target_compile_definitions(rnnoise PRIVATE
         pitch_search=rnnoise_pitch_search
         remove_doubling=rnnoise_remove_doubling)
 target_compile_definitions(rnnoise PUBLIC
-        RTC_DISABLE_TRACE_EVENTS WEBRTC_OPUS_SUPPORT_120MS_PTIME=1 BWE_TEST_LOGGING_COMPILE_TIME_ENABLE=0 ABSL_ALLOCATOR_NOTHROW=1 RTC_ENABLE_VP9 WEBRTC_POSIX WEBRTC_LINUX WEBRTC_ANDROID WEBRTC_USE_H264 NDEBUG WEBRTC_HAVE_USRSCTP WEBRTC_HAVE_SCTP WEBRTC_APM_DEBUG_DUMP=0 WEBRTC_USE_BUILTIN_ISAC_FLOAT WEBRTC_OPUS_VARIABLE_COMPLEXITY=0 HAVE_NETINET_IN_H WEBRTC_INCLUDE_INTERNAL_AUDIO_DEVICE __Userspace__ SCTP_SIMPLE_ALLOCATOR SCTP_PROCESS_LEVEL_LOCKS __Userspace_os_Linux)
+        WEBRTC_HAVE_DCSCTP RTC_DISABLE_TRACE_EVENTS WEBRTC_OPUS_SUPPORT_120MS_PTIME=1 BWE_TEST_LOGGING_COMPILE_TIME_ENABLE=0 ABSL_ALLOCATOR_NOTHROW=1 RTC_ENABLE_VP9 RTC_ENABLE_H265 WEBRTC_POSIX WEBRTC_LINUX WEBRTC_ANDROID WEBRTC_USE_H264 NDEBUG WEBRTC_HAVE_USRSCTP WEBRTC_HAVE_SCTP WEBRTC_APM_DEBUG_DUMP=0 WEBRTC_USE_BUILTIN_ISAC_FLOAT WEBRTC_OPUS_VARIABLE_COMPLEXITY=0 HAVE_NETINET_IN_H WEBRTC_INCLUDE_INTERNAL_AUDIO_DEVICE __Userspace__ SCTP_SIMPLE_ALLOCATOR SCTP_PROCESS_LEVEL_LOCKS __Userspace_os_Linux)
 target_include_directories(rnnoise PUBLIC
         voip/rnnoise/include)
 
@@ -253,193 +252,6 @@ add_library(tgcalls_tp STATIC
         third_party/rnnoise/src/rnn_vad_weights.cc
         third_party/pffft/src/fftpack.c
         third_party/pffft/src/pffft.c
-        third_party/libvpx/source/libvpx/args.c
-        third_party/libvpx/source/libvpx/ivfdec.c
-        third_party/libvpx/source/libvpx/ivfenc.c
-        third_party/libvpx/source/libvpx/md5_utils.c
-        third_party/libvpx/source/libvpx/rate_hist.c
-        third_party/libvpx/source/libvpx/tools_common.c
-        third_party/libvpx/source/libvpx/video_reader.c
-        third_party/libvpx/source/libvpx/video_writer.c
-        third_party/libvpx/source/libvpx/vp8/common/alloccommon.c
-        third_party/libvpx/source/libvpx/vp8/common/blockd.c
-        third_party/libvpx/source/libvpx/vp8/common/context.c
-        third_party/libvpx/source/libvpx/vp8/common/debugmodes.c
-        third_party/libvpx/source/libvpx/vp8/common/dequantize.c
-        third_party/libvpx/source/libvpx/vp8/common/entropy.c
-        third_party/libvpx/source/libvpx/vp8/common/entropymode.c
-        third_party/libvpx/source/libvpx/vp8/common/entropymv.c
-        third_party/libvpx/source/libvpx/vp8/common/extend.c
-        third_party/libvpx/source/libvpx/vp8/common/filter.c
-        third_party/libvpx/source/libvpx/vp8/common/findnearmv.c
-        third_party/libvpx/source/libvpx/vp8/common/generic/systemdependent.c
-        third_party/libvpx/source/libvpx/vp8/common/idct_blk.c
-        third_party/libvpx/source/libvpx/vp8/common/idctllm.c
-        third_party/libvpx/source/libvpx/vp8/common/loopfilter_filters.c
-        third_party/libvpx/source/libvpx/vp8/common/mbpitch.c
-        third_party/libvpx/source/libvpx/vp8/common/mfqe.c
-        third_party/libvpx/source/libvpx/vp8/common/modecont.c
-        third_party/libvpx/source/libvpx/vp8/common/postproc.c
-        third_party/libvpx/source/libvpx/vp8/common/quant_common.c
-        third_party/libvpx/source/libvpx/vp8/common/reconinter.c
-        third_party/libvpx/source/libvpx/vp8/common/reconintra.c
-        third_party/libvpx/source/libvpx/vp8/common/reconintra4x4.c
-        third_party/libvpx/source/libvpx/vp8/common/rtcd.c
-        third_party/libvpx/source/libvpx/vp8/common/setupintrarecon.c
-        third_party/libvpx/source/libvpx/vp8/common/swapyv12buffer.c
-        third_party/libvpx/source/libvpx/vp8/common/treecoder.c
-        third_party/libvpx/source/libvpx/vp8/common/vp8_loopfilter.c
-        third_party/libvpx/source/libvpx/vp8/common/vp8_skin_detection.c
-        third_party/libvpx/source/libvpx/vp8/decoder/dboolhuff.c
-        third_party/libvpx/source/libvpx/vp8/decoder/decodeframe.c
-        third_party/libvpx/source/libvpx/vp8/decoder/decodemv.c
-        third_party/libvpx/source/libvpx/vp8/decoder/detokenize.c
-        third_party/libvpx/source/libvpx/vp8/decoder/onyxd_if.c
-        third_party/libvpx/source/libvpx/vp8/decoder/threading.c
-        third_party/libvpx/source/libvpx/vp8/encoder/bitstream.c
-        third_party/libvpx/source/libvpx/vp8/encoder/boolhuff.c
-        third_party/libvpx/source/libvpx/vp8/encoder/copy_c.c
-        third_party/libvpx/source/libvpx/vp8/encoder/dct.c
-        third_party/libvpx/source/libvpx/vp8/encoder/denoising.c
-        third_party/libvpx/source/libvpx/vp8/encoder/encodeframe.c
-        third_party/libvpx/source/libvpx/vp8/encoder/encodeintra.c
-        third_party/libvpx/source/libvpx/vp8/encoder/encodemb.c
-        third_party/libvpx/source/libvpx/vp8/encoder/encodemv.c
-        third_party/libvpx/source/libvpx/vp8/encoder/ethreading.c
-        third_party/libvpx/source/libvpx/vp8/encoder/firstpass.c
-        third_party/libvpx/source/libvpx/vp8/encoder/lookahead.c
-        third_party/libvpx/source/libvpx/vp8/encoder/mcomp.c
-        third_party/libvpx/source/libvpx/vp8/encoder/modecosts.c
-        third_party/libvpx/source/libvpx/vp8/encoder/mr_dissim.c
-        third_party/libvpx/source/libvpx/vp8/encoder/onyx_if.c
-        third_party/libvpx/source/libvpx/vp8/encoder/pickinter.c
-        third_party/libvpx/source/libvpx/vp8/encoder/picklpf.c
-        third_party/libvpx/source/libvpx/vp8/encoder/ratectrl.c
-        third_party/libvpx/source/libvpx/vp8/encoder/rdopt.c
-        third_party/libvpx/source/libvpx/vp8/encoder/segmentation.c
-        third_party/libvpx/source/libvpx/vp8/encoder/temporal_filter.c
-        third_party/libvpx/source/libvpx/vp8/encoder/tokenize.c
-        third_party/libvpx/source/libvpx/vp8/encoder/treewriter.c
-        third_party/libvpx/source/libvpx/vp8/encoder/vp8_quantize.c
-        third_party/libvpx/source/libvpx/vp8/vp8_cx_iface.c
-        third_party/libvpx/source/libvpx/vp8/vp8_dx_iface.c
-        third_party/libvpx/source/libvpx/vp9/common/vp9_alloccommon.c
-        third_party/libvpx/source/libvpx/vp9/common/vp9_blockd.c
-        third_party/libvpx/source/libvpx/vp9/common/vp9_common_data.c
-        third_party/libvpx/source/libvpx/vp9/common/vp9_debugmodes.c
-        third_party/libvpx/source/libvpx/vp9/common/vp9_entropy.c
-        third_party/libvpx/source/libvpx/vp9/common/vp9_entropymode.c
-        third_party/libvpx/source/libvpx/vp9/common/vp9_entropymv.c
-        third_party/libvpx/source/libvpx/vp9/common/vp9_filter.c
-        third_party/libvpx/source/libvpx/vp9/common/vp9_frame_buffers.c
-        third_party/libvpx/source/libvpx/vp9/common/vp9_idct.c
-        third_party/libvpx/source/libvpx/vp9/common/vp9_loopfilter.c
-        third_party/libvpx/source/libvpx/vp9/common/vp9_mfqe.c
-        third_party/libvpx/source/libvpx/vp9/common/vp9_mvref_common.c
-        third_party/libvpx/source/libvpx/vp9/common/vp9_postproc.c
-        third_party/libvpx/source/libvpx/vp9/common/vp9_pred_common.c
-        third_party/libvpx/source/libvpx/vp9/common/vp9_quant_common.c
-        third_party/libvpx/source/libvpx/vp9/common/vp9_reconinter.c
-        third_party/libvpx/source/libvpx/vp9/common/vp9_reconintra.c
-        third_party/libvpx/source/libvpx/vp9/common/vp9_rtcd.c
-        third_party/libvpx/source/libvpx/vp9/common/vp9_scale.c
-        third_party/libvpx/source/libvpx/vp9/common/vp9_scan.c
-        third_party/libvpx/source/libvpx/vp9/common/vp9_seg_common.c
-        third_party/libvpx/source/libvpx/vp9/common/vp9_thread_common.c
-        third_party/libvpx/source/libvpx/vp9/common/vp9_tile_common.c
-        third_party/libvpx/source/libvpx/vp9/decoder/vp9_decodeframe.c
-        third_party/libvpx/source/libvpx/vp9/decoder/vp9_decodemv.c
-        third_party/libvpx/source/libvpx/vp9/decoder/vp9_decoder.c
-        third_party/libvpx/source/libvpx/vp9/decoder/vp9_detokenize.c
-        third_party/libvpx/source/libvpx/vp9/decoder/vp9_dsubexp.c
-        third_party/libvpx/source/libvpx/vp9/decoder/vp9_job_queue.c
-        third_party/libvpx/source/libvpx/vp9/encoder/vp9_alt_ref_aq.c
-        third_party/libvpx/source/libvpx/vp9/encoder/vp9_aq_360.c
-        third_party/libvpx/source/libvpx/vp9/encoder/vp9_aq_complexity.c
-        third_party/libvpx/source/libvpx/vp9/encoder/vp9_aq_cyclicrefresh.c
-        third_party/libvpx/source/libvpx/vp9/encoder/vp9_aq_variance.c
-        third_party/libvpx/source/libvpx/vp9/encoder/vp9_bitstream.c
-        third_party/libvpx/source/libvpx/vp9/encoder/vp9_blockiness.c
-        third_party/libvpx/source/libvpx/vp9/encoder/vp9_context_tree.c
-        third_party/libvpx/source/libvpx/vp9/encoder/vp9_cost.c
-        third_party/libvpx/source/libvpx/vp9/encoder/vp9_dct.c
-        third_party/libvpx/source/libvpx/vp9/encoder/vp9_denoiser.c
-        third_party/libvpx/source/libvpx/vp9/encoder/vp9_encodeframe.c
-        third_party/libvpx/source/libvpx/vp9/encoder/vp9_encodemb.c
-        third_party/libvpx/source/libvpx/vp9/encoder/vp9_encodemv.c
-        third_party/libvpx/source/libvpx/vp9/encoder/vp9_encoder.c
-        third_party/libvpx/source/libvpx/vp9/encoder/vp9_ethread.c
-        third_party/libvpx/source/libvpx/vp9/encoder/vp9_extend.c
-        third_party/libvpx/source/libvpx/vp9/encoder/vp9_firstpass.c
-        third_party/libvpx/source/libvpx/vp9/encoder/vp9_frame_scale.c
-        third_party/libvpx/source/libvpx/vp9/encoder/vp9_lookahead.c
-        third_party/libvpx/source/libvpx/vp9/encoder/vp9_mbgraph.c
-        third_party/libvpx/source/libvpx/vp9/encoder/vp9_mcomp.c
-        third_party/libvpx/source/libvpx/vp9/encoder/vp9_multi_thread.c
-        third_party/libvpx/source/libvpx/vp9/encoder/vp9_noise_estimate.c
-        third_party/libvpx/source/libvpx/vp9/encoder/vp9_non_greedy_mv.c
-        third_party/libvpx/source/libvpx/vp9/encoder/vp9_picklpf.c
-        third_party/libvpx/source/libvpx/vp9/encoder/vp9_pickmode.c
-        third_party/libvpx/source/libvpx/vp9/encoder/vp9_quantize.c
-        third_party/libvpx/source/libvpx/vp9/encoder/vp9_ratectrl.c
-        third_party/libvpx/source/libvpx/vp9/encoder/vp9_rd.c
-        third_party/libvpx/source/libvpx/vp9/encoder/vp9_rdopt.c
-        third_party/libvpx/source/libvpx/vp9/encoder/vp9_resize.c
-        third_party/libvpx/source/libvpx/vp9/encoder/vp9_segmentation.c
-        third_party/libvpx/source/libvpx/vp9/encoder/vp9_skin_detection.c
-        third_party/libvpx/source/libvpx/vp9/encoder/vp9_speed_features.c
-        third_party/libvpx/source/libvpx/vp9/encoder/vp9_subexp.c
-        third_party/libvpx/source/libvpx/vp9/encoder/vp9_svc_layercontext.c
-        third_party/libvpx/source/libvpx/vp9/encoder/vp9_temporal_filter.c
-        third_party/libvpx/source/libvpx/vp9/encoder/vp9_tokenize.c
-        third_party/libvpx/source/libvpx/vp9/encoder/vp9_treewriter.c
-        third_party/libvpx/source/libvpx/vp9/encoder/vp9_ext_ratectrl.c
-        third_party/libvpx/source/libvpx/vp9/ratectrl_rtc.cc
-        third_party/libvpx/source/libvpx/vp9/vp9_cx_iface.c
-        third_party/libvpx/source/libvpx/vp9/vp9_dx_iface.c
-        third_party/libvpx/source/libvpx/vp9/vp9_iface_common.c
-        third_party/libvpx/source/libvpx/vpx/src/vpx_codec.c
-        third_party/libvpx/source/libvpx/vpx/src/vpx_decoder.c
-        third_party/libvpx/source/libvpx/vpx/src/vpx_encoder.c
-        third_party/libvpx/source/libvpx/vpx/src/vpx_image.c
-        third_party/libvpx/source/libvpx/vpx_dsp/add_noise.c
-        third_party/libvpx/source/libvpx/vpx_dsp/avg.c
-        third_party/libvpx/source/libvpx/vpx_dsp/bitreader.c
-        third_party/libvpx/source/libvpx/vpx_dsp/bitreader_buffer.c
-        third_party/libvpx/source/libvpx/vpx_dsp/bitwriter.c
-        third_party/libvpx/source/libvpx/vpx_dsp/bitwriter_buffer.c
-        third_party/libvpx/source/libvpx/vpx_dsp/deblock.c
-        third_party/libvpx/source/libvpx/vpx_dsp/fastssim.c
-        third_party/libvpx/source/libvpx/vpx_dsp/fwd_txfm.c
-        third_party/libvpx/source/libvpx/vpx_dsp/intrapred.c
-        third_party/libvpx/source/libvpx/vpx_dsp/inv_txfm.c
-        third_party/libvpx/source/libvpx/vpx_dsp/loopfilter.c
-        third_party/libvpx/source/libvpx/vpx_dsp/prob.c
-        third_party/libvpx/source/libvpx/vpx_dsp/psnr.c
-        third_party/libvpx/source/libvpx/vpx_dsp/psnrhvs.c
-        third_party/libvpx/source/libvpx/vpx_dsp/quantize.c
-        third_party/libvpx/source/libvpx/vpx_dsp/sad.c
-        third_party/libvpx/source/libvpx/vpx_dsp/skin_detection.c
-        third_party/libvpx/source/libvpx/vpx_dsp/ssim.c
-        third_party/libvpx/source/libvpx/vpx_dsp/subtract.c
-        third_party/libvpx/source/libvpx/vpx_dsp/sum_squares.c
-        third_party/libvpx/source/libvpx/vpx_dsp/variance.c
-        third_party/libvpx/source/libvpx/vpx_dsp/vpx_convolve.c
-        third_party/libvpx/source/libvpx/vpx_dsp/vpx_dsp_rtcd.c
-        third_party/libvpx/source/libvpx/vpx_mem/vpx_mem.c
-        third_party/libvpx/source/libvpx/vpx_ports/arm_cpudetect.c
-        third_party/libvpx/source/libvpx/vpx_scale/generic/gen_scalers.c
-        third_party/libvpx/source/libvpx/vpx_scale/generic/vpx_scale.c
-        third_party/libvpx/source/libvpx/vpx_scale/generic/yv12config.c
-        third_party/libvpx/source/libvpx/vpx_scale/generic/yv12extend.c
-        third_party/libvpx/source/libvpx/vpx_scale/vpx_scale_rtcd.c
-        third_party/libvpx/source/libvpx/vpx_util/vpx_debug_util.c
-        third_party/libvpx/source/libvpx/vpx_util/vpx_thread.c
-        third_party/libvpx/source/libvpx/vpx_util/vpx_write_yuv_frame.c
-        third_party/libvpx/source/libvpx/vpxstats.c
-        third_party/libvpx/source/libvpx/warnings.c
-        third_party/libvpx/source/libvpx/y4menc.c
-        third_party/libvpx/source/libvpx/y4minput.c
         third_party/libsrtp/crypto/cipher/aes_gcm_ossl.c
         third_party/libsrtp/crypto/cipher/aes_icm_ossl.c
         third_party/libsrtp/crypto/cipher/cipher.c
@@ -481,125 +293,176 @@ add_library(tgcalls_tp STATIC
         third_party/usrsctplib/user_mbuf.c
         third_party/usrsctplib/user_recv_thread.c
         third_party/usrsctplib/user_socket.c
-        voip/webrtc/absl/base/dynamic_annotations.cc
-        voip/webrtc/absl/base/internal/cycleclock.cc
-        voip/webrtc/absl/base/internal/exception_safety_testing.cc
-        voip/webrtc/absl/base/internal/exponential_biased.cc
-        voip/webrtc/absl/base/internal/low_level_alloc.cc
-        voip/webrtc/absl/base/internal/periodic_sampler.cc
-        voip/webrtc/absl/base/internal/raw_logging.cc
-        voip/webrtc/absl/base/internal/scoped_set_env.cc
-        voip/webrtc/absl/base/internal/spinlock.cc
-        voip/webrtc/absl/base/internal/spinlock_wait.cc
-        voip/webrtc/absl/base/internal/strerror.cc
-        voip/webrtc/absl/base/internal/sysinfo.cc
-        voip/webrtc/absl/base/internal/thread_identity.cc
-        voip/webrtc/absl/base/internal/throw_delegate.cc
-        voip/webrtc/absl/base/internal/unscaledcycleclock.cc
-        voip/webrtc/absl/base/log_severity.cc
-        voip/webrtc/absl/container/internal/hash_generator_testing.cc
-        voip/webrtc/absl/container/internal/hashtablez_sampler.cc
-        voip/webrtc/absl/container/internal/hashtablez_sampler_force_weak_definition.cc
-        voip/webrtc/absl/container/internal/raw_hash_set.cc
-        voip/webrtc/absl/container/internal/test_instance_tracker.cc
-        voip/webrtc/absl/debugging/failure_signal_handler.cc
-        voip/webrtc/absl/debugging/internal/address_is_readable.cc
-        voip/webrtc/absl/debugging/internal/demangle.cc
-        voip/webrtc/absl/debugging/internal/elf_mem_image.cc
-        voip/webrtc/absl/debugging/internal/examine_stack.cc
-        voip/webrtc/absl/debugging/internal/stack_consumption.cc
-        voip/webrtc/absl/debugging/internal/vdso_support.cc
-        voip/webrtc/absl/debugging/leak_check.cc
-        voip/webrtc/absl/debugging/leak_check_disable.cc
-        voip/webrtc/absl/debugging/stacktrace.cc
-        voip/webrtc/absl/debugging/symbolize.cc
-        voip/webrtc/absl/flags/flag.cc
-        voip/webrtc/absl/flags/flag_test_defs.cc
-        voip/webrtc/absl/flags/internal/commandlineflag.cc
-        voip/webrtc/absl/flags/internal/flag.cc
-        voip/webrtc/absl/flags/internal/program_name.cc
-        voip/webrtc/absl/flags/internal/registry.cc
-        voip/webrtc/absl/flags/internal/type_erased.cc
-        voip/webrtc/absl/flags/internal/usage.cc
-        voip/webrtc/absl/flags/marshalling.cc
-        voip/webrtc/absl/flags/parse.cc
-        voip/webrtc/absl/flags/usage.cc
-        voip/webrtc/absl/flags/usage_config.cc
-        voip/webrtc/absl/hash/internal/city.cc
-        voip/webrtc/absl/hash/internal/hash.cc
-        voip/webrtc/absl/numeric/int128.cc
-        voip/webrtc/absl/random/discrete_distribution.cc
-        voip/webrtc/absl/random/gaussian_distribution.cc
-        voip/webrtc/absl/random/internal/chi_square.cc
-        voip/webrtc/absl/random/internal/distribution_test_util.cc
-        voip/webrtc/absl/random/internal/nanobenchmark.cc
-        voip/webrtc/absl/random/internal/pool_urbg.cc
-        voip/webrtc/absl/random/internal/randen.cc
-        voip/webrtc/absl/random/internal/randen_detect.cc
-        voip/webrtc/absl/random/internal/randen_hwaes.cc
-        voip/webrtc/absl/random/internal/randen_slow.cc
-        voip/webrtc/absl/random/internal/seed_material.cc
-        voip/webrtc/absl/random/seed_gen_exception.cc
-        voip/webrtc/absl/random/seed_sequences.cc
-        voip/webrtc/absl/status/status.cc
-        voip/webrtc/absl/status/status_payload_printer.cc
-        voip/webrtc/absl/strings/ascii.cc
-        voip/webrtc/absl/strings/charconv.cc
-        voip/webrtc/absl/strings/cord.cc
-        voip/webrtc/absl/strings/escaping.cc
+        voip/webrtc/absl/strings/cord_analysis.cc
+        voip/webrtc/absl/strings/match.cc
+        voip/webrtc/absl/strings/cord_buffer.cc
+        voip/webrtc/absl/strings/internal/cord_rep_crc.cc
         voip/webrtc/absl/strings/internal/charconv_bigint.cc
+        voip/webrtc/absl/strings/internal/cord_rep_btree_reader.cc
+        voip/webrtc/absl/strings/internal/cordz_info.cc
+        voip/webrtc/absl/strings/internal/stringify_sink.cc
+        voip/webrtc/absl/strings/internal/cord_internal.cc
+        voip/webrtc/absl/strings/internal/cordz_sample_token.cc
+        voip/webrtc/absl/strings/internal/cord_rep_consume.cc
         voip/webrtc/absl/strings/internal/charconv_parse.cc
-        voip/webrtc/absl/strings/internal/escaping.cc
+        voip/webrtc/absl/strings/internal/str_format/arg.cc
+        voip/webrtc/absl/strings/internal/str_format/float_conversion.cc
+        voip/webrtc/absl/strings/internal/str_format/output.cc
+        voip/webrtc/absl/strings/internal/str_format/bind.cc
+        voip/webrtc/absl/strings/internal/str_format/parser.cc
+        voip/webrtc/absl/strings/internal/str_format/extension.cc
+        voip/webrtc/absl/strings/internal/cordz_handle.cc
         voip/webrtc/absl/strings/internal/memutil.cc
         voip/webrtc/absl/strings/internal/ostringstream.cc
         voip/webrtc/absl/strings/internal/pow10_helper.cc
-        voip/webrtc/absl/strings/internal/str_format/arg.cc
-        voip/webrtc/absl/strings/internal/str_format/bind.cc
-        voip/webrtc/absl/strings/internal/str_format/extension.cc
-        voip/webrtc/absl/strings/internal/str_format/float_conversion.cc
-        voip/webrtc/absl/strings/internal/str_format/output.cc
-        voip/webrtc/absl/strings/internal/str_format/parser.cc
         voip/webrtc/absl/strings/internal/utf8.cc
-        voip/webrtc/absl/strings/match.cc
-        voip/webrtc/absl/strings/numbers.cc
-        voip/webrtc/absl/strings/str_cat.cc
-        voip/webrtc/absl/strings/str_replace.cc
-        voip/webrtc/absl/strings/str_split.cc
+        voip/webrtc/absl/strings/internal/damerau_levenshtein_distance.cc
+        voip/webrtc/absl/strings/internal/cordz_functions.cc
+        voip/webrtc/absl/strings/internal/cord_rep_btree_navigator.cc
+        voip/webrtc/absl/strings/internal/escaping.cc
+        voip/webrtc/absl/strings/internal/cord_rep_btree.cc
         voip/webrtc/absl/strings/string_view.cc
+        voip/webrtc/absl/strings/str_cat.cc
+        voip/webrtc/absl/strings/cord.cc
+        voip/webrtc/absl/strings/ascii.cc
+        voip/webrtc/absl/strings/numbers.cc
+        voip/webrtc/absl/strings/charconv.cc
+        voip/webrtc/absl/strings/str_split.cc
         voip/webrtc/absl/strings/substitute.cc
-        voip/webrtc/absl/synchronization/barrier.cc
-        voip/webrtc/absl/synchronization/blocking_counter.cc
-        voip/webrtc/absl/synchronization/internal/create_thread_identity.cc
-        voip/webrtc/absl/synchronization/internal/graphcycles.cc
-        voip/webrtc/absl/synchronization/internal/per_thread_sem.cc
-        voip/webrtc/absl/synchronization/internal/waiter.cc
-        voip/webrtc/absl/synchronization/mutex.cc
-        voip/webrtc/absl/synchronization/notification.cc
-        voip/webrtc/absl/time/civil_time.cc
-        voip/webrtc/absl/time/clock.cc
-        voip/webrtc/absl/time/duration.cc
-        voip/webrtc/absl/time/format.cc
-        voip/webrtc/absl/time/internal/cctz/src/civil_time_detail.cc
-        voip/webrtc/absl/time/internal/cctz/src/time_zone_fixed.cc
-        voip/webrtc/absl/time/internal/cctz/src/time_zone_format.cc
-        voip/webrtc/absl/time/internal/cctz/src/time_zone_if.cc
-        voip/webrtc/absl/time/internal/cctz/src/time_zone_impl.cc
-        voip/webrtc/absl/time/internal/cctz/src/time_zone_info.cc
-        voip/webrtc/absl/time/internal/cctz/src/time_zone_libc.cc
-        voip/webrtc/absl/time/internal/cctz/src/time_zone_lookup.cc
-        voip/webrtc/absl/time/internal/cctz/src/time_zone_posix.cc
-        voip/webrtc/absl/time/internal/cctz/src/zone_info_source.cc
-        voip/webrtc/absl/time/internal/test_util.cc
-        voip/webrtc/absl/time/time.cc
+        voip/webrtc/absl/strings/escaping.cc
+        voip/webrtc/absl/strings/str_replace.cc
         voip/webrtc/absl/types/bad_any_cast.cc
         voip/webrtc/absl/types/bad_optional_access.cc
-        voip/webrtc/absl/types/bad_variant_access.cc)
+        voip/webrtc/absl/types/bad_variant_access.cc
+        voip/webrtc/absl/flags/parse.cc
+        voip/webrtc/absl/flags/flag_test_defs.cc
+        voip/webrtc/absl/flags/usage.cc
+        voip/webrtc/absl/flags/internal/private_handle_accessor.cc
+        voip/webrtc/absl/flags/internal/usage.cc
+        voip/webrtc/absl/flags/internal/program_name.cc
+        voip/webrtc/absl/flags/internal/flag.cc
+        voip/webrtc/absl/flags/internal/commandlineflag.cc
+        voip/webrtc/absl/flags/reflection.cc
+        voip/webrtc/absl/flags/usage_config.cc
+        voip/webrtc/absl/flags/marshalling.cc
+        voip/webrtc/absl/flags/commandlineflag.cc
+        voip/webrtc/absl/synchronization/blocking_counter.cc
+        voip/webrtc/absl/synchronization/mutex.cc
+        voip/webrtc/absl/synchronization/internal/per_thread_sem.cc
+        voip/webrtc/absl/synchronization/internal/kernel_timeout.cc
+        voip/webrtc/absl/synchronization/internal/pthread_waiter.cc
+        voip/webrtc/absl/synchronization/internal/stdcpp_waiter.cc
+        voip/webrtc/absl/synchronization/internal/waiter_base.cc
+        voip/webrtc/absl/synchronization/internal/create_thread_identity.cc
+        voip/webrtc/absl/synchronization/internal/futex_waiter.cc
+        voip/webrtc/absl/synchronization/internal/win32_waiter.cc
+        voip/webrtc/absl/synchronization/internal/sem_waiter.cc
+        voip/webrtc/absl/synchronization/internal/graphcycles.cc
+        voip/webrtc/absl/synchronization/barrier.cc
+        voip/webrtc/absl/synchronization/notification.cc
+        voip/webrtc/absl/hash/internal/low_level_hash.cc
+        voip/webrtc/absl/hash/internal/hash.cc
+        voip/webrtc/absl/hash/internal/print_hash_of.cc
+        voip/webrtc/absl/hash/internal/city.cc
+        voip/webrtc/absl/debugging/symbolize.cc
+        voip/webrtc/absl/debugging/failure_signal_handler.cc
+        voip/webrtc/absl/debugging/internal/examine_stack.cc
+        voip/webrtc/absl/debugging/internal/vdso_support.cc
+        voip/webrtc/absl/debugging/internal/utf8_for_code_point.cc
+        voip/webrtc/absl/debugging/internal/stack_consumption.cc
+        voip/webrtc/absl/debugging/internal/decode_rust_punycode.cc
+        voip/webrtc/absl/debugging/internal/demangle_rust.cc
+        voip/webrtc/absl/debugging/internal/address_is_readable.cc
+        voip/webrtc/absl/debugging/internal/elf_mem_image.cc
+        voip/webrtc/absl/debugging/internal/demangle.cc
+        voip/webrtc/absl/debugging/leak_check.cc
+        voip/webrtc/absl/debugging/stacktrace.cc
+        voip/webrtc/absl/crc/internal/crc_x86_arm_combined.cc
+        voip/webrtc/absl/crc/internal/crc_cord_state.cc
+        voip/webrtc/absl/crc/internal/crc_memcpy_fallback.cc
+        voip/webrtc/absl/crc/internal/crc_memcpy_x86_arm_combined.cc
+        voip/webrtc/absl/crc/internal/cpu_detect.cc
+        voip/webrtc/absl/crc/internal/crc.cc
+        voip/webrtc/absl/crc/internal/crc_non_temporal_memcpy.cc
+        voip/webrtc/absl/crc/crc32c.cc
+        voip/webrtc/absl/status/status_payload_printer.cc
+        voip/webrtc/absl/status/status.cc
+        voip/webrtc/absl/status/statusor.cc
+        voip/webrtc/absl/time/internal/test_util.cc
+        voip/webrtc/absl/time/internal/cctz/src/time_zone_format.cc
+        voip/webrtc/absl/time/internal/cctz/src/time_zone_impl.cc
+        voip/webrtc/absl/time/internal/cctz/src/time_zone_lookup.cc
+        voip/webrtc/absl/time/internal/cctz/src/time_zone_info.cc
+        voip/webrtc/absl/time/internal/cctz/src/time_zone_if.cc
+        voip/webrtc/absl/time/internal/cctz/src/time_zone_fixed.cc
+        voip/webrtc/absl/time/internal/cctz/src/zone_info_source.cc
+        voip/webrtc/absl/time/internal/cctz/src/time_zone_libc.cc
+        voip/webrtc/absl/time/internal/cctz/src/civil_time_detail.cc
+        voip/webrtc/absl/time/internal/cctz/src/time_zone_posix.cc
+        voip/webrtc/absl/time/clock.cc
+        voip/webrtc/absl/time/duration.cc
+        voip/webrtc/absl/time/civil_time.cc
+        voip/webrtc/absl/time/format.cc
+        voip/webrtc/absl/time/time.cc
+        voip/webrtc/absl/container/internal/raw_hash_set.cc
+        voip/webrtc/absl/container/internal/hash_generator_testing.cc
+        voip/webrtc/absl/container/internal/hashtablez_sampler_force_weak_definition.cc
+        voip/webrtc/absl/container/internal/hashtablez_sampler.cc
+        voip/webrtc/absl/numeric/int128.cc
+        voip/webrtc/absl/profiling/internal/periodic_sampler.cc
+        voip/webrtc/absl/profiling/internal/exponential_biased.cc
+        voip/webrtc/absl/log/die_if_null.cc
+        voip/webrtc/absl/log/internal/nullguard.cc
+        voip/webrtc/absl/log/internal/proto.cc
+        voip/webrtc/absl/log/internal/log_message.cc
+        voip/webrtc/absl/log/internal/conditions.cc
+        voip/webrtc/absl/log/internal/globals.cc
+        voip/webrtc/absl/log/internal/fnmatch.cc
+        voip/webrtc/absl/log/internal/structured_proto.cc
+        voip/webrtc/absl/log/internal/check_op.cc
+        voip/webrtc/absl/log/internal/log_format.cc
+        voip/webrtc/absl/log/internal/log_sink_set.cc
+        voip/webrtc/absl/log/internal/vlog_config.cc
+        voip/webrtc/absl/log/globals.cc
+        voip/webrtc/absl/log/flags.cc
+        voip/webrtc/absl/log/log_entry.cc
+        voip/webrtc/absl/log/log_sink.cc
+        voip/webrtc/absl/log/initialize.cc
+        voip/webrtc/absl/random/gaussian_distribution.cc
+        voip/webrtc/absl/random/discrete_distribution.cc
+        voip/webrtc/absl/random/seed_gen_exception.cc
+        voip/webrtc/absl/random/internal/gaussian_distribution_gentables.cc
+        voip/webrtc/absl/random/internal/seed_material.cc
+        voip/webrtc/absl/random/internal/distribution_test_util.cc
+        voip/webrtc/absl/random/internal/randen_slow.cc
+        voip/webrtc/absl/random/internal/chi_square.cc
+        voip/webrtc/absl/random/internal/randen.cc
+        voip/webrtc/absl/random/internal/randen_detect.cc
+        voip/webrtc/absl/random/internal/randen_round_keys.cc
+        voip/webrtc/absl/random/internal/randen_hwaes.cc
+        voip/webrtc/absl/random/internal/pool_urbg.cc
+        voip/webrtc/absl/random/seed_sequences.cc
+        voip/webrtc/absl/base/internal/spinlock_wait.cc
+        voip/webrtc/absl/base/internal/cycleclock.cc
+        voip/webrtc/absl/base/internal/spinlock.cc
+        voip/webrtc/absl/base/internal/unscaledcycleclock.cc
+        voip/webrtc/absl/base/internal/scoped_set_env.cc
+        voip/webrtc/absl/base/internal/sysinfo.cc
+        voip/webrtc/absl/base/internal/raw_logging.cc
+        voip/webrtc/absl/base/internal/throw_delegate.cc
+        voip/webrtc/absl/base/internal/strerror.cc
+        voip/webrtc/absl/base/internal/poison.cc
+        voip/webrtc/absl/base/internal/thread_identity.cc
+        voip/webrtc/absl/base/internal/tracing.cc
+        voip/webrtc/absl/base/internal/low_level_alloc.cc
+        voip/webrtc/absl/base/log_severity.cc
+)
 target_compile_options(tgcalls_tp PUBLIC
         -finline-functions -ffast-math -Os )
 set_target_properties(tgcalls_tp PROPERTIES
         ANDROID_ARM_MODE arm)
 target_compile_definitions(tgcalls_tp PUBLIC
-        RTC_DISABLE_TRACE_EVENTS WEBRTC_OPUS_SUPPORT_120MS_PTIME=1 BWE_TEST_LOGGING_COMPILE_TIME_ENABLE=0 ABSL_ALLOCATOR_NOTHROW=1 HAVE_PTHREAD RTC_ENABLE_VP9 WEBRTC_POSIX WEBRTC_LINUX WEBRTC_ANDROID WEBRTC_USE_H264 NDEBUG WEBRTC_HAVE_USRSCTP WEBRTC_HAVE_SCTP WEBRTC_APM_DEBUG_DUMP=0 WEBRTC_USE_BUILTIN_ISAC_FLOAT WEBRTC_OPUS_VARIABLE_COMPLEXITY=0 HAVE_NETINET_IN_H WEBRTC_INCLUDE_INTERNAL_AUDIO_DEVICE __Userspace__ SCTP_SIMPLE_ALLOCATOR SCTP_PROCESS_LEVEL_LOCKS __Userspace_os_Linux HAVE_WEBRTC_VIDEO __ANDROID__)
+        WEBRTC_HAVE_DCSCTP RTC_DISABLE_TRACE_EVENTS WEBRTC_OPUS_SUPPORT_120MS_PTIME=1 BWE_TEST_LOGGING_COMPILE_TIME_ENABLE=0 ABSL_ALLOCATOR_NOTHROW=1 HAVE_PTHREAD RTC_ENABLE_VP9 RTC_ENABLE_H265 WEBRTC_POSIX WEBRTC_LINUX WEBRTC_ANDROID WEBRTC_USE_H264 NDEBUG WEBRTC_HAVE_USRSCTP WEBRTC_HAVE_SCTP WEBRTC_APM_DEBUG_DUMP=0 WEBRTC_USE_BUILTIN_ISAC_FLOAT WEBRTC_OPUS_VARIABLE_COMPLEXITY=0 HAVE_NETINET_IN_H WEBRTC_INCLUDE_INTERNAL_AUDIO_DEVICE __Userspace__ SCTP_SIMPLE_ALLOCATOR SCTP_PROCESS_LEVEL_LOCKS __Userspace_os_Linux HAVE_WEBRTC_VIDEO __ANDROID__ TGVOIP_NO_DSP)
 target_include_directories(tgcalls_tp PUBLIC
         ./
         voip
@@ -617,653 +480,412 @@ target_include_directories(tgcalls_tp PUBLIC
         third_party/libsrtp/include
         third_party/libsrtp/config
         third_party/libsrtp/crypto/include
-        third_party/libvpx/source/libvpx
-        third_party/libvpx/source/config
-        third_party)
-
-if (${ANDROID_ABI} STREQUAL "armeabi-v7a")
-    target_sources(tgcalls_tp PRIVATE
-            third_party/libvpx/source/libvpx/vpx_dsp/arm/idct_neon.asm.S
-            third_party/libvpx/source/libvpx/vpx_dsp/arm/idct4x4_1_add_neon.asm.S
-            third_party/libvpx/source/libvpx/vpx_dsp/arm/idct4x4_add_neon.asm.S
-            third_party/libvpx/source/libvpx/vpx_dsp/arm/intrapred_neon_asm.asm.S
-            third_party/libvpx/source/libvpx/vpx_dsp/arm/loopfilter_4_neon.asm.S
-            third_party/libvpx/source/libvpx/vpx_dsp/arm/loopfilter_8_neon.asm.S
-            third_party/libvpx/source/libvpx/vpx_dsp/arm/loopfilter_16_neon.asm.S
-            third_party/libvpx/source/libvpx/vpx_dsp/arm/save_reg_neon.asm.S
-            third_party/libvpx/source/libvpx/vpx_dsp/arm/vpx_convolve_avg_neon_asm.asm.S
-            third_party/libvpx/source/libvpx/vpx_dsp/arm/vpx_convolve_copy_neon_asm.asm.S
-            third_party/libvpx/source/libvpx/vpx_dsp/arm/vpx_convolve8_avg_horiz_filter_type1_neon.asm.S
-            third_party/libvpx/source/libvpx/vpx_dsp/arm/vpx_convolve8_avg_horiz_filter_type2_neon.asm.S
-            third_party/libvpx/source/libvpx/vpx_dsp/arm/vpx_convolve8_avg_vert_filter_type1_neon.asm.S
-            third_party/libvpx/source/libvpx/vpx_dsp/arm/vpx_convolve8_avg_vert_filter_type2_neon.asm.S
-            third_party/libvpx/source/libvpx/vpx_dsp/arm/vpx_convolve8_horiz_filter_type1_neon.asm.S
-            third_party/libvpx/source/libvpx/vpx_dsp/arm/vpx_convolve8_horiz_filter_type2_neon.asm.S
-            third_party/libvpx/source/libvpx/vpx_dsp/arm/vpx_convolve8_vert_filter_type1_neon.asm.S
-            third_party/libvpx/source/libvpx/vpx_dsp/arm/vpx_convolve8_vert_filter_type2_neon.asm.S)
-    target_compile_definitions(tgcalls_tp PUBLIC
-            WEBRTC_ARCH_ARM WEBRTC_ARCH_ARM_V7 WEBRTC_HAS_NEON)
-    target_include_directories(tgcalls_tp PUBLIC
-            third_party/libvpx/source/config/linux/arm-neon-cpu-detect)
-elseif(${ANDROID_ABI} STREQUAL "arm64-v8a")
-    target_compile_definitions(tgcalls_tp PUBLIC
-            WEBRTC_ARCH_ARM64 WEBRTC_HAS_NEON)
-    target_include_directories(tgcalls_tp PUBLIC
-            third_party/libvpx/source/config/linux/arm64-highbd)
-elseif(${ANDROID_ABI} STREQUAL "x86")
-    target_sources(tgcalls_tp PRIVATE
-            third_party/libvpx/source/libvpx/vpx_ports/emms_mmx.c)
-    target_compile_definitions(tgcalls_tp PUBLIC
-            HAVE_SSE2)
-    target_include_directories(tgcalls_tp PUBLIC
-            third_party/libvpx/source/config/linux/ia32)
-elseif(${ANDROID_ABI} STREQUAL "x86_64")
-    target_compile_definitions(tgcalls_tp PUBLIC
-            HAVE_SSE2)
-    target_include_directories(tgcalls_tp PUBLIC
-            third_party/libvpx/source/config/linux/x64)
-endif()
-
-if (${ANDROID_ABI} STREQUAL "armeabi-v7a" OR ${ANDROID_ABI} STREQUAL "arm64-v8a")
-    target_sources(tgcalls_tp PRIVATE
-            third_party/libvpx/source/libvpx/vp8/common/arm/loopfilter_arm.c
-            third_party/libvpx/source/libvpx/vp8/common/arm/neon/bilinearpredict_neon.c
-            third_party/libvpx/source/libvpx/vp8/common/arm/neon/copymem_neon.c
-            third_party/libvpx/source/libvpx/vp8/common/arm/neon/dc_only_idct_add_neon.c
-            third_party/libvpx/source/libvpx/vp8/common/arm/neon/dequant_idct_neon.c
-            third_party/libvpx/source/libvpx/vp8/common/arm/neon/dequantizeb_neon.c
-            third_party/libvpx/source/libvpx/vp8/common/arm/neon/idct_blk_neon.c
-            third_party/libvpx/source/libvpx/vp8/common/arm/neon/iwalsh_neon.c
-            third_party/libvpx/source/libvpx/vp8/common/arm/neon/loopfiltersimplehorizontaledge_neon.c
-            third_party/libvpx/source/libvpx/vp8/common/arm/neon/loopfiltersimpleverticaledge_neon.c
-            third_party/libvpx/source/libvpx/vp8/common/arm/neon/mbloopfilter_neon.c
-            third_party/libvpx/source/libvpx/vp8/common/arm/neon/shortidct4x4llm_neon.c
-            third_party/libvpx/source/libvpx/vp8/common/arm/neon/sixtappredict_neon.c
-            third_party/libvpx/source/libvpx/vp8/common/arm/neon/vp8_loopfilter_neon.c
-            third_party/libvpx/source/libvpx/vp8/encoder/arm/neon/denoising_neon.c
-            third_party/libvpx/source/libvpx/vp8/encoder/arm/neon/fastquantizeb_neon.c
-            third_party/libvpx/source/libvpx/vp8/encoder/arm/neon/shortfdct_neon.c
-            third_party/libvpx/source/libvpx/vp8/encoder/arm/neon/vp8_shortwalsh4x4_neon.c
-            third_party/libvpx/source/libvpx/vp9/common/arm/neon/vp9_highbd_iht16x16_add_neon.c
-            third_party/libvpx/source/libvpx/vp9/common/arm/neon/vp9_highbd_iht4x4_add_neon.c
-            third_party/libvpx/source/libvpx/vp9/common/arm/neon/vp9_highbd_iht8x8_add_neon.c
-            third_party/libvpx/source/libvpx/vp9/common/arm/neon/vp9_iht16x16_add_neon.c
-            third_party/libvpx/source/libvpx/vp9/common/arm/neon/vp9_iht4x4_add_neon.c
-            third_party/libvpx/source/libvpx/vp9/common/arm/neon/vp9_iht8x8_add_neon.c
-            third_party/libvpx/source/libvpx/vp9/encoder/arm/neon/vp9_denoiser_neon.c
-            third_party/libvpx/source/libvpx/vp9/encoder/arm/neon/vp9_error_neon.c
-            third_party/libvpx/source/libvpx/vp9/encoder/arm/neon/vp9_frame_scale_neon.c
-            third_party/libvpx/source/libvpx/vp9/encoder/arm/neon/vp9_quantize_neon.c
-            third_party/libvpx/source/libvpx/vpx_dsp/arm/avg_neon.c
-            third_party/libvpx/source/libvpx/vpx_dsp/arm/avg_pred_neon.c
-            third_party/libvpx/source/libvpx/vpx_dsp/arm/deblock_neon.c
-            third_party/libvpx/source/libvpx/vpx_dsp/arm/fdct16x16_neon.c
-            third_party/libvpx/source/libvpx/vpx_dsp/arm/fdct32x32_neon.c
-            third_party/libvpx/source/libvpx/vpx_dsp/arm/fdct_neon.c
-            third_party/libvpx/source/libvpx/vpx_dsp/arm/fdct_partial_neon.c
-            third_party/libvpx/source/libvpx/vpx_dsp/arm/fwd_txfm_neon.c
-            third_party/libvpx/source/libvpx/vpx_dsp/arm/hadamard_neon.c
-            third_party/libvpx/source/libvpx/vpx_dsp/arm/highbd_idct16x16_add_neon.c
-            third_party/libvpx/source/libvpx/vpx_dsp/arm/highbd_idct32x32_1024_add_neon.c
-            third_party/libvpx/source/libvpx/vpx_dsp/arm/highbd_idct32x32_135_add_neon.c
-            third_party/libvpx/source/libvpx/vpx_dsp/arm/highbd_idct32x32_34_add_neon.c
-            third_party/libvpx/source/libvpx/vpx_dsp/arm/highbd_idct32x32_add_neon.c
-            third_party/libvpx/source/libvpx/vpx_dsp/arm/highbd_idct4x4_add_neon.c
-            third_party/libvpx/source/libvpx/vpx_dsp/arm/highbd_idct8x8_add_neon.c
-            third_party/libvpx/source/libvpx/vpx_dsp/arm/highbd_intrapred_neon.c
-            third_party/libvpx/source/libvpx/vpx_dsp/arm/highbd_loopfilter_neon.c
-            third_party/libvpx/source/libvpx/vpx_dsp/arm/highbd_vpx_convolve8_neon.c
-            third_party/libvpx/source/libvpx/vpx_dsp/arm/highbd_vpx_convolve_avg_neon.c
-            third_party/libvpx/source/libvpx/vpx_dsp/arm/highbd_vpx_convolve_copy_neon.c
-            third_party/libvpx/source/libvpx/vpx_dsp/arm/highbd_vpx_convolve_neon.c
-            third_party/libvpx/source/libvpx/vpx_dsp/arm/idct16x16_1_add_neon.c
-            third_party/libvpx/source/libvpx/vpx_dsp/arm/idct16x16_add_neon.c
-            third_party/libvpx/source/libvpx/vpx_dsp/arm/idct32x32_135_add_neon.c
-            third_party/libvpx/source/libvpx/vpx_dsp/arm/idct32x32_1_add_neon.c
-            third_party/libvpx/source/libvpx/vpx_dsp/arm/idct32x32_34_add_neon.c
-            third_party/libvpx/source/libvpx/vpx_dsp/arm/idct32x32_add_neon.c
-            third_party/libvpx/source/libvpx/vpx_dsp/arm/idct4x4_1_add_neon.c
-            third_party/libvpx/source/libvpx/vpx_dsp/arm/idct4x4_add_neon.c
-            third_party/libvpx/source/libvpx/vpx_dsp/arm/idct8x8_1_add_neon.c
-            third_party/libvpx/source/libvpx/vpx_dsp/arm/idct8x8_add_neon.c
-            third_party/libvpx/source/libvpx/vpx_dsp/arm/intrapred_neon.c
-            third_party/libvpx/source/libvpx/vpx_dsp/arm/loopfilter_neon.c
-            third_party/libvpx/source/libvpx/vpx_dsp/arm/quantize_neon.c
-            third_party/libvpx/source/libvpx/vpx_dsp/arm/sad4d_neon.c
-            third_party/libvpx/source/libvpx/vpx_dsp/arm/sad_neon.c
-            third_party/libvpx/source/libvpx/vpx_dsp/arm/subpel_variance_neon.c
-            third_party/libvpx/source/libvpx/vpx_dsp/arm/subtract_neon.c
-            third_party/libvpx/source/libvpx/vpx_dsp/arm/sum_squares_neon.c
-            third_party/libvpx/source/libvpx/vpx_dsp/arm/variance_neon.c
-            third_party/libvpx/source/libvpx/vpx_dsp/arm/vpx_convolve8_neon.c
-            third_party/libvpx/source/libvpx/vpx_dsp/arm/vpx_convolve8_neon_asm.c
-            third_party/libvpx/source/libvpx/vpx_dsp/arm/vpx_convolve_avg_neon.c
-            third_party/libvpx/source/libvpx/vpx_dsp/arm/vpx_convolve_copy_neon.c
-            third_party/libvpx/source/libvpx/vpx_dsp/arm/vpx_convolve_neon.c
-            third_party/libvpx/source/libvpx/vpx_dsp/arm/vpx_scaled_convolve8_neon.c)
-else()
-    target_sources(tgcalls_tp PRIVATE
-            third_party/libvpx/source/libvpx/vp8/encoder/x86/denoising_sse2.c
-            third_party/libvpx/source/libvpx/vp8/encoder/x86/vp8_enc_stubs_sse2.c
-            third_party/libvpx/source/libvpx/vp8/encoder/x86/vp8_quantize_sse2.c
-            third_party/libvpx/source/libvpx/vp8/common/x86/bilinear_filter_sse2.c
-            third_party/libvpx/source/libvpx/vp8/common/x86/idct_blk_mmx.c
-            third_party/libvpx/source/libvpx/vp8/common/x86/idct_blk_sse2.c
-            third_party/libvpx/source/libvpx/vp8/common/x86/loopfilter_x86.c
-            third_party/libvpx/source/libvpx/vp8/common/x86/vp8_asm_stubs.c
-            third_party/libvpx/source/libvpx/vp9/common/x86/vp9_idct_intrin_sse2.c
-            third_party/libvpx/source/libvpx/vp9/encoder/x86/vp9_dct_intrin_sse2.c
-            third_party/libvpx/source/libvpx/vp9/encoder/x86/vp9_denoiser_sse2.c
-            third_party/libvpx/source/libvpx/vp9/encoder/x86/vp9_highbd_block_error_intrin_sse2.c
-            third_party/libvpx/source/libvpx/vp9/encoder/x86/vp9_quantize_sse2.c
-            third_party/libvpx/source/libvpx/vpx_dsp/x86/avg_intrin_sse2.c
-            third_party/libvpx/source/libvpx/vpx_dsp/x86/avg_pred_sse2.c
-            third_party/libvpx/source/libvpx/vpx_dsp/x86/fwd_txfm_sse2.c
-            third_party/libvpx/source/libvpx/vpx_dsp/x86/highbd_idct16x16_add_sse2.c
-            third_party/libvpx/source/libvpx/vpx_dsp/x86/highbd_idct32x32_add_sse2.c
-            third_party/libvpx/source/libvpx/vpx_dsp/x86/highbd_idct4x4_add_sse2.c
-            third_party/libvpx/source/libvpx/vpx_dsp/x86/highbd_idct8x8_add_sse2.c
-            third_party/libvpx/source/libvpx/vpx_dsp/x86/highbd_intrapred_intrin_sse2.c
-            third_party/libvpx/source/libvpx/vpx_dsp/x86/highbd_loopfilter_sse2.c
-            third_party/libvpx/source/libvpx/vpx_dsp/x86/highbd_quantize_intrin_sse2.c
-            third_party/libvpx/source/libvpx/vpx_dsp/x86/highbd_variance_sse2.c
-            third_party/libvpx/source/libvpx/vpx_dsp/x86/inv_txfm_sse2.c
-            third_party/libvpx/source/libvpx/vpx_dsp/x86/loopfilter_sse2.c
-            third_party/libvpx/source/libvpx/vpx_dsp/x86/post_proc_sse2.c
-            third_party/libvpx/source/libvpx/vpx_dsp/x86/quantize_sse2.c
-            third_party/libvpx/source/libvpx/vpx_dsp/x86/sum_squares_sse2.c
-            third_party/libvpx/source/libvpx/vpx_dsp/x86/variance_sse2.c
-            third_party/libvpx/source/libvpx/vpx_dsp/x86/vpx_subpixel_4t_intrin_sse2.c)
-endif()
-
-#vpxasm
-#if (${ANDROID_ABI} STREQUAL "x86" OR ${ANDROID_ABI} STREQUAL "x86_64")
-#    if(${ANDROID_ABI} STREQUAL "x86")
-#        add_library(vpxasm STATIC
-#                third_party/libvpx/source/libvpx/vpx_ports/emms_mmx.c
-#                third_party/libvpx/source/libvpx/vp8/common/x86/dequantize_mmx.asm
-#                third_party/libvpx/source/libvpx/vp8/common/x86/idctllm_mmx.asm
-#                third_party/libvpx/source/libvpx/vp8/common/x86/idctllm_sse2.asm
-#                third_party/libvpx/source/libvpx/vp8/common/x86/iwalsh_sse2.asm
-#                third_party/libvpx/source/libvpx/vp8/common/x86/loopfilter_sse2.asm
-#                third_party/libvpx/source/libvpx/vp8/common/x86/mfqe_sse2.asm
-#                third_party/libvpx/source/libvpx/vp8/common/x86/recon_mmx.asm
-#                third_party/libvpx/source/libvpx/vp8/common/x86/recon_sse2.asm
-#                third_party/libvpx/source/libvpx/vp8/common/x86/subpixel_mmx.asm
-#                third_party/libvpx/source/libvpx/vp8/common/x86/subpixel_sse2.asm
-#                third_party/libvpx/source/libvpx/vp8/common/x86/subpixel_ssse3.asm
-#                third_party/libvpx/source/libvpx/vp8/encoder/x86/block_error_sse2.asm
-#                third_party/libvpx/source/libvpx/vp8/encoder/x86/copy_sse2.asm
-#                third_party/libvpx/source/libvpx/vp8/encoder/x86/copy_sse3.asm
-#                third_party/libvpx/source/libvpx/vp8/encoder/x86/dct_sse2.asm
-#                third_party/libvpx/source/libvpx/vp8/encoder/x86/fwalsh_sse2.asm
-#                third_party/libvpx/source/libvpx/vp9/common/x86/vp9_mfqe_sse2.asm
-#                third_party/libvpx/source/libvpx/vp9/encoder/x86/vp9_dct_sse2.asm
-#                third_party/libvpx/source/libvpx/vp9/encoder/x86/vp9_error_sse2.asm
-#                third_party/libvpx/source/libvpx/vpx_dsp/x86/add_noise_sse2.asm
-#                third_party/libvpx/source/libvpx/vpx_dsp/x86/deblock_sse2.asm
-#                third_party/libvpx/source/libvpx/vpx_dsp/x86/highbd_intrapred_sse2.asm
-#                third_party/libvpx/source/libvpx/vpx_dsp/x86/highbd_sad4d_sse2.asm
-#                third_party/libvpx/source/libvpx/vpx_dsp/x86/highbd_sad_sse2.asm
-#                third_party/libvpx/source/libvpx/vpx_dsp/x86/highbd_subpel_variance_impl_sse2.asm
-#                third_party/libvpx/source/libvpx/vpx_dsp/x86/highbd_variance_impl_sse2.asm
-#                third_party/libvpx/source/libvpx/vpx_dsp/x86/intrapred_sse2.asm
-#                third_party/libvpx/source/libvpx/vpx_dsp/x86/intrapred_ssse3.asm
-#                third_party/libvpx/source/libvpx/vpx_dsp/x86/inv_wht_sse2.asm
-#                third_party/libvpx/source/libvpx/vpx_dsp/x86/sad4d_sse2.asm
-#                third_party/libvpx/source/libvpx/vpx_dsp/x86/sad_sse2.asm
-#                third_party/libvpx/source/libvpx/vpx_dsp/x86/sad_sse3.asm
-#                third_party/libvpx/source/libvpx/vpx_dsp/x86/sad_sse4.asm
-#                third_party/libvpx/source/libvpx/vpx_dsp/x86/sad_ssse3.asm
-#                third_party/libvpx/source/libvpx/vpx_dsp/x86/subpel_variance_sse2.asm
-#                third_party/libvpx/source/libvpx/vpx_dsp/x86/subtract_sse2.asm
-#                third_party/libvpx/source/libvpx/vpx_dsp/x86/vpx_convolve_copy_sse2.asm
-#                third_party/libvpx/source/libvpx/vpx_dsp/x86/vpx_high_subpixel_8t_sse2.asm
-#                third_party/libvpx/source/libvpx/vpx_dsp/x86/vpx_high_subpixel_bilinear_sse2.asm
-#                third_party/libvpx/source/libvpx/vpx_dsp/x86/vpx_subpixel_8t_sse2.asm
-#                third_party/libvpx/source/libvpx/vpx_dsp/x86/vpx_subpixel_8t_ssse3.asm
-#                third_party/libvpx/source/libvpx/vpx_dsp/x86/vpx_subpixel_bilinear_sse2.asm
-#                third_party/libvpx/source/libvpx/vpx_dsp/x86/vpx_subpixel_bilinear_ssse3.asm)
-#        target_compile_definitions(vpxasm PUBLIC
-#                HAVE_SSE2)
-#        target_include_directories(vpxasm PUBLIC
-#                third_party/libvpx/source/config/linux/ia32)
-#        set(CMAKE_ASM_NASM_COMPILER_ARG1 "${CMAKE_ASM_NASM_COMPILER_ARG1} -felf32 -m x86 -DABI_IS_32BIT=1 -D__ANDROID__")
-#    elseif(${ANDROID_ABI} STREQUAL "x86_64")
-#        add_library(vpxasm STATIC
-#                third_party/libvpx/source/libvpx/vp8/common/x86/dequantize_mmx.asm
-#                third_party/libvpx/source/libvpx/vp8/common/x86/idctllm_mmx.asm
-#                third_party/libvpx/source/libvpx/vp8/common/x86/idctllm_sse2.asm
-#                third_party/libvpx/source/libvpx/vp8/common/x86/iwalsh_sse2.asm
-#                third_party/libvpx/source/libvpx/vp8/common/x86/loopfilter_block_sse2_x86_64.asm
-#                third_party/libvpx/source/libvpx/vp8/common/x86/loopfilter_sse2.asm
-#                third_party/libvpx/source/libvpx/vp8/common/x86/mfqe_sse2.asm
-#                third_party/libvpx/source/libvpx/vp8/common/x86/recon_mmx.asm
-#                third_party/libvpx/source/libvpx/vp8/common/x86/recon_sse2.asm
-#                third_party/libvpx/source/libvpx/vp8/common/x86/subpixel_mmx.asm
-#                third_party/libvpx/source/libvpx/vp8/common/x86/subpixel_sse2.asm
-#                third_party/libvpx/source/libvpx/vp8/common/x86/subpixel_ssse3.asm
-#                third_party/libvpx/source/libvpx/vp8/encoder/x86/block_error_sse2.asm
-#                third_party/libvpx/source/libvpx/vp8/encoder/x86/copy_sse2.asm
-#                third_party/libvpx/source/libvpx/vp8/encoder/x86/copy_sse3.asm
-#                third_party/libvpx/source/libvpx/vp8/encoder/x86/dct_sse2.asm
-#                third_party/libvpx/source/libvpx/vp8/encoder/x86/fwalsh_sse2.asm
-#                third_party/libvpx/source/libvpx/vp9/common/x86/vp9_mfqe_sse2.asm
-#                third_party/libvpx/source/libvpx/vp9/encoder/x86/vp9_dct_sse2.asm
-#                third_party/libvpx/source/libvpx/vp9/encoder/x86/vp9_error_sse2.asm
-#                third_party/libvpx/source/libvpx/vp9/encoder/x86/vp9_quantize_ssse3_x86_64.asm
-#                third_party/libvpx/source/libvpx/vpx_dsp/x86/add_noise_sse2.asm
-#                third_party/libvpx/source/libvpx/vpx_dsp/x86/avg_ssse3_x86_64.asm
-#                third_party/libvpx/source/libvpx/vpx_dsp/x86/deblock_sse2.asm
-#                third_party/libvpx/source/libvpx/vpx_dsp/x86/fwd_txfm_ssse3_x86_64.asm
-#                third_party/libvpx/source/libvpx/vpx_dsp/x86/highbd_intrapred_sse2.asm
-#                third_party/libvpx/source/libvpx/vpx_dsp/x86/highbd_sad4d_sse2.asm
-#                third_party/libvpx/source/libvpx/vpx_dsp/x86/highbd_sad_sse2.asm
-#                third_party/libvpx/source/libvpx/vpx_dsp/x86/highbd_subpel_variance_impl_sse2.asm
-#                third_party/libvpx/source/libvpx/vpx_dsp/x86/highbd_variance_impl_sse2.asm
-#                third_party/libvpx/source/libvpx/vpx_dsp/x86/intrapred_sse2.asm
-#                third_party/libvpx/source/libvpx/vpx_dsp/x86/intrapred_ssse3.asm
-#                third_party/libvpx/source/libvpx/vpx_dsp/x86/inv_wht_sse2.asm
-#                third_party/libvpx/source/libvpx/vpx_dsp/x86/sad4d_sse2.asm
-#                third_party/libvpx/source/libvpx/vpx_dsp/x86/sad_sse2.asm
-#                third_party/libvpx/source/libvpx/vpx_dsp/x86/sad_sse3.asm
-#                third_party/libvpx/source/libvpx/vpx_dsp/x86/sad_sse4.asm
-#                third_party/libvpx/source/libvpx/vpx_dsp/x86/sad_ssse3.asm
-#                third_party/libvpx/source/libvpx/vpx_dsp/x86/ssim_opt_x86_64.asm
-#                third_party/libvpx/source/libvpx/vpx_dsp/x86/subpel_variance_sse2.asm
-#                third_party/libvpx/source/libvpx/vpx_dsp/x86/subtract_sse2.asm
-#                third_party/libvpx/source/libvpx/vpx_dsp/x86/vpx_convolve_copy_sse2.asm
-#                third_party/libvpx/source/libvpx/vpx_dsp/x86/vpx_high_subpixel_8t_sse2.asm
-#                third_party/libvpx/source/libvpx/vpx_dsp/x86/vpx_high_subpixel_bilinear_sse2.asm
-#                third_party/libvpx/source/libvpx/vpx_dsp/x86/vpx_subpixel_8t_sse2.asm
-#                third_party/libvpx/source/libvpx/vpx_dsp/x86/vpx_subpixel_8t_ssse3.asm
-#                third_party/libvpx/source/libvpx/vpx_dsp/x86/vpx_subpixel_bilinear_sse2.asm
-#                third_party/libvpx/source/libvpx/vpx_dsp/x86/vpx_subpixel_bilinear_ssse3.asm
-#                third_party/libvpx/source/libvpx/vpx_ports/emms_mmx.asm
-#                third_party/libvpx/source/libvpx/vpx_ports/float_control_word.asm)
-#        target_compile_definitions(vpxasm PUBLIC
-#                HAVE_SSE2)
-#        target_include_directories(vpxasm PUBLIC
-#                third_party/libvpx/source/config/linux/x64)
-#        set(CMAKE_ASM_NASM_COMPILER_ARG1 "${CMAKE_ASM_NASM_COMPILER_ARG1} -DPIC -felf64 -m amd64 -DABI_IS_32BIT=0 -D__ANDROID__")
-#    endif()
-#    target_compile_definitions(vpxasm PUBLIC
-#            __ANDROID__)
-#    target_include_directories(vpxasm PUBLIC
-#            third_party/libvpx/source/libvpx
-#            third_party/libvpx/source/config)
-#endif()
+        third_party
+        voip/webrtc/third_party/crc32c/src/include
+)
 
 #tgcalls+webrtc
 add_library(tgcalls STATIC
-        voip/tgcalls/CodecSelectHelper.cpp
         voip/tgcalls/CryptoHelper.cpp
-        voip/tgcalls/EncryptedConnection.cpp
-        voip/tgcalls/Instance.cpp
-        voip/tgcalls/InstanceImpl.cpp
         voip/tgcalls/LogSinkImpl.cpp
-        voip/tgcalls/Manager.cpp
-        voip/tgcalls/MediaManager.cpp
-        voip/tgcalls/Message.cpp
-        voip/tgcalls/NetworkManager.cpp
-        voip/tgcalls/StaticThreads.cpp
-        voip/tgcalls/ThreadLocalObject.cpp
-        voip/tgcalls/VideoCaptureInterface.cpp
-        voip/tgcalls/VideoCaptureInterfaceImpl.cpp
-        voip/tgcalls/AudioDeviceHelper.cpp
         voip/tgcalls/SctpDataChannelProviderInterfaceImpl.cpp
-        voip/tgcalls/TurnCustomizerImpl.cpp
-        voip/tgcalls/reference/InstanceImplReference.cpp
-        voip/tgcalls/legacy/InstanceImplLegacy.cpp
+        voip/tgcalls/CodecSelectHelper.cpp
+        voip/tgcalls/Message.cpp
+        voip/tgcalls/InstanceImpl.cpp
         voip/tgcalls/group/GroupNetworkManager.cpp
-        voip/tgcalls/group/GroupInstanceCustomImpl.cpp
         voip/tgcalls/group/GroupJoinPayloadInternal.cpp
+        voip/tgcalls/group/GroupInstanceCustomImpl.cpp
         voip/tgcalls/group/AudioStreamingPart.cpp
-        voip/tgcalls/group/VideoStreamingPart.cpp
+        voip/tgcalls/group/AudioStreamingPartInternal.cpp
+        voip/tgcalls/group/AVIOContextImpl.cpp
         voip/tgcalls/group/StreamingMediaContext.cpp
+        voip/tgcalls/group/AudioStreamingPartPersistentDecoder.cpp
+        voip/tgcalls/group/VideoStreamingPart.cpp
+        voip/tgcalls/ChannelManager.cpp
+        voip/tgcalls/StaticThreads.cpp
+        voip/tgcalls/VideoCaptureInterfaceImpl.cpp
+        voip/tgcalls/legacy/InstanceImplLegacy.cpp
+        voip/tgcalls/utils/gzip.cpp
+        voip/tgcalls/Manager.cpp
+        voip/tgcalls/TurnCustomizerImpl.cpp
+        voip/tgcalls/v2/ExternalSignalingConnection.cpp
+        voip/tgcalls/v2/DirectNetworkingImpl.cpp
+        voip/tgcalls/v2/SignalingKcpConnection.cpp
+        voip/tgcalls/v2/ReflectorRelayPortFactory.cpp
+        voip/tgcalls/v2/SignalingConnection.cpp
+        voip/tgcalls/v2/ContentNegotiation.cpp
+        voip/tgcalls/v2/SignalingEncryption.cpp
+        voip/tgcalls/v2/SignalingSctpConnection.cpp
+        voip/tgcalls/v2/ReflectorPort.cpp
+        voip/tgcalls/v2/NativeNetworkingImpl.cpp
+        voip/tgcalls/v2/RawTcpSocket.cpp
+        voip/tgcalls/v2/InstanceV2ReferenceImpl.cpp
+        voip/tgcalls/v2/ikcp.cpp
+        voip/tgcalls/v2/InstanceV2Impl.cpp
+        voip/tgcalls/v2/Signaling.cpp
+        voip/tgcalls/ThreadLocalObject.cpp
+        voip/tgcalls/NetworkManager.cpp
+        voip/tgcalls/FakeVideoTrackSource.cpp
+        voip/tgcalls/AudioDeviceHelper.cpp
+        voip/tgcalls/EncryptedConnection.cpp
+        voip/tgcalls/FieldTrialsConfig.cpp
+        voip/tgcalls/MediaManager.cpp
+        voip/tgcalls/FakeAudioDeviceModule.cpp
         voip/tgcalls/third-party/json11.cpp
-
-        voip/webrtc/rtc_base/async_invoker.cc
-        voip/webrtc/rtc_base/system_time.cc
-        voip/webrtc/rtc_base/async_resolver.cc
-        voip/webrtc/rtc_base/async_packet_socket.cc
-        voip/webrtc/rtc_base/async_resolver_interface.cc
-        voip/webrtc/rtc_base/async_socket.cc
-        voip/webrtc/rtc_base/async_tcp_socket.cc
-        voip/webrtc/rtc_base/async_udp_socket.cc
+        voip/tgcalls/v2_4_0_0/Signaling_4_0_0.cpp
+        voip/tgcalls/VideoCaptureInterface.cpp
+        voip/tgcalls/Instance.cpp
         voip/webrtc/rtc_base/bit_buffer.cc
-        voip/webrtc/rtc_base/buffer_queue.cc
-        voip/webrtc/rtc_base/byte_buffer.cc
-        voip/webrtc/rtc_base/checks.cc
-        voip/webrtc/rtc_base/copy_on_write_buffer.cc
-        voip/webrtc/rtc_base/crc32.cc
-        voip/webrtc/rtc_base/crypt_string.cc
-        voip/webrtc/rtc_base/data_rate_limiter.cc
-        voip/webrtc/rtc_base/event.cc
-        voip/webrtc/rtc_base/event_tracer.cc
-        voip/webrtc/rtc_base/boringssl_certificate.cc
-        voip/webrtc/rtc_base/boringssl_identity.cc
-        voip/webrtc/rtc_base/experiments/alr_experiment.cc
-        voip/webrtc/rtc_base/experiments/balanced_degradation_settings.cc
-        voip/webrtc/rtc_base/experiments/cpu_speed_experiment.cc
-        voip/webrtc/rtc_base/experiments/encoder_info_settings.cc
-        voip/webrtc/rtc_base/experiments/field_trial_list.cc
-        voip/webrtc/rtc_base/experiments/field_trial_parser.cc
-        voip/webrtc/rtc_base/experiments/field_trial_units.cc
-        voip/webrtc/rtc_base/experiments/jitter_upper_bound_experiment.cc
-        voip/webrtc/rtc_base/experiments/keyframe_interval_settings.cc
-        voip/webrtc/rtc_base/experiments/min_video_bitrate_experiment.cc
-        voip/webrtc/rtc_base/experiments/normalize_simulcast_size_experiment.cc
-        voip/webrtc/rtc_base/experiments/quality_rampup_experiment.cc
-        voip/webrtc/rtc_base/experiments/quality_scaler_settings.cc
-        voip/webrtc/rtc_base/experiments/quality_scaling_experiment.cc
-        voip/webrtc/rtc_base/experiments/rate_control_settings.cc
-        voip/webrtc/rtc_base/experiments/rtt_mult_experiment.cc
-        voip/webrtc/rtc_base/experiments/stable_target_rate_experiment.cc
-        voip/webrtc/rtc_base/experiments/struct_parameters_parser.cc
-        voip/webrtc/rtc_base/file_rotating_stream.cc
-        voip/webrtc/rtc_base/helpers.cc
-        voip/webrtc/rtc_base/http_common.cc
-        voip/webrtc/rtc_base/ifaddrs_android.cc
+        voip/webrtc/rtc_base/ssl_identity.cc
+        voip/webrtc/rtc_base/nat_socket_factory.cc
+        voip/webrtc/rtc_base/socket.cc
+        voip/webrtc/rtc_base/bitrate_tracker.cc
+        voip/webrtc/rtc_base/virtual_socket_server.cc
         voip/webrtc/rtc_base/ifaddrs_converter.cc
+        voip/webrtc/rtc_base/race_checker.cc
+#        voip/webrtc/rtc_base/strings/json.cc
+        voip/webrtc/rtc_base/strings/string_format.cc
+        voip/webrtc/rtc_base/strings/string_builder.cc
+        voip/webrtc/rtc_base/strings/audio_format_to_string.cc
         voip/webrtc/rtc_base/ip_address.cc
-        voip/webrtc/rtc_base/location.cc
-        voip/webrtc/rtc_base/log_sinks.cc
-        voip/webrtc/rtc_base/logging.cc
+        voip/webrtc/rtc_base/data_rate_limiter.cc
+        voip/webrtc/rtc_base/http_common.cc
+        voip/webrtc/rtc_base/task_queue_libevent.cc
+        voip/webrtc/rtc_base/net_helpers.cc
         voip/webrtc/rtc_base/memory/aligned_malloc.cc
         voip/webrtc/rtc_base/memory/fifo_buffer.cc
-        voip/webrtc/rtc_base/message_digest.cc
-        voip/webrtc/rtc_base/message_handler.cc
-        voip/webrtc/rtc_base/net_helper.cc
-        voip/webrtc/rtc_base/net_helpers.cc
-        voip/webrtc/rtc_base/network.cc
-        voip/webrtc/rtc_base/network/sent_packet.cc
-        voip/webrtc/rtc_base/network_constants.cc
-        voip/webrtc/rtc_base/network_monitor_factory.cc
-        voip/webrtc/rtc_base/network_monitor.cc
-        voip/webrtc/rtc_base/network_route.cc
-        voip/webrtc/rtc_base/null_socket_server.cc
-        voip/webrtc/rtc_base/numerics/event_based_exponential_moving_average.cc
-        voip/webrtc/rtc_base/numerics/event_rate_counter.cc
-        voip/webrtc/rtc_base/numerics/exp_filter.cc
-        voip/webrtc/rtc_base/numerics/histogram_percentile_counter.cc
-        voip/webrtc/rtc_base/numerics/moving_average.cc
-        voip/webrtc/rtc_base/numerics/sample_counter.cc
-        voip/webrtc/rtc_base/numerics/sample_stats.cc
         voip/webrtc/rtc_base/openssl_adapter.cc
-        voip/webrtc/rtc_base/openssl_certificate.cc
+        voip/webrtc/rtc_base/openssl_utility.cc
+        voip/webrtc/rtc_base/network_monitor.cc
+        voip/webrtc/rtc_base/bitstream_reader.cc
+        voip/webrtc/rtc_base/synchronization/yield.cc
+        voip/webrtc/rtc_base/synchronization/yield_policy.cc
+        voip/webrtc/rtc_base/synchronization/sequence_checker_internal.cc
+        voip/webrtc/rtc_base/async_tcp_socket.cc
+        voip/webrtc/rtc_base/helpers.cc
+        voip/webrtc/rtc_base/ifaddrs_android.cc
         voip/webrtc/rtc_base/openssl_digest.cc
+        voip/webrtc/rtc_base/experiments/bandwidth_quality_scaler_settings.cc
+        voip/webrtc/rtc_base/experiments/encoder_info_settings.cc
+        voip/webrtc/rtc_base/experiments/quality_rampup_experiment.cc
+        voip/webrtc/rtc_base/experiments/field_trial_list.cc
+        voip/webrtc/rtc_base/experiments/balanced_degradation_settings.cc
+        voip/webrtc/rtc_base/experiments/quality_scaling_experiment.cc
+        voip/webrtc/rtc_base/experiments/field_trial_parser.cc
+        voip/webrtc/rtc_base/experiments/min_video_bitrate_experiment.cc
+        voip/webrtc/rtc_base/experiments/struct_parameters_parser.cc
+        voip/webrtc/rtc_base/experiments/keyframe_interval_settings.cc
+        voip/webrtc/rtc_base/experiments/alr_experiment.cc
+        voip/webrtc/rtc_base/experiments/cpu_speed_experiment.cc
+        voip/webrtc/rtc_base/experiments/normalize_simulcast_size_experiment.cc
+        voip/webrtc/rtc_base/experiments/rtt_mult_experiment.cc
+        voip/webrtc/rtc_base/experiments/field_trial_units.cc
+        voip/webrtc/rtc_base/experiments/stable_target_rate_experiment.cc
+        voip/webrtc/rtc_base/experiments/quality_scaler_settings.cc
+        voip/webrtc/rtc_base/experiments/rate_control_settings.cc
+        voip/webrtc/rtc_base/task_queue_stdlib.cc
+        voip/webrtc/rtc_base/memory_usage.cc
+        voip/webrtc/rtc_base/network/sent_packet.cc
+        voip/webrtc/rtc_base/network/received_packet.cc
+        voip/webrtc/rtc_base/operations_chain.cc
+        voip/webrtc/rtc_base/string_utils.cc
+        voip/webrtc/rtc_base/string_to_number.cc
+        voip/webrtc/rtc_base/internal/default_socket_server.cc
+        voip/webrtc/rtc_base/system_time.cc
+        voip/webrtc/rtc_base/network.cc
+        voip/webrtc/rtc_base/openssl_session_cache.cc
+        voip/webrtc/rtc_base/buffer_queue.cc
+        voip/webrtc/rtc_base/frequency_tracker.cc
+        voip/webrtc/rtc_base/string_encode.cc
+        voip/webrtc/rtc_base/network_monitor_factory.cc
+        voip/webrtc/rtc_base/socket_adapters.cc
+        voip/webrtc/rtc_base/rtc_certificate_generator.cc
         voip/webrtc/rtc_base/openssl_identity.cc
         voip/webrtc/rtc_base/openssl_key_pair.cc
-        voip/webrtc/rtc_base/openssl_session_cache.cc
-        voip/webrtc/rtc_base/openssl_stream_adapter.cc
-        voip/webrtc/rtc_base/openssl_utility.cc
-        voip/webrtc/rtc_base/operations_chain.cc
+        voip/webrtc/rtc_base/crc32.cc
+        voip/webrtc/rtc_base/checks.cc
+        voip/webrtc/rtc_base/boringssl_certificate.cc
         voip/webrtc/rtc_base/physical_socket_server.cc
-        voip/webrtc/rtc_base/platform_thread.cc
-        voip/webrtc/rtc_base/platform_thread_types.cc
-        voip/webrtc/rtc_base/proxy_info.cc
-        voip/webrtc/rtc_base/race_checker.cc
-        voip/webrtc/rtc_base/random.cc
-        voip/webrtc/rtc_base/rate_limiter.cc
-        voip/webrtc/rtc_base/rate_statistics.cc
-        voip/webrtc/rtc_base/rate_tracker.cc
-        voip/webrtc/rtc_base/rtc_certificate.cc
-        voip/webrtc/rtc_base/rtc_certificate_generator.cc
-        voip/webrtc/rtc_base/socket.cc
-        voip/webrtc/rtc_base/socket_adapters.cc
-        voip/webrtc/rtc_base/socket_address.cc
-        voip/webrtc/rtc_base/socket_address_pair.cc
-        voip/webrtc/rtc_base/ssl_adapter.cc
-        voip/webrtc/rtc_base/ssl_certificate.cc
-        voip/webrtc/rtc_base/ssl_fingerprint.cc
-        voip/webrtc/rtc_base/ssl_identity.cc
-        voip/webrtc/rtc_base/ssl_stream_adapter.cc
-        voip/webrtc/rtc_base/stream.cc
-        voip/webrtc/rtc_base/string_encode.cc
-        voip/webrtc/rtc_base/string_to_number.cc
-        voip/webrtc/rtc_base/string_utils.cc
-        voip/webrtc/rtc_base/strings/audio_format_to_string.cc
-        voip/webrtc/rtc_base/strings/string_builder.cc
-        voip/webrtc/rtc_base/strings/string_format.cc
-        voip/webrtc/rtc_base/synchronization/mutex.cc
-        voip/webrtc/rtc_base/synchronization/yield.cc
-        voip/webrtc/rtc_base/synchronization/sequence_checker_internal.cc
-        voip/webrtc/rtc_base/synchronization/yield_policy.cc
-        voip/webrtc/rtc_base/system/file_wrapper.cc
-        voip/webrtc/rtc_base/system/thread_registry.cc
+        voip/webrtc/rtc_base/numerics/exp_filter.cc
+        voip/webrtc/rtc_base/numerics/event_based_exponential_moving_average.cc
+        voip/webrtc/rtc_base/numerics/sample_stats.cc
+        voip/webrtc/rtc_base/numerics/moving_average.cc
+        voip/webrtc/rtc_base/numerics/histogram_percentile_counter.cc
+        voip/webrtc/rtc_base/numerics/sample_counter.cc
+        voip/webrtc/rtc_base/numerics/event_rate_counter.cc
         voip/webrtc/rtc_base/system/warn_current_thread_is_deadlocked.cc
-        voip/webrtc/rtc_base/task_queue.cc
-        voip/webrtc/rtc_base/task_queue_libevent.cc
-        voip/webrtc/rtc_base/task_queue_stdlib.cc
-        voip/webrtc/rtc_base/task_utils/pending_task_safety_flag.cc
-        voip/webrtc/rtc_base/task_utils/repeating_task.cc
-        voip/webrtc/rtc_base/third_party/base64/base64.cc
+        voip/webrtc/rtc_base/system/file_wrapper.cc
+        voip/webrtc/rtc_base/null_socket_server.cc
+        voip/webrtc/rtc_base/crypt_string.cc
+        voip/webrtc/rtc_base/platform_thread.cc
         voip/webrtc/rtc_base/third_party/sigslot/sigslot.cc
-        voip/webrtc/rtc_base/thread.cc
-        voip/webrtc/rtc_base/time/timestamp_extrapolator.cc
-        voip/webrtc/rtc_base/time_utils.cc
-        voip/webrtc/rtc_base/timestamp_aligner.cc
+        voip/webrtc/rtc_base/third_party/base64/base64.cc
+        voip/webrtc/rtc_base/net_helper.cc
+        voip/webrtc/rtc_base/memory_stream.cc
+        voip/webrtc/rtc_base/network_constants.cc
+        voip/webrtc/rtc_base/nat_types.cc
+        voip/webrtc/rtc_base/openssl_stream_adapter.cc
+        voip/webrtc/rtc_base/proxy_server.cc
+        voip/webrtc/rtc_base/async_packet_socket.cc
+        voip/webrtc/rtc_base/rtc_certificate.cc
+        voip/webrtc/rtc_base/server_socket_adapters.cc
+        voip/webrtc/rtc_base/boringssl_identity.cc
+        voip/webrtc/rtc_base/stream.cc
         voip/webrtc/rtc_base/unique_id_generator.cc
-        voip/webrtc/rtc_base/weak_ptr.cc
+        voip/webrtc/rtc_base/random.cc
+        voip/webrtc/rtc_base/log_sinks.cc
         voip/webrtc/rtc_base/zero_memory.cc
+        voip/webrtc/rtc_base/task_utils/repeating_task.cc
+        voip/webrtc/rtc_base/ssl_adapter.cc
+        voip/webrtc/rtc_base/rate_limiter.cc
+        voip/webrtc/rtc_base/nat_server.cc
+        voip/webrtc/rtc_base/ssl_fingerprint.cc
+        voip/webrtc/rtc_base/time_utils.cc
+#        voip/webrtc/rtc_base/test_utils.cc
+        voip/webrtc/rtc_base/weak_ptr.cc
+        voip/webrtc/rtc_base/fake_ssl_identity.cc
+        voip/webrtc/rtc_base/async_dns_resolver.cc
+        voip/webrtc/rtc_base/platform_thread_types.cc
+        voip/webrtc/rtc_base/socket_stream.cc
+        voip/webrtc/rtc_base/ssl_certificate.cc
+        voip/webrtc/rtc_base/containers/flat_tree.cc
+        voip/webrtc/rtc_base/ssl_stream_adapter.cc
+        voip/webrtc/rtc_base/event.cc
         voip/webrtc/rtc_base/callback_list.cc
+        voip/webrtc/rtc_base/event_tracer.cc
+        voip/webrtc/rtc_base/message_digest.cc
+        voip/webrtc/rtc_base/file_rotating_stream.cc
+        voip/webrtc/rtc_base/logging.cc
+        voip/webrtc/rtc_base/socket_address_pair.cc
+        voip/webrtc/rtc_base/copy_on_write_buffer.cc
+        voip/webrtc/rtc_base/socket_address.cc
+        voip/webrtc/rtc_base/firewall_socket_server.cc
+#        voip/webrtc/rtc_base/mac_ifaddrs_converter.cc
+        voip/webrtc/rtc_base/fake_clock.cc
+        voip/webrtc/rtc_base/cpu_time.cc
+        voip/webrtc/rtc_base/openssl_certificate.cc
+        voip/webrtc/rtc_base/network_route.cc
+        voip/webrtc/rtc_base/thread.cc
+        voip/webrtc/rtc_base/rate_tracker.cc
+        voip/webrtc/rtc_base/async_udp_socket.cc
+        voip/webrtc/rtc_base/task_queue.cc
+        voip/webrtc/rtc_base/rate_statistics.cc
+        voip/webrtc/rtc_base/proxy_info.cc
+        voip/webrtc/rtc_base/async_socket.cc
+        voip/webrtc/rtc_base/timestamp_aligner.cc
         voip/webrtc/rtc_base/deprecated/recursive_critical_section.cc
-        voip/webrtc/rtc_base/internal/default_socket_server.cc
-        voip/webrtc/api/audio/audio_frame.cc
-        voip/webrtc/api/audio/channel_layout.cc
-        voip/webrtc/api/audio/echo_canceller3_config.cc
-        voip/webrtc/api/audio/echo_canceller3_factory.cc
-        voip/webrtc/api/audio_codecs/L16/audio_decoder_L16.cc
-        voip/webrtc/api/audio_codecs/L16/audio_encoder_L16.cc
-        voip/webrtc/api/audio_codecs/audio_codec_pair_id.cc
-        voip/webrtc/api/audio_codecs/audio_decoder.cc
-        voip/webrtc/api/audio_codecs/audio_encoder.cc
-        voip/webrtc/api/audio_codecs/audio_format.cc
-        voip/webrtc/api/audio_codecs/builtin_audio_decoder_factory.cc
-        voip/webrtc/api/audio_codecs/builtin_audio_encoder_factory.cc
-        voip/webrtc/api/audio_codecs/g711/audio_decoder_g711.cc
-        voip/webrtc/api/audio_codecs/g711/audio_encoder_g711.cc
-        voip/webrtc/api/audio_codecs/g722/audio_decoder_g722.cc
-        voip/webrtc/api/audio_codecs/g722/audio_encoder_g722.cc
-        voip/webrtc/api/audio_codecs/ilbc/audio_decoder_ilbc.cc
-        voip/webrtc/api/audio_codecs/ilbc/audio_encoder_ilbc.cc
-        voip/webrtc/api/audio_codecs/isac/audio_decoder_isac_fix.cc
-        voip/webrtc/api/audio_codecs/isac/audio_decoder_isac_float.cc
-        voip/webrtc/api/audio_codecs/isac/audio_encoder_isac_fix.cc
-        voip/webrtc/api/audio_codecs/isac/audio_encoder_isac_float.cc
-        voip/webrtc/api/audio_codecs/opus/audio_decoder_multi_channel_opus.cc
-        voip/webrtc/api/audio_codecs/opus/audio_decoder_opus.cc
-        voip/webrtc/api/audio_codecs/opus/audio_encoder_multi_channel_opus.cc
-        voip/webrtc/api/audio_codecs/opus/audio_encoder_multi_channel_opus_config.cc
-        voip/webrtc/api/audio_codecs/opus/audio_encoder_opus.cc
-        voip/webrtc/api/audio_codecs/opus/audio_encoder_opus_config.cc
-        voip/webrtc/api/audio_codecs/opus_audio_decoder_factory.cc
-        voip/webrtc/api/audio_codecs/opus_audio_encoder_factory.cc
-        voip/webrtc/api/audio_options.cc
-        voip/webrtc/api/call/transport.cc
-        voip/webrtc/api/candidate.cc
-        voip/webrtc/api/create_peerconnection_factory.cc
+        voip/webrtc/rtc_base/byte_buffer.cc
+#        voip/webrtc/api/wrapping_async_dns_resolver.cc
         voip/webrtc/api/crypto/crypto_options.cc
-        voip/webrtc/api/data_channel_interface.cc
-        voip/webrtc/api/dtls_transport_interface.cc
-        voip/webrtc/api/ice_transport_factory.cc
+        voip/webrtc/api/video/i210_buffer.cc
+        voip/webrtc/api/video/video_adaptation_counters.cc
+        voip/webrtc/api/video/i422_buffer.cc
+        voip/webrtc/api/video/video_frame_metadata.cc
+        voip/webrtc/api/video/encoded_frame.cc
+        voip/webrtc/api/video/i410_buffer.cc
+        voip/webrtc/api/video/video_bitrate_allocation.cc
+        voip/webrtc/api/video/color_space.cc
+        voip/webrtc/api/video/builtin_video_bitrate_allocator_factory.cc
+        voip/webrtc/api/video/encoded_image.cc
+        voip/webrtc/api/video/hdr_metadata.cc
+        voip/webrtc/api/video/frame_buffer.cc
+        voip/webrtc/api/video/i420_buffer.cc
+        voip/webrtc/api/video/video_content_type.cc
+        voip/webrtc/api/video/rtp_video_frame_assembler.cc
+        voip/webrtc/api/video/video_frame.cc
+        voip/webrtc/api/video/video_bitrate_allocator.cc
+        voip/webrtc/api/video/i010_buffer.cc
+        voip/webrtc/api/video/i444_buffer.cc
+        voip/webrtc/api/video/video_timing.cc
+        voip/webrtc/api/video/video_frame_buffer.cc
+        voip/webrtc/api/video/video_source_interface.cc
+        voip/webrtc/api/video/nv12_buffer.cc
+        voip/webrtc/api/frame_transformer_factory.cc
+        voip/webrtc/api/candidate.cc
+        voip/webrtc/api/transport/bitrate_settings.cc
+        voip/webrtc/api/transport/field_trial_based_config.cc
+        voip/webrtc/api/transport/rtp/dependency_descriptor.cc
+        voip/webrtc/api/transport/stun.cc
+        voip/webrtc/api/transport/network_types.cc
+        voip/webrtc/api/transport/goog_cc_factory.cc
+        voip/webrtc/api/rtc_error.cc
         voip/webrtc/api/jsep.cc
-        voip/webrtc/api/jsep_ice_candidate.cc
-        voip/webrtc/api/media_stream_interface.cc
-        voip/webrtc/api/media_types.cc
+        voip/webrtc/api/rtp_transceiver_interface.cc
+        voip/webrtc/api/enable_media_with_defaults.cc
         voip/webrtc/api/neteq/custom_neteq_factory.cc
         voip/webrtc/api/neteq/default_neteq_controller_factory.cc
-        voip/webrtc/api/neteq/neteq.cc
         voip/webrtc/api/neteq/tick_timer.cc
-        voip/webrtc/api/peer_connection_interface.cc
-        voip/webrtc/api/proxy.cc
-        voip/webrtc/api/rtc_error.cc
+        voip/webrtc/api/neteq/neteq.cc
+        voip/webrtc/api/legacy_stats_types.cc
+        voip/webrtc/api/rtp_packet_info.cc
+        voip/webrtc/api/audio_codecs/L16/audio_decoder_L16.cc
+        voip/webrtc/api/audio_codecs/L16/audio_encoder_L16.cc
+        voip/webrtc/api/audio_codecs/g711/audio_decoder_g711.cc
+        voip/webrtc/api/audio_codecs/g711/audio_encoder_g711.cc
+        voip/webrtc/api/audio_codecs/opus_audio_encoder_factory.cc
+        voip/webrtc/api/audio_codecs/audio_encoder.cc
+        voip/webrtc/api/audio_codecs/opus/audio_encoder_multi_channel_opus_config.cc
+        voip/webrtc/api/audio_codecs/opus/audio_encoder_opus_config.cc
+        voip/webrtc/api/audio_codecs/opus/audio_encoder_opus.cc
+        voip/webrtc/api/audio_codecs/opus/audio_encoder_multi_channel_opus.cc
+        voip/webrtc/api/audio_codecs/opus/audio_decoder_opus.cc
+        voip/webrtc/api/audio_codecs/opus/audio_decoder_multi_channel_opus.cc
+        voip/webrtc/api/audio_codecs/builtin_audio_decoder_factory.cc
+        voip/webrtc/api/audio_codecs/audio_decoder.cc
+        voip/webrtc/api/audio_codecs/g722/audio_encoder_g722.cc
+        voip/webrtc/api/audio_codecs/g722/audio_decoder_g722.cc
+        voip/webrtc/api/audio_codecs/audio_format.cc
+        voip/webrtc/api/audio_codecs/builtin_audio_encoder_factory.cc
+        voip/webrtc/api/audio_codecs/audio_codec_pair_id.cc
+        voip/webrtc/api/audio_codecs/opus_audio_decoder_factory.cc
+        voip/webrtc/api/audio_codecs/ilbc/audio_encoder_ilbc.cc
+        voip/webrtc/api/audio_codecs/ilbc/audio_decoder_ilbc.cc
+        voip/webrtc/api/sctp_transport_interface.cc
+        voip/webrtc/api/audio_options.cc
+        voip/webrtc/api/rtp_receiver_interface.cc
         voip/webrtc/api/rtc_event_log/rtc_event.cc
         voip/webrtc/api/rtc_event_log/rtc_event_log.cc
         voip/webrtc/api/rtc_event_log/rtc_event_log_factory.cc
-        voip/webrtc/api/rtc_event_log_output_file.cc
-        voip/webrtc/api/rtp_headers.cc
-        voip/webrtc/api/rtp_packet_info.cc
-        voip/webrtc/api/rtp_parameters.cc
-        voip/webrtc/api/rtp_receiver_interface.cc
-        voip/webrtc/api/rtp_sender_interface.cc
-        voip/webrtc/api/rtp_transceiver_interface.cc
-        voip/webrtc/api/sctp_transport_interface.cc
-        voip/webrtc/api/stats_types.cc
+        voip/webrtc/api/create_peerconnection_factory.cc
         voip/webrtc/api/task_queue/default_task_queue_factory_libevent.cc
+        voip/webrtc/api/task_queue/pending_task_safety_flag.cc
         voip/webrtc/api/task_queue/task_queue_base.cc
-        voip/webrtc/api/transport/bitrate_settings.cc
-        voip/webrtc/api/transport/field_trial_based_config.cc
-        voip/webrtc/api/transport/goog_cc_factory.cc
-        voip/webrtc/api/transport/network_types.cc
-        voip/webrtc/api/transport/stun.cc
-        voip/webrtc/api/transport/rtp/dependency_descriptor.cc
-        voip/webrtc/api/video/video_adaptation_counters.cc
-        voip/webrtc/api/video/video_frame_metadata.cc
-        voip/webrtc/api/voip/voip_engine_factory.cc
-        voip/webrtc/api/numerics/samples_stats_counter.cc
-        voip/webrtc/call/adaptation/adaptation_constraint.cc
-        voip/webrtc/call/adaptation/broadcast_resource_listener.cc
-        voip/webrtc/call/adaptation/degradation_preference_provider.cc
-        voip/webrtc/call/adaptation/resource_adaptation_processor.cc
-        voip/webrtc/call/adaptation/video_stream_adapter.cc
-        voip/webrtc/call/adaptation/video_stream_input_state.cc
-        voip/webrtc/call/adaptation/video_stream_input_state_provider.cc
-        voip/webrtc/call/adaptation/encoder_settings.cc
-        voip/webrtc/modules/rtp_rtcp/source/rtp_rtcp_impl2.cc
-        voip/webrtc/audio/voip/audio_channel.cc
-        voip/webrtc/audio/voip/audio_ingress.cc
-        voip/webrtc/audio/voip/voip_core.cc
-        voip/webrtc/api/adaptation/resource.cc
+        voip/webrtc/api/media_types.cc
+        voip/webrtc/api/media_stream_interface.cc
+        voip/webrtc/api/units/timestamp.cc
+        voip/webrtc/api/units/time_delta.cc
         voip/webrtc/api/units/data_rate.cc
         voip/webrtc/api/units/data_size.cc
         voip/webrtc/api/units/frequency.cc
-        voip/webrtc/api/units/time_delta.cc
-        voip/webrtc/api/units/timestamp.cc
-        voip/webrtc/api/video/builtin_video_bitrate_allocator_factory.cc
-        voip/webrtc/api/video/color_space.cc
-        voip/webrtc/api/video/encoded_frame.cc
-        voip/webrtc/api/video/encoded_image.cc
-        voip/webrtc/api/video/hdr_metadata.cc
-        voip/webrtc/api/video/i010_buffer.cc
-        voip/webrtc/api/video/i420_buffer.cc
-        voip/webrtc/api/video/video_bitrate_allocation.cc
-        voip/webrtc/api/video/video_bitrate_allocator.cc
-        voip/webrtc/api/video/video_content_type.cc
-        voip/webrtc/api/video/video_frame.cc
-        voip/webrtc/api/video/video_frame_buffer.cc
-        voip/webrtc/api/video/nv12_buffer.cc
-        voip/webrtc/api/video/video_source_interface.cc
-        voip/webrtc/api/video/video_stream_decoder_create.cc
-        voip/webrtc/api/video/video_timing.cc
+        voip/webrtc/api/rtp_parameters.cc
+        voip/webrtc/api/video_codecs/h264_profile_level_id.cc
+        voip/webrtc/api/video_codecs/av1_profile.cc
+        voip/webrtc/api/video_codecs/vp8_temporal_layers.cc
+        voip/webrtc/api/video_codecs/simulcast_stream.cc
+        voip/webrtc/api/video_codecs/spatial_layer.cc
+        voip/webrtc/api/video_codecs/vp8_temporal_layers_factory.cc
+        voip/webrtc/api/video_codecs/video_decoder_factory.cc
+        voip/webrtc/api/video_codecs/h265_profile_tier_level.cc
         voip/webrtc/api/video_codecs/builtin_video_decoder_factory.cc
-        voip/webrtc/api/video_codecs/builtin_video_encoder_factory.cc
-        voip/webrtc/api/video_codecs/sdp_video_format.cc
-        voip/webrtc/api/video_codecs/video_codec.cc
-        voip/webrtc/api/video_codecs/video_decoder.cc
         voip/webrtc/api/video_codecs/video_decoder_software_fallback_wrapper.cc
-        voip/webrtc/api/video_codecs/video_encoder.cc
-        voip/webrtc/api/video_codecs/video_encoder_config.cc
+        voip/webrtc/api/video_codecs/video_decoder.cc
+        voip/webrtc/api/video_codecs/builtin_video_encoder_factory.cc
+        voip/webrtc/api/video_codecs/video_codec.cc
+        voip/webrtc/api/video_codecs/sdp_video_format.cc
+        voip/webrtc/api/video_codecs/scalability_mode.cc
+        voip/webrtc/api/video_codecs/scalability_mode_helper.cc
         voip/webrtc/api/video_codecs/video_encoder_software_fallback_wrapper.cc
         voip/webrtc/api/video_codecs/vp8_frame_config.cc
-        voip/webrtc/api/video_codecs/vp8_temporal_layers.cc
-        voip/webrtc/api/video_codecs/vp8_temporal_layers_factory.cc
-        voip/webrtc/api/video_codecs/spatial_layer.cc
-        voip/webrtc/api/video_codecs/h264_profile_level_id.cc
+        voip/webrtc/api/video_codecs/video_encoder.cc
         voip/webrtc/api/video_codecs/vp9_profile.cc
-        voip/webrtc/pc/audio_rtp_receiver.cc
-        voip/webrtc/pc/audio_track.cc
-        voip/webrtc/pc/channel.cc
-        voip/webrtc/pc/channel_manager.cc
+        voip/webrtc/api/numerics/samples_stats_counter.cc
+        voip/webrtc/api/audio/audio_frame.cc
+        voip/webrtc/api/audio/echo_detector_creator.cc
+        voip/webrtc/api/audio/echo_canceller3_config.cc
+        voip/webrtc/api/audio/channel_layout.cc
+        voip/webrtc/api/audio/echo_canceller3_factory.cc
+        voip/webrtc/api/call/transport.cc
+        voip/webrtc/api/rtp_sender_interface.cc
+        voip/webrtc/api/dtls_transport_interface.cc
+        voip/webrtc/api/field_trials_registry.cc
+        voip/webrtc/api/field_trials.cc
+        voip/webrtc/api/rtp_headers.cc
+        voip/webrtc/api/peer_connection_interface.cc
+        voip/webrtc/api/environment/environment_factory.cc
+        voip/webrtc/api/voip/voip_engine_factory.cc
+        voip/webrtc/api/adaptation/resource.cc
+        voip/webrtc/api/data_channel_interface.cc
+        voip/webrtc/api/ice_transport_factory.cc
+        voip/webrtc/api/enable_media.cc
+        voip/webrtc/api/rtc_event_log_output_file.cc
+        voip/webrtc/api/jsep_ice_candidate.cc
+        voip/webrtc/pc/connection_context.cc
+        voip/webrtc/pc/rtp_receiver.cc
+        voip/webrtc/pc/rtp_transport.cc
+        voip/webrtc/pc/rtcp_mux_filter.cc
+        voip/webrtc/pc/srtp_transport.cc
+        voip/webrtc/pc/video_track.cc
+        voip/webrtc/pc/media_protocol_names.cc
+        voip/webrtc/pc/rtp_parameters_conversion.cc
+        voip/webrtc/pc/rtp_media_utils.cc
+        voip/webrtc/pc/jsep_session_description.cc
         voip/webrtc/pc/data_channel_controller.cc
-        voip/webrtc/pc/data_channel_utils.cc
-        voip/webrtc/pc/dtls_srtp_transport.cc
+        voip/webrtc/pc/srtp_session.cc
+        voip/webrtc/pc/video_rtp_receiver.cc
+        voip/webrtc/pc/jsep_transport_controller.cc
         voip/webrtc/pc/dtls_transport.cc
         voip/webrtc/pc/dtmf_sender.cc
-        voip/webrtc/pc/external_hmac.cc
-        voip/webrtc/pc/ice_server_parsing.cc
-        voip/webrtc/pc/ice_transport.cc
-        voip/webrtc/pc/jitter_buffer_delay.cc
-        voip/webrtc/pc/jsep_ice_candidate.cc
-        voip/webrtc/pc/jsep_session_description.cc
-        voip/webrtc/pc/jsep_transport.cc
-        voip/webrtc/pc/jsep_transport_controller.cc
-        voip/webrtc/pc/local_audio_source.cc
-        voip/webrtc/pc/media_protocol_names.cc
-        voip/webrtc/pc/media_session.cc
-        voip/webrtc/pc/media_stream.cc
-        voip/webrtc/pc/media_stream_observer.cc
-        voip/webrtc/pc/peer_connection.cc
-        voip/webrtc/pc/peer_connection_factory.cc
-        voip/webrtc/pc/remote_audio_source.cc
-        voip/webrtc/pc/rtc_stats_collector.cc
-        voip/webrtc/pc/rtc_stats_traversal.cc
-        voip/webrtc/pc/rtcp_mux_filter.cc
-        voip/webrtc/pc/rtp_media_utils.cc
-        voip/webrtc/pc/rtp_parameters_conversion.cc
-        voip/webrtc/pc/rtp_receiver.cc
-        voip/webrtc/pc/rtp_sender.cc
-        voip/webrtc/pc/rtp_transceiver.cc
-        voip/webrtc/pc/rtp_transport.cc
-        voip/webrtc/pc/sctp_data_channel_transport.cc
-        voip/webrtc/pc/sctp_transport.cc
         voip/webrtc/pc/sctp_utils.cc
-        voip/webrtc/pc/sctp_data_channel.cc
-        voip/webrtc/pc/sdp_serializer.cc
-        voip/webrtc/pc/sdp_utils.cc
-        voip/webrtc/pc/session_description.cc
-        voip/webrtc/pc/simulcast_description.cc
-        voip/webrtc/pc/srtp_filter.cc
-        voip/webrtc/pc/srtp_session.cc
-        voip/webrtc/pc/srtp_transport.cc
-        voip/webrtc/pc/stats_collector.cc
+        voip/webrtc/pc/ice_transport.cc
         voip/webrtc/pc/track_media_info_map.cc
-        voip/webrtc/pc/transport_stats.cc
-        voip/webrtc/pc/video_rtp_receiver.cc
-        voip/webrtc/pc/video_rtp_track_source.cc
-        voip/webrtc/pc/video_track.cc
-        voip/webrtc/pc/video_track_source.cc
-        voip/webrtc/pc/webrtc_sdp.cc
-        voip/webrtc/pc/webrtc_session_description_factory.cc
-        voip/webrtc/pc/connection_context.cc
-        voip/webrtc/pc/peer_connection_message_handler.cc
-        voip/webrtc/pc/rtp_transmission_manager.cc
-        voip/webrtc/pc/sdp_offer_answer.cc
-        voip/webrtc/pc/transceiver_list.cc
+        voip/webrtc/pc/media_session.cc
+        voip/webrtc/pc/simulcast_sdp_serializer.cc
+        voip/webrtc/pc/media_stream.cc
+        voip/webrtc/pc/remote_audio_source.cc
         voip/webrtc/pc/usage_pattern.cc
+        voip/webrtc/pc/webrtc_session_description_factory.cc
+        voip/webrtc/pc/media_stream_observer.cc
+        voip/webrtc/pc/ice_server_parsing.cc
+        voip/webrtc/pc/sdp_offer_answer.cc
+        voip/webrtc/pc/audio_track.cc
+        voip/webrtc/pc/video_rtp_track_source.cc
+        voip/webrtc/pc/jitter_buffer_delay.cc
+        voip/webrtc/pc/channel.cc
+        voip/webrtc/pc/session_description.cc
+        voip/webrtc/pc/webrtc_sdp.cc
+        voip/webrtc/pc/sdp_utils.cc
+        voip/webrtc/pc/rtc_stats_traversal.cc
+        voip/webrtc/pc/dtls_srtp_transport.cc
+        voip/webrtc/pc/proxy.cc
+        voip/webrtc/pc/rtp_transceiver.cc
+        voip/webrtc/pc/video_track_source.cc
+        voip/webrtc/pc/peer_connection_message_handler.cc
+        voip/webrtc/pc/rtp_sender.cc
+        voip/webrtc/pc/rtc_stats_collector.cc
+        voip/webrtc/pc/jsep_transport.cc
+        voip/webrtc/pc/local_audio_source.cc
+        voip/webrtc/pc/sctp_transport.cc
+        voip/webrtc/pc/peer_connection_factory.cc
+        voip/webrtc/pc/jsep_transport_collection.cc
+        voip/webrtc/pc/transceiver_list.cc
+        voip/webrtc/pc/rtp_transmission_manager.cc
+        voip/webrtc/pc/legacy_stats_collector.cc
+#        voip/webrtc/pc/peer_connection_wrapper.cc
+        voip/webrtc/pc/sctp_data_channel.cc
+        voip/webrtc/pc/data_channel_utils.cc
+        voip/webrtc/pc/transport_stats.cc
+        voip/webrtc/pc/peer_connection.cc
+        voip/webrtc/pc/audio_rtp_receiver.cc
+        voip/webrtc/pc/jsep_ice_candidate.cc
+        voip/webrtc/pc/video_track_source_proxy.cc
+        voip/webrtc/pc/external_hmac.cc
+        voip/webrtc/pc/simulcast_description.cc
         voip/webrtc/sdk/android/src/jni/pc/add_ice_candidate_observer.cc
-        voip/webrtc/media/base/adapted_video_track_source.cc
         voip/webrtc/media/base/codec.cc
-        voip/webrtc/media/base/h264_profile_level_id.cc
-        voip/webrtc/media/base/media_channel.cc
+        voip/webrtc/media/base/sdp_video_format_utils.cc
+        voip/webrtc/media/base/media_channel_impl.cc
         voip/webrtc/media/base/media_constants.cc
+        voip/webrtc/media/base/stream_params.cc
         voip/webrtc/media/base/media_engine.cc
         voip/webrtc/media/base/rid_description.cc
-        voip/webrtc/media/base/rtp_utils.cc
-        voip/webrtc/media/base/sdp_video_format_utils.cc
-        voip/webrtc/media/base/stream_params.cc
         voip/webrtc/media/base/turn_utils.cc
+        voip/webrtc/media/base/adapted_video_track_source.cc
+        voip/webrtc/media/base/rtp_utils.cc
         voip/webrtc/media/base/video_adapter.cc
         voip/webrtc/media/base/video_broadcaster.cc
         voip/webrtc/media/base/video_common.cc
         voip/webrtc/media/base/video_source_base.cc
         voip/webrtc/media/engine/adm_helpers.cc
-        voip/webrtc/media/engine/encoder_simulcast_proxy.cc
-        voip/webrtc/media/engine/internal_decoder_factory.cc
         voip/webrtc/media/engine/internal_encoder_factory.cc
         voip/webrtc/media/engine/multiplex_codec_factory.cc
         voip/webrtc/media/engine/payload_type_mapper.cc
-        voip/webrtc/media/engine/simulcast.cc
+        voip/webrtc/media/engine/internal_decoder_factory.cc
         voip/webrtc/media/engine/simulcast_encoder_adapter.cc
-        voip/webrtc/media/engine/unhandled_packets_buffer.cc
         voip/webrtc/media/engine/webrtc_media_engine.cc
-        voip/webrtc/media/engine/webrtc_media_engine_defaults.cc
         voip/webrtc/media/engine/webrtc_video_engine.cc
         voip/webrtc/media/engine/webrtc_voice_engine.cc
         voip/webrtc/media/sctp/dcsctp_transport.cc
         voip/webrtc/media/sctp/sctp_transport_factory.cc
-        voip/webrtc/media/sctp/usrsctp_transport.cc
         voip/webrtc/system_wrappers/source/clock.cc
         voip/webrtc/system_wrappers/source/cpu_features.cc
         voip/webrtc/system_wrappers/source/cpu_info.cc
@@ -1271,27 +893,132 @@ add_library(tgcalls STATIC
         voip/webrtc/system_wrappers/source/metrics.cc
         voip/webrtc/system_wrappers/source/rtp_to_ntp_estimator.cc
         voip/webrtc/system_wrappers/source/sleep.cc
-        voip/webrtc/modules/audio_coding/acm2/acm_receiver.cc
-        voip/webrtc/modules/audio_coding/acm2/acm_remixing.cc
-        voip/webrtc/modules/audio_coding/acm2/acm_resampler.cc
-        voip/webrtc/modules/audio_coding/acm2/audio_coding_module.cc
-        voip/webrtc/modules/audio_coding/acm2/call_statistics.cc
-        voip/webrtc/modules/audio_coding/audio_network_adaptor/audio_network_adaptor_config.cc
-        voip/webrtc/modules/audio_coding/audio_network_adaptor/audio_network_adaptor_impl.cc
-        voip/webrtc/modules/audio_coding/audio_network_adaptor/bitrate_controller.cc
-        voip/webrtc/modules/audio_coding/audio_network_adaptor/channel_controller.cc
-        voip/webrtc/modules/audio_coding/audio_network_adaptor/controller.cc
-        voip/webrtc/modules/audio_coding/audio_network_adaptor/controller_manager.cc
-        voip/webrtc/modules/audio_coding/audio_network_adaptor/debug_dump_writer.cc
-        voip/webrtc/modules/audio_coding/audio_network_adaptor/dtx_controller.cc
-        voip/webrtc/modules/audio_coding/audio_network_adaptor/event_log_writer.cc
-        voip/webrtc/modules/audio_coding/audio_network_adaptor/fec_controller_plr_based.cc
-        voip/webrtc/modules/audio_coding/audio_network_adaptor/frame_length_controller.cc
-        voip/webrtc/modules/audio_coding/codecs/cng/audio_encoder_cng.cc
-        voip/webrtc/modules/audio_coding/codecs/cng/webrtc_cng.cc
+        voip/webrtc/system_wrappers/source/denormal_disabler.cc
+        voip/webrtc/modules/audio_mixer/audio_frame_manipulator.cc
+        voip/webrtc/modules/audio_mixer/sine_wave_generator.cc
+        voip/webrtc/modules/audio_mixer/default_output_rate_calculator.cc
+        voip/webrtc/modules/audio_mixer/gain_change_calculator.cc
+        voip/webrtc/modules/audio_mixer/audio_mixer_impl.cc
+        voip/webrtc/modules/audio_mixer/frame_combiner.cc
+        voip/webrtc/modules/async_audio_processing/async_audio_processing.cc
+        voip/webrtc/modules/video_coding/rtp_vp9_ref_finder.cc
+        voip/webrtc/modules/video_coding/chain_diff_calculator.cc
+        voip/webrtc/modules/video_coding/h264_sprop_parameter_sets.cc
+        voip/webrtc/modules/video_coding/rtp_frame_reference_finder.cc
+        voip/webrtc/modules/video_coding/codecs/interface/libvpx_interface.cc
+        voip/webrtc/modules/video_coding/codecs/av1/av1_svc_config.cc
+#        voip/webrtc/modules/video_coding/codecs/av1/dav1d_decoder.cc
+#        voip/webrtc/modules/video_coding/codecs/av1/libaom_av1_encoder.cc
+        voip/webrtc/modules/video_coding/codecs/vp9/vp9_frame_buffer_pool.cc
+        voip/webrtc/modules/video_coding/codecs/vp9/svc_config.cc
+        voip/webrtc/modules/video_coding/codecs/vp9/vp9.cc
+        voip/webrtc/modules/video_coding/codecs/vp9/libvpx_vp9_decoder.cc
+        voip/webrtc/modules/video_coding/codecs/vp9/libvpx_vp9_encoder.cc
+        voip/webrtc/modules/video_coding/codecs/vp8/temporal_layers_checker.cc
+        voip/webrtc/modules/video_coding/codecs/vp8/libvpx_vp8_decoder.cc
+        voip/webrtc/modules/video_coding/codecs/vp8/libvpx_vp8_encoder.cc
+        voip/webrtc/modules/video_coding/codecs/vp8/vp8_scalability.cc
+        voip/webrtc/modules/video_coding/codecs/vp8/screenshare_layers.cc
+        voip/webrtc/modules/video_coding/codecs/vp8/default_temporal_layers.cc
+        voip/webrtc/modules/video_coding/codecs/h264/h264_encoder_impl.cc
+        voip/webrtc/modules/video_coding/codecs/h264/h264.cc
+        voip/webrtc/modules/video_coding/codecs/h264/h264_decoder_impl.cc
+        voip/webrtc/modules/video_coding/codecs/h264/h264_color_space.cc
+        voip/webrtc/modules/video_coding/codecs/multiplex/multiplex_encoded_image_packer.cc
+        voip/webrtc/modules/video_coding/codecs/multiplex/multiplex_decoder_adapter.cc
+        voip/webrtc/modules/video_coding/codecs/multiplex/augmented_video_frame_buffer.cc
+        voip/webrtc/modules/video_coding/codecs/multiplex/multiplex_encoder_adapter.cc
+        voip/webrtc/modules/video_coding/packet_buffer.cc
+        voip/webrtc/modules/video_coding/video_receiver.cc
+        voip/webrtc/modules/video_coding/encoded_frame.cc
+        voip/webrtc/modules/video_coding/generic_decoder.cc
+        voip/webrtc/modules/video_coding/include/video_error_codes_utils.cc
+        voip/webrtc/modules/video_coding/include/video_codec_interface.cc
+        voip/webrtc/modules/video_coding/video_coding_impl.cc
+        voip/webrtc/modules/video_coding/h264_sps_pps_tracker.cc
+        voip/webrtc/modules/video_coding/frame_dependencies_calculator.cc
+        voip/webrtc/modules/video_coding/h265_vps_sps_pps_tracker.cc
+        voip/webrtc/modules/video_coding/timing/jitter_estimator.cc
+        voip/webrtc/modules/video_coding/timing/inter_frame_delay_variation_calculator.cc
+        voip/webrtc/modules/video_coding/timing/timing.cc
+        voip/webrtc/modules/video_coding/timing/frame_delay_variation_kalman_filter.cc
+        voip/webrtc/modules/video_coding/timing/timestamp_extrapolator.cc
+        voip/webrtc/modules/video_coding/timing/rtt_filter.cc
+        voip/webrtc/modules/video_coding/timing/decode_time_percentile_filter.cc
+        voip/webrtc/modules/video_coding/svc/svc_rate_allocator.cc
+        voip/webrtc/modules/video_coding/svc/create_scalability_structure.cc
+        voip/webrtc/modules/video_coding/svc/scalability_structure_key_svc.cc
+        voip/webrtc/modules/video_coding/svc/scalability_structure_l2t2_key_shift.cc
+        voip/webrtc/modules/video_coding/svc/scalability_mode_util.cc
+        voip/webrtc/modules/video_coding/svc/scalability_structure_simulcast.cc
+        voip/webrtc/modules/video_coding/svc/scalability_structure_full_svc.cc
+        voip/webrtc/modules/video_coding/svc/scalable_video_controller_no_layering.cc
+        voip/webrtc/modules/video_coding/loss_notification_controller.cc
+        voip/webrtc/modules/video_coding/rtp_generic_ref_finder.cc
+        voip/webrtc/modules/video_coding/fec_controller_default.cc
+        voip/webrtc/modules/video_coding/decoder_database.cc
+        voip/webrtc/modules/video_coding/histogram.cc
+        voip/webrtc/modules/video_coding/frame_helpers.cc
+        voip/webrtc/modules/video_coding/rtp_frame_id_only_ref_finder.cc
+        voip/webrtc/modules/video_coding/video_receiver2.cc
+        voip/webrtc/modules/video_coding/video_codec_initializer.cc
+        voip/webrtc/modules/video_coding/nack_requester.cc
+        voip/webrtc/modules/video_coding/rtp_seq_num_only_ref_finder.cc
+        voip/webrtc/modules/video_coding/media_opt_util.cc
+        voip/webrtc/modules/video_coding/rtp_vp8_ref_finder.cc
+        voip/webrtc/modules/video_coding/h26x_packet_buffer.cc
+        voip/webrtc/modules/video_coding/video_coding_defines.cc
+        voip/webrtc/modules/video_coding/utility/frame_dropper.cc
+        voip/webrtc/modules/video_coding/utility/simulcast_rate_allocator.cc
+        voip/webrtc/modules/video_coding/utility/vp9_uncompressed_header_parser.cc
+        voip/webrtc/modules/video_coding/utility/decoded_frames_history.cc
+        voip/webrtc/modules/video_coding/utility/bandwidth_quality_scaler.cc
+        voip/webrtc/modules/video_coding/utility/ivf_file_reader.cc
+        voip/webrtc/modules/video_coding/utility/ivf_file_writer.cc
+        voip/webrtc/modules/video_coding/utility/qp_parser.cc
+        voip/webrtc/modules/video_coding/utility/quality_scaler.cc
+        voip/webrtc/modules/video_coding/utility/vp8_header_parser.cc
+        voip/webrtc/modules/video_coding/utility/simulcast_utility.cc
+        voip/webrtc/modules/video_coding/utility/framerate_controller_deprecated.cc
+        voip/webrtc/modules/video_coding/deprecated/stream_generator.cc
+        voip/webrtc/modules/video_coding/deprecated/packet.cc
+        voip/webrtc/modules/video_coding/deprecated/session_info.cc
+        voip/webrtc/modules/video_coding/deprecated/frame_buffer.cc
+        voip/webrtc/modules/video_coding/deprecated/receiver.cc
+        voip/webrtc/modules/video_coding/deprecated/decoding_state.cc
+        voip/webrtc/modules/video_coding/deprecated/event_wrapper.cc
+        voip/webrtc/modules/video_coding/deprecated/jitter_buffer.cc
+        voip/webrtc/modules/video_capture/device_info_impl.cc
+        voip/webrtc/modules/video_capture/linux/device_info_linux.cc
+        voip/webrtc/modules/video_capture/linux/video_capture_linux.cc
+        voip/webrtc/modules/video_capture/video_capture_factory.cc
+        voip/webrtc/modules/video_capture/video_capture_factory_null.cc
+        voip/webrtc/modules/video_capture/video_capture_impl.cc
+        voip/webrtc/modules/pacing/interval_budget.cc
+        voip/webrtc/modules/pacing/packet_router.cc
+        voip/webrtc/modules/pacing/prioritized_packet_queue.cc
+        voip/webrtc/modules/pacing/bitrate_prober.cc
+        voip/webrtc/modules/pacing/task_queue_paced_sender.cc
+        voip/webrtc/modules/pacing/pacing_controller.cc
+        voip/webrtc/modules/audio_device/audio_device_buffer.cc
+        voip/webrtc/modules/audio_device/audio_device_data_observer.cc
+        voip/webrtc/modules/audio_device/audio_device_generic.cc
+        voip/webrtc/modules/audio_device/audio_device_impl.cc
+        voip/webrtc/modules/audio_device/audio_device_name.cc
+        voip/webrtc/modules/audio_device/dummy/audio_device_dummy.cc
+        voip/webrtc/modules/audio_device/dummy/file_audio_device.cc
+        voip/webrtc/modules/audio_device/dummy/file_audio_device_factory.cc
+        voip/webrtc/modules/audio_device/fine_audio_buffer.cc
+#        voip/webrtc/modules/audio_device/include/test_audio_device.cc
         voip/webrtc/modules/audio_coding/codecs/g711/g711_interface.c
         voip/webrtc/modules/audio_coding/codecs/g711/audio_decoder_pcm.cc
         voip/webrtc/modules/audio_coding/codecs/g711/audio_encoder_pcm.cc
+        voip/webrtc/modules/audio_coding/codecs/opus/audio_decoder_multi_channel_opus_impl.cc
+        voip/webrtc/modules/audio_coding/codecs/opus/audio_encoder_opus.cc
+        voip/webrtc/modules/audio_coding/codecs/opus/audio_coder_opus_common.cc
+        voip/webrtc/modules/audio_coding/codecs/opus/audio_encoder_multi_channel_opus_impl.cc
+        voip/webrtc/modules/audio_coding/codecs/opus/audio_decoder_opus.cc
+        voip/webrtc/modules/audio_coding/codecs/opus/opus_interface.cc
         voip/webrtc/modules/audio_coding/codecs/g722/audio_decoder_g722.cc
         voip/webrtc/modules/audio_coding/codecs/g722/audio_encoder_g722.cc
         voip/webrtc/modules/audio_coding/codecs/g722/g722_interface.c
@@ -1363,218 +1090,124 @@ add_library(tgcalls STATIC
         voip/webrtc/modules/audio_coding/codecs/isac/main/source/spectrum_ar_model_tables.c
         voip/webrtc/modules/audio_coding/codecs/isac/main/source/transform.c
         voip/webrtc/modules/audio_coding/codecs/isac/main/util/utility.c
+        voip/webrtc/modules/audio_coding/codecs/red/audio_encoder_copy_red.cc
+        voip/webrtc/modules/audio_coding/codecs/cng/audio_encoder_cng.cc
+        voip/webrtc/modules/audio_coding/codecs/cng/webrtc_cng.cc
         voip/webrtc/modules/audio_coding/codecs/legacy_encoded_audio_frame.cc
-        voip/webrtc/modules/audio_coding/codecs/opus/audio_coder_opus_common.cc
-        voip/webrtc/modules/audio_coding/codecs/opus/audio_decoder_multi_channel_opus_impl.cc
-        voip/webrtc/modules/audio_coding/codecs/opus/audio_decoder_opus.cc
-        voip/webrtc/modules/audio_coding/codecs/opus/audio_encoder_multi_channel_opus_impl.cc
-        voip/webrtc/modules/audio_coding/codecs/opus/audio_encoder_opus.cc
-        voip/webrtc/modules/audio_coding/codecs/opus/opus_interface.cc
         voip/webrtc/modules/audio_coding/codecs/pcm16b/audio_decoder_pcm16b.cc
         voip/webrtc/modules/audio_coding/codecs/pcm16b/audio_encoder_pcm16b.cc
         voip/webrtc/modules/audio_coding/codecs/pcm16b/pcm16b_common.cc
-        voip/webrtc/modules/audio_coding/codecs/red/audio_encoder_copy_red.cc
-        voip/webrtc/modules/audio_coding/codecs/ilbc/abs_quant.c
-        voip/webrtc/modules/audio_coding/codecs/ilbc/abs_quant_loop.c
-        voip/webrtc/modules/audio_coding/codecs/ilbc/augmented_cb_corr.c
-        voip/webrtc/modules/audio_coding/codecs/ilbc/bw_expand.c
-        voip/webrtc/modules/audio_coding/codecs/ilbc/cb_construct.c
-        voip/webrtc/modules/audio_coding/codecs/ilbc/cb_mem_energy.c
-        voip/webrtc/modules/audio_coding/codecs/ilbc/cb_mem_energy_augmentation.c
-        voip/webrtc/modules/audio_coding/codecs/ilbc/cb_mem_energy_calc.c
-        voip/webrtc/modules/audio_coding/codecs/ilbc/cb_search.c
-        voip/webrtc/modules/audio_coding/codecs/ilbc/cb_search_core.c
-        voip/webrtc/modules/audio_coding/codecs/ilbc/cb_update_best_index.c
-        voip/webrtc/modules/audio_coding/codecs/ilbc/chebyshev.c
-        voip/webrtc/modules/audio_coding/codecs/ilbc/comp_corr.c
-        voip/webrtc/modules/audio_coding/codecs/ilbc/constants.c
-        voip/webrtc/modules/audio_coding/codecs/ilbc/create_augmented_vec.c
-        voip/webrtc/modules/audio_coding/codecs/ilbc/decode.c
-        voip/webrtc/modules/audio_coding/codecs/ilbc/decode_residual.c
-        voip/webrtc/modules/audio_coding/codecs/ilbc/decoder_interpolate_lsf.c
-        voip/webrtc/modules/audio_coding/codecs/ilbc/do_plc.c
-        voip/webrtc/modules/audio_coding/codecs/ilbc/encode.c
-        voip/webrtc/modules/audio_coding/codecs/ilbc/energy_inverse.c
-        voip/webrtc/modules/audio_coding/codecs/ilbc/enh_upsample.c
-        voip/webrtc/modules/audio_coding/codecs/ilbc/enhancer.c
-        voip/webrtc/modules/audio_coding/codecs/ilbc/enhancer_interface.c
-        voip/webrtc/modules/audio_coding/codecs/ilbc/filtered_cb_vecs.c
-        voip/webrtc/modules/audio_coding/codecs/ilbc/frame_classify.c
-        voip/webrtc/modules/audio_coding/codecs/ilbc/gain_dequant.c
-        voip/webrtc/modules/audio_coding/codecs/ilbc/gain_quant.c
-        voip/webrtc/modules/audio_coding/codecs/ilbc/get_cd_vec.c
-        voip/webrtc/modules/audio_coding/codecs/ilbc/get_lsp_poly.c
-        voip/webrtc/modules/audio_coding/codecs/ilbc/get_sync_seq.c
-        voip/webrtc/modules/audio_coding/codecs/ilbc/hp_input.c
-        voip/webrtc/modules/audio_coding/codecs/ilbc/hp_output.c
-        voip/webrtc/modules/audio_coding/codecs/ilbc/ilbc.c
-        voip/webrtc/modules/audio_coding/codecs/ilbc/index_conv_dec.c
-        voip/webrtc/modules/audio_coding/codecs/ilbc/index_conv_enc.c
-        voip/webrtc/modules/audio_coding/codecs/ilbc/init_decode.c
-        voip/webrtc/modules/audio_coding/codecs/ilbc/init_encode.c
-        voip/webrtc/modules/audio_coding/codecs/ilbc/interpolate.c
-        voip/webrtc/modules/audio_coding/codecs/ilbc/interpolate_samples.c
-        voip/webrtc/modules/audio_coding/codecs/ilbc/lpc_encode.c
-        voip/webrtc/modules/audio_coding/codecs/ilbc/lsf_check.c
-        voip/webrtc/modules/audio_coding/codecs/ilbc/lsf_interpolate_to_poly_dec.c
-        voip/webrtc/modules/audio_coding/codecs/ilbc/lsf_interpolate_to_poly_enc.c
-        voip/webrtc/modules/audio_coding/codecs/ilbc/lsf_to_lsp.c
-        voip/webrtc/modules/audio_coding/codecs/ilbc/lsf_to_poly.c
-        voip/webrtc/modules/audio_coding/codecs/ilbc/lsp_to_lsf.c
-        voip/webrtc/modules/audio_coding/codecs/ilbc/my_corr.c
-        voip/webrtc/modules/audio_coding/codecs/ilbc/nearest_neighbor.c
-        voip/webrtc/modules/audio_coding/codecs/ilbc/pack_bits.c
-        voip/webrtc/modules/audio_coding/codecs/ilbc/poly_to_lsf.c
-        voip/webrtc/modules/audio_coding/codecs/ilbc/poly_to_lsp.c
-        voip/webrtc/modules/audio_coding/codecs/ilbc/refiner.c
-        voip/webrtc/modules/audio_coding/codecs/ilbc/simple_interpolate_lsf.c
-        voip/webrtc/modules/audio_coding/codecs/ilbc/simple_lpc_analysis.c
-        voip/webrtc/modules/audio_coding/codecs/ilbc/simple_lsf_dequant.c
-        voip/webrtc/modules/audio_coding/codecs/ilbc/simple_lsf_quant.c
-        voip/webrtc/modules/audio_coding/codecs/ilbc/smooth.c
-        voip/webrtc/modules/audio_coding/codecs/ilbc/smooth_out_data.c
-        voip/webrtc/modules/audio_coding/codecs/ilbc/sort_sq.c
-        voip/webrtc/modules/audio_coding/codecs/ilbc/split_vq.c
-        voip/webrtc/modules/audio_coding/codecs/ilbc/state_construct.c
-        voip/webrtc/modules/audio_coding/codecs/ilbc/state_search.c
-        voip/webrtc/modules/audio_coding/codecs/ilbc/swap_bytes.c
-        voip/webrtc/modules/audio_coding/codecs/ilbc/unpack_bits.c
-        voip/webrtc/modules/audio_coding/codecs/ilbc/vq3.c
-        voip/webrtc/modules/audio_coding/codecs/ilbc/vq4.c
-        voip/webrtc/modules/audio_coding/codecs/ilbc/window32_w32.c
-        voip/webrtc/modules/audio_coding/codecs/ilbc/xcorr_coef.c
-        voip/webrtc/modules/audio_coding/neteq/accelerate.cc
-        voip/webrtc/modules/audio_coding/neteq/audio_multi_vector.cc
-        voip/webrtc/modules/audio_coding/neteq/audio_vector.cc
-        voip/webrtc/modules/audio_coding/neteq/background_noise.cc
-        voip/webrtc/modules/audio_coding/neteq/buffer_level_filter.cc
-        voip/webrtc/modules/audio_coding/neteq/comfort_noise.cc
-        voip/webrtc/modules/audio_coding/neteq/cross_correlation.cc
+        voip/webrtc/modules/audio_coding/codecs/pcm16b/pcm16b.c
+        voip/webrtc/modules/audio_coding/codecs/ilbc/test/empty.cc
+        voip/webrtc/modules/audio_coding/codecs/ilbc/audio_encoder_ilbc.cc
+        voip/webrtc/modules/audio_coding/codecs/ilbc/audio_decoder_ilbc.cc
+        voip/webrtc/modules/audio_coding/acm2/acm_resampler.cc
+        voip/webrtc/modules/audio_coding/acm2/audio_coding_module.cc
+        voip/webrtc/modules/audio_coding/acm2/call_statistics.cc
+        voip/webrtc/modules/audio_coding/acm2/acm_receiver.cc
+        voip/webrtc/modules/audio_coding/acm2/acm_remixing.cc
+        voip/webrtc/modules/audio_coding/neteq/underrun_optimizer.cc
+#        voip/webrtc/modules/audio_coding/neteq/tools/input_audio_file.cc
+#        voip/webrtc/modules/audio_coding/neteq/tools/initial_packet_inserter_neteq_input.cc
+#        voip/webrtc/modules/audio_coding/neteq/tools/audio_sink.cc
+#        voip/webrtc/modules/audio_coding/neteq/tools/neteq_replacement_input.cc
+#        voip/webrtc/modules/audio_coding/neteq/tools/neteq_delay_analyzer.cc
+#        voip/webrtc/modules/audio_coding/neteq/tools/neteq_input.cc
+#        voip/webrtc/modules/audio_coding/neteq/tools/neteq_stats_plotter.cc
+#        voip/webrtc/modules/audio_coding/neteq/tools/packet_source.cc
+#        voip/webrtc/modules/audio_coding/neteq/tools/neteq_rtp_dump_input.cc
+#        voip/webrtc/modules/audio_coding/neteq/tools/packet.cc
+#        voip/webrtc/modules/audio_coding/neteq/tools/neteq_rtpplay.cc
+#        voip/webrtc/modules/audio_coding/neteq/tools/rtp_encode.cc
+#        voip/webrtc/modules/audio_coding/neteq/tools/audio_loop.cc
+#        voip/webrtc/modules/audio_coding/neteq/tools/rtp_analyze.cc
+#        voip/webrtc/modules/audio_coding/neteq/tools/neteq_stats_getter.cc
+#        voip/webrtc/modules/audio_coding/neteq/tools/rtp_jitter.cc
+#        voip/webrtc/modules/audio_coding/neteq/tools/fake_decode_from_file.cc
+#        voip/webrtc/modules/audio_coding/neteq/tools/rtp_generator.cc
+#        voip/webrtc/modules/audio_coding/neteq/tools/neteq_event_log_input.cc
+#        voip/webrtc/modules/audio_coding/neteq/tools/constant_pcm_packet_source.cc
+#        voip/webrtc/modules/audio_coding/neteq/tools/resample_input_audio_file.cc
+#        voip/webrtc/modules/audio_coding/neteq/tools/rtpcat.cc
+#        voip/webrtc/modules/audio_coding/neteq/tools/encode_neteq_input.cc
         voip/webrtc/modules/audio_coding/neteq/decision_logic.cc
-        voip/webrtc/modules/audio_coding/neteq/decoder_database.cc
-        voip/webrtc/modules/audio_coding/neteq/default_neteq_factory.cc
-        voip/webrtc/modules/audio_coding/neteq/delay_manager.cc
-        voip/webrtc/modules/audio_coding/neteq/dsp_helper.cc
-        voip/webrtc/modules/audio_coding/neteq/dtmf_buffer.cc
-        voip/webrtc/modules/audio_coding/neteq/dtmf_tone_generator.cc
-        voip/webrtc/modules/audio_coding/neteq/expand.cc
-        voip/webrtc/modules/audio_coding/neteq/expand_uma_logger.cc
-        voip/webrtc/modules/audio_coding/neteq/histogram.cc
-        voip/webrtc/modules/audio_coding/neteq/merge.cc
-        voip/webrtc/modules/audio_coding/neteq/nack_tracker.cc
-        voip/webrtc/modules/audio_coding/neteq/neteq_impl.cc
-        voip/webrtc/modules/audio_coding/neteq/normal.cc
-        voip/webrtc/modules/audio_coding/neteq/packet.cc
-        voip/webrtc/modules/audio_coding/neteq/packet_buffer.cc
-        voip/webrtc/modules/audio_coding/neteq/post_decode_vad.cc
-        voip/webrtc/modules/audio_coding/neteq/preemptive_expand.cc
-        voip/webrtc/modules/audio_coding/neteq/random_vector.cc
         voip/webrtc/modules/audio_coding/neteq/red_payload_splitter.cc
-        voip/webrtc/modules/audio_coding/neteq/statistics_calculator.cc
-        voip/webrtc/modules/audio_coding/neteq/sync_buffer.cc
+        voip/webrtc/modules/audio_coding/neteq/packet_buffer.cc
+        voip/webrtc/modules/audio_coding/neteq/expand.cc
+        voip/webrtc/modules/audio_coding/neteq/delay_manager.cc
+        voip/webrtc/modules/audio_coding/neteq/accelerate.cc
+        voip/webrtc/modules/audio_coding/neteq/buffer_level_filter.cc
+        voip/webrtc/modules/audio_coding/neteq/reorder_optimizer.cc
+        voip/webrtc/modules/audio_coding/neteq/packet.cc
         voip/webrtc/modules/audio_coding/neteq/time_stretch.cc
+        voip/webrtc/modules/audio_coding/neteq/preemptive_expand.cc
+        voip/webrtc/modules/audio_coding/neteq/background_noise.cc
+        voip/webrtc/modules/audio_coding/neteq/dtmf_tone_generator.cc
+        voip/webrtc/modules/audio_coding/neteq/dsp_helper.cc
+        voip/webrtc/modules/audio_coding/neteq/default_neteq_factory.cc
+        voip/webrtc/modules/audio_coding/neteq/decoder_database.cc
+        voip/webrtc/modules/audio_coding/neteq/normal.cc
+        voip/webrtc/modules/audio_coding/neteq/histogram.cc
+        voip/webrtc/modules/audio_coding/neteq/neteq_impl.cc
+        voip/webrtc/modules/audio_coding/neteq/random_vector.cc
+        voip/webrtc/modules/audio_coding/neteq/cross_correlation.cc
+        voip/webrtc/modules/audio_coding/neteq/merge.cc
+        voip/webrtc/modules/audio_coding/neteq/audio_vector.cc
+        voip/webrtc/modules/audio_coding/neteq/expand_uma_logger.cc
+        voip/webrtc/modules/audio_coding/neteq/comfort_noise.cc
         voip/webrtc/modules/audio_coding/neteq/timestamp_scaler.cc
-        voip/webrtc/modules/audio_device/audio_device_buffer.cc
-        voip/webrtc/modules/audio_device/audio_device_data_observer.cc
-        voip/webrtc/modules/audio_device/audio_device_generic.cc
-        voip/webrtc/modules/audio_device/audio_device_impl.cc
-        voip/webrtc/modules/audio_device/audio_device_name.cc
-        voip/webrtc/modules/audio_device/dummy/audio_device_dummy.cc
-        voip/webrtc/modules/audio_device/dummy/file_audio_device.cc
-        voip/webrtc/modules/audio_device/dummy/file_audio_device_factory.cc
-        voip/webrtc/modules/audio_device/fine_audio_buffer.cc
-        voip/webrtc/modules/audio_device/include/test_audio_device.cc
-        voip/webrtc/modules/audio_mixer/audio_frame_manipulator.cc
-        voip/webrtc/modules/audio_mixer/audio_mixer_impl.cc
-        voip/webrtc/modules/audio_mixer/default_output_rate_calculator.cc
-        voip/webrtc/modules/audio_mixer/frame_combiner.cc
-        voip/webrtc/modules/audio_mixer/gain_change_calculator.cc
-        voip/webrtc/modules/audio_mixer/sine_wave_generator.cc
-        voip/webrtc/modules/audio_processing/aec3/adaptive_fir_filter.cc
-        voip/webrtc/modules/audio_processing/aec3/adaptive_fir_filter_erl.cc
-        voip/webrtc/modules/audio_processing/aec3/aec3_common.cc
-        voip/webrtc/modules/audio_processing/aec3/aec3_fft.cc
-        voip/webrtc/modules/audio_processing/aec3/aec_state.cc
-        voip/webrtc/modules/audio_processing/aec3/alignment_mixer.cc
-        voip/webrtc/modules/audio_processing/aec3/api_call_jitter_metrics.cc
-        voip/webrtc/modules/audio_processing/aec3/block_buffer.cc
-        voip/webrtc/modules/audio_processing/aec3/block_delay_buffer.cc
-        voip/webrtc/modules/audio_processing/aec3/block_framer.cc
-        voip/webrtc/modules/audio_processing/aec3/block_processor.cc
-        voip/webrtc/modules/audio_processing/aec3/block_processor_metrics.cc
-        voip/webrtc/modules/audio_processing/aec3/clockdrift_detector.cc
-        voip/webrtc/modules/audio_processing/aec3/coarse_filter_update_gain.cc
-        voip/webrtc/modules/audio_processing/aec3/comfort_noise_generator.cc
-        voip/webrtc/modules/audio_processing/aec3/decimator.cc
-        voip/webrtc/modules/audio_processing/aec3/dominant_nearend_detector.cc
-        voip/webrtc/modules/audio_processing/aec3/downsampled_render_buffer.cc
-        voip/webrtc/modules/audio_processing/aec3/echo_audibility.cc
-        voip/webrtc/modules/audio_processing/aec3/echo_canceller3.cc
-        voip/webrtc/modules/audio_processing/aec3/echo_path_delay_estimator.cc
-        voip/webrtc/modules/audio_processing/aec3/echo_path_variability.cc
-        voip/webrtc/modules/audio_processing/aec3/echo_remover.cc
-        voip/webrtc/modules/audio_processing/aec3/echo_remover_metrics.cc
-        voip/webrtc/modules/audio_processing/aec3/erl_estimator.cc
-        voip/webrtc/modules/audio_processing/aec3/erle_estimator.cc
-        voip/webrtc/modules/audio_processing/aec3/fft_buffer.cc
-        voip/webrtc/modules/audio_processing/aec3/filter_analyzer.cc
-        voip/webrtc/modules/audio_processing/aec3/frame_blocker.cc
-        voip/webrtc/modules/audio_processing/aec3/fullband_erle_estimator.cc
-        voip/webrtc/modules/audio_processing/aec3/matched_filter.cc
-        voip/webrtc/modules/audio_processing/aec3/matched_filter_lag_aggregator.cc
-        voip/webrtc/modules/audio_processing/aec3/moving_average.cc
-        voip/webrtc/modules/audio_processing/aec3/refined_filter_update_gain.cc
-        voip/webrtc/modules/audio_processing/aec3/render_buffer.cc
-        voip/webrtc/modules/audio_processing/aec3/render_delay_buffer.cc
-        voip/webrtc/modules/audio_processing/aec3/render_delay_controller.cc
-        voip/webrtc/modules/audio_processing/aec3/render_delay_controller_metrics.cc
-        voip/webrtc/modules/audio_processing/aec3/render_signal_analyzer.cc
-        voip/webrtc/modules/audio_processing/aec3/residual_echo_estimator.cc
-        voip/webrtc/modules/audio_processing/aec3/reverb_decay_estimator.cc
-        voip/webrtc/modules/audio_processing/aec3/reverb_frequency_response.cc
-        voip/webrtc/modules/audio_processing/aec3/reverb_model.cc
-        voip/webrtc/modules/audio_processing/aec3/reverb_model_estimator.cc
-        voip/webrtc/modules/audio_processing/aec3/signal_dependent_erle_estimator.cc
-        voip/webrtc/modules/audio_processing/aec3/spectrum_buffer.cc
-        voip/webrtc/modules/audio_processing/aec3/stationarity_estimator.cc
-        voip/webrtc/modules/audio_processing/aec3/subband_erle_estimator.cc
-        voip/webrtc/modules/audio_processing/aec3/subband_nearend_detector.cc
-        voip/webrtc/modules/audio_processing/aec3/subtractor.cc
-        voip/webrtc/modules/audio_processing/aec3/subtractor_output.cc
-        voip/webrtc/modules/audio_processing/aec3/subtractor_output_analyzer.cc
-        voip/webrtc/modules/audio_processing/aec3/suppression_filter.cc
-        voip/webrtc/modules/audio_processing/aec3/suppression_gain.cc
-        voip/webrtc/modules/audio_processing/aec3/transparent_mode.cc
+        voip/webrtc/modules/audio_coding/neteq/sync_buffer.cc
+        voip/webrtc/modules/audio_coding/neteq/statistics_calculator.cc
+        voip/webrtc/modules/audio_coding/neteq/audio_multi_vector.cc
+        voip/webrtc/modules/audio_coding/neteq/dtmf_buffer.cc
+        voip/webrtc/modules/audio_coding/neteq/packet_arrival_history.cc
+        voip/webrtc/modules/audio_coding/neteq/nack_tracker.cc
+        voip/webrtc/modules/audio_coding/audio_network_adaptor/controller_manager.cc
+        voip/webrtc/modules/audio_coding/audio_network_adaptor/dtx_controller.cc
+        voip/webrtc/modules/audio_coding/audio_network_adaptor/debug_dump_writer.cc
+        voip/webrtc/modules/audio_coding/audio_network_adaptor/event_log_writer.cc
+        voip/webrtc/modules/audio_coding/audio_network_adaptor/fec_controller_plr_based.cc
+        voip/webrtc/modules/audio_coding/audio_network_adaptor/bitrate_controller.cc
+        voip/webrtc/modules/audio_coding/audio_network_adaptor/audio_network_adaptor_config.cc
+        voip/webrtc/modules/audio_coding/audio_network_adaptor/frame_length_controller.cc
+        voip/webrtc/modules/audio_coding/audio_network_adaptor/channel_controller.cc
+        voip/webrtc/modules/audio_coding/audio_network_adaptor/frame_length_controller_v2.cc
+        voip/webrtc/modules/audio_coding/audio_network_adaptor/audio_network_adaptor_impl.cc
+        voip/webrtc/modules/audio_coding/audio_network_adaptor/controller.cc
+        voip/webrtc/modules/audio_processing/rms_level.cc
+        voip/webrtc/modules/audio_processing/echo_detector/normalized_covariance_estimator.cc
+        voip/webrtc/modules/audio_processing/echo_detector/moving_max.cc
+        voip/webrtc/modules/audio_processing/echo_detector/circular_buffer.cc
+        voip/webrtc/modules/audio_processing/echo_detector/mean_variance_estimator.cc
+        voip/webrtc/modules/audio_processing/splitting_filter.cc
+        voip/webrtc/modules/audio_processing/gain_control_impl.cc
+        voip/webrtc/modules/audio_processing/ns/prior_signal_model.cc
+        voip/webrtc/modules/audio_processing/ns/quantile_noise_estimator.cc
+        voip/webrtc/modules/audio_processing/ns/noise_suppressor.cc
+        voip/webrtc/modules/audio_processing/ns/ns_fft.cc
+        voip/webrtc/modules/audio_processing/ns/signal_model.cc
+        voip/webrtc/modules/audio_processing/ns/fast_math.cc
+        voip/webrtc/modules/audio_processing/ns/signal_model_estimator.cc
+        voip/webrtc/modules/audio_processing/ns/prior_signal_model_estimator.cc
+        voip/webrtc/modules/audio_processing/ns/speech_probability_estimator.cc
+        voip/webrtc/modules/audio_processing/ns/suppression_params.cc
+        voip/webrtc/modules/audio_processing/ns/wiener_filter.cc
+        voip/webrtc/modules/audio_processing/ns/noise_estimator.cc
+        voip/webrtc/modules/audio_processing/ns/histograms.cc
+        voip/webrtc/modules/audio_processing/capture_levels_adjuster/audio_samples_scaler.cc
+        voip/webrtc/modules/audio_processing/capture_levels_adjuster/capture_levels_adjuster.cc
         voip/webrtc/modules/audio_processing/aec_dump/null_aec_dump_factory.cc
-        voip/webrtc/modules/audio_processing/aecm/aecm_core.cc
-        voip/webrtc/modules/audio_processing/aecm/aecm_core_c.cc
-        voip/webrtc/modules/audio_processing/aecm/echo_control_mobile.cc
-        voip/webrtc/modules/audio_processing/agc/agc.cc
-        voip/webrtc/modules/audio_processing/agc/agc_manager_direct.cc
-        voip/webrtc/modules/audio_processing/agc/legacy/analog_agc.cc
-        voip/webrtc/modules/audio_processing/agc/legacy/digital_agc.cc
-        voip/webrtc/modules/audio_processing/agc/loudness_histogram.cc
-        voip/webrtc/modules/audio_processing/agc/utility.cc
-        voip/webrtc/modules/audio_processing/agc2/adaptive_agc.cc
-        voip/webrtc/modules/audio_processing/agc2/cpu_features.cc
-        voip/webrtc/modules/audio_processing/agc2/adaptive_digital_gain_applier.cc
-        voip/webrtc/modules/audio_processing/agc2/adaptive_mode_level_estimator.cc
-        voip/webrtc/modules/audio_processing/agc2/agc2_testing_common.cc
-        voip/webrtc/modules/audio_processing/agc2/biquad_filter.cc
-        voip/webrtc/modules/audio_processing/agc2/compute_interpolated_gain_curve.cc
-        voip/webrtc/modules/audio_processing/agc2/down_sampler.cc
-        voip/webrtc/modules/audio_processing/agc2/fixed_digital_level_estimator.cc
-        voip/webrtc/modules/audio_processing/agc2/gain_applier.cc
+        voip/webrtc/modules/audio_processing/include/audio_frame_proxies.cc
+        voip/webrtc/modules/audio_processing/include/audio_processing_statistics.cc
+        voip/webrtc/modules/audio_processing/include/aec_dump.cc
+        voip/webrtc/modules/audio_processing/include/audio_processing.cc
         voip/webrtc/modules/audio_processing/agc2/interpolated_gain_curve.cc
+        voip/webrtc/modules/audio_processing/agc2/input_volume_controller.cc
+        voip/webrtc/modules/audio_processing/agc2/gain_applier.cc
         voip/webrtc/modules/audio_processing/agc2/limiter.cc
-        voip/webrtc/modules/audio_processing/agc2/limiter_db_gain_curve.cc
-        voip/webrtc/modules/audio_processing/agc2/noise_level_estimator.cc
-        voip/webrtc/modules/audio_processing/agc2/noise_spectrum_estimator.cc
+        voip/webrtc/modules/audio_processing/agc2/speech_level_estimator.cc
         voip/webrtc/modules/audio_processing/agc2/saturation_protector.cc
-        voip/webrtc/modules/audio_processing/agc2/signal_classifier.cc
-        voip/webrtc/modules/audio_processing/agc2/vad_with_level.cc
-        voip/webrtc/modules/audio_processing/agc2/vector_float_frame.cc
-        voip/webrtc/modules/audio_processing/agc2/saturation_protector_buffer.cc
+        voip/webrtc/modules/audio_processing/agc2/clipping_predictor.cc
         voip/webrtc/modules/audio_processing/agc2/rnn_vad/auto_correlation.cc
         voip/webrtc/modules/audio_processing/agc2/rnn_vad/features_extraction.cc
         voip/webrtc/modules/audio_processing/agc2/rnn_vad/lp_residual.cc
@@ -1585,317 +1218,293 @@ add_library(tgcalls STATIC
         voip/webrtc/modules/audio_processing/agc2/rnn_vad/spectral_features_internal.cc
         voip/webrtc/modules/audio_processing/agc2/rnn_vad/rnn_fc.cc
         voip/webrtc/modules/audio_processing/agc2/rnn_vad/rnn_gru.cc
+        voip/webrtc/modules/audio_processing/agc2/clipping_predictor_level_buffer.cc
+        voip/webrtc/modules/audio_processing/agc2/vector_float_frame.cc
+        voip/webrtc/modules/audio_processing/agc2/noise_level_estimator.cc
+        voip/webrtc/modules/audio_processing/agc2/agc2_testing_common.cc
+        voip/webrtc/modules/audio_processing/agc2/fixed_digital_level_estimator.cc
+        voip/webrtc/modules/audio_processing/agc2/speech_probability_buffer.cc
+        voip/webrtc/modules/audio_processing/agc2/limiter_db_gain_curve.cc
+        voip/webrtc/modules/audio_processing/agc2/vad_wrapper.cc
+        voip/webrtc/modules/audio_processing/agc2/adaptive_digital_gain_controller.cc
+        voip/webrtc/modules/audio_processing/agc2/saturation_protector_buffer.cc
+        voip/webrtc/modules/audio_processing/agc2/compute_interpolated_gain_curve.cc
+        voip/webrtc/modules/audio_processing/agc2/biquad_filter.cc
+        voip/webrtc/modules/audio_processing/agc2/input_volume_stats_reporter.cc
+        voip/webrtc/modules/audio_processing/agc2/cpu_features.cc
+        voip/webrtc/modules/audio_processing/transient/moving_moments.cc
+        voip/webrtc/modules/audio_processing/transient/transient_suppressor_impl.cc
+        voip/webrtc/modules/audio_processing/transient/voice_probability_delay_unit.cc
+        voip/webrtc/modules/audio_processing/transient/file_utils.cc
+        voip/webrtc/modules/audio_processing/transient/wpd_tree.cc
+        voip/webrtc/modules/audio_processing/transient/click_annotate.cc
+        voip/webrtc/modules/audio_processing/transient/wpd_node.cc
+        voip/webrtc/modules/audio_processing/transient/transient_detector.cc
+        voip/webrtc/modules/audio_processing/three_band_filter_bank.cc
+        voip/webrtc/modules/audio_processing/optionally_built_submodule_creators.cc
+        voip/webrtc/modules/audio_processing/agc/agc.cc
+        voip/webrtc/modules/audio_processing/agc/loudness_histogram.cc
+        voip/webrtc/modules/audio_processing/agc/agc_manager_direct.cc
+        voip/webrtc/modules/audio_processing/agc/legacy/analog_agc.cc
+        voip/webrtc/modules/audio_processing/agc/legacy/digital_agc.cc
+        voip/webrtc/modules/audio_processing/agc/utility.cc
         voip/webrtc/modules/audio_processing/audio_buffer.cc
         voip/webrtc/modules/audio_processing/audio_processing_impl.cc
         voip/webrtc/modules/audio_processing/audio_processing_builder_impl.cc
-        voip/webrtc/modules/audio_processing/echo_control_mobile_impl.cc
-        voip/webrtc/modules/audio_processing/echo_detector/circular_buffer.cc
-        voip/webrtc/modules/audio_processing/echo_detector/mean_variance_estimator.cc
-        voip/webrtc/modules/audio_processing/echo_detector/moving_max.cc
-        voip/webrtc/modules/audio_processing/echo_detector/normalized_covariance_estimator.cc
-        voip/webrtc/modules/audio_processing/gain_control_impl.cc
-        voip/webrtc/modules/audio_processing/gain_controller2.cc
         voip/webrtc/modules/audio_processing/high_pass_filter.cc
-        voip/webrtc/modules/audio_processing/include/aec_dump.cc
-        voip/webrtc/modules/audio_processing/include/audio_frame_proxies.cc
-        voip/webrtc/modules/audio_processing/include/audio_processing.cc
-        voip/webrtc/modules/audio_processing/include/audio_processing_statistics.cc
-        voip/webrtc/modules/audio_processing/include/config.cc
-        voip/webrtc/modules/audio_processing/level_estimator.cc
-        voip/webrtc/modules/audio_processing/logging/apm_data_dumper.cc
-        voip/webrtc/modules/audio_processing/ns/fast_math.cc
-        voip/webrtc/modules/audio_processing/ns/histograms.cc
-        voip/webrtc/modules/audio_processing/ns/noise_estimator.cc
-        voip/webrtc/modules/audio_processing/ns/noise_suppressor.cc
-        voip/webrtc/modules/audio_processing/ns/ns_fft.cc
-        voip/webrtc/modules/audio_processing/ns/prior_signal_model.cc
-        voip/webrtc/modules/audio_processing/ns/prior_signal_model_estimator.cc
-        voip/webrtc/modules/audio_processing/ns/quantile_noise_estimator.cc
-        voip/webrtc/modules/audio_processing/ns/signal_model.cc
-        voip/webrtc/modules/audio_processing/ns/signal_model_estimator.cc
-        voip/webrtc/modules/audio_processing/ns/speech_probability_estimator.cc
-        voip/webrtc/modules/audio_processing/ns/suppression_params.cc
-        voip/webrtc/modules/audio_processing/ns/wiener_filter.cc
+        voip/webrtc/modules/audio_processing/gain_controller2.cc
         voip/webrtc/modules/audio_processing/residual_echo_detector.cc
-        voip/webrtc/modules/audio_processing/rms_level.cc
-        voip/webrtc/modules/audio_processing/splitting_filter.cc
-        voip/webrtc/modules/audio_processing/three_band_filter_bank.cc
-        voip/webrtc/modules/audio_processing/transient/file_utils.cc
-        voip/webrtc/modules/audio_processing/transient/moving_moments.cc
-        voip/webrtc/modules/audio_processing/transient/transient_detector.cc
-        voip/webrtc/modules/audio_processing/transient/transient_suppressor_impl.cc
-        voip/webrtc/modules/audio_processing/transient/wpd_node.cc
-        voip/webrtc/modules/audio_processing/transient/wpd_tree.cc
-        voip/webrtc/modules/audio_processing/typing_detection.cc
+        voip/webrtc/modules/audio_processing/aecm/aecm_core.cc
+        voip/webrtc/modules/audio_processing/aecm/aecm_core_c.cc
+        voip/webrtc/modules/audio_processing/aecm/echo_control_mobile.cc
+        voip/webrtc/modules/audio_processing/aec3/dominant_nearend_detector.cc
+        voip/webrtc/modules/audio_processing/aec3/transparent_mode.cc
+        voip/webrtc/modules/audio_processing/aec3/echo_remover_metrics.cc
+        voip/webrtc/modules/audio_processing/aec3/matched_filter_lag_aggregator.cc
+        voip/webrtc/modules/audio_processing/aec3/echo_path_variability.cc
+        voip/webrtc/modules/audio_processing/aec3/frame_blocker.cc
+        voip/webrtc/modules/audio_processing/aec3/subtractor.cc
+        voip/webrtc/modules/audio_processing/aec3/adaptive_fir_filter_erl.cc
+        voip/webrtc/modules/audio_processing/aec3/aec3_fft.cc
+        voip/webrtc/modules/audio_processing/aec3/fullband_erle_estimator.cc
+        voip/webrtc/modules/audio_processing/aec3/suppression_filter.cc
+        voip/webrtc/modules/audio_processing/aec3/block_processor.cc
+        voip/webrtc/modules/audio_processing/aec3/api_call_jitter_metrics.cc
+        voip/webrtc/modules/audio_processing/aec3/subband_erle_estimator.cc
+        voip/webrtc/modules/audio_processing/aec3/render_delay_controller_metrics.cc
+        voip/webrtc/modules/audio_processing/aec3/render_delay_buffer.cc
+        voip/webrtc/modules/audio_processing/aec3/subband_nearend_detector.cc
+        voip/webrtc/modules/audio_processing/aec3/erl_estimator.cc
+        voip/webrtc/modules/audio_processing/aec3/aec_state.cc
+        voip/webrtc/modules/audio_processing/aec3/adaptive_fir_filter.cc
+        voip/webrtc/modules/audio_processing/aec3/render_delay_controller.cc
+        voip/webrtc/modules/audio_processing/aec3/refined_filter_update_gain.cc
+        voip/webrtc/modules/audio_processing/aec3/block_buffer.cc
+        voip/webrtc/modules/audio_processing/aec3/echo_path_delay_estimator.cc
+        voip/webrtc/modules/audio_processing/aec3/block_framer.cc
+        voip/webrtc/modules/audio_processing/aec3/erle_estimator.cc
+        voip/webrtc/modules/audio_processing/aec3/reverb_model.cc
+        voip/webrtc/modules/audio_processing/aec3/render_buffer.cc
+        voip/webrtc/modules/audio_processing/aec3/subtractor_output.cc
+        voip/webrtc/modules/audio_processing/aec3/stationarity_estimator.cc
+        voip/webrtc/modules/audio_processing/aec3/render_signal_analyzer.cc
+        voip/webrtc/modules/audio_processing/aec3/subtractor_output_analyzer.cc
+        voip/webrtc/modules/audio_processing/aec3/suppression_gain.cc
+        voip/webrtc/modules/audio_processing/aec3/echo_audibility.cc
+        voip/webrtc/modules/audio_processing/aec3/block_processor_metrics.cc
+        voip/webrtc/modules/audio_processing/aec3/moving_average.cc
+        voip/webrtc/modules/audio_processing/aec3/reverb_model_estimator.cc
+        voip/webrtc/modules/audio_processing/aec3/aec3_common.cc
+        voip/webrtc/modules/audio_processing/aec3/residual_echo_estimator.cc
+        voip/webrtc/modules/audio_processing/aec3/multi_channel_content_detector.cc
+        voip/webrtc/modules/audio_processing/aec3/matched_filter.cc
+        voip/webrtc/modules/audio_processing/aec3/clockdrift_detector.cc
+        voip/webrtc/modules/audio_processing/aec3/reverb_decay_estimator.cc
+        voip/webrtc/modules/audio_processing/aec3/signal_dependent_erle_estimator.cc
+        voip/webrtc/modules/audio_processing/aec3/echo_remover.cc
+        voip/webrtc/modules/audio_processing/aec3/downsampled_render_buffer.cc
+        voip/webrtc/modules/audio_processing/aec3/config_selector.cc
+        voip/webrtc/modules/audio_processing/aec3/spectrum_buffer.cc
+        voip/webrtc/modules/audio_processing/aec3/echo_canceller3.cc
+        voip/webrtc/modules/audio_processing/aec3/block_delay_buffer.cc
+        voip/webrtc/modules/audio_processing/aec3/fft_buffer.cc
+        voip/webrtc/modules/audio_processing/aec3/coarse_filter_update_gain.cc
+        voip/webrtc/modules/audio_processing/aec3/comfort_noise_generator.cc
+        voip/webrtc/modules/audio_processing/aec3/filter_analyzer.cc
+        voip/webrtc/modules/audio_processing/aec3/reverb_frequency_response.cc
+        voip/webrtc/modules/audio_processing/aec3/decimator.cc
+        voip/webrtc/modules/audio_processing/aec3/alignment_mixer.cc
+        voip/webrtc/modules/audio_processing/echo_control_mobile_impl.cc
+        voip/webrtc/modules/audio_processing/logging/apm_data_dumper.cc
+        voip/webrtc/modules/audio_processing/vad/voice_activity_detector.cc
+        voip/webrtc/modules/audio_processing/vad/standalone_vad.cc
+        voip/webrtc/modules/audio_processing/vad/pitch_internal.cc
+        voip/webrtc/modules/audio_processing/vad/vad_circular_buffer.cc
+        voip/webrtc/modules/audio_processing/vad/vad_audio_proc.cc
+        voip/webrtc/modules/audio_processing/vad/pole_zero_filter.cc
+        voip/webrtc/modules/audio_processing/vad/pitch_based_vad.cc
+        voip/webrtc/modules/audio_processing/vad/gmm.cc
         voip/webrtc/modules/audio_processing/utility/cascaded_biquad_filter.cc
-        voip/webrtc/modules/audio_processing/utility/delay_estimator.cc
         voip/webrtc/modules/audio_processing/utility/delay_estimator_wrapper.cc
         voip/webrtc/modules/audio_processing/utility/pffft_wrapper.cc
-        voip/webrtc/modules/audio_processing/vad/gmm.cc
-        voip/webrtc/modules/audio_processing/vad/pitch_based_vad.cc
-        voip/webrtc/modules/audio_processing/vad/pitch_internal.cc
-        voip/webrtc/modules/audio_processing/vad/pole_zero_filter.cc
-        voip/webrtc/modules/audio_processing/vad/standalone_vad.cc
-        voip/webrtc/modules/audio_processing/vad/vad_audio_proc.cc
-        voip/webrtc/modules/audio_processing/vad/vad_circular_buffer.cc
-        voip/webrtc/modules/audio_processing/vad/voice_activity_detector.cc
-        voip/webrtc/modules/audio_processing/voice_detection.cc
-        voip/webrtc/modules/audio_processing/optionally_built_submodule_creators.cc
-        voip/webrtc/modules/audio_processing/capture_levels_adjuster/capture_levels_adjuster.cc
-        voip/webrtc/modules/audio_processing/capture_levels_adjuster/audio_samples_scaler.cc
-        voip/webrtc/modules/congestion_controller/remb_throttler.cc
-        voip/webrtc/modules/congestion_controller/pcc/bitrate_controller.cc
-        voip/webrtc/modules/congestion_controller/pcc/monitor_interval.cc
-        voip/webrtc/modules/congestion_controller/pcc/pcc_factory.cc
-        voip/webrtc/modules/congestion_controller/pcc/pcc_network_controller.cc
-        voip/webrtc/modules/congestion_controller/pcc/rtt_tracker.cc
-        voip/webrtc/modules/congestion_controller/pcc/utility_function.cc
-        voip/webrtc/modules/congestion_controller/receive_side_congestion_controller.cc
-        voip/webrtc/modules/congestion_controller/rtp/control_handler.cc
-        voip/webrtc/modules/congestion_controller/rtp/transport_feedback_adapter.cc
-        voip/webrtc/modules/congestion_controller/rtp/transport_feedback_demuxer.cc
-        voip/webrtc/modules/congestion_controller/goog_cc/acknowledged_bitrate_estimator.cc
-        voip/webrtc/modules/congestion_controller/goog_cc/acknowledged_bitrate_estimator_interface.cc
-        voip/webrtc/modules/congestion_controller/goog_cc/alr_detector.cc
-        voip/webrtc/modules/congestion_controller/goog_cc/bitrate_estimator.cc
-        voip/webrtc/modules/congestion_controller/goog_cc/congestion_window_pushback_controller.cc
-        voip/webrtc/modules/congestion_controller/goog_cc/delay_based_bwe.cc
-        voip/webrtc/modules/congestion_controller/goog_cc/goog_cc_network_control.cc
-        voip/webrtc/modules/congestion_controller/goog_cc/link_capacity_estimator.cc
-        voip/webrtc/modules/congestion_controller/goog_cc/loss_based_bandwidth_estimation.cc
-        voip/webrtc/modules/congestion_controller/goog_cc/probe_bitrate_estimator.cc
-        voip/webrtc/modules/congestion_controller/goog_cc/probe_controller.cc
-        voip/webrtc/modules/congestion_controller/goog_cc/robust_throughput_estimator.cc
-        voip/webrtc/modules/congestion_controller/goog_cc/send_side_bandwidth_estimation.cc
-        voip/webrtc/modules/congestion_controller/goog_cc/trendline_estimator.cc
-        voip/webrtc/modules/congestion_controller/goog_cc/inter_arrival_delta.cc
-        voip/webrtc/modules/pacing/bitrate_prober.cc
-        voip/webrtc/modules/pacing/interval_budget.cc
-        voip/webrtc/modules/pacing/paced_sender.cc
-        voip/webrtc/modules/pacing/pacing_controller.cc
-        voip/webrtc/modules/pacing/packet_router.cc
-        voip/webrtc/modules/pacing/round_robin_packet_queue.cc
-        voip/webrtc/modules/pacing/task_queue_paced_sender.cc
-        voip/webrtc/modules/rtp_rtcp/include/report_block_data.cc
+        voip/webrtc/modules/audio_processing/utility/delay_estimator.cc
+        voip/webrtc/modules/remote_bitrate_estimator/overuse_detector.cc
+        voip/webrtc/modules/remote_bitrate_estimator/remote_estimator_proxy.cc
+#        voip/webrtc/modules/remote_bitrate_estimator/tools/rtp_to_text.cc
+#        voip/webrtc/modules/remote_bitrate_estimator/tools/bwe_rtp.cc
+        voip/webrtc/modules/remote_bitrate_estimator/packet_arrival_map.cc
+        voip/webrtc/modules/remote_bitrate_estimator/overuse_estimator.cc
+        voip/webrtc/modules/remote_bitrate_estimator/aimd_rate_control.cc
+        voip/webrtc/modules/remote_bitrate_estimator/remote_bitrate_estimator_abs_send_time.cc
+        voip/webrtc/modules/remote_bitrate_estimator/inter_arrival.cc
+        voip/webrtc/modules/remote_bitrate_estimator/remote_bitrate_estimator_single_stream.cc
+        voip/webrtc/modules/remote_bitrate_estimator/bwe_defines.cc
         voip/webrtc/modules/rtp_rtcp/include/rtp_rtcp_defines.cc
-        voip/webrtc/modules/rtp_rtcp/source/absolute_capture_time_interpolator.cc
-        voip/webrtc/modules/rtp_rtcp/source/capture_clock_offset_updater.cc
-        voip/webrtc/modules/rtp_rtcp/source/active_decode_targets_helper.cc
-        voip/webrtc/modules/rtp_rtcp/source/absolute_capture_time_receiver.cc
-        voip/webrtc/modules/rtp_rtcp/source/absolute_capture_time_sender.cc
-        voip/webrtc/modules/rtp_rtcp/source/create_video_rtp_depacketizer.cc
+        voip/webrtc/modules/rtp_rtcp/include/report_block_data.cc
+        voip/webrtc/modules/rtp_rtcp/source/time_util.cc
+        voip/webrtc/modules/rtp_rtcp/source/rtp_packet.cc
+        voip/webrtc/modules/rtp_rtcp/source/rtp_packet_to_send.cc
+        voip/webrtc/modules/rtp_rtcp/source/rtp_generic_frame_descriptor.cc
+        voip/webrtc/modules/rtp_rtcp/source/rtp_dependency_descriptor_writer.cc
+        voip/webrtc/modules/rtp_rtcp/source/packet_loss_stats.cc
+        voip/webrtc/modules/rtp_rtcp/source/rtp_video_layers_allocation_extension.cc
+        voip/webrtc/modules/rtp_rtcp/source/rtp_header_extensions.cc
+        voip/webrtc/modules/rtp_rtcp/source/remote_ntp_time_estimator.cc
+        voip/webrtc/modules/rtp_rtcp/source/rtp_sender_video.cc
+        voip/webrtc/modules/rtp_rtcp/source/video_rtp_depacketizer_generic.cc
+        voip/webrtc/modules/rtp_rtcp/source/fec_private_tables_random.cc
         voip/webrtc/modules/rtp_rtcp/source/dtmf_queue.cc
         voip/webrtc/modules/rtp_rtcp/source/fec_private_tables_bursty.cc
-        voip/webrtc/modules/rtp_rtcp/source/fec_private_tables_random.cc
         voip/webrtc/modules/rtp_rtcp/source/fec_test_helper.cc
-        voip/webrtc/modules/rtp_rtcp/source/flexfec_header_reader_writer.cc
-        voip/webrtc/modules/rtp_rtcp/source/flexfec_receiver.cc
-        voip/webrtc/modules/rtp_rtcp/source/flexfec_sender.cc
+        voip/webrtc/modules/rtp_rtcp/source/rtp_util.cc
+        voip/webrtc/modules/rtp_rtcp/source/rtp_dependency_descriptor_reader.cc
+        voip/webrtc/modules/rtp_rtcp/source/rtp_sender_audio.cc
+        voip/webrtc/modules/rtp_rtcp/source/video_rtp_depacketizer_raw.cc
+        voip/webrtc/modules/rtp_rtcp/source/frame_object.cc
+        voip/webrtc/modules/rtp_rtcp/source/rtp_format_h264.cc
         voip/webrtc/modules/rtp_rtcp/source/forward_error_correction.cc
-        voip/webrtc/modules/rtp_rtcp/source/forward_error_correction_internal.cc
-        voip/webrtc/modules/rtp_rtcp/source/packet_loss_stats.cc
-        voip/webrtc/modules/rtp_rtcp/source/remote_ntp_time_estimator.cc
-        voip/webrtc/modules/rtp_rtcp/source/rtcp_nack_stats.cc
+        voip/webrtc/modules/rtp_rtcp/source/rtp_packetizer_av1.cc
+        voip/webrtc/modules/rtp_rtcp/source/rtp_rtcp_impl2.cc
+        voip/webrtc/modules/rtp_rtcp/source/rtcp_transceiver_config.cc
+        voip/webrtc/modules/rtp_rtcp/source/receive_statistics_impl.cc
+        voip/webrtc/modules/rtp_rtcp/source/rtp_sequence_number_map.cc
+        voip/webrtc/modules/rtp_rtcp/source/absolute_capture_time_interpolator.cc
+        voip/webrtc/modules/rtp_rtcp/source/packet_sequencer.cc
+        voip/webrtc/modules/rtp_rtcp/source/source_tracker.cc
+        voip/webrtc/modules/rtp_rtcp/source/rtp_sender_egress.cc
+        voip/webrtc/modules/rtp_rtcp/source/rtp_packet_received.cc
+        voip/webrtc/modules/rtp_rtcp/source/rtp_sender_video_frame_transformer_delegate.cc
+        voip/webrtc/modules/rtp_rtcp/source/rtp_header_extension_size.cc
         voip/webrtc/modules/rtp_rtcp/source/rtcp_packet.cc
-        voip/webrtc/modules/rtp_rtcp/source/rtcp_packet/app.cc
-        voip/webrtc/modules/rtp_rtcp/source/rtcp_packet/bye.cc
+        voip/webrtc/modules/rtp_rtcp/source/rtp_packetizer_h265.cc
+        voip/webrtc/modules/rtp_rtcp/source/flexfec_sender.cc
+        voip/webrtc/modules/rtp_rtcp/source/video_rtp_depacketizer.cc
+        voip/webrtc/modules/rtp_rtcp/source/video_rtp_depacketizer_vp8.cc
+        voip/webrtc/modules/rtp_rtcp/source/rtp_video_header.cc
+        voip/webrtc/modules/rtp_rtcp/source/leb128.cc
+        voip/webrtc/modules/rtp_rtcp/source/active_decode_targets_helper.cc
+        voip/webrtc/modules/rtp_rtcp/source/create_video_rtp_depacketizer.cc
+        voip/webrtc/modules/rtp_rtcp/source/rtp_rtcp_impl.cc
+        voip/webrtc/modules/rtp_rtcp/source/rtp_descriptor_authentication.cc
+        voip/webrtc/modules/rtp_rtcp/source/rtp_packet_history.cc
+        voip/webrtc/modules/rtp_rtcp/source/flexfec_receiver.cc
+        voip/webrtc/modules/rtp_rtcp/source/rtp_sender.cc
+        voip/webrtc/modules/rtp_rtcp/source/video_rtp_depacketizer_vp9.cc
+        voip/webrtc/modules/rtp_rtcp/source/rtp_video_stream_receiver_frame_transformer_delegate.cc
+        voip/webrtc/modules/rtp_rtcp/source/rtp_dependency_descriptor_extension.cc
+        voip/webrtc/modules/rtp_rtcp/source/rtp_generic_frame_descriptor_extension.cc
+        voip/webrtc/modules/rtp_rtcp/source/rtcp_receiver.cc
+        voip/webrtc/modules/rtp_rtcp/source/tmmbr_help.cc
+        voip/webrtc/modules/rtp_rtcp/source/rtcp_sender.cc
+        voip/webrtc/modules/rtp_rtcp/source/rtcp_nack_stats.cc
+        voip/webrtc/modules/rtp_rtcp/source/rtp_format_vp8.cc
+        voip/webrtc/modules/rtp_rtcp/source/video_rtp_depacketizer_h264.cc
+        voip/webrtc/modules/rtp_rtcp/source/video_rtp_depacketizer_av1.cc
+        voip/webrtc/modules/rtp_rtcp/source/ulpfec_header_reader_writer.cc
+        voip/webrtc/modules/rtp_rtcp/source/rtcp_transceiver_impl.cc
+        voip/webrtc/modules/rtp_rtcp/source/rtp_format.cc
+        voip/webrtc/modules/rtp_rtcp/source/rtp_format_video_generic.cc
+        voip/webrtc/modules/rtp_rtcp/source/flexfec_03_header_reader_writer.cc
+        voip/webrtc/modules/rtp_rtcp/source/rtcp_transceiver.cc
+        voip/webrtc/modules/rtp_rtcp/source/ulpfec_receiver.cc
+        voip/webrtc/modules/rtp_rtcp/source/flexfec_header_reader_writer.cc
+        voip/webrtc/modules/rtp_rtcp/source/rtcp_packet/pli.cc
+        voip/webrtc/modules/rtp_rtcp/source/rtcp_packet/sdes.cc
+        voip/webrtc/modules/rtp_rtcp/source/rtcp_packet/remb.cc
+        voip/webrtc/modules/rtp_rtcp/source/rtcp_packet/psfb.cc
         voip/webrtc/modules/rtp_rtcp/source/rtcp_packet/common_header.cc
-        voip/webrtc/modules/rtp_rtcp/source/rtcp_packet/compound_packet.cc
-        voip/webrtc/modules/rtp_rtcp/source/rtcp_packet/dlrr.cc
-        voip/webrtc/modules/rtp_rtcp/source/rtcp_packet/extended_jitter_report.cc
-        voip/webrtc/modules/rtp_rtcp/source/rtcp_packet/extended_reports.cc
+        voip/webrtc/modules/rtp_rtcp/source/rtcp_packet/sender_report.cc
         voip/webrtc/modules/rtp_rtcp/source/rtcp_packet/fir.cc
         voip/webrtc/modules/rtp_rtcp/source/rtcp_packet/loss_notification.cc
-        voip/webrtc/modules/rtp_rtcp/source/rtcp_packet/nack.cc
-        voip/webrtc/modules/rtp_rtcp/source/rtcp_packet/pli.cc
-        voip/webrtc/modules/rtp_rtcp/source/rtcp_packet/psfb.cc
-        voip/webrtc/modules/rtp_rtcp/source/rtcp_packet/rapid_resync_request.cc
-        voip/webrtc/modules/rtp_rtcp/source/rtcp_packet/receiver_report.cc
-        voip/webrtc/modules/rtp_rtcp/source/rtcp_packet/remb.cc
-        voip/webrtc/modules/rtp_rtcp/source/rtcp_packet/remote_estimate.cc
-        voip/webrtc/modules/rtp_rtcp/source/rtcp_packet/report_block.cc
-        voip/webrtc/modules/rtp_rtcp/source/rtcp_packet/rrtr.cc
-        voip/webrtc/modules/rtp_rtcp/source/rtcp_packet/rtpfb.cc
-        voip/webrtc/modules/rtp_rtcp/source/rtcp_packet/sdes.cc
-        voip/webrtc/modules/rtp_rtcp/source/rtcp_packet/sender_report.cc
+        voip/webrtc/modules/rtp_rtcp/source/rtcp_packet/dlrr.cc
         voip/webrtc/modules/rtp_rtcp/source/rtcp_packet/target_bitrate.cc
+        voip/webrtc/modules/rtp_rtcp/source/rtcp_packet/app.cc
+        voip/webrtc/modules/rtp_rtcp/source/rtcp_packet/compound_packet.cc
         voip/webrtc/modules/rtp_rtcp/source/rtcp_packet/tmmb_item.cc
-        voip/webrtc/modules/rtp_rtcp/source/rtcp_packet/tmmbn.cc
         voip/webrtc/modules/rtp_rtcp/source/rtcp_packet/tmmbr.cc
         voip/webrtc/modules/rtp_rtcp/source/rtcp_packet/transport_feedback.cc
-        voip/webrtc/modules/rtp_rtcp/source/rtcp_receiver.cc
-        voip/webrtc/modules/rtp_rtcp/source/rtcp_sender.cc
-        voip/webrtc/modules/rtp_rtcp/source/rtcp_transceiver.cc
-        voip/webrtc/modules/rtp_rtcp/source/rtcp_transceiver_config.cc
-        voip/webrtc/modules/rtp_rtcp/source/rtcp_transceiver_impl.cc
-        voip/webrtc/modules/rtp_rtcp/source/rtp_dependency_descriptor_extension.cc
-        voip/webrtc/modules/rtp_rtcp/source/rtp_dependency_descriptor_reader.cc
-        voip/webrtc/modules/rtp_rtcp/source/rtp_dependency_descriptor_writer.cc
-        voip/webrtc/modules/rtp_rtcp/source/rtp_descriptor_authentication.cc
-        voip/webrtc/modules/rtp_rtcp/source/rtp_format.cc
-        voip/webrtc/modules/rtp_rtcp/source/rtp_format_h264.cc
-        voip/webrtc/modules/rtp_rtcp/source/rtp_format_h265.cc
-        voip/webrtc/modules/rtp_rtcp/source/rtp_format_video_generic.cc
-        voip/webrtc/modules/rtp_rtcp/source/rtp_format_vp8.cc
-        voip/webrtc/modules/rtp_rtcp/source/rtp_format_vp9.cc
-        voip/webrtc/modules/rtp_rtcp/source/rtp_generic_frame_descriptor.cc
-        voip/webrtc/modules/rtp_rtcp/source/rtp_generic_frame_descriptor_extension.cc
-        voip/webrtc/modules/rtp_rtcp/source/rtp_header_extension_map.cc
-        voip/webrtc/modules/rtp_rtcp/source/rtp_header_extension_size.cc
-        voip/webrtc/modules/rtp_rtcp/source/rtp_header_extensions.cc
-        voip/webrtc/modules/rtp_rtcp/source/rtp_packet.cc
-        voip/webrtc/modules/rtp_rtcp/source/rtp_packet_history.cc
-        voip/webrtc/modules/rtp_rtcp/source/rtp_packet_received.cc
-        voip/webrtc/modules/rtp_rtcp/source/rtp_packet_to_send.cc
-        voip/webrtc/modules/rtp_rtcp/source/rtp_packetizer_av1.cc
-        voip/webrtc/modules/rtp_rtcp/source/rtp_rtcp_impl.cc
-        voip/webrtc/modules/rtp_rtcp/source/rtp_sender.cc
-        voip/webrtc/modules/rtp_rtcp/source/rtp_sender_audio.cc
-        voip/webrtc/modules/rtp_rtcp/source/rtp_sender_egress.cc
-        voip/webrtc/modules/rtp_rtcp/source/rtp_sender_video.cc
-        voip/webrtc/modules/rtp_rtcp/source/rtp_sender_video_frame_transformer_delegate.cc
-        voip/webrtc/modules/rtp_rtcp/source/rtp_sequence_number_map.cc
-        voip/webrtc/modules/rtp_rtcp/source/rtp_utility.cc
-        voip/webrtc/modules/rtp_rtcp/source/rtp_video_header.cc
-        voip/webrtc/modules/rtp_rtcp/source/source_tracker.cc
-        voip/webrtc/modules/rtp_rtcp/source/time_util.cc
-        voip/webrtc/modules/rtp_rtcp/source/tmmbr_help.cc
+        voip/webrtc/modules/rtp_rtcp/source/rtcp_packet/tmmbn.cc
+        voip/webrtc/modules/rtp_rtcp/source/rtcp_packet/rapid_resync_request.cc
+        voip/webrtc/modules/rtp_rtcp/source/rtcp_packet/report_block.cc
+        voip/webrtc/modules/rtp_rtcp/source/rtcp_packet/rrtr.cc
+        voip/webrtc/modules/rtp_rtcp/source/rtcp_packet/nack.cc
+        voip/webrtc/modules/rtp_rtcp/source/rtcp_packet/receiver_report.cc
+        voip/webrtc/modules/rtp_rtcp/source/rtcp_packet/remote_estimate.cc
+        voip/webrtc/modules/rtp_rtcp/source/rtcp_packet/bye.cc
+        voip/webrtc/modules/rtp_rtcp/source/rtcp_packet/rtpfb.cc
+        voip/webrtc/modules/rtp_rtcp/source/rtcp_packet/extended_reports.cc
         voip/webrtc/modules/rtp_rtcp/source/ulpfec_generator.cc
-        voip/webrtc/modules/rtp_rtcp/source/ulpfec_header_reader_writer.cc
-        voip/webrtc/modules/rtp_rtcp/source/ulpfec_receiver_impl.cc
-        voip/webrtc/modules/rtp_rtcp/source/video_rtp_depacketizer.cc
-        voip/webrtc/modules/rtp_rtcp/source/video_rtp_depacketizer_av1.cc
-        voip/webrtc/modules/rtp_rtcp/source/video_rtp_depacketizer_generic.cc
-        voip/webrtc/modules/rtp_rtcp/source/video_rtp_depacketizer_h264.cc
+        voip/webrtc/modules/rtp_rtcp/source/rtp_header_extension_map.cc
+        voip/webrtc/modules/rtp_rtcp/source/forward_error_correction_internal.cc
+        voip/webrtc/modules/rtp_rtcp/source/capture_clock_offset_updater.cc
+        voip/webrtc/modules/rtp_rtcp/source/rtp_format_vp9.cc
+        voip/webrtc/modules/rtp_rtcp/source/absolute_capture_time_sender.cc
         voip/webrtc/modules/rtp_rtcp/source/video_rtp_depacketizer_h265.cc
-        voip/webrtc/modules/rtp_rtcp/source/video_rtp_depacketizer_raw.cc
-        voip/webrtc/modules/rtp_rtcp/source/video_rtp_depacketizer_vp8.cc
-        voip/webrtc/modules/rtp_rtcp/source/video_rtp_depacketizer_vp9.cc
-        voip/webrtc/modules/rtp_rtcp/source/receive_statistics_impl.cc
         voip/webrtc/modules/rtp_rtcp/source/deprecated/deprecated_rtp_sender_egress.cc
-        voip/webrtc/modules/rtp_rtcp/source/rtp_video_layers_allocation_extension.cc
-        voip/webrtc/modules/rtp_rtcp/source/packet_sequencer.cc
+        voip/webrtc/modules/congestion_controller/remb_throttler.cc
+        voip/webrtc/modules/congestion_controller/goog_cc/goog_cc_network_control.cc
+        voip/webrtc/modules/congestion_controller/goog_cc/send_side_bandwidth_estimation.cc
+        voip/webrtc/modules/congestion_controller/goog_cc/probe_bitrate_estimator.cc
+        voip/webrtc/modules/congestion_controller/goog_cc/congestion_window_pushback_controller.cc
+        voip/webrtc/modules/congestion_controller/goog_cc/robust_throughput_estimator.cc
+        voip/webrtc/modules/congestion_controller/goog_cc/loss_based_bandwidth_estimation.cc
+        voip/webrtc/modules/congestion_controller/goog_cc/link_capacity_estimator.cc
+        voip/webrtc/modules/congestion_controller/goog_cc/acknowledged_bitrate_estimator_interface.cc
+        voip/webrtc/modules/congestion_controller/goog_cc/alr_detector.cc
+        voip/webrtc/modules/congestion_controller/goog_cc/loss_based_bwe_v2.cc
+        voip/webrtc/modules/congestion_controller/goog_cc/probe_controller.cc
+        voip/webrtc/modules/congestion_controller/goog_cc/inter_arrival_delta.cc
+        voip/webrtc/modules/congestion_controller/goog_cc/bitrate_estimator.cc
+        voip/webrtc/modules/congestion_controller/goog_cc/trendline_estimator.cc
+        voip/webrtc/modules/congestion_controller/goog_cc/delay_based_bwe.cc
+        voip/webrtc/modules/congestion_controller/goog_cc/acknowledged_bitrate_estimator.cc
+        voip/webrtc/modules/congestion_controller/receive_side_congestion_controller.cc
+        voip/webrtc/modules/congestion_controller/pcc/monitor_interval.cc
+        voip/webrtc/modules/congestion_controller/pcc/pcc_factory.cc
+        voip/webrtc/modules/congestion_controller/pcc/utility_function.cc
+        voip/webrtc/modules/congestion_controller/pcc/rtt_tracker.cc
+        voip/webrtc/modules/congestion_controller/pcc/bitrate_controller.cc
+        voip/webrtc/modules/congestion_controller/pcc/pcc_network_controller.cc
+        voip/webrtc/modules/congestion_controller/rtp/transport_feedback_demuxer.cc
+        voip/webrtc/modules/congestion_controller/rtp/transport_feedback_adapter.cc
+        voip/webrtc/modules/congestion_controller/rtp/control_handler.cc
         voip/webrtc/modules/utility/source/helpers_android.cc
         voip/webrtc/modules/utility/source/jvm_android.cc
-        voip/webrtc/modules/utility/source/process_thread_impl.cc
-        voip/webrtc/modules/video_capture/device_info_impl.cc
-        voip/webrtc/modules/video_capture/linux/device_info_linux.cc
-        voip/webrtc/modules/video_capture/linux/video_capture_linux.cc
-        voip/webrtc/modules/video_capture/video_capture_factory.cc
-        voip/webrtc/modules/video_capture/video_capture_impl.cc
-        voip/webrtc/modules/video_coding/codec_timer.cc
-        voip/webrtc/modules/video_coding/codecs/av1/libaom_av1_decoder_absent.cc
-        voip/webrtc/modules/video_coding/codecs/av1/libaom_av1_encoder_absent.cc
-        voip/webrtc/modules/video_coding/codecs/h264/h264.cc
-        voip/webrtc/modules/video_coding/codecs/h264/h264_color_space.cc
-        voip/webrtc/modules/video_coding/codecs/h264/h264_decoder_impl.cc
-        voip/webrtc/modules/video_coding/codecs/h264/h264_encoder_impl.cc
-        voip/webrtc/modules/video_coding/codecs/multiplex/augmented_video_frame_buffer.cc
-        voip/webrtc/modules/video_coding/codecs/multiplex/multiplex_decoder_adapter.cc
-        voip/webrtc/modules/video_coding/codecs/multiplex/multiplex_encoded_image_packer.cc
-        voip/webrtc/modules/video_coding/codecs/multiplex/multiplex_encoder_adapter.cc
-        voip/webrtc/modules/video_coding/decoder_database.cc
-        voip/webrtc/modules/video_coding/chain_diff_calculator.cc
-        voip/webrtc/modules/video_coding/decoding_state.cc
-        voip/webrtc/modules/video_coding/encoded_frame.cc
-        voip/webrtc/modules/video_coding/event_wrapper.cc
-        voip/webrtc/modules/video_coding/fec_controller_default.cc
-        voip/webrtc/modules/video_coding/frame_buffer.cc
-        voip/webrtc/modules/video_coding/frame_buffer2.cc
-        voip/webrtc/modules/video_coding/frame_dependencies_calculator.cc
-        voip/webrtc/modules/video_coding/frame_object.cc
-        voip/webrtc/modules/video_coding/generic_decoder.cc
-        voip/webrtc/modules/video_coding/h264_sprop_parameter_sets.cc
-        voip/webrtc/modules/video_coding/h264_sps_pps_tracker.cc
-        voip/webrtc/modules/video_coding/h265_vps_sps_pps_tracker.cc
-        voip/webrtc/modules/video_coding/histogram.cc
-        voip/webrtc/modules/video_coding/include/video_codec_interface.cc
-        voip/webrtc/modules/video_coding/inter_frame_delay.cc
-        voip/webrtc/modules/video_coding/jitter_buffer.cc
-        voip/webrtc/modules/video_coding/jitter_estimator.cc
-        voip/webrtc/modules/video_coding/loss_notification_controller.cc
-        voip/webrtc/modules/video_coding/media_opt_util.cc
-        voip/webrtc/modules/video_coding/packet.cc
-        voip/webrtc/modules/video_coding/packet_buffer.cc
-        voip/webrtc/modules/video_coding/receiver.cc
-        voip/webrtc/modules/video_coding/rtp_frame_reference_finder.cc
-        voip/webrtc/modules/video_coding/rtt_filter.cc
-        voip/webrtc/modules/video_coding/session_info.cc
-        voip/webrtc/modules/video_coding/timestamp_map.cc
-        voip/webrtc/modules/video_coding/timing.cc
-        voip/webrtc/modules/video_coding/unique_timestamp_counter.cc
-        voip/webrtc/modules/video_coding/utility/decoded_frames_history.cc
-        voip/webrtc/modules/video_coding/utility/qp_parser.cc
-        voip/webrtc/modules/video_coding/utility/frame_dropper.cc
-        voip/webrtc/modules/video_coding/utility/framerate_controller.cc
-        voip/webrtc/modules/video_coding/utility/ivf_file_reader.cc
-        voip/webrtc/modules/video_coding/utility/ivf_file_writer.cc
-        voip/webrtc/modules/video_coding/utility/quality_scaler.cc
-        voip/webrtc/modules/video_coding/utility/simulcast_rate_allocator.cc
-        voip/webrtc/modules/video_coding/utility/simulcast_utility.cc
-        voip/webrtc/modules/video_coding/utility/vp8_header_parser.cc
-        voip/webrtc/modules/video_coding/utility/vp9_uncompressed_header_parser.cc
-        voip/webrtc/modules/video_coding/video_codec_initializer.cc
-        voip/webrtc/modules/video_coding/video_coding_defines.cc
-        voip/webrtc/modules/video_coding/video_coding_impl.cc
-        voip/webrtc/modules/video_coding/video_receiver.cc
-        voip/webrtc/modules/video_coding/video_receiver2.cc
-        voip/webrtc/modules/video_coding/codecs/interface/libvpx_interface.cc
-        voip/webrtc/modules/video_coding/codecs/vp8/default_temporal_layers.cc
-        voip/webrtc/modules/video_coding/codecs/vp8/libvpx_vp8_decoder.cc
-        voip/webrtc/modules/video_coding/codecs/vp8/libvpx_vp8_encoder.cc
-        voip/webrtc/modules/video_coding/codecs/vp8/screenshare_layers.cc
-        voip/webrtc/modules/video_coding/codecs/vp8/temporal_layers_checker.cc
-        voip/webrtc/modules/video_coding/codecs/vp9/svc_config.cc
-        voip/webrtc/modules/video_coding/codecs/vp9/vp9.cc
-        voip/webrtc/modules/video_coding/codecs/vp9/vp9_frame_buffer_pool.cc
-        voip/webrtc/modules/video_coding/codecs/vp9/libvpx_vp9_decoder.cc
-        voip/webrtc/modules/video_coding/codecs/vp9/libvpx_vp9_encoder.cc
-        voip/webrtc/modules/video_coding/svc/create_scalability_structure.cc
-        voip/webrtc/modules/video_coding/svc/scalability_structure_full_svc.cc
-        voip/webrtc/modules/video_coding/svc/scalability_structure_key_svc.cc
-        voip/webrtc/modules/video_coding/svc/scalability_structure_l2t2_key_shift.cc
-        voip/webrtc/modules/video_coding/svc/scalability_structure_simulcast.cc
-        voip/webrtc/modules/video_coding/svc/scalable_video_controller_no_layering.cc
-        voip/webrtc/modules/video_coding/svc/svc_rate_allocator.cc
-        voip/webrtc/modules/video_coding/rtp_seq_num_only_ref_finder.cc
-        voip/webrtc/modules/video_coding/rtp_frame_id_only_ref_finder.cc
-        voip/webrtc/modules/video_coding/rtp_vp8_ref_finder.cc
-        voip/webrtc/modules/video_coding/rtp_vp9_ref_finder.cc
-        voip/webrtc/modules/video_coding/rtp_generic_ref_finder.cc
-        voip/webrtc/modules/video_coding/codecs/av1/av1_svc_config.cc
-        voip/webrtc/modules/video_processing/util/denoiser_filter.cc
-        voip/webrtc/modules/video_processing/util/denoiser_filter_c.cc
-        voip/webrtc/modules/video_processing/util/noise_estimation.cc
-        voip/webrtc/modules/video_processing/util/skin_detection.cc
-        voip/webrtc/modules/video_processing/video_denoiser.cc
+        voip/webrtc/call/flexfec_receive_stream_impl.cc
+        voip/webrtc/call/degraded_call.cc
+        voip/webrtc/call/rtp_transport_controller_send.cc
+        voip/webrtc/call/call.cc
+        voip/webrtc/call/rtp_stream_receiver_controller.cc
+        voip/webrtc/call/create_call.cc
+        voip/webrtc/call/rtp_bitrate_configurator.cc
+        voip/webrtc/call/rtx_receive_stream.cc
+        voip/webrtc/call/audio_state.cc
+        voip/webrtc/call/simulated_network.cc
+        voip/webrtc/call/video_send_stream.cc
+        voip/webrtc/call/receive_time_calculator.cc
+        voip/webrtc/call/flexfec_receive_stream.cc
+        voip/webrtc/call/bitrate_allocator.cc
+        voip/webrtc/call/rtp_config.cc
+        voip/webrtc/call/audio_send_stream.cc
+        voip/webrtc/call/syncable.cc
+        voip/webrtc/call/rtp_payload_params.cc
+        voip/webrtc/call/rtp_video_sender.cc
+        voip/webrtc/call/video_receive_stream.cc
+        voip/webrtc/call/rtp_demuxer.cc
         voip/webrtc/call/adaptation/resource_adaptation_processor_interface.cc
+        voip/webrtc/call/adaptation/video_stream_adapter.cc
+        voip/webrtc/call/adaptation/encoder_settings.cc
+        voip/webrtc/call/adaptation/degradation_preference_provider.cc
+        voip/webrtc/call/adaptation/video_stream_input_state_provider.cc
+        voip/webrtc/call/adaptation/video_stream_input_state.cc
+        voip/webrtc/call/adaptation/adaptation_constraint.cc
+        voip/webrtc/call/adaptation/resource_adaptation_processor.cc
+        voip/webrtc/call/adaptation/broadcast_resource_listener.cc
         voip/webrtc/call/adaptation/video_source_restrictions.cc
         voip/webrtc/call/audio_receive_stream.cc
-        voip/webrtc/call/version.cc
-        voip/webrtc/call/audio_send_stream.cc
-        voip/webrtc/call/audio_state.cc
-        voip/webrtc/call/bitrate_allocator.cc
-        voip/webrtc/call/call.cc
         voip/webrtc/call/call_config.cc
-        voip/webrtc/call/call_factory.cc
-        voip/webrtc/call/degraded_call.cc
+        voip/webrtc/call/version.cc
         voip/webrtc/call/fake_network_pipe.cc
-        voip/webrtc/call/flexfec_receive_stream.cc
-        voip/webrtc/call/flexfec_receive_stream_impl.cc
-        voip/webrtc/call/receive_time_calculator.cc
-        voip/webrtc/call/rtp_bitrate_configurator.cc
-        voip/webrtc/call/rtp_config.cc
-        voip/webrtc/call/rtp_demuxer.cc
-        voip/webrtc/call/rtp_payload_params.cc
-        voip/webrtc/call/rtp_stream_receiver_controller.cc
-        voip/webrtc/call/rtp_transport_controller_send.cc
-        voip/webrtc/call/rtp_video_sender.cc
-        voip/webrtc/call/rtx_receive_stream.cc
-        voip/webrtc/call/simulated_network.cc
-        voip/webrtc/call/syncable.cc
-        voip/webrtc/call/video_receive_stream.cc
-        voip/webrtc/call/video_send_stream.cc
         voip/webrtc/common_audio/audio_converter.cc
         voip/webrtc/common_audio/audio_util.cc
         voip/webrtc/common_audio/channel_buffer.cc
@@ -1954,184 +1563,270 @@ add_library(tgcalls STATIC
         voip/webrtc/common_audio/third_party/ooura/fft_size_128/ooura_fft.cc
         voip/webrtc/common_audio/third_party/ooura/fft_size_256/fft4g.cc
         voip/webrtc/common_video/frame_rate_estimator.cc
-        voip/webrtc/common_video/generic_frame_descriptor/generic_frame_info.cc
+        voip/webrtc/common_video/bitrate_adjuster.cc
+        voip/webrtc/common_video/framerate_controller.cc
+        voip/webrtc/common_video/h265/h265_pps_parser.cc
+        voip/webrtc/common_video/h265/h265_common.cc
+        voip/webrtc/common_video/h265/h265_bitstream_parser.cc
+        voip/webrtc/common_video/h265/h265_vps_parser.cc
+        voip/webrtc/common_video/h265/h265_inline.cc
+        voip/webrtc/common_video/h265/h265_sps_parser.cc
+        voip/webrtc/common_video/h265/legacy_bit_buffer.cc
+        voip/webrtc/common_video/h264/sps_vui_rewriter.cc
+        voip/webrtc/common_video/h264/pps_parser.cc
         voip/webrtc/common_video/h264/h264_bitstream_parser.cc
         voip/webrtc/common_video/h264/h264_common.cc
-        voip/webrtc/common_video/h264/pps_parser.cc
-        voip/webrtc/common_video/h264/prefix_parser.cc
         voip/webrtc/common_video/h264/sps_parser.cc
-        voip/webrtc/common_video/h264/sps_vui_rewriter.cc
-        voip/webrtc/common_video/h265/h265_bitstream_parser.cc
-        voip/webrtc/common_video/h265/h265_common.cc
-        voip/webrtc/common_video/h265/h265_pps_parser.cc
-        voip/webrtc/common_video/h265/h265_sps_parser.cc
-        voip/webrtc/common_video/h265/h265_vps_parser.cc
-        voip/webrtc/common_video/incoming_video_stream.cc
+        voip/webrtc/common_video/video_frame_buffer_pool.cc
         voip/webrtc/common_video/libyuv/webrtc_libyuv.cc
         voip/webrtc/common_video/video_frame_buffer.cc
-        voip/webrtc/common_video/video_render_frames.cc
-        voip/webrtc/common_video/video_frame_buffer_pool.cc
-        voip/webrtc/p2p/base/async_stun_tcp_socket.cc
-        voip/webrtc/p2p/base/basic_async_resolver_factory.cc
-        voip/webrtc/p2p/base/basic_ice_controller.cc
-        voip/webrtc/p2p/base/basic_packet_socket_factory.cc
-        voip/webrtc/p2p/base/connection.cc
-        voip/webrtc/p2p/base/connection_info.cc
-        voip/webrtc/p2p/base/default_ice_transport_factory.cc
-        voip/webrtc/p2p/base/dtls_transport.cc
-        voip/webrtc/p2p/base/dtls_transport_internal.cc
-        voip/webrtc/p2p/base/ice_controller_interface.cc
-        voip/webrtc/p2p/base/ice_credentials_iterator.cc
-        voip/webrtc/p2p/base/ice_transport_internal.cc
-        voip/webrtc/p2p/base/p2p_constants.cc
-        voip/webrtc/p2p/base/p2p_transport_channel.cc
-        voip/webrtc/p2p/base/packet_transport_internal.cc
-        voip/webrtc/p2p/base/port.cc
-        voip/webrtc/p2p/base/port_allocator.cc
-        voip/webrtc/p2p/base/port_interface.cc
-        voip/webrtc/p2p/base/pseudo_tcp.cc
-        voip/webrtc/p2p/base/regathering_controller.cc
-        voip/webrtc/p2p/base/stun_port.cc
-        voip/webrtc/p2p/base/stun_request.cc
-        voip/webrtc/p2p/base/stun_server.cc
-        voip/webrtc/p2p/base/tcp_port.cc
-        voip/webrtc/p2p/base/test_stun_server.cc
-        voip/webrtc/p2p/base/transport_description.cc
-        voip/webrtc/p2p/base/transport_description_factory.cc
-        voip/webrtc/p2p/base/turn_port.cc
-        voip/webrtc/p2p/base/turn_server.cc
-        voip/webrtc/p2p/client/basic_port_allocator.cc
-        voip/webrtc/p2p/client/turn_port_factory.cc
+        voip/webrtc/common_video/generic_frame_descriptor/generic_frame_info.cc
         voip/webrtc/p2p/stunprober/stun_prober.cc
-        voip/webrtc/video/adaptation/quality_rampup_experiment_helper.cc
-        voip/webrtc/modules/video_coding/deprecated/nack_module.cc
-        voip/webrtc/modules/video_coding/nack_module2.cc
-        voip/webrtc/modules/async_audio_processing/async_audio_processing.cc
+        voip/webrtc/p2p/client/turn_port_factory.cc
+        voip/webrtc/p2p/client/basic_port_allocator.cc
+        voip/webrtc/p2p/base/stun_dictionary.cc
+        voip/webrtc/p2p/base/regathering_controller.cc
+        voip/webrtc/p2p/base/dtls_transport_internal.cc
+        voip/webrtc/p2p/base/transport_description_factory.cc
+        voip/webrtc/p2p/base/turn_server.cc
+        voip/webrtc/p2p/base/connection_info.cc
+        voip/webrtc/p2p/base/packet_transport_internal.cc
+        voip/webrtc/p2p/base/ice_transport_internal.cc
+        voip/webrtc/p2p/base/port_interface.cc
+        voip/webrtc/p2p/base/wrapping_active_ice_controller.cc
+        voip/webrtc/p2p/base/dtls_transport.cc
+        voip/webrtc/p2p/base/p2p_transport_channel.cc
+        voip/webrtc/p2p/base/connection.cc
+        voip/webrtc/p2p/base/basic_async_resolver_factory.cc
+        voip/webrtc/p2p/base/ice_credentials_iterator.cc
+        voip/webrtc/p2p/base/port_allocator.cc
+        voip/webrtc/p2p/base/p2p_constants.cc
+        voip/webrtc/p2p/base/default_ice_transport_factory.cc
+        voip/webrtc/p2p/base/ice_switch_reason.cc
+        voip/webrtc/p2p/base/test_stun_server.cc
+        voip/webrtc/p2p/base/basic_packet_socket_factory.cc
+        voip/webrtc/p2p/base/turn_port.cc
+        voip/webrtc/p2p/base/tcp_port.cc
+        voip/webrtc/p2p/base/ice_controller_interface.cc
+        voip/webrtc/p2p/base/basic_ice_controller.cc
+        voip/webrtc/p2p/base/port.cc
+        voip/webrtc/p2p/base/stun_request.cc
+        voip/webrtc/p2p/base/async_stun_tcp_socket.cc
+        voip/webrtc/p2p/base/stun_port.cc
+        voip/webrtc/p2p/base/stun_server.cc
+        voip/webrtc/p2p/base/transport_description.cc
+        voip/webrtc/p2p/base/pseudo_tcp.cc
         voip/webrtc/logging/rtc_event_log/encoder/blob_encoding.cc
         voip/webrtc/logging/rtc_event_log/encoder/delta_encoding.cc
         voip/webrtc/logging/rtc_event_log/encoder/rtc_event_log_encoder_common.cc
         voip/webrtc/logging/rtc_event_log/encoder/var_int.cc
-        voip/webrtc/logging/rtc_event_log/events/rtc_event_alr_state.cc
-        voip/webrtc/logging/rtc_event_log/events/rtc_event_audio_network_adaptation.cc
-        voip/webrtc/logging/rtc_event_log/events/rtc_event_audio_playout.cc
+        voip/webrtc/logging/rtc_event_log/events/rtc_event_rtp_packet_outgoing.cc
+        voip/webrtc/logging/rtc_event_log/events/rtc_event_probe_result_success.cc
+        voip/webrtc/logging/rtc_event_log/events/rtc_event_probe_result_failure.cc
+        voip/webrtc/logging/rtc_event_log/events/rtc_event_probe_cluster_created.cc
+        voip/webrtc/logging/rtc_event_log/events/rtc_event_video_send_stream_config.cc
         voip/webrtc/logging/rtc_event_log/events/rtc_event_audio_receive_stream_config.cc
-        voip/webrtc/logging/rtc_event_log/events/rtc_event_audio_send_stream_config.cc
+        voip/webrtc/logging/rtc_event_log/events/rtc_event_begin_log.cc
+        voip/webrtc/logging/rtc_event_log/events/rtc_event_field_encoding.cc
+        voip/webrtc/logging/rtc_event_log/events/rtc_event_field_extraction.cc
         voip/webrtc/logging/rtc_event_log/events/rtc_event_bwe_update_delay_based.cc
-        voip/webrtc/logging/rtc_event_log/events/rtc_event_bwe_update_loss_based.cc
-        voip/webrtc/logging/rtc_event_log/events/rtc_event_dtls_transport_state.cc
+        voip/webrtc/logging/rtc_event_log/events/rtc_event_rtcp_packet_incoming.cc
+        voip/webrtc/logging/rtc_event_log/events/rtc_event_ice_candidate_pair_config.cc
+        voip/webrtc/logging/rtc_event_log/events/rtc_event_end_log.cc
+        voip/webrtc/logging/rtc_event_log/events/rtc_event_audio_network_adaptation.cc
+        voip/webrtc/logging/rtc_event_log/events/rtc_event_alr_state.cc
         voip/webrtc/logging/rtc_event_log/events/rtc_event_dtls_writable_state.cc
+        voip/webrtc/logging/rtc_event_log/events/rtc_event_video_receive_stream_config.cc
+        voip/webrtc/logging/rtc_event_log/events/rtc_event_route_change.cc
+        voip/webrtc/logging/rtc_event_log/events/rtc_event_generic_packet_sent.cc
+        voip/webrtc/logging/rtc_event_log/events/rtc_event_dtls_transport_state.cc
+        voip/webrtc/logging/rtc_event_log/events/rtc_event_rtcp_packet_outgoing.cc
+        voip/webrtc/logging/rtc_event_log/events/fixed_length_encoding_parameters_v3.cc
+        voip/webrtc/logging/rtc_event_log/events/rtc_event_audio_playout.cc
+        voip/webrtc/logging/rtc_event_log/events/rtc_event_rtp_packet_incoming.cc
         voip/webrtc/logging/rtc_event_log/events/rtc_event_generic_ack_received.cc
         voip/webrtc/logging/rtc_event_log/events/rtc_event_generic_packet_received.cc
-        voip/webrtc/logging/rtc_event_log/events/rtc_event_generic_packet_sent.cc
+        voip/webrtc/logging/rtc_event_log/events/rtc_event_bwe_update_loss_based.cc
+        voip/webrtc/logging/rtc_event_log/events/rtc_event_neteq_set_minimum_delay.cc
         voip/webrtc/logging/rtc_event_log/events/rtc_event_ice_candidate_pair.cc
-        voip/webrtc/logging/rtc_event_log/events/rtc_event_ice_candidate_pair_config.cc
-        voip/webrtc/logging/rtc_event_log/events/rtc_event_probe_cluster_created.cc
-        voip/webrtc/logging/rtc_event_log/events/rtc_event_probe_result_failure.cc
-        voip/webrtc/logging/rtc_event_log/events/rtc_event_probe_result_success.cc
-        voip/webrtc/logging/rtc_event_log/events/rtc_event_route_change.cc
-        voip/webrtc/logging/rtc_event_log/events/rtc_event_rtcp_packet_incoming.cc
-        voip/webrtc/logging/rtc_event_log/events/rtc_event_rtcp_packet_outgoing.cc
-        voip/webrtc/logging/rtc_event_log/events/rtc_event_rtp_packet_incoming.cc
-        voip/webrtc/logging/rtc_event_log/events/rtc_event_rtp_packet_outgoing.cc
-        voip/webrtc/logging/rtc_event_log/events/rtc_event_video_receive_stream_config.cc
-        voip/webrtc/logging/rtc_event_log/events/rtc_event_video_send_stream_config.cc
+        voip/webrtc/logging/rtc_event_log/events/rtc_event_field_encoding_parser.cc
+        voip/webrtc/logging/rtc_event_log/events/rtc_event_audio_send_stream_config.cc
+        voip/webrtc/logging/rtc_event_log/events/rtc_event_frame_decoded.cc
         voip/webrtc/logging/rtc_event_log/fake_rtc_event_log.cc
         voip/webrtc/logging/rtc_event_log/fake_rtc_event_log_factory.cc
         voip/webrtc/logging/rtc_event_log/ice_logger.cc
         voip/webrtc/logging/rtc_event_log/rtc_event_log_impl.cc
         voip/webrtc/logging/rtc_event_log/rtc_stream_config.cc
+#        voip/webrtc/logging/rtc_event_log/rtc_event_log.pb.cc
+#        voip/webrtc/logging/rtc_event_log/rtc_event_log2.pb.cc
+        voip/webrtc/video/encoder_overshoot_detector.cc
+        voip/webrtc/video/send_delay_stats.cc
+        voip/webrtc/video/video_receive_stream_timeout_tracker.cc
+#        voip/webrtc/video/video_analyzer.cc
+        voip/webrtc/video/video_source_sink_controller.cc
+        voip/webrtc/video/send_statistics_proxy.cc
+        voip/webrtc/video/stream_synchronization.cc
+        voip/webrtc/video/frame_decode_timing.cc
+        voip/webrtc/video/unique_timestamp_counter.cc
+        voip/webrtc/video/encoder_bitrate_adjuster.cc
+#        voip/webrtc/video/video_loopback.cc
+        #        voip/webrtc/video/video_loopback_main.cc
+        voip/webrtc/video/config/video_encoder_config.cc
+        voip/webrtc/video/config/encoder_stream_factory.cc
+        voip/webrtc/video/config/simulcast.cc
+        voip/webrtc/video/video_quality_observer2.cc
+        voip/webrtc/video/receive_statistics_proxy.cc
+        voip/webrtc/video/buffered_frame_decryptor.cc
+        voip/webrtc/video/call_stats2.cc
+#        voip/webrtc/video/screenshare_loopback.cc
+        voip/webrtc/video/render/incoming_video_stream.cc
+        voip/webrtc/video/render/video_render_frames.cc
+        voip/webrtc/video/encoder_rtcp_feedback.cc
+        voip/webrtc/video/video_receive_stream2.cc
+        voip/webrtc/video/video_stream_encoder.cc
+        voip/webrtc/video/frame_dumping_decoder.cc
+        voip/webrtc/video/frame_cadence_adapter.cc
+        voip/webrtc/video/task_queue_frame_decode_scheduler.cc
+        voip/webrtc/video/rtp_video_stream_receiver2.cc
+        voip/webrtc/video/video_stream_buffer_controller.cc
+        voip/webrtc/video/adaptation/video_stream_encoder_resource_manager.cc
         voip/webrtc/video/adaptation/encode_usage_resource.cc
-        voip/webrtc/video/adaptation/overuse_frame_detector.cc
         voip/webrtc/video/adaptation/quality_scaler_resource.cc
         voip/webrtc/video/adaptation/video_stream_encoder_resource.cc
-        voip/webrtc/video/adaptation/video_stream_encoder_resource_manager.cc
-        voip/webrtc/video/adaptation/balanced_constraint.cc
-        voip/webrtc/video/adaptation/bitrate_constraint.cc
         voip/webrtc/video/adaptation/pixel_limit_resource.cc
-        voip/webrtc/video/buffered_frame_decryptor.cc
-        voip/webrtc/video/call_stats.cc
-        voip/webrtc/video/encoder_bitrate_adjuster.cc
-        voip/webrtc/video/encoder_overshoot_detector.cc
-        voip/webrtc/video/encoder_rtcp_feedback.cc
-        voip/webrtc/video/frame_dumping_decoder.cc
+        voip/webrtc/video/adaptation/bitrate_constraint.cc
+        voip/webrtc/video/adaptation/overuse_frame_detector.cc
+        voip/webrtc/video/adaptation/bandwidth_quality_scaler_resource.cc
+        voip/webrtc/video/adaptation/quality_rampup_experiment_helper.cc
+        voip/webrtc/video/adaptation/balanced_constraint.cc
+        voip/webrtc/video/rtp_streams_synchronizer2.cc
+        voip/webrtc/video/alignment_adjuster.cc
         voip/webrtc/video/frame_encode_metadata_writer.cc
         voip/webrtc/video/quality_limitation_reason_tracker.cc
-        voip/webrtc/video/quality_threshold.cc
-        voip/webrtc/video/receive_statistics_proxy.cc
-        voip/webrtc/video/report_block_stats.cc
-        voip/webrtc/video/rtp_streams_synchronizer.cc
-        voip/webrtc/video/rtp_video_stream_receiver.cc
-        voip/webrtc/video/rtp_video_stream_receiver_frame_transformer_delegate.cc
-        voip/webrtc/video/send_delay_stats.cc
-        voip/webrtc/video/send_statistics_proxy.cc
         voip/webrtc/video/stats_counter.cc
-        voip/webrtc/video/stream_synchronization.cc
+        voip/webrtc/video/report_block_stats.cc
+        voip/webrtc/video/frame_dumping_encoder.cc
         voip/webrtc/video/transport_adapter.cc
-        voip/webrtc/video/video_quality_observer.cc
-        voip/webrtc/video/video_receive_stream.cc
-        voip/webrtc/video/video_send_stream.cc
+#        voip/webrtc/video/sv_loopback.cc
         voip/webrtc/video/video_send_stream_impl.cc
-        voip/webrtc/video/video_source_sink_controller.cc
-        voip/webrtc/video/video_stream_decoder.cc
-        voip/webrtc/video/video_stream_decoder_impl.cc
-        voip/webrtc/video/video_stream_encoder.cc
+        voip/webrtc/video/decode_synchronizer.cc
         voip/webrtc/video/video_stream_decoder2.cc
-        voip/webrtc/video/video_receive_stream2.cc
-        voip/webrtc/video/video_quality_observer2.cc
-        voip/webrtc/video/rtp_video_stream_receiver2.cc
-        voip/webrtc/video/rtp_streams_synchronizer2.cc
-        voip/webrtc/video/receive_statistics_proxy2.cc
-        voip/webrtc/video/call_stats2.cc
-        voip/webrtc/video/alignment_adjuster.cc
-        voip/webrtc/audio/audio_level.cc
-        voip/webrtc/audio/audio_receive_stream.cc
-        voip/webrtc/audio/audio_send_stream.cc
-        voip/webrtc/audio/audio_state.cc
-        voip/webrtc/audio/audio_transport_impl.cc
-        voip/webrtc/audio/channel_receive.cc
-        voip/webrtc/audio/channel_receive_frame_transformer_delegate.cc
-        voip/webrtc/audio/channel_send.cc
-        voip/webrtc/audio/channel_send_frame_transformer_delegate.cc
-        voip/webrtc/audio/null_audio_poller.cc
         voip/webrtc/audio/remix_resample.cc
-        voip/webrtc/audio/utility/audio_frame_operations.cc
+        voip/webrtc/audio/audio_state.cc
+        voip/webrtc/audio/audio_level.cc
+        voip/webrtc/audio/channel_receive_frame_transformer_delegate.cc
+        voip/webrtc/audio/audio_send_stream.cc
+        voip/webrtc/audio/voip/audio_channel.cc
+        voip/webrtc/audio/voip/audio_ingress.cc
+        voip/webrtc/audio/voip/voip_core.cc
+        voip/webrtc/audio/voip/audio_egress.cc
+        voip/webrtc/audio/audio_receive_stream.cc
+        voip/webrtc/audio/channel_receive.cc
+        voip/webrtc/audio/audio_transport_impl.cc
+        voip/webrtc/audio/channel_send_frame_transformer_delegate.cc
+        voip/webrtc/audio/channel_send.cc
         voip/webrtc/audio/utility/channel_mixer.cc
         voip/webrtc/audio/utility/channel_mixing_matrix.cc
-        voip/webrtc/audio/voip/audio_egress.cc
-        voip/webrtc/modules/remote_bitrate_estimator/aimd_rate_control.cc
-        voip/webrtc/modules/remote_bitrate_estimator/bwe_defines.cc
-        voip/webrtc/modules/remote_bitrate_estimator/inter_arrival.cc
-        voip/webrtc/modules/remote_bitrate_estimator/overuse_detector.cc
-        voip/webrtc/modules/remote_bitrate_estimator/overuse_estimator.cc
-        voip/webrtc/modules/remote_bitrate_estimator/remote_bitrate_estimator_abs_send_time.cc
-        voip/webrtc/modules/remote_bitrate_estimator/remote_bitrate_estimator_single_stream.cc
-        voip/webrtc/modules/remote_bitrate_estimator/test/bwe_test_logging.cc
-        voip/webrtc/modules/remote_bitrate_estimator/remote_estimator_proxy.cc
-        voip/webrtc/modules/remote_bitrate_estimator/packet_arrival_map.cc
+        voip/webrtc/audio/utility/audio_frame_operations.cc
         voip/webrtc/sdk/media_constraints.cc
+        voip/webrtc/stats/attribute.cc
         voip/webrtc/stats/rtc_stats_report.cc
         voip/webrtc/stats/rtc_stats.cc
         voip/webrtc/stats/rtcstats_objects.cc
-        voip/webrtc/base/third_party/libevent/buffer.c
-        voip/webrtc/base/third_party/libevent/epoll.c
-        voip/webrtc/base/third_party/libevent/evbuffer.c
-        voip/webrtc/base/third_party/libevent/evdns.c
-        voip/webrtc/base/third_party/libevent/event.c
-        voip/webrtc/base/third_party/libevent/event_tagging.c
-        voip/webrtc/base/third_party/libevent/evrpc.c
-        voip/webrtc/base/third_party/libevent/evutil.c
-        voip/webrtc/base/third_party/libevent/http.c
-        voip/webrtc/base/third_party/libevent/log.c
-        voip/webrtc/base/third_party/libevent/poll.c
-        voip/webrtc/base/third_party/libevent/select.c
-        voip/webrtc/base/third_party/libevent/signal.c
-        voip/webrtc/base/third_party/libevent/strlcpy.c)
+        voip/webrtc/third_party/libevent/buffer.c
+        voip/webrtc/third_party/libevent/epoll.c
+        voip/webrtc/third_party/libevent/evbuffer.c
+        voip/webrtc/third_party/libevent/evdns.c
+        voip/webrtc/third_party/libevent/event.c
+        voip/webrtc/third_party/libevent/event_tagging.c
+        voip/webrtc/third_party/libevent/evrpc.c
+        voip/webrtc/third_party/libevent/evutil.c
+        voip/webrtc/third_party/libevent/http.c
+        voip/webrtc/third_party/libevent/log.c
+        voip/webrtc/third_party/libevent/poll.c
+        voip/webrtc/third_party/libevent/select.c
+        voip/webrtc/third_party/libevent/signal.c
+        voip/webrtc/third_party/libevent/strlcpy.c
+        voip/webrtc/net/dcsctp/public/dcsctp_socket_factory.cc
+        voip/webrtc/net/dcsctp/public/dcsctp_handover_state.cc
+        voip/webrtc/net/dcsctp/public/text_pcap_packet_observer.cc
+        voip/webrtc/net/dcsctp/socket/callback_deferrer.cc
+        voip/webrtc/net/dcsctp/socket/dcsctp_socket.cc
+        voip/webrtc/net/dcsctp/socket/heartbeat_handler.cc
+        voip/webrtc/net/dcsctp/socket/packet_sender.cc
+        voip/webrtc/net/dcsctp/socket/state_cookie.cc
+        voip/webrtc/net/dcsctp/socket/stream_reset_handler.cc
+        voip/webrtc/net/dcsctp/socket/transmission_control_block.cc
+        voip/webrtc/net/dcsctp/packet/chunk_validators.cc
+        voip/webrtc/net/dcsctp/packet/crc32c.cc
+        voip/webrtc/net/dcsctp/packet/sctp_packet.cc
+        voip/webrtc/net/dcsctp/packet/tlv_trait.cc
+        voip/webrtc/net/dcsctp/packet/chunk/abort_chunk.cc
+        voip/webrtc/net/dcsctp/packet/chunk/chunk.cc
+        voip/webrtc/net/dcsctp/packet/chunk/cookie_ack_chunk.cc
+        voip/webrtc/net/dcsctp/packet/chunk/cookie_echo_chunk.cc
+        voip/webrtc/net/dcsctp/packet/chunk/data_chunk.cc
+        voip/webrtc/net/dcsctp/packet/chunk/error_chunk.cc
+        voip/webrtc/net/dcsctp/packet/chunk/forward_tsn_chunk.cc
+        voip/webrtc/net/dcsctp/packet/chunk/heartbeat_ack_chunk.cc
+        voip/webrtc/net/dcsctp/packet/chunk/heartbeat_request_chunk.cc
+        voip/webrtc/net/dcsctp/packet/chunk/idata_chunk.cc
+        voip/webrtc/net/dcsctp/packet/chunk/iforward_tsn_chunk.cc
+        voip/webrtc/net/dcsctp/packet/chunk/init_ack_chunk.cc
+        voip/webrtc/net/dcsctp/packet/chunk/init_chunk.cc
+        voip/webrtc/net/dcsctp/packet/chunk/reconfig_chunk.cc
+        voip/webrtc/net/dcsctp/packet/chunk/sack_chunk.cc
+        voip/webrtc/net/dcsctp/packet/chunk/shutdown_ack_chunk.cc
+        voip/webrtc/net/dcsctp/packet/chunk/shutdown_chunk.cc
+        voip/webrtc/net/dcsctp/packet/chunk/shutdown_complete_chunk.cc
+        voip/webrtc/net/dcsctp/packet/error_cause/cookie_received_while_shutting_down_cause.cc
+        voip/webrtc/net/dcsctp/packet/error_cause/error_cause.cc
+        voip/webrtc/net/dcsctp/packet/error_cause/invalid_mandatory_parameter_cause.cc
+        voip/webrtc/net/dcsctp/packet/error_cause/invalid_stream_identifier_cause.cc
+        voip/webrtc/net/dcsctp/packet/error_cause/missing_mandatory_parameter_cause.cc
+        voip/webrtc/net/dcsctp/packet/error_cause/no_user_data_cause.cc
+        voip/webrtc/net/dcsctp/packet/error_cause/out_of_resource_error_cause.cc
+        voip/webrtc/net/dcsctp/packet/error_cause/protocol_violation_cause.cc
+        voip/webrtc/net/dcsctp/packet/error_cause/stale_cookie_error_cause.cc
+        voip/webrtc/net/dcsctp/packet/error_cause/restart_of_an_association_with_new_address_cause.cc
+        voip/webrtc/net/dcsctp/packet/error_cause/unrecognized_chunk_type_cause.cc
+        voip/webrtc/net/dcsctp/packet/error_cause/unrecognized_parameter_cause.cc
+        voip/webrtc/net/dcsctp/packet/error_cause/unresolvable_address_cause.cc
+        voip/webrtc/net/dcsctp/packet/error_cause/user_initiated_abort_cause.cc
+        voip/webrtc/net/dcsctp/packet/parameter/add_incoming_streams_request_parameter.cc
+        voip/webrtc/net/dcsctp/packet/parameter/add_outgoing_streams_request_parameter.cc
+        voip/webrtc/net/dcsctp/packet/parameter/forward_tsn_supported_parameter.cc
+        voip/webrtc/net/dcsctp/packet/parameter/heartbeat_info_parameter.cc
+        voip/webrtc/net/dcsctp/packet/parameter/incoming_ssn_reset_request_parameter.cc
+        voip/webrtc/net/dcsctp/packet/parameter/outgoing_ssn_reset_request_parameter.cc
+        voip/webrtc/net/dcsctp/packet/parameter/parameter.cc
+        voip/webrtc/net/dcsctp/packet/parameter/reconfiguration_response_parameter.cc
+        voip/webrtc/net/dcsctp/packet/parameter/ssn_tsn_reset_request_parameter.cc
+        voip/webrtc/net/dcsctp/packet/parameter/state_cookie_parameter.cc
+        voip/webrtc/net/dcsctp/packet/parameter/supported_extensions_parameter.cc
+        voip/webrtc/net/dcsctp/packet/parameter/zero_checksum_acceptable_chunk_parameter.cc
+        voip/webrtc/net/dcsctp/rx/data_tracker.cc
+        voip/webrtc/net/dcsctp/rx/reassembly_queue.cc
+        voip/webrtc/net/dcsctp/rx/traditional_reassembly_streams.cc
+        voip/webrtc/net/dcsctp/rx/interleaved_reassembly_streams.cc
+        voip/webrtc/net/dcsctp/tx/outstanding_data.cc
+        voip/webrtc/net/dcsctp/tx/retransmission_error_counter.cc
+        voip/webrtc/net/dcsctp/tx/retransmission_queue.cc
+        voip/webrtc/net/dcsctp/tx/retransmission_timeout.cc
+        voip/webrtc/net/dcsctp/tx/rr_send_queue.cc
+        voip/webrtc/net/dcsctp/tx/stream_scheduler.cc
+        voip/webrtc/net/dcsctp/timer/task_queue_timeout.cc
+        voip/webrtc/net/dcsctp/timer/timer.cc
+        voip/webrtc/third_party/crc32c/src/crc32c_portable.cc
+        voip/webrtc/third_party/crc32c/src/crc32c.cc
+#        voip/webrtc/third_party/jni_zero/jni_zero.cc
+)
 target_compile_options(tgcalls PUBLIC
         -Wall -finline-functions -ffast-math)
 set_target_properties(tgcalls PROPERTIES
         ANDROID_ARM_MODE arm)
 target_compile_definitions(tgcalls PUBLIC
-        RTC_DISABLE_TRACE_EVENTS WEBRTC_OPUS_SUPPORT_120MS_PTIME=1 BWE_TEST_LOGGING_COMPILE_TIME_ENABLE=0 ABSL_ALLOCATOR_NOTHROW=1 WEBRTC_NS_FLOAT HAVE_PTHREAD RTC_ENABLE_VP9 WEBRTC_POSIX WEBRTC_LINUX WEBRTC_ANDROID WEBRTC_USE_H264 NDEBUG WEBRTC_HAVE_USRSCTP WEBRTC_HAVE_SCTP WEBRTC_APM_DEBUG_DUMP=0 WEBRTC_USE_BUILTIN_ISAC_FLOAT WEBRTC_OPUS_VARIABLE_COMPLEXITY=0 HAVE_NETINET_IN_H WEBRTC_INCLUDE_INTERNAL_AUDIO_DEVICE HAVE_WEBRTC_VIDEO)
+        WEBRTC_HAVE_DCSCTP RTC_DISABLE_TRACE_EVENTS WEBRTC_OPUS_SUPPORT_120MS_PTIME=1 BWE_TEST_LOGGING_COMPILE_TIME_ENABLE=0 ABSL_ALLOCATOR_NOTHROW=1 WEBRTC_NS_FLOAT HAVE_PTHREAD RTC_ENABLE_VP9 RTC_ENABLE_H265 WEBRTC_POSIX WEBRTC_LINUX WEBRTC_ANDROID WEBRTC_USE_H264 NDEBUG WEBRTC_HAVE_USRSCTP WEBRTC_HAVE_SCTP WEBRTC_APM_DEBUG_DUMP=0 WEBRTC_USE_BUILTIN_ISAC_FLOAT WEBRTC_OPUS_VARIABLE_COMPLEXITY=0 HAVE_NETINET_IN_H WEBRTC_INCLUDE_INTERNAL_AUDIO_DEVICE HAVE_WEBRTC_VIDEO)
 target_include_directories(tgcalls PUBLIC
         ./
         voip
@@ -2149,12 +1844,12 @@ target_include_directories(tgcalls PUBLIC
         third_party/libsrtp/include
         third_party/libsrtp/config
         third_party/libsrtp/crypto/include
-        third_party/libvpx/source/libvpx
-        third_party/libvpx/source/config
         third_party/usrsctplib
         third_party
         voip/libtgvoip
-        ffmpeg/include)
+        ffmpeg/include
+        voip/webrtc/third_party/crc32c/src/include
+        voip/webrtc/third_party/jni_zero)
 
 if (${ANDROID_ABI} STREQUAL "armeabi-v7a")
     target_sources(tgcalls PRIVATE
@@ -2162,28 +1857,24 @@ if (${ANDROID_ABI} STREQUAL "armeabi-v7a")
             voip/webrtc/common_audio/signal_processing/filter_ar_fast_q12_armv7.S)
     target_compile_definitions(tgcalls PUBLIC
             WEBRTC_ARCH_ARM WEBRTC_ARCH_ARM_V7 WEBRTC_HAS_NEON)
-    target_include_directories(tgcalls PUBLIC
-            third_party/libvpx/source/config/linux/arm-neon-cpu-detect)
 elseif(${ANDROID_ABI} STREQUAL "arm64-v8a")
     target_sources(tgcalls PRIVATE
             voip/webrtc/common_audio/signal_processing/complex_bit_reverse.c
             voip/webrtc/common_audio/signal_processing/filter_ar_fast_q12.c)
     target_compile_definitions(tgcalls PUBLIC
             WEBRTC_ARCH_ARM64 WEBRTC_HAS_NEON)
-    target_include_directories(tgcalls PUBLIC
-            third_party/libvpx/source/config/linux/arm64-highbd)
 elseif(${ANDROID_ABI} STREQUAL "x86")
     target_sources(tgcalls PRIVATE
-            )
+
+    )
     target_compile_definitions(tgcalls PUBLIC
             HAVE_SSE2)
-    target_include_directories(tgcalls PUBLIC
-            third_party/libvpx/source/config/linux/ia32)
 elseif(${ANDROID_ABI} STREQUAL "x86_64")
+    target_sources(tgcalls PRIVATE
+
+    )
     target_compile_definitions(tgcalls PUBLIC
             HAVE_SSE2)
-    target_include_directories(tgcalls PUBLIC
-            third_party/libvpx/source/config/linux/x64)
 endif()
 
 if (${ANDROID_ABI} STREQUAL "armeabi-v7a" OR ${ANDROID_ABI} STREQUAL "arm64-v8a")
@@ -2194,7 +1885,6 @@ if (${ANDROID_ABI} STREQUAL "armeabi-v7a" OR ${ANDROID_ABI} STREQUAL "arm64-v8a"
             voip/webrtc/modules/audio_coding/codecs/isac/fix/source/lattice_neon.c
             voip/webrtc/modules/audio_coding/codecs/isac/fix/source/transform_neon.c
             voip/webrtc/modules/audio_processing/aecm/aecm_core_neon.cc
-            voip/webrtc/modules/video_processing/util/denoiser_filter_neon.cc
             voip/webrtc/common_audio/fir_filter_neon.cc
             voip/webrtc/common_audio/signal_processing/cross_correlation_neon.c
             voip/webrtc/common_audio/signal_processing/downsample_fast_neon.c
@@ -2203,7 +1893,6 @@ if (${ANDROID_ABI} STREQUAL "armeabi-v7a" OR ${ANDROID_ABI} STREQUAL "arm64-v8a"
             voip/webrtc/common_audio/third_party/ooura/fft_size_128/ooura_fft_neon.cc)
 else()
     target_sources(tgcalls PRIVATE
-            voip/webrtc/modules/video_processing/util/denoiser_filter_sse2.cc
             voip/webrtc/common_audio/fir_filter_sse.cc
             voip/webrtc/common_audio/resampler/sinc_resampler_sse.cc
             voip/webrtc/common_audio/signal_processing/complex_bit_reverse.c
@@ -2226,23 +1915,72 @@ add_library(voipandroid STATIC
         voip/webrtc/modules/audio_device/android/opensles_common.cc
         voip/webrtc/modules/audio_device/android/opensles_player.cc
         voip/webrtc/modules/audio_device/android/opensles_recorder.cc
-        voip/webrtc/sdk/android/native_api/audio_device_module/audio_device_android.cc
-        voip/webrtc/sdk/android/native_api/base/init.cc
-        voip/webrtc/sdk/android/native_api/codecs/wrapper.cc
-        voip/webrtc/sdk/android/native_api/jni/class_loader.cc
-        voip/webrtc/sdk/android/native_api/jni/java_types.cc
-        voip/webrtc/sdk/android/native_api/jni/jvm.cc
-        voip/webrtc/sdk/android/native_api/peerconnection/peer_connection_factory.cc
-        voip/webrtc/sdk/android/native_api/stacktrace/stacktrace.cc
         voip/webrtc/sdk/android/native_api/video/video_source.cc
         voip/webrtc/sdk/android/native_api/video/wrapper.cc
+        voip/webrtc/sdk/android/native_api/codecs/wrapper.cc
         voip/webrtc/sdk/android/native_api/network_monitor/network_monitor.cc
-        voip/webrtc/sdk/android/src/jni/android_histogram.cc
-        voip/webrtc/sdk/android/src/jni/av1_codec.cc
-        voip/webrtc/sdk/android/src/jni/egl_base_10_impl.cc
+        voip/webrtc/sdk/android/native_api/peerconnection/peer_connection_factory.cc
+        voip/webrtc/sdk/android/native_api/audio_device_module/audio_device_android.cc
+        voip/webrtc/sdk/android/native_api/stacktrace/stacktrace.cc
+        voip/webrtc/sdk/android/native_api/jni/jvm.cc
+        voip/webrtc/sdk/android/native_api/jni/application_context_provider.cc
+        voip/webrtc/sdk/android/native_api/jni/class_loader.cc
+        voip/webrtc/sdk/android/native_api/jni/java_types.cc
+        voip/webrtc/sdk/android/native_api/base/init.cc
+        voip/webrtc/sdk/android/src/jni/pc/audio.cc
+        voip/webrtc/sdk/android/src/jni/pc/rtp_receiver.cc
+        voip/webrtc/sdk/android/src/jni/pc/sdp_observer.cc
+        voip/webrtc/sdk/android/src/jni/pc/video.cc
+        voip/webrtc/sdk/android/src/jni/pc/stats_observer.cc
+        voip/webrtc/sdk/android/src/jni/pc/dtmf_sender.cc
+        voip/webrtc/sdk/android/src/jni/pc/crypto_options.cc
+        voip/webrtc/sdk/android/src/jni/pc/media_stream.cc
+        voip/webrtc/sdk/android/src/jni/pc/rtc_stats_collector_callback_wrapper.cc
+        voip/webrtc/sdk/android/src/jni/pc/audio_track.cc
+        voip/webrtc/sdk/android/src/jni/pc/rtp_parameters.cc
+        voip/webrtc/sdk/android/src/jni/pc/turn_customizer.cc
+        voip/webrtc/sdk/android/src/jni/pc/session_description.cc
+        voip/webrtc/sdk/android/src/jni/pc/rtp_transceiver.cc
+        voip/webrtc/sdk/android/src/jni/pc/rtc_certificate.cc
+        voip/webrtc/sdk/android/src/jni/pc/data_channel.cc
+        voip/webrtc/sdk/android/src/jni/pc/ice_candidate.cc
+        voip/webrtc/sdk/android/src/jni/pc/rtp_capabilities.cc
+        voip/webrtc/sdk/android/src/jni/pc/rtp_sender.cc
+        voip/webrtc/sdk/android/src/jni/pc/call_session_file_rotating_log_sink.cc
+        voip/webrtc/sdk/android/src/jni/pc/peer_connection_factory.cc
+        voip/webrtc/sdk/android/src/jni/pc/ssl_certificate_verifier_wrapper.cc
+        voip/webrtc/sdk/android/src/jni/pc/add_ice_candidate_observer.cc
+        voip/webrtc/sdk/android/src/jni/pc/media_constraints.cc
+        voip/webrtc/sdk/android/src/jni/pc/logging.cc
+        voip/webrtc/sdk/android/src/jni/pc/media_stream_track.cc
+        voip/webrtc/sdk/android/src/jni/pc/peer_connection.cc
+        voip/webrtc/sdk/android/src/jni/pc/owned_factory_and_threads.cc
+        voip/webrtc/sdk/android/src/jni/pc/media_source.cc
+        voip/webrtc/sdk/android/src/jni/video_decoder_factory_wrapper.cc
+        voip/webrtc/sdk/android/src/jni/jvm.cc
+        voip/webrtc/sdk/android/src/jni/jni_common.cc
+        voip/webrtc/sdk/android/src/jni/vp8_codec.cc
+        voip/webrtc/sdk/android/src/jni/vp9_codec.cc
+#        voip/webrtc/sdk/android/src/jni/dav1d_codec.cc
+        voip/webrtc/sdk/android/src/jni/video_track.cc
+        voip/webrtc/sdk/android/src/jni/jni_generator_helper.cc
         voip/webrtc/sdk/android/src/jni/android_metrics.cc
+        voip/webrtc/sdk/android/src/jni/video_decoder_wrapper.cc
+        voip/webrtc/sdk/android/src/jni/video_encoder_factory_wrapper.cc
+        voip/webrtc/sdk/android/src/jni/h264_utils.cc
+        voip/webrtc/sdk/android/src/jni/yuv_helper.cc
+        voip/webrtc/sdk/android/src/jni/egl_base_10_impl.cc
+#        voip/webrtc/sdk/android/src/jni/jni_onload.cc
         voip/webrtc/sdk/android/src/jni/android_network_monitor.cc
-        voip/webrtc/sdk/android/src/jni/android_video_track_source.cc
+        voip/webrtc/sdk/android/src/jni/scoped_java_ref_counted.cc
+        voip/webrtc/sdk/android/src/jni/encoded_image.cc
+        voip/webrtc/sdk/android/src/jni/software_video_decoder_factory.cc
+        voip/webrtc/sdk/android/src/jni/video_encoder_fallback.cc
+        voip/webrtc/sdk/android/src/jni/video_sink.cc
+        voip/webrtc/sdk/android/src/jni/native_capturer_observer.cc
+        voip/webrtc/sdk/android/src/jni/video_codec_status.cc
+        voip/webrtc/sdk/android/src/jni/wrapped_native_i420_buffer.cc
+        voip/webrtc/sdk/android/src/jni/builtin_audio_encoder_factory_factory.cc
         voip/webrtc/sdk/android/src/jni/audio_device/audio_device_module.cc
         voip/webrtc/sdk/android/src/jni/audio_device/audio_record_jni.cc
         voip/webrtc/sdk/android/src/jni/audio_device/audio_track_jni.cc
@@ -2250,71 +1988,29 @@ add_library(voipandroid STATIC
         voip/webrtc/sdk/android/src/jni/audio_device/opensles_common.cc
         voip/webrtc/sdk/android/src/jni/audio_device/opensles_player.cc
         voip/webrtc/sdk/android/src/jni/audio_device/opensles_recorder.cc
-        voip/webrtc/sdk/android/src/jni/builtin_audio_decoder_factory_factory.cc
-        voip/webrtc/sdk/android/src/jni/builtin_audio_encoder_factory_factory.cc
-        voip/webrtc/sdk/android/src/jni/encoded_image.cc
-        voip/webrtc/sdk/android/src/jni/h264_utils.cc
-        voip/webrtc/sdk/android/src/jni/java_i420_buffer.cc
-        voip/webrtc/sdk/android/src/jni/jni_common.cc
-        voip/webrtc/sdk/android/src/jni/jni_generator_helper.cc
-        voip/webrtc/sdk/android/src/jni/jni_helpers.cc
-        voip/webrtc/sdk/android/src/jni/jvm.cc
-        voip/webrtc/sdk/android/src/jni/logging/log_sink.cc
-        voip/webrtc/sdk/android/src/jni/native_capturer_observer.cc
-        voip/webrtc/sdk/android/src/jni/nv12_buffer.cc
-        voip/webrtc/sdk/android/src/jni/nv21_buffer.cc
-        voip/webrtc/sdk/android/src/jni/pc/audio.cc
-        voip/webrtc/sdk/android/src/jni/pc/audio_track.cc
-        voip/webrtc/sdk/android/src/jni/pc/call_session_file_rotating_log_sink.cc
-        voip/webrtc/sdk/android/src/jni/pc/crypto_options.cc
-        voip/webrtc/sdk/android/src/jni/pc/data_channel.cc
-        voip/webrtc/sdk/android/src/jni/pc/dtmf_sender.cc
-        voip/webrtc/sdk/android/src/jni/pc/ice_candidate.cc
-        voip/webrtc/sdk/android/src/jni/pc/logging.cc
-        voip/webrtc/sdk/android/src/jni/pc/media_constraints.cc
-        voip/webrtc/sdk/android/src/jni/pc/media_source.cc
-        voip/webrtc/sdk/android/src/jni/pc/media_stream.cc
-        voip/webrtc/sdk/android/src/jni/pc/media_stream_track.cc
-        voip/webrtc/sdk/android/src/jni/pc/owned_factory_and_threads.cc
-        voip/webrtc/sdk/android/src/jni/pc/peer_connection.cc
-        voip/webrtc/sdk/android/src/jni/pc/peer_connection_factory.cc
-        voip/webrtc/sdk/android/src/jni/pc/rtc_certificate.cc
-        voip/webrtc/sdk/android/src/jni/pc/rtc_stats_collector_callback_wrapper.cc
-        voip/webrtc/sdk/android/src/jni/pc/rtp_parameters.cc
-        voip/webrtc/sdk/android/src/jni/pc/rtp_receiver.cc
-        voip/webrtc/sdk/android/src/jni/pc/rtp_sender.cc
-        voip/webrtc/sdk/android/src/jni/pc/rtp_transceiver.cc
-        voip/webrtc/sdk/android/src/jni/pc/sdp_observer.cc
-        voip/webrtc/sdk/android/src/jni/pc/session_description.cc
-        voip/webrtc/sdk/android/src/jni/pc/ssl_certificate_verifier_wrapper.cc
-        voip/webrtc/sdk/android/src/jni/pc/stats_observer.cc
-        voip/webrtc/sdk/android/src/jni/pc/turn_customizer.cc
-        voip/webrtc/sdk/android/src/jni/pc/video.cc
-        voip/webrtc/sdk/android/src/jni/scoped_java_ref_counted.cc
-        voip/webrtc/sdk/android/src/jni/timestamp_aligner.cc
-        voip/webrtc/sdk/android/src/jni/video_codec_info.cc
-        voip/webrtc/sdk/android/src/jni/video_codec_status.cc
-        voip/webrtc/sdk/android/src/jni/video_decoder_factory_wrapper.cc
         voip/webrtc/sdk/android/src/jni/video_decoder_fallback.cc
-        voip/webrtc/sdk/android/src/jni/video_decoder_wrapper.cc
-        voip/webrtc/sdk/android/src/jni/video_encoder_factory_wrapper.cc
-        voip/webrtc/sdk/android/src/jni/video_encoder_fallback.cc
-        voip/webrtc/sdk/android/src/jni/video_encoder_wrapper.cc
+        voip/webrtc/sdk/android/src/jni/android_video_track_source.cc
+        voip/webrtc/sdk/android/src/jni/software_video_encoder_factory.cc
         voip/webrtc/sdk/android/src/jni/video_frame.cc
-        voip/webrtc/sdk/android/src/jni/video_sink.cc
-        voip/webrtc/sdk/android/src/jni/video_track.cc
-        voip/webrtc/sdk/android/src/jni/vp8_codec.cc
-        voip/webrtc/sdk/android/src/jni/vp9_codec.cc
-        voip/webrtc/sdk/android/src/jni/h264_codec.cc
-        voip/webrtc/sdk/android/src/jni/wrapped_native_i420_buffer.cc
-        voip/webrtc/sdk/android/src/jni/yuv_helper.cc
-        voip/org_telegram_messenger_voip_Instance.cpp)
+        voip/webrtc/sdk/android/src/jni/builtin_audio_decoder_factory_factory.cc
+        voip/webrtc/sdk/android/src/jni/nv21_buffer.cc
+        voip/webrtc/sdk/android/src/jni/jni_helpers.cc
+        voip/webrtc/sdk/android/src/jni/android_histogram.cc
+        voip/webrtc/sdk/android/src/jni/java_i420_buffer.cc
+        voip/webrtc/sdk/android/src/jni/logging/log_sink.cc
+#        voip/webrtc/sdk/android/src/jni/libaom_av1_encoder.cc
+        voip/webrtc/sdk/android/src/jni/video_codec_info.cc
+        voip/webrtc/sdk/android/src/jni/video_encoder_wrapper.cc
+        voip/webrtc/sdk/android/src/jni/timestamp_aligner.cc
+        voip/webrtc/sdk/android/src/jni/nv12_buffer.cc
+        voip/org_telegram_messenger_voip_Instance.cpp
+)
 target_compile_options(voipandroid PUBLIC
         -Wall -finline-functions -ffast-math -fexceptions)
 set_target_properties(voipandroid PROPERTIES
         ANDROID_ARM_MODE arm)
 target_compile_definitions(voipandroid PUBLIC
-        RTC_DISABLE_TRACE_EVENTS WEBRTC_OPUS_SUPPORT_120MS_PTIME=1 BWE_TEST_LOGGING_COMPILE_TIME_ENABLE=0 ABSL_ALLOCATOR_NOTHROW=1 WEBRTC_NS_FLOAT HAVE_PTHREAD RTC_ENABLE_VP9 WEBRTC_POSIX WEBRTC_LINUX WEBRTC_ANDROID WEBRTC_USE_H264 NDEBUG WEBRTC_HAVE_USRSCTP WEBRTC_HAVE_SCTP WEBRTC_APM_DEBUG_DUMP=0 WEBRTC_USE_BUILTIN_ISAC_FLOAT WEBRTC_OPUS_VARIABLE_COMPLEXITY=0 HAVE_NETINET_IN_H WEBRTC_INCLUDE_INTERNAL_AUDIO_DEVICE HAVE_WEBRTC_VIDEO)
+        WEBRTC_HAVE_DCSCTP RTC_DISABLE_TRACE_EVENTS WEBRTC_OPUS_SUPPORT_120MS_PTIME=1 BWE_TEST_LOGGING_COMPILE_TIME_ENABLE=0 ABSL_ALLOCATOR_NOTHROW=1 WEBRTC_NS_FLOAT HAVE_PTHREAD RTC_ENABLE_VP9 RTC_ENABLE_H265 WEBRTC_POSIX WEBRTC_LINUX WEBRTC_ANDROID WEBRTC_USE_H264 NDEBUG WEBRTC_HAVE_USRSCTP WEBRTC_HAVE_SCTP WEBRTC_APM_DEBUG_DUMP=0 WEBRTC_USE_BUILTIN_ISAC_FLOAT WEBRTC_OPUS_VARIABLE_COMPLEXITY=0 HAVE_NETINET_IN_H WEBRTC_INCLUDE_INTERNAL_AUDIO_DEVICE HAVE_WEBRTC_VIDEO)
 target_include_directories(voipandroid PUBLIC
         ./
         voip
@@ -2332,30 +2028,22 @@ target_include_directories(voipandroid PUBLIC
         third_party/libsrtp/include
         third_party/libsrtp/config
         third_party/libsrtp/crypto/include
-        third_party/libvpx/source/libvpx
-        third_party/libvpx/source/config
         third_party/usrsctplib
         third_party
-        voip/libtgvoip)
+        voip/libtgvoip
+        tde2e/include
+)
 
 if (${ANDROID_ABI} STREQUAL "armeabi-v7a")
     target_compile_definitions(voipandroid PUBLIC
             WEBRTC_ARCH_ARM WEBRTC_ARCH_ARM_V7 WEBRTC_HAS_NEON)
-    target_include_directories(voipandroid PUBLIC
-            third_party/libvpx/source/config/linux/arm-neon-cpu-detect)
 elseif(${ANDROID_ABI} STREQUAL "arm64-v8a")
     target_compile_definitions(voipandroid PUBLIC
             WEBRTC_ARCH_ARM64 WEBRTC_HAS_NEON)
-    target_include_directories(voipandroid PUBLIC
-            third_party/libvpx/source/config/linux/arm64-highbd)
 elseif(${ANDROID_ABI} STREQUAL "x86")
     target_compile_definitions(voipandroid PUBLIC
             HAVE_SSE2)
-    target_include_directories(voipandroid PUBLIC
-            third_party/libvpx/source/config/linux/ia32)
 elseif(${ANDROID_ABI} STREQUAL "x86_64")
     target_compile_definitions(voipandroid PUBLIC
             HAVE_SSE2)
-    target_include_directories(voipandroid PUBLIC
-            third_party/libvpx/source/config/linux/x64)
 endif()

@@ -1,4 +1,6 @@
 <resources>
+    <item name="menu_spoiler" type="id"/>
+    <item name="menu_quote" type="id"/>
     <item name="menu_regular" type="id"/>
     <item name="menu_bold" type="id"/>
     <item name="menu_italic" type="id"/>
@@ -7,15 +9,35 @@
     <item name="menu_strike" type="id"/>
     <item name="menu_underline" type="id"/>
     <item name="menu_groupbolditalic" type="id"/>
+    <item name="menu_delete" type="id"/>
     <item name="parent_tag" type="id"/>
     <item name="object_tag" type="id"/>
+    <item name="spring_tag" type="id"/>
+    <item name="spring_was_translation_x_tag" type="id"/>
+    <item name="fit_width_tag" type="id"/>
     <item name="index_tag" type="id"/>
     <item name="svg_tag" type="id"/>
     <item name="width_tag" type="id"/>
+    <item name="color_key_tag" type="id"/>
     <item name="current_animation" type="id"/>
     <item name="acc_action_small_button" type="id"/>
     <item name="acc_action_msg_options" type="id"/>
     <item name="acc_action_open_photo" type="id"/>
+    <item name="acc_action_chat_preview" type="id"/>
+    <item name="acc_action_open_forwarded_origin" type="id"/>
+    <item name="shake_animation" type="id"/>
+
+    <item name="timeout_callback" type="id"/>
+
+    <item name="menu_open_bot" type="id"/>
+    <item name="menu_settings" type="id"/>
+    <item name="menu_reload_page" type="id"/>
+    <item name="menu_delete_bot" type="id"/>
+    <item name="menu_tos_bot" type="id"/>
+    <item name="menu_privacy" type="id"/>
+    <item name="menu_add_to_home_screen_bot" type="id"/>
+    <item name="menu_collapse_bot" type="id"/>
+    <item name="menu_share_bot" type="id"/>
 
     <!-- there are required for focusing order customization on the passcode screen -->
     <item name="passcode_btn_1" type="id"/>

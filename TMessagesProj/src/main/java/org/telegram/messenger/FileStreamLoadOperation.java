@@ -9,36 +9,50 @@
 package org.telegram.messenger;
 
 import android.net.Uri;
+
 import androidx.annotation.Nullable;
 
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.upstream.BaseDataSource;
 import com.google.android.exoplayer2.upstream.DataSpec;
 import com.google.android.exoplayer2.upstream.TransferListener;
+import com.google.android.exoplayer2.util.Log;
 
 import org.telegram.tgnet.TLRPC;
 
 import java.io.EOFException;
+import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
+import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 
 public class FileStreamLoadOperation extends BaseDataSource implements FileLoadOperationStream {
+
+    public static final ConcurrentHashMap<Long, FileStreamLoadOperation> allStreams = new ConcurrentHashMap<>();
 
     private FileLoadOperation loadOperation;
 
     private Uri uri;
     private long bytesRemaining;
+    private long bytesTransferred;
+    private long requestedLength;
     private boolean opened;
-    private int currentOffset;
+    private long currentOffset;
     private CountDownLatch countDownLatch;
     private RandomAccessFile file;
     private TLRPC.Document document;
     private Object parentObject;
     private int currentAccount;
+    File currentFile;
+
+    private static final ConcurrentHashMap<Long, Integer> priorityMap = new ConcurrentHashMap<>();
 
     public FileStreamLoadOperation() {
-        super(/* isNetwork= */ false);
+        super(/* isNetwork= */ true);
     }
 
     @Deprecated
@@ -49,15 +63,27 @@ public class FileStreamLoadOperation extends BaseDataSource implements FileLoadO
         }
     }
 
+    public static int getStreamPrioriy(TLRPC.Document document) {
+        if (document == null) {
+            return FileLoader.PRIORITY_HIGH;
+        }
+        Integer integer = priorityMap.get(document.id);
+        if (integer == null) {
+            return FileLoader.PRIORITY_HIGH;
+        }
+        return integer;
+    }
+
     @Override
     public long open(DataSpec dataSpec) throws IOException {
         uri = dataSpec.uri;
+        transferInitializing(dataSpec);
         currentAccount = Utilities.parseInt(uri.getQueryParameter("account"));
         parentObject = FileLoader.getInstance(currentAccount).getParentObject(Utilities.parseInt(uri.getQueryParameter("rid")));
         document = new TLRPC.TL_document();
         document.access_hash = Utilities.parseLong(uri.getQueryParameter("hash"));
         document.id = Utilities.parseLong(uri.getQueryParameter("id"));
-        document.size = Utilities.parseInt(uri.getQueryParameter("size"));
+        document.size = Utilities.parseLong(uri.getQueryParameter("size"));
         document.dc_id = Utilities.parseInt(uri.getQueryParameter("dc"));
         document.mime_type = uri.getQueryParameter("mime");
         document.file_reference = Utilities.hexToBytes(uri.getQueryParameter("reference"));
@@ -69,51 +95,138 @@ public class FileStreamLoadOperation extends BaseDataSource implements FileLoadO
         } else if (document.mime_type.startsWith("audio")) {
             document.attributes.add(new TLRPC.TL_documentAttributeAudio());
         }
-        loadOperation = FileLoader.getInstance(currentAccount).loadStreamFile(this, document, null, parentObject, currentOffset = (int) dataSpec.position, false);
-        bytesRemaining = dataSpec.length == C.LENGTH_UNSET ? document.size - dataSpec.position : dataSpec.length;
-        if (bytesRemaining < 0) {
-            throw new EOFException();
+        allStreams.put(document.id, this);
+        currentOffset = dataSpec.position;
+        requestedLength = dataSpec.length;
+        loadOperation = FileLoader.getInstance(currentAccount).loadStreamFile(this, document, null, parentObject, currentOffset, false, getCurrentPriority());
+        bytesTransferred = 0;
+        bytesRemaining = document.size - dataSpec.position;
+        if (requestedLength != C.LENGTH_UNSET) {
+            bytesRemaining = Math.min(bytesRemaining, requestedLength - bytesTransferred);
         }
         opened = true;
         transferStarted(dataSpec);
         if (loadOperation != null) {
-            file = new RandomAccessFile(loadOperation.getCurrentFile(), "r");
-            file.seek(currentOffset);
+            currentFile = loadOperation.getCurrentFile();
+            if (currentFile != null) {
+                try {
+                    file = new RandomAccessFile(currentFile, "r");
+                    file.seek(currentOffset);
+                    if (loadOperation.isFinished()) {
+                        super.isNetwork = false;
+                        bytesRemaining = currentFile.length() - currentOffset;
+                        if (requestedLength != C.LENGTH_UNSET) {
+                            bytesRemaining = Math.min(bytesRemaining, requestedLength - bytesTransferred);
+                        }
+                    }
+                } catch (Throwable e) {
+                }
+            }
         }
+        FileLog.e("FileStreamLoadOperation " + document.id + " open operation=" + loadOperation + " currentFile=" + currentFile + " file=" + file + " bytesRemaining=" + bytesRemaining + " me=" + this);
+        FileLog.e("FileStreamLoadOperation " + document.id + " " + MessageObject.getVideoWidth(document) + "x" + MessageObject.getVideoWidth(document) + " mime_type="+document.mime_type+" codec="+MessageObject.getVideoCodec(document)+" size="+ document.size);
         return bytesRemaining;
+    }
+
+    private int getCurrentPriority() {
+        Integer priority = priorityMap.getOrDefault(document.id, null);
+        if (priority != null) {
+            return priority;
+        }
+        return FileLoader.PRIORITY_HIGH;
     }
 
     @Override
     public int read(byte[] buffer, int offset, int readLength) throws IOException {
         if (readLength == 0) {
+//            FileLog.e("FileStreamLoadOperation " + document.id + " read 0 return");
             return 0;
         } else if (bytesRemaining == 0) {
+//            FileLog.e("FileStreamLoadOperation " + document.id + " read RESULT_END_OF_INPUT");
             return C.RESULT_END_OF_INPUT;
         } else {
             int availableLength = 0;
+            int bytesRead;
             try {
                 if (bytesRemaining < readLength) {
                     readLength = (int) bytesRemaining;
                 }
-                while (availableLength == 0 && opened) {
-                    availableLength = loadOperation.getDownloadedLengthFromOffset(currentOffset, readLength)[0];
+                while ((availableLength == 0 && opened) || file == null) {
+                    availableLength = (int) loadOperation.getDownloadedLengthFromOffset(currentOffset, readLength)[0];
                     if (availableLength == 0) {
-                        FileLoader.getInstance(currentAccount).loadStreamFile(this, document, null, parentObject, currentOffset, false);
                         countDownLatch = new CountDownLatch(1);
-                        countDownLatch.await();
+                        FileLoadOperation loadOperation = FileLoader.getInstance(currentAccount).loadStreamFile(this, document, null, parentObject, currentOffset, false, getCurrentPriority());
+                        if (this.loadOperation != loadOperation) {
+//                            FileLog.e("FileStreamLoadOperation " + document.id + " read: changed operation!");
+                            this.loadOperation.removeStreamListener(this);
+                            this.loadOperation = loadOperation;
+                        }
+//                        FileLog.e("FileStreamLoadOperation " + document.id + " read sleeping.... Zzz");
+                        if (countDownLatch != null) {
+                            countDownLatch.await();
+                            countDownLatch = null;
+                        }
+                    }
+//                    FileLog.e("FileStreamLoadOperation " + document.id + " read availableLength=" + availableLength);
+                    File currentFileFast = loadOperation.getCurrentFileFast();
+                    if (file == null || !Objects.equals(currentFile, currentFileFast)) {
+                        if (BuildVars.LOGS_ENABLED) {
+                            FileLog.d("check stream file " + currentFileFast);
+                        }
+                        if (file != null) {
+                            try {
+                                file.close();
+                            } catch (Exception ignore) {
+
+                            }
+                        }
+//                        FileLog.e("FileStreamLoadOperation " + document.id + " read update file from " + currentFile + " to " + currentFileFast + " me=" + this);
+                        currentFile = currentFileFast;
+                        if (currentFile != null) {
+                            try {
+                                file = new RandomAccessFile(currentFile, "r");
+                                file.seek(currentOffset);
+                                if (loadOperation.isFinished()) {
+                                    super.isNetwork = false;
+                                    bytesRemaining = currentFile.length() - currentOffset;
+                                    if (requestedLength != C.LENGTH_UNSET) {
+                                        bytesRemaining = Math.min(bytesRemaining, requestedLength - bytesTransferred);
+                                    }
+                                }
+                            } catch (Throwable e) {
+                                if (loadOperation.isFinished() && !currentFile.exists()) {
+                                    FileLoader.getInstance(currentAccount).cancelLoadFile(loadOperation.getFileName());
+                                    FileLoadOperation newLoadOperation = FileLoader.getInstance(currentAccount).loadStreamFile(this, document, null, parentObject, currentOffset, false, getCurrentPriority());
+                                    if (this.loadOperation != newLoadOperation) {
+//                            FileLog.e("FileStreamLoadOperation " + document.id + " read: changed operation!");
+                                        this.loadOperation.removeStreamListener(this);
+                                        this.loadOperation = newLoadOperation;
+                                    }
+                                }
+                            }
+                        }
+                    } else {
+//                        FileLog.e("FileStreamLoadOperation " + document.id + " read have exact same file");
                     }
                 }
                 if (!opened) {
+//                    FileLog.e("FileStreamLoadOperation " + document.id + " read return, not opened");
                     return 0;
                 }
-                file.readFully(buffer, offset, availableLength);
-                currentOffset += availableLength;
-                bytesRemaining -= availableLength;
-                bytesTransferred(availableLength);
+                bytesRead = file.read(buffer, offset, availableLength);
+                if (bytesRead > 0) {
+                    currentOffset += bytesRead;
+                    bytesRemaining -= bytesRead;
+                    bytesTransferred += bytesRead;
+                    bytesTransferred(bytesRead);
+                }
+            } catch (InterruptedException e) {
+                FileLog.e(e);
+                return C.RESULT_NOTHING_READ;
             } catch (Exception e) {
                 throw new IOException(e);
             }
-            return availableLength;
+            return bytesRead;
         }
     }
 
@@ -124,6 +237,7 @@ public class FileStreamLoadOperation extends BaseDataSource implements FileLoadO
 
     @Override
     public void close() {
+        FileLog.e("FileStreamLoadOperation " + document.id + " close me=" + this);
         if (loadOperation != null) {
             loadOperation.removeStreamListener(this);
         }
@@ -136,19 +250,57 @@ public class FileStreamLoadOperation extends BaseDataSource implements FileLoadO
             file = null;
         }
         uri = null;
+        allStreams.remove(document.id);
         if (opened) {
             opened = false;
             transferEnded();
         }
         if (countDownLatch != null) {
+         //   FileLog.d("FileStreamLoadOperation count down");
             countDownLatch.countDown();
+            countDownLatch = null;
         }
     }
 
     @Override
     public void newDataAvailable() {
-        if (countDownLatch != null) {
-            countDownLatch.countDown();
+//        FileLog.e("FileStreamLoadOperation " + document.id + " newDataAvailable me=" + this);
+        CountDownLatch latch = countDownLatch;
+        countDownLatch = null;
+        if (latch != null) {
+            latch.countDown();
         }
+    }
+
+    public static void setPriorityForDocument(TLRPC.Document document, int priority) {
+        if (document != null) {
+            priorityMap.put(document.id, priority);
+        }
+    }
+
+    @Nullable
+    public static Uri prepareUri(int currentAccount, TLRPC.Document document, Object parent) {
+        String attachFileName = FileLoader.getAttachFileName(document);
+        File file = FileLoader.getInstance(currentAccount).getPathToAttach(document);
+
+        if (file != null && file.exists()) {
+            return Uri.fromFile(file);
+        }
+        try {
+            String params =
+                "?account=" + currentAccount +
+                "&id=" + document.id +
+                "&hash=" + document.access_hash +
+                "&dc=" + document.dc_id +
+                "&size=" + document.size +
+                "&mime=" + URLEncoder.encode(document.mime_type, "UTF-8") +
+                "&rid=" + FileLoader.getInstance(currentAccount).getFileReference(parent) +
+                "&name=" + URLEncoder.encode(FileLoader.getDocumentFileName(document), "UTF-8") +
+                "&reference=" + Utilities.bytesToHex(document.file_reference != null ? document.file_reference : new byte[0]);
+            return Uri.parse("tg://" + attachFileName + params);
+        } catch (UnsupportedEncodingException e) {
+            FileLog.e(e);
+        }
+        return null;
     }
 }

@@ -26,13 +26,17 @@ import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.RippleDrawable;
 import android.os.Build;
-import androidx.annotation.Keep;
+import android.os.VibrationEffect;
+import android.os.Vibrator;
 import android.util.StateSet;
 import android.view.View;
 import android.view.accessibility.AccessibilityNodeInfo;
 
+import androidx.annotation.Keep;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Cells.BaseCell;
 
 public class Switch extends View {
 
@@ -52,10 +56,10 @@ public class Switch extends View {
 
     private OnCheckedChangeListener onCheckedChangeListener;
 
-    private String trackColorKey = Theme.key_switch2Track;
-    private String trackCheckedColorKey = Theme.key_switch2TrackChecked;
-    private String thumbColorKey = Theme.key_windowBackgroundWhite;
-    private String thumbCheckedColorKey = Theme.key_windowBackgroundWhite;
+    private int trackColorKey = Theme.key_fill_RedNormal;
+    private int trackCheckedColorKey = Theme.key_switch2TrackChecked;
+    private int thumbColorKey = Theme.key_windowBackgroundWhite;
+    private int thumbCheckedColorKey = Theme.key_windowBackgroundWhite;
 
     private Drawable iconDrawable;
     private int lastIconColor;
@@ -77,6 +81,8 @@ public class Switch extends View {
     private Paint overlayEraserPaint;
     private Paint overlayMaskPaint;
 
+    private Theme.ResourcesProvider resourcesProvider;
+
     private int overrideColorProgress;
 
     public interface OnCheckedChangeListener {
@@ -84,7 +90,12 @@ public class Switch extends View {
     }
 
     public Switch(Context context) {
+        this(context, null);
+    }
+
+    public Switch(Context context, Theme.ResourcesProvider resourcesProvider) {
         super(context);
+        this.resourcesProvider = resourcesProvider;
         rectF = new RectF();
 
         paint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -92,6 +103,8 @@ public class Switch extends View {
         paint2.setStyle(Paint.Style.STROKE);
         paint2.setStrokeCap(Paint.Cap.ROUND);
         paint2.setStrokeWidth(AndroidUtilities.dp(2));
+
+        setHapticFeedbackEnabled(true);
     }
 
     @Keep
@@ -177,23 +190,21 @@ public class Switch extends View {
                 };
             }
             ColorStateList colorStateList = new ColorStateList(
-                    new int[][]{StateSet.WILD_CARD},
-                    new int[]{0}
+                new int[][]{StateSet.WILD_CARD},
+                new int[]{0}
             );
-            rippleDrawable = new RippleDrawable(colorStateList, null, maskDrawable);
+            rippleDrawable = new BaseCell.RippleDrawableSafe(colorStateList, null, maskDrawable);
             if (Build.VERSION.SDK_INT >= 23) {
                 rippleDrawable.setRadius(AndroidUtilities.dp(18));
             }
             rippleDrawable.setCallback(this);
         }
         if (isChecked && colorSet != 2 || !isChecked && colorSet != 1) {
-            int color = isChecked ? Theme.getColor(Theme.key_switchTrackBlueSelectorChecked) : Theme.getColor(Theme.key_switchTrackBlueSelector);
-            /*if (Build.VERSION.SDK_INT < 28) {
-                color = Color.argb(Color.alpha(color) * 2, Color.red(color), Color.green(color), Color.blue(color));
-            }*/
+            int color = Theme.getColor(isChecked ? Theme.key_switchTrackBlueSelectorChecked : Theme.key_switchTrackBlueSelector, resourcesProvider);
+            color = processColor(color);
             ColorStateList colorStateList = new ColorStateList(
-                    new int[][]{StateSet.WILD_CARD},
-                    new int[]{color}
+                new int[][]{StateSet.WILD_CARD},
+                new int[]{color}
             );
             rippleDrawable.setColor(colorStateList);
             colorSet = isChecked ? 2 : 1;
@@ -210,7 +221,11 @@ public class Switch extends View {
         return super.verifyDrawable(who) || rippleDrawable != null && who == rippleDrawable;
     }
 
-    public void setColors(String track, String trackChecked, String thumb, String thumbChecked) {
+    protected int processColor(int color) {
+        return color;
+    }
+
+    public void setColors(int track, int trackChecked, int thumb, int thumbChecked) {
         trackColorKey = track;
         trackCheckedColorKey = trackChecked;
         thumbColorKey = thumb;
@@ -219,7 +234,7 @@ public class Switch extends View {
 
     private void animateToCheckedState(boolean newCheckedState) {
         checkAnimator = ObjectAnimator.ofFloat(this, "progress", newCheckedState ? 1 : 0);
-        checkAnimator.setDuration(250);
+        checkAnimator.setDuration(200);
         checkAnimator.addListener(new AnimatorListenerAdapter() {
             @Override
             public void onAnimationEnd(Animator animation) {
@@ -231,7 +246,7 @@ public class Switch extends View {
 
     private void animateIcon(boolean newCheckedState) {
         iconAnimator = ObjectAnimator.ofFloat(this, "iconProgress", newCheckedState ? 1 : 0);
-        iconAnimator.setDuration(250);
+        iconAnimator.setDuration(200);
         iconAnimator.addListener(new AnimatorListenerAdapter() {
             @Override
             public void onAnimationEnd(Animator animation) {
@@ -274,6 +289,22 @@ public class Switch extends View {
                 onCheckedChangeListener.onCheckedChanged(this, checked);
             }
         }
+        setDrawIconType(iconType, animated);
+    }
+
+    public void setIcon(int icon) {
+        if (icon != 0) {
+            iconDrawable = getResources().getDrawable(icon).mutate();
+            if (iconDrawable != null) {
+                iconDrawable.setColorFilter(new PorterDuffColorFilter(lastIconColor = Theme.getColor(isChecked ? trackCheckedColorKey : trackColorKey, resourcesProvider), PorterDuff.Mode.MULTIPLY));
+            }
+        } else {
+            iconDrawable = null;
+        }
+        invalidate();
+    }
+
+    public void setDrawIconType(int iconType, boolean animated) {
         if (drawIconType != iconType) {
             drawIconType = iconType;
             if (attachedToWindow && animated) {
@@ -282,17 +313,6 @@ public class Switch extends View {
                 cancelIconAnimator();
                 setIconProgress(iconType == 0 ? 1.0f : 0.0f);
             }
-        }
-    }
-
-    public void setIcon(int icon) {
-        if (icon != 0) {
-            iconDrawable = getResources().getDrawable(icon).mutate();
-            if (iconDrawable != null) {
-                iconDrawable.setColorFilter(new PorterDuffColorFilter(lastIconColor = Theme.getColor(isChecked ? trackCheckedColorKey : trackColorKey), PorterDuff.Mode.MULTIPLY));
-            }
-        } else {
-            iconDrawable = null;
         }
     }
 
@@ -397,8 +417,8 @@ public class Switch extends View {
                 colorProgress = progress;
             }
 
-            color1 = Theme.getColor(trackColorKey);
-            color2 = Theme.getColor(trackCheckedColorKey);
+            color1 = processColor(Theme.getColor(trackColorKey, resourcesProvider));
+            color2 = processColor(Theme.getColor(trackCheckedColorKey, resourcesProvider));
             if (a == 0 && iconDrawable != null && lastIconColor != (isChecked ? color2 : color1)) {
                 iconDrawable.setColorFilter(new PorterDuffColorFilter(lastIconColor = (isChecked ? color2 : color1), PorterDuff.Mode.MULTIPLY));
             }
@@ -452,8 +472,8 @@ public class Switch extends View {
                 colorProgress = progress;
             }
 
-            color1 = Theme.getColor(thumbColorKey);
-            color2 = Theme.getColor(thumbCheckedColorKey);
+            color1 = Theme.getColor(thumbColorKey, resourcesProvider);
+            color2 = processColor(Theme.getColor(thumbCheckedColorKey, resourcesProvider));
             r1 = Color.red(color1);
             r2 = Color.red(color2);
             g1 = Color.green(color1);
@@ -523,6 +543,6 @@ public class Switch extends View {
         info.setClassName("android.widget.Switch");
         info.setCheckable(true);
         info.setChecked(isChecked);
-        //info.setContentDescription(isChecked ? LocaleController.getString("NotificationsOn", R.string.NotificationsOn) : LocaleController.getString("NotificationsOff", R.string.NotificationsOff));
+        //info.setContentDescription(isChecked ? LocaleController.getString(R.string.NotificationsOn) : LocaleController.getString(R.string.NotificationsOff));
     }
 }

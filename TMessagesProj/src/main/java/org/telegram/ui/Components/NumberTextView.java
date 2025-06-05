@@ -19,6 +19,7 @@ import android.text.Layout;
 import android.text.StaticLayout;
 import android.text.TextPaint;
 import android.view.View;
+import android.view.accessibility.AccessibilityNodeInfo;
 
 import org.telegram.messenger.AndroidUtilities;
 
@@ -40,8 +41,14 @@ public class NumberTextView extends View {
     private float textWidth;
     private float oldTextWidth;
 
+    private OnTextWidthProgressChangedListener onTextWidthProgressChangedListener;
+
     public NumberTextView(Context context) {
         super(context);
+    }
+
+    public void setOnTextWidthProgressChangedListener(OnTextWidthProgressChangedListener onTextWidthProgressChangedListener) {
+        this.onTextWidthProgressChangedListener = onTextWidthProgressChangedListener;
     }
 
     @Keep
@@ -50,6 +57,9 @@ public class NumberTextView extends View {
             return;
         }
         progress = value;
+        if (onTextWidthProgressChangedListener != null) {
+            onTextWidthProgressChangedListener.onTextWidthProgress(oldTextWidth, textWidth, progress);
+        }
         invalidate();
     }
 
@@ -86,9 +96,9 @@ public class NumberTextView extends View {
             forwardAnimation = number > currentNumber;
         }
         boolean replace = false;
+        textWidth = textPaint.measureText(text);
+        oldTextWidth = textPaint.measureText(oldText);
         if (center) {
-            textWidth = textPaint.measureText(text);
-            oldTextWidth = textPaint.measureText(oldText);
             if (textWidth != oldTextWidth) {
                 replace = true;
             }
@@ -121,6 +131,8 @@ public class NumberTextView extends View {
                 }
             });
             animator.start();
+        } else if (onTextWidthProgressChangedListener != null) {
+            onTextWidthProgressChangedListener.onTextWidthProgress(oldTextWidth, textWidth, progress);
         }
         invalidate();
     }
@@ -212,5 +224,23 @@ public class NumberTextView extends View {
             }
         }
         canvas.restore();
+    }
+
+    public float getOldTextWidth() {
+        return oldTextWidth;
+    }
+
+    public float getTextWidth() {
+        return textWidth;
+    }
+
+    public interface OnTextWidthProgressChangedListener {
+        /**
+         * Notifies layout that text width has changed
+         * @param fromWidth Old text width value
+         * @param toWidth New text width value
+         * @param progress Progress for the animation
+         */
+        void onTextWidthProgress(float fromWidth, float toWidth, float progress);
     }
 }

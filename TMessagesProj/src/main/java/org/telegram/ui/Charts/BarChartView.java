@@ -3,6 +3,7 @@ package org.telegram.ui.Charts;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.util.Log;
 
 import androidx.core.graphics.ColorUtils;
 
@@ -66,7 +67,7 @@ public class BarChartView extends BaseChartView<ChartData, BarViewData> {
                 } else {
                     p = chartData.xPercentage[1] * fullWidth;
                 }
-                int[] y = line.line.y;
+                final long[] y = line.line.y;
                 int j = 0;
 
                 float selectedX = 0f;
@@ -105,12 +106,12 @@ public class BarChartView extends BaseChartView<ChartData, BarViewData> {
                             line.lineColor, line.blendColor, 0));
                 }
 
-                paint.setAlpha((int) (transitionAlpha * 255));
+                paint.setAlpha((int) (0xFF * transitionAlpha));
                 canvas.drawLines(line.linesPath, 0, j, paint);
 
                 if (selected) {
                     line.paint.setStrokeWidth(p);
-                    line.paint.setAlpha((int) (transitionAlpha * 255));
+                    line.paint.setAlpha((int) (0xFF * transitionAlpha));
                     canvas.drawLine(selectedX, selectedY,
                             selectedX, getMeasuredHeight() - chartBottom,
                             line.paint
@@ -148,7 +149,7 @@ public class BarChartView extends BaseChartView<ChartData, BarViewData> {
                 } else {
                     p = chartData.xPercentage[1] * pickerWidth;
                 }
-                int[] y = line.line.y;
+                final long[] y = line.line.y;
 
                 float a = line.alpha;
 
@@ -179,7 +180,7 @@ public class BarChartView extends BaseChartView<ChartData, BarViewData> {
 
     @Override
     public BarViewData createLineViewData(ChartData.Line line) {
-        return new BarViewData(line);
+        return new BarViewData(line, resourcesProvider);
     }
 
     @Override

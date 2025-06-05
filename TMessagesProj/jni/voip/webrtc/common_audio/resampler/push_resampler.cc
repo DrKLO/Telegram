@@ -20,42 +20,6 @@
 #include "rtc_base/checks.h"
 
 namespace webrtc {
-namespace {
-// These checks were factored out into a non-templatized function
-// due to problems with clang on Windows in debug builds.
-// For some reason having the DCHECKs inline in the template code
-// caused the compiler to generate code that threw off the linker.
-// TODO(tommi): Re-enable when we've figured out what the problem is.
-// http://crbug.com/615050
-void CheckValidInitParams(int src_sample_rate_hz,
-                          int dst_sample_rate_hz,
-                          size_t num_channels) {
-// The below checks are temporarily disabled on WEBRTC_WIN due to problems
-// with clang debug builds.
-#if !defined(WEBRTC_WIN) && defined(__clang__)
-  RTC_DCHECK_GT(src_sample_rate_hz, 0);
-  RTC_DCHECK_GT(dst_sample_rate_hz, 0);
-  RTC_DCHECK_GT(num_channels, 0);
-#endif
-}
-
-void CheckExpectedBufferSizes(size_t src_length,
-                              size_t dst_capacity,
-                              size_t num_channels,
-                              int src_sample_rate,
-                              int dst_sample_rate) {
-// The below checks are temporarily disabled on WEBRTC_WIN due to problems
-// with clang debug builds.
-// TODO(tommi): Re-enable when we've figured out what the problem is.
-// http://crbug.com/615050
-#if !defined(WEBRTC_WIN) && defined(__clang__)
-  const size_t src_size_10ms = src_sample_rate * num_channels / 100;
-  const size_t dst_size_10ms = dst_sample_rate * num_channels / 100;
-  RTC_DCHECK_EQ(src_length, src_size_10ms);
-  RTC_DCHECK_GE(dst_capacity, dst_size_10ms);
-#endif
-}
-}  // namespace
 
 template <typename T>
 PushResampler<T>::PushResampler()
@@ -68,7 +32,11 @@ template <typename T>
 int PushResampler<T>::InitializeIfNeeded(int src_sample_rate_hz,
                                          int dst_sample_rate_hz,
                                          size_t num_channels) {
-  CheckValidInitParams(src_sample_rate_hz, dst_sample_rate_hz, num_channels);
+  // These checks used to be factored out of this template function due to
+  // Windows debug build issues with clang. http://crbug.com/615050
+  RTC_DCHECK_GT(src_sample_rate_hz, 0);
+  RTC_DCHECK_GT(dst_sample_rate_hz, 0);
+  RTC_DCHECK_GT(num_channels, 0);
 
   if (src_sample_rate_hz == src_sample_rate_hz_ &&
       dst_sample_rate_hz == dst_sample_rate_hz_ &&
@@ -109,8 +77,12 @@ int PushResampler<T>::Resample(const T* src,
                                size_t src_length,
                                T* dst,
                                size_t dst_capacity) {
-  CheckExpectedBufferSizes(src_length, dst_capacity, num_channels_,
-                           src_sample_rate_hz_, dst_sample_rate_hz_);
+  // These checks used to be factored out of this template function due to
+  // Windows debug build issues with clang. http://crbug.com/615050
+  const size_t src_size_10ms = (src_sample_rate_hz_ / 100) * num_channels_;
+  const size_t dst_size_10ms = (dst_sample_rate_hz_ / 100) * num_channels_;
+  RTC_DCHECK_EQ(src_length, src_size_10ms);
+  RTC_DCHECK_GE(dst_capacity, dst_size_10ms);
 
   if (src_sample_rate_hz_ == dst_sample_rate_hz_) {
     // The old resampler provides this memcpy facility in the case of matching

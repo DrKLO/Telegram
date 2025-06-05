@@ -32,9 +32,9 @@
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifdef __FreeBSD__
+#if defined(__FreeBSD__) && !defined(__Userspace__)
 #include <sys/cdefs.h>
-__FBSDID("$FreeBSD: head/sys/netinet/sctp_sysctl.h 356357 2020-01-04 20:33:12Z tuexen $");
+__FBSDID("$FreeBSD: head/sys/netinet/sctp_sysctl.h 366750 2020-10-16 10:44:48Z tuexen $");
 #endif
 
 #ifndef _NETINET_SCTP_SYSCTL_H_
@@ -56,7 +56,7 @@ struct sctp_sysctl {
 	uint32_t sctp_nrsack_enable;
 	uint32_t sctp_pktdrop_enable;
 	uint32_t sctp_fr_max_burst_default;
-#if !(defined(__FreeBSD__) && __FreeBSD_version >= 800000)
+#if !(defined(__FreeBSD__)  && !defined(__Userspace__))
 	uint32_t sctp_no_csum_on_loopback;
 #endif
 	uint32_t sctp_peer_chunk_oh;
@@ -113,7 +113,7 @@ struct sctp_sysctl {
 	uint32_t sctp_use_dccc_ecn;
 	uint32_t sctp_diag_info_code;
 #if defined(SCTP_LOCAL_TRACE_BUF)
-#if defined(__Windows__)
+#if defined(_WIN32) && !defined(__Userspace__)
 	struct sctp_log *sctp_log;
 #else
 	struct sctp_log sctp_log;
@@ -129,13 +129,13 @@ struct sctp_sysctl {
 #if defined(SCTP_DEBUG)
 	uint32_t sctp_debug_on;
 #endif
-#if defined(__APPLE__)
+#if defined(__APPLE__) && !defined(__Userspace__)
 	uint32_t sctp_ignore_vmware_interfaces;
 	uint32_t sctp_main_timer;
 	uint32_t sctp_addr_watchdog_limit;
 	uint32_t sctp_vtag_watchdog_limit;
 #endif
-#if defined(__APPLE__) || defined(SCTP_SO_LOCK_TESTING)
+#if defined(__APPLE__) && !defined(__Userspace__)
 	uint32_t sctp_output_unlocked;
 #endif
 };
@@ -241,7 +241,6 @@ struct sctp_sysctl {
 #define SCTPCTL_FRMAXBURST_MAX		0xFFFFFFFF
 #define SCTPCTL_FRMAXBURST_DEFAULT	SCTP_DEF_FRMAX_BURST
 
-
 /* maxchunks: Default max chunks on queue per asoc */
 #define SCTPCTL_MAXCHUNKS_DESC		"Default max chunks on queue per asoc"
 #define SCTPCTL_MAXCHUNKS_MIN		0
@@ -344,10 +343,10 @@ struct sctp_sysctl {
 #define SCTPCTL_INIT_RTO_MAX_MAX	0xFFFFFFFF
 #define SCTPCTL_INIT_RTO_MAX_DEFAULT	SCTP_RTO_UPPER_BOUND
 
-/* valid_cookie_life: Default cookie lifetime in sec */
-#define SCTPCTL_VALID_COOKIE_LIFE_DESC	"Default cookie lifetime in seconds"
-#define SCTPCTL_VALID_COOKIE_LIFE_MIN	0
-#define SCTPCTL_VALID_COOKIE_LIFE_MAX	0xFFFFFFFF
+/* valid_cookie_life: Default cookie lifetime in ms */
+#define SCTPCTL_VALID_COOKIE_LIFE_DESC		"Default cookie lifetime in ms"
+#define SCTPCTL_VALID_COOKIE_LIFE_MIN		SCTP_MIN_COOKIE_LIFE
+#define SCTPCTL_VALID_COOKIE_LIFE_MAX		SCTP_MAX_COOKIE_LIFE
 #define SCTPCTL_VALID_COOKIE_LIFE_DEFAULT	SCTP_DEFAULT_COOKIE_LIFE
 
 /* init_rtx_max: Default maximum number of retransmission for INIT chunks */
@@ -498,7 +497,7 @@ struct sctp_sysctl {
 #define SCTPCTL_UDP_TUNNELING_PORT_DESC		"Set the SCTP/UDP tunneling port"
 #define SCTPCTL_UDP_TUNNELING_PORT_MIN		0
 #define SCTPCTL_UDP_TUNNELING_PORT_MAX		65535
-#if defined(__FreeBSD__)
+#if defined(__FreeBSD__) && !defined(__Userspace__)
 #define SCTPCTL_UDP_TUNNELING_PORT_DEFAULT	0
 #else
 #define SCTPCTL_UDP_TUNNELING_PORT_DEFAULT	SCTP_OVER_UDP_TUNNELING_PORT
@@ -585,7 +584,7 @@ struct sctp_sysctl {
 #define SCTPCTL_DEBUG_DEFAULT	0
 #endif
 
-#if defined(__APPLE__)
+#if defined(__APPLE__) && !defined(__Userspace__)
 #define SCTPCTL_MAIN_TIMER_DESC		"Main timer interval in ms"
 #define SCTPCTL_MAIN_TIMER_MIN		1
 #define SCTPCTL_MAIN_TIMER_MAX		0xFFFFFFFF
@@ -595,16 +594,12 @@ struct sctp_sysctl {
 #define SCTPCTL_IGNORE_VMWARE_INTERFACES_MIN		0
 #define SCTPCTL_IGNORE_VMWARE_INTERFACES_MAX		1
 #define SCTPCTL_IGNORE_VMWARE_INTERFACES_DEFAULT	SCTPCTL_IGNORE_VMWARE_INTERFACES_MAX
-#endif
 
-#if defined(__APPLE__) || defined(SCTP_SO_LOCK_TESTING)
 #define SCTPCTL_OUTPUT_UNLOCKED_DESC	"Unlock socket when sending packets down to IP"
 #define SCTPCTL_OUTPUT_UNLOCKED_MIN	0
 #define SCTPCTL_OUTPUT_UNLOCKED_MAX	1
 #define SCTPCTL_OUTPUT_UNLOCKED_DEFAULT	SCTPCTL_OUTPUT_UNLOCKED_MIN
-#endif
 
-#if defined(__APPLE__)
 #define	SCTPCTL_ADDR_WATCHDOG_LIMIT_DESC	"Address watchdog limit"
 #define	SCTPCTL_ADDR_WATCHDOG_LIMIT_MIN		0
 #define	SCTPCTL_ADDR_WATCHDOG_LIMIT_MAX		0xFFFFFFFF
@@ -614,8 +609,8 @@ struct sctp_sysctl {
 #define	SCTPCTL_VTAG_WATCHDOG_LIMIT_MIN		0
 #define	SCTPCTL_VTAG_WATCHDOG_LIMIT_MAX		0xFFFFFFFF
 #define	SCTPCTL_VTAG_WATCHDOG_LIMIT_DEFAULT	SCTPCTL_VTAG_WATCHDOG_LIMIT_MIN
-#endif
 
+#endif
 #if defined(_KERNEL) || defined(__Userspace__)
 #if defined(__FreeBSD__) || defined(__APPLE__) || defined(__Userspace__)
 #if defined(SYSCTL_DECL)
@@ -624,7 +619,7 @@ SYSCTL_DECL(_net_inet_sctp);
 #endif
 
 void sctp_init_sysctls(void);
-#if defined(__Windows__)
+#if defined(_WIN32) && !defined(__Userspace__)
 void sctp_finish_sysctls(void);
 #endif
 

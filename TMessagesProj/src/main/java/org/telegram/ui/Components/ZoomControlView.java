@@ -46,6 +46,8 @@ public class ZoomControlView extends View {
 
     private ZoomControlViewDelegate delegate;
 
+    public boolean enabledTouch = true;
+
     public interface ZoomControlViewDelegate {
         void didSetZoom(float zoom);
     }
@@ -106,6 +108,9 @@ public class ZoomControlView extends View {
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
+        if (!enabledTouch) {
+            return false;
+        }
         float x = event.getX();
         float y = event.getY();
         int action = event.getAction();
@@ -124,14 +129,18 @@ public class ZoomControlView extends View {
                 handled = true;
             } else if (x >= minusCx - AndroidUtilities.dp(16) && x <= minusCx + AndroidUtilities.dp(16) && y >= minusCy - AndroidUtilities.dp(16) && y <= minusCy + AndroidUtilities.dp(16)) {
                 if (action == MotionEvent.ACTION_UP && animateToZoom((float) Math.floor(getZoom() / 0.25f) * 0.25f - 0.25f)) {
-                    performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
+                    try {
+                        performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
+                    } catch (Exception ignored) {}
                 } else {
                     pressed = true;
                 }
                 handled = true;
             } else if (x >= plusCx - AndroidUtilities.dp(16) && x <= plusCx + AndroidUtilities.dp(16) && y >= plusCy - AndroidUtilities.dp(16) && y <= plusCy + AndroidUtilities.dp(16)) {
                 if (action == MotionEvent.ACTION_UP && animateToZoom((float) Math.floor(getZoom() / 0.25f) * 0.25f + 0.25f)) {
-                    performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
+                    try {
+                        performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
+                    } catch (Exception ignored) {}
                 } else {
                     pressed = true;
                 }
@@ -189,6 +198,10 @@ public class ZoomControlView extends View {
             invalidate();
         }
         return handled || pressed || knobPressed || super.onTouchEvent(event);
+    }
+
+    public boolean isTouch() {
+        return pressed || knobPressed;
     }
 
     private boolean animateToZoom(float zoom) {

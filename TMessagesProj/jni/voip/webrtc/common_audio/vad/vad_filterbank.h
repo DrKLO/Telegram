@@ -17,8 +17,8 @@
 
 #include "common_audio/vad/vad_core.h"
 
-// Takes |data_length| samples of |data_in| and calculates the logarithm of the
-// energy of each of the |kNumChannels| = 6 frequency bands used by the VAD:
+// Takes `data_length` samples of `data_in` and calculates the logarithm of the
+// energy of each of the `kNumChannels` = 6 frequency bands used by the VAD:
 //        80 Hz - 250 Hz
 //        250 Hz - 500 Hz
 //        500 Hz - 1000 Hz
@@ -26,10 +26,10 @@
 //        2000 Hz - 3000 Hz
 //        3000 Hz - 4000 Hz
 //
-// The values are given in Q4 and written to |features|. Further, an approximate
+// The values are given in Q4 and written to `features`. Further, an approximate
 // overall energy is returned. The return value is used in
 // WebRtcVad_GmmProbability() as a signal indicator, hence it is arbitrary above
-// the threshold |kMinEnergy|.
+// the threshold `kMinEnergy`.
 //
 // - self         [i/o] : State information of the VAD.
 // - data_in      [i]   : Input audio data, for feature extraction.

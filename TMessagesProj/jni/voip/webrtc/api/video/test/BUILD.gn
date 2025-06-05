@@ -1,0 +1,56 @@
+# Copyright (c) 2018 The WebRTC project authors. All Rights Reserved.
+#
+# Use of this source code is governed by a BSD-style license
+# that can be found in the LICENSE file in the root of the source
+# tree. An additional intellectual property rights grant can be found
+# in the file PATENTS.  All contributing project authors may
+# be found in the AUTHORS file in the root of the source tree.
+
+import("../../../webrtc.gni")
+
+rtc_library("rtc_api_video_unittests") {
+  testonly = true
+  sources = [
+    "color_space_unittest.cc",
+    "i210_buffer_unittest.cc",
+    "i410_buffer_unittest.cc",
+    "i422_buffer_unittest.cc",
+    "i444_buffer_unittest.cc",
+    "nv12_buffer_unittest.cc",
+    "video_adaptation_counters_unittest.cc",
+    "video_bitrate_allocation_unittest.cc",
+  ]
+  deps = [
+    "..:video_adaptation",
+    "..:video_bitrate_allocation",
+    "..:video_frame",
+    "..:video_frame_i010",
+    "..:video_rtp_headers",
+    "../../../test:frame_utils",
+    "../../../test:test_support",
+  ]
+  absl_deps = [ "//third_party/abseil-cpp/absl/types:optional" ]
+}
+
+rtc_source_set("mock_recordable_encoded_frame") {
+  testonly = true
+  visibility = [ "*" ]
+  sources = [ "mock_recordable_encoded_frame.h" ]
+
+  deps = [
+    "..:recordable_encoded_frame",
+    "../../../test:test_support",
+  ]
+}
+
+rtc_source_set("video_frame_matchers") {
+  testonly = true
+  visibility = [ "*" ]
+  sources = [ "video_frame_matchers.h" ]
+
+  deps = [
+    "..:video_frame",
+    "../..:rtp_packet_info",
+    "../../../test:test_support",
+  ]
+}

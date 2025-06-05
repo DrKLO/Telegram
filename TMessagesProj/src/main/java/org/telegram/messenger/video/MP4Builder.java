@@ -10,6 +10,7 @@ package org.telegram.messenger.video;
 
 import android.media.MediaCodec;
 import android.media.MediaFormat;
+import android.util.Log;
 
 import com.coremedia.iso.BoxParser;
 import com.coremedia.iso.IsoFile;
@@ -38,11 +39,18 @@ import com.coremedia.iso.boxes.TrackHeaderBox;
 import com.googlecode.mp4parser.DataSource;
 import com.googlecode.mp4parser.util.Matrix;
 
+import org.telegram.messenger.AndroidUtilities;
+
+import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.WritableByteChannel;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -62,14 +70,15 @@ public class MP4Builder {
     private ByteBuffer sizeBuffer = null;
     private boolean splitMdat;
     private boolean wasFirstVideoFrame;
+    private boolean allowSyncFiles = true;
 
-    public MP4Builder createMovie(Mp4Movie mp4Movie, boolean split) throws Exception {
+    public MP4Builder createMovie(Mp4Movie mp4Movie, boolean split, boolean hevc) throws Exception {
         currentMp4Movie = mp4Movie;
 
         fos = new FileOutputStream(mp4Movie.getCacheFile());
         fc = fos.getChannel();
 
-        FileTypeBox fileTypeBox = createFileTypeBox();
+        FileTypeBox fileTypeBox = createFileTypeBox(hevc);
         fileTypeBox.getBox(fc);
         dataOffset += fileTypeBox.getSize();
         wroteSinceLastMdat += dataOffset;
@@ -90,7 +99,9 @@ public class MP4Builder {
         mdat.setDataOffset(0);
         mdat.setContentSize(0);
         fos.flush();
-        fos.getFD().sync();
+        if (allowSyncFiles) {
+            fos.getFD().sync();
+        }
     }
 
     public long writeSampleData(int trackIndex, ByteBuffer byteBuf, MediaCodec.BufferInfo bufferInfo, boolean writeLength) throws Exception {
@@ -163,7 +174,9 @@ public class MP4Builder {
 
         if (flush) {
             fos.flush();
-            fos.getFD().sync();
+            if (allowSyncFiles) {
+                fos.getFD().sync();
+            }
             return fc.position();
         }
         return 0;
@@ -194,19 +207,66 @@ public class MP4Builder {
         Box moov = createMovieBox(currentMp4Movie);
         moov.getBox(fc);
         fos.flush();
-        fos.getFD().sync();
+        if (allowSyncFiles) {
+            fos.getFD().sync();
+        }
 
         fc.close();
         fos.close();
     }
 
-    protected FileTypeBox createFileTypeBox() {
+    public void finishMovie(File into) throws Exception {
+        if (into == null) {
+            finishMovie();
+            return;
+        }
+
+        fos.flush();
+        final long wasPosition = fc.position();
+        if (allowSyncFiles) {
+            fos.getFD().sync();
+        }
+
+        AndroidUtilities.copyFile(currentMp4Movie.getCacheFile(), into);
+
+        try (RandomAccessFile raf = new RandomAccessFile(into, "rw");
+             FileChannel copiedFc = raf.getChannel()) {
+
+            // put mdat box
+            copiedFc.position(wasPosition);
+            if (mdat.getContentSize() != 0) {
+                copiedFc.position(mdat.getOffset());
+                mdat.getBox(copiedFc);
+                copiedFc.position(wasPosition);
+            }
+
+            // put moov box
+            track2SampleSizes.clear();
+            for (Track track : currentMp4Movie.getTracks()) {
+                List<Sample> samples = track.getSamples();
+                long[] sizes = new long[samples.size()];
+                for (int i = 0; i < sizes.length; i++) {
+                    sizes[i] = samples.get(i).getSize();
+                }
+                track2SampleSizes.put(track, sizes);
+            }
+            Box moov = createMovieBox(currentMp4Movie);
+            moov.getBox(copiedFc);
+        }
+    }
+
+
+    protected FileTypeBox createFileTypeBox(boolean hevc) {
         LinkedList<String> minorBrands = new LinkedList<>();
         minorBrands.add("isom");
         minorBrands.add("iso2");
-        minorBrands.add("avc1");
+        minorBrands.add(hevc ? "hvc1" : "avc1");
         minorBrands.add("mp41");
         return new FileTypeBox("isom", 512, minorBrands);
+    }
+
+    public void setAllowSyncFiles(boolean allowSyncFiles) {
+        this.allowSyncFiles = allowSyncFiles;
     }
 
     private static class InterleaveChunkMdat implements Box {

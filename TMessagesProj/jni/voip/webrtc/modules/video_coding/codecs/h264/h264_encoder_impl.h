@@ -17,13 +17,22 @@
 // #ifdef unless needed and tested.
 #ifdef WEBRTC_USE_H264
 
+#if defined(WEBRTC_WIN) && !defined(__clang__)
+#error "See: bugs.webrtc.org/9213#c13."
+#endif
+
 #include <memory>
 #include <vector>
 
+#include "absl/container/inlined_vector.h"
+#include "api/transport/rtp/dependency_descriptor.h"
 #include "api/video/i420_buffer.h"
+#include "api/video/video_codec_constants.h"
+#include "api/video_codecs/scalability_mode.h"
 #include "api/video_codecs/video_encoder.h"
 #include "common_video/h264/h264_bitstream_parser.h"
 #include "modules/video_coding/codecs/h264/include/h264.h"
+#include "modules/video_coding/svc/scalable_video_controller.h"
 #include "modules/video_coding/utility/quality_scaler.h"
 #include "third_party/openh264/src/codec/api/svc/codec_app_def.h"
 
@@ -53,8 +62,8 @@ class H264EncoderImpl : public H264Encoder {
   explicit H264EncoderImpl(const cricket::VideoCodec& codec);
   ~H264EncoderImpl() override;
 
-  // |settings.max_payload_size| is ignored.
-  // The following members of |codec_settings| are used. The rest are ignored.
+  // `settings.max_payload_size` is ignored.
+  // The following members of `codec_settings` are used. The rest are ignored.
   // - codecType (must be kVideoCodecH264)
   // - targetBitrate
   // - maxFramerate
@@ -93,11 +102,15 @@ class H264EncoderImpl : public H264Encoder {
   std::vector<rtc::scoped_refptr<I420Buffer>> downscaled_buffers_;
   std::vector<LayerConfig> configurations_;
   std::vector<EncodedImage> encoded_images_;
+  std::vector<std::unique_ptr<ScalableVideoController>> svc_controllers_;
+  absl::InlinedVector<absl::optional<ScalabilityMode>, kMaxSimulcastStreams>
+      scalability_modes_;
 
   VideoCodec codec_;
   H264PacketizationMode packetization_mode_;
   size_t max_payload_size_;
   int32_t number_of_cores_;
+  absl::optional<int> encoder_thread_limit_;
   EncodedImageCallback* encoded_image_callback_;
 
   bool has_reported_init_;

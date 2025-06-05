@@ -43,46 +43,85 @@ ABSL_NAMESPACE_BEGIN
 // StrContains()
 //
 // Returns whether a given string `haystack` contains the substring `needle`.
-inline bool StrContains(absl::string_view haystack, absl::string_view needle) {
+inline bool StrContains(absl::string_view haystack,
+                        absl::string_view needle) noexcept {
   return haystack.find(needle, 0) != haystack.npos;
+}
+
+inline bool StrContains(absl::string_view haystack, char needle) noexcept {
+  return haystack.find(needle) != haystack.npos;
 }
 
 // StartsWith()
 //
 // Returns whether a given string `text` begins with `prefix`.
-inline bool StartsWith(absl::string_view text, absl::string_view prefix) {
-  return prefix.empty() ||
-         (text.size() >= prefix.size() &&
-          memcmp(text.data(), prefix.data(), prefix.size()) == 0);
+inline constexpr bool StartsWith(absl::string_view text,
+                                 absl::string_view prefix) noexcept {
+  if (prefix.empty()) {
+    return true;
+  }
+  if (text.size() < prefix.size()) {
+    return false;
+  }
+  absl::string_view possible_match = text.substr(0, prefix.size());
+
+  return possible_match == prefix;
 }
 
 // EndsWith()
 //
 // Returns whether a given string `text` ends with `suffix`.
-inline bool EndsWith(absl::string_view text, absl::string_view suffix) {
-  return suffix.empty() ||
-         (text.size() >= suffix.size() &&
-          memcmp(text.data() + (text.size() - suffix.size()), suffix.data(),
-                 suffix.size()) == 0);
+inline constexpr bool EndsWith(absl::string_view text,
+                               absl::string_view suffix) noexcept {
+  if (suffix.empty()) {
+    return true;
+  }
+  if (text.size() < suffix.size()) {
+    return false;
+  }
+  absl::string_view possible_match = text.substr(text.size() - suffix.size());
+  return possible_match == suffix;
 }
+// StrContainsIgnoreCase()
+//
+// Returns whether a given ASCII string `haystack` contains the ASCII substring
+// `needle`, ignoring case in the comparison.
+bool StrContainsIgnoreCase(absl::string_view haystack,
+                           absl::string_view needle) noexcept;
+
+bool StrContainsIgnoreCase(absl::string_view haystack,
+                           char needle) noexcept;
 
 // EqualsIgnoreCase()
 //
 // Returns whether given ASCII strings `piece1` and `piece2` are equal, ignoring
 // case in the comparison.
-bool EqualsIgnoreCase(absl::string_view piece1, absl::string_view piece2);
+bool EqualsIgnoreCase(absl::string_view piece1,
+                      absl::string_view piece2) noexcept;
 
 // StartsWithIgnoreCase()
 //
 // Returns whether a given ASCII string `text` starts with `prefix`,
 // ignoring case in the comparison.
-bool StartsWithIgnoreCase(absl::string_view text, absl::string_view prefix);
+bool StartsWithIgnoreCase(absl::string_view text,
+                          absl::string_view prefix) noexcept;
 
 // EndsWithIgnoreCase()
 //
 // Returns whether a given ASCII string `text` ends with `suffix`, ignoring
 // case in the comparison.
-bool EndsWithIgnoreCase(absl::string_view text, absl::string_view suffix);
+bool EndsWithIgnoreCase(absl::string_view text,
+                        absl::string_view suffix) noexcept;
+
+// Yields the longest prefix in common between both input strings.
+// Pointer-wise, the returned result is a subset of input "a".
+absl::string_view FindLongestCommonPrefix(absl::string_view a,
+                                          absl::string_view b);
+
+// Yields the longest suffix in common between both input strings.
+// Pointer-wise, the returned result is a subset of input "a".
+absl::string_view FindLongestCommonSuffix(absl::string_view a,
+                                          absl::string_view b);
 
 ABSL_NAMESPACE_END
 }  // namespace absl

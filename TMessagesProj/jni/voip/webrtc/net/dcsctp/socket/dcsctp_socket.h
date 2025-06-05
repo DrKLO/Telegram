@@ -14,6 +14,7 @@
 #include <memory>
 #include <string>
 #include <utility>
+#include <vector>
 
 #include "absl/strings/string_view.h"
 #include "api/array_view.h"
@@ -46,13 +47,14 @@
 #include "net/dcsctp/rx/data_tracker.h"
 #include "net/dcsctp/rx/reassembly_queue.h"
 #include "net/dcsctp/socket/callback_deferrer.h"
+#include "net/dcsctp/socket/packet_sender.h"
 #include "net/dcsctp/socket/state_cookie.h"
 #include "net/dcsctp/socket/transmission_control_block.h"
 #include "net/dcsctp/timer/timer.h"
-#include "net/dcsctp/tx/fcfs_send_queue.h"
 #include "net/dcsctp/tx/retransmission_error_counter.h"
 #include "net/dcsctp/tx/retransmission_queue.h"
 #include "net/dcsctp/tx/retransmission_timeout.h"
+#include "net/dcsctp/tx/rr_send_queue.h"
 
 namespace dcsctp {
 
@@ -84,16 +86,29 @@ class DcSctpSocket : public DcSctpSocketInterface {
   void ReceivePacket(rtc::ArrayView<const uint8_t> data) override;
   void HandleTimeout(TimeoutID timeout_id) override;
   void Connect() override;
+  void RestoreFromState(const DcSctpSocketHandoverState& state) override;
   void Shutdown() override;
   void Close() override;
   SendStatus Send(DcSctpMessage message,
                   const SendOptions& send_options) override;
+  std::vector<SendStatus> SendMany(rtc::ArrayView<DcSctpMessage> messages,
+                                   const SendOptions& send_options) override;
   ResetStreamsStatus ResetStreams(
       rtc::ArrayView<const StreamID> outgoing_streams) override;
   SocketState state() const override;
   const DcSctpOptions& options() const override { return options_; }
   void SetMaxMessageSize(size_t max_message_size) override;
-
+  void SetStreamPriority(StreamID stream_id, StreamPriority priority) override;
+  StreamPriority GetStreamPriority(StreamID stream_id) const override;
+  size_t buffered_amount(StreamID stream_id) const override;
+  size_t buffered_amount_low_threshold(StreamID stream_id) const override;
+  void SetBufferedAmountLowThreshold(StreamID stream_id, size_t bytes) override;
+  absl::optional<Metrics> GetMetrics() const override;
+  HandoverReadinessStatus GetHandoverReadiness() const override;
+  absl::optional<DcSctpSocketHandoverState> GetHandoverStateAndClose() override;
+  SctpImplementation peer_implementation() const override {
+    return metrics_.peer_implementation;
+  }
   // Returns this socket's verification tag, or zero if not yet connected.
   VerificationTag verification_tag() const {
     return tcb_ != nullptr ? tcb_->my_verification_tag() : VerificationTag(0);
@@ -125,29 +140,38 @@ class DcSctpSocket : public DcSctpSocketInterface {
   bool IsConsistent() const;
   static constexpr absl::string_view ToString(DcSctpSocket::State state);
 
+  void CreateTransmissionControlBlock(const Capabilities& capabilities,
+                                      VerificationTag my_verification_tag,
+                                      TSN my_initial_tsn,
+                                      VerificationTag peer_verification_tag,
+                                      TSN peer_initial_tsn,
+                                      size_t a_rwnd,
+                                      TieTag tie_tag);
+
   // Changes the socket state, given a `reason` (for debugging/logging).
   void SetState(State state, absl::string_view reason);
-  // Fills in `connect_params` with random verification tag and initial TSN.
-  void MakeConnectionParameters();
   // Closes the association. Note that the TCB will not be valid past this call.
   void InternalClose(ErrorKind error, absl::string_view message);
   // Closes the association, because of too many retransmission errors.
   void CloseConnectionBecauseOfTooManyTransmissionErrors();
   // Timer expiration handlers
-  absl::optional<DurationMs> OnInitTimerExpiry();
-  absl::optional<DurationMs> OnCookieTimerExpiry();
-  absl::optional<DurationMs> OnShutdownTimerExpiry();
-  // Builds the packet from `builder` and sends it (through callbacks).
-  void SendPacket(SctpPacket::Builder& builder);
+  webrtc::TimeDelta OnInitTimerExpiry();
+  webrtc::TimeDelta OnCookieTimerExpiry();
+  webrtc::TimeDelta OnShutdownTimerExpiry();
+  void OnSentPacket(rtc::ArrayView<const uint8_t> packet,
+                    SendPacketStatus status);
   // Sends SHUTDOWN or SHUTDOWN-ACK if the socket is shutting down and if all
   // outstanding data has been acknowledged.
   void MaybeSendShutdownOrAck();
   // If the socket is shutting down, responds SHUTDOWN to any incoming DATA.
   void MaybeSendShutdownOnPacketReceived(const SctpPacket& packet);
+  // If there are streams pending to be reset, send a request to reset them.
+  void MaybeSendResetStreamsRequest();
+  // Performs internal processing shared between Send and SendMany.
+  SendStatus InternalSend(const DcSctpMessage& message,
+                          const SendOptions& send_options);
   // Sends a INIT chunk.
   void SendInit();
-  // Sends a CookieEcho chunk.
-  void SendCookieEcho();
   // Sends a SHUTDOWN chunk.
   void SendShutdown();
   // Sends a SHUTDOWN-ACK chunk.
@@ -158,8 +182,9 @@ class DcSctpSocket : public DcSctpSocketInterface {
   // Parses `payload`, which is a serialized packet that is just going to be
   // sent and prints all chunks.
   void DebugPrintOutgoing(rtc::ArrayView<const uint8_t> payload);
-  // Called whenever there may be reassembled messages, and delivers those.
-  void DeliverReassembledMessages();
+  // Called whenever data has been received, or the cumulative acknowledgment
+  // TSN has moved, that may result in delivering messages.
+  void MaybeDeliverMessages();
   // Returns true if there is a TCB, and false otherwise (and reports an error).
   bool ValidateHasTCB();
 
@@ -245,6 +270,7 @@ class DcSctpSocket : public DcSctpSocketInterface {
 
   const std::string log_prefix_;
   const std::unique_ptr<PacketObserver> packet_observer_;
+  Metrics metrics_;
   DcSctpOptions options_;
 
   // Enqueues callbacks and dispatches them just before returning to the caller.
@@ -255,13 +281,12 @@ class DcSctpSocket : public DcSctpSocketInterface {
   const std::unique_ptr<Timer> t1_cookie_;
   const std::unique_ptr<Timer> t2_shutdown_;
 
+  // Packets that failed to be sent, but should be retried.
+  PacketSender packet_sender_;
+
   // The actual SendQueue implementation. As data can be sent on a socket before
   // the connection is established, this component is not in the TCB.
-  FCFSSendQueue send_queue_;
-
-  // Only valid when state == State::kCookieEchoed
-  // A cached Cookie Echo Chunk, to be re-sent on timer expiry.
-  absl::optional<CookieEchoChunk> cookie_echo_chunk_ = absl::nullopt;
+  RRSendQueue send_queue_;
 
   // Contains verification tag and initial TSN between having sent the INIT
   // until the connection is established (there is no TCB at this point).

@@ -22,6 +22,6 @@
 #include "modules/audio_coding/codecs/ilbc/defines.h"
 
 void WebRtcIlbcfix_IndexConvDec(int16_t* index /* (i/o) Codebook indexes */
-                                );
+);
 
 #endif

@@ -15,6 +15,7 @@ import androidx.recyclerview.widget.SimpleItemAnimator;
 
 import org.telegram.ui.Adapters.DialogsAdapter;
 import org.telegram.ui.Cells.DialogCell;
+import org.telegram.ui.Cells.DialogsEmptyCell;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -61,6 +62,7 @@ public class DialogsItemAnimator extends SimpleItemAnimator {
     private final RecyclerListView listView;
 
     public DialogsItemAnimator(RecyclerListView listView) {
+        setSupportsChangeAnimations(false);
         this.listView = listView;
     }
 
@@ -621,7 +623,7 @@ public class DialogsItemAnimator extends SimpleItemAnimator {
         return (!mPendingAdditions.isEmpty()
                 || !mPendingChanges.isEmpty()
                 || !mPendingMoves.isEmpty()
-                || !mPendingRemovals.isEmpty()
+                || !mPendingChanges.isEmpty()
                 || !mMoveAnimations.isEmpty()
                 || !mRemoveAnimations.isEmpty()
                 || !mAddAnimations.isEmpty()
@@ -746,6 +748,6 @@ public class DialogsItemAnimator extends SimpleItemAnimator {
 
     @Override
     public boolean canReuseUpdatedViewHolder(ViewHolder viewHolder, List<Object> payloads) {
-        return false;
+        return viewHolder.itemView instanceof DialogsEmptyCell;
     }
 }

@@ -12,7 +12,13 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.graphics.Path;
 import android.graphics.Rect;
+import android.net.Uri;
+
+import com.carrotsearch.randomizedtesting.Xoroshiro128PlusRandom;
+
+import org.telegram.tgnet.ConnectionsManager;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -20,13 +26,17 @@ import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Random;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class Utilities {
-
     public static Pattern pattern = Pattern.compile("[\\-0-9]+");
     public static SecureRandom random = new SecureRandom();
+    public static Random fastRandom = new Xoroshiro128PlusRandom(random.nextLong());
 
     public static volatile DispatchQueue stageQueue = new DispatchQueue("stageQueue");
     public static volatile DispatchQueue globalQueue = new DispatchQueue("globalQueue");
@@ -34,6 +44,10 @@ public class Utilities {
     public static volatile DispatchQueue searchQueue = new DispatchQueue("searchQueue");
     public static volatile DispatchQueue phoneBookQueue = new DispatchQueue("phoneBookQueue");
     public static volatile DispatchQueue themeQueue = new DispatchQueue("themeQueue");
+    public static volatile DispatchQueue externalNetworkQueue = new DispatchQueue("externalNetworkQueue");
+    public static volatile DispatchQueue videoPlayerQueue;
+
+    private final static String RANDOM_STRING_CHARS = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
     final protected static char[] hexArray = "0123456789ABCDEF".toCharArray();
 
@@ -55,23 +69,59 @@ public class Utilities {
     public native static void blurBitmap(Object bitmap, int radius, int unpin, int width, int height, int stride);
     public native static int needInvert(Object bitmap, int unpin, int width, int height, int stride);
     public native static void calcCDT(ByteBuffer hsvBuffer, int width, int height, ByteBuffer buffer, ByteBuffer calcBuffer);
-    public native static boolean loadWebpImage(Bitmap bitmap, ByteBuffer buffer, int len, BitmapFactory.Options options, boolean unpin);
     public native static int convertVideoFrame(ByteBuffer src, ByteBuffer dest, int destFormat, int width, int height, int padding, int swap);
     private native static void aesIgeEncryption(ByteBuffer buffer, byte[] key, byte[] iv, boolean encrypt, int offset, int length);
     private native static void aesIgeEncryptionByteArray(byte[] buffer, byte[] key, byte[] iv, boolean encrypt, int offset, int length);
     public native static void aesCtrDecryption(ByteBuffer buffer, byte[] key, byte[] iv, int offset, int length);
-    public native static void aesCtrDecryptionByteArray(byte[] buffer, byte[] key, byte[] iv, int offset, int length, int n);
+    public native static void aesCtrDecryptionByteArray(byte[] buffer, byte[] key, byte[] iv, int offset, long length, int n);
     private native static void aesCbcEncryptionByteArray(byte[] buffer, byte[] key, byte[] iv, int offset, int length, int n, int encrypt);
     public native static void aesCbcEncryption(ByteBuffer buffer, byte[] key, byte[] iv, int offset, int length, int encrypt);
     public native static String readlink(String path);
     public native static String readlinkFd(int fd);
     public native static long getDirSize(String path, int docType, boolean subdirs);
+    public native static long getLastUsageFileTime(String path);
     public native static void clearDir(String path, int docType, long time, boolean subdirs);
     private native static int pbkdf2(byte[] password, byte[] salt, byte[] dst, int iterations);
     public static native void stackBlurBitmap(Bitmap bitmap, int radius);
     public static native void drawDitheredGradient(Bitmap bitmap, int[] colors, int startX, int startY, int endX, int endY);
-    public static native int saveProgressiveJpeg(Bitmap bitmap, int width, int height, int stride, int quality, String path);
+//    public static native int saveProgressiveJpeg(Bitmap bitmap, int width, int height, int stride, int quality, String path);
     public static native void generateGradient(Bitmap bitmap, boolean unpin, int phase, float progress, int width, int height, int stride, int[] colors);
+    public static native void setupNativeCrashesListener(String path);
+
+    public static Bitmap stackBlurBitmapMax(Bitmap bitmap) {
+        return stackBlurBitmapMax(bitmap, false);
+    }
+
+    public static Bitmap stackBlurBitmapMax(Bitmap bitmap, boolean round) {
+        int w = AndroidUtilities.dp(20);
+        int h = (int) (AndroidUtilities.dp(20) * (float) bitmap.getHeight() / bitmap.getWidth());
+        Bitmap scaledBitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(scaledBitmap);
+        canvas.save();
+        canvas.scale((float) scaledBitmap.getWidth() / bitmap.getWidth(), (float) scaledBitmap.getHeight() / bitmap.getHeight());
+        if (round) {
+            Path path = new Path();
+            path.addCircle(bitmap.getWidth() / 2f, bitmap.getHeight() / 2f, Math.min(bitmap.getWidth(), bitmap.getHeight()) / 2f - 1, Path.Direction.CW);
+            canvas.clipPath(path);
+        }
+        canvas.drawBitmap(bitmap, 0, 0, null);
+        canvas.restore();
+        Utilities.stackBlurBitmap(scaledBitmap, Math.max(10, Math.max(w, h) / 150));
+        return scaledBitmap;
+    }
+
+    public static Bitmap stackBlurBitmapWithScaleFactor(Bitmap bitmap, float scaleFactor) {
+        int w = (int) Math.max(AndroidUtilities.dp(20), bitmap.getWidth() / scaleFactor);
+        int h = (int) Math.max(AndroidUtilities.dp(20) * (float) bitmap.getHeight() / bitmap.getWidth(), bitmap.getHeight() / scaleFactor);
+        Bitmap scaledBitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(scaledBitmap);
+        canvas.save();
+        canvas.scale((float) scaledBitmap.getWidth() / bitmap.getWidth(), (float) scaledBitmap.getHeight() / bitmap.getHeight());
+        canvas.drawBitmap(bitmap, 0, 0, null);
+        canvas.restore();
+        Utilities.stackBlurBitmap(scaledBitmap, Math.max(10, Math.max(w, h) / 150));
+        return scaledBitmap;
+    }
 
     public static Bitmap blurWallpaper(Bitmap src) {
         if (src == null) {
@@ -106,17 +156,52 @@ public class Utilities {
         if (value == null) {
             return 0;
         }
-        int val = 0;
-        try {
+        if (BuildConfig.BUILD_HOST_IS_WINDOWS) {
             Matcher matcher = pattern.matcher(value);
             if (matcher.find()) {
-                String num = matcher.group(0);
-                val = Integer.parseInt(num);
+                return Integer.valueOf(matcher.group());
             }
-        } catch (Exception ignore) {
-
+        } else {
+            int val = 0;
+            try {
+                int start = -1, end;
+                for (end = 0; end < value.length(); ++end) {
+                    char character = value.charAt(end);
+                    boolean allowedChar = character == '-' || character >= '0' && character <= '9';
+                    if (allowedChar && start < 0) {
+                        start = end;
+                    } else if (!allowedChar && start >= 0) {
+                        end++;
+                        break;
+                    }
+                }
+                if (start >= 0) {
+                    String str = value.subSequence(start, end).toString();
+//                val = parseInt(str);
+                    val = Integer.parseInt(str);
+                }
+            } catch (Exception ignore) {}
+            return val;
         }
-        return val;
+        return 0;
+    }
+
+    private static int parseInt(final String s) {
+        int num = 0;
+        boolean negative = true;
+        final int len = s.length();
+        final char ch = s.charAt(0);
+        if (ch == '-') {
+            negative = false;
+        } else {
+            num = '0' - ch;
+        }
+        int i = 1;
+        while (i < len) {
+            num = num * 10 + '0' - s.charAt(i++);
+        }
+
+        return negative ? -num : num;
     }
 
     public static Long parseLong(String value) {
@@ -171,53 +256,7 @@ public class Utilities {
     }
 
     public static boolean isGoodPrime(byte[] prime, int g) {
-        if (!(g >= 2 && g <= 7)) {
-            return false;
-        }
-
-        if (prime.length != 256 || prime[0] >= 0) {
-            return false;
-        }
-
-        BigInteger dhBI = new BigInteger(1, prime);
-
-        if (g == 2) { // p mod 8 = 7 for g = 2;
-            BigInteger res = dhBI.mod(BigInteger.valueOf(8));
-            if (res.intValue() != 7) {
-                return false;
-            }
-        } else if (g == 3) { // p mod 3 = 2 for g = 3;
-            BigInteger res = dhBI.mod(BigInteger.valueOf(3));
-            if (res.intValue() != 2) {
-                return false;
-            }
-        } else if (g == 5) { // p mod 5 = 1 or 4 for g = 5;
-            BigInteger res = dhBI.mod(BigInteger.valueOf(5));
-            int val = res.intValue();
-            if (val != 1 && val != 4) {
-                return false;
-            }
-        } else if (g == 6) { // p mod 24 = 19 or 23 for g = 6;
-            BigInteger res = dhBI.mod(BigInteger.valueOf(24));
-            int val = res.intValue();
-            if (val != 19 && val != 23) {
-                return false;
-            }
-        } else if (g == 7) { // p mod 7 = 3, 5 or 6 for g = 7.
-            BigInteger res = dhBI.mod(BigInteger.valueOf(7));
-            int val = res.intValue();
-            if (val != 3 && val != 5 && val != 6) {
-                return false;
-            }
-        }
-
-        String hex = bytesToHex(prime);
-        if (hex.equals("C71CAEB9C6B1C9048E6C522F70F13F73980D40238E3E21C14934D037563D930F48198A0AA7C14058229493D22530F4DBFA336F6E0AC925139543AED44CCE7C3720FD51F69458705AC68CD4FE6B6B13ABDC9746512969328454F18FAF8C595F642477FE96BB2A941D5BCD1D4AC8CC49880708FA9B378E3C4F3A9060BEE67CF9A4A4A695811051907E162753B56B0F6B410DBA74D8A84B2A14B3144E0EF1284754FD17ED950D5965B4B9DD46582DB1178D169C6BC465B0D6FF9CA3928FEF5B9AE4E418FC15E83EBEA0F87FA9FF5EED70050DED2849F47BF959D956850CE929851F0D8115F635B105EE2E4E15D04B2454BF6F4FADF034B10403119CD8E3B92FCC5B")) {
-            return true;
-        }
-
-        BigInteger dhBI2 = dhBI.subtract(BigInteger.valueOf(1)).divide(BigInteger.valueOf(2));
-        return !(!dhBI.isProbablePrime(30) || !dhBI2.isProbablePrime(30));
+        return ConnectionsManager.native_isGoodPrime(prime, g);
     }
 
     public static boolean isGoodGaAndGb(BigInteger g_a, BigInteger p) {
@@ -278,10 +317,10 @@ public class Utilities {
         return computeSHA256(convertme, 0, convertme.length);
     }
 
-    public static byte[] computeSHA256(byte[] convertme, int offset, int len) {
+    public static byte[] computeSHA256(byte[] convertme, int offset, long len) {
         try {
             MessageDigest md = MessageDigest.getInstance("SHA-256");
-            md.update(convertme, offset, len);
+            md.update(convertme, offset, (int) len);
             return md.digest();
         } catch (Exception e) {
             FileLog.e(e);
@@ -397,4 +436,188 @@ public class Utilities {
         }
         return null;
     }
+
+    public static String SHA256(String x) {
+        if (x == null) {
+            return null;
+        }
+        try {
+            java.security.MessageDigest md = java.security.MessageDigest.getInstance("SHA-256");
+            byte[] array = md.digest(AndroidUtilities.getStringBytes(x));
+            StringBuilder sb = new StringBuilder();
+            for (int a = 0; a < array.length; a++) {
+                sb.append(Integer.toHexString((array[a] & 0xFF) | 0x100).substring(1, 3));
+            }
+            return sb.toString();
+        } catch (java.security.NoSuchAlgorithmException e) {
+            FileLog.e(e);
+        }
+        return null;
+    }
+
+    public static int clamp(int value, int maxValue, int minValue) {
+        return Math.max(Math.min(value, maxValue), minValue);
+    }
+
+    public static long clamp(long value, long maxValue, long minValue) {
+        return Math.max(Math.min(value, maxValue), minValue);
+    }
+
+    public static float clamp(float value, float maxValue, float minValue) {
+        if (Float.isNaN(value)) {
+            return minValue;
+        }
+        if (Float.isInfinite(value)) {
+            return maxValue;
+        }
+        return Math.max(Math.min(value, maxValue), minValue);
+    }
+
+    public static float clamp01(float value) {
+        return clamp(value, 1f, 0f);
+    }
+
+    public static double clamp(double value, double maxValue, double minValue) {
+        if (Double.isNaN(value)) {
+            return minValue;
+        }
+        if (Double.isInfinite(value)) {
+            return maxValue;
+        }
+        return Math.max(Math.min(value, maxValue), minValue);
+    }
+
+    public static String generateRandomString() {
+        return generateRandomString(16);
+    }
+
+    public static String generateRandomString(int chars) {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < chars; i++) {
+            sb.append(RANDOM_STRING_CHARS.charAt(fastRandom.nextInt(RANDOM_STRING_CHARS.length())));
+        }
+        return sb.toString();
+    }
+
+    public static String getExtension(String fileName) {
+        int idx = fileName.lastIndexOf('.');
+        String ext = null;
+        if (idx != -1) {
+            ext = fileName.substring(idx + 1);
+        }
+        if (ext == null) {
+            return null;
+        }
+        ext = ext.toUpperCase();
+        return ext;
+    }
+
+    public static interface Callback<T> {
+        public void run(T arg);
+    }
+
+    public static interface CallbackVoidReturn<ReturnType> {
+        public ReturnType run();
+    }
+
+    public static interface Callback0Return<ReturnType> {
+        public ReturnType run();
+    }
+
+    public static interface CallbackReturn<Arg, ReturnType> {
+        public ReturnType run(Arg arg);
+    }
+
+    public static interface Callback2Return<T1, T2, ReturnType> {
+        public ReturnType run(T1 arg, T2 arg2);
+    }
+
+    public static interface Callback3Return<T1, T2, T3, ReturnType> {
+        public ReturnType run(T1 arg, T2 arg2, T3 arg3);
+    }
+
+    public static interface Callback2<T, T2> {
+        public void run(T arg, T2 arg2);
+    }
+
+    public static interface Callback3<T, T2, T3> {
+        public void run(T arg, T2 arg2, T3 arg3);
+    }
+
+    public static interface Callback4<T, T2, T3, T4> {
+        public void run(T arg, T2 arg2, T3 arg3, T4 arg4);
+    }
+
+    public static interface Callback4Return<T, T2, T3, T4, ReturnType> {
+        public ReturnType run(T arg, T2 arg2, T3 arg3, T4 arg4);
+    }
+    public static interface Callback5<T, T2, T3, T4, T5> {
+        public void run(T arg, T2 arg2, T3 arg3, T4 arg4, T5 arg5);
+    }
+
+    public static interface Callback5Return<T, T2, T3, T4, T5, ReturnType> {
+        public ReturnType run(T arg, T2 arg2, T3 arg3, T4 arg4, T5 arg5);
+    }
+
+    public static interface IndexedConsumer<T> {
+        void accept(T t, int index);
+    }
+
+    public static <Key, Value> Value getOrDefault(HashMap<Key, Value> map, Key key, Value defaultValue) {
+        Value v = map.get(key);
+        if (v == null) {
+            return defaultValue;
+        }
+        return v;
+    }
+
+    public static void doCallbacks(Utilities.Callback<Runnable> ...actions) {
+        doCallbacks(0, actions);
+    }
+    private static void doCallbacks(int i, Utilities.Callback<Runnable> ...actions) {
+        if (actions != null && actions.length > i) {
+            actions[i].run(() -> doCallbacks(i + 1, actions));
+        }
+    }
+
+    public static void raceCallbacks(Runnable onFinish, Utilities.Callback<Runnable> ...actions) {
+        if (actions == null || actions.length == 0) {
+            if (onFinish != null) {
+                onFinish.run();
+            }
+            return;
+        }
+        final int[] finished = new int[] { 0 };
+        Runnable checkFinish = () -> {
+            finished[0]++;
+            if (finished[0] == actions.length) {
+                if (onFinish != null) {
+                    onFinish.run();
+                }
+            }
+        };
+        for (int i = 0; i < actions.length; ++i) {
+            actions[i].run(checkFinish);
+        }
+    }
+
+    public static DispatchQueue getOrCreatePlayerQueue() {
+        if (videoPlayerQueue == null) {
+            videoPlayerQueue = new DispatchQueue("playerQueue");
+        }
+        return videoPlayerQueue;
+    }
+
+    public static boolean isNullOrEmpty(final Collection<?> list) {
+        return list == null || list.isEmpty();
+    }
+
+    public static Uri uriParseSafe(String link) {
+        try {
+            return Uri.parse(link);
+        } catch (Exception ignore) {
+            return null;
+        }
+    }
+
 }

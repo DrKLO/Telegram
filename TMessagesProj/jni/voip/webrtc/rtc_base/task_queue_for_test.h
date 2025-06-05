@@ -13,67 +13,81 @@
 
 #include <utility>
 
+#include "absl/cleanup/cleanup.h"
 #include "absl/strings/string_view.h"
+#include "api/function_view.h"
 #include "api/task_queue/task_queue_base.h"
+#include "api/task_queue/task_queue_factory.h"
 #include "rtc_base/checks.h"
 #include "rtc_base/event.h"
-#include "rtc_base/location.h"
-#include "rtc_base/task_queue.h"
-#include "rtc_base/task_utils/to_queued_task.h"
-#include "rtc_base/thread_annotations.h"
 
 namespace webrtc {
 
-template <typename Closure>
-void SendTask(rtc::Location loc, TaskQueueBase* task_queue, Closure&& task) {
-  RTC_CHECK(!task_queue->IsCurrent())
-      << "Called SendTask to a queue from the same queue at " << loc.ToString();
+inline void SendTask(TaskQueueBase* task_queue,
+                     rtc::FunctionView<void()> task) {
+  if (task_queue->IsCurrent()) {
+    task();
+    return;
+  }
+
   rtc::Event event;
-  task_queue->PostTask(
-      ToQueuedTask(std::forward<Closure>(task), [&event] { event.Set(); }));
-  RTC_CHECK(event.Wait(/*give_up_after_ms=*/rtc::Event::kForever,
-                       /*warn_after_ms=*/10'000))
-      << "Waited too long at " << loc.ToString();
+  absl::Cleanup cleanup = [&event] { event.Set(); };
+  task_queue->PostTask([task, cleanup = std::move(cleanup)] { task(); });
+  RTC_CHECK(event.Wait(/*give_up_after=*/rtc::Event::kForever,
+                       /*warn_after=*/TimeDelta::Seconds(10)));
 }
 
-class RTC_LOCKABLE TaskQueueForTest : public rtc::TaskQueue {
+class TaskQueueForTest {
  public:
-  using rtc::TaskQueue::TaskQueue;
-  explicit TaskQueueForTest(absl::string_view name = "TestQueue",
-                            Priority priority = Priority::NORMAL);
+  explicit TaskQueueForTest(
+      std::unique_ptr<TaskQueueBase, TaskQueueDeleter> task_queue);
+  explicit TaskQueueForTest(
+      absl::string_view name = "TestQueue",
+      TaskQueueFactory::Priority priority = TaskQueueFactory::Priority::NORMAL);
   TaskQueueForTest(const TaskQueueForTest&) = delete;
   TaskQueueForTest& operator=(const TaskQueueForTest&) = delete;
-  ~TaskQueueForTest() = default;
+  ~TaskQueueForTest();
 
-  // A convenience, test-only method that blocks the current thread while
-  // a task executes on the task queue.
-  // This variant is specifically for posting custom QueuedTask derived
-  // implementations that tests do not want to pass ownership of over to the
-  // task queue (i.e. the Run() method always returns |false|.).
-  template <class Closure>
-  void SendTask(Closure* task) {
-    RTC_CHECK(!IsCurrent());
-    rtc::Event event;
-    PostTask(ToQueuedTask(
-        [&task] { RTC_CHECK_EQ(false, static_cast<QueuedTask*>(task)->Run()); },
-        [&event] { event.Set(); }));
-    event.Wait(rtc::Event::kForever);
+  bool IsCurrent() const { return impl_->IsCurrent(); }
+
+  // Returns non-owning pointer to the task queue implementation.
+  TaskQueueBase* Get() { return impl_.get(); }
+
+  void PostTask(
+      absl::AnyInvocable<void() &&> task,
+      const webrtc::Location& location = webrtc::Location::Current()) {
+    impl_->PostTask(std::move(task), location);
+  }
+  void PostDelayedTask(
+      absl::AnyInvocable<void() &&> task,
+      webrtc::TimeDelta delay,
+      const webrtc::Location& location = webrtc::Location::Current()) {
+    impl_->PostDelayedTask(std::move(task), delay, location);
+  }
+  void PostDelayedHighPrecisionTask(
+      absl::AnyInvocable<void() &&> task,
+      webrtc::TimeDelta delay,
+      const webrtc::Location& location = webrtc::Location::Current()) {
+    impl_->PostDelayedHighPrecisionTask(std::move(task), delay, location);
   }
 
   // A convenience, test-only method that blocks the current thread while
   // a task executes on the task queue.
-  template <class Closure>
-  void SendTask(Closure&& task, rtc::Location loc) {
-    ::webrtc::SendTask(loc, Get(), std::forward<Closure>(task));
+  void SendTask(rtc::FunctionView<void()> task) {
+    ::webrtc::SendTask(Get(), task);
   }
 
   // Wait for the completion of all tasks posted prior to the
   // WaitForPreviouslyPostedTasks() call.
   void WaitForPreviouslyPostedTasks() {
+    RTC_DCHECK(!Get()->IsCurrent());
     // Post an empty task on the queue and wait for it to finish, to ensure
     // that all already posted tasks on the queue get executed.
-    SendTask([]() {}, RTC_FROM_HERE);
+    SendTask([]() {});
   }
+
+ private:
+  std::unique_ptr<TaskQueueBase, TaskQueueDeleter> impl_;
 };
 
 }  // namespace webrtc

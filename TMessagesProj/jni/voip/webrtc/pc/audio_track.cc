@@ -11,18 +11,17 @@
 #include "pc/audio_track.h"
 
 #include "rtc_base/checks.h"
-#include "rtc_base/ref_counted_object.h"
 
 namespace webrtc {
 
 // static
 rtc::scoped_refptr<AudioTrack> AudioTrack::Create(
-    const std::string& id,
+    absl::string_view id,
     const rtc::scoped_refptr<AudioSourceInterface>& source) {
   return rtc::make_ref_counted<AudioTrack>(id, source);
 }
 
-AudioTrack::AudioTrack(const std::string& label,
+AudioTrack::AudioTrack(absl::string_view label,
                        const rtc::scoped_refptr<AudioSourceInterface>& source)
     : MediaStreamTrack<AudioTrackInterface>(label), audio_source_(source) {
   if (audio_source_) {
@@ -32,7 +31,7 @@ AudioTrack::AudioTrack(const std::string& label,
 }
 
 AudioTrack::~AudioTrack() {
-  RTC_DCHECK(thread_checker_.IsCurrent());
+  RTC_DCHECK_RUN_ON(&signaling_thread_checker_);
   set_state(MediaStreamTrackInterface::kEnded);
   if (audio_source_)
     audio_source_->UnregisterObserver(this);
@@ -43,24 +42,24 @@ std::string AudioTrack::kind() const {
 }
 
 AudioSourceInterface* AudioTrack::GetSource() const {
-  RTC_DCHECK(thread_checker_.IsCurrent());
+  // Callable from any thread.
   return audio_source_.get();
 }
 
 void AudioTrack::AddSink(AudioTrackSinkInterface* sink) {
-  RTC_DCHECK(thread_checker_.IsCurrent());
+  RTC_DCHECK_RUN_ON(&signaling_thread_checker_);
   if (audio_source_)
     audio_source_->AddSink(sink);
 }
 
 void AudioTrack::RemoveSink(AudioTrackSinkInterface* sink) {
-  RTC_DCHECK(thread_checker_.IsCurrent());
+  RTC_DCHECK_RUN_ON(&signaling_thread_checker_);
   if (audio_source_)
     audio_source_->RemoveSink(sink);
 }
 
 void AudioTrack::OnChanged() {
-  RTC_DCHECK(thread_checker_.IsCurrent());
+  RTC_DCHECK_RUN_ON(&signaling_thread_checker_);
   if (audio_source_->state() == MediaSourceInterface::kEnded) {
     set_state(kEnded);
   } else {

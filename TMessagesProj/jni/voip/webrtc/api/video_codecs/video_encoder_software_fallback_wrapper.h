@@ -32,7 +32,7 @@ CreateVideoEncoderSoftwareFallbackWrapper(
     bool prefer_temporal_support);
 
 // Default fallback for call-sites not yet updated with
-// |prefer_temporal_support|.
+// `prefer_temporal_support`.
 // TODO(sprang): Remove when usage is gone.
 RTC_EXPORT inline std::unique_ptr<VideoEncoder>
 CreateVideoEncoderSoftwareFallbackWrapper(

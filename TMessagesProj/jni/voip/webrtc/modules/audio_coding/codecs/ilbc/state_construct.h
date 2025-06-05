@@ -33,6 +33,6 @@ void WebRtcIlbcfix_StateConstruct(
     int16_t* syntDenum, /* (i) synthesis filter denumerator */
     int16_t* Out_fix,   /* (o) the decoded state vector */
     size_t len          /* (i) length of a state vector */
-    );
+);
 
 #endif

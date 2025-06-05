@@ -31,6 +31,6 @@ void WebRtcIlbcfix_Vq3(
     int16_t* CB,    /* (i) the vector quantization codebook (Q13) */
     int16_t* X,     /* (i) the vector to quantize (Q13) */
     int16_t n_cb    /* (i) the number of vectors in the codebook */
-    );
+);
 
 #endif

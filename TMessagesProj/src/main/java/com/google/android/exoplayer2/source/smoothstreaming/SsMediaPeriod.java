@@ -19,18 +19,19 @@ import androidx.annotation.Nullable;
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.Format;
 import com.google.android.exoplayer2.SeekParameters;
+import com.google.android.exoplayer2.drm.DrmSessionEventListener;
 import com.google.android.exoplayer2.drm.DrmSessionManager;
 import com.google.android.exoplayer2.offline.StreamKey;
 import com.google.android.exoplayer2.source.CompositeSequenceableLoaderFactory;
 import com.google.android.exoplayer2.source.MediaPeriod;
-import com.google.android.exoplayer2.source.MediaSourceEventListener.EventDispatcher;
+import com.google.android.exoplayer2.source.MediaSourceEventListener;
 import com.google.android.exoplayer2.source.SampleStream;
 import com.google.android.exoplayer2.source.SequenceableLoader;
 import com.google.android.exoplayer2.source.TrackGroup;
 import com.google.android.exoplayer2.source.TrackGroupArray;
 import com.google.android.exoplayer2.source.chunk.ChunkSampleStream;
 import com.google.android.exoplayer2.source.smoothstreaming.manifest.SsManifest;
-import com.google.android.exoplayer2.trackselection.TrackSelection;
+import com.google.android.exoplayer2.trackselection.ExoTrackSelection;
 import com.google.android.exoplayer2.upstream.Allocator;
 import com.google.android.exoplayer2.upstream.LoadErrorHandlingPolicy;
 import com.google.android.exoplayer2.upstream.LoaderErrorThrower;
@@ -47,9 +48,10 @@ import org.checkerframework.checker.nullness.compatqual.NullableType;
   private final SsChunkSource.Factory chunkSourceFactory;
   @Nullable private final TransferListener transferListener;
   private final LoaderErrorThrower manifestLoaderErrorThrower;
-  private final DrmSessionManager<?> drmSessionManager;
+  private final DrmSessionManager drmSessionManager;
+  private final DrmSessionEventListener.EventDispatcher drmEventDispatcher;
   private final LoadErrorHandlingPolicy loadErrorHandlingPolicy;
-  private final EventDispatcher eventDispatcher;
+  private final MediaSourceEventListener.EventDispatcher mediaSourceEventDispatcher;
   private final Allocator allocator;
   private final TrackGroupArray trackGroups;
   private final CompositeSequenceableLoaderFactory compositeSequenceableLoaderFactory;
@@ -58,16 +60,16 @@ import org.checkerframework.checker.nullness.compatqual.NullableType;
   private SsManifest manifest;
   private ChunkSampleStream<SsChunkSource>[] sampleStreams;
   private SequenceableLoader compositeSequenceableLoader;
-  private boolean notifiedReadingStarted;
 
   public SsMediaPeriod(
       SsManifest manifest,
       SsChunkSource.Factory chunkSourceFactory,
       @Nullable TransferListener transferListener,
       CompositeSequenceableLoaderFactory compositeSequenceableLoaderFactory,
-      DrmSessionManager<?> drmSessionManager,
+      DrmSessionManager drmSessionManager,
+      DrmSessionEventListener.EventDispatcher drmEventDispatcher,
       LoadErrorHandlingPolicy loadErrorHandlingPolicy,
-      EventDispatcher eventDispatcher,
+      MediaSourceEventListener.EventDispatcher mediaSourceEventDispatcher,
       LoaderErrorThrower manifestLoaderErrorThrower,
       Allocator allocator) {
     this.manifest = manifest;
@@ -75,15 +77,15 @@ import org.checkerframework.checker.nullness.compatqual.NullableType;
     this.transferListener = transferListener;
     this.manifestLoaderErrorThrower = manifestLoaderErrorThrower;
     this.drmSessionManager = drmSessionManager;
+    this.drmEventDispatcher = drmEventDispatcher;
     this.loadErrorHandlingPolicy = loadErrorHandlingPolicy;
-    this.eventDispatcher = eventDispatcher;
+    this.mediaSourceEventDispatcher = mediaSourceEventDispatcher;
     this.allocator = allocator;
     this.compositeSequenceableLoaderFactory = compositeSequenceableLoaderFactory;
     trackGroups = buildTrackGroups(manifest, drmSessionManager);
     sampleStreams = newSampleStreamArray(0);
     compositeSequenceableLoader =
         compositeSequenceableLoaderFactory.createCompositeSequenceableLoader(sampleStreams);
-    eventDispatcher.mediaPeriodCreated();
   }
 
   public void updateManifest(SsManifest manifest) {
@@ -99,7 +101,6 @@ import org.checkerframework.checker.nullness.compatqual.NullableType;
       sampleStream.release();
     }
     callback = null;
-    eventDispatcher.mediaPeriodReleased();
   }
 
   // MediaPeriod implementation.
@@ -122,7 +123,7 @@ import org.checkerframework.checker.nullness.compatqual.NullableType;
 
   @Override
   public long selectTracks(
-      @NullableType TrackSelection[] selections,
+      @NullableType ExoTrackSelection[] selections,
       boolean[] mayRetainStreamFlags,
       @NullableType SampleStream[] streams,
       boolean[] streamResetFlags,
@@ -155,10 +156,10 @@ import org.checkerframework.checker.nullness.compatqual.NullableType;
   }
 
   @Override
-  public List<StreamKey> getStreamKeys(List<TrackSelection> trackSelections) {
+  public List<StreamKey> getStreamKeys(List<ExoTrackSelection> trackSelections) {
     List<StreamKey> streamKeys = new ArrayList<>();
     for (int selectionIndex = 0; selectionIndex < trackSelections.size(); selectionIndex++) {
-      TrackSelection trackSelection = trackSelections.get(selectionIndex);
+      ExoTrackSelection trackSelection = trackSelections.get(selectionIndex);
       int streamElementIndex = trackGroups.indexOf(trackSelection.getTrackGroup());
       for (int i = 0; i < trackSelection.length(); i++) {
         streamKeys.add(new StreamKey(streamElementIndex, trackSelection.getIndexInTrackGroup(i)));
@@ -196,10 +197,6 @@ import org.checkerframework.checker.nullness.compatqual.NullableType;
 
   @Override
   public long readDiscontinuity() {
-    if (!notifiedReadingStarted) {
-      eventDispatcher.readingStarted();
-      notifiedReadingStarted = true;
-    }
     return C.TIME_UNSET;
   }
 
@@ -235,16 +232,12 @@ import org.checkerframework.checker.nullness.compatqual.NullableType;
 
   // Private methods.
 
-  private ChunkSampleStream<SsChunkSource> buildSampleStream(TrackSelection selection,
-      long positionUs) {
+  private ChunkSampleStream<SsChunkSource> buildSampleStream(
+      ExoTrackSelection selection, long positionUs) {
     int streamElementIndex = trackGroups.indexOf(selection.getTrackGroup());
     SsChunkSource chunkSource =
         chunkSourceFactory.createChunkSource(
-            manifestLoaderErrorThrower,
-            manifest,
-            streamElementIndex,
-            selection,
-            transferListener);
+            manifestLoaderErrorThrower, manifest, streamElementIndex, selection, transferListener);
     return new ChunkSampleStream<>(
         manifest.streamElements[streamElementIndex].type,
         null,
@@ -254,12 +247,13 @@ import org.checkerframework.checker.nullness.compatqual.NullableType;
         allocator,
         positionUs,
         drmSessionManager,
+        drmEventDispatcher,
         loadErrorHandlingPolicy,
-        eventDispatcher);
+        mediaSourceEventDispatcher);
   }
 
   private static TrackGroupArray buildTrackGroups(
-      SsManifest manifest, DrmSessionManager<?> drmSessionManager) {
+      SsManifest manifest, DrmSessionManager drmSessionManager) {
     TrackGroup[] trackGroups = new TrackGroup[manifest.streamElements.length];
     for (int i = 0; i < manifest.streamElements.length; i++) {
       Format[] manifestFormats = manifest.streamElements[i].formats;
@@ -267,12 +261,9 @@ import org.checkerframework.checker.nullness.compatqual.NullableType;
       for (int j = 0; j < manifestFormats.length; j++) {
         Format manifestFormat = manifestFormats[j];
         exposedFormats[j] =
-            manifestFormat.drmInitData != null
-                ? manifestFormat.copyWithExoMediaCryptoType(
-                    drmSessionManager.getExoMediaCryptoType(manifestFormat.drmInitData))
-                : manifestFormat;
+            manifestFormat.copyWithCryptoType(drmSessionManager.getCryptoType(manifestFormat));
       }
-      trackGroups[i] = new TrackGroup(exposedFormats);
+      trackGroups[i] = new TrackGroup(/* id= */ Integer.toString(i), exposedFormats);
     }
     return new TrackGroupArray(trackGroups);
   }

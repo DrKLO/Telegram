@@ -20,5 +20,5 @@
 
 ABSL_FLAG(int, mistyped_int_flag, 0, "");
 ABSL_FLAG(std::string, mistyped_string_flag, "", "");
-ABSL_RETIRED_FLAG(bool, old_bool_flag, true,
-                  "repetition of retired flag definition");
+ABSL_FLAG(bool, flag_on_separate_file, false, "");
+ABSL_RETIRED_FLAG(bool, retired_flag_on_separate_file, false, "");

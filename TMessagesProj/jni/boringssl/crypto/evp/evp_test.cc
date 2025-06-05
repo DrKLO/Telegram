@@ -1,55 +1,16 @@
-/*
- * Written by Dr Stephen N Henson (steve@openssl.org) for the OpenSSL
- * project.
- */
-/* ====================================================================
- * Copyright (c) 2015 The OpenSSL Project.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- *
- * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- *
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- *
- * 3. All advertising materials mentioning features or use of this
- *    software must display the following acknowledgment:
- *    "This product includes software developed by the OpenSSL Project
- *    for use in the OpenSSL Toolkit. (http://www.OpenSSL.org/)"
- *
- * 4. The names "OpenSSL Toolkit" and "OpenSSL Project" must not be used to
- *    endorse or promote products derived from this software without
- *    prior written permission. For written permission, please contact
- *    licensing@OpenSSL.org.
- *
- * 5. Products derived from this software may not be called "OpenSSL"
- *    nor may "OpenSSL" appear in their names without prior written
- *    permission of the OpenSSL Project.
- *
- * 6. Redistributions of any form whatsoever must retain the following
- *    acknowledgment:
- *    "This product includes software developed by the OpenSSL Project
- *    for use in the OpenSSL Toolkit (http://www.OpenSSL.org/)"
- *
- * THIS SOFTWARE IS PROVIDED BY THE OpenSSL PROJECT ``AS IS'' AND ANY
- * EXPRESSED OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
- * PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE OpenSSL PROJECT OR
- * ITS CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
- * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
- * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
- * OF THE POSSIBILITY OF SUCH DAMAGE.
- * ====================================================================
- */
+// Copyright 2015-2016 The OpenSSL Project Authors. All Rights Reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 #include <openssl/evp.h>
 
@@ -58,22 +19,18 @@
 #include <stdlib.h>
 #include <string.h>
 
-OPENSSL_MSVC_PRAGMA(warning(push))
-OPENSSL_MSVC_PRAGMA(warning(disable: 4702))
-
 #include <map>
 #include <string>
 #include <utility>
 #include <vector>
 
-OPENSSL_MSVC_PRAGMA(warning(pop))
-
 #include <gtest/gtest.h>
 
-#include <openssl/buf.h>
+#include <openssl/bn.h>
 #include <openssl/bytestring.h>
 #include <openssl/crypto.h>
 #include <openssl/digest.h>
+#include <openssl/dh.h>
 #include <openssl/dsa.h>
 #include <openssl/err.h>
 #include <openssl/rsa.h>
@@ -126,7 +83,7 @@ static int GetKeyType(FileTest *t, const std::string &name) {
   return EVP_PKEY_NONE;
 }
 
-static int GetRSAPadding(FileTest *t, int *out, const std::string &name) {
+static bool GetRSAPadding(FileTest *t, int *out, const std::string &name) {
   if (name == "PKCS1") {
     *out = RSA_PKCS1_PADDING;
     return true;
@@ -137,6 +94,10 @@ static int GetRSAPadding(FileTest *t, int *out, const std::string &name) {
   }
   if (name == "OAEP") {
     *out = RSA_PKCS1_OAEP_PADDING;
+    return true;
+  }
+  if (name == "None") {
+    *out = RSA_NO_PADDING;
     return true;
   }
   ADD_FAILURE() << "Unknown RSA padding mode: " << name;
@@ -246,6 +207,60 @@ static bool ImportKey(FileTest *t, KeyMap *key_map,
   return true;
 }
 
+static bool GetOptionalBignum(FileTest *t, bssl::UniquePtr<BIGNUM> *out,
+                              const std::string &key) {
+  if (!t->HasAttribute(key)) {
+    *out = nullptr;
+    return true;
+  }
+
+  std::vector<uint8_t> bytes;
+  if (!t->GetBytes(&bytes, key)) {
+    return false;
+  }
+
+  out->reset(BN_bin2bn(bytes.data(), bytes.size(), nullptr));
+  return *out != nullptr;
+}
+
+static bool ImportDHKey(FileTest *t, KeyMap *key_map) {
+  bssl::UniquePtr<BIGNUM> p, q, g, pub_key, priv_key;
+  if (!GetOptionalBignum(t, &p, "P") ||  //
+      !GetOptionalBignum(t, &q, "Q") ||  //
+      !GetOptionalBignum(t, &g, "G") ||
+      !GetOptionalBignum(t, &pub_key, "Public") ||
+      !GetOptionalBignum(t, &priv_key, "Private")) {
+    return false;
+  }
+
+  bssl::UniquePtr<DH> dh(DH_new());
+  if (dh == nullptr || !DH_set0_pqg(dh.get(), p.get(), q.get(), g.get())) {
+    return false;
+  }
+  // |DH_set0_pqg| takes ownership on success.
+  p.release();
+  q.release();
+  g.release();
+
+  if (!DH_set0_key(dh.get(), pub_key.get(), priv_key.get())) {
+    return false;
+  }
+  // |DH_set0_key| takes ownership on success.
+  pub_key.release();
+  priv_key.release();
+
+  bssl::UniquePtr<EVP_PKEY> pkey(EVP_PKEY_new());
+  if (pkey == nullptr || !EVP_PKEY_set1_DH(pkey.get(), dh.get())) {
+    return false;
+  }
+
+  // Save the key for future tests.
+  const std::string &key_name = t->GetParameter();
+  EXPECT_EQ(0u, key_map->count(key_name)) << "Duplicate key: " << key_name;
+  (*key_map)[key_name] = std::move(pkey);
+  return true;
+}
+
 // SetupContext configures |ctx| based on attributes in |t|, with the exception
 // of the signing digest which must be configured externally.
 static bool SetupContext(FileTest *t, KeyMap *key_map, EVP_PKEY_CTX *ctx) {
@@ -280,8 +295,8 @@ static bool SetupContext(FileTest *t, KeyMap *key_map, EVP_PKEY_CTX *ctx) {
     }
     // For historical reasons, |EVP_PKEY_CTX_set0_rsa_oaep_label| expects to be
     // take ownership of the input.
-    bssl::UniquePtr<uint8_t> buf(
-        reinterpret_cast<uint8_t *>(BUF_memdup(label.data(), label.size())));
+    bssl::UniquePtr<uint8_t> buf(reinterpret_cast<uint8_t *>(
+        OPENSSL_memdup(label.data(), label.size())));
     if (!buf ||
         !EVP_PKEY_CTX_set0_rsa_oaep_label(ctx, buf.get(), label.size())) {
       return false;
@@ -298,6 +313,9 @@ static bool SetupContext(FileTest *t, KeyMap *key_map, EVP_PKEY_CTX *ctx) {
     if (!EVP_PKEY_derive_set_peer(ctx, derive_peer_key)) {
       return false;
     }
+  }
+  if (t->HasAttribute("DiffieHellmanPad") && !EVP_PKEY_CTX_set_dh_pad(ctx, 1)) {
+    return false;
   }
   return true;
 }
@@ -367,6 +385,10 @@ static bool TestEVP(FileTest *t, KeyMap *key_map) {
 
   if (t->GetType() == "PublicKey") {
     return ImportKey(t, key_map, EVP_parse_public_key, EVP_marshal_public_key);
+  }
+
+  if (t->GetType() == "DHKey") {
+    return ImportDHKey(t, key_map);
   }
 
   // Load the key.
@@ -568,40 +590,10 @@ TEST(EVPTest, TestVectors) {
   });
 }
 
-static void RunWycheproofTest(const char *path) {
+static void RunWycheproofVerifyTest(const char *path) {
   SCOPED_TRACE(path);
   FileTestGTest(path, [](FileTest *t) {
-    t->IgnoreInstruction("key.type");
-    // Extra ECDSA fields.
-    t->IgnoreInstruction("key.curve");
-    t->IgnoreInstruction("key.keySize");
-    t->IgnoreInstruction("key.wx");
-    t->IgnoreInstruction("key.wy");
-    t->IgnoreInstruction("key.uncompressed");
-    // Extra RSA fields.
-    t->IgnoreInstruction("e");
-    t->IgnoreInstruction("keyAsn");
-    t->IgnoreInstruction("keysize");
-    t->IgnoreInstruction("n");
-    t->IgnoreAttribute("padding");
-    t->IgnoreInstruction("keyJwk.alg");
-    t->IgnoreInstruction("keyJwk.e");
-    t->IgnoreInstruction("keyJwk.kid");
-    t->IgnoreInstruction("keyJwk.kty");
-    t->IgnoreInstruction("keyJwk.n");
-    // Extra EdDSA fields.
-    t->IgnoreInstruction("key.pk");
-    t->IgnoreInstruction("key.sk");
-    t->IgnoreInstruction("jwk.crv");
-    t->IgnoreInstruction("jwk.d");
-    t->IgnoreInstruction("jwk.kid");
-    t->IgnoreInstruction("jwk.kty");
-    t->IgnoreInstruction("jwk.x");
-    // Extra DSA fields.
-    t->IgnoreInstruction("key.g");
-    t->IgnoreInstruction("key.p");
-    t->IgnoreInstruction("key.q");
-    t->IgnoreInstruction("key.y");
+    t->IgnoreAllUnusedInstructions();
 
     std::vector<uint8_t> der;
     ASSERT_TRUE(t->GetInstructionBytes(&der, "keyDer"));
@@ -646,13 +638,7 @@ static void RunWycheproofTest(const char *path) {
       bool sig_ok = DSA_check_signature(&valid, digest, digest_len, sig.data(),
                                         sig.size(), dsa) &&
                     valid;
-      if (result == WycheproofResult::kValid) {
-        EXPECT_TRUE(sig_ok);
-      } else if (result == WycheproofResult::kInvalid) {
-        EXPECT_FALSE(sig_ok);
-      } else {
-        // this is a legacy signature, which may or may not be accepted.
-      }
+      EXPECT_EQ(sig_ok, result.IsValid());
     } else {
       bssl::ScopedEVP_MD_CTX ctx;
       EVP_PKEY_CTX *pctx;
@@ -665,75 +651,275 @@ static void RunWycheproofTest(const char *path) {
       }
       int ret = EVP_DigestVerify(ctx.get(), sig.data(), sig.size(), msg.data(),
                                  msg.size());
-      if (result == WycheproofResult::kValid) {
-        EXPECT_EQ(1, ret);
-      } else if (result == WycheproofResult::kInvalid) {
-        EXPECT_EQ(0, ret);
-      } else {
-        // this is a legacy signature, which may or may not be accepted.
-        EXPECT_TRUE(ret == 1 || ret == 0);
-      }
+      // BoringSSL does not enforce policies on weak keys and leaves it to the
+      // caller.
+      EXPECT_EQ(ret,
+                result.IsValid({"SmallModulus", "SmallPublicKey", "WeakHash"})
+                    ? 1
+                    : 0);
     }
   });
 }
 
 TEST(EVPTest, WycheproofDSA) {
-  RunWycheproofTest("third_party/wycheproof_testvectors/dsa_test.txt");
+  RunWycheproofVerifyTest("third_party/wycheproof_testvectors/dsa_test.txt");
 }
 
 TEST(EVPTest, WycheproofECDSAP224) {
-  RunWycheproofTest(
+  RunWycheproofVerifyTest(
       "third_party/wycheproof_testvectors/ecdsa_secp224r1_sha224_test.txt");
-  RunWycheproofTest(
+  RunWycheproofVerifyTest(
       "third_party/wycheproof_testvectors/ecdsa_secp224r1_sha256_test.txt");
-  RunWycheproofTest(
+  RunWycheproofVerifyTest(
       "third_party/wycheproof_testvectors/ecdsa_secp224r1_sha512_test.txt");
 }
 
 TEST(EVPTest, WycheproofECDSAP256) {
-  RunWycheproofTest(
+  RunWycheproofVerifyTest(
       "third_party/wycheproof_testvectors/ecdsa_secp256r1_sha256_test.txt");
-  RunWycheproofTest(
+  RunWycheproofVerifyTest(
       "third_party/wycheproof_testvectors/ecdsa_secp256r1_sha512_test.txt");
 }
 
 TEST(EVPTest, WycheproofECDSAP384) {
-  RunWycheproofTest(
+  RunWycheproofVerifyTest(
       "third_party/wycheproof_testvectors/ecdsa_secp384r1_sha384_test.txt");
 }
 
 TEST(EVPTest, WycheproofECDSAP521) {
-  RunWycheproofTest(
+  RunWycheproofVerifyTest(
       "third_party/wycheproof_testvectors/ecdsa_secp384r1_sha512_test.txt");
-  RunWycheproofTest(
+  RunWycheproofVerifyTest(
       "third_party/wycheproof_testvectors/ecdsa_secp521r1_sha512_test.txt");
 }
 
 TEST(EVPTest, WycheproofEdDSA) {
-  RunWycheproofTest("third_party/wycheproof_testvectors/eddsa_test.txt");
+  RunWycheproofVerifyTest("third_party/wycheproof_testvectors/eddsa_test.txt");
 }
 
 TEST(EVPTest, WycheproofRSAPKCS1) {
-  RunWycheproofTest(
+  RunWycheproofVerifyTest(
+      "third_party/wycheproof_testvectors/rsa_signature_2048_sha224_test.txt");
+  RunWycheproofVerifyTest(
+      "third_party/wycheproof_testvectors/rsa_signature_2048_sha256_test.txt");
+  RunWycheproofVerifyTest(
+      "third_party/wycheproof_testvectors/rsa_signature_2048_sha384_test.txt");
+  RunWycheproofVerifyTest(
+      "third_party/wycheproof_testvectors/rsa_signature_2048_sha512_test.txt");
+  RunWycheproofVerifyTest(
+      "third_party/wycheproof_testvectors/rsa_signature_3072_sha256_test.txt");
+  RunWycheproofVerifyTest(
+      "third_party/wycheproof_testvectors/rsa_signature_3072_sha384_test.txt");
+  RunWycheproofVerifyTest(
+      "third_party/wycheproof_testvectors/rsa_signature_3072_sha512_test.txt");
+  RunWycheproofVerifyTest(
+      "third_party/wycheproof_testvectors/rsa_signature_4096_sha384_test.txt");
+  RunWycheproofVerifyTest(
+      "third_party/wycheproof_testvectors/rsa_signature_4096_sha512_test.txt");
+  // TODO(davidben): Is this file redundant with the tests above?
+  RunWycheproofVerifyTest(
       "third_party/wycheproof_testvectors/rsa_signature_test.txt");
 }
 
+TEST(EVPTest, WycheproofRSAPKCS1Sign) {
+  FileTestGTest(
+      "third_party/wycheproof_testvectors/rsa_sig_gen_misc_test.txt",
+      [](FileTest *t) {
+        t->IgnoreAllUnusedInstructions();
+
+        std::vector<uint8_t> pkcs8;
+        ASSERT_TRUE(t->GetInstructionBytes(&pkcs8, "privateKeyPkcs8"));
+        CBS cbs;
+        CBS_init(&cbs, pkcs8.data(), pkcs8.size());
+        bssl::UniquePtr<EVP_PKEY> key(EVP_parse_private_key(&cbs));
+        ASSERT_TRUE(key);
+
+        const EVP_MD *md = GetWycheproofDigest(t, "sha", true);
+        ASSERT_TRUE(md);
+
+        std::vector<uint8_t> msg, sig;
+        ASSERT_TRUE(t->GetBytes(&msg, "msg"));
+        ASSERT_TRUE(t->GetBytes(&sig, "sig"));
+        WycheproofResult result;
+        ASSERT_TRUE(GetWycheproofResult(t, &result));
+
+        bssl::ScopedEVP_MD_CTX ctx;
+        EVP_PKEY_CTX *pctx;
+        ASSERT_TRUE(
+            EVP_DigestSignInit(ctx.get(), &pctx, md, nullptr, key.get()));
+        std::vector<uint8_t> out(EVP_PKEY_size(key.get()));
+        size_t len = out.size();
+        int ret =
+            EVP_DigestSign(ctx.get(), out.data(), &len, msg.data(), msg.size());
+        // BoringSSL does not enforce policies on weak keys and leaves it to the
+        // caller.
+        bool is_valid =
+            result.IsValid({"SmallModulus", "SmallPublicKey", "WeakHash"});
+        EXPECT_EQ(ret, is_valid ? 1 : 0);
+        if (is_valid) {
+          out.resize(len);
+          EXPECT_EQ(Bytes(sig), Bytes(out));
+        }
+      });
+}
+
 TEST(EVPTest, WycheproofRSAPSS) {
-  RunWycheproofTest(
+  RunWycheproofVerifyTest(
       "third_party/wycheproof_testvectors/rsa_pss_2048_sha1_mgf1_20_test.txt");
-  RunWycheproofTest(
+  RunWycheproofVerifyTest(
       "third_party/wycheproof_testvectors/rsa_pss_2048_sha256_mgf1_0_test.txt");
-  RunWycheproofTest(
+  RunWycheproofVerifyTest(
       "third_party/wycheproof_testvectors/"
       "rsa_pss_2048_sha256_mgf1_32_test.txt");
-  RunWycheproofTest(
+  RunWycheproofVerifyTest(
       "third_party/wycheproof_testvectors/"
       "rsa_pss_3072_sha256_mgf1_32_test.txt");
-  RunWycheproofTest(
+  RunWycheproofVerifyTest(
       "third_party/wycheproof_testvectors/"
       "rsa_pss_4096_sha256_mgf1_32_test.txt");
-  RunWycheproofTest(
+  RunWycheproofVerifyTest(
       "third_party/wycheproof_testvectors/"
       "rsa_pss_4096_sha512_mgf1_32_test.txt");
-  RunWycheproofTest("third_party/wycheproof_testvectors/rsa_pss_misc_test.txt");
+  RunWycheproofVerifyTest(
+      "third_party/wycheproof_testvectors/rsa_pss_misc_test.txt");
+}
+
+static void RunWycheproofDecryptTest(
+    const char *path,
+    std::function<void(FileTest *, EVP_PKEY_CTX *)> setup_cb) {
+  FileTestGTest(path, [&](FileTest *t) {
+    t->IgnoreAllUnusedInstructions();
+
+    std::vector<uint8_t> pkcs8;
+    ASSERT_TRUE(t->GetInstructionBytes(&pkcs8, "privateKeyPkcs8"));
+    CBS cbs;
+    CBS_init(&cbs, pkcs8.data(), pkcs8.size());
+    bssl::UniquePtr<EVP_PKEY> key(EVP_parse_private_key(&cbs));
+    ASSERT_TRUE(key);
+
+    std::vector<uint8_t> ct, msg;
+    ASSERT_TRUE(t->GetBytes(&ct, "ct"));
+    ASSERT_TRUE(t->GetBytes(&msg, "msg"));
+    WycheproofResult result;
+    ASSERT_TRUE(GetWycheproofResult(t, &result));
+
+    bssl::UniquePtr<EVP_PKEY_CTX> ctx(EVP_PKEY_CTX_new(key.get(), nullptr));
+    ASSERT_TRUE(ctx);
+    ASSERT_TRUE(EVP_PKEY_decrypt_init(ctx.get()));
+    ASSERT_NO_FATAL_FAILURE(setup_cb(t, ctx.get()));
+    std::vector<uint8_t> out(EVP_PKEY_size(key.get()));
+    size_t len = out.size();
+    int ret =
+        EVP_PKEY_decrypt(ctx.get(), out.data(), &len, ct.data(), ct.size());
+    // BoringSSL does not enforce policies on weak keys and leaves it to the
+    // caller.
+    bool is_valid = result.IsValid({"SmallModulus"});
+    EXPECT_EQ(ret, is_valid ? 1 : 0);
+    if (is_valid) {
+      out.resize(len);
+      EXPECT_EQ(Bytes(msg), Bytes(out));
+    }
+  });
+}
+
+static void RunWycheproofOAEPTest(const char *path) {
+  RunWycheproofDecryptTest(path, [](FileTest *t, EVP_PKEY_CTX *ctx) {
+    const EVP_MD *md = GetWycheproofDigest(t, "sha", true);
+    ASSERT_TRUE(md);
+    const EVP_MD *mgf1_md = GetWycheproofDigest(t, "mgfSha", true);
+    ASSERT_TRUE(mgf1_md);
+    std::vector<uint8_t> label;
+    ASSERT_TRUE(t->GetBytes(&label, "label"));
+
+    ASSERT_TRUE(EVP_PKEY_CTX_set_rsa_padding(ctx, RSA_PKCS1_OAEP_PADDING));
+    ASSERT_TRUE(EVP_PKEY_CTX_set_rsa_oaep_md(ctx, md));
+    ASSERT_TRUE(EVP_PKEY_CTX_set_rsa_mgf1_md(ctx, mgf1_md));
+    bssl::UniquePtr<uint8_t> label_copy(
+        static_cast<uint8_t *>(OPENSSL_memdup(label.data(), label.size())));
+    ASSERT_TRUE(label_copy || label.empty());
+    ASSERT_TRUE(
+        EVP_PKEY_CTX_set0_rsa_oaep_label(ctx, label_copy.get(), label.size()));
+    // |EVP_PKEY_CTX_set0_rsa_oaep_label| takes ownership on success.
+    label_copy.release();
+  });
+}
+
+TEST(EVPTest, WycheproofRSAOAEP2048) {
+  RunWycheproofOAEPTest(
+      "third_party/wycheproof_testvectors/"
+      "rsa_oaep_2048_sha1_mgf1sha1_test.txt");
+  RunWycheproofOAEPTest(
+      "third_party/wycheproof_testvectors/"
+      "rsa_oaep_2048_sha224_mgf1sha1_test.txt");
+  RunWycheproofOAEPTest(
+      "third_party/wycheproof_testvectors/"
+      "rsa_oaep_2048_sha224_mgf1sha224_test.txt");
+  RunWycheproofOAEPTest(
+      "third_party/wycheproof_testvectors/"
+      "rsa_oaep_2048_sha256_mgf1sha1_test.txt");
+  RunWycheproofOAEPTest(
+      "third_party/wycheproof_testvectors/"
+      "rsa_oaep_2048_sha256_mgf1sha256_test.txt");
+  RunWycheproofOAEPTest(
+      "third_party/wycheproof_testvectors/"
+      "rsa_oaep_2048_sha384_mgf1sha1_test.txt");
+  RunWycheproofOAEPTest(
+      "third_party/wycheproof_testvectors/"
+      "rsa_oaep_2048_sha384_mgf1sha384_test.txt");
+  RunWycheproofOAEPTest(
+      "third_party/wycheproof_testvectors/"
+      "rsa_oaep_2048_sha512_mgf1sha1_test.txt");
+  RunWycheproofOAEPTest(
+      "third_party/wycheproof_testvectors/"
+      "rsa_oaep_2048_sha512_mgf1sha512_test.txt");
+}
+
+TEST(EVPTest, WycheproofRSAOAEP3072) {
+  RunWycheproofOAEPTest(
+      "third_party/wycheproof_testvectors/"
+      "rsa_oaep_3072_sha256_mgf1sha1_test.txt");
+  RunWycheproofOAEPTest(
+      "third_party/wycheproof_testvectors/"
+      "rsa_oaep_3072_sha256_mgf1sha256_test.txt");
+  RunWycheproofOAEPTest(
+      "third_party/wycheproof_testvectors/"
+      "rsa_oaep_3072_sha512_mgf1sha1_test.txt");
+  RunWycheproofOAEPTest(
+      "third_party/wycheproof_testvectors/"
+      "rsa_oaep_3072_sha512_mgf1sha512_test.txt");
+}
+
+TEST(EVPTest, WycheproofRSAOAEP4096) {
+  RunWycheproofOAEPTest(
+      "third_party/wycheproof_testvectors/"
+      "rsa_oaep_4096_sha256_mgf1sha1_test.txt");
+  RunWycheproofOAEPTest(
+      "third_party/wycheproof_testvectors/"
+      "rsa_oaep_4096_sha256_mgf1sha256_test.txt");
+  RunWycheproofOAEPTest(
+      "third_party/wycheproof_testvectors/"
+      "rsa_oaep_4096_sha512_mgf1sha1_test.txt");
+  RunWycheproofOAEPTest(
+      "third_party/wycheproof_testvectors/"
+      "rsa_oaep_4096_sha512_mgf1sha512_test.txt");
+}
+
+TEST(EVPTest, WycheproofRSAOAEPMisc) {
+  RunWycheproofOAEPTest(
+      "third_party/wycheproof_testvectors/rsa_oaep_misc_test.txt");
+}
+
+static void RunWycheproofPKCS1DecryptTest(const char *path) {
+  RunWycheproofDecryptTest(path, [](FileTest *t, EVP_PKEY_CTX *ctx) {
+    // No setup needed. PKCS#1 is, sadly, the default.
+  });
+}
+
+TEST(EVPTest, WycheproofRSAPKCS1Decrypt) {
+  RunWycheproofPKCS1DecryptTest(
+      "third_party/wycheproof_testvectors/rsa_pkcs1_2048_test.txt");
+  RunWycheproofPKCS1DecryptTest(
+      "third_party/wycheproof_testvectors/rsa_pkcs1_3072_test.txt");
+  RunWycheproofPKCS1DecryptTest(
+      "third_party/wycheproof_testvectors/rsa_pkcs1_4096_test.txt");
 }

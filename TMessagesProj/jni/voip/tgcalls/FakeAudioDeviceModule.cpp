@@ -12,11 +12,11 @@
 namespace tgcalls {
 class FakeAudioDeviceModuleImpl : public webrtc::webrtc_impl::AudioDeviceModuleDefault<webrtc::AudioDeviceModule> {
  public:
-  static rtc::scoped_refptr<webrtc::AudioDeviceModule> Create(webrtc::TaskQueueFactory* taskQueueFactory,
+  static webrtc::scoped_refptr<webrtc::AudioDeviceModule> Create(webrtc::TaskQueueFactory* taskQueueFactory,
                                                               std::shared_ptr<FakeAudioDeviceModule::Renderer> renderer,
                                                               std::shared_ptr<FakeAudioDeviceModule::Recorder> recorder,
                                                               FakeAudioDeviceModule::Options options) {
-    return rtc::scoped_refptr<webrtc::AudioDeviceModule>(
+    return webrtc::scoped_refptr<webrtc::AudioDeviceModule>(
         new rtc::RefCountedObject<FakeAudioDeviceModuleImpl>(taskQueueFactory, options, std::move(renderer), std::move(recorder)));
   }
 
@@ -240,7 +240,7 @@ private:
   std::vector<int16_t> playout_buffer_;
 };
 
-std::function<rtc::scoped_refptr<webrtc::AudioDeviceModule>(webrtc::TaskQueueFactory*)> FakeAudioDeviceModule::Creator(
+std::function<webrtc::scoped_refptr<webrtc::AudioDeviceModule>(webrtc::TaskQueueFactory*)> FakeAudioDeviceModule::Creator(
     std::shared_ptr<Renderer> renderer, std::shared_ptr<Recorder> recorder, Options options) {
   bool is_renderer_empty = bool(renderer);
   auto boxed_renderer = std::make_shared<std::shared_ptr<Renderer>>(std::move(renderer));

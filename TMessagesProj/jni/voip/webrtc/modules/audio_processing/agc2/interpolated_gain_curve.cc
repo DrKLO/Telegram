@@ -13,9 +13,11 @@
 #include <algorithm>
 #include <iterator>
 
+#include "absl/strings/string_view.h"
 #include "modules/audio_processing/agc2/agc2_common.h"
 #include "modules/audio_processing/logging/apm_data_dumper.h"
 #include "rtc_base/checks.h"
+#include "rtc_base/strings/string_builder.h"
 
 namespace webrtc {
 
@@ -30,15 +32,21 @@ constexpr std::array<float, kInterpolatedGainCurveTotalPoints>
 
 InterpolatedGainCurve::InterpolatedGainCurve(
     ApmDataDumper* apm_data_dumper,
-    const std::string& histogram_name_prefix)
-    : region_logger_("WebRTC.Audio." + histogram_name_prefix +
-                         ".FixedDigitalGainCurveRegion.Identity",
-                     "WebRTC.Audio." + histogram_name_prefix +
-                         ".FixedDigitalGainCurveRegion.Knee",
-                     "WebRTC.Audio." + histogram_name_prefix +
-                         ".FixedDigitalGainCurveRegion.Limiter",
-                     "WebRTC.Audio." + histogram_name_prefix +
-                         ".FixedDigitalGainCurveRegion.Saturation"),
+    absl::string_view histogram_name_prefix)
+    : region_logger_(
+          (rtc::StringBuilder("WebRTC.Audio.")
+           << histogram_name_prefix << ".FixedDigitalGainCurveRegion.Identity")
+              .str(),
+          (rtc::StringBuilder("WebRTC.Audio.")
+           << histogram_name_prefix << ".FixedDigitalGainCurveRegion.Knee")
+              .str(),
+          (rtc::StringBuilder("WebRTC.Audio.")
+           << histogram_name_prefix << ".FixedDigitalGainCurveRegion.Limiter")
+              .str(),
+          (rtc::StringBuilder("WebRTC.Audio.")
+           << histogram_name_prefix
+           << ".FixedDigitalGainCurveRegion.Saturation")
+              .str()),
       apm_data_dumper_(apm_data_dumper) {}
 
 InterpolatedGainCurve::~InterpolatedGainCurve() {
@@ -57,10 +65,10 @@ InterpolatedGainCurve::~InterpolatedGainCurve() {
 }
 
 InterpolatedGainCurve::RegionLogger::RegionLogger(
-    const std::string& identity_histogram_name,
-    const std::string& knee_histogram_name,
-    const std::string& limiter_histogram_name,
-    const std::string& saturation_histogram_name)
+    absl::string_view identity_histogram_name,
+    absl::string_view knee_histogram_name,
+    absl::string_view limiter_histogram_name,
+    absl::string_view saturation_histogram_name)
     : identity_histogram(
           metrics::HistogramFactoryGetCounts(identity_histogram_name,
                                              1,
@@ -115,7 +123,7 @@ void InterpolatedGainCurve::RegionLogger::LogRegionStats(
       break;
     }
     default: {
-      RTC_NOTREACHED();
+      RTC_DCHECK_NOTREACHED();
     }
   }
 }
@@ -151,11 +159,11 @@ void InterpolatedGainCurve::UpdateStats(float input_level) const {
 }
 
 // Looks up a gain to apply given a non-negative input level.
-// The cost of this operation depends on the region in which |input_level|
+// The cost of this operation depends on the region in which `input_level`
 // falls.
 // For the identity and the saturation regions the cost is O(1).
 // For the other regions, namely knee and limiter, the cost is
-// O(2 + log2(|LightkInterpolatedGainCurveTotalPoints|), plus O(1) for the
+// O(2 + log2(`LightkInterpolatedGainCurveTotalPoints`), plus O(1) for the
 // linear interpolation (one product and one sum).
 float InterpolatedGainCurve::LookUpGainToApply(float input_level) const {
   UpdateStats(input_level);

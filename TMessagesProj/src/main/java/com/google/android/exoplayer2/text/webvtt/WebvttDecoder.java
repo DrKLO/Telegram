@@ -16,6 +16,7 @@
 package com.google.android.exoplayer2.text.webvtt;
 
 import android.text.TextUtils;
+import androidx.annotation.Nullable;
 import com.google.android.exoplayer2.ParserException;
 import com.google.android.exoplayer2.text.SimpleSubtitleDecoder;
 import com.google.android.exoplayer2.text.Subtitle;
@@ -26,7 +27,7 @@ import java.util.List;
 
 /**
  * A {@link SimpleSubtitleDecoder} for WebVTT.
- * <p>
+ *
  * @see <a href="http://dev.w3.org/html5/webvtt">WebVTT specification</a>
  */
 public final class WebvttDecoder extends SimpleSubtitleDecoder {
@@ -40,28 +41,20 @@ public final class WebvttDecoder extends SimpleSubtitleDecoder {
   private static final String COMMENT_START = "NOTE";
   private static final String STYLE_START = "STYLE";
 
-  private final WebvttCueParser cueParser;
   private final ParsableByteArray parsableWebvttData;
-  private final WebvttCue.Builder webvttCueBuilder;
-  private final CssParser cssParser;
-  private final List<WebvttCssStyle> definedStyles;
+  private final WebvttCssParser cssParser;
 
   public WebvttDecoder() {
     super("WebvttDecoder");
-    cueParser = new WebvttCueParser();
     parsableWebvttData = new ParsableByteArray();
-    webvttCueBuilder = new WebvttCue.Builder();
-    cssParser = new CssParser();
-    definedStyles = new ArrayList<>();
+    cssParser = new WebvttCssParser();
   }
 
   @Override
-  protected Subtitle decode(byte[] bytes, int length, boolean reset)
+  protected Subtitle decode(byte[] data, int length, boolean reset)
       throws SubtitleDecoderException {
-    parsableWebvttData.reset(bytes, length);
-    // Initialization for consistent starting state.
-    webvttCueBuilder.reset();
-    definedStyles.clear();
+    parsableWebvttData.reset(data, length);
+    List<WebvttCssStyle> definedStyles = new ArrayList<>();
 
     // Validate the first line of the header, and skip the remainder.
     try {
@@ -72,24 +65,25 @@ public final class WebvttDecoder extends SimpleSubtitleDecoder {
     while (!TextUtils.isEmpty(parsableWebvttData.readLine())) {}
 
     int event;
-    ArrayList<WebvttCue> subtitles = new ArrayList<>();
+    List<WebvttCueInfo> cueInfos = new ArrayList<>();
     while ((event = getNextEvent(parsableWebvttData)) != EVENT_END_OF_FILE) {
       if (event == EVENT_COMMENT) {
         skipComment(parsableWebvttData);
       } else if (event == EVENT_STYLE_BLOCK) {
-        if (!subtitles.isEmpty()) {
+        if (!cueInfos.isEmpty()) {
           throw new SubtitleDecoderException("A style block was found after the first cue.");
         }
         parsableWebvttData.readLine(); // Consume the "STYLE" header.
         definedStyles.addAll(cssParser.parseBlock(parsableWebvttData));
       } else if (event == EVENT_CUE) {
-        if (cueParser.parseCue(parsableWebvttData, webvttCueBuilder, definedStyles)) {
-          subtitles.add(webvttCueBuilder.build());
-          webvttCueBuilder.reset();
+        @Nullable
+        WebvttCueInfo cueInfo = WebvttCueParser.parseCue(parsableWebvttData, definedStyles);
+        if (cueInfo != null) {
+          cueInfos.add(cueInfo);
         }
       }
     }
-    return new WebvttSubtitle(subtitles);
+    return new WebvttSubtitle(cueInfos);
   }
 
   /**
@@ -121,5 +115,4 @@ public final class WebvttDecoder extends SimpleSubtitleDecoder {
   private static void skipComment(ParsableByteArray parsableWebvttData) {
     while (!TextUtils.isEmpty(parsableWebvttData.readLine())) {}
   }
-
 }

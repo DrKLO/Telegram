@@ -18,7 +18,6 @@
 
 #include "api/audio_codecs/audio_decoder.h"
 #include "rtc_base/buffer.h"
-#include "rtc_base/constructor_magic.h"
 
 typedef struct iLBC_decinst_t_ IlbcDecoderInstance;
 
@@ -28,6 +27,10 @@ class AudioDecoderIlbcImpl final : public AudioDecoder {
  public:
   AudioDecoderIlbcImpl();
   ~AudioDecoderIlbcImpl() override;
+
+  AudioDecoderIlbcImpl(const AudioDecoderIlbcImpl&) = delete;
+  AudioDecoderIlbcImpl& operator=(const AudioDecoderIlbcImpl&) = delete;
+
   bool HasDecodePlc() const override;
   size_t DecodePlc(size_t num_frames, int16_t* decoded) override;
   void Reset() override;
@@ -45,7 +48,6 @@ class AudioDecoderIlbcImpl final : public AudioDecoder {
 
  private:
   IlbcDecoderInstance* dec_state_;
-  RTC_DISALLOW_COPY_AND_ASSIGN(AudioDecoderIlbcImpl);
 };
 
 }  // namespace webrtc

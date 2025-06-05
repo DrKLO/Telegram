@@ -15,7 +15,11 @@
  */
 package com.google.android.exoplayer2.extractor.ts;
 
+import static java.lang.Math.min;
+import static java.lang.annotation.ElementType.TYPE_USE;
+
 import androidx.annotation.IntDef;
+import androidx.annotation.Nullable;
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.Format;
 import com.google.android.exoplayer2.audio.Ac4Util;
@@ -23,18 +27,23 @@ import com.google.android.exoplayer2.audio.Ac4Util.SyncFrameInfo;
 import com.google.android.exoplayer2.extractor.ExtractorOutput;
 import com.google.android.exoplayer2.extractor.TrackOutput;
 import com.google.android.exoplayer2.extractor.ts.TsPayloadReader.TrackIdGenerator;
+import com.google.android.exoplayer2.util.Assertions;
 import com.google.android.exoplayer2.util.MimeTypes;
 import com.google.android.exoplayer2.util.ParsableBitArray;
 import com.google.android.exoplayer2.util.ParsableByteArray;
 import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
+import org.checkerframework.checker.nullness.qual.RequiresNonNull;
 
 /** Parses a continuous AC-4 byte stream and extracts individual samples. */
 public final class Ac4Reader implements ElementaryStreamReader {
 
   @Documented
   @Retention(RetentionPolicy.SOURCE)
+  @Target(TYPE_USE)
   @IntDef({STATE_FINDING_SYNC, STATE_READING_HEADER, STATE_READING_SAMPLE})
   private @interface State {}
 
@@ -44,12 +53,12 @@ public final class Ac4Reader implements ElementaryStreamReader {
 
   private final ParsableBitArray headerScratchBits;
   private final ParsableByteArray headerScratchBytes;
-  private final String language;
+  @Nullable private final String language;
 
-  private String trackFormatId;
-  private TrackOutput output;
+  private @MonotonicNonNull String formatId;
+  private @MonotonicNonNull TrackOutput output;
 
-  @State private int state;
+  private @State int state;
   private int bytesRead;
 
   // Used to find the header.
@@ -58,7 +67,7 @@ public final class Ac4Reader implements ElementaryStreamReader {
 
   // Used when parsing the header.
   private long sampleDurationUs;
-  private Format format;
+  private @MonotonicNonNull Format format;
   private int sampleSize;
 
   // Used when reading the samples.
@@ -74,13 +83,14 @@ public final class Ac4Reader implements ElementaryStreamReader {
    *
    * @param language Track language.
    */
-  public Ac4Reader(String language) {
+  public Ac4Reader(@Nullable String language) {
     headerScratchBits = new ParsableBitArray(new byte[Ac4Util.HEADER_SIZE_FOR_PARSER]);
     headerScratchBytes = new ParsableByteArray(headerScratchBits.data);
     state = STATE_FINDING_SYNC;
     bytesRead = 0;
     lastByteWasAC = false;
     hasCRC = false;
+    timeUs = C.TIME_UNSET;
     this.language = language;
   }
 
@@ -90,34 +100,38 @@ public final class Ac4Reader implements ElementaryStreamReader {
     bytesRead = 0;
     lastByteWasAC = false;
     hasCRC = false;
+    timeUs = C.TIME_UNSET;
   }
 
   @Override
-  public void createTracks(ExtractorOutput extractorOutput, TrackIdGenerator generator) {
-    generator.generateNewId();
-    trackFormatId = generator.getFormatId();
-    output = extractorOutput.track(generator.getTrackId(), C.TRACK_TYPE_AUDIO);
+  public void createTracks(ExtractorOutput extractorOutput, TrackIdGenerator idGenerator) {
+    idGenerator.generateNewId();
+    formatId = idGenerator.getFormatId();
+    output = extractorOutput.track(idGenerator.getTrackId(), C.TRACK_TYPE_AUDIO);
   }
 
   @Override
   public void packetStarted(long pesTimeUs, @TsPayloadReader.Flags int flags) {
-    timeUs = pesTimeUs;
+    if (pesTimeUs != C.TIME_UNSET) {
+      timeUs = pesTimeUs;
+    }
   }
 
   @Override
   public void consume(ParsableByteArray data) {
+    Assertions.checkStateNotNull(output); // Asserts that createTracks has been called.
     while (data.bytesLeft() > 0) {
       switch (state) {
         case STATE_FINDING_SYNC:
           if (skipToNextSync(data)) {
             state = STATE_READING_HEADER;
-            headerScratchBytes.data[0] = (byte) 0xAC;
-            headerScratchBytes.data[1] = (byte) (hasCRC ? 0x41 : 0x40);
+            headerScratchBytes.getData()[0] = (byte) 0xAC;
+            headerScratchBytes.getData()[1] = (byte) (hasCRC ? 0x41 : 0x40);
             bytesRead = 2;
           }
           break;
         case STATE_READING_HEADER:
-          if (continueRead(data, headerScratchBytes.data, Ac4Util.HEADER_SIZE_FOR_PARSER)) {
+          if (continueRead(data, headerScratchBytes.getData(), Ac4Util.HEADER_SIZE_FOR_PARSER)) {
             parseHeader();
             headerScratchBytes.setPosition(0);
             output.sampleData(headerScratchBytes, Ac4Util.HEADER_SIZE_FOR_PARSER);
@@ -125,12 +139,14 @@ public final class Ac4Reader implements ElementaryStreamReader {
           }
           break;
         case STATE_READING_SAMPLE:
-          int bytesToRead = Math.min(data.bytesLeft(), sampleSize - bytesRead);
+          int bytesToRead = min(data.bytesLeft(), sampleSize - bytesRead);
           output.sampleData(data, bytesToRead);
           bytesRead += bytesToRead;
           if (bytesRead == sampleSize) {
-            output.sampleMetadata(timeUs, C.BUFFER_FLAG_KEY_FRAME, sampleSize, 0, null);
-            timeUs += sampleDurationUs;
+            if (timeUs != C.TIME_UNSET) {
+              output.sampleMetadata(timeUs, C.BUFFER_FLAG_KEY_FRAME, sampleSize, 0, null);
+              timeUs += sampleDurationUs;
+            }
             state = STATE_FINDING_SYNC;
           }
           break;
@@ -155,7 +171,7 @@ public final class Ac4Reader implements ElementaryStreamReader {
    * @return Whether the target length was reached.
    */
   private boolean continueRead(ParsableByteArray source, byte[] target, int targetLength) {
-    int bytesToRead = Math.min(source.bytesLeft(), targetLength - bytesRead);
+    int bytesToRead = min(source.bytesLeft(), targetLength - bytesRead);
     source.readBytes(target, bytesRead, bytesToRead);
     bytesRead += bytesToRead;
     return bytesRead == targetLength;
@@ -185,7 +201,7 @@ public final class Ac4Reader implements ElementaryStreamReader {
   }
 
   /** Parses the sample header. */
-  @SuppressWarnings("ReferenceEquality")
+  @RequiresNonNull("output")
   private void parseHeader() {
     headerScratchBits.setPosition(0);
     SyncFrameInfo frameInfo = Ac4Util.parseAc4SyncframeInfo(headerScratchBits);
@@ -194,18 +210,13 @@ public final class Ac4Reader implements ElementaryStreamReader {
         || frameInfo.sampleRate != format.sampleRate
         || !MimeTypes.AUDIO_AC4.equals(format.sampleMimeType)) {
       format =
-          Format.createAudioSampleFormat(
-              trackFormatId,
-              MimeTypes.AUDIO_AC4,
-              /* codecs= */ null,
-              /* bitrate= */ Format.NO_VALUE,
-              /* maxInputSize= */ Format.NO_VALUE,
-              frameInfo.channelCount,
-              frameInfo.sampleRate,
-              /* initializationData= */ null,
-              /* drmInitData= */ null,
-              /* selectionFlags= */ 0,
-              language);
+          new Format.Builder()
+              .setId(formatId)
+              .setSampleMimeType(MimeTypes.AUDIO_AC4)
+              .setChannelCount(frameInfo.channelCount)
+              .setSampleRate(frameInfo.sampleRate)
+              .setLanguage(language)
+              .build();
       output.format(format);
     }
     sampleSize = frameInfo.frameSize;

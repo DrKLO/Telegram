@@ -19,8 +19,8 @@
 
 namespace webrtc {
 namespace {
-// Keep a container's size no higher than |max_allowed_size|, by paring its size
-// down to |target_size| whenever it has more than |max_allowed_size| elements.
+// Keep a container's size no higher than `max_allowed_size`, by paring its size
+// down to `target_size` whenever it has more than `max_allowed_size` elements.
 template <typename Container>
 void PareDown(Container* container,
               size_t max_allowed_size,
@@ -67,7 +67,7 @@ void LossNotificationController::OnReceivedPacket(
 
   last_received_seq_num_ = rtp_seq_num;
 
-  // |frame| is not nullptr iff the packet is the first packet in the frame.
+  // `frame` is not nullptr iff the packet is the first packet in the frame.
   if (frame != nullptr) {
     // Ignore repeated or reordered frames.
     // TODO(bugs.webrtc.org/10336): Handle frame reordering.

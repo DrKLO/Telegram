@@ -10,12 +10,15 @@
 #include "rtc_base/third_party/sigslot/sigslot.h"
 #include "api/candidate.h"
 #include "media/base/media_channel.h"
-#include "media/sctp/sctp_transport.h"
+#include "rtc_base/ssl_fingerprint.h"
 #include "pc/sctp_data_channel.h"
+#include "p2p/base/port.h"
+#include "api/transport/field_trial_based_config.h"
 
 #include <functional>
 #include <memory>
 
+#include "InstanceNetworking.h"
 #include "Message.h"
 #include "ThreadLocalObject.h"
 #include "Instance.h"
@@ -32,13 +35,14 @@ class BasicPortAllocator;
 class P2PTransportChannel;
 class IceTransportInternal;
 class DtlsTransport;
+class RelayPortFactoryInterface;
 } // namespace cricket
 
 namespace webrtc {
-class BasicAsyncResolverFactory;
 class TurnCustomizer;
 class DtlsSrtpTransport;
 class RtpTransport;
+class AsyncDnsResolverFactoryInterface;
 } // namespace webrtc
 
 namespace tgcalls {
@@ -47,44 +51,24 @@ struct Message;
 class SctpDataChannelProviderInterfaceImpl;
 class Threads;
 
-class NativeNetworkingImpl : public sigslot::has_slots<>, public std::enable_shared_from_this<NativeNetworkingImpl> {
+class NativeNetworkingImpl : public InstanceNetworking, public sigslot::has_slots<>, public std::enable_shared_from_this<NativeNetworkingImpl> {
 public:
-    struct State {
-        bool isReadyToSendData = false;
-        bool isFailed = false;
-    };
-    
-    struct Configuration {
-        bool isOutgoing = false;
-        bool enableStunMarking = false;
-        bool enableTCP = false;
-        bool enableP2P = false;
-        std::vector<RtcServer> rtcServers;
-        std::function<void(const NativeNetworkingImpl::State &)> stateUpdated;
-        std::function<void(const cricket::Candidate &)> candidateGathered;
-        std::function<void(rtc::CopyOnWriteBuffer const &, bool)> transportMessageReceived;
-        std::function<void(rtc::CopyOnWriteBuffer const &, int64_t)> rtcpPacketReceived;
-        std::function<void(bool)> dataChannelStateUpdated;
-        std::function<void(std::string const &)> dataChannelMessageReceived;
-        std::shared_ptr<Threads> threads;
-    };
-    
     static webrtc::CryptoOptions getDefaulCryptoOptions();
 
     NativeNetworkingImpl(Configuration &&configuration);
-    ~NativeNetworkingImpl();
+    virtual ~NativeNetworkingImpl();
 
-    void start();
-    void stop();
+    virtual void start() override;
+    virtual void stop() override;
 
-    PeerIceParameters getLocalIceParameters();
-    std::unique_ptr<rtc::SSLFingerprint> getLocalFingerprint();
-    void setRemoteParams(PeerIceParameters const &remoteIceParameters, rtc::SSLFingerprint *fingerprint, std::string const &sslSetup);
-    void addCandidates(std::vector<cricket::Candidate> const &candidates);
+    virtual PeerIceParameters getLocalIceParameters() override;
+    virtual std::unique_ptr<rtc::SSLFingerprint> getLocalFingerprint() override;
+    virtual void setRemoteParams(PeerIceParameters const &remoteIceParameters, rtc::SSLFingerprint *fingerprint, std::string const &sslSetup) override;
+    virtual void addCandidates(std::vector<cricket::Candidate> const &candidates) override;
 
-    void sendDataChannelMessage(std::string const &message);
+    virtual void sendDataChannelMessage(std::string const &message) override;
 
-    webrtc::RtpTransport *getRtpTransport();
+    virtual webrtc::RtpTransport *getRtpTransport() override;
 
 private:
     void resetDtlsSrtpTransport();
@@ -95,46 +79,62 @@ private:
     void OnTransportReceivingState_n(rtc::PacketTransportInternal *transport);
     void transportStateChanged(cricket::IceTransportInternal *transport);
     void transportReadyToSend(cricket::IceTransportInternal *transport);
-    void transportPacketReceived(rtc::PacketTransportInternal *transport, const char *bytes, size_t size, const int64_t &timestamp, int unused);
+    void transportRouteChanged(absl::optional<rtc::NetworkRoute> route);
+    void candidatePairChanged(cricket::CandidatePairChangeEvent const &event);
     void DtlsReadyToSend(bool DtlsReadyToSend);
     void UpdateAggregateStates_n();
     void RtpPacketReceived_n(rtc::CopyOnWriteBuffer *packet, int64_t packet_time_us, bool isUnresolved);
     void OnRtcpPacketReceived_n(rtc::CopyOnWriteBuffer *packet, int64_t packet_time_us);
 
     void sctpReadyToSendData();
-    void sctpDataReceived(const cricket::ReceiveDataParams& params, const rtc::CopyOnWriteBuffer& buffer);
+    
+    void notifyStateUpdated();
+    
+    void processPendingLocalStandaloneReflectorCandidates();
 
     std::shared_ptr<Threads> _threads;
     bool _isOutgoing = false;
+    EncryptionKey _encryptionKey;
     bool _enableStunMarking = false;
     bool _enableTCP = false;
     bool _enableP2P = false;
     std::vector<RtcServer> _rtcServers;
+    absl::optional<Proxy> _proxy;
+    std::map<std::string, json11::Json> _customParameters;
 
-    std::function<void(const NativeNetworkingImpl::State &)> _stateUpdated;
+    std::function<void(const InstanceNetworking::State &)> _stateUpdated;
     std::function<void(const cricket::Candidate &)> _candidateGathered;
     std::function<void(rtc::CopyOnWriteBuffer const &, bool)> _transportMessageReceived;
     std::function<void(rtc::CopyOnWriteBuffer const &, int64_t)> _rtcpPacketReceived;
     std::function<void(bool)> _dataChannelStateUpdated;
     std::function<void(std::string const &)> _dataChannelMessageReceived;
 
-    std::unique_ptr<rtc::BasicPacketSocketFactory> _socketFactory;
-    std::unique_ptr<rtc::BasicNetworkManager> _networkManager;
+    std::unique_ptr<rtc::NetworkMonitorFactory> _networkMonitorFactory;
+    rtc::SocketFactory *_underlyingSocketFactory = nullptr;
+    std::unique_ptr<rtc::PacketSocketFactory> _socketFactory;
+    std::unique_ptr<rtc::NetworkManager> _networkManager;
     std::unique_ptr<webrtc::TurnCustomizer> _turnCustomizer;
+    std::unique_ptr<cricket::RelayPortFactoryInterface> _relayPortFactory;
     std::unique_ptr<cricket::BasicPortAllocator> _portAllocator;
-    std::unique_ptr<webrtc::BasicAsyncResolverFactory> _asyncResolverFactory;
+    std::unique_ptr<webrtc::AsyncDnsResolverFactoryInterface> _asyncResolverFactory;
     std::unique_ptr<cricket::P2PTransportChannel> _transportChannel;
+    std::unique_ptr<webrtc::RtpTransport> _mtProtoRtpTransport;
     std::unique_ptr<cricket::DtlsTransport> _dtlsTransport;
     std::unique_ptr<webrtc::DtlsSrtpTransport> _dtlsSrtpTransport;
 
     std::unique_ptr<SctpDataChannelProviderInterfaceImpl> _dataChannelInterface;
 
-    rtc::scoped_refptr<rtc::RTCCertificate> _localCertificate;
+    webrtc::scoped_refptr<rtc::RTCCertificate> _localCertificate;
     PeerIceParameters _localIceParameters;
     absl::optional<PeerIceParameters> _remoteIceParameters;
 
     bool _isConnected = false;
-    int64_t _lastNetworkActivityMs = 0;
+    bool _isFailed = false;
+    int64_t _lastDisconnectedTimestamp = 0;
+    absl::optional<RouteDescription> _currentRouteDescription;
+    absl::optional<ConnectionDescription> _currentConnectionDescription;
+    
+    std::vector<cricket::Candidate> _pendingLocalStandaloneReflectorCandidates;
 };
 
 } // namespace tgcalls

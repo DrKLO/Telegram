@@ -15,6 +15,8 @@
 
 #include <memory>
 #include <string>
+#include <unordered_map>
+#include <thread>
 
 #include "api/sequence_checker.h"
 #include "modules/utility/include/helpers_android.h"
@@ -35,7 +37,6 @@ class JvmThreadConnector {
 
  private:
   SequenceChecker thread_checker_;
-  bool attached_;
 };
 
 // This class is created by the NativeRegistration class and is used to wrap
@@ -97,9 +98,9 @@ class JNIEnvironment {
   explicit JNIEnvironment(JNIEnv* jni);
   ~JNIEnvironment();
 
-  // Registers native methods with the Java class specified by |name|.
+  // Registers native methods with the Java class specified by `name`.
   // Note that the class name must be one of the names in the static
-  // |loaded_classes| array defined in jvm_android.cc.
+  // `loaded_classes` array defined in jvm_android.cc.
   // This method must be called on the construction thread.
   std::unique_ptr<NativeRegistration> RegisterNatives(
       const char* name,
@@ -138,7 +139,7 @@ class JNIEnvironment {
 //     obj = reg->NewObject("<init>", ,);
 //   }
 //
-//   // Each User method can now use |reg| and |obj| and call Java functions
+//   // Each User method can now use `reg` and `obj` and call Java functions
 //   // in WebRtcTest.java, e.g. boolean init() {}.
 //   bool User::Foo() {
 //     jmethodID id = reg->GetMethodId("init", "()Z");
@@ -168,11 +169,14 @@ class JVM {
   // called successfully. Use the AttachCurrentThreadIfNeeded class if needed.
   std::unique_ptr<JNIEnvironment> environment();
 
-  // Returns a JavaClass object given class |name|.
+  // Returns a JavaClass object given class `name`.
   // Note that the class name must be one of the names in the static
-  // |loaded_classes| array defined in jvm_android.cc.
+  // `loaded_classes` array defined in jvm_android.cc.
   // This method must be called on the construction thread.
   JavaClass GetClass(const char* name);
+
+  bool attachThread(std::thread::id id);
+  bool detachThread(std::thread::id id);
 
   // TODO(henrika): can we make these private?
   JavaVM* jvm() const { return jvm_; }
@@ -186,6 +190,7 @@ class JVM {
 
   SequenceChecker thread_checker_;
   JavaVM* const jvm_;
+  std::unordered_map<std::thread::id, int> threadAttachCounts;
 };
 
 }  // namespace webrtc

@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:drawable="@drawable/icon_4_background_sa" />
+    <item android:drawable="@mipmap/icon_background_clip" />
+</layer-list>

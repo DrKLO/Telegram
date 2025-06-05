@@ -1,21 +1,21 @@
-/* Copyright (c) 2014, Google Inc.
- *
- * Permission to use, copy, modify, and/or distribute this software for any
- * purpose with or without fee is hereby granted, provided that the above
- * copyright notice and this permission notice appear in all copies.
- *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
- * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY
- * SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION
- * OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
- * CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE. */
+// Copyright 2014 The BoringSSL Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 #ifndef OPENSSL_HEADER_POLY1305_H
 #define OPENSSL_HEADER_POLY1305_H
 
-#include <openssl/base.h>
+#include <openssl/base.h>   // IWYU pragma: export
 
 #ifdef  __cplusplus
 extern "C" {
@@ -28,19 +28,17 @@ typedef uint8_t poly1305_state[512];
 // authentication tag with the one-time key |key|. Note that |key| is a
 // one-time key and therefore there is no `reset' method because that would
 // enable several messages to be authenticated with the same key.
-OPENSSL_EXPORT void CRYPTO_poly1305_init(poly1305_state* state,
+OPENSSL_EXPORT void CRYPTO_poly1305_init(poly1305_state *state,
                                          const uint8_t key[32]);
 
 // CRYPTO_poly1305_update processes |in_len| bytes from |in|. It can be called
 // zero or more times after poly1305_init.
-OPENSSL_EXPORT void CRYPTO_poly1305_update(poly1305_state* state,
-                                           const uint8_t* in,
-                                           size_t in_len);
+OPENSSL_EXPORT void CRYPTO_poly1305_update(poly1305_state *state,
+                                           const uint8_t *in, size_t in_len);
 
 // CRYPTO_poly1305_finish completes the poly1305 calculation and writes a 16
-// byte authentication tag to |mac|. The |mac| address must be 16-byte
-// aligned.
-OPENSSL_EXPORT void CRYPTO_poly1305_finish(poly1305_state* state,
+// byte authentication tag to |mac|.
+OPENSSL_EXPORT void CRYPTO_poly1305_finish(poly1305_state *state,
                                            uint8_t mac[16]);
 
 

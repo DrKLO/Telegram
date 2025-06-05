@@ -37,12 +37,14 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
+import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
+import org.telegram.messenger.UserObject;
 import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLObject;
@@ -130,14 +132,18 @@ public class InviteMembersBottomSheet extends UsersAlertBase implements Notifica
         needSnapToTop = false;
         this.parentFragment = parentFragment;
         this.chatId = chatId;
+        fixNavigationBar();
 
-        searchView.searchEditText.setHint(LocaleController.getString("SearchForChats", R.string.SearchForChats));
+        searchView.searchEditText.setHint(LocaleController.getString(R.string.SearchForChats));
 
         final ViewConfiguration configuration = ViewConfiguration.get(context);
         touchSlop = configuration.getScaledTouchSlop();
 
         searchListViewAdapter = searchAdapter = new SearchAdapter();
         listView.setAdapter(listViewAdapter = new ListAdapter());
+
+        emptyView.showProgress(false, false);
+        emptyView.setVisibility(View.GONE);
 
         ArrayList<TLRPC.TL_contact> arrayList = ContactsController.getInstance(account).contacts;
         for (int a = 0; a < arrayList.size(); a++) {
@@ -172,9 +178,9 @@ public class InviteMembersBottomSheet extends UsersAlertBase implements Notifica
                 if (position == copyLinkRow) {
                     TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(chatId);
                     TLRPC.ChatFull chatInfo = MessagesController.getInstance(currentAccount).getChatFull(chatId);
-                    String link = null;
-                    if (chat != null && !TextUtils.isEmpty(chat.username)) {
-                        link = "https://t.me/" + chat.username;
+                    String link = null, username;
+                    if (chat != null && !TextUtils.isEmpty(username = ChatObject.getPublicUsername(chat))) {
+                        link = "https://" + MessagesController.getInstance(currentAccount).linkPrefix + "/" + username;
                     } else if (chatInfo != null &&  chatInfo.exported_invite != null) {
                         link = chatInfo.exported_invite.link;
                     } else {
@@ -295,11 +301,7 @@ public class InviteMembersBottomSheet extends UsersAlertBase implements Notifica
                 dismiss();
             } else {
                 AlertDialog.Builder builder = new AlertDialog.Builder(activity);
-                if (selectedContacts.size() == 1) {
-                    builder.setTitle(LocaleController.getString("AddOneMemberAlertTitle", R.string.AddOneMemberAlertTitle));
-                } else {
-                    builder.setTitle(LocaleController.formatString("AddMembersAlertTitle", R.string.AddMembersAlertTitle, LocaleController.formatPluralString("Members", selectedContacts.size())));
-                }
+                builder.setTitle(LocaleController.formatPluralString("AddManyMembersAlertTitle", selectedContacts.size()));
                 StringBuilder stringBuilder = new StringBuilder();
                 for (int a = 0; a < selectedContacts.size(); a++) {
                     long uid = selectedContacts.keyAt(a);
@@ -314,18 +316,18 @@ public class InviteMembersBottomSheet extends UsersAlertBase implements Notifica
                 }
                 TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(chatId);
                 if (selectedContacts.size() > 5) {
-                    SpannableStringBuilder spannableStringBuilder = new SpannableStringBuilder(AndroidUtilities.replaceTags(LocaleController.formatString("AddMembersAlertNamesText", R.string.AddMembersAlertNamesText, LocaleController.formatPluralString("Members", selectedContacts.size()), chat.title)));
+                    SpannableStringBuilder spannableStringBuilder = new SpannableStringBuilder(AndroidUtilities.replaceTags(LocaleController.formatPluralString("AddManyMembersAlertNamesText", selectedContacts.size(), chat.title)));
                     String countString = String.format("%d", selectedContacts.size());
                     int index = TextUtils.indexOf(spannableStringBuilder, countString);
                     if (index >= 0) {
-                        spannableStringBuilder.setSpan(new TypefaceSpan(AndroidUtilities.getTypeface("fonts/rmedium.ttf")), index, index + countString.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                        spannableStringBuilder.setSpan(new TypefaceSpan(AndroidUtilities.bold()), index, index + countString.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                     }
                     builder.setMessage(spannableStringBuilder);
                 } else {
                     builder.setMessage(AndroidUtilities.replaceTags(LocaleController.formatString("AddMembersAlertNamesText", R.string.AddMembersAlertNamesText, stringBuilder, chat.title)));
                 }
-                builder.setPositiveButton(LocaleController.getString("Add", R.string.Add), (dialogInterface, i) -> onAddToGroupDone(0));
-                builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+                builder.setPositiveButton(LocaleController.getString(R.string.Add), (dialogInterface, i) -> onAddToGroupDone(0));
+                builder.setNegativeButton(LocaleController.getString(R.string.Cancel), null);
                 builder.create();
                 builder.show();
             }
@@ -334,7 +336,7 @@ public class InviteMembersBottomSheet extends UsersAlertBase implements Notifica
         floatingButton.setScaleX(0.0f);
         floatingButton.setScaleY(0.0f);
         floatingButton.setAlpha(0.0f);
-        floatingButton.setContentDescription(LocaleController.getString("Next", R.string.Next));
+        floatingButton.setContentDescription(LocaleController.getString(R.string.Next));
 
         containerView.addView(floatingButton, LayoutHelper.createFrame((Build.VERSION.SDK_INT >= 21 ? 56 : 60), (Build.VERSION.SDK_INT >= 21 ? 56 : 60), Gravity.RIGHT | Gravity.BOTTOM, 14, 14, 14, 14));
 
@@ -508,12 +510,15 @@ public class InviteMembersBottomSheet extends UsersAlertBase implements Notifica
     private void updateRows() {
         contactsStartRow = -1;
         contactsEndRow = -1;
+        copyLinkRow = -1;
         noContactsStubRow = -1;
 
         rowCount = 0;
         emptyRow = rowCount++;
         if (dialogsDelegate == null) {
-            copyLinkRow = rowCount++;
+            if (hasLink()) {
+                copyLinkRow = rowCount++;
+            }
             if (contacts.size() != 0) {
                 contactsStartRow = rowCount;
                 rowCount += contacts.size();
@@ -522,7 +527,6 @@ public class InviteMembersBottomSheet extends UsersAlertBase implements Notifica
                 noContactsStubRow = rowCount++;
             }
         } else {
-            copyLinkRow = -1;
             if (dialogsServerOnly.size() != 0) {
                 contactsStartRow = rowCount;
                 rowCount += dialogsServerOnly.size();
@@ -533,6 +537,21 @@ public class InviteMembersBottomSheet extends UsersAlertBase implements Notifica
         }
 
         lastRow = rowCount++;
+    }
+
+    protected boolean hasLink() {
+        TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(chatId);
+        TLRPC.ChatFull chatInfo = MessagesController.getInstance(currentAccount).getChatFull(chatId);
+        if (chat != null && !TextUtils.isEmpty(ChatObject.getPublicUsername(chat)) ||
+            chatInfo != null &&  chatInfo.exported_invite != null) {
+            return true;
+        } else {
+            return canGenerateLink();
+        }
+    }
+
+    protected boolean canGenerateLink() {
+        return true;
     }
 
     @Override
@@ -556,7 +575,7 @@ public class InviteMembersBottomSheet extends UsersAlertBase implements Notifica
                 default:
                 case 1:
                     ManageChatTextCell manageChatTextCell = new ManageChatTextCell(context);
-                    manageChatTextCell.setText(LocaleController.getString("VoipGroupCopyInviteLink", R.string.VoipGroupCopyInviteLink), null, R.drawable.msg_link, 7, true);
+                    manageChatTextCell.setText(LocaleController.getString(R.string.VoipGroupCopyInviteLink), null, R.drawable.msg_link, 7, true);
                     manageChatTextCell.setColors(Theme.key_dialogTextBlue2, Theme.key_dialogTextBlue2);
                     view = manageChatTextCell;
                     break;
@@ -585,9 +604,9 @@ public class InviteMembersBottomSheet extends UsersAlertBase implements Notifica
                     stickerEmptyView.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
                     stickerEmptyView.subtitle.setVisibility(View.GONE);
                     if (dialogsDelegate != null) {
-                        stickerEmptyView.title.setText(LocaleController.getString("FilterNoChats", R.string.FilterNoChats));
+                        stickerEmptyView.title.setText(LocaleController.getString(R.string.FilterNoChats));
                     } else {
-                        stickerEmptyView.title.setText(LocaleController.getString("NoContacts", R.string.NoContacts));
+                        stickerEmptyView.title.setText(LocaleController.getString(R.string.NoContacts));
                     }
                     stickerEmptyView.setAnimateLayoutChange(true);
                     view = stickerEmptyView;
@@ -745,7 +764,7 @@ public class InviteMembersBottomSheet extends UsersAlertBase implements Notifica
                     break;
                 case 0: {
                     GroupCreateSectionCell cell = (GroupCreateSectionCell) holder.itemView;
-                    cell.setText(LocaleController.getString("GlobalSearch", R.string.GlobalSearch));
+                    cell.setText(LocaleController.getString(R.string.GlobalSearch));
                     break;
                 }
                 case 1: {
@@ -773,7 +792,7 @@ public class InviteMembersBottomSheet extends UsersAlertBase implements Notifica
                         if (object instanceof TLRPC.User) {
                             objectUserName = ((TLRPC.User) object).username;
                         } else {
-                            objectUserName = ((TLRPC.Chat) object).username;
+                            objectUserName = ChatObject.getPublicUsername((TLRPC.Chat) object);
                         }
                         if (position < localCount) {
                             name = searchResultNames.get(position);
@@ -934,11 +953,11 @@ public class InviteMembersBottomSheet extends UsersAlertBase implements Notifica
                             if (object instanceof TLRPC.User) {
                                 TLRPC.User user = (TLRPC.User) object;
                                 name = ContactsController.formatName(user.first_name, user.last_name).toLowerCase();
-                                username = user.username;
+                                username = UserObject.getPublicUsername(user);
                             } else {
                                 TLRPC.Chat chat = (TLRPC.Chat) object;
                                 name = chat.title;
-                                username = chat.username;
+                                username = ChatObject.getPublicUsername(chat);
                             }
                             String tName = LocaleController.getInstance().getTranslitString(name);
                             if (name.equals(tName)) {
@@ -993,7 +1012,7 @@ public class InviteMembersBottomSheet extends UsersAlertBase implements Notifica
                 Activity activity = AndroidUtilities.findActivity(getContext());
                 BaseFragment fragment = null;
                 if (activity instanceof LaunchActivity) {
-                    fragment = ((LaunchActivity) activity).getActionBarLayout().fragmentsStack.get(((LaunchActivity) activity).getActionBarLayout().fragmentsStack.size() - 1);
+                    fragment = ((LaunchActivity) activity).getActionBarLayout().getFragmentStack().get(((LaunchActivity) activity).getActionBarLayout().getFragmentStack().size() - 1);
                 }
                 if (fragment instanceof ChatActivity) {
                     boolean keyboardVisible = ((ChatActivity) fragment).needEnterText();
@@ -1090,6 +1109,16 @@ public class InviteMembersBottomSheet extends UsersAlertBase implements Notifica
                     if (holder != null) {
                         listView.getAdapter().notifyItemChanged(0);
                         layoutManager.scrollToPositionWithOffset(0, holder.itemView.getTop() - listView.getPaddingTop());
+                        if (listView.getItemAnimator() != null) {
+                            ValueAnimator va = ValueAnimator.ofFloat(0, 1);
+                            va.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+                                @Override
+                                public void onAnimationUpdate(ValueAnimator valueAnimator) {
+                                    listView.updateSelector();
+                                }
+                            });
+                            va.setDuration(listView.getItemAnimator().getChangeDuration()).start();
+                        }
                     }
                 }
             }
@@ -1314,9 +1343,9 @@ public class InviteMembersBottomSheet extends UsersAlertBase implements Notifica
         if (enterEventSent) {
             Activity activity = AndroidUtilities.findActivity(getContext());
             if (activity instanceof LaunchActivity) {
-                BaseFragment fragment = ((LaunchActivity) activity).getActionBarLayout().fragmentsStack.get(((LaunchActivity) activity).getActionBarLayout().fragmentsStack.size() - 1);
+                BaseFragment fragment = ((LaunchActivity) activity).getActionBarLayout().getFragmentStack().get(((LaunchActivity) activity).getActionBarLayout().getFragmentStack().size() - 1);
                 if (fragment instanceof ChatActivity) {
-                    ((ChatActivity) fragment).onEditTextDialogClose(true);
+                    ((ChatActivity) fragment).onEditTextDialogClose(true, true);
                 }
             }
         }

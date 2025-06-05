@@ -14,8 +14,9 @@ import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.RectF;
-import androidx.annotation.Keep;
 import android.view.View;
+
+import androidx.annotation.Keep;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.ui.ActionBar.Theme;
@@ -37,9 +38,9 @@ public class CheckBoxSquare extends View {
 
     private final static float progressBounceDiff = 0.2f;
 
-    private String key1;
-    private String key2;
-    private String key3;
+    private int key1;
+    private int key2;
+    private int key3;
     private final Theme.ResourcesProvider resourcesProvider;
 
     public CheckBoxSquare(Context context, boolean alert) {
@@ -63,10 +64,11 @@ public class CheckBoxSquare extends View {
         isAlert = alert;
     }
 
-    public void setColors(String unchecked, String checked, String check) {
+    public void setColors(int unchecked, int checked, int check) {
         key1 = unchecked;
         key2 = checked;
         key3 = check;
+        invalidate();
     }
 
     @Keep
@@ -185,8 +187,7 @@ public class CheckBoxSquare extends View {
         canvas.drawBitmap(drawBitmap, 0, 0, null);
     }
 
-    protected int getThemedColor(String key) {
-        Integer color = resourcesProvider != null ? resourcesProvider.getColor(key) : null;
-        return color != null ? color : Theme.getColor(key);
+    protected int getThemedColor(int key) {
+        return Theme.getColor(key, resourcesProvider);
     }
 }

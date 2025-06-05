@@ -13,11 +13,10 @@
 
 // Configuration file for RTP utilities (RTPSender, RTPReceiver ...)
 namespace webrtc {
-enum { kDefaultMaxReorderingThreshold = 50 };  // In sequence numbers.
-enum { kRtcpMaxNackFields = 253 };
+constexpr int kDefaultMaxReorderingThreshold = 50;  // In sequence numbers.
+constexpr int kRtcpMaxNackFields = 253;
 
-enum { RTCP_SEND_BEFORE_KEY_FRAME_MS = 100 };
-enum { RTCP_MAX_REPORT_BLOCKS = 31 };  // RFC 3550 page 37
+constexpr int RTCP_MAX_REPORT_BLOCKS = 31;  // RFC 3550 page 37
 }  // namespace webrtc
 
 #endif  // MODULES_RTP_RTCP_SOURCE_RTP_RTCP_CONFIG_H_

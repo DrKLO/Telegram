@@ -35,7 +35,14 @@ public class LineViewData {
 
     public float alpha = 1f;
 
-    public LineViewData(ChartData.Line line) {
+    private Theme.ResourcesProvider resourcesProvider;
+
+    public LineViewData(ChartData.Line line, boolean bar) {
+        this(line, bar, null);
+    }
+
+    public LineViewData(ChartData.Line line, boolean bar, Theme.ResourcesProvider resourcesProvider) {
+        this.resourcesProvider = resourcesProvider;
         this.line = line;
 
         paint.setStrokeWidth(AndroidUtilities.dpf2(2));
@@ -55,15 +62,15 @@ public class LineViewData {
         selectionPaint.setColor(line.color);
 
 
-        linesPath = new float[line.y.length << 2];
-        linesPathBottom = new float[line.y.length << 2];
+        linesPath = new float[bar ? (8 * line.y.length) : line.y.length << 2];
+        linesPathBottom = new float[bar ? (8 * line.y.length) : line.y.length << 2];
     }
 
     public void updateColors() {
-        if (line.colorKey != null && Theme.hasThemeKey(line.colorKey)) {
-            lineColor = Theme.getColor(line.colorKey);
+        if (line.colorKey >= 0 && Theme.hasThemeKey(line.colorKey)) {
+            lineColor = Theme.getColor(line.colorKey, resourcesProvider);
         } else {
-            int color = Theme.getColor(Theme.key_windowBackgroundWhite);
+            int color = Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider);
             boolean darkBackground = ColorUtils.calculateLuminance(color) < 0.5f;
             lineColor = darkBackground ? line.colorDark : line.color;
         }

@@ -15,7 +15,6 @@
 #include <set>
 
 #include "rtc_base/async_udp_socket.h"
-#include "rtc_base/constructor_magic.h"
 #include "rtc_base/nat_types.h"
 #include "rtc_base/proxy_server.h"
 #include "rtc_base/socket_address_pair.h"
@@ -59,15 +58,20 @@ struct AddrCmp {
 const int NAT_SERVER_UDP_PORT = 4237;
 const int NAT_SERVER_TCP_PORT = 4238;
 
-class NATServer : public sigslot::has_slots<> {
+class NATServer {
  public:
   NATServer(NATType type,
+            rtc::Thread& internal_socket_thread,
             SocketFactory* internal,
             const SocketAddress& internal_udp_addr,
             const SocketAddress& internal_tcp_addr,
+            rtc::Thread& external_socket_thread,
             SocketFactory* external,
             const SocketAddress& external_ip);
-  ~NATServer() override;
+  ~NATServer();
+
+  NATServer(const NATServer&) = delete;
+  NATServer& operator=(const NATServer&) = delete;
 
   SocketAddress internal_udp_address() const {
     return udp_server_socket_->GetLocalAddress();
@@ -79,15 +83,9 @@ class NATServer : public sigslot::has_slots<> {
 
   // Packets received on one of the networks.
   void OnInternalUDPPacket(AsyncPacketSocket* socket,
-                           const char* buf,
-                           size_t size,
-                           const SocketAddress& addr,
-                           const int64_t& packet_time_us);
+                           const rtc::ReceivedPacket& packet);
   void OnExternalUDPPacket(AsyncPacketSocket* socket,
-                           const char* buf,
-                           size_t size,
-                           const SocketAddress& remote_addr,
-                           const int64_t& packet_time_us);
+                           const rtc::ReceivedPacket& packet);
 
  private:
   typedef std::set<SocketAddress, AddrCmp> AddressSet;
@@ -116,13 +114,14 @@ class NATServer : public sigslot::has_slots<> {
   bool ShouldFilterOut(TransEntry* entry, const SocketAddress& ext_addr);
 
   NAT* nat_;
+  rtc::Thread& internal_socket_thread_;
+  rtc::Thread& external_socket_thread_;
   SocketFactory* external_;
   SocketAddress external_ip_;
   AsyncUDPSocket* udp_server_socket_;
   ProxyServer* tcp_proxy_server_;
   InternalMap* int_map_;
   ExternalMap* ext_map_;
-  RTC_DISALLOW_COPY_AND_ASSIGN(NATServer);
 };
 
 }  // namespace rtc

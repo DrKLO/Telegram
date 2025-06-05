@@ -10,8 +10,6 @@
 
 #include "modules/audio_coding/neteq/audio_multi_vector.h"
 
-#include <assert.h>
-
 #include <algorithm>
 
 #include "rtc_base/checks.h"
@@ -19,7 +17,7 @@
 namespace webrtc {
 
 AudioMultiVector::AudioMultiVector(size_t N) {
-  assert(N > 0);
+  RTC_DCHECK_GT(N, 0);
   if (N < 1)
     N = 1;
   for (size_t n = 0; n < N; ++n) {
@@ -29,7 +27,7 @@ AudioMultiVector::AudioMultiVector(size_t N) {
 }
 
 AudioMultiVector::AudioMultiVector(size_t N, size_t initial_size) {
-  assert(N > 0);
+  RTC_DCHECK_GT(N, 0);
   if (N < 1)
     N = 1;
   for (size_t n = 0; n < N; ++n) {
@@ -70,6 +68,9 @@ void AudioMultiVector::CopyTo(AudioMultiVector* copy_to) const {
 void AudioMultiVector::PushBackInterleaved(
     rtc::ArrayView<const int16_t> append_this) {
   RTC_DCHECK_EQ(append_this.size() % num_channels_, 0);
+  if (append_this.empty()) {
+    return;
+  }
   if (num_channels_ == 1) {
     // Special case to avoid extra allocation and data shuffling.
     channels_[0]->PushBack(append_this.data(), append_this.size());
@@ -78,12 +79,9 @@ void AudioMultiVector::PushBackInterleaved(
   size_t length_per_channel = append_this.size() / num_channels_;
   int16_t* temp_array = new int16_t[length_per_channel];  // Temporary storage.
   for (size_t channel = 0; channel < num_channels_; ++channel) {
-    // Copy elements to |temp_array|.
-    // Set |source_ptr| to first element of this channel.
-    const int16_t* source_ptr = &append_this[channel];
+    // Copy elements to `temp_array`.
     for (size_t i = 0; i < length_per_channel; ++i) {
-      temp_array[i] = *source_ptr;
-      source_ptr += num_channels_;  // Jump to next element of this channel.
+      temp_array[i] = append_this[channel + i * num_channels_];
     }
     channels_[channel]->PushBack(temp_array, length_per_channel);
   }
@@ -91,7 +89,7 @@ void AudioMultiVector::PushBackInterleaved(
 }
 
 void AudioMultiVector::PushBack(const AudioMultiVector& append_this) {
-  assert(num_channels_ == append_this.num_channels_);
+  RTC_DCHECK_EQ(num_channels_, append_this.num_channels_);
   if (num_channels_ == append_this.num_channels_) {
     for (size_t i = 0; i < num_channels_; ++i) {
       channels_[i]->PushBack(append_this[i]);
@@ -101,10 +99,10 @@ void AudioMultiVector::PushBack(const AudioMultiVector& append_this) {
 
 void AudioMultiVector::PushBackFromIndex(const AudioMultiVector& append_this,
                                          size_t index) {
-  assert(index < append_this.Size());
+  RTC_DCHECK_LT(index, append_this.Size());
   index = std::min(index, append_this.Size() - 1);
   size_t length = append_this.Size() - index;
-  assert(num_channels_ == append_this.num_channels_);
+  RTC_DCHECK_EQ(num_channels_, append_this.num_channels_);
   if (num_channels_ == append_this.num_channels_) {
     for (size_t i = 0; i < num_channels_; ++i) {
       channels_[i]->PushBack(append_this[i], length, index);
@@ -133,7 +131,7 @@ size_t AudioMultiVector::ReadInterleavedFromIndex(size_t start_index,
                                                   size_t length,
                                                   int16_t* destination) const {
   RTC_DCHECK(destination);
-  size_t index = 0;  // Number of elements written to |destination| so far.
+  size_t index = 0;  // Number of elements written to `destination` so far.
   RTC_DCHECK_LE(start_index, Size());
   start_index = std::min(start_index, Size());
   if (length + start_index > Size()) {
@@ -162,9 +160,9 @@ size_t AudioMultiVector::ReadInterleavedFromEnd(size_t length,
 void AudioMultiVector::OverwriteAt(const AudioMultiVector& insert_this,
                                    size_t length,
                                    size_t position) {
-  assert(num_channels_ == insert_this.num_channels_);
-  // Cap |length| at the length of |insert_this|.
-  assert(length <= insert_this.Size());
+  RTC_DCHECK_EQ(num_channels_, insert_this.num_channels_);
+  // Cap `length` at the length of `insert_this`.
+  RTC_DCHECK_LE(length, insert_this.Size());
   length = std::min(length, insert_this.Size());
   if (num_channels_ == insert_this.num_channels_) {
     for (size_t i = 0; i < num_channels_; ++i) {
@@ -175,7 +173,7 @@ void AudioMultiVector::OverwriteAt(const AudioMultiVector& insert_this,
 
 void AudioMultiVector::CrossFade(const AudioMultiVector& append_this,
                                  size_t fade_length) {
-  assert(num_channels_ == append_this.num_channels_);
+  RTC_DCHECK_EQ(num_channels_, append_this.num_channels_);
   if (num_channels_ == append_this.num_channels_) {
     for (size_t i = 0; i < num_channels_; ++i) {
       channels_[i]->CrossFade(append_this[i], fade_length);
@@ -188,7 +186,7 @@ size_t AudioMultiVector::Channels() const {
 }
 
 size_t AudioMultiVector::Size() const {
-  assert(channels_[0]);
+  RTC_DCHECK(channels_[0]);
   return channels_[0]->Size();
 }
 
@@ -202,13 +200,13 @@ void AudioMultiVector::AssertSize(size_t required_size) {
 }
 
 bool AudioMultiVector::Empty() const {
-  assert(channels_[0]);
+  RTC_DCHECK(channels_[0]);
   return channels_[0]->Empty();
 }
 
 void AudioMultiVector::CopyChannel(size_t from_channel, size_t to_channel) {
-  assert(from_channel < num_channels_);
-  assert(to_channel < num_channels_);
+  RTC_DCHECK_LT(from_channel, num_channels_);
+  RTC_DCHECK_LT(to_channel, num_channels_);
   channels_[from_channel]->CopyTo(channels_[to_channel]);
 }
 

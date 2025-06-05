@@ -18,10 +18,10 @@
  *    before stun binding completed will trigger IPC socket layer to shutdown
  *    the connection.
  *
- *  - PendingTCP: |connection_pending_| indicates whether there is an
+ *  - PendingTCP: `connection_pending_` indicates whether there is an
  *    outstanding TCP connection in progress.
  *
- *  - PretendWri: Tracked by |pretending_to_be_writable_|. Marking connection as
+ *  - PretendWri: Tracked by `pretending_to_be_writable_`. Marking connection as
  *    WRITE_TIMEOUT will cause the connection be deleted. Instead, we're
  *    "pretending" we're still writable for a period of time such that reconnect
  *    could work.
@@ -68,28 +68,36 @@
 
 #include <errno.h>
 
+#include <utility>
 #include <vector>
 
 #include "absl/algorithm/container.h"
+#include "absl/memory/memory.h"
+#include "absl/strings/string_view.h"
+#include "api/task_queue/pending_task_safety_flag.h"
+#include "api/units/time_delta.h"
 #include "p2p/base/p2p_constants.h"
 #include "rtc_base/checks.h"
 #include "rtc_base/ip_address.h"
-#include "rtc_base/location.h"
 #include "rtc_base/logging.h"
 #include "rtc_base/net_helper.h"
+#include "rtc_base/network/received_packet.h"
 #include "rtc_base/rate_tracker.h"
-#include "rtc_base/third_party/sigslot/sigslot.h"
+#include "rtc_base/thread.h"
 
 namespace cricket {
+using ::webrtc::SafeTask;
+using ::webrtc::TimeDelta;
 
 TCPPort::TCPPort(rtc::Thread* thread,
                  rtc::PacketSocketFactory* factory,
-                 rtc::Network* network,
+                 const rtc::Network* network,
                  uint16_t min_port,
                  uint16_t max_port,
-                 const std::string& username,
-                 const std::string& password,
-                 bool allow_listen)
+                 absl::string_view username,
+                 absl::string_view password,
+                 bool allow_listen,
+                 const webrtc::FieldTrialsView* field_trials)
     : Port(thread,
            LOCAL_PORT_TYPE,
            factory,
@@ -97,19 +105,23 @@ TCPPort::TCPPort(rtc::Thread* thread,
            min_port,
            max_port,
            username,
-           password),
+           password,
+           field_trials),
       allow_listen_(allow_listen),
-      socket_(NULL),
       error_(0) {
   // TODO(mallinath) - Set preference value as per RFC 6544.
   // http://b/issue?id=7141794
   if (allow_listen_) {
     TryCreateServerSocket();
   }
+  // Set TCP_NODELAY (via OPT_NODELAY) for improved performance; this causes
+  // small media packets to be sent immediately rather than being buffered up,
+  // reducing latency.
+  SetOption(rtc::Socket::OPT_NODELAY, 1);
 }
 
 TCPPort::~TCPPort() {
-  delete socket_;
+  listen_socket_ = nullptr;
   std::list<Incoming>::iterator it;
   for (it = incoming_.begin(); it != incoming_.end(); ++it)
     delete it->socket;
@@ -122,8 +134,7 @@ Connection* TCPPort::CreateConnection(const Candidate& address,
     return NULL;
   }
 
-  if ((address.tcptype() == TCPTYPE_ACTIVE_STR &&
-       address.type() != PRFLX_PORT_TYPE) ||
+  if ((address.tcptype() == TCPTYPE_ACTIVE_STR && !address.is_prflx()) ||
       (address.tcptype().empty() && address.address().port() == 0)) {
     // It's active only candidate, we should not try to create connections
     // for these candidates.
@@ -149,12 +160,12 @@ Connection* TCPPort::CreateConnection(const Candidate& address,
     // Incoming connection; we already created a socket and connected signals,
     // so we need to hand off the "read packet" responsibility to
     // TCPConnection.
-    socket->SignalReadPacket.disconnect(this);
-    conn = new TCPConnection(this, address, socket);
+    socket->DeregisterReceivedPacketCallback();
+    conn = new TCPConnection(NewWeakPtr(), address, socket);
   } else {
     // Outgoing connection, which will create a new socket for which we still
     // need to connect SignalReadyToSend and SignalSentPacket.
-    conn = new TCPConnection(this, address);
+    conn = new TCPConnection(NewWeakPtr(), address);
     if (conn->socket()) {
       conn->socket()->SignalReadyToSend.connect(this, &TCPPort::OnReadyToSend);
       conn->socket()->SignalSentPacket.connect(this, &TCPPort::OnSentPacket);
@@ -165,18 +176,15 @@ Connection* TCPPort::CreateConnection(const Candidate& address,
 }
 
 void TCPPort::PrepareAddress() {
-  if (socket_) {
-    // If socket isn't bound yet the address will be added in
-    // OnAddressReady(). Socket may be in the CLOSED state if Listen()
+  if (listen_socket_) {
+    // Socket may be in the CLOSED state if Listen()
     // failed, we still want to add the socket address.
     RTC_LOG(LS_VERBOSE) << "Preparing TCP address, current state: "
-                        << socket_->GetState();
-    if (socket_->GetState() == rtc::AsyncPacketSocket::STATE_BOUND ||
-        socket_->GetState() == rtc::AsyncPacketSocket::STATE_CLOSED)
-      AddAddress(socket_->GetLocalAddress(), socket_->GetLocalAddress(),
-                 rtc::SocketAddress(), TCP_PROTOCOL_NAME, "",
-                 TCPTYPE_PASSIVE_STR, LOCAL_PORT_TYPE,
-                 ICE_TYPE_PREFERENCE_HOST_TCP, 0, "", true);
+                        << static_cast<int>(listen_socket_->GetState());
+    AddAddress(listen_socket_->GetLocalAddress(),
+               listen_socket_->GetLocalAddress(), rtc::SocketAddress(),
+               TCP_PROTOCOL_NAME, "", TCPTYPE_PASSIVE_STR, LOCAL_PORT_TYPE,
+               ICE_TYPE_PREFERENCE_HOST_TCP, 0, "", true);
   } else {
     RTC_LOG(LS_INFO) << ToString()
                      << ": Not listening due to firewall restrictions.";
@@ -246,26 +254,24 @@ int TCPPort::SendTo(const void* data,
 }
 
 int TCPPort::GetOption(rtc::Socket::Option opt, int* value) {
-  if (socket_) {
-    return socket_->GetOption(opt, value);
-  } else {
-    return SOCKET_ERROR;
+  auto const& it = socket_options_.find(opt);
+  if (it == socket_options_.end()) {
+    return -1;
   }
+  *value = it->second;
+  return 0;
 }
 
 int TCPPort::SetOption(rtc::Socket::Option opt, int value) {
-  if (socket_) {
-    return socket_->SetOption(opt, value);
-  } else {
-    return SOCKET_ERROR;
-  }
+  socket_options_[opt] = value;
+  return 0;
 }
 
 int TCPPort::GetError() {
   return error_;
 }
 
-bool TCPPort::SupportsProtocol(const std::string& protocol) const {
+bool TCPPort::SupportsProtocol(absl::string_view protocol) const {
   return protocol == TCP_PROTOCOL_NAME || protocol == SSLTCP_PROTOCOL_NAME;
 }
 
@@ -273,14 +279,20 @@ ProtocolType TCPPort::GetProtocol() const {
   return PROTO_TCP;
 }
 
-void TCPPort::OnNewConnection(rtc::AsyncPacketSocket* socket,
+void TCPPort::OnNewConnection(rtc::AsyncListenSocket* socket,
                               rtc::AsyncPacketSocket* new_socket) {
-  RTC_DCHECK(socket == socket_);
+  RTC_DCHECK_EQ(socket, listen_socket_.get());
 
+  for (const auto& option : socket_options_) {
+    new_socket->SetOption(option.first, option.second);
+  }
   Incoming incoming;
   incoming.addr = new_socket->GetRemoteAddress();
   incoming.socket = new_socket;
-  incoming.socket->SignalReadPacket.connect(this, &TCPPort::OnReadPacket);
+  incoming.socket->RegisterReceivedPacketCallback(
+      [&](rtc::AsyncPacketSocket* socket, const rtc::ReceivedPacket& packet) {
+        OnReadPacket(socket, packet);
+      });
   incoming.socket->SignalReadyToSend.connect(this, &TCPPort::OnReadyToSend);
   incoming.socket->SignalSentPacket.connect(this, &TCPPort::OnSentPacket);
 
@@ -290,17 +302,16 @@ void TCPPort::OnNewConnection(rtc::AsyncPacketSocket* socket,
 }
 
 void TCPPort::TryCreateServerSocket() {
-  socket_ = socket_factory()->CreateServerTcpSocket(
+  listen_socket_ = absl::WrapUnique(socket_factory()->CreateServerTcpSocket(
       rtc::SocketAddress(Network()->GetBestIP(), 0), min_port(), max_port(),
-      false /* ssl */);
-  if (!socket_) {
+      false /* ssl */));
+  if (!listen_socket_) {
     RTC_LOG(LS_WARNING)
         << ToString()
         << ": TCP server socket creation failed; continuing anyway.";
     return;
   }
-  socket_->SignalNewConnection.connect(this, &TCPPort::OnNewConnection);
-  socket_->SignalAddressReady.connect(this, &TCPPort::OnAddressReady);
+  listen_socket_->SignalNewConnection.connect(this, &TCPPort::OnNewConnection);
 }
 
 rtc::AsyncPacketSocket* TCPPort::GetIncoming(const rtc::SocketAddress& addr,
@@ -319,11 +330,8 @@ rtc::AsyncPacketSocket* TCPPort::GetIncoming(const rtc::SocketAddress& addr,
 }
 
 void TCPPort::OnReadPacket(rtc::AsyncPacketSocket* socket,
-                           const char* data,
-                           size_t size,
-                           const rtc::SocketAddress& remote_addr,
-                           const int64_t& packet_time_us) {
-  Port::OnReadPacket(data, size, remote_addr, PROTO_TCP);
+                           const rtc::ReceivedPacket& packet) {
+  Port::OnReadPacket(packet, PROTO_TCP);
 }
 
 void TCPPort::OnSentPacket(rtc::AsyncPacketSocket* socket,
@@ -335,27 +343,25 @@ void TCPPort::OnReadyToSend(rtc::AsyncPacketSocket* socket) {
   Port::OnReadyToSend();
 }
 
-void TCPPort::OnAddressReady(rtc::AsyncPacketSocket* socket,
-                             const rtc::SocketAddress& address) {
-  AddAddress(address, address, rtc::SocketAddress(), TCP_PROTOCOL_NAME, "",
-             TCPTYPE_PASSIVE_STR, LOCAL_PORT_TYPE, ICE_TYPE_PREFERENCE_HOST_TCP,
-             0, "", true);
-}
-
-// TODO(qingsi): |CONNECTION_WRITE_CONNECT_TIMEOUT| is overriden by
-// |ice_unwritable_timeout| in IceConfig when determining the writability state.
+// TODO(qingsi): `CONNECTION_WRITE_CONNECT_TIMEOUT` is overriden by
+// `ice_unwritable_timeout` in IceConfig when determining the writability state.
 // Replace this constant with the config parameter assuming the default value if
 // we decide it is also applicable here.
-TCPConnection::TCPConnection(TCPPort* port,
+TCPConnection::TCPConnection(rtc::WeakPtr<Port> tcp_port,
                              const Candidate& candidate,
                              rtc::AsyncPacketSocket* socket)
-    : Connection(port, 0, candidate),
+    : Connection(std::move(tcp_port), 0, candidate),
       socket_(socket),
       error_(0),
       outgoing_(socket == NULL),
       connection_pending_(false),
       pretending_to_be_writable_(false),
       reconnection_timeout_(cricket::CONNECTION_WRITE_CONNECT_TIMEOUT) {
+  RTC_DCHECK_RUN_ON(network_thread_);
+  RTC_DCHECK_EQ(port()->GetProtocol(), PROTO_TCP);  // Needs to be TCPPort.
+
+  SignalDestroyed.connect(this, &TCPConnection::OnDestroyed);
+
   if (outgoing_) {
     CreateOutgoingTcpSocket();
   } else {
@@ -363,7 +369,7 @@ TCPConnection::TCPConnection(TCPPort* port,
     // what's being checked in OnConnect, but just DCHECKing here.
     RTC_LOG(LS_VERBOSE) << ToString() << ": socket ipaddr: "
                         << socket_->GetLocalAddress().ToSensitiveString()
-                        << ", port() Network:" << port->Network()->ToString();
+                        << ", port() Network:" << port()->Network()->ToString();
     RTC_DCHECK(absl::c_any_of(
         port_->Network()->GetIPs(), [this](const rtc::InterfaceAddress& addr) {
           return socket_->GetLocalAddress().ipaddr() == addr;
@@ -372,7 +378,9 @@ TCPConnection::TCPConnection(TCPPort* port,
   }
 }
 
-TCPConnection::~TCPConnection() {}
+TCPConnection::~TCPConnection() {
+  RTC_DCHECK_RUN_ON(network_thread_);
+}
 
 int TCPConnection::Send(const void* data,
                         size_t size,
@@ -400,7 +408,7 @@ int TCPConnection::Send(const void* data,
   }
   stats_.sent_total_packets++;
   rtc::PacketOptions modified_options(options);
-  static_cast<TCPPort*>(port_)->CopyPortInformationToPacketInfo(
+  tcp_port()->CopyPortInformationToPacketInfo(
       &modified_options.info_signaled_after_sent);
   int sent = socket_->Send(data, size, modified_options);
   int64_t now = rtc::TimeMillis();
@@ -418,7 +426,7 @@ int TCPConnection::GetError() {
   return error_;
 }
 
-void TCPConnection::OnConnectionRequestResponse(ConnectionRequest* req,
+void TCPConnection::OnConnectionRequestResponse(StunRequest* req,
                                                 StunMessage* response) {
   // Process the STUN response before we inform upper layer ready to send.
   Connection::OnConnectionRequestResponse(req, response);
@@ -434,7 +442,13 @@ void TCPConnection::OnConnectionRequestResponse(ConnectionRequest* req,
 }
 
 void TCPConnection::OnConnect(rtc::AsyncPacketSocket* socket) {
-  RTC_DCHECK(socket == socket_.get());
+  RTC_DCHECK_EQ(socket, socket_.get());
+
+  if (!port_) {
+    RTC_LOG(LS_ERROR) << "TCPConnection: Port has been deleted.";
+    return;
+  }
+
   // Do not use this port if the socket bound to an address not associated with
   // the desired network interface. This is seen in Chrome, where TCP sockets
   // cannot be given a binding address, and the platform is expected to pick
@@ -487,8 +501,14 @@ void TCPConnection::OnConnect(rtc::AsyncPacketSocket* socket) {
 }
 
 void TCPConnection::OnClose(rtc::AsyncPacketSocket* socket, int error) {
-  RTC_DCHECK(socket == socket_.get());
+  RTC_DCHECK_RUN_ON(network_thread());
+  RTC_DCHECK_EQ(socket, socket_.get());
   RTC_LOG(LS_INFO) << ToString() << ": Connection closed with error " << error;
+
+  if (!port_) {
+    RTC_LOG(LS_ERROR) << "TCPConnection: Port has been deleted.";
+    return;
+  }
 
   // Guard against the condition where IPC socket will call OnClose for every
   // packet it can't send.
@@ -499,39 +519,32 @@ void TCPConnection::OnClose(rtc::AsyncPacketSocket* socket, int error) {
     // events.
     pretending_to_be_writable_ = true;
 
+    // If this connection can't become connected and writable again in 5
+    // seconds, it's time to tear this down. This is the case for the original
+    // TCP connection on passive side during a reconnect.
     // We don't attempt reconnect right here. This is to avoid a case where the
     // shutdown is intentional and reconnect is not necessary. We only reconnect
     // when the connection is used to Send() or Ping().
-    port()->thread()->PostDelayed(RTC_FROM_HERE, reconnection_timeout(), this,
-                                  MSG_TCPCONNECTION_DELAYED_ONCLOSE);
+    network_thread()->PostDelayedTask(
+        SafeTask(network_safety_.flag(),
+                 [this]() {
+                   if (pretending_to_be_writable_) {
+                     Destroy();
+                   }
+                 }),
+        TimeDelta::Millis(reconnection_timeout()));
   } else if (!pretending_to_be_writable_) {
     // OnClose could be called when the underneath socket times out during the
-    // initial connect() (i.e. |pretending_to_be_writable_| is false) . We have
+    // initial connect() (i.e. `pretending_to_be_writable_` is false) . We have
     // to manually destroy here as this connection, as never connected, will not
     // be scheduled for ping to trigger destroy.
-    Destroy();
-  }
-}
-
-void TCPConnection::OnMessage(rtc::Message* pmsg) {
-  switch (pmsg->message_id) {
-    case MSG_TCPCONNECTION_DELAYED_ONCLOSE:
-      // If this connection can't become connected and writable again in 5
-      // seconds, it's time to tear this down. This is the case for the original
-      // TCP connection on passive side during a reconnect.
-      if (pretending_to_be_writable_) {
-        Destroy();
-      }
-      break;
-    case MSG_TCPCONNECTION_FAILED_CREATE_SOCKET:
-      FailAndPrune();
-      break;
-    default:
-      Connection::OnMessage(pmsg);
+    DisconnectSocketSignals(socket_.get());
+    port()->DestroyConnectionAsync(this);
   }
 }
 
 void TCPConnection::MaybeReconnect() {
+  RTC_DCHECK_RUN_ON(network_thread());
   // Only reconnect for an outgoing TCPConnection when OnClose was signaled and
   // no outstanding reconnect is pending.
   if (connected() || connection_pending_ || !outgoing_) {
@@ -547,17 +560,24 @@ void TCPConnection::MaybeReconnect() {
 }
 
 void TCPConnection::OnReadPacket(rtc::AsyncPacketSocket* socket,
-                                 const char* data,
-                                 size_t size,
-                                 const rtc::SocketAddress& remote_addr,
-                                 const int64_t& packet_time_us) {
-  RTC_DCHECK(socket == socket_.get());
-  Connection::OnReadPacket(data, size, packet_time_us);
+                                 const rtc::ReceivedPacket& packet) {
+  RTC_DCHECK_RUN_ON(network_thread());
+  RTC_DCHECK_EQ(socket, socket_.get());
+  Connection::OnReadPacket(packet);
 }
 
 void TCPConnection::OnReadyToSend(rtc::AsyncPacketSocket* socket) {
-  RTC_DCHECK(socket == socket_.get());
+  RTC_DCHECK_RUN_ON(network_thread());
+  RTC_DCHECK_EQ(socket, socket_.get());
   Connection::OnReadyToSend();
+}
+
+void TCPConnection::OnDestroyed(Connection* c) {
+  RTC_DCHECK_RUN_ON(network_thread());
+  RTC_DCHECK_EQ(c, this);
+  if (socket_) {
+    DisconnectSocketSignals(socket_.get());
+  }
 }
 
 void TCPConnection::CreateOutgoingTcpSocket() {
@@ -565,6 +585,11 @@ void TCPConnection::CreateOutgoingTcpSocket() {
   int opts = (remote_candidate().protocol() == SSLTCP_PROTOCOL_NAME)
                  ? rtc::PacketSocketFactory::OPT_TLS_FAKE
                  : 0;
+
+  if (socket_) {
+    DisconnectSocketSignals(socket_.get());
+  }
+
   rtc::PacketSocketTcpOptions tcp_opts;
   tcp_opts.opts = opts;
   socket_.reset(port()->socket_factory()->CreateClientTcpSocket(
@@ -582,13 +607,13 @@ void TCPConnection::CreateOutgoingTcpSocket() {
   } else {
     RTC_LOG(LS_WARNING) << ToString() << ": Failed to create connection to "
                         << remote_candidate().address().ToSensitiveString();
+    set_state(IceCandidatePairState::FAILED);
     // We can't FailAndPrune directly here. FailAndPrune and deletes all
     // the StunRequests from the request_map_. And if this is in the stack
     // of Connection::Ping(), we are still using the request.
     // Unwind the stack and defer the FailAndPrune.
-    set_state(IceCandidatePairState::FAILED);
-    port()->thread()->Post(RTC_FROM_HERE, this,
-                           MSG_TCPCONNECTION_FAILED_CREATE_SOCKET);
+    network_thread()->PostTask(
+        SafeTask(network_safety_.flag(), [this]() { FailAndPrune(); }));
   }
 }
 
@@ -596,9 +621,25 @@ void TCPConnection::ConnectSocketSignals(rtc::AsyncPacketSocket* socket) {
   if (outgoing_) {
     socket->SignalConnect.connect(this, &TCPConnection::OnConnect);
   }
-  socket->SignalReadPacket.connect(this, &TCPConnection::OnReadPacket);
+  socket->RegisterReceivedPacketCallback(
+      [&](rtc::AsyncPacketSocket* socket, const rtc::ReceivedPacket& packet) {
+        OnReadPacket(socket, packet);
+      });
   socket->SignalReadyToSend.connect(this, &TCPConnection::OnReadyToSend);
-  socket->SignalClose.connect(this, &TCPConnection::OnClose);
+  socket->SubscribeCloseEvent(this, [this, safety = network_safety_.flag()](
+                                        rtc::AsyncPacketSocket* s, int err) {
+    if (safety->alive())
+      OnClose(s, err);
+  });
+}
+
+void TCPConnection::DisconnectSocketSignals(rtc::AsyncPacketSocket* socket) {
+  if (outgoing_) {
+    socket->SignalConnect.disconnect(this);
+  }
+  socket->DeregisterReceivedPacketCallback();
+  socket->SignalReadyToSend.disconnect(this);
+  socket->UnsubscribeCloseEvent(this);
 }
 
 }  // namespace cricket

@@ -5,7 +5,6 @@ import android.graphics.PorterDuff;
 import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
 import android.text.TextPaint;
-import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
@@ -18,8 +17,8 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Charts.BaseChartView;
+import org.telegram.ui.Components.LayoutHelper;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -38,17 +37,23 @@ public class ChartHeaderView extends FrameLayout {
     SimpleDateFormat formatter = new SimpleDateFormat("d MMM yyyy");
 
     int textMargin;
+    private Theme.ResourcesProvider resourcesProvider;
 
     public ChartHeaderView(Context context) {
+        this(context, null);
+    }
+
+    public ChartHeaderView(Context context, Theme.ResourcesProvider resourcesProvider) {
         super(context);
+        this.resourcesProvider = resourcesProvider;
         TextPaint textPaint = new TextPaint();
         textPaint.setTextSize(14);
-        textPaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        textPaint.setTypeface(AndroidUtilities.bold());
         textMargin = (int) textPaint.measureText("00 MMM 0000 - 00 MMM 000");
 
         title = new TextView(context);
         title.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
-        title.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        title.setTypeface(AndroidUtilities.bold());
         addView(title, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.START | Gravity.CENTER_VERTICAL, 16, 0, textMargin, 0));
 
         back = new TextView(context);
@@ -59,25 +64,25 @@ public class ChartHeaderView extends FrameLayout {
 
         dates = new TextView(context);
         dates.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
-        dates.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        dates.setTypeface(AndroidUtilities.bold());
         dates.setGravity(Gravity.END | Gravity.CENTER_VERTICAL);
         addView(dates, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.END | Gravity.CENTER_VERTICAL, 16, 0, 16, 0));
 
         datesTmp = new TextView(context);
         datesTmp.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
-        datesTmp.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        datesTmp.setTypeface(AndroidUtilities.bold());
         datesTmp.setGravity(Gravity.END | Gravity.CENTER_VERTICAL);
         addView(datesTmp, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.END | Gravity.CENTER_VERTICAL, 16, 0, 16, 0));
         datesTmp.setVisibility(View.GONE);
 
 
         back.setVisibility(View.GONE);
-        back.setText(LocaleController.getString("ZoomOut", R.string.ZoomOut));
-        zoomIcon = ContextCompat.getDrawable(getContext(), R.drawable.stats_zoom);
+        back.setText(LocaleController.getString(R.string.ZoomOut));
+        zoomIcon = ContextCompat.getDrawable(getContext(), R.drawable.msg_zoomout_stats);
         back.setCompoundDrawablesWithIntrinsicBounds(zoomIcon, null, null, null);
         back.setCompoundDrawablePadding(AndroidUtilities.dp(4));
         back.setPadding(AndroidUtilities.dp(8), AndroidUtilities.dp(4), AndroidUtilities.dp(8), AndroidUtilities.dp(4));
-        back.setBackground(Theme.getRoundRectSelectorDrawable(Theme.getColor(Theme.key_featuredStickers_removeButtonText)));
+        back.setBackground(Theme.getRoundRectSelectorDrawable(Theme.getColor(Theme.key_featuredStickers_removeButtonText, resourcesProvider)));
 
         datesTmp.addOnLayoutChangeListener((v, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom) -> {
             datesTmp.setPivotX(datesTmp.getMeasuredWidth() * 0.7f);
@@ -88,11 +93,11 @@ public class ChartHeaderView extends FrameLayout {
 
 
     public void recolor() {
-        title.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
-        dates.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
-        datesTmp.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
-        back.setTextColor(Theme.getColor(Theme.key_statisticChartBackZoomColor));
-        zoomIcon.setColorFilter(Theme.getColor(Theme.key_statisticChartBackZoomColor), PorterDuff.Mode.SRC_IN);
+        title.setTextColor(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
+        dates.setTextColor(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
+        datesTmp.setTextColor(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
+        back.setTextColor(Theme.getColor(Theme.key_statisticChartBackZoomColor, resourcesProvider));
+        zoomIcon.setColorFilter(Theme.getColor(Theme.key_statisticChartBackZoomColor, resourcesProvider), PorterDuff.Mode.SRC_IN);
     }
 
     public void setDates(long start, long end) {
@@ -106,9 +111,9 @@ public class ChartHeaderView extends FrameLayout {
         }
         final String newText;
         if (end - start >= 86400000L) {
-            newText = formatter.format(new Date(start)) + " — " + formatter.format(new Date(end));
+            newText = LocaleController.getInstance().getFormatterYear().format(new Date(start)) + " — " + LocaleController.getInstance().getFormatterYear().format(new Date(end));
         } else {
-            newText = formatter.format(new Date(start));
+            newText = LocaleController.getInstance().getFormatterYear().format(new Date(start));
         }
 
         dates.setText(newText);

@@ -13,6 +13,8 @@
 
 #include <memory>
 
+#include "api/units/time_delta.h"
+#include "rtc_base/event.h"
 #include "rtc_base/socket_factory.h"
 
 namespace rtc {
@@ -30,7 +32,7 @@ class NetworkBinderInterface;
 // notified of asynchronous I/O from this server's Wait method.
 class SocketServer : public SocketFactory {
  public:
-  static const int kForever = -1;
+  static constexpr webrtc::TimeDelta kForever = rtc::Event::kForever;
 
   static std::unique_ptr<SocketServer> CreateDefault();
   // When the socket server is installed into a Thread, this function is called
@@ -40,10 +42,11 @@ class SocketServer : public SocketFactory {
   virtual void SetMessageQueue(Thread* queue) {}
 
   // Sleeps until:
-  //  1) cms milliseconds have elapsed (unless cms == kForever)
-  //  2) WakeUp() is called
+  //  1) `max_wait_duration` has elapsed (unless `max_wait_duration` ==
+  //  `kForever`)
+  // 2) WakeUp() is called
   // While sleeping, I/O is performed if process_io is true.
-  virtual bool Wait(int cms, bool process_io) = 0;
+  virtual bool Wait(webrtc::TimeDelta max_wait_duration, bool process_io) = 0;
 
   // Causes the current wait (if one is in progress) to wake up.
   virtual void WakeUp() = 0;

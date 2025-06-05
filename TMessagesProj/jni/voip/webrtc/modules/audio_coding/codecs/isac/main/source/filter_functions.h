@@ -11,6 +11,8 @@
 #ifndef MODULES_AUDIO_CODING_CODECS_ISAC_MAIN_SOURCE_FILTER_FUNCTIONS_H_
 #define MODULES_AUDIO_CODING_CODECS_ISAC_MAIN_SOURCE_FILTER_FUNCTIONS_H_
 
+#include <stddef.h>
+
 #include "modules/audio_coding/codecs/isac/main/source/structs.h"
 
 void WebRtcIsac_AutoCorr(double* r, const double* x, size_t N, size_t order);

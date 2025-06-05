@@ -1,0 +1,1269 @@
+{
+  "algorithm" : "HKDF-SHA-1",
+  "generatorVersion" : "0.8rc17",
+  "numberOfTests" : 106,
+  "header" : [
+    "Test vector of type HkdfTest are intended for the verification of HKDF."
+  ],
+  "notes" : {
+    "EmptySalt" : "An empty salt is a valid input for HKDF. It is equivalent to a salt with n zero bytes, where n is the size of the underlying hash function.",
+    "SizeTooLarge" : "The output size of HKDF is limited to 255*size of the hash digest"
+  },
+  "schema" : "hkdf_test_schema.json",
+  "testGroups" : [
+    {
+      "type" : "HkdfTest",
+      "keySize" : 88,
+      "tests" : [
+        {
+          "tcId" : 1,
+          "comment" : "RFC 5869",
+          "ikm" : "0b0b0b0b0b0b0b0b0b0b0b",
+          "salt" : "000102030405060708090a0b0c",
+          "info" : "f0f1f2f3f4f5f6f7f8f9",
+          "size" : 42,
+          "okm" : "085a01ea1b10f36933068b56efa5ad81a4f14b822f5b091568a9cdd4f155fda2c22e422478d305f3f896",
+          "result" : "valid",
+          "flags" : []
+        }
+      ]
+    },
+    {
+      "type" : "HkdfTest",
+      "keySize" : 640,
+      "tests" : [
+        {
+          "tcId" : 2,
+          "comment" : "RFC 5869",
+          "ikm" : "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f404142434445464748494a4b4c4d4e4f",
+          "salt" : "606162636465666768696a6b6c6d6e6f707172737475767778797a7b7c7d7e7f808182838485868788898a8b8c8d8e8f909192939495969798999a9b9c9d9e9fa0a1a2a3a4a5a6a7a8a9aaabacadaeaf",
+          "info" : "b0b1b2b3b4b5b6b7b8b9babbbcbdbebfc0c1c2c3c4c5c6c7c8c9cacbcccdcecfd0d1d2d3d4d5d6d7d8d9dadbdcdddedfe0e1e2e3e4e5e6e7e8e9eaebecedeeeff0f1f2f3f4f5f6f7f8f9fafbfcfdfeff",
+          "size" : 82,
+          "okm" : "0bd770a74d1160f7c9f12cd5912a06ebff6adcae899d92191fe4305673ba2ffe8fa3f1a4e5ad79f3f334b3b202b2173c486ea37ce3d397ed034c7f9dfeb15c5e927336d0441f4c4300e2cff0d0900b52d3b4",
+          "result" : "valid",
+          "flags" : []
+        }
+      ]
+    },
+    {
+      "type" : "HkdfTest",
+      "keySize" : 176,
+      "tests" : [
+        {
+          "tcId" : 3,
+          "comment" : "RFC 5869",
+          "ikm" : "0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b",
+          "salt" : "",
+          "info" : "",
+          "size" : 42,
+          "okm" : "0ac1af7002b3d761d1e55298da9d0506b9ae52057220a306e07b6b87e8df21d0ea00033de03984d34918",
+          "result" : "valid",
+          "flags" : [
+            "EmptySalt"
+          ]
+        },
+        {
+          "tcId" : 4,
+          "comment" : "RFC 5869",
+          "ikm" : "0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c",
+          "salt" : "",
+          "info" : "",
+          "size" : 42,
+          "okm" : "2c91117204d745f3500d636a62f64f0ab3bae548aa53d423b0d1f27ebba6f5e5673a081d70cce7acfc48",
+          "result" : "valid",
+          "flags" : [
+            "EmptySalt"
+          ]
+        }
+      ]
+    },
+    {
+      "type" : "HkdfTest",
+      "keySize" : 128,
+      "tests" : [
+        {
+          "tcId" : 5,
+          "comment" : "",
+          "ikm" : "60ab7f45b0ad534683b3a6c020d4f775",
+          "salt" : "",
+          "info" : "",
+          "size" : 20,
+          "okm" : "73bf325f0fcc78f15b6cee7c9e7d927d4016eafd",
+          "result" : "valid",
+          "flags" : [
+            "EmptySalt"
+          ]
+        },
+        {
+          "tcId" : 6,
+          "comment" : "",
+          "ikm" : "e3db76e02278cbd2adbcb4555803da11",
+          "salt" : "",
+          "info" : "",
+          "size" : 42,
+          "okm" : "a9382b2bb04ceb4fe0543cee88753df8cb90c9dc440f7e476e95150c82e1376e123f058875c00cff6f29",
+          "result" : "valid",
+          "flags" : [
+            "EmptySalt"
+          ]
+        },
+        {
+          "tcId" : 7,
+          "comment" : "",
+          "ikm" : "d4dcb92a769f57c8bab8a420ee0aa351",
+          "salt" : "",
+          "info" : "",
+          "size" : 64,
+          "okm" : "d10d4bd0ed723533adfceaa903f1ee8836e61cd085fd951dfc6a291edded082e8478c9f8bd1f7a2611a6a049761dfc2888a9e32be9c326833c6559487c33f6e1",
+          "result" : "valid",
+          "flags" : [
+            "EmptySalt"
+          ]
+        },
+        {
+          "tcId" : 8,
+          "comment" : "",
+          "ikm" : "2d43e54bf0c94c9cbff4300f4aa69ab8",
+          "salt" : "",
+          "info" : "d674da3bb47d5c7e38b501e5251d9348af601c44",
+          "size" : 20,
+          "okm" : "c1b8065a9ea8e79d404f882089cf423a99bde5ea",
+          "result" : "valid",
+          "flags" : [
+            "EmptySalt"
+          ]
+        },
+        {
+          "tcId" : 9,
+          "comment" : "",
+          "ikm" : "4055536896c406d5fe14a6cd6b999bff",
+          "salt" : "",
+          "info" : "2094768a8816f7df070d6e08b7ad93755dc9024b",
+          "size" : 42,
+          "okm" : "c7d3c9ab74081357d0f6ee3aef0442afee7325381090a2df642926a3e6e6a7e213f05ea5c39978d52165",
+          "result" : "valid",
+          "flags" : [
+            "EmptySalt"
+          ]
+        },
+        {
+          "tcId" : 10,
+          "comment" : "",
+          "ikm" : "5b01b2da3166f217cdd68de8af60078f",
+          "salt" : "",
+          "info" : "6884cfa7ffe8f27bf4ebc6e46a7e01488c79243a",
+          "size" : 64,
+          "okm" : "1535a41d6e8a94c5bd51b7447bbd9c2b8fa00ba05b92e7ab0da7d1fec7d348ee7d50a4bdbbde173dd6eeff83aba9e8b822823b339a76811d62771336f4e08f3d",
+          "result" : "valid",
+          "flags" : [
+            "EmptySalt"
+          ]
+        },
+        {
+          "tcId" : 11,
+          "comment" : "",
+          "ikm" : "467403c2ec02a235bf730ff37e8d8ff3",
+          "salt" : "41f0f173d307d40436c25856cf559f96",
+          "info" : "",
+          "size" : 20,
+          "okm" : "4ab2bf78f2678effaced317249e116862d3d9b8a",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 12,
+          "comment" : "",
+          "ikm" : "3352f942aa93071da6d39cc5ed8dc460",
+          "salt" : "57a0db708b25a51afc4271803aa35204",
+          "info" : "",
+          "size" : 42,
+          "okm" : "bbcf63065c761017f229183e767683b98633a85f4d8f32236cfa0fd3f6b182a5f41c33506636d18c5eba",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 13,
+          "comment" : "",
+          "ikm" : "08867e76311126089356623ba5381e73",
+          "salt" : "0c164c443edcdfaedb1ab150f047951f",
+          "info" : "",
+          "size" : 64,
+          "okm" : "3084fee371179b60a4fd27ea2637a9b89a3dcf6ab45d4805c99880b26e5d73efed4b421f1fea4cabb60893241765b19554aa51689bf00d7d94a053a94bfec55e",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 14,
+          "comment" : "",
+          "ikm" : "c55c41d69d2424a520414e3662aa7303",
+          "salt" : "fea9bfc92b74337e43a201a2dc199e27",
+          "info" : "3fdf20538063b76901d61bbf9b72b0c18749e00e",
+          "size" : 20,
+          "okm" : "3917a782fed4d7f525ca16ca1dfde0faa7207262",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 15,
+          "comment" : "",
+          "ikm" : "5d3db20e8238a90b62a600fa57fdb318",
+          "salt" : "1d6f3b38a1e607b5e6bcd4af1800a9d3",
+          "info" : "2bc5f39032b6fc87da69ba8711ce735b169646fd",
+          "size" : 42,
+          "okm" : "ca0903f17759fc29df761469e3b98a5b1476977706f3c87e9d39050e5b36c7ae6bbafeb3814037b12ca0",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 16,
+          "comment" : "",
+          "ikm" : "8677dc79233ef3480777c4c601ef4f0b",
+          "salt" : "ad88db718244e2cb60e35f874d7ad81f",
+          "info" : "a38f634d947819a9bfa792174b42baa20c9fce15",
+          "size" : 64,
+          "okm" : "1761915ac282909fbfd43ce31934e7a10951f901ad33f614a9394b6f5ca04e00906aa14b91132bf9e8ae0aa2102c3c7a67756e81b57d89192a62ca0cf907a3dc",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 17,
+          "comment" : "",
+          "ikm" : "0f602703d37943e0253bed3da331aff4",
+          "salt" : "ebdc8510499f69b2e188daab77cd819cccb95f276f46e6b2be11cbe72700",
+          "info" : "",
+          "size" : 20,
+          "okm" : "4a54220ecee20a84e1b7b6f5407af234b14938d1",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 18,
+          "comment" : "",
+          "ikm" : "9fe65737574c5c7aa67646adf8230ba8",
+          "salt" : "73a34648c152443586236abcb46a090ce55ef6c7f282ffce6342d694650a",
+          "info" : "",
+          "size" : 42,
+          "okm" : "741662ad515bf9d2661aa0731eebd674f7390bd20fa3bb7cb2e9d6ca953c2bd839929c44a6f0ba5ae614",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 19,
+          "comment" : "",
+          "ikm" : "e8f2b1c3e6a6c3d5ee0a20dd47aafa78",
+          "salt" : "3f5e162de91e0782cd189f3b7778cdc2ce6bfe9d3fe841cd3c70475d7b3c",
+          "info" : "",
+          "size" : 64,
+          "okm" : "695807f517ba39e33eadeb6a7b71d2016163e9f5e6aaad5f493bcbe24ac06f8a6770097da76b50338a4dcbd9fac4d3a545c45eb1e733f70e9e82ca03830d0ee9",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 20,
+          "comment" : "",
+          "ikm" : "a679521cdb56aafc5a4b76db0431a4dd",
+          "salt" : "123033b1ddaead83a4b9cfef8a660bd8e00fde01e67c35656c6d7607d456",
+          "info" : "44ec41ab4f4e64f4a36e5e30c9f0dc1d77ae4974",
+          "size" : 20,
+          "okm" : "e36789305dd2613dedd29e041afddf558d6fb8b6",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 21,
+          "comment" : "",
+          "ikm" : "49bf155ca102026f2a217ea1bc9843ac",
+          "salt" : "76776e3b4d75f8f43dce4bded71f3b1ae6bcb012d9c0d59f78248b9427b8",
+          "info" : "851bda4faa8f7add2a3cbf0acf9c2786f8f955b2",
+          "size" : 42,
+          "okm" : "6016f537e75e1aaf2e6920827d18aa25e9fc8742c607b0cd97a38cad0bed0a6622981f97b63b08f31ed9",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 22,
+          "comment" : "",
+          "ikm" : "6cf725e939e8824d4392233eeac75d30",
+          "salt" : "1e72f24b05a91a0093f34306ffced79e7003055b0833c6d0f27a4f33a1bd",
+          "info" : "495425d9727fee2e2b7e78899868c1c3e7735e1d",
+          "size" : 64,
+          "okm" : "b31f845aa6ad9b6803153872145a28617035e9b2d2a5c1ce8d0d2c6017f17403a67326cd06068af972eb8b734903d10b633d07de05f02fc70ed383a60bd82b48",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 23,
+          "comment" : "",
+          "ikm" : "a319ff7b5ba9b14ac72b681cecf0f742",
+          "salt" : "d7e3bc6daed343ce77ef793e15a8246e4bfcbaf83d2ac956d0661d1df7262b2e7311623dfe4152caddbfda8fa8ed7a82656ec00b72c5adf7c9d388e5b3bc8d24",
+          "info" : "",
+          "size" : 42,
+          "okm" : "d547c94891439eb7dc9e0c425adf20262d27fd9b55e7b0516e836db6b2f778c70296bc97c466e05ce2d5",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 24,
+          "comment" : "",
+          "ikm" : "34bae5a158c1678aa76a744417a70d7a",
+          "salt" : "1532075f363e061133780ac959bf653c7687d181b9431215d6f62dd2f1ec3019d61c50fa82c70ae25e624c849a276b0c57d7c02a4d753fe84a1a6621e9a5ef01",
+          "info" : "87ec30aa53acfc3d09ccc1d57d654fdbce403cd4",
+          "size" : 42,
+          "okm" : "c508b4bc7503440f3ee04c5b8c5832bf70b54a6caea8d2a0ade43a0ea72c08e474904587334d699ba2ce",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 25,
+          "comment" : "maximal output size",
+          "ikm" : "9ab09999adde788dc2bf82c7ec8fab03",
+          "salt" : "1aa93ccbc92e29d7016f71e7f806bae2027f62c4",
+          "info" : "60999543d9cec9d3",
+          "size" : 5100,
+          "okm" : "033293a76b1496c9619331f089d402d0deae28166bccf304bf25822f369479cf0aa1600b6ebcae43fd1f5d3389c55331b81cbe1e9f6ae29aa86d8a332d298d50516af4926f01691754981c9c92d743d0d26a94423120761a4d0d0e562368696ab78684e51a65b30cc4849a6a5a6c53a076c276db287b787dbb43d1e107f86bce19986cfcb86ec40fd74dfba08784219c2aea2152e21be5a87dacdd18b22ef23292623bcc64bd03a3a1b408a77fbbf4e18ae59a94cac72f43687190e358579d1b0a54d3f2df7f08b867af0b941deb9f7035a1a8f13c6d0da4f9e02f817ea0a92c02140ff5a7d7e398a7b410574d2e6ef7a710efbd1db628318650236ea02f1b617bc79087f5a6c3adeb7037176ef51fda844b2607a4960e3852107dd2703558a534a06ab5a1595d237fe3eb0c0ea3f14400332abb221784914e99fa5ca7a1f67338860283bf589a6b6ea0b32e2779e207fa8139dfeee954e762ebf6255250b1fc58c4c79b3d98fbbeaf786907b5fc7a8c34a25a642b7286a4b2ecdfd1dce041294322bc54b3c15ac44913dd1a3a4361e2d2a0e58c13f34ab2ead723fa01311a2659f74722a09f5b1837a7666da60728ae5cb4b837621961bf0278da749f79a47249ea0e361be3afd14ea9ead4e2f70d9941fa55862d86b53046de5dceec48a4b9f7b895693e328c59c0b2543ef2cd84b2c549a8e0013351703f7669b8346d2b32f7627b7df9ee746b1092f34033f69314a985ce2e948b9a98dabe9bf259f92b78b9a1de7285db617784001894af381618e9a2992c5738337930408b7e0fb57697bf4839e7e72ffa1010319a50aef208829950d60b6c4e57b76bc62d1923003c374710d5370249172064e4e5e0aacae369fecd4ac4bec3861fd24a6c633aca87f2d73c7accb43f9d83bce2d544563c9213e2eaf4a159520500d576bee5d3301613c31580cd6ca8c47039a4d4085dd8b959e5b8ca4835705bcba8982bcf9e8fef0a1602a76364cedb6daf92952ca58be7076ff55364030230daff9fee31152d64fa0d6541d862970c2c013efd711c4f96b532fe9f4a4a180ac4d3cd41e5d66d62371616e6ea88896320944a8f3df632ae0188bd93929ce6a6669803c04be549d80fba1815ec67a0269b74e0a1d33beabc1c94ef6636722a2b27bc0f249da083feeb39ef2fa5666ee38339791602afacc9829abf6541a5ede2cd45ece276ddaa9f49fc4d02b755eab466d5bb0ceb3b7b771ce6a9d85283d4a53f53c54b63b4011110b42e9c1fc8c8dca6e4b69e6c4b3b89c53f0f990e26b84ca5f0660e712c775c1824eab5055527bd92495cc59f8d4c04ae13b49c466e886d81639d00b7bc68875a8ab6cb87807d4b2257252561d69788cc136a5273e5f3e68b9ac4ba4f7547422544edd4ca658e1c13c756420e4a6290c7db03f5ff7f44ac78fe4d353847caacd1692c1521b12f1f55362ae755c9714712a6d80362080d865062905ed0e9601c5b12b1300dca219f7676d0080a33d1a6b08718c36f084211461c0f50f6911f17746752f3a6bda656e3a065aab0cf30ce2542eda35a42821c62c838ed18dcd4dcf5d51346804c034fb2c3a16b0c84a6aad62972c84b499a370965a959e17d537acc13d5d08000d732c11aaad9e0f192a9b74d94ef408040c8bc50e7b2ba9edbac047fd4b80c16dbd3962f7eb528e0d80cb5a439eb3d6cc62e41e2cc7f4e2d5141bd48b400ffd19da07d0694e983b91744e420541c01bbfba3f333c5e3e7946d2dd245b70304c3b1a35cd9485aa6908c7a7a846f23466265c1e55e6dfdf8d0cc320033a18feff132c0e3b1216d33b954679121ff2c8795e7c4f9a4a9725d31200bfc72444cb76f50f198b04afbd4821a31a183593210789f93ed612a2e1d70facfa0b23e5aa854059b83979b55ac382777e351589d266d3ceba76a5bc345c5514f4f07e79e54a8b70a024cb031808bc13524c04b4d1fe28781da04688bad13f379a0659915ce438985428473823a70687daa8b6afb659edf07e25518b00114e9847e3d6598f23f2eecf07e59cd2a801eea6e3891735e457b7fa03872358e682571fec629cf19f17fe167a6253dee7b6deb39773e0d3606e025df91f35fc27be8c046d67489e010f743d84599283fcc418b628dc244d2f859db667c376b2953991e0db773b3e068c1da262302c391681fb414c26c41ed85eb4212e982d0e15eab5a67257a3ff913ce68d6aed6e9a8ff385c7d878cd4789ec9adee99fe25438911252de7a7cf6ef5d6662cb424208003d0ddc04d38e04c32d9beb4f6e8cbb19a8dc0835515bb5ddbc600f148861d6dec69dc8cbd4aaa7fbbe49f782199d618cfcc9820e77f2a474a3fa219c384d66bc8abccecf9f82caed37f05f3f0e1d448af96a5a8287a8c877b25b842dd9e0f66ef810f1b0be4e76f8f4e6e15d7eeadd07633fa3763c493e12a84639f76f67cfc823ab945403ce84d50263edcc95223a22acebb79b85aecd82b3aee931c891ba61bd8ff94c625cfa4d55e1b2bd996b5d99e6cab245e243e6414005f1cc4f0dea54b35e1309cc2db46cd785b294aad50ebd634d363688e3206a57fe38d83cc068c4b8504c11bb4c1d256d496513667170163f7ec98b5b9c3e23777d6a3cf72598ed68fc51466ec4e3ebd0412e002af200f1bc8800400e816ab29293b1c7ef24e30415a8e513e4a9efc851fa549b3d1e0d881fda0a6c393d0ff0c57f44260b3f5d7dd60408ca687429c4cd4274c206f80833d605290e5c992f17e05dbc9552f8c40300bc1f3480c6bb404c75c4220d8888afeaa779eb0f625c5c044bb12349af62adf5b0a18e07b37c954146851dd628dc26e894ffea95c84e78a75c25cb751cc81dc93d3146b6beee9871ca3004af6e644b65e972df9934717e075b53eaa6c878cb94f5d1fea89c3e8c9da4d0bd7d8d8ffedda0b48eee4c9877748be05a06b3e69342d5366e9db9be38f36af0f759fb6904876f5ce327dfc777fad8732e4372ada25106477d8311095b8d9dc4c0100cffd70847305695be46b2b5ba8df8ab3de333d09a7f32736061eadf9182bc4c0ea5965ba7d91d655d6942f0796fb4a05c959b6afb52a8b943065de6e0eae3639006c5b130b0a8b00b617409c5c8d5cfcdd88b1e981930ec92f21ada92a8373fc7b49d3ccc5c63b776849d5efa51de531f9387a9d11ae9fba6987d6b680fe15fc19c88bf0b5e1764044bd689554a12c8013f1e7dd6d2214c74c3fa65b4a0a35bf479d2582e948ef91c464c4dbfbea80d42bc8b1ce1fa42ccc38f492e3acf93b2b64f5e956fb171eb2c0e4ff537c4ea2ca13978dbd280aaa1d5a798b423942b6897663aa75d4c153f76d653b4fbdda2d2e141e9731679d52225fbc6dd0e81e03095b37af927e0c2aaf7eea5bdcbf59749e54e391b2af88626ef8f86920c81043334b3a09acd8c0a20e9aa0849dd56a2643803d133fefa3ee0f6b52b6109170ec5d6a15d0d20f7fb546ed78930b4298f4b5623ed912d0a5d6688b05b1b5c892e6fe60b2f1c68623bcf9a0ed513ac75c17cde5e01c3be75b1ce441174d26244873a7946ec1953666512efae05547dc8cf58fc342b262c3ab072f29ee876327e1de6c67f5c480814ea26702e1c7672de4655a87350b38f7b290cb22a3a0725f8aa2d24a794fea6f70fac5a345fc426ea2931cc3890b8cae7e92cc171d86f5f1baddae8f4b1db7aab80e629022eccfad9276c578d2a6085a446ed4b017e6a0da40343be3761f190d801283c061865610c3173753384bf87ef3ec78e63aebb1b051236f9f4d6712b487f0c407a44c7241c96e2af404a2ca14b8b6a11564d0aa2b6efe18072d6d596e26d105783a57beb5954f6066f7d2f4eefc2b455171d56364b21c3d8747d5f407cff5bd8bd350d904c17a4b91f37b48ffca09e5334420bdcb6fc3797417cf99af8773a027d0dccf56087c7e751e519c365119dd9195ee2449de13aac6d538c31d58dfb3b4183be4e71f6b4893ca588876514b581b03ac897b5e9305234740858f2b2a368b26b4d560c54a3f1018df913344d66229c56b3995a9c67d5f6db145e495159501522472dfd3d38deebf4c8cdd698325914d7472d02c49af1a9c85d20c019b03259a849130a53909929695a2f911e11f04caec36280f9653218911f4fa62ff63d77ecbeab3f2eaa235598617c424eb6caceaf365fdb7659eb06569623d38e47306ca2dfa98398586c4d5aba8ee29b9046416b3d7c6660b03aa5f59ca921e9f25090769428587428c8715f053323dff1eecbc2bec9ce90bda4d890416fcb952018f50f9ac9119d45e7ed56af58a4d0d9ab8a2a301eb17325f89359575a6277d340c8fb40f3271387fcbe04f2d3c1d63b490d12b5d2e8e592529c62d07d5d9c315f54157d30cf5ffb870b6a466c6c1f19fd0aa4b8973f1c3492b77cd7aeea7bd85f21cec76b61c3183cccf83e754d8ecca2b2e39420fbd4724f03efd9b6f4d4d59f1e8cdc3746b1dfebcad85287127de3658c2aadaa514e35c84bc772839575622d872a0e8469b3eec05e143b2129c6a75d1d4f043b2785fd2818a3db7dcf2991ea95caf73db5b2340df001771a8548db332006378466ff16dd0c60fcf6fe0c185da8e501afebcc9f566e1ff34f69b5af7997e6413c9e17e34745e131edce9820540c07ada9f500368b0f3dda452b3d1f8312e2926e20ad55fd398d21fed2ae3440834c9779d747f4553cfa2d5edd8242f3e6b1b3694031fa2c7430e78f117e69487798f1f3ac539979e29cb69ec44d8dcf6d0220d956cb4e6a5c9b8ce5263a950362f88f3ba56ad7d2f38fcfb2195cfe79baf44845dc124aeb5283962691abc25a4e016bed2f127e4e6bb78b22437ebc87cc975fc898793dd20f94784cad271dafeda980b4c6a91de39ba71eed0529bf05907db0b1bb9ff09e2bbec611d8238eac1939c3a7fabe8ab631337300ed6c40dbd5299f934790137ea875e54af87a60a169eb920522af2a50b62856a6e471e6c52f285cca854d0bc98b69622aa2c4364843279ac21eb4002c9814fec8be3de5f1e587ea62b0b2f1b5313b69ea407f1f2b7bab8c13cd54ce2a7704ee97d01c1d40feca1aa698fd90b2003507b32644043254dc61ac50f92840a408c62d6754e80108ca656b0ac977e9d1da44f87f4e8be3f1b2258f092714b9c4027b1678388546031a1c7391d9a151a33c5d291d85a457fe46b12ba6faac046630ad646fd5705a67ae2b2f85e4a79f780bf506829fc9cdcf6b8c2cad831ef7b26b37d3db8d4cf63776eb60151f17b68d86002e878c6198c171c8db609f870ef0ce62bc27b0c97788c25262020c4b42036ac3ea666429f7a47248fc41126bfc5777ea036775437b9d14154aea29884aee95e46966699a6a5707726057de573d77f31d190624dc3833c939c318784fb1d80c448fca6f0af4cd18168cb40d3c19377852195ba42da113d5953c1a0fbe5d188d884f6162503d69442798c891d1fa0c706c80565b9e6300918e6f718770058f18e80ae393a96c83a987ab08b2065c42d02f03d88385f1b2041ed70b90b124b6973990d61cff38b493c778c3eb26c722408f4060da392632be571b7260051cf18dfaea3efbc3d37c67b0c182a0cfacc1d013c38ad0592bfd868797790bc8f5a5e2a95c33bf078bfcee82afa438cd4ce48eb8698906cee16e0eee03c551d8c0df8d3448924d3d1108a6dd89739ae1745d637035af515ef94ab3ef461eb479281e743b9d7ea10e7bc1a033da2eac28a97e1b81550c32033ad630efa2a6ec9f666c34adf8dab8367a40c21f1b70fb8254976eed50be0764be04e62cb0427cfa51a9b78d1f4ddfa09c995d20fa0cc3cda2978ccc762146ce9441394df789bfd8233950f84df64d20808758f19e00b5c6aabe64d3c23f709ce866fffa5d35590801459f076e6751827d131185e36e818c30bd5ade360e4f0818a03188a5266c44747ed5e7154c4c93a87f0ce05b745bc7ebd3fe011c5169f1ca118bab34337eeb61206f251d8a0307f6dcb33aea11b1ec7eb888667c7145b2fc601dac47787c842a45ee0f5af1811b7a57759c14f5da6f8b86f73a3bea7b3f1effd9366dc6658fb3b8510f54621d8d13f330163a6530da45f7263a8fda2c43123ef46580b3990d51def937db27f9e06e87fdfd186df2fd6a5dd6133a8f3ee06e0e14719861def6cccf68f085caa631db3e85b4bcdedf83923c2950665b0187e224522060d5d54a02d5501a0c0a384bd247164caedb02c9a69f9a3638d258b945aeba029250ab549478cb855cb27404fa5cdb15a46b9f1ff8dda401f2dd472a6d6c66dfe8f5f7449238eb959c091db1c26e5efb5e7efe096489c7a25515de6399d7399b793aea554bf9fa1f6083f3c955f144171e8584b133a2ea77f49c974c2e79846e83541f37e0671d65173b3327de75c5173644959ba119f49195ed3ca26b144ca3001aa5044d46781a1336967911496da309744bb6ad244d1a96d47c7089c539486a1977a63b6523782bc2701495d50ea208a7fa411c70953cb506befe8ef37cc41dded7edc0a91de2e952abe338141e020afcff657e3eae7d11b384b0a496dc105fcba6c9cb3404dc20c704f0d37c5a96cc37ee132c47ce1ad12791d48a96ea2dfd0881b1d1d777619405b9040fb52cb1a7ca1ca993f34eaa2a7e97edeec2382ff73bfcf3ed5b6fd911c8d610551aaf92c92111d95a3919e20974ac27f3ceabe6aa3be7b6bceab0080f7ad9ee3d48bdfa7e44f6c71845c4e744726f1069324c519188d7ea3607d466ffd25b2d65a4ae1023929087e959eb8277eb495fa4dbbd1fa229490db87ba6b3a46c55524e398000d7f3d50c11aad2b9e3d033e503fa279f77d2a2fca9c8bd026a006ecc4c913dd3fa519594784c9eb43a9e3f862c3014cc1f01284545004d3733e63b6832607685b329988f26dc394bf17d2d4355e5e4622f86a4a2179b48f6e3a2eb391c343364a6040a384e70babdfb557d23fbf08730f9e8894f28b6c43a8fee397bdb39555c9e1cb389388776f72ac3c88656e4f36ff032c6324d68949bd2608313651eb6662095d40ed72a89dc85b420168c1c299f78ef8601609c1a5a29625545794b89a01e13cbaa339c05f7504bd45b79239d8f0ed106450918fc0be03205e414a58c734cc9fa134e6d7af2e106f25861511c6bb1510f1a4a493bacbad33bea4f41c3d8d28488a87d8fc",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 26,
+          "comment" : "invalid output size",
+          "ikm" : "7727bdfb91621dcd4ca5e8cea6b4e2eb",
+          "salt" : "96b2e11fe817e1e40fba8aa5083cd490482b2abe",
+          "info" : "f3fecf4736e28862",
+          "size" : 5101,
+          "okm" : "",
+          "result" : "invalid",
+          "flags" : [
+            "SizeTooLarge"
+          ]
+        },
+        {
+          "tcId" : 27,
+          "comment" : "output collision for different salts",
+          "ikm" : "5943c65bc33bf05a205b04be8ae0ab2e",
+          "salt" : "",
+          "info" : "be082f301a03f87787a80fbea88941214d50c42b",
+          "size" : 32,
+          "okm" : "bfe5a1669df67ed5638007f620875759af8c0242535a263cd4d17ee9bd9219d2",
+          "result" : "valid",
+          "flags" : [
+            "EmptySalt"
+          ]
+        },
+        {
+          "tcId" : 28,
+          "comment" : "output collision for different salts",
+          "ikm" : "5943c65bc33bf05a205b04be8ae0ab2e",
+          "salt" : "0000000000000000000000000000000000000000",
+          "info" : "be082f301a03f87787a80fbea88941214d50c42b",
+          "size" : 32,
+          "okm" : "bfe5a1669df67ed5638007f620875759af8c0242535a263cd4d17ee9bd9219d2",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 29,
+          "comment" : "a salt longer than the block size of the hash is equivalent to the hash of the salt",
+          "ikm" : "5943c65bc33bf05a205b04be8ae0ab2e",
+          "salt" : "329f445e7de8a156cf26a0208dbb028d9de6ef76b8de67ca634f4a5a732138a1bd436a7b345d7a0314c7ed0a00b0d34ecad2cb8bd141e2ecc1c77e237094d55154",
+          "info" : "be082f301a03f87787a80fbea88941214d50c42b",
+          "size" : 32,
+          "okm" : "ef793d5a62169cc1911fe5dac7ddb3ce07404e8299296f7c139442b721a75ef4",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 30,
+          "comment" : "a salt longer than the block size of the hash is equivalent to the hash of the salt",
+          "ikm" : "5943c65bc33bf05a205b04be8ae0ab2e",
+          "salt" : "ff881c9fd53adc0535d68f4690bbbd4f4990c7c1",
+          "info" : "be082f301a03f87787a80fbea88941214d50c42b",
+          "size" : 32,
+          "okm" : "ef793d5a62169cc1911fe5dac7ddb3ce07404e8299296f7c139442b721a75ef4",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 31,
+          "comment" : "a salt shorter than the block size is padded with zeros.",
+          "ikm" : "5943c65bc33bf05a205b04be8ae0ab2e",
+          "salt" : "e69dcaad55fb0536",
+          "info" : "be082f301a03f87787a80fbea88941214d50c42b",
+          "size" : 32,
+          "okm" : "2a031029e1b02289917618b7e0dcaf0226f84ff1a5770896c92e42cbe6d27d00",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 32,
+          "comment" : "a salt shorter than the block size is padded with zeros.",
+          "ikm" : "5943c65bc33bf05a205b04be8ae0ab2e",
+          "salt" : "e69dcaad55fb05360000000000000000",
+          "info" : "be082f301a03f87787a80fbea88941214d50c42b",
+          "size" : 32,
+          "okm" : "2a031029e1b02289917618b7e0dcaf0226f84ff1a5770896c92e42cbe6d27d00",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 33,
+          "comment" : "a salt shorter than the block size is padded with zeros.",
+          "ikm" : "5943c65bc33bf05a205b04be8ae0ab2e",
+          "salt" : "e69dcaad55fb053600000000000000000000000000000000",
+          "info" : "be082f301a03f87787a80fbea88941214d50c42b",
+          "size" : 32,
+          "okm" : "2a031029e1b02289917618b7e0dcaf0226f84ff1a5770896c92e42cbe6d27d00",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 34,
+          "comment" : "a salt shorter than the block size is padded with zeros.",
+          "ikm" : "5943c65bc33bf05a205b04be8ae0ab2e",
+          "salt" : "e69dcaad55fb0536000000000000000000000000000000000000000000000000",
+          "info" : "be082f301a03f87787a80fbea88941214d50c42b",
+          "size" : 32,
+          "okm" : "2a031029e1b02289917618b7e0dcaf0226f84ff1a5770896c92e42cbe6d27d00",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 35,
+          "comment" : "a salt shorter than the block size is padded with zeros.",
+          "ikm" : "5943c65bc33bf05a205b04be8ae0ab2e",
+          "salt" : "e69dcaad55fb05360000000000000000000000000000000000000000000000000000000000000000",
+          "info" : "be082f301a03f87787a80fbea88941214d50c42b",
+          "size" : 32,
+          "okm" : "2a031029e1b02289917618b7e0dcaf0226f84ff1a5770896c92e42cbe6d27d00",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 36,
+          "comment" : "a salt shorter than the block size is padded with zeros.",
+          "ikm" : "5943c65bc33bf05a205b04be8ae0ab2e",
+          "salt" : "e69dcaad55fb053600000000000000000000000000000000000000000000000000000000000000000000000000000000",
+          "info" : "be082f301a03f87787a80fbea88941214d50c42b",
+          "size" : 32,
+          "okm" : "2a031029e1b02289917618b7e0dcaf0226f84ff1a5770896c92e42cbe6d27d00",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 37,
+          "comment" : "a salt shorter than the block size is padded with zeros.",
+          "ikm" : "5943c65bc33bf05a205b04be8ae0ab2e",
+          "salt" : "e69dcaad55fb0536000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+          "info" : "be082f301a03f87787a80fbea88941214d50c42b",
+          "size" : 32,
+          "okm" : "2a031029e1b02289917618b7e0dcaf0226f84ff1a5770896c92e42cbe6d27d00",
+          "result" : "valid",
+          "flags" : []
+        }
+      ]
+    },
+    {
+      "type" : "HkdfTest",
+      "keySize" : 160,
+      "tests" : [
+        {
+          "tcId" : 38,
+          "comment" : "",
+          "ikm" : "e2865d6bbc1abf6a815067edc4ee7aa33c290d5a",
+          "salt" : "",
+          "info" : "",
+          "size" : 20,
+          "okm" : "1c9f5d2c19e47feddf19af9bbf38ed6aab1f872b",
+          "result" : "valid",
+          "flags" : [
+            "EmptySalt"
+          ]
+        },
+        {
+          "tcId" : 39,
+          "comment" : "",
+          "ikm" : "8c177ab5f40e9c57203883562f01f174070ccd97",
+          "salt" : "",
+          "info" : "",
+          "size" : 42,
+          "okm" : "07d4aa3e002dad7940089482d10e80b349da499fe7d9530b27a8dc5c61940bb44aa703fba340d21c1fec",
+          "result" : "valid",
+          "flags" : [
+            "EmptySalt"
+          ]
+        },
+        {
+          "tcId" : 40,
+          "comment" : "",
+          "ikm" : "e842a4fc1a147cf2f87de9bd5a42fce6457496f7",
+          "salt" : "",
+          "info" : "",
+          "size" : 64,
+          "okm" : "5f426da341127db39b959cd77c13cfa4a7a29259f105f2b181067492a54ba259020a5289b0fff0ffe0b9f72606bb980c929a1aa37255d3cec453bdfb26a3ffe0",
+          "result" : "valid",
+          "flags" : [
+            "EmptySalt"
+          ]
+        },
+        {
+          "tcId" : 41,
+          "comment" : "",
+          "ikm" : "5b870ee1bb97ee83f67fa7335b4a0f9dadc80d12",
+          "salt" : "",
+          "info" : "0a0dfb2a6e051441678788bdec04cc1b63ebe1f4",
+          "size" : 20,
+          "okm" : "31aa4cff955a0bc5884e1653087f9d97e284775c",
+          "result" : "valid",
+          "flags" : [
+            "EmptySalt"
+          ]
+        },
+        {
+          "tcId" : 42,
+          "comment" : "",
+          "ikm" : "58ea7ab33acff514ec08f41e59c17a3c66c1ceef",
+          "salt" : "",
+          "info" : "1cf9e25bd70c5546ea7a79eaf5d90cacf754c4f0",
+          "size" : 42,
+          "okm" : "16ec1734868565540efe2967cae02d8be26a86abe83edcb4b599f08e016b25b925660179b9dcbf0bf07b",
+          "result" : "valid",
+          "flags" : [
+            "EmptySalt"
+          ]
+        },
+        {
+          "tcId" : 43,
+          "comment" : "",
+          "ikm" : "e8d20934b9d320458f4854e2442e2f0fa092f461",
+          "salt" : "",
+          "info" : "4425999958aa3cc629300c25ab15be8cea7a4277",
+          "size" : 64,
+          "okm" : "ad2bdb5383dc53258ca2051b26c53adc156b31acaf61ecef7d0ecfa14b81b0f53b1c98ce28ee804e964f8b106312f429670287ddcf5bbb67bcbf96ac66c242b5",
+          "result" : "valid",
+          "flags" : [
+            "EmptySalt"
+          ]
+        },
+        {
+          "tcId" : 44,
+          "comment" : "",
+          "ikm" : "dc9e488c684dbf0ac8ff1eefaa0666d413d258f0",
+          "salt" : "9afa7df500d7a17af1f44422d25a62bf",
+          "info" : "",
+          "size" : 20,
+          "okm" : "65580e5feab001f31405f812d87c7d8bcc187c78",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 45,
+          "comment" : "",
+          "ikm" : "34b85c341a04cbade472b3f7dee4de4d1954bf70",
+          "salt" : "b066b42acea664350a8448f8e064225f",
+          "info" : "",
+          "size" : 42,
+          "okm" : "e02ff2640000391f1fcb3d0fcec40150b20c5af7c3a0c4965281e1761539d48555cddb2cc35efd27ff86",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 46,
+          "comment" : "",
+          "ikm" : "44cc641e09f7d5642f7b6007ca5a1c0813319666",
+          "salt" : "69c0dde6c8e5bd40553a5981fad6ad87",
+          "info" : "",
+          "size" : 64,
+          "okm" : "81c3016fe63b57cfcb13ad04eea7e2f5ab1402dc489c20824271c5a95ac1cb9b0809d76d5d7437e4ac74a36c1693d964d37d10064649fe9003503197456dc4d2",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 47,
+          "comment" : "",
+          "ikm" : "88a8880cc2b73e73b3b6ca1d4902caf2128732c3",
+          "salt" : "0579f690ed32e57a26701a9f6877f243",
+          "info" : "6dc723df3d26f704067afb2fb6d95a66516d089c",
+          "size" : 20,
+          "okm" : "69614a2ebf14d74188e830ee5623c0e0366ea994",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 48,
+          "comment" : "",
+          "ikm" : "8408668b9d671121b8c7d31113f045c0d7c020fe",
+          "salt" : "679b30e6930a8ea3f076e317b9595d5e",
+          "info" : "b4451b0f1a217db703582881e86d8044d5f2e092",
+          "size" : 42,
+          "okm" : "6a6ee276cb321c6cf237360a7b30faab9060653ecad213a3aee36735e29164c6fc929b7f206ea4fc2f1c",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 49,
+          "comment" : "",
+          "ikm" : "e6715cc4ee13c4d999d8f8f500243c321f70b0be",
+          "salt" : "ecfaca2ea3301a992b4de081d9d3a4cc",
+          "info" : "ef17c9227a5ca654fbdb35dd00dd6dc77b6321de",
+          "size" : 64,
+          "okm" : "1532fbae2e75d854c96a0b172cbe40b91d36143a93bd1b68d26be85f19de06f585d8670190380dd0690f5fd168cd0c64bcbd99b8dcb9fda9eb345af917f75739",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 50,
+          "comment" : "",
+          "ikm" : "9a6b88f3f68f5a8e79903b51dcd733abaece1a41",
+          "salt" : "0226df3d66ee3abb275eb39c8ec3d3e12e9b87b67f85c552accc4279ec17",
+          "info" : "",
+          "size" : 20,
+          "okm" : "0b45a0d3ee381c5c1a33556af0a050c81a336f9d",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 51,
+          "comment" : "",
+          "ikm" : "0b9eaec88b2940a4754e83272cbf47fb6f86aaa1",
+          "salt" : "c1616497d49246400ba68242b635c67515d2528ee1c3b71b318b631f9bef",
+          "info" : "",
+          "size" : 42,
+          "okm" : "844af69cb0e4dbd1a768f69c4a5d2b280b645e48f11cf9f9dfd5930dacae47f5a8a0a58cda227747638f",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 52,
+          "comment" : "",
+          "ikm" : "c4717276e7c7f794c4ee333b2f7a2ab244be9e8c",
+          "salt" : "af4c63e5b554063e83e37bf730ffa401c696088ccc4f133a8695ffcbf2a9",
+          "info" : "",
+          "size" : 64,
+          "okm" : "e1e9d8dabba5f8bf934c933170abf15edfa69a19e32666503b00694a1952c38c16703c79ee41d76cc6219533876d162727fa738b949b74b8d04a880d7e917dba",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 53,
+          "comment" : "",
+          "ikm" : "5e43a900ee0d432c5fe6fc81db8d5f81a54e39df",
+          "salt" : "8cc815009350b0b6a924ed93e73c8f8c57a1105726663b72741b67209c1f",
+          "info" : "32460280e60910b10abee2e9f80a3dab48acbc59",
+          "size" : 20,
+          "okm" : "113ea70eb9eb87624ca2956afa5d5acdb4a5eabd",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 54,
+          "comment" : "",
+          "ikm" : "070c170fca600aa2b23618150ab9044bff7d4dcf",
+          "salt" : "f32a1cddb32693860eeb39a5d190f5667a303d5403712cdcebb575c6563b",
+          "info" : "c1b0971fefa0a23cf4b7185879475ebd8d83b9bc",
+          "size" : 42,
+          "okm" : "3184be87cfb54d3cf95b2baf96a415c470be4aaf40c38ecddfdc2ea113c0996f1e2c42040d4508ae9fc8",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 55,
+          "comment" : "",
+          "ikm" : "87a23208df5e66488d23f7aaa066e87bdced8e2b",
+          "salt" : "0488ffa08062f1fe83e9c3934f5688a2e17827f898aa5daa2d595f09b245",
+          "info" : "e4d66fa23a6020820013d94d1f8e84a58cba2a82",
+          "size" : 64,
+          "okm" : "26ed80390ef739f3497e5765f1253706e070a103201988099333c14a70c53762974117c2eeec6b90357e4f5d71f07151fa7d37af7084159653c745915aa23a2c",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 56,
+          "comment" : "",
+          "ikm" : "214746af12a669b726364027e9a1cfa40c18f8e0",
+          "salt" : "f65ab21816c5eaa5c9ce77d58608ab67176d2255438096f4b45779d15c2afda12718ec557bfe161e7fab89ebad4fa634cf73f2d12c884c4583e64d2b59b9d8b9",
+          "info" : "",
+          "size" : 42,
+          "okm" : "b7fa371a39453ea956670a412fe6c76bfa4efc0199b20fefd7fdcbd5bb506c9369de90b5d2702ba6e1c7",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 57,
+          "comment" : "",
+          "ikm" : "d509c509f91d78c33b9d661e6df1992b2b6ae429",
+          "salt" : "95ff4b20ade46bada320316dad7e2b4286e93dfa2a72c6366c5ddfe8ce2ff344729ea56416d5b53074c6d6c4eb4e4873980e5e4a4991d6b1497aef822e16e209",
+          "info" : "bea4f60eff1a0c6ab664ff3db2f774347920a482",
+          "size" : 42,
+          "okm" : "e3acc2fed4cbffa22a903ed7718017931584e6cbaf7c61234c27bc1a3fd383df74fdd354cb022fa7b6c6",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 58,
+          "comment" : "",
+          "ikm" : "71a4a7f2ccfdbfa5a907e43f46ab5ccd12abe98c",
+          "salt" : "4769ee2fdaa773b6f8293d45a1727adfcb1c8a95",
+          "info" : "4f4a4b68bb234db3",
+          "size" : 20,
+          "okm" : "cfb7a0e0dfca246a458c830c77eea7a98f8421a9",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 59,
+          "comment" : "",
+          "ikm" : "b1818c1e56aca23595c583b89a2bf39bf90ce9ef",
+          "salt" : "70aa181d4b639d67e8ae33881869c8e7f0f1e75c",
+          "info" : "5dbc8584e5facee8",
+          "size" : 32,
+          "okm" : "63dbd61113df62afed82f2cfdf336f224a528dbe26deaf2446bae9becdd44bee",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 60,
+          "comment" : "",
+          "ikm" : "2bf9f0f061cd37f97141853dd93fad6109bd9d1f",
+          "salt" : "51e306b1bcb7722ded9697541366d5c905ca9395",
+          "info" : "d1f3077fbe2316e8",
+          "size" : 80,
+          "okm" : "93b206bd2e38cd81ebfea96fa3cc0573f0f52266ecc5a47fd001cb0b432ed0c2bcb32dbd8d13cd909ab43c905bbd78eba3a976ee16010fc7c77c23c515964a73c19224ae555b5bb207d86073c903718c",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 61,
+          "comment" : "maximal output size",
+          "ikm" : "a974f779dfb38415d1cc69df4c2e7dac023e058a",
+          "salt" : "c2a82e526587f4849d37bcab274aacb2bc01529c",
+          "info" : "7a036703c77d7bd4",
+          "size" : 5100,
+          "okm" : "752d5f1fcdaba5f778ef92a8218c730e1d8e43845eb3e976fb05d51397a57f8b94e7cce3e20469283ec1b6b471bce8c1fbd280a3c49670634a47c877069a54f1e8b478bbd9b4662b314b326258334fa40c2d2b7ae953d71301aa309f14d7e54e658ddd259cc7bb05efa475c00630905396dd8aa5f8fe72d3af04f9fa844b1f0ea9975915073d544b3be33db8df48b9d328ef07a800eda472e38df3fb57de8564b2460d80cf0539d5b86501178314704d9f6af54dec9b06313f9cf85112b05f6351c86841214f5f4d7a7981bc3c8f8d68b9ccd8a81e44e3530739409b1a6fd8a6ea91a5f7bc5b91690e423cad62de26437c5c43c99ba84d84d34e83c34a0b2df6449113e5e3bc602e3f07c3ae2c08416d304308deffa44039212f1c8bac344ce1787232d6628b225f0d624574b977371a611c56515c449b324d2fe9d4d3215ffa95753a3aeb2608087240d32bc8eab576a21b37526d9e35917f512ac886da5a3302f4b76b4b6868e35795a44a0ecd4d23a4f252543ea3bad81d337ad13be1ab417a7967aacb48a564808c225919909ccc33c0f34e8911d59c017b3b279d0a176bdbb77c3c11b5a2c0a91a0e67a4c8a498fbd563ee49cdd3b9794c38efbfe1a45d110b3705070a2da15e010ac90b4b4e0a6863acf20c49c4be0d596104925432678dd39a2f9117fc6579e42c3b245174c2aefb5e63308ba372152596fd842304c335a0010e7c3965829b6bfe4352c41c40bdf1d55879e2c3d30c7e6ea892f5b0832f5fa504d20a202ef1a91baa70ecab57684168cf02224ff45af135da178fb4ca48c03865a9857f62d280272e182c82d53cd0b9ab11620e7edb1a3f9e9df3d59a3b01468208651ec3c53b9e4c49f66ec021b5cd4d47bc8db46132c2ad3e0aa9124b312c6b5366f2108c2a74a9876e556182dd96731179c5c6e6519d4dd83d64e7a49c6b70a96e89b7baab690e15e1263e93434b9b9f4f1ca2c53edee06066d69724506493d216fb44eb6096e35f205bbe0fdaae76fbcc2da07891933b864881d331b49bac09f6a98dfaa2d32fdaf36717017c61105bd1b0d238313b1916ff69a67c5c51da53108d46ecf651aff07a106a09c8fcfc3c6b9e22255f9a95b7e804c1b1678e11050fe6f50c7c53b339c89de46ffa605fb3174ab6cb92f9ab8daef7a5aca41497f489f573269b361efe1e0703a75b91516a88e123b2e82a989e0dbe4e69e37ddb9e20864014d9fb6c6040f2c5558cc22c84b1e8286e0d46400361820a39afca673f898ea57c1cbb9c2d0d643e32b1837a153f70aca708775b84605f60d8d2d0200f55a4a4eab235489c391da0fb885a6948965d5144a85d33fbb795caaf2995338ff206638be4a47faaaff20b79eed27096b3da2c9996a8cafb7b28fe7df4c0be6daf4f32992f2223fb90fd6cd4a15db37a29b10c017e8fef57609ce35239c8017428ce6a4f069b5feaec6f1ac46d54450ad066a6da304b65feb5e9b1c905eb35e051e2ea8d5b8c37c6a75a110e351c2a16f61e944ebe2513986df9917b796cd632b26b533d79b26970d71e741ddd4f899195d036cbf03fe8e3fc9596b0f684bf79babf83d232745bcaa58350a0fa50ba99f87382a5346481f1c91ca8367ab0b4b8386f5aef3ef02f90d19e21f3f89fab1b614fef03fe1da6309c2f0067ba5430d79884359b5387a920d913f48c2f71b0b71d1196a9755b1b7a574b84655da35afe333d6babd3ce46c51167fbd845a0a105121a356234cf2704d4a585b817899d230c0e9f03c96f0bbe0c313cf00b031e5b0e7f2e154a122bf625a5bbf406c2d0d7c404fa1a23e9533fc8632401f01088ce6a8e8bf45aef62b3ccad031fc92c262e3197b11c8e4f97122306eac0dd9a7d2060ed1469c67dda2e086d470c2635dbce357b3ff0a1d5fbb808f33869d0b7a37e97510148f1d41a4c53cf4f04069131ba4bcd48d5aff3f484d51431d7e717e8bfec270775a6336b39c4b314d0ce43f82136458c4344953a2ed9d42b8335ffd23b260b026b213156cc6d9aa512aaa90c6d59116aa78404469756740d0eb232b38fd5268b88c6dd04e25eb7c122c5470c65d48e90765012c3a29c3aa692eeb856d7e33a46661ccc2d9dc1d6fb99c8f19f7fe77a0d042a34124057ee4ff8982e45ea19c7c257547b8a4b46a1f042cf8b42bf045c23628b6998553be1d1fd64464c144251e809698b8b7d095a2a45df7db6b6382fb3818ec3e2bff53956279930c7a73dd4477b6bdc53e959dcf9875ceecac88aecb5dcaeedfdea18ae79b41c04f675a9ec0fdf0b8113741a91cf8f3627c83f78f6aae081d6d4b2ed6e08427528e0bbc8ea52dc8b8e6c5327d9c9fd3f09b772ead820b7b4e2b71b5ec579775ff16b978709a7e17d78ef50998b5858cd0cac664e4b341995535f11888b09d8b028ec66961aafb871c12dcf5c6a30514bcf677383f56ad36b8e1ca42f1c4dea49611f4fb4eb57e5724cbf6767c57213767ccda73a9215802801f4804e68d6f7cf35089092bb12da8b091ac90a242e5feeafb576d7392d829b702651d310544d9875edf4225449dad035fcb3473b704650f9ccf48ace3f076abad1797e5ece1ce0fc6181be66457d6c330be1bbba8547b547bb7512645f92403f39b66611bf8f8879cea8421dad5c076dfc5e68ed5c2e8a7e75e47867c6f30c7f44b178a4ca7c9036d0a8e907c9bc12b38ab2f25cdd320046b55e17a2b4f5218b8cf4228c7d4755acf1d188a3795998209a3b2fff15d6c0994da88cb42b9e06de60824f957b2a2299af5774856de93e7d9f88f4e2d833dffb431190cbecc47a7f3c172cd80ce2c496838b6558062c4f60dca3d0c3a754829007fbd462a1718b205214e797b03e834d36c4877fbc6f7bcf091cd905dd4797fc709967f0f0b612311ffc0126b07a09d54d3a87c19e5ff2ab1fa9a2c08c0931fe94be2f334d2a4ac02c3714ae8be23fc08de5d067871438d3cd9f794af08f81fe4921454410dff0ec370fee9af3f29d9f4bd4a6b3a71539ae87e94609b1decd20310f917ed2143c622e239ee3c9de096a79102b86abcbf25b689c2d9fcd9ef5f7d16e197fdd2d640dc9ddf6346d639725efcdf293dfd070ac0c1fb53bbe9e576509174d11bde19cb8c14ee9efbe297f4fabebdb600233abfbe39ee670ea687a9731b9677a59a50f1ee4d0828f1dbb33031df527c3064c6349c51589273218da3c67833a0e86cda700f2d57337ce71d2ab37919b9be78c2895f52b82c088f662c5e8e9d474aa0922f1ff99a106ec931f5e74cdd468a36c34ae0074fd9bcb315fa2ee0c3513dbe8a681fe1634331a885d86bf44972bc94e79a7eeb068bddd629684430e757781992c88549158345557d49039ce61c4f1cf76e6d0ba3279f99a8685d83421d85d50ef5ffe03b2bf414099c34854d39d6938630ca33f0024530ca85e1d590612a5d8b3c2efede0946621bdb2d51da9b8d3bea6d9b22f2f32f764e11db88b360c4ba4092ee7711ea895736f13a1e29ef7480dbfe8257150b80d6c2e3bc7595c3807e1d9b127f354951155da4cc89e13dd694196fcccc62bbc192a1296f2e44b367c88ec4eaf578bc6aa85d0e03c6b70a15344fd649567f6968a96b518e0eb3f981328b1dcbf2a89c8181395fc7ade3061e3106826c9f0bcdd163d9a5bc9979f9b671ad6a6b57ed5e930f763a593b01c10fcd7e27ee79a7b28d62d5f110ed3f96be8468b5922735d99893b63a395aa0b8e0c5ec8abdfe76e5ceef73a5b7326dace9fbc560fb0c50939f45e849c9519875febe765e6f08e5e65c9d551743e36ebbd34f83c22a2c3f89e7056380b2f5d2303a21fea83e445b07e25e45b11299893b73ad73bdfa574ec51641fd8c1bf1aa2051f179ce9448b6b6d32068684c59ae9afb9095ce0eb42ed78281e3fbbc51ca634676b56725b770f7f46c383154bc398f9cef9aae65a04d334700c2c479ab6170cdee3a75a72071087cb22911db25489e64db66707149202468c10b5b3ae7b26c26f487423e411f849965ad2fa8632993be938ffaefc120a1dade3296624d51a5ef1295f455792b89d223916a41b24a6bb3b8ef848d3e57dc4e0e7fc2c2bc5eb0c187578ebd6def2375d4f7b85b2cb10a9e043a7aad0cbae17609dbf43ad3759bf7f6e32fdea4ecd614a9d6dce4f5f204adf86f6a0b73607fe9efe66b2335f9545a93d56ac15a7c763bf1c7246c8f3208f2a6d16bbbe93fb6f712c6dcdb98b25765eeb56c54871d4c2d7c387432153d848a72d592e61f4a1715a9282a8b97f9888fac216fbef2a784f148c9da8a3cd74ecea787fb4996a5fccf6a044ec138a2df359d23570d99b5b43802d0bb0f26f292f62629dcefd86b105e4f0b3258a446ddaeb5a5c52968d49f212b796ca0d2867c03e613558b5854884c96dbe26a1a8db0ff2af83057dcdcd651751d42ad08b366a8a8c8789754a747c7093bf84ca7c537abc024f55279a4a32a77287dd37703093871988f4e439a5aac058a1dc679904d11990c6319b163a41d91be270884b14c528a297556c78118842ff227e63f2d2411c26b5b5c08e1e21b2ae65b2d8fd8d6755b74f7bffe6a247861abb8e2f67802a32fc30543e3b09c01ecb628a8062a130c85a1f89c1b99ee4f87937c0fec871dc6cdb5faa0cde40f187161e2395207595a10863d9de3c77f67d330bc4eca8d296d459fc245b66ef95be412cc34ea63a4b6ef54667de97ab642f3e04ff1d52fd0c53d91aa4c2a099e95c674cb0062ca64a787271c6f3d1f7a151e49564e717093ccc316d201109655a951a2cbc1452d6c9ad6c8a85f0225f1864448e184f6f345f119ea794633fa4ed14f73cb4a93a565a32b23263ee98d6d7ae6d7e72747d0e701d275549cb0e8cc1836473bca962ed3f1634e12336d8e2031276953da8dbaadf43febb2bbc185deb4e4b6bd5b5ae36351f19b3d5fd4eb224185e06ddd7dd9002543d0d165884a48cf560e68decc251cd308eff3fa3d605e749163920c648311f0d458a6d2e162bb54c25eb4ae35c0388c917155eac3e39600a5f56221f8e2874f19dd3620d5148f40be1905a053c7da299dd665c2a2aed1e72c0b02278c6e67f6ec94b4eb9986169b15375ef2cdef3b8ded36ef3f70d2fedbc33ca04f0ecc8214bb754e30bc9596f1425e318d6ef012d8a5360e85bce81a10b4376f9f668382c5453338c0e4ef03a4787bcf971066e1827925ac3db01c8a26abe8270e727d5e946785503ce3e18a1e01c5caab42cde3770d3c133e4504fb040303ae41d707410bbfd76850e8a91fed41759fe84d12c16043a8cdd8d61b999b0f964fe3c3829e365463382ac4e88b50e0a0a25d42df3dd5c9216e117b45ac9168a5190fa7356a050970257871f1e90760b5156ee694372e2751a2c79e31a49a00f546a1e9c829df7066a0b015bde5caffc7f209f6fc888cb5801613b2b7bae1f4fa7266187e6295f3f7e780b86c401cdb965228fc1e343eb18c57ab92295e4fa9f9f6a1de3f4be78453ea916aba396ca6fc77c4694ade2216d7419ea6817ca28e103d36833dc6020a5131a9c7573d8b5fa7b145fad562a061bdd1fa713a3a2cd19bc5d0f58fdb3a10ab41b984ee7bdce5ec312f0986a30bf9eccf5366e90be9aee28f16bd8fe80d521b5050d352c79389eb3c20f83bc3b354633f0c74264761426f3ac09302cd64ecf2b8a28997b40cbcfdccba88c95c4fb38b15ba75295c3540c9d5c61f5f3b33b6183982d0683638109ac91cd77ac59fb9ec61de4e4e753b2731443556848b6c72ba29d436021e12bc33da2049d50cdc955dc13b03d7b7af5b6e646e2d3d1d66a95f19a107d827c1b6cb1a9df3ada381f18b2789eeacf7c48a181bbd29308527ac6c04002029583edc71b9c93d9ac1e22db647f41f8de22641526c5e9fe09b0dd5161445b7c8a574f60c59487a99dd020e01001d937fd6bef90977948bb99717ed59fdfc59ea2a75ebb3ec627470e6dece5a5a4f5b77d453099ec398397019bf38e70f8b43ad39524c55575778136f8715f61043fa7f26bd8deb04a667b4a524c956f625c1cc40b125a73a7fcb8293f7e85e0cb213d3a70eef24bb8ca8fc9c528ba3e99e6288168f494074f0c35ec8caa57932e626f227f571ba3e54cdeae80456b0aa084f91edd2227c4a2fc9a88b070aac07c1356d6add76b1df1cf8bf2220eded9bfda697867e2a8db619f535e3e71593b3a47ca8f7ab8c4343288700dd322317e28d016f777ebfef45915050315e9d7d43424e6326486f4595167ddb226134e72685723564ef8cd5cf3998ecf47fcea5c9e794366d036a263962d39a97aad98c2c183501d480a2b0492f31642ded1cac194e06ea4bf1ddb73d327d526d63bafda5061a6ed1f056959c260ae7371e70bba49e7e002f2f4a1107f5e3b3575e1b80254b637340a0e5ad28f04453a87450f9d8de3e461cf226627c78a3c0f9a022da96c77122b3d00f50a023148d0736dfd694329d5d47381f4f090f3822476d9644024f4ddb95efb0516d1d036a4224c6797468a3de72cad2a0a61dbff3cf8bd1bd77a5e000f96c2487ab180d6c14592bdba2d2ee7f0877ab62c9bbb59c2d420bab61b760f86f2486d4ebeca62b8143ccae97ce1aada007b24fb923c7213d4e824b328a044190c8b668d58208bdcdd14b040c19d58f11e6a773a6f5ab35e4f81d5558259d5717c81798d5edb538b1767e19881f1e3c4cd28a8b27087a78472f4b4d146216ae001b18d5d0d7eb5f4575b23334ea97e4aa99ee4315a34a52cec41856ee6b6c3f203f78172eb21d9af1e75b42b5fe3a5edb5c700a736fcd25fdfed833078f5d2d4f1e6a3e37036509db0e69ee7054fc9245a9d7ef08c2d54851b5be1ceabedac30b21c1c2540498e98080670e1fdd915430ecccfef3bb3c8bbf9e97e63a664841e8eacea6fb770a4ca66bc61cd317c18455857f561a3d4413f66dff4799dd1d0eebb380967e67b657661ca437da3be1838f2577ebcb0bf43977a6e4c570f0a6af142a9c385cb3371130ba19edb4f4b1e47d5ece1631b4685dd0961fe1ddad831f4d73df810ba636f2f6ba2ad86c5e333ecf2e67f6276252e301d648ea8cefb2c906b635e962aa8f237bd8f782a87a3b2e6434633f024f90b5c44b555831d659d5fc98c295d8abf3b6b5cc7da453bad40c0bb5258860f05ec8ef698848a2f9b7569f9b028278eee239968bf3be77ab9",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 62,
+          "comment" : "invalid output size",
+          "ikm" : "7b5b2acc573537f4bbcca4bb02d06c902803ead7",
+          "salt" : "cfe7614e2db108b12f077ff8e58e2b80718d981e",
+          "info" : "26a8336ac6218c2b",
+          "size" : 5101,
+          "okm" : "",
+          "result" : "invalid",
+          "flags" : [
+            "SizeTooLarge"
+          ]
+        },
+        {
+          "tcId" : 63,
+          "comment" : "output collision for different salts",
+          "ikm" : "624a5b59c2be55cbe29ea90c0020a7e8c60f2501",
+          "salt" : "",
+          "info" : "5447e595250d02165aae3e61fa90313e25509a7b",
+          "size" : 32,
+          "okm" : "eb919ce9c8382ba88195f4fc48df903947f98705bbff58d576ac9bc129034a18",
+          "result" : "valid",
+          "flags" : [
+            "EmptySalt"
+          ]
+        },
+        {
+          "tcId" : 64,
+          "comment" : "output collision for different salts",
+          "ikm" : "624a5b59c2be55cbe29ea90c0020a7e8c60f2501",
+          "salt" : "0000000000000000000000000000000000000000",
+          "info" : "5447e595250d02165aae3e61fa90313e25509a7b",
+          "size" : 32,
+          "okm" : "eb919ce9c8382ba88195f4fc48df903947f98705bbff58d576ac9bc129034a18",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 65,
+          "comment" : "a salt longer than the block size of the hash is equivalent to the hash of the salt",
+          "ikm" : "624a5b59c2be55cbe29ea90c0020a7e8c60f2501",
+          "salt" : "1a08959149f4b073bcd902c9bc4ed0324c21c95590773afc77037d610b9584806aeeeda8b5d588d0cd79e7c12211b8e394067516ce12946d61111a52042b539353",
+          "info" : "5447e595250d02165aae3e61fa90313e25509a7b",
+          "size" : 32,
+          "okm" : "bbb1f0bcef58029d47d31d32b5219f5c89e6a108402fbd7f35076455a7f6dc8a",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 66,
+          "comment" : "a salt longer than the block size of the hash is equivalent to the hash of the salt",
+          "ikm" : "624a5b59c2be55cbe29ea90c0020a7e8c60f2501",
+          "salt" : "36d0017c873ac651fefae61522d41d97ecc66dee",
+          "info" : "5447e595250d02165aae3e61fa90313e25509a7b",
+          "size" : 32,
+          "okm" : "bbb1f0bcef58029d47d31d32b5219f5c89e6a108402fbd7f35076455a7f6dc8a",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 67,
+          "comment" : "a salt shorter than the block size is padded with zeros.",
+          "ikm" : "624a5b59c2be55cbe29ea90c0020a7e8c60f2501",
+          "salt" : "af856d5eed5c77f4",
+          "info" : "5447e595250d02165aae3e61fa90313e25509a7b",
+          "size" : 32,
+          "okm" : "dea2015fd2e84a9ca599dc622fc9c87aab224569261290a63cbed6f7f61939b6",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 68,
+          "comment" : "a salt shorter than the block size is padded with zeros.",
+          "ikm" : "624a5b59c2be55cbe29ea90c0020a7e8c60f2501",
+          "salt" : "af856d5eed5c77f40000000000000000",
+          "info" : "5447e595250d02165aae3e61fa90313e25509a7b",
+          "size" : 32,
+          "okm" : "dea2015fd2e84a9ca599dc622fc9c87aab224569261290a63cbed6f7f61939b6",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 69,
+          "comment" : "a salt shorter than the block size is padded with zeros.",
+          "ikm" : "624a5b59c2be55cbe29ea90c0020a7e8c60f2501",
+          "salt" : "af856d5eed5c77f400000000000000000000000000000000",
+          "info" : "5447e595250d02165aae3e61fa90313e25509a7b",
+          "size" : 32,
+          "okm" : "dea2015fd2e84a9ca599dc622fc9c87aab224569261290a63cbed6f7f61939b6",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 70,
+          "comment" : "a salt shorter than the block size is padded with zeros.",
+          "ikm" : "624a5b59c2be55cbe29ea90c0020a7e8c60f2501",
+          "salt" : "af856d5eed5c77f4000000000000000000000000000000000000000000000000",
+          "info" : "5447e595250d02165aae3e61fa90313e25509a7b",
+          "size" : 32,
+          "okm" : "dea2015fd2e84a9ca599dc622fc9c87aab224569261290a63cbed6f7f61939b6",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 71,
+          "comment" : "a salt shorter than the block size is padded with zeros.",
+          "ikm" : "624a5b59c2be55cbe29ea90c0020a7e8c60f2501",
+          "salt" : "af856d5eed5c77f40000000000000000000000000000000000000000000000000000000000000000",
+          "info" : "5447e595250d02165aae3e61fa90313e25509a7b",
+          "size" : 32,
+          "okm" : "dea2015fd2e84a9ca599dc622fc9c87aab224569261290a63cbed6f7f61939b6",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 72,
+          "comment" : "a salt shorter than the block size is padded with zeros.",
+          "ikm" : "624a5b59c2be55cbe29ea90c0020a7e8c60f2501",
+          "salt" : "af856d5eed5c77f400000000000000000000000000000000000000000000000000000000000000000000000000000000",
+          "info" : "5447e595250d02165aae3e61fa90313e25509a7b",
+          "size" : 32,
+          "okm" : "dea2015fd2e84a9ca599dc622fc9c87aab224569261290a63cbed6f7f61939b6",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 73,
+          "comment" : "a salt shorter than the block size is padded with zeros.",
+          "ikm" : "624a5b59c2be55cbe29ea90c0020a7e8c60f2501",
+          "salt" : "af856d5eed5c77f4000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+          "info" : "5447e595250d02165aae3e61fa90313e25509a7b",
+          "size" : 32,
+          "okm" : "dea2015fd2e84a9ca599dc622fc9c87aab224569261290a63cbed6f7f61939b6",
+          "result" : "valid",
+          "flags" : []
+        }
+      ]
+    },
+    {
+      "type" : "HkdfTest",
+      "keySize" : 256,
+      "tests" : [
+        {
+          "tcId" : 74,
+          "comment" : "",
+          "ikm" : "b18e35e63cc4fe4117bf2754ec3f9ebb5346dbb0bf6d4e5f2422418771816fc4",
+          "salt" : "",
+          "info" : "",
+          "size" : 20,
+          "okm" : "8842b25685d615b84d2aded432bc637a6291bf72",
+          "result" : "valid",
+          "flags" : [
+            "EmptySalt"
+          ]
+        },
+        {
+          "tcId" : 75,
+          "comment" : "",
+          "ikm" : "236c2ba20c72242820f63d3e9c20633162c1cb048a45dea13861e8a138b9640d",
+          "salt" : "",
+          "info" : "",
+          "size" : 42,
+          "okm" : "7963ec539686050e96da3e3da97ee1fb997209c0c2d73ae0750032cab8b6ea4d3682568753815b9da183",
+          "result" : "valid",
+          "flags" : [
+            "EmptySalt"
+          ]
+        },
+        {
+          "tcId" : 76,
+          "comment" : "",
+          "ikm" : "f2cba42dd82acb5d2d569406815a3769b7becb13fa48537fa7d7d5e121081d39",
+          "salt" : "",
+          "info" : "",
+          "size" : 64,
+          "okm" : "e8687a27812286db996d44fe0c21dbe772bf3589d40b36845cb8585f7d55b433d35dbf5bd566ce742eb3c3e9975821cfd67ca223a2f8a53b4575489dfb7ba116",
+          "result" : "valid",
+          "flags" : [
+            "EmptySalt"
+          ]
+        },
+        {
+          "tcId" : 77,
+          "comment" : "",
+          "ikm" : "73d97f2ffde01b447a5b8573190a8eb4f87f7ac04482836143f780ad876bfffe",
+          "salt" : "",
+          "info" : "74d2301c5aca2441372cf6077bd8806dab3e8721",
+          "size" : 20,
+          "okm" : "0f0e082b4d3afbd94d5aaa583c0ad3d8b746b9b1",
+          "result" : "valid",
+          "flags" : [
+            "EmptySalt"
+          ]
+        },
+        {
+          "tcId" : 78,
+          "comment" : "",
+          "ikm" : "6948521434707e96fa943e44988d1ad409ec57e6594867e8193e9d727238916d",
+          "salt" : "",
+          "info" : "9eaddd1e7edb6b84c96fb5ac7e0d673a8f5084f2",
+          "size" : 42,
+          "okm" : "623eb8c00bc85148d561833bc44a092b4e05e033640decbf36a70fdba26987cacaba3c19f71536986348",
+          "result" : "valid",
+          "flags" : [
+            "EmptySalt"
+          ]
+        },
+        {
+          "tcId" : 79,
+          "comment" : "",
+          "ikm" : "b72b3854923b8a0048497a86bddef962552c8f6b2c72b2b2006a1820fea5c6a9",
+          "salt" : "",
+          "info" : "113b708f7522ec3b362999db18699bf7871e3b8f",
+          "size" : 64,
+          "okm" : "0e9718ad1fa0c5501b42ef7a9b1bb1e4a985f834d44aa10cd77510c182dc2e948c801d5c6fffc92a8342c034b53c499d6af89f0e80ed1942ecee741195aec71c",
+          "result" : "valid",
+          "flags" : [
+            "EmptySalt"
+          ]
+        },
+        {
+          "tcId" : 80,
+          "comment" : "",
+          "ikm" : "44d774def90685c0e9a685fa50fd434c807d1a57896fa42f91778821fe232057",
+          "salt" : "0d7d3b47bf8484c8adab7f9c27c9584f",
+          "info" : "",
+          "size" : 20,
+          "okm" : "05a30d9926c5ae588f0694962837d40d412a0555",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 81,
+          "comment" : "",
+          "ikm" : "098ecd86354496a701ffcac8d589a1217231da3b80ccce4ef85762d7f3a2c211",
+          "salt" : "5232e5e4e2dd6133d46ebe5a8a51a0bc",
+          "info" : "",
+          "size" : 42,
+          "okm" : "d8c830bdab6a974b492da563d100201b3361de746a77fc29cb9b886a84aebff5eae86d9cf2ed5fbbd8cd",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 82,
+          "comment" : "",
+          "ikm" : "917ad396520e454a571ac39a9f6bc845a8920954fba1ac400cb2988cd8847ba0",
+          "salt" : "962d86949506450eaca929286ce5d9e7",
+          "info" : "",
+          "size" : 64,
+          "okm" : "c0d75cd597ac28549030c94a90a8935608ec1300577bc84fc09cb35a3cec2a60b98cfb5d6adab160a960c0032e470cf82a80b683c1580871334f248ed92beff6",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 83,
+          "comment" : "",
+          "ikm" : "1cbff2202268edf1985bc91466b80133644988c5e81368cf0995274204fb0aa3",
+          "salt" : "2bde6e33534731f52d39add940ff46f6",
+          "info" : "3e4f9c8d3d607c2ed43caa9e87e6ecbc307c6048",
+          "size" : 20,
+          "okm" : "6c8dd17408c8c2492537ea032874aba93e19386f",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 84,
+          "comment" : "",
+          "ikm" : "d00d6b4fe088077ffbc64127d6bdb9707a0f9061c0b873c334c3be0adaa7c2bd",
+          "salt" : "1647a044472179d454b8d2108e4a2aa8",
+          "info" : "4266351bad419173279c901aea148e8b1d99e50f",
+          "size" : 42,
+          "okm" : "e0d47f91e475fd3c8d53e9a5bb4230c0dbd7be0b96ba9ea66d9066291e0f397bf634d2699d935686d4c3",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 85,
+          "comment" : "",
+          "ikm" : "9a27c19b607adc8f152faeaeb1282002d3a2166894b7fe5d65829ecdcfaf73b9",
+          "salt" : "70d83929a6376a6eab859f0d6225f131",
+          "info" : "36356cdc28187c11cbb9046f9ce7502ab4d2ea46",
+          "size" : 64,
+          "okm" : "20e2676587655ee3c899bef116ad4515e947cb549c0fd5d0f3cc61335bbedc7518caafe1950000a067f67bc7bfe5ca81f021723013fd687a13b621613a0775b4",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 86,
+          "comment" : "",
+          "ikm" : "f5d1c855d3448e212d76d3927ec797dc439cb182f427064288452988ab79c83f",
+          "salt" : "87ef5da5400db731d658972ea82b76848004e70d3b22cec76c8be06283c4",
+          "info" : "",
+          "size" : 20,
+          "okm" : "a605589e0fe22ad6dee3e7910534a58f69d24e02",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 87,
+          "comment" : "",
+          "ikm" : "3f19b7095a6b3d313b59c3ba2c3a78d8b24f30c9ed4f8be9eb92f8eeaabd2c3c",
+          "salt" : "8f1f6c8e4f68830319ae859b4b1fa71f1d69552b0c3e53cbbad26293651e",
+          "info" : "",
+          "size" : 42,
+          "okm" : "f364e1b27fa697d6ebc5e2931ba9a4d81c42be447337a8ff519455fd5f89cd356bef5fc8b795334d6a8f",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 88,
+          "comment" : "",
+          "ikm" : "b1d396c69f14994dc8add0f6e0cde4455677ba9ee95ff84a142295f9177ee629",
+          "salt" : "7f693304bff77534b8246d832749387ecc0e8daeae11d77d022ca9e362d1",
+          "info" : "",
+          "size" : 64,
+          "okm" : "66ee99f5b2ce636fad989225301ad571d2124cd9c758042eb005a9f3ef091694c036a5975b39396877aa84342e26f8020eda23f0097b89ed7f3252afc87b37f4",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 89,
+          "comment" : "",
+          "ikm" : "003d1901a10c062ec44e0f2a94c544b7f53b33f1ea4679fa6e023c2d0a907fcd",
+          "salt" : "ed86cb8c8ba1c989f9a60a4a82c38be98c70e6218576b292c93fcc18192e",
+          "info" : "d5d3ef5beb9840d15efe9c778aefe38f1bf7bae3",
+          "size" : 20,
+          "okm" : "6924d12a17521e8a235a4b0df4eb8dbe3d5cf277",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 90,
+          "comment" : "",
+          "ikm" : "02e0647a4b7ccfc0d3ee7ddfe24ce69c02f51cbaa836b96cbc5a9c2885c45599",
+          "salt" : "f0862f61f2377ca34b76476ae21e331b114c7712aef501a1bf00f7e9cb79",
+          "info" : "4e9e27d971e76fda614fde15031f6664b97d4786",
+          "size" : 42,
+          "okm" : "3fae59261e358dfe04edd33c1b328ff656a3cb4fac2f1130c97d4e34f10777aa5fc3fd586c4aadc7dbff",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 91,
+          "comment" : "",
+          "ikm" : "92bfb7e31e839f109e6622b2c2c4f41ce84c9907172681920e7d90e80e2339bf",
+          "salt" : "ce869619607f71fde53ef55e18d01d20002e3f91a8b7584190fc6667b8d2",
+          "info" : "ff36776fc755722ff371f21cfb37a168a2731e99",
+          "size" : 64,
+          "okm" : "6ec989baee1db032c1867222e1f98104c546dc784329367a1e0ff4fe55435a88235a52786b6854f2fd809e1ec3d4fe836b9345474fafec29418da2e213a283f0",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 92,
+          "comment" : "",
+          "ikm" : "17632581c34ab743992cd99318889b32f92812bd37f41636b5fbbf2b12190c6f",
+          "salt" : "55e39431c83648867ac98eb7ecbbc8b41c5a5e774646b926a9b49c511915b0de1241f8666da198f6ba4bf7e9025e434b6d7ef794e7a563309303055fe3bbe769",
+          "info" : "",
+          "size" : 42,
+          "okm" : "2486d2d795a6be77f2bca215de895ac1b011bf84b58b07020136cf87972402243ee2c210902c33116789",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 93,
+          "comment" : "",
+          "ikm" : "045b4d451bc30c39afe0932f6cd62e65b4b2ae2cf1160f19e8ba1323f7ca146c",
+          "salt" : "b73682dda0fad41095070b2b26f2d7d98ac62202d918258ca9aca0f794ef5e4d23b3fc43c8cabf9fcb37ad9a62337fbce967fe24054c3bf891195858e53997f4",
+          "info" : "613e353162c6c1b12fb1477fbc54074ff7848a14",
+          "size" : 42,
+          "okm" : "7c9b85c582725a15a90570f03c8ba3be2c5ce553db3ff429fcf6eb58e3888c5dfdf29f003740301346c9",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 94,
+          "comment" : "maximal output size",
+          "ikm" : "a65a2526a0452a6bda7e16555658611216973b1e85412e0c6fc8f4e25168cc3a",
+          "salt" : "bd5cafafd71f517269ce6300208db7593c558639",
+          "info" : "af7eddefd083edca",
+          "size" : 5100,
+          "okm" : "70e1bf4b225a9a6828cd59bd32f1e83264b7eaa6123592002498497bde3f7386c1a42a1866a668c56916e3b3ab355b8807e21f79f0fca49d5ef88be9a6f157c1dc1f74a473212ce8f1ffd759fa6d301718578a7c2332c32d2d924d7ea767954a976fa40043e70c980626ecb4a3326e889a23d0c7267292161da339df633540ffee5a4ee5213e4b37ee302a611fc5130eeb5c0d8e18e7657081867deb121194b3e0c2186e61d4f58c89561de51791708091ae2b2aa2467d8969f67720ef1f6bcdf636cc015fb0b76d8085cf006f7eeaaad6a64301723aaf0a6279aaf1ee7819e882cd5a9ac33cf8b8f5e8b56642f6d540126010f7976b3a8a07152f17353919bbe7447126b004f6100d706627f00a7cd5660026064d50b11b7b487c1a2ac9ebcca2e4a590807293e8e46b6655d4f2aa170a4d42011f0cf406afc63c6685c2e6bb203fa1b80a90160fd4ea1ccc87402bf658cc776ce1133250a35a4c22a34450d180f4eabd9a63a4a38b67a91a4bf6f2c2ace2935e36b03d24566bac6446e0916af2a70675cca74828c5f70861c438d58dce384a3df4bff3c6f372996e2d104878d93b9dee0a7ee4c83d56c206b6d3dea1af2f9ba268303c6be86d99f0b576115f5523dc0918a54709189b3d1e458caa80ea376a3cf9ec421962b89e9ced740dc6ddf065af43afa9cd925ffa8c7d7a9a7643ca73890e490608ad77e0c9a9b98db65ddbda8ad76c8b2539a34370cc79433e0023ddf81bc8a83bea1ac4fbb181ee800bb5682d67fc9c607b178fb984ae9f55471bdceece6c3c5e6af9491fb7d3962bc8ab914f0ef65358a6cd63bee8290d581c1e0bf8b5c118642aa1bdbc02938773754cf6a5a3aa98b9012cebe9c87eed630496d27a28eea3835b7ff9cb51d779a5a60528d08b3ec23a31ec6b5603ddc85b18f0c6772e91019cb15159da61c5df0bc29c4bdeb2c68c66021196b8ccd12d6ca75180b1c129f9a75cd59fc8afc51574d2503ee76fffcf6ed6d46477b874665ef45e6ff04a916b67c89f9e57819c66baa782f12ebabd3a5468b5b729834b0ee0e782201235cc09ffa7f5293ca8d3ca347545e2f3f5806ff44bdc5c8d0ace63e947820b67281bfc1ecf36e637c430e1cf47e39b2ab5f47b4cdbaf60e6db884bf6c5200e0249f7c3e0ba814d6f0ccd914222beaa845884b00faf29b2e630c1a55e1fcbf5d5b3a6fa74dafac252647ff40a271a749fade39df7a1f86f046ca0fc618b649ce023b3a92b35e657deb8ce2d181f2ae6eca0989452853e4f2115567793748164c1cc0a114506cc3ba32bf682030003928fe9f9e00be2236c2b7173b33623452fbbf40c90e5085e90703dbcf1a7267422a68840c9010bbd49961ed0a935f5e6e8c1963ac04b851f0ef8716cbebc27db8868e78556aad4ed4b80e39443bc8ec25359bcc1737330be79227f136a0357475afc585c621a8520d0639fc750d1a44f243b553aab880025687a06947e45da0044a74ef4f352dfdeb629eb1bc1ea343192c68139e36c816f74cf3ae3e476a3652d1d6cfd02c0b84a99c728ec1a3b97f28fb5a3ce2b03c2eb8c0f42aed83e4f5891911fbf189dda44f302def860b308a9022b1c46800616ddd799ee19f7394e3ac10a305537d9f0659bc48fcc9d01996a1fda0df5597c60600cdd0299971ac4f1cdfc6af7de2a3f131c868714a24b3c0aff8162951852aa97a29cee9eb7558bd2f384065130abc4de58ee5b268aab6b2380d885e5c98d22138fdf77bff9fe2370eff28f22a4515341d9c226a6dded964086f3bcb5342acee09451c6257eeb434b61b8d93b0850d49e2d229fbd0bb84ba4efa3fc1c2d59a2e725a528fcdb44d43a0e1f5572d52b3f526581af49043d939e9857713d04ba2a96139e007b974b2971f71a0bbdfa76998f250802eecce869bee6e4bd3e4523c3b5d32a61c9f9aa1e0bc215484a4b11bc81ba3b2562ea49d08f63b46edfdcdcb7a496f414d80f853547ae94d8654de4729774b08dfe3acb94ec5ee2a940efef53bb76d2517ffe1acc915ea5c17652ec6651d3f7734cb8b7aa176c5f2e601dc42f0700357b592d4bc72c25e42ad9897ef1fb43bec5be51b7225e57b87732383d0274e1a9594d4cc22451611ec5de786e31a69fdb3c5aa4a857e02539f1655c542c84a32f40dffc4ae8d83ae8c8f7e54dfcc4362fb4c8134a9137836f0ea40b329bb7040eacb31e7b362010fda9fabfa96622db22316c3b297e26d2b867bdee55f600e97d338cd5a2969f38a76f968d9b76aabc392bf1089c0f99dad174b6f8b8e9897bbb0680e9fb08b39f1b9d618b81e1295b546c3ddf7b8b807950199d9fb48a3c1754d97344908e8a4831477132cc7e8525a5fbbe15608619dd369ace1f9c73c67224358f4ce07dbb3cde19df4bac7bc706f18df54c17c3a8284610ae25c00913edbaf2c9fc8ef582ea3ba5c50b7d15a93acc50f632ce4473009da29a6e1852e752a15e6b7c56f5a0dfe65e5cdd00edd363469dcb9866397646722c6ae0f48502dc75bf8381225a17f3533be924a0864f60ba58341a75b1a83404d1d4380f0565c3d55533e858d4c9f427c712965c015fe91589d43a4ef4e95f4bcff164ba8752ed83cb57a7b460d2c9796177433588f800fcd518c5e99baf8ed652e61c1fb4d47a882174e4a0d2d03078b2316327799adb88d07270fc7c9d7919b6be24bbbe2ee7999ca00eae4c64c19e217196c8df9a45d7a9009f11444340eac6454db20263873c86d884d466dd75ffa5315a693fca6ed2af24452a48c9a5e36c1cd7408f5e6a8fbc41e3653986e0f355a05288c51d1f911c494540e9eb164e2cf270d4d07c334a47fdd3d870a2fe69516f8b4ddbc3c0f21179c3ba3863d2851ee1ff0f336a23add665ddbbf7a8168c6e04119eaf4944b132df977cfc826cb53768c275848a498fb3c68a352c1d0a51701bdbe7194beb546c6f9cca343a7e3d86aa74cae125b926dcb5037bf7b3ac08e15c024b1997c4d01f95fc1a941027f8efc6b8abf34c6b25aed0b4052c0bf15aa56812d90c7a43856d9134dc1140788dd2300c555a0ede7be750bea34dd3f8ccbdba143abf975879f9e374b6d417fba64e22b5c848189173a9f972176ca68e2591e4be093e51ba3775443101767db9be8dd92953ce03d91a9f1bb3ebf0a3bdc434be0197f527da23927d8ab4ce0613e363fb7acafa3f2b11ad4c1f12a1990c431bf2553d936d98822a1c893a41663b0ccae8541da379d14895584151c57605c76390b1c91dbc752acae6ad571ab4d0a47e2a4db7b88fedf2081e1c0bb0cf5f60230129711586fa5c99fd34cc3816fcc30644195c4bb72fe8578d4007f7cc16ede32eaf34ce19084782080e2815f25d117dd1d911601fb77bc0e471189fd0a4bbe01b1aa979f052e0431dae1abd9dc8e2cb7d575c5749fdd82f247f1686c24677f8d3a358b6860632d26af38f2d4c91457372c11acde9b447fa1a598b5ec1a3ac0babdbd4eb737f3c4c2f2e15b5d8df3b8d6e6b70a3cd365b57349e6ac60b8759bb09bbef1855c1468d10a777a2babb7e77313a321f2169761108d5e8f11c51c1314fe8fd59aea60551c402c4102d08f4d0c54e4a8ad7303905e42bae5b1ceb09119324e274b63c32215eedf7dc51e4f1ed19f013c5a23c8a2f0841eafbe1ae2ea5f4cf20719010a448f154397b6c65be5867508cf112f9f2ff236024c8254d921c8de4e4c39d91e847e7aef69a2747f75edde39e3adc4c653f20d5742606baaf985260b955c2b6e1947b469927a61d866f797e73fadb2821ffe03c109219078d8c24c852188e3352fe257ca3e371043470575f1b180d0747550d9ae8b55b29b06be0cdfe6955a1acba316f2e0d9fc4a99d7725d022fc240e3956bd66425dd2c844b4824cb5307af5d6d77ee97590ecd849650cab25567bdfef5661d35966a16ad5fea8ca1dad42e19bb6b2b28b06e24dcd8bb240e065ea027ca71ee286e9b8c7a4100f1f08391dfdc0ea125e35c2867aa55f21af22a5ff685ef1bc3a023453bdd381b3cc0a1f0470f0e198c8e9ece8d469479b73f3eced657dabb588b95f82de80b58a924e41146274cdd7b32aaf7c2c1f600f30353cbd88bd236c37619ec4c54f44dad9eb79b5e0f5900dedf93b43e33b94a0bbd24bcf17aa7986287232717a8ccf085ba6826f7224d4a35fbee2592b32ad48cbb30961d2412c65f6d6385107267b7595568d7d76fc8cf4ec6fb06f1c38d29357511454a28ef029da6b9007f3d6a400c381f4b0bd99c5f8371d97a7adcf122bc8d1b51f914016fc96f1ebf1628d62d0c1ff93bc16b960f93d782c66d73023685a881acef65f40e5891132e723697082b8a9bc48eaa170e5935a801914c175906b0e7a54f199907562bc2a3d919bc41b4b4fc43872aceceb494f186fd2510925d082c623a3f17f80d1d421710b91035dcfdfdb912b84270e07c9be495e8713ff51df5eda5a030e51516917605e24d29f2238d27b2a823443e8c7659c62ee4d69d3094e95e630e27e2c0c913d200e23fdfb947f7d2d2037284680aac2d002adb79848e99ca1ee7d5c40e190a3ef5f05c59eeadc97449300b0f41943dd70f3ca2f59a218a093cc036cad4f8f3bf1d488f402d5c5abf5ac9fee0263f6d44fae0d5c157ac12b78032604b618bd66a2dbec688b28a0c301ae294b1e2fffaf0f4f92030aaf4154f91baa6d1167ace84be70da0cb2c38c1f1e8a0e8a7474f3f3e508c1fc9d4a431e2f1f45d142f8cc22af65ac656b94109905ca95d33e809586d3b409ca68269bda1368ecd8e9b6e2d95327aa491b6bc162a9f6c4e8162809b0efd7bee9e4c915534083d5cb9ff27bfaa40f7cfacd1c301c740254ab4421aaeb4fdf8d6f46014a3c3ea23256ac64fb2fc95cfb99688a8788759d1dc35992d455b3ecc4a4c99ebab223d774270d7ebefa8545203cefd49bb21397b6d68664dad1b3461a5162fced871d8fc2160d57834356ec88841f89da475fa7acebcc2321f04c6cb56268b42087b52191d43bc82c29c44d451d6798758b43040617a6024b5750577ee3679f43e08a893da6c330b54cbcb6a3c6eee525d4740ad5cca9c7dd75c3d1b24801961f7a517386fb0ed2b181521ab207574fd4edfa09597afd0fe976d2edc428ea28ba9a5c96162bf891e6b50e345855bd6852252959586aaeb63c1aa0c07c422d70e5655507c090ee47e98c2b7cecfa6a4d11210ee8f22a28806b5f5dce15f139385dcccd2838a7c6c71740b80a7f0239706fde8be06cb1e8e352c176b8bb564b5cc98eec6d4a554a4d7bca07b5f72ca8131fa8479d706d367d32d1652c6f8ec4b9cd374153acdf29bdedd5d385e3b581a3142092b28cc3c8d89c3470cf56ceb9109d70d5a0d98ebe4e9432143d6ccd58fcde6a1f0eaa845175dca5ff85dcfa5448bae273be2dd5354654763de0f2fb0974164f001b42d1156ede02fce2ca912355d59e510ddef52589210506439138c230298e2c7f1b76a4ca7dbcffda66fa2a52e146dcca8ecc0cfae3340fccd033e83fb85cd3ceb30ff33a8bfaac4e9d3c28bd0a1ab89d6582c3c9cc6894e299e71551e4f394ffd81b0a67985a65c9c9850ce869635da0c769bb283bf27c1c2b70fac3b7f0ec6773351753c7527cab97a982722b422eb950b41b9e03e025c17c8dc73852490bc83e82ae956b2c546aa0b1c9a06dd9d4c60c3702753385f67df61422906f5a63cc5ff225efdfd57d9e33acc917b68661c8145e2db301777659692925511534e701ad80c46479e5808aeb1f90ed45526ccf995255555d57f987e2e56bfb04233aad88790207b67b7675db58cc00f7594bfe5089671617991124b72ad32d46b304a87c2a5074c581421652bd730808ebb039e74cdd6dfd1f8dcbb55f978458d1b161780fbbbfa52e3a2288653210c0ba901b385dd7d886cb2db18407b37e3c455b2773bc670436ff702af2bd9d87dce441ed7083231763ca76fb07389de0be1029f29c0fc873fc2c986ffb21724c6c1a746ec03729a0d9cdcf123129c550b8e1500968110c363bdf0fd68df0e3a60146790b216447f82b17718c3ceff4df0ee840f42712f9bf4b898ac9e703afd5869309d89604f2c6fdae0c8ca348e1a980303c522d89949dda61e02982814708630324e6362839f3d28b80adf42a0772c52b532ebb2636c8a006a39b0d384cdabcfab075e66116fdd9ad6c6af17cc812d4b691708f671d9a63244dd833e2c3a90aadfd68ddc03fa290663f0fc7445aee617dca94941f94ca0c6638d99b92f0ed7ebbe5fb6f1c02273751094d8aaee32772365cd8efdb5a85290bb356c4c787dd8bbb9a97ae562c27941bc68cd38f314080c89e27fc1bd7f45bca8412149be8260eec24928f77fc7a722a42e5050ab5d135985c56cb68abd5b7ec49c56ec519c63373a1c8d6dee785671e3c104ca6f5c740c7ca3bb1fd8cce68a097c540fa40f9a4f2b21a7853554556596665881038d4d4530862931aca8cd76e412bf5d2ef66b0d67ba991c4c676d95e2a8d6a4ba8b9dc70e165c697227e59323c96f28f81d79db8ac1fb80de77f13358a2255b9a8c56eeb7a4e504de72e71d31cc6e4b4166313035bb6a44dd80a369c9106e9baf69f5963f92b2bc7c16d39e0e8b88611c36523a7635bf8172b995892bf67bf2f5b4d971508f1a1a8d8d1bbfc46f87f2bc50ef30a8922a354764c66e9daa50194e3ee90ad0b59072fa84b1c2e36f93446c9b920f543ddbb0485f18191cd1aba0387d7793aa3b6e62dc49e3bb5b7ec1cc06840fb671dfb8e6c185ae1e0c62a142d244863689a5772eb78c6356122498bc088e53f0c6895cdb1cf0f646ac6db2d8efdeea5f7ff23c91901c4d496e34550695667a7db538e2a4982d34e8256f18be3d493fa2cbe46c1f04b0474328f4eb417ba155cf3d926107845f0a734488bfc5c9c3b0b236750bcbe0bed15b7a5d219a7c2df95d3505a4f116fa6dafa8b746f4d1fdb1a502d9a45849cf2cad4dbe24eae0b65cf4f38ee38078997a5ade9ccf13fe11206362300fff7628603a4707c1c2fd5eb883f5321e8882c1dcfa1867877447ed9b6813031b95ab9603ced93317b265f70229bfd702da85e3ec5df6d2b9dc2958fb9a0f99e501efd391e22c0e198eec87bd2db850058e6f42b53d888cf8c5fb400ecf6e804554fe2b8e7a3a9d9db7a7704c3a2c82643816d8362c909720a693b665d3eb",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 95,
+          "comment" : "invalid output size",
+          "ikm" : "ac106eababe3b8fcdfe44ed3f332695aa50833d5d110632b4215a86f9f4ceebb",
+          "salt" : "aac161c03b3d3cf4d94072a48fd6ca3619510888",
+          "info" : "9824a5f84186c0ea",
+          "size" : 5101,
+          "okm" : "",
+          "result" : "invalid",
+          "flags" : [
+            "SizeTooLarge"
+          ]
+        },
+        {
+          "tcId" : 96,
+          "comment" : "output collision for different salts",
+          "ikm" : "2b54cba29681b6ff2feaa9202b87322d861aff8a8260e1bda68d61979e605b2d",
+          "salt" : "",
+          "info" : "1301b63168af5451377717f7f5ed52de36a197ff",
+          "size" : 32,
+          "okm" : "06e27d970948bb30a9d453d843ab332ae2231dfdffbc4815788695c38368fb03",
+          "result" : "valid",
+          "flags" : [
+            "EmptySalt"
+          ]
+        },
+        {
+          "tcId" : 97,
+          "comment" : "output collision for different salts",
+          "ikm" : "2b54cba29681b6ff2feaa9202b87322d861aff8a8260e1bda68d61979e605b2d",
+          "salt" : "0000000000000000000000000000000000000000",
+          "info" : "1301b63168af5451377717f7f5ed52de36a197ff",
+          "size" : 32,
+          "okm" : "06e27d970948bb30a9d453d843ab332ae2231dfdffbc4815788695c38368fb03",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 98,
+          "comment" : "a salt longer than the block size of the hash is equivalent to the hash of the salt",
+          "ikm" : "2b54cba29681b6ff2feaa9202b87322d861aff8a8260e1bda68d61979e605b2d",
+          "salt" : "0102c651e047fed9c217bcf915520532d44999534c1e7e7c87311093d7a3681aff3e2d335b3c6139b9fc66dcfe35573b36a329a550c4cd20bfe2a90dfea50167ff",
+          "info" : "1301b63168af5451377717f7f5ed52de36a197ff",
+          "size" : 32,
+          "okm" : "e86ef68c222337607de55e6bef35d9df3563cfd8754a5a231a5fb110f1ed1b40",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 99,
+          "comment" : "a salt longer than the block size of the hash is equivalent to the hash of the salt",
+          "ikm" : "2b54cba29681b6ff2feaa9202b87322d861aff8a8260e1bda68d61979e605b2d",
+          "salt" : "ce4fbf306d1eecef0d60543d9726b5b3d3d5d8d2",
+          "info" : "1301b63168af5451377717f7f5ed52de36a197ff",
+          "size" : 32,
+          "okm" : "e86ef68c222337607de55e6bef35d9df3563cfd8754a5a231a5fb110f1ed1b40",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 100,
+          "comment" : "a salt shorter than the block size is padded with zeros.",
+          "ikm" : "2b54cba29681b6ff2feaa9202b87322d861aff8a8260e1bda68d61979e605b2d",
+          "salt" : "cd920e8dbf19ed66",
+          "info" : "1301b63168af5451377717f7f5ed52de36a197ff",
+          "size" : 32,
+          "okm" : "87cf7342816d0b08822263edae8567b453a251373e2f3ce338114b6738cdd1b4",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 101,
+          "comment" : "a salt shorter than the block size is padded with zeros.",
+          "ikm" : "2b54cba29681b6ff2feaa9202b87322d861aff8a8260e1bda68d61979e605b2d",
+          "salt" : "cd920e8dbf19ed660000000000000000",
+          "info" : "1301b63168af5451377717f7f5ed52de36a197ff",
+          "size" : 32,
+          "okm" : "87cf7342816d0b08822263edae8567b453a251373e2f3ce338114b6738cdd1b4",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 102,
+          "comment" : "a salt shorter than the block size is padded with zeros.",
+          "ikm" : "2b54cba29681b6ff2feaa9202b87322d861aff8a8260e1bda68d61979e605b2d",
+          "salt" : "cd920e8dbf19ed6600000000000000000000000000000000",
+          "info" : "1301b63168af5451377717f7f5ed52de36a197ff",
+          "size" : 32,
+          "okm" : "87cf7342816d0b08822263edae8567b453a251373e2f3ce338114b6738cdd1b4",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 103,
+          "comment" : "a salt shorter than the block size is padded with zeros.",
+          "ikm" : "2b54cba29681b6ff2feaa9202b87322d861aff8a8260e1bda68d61979e605b2d",
+          "salt" : "cd920e8dbf19ed66000000000000000000000000000000000000000000000000",
+          "info" : "1301b63168af5451377717f7f5ed52de36a197ff",
+          "size" : 32,
+          "okm" : "87cf7342816d0b08822263edae8567b453a251373e2f3ce338114b6738cdd1b4",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 104,
+          "comment" : "a salt shorter than the block size is padded with zeros.",
+          "ikm" : "2b54cba29681b6ff2feaa9202b87322d861aff8a8260e1bda68d61979e605b2d",
+          "salt" : "cd920e8dbf19ed660000000000000000000000000000000000000000000000000000000000000000",
+          "info" : "1301b63168af5451377717f7f5ed52de36a197ff",
+          "size" : 32,
+          "okm" : "87cf7342816d0b08822263edae8567b453a251373e2f3ce338114b6738cdd1b4",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 105,
+          "comment" : "a salt shorter than the block size is padded with zeros.",
+          "ikm" : "2b54cba29681b6ff2feaa9202b87322d861aff8a8260e1bda68d61979e605b2d",
+          "salt" : "cd920e8dbf19ed6600000000000000000000000000000000000000000000000000000000000000000000000000000000",
+          "info" : "1301b63168af5451377717f7f5ed52de36a197ff",
+          "size" : 32,
+          "okm" : "87cf7342816d0b08822263edae8567b453a251373e2f3ce338114b6738cdd1b4",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 106,
+          "comment" : "a salt shorter than the block size is padded with zeros.",
+          "ikm" : "2b54cba29681b6ff2feaa9202b87322d861aff8a8260e1bda68d61979e605b2d",
+          "salt" : "cd920e8dbf19ed66000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+          "info" : "1301b63168af5451377717f7f5ed52de36a197ff",
+          "size" : 32,
+          "okm" : "87cf7342816d0b08822263edae8567b453a251373e2f3ce338114b6738cdd1b4",
+          "result" : "valid",
+          "flags" : []
+        }
+      ]
+    }
+  ]
+}

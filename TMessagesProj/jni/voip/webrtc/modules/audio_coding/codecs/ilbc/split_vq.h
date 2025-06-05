@@ -33,6 +33,6 @@ void WebRtcIlbcfix_SplitVq(
     int16_t* CB,    /* (i) the quantizer codebook in Q13 */
     int16_t* dim,   /* (i) the dimension of X and qX */
     int16_t* cbsize /* (i) the number of vectors in the codebook */
-    );
+);
 
 #endif

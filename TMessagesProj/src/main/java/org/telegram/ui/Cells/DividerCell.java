@@ -23,9 +23,15 @@ public class DividerCell extends View {
 
     private boolean forceDarkTheme;
     private Paint paint = new Paint();
+    private Theme.ResourcesProvider resourcesProvider;
 
     public DividerCell(Context context) {
+        this(context, null);
+    }
+
+    public DividerCell(Context context, Theme.ResourcesProvider resourcesProvider) {
         super(context);
+        this.resourcesProvider = resourcesProvider;
         setPadding(0, AndroidUtilities.dp(8), 0, AndroidUtilities.dp(8));
     }
 
@@ -37,9 +43,9 @@ public class DividerCell extends View {
     @Override
     protected void onDraw(Canvas canvas) {
         if (forceDarkTheme) {
-            paint.setColor(ColorUtils.blendARGB(Color.BLACK, Theme.getColor(Theme.key_voipgroup_dialogBackground),  0.2f));
+            paint.setColor(ColorUtils.blendARGB(Color.BLACK, Theme.getColor(Theme.key_voipgroup_dialogBackground, resourcesProvider),  0.2f));
         } else {
-            paint.setColor(Theme.getColor(Theme.key_divider));
+            paint.setColor(Theme.getColor(Theme.key_divider, resourcesProvider));
         }
 
         canvas.drawLine(getPaddingLeft(), getPaddingTop(), getWidth() - getPaddingRight(), getPaddingTop(), paint);

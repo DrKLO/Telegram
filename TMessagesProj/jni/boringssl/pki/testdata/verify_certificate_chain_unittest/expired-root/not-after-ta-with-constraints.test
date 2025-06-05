@@ -1,0 +1,5 @@
+chain: chain.pem
+last_cert_trust: TRUSTED_ANCHOR_WITH_CONSTRAINTS
+utc_time: 151102120000Z
+key_purpose: SERVER_AUTH
+expected_errors:

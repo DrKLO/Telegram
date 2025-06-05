@@ -32,12 +32,13 @@ VoiceActivityDetector::VoiceActivityDetector()
 VoiceActivityDetector::~VoiceActivityDetector() = default;
 
 // Because ISAC has a different chunk length, it updates
-// |chunkwise_voice_probabilities_| and |chunkwise_rms_| when there is new data.
+// `chunkwise_voice_probabilities_` and `chunkwise_rms_` when there is new data.
 // Otherwise it clears them.
 void VoiceActivityDetector::ProcessChunk(const int16_t* audio,
                                          size_t length,
                                          int sample_rate_hz) {
   RTC_DCHECK_EQ(length, sample_rate_hz / 100);
+  // TODO(bugs.webrtc.org/7494): Remove resampling and force 16 kHz audio.
   // Resample to the required rate.
   const int16_t* resampled_ptr = audio;
   if (sample_rate_hz != kSampleRateHz) {
@@ -49,7 +50,7 @@ void VoiceActivityDetector::ProcessChunk(const int16_t* audio,
   }
   RTC_DCHECK_EQ(length, kLength10Ms);
 
-  // Each chunk needs to be passed into |standalone_vad_|, because internally it
+  // Each chunk needs to be passed into `standalone_vad_`, because internally it
   // buffers the audio and processes it all at once when GetActivity() is
   // called.
   RTC_CHECK_EQ(standalone_vad_->AddAudio(resampled_ptr, length), 0);

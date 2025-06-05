@@ -44,12 +44,15 @@ class QualityRampUpExperimentHelper {
   void cpu_adapted(bool cpu_adapted);
   void qp_resolution_adaptations(int qp_adaptations);
 
+  void ConfigureQualityRampupExperiment(bool reset,
+                                        absl::optional<uint32_t> pixels,
+                                        absl::optional<DataRate> max_bitrate);
+
   void PerformQualityRampupExperiment(
       rtc::scoped_refptr<QualityScalerResource> quality_scaler_resource,
       DataRate bandwidth,
       DataRate encoder_target_bitrate,
-      DataRate max_bitrate,
-      int pixels);
+      absl::optional<DataRate> max_bitrate);
 
  private:
   QualityRampUpExperimentHelper(

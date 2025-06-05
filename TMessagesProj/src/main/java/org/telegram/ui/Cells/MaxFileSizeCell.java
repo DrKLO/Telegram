@@ -95,7 +95,7 @@ public class MaxFileSizeCell extends FrameLayout {
                             progress -= 0.25f;
                             size += 90 * 1024 * 1024;
 
-                            size += (FileLoader.MAX_FILE_SIZE - size) * (progress / 0.25f);
+                            size += (FileLoader.DEFAULT_MAX_FILE_SIZE - size) * (progress / 0.25f);
                         }
                     }
                 }
@@ -196,7 +196,7 @@ public class MaxFileSizeCell extends FrameLayout {
                     progress += 0.25f;
                     size -= 90 * 1024 * 1024;
 
-                    progress += Math.max(0, size / (float) (FileLoader.MAX_FILE_SIZE - 100 * 1024 * 1024)) * 0.25f;
+                    progress += Math.max(0, size / (float) (FileLoader.DEFAULT_MAX_FILE_SIZE - 100 * 1024 * 1024)) * 0.25f;
                 }
             }
         }

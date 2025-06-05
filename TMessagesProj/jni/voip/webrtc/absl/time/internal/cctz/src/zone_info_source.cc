@@ -58,14 +58,15 @@ std::unique_ptr<absl::time_internal::cctz::ZoneInfoSource> DefaultFactory(
 // MinGW is GCC on Windows, so while it asserts __has_attribute(weak), the
 // Windows linker cannot handle that. Nor does the MinGW compiler know how to
 // pass "#pragma comment(linker, ...)" to the Windows linker.
-#if (__has_attribute(weak) || defined(__GNUC__)) && !defined(__MINGW32__)
+#if (__has_attribute(weak) || defined(__GNUC__)) && !defined(__MINGW32__) && \
+    !defined(__CYGWIN__)
 ZoneInfoSourceFactory zone_info_source_factory __attribute__((weak)) =
     DefaultFactory;
 #elif defined(_MSC_VER) && !defined(__MINGW32__) && !defined(_LIBCPP_VERSION)
 extern ZoneInfoSourceFactory zone_info_source_factory;
 extern ZoneInfoSourceFactory default_factory;
 ZoneInfoSourceFactory default_factory = DefaultFactory;
-#if defined(_M_IX86)
+#if defined(_M_IX86) || defined(_M_ARM)
 #pragma comment(                                                                                                         \
     linker,                                                                                                              \
     "/alternatename:?zone_info_source_factory@cctz_extension@time_internal@" ABSL_INTERNAL_MANGLED_NS                    \

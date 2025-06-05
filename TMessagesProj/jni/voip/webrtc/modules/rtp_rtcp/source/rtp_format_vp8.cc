@@ -63,7 +63,9 @@ RtpPacketizerVp8::RtpPacketizerVp8(rtc::ArrayView<const uint8_t> payload,
                                    const RTPVideoHeaderVP8& hdr_info)
     : hdr_(BuildHeader(hdr_info)), remaining_payload_(payload) {
   limits.max_payload_len -= hdr_.size();
-  payload_sizes_ = SplitAboutEqually(payload.size(), limits);
+  if (!payload.empty()) {
+    payload_sizes_ = SplitAboutEqually(payload.size(), limits);
+  }
   current_packet_ = payload_sizes_.begin();
 }
 
@@ -94,22 +96,25 @@ bool RtpPacketizerVp8::NextPacket(RtpPacketToSend* packet) {
   return true;
 }
 
-// Write the VP8 payload descriptor.
-//       0
-//       0 1 2 3 4 5 6 7 8
-//      +-+-+-+-+-+-+-+-+-+
-//      |X| |N|S| PART_ID |
-//      +-+-+-+-+-+-+-+-+-+
-// X:   |I|L|T|K|         | (mandatory if any of the below are used)
-//      +-+-+-+-+-+-+-+-+-+
-// I:   |PictureID   (16b)| (optional)
-//      +-+-+-+-+-+-+-+-+-+
-// L:   |   TL0PIC_IDX    | (optional)
-//      +-+-+-+-+-+-+-+-+-+
-// T/K: |TID:Y|  KEYIDX   | (optional)
-//      +-+-+-+-+-+-+-+-+-+
 RtpPacketizerVp8::RawHeader RtpPacketizerVp8::BuildHeader(
     const RTPVideoHeaderVP8& header) {
+  // VP8 payload descriptor
+  // https://datatracker.ietf.org/doc/html/rfc7741#section-4.2
+  //
+  //       0 1 2 3 4 5 6 7
+  //      +-+-+-+-+-+-+-+-+
+  //      |X|R|N|S|R| PID | (REQUIRED)
+  //      +-+-+-+-+-+-+-+-+
+  // X:   |I|L|T|K| RSV   | (OPTIONAL)
+  //      +-+-+-+-+-+-+-+-+
+  // I:   |M| PictureID   | (OPTIONAL)
+  //      +-+-+-+-+-+-+-+-+
+  //      |   PictureID   |
+  //      +-+-+-+-+-+-+-+-+
+  // L:   |   TL0PICIDX   | (OPTIONAL)
+  //      +-+-+-+-+-+-+-+-+
+  // T/K: |TID|Y| KEYIDX  | (OPTIONAL)
+  //      +-+-+-+-+-+-+-+-+
   RTC_DCHECK(ValidateHeader(header));
 
   RawHeader result;

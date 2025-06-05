@@ -10,8 +10,6 @@
 
 #include "api/jsep_ice_candidate.h"
 
-#include <memory>
-
 #include "pc/webrtc_sdp.h"
 
 // This file contains JsepIceCandidate-related functions that are not

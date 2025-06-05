@@ -16,11 +16,15 @@ import android.graphics.PixelFormat;
 import android.graphics.drawable.Drawable;
 import android.view.animation.DecelerateInterpolator;
 
+import androidx.core.graphics.ColorUtils;
+
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.Utilities;
 
 public class BackDrawable extends Drawable {
 
     private Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private Paint prevPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private boolean reverseAngle;
     private long lastFrameTime;
     private boolean animationInProgress;
@@ -35,9 +39,16 @@ public class BackDrawable extends Drawable {
     private boolean rotated = true;
     private int arrowRotation;
 
+    public float getRotation() {
+        return finalRotation;
+    }
+
     public BackDrawable(boolean close) {
         super();
         paint.setStrokeWidth(AndroidUtilities.dp(2));
+        paint.setStrokeCap(Paint.Cap.ROUND);
+        prevPaint.setStrokeWidth(AndroidUtilities.dp(2));
+        prevPaint.setColor(Color.RED);
         alwaysClose = close;
     }
 
@@ -107,11 +118,7 @@ public class BackDrawable extends Drawable {
             invalidateSelf();
         }
 
-        int rD = rotated ? (int) ((Color.red(rotatedColor) - Color.red(color)) * currentRotation) : 0;
-        int rG = rotated ? (int) ((Color.green(rotatedColor) - Color.green(color)) * currentRotation) : 0;
-        int rB = rotated ? (int) ((Color.blue(rotatedColor) - Color.blue(color)) * currentRotation) : 0;
-        int c = Color.rgb(Color.red(color) + rD, Color.green(color) + rG, Color.blue(color) + rB);
-        paint.setColor(c);
+        paint.setColor(ColorUtils.blendARGB(color, rotatedColor, currentRotation));
 
         canvas.save();
         canvas.translate(getIntrinsicWidth() / 2, getIntrinsicHeight() / 2);
@@ -125,11 +132,11 @@ public class BackDrawable extends Drawable {
             canvas.rotate(135 + currentRotation * (reverseAngle ? -180 : 180));
             rotation = 1.0f;
         }
-        canvas.drawLine(-AndroidUtilities.dp(7) - AndroidUtilities.dp(1) * rotation, 0, AndroidUtilities.dp(8), 0, paint);
-        float startYDiff = -AndroidUtilities.dp(0.5f);
-        float endYDiff = AndroidUtilities.dp(7) + AndroidUtilities.dp(1) * rotation;
-        float startXDiff = -AndroidUtilities.dp(7.0f) + AndroidUtilities.dp(7.0f) * rotation;
-        float endXDiff = AndroidUtilities.dp(0.5f) - AndroidUtilities.dp(0.5f) * rotation;
+        canvas.drawLine(AndroidUtilities.dp(AndroidUtilities.lerp(-6.75f, -8f, rotation)), 0, AndroidUtilities.dp(8) - (paint.getStrokeWidth() / 2f) * (1f - rotation), 0, paint);
+        float startYDiff = AndroidUtilities.dp(-0.25f);
+        float endYDiff = AndroidUtilities.dp(AndroidUtilities.lerp(7f, 8f, rotation)) - (paint.getStrokeWidth() / 4f) * (1f - rotation);
+        float startXDiff = AndroidUtilities.dp(AndroidUtilities.lerp(-7f - 0.25f, 0f, rotation));
+        float endXDiff = 0;
         canvas.drawLine(startXDiff, -startYDiff, endXDiff, -endYDiff, paint);
         canvas.drawLine(startXDiff, startYDiff, endXDiff, endYDiff, paint);
         canvas.restore();
@@ -137,12 +144,12 @@ public class BackDrawable extends Drawable {
 
     @Override
     public void setAlpha(int alpha) {
-
+        paint.setAlpha(alpha);
     }
 
     @Override
     public void setColorFilter(ColorFilter cf) {
-
+        paint.setColorFilter(cf);
     }
 
     @Override

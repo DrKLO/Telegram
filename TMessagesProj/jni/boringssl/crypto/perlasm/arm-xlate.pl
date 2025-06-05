@@ -1,10 +1,17 @@
 #! /usr/bin/env perl
 # Copyright 2015-2016 The OpenSSL Project Authors. All Rights Reserved.
 #
-# Licensed under the OpenSSL license (the "License").  You may not use
-# this file except in compliance with the License.  You can obtain a copy
-# in the file LICENSE in the source distribution or at
-# https://www.openssl.org/source/license.html
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 use strict;
 
@@ -22,6 +29,7 @@ my $dotinlocallabels=($flavour=~/linux/)?1:0;
 ################################################################
 my $arch = sub {
     if ($flavour =~ /linux/)	{ ".arch\t".join(',',@_); }
+    elsif ($flavour =~ /win64/) { ".arch\t".join(',',@_); }
     else			{ ""; }
 };
 my $fpu = sub {
@@ -30,6 +38,7 @@ my $fpu = sub {
 };
 my $hidden = sub {
     if ($flavour =~ /ios/)	{ ".private_extern\t".join(',',@_); }
+    elsif ($flavour =~ /win64/) { ""; }
     else			{ ".hidden\t".join(',',@_); }
 };
 my $comm = sub {
@@ -80,6 +89,15 @@ my $type = sub {
 					"#endif";
 				  }
 			        }
+    elsif ($flavour =~ /win64/) { if (join(',',@_) =~ /(\w+),%function/) {
+                # See https://sourceware.org/binutils/docs/as/Pseudo-Ops.html
+                # Per https://docs.microsoft.com/en-us/windows/win32/debug/pe-format#coff-symbol-table,
+                # the type for functions is 0x20, or 32.
+                ".def $1\n".
+                "   .type 32\n".
+                ".endef";
+            }
+        }
     else			{ ""; }
 };
 my $size = sub {
@@ -140,26 +158,36 @@ sub expand_line {
     return $line;
 }
 
+my ($arch_defines, $target_defines);
+if ($flavour =~ /32/) {
+    $arch_defines = "defined(OPENSSL_ARM)";
+} elsif ($flavour =~ /64/) {
+    $arch_defines = "defined(OPENSSL_AARCH64)";
+} else {
+    die "unknown architecture: $flavour";
+}
+if ($flavour =~ /linux/) {
+    # Although the flavour is specified as "linux", it is really used by all
+    # ELF platforms.
+    $target_defines = "defined(__ELF__)";
+} elsif ($flavour =~ /ios/) {
+    # Although the flavour is specified as "ios", it is really used by all Apple
+    # platforms.
+    $target_defines = "defined(__APPLE__)";
+} elsif ($flavour =~ /win/) {
+    $target_defines = "defined(_WIN32)";
+} else {
+    die "unknown target: $flavour";
+}
+
 print <<___;
 // This file is generated from a similarly-named Perl script in the BoringSSL
 // source tree. Do not edit by hand.
 
-#if !defined(__has_feature)
-#define __has_feature(x) 0
-#endif
-#if __has_feature(memory_sanitizer) && !defined(OPENSSL_NO_ASM)
-#define OPENSSL_NO_ASM
-#endif
+#include <openssl/asm_base.h>
 
-#if !defined(OPENSSL_NO_ASM)
+#if !defined(OPENSSL_NO_ASM) && $arch_defines && $target_defines
 ___
-
-print "#if defined(__arm__)\n" if ($flavour eq "linux32");
-print "#if defined(__aarch64__)\n" if ($flavour eq "linux64");
-
-print "#if defined(BORINGSSL_PREFIX)\n";
-print "#include <boringssl_prefix_symbols_asm.h>\n";
-print "#endif\n";
 
 while(my $line=<>) {
 
@@ -228,7 +256,8 @@ while(my $line=<>) {
     print "\n";
 }
 
-print "#endif\n" if ($flavour eq "linux32" || $flavour eq "linux64");
-print "#endif  // !OPENSSL_NO_ASM\n";
+print <<___;
+#endif  // !OPENSSL_NO_ASM && $arch_defines && $target_defines
+___
 
-close STDOUT;
+close STDOUT or die "error closing STDOUT: $!";

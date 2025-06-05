@@ -15,36 +15,25 @@
 #include <utility>
 #include <vector>
 
+#include "absl/types/optional.h"
 #include "p2p/base/connection.h"
+#include "p2p/base/ice_switch_reason.h"
 #include "p2p/base/ice_transport_internal.h"
+#include "rtc_base/checks.h"
+#include "rtc_base/system/rtc_export.h"
 
 namespace cricket {
 
 struct IceFieldTrials;  // Forward declaration to avoid circular dependency.
 
-struct IceControllerEvent {
-  enum Type {
-    REMOTE_CANDIDATE_GENERATION_CHANGE,
-    NETWORK_PREFERENCE_CHANGE,
-    NEW_CONNECTION_FROM_LOCAL_CANDIDATE,
-    NEW_CONNECTION_FROM_REMOTE_CANDIDATE,
-    NEW_CONNECTION_FROM_UNKNOWN_REMOTE_ADDRESS,
-    NOMINATION_ON_CONTROLLED_SIDE,
-    DATA_RECEIVED,
-    CONNECT_STATE_CHANGE,
-    SELECTED_CONNECTION_DESTROYED,
-    // The ICE_CONTROLLER_RECHECK enum value lets an IceController request
-    // P2PTransportChannel to recheck a switch periodically without an event
-    // taking place.
-    ICE_CONTROLLER_RECHECK,
-  };
+struct RTC_EXPORT IceRecheckEvent {
+  IceRecheckEvent(IceSwitchReason _reason, int _recheck_delay_ms)
+      : reason(_reason), recheck_delay_ms(_recheck_delay_ms) {}
 
-  IceControllerEvent(const Type& _type)  // NOLINT: runtime/explicit
-      : type(_type) {}
   std::string ToString() const;
 
-  Type type;
-  int recheck_delay_ms = 0;
+  IceSwitchReason reason;
+  int recheck_delay_ms;
 };
 
 // Defines the interface for a module that control
@@ -55,7 +44,7 @@ struct IceControllerEvent {
 //
 // The P2PTransportChannel owns (creates and destroys) Connections,
 // but P2PTransportChannel gives const pointers to the the IceController using
-// |AddConnection|, i.e the IceController should not call any non-const methods
+// `AddConnection`, i.e the IceController should not call any non-const methods
 // on a Connection but signal back in the interface if any mutable function
 // shall be called.
 //
@@ -65,7 +54,7 @@ struct IceControllerEvent {
 // Connection::ForgetLearnedState - return in SwitchResult
 //
 // The IceController shall keep track of all connections added
-// (and not destroyed) and give them back using the connections()-function-
+// (and not destroyed) and give them back using the GetConnections() function.
 //
 // When a Connection gets destroyed
 // - signals on Connection::SignalDestroyed
@@ -78,7 +67,7 @@ class IceControllerInterface {
     absl::optional<const Connection*> connection;
 
     // An optional recheck event for when a Switch() should be attempted again.
-    absl::optional<IceControllerEvent> recheck_event;
+    absl::optional<IceRecheckEvent> recheck_event;
 
     // A vector with connection to run ForgetLearnedState on.
     std::vector<const Connection*> connections_to_forget_state_on;
@@ -113,7 +102,17 @@ class IceControllerInterface {
   virtual void OnConnectionDestroyed(const Connection* connection) = 0;
 
   // These are all connections that has been added and not destroyed.
-  virtual rtc::ArrayView<const Connection*> connections() const = 0;
+  virtual rtc::ArrayView<const Connection* const> GetConnections() const {
+    // Stub implementation to simplify downstream roll.
+    RTC_CHECK_NOTREACHED();
+    return {};
+  }
+  // TODO(bugs.webrtc.org/15702): Remove this after downstream is cleaned up.
+  virtual rtc::ArrayView<const Connection*> connections() const {
+    // Stub implementation to simplify downstream removal.
+    RTC_CHECK_NOTREACHED();
+    return {};
+  }
 
   // Is there a pingable connection ?
   // This function is used to boot-strap pinging, after this returns true
@@ -123,7 +122,7 @@ class IceControllerInterface {
   // Select a connection to Ping, or nullptr if none.
   virtual PingResult SelectConnectionToPing(int64_t last_ping_sent_ms) = 0;
 
-  // Compute the "STUN_ATTR_USE_CANDIDATE" for |conn|.
+  // Compute the "STUN_ATTR_USE_CANDIDATE" for `conn`.
   virtual bool GetUseCandidateAttr(const Connection* conn,
                                    NominationMode mode,
                                    IceMode remote_ice_mode) const = 0;
@@ -133,14 +132,14 @@ class IceControllerInterface {
   virtual const Connection* FindNextPingableConnection() = 0;
   virtual void MarkConnectionPinged(const Connection* con) = 0;
 
-  // Check if we should switch to |connection|.
-  // This method is called for IceControllerEvent's that can switch directly
+  // Check if we should switch to `connection`.
+  // This method is called for IceSwitchReasons that can switch directly
   // i.e without resorting.
-  virtual SwitchResult ShouldSwitchConnection(IceControllerEvent reason,
+  virtual SwitchResult ShouldSwitchConnection(IceSwitchReason reason,
                                               const Connection* connection) = 0;
 
   // Sort connections and check if we should switch.
-  virtual SwitchResult SortAndSwitchConnection(IceControllerEvent reason) = 0;
+  virtual SwitchResult SortAndSwitchConnection(IceSwitchReason reason) = 0;
 
   // Prune connections.
   virtual std::vector<const Connection*> PruneConnections() = 0;

@@ -242,7 +242,7 @@ int BigUnsigned<max_words>::ReadDigits(const char* begin, const char* end,
       // decimal exponent to compensate.
       --exponent_adjust;
     }
-    int digit = (*begin - '0');
+    char digit = (*begin - '0');
     --significant_digits;
     if (significant_digits == 0 && std::next(begin) != end &&
         (digit == 0 || digit == 5)) {
@@ -255,7 +255,7 @@ int BigUnsigned<max_words>::ReadDigits(const char* begin, const char* end,
       // 500000...000000000001 to correctly round up, rather than to nearest.
       ++digit;
     }
-    queued = 10 * queued + digit;
+    queued = 10 * queued + static_cast<uint32_t>(digit);
     ++digits_queued;
     if (digits_queued == kMaxSmallPowerOfTen) {
       MultiplyBy(kTenToNth[kMaxSmallPowerOfTen]);
@@ -296,10 +296,8 @@ template <int max_words>
         std::min(n / kLargePowerOfFiveStep, kLargestPowerOfFiveIndex);
     if (first_pass) {
       // just copy, rather than multiplying by 1
-      std::copy(
-          LargePowerOfFiveData(big_power),
-          LargePowerOfFiveData(big_power) + LargePowerOfFiveSize(big_power),
-          answer.words_);
+      std::copy_n(LargePowerOfFiveData(big_power),
+                  LargePowerOfFiveSize(big_power), answer.words_);
       answer.size_ = LargePowerOfFiveSize(big_power);
       first_pass = false;
     } else {
@@ -341,8 +339,8 @@ std::string BigUnsigned<max_words>::ToString() const {
   std::string result;
   // Build result in reverse order
   while (copy.size() > 0) {
-    int next_digit = copy.DivMod<10>();
-    result.push_back('0' + next_digit);
+    uint32_t next_digit = copy.DivMod<10>();
+    result.push_back('0' + static_cast<char>(next_digit));
   }
   if (result.empty()) {
     result.push_back('0');

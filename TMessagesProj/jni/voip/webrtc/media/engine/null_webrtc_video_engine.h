@@ -24,12 +24,17 @@ class Call;
 
 namespace cricket {
 
-class VideoMediaChannel;
-
 // Video engine implementation that does nothing and can be used in
 // CompositeMediaEngine.
 class NullWebRtcVideoEngine : public VideoEngineInterface {
  public:
+  std::vector<VideoCodec> send_codecs(bool) const override {
+    return std::vector<VideoCodec>();
+  }
+
+  std::vector<VideoCodec> recv_codecs(bool) const override {
+    return std::vector<VideoCodec>();
+  }
   std::vector<VideoCodec> send_codecs() const override {
     return std::vector<VideoCodec>();
   }
@@ -41,16 +46,6 @@ class NullWebRtcVideoEngine : public VideoEngineInterface {
   std::vector<webrtc::RtpHeaderExtensionCapability> GetRtpHeaderExtensions()
       const override {
     return {};
-  }
-
-  VideoMediaChannel* CreateMediaChannel(
-      webrtc::Call* call,
-      const MediaConfig& config,
-      const VideoOptions& options,
-      const webrtc::CryptoOptions& crypto_options,
-      webrtc::VideoBitrateAllocatorFactory* video_bitrate_allocator_factory)
-      override {
-    return nullptr;
   }
 };
 

@@ -25,7 +25,7 @@ constexpr float kMaxS16 =
     static_cast<float>(std::numeric_limits<int16_t>::max());
 
 // Level Estimator test parameters.
-constexpr float kDecayMs = 500.f;
+constexpr float kDecayMs = 20.0f;
 
 // Limiter parameters.
 constexpr float kLimiterMaxInputLevelDbFs = 1.f;

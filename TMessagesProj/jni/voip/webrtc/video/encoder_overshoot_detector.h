@@ -15,26 +15,29 @@
 
 #include "absl/types/optional.h"
 #include "api/units/data_rate.h"
+#include "api/video_codecs/video_codec.h"
 
 namespace webrtc {
 
 class EncoderOvershootDetector {
  public:
-  explicit EncoderOvershootDetector(int64_t window_size_ms);
+  explicit EncoderOvershootDetector(int64_t window_size_ms,
+                                    VideoCodecType codec,
+                                    bool is_screenshare);
   ~EncoderOvershootDetector();
 
   void SetTargetRate(DataRate target_bitrate,
                      double target_framerate_fps,
                      int64_t time_ms);
-  // A frame has been encoded or dropped. |bytes| == 0 indicates a drop.
+  // A frame has been encoded or dropped. `bytes` == 0 indicates a drop.
   void OnEncodedFrame(size_t bytes, int64_t time_ms);
   // This utilization factor reaches 1.0 only if the encoder produces encoded
   // frame in such a way that they can be sent onto the network at
-  // |target_bitrate| without building growing queues.
+  // `target_bitrate` without building growing queues.
   absl::optional<double> GetNetworkRateUtilizationFactor(int64_t time_ms);
   // This utilization factor is based just on actual encoded frame sizes in
   // relation to ideal sizes. An undershoot may be compensated by an
-  // overshoot so that the average over time is close to |target_bitrate|.
+  // overshoot so that the average over time is close to `target_bitrate`.
   absl::optional<double> GetMediaRateUtilizationFactor(int64_t time_ms);
   void Reset();
 
@@ -64,6 +67,7 @@ class EncoderOvershootDetector {
     double media_utilization_factor;
     int64_t update_time_ms;
   };
+  void UpdateHistograms();
   std::deque<BitrateUpdate> utilization_factors_;
   double sum_network_utilization_factors_;
   double sum_media_utilization_factors_;
@@ -71,6 +75,11 @@ class EncoderOvershootDetector {
   double target_framerate_fps_;
   int64_t network_buffer_level_bits_;
   int64_t media_buffer_level_bits_;
+  VideoCodecType codec_;
+  bool is_screenshare_;
+  int64_t frame_count_;
+  int64_t sum_diff_kbps_squared_;
+  int64_t sum_overshoot_percent_;
 };
 
 }  // namespace webrtc

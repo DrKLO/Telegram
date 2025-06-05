@@ -14,25 +14,29 @@
 #ifndef API_RTP_SENDER_INTERFACE_H_
 #define API_RTP_SENDER_INTERFACE_H_
 
+#include <memory>
 #include <string>
 #include <vector>
 
+#include "absl/functional/any_invocable.h"
 #include "api/crypto/frame_encryptor_interface.h"
 #include "api/dtls_transport_interface.h"
 #include "api/dtmf_sender_interface.h"
 #include "api/frame_transformer_interface.h"
 #include "api/media_stream_interface.h"
 #include "api/media_types.h"
-#include "api/proxy.h"
+#include "api/ref_count.h"
 #include "api/rtc_error.h"
 #include "api/rtp_parameters.h"
 #include "api/scoped_refptr.h"
-#include "rtc_base/ref_count.h"
+#include "api/video_codecs/video_encoder_factory.h"
 #include "rtc_base/system/rtc_export.h"
 
 namespace webrtc {
 
-class RTC_EXPORT RtpSenderInterface : public rtc::RefCountInterface {
+using SetParametersCallback = absl::AnyInvocable<void(RTCError) &&>;
+
+class RTC_EXPORT RtpSenderInterface : public webrtc::RefCountInterface {
  public:
   // Returns true if successful in setting the track.
   // Fails if an audio track is set on a video RtpSender, or vice-versa.
@@ -42,8 +46,7 @@ class RTC_EXPORT RtpSenderInterface : public rtc::RefCountInterface {
   // The dtlsTransport attribute exposes the DTLS transport on which the
   // media is sent. It may be null.
   // https://w3c.github.io/webrtc-pc/#dom-rtcrtpsender-transport
-  // TODO(https://bugs.webrtc.org/907849) remove default implementation
-  virtual rtc::scoped_refptr<DtlsTransportInterface> dtls_transport() const;
+  virtual rtc::scoped_refptr<DtlsTransportInterface> dtls_transport() const = 0;
 
   // Returns primary SSRC used by this sender for sending media.
   // Returns 0 if not yet determined.
@@ -66,19 +69,21 @@ class RTC_EXPORT RtpSenderInterface : public rtc::RefCountInterface {
   // Sets the IDs of the media streams associated with this sender's track.
   // These are signalled in the SDP so that the remote side can associate
   // tracks.
-  virtual void SetStreams(const std::vector<std::string>& stream_ids) {}
+  virtual void SetStreams(const std::vector<std::string>& stream_ids) = 0;
 
   // Returns the list of encoding parameters that will be applied when the SDP
   // local description is set. These initial encoding parameters can be set by
   // PeerConnection::AddTransceiver, and later updated with Get/SetParameters.
   // TODO(orphis): Make it pure virtual once Chrome has updated
-  virtual std::vector<RtpEncodingParameters> init_send_encodings() const;
+  virtual std::vector<RtpEncodingParameters> init_send_encodings() const = 0;
 
   virtual RtpParameters GetParameters() const = 0;
   // Note that only a subset of the parameters can currently be changed. See
   // rtpparameters.h
   // The encodings are in increasing quality order for simulcast.
   virtual RTCError SetParameters(const RtpParameters& parameters) = 0;
+  virtual void SetParametersAsync(const RtpParameters& parameters,
+                                  SetParametersCallback callback);
 
   // Returns null for a video sender.
   virtual rtc::scoped_refptr<DtmfSenderInterface> GetDtmfSender() const = 0;
@@ -88,45 +93,25 @@ class RTC_EXPORT RtpSenderInterface : public rtc::RefCountInterface {
   // using the user provided encryption mechanism regardless of whether SRTP is
   // enabled or not.
   virtual void SetFrameEncryptor(
-      rtc::scoped_refptr<FrameEncryptorInterface> frame_encryptor);
+      rtc::scoped_refptr<FrameEncryptorInterface> frame_encryptor) = 0;
 
   // Returns a pointer to the frame encryptor set previously by the
   // user. This can be used to update the state of the object.
-  virtual rtc::scoped_refptr<FrameEncryptorInterface> GetFrameEncryptor() const;
+  virtual rtc::scoped_refptr<FrameEncryptorInterface> GetFrameEncryptor()
+      const = 0;
 
   virtual void SetEncoderToPacketizerFrameTransformer(
-      rtc::scoped_refptr<FrameTransformerInterface> frame_transformer);
+      rtc::scoped_refptr<FrameTransformerInterface> frame_transformer) = 0;
+
+  // Sets a user defined encoder selector.
+  // Overrides selector that is (optionally) provided by VideoEncoderFactory.
+  virtual void SetEncoderSelector(
+      std::unique_ptr<VideoEncoderFactory::EncoderSelectorInterface>
+          encoder_selector) = 0;
 
  protected:
   ~RtpSenderInterface() override = default;
 };
-
-// Define proxy for RtpSenderInterface.
-// TODO(deadbeef): Move this to .cc file and out of api/. What threads methods
-// are called on is an implementation detail.
-BEGIN_PRIMARY_PROXY_MAP(RtpSender)
-PROXY_PRIMARY_THREAD_DESTRUCTOR()
-PROXY_METHOD1(bool, SetTrack, MediaStreamTrackInterface*)
-PROXY_CONSTMETHOD0(rtc::scoped_refptr<MediaStreamTrackInterface>, track)
-PROXY_CONSTMETHOD0(rtc::scoped_refptr<DtlsTransportInterface>, dtls_transport)
-PROXY_CONSTMETHOD0(uint32_t, ssrc)
-BYPASS_PROXY_CONSTMETHOD0(cricket::MediaType, media_type)
-BYPASS_PROXY_CONSTMETHOD0(std::string, id)
-PROXY_CONSTMETHOD0(std::vector<std::string>, stream_ids)
-PROXY_CONSTMETHOD0(std::vector<RtpEncodingParameters>, init_send_encodings)
-PROXY_CONSTMETHOD0(RtpParameters, GetParameters)
-PROXY_METHOD1(RTCError, SetParameters, const RtpParameters&)
-PROXY_CONSTMETHOD0(rtc::scoped_refptr<DtmfSenderInterface>, GetDtmfSender)
-PROXY_METHOD1(void,
-              SetFrameEncryptor,
-              rtc::scoped_refptr<FrameEncryptorInterface>)
-PROXY_CONSTMETHOD0(rtc::scoped_refptr<FrameEncryptorInterface>,
-                   GetFrameEncryptor)
-PROXY_METHOD1(void, SetStreams, const std::vector<std::string>&)
-PROXY_METHOD1(void,
-              SetEncoderToPacketizerFrameTransformer,
-              rtc::scoped_refptr<FrameTransformerInterface>)
-END_PROXY_MAP()
 
 }  // namespace webrtc
 

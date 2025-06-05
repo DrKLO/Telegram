@@ -24,13 +24,13 @@
 //   void some_function() {
 //     scoped_refptr<MyFoo> foo = new MyFoo();
 //     foo->Method(param);
-//     // |foo| is released when this function returns
+//     // `foo` is released when this function returns
 //   }
 //
 //   void some_other_function() {
 //     scoped_refptr<MyFoo> foo = new MyFoo();
 //     ...
-//     foo = nullptr;  // explicitly releases |foo|
+//     foo = nullptr;  // explicitly releases `foo`
 //     ...
 //     if (foo)
 //       foo->Method(param);
@@ -45,10 +45,10 @@
 //     scoped_refptr<MyFoo> b;
 //
 //     b.swap(a);
-//     // now, |b| references the MyFoo object, and |a| references null.
+//     // now, `b` references the MyFoo object, and `a` references null.
 //   }
 //
-// To make both |a| and |b| in the above example reference the same MyFoo
+// To make both `a` and `b` in the above example reference the same MyFoo
 // object, simply use the assignment operator:
 //
 //   {
@@ -56,7 +56,7 @@
 //     scoped_refptr<MyFoo> b;
 //
 //     b = a;
-//     // now, |a| and |b| each own a reference to the same MyFoo object.
+//     // now, `a` and `b` each own a reference to the same MyFoo object.
 //   }
 //
 
@@ -66,7 +66,7 @@
 #include <memory>
 #include <utility>
 
-namespace rtc {
+namespace webrtc {
 
 template <class T>
 class scoped_refptr {
@@ -74,8 +74,9 @@ class scoped_refptr {
   typedef T element_type;
 
   scoped_refptr() : ptr_(nullptr) {}
+  scoped_refptr(std::nullptr_t) : ptr_(nullptr) {}  // NOLINT(runtime/explicit)
 
-  scoped_refptr(T* p) : ptr_(p) {  // NOLINT(runtime/explicit)
+  explicit scoped_refptr(T* p) : ptr_(p) {
     if (ptr_)
       ptr_->AddRef();
   }
@@ -103,7 +104,7 @@ class scoped_refptr {
   }
 
   T* get() const { return ptr_; }
-  operator T*() const { return ptr_; }
+  explicit operator bool() const { return ptr_ != nullptr; }
   T& operator*() const { return *ptr_; }
   T* operator->() const { return ptr_; }
 
@@ -160,6 +161,67 @@ class scoped_refptr {
   T* ptr_;
 };
 
+template <typename T, typename U>
+bool operator==(const scoped_refptr<T>& a, const scoped_refptr<U>& b) {
+  return a.get() == b.get();
+}
+template <typename T, typename U>
+bool operator!=(const scoped_refptr<T>& a, const scoped_refptr<U>& b) {
+  return !(a == b);
+}
+
+template <typename T>
+bool operator==(const scoped_refptr<T>& a, std::nullptr_t) {
+  return a.get() == nullptr;
+}
+
+template <typename T>
+bool operator!=(const scoped_refptr<T>& a, std::nullptr_t) {
+  return !(a == nullptr);
+}
+
+template <typename T>
+bool operator==(std::nullptr_t, const scoped_refptr<T>& a) {
+  return a.get() == nullptr;
+}
+
+template <typename T>
+bool operator!=(std::nullptr_t, const scoped_refptr<T>& a) {
+  return !(a == nullptr);
+}
+
+// Comparison with raw pointer.
+template <typename T, typename U>
+bool operator==(const scoped_refptr<T>& a, const U* b) {
+  return a.get() == b;
+}
+template <typename T, typename U>
+bool operator!=(const scoped_refptr<T>& a, const U* b) {
+  return !(a == b);
+}
+
+template <typename T, typename U>
+bool operator==(const T* a, const scoped_refptr<U>& b) {
+  return a == b.get();
+}
+template <typename T, typename U>
+bool operator!=(const T* a, const scoped_refptr<U>& b) {
+  return !(a == b);
+}
+
+// Ordered comparison, needed for use as a std::map key.
+template <typename T, typename U>
+bool operator<(const scoped_refptr<T>& a, const scoped_refptr<U>& b) {
+  return a.get() < b.get();
+}
+
+}  // namespace webrtc
+
+namespace rtc {
+// Backwards compatible alias.
+// TODO(bugs.webrtc.org/15622): Deprecate and remove.
+template <typename T>
+using scoped_refptr = webrtc::scoped_refptr<T>;
 }  // namespace rtc
 
 #endif  // API_SCOPED_REFPTR_H_

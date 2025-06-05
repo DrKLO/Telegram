@@ -17,19 +17,19 @@
 namespace webrtc {
 namespace voe {
 
-// Upmix or downmix and resample the audio to |dst_frame|. Expects |dst_frame|
+// Upmix or downmix and resample the audio to `dst_frame`. Expects `dst_frame`
 // to have its sample rate and channels members set to the desired values.
-// Updates the |samples_per_channel_| member accordingly.
+// Updates the `samples_per_channel_` member accordingly.
 //
-// This version has an AudioFrame |src_frame| as input and sets the output
-// |timestamp_|, |elapsed_time_ms_| and |ntp_time_ms_| members equals to the
+// This version has an AudioFrame `src_frame` as input and sets the output
+// `timestamp_`, `elapsed_time_ms_` and `ntp_time_ms_` members equals to the
 // input ones.
 void RemixAndResample(const AudioFrame& src_frame,
                       PushResampler<int16_t>* resampler,
                       AudioFrame* dst_frame);
 
-// This version has a pointer to the samples |src_data| as input and receives
-// |samples_per_channel|, |num_channels| and |sample_rate_hz| of the data as
+// This version has a pointer to the samples `src_data` as input and receives
+// `samples_per_channel`, `num_channels` and `sample_rate_hz` of the data as
 // parameters.
 void RemixAndResample(const int16_t* src_data,
                       size_t samples_per_channel,

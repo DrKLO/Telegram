@@ -15,6 +15,8 @@
 
 #include "absl/types/optional.h"
 #include "api/rtp_headers.h"
+#include "api/units/time_delta.h"
+#include "api/units/timestamp.h"
 #include "rtc_base/checks.h"
 
 namespace webrtc {
@@ -28,30 +30,27 @@ class RtpSource {
  public:
   struct Extensions {
     absl::optional<uint8_t> audio_level;
+
+    // Fields from the Absolute Capture Time header extension:
+    // http://www.webrtc.org/experiments/rtp-hdrext/abs-capture-time
     absl::optional<AbsoluteCaptureTime> absolute_capture_time;
+
+    // Clock offset between the local clock and the capturer's clock.
+    // Do not confuse with `AbsoluteCaptureTime::estimated_capture_clock_offset`
+    // which instead represents the clock offset between a remote sender and the
+    // capturer. The following holds:
+    //   Capture's NTP Clock = Local NTP Clock + Local-Capture Clock Offset
+    absl::optional<TimeDelta> local_capture_clock_offset;
   };
 
   RtpSource() = delete;
 
-  // TODO(bugs.webrtc.org/10739): Remove this constructor once all clients
-  // migrate to the version with absolute capture time.
-  RtpSource(int64_t timestamp_ms,
-            uint32_t source_id,
-            RtpSourceType source_type,
-            absl::optional<uint8_t> audio_level,
-            uint32_t rtp_timestamp)
-      : RtpSource(timestamp_ms,
-                  source_id,
-                  source_type,
-                  rtp_timestamp,
-                  {audio_level, absl::nullopt}) {}
-
-  RtpSource(int64_t timestamp_ms,
+  RtpSource(Timestamp timestamp,
             uint32_t source_id,
             RtpSourceType source_type,
             uint32_t rtp_timestamp,
             const RtpSource::Extensions& extensions)
-      : timestamp_ms_(timestamp_ms),
+      : timestamp_(timestamp),
         source_id_(source_id),
         source_type_(source_type),
         extensions_(extensions),
@@ -61,11 +60,7 @@ class RtpSource {
   RtpSource& operator=(const RtpSource&) = default;
   ~RtpSource() = default;
 
-  int64_t timestamp_ms() const { return timestamp_ms_; }
-  void update_timestamp_ms(int64_t timestamp_ms) {
-    RTC_DCHECK_LE(timestamp_ms_, timestamp_ms);
-    timestamp_ms_ = timestamp_ms;
-  }
+  Timestamp timestamp() const { return timestamp_; }
 
   // The identifier of the source can be the CSRC or the SSRC.
   uint32_t source_id() const { return source_id_; }
@@ -87,8 +82,12 @@ class RtpSource {
     return extensions_.absolute_capture_time;
   }
 
+  absl::optional<TimeDelta> local_capture_clock_offset() const {
+    return extensions_.local_capture_clock_offset;
+  }
+
   bool operator==(const RtpSource& o) const {
-    return timestamp_ms_ == o.timestamp_ms() && source_id_ == o.source_id() &&
+    return timestamp_ == o.timestamp() && source_id_ == o.source_id() &&
            source_type_ == o.source_type() &&
            extensions_.audio_level == o.extensions_.audio_level &&
            extensions_.absolute_capture_time ==
@@ -97,7 +96,7 @@ class RtpSource {
   }
 
  private:
-  int64_t timestamp_ms_;
+  Timestamp timestamp_;
   uint32_t source_id_;
   RtpSourceType source_type_;
   RtpSource::Extensions extensions_;

@@ -18,6 +18,7 @@ import android.text.method.LinkMovementMethod;
 import android.text.style.AbsoluteSizeSpan;
 import android.util.TypedValue;
 import android.view.Gravity;
+import android.view.View;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.FrameLayout;
 import android.widget.TextView;
@@ -26,16 +27,20 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Components.LinkSpanDrawable;
 
 import java.util.ArrayList;
 
 public class TextInfoPrivacyCell extends FrameLayout {
 
-    private TextView textView;
-    private String linkTextColorKey = Theme.key_windowBackgroundWhiteLinkText;
+    private LinkSpanDrawable.LinksTextView textView;
+    private LinkSpanDrawable.LinkCollector links;
+    private int linkTextColorKey = Theme.key_windowBackgroundWhiteLinkText;
+    private Integer linkTextRippleColor;
     private int topPadding = 10;
     private int bottomPadding = 17;
     private int fixedSize;
+    private boolean isRTL;
 
     private CharSequence text;
     private final Theme.ResourcesProvider resourcesProvider;
@@ -56,12 +61,20 @@ public class TextInfoPrivacyCell extends FrameLayout {
         super(context);
         this.resourcesProvider = resourcesProvider;
 
-        textView = new TextView(context) {
+        textView = new LinkSpanDrawable.LinksTextView(context, links = new LinkSpanDrawable.LinkCollector(this), resourcesProvider) {
             @Override
             protected void onDraw(Canvas canvas) {
                 onTextDraw();
                 super.onDraw(canvas);
                 afterTextDraw();
+            }
+
+            @Override
+            public int overrideColor() {
+                if (linkTextRippleColor != null) {
+                    return linkTextRippleColor;
+                }
+                return super.overrideColor();
             }
         };
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
@@ -69,9 +82,39 @@ public class TextInfoPrivacyCell extends FrameLayout {
         textView.setPadding(0, AndroidUtilities.dp(10), 0, AndroidUtilities.dp(17));
         textView.setMovementMethod(LinkMovementMethod.getInstance());
         textView.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteGrayText4));
+        textView.setEmojiColor(getThemedColor(Theme.key_windowBackgroundWhiteGrayText4));
         textView.setLinkTextColor(getThemedColor(linkTextColorKey));
         textView.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);
         addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, padding, 0, padding, 0));
+
+        isRTL = LocaleController.isRTL;
+
+        setWillNotDraw(false);
+    }
+
+    public void updateRTL() {
+        if (isRTL == LocaleController.isRTL) {
+            return;
+        }
+        isRTL = LocaleController.isRTL;
+
+        textView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
+        FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) textView.getLayoutParams();
+        layoutParams.gravity = (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP;
+        textView.setLayoutParams(layoutParams);
+    }
+
+    @Override
+    protected void onDraw(Canvas canvas) {
+        if (links != null) {
+            canvas.save();
+            canvas.translate(textView.getLeft(), textView.getTop());
+            if (links.draw(canvas)) {
+                invalidate();
+            }
+            canvas.restore();
+        }
+        super.onDraw(canvas);
     }
 
     protected void onTextDraw() {
@@ -82,13 +125,15 @@ public class TextInfoPrivacyCell extends FrameLayout {
 
     }
 
-    public void setLinkTextColorKey(String key) {
+    public void setLinkTextColorKey(int key) {
         linkTextColorKey = key;
     }
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        if (fixedSize != 0) {
+        if (fixedSize == -1) {
+            super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(0, MeasureSpec.EXACTLY));
+        } else if (fixedSize != 0) {
             super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(fixedSize), MeasureSpec.EXACTLY));
         } else {
             super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED));
@@ -105,6 +150,10 @@ public class TextInfoPrivacyCell extends FrameLayout {
 
     public void setFixedSize(int size) {
         fixedSize = size;
+    }
+
+    public CharSequence getText() {
+        return textView.getText();
     }
 
     public void setText(CharSequence text) {
@@ -134,13 +183,17 @@ public class TextInfoPrivacyCell extends FrameLayout {
         textView.setTextColor(color);
     }
 
-    public void setTextColor(String key) {
+    public void setTextColorByKey(int key) {
         textView.setTextColor(getThemedColor(key));
         textView.setTag(key);
     }
 
-    public TextView getTextView() {
+    public LinkSpanDrawable.LinksTextView getTextView() {
         return textView;
+    }
+
+    public void setLinkTextRippleColor(Integer color) {
+        linkTextRippleColor = color;
     }
 
     public int length() {
@@ -149,10 +202,14 @@ public class TextInfoPrivacyCell extends FrameLayout {
 
     public void setEnabled(boolean value, ArrayList<Animator> animators) {
         if (animators != null) {
-            animators.add(ObjectAnimator.ofFloat(textView, "alpha", value ? 1.0f : 0.5f));
+            animators.add(ObjectAnimator.ofFloat(textView, View.ALPHA, value ? 1.0f : 0.5f));
         } else {
             textView.setAlpha(value ? 1.0f : 0.5f);
         }
+    }
+
+    public void setTextGravity(int gravity) {
+        textView.setGravity(gravity);
     }
 
     @Override
@@ -162,8 +219,7 @@ public class TextInfoPrivacyCell extends FrameLayout {
         info.setText(text);
     }
 
-    private int getThemedColor(String key) {
-        Integer color = resourcesProvider != null ? resourcesProvider.getColor(key) : null;
-        return color != null ? color : Theme.getColor(key);
+    private int getThemedColor(int key) {
+        return Theme.getColor(key, resourcesProvider);
     }
 }

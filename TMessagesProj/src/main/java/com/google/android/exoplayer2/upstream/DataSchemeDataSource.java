@@ -16,13 +16,17 @@
 package com.google.android.exoplayer2.upstream;
 
 import static com.google.android.exoplayer2.util.Util.castNonNull;
+import static java.lang.Math.min;
 
 import android.net.Uri;
 import android.util.Base64;
 import androidx.annotation.Nullable;
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.ParserException;
+import com.google.android.exoplayer2.PlaybackException;
+import com.google.android.exoplayer2.util.Assertions;
 import com.google.android.exoplayer2.util.Util;
+import com.google.common.base.Charsets;
 import java.io.IOException;
 import java.net.URLDecoder;
 
@@ -33,11 +37,9 @@ public final class DataSchemeDataSource extends BaseDataSource {
 
   @Nullable private DataSpec dataSpec;
   @Nullable private byte[] data;
-  private int endPosition;
   private int readPosition;
+  private int bytesRemaining;
 
-  // the constructor does not initialize fields: data
-  @SuppressWarnings("nullness:initialization.fields.uninitialized")
   public DataSchemeDataSource() {
     super(/* isNetwork= */ false);
   }
@@ -46,51 +48,53 @@ public final class DataSchemeDataSource extends BaseDataSource {
   public long open(DataSpec dataSpec) throws IOException {
     transferInitializing(dataSpec);
     this.dataSpec = dataSpec;
-    readPosition = (int) dataSpec.position;
     Uri uri = dataSpec.uri;
     String scheme = uri.getScheme();
-    if (!SCHEME_DATA.equals(scheme)) {
-      throw new ParserException("Unsupported scheme: " + scheme);
-    }
+    Assertions.checkArgument(SCHEME_DATA.equals(scheme), "Unsupported scheme: " + scheme);
     String[] uriParts = Util.split(uri.getSchemeSpecificPart(), ",");
     if (uriParts.length != 2) {
-      throw new ParserException("Unexpected URI format: " + uri);
+      throw ParserException.createForMalformedDataOfUnknownType(
+          "Unexpected URI format: " + uri, /* cause= */ null);
     }
     String dataString = uriParts[1];
     if (uriParts[0].contains(";base64")) {
       try {
-        data = Base64.decode(dataString, 0);
+        data = Base64.decode(dataString, /* flags= */ Base64.DEFAULT);
       } catch (IllegalArgumentException e) {
-        throw new ParserException("Error while parsing Base64 encoded string: " + dataString, e);
+        throw ParserException.createForMalformedDataOfUnknownType(
+            "Error while parsing Base64 encoded string: " + dataString, e);
       }
     } else {
       // TODO: Add support for other charsets.
-      data = Util.getUtf8Bytes(URLDecoder.decode(dataString, C.ASCII_NAME));
+      data = Util.getUtf8Bytes(URLDecoder.decode(dataString, Charsets.US_ASCII.name()));
     }
-    endPosition =
-        dataSpec.length != C.LENGTH_UNSET ? (int) dataSpec.length + readPosition : data.length;
-    if (endPosition > data.length || readPosition > endPosition) {
+    if (dataSpec.position > data.length) {
       data = null;
-      throw new DataSourceException(DataSourceException.POSITION_OUT_OF_RANGE);
+      throw new DataSourceException(PlaybackException.ERROR_CODE_IO_READ_POSITION_OUT_OF_RANGE);
+    }
+    readPosition = (int) dataSpec.position;
+    bytesRemaining = data.length - readPosition;
+    if (dataSpec.length != C.LENGTH_UNSET) {
+      bytesRemaining = (int) min(bytesRemaining, dataSpec.length);
     }
     transferStarted(dataSpec);
-    return (long) endPosition - readPosition;
+    return dataSpec.length != C.LENGTH_UNSET ? dataSpec.length : bytesRemaining;
   }
 
   @Override
-  public int read(byte[] buffer, int offset, int readLength) {
-    if (readLength == 0) {
+  public int read(byte[] buffer, int offset, int length) {
+    if (length == 0) {
       return 0;
     }
-    int remainingBytes = endPosition - readPosition;
-    if (remainingBytes == 0) {
+    if (bytesRemaining == 0) {
       return C.RESULT_END_OF_INPUT;
     }
-    readLength = Math.min(readLength, remainingBytes);
-    System.arraycopy(castNonNull(data), readPosition, buffer, offset, readLength);
-    readPosition += readLength;
-    bytesTransferred(readLength);
-    return readLength;
+    length = min(length, bytesRemaining);
+    System.arraycopy(castNonNull(data), readPosition, buffer, offset, length);
+    readPosition += length;
+    bytesRemaining -= length;
+    bytesTransferred(length);
+    return length;
   }
 
   @Override

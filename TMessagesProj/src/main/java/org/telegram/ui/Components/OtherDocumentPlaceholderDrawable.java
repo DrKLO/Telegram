@@ -18,6 +18,7 @@ import org.telegram.messenger.ImageLoader;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.R;
+import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.TLRPC;
 
 import java.io.File;
@@ -76,11 +77,11 @@ public class OtherDocumentPlaceholderDrawable extends RecyclableDrawable impleme
         percentPaint.setColor(0xffffffff);
         openPaint.setColor(0xffffffff);
 
-        docPaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
-        namePaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
-        buttonPaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
-        percentPaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
-        openPaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        docPaint.setTypeface(AndroidUtilities.bold());
+        namePaint.setTypeface(AndroidUtilities.bold());
+        buttonPaint.setTypeface(AndroidUtilities.bold());
+        percentPaint.setTypeface(AndroidUtilities.bold());
+        openPaint.setTypeface(AndroidUtilities.bold());
     }
 
     public OtherDocumentPlaceholderDrawable(Context context, View view, MessageObject messageObject) {
@@ -163,14 +164,14 @@ public class OtherDocumentPlaceholderDrawable extends RecyclableDrawable impleme
         TextPaint paint;
         int offsetY;
         if (loaded) {
-            button = LocaleController.getString("OpenFile", R.string.OpenFile);
+            button = LocaleController.getString(R.string.OpenFile);
             paint = openPaint;
             offsetY = 0;
         } else {
             if (loading) {
-                button = LocaleController.getString("Cancel", R.string.Cancel).toUpperCase();
+                button = LocaleController.getString(R.string.Cancel).toUpperCase();
             } else {
-                button = LocaleController.getString("TapToDownload", R.string.TapToDownload);
+                button = LocaleController.getString(R.string.TapToDownload);
             }
             offsetY = AndroidUtilities.dp(28);
             paint = buttonPaint;
@@ -266,7 +267,7 @@ public class OtherDocumentPlaceholderDrawable extends RecyclableDrawable impleme
             String fileName = null;
             File cacheFile;
             if (TextUtils.isEmpty(parentMessageObject.messageOwner.attachPath) || !(new File(parentMessageObject.messageOwner.attachPath).exists())) {
-                cacheFile = FileLoader.getPathToMessage(parentMessageObject.messageOwner);
+                cacheFile = FileLoader.getInstance(UserConfig.selectedAccount).getPathToMessage(parentMessageObject.messageOwner);
                 if (!cacheFile.exists()) {
                     fileName = FileLoader.getAttachFileName(parentMessageObject.getDocument());
                 }

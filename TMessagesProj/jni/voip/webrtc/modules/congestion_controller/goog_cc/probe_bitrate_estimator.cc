@@ -13,12 +13,17 @@
 #include <algorithm>
 #include <memory>
 
+#include "absl/types/optional.h"
 #include "api/rtc_event_log/rtc_event_log.h"
+#include "api/transport/network_types.h"
+#include "api/units/data_rate.h"
+#include "api/units/data_size.h"
+#include "api/units/time_delta.h"
+#include "api/units/timestamp.h"
 #include "logging/rtc_event_log/events/rtc_event_probe_result_failure.h"
 #include "logging/rtc_event_log/events/rtc_event_probe_result_success.h"
 #include "rtc_base/checks.h"
 #include "rtc_base/logging.h"
-#include "rtc_base/numerics/safe_conversions.h"
 
 namespace webrtc {
 namespace {
@@ -119,14 +124,14 @@ absl::optional<DataRate> ProbeBitrateEstimator::HandleProbeAndEstimateBitrate(
     }
     return absl::nullopt;
   }
-  // Since the |send_interval| does not include the time it takes to actually
+  // Since the `send_interval` does not include the time it takes to actually
   // send the last packet the size of the last sent packet should not be
   // included when calculating the send bitrate.
   RTC_DCHECK_GT(cluster->size_total, cluster->size_last_send);
   DataSize send_size = cluster->size_total - cluster->size_last_send;
   DataRate send_rate = send_size / send_interval;
 
-  // Since the |receive_interval| does not include the time it takes to
+  // Since the `receive_interval` does not include the time it takes to
   // actually receive the first packet the size of the first received packet
   // should not be included when calculating the receive bitrate.
   RTC_DCHECK_GT(cluster->size_total, cluster->size_first_receive);

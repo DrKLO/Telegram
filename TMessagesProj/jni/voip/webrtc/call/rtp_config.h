@@ -78,10 +78,10 @@ struct RtpConfig {
 
   // The Rtp Stream Ids (aka RIDs) to send in the RID RTP header extension
   // if the extension is included in the list of extensions.
-  // If rids are specified, they should correspond to the |ssrcs| vector.
+  // If rids are specified, they should correspond to the `ssrcs` vector.
   // This means that:
   // 1. rids.size() == 0 || rids.size() == ssrcs.size().
-  // 2. If rids is not empty, then |rids[i]| should use |ssrcs[i]|.
+  // 2. If rids is not empty, then `rids[i]` should use `ssrcs[i]`.
   std::vector<std::string> rids;
 
   // The value to send in the MID RTP header extension if the extension is
@@ -104,7 +104,7 @@ struct RtpConfig {
   // changing codec without recreating the VideoSendStream. Then these
   // fields must be removed, and association between payload type and codec
   // must move above the per-stream level. Ownership could be with
-  // RtpTransportControllerSend, with a reference from PayloadRouter, where
+  // RtpTransportControllerSend, with a reference from RtpVideoSender, where
   // the latter would be responsible for mapping the codec type of encoded
   // images to the right payload type.
   std::string payload_name;
@@ -158,6 +158,9 @@ struct RtpConfig {
 
   // RTCP CNAME, see RFC 3550.
   std::string c_name;
+
+  // Enables send packet batching from the egress RTP sender.
+  bool enable_send_packet_batching = false;
 
   bool IsMediaSsrc(uint32_t ssrc) const;
   bool IsRtxSsrc(uint32_t ssrc) const;

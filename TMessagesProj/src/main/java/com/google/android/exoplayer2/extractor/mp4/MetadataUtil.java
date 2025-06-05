@@ -15,6 +15,8 @@
  */
 package com.google.android.exoplayer2.extractor.mp4;
 
+import static java.lang.Math.min;
+
 import androidx.annotation.Nullable;
 import androidx.annotation.VisibleForTesting;
 import com.google.android.exoplayer2.C;
@@ -26,8 +28,11 @@ import com.google.android.exoplayer2.metadata.id3.CommentFrame;
 import com.google.android.exoplayer2.metadata.id3.Id3Frame;
 import com.google.android.exoplayer2.metadata.id3.InternalFrame;
 import com.google.android.exoplayer2.metadata.id3.TextInformationFrame;
+import com.google.android.exoplayer2.metadata.mp4.MdtaMetadataEntry;
 import com.google.android.exoplayer2.util.Log;
 import com.google.android.exoplayer2.util.ParsableByteArray;
+import com.google.common.collect.ImmutableList;
+import org.checkerframework.checker.nullness.compatqual.NullableType;
 
 /** Utilities for handling metadata in MP4. */
 /* package */ final class MetadataUtil {
@@ -275,48 +280,60 @@ import com.google.android.exoplayer2.util.ParsableByteArray;
         "Psybient"
       };
 
-  private static final String LANGUAGE_UNDEFINED = "und";
-
   private static final int TYPE_TOP_BYTE_COPYRIGHT = 0xA9;
   private static final int TYPE_TOP_BYTE_REPLACEMENT = 0xFD; // Truncated value of \uFFFD.
 
-  private static final String MDTA_KEY_ANDROID_CAPTURE_FPS = "com.android.capture.fps";
-
   private MetadataUtil() {}
 
-  /**
-   * Returns a {@link Format} that is the same as the input format but includes information from the
-   * specified sources of metadata.
-   */
-  public static Format getFormatWithMetadata(
+  /** Updates a {@link Format.Builder} to include metadata from the provided sources. */
+  public static void setFormatMetadata(
       int trackType,
-      Format format,
-      @Nullable Metadata udtaMetadata,
+      @Nullable Metadata udtaMetaMetadata,
       @Nullable Metadata mdtaMetadata,
-      GaplessInfoHolder gaplessInfoHolder) {
+      Format.Builder formatBuilder,
+      @NullableType Metadata... additionalMetadata) {
+    Metadata formatMetadata = new Metadata();
+
     if (trackType == C.TRACK_TYPE_AUDIO) {
-      if (gaplessInfoHolder.hasGaplessInfo()) {
-        format =
-            format.copyWithGaplessInfo(
-                gaplessInfoHolder.encoderDelay, gaplessInfoHolder.encoderPadding);
+      // We assume all meta metadata in the udta box is associated with the audio track.
+      if (udtaMetaMetadata != null) {
+        formatMetadata = udtaMetaMetadata;
       }
-      // We assume all udta metadata is associated with the audio track.
-      if (udtaMetadata != null) {
-        format = format.copyWithMetadata(udtaMetadata);
-      }
-    } else if (trackType == C.TRACK_TYPE_VIDEO && mdtaMetadata != null) {
+    } else if (trackType == C.TRACK_TYPE_VIDEO) {
       // Populate only metadata keys that are known to be specific to video.
-      for (int i = 0; i < mdtaMetadata.length(); i++) {
-        Metadata.Entry entry = mdtaMetadata.get(i);
-        if (entry instanceof MdtaMetadataEntry) {
-          MdtaMetadataEntry mdtaMetadataEntry = (MdtaMetadataEntry) entry;
-          if (MDTA_KEY_ANDROID_CAPTURE_FPS.equals(mdtaMetadataEntry.key)) {
-            format = format.copyWithMetadata(new Metadata(mdtaMetadataEntry));
+      if (mdtaMetadata != null) {
+        for (int i = 0; i < mdtaMetadata.length(); i++) {
+          Metadata.Entry entry = mdtaMetadata.get(i);
+          if (entry instanceof MdtaMetadataEntry) {
+            MdtaMetadataEntry mdtaMetadataEntry = (MdtaMetadataEntry) entry;
+            if (MdtaMetadataEntry.KEY_ANDROID_CAPTURE_FPS.equals(mdtaMetadataEntry.key)) {
+              formatMetadata = new Metadata(mdtaMetadataEntry);
+              break;
+            }
           }
         }
       }
     }
-    return format;
+
+    for (Metadata metadata : additionalMetadata) {
+      formatMetadata = formatMetadata.copyWithAppendedEntriesFrom(metadata);
+    }
+
+    if (formatMetadata.length() > 0) {
+      formatBuilder.setMetadata(formatMetadata);
+    }
+  }
+
+  /**
+   * Updates a {@link Format.Builder} to include audio gapless information from the provided source.
+   */
+  public static void setFormatGaplessInfo(
+      int trackType, GaplessInfoHolder gaplessInfoHolder, Format.Builder formatBuilder) {
+    if (trackType == C.TRACK_TYPE_AUDIO && gaplessInfoHolder.hasGaplessInfo()) {
+      formatBuilder
+          .setEncoderDelay(gaplessInfoHolder.encoderDelay)
+          .setEncoderPadding(gaplessInfoHolder.encoderPadding);
+    }
   }
 
   /**
@@ -436,7 +453,7 @@ import com.google.android.exoplayer2.util.ParsableByteArray;
     if (atomType == Atom.TYPE_data) {
       data.skipBytes(8); // version (1), flags (3), empty (4)
       String value = data.readNullTerminatedString(atomSize - 16);
-      return new TextInformationFrame(id, /* description= */ null, value);
+      return new TextInformationFrame(id, /* description= */ null, ImmutableList.of(value));
     }
     Log.w(TAG, "Failed to parse text attribute: " + Atom.getAtomTypeString(type));
     return null;
@@ -449,7 +466,7 @@ import com.google.android.exoplayer2.util.ParsableByteArray;
     if (atomType == Atom.TYPE_data) {
       data.skipBytes(8); // version (1), flags (3), empty (4)
       String value = data.readNullTerminatedString(atomSize - 16);
-      return new CommentFrame(LANGUAGE_UNDEFINED, value, value);
+      return new CommentFrame(C.LANGUAGE_UNDETERMINED, value, value);
     }
     Log.w(TAG, "Failed to parse comment attribute: " + Atom.getAtomTypeString(type));
     return null;
@@ -464,12 +481,13 @@ import com.google.android.exoplayer2.util.ParsableByteArray;
       boolean isBoolean) {
     int value = parseUint8AttributeValue(data);
     if (isBoolean) {
-      value = Math.min(1, value);
+      value = min(1, value);
     }
     if (value >= 0) {
       return isTextInformationFrame
-          ? new TextInformationFrame(id, /* description= */ null, Integer.toString(value))
-          : new CommentFrame(LANGUAGE_UNDEFINED, id, Integer.toString(value));
+          ? new TextInformationFrame(
+              id, /* description= */ null, ImmutableList.of(Integer.toString(value)))
+          : new CommentFrame(C.LANGUAGE_UNDETERMINED, id, Integer.toString(value));
     }
     Log.w(TAG, "Failed to parse uint8 attribute: " + Atom.getAtomTypeString(type));
     return null;
@@ -489,7 +507,8 @@ import com.google.android.exoplayer2.util.ParsableByteArray;
         if (count > 0) {
           value += "/" + count;
         }
-        return new TextInformationFrame(attributeName, /* description= */ null, value);
+        return new TextInformationFrame(
+            attributeName, /* description= */ null, ImmutableList.of(value));
       }
     }
     Log.w(TAG, "Failed to parse index/count attribute: " + Atom.getAtomTypeString(type));
@@ -499,10 +518,14 @@ import com.google.android.exoplayer2.util.ParsableByteArray;
   @Nullable
   private static TextInformationFrame parseStandardGenreAttribute(ParsableByteArray data) {
     int genreCode = parseUint8AttributeValue(data);
-    String genreString = (0 < genreCode && genreCode <= STANDARD_GENRES.length)
-        ? STANDARD_GENRES[genreCode - 1] : null;
+    @Nullable
+    String genreString =
+        (0 < genreCode && genreCode <= STANDARD_GENRES.length)
+            ? STANDARD_GENRES[genreCode - 1]
+            : null;
     if (genreString != null) {
-      return new TextInformationFrame("TCON", /* description= */ null, genreString);
+      return new TextInformationFrame(
+          "TCON", /* description= */ null, ImmutableList.of(genreString));
     }
     Log.w(TAG, "Failed to parse standard genre code");
     return null;
@@ -515,7 +538,7 @@ import com.google.android.exoplayer2.util.ParsableByteArray;
     if (atomType == Atom.TYPE_data) {
       int fullVersionInt = data.readInt();
       int flags = Atom.parseFullAtomFlags(fullVersionInt);
-      String mimeType = flags == 13 ? "image/jpeg" : flags == 14 ? "image/png" : null;
+      @Nullable String mimeType = flags == 13 ? "image/jpeg" : flags == 14 ? "image/png" : null;
       if (mimeType == null) {
         Log.w(TAG, "Unrecognized cover art flags: " + flags);
         return null;
@@ -535,8 +558,8 @@ import com.google.android.exoplayer2.util.ParsableByteArray;
 
   @Nullable
   private static Id3Frame parseInternalAttribute(ParsableByteArray data, int endPosition) {
-    String domain = null;
-    String name = null;
+    @Nullable String domain = null;
+    @Nullable String name = null;
     int dataAtomPosition = -1;
     int dataAtomSize = -1;
     while (data.getPosition() < endPosition) {
@@ -575,5 +598,4 @@ import com.google.android.exoplayer2.util.ParsableByteArray;
     Log.w(TAG, "Failed to parse uint8 attribute value");
     return -1;
   }
-
 }

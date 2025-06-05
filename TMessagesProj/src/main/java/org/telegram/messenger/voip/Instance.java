@@ -1,6 +1,6 @@
 package org.telegram.messenger.voip;
 
-import android.os.Build;
+import com.google.android.exoplayer2.util.Util;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -14,8 +14,6 @@ import java.util.Arrays;
 import java.util.List;
 
 public final class Instance {
-
-    public static final List<String> AVAILABLE_VERSIONS = Build.VERSION.SDK_INT >= 18 ? Arrays.asList(/*"3.0.0", */"2.7.7", "2.4.4") : Arrays.asList("2.4.4");
 
     public static final int AUDIO_STATE_MUTED = 0;
     public static final int AUDIO_STATE_ACTIVE = 1;
@@ -156,8 +154,23 @@ public final class Instance {
         public final String statsLogPath;
         public final int maxApiLayer;
         public final boolean enableSm;
+        public final String customParameters;
 
-        public Config(double initializationTimeout, double receiveTimeout, int dataSaving, boolean enableP2p, boolean enableAec, boolean enableNs, boolean enableAgc, boolean enableCallUpgrade, boolean enableSm, String logPath, String statsLogPath, int maxApiLayer) {
+        public Config(
+            double initializationTimeout,
+            double receiveTimeout,
+            int dataSaving,
+            boolean enableP2p,
+            boolean enableAec,
+            boolean enableNs,
+            boolean enableAgc,
+            boolean enableCallUpgrade,
+            boolean enableSm,
+            String logPath,
+            String statsLogPath,
+            int maxApiLayer,
+            String customParameters
+        ) {
             this.initializationTimeout = initializationTimeout;
             this.receiveTimeout = receiveTimeout;
             this.dataSaving = dataSaving;
@@ -170,6 +183,7 @@ public final class Instance {
             this.statsLogPath = statsLogPath;
             this.maxApiLayer = maxApiLayer;
             this.enableSm = enableSm;
+            this.customParameters = customParameters;
         }
 
         @Override
@@ -187,6 +201,7 @@ public final class Instance {
                     ", statsLogPath='" + statsLogPath + '\'' +
                     ", maxApiLayer=" + maxApiLayer +
                     ", enableSm=" + enableSm +
+                    ", customParameters=" + customParameters +
                     '}';
         }
     }
@@ -204,8 +219,10 @@ public final class Instance {
         public final boolean stun;
         public final String username;
         public final String password;
+        public final boolean tcp;
+        public int reflectorId;
 
-        public Endpoint(boolean isRtc, long id, String ipv4, String ipv6, int port, int type, byte[] peerTag, boolean turn, boolean stun, String username, String password) {
+        public Endpoint(boolean isRtc, long id, String ipv4, String ipv6, int port, int type, byte[] peerTag, boolean turn, boolean stun, String username, String password, boolean tcp) {
             this.isRtc = isRtc;
             this.id = id;
             this.ipv4 = ipv4;
@@ -215,8 +232,17 @@ public final class Instance {
             this.peerTag = peerTag;
             this.turn = turn;
             this.stun = stun;
-            this.username = username;
-            this.password = password;
+            if (isRtc) {
+                this.username = username;
+                this.password = password;
+            } else if (peerTag != null) {
+                this.username = "reflector";
+                this.password = Util.toHexString(peerTag);
+            } else {
+                this.username = null;
+                this.password = null;
+            }
+            this.tcp = tcp;
         }
 
         @Override
@@ -232,6 +258,7 @@ public final class Instance {
                     ", stun=" + stun +
                     ", username=" + username +
                     ", password=" + password +
+                    ", tcp=" + tcp +
                     '}';
         }
     }
@@ -283,7 +310,7 @@ public final class Instance {
     public static final class FinalState {
 
         public final byte[] persistentState;
-        public final String debugLog;
+        public String debugLog;
         public final TrafficStats trafficStats;
         public final boolean isRatingSuggested;
 

@@ -18,7 +18,6 @@
 
 #include "api/sequence_checker.h"
 #include "rtc_base/buffer.h"
-#include "rtc_base/constructor_magic.h"
 #include "rtc_base/system/no_unique_address.h"
 #include "rtc_base/thread_annotations.h"
 
@@ -30,10 +29,13 @@ class BufferQueue final {
   BufferQueue(size_t capacity, size_t default_size);
   ~BufferQueue();
 
+  BufferQueue(const BufferQueue&) = delete;
+  BufferQueue& operator=(const BufferQueue&) = delete;
+
   // Return number of queued buffers.
   size_t size() const;
 
-  // Clear the BufferQueue by moving all Buffers from |queue_| to |free_list_|.
+  // Clear the BufferQueue by moving all Buffers from `queue_` to `free_list_`.
   void Clear();
 
   // ReadFront will only read one buffer at a time and will truncate buffers
@@ -61,8 +63,6 @@ class BufferQueue final {
   const size_t default_size_;
   std::deque<Buffer*> queue_ RTC_GUARDED_BY(sequence_checker_);
   std::vector<Buffer*> free_list_ RTC_GUARDED_BY(sequence_checker_);
-
-  RTC_DISALLOW_COPY_AND_ASSIGN(BufferQueue);
 };
 
 }  // namespace rtc

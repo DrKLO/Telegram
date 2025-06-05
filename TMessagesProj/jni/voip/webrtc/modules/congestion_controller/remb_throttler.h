@@ -16,7 +16,7 @@
 #include "api/units/data_rate.h"
 #include "api/units/time_delta.h"
 #include "api/units/timestamp.h"
-#include "modules/remote_bitrate_estimator/remote_estimator_proxy.h"
+#include "modules/remote_bitrate_estimator/include/remote_bitrate_estimator.h"
 #include "rtc_base/synchronization/mutex.h"
 
 namespace webrtc {
@@ -30,7 +30,7 @@ class RembThrottler : public RemoteBitrateObserver {
   RembThrottler(RembSender remb_sender, Clock* clock);
 
   // Ensures the remote party is notified of the receive bitrate no larger than
-  // |bitrate| using RTCP REMB.
+  // `bitrate` using RTCP REMB.
   void SetMaxDesiredReceiveBitrate(DataRate bitrate);
 
   // Implements RemoteBitrateObserver;

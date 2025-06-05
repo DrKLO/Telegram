@@ -25,7 +25,7 @@ class ExpFilter {
   }
 
   // Resets the filter to its initial state, and resets filter factor base to
-  // the given value |alpha|.
+  // the given value `alpha`.
   void Reset(float alpha);
 
   // Applies the filter with a given exponent on the provided sample:
@@ -35,7 +35,7 @@ class ExpFilter {
   // Returns current filtered value.
   float filtered() const { return filtered_; }
 
-  // Changes the filter factor base to the given value |alpha|.
+  // Changes the filter factor base to the given value `alpha`.
   void UpdateBase(float alpha);
 
  private:

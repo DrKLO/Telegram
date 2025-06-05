@@ -49,9 +49,13 @@ float AverageDecayWithinFilter(
 
 }  // namespace
 
-ReverbFrequencyResponse::ReverbFrequencyResponse() {
-  tail_response_.fill(0.f);
+ReverbFrequencyResponse::ReverbFrequencyResponse(
+    bool use_conservative_tail_frequency_response)
+    : use_conservative_tail_frequency_response_(
+          use_conservative_tail_frequency_response) {
+  tail_response_.fill(0.0f);
 }
+
 ReverbFrequencyResponse::~ReverbFrequencyResponse() = default;
 
 void ReverbFrequencyResponse::Update(
@@ -86,6 +90,12 @@ void ReverbFrequencyResponse::Update(
 
   for (size_t k = 0; k < kFftLengthBy2Plus1; ++k) {
     tail_response_[k] = freq_resp_direct_path[k] * average_decay_;
+  }
+
+  if (use_conservative_tail_frequency_response_) {
+    for (size_t k = 0; k < kFftLengthBy2Plus1; ++k) {
+      tail_response_[k] = std::max(freq_resp_tail[k], tail_response_[k]);
+    }
   }
 
   for (size_t k = 1; k < kFftLengthBy2; ++k) {

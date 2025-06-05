@@ -12,14 +12,14 @@
 #define RTC_BASE_EXPERIMENTS_QUALITY_SCALER_SETTINGS_H_
 
 #include "absl/types/optional.h"
-#include "api/transport/webrtc_key_value_config.h"
+#include "api/field_trials_view.h"
 #include "rtc_base/experiments/field_trial_parser.h"
 
 namespace webrtc {
 
 class QualityScalerSettings final {
  public:
-  static QualityScalerSettings ParseFromFieldTrials();
+  explicit QualityScalerSettings(const FieldTrialsView& field_trials);
 
   absl::optional<int> SamplingPeriodMs() const;
   absl::optional<int> AverageQpWindow() const;
@@ -30,9 +30,6 @@ class QualityScalerSettings final {
   absl::optional<double> InitialBitrateFactor() const;
 
  private:
-  explicit QualityScalerSettings(
-      const WebRtcKeyValueConfig* const key_value_config);
-
   FieldTrialOptional<int> sampling_period_ms_;
   FieldTrialOptional<int> average_qp_window_;
   FieldTrialOptional<int> min_frames_;

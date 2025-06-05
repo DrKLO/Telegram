@@ -12,7 +12,9 @@
 #define P2P_BASE_TRANSPORT_DESCRIPTION_FACTORY_H_
 
 #include <memory>
+#include <utility>
 
+#include "api/field_trials_view.h"
 #include "p2p/base/ice_credentials_iterator.h"
 #include "p2p/base/transport_description.h"
 #include "rtc_base/rtc_certificate.h"
@@ -37,21 +39,18 @@ struct TransportOptions {
 class TransportDescriptionFactory {
  public:
   // Default ctor; use methods below to set configuration.
-  TransportDescriptionFactory();
+  explicit TransportDescriptionFactory(
+      const webrtc::FieldTrialsView& field_trials);
   ~TransportDescriptionFactory();
 
-  SecurePolicy secure() const { return secure_; }
   // The certificate to use when setting up DTLS.
   const rtc::scoped_refptr<rtc::RTCCertificate>& certificate() const {
     return certificate_;
   }
 
-  // Specifies the transport security policy to use.
-  void set_secure(SecurePolicy s) { secure_ = s; }
-  // Specifies the certificate to use (only used when secure != SEC_DISABLED).
-  void set_certificate(
-      const rtc::scoped_refptr<rtc::RTCCertificate>& certificate) {
-    certificate_ = certificate;
+  // Specifies the certificate to use
+  void set_certificate(rtc::scoped_refptr<rtc::RTCCertificate> certificate) {
+    certificate_ = std::move(certificate);
   }
 
   // Creates a transport description suitable for use in an offer.
@@ -61,8 +60,8 @@ class TransportDescriptionFactory {
       IceCredentialsIterator* ice_credentials) const;
   // Create a transport description that is a response to an offer.
   //
-  // If |require_transport_attributes| is true, then TRANSPORT category
-  // attributes are expected to be present in |offer|, as defined by
+  // If `require_transport_attributes` is true, then TRANSPORT category
+  // attributes are expected to be present in `offer`, as defined by
   // sdp-mux-attributes, and null will be returned otherwise. It's expected
   // that this will be set to false for an m= section that's in a BUNDLE group
   // but isn't the first m= section in the group.
@@ -73,12 +72,21 @@ class TransportDescriptionFactory {
       const TransportDescription* current_description,
       IceCredentialsIterator* ice_credentials) const;
 
+  const webrtc::FieldTrialsView& trials() const { return field_trials_; }
+  // Functions for disabling encryption - test only!
+  // In insecure mode, the connection will accept a description without
+  // fingerprint, and will generate SDP even if certificate is not set.
+  // If certificate is set, it will accept a description both with and
+  // without fingerprint, but will generate a description with fingerprint.
+  bool insecure() const { return insecure_; }
+  void SetInsecureForTesting() { insecure_ = true; }
+
  private:
   bool SetSecurityInfo(TransportDescription* description,
                        ConnectionRole role) const;
-
-  SecurePolicy secure_;
+  bool insecure_ = false;
   rtc::scoped_refptr<rtc::RTCCertificate> certificate_;
+  const webrtc::FieldTrialsView& field_trials_;
 };
 
 }  // namespace cricket

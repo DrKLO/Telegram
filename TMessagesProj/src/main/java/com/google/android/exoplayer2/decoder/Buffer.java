@@ -17,38 +17,32 @@ package com.google.android.exoplayer2.decoder;
 
 import com.google.android.exoplayer2.C;
 
-/**
- * Base class for buffers with flags.
- */
+/** Base class for buffers with flags. */
 public abstract class Buffer {
 
-  @C.BufferFlags
-  private int flags;
+  private @C.BufferFlags int flags;
 
-  /**
-   * Clears the buffer.
-   */
+  /** Clears the buffer. */
   public void clear() {
     flags = 0;
   }
 
-  /**
-   * Returns whether the {@link C#BUFFER_FLAG_DECODE_ONLY} flag is set.
-   */
+  /** Returns whether the {@link C#BUFFER_FLAG_DECODE_ONLY} flag is set. */
   public final boolean isDecodeOnly() {
     return getFlag(C.BUFFER_FLAG_DECODE_ONLY);
   }
 
-  /**
-   * Returns whether the {@link C#BUFFER_FLAG_END_OF_STREAM} flag is set.
-   */
+  /** Returns whether the {@link C#BUFFER_FLAG_FIRST_SAMPLE} flag is set. */
+  public final boolean isFirstSample() {
+    return getFlag(C.BUFFER_FLAG_FIRST_SAMPLE);
+  }
+
+  /** Returns whether the {@link C#BUFFER_FLAG_END_OF_STREAM} flag is set. */
   public final boolean isEndOfStream() {
     return getFlag(C.BUFFER_FLAG_END_OF_STREAM);
   }
 
-  /**
-   * Returns whether the {@link C#BUFFER_FLAG_KEY_FRAME} flag is set.
-   */
+  /** Returns whether the {@link C#BUFFER_FLAG_KEY_FRAME} flag is set. */
   public final boolean isKeyFrame() {
     return getFlag(C.BUFFER_FLAG_KEY_FRAME);
   }
@@ -71,8 +65,8 @@ public abstract class Buffer {
   /**
    * Adds the {@code flag} to this buffer's flags.
    *
-   * @param flag The flag to add to this buffer's flags, which should be one of the
-   *     {@code C.BUFFER_FLAG_*} constants.
+   * @param flag The flag to add to this buffer's flags, which should be one of the {@code
+   *     C.BUFFER_FLAG_*} constants.
    */
   public final void addFlag(@C.BufferFlags int flag) {
     flags |= flag;
@@ -96,5 +90,4 @@ public abstract class Buffer {
   protected final boolean getFlag(@C.BufferFlags int flag) {
     return (flags & flag) == flag;
   }
-
 }

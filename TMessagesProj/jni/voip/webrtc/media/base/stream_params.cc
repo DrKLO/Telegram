@@ -111,7 +111,7 @@ StreamParams& StreamParams::operator=(const StreamParams&) = default;
 StreamParams& StreamParams::operator=(StreamParams&&) = default;
 
 bool StreamParams::operator==(const StreamParams& other) const {
-  return (groupid == other.groupid && id == other.id && ssrcs == other.ssrcs &&
+  return (id == other.id && ssrcs == other.ssrcs &&
           ssrc_groups == other.ssrc_groups && cname == other.cname &&
           stream_ids_ == other.stream_ids_ &&
           // RIDs are not required to be in the same order for equality.
@@ -122,9 +122,6 @@ std::string StreamParams::ToString() const {
   char buf[2 * 1024];
   rtc::SimpleStringBuilder sb(buf);
   sb << "{";
-  if (!groupid.empty()) {
-    sb << "groupid:" << groupid << ";";
-  }
   if (!id.empty()) {
     sb << "id:" << id << ";";
   }
@@ -186,14 +183,21 @@ void StreamParams::GetPrimarySsrcs(std::vector<uint32_t>* ssrcs) const {
   }
 }
 
-void StreamParams::GetFidSsrcs(const std::vector<uint32_t>& primary_ssrcs,
-                               std::vector<uint32_t>* fid_ssrcs) const {
+void StreamParams::GetSecondarySsrcs(
+    const std::string& semantics,
+    const std::vector<uint32_t>& primary_ssrcs,
+    std::vector<uint32_t>* secondary_ssrcs) const {
   for (uint32_t primary_ssrc : primary_ssrcs) {
-    uint32_t fid_ssrc;
-    if (GetFidSsrc(primary_ssrc, &fid_ssrc)) {
-      fid_ssrcs->push_back(fid_ssrc);
+    uint32_t secondary_ssrc;
+    if (GetSecondarySsrc(semantics, primary_ssrc, &secondary_ssrc)) {
+      secondary_ssrcs->push_back(secondary_ssrc);
     }
   }
+}
+
+void StreamParams::GetFidSsrcs(const std::vector<uint32_t>& primary_ssrcs,
+                               std::vector<uint32_t>* fid_ssrcs) const {
+  return GetSecondarySsrcs(kFidSsrcGroupSemantics, primary_ssrcs, fid_ssrcs);
 }
 
 bool StreamParams::AddSecondarySsrc(const std::string& semantics,

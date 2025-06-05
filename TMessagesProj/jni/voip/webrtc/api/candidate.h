@@ -17,12 +17,29 @@
 #include <algorithm>
 #include <string>
 
+#include "absl/base/attributes.h"
+#include "absl/strings/string_view.h"
 #include "rtc_base/checks.h"
 #include "rtc_base/network_constants.h"
 #include "rtc_base/socket_address.h"
 #include "rtc_base/system/rtc_export.h"
 
+namespace webrtc {
+enum class IceCandidateType : int { kHost, kSrflx, kPrflx, kRelay };
+}  // namespace webrtc
+
 namespace cricket {
+
+// TODO(tommi): These are temporarily here, moved from `port.h` and will
+// eventually be removed once we use enums instead of strings for these values.
+RTC_EXPORT extern const absl::string_view LOCAL_PORT_TYPE;
+RTC_EXPORT extern const absl::string_view STUN_PORT_TYPE;
+RTC_EXPORT extern const absl::string_view PRFLX_PORT_TYPE;
+RTC_EXPORT extern const absl::string_view RELAY_PORT_TYPE;
+
+// TURN servers are limited to 32 in accordance with
+// https://w3c.github.io/webrtc-pc/#dom-rtcconfiguration-iceservers
+static constexpr size_t kMaxTurnServers = 32;
 
 // Candidate for ICE based connection discovery.
 // TODO(phoglund): remove things in here that are not needed in the public API.
@@ -33,32 +50,36 @@ class RTC_EXPORT Candidate {
   // TODO(pthatcher): Match the ordering and param list as per RFC 5245
   // candidate-attribute syntax. http://tools.ietf.org/html/rfc5245#section-15.1
   Candidate(int component,
-            const std::string& protocol,
+            absl::string_view protocol,
             const rtc::SocketAddress& address,
             uint32_t priority,
-            const std::string& username,
-            const std::string& password,
-            const std::string& type,
+            absl::string_view username,
+            absl::string_view password,
+            absl::string_view type ABSL_ATTRIBUTE_LIFETIME_BOUND,
             uint32_t generation,
-            const std::string& foundation,
+            absl::string_view foundation,
             uint16_t network_id = 0,
             uint16_t network_cost = 0);
   Candidate(const Candidate&);
   ~Candidate();
 
+  // 8 character long randomized ID string for logging purposes.
   const std::string& id() const { return id_; }
-  void set_id(const std::string& id) { id_ = id; }
+  // Generates a new, 8 character long, id.
+  void generate_id();
+  // TODO(tommi): Callers should use generate_id(). Remove.
+  [[deprecated]] void set_id(absl::string_view id) { Assign(id_, id); }
 
   int component() const { return component_; }
   void set_component(int component) { component_ = component; }
 
   const std::string& protocol() const { return protocol_; }
-  void set_protocol(const std::string& protocol) { protocol_ = protocol; }
+  void set_protocol(absl::string_view protocol) { Assign(protocol_, protocol); }
 
   // The protocol used to talk to relay.
   const std::string& relay_protocol() const { return relay_protocol_; }
-  void set_relay_protocol(const std::string& protocol) {
-    relay_protocol_ = protocol;
+  void set_relay_protocol(absl::string_view protocol) {
+    Assign(relay_protocol_, protocol);
   }
 
   const rtc::SocketAddress& address() const { return address_; }
@@ -67,40 +88,56 @@ class RTC_EXPORT Candidate {
   uint32_t priority() const { return priority_; }
   void set_priority(const uint32_t priority) { priority_ = priority; }
 
-  // TODO(pthatcher): Remove once Chromium's jingle/glue/utils.cc
-  // doesn't use it.
-  // Maps old preference (which was 0.0-1.0) to match priority (which
-  // is 0-2^32-1) to to match RFC 5245, section 4.1.2.1.  Also see
-  // https://docs.google.com/a/google.com/document/d/
-  // 1iNQDiwDKMh0NQOrCqbj3DKKRT0Dn5_5UJYhmZO-t7Uc/edit
-  float preference() const {
-    // The preference value is clamped to two decimal precision.
-    return static_cast<float>(((priority_ >> 24) * 100 / 127) / 100.0);
-  }
-
-  // TODO(pthatcher): Remove once Chromium's jingle/glue/utils.cc
-  // doesn't use it.
-  void set_preference(float preference) {
-    // Limiting priority to UINT_MAX when value exceeds uint32_t max.
-    // This can happen for e.g. when preference = 3.
-    uint64_t prio_val = static_cast<uint64_t>(preference * 127) << 24;
-    priority_ = static_cast<uint32_t>(
-        std::min(prio_val, static_cast<uint64_t>(UINT_MAX)));
-  }
-
   // TODO(honghaiz): Change to usernameFragment or ufrag.
   const std::string& username() const { return username_; }
-  void set_username(const std::string& username) { username_ = username; }
+  void set_username(absl::string_view username) { Assign(username_, username); }
 
   const std::string& password() const { return password_; }
-  void set_password(const std::string& password) { password_ = password; }
+  void set_password(absl::string_view password) { Assign(password_, password); }
 
   const std::string& type() const { return type_; }
-  void set_type(const std::string& type) { type_ = type; }
+
+  // Returns the name of the candidate type as specified in
+  // https://datatracker.ietf.org/doc/html/rfc5245#section-15.1
+  absl::string_view type_name() const;
+
+  // Setting the type requires a constant string (e.g.
+  // cricket::LOCAL_PORT_TYPE). The type should really be an enum rather than a
+  // string, but until we make that change the lifetime attribute helps us lock
+  // things down. See also the `Port` class.
+  void set_type(absl::string_view type ABSL_ATTRIBUTE_LIFETIME_BOUND) {
+    Assign(type_, type);
+  }
+
+  // Provide these simple checkers to abstract away dependency on the port types
+  // that are currently defined outside of Candidate. This will ease the change
+  // from the string type to an enum.
+  bool is_local() const;
+  bool is_stun() const;
+  bool is_prflx() const;
+  bool is_relay() const;
+
+  // Returns the type preference, a value between 0-126 inclusive, with 0 being
+  // the lowest preference value, as described in RFC 5245.
+  // https://datatracker.ietf.org/doc/html/rfc5245#section-4.1.2.1
+  int type_preference() const {
+    // From https://datatracker.ietf.org/doc/html/rfc5245#section-4.1.4 :
+    // It is RECOMMENDED that default candidates be chosen based on the
+    // likelihood of those candidates to work with the peer that is being
+    // contacted.
+    // I.e. it is recommended that relayed > reflexive > host.
+    if (is_local())
+      return 1;  // Host.
+    if (is_stun())
+      return 2;  // Reflexive.
+    if (is_relay())
+      return 3;  // Relayed.
+    return 0;    // Unknown, lowest preference.
+  }
 
   const std::string& network_name() const { return network_name_; }
-  void set_network_name(const std::string& network_name) {
-    network_name_ = network_name;
+  void set_network_name(absl::string_view network_name) {
+    Assign(network_name_, network_name);
   }
 
   rtc::AdapterType network_type() const { return network_type_; }
@@ -108,11 +145,18 @@ class RTC_EXPORT Candidate {
     network_type_ = network_type;
   }
 
+  rtc::AdapterType underlying_type_for_vpn() const {
+    return underlying_type_for_vpn_;
+  }
+  void set_underlying_type_for_vpn(rtc::AdapterType network_type) {
+    underlying_type_for_vpn_ = network_type;
+  }
+
   // Candidates in a new generation replace those in the old generation.
   uint32_t generation() const { return generation_; }
   void set_generation(uint32_t generation) { generation_ = generation; }
 
-  // |network_cost| measures the cost/penalty of using this candidate. A network
+  // `network_cost` measures the cost/penalty of using this candidate. A network
   // cost of 0 indicates this candidate can be used freely. A value of
   // rtc::kNetworkCostMax indicates it should be used only as the last resort.
   void set_network_cost(uint16_t network_cost) {
@@ -126,8 +170,8 @@ class RTC_EXPORT Candidate {
   void set_network_id(uint16_t network_id) { network_id_ = network_id; }
 
   const std::string& foundation() const { return foundation_; }
-  void set_foundation(const std::string& foundation) {
-    foundation_ = foundation;
+  void set_foundation(absl::string_view foundation) {
+    Assign(foundation_, foundation);
   }
 
   const rtc::SocketAddress& related_address() const { return related_address_; }
@@ -135,18 +179,18 @@ class RTC_EXPORT Candidate {
     related_address_ = related_address;
   }
   const std::string& tcptype() const { return tcptype_; }
-  void set_tcptype(const std::string& tcptype) { tcptype_ = tcptype; }
+  void set_tcptype(absl::string_view tcptype) { Assign(tcptype_, tcptype); }
 
   // The name of the transport channel of this candidate.
   // TODO(phoglund): remove.
   const std::string& transport_name() const { return transport_name_; }
-  void set_transport_name(const std::string& transport_name) {
-    transport_name_ = transport_name;
+  void set_transport_name(absl::string_view transport_name) {
+    Assign(transport_name_, transport_name);
   }
 
   // The URL of the ICE server which this candidate is gathered from.
   const std::string& url() const { return url_; }
-  void set_url(const std::string& url) { url_ = url; }
+  void set_url(absl::string_view url) { Assign(url_, url); }
 
   // Determines whether this candidate is equivalent to the given one.
   bool IsEquivalent(const Candidate& c) const;
@@ -161,15 +205,16 @@ class RTC_EXPORT Candidate {
 
   uint32_t GetPriority(uint32_t type_preference,
                        int network_adapter_preference,
-                       int relay_preference) const;
+                       int relay_preference,
+                       bool adjust_local_preference) const;
 
   bool operator==(const Candidate& o) const;
   bool operator!=(const Candidate& o) const;
 
   // Returns a sanitized copy configured by the given booleans. If
-  // |use_host_address| is true, the returned copy has its IP removed from
-  // |address()|, which leads |address()| to be a hostname address. If
-  // |filter_related_address|, the returned copy has its related address reset
+  // `use_host_address` is true, the returned copy has its IP removed from
+  // `address()`, which leads `address()` to be a hostname address. If
+  // `filter_related_address`, the returned copy has its related address reset
   // to the wildcard address (i.e. 0.0.0.0 for IPv4 and :: for IPv6). Note that
   // setting both booleans to false returns an identical copy to the original
   // candidate.
@@ -177,6 +222,10 @@ class RTC_EXPORT Candidate {
                             bool filter_related_address) const;
 
  private:
+  // TODO(bugs.webrtc.org/13220): With C++17, we get a std::string assignment
+  // operator accepting any object implicitly convertible to std::string_view,
+  // and then we don't need this workaround.
+  static void Assign(std::string& s, absl::string_view view);
   std::string ToStringInternal(bool sensitive) const;
 
   std::string id_;
@@ -190,6 +239,7 @@ class RTC_EXPORT Candidate {
   std::string type_;
   std::string network_name_;
   rtc::AdapterType network_type_;
+  rtc::AdapterType underlying_type_for_vpn_;
   uint32_t generation_;
   std::string foundation_;
   rtc::SocketAddress related_address_;

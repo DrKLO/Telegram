@@ -212,7 +212,7 @@ Vp8FrameConfig ScreenshareLayers::NextFrameConfig(size_t stream_index,
       ++stats_.num_dropped_frames_;
       break;
     default:
-      RTC_NOTREACHED();
+      RTC_DCHECK_NOTREACHED();
   }
 
   DependencyInfo dependency_info;
@@ -255,7 +255,7 @@ void ScreenshareLayers::OnRatesUpdated(
   RTC_DCHECK_GE(bitrates_bps.size(), 1);
   RTC_DCHECK_LE(bitrates_bps.size(), 2);
 
-  // |bitrates_bps| uses individual rates per layer, but we want to use the
+  // `bitrates_bps` uses individual rates per layer, but we want to use the
   // accumulated rate here.
   uint32_t tl0_kbps = bitrates_bps[0] / 1000;
   uint32_t tl1_kbps = tl0_kbps;
@@ -320,6 +320,7 @@ void ScreenshareLayers::OnEncodeDone(size_t stream_index,
   if (number_of_temporal_layers_ == 1) {
     vp8_info.temporalIdx = kNoTemporalIdx;
     vp8_info.layerSync = false;
+    generic_frame_info.temporal_id = 0;
     generic_frame_info.decode_target_indications = {kSwitch};
     generic_frame_info.encoder_buffers.emplace_back(
         0, /*referenced=*/!is_keyframe, /*updated=*/true);
@@ -329,6 +330,7 @@ void ScreenshareLayers::OnEncodeDone(size_t stream_index,
       vp8_info.temporalIdx =
           dependency_info->frame_config.packetizer_temporal_idx;
       vp8_info.layerSync = dependency_info->frame_config.layer_sync;
+      generic_frame_info.temporal_id = vp8_info.temporalIdx;
       generic_frame_info.decode_target_indications =
           dependency_info->decode_target_indications;
     } else {
@@ -344,6 +346,7 @@ void ScreenshareLayers::OnEncodeDone(size_t stream_index,
       active_layer_ = 1;
       info->template_structure =
           GetTemplateStructure(number_of_temporal_layers_);
+      generic_frame_info.temporal_id = vp8_info.temporalIdx;
       generic_frame_info.decode_target_indications = {kSwitch, kSwitch};
     } else if (active_layer_ >= 0 && layers_[active_layer_].state ==
                                          TemporalLayer::State::kKeyFrame) {
@@ -354,7 +357,7 @@ void ScreenshareLayers::OnEncodeDone(size_t stream_index,
     RTC_DCHECK_EQ(vp8_info.referencedBuffersCount, 0u);
     RTC_DCHECK_EQ(vp8_info.updatedBuffersCount, 0u);
 
-    // Note that |frame_config| is not derefernced if |is_keyframe|,
+    // Note that `frame_config` is not derefernced if `is_keyframe`,
     // meaning it's never dereferenced if the optional may be unset.
     for (int i = 0; i < static_cast<int>(Vp8FrameConfig::Buffer::kCount); ++i) {
       bool references = false;
@@ -443,7 +446,7 @@ FrameDependencyStructure ScreenshareLayers::GetTemplateStructure(
       return template_structure;
     }
     default:
-      RTC_NOTREACHED();
+      RTC_DCHECK_NOTREACHED();
       // To make the compiler happy!
       return template_structure;
   }

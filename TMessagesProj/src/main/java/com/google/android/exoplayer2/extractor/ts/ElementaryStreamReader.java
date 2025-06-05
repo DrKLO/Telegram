@@ -20,14 +20,10 @@ import com.google.android.exoplayer2.extractor.ExtractorOutput;
 import com.google.android.exoplayer2.extractor.TrackOutput;
 import com.google.android.exoplayer2.util.ParsableByteArray;
 
-/**
- * Extracts individual samples from an elementary media stream, preserving original order.
- */
+/** Extracts individual samples from an elementary media stream, preserving original order. */
 public interface ElementaryStreamReader {
 
-  /**
-   * Notifies the reader that a seek has occurred.
-   */
+  /** Notifies the reader that a seek has occurred. */
   void seek();
 
   /**
@@ -55,9 +51,6 @@ public interface ElementaryStreamReader {
    */
   void consume(ParsableByteArray data) throws ParserException;
 
-  /**
-   * Called when a packet ends.
-   */
+  /** Called when a packet ends. */
   void packetFinished();
-
 }

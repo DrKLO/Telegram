@@ -18,14 +18,19 @@
 #include <vector>
 
 #include "api/peer_connection_interface.h"
+#include "api/scoped_refptr.h"
 #include "api/sctp_transport_interface.h"
+#include "rtc_base/ref_counted_object.h"
 #include "test/gmock.h"
 
 namespace webrtc {
 
-class MockPeerConnectionInterface
-    : public rtc::RefCountedObject<webrtc::PeerConnectionInterface> {
+class MockPeerConnectionInterface : public webrtc::PeerConnectionInterface {
  public:
+  static rtc::scoped_refptr<MockPeerConnectionInterface> Create() {
+    return rtc::make_ref_counted<MockPeerConnectionInterface>();
+  }
+
   // PeerConnectionInterface
   MOCK_METHOD(rtc::scoped_refptr<StreamCollectionInterface>,
               local_streams,
@@ -42,9 +47,14 @@ class MockPeerConnectionInterface
               (rtc::scoped_refptr<MediaStreamTrackInterface>,
                const std::vector<std::string>&),
               (override));
-  MOCK_METHOD(bool, RemoveTrack, (RtpSenderInterface*), (override));
+  MOCK_METHOD(RTCErrorOr<rtc::scoped_refptr<RtpSenderInterface>>,
+              AddTrack,
+              (rtc::scoped_refptr<MediaStreamTrackInterface>,
+               const std::vector<std::string>&,
+               const std::vector<RtpEncodingParameters>&),
+              (override));
   MOCK_METHOD(RTCError,
-              RemoveTrackNew,
+              RemoveTrackOrError,
               (rtc::scoped_refptr<RtpSenderInterface>),
               (override));
   MOCK_METHOD(RTCErrorOr<rtc::scoped_refptr<RtpTransceiverInterface>>,
@@ -71,15 +81,15 @@ class MockPeerConnectionInterface
   MOCK_METHOD(std::vector<rtc::scoped_refptr<RtpSenderInterface>>,
               GetSenders,
               (),
-              (const override));
+              (const, override));
   MOCK_METHOD(std::vector<rtc::scoped_refptr<RtpReceiverInterface>>,
               GetReceivers,
               (),
-              (const override));
+              (const, override));
   MOCK_METHOD(std::vector<rtc::scoped_refptr<RtpTransceiverInterface>>,
               GetTransceivers,
               (),
-              (const override));
+              (const, override));
   MOCK_METHOD(bool,
               GetStats,
               (StatsObserver*, MediaStreamTrackInterface*, StatsOutputLevel),
@@ -99,35 +109,35 @@ class MockPeerConnectionInterface
   MOCK_METHOD(rtc::scoped_refptr<SctpTransportInterface>,
               GetSctpTransport,
               (),
-              (const override));
-  MOCK_METHOD(rtc::scoped_refptr<DataChannelInterface>,
-              CreateDataChannel,
+              (const, override));
+  MOCK_METHOD(RTCErrorOr<rtc::scoped_refptr<DataChannelInterface>>,
+              CreateDataChannelOrError,
               (const std::string&, const DataChannelInit*),
               (override));
   MOCK_METHOD(const SessionDescriptionInterface*,
               local_description,
               (),
-              (const override));
+              (const, override));
   MOCK_METHOD(const SessionDescriptionInterface*,
               remote_description,
               (),
-              (const override));
+              (const, override));
   MOCK_METHOD(const SessionDescriptionInterface*,
               current_local_description,
               (),
-              (const override));
+              (const, override));
   MOCK_METHOD(const SessionDescriptionInterface*,
               current_remote_description,
               (),
-              (const override));
+              (const, override));
   MOCK_METHOD(const SessionDescriptionInterface*,
               pending_local_description,
               (),
-              (const override));
+              (const, override));
   MOCK_METHOD(const SessionDescriptionInterface*,
               pending_remote_description,
               (),
-              (const override));
+              (const, override));
   MOCK_METHOD(void, RestartIce, (), (override));
   MOCK_METHOD(void,
               CreateOffer,
@@ -167,6 +177,10 @@ class MockPeerConnectionInterface
               (const std::vector<cricket::Candidate>&),
               (override));
   MOCK_METHOD(RTCError, SetBitrate, (const BitrateSettings&), (override));
+  MOCK_METHOD(void,
+              ReconfigureBandwidthEstimation,
+              (const BandwidthEstimationSettings&),
+              (override));
   MOCK_METHOD(void, SetAudioPlayout, (bool), (override));
   MOCK_METHOD(void, SetAudioRecording, (bool), (override));
   MOCK_METHOD(rtc::scoped_refptr<DtlsTransportInterface>,
@@ -194,7 +208,9 @@ class MockPeerConnectionInterface
   MOCK_METHOD(void, Close, (), (override));
 };
 
-static_assert(!std::is_abstract<MockPeerConnectionInterface>::value, "");
+static_assert(
+    !std::is_abstract_v<rtc::RefCountedObject<MockPeerConnectionInterface>>,
+    "");
 
 }  // namespace webrtc
 

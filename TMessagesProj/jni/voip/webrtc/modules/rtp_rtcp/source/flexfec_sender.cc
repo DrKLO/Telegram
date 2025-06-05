@@ -15,6 +15,9 @@
 #include <list>
 #include <utility>
 
+#include "absl/strings/string_view.h"
+#include "api/units/time_delta.h"
+#include "api/units/timestamp.h"
 #include "modules/rtp_rtcp/include/rtp_rtcp_defines.h"
 #include "modules/rtp_rtcp/source/forward_error_correction.h"
 #include "modules/rtp_rtcp/source/rtp_header_extensions.h"
@@ -41,19 +44,19 @@ constexpr size_t kFlexfecMaxHeaderSize = 32;
 const int kMsToRtpTimestamp = kVideoPayloadTypeFrequency / 1000;
 
 // How often to log the generated FEC packets to the text log.
-constexpr int64_t kPacketLogIntervalMs = 10000;
+constexpr TimeDelta kPacketLogInterval = TimeDelta::Seconds(10);
 
 RtpHeaderExtensionMap RegisterSupportedExtensions(
     const std::vector<RtpExtension>& rtp_header_extensions) {
   RtpHeaderExtensionMap map;
   for (const auto& extension : rtp_header_extensions) {
-    if (extension.uri == TransportSequenceNumber::kUri) {
+    if (extension.uri == TransportSequenceNumber::Uri()) {
       map.Register<TransportSequenceNumber>(extension.id);
-    } else if (extension.uri == AbsoluteSendTime::kUri) {
+    } else if (extension.uri == AbsoluteSendTime::Uri()) {
       map.Register<AbsoluteSendTime>(extension.id);
-    } else if (extension.uri == TransmissionOffset::kUri) {
+    } else if (extension.uri == TransmissionOffset::Uri()) {
       map.Register<TransmissionOffset>(extension.id);
-    } else if (extension.uri == RtpMid::kUri) {
+    } else if (extension.uri == RtpMid::Uri()) {
       map.Register<RtpMid>(extension.id);
     } else {
       RTC_LOG(LS_INFO)
@@ -71,14 +74,13 @@ FlexfecSender::FlexfecSender(
     int payload_type,
     uint32_t ssrc,
     uint32_t protected_media_ssrc,
-    const std::string& mid,
+    absl::string_view mid,
     const std::vector<RtpExtension>& rtp_header_extensions,
     rtc::ArrayView<const RtpExtensionSize> extension_sizes,
     const RtpState* rtp_state,
     Clock* clock)
     : clock_(clock),
       random_(clock_->TimeInMicroseconds()),
-      last_generated_packet_ms_(-1),
       payload_type_(payload_type),
       // Reset RTP state if this is not the first time we are operating.
       // Otherwise, randomize the initial timestamp offset and RTP sequence
@@ -97,7 +99,7 @@ FlexfecSender::FlexfecSender(
           RegisterSupportedExtensions(rtp_header_extensions)),
       header_extensions_size_(
           RtpHeaderExtensionSize(extension_sizes, rtp_header_extension_map_)),
-      fec_bitrate_(/*max_window_size_ms=*/1000, RateStatistics::kBpsScale) {
+      fec_bitrate_(/*max_window_size=*/TimeDelta::Seconds(1)) {
   // This object should not have been instantiated if FlexFEC is disabled.
   RTC_DCHECK_GE(payload_type, 0);
   RTC_DCHECK_LE(payload_type, 127);
@@ -142,7 +144,7 @@ std::vector<std::unique_ptr<RtpPacketToSend>> FlexfecSender::GetFecPackets() {
                               clock_->TimeInMilliseconds()));
     // Set "capture time" so that the TransmissionOffset header extension
     // can be set by the RTPSender.
-    fec_packet_to_send->set_capture_time_ms(clock_->TimeInMilliseconds());
+    fec_packet_to_send->set_capture_time(clock_->CurrentTime());
     fec_packet_to_send->SetSsrc(ssrc_);
     // Reserve extensions, if registered. These will be set by the RTPSender.
     fec_packet_to_send->ReserveExtension<AbsoluteSendTime>();
@@ -167,17 +169,17 @@ std::vector<std::unique_ptr<RtpPacketToSend>> FlexfecSender::GetFecPackets() {
     ulpfec_generator_.ResetState();
   }
 
-  int64_t now_ms = clock_->TimeInMilliseconds();
+  Timestamp now = clock_->CurrentTime();
   if (!fec_packets_to_send.empty() &&
-      now_ms - last_generated_packet_ms_ > kPacketLogIntervalMs) {
+      now - last_generated_packet_ > kPacketLogInterval) {
     RTC_LOG(LS_VERBOSE) << "Generated " << fec_packets_to_send.size()
                         << " FlexFEC packets with payload type: "
                         << payload_type_ << " and SSRC: " << ssrc_ << ".";
-    last_generated_packet_ms_ = now_ms;
+    last_generated_packet_ = now;
   }
 
   MutexLock lock(&mutex_);
-  fec_bitrate_.Update(total_fec_data_bytes, now_ms);
+  fec_bitrate_.Update(total_fec_data_bytes, now);
 
   return fec_packets_to_send;
 }
@@ -189,8 +191,7 @@ size_t FlexfecSender::MaxPacketOverhead() const {
 
 DataRate FlexfecSender::CurrentFecRate() const {
   MutexLock lock(&mutex_);
-  return DataRate::BitsPerSec(
-      fec_bitrate_.Rate(clock_->TimeInMilliseconds()).value_or(0));
+  return fec_bitrate_.Rate(clock_->CurrentTime()).value_or(DataRate::Zero());
 }
 
 absl::optional<RtpState> FlexfecSender::GetRtpState() {

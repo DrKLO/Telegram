@@ -67,7 +67,7 @@ class FullBandErleEstimator {
     // Updates the estimator with a new point, returns true
     // if the instantaneous ERLE was updated due to having enough
     // points for performing the estimate.
-    bool Update(const float Y2_sum, const float E2_sum);
+    bool Update(float Y2_sum, float E2_sum);
     // Resets the instantaneous ERLE estimator to its initial state.
     void Reset();
     // Resets the members related with an instantaneous estimate.

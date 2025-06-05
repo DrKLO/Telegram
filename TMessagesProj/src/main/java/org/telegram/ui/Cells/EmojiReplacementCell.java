@@ -9,6 +9,7 @@
 package org.telegram.ui.Cells;
 
 import android.content.Context;
+import android.graphics.Canvas;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.drawable.Drawable;
@@ -19,7 +20,9 @@ import android.widget.ImageView;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.Emoji;
 import org.telegram.messenger.R;
+import org.telegram.messenger.UserConfig;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Components.AnimatedEmojiDrawable;
 import org.telegram.ui.Components.LayoutHelper;
 
 public class EmojiReplacementCell extends FrameLayout {
@@ -27,6 +30,8 @@ public class EmojiReplacementCell extends FrameLayout {
     private ImageView imageView;
     private String emoji;
     private final Theme.ResourcesProvider resourcesProvider;
+
+    private AnimatedEmojiDrawable emojiDrawable;
 
     public EmojiReplacementCell(Context context, Theme.ResourcesProvider resourcesProvider) {
         super(context);
@@ -44,7 +49,26 @@ public class EmojiReplacementCell extends FrameLayout {
 
     public void setEmoji(String e, int side) {
         emoji = e;
-        imageView.setImageDrawable(Emoji.getEmojiBigDrawable(e));
+        if (emoji != null && emoji.startsWith("animated_")) {
+            try {
+                long documentId = Long.parseLong(emoji.substring(9));
+                if (emojiDrawable == null || emojiDrawable.getDocumentId() != documentId) {
+                    emojiDrawable = AnimatedEmojiDrawable.make(UserConfig.selectedAccount, AnimatedEmojiDrawable.CACHE_TYPE_KEYBOARD, documentId);
+                    emojiDrawable.addView(this);
+                }
+            } catch (Exception ignore) {}
+        } else {
+            if (emojiDrawable != null) {
+                emojiDrawable.removeView(this);
+                emojiDrawable = null;
+            }
+        }
+        if (emojiDrawable == null) {
+            imageView.setImageDrawable(Emoji.getEmojiBigDrawable(e));
+        } else {
+            imageView.setImageDrawable(null);
+        }
+
         if (side == -1) {
             setBackgroundResource(R.drawable.stickers_back_left);
             setPadding(AndroidUtilities.dp(7), 0, 0, 0);
@@ -65,6 +89,32 @@ public class EmojiReplacementCell extends FrameLayout {
         }
     }
 
+    @Override
+    protected void dispatchDraw(Canvas canvas) {
+        super.dispatchDraw(canvas);
+        if (emojiDrawable != null) {
+            final int sz = AndroidUtilities.dp(38);
+            emojiDrawable.setBounds((getWidth() - sz) / 2, (getHeight() - sz) / 2, (getWidth() + sz) / 2, (getHeight() + sz) / 2);
+            emojiDrawable.draw(canvas);
+        }
+    }
+
+    @Override
+    protected void onDetachedFromWindow() {
+        super.onDetachedFromWindow();
+        if (emojiDrawable != null) {
+            emojiDrawable.removeView(this);
+        }
+    }
+
+    @Override
+    protected void onAttachedToWindow() {
+        super.onAttachedToWindow();
+        if (emojiDrawable != null) {
+            emojiDrawable.addView(this);
+        }
+    }
+
     public String getEmoji() {
         return emoji;
     }
@@ -75,8 +125,7 @@ public class EmojiReplacementCell extends FrameLayout {
         imageView.invalidate();
     }
 
-    private int getThemedColor(String key) {
-        Integer color = resourcesProvider != null ? resourcesProvider.getColor(key) : null;
-        return color != null ? color : Theme.getColor(key);
+    private int getThemedColor(int key) {
+        return Theme.getColor(key, resourcesProvider);
     }
 }

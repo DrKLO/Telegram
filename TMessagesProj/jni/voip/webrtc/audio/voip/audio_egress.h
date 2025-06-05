@@ -16,6 +16,7 @@
 
 #include "api/audio_codecs/audio_format.h"
 #include "api/sequence_checker.h"
+#include "api/task_queue/task_queue_base.h"
 #include "api/task_queue/task_queue_factory.h"
 #include "audio/audio_level.h"
 #include "audio/utility/audio_frame_operations.h"
@@ -25,7 +26,7 @@
 #include "modules/rtp_rtcp/source/rtp_rtcp_interface.h"
 #include "modules/rtp_rtcp/source/rtp_sender_audio.h"
 #include "rtc_base/synchronization/mutex.h"
-#include "rtc_base/task_queue.h"
+#include "rtc_base/system/no_unique_address.h"
 #include "rtc_base/time_utils.h"
 
 namespace webrtc {
@@ -52,7 +53,7 @@ class AudioEgress : public AudioSender, public AudioPacketizationCallback {
 
   // Set the encoder format and payload type for AudioCodingModule.
   // It's possible to change the encoder type during its active usage.
-  // |payload_type| must be the type that is negotiated with peer through
+  // `payload_type` must be the type that is negotiated with peer through
   // offer/answer.
   void SetEncoder(int payload_type,
                   const SdpAudioFormat& encoder_format,
@@ -84,7 +85,7 @@ class AudioEgress : public AudioSender, public AudioPacketizationCallback {
 
   // Send DTMF named event as specified by
   // https://tools.ietf.org/html/rfc4733#section-3.2
-  // |duration_ms| specifies the duration of DTMF packets that will be emitted
+  // `duration_ms` specifies the duration of DTMF packets that will be emitted
   // in place of real RTP packets instead.
   // This will return true when requested dtmf event is successfully scheduled
   // otherwise false when the dtmf queue reached maximum of 20 events.
@@ -139,18 +140,17 @@ class AudioEgress : public AudioSender, public AudioPacketizationCallback {
     // newly received audio frame from AudioTransport.
     uint32_t frame_rtp_timestamp_ = 0;
 
-    // Flag to track mute state from caller. |previously_muted_| is used to
+    // Flag to track mute state from caller. `previously_muted_` is used to
     // track previous state as part of input to AudioFrameOperations::Mute
     // to implement fading effect when (un)mute is invoked.
     bool mute_ = false;
     bool previously_muted_ = false;
   };
 
-  EncoderContext encoder_context_ RTC_GUARDED_BY(encoder_queue_);
+  EncoderContext encoder_context_ RTC_GUARDED_BY(encoder_queue_checker_);
 
-  // Defined last to ensure that there are no running tasks when the other
-  // members are destroyed.
-  rtc::TaskQueue encoder_queue_;
+  std::unique_ptr<TaskQueueBase, TaskQueueDeleter> encoder_queue_;
+  RTC_NO_UNIQUE_ADDRESS SequenceChecker encoder_queue_checker_;
 };
 
 }  // namespace webrtc

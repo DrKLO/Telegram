@@ -9,6 +9,9 @@
  */
 #include "rtc_base/physical_socket_server.h"
 
+#include <cstdint>
+#include <utility>
+
 #if defined(_MSC_VER) && _MSC_VER < 1300
 #pragma warning(disable : 4786)
 #endif
@@ -19,14 +22,14 @@
 
 #if defined(WEBRTC_POSIX)
 #include <fcntl.h>
-#include <string.h>
 #if defined(WEBRTC_USE_EPOLL)
 // "poll" will be used to wait for the signal dispatcher.
+#include <poll.h>
+#elif defined(WEBRTC_USE_POLL)
 #include <poll.h>
 #endif
 #include <sys/ioctl.h>
 #include <sys/select.h>
-#include <sys/time.h>
 #include <unistd.h>
 #endif
 
@@ -34,22 +37,21 @@
 #include <windows.h>
 #include <winsock2.h>
 #include <ws2tcpip.h>
+
 #undef SetPort
 #endif
 
 #include <errno.h>
 
-#include <algorithm>
-#include <map>
-
-#include "rtc_base/arraysize.h"
-#include "rtc_base/byte_order.h"
+#include "rtc_base/async_dns_resolver.h"
 #include "rtc_base/checks.h"
+#include "rtc_base/event.h"
+#include "rtc_base/ip_address.h"
 #include "rtc_base/logging.h"
 #include "rtc_base/network_monitor.h"
-#include "rtc_base/null_socket_server.h"
 #include "rtc_base/synchronization/mutex.h"
 #include "rtc_base/time_utils.h"
+#include "system_wrappers/include/field_trial.h"
 
 #if defined(WEBRTC_LINUX)
 #include <linux/sockios.h>
@@ -65,6 +67,7 @@
 
 #if defined(WEBRTC_POSIX)
 #include <netinet/tcp.h>  // for TCP_NODELAY
+
 #define IP_MTU 14  // Until this is integrated from linux/in.h to netinet/in.h
 typedef void* SockOptArg;
 
@@ -116,6 +119,12 @@ class ScopedSetTrue {
  private:
   bool* value_;
 };
+
+// Returns true if the experiement "WebRTC-SCM-Timestamp" is explicitly
+// disabled.
+bool IsScmTimeStampExperimentDisabled() {
+  return webrtc::field_trial::IsDisabled("WebRTC-SCM-Timestamp");
+}
 }  // namespace
 
 namespace rtc {
@@ -125,7 +134,8 @@ PhysicalSocket::PhysicalSocket(PhysicalSocketServer* ss, SOCKET s)
       s_(s),
       error_(0),
       state_((s == INVALID_SOCKET) ? CS_CLOSED : CS_CONNECTED),
-      resolver_(nullptr) {
+      resolver_(nullptr),
+      read_scm_timestamp_experiment_(!IsScmTimeStampExperimentDisabled()) {
   if (s_ != INVALID_SOCKET) {
     SetEnabledEvents(DE_READ | DE_WRITE);
 
@@ -240,9 +250,8 @@ int PhysicalSocket::Connect(const SocketAddress& addr) {
   }
   if (addr.IsUnresolvedIP()) {
     RTC_LOG(LS_VERBOSE) << "Resolving addr in PhysicalSocket::Connect";
-    resolver_ = new AsyncResolver();
-    resolver_->SignalDone.connect(this, &PhysicalSocket::OnResolveResult);
-    resolver_->Start(addr);
+    resolver_ = std::make_unique<webrtc::AsyncDnsResolver>();
+    resolver_->Start(addr, [this] { OnResolveResult(resolver_->result()); });
     state_ = CS_CONNECTING;
     return 0;
   }
@@ -283,7 +292,7 @@ void PhysicalSocket::SetError(int error) {
   error_ = error;
 }
 
-AsyncSocket::ConnState PhysicalSocket::GetState() const {
+Socket::ConnState PhysicalSocket::GetState() const {
   return state_;
 }
 
@@ -393,7 +402,7 @@ int PhysicalSocket::SendTo(const void* buffer,
 
 int PhysicalSocket::Recv(void* buffer, size_t length, int64_t* timestamp) {
   int received =
-      ::recv(s_, static_cast<char*>(buffer), static_cast<int>(length), 0);
+      DoReadFromSocket(buffer, length, /*out_addr*/ nullptr, timestamp);
   if ((received == 0) && (length != 0)) {
     // Note: on graceful shutdown, recv can return 0.  In this case, we
     // pretend it is blocking, and then signal close, so that simplifying
@@ -405,9 +414,7 @@ int PhysicalSocket::Recv(void* buffer, size_t length, int64_t* timestamp) {
     SetError(EWOULDBLOCK);
     return SOCKET_ERROR;
   }
-  if (timestamp) {
-    *timestamp = GetSocketRecvTimestamp(s_);
-  }
+
   UpdateLastError();
   int error = GetError();
   bool success = (received >= 0) || IsBlockingError(error);
@@ -424,17 +431,9 @@ int PhysicalSocket::RecvFrom(void* buffer,
                              size_t length,
                              SocketAddress* out_addr,
                              int64_t* timestamp) {
-  sockaddr_storage addr_storage;
-  socklen_t addr_len = sizeof(addr_storage);
-  sockaddr* addr = reinterpret_cast<sockaddr*>(&addr_storage);
-  int received = ::recvfrom(s_, static_cast<char*>(buffer),
-                            static_cast<int>(length), 0, addr, &addr_len);
-  if (timestamp) {
-    *timestamp = GetSocketRecvTimestamp(s_);
-  }
+  int received = DoReadFromSocket(buffer, length, out_addr, timestamp);
+
   UpdateLastError();
-  if ((received >= 0) && (out_addr != nullptr))
-    SocketAddressFromSockAddrStorage(addr_storage, out_addr);
   int error = GetError();
   bool success = (received >= 0) || IsBlockingError(error);
   if (udp_ || success) {
@@ -444,6 +443,108 @@ int PhysicalSocket::RecvFrom(void* buffer,
     RTC_LOG_F(LS_VERBOSE) << "Error = " << error;
   }
   return received;
+}
+
+int PhysicalSocket::RecvFrom(ReceiveBuffer& buffer) {
+  int64_t timestamp = -1;
+  static constexpr int BUF_SIZE = 64 * 1024;
+  buffer.payload.EnsureCapacity(BUF_SIZE);
+
+  int received =
+      DoReadFromSocket(buffer.payload.data(), buffer.payload.capacity(),
+                       &buffer.source_address, &timestamp);
+  buffer.payload.SetSize(received > 0 ? received : 0);
+  if (received > 0 && timestamp != -1) {
+    buffer.arrival_time = webrtc::Timestamp::Micros(timestamp);
+  }
+  UpdateLastError();
+  int error = GetError();
+  bool success = (received >= 0) || IsBlockingError(error);
+  if (udp_ || success) {
+    EnableEvents(DE_READ);
+  }
+  if (!success) {
+    RTC_LOG_F(LS_VERBOSE) << "Error = " << error;
+  }
+  return received;
+}
+
+int PhysicalSocket::DoReadFromSocket(void* buffer,
+                                     size_t length,
+                                     SocketAddress* out_addr,
+                                     int64_t* timestamp) {
+  sockaddr_storage addr_storage;
+  socklen_t addr_len = sizeof(addr_storage);
+  sockaddr* addr = reinterpret_cast<sockaddr*>(&addr_storage);
+
+#if defined(WEBRTC_POSIX)
+  int received = 0;
+  if (read_scm_timestamp_experiment_) {
+    iovec iov = {.iov_base = buffer, .iov_len = length};
+    msghdr msg = {.msg_iov = &iov, .msg_iovlen = 1};
+    if (out_addr) {
+      out_addr->Clear();
+      msg.msg_name = addr;
+      msg.msg_namelen = addr_len;
+    }
+    char control[CMSG_SPACE(sizeof(struct timeval))] = {};
+    if (timestamp) {
+      *timestamp = -1;
+      msg.msg_control = &control;
+      msg.msg_controllen = sizeof(control);
+    }
+    received = ::recvmsg(s_, &msg, 0);
+    if (received <= 0) {
+      // An error occured or shut down.
+      return received;
+    }
+    if (timestamp) {
+      struct cmsghdr* cmsg;
+      for (cmsg = CMSG_FIRSTHDR(&msg); cmsg; cmsg = CMSG_NXTHDR(&msg, cmsg)) {
+        if (cmsg->cmsg_level != SOL_SOCKET)
+          continue;
+        if (cmsg->cmsg_type == SCM_TIMESTAMP) {
+          timeval* ts = reinterpret_cast<timeval*>(CMSG_DATA(cmsg));
+          *timestamp =
+              rtc::kNumMicrosecsPerSec * static_cast<int64_t>(ts->tv_sec) +
+              static_cast<int64_t>(ts->tv_usec);
+          break;
+        }
+      }
+    }
+    if (out_addr) {
+      SocketAddressFromSockAddrStorage(addr_storage, out_addr);
+    }
+  } else {  // !read_scm_timestamp_experiment_
+    if (out_addr) {
+      received = ::recvfrom(s_, static_cast<char*>(buffer),
+                            static_cast<int>(length), 0, addr, &addr_len);
+      SocketAddressFromSockAddrStorage(addr_storage, out_addr);
+    } else {
+      received =
+          ::recv(s_, static_cast<char*>(buffer), static_cast<int>(length), 0);
+    }
+    if (timestamp) {
+      *timestamp = GetSocketRecvTimestamp(s_);
+    }
+  }
+  return received;
+
+#else
+  int received = 0;
+  if (out_addr) {
+    received = ::recvfrom(s_, static_cast<char*>(buffer),
+                          static_cast<int>(length), 0, addr, &addr_len);
+    SocketAddressFromSockAddrStorage(addr_storage, out_addr);
+  } else {
+    received =
+        ::recv(s_, static_cast<char*>(buffer), static_cast<int>(length), 0);
+  }
+  if (timestamp) {
+    *timestamp = -1;
+  }
+  return received;
+#endif
 }
 
 int PhysicalSocket::Listen(int backlog) {
@@ -460,7 +561,7 @@ int PhysicalSocket::Listen(int backlog) {
   return err;
 }
 
-AsyncSocket* PhysicalSocket::Accept(SocketAddress* out_addr) {
+Socket* PhysicalSocket::Accept(SocketAddress* out_addr) {
   // Always re-subscribe DE_ACCEPT to make sure new incoming connections will
   // trigger an event even if DoAccept returns an error here.
   EnableEvents(DE_ACCEPT);
@@ -485,8 +586,7 @@ int PhysicalSocket::Close() {
   state_ = CS_CLOSED;
   SetEnabledEvents(0);
   if (resolver_) {
-    resolver_->Destroy(false);
-    resolver_ = nullptr;
+    resolver_.reset();
   }
   return err;
 }
@@ -510,14 +610,16 @@ int PhysicalSocket::DoSendTo(SOCKET socket,
   return ::sendto(socket, buf, len, flags, dest_addr, addrlen);
 }
 
-void PhysicalSocket::OnResolveResult(AsyncResolverInterface* resolver) {
-  if (resolver != resolver_) {
-    return;
-  }
-
-  int error = resolver_->GetError();
+void PhysicalSocket::OnResolveResult(
+    const webrtc::AsyncDnsResolverResult& result) {
+  int error = result.GetError();
   if (error == 0) {
-    error = DoConnect(resolver_->address());
+    SocketAddress address;
+    if (result.GetResolvedAddress(AF_INET, &address)) {
+      error = DoConnect(address);
+    } else {
+      Close();
+    }
   } else {
     Close();
   }
@@ -601,7 +703,7 @@ int PhysicalSocket::TranslateOption(Option opt, int* slevel, int* sopt) {
     case OPT_RTP_SENDTIME_EXTN_ID:
       return -1;  // No logging is necessary as this not a OS socket option.
     default:
-      RTC_NOTREACHED();
+      RTC_DCHECK_NOTREACHED();
       return -1;
   }
   return 0;
@@ -641,7 +743,16 @@ bool SocketDispatcher::Initialize() {
   ioctlsocket(s_, FIONBIO, &argp);
 #elif defined(WEBRTC_POSIX)
   fcntl(s_, F_SETFL, fcntl(s_, F_GETFL, 0) | O_NONBLOCK);
+  if (!IsScmTimeStampExperimentDisabled()) {
+    int value = 1;
+    // Attempt to get receive packet timestamp from the socket.
+    if (::setsockopt(s_, SOL_SOCKET, SO_TIMESTAMP, &value, sizeof(value)) !=
+        0) {
+      RTC_DLOG(LS_ERROR) << "::setsockopt failed. errno: " << LAST_SYSTEM_ERROR;
+    }
+  }
 #endif
+
 #if defined(WEBRTC_IOS)
   // iOS may kill sockets when the app is moved to the background
   // (specifically, if the app doesn't use the "voip" UIBackgroundMode). When
@@ -649,7 +760,9 @@ bool SocketDispatcher::Initialize() {
   // default will terminate the process, which we don't want. By specifying
   // this socket option, SIGPIPE will be disabled for the socket.
   int value = 1;
-  ::setsockopt(s_, SOL_SOCKET, SO_NOSIGPIPE, &value, sizeof(value));
+  if (::setsockopt(s_, SOL_SOCKET, SO_NOSIGPIPE, &value, sizeof(value)) != 0) {
+    RTC_DLOG(LS_ERROR) << "::setsockopt failed. errno: " << LAST_SYSTEM_ERROR;
+  }
 #endif
   ss_->Add(this);
   return true;
@@ -711,7 +824,7 @@ bool SocketDispatcher::IsDescriptorClosed() {
   if (udp_) {
     // The MSG_PEEK trick doesn't work for UDP, since (at least in some
     // circumstances) it requires reading an entire UDP packet, which would be
-    // bad for performance here. So, just check whether |s_| has been closed,
+    // bad for performance here. So, just check whether `s_` has been closed,
     // which should be sufficient.
     return s_ == INVALID_SOCKET;
   }
@@ -719,7 +832,11 @@ bool SocketDispatcher::IsDescriptorClosed() {
   // from readability.  So test on each readable call.  Is this
   // inefficient?  Probably.
   char ch;
-  ssize_t res = ::recv(s_, &ch, 1, MSG_PEEK);
+  ssize_t res;
+  // Retry if the system call was interrupted.
+  do {
+    res = ::recv(s_, &ch, 1, MSG_PEEK);
+  } while (res < 0 && errno == EINTR);
   if (res > 0) {
     // Data available, so not closed.
     return false;
@@ -730,13 +847,20 @@ bool SocketDispatcher::IsDescriptorClosed() {
     switch (errno) {
       // Returned if we've already closed s_.
       case EBADF:
+        // This is dangerous: if we keep attempting to access a FD after close,
+        // it could be reopened by something else making us think it's still
+        // open. Note that this is only a DCHECK.
+        RTC_DCHECK_NOTREACHED();
+        return true;
       // Returned during ungraceful peer shutdown.
       case ECONNRESET:
         return true;
+      case ECONNABORTED:
+        return true;
+      case EPIPE:
+        return true;
       // The normal blocking error; don't log anything.
       case EWOULDBLOCK:
-      // Interrupted system call.
-      case EINTR:
         return false;
       default:
         // Assume that all other errors are just blocking errors, meaning the
@@ -928,7 +1052,7 @@ class Signaler : public Dispatcher {
           std::array<int, 2> afd = {-1, -1};
 
           if (pipe(afd.data()) < 0) {
-            RTC_LOG(LERROR) << "pipe failed";
+            RTC_LOG(LS_ERROR) << "pipe failed";
           }
           return afd;
         }()),
@@ -1083,16 +1207,6 @@ void PhysicalSocketServer::WakeUp() {
 }
 
 Socket* PhysicalSocketServer::CreateSocket(int family, int type) {
-  PhysicalSocket* socket = new PhysicalSocket(this);
-  if (socket->Create(family, type)) {
-    return socket;
-  } else {
-    delete socket;
-    return nullptr;
-  }
-}
-
-AsyncSocket* PhysicalSocketServer::CreateAsyncSocket(int family, int type) {
   SocketDispatcher* dispatcher = new SocketDispatcher(this);
   if (dispatcher->Create(family, type)) {
     return dispatcher;
@@ -1102,7 +1216,7 @@ AsyncSocket* PhysicalSocketServer::CreateAsyncSocket(int family, int type) {
   }
 }
 
-AsyncSocket* PhysicalSocketServer::WrapSocket(SOCKET s) {
+Socket* PhysicalSocketServer::WrapSocket(SOCKET s) {
   SocketDispatcher* dispatcher = new SocketDispatcher(s, this);
   if (dispatcher->Initialize()) {
     return dispatcher;
@@ -1163,35 +1277,61 @@ void PhysicalSocketServer::Update(Dispatcher* pdispatcher) {
 #endif
 }
 
+int PhysicalSocketServer::ToCmsWait(webrtc::TimeDelta max_wait_duration) {
+  return max_wait_duration == Event::kForever
+             ? kForeverMs
+             : max_wait_duration.RoundUpTo(webrtc::TimeDelta::Millis(1)).ms();
+}
+
 #if defined(WEBRTC_POSIX)
 
-bool PhysicalSocketServer::Wait(int cmsWait, bool process_io) {
+bool PhysicalSocketServer::Wait(webrtc::TimeDelta max_wait_duration,
+                                bool process_io) {
   // We don't support reentrant waiting.
   RTC_DCHECK(!waiting_);
   ScopedSetTrue s(&waiting_);
+  const int cmsWait = ToCmsWait(max_wait_duration);
+
+#if defined(WEBRTC_USE_POLL)
+  return WaitPoll(cmsWait, process_io);
+#else
 #if defined(WEBRTC_USE_EPOLL)
   // We don't keep a dedicated "epoll" descriptor containing only the non-IO
   // (i.e. signaling) dispatcher, so "poll" will be used instead of the default
   // "select" to support sockets larger than FD_SETSIZE.
   if (!process_io) {
-    return WaitPoll(cmsWait, signal_wakeup_);
+    return WaitPollOneDispatcher(cmsWait, signal_wakeup_);
   } else if (epoll_fd_ != INVALID_SOCKET) {
     return WaitEpoll(cmsWait);
   }
 #endif
   return WaitSelect(cmsWait, process_io);
+#endif
 }
 
+// `error_event` is true if we are responding to an event where we know an
+// error has occurred, which is possible with the poll/epoll implementations
+// but not the select implementation.
+//
+// `check_error` is true if there is the possibility of an error.
 static void ProcessEvents(Dispatcher* dispatcher,
                           bool readable,
                           bool writable,
+                          bool error_event,
                           bool check_error) {
+  RTC_DCHECK(!(error_event && !check_error));
   int errcode = 0;
-  // TODO(pthatcher): Should we set errcode if getsockopt fails?
   if (check_error) {
     socklen_t len = sizeof(errcode);
-    ::getsockopt(dispatcher->GetDescriptor(), SOL_SOCKET, SO_ERROR, &errcode,
-                 &len);
+    int res = ::getsockopt(dispatcher->GetDescriptor(), SOL_SOCKET, SO_ERROR,
+                           &errcode, &len);
+    if (res < 0) {
+      // If we are sure an error has occurred, or if getsockopt failed for a
+      // socket descriptor, make sure we set the error code to a nonzero value.
+      if (error_event || errno != ENOTSOCK) {
+        errcode = EBADF;
+      }
+    }
   }
 
   // Most often the socket is writable or readable or both, so make a single
@@ -1204,10 +1344,10 @@ static void ProcessEvents(Dispatcher* dispatcher,
   // readable or really closed.
   // TODO(pthatcher): Only peek at TCP descriptors.
   if (readable) {
-    if (requested_events & DE_ACCEPT) {
-      ff |= DE_ACCEPT;
-    } else if (errcode || dispatcher->IsDescriptorClosed()) {
+    if (errcode || dispatcher->IsDescriptorClosed()) {
       ff |= DE_CLOSE;
+    } else if (requested_events & DE_ACCEPT) {
+      ff |= DE_ACCEPT;
     } else {
       ff |= DE_READ;
     }
@@ -1219,12 +1359,15 @@ static void ProcessEvents(Dispatcher* dispatcher,
     if (requested_events & DE_CONNECT) {
       if (!errcode) {
         ff |= DE_CONNECT;
-      } else {
-        ff |= DE_CLOSE;
       }
     } else {
       ff |= DE_WRITE;
     }
+  }
+
+  // Make sure we report any errors regardless of whether readable or writable.
+  if (errcode) {
+    ff |= DE_CLOSE;
   }
 
   // Tell the descriptor about the event.
@@ -1233,13 +1376,41 @@ static void ProcessEvents(Dispatcher* dispatcher,
   }
 }
 
+#if defined(WEBRTC_USE_POLL) || defined(WEBRTC_USE_EPOLL)
+static void ProcessPollEvents(Dispatcher* dispatcher, const pollfd& pfd) {
+  bool readable = (pfd.revents & (POLLIN | POLLPRI));
+  bool writable = (pfd.revents & POLLOUT);
+  bool error = (pfd.revents & (POLLRDHUP | POLLERR | POLLHUP));
+
+  ProcessEvents(dispatcher, readable, writable, error, error);
+}
+
+static pollfd DispatcherToPollfd(Dispatcher* dispatcher) {
+  pollfd fd{
+      .fd = dispatcher->GetDescriptor(),
+      .events = 0,
+      .revents = 0,
+  };
+
+  uint32_t ff = dispatcher->GetRequestedEvents();
+  if (ff & (DE_READ | DE_ACCEPT)) {
+    fd.events |= POLLIN;
+  }
+  if (ff & (DE_WRITE | DE_CONNECT)) {
+    fd.events |= POLLOUT;
+  }
+
+  return fd;
+}
+#endif  // WEBRTC_USE_POLL || WEBRTC_USE_EPOLL
+
 bool PhysicalSocketServer::WaitSelect(int cmsWait, bool process_io) {
   // Calculate timing information
 
   struct timeval* ptvWait = nullptr;
   struct timeval tvWait;
   int64_t stop_us;
-  if (cmsWait != kForever) {
+  if (cmsWait != kForeverMs) {
     // Calculate wait timeval
     tvWait.tv_sec = cmsWait / 1000;
     tvWait.tv_usec = (cmsWait % 1000) * 1000;
@@ -1248,7 +1419,6 @@ bool PhysicalSocketServer::WaitSelect(int cmsWait, bool process_io) {
     // Calculate when to return
     stop_us = rtc::TimeMicros() + cmsWait * 1000;
   }
-
 
   fd_set fdsRead;
   fd_set fdsWrite;
@@ -1275,7 +1445,6 @@ bool PhysicalSocketServer::WaitSelect(int cmsWait, bool process_io) {
       for (auto const& kv : dispatcher_by_key_) {
         uint64_t key = kv.first;
         Dispatcher* pdispatcher = kv.second;
-        // Query dispatchers for read and write wait state
         if (!process_io && (pdispatcher != signal_wakeup_))
           continue;
         current_dispatcher_keys_.push_back(key);
@@ -1316,9 +1485,9 @@ bool PhysicalSocketServer::WaitSelect(int cmsWait, bool process_io) {
     } else {
       // We have signaled descriptors
       CritScope cr(&crit_);
-      // Iterate only on the dispatchers whose sockets were passed into
-      // WSAEventSelect; this avoids the ABA problem (a socket being
-      // destroyed and a new one created with the same file descriptor).
+      // Iterate only on the dispatchers whose file descriptors were passed into
+      // select; this avoids the ABA problem (a socket being destroyed and a new
+      // one created with the same file descriptor).
       for (uint64_t key : current_dispatcher_keys_) {
         if (!dispatcher_by_key_.count(key))
           continue;
@@ -1337,7 +1506,8 @@ bool PhysicalSocketServer::WaitSelect(int cmsWait, bool process_io) {
         }
 
         // The error code can be signaled through reads or writes.
-        ProcessEvents(pdispatcher, readable, writable, readable || writable);
+        ProcessEvents(pdispatcher, readable, writable, /*error_event=*/false,
+                      readable || writable);
       }
     }
 
@@ -1369,6 +1539,11 @@ void PhysicalSocketServer::AddEpoll(Dispatcher* pdispatcher, uint64_t key) {
 
   struct epoll_event event = {0};
   event.events = GetEpollEvents(pdispatcher->GetRequestedEvents());
+  if (event.events == 0u) {
+    // Don't add at all if we don't have any requested events. Could indicate a
+    // closed socket.
+    return;
+  }
   event.data.u64 = key;
   int err = epoll_ctl(epoll_fd_, EPOLL_CTL_ADD, fd, &event);
   RTC_DCHECK_EQ(err, 0);
@@ -1388,13 +1563,10 @@ void PhysicalSocketServer::RemoveEpoll(Dispatcher* pdispatcher) {
   struct epoll_event event = {0};
   int err = epoll_ctl(epoll_fd_, EPOLL_CTL_DEL, fd, &event);
   RTC_DCHECK(err == 0 || errno == ENOENT);
-  if (err == -1) {
-    if (errno == ENOENT) {
-      // Socket has already been closed.
-      RTC_LOG_E(LS_VERBOSE, EN, errno) << "epoll_ctl EPOLL_CTL_DEL";
-    } else {
-      RTC_LOG_E(LS_ERROR, EN, errno) << "epoll_ctl EPOLL_CTL_DEL";
-    }
+  // Ignore ENOENT, which could occur if this descriptor wasn't added due to
+  // having no requested events.
+  if (err == -1 && errno != ENOENT) {
+    RTC_LOG_E(LS_ERROR, EN, errno) << "epoll_ctl EPOLL_CTL_DEL";
   }
 }
 
@@ -1409,20 +1581,34 @@ void PhysicalSocketServer::UpdateEpoll(Dispatcher* pdispatcher, uint64_t key) {
   struct epoll_event event = {0};
   event.events = GetEpollEvents(pdispatcher->GetRequestedEvents());
   event.data.u64 = key;
-  int err = epoll_ctl(epoll_fd_, EPOLL_CTL_MOD, fd, &event);
-  RTC_DCHECK_EQ(err, 0);
-  if (err == -1) {
-    RTC_LOG_E(LS_ERROR, EN, errno) << "epoll_ctl EPOLL_CTL_MOD";
+  // Remove if we don't have any requested events. Could indicate a closed
+  // socket.
+  if (event.events == 0u) {
+    epoll_ctl(epoll_fd_, EPOLL_CTL_DEL, fd, &event);
+  } else {
+    int err = epoll_ctl(epoll_fd_, EPOLL_CTL_MOD, fd, &event);
+    RTC_DCHECK(err == 0 || errno == ENOENT);
+    if (err == -1) {
+      // Could have been removed earlier due to no requested events.
+      if (errno == ENOENT) {
+        err = epoll_ctl(epoll_fd_, EPOLL_CTL_ADD, fd, &event);
+        if (err == -1) {
+          RTC_LOG_E(LS_ERROR, EN, errno) << "epoll_ctl EPOLL_CTL_ADD";
+        }
+      } else {
+        RTC_LOG_E(LS_ERROR, EN, errno) << "epoll_ctl EPOLL_CTL_MOD";
+      }
+    }
   }
 }
 
 bool PhysicalSocketServer::WaitEpoll(int cmsWait) {
   RTC_DCHECK(epoll_fd_ != INVALID_SOCKET);
-  int64_t tvWait = -1;
-  int64_t tvStop = -1;
-  if (cmsWait != kForever) {
-    tvWait = cmsWait;
-    tvStop = TimeAfter(cmsWait);
+  int64_t msWait = -1;
+  int64_t msStop = -1;
+  if (cmsWait != kForeverMs) {
+    msWait = cmsWait;
+    msStop = TimeAfter(cmsWait);
   }
 
   fWait_ = true;
@@ -1432,7 +1618,7 @@ bool PhysicalSocketServer::WaitEpoll(int cmsWait) {
     // 0 means timeout
     // > 0 means count of descriptors ready
     int n = epoll_wait(epoll_fd_, epoll_events_.data(), epoll_events_.size(),
-                       static_cast<int>(tvWait));
+                       static_cast<int>(msWait));
     if (n < 0) {
       if (errno != EINTR) {
         RTC_LOG_E(LS_ERROR, EN, errno) << "epoll";
@@ -1459,15 +1645,15 @@ bool PhysicalSocketServer::WaitEpoll(int cmsWait) {
 
         bool readable = (event.events & (EPOLLIN | EPOLLPRI));
         bool writable = (event.events & EPOLLOUT);
-        bool check_error = (event.events & (EPOLLRDHUP | EPOLLERR | EPOLLHUP));
+        bool error = (event.events & (EPOLLRDHUP | EPOLLERR | EPOLLHUP));
 
-        ProcessEvents(pdispatcher, readable, writable, check_error);
+        ProcessEvents(pdispatcher, readable, writable, error, error);
       }
     }
 
-    if (cmsWait != kForever) {
-      tvWait = TimeDiff(tvStop, TimeMillis());
-      if (tvWait <= 0) {
+    if (cmsWait != kForeverMs) {
+      msWait = TimeDiff(msStop, TimeMillis());
+      if (msWait <= 0) {
         // Return success on timeout.
         return true;
       }
@@ -1477,37 +1663,27 @@ bool PhysicalSocketServer::WaitEpoll(int cmsWait) {
   return true;
 }
 
-bool PhysicalSocketServer::WaitPoll(int cmsWait, Dispatcher* dispatcher) {
+bool PhysicalSocketServer::WaitPollOneDispatcher(int cmsWait,
+                                                 Dispatcher* dispatcher) {
   RTC_DCHECK(dispatcher);
-  int64_t tvWait = -1;
-  int64_t tvStop = -1;
-  if (cmsWait != kForever) {
-    tvWait = cmsWait;
-    tvStop = TimeAfter(cmsWait);
+  int64_t msWait = -1;
+  int64_t msStop = -1;
+  if (cmsWait != kForeverMs) {
+    msWait = cmsWait;
+    msStop = TimeAfter(cmsWait);
   }
 
   fWait_ = true;
-
-  struct pollfd fds = {0};
-  int fd = dispatcher->GetDescriptor();
-  fds.fd = fd;
+  const int fd = dispatcher->GetDescriptor();
 
   while (fWait_) {
-    uint32_t ff = dispatcher->GetRequestedEvents();
-    fds.events = 0;
-    if (ff & (DE_READ | DE_ACCEPT)) {
-      fds.events |= POLLIN;
-    }
-    if (ff & (DE_WRITE | DE_CONNECT)) {
-      fds.events |= POLLOUT;
-    }
-    fds.revents = 0;
+    auto fds = DispatcherToPollfd(dispatcher);
 
     // Wait then call handlers as appropriate
     // < 0 means error
     // 0 means timeout
     // > 0 means count of descriptors ready
-    int n = poll(&fds, 1, static_cast<int>(tvWait));
+    int n = poll(&fds, 1, static_cast<int>(msWait));
     if (n < 0) {
       if (errno != EINTR) {
         RTC_LOG_E(LS_ERROR, EN, errno) << "poll";
@@ -1524,17 +1700,12 @@ bool PhysicalSocketServer::WaitPoll(int cmsWait, Dispatcher* dispatcher) {
       // We have signaled descriptors (should only be the passed dispatcher).
       RTC_DCHECK_EQ(n, 1);
       RTC_DCHECK_EQ(fds.fd, fd);
-
-      bool readable = (fds.revents & (POLLIN | POLLPRI));
-      bool writable = (fds.revents & POLLOUT);
-      bool check_error = (fds.revents & (POLLRDHUP | POLLERR | POLLHUP));
-
-      ProcessEvents(dispatcher, readable, writable, check_error);
+      ProcessPollEvents(dispatcher, fds);
     }
 
-    if (cmsWait != kForever) {
-      tvWait = TimeDiff(tvStop, TimeMillis());
-      if (tvWait < 0) {
+    if (cmsWait != kForeverMs) {
+      msWait = TimeDiff(msStop, TimeMillis());
+      if (msWait < 0) {
         // Return success on timeout.
         return true;
       }
@@ -1544,16 +1715,91 @@ bool PhysicalSocketServer::WaitPoll(int cmsWait, Dispatcher* dispatcher) {
   return true;
 }
 
-#endif  // WEBRTC_USE_EPOLL
+#elif defined(WEBRTC_USE_POLL)
+
+bool PhysicalSocketServer::WaitPoll(int cmsWait, bool process_io) {
+  int64_t msWait = -1;
+  int64_t msStop = -1;
+  if (cmsWait != kForeverMs) {
+    msWait = cmsWait;
+    msStop = TimeAfter(cmsWait);
+  }
+
+  std::vector<pollfd> pollfds;
+  fWait_ = true;
+
+  while (fWait_) {
+    {
+      CritScope cr(&crit_);
+      current_dispatcher_keys_.clear();
+      pollfds.clear();
+      pollfds.reserve(dispatcher_by_key_.size());
+
+      for (auto const& kv : dispatcher_by_key_) {
+        uint64_t key = kv.first;
+        Dispatcher* pdispatcher = kv.second;
+        if (!process_io && (pdispatcher != signal_wakeup_))
+          continue;
+        current_dispatcher_keys_.push_back(key);
+        pollfds.push_back(DispatcherToPollfd(pdispatcher));
+      }
+    }
+
+    // Wait then call handlers as appropriate
+    // < 0 means error
+    // 0 means timeout
+    // > 0 means count of descriptors ready
+    int n = poll(pollfds.data(), pollfds.size(), static_cast<int>(msWait));
+    if (n < 0) {
+      if (errno != EINTR) {
+        RTC_LOG_E(LS_ERROR, EN, errno) << "poll";
+        return false;
+      }
+      // Else ignore the error and keep going. If this EINTR was for one of the
+      // signals managed by this PhysicalSocketServer, the
+      // PosixSignalDeliveryDispatcher will be in the signaled state in the next
+      // iteration.
+    } else if (n == 0) {
+      // If timeout, return success
+      return true;
+    } else {
+      // We have signaled descriptors
+      CritScope cr(&crit_);
+      // Iterate only on the dispatchers whose file descriptors were passed into
+      // poll; this avoids the ABA problem (a socket being destroyed and a new
+      // one created with the same file descriptor).
+      for (size_t i = 0; i < current_dispatcher_keys_.size(); ++i) {
+        uint64_t key = current_dispatcher_keys_[i];
+        if (!dispatcher_by_key_.count(key))
+          continue;
+        ProcessPollEvents(dispatcher_by_key_.at(key), pollfds[i]);
+      }
+    }
+
+    if (cmsWait != kForeverMs) {
+      msWait = TimeDiff(msStop, TimeMillis());
+      if (msWait < 0) {
+        // Return success on timeout.
+        return true;
+      }
+    }
+  }
+
+  return true;
+}
+
+#endif  // WEBRTC_USE_EPOLL, WEBRTC_USE_POLL
 
 #endif  // WEBRTC_POSIX
 
 #if defined(WEBRTC_WIN)
-bool PhysicalSocketServer::Wait(int cmsWait, bool process_io) {
+bool PhysicalSocketServer::Wait(webrtc::TimeDelta max_wait_duration,
+                                bool process_io) {
   // We don't support reentrant waiting.
   RTC_DCHECK(!waiting_);
   ScopedSetTrue s(&waiting_);
 
+  int cmsWait = ToCmsWait(max_wait_duration);
   int64_t cmsTotal = cmsWait;
   int64_t cmsElapsed = 0;
   int64_t msStart = Time();
@@ -1600,7 +1846,7 @@ bool PhysicalSocketServer::Wait(int cmsWait, bool process_io) {
     // Which is shorter, the delay wait or the asked wait?
 
     int64_t cmsNext;
-    if (cmsWait == kForever) {
+    if (cmsWait == kForeverMs) {
       cmsNext = cmsWait;
     } else {
       cmsNext = std::max<int64_t>(0, cmsTotal - cmsElapsed);
@@ -1615,7 +1861,7 @@ bool PhysicalSocketServer::Wait(int cmsWait, bool process_io) {
       // Failed?
       // TODO(pthatcher): need a better strategy than this!
       WSAGetLastError();
-      RTC_NOTREACHED();
+      RTC_DCHECK_NOTREACHED();
       return false;
     } else if (dw == WSA_WAIT_TIMEOUT) {
       // Timeout?
@@ -1652,31 +1898,31 @@ bool PhysicalSocketServer::Wait(int cmsWait, bool process_io) {
             {
               if ((wsaEvents.lNetworkEvents & FD_READ) &&
                   wsaEvents.iErrorCode[FD_READ_BIT] != 0) {
-                RTC_LOG(WARNING)
+                RTC_LOG(LS_WARNING)
                     << "PhysicalSocketServer got FD_READ_BIT error "
                     << wsaEvents.iErrorCode[FD_READ_BIT];
               }
               if ((wsaEvents.lNetworkEvents & FD_WRITE) &&
                   wsaEvents.iErrorCode[FD_WRITE_BIT] != 0) {
-                RTC_LOG(WARNING)
+                RTC_LOG(LS_WARNING)
                     << "PhysicalSocketServer got FD_WRITE_BIT error "
                     << wsaEvents.iErrorCode[FD_WRITE_BIT];
               }
               if ((wsaEvents.lNetworkEvents & FD_CONNECT) &&
                   wsaEvents.iErrorCode[FD_CONNECT_BIT] != 0) {
-                RTC_LOG(WARNING)
+                RTC_LOG(LS_WARNING)
                     << "PhysicalSocketServer got FD_CONNECT_BIT error "
                     << wsaEvents.iErrorCode[FD_CONNECT_BIT];
               }
               if ((wsaEvents.lNetworkEvents & FD_ACCEPT) &&
                   wsaEvents.iErrorCode[FD_ACCEPT_BIT] != 0) {
-                RTC_LOG(WARNING)
+                RTC_LOG(LS_WARNING)
                     << "PhysicalSocketServer got FD_ACCEPT_BIT error "
                     << wsaEvents.iErrorCode[FD_ACCEPT_BIT];
               }
               if ((wsaEvents.lNetworkEvents & FD_CLOSE) &&
                   wsaEvents.iErrorCode[FD_CLOSE_BIT] != 0) {
-                RTC_LOG(WARNING)
+                RTC_LOG(LS_WARNING)
                     << "PhysicalSocketServer got FD_CLOSE_BIT error "
                     << wsaEvents.iErrorCode[FD_CLOSE_BIT];
               }
@@ -1716,7 +1962,7 @@ bool PhysicalSocketServer::Wait(int cmsWait, bool process_io) {
     if (!fWait_)
       break;
     cmsElapsed = TimeSince(msStart);
-    if ((cmsWait != kForever) && (cmsElapsed >= cmsWait)) {
+    if ((cmsWait != kForeverMs) && (cmsElapsed >= cmsWait)) {
       break;
     }
   }

@@ -1,21 +1,21 @@
-/* Copyright (c) 2018, Google Inc.
- *
- * Permission to use, copy, modify, and/or distribute this software for any
- * purpose with or without fee is hereby granted, provided that the above
- * copyright notice and this permission notice appear in all copies.
- *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
- * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY
- * SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION
- * OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
- * CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE. */
+// Copyright 2018 The BoringSSL Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 #ifndef OPENSSL_HEADER_HRSS_H
 #define OPENSSL_HEADER_HRSS_H
 
-#include <openssl/base.h>
+#include <openssl/base.h>   // IWYU pragma: export
 
 #if defined(__cplusplus)
 extern "C" {
@@ -59,29 +59,31 @@ struct HRSS_public_key {
   (HRSS_POLY3_BYTES * 2 + HRSS_PUBLIC_KEY_BYTES + 2 + 32)
 
 // HRSS_generate_key is a deterministic function that outputs a public and
-// private key based on the given entropy.
-OPENSSL_EXPORT void HRSS_generate_key(
+// private key based on the given entropy. It returns one on success or zero
+// on malloc failure.
+OPENSSL_EXPORT int HRSS_generate_key(
     struct HRSS_public_key *out_pub, struct HRSS_private_key *out_priv,
     const uint8_t input[HRSS_GENERATE_KEY_BYTES]);
 
 // HRSS_encap is a deterministic function the generates and encrypts a random
 // session key from the given entropy, writing those values to |out_shared_key|
-// and |out_ciphertext|, respectively.
-OPENSSL_EXPORT void HRSS_encap(uint8_t out_ciphertext[HRSS_CIPHERTEXT_BYTES],
-                               uint8_t out_shared_key[HRSS_KEY_BYTES],
-                               const struct HRSS_public_key *in_pub,
-                               const uint8_t in[HRSS_ENCAP_BYTES]);
+// and |out_ciphertext|, respectively. It returns one on success or zero on
+// malloc failure.
+OPENSSL_EXPORT int HRSS_encap(uint8_t out_ciphertext[HRSS_CIPHERTEXT_BYTES],
+                              uint8_t out_shared_key[HRSS_KEY_BYTES],
+                              const struct HRSS_public_key *in_pub,
+                              const uint8_t in[HRSS_ENCAP_BYTES]);
 
 // HRSS_decap decrypts a session key from |ciphertext_len| bytes of
 // |ciphertext|. If the ciphertext is valid, the decrypted key is written to
 // |out_shared_key|. Otherwise the HMAC of |ciphertext| under a secret key (kept
 // in |in_priv|) is written. If the ciphertext is the wrong length then it will
 // leak which was done via side-channels. Otherwise it should perform either
-// action in constant-time.
-OPENSSL_EXPORT void HRSS_decap(uint8_t out_shared_key[HRSS_KEY_BYTES],
-                               const struct HRSS_private_key *in_priv,
-                               const uint8_t *ciphertext,
-                               size_t ciphertext_len);
+// action in constant-time. It returns one on success (whether the ciphertext
+// was valid or not) and zero on malloc failure.
+OPENSSL_EXPORT int HRSS_decap(uint8_t out_shared_key[HRSS_KEY_BYTES],
+                              const struct HRSS_private_key *in_priv,
+                              const uint8_t *ciphertext, size_t ciphertext_len);
 
 // HRSS_marshal_public_key serialises |in_pub| to |out|.
 OPENSSL_EXPORT void HRSS_marshal_public_key(

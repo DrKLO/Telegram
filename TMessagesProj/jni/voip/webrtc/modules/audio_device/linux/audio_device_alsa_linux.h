@@ -131,11 +131,11 @@ class AudioDeviceLinuxALSA : public AudioDeviceGeneric {
   int32_t InitPlayoutLocked() RTC_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
   int32_t InitSpeakerLocked() RTC_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
   int32_t InitMicrophoneLocked() RTC_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
-  int32_t GetDevicesInfo(const int32_t function,
-                         const bool playback,
-                         const int32_t enumDeviceNo = 0,
+  int32_t GetDevicesInfo(int32_t function,
+                         bool playback,
+                         int32_t enumDeviceNo = 0,
                          char* enumDeviceName = NULL,
-                         const int32_t ednLen = 0) const;
+                         int32_t ednLen = 0) const;
   int32_t ErrorRecovery(int32_t error, snd_pcm_t* deviceHandle);
 
   bool KeyPressed() const;

@@ -1,22 +1,23 @@
-/* Copyright (c) 2014, Google Inc.
- *
- * Permission to use, copy, modify, and/or distribute this software for any
- * purpose with or without fee is hereby granted, provided that the above
- * copyright notice and this permission notice appear in all copies.
- *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
- * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY
- * SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION
- * OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
- * CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE. */
+// Copyright 2014 The BoringSSL Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 #include <openssl/base.h>
 
 #include <memory>
 
 #include <openssl/err.h>
+#include <openssl/hpke.h>
 #include <openssl/rand.h>
 #include <openssl/ssl.h>
 
@@ -59,6 +60,16 @@ static const struct argument kArguments[] = {
     },
     {
         "-ocsp-response", kOptionalArgument, "OCSP response file to send",
+    },
+    {
+        "-ech-key",
+        kOptionalArgument,
+        "File containing the private key corresponding to the ECHConfig.",
+    },
+    {
+        "-ech-config",
+        kOptionalArgument,
+        "File containing one ECHConfig.",
     },
     {
         "-loop", kBooleanArgument,
@@ -121,21 +132,37 @@ static bssl::UniquePtr<EVP_PKEY> MakeKeyPairForSelfSignedCert() {
 
 static bssl::UniquePtr<X509> MakeSelfSignedCert(EVP_PKEY *evp_pkey,
                                                 const int valid_days) {
+  uint64_t serial;
   bssl::UniquePtr<X509> x509(X509_new());
-  uint32_t serial;
-  RAND_bytes(reinterpret_cast<uint8_t*>(&serial), sizeof(serial));
-  ASN1_INTEGER_set(X509_get_serialNumber(x509.get()), serial >> 1);
-  X509_gmtime_adj(X509_get_notBefore(x509.get()), 0);
-  X509_gmtime_adj(X509_get_notAfter(x509.get()), 60 * 60 * 24 * valid_days);
+  if (!x509 ||  //
+      !X509_set_version(x509.get(), X509_VERSION_3) ||
+      !RAND_bytes(reinterpret_cast<uint8_t *>(&serial), sizeof(serial)) ||
+      !ASN1_INTEGER_set_uint64(X509_get_serialNumber(x509.get()), serial) ||
+      !X509_gmtime_adj(X509_get_notBefore(x509.get()), 0) ||
+      !X509_gmtime_adj(X509_get_notAfter(x509.get()),
+                       60 * 60 * 24 * valid_days)) {
+    return nullptr;
+  }
 
-  X509_NAME* subject = X509_get_subject_name(x509.get());
-  X509_NAME_add_entry_by_txt(subject, "C", MBSTRING_ASC,
-                             reinterpret_cast<const uint8_t *>("US"), -1, -1,
-                             0);
-  X509_NAME_add_entry_by_txt(subject, "O", MBSTRING_ASC,
-                             reinterpret_cast<const uint8_t *>("BoringSSL"), -1,
-                             -1, 0);
-  X509_set_issuer_name(x509.get(), subject);
+  X509_NAME *subject = X509_get_subject_name(x509.get());
+  if (!X509_NAME_add_entry_by_txt(subject, "C", MBSTRING_ASC,
+                                  reinterpret_cast<const uint8_t *>("US"), -1,
+                                  -1, 0) ||
+      !X509_NAME_add_entry_by_txt(
+          subject, "O", MBSTRING_ASC,
+          reinterpret_cast<const uint8_t *>("BoringSSL"), -1, -1, 0) ||
+      !X509_set_issuer_name(x509.get(), subject)) {
+    return nullptr;
+  }
+
+  // macOS requires an explicit EKU extension.
+  bssl::UniquePtr<STACK_OF(ASN1_OBJECT)> ekus(sk_ASN1_OBJECT_new_null());
+  if (!ekus ||
+      !sk_ASN1_OBJECT_push(ekus.get(), OBJ_nid2obj(NID_server_auth)) ||
+      !X509_add1_ext_i2d(x509.get(), NID_ext_key_usage, ekus.get(), /*crit=*/1,
+                         /*flags=*/0)) {
+    return nullptr;
+  }
 
   if (!X509_set_pubkey(x509.get(), evp_pkey)) {
     fprintf(stderr, "Failed to set public key.\n");
@@ -257,6 +284,47 @@ bool Server(const std::vector<std::string> &args) {
     }
     if (!SSL_CTX_use_certificate(ctx.get(), cert.get())) {
       fprintf(stderr, "Failed to set certificate.\n");
+      return false;
+    }
+  }
+
+  if (args_map.count("-ech-key") + args_map.count("-ech-config") == 1) {
+    fprintf(stderr,
+            "-ech-config and -ech-key must be specified together.\n");
+    return false;
+  }
+
+  if (args_map.count("-ech-key") != 0) {
+    // Load the ECH private key.
+    std::string ech_key_path = args_map["-ech-key"];
+    ScopedFILE ech_key_file(fopen(ech_key_path.c_str(), "rb"));
+    std::vector<uint8_t> ech_key;
+    if (ech_key_file == nullptr ||
+        !ReadAll(&ech_key, ech_key_file.get())) {
+      fprintf(stderr, "Error reading %s\n", ech_key_path.c_str());
+      return false;
+    }
+
+    // Load the ECHConfig.
+    std::string ech_config_path = args_map["-ech-config"];
+    ScopedFILE ech_config_file(fopen(ech_config_path.c_str(), "rb"));
+    std::vector<uint8_t> ech_config;
+    if (ech_config_file == nullptr ||
+        !ReadAll(&ech_config, ech_config_file.get())) {
+      fprintf(stderr, "Error reading %s\n", ech_config_path.c_str());
+      return false;
+    }
+
+    bssl::UniquePtr<SSL_ECH_KEYS> keys(SSL_ECH_KEYS_new());
+    bssl::ScopedEVP_HPKE_KEY key;
+    if (!keys ||
+        !EVP_HPKE_KEY_init(key.get(), EVP_hpke_x25519_hkdf_sha256(),
+                           ech_key.data(), ech_key.size()) ||
+        !SSL_ECH_KEYS_add(keys.get(),
+                          /*is_retry_config=*/1, ech_config.data(),
+                          ech_config.size(), key.get()) ||
+        !SSL_CTX_set1_ech_keys(ctx.get(), keys.get())) {
+      fprintf(stderr, "Error setting server's ECHConfig and private key\n");
       return false;
     }
   }

@@ -117,8 +117,8 @@ static std::vector<DataRate> SplitBitrate(size_t num_layers,
   return bitrates;
 }
 
-// Returns the minimum bitrate needed for |num_active_layers| spatial layers to
-// become active using the configuration specified by |codec|.
+// Returns the minimum bitrate needed for `num_active_layers` spatial layers to
+// become active using the configuration specified by `codec`.
 DataRate FindLayerTogglingThreshold(const VideoCodec& codec,
                                     size_t first_active_layer,
                                     size_t num_active_layers) {
@@ -142,7 +142,7 @@ DataRate FindLayerTogglingThreshold(const VideoCodec& codec,
             .minBitrate);
 
     // Do a binary search until upper and lower bound is the highest bitrate for
-    // |num_active_layers| - 1 layers and lowest bitrate for |num_active_layers|
+    // `num_active_layers` - 1 layers and lowest bitrate for `num_active_layers`
     // layers respectively.
     while (upper_bound - lower_bound > DataRate::BitsPerSec(1)) {
       DataRate try_rate = (lower_bound + upper_bound) / 2;
@@ -174,8 +174,10 @@ DataRate FindLayerTogglingThreshold(const VideoCodec& codec,
 SvcRateAllocator::NumLayers SvcRateAllocator::GetNumLayers(
     const VideoCodec& codec) {
   NumLayers layers;
-  if (!codec.ScalabilityMode().empty()) {
-    if (auto structure = CreateScalabilityStructure(codec.ScalabilityMode())) {
+  if (absl::optional<ScalabilityMode> scalability_mode =
+          codec.GetScalabilityMode();
+      scalability_mode.has_value()) {
+    if (auto structure = CreateScalabilityStructure(*scalability_mode)) {
       ScalableVideoController::StreamLayersConfig config =
           structure->StreamConfig();
       layers.spatial = config.num_spatial_layers;
@@ -251,8 +253,7 @@ VideoBitrateAllocation SvcRateAllocator::Allocate(
       hysteresis_factor = experiment_settings_.GetVideoHysteresisFactor();
     }
 
-    DataRate stable_rate =
-        std::min(parameters.total_bitrate, parameters.stable_bitrate);
+    DataRate stable_rate = std::min(total_bitrate, parameters.stable_bitrate);
     // First check if bitrate has grown large enough to enable new layers.
     size_t num_enabled_with_hysteresis =
         FindNumEnabledLayers(stable_rate / hysteresis_factor);
@@ -264,7 +265,7 @@ VideoBitrateAllocation SvcRateAllocator::Allocate(
           std::min(last_active_layer_count_, FindNumEnabledLayers(stable_rate));
     }
   } else {
-    num_spatial_layers = FindNumEnabledLayers(parameters.total_bitrate);
+    num_spatial_layers = FindNumEnabledLayers(total_bitrate);
   }
   last_active_layer_count_ = num_spatial_layers;
 

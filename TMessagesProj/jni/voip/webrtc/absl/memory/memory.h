@@ -75,32 +75,6 @@ std::unique_ptr<T> WrapUnique(T* ptr) {
   return std::unique_ptr<T>(ptr);
 }
 
-namespace memory_internal {
-
-// Traits to select proper overload and return type for `absl::make_unique<>`.
-template <typename T>
-struct MakeUniqueResult {
-  using scalar = std::unique_ptr<T>;
-};
-template <typename T>
-struct MakeUniqueResult<T[]> {
-  using array = std::unique_ptr<T[]>;
-};
-template <typename T, size_t N>
-struct MakeUniqueResult<T[N]> {
-  using invalid = void;
-};
-
-}  // namespace memory_internal
-
-// gcc 4.8 has __cplusplus at 201301 but the libstdc++ shipped with it doesn't
-// define make_unique.  Other supported compilers either just define __cplusplus
-// as 201103 but have make_unique (msvc), or have make_unique whenever
-// __cplusplus > 201103 (clang).
-#if (__cplusplus > 201103L || defined(_MSC_VER)) && \
-    !(defined(__GLIBCXX__) && !defined(__cpp_lib_make_unique))
-using std::make_unique;
-#else
 // -----------------------------------------------------------------------------
 // Function Template: make_unique<T>()
 // -----------------------------------------------------------------------------
@@ -109,82 +83,18 @@ using std::make_unique;
 // during the construction process. `absl::make_unique<>` also avoids redundant
 // type declarations, by avoiding the need to explicitly use the `new` operator.
 //
-// This implementation of `absl::make_unique<>` is designed for C++11 code and
-// will be replaced in C++14 by the equivalent `std::make_unique<>` abstraction.
-// `absl::make_unique<>` is designed to be 100% compatible with
-// `std::make_unique<>` so that the eventual migration will involve a simple
-// rename operation.
+// https://en.cppreference.com/w/cpp/memory/unique_ptr/make_unique
 //
 // For more background on why `std::unique_ptr<T>(new T(a,b))` is problematic,
 // see Herb Sutter's explanation on
 // (Exception-Safe Function Calls)[https://herbsutter.com/gotw/_102/].
 // (In general, reviewers should treat `new T(a,b)` with scrutiny.)
 //
-// Example usage:
-//
-//    auto p = make_unique<X>(args...);  // 'p'  is a std::unique_ptr<X>
-//    auto pa = make_unique<X[]>(5);     // 'pa' is a std::unique_ptr<X[]>
-//
-// Three overloads of `absl::make_unique` are required:
-//
-//   - For non-array T:
-//
-//       Allocates a T with `new T(std::forward<Args> args...)`,
-//       forwarding all `args` to T's constructor.
-//       Returns a `std::unique_ptr<T>` owning that object.
-//
-//   - For an array of unknown bounds T[]:
-//
-//       `absl::make_unique<>` will allocate an array T of type U[] with
-//       `new U[n]()` and return a `std::unique_ptr<U[]>` owning that array.
-//
-//       Note that 'U[n]()' is different from 'U[n]', and elements will be
-//       value-initialized. Note as well that `std::unique_ptr` will perform its
-//       own destruction of the array elements upon leaving scope, even though
-//       the array [] does not have a default destructor.
-//
-//       NOTE: an array of unknown bounds T[] may still be (and often will be)
-//       initialized to have a size, and will still use this overload. E.g:
-//
-//         auto my_array = absl::make_unique<int[]>(10);
-//
-//   - For an array of known bounds T[N]:
-//
-//       `absl::make_unique<>` is deleted (like with `std::make_unique<>`) as
-//       this overload is not useful.
-//
-//       NOTE: an array of known bounds T[N] is not considered a useful
-//       construction, and may cause undefined behavior in templates. E.g:
-//
-//         auto my_array = absl::make_unique<int[10]>();
-//
-//       In those cases, of course, you can still use the overload above and
-//       simply initialize it to its desired size:
-//
-//         auto my_array = absl::make_unique<int[]>(10);
-
-// `absl::make_unique` overload for non-array types.
-template <typename T, typename... Args>
-typename memory_internal::MakeUniqueResult<T>::scalar make_unique(
-    Args&&... args) {
-  return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
-}
-
-// `absl::make_unique` overload for an array T[] of unknown bounds.
-// The array allocation needs to use the `new T[size]` form and cannot take
-// element constructor arguments. The `std::unique_ptr` will manage destructing
-// these array elements.
-template <typename T>
-typename memory_internal::MakeUniqueResult<T>::array make_unique(size_t n) {
-  return std::unique_ptr<T>(new typename absl::remove_extent_t<T>[n]());
-}
-
-// `absl::make_unique` overload for an array T[N] of known bounds.
-// This construction will be rejected.
-template <typename T, typename... Args>
-typename memory_internal::MakeUniqueResult<T>::invalid make_unique(
-    Args&&... /* args */) = delete;
-#endif
+// Historical note: Abseil once provided a C++11 compatible implementation of
+// the C++14's `std::make_unique`. Now that C++11 support has been sunsetted,
+// `absl::make_unique` simply uses the STL-provided implementation. New code
+// should use `std::make_unique`.
+using std::make_unique;
 
 // -----------------------------------------------------------------------------
 // Function Template: RawPtr()
@@ -248,6 +158,26 @@ std::weak_ptr<T> WeakenPtr(const std::shared_ptr<T>& ptr) {
   return std::weak_ptr<T>(ptr);
 }
 
+// -----------------------------------------------------------------------------
+// Class Template: pointer_traits
+// -----------------------------------------------------------------------------
+//
+// Historical note: Abseil once provided an implementation of
+// `std::pointer_traits` for platforms that had not yet provided it. Those
+// platforms are no longer supported. New code should simply use
+// `std::pointer_traits`.
+using std::pointer_traits;
+
+// -----------------------------------------------------------------------------
+// Class Template: allocator_traits
+// -----------------------------------------------------------------------------
+//
+// Historical note: Abseil once provided an implementation of
+// `std::allocator_traits` for platforms that had not yet provided it. Those
+// platforms are no longer supported. New code should simply use
+// `std::allocator_traits`.
+using std::allocator_traits;
+
 namespace memory_internal {
 
 // ExtractOr<E, O, D>::type evaluates to E<O> if possible. Otherwise, D.
@@ -264,353 +194,6 @@ struct ExtractOr<Extract, Obj, Default, void_t<Extract<Obj>>> {
 
 template <template <typename> class Extract, typename Obj, typename Default>
 using ExtractOrT = typename ExtractOr<Extract, Obj, Default, void>::type;
-
-// Extractors for the features of allocators.
-template <typename T>
-using GetPointer = typename T::pointer;
-
-template <typename T>
-using GetConstPointer = typename T::const_pointer;
-
-template <typename T>
-using GetVoidPointer = typename T::void_pointer;
-
-template <typename T>
-using GetConstVoidPointer = typename T::const_void_pointer;
-
-template <typename T>
-using GetDifferenceType = typename T::difference_type;
-
-template <typename T>
-using GetSizeType = typename T::size_type;
-
-template <typename T>
-using GetPropagateOnContainerCopyAssignment =
-    typename T::propagate_on_container_copy_assignment;
-
-template <typename T>
-using GetPropagateOnContainerMoveAssignment =
-    typename T::propagate_on_container_move_assignment;
-
-template <typename T>
-using GetPropagateOnContainerSwap = typename T::propagate_on_container_swap;
-
-template <typename T>
-using GetIsAlwaysEqual = typename T::is_always_equal;
-
-template <typename T>
-struct GetFirstArg;
-
-template <template <typename...> class Class, typename T, typename... Args>
-struct GetFirstArg<Class<T, Args...>> {
-  using type = T;
-};
-
-template <typename Ptr, typename = void>
-struct ElementType {
-  using type = typename GetFirstArg<Ptr>::type;
-};
-
-template <typename T>
-struct ElementType<T, void_t<typename T::element_type>> {
-  using type = typename T::element_type;
-};
-
-template <typename T, typename U>
-struct RebindFirstArg;
-
-template <template <typename...> class Class, typename T, typename... Args,
-          typename U>
-struct RebindFirstArg<Class<T, Args...>, U> {
-  using type = Class<U, Args...>;
-};
-
-template <typename T, typename U, typename = void>
-struct RebindPtr {
-  using type = typename RebindFirstArg<T, U>::type;
-};
-
-template <typename T, typename U>
-struct RebindPtr<T, U, void_t<typename T::template rebind<U>>> {
-  using type = typename T::template rebind<U>;
-};
-
-template <typename T, typename U>
-constexpr bool HasRebindAlloc(...) {
-  return false;
-}
-
-template <typename T, typename U>
-constexpr bool HasRebindAlloc(typename T::template rebind<U>::other*) {
-  return true;
-}
-
-template <typename T, typename U, bool = HasRebindAlloc<T, U>(nullptr)>
-struct RebindAlloc {
-  using type = typename RebindFirstArg<T, U>::type;
-};
-
-template <typename T, typename U>
-struct RebindAlloc<T, U, true> {
-  using type = typename T::template rebind<U>::other;
-};
-
-}  // namespace memory_internal
-
-// -----------------------------------------------------------------------------
-// Class Template: pointer_traits
-// -----------------------------------------------------------------------------
-//
-// An implementation of C++11's std::pointer_traits.
-//
-// Provided for portability on toolchains that have a working C++11 compiler,
-// but the standard library is lacking in C++11 support. For example, some
-// version of the Android NDK.
-//
-
-template <typename Ptr>
-struct pointer_traits {
-  using pointer = Ptr;
-
-  // element_type:
-  // Ptr::element_type if present. Otherwise T if Ptr is a template
-  // instantiation Template<T, Args...>
-  using element_type = typename memory_internal::ElementType<Ptr>::type;
-
-  // difference_type:
-  // Ptr::difference_type if present, otherwise std::ptrdiff_t
-  using difference_type =
-      memory_internal::ExtractOrT<memory_internal::GetDifferenceType, Ptr,
-                                  std::ptrdiff_t>;
-
-  // rebind:
-  // Ptr::rebind<U> if exists, otherwise Template<U, Args...> if Ptr is a
-  // template instantiation Template<T, Args...>
-  template <typename U>
-  using rebind = typename memory_internal::RebindPtr<Ptr, U>::type;
-
-  // pointer_to:
-  // Calls Ptr::pointer_to(r)
-  static pointer pointer_to(element_type& r) {  // NOLINT(runtime/references)
-    return Ptr::pointer_to(r);
-  }
-};
-
-// Specialization for T*.
-template <typename T>
-struct pointer_traits<T*> {
-  using pointer = T*;
-  using element_type = T;
-  using difference_type = std::ptrdiff_t;
-
-  template <typename U>
-  using rebind = U*;
-
-  // pointer_to:
-  // Calls std::addressof(r)
-  static pointer pointer_to(
-      element_type& r) noexcept {  // NOLINT(runtime/references)
-    return std::addressof(r);
-  }
-};
-
-// -----------------------------------------------------------------------------
-// Class Template: allocator_traits
-// -----------------------------------------------------------------------------
-//
-// A C++11 compatible implementation of C++17's std::allocator_traits.
-//
-template <typename Alloc>
-struct allocator_traits {
-  using allocator_type = Alloc;
-
-  // value_type:
-  // Alloc::value_type
-  using value_type = typename Alloc::value_type;
-
-  // pointer:
-  // Alloc::pointer if present, otherwise value_type*
-  using pointer = memory_internal::ExtractOrT<memory_internal::GetPointer,
-                                              Alloc, value_type*>;
-
-  // const_pointer:
-  // Alloc::const_pointer if present, otherwise
-  // absl::pointer_traits<pointer>::rebind<const value_type>
-  using const_pointer =
-      memory_internal::ExtractOrT<memory_internal::GetConstPointer, Alloc,
-                                  typename absl::pointer_traits<pointer>::
-                                      template rebind<const value_type>>;
-
-  // void_pointer:
-  // Alloc::void_pointer if present, otherwise
-  // absl::pointer_traits<pointer>::rebind<void>
-  using void_pointer = memory_internal::ExtractOrT<
-      memory_internal::GetVoidPointer, Alloc,
-      typename absl::pointer_traits<pointer>::template rebind<void>>;
-
-  // const_void_pointer:
-  // Alloc::const_void_pointer if present, otherwise
-  // absl::pointer_traits<pointer>::rebind<const void>
-  using const_void_pointer = memory_internal::ExtractOrT<
-      memory_internal::GetConstVoidPointer, Alloc,
-      typename absl::pointer_traits<pointer>::template rebind<const void>>;
-
-  // difference_type:
-  // Alloc::difference_type if present, otherwise
-  // absl::pointer_traits<pointer>::difference_type
-  using difference_type = memory_internal::ExtractOrT<
-      memory_internal::GetDifferenceType, Alloc,
-      typename absl::pointer_traits<pointer>::difference_type>;
-
-  // size_type:
-  // Alloc::size_type if present, otherwise
-  // std::make_unsigned<difference_type>::type
-  using size_type = memory_internal::ExtractOrT<
-      memory_internal::GetSizeType, Alloc,
-      typename std::make_unsigned<difference_type>::type>;
-
-  // propagate_on_container_copy_assignment:
-  // Alloc::propagate_on_container_copy_assignment if present, otherwise
-  // std::false_type
-  using propagate_on_container_copy_assignment = memory_internal::ExtractOrT<
-      memory_internal::GetPropagateOnContainerCopyAssignment, Alloc,
-      std::false_type>;
-
-  // propagate_on_container_move_assignment:
-  // Alloc::propagate_on_container_move_assignment if present, otherwise
-  // std::false_type
-  using propagate_on_container_move_assignment = memory_internal::ExtractOrT<
-      memory_internal::GetPropagateOnContainerMoveAssignment, Alloc,
-      std::false_type>;
-
-  // propagate_on_container_swap:
-  // Alloc::propagate_on_container_swap if present, otherwise std::false_type
-  using propagate_on_container_swap =
-      memory_internal::ExtractOrT<memory_internal::GetPropagateOnContainerSwap,
-                                  Alloc, std::false_type>;
-
-  // is_always_equal:
-  // Alloc::is_always_equal if present, otherwise std::is_empty<Alloc>::type
-  using is_always_equal =
-      memory_internal::ExtractOrT<memory_internal::GetIsAlwaysEqual, Alloc,
-                                  typename std::is_empty<Alloc>::type>;
-
-  // rebind_alloc:
-  // Alloc::rebind<T>::other if present, otherwise Alloc<T, Args> if this Alloc
-  // is Alloc<U, Args>
-  template <typename T>
-  using rebind_alloc = typename memory_internal::RebindAlloc<Alloc, T>::type;
-
-  // rebind_traits:
-  // absl::allocator_traits<rebind_alloc<T>>
-  template <typename T>
-  using rebind_traits = absl::allocator_traits<rebind_alloc<T>>;
-
-  // allocate(Alloc& a, size_type n):
-  // Calls a.allocate(n)
-  static pointer allocate(Alloc& a,  // NOLINT(runtime/references)
-                          size_type n) {
-    return a.allocate(n);
-  }
-
-  // allocate(Alloc& a, size_type n, const_void_pointer hint):
-  // Calls a.allocate(n, hint) if possible.
-  // If not possible, calls a.allocate(n)
-  static pointer allocate(Alloc& a, size_type n,  // NOLINT(runtime/references)
-                          const_void_pointer hint) {
-    return allocate_impl(0, a, n, hint);
-  }
-
-  // deallocate(Alloc& a, pointer p, size_type n):
-  // Calls a.deallocate(p, n)
-  static void deallocate(Alloc& a, pointer p,  // NOLINT(runtime/references)
-                         size_type n) {
-    a.deallocate(p, n);
-  }
-
-  // construct(Alloc& a, T* p, Args&&... args):
-  // Calls a.construct(p, std::forward<Args>(args)...) if possible.
-  // If not possible, calls
-  //   ::new (static_cast<void*>(p)) T(std::forward<Args>(args)...)
-  template <typename T, typename... Args>
-  static void construct(Alloc& a, T* p,  // NOLINT(runtime/references)
-                        Args&&... args) {
-    construct_impl(0, a, p, std::forward<Args>(args)...);
-  }
-
-  // destroy(Alloc& a, T* p):
-  // Calls a.destroy(p) if possible. If not possible, calls p->~T().
-  template <typename T>
-  static void destroy(Alloc& a, T* p) {  // NOLINT(runtime/references)
-    destroy_impl(0, a, p);
-  }
-
-  // max_size(const Alloc& a):
-  // Returns a.max_size() if possible. If not possible, returns
-  //   std::numeric_limits<size_type>::max() / sizeof(value_type)
-  static size_type max_size(const Alloc& a) { return max_size_impl(0, a); }
-
-  // select_on_container_copy_construction(const Alloc& a):
-  // Returns a.select_on_container_copy_construction() if possible.
-  // If not possible, returns a.
-  static Alloc select_on_container_copy_construction(const Alloc& a) {
-    return select_on_container_copy_construction_impl(0, a);
-  }
-
- private:
-  template <typename A>
-  static auto allocate_impl(int, A& a,  // NOLINT(runtime/references)
-                            size_type n, const_void_pointer hint)
-      -> decltype(a.allocate(n, hint)) {
-    return a.allocate(n, hint);
-  }
-  static pointer allocate_impl(char, Alloc& a,  // NOLINT(runtime/references)
-                               size_type n, const_void_pointer) {
-    return a.allocate(n);
-  }
-
-  template <typename A, typename... Args>
-  static auto construct_impl(int, A& a,  // NOLINT(runtime/references)
-                             Args&&... args)
-      -> decltype(a.construct(std::forward<Args>(args)...)) {
-    a.construct(std::forward<Args>(args)...);
-  }
-
-  template <typename T, typename... Args>
-  static void construct_impl(char, Alloc&, T* p, Args&&... args) {
-    ::new (static_cast<void*>(p)) T(std::forward<Args>(args)...);
-  }
-
-  template <typename A, typename T>
-  static auto destroy_impl(int, A& a,  // NOLINT(runtime/references)
-                           T* p) -> decltype(a.destroy(p)) {
-    a.destroy(p);
-  }
-  template <typename T>
-  static void destroy_impl(char, Alloc&, T* p) {
-    p->~T();
-  }
-
-  template <typename A>
-  static auto max_size_impl(int, const A& a) -> decltype(a.max_size()) {
-    return a.max_size();
-  }
-  static size_type max_size_impl(char, const Alloc&) {
-    return (std::numeric_limits<size_type>::max)() / sizeof(value_type);
-  }
-
-  template <typename A>
-  static auto select_on_container_copy_construction_impl(int, const A& a)
-      -> decltype(a.select_on_container_copy_construction()) {
-    return a.select_on_container_copy_construction();
-  }
-  static Alloc select_on_container_copy_construction_impl(char,
-                                                          const Alloc& a) {
-    return a;
-  }
-};
-
-namespace memory_internal {
 
 // This template alias transforms Alloc::is_nothrow into a metafunction with
 // Alloc as a parameter so it can be used with ExtractOrT<>.

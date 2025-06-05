@@ -18,7 +18,7 @@
 #include <string>
 #include <type_traits>
 
-#include "rtc_base/units/unit_base.h"
+#include "rtc_base/units/unit_base.h"  // IWYU pragma: export
 
 namespace webrtc {
 // DataSize is a class represeting a count of bytes.

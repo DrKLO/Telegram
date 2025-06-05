@@ -51,6 +51,7 @@ ScalabilityStructureKeySvc::StreamConfig() const {
     result.scaling_factor_num[sid - 1] = 1;
     result.scaling_factor_den[sid - 1] = 2 * result.scaling_factor_den[sid];
   }
+  result.uses_reference_scaling = true;
   return result;
 }
 
@@ -197,7 +198,7 @@ ScalabilityStructureKeySvc::NextPattern(FramePattern last_pattern) const {
       }
       return kDeltaT0;
   }
-  RTC_NOTREACHED();
+  RTC_DCHECK_NOTREACHED();
   return kNone;
 }
 
@@ -226,7 +227,7 @@ ScalabilityStructureKeySvc::NextFrameConfig(bool restart) {
     case kNone:
       break;
   }
-  RTC_NOTREACHED();
+  RTC_DCHECK_NOTREACHED();
   return {};
 }
 
@@ -339,6 +340,55 @@ FrameDependencyStructure ScalabilityStructureL2T3Key::DependencyStructure()
   templates[7].S(1).T(1).Dtis("----DS").ChainDiffs({5, 4}).FrameDiffs({4});
   templates[8].S(1).T(2).Dtis("-----D").ChainDiffs({3, 2}).FrameDiffs({2});
   templates[9].S(1).T(2).Dtis("-----D").ChainDiffs({7, 6}).FrameDiffs({2});
+  return structure;
+}
+
+ScalabilityStructureL3T1Key::~ScalabilityStructureL3T1Key() = default;
+
+FrameDependencyStructure ScalabilityStructureL3T1Key::DependencyStructure()
+    const {
+  FrameDependencyStructure structure;
+  structure.num_decode_targets = 3;
+  structure.num_chains = 3;
+  structure.decode_target_protected_by_chain = {0, 1, 2};
+  auto& t = structure.templates;
+  t.resize(6);
+  // Templates are shown in the order frames following them appear in the
+  // stream, but in `structure.templates` array templates are sorted by
+  // (`spatial_id`, `temporal_id`) since that is a dependency descriptor
+  // requirement.
+  t[1].S(0).Dtis("SSS").ChainDiffs({0, 0, 0});
+  t[3].S(1).Dtis("-SS").ChainDiffs({1, 1, 1}).FrameDiffs({1});
+  t[5].S(2).Dtis("--S").ChainDiffs({2, 1, 1}).FrameDiffs({1});
+  t[0].S(0).Dtis("S--").ChainDiffs({3, 2, 1}).FrameDiffs({3});
+  t[2].S(1).Dtis("-S-").ChainDiffs({1, 3, 2}).FrameDiffs({3});
+  t[4].S(2).Dtis("--S").ChainDiffs({2, 1, 3}).FrameDiffs({3});
+  return structure;
+}
+
+ScalabilityStructureL3T2Key::~ScalabilityStructureL3T2Key() = default;
+
+FrameDependencyStructure ScalabilityStructureL3T2Key::DependencyStructure()
+    const {
+  FrameDependencyStructure structure;
+  structure.num_decode_targets = 6;
+  structure.num_chains = 3;
+  structure.decode_target_protected_by_chain = {0, 0, 1, 1, 2, 2};
+  auto& t = structure.templates;
+  t.resize(9);
+  // Templates are shown in the order frames following them appear in the
+  // stream, but in `structure.templates` array templates are sorted by
+  // (`spatial_id`, `temporal_id`) since that is a dependency descriptor
+  // requirement.
+  t[1].S(0).T(0).Dtis("SSSSSS").ChainDiffs({0, 0, 0});
+  t[4].S(1).T(0).Dtis("--SSSS").ChainDiffs({1, 1, 1}).FrameDiffs({1});
+  t[7].S(2).T(0).Dtis("----SS").ChainDiffs({2, 1, 1}).FrameDiffs({1});
+  t[2].S(0).T(1).Dtis("-D----").ChainDiffs({3, 2, 1}).FrameDiffs({3});
+  t[5].S(1).T(1).Dtis("---D--").ChainDiffs({4, 3, 2}).FrameDiffs({3});
+  t[8].S(2).T(1).Dtis("-----D").ChainDiffs({5, 4, 3}).FrameDiffs({3});
+  t[0].S(0).T(0).Dtis("SS----").ChainDiffs({6, 5, 4}).FrameDiffs({6});
+  t[3].S(1).T(0).Dtis("--SS--").ChainDiffs({1, 6, 5}).FrameDiffs({6});
+  t[6].S(2).T(0).Dtis("----SS").ChainDiffs({2, 1, 6}).FrameDiffs({6});
   return structure;
 }
 

@@ -1,16 +1,16 @@
-/* Copyright (c) 2015, Google Inc.
- *
- * Permission to use, copy, modify, and/or distribute this software for any
- * purpose with or without fee is hereby granted, provided that the above
- * copyright notice and this permission notice appear in all copies.
- *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
- * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY
- * SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION
- * OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
- * CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE. */
+// Copyright 2015 The BoringSSL Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 #ifndef OPENSSL_HEADER_CRYPTO_TEST_FILE_TEST_H
 #define OPENSSL_HEADER_CRYPTO_TEST_FILE_TEST_H
@@ -19,17 +19,12 @@
 
 #include <stdint.h>
 
-OPENSSL_MSVC_PRAGMA(warning(push))
-OPENSSL_MSVC_PRAGMA(warning(disable : 4702))
-
 #include <functional>
 #include <map>
 #include <memory>
 #include <set>
 #include <string>
 #include <vector>
-
-OPENSSL_MSVC_PRAGMA(warning(pop))
 
 // File-based test framework.
 //
@@ -164,11 +159,6 @@ class FileTest {
   // success and returns false with an error to |stderr| on failure.
   bool GetBytes(std::vector<uint8_t> *out, const std::string &key);
 
-  // ExpectBytesEqual returns true if |expected| and |actual| are equal.
-  // Otherwise, it returns false and prints a message to |stderr|.
-  bool ExpectBytesEqual(const uint8_t *expected, size_t expected_len,
-                        const uint8_t *actual, size_t actual_len);
-
   // AtNewInstructionBlock returns true if the current test was immediately
   // preceded by an instruction block.
   bool IsAtNewInstructionBlock() const;
@@ -178,6 +168,9 @@ class FileTest {
 
   // IgnoreInstruction marks the instruction with key |key| as used.
   void IgnoreInstruction(const std::string &key) { HasInstruction(key); }
+
+  // IgnoreAllUnusedInstructions disables checking for unused instructions.
+  void IgnoreAllUnusedInstructions();
 
   // GetInstruction looks up the instruction with key |key|. It sets
   // |*out_value| to the value (empty string if the instruction has no value)
@@ -223,6 +216,9 @@ class FileTest {
   std::string type_;
   // parameter_ is the value of the first attribute.
   std::string parameter_;
+  // attribute_count_ maps unsuffixed attribute names to the number of times
+  // they have occurred so far.
+  std::map<std::string, size_t> attribute_count_;
   // attributes_ contains all attributes in the test, including the first.
   std::map<std::string, std::string> attributes_;
   // instructions_ contains all instructions in scope for the test.

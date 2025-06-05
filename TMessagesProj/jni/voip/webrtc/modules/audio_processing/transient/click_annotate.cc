@@ -26,7 +26,7 @@ using webrtc::TransientDetector;
 // Creates a send times array, one for each step.
 // Each block that contains a transient, has an infinite send time.
 // The resultant array is written to a DAT file
-// Returns -1 on error or |lost_packets| otherwise.
+// Returns -1 on error or `lost_packets` otherwise.
 int main(int argc, char* argv[]) {
   if (argc != 5) {
     printf("\n%s - Application to generate a RTP timing file.\n\n", argv[0]);

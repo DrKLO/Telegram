@@ -12,6 +12,7 @@
 #define SDK_ANDROID_NATIVE_API_CODECS_WRAPPER_H_
 
 #include <jni.h>
+
 #include <memory>
 #include <vector>
 
@@ -41,7 +42,7 @@ std::unique_ptr<VideoEncoderFactory> JavaToNativeVideoEncoderFactory(
 // of ResolutionBitrateLimits.
 std::vector<VideoEncoder::ResolutionBitrateLimits>
 JavaToNativeResolutionBitrateLimits(JNIEnv* jni,
-                                    const jobjectArray j_bitrate_limits_array);
+                                    jobjectArray j_bitrate_limits_array);
 
 }  // namespace webrtc
 

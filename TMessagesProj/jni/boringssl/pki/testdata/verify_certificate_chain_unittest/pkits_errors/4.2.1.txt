@@ -1,0 +1,3 @@
+----- Certificate i=1 (CN=Bad notBefore Date CA,O=Test Certificates 2011,C=US) -----
+ERROR: Time is before notBefore
+

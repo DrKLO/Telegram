@@ -17,6 +17,7 @@ import android.media.AudioFormat;
 import android.media.AudioManager;
 import android.media.AudioRecord;
 import android.media.AudioRecordingConfiguration;
+import android.media.AudioTimestamp;
 import android.media.MediaRecorder.AudioSource;
 import android.os.Build;
 import android.os.Process;
@@ -43,7 +44,7 @@ import org.webrtc.audio.JavaAudioDeviceModule.AudioRecordStartErrorCode;
 import org.webrtc.audio.JavaAudioDeviceModule.AudioRecordStateCallback;
 import org.webrtc.audio.JavaAudioDeviceModule.SamplesReadyCallback;
 
-class WebRtcAudioRecord {
+public class WebRtcAudioRecord {
   private static final String TAG = "WebRtcAudioRecordExternal";
 
   // Requested size of each recorded buffer provided to the client.
@@ -130,6 +131,10 @@ class WebRtcAudioRecord {
       doAudioRecordStateCallback(AUDIO_RECORD_START);
 
       long lastTime = System.nanoTime();
+      AudioTimestamp audioTimestamp = null;
+      if (Build.VERSION.SDK_INT >= 24) {
+        audioTimestamp = new AudioTimestamp();
+      }
       while (keepAlive) {
         int bytesRead = audioRecord.read(byteBuffer, byteBuffer.capacity());
         if (bytesRead == byteBuffer.capacity()) {
@@ -141,7 +146,14 @@ class WebRtcAudioRecord {
           // failed to join this thread. To be a bit safer, try to avoid calling any native methods
           // in case they've been unregistered after stopRecording() returned.
           if (keepAlive) {
-            nativeDataIsRecorded(nativeAudioRecord, bytesRead);
+            long captureTimeNs = 0;
+            if (Build.VERSION.SDK_INT >= 24) {
+              if (audioRecord.getTimestamp(audioTimestamp, AudioTimestamp.TIMEBASE_MONOTONIC)
+                  == AudioRecord.SUCCESS) {
+                captureTimeNs = audioTimestamp.nanoTime;
+              }
+            }
+            nativeDataIsRecorded(nativeAudioRecord, bytesRead, captureTimeNs);
           }
           if (audioSamplesReadyCallback != null) {
             // Copy the entire byte buffer array. The start of the byteBuffer is not necessarily
@@ -237,7 +249,7 @@ class WebRtcAudioRecord {
 
   // Returns true if verifyAudioConfig() succeeds. This value is set after a specific delay when
   // startRecording() has been called. Hence, should preferably be called in combination with
-  // stopRecording() to ensure that it has been set properly. |isAudioConfigVerified| is
+  // stopRecording() to ensure that it has been set properly. `isAudioConfigVerified` is
   // enabled in WebRtcAudioRecord to ensure that the returned value is valid.
   @CalledByNative
   boolean isAudioSourceMatchingRecordingSession() {
@@ -489,13 +501,26 @@ class WebRtcAudioRecord {
 
   private native void nativeCacheDirectBufferAddress(
       long nativeAudioRecordJni, ByteBuffer byteBuffer);
-  private native void nativeDataIsRecorded(long nativeAudioRecordJni, int bytes);
+  private native void nativeDataIsRecorded(
+      long nativeAudioRecordJni, int bytes, long captureTimestampNs);
 
-  // Sets all recorded samples to zero if |mute| is true, i.e., ensures that
+  // Sets all recorded samples to zero if `mute` is true, i.e., ensures that
   // the microphone is muted.
   public void setMicrophoneMute(boolean mute) {
     Logging.w(TAG, "setMicrophoneMute(" + mute + ")");
     microphoneMute = mute;
+  }
+
+  // Sets whether NoiseSuppressor should be enabled or disabled.
+  // Returns true if the enabling was successful, otherwise false is returned (this is also the case
+  // if the NoiseSuppressor effect is not supported).
+  public boolean setNoiseSuppressorEnabled(boolean enabled) {
+    if (!WebRtcAudioEffects.isNoiseSuppressorSupported()) {
+      Logging.e(TAG, "Noise suppressor is not supported.");
+      return false;
+    }
+    Logging.w(TAG, "SetNoiseSuppressorEnabled(" + enabled + ")");
+    return effects.toggleNS(enabled);
   }
 
   // Releases the native AudioRecord resources.

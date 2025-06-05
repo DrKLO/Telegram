@@ -6,7 +6,6 @@ import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.content.Context;
 import android.graphics.Canvas;
-import android.graphics.Color;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.RectF;
@@ -21,9 +20,15 @@ import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.TextView;
 
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
+import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.DialogObject;
+import org.telegram.messenger.Emoji;
 import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
@@ -34,9 +39,6 @@ import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.DialogsActivity;
 
 import java.util.ArrayList;
-
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
 
 public class FiltersListBottomSheet extends BottomSheet implements NotificationCenter.NotificationCenterDelegate {
 
@@ -54,12 +56,25 @@ public class FiltersListBottomSheet extends BottomSheet implements NotificationC
     private ArrayList<MessagesController.DialogFilter> dialogFilters;
 
     public interface FiltersListBottomSheetDelegate {
-        void didSelectFilter(MessagesController.DialogFilter filter);
+        void didSelectFilter(MessagesController.DialogFilter filter, boolean checked);
     }
+
+    private final ArrayList<Long> selectedDialogs;
+    private final DialogsActivity fragment;
 
     public FiltersListBottomSheet(DialogsActivity baseFragment, ArrayList<Long> selectedDialogs) {
         super(baseFragment.getParentActivity(), false);
-        dialogFilters = getCanAddDialogFilters(baseFragment, selectedDialogs);
+        fixNavigationBar();
+        this.selectedDialogs = selectedDialogs;
+        this.fragment = baseFragment;
+//        dialogFilters = getCanAddDialogFilters(baseFragment, selectedDialogs);
+        dialogFilters = new ArrayList<>(baseFragment.getMessagesController().dialogFilters);
+        for (int i = 0; i < dialogFilters.size(); ++i) {
+            if (dialogFilters.get(i).isDefault()) {
+                dialogFilters.remove(i);
+                i--;
+            }
+        }
         Context context = baseFragment.getParentActivity();
 
         containerView = new FrameLayout(context) {
@@ -153,11 +168,21 @@ public class FiltersListBottomSheet extends BottomSheet implements NotificationC
                 }
 
                 if (statusBarHeight > 0) {
-                    int color1 = Theme.getColor(Theme.key_dialogBackground);
-                    int finalColor = Color.argb(0xff, (int) (Color.red(color1) * 0.8f), (int) (Color.green(color1) * 0.8f), (int) (Color.blue(color1) * 0.8f));
-                    Theme.dialogs_onlineCirclePaint.setColor(finalColor);
+                    Theme.dialogs_onlineCirclePaint.setColor(Theme.getColor(Theme.key_dialogBackground));
                     canvas.drawRect(backgroundPaddingLeft, AndroidUtilities.statusBarHeight - statusBarHeight, getMeasuredWidth() - backgroundPaddingLeft, AndroidUtilities.statusBarHeight, Theme.dialogs_onlineCirclePaint);
                 }
+                updateLightStatusBar(statusBarHeight > AndroidUtilities.statusBarHeight / 2);
+            }
+
+            private Boolean statusBarOpen;
+            private void updateLightStatusBar(boolean open) {
+                if (statusBarOpen != null && statusBarOpen == open) {
+                    return;
+                }
+                boolean openBgLight = AndroidUtilities.computePerceivedBrightness(getThemedColor(Theme.key_dialogBackground)) > .721f;
+                boolean closedBgLight = AndroidUtilities.computePerceivedBrightness(Theme.blendOver(getThemedColor(Theme.key_actionBarDefault), 0x33000000)) > .721f;
+                boolean isLight = (statusBarOpen = open) ? openBgLight : closedBgLight;
+                AndroidUtilities.setLightStatusBar(getWindow(), isLight);
             }
         };
         containerView.setWillNotDraw(false);
@@ -195,7 +220,7 @@ public class FiltersListBottomSheet extends BottomSheet implements NotificationC
             }
         });
         listView.setOnItemClickListener((view, position) -> {
-            delegate.didSelectFilter(adapter.getItem(position));
+            delegate.didSelectFilter(adapter.getItem(position), view instanceof BottomSheet.BottomSheetCell ? ((BottomSheet.BottomSheetCell) view).isChecked() : false);
             dismiss();
         });
         containerView.addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT, 0, 48, 0, 0));
@@ -208,10 +233,10 @@ public class FiltersListBottomSheet extends BottomSheet implements NotificationC
         titleTextView.setLinkTextColor(Theme.getColor(Theme.key_dialogTextLink));
         titleTextView.setHighlightColor(Theme.getColor(Theme.key_dialogLinkSelection));
         titleTextView.setEllipsize(TextUtils.TruncateAt.END);
-        titleTextView.setPadding(AndroidUtilities.dp(18), 0, AndroidUtilities.dp(18), 0);
+        titleTextView.setPadding(AndroidUtilities.dp(24), 0, AndroidUtilities.dp(24), 0);
         titleTextView.setGravity(Gravity.CENTER_VERTICAL);
-        titleTextView.setText(LocaleController.getString("FilterChoose", R.string.FilterChoose));
-        titleTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        titleTextView.setText(LocaleController.getString(R.string.FilterChoose));
+        titleTextView.setTypeface(AndroidUtilities.bold());
         containerView.addView(titleTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 50, Gravity.LEFT | Gravity.TOP, 0, 0, 40, 0));
 
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.emojiLoaded);
@@ -291,12 +316,13 @@ public class FiltersListBottomSheet extends BottomSheet implements NotificationC
     @Override
     public void didReceivedNotification(int id, int account, Object... args) {
         if (id == NotificationCenter.emojiLoaded) {
-            if (listView != null) {
-                int count = listView.getChildCount();
-                for (int a = 0; a < count; a++) {
-                    listView.getChildAt(a).invalidate();
+            AndroidUtilities.forEachViews(listView, view -> {
+                if (view instanceof BottomSheetCell) {
+                    ((BottomSheetCell) view).getTextView().invalidate();
+                } else {
+                    view.invalidate();
                 }
-            }
+            });
         }
     }
 
@@ -309,7 +335,7 @@ public class FiltersListBottomSheet extends BottomSheet implements NotificationC
         ArrayList<MessagesController.DialogFilter> filters = fragment.getMessagesController().dialogFilters;
         for (int a = 0, N = filters.size(); a < N; a++) {
             MessagesController.DialogFilter filter = filters.get(a);
-            if (!getDialogsCount(fragment, filter, selectedDialogs, true, true).isEmpty()) {
+            if (!getDialogsCount(fragment, filter, selectedDialogs, true, true).isEmpty() && !filter.isDefault()) {
                 result.add(filter);
             }
         }
@@ -393,21 +419,33 @@ public class FiltersListBottomSheet extends BottomSheet implements NotificationC
                 cell.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
                 int icon;
                 if ((filter.flags & MessagesController.DIALOG_FILTER_FLAG_ALL_CHATS) == (MessagesController.DIALOG_FILTER_FLAG_CONTACTS | MessagesController.DIALOG_FILTER_FLAG_NON_CONTACTS)) {
-                    icon = R.drawable.menu_private;
+                    icon = R.drawable.msg_openprofile;
                 } else if ((filter.flags & MessagesController.DIALOG_FILTER_FLAG_EXCLUDE_READ) != 0 && (filter.flags & MessagesController.DIALOG_FILTER_FLAG_ALL_CHATS) == MessagesController.DIALOG_FILTER_FLAG_ALL_CHATS) {
-                    icon = R.drawable.menu_unread;
+                    icon = R.drawable.msg_markunread;
                 } else if ((filter.flags & MessagesController.DIALOG_FILTER_FLAG_ALL_CHATS) == MessagesController.DIALOG_FILTER_FLAG_CHANNELS) {
-                    icon = R.drawable.menu_broadcast;
+                    icon = R.drawable.msg_channel;
                 } else if ((filter.flags & MessagesController.DIALOG_FILTER_FLAG_ALL_CHATS) == MessagesController.DIALOG_FILTER_FLAG_GROUPS) {
-                    icon = R.drawable.menu_groups;
+                    icon = R.drawable.msg_groups;
                 } else if ((filter.flags & MessagesController.DIALOG_FILTER_FLAG_ALL_CHATS) == MessagesController.DIALOG_FILTER_FLAG_CONTACTS) {
-                    icon = R.drawable.menu_contacts;
+                    icon = R.drawable.msg_contacts;
                 } else if ((filter.flags & MessagesController.DIALOG_FILTER_FLAG_ALL_CHATS) == MessagesController.DIALOG_FILTER_FLAG_BOTS) {
-                    icon = R.drawable.menu_bots;
+                    icon = R.drawable.msg_bots;
                 } else {
-                    icon = R.drawable.menu_folders;
+                    icon = R.drawable.msg_folders;
                 }
-                cell.setTextAndIcon(filter.name, icon);
+                CharSequence title = filter.name;
+                title = Emoji.replaceEmoji(title, cell.getTextView().getPaint().getFontMetricsInt(), false);
+                title = MessageObject.replaceAnimatedEmoji(title, filter.entities, cell.getTextView().getPaint().getFontMetricsInt());
+                cell.setTextAndIcon(title, 0, new FolderDrawable(getContext(), icon, filter.color), false);
+                cell.getTextView().setEmojiColor(Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider));
+                boolean isChecked = true;
+                for (int i = 0; i < selectedDialogs.size(); ++i) {
+                    long did = selectedDialogs.get(i);
+                    if (!filter.includesDialog(AccountInstance.getInstance(currentAccount), did)) {
+                        isChecked = false;
+                    }
+                }
+                cell.setChecked(isChecked);
             } else {
                 cell.getImageView().setColorFilter(null);
                 Drawable drawable1 = context.getResources().getDrawable(R.drawable.poll_add_circle);
@@ -416,7 +454,7 @@ public class FiltersListBottomSheet extends BottomSheet implements NotificationC
                 drawable2.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_checkboxCheck), PorterDuff.Mode.MULTIPLY));
                 CombinedDrawable combinedDrawable = new CombinedDrawable(drawable1, drawable2);
                 cell.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText4));
-                cell.setTextAndIcon(LocaleController.getString("CreateNewFilter", R.string.CreateNewFilter), combinedDrawable);
+                cell.setTextAndIcon(LocaleController.getString(R.string.CreateNewFilter), combinedDrawable);
             }
         }
     }

@@ -20,8 +20,8 @@ bool RouteEndpoint::operator==(const RouteEndpoint& other) const {
 
 bool NetworkRoute::operator==(const NetworkRoute& other) const {
   return connected == other.connected && local == other.local &&
-      remote == other.remote && packet_overhead == other.packet_overhead &&
-      last_sent_packet_id == other.last_sent_packet_id;
+         remote == other.remote && packet_overhead == other.packet_overhead &&
+         last_sent_packet_id == other.last_sent_packet_id;
 }
 
 }  // namespace rtc

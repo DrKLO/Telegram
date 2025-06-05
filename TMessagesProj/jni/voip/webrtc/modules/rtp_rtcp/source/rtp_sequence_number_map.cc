@@ -23,7 +23,7 @@ namespace webrtc {
 
 RtpSequenceNumberMap::RtpSequenceNumberMap(size_t max_entries)
     : max_entries_(max_entries) {
-  RTC_DCHECK_GT(max_entries_, 4);  // See code paring down to |max_entries_|.
+  RTC_DCHECK_GT(max_entries_, 4);  // See code paring down to `max_entries_`.
   RTC_DCHECK_LE(max_entries_, 1 << 15);
 }
 
@@ -42,7 +42,7 @@ void RtpSequenceNumberMap::InsertPacket(uint16_t sequence_number, Info info) {
   if (AheadOrAt(sequence_number, associations_.front().sequence_number) &&
       AheadOrAt(associations_.back().sequence_number, sequence_number)) {
     // The sequence number has wrapped around and is within the range
-    // currently held by |associations_| - we should invalidate all entries.
+    // currently held by `associations_` - we should invalidate all entries.
     RTC_LOG(LS_WARNING) << "Sequence number wrapped-around unexpectedly.";
     associations_.clear();
     associations_.emplace_back(sequence_number, info);
@@ -59,7 +59,7 @@ void RtpSequenceNumberMap::InsertPacket(uint16_t sequence_number, Info info) {
     erase_to = std::next(erase_to, max_entries_ - new_size);
   }
 
-  // It is guaranteed that |associations_| can be split into two partitions,
+  // It is guaranteed that `associations_` can be split into two partitions,
   // either partition possibly empty, such that:
   // * In the first partition, all elements are AheadOf the new element.
   //   This is the partition of the obsolete elements.

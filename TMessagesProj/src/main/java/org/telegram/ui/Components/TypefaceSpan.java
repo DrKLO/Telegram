@@ -14,12 +14,15 @@ import android.text.TextPaint;
 import android.text.style.MetricAffectingSpan;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.ui.ActionBar.Theme;
 
 public class TypefaceSpan extends MetricAffectingSpan {
 
     private Typeface typeface;
     private int textSize;
     private int color;
+    private int colorKey = -1;
+    Theme.ResourcesProvider resourcesProvider;
 
     public TypefaceSpan(Typeface tf) {
         typeface = tf;
@@ -38,6 +41,16 @@ public class TypefaceSpan extends MetricAffectingSpan {
         color = textColor;
     }
 
+    public TypefaceSpan(Typeface tf, int size, int colorKey, Theme.ResourcesProvider resourcesProvider) {
+        typeface = tf;
+        if (size > 0) {
+            textSize = size;
+        }
+        this.resourcesProvider = resourcesProvider;
+        this.colorKey = colorKey;
+        color = Theme.getColor(colorKey, resourcesProvider);
+    }
+
     public Typeface getTypeface() {
         return typeface;
     }
@@ -51,7 +64,7 @@ public class TypefaceSpan extends MetricAffectingSpan {
     }
 
     public boolean isBold() {
-        return typeface == AndroidUtilities.getTypeface("fonts/rmedium.ttf");
+        return typeface == AndroidUtilities.bold();
     }
 
     public boolean isItalic() {
@@ -71,6 +84,9 @@ public class TypefaceSpan extends MetricAffectingSpan {
 
     @Override
     public void updateDrawState(TextPaint tp) {
+        if (colorKey >= 0) {
+            color = Theme.getColor(colorKey, resourcesProvider);
+        }
         if (typeface != null) {
             tp.setTypeface(typeface);
         }

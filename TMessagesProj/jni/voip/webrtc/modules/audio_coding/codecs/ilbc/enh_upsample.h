@@ -28,6 +28,6 @@
 void WebRtcIlbcfix_EnhUpsample(
     int32_t* useq1, /* (o) upsampled output sequence */
     int16_t* seq1   /* (i) unupsampled sequence */
-    );
+);
 
 #endif

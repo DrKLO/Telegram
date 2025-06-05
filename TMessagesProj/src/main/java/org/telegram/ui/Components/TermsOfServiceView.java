@@ -22,6 +22,7 @@ import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.tgnet.tl.TL_account;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.Theme;
 
@@ -63,8 +64,8 @@ public class TermsOfServiceView extends FrameLayout {
         titleTextView = new TextView(context);
         titleTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
         titleTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 17);
-        titleTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
-        titleTextView.setText(LocaleController.getString("PrivacyPolicyAndTerms", R.string.PrivacyPolicyAndTerms));
+        titleTextView.setTypeface(AndroidUtilities.bold());
+        titleTextView.setText(LocaleController.getString(R.string.PrivacyPolicyAndTerms));
         linearLayout.addView(titleTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT, 0, 20, 0, 0));
 
         textView = new TextView(context);
@@ -84,9 +85,9 @@ public class TermsOfServiceView extends FrameLayout {
         addView(scrollView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
         TextView declineTextView = new TextView(context);
-        declineTextView.setText(LocaleController.getString("Decline", R.string.Decline).toUpperCase());
+        declineTextView.setText(LocaleController.getString(R.string.Decline).toUpperCase());
         declineTextView.setGravity(Gravity.CENTER);
-        declineTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        declineTextView.setTypeface(AndroidUtilities.bold());
         declineTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
         declineTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         declineTextView.setBackground(Theme.getRoundRectSelectorDrawable(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText)));
@@ -94,16 +95,16 @@ public class TermsOfServiceView extends FrameLayout {
         addView(declineTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.BOTTOM, 16, 0, 16, 16));
         declineTextView.setOnClickListener(view -> {
             AlertDialog.Builder builder = new AlertDialog.Builder(view.getContext());
-            builder.setTitle(LocaleController.getString("TermsOfService", R.string.TermsOfService));
-            builder.setPositiveButton(LocaleController.getString("DeclineDeactivate", R.string.DeclineDeactivate), (dialog, which) -> {
+            builder.setTitle(LocaleController.getString(R.string.TermsOfService));
+            builder.setPositiveButton(LocaleController.getString(R.string.DeclineDeactivate), (dialog, which) -> {
                 AlertDialog.Builder builder12 = new AlertDialog.Builder(getContext());
-                builder12.setMessage(LocaleController.getString("TosDeclineDeleteAccount", R.string.TosDeclineDeleteAccount));
-                builder12.setTitle(LocaleController.getString("AppName", R.string.AppName));
-                builder12.setPositiveButton(LocaleController.getString("Deactivate", R.string.Deactivate), (dialogInterface, i) -> {
-                    final AlertDialog progressDialog = new AlertDialog(getContext(), 3);
-                    progressDialog.setCanCacnel(false);
+                builder12.setMessage(LocaleController.getString(R.string.TosDeclineDeleteAccount));
+                builder12.setTitle(LocaleController.getString(R.string.AppName));
+                builder12.setPositiveButton(LocaleController.getString(R.string.Deactivate), (dialogInterface, i) -> {
+                    final AlertDialog progressDialog = new AlertDialog(getContext(), AlertDialog.ALERT_TYPE_SPINNER);
+                    progressDialog.setCanCancel(false);
 
-                    TLRPC.TL_account_deleteAccount req = new TLRPC.TL_account_deleteAccount();
+                    TL_account.deleteAccount req = new TL_account.deleteAccount();
                     req.reason = "Decline ToS update";
                     ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
                         try {
@@ -114,31 +115,31 @@ public class TermsOfServiceView extends FrameLayout {
                         if (response instanceof TLRPC.TL_boolTrue) {
                             MessagesController.getInstance(currentAccount).performLogout(0);
                         } else if (error == null || error.code != -1000) {
-                            String errorText = LocaleController.getString("ErrorOccurred", R.string.ErrorOccurred);
+                            String errorText = LocaleController.getString(R.string.ErrorOccurred);
                             if (error != null) {
                                 errorText += "\n" + error.text;
                             }
                             AlertDialog.Builder builder1 = new AlertDialog.Builder(getContext());
-                            builder1.setTitle(LocaleController.getString("AppName", R.string.AppName));
+                            builder1.setTitle(LocaleController.getString(R.string.AppName));
                             builder1.setMessage(errorText);
-                            builder1.setPositiveButton(LocaleController.getString("OK", R.string.OK), null);
+                            builder1.setPositiveButton(LocaleController.getString(R.string.OK), null);
                             builder1.show();
                         }
                     }));
                     progressDialog.show();
                 });
-                builder12.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+                builder12.setNegativeButton(LocaleController.getString(R.string.Cancel), null);
                 builder12.show();
             });
-            builder.setNegativeButton(LocaleController.getString("Back", R.string.Back), null);
-            builder.setMessage(LocaleController.getString("TosUpdateDecline", R.string.TosUpdateDecline));
+            builder.setNegativeButton(LocaleController.getString(R.string.Back), null);
+            builder.setMessage(LocaleController.getString(R.string.TosUpdateDecline));
             builder.show();
         });
 
         TextView acceptTextView = new TextView(context);
-        acceptTextView.setText(LocaleController.getString("Accept", R.string.Accept));
+        acceptTextView.setText(LocaleController.getString(R.string.Accept));
         acceptTextView.setGravity(Gravity.CENTER);
-        acceptTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        acceptTextView.setTypeface(AndroidUtilities.bold());
         acceptTextView.setTextColor(0xffffffff);
         acceptTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         acceptTextView.setBackgroundDrawable(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(4), 0xff50a8eb, 0xff439bde));
@@ -147,9 +148,9 @@ public class TermsOfServiceView extends FrameLayout {
         acceptTextView.setOnClickListener(view -> {
             if (currentTos.min_age_confirm != 0) {
                 AlertDialog.Builder builder = new AlertDialog.Builder(view.getContext());
-                builder.setTitle(LocaleController.getString("TosAgeTitle", R.string.TosAgeTitle));
-                builder.setPositiveButton(LocaleController.getString("Agree", R.string.Agree), (dialog, which) -> accept());
-                builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+                builder.setTitle(LocaleController.getString(R.string.TosAgeTitle));
+                builder.setPositiveButton(LocaleController.getString(R.string.Agree), (dialog, which) -> accept());
+                builder.setNegativeButton(LocaleController.getString(R.string.Cancel), null);
                 builder.setMessage(LocaleController.formatString("TosAgeText", R.string.TosAgeText, LocaleController.formatPluralString("Years", currentTos.min_age_confirm)));
                 builder.show();
             } else {

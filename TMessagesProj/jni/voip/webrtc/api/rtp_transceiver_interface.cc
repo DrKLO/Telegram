@@ -34,39 +34,14 @@ void RtpTransceiverInterface::Stop() {
 }
 
 RTCError RtpTransceiverInterface::StopStandard() {
-  RTC_NOTREACHED() << "DEBUG: RtpTransceiverInterface::StopStandard called";
+  RTC_DCHECK_NOTREACHED()
+      << "DEBUG: RtpTransceiverInterface::StopStandard called";
   return RTCError::OK();
 }
 
 void RtpTransceiverInterface::StopInternal() {
-  RTC_NOTREACHED() << "DEBUG: RtpTransceiverInterface::StopInternal called";
-}
-
-RTCError RtpTransceiverInterface::SetCodecPreferences(
-    rtc::ArrayView<RtpCodecCapability>) {
-  RTC_NOTREACHED() << "Not implemented";
-  return {};
-}
-
-std::vector<RtpCodecCapability> RtpTransceiverInterface::codec_preferences()
-    const {
-  return {};
-}
-
-std::vector<RtpHeaderExtensionCapability>
-RtpTransceiverInterface::HeaderExtensionsToOffer() const {
-  return {};
-}
-
-webrtc::RTCError RtpTransceiverInterface::SetOfferedRtpHeaderExtensions(
-    rtc::ArrayView<const RtpHeaderExtensionCapability>
-        header_extensions_to_offer) {
-  return webrtc::RTCError(webrtc::RTCErrorType::UNSUPPORTED_OPERATION);
-}
-
-std::vector<RtpHeaderExtensionCapability>
-RtpTransceiverInterface::HeaderExtensionsNegotiated() const {
-  return {};
+  RTC_DCHECK_NOTREACHED()
+      << "DEBUG: RtpTransceiverInterface::StopInternal called";
 }
 
 // TODO(bugs.webrtc.org/11839) Remove default implementations when clients
@@ -78,7 +53,7 @@ void RtpTransceiverInterface::SetDirection(
 
 RTCError RtpTransceiverInterface::SetDirectionWithError(
     RtpTransceiverDirection new_direction) {
-  RTC_NOTREACHED() << "Default implementation called";
+  RTC_DCHECK_NOTREACHED() << "Default implementation called";
   return RTCError::OK();
 }
 

@@ -79,7 +79,7 @@ uint32_t TimestampScaler::ToExternal(uint32_t internal_timestamp) const {
     const int64_t internal_diff = int64_t{internal_timestamp} - internal_ref_;
     RTC_DCHECK_GT(numerator_, 0);
     // Do not update references in this method.
-    // Switch |denominator_| and |numerator_| to convert the other way.
+    // Switch `denominator_` and `numerator_` to convert the other way.
     return external_ref_ + (internal_diff * denominator_) / numerator_;
   }
 }

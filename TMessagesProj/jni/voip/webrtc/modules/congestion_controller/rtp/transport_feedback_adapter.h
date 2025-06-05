@@ -18,10 +18,11 @@
 
 #include "api/sequence_checker.h"
 #include "api/transport/network_types.h"
-#include "modules/include/module_common_types_public.h"
+#include "api/units/timestamp.h"
 #include "modules/rtp_rtcp/include/rtp_rtcp_defines.h"
 #include "rtc_base/network/sent_packet.h"
 #include "rtc_base/network_route.h"
+#include "rtc_base/numerics/sequence_number_unwrapper.h"
 #include "rtc_base/thread_annotations.h"
 
 namespace webrtc {
@@ -82,7 +83,7 @@ class TransportFeedbackAdapter {
   DataSize pending_untracked_size_ = DataSize::Zero();
   Timestamp last_send_time_ = Timestamp::MinusInfinity();
   Timestamp last_untracked_send_time_ = Timestamp::MinusInfinity();
-  SequenceNumberUnwrapper seq_num_unwrapper_;
+  RtpSequenceNumberUnwrapper seq_num_unwrapper_;
   std::map<int64_t, PacketFeedback> history_;
 
   // Sequence numbers are never negative, using -1 as it always < a real
@@ -91,7 +92,7 @@ class TransportFeedbackAdapter {
   InFlightBytesTracker in_flight_;
 
   Timestamp current_offset_ = Timestamp::MinusInfinity();
-  TimeDelta last_timestamp_ = TimeDelta::MinusInfinity();
+  Timestamp last_timestamp_ = Timestamp::MinusInfinity();
 
   rtc::NetworkRoute network_route_;
 };

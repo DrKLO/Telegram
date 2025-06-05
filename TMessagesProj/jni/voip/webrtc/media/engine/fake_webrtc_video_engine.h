@@ -44,8 +44,8 @@ class FakeWebRtcVideoDecoder : public webrtc::VideoDecoder {
   explicit FakeWebRtcVideoDecoder(FakeWebRtcVideoDecoderFactory* factory);
   ~FakeWebRtcVideoDecoder();
 
-  int32_t InitDecode(const webrtc::VideoCodec*, int32_t) override;
-  int32_t Decode(const webrtc::EncodedImage&, bool, int64_t) override;
+  bool Configure(const Settings& settings) override;
+  int32_t Decode(const webrtc::EncodedImage&, int64_t) override;
   int32_t RegisterDecodeCompleteCallback(
       webrtc::DecodedImageCallback*) override;
   int32_t Release() override;
@@ -114,16 +114,19 @@ class FakeWebRtcVideoEncoderFactory : public webrtc::VideoEncoderFactory {
   FakeWebRtcVideoEncoderFactory();
 
   std::vector<webrtc::SdpVideoFormat> GetSupportedFormats() const override;
+  webrtc::VideoEncoderFactory::CodecSupport QueryCodecSupport(
+      const webrtc::SdpVideoFormat& format,
+      absl::optional<std::string> scalability_mode) const override;
   std::unique_ptr<webrtc::VideoEncoder> CreateVideoEncoder(
       const webrtc::SdpVideoFormat& format) override;
-  CodecInfo QueryVideoEncoder(
-      const webrtc::SdpVideoFormat& format) const override;
 
   bool WaitForCreatedVideoEncoders(int num_encoders);
   void EncoderDestroyed(FakeWebRtcVideoEncoder* encoder);
   void set_encoders_have_internal_sources(bool internal_source);
   void AddSupportedVideoCodec(const webrtc::SdpVideoFormat& format);
-  void AddSupportedVideoCodecType(const std::string& name);
+  void AddSupportedVideoCodecType(
+      const std::string& name,
+      const std::vector<webrtc::ScalabilityMode>& scalability_modes = {});
   int GetNumCreatedEncoders();
   const std::vector<FakeWebRtcVideoEncoder*> encoders();
 
@@ -133,7 +136,6 @@ class FakeWebRtcVideoEncoderFactory : public webrtc::VideoEncoderFactory {
   std::vector<webrtc::SdpVideoFormat> formats_;
   std::vector<FakeWebRtcVideoEncoder*> encoders_ RTC_GUARDED_BY(mutex_);
   int num_created_encoders_ RTC_GUARDED_BY(mutex_);
-  bool encoders_have_internal_sources_;
   bool vp8_factory_mode_;
 };
 

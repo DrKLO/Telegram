@@ -12,21 +12,23 @@
 #pragma warning(disable : 4786)
 #endif
 
+#include "rtc_base/socket_adapters.h"
+
 #include <algorithm>
 
 #include "absl/strings/match.h"
+#include "absl/strings/string_view.h"
 #include "rtc_base/buffer.h"
 #include "rtc_base/byte_buffer.h"
 #include "rtc_base/checks.h"
 #include "rtc_base/http_common.h"
 #include "rtc_base/logging.h"
-#include "rtc_base/socket_adapters.h"
 #include "rtc_base/strings/string_builder.h"
 #include "rtc_base/zero_memory.h"
 
 namespace rtc {
 
-BufferedReadAdapter::BufferedReadAdapter(AsyncSocket* socket, size_t size)
+BufferedReadAdapter::BufferedReadAdapter(Socket* socket, size_t size)
     : AsyncSocketAdapter(socket),
       buffer_size_(size),
       data_len_(0),
@@ -41,7 +43,7 @@ BufferedReadAdapter::~BufferedReadAdapter() {
 int BufferedReadAdapter::Send(const void* pv, size_t cb) {
   if (buffering_) {
     // TODO: Spoof error better; Signal Writeable
-    socket_->SetError(EWOULDBLOCK);
+    SetError(EWOULDBLOCK);
     return -1;
   }
   return AsyncSocketAdapter::Send(pv, cb);
@@ -49,7 +51,7 @@ int BufferedReadAdapter::Send(const void* pv, size_t cb) {
 
 int BufferedReadAdapter::Recv(void* pv, size_t cb, int64_t* timestamp) {
   if (buffering_) {
-    socket_->SetError(EWOULDBLOCK);
+    SetError(EWOULDBLOCK);
     return -1;
   }
 
@@ -87,8 +89,8 @@ void BufferedReadAdapter::BufferInput(bool on) {
   buffering_ = on;
 }
 
-void BufferedReadAdapter::OnReadEvent(AsyncSocket* socket) {
-  RTC_DCHECK(socket == socket_);
+void BufferedReadAdapter::OnReadEvent(Socket* socket) {
+  RTC_DCHECK(socket == GetSocket());
 
   if (!buffering_) {
     AsyncSocketAdapter::OnReadEvent(socket);
@@ -97,15 +99,15 @@ void BufferedReadAdapter::OnReadEvent(AsyncSocket* socket) {
 
   if (data_len_ >= buffer_size_) {
     RTC_LOG(LS_ERROR) << "Input buffer overflow";
-    RTC_NOTREACHED();
+    RTC_DCHECK_NOTREACHED();
     data_len_ = 0;
   }
 
-  int len =
-      socket_->Recv(buffer_ + data_len_, buffer_size_ - data_len_, nullptr);
+  int len = AsyncSocketAdapter::Recv(buffer_ + data_len_,
+                                     buffer_size_ - data_len_, nullptr);
   if (len < 0) {
     // TODO: Do something better like forwarding the error to the user.
-    RTC_LOG_ERR(INFO) << "Recv";
+    RTC_LOG_ERR(LS_INFO) << "Recv";
     return;
   }
 
@@ -168,7 +170,7 @@ ArrayView<const uint8_t> AsyncSSLSocket::SslServerHello() {
   return {kSslServerHello, sizeof(kSslServerHello)};
 }
 
-AsyncSSLSocket::AsyncSSLSocket(AsyncSocket* socket)
+AsyncSSLSocket::AsyncSSLSocket(Socket* socket)
     : BufferedReadAdapter(socket, 1024) {}
 
 int AsyncSSLSocket::Connect(const SocketAddress& addr) {
@@ -178,11 +180,15 @@ int AsyncSSLSocket::Connect(const SocketAddress& addr) {
   return BufferedReadAdapter::Connect(addr);
 }
 
-void AsyncSSLSocket::OnConnectEvent(AsyncSocket* socket) {
-  RTC_DCHECK(socket == socket_);
+void AsyncSSLSocket::OnConnectEvent(Socket* socket) {
+  RTC_DCHECK(socket == GetSocket());
   // TODO: we could buffer output too...
   const int res = DirectSend(kSslClientHello, sizeof(kSslClientHello));
-  RTC_DCHECK_EQ(sizeof(kSslClientHello), res);
+  if (res != sizeof(kSslClientHello)) {
+    RTC_LOG(LS_ERROR) << "Sending fake SSL ClientHello message failed.";
+    Close();
+    SignalCloseEvent(this, 0);
+  }
 }
 
 void AsyncSSLSocket::ProcessInput(char* data, size_t* len) {
@@ -190,6 +196,7 @@ void AsyncSSLSocket::ProcessInput(char* data, size_t* len) {
     return;
 
   if (memcmp(kSslServerHello, data, sizeof(kSslServerHello)) != 0) {
+    RTC_LOG(LS_ERROR) << "Received non-matching fake SSL ServerHello message.";
     Close();
     SignalCloseEvent(this, 0);  // TODO: error code?
     return;
@@ -211,10 +218,10 @@ void AsyncSSLSocket::ProcessInput(char* data, size_t* len) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-AsyncHttpsProxySocket::AsyncHttpsProxySocket(AsyncSocket* socket,
-                                             const std::string& user_agent,
+AsyncHttpsProxySocket::AsyncHttpsProxySocket(Socket* socket,
+                                             absl::string_view user_agent,
                                              const SocketAddress& proxy,
-                                             const std::string& username,
+                                             absl::string_view username,
                                              const CryptString& password)
     : BufferedReadAdapter(socket, 1024),
       proxy_(proxy),
@@ -266,7 +273,7 @@ Socket::ConnState AsyncHttpsProxySocket::GetState() const {
   }
 }
 
-void AsyncHttpsProxySocket::OnConnectEvent(AsyncSocket* socket) {
+void AsyncHttpsProxySocket::OnConnectEvent(Socket* socket) {
   RTC_LOG(LS_VERBOSE) << "AsyncHttpsProxySocket::OnConnectEvent";
   if (!ShouldIssueConnect()) {
     state_ = PS_TUNNEL;
@@ -276,7 +283,7 @@ void AsyncHttpsProxySocket::OnConnectEvent(AsyncSocket* socket) {
   SendRequest();
 }
 
-void AsyncHttpsProxySocket::OnCloseEvent(AsyncSocket* socket, int err) {
+void AsyncHttpsProxySocket::OnCloseEvent(Socket* socket, int err) {
   RTC_LOG(LS_VERBOSE) << "AsyncHttpsProxySocket::OnCloseEvent(" << err << ")";
   if ((state_ == PS_WAIT_CLOSE) && (err == 0)) {
     state_ = PS_ERROR;
@@ -303,12 +310,12 @@ void AsyncHttpsProxySocket::ProcessInput(char* data, size_t* len) {
     if (data[pos++] != '\n')
       continue;
 
-    size_t len = pos - start - 1;
-    if ((len > 0) && (data[start + len - 1] == '\r'))
-      --len;
+    size_t length = pos - start - 1;
+    if ((length > 0) && (data[start + length - 1] == '\r'))
+      --length;
 
-    data[start + len] = 0;
-    ProcessLine(data + start, len);
+    data[start + length] = 0;
+    ProcessLine(data + start, length);
     start = pos;
   }
 
@@ -404,8 +411,9 @@ void AsyncHttpsProxySocket::ProcessLine(char* data, size_t len) {
   } else if ((state_ == PS_AUTHENTICATE) &&
              absl::StartsWithIgnoreCase(data, "Proxy-Authenticate:")) {
     std::string response, auth_method;
-    switch (HttpAuthenticate(data + 19, len - 19, proxy_, "CONNECT", "/", user_,
-                             pass_, context_, response, auth_method)) {
+    switch (HttpAuthenticate(absl::string_view(data + 19, len - 19), proxy_,
+                             "CONNECT", "/", user_, pass_, context_, response,
+                             auth_method)) {
       case HAR_IGNORE:
         RTC_LOG(LS_VERBOSE) << "Ignoring Proxy-Authenticate: " << auth_method;
         if (!unknown_mechanisms_.empty())
@@ -458,199 +466,6 @@ void AsyncHttpsProxySocket::Error(int error) {
   BufferInput(false);
   Close();
   SetError(error);
-  SignalCloseEvent(this, error);
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-AsyncSocksProxySocket::AsyncSocksProxySocket(AsyncSocket* socket,
-                                             const SocketAddress& proxy,
-                                             const std::string& username,
-                                             const CryptString& password)
-    : BufferedReadAdapter(socket, 1024),
-      state_(SS_ERROR),
-      proxy_(proxy),
-      user_(username),
-      pass_(password) {}
-
-AsyncSocksProxySocket::~AsyncSocksProxySocket() = default;
-
-int AsyncSocksProxySocket::Connect(const SocketAddress& addr) {
-  int ret;
-  dest_ = addr;
-  state_ = SS_INIT;
-  BufferInput(true);
-  ret = BufferedReadAdapter::Connect(proxy_);
-  // TODO: Set state_ appropriately if Connect fails.
-  return ret;
-}
-
-SocketAddress AsyncSocksProxySocket::GetRemoteAddress() const {
-  return dest_;
-}
-
-int AsyncSocksProxySocket::Close() {
-  state_ = SS_ERROR;
-  dest_.Clear();
-  return BufferedReadAdapter::Close();
-}
-
-Socket::ConnState AsyncSocksProxySocket::GetState() const {
-  if (state_ < SS_TUNNEL) {
-    return CS_CONNECTING;
-  } else if (state_ == SS_TUNNEL) {
-    return CS_CONNECTED;
-  } else {
-    return CS_CLOSED;
-  }
-}
-
-void AsyncSocksProxySocket::OnConnectEvent(AsyncSocket* socket) {
-  SendHello();
-}
-
-void AsyncSocksProxySocket::ProcessInput(char* data, size_t* len) {
-  RTC_DCHECK(state_ < SS_TUNNEL);
-
-  ByteBufferReader response(data, *len);
-
-  if (state_ == SS_HELLO) {
-    uint8_t ver, method;
-    if (!response.ReadUInt8(&ver) || !response.ReadUInt8(&method))
-      return;
-
-    if (ver != 5) {
-      Error(0);
-      return;
-    }
-
-    if (method == 0) {
-      SendConnect();
-    } else if (method == 2) {
-      SendAuth();
-    } else {
-      Error(0);
-      return;
-    }
-  } else if (state_ == SS_AUTH) {
-    uint8_t ver, status;
-    if (!response.ReadUInt8(&ver) || !response.ReadUInt8(&status))
-      return;
-
-    if ((ver != 1) || (status != 0)) {
-      Error(SOCKET_EACCES);
-      return;
-    }
-
-    SendConnect();
-  } else if (state_ == SS_CONNECT) {
-    uint8_t ver, rep, rsv, atyp;
-    if (!response.ReadUInt8(&ver) || !response.ReadUInt8(&rep) ||
-        !response.ReadUInt8(&rsv) || !response.ReadUInt8(&atyp))
-      return;
-
-    if ((ver != 5) || (rep != 0)) {
-      Error(0);
-      return;
-    }
-
-    uint16_t port;
-    if (atyp == 1) {
-      uint32_t addr;
-      if (!response.ReadUInt32(&addr) || !response.ReadUInt16(&port))
-        return;
-      RTC_LOG(LS_VERBOSE) << "Bound on " << addr << ":" << port;
-    } else if (atyp == 3) {
-      uint8_t len;
-      std::string addr;
-      if (!response.ReadUInt8(&len) || !response.ReadString(&addr, len) ||
-          !response.ReadUInt16(&port))
-        return;
-      RTC_LOG(LS_VERBOSE) << "Bound on " << addr << ":" << port;
-    } else if (atyp == 4) {
-      std::string addr;
-      if (!response.ReadString(&addr, 16) || !response.ReadUInt16(&port))
-        return;
-      RTC_LOG(LS_VERBOSE) << "Bound on <IPV6>:" << port;
-    } else {
-      Error(0);
-      return;
-    }
-
-    state_ = SS_TUNNEL;
-  }
-
-  // Consume parsed data
-  *len = response.Length();
-  memmove(data, response.Data(), *len);
-
-  if (state_ != SS_TUNNEL)
-    return;
-
-  bool remainder = (*len > 0);
-  BufferInput(false);
-  SignalConnectEvent(this);
-
-  // FIX: if SignalConnect causes the socket to be destroyed, we are in trouble
-  if (remainder)
-    SignalReadEvent(this);  // TODO: signal this??
-}
-
-void AsyncSocksProxySocket::SendHello() {
-  ByteBufferWriter request;
-  request.WriteUInt8(5);  // Socks Version
-  if (user_.empty()) {
-    request.WriteUInt8(1);  // Authentication Mechanisms
-    request.WriteUInt8(0);  // No authentication
-  } else {
-    request.WriteUInt8(2);  // Authentication Mechanisms
-    request.WriteUInt8(0);  // No authentication
-    request.WriteUInt8(2);  // Username/Password
-  }
-  DirectSend(request.Data(), request.Length());
-  state_ = SS_HELLO;
-}
-
-void AsyncSocksProxySocket::SendAuth() {
-  ByteBufferWriterT<ZeroOnFreeBuffer<char>> request;
-  request.WriteUInt8(1);  // Negotiation Version
-  request.WriteUInt8(static_cast<uint8_t>(user_.size()));
-  request.WriteString(user_);  // Username
-  request.WriteUInt8(static_cast<uint8_t>(pass_.GetLength()));
-  size_t len = pass_.GetLength() + 1;
-  char* sensitive = new char[len];
-  pass_.CopyTo(sensitive, true);
-  request.WriteBytes(sensitive, pass_.GetLength());  // Password
-  ExplicitZeroMemory(sensitive, len);
-  delete[] sensitive;
-  DirectSend(request.Data(), request.Length());
-  state_ = SS_AUTH;
-}
-
-void AsyncSocksProxySocket::SendConnect() {
-  ByteBufferWriter request;
-  request.WriteUInt8(5);  // Socks Version
-  request.WriteUInt8(1);  // CONNECT
-  request.WriteUInt8(0);  // Reserved
-  if (dest_.IsUnresolvedIP()) {
-    std::string hostname = dest_.hostname();
-    request.WriteUInt8(3);  // DOMAINNAME
-    request.WriteUInt8(static_cast<uint8_t>(hostname.size()));
-    request.WriteString(hostname);  // Destination Hostname
-  } else {
-    request.WriteUInt8(1);            // IPV4
-    request.WriteUInt32(dest_.ip());  // Destination IP
-  }
-  request.WriteUInt16(dest_.port());  // Destination Port
-  DirectSend(request.Data(), request.Length());
-  state_ = SS_CONNECT;
-}
-
-void AsyncSocksProxySocket::Error(int error) {
-  state_ = SS_ERROR;
-  BufferInput(false);
-  Close();
-  SetError(SOCKET_EACCES);
   SignalCloseEvent(this, error);
 }
 

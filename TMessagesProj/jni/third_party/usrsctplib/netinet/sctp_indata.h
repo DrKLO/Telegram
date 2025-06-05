@@ -32,9 +32,9 @@
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifdef __FreeBSD__
+#if defined(__FreeBSD__) && !defined(__Userspace__)
 #include <sys/cdefs.h>
-__FBSDID("$FreeBSD: head/sys/netinet/sctp_indata.h 351655 2019-09-01 10:39:16Z tuexen $");
+__FBSDID("$FreeBSD: head/sys/netinet/sctp_indata.h 365071 2020-09-01 21:19:14Z mjg $");
 #endif
 
 #ifndef _NETINET_SCTP_INDATA_H_
@@ -44,12 +44,11 @@ __FBSDID("$FreeBSD: head/sys/netinet/sctp_indata.h 351655 2019-09-01 10:39:16Z t
 
 struct sctp_queued_to_read *
 sctp_build_readq_entry(struct sctp_tcb *stcb,
-    struct sctp_nets *net,
-    uint32_t tsn, uint32_t ppid,
-    uint32_t context, uint16_t sid,
-    uint32_t mid, uint8_t flags,
-    struct mbuf *dm);
-
+                       struct sctp_nets *net,
+                       uint32_t tsn, uint32_t ppid,
+                       uint32_t context, uint16_t sid,
+                       uint32_t mid, uint8_t flags,
+                       struct mbuf *dm);
 
 #define sctp_build_readq_entry_mac(_ctl, in_it, context, net, tsn, ppid, sid, flags, dm, tfsn, mid) do { \
 	if (_ctl) { \
@@ -70,14 +69,15 @@ sctp_build_readq_entry(struct sctp_tcb *stcb,
 		(_ctl)->data = dm; \
 		(_ctl)->stcb = (in_it); \
 		(_ctl)->port_from = (in_it)->rport; \
+		if ((in_it)->asoc.state & SCTP_STATE_ABOUT_TO_BE_FREED) { \
+			(_ctl)->do_not_ref_stcb = 1; \
+		}\
 	} \
 } while (0)
 
-
-
 struct mbuf *
 sctp_build_ctl_nchunk(struct sctp_inpcb *inp,
-		      struct sctp_sndrcvinfo *sinfo);
+                      struct sctp_sndrcvinfo *sinfo);
 
 void sctp_set_rwnd(struct sctp_tcb *, struct sctp_association *);
 
@@ -86,7 +86,7 @@ sctp_calc_rwnd(struct sctp_tcb *stcb, struct sctp_association *asoc);
 
 void
 sctp_express_handle_sack(struct sctp_tcb *stcb, uint32_t cumack,
-			 uint32_t rwnd, int *abort_now, int ecne_seen);
+                         uint32_t rwnd, int *abort_now, int ecne_seen);
 
 void
 sctp_handle_sack(struct mbuf *m, int offset_seg, int offset_dup,
@@ -98,7 +98,7 @@ sctp_handle_sack(struct mbuf *m, int offset_seg, int offset_dup,
 /* draft-ietf-tsvwg-usctp */
 void
 sctp_handle_forward_tsn(struct sctp_tcb *,
-			struct sctp_forward_tsn_chunk *, int *, struct mbuf *, int);
+                        struct sctp_forward_tsn_chunk *, int *, struct mbuf *, int);
 
 struct sctp_tmit_chunk *
 sctp_try_advance_peer_ack_point(struct sctp_tcb *, struct sctp_association *);
@@ -110,8 +110,8 @@ sctp_update_acked(struct sctp_tcb *, struct sctp_shutdown_chunk *, int *);
 
 int
 sctp_process_data(struct mbuf **, int, int *, int,
-		  struct sctp_inpcb *, struct sctp_tcb *,
-		  struct sctp_nets *, uint32_t *);
+                  struct sctp_inpcb *, struct sctp_tcb *,
+                  struct sctp_nets *, uint32_t *);
 
 void sctp_slide_mapping_arrays(struct sctp_tcb *stcb);
 

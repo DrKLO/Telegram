@@ -11,6 +11,7 @@
 #ifndef PC_JSEP_TRANSPORT_H_
 #define PC_JSEP_TRANSPORT_H_
 
+#include <functional>
 #include <map>
 #include <memory>
 #include <string>
@@ -18,7 +19,6 @@
 
 #include "absl/types/optional.h"
 #include "api/candidate.h"
-#include "api/crypto_params.h"
 #include "api/ice_transport_interface.h"
 #include "api/jsep.h"
 #include "api/rtc_error.h"
@@ -39,15 +39,12 @@
 #include "pc/rtp_transport_internal.h"
 #include "pc/sctp_transport.h"
 #include "pc/session_description.h"
-#include "pc/srtp_filter.h"
 #include "pc/srtp_transport.h"
 #include "pc/transport_stats.h"
 #include "rtc_base/checks.h"
-#include "rtc_base/constructor_magic.h"
 #include "rtc_base/rtc_certificate.h"
 #include "rtc_base/ssl_fingerprint.h"
 #include "rtc_base/ssl_stream_adapter.h"
-#include "rtc_base/third_party/sigslot/sigslot.h"
 #include "rtc_base/thread.h"
 #include "rtc_base/thread_annotations.h"
 
@@ -60,7 +57,6 @@ struct JsepTransportDescription {
   JsepTransportDescription();
   JsepTransportDescription(
       bool rtcp_mux_enabled,
-      const std::vector<CryptoParams>& cryptos,
       const std::vector<int>& encrypted_header_extension_ids,
       int rtp_abs_sendtime_extn_id,
       const TransportDescription& transport_description);
@@ -70,7 +66,6 @@ struct JsepTransportDescription {
   JsepTransportDescription& operator=(const JsepTransportDescription& from);
 
   bool rtcp_mux_enabled = true;
-  std::vector<CryptoParams> cryptos;
   std::vector<int> encrypted_header_extension_ids;
   int rtp_abs_sendtime_extn_id = -1;
   // TODO(zhihuang): Add the ICE and DTLS related variables and methods from
@@ -86,10 +81,10 @@ struct JsepTransportDescription {
 //
 // On Threading: JsepTransport performs work solely on the network thread, and
 // so its methods should only be called on the network thread.
-class JsepTransport : public sigslot::has_slots<> {
+class JsepTransport {
  public:
-  // |mid| is just used for log statements in order to identify the Transport.
-  // Note that |local_certificate| is allowed to be null since a remote
+  // `mid` is just used for log statements in order to identify the Transport.
+  // Note that `local_certificate` is allowed to be null since a remote
   // description may be set before a local certificate is generated.
   JsepTransport(
       const std::string& mid,
@@ -101,9 +96,13 @@ class JsepTransport : public sigslot::has_slots<> {
       std::unique_ptr<webrtc::DtlsSrtpTransport> dtls_srtp_transport,
       std::unique_ptr<DtlsTransportInternal> rtp_dtls_transport,
       std::unique_ptr<DtlsTransportInternal> rtcp_dtls_transport,
-      std::unique_ptr<SctpTransportInternal> sctp_transport);
+      std::unique_ptr<SctpTransportInternal> sctp_transport,
+      std::function<void()> rtcp_mux_active_callback);
 
-  ~JsepTransport() override;
+  ~JsepTransport();
+
+  JsepTransport(const JsepTransport&) = delete;
+  JsepTransport& operator=(const JsepTransport&) = delete;
 
   // Returns the MID of this transport. This is only used for logging.
   const std::string& mid() const { return mid_; }
@@ -137,7 +136,7 @@ class JsepTransport : public sigslot::has_slots<> {
   // set, offers should generate new ufrags/passwords until an ICE restart
   // occurs.
   //
-  // This and |needs_ice_restart()| must be called on the network thread.
+  // This and `needs_ice_restart()` must be called on the network thread.
   void SetNeedsIceRestartFlag();
 
   // Returns true if the ICE restart flag above was set, and no ICE restart has
@@ -220,16 +219,8 @@ class JsepTransport : public sigslot::has_slots<> {
   // TODO(bugs.webrtc.org/9719): Delete method, update callers to use
   // SctpTransport() instead.
   webrtc::DataChannelTransportInterface* data_channel_transport() const {
-    if (sctp_data_channel_transport_) {
-      return sctp_data_channel_transport_.get();
-    }
-    return nullptr;
+    return sctp_transport_.get();
   }
-
-  // This is signaled when RTCP-mux becomes active and
-  // |rtcp_dtls_transport_| is destroyed. The JsepTransportController will
-  // handle the signal and update the aggregate transport states.
-  sigslot::signal<> SignalRtcpMuxActive;
 
   // TODO(deadbeef): The methods below are only public for testing. Should make
   // them utility functions or objects so they can be tested independently from
@@ -247,11 +238,6 @@ class JsepTransport : public sigslot::has_slots<> {
   bool SetRtcpMux(bool enable, webrtc::SdpType type, ContentSource source);
 
   void ActivateRtcpMux() RTC_RUN_ON(network_thread_);
-
-  bool SetSdes(const std::vector<CryptoParams>& cryptos,
-               const std::vector<int>& encrypted_extension_ids,
-               webrtc::SdpType type,
-               ContentSource source);
 
   // Negotiates and sets the DTLS parameters based on the current local and
   // remote transport description, such as the DTLS role to use, and whether
@@ -313,11 +299,8 @@ class JsepTransport : public sigslot::has_slots<> {
   rtc::scoped_refptr<webrtc::DtlsTransport> rtcp_dtls_transport_
       RTC_GUARDED_BY(network_thread_);
 
-  const std::unique_ptr<webrtc::DataChannelTransportInterface>
-      sctp_data_channel_transport_;
   const rtc::scoped_refptr<webrtc::SctpTransport> sctp_transport_;
 
-  SrtpFilter sdes_negotiator_ RTC_GUARDED_BY(network_thread_);
   RtcpMuxFilter rtcp_mux_negotiator_ RTC_GUARDED_BY(network_thread_);
 
   // Cache the encrypted header extension IDs for SDES negoitation.
@@ -326,7 +309,10 @@ class JsepTransport : public sigslot::has_slots<> {
   absl::optional<std::vector<int>> recv_extension_ids_
       RTC_GUARDED_BY(network_thread_);
 
-  RTC_DISALLOW_COPY_AND_ASSIGN(JsepTransport);
+  // This is invoked when RTCP-mux becomes active and
+  // `rtcp_dtls_transport_` is destroyed. The JsepTransportController will
+  // receive the callback and update the aggregate transport states.
+  std::function<void()> rtcp_mux_active_callback_;
 };
 
 }  // namespace cricket

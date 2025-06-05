@@ -13,6 +13,8 @@
 
 #include <stdint.h>
 
+#include <string>
+
 #include "absl/types/optional.h"
 #include "api/video/hdr_metadata.h"
 #include "rtc_base/system/rtc_export.h"
@@ -101,7 +103,7 @@ class RTC_EXPORT ColorSpace {
     kInvalid = 0,
     // Limited Rec. 709 color range with RGB values ranging from 16 to 235.
     kLimited = 1,
-    // Full RGB color range with RGB valees from 0 to 255.
+    // Full RGB color range with RGB values from 0 to 255.
     kFull = 2,
     // Range is defined by MatrixCoefficients/TransferCharacteristics.
     kDerived = 3,
@@ -155,6 +157,7 @@ class RTC_EXPORT ColorSpace {
   ChromaSiting chroma_siting_horizontal() const;
   ChromaSiting chroma_siting_vertical() const;
   const HdrMetadata* hdr_metadata() const;
+  std::string AsString() const;
 
   bool set_primaries_from_uint8(uint8_t enum_value);
   bool set_transfer_from_uint8(uint8_t enum_value);

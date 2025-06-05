@@ -15,6 +15,7 @@
  */
 package com.google.android.exoplayer2.upstream.crypto;
 
+import static com.google.android.exoplayer2.util.Assertions.checkNotNull;
 import static com.google.android.exoplayer2.util.Util.castNonNull;
 
 import android.net.Uri;
@@ -28,9 +29,7 @@ import java.util.List;
 import java.util.Map;
 import javax.crypto.Cipher;
 
-/**
- * A {@link DataSource} that decrypts the data read from an upstream source.
- */
+/** A {@link DataSource} that decrypts the data read from an upstream source. */
 public final class AesCipherDataSource implements DataSource {
 
   private final DataSource upstream;
@@ -45,28 +44,32 @@ public final class AesCipherDataSource implements DataSource {
 
   @Override
   public void addTransferListener(TransferListener transferListener) {
+    checkNotNull(transferListener);
     upstream.addTransferListener(transferListener);
   }
 
   @Override
   public long open(DataSpec dataSpec) throws IOException {
     long dataLength = upstream.open(dataSpec);
-    long nonce = CryptoUtil.getFNV64Hash(dataSpec.key);
-    cipher = new AesFlushingCipher(Cipher.DECRYPT_MODE, secretKey, nonce,
-        dataSpec.absoluteStreamPosition);
+    cipher =
+        new AesFlushingCipher(
+            Cipher.DECRYPT_MODE,
+            secretKey,
+            dataSpec.key,
+            dataSpec.uriPositionOffset + dataSpec.position);
     return dataLength;
   }
 
   @Override
-  public int read(byte[] data, int offset, int readLength) throws IOException {
-    if (readLength == 0) {
+  public int read(byte[] buffer, int offset, int length) throws IOException {
+    if (length == 0) {
       return 0;
     }
-    int read = upstream.read(data, offset, readLength);
+    int read = upstream.read(buffer, offset, length);
     if (read == C.RESULT_END_OF_INPUT) {
       return C.RESULT_END_OF_INPUT;
     }
-    castNonNull(cipher).updateInPlace(data, offset, read);
+    castNonNull(cipher).updateInPlace(buffer, offset, read);
     return read;
   }
 

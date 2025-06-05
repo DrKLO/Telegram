@@ -15,36 +15,44 @@
 #include <memory>
 
 #include "absl/types/optional.h"
+#include "api/field_trials_view.h"
 #include "api/sequence_checker.h"
 #include "api/task_queue/task_queue_base.h"
-#include "api/video/video_stream_encoder_observer.h"
-#include "rtc_base/constructor_magic.h"
 #include "rtc_base/experiments/field_trial_parser.h"
 #include "rtc_base/numerics/exp_filter.h"
 #include "rtc_base/system/no_unique_address.h"
 #include "rtc_base/task_utils/repeating_task.h"
 #include "rtc_base/thread_annotations.h"
+#include "video/video_stream_encoder_observer.h"
 
 namespace webrtc {
 
 class VideoFrame;
 
 struct CpuOveruseOptions {
-  CpuOveruseOptions();
-
-  int low_encode_usage_threshold_percent;  // Threshold for triggering underuse.
-  int high_encode_usage_threshold_percent;  // Threshold for triggering overuse.
+  // Threshold for triggering overuse.
+  int high_encode_usage_threshold_percent = 85;
+  // Threshold for triggering underuse.
+  // Note that we make the interval 2x+epsilon wide, since libyuv scaling steps
+  // are close to that (when squared). This wide interval makes sure that
+  // scaling up or down does not jump all the way across the interval.
+  int low_encode_usage_threshold_percent =
+      (high_encode_usage_threshold_percent - 1) / 2;
   // General settings.
-  int frame_timeout_interval_ms;  // The maximum allowed interval between two
-                                  // frames before resetting estimations.
-  int min_frame_samples;          // The minimum number of frames required.
-  int min_process_count;  // The number of initial process times required before
-                          // triggering an overuse/underuse.
-  int high_threshold_consecutive_count;  // The number of consecutive checks
-                                         // above the high threshold before
-                                         // triggering an overuse.
+  // The maximum allowed interval between two frames before resetting
+  // estimations.
+  int frame_timeout_interval_ms = 1500;
+  // The minimum number of frames required.
+  int min_frame_samples = 120;
+
+  // The number of initial process times required before
+  // triggering an overuse/underuse.
+  int min_process_count = 3;
+  // The number of consecutive checks above the high threshold before triggering
+  // an overuse.
+  int high_threshold_consecutive_count = 2;
   // New estimator enabled if this is set non-zero.
-  int filter_time_ms;  // Time constant for averaging
+  int filter_time_ms = 0;  // Time constant for averaging
 };
 
 class OveruseFrameDetectorObserverInterface {
@@ -67,6 +75,9 @@ class OveruseFrameDetector {
  public:
   explicit OveruseFrameDetector(CpuOveruseMetricsObserver* metrics_observer);
   virtual ~OveruseFrameDetector();
+
+  OveruseFrameDetector(const OveruseFrameDetector&) = delete;
+  OveruseFrameDetector& operator=(const OveruseFrameDetector&) = delete;
 
   // Start to periodically check for overuse.
   void StartCheckForOveruse(
@@ -161,8 +172,6 @@ class OveruseFrameDetector {
 
   // If set by field trial, overrides CpuOveruseOptions::filter_time_ms.
   FieldTrialOptional<TimeDelta> filter_time_constant_{"tau"};
-
-  RTC_DISALLOW_COPY_AND_ASSIGN(OveruseFrameDetector);
 };
 
 }  // namespace webrtc

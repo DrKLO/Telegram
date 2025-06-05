@@ -57,11 +57,8 @@ class UlpfecHeaderWriter : public FecHeaderWriter {
   size_t FecHeaderSize(size_t packet_mask_row_size) const override;
 
   void FinalizeFecHeader(
-      uint32_t media_ssrc,  // Unused by ULPFEC.
-      uint16_t seq_num_base,
-      const uint8_t* packet_mask,
-      size_t packet_mask_size,
-      ForwardErrorCorrection::Packet* fec_packet) const override;
+      rtc::ArrayView<const ProtectedStream> protected_streams,
+      ForwardErrorCorrection::Packet& fec_packet) const override;
 };
 
 }  // namespace webrtc

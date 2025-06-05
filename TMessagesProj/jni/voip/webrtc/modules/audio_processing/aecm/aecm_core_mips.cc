@@ -569,8 +569,8 @@ static void InverseFFTAndWindow(AecmCore* aecm,
         [paecm_buf] "+r"(paecm_buf), [i] "=&r"(i),
         [pp_kSqrtHanning] "+r"(pp_kSqrtHanning),
         [p_kSqrtHanning] "+r"(p_kSqrtHanning)
-      : [out_aecm] "r"(out_aecm),
-        [WebRtcAecm_kSqrtHanning] "r"(WebRtcAecm_kSqrtHanning)
+      : [out_aecm] "r"(out_aecm), [WebRtcAecm_kSqrtHanning] "r"(
+                                      WebRtcAecm_kSqrtHanning)
       : "hi", "lo", "memory");
 
   // Copy the current block to the old position
@@ -822,7 +822,7 @@ static int TimeToFrequencyDomain(AecmCore* aecm,
     } else {
       // Approximation for magnitude of complex fft output
       // magn = sqrt(real^2 + imag^2)
-      // magn ~= alpha * max(|imag|,|real|) + beta * min(|imag|,|real|)
+      // magn ~= alpha * max(`imag`,`real`) + beta * min(`imag`,`real`)
       //
       // The parameters alpha and beta are stored in Q15
       tmp16no1 = WEBRTC_SPL_ABS_W16(freq_signal[i].real);
@@ -1106,7 +1106,7 @@ int WebRtcAecm_ProcessBlock(AecmCore* aecm,
     }
 
     zeros16 = WebRtcSpl_NormW16(aecm->nearFilt[i]);
-    RTC_DCHECK_GE(zeros16, 0);  // |zeros16| is a norm, hence non-negative.
+    RTC_DCHECK_GE(zeros16, 0);  // `zeros16` is a norm, hence non-negative.
     dfa_clean_q_domain_diff = aecm->dfaCleanQDomain - aecm->dfaCleanQDomainOld;
     if (zeros16 < dfa_clean_q_domain_diff && aecm->nearFilt[i]) {
       tmp16no1 = aecm->nearFilt[i] << zeros16;
@@ -1334,10 +1334,10 @@ int WebRtcAecm_ProcessBlock(AecmCore* aecm,
   } else {
     // multiply with Wiener coefficients
     for (i = 0; i < PART_LEN1; i++) {
-      efw[i].real = (int16_t)(
-          WEBRTC_SPL_MUL_16_16_RSFT_WITH_ROUND(dfw[i].real, hnl[i], 14));
-      efw[i].imag = (int16_t)(
-          WEBRTC_SPL_MUL_16_16_RSFT_WITH_ROUND(dfw[i].imag, hnl[i], 14));
+      efw[i].real = (int16_t)(WEBRTC_SPL_MUL_16_16_RSFT_WITH_ROUND(dfw[i].real,
+                                                                   hnl[i], 14));
+      efw[i].imag = (int16_t)(WEBRTC_SPL_MUL_16_16_RSFT_WITH_ROUND(dfw[i].imag,
+                                                                   hnl[i], 14));
     }
   }
 
@@ -1411,7 +1411,7 @@ static void ComfortNoise(AecmCore* aecm,
       // Track the minimum.
       if (tnoise < (1 << minTrackShift)) {
         // For small values, decrease noiseEst[i] every
-        // |kNoiseEstIncCount| block. The regular approach below can not
+        // `kNoiseEstIncCount` block. The regular approach below can not
         // go further down due to truncation.
         aecm->noiseEstTooHighCtr[i]++;
         if (aecm->noiseEstTooHighCtr[i] >= kNoiseEstIncCount) {
@@ -1424,8 +1424,8 @@ static void ComfortNoise(AecmCore* aecm,
             "srav   %[tmp32],       %[tmp32],       %[minTrackShift]    \n\t"
             "subu   %[tnoise],      %[tnoise],      %[tmp32]            \n\t"
             : [tmp32] "=&r"(tmp32), [tnoise] "+r"(tnoise)
-            :
-            [outLShift32] "r"(outLShift32), [minTrackShift] "r"(minTrackShift));
+            : [outLShift32] "r"(outLShift32), [minTrackShift] "r"(
+                                                  minTrackShift));
       }
     } else {
       // Reset "too high" counter
@@ -1442,7 +1442,7 @@ static void ComfortNoise(AecmCore* aecm,
               : "hi", "lo");
         } else {
           // Make incremental increases based on size every
-          // |kNoiseEstIncCount| block
+          // `kNoiseEstIncCount` block
           aecm->noiseEstTooLowCtr[i]++;
           if (aecm->noiseEstTooLowCtr[i] >= kNoiseEstIncCount) {
             __asm __volatile(
@@ -1484,7 +1484,7 @@ static void ComfortNoise(AecmCore* aecm,
       // Track the minimum.
       if (tnoise1 < (1 << minTrackShift)) {
         // For small values, decrease noiseEst[i] every
-        // |kNoiseEstIncCount| block. The regular approach below can not
+        // `kNoiseEstIncCount` block. The regular approach below can not
         // go further down due to truncation.
         aecm->noiseEstTooHighCtr[i + 1]++;
         if (aecm->noiseEstTooHighCtr[i + 1] >= kNoiseEstIncCount) {
@@ -1497,8 +1497,8 @@ static void ComfortNoise(AecmCore* aecm,
             "srav   %[tmp32],       %[tmp32],       %[minTrackShift]    \n\t"
             "subu   %[tnoise1],     %[tnoise1],     %[tmp32]            \n\t"
             : [tmp32] "=&r"(tmp32), [tnoise1] "+r"(tnoise1)
-            :
-            [outLShift32] "r"(outLShift32), [minTrackShift] "r"(minTrackShift));
+            : [outLShift32] "r"(outLShift32), [minTrackShift] "r"(
+                                                  minTrackShift));
       }
     } else {
       // Reset "too high" counter
@@ -1515,7 +1515,7 @@ static void ComfortNoise(AecmCore* aecm,
               : "hi", "lo");
         } else {
           // Make incremental increases based on size every
-          // |kNoiseEstIncCount| block
+          // `kNoiseEstIncCount` block
           aecm->noiseEstTooLowCtr[i + 1]++;
           if (aecm->noiseEstTooLowCtr[i + 1] >= kNoiseEstIncCount) {
             __asm __volatile(

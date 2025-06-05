@@ -11,13 +11,14 @@
 
 #include <algorithm>
 
+#include "absl/strings/string_view.h"
 #include "rtc_base/logging.h"
 
 namespace webrtc {
 namespace {
 size_t FindOrEnd(absl::string_view str, size_t start, char delimiter) {
   size_t pos = str.find(delimiter, start);
-  pos = (pos == std::string::npos) ? str.length() : pos;
+  pos = (pos == absl::string_view::npos) ? str.length() : pos;
   return pos;
 }
 }  // namespace

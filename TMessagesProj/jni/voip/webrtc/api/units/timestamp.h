@@ -20,6 +20,7 @@
 
 #include "api/units/time_delta.h"
 #include "rtc_base/checks.h"
+#include "rtc_base/units/unit_base.h"  // IWYU pragma: export
 
 namespace webrtc {
 // Timestamp represents the time that has passed since some unspecified epoch.

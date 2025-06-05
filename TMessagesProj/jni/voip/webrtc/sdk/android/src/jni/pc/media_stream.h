@@ -12,6 +12,7 @@
 #define SDK_ANDROID_SRC_JNI_PC_MEDIA_STREAM_H_
 
 #include <jni.h>
+
 #include <memory>
 
 #include "api/media_stream_interface.h"
@@ -21,12 +22,12 @@
 namespace webrtc {
 namespace jni {
 
-class JavaMediaStream : public sigslot::has_slots<> {
+class JavaMediaStream {
  public:
   explicit JavaMediaStream(
       JNIEnv* env,
       rtc::scoped_refptr<MediaStreamInterface> media_stream);
-  ~JavaMediaStream() override;
+  ~JavaMediaStream();
 
   const ScopedJavaGlobalRef<jobject>& j_media_stream() {
     return j_media_stream_;

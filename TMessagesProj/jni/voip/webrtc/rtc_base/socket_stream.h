@@ -13,8 +13,7 @@
 
 #include <stddef.h>
 
-#include "rtc_base/async_socket.h"
-#include "rtc_base/constructor_magic.h"
+#include "rtc_base/socket.h"
 #include "rtc_base/stream.h"
 #include "rtc_base/third_party/sigslot/sigslot.h"
 
@@ -24,37 +23,36 @@ namespace rtc {
 
 class SocketStream : public StreamInterface, public sigslot::has_slots<> {
  public:
-  explicit SocketStream(AsyncSocket* socket);
+  explicit SocketStream(Socket* socket);
   ~SocketStream() override;
 
-  void Attach(AsyncSocket* socket);
-  AsyncSocket* Detach();
+  SocketStream(const SocketStream&) = delete;
+  SocketStream& operator=(const SocketStream&) = delete;
 
-  AsyncSocket* GetSocket() { return socket_; }
+  void Attach(Socket* socket);
+  Socket* Detach();
+
+  Socket* GetSocket() { return socket_; }
 
   StreamState GetState() const override;
 
-  StreamResult Read(void* buffer,
-                    size_t buffer_len,
-                    size_t* read,
-                    int* error) override;
+  StreamResult Read(rtc::ArrayView<uint8_t> buffer,
+                    size_t& read,
+                    int& error) override;
 
-  StreamResult Write(const void* data,
-                     size_t data_len,
-                     size_t* written,
-                     int* error) override;
+  StreamResult Write(rtc::ArrayView<const uint8_t> data,
+                     size_t& written,
+                     int& error) override;
 
   void Close() override;
 
  private:
-  void OnConnectEvent(AsyncSocket* socket);
-  void OnReadEvent(AsyncSocket* socket);
-  void OnWriteEvent(AsyncSocket* socket);
-  void OnCloseEvent(AsyncSocket* socket, int err);
+  void OnConnectEvent(Socket* socket);
+  void OnReadEvent(Socket* socket);
+  void OnWriteEvent(Socket* socket);
+  void OnCloseEvent(Socket* socket, int err);
 
-  AsyncSocket* socket_;
-
-  RTC_DISALLOW_COPY_AND_ASSIGN(SocketStream);
+  Socket* socket_;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

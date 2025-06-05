@@ -15,6 +15,7 @@
 #include <utility>
 
 #include "absl/algorithm/container.h"
+#include "absl/strings/string_view.h"
 #include "rtc_base/checks.h"
 #include "rtc_base/openssl.h"
 #ifdef OPENSSL_IS_BORINGSSL
@@ -43,21 +44,27 @@ SSLCertificateStats::SSLCertificateStats(
 
 SSLCertificateStats::~SSLCertificateStats() {}
 
+std::unique_ptr<SSLCertificateStats> SSLCertificateStats::Copy() const {
+  return std::make_unique<SSLCertificateStats>(
+      std::string(fingerprint), std::string(fingerprint_algorithm),
+      std::string(base64_certificate), issuer ? issuer->Copy() : nullptr);
+}
+
 //////////////////////////////////////////////////////////////////////
 // SSLCertificate
 //////////////////////////////////////////////////////////////////////
 
 std::unique_ptr<SSLCertificateStats> SSLCertificate::GetStats() const {
   // TODO(bemasc): Move this computation to a helper class that caches these
-  // values to reduce CPU use in |StatsCollector::GetStats|. This will require
-  // adding a fast |SSLCertificate::Equals| to detect certificate changes.
+  // values to reduce CPU use in `StatsCollector::GetStats`. This will require
+  // adding a fast `SSLCertificate::Equals` to detect certificate changes.
   std::string digest_algorithm;
   if (!GetSignatureDigestAlgorithm(&digest_algorithm))
     return nullptr;
 
-  // |SSLFingerprint::Create| can fail if the algorithm returned by
-  // |SSLCertificate::GetSignatureDigestAlgorithm| is not supported by the
-  // implementation of |SSLCertificate::ComputeDigest|. This currently happens
+  // `SSLFingerprint::Create` can fail if the algorithm returned by
+  // `SSLCertificate::GetSignatureDigestAlgorithm` is not supported by the
+  // implementation of `SSLCertificate::ComputeDigest`. This currently happens
   // with MD5- and SHA-224-signed certificates when linked to libNSS.
   std::unique_ptr<SSLFingerprint> ssl_fingerprint =
       SSLFingerprint::Create(digest_algorithm, *this);
@@ -103,12 +110,12 @@ std::unique_ptr<SSLCertChain> SSLCertChain::Clone() const {
 
 std::unique_ptr<SSLCertificateStats> SSLCertChain::GetStats() const {
   // We have a linked list of certificates, starting with the first element of
-  // |certs_| and ending with the last element of |certs_|. The "issuer" of a
+  // `certs_` and ending with the last element of `certs_`. The "issuer" of a
   // certificate is the next certificate in the chain. Stats are produced for
   // each certificate in the list. Here, the "issuer" is the issuer's stats.
   std::unique_ptr<SSLCertificateStats> issuer;
-  // The loop runs in reverse so that the |issuer| is known before the
-  // certificate issued by |issuer|.
+  // The loop runs in reverse so that the `issuer` is known before the
+  // certificate issued by `issuer`.
   for (ptrdiff_t i = certs_.size() - 1; i >= 0; --i) {
     std::unique_ptr<SSLCertificateStats> new_stats = certs_[i]->GetStats();
     if (new_stats) {
@@ -121,7 +128,7 @@ std::unique_ptr<SSLCertificateStats> SSLCertChain::GetStats() const {
 
 // static
 std::unique_ptr<SSLCertificate> SSLCertificate::FromPEMString(
-    const std::string& pem_string) {
+    absl::string_view pem_string) {
 #ifdef OPENSSL_IS_BORINGSSL
   return BoringSSLCertificate::FromPEMString(pem_string);
 #else

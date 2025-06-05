@@ -1,12 +1,12 @@
 package org.telegram.ui.Components;
 
-import android.animation.ValueAnimator;
 import android.graphics.Canvas;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Path;
 
-import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.LiteMode;
+import org.telegram.messenger.SharedConfig;
 
 import java.util.Random;
 
@@ -40,26 +40,32 @@ public class BlobDrawable {
     private Path path = new Path();
     public Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
-    private float[] radius;
-    private float[] angle;
-    private float[] radiusNext;
-    private float[] angleNext;
-    private float[] progress;
-    private float[] speed;
+    protected float[] radius;
+    protected float[] angle;
+    protected float[] radiusNext;
+    protected float[] angleNext;
+    protected float[] progress;
+    protected float[] speed;
 
 
     private float[] pointStart = new float[4];
     private float[] pointEnd = new float[4];
 
-    final Random random = new Random();
+    protected final Random random = new Random();
 
-    private final float N;
+    protected final float N;
     private final float L;
     public float cubicBezierK = 1f;
 
     private final Matrix m = new Matrix();
 
+    protected final int liteFlag;
+
     public BlobDrawable(int n) {
+        this(n, LiteMode.FLAG_CALLS_ANIMATIONS);
+    }
+
+    public BlobDrawable(int n, int liteFlag) {
         N = n;
         L = (float) ((4.0 / 3.0) * Math.tan(Math.PI / (2 * N)));
         radius = new float[n];
@@ -75,9 +81,11 @@ public class BlobDrawable {
             generateBlob(radiusNext, angleNext, i);
             progress[i] = 0;
         }
+
+        this.liteFlag = liteFlag;
     }
 
-    private void generateBlob(float[] radius, float[] angle, int i) {
+    protected void generateBlob(float[] radius, float[] angle, int i) {
         float angleDif = 360f / N * 0.05f;
         float radDif = maxRadius - minRadius;
         radius[i] = minRadius + Math.abs(((random.nextInt() % 100f) / 100f)) * radDif;
@@ -86,6 +94,9 @@ public class BlobDrawable {
     }
 
     public void update(float amplitude, float speedScale) {
+        if (!LiteMode.isEnabled(liteFlag)) {
+            return;
+        }
         for (int i = 0; i < N; i++) {
             progress[i] += (speed[i] * MIN_SPEED) + amplitude * speed[i] * MAX_SPEED * speedScale;
             if (progress[i] >= 1f) {
@@ -98,6 +109,9 @@ public class BlobDrawable {
     }
 
     public void draw(float cX, float cY, Canvas canvas, Paint paint) {
+        if (!LiteMode.isEnabled(liteFlag)) {
+            return;
+        }
         path.reset();
 
         for (int i = 0; i < N; i++) {
@@ -164,8 +178,15 @@ public class BlobDrawable {
     private final static float animationSpeed = 1f - ANIMATION_SPEED_WAVE_HUGE;
     private final static float animationSpeedTiny = 1f - ANIMATION_SPEED_WAVE_SMALL;
 
+    public void setValue(float value) {
+        amplitude = value;
+    }
+
     public void setValue(float value, boolean isBig) {
         animateToAmplitude = value;
+        if (!LiteMode.isEnabled(liteFlag)) {
+            return;
+        }
         if (isBig) {
             if (animateToAmplitude > amplitude) {
                 animateAmplitudeDiff = (animateToAmplitude - amplitude) / (100f + 300f * animationSpeed);

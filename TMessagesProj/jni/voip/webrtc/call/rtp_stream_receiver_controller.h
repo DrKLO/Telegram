@@ -15,6 +15,7 @@
 #include "api/sequence_checker.h"
 #include "call/rtp_demuxer.h"
 #include "call/rtp_stream_receiver_controller_interface.h"
+#include "modules/rtp_rtcp/include/recovered_packet_receiver.h"
 
 namespace webrtc {
 
@@ -22,12 +23,10 @@ class RtpPacketReceived;
 
 // This class represents the RTP receive parsing and demuxing, for a
 // single RTP session.
-// TODO(nisse): Add RTCP processing, we should aim to terminate RTCP
-// and not leave any RTCP processing to individual receive streams.
-// TODO(nisse): Extract per-packet processing, including parsing and
-// demuxing, into a separate class.
-class RtpStreamReceiverController
-    : public RtpStreamReceiverControllerInterface {
+// TODO(bugs.webrtc.org/7135): Add RTCP processing, we should aim to terminate
+// RTCP and not leave any RTCP processing to individual receive streams.
+class RtpStreamReceiverController : public RtpStreamReceiverControllerInterface,
+                                    public RecoveredPacketReceiver {
  public:
   RtpStreamReceiverController();
   ~RtpStreamReceiverController() override;
@@ -37,12 +36,12 @@ class RtpStreamReceiverController
       uint32_t ssrc,
       RtpPacketSinkInterface* sink) override;
 
-  // Thread-safe wrappers for the corresponding RtpDemuxer methods.
-  bool AddSink(uint32_t ssrc, RtpPacketSinkInterface* sink) override;
-  size_t RemoveSink(const RtpPacketSinkInterface* sink) override;
-
-  // TODO(nisse): Not yet responsible for parsing.
+  // TODO(bugs.webrtc.org/7135): Not yet responsible for parsing.
   bool OnRtpPacket(const RtpPacketReceived& packet);
+
+  // Implements RecoveredPacketReceiver.
+  // Responsible for demuxing recovered FLEXFEC packets.
+  void OnRecoveredPacket(const RtpPacketReceived& packet) override;
 
  private:
   class Receiver : public RtpStreamReceiverInterface {
@@ -57,6 +56,10 @@ class RtpStreamReceiverController
     RtpStreamReceiverController* const controller_;
     RtpPacketSinkInterface* const sink_;
   };
+
+  // Thread-safe wrappers for the corresponding RtpDemuxer methods.
+  bool AddSink(uint32_t ssrc, RtpPacketSinkInterface* sink);
+  bool RemoveSink(const RtpPacketSinkInterface* sink);
 
   // TODO(bugs.webrtc.org/11993): We expect construction and all methods to be
   // called on the same thread/tq. Currently this is the worker thread

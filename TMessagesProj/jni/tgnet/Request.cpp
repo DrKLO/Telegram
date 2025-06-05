@@ -13,8 +13,9 @@
 #include "ConnectionsManager.h"
 #include "Datacenter.h"
 #include "Connection.h"
+#include "FileLog.h"
 
-Request::Request(int32_t instance, int32_t token, ConnectionType type, uint32_t flags, uint32_t datacenter, onCompleteFunc completeFunc, onQuickAckFunc quickAckFunc, onWriteToSocketFunc writeToSocketFunc) {
+Request::Request(int32_t instance, int32_t token, ConnectionType type, uint32_t flags, uint32_t datacenter, onCompleteFunc completeFunc, onQuickAckFunc quickAckFunc, onWriteToSocketFunc writeToSocketFunc, onRequestClearFunc onClearFunc) {
     requestToken = token;
     connectionType = type;
     requestFlags = flags;
@@ -22,25 +23,15 @@ Request::Request(int32_t instance, int32_t token, ConnectionType type, uint32_t 
     onCompleteRequestCallback = completeFunc;
     onQuickAckCallback = quickAckFunc;
     onWriteToSocketCallback = writeToSocketFunc;
+    onRequestClearCallback = onClearFunc;
     dataType = (uint8_t) (requestFlags >> 24);
     instanceNum = instance;
 }
 
 Request::~Request() {
-#ifdef ANDROID
-    if (ptr1 != nullptr) {
-        jniEnv[instanceNum]->DeleteGlobalRef(ptr1);
-        ptr1 = nullptr;
+    if (!completedSent && !disableClearCallback && onRequestClearCallback != nullptr) {
+        onRequestClearCallback();
     }
-    if (ptr2 != nullptr) {
-        jniEnv[instanceNum]->DeleteGlobalRef(ptr2);
-        ptr2 = nullptr;
-    }
-    if (ptr3 != nullptr) {
-        jniEnv[instanceNum]->DeleteGlobalRef(ptr3);
-        ptr3 = nullptr;
-    }
-#endif
 }
 
 void Request::addRespondMessageId(int64_t id) {
@@ -61,9 +52,10 @@ void Request::clear(bool time) {
     }
 }
 
-void Request::onComplete(TLObject *result, TL_error *error, int32_t networkType, int64_t responseTime) {
+void Request::onComplete(TLObject *result, TL_error *error, int32_t networkType, int64_t responseTime, int64_t requestMsgId, int32_t dcId) {
     if (onCompleteRequestCallback != nullptr && (result != nullptr || error != nullptr)) {
-        onCompleteRequestCallback(result, error, networkType, responseTime);
+        completedSent = true;
+        onCompleteRequestCallback(result, error, networkType, responseTime, requestMsgId, dcId);
     }
 }
 
@@ -79,6 +71,10 @@ bool Request::hasInitFlag() {
 
 bool Request::isMediaRequest() {
     return Connection::isMediaConnectionType(connectionType);
+}
+
+bool Request::isCancelRequest() {
+    return (requestFlags & RequestFlagIsCancel) != 0;
 }
 
 bool Request::needInitRequest(Datacenter *datacenter, uint32_t currentVersion) {

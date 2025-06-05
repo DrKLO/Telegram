@@ -48,7 +48,7 @@ std::vector<PacketResult> TransportPacketsFeedback::ReceivedWithSendInfo()
     const {
   std::vector<PacketResult> res;
   for (const PacketResult& fb : packet_feedbacks) {
-    if (fb.receive_time.IsFinite()) {
+    if (fb.IsReceived()) {
       res.push_back(fb);
     }
   }
@@ -58,7 +58,7 @@ std::vector<PacketResult> TransportPacketsFeedback::ReceivedWithSendInfo()
 std::vector<PacketResult> TransportPacketsFeedback::LostWithSendInfo() const {
   std::vector<PacketResult> res;
   for (const PacketResult& fb : packet_feedbacks) {
-    if (fb.receive_time.IsPlusInfinity()) {
+    if (!fb.IsReceived()) {
       res.push_back(fb);
     }
   }
@@ -74,7 +74,7 @@ std::vector<PacketResult> TransportPacketsFeedback::SortedByReceiveTime()
     const {
   std::vector<PacketResult> res;
   for (const PacketResult& fb : packet_feedbacks) {
-    if (fb.receive_time.IsFinite()) {
+    if (fb.IsReceived()) {
       res.push_back(fb);
     }
   }
@@ -97,14 +97,10 @@ PacedPacketInfo::PacedPacketInfo(int probe_cluster_id,
       probe_cluster_min_bytes(probe_cluster_min_bytes) {}
 
 bool PacedPacketInfo::operator==(const PacedPacketInfo& rhs) const {
-  return send_bitrate_bps == rhs.send_bitrate_bps &&
+  return send_bitrate == rhs.send_bitrate &&
          probe_cluster_id == rhs.probe_cluster_id &&
          probe_cluster_min_probes == rhs.probe_cluster_min_probes &&
          probe_cluster_min_bytes == rhs.probe_cluster_min_bytes;
 }
-
-ProcessInterval::ProcessInterval() = default;
-ProcessInterval::ProcessInterval(const ProcessInterval&) = default;
-ProcessInterval::~ProcessInterval() = default;
 
 }  // namespace webrtc

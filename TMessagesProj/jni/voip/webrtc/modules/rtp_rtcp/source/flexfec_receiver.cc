@@ -14,6 +14,8 @@
 
 #include "api/array_view.h"
 #include "api/scoped_refptr.h"
+#include "api/units/time_delta.h"
+#include "api/units/timestamp.h"
 #include "rtc_base/checks.h"
 #include "rtc_base/logging.h"
 
@@ -25,7 +27,7 @@ namespace {
 constexpr size_t kMinFlexfecHeaderSize = 20;
 
 // How often to log the recovered packets to the text log.
-constexpr int kPacketLogIntervalMs = 10000;
+constexpr TimeDelta kPacketLogInterval = TimeDelta::Seconds(10);
 
 }  // namespace
 
@@ -48,8 +50,7 @@ FlexfecReceiver::FlexfecReceiver(
       erasure_code_(
           ForwardErrorCorrection::CreateFlexfec(ssrc, protected_media_ssrc)),
       recovered_packet_receiver_(recovered_packet_receiver),
-      clock_(clock),
-      last_recovered_packet_ms_(-1) {
+      clock_(clock) {
   // It's OK to create this object on a different thread/task queue than
   // the one used during main operation.
   sequence_checker_.Detach();
@@ -62,7 +63,7 @@ void FlexfecReceiver::OnRtpPacket(const RtpPacketReceived& packet) {
 
   // If this packet was recovered, it might be originating from
   // ProcessReceivedPacket in this object. To avoid lifetime issues with
-  // |recovered_packets_|, we therefore break the cycle here.
+  // `recovered_packets_`, we therefore break the cycle here.
   // This might reduce decoding efficiency a bit, since we can't disambiguate
   // recovered packets by RTX from recovered packets by FlexFEC.
   if (packet.recovered())
@@ -97,6 +98,7 @@ FlexfecReceiver::AddReceivedPacket(const RtpPacketReceived& packet) {
       new ForwardErrorCorrection::ReceivedPacket());
   received_packet->seq_num = packet.SequenceNumber();
   received_packet->ssrc = packet.Ssrc();
+  received_packet->extensions = packet.extension_manager();
   if (received_packet->ssrc == ssrc_) {
     // This is a FlexFEC packet.
     if (packet.payload_size() < kMinFlexfecHeaderSize) {
@@ -147,7 +149,12 @@ void FlexfecReceiver::ProcessReceivedPacket(
   RTC_DCHECK_RUN_ON(&sequence_checker_);
 
   // Decode.
-  erasure_code_->DecodeFec(received_packet, &recovered_packets_);
+  ForwardErrorCorrection::DecodeFecResult decode_result =
+      erasure_code_->DecodeFec(received_packet, &recovered_packets_);
+
+  if (decode_result.num_recovered_packets == 0) {
+    return;
+  }
 
   // Return recovered packets through callback.
   for (const auto& recovered_packet : recovered_packets_) {
@@ -159,18 +166,35 @@ void FlexfecReceiver::ProcessReceivedPacket(
     // Set this flag first, since OnRecoveredPacket may end up here
     // again, with the same packet.
     recovered_packet->returned = true;
-    RTC_CHECK_GT(recovered_packet->pkt->data.size(), 0);
-    recovered_packet_receiver_->OnRecoveredPacket(
-        recovered_packet->pkt->data.cdata(),
-        recovered_packet->pkt->data.size());
-    // Periodically log the incoming packets.
-    int64_t now_ms = clock_->TimeInMilliseconds();
-    if (now_ms - last_recovered_packet_ms_ > kPacketLogIntervalMs) {
-      uint32_t media_ssrc =
-          ForwardErrorCorrection::ParseSsrc(recovered_packet->pkt->data.data());
-      RTC_LOG(LS_VERBOSE) << "Recovered media packet with SSRC: " << media_ssrc
-                          << " from FlexFEC stream with SSRC: " << ssrc_ << ".";
-      last_recovered_packet_ms_ = now_ms;
+    RTC_CHECK_GE(recovered_packet->pkt->data.size(), kRtpHeaderSize);
+
+    RtpPacketReceived parsed_packet(&received_packet.extensions);
+    if (!parsed_packet.Parse(recovered_packet->pkt->data)) {
+      continue;
+    }
+    parsed_packet.set_recovered(true);
+
+    // TODO(brandtr): Update here when we support protecting audio packets too.
+    parsed_packet.set_payload_type_frequency(kVideoPayloadTypeFrequency);
+    recovered_packet_receiver_->OnRecoveredPacket(parsed_packet);
+
+    // Periodically log the incoming packets at LS_INFO.
+    Timestamp now = clock_->CurrentTime();
+    bool should_log_periodically =
+        now - last_recovered_packet_ > kPacketLogInterval;
+    if (RTC_LOG_CHECK_LEVEL(LS_VERBOSE) || should_log_periodically) {
+      rtc::LoggingSeverity level =
+          should_log_periodically ? rtc::LS_INFO : rtc::LS_VERBOSE;
+      RTC_LOG_V(level) << "Recovered media packet with SSRC: "
+                       << parsed_packet.Ssrc() << " seq "
+                       << parsed_packet.SequenceNumber() << " recovered length "
+                       << recovered_packet->pkt->data.size()
+                       << " received length "
+                       << received_packet.pkt->data.size()
+                       << " from FlexFEC stream with SSRC: " << ssrc_;
+      if (should_log_periodically) {
+        last_recovered_packet_ = now;
+      }
     }
   }
 }

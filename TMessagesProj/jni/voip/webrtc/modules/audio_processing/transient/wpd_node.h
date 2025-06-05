@@ -11,6 +11,7 @@
 #ifndef MODULES_AUDIO_PROCESSING_TRANSIENT_WPD_NODE_H_
 #define MODULES_AUDIO_PROCESSING_TRANSIENT_WPD_NODE_H_
 
+#include <cstddef>
 #include <memory>
 
 namespace webrtc {
@@ -25,7 +26,7 @@ class WPDNode {
   WPDNode(size_t length, const float* coefficients, size_t coefficients_length);
   ~WPDNode();
 
-  // Updates the node data. |parent_data| / 2 must be equals to |length_|.
+  // Updates the node data. `parent_data` / 2 must be equals to `length_`.
   // Returns 0 if correct, and -1 otherwise.
   int Update(const float* parent_data, size_t parent_data_length);
 

@@ -31,9 +31,7 @@ RtpStreamReceiverController::Receiver::Receiver(
 }
 
 RtpStreamReceiverController::Receiver::~Receiver() {
-  // Don't require return value > 0, since for RTX we currently may
-  // have multiple Receiver objects with the same sink.
-  // TODO(nisse): Consider adding a DCHECK when RtxReceiveStream is wired up.
+  // This may fail, if corresponding AddSink in the constructor failed.
   controller_->RemoveSink(sink_);
 }
 
@@ -52,13 +50,19 @@ bool RtpStreamReceiverController::OnRtpPacket(const RtpPacketReceived& packet) {
   return demuxer_.OnRtpPacket(packet);
 }
 
+void RtpStreamReceiverController::OnRecoveredPacket(
+    const RtpPacketReceived& packet) {
+  RTC_DCHECK_RUN_ON(&demuxer_sequence_);
+  demuxer_.OnRtpPacket(packet);
+}
+
 bool RtpStreamReceiverController::AddSink(uint32_t ssrc,
                                           RtpPacketSinkInterface* sink) {
   RTC_DCHECK_RUN_ON(&demuxer_sequence_);
   return demuxer_.AddSink(ssrc, sink);
 }
 
-size_t RtpStreamReceiverController::RemoveSink(
+bool RtpStreamReceiverController::RemoveSink(
     const RtpPacketSinkInterface* sink) {
   RTC_DCHECK_RUN_ON(&demuxer_sequence_);
   return demuxer_.RemoveSink(sink);

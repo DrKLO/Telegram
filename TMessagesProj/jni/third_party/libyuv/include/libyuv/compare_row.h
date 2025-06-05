@@ -55,20 +55,20 @@ extern "C" {
 
 // The following are available for Visual C and clangcl 32 bit:
 #if !defined(LIBYUV_DISABLE_X86) && defined(_M_IX86) && defined(_MSC_VER) && \
+    !defined(__clang__) &&                                                   \
     (defined(VISUALC_HAS_AVX2) || defined(CLANG_HAS_AVX2))
 #define HAS_HASHDJB2_AVX2
 #define HAS_SUMSQUAREERROR_AVX2
 #endif
 
-// The following are available for GCC and clangcl 64 bit:
-#if !defined(LIBYUV_DISABLE_X86) && \
-    (defined(__x86_64__) || (defined(__i386__) && !defined(_MSC_VER)))
+// The following are available for GCC and clangcl:
+#if !defined(LIBYUV_DISABLE_X86) && (defined(__x86_64__) || defined(__i386__))
 #define HAS_HAMMINGDISTANCE_SSSE3
 #endif
 
-// The following are available for GCC and clangcl 64 bit:
+// The following are available for GCC and clangcl:
 #if !defined(LIBYUV_DISABLE_X86) && defined(CLANG_HAS_AVX2) && \
-    (defined(__x86_64__) || (defined(__i386__) && !defined(_MSC_VER)))
+    (defined(__x86_64__) || defined(__i386__))
 #define HAS_HAMMINGDISTANCE_AVX2
 #endif
 
@@ -82,11 +82,6 @@ extern "C" {
 #if !defined(LIBYUV_DISABLE_MSA) && defined(__mips_msa)
 #define HAS_HAMMINGDISTANCE_MSA
 #define HAS_SUMSQUAREERROR_MSA
-#endif
-
-#if !defined(LIBYUV_DISABLE_MMI) && defined(_MIPS_ARCH_LOONGSON3A)
-#define HAS_HAMMINGDISTANCE_MMI
-#define HAS_SUMSQUAREERROR_MMI
 #endif
 
 uint32_t HammingDistance_C(const uint8_t* src_a,
@@ -107,9 +102,6 @@ uint32_t HammingDistance_NEON(const uint8_t* src_a,
 uint32_t HammingDistance_MSA(const uint8_t* src_a,
                              const uint8_t* src_b,
                              int count);
-uint32_t HammingDistance_MMI(const uint8_t* src_a,
-                             const uint8_t* src_b,
-                             int count);
 uint32_t SumSquareError_C(const uint8_t* src_a,
                           const uint8_t* src_b,
                           int count);
@@ -123,9 +115,6 @@ uint32_t SumSquareError_NEON(const uint8_t* src_a,
                              const uint8_t* src_b,
                              int count);
 uint32_t SumSquareError_MSA(const uint8_t* src_a,
-                            const uint8_t* src_b,
-                            int count);
-uint32_t SumSquareError_MMI(const uint8_t* src_a,
                             const uint8_t* src_b,
                             int count);
 

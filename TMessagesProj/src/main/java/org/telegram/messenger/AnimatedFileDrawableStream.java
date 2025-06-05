@@ -1,5 +1,8 @@
 package org.telegram.messenger;
 
+import com.google.android.exoplayer2.ExoPlayer;
+import com.google.android.exoplayer2.util.Log;
+
 import org.telegram.tgnet.TLRPC;
 
 import java.util.concurrent.CountDownLatch;
@@ -14,21 +17,24 @@ public class AnimatedFileDrawableStream implements FileLoadOperationStream {
     private int currentAccount;
     private volatile boolean canceled;
     private final Object sync = new Object();
-    private int lastOffset;
+    private long lastOffset;
     private boolean waitingForLoad;
     private boolean preview;
     private boolean finishedLoadingFile;
     private String finishedFilePath;
+    private int loadingPriority;
 
-    private boolean ignored;
+    private int debugCanceledCount;
+    private boolean debugReportSend;
 
-    public AnimatedFileDrawableStream(TLRPC.Document d, ImageLocation l, Object p, int a, boolean prev) {
+    public AnimatedFileDrawableStream(TLRPC.Document d, ImageLocation l, Object p, int a, boolean prev, int loadingPriority, int cacheType) {
         document = d;
         location = l;
         parentObject = p;
         currentAccount = a;
         preview = prev;
-        loadOperation = FileLoader.getInstance(currentAccount).loadStreamFile(this, document, location, parentObject, 0, preview);
+        this.loadingPriority = loadingPriority;
+        loadOperation = FileLoader.getInstance(currentAccount).loadStreamFile(this, document, location, parentObject, 0, preview, loadingPriority, cacheType);
     }
 
     public boolean isFinishedLoadingFile() {
@@ -42,44 +48,64 @@ public class AnimatedFileDrawableStream implements FileLoadOperationStream {
     public int read(int offset, int readLength) {
         synchronized (sync) {
             if (canceled) {
+                debugCanceledCount++;
+                if (!debugReportSend && debugCanceledCount > 200) {
+                    debugReportSend = true;
+                    FileLog.e(new RuntimeException("infinity stream reading!!!"));
+                }
                 return 0;
             }
         }
         if (readLength == 0) {
             return 0;
         } else {
-            int availableLength = 0;
+            long availableLength = 0;
             try {
                 while (availableLength == 0) {
-                    int[] result = loadOperation.getDownloadedLengthFromOffset(offset, readLength);
+                    long[] result = loadOperation.getDownloadedLengthFromOffset(offset, readLength);
                     availableLength = result[0];
                     if (!finishedLoadingFile && result[1] != 0) {
                         finishedLoadingFile = true;
                         finishedFilePath = loadOperation.getCacheFileFinal().getAbsolutePath();
                     }
                     if (availableLength == 0) {
+                        synchronized (sync) {
+                            if (canceled) {
+                                cancelLoadingInternal();
+                                return 0;
+                            }
+                        }
+                        countDownLatch = new CountDownLatch(1);
                         if (loadOperation.isPaused() || lastOffset != offset || preview) {
-                            FileLoader.getInstance(currentAccount).loadStreamFile(this, document, location, parentObject, offset, preview);
+                            FileLoadOperation loadOperation = FileLoader.getInstance(currentAccount).loadStreamFile(this, document, location, parentObject, offset, preview, loadingPriority);
+                            if (this.loadOperation != loadOperation) {
+                                this.loadOperation.removeStreamListener(this);
+                                this.loadOperation = loadOperation;
+                            }
+                            lastOffset = offset + availableLength;
                         }
                         synchronized (sync) {
                             if (canceled) {
+                                countDownLatch = null;
+                                cancelLoadingInternal();
                                 return 0;
                             }
-                            countDownLatch = new CountDownLatch(1);
                         }
                         if (!preview) {
                             FileLoader.getInstance(currentAccount).setLoadingVideo(document, false, true);
                         }
-                        waitingForLoad = true;
-                        countDownLatch.await();
-                        waitingForLoad = false;
+                        if (countDownLatch != null) {
+                            waitingForLoad = true;
+                            countDownLatch.await();
+                            waitingForLoad = false;
+                        }
                     }
                 }
                 lastOffset = offset + availableLength;
             } catch (Exception e) {
-                FileLog.e(e);
+                FileLog.e(e, false);
             }
-            return availableLength;
+            return (int) availableLength;
         }
     }
 
@@ -88,14 +114,34 @@ public class AnimatedFileDrawableStream implements FileLoadOperationStream {
     }
 
     public void cancel(boolean removeLoading) {
+        if (canceled) {
+            return;
+        }
         synchronized (sync) {
             if (countDownLatch != null) {
                 countDownLatch.countDown();
+                countDownLatch = null;
                 if (removeLoading && !canceled && !preview) {
                     FileLoader.getInstance(currentAccount).removeLoadingVideo(document, false, true);
                 }
             }
+            if (parentObject instanceof MessageObject) {
+                MessageObject messageObject = (MessageObject) parentObject;
+                if (DownloadController.getInstance(messageObject.currentAccount).isDownloading(messageObject.getId()))  {
+                    removeLoading = false;
+                }
+            }
+            if (removeLoading) {
+                cancelLoadingInternal();
+            }
             canceled = true;
+        }
+    }
+
+    private void cancelLoadingInternal() {
+        FileLoader.getInstance(currentAccount).cancelLoadFile(document);
+        if (location != null) {
+            FileLoader.getInstance(currentAccount).cancelLoadFile(location.location, "mp4");
         }
     }
 
@@ -133,6 +179,11 @@ public class AnimatedFileDrawableStream implements FileLoadOperationStream {
     public void newDataAvailable() {
         if (countDownLatch != null) {
             countDownLatch.countDown();
+            countDownLatch = null;
         }
+    }
+
+    public boolean isCanceled() {
+        return canceled;
     }
 }

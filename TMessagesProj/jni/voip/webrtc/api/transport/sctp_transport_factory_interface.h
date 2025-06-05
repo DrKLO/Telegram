@@ -32,7 +32,7 @@ class SctpTransportFactoryInterface {
  public:
   virtual ~SctpTransportFactoryInterface() = default;
 
-  // Create an SCTP transport using |channel| for the underlying transport.
+  // Create an SCTP transport using `channel` for the underlying transport.
   virtual std::unique_ptr<cricket::SctpTransportInternal> CreateSctpTransport(
       rtc::PacketTransportInternal* channel) = 0;
 };

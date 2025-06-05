@@ -22,24 +22,81 @@ public class ShadowSectionCell extends View {
 
     private int size;
 
+    private int backgroundColor;
+    private Theme.ResourcesProvider resourcesProvider;
+
+    private boolean top = true;
+    private boolean bottom = true;
+
     public ShadowSectionCell(Context context) {
-        this(context, 12);
+        this(context, 12, null);
     }
 
-    public ShadowSectionCell(Context context, int s) {
+    public ShadowSectionCell(Context context, Theme.ResourcesProvider resourcesProvider) {
+        this(context, 12, resourcesProvider);
+    }
+
+    public ShadowSectionCell(Context context,  int s) {
+        this(context, s, null);
+    }
+
+    public ShadowSectionCell(Context context, int s, Theme.ResourcesProvider resourcesProvider) {
         super(context);
-        setBackgroundDrawable(Theme.getThemedDrawable(context, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow));
-        size = s;
+        this.resourcesProvider = resourcesProvider;
+        this.size = s;
+        updateBackground();
     }
 
     public ShadowSectionCell(Context context, int s, int backgroundColor) {
+        this(context, s, backgroundColor, null);
+    }
+
+    public ShadowSectionCell(Context context, int s, int backgroundColor, Theme.ResourcesProvider resourcesProvider) {
         super(context);
-        Drawable shadowDrawable = Theme.getThemedDrawable(context, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow);
-        Drawable background = new ColorDrawable(backgroundColor);
-        CombinedDrawable combinedDrawable = new CombinedDrawable(background, shadowDrawable, 0, 0);
-        combinedDrawable.setFullsize(true);
-        setBackgroundDrawable(combinedDrawable);
-        size = s;
+        this.resourcesProvider = resourcesProvider;
+        this.backgroundColor = backgroundColor;
+        this.size = s;
+        updateBackground();
+    }
+
+    public void setTopBottom(boolean top, boolean bottom) {
+        if (this.top != top || this.bottom != bottom) {
+            this.top = top;
+            this.bottom = bottom;
+            updateBackground();
+        }
+    }
+
+    private void updateBackground() {
+        if (backgroundColor == 0) {
+            if (!top && !bottom) {
+                setBackground(null);
+            } else {
+                setBackground(Theme.getThemedDrawable(getContext(), getBackgroundResId(), Theme.getColor(Theme.key_windowBackgroundGrayShadow, resourcesProvider)));
+            }
+        } else {
+            if (!top && !bottom) {
+                setBackgroundColor(backgroundColor);
+            } else {
+                Drawable shadowDrawable = Theme.getThemedDrawable(getContext(), getBackgroundResId(), Theme.getColor(Theme.key_windowBackgroundGrayShadow, resourcesProvider));
+                Drawable background = new ColorDrawable(backgroundColor);
+                CombinedDrawable combinedDrawable = new CombinedDrawable(background, shadowDrawable, 0, 0);
+                combinedDrawable.setFullsize(true);
+                setBackground(combinedDrawable);
+            }
+        }
+    }
+
+    private int getBackgroundResId() {
+        if (top && bottom) {
+            return R.drawable.greydivider;
+        } else if (top) {
+            return R.drawable.greydivider_bottom;
+        } else if (bottom) {
+            return R.drawable.greydivider_top;
+        } else {
+            return R.drawable.transparent;
+        }
     }
 
     @Override

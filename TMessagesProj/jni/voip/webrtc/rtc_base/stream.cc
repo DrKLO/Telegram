@@ -15,8 +15,8 @@
 #include <algorithm>
 #include <string>
 
+#include "api/array_view.h"
 #include "rtc_base/checks.h"
-#include "rtc_base/location.h"
 #include "rtc_base/thread.h"
 
 namespace rtc {
@@ -32,8 +32,10 @@ StreamResult StreamInterface::WriteAll(const void* data,
   StreamResult result = SR_SUCCESS;
   size_t total_written = 0, current_written;
   while (total_written < data_len) {
-    result = Write(static_cast<const char*>(data) + total_written,
-                   data_len - total_written, &current_written, error);
+    result = Write(ArrayView<const uint8_t>(
+                       reinterpret_cast<const uint8_t*>(data) + total_written,
+                       data_len - total_written),
+                   current_written, *error);
     if (result != SR_SUCCESS)
       break;
     total_written += current_written;

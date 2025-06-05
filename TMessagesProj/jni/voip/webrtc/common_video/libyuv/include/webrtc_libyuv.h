@@ -32,13 +32,16 @@ enum class VideoType {
   kI420,
   kIYUV,
   kRGB24,
+  kBGR24,
   kARGB,
+  kABGR,
   kRGB565,
   kYUY2,
   kYV12,
   kUYVY,
   kMJPEG,
   kBGRA,
+  kNV12,
 };
 
 // This is the max PSNR value our algorithms can return.
@@ -87,10 +90,23 @@ double I420SSE(const I420BufferInterface& ref_buffer,
                const I420BufferInterface& test_buffer);
 
 // Compute PSNR for an I420 frame (all planes).
-// Returns the PSNR in decibel, to a maximum of kInfinitePSNR.
+// Returns the PSNR in decibel, to a maximum of kPerfectPSNR.
 double I420PSNR(const VideoFrame* ref_frame, const VideoFrame* test_frame);
 double I420PSNR(const I420BufferInterface& ref_buffer,
                 const I420BufferInterface& test_buffer);
+
+// Computes the weighted PSNR-YUV for an I420 buffer.
+//
+// For the definition and motivation, see
+// J. Ohm, G. J. Sullivan, H. Schwarz, T. K. Tan and T. Wiegand,
+// "Comparison of the Coding Efficiency of Video Coding Standards—Including
+// High Efficiency Video Coding (HEVC)," in IEEE Transactions on Circuits and
+// Systems for Video Technology, vol. 22, no. 12, pp. 1669-1684, Dec. 2012
+// doi: 10.1109/TCSVT.2012.2221192.
+//
+// Returns the PSNR-YUV in decibel, to a maximum of kPerfectPSNR.
+double I420WeightedPSNR(const I420BufferInterface& ref_buffer,
+                        const I420BufferInterface& test_buffer);
 
 // Compute SSIM for an I420 frame (all planes).
 double I420SSIM(const VideoFrame* ref_frame, const VideoFrame* test_frame);
@@ -98,9 +114,9 @@ double I420SSIM(const I420BufferInterface& ref_buffer,
                 const I420BufferInterface& test_buffer);
 
 // Helper function for scaling NV12 to NV12.
-// If the |src_width| and |src_height| matches the |dst_width| and |dst_height|,
-// then |tmp_buffer| is not used. In other cases, the minimum size of
-// |tmp_buffer| should be:
+// If the `src_width` and `src_height` matches the `dst_width` and `dst_height`,
+// then `tmp_buffer` is not used. In other cases, the minimum size of
+// `tmp_buffer` should be:
 //   (src_width/2) * (src_height/2) * 2 + (dst_width/2) * (dst_height/2) * 2
 void NV12Scale(uint8_t* tmp_buffer,
                const uint8_t* src_y,

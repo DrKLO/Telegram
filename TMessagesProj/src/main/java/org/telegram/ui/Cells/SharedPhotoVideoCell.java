@@ -117,7 +117,7 @@ public class SharedPhotoVideoCell extends FrameLayout {
 
             videoTextView = new TextView(context);
             videoTextView.setTextColor(0xffffffff);
-            videoTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            videoTextView.setTypeface(AndroidUtilities.bold());
             videoTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
             videoTextView.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);
             videoInfoContainer.addView(videoTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.CENTER_VERTICAL, 13, -0.7f, 0, 0));
@@ -128,7 +128,7 @@ public class SharedPhotoVideoCell extends FrameLayout {
 
             checkBox = new CheckBox2(context, 21);
             checkBox.setVisibility(INVISIBLE);
-            checkBox.setColor(null, Theme.key_sharedMedia_photoPlaceholder, Theme.key_checkboxCheck);
+            checkBox.setColor(-1, Theme.key_sharedMedia_photoPlaceholder, Theme.key_checkboxCheck);
             checkBox.setDrawUnchecked(false);
             checkBox.setDrawBackgroundAsArc(1);
             addView(checkBox, LayoutHelper.createFrame(24, 24, Gravity.RIGHT | Gravity.TOP, 0, 1, 1, 0));
@@ -182,13 +182,13 @@ public class SharedPhotoVideoCell extends FrameLayout {
         public void setMessageObject(MessageObject messageObject) {
             currentMessageObject = messageObject;
             imageView.getImageReceiver().setVisible(!PhotoViewer.isShowingImage(messageObject), false);
-            String restrictionReason = MessagesController.getRestrictionReason(messageObject.messageOwner.restriction_reason);
+            String restrictionReason = MessagesController.getInstance(currentAccount).getRestrictionReason(messageObject.messageOwner.restriction_reason);
             if (!TextUtils.isEmpty(restrictionReason)) {
                 videoInfoContainer.setVisibility(INVISIBLE);
                 imageView.setImageResource(R.drawable.photo_placeholder_in);
             } else if (messageObject.isVideo()) {
                 videoInfoContainer.setVisibility(VISIBLE);
-                videoTextView.setText(AndroidUtilities.formatShortDuration(messageObject.getDuration()));
+                videoTextView.setText(AndroidUtilities.formatShortDuration((int) messageObject.getDuration()));
                 TLRPC.Document document = messageObject.getDocument();
                 TLRPC.PhotoSize thumb = FileLoader.getClosestPhotoSizeWithSize(document.thumbs, 50);
                 TLRPC.PhotoSize qualityThumb = FileLoader.getClosestPhotoSizeWithSize(document.thumbs, 320);
@@ -250,9 +250,9 @@ public class SharedPhotoVideoCell extends FrameLayout {
         public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
             super.onInitializeAccessibilityNodeInfo(info);
             if (currentMessageObject.isVideo()) {
-                info.setText(LocaleController.getString("AttachVideo", R.string.AttachVideo) + ", " + LocaleController.formatDuration(currentMessageObject.getDuration()));
+                info.setText(LocaleController.getString(R.string.AttachVideo) + ", " + LocaleController.formatDuration((int) currentMessageObject.getDuration()));
             } else {
-                info.setText(LocaleController.getString("AttachPhoto", R.string.AttachPhoto));
+                info.setText(LocaleController.getString(R.string.AttachPhoto));
             }
             if (checkBox.isChecked()) {
                 info.setCheckable(true);

@@ -14,8 +14,7 @@
 
 #include <algorithm>
 #include <map>
-#include <memory>
-#include <set>
+#include <string>
 #include <unordered_map>
 #include <utility>
 
@@ -23,14 +22,12 @@
 #include "absl/strings/match.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/optional.h"
-#include "api/crypto_params.h"
-#include "api/video_codecs/h264_profile_level_id.h"
 #include "media/base/codec.h"
 #include "media/base/media_constants.h"
+#include "media/base/media_engine.h"
 #include "media/base/sdp_video_format_utils.h"
 #include "media/sctp/sctp_transport_internal.h"
 #include "p2p/base/p2p_constants.h"
-#include "pc/channel_manager.h"
 #include "pc/media_protocol_names.h"
 #include "pc/rtp_media_utils.h"
 #include "pc/used_ids.h"
@@ -41,25 +38,13 @@
 #include "rtc_base/string_encode.h"
 #include "rtc_base/third_party/base64/base64.h"
 #include "rtc_base/unique_id_generator.h"
-#include "system_wrappers/include/field_trial.h"
 
 namespace {
 
 using rtc::UniqueRandomIdGenerator;
+using webrtc::RTCError;
+using webrtc::RTCErrorType;
 using webrtc::RtpTransceiverDirection;
-
-const char kInline[] = "inline:";
-
-void GetSupportedSdesCryptoSuiteNames(
-    void (*func)(const webrtc::CryptoOptions&, std::vector<int>*),
-    const webrtc::CryptoOptions& crypto_options,
-    std::vector<std::string>* names) {
-  std::vector<int> crypto_suites;
-  func(crypto_options, &crypto_suites);
-  for (const auto crypto : crypto_suites) {
-    names->push_back(rtc::SrtpCryptoSuiteToName(crypto));
-  }
-}
 
 webrtc::RtpExtension RtpExtensionFromCapability(
     const webrtc::RtpHeaderExtensionCapability& capability) {
@@ -116,34 +101,41 @@ cricket::RtpHeaderExtensions UnstoppedOrPresentRtpHeaderExtensions(
 
 namespace cricket {
 
-// RTP Profile names
-// http://www.iana.org/assignments/rtp-parameters/rtp-parameters.xml
-// RFC4585
-const char kMediaProtocolAvpf[] = "RTP/AVPF";
-// RFC5124
-const char kMediaProtocolDtlsSavpf[] = "UDP/TLS/RTP/SAVPF";
+namespace {
 
-// We always generate offers with "UDP/TLS/RTP/SAVPF" when using DTLS-SRTP,
-// but we tolerate "RTP/SAVPF" in offers we receive, for compatibility.
-const char kMediaProtocolSavpf[] = "RTP/SAVPF";
-
-// Note that the below functions support some protocol strings purely for
-// legacy compatibility, as required by JSEP in Section 5.1.2, Profile Names
-// and Interoperability.
-
-static bool IsDtlsRtp(const std::string& protocol) {
-  // Most-likely values first.
-  return protocol == "UDP/TLS/RTP/SAVPF" || protocol == "TCP/TLS/RTP/SAVPF" ||
-         protocol == "UDP/TLS/RTP/SAVP" || protocol == "TCP/TLS/RTP/SAVP";
+bool IsRtxCodec(const webrtc::RtpCodecCapability& capability) {
+  return absl::EqualsIgnoreCase(capability.name, kRtxCodecName);
 }
 
-static bool IsPlainRtp(const std::string& protocol) {
-  // Most-likely values first.
-  return protocol == "RTP/SAVPF" || protocol == "RTP/AVPF" ||
-         protocol == "RTP/SAVP" || protocol == "RTP/AVP";
+bool ContainsRtxCodec(const std::vector<Codec>& codecs) {
+  return absl::c_find_if(codecs, [](const Codec& c) {
+           return c.GetResiliencyType() == Codec::ResiliencyType::kRtx;
+         }) != codecs.end();
 }
 
-static RtpTransceiverDirection NegotiateRtpTransceiverDirection(
+bool IsRedCodec(const webrtc::RtpCodecCapability& capability) {
+  return absl::EqualsIgnoreCase(capability.name, kRedCodecName);
+}
+
+bool ContainsFlexfecCodec(const std::vector<Codec>& codecs) {
+  return absl::c_find_if(codecs, [](const Codec& c) {
+           return c.GetResiliencyType() == Codec::ResiliencyType::kFlexfec;
+         }) != codecs.end();
+}
+
+bool IsComfortNoiseCodec(const Codec& codec) {
+  return absl::EqualsIgnoreCase(codec.name, kComfortNoiseCodecName);
+}
+
+void StripCNCodecs(AudioCodecs* audio_codecs) {
+  audio_codecs->erase(std::remove_if(audio_codecs->begin(), audio_codecs->end(),
+                                     [](const AudioCodec& codec) {
+                                       return IsComfortNoiseCodec(codec);
+                                     }),
+                      audio_codecs->end());
+}
+
+RtpTransceiverDirection NegotiateRtpTransceiverDirection(
     RtpTransceiverDirection offer,
     RtpTransceiverDirection wants) {
   bool offer_send = webrtc::RtpTransceiverDirectionHasSend(offer);
@@ -154,167 +146,15 @@ static RtpTransceiverDirection NegotiateRtpTransceiverDirection(
                                                      offer_send && wants_recv);
 }
 
-static bool IsMediaContentOfType(const ContentInfo* content,
-                                 MediaType media_type) {
+bool IsMediaContentOfType(const ContentInfo* content, MediaType media_type) {
   if (!content || !content->media_description()) {
     return false;
   }
   return content->media_description()->type() == media_type;
 }
 
-static bool CreateCryptoParams(int tag,
-                               const std::string& cipher,
-                               CryptoParams* crypto_out) {
-  int key_len;
-  int salt_len;
-  if (!rtc::GetSrtpKeyAndSaltLengths(rtc::SrtpCryptoSuiteFromName(cipher),
-                                     &key_len, &salt_len)) {
-    return false;
-  }
-
-  int master_key_len = key_len + salt_len;
-  std::string master_key;
-  if (!rtc::CreateRandomData(master_key_len, &master_key)) {
-    return false;
-  }
-
-  RTC_CHECK_EQ(master_key_len, master_key.size());
-  std::string key = rtc::Base64::Encode(master_key);
-
-  crypto_out->tag = tag;
-  crypto_out->cipher_suite = cipher;
-  crypto_out->key_params = kInline;
-  crypto_out->key_params += key;
-  return true;
-}
-
-static bool AddCryptoParams(const std::string& cipher_suite,
-                            CryptoParamsVec* cryptos_out) {
-  int size = static_cast<int>(cryptos_out->size());
-
-  cryptos_out->resize(size + 1);
-  return CreateCryptoParams(size, cipher_suite, &cryptos_out->at(size));
-}
-
-void AddMediaCryptos(const CryptoParamsVec& cryptos,
-                     MediaContentDescription* media) {
-  for (const CryptoParams& crypto : cryptos) {
-    media->AddCrypto(crypto);
-  }
-}
-
-bool CreateMediaCryptos(const std::vector<std::string>& crypto_suites,
-                        MediaContentDescription* media) {
-  CryptoParamsVec cryptos;
-  for (const std::string& crypto_suite : crypto_suites) {
-    if (!AddCryptoParams(crypto_suite, &cryptos)) {
-      return false;
-    }
-  }
-  AddMediaCryptos(cryptos, media);
-  return true;
-}
-
-const CryptoParamsVec* GetCryptos(const ContentInfo* content) {
-  if (!content || !content->media_description()) {
-    return nullptr;
-  }
-  return &content->media_description()->cryptos();
-}
-
-bool FindMatchingCrypto(const CryptoParamsVec& cryptos,
-                        const CryptoParams& crypto,
-                        CryptoParams* crypto_out) {
-  auto it = absl::c_find_if(
-      cryptos, [&crypto](const CryptoParams& c) { return crypto.Matches(c); });
-  if (it == cryptos.end()) {
-    return false;
-  }
-  *crypto_out = *it;
-  return true;
-}
-
-// For audio, HMAC 32 (if enabled) is prefered over HMAC 80 because of the
-// low overhead.
-void GetSupportedAudioSdesCryptoSuites(
-    const webrtc::CryptoOptions& crypto_options,
-    std::vector<int>* crypto_suites) {
-  if (crypto_options.srtp.enable_aes128_sha1_32_crypto_cipher) {
-    crypto_suites->push_back(rtc::SRTP_AES128_CM_SHA1_32);
-  }
-  crypto_suites->push_back(rtc::SRTP_AES128_CM_SHA1_80);
-  if (crypto_options.srtp.enable_gcm_crypto_suites) {
-    crypto_suites->push_back(rtc::SRTP_AEAD_AES_256_GCM);
-    crypto_suites->push_back(rtc::SRTP_AEAD_AES_128_GCM);
-  }
-}
-
-void GetSupportedAudioSdesCryptoSuiteNames(
-    const webrtc::CryptoOptions& crypto_options,
-    std::vector<std::string>* crypto_suite_names) {
-  GetSupportedSdesCryptoSuiteNames(GetSupportedAudioSdesCryptoSuites,
-                                   crypto_options, crypto_suite_names);
-}
-
-void GetSupportedVideoSdesCryptoSuites(
-    const webrtc::CryptoOptions& crypto_options,
-    std::vector<int>* crypto_suites) {
-  crypto_suites->push_back(rtc::SRTP_AES128_CM_SHA1_80);
-  if (crypto_options.srtp.enable_gcm_crypto_suites) {
-    crypto_suites->push_back(rtc::SRTP_AEAD_AES_256_GCM);
-    crypto_suites->push_back(rtc::SRTP_AEAD_AES_128_GCM);
-  }
-}
-
-void GetSupportedVideoSdesCryptoSuiteNames(
-    const webrtc::CryptoOptions& crypto_options,
-    std::vector<std::string>* crypto_suite_names) {
-  GetSupportedSdesCryptoSuiteNames(GetSupportedVideoSdesCryptoSuites,
-                                   crypto_options, crypto_suite_names);
-}
-
-void GetSupportedDataSdesCryptoSuites(
-    const webrtc::CryptoOptions& crypto_options,
-    std::vector<int>* crypto_suites) {
-  crypto_suites->push_back(rtc::SRTP_AES128_CM_SHA1_80);
-  if (crypto_options.srtp.enable_gcm_crypto_suites) {
-    crypto_suites->push_back(rtc::SRTP_AEAD_AES_256_GCM);
-    crypto_suites->push_back(rtc::SRTP_AEAD_AES_128_GCM);
-  }
-}
-
-void GetSupportedDataSdesCryptoSuiteNames(
-    const webrtc::CryptoOptions& crypto_options,
-    std::vector<std::string>* crypto_suite_names) {
-  GetSupportedSdesCryptoSuiteNames(GetSupportedDataSdesCryptoSuites,
-                                   crypto_options, crypto_suite_names);
-}
-
-// Support any GCM cipher (if enabled through options). For video support only
-// 80-bit SHA1 HMAC. For audio 32-bit HMAC is tolerated (if enabled) unless
-// bundle is enabled because it is low overhead.
-// Pick the crypto in the list that is supported.
-static bool SelectCrypto(const MediaContentDescription* offer,
-                         bool bundle,
-                         const webrtc::CryptoOptions& crypto_options,
-                         CryptoParams* crypto_out) {
-  bool audio = offer->type() == MEDIA_TYPE_AUDIO;
-  const CryptoParamsVec& cryptos = offer->cryptos();
-
-  for (const CryptoParams& crypto : cryptos) {
-    if ((crypto_options.srtp.enable_gcm_crypto_suites &&
-         rtc::IsGcmCryptoSuiteName(crypto.cipher_suite)) ||
-        rtc::CS_AES_CM_128_HMAC_SHA1_80 == crypto.cipher_suite ||
-        (rtc::CS_AES_CM_128_HMAC_SHA1_32 == crypto.cipher_suite && audio &&
-         !bundle && crypto_options.srtp.enable_aes128_sha1_32_crypto_cipher)) {
-      return CreateCryptoParams(crypto.tag, crypto.cipher_suite, crypto_out);
-    }
-  }
-  return false;
-}
-
 // Finds all StreamParams of all media types and attach them to stream_params.
-static StreamParamsVec GetCurrentStreamParams(
+StreamParamsVec GetCurrentStreamParams(
     const std::vector<const ContentInfo*>& active_local_contents) {
   StreamParamsVec stream_params;
   for (const ContentInfo* content : active_local_contents) {
@@ -325,12 +165,13 @@ static StreamParamsVec GetCurrentStreamParams(
   return stream_params;
 }
 
-static StreamParams CreateStreamParamsForNewSenderWithSsrcs(
+StreamParams CreateStreamParamsForNewSenderWithSsrcs(
     const SenderOptions& sender,
     const std::string& rtcp_cname,
     bool include_rtx_streams,
     bool include_flexfec_stream,
-    UniqueRandomIdGenerator* ssrc_generator) {
+    UniqueRandomIdGenerator* ssrc_generator,
+    const webrtc::FieldTrialsView& field_trials) {
   StreamParams result;
   result.id = sender.track_id;
 
@@ -342,8 +183,7 @@ static StreamParams CreateStreamParamsForNewSenderWithSsrcs(
            "a single media streams. This session has multiple "
            "media streams however, so no FlexFEC SSRC will be generated.";
   }
-  if (include_flexfec_stream &&
-      !webrtc::field_trial::IsEnabled("WebRTC-FlexFEC-03")) {
+  if (include_flexfec_stream && !field_trials.IsEnabled("WebRTC-FlexFEC-03")) {
     include_flexfec_stream = false;
     RTC_LOG(LS_WARNING)
         << "WebRTC-FlexFEC trial is not enabled, not sending FlexFEC";
@@ -358,9 +198,8 @@ static StreamParams CreateStreamParamsForNewSenderWithSsrcs(
   return result;
 }
 
-static bool ValidateSimulcastLayers(
-    const std::vector<RidDescription>& rids,
-    const SimulcastLayerList& simulcast_layers) {
+bool ValidateSimulcastLayers(const std::vector<RidDescription>& rids,
+                             const SimulcastLayerList& simulcast_layers) {
   return absl::c_all_of(
       simulcast_layers.GetAllLayers(), [&rids](const SimulcastLayer& layer) {
         return absl::c_any_of(rids, [&layer](const RidDescription& rid) {
@@ -369,7 +208,7 @@ static bool ValidateSimulcastLayers(
       });
 }
 
-static StreamParams CreateStreamParamsForNewSenderWithRids(
+StreamParams CreateStreamParamsForNewSenderWithRids(
     const SenderOptions& sender,
     const std::string& rtcp_cname) {
   RTC_DCHECK(!sender.rids.empty());
@@ -391,7 +230,7 @@ static StreamParams CreateStreamParamsForNewSenderWithRids(
 
 // Adds SimulcastDescription if indicated by the media description options.
 // MediaContentDescription should already be set up with the send rids.
-static void AddSimulcastToMediaDescription(
+void AddSimulcastToMediaDescription(
     const MediaDescriptionOptions& media_description_options,
     MediaContentDescription* description) {
   RTC_DCHECK(description);
@@ -421,16 +260,15 @@ static void AddSimulcastToMediaDescription(
   description->set_simulcast_description(simulcast);
 }
 
-// Adds a StreamParams for each SenderOptions in |sender_options| to
+// Adds a StreamParams for each SenderOptions in `sender_options` to
 // content_description.
-// |current_params| - All currently known StreamParams of any media type.
-template <class C>
-static bool AddStreamParams(
-    const std::vector<SenderOptions>& sender_options,
-    const std::string& rtcp_cname,
-    UniqueRandomIdGenerator* ssrc_generator,
-    StreamParamsVec* current_streams,
-    MediaContentDescriptionImpl<C>* content_description) {
+// `current_params` - All currently known StreamParams of any media type.
+bool AddStreamParams(const std::vector<SenderOptions>& sender_options,
+                     const std::string& rtcp_cname,
+                     UniqueRandomIdGenerator* ssrc_generator,
+                     StreamParamsVec* current_streams,
+                     MediaContentDescription* content_description,
+                     const webrtc::FieldTrialsView& field_trials) {
   // SCTP streams are not negotiated using SDP/ContentDescriptions.
   if (IsSctpProtocol(content_description->protocol())) {
     return true;
@@ -443,10 +281,7 @@ static bool AddStreamParams(
       ContainsFlexfecCodec(content_description->codecs());
 
   for (const SenderOptions& sender : sender_options) {
-    // groupid is empty for StreamParams generated using
-    // MediaSessionDescriptionFactory.
-    StreamParams* param =
-        GetStreamByIds(*current_streams, "" /*group_id*/, sender.track_id);
+    StreamParams* param = GetStreamByIds(*current_streams, sender.track_id);
     if (!param) {
       // This is a new sender.
       StreamParams stream_param =
@@ -455,7 +290,7 @@ static bool AddStreamParams(
               // Signal SSRCs and legacy simulcast (if requested).
               CreateStreamParamsForNewSenderWithSsrcs(
                   sender, rtcp_cname, include_rtx_streams,
-                  include_flexfec_stream, ssrc_generator)
+                  include_flexfec_stream, ssrc_generator, field_trials)
               :
               // Signal RIDs and spec-compliant simulcast (if requested).
               CreateStreamParamsForNewSenderWithRids(sender, rtcp_cname);
@@ -476,12 +311,12 @@ static bool AddStreamParams(
   return true;
 }
 
-// Updates the transport infos of the |sdesc| according to the given
-// |bundle_group|. The transport infos of the content names within the
-// |bundle_group| should be updated to use the ufrag, pwd and DTLS role of the
-// first content within the |bundle_group|.
-static bool UpdateTransportInfoForBundle(const ContentGroup& bundle_group,
-                                         SessionDescription* sdesc) {
+// Updates the transport infos of the `sdesc` according to the given
+// `bundle_group`. The transport infos of the content names within the
+// `bundle_group` should be updated to use the ufrag, pwd and DTLS role of the
+// first content within the `bundle_group`.
+bool UpdateTransportInfoForBundle(const ContentGroup& bundle_group,
+                                  SessionDescription* sdesc) {
   // The bundle should not be empty.
   if (!sdesc || !bundle_group.FirstContentName()) {
     return false;
@@ -513,120 +348,7 @@ static bool UpdateTransportInfoForBundle(const ContentGroup& bundle_group,
   return true;
 }
 
-// Gets the CryptoParamsVec of the given |content_name| from |sdesc|, and
-// sets it to |cryptos|.
-static bool GetCryptosByName(const SessionDescription* sdesc,
-                             const std::string& content_name,
-                             CryptoParamsVec* cryptos) {
-  if (!sdesc || !cryptos) {
-    return false;
-  }
-  const ContentInfo* content = sdesc->GetContentByName(content_name);
-  if (!content || !content->media_description()) {
-    return false;
-  }
-  *cryptos = content->media_description()->cryptos();
-  return true;
-}
-
-// Prunes the |target_cryptos| by removing the crypto params (cipher_suite)
-// which are not available in |filter|.
-static void PruneCryptos(const CryptoParamsVec& filter,
-                         CryptoParamsVec* target_cryptos) {
-  if (!target_cryptos) {
-    return;
-  }
-
-  target_cryptos->erase(
-      std::remove_if(target_cryptos->begin(), target_cryptos->end(),
-                     // Returns true if the |crypto|'s cipher_suite is not
-                     // found in |filter|.
-                     [&filter](const CryptoParams& crypto) {
-                       for (const CryptoParams& entry : filter) {
-                         if (entry.cipher_suite == crypto.cipher_suite)
-                           return false;
-                       }
-                       return true;
-                     }),
-      target_cryptos->end());
-}
-
-static bool IsRtpContent(SessionDescription* sdesc,
-                         const std::string& content_name) {
-  bool is_rtp = false;
-  ContentInfo* content = sdesc->GetContentByName(content_name);
-  if (content && content->media_description()) {
-    is_rtp = IsRtpProtocol(content->media_description()->protocol());
-  }
-  return is_rtp;
-}
-
-// Updates the crypto parameters of the |sdesc| according to the given
-// |bundle_group|. The crypto parameters of all the contents within the
-// |bundle_group| should be updated to use the common subset of the
-// available cryptos.
-static bool UpdateCryptoParamsForBundle(const ContentGroup& bundle_group,
-                                        SessionDescription* sdesc) {
-  // The bundle should not be empty.
-  if (!sdesc || !bundle_group.FirstContentName()) {
-    return false;
-  }
-
-  bool common_cryptos_needed = false;
-  // Get the common cryptos.
-  const ContentNames& content_names = bundle_group.content_names();
-  CryptoParamsVec common_cryptos;
-  bool first = true;
-  for (const std::string& content_name : content_names) {
-    if (!IsRtpContent(sdesc, content_name)) {
-      continue;
-    }
-    // The common cryptos are needed if any of the content does not have DTLS
-    // enabled.
-    if (!sdesc->GetTransportInfoByName(content_name)->description.secure()) {
-      common_cryptos_needed = true;
-    }
-    if (first) {
-      first = false;
-      // Initial the common_cryptos with the first content in the bundle group.
-      if (!GetCryptosByName(sdesc, content_name, &common_cryptos)) {
-        return false;
-      }
-      if (common_cryptos.empty()) {
-        // If there's no crypto params, we should just return.
-        return true;
-      }
-    } else {
-      CryptoParamsVec cryptos;
-      if (!GetCryptosByName(sdesc, content_name, &cryptos)) {
-        return false;
-      }
-      PruneCryptos(cryptos, &common_cryptos);
-    }
-  }
-
-  if (common_cryptos.empty() && common_cryptos_needed) {
-    return false;
-  }
-
-  // Update to use the common cryptos.
-  for (const std::string& content_name : content_names) {
-    if (!IsRtpContent(sdesc, content_name)) {
-      continue;
-    }
-    ContentInfo* content = sdesc->GetContentByName(content_name);
-    if (IsMediaContent(content)) {
-      MediaContentDescription* media_desc = content->media_description();
-      if (!media_desc) {
-        return false;
-      }
-      media_desc->set_cryptos(common_cryptos);
-    }
-  }
-  return true;
-}
-
-static std::vector<const ContentInfo*> GetActiveContents(
+std::vector<const ContentInfo*> GetActiveContents(
     const SessionDescription& description,
     const MediaSessionOptions& session_options) {
   std::vector<const ContentInfo*> active_contents;
@@ -643,48 +365,15 @@ static std::vector<const ContentInfo*> GetActiveContents(
   return active_contents;
 }
 
-template <class C>
-static bool ContainsRtxCodec(const std::vector<C>& codecs) {
-  for (const auto& codec : codecs) {
-    if (IsRtxCodec(codec)) {
-      return true;
-    }
-  }
-  return false;
-}
-
-template <class C>
-static bool IsRtxCodec(const C& codec) {
-  return absl::EqualsIgnoreCase(codec.name, kRtxCodecName);
-}
-
-template <class C>
-static bool ContainsFlexfecCodec(const std::vector<C>& codecs) {
-  for (const auto& codec : codecs) {
-    if (IsFlexfecCodec(codec)) {
-      return true;
-    }
-  }
-  return false;
-}
-
-template <class C>
-static bool IsFlexfecCodec(const C& codec) {
-  return absl::EqualsIgnoreCase(codec.name, kFlexfecCodecName);
-}
-
-// Create a media content to be offered for the given |sender_options|,
+// Create a media content to be offered for the given `sender_options`,
 // according to the given options.rtcp_mux, session_options.is_muc, codecs,
 // secure_transport, crypto, and current_streams. If we don't currently have
 // crypto (in current_cryptos) and it is enabled (in secure_policy), crypto is
 // created (according to crypto_suites). The created content is added to the
 // offer.
-static bool CreateContentOffer(
+RTCError CreateContentOffer(
     const MediaDescriptionOptions& media_description_options,
     const MediaSessionOptions& session_options,
-    const SecurePolicy& secure_policy,
-    const CryptoParamsVec* current_cryptos,
-    const std::vector<std::string>& crypto_suites,
     const RtpHeaderExtensions& rtp_extensions,
     UniqueRandomIdGenerator* ssrc_generator,
     StreamParamsVec* current_streams,
@@ -703,7 +392,9 @@ static bool CreateContentOffer(
         // TODO(crbug.com/1051821): Configure the extension direction from
         // the information in the media_description_options extension
         // capability.
-        extensions.push_back(extension_with_id);
+        if (extension.direction != RtpTransceiverDirection::kStopped) {
+          extensions.push_back(extension_with_id);
+        }
       }
     }
   }
@@ -711,139 +402,74 @@ static bool CreateContentOffer(
 
   AddSimulcastToMediaDescription(media_description_options, offer);
 
-  if (secure_policy != SEC_DISABLED) {
-    if (current_cryptos) {
-      AddMediaCryptos(*current_cryptos, offer);
-    }
-    if (offer->cryptos().empty()) {
-      if (!CreateMediaCryptos(crypto_suites, offer)) {
-        return false;
-      }
-    }
-  }
-
-  if (secure_policy == SEC_REQUIRED && offer->cryptos().empty()) {
-    return false;
-  }
-  return true;
+  return RTCError::OK();
 }
-template <class C>
-static bool CreateMediaContentOffer(
+
+RTCError CreateMediaContentOffer(
     const MediaDescriptionOptions& media_description_options,
     const MediaSessionOptions& session_options,
-    const std::vector<C>& codecs,
-    const SecurePolicy& secure_policy,
-    const CryptoParamsVec* current_cryptos,
-    const std::vector<std::string>& crypto_suites,
+    const std::vector<Codec>& codecs,
     const RtpHeaderExtensions& rtp_extensions,
     UniqueRandomIdGenerator* ssrc_generator,
     StreamParamsVec* current_streams,
-    MediaContentDescriptionImpl<C>* offer) {
+    MediaContentDescription* offer,
+    const webrtc::FieldTrialsView& field_trials) {
   offer->AddCodecs(codecs);
   if (!AddStreamParams(media_description_options.sender_options,
                        session_options.rtcp_cname, ssrc_generator,
-                       current_streams, offer)) {
-    return false;
+                       current_streams, offer, field_trials)) {
+    LOG_AND_RETURN_ERROR(RTCErrorType::INTERNAL_ERROR,
+                         "Failed to add stream parameters");
   }
 
   return CreateContentOffer(media_description_options, session_options,
-                            secure_policy, current_cryptos, crypto_suites,
                             rtp_extensions, ssrc_generator, current_streams,
                             offer);
 }
 
-template <class C>
-static bool ReferencedCodecsMatch(const std::vector<C>& codecs1,
-                                  const int codec1_id,
-                                  const std::vector<C>& codecs2,
-                                  const int codec2_id) {
-  const C* codec1 = FindCodecById(codecs1, codec1_id);
-  const C* codec2 = FindCodecById(codecs2, codec2_id);
+bool ReferencedCodecsMatch(const std::vector<Codec>& codecs1,
+                           const int codec1_id,
+                           const std::vector<Codec>& codecs2,
+                           const int codec2_id) {
+  const Codec* codec1 = FindCodecById(codecs1, codec1_id);
+  const Codec* codec2 = FindCodecById(codecs2, codec2_id);
   return codec1 != nullptr && codec2 != nullptr && codec1->Matches(*codec2);
 }
 
-template <class C>
-static void NegotiatePacketization(const C& local_codec,
-                                   const C& remote_codec,
-                                   C* negotiated_codec) {}
-
-template <>
-void NegotiatePacketization(const VideoCodec& local_codec,
-                            const VideoCodec& remote_codec,
-                            VideoCodec* negotiated_codec) {
+void NegotiatePacketization(const Codec& local_codec,
+                            const Codec& remote_codec,
+                            Codec* negotiated_codec) {
   negotiated_codec->packetization =
-      VideoCodec::IntersectPacketization(local_codec, remote_codec);
+      (local_codec.packetization == remote_codec.packetization)
+          ? local_codec.packetization
+          : absl::nullopt;
 }
 
-template <class C>
-static void NegotiateCodecs(const std::vector<C>& local_codecs,
-                            const std::vector<C>& offered_codecs,
-                            std::vector<C>* negotiated_codecs,
-                            bool keep_offer_order) {
-  for (const C& ours : local_codecs) {
-    C theirs;
-    // Note that we intentionally only find one matching codec for each of our
-    // local codecs, in case the remote offer contains duplicate codecs.
-    if (FindMatchingCodec(local_codecs, offered_codecs, ours, &theirs)) {
-      C negotiated = ours;
-      NegotiatePacketization(ours, theirs, &negotiated);
-      negotiated.IntersectFeedbackParams(theirs);
-      if (IsRtxCodec(negotiated)) {
-        const auto apt_it =
-            theirs.params.find(kCodecParamAssociatedPayloadType);
-        // FindMatchingCodec shouldn't return something with no apt value.
-        RTC_DCHECK(apt_it != theirs.params.end());
-        negotiated.SetParam(kCodecParamAssociatedPayloadType, apt_it->second);
-
-        // We support parsing the declarative rtx-time parameter.
-        const auto rtx_time_it = theirs.params.find(kCodecParamRtxTime);
-        if (rtx_time_it != theirs.params.end()) {
-          negotiated.SetParam(kCodecParamRtxTime, rtx_time_it->second);
-        }
-      }
-      if (absl::EqualsIgnoreCase(ours.name, kH264CodecName)) {
-        webrtc::H264GenerateProfileLevelIdForAnswer(ours.params, theirs.params,
-                                                    &negotiated.params);
-      }
-      negotiated.id = theirs.id;
-      negotiated.name = theirs.name;
-      negotiated_codecs->push_back(std::move(negotiated));
-    }
-  }
-  if (keep_offer_order) {
-    // RFC3264: Although the answerer MAY list the formats in their desired
-    // order of preference, it is RECOMMENDED that unless there is a
-    // specific reason, the answerer list formats in the same relative order
-    // they were present in the offer.
-    // This can be skipped when the transceiver has any codec preferences.
-    std::unordered_map<int, int> payload_type_preferences;
-    int preference = static_cast<int>(offered_codecs.size() + 1);
-    for (const C& codec : offered_codecs) {
-      payload_type_preferences[codec.id] = preference--;
-    }
-    absl::c_sort(*negotiated_codecs, [&payload_type_preferences](const C& a,
-                                                                 const C& b) {
-      return payload_type_preferences[a.id] > payload_type_preferences[b.id];
-    });
-  }
+#ifdef RTC_ENABLE_H265
+void NegotiateTxMode(const Codec& local_codec,
+                     const Codec& remote_codec,
+                     Codec* negotiated_codec) {
+  negotiated_codec->tx_mode = (local_codec.tx_mode == remote_codec.tx_mode)
+                                  ? local_codec.tx_mode
+                                  : absl::nullopt;
 }
+#endif
 
-// Finds a codec in |codecs2| that matches |codec_to_match|, which is
-// a member of |codecs1|. If |codec_to_match| is an RTX codec, both
+// Finds a codec in `codecs2` that matches `codec_to_match`, which is
+// a member of `codecs1`. If `codec_to_match` is an RED or RTX codec, both
 // the codecs themselves and their associated codecs must match.
-template <class C>
-static bool FindMatchingCodec(const std::vector<C>& codecs1,
-                              const std::vector<C>& codecs2,
-                              const C& codec_to_match,
-                              C* found_codec) {
-  // |codec_to_match| should be a member of |codecs1|, in order to look up RTX
-  // codecs' associated codecs correctly. If not, that's a programming error.
-  RTC_DCHECK(absl::c_any_of(codecs1, [&codec_to_match](const C& codec) {
+absl::optional<Codec> FindMatchingCodec(const std::vector<Codec>& codecs1,
+                                        const std::vector<Codec>& codecs2,
+                                        const Codec& codec_to_match) {
+  // `codec_to_match` should be a member of `codecs1`, in order to look up
+  // RED/RTX codecs' associated codecs correctly. If not, that's a programming
+  // error.
+  RTC_DCHECK(absl::c_any_of(codecs1, [&codec_to_match](const Codec& codec) {
     return &codec == &codec_to_match;
   }));
-  for (const C& potential_match : codecs2) {
+  for (const Codec& potential_match : codecs2) {
     if (potential_match.Matches(codec_to_match)) {
-      if (IsRtxCodec(codec_to_match)) {
+      if (codec_to_match.GetResiliencyType() == Codec::ResiliencyType::kRtx) {
         int apt_value_1 = 0;
         int apt_value_2 = 0;
         if (!codec_to_match.GetParam(kCodecParamAssociatedPayloadType,
@@ -857,24 +483,136 @@ static bool FindMatchingCodec(const std::vector<C>& codecs1,
                                    apt_value_2)) {
           continue;
         }
+      } else if (codec_to_match.GetResiliencyType() ==
+                 Codec::ResiliencyType::kRed) {
+        auto red_parameters_1 =
+            codec_to_match.params.find(kCodecParamNotInNameValueFormat);
+        auto red_parameters_2 =
+            potential_match.params.find(kCodecParamNotInNameValueFormat);
+        bool has_parameters_1 = red_parameters_1 != codec_to_match.params.end();
+        bool has_parameters_2 =
+            red_parameters_2 != potential_match.params.end();
+        if (has_parameters_1 && has_parameters_2) {
+          // Mixed reference codecs (i.e. 111/112) are not supported.
+          // Different levels of redundancy between offer and answer are
+          // since RED is considered to be declarative.
+          std::vector<absl::string_view> redundant_payloads_1 =
+              rtc::split(red_parameters_1->second, '/');
+          std::vector<absl::string_view> redundant_payloads_2 =
+              rtc::split(red_parameters_2->second, '/');
+          if (redundant_payloads_1.size() > 0 &&
+              redundant_payloads_2.size() > 0) {
+            bool consistent = true;
+            for (size_t i = 1; i < redundant_payloads_1.size(); i++) {
+              if (redundant_payloads_1[i] != redundant_payloads_1[0]) {
+                consistent = false;
+                break;
+              }
+            }
+            for (size_t i = 1; i < redundant_payloads_2.size(); i++) {
+              if (redundant_payloads_2[i] != redundant_payloads_2[0]) {
+                consistent = false;
+                break;
+              }
+            }
+            if (!consistent) {
+              continue;
+            }
+
+            int red_value_1;
+            int red_value_2;
+            if (rtc::FromString(redundant_payloads_1[0], &red_value_1) &&
+                rtc::FromString(redundant_payloads_2[0], &red_value_2)) {
+              if (!ReferencedCodecsMatch(codecs1, red_value_1, codecs2,
+                                         red_value_2)) {
+                continue;
+              }
+            }
+          }
+        } else if (has_parameters_1 != has_parameters_2) {
+          continue;
+        }
       }
-      if (found_codec) {
-        *found_codec = potential_match;
-      }
-      return true;
+      return potential_match;
     }
   }
-  return false;
+  return absl::nullopt;
 }
 
-// Find the codec in |codec_list| that |rtx_codec| is associated with.
-template <class C>
-static const C* GetAssociatedCodec(const std::vector<C>& codec_list,
-                                   const C& rtx_codec) {
+void NegotiateCodecs(const std::vector<Codec>& local_codecs,
+                     const std::vector<Codec>& offered_codecs,
+                     std::vector<Codec>* negotiated_codecs,
+                     bool keep_offer_order) {
+  for (const Codec& ours : local_codecs) {
+    absl::optional<Codec> theirs =
+        FindMatchingCodec(local_codecs, offered_codecs, ours);
+    // Note that we intentionally only find one matching codec for each of our
+    // local codecs, in case the remote offer contains duplicate codecs.
+    if (theirs) {
+      Codec negotiated = ours;
+      NegotiatePacketization(ours, *theirs, &negotiated);
+      negotiated.IntersectFeedbackParams(*theirs);
+      if (negotiated.GetResiliencyType() == Codec::ResiliencyType::kRtx) {
+        const auto apt_it =
+            theirs->params.find(kCodecParamAssociatedPayloadType);
+        // FindMatchingCodec shouldn't return something with no apt value.
+        RTC_DCHECK(apt_it != theirs->params.end());
+        negotiated.SetParam(kCodecParamAssociatedPayloadType, apt_it->second);
+
+        // We support parsing the declarative rtx-time parameter.
+        const auto rtx_time_it = theirs->params.find(kCodecParamRtxTime);
+        if (rtx_time_it != theirs->params.end()) {
+          negotiated.SetParam(kCodecParamRtxTime, rtx_time_it->second);
+        }
+      } else if (negotiated.GetResiliencyType() ==
+                 Codec::ResiliencyType::kRed) {
+        const auto red_it =
+            theirs->params.find(kCodecParamNotInNameValueFormat);
+        if (red_it != theirs->params.end()) {
+          negotiated.SetParam(kCodecParamNotInNameValueFormat, red_it->second);
+        }
+      }
+      if (absl::EqualsIgnoreCase(ours.name, kH264CodecName)) {
+        webrtc::H264GenerateProfileLevelIdForAnswer(ours.params, theirs->params,
+                                                    &negotiated.params);
+      }
+#ifdef RTC_ENABLE_H265
+      if (absl::EqualsIgnoreCase(ours.name, kH265CodecName)) {
+        webrtc::H265GenerateProfileTierLevelForAnswer(
+            ours.params, theirs->params, &negotiated.params);
+        NegotiateTxMode(ours, *theirs, &negotiated);
+      }
+#endif
+      negotiated.id = theirs->id;
+      negotiated.name = theirs->name;
+      negotiated_codecs->push_back(std::move(negotiated));
+    }
+  }
+  if (keep_offer_order) {
+    // RFC3264: Although the answerer MAY list the formats in their desired
+    // order of preference, it is RECOMMENDED that unless there is a
+    // specific reason, the answerer list formats in the same relative order
+    // they were present in the offer.
+    // This can be skipped when the transceiver has any codec preferences.
+    std::unordered_map<int, int> payload_type_preferences;
+    int preference = static_cast<int>(offered_codecs.size() + 1);
+    for (const Codec& codec : offered_codecs) {
+      payload_type_preferences[codec.id] = preference--;
+    }
+    absl::c_sort(*negotiated_codecs, [&payload_type_preferences](
+                                         const Codec& a, const Codec& b) {
+      return payload_type_preferences[a.id] > payload_type_preferences[b.id];
+    });
+  }
+}
+
+// Find the codec in `codec_list` that `rtx_codec` is associated with.
+const Codec* GetAssociatedCodecForRtx(const std::vector<Codec>& codec_list,
+                                      const Codec& rtx_codec) {
   std::string associated_pt_str;
   if (!rtx_codec.GetParam(kCodecParamAssociatedPayloadType,
                           &associated_pt_str)) {
-    RTC_LOG(LS_WARNING) << "RTX codec " << rtx_codec.name
+    RTC_LOG(LS_WARNING) << "RTX codec " << rtx_codec.id
                         << " is missing an associated payload type.";
     return nullptr;
   }
@@ -882,79 +620,152 @@ static const C* GetAssociatedCodec(const std::vector<C>& codec_list,
   int associated_pt;
   if (!rtc::FromString(associated_pt_str, &associated_pt)) {
     RTC_LOG(LS_WARNING) << "Couldn't convert payload type " << associated_pt_str
-                        << " of RTX codec " << rtx_codec.name
+                        << " of RTX codec " << rtx_codec.id
                         << " to an integer.";
     return nullptr;
   }
 
-  // Find the associated reference codec for the reference RTX codec.
-  const C* associated_codec = FindCodecById(codec_list, associated_pt);
+  // Find the associated codec for the RTX codec.
+  const Codec* associated_codec = FindCodecById(codec_list, associated_pt);
   if (!associated_codec) {
     RTC_LOG(LS_WARNING) << "Couldn't find associated codec with payload type "
-                        << associated_pt << " for RTX codec " << rtx_codec.name
+                        << associated_pt << " for RTX codec " << rtx_codec.id
                         << ".";
   }
   return associated_codec;
 }
 
-// Adds all codecs from |reference_codecs| to |offered_codecs| that don't
-// already exist in |offered_codecs| and ensure the payload types don't
+// Find the codec in `codec_list` that `red_codec` is associated with.
+const Codec* GetAssociatedCodecForRed(const std::vector<Codec>& codec_list,
+                                      const Codec& red_codec) {
+  std::string fmtp;
+  if (!red_codec.GetParam(kCodecParamNotInNameValueFormat, &fmtp)) {
+    // Don't log for video/RED where this is normal.
+    if (red_codec.type == Codec::Type::kAudio) {
+      RTC_LOG(LS_WARNING) << "RED codec " << red_codec.id
+                          << " is missing an associated payload type.";
+    }
+    return nullptr;
+  }
+
+  std::vector<absl::string_view> redundant_payloads = rtc::split(fmtp, '/');
+  if (redundant_payloads.size() < 2) {
+    return nullptr;
+  }
+
+  absl::string_view associated_pt_str = redundant_payloads[0];
+  int associated_pt;
+  if (!rtc::FromString(associated_pt_str, &associated_pt)) {
+    RTC_LOG(LS_WARNING) << "Couldn't convert first payload type "
+                        << associated_pt_str << " of RED codec " << red_codec.id
+                        << " to an integer.";
+    return nullptr;
+  }
+
+  // Find the associated codec for the RED codec.
+  const Codec* associated_codec = FindCodecById(codec_list, associated_pt);
+  if (!associated_codec) {
+    RTC_LOG(LS_WARNING) << "Couldn't find associated codec with payload type "
+                        << associated_pt << " for RED codec " << red_codec.id
+                        << ".";
+  }
+  return associated_codec;
+}
+
+// Adds all codecs from `reference_codecs` to `offered_codecs` that don't
+// already exist in `offered_codecs` and ensure the payload types don't
 // collide.
-template <class C>
-static void MergeCodecs(const std::vector<C>& reference_codecs,
-                        std::vector<C>* offered_codecs,
-                        UsedPayloadTypes* used_pltypes) {
-  // Add all new codecs that are not RTX codecs.
-  for (const C& reference_codec : reference_codecs) {
-    if (!IsRtxCodec(reference_codec) &&
-        !FindMatchingCodec<C>(reference_codecs, *offered_codecs,
-                              reference_codec, nullptr)) {
-      C codec = reference_codec;
+void MergeCodecs(const std::vector<Codec>& reference_codecs,
+                 std::vector<Codec>* offered_codecs,
+                 UsedPayloadTypes* used_pltypes) {
+  // Add all new codecs that are not RTX/RED codecs.
+  // The two-pass splitting of the loops means preferring payload types
+  // of actual codecs with respect to collisions.
+  for (const Codec& reference_codec : reference_codecs) {
+    if (reference_codec.GetResiliencyType() != Codec::ResiliencyType::kRtx &&
+        reference_codec.GetResiliencyType() != Codec::ResiliencyType::kRed &&
+        !FindMatchingCodec(reference_codecs, *offered_codecs,
+                           reference_codec)) {
+      Codec codec = reference_codec;
       used_pltypes->FindAndSetIdUsed(&codec);
       offered_codecs->push_back(codec);
     }
   }
 
-  // Add all new RTX codecs.
-  for (const C& reference_codec : reference_codecs) {
-    if (IsRtxCodec(reference_codec) &&
-        !FindMatchingCodec<C>(reference_codecs, *offered_codecs,
-                              reference_codec, nullptr)) {
-      C rtx_codec = reference_codec;
-      const C* associated_codec =
-          GetAssociatedCodec(reference_codecs, rtx_codec);
+  // Add all new RTX or RED codecs.
+  for (const Codec& reference_codec : reference_codecs) {
+    if (reference_codec.GetResiliencyType() == Codec::ResiliencyType::kRtx &&
+        !FindMatchingCodec(reference_codecs, *offered_codecs,
+                           reference_codec)) {
+      Codec rtx_codec = reference_codec;
+      const Codec* associated_codec =
+          GetAssociatedCodecForRtx(reference_codecs, rtx_codec);
       if (!associated_codec) {
         continue;
       }
       // Find a codec in the offered list that matches the reference codec.
       // Its payload type may be different than the reference codec.
-      C matching_codec;
-      if (!FindMatchingCodec<C>(reference_codecs, *offered_codecs,
-                                *associated_codec, &matching_codec)) {
+      absl::optional<Codec> matching_codec = FindMatchingCodec(
+          reference_codecs, *offered_codecs, *associated_codec);
+      if (!matching_codec) {
         RTC_LOG(LS_WARNING)
             << "Couldn't find matching " << associated_codec->name << " codec.";
         continue;
       }
 
       rtx_codec.params[kCodecParamAssociatedPayloadType] =
-          rtc::ToString(matching_codec.id);
+          rtc::ToString(matching_codec->id);
       used_pltypes->FindAndSetIdUsed(&rtx_codec);
       offered_codecs->push_back(rtx_codec);
+    } else if (reference_codec.GetResiliencyType() ==
+                   Codec::ResiliencyType::kRed &&
+               !FindMatchingCodec(reference_codecs, *offered_codecs,
+                                  reference_codec)) {
+      Codec red_codec = reference_codec;
+      const Codec* associated_codec =
+          GetAssociatedCodecForRed(reference_codecs, red_codec);
+      if (associated_codec) {
+        absl::optional<Codec> matching_codec = FindMatchingCodec(
+            reference_codecs, *offered_codecs, *associated_codec);
+        if (!matching_codec) {
+          RTC_LOG(LS_WARNING) << "Couldn't find matching "
+                              << associated_codec->name << " codec.";
+          continue;
+        }
+
+        red_codec.params[kCodecParamNotInNameValueFormat] =
+            rtc::ToString(matching_codec->id) + "/" +
+            rtc::ToString(matching_codec->id);
+      }
+      used_pltypes->FindAndSetIdUsed(&red_codec);
+      offered_codecs->push_back(red_codec);
     }
   }
 }
 
-template <typename Codecs>
-static Codecs MatchCodecPreference(
+// `codecs` is a full list of codecs with correct payload type mappings, which
+// don't conflict with mappings of the other media type; `supported_codecs` is
+// a list filtered for the media section`s direction but with default payload
+// types.
+std::vector<Codec> MatchCodecPreference(
     const std::vector<webrtc::RtpCodecCapability>& codec_preferences,
-    const Codecs& codecs) {
-  Codecs filtered_codecs;
-  std::set<std::string> kept_codecs_ids;
+    const std::vector<Codec>& codecs,
+    const std::vector<Codec>& supported_codecs) {
+  std::vector<Codec> filtered_codecs;
   bool want_rtx = false;
+  bool want_red = false;
 
   for (const auto& codec_preference : codec_preferences) {
+    if (IsRtxCodec(codec_preference)) {
+      want_rtx = true;
+    } else if (IsRedCodec(codec_preference)) {
+      want_red = true;
+    }
+  }
+  bool red_was_added = false;
+  for (const auto& codec_preference : codec_preferences) {
     auto found_codec = absl::c_find_if(
-        codecs, [&codec_preference](const typename Codecs::value_type& codec) {
+        supported_codecs, [&codec_preference](const Codec& codec) {
           webrtc::RtpCodecParameters codec_parameters =
               codec.ToCodecParameters();
           return codec_parameters.name == codec_preference.name &&
@@ -965,22 +776,50 @@ static Codecs MatchCodecPreference(
                  codec_parameters.parameters == codec_preference.parameters;
         });
 
-    if (found_codec != codecs.end()) {
-      filtered_codecs.push_back(*found_codec);
-      kept_codecs_ids.insert(std::to_string(found_codec->id));
-    } else if (IsRtxCodec(codec_preference)) {
-      want_rtx = true;
-    }
-  }
-
-  if (want_rtx) {
-    for (const auto& codec : codecs) {
-      if (IsRtxCodec(codec)) {
-        const auto apt =
-            codec.params.find(cricket::kCodecParamAssociatedPayloadType);
-        if (apt != codec.params.end() &&
-            kept_codecs_ids.count(apt->second) > 0) {
-          filtered_codecs.push_back(codec);
+    if (found_codec != supported_codecs.end()) {
+      absl::optional<Codec> found_codec_with_correct_pt =
+          FindMatchingCodec(supported_codecs, codecs, *found_codec);
+      if (found_codec_with_correct_pt) {
+        // RED may already have been added if its primary codec is before RED
+        // in the codec list.
+        bool is_red_codec = found_codec_with_correct_pt->GetResiliencyType() ==
+                            Codec::ResiliencyType::kRed;
+        if (!is_red_codec || !red_was_added) {
+          filtered_codecs.push_back(*found_codec_with_correct_pt);
+          red_was_added = is_red_codec ? true : red_was_added;
+        }
+        std::string id = rtc::ToString(found_codec_with_correct_pt->id);
+        // Search for the matching rtx or red codec.
+        if (want_red || want_rtx) {
+          for (const auto& codec : codecs) {
+            if (codec.GetResiliencyType() == Codec::ResiliencyType::kRtx) {
+              const auto apt =
+                  codec.params.find(cricket::kCodecParamAssociatedPayloadType);
+              if (apt != codec.params.end() && apt->second == id) {
+                filtered_codecs.push_back(codec);
+                break;
+              }
+            } else if (codec.GetResiliencyType() ==
+                       Codec::ResiliencyType::kRed) {
+              // For RED, do not insert the codec again if it was already
+              // inserted. audio/red for opus gets enabled by having RED before
+              // the primary codec.
+              const auto fmtp =
+                  codec.params.find(cricket::kCodecParamNotInNameValueFormat);
+              if (fmtp != codec.params.end()) {
+                std::vector<absl::string_view> redundant_payloads =
+                    rtc::split(fmtp->second, '/');
+                if (!redundant_payloads.empty() &&
+                    redundant_payloads[0] == id) {
+                  if (!red_was_added) {
+                    filtered_codecs.push_back(codec);
+                    red_was_added = true;
+                  }
+                  break;
+                }
+              }
+            }
+          }
         }
       }
     }
@@ -989,98 +828,60 @@ static Codecs MatchCodecPreference(
   return filtered_codecs;
 }
 
-static bool FindByUriAndEncryption(const RtpHeaderExtensions& extensions,
-                                   const webrtc::RtpExtension& ext_to_match,
-                                   webrtc::RtpExtension* found_extension) {
-  auto it = absl::c_find_if(
-      extensions, [&ext_to_match](const webrtc::RtpExtension& extension) {
-        // We assume that all URIs are given in a canonical
-        // format.
-        return extension.uri == ext_to_match.uri &&
-               extension.encrypt == ext_to_match.encrypt;
-      });
-  if (it == extensions.end()) {
-    return false;
+// Compute the union of `codecs1` and `codecs2`.
+std::vector<Codec> ComputeCodecsUnion(const std::vector<Codec>& codecs1,
+                                      const std::vector<Codec>& codecs2) {
+  std::vector<Codec> all_codecs;
+  UsedPayloadTypes used_payload_types;
+  for (const Codec& codec : codecs1) {
+    Codec codec_mutable = codec;
+    used_payload_types.FindAndSetIdUsed(&codec_mutable);
+    all_codecs.push_back(codec_mutable);
   }
-  if (found_extension) {
-    *found_extension = *it;
-  }
-  return true;
+
+  // Use MergeCodecs to merge the second half of our list as it already checks
+  // and fixes problems with duplicate payload types.
+  MergeCodecs(codecs2, &all_codecs, &used_payload_types);
+
+  return all_codecs;
 }
 
-static bool FindByUri(const RtpHeaderExtensions& extensions,
-                      const webrtc::RtpExtension& ext_to_match,
-                      webrtc::RtpExtension* found_extension) {
-  // We assume that all URIs are given in a canonical format.
-  const webrtc::RtpExtension* found =
-      webrtc::RtpExtension::FindHeaderExtensionByUri(extensions,
-                                                     ext_to_match.uri);
-  if (!found) {
-    return false;
-  }
-  if (found_extension) {
-    *found_extension = *found;
-  }
-  return true;
-}
-
-static bool FindByUriWithEncryptionPreference(
-    const RtpHeaderExtensions& extensions,
-    absl::string_view uri_to_match,
-    bool encryption_preference,
-    webrtc::RtpExtension* found_extension) {
-  const webrtc::RtpExtension* unencrypted_extension = nullptr;
-  for (const webrtc::RtpExtension& extension : extensions) {
-    // We assume that all URIs are given in a canonical format.
-    if (extension.uri == uri_to_match) {
-      if (!encryption_preference || extension.encrypt) {
-        if (found_extension) {
-          *found_extension = extension;
-        }
-        return true;
-      }
-      unencrypted_extension = &extension;
-    }
-  }
-  if (unencrypted_extension) {
-    if (found_extension) {
-      *found_extension = *unencrypted_extension;
-    }
-    return true;
-  }
-  return false;
-}
-
-// Adds all extensions from |reference_extensions| to |offered_extensions| that
-// don't already exist in |offered_extensions| and ensure the IDs don't
-// collide. If an extension is added, it's also added to |regular_extensions| or
-// |encrypted_extensions|, and if the extension is in |regular_extensions| or
-// |encrypted_extensions|, its ID is marked as used in |used_ids|.
-// |offered_extensions| is for either audio or video while |regular_extensions|
-// and |encrypted_extensions| are used for both audio and video. There could be
+// Adds all extensions from `reference_extensions` to `offered_extensions` that
+// don't already exist in `offered_extensions` and ensure the IDs don't
+// collide. If an extension is added, it's also added to `regular_extensions` or
+// `encrypted_extensions`, and if the extension is in `regular_extensions` or
+// `encrypted_extensions`, its ID is marked as used in `used_ids`.
+// `offered_extensions` is for either audio or video while `regular_extensions`
+// and `encrypted_extensions` are used for both audio and video. There could be
 // overlap between audio extensions and video extensions.
-static void MergeRtpHdrExts(const RtpHeaderExtensions& reference_extensions,
-                            RtpHeaderExtensions* offered_extensions,
-                            RtpHeaderExtensions* regular_extensions,
-                            RtpHeaderExtensions* encrypted_extensions,
-                            UsedRtpHeaderExtensionIds* used_ids) {
+void MergeRtpHdrExts(const RtpHeaderExtensions& reference_extensions,
+                     RtpHeaderExtensions* offered_extensions,
+                     RtpHeaderExtensions* regular_extensions,
+                     RtpHeaderExtensions* encrypted_extensions,
+                     UsedRtpHeaderExtensionIds* used_ids) {
   for (auto reference_extension : reference_extensions) {
-    if (!FindByUriAndEncryption(*offered_extensions, reference_extension,
-                                nullptr)) {
-      webrtc::RtpExtension existing;
+    if (!webrtc::RtpExtension::FindHeaderExtensionByUriAndEncryption(
+            *offered_extensions, reference_extension.uri,
+            reference_extension.encrypt)) {
       if (reference_extension.encrypt) {
-        if (FindByUriAndEncryption(*encrypted_extensions, reference_extension,
-                                   &existing)) {
-          offered_extensions->push_back(existing);
+        const webrtc::RtpExtension* existing =
+            webrtc::RtpExtension::FindHeaderExtensionByUriAndEncryption(
+                *encrypted_extensions, reference_extension.uri,
+                reference_extension.encrypt);
+        if (existing) {
+          offered_extensions->push_back(*existing);
         } else {
           used_ids->FindAndSetIdUsed(&reference_extension);
           encrypted_extensions->push_back(reference_extension);
           offered_extensions->push_back(reference_extension);
         }
       } else {
-        if (FindByUriAndEncryption(*regular_extensions, reference_extension,
-                                   &existing)) {
-          offered_extensions->push_back(existing);
+        const webrtc::RtpExtension* existing =
+            webrtc::RtpExtension::FindHeaderExtensionByUriAndEncryption(
+                *regular_extensions, reference_extension.uri,
+                reference_extension.encrypt);
+        if (existing) {
+          offered_extensions->push_back(*existing);
         } else {
           used_ids->FindAndSetIdUsed(&reference_extension);
           regular_extensions->push_back(reference_extension);
@@ -1091,53 +892,85 @@ static void MergeRtpHdrExts(const RtpHeaderExtensions& reference_extensions,
   }
 }
 
-static void AddEncryptedVersionsOfHdrExts(RtpHeaderExtensions* extensions,
-                                          RtpHeaderExtensions* all_extensions,
-                                          UsedRtpHeaderExtensionIds* used_ids) {
-  RtpHeaderExtensions encrypted_extensions;
-  for (const webrtc::RtpExtension& extension : *extensions) {
-    webrtc::RtpExtension existing;
-    // Don't add encrypted extensions again that were already included in a
-    // previous offer or regular extensions that are also included as encrypted
-    // extensions.
-    if (extension.encrypt ||
-        !webrtc::RtpExtension::IsEncryptionSupported(extension.uri) ||
-        (FindByUriWithEncryptionPreference(*extensions, extension.uri, true,
-                                           &existing) &&
-         existing.encrypt)) {
+void AddEncryptedVersionsOfHdrExts(RtpHeaderExtensions* offered_extensions,
+                                   RtpHeaderExtensions* encrypted_extensions,
+                                   UsedRtpHeaderExtensionIds* used_ids) {
+  RtpHeaderExtensions encrypted_extensions_to_add;
+  for (const auto& extension : *offered_extensions) {
+    // Skip existing encrypted offered extension
+    if (extension.encrypt) {
       continue;
     }
 
-    if (FindByUri(*all_extensions, extension, &existing)) {
-      encrypted_extensions.push_back(existing);
-    } else {
-      webrtc::RtpExtension encrypted(extension);
-      encrypted.encrypt = true;
-      used_ids->FindAndSetIdUsed(&encrypted);
-      all_extensions->push_back(encrypted);
-      encrypted_extensions.push_back(encrypted);
+    // Skip if we cannot encrypt the extension
+    if (!webrtc::RtpExtension::IsEncryptionSupported(extension.uri)) {
+      continue;
     }
+
+    // Skip if an encrypted extension with that URI already exists in the
+    // offered extensions.
+    const bool have_encrypted_extension =
+        webrtc::RtpExtension::FindHeaderExtensionByUriAndEncryption(
+            *offered_extensions, extension.uri, true);
+    if (have_encrypted_extension) {
+      continue;
+    }
+
+    // Determine if a shared encrypted extension with that URI already exists.
+    const webrtc::RtpExtension* shared_encrypted_extension =
+        webrtc::RtpExtension::FindHeaderExtensionByUriAndEncryption(
+            *encrypted_extensions, extension.uri, true);
+    if (shared_encrypted_extension) {
+      // Re-use the shared encrypted extension
+      encrypted_extensions_to_add.push_back(*shared_encrypted_extension);
+      continue;
+    }
+
+    // None exists. Create a new shared encrypted extension from the
+    // non-encrypted one.
+    webrtc::RtpExtension new_encrypted_extension(extension);
+    new_encrypted_extension.encrypt = true;
+    used_ids->FindAndSetIdUsed(&new_encrypted_extension);
+    encrypted_extensions->push_back(new_encrypted_extension);
+    encrypted_extensions_to_add.push_back(new_encrypted_extension);
   }
-  extensions->insert(extensions->end(), encrypted_extensions.begin(),
-                     encrypted_extensions.end());
+
+  // Append the additional encrypted extensions to be offered
+  offered_extensions->insert(offered_extensions->end(),
+                             encrypted_extensions_to_add.begin(),
+                             encrypted_extensions_to_add.end());
 }
 
-static void NegotiateRtpHeaderExtensions(
-    const RtpHeaderExtensions& local_extensions,
-    const RtpHeaderExtensions& offered_extensions,
-    bool enable_encrypted_rtp_header_extensions,
-    RtpHeaderExtensions* negotiated_extensions) {
-  // TransportSequenceNumberV2 is not offered by default. The special logic for
-  // the TransportSequenceNumber extensions works as follows:
-  // Offer       Answer
-  // V1          V1 if in local_extensions.
-  // V1 and V2   V2 regardless of local_extensions.
-  // V2          V2 regardless of local_extensions.
-  const webrtc::RtpExtension* transport_sequence_number_v2_offer =
-      webrtc::RtpExtension::FindHeaderExtensionByUri(
-          offered_extensions,
-          webrtc::RtpExtension::kTransportSequenceNumberV2Uri);
+// Mostly identical to RtpExtension::FindHeaderExtensionByUri but discards any
+// encrypted extensions that this implementation cannot encrypt.
+const webrtc::RtpExtension* FindHeaderExtensionByUriDiscardUnsupported(
+    const std::vector<webrtc::RtpExtension>& extensions,
+    absl::string_view uri,
+    webrtc::RtpExtension::Filter filter) {
+  // Note: While it's technically possible to decrypt extensions that we don't
+  // encrypt, the symmetric API of libsrtp does not allow us to supply
+  // different IDs for encryption/decryption of header extensions depending on
+  // whether the packet is inbound or outbound. Thereby, we are limited to
+  // what we can send in encrypted form.
+  if (!webrtc::RtpExtension::IsEncryptionSupported(uri)) {
+    // If there's no encryption support and we only want encrypted extensions,
+    // there's no point in continuing the search here.
+    if (filter == webrtc::RtpExtension::kRequireEncryptedExtension) {
+      return nullptr;
+    }
 
+    // Instruct to only return non-encrypted extensions
+    filter = webrtc::RtpExtension::Filter::kDiscardEncryptedExtension;
+  }
+
+  return webrtc::RtpExtension::FindHeaderExtensionByUri(extensions, uri,
+                                                        filter);
+}
+
+void NegotiateRtpHeaderExtensions(const RtpHeaderExtensions& local_extensions,
+                                  const RtpHeaderExtensions& offered_extensions,
+                                  webrtc::RtpExtension::Filter filter,
+                                  RtpHeaderExtensions* negotiated_extensions) {
   bool frame_descriptor_in_local = false;
   bool dependency_descriptor_in_local = false;
   bool abs_capture_time_in_local = false;
@@ -1149,100 +982,84 @@ static void NegotiateRtpHeaderExtensions(
       dependency_descriptor_in_local = true;
     else if (ours.uri == webrtc::RtpExtension::kAbsoluteCaptureTimeUri)
       abs_capture_time_in_local = true;
-    webrtc::RtpExtension theirs;
-    if (FindByUriWithEncryptionPreference(
-            offered_extensions, ours.uri,
-            enable_encrypted_rtp_header_extensions, &theirs)) {
-      if (transport_sequence_number_v2_offer &&
-          ours.uri == webrtc::RtpExtension::kTransportSequenceNumberUri) {
-        // Don't respond to
-        // http://www.ietf.org/id/draft-holmer-rmcat-transport-wide-cc-extensions-01
-        // if we get an offer including
-        // http://www.webrtc.org/experiments/rtp-hdrext/transport-wide-cc-02
-        continue;
-      } else {
-        // We respond with their RTP header extension id.
-        negotiated_extensions->push_back(theirs);
-      }
-    }
-  }
 
-  if (transport_sequence_number_v2_offer) {
-    // Respond that we support kTransportSequenceNumberV2Uri.
-    negotiated_extensions->push_back(*transport_sequence_number_v2_offer);
+    const webrtc::RtpExtension* theirs =
+        FindHeaderExtensionByUriDiscardUnsupported(offered_extensions, ours.uri,
+                                                   filter);
+    if (theirs) {
+      // We respond with their RTP header extension id.
+      negotiated_extensions->push_back(*theirs);
+    }
   }
 
   // Frame descriptors support. If the extension is not present locally, but is
   // in the offer, we add it to the list.
-  webrtc::RtpExtension theirs;
-  if (!dependency_descriptor_in_local &&
-      FindByUriWithEncryptionPreference(
-          offered_extensions, webrtc::RtpExtension::kDependencyDescriptorUri,
-          enable_encrypted_rtp_header_extensions, &theirs)) {
-    negotiated_extensions->push_back(theirs);
+  if (!dependency_descriptor_in_local) {
+    const webrtc::RtpExtension* theirs =
+        FindHeaderExtensionByUriDiscardUnsupported(
+            offered_extensions, webrtc::RtpExtension::kDependencyDescriptorUri,
+            filter);
+    if (theirs) {
+      negotiated_extensions->push_back(*theirs);
+    }
   }
-  if (!frame_descriptor_in_local &&
-      FindByUriWithEncryptionPreference(
-          offered_extensions,
-          webrtc::RtpExtension::kGenericFrameDescriptorUri00,
-          enable_encrypted_rtp_header_extensions, &theirs)) {
-    negotiated_extensions->push_back(theirs);
+  if (!frame_descriptor_in_local) {
+    const webrtc::RtpExtension* theirs =
+        FindHeaderExtensionByUriDiscardUnsupported(
+            offered_extensions,
+            webrtc::RtpExtension::kGenericFrameDescriptorUri00, filter);
+    if (theirs) {
+      negotiated_extensions->push_back(*theirs);
+    }
   }
 
   // Absolute capture time support. If the extension is not present locally, but
   // is in the offer, we add it to the list.
-  if (!abs_capture_time_in_local &&
-      FindByUriWithEncryptionPreference(
-          offered_extensions, webrtc::RtpExtension::kAbsoluteCaptureTimeUri,
-          enable_encrypted_rtp_header_extensions, &theirs)) {
-    negotiated_extensions->push_back(theirs);
+  if (!abs_capture_time_in_local) {
+    const webrtc::RtpExtension* theirs =
+        FindHeaderExtensionByUriDiscardUnsupported(
+            offered_extensions, webrtc::RtpExtension::kAbsoluteCaptureTimeUri,
+            filter);
+    if (theirs) {
+      negotiated_extensions->push_back(*theirs);
+    }
   }
 }
 
-static void StripCNCodecs(AudioCodecs* audio_codecs) {
-  audio_codecs->erase(std::remove_if(audio_codecs->begin(), audio_codecs->end(),
-                                     [](const AudioCodec& codec) {
-                                       return absl::EqualsIgnoreCase(
-                                           codec.name, kComfortNoiseCodecName);
-                                     }),
-                      audio_codecs->end());
-}
-
-template <class C>
-static bool SetCodecsInAnswer(
-    const MediaContentDescriptionImpl<C>* offer,
-    const std::vector<C>& local_codecs,
-    const MediaDescriptionOptions& media_description_options,
-    const MediaSessionOptions& session_options,
-    UniqueRandomIdGenerator* ssrc_generator,
-    StreamParamsVec* current_streams,
-    MediaContentDescriptionImpl<C>* answer) {
-  std::vector<C> negotiated_codecs;
+bool SetCodecsInAnswer(const MediaContentDescription* offer,
+                       const std::vector<Codec>& local_codecs,
+                       const MediaDescriptionOptions& media_description_options,
+                       const MediaSessionOptions& session_options,
+                       UniqueRandomIdGenerator* ssrc_generator,
+                       StreamParamsVec* current_streams,
+                       MediaContentDescription* answer,
+                       const webrtc::FieldTrialsView& field_trials) {
+  RTC_DCHECK(offer->type() == MEDIA_TYPE_AUDIO ||
+             offer->type() == MEDIA_TYPE_VIDEO);
+  std::vector<Codec> negotiated_codecs;
   NegotiateCodecs(local_codecs, offer->codecs(), &negotiated_codecs,
                   media_description_options.codec_preferences.empty());
   answer->AddCodecs(negotiated_codecs);
   answer->set_protocol(offer->protocol());
   if (!AddStreamParams(media_description_options.sender_options,
                        session_options.rtcp_cname, ssrc_generator,
-                       current_streams, answer)) {
+                       current_streams, answer, field_trials)) {
     return false;  // Something went seriously wrong.
   }
   return true;
 }
 
-// Create a media content to be answered for the given |sender_options|
+// Create a media content to be answered for the given `sender_options`
 // according to the given session_options.rtcp_mux, session_options.streams,
 // codecs, crypto, and current_streams.  If we don't currently have crypto (in
 // current_cryptos) and it is enabled (in secure_policy), crypto is created
 // (according to crypto_suites). The codecs, rtcp_mux, and crypto are all
 // negotiated with the offer. If the negotiation fails, this method returns
 // false.  The created content is added to the offer.
-static bool CreateMediaContentAnswer(
+bool CreateMediaContentAnswer(
     const MediaContentDescription* offer,
     const MediaDescriptionOptions& media_description_options,
     const MediaSessionOptions& session_options,
-    const SecurePolicy& sdes_policy,
-    const CryptoParamsVec* current_cryptos,
     const RtpHeaderExtensions& local_rtp_extensions,
     UniqueRandomIdGenerator* ssrc_generator,
     bool enable_encrypted_rtp_header_extensions,
@@ -1250,10 +1067,30 @@ static bool CreateMediaContentAnswer(
     bool bundle_enabled,
     MediaContentDescription* answer) {
   answer->set_extmap_allow_mixed_enum(offer->extmap_allow_mixed_enum());
+  const webrtc::RtpExtension::Filter extensions_filter =
+      enable_encrypted_rtp_header_extensions
+          ? webrtc::RtpExtension::Filter::kPreferEncryptedExtension
+          : webrtc::RtpExtension::Filter::kDiscardEncryptedExtension;
+
+  // Filter local extensions by capabilities and direction.
+  RtpHeaderExtensions local_rtp_extensions_to_reply_with;
+  for (auto extension_with_id : local_rtp_extensions) {
+    for (const auto& extension : media_description_options.header_extensions) {
+      if (extension_with_id.uri == extension.uri) {
+        // TODO(crbug.com/1051821): Configure the extension direction from
+        // the information in the media_description_options extension
+        // capability. For now, do not include stopped extensions.
+        // See also crbug.com/webrtc/7477 about the general lack of direction.
+        if (extension.direction != RtpTransceiverDirection::kStopped) {
+          local_rtp_extensions_to_reply_with.push_back(extension_with_id);
+        }
+      }
+    }
+  }
   RtpHeaderExtensions negotiated_rtp_extensions;
-  NegotiateRtpHeaderExtensions(
-      local_rtp_extensions, offer->rtp_header_extensions(),
-      enable_encrypted_rtp_header_extensions, &negotiated_rtp_extensions);
+  NegotiateRtpHeaderExtensions(local_rtp_extensions_to_reply_with,
+                               offer->rtp_header_extensions(),
+                               extensions_filter, &negotiated_rtp_extensions);
   answer->set_rtp_header_extensions(negotiated_rtp_extensions);
 
   answer->set_rtcp_mux(session_options.rtcp_mux_enabled && offer->rtcp_mux());
@@ -1263,21 +1100,6 @@ static bool CreateMediaContentAnswer(
 
   answer->set_remote_estimate(offer->remote_estimate());
 
-  if (sdes_policy != SEC_DISABLED) {
-    CryptoParams crypto;
-    if (SelectCrypto(offer, bundle_enabled, session_options.crypto_options,
-                     &crypto)) {
-      if (current_cryptos) {
-        FindMatchingCrypto(*current_cryptos, crypto, &crypto);
-      }
-      answer->AddCrypto(crypto);
-    }
-  }
-
-  if (answer->cryptos().empty() && sdes_policy == SEC_REQUIRED) {
-    return false;
-  }
-
   AddSimulcastToMediaDescription(media_description_options, answer);
 
   answer->set_direction(NegotiateRtpTransceiverDirection(
@@ -1286,24 +1108,22 @@ static bool CreateMediaContentAnswer(
   return true;
 }
 
-static bool IsMediaProtocolSupported(MediaType type,
-                                     const std::string& protocol,
-                                     bool secure_transport) {
+bool IsMediaProtocolSupported(MediaType type,
+                              const std::string& protocol,
+                              bool secure_transport) {
   // Since not all applications serialize and deserialize the media protocol,
-  // we will have to accept |protocol| to be empty.
+  // we will have to accept `protocol` to be empty.
   if (protocol.empty()) {
     return true;
   }
 
   if (type == MEDIA_TYPE_DATA) {
-    // Check for SCTP, but also for RTP for RTP-based data channels.
-    // TODO(pthatcher): Remove RTP once RTP-based data channels are gone.
+    // Check for SCTP
     if (secure_transport) {
       // Most likely scenarios first.
-      return IsDtlsSctp(protocol) || IsDtlsRtp(protocol) ||
-             IsPlainRtp(protocol);
+      return IsDtlsSctp(protocol);
     } else {
-      return IsPlainSctp(protocol) || IsPlainRtp(protocol);
+      return IsPlainSctp(protocol);
     }
   }
 
@@ -1317,19 +1137,16 @@ static bool IsMediaProtocolSupported(MediaType type,
   }
 }
 
-static void SetMediaProtocol(bool secure_transport,
-                             MediaContentDescription* desc) {
-  if (!desc->cryptos().empty())
-    desc->set_protocol(kMediaProtocolSavpf);
-  else if (secure_transport)
+void SetMediaProtocol(bool secure_transport, MediaContentDescription* desc) {
+  if (secure_transport)
     desc->set_protocol(kMediaProtocolDtlsSavpf);
   else
     desc->set_protocol(kMediaProtocolAvpf);
 }
 
-// Gets the TransportInfo of the given |content_name| from the
-// |current_description|. If doesn't exist, returns a new one.
-static const TransportDescription* GetTransportDescription(
+// Gets the TransportInfo of the given `content_name` from the
+// `current_description`. If doesn't exist, returns a new one.
+const TransportDescription* GetTransportDescription(
     const std::string& content_name,
     const SessionDescription* current_description) {
   const TransportDescription* desc = NULL;
@@ -1343,22 +1160,146 @@ static const TransportDescription* GetTransportDescription(
   return desc;
 }
 
-// Gets the current DTLS state from the transport description.
-static bool IsDtlsActive(const ContentInfo* content,
-                         const SessionDescription* current_description) {
-  if (!content) {
-    return false;
+webrtc::RTCErrorOr<AudioCodecs> GetNegotiatedCodecsForOffer(
+    const MediaDescriptionOptions& media_description_options,
+    const MediaSessionOptions& session_options,
+    const ContentInfo* current_content,
+    const std::vector<Codec>& codecs,
+    const std::vector<Codec>& supported_codecs) {
+  std::vector<Codec> filtered_codecs;
+  if (!media_description_options.codec_preferences.empty()) {
+    // Add the codecs from the current transceiver's codec preferences.
+    // They override any existing codecs from previous negotiations.
+    filtered_codecs = MatchCodecPreference(
+        media_description_options.codec_preferences, codecs, supported_codecs);
+  } else {
+    // Add the codecs from current content if it exists and is not rejected nor
+    // recycled.
+    if (current_content && !current_content->rejected &&
+        current_content->name == media_description_options.mid) {
+      if (!IsMediaContentOfType(current_content,
+                                media_description_options.type)) {
+        // Can happen if the remote side re-uses a MID while recycling.
+        LOG_AND_RETURN_ERROR(RTCErrorType::INTERNAL_ERROR,
+                             "Media type for content with mid='" +
+                                 current_content->name +
+                                 "' does not match previous type.");
+      }
+      const MediaContentDescription* mcd = current_content->media_description();
+      for (const Codec& codec : mcd->codecs()) {
+        if (FindMatchingCodec(mcd->codecs(), codecs, codec)) {
+          filtered_codecs.push_back(codec);
+        }
+      }
+    }
+    // Add other supported codecs.
+    for (const Codec& codec : supported_codecs) {
+      absl::optional<Codec> found_codec =
+          FindMatchingCodec(supported_codecs, codecs, codec);
+      if (found_codec &&
+          !FindMatchingCodec(supported_codecs, filtered_codecs, codec)) {
+        // Use the `found_codec` from `codecs` because it has the
+        // correctly mapped payload type.
+        // This is only done for video since we do not yet have rtx for audio.
+        if (media_description_options.type == MEDIA_TYPE_VIDEO &&
+            found_codec->GetResiliencyType() == Codec::ResiliencyType::kRtx) {
+          // For RTX we might need to adjust the apt parameter if we got a
+          // remote offer without RTX for a codec for which we support RTX.
+          auto referenced_codec =
+              GetAssociatedCodecForRtx(supported_codecs, codec);
+          RTC_DCHECK(referenced_codec);
+
+          // Find the codec we should be referencing and point to it.
+          absl::optional<Codec> changed_referenced_codec = FindMatchingCodec(
+              supported_codecs, filtered_codecs, *referenced_codec);
+          if (changed_referenced_codec) {
+            found_codec->SetParam(kCodecParamAssociatedPayloadType,
+                                  changed_referenced_codec->id);
+          }
+        }
+        filtered_codecs.push_back(*found_codec);
+      }
+    }
   }
 
-  size_t msection_index = content - &current_description->contents()[0];
-
-  if (current_description->transport_infos().size() <= msection_index) {
-    return false;
+  if (media_description_options.type == MEDIA_TYPE_AUDIO &&
+      !session_options.vad_enabled) {
+    // If application doesn't want CN codecs in offer.
+    StripCNCodecs(&filtered_codecs);
+  } else if (media_description_options.type == MEDIA_TYPE_VIDEO &&
+             session_options.raw_packetization_for_video) {
+    for (Codec& codec : filtered_codecs) {
+      if (codec.IsMediaCodec()) {
+        codec.packetization = kPacketizationParamRaw;
+      }
+    }
   }
-
-  return current_description->transport_infos()[msection_index]
-      .description.secure();
+  return filtered_codecs;
 }
+
+webrtc::RTCErrorOr<AudioCodecs> GetNegotiatedCodecsForAnswer(
+    const MediaDescriptionOptions& media_description_options,
+    const MediaSessionOptions& session_options,
+    const ContentInfo* current_content,
+    const std::vector<Codec>& codecs,
+    const std::vector<Codec>& supported_codecs) {
+  std::vector<Codec> filtered_codecs;
+
+  if (!media_description_options.codec_preferences.empty()) {
+    filtered_codecs = MatchCodecPreference(
+        media_description_options.codec_preferences, codecs, supported_codecs);
+  } else {
+    // Add the codecs from current content if it exists and is not rejected nor
+    // recycled.
+    if (current_content && !current_content->rejected &&
+        current_content->name == media_description_options.mid) {
+      if (!IsMediaContentOfType(current_content,
+                                media_description_options.type)) {
+        // Can happen if the remote side re-uses a MID while recycling.
+        LOG_AND_RETURN_ERROR(RTCErrorType::INTERNAL_ERROR,
+                             "Media type for content with mid='" +
+                                 current_content->name +
+                                 "' does not match previous type.");
+      }
+      const MediaContentDescription* mcd = current_content->media_description();
+      for (const Codec& codec : mcd->codecs()) {
+        if (FindMatchingCodec(mcd->codecs(), codecs, codec)) {
+          filtered_codecs.push_back(codec);
+        }
+      }
+    }
+    // Add other supported video codecs.
+    std::vector<Codec> other_codecs;
+    for (const Codec& codec : supported_codecs) {
+      if (FindMatchingCodec(supported_codecs, codecs, codec) &&
+          !FindMatchingCodec(supported_codecs, filtered_codecs, codec)) {
+        // We should use the local codec with local parameters and the codec id
+        // would be correctly mapped in `NegotiateCodecs`.
+        other_codecs.push_back(codec);
+      }
+    }
+
+    // Use ComputeCodecsUnion to avoid having duplicate payload IDs.
+    // This is a no-op for audio until RTX is added.
+    filtered_codecs = ComputeCodecsUnion(filtered_codecs, other_codecs);
+  }
+
+  if (media_description_options.type == MEDIA_TYPE_AUDIO &&
+      !session_options.vad_enabled) {
+    // If application doesn't want CN codecs in offer.
+    StripCNCodecs(&filtered_codecs);
+  } else if (media_description_options.type == MEDIA_TYPE_VIDEO &&
+             session_options.raw_packetization_for_video) {
+    for (Codec& codec : filtered_codecs) {
+      if (codec.IsMediaCodec()) {
+        codec.packetization = kPacketizationParamRaw;
+      }
+    }
+  }
+  return filtered_codecs;
+}
+
+}  // namespace
 
 void MediaDescriptionOptions::AddAudioSender(
     const std::string& track_id,
@@ -1405,22 +1346,19 @@ bool MediaSessionOptions::HasMediaDescription(MediaType type) const {
 }
 
 MediaSessionDescriptionFactory::MediaSessionDescriptionFactory(
-    const TransportDescriptionFactory* transport_desc_factory,
-    rtc::UniqueRandomIdGenerator* ssrc_generator)
+    cricket::MediaEngineInterface* media_engine,
+    bool rtx_enabled,
+    rtc::UniqueRandomIdGenerator* ssrc_generator,
+    const TransportDescriptionFactory* transport_desc_factory)
     : ssrc_generator_(ssrc_generator),
       transport_desc_factory_(transport_desc_factory) {
-  RTC_DCHECK(ssrc_generator_);
-}
-
-MediaSessionDescriptionFactory::MediaSessionDescriptionFactory(
-    ChannelManager* channel_manager,
-    const TransportDescriptionFactory* transport_desc_factory,
-    rtc::UniqueRandomIdGenerator* ssrc_generator)
-    : MediaSessionDescriptionFactory(transport_desc_factory, ssrc_generator) {
-  channel_manager->GetSupportedAudioSendCodecs(&audio_send_codecs_);
-  channel_manager->GetSupportedAudioReceiveCodecs(&audio_recv_codecs_);
-  channel_manager->GetSupportedVideoSendCodecs(&video_send_codecs_);
-  channel_manager->GetSupportedVideoReceiveCodecs(&video_recv_codecs_);
+  RTC_CHECK(transport_desc_factory_);
+  if (media_engine) {
+    audio_send_codecs_ = media_engine->voice().send_codecs();
+    audio_recv_codecs_ = media_engine->voice().recv_codecs();
+    video_send_codecs_ = media_engine->video().send_codecs(rtx_enabled);
+    video_recv_codecs_ = media_engine->video().recv_codecs(rtx_enabled);
+  }
   ComputeAudioCodecsIntersectionAndUnion();
   ComputeVideoCodecsIntersectionAndUnion();
 }
@@ -1467,30 +1405,26 @@ void MediaSessionDescriptionFactory::set_video_codecs(
   ComputeVideoCodecsIntersectionAndUnion();
 }
 
-static void RemoveUnifiedPlanExtensions(RtpHeaderExtensions* extensions) {
-  RTC_DCHECK(extensions);
-
-  extensions->erase(
-      std::remove_if(extensions->begin(), extensions->end(),
-                     [](auto extension) {
-                       return extension.uri == webrtc::RtpExtension::kMidUri ||
-                              extension.uri == webrtc::RtpExtension::kRidUri ||
-                              extension.uri ==
-                                  webrtc::RtpExtension::kRepairedRidUri;
-                     }),
-      extensions->end());
-}
-
 RtpHeaderExtensions
 MediaSessionDescriptionFactory::filtered_rtp_header_extensions(
     RtpHeaderExtensions extensions) const {
   if (!is_unified_plan_) {
-    RemoveUnifiedPlanExtensions(&extensions);
+    // Remove extensions only supported with unified-plan.
+    extensions.erase(
+        std::remove_if(
+            extensions.begin(), extensions.end(),
+            [](const webrtc::RtpExtension& extension) {
+              return extension.uri == webrtc::RtpExtension::kMidUri ||
+                     extension.uri == webrtc::RtpExtension::kRidUri ||
+                     extension.uri == webrtc::RtpExtension::kRepairedRidUri;
+            }),
+        extensions.end());
   }
   return extensions;
 }
 
-std::unique_ptr<SessionDescription> MediaSessionDescriptionFactory::CreateOffer(
+webrtc::RTCErrorOr<std::unique_ptr<SessionDescription>>
+MediaSessionDescriptionFactory::CreateOfferOrError(
     const MediaSessionOptions& session_options,
     const SessionDescription* current_description) const {
   // Must have options for each existing section.
@@ -1523,7 +1457,7 @@ std::unique_ptr<SessionDescription> MediaSessionDescriptionFactory::CreateOffer(
   auto offer = std::make_unique<SessionDescription>();
 
   // Iterate through the media description options, matching with existing media
-  // descriptions in |current_description|.
+  // descriptions in `current_description`.
   size_t msection_index = 0;
   for (const MediaDescriptionOptions& media_description_options :
        session_options.media_description_options) {
@@ -1532,46 +1466,38 @@ std::unique_ptr<SessionDescription> MediaSessionDescriptionFactory::CreateOffer(
         msection_index < current_description->contents().size()) {
       current_content = &current_description->contents()[msection_index];
       // Media type must match unless this media section is being recycled.
-      RTC_DCHECK(current_content->name != media_description_options.mid ||
-                 IsMediaContentOfType(current_content,
-                                      media_description_options.type));
     }
+    RTCError error;
     switch (media_description_options.type) {
       case MEDIA_TYPE_AUDIO:
-        if (!AddAudioContentForOffer(media_description_options, session_options,
-                                     current_content, current_description,
-                                     extensions_with_ids.audio,
-                                     offer_audio_codecs, &current_streams,
-                                     offer.get(), &ice_credentials)) {
-          return nullptr;
-        }
-        break;
       case MEDIA_TYPE_VIDEO:
-        if (!AddVideoContentForOffer(media_description_options, session_options,
-                                     current_content, current_description,
-                                     extensions_with_ids.video,
-                                     offer_video_codecs, &current_streams,
-                                     offer.get(), &ice_credentials)) {
-          return nullptr;
-        }
+        error = AddRtpContentForOffer(
+            media_description_options, session_options, current_content,
+            current_description,
+            media_description_options.type == MEDIA_TYPE_AUDIO
+                ? extensions_with_ids.audio
+                : extensions_with_ids.video,
+            media_description_options.type == MEDIA_TYPE_AUDIO
+                ? offer_audio_codecs
+                : offer_video_codecs,
+            &current_streams, offer.get(), &ice_credentials);
         break;
       case MEDIA_TYPE_DATA:
-        if (!AddDataContentForOffer(media_description_options, session_options,
-                                    current_content, current_description,
-                                    &current_streams, offer.get(),
-                                    &ice_credentials)) {
-          return nullptr;
-        }
+        error = AddDataContentForOffer(media_description_options,
+                                       session_options, current_content,
+                                       current_description, &current_streams,
+                                       offer.get(), &ice_credentials);
         break;
       case MEDIA_TYPE_UNSUPPORTED:
-        if (!AddUnsupportedContentForOffer(
-                media_description_options, session_options, current_content,
-                current_description, offer.get(), &ice_credentials)) {
-          return nullptr;
-        }
+        error = AddUnsupportedContentForOffer(
+            media_description_options, session_options, current_content,
+            current_description, offer.get(), &ice_credentials);
         break;
       default:
-        RTC_NOTREACHED();
+        RTC_DCHECK_NOTREACHED();
+    }
+    if (!error.ok()) {
+      return error;
     }
     ++msection_index;
   }
@@ -1594,14 +1520,9 @@ std::unique_ptr<SessionDescription> MediaSessionDescriptionFactory::CreateOffer(
     if (!offer_bundle.content_names().empty()) {
       offer->AddGroup(offer_bundle);
       if (!UpdateTransportInfoForBundle(offer_bundle, offer.get())) {
-        RTC_LOG(LS_ERROR)
-            << "CreateOffer failed to UpdateTransportInfoForBundle.";
-        return nullptr;
-      }
-      if (!UpdateCryptoParamsForBundle(offer_bundle, offer.get())) {
-        RTC_LOG(LS_ERROR)
-            << "CreateOffer failed to UpdateCryptoParamsForBundle.";
-        return nullptr;
+        LOG_AND_RETURN_ERROR(
+            RTCErrorType::INTERNAL_ERROR,
+            "CreateOffer failed to UpdateTransportInfoForBundle");
       }
     }
   }
@@ -1612,11 +1533,13 @@ std::unique_ptr<SessionDescription> MediaSessionDescriptionFactory::CreateOffer(
     // Be conservative and signal using both a=msid and a=ssrc lines. Unified
     // Plan answerers will look at a=msid and Plan B answerers will look at the
     // a=ssrc MSID line.
-    offer->set_msid_signaling(cricket::kMsidSignalingMediaSection |
+    offer->set_msid_signaling(cricket::kMsidSignalingSemantic |
+                              cricket::kMsidSignalingMediaSection |
                               cricket::kMsidSignalingSsrcAttribute);
   } else {
     // Plan B always signals MSID using a=ssrc lines.
-    offer->set_msid_signaling(cricket::kMsidSignalingSsrcAttribute);
+    offer->set_msid_signaling(cricket::kMsidSignalingSemantic |
+                              cricket::kMsidSignalingSsrcAttribute);
   }
 
   offer->set_extmap_allow_mixed(session_options.offer_extmap_allow_mixed);
@@ -1624,13 +1547,13 @@ std::unique_ptr<SessionDescription> MediaSessionDescriptionFactory::CreateOffer(
   return offer;
 }
 
-std::unique_ptr<SessionDescription>
-MediaSessionDescriptionFactory::CreateAnswer(
+webrtc::RTCErrorOr<std::unique_ptr<SessionDescription>>
+MediaSessionDescriptionFactory::CreateAnswerOrError(
     const SessionDescription* offer,
     const MediaSessionOptions& session_options,
     const SessionDescription* current_description) const {
   if (!offer) {
-    return nullptr;
+    LOG_AND_RETURN_ERROR(RTCErrorType::INTERNAL_ERROR, "Called without offer.");
   }
 
   // Must have options for exactly as many sections as in the offer.
@@ -1667,8 +1590,8 @@ MediaSessionDescriptionFactory::CreateAnswer(
   std::vector<const ContentGroup*> offer_bundles =
       offer->GetGroupsByName(GROUP_TYPE_BUNDLE);
   // There are as many answer BUNDLE groups as offer BUNDLE groups (even if
-  // rejected, we respond with an empty group). |offer_bundles|,
-  // |answer_bundles| and |bundle_transports| share the same size and indices.
+  // rejected, we respond with an empty group). `offer_bundles`,
+  // `answer_bundles` and `bundle_transports` share the same size and indices.
   std::vector<ContentGroup> answer_bundles;
   std::vector<std::unique_ptr<TransportInfo>> bundle_transports;
   answer_bundles.reserve(offer_bundles.size());
@@ -1681,7 +1604,7 @@ MediaSessionDescriptionFactory::CreateAnswer(
   answer->set_extmap_allow_mixed(offer->extmap_allow_mixed());
 
   // Iterate through the media description options, matching with existing
-  // media descriptions in |current_description|.
+  // media descriptions in `current_description`.
   size_t msection_index = 0;
   for (const MediaDescriptionOptions& media_description_options :
        session_options.media_description_options) {
@@ -1711,43 +1634,36 @@ MediaSessionDescriptionFactory::CreateAnswer(
     RtpHeaderExtensions header_extensions = RtpHeaderExtensionsFromCapabilities(
         UnstoppedRtpHeaderExtensionCapabilities(
             media_description_options.header_extensions));
+    RTCError error;
     switch (media_description_options.type) {
       case MEDIA_TYPE_AUDIO:
-        if (!AddAudioContentForAnswer(
-                media_description_options, session_options, offer_content,
-                offer, current_content, current_description, bundle_transport,
-                answer_audio_codecs, header_extensions, &current_streams,
-                answer.get(), &ice_credentials)) {
-          return nullptr;
-        }
-        break;
       case MEDIA_TYPE_VIDEO:
-        if (!AddVideoContentForAnswer(
-                media_description_options, session_options, offer_content,
-                offer, current_content, current_description, bundle_transport,
-                answer_video_codecs, header_extensions, &current_streams,
-                answer.get(), &ice_credentials)) {
-          return nullptr;
-        }
+        error = AddRtpContentForAnswer(
+            media_description_options, session_options, offer_content, offer,
+            current_content, current_description, bundle_transport,
+            media_description_options.type == MEDIA_TYPE_AUDIO
+                ? answer_audio_codecs
+                : answer_video_codecs,
+            header_extensions, &current_streams, answer.get(),
+            &ice_credentials);
         break;
       case MEDIA_TYPE_DATA:
-        if (!AddDataContentForAnswer(
-                media_description_options, session_options, offer_content,
-                offer, current_content, current_description, bundle_transport,
-                &current_streams, answer.get(), &ice_credentials)) {
-          return nullptr;
-        }
+        error = AddDataContentForAnswer(
+            media_description_options, session_options, offer_content, offer,
+            current_content, current_description, bundle_transport,
+            &current_streams, answer.get(), &ice_credentials);
         break;
       case MEDIA_TYPE_UNSUPPORTED:
-        if (!AddUnsupportedContentForAnswer(
-                media_description_options, session_options, offer_content,
-                offer, current_content, current_description, bundle_transport,
-                answer.get(), &ice_credentials)) {
-          return nullptr;
-        }
+        error = AddUnsupportedContentForAnswer(
+            media_description_options, session_options, offer_content, offer,
+            current_content, current_description, bundle_transport,
+            answer.get(), &ice_credentials);
         break;
       default:
-        RTC_NOTREACHED();
+        RTC_DCHECK_NOTREACHED();
+    }
+    if (!error.ok()) {
+      return error;
     }
     ++msection_index;
     // See if we can add the newly generated m= section to the BUNDLE group in
@@ -1755,7 +1671,7 @@ MediaSessionDescriptionFactory::CreateAnswer(
     ContentInfo& added = answer->contents().back();
     if (!added.rejected && session_options.bundle_enabled &&
         bundle_index.has_value()) {
-      // The |bundle_index| is for |media_description_options.mid|.
+      // The `bundle_index` is for `media_description_options.mid`.
       RTC_DCHECK_EQ(media_description_options.mid, added.name);
       answer_bundles[bundle_index.value()].AddContentName(added.name);
       bundle_transports[bundle_index.value()].reset(
@@ -1777,15 +1693,9 @@ MediaSessionDescriptionFactory::CreateAnswer(
         // Share the same ICE credentials and crypto params across all contents,
         // as BUNDLE requires.
         if (!UpdateTransportInfoForBundle(answer_bundle, answer.get())) {
-          RTC_LOG(LS_ERROR)
-              << "CreateAnswer failed to UpdateTransportInfoForBundle.";
-          return NULL;
-        }
-
-        if (!UpdateCryptoParamsForBundle(answer_bundle, answer.get())) {
-          RTC_LOG(LS_ERROR)
-              << "CreateAnswer failed to UpdateCryptoParamsForBundle.";
-          return NULL;
+          LOG_AND_RETURN_ERROR(
+              RTCErrorType::INTERNAL_ERROR,
+              "CreateAnswer failed to UpdateTransportInfoForBundle.");
         }
       }
     }
@@ -1796,7 +1706,16 @@ MediaSessionDescriptionFactory::CreateAnswer(
   if (is_unified_plan_) {
     // Unified Plan needs to look at what the offer included to find the most
     // compatible answer.
-    if (offer->msid_signaling() == 0) {
+    int msid_signaling = offer->msid_signaling();
+    if (msid_signaling ==
+        (cricket::kMsidSignalingSemantic | cricket::kMsidSignalingMediaSection |
+         cricket::kMsidSignalingSsrcAttribute)) {
+      // If both a=msid and a=ssrc MSID signaling methods were used, we're
+      // probably talking to a Unified Plan endpoint so respond with just
+      // a=msid.
+      answer->set_msid_signaling(cricket::kMsidSignalingSemantic |
+                                 cricket::kMsidSignalingMediaSection);
+    } else if (msid_signaling == cricket::kMsidSignalingSemantic) {
       // We end up here in one of three cases:
       // 1. An empty offer. We'll reply with an empty answer so it doesn't
       //    matter what we pick here.
@@ -1805,23 +1724,19 @@ MediaSessionDescriptionFactory::CreateAnswer(
       // 3. Media that's either sendonly or inactive from the remote endpoint.
       //    We don't have any information to say whether the endpoint is Plan B
       //    or Unified Plan, so be conservative and send both.
-      answer->set_msid_signaling(cricket::kMsidSignalingMediaSection |
+      answer->set_msid_signaling(cricket::kMsidSignalingSemantic |
+                                 cricket::kMsidSignalingMediaSection |
                                  cricket::kMsidSignalingSsrcAttribute);
-    } else if (offer->msid_signaling() ==
-               (cricket::kMsidSignalingMediaSection |
-                cricket::kMsidSignalingSsrcAttribute)) {
-      // If both a=msid and a=ssrc MSID signaling methods were used, we're
-      // probably talking to a Unified Plan endpoint so respond with just
-      // a=msid.
-      answer->set_msid_signaling(cricket::kMsidSignalingMediaSection);
     } else {
       // Otherwise, it's clear which method the offerer is using so repeat that
-      // back to them.
-      answer->set_msid_signaling(offer->msid_signaling());
+      // back to them. This includes the case where the msid-semantic line is
+      // not included.
+      answer->set_msid_signaling(msid_signaling);
     }
   } else {
     // Plan B always signals MSID using a=ssrc lines.
-    answer->set_msid_signaling(cricket::kMsidSignalingSsrcAttribute);
+    answer->set_msid_signaling(cricket::kMsidSignalingSemantic |
+                               cricket::kMsidSignalingSsrcAttribute);
   }
 
   return answer;
@@ -1904,13 +1819,11 @@ void MergeCodecsFromDescription(
     UsedPayloadTypes* used_pltypes) {
   for (const ContentInfo* content : current_active_contents) {
     if (IsMediaContentOfType(content, MEDIA_TYPE_AUDIO)) {
-      const AudioContentDescription* audio =
-          content->media_description()->as_audio();
-      MergeCodecs<AudioCodec>(audio->codecs(), audio_codecs, used_pltypes);
+      MergeCodecs(content->media_description()->codecs(), audio_codecs,
+                  used_pltypes);
     } else if (IsMediaContentOfType(content, MEDIA_TYPE_VIDEO)) {
-      const VideoContentDescription* video =
-          content->media_description()->as_video();
-      MergeCodecs<VideoCodec>(video->codecs(), video_codecs, used_pltypes);
+      MergeCodecs(content->media_description()->codecs(), video_codecs,
+                  used_pltypes);
     }
   }
 }
@@ -1926,15 +1839,15 @@ void MediaSessionDescriptionFactory::GetCodecsForOffer(
     AudioCodecs* audio_codecs,
     VideoCodecs* video_codecs) const {
   // First - get all codecs from the current description if the media type
-  // is used. Add them to |used_pltypes| so the payload type is not reused if a
+  // is used. Add them to `used_pltypes` so the payload type is not reused if a
   // new media type is added.
   UsedPayloadTypes used_pltypes;
   MergeCodecsFromDescription(current_active_contents, audio_codecs,
                              video_codecs, &used_pltypes);
 
   // Add our codecs that are not in the current description.
-  MergeCodecs<AudioCodec>(all_audio_codecs_, audio_codecs, &used_pltypes);
-  MergeCodecs<VideoCodec>(all_video_codecs_, video_codecs, &used_pltypes);
+  MergeCodecs(all_audio_codecs_, audio_codecs, &used_pltypes);
+  MergeCodecs(all_video_codecs_, video_codecs, &used_pltypes);
 }
 
 // Getting codecs for an answer involves these steps:
@@ -1950,7 +1863,7 @@ void MediaSessionDescriptionFactory::GetCodecsForAnswer(
     AudioCodecs* audio_codecs,
     VideoCodecs* video_codecs) const {
   // First - get all codecs from the current description if the media type
-  // is used. Add them to |used_pltypes| so the payload type is not reused if a
+  // is used. Add them to `used_pltypes` so the payload type is not reused if a
   // new media type is added.
   UsedPayloadTypes used_pltypes;
   MergeCodecsFromDescription(current_active_contents, audio_codecs,
@@ -1961,26 +1874,22 @@ void MediaSessionDescriptionFactory::GetCodecsForAnswer(
   VideoCodecs filtered_offered_video_codecs;
   for (const ContentInfo& content : remote_offer.contents()) {
     if (IsMediaContentOfType(&content, MEDIA_TYPE_AUDIO)) {
-      const AudioContentDescription* audio =
-          content.media_description()->as_audio();
-      for (const AudioCodec& offered_audio_codec : audio->codecs()) {
-        if (!FindMatchingCodec<AudioCodec>(audio->codecs(),
-                                           filtered_offered_audio_codecs,
-                                           offered_audio_codec, nullptr) &&
-            FindMatchingCodec<AudioCodec>(audio->codecs(), all_audio_codecs_,
-                                          offered_audio_codec, nullptr)) {
+      std::vector<Codec> offered_codecs = content.media_description()->codecs();
+      for (const Codec& offered_audio_codec : offered_codecs) {
+        if (!FindMatchingCodec(offered_codecs, filtered_offered_audio_codecs,
+                               offered_audio_codec) &&
+            FindMatchingCodec(offered_codecs, all_audio_codecs_,
+                              offered_audio_codec)) {
           filtered_offered_audio_codecs.push_back(offered_audio_codec);
         }
       }
     } else if (IsMediaContentOfType(&content, MEDIA_TYPE_VIDEO)) {
-      const VideoContentDescription* video =
-          content.media_description()->as_video();
-      for (const VideoCodec& offered_video_codec : video->codecs()) {
-        if (!FindMatchingCodec<VideoCodec>(video->codecs(),
-                                           filtered_offered_video_codecs,
-                                           offered_video_codec, nullptr) &&
-            FindMatchingCodec<VideoCodec>(video->codecs(), all_video_codecs_,
-                                          offered_video_codec, nullptr)) {
+      std::vector<Codec> offered_codecs = content.media_description()->codecs();
+      for (const Codec& offered_video_codec : offered_codecs) {
+        if (!FindMatchingCodec(offered_codecs, filtered_offered_video_codecs,
+                               offered_video_codec) &&
+            FindMatchingCodec(offered_codecs, all_video_codecs_,
+                              offered_video_codec)) {
           filtered_offered_video_codecs.push_back(offered_video_codec);
         }
       }
@@ -1988,11 +1897,9 @@ void MediaSessionDescriptionFactory::GetCodecsForAnswer(
   }
 
   // Add codecs that are not in the current description but were in
-  // |remote_offer|.
-  MergeCodecs<AudioCodec>(filtered_offered_audio_codecs, audio_codecs,
-                          &used_pltypes);
-  MergeCodecs<VideoCodec>(filtered_offered_video_codecs, video_codecs,
-                          &used_pltypes);
+  // `remote_offer`.
+  MergeCodecs(filtered_offered_audio_codecs, audio_codecs, &used_pltypes);
+  MergeCodecs(filtered_offered_video_codecs, video_codecs, &used_pltypes);
 }
 
 MediaSessionDescriptionFactory::AudioVideoRtpHeaderExtensions
@@ -2017,21 +1924,17 @@ MediaSessionDescriptionFactory::GetOfferedRtpHeaderExtensionsWithIds(
   AudioVideoRtpHeaderExtensions offered_extensions;
   // First - get all extensions from the current description if the media type
   // is used.
-  // Add them to |used_ids| so the local ids are not reused if a new media
+  // Add them to `used_ids` so the local ids are not reused if a new media
   // type is added.
   for (const ContentInfo* content : current_active_contents) {
     if (IsMediaContentOfType(content, MEDIA_TYPE_AUDIO)) {
-      const AudioContentDescription* audio =
-          content->media_description()->as_audio();
-      MergeRtpHdrExts(audio->rtp_header_extensions(), &offered_extensions.audio,
-                      &all_regular_extensions, &all_encrypted_extensions,
-                      &used_ids);
+      MergeRtpHdrExts(content->media_description()->rtp_header_extensions(),
+                      &offered_extensions.audio, &all_regular_extensions,
+                      &all_encrypted_extensions, &used_ids);
     } else if (IsMediaContentOfType(content, MEDIA_TYPE_VIDEO)) {
-      const VideoContentDescription* video =
-          content->media_description()->as_video();
-      MergeRtpHdrExts(video->rtp_header_extensions(), &offered_extensions.video,
-                      &all_regular_extensions, &all_encrypted_extensions,
-                      &used_ids);
+      MergeRtpHdrExts(content->media_description()->rtp_header_extensions(),
+                      &offered_extensions.video, &all_regular_extensions,
+                      &all_encrypted_extensions, &used_ids);
     }
   }
 
@@ -2064,14 +1967,12 @@ MediaSessionDescriptionFactory::GetOfferedRtpHeaderExtensionsWithIds(
   return offered_extensions;
 }
 
-bool MediaSessionDescriptionFactory::AddTransportOffer(
+RTCError MediaSessionDescriptionFactory::AddTransportOffer(
     const std::string& content_name,
     const TransportOptions& transport_options,
     const SessionDescription* current_desc,
     SessionDescription* offer_desc,
     IceCredentialsIterator* ice_credentials) const {
-  if (!transport_desc_factory_)
-    return false;
   const TransportDescription* current_tdesc =
       GetTransportDescription(content_name, current_desc);
   std::unique_ptr<TransportDescription> new_tdesc(
@@ -2082,7 +1983,7 @@ bool MediaSessionDescriptionFactory::AddTransportOffer(
                       << content_name;
   }
   offer_desc->AddTransportInfo(TransportInfo(content_name, *new_tdesc));
-  return true;
+  return RTCError::OK();
 }
 
 std::unique_ptr<TransportDescription>
@@ -2093,8 +1994,6 @@ MediaSessionDescriptionFactory::CreateTransportAnswer(
     const SessionDescription* current_desc,
     bool require_transport_attributes,
     IceCredentialsIterator* ice_credentials) const {
-  if (!transport_desc_factory_)
-    return NULL;
   const TransportDescription* offer_tdesc =
       GetTransportDescription(content_name, offer_desc);
   const TransportDescription* current_tdesc =
@@ -2104,208 +2003,83 @@ MediaSessionDescriptionFactory::CreateTransportAnswer(
                                                current_tdesc, ice_credentials);
 }
 
-bool MediaSessionDescriptionFactory::AddTransportAnswer(
+RTCError MediaSessionDescriptionFactory::AddTransportAnswer(
     const std::string& content_name,
     const TransportDescription& transport_desc,
     SessionDescription* answer_desc) const {
   answer_desc->AddTransportInfo(TransportInfo(content_name, transport_desc));
-  return true;
+  return RTCError::OK();
 }
 
-// |audio_codecs| = set of all possible codecs that can be used, with correct
+// `codecs` = set of all possible codecs that can be used, with correct
 // payload type mappings
 //
-// |supported_audio_codecs| = set of codecs that are supported for the direction
+// `supported_codecs` = set of codecs that are supported for the direction
 // of this m= section
+// `current_content` = current description, may be null.
+// current_content->codecs() = set of previously negotiated codecs for this m=
+// section
 //
-// acd->codecs() = set of previously negotiated codecs for this m= section
-//
-// The payload types should come from audio_codecs, but the order should come
-// from acd->codecs() and then supported_codecs, to ensure that re-offers don't
-// change existing codec priority, and that new codecs are added with the right
-// priority.
-bool MediaSessionDescriptionFactory::AddAudioContentForOffer(
+// The payload types should come from codecs, but the order should come
+// from current_content->codecs() and then supported_codecs, to ensure that
+// re-offers don't change existing codec priority, and that new codecs are added
+// with the right priority.
+RTCError MediaSessionDescriptionFactory::AddRtpContentForOffer(
     const MediaDescriptionOptions& media_description_options,
     const MediaSessionOptions& session_options,
     const ContentInfo* current_content,
     const SessionDescription* current_description,
-    const RtpHeaderExtensions& audio_rtp_extensions,
-    const AudioCodecs& audio_codecs,
+    const RtpHeaderExtensions& header_extensions,
+    const std::vector<Codec>& codecs,
     StreamParamsVec* current_streams,
-    SessionDescription* desc,
+    SessionDescription* session_description,
     IceCredentialsIterator* ice_credentials) const {
-  // Filter audio_codecs (which includes all codecs, with correctly remapped
-  // payload types) based on transceiver direction.
-  const AudioCodecs& supported_audio_codecs =
-      GetAudioCodecsForOffer(media_description_options.direction);
+  RTC_DCHECK(media_description_options.type == MEDIA_TYPE_AUDIO ||
+             media_description_options.type == MEDIA_TYPE_VIDEO);
 
-  AudioCodecs filtered_codecs;
+  const std::vector<Codec>& supported_codecs =
+      media_description_options.type == MEDIA_TYPE_AUDIO
+          ? GetAudioCodecsForOffer(media_description_options.direction)
+          : GetVideoCodecsForOffer(media_description_options.direction);
+  webrtc::RTCErrorOr<std::vector<Codec>> error_or_filtered_codecs =
+      GetNegotiatedCodecsForOffer(media_description_options, session_options,
+                                  current_content, codecs, supported_codecs);
+  if (!error_or_filtered_codecs.ok()) {
+    return error_or_filtered_codecs.MoveError();
+  }
 
-  if (!media_description_options.codec_preferences.empty()) {
-    // Add the codecs from the current transceiver's codec preferences.
-    // They override any existing codecs from previous negotiations.
-    filtered_codecs = MatchCodecPreference(
-        media_description_options.codec_preferences, supported_audio_codecs);
+  std::unique_ptr<MediaContentDescription> content_description;
+  if (media_description_options.type == MEDIA_TYPE_AUDIO) {
+    content_description = std::make_unique<AudioContentDescription>();
   } else {
-    // Add the codecs from current content if it exists and is not rejected nor
-    // recycled.
-    if (current_content && !current_content->rejected &&
-        current_content->name == media_description_options.mid) {
-      RTC_CHECK(IsMediaContentOfType(current_content, MEDIA_TYPE_AUDIO));
-      const AudioContentDescription* acd =
-          current_content->media_description()->as_audio();
-      for (const AudioCodec& codec : acd->codecs()) {
-        if (FindMatchingCodec<AudioCodec>(acd->codecs(), audio_codecs, codec,
-                                          nullptr)) {
-          filtered_codecs.push_back(codec);
-        }
-      }
-    }
-    // Add other supported audio codecs.
-    AudioCodec found_codec;
-    for (const AudioCodec& codec : supported_audio_codecs) {
-      if (FindMatchingCodec<AudioCodec>(supported_audio_codecs, audio_codecs,
-                                        codec, &found_codec) &&
-          !FindMatchingCodec<AudioCodec>(supported_audio_codecs,
-                                         filtered_codecs, codec, nullptr)) {
-        // Use the |found_codec| from |audio_codecs| because it has the
-        // correctly mapped payload type.
-        filtered_codecs.push_back(found_codec);
-      }
-    }
-  }
-  if (!session_options.vad_enabled) {
-    // If application doesn't want CN codecs in offer.
-    StripCNCodecs(&filtered_codecs);
+    content_description = std::make_unique<VideoContentDescription>();
   }
 
-  cricket::SecurePolicy sdes_policy =
-      IsDtlsActive(current_content, current_description) ? cricket::SEC_DISABLED
-                                                         : secure();
-
-  auto audio = std::make_unique<AudioContentDescription>();
-  std::vector<std::string> crypto_suites;
-  GetSupportedAudioSdesCryptoSuiteNames(session_options.crypto_options,
-                                        &crypto_suites);
-  if (!CreateMediaContentOffer(media_description_options, session_options,
-                               filtered_codecs, sdes_policy,
-                               GetCryptos(current_content), crypto_suites,
-                               audio_rtp_extensions, ssrc_generator_,
-                               current_streams, audio.get())) {
-    return false;
+  auto error = CreateMediaContentOffer(
+      media_description_options, session_options,
+      error_or_filtered_codecs.MoveValue(), header_extensions, ssrc_generator(),
+      current_streams, content_description.get(),
+      transport_desc_factory_->trials());
+  if (!error.ok()) {
+    return error;
   }
 
-  bool secure_transport = (transport_desc_factory_->secure() != SEC_DISABLED);
-  SetMediaProtocol(secure_transport, audio.get());
+  // Insecure transport should only occur in testing.
+  bool secure_transport = !(transport_desc_factory_->insecure());
+  SetMediaProtocol(secure_transport, content_description.get());
 
-  audio->set_direction(media_description_options.direction);
+  content_description->set_direction(media_description_options.direction);
 
-  desc->AddContent(media_description_options.mid, MediaProtocolType::kRtp,
-                   media_description_options.stopped, std::move(audio));
-  if (!AddTransportOffer(media_description_options.mid,
-                         media_description_options.transport_options,
-                         current_description, desc, ice_credentials)) {
-    return false;
-  }
-
-  return true;
+  session_description->AddContent(
+      media_description_options.mid, MediaProtocolType::kRtp,
+      media_description_options.stopped, std::move(content_description));
+  return AddTransportOffer(media_description_options.mid,
+                           media_description_options.transport_options,
+                           current_description, session_description,
+                           ice_credentials);
 }
 
-// TODO(kron): This function is very similar to AddAudioContentForOffer.
-// Refactor to reuse shared code.
-bool MediaSessionDescriptionFactory::AddVideoContentForOffer(
-    const MediaDescriptionOptions& media_description_options,
-    const MediaSessionOptions& session_options,
-    const ContentInfo* current_content,
-    const SessionDescription* current_description,
-    const RtpHeaderExtensions& video_rtp_extensions,
-    const VideoCodecs& video_codecs,
-    StreamParamsVec* current_streams,
-    SessionDescription* desc,
-    IceCredentialsIterator* ice_credentials) const {
-  // Filter video_codecs (which includes all codecs, with correctly remapped
-  // payload types) based on transceiver direction.
-  const VideoCodecs& supported_video_codecs =
-      GetVideoCodecsForOffer(media_description_options.direction);
-
-  VideoCodecs filtered_codecs;
-
-  if (!media_description_options.codec_preferences.empty()) {
-    // Add the codecs from the current transceiver's codec preferences.
-    // They override any existing codecs from previous negotiations.
-    filtered_codecs = MatchCodecPreference(
-        media_description_options.codec_preferences, supported_video_codecs);
-  } else {
-    // Add the codecs from current content if it exists and is not rejected nor
-    // recycled.
-    if (current_content && !current_content->rejected &&
-        current_content->name == media_description_options.mid) {
-      RTC_CHECK(IsMediaContentOfType(current_content, MEDIA_TYPE_VIDEO));
-      const VideoContentDescription* vcd =
-          current_content->media_description()->as_video();
-      for (const VideoCodec& codec : vcd->codecs()) {
-        if (FindMatchingCodec<VideoCodec>(vcd->codecs(), video_codecs, codec,
-                                          nullptr)) {
-          filtered_codecs.push_back(codec);
-        }
-      }
-    }
-    // Add other supported video codecs.
-    VideoCodec found_codec;
-    for (const VideoCodec& codec : supported_video_codecs) {
-      if (FindMatchingCodec<VideoCodec>(supported_video_codecs, video_codecs,
-                                        codec, &found_codec) &&
-          !FindMatchingCodec<VideoCodec>(supported_video_codecs,
-                                         filtered_codecs, codec, nullptr)) {
-        // Use the |found_codec| from |video_codecs| because it has the
-        // correctly mapped payload type.
-        filtered_codecs.push_back(found_codec);
-      }
-    }
-  }
-
-  if (session_options.raw_packetization_for_video) {
-    for (VideoCodec& codec : filtered_codecs) {
-      if (codec.GetCodecType() == VideoCodec::CODEC_VIDEO) {
-        codec.packetization = kPacketizationParamRaw;
-      }
-    }
-  }
-
-  cricket::SecurePolicy sdes_policy =
-      IsDtlsActive(current_content, current_description) ? cricket::SEC_DISABLED
-                                                         : secure();
-  auto video = std::make_unique<VideoContentDescription>();
-  std::vector<std::string> crypto_suites;
-  GetSupportedVideoSdesCryptoSuiteNames(session_options.crypto_options,
-                                        &crypto_suites);
-  if (!CreateMediaContentOffer(media_description_options, session_options,
-                               filtered_codecs, sdes_policy,
-                               GetCryptos(current_content), crypto_suites,
-                               video_rtp_extensions, ssrc_generator_,
-                               current_streams, video.get())) {
-    return false;
-  }
-
-  video->set_bandwidth(kAutoBandwidth);
-
-  bool secure_transport = (transport_desc_factory_->secure() != SEC_DISABLED);
-  SetMediaProtocol(secure_transport, video.get());
-
-  video->set_direction(media_description_options.direction);
-
-  desc->AddContent(media_description_options.mid, MediaProtocolType::kRtp,
-                   media_description_options.stopped, std::move(video));
-  if (!AddTransportOffer(media_description_options.mid,
-                         media_description_options.transport_options,
-                         current_description, desc, ice_credentials)) {
-    return false;
-  }
-
-  return true;
-}
-
-bool MediaSessionDescriptionFactory::AddDataContentForOffer(
+RTCError MediaSessionDescriptionFactory::AddDataContentForOffer(
     const MediaDescriptionOptions& media_description_options,
     const MediaSessionOptions& session_options,
     const ContentInfo* current_content,
@@ -2315,15 +2089,9 @@ bool MediaSessionDescriptionFactory::AddDataContentForOffer(
     IceCredentialsIterator* ice_credentials) const {
   auto data = std::make_unique<SctpDataContentDescription>();
 
-  bool secure_transport = (transport_desc_factory_->secure() != SEC_DISABLED);
+  bool secure_transport = true;
 
-  cricket::SecurePolicy sdes_policy =
-      IsDtlsActive(current_content, current_description) ? cricket::SEC_DISABLED
-                                                         : secure();
   std::vector<std::string> crypto_suites;
-  // SDES doesn't make sense for SCTP, so we disable it, and we only
-  // get SDES crypto suites for RTP-based data channels.
-  sdes_policy = cricket::SEC_DISABLED;
   // Unlike SetMediaProtocol below, we need to set the protocol
   // before we call CreateMediaContentOffer.  Otherwise,
   // CreateMediaContentOffer won't know this is SCTP and will
@@ -2333,24 +2101,21 @@ bool MediaSessionDescriptionFactory::AddDataContentForOffer(
   data->set_use_sctpmap(session_options.use_obsolete_sctp_sdp);
   data->set_max_message_size(kSctpSendBufferSize);
 
-  if (!CreateContentOffer(media_description_options, session_options,
-                          sdes_policy, GetCryptos(current_content),
-                          crypto_suites, RtpHeaderExtensions(), ssrc_generator_,
-                          current_streams, data.get())) {
-    return false;
+  auto error = CreateContentOffer(media_description_options, session_options,
+                                  RtpHeaderExtensions(), ssrc_generator(),
+                                  current_streams, data.get());
+  if (!error.ok()) {
+    return error;
   }
 
   desc->AddContent(media_description_options.mid, MediaProtocolType::kSctp,
                    media_description_options.stopped, std::move(data));
-  if (!AddTransportOffer(media_description_options.mid,
-                         media_description_options.transport_options,
-                         current_description, desc, ice_credentials)) {
-    return false;
-  }
-  return true;
+  return AddTransportOffer(media_description_options.mid,
+                           media_description_options.transport_options,
+                           current_description, desc, ice_credentials);
 }
 
-bool MediaSessionDescriptionFactory::AddUnsupportedContentForOffer(
+RTCError MediaSessionDescriptionFactory::AddUnsupportedContentForOffer(
     const MediaDescriptionOptions& media_description_options,
     const MediaSessionOptions& session_options,
     const ContentInfo* current_content,
@@ -2367,27 +2132,24 @@ bool MediaSessionDescriptionFactory::AddUnsupportedContentForOffer(
   desc->AddContent(media_description_options.mid, MediaProtocolType::kOther,
                    /*rejected=*/true, std::move(unsupported));
 
-  if (!AddTransportOffer(media_description_options.mid,
-                         media_description_options.transport_options,
-                         current_description, desc, ice_credentials)) {
-    return false;
-  }
-  return true;
+  return AddTransportOffer(media_description_options.mid,
+                           media_description_options.transport_options,
+                           current_description, desc, ice_credentials);
 }
 
-// |audio_codecs| = set of all possible codecs that can be used, with correct
+// `codecs` = set of all possible codecs that can be used, with correct
 // payload type mappings
 //
-// |supported_audio_codecs| = set of codecs that are supported for the direction
+// `supported_codecs` = set of codecs that are supported for the direction
 // of this m= section
 //
-// acd->codecs() = set of previously negotiated codecs for this m= section
+// mcd->codecs() = set of previously negotiated codecs for this m= section
 //
-// The payload types should come from audio_codecs, but the order should come
-// from acd->codecs() and then supported_codecs, to ensure that re-offers don't
+// The payload types should come from codecs, but the order should come
+// from mcd->codecs() and then supported_codecs, to ensure that re-offers don't
 // change existing codec priority, and that new codecs are added with the right
 // priority.
-bool MediaSessionDescriptionFactory::AddAudioContentForAnswer(
+RTCError MediaSessionDescriptionFactory::AddRtpContentForAnswer(
     const MediaDescriptionOptions& media_description_options,
     const MediaSessionOptions& session_options,
     const ContentInfo* offer_content,
@@ -2395,231 +2157,108 @@ bool MediaSessionDescriptionFactory::AddAudioContentForAnswer(
     const ContentInfo* current_content,
     const SessionDescription* current_description,
     const TransportInfo* bundle_transport,
-    const AudioCodecs& audio_codecs,
-    const RtpHeaderExtensions& default_audio_rtp_header_extensions,
+    const std::vector<Codec>& codecs,
+    const RtpHeaderExtensions& header_extensions,
     StreamParamsVec* current_streams,
     SessionDescription* answer,
     IceCredentialsIterator* ice_credentials) const {
-  RTC_CHECK(IsMediaContentOfType(offer_content, MEDIA_TYPE_AUDIO));
-  const AudioContentDescription* offer_audio_description =
-      offer_content->media_description()->as_audio();
-
-  std::unique_ptr<TransportDescription> audio_transport = CreateTransportAnswer(
+  RTC_DCHECK(media_description_options.type == MEDIA_TYPE_AUDIO ||
+             media_description_options.type == MEDIA_TYPE_VIDEO);
+  RTC_CHECK(
+      IsMediaContentOfType(offer_content, media_description_options.type));
+  const RtpMediaContentDescription* offer_content_description;
+  if (media_description_options.type == MEDIA_TYPE_AUDIO) {
+    offer_content_description = offer_content->media_description()->as_audio();
+  } else {
+    offer_content_description = offer_content->media_description()->as_video();
+  }
+  // If this section is part of a bundle, bundle_transport is non-null.
+  // Then require_transport_attributes is false - we can handle sections
+  // without the DTLS parameters. For rejected m-lines it does not matter.
+  // Otherwise, transport attributes MUST be present.
+  std::unique_ptr<TransportDescription> transport = CreateTransportAnswer(
       media_description_options.mid, offer_description,
       media_description_options.transport_options, current_description,
-      bundle_transport != nullptr, ice_credentials);
-  if (!audio_transport) {
-    return false;
+      !offer_content->rejected && bundle_transport == nullptr, ice_credentials);
+  if (!transport) {
+    LOG_AND_RETURN_ERROR(
+        RTCErrorType::INTERNAL_ERROR,
+        "Failed to create transport answer, transport is missing");
   }
 
   // Pick codecs based on the requested communications direction in the offer
   // and the selected direction in the answer.
   // Note these will be filtered one final time in CreateMediaContentAnswer.
   auto wants_rtd = media_description_options.direction;
-  auto offer_rtd = offer_audio_description->direction();
+  auto offer_rtd = offer_content_description->direction();
   auto answer_rtd = NegotiateRtpTransceiverDirection(offer_rtd, wants_rtd);
-  AudioCodecs supported_audio_codecs =
-      GetAudioCodecsForAnswer(offer_rtd, answer_rtd);
 
-  AudioCodecs filtered_codecs;
+  const std::vector<Codec>& supported_codecs =
+      media_description_options.type == MEDIA_TYPE_AUDIO
+          ? GetAudioCodecsForAnswer(offer_rtd, answer_rtd)
+          : GetVideoCodecsForAnswer(offer_rtd, answer_rtd);
+  webrtc::RTCErrorOr<std::vector<Codec>> error_or_filtered_codecs =
+      GetNegotiatedCodecsForAnswer(media_description_options, session_options,
+                                   current_content, codecs, supported_codecs);
+  if (!error_or_filtered_codecs.ok()) {
+    return error_or_filtered_codecs.MoveError();
+  }
+  auto filtered_codecs = error_or_filtered_codecs.MoveValue();
 
-  if (!media_description_options.codec_preferences.empty()) {
-    filtered_codecs = MatchCodecPreference(
-        media_description_options.codec_preferences, supported_audio_codecs);
-  } else {
-    // Add the codecs from current content if it exists and is not rejected nor
-    // recycled.
-    if (current_content && !current_content->rejected &&
-        current_content->name == media_description_options.mid) {
-      RTC_CHECK(IsMediaContentOfType(current_content, MEDIA_TYPE_AUDIO));
-      const AudioContentDescription* acd =
-          current_content->media_description()->as_audio();
-      for (const AudioCodec& codec : acd->codecs()) {
-        if (FindMatchingCodec<AudioCodec>(acd->codecs(), audio_codecs, codec,
-                                          nullptr)) {
-          filtered_codecs.push_back(codec);
-        }
-      }
-    }
-    // Add other supported audio codecs.
-    for (const AudioCodec& codec : supported_audio_codecs) {
-      if (FindMatchingCodec<AudioCodec>(supported_audio_codecs, audio_codecs,
-                                        codec, nullptr) &&
-          !FindMatchingCodec<AudioCodec>(supported_audio_codecs,
-                                         filtered_codecs, codec, nullptr)) {
-        // We should use the local codec with local parameters and the codec id
-        // would be correctly mapped in |NegotiateCodecs|.
-        filtered_codecs.push_back(codec);
-      }
-    }
-  }
-  if (!session_options.vad_enabled) {
-    // If application doesn't want CN codecs in answer.
-    StripCNCodecs(&filtered_codecs);
-  }
+  // Determine if we have media codecs in common.
+  bool has_common_media_codecs =
+      std::find_if(filtered_codecs.begin(), filtered_codecs.end(),
+                   [](const Codec& c) {
+                     return c.IsMediaCodec() && !IsComfortNoiseCodec(c);
+                   }) != filtered_codecs.end();
 
   bool bundle_enabled = offer_description->HasGroup(GROUP_TYPE_BUNDLE) &&
                         session_options.bundle_enabled;
-  auto audio_answer = std::make_unique<AudioContentDescription>();
-  // Do not require or create SDES cryptos if DTLS is used.
-  cricket::SecurePolicy sdes_policy =
-      audio_transport->secure() ? cricket::SEC_DISABLED : secure();
-  if (!SetCodecsInAnswer(offer_audio_description, filtered_codecs,
-                         media_description_options, session_options,
-                         ssrc_generator_, current_streams,
-                         audio_answer.get())) {
-    return false;
+  std::unique_ptr<MediaContentDescription> answer_content;
+  if (media_description_options.type == MEDIA_TYPE_AUDIO) {
+    answer_content = std::make_unique<AudioContentDescription>();
+  } else {
+    answer_content = std::make_unique<VideoContentDescription>();
+  }
+  if (!SetCodecsInAnswer(
+          offer_content_description, filtered_codecs, media_description_options,
+          session_options, ssrc_generator(), current_streams,
+          answer_content.get(), transport_desc_factory_->trials())) {
+    LOG_AND_RETURN_ERROR(RTCErrorType::INTERNAL_ERROR,
+                         "Failed to set codecs in answer");
   }
   if (!CreateMediaContentAnswer(
-          offer_audio_description, media_description_options, session_options,
-          sdes_policy, GetCryptos(current_content),
-          filtered_rtp_header_extensions(default_audio_rtp_header_extensions),
-          ssrc_generator_, enable_encrypted_rtp_header_extensions_,
-          current_streams, bundle_enabled, audio_answer.get())) {
-    return false;  // Fails the session setup.
+          offer_content_description, media_description_options, session_options,
+          filtered_rtp_header_extensions(header_extensions), ssrc_generator(),
+          enable_encrypted_rtp_header_extensions_, current_streams,
+          bundle_enabled, answer_content.get())) {
+    LOG_AND_RETURN_ERROR(RTCErrorType::INTERNAL_ERROR,
+                         "Failed to create answer");
   }
 
   bool secure = bundle_transport ? bundle_transport->description.secure()
-                                 : audio_transport->secure();
+                                 : transport->secure();
   bool rejected = media_description_options.stopped ||
-                  offer_content->rejected ||
+                  offer_content->rejected || !has_common_media_codecs ||
                   !IsMediaProtocolSupported(MEDIA_TYPE_AUDIO,
-                                            audio_answer->protocol(), secure);
-  if (!AddTransportAnswer(media_description_options.mid,
-                          *(audio_transport.get()), answer)) {
-    return false;
-  }
-
+                                            answer_content->protocol(), secure);
   if (rejected) {
-    RTC_LOG(LS_INFO) << "Audio m= section '" << media_description_options.mid
+    RTC_LOG(LS_INFO) << "m= section '" << media_description_options.mid
                      << "' being rejected in answer.";
   }
 
+  auto error = AddTransportAnswer(media_description_options.mid,
+                                  *(transport.get()), answer);
+  if (!error.ok()) {
+    return error;
+  }
+
   answer->AddContent(media_description_options.mid, offer_content->type,
-                     rejected, std::move(audio_answer));
-  return true;
+                     rejected, std::move(answer_content));
+  return RTCError::OK();
 }
 
-// TODO(kron): This function is very similar to AddAudioContentForAnswer.
-// Refactor to reuse shared code.
-bool MediaSessionDescriptionFactory::AddVideoContentForAnswer(
-    const MediaDescriptionOptions& media_description_options,
-    const MediaSessionOptions& session_options,
-    const ContentInfo* offer_content,
-    const SessionDescription* offer_description,
-    const ContentInfo* current_content,
-    const SessionDescription* current_description,
-    const TransportInfo* bundle_transport,
-    const VideoCodecs& video_codecs,
-    const RtpHeaderExtensions& default_video_rtp_header_extensions,
-    StreamParamsVec* current_streams,
-    SessionDescription* answer,
-    IceCredentialsIterator* ice_credentials) const {
-  RTC_CHECK(IsMediaContentOfType(offer_content, MEDIA_TYPE_VIDEO));
-  const VideoContentDescription* offer_video_description =
-      offer_content->media_description()->as_video();
-
-  std::unique_ptr<TransportDescription> video_transport = CreateTransportAnswer(
-      media_description_options.mid, offer_description,
-      media_description_options.transport_options, current_description,
-      bundle_transport != nullptr, ice_credentials);
-  if (!video_transport) {
-    return false;
-  }
-
-  // Pick codecs based on the requested communications direction in the offer
-  // and the selected direction in the answer.
-  // Note these will be filtered one final time in CreateMediaContentAnswer.
-  auto wants_rtd = media_description_options.direction;
-  auto offer_rtd = offer_video_description->direction();
-  auto answer_rtd = NegotiateRtpTransceiverDirection(offer_rtd, wants_rtd);
-  VideoCodecs supported_video_codecs =
-      GetVideoCodecsForAnswer(offer_rtd, answer_rtd);
-
-  VideoCodecs filtered_codecs;
-
-  if (!media_description_options.codec_preferences.empty()) {
-    filtered_codecs = MatchCodecPreference(
-        media_description_options.codec_preferences, supported_video_codecs);
-  } else {
-    // Add the codecs from current content if it exists and is not rejected nor
-    // recycled.
-    if (current_content && !current_content->rejected &&
-        current_content->name == media_description_options.mid) {
-      RTC_CHECK(IsMediaContentOfType(current_content, MEDIA_TYPE_VIDEO));
-      const VideoContentDescription* vcd =
-          current_content->media_description()->as_video();
-      for (const VideoCodec& codec : vcd->codecs()) {
-        if (FindMatchingCodec<VideoCodec>(vcd->codecs(), video_codecs, codec,
-                                          nullptr)) {
-          filtered_codecs.push_back(codec);
-        }
-      }
-    }
-    // Add other supported video codecs.
-    for (const VideoCodec& codec : supported_video_codecs) {
-      if (FindMatchingCodec<VideoCodec>(supported_video_codecs, video_codecs,
-                                        codec, nullptr) &&
-          !FindMatchingCodec<VideoCodec>(supported_video_codecs,
-                                         filtered_codecs, codec, nullptr)) {
-        // We should use the local codec with local parameters and the codec id
-        // would be correctly mapped in |NegotiateCodecs|.
-        filtered_codecs.push_back(codec);
-      }
-    }
-  }
-
-  if (session_options.raw_packetization_for_video) {
-    for (VideoCodec& codec : filtered_codecs) {
-      if (codec.GetCodecType() == VideoCodec::CODEC_VIDEO) {
-        codec.packetization = kPacketizationParamRaw;
-      }
-    }
-  }
-
-  bool bundle_enabled = offer_description->HasGroup(GROUP_TYPE_BUNDLE) &&
-                        session_options.bundle_enabled;
-  auto video_answer = std::make_unique<VideoContentDescription>();
-  // Do not require or create SDES cryptos if DTLS is used.
-  cricket::SecurePolicy sdes_policy =
-      video_transport->secure() ? cricket::SEC_DISABLED : secure();
-  if (!SetCodecsInAnswer(offer_video_description, filtered_codecs,
-                         media_description_options, session_options,
-                         ssrc_generator_, current_streams,
-                         video_answer.get())) {
-    return false;
-  }
-  if (!CreateMediaContentAnswer(
-          offer_video_description, media_description_options, session_options,
-          sdes_policy, GetCryptos(current_content),
-          filtered_rtp_header_extensions(default_video_rtp_header_extensions),
-          ssrc_generator_, enable_encrypted_rtp_header_extensions_,
-          current_streams, bundle_enabled, video_answer.get())) {
-    return false;  // Failed the sessin setup.
-  }
-  bool secure = bundle_transport ? bundle_transport->description.secure()
-                                 : video_transport->secure();
-  bool rejected = media_description_options.stopped ||
-                  offer_content->rejected ||
-                  !IsMediaProtocolSupported(MEDIA_TYPE_VIDEO,
-                                            video_answer->protocol(), secure);
-  if (!AddTransportAnswer(media_description_options.mid,
-                          *(video_transport.get()), answer)) {
-    return false;
-  }
-
-  if (!rejected) {
-    video_answer->set_bandwidth(kAutoBandwidth);
-  } else {
-    RTC_LOG(LS_INFO) << "Video m= section '" << media_description_options.mid
-                     << "' being rejected in answer.";
-  }
-  answer->AddContent(media_description_options.mid, offer_content->type,
-                     rejected, std::move(video_answer));
-  return true;
-}
-
-bool MediaSessionDescriptionFactory::AddDataContentForAnswer(
+RTCError MediaSessionDescriptionFactory::AddDataContentForAnswer(
     const MediaDescriptionOptions& media_description_options,
     const MediaSessionOptions& session_options,
     const ContentInfo* offer_content,
@@ -2633,14 +2272,13 @@ bool MediaSessionDescriptionFactory::AddDataContentForAnswer(
   std::unique_ptr<TransportDescription> data_transport = CreateTransportAnswer(
       media_description_options.mid, offer_description,
       media_description_options.transport_options, current_description,
-      bundle_transport != nullptr, ice_credentials);
+      !offer_content->rejected && bundle_transport == nullptr, ice_credentials);
   if (!data_transport) {
-    return false;
+    LOG_AND_RETURN_ERROR(
+        RTCErrorType::INTERNAL_ERROR,
+        "Failed to create transport answer, data transport is missing");
   }
 
-  // Do not require or create SDES cryptos if DTLS is used.
-  cricket::SecurePolicy sdes_policy =
-      data_transport->secure() ? cricket::SEC_DISABLED : secure();
   bool bundle_enabled = offer_description->HasGroup(GROUP_TYPE_BUNDLE) &&
                         session_options.bundle_enabled;
   RTC_CHECK(IsMediaContentOfType(offer_content, MEDIA_TYPE_DATA));
@@ -2665,16 +2303,17 @@ bool MediaSessionDescriptionFactory::AddDataContentForAnswer(
     }
     if (!CreateMediaContentAnswer(
             offer_data_description, media_description_options, session_options,
-            sdes_policy, GetCryptos(current_content), RtpHeaderExtensions(),
-            ssrc_generator_, enable_encrypted_rtp_header_extensions_,
-            current_streams, bundle_enabled, data_answer.get())) {
-      return false;  // Fails the session setup.
+            RtpHeaderExtensions(), ssrc_generator(),
+            enable_encrypted_rtp_header_extensions_, current_streams,
+            bundle_enabled, data_answer.get())) {
+      LOG_AND_RETURN_ERROR(RTCErrorType::INTERNAL_ERROR,
+                           "Failed to create answer");
     }
     // Respond with sctpmap if the offer uses sctpmap.
     bool offer_uses_sctpmap = offer_data_description->use_sctpmap();
     data_answer->as_sctp()->set_use_sctpmap(offer_uses_sctpmap);
   } else {
-    RTC_NOTREACHED() << "Non-SCTP data content found";
+    RTC_DCHECK_NOTREACHED() << "Non-SCTP data content found";
   }
 
   bool secure = bundle_transport ? bundle_transport->description.secure()
@@ -2684,17 +2323,17 @@ bool MediaSessionDescriptionFactory::AddDataContentForAnswer(
                   offer_content->rejected ||
                   !IsMediaProtocolSupported(MEDIA_TYPE_DATA,
                                             data_answer->protocol(), secure);
-  if (!AddTransportAnswer(media_description_options.mid,
-                          *(data_transport.get()), answer)) {
-    return false;
+  auto error = AddTransportAnswer(media_description_options.mid,
+                                  *(data_transport.get()), answer);
+  if (!error.ok()) {
+    return error;
   }
-
   answer->AddContent(media_description_options.mid, offer_content->type,
                      rejected, std::move(data_answer));
-  return true;
+  return RTCError::OK();
 }
 
-bool MediaSessionDescriptionFactory::AddUnsupportedContentForAnswer(
+RTCError MediaSessionDescriptionFactory::AddUnsupportedContentForAnswer(
     const MediaDescriptionOptions& media_description_options,
     const MediaSessionOptions& session_options,
     const ContentInfo* offer_content,
@@ -2705,12 +2344,15 @@ bool MediaSessionDescriptionFactory::AddUnsupportedContentForAnswer(
     SessionDescription* answer,
     IceCredentialsIterator* ice_credentials) const {
   std::unique_ptr<TransportDescription> unsupported_transport =
-      CreateTransportAnswer(media_description_options.mid, offer_description,
-                            media_description_options.transport_options,
-                            current_description, bundle_transport != nullptr,
-                            ice_credentials);
+      CreateTransportAnswer(
+          media_description_options.mid, offer_description,
+          media_description_options.transport_options, current_description,
+          !offer_content->rejected && bundle_transport == nullptr,
+          ice_credentials);
   if (!unsupported_transport) {
-    return false;
+    LOG_AND_RETURN_ERROR(
+        RTCErrorType::INTERNAL_ERROR,
+        "Failed to create transport answer, unsupported transport is missing");
   }
   RTC_CHECK(IsMediaContentOfType(offer_content, MEDIA_TYPE_UNSUPPORTED));
 
@@ -2721,31 +2363,31 @@ bool MediaSessionDescriptionFactory::AddUnsupportedContentForAnswer(
           offer_unsupported_description->media_type());
   unsupported_answer->set_protocol(offer_unsupported_description->protocol());
 
-  if (!AddTransportAnswer(media_description_options.mid,
-                          *(unsupported_transport.get()), answer)) {
-    return false;
+  auto error = AddTransportAnswer(media_description_options.mid,
+                                  *(unsupported_transport.get()), answer);
+  if (!error.ok()) {
+    return error;
   }
+
   answer->AddContent(media_description_options.mid, offer_content->type,
                      /*rejected=*/true, std::move(unsupported_answer));
-  return true;
+  return RTCError::OK();
 }
 
 void MediaSessionDescriptionFactory::ComputeAudioCodecsIntersectionAndUnion() {
   audio_sendrecv_codecs_.clear();
   all_audio_codecs_.clear();
   // Compute the audio codecs union.
-  for (const AudioCodec& send : audio_send_codecs_) {
+  for (const Codec& send : audio_send_codecs_) {
     all_audio_codecs_.push_back(send);
-    if (!FindMatchingCodec<AudioCodec>(audio_send_codecs_, audio_recv_codecs_,
-                                       send, nullptr)) {
+    if (!FindMatchingCodec(audio_send_codecs_, audio_recv_codecs_, send)) {
       // It doesn't make sense to have an RTX codec we support sending but not
       // receiving.
-      RTC_DCHECK(!IsRtxCodec(send));
+      RTC_DCHECK(send.GetResiliencyType() != Codec::ResiliencyType::kRtx);
     }
   }
-  for (const AudioCodec& recv : audio_recv_codecs_) {
-    if (!FindMatchingCodec<AudioCodec>(audio_recv_codecs_, audio_send_codecs_,
-                                       recv, nullptr)) {
+  for (const Codec& recv : audio_recv_codecs_) {
+    if (!FindMatchingCodec(audio_recv_codecs_, audio_send_codecs_, recv)) {
       all_audio_codecs_.push_back(recv);
     }
   }
@@ -2760,27 +2402,11 @@ void MediaSessionDescriptionFactory::ComputeAudioCodecsIntersectionAndUnion() {
 
 void MediaSessionDescriptionFactory::ComputeVideoCodecsIntersectionAndUnion() {
   video_sendrecv_codecs_.clear();
-  all_video_codecs_.clear();
-  // Compute the video codecs union.
-  for (const VideoCodec& send : video_send_codecs_) {
-    all_video_codecs_.push_back(send);
-    if (!FindMatchingCodec<VideoCodec>(video_send_codecs_, video_recv_codecs_,
-                                       send, nullptr)) {
-      // TODO(kron): This check is violated by the unit test:
-      // MediaSessionDescriptionFactoryTest.RtxWithoutApt
-      // Remove either the test or the check.
 
-      // It doesn't make sense to have an RTX codec we support sending but not
-      // receiving.
-      // RTC_DCHECK(!IsRtxCodec(send));
-    }
-  }
-  for (const VideoCodec& recv : video_recv_codecs_) {
-    if (!FindMatchingCodec<VideoCodec>(video_recv_codecs_, video_send_codecs_,
-                                       recv, nullptr)) {
-      all_video_codecs_.push_back(recv);
-    }
-  }
+  // Use ComputeCodecsUnion to avoid having duplicate payload IDs
+  all_video_codecs_ =
+      ComputeCodecsUnion(video_recv_codecs_, video_send_codecs_);
+
   // Use NegotiateCodecs to merge our codec lists, since the operation is
   // essentially the same. Put send_codecs as the offered_codecs, which is the
   // order we'd like to follow. The reasoning is that encoding is usually more

@@ -7,7 +7,7 @@ import org.telegram.messenger.SegmentTree;
 
 public class StackBarChartData extends ChartData {
 
-    public int[] ySum;
+    public long[] ySum;
     public SegmentTree ySumSegmentTree;
 
     public StackBarChartData(JSONObject jsonObject) throws JSONException {
@@ -19,7 +19,7 @@ public class StackBarChartData extends ChartData {
         int n = lines.get(0).y.length;
         int k = lines.size();
 
-        ySum = new int[n];
+        ySum = new long[n];
         for (int i = 0; i < n; i++) {
             ySum[i] = 0;
             for (int j = 0; j < k; j++) {
@@ -30,7 +30,7 @@ public class StackBarChartData extends ChartData {
         ySumSegmentTree = new SegmentTree(ySum);
     }
 
-    public int findMax(int start, int end) {
+    public long findMax(int start, int end) {
         return ySumSegmentTree.rMaxQ(start, end);
     }
 

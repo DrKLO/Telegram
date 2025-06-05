@@ -18,7 +18,6 @@
 
 #include "api/array_view.h"
 #include "modules/audio_processing/aec3/aec3_common.h"
-#include "rtc_base/constructor_magic.h"
 
 namespace webrtc {
 
@@ -27,6 +26,9 @@ class ErlEstimator {
  public:
   explicit ErlEstimator(size_t startup_phase_length_blocks_);
   ~ErlEstimator();
+
+  ErlEstimator(const ErlEstimator&) = delete;
+  ErlEstimator& operator=(const ErlEstimator&) = delete;
 
   // Resets the ERL estimation.
   void Reset();
@@ -49,7 +51,6 @@ class ErlEstimator {
   float erl_time_domain_;
   int hold_counter_time_domain_;
   size_t blocks_since_reset_ = 0;
-  RTC_DISALLOW_COPY_AND_ASSIGN(ErlEstimator);
 };
 
 }  // namespace webrtc

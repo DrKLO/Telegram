@@ -10,7 +10,10 @@
 
 #include "api/video/video_timing.h"
 
+#include <algorithm>
+
 #include "api/array_view.h"
+#include "api/units/time_delta.h"
 #include "rtc_base/logging.h"
 #include "rtc_base/numerics/safe_conversions.h"
 #include "rtc_base/strings/string_builder.h"
@@ -23,6 +26,14 @@ uint16_t VideoSendTiming::GetDeltaCappedMs(int64_t base_ms, int64_t time_ms) {
                        << "ms expected to be positive";
   }
   return rtc::saturated_cast<uint16_t>(time_ms - base_ms);
+}
+
+uint16_t VideoSendTiming::GetDeltaCappedMs(TimeDelta delta) {
+  if (delta < TimeDelta::Zero()) {
+    RTC_DLOG(LS_ERROR) << "Delta " << delta.ms()
+                       << "ms expected to be positive";
+  }
+  return rtc::saturated_cast<uint16_t>(delta.ms());
 }
 
 TimingFrameInfo::TimingFrameInfo()
@@ -87,6 +98,25 @@ std::string TimingFrameInfo::ToString() const {
      << IsTimerTriggered();
 
   return sb.str();
+}
+
+VideoPlayoutDelay::VideoPlayoutDelay(TimeDelta min, TimeDelta max)
+    : min_(std::clamp(min, TimeDelta::Zero(), kMax)),
+      max_(std::clamp(max, min_, kMax)) {
+  if (!(TimeDelta::Zero() <= min && min <= max && max <= kMax)) {
+    RTC_LOG(LS_ERROR) << "Invalid video playout delay: [" << min << "," << max
+                      << "]. Clamped to [" << this->min() << "," << this->max()
+                      << "]";
+  }
+}
+
+bool VideoPlayoutDelay::Set(TimeDelta min, TimeDelta max) {
+  if (TimeDelta::Zero() <= min && min <= max && max <= kMax) {
+    min_ = min;
+    max_ = max;
+    return true;
+  }
+  return false;
 }
 
 }  // namespace webrtc

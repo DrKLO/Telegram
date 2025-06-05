@@ -39,6 +39,24 @@ int I420ToI010(const uint8_t* src_y,
                int width,
                int height);
 
+// Convert 8 bit YUV to 12 bit.
+#define H420ToH012 I420ToI012
+LIBYUV_API
+int I420ToI012(const uint8_t* src_y,
+               int src_stride_y,
+               const uint8_t* src_u,
+               int src_stride_u,
+               const uint8_t* src_v,
+               int src_stride_v,
+               uint16_t* dst_y,
+               int dst_stride_y,
+               uint16_t* dst_u,
+               int dst_stride_u,
+               uint16_t* dst_v,
+               int dst_stride_v,
+               int width,
+               int height);
+
 LIBYUV_API
 int I420ToI422(const uint8_t* src_y,
                int src_stride_y,

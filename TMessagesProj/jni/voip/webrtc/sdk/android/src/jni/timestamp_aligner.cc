@@ -8,10 +8,11 @@
  *  be found in the AUTHORS file in the root of the source tree.
  */
 
+#include "rtc_base/timestamp_aligner.h"
+
 #include <jni.h>
 
 #include "rtc_base/time_utils.h"
-#include "rtc_base/timestamp_aligner.h"
 #include "sdk/android/generated_video_jni/TimestampAligner_jni.h"
 #include "sdk/android/src/jni/jni_helpers.h"
 
@@ -32,10 +33,9 @@ static void JNI_TimestampAligner_ReleaseTimestampAligner(
   delete reinterpret_cast<rtc::TimestampAligner*>(timestamp_aligner);
 }
 
-static jlong JNI_TimestampAligner_TranslateTimestamp(
-    JNIEnv* env,
-    jlong timestamp_aligner,
-    jlong camera_time_ns) {
+static jlong JNI_TimestampAligner_TranslateTimestamp(JNIEnv* env,
+                                                     jlong timestamp_aligner,
+                                                     jlong camera_time_ns) {
   return reinterpret_cast<rtc::TimestampAligner*>(timestamp_aligner)
              ->TranslateTimestamp(camera_time_ns / rtc::kNumNanosecsPerMicrosec,
                                   rtc::TimeMicros()) *

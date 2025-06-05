@@ -11,29 +11,30 @@
 #include "p2p/base/port_allocator.h"
 
 #include <iterator>
+#include <optional>
 #include <set>
 #include <utility>
 
+#include "absl/strings/string_view.h"
 #include "p2p/base/ice_credentials_iterator.h"
 #include "rtc_base/checks.h"
-#include "rtc_base/logging.h"
 
 namespace cricket {
 
 RelayServerConfig::RelayServerConfig() {}
 
 RelayServerConfig::RelayServerConfig(const rtc::SocketAddress& address,
-                                     const std::string& username,
-                                     const std::string& password,
+                                     absl::string_view username,
+                                     absl::string_view password,
                                      ProtocolType proto)
     : credentials(username, password) {
   ports.push_back(ProtocolAddress(address, proto));
 }
 
-RelayServerConfig::RelayServerConfig(const std::string& address,
+RelayServerConfig::RelayServerConfig(absl::string_view address,
                                      int port,
-                                     const std::string& username,
-                                     const std::string& password,
+                                     absl::string_view username,
+                                     absl::string_view password,
                                      ProtocolType proto)
     : RelayServerConfig(rtc::SocketAddress(address, port),
                         username,
@@ -41,10 +42,10 @@ RelayServerConfig::RelayServerConfig(const std::string& address,
                         proto) {}
 
 // Legacy constructor where "secure" and PROTO_TCP implies PROTO_TLS.
-RelayServerConfig::RelayServerConfig(const std::string& address,
+RelayServerConfig::RelayServerConfig(absl::string_view address,
                                      int port,
-                                     const std::string& username,
-                                     const std::string& password,
+                                     absl::string_view username,
+                                     absl::string_view password,
                                      ProtocolType proto,
                                      bool secure)
     : RelayServerConfig(address,
@@ -57,10 +58,10 @@ RelayServerConfig::RelayServerConfig(const RelayServerConfig&) = default;
 
 RelayServerConfig::~RelayServerConfig() = default;
 
-PortAllocatorSession::PortAllocatorSession(const std::string& content_name,
+PortAllocatorSession::PortAllocatorSession(absl::string_view content_name,
                                            int component,
-                                           const std::string& ice_ufrag,
-                                           const std::string& ice_pwd,
+                                           absl::string_view ice_ufrag,
+                                           absl::string_view ice_pwd,
                                            uint32_t flags)
     : flags_(flags),
       generation_(0),
@@ -98,7 +99,8 @@ PortAllocator::PortAllocator()
       max_ipv6_networks_(kDefaultMaxIPv6Networks),
       step_delay_(kDefaultStepDelay),
       allow_tcp_listen_(true),
-      candidate_filter_(CF_ALL) {
+      candidate_filter_(CF_ALL),
+      tiebreaker_(rtc::CreateRandomId64()) {
   // The allocator will be attached to a thread in Initialize.
   thread_checker_.Detach();
 }
@@ -138,6 +140,8 @@ bool PortAllocator::SetConfiguration(
     webrtc::PortPrunePolicy turn_port_prune_policy,
     webrtc::TurnCustomizer* turn_customizer,
     const absl::optional<int>& stun_candidate_keepalive_interval) {
+  RTC_DCHECK_GE(candidate_pool_size, 0);
+  RTC_DCHECK_LE(candidate_pool_size, static_cast<int>(UINT16_MAX));
   CheckRunOnValidThreadIfInitialized();
   // A positive candidate pool size would lead to the creation of a pooled
   // allocator session and starting getting ports, which we should only do on
@@ -149,20 +153,6 @@ bool PortAllocator::SetConfiguration(
   turn_servers_ = turn_servers;
   turn_port_prune_policy_ = turn_port_prune_policy;
 
-  if (candidate_pool_frozen_) {
-    if (candidate_pool_size != candidate_pool_size_) {
-      RTC_LOG(LS_ERROR)
-          << "Trying to change candidate pool size after pool was frozen.";
-      return false;
-    }
-    return true;
-  }
-
-  if (candidate_pool_size < 0) {
-    RTC_LOG(LS_ERROR) << "Can't set negative pool size.";
-    return false;
-  }
-
   candidate_pool_size_ = candidate_pool_size;
 
   // If ICE servers changed, throw away any existing pooled sessions and create
@@ -173,14 +163,14 @@ bool PortAllocator::SetConfiguration(
 
   turn_customizer_ = turn_customizer;
 
-  // If |candidate_pool_size_| is less than the number of pooled sessions, get
+  // If `candidate_pool_size_` is less than the number of pooled sessions, get
   // rid of the extras.
   while (candidate_pool_size_ < static_cast<int>(pooled_sessions_.size())) {
     pooled_sessions_.back().reset(nullptr);
     pooled_sessions_.pop_back();
   }
 
-  // |stun_candidate_keepalive_interval_| will be used in STUN port allocation
+  // `stun_candidate_keepalive_interval_` will be used in STUN port allocation
   // in future sessions. We also update the ready ports in the pooled sessions.
   // Ports in sessions that are taken and owned by P2PTransportChannel will be
   // updated there via IceConfig.
@@ -190,7 +180,7 @@ bool PortAllocator::SetConfiguration(
         stun_candidate_keepalive_interval_);
   }
 
-  // If |candidate_pool_size_| is greater than the number of pooled sessions,
+  // If `candidate_pool_size_` is greater than the number of pooled sessions,
   // create new sessions.
   while (static_cast<int>(pooled_sessions_.size()) < candidate_pool_size_) {
     IceParameters iceCredentials =
@@ -206,10 +196,10 @@ bool PortAllocator::SetConfiguration(
 }
 
 std::unique_ptr<PortAllocatorSession> PortAllocator::CreateSession(
-    const std::string& content_name,
+    absl::string_view content_name,
     int component,
-    const std::string& ice_ufrag,
-    const std::string& ice_pwd) {
+    absl::string_view ice_ufrag,
+    absl::string_view ice_pwd) {
   CheckRunOnValidThreadAndInitialized();
   auto session = std::unique_ptr<PortAllocatorSession>(
       CreateSessionInternal(content_name, component, ice_ufrag, ice_pwd));
@@ -218,10 +208,10 @@ std::unique_ptr<PortAllocatorSession> PortAllocator::CreateSession(
 }
 
 std::unique_ptr<PortAllocatorSession> PortAllocator::TakePooledSession(
-    const std::string& content_name,
+    absl::string_view content_name,
     int component,
-    const std::string& ice_ufrag,
-    const std::string& ice_pwd) {
+    absl::string_view ice_ufrag,
+    absl::string_view ice_pwd) {
   CheckRunOnValidThreadAndInitialized();
   RTC_DCHECK(!ice_ufrag.empty());
   RTC_DCHECK(!ice_pwd.empty());
@@ -274,11 +264,6 @@ PortAllocator::FindPooledSession(const IceParameters* ice_credentials) const {
   return pooled_sessions_.end();
 }
 
-void PortAllocator::FreezeCandidatePool() {
-  CheckRunOnValidThreadAndInitialized();
-  candidate_pool_frozen_ = true;
-}
-
 void PortAllocator::DiscardCandidatePool() {
   CheckRunOnValidThreadIfInitialized();
   pooled_sessions_.clear();
@@ -317,7 +302,7 @@ Candidate PortAllocator::SanitizeCandidate(const Candidate& c) const {
   // For a local host candidate, we need to conceal its IP address candidate if
   // the mDNS obfuscation is enabled.
   bool use_hostname_address =
-      c.type() == LOCAL_PORT_TYPE && MdnsObfuscationEnabled();
+      (c.is_local() || c.is_prflx()) && MdnsObfuscationEnabled();
   // If adapter enumeration is disabled or host candidates are disabled,
   // clear the raddr of STUN candidates to avoid local address leakage.
   bool filter_stun_related_address =
@@ -327,9 +312,12 @@ Candidate PortAllocator::SanitizeCandidate(const Candidate& c) const {
   // If the candidate filter doesn't allow reflexive addresses, empty TURN raddr
   // to avoid reflexive address leakage.
   bool filter_turn_related_address = !(candidate_filter_ & CF_REFLEXIVE);
+  // Sanitize related_address when using MDNS.
+  bool filter_prflx_related_address = MdnsObfuscationEnabled();
   bool filter_related_address =
-      ((c.type() == STUN_PORT_TYPE && filter_stun_related_address) ||
-       (c.type() == RELAY_PORT_TYPE && filter_turn_related_address));
+      ((c.is_stun() && filter_stun_related_address) ||
+       (c.is_relay() && filter_turn_related_address) ||
+       (c.is_prflx() && filter_prflx_related_address));
   return c.ToSanitizedCopy(use_hostname_address, filter_related_address);
 }
 

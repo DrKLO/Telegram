@@ -10,9 +10,9 @@
 
 #include "api/video/nv12_buffer.h"
 
+#include "api/make_ref_counted.h"
 #include "api/video/i420_buffer.h"
 #include "rtc_base/checks.h"
-#include "rtc_base/ref_counted_object.h"
 #include "third_party/libyuv/include/libyuv/convert.h"
 #include "third_party/libyuv/include/libyuv/scale.h"
 
@@ -144,11 +144,10 @@ void NV12Buffer::CropAndScaleFrom(const NV12BufferInterface& src,
   const uint8_t* uv_plane =
       src.DataUV() + src.StrideUV() * uv_offset_y + uv_offset_x * 2;
 
-  // kFilterBox is unsupported in libyuv, so using kFilterBilinear instead.
   int res = libyuv::NV12Scale(y_plane, src.StrideY(), uv_plane, src.StrideUV(),
                               crop_width, crop_height, MutableDataY(),
                               StrideY(), MutableDataUV(), StrideUV(), width(),
-                              height(), libyuv::kFilterBilinear);
+                              height(), libyuv::kFilterBox);
 
   RTC_DCHECK_EQ(res, 0);
 }

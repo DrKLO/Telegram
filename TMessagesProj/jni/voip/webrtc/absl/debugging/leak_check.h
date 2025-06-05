@@ -24,7 +24,24 @@
 // Note: this leak checking API is not yet supported in MSVC.
 // Leak checking is enabled by default in all ASan builds.
 //
-// See https://github.com/google/sanitizers/wiki/AddressSanitizerLeakSanitizer
+// https://clang.llvm.org/docs/LeakSanitizer.html
+// https://github.com/google/sanitizers/wiki/AddressSanitizerLeakSanitizer
+//
+// GCC and Clang both automatically enable LeakSanitizer when AddressSanitizer
+// is enabled. To use the mode, simply pass `-fsanitize=address` to both the
+// compiler and linker. An example Bazel command could be
+//
+//   $ bazel test --copt=-fsanitize=address --linkopt=-fsanitize=address ...
+//
+// GCC and Clang auto support a standalone LeakSanitizer mode (a mode which does
+// not also use AddressSanitizer). To use the mode, simply pass
+// `-fsanitize=leak` to both the compiler and linker. Since GCC does not
+// currently provide a way of detecting this mode at compile-time, GCC users
+// must also pass -DLEAK_SANITIZER to the compiler. An example Bazel command
+// could be
+//
+//   $ bazel test --copt=-DLEAK_SANITIZER --copt=-fsanitize=leak
+//     --linkopt=-fsanitize=leak ...
 //
 // -----------------------------------------------------------------------------
 #ifndef ABSL_DEBUGGING_LEAK_CHECK_H_
@@ -42,6 +59,12 @@ ABSL_NAMESPACE_BEGIN
 // Returns true if a leak-checking sanitizer (either ASan or standalone LSan) is
 // currently built into this target.
 bool HaveLeakSanitizer();
+
+// LeakCheckerIsActive()
+//
+// Returns true if a leak-checking sanitizer (either ASan or standalone LSan) is
+// currently built into this target and is turned on.
+bool LeakCheckerIsActive();
 
 // DoIgnoreLeak()
 //
@@ -62,13 +85,27 @@ void DoIgnoreLeak(const void* ptr);
 //
 // If the passed `ptr` does not point to an actively allocated object at the
 // time `IgnoreLeak()` is called, the call is a no-op; if it is actively
-// allocated, the object must not get deallocated later.
+// allocated, leak sanitizer will assume this object is referenced even if
+// there is no actual reference in user memory.
 //
 template <typename T>
 T* IgnoreLeak(T* ptr) {
   DoIgnoreLeak(ptr);
   return ptr;
 }
+
+// FindAndReportLeaks()
+//
+// If any leaks are detected, prints a leak report and returns true.  This
+// function may be called repeatedly, and does not affect end-of-process leak
+// checking.
+//
+// Example:
+// if (FindAndReportLeaks()) {
+//   ... diagnostic already printed. Exit with failure code.
+//   exit(1)
+// }
+bool FindAndReportLeaks();
 
 // LeakCheckDisabler
 //

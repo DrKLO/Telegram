@@ -19,20 +19,16 @@
 #include "api/call/transport.h"
 #include "api/rtp_headers.h"
 #include "api/rtp_parameters.h"
+#include "call/receive_stream.h"
 #include "call/rtp_packet_sink_interface.h"
+#include "modules/rtp_rtcp/include/receive_statistics.h"
 
 namespace webrtc {
 
-class FlexfecReceiveStream : public RtpPacketSinkInterface {
+class FlexfecReceiveStream : public RtpPacketSinkInterface,
+                             public ReceiveStreamInterface {
  public:
   ~FlexfecReceiveStream() override = default;
-
-  struct Stats {
-    std::string ToString(int64_t time_ms) const;
-
-    // TODO(brandtr): Add appropriate stats here.
-    int flexfec_bitrate_bps;
-  };
 
   struct Config {
     explicit Config(Transport* rtcp_send_transport);
@@ -48,8 +44,7 @@ class FlexfecReceiveStream : public RtpPacketSinkInterface {
     // Payload type for FlexFEC.
     int payload_type = -1;
 
-    // SSRC for FlexFEC stream to be received.
-    uint32_t remote_ssrc = 0;
+    ReceiveStreamRtpConfig rtp;
 
     // Vector containing a single element, corresponding to the SSRC of the
     // media stream being protected by this FlexFEC stream. The vector MUST have
@@ -59,26 +54,24 @@ class FlexfecReceiveStream : public RtpPacketSinkInterface {
     // protection.
     std::vector<uint32_t> protected_media_ssrcs;
 
-    // SSRC for RTCP reports to be sent.
-    uint32_t local_ssrc = 0;
-
     // What RTCP mode to use in the reports.
     RtcpMode rtcp_mode = RtcpMode::kCompound;
 
     // Transport for outgoing RTCP packets.
     Transport* rtcp_send_transport = nullptr;
-
-    // |transport_cc| is true whenever the send-side BWE RTCP feedback message
-    // has been negotiated. This is a prerequisite for enabling send-side BWE.
-    bool transport_cc = false;
-
-    // RTP header extensions that have been negotiated for this track.
-    std::vector<RtpExtension> rtp_header_extensions;
   };
 
-  virtual Stats GetStats() const = 0;
+  // TODO(tommi): FlexfecReceiveStream inherits from ReceiveStreamInterface,
+  // not VideoReceiveStreamInterface where there's also a SetRtcpMode method.
+  // Perhaps this should be in ReceiveStreamInterface and apply to audio streams
+  // as well (although there's no logic that would use it at present).
+  virtual void SetRtcpMode(RtcpMode mode) = 0;
 
-  virtual const Config& GetConfig() const = 0;
+  // Called to change the payload type after initialization.
+  virtual void SetPayloadType(int payload_type) = 0;
+  virtual int payload_type() const = 0;
+
+  virtual const ReceiveStatistics* GetStats() const = 0;
 };
 
 }  // namespace webrtc

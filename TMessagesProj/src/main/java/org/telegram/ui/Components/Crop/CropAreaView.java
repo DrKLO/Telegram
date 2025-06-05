@@ -4,6 +4,7 @@ import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
+import android.app.Activity;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
@@ -13,19 +14,28 @@ import android.graphics.PorterDuff;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.RectF;
 import android.os.Build;
-import androidx.annotation.Keep;
-
 import android.os.SystemClock;
+import android.text.Layout;
+import android.text.StaticLayout;
+import android.text.TextPaint;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.Window;
 import android.view.animation.AccelerateDecelerateInterpolator;
 import android.view.animation.Interpolator;
+
+import androidx.annotation.Keep;
+import androidx.core.graphics.ColorUtils;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.ui.BubbleActivity;
 
-public class CropAreaView extends View {
+public class CropAreaView extends ViewGroup {
+
+    public int size;
+    public float left, top;
+
 
     private enum Control {
         NONE, TOP_LEFT, TOP_RIGHT, BOTTOM_LEFT, BOTTOM_RIGHT, TOP, LEFT, BOTTOM, RIGHT
@@ -54,11 +64,13 @@ public class CropAreaView extends View {
     private int previousX;
     private int previousY;
 
-    private float bottomPadding;
+    private float bottomPadding, topPadding;
     private boolean dimVisibile;
     private boolean frameVisible;
+    private float overrideDimAlpha = -1.0f;
 
     private float frameAlpha = 1.0f;
+    private float overrideFrameAlpha = -1.0f;
     private long lastUpdateTime;
 
     private Paint dimPaint;
@@ -91,6 +103,8 @@ public class CropAreaView extends View {
     private boolean freeform = true;
     private Bitmap circleBitmap;
     private Paint eraserPaint;
+    private String subtitle;
+    private StaticLayout subtitleLayout;
 
     private Animator animator;
 
@@ -137,7 +151,34 @@ public class CropAreaView extends View {
 
         bitmapPaint = new Paint(Paint.FILTER_BITMAP_FLAG);
         bitmapPaint.setColor(0xffffffff);
+
+        setWillNotDraw(false);
     }
+
+    TextPaint subtitlePaint;
+
+    @Override
+    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+        super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+        updateSubtitle();
+    }
+
+    private void updateSubtitle() {
+        if (subtitle != null) {
+            if (subtitlePaint == null) {
+                subtitlePaint = new TextPaint();
+                subtitlePaint.setColor(ColorUtils.setAlphaComponent(Color.WHITE, 120));
+                subtitlePaint.setTextSize(AndroidUtilities.dp(13));
+                subtitlePaint.setTextAlign(Paint.Align.CENTER);
+            }
+            subtitleLayout = new StaticLayout(subtitle, subtitlePaint, getMeasuredWidth() - AndroidUtilities.dp(120), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
+        } else {
+            subtitleLayout = null;
+        }
+    }
+
+    @Override
+    protected void onLayout(boolean b, int i, int i1, int i2, int i3) {}
 
     public void setIsVideo(boolean value) {
         minWidth = AndroidUtilities.dp(value ? 64 : 32);
@@ -149,6 +190,14 @@ public class CropAreaView extends View {
 
     public void setDimVisibility(boolean visible) {
         dimVisibile = visible;
+    }
+
+    public void setDimAlpha(float alpha) {
+        overrideDimAlpha = alpha;
+    }
+
+    public void setFrameAlpha(float alpha) {
+        overrideFrameAlpha = alpha;
     }
 
     public void setFrameVisibility(boolean visible, boolean animated) {
@@ -164,6 +213,10 @@ public class CropAreaView extends View {
 
     public void setBottomPadding(float value) {
         bottomPadding = value;
+    }
+
+    public void setTopPadding(float value) {
+        topPadding = value;
     }
 
     public Interpolator getInterpolator() {
@@ -207,19 +260,49 @@ public class CropAreaView extends View {
         invalidate();
     }
 
+    public float rotate = 0;
+    public float scale = 1;
+    public float tx = 0, ty = 0;
+    public void setRotationScaleTranslation(float rotate, float scale, float tx, float ty) {
+        this.rotate = rotate;
+        this.scale = scale;
+        this.tx = tx;
+        this.ty = ty;
+        invalidate();
+    }
+
     @Override
     protected void onDraw(Canvas canvas) {
         if (freeform) {
-            int lineThickness = AndroidUtilities.dp(2);
-            int handleSize = AndroidUtilities.dp(16);
-            int handleThickness = AndroidUtilities.dp(3);
+            int lineThickness = AndroidUtilities.dp(2 / scale);
+            int handleSize = AndroidUtilities.dp(16 / scale);
+            int handleThickness = AndroidUtilities.dp(3 / scale);
 
             int originX = (int) actualRect.left - lineThickness;
             int originY = (int) actualRect.top - lineThickness;
             int width = (int) (actualRect.right - actualRect.left) + lineThickness * 2;
             int height = (int) (actualRect.bottom - actualRect.top) + lineThickness * 2;
 
+            canvas.save();
+            canvas.translate(tx, ty);
+            canvas.scale(scale, scale, originX + width / 2, originY + height / 2);
+            canvas.rotate(rotate, originX + width / 2, originY + height / 2);
+
             if (dimVisibile) {
+                int left = -getWidth() * 4, top = -getHeight() * 4,
+                    right = getWidth() * 4, bottom = getHeight() * 4;
+
+                if (overrideDimAlpha >= 0) {
+                    dimPaint.setAlpha((int) (0xFF * overrideDimAlpha));
+                } else {
+                    dimPaint.setAlpha((int) (0xff - 0x7f * frameAlpha));
+                }
+
+                canvas.drawRect(left, top, right, 0, dimPaint);
+                canvas.drawRect(left, 0, 0, getHeight(), dimPaint);
+                canvas.drawRect(getWidth(), 0, right, getHeight(), dimPaint);
+                canvas.drawRect(left, getHeight(), right, bottom, dimPaint);
+
                 canvas.drawRect(0, 0, getWidth(), originY + lineThickness, dimPaint);
                 canvas.drawRect(0, originY + lineThickness, originX + lineThickness, originY + height - lineThickness, dimPaint);
                 canvas.drawRect(originX + width - lineThickness, originY + lineThickness, getWidth(), originY + height - lineThickness, dimPaint);
@@ -239,10 +322,22 @@ public class CropAreaView extends View {
                 type = previousGridType;
             }
 
-            shadowPaint.setAlpha((int) (gridProgress * 26 * frameAlpha));
-            linePaint.setAlpha((int) (gridProgress * 178 * frameAlpha));
-            framePaint.setAlpha((int) (178 * frameAlpha));
-            handlePaint.setAlpha((int) (255 * frameAlpha));
+            if (overrideFrameAlpha >= 0) {
+                shadowPaint.setAlpha((int) (gridProgress * 26 * overrideFrameAlpha));
+                linePaint.setAlpha((int) (gridProgress * 178 * overrideFrameAlpha));
+                framePaint.setAlpha((int) (178 * overrideFrameAlpha));
+                handlePaint.setAlpha((int) (255 * overrideFrameAlpha));
+            } else {
+                shadowPaint.setAlpha((int) (gridProgress * 26 * frameAlpha));
+                linePaint.setAlpha((int) (gridProgress * 178 * frameAlpha));
+                framePaint.setAlpha((int) (178 * frameAlpha));
+                handlePaint.setAlpha((int) (255 * frameAlpha));
+            }
+
+            canvas.drawRect(originX + inset, originY + inset, originX + width - inset, originY + inset + lineThickness, framePaint);
+            canvas.drawRect(originX + inset, originY + inset, originX + inset + lineThickness, originY + height - inset, framePaint);
+            canvas.drawRect(originX + inset, originY + height - inset - lineThickness, originX + width - inset, originY + height - inset, framePaint);
+            canvas.drawRect(originX + width - inset - lineThickness, originY + inset, originX + width - inset, originY + height - inset, framePaint);
 
             for (int i = 0; i < 3; i++) {
                 if (type == GridType.MINOR) {
@@ -272,11 +367,6 @@ public class CropAreaView extends View {
                 }
             }
 
-            canvas.drawRect(originX + inset, originY + inset, originX + width - inset, originY + inset + lineThickness, framePaint);
-            canvas.drawRect(originX + inset, originY + inset, originX + inset + lineThickness, originY + height - inset, framePaint);
-            canvas.drawRect(originX + inset, originY + height - inset - lineThickness, originX + width - inset, originY + height - inset, framePaint);
-            canvas.drawRect(originX + width - inset - lineThickness, originY + inset, originX + width - inset, originY + height - inset, framePaint);
-
             canvas.drawRect(originX, originY, originX + handleSize, originY + handleThickness, handlePaint);
             canvas.drawRect(originX, originY, originX + handleThickness, originY + handleSize, handlePaint);
 
@@ -288,10 +378,12 @@ public class CropAreaView extends View {
 
             canvas.drawRect(originX + width - handleSize, originY + height - handleThickness, originX + width, originY + height, handlePaint);
             canvas.drawRect(originX + width - handleThickness, originY + height - handleSize, originX + width, originY + height, handlePaint);
+
+            canvas.restore();
         } else {
             float width = getMeasuredWidth() - 2 * sidePadding;
-            float height = getMeasuredHeight() - bottomPadding - (Build.VERSION.SDK_INT >= 21 && !inBubbleMode ? AndroidUtilities.statusBarHeight : 0) - 2 * sidePadding;
-            int size = (int) Math.min(width, height);
+            float height = getMeasuredHeight() - bottomPadding - (Build.VERSION.SDK_INT >= 21 && !inBubbleMode ? AndroidUtilities.statusBarHeight : 0) - topPadding - 2 * sidePadding;
+            size = (int) Math.min(width, height);
 
             if (circleBitmap == null || circleBitmap.getWidth() != size) {
                 boolean hasBitmap = circleBitmap != null;
@@ -316,8 +408,8 @@ public class CropAreaView extends View {
             if (circleBitmap != null) {
                 bitmapPaint.setAlpha((int) (255 * frameAlpha));
                 dimPaint.setAlpha((int) (0x7f * frameAlpha));
-                float left = sidePadding + (width - size) / 2.0f;
-                float top = sidePadding + (height - size) / 2.0f + (Build.VERSION.SDK_INT >= 21 && !inBubbleMode ? AndroidUtilities.statusBarHeight : 0);
+                left = sidePadding + (width - size) / 2.0f;
+                top = sidePadding + (height - size) / 2.0f + (Build.VERSION.SDK_INT >= 21 && !inBubbleMode ? AndroidUtilities.statusBarHeight : 0);
                 float right = left + size;
                 float bottom = top + size;
                 canvas.drawRect(0, 0, getWidth(), (int) top, dimPaint);
@@ -325,6 +417,13 @@ public class CropAreaView extends View {
                 canvas.drawRect((int) right, (int) top, getWidth(), (int) bottom, dimPaint);
                 canvas.drawRect(0, (int) bottom, getWidth(), getHeight(), dimPaint);
                 canvas.drawBitmap(circleBitmap, (int) left, (int) top, bitmapPaint);
+
+                if (getMeasuredHeight() > getMeasuredWidth() && subtitleLayout != null) {
+                    canvas.save();
+                    canvas.translate(getMeasuredWidth() / 2f, bottom + AndroidUtilities.dp(16));
+                    subtitleLayout.draw(canvas);
+                    canvas.restore();
+                }
             }
         }
 
@@ -529,13 +628,13 @@ public class CropAreaView extends View {
     public void calculateRect(RectF rect, float cropAspectRatio) {
         float statusBarHeight = (Build.VERSION.SDK_INT >= 21 && !inBubbleMode ? AndroidUtilities.statusBarHeight : 0);
         float left, top, right, bottom;
-        float measuredHeight = (float) getMeasuredHeight() - bottomPadding - statusBarHeight;
+        float measuredHeight = (float) getMeasuredHeight() - bottomPadding - topPadding - statusBarHeight;
         float aspectRatio = (float) getMeasuredWidth() / measuredHeight;
         float minSide = Math.min(getMeasuredWidth(), measuredHeight) - 2 * sidePadding;
         float width = getMeasuredWidth() - 2 * sidePadding;
         float height = measuredHeight - 2 * sidePadding;
         float centerX = getMeasuredWidth() / 2.0f;
-        float centerY = statusBarHeight + measuredHeight / 2.0f;
+        float centerY = statusBarHeight + topPadding + measuredHeight / 2.0f;
 
         if (Math.abs(1.0f - cropAspectRatio) < 0.0001) {
             left = centerX - (minSide / 2.0f);
@@ -554,6 +653,28 @@ public class CropAreaView extends View {
             bottom = centerY + (height / 2.0f);
         }
         rect.set(left, top, right, bottom);
+    }
+
+    @Override
+    public boolean onInterceptTouchEvent(MotionEvent ev) {
+        if (isDragging) {
+            return false;
+        }
+        return super.onInterceptTouchEvent(ev);
+    }
+
+    public void updateStatusShow(boolean show) {
+        try {
+            Window window = ((Activity) getContext()).getWindow();
+            View decorView = window.getDecorView();
+            int flags = decorView.getSystemUiVisibility();
+            if (show) {
+                flags |= View.SYSTEM_UI_FLAG_FULLSCREEN;
+            } else {
+                flags &= ~View.SYSTEM_UI_FLAG_FULLSCREEN;
+            }
+            decorView.setSystemUiVisibility(flags);
+        } catch (Exception ignore) {}
     }
 
     @Override
@@ -596,6 +717,7 @@ public class CropAreaView extends View {
             setGridType(GridType.MAJOR, false);
 
             isDragging = true;
+            updateStatusShow(true);
 
             if (listener != null) {
                 listener.onAreaChangeBegan();
@@ -604,6 +726,7 @@ public class CropAreaView extends View {
             return true;
         } else if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) {
             isDragging = false;
+            updateStatusShow(false);
 
             if (activeControl == Control.NONE) {
                 return false;
@@ -744,7 +867,7 @@ public class CropAreaView extends View {
                 }
             }
 
-            float topPadding = statusBarHeight + sidePadding;
+            float topPadding = statusBarHeight + this.topPadding + sidePadding;
             float finalBottomPadidng = bottomPadding + sidePadding;
             if (tempRect.top < topPadding) {
                 if (lockAspectRatio > 0) {
@@ -809,5 +932,12 @@ public class CropAreaView extends View {
 
     public void getCropRect(RectF rect) {
         rect.set(actualRect);
+    }
+
+    public void setSubtitle(String subtitle) {
+        this.subtitle = subtitle;
+        if (getMeasuredWidth() > 0) {
+            updateSubtitle();
+        }
     }
 }

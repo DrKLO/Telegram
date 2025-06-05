@@ -26,12 +26,12 @@ bool CompareFormats(const VideoFormat &a, const VideoFormat &b) {
 int FormatPriority(const VideoFormat &format, const std::vector<std::string> &preferredCodecs, std::shared_ptr<PlatformContext> platformContext) {
 	static const auto kCodecs = {
 		std::string(cricket::kAv1CodecName),
-        std::string(cricket::kVp9CodecName),
 #ifndef WEBRTC_DISABLE_H265
 		std::string(cricket::kH265CodecName),
 #endif
 		std::string(cricket::kH264CodecName),
 		std::string(cricket::kVp8CodecName),
+        std::string(cricket::kVp9CodecName),
 	};
 	static const auto kSupported = [platformContext] {
 		const auto platform = PlatformInterface::SharedInstance();
@@ -106,11 +106,7 @@ std::vector<VideoFormat>::const_iterator FindEqualFormat(
 		const std::vector<VideoFormat> &list,
 		const VideoFormat &format) {
 	return std::find_if(list.begin(), list.end(), [&](const VideoFormat &other) {
-		return cricket::IsSameCodec(
-			format.name,
-			format.parameters,
-			other.name,
-			other.parameters);
+        return format.IsSameCodec(other);
 	});
 }
 
@@ -133,13 +129,37 @@ void AddDefaultFeedbackParams(cricket::VideoCodec *codec) {
 	}
 }
 
+std::vector<VideoFormat> RemoveScalabilityModes(
+		std::vector<VideoFormat> list) {
+	auto changed = false;
+	for (auto &entry : list) {
+		if (!entry.scalability_modes.empty()) {
+			entry.scalability_modes = {};
+			changed = true;
+		}
+	}
+	if (changed && list.size() > 1) {
+		for (auto i = list.end() - 1; i != list.begin(); --i) {
+			if (std::find(list.begin(), i, *i) != i) {
+				i = list.erase(i);
+			}
+		}
+	}
+	return list;
+}
+
 } // namespace
 
 VideoFormatsMessage ComposeSupportedFormats(
 		std::vector<VideoFormat> encoders,
 		std::vector<VideoFormat> decoders,
         const std::vector<std::string> &preferredCodecs,
-		std::shared_ptr<PlatformContext> platformContext) {
+        std::shared_ptr<PlatformContext> platformContext) {
+	// We don't pass scalability_modes through signaling,
+	// So we have to remove them here, otherwise lists are different.
+	encoders = RemoveScalabilityModes(std::move(encoders));
+	decoders = RemoveScalabilityModes(std::move(decoders));
+
 	encoders = FilterAndSortEncoders(std::move(encoders), preferredCodecs, platformContext);
 
 	auto result = VideoFormatsMessage();
@@ -249,12 +269,12 @@ CommonCodecs AssignPayloadTypesAndDefaultCodecs(CommonFormats &&formats) {
 	auto result = CommonCodecs();
 	result.list.reserve(2 * formats.list.size() - 2);
 	for (const auto &format : formats.list) {
-		cricket::VideoCodec codec(format);
+        cricket::VideoCodec codec = cricket::CreateVideoCodec(format);
 		codec.id = payload_type;
 		AddDefaultFeedbackParams(&codec);
 
 		if (inputIndex++ == formats.myEncoderIndex) {
-			result.myEncoderIndex = result.list.size();
+			result.myEncoderIndex = (int)result.list.size();
 		}
 		result.list.push_back(codec);
 
@@ -268,7 +288,7 @@ CommonCodecs AssignPayloadTypesAndDefaultCodecs(CommonFormats &&formats) {
 		// Add associated RTX codec for non-FEC codecs.
 		if (!absl::EqualsIgnoreCase(codec.name, cricket::kUlpfecCodecName) &&
 			!absl::EqualsIgnoreCase(codec.name, cricket::kFlexfecCodecName)) {
-			result.list.push_back(cricket::VideoCodec::CreateRtxCodec(payload_type, codec.id));
+			result.list.push_back(cricket::CreateVideoRtxCodec(payload_type, codec.id));
 
 			// Increment payload type.
 			++payload_type;

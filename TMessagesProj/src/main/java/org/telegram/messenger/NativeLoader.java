@@ -22,13 +22,13 @@ import java.util.zip.ZipFile;
 
 public class NativeLoader {
 
-    private final static int LIB_VERSION = 40;
+    private final static int LIB_VERSION = 49;
     private final static String LIB_NAME = "tmessages." + LIB_VERSION;
     private final static String LIB_SO_NAME = "lib" + LIB_NAME + ".so";
     private final static String LOCALE_LIB_SO_NAME = "lib" + LIB_NAME + "loc.so";
-    private String crashPath = "";
 
     private static volatile boolean nativeLoaded = false;
+    public static StringBuilder log = new StringBuilder();
 
     private static File getNativeLibraryDir(Context context) {
         File f = null;
@@ -125,38 +125,10 @@ public class NativeLoader {
                 return;
             } catch (Error e) {
                 FileLog.e(e);
+                log.append("128: ").append(e).append("\n");
             }
 
-            String folder;
-            try {
-                String str = Build.CPU_ABI;
-                if (Build.CPU_ABI.equalsIgnoreCase("x86_64")) {
-                    folder = "x86_64";
-                } else if (Build.CPU_ABI.equalsIgnoreCase("arm64-v8a")) {
-                    folder = "arm64-v8a";
-                } else if (Build.CPU_ABI.equalsIgnoreCase("armeabi-v7a")) {
-                    folder = "armeabi-v7a";
-                } else if (Build.CPU_ABI.equalsIgnoreCase("armeabi")) {
-                    folder = "armeabi";
-                } else if (Build.CPU_ABI.equalsIgnoreCase("x86")) {
-                    folder = "x86";
-                } else if (Build.CPU_ABI.equalsIgnoreCase("mips")) {
-                    folder = "mips";
-                } else {
-                    folder = "armeabi";
-                    if (BuildVars.LOGS_ENABLED) {
-                        FileLog.e("Unsupported arch: " + Build.CPU_ABI);
-                    }
-                }
-            } catch (Exception e) {
-                FileLog.e(e);
-                folder = "armeabi";
-            }
-
-            String javaArch = System.getProperty("os.arch");
-            if (javaArch != null && javaArch.contains("686")) {
-                folder = "x86";
-            }
+            String folder = getAbiFolder();
 
             /*File destFile = getNativeLibraryDir(context);
             if (destFile != null) {
@@ -185,6 +157,7 @@ public class NativeLoader {
                     nativeLoaded = true;
                     return;
                 } catch (Error e) {
+                    log.append(e).append("\n");
                     FileLog.e(e);
                 }
                 destLocalFile.delete();
@@ -192,6 +165,7 @@ public class NativeLoader {
 
             if (BuildVars.LOGS_ENABLED) {
                 FileLog.e("Library not found, arch = " + folder);
+                log.append("Library not found, arch = " + folder).append("\n");
             }
 
             if (loadFromZip(context, destDir, destLocalFile, folder)) {
@@ -199,6 +173,7 @@ public class NativeLoader {
             }
         } catch (Throwable e) {
             e.printStackTrace();
+            log.append("176: ").append(e).append("\n");
         }
 
         try {
@@ -206,9 +181,48 @@ public class NativeLoader {
             nativeLoaded = true;
         } catch (Error e) {
             FileLog.e(e);
+            log.append("184: ").append(e).append("\n");
         }
     }
 
+    public static String getAbiFolder() {
+        String folder;
+        try {
+            String str = Build.CPU_ABI;
+            if (Build.CPU_ABI.equalsIgnoreCase("x86_64")) {
+                folder = "x86_64";
+            } else if (Build.CPU_ABI.equalsIgnoreCase("arm64-v8a")) {
+                folder = "arm64-v8a";
+            } else if (Build.CPU_ABI.equalsIgnoreCase("armeabi-v7a")) {
+                folder = "armeabi-v7a";
+            } else if (Build.CPU_ABI.equalsIgnoreCase("armeabi")) {
+                folder = "armeabi";
+            } else if (Build.CPU_ABI.equalsIgnoreCase("x86")) {
+                folder = "x86";
+            } else if (Build.CPU_ABI.equalsIgnoreCase("mips")) {
+                folder = "mips";
+            } else {
+                folder = "armeabi";
+                if (BuildVars.LOGS_ENABLED) {
+                    FileLog.e("Unsupported arch: " + Build.CPU_ABI);
+                }
+            }
+        } catch (Exception e) {
+            FileLog.e(e);
+            folder = "armeabi";
+        }
+
+        String javaArch = System.getProperty("os.arch");
+        if (javaArch != null && javaArch.contains("686")) {
+            folder = "x86";
+        }
+        return folder;
+    }
+
     private static native void init(String path, boolean enable);
+
+    public static boolean loaded() {
+        return nativeLoaded;
+    }
     //public static native void crash();
 }

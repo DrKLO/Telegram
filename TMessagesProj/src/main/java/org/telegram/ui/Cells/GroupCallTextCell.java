@@ -138,10 +138,10 @@ public class GroupCallTextCell extends FrameLayout {
         textView.setTextColor(color);
     }
 
-    public void setColors(String icon, String text) {
+    public void setColorsByKey(int icon, int text) {
         textView.setTextColor(Theme.getColor(text));
         textView.setTag(text);
-        if (icon != null) {
+        if (icon >= 0) {
             imageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(icon), PorterDuff.Mode.MULTIPLY));
             imageView.setTag(icon);
         }

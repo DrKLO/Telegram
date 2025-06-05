@@ -36,7 +36,7 @@ public class TooManyCommunitiesHintCell extends FrameLayout {
         headerTextView = new TextView(context);
         headerTextView.setTextColor(Theme.getColor(Theme.key_chats_nameMessage_threeLines));
         headerTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
-        headerTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        headerTextView.setTypeface(AndroidUtilities.bold());
         headerTextView.setGravity(Gravity.CENTER);
         addView(headerTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.LEFT, 52, 75, 52, 0));
 
@@ -49,7 +49,7 @@ public class TooManyCommunitiesHintCell extends FrameLayout {
         TextPaint textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
         textPaint.setColor(Color.WHITE);
         textPaint.setTextSize(AndroidUtilities.dp(12));
-        textPaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        textPaint.setTypeface(AndroidUtilities.bold());
         Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
         String s = "500";
@@ -61,7 +61,7 @@ public class TooManyCommunitiesHintCell extends FrameLayout {
             @Override
             protected void onDraw(Canvas canvas) {
                 super.onDraw(canvas);
-                paint.setColor(Theme.getColor(Theme.key_windowBackgroundWhiteRedText));
+                paint.setColor(Theme.getColor(Theme.key_text_RedRegular));
 
                 canvas.save();
                 canvas.translate(getMeasuredWidth() - textPaint.measureText(s) - AndroidUtilities.dp(8), AndroidUtilities.dpf2(7f));
@@ -76,7 +76,7 @@ public class TooManyCommunitiesHintCell extends FrameLayout {
         imageLayout.setWillNotDraw(false);
         imageLayout.addView(imageView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL));
         addView(imageLayout, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 0, 12, 0, 6));
-        headerTextView.setText(LocaleController.getString("TooManyCommunities", R.string.TooManyCommunities));
+        headerTextView.setText(LocaleController.getString(R.string.TooManyCommunities));
         imageView.setImageResource(R.drawable.groups_limit1);
     }
 

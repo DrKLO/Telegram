@@ -31,7 +31,7 @@
 // Write an unsigned 40-bit (5 byte) integer in big endian format
 // ByteWriter<uint64_t, 5>::WriteBigEndian(buffer, val);
 //
-// These classes are implemented as recursive templetizations, inteded to make
+// These classes are implemented as recursive templetizations, intended to make
 // it easy for the compiler to completely inline the reading/writing.
 
 #include <stdint.h>

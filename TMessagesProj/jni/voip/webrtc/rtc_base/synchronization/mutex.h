@@ -18,12 +18,7 @@
 #include "rtc_base/checks.h"
 #include "rtc_base/thread_annotations.h"
 
-#if defined(WEBRTC_RACE_CHECK_MUTEX)
-// To use the race check mutex, define WEBRTC_RACE_CHECK_MUTEX globally. This
-// also adds a dependency to absl::Mutex from logging.cc due to concurrent
-// invocation of the static logging system.
-#include "rtc_base/synchronization/mutex_race_check.h"
-#elif defined(WEBRTC_ABSL_MUTEX)
+#if defined(WEBRTC_ABSL_MUTEX)
 #include "rtc_base/synchronization/mutex_abseil.h"  // nogncheck
 #elif defined(WEBRTC_WIN)
 #include "rtc_base/synchronization/mutex_critical_section.h"
@@ -43,15 +38,15 @@ class RTC_LOCKABLE Mutex final {
   Mutex(const Mutex&) = delete;
   Mutex& operator=(const Mutex&) = delete;
 
-  void Lock() RTC_EXCLUSIVE_LOCK_FUNCTION() {
-    impl_.Lock();
-  }
+  void Lock() RTC_EXCLUSIVE_LOCK_FUNCTION() { impl_.Lock(); }
   ABSL_MUST_USE_RESULT bool TryLock() RTC_EXCLUSIVE_TRYLOCK_FUNCTION(true) {
     return impl_.TryLock();
   }
-  void Unlock() RTC_UNLOCK_FUNCTION() {
-    impl_.Unlock();
-  }
+  // Return immediately if this thread holds the mutex, or RTC_DCHECK_IS_ON==0.
+  // Otherwise, may report an error (typically by crashing with a diagnostic),
+  // or may return immediately.
+  void AssertHeld() const RTC_ASSERT_EXCLUSIVE_LOCK() { impl_.AssertHeld(); }
+  void Unlock() RTC_UNLOCK_FUNCTION() { impl_.Unlock(); }
 
  private:
   MutexImpl impl_;
@@ -72,41 +67,6 @@ class RTC_SCOPED_LOCKABLE MutexLock final {
  private:
   Mutex* mutex_;
 };
-
-// A mutex used to protect global variables. Do NOT use for other purposes.
-#if defined(WEBRTC_ABSL_MUTEX)
-using GlobalMutex = absl::Mutex;
-using GlobalMutexLock = absl::MutexLock;
-#else
-class RTC_LOCKABLE GlobalMutex final {
- public:
-  GlobalMutex(const GlobalMutex&) = delete;
-  GlobalMutex& operator=(const GlobalMutex&) = delete;
-
-  constexpr explicit GlobalMutex(absl::ConstInitType /*unused*/)
-      : mutex_locked_(0) {}
-
-  void Lock() RTC_EXCLUSIVE_LOCK_FUNCTION();
-  void Unlock() RTC_UNLOCK_FUNCTION();
-
- private:
-  std::atomic<int> mutex_locked_;  // 0 means lock not taken, 1 means taken.
-};
-
-// GlobalMutexLock, for serializing execution through a scope.
-class RTC_SCOPED_LOCKABLE GlobalMutexLock final {
- public:
-  GlobalMutexLock(const GlobalMutexLock&) = delete;
-  GlobalMutexLock& operator=(const GlobalMutexLock&) = delete;
-
-  explicit GlobalMutexLock(GlobalMutex* mutex)
-      RTC_EXCLUSIVE_LOCK_FUNCTION(mutex_);
-  ~GlobalMutexLock() RTC_UNLOCK_FUNCTION();
-
- private:
-  GlobalMutex* mutex_;
-};
-#endif  // if defined(WEBRTC_ABSL_MUTEX)
 
 }  // namespace webrtc
 

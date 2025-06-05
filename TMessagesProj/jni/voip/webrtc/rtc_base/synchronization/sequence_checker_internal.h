@@ -30,7 +30,8 @@ namespace webrtc_sequence_checker_internal {
 // right version for your build configuration.
 class RTC_EXPORT SequenceCheckerImpl {
  public:
-  SequenceCheckerImpl();
+  explicit SequenceCheckerImpl(bool attach_to_current_thread);
+  explicit SequenceCheckerImpl(TaskQueueBase* attached_queue);
   ~SequenceCheckerImpl() = default;
 
   bool IsCurrent() const;
@@ -50,7 +51,6 @@ class RTC_EXPORT SequenceCheckerImpl {
   mutable bool attached_ RTC_GUARDED_BY(lock_);
   mutable rtc::PlatformThreadRef valid_thread_ RTC_GUARDED_BY(lock_);
   mutable const TaskQueueBase* valid_queue_ RTC_GUARDED_BY(lock_);
-  mutable const void* valid_system_queue_ RTC_GUARDED_BY(lock_);
 };
 
 // Do nothing implementation, for use in release mode.
@@ -59,31 +59,28 @@ class RTC_EXPORT SequenceCheckerImpl {
 // right version for your build configuration.
 class SequenceCheckerDoNothing {
  public:
+  explicit SequenceCheckerDoNothing(bool attach_to_current_thread) {}
+  explicit SequenceCheckerDoNothing(TaskQueueBase* attached_queue) {}
   bool IsCurrent() const { return true; }
   void Detach() {}
 };
 
-// Helper class used by RTC_DCHECK_RUN_ON (see example usage below).
-class RTC_SCOPED_LOCKABLE SequenceCheckerScope {
- public:
-  template <typename ThreadLikeObject>
-  explicit SequenceCheckerScope(const ThreadLikeObject* thread_like_object)
-      RTC_EXCLUSIVE_LOCK_FUNCTION(thread_like_object) {}
-  SequenceCheckerScope(const SequenceCheckerScope&) = delete;
-  SequenceCheckerScope& operator=(const SequenceCheckerScope&) = delete;
-  ~SequenceCheckerScope() RTC_UNLOCK_FUNCTION() {}
-
-  template <typename ThreadLikeObject>
-  static bool IsCurrent(const ThreadLikeObject* thread_like_object) {
-    return thread_like_object->IsCurrent();
-  }
-};
-
-std::string ExpectationToString(const SequenceCheckerImpl* checker);
+template <typename ThreadLikeObject>
+std::enable_if_t<std::is_base_of_v<SequenceCheckerImpl, ThreadLikeObject>,
+                 std::string>
+ExpectationToString(const ThreadLikeObject* checker) {
+#if RTC_DCHECK_IS_ON
+  return checker->ExpectationToString();
+#else
+  return std::string();
+#endif
+}
 
 // Catch-all implementation for types other than explicitly supported above.
 template <typename ThreadLikeObject>
-std::string ExpectationToString(const ThreadLikeObject*) {
+std::enable_if_t<!std::is_base_of_v<SequenceCheckerImpl, ThreadLikeObject>,
+                 std::string>
+ExpectationToString(const ThreadLikeObject*) {
   return std::string();
 }
 

@@ -11,18 +11,21 @@
 #ifndef MODULES_CONGESTION_CONTROLLER_GOOG_CC_DELAY_BASED_BWE_H_
 #define MODULES_CONGESTION_CONTROLLER_GOOG_CC_DELAY_BASED_BWE_H_
 
-#include <stddef.h>
 #include <stdint.h>
 
 #include <memory>
 #include <vector>
 
 #include "absl/types/optional.h"
+#include "api/field_trials_view.h"
 #include "api/network_state_predictor.h"
 #include "api/transport/network_types.h"
-#include "api/transport/webrtc_key_value_config.h"
+#include "api/units/data_rate.h"
+#include "api/units/time_delta.h"
+#include "api/units/timestamp.h"
 #include "modules/congestion_controller/goog_cc/delay_increase_detector_interface.h"
 #include "modules/congestion_controller/goog_cc/inter_arrival_delta.h"
+#include "modules/congestion_controller/goog_cc/link_capacity_estimator.h"
 #include "modules/congestion_controller/goog_cc/probe_bitrate_estimator.h"
 #include "modules/remote_bitrate_estimator/aimd_rate_control.h"
 #include "modules/remote_bitrate_estimator/inter_arrival.h"
@@ -37,7 +40,7 @@ struct BweSeparateAudioPacketsSettings {
 
   BweSeparateAudioPacketsSettings() = default;
   explicit BweSeparateAudioPacketsSettings(
-      const WebRtcKeyValueConfig* key_value_config);
+      const FieldTrialsView* key_value_config);
 
   bool enabled = false;
   int packet_threshold = 10;
@@ -55,10 +58,10 @@ class DelayBasedBwe {
     bool probe;
     DataRate target_bitrate = DataRate::Zero();
     bool recovered_from_overuse;
-    bool backoff_in_alr;
+    BandwidthUsage delay_detector_state;
   };
 
-  explicit DelayBasedBwe(const WebRtcKeyValueConfig* key_value_config,
+  explicit DelayBasedBwe(const FieldTrialsView* key_value_config,
                          RtcEventLog* event_log,
                          NetworkStatePredictor* network_state_predictor);
 
@@ -79,10 +82,10 @@ class DelayBasedBwe {
   void SetStartBitrate(DataRate start_bitrate);
   void SetMinBitrate(DataRate min_bitrate);
   TimeDelta GetExpectedBwePeriod() const;
-  void SetAlrLimitedBackoffExperiment(bool enabled);
   DataRate TriggerOveruse(Timestamp at_time,
                           absl::optional<DataRate> link_capacity);
   DataRate last_estimate() const { return prev_bitrate_; }
+  BandwidthUsage last_state() const { return prev_state_; }
 
  private:
   friend class GoogCcStatePrinter;
@@ -103,7 +106,7 @@ class DelayBasedBwe {
 
   rtc::RaceChecker network_race_;
   RtcEventLog* const event_log_;
-  const WebRtcKeyValueConfig* const key_value_config_;
+  const FieldTrialsView* const key_value_config_;
 
   // Alternatively, run two separate overuse detectors for audio and video,
   // and fall back to the audio one if we haven't seen a video packet in a
@@ -125,10 +128,7 @@ class DelayBasedBwe {
   bool uma_recorded_;
   AimdRateControl rate_control_;
   DataRate prev_bitrate_;
-  bool has_once_detected_overuse_;
   BandwidthUsage prev_state_;
-  const bool use_new_inter_arrival_delta_;
-  bool alr_limited_backoff_enabled_;
 };
 
 }  // namespace webrtc

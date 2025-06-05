@@ -12,7 +12,7 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
-#include "time_zone_fixed.h"
+#include "absl/time/internal/cctz/src/time_zone_fixed.h"
 
 #include <algorithm>
 #include <cassert>
@@ -53,7 +53,7 @@ int Parse02d(const char* p) {
 }  // namespace
 
 bool FixedOffsetFromName(const std::string& name, seconds* offset) {
-  if (name.compare(0, std::string::npos, "UTC", 3) == 0) {
+  if (name == "UTC" || name == "UTC0") {
     *offset = seconds::zero();
     return true;
   }
@@ -105,7 +105,7 @@ std::string FixedOffsetToName(const seconds& offset) {
   offset_minutes %= 60;
   const std::size_t prefix_len = sizeof(kFixedZonePrefix) - 1;
   char buf[prefix_len + sizeof("-24:00:00")];
-  char* ep = std::copy(kFixedZonePrefix, kFixedZonePrefix + prefix_len, buf);
+  char* ep = std::copy_n(kFixedZonePrefix, prefix_len, buf);
   *ep++ = sign;
   ep = Format02d(ep, offset_hours);
   *ep++ = ':';

@@ -17,7 +17,6 @@
 #include <memory>
 
 #include "rtc_base/checks.h"
-#include "rtc_base/constructor_magic.h"
 
 namespace webrtc {
 
@@ -31,30 +30,33 @@ class AudioVector {
 
   virtual ~AudioVector();
 
+  AudioVector(const AudioVector&) = delete;
+  AudioVector& operator=(const AudioVector&) = delete;
+
   // Deletes all values and make the vector empty.
   virtual void Clear();
 
-  // Copies all values from this vector to |copy_to|. Any contents in |copy_to|
+  // Copies all values from this vector to `copy_to`. Any contents in `copy_to`
   // are deleted before the copy operation. After the operation is done,
-  // |copy_to| will be an exact replica of this object.
+  // `copy_to` will be an exact replica of this object.
   virtual void CopyTo(AudioVector* copy_to) const;
 
-  // Copies |length| values from |position| in this vector to |copy_to|.
+  // Copies `length` values from `position` in this vector to `copy_to`.
   virtual void CopyTo(size_t length, size_t position, int16_t* copy_to) const;
 
-  // Prepends the contents of AudioVector |prepend_this| to this object. The
-  // length of this object is increased with the length of |prepend_this|.
+  // Prepends the contents of AudioVector `prepend_this` to this object. The
+  // length of this object is increased with the length of `prepend_this`.
   virtual void PushFront(const AudioVector& prepend_this);
 
-  // Same as above, but with an array |prepend_this| with |length| elements as
+  // Same as above, but with an array `prepend_this` with `length` elements as
   // source.
   virtual void PushFront(const int16_t* prepend_this, size_t length);
 
   // Same as PushFront but will append to the end of this object.
   virtual void PushBack(const AudioVector& append_this);
 
-  // Appends a segment of |append_this| to the end of this object. The segment
-  // starts from |position| and has |length| samples.
+  // Appends a segment of `append_this` to the end of this object. The segment
+  // starts from `position` and has `length` samples.
   virtual void PushBack(const AudioVector& append_this,
                         size_t length,
                         size_t position);
@@ -62,47 +64,47 @@ class AudioVector {
   // Same as PushFront but will append to the end of this object.
   virtual void PushBack(const int16_t* append_this, size_t length);
 
-  // Removes |length| elements from the beginning of this object.
+  // Removes `length` elements from the beginning of this object.
   virtual void PopFront(size_t length);
 
-  // Removes |length| elements from the end of this object.
+  // Removes `length` elements from the end of this object.
   virtual void PopBack(size_t length);
 
-  // Extends this object with |extra_length| elements at the end. The new
+  // Extends this object with `extra_length` elements at the end. The new
   // elements are initialized to zero.
   virtual void Extend(size_t extra_length);
 
-  // Inserts |length| elements taken from the array |insert_this| and insert
-  // them at |position|. The length of the AudioVector is increased by |length|.
-  // |position| = 0 means that the new values are prepended to the vector.
-  // |position| = Size() means that the new values are appended to the vector.
+  // Inserts `length` elements taken from the array `insert_this` and insert
+  // them at `position`. The length of the AudioVector is increased by `length`.
+  // `position` = 0 means that the new values are prepended to the vector.
+  // `position` = Size() means that the new values are appended to the vector.
   virtual void InsertAt(const int16_t* insert_this,
                         size_t length,
                         size_t position);
 
-  // Like InsertAt, but inserts |length| zero elements at |position|.
+  // Like InsertAt, but inserts `length` zero elements at `position`.
   virtual void InsertZerosAt(size_t length, size_t position);
 
-  // Overwrites |length| elements of this AudioVector starting from |position|
-  // with first values in |AudioVector|. The definition of |position|
-  // is the same as for InsertAt(). If |length| and |position| are selected
+  // Overwrites `length` elements of this AudioVector starting from `position`
+  // with first values in `AudioVector`. The definition of `position`
+  // is the same as for InsertAt(). If `length` and `position` are selected
   // such that the new data extends beyond the end of the current AudioVector,
   // the vector is extended to accommodate the new data.
   virtual void OverwriteAt(const AudioVector& insert_this,
                            size_t length,
                            size_t position);
 
-  // Overwrites |length| elements of this AudioVector with values taken from the
-  // array |insert_this|, starting at |position|. The definition of |position|
-  // is the same as for InsertAt(). If |length| and |position| are selected
+  // Overwrites `length` elements of this AudioVector with values taken from the
+  // array `insert_this`, starting at `position`. The definition of `position`
+  // is the same as for InsertAt(). If `length` and `position` are selected
   // such that the new data extends beyond the end of the current AudioVector,
   // the vector is extended to accommodate the new data.
   virtual void OverwriteAt(const int16_t* insert_this,
                            size_t length,
                            size_t position);
 
-  // Appends |append_this| to the end of the current vector. Lets the two
-  // vectors overlap by |fade_length| samples, and cross-fade linearly in this
+  // Appends `append_this` to the end of the current vector. Lets the two
+  // vectors overlap by `fade_length` samples, and cross-fade linearly in this
   // region.
   virtual void CrossFade(const AudioVector& append_this, size_t fade_length);
 
@@ -158,14 +160,12 @@ class AudioVector {
 
   size_t capacity_;  // Allocated number of samples in the array.
 
-  // The index of the first sample in |array_|, except when
+  // The index of the first sample in `array_`, except when
   // |begin_index_ == end_index_|, which indicates an empty buffer.
   size_t begin_index_;
 
-  // The index of the sample after the last sample in |array_|.
+  // The index of the sample after the last sample in `array_`.
   size_t end_index_;
-
-  RTC_DISALLOW_COPY_AND_ASSIGN(AudioVector);
 };
 
 }  // namespace webrtc

@@ -16,10 +16,14 @@
 #define ABSL_RANDOM_INTERNAL_IOSTREAM_STATE_SAVER_H_
 
 #include <cmath>
-#include <iostream>
+#include <cstdint>
+#include <ios>
+#include <istream>
 #include <limits>
+#include <ostream>
 #include <type_traits>
 
+#include "absl/base/config.h"
 #include "absl/meta/type_traits.h"
 #include "absl/numeric/int128.h"
 
@@ -95,7 +99,6 @@ typename absl::enable_if_t<!std::is_base_of<std::ios_base, T>::value,
                            null_state_saver<T>>
 make_ostream_state_saver(T& is,  // NOLINT(runtime/references)
                          std::ios_base::fmtflags flags = std::ios_base::dec) {
-  std::cerr << "null_state_saver";
   using result_type = null_state_saver<T>;
   return result_type(is, flags);
 }
@@ -192,8 +195,8 @@ struct stream_u128_helper<absl::uint128> {
 
   template <typename OStream>
   inline void write(absl::uint128 val, OStream& out) {
-    uint64_t h = Uint128High64(val);
-    uint64_t l = Uint128Low64(val);
+    uint64_t h = absl::Uint128High64(val);
+    uint64_t l = absl::Uint128Low64(val);
     out << h << out.fill() << l;
   }
 };

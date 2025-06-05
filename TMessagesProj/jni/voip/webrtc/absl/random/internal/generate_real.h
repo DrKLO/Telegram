@@ -23,8 +23,8 @@
 #include <limits>
 #include <type_traits>
 
-#include "absl/base/internal/bits.h"
 #include "absl/meta/type_traits.h"
+#include "absl/numeric/bits.h"
 #include "absl/random/internal/fastmath.h"
 #include "absl/random/internal/traits.h"
 
@@ -50,10 +50,10 @@ struct GenerateSignedTag {};
 // inputs, otherwise it never returns 0.
 //
 // When a value in U(0,1) is required, use:
-//   Uniform64ToReal<double, PositiveValueT, true>;
+//   GenerateRealFromBits<double, PositiveValueT, true>;
 //
 // When a value in U(-1,1) is required, use:
-//   Uniform64ToReal<double, SignedValueT, false>;
+//   GenerateRealFromBits<double, SignedValueT, false>;
 //
 //   This generates more distinct values than the mathematical equivalent
 //   `U(0, 1) * 2.0 - 1.0`.
@@ -78,7 +78,7 @@ inline RealType GenerateRealFromBits(uint64_t bits, int exp_bias = 0) {
       "GenerateRealFromBits must be parameterized by either float or double.");
 
   static_assert(sizeof(uint_type) == sizeof(real_type),
-                "Mismatched unsinged and real types.");
+                "Mismatched unsigned and real types.");
 
   static_assert((std::numeric_limits<real_type>::is_iec559 &&
                  std::numeric_limits<real_type>::radix == 2),
@@ -120,17 +120,15 @@ inline RealType GenerateRealFromBits(uint64_t bits, int exp_bias = 0) {
 
   // Number of leading zeros is mapped to the exponent: 2^-clz
   // bits is 0..01xxxxxx. After shifting, we're left with 1xxx...0..0
-  int clz = base_internal::CountLeadingZeros64(bits);
+  int clz = countl_zero(bits);
   bits <<= (IncludeZero ? clz : (clz & 63));  // remove 0-bits.
   exp -= clz;                                 // set the exponent.
   bits >>= (63 - kExp);
 
   // Construct the 32-bit or 64-bit IEEE 754 floating-point value from
   // the individual fields: sign, exp, mantissa(bits).
-  uint_type val =
-      (std::is_same<SignedTag, GeneratePositiveTag>::value ? 0u : sign) |
-      (static_cast<uint_type>(exp) << kExp) |
-      (static_cast<uint_type>(bits) & kMask);
+  uint_type val = sign | (static_cast<uint_type>(exp) << kExp) |
+                  (static_cast<uint_type>(bits) & kMask);
 
   // bit_cast to the output-type
   real_type result;

@@ -1,63 +1,22 @@
-/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
- * All rights reserved.
- *
- * This package is an SSL implementation written
- * by Eric Young (eay@cryptsoft.com).
- * The implementation was written so as to conform with Netscapes SSL.
- *
- * This library is free for commercial and non-commercial use as long as
- * the following conditions are aheared to.  The following conditions
- * apply to all code found in this distribution, be it the RC4, RSA,
- * lhash, DES, etc., code; not just the SSL code.  The SSL documentation
- * included with this distribution is covered by the same copyright terms
- * except that the holder is Tim Hudson (tjh@cryptsoft.com).
- *
- * Copyright remains Eric Young's, and as such any Copyright notices in
- * the code are not to be removed.
- * If this package is used in a product, Eric Young should be given attribution
- * as the author of the parts of the library used.
- * This can be in the form of a textual message at program startup or
- * in documentation (online or textual) provided with the package.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- * 1. Redistributions of source code must retain the copyright
- *    notice, this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
- * 3. All advertising materials mentioning features or use of this software
- *    must display the following acknowledgement:
- *    "This product includes cryptographic software written by
- *     Eric Young (eay@cryptsoft.com)"
- *    The word 'cryptographic' can be left out if the rouines from the library
- *    being used are not cryptographic related :-).
- * 4. If you include any Windows specific code (or a derivative thereof) from
- *    the apps directory (application code) you must include an acknowledgement:
- *    "This product includes software written by Tim Hudson (tjh@cryptsoft.com)"
- *
- * THIS SOFTWARE IS PROVIDED BY ERIC YOUNG ``AS IS'' AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
- * SUCH DAMAGE.
- *
- * The licence and distribution terms for any publically available version or
- * derivative of this code cannot be changed.  i.e. this code cannot simply be
- * copied and put under another distribution licence
- * [including the GNU Public Licence.] */
+// Copyright 1995-2016 The OpenSSL Project Authors. All Rights Reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 #ifndef OPENSSL_HEADER_SHA_H
 #define OPENSSL_HEADER_SHA_H
 
-#include <openssl/base.h>
+#include <openssl/base.h>   // IWYU pragma: export
+#include <openssl/bcm_public.h> // IWYU pragma: export
 
 #if defined(__cplusplus)
 extern "C" {
@@ -96,27 +55,21 @@ OPENSSL_EXPORT uint8_t *SHA1(const uint8_t *data, size_t len,
 OPENSSL_EXPORT void SHA1_Transform(SHA_CTX *sha,
                                    const uint8_t block[SHA_CBLOCK]);
 
-struct sha_state_st {
-#if defined(OPENSSL_WINDOWS)
-  uint32_t h[5];
-#else
-  // wpa_supplicant accesses |h0|..|h4| so we must support those names
-  // for compatibility with it until it can be updated.
-  union {
-    uint32_t h[5];
-    struct {
-      uint32_t h0;
-      uint32_t h1;
-      uint32_t h2;
-      uint32_t h3;
-      uint32_t h4;
-    };
-  };
-#endif
-  uint32_t Nl, Nh;
-  uint8_t data[SHA_CBLOCK];
-  unsigned num;
-};
+// CRYPTO_fips_186_2_prf derives |out_len| bytes from |xkey| using the PRF
+// defined in FIPS 186-2, Appendix 3.1, with change notice 1 applied. The b
+// parameter is 160 and seed, XKEY, is also 160 bits. The optional XSEED user
+// input is all zeros.
+//
+// The PRF generates a sequence of 320-bit numbers. Each number is encoded as a
+// 40-byte string in big-endian and then concatenated to form |out|. If
+// |out_len| is not a multiple of 40, the result is truncated. This matches the
+// construction used in Section 7 of RFC 4186 and Section 7 of RFC 4187.
+//
+// This PRF is based on SHA-1, a weak hash function, and should not be used
+// in new protocols. It is provided for compatibility with some legacy EAP
+// methods.
+OPENSSL_EXPORT void CRYPTO_fips_186_2_prf(
+    uint8_t *out, size_t out_len, const uint8_t xkey[SHA_DIGEST_LENGTH]);
 
 
 // SHA-224.
@@ -135,7 +88,7 @@ OPENSSL_EXPORT int SHA224_Update(SHA256_CTX *sha, const void *data, size_t len);
 
 // SHA224_Final adds the final padding to |sha| and writes the resulting digest
 // to |out|, which must have at least |SHA224_DIGEST_LENGTH| bytes of space. It
-// returns one on success and zero on programmer error.
+// returns 1.
 OPENSSL_EXPORT int SHA224_Final(uint8_t out[SHA224_DIGEST_LENGTH],
                                 SHA256_CTX *sha);
 
@@ -185,14 +138,6 @@ OPENSSL_EXPORT void SHA256_Transform(SHA256_CTX *sha,
 OPENSSL_EXPORT void SHA256_TransformBlocks(uint32_t state[8],
                                            const uint8_t *data,
                                            size_t num_blocks);
-
-struct sha256_state_st {
-  uint32_t h[8];
-  uint32_t Nl, Nh;
-  uint8_t data[SHA256_CBLOCK];
-  unsigned num, md_len;
-};
-
 
 // SHA-384.
 
@@ -253,12 +198,30 @@ OPENSSL_EXPORT uint8_t *SHA512(const uint8_t *data, size_t len,
 OPENSSL_EXPORT void SHA512_Transform(SHA512_CTX *sha,
                                      const uint8_t block[SHA512_CBLOCK]);
 
-struct sha512_state_st {
-  uint64_t h[8];
-  uint64_t Nl, Nh;
-  uint8_t p[128];
-  unsigned num, md_len;
-};
+// SHA-512-256
+//
+// See https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.180-4.pdf section 5.3.6
+
+#define SHA512_256_DIGEST_LENGTH 32
+
+// SHA512_256_Init initialises |sha| and returns 1.
+OPENSSL_EXPORT int SHA512_256_Init(SHA512_CTX *sha);
+
+// SHA512_256_Update adds |len| bytes from |data| to |sha| and returns 1.
+OPENSSL_EXPORT int SHA512_256_Update(SHA512_CTX *sha, const void *data,
+                                     size_t len);
+
+// SHA512_256_Final adds the final padding to |sha| and writes the resulting
+// digest to |out|, which must have at least |SHA512_256_DIGEST_LENGTH| bytes of
+// space. It returns one on success and zero on programmer error.
+OPENSSL_EXPORT int SHA512_256_Final(uint8_t out[SHA512_256_DIGEST_LENGTH],
+                                    SHA512_CTX *sha);
+
+// SHA512_256 writes the digest of |len| bytes from |data| to |out| and returns
+// |out|. There must be at least |SHA512_256_DIGEST_LENGTH| bytes of space in
+// |out|.
+OPENSSL_EXPORT uint8_t *SHA512_256(const uint8_t *data, size_t len,
+                                   uint8_t out[SHA512_256_DIGEST_LENGTH]);
 
 
 #if defined(__cplusplus)

@@ -23,8 +23,39 @@ public class CallReceiver extends BroadcastReceiver {
             String phoneState = intent.getStringExtra(TelephonyManager.EXTRA_STATE);
             if (TelephonyManager.EXTRA_STATE_RINGING.equals(phoneState)) {
                 String phoneNumber = intent.getStringExtra(TelephonyManager.EXTRA_INCOMING_NUMBER);
-                NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.didReceiveCall, PhoneFormat.stripExceptNumbers(phoneNumber));
+                String phone = PhoneFormat.stripExceptNumbers(phoneNumber);
+                SharedConfig.getPreferences().edit()
+                        .putString("last_call_phone_number", phone)
+                        .putLong("last_call_time", System.currentTimeMillis())
+                        .apply();
+                NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.didReceiveCall, phone);
             }
         }
+    }
+
+    public static String getLastReceivedCall() {
+        String phone = SharedConfig.getPreferences().getString("last_call_phone_number", null);
+        if (phone == null) {
+            return null;
+        }
+        long lastTime = SharedConfig.getPreferences().getLong("last_call_time", 0);
+        if (System.currentTimeMillis() - lastTime < 1000 * 60 * 60 * 15) {
+            return phone;
+        }
+        return null;
+    }
+
+    public static void checkLastReceivedCall() {
+        String lastCall = getLastReceivedCall();
+        if (lastCall != null) {
+            NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.didReceiveCall, lastCall);
+        }
+    }
+
+    public static void clearLastCall() {
+        SharedConfig.getPreferences().edit()
+                .remove("last_call_phone_number")
+                .remove("last_call_time")
+                .apply();
     }
 }

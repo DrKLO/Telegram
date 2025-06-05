@@ -12,9 +12,13 @@ import java.nio.FloatBuffer;
 public class Render {
 
     public static RectF RenderPath(Path path, RenderState state) {
+        return RenderPath(path, state, false);
+    }
+
+    public static RectF RenderPath(Path path, RenderState state, boolean fullAlpha) {
         state.baseWeight = path.getBaseWeight();
         state.spacing = path.getBrush().getSpacing();
-        state.alpha = path.getBrush().getAlpha();
+        state.alpha = fullAlpha ? 1f : path.getBrush().getAlpha();
         state.angle = path.getBrush().getAngle();
         state.scale = path.getBrush().getScale();
 
@@ -45,7 +49,7 @@ public class Render {
         Point unitVector = new Point(1.0f, 1.0f, 0.0f);
         float vectorAngle = Math.abs(state.angle) > 0.0f ? state.angle : (float) Math.atan2(vector.y, vector.x);
 
-        float brushWeight = state.baseWeight * state.scale * 1f / state.viewportScale;
+        float brushWeight = (float) (state.baseWeight * point.z * state.scale * 1f / state.viewportScale);
         double step = Math.max(1.0f, state.spacing * brushWeight);
 
         if (distance > 0.0) {
@@ -99,7 +103,7 @@ public class Render {
         RectF dataBounds = new RectF(0, 0, 0, 0);
 
         int count = state.getCount();
-        if (count == 0) {
+        if (count <= 0) {
             return dataBounds;
         }
 

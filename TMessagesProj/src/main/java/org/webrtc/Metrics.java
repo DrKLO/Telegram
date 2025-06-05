@@ -18,12 +18,12 @@ import java.util.Map;
 // Rtc histograms can be queried through the API, getAndReset().
 // The returned map holds the name of a histogram and its samples.
 //
-// Example of |map| with one histogram:
-// |name|: "WebRTC.Video.InputFramesPerSecond"
-//     |min|: 1
-//     |max|: 100
-//     |bucketCount|: 50
-//     |samples|: [30]:1
+// Example of `map` with one histogram:
+// `name`: "WebRTC.Video.InputFramesPerSecond"
+//     `min`: 1
+//     `max`: 100
+//     `bucketCount`: 50
+//     `samples`: [30]:1
 //
 // Most histograms are not updated frequently (e.g. most video metrics are an
 // average over the call and recorded when a stream is removed).

@@ -41,10 +41,10 @@ struct RTC_EXPORT CryptoOptions {
   struct Srtp {
     // Enable GCM crypto suites from RFC 7714 for SRTP. GCM will only be used
     // if both sides enable it.
-    bool enable_gcm_crypto_suites = false;
+    bool enable_gcm_crypto_suites = true;
 
     // If set to true, the (potentially insecure) crypto cipher
-    // SRTP_AES128_CM_SHA1_32 will be included in the list of supported ciphers
+    // kSrtpAes128CmSha1_32 will be included in the list of supported ciphers
     // during negotiation. It will only be used if both peers support it and no
     // other ciphers get preferred.
     bool enable_aes128_sha1_32_crypto_cipher = false;

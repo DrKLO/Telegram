@@ -19,18 +19,20 @@ extern "C" {
 #include <libavformat/isom.h>
 #include <libavcodec/bytestream.h>
 #include <libavcodec/get_bits.h>
-#include <libavcodec/golomb.h>    
+#include <libavcodec/golomb.h>
 #include <libavutil/eval.h>
 #include <libavutil/intmath.h>
 #include <libswscale/swscale.h>
 }
-    
+
+#define RGB8888_A(p) ((p & (0xff<<24))      >> 24 )
+
 static const std::string av_make_error_str(int errnum) {
     char errbuf[AV_ERROR_MAX_STRING_SIZE];
     av_strerror(errnum, errbuf, AV_ERROR_MAX_STRING_SIZE);
     return (std::string) errbuf;
 }
-    
+
 #undef av_err2str
 #define av_err2str(errnum) av_make_error_str(errnum).c_str()
 #define FFMPEG_AVSEEK_SIZE 0x10000
@@ -38,58 +40,12 @@ static const std::string av_make_error_str(int errnum) {
 jclass jclass_AnimatedFileDrawableStream;
 jmethodID jclass_AnimatedFileDrawableStream_read;
 jmethodID jclass_AnimatedFileDrawableStream_cancel;
+jmethodID jclass_AnimatedFileDrawableStream_isCanceled;
 jmethodID jclass_AnimatedFileDrawableStream_isFinishedLoadingFile;
 jmethodID jclass_AnimatedFileDrawableStream_getFinishedFilePath;
 
-typedef struct H2645NAL {
-    uint8_t *rbsp_buffer;
-    int size;
-    const uint8_t *data;
-    int size_bits;
-    int raw_size;
-    const uint8_t *raw_data;
-    int type;
-    int temporal_id;
-    int nuh_layer_id;
-    int skipped_bytes;
-    int skipped_bytes_pos_size;
-    int *skipped_bytes_pos;
-    int ref_idc;
-    GetBitContext gb;
-} H2645NAL;
-
-typedef struct H2645RBSP {
-    uint8_t *rbsp_buffer;
-    AVBufferRef *rbsp_buffer_ref;
-    int rbsp_buffer_alloc_size;
-    int rbsp_buffer_size;
-} H2645RBSP;
-
-typedef struct H2645Packet {
-    H2645NAL *nals;
-    H2645RBSP rbsp;
-    int nb_nals;
-    int nals_allocated;
-    unsigned nal_buffer_size;
-} H2645Packet;
-
-void ff_h2645_packet_uninit(H2645Packet *pkt) {
-    int i;
-    for (i = 0; i < pkt->nals_allocated; i++) {
-        av_freep(&pkt->nals[i].skipped_bytes_pos);
-    }
-    av_freep(&pkt->nals);
-    pkt->nals_allocated = pkt->nal_buffer_size = 0;
-    if (pkt->rbsp.rbsp_buffer_ref) {
-        av_buffer_unref(&pkt->rbsp.rbsp_buffer_ref);
-        pkt->rbsp.rbsp_buffer = NULL;
-    } else
-        av_freep(&pkt->rbsp.rbsp_buffer);
-    pkt->rbsp.rbsp_buffer_alloc_size = pkt->rbsp.rbsp_buffer_size = 0;
-}
-
 typedef struct VideoInfo {
-    
+
     ~VideoInfo() {
         if (video_dec_ctx) {
             avcodec_close(video_dec_ctx);
@@ -119,6 +75,7 @@ typedef struct VideoInfo {
             } else {
                 attached = false;
             }
+            DEBUG_DELREF("gifvideo.cpp stream");
             jniEnv->DeleteGlobalRef(stream);
             if (attached) {
                 javaVm->DetachCurrentThread();
@@ -141,7 +98,6 @@ typedef struct VideoInfo {
             fd = -1;
         }
 
-        ff_h2645_packet_uninit(&h2645Packet);
         av_packet_unref(&orig_pkt);
 
         video_stream_idx = -1;
@@ -166,8 +122,6 @@ typedef struct VideoInfo {
     int firstHeight = 0;
 
     bool dropFrames = false;
-
-    H2645Packet h2645Packet = {nullptr};
 
     int32_t dst_linesize[1];
 
@@ -194,6 +148,18 @@ void custom_log(void *ptr, int level, const char* fmt, va_list vl){
     LOGE(line);
 }
 
+static enum AVPixelFormat get_format(AVCodecContext *ctx,
+                                        const enum AVPixelFormat *pix_fmts)
+{
+    const enum AVPixelFormat *p;
+
+    for (p = pix_fmts; *p != -1; p++) {
+        LOGE("available format %d", p);
+    }
+
+    return pix_fmts[0];
+}
+
 int open_codec_context(int *stream_idx, AVCodecContext **dec_ctx, AVFormatContext *fmt_ctx, enum AVMediaType type) {
     int ret, stream_index;
     AVStream *st;
@@ -210,7 +176,7 @@ int open_codec_context(int *stream_idx, AVCodecContext **dec_ctx, AVFormatContex
 
         dec = avcodec_find_decoder(st->codecpar->codec_id);
         if (!dec) {
-            LOGE("failed to find %s codec", av_get_media_type_string(type));
+            LOGE("failed to find %d codec", st->codecpar->codec_id);
             return AVERROR(EINVAL);
         }
 
@@ -236,480 +202,31 @@ int open_codec_context(int *stream_idx, AVCodecContext **dec_ctx, AVFormatContex
     return 0;
 }
 
-#define MAX_MBPAIR_SIZE (256*1024)
-
-int ff_h2645_extract_rbsp(const uint8_t *src, int length, H2645RBSP *rbsp, H2645NAL *nal)
-{
-    int i, si, di;
-    uint8_t *dst;
-
-    nal->skipped_bytes = 0;
-#define STARTCODE_TEST                                                  \
-        if (i + 2 < length && src[i + 1] == 0 && src[i + 2] <= 3) {     \
-            if (src[i + 2] != 3 && src[i + 2] != 0) {                   \
-                /* startcode, so we must be past the end */             \
-                length = i;                                             \
-            }                                                           \
-            break;                                                      \
-        }
-
-    for (i = 0; i + 1 < length; i += 2) {
-        if (src[i])
-            continue;
-        if (i > 0 && src[i - 1] == 0)
-            i--;
-        STARTCODE_TEST;
-    }
-
-    if (i > length)
-        i = length;
-
-    nal->rbsp_buffer = &rbsp->rbsp_buffer[rbsp->rbsp_buffer_size];
-    dst = nal->rbsp_buffer;
-
-    memcpy(dst, src, i);
-    si = di = i;
-    while (si + 2 < length) {
-        if (src[si + 2] > 3) {
-            dst[di++] = src[si++];
-            dst[di++] = src[si++];
-        } else if (src[si] == 0 && src[si + 1] == 0 && src[si + 2] != 0) {
-            if (src[si + 2] == 3) {
-                dst[di++] = 0;
-                dst[di++] = 0;
-                si       += 3;
-
-                if (nal->skipped_bytes_pos) {
-                    nal->skipped_bytes++;
-                    if (nal->skipped_bytes_pos_size < nal->skipped_bytes) {
-                        nal->skipped_bytes_pos_size *= 2;
-                        av_reallocp_array(&nal->skipped_bytes_pos,
-                                          nal->skipped_bytes_pos_size,
-                                          sizeof(*nal->skipped_bytes_pos));
-                        if (!nal->skipped_bytes_pos) {
-                            nal->skipped_bytes_pos_size = 0;
-                            return AVERROR(ENOMEM);
-                        }
-                    }
-                    if (nal->skipped_bytes_pos)
-                        nal->skipped_bytes_pos[nal->skipped_bytes-1] = di - 1;
-                }
-                continue;
-            } else // next start code
-                goto nsc;
-        }
-
-        dst[di++] = src[si++];
-    }
-    while (si < length)
-        dst[di++] = src[si++];
-
-    nsc:
-    memset(dst + di, 0, AV_INPUT_BUFFER_PADDING_SIZE);
-
-    nal->data = dst;
-    nal->size = di;
-    nal->raw_data = src;
-    nal->raw_size = si;
-    rbsp->rbsp_buffer_size += si;
-
-    return si;
-}
-
-static inline int get_nalsize(int nal_length_size, const uint8_t *buf, int buf_size, int *buf_index) {
-    int i, nalsize = 0;
-    if (*buf_index >= buf_size - nal_length_size) {
-        return AVERROR(EAGAIN);
-    }
-    for (i = 0; i < nal_length_size; i++)
-        nalsize = ((unsigned)nalsize << 8) | buf[(*buf_index)++];
-    if (nalsize <= 0 || nalsize > buf_size - *buf_index) {
-        return AVERROR_INVALIDDATA;
-    }
-    return nalsize;
-}
-
-static int find_next_start_code(const uint8_t *buf, const uint8_t *next_avc) {
-    int i = 0;
-    if (buf + 3 >= next_avc)
-        return next_avc - buf;
-    while (buf + i + 3 < next_avc) {
-        if (buf[i] == 0 && buf[i + 1] == 0 && buf[i + 2] == 1)
-            break;
-        i++;
-    }
-    return i + 3;
-}
-
-static int get_bit_length(H2645NAL *nal, int skip_trailing_zeros) {
-    int size = nal->size;
-    int v;
-
-    while (skip_trailing_zeros && size > 0 && nal->data[size - 1] == 0)
-        size--;
-
-    if (!size)
-        return 0;
-
-    v = nal->data[size - 1];
-
-    if (size > INT_MAX / 8)
-        return AVERROR(ERANGE);
-    size *= 8;
-
-    /* remove the stop bit and following trailing zeros,
-     * or nothing for damaged bitstreams */
-    if (v)
-        size -= ff_ctz(v) + 1;
-
-    return size;
-}
-
-static void alloc_rbsp_buffer(H2645RBSP *rbsp, unsigned int size) {
-    int min_size = size;
-
-    if (size > INT_MAX - AV_INPUT_BUFFER_PADDING_SIZE)
-        goto fail;
-    size += AV_INPUT_BUFFER_PADDING_SIZE;
-
-    if (rbsp->rbsp_buffer_alloc_size >= size &&
-        (!rbsp->rbsp_buffer_ref || av_buffer_is_writable(rbsp->rbsp_buffer_ref))) {
-        memset(rbsp->rbsp_buffer + min_size, 0, AV_INPUT_BUFFER_PADDING_SIZE);
-        return;
-    }
-
-    size = FFMIN(size + size / 16 + 32, INT_MAX);
-
-    if (rbsp->rbsp_buffer_ref)
-        av_buffer_unref(&rbsp->rbsp_buffer_ref);
-    else
-        av_free(rbsp->rbsp_buffer);
-
-    rbsp->rbsp_buffer = (uint8_t *) av_mallocz(size);
-    if (!rbsp->rbsp_buffer)
-        goto fail;
-    rbsp->rbsp_buffer_alloc_size = size;
-
-    return;
-
-    fail:
-    rbsp->rbsp_buffer_alloc_size = 0;
-    if (rbsp->rbsp_buffer_ref) {
-        av_buffer_unref(&rbsp->rbsp_buffer_ref);
-        rbsp->rbsp_buffer = NULL;
-    } else
-        av_freep(&rbsp->rbsp_buffer);
-
-    return;
-}
-
-static int h264_parse_nal_header(H2645NAL *nal) {
-    GetBitContext *gb = &nal->gb;
-
-    if (get_bits1(gb) != 0)
-        return AVERROR_INVALIDDATA;
-
-    nal->ref_idc = get_bits(gb, 2);
-    nal->type    = get_bits(gb, 5);
-
-    return 1;
-}
-
-int ff_h2645_packet_split(H2645Packet *pkt, const uint8_t *buf, int length, int is_nalff, int nal_length_size) {
-    GetByteContext bc;
-    int consumed, ret = 0;
-    int next_avc = is_nalff ? 0 : length;
-    int64_t padding = MAX_MBPAIR_SIZE;
-
-    bytestream2_init(&bc, buf, length);
-    alloc_rbsp_buffer(&pkt->rbsp, length + padding);
-
-    if (!pkt->rbsp.rbsp_buffer)
-        return AVERROR(ENOMEM);
-
-    pkt->rbsp.rbsp_buffer_size = 0;
-    pkt->nb_nals = 0;
-    while (bytestream2_get_bytes_left(&bc) >= 4) {
-        H2645NAL *nal;
-        int extract_length = 0;
-        int skip_trailing_zeros = 1;
-
-        if (bytestream2_tell(&bc) == next_avc) {
-            int i = 0;
-            extract_length = get_nalsize(nal_length_size, bc.buffer, bytestream2_get_bytes_left(&bc), &i);
-            if (extract_length < 0)
-                return extract_length;
-
-            bytestream2_skip(&bc, nal_length_size);
-
-            next_avc = bytestream2_tell(&bc) + extract_length;
-        } else {
-            int buf_index;
-            buf_index = find_next_start_code(bc.buffer, buf + next_avc);
-            bytestream2_skip(&bc, buf_index);
-            if (!bytestream2_get_bytes_left(&bc)) {
-                if (pkt->nb_nals > 0) {
-                    return 0;
-                } else {
-                    return AVERROR_INVALIDDATA;
-                }
-            }
-            extract_length = FFMIN(bytestream2_get_bytes_left(&bc), next_avc - bytestream2_tell(&bc));
-            if (bytestream2_tell(&bc) >= next_avc) {
-                bytestream2_skip(&bc, next_avc - bytestream2_tell(&bc));
-                continue;
-            }
-        }
-
-        if (pkt->nals_allocated < pkt->nb_nals + 1) {
-            int new_size = pkt->nals_allocated + 1;
-            void *tmp;
-
-            if (new_size >= INT_MAX / sizeof(*pkt->nals))
-                return AVERROR(ENOMEM);
-
-            tmp = av_fast_realloc(pkt->nals, &pkt->nal_buffer_size, new_size * sizeof(*pkt->nals));
-            if (!tmp)
-                return AVERROR(ENOMEM);
-
-            pkt->nals = (H2645NAL *) tmp;
-            memset(pkt->nals + pkt->nals_allocated, 0, sizeof(*pkt->nals));
-
-            nal = &pkt->nals[pkt->nb_nals];
-            nal->skipped_bytes_pos_size = 1024;
-            nal->skipped_bytes_pos = (int *) av_malloc_array(nal->skipped_bytes_pos_size, sizeof(*nal->skipped_bytes_pos));
-            if (!nal->skipped_bytes_pos)
-                return AVERROR(ENOMEM);
-
-            pkt->nals_allocated = new_size;
-        }
-        nal = &pkt->nals[pkt->nb_nals];
-
-        consumed = ff_h2645_extract_rbsp(bc.buffer, extract_length, &pkt->rbsp, nal);
-        if (consumed < 0)
-            return consumed;
-
-        pkt->nb_nals++;
-
-        bytestream2_skip(&bc, consumed);
-
-        /* see commit 3566042a0 */
-        if (bytestream2_get_bytes_left(&bc) >= 4 &&
-            bytestream2_peek_be32(&bc) == 0x000001E0)
-            skip_trailing_zeros = 0;
-
-        nal->size_bits = get_bit_length(nal, skip_trailing_zeros);
-
-        ret = init_get_bits(&nal->gb, nal->data, nal->size_bits);
-        if (ret < 0)
-            return ret;
-
-        ret = h264_parse_nal_header(nal);
-        if (ret <= 0 || nal->size <= 0 || nal->size_bits <= 0) {
-            pkt->nb_nals--;
-        }
-    }
-
-    return 0;
-}
-
-#define MAX_SPS_COUNT          32
-
-const uint8_t ff_zigzag_direct[64] = {
-        0,   1,  8, 16,  9,  2,  3, 10,
-        17, 24, 32, 25, 18, 11,  4,  5,
-        12, 19, 26, 33, 40, 48, 41, 34,
-        27, 20, 13,  6,  7, 14, 21, 28,
-        35, 42, 49, 56, 57, 50, 43, 36,
-        29, 22, 15, 23, 30, 37, 44, 51,
-        58, 59, 52, 45, 38, 31, 39, 46,
-        53, 60, 61, 54, 47, 55, 62, 63
-};
-
-const uint8_t ff_zigzag_scan[16+1] = {
-        0 + 0 * 4, 1 + 0 * 4, 0 + 1 * 4, 0 + 2 * 4,
-        1 + 1 * 4, 2 + 0 * 4, 3 + 0 * 4, 2 + 1 * 4,
-        1 + 2 * 4, 0 + 3 * 4, 1 + 3 * 4, 2 + 2 * 4,
-        3 + 1 * 4, 3 + 2 * 4, 2 + 3 * 4, 3 + 3 * 4,
-};
-
-static int decode_scaling_list(GetBitContext *gb, uint8_t *factors, int size) {
-    int i, last = 8, next = 8;
-    const uint8_t *scan = size == 16 ? ff_zigzag_scan : ff_zigzag_direct;
-    if (!get_bits1(gb)) {
-
-    } else {
-        for (i = 0; i < size; i++) {
-            if (next) {
-                int v = get_se_golomb(gb);
-                if (v < -128 || v > 127) {
-                    return AVERROR_INVALIDDATA;
-                }
-                next = (last + v) & 0xff;
-            }
-            if (!i && !next) { /* matrix not written, we use the preset one */
-                break;
-            }
-            last = factors[scan[i]] = next ? next : last;
-        }
-    }
-    return 0;
-}
-
-static int decode_scaling_matrices(GetBitContext *gb, int chroma_format_idc, uint8_t(*scaling_matrix4)[16], uint8_t(*scaling_matrix8)[64]) {
-    int ret = 0;
-    if (get_bits1(gb)) {
-        ret |= decode_scaling_list(gb, scaling_matrix4[0], 16);        // Intra, Y
-        ret |= decode_scaling_list(gb, scaling_matrix4[1], 16); // Intra, Cr
-        ret |= decode_scaling_list(gb, scaling_matrix4[2], 16); // Intra, Cb
-        ret |= decode_scaling_list(gb, scaling_matrix4[3], 16);        // Inter, Y
-        ret |= decode_scaling_list(gb, scaling_matrix4[4], 16); // Inter, Cr
-        ret |= decode_scaling_list(gb, scaling_matrix4[5], 16); // Inter, Cb
-
-        ret |= decode_scaling_list(gb, scaling_matrix8[0], 64); // Intra, Y
-        ret |= decode_scaling_list(gb, scaling_matrix8[3], 64); // Inter, Y
-        if (chroma_format_idc == 3) {
-            ret |= decode_scaling_list(gb, scaling_matrix8[1], 64); // Intra, Cr
-            ret |= decode_scaling_list(gb, scaling_matrix8[4], 64); // Inter, Cr
-            ret |= decode_scaling_list(gb, scaling_matrix8[2], 64); // Intra, Cb
-            ret |= decode_scaling_list(gb, scaling_matrix8[5], 64); // Inter, Cb
-        }
-        if (!ret)
-            ret = 1;
-    }
-
-    return ret;
-}
-
-int ff_h264_decode_seq_parameter_set(GetBitContext *gb, int &width, int &height) {
-    int profile_idc, level_idc, constraint_set_flags = 0;
-    unsigned int sps_id;
-    int i, log2_max_frame_num_minus4;
-    int ret;
-
-    profile_idc = get_bits(gb, 8);
-    constraint_set_flags |= get_bits1(gb) << 0;
-    constraint_set_flags |= get_bits1(gb) << 1;
-    constraint_set_flags |= get_bits1(gb) << 2;
-    constraint_set_flags |= get_bits1(gb) << 3;
-    constraint_set_flags |= get_bits1(gb) << 4;
-    constraint_set_flags |= get_bits1(gb) << 5;
-    skip_bits(gb, 2);
-    level_idc = get_bits(gb, 8);
-    sps_id = get_ue_golomb_31(gb);
-
-    if (sps_id >= MAX_SPS_COUNT) {
-        return false;
-    }
-
-    if (profile_idc == 100 ||  // High profile
-        profile_idc == 110 ||  // High10 profile
-        profile_idc == 122 ||  // High422 profile
-        profile_idc == 244 ||  // High444 Predictive profile
-        profile_idc == 44 ||  // Cavlc444 profile
-        profile_idc == 83 ||  // Scalable Constrained High profile (SVC)
-        profile_idc == 86 ||  // Scalable High Intra profile (SVC)
-        profile_idc == 118 ||  // Stereo High profile (MVC)
-        profile_idc == 128 ||  // Multiview High profile (MVC)
-        profile_idc == 138 ||  // Multiview Depth High profile (MVCD)
-        profile_idc == 144) {  // old High444 profile
-        int chroma_format_idc = get_ue_golomb_31(gb);
-        if (chroma_format_idc > 3U) {
-            return false;
-        } else if (chroma_format_idc == 3) {
-            int residual_color_transform_flag = get_bits1(gb);
-            if (residual_color_transform_flag) {
-                return false;
-            }
-        }
-        int bit_depth_luma = get_ue_golomb(gb) + 8;
-        int bit_depth_chroma = get_ue_golomb(gb) + 8;
-        if (bit_depth_chroma != bit_depth_luma) {
-            return false;
-        }
-        if (bit_depth_luma < 8 || bit_depth_luma > 14 || bit_depth_chroma < 8 || bit_depth_chroma > 14) {
-            return false;
-        }
-        get_bits1(gb);
-        uint8_t scaling_matrix4[6][16];
-        uint8_t scaling_matrix8[6][64];
-        ret = decode_scaling_matrices(gb, chroma_format_idc, scaling_matrix4, scaling_matrix8);
-        if (ret < 0)
-            return false;
-    }
-
-    get_ue_golomb(gb);
-
-    int poc_type = get_ue_golomb_31(gb);
-
-    if (poc_type == 0) {
-        unsigned t = get_ue_golomb(gb);
-        if (t > 12) {
-            return false;
-        }
-    } else if (poc_type == 1) {
-        get_bits1(gb);
-        int offset_for_non_ref_pic = get_se_golomb_long(gb);
-        int offset_for_top_to_bottom_field = get_se_golomb_long(gb);
-
-        if (offset_for_non_ref_pic == INT32_MIN || offset_for_top_to_bottom_field == INT32_MIN) {
-            return false;
-        }
-
-        int poc_cycle_length = get_ue_golomb(gb);
-
-        if ((unsigned) poc_cycle_length >= 256) {
-            return false;
-        }
-
-        for (i = 0; i < poc_cycle_length; i++) {
-            int offset_for_ref_frame = get_se_golomb_long(gb);
-            if (offset_for_ref_frame == INT32_MIN) {
-                return false;
-            }
-        }
-    } else if (poc_type != 2) {
-        return false;
-    }
-
-    get_ue_golomb_31(gb);
-    get_bits1(gb);
-    int mb_width = get_ue_golomb(gb) + 1;
-    int mb_height = get_ue_golomb(gb) + 1;
-
-    if (width == 0 || height == 0) {
-        width = mb_width;
-        height = mb_height;
-    }
-    return mb_width != width || mb_height != height;
-}
-    
 int decode_packet(VideoInfo *info, int *got_frame) {
     int ret = 0;
     int decoded = info->pkt.size;
     *got_frame = 0;
 
     if (info->pkt.stream_index == info->video_stream_idx) {
-        if (info->video_stream->codecpar->codec_id == AV_CODEC_ID_H264 && decoded > 0) {
-            ff_h2645_packet_split(&info->h2645Packet, info->pkt.data, info->pkt.size, 1, 4);
-            for (int i = 0; i < info->h2645Packet.nb_nals; i++) {
-                H2645NAL *nal = &info->h2645Packet.nals[i];
-                switch (nal->type) {
-                    case 7: {
-                        GetBitContext tmp_gb = nal->gb;
-                        info->dropFrames = ff_h264_decode_seq_parameter_set(&tmp_gb, info->firstWidth, info->firstHeight);
-                    }
-                }
-            }
-        }
-        if (!info->dropFrames) {
-            ret = avcodec_decode_video2(info->video_dec_ctx, info->frame, got_frame, &info->pkt);
-            if (ret != 0) {
+        while (decoded > 0) {
+            ret = avcodec_send_packet(info->video_dec_ctx, &info->pkt);
+            if (ret < 0 && ret != AVERROR(EAGAIN)) {
                 return ret;
             }
+            if (ret >= 0) {
+                ret = avcodec_receive_frame(info->video_dec_ctx, info->frame);
+                if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) {
+                    return 0;
+                } else if (ret < 0) {
+                    return ret;
+                }
+                *got_frame = 1;
+                return info->pkt.size;
+            }
+            decoded = info->pkt.size;
         }
     }
-    
+
     return decoded;
 }
 
@@ -776,11 +293,18 @@ int readCallback(void *opaque, uint8_t *buf, int buf_size) {
                 if (attached) {
                     javaVm->DetachCurrentThread();
                 }
-                return (int) read(info->fd, buf, (size_t) buf_size);
+                if (buf_size == 0) {
+                    return AVERROR_EXIT;
+                }
+                int ret = (int) read(info->fd, buf, (size_t) buf_size);
+                if (ret <= 0) {
+                    return AVERROR_EOF;
+                }
+                return ret;
             }
         }
     }
-    return 0;
+    return AVERROR_EOF;
 }
 
 int64_t seekCallback(void *opaque, int64_t offset, int whence) {
@@ -817,7 +341,7 @@ enum PARAM_NUM {
     PARAM_NUM_COUNT = 11,
 };
 
-extern "C" JNIEXPORT void JNICALL Java_org_telegram_ui_Components_AnimatedFileDrawable_getVideoInfo(JNIEnv *env, jclass clazz,jint sdkVersion, jstring src, jintArray data) {
+extern "C" JNIEXPORT void JNICALL Java_org_telegram_ui_Components_AnimatedFileDrawable_getVideoInfo(JNIEnv *env, jclass clazz, jint sdkVersion, jstring src, jintArray data) {
     VideoInfo *info = new VideoInfo();
 
     char const *srcString = env->GetStringUTFChars(src, 0);
@@ -921,7 +445,7 @@ extern "C" JNIEXPORT void JNICALL Java_org_telegram_ui_Components_AnimatedFileDr
 
 extern "C" JNIEXPORT jlong JNICALL Java_org_telegram_ui_Components_AnimatedFileDrawable_createDecoder(JNIEnv *env, jclass clazz, jstring src, jintArray data, jint account, jlong streamFileSize, jobject stream, jboolean preview) {
     VideoInfo *info = new VideoInfo();
-    
+
     char const *srcString = env->GetStringUTFChars(src, 0);
     size_t len = strlen(srcString);
     info->src = new char[len + 1];
@@ -934,6 +458,7 @@ extern "C" JNIEXPORT jlong JNICALL Java_org_telegram_ui_Components_AnimatedFileD
     int ret;
     if (streamFileSize != 0) {
         info->file_size = streamFileSize;
+        DEBUG_REF("gifvideo.cpp new stream");
         info->stream = env->NewGlobalRef(stream);
         info->account = account;
         info->fd = open(info->src, O_RDONLY, S_IRUSR);
@@ -968,13 +493,13 @@ extern "C" JNIEXPORT jlong JNICALL Java_org_telegram_ui_Components_AnimatedFileD
             return 0;
         }
     }
-    
+
     if ((ret = avformat_find_stream_info(info->fmt_ctx, NULL)) < 0) {
         LOGE("can't find stream information %s, %s", info->src, av_err2str(ret));
         delete info;
         return 0;
     }
-    
+
     if (open_codec_context(&info->video_stream_idx, &info->video_dec_ctx, info->fmt_ctx, AVMEDIA_TYPE_VIDEO) >= 0) {
         info->video_stream = info->fmt_ctx->streams[info->video_stream_idx];
     }
@@ -984,14 +509,14 @@ extern "C" JNIEXPORT jlong JNICALL Java_org_telegram_ui_Components_AnimatedFileD
         delete info;
         return 0;
     }
-    
+
     info->frame = av_frame_alloc();
     if (info->frame == nullptr) {
         LOGE("can't allocate frame %s", info->src);
         delete info;
         return 0;
     }
-    
+
     av_init_packet(&info->pkt);
     info->pkt.data = NULL;
     info->pkt.size = 0;
@@ -1012,12 +537,32 @@ extern "C" JNIEXPORT jlong JNICALL Java_org_telegram_ui_Components_AnimatedFileD
             dataArr[2] = 0;
         }
         dataArr[4] = (int32_t) (info->fmt_ctx->duration * 1000 / AV_TIME_BASE);
+        int video_stream_index = -1;
+        double fps = 30.0;
+        for (int i = 0; i < info->fmt_ctx->nb_streams; i++) {
+            if (info->fmt_ctx->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
+                video_stream_index = i;
+                break;
+            }
+        }
+        if (video_stream_index != -1) {
+            AVStream* video_stream = info->fmt_ctx->streams[video_stream_index];
+            if (video_stream->avg_frame_rate.den && video_stream->avg_frame_rate.num) {
+                fps = av_q2d(video_stream->avg_frame_rate);
+            } else if(video_stream->r_frame_rate.den && video_stream->r_frame_rate.num) {
+                fps = av_q2d(video_stream->r_frame_rate);
+            } else {
+                int ticks = video_stream->codec->ticks_per_frame;
+                fps = 1.0 / (ticks * av_q2d(video_stream->time_base));
+            }
+        }
+        dataArr[5] = (int32_t) fps;
         //(int32_t) (1000 * info->video_stream->duration * av_q2d(info->video_stream->time_base));
         env->ReleaseIntArrayElements(data, dataArr, 0);
     }
-    
+
     //LOGD("successfully opened file %s", info->src);
-    
+
     return (jlong) (intptr_t) info;
 }
 
@@ -1062,7 +607,13 @@ extern "C" JNIEXPORT void JNICALL Java_org_telegram_ui_Components_AnimatedFileDr
     info->seeking = true;
 }
 
-extern "C" JNIEXPORT void JNICALL Java_org_telegram_ui_Components_AnimatedFileDrawable_seekToMs(JNIEnv *env, jclass clazz, jlong ptr, jlong ms, jboolean precise) {
+void push_time(JNIEnv *env, VideoInfo* info, jintArray data) {
+    jint *dataArr = env->GetIntArrayElements(data, 0);
+    dataArr[3] = (jint) (1000 * info->frame->best_effort_timestamp * av_q2d(info->video_stream->time_base));
+    env->ReleaseIntArrayElements(data, dataArr, 0);
+}
+
+extern "C" JNIEXPORT void JNICALL Java_org_telegram_ui_Components_AnimatedFileDrawable_seekToMs(JNIEnv *env, jclass clazz, jlong ptr, jlong ms, jintArray data, jboolean precise) {
     if (ptr == NULL) {
         return;
     }
@@ -1076,10 +627,11 @@ extern "C" JNIEXPORT void JNICALL Java_org_telegram_ui_Components_AnimatedFileDr
     } else {
         avcodec_flush_buffers(info->video_dec_ctx);
         if (!precise) {
+            push_time(env, info, data);
             return;
         }
         int got_frame = 0;
-        int32_t tries = 1000;
+        int32_t tries = 100;
         while (tries > 0) {
             if (info->pkt.size == 0) {
                 ret = av_read_frame(info->fmt_ctx, &info->pkt);
@@ -1107,14 +659,17 @@ extern "C" JNIEXPORT void JNICALL Java_org_telegram_ui_Components_AnimatedFileDr
                 info->pkt.size = 0;
                 ret = decode_packet(info, &got_frame);
                 if (ret < 0) {
+                    push_time(env, info, data);
                     return;
                 }
                 if (got_frame == 0) {
                     av_seek_frame(info->fmt_ctx, info->video_stream_idx, 0, AVSEEK_FLAG_BACKWARD | AVSEEK_FLAG_FRAME);
+                    push_time(env, info, data);
                     return;
                 }
             }
             if (ret < 0) {
+                push_time(env, info, data);
                 return;
             }
             if (got_frame) {
@@ -1128,15 +683,26 @@ extern "C" JNIEXPORT void JNICALL Java_org_telegram_ui_Components_AnimatedFileDr
                 }
                 av_frame_unref(info->frame);
                 if (finished) {
+                    push_time(env, info, data);
                     return;
                 }
             }
             tries--;
         }
     }
+    push_time(env, info, data);
+}
+
+uint32_t premultiply_channel_value(const uint32_t pixel, const uint8_t offset, const float normalizedAlpha) {
+    auto multipliedValue = ((pixel >> offset) & 0xFF) * normalizedAlpha;
+    return ((uint32_t)std::min(multipliedValue, 255.0f)) << offset;
 }
 
 static inline void writeFrameToBitmap(JNIEnv *env, VideoInfo *info, jintArray data, jobject bitmap, jint stride) {
+    if (env->IsSameObject(bitmap, NULL)) {
+        push_time(env, info, data);
+        return;
+    }
     jint *dataArr = env->GetIntArrayElements(data, 0);
     int32_t wantedWidth;
     int32_t wantedHeight;
@@ -1159,14 +725,16 @@ static inline void writeFrameToBitmap(JNIEnv *env, VideoInfo *info, jintArray da
         void *pixels;
         if (AndroidBitmap_lockPixels(env, bitmap, &pixels) >= 0) {
             if (info->sws_ctx == nullptr) {
-                if (info->frame->format > AV_PIX_FMT_NONE && info->frame->format < AV_PIX_FMT_NB) {
+                if (info->frame->format > AV_PIX_FMT_NONE && info->frame->format < AV_PIX_FMT_NB && info->frame->format != AV_PIX_FMT_YUVA420P) {
                     info->sws_ctx = sws_getContext(info->frame->width, info->frame->height, (AVPixelFormat) info->frame->format, bitmapWidth, bitmapHeight, AV_PIX_FMT_RGBA, SWS_BILINEAR, NULL, NULL, NULL);
-                } else if (info->video_dec_ctx->pix_fmt > AV_PIX_FMT_NONE && info->video_dec_ctx->pix_fmt < AV_PIX_FMT_NB) {
+                } else if (info->video_dec_ctx->pix_fmt > AV_PIX_FMT_NONE && info->video_dec_ctx->pix_fmt < AV_PIX_FMT_NB && info->frame->format != AV_PIX_FMT_YUVA420P) {
                     info->sws_ctx = sws_getContext(info->video_dec_ctx->width, info->video_dec_ctx->height, info->video_dec_ctx->pix_fmt, bitmapWidth, bitmapHeight, AV_PIX_FMT_RGBA, SWS_BILINEAR, NULL, NULL, NULL);
                 }
             }
             if (info->sws_ctx == nullptr || ((intptr_t) pixels) % 16 != 0) {
-                if (info->frame->format == AV_PIX_FMT_YUV444P) {
+                if (info->frame->format == AV_PIX_FMT_YUVA420P) {
+                    libyuv::I420AlphaToARGBMatrix(info->frame->data[0], info->frame->linesize[0], info->frame->data[2], info->frame->linesize[2], info->frame->data[1], info->frame->linesize[1], info->frame->data[3], info->frame->linesize[3], (uint8_t *) pixels, bitmapWidth * 4, &libyuv::kYvuI601Constants, bitmapWidth, bitmapHeight, 1);
+                } else if (info->frame->format == AV_PIX_FMT_YUV444P) {
                     libyuv::H444ToARGB(info->frame->data[0], info->frame->linesize[0], info->frame->data[2], info->frame->linesize[2], info->frame->data[1], info->frame->linesize[1], (uint8_t *) pixels, bitmapWidth * 4, bitmapWidth, bitmapHeight);
                 } else if (info->frame->format == AV_PIX_FMT_YUV420P || info->frame->format == AV_PIX_FMT_YUVJ420P) {
                     if (info->frame->colorspace == AVColorSpace::AVCOL_SPC_BT709) {
@@ -1205,6 +773,26 @@ extern "C" JNIEXPORT int JNICALL Java_org_telegram_ui_Components_AnimatedFileDra
         int32_t tries = 1000;
         bool readNextPacket = true;
         while (tries > 0) {
+            if (info->stream != nullptr) {
+                JNIEnv *jniEnv = nullptr;
+                JavaVMAttachArgs jvmArgs;
+                jvmArgs.version = JNI_VERSION_1_6;
+
+                bool attached;
+                if (JNI_EDETACHED == javaVm->GetEnv((void **) &jniEnv, JNI_VERSION_1_6)) {
+                    javaVm->AttachCurrentThread(&jniEnv, &jvmArgs);
+                    attached = true;
+                } else {
+                    attached = false;
+                }
+                jboolean canceled = jniEnv->CallBooleanMethod(info->stream, jclass_AnimatedFileDrawableStream_isCanceled);
+                if (attached) {
+                    javaVm->DetachCurrentThread();
+                }
+                if (canceled) {
+                    return 0;
+                }
+            }
             if (info->pkt.size == 0 && readNextPacket) {
                 ret = av_read_frame(info->fmt_ctx, &info->pkt);
                 if (ret >= 0) {
@@ -1268,8 +856,8 @@ extern "C" JNIEXPORT int JNICALL Java_org_telegram_ui_Components_AnimatedFileDra
     }
 }
 
-extern "C" JNIEXPORT jint JNICALL Java_org_telegram_ui_Components_AnimatedFileDrawable_getVideoFrame(JNIEnv *env, jclass clazz, jlong ptr, jobject bitmap, jintArray data, jint stride, jboolean preview, jfloat start_time, jfloat end_time) {
-    if (ptr == NULL || bitmap == nullptr) {
+extern "C" JNIEXPORT jint JNICALL Java_org_telegram_ui_Components_AnimatedFileDrawable_getVideoFrame(JNIEnv *env, jclass clazz, jlong ptr, jobject bitmap, jintArray data, jint stride, jboolean preview, jfloat start_time, jfloat end_time, jboolean loop) {
+    if (ptr == NULL) {
         return 0;
     }
     //int64_t time = ConnectionsManager::getInstance(0).getCurrentTimeMonotonicMillis();
@@ -1279,6 +867,26 @@ extern "C" JNIEXPORT jint JNICALL Java_org_telegram_ui_Components_AnimatedFileDr
     int32_t triesCount = preview ? 50 : 6;
     //info->has_decoded_frames = false;
     while (!info->stopped && triesCount != 0) {
+        if (info->stream != nullptr) {
+            JNIEnv *jniEnv = nullptr;
+            JavaVMAttachArgs jvmArgs;
+            jvmArgs.version = JNI_VERSION_1_6;
+
+            bool attached;
+            if (JNI_EDETACHED == javaVm->GetEnv((void **) &jniEnv, JNI_VERSION_1_6)) {
+                javaVm->AttachCurrentThread(&jniEnv, &jvmArgs);
+                attached = true;
+            } else {
+                attached = false;
+            }
+            jboolean canceled = jniEnv->CallBooleanMethod(info->stream, jclass_AnimatedFileDrawableStream_isCanceled);
+            if (attached) {
+                javaVm->DetachCurrentThread();
+            }
+            if (canceled) {
+                return 0;
+            }
+        }
         if (info->pkt.size == 0) {
             ret = av_read_frame(info->fmt_ctx, &info->pkt);
             if (ret >= 0) {
@@ -1317,18 +925,19 @@ extern "C" JNIEXPORT jint JNICALL Java_org_telegram_ui_Components_AnimatedFileDr
                 LOGE("can't decode packet flushed %s", info->src);
                 return 0;
             }
-            if (!preview && got_frame == 0) {
-                if (info->has_decoded_frames) {
-                    int64_t start_from = 0;
-                    if (start_time > 0) {
-                        start_from = (int64_t)(start_time / av_q2d(info->video_stream->time_base));
-                    }
-                    if ((ret = av_seek_frame(info->fmt_ctx, info->video_stream_idx, start_from, AVSEEK_FLAG_BACKWARD | AVSEEK_FLAG_FRAME)) < 0) {
-                        LOGE("can't seek to begin of file %s, %s", info->src, av_err2str(ret));
-                        return 0;
-                    } else {
-                        avcodec_flush_buffers(info->video_dec_ctx);
-                    }
+            if (!preview && got_frame == 0 && info->has_decoded_frames) {
+                if (!loop) {
+                    return 0;
+                }
+                int64_t start_from = 0;
+                if (start_time > 0) {
+                    start_from = (int64_t)(start_time / av_q2d(info->video_stream->time_base));
+                }
+                if ((ret = av_seek_frame(info->fmt_ctx, info->video_stream_idx, start_from, AVSEEK_FLAG_BACKWARD | AVSEEK_FLAG_FRAME)) < 0) {
+                    LOGE("can't seek to begin of file %s, %s", info->src, av_err2str(ret));
+                    return 0;
+                } else {
+                    avcodec_flush_buffers(info->video_dec_ctx);
                 }
             }
         }
@@ -1337,10 +946,11 @@ extern "C" JNIEXPORT jint JNICALL Java_org_telegram_ui_Components_AnimatedFileDr
         }
         if (got_frame) {
             //LOGD("decoded frame with w = %d, h = %d, format = %d", info->frame->width, info->frame->height, info->frame->format);
-            if (info->frame->format == AV_PIX_FMT_YUV420P || info->frame->format == AV_PIX_FMT_BGRA || info->frame->format == AV_PIX_FMT_YUVJ420P || info->frame->format == AV_PIX_FMT_YUV444P) {
+            if (bitmap != nullptr && (info->frame->format == AV_PIX_FMT_YUV420P || info->frame->format == AV_PIX_FMT_BGRA || info->frame->format == AV_PIX_FMT_YUVJ420P || info->frame->format == AV_PIX_FMT_YUV444P || info->frame->format == AV_PIX_FMT_YUVA420P)) {
                 writeFrameToBitmap(env, info, data, bitmap, stride);
             }
             info->has_decoded_frames = true;
+            push_time(env, info, data);
             av_frame_unref(info->frame);
             return 1;
         }
@@ -1353,6 +963,7 @@ extern "C" JNIEXPORT jint JNICALL Java_org_telegram_ui_Components_AnimatedFileDr
 
 extern "C" jint videoOnJNILoad(JavaVM *vm, JNIEnv *env) {
     //av_log_set_callback(custom_log);
+    DEBUG_REF("gifvideo.cpp AnimatedFileDrawableStream ref");
     jclass_AnimatedFileDrawableStream = (jclass) env->NewGlobalRef(env->FindClass("org/telegram/messenger/AnimatedFileDrawableStream"));
     if (jclass_AnimatedFileDrawableStream == 0) {
         return JNI_FALSE;
@@ -1367,6 +978,10 @@ extern "C" jint videoOnJNILoad(JavaVM *vm, JNIEnv *env) {
     }
     jclass_AnimatedFileDrawableStream_isFinishedLoadingFile = env->GetMethodID(jclass_AnimatedFileDrawableStream, "isFinishedLoadingFile", "()Z");
     if (jclass_AnimatedFileDrawableStream_isFinishedLoadingFile == 0) {
+        return JNI_FALSE;
+    }
+    jclass_AnimatedFileDrawableStream_isCanceled = env->GetMethodID(jclass_AnimatedFileDrawableStream, "isCanceled", "()Z");
+    if (jclass_AnimatedFileDrawableStream_isCanceled == 0) {
         return JNI_FALSE;
     }
     jclass_AnimatedFileDrawableStream_getFinishedFilePath = env->GetMethodID(jclass_AnimatedFileDrawableStream, "getFinishedFilePath", "()Ljava/lang/String;");

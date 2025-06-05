@@ -17,6 +17,7 @@
 #define SDK_MEDIA_CONSTRAINTS_H_
 
 #include <stddef.h>
+
 #include <string>
 #include <utility>
 #include <vector>
@@ -59,15 +60,13 @@ class MediaConstraints {
   // These keys are google specific.
   static const char kGoogEchoCancellation[];  // googEchoCancellation
 
-  static const char kAutoGainControl[];               // googAutoGainControl
-  static const char kExperimentalAutoGainControl[];   // googAutoGainControl2
-  static const char kNoiseSuppression[];              // googNoiseSuppression
-  static const char kExperimentalNoiseSuppression[];  // googNoiseSuppression2
-  static const char kHighpassFilter[];                // googHighpassFilter
-  static const char kTypingNoiseDetection[];  // googTypingNoiseDetection
-  static const char kAudioMirroring[];        // googAudioMirroring
+  static const char kAutoGainControl[];   // googAutoGainControl
+  static const char kNoiseSuppression[];  // googNoiseSuppression
+  static const char kHighpassFilter[];    // googHighpassFilter
+  static const char kAudioMirroring[];    // googAudioMirroring
   static const char
-      kAudioNetworkAdaptorConfig[];  // goodAudioNetworkAdaptorConfig
+      kAudioNetworkAdaptorConfig[];  // googAudioNetworkAdaptorConfig
+  static const char kInitAudioRecordingOnSend[];  // InitAudioRecordingOnSend;
 
   // Constraint keys for CreateOffer / CreateAnswer
   // Specified by the W3C PeerConnection spec
@@ -83,8 +82,6 @@ class MediaConstraints {
   static const char kValueFalse[];  // false
 
   // PeerConnection constraint keys.
-  // Temporary pseudo-constraints used to enable DTLS-SRTP
-  static const char kEnableDtlsSrtp[];  // Enable DTLS-SRTP
   // Google-specific constraint keys.
   // Temporary pseudo-constraint for enabling DSCP through JS.
   static const char kEnableDscp[];  // googDscp
@@ -92,9 +89,6 @@ class MediaConstraints {
   static const char kEnableIPv6[];  // googIPv6
   // Temporary constraint to enable suspend below min bitrate feature.
   static const char kEnableVideoSuspendBelowMinBitrate[];
-  // googSuspendBelowMinBitrate
-  // Constraint to enable combined audio+video bandwidth estimation.
-  static const char kCombinedAudioVideoBwe[];  // googCombinedAudioVideoBwe
   static const char kScreencastMinBitrate[];   // googScreencastMinBitrate
   static const char kCpuOveruseDetection[];    // googCpuOveruseDetection
 

@@ -26,6 +26,10 @@ class IvfFileReader {
   // Creates IvfFileReader. Returns nullptr if error acquired.
   static std::unique_ptr<IvfFileReader> Create(FileWrapper file);
   ~IvfFileReader();
+
+  IvfFileReader(const IvfFileReader&) = delete;
+  IvfFileReader& operator=(const IvfFileReader&) = delete;
+
   // Reinitializes reader. Returns false if any error acquired.
   bool Reset();
 
@@ -66,13 +70,11 @@ class IvfFileReader {
   size_t num_read_frames_;
   uint16_t width_;
   uint16_t height_;
-  bool using_capture_timestamps_;
+  uint32_t time_scale_;
   FileWrapper file_;
 
   absl::optional<FrameHeader> next_frame_header_;
   bool has_error_;
-
-  RTC_DISALLOW_COPY_AND_ASSIGN(IvfFileReader);
 };
 
 }  // namespace webrtc

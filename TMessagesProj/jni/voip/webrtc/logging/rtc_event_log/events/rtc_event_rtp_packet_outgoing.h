@@ -13,11 +13,17 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <map>
 #include <memory>
+#include <string>
 #include <utility>
+#include <vector>
 
+#include "absl/strings/string_view.h"
 #include "api/array_view.h"
 #include "api/rtc_event_log/rtc_event.h"
+#include "logging/rtc_event_log/events/logged_rtp_rtcp.h"
+#include "logging/rtc_event_log/events/rtc_event_field_encoding_parser.h"
 #include "modules/rtp_rtcp/source/rtp_packet.h"
 
 namespace webrtc {
@@ -52,6 +58,10 @@ class RtcEventRtpPacketOutgoing final : public RtcEvent {
     return packet_.GetExtension<ExtensionTrait>(std::forward<Args>(args)...);
   }
   template <typename ExtensionTrait>
+  rtc::ArrayView<const uint8_t> GetRawExtension() const {
+    return packet_.GetRawExtension<ExtensionTrait>();
+  }
+  template <typename ExtensionTrait>
   bool HasExtension() const {
     return packet_.HasExtension<ExtensionTrait>();
   }
@@ -61,11 +71,24 @@ class RtcEventRtpPacketOutgoing final : public RtcEvent {
   size_t padding_length() const { return packet_.padding_size(); }
   int probe_cluster_id() const { return probe_cluster_id_; }
 
+  static std::string Encode(rtc::ArrayView<const RtcEvent*> batch) {
+    // TODO(terelius): Implement
+    return "";
+  }
+
+  static RtcEventLogParseStatus Parse(
+      absl::string_view encoded_bytes,
+      bool batched,
+      std::map<uint32_t, std::vector<LoggedRtpPacketOutgoing>>& output) {
+    // TODO(terelius): Implement
+    return RtcEventLogParseStatus::Error("Not Implemented", __FILE__, __LINE__);
+  }
+
  private:
   RtcEventRtpPacketOutgoing(const RtcEventRtpPacketOutgoing& other);
 
   const RtpPacket packet_;
-  // TODO(eladalon): Delete |probe_cluster_id_| along with legacy encoding.
+  // TODO(eladalon): Delete `probe_cluster_id_` along with legacy encoding.
   const int probe_cluster_id_;
 };
 

@@ -8,20 +8,30 @@
  *  be found in the AUTHORS file in the root of the source tree.
  */
 
-#include <memory>
+#include <stdint.h>
 
+#include <memory>
+#include <string>
+
+#include "absl/types/optional.h"
+#include "api/adaptation/resource.h"
 #include "api/audio_codecs/builtin_audio_decoder_factory.h"
 #include "api/audio_codecs/builtin_audio_encoder_factory.h"
+#include "api/media_stream_interface.h"
+#include "api/peer_connection_interface.h"
+#include "api/rtc_error.h"
 #include "api/rtp_parameters.h"
+#include "api/rtp_sender_interface.h"
 #include "api/scoped_refptr.h"
+#include "api/video/video_source_interface.h"
 #include "call/adaptation/test/fake_resource.h"
 #include "pc/test/fake_periodic_video_source.h"
 #include "pc/test/fake_periodic_video_track_source.h"
 #include "pc/test/peer_connection_test_wrapper.h"
 #include "rtc_base/checks.h"
 #include "rtc_base/gunit.h"
-#include "rtc_base/ref_counted_object.h"
 #include "rtc_base/thread.h"
+#include "rtc_base/time_utils.h"
 #include "rtc_base/virtual_socket_server.h"
 #include "test/gtest.h"
 
@@ -54,7 +64,7 @@ TrackWithPeriodicSource CreateTrackWithPeriodicSource(
           periodic_track_source_config, /* remote */ false);
   TrackWithPeriodicSource track_with_source;
   track_with_source.track =
-      factory->CreateVideoTrack("PeriodicTrack", periodic_track_source);
+      factory->CreateVideoTrack(periodic_track_source, "PeriodicTrack");
   track_with_source.periodic_track_source = periodic_track_source;
   return track_with_source;
 }
@@ -84,7 +94,8 @@ class PeerConnectionAdaptationIntegrationTest : public ::testing::Test {
       const char* name) {
     rtc::scoped_refptr<PeerConnectionTestWrapper> pc_wrapper =
         rtc::make_ref_counted<PeerConnectionTestWrapper>(
-            name, network_thread_.get(), worker_thread_.get());
+            name, &virtual_socket_server_, network_thread_.get(),
+            worker_thread_.get());
     PeerConnectionInterface::RTCConfiguration config;
     config.sdp_semantics = SdpSemantics::kUnifiedPlan;
     EXPECT_TRUE(pc_wrapper->CreatePc(config, CreateBuiltinAudioEncoderFactory(),

@@ -19,12 +19,17 @@
 #include <utility>
 #include <vector>
 
+#include "absl/strings/string_view.h"
 #include "api/sequence_checker.h"
+#include "api/task_queue/pending_task_safety_flag.h"
+#include "api/task_queue/task_queue_base.h"
+#include "api/units/time_delta.h"
 #include "p2p/base/port_interface.h"
 #include "rtc_base/async_packet_socket.h"
+#include "rtc_base/network/received_packet.h"
 #include "rtc_base/socket_address.h"
+#include "rtc_base/ssl_adapter.h"
 #include "rtc_base/third_party/sigslot/sigslot.h"
-#include "rtc_base/thread.h"
 
 namespace rtc {
 class ByteBufferWriter;
@@ -64,37 +69,44 @@ class TurnServerConnection {
 // The object is created when an allocation request is received, and then
 // handles TURN messages (via HandleTurnMessage) and channel data messages
 // (via HandleChannelData) for this allocation when received by the server.
-// The object self-deletes and informs the server if its lifetime timer expires.
-class TurnServerAllocation : public rtc::MessageHandlerAutoCleanup,
-                             public sigslot::has_slots<> {
+// The object informs the server when its lifetime timer expires.
+class TurnServerAllocation {
  public:
   TurnServerAllocation(TurnServer* server_,
-                       rtc::Thread* thread,
+                       webrtc::TaskQueueBase* thread,
                        const TurnServerConnection& conn,
                        rtc::AsyncPacketSocket* server_socket,
-                       const std::string& key);
-  ~TurnServerAllocation() override;
+                       absl::string_view key);
+  virtual ~TurnServerAllocation();
 
   TurnServerConnection* conn() { return &conn_; }
   const std::string& key() const { return key_; }
   const std::string& transaction_id() const { return transaction_id_; }
   const std::string& username() const { return username_; }
-  const std::string& origin() const { return origin_; }
   const std::string& last_nonce() const { return last_nonce_; }
-  void set_last_nonce(const std::string& nonce) { last_nonce_ = nonce; }
+  void set_last_nonce(absl::string_view nonce) {
+    last_nonce_ = std::string(nonce);
+  }
 
   std::string ToString() const;
 
   void HandleTurnMessage(const TurnMessage* msg);
-  void HandleChannelData(const char* data, size_t size);
-
-  sigslot::signal1<TurnServerAllocation*> SignalDestroyed;
+  void HandleChannelData(rtc::ArrayView<const uint8_t> payload);
 
  private:
-  class Channel;
-  class Permission;
-  typedef std::list<Permission*> PermissionList;
-  typedef std::list<Channel*> ChannelList;
+  struct Channel {
+    webrtc::ScopedTaskSafety pending_delete;
+    int id;
+    rtc::SocketAddress peer;
+  };
+  struct Permission {
+    webrtc::ScopedTaskSafety pending_delete;
+    rtc::IPAddress peer;
+  };
+  using PermissionList = std::list<Permission>;
+  using ChannelList = std::list<Channel>;
+
+  void PostDeleteSelf(webrtc::TimeDelta delay);
 
   void HandleAllocateRequest(const TurnMessage* msg);
   void HandleRefreshRequest(const TurnMessage* msg);
@@ -103,42 +115,35 @@ class TurnServerAllocation : public rtc::MessageHandlerAutoCleanup,
   void HandleChannelBindRequest(const TurnMessage* msg);
 
   void OnExternalPacket(rtc::AsyncPacketSocket* socket,
-                        const char* data,
-                        size_t size,
-                        const rtc::SocketAddress& addr,
-                        const int64_t& packet_time_us);
+                        const rtc::ReceivedPacket& packet);
 
-  static int ComputeLifetime(const TurnMessage* msg);
+  static webrtc::TimeDelta ComputeLifetime(const TurnMessage& msg);
   bool HasPermission(const rtc::IPAddress& addr);
   void AddPermission(const rtc::IPAddress& addr);
-  Permission* FindPermission(const rtc::IPAddress& addr) const;
-  Channel* FindChannel(int channel_id) const;
-  Channel* FindChannel(const rtc::SocketAddress& addr) const;
+  PermissionList::iterator FindPermission(const rtc::IPAddress& addr);
+  ChannelList::iterator FindChannel(int channel_id);
+  ChannelList::iterator FindChannel(const rtc::SocketAddress& addr);
 
   void SendResponse(TurnMessage* msg);
   void SendBadRequestResponse(const TurnMessage* req);
   void SendErrorResponse(const TurnMessage* req,
                          int code,
-                         const std::string& reason);
+                         absl::string_view reason);
   void SendExternal(const void* data,
                     size_t size,
                     const rtc::SocketAddress& peer);
 
-  void OnPermissionDestroyed(Permission* perm);
-  void OnChannelDestroyed(Channel* channel);
-  void OnMessage(rtc::Message* msg) override;
-
   TurnServer* const server_;
-  rtc::Thread* const thread_;
+  webrtc::TaskQueueBase* const thread_;
   TurnServerConnection conn_;
   std::unique_ptr<rtc::AsyncPacketSocket> external_socket_;
   std::string key_;
   std::string transaction_id_;
   std::string username_;
-  std::string origin_;
   std::string last_nonce_;
   PermissionList perms_;
   ChannelList channels_;
+  webrtc::ScopedTaskSafety safety_;
 };
 
 // An interface through which the MD5 credential hash can be retrieved.
@@ -147,8 +152,8 @@ class TurnAuthInterface {
   // Gets HA1 for the specified user and realm.
   // HA1 = MD5(A1) = MD5(username:realm:password).
   // Return true if the given username and realm are valid, or false if not.
-  virtual bool GetKey(const std::string& username,
-                      const std::string& realm,
+  virtual bool GetKey(absl::string_view username,
+                      absl::string_view realm,
                       std::string* key) = 0;
   virtual ~TurnAuthInterface() = default;
 };
@@ -164,7 +169,7 @@ class TurnRedirectInterface {
 class StunMessageObserver {
  public:
   virtual void ReceivedMessage(const TurnMessage* msg) = 0;
-  virtual void ReceivedChannelData(const char* data, size_t size) = 0;
+  virtual void ReceivedChannelData(rtc::ArrayView<const uint8_t> payload) = 0;
   virtual ~StunMessageObserver() {}
 };
 
@@ -177,7 +182,7 @@ class TurnServer : public sigslot::has_slots<> {
   typedef std::map<TurnServerConnection, std::unique_ptr<TurnServerAllocation>>
       AllocationMap;
 
-  explicit TurnServer(rtc::Thread* thread);
+  explicit TurnServer(webrtc::TaskQueueBase* thread);
   ~TurnServer() override;
 
   // Gets/sets the realm value to use for the server.
@@ -185,9 +190,9 @@ class TurnServer : public sigslot::has_slots<> {
     RTC_DCHECK_RUN_ON(thread_);
     return realm_;
   }
-  void set_realm(const std::string& realm) {
+  void set_realm(absl::string_view realm) {
     RTC_DCHECK_RUN_ON(thread_);
-    realm_ = realm;
+    realm_ = std::string(realm);
   }
 
   // Gets/sets the value for the SOFTWARE attribute for TURN messages.
@@ -195,9 +200,9 @@ class TurnServer : public sigslot::has_slots<> {
     RTC_DCHECK_RUN_ON(thread_);
     return software_;
   }
-  void set_software(const std::string& software) {
+  void set_software(absl::string_view software) {
     RTC_DCHECK_RUN_ON(thread_);
-    software_ = software;
+    software_ = std::string(software);
   }
 
   const AllocationMap& allocations() const {
@@ -237,7 +242,10 @@ class TurnServer : public sigslot::has_slots<> {
   // Starts listening for the connections on this socket. When someone tries
   // to connect, the connection will be accepted and a new internal socket
   // will be added.
-  void AddInternalServerSocket(rtc::AsyncSocket* socket, ProtocolType proto);
+  void AddInternalServerSocket(
+      rtc::Socket* socket,
+      ProtocolType proto,
+      std::unique_ptr<rtc::SSLAdapterFactory> ssl_adapter_factory = nullptr);
   // Specifies the factory to use for creating external sockets.
   void SetExternalSocketFactory(rtc::PacketSocketFactory* factory,
                                 const rtc::SocketAddress& address);
@@ -256,54 +264,49 @@ class TurnServer : public sigslot::has_slots<> {
  private:
   // All private member functions and variables should have access restricted to
   // thread_. But compile-time annotations are missing for members access from
-  // TurnServerAllocation (via friend declaration), and the On* methods, which
-  // are called via sigslot.
+  // TurnServerAllocation (via friend declaration).
+
   std::string GenerateNonce(int64_t now) const RTC_RUN_ON(thread_);
   void OnInternalPacket(rtc::AsyncPacketSocket* socket,
-                        const char* data,
-                        size_t size,
-                        const rtc::SocketAddress& address,
-                        const int64_t& packet_time_us);
+                        const rtc::ReceivedPacket& packet) RTC_RUN_ON(thread_);
 
-  void OnNewInternalConnection(rtc::AsyncSocket* socket);
+  void OnNewInternalConnection(rtc::Socket* socket);
 
   // Accept connections on this server socket.
-  void AcceptConnection(rtc::AsyncSocket* server_socket) RTC_RUN_ON(thread_);
+  void AcceptConnection(rtc::Socket* server_socket) RTC_RUN_ON(thread_);
   void OnInternalSocketClose(rtc::AsyncPacketSocket* socket, int err);
 
   void HandleStunMessage(TurnServerConnection* conn,
-                         const char* data,
-                         size_t size) RTC_RUN_ON(thread_);
+                         rtc::ArrayView<const uint8_t> payload)
+      RTC_RUN_ON(thread_);
   void HandleBindingRequest(TurnServerConnection* conn, const StunMessage* msg)
       RTC_RUN_ON(thread_);
   void HandleAllocateRequest(TurnServerConnection* conn,
                              const TurnMessage* msg,
-                             const std::string& key) RTC_RUN_ON(thread_);
+                             absl::string_view key) RTC_RUN_ON(thread_);
 
   bool GetKey(const StunMessage* msg, std::string* key) RTC_RUN_ON(thread_);
   bool CheckAuthorization(TurnServerConnection* conn,
                           StunMessage* msg,
-                          const char* data,
-                          size_t size,
-                          const std::string& key) RTC_RUN_ON(thread_);
-  bool ValidateNonce(const std::string& nonce) const RTC_RUN_ON(thread_);
+                          absl::string_view key) RTC_RUN_ON(thread_);
+  bool ValidateNonce(absl::string_view nonce) const RTC_RUN_ON(thread_);
 
   TurnServerAllocation* FindAllocation(TurnServerConnection* conn)
       RTC_RUN_ON(thread_);
   TurnServerAllocation* CreateAllocation(TurnServerConnection* conn,
                                          int proto,
-                                         const std::string& key)
+                                         absl::string_view key)
       RTC_RUN_ON(thread_);
 
   void SendErrorResponse(TurnServerConnection* conn,
                          const StunMessage* req,
                          int code,
-                         const std::string& reason);
+                         absl::string_view reason);
 
   void SendErrorResponseWithRealmAndNonce(TurnServerConnection* conn,
                                           const StunMessage* req,
                                           int code,
-                                          const std::string& reason)
+                                          absl::string_view reason)
       RTC_RUN_ON(thread_);
 
   void SendErrorResponseWithAlternateServer(TurnServerConnection* conn,
@@ -314,15 +317,19 @@ class TurnServer : public sigslot::has_slots<> {
   void SendStun(TurnServerConnection* conn, StunMessage* msg);
   void Send(TurnServerConnection* conn, const rtc::ByteBufferWriter& buf);
 
-  void OnAllocationDestroyed(TurnServerAllocation* allocation)
-      RTC_RUN_ON(thread_);
+  void DestroyAllocation(TurnServerAllocation* allocation) RTC_RUN_ON(thread_);
   void DestroyInternalSocket(rtc::AsyncPacketSocket* socket)
       RTC_RUN_ON(thread_);
 
   typedef std::map<rtc::AsyncPacketSocket*, ProtocolType> InternalSocketMap;
-  typedef std::map<rtc::AsyncSocket*, ProtocolType> ServerSocketMap;
+  struct ServerSocketInfo {
+    ProtocolType proto;
+    // If non-null, used to wrap accepted sockets.
+    std::unique_ptr<rtc::SSLAdapterFactory> ssl_adapter_factory;
+  };
+  typedef std::map<rtc::Socket*, ServerSocketInfo> ServerSocketMap;
 
-  rtc::Thread* const thread_;
+  webrtc::TaskQueueBase* const thread_;
   const std::string nonce_key_;
   std::string realm_ RTC_GUARDED_BY(thread_);
   std::string software_ RTC_GUARDED_BY(thread_);

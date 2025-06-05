@@ -274,7 +274,7 @@ bool ChannelMixingMatrix::CreateTransformationMatrix(
   // All channels should now be accounted for.
   RTC_DCHECK(unaccounted_inputs_.empty());
 
-  // See if the output |matrix_| is simply a remapping matrix.  If each input
+  // See if the output `matrix_` is simply a remapping matrix.  If each input
   // channel maps to a single output channel we can simply remap.  Doing this
   // programmatically is less fragile than logic checks on channel mappings.
   for (int output_ch = 0; output_ch < output_channels_; ++output_ch) {
@@ -287,7 +287,7 @@ bool ChannelMixingMatrix::CreateTransformationMatrix(
     }
   }
 
-  // If we've gotten here, |matrix_| is simply a remapping.
+  // If we've gotten here, `matrix_` is simply a remapping.
   return true;
 }
 

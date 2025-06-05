@@ -54,7 +54,6 @@
 
 #include "absl/algorithm/container.h"
 #include "media/base/rid_description.h"
-#include "rtc_base/constructor_magic.h"
 #include "rtc_base/unique_id_generator.h"
 
 namespace cricket {
@@ -167,6 +166,14 @@ struct StreamParams {
   // the first SSRC otherwise.
   void GetPrimarySsrcs(std::vector<uint32_t>* ssrcs) const;
 
+  // Convenience to get all the secondary SSRCs for the given primary ssrcs
+  // of a particular semantic.
+  // If a given primary SSRC does not have a secondary SSRC, the list of
+  // secondary SSRCS will be smaller than the list of primary SSRCs.
+  void GetSecondarySsrcs(const std::string& semantic,
+                         const std::vector<uint32_t>& primary_ssrcs,
+                         std::vector<uint32_t>* fid_ssrcs) const;
+
   // Convenience to get all the FID SSRCs for the given primary ssrcs.
   // If a given primary SSRC does not have a FID SSRC, the list of FID
   // SSRCS will be smaller than the list of primary SSRCs.
@@ -183,11 +190,6 @@ struct StreamParams {
 
   std::string ToString() const;
 
-  // Resource of the MUC jid of the participant of with this stream.
-  // For 1:1 calls, should be left empty (which means remote streams
-  // and local streams should not be mixed together). This is not used
-  // internally and should be deprecated.
-  std::string groupid;
   // A unique identifier of the StreamParams object. When the SDP is created,
   // this comes from the track ID of the sender that the StreamParams object
   // is associated with.
@@ -224,26 +226,22 @@ struct StreamParams {
   std::vector<RidDescription> rids_;
 };
 
-// A Stream can be selected by either groupid+id or ssrc.
+// A Stream can be selected by either id or ssrc.
 struct StreamSelector {
   explicit StreamSelector(uint32_t ssrc) : ssrc(ssrc) {}
-
-  StreamSelector(const std::string& groupid, const std::string& streamid)
-      : ssrc(0), groupid(groupid), streamid(streamid) {}
 
   explicit StreamSelector(const std::string& streamid)
       : ssrc(0), streamid(streamid) {}
 
   bool Matches(const StreamParams& stream) const {
     if (ssrc == 0) {
-      return stream.groupid == groupid && stream.id == streamid;
+      return stream.id == streamid;
     } else {
       return stream.has_ssrc(ssrc);
     }
   }
 
   uint32_t ssrc;
-  std::string groupid;
   std::string streamid;
 };
 
@@ -274,19 +272,15 @@ inline const StreamParams* GetStreamBySsrc(const StreamParamsVec& streams,
 }
 
 inline const StreamParams* GetStreamByIds(const StreamParamsVec& streams,
-                                          const std::string& groupid,
                                           const std::string& id) {
-  return GetStream(streams, [&groupid, &id](const StreamParams& sp) {
-    return sp.groupid == groupid && sp.id == id;
-  });
+  return GetStream(streams,
+                   [&id](const StreamParams& sp) { return sp.id == id; });
 }
 
 inline StreamParams* GetStreamByIds(StreamParamsVec& streams,
-                                    const std::string& groupid,
                                     const std::string& id) {
-  return GetStream(streams, [&groupid, &id](const StreamParams& sp) {
-    return sp.groupid == groupid && sp.id == id;
-  });
+  return GetStream(streams,
+                   [&id](const StreamParams& sp) { return sp.id == id; });
 }
 
 inline const StreamParams* GetStream(const StreamParamsVec& streams,
@@ -317,12 +311,9 @@ inline bool RemoveStreamBySsrc(StreamParamsVec* streams, uint32_t ssrc) {
   return RemoveStream(
       streams, [&ssrc](const StreamParams& sp) { return sp.has_ssrc(ssrc); });
 }
-inline bool RemoveStreamByIds(StreamParamsVec* streams,
-                              const std::string& groupid,
-                              const std::string& id) {
-  return RemoveStream(streams, [&groupid, &id](const StreamParams& sp) {
-    return sp.groupid == groupid && sp.id == id;
-  });
+inline bool RemoveStreamByIds(StreamParamsVec* streams, const std::string& id) {
+  return RemoveStream(streams,
+                      [&id](const StreamParams& sp) { return sp.id == id; });
 }
 
 }  // namespace cricket

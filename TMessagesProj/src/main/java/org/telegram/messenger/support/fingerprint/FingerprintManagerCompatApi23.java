@@ -32,12 +32,16 @@ import javax.crypto.Mac;
 public final class FingerprintManagerCompatApi23 {
 
     private static FingerprintManager getFingerprintManager(Context ctx) {
-        return ctx.getSystemService(FingerprintManager.class);
+        return (FingerprintManager) ctx.getSystemService(Context.FINGERPRINT_SERVICE);
     }
 
     public static boolean hasEnrolledFingerprints(Context context) {
         try {
-            return getFingerprintManager(context).hasEnrolledFingerprints();
+            FingerprintManager fingerprintManager = getFingerprintManager(context);
+            if (fingerprintManager == null) {
+                return false;
+            }
+            return fingerprintManager.hasEnrolledFingerprints();
         } catch (Exception e) {
             FileLog.e(e);
         }
@@ -46,7 +50,11 @@ public final class FingerprintManagerCompatApi23 {
 
     public static boolean isHardwareDetected(Context context) {
         try {
-            return getFingerprintManager(context).isHardwareDetected();
+            FingerprintManager fingerprintManager = getFingerprintManager(context);
+            if (fingerprintManager == null) {
+                return false;
+            }
+            return fingerprintManager.isHardwareDetected();
         } catch (Exception e) {
             FileLog.e(e);
         }

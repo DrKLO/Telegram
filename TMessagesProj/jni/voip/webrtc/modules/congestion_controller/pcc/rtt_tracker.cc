@@ -23,7 +23,7 @@ void RttTracker::OnPacketsFeedback(
     Timestamp feedback_received_time) {
   TimeDelta packet_rtt = TimeDelta::MinusInfinity();
   for (const PacketResult& packet_result : packet_feedbacks) {
-    if (packet_result.receive_time.IsInfinite())
+    if (!packet_result.IsReceived())
       continue;
     packet_rtt = std::max<TimeDelta>(
         packet_rtt,

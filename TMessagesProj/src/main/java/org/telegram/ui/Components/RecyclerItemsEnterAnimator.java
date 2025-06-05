@@ -21,6 +21,7 @@ public class RecyclerItemsEnterAnimator {
     HashSet<View> ignoreView = new HashSet<>();
     boolean invalidateAlpha;
     boolean alwaysCheckItemsAlpha;
+    public boolean animateAlphaProgressView = true;
 
     ArrayList<AnimatorSet> currentAnimations = new ArrayList<>();
     ArrayList<ViewTreeObserver.OnPreDrawListener> preDrawListeners = new ArrayList<>();
@@ -28,6 +29,7 @@ public class RecyclerItemsEnterAnimator {
     public RecyclerItemsEnterAnimator(RecyclerListView listView, boolean alwaysCheckItemsAlpha) {
         this.listView = listView;
         this.alwaysCheckItemsAlpha = alwaysCheckItemsAlpha;
+        listView.setItemsEnterAnimator(this);
     }
 
     public void dispatchDraw() {
@@ -49,22 +51,19 @@ public class RecyclerItemsEnterAnimator {
     }
 
     public void showItemsAnimated(int from) {
-        int n = listView.getChildCount();
-        View progressView = null;
-        for (int i = 0; i < n; i++) {
-            View child = listView.getChildAt(i);
-            if (listView.getChildAdapterPosition(child) >= 0 && child instanceof FlickerLoadingView) {
-                progressView = child;
-            }
-        }
-        final View finalProgressView = progressView;
+        final View finalProgressView = getProgressView();
         RecyclerView.LayoutManager layoutManager = listView.getLayoutManager();
-        if (progressView != null && layoutManager != null) {
-            listView.removeView(progressView);
+        if (finalProgressView != null && layoutManager != null) {
+            listView.removeView(finalProgressView);
             ignoreView.add(finalProgressView);
             listView.addView(finalProgressView);
             layoutManager.ignoreView(finalProgressView);
-            Animator animator = ObjectAnimator.ofFloat(finalProgressView, View.ALPHA, finalProgressView.getAlpha(), 0);
+            Animator animator;
+            if (animateAlphaProgressView) {
+                animator = ObjectAnimator.ofFloat(finalProgressView, View.ALPHA, finalProgressView.getAlpha(), 0f);
+            } else {
+                animator = ValueAnimator.ofFloat(0f, 1f);
+            }
             animator.addListener(new AnimatorListenerAdapter() {
                 @Override
                 public void onAnimationEnd(Animator animation) {
@@ -133,6 +132,18 @@ public class RecyclerItemsEnterAnimator {
         };
         preDrawListeners.add(preDrawListener);
         listView.getViewTreeObserver().addOnPreDrawListener(preDrawListener);
+    }
+
+    public View getProgressView() {
+        View progressView = null;
+        int n = listView.getChildCount();
+        for (int i = 0; i < n; i++) {
+            View child = listView.getChildAt(i);
+            if (listView.getChildAdapterPosition(child) >= 0 && child instanceof FlickerLoadingView) {
+                progressView = child;
+            }
+        }
+        return progressView;
     }
 
     public void onDetached() {

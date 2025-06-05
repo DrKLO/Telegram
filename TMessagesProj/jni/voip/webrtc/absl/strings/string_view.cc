@@ -21,18 +21,45 @@
 #include <cstring>
 #include <ostream>
 
-#include "absl/strings/internal/memutil.h"
+#include "absl/base/nullability.h"
 
 namespace absl {
 ABSL_NAMESPACE_BEGIN
 
 namespace {
+
+// This is significantly faster for case-sensitive matches with very
+// few possible matches.
+absl::Nullable<const char*> memmatch(absl::Nullable<const char*> phaystack,
+                                     size_t haylen,
+                                     absl::Nullable<const char*> pneedle,
+                                     size_t neelen) {
+  if (0 == neelen) {
+    return phaystack;  // even if haylen is 0
+  }
+  if (haylen < neelen) return nullptr;
+
+  const char* match;
+  const char* hayend = phaystack + haylen - neelen + 1;
+  // A static cast is used here as memchr returns a const void *, and pointer
+  // arithmetic is not allowed on pointers to void.
+  while (
+      (match = static_cast<const char*>(memchr(
+           phaystack, pneedle[0], static_cast<size_t>(hayend - phaystack))))) {
+    if (memcmp(match, pneedle, neelen) == 0)
+      return match;
+    else
+      phaystack = match + 1;
+  }
+  return nullptr;
+}
+
 void WritePadding(std::ostream& o, size_t pad) {
   char fill_buf[32];
   memset(fill_buf, o.fill(), sizeof(fill_buf));
   while (pad) {
     size_t n = std::min(pad, sizeof(fill_buf));
-    o.write(fill_buf, n);
+    o.write(fill_buf, static_cast<std::streamsize>(n));
     pad -= n;
   }
 }
@@ -63,7 +90,7 @@ std::ostream& operator<<(std::ostream& o, string_view piece) {
     size_t lpad = 0;
     size_t rpad = 0;
     if (static_cast<size_t>(o.width()) > piece.size()) {
-      size_t pad = o.width() - piece.size();
+      size_t pad = static_cast<size_t>(o.width()) - piece.size();
       if ((o.flags() & o.adjustfield) == o.left) {
         rpad = pad;
       } else {
@@ -71,22 +98,21 @@ std::ostream& operator<<(std::ostream& o, string_view piece) {
       }
     }
     if (lpad) WritePadding(o, lpad);
-    o.write(piece.data(), piece.size());
+    o.write(piece.data(), static_cast<std::streamsize>(piece.size()));
     if (rpad) WritePadding(o, rpad);
     o.width(0);
   }
   return o;
 }
 
-string_view::size_type string_view::find(string_view s, size_type pos) const
-    noexcept {
+string_view::size_type string_view::find(string_view s,
+                                         size_type pos) const noexcept {
   if (empty() || pos > length_) {
     if (empty() && pos == 0 && s.empty()) return 0;
     return npos;
   }
-  const char* result =
-      strings_internal::memmatch(ptr_ + pos, length_ - pos, s.ptr_, s.length_);
-  return result ? result - ptr_ : npos;
+  const char* result = memmatch(ptr_ + pos, length_ - pos, s.ptr_, s.length_);
+  return result ? static_cast<size_type>(result - ptr_) : npos;
 }
 
 string_view::size_type string_view::find(char c, size_type pos) const noexcept {
@@ -95,21 +121,21 @@ string_view::size_type string_view::find(char c, size_type pos) const noexcept {
   }
   const char* result =
       static_cast<const char*>(memchr(ptr_ + pos, c, length_ - pos));
-  return result != nullptr ? result - ptr_ : npos;
+  return result != nullptr ? static_cast<size_type>(result - ptr_) : npos;
 }
 
-string_view::size_type string_view::rfind(string_view s, size_type pos) const
-    noexcept {
+string_view::size_type string_view::rfind(string_view s,
+                                          size_type pos) const noexcept {
   if (length_ < s.length_) return npos;
   if (s.empty()) return std::min(length_, pos);
   const char* last = ptr_ + std::min(length_ - s.length_, pos) + s.length_;
   const char* result = std::find_end(ptr_, last, s.ptr_, s.ptr_ + s.length_);
-  return result != last ? result - ptr_ : npos;
+  return result != last ? static_cast<size_type>(result - ptr_) : npos;
 }
 
 // Search range is [0..pos] inclusive.  If pos == npos, search everything.
-string_view::size_type string_view::rfind(char c, size_type pos) const
-    noexcept {
+string_view::size_type string_view::rfind(char c,
+                                          size_type pos) const noexcept {
   // Note: memrchr() is not available on Windows.
   if (empty()) return npos;
   for (size_type i = std::min(pos, length_ - 1);; --i) {
@@ -121,9 +147,8 @@ string_view::size_type string_view::rfind(char c, size_type pos) const
   return npos;
 }
 
-string_view::size_type string_view::find_first_of(string_view s,
-                                                  size_type pos) const
-    noexcept {
+string_view::size_type string_view::find_first_of(
+    string_view s, size_type pos) const noexcept {
   if (empty() || s.empty()) {
     return npos;
   }
@@ -138,9 +163,8 @@ string_view::size_type string_view::find_first_of(string_view s,
   return npos;
 }
 
-string_view::size_type string_view::find_first_not_of(string_view s,
-                                                      size_type pos) const
-    noexcept {
+string_view::size_type string_view::find_first_not_of(
+    string_view s, size_type pos) const noexcept {
   if (empty()) return npos;
   // Avoid the cost of LookupTable() for a single-character search.
   if (s.length_ == 1) return find_first_not_of(s.ptr_[0], pos);
@@ -153,9 +177,8 @@ string_view::size_type string_view::find_first_not_of(string_view s,
   return npos;
 }
 
-string_view::size_type string_view::find_first_not_of(char c,
-                                                      size_type pos) const
-    noexcept {
+string_view::size_type string_view::find_first_not_of(
+    char c, size_type pos) const noexcept {
   if (empty()) return npos;
   for (; pos < length_; ++pos) {
     if (ptr_[pos] != c) {
@@ -180,9 +203,8 @@ string_view::size_type string_view::find_last_of(string_view s,
   return npos;
 }
 
-string_view::size_type string_view::find_last_not_of(string_view s,
-                                                     size_type pos) const
-    noexcept {
+string_view::size_type string_view::find_last_not_of(
+    string_view s, size_type pos) const noexcept {
   if (empty()) return npos;
   size_type i = std::min(pos, length_ - 1);
   if (s.empty()) return i;
@@ -198,9 +220,8 @@ string_view::size_type string_view::find_last_not_of(string_view s,
   return npos;
 }
 
-string_view::size_type string_view::find_last_not_of(char c,
-                                                     size_type pos) const
-    noexcept {
+string_view::size_type string_view::find_last_not_of(
+    char c, size_type pos) const noexcept {
   if (empty()) return npos;
   size_type i = std::min(pos, length_ - 1);
   for (;; --i) {
@@ -212,24 +233,30 @@ string_view::size_type string_view::find_last_not_of(char c,
   return npos;
 }
 
-// MSVC has non-standard behavior that implicitly creates definitions for static
-// const members. These implicit definitions conflict with explicit out-of-class
-// member definitions that are required by the C++ standard, resulting in
-// LNK1169 "multiply defined" errors at link time. __declspec(selectany) asks
-// MSVC to choose only one definition for the symbol it decorates. See details
-// at https://msdn.microsoft.com/en-us/library/34h23df8(v=vs.100).aspx
-#ifdef _MSC_VER
-#define ABSL_STRING_VIEW_SELECTANY __declspec(selectany)
-#else
-#define ABSL_STRING_VIEW_SELECTANY
-#endif
-
-ABSL_STRING_VIEW_SELECTANY
+#ifdef ABSL_INTERNAL_NEED_REDUNDANT_CONSTEXPR_DECL
 constexpr string_view::size_type string_view::npos;
-ABSL_STRING_VIEW_SELECTANY
 constexpr string_view::size_type string_view::kMaxSize;
+#endif
 
 ABSL_NAMESPACE_END
 }  // namespace absl
+
+#else
+
+// https://github.com/abseil/abseil-cpp/issues/1465
+// CMake builds on Apple platforms error when libraries are empty.
+// Our CMake configuration can avoid this error on header-only libraries,
+// but since this library is conditionally empty, including a single
+// variable is an easy workaround.
+#ifdef __APPLE__
+namespace absl {
+ABSL_NAMESPACE_BEGIN
+namespace strings_internal {
+extern const char kAvoidEmptyStringViewLibraryWarning;
+const char kAvoidEmptyStringViewLibraryWarning = 0;
+}  // namespace strings_internal
+ABSL_NAMESPACE_END
+}  // namespace absl
+#endif  // __APPLE__
 
 #endif  // ABSL_USES_STD_STRING_VIEW

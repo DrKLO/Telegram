@@ -15,6 +15,7 @@
 #include <string>
 #include <vector>
 
+#include "absl/types/optional.h"
 #include "api/data_channel_interface.h"
 #include "api/function_view.h"
 #include "api/jsep.h"
@@ -149,6 +150,11 @@ class PeerConnectionWrapper {
       rtc::scoped_refptr<MediaStreamTrackInterface> track,
       const std::vector<std::string>& stream_ids = {});
 
+  rtc::scoped_refptr<RtpSenderInterface> AddTrack(
+      rtc::scoped_refptr<MediaStreamTrackInterface> track,
+      const std::vector<std::string>& stream_ids,
+      const std::vector<RtpEncodingParameters>& init_send_encodings);
+
   // Calls the underlying PeerConnection's AddTrack method with an audio media
   // stream track not bound to any source.
   rtc::scoped_refptr<RtpSenderInterface> AddAudioTrack(
@@ -164,7 +170,8 @@ class PeerConnectionWrapper {
   // Calls the underlying PeerConnection's CreateDataChannel method with default
   // initialization parameters.
   rtc::scoped_refptr<DataChannelInterface> CreateDataChannel(
-      const std::string& label);
+      const std::string& label,
+      const absl::optional<DataChannelInit>& config = absl::nullopt);
 
   // Returns the signaling state of the underlying PeerConnection.
   PeerConnectionInterface::SignalingState signaling_state();

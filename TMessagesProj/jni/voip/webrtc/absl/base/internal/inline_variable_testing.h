@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef ABSL_BASE_INLINE_VARIABLE_TESTING_H_
-#define ABSL_BASE_INLINE_VARIABLE_TESTING_H_
+#ifndef ABSL_BASE_INTERNAL_INLINE_VARIABLE_TESTING_H_
+#define ABSL_BASE_INTERNAL_INLINE_VARIABLE_TESTING_H_
 
 #include "absl/base/internal/inline_variable.h"
 
@@ -43,4 +43,4 @@ const int& get_int_b();
 ABSL_NAMESPACE_END
 }  // namespace absl
 
-#endif  // ABSL_BASE_INLINE_VARIABLE_TESTING_H_
+#endif  // ABSL_BASE_INTERNAL_INLINE_VARIABLE_TESTING_H_

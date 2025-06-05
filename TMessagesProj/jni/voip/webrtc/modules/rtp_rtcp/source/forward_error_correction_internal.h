@@ -71,7 +71,7 @@ rtc::ArrayView<const uint8_t> LookUpInFecTable(const uint8_t* table,
 //                                     protection scenario.
 // \param[in]  use_unequal_protection  Enables unequal protection: allocates
 //                                     more protection to the num_imp_packets.
-// \param[in]  mask_table              An instance of the |PacketMaskTable|
+// \param[in]  mask_table              An instance of the `PacketMaskTable`
 //                                     class, which contains the type of FEC
 //                                     packet mask used, and a pointer to the
 //                                     corresponding packet masks.
@@ -89,9 +89,9 @@ void GeneratePacketMasks(int num_media_packets,
 // that will be covered.
 size_t PacketMaskSize(size_t num_sequence_numbers);
 
-// Inserts |num_zeros| zero columns into |new_mask| at position
-// |new_bit_index|. If the current byte of |new_mask| can't fit all zeros, the
-// byte will be filled with zeros from |new_bit_index|, but the next byte will
+// Inserts `num_zeros` zero columns into `new_mask` at position
+// `new_bit_index`. If the current byte of `new_mask` can't fit all zeros, the
+// byte will be filled with zeros from `new_bit_index`, but the next byte will
 // be untouched.
 void InsertZeroColumns(int num_zeros,
                        uint8_t* new_mask,
@@ -100,12 +100,12 @@ void InsertZeroColumns(int num_zeros,
                        int new_bit_index);
 
 // Copies the left most bit column from the byte pointed to by
-// |old_bit_index| in |old_mask| to the right most column of the byte pointed
-// to by |new_bit_index| in |new_mask|. |old_mask_bytes| and |new_mask_bytes|
-// represent the number of bytes used per row for each mask. |num_fec_packets|
+// `old_bit_index` in `old_mask` to the right most column of the byte pointed
+// to by `new_bit_index` in `new_mask`. `old_mask_bytes` and `new_mask_bytes`
+// represent the number of bytes used per row for each mask. `num_fec_packets`
 // represent the number of rows of the masks.
-// The copied bit is shifted out from |old_mask| and is shifted one step to
-// the left in |new_mask|. |new_mask| will contain "xxxx xxn0" after this
+// The copied bit is shifted out from `old_mask` and is shifted one step to
+// the left in `new_mask`. `new_mask` will contain "xxxx xxn0" after this
 // operation, where x are previously inserted bits and n is the new bit.
 void CopyColumn(uint8_t* new_mask,
                 int new_mask_bytes,

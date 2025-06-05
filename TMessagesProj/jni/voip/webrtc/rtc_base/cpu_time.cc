@@ -26,6 +26,10 @@
 #include <unistd.h>
 #elif defined(WEBRTC_WIN)
 #include <windows.h>
+#elif defined(WEBRTC_FUCHSIA)
+#include <lib/zx/process.h>
+#include <lib/zx/thread.h>
+#include <zircon/status.h>
 #endif
 
 #if defined(WEBRTC_WIN)
@@ -38,7 +42,18 @@ const int64_t kNanosecsPerFiletime = 100;
 namespace rtc {
 
 int64_t GetProcessCpuTimeNanos() {
-#if defined(WEBRTC_LINUX)
+#if defined(WEBRTC_FUCHSIA)
+  zx_info_task_runtime_t runtime_info;
+  zx_status_t status =
+      zx::process::self()->get_info(ZX_INFO_TASK_RUNTIME, &runtime_info,
+                                    sizeof(runtime_info), nullptr, nullptr);
+  if (status == ZX_OK) {
+    return runtime_info.cpu_time;
+  } else {
+    RTC_LOG_ERR(LS_ERROR) << "get_info() failed: "
+                          << zx_status_get_string(status);
+  }
+#elif defined(WEBRTC_LINUX)
   struct timespec ts;
   if (clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &ts) == 0) {
     return ts.tv_sec * kNumNanosecsPerSec + ts.tv_nsec;
@@ -66,9 +81,6 @@ int64_t GetProcessCpuTimeNanos() {
   } else {
     RTC_LOG_ERR(LS_ERROR) << "GetProcessTimes() failed.";
   }
-#elif defined(WEBRTC_FUCHSIA)
-  RTC_LOG_ERR(LS_ERROR) << "GetProcessCpuTimeNanos() not implemented";
-  return 0;
 #else
   // Not implemented yet.
   static_assert(
@@ -78,7 +90,18 @@ int64_t GetProcessCpuTimeNanos() {
 }
 
 int64_t GetThreadCpuTimeNanos() {
-#if defined(WEBRTC_LINUX)
+#if defined(WEBRTC_FUCHSIA)
+  zx_info_task_runtime_t runtime_info;
+  zx_status_t status =
+      zx::thread::self()->get_info(ZX_INFO_TASK_RUNTIME, &runtime_info,
+                                   sizeof(runtime_info), nullptr, nullptr);
+  if (status == ZX_OK) {
+    return runtime_info.cpu_time;
+  } else {
+    RTC_LOG_ERR(LS_ERROR) << "get_info() failed: "
+                          << zx_status_get_string(status);
+  }
+#elif defined(WEBRTC_LINUX)
   struct timespec ts;
   if (clock_gettime(CLOCK_THREAD_CPUTIME_ID, &ts) == 0) {
     return ts.tv_sec * kNumNanosecsPerSec + ts.tv_nsec;
@@ -111,9 +134,6 @@ int64_t GetThreadCpuTimeNanos() {
   } else {
     RTC_LOG_ERR(LS_ERROR) << "GetThreadTimes() failed.";
   }
-#elif defined(WEBRTC_FUCHSIA)
-  RTC_LOG_ERR(LS_ERROR) << "GetThreadCpuTimeNanos() not implemented";
-  return 0;
 #else
   // Not implemented yet.
   static_assert(

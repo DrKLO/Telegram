@@ -12,6 +12,8 @@
 
 #include <utility>
 
+#include "pc/media_factory.h"
+
 namespace webrtc {
 
 PeerConnectionInterface::IceServer::IceServer() = default;
@@ -41,23 +43,17 @@ PeerConnectionInterface::RTCConfiguration::RTCConfiguration(
 
 PeerConnectionInterface::RTCConfiguration::~RTCConfiguration() = default;
 
-RTCError PeerConnectionInterface::RemoveTrackNew(
-    rtc::scoped_refptr<RtpSenderInterface> sender) {
-  return RTCError(RemoveTrack(sender) ? RTCErrorType::NONE
-                                      : RTCErrorType::INTERNAL_ERROR);
-}
-
-RTCError PeerConnectionInterface::SetConfiguration(
-    const PeerConnectionInterface::RTCConfiguration& config) {
-  return RTCError();
-}
-
 PeerConnectionDependencies::PeerConnectionDependencies(
     PeerConnectionObserver* observer_in)
     : observer(observer_in) {}
 
+// TODO(bugs.webrtc.org/12598: remove pragma once async_resolver_factory
+// is removed from PeerConnectionDependencies
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
 PeerConnectionDependencies::PeerConnectionDependencies(
     PeerConnectionDependencies&&) = default;
+#pragma clang diagnostic pop
 
 PeerConnectionDependencies::~PeerConnectionDependencies() = default;
 

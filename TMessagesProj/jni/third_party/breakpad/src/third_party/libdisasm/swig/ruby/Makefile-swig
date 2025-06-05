@@ -1,0 +1,68 @@
+ifndef BASE_NAME
+BASE_NAME	=	x86disasm
+endif
+
+ifndef SWIG
+SWIG		=	swig	# apt-get install swig !
+endif
+
+ifndef GCC
+GCC		=	gcc
+endif
+
+ifndef CC_FLAGS
+CC_FLAGS	=	-c -fPIC
+endif
+
+ifndef LD_FLAGS
+LD_FLAGS	=	-shared -L../.. -ldisasm
+endif
+
+LIBDISASM_DIR	=	../..
+
+INTERFACE_FILE	=	libdisasm_oop.i
+
+SWIG_INTERFACE	=	../$(INTERFACE_FILE)
+
+# RUBY rules
+RUBY_MAKEFILE	=	Makefile
+RUBY_MOD	=	$(BASE_NAME).so
+RUBY_SHADOW	=	$(BASE_NAME)_wrap.c
+#RUBY_SWIG	=	$(BASE_NAME).rb
+RUBY_OBJ	=	$(BASE_NAME)_wrap.o
+RUBY_INC	=	`ruby -e 'puts $$:.join("\n")' | tail -2 | head -1`
+#RUBY_LIB	=	
+#RUBY_DEST	=	
+
+#====================================================
+# TARGETS
+
+all: swig-ruby
+
+dummy: swig-ruby install uninstall clean
+
+swig-ruby: $(RUBY_MOD)
+
+$(RUBY_MOD): $(RUBY_MAKEFILE)
+	make
+
+$(RUBY_MAKEFILE): $(RUBY_OBJ)
+	ruby extconf.rb
+
+$(RUBY_OBJ):$(RUBY_SHADOW)
+	$(GCC) $(CC_FLAGS) -I$(RUBY_INC) -I.. -o $@ $<
+
+$(RUBY_SHADOW): $(SWIG_INTERFACE)
+	swig -ruby -o $(RUBY_SHADOW) -outdir . $<
+
+# ==================================================================
+install: $(RUBY_MOD)
+	make install
+
+# ==================================================================
+uninstall:
+
+# ==================================================================
+clean: 
+	make clean || true
+	rm $(RUBY_SHADOW) $(RUBY_MAKEFILE) $(RUBY_MOD) $(RUBY_OBJ)

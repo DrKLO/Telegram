@@ -124,7 +124,7 @@ public class StackLinearChartView<T extends StackLinearViewData> extends BaseCha
                 for (int k = 0; k < lines.size(); k++) {
                     LineViewData line = lines.get(k);
                     if (!line.enabled && line.alpha == 0) continue;
-                    int[] y = line.line.y;
+                    final long[] y = line.line.y;
 
                     float yPercentage;
 
@@ -507,7 +507,7 @@ public class StackLinearChartView<T extends StackLinearViewData> extends BaseCha
     }
 
     @Override
-    public int findMaxValue(int startXIndex, int endXIndex) {
+    public long findMaxValue(int startXIndex, int endXIndex) {
         return 100;
     }
 
@@ -562,7 +562,7 @@ public class StackLinearChartView<T extends StackLinearViewData> extends BaseCha
             for (int k = 0; k < lines.size(); k++) {
                 LineViewData line = lines.get(k);
                 if (!line.enabled && line.alpha == 0) continue;
-                int[] y = line.line.y;
+                final long[] y = line.line.y;
 
                 float yPercentage;
 

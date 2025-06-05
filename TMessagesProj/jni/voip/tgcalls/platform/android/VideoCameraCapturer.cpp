@@ -1,6 +1,6 @@
 #include "VideoCameraCapturer.h"
 
-#include <cstdint>
+#include <stdint.h>
 #include <memory>
 #include <algorithm>
 

@@ -19,7 +19,7 @@
 #include <string>
 #include <type_traits>
 
-#include "rtc_base/units/unit_base.h"
+#include "rtc_base/units/unit_base.h"  // IWYU pragma: export
 
 namespace webrtc {
 
@@ -32,6 +32,11 @@ namespace webrtc {
 // microseconds (us).
 class TimeDelta final : public rtc_units_impl::RelativeUnit<TimeDelta> {
  public:
+  template <typename T>
+  static constexpr TimeDelta Minutes(T value) {
+    static_assert(std::is_arithmetic<T>::value, "");
+    return Seconds(value * 60);
+  }
   template <typename T>
   static constexpr TimeDelta Seconds(T value) {
     static_assert(std::is_arithmetic<T>::value, "");

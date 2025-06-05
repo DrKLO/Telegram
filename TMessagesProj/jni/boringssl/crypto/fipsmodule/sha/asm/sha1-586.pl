@@ -1,17 +1,22 @@
 #! /usr/bin/env perl
 # Copyright 1998-2016 The OpenSSL Project Authors. All Rights Reserved.
 #
-# Licensed under the OpenSSL license (the "License").  You may not use
-# this file except in compliance with the License.  You can obtain a copy
-# in the file LICENSE in the source distribution or at
-# https://www.openssl.org/source/license.html
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 
 # ====================================================================
 # [Re]written by Andy Polyakov <appro@openssl.org> for the OpenSSL
-# project. The module is, however, dual licensed under OpenSSL and
-# CRYPTOGAMS licenses depending on where you obtain it. For further
-# details see http://www.openssl.org/~appro/cryptogams/.
+# project.
 # ====================================================================
 
 # "[Re]written" was achieved in two major overhauls. In 2004 BODY_*
@@ -126,25 +131,20 @@ require "x86asm.pl";
 $output=pop;
 open STDOUT,">$output";
 
-&asm_init($ARGV[0],$ARGV[$#ARGV] eq "386");
+&asm_init($ARGV[0]);
 
-$xmm=$ymm=0;
-for (@ARGV) { $xmm=1 if (/-DOPENSSL_IA32_SSE2/); }
+$xmm = 1;
 
 # In upstream, this is controlled by shelling out to the compiler to check
 # versions, but BoringSSL is intended to be used with pre-generated perlasm
 # output, so this isn't useful anyway.
 $ymm = 1;
 
-$ymm = 0 unless ($xmm);
-
 $shaext=$xmm;	### set to zero if compiling for 1.0.1
 
 # TODO(davidben): Consider enabling the Intel SHA Extensions code once it's
 # been tested.
 $shaext = 0;
-
-&external_label("OPENSSL_ia32cap_P") if ($xmm);
 
 
 $A="eax";
@@ -321,40 +321,9 @@ if ($alt) {
 }
 	}
 
-&function_begin("sha1_block_data_order");
-if ($xmm) {
-  &static_label("shaext_shortcut")	if ($shaext);
-  &static_label("ssse3_shortcut");
-  &static_label("avx_shortcut")		if ($ymm);
-  &static_label("K_XX_XX");
+&static_label("K_XX_XX");
 
-	&call	(&label("pic_point"));	# make it PIC!
-  &set_label("pic_point");
-	&blindpop($tmp1);
-	&picmeup($T,"OPENSSL_ia32cap_P",$tmp1,&label("pic_point"));
-	&lea	($tmp1,&DWP(&label("K_XX_XX")."-".&label("pic_point"),$tmp1));
-
-	&mov	($A,&DWP(0,$T));
-	&mov	($D,&DWP(4,$T));
-	&test	($D,1<<9);		# check SSSE3 bit
-	&jz	(&label("x86"));
-	&mov	($C,&DWP(8,$T));
-	&test	($A,1<<24);		# check FXSR bit
-	&jz	(&label("x86"));
-	if ($shaext) {
-		&test	($C,1<<29);		# check SHA bit
-		&jnz	(&label("shaext_shortcut"));
-	}
-	if ($ymm) {
-		&and	($D,1<<28);		# mask AVX bit
-		&and	($A,1<<30);		# mask "Intel CPU" bit
-		&or	($A,$D);
-		&cmp	($A,1<<28|1<<30);
-		&je	(&label("avx_shortcut"));
-	}
-	&jmp	(&label("ssse3_shortcut"));
-  &set_label("x86",16);
-}
+&function_begin("sha1_block_data_order_nohw");
 	&mov($tmp1,&wparam(0));	# SHA_CTX *c
 	&mov($T,&wparam(1));	# const void *input
 	&mov($A,&wparam(2));	# size_t num
@@ -420,7 +389,7 @@ if ($xmm) {
 	&jb(&label("loop"));
 
 	&stack_pop(16+3);
-&function_end("sha1_block_data_order");
+&function_end("sha1_block_data_order_nohw");
 
 if ($xmm) {
 if ($shaext) {
@@ -445,12 +414,11 @@ sub sha1nexte	{ sha1op38(0xc8,@_); }
 sub sha1msg1	{ sha1op38(0xc9,@_); }
 sub sha1msg2	{ sha1op38(0xca,@_); }
 
-&function_begin("_sha1_block_data_order_shaext");
+&function_begin("sha1_block_data_order_shaext");
 	&call	(&label("pic_point"));	# make it PIC!
 	&set_label("pic_point");
 	&blindpop($tmp1);
 	&lea	($tmp1,&DWP(&label("K_XX_XX")."-".&label("pic_point"),$tmp1));
-&set_label("shaext_shortcut");
 	&mov	($ctx,&wparam(0));
 	&mov	("ebx","esp");
 	&mov	($inp,&wparam(1));
@@ -532,7 +500,7 @@ for($i=0;$i<20-4;$i+=2) {
 	&movdqu	(&QWP(0,$ctx),$ABCD)
 	&movd	(&DWP(16,$ctx),$E);
 	&mov	("esp","ebx");
-&function_end("_sha1_block_data_order_shaext");
+&function_end("sha1_block_data_order_shaext");
 }
 ######################################################################
 # The SSSE3 implementation.
@@ -568,12 +536,11 @@ my $inp;
 my $_rol=sub { &rol(@_) };
 my $_ror=sub { &ror(@_) };
 
-&function_begin("_sha1_block_data_order_ssse3");
+&function_begin("sha1_block_data_order_ssse3");
 	&call	(&label("pic_point"));	# make it PIC!
 	&set_label("pic_point");
 	&blindpop($tmp1);
 	&lea	($tmp1,&DWP(&label("K_XX_XX")."-".&label("pic_point"),$tmp1));
-&set_label("ssse3_shortcut");
 
 	&movdqa	(@X[3],&QWP(0,$tmp1));		# K_00_19
 	&movdqa	(@X[4],&QWP(16,$tmp1));		# K_20_39
@@ -1096,7 +1063,7 @@ sub bodyx_40_59 () {	# ((b^c)&(c^d))^c
 	&mov	(&DWP(12,@T[1]),$D);
 	&mov	(&DWP(16,@T[1]),$E);
 
-&function_end("_sha1_block_data_order_ssse3");
+&function_end("sha1_block_data_order_ssse3");
 
 $rx=0;	# reset
 
@@ -1111,12 +1078,11 @@ my $inp;
 my $_rol=sub { &shld(@_[0],@_) };
 my $_ror=sub { &shrd(@_[0],@_) };
 
-&function_begin("_sha1_block_data_order_avx");
+&function_begin("sha1_block_data_order_avx");
 	&call	(&label("pic_point"));	# make it PIC!
 	&set_label("pic_point");
 	&blindpop($tmp1);
 	&lea	($tmp1,&DWP(&label("K_XX_XX")."-".&label("pic_point"),$tmp1));
-&set_label("avx_shortcut");
 	&vzeroall();
 
 	&vmovdqa(@X[3],&QWP(0,$tmp1));		# K_00_19
@@ -1469,7 +1435,7 @@ sub Xtail_avx()
 	&mov	(&DWP(8,@T[1]),$C);
 	&mov	(&DWP(12,@T[1]),$D);
 	&mov	(&DWP(16,@T[1]),$E);
-&function_end("_sha1_block_data_order_avx");
+&function_end("sha1_block_data_order_avx");
 }
 &set_label("K_XX_XX",64);
 &data_word(0x5a827999,0x5a827999,0x5a827999,0x5a827999);	# K_00_19
@@ -1483,4 +1449,4 @@ sub Xtail_avx()
 
 &asm_finish();
 
-close STDOUT or die "error closing STDOUT";
+close STDOUT or die "error closing STDOUT: $!";

@@ -53,8 +53,11 @@ absl::optional<AudioEncoderIlbcConfig> AudioEncoderIlbc::SdpToConfig(
       config.frame_size_ms = rtc::SafeClamp<int>(whole_packets * 10, 20, 60);
     }
   }
-  return config.IsOk() ? absl::optional<AudioEncoderIlbcConfig>(config)
-                       : absl::nullopt;
+  if (!config.IsOk()) {
+    RTC_DCHECK_NOTREACHED();
+    return absl::nullopt;
+  }
+  return config;
 }
 
 void AudioEncoderIlbc::AppendSupportedEncoders(
@@ -73,8 +76,12 @@ AudioCodecInfo AudioEncoderIlbc::QueryAudioEncoder(
 std::unique_ptr<AudioEncoder> AudioEncoderIlbc::MakeAudioEncoder(
     const AudioEncoderIlbcConfig& config,
     int payload_type,
-    absl::optional<AudioCodecPairId> /*codec_pair_id*/) {
-  RTC_DCHECK(config.IsOk());
+    absl::optional<AudioCodecPairId> /*codec_pair_id*/,
+    const FieldTrialsView* field_trials) {
+  if (!config.IsOk()) {
+    RTC_DCHECK_NOTREACHED();
+    return nullptr;
+  }
   return std::make_unique<AudioEncoderIlbcImpl>(config, payload_type);
 }
 

@@ -10,8 +10,6 @@
 
 #include "modules/audio_device/linux/audio_device_alsa_linux.h"
 
-#include <assert.h>
-
 #include "modules/audio_device/audio_device_config.h"
 #include "rtc_base/logging.h"
 #include "rtc_base/system/arch.h"
@@ -542,8 +540,6 @@ int32_t AudioDeviceLinuxALSA::MicrophoneVolumeIsAvailable(bool& available) {
 
 int32_t AudioDeviceLinuxALSA::SetMicrophoneVolume(uint32_t volume) {
   return (_mixerManager.SetMicrophoneVolume(volume));
-
-  return 0;
 }
 
 int32_t AudioDeviceLinuxALSA::MicrophoneVolume(uint32_t& volume) const {
@@ -592,7 +588,7 @@ int32_t AudioDeviceLinuxALSA::SetPlayoutDevice(uint16_t index) {
     return -1;
   }
 
-  uint32_t nDevices = GetDevicesInfo(0, true);
+  int32_t nDevices = GetDevicesInfo(0, true);
   RTC_LOG(LS_VERBOSE) << "number of available audio output devices is "
                       << nDevices;
 
@@ -661,7 +657,7 @@ int32_t AudioDeviceLinuxALSA::SetRecordingDevice(uint16_t index) {
     return -1;
   }
 
-  uint32_t nDevices = GetDevicesInfo(0, false);
+  int32_t nDevices = GetDevicesInfo(0, false);
   RTC_LOG(LS_VERBOSE) << "number of availiable audio input devices is "
                       << nDevices;
 
@@ -856,8 +852,6 @@ int32_t AudioDeviceLinuxALSA::InitPlayoutLocked() {
   } else {
     return -1;
   }
-
-  return 0;
 }
 
 int32_t AudioDeviceLinuxALSA::InitRecording() {
@@ -1000,8 +994,6 @@ int32_t AudioDeviceLinuxALSA::InitRecordingLocked() {
   } else {
     return -1;
   }
-
-  return 0;
 }
 
 int32_t AudioDeviceLinuxALSA::StartRecording() {
@@ -1060,8 +1052,8 @@ int32_t AudioDeviceLinuxALSA::StartRecording() {
 }
 
 int32_t AudioDeviceLinuxALSA::StopRecording() {
-    MutexLock lock(&mutex_);
-    return StopRecordingLocked();
+  MutexLock lock(&mutex_);
+  return StopRecordingLocked();
 }
 
 int32_t AudioDeviceLinuxALSA::StopRecordingLocked() {
@@ -1164,8 +1156,8 @@ int32_t AudioDeviceLinuxALSA::StartPlayout() {
 }
 
 int32_t AudioDeviceLinuxALSA::StopPlayout() {
-    MutexLock lock(&mutex_);
-    return StopPlayoutLocked();
+  MutexLock lock(&mutex_);
+  return StopPlayoutLocked();
 }
 
 int32_t AudioDeviceLinuxALSA::StopPlayoutLocked() {
@@ -1490,7 +1482,7 @@ bool AudioDeviceLinuxALSA::PlayThreadProcess() {
     Lock();
 
     _playoutFramesLeft = _ptrAudioBuffer->GetPlayoutData(_playoutBuffer);
-    assert(_playoutFramesLeft == _playoutFramesIn10MS);
+    RTC_DCHECK_EQ(_playoutFramesLeft, _playoutFramesIn10MS);
   }
 
   if (static_cast<uint32_t>(avail_frames) > _playoutFramesLeft)
@@ -1509,7 +1501,7 @@ bool AudioDeviceLinuxALSA::PlayThreadProcess() {
     UnLock();
     return true;
   } else {
-    assert(frames == avail_frames);
+    RTC_DCHECK_EQ(frames, avail_frames);
     _playoutFramesLeft -= frames;
   }
 
@@ -1559,7 +1551,7 @@ bool AudioDeviceLinuxALSA::RecThreadProcess() {
     UnLock();
     return true;
   } else if (frames > 0) {
-    assert(frames == avail_frames);
+    RTC_DCHECK_EQ(frames, avail_frames);
 
     int left_size =
         LATE(snd_pcm_frames_to_bytes)(_handleRecord, _recordingFramesLeft);

@@ -77,7 +77,7 @@ private:
       }
     }
 
-    rtc::scoped_refptr<webrtc::I420Buffer> buffer = webrtc::I420Buffer::Create(width, height);
+    webrtc::scoped_refptr<webrtc::I420Buffer> buffer = webrtc::I420Buffer::Create(width, height);
 
     libyuv::RGBAToI420(bytes, width * 4, buffer->MutableDataY(), buffer->StrideY(), buffer->MutableDataU(),
                        buffer->StrideU(), buffer->MutableDataV(), buffer->StrideV(), width, height);
@@ -94,7 +94,7 @@ webrtc::VideoFrame FrameSource::next_frame() {
   auto bytes_ptr = std::make_unique<std::uint8_t[]>(width * height * 4);
   double pts;
   next_frame_rgb0(reinterpret_cast<char *>(bytes_ptr.get()), &pts);
-  rtc::scoped_refptr<webrtc::I420Buffer> buffer = webrtc::I420Buffer::Create(width, height);
+  webrtc::scoped_refptr<webrtc::I420Buffer> buffer = webrtc::I420Buffer::Create(width, height);
   libyuv::ABGRToI420(bytes_ptr.get(), width * 4, buffer->MutableDataY(), buffer->StrideY(), buffer->MutableDataU(),
                      buffer->StrideU(), buffer->MutableDataV(), buffer->StrideV(), width, height);
   return webrtc::VideoFrame::Builder().set_timestamp_us(static_cast<int64_t>(pts * 1000000)).set_video_frame_buffer(buffer).build();
@@ -121,13 +121,13 @@ class FakeVideoSource : public rtc::VideoSourceInterface<webrtc::VideoFrame> {
   }
   using VideoFrameT = webrtc::VideoFrame;
   void AddOrUpdateSink(rtc::VideoSinkInterface<VideoFrameT> *sink, const rtc::VideoSinkWants &wants) override {
-    RTC_LOG(WARNING) << "ADD";
+    RTC_LOG(LS_WARNING) << "ADD";
     data_->broadcaster_.AddOrUpdateSink(sink, wants);
   }
   // RemoveSink must guarantee that at the time the method returns,
   // there is no current and no future calls to VideoSinkInterface::OnFrame.
-  void RemoveSink(rtc::VideoSinkInterface<VideoFrameT> *sink) {
-    RTC_LOG(WARNING) << "REMOVE";
+  void RemoveSink(rtc::VideoSinkInterface<VideoFrameT> *sink) override {
+    RTC_LOG(LS_WARNING) << "REMOVE";
     data_->broadcaster_.RemoveSink(sink);
   }
 
@@ -141,8 +141,8 @@ class FakeVideoSource : public rtc::VideoSourceInterface<webrtc::VideoFrame> {
 
 class FakeVideoTrackSourceImpl : public webrtc::VideoTrackSource {
  public:
-  static rtc::scoped_refptr<FakeVideoTrackSourceImpl> Create(std::unique_ptr<FrameSource> source) {
-    return rtc::scoped_refptr<FakeVideoTrackSourceImpl>(new rtc::RefCountedObject<FakeVideoTrackSourceImpl>(std::move(source)));
+  static webrtc::scoped_refptr<FakeVideoTrackSourceImpl> Create(std::unique_ptr<FrameSource> source) {
+    return webrtc::scoped_refptr<FakeVideoTrackSourceImpl>(new rtc::RefCountedObject<FakeVideoTrackSourceImpl>(std::move(source)));
   }
 
   explicit FakeVideoTrackSourceImpl(std::unique_ptr<FrameSource> source) : VideoTrackSource(false), source_(std::move(source)) {
@@ -166,7 +166,7 @@ std::unique_ptr<FrameSource> FrameSource::chess(){
 }
 
 void FrameSource::video_frame_to_rgb0(const webrtc::VideoFrame & src, char *dest){
-  auto buffer = src.video_frame_buffer()->GetI420();
+  auto buffer = src.video_frame_buffer()->ToI420();
   libyuv::I420ToABGR(buffer->DataY(), buffer->StrideY(), buffer->DataU(),
                      buffer->StrideU(), buffer->DataV(), buffer->StrideV( ), reinterpret_cast<uint8_t *>(dest), src.width() * 4,  src.width(), src.height());
 }

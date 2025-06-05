@@ -54,7 +54,7 @@ int WebRtcVad_Init(VadInst* handle);
 //                       has not been initialized).
 int WebRtcVad_set_mode(VadInst* handle, int mode);
 
-// Calculates a VAD decision for the |audio_frame|. For valid sampling rates
+// Calculates a VAD decision for the `audio_frame`. For valid sampling rates
 // frame lengths, see the description of WebRtcVad_ValidRatesAndFrameLengths().
 //
 // - handle       [i/o] : VAD Instance. Needs to be initialized by
@@ -71,7 +71,7 @@ int WebRtcVad_Process(VadInst* handle,
                       const int16_t* audio_frame,
                       size_t frame_length);
 
-// Checks for valid combinations of |rate| and |frame_length|. We support 10,
+// Checks for valid combinations of `rate` and `frame_length`. We support 10,
 // 20 and 30 ms frames and the rates 8000, 16000 and 32000 Hz.
 //
 // - rate         [i] : Sampling frequency (Hz).

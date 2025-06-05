@@ -8,6 +8,8 @@
 
 package org.telegram.messenger;
 
+import android.Manifest;
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
 import android.location.Address;
@@ -19,33 +21,26 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.SystemClock;
 import android.text.TextUtils;
+import android.util.Log;
 import android.util.SparseIntArray;
 
-import com.google.android.gms.common.ConnectionResult;
-import com.google.android.gms.common.GoogleApiAvailability;
-import com.google.android.gms.common.api.GoogleApiClient;
-import com.google.android.gms.common.api.PendingResult;
-import com.google.android.gms.common.api.Status;
-import com.google.android.gms.location.LocationRequest;
-import com.google.android.gms.location.LocationServices;
-import com.google.android.gms.location.LocationSettingsRequest;
-import com.google.android.gms.location.LocationSettingsResult;
-import com.google.android.gms.location.LocationSettingsStatusCodes;
+import androidx.collection.LongSparseArray;
 
 import org.telegram.SQLite.SQLiteCursor;
 import org.telegram.SQLite.SQLitePreparedStatement;
 import org.telegram.tgnet.NativeByteBuffer;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.tgnet.tl.TL_stories;
+import org.telegram.ui.Components.PermissionRequest;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 
-import androidx.collection.LongSparseArray;
-
-public class LocationController extends BaseController implements NotificationCenter.NotificationCenterDelegate, GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener {
+@SuppressLint("MissingPermission")
+public class LocationController extends BaseController implements NotificationCenter.NotificationCenterDelegate, ILocationServiceProvider.IAPIConnectionCallbacks, ILocationServiceProvider.IAPIOnConnectionFailedListener {
 
     private LongSparseArray<SharingLocationInfo> sharingLocationsMap = new LongSparseArray<>();
     private ArrayList<SharingLocationInfo> sharingLocations = new ArrayList<>();
@@ -58,23 +53,20 @@ public class LocationController extends BaseController implements NotificationCe
     private FusedLocationListener fusedLocationListener = new FusedLocationListener();
     private Location lastKnownLocation;
     private long lastLocationSendTime;
-    private boolean locationSentSinceLastGoogleMapUpdate = true;
+    private boolean locationSentSinceLastMapUpdate = true;
     private long lastLocationStartTime;
     private boolean started;
-    private boolean lastLocationByGoogleMaps;
+    private boolean lastLocationByMaps;
     private SparseIntArray requests = new SparseIntArray();
     private LongSparseArray<Boolean> cacheRequests = new LongSparseArray<>();
     private long locationEndWatchTime;
-    private boolean shareMyCurrentLocation;
-
-    private boolean lookingForPeopleNearby;
 
     public ArrayList<SharingLocationInfo> sharingLocationsUI = new ArrayList<>();
     private LongSparseArray<SharingLocationInfo> sharingLocationsMapUI = new LongSparseArray<>();
 
-    private Boolean playServicesAvailable;
+    private Boolean servicesAvailable;
     private boolean wasConnectedToPlayServices;
-    private GoogleApiClient googleApiClient;
+    private ILocationServiceProvider.IMapApiClient apiClient;
     private final static int PLAY_SERVICES_RESOLUTION_REQUEST = 9000;
     private final static long UPDATE_INTERVAL = 1000, FASTEST_INTERVAL = 1000;
     private final static int BACKGROUD_UPDATE_TIME = 30 * 1000;
@@ -83,10 +75,7 @@ public class LocationController extends BaseController implements NotificationCe
     private final static int WATCH_LOCATION_TIMEOUT = 65 * 1000;
     private final static int SEND_NEW_LOCATION_TIME = 2 * 1000;
 
-    private ArrayList<TLRPC.TL_peerLocated> cachedNearbyUsers = new ArrayList<>();
-    private ArrayList<TLRPC.TL_peerLocated> cachedNearbyChats = new ArrayList<>();
-
-    private LocationRequest locationRequest;
+    private ILocationServiceProvider.ILocationRequest locationRequest;
 
     private static volatile LocationController[] Instance = new LocationController[UserConfig.MAX_ACCOUNT_COUNT];
 
@@ -147,7 +136,7 @@ public class LocationController extends BaseController implements NotificationCe
         }
     }
 
-    private class FusedLocationListener implements com.google.android.gms.location.LocationListener {
+    private class FusedLocationListener implements ILocationServiceProvider.ILocationListener {
 
         @Override
         public void onLocationChanged(Location location) {
@@ -162,13 +151,10 @@ public class LocationController extends BaseController implements NotificationCe
         super(instance);
 
         locationManager = (LocationManager) ApplicationLoader.applicationContext.getSystemService(Context.LOCATION_SERVICE);
-        googleApiClient = new GoogleApiClient.Builder(ApplicationLoader.applicationContext).
-                addApi(LocationServices.API).
-                addConnectionCallbacks(this).
-                addOnConnectionFailedListener(this).build();
+        apiClient = ApplicationLoader.getLocationServiceProvider().onCreateLocationServicesAPI(ApplicationLoader.applicationContext, this, this);
 
-        locationRequest = new LocationRequest();
-        locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+        locationRequest = ApplicationLoader.getLocationServiceProvider().onCreateLocationRequest();
+        locationRequest.setPriority(ILocationServiceProvider.PRIORITY_HIGH_ACCURACY);
         locationRequest.setInterval(UPDATE_INTERVAL);
         locationRequest.setFastestInterval(FASTEST_INTERVAL);
 
@@ -288,30 +274,25 @@ public class LocationController extends BaseController implements NotificationCe
         wasConnectedToPlayServices = true;
         try {
             if (Build.VERSION.SDK_INT >= 21) {
-                LocationSettingsRequest.Builder builder = new LocationSettingsRequest.Builder().addLocationRequest(locationRequest);
-                PendingResult<LocationSettingsResult> result = LocationServices.SettingsApi.checkLocationSettings(googleApiClient, builder.build());
-                result.setResultCallback(locationSettingsResult -> {
-                    final Status status = locationSettingsResult.getStatus();
-                    switch (status.getStatusCode()) {
-                        case LocationSettingsStatusCodes.SUCCESS:
+                ApplicationLoader.getLocationServiceProvider().checkLocationSettings(locationRequest, status -> {
+                    switch (status) {
+                        case ILocationServiceProvider.STATUS_SUCCESS:
                             startFusedLocationRequest(true);
                             break;
-                        case LocationSettingsStatusCodes.RESOLUTION_REQUIRED:
+                        case ILocationServiceProvider.STATUS_RESOLUTION_REQUIRED:
                             Utilities.stageQueue.postRunnable(() -> {
-                                if (lookingForPeopleNearby || !sharingLocations.isEmpty()) {
+                                if (!sharingLocations.isEmpty()) {
                                     AndroidUtilities.runOnUIThread(() -> getNotificationCenter().postNotificationName(NotificationCenter.needShowPlayServicesAlert, status));
                                 }
                             });
                             break;
-                        case LocationSettingsStatusCodes.SETTINGS_CHANGE_UNAVAILABLE:
+                        case ILocationServiceProvider.STATUS_SETTINGS_CHANGE_UNAVAILABLE:
                             Utilities.stageQueue.postRunnable(() -> {
-                                playServicesAvailable = false;
+                                servicesAvailable = false;
                                 try {
-                                    googleApiClient.disconnect();
+                                    apiClient.disconnect();
                                     start();
-                                } catch (Throwable ignore) {
-
-                                }
+                                } catch (Throwable ignore) {}
                             });
                             break;
                     }
@@ -327,13 +308,13 @@ public class LocationController extends BaseController implements NotificationCe
     public void startFusedLocationRequest(boolean permissionsGranted) {
         Utilities.stageQueue.postRunnable(() -> {
             if (!permissionsGranted) {
-                playServicesAvailable = false;
+                servicesAvailable = false;
             }
-            if (shareMyCurrentLocation || lookingForPeopleNearby || !sharingLocations.isEmpty()) {
+            if (!sharingLocations.isEmpty()) {
                 if (permissionsGranted) {
                     try {
-                        setLastKnownLocation(LocationServices.FusedLocationApi.getLastLocation(googleApiClient));
-                        LocationServices.FusedLocationApi.requestLocationUpdates(googleApiClient, locationRequest, fusedLocationListener);
+                        ApplicationLoader.getLocationServiceProvider().getLastLocation(this::setLastKnownLocation);
+                        ApplicationLoader.getLocationServiceProvider().requestLocationUpdates(locationRequest, fusedLocationListener);
                     } catch (Throwable e) {
                         FileLog.e(e);
                     }
@@ -350,24 +331,22 @@ public class LocationController extends BaseController implements NotificationCe
     }
 
     @Override
-    public void onConnectionFailed(ConnectionResult connectionResult) {
+    public void onConnectionFailed() {
         if (wasConnectedToPlayServices) {
             return;
         }
-        playServicesAvailable = false;
+        servicesAvailable = false;
         if (started) {
             started = false;
             start();
         }
     }
 
-    private boolean checkPlayServices() {
-        if (playServicesAvailable == null) {
-            GoogleApiAvailability apiAvailability = GoogleApiAvailability.getInstance();
-            int resultCode = apiAvailability.isGooglePlayServicesAvailable(ApplicationLoader.applicationContext);
-            playServicesAvailable = resultCode == ConnectionResult.SUCCESS;
+    private boolean checkServices() {
+        if (servicesAvailable == null) {
+            servicesAvailable = ApplicationLoader.getLocationServiceProvider().checkServices();
         }
-        return playServicesAvailable;
+        return servicesAvailable;
     }
 
     private void broadcastLastKnownLocation(boolean cancelCurrent) {
@@ -458,23 +437,8 @@ public class LocationController extends BaseController implements NotificationCe
                 requests.put(reqId[0], 0);
             }
         }
-        if (shareMyCurrentLocation) {
-            UserConfig userConfig = getUserConfig();
-            userConfig.lastMyLocationShareTime = (int) (System.currentTimeMillis() / 1000);
-            userConfig.saveConfig(false);
-
-            TLRPC.TL_contacts_getLocated req = new TLRPC.TL_contacts_getLocated();
-            req.geo_point = new TLRPC.TL_inputGeoPoint();
-            req.geo_point.lat = lastKnownLocation.getLatitude();
-            req.geo_point._long = lastKnownLocation.getLongitude();
-            req.background = true;
-            getConnectionsManager().sendRequest(req, (response, error) -> {
-
-            });
-        }
         getConnectionsManager().resumeNetworkMaybe();
-        if (shouldStopGps() || shareMyCurrentLocation) {
-            shareMyCurrentLocation = false;
+        if (shouldStopGps()) {
             stop(false);
         }
     }
@@ -493,10 +457,6 @@ public class LocationController extends BaseController implements NotificationCe
 
     protected void update() {
         UserConfig userConfig = getUserConfig();
-        if (ApplicationLoader.isScreenOn && !ApplicationLoader.mainInterfacePaused && !shareMyCurrentLocation &&
-                userConfig.isClientActivated() && userConfig.isConfigLoaded() && userConfig.sharingMyLocationUntil != 0 && Math.abs(System.currentTimeMillis() / 1000 - userConfig.lastMyLocationShareTime) >= 60 * 60) {
-            shareMyCurrentLocation = true;
-        }
         if (!sharingLocations.isEmpty()) {
             for (int a = 0; a < sharingLocations.size(); a++) {
                 final SharingLocationInfo info = sharingLocations.get(a);
@@ -519,16 +479,16 @@ public class LocationController extends BaseController implements NotificationCe
         }
         if (started) {
             long newTime = SystemClock.elapsedRealtime();
-            if (lastLocationByGoogleMaps || Math.abs(lastLocationStartTime - newTime) > LOCATION_ACQUIRE_TIME || shouldSendLocationNow()) {
-                lastLocationByGoogleMaps = false;
-                locationSentSinceLastGoogleMapUpdate = true;
+            if (lastLocationByMaps || Math.abs(lastLocationStartTime - newTime) > LOCATION_ACQUIRE_TIME || shouldSendLocationNow()) {
+                lastLocationByMaps = false;
+                locationSentSinceLastMapUpdate = true;
                 boolean cancelAll = (SystemClock.elapsedRealtime() - lastLocationSendTime) > 2 * 1000;
                 lastLocationStartTime = newTime;
                 lastLocationSendTime = SystemClock.elapsedRealtime();
                 broadcastLastKnownLocation(cancelAll);
             }
-        } else if (!sharingLocations.isEmpty() || shareMyCurrentLocation) {
-            if (shareMyCurrentLocation || Math.abs(lastLocationSendTime - SystemClock.elapsedRealtime()) > BACKGROUD_UPDATE_TIME) {
+        } else if (!sharingLocations.isEmpty()) {
+            if (Math.abs(lastLocationSendTime - SystemClock.elapsedRealtime()) > BACKGROUD_UPDATE_TIME) {
                 lastLocationStartTime = SystemClock.elapsedRealtime();
                 start();
             }
@@ -550,8 +510,6 @@ public class LocationController extends BaseController implements NotificationCe
         sharingLocationsMapUI.clear();
         locationsCache.clear();
         cacheRequests.clear();
-        cachedNearbyUsers.clear();
-        cachedNearbyChats.clear();
         lastReadLocationTime.clear();
         stopService();
         Utilities.stageQueue.postRunnable(() -> {
@@ -574,19 +532,6 @@ public class LocationController extends BaseController implements NotificationCe
         }
     }
 
-    public void setCachedNearbyUsersAndChats(ArrayList<TLRPC.TL_peerLocated> u, ArrayList<TLRPC.TL_peerLocated> c) {
-        cachedNearbyUsers = new ArrayList<>(u);
-        cachedNearbyChats = new ArrayList<>(c);
-    }
-
-    public ArrayList<TLRPC.TL_peerLocated> getCachedNearbyUsers() {
-        return cachedNearbyUsers;
-    }
-
-    public ArrayList<TLRPC.TL_peerLocated> getCachedNearbyChats() {
-        return cachedNearbyChats;
-    }
-
     protected void addSharingLocation(TLRPC.Message message) {
         final SharingLocationInfo info = new SharingLocationInfo();
         info.did = message.dialog_id;
@@ -595,7 +540,11 @@ public class LocationController extends BaseController implements NotificationCe
         info.lastSentProximityMeters = info.proximityMeters = message.media.proximity_notification_radius;
         info.account = currentAccount;
         info.messageObject = new MessageObject(currentAccount, message, false, false);
-        info.stopTime = getConnectionsManager().getCurrentTime() + info.period;
+        if (info.period == 0x7FFFFFFF) {
+            info.stopTime = Integer.MAX_VALUE;
+        } else {
+            info.stopTime = getConnectionsManager().getCurrentTime() + info.period;
+        }
         final SharingLocationInfo old = sharingLocationsMap.get(info.did);
         sharingLocationsMap.put(info.did, info);
         if (old != null) {
@@ -678,7 +627,7 @@ public class LocationController extends BaseController implements NotificationCe
                     NativeByteBuffer data = cursor.byteBufferValue(4);
                     if (data != null) {
                         info.messageObject = new MessageObject(currentAccount, TLRPC.Message.TLdeserialize(data, data.readInt32(false), false), false, false);
-                        MessagesStorage.addUsersAndChatsFromMessage(info.messageObject.messageOwner, usersToLoad, chatsToLoad);
+                        MessagesStorage.addUsersAndChatsFromMessage(info.messageObject.messageOwner, usersToLoad, chatsToLoad, null);
                         data.reuse();
                     }
                     result.add(info);
@@ -696,9 +645,7 @@ public class LocationController extends BaseController implements NotificationCe
                 if (!chatsToLoad.isEmpty()) {
                     getMessagesStorage().getChatsInternal(TextUtils.join(",", chatsToLoad), chats);
                 }
-                if (!usersToLoad.isEmpty()) {
-                    getMessagesStorage().getUsersInternal(TextUtils.join(",", usersToLoad), users);
-                }
+                getMessagesStorage().getUsersInternal(usersToLoad, users);
             } catch (Exception e) {
                 FileLog.e(e);
             }
@@ -801,11 +748,9 @@ public class LocationController extends BaseController implements NotificationCe
 
     private void startService() {
         try {
-            /*if (Build.VERSION.SDK_INT >= 26) {
-                ApplicationLoader.applicationContext.startForegroundService(new Intent(ApplicationLoader.applicationContext, LocationSharingService.class));
-            } else {*/
+            if (PermissionRequest.hasPermission(Manifest.permission.ACCESS_COARSE_LOCATION) || PermissionRequest.hasPermission(Manifest.permission.ACCESS_FINE_LOCATION)) {
                 ApplicationLoader.applicationContext.startService(new Intent(ApplicationLoader.applicationContext, LocationSharingService.class));
-            //}
+            }
         } catch (Throwable e) {
             FileLog.e(e);
         }
@@ -846,17 +791,17 @@ public class LocationController extends BaseController implements NotificationCe
         });
     }
 
-    public void setGoogleMapLocation(Location location, boolean first) {
+    public void setMapLocation(Location location, boolean first) {
         if (location == null) {
             return;
         }
-        lastLocationByGoogleMaps = true;
+        lastLocationByMaps = true;
         if (first || lastKnownLocation != null && lastKnownLocation.distanceTo(location) >= 20) {
             lastLocationSendTime = SystemClock.elapsedRealtime() - BACKGROUD_UPDATE_TIME;
-            locationSentSinceLastGoogleMapUpdate = false;
-        } else if (locationSentSinceLastGoogleMapUpdate) {
+            locationSentSinceLastMapUpdate = false;
+        } else if (locationSentSinceLastMapUpdate) {
             lastLocationSendTime = SystemClock.elapsedRealtime() - BACKGROUD_UPDATE_TIME + FOREGROUND_UPDATE_TIME;
-            locationSentSinceLastGoogleMapUpdate = false;
+            locationSentSinceLastMapUpdate = false;
         }
         setLastKnownLocation(location);
     }
@@ -868,9 +813,9 @@ public class LocationController extends BaseController implements NotificationCe
         lastLocationStartTime = SystemClock.elapsedRealtime();
         started = true;
         boolean ok = false;
-        if (checkPlayServices()) {
+        if (checkServices()) {
             try {
-                googleApiClient.connect();
+                apiClient.connect();
                 ok = true;
             } catch (Throwable e) {
                 FileLog.e(e);
@@ -906,16 +851,13 @@ public class LocationController extends BaseController implements NotificationCe
     }
 
     private void stop(boolean empty) {
-        if (lookingForPeopleNearby || shareMyCurrentLocation) {
-            return;
-        }
         started = false;
-        if (checkPlayServices()) {
+        if (checkServices()) {
             try {
-                LocationServices.FusedLocationApi.removeLocationUpdates(googleApiClient, fusedLocationListener);
-                googleApiClient.disconnect();
+                ApplicationLoader.getLocationServiceProvider().removeLocationUpdates(fusedLocationListener);
+                apiClient.disconnect();
             } catch (Throwable e) {
-                FileLog.e(e);
+                FileLog.e(e, false);
             }
         }
         locationManager.removeUpdates(gpsLocationListener);
@@ -923,17 +865,6 @@ public class LocationController extends BaseController implements NotificationCe
             locationManager.removeUpdates(networkLocationListener);
             locationManager.removeUpdates(passiveLocationListener);
         }
-    }
-
-    public void startLocationLookupForPeopleNearby(boolean stop) {
-        Utilities.stageQueue.postRunnable(() -> {
-            lookingForPeopleNearby = !stop;
-            if (lookingForPeopleNearby) {
-                start();
-            } else if (sharingLocations.isEmpty()) {
-                stop(true);
-            }
-        });
     }
 
     public Location getLastKnownLocation() {
@@ -1016,11 +947,40 @@ public class LocationController extends BaseController implements NotificationCe
     }
 
     public interface LocationFetchCallback {
-        void onLocationAddressAvailable(String address, String displayAddress, Location location);
+        void onLocationAddressAvailable(String address, String displayAddress, TLRPC.TL_messageMediaVenue city, TLRPC.TL_messageMediaVenue street, Location location);
     }
+
+    public static final int TYPE_BIZ = 1;
+    public static final int TYPE_STORY = 2;
+
+    // google geocoder thinks that "unnamed road" is a street name
+    public static String[] unnamedRoads = {
+        "Unnamed Road",
+        "Вulicya bez nazvi",
+        "Нeizvestnaya doroga",
+        "İsimsiz Yol",
+        "Ceļš bez nosaukuma",
+        "Kelias be pavadinimo",
+        "Droga bez nazwy",
+        "Cesta bez názvu",
+        "Silnice bez názvu",
+        "Drum fără nume",
+        "Route sans nom",
+        "Vía sin nombre",
+        "Estrada sem nome",
+        "Οdos xoris onomasia",
+        "Rrugë pa emër",
+        "Пat bez ime",
+        "Нeimenovani put",
+        "Strada senza nome",
+        "Straße ohne Straßennamen"
+    };
 
     private static HashMap<LocationFetchCallback, Runnable> callbacks = new HashMap<>();
     public static void fetchLocationAddress(Location location, LocationFetchCallback callback) {
+        fetchLocationAddress(location, 0, callback);
+    }
+    public static void fetchLocationAddress(Location location, int type, LocationFetchCallback callback) {
         if (callback == null) {
             return;
         }
@@ -1030,114 +990,429 @@ public class LocationController extends BaseController implements NotificationCe
             callbacks.remove(callback);
         }
         if (location == null) {
-            callback.onLocationAddressAvailable(null, null, null);
+            callback.onLocationAddressAvailable(null, null, null, null, null);
             return;
         }
 
+        Locale locale;
+        Locale englishLocale;
+        try {
+            locale = LocaleController.getInstance().getCurrentLocale();
+        } catch (Exception ignore) {
+            locale = LocaleController.getInstance().getSystemDefaultLocale();
+        }
+        if (locale.getLanguage().contains("en")) {
+            englishLocale = locale;
+        } else {
+            englishLocale = Locale.US;
+        }
+        final Locale finalLocale = locale;
         Utilities.globalQueue.postRunnable(fetchLocationRunnable = () -> {
-            String name;
-            String displayName;
+            String name, displayName, city, street, countryCode = null, locality = null, feature = null, engFeature = null;
+            String engState = null, engCity = null;
+            StringBuilder engStreet = new StringBuilder();
+            boolean onlyCountry = true;
+            TLRPC.TL_messageMediaVenue cityLocation = null;
+            TL_stories.TL_geoPointAddress cityAddress = new TL_stories.TL_geoPointAddress();
+            TLRPC.TL_messageMediaVenue streetLocation = null;
+            TL_stories.TL_geoPointAddress streetAddress = new TL_stories.TL_geoPointAddress();
             try {
-                Geocoder gcd = new Geocoder(ApplicationLoader.applicationContext, LocaleController.getInstance().getSystemDefaultLocale());
+                Geocoder gcd = new Geocoder(ApplicationLoader.applicationContext, finalLocale);
                 List<Address> addresses = gcd.getFromLocation(location.getLatitude(), location.getLongitude(), 1);
+                List<Address> engAddresses = null;
+                if (type == TYPE_STORY) {
+                    if (englishLocale == finalLocale) {
+                        engAddresses = addresses;
+                    } else {
+                        Geocoder gcd2 = new Geocoder(ApplicationLoader.applicationContext, englishLocale);
+                        engAddresses = gcd2.getFromLocation(location.getLatitude(), location.getLongitude(), 1);
+                    }
+                }
                 if (addresses.size() > 0) {
                     Address address = addresses.get(0);
-                    boolean hasAny = false;
-                    String arg;
+                    Address engAddress = engAddresses != null && engAddresses.size() >= 1 ? engAddresses.get(0) : null;
+                    if (type == TYPE_BIZ) {
+                        ArrayList<String> parts = new ArrayList<>();
 
-                    StringBuilder nameBuilder = new StringBuilder();
-                    StringBuilder displayNameBuilder = new StringBuilder();
-
-                    arg = address.getSubThoroughfare();
-                    if (!TextUtils.isEmpty(arg)) {
-                        nameBuilder.append(arg);
-                        hasAny = true;
-                    }
-                    arg = address.getThoroughfare();
-                    if (!TextUtils.isEmpty(arg)) {
-                        if (nameBuilder.length() > 0) {
-                            nameBuilder.append(" ");
+                        String arg = null;
+                        try {
+                            arg = address.getAddressLine(0);
+                        } catch (Exception ignore) {}
+                        if (TextUtils.isEmpty(arg)) {
+                            try {
+                                parts.add(address.getSubThoroughfare());
+                            } catch (Exception ignore) {}
+                            try {
+                                parts.add(address.getThoroughfare());
+                            } catch (Exception ignore) {}
+                            try {
+                                parts.add(address.getAdminArea());
+                            } catch (Exception ignore) {}
+                            try {
+                                parts.add(address.getCountryName());
+                            } catch (Exception ignore) {}
+                        } else {
+                            parts.add(arg);
                         }
-                        nameBuilder.append(arg);
-                        hasAny = true;
-                    }
-                    if (!hasAny) {
-                        arg = address.getAdminArea();
+
+                        for (int i = 0; i < parts.size(); ++i) {
+                            if (parts.get(i) != null) {
+                                String[] partsInside = parts.get(i).split(", ");
+                                if (partsInside.length > 1) {
+                                    parts.remove(i);
+                                    for (int j = 0; j < partsInside.length; ++j) {
+                                        parts.add(i, partsInside[j]);
+                                        i++;
+                                    }
+                                }
+                            }
+                        }
+                        for (int i = 0; i < parts.size(); ++i) {
+                            if (TextUtils.isEmpty(parts.get(i)) || parts.indexOf(parts.get(i)) != i || parts.get(i).matches("^\\s*\\d{4,}\\s*$")) {
+                                parts.remove(i);
+                                i--;
+                            }
+                        }
+
+                        name = displayName = parts.isEmpty() ? null : TextUtils.join(", ", parts);
+                        city = null;
+                        street = null;
+                        countryCode = null;
+                    } else {
+
+                        boolean hasAny = false;
+                        String arg;
+
+                        StringBuilder nameBuilder = new StringBuilder();
+                        StringBuilder displayNameBuilder = new StringBuilder();
+                        StringBuilder cityBuilder = new StringBuilder();
+                        StringBuilder streetBuilder = new StringBuilder();
+
+//                    String addressLine = null;
+//                    try {
+//                        addressLine = address.getAddressLine(0);
+//                    } catch (Exception ignore) {}
+//                    if (addressLine != null) {
+//                        String postalCode = address.getPostalCode();
+//                        if (postalCode != null) {
+//                            addressLine = addressLine.replace(" " + postalCode, "");
+//                            addressLine = addressLine.replace(postalCode, "");
+//                        }
+//                        String[] parts = addressLine.split(", ");
+//                        if (parts.length > 2) {
+//                            String _country = parts[parts.length - 1].replace(",", "").trim();
+//                            String _city = parts[parts.length - 2].replace(",", "").trim();
+////                            if (_city.length() > 3) {
+////                                locality = _city;
+////                            }
+////                            feature = parts[0].replace(",", "").trim();
+//                        }
+//                    }
+
+                        if (TextUtils.isEmpty(locality)) {
+                            locality = address.getLocality();
+                        }
+                        if (TextUtils.isEmpty(locality)) {
+                            locality = address.getAdminArea();
+                        }
+                        if (TextUtils.isEmpty(locality)) {
+                            locality = address.getSubAdminArea();
+                        }
+                        if (engAddress != null) {
+                            if (TextUtils.isEmpty(engCity)) {
+                                engCity = engAddress.getLocality();
+                            }
+                            if (TextUtils.isEmpty(engCity)) {
+                                engCity = engAddress.getAdminArea();
+                            }
+                            if (TextUtils.isEmpty(engCity)) {
+                                engCity = engAddress.getSubAdminArea();
+                            }
+
+                            engState = engAddress.getAdminArea();
+                        }
+
+                        if (TextUtils.isEmpty(feature) && !TextUtils.equals(address.getThoroughfare(), locality) && !TextUtils.equals(address.getThoroughfare(), address.getCountryName())) {
+                            feature = address.getThoroughfare();
+                        }
+                        if (TextUtils.isEmpty(feature) && !TextUtils.equals(address.getSubLocality(), locality) && !TextUtils.equals(address.getSubLocality(), address.getCountryName())) {
+                            feature = address.getSubLocality();
+                        }
+                        if (TextUtils.isEmpty(feature) && !TextUtils.equals(address.getLocality(), locality) && !TextUtils.equals(address.getLocality(), address.getCountryName())) {
+                            feature = address.getLocality();
+                        }
+                        if (!TextUtils.isEmpty(feature) && !TextUtils.equals(feature, locality) && !TextUtils.equals(feature, address.getCountryName())) {
+                            if (streetBuilder.length() > 0) {
+                                streetBuilder.append(", ");
+                            }
+                            streetBuilder.append(feature);
+                        } else {
+                            streetBuilder = null;
+                        }
+
+                        if (engAddress != null) {
+                            if (TextUtils.isEmpty(engFeature) && !TextUtils.equals(engAddress.getThoroughfare(), locality) && !TextUtils.equals(engAddress.getThoroughfare(), engAddress.getCountryName())) {
+                                engFeature = engAddress.getThoroughfare();
+                            }
+                            if (TextUtils.isEmpty(engFeature) && !TextUtils.equals(engAddress.getSubLocality(), locality) && !TextUtils.equals(engAddress.getSubLocality(), engAddress.getCountryName())) {
+                                engFeature = engAddress.getSubLocality();
+                            }
+                            if (TextUtils.isEmpty(engFeature) && !TextUtils.equals(engAddress.getLocality(), locality) && !TextUtils.equals(engAddress.getLocality(), engAddress.getCountryName())) {
+                                engFeature = engAddress.getLocality();
+                            }
+                            if (!TextUtils.isEmpty(engFeature) && !TextUtils.equals(engFeature, engState) && !TextUtils.equals(engFeature, engAddress.getCountryName())) {
+                                if (engStreet.length() > 0) {
+                                    engStreet.append(", ");
+                                }
+                                engStreet.append(engFeature);
+                            } else {
+                                engStreet = null;
+                            }
+
+                            if (!TextUtils.isEmpty(engStreet)) {
+                                boolean isUnnamed = false;
+                                for (int i = 0; i < unnamedRoads.length; ++i) {
+                                    if (unnamedRoads[i].equalsIgnoreCase(engStreet.toString())) {
+                                        isUnnamed = true;
+                                        break;
+                                    }
+                                }
+                                if (isUnnamed) {
+                                    engStreet = null;
+                                    streetBuilder = null;
+                                }
+                            }
+                        }
+
+                        if (!TextUtils.isEmpty(locality)) {
+                            if (cityBuilder.length() > 0) {
+                                cityBuilder.append(", ");
+                            }
+                            cityBuilder.append(locality);
+                            onlyCountry = false;
+                            if (streetBuilder != null) {
+                                if (streetBuilder.length() > 0) {
+                                    streetBuilder.append(", ");
+                                }
+                                streetBuilder.append(locality);
+                            }
+                        }
+
+                        arg = address.getSubThoroughfare();
+                        if (!TextUtils.isEmpty(arg)) {
+                            nameBuilder.append(arg);
+                            hasAny = true;
+                        }
+                        arg = address.getThoroughfare();
+                        if (!TextUtils.isEmpty(arg)) {
+                            if (nameBuilder.length() > 0) {
+                                nameBuilder.append(" ");
+                            }
+                            nameBuilder.append(arg);
+                            hasAny = true;
+                        }
+                        if (!hasAny) {
+                            arg = address.getAdminArea();
+                            if (!TextUtils.isEmpty(arg)) {
+                                if (nameBuilder.length() > 0) {
+                                    nameBuilder.append(", ");
+                                }
+                                nameBuilder.append(arg);
+                            }
+                            arg = address.getSubAdminArea();
+                            if (!TextUtils.isEmpty(arg)) {
+                                if (nameBuilder.length() > 0) {
+                                    nameBuilder.append(", ");
+                                }
+                                nameBuilder.append(arg);
+                            }
+                        }
+                        arg = address.getLocality();
                         if (!TextUtils.isEmpty(arg)) {
                             if (nameBuilder.length() > 0) {
                                 nameBuilder.append(", ");
                             }
                             nameBuilder.append(arg);
                         }
-                        arg = address.getSubAdminArea();
+                        countryCode = address.getCountryCode();
+                        arg = address.getCountryName();
                         if (!TextUtils.isEmpty(arg)) {
                             if (nameBuilder.length() > 0) {
                                 nameBuilder.append(", ");
                             }
                             nameBuilder.append(arg);
+                            String shortCountry = arg;
+                            final String lng = finalLocale.getLanguage();
+                            if (("US".equals(address.getCountryCode()) || "AE".equals(address.getCountryCode())) && ("en".equals(lng) || "uk".equals(lng) || "ru".equals(lng)) || "GB".equals(address.getCountryCode()) && "en".equals(lng)) {
+                                shortCountry = "";
+                                String[] words = arg.split(" ");
+                                for (String word : words) {
+                                    if (word.length() > 0)
+                                        shortCountry += word.charAt(0);
+                                }
+                            } else if ("US".equals(address.getCountryCode())) {
+                                shortCountry = "USA";
+                            }
+                            if (cityBuilder.length() > 0) {
+                                cityBuilder.append(", ");
+                            }
+                            cityBuilder.append(shortCountry);
                         }
-                    }
-                    arg = address.getLocality();
-                    if (!TextUtils.isEmpty(arg)) {
-                        if (nameBuilder.length() > 0) {
-                            nameBuilder.append(", ");
-                        }
-                        nameBuilder.append(arg);
-                    }
-                    arg = address.getCountryName();
-                    if (!TextUtils.isEmpty(arg)) {
-                        if (nameBuilder.length() > 0) {
-                            nameBuilder.append(", ");
-                        }
-                        nameBuilder.append(arg);
-                    }
 
-                    arg = address.getCountryName();
-                    if (!TextUtils.isEmpty(arg)) {
-                        if (displayNameBuilder.length() > 0) {
-                            displayNameBuilder.append(", ");
-                        }
-                        displayNameBuilder.append(arg);
-                    }
-                    arg = address.getLocality();
-                    if (!TextUtils.isEmpty(arg)) {
-                        if (displayNameBuilder.length() > 0) {
-                            displayNameBuilder.append(", ");
-                        }
-                        displayNameBuilder.append(arg);
-                    }
-                    if (!hasAny) {
-                        arg = address.getAdminArea();
+                        arg = address.getCountryName();
                         if (!TextUtils.isEmpty(arg)) {
                             if (displayNameBuilder.length() > 0) {
                                 displayNameBuilder.append(", ");
                             }
                             displayNameBuilder.append(arg);
                         }
-                        arg = address.getSubAdminArea();
+                        arg = address.getLocality();
                         if (!TextUtils.isEmpty(arg)) {
                             if (displayNameBuilder.length() > 0) {
                                 displayNameBuilder.append(", ");
                             }
                             displayNameBuilder.append(arg);
                         }
-                    }
+                        if (!hasAny) {
+                            arg = address.getAdminArea();
+                            if (!TextUtils.isEmpty(arg)) {
+                                if (displayNameBuilder.length() > 0) {
+                                    displayNameBuilder.append(", ");
+                                }
+                                displayNameBuilder.append(arg);
+                            }
+                            arg = address.getSubAdminArea();
+                            if (!TextUtils.isEmpty(arg)) {
+                                if (displayNameBuilder.length() > 0) {
+                                    displayNameBuilder.append(", ");
+                                }
+                                displayNameBuilder.append(arg);
+                            }
+                        }
 
-                    name = nameBuilder.toString();
-                    displayName = displayNameBuilder.toString();
+                        name = nameBuilder.toString();
+                        displayName = displayNameBuilder.toString();
+                        city = cityBuilder.toString();
+                        street = streetBuilder == null ? null : streetBuilder.toString();
+                    }
                 } else {
-                    name = displayName = String.format(Locale.US, "Unknown address (%f,%f)", location.getLatitude(), location.getLongitude());
+                    if (type == TYPE_BIZ) {
+                        name = displayName = null;
+                    } else {
+                        name = displayName = String.format(Locale.US, "Unknown address (%f,%f)", location.getLatitude(), location.getLongitude());
+                    }
+                    city = null;
+                    street = null;
+                }
+                if (!TextUtils.isEmpty(city)) {
+                    cityLocation = new TLRPC.TL_messageMediaVenue();
+                    cityLocation.geo = new TLRPC.TL_geoPoint();
+                    cityLocation.geo.lat = location.getLatitude();
+                    cityLocation.geo._long = location.getLongitude();
+                    cityLocation.query_id = -1;
+                    cityLocation.title = city;
+                    cityLocation.icon = onlyCountry ? "https://ss3.4sqi.net/img/categories_v2/building/government_capitolbuilding_64.png" : "https://ss3.4sqi.net/img/categories_v2/travel/hotel_64.png";
+                    cityLocation.emoji = countryCodeToEmoji(countryCode);
+                    cityLocation.address = onlyCountry ? LocaleController.getString(R.string.Country) : LocaleController.getString(R.string.PassportCity);
+
+                    cityLocation.geoAddress = cityAddress;
+                    cityAddress.country_iso2 = countryCode;
+                    if (!onlyCountry) {
+                        if (!TextUtils.isEmpty(engState)) {
+                            cityAddress.flags |= 1;
+                            cityAddress.state = engState;
+                        }
+                        if (!TextUtils.isEmpty(engCity)) {
+                            cityAddress.flags |= 2;
+                            cityAddress.city = engCity;
+                        }
+                    }
+                }
+                if (!TextUtils.isEmpty(street)) {
+                    streetLocation = new TLRPC.TL_messageMediaVenue();
+                    streetLocation.geo = new TLRPC.TL_geoPoint();
+                    streetLocation.geo.lat = location.getLatitude();
+                    streetLocation.geo._long = location.getLongitude();
+                    streetLocation.query_id = -1;
+                    streetLocation.title = street;
+                    streetLocation.icon = "pin";
+                    streetLocation.address = LocaleController.getString(R.string.PassportStreet1);
+
+                    streetLocation.geoAddress = streetAddress;
+                    streetAddress.country_iso2 = countryCode;
+                    if (!TextUtils.isEmpty(engState)) {
+                        streetAddress.flags |= 1;
+                        streetAddress.state = engState;
+                    }
+                    if (!TextUtils.isEmpty(engCity)) {
+                        streetAddress.flags |= 2;
+                        streetAddress.city = engCity;
+                    }
+                    if (!TextUtils.isEmpty(engStreet)) {
+                        streetAddress.flags |= 4;
+                        streetAddress.street = engStreet.toString();
+                    }
+                }
+                if (cityLocation == null && streetLocation == null && location != null) {
+                    String ocean = detectOcean(location.getLongitude(), location.getLatitude());
+                    if (ocean != null) {
+                        cityLocation = new TLRPC.TL_messageMediaVenue();
+                        cityLocation.geo = new TLRPC.TL_geoPoint();
+                        cityLocation.geo.lat = location.getLatitude();
+                        cityLocation.geo._long = location.getLongitude();
+                        cityLocation.query_id = -1;
+                        cityLocation.title = ocean;
+                        cityLocation.icon = "pin";
+                        cityLocation.emoji = "🌊";
+                        cityLocation.address = "Ocean";
+                    }
                 }
             } catch (Exception ignore) {
                 name = displayName = String.format(Locale.US, "Unknown address (%f,%f)", location.getLatitude(), location.getLongitude());
+                city = null;
+                street = null;
             }
             final String nameFinal = name;
             final String displayNameFinal = displayName;
+            final TLRPC.TL_messageMediaVenue finalCityLocation = cityLocation;
+            final TLRPC.TL_messageMediaVenue finalStreetLocation = streetLocation;
             AndroidUtilities.runOnUIThread(() -> {
                 callbacks.remove(callback);
-                callback.onLocationAddressAvailable(nameFinal, displayNameFinal, location);
+                callback.onLocationAddressAvailable(nameFinal, displayNameFinal, finalCityLocation, finalStreetLocation, location);
             });
         }, 300);
         callbacks.put(callback, fetchLocationRunnable);
+    }
+
+    public static String countryCodeToEmoji(String code) {
+        if (code == null) {
+            return null;
+        }
+        code = code.toUpperCase();
+        final int count = code.codePointCount(0, code.length());
+        if (count > 2) {
+            return null;
+        }
+        StringBuilder flag = new StringBuilder();
+        for (int j = 0; j < count; ++j) {
+            flag.append(Character.toChars(Character.codePointAt(code, j) - 0x41 + 0x1F1E6));
+        }
+        return flag.toString();
+    }
+
+    public static String detectOcean(double x, double y) {
+        if (y > 65) {
+            return "Arctic Ocean";
+        }
+        if (x > -88 && x < 40 && y > 0 || x > -60 && x < 20 && y <= 0) {
+            return "Atlantic Ocean";
+        }
+        if (y <= 30 && x >= 20 && x < 150) {
+            return "Indian Ocean";
+        }
+        if ((x > 106 || x < -60) && y > 0 || (x > 150 || x < -60) && y <= 0) {
+            return "Pacific Ocean";
+        }
+        return null;
     }
 }

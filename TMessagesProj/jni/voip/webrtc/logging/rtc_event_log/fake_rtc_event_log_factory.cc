@@ -17,10 +17,10 @@
 
 namespace webrtc {
 
-std::unique_ptr<RtcEventLog> FakeRtcEventLogFactory::CreateRtcEventLog(
-    RtcEventLog::EncodingType /*encoding_type*/) {
+absl::Nonnull<std::unique_ptr<RtcEventLog>> FakeRtcEventLogFactory::Create(
+    const Environment& /*env*/) const {
   auto fake_event_log = std::make_unique<FakeRtcEventLog>();
-  last_log_created_ = fake_event_log.get();
+  const_cast<FakeRtcEventLog*&>(last_log_created_) = fake_event_log.get();
   return fake_event_log;
 }
 

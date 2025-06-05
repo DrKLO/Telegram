@@ -18,7 +18,7 @@
 #include "rtc_base/checks.h"
 #include "rtc_base/thread.h"
 #include "rtc_base/timestamp_aligner.h"
-#include "sdk/android/src/jni/video_frame.h"
+#include "sdk/android/src/jni/jni_helpers.h"
 
 namespace webrtc {
 namespace jni {
@@ -70,8 +70,7 @@ class AndroidVideoTrackSource : public rtc::AdaptedVideoTrackSource {
                        jlong j_timestamp_ns,
                        const JavaRef<jobject>& j_video_frame_buffer);
 
-  void SetState(JNIEnv* env,
-                jboolean j_is_live);
+  void SetState(JNIEnv* env, jboolean j_is_live);
 
   void AdaptOutputFormat(JNIEnv* env,
                          jint j_landscape_width,

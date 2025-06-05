@@ -13,12 +13,13 @@
 
 #include <stddef.h>
 
+#include <cstdint>
 #include <map>
 #include <memory>
 #include <set>
 
-#include "rtc_base/async_socket.h"
-#include "rtc_base/constructor_magic.h"
+#include "api/array_view.h"
+#include "rtc_base/buffer.h"
 #include "rtc_base/nat_server.h"
 #include "rtc_base/nat_types.h"
 #include "rtc_base/socket.h"
@@ -36,10 +37,10 @@ const size_t kNATEncodedIPv6AddressSize = 20U;
 class NATInternalSocketFactory {
  public:
   virtual ~NATInternalSocketFactory() {}
-  virtual AsyncSocket* CreateInternalSocket(int family,
-                                            int type,
-                                            const SocketAddress& local_addr,
-                                            SocketAddress* nat_addr) = 0;
+  virtual Socket* CreateInternalSocket(int family,
+                                       int type,
+                                       const SocketAddress& local_addr,
+                                       SocketAddress* nat_addr) = 0;
 };
 
 // Creates sockets that will send all traffic through a NAT, using an existing
@@ -51,21 +52,22 @@ class NATSocketFactory : public SocketFactory, public NATInternalSocketFactory {
                    const SocketAddress& nat_udp_addr,
                    const SocketAddress& nat_tcp_addr);
 
+  NATSocketFactory(const NATSocketFactory&) = delete;
+  NATSocketFactory& operator=(const NATSocketFactory&) = delete;
+
   // SocketFactory implementation
   Socket* CreateSocket(int family, int type) override;
-  AsyncSocket* CreateAsyncSocket(int family, int type) override;
 
   // NATInternalSocketFactory implementation
-  AsyncSocket* CreateInternalSocket(int family,
-                                    int type,
-                                    const SocketAddress& local_addr,
-                                    SocketAddress* nat_addr) override;
+  Socket* CreateInternalSocket(int family,
+                               int type,
+                               const SocketAddress& local_addr,
+                               SocketAddress* nat_addr) override;
 
  private:
   SocketFactory* factory_;
   SocketAddress nat_udp_addr_;
   SocketAddress nat_tcp_addr_;
-  RTC_DISALLOW_COPY_AND_ASSIGN(NATSocketFactory);
 };
 
 // Creates sockets that will send traffic through a NAT depending on what
@@ -103,6 +105,7 @@ class NATSocketServer : public SocketServer, public NATInternalSocketFactory {
     Translator(NATSocketServer* server,
                NATType type,
                const SocketAddress& int_addr,
+               Thread& external_socket_thread,
                SocketFactory* ext_factory,
                const SocketAddress& ext_addr);
     ~Translator();
@@ -137,6 +140,9 @@ class NATSocketServer : public SocketServer, public NATInternalSocketFactory {
 
   explicit NATSocketServer(SocketServer* ss);
 
+  NATSocketServer(const NATSocketServer&) = delete;
+  NATSocketServer& operator=(const NATSocketServer&) = delete;
+
   SocketServer* socketserver() { return server_; }
   Thread* queue() { return msg_queue_; }
 
@@ -148,31 +154,28 @@ class NATSocketServer : public SocketServer, public NATInternalSocketFactory {
 
   // SocketServer implementation
   Socket* CreateSocket(int family, int type) override;
-  AsyncSocket* CreateAsyncSocket(int family, int type) override;
 
   void SetMessageQueue(Thread* queue) override;
-  bool Wait(int cms, bool process_io) override;
+  bool Wait(webrtc::TimeDelta max_wait_duration, bool process_io) override;
   void WakeUp() override;
 
   // NATInternalSocketFactory implementation
-  AsyncSocket* CreateInternalSocket(int family,
-                                    int type,
-                                    const SocketAddress& local_addr,
-                                    SocketAddress* nat_addr) override;
+  Socket* CreateInternalSocket(int family,
+                               int type,
+                               const SocketAddress& local_addr,
+                               SocketAddress* nat_addr) override;
 
  private:
   SocketServer* server_;
   Thread* msg_queue_;
   TranslatorMap nats_;
-  RTC_DISALLOW_COPY_AND_ASSIGN(NATSocketServer);
 };
 
 // Free-standing NAT helper functions.
 size_t PackAddressForNAT(char* buf,
                          size_t buf_size,
                          const SocketAddress& remote_addr);
-size_t UnpackAddressFromNAT(const char* buf,
-                            size_t buf_size,
+size_t UnpackAddressFromNAT(rtc::ArrayView<const uint8_t> buf,
                             SocketAddress* remote_addr);
 }  // namespace rtc
 

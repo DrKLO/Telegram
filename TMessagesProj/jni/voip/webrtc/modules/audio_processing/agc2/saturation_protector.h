@@ -38,7 +38,6 @@ class SaturationProtector {
 // Creates a saturation protector that starts at `initial_headroom_db`.
 std::unique_ptr<SaturationProtector> CreateSaturationProtector(
     float initial_headroom_db,
-    float extra_headroom_db,
     int adjacent_speech_frames_threshold,
     ApmDataDumper* apm_data_dumper);
 

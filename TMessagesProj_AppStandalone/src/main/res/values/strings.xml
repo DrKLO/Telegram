@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="SmsJobsMenu">SMS Statistics</string>
+
+    <string name="SmsJobsPremiumHintTitle">Premium Subscription **for free**</string>
+    <string name="SmsJobsPremiumHintMessage">Help Telegram send SMS codes and get a free premium subscription.</string>
+    <string name="SmsJobsErrorHintTitle">Some SMS were not sent successfully</string>
+    <string name="SmsJobsErrorHintMessage">Review SMS history to troubleshoot</string>
+
+    <string name="SmsSubscribeTitle">Premium for Free</string>
+    <string name="SmsSubscribeMessage">You are one of **0.01%** users eligible to take part in Telegram\'s **Premium for SMS** initiative!</string>
+    <string name="SmsSubscribeFeature1Title">Help Send Login SMS</string>
+    <string name="SmsSubscribeFeature1Message_other">Let Telegram use your phone to send %d login SMS per month.</string>
+    <string name="SmsSubscribeFeature2Title">Get Telegram Premium</string>
+    <string name="SmsSubscribeFeature2Message">Receive 1-month **Premium subscription** each month.</string>
+    <string name="SmsSubscribeFeature3Title">Share Premium with Friends</string>
+    <string name="SmsSubscribeFeature3Message">Send gift links granting Telegram subscriptions to your friends.</string>
+
+    <string name="SmsSubscribeAccept">I accept the **Terms of Service for P2PLP**</string>
+    <string name="SmsSubscribeActivate">Activate</string>
+    <string name="SmsSubscribeActivateText">Sending SMS can result in charges. Please read **Terms of Service for Peer-to-Peer Login Program.**</string>
+
+    <string name="SmsPremiumActivated">Premium for SMS activated!</string>
+    <string name="SmsPremiumActivatedText">Telegram will now try to use your device to automatically send SMS codes in your country (**%s**).</string>
+    <string name="SmsPremiumActivatedTextUnknown">Telegram will now try to use your device to automatically send SMS codes in your country.</string>
+    <string name="SmsPremiumActivatedText2">Check **SMS Statistics** in the left-side menu to see how many SMS have been sent or change settings for this Program.</string>
+    <string name="SmsPermissionText">To join the **Premium for SMS** program, please allow Telegram to send out SMS from your device</string>
+    <string name="SmsPermissionTextSMSSettings">To join the **Premium for SMS** program, please allow Telegram to send out SMS from your device.\n\nTap Settings -> Permissions, and turn **SMS** on.</string>
+    <string name="SmsPermissionTextPhoneSettings">To join the **Premium for SMS** program, please allow Telegram to read phone SIM card info.\n\nTap Settings -> Permissions, and turn **Phone** permission on.</string>
+    <string name="SmsPermissionTextSMSPhoneSettings">To join the **Premium for SMS** program, please allow Telegram to send out SMS and read phone SIM card info.\n\nTap Settings -> Permissions, and turn **SMS** and **Phone** permissions on.</string>
+
+    <string name="SmsStatusSending">%1$d of %2$d SMS Sent</string>
+    <string name="SmsStatusSendingSubtitle_other">Only **%d** SMS left to send to received your **Telegram Premium** gift link.</string>
+
+    <string name="SmsStatusFirst">Premium for SMS</string>
+    <string name="SmsStatusFirstSubtitle">Help Telegram send SMS login codes and get **Telegram Premium** gift links.</string>
+    <string name="SmsStatusNoSim">Insert a SIM card</string>
+    <string name="SmsStatusNoSimSubtitle">To join this program, please insert a SIM card into the device to start sending SMS.</string>
+    <string name="SmsStatusNoPermission">Access Required</string>
+    <string name="SmsStatusNoPermissionSubtitle">To join this program, please allow Telegram to send SMS in your phone\'s Settings.</string>
+    <string name="SmsStatusDone">All %d SMS Sent!</string>
+    <string name="SmsStatusDoneSubtitle">Telegram Premium gift-code is sent for you to activate.</string>
+
+    <string name="SmsNoSimTitle">No SIM card</string>
+    <string name="SmsNoSimMessage">Insert a SIM card into the device and come back to **SMS Statistics**.</string>
+
+    <string name="SmsTotalSent">Total SMS Sent</string>
+    <string name="SmsRemaining">SMS Remaining</string>
+    <string name="SmsSentSince">Sent Since</string>
+    <string name="SmsStartDate">Start Date</string>
+    <string name="SmsLastGiftLink">Last Gift Link Receipt</string>
+
+    <string name="SmsOverview">Overview</string>
+    <string name="SmsToS">Terms of Service</string>
+    <string name="SmsPremiumBenefits">Benefits of Premium</string>
+    <string name="SmsHistory">SMS History</string>
+    <string name="SmsActiveSim">Active SIM</string>
+    <string name="SmsSelectSim">Select SIM card</string>
+    <string name="SmsAllowInternational">Also send SMS outside my country</string>
+    <string name="SmsCostsInfo">Please refer to your mobile plan for any SMS costs that you may incur</string>
+    <string name="SmsDeactivate">Deactivate Premium for SMS</string>
+    <string name="SmsDeactivateTitle">Deactivate Premium for SMS</string>
+    <string name="SmsDeactivateMessage">Are you sure you want to leave the program?</string>
+
+    <string name="SmsHistoryTitle">Sent SMS History</string>
+    <string name="SmsHistorySubtitle">Here you can see all the SMS automatically sent from your device.</string>
+    <string name="SmsHistoryDateCountry">Date and Country</string>
+    <string name="SmsHistoryStatus">Status</string>
+    <string name="SmsHistoryStatusSuccess">Sent</string>
+    <string name="SmsHistoryStatusPending">Pending</string>
+    <string name="SmsHistoryStatusFailure">Failed</string>
+
+    <string name="SmsAirplaneMode">Airplane mode</string>
+    <string name="SmsDescrRESULT_ERROR_RADIO_OFF">Your device has been in airplane mode.</string>
+    <string name="SmsDescrRESULT_ERROR_NO_SERVICE">Your device hasn\'t had contact with cell phone network.</string>
+    <string name="SmsDescrRESULT_RIL_NETWORK_ERR">Network error. Make sure your SIM card is active.</string>
+
+    <string name="SmsNotificationTitle">Telegram Premium for SMS</string>
+    <string name="SmsNotificationSubtitle">%1$d of %2$d SMS Sent</string>
+</resources>

@@ -1,0 +1,5 @@
+----- Certificate i=0 (CN=Invalid Unknown Critical Certificate Extension EE Cert Test2,O=Test Certificates 2011,C=US) -----
+ERROR: Unconsumed critical extension
+  oid: 608648016502010C02
+  value: 020100
+

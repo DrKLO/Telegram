@@ -5,7 +5,6 @@ import android.animation.AnimatorListenerAdapter;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Rect;
-import android.graphics.drawable.Drawable;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -37,6 +36,7 @@ import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.CombinedDrawable;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.Reactions.ReactionsLayoutInBubble;
 import org.telegram.ui.Components.RecyclerListView;
 
 import java.text.SimpleDateFormat;
@@ -63,12 +63,18 @@ public class FiltersView extends RecyclerListView {
     public final static int FILTER_TYPE_DATE = 6;
     public final static int FILTER_TYPE_ARCHIVE = 7;
 
+    public final static int FILTER_INDEX_MEDIA = 0;
+    public final static int FILTER_INDEX_LINKS = 1;
+    public final static int FILTER_INDEX_FILES = 2;
+    public final static int FILTER_INDEX_MUSIC = 3;
+    public final static int FILTER_INDEX_VOICE = 4;
+
     public final static MediaFilterData[] filters = new MediaFilterData[]{
-            new MediaFilterData(R.drawable.search_media, R.drawable.search_media_filled, LocaleController.getString("SharedMediaTab2", R.string.SharedMediaTab2), new TLRPC.TL_inputMessagesFilterPhotoVideo(), FILTER_TYPE_MEDIA),
-            new MediaFilterData(R.drawable.search_links, R.drawable.search_links_filled, LocaleController.getString("SharedLinksTab2", R.string.SharedLinksTab2), new TLRPC.TL_inputMessagesFilterUrl(), FILTER_TYPE_LINKS),
-            new MediaFilterData(R.drawable.search_files, R.drawable.search_files_filled, LocaleController.getString("SharedFilesTab2", R.string.SharedFilesTab2), new TLRPC.TL_inputMessagesFilterDocument(), FILTER_TYPE_FILES),
-            new MediaFilterData(R.drawable.search_music, R.drawable.search_music_filled, LocaleController.getString("SharedMusicTab2", R.string.SharedMusicTab2), new TLRPC.TL_inputMessagesFilterMusic(), FILTER_TYPE_MUSIC),
-            new MediaFilterData(R.drawable.search_voice, R.drawable.search_voice_filled, LocaleController.getString("SharedVoiceTab2", R.string.SharedVoiceTab2), new TLRPC.TL_inputMessagesFilterRoundVoice(), FILTER_TYPE_VOICE)
+            new MediaFilterData(R.drawable.search_media_filled, R.string.SharedMediaTab2, new TLRPC.TL_inputMessagesFilterPhotoVideo(), FILTER_TYPE_MEDIA),
+            new MediaFilterData(R.drawable.search_links_filled, R.string.SharedLinksTab2, new TLRPC.TL_inputMessagesFilterUrl(), FILTER_TYPE_LINKS),
+            new MediaFilterData(R.drawable.search_files_filled, R.string.SharedFilesTab2, new TLRPC.TL_inputMessagesFilterDocument(), FILTER_TYPE_FILES),
+            new MediaFilterData(R.drawable.search_music_filled, R.string.SharedMusicTab2, new TLRPC.TL_inputMessagesFilterMusic(), FILTER_TYPE_MUSIC),
+            new MediaFilterData(R.drawable.search_voice_filled, R.string.SharedVoiceTab2, new TLRPC.TL_inputMessagesFilterRoundVoice(), FILTER_TYPE_VOICE)
     };
 
     private ArrayList<MediaFilterData> usersFilters = new ArrayList<>();
@@ -226,11 +232,11 @@ public class FiltersView extends RecyclerListView {
                     TLRPC.User user = (TLRPC.User) object;
                     String title;
                     if (UserConfig.getInstance(UserConfig.selectedAccount).getCurrentUser().id == user.id) {
-                        title = LocaleController.getString("SavedMessages", R.string.SavedMessages);
+                        title = LocaleController.getString(R.string.SavedMessages);
                     } else {
                         title = ContactsController.formatName(user.first_name, user.last_name, 10);
                     }
-                    MediaFilterData data = new MediaFilterData(R.drawable.search_users, R.drawable.search_users_filled, title, null, FILTER_TYPE_CHAT);
+                    MediaFilterData data = new MediaFilterData(R.drawable.search_users_filled, title, null, FILTER_TYPE_CHAT);
                     data.setUser(user);
                     usersFilters.add(data);
                 } else if (object instanceof TLRPC.Chat) {
@@ -239,7 +245,7 @@ public class FiltersView extends RecyclerListView {
                     if (chat.title.length() > 12) {
                         title = String.format("%s...", title.substring(0, 10));
                     }
-                    MediaFilterData data = new MediaFilterData(R.drawable.search_users, R.drawable.search_users_filled, title, null, FILTER_TYPE_CHAT);
+                    MediaFilterData data = new MediaFilterData(R.drawable.search_users_filled, title, null, FILTER_TYPE_CHAT);
                     data.setUser(chat);
                     usersFilters.add(data);
                 }
@@ -248,13 +254,13 @@ public class FiltersView extends RecyclerListView {
         if (dates != null) {
             for (int i = 0; i < dates.size(); i++) {
                 DateData dateData = dates.get(i);
-                MediaFilterData data = new MediaFilterData(R.drawable.search_date, R.drawable.search_date_filled, dateData.title, null, FILTER_TYPE_DATE);
+                MediaFilterData data = new MediaFilterData(R.drawable.search_date_filled, dateData.title, null, FILTER_TYPE_DATE);
                 data.setDate(dateData);
                 usersFilters.add(data);
             }
         }
         if (archive) {
-            FiltersView.MediaFilterData filterData = new FiltersView.MediaFilterData(R.drawable.chats_archive, R.drawable.chats_archive, LocaleController.getString("ArchiveSearchFilter", R.string.ArchiveSearchFilter), null, FiltersView.FILTER_TYPE_ARCHIVE);
+            FiltersView.MediaFilterData filterData = new FiltersView.MediaFilterData(R.drawable.chats_archive, R.string.ArchiveSearchFilter, null, FiltersView.FILTER_TYPE_ARCHIVE);
             usersFilters.add(filterData);
         }
         if (getAdapter() != null) {
@@ -286,7 +292,7 @@ public class FiltersView extends RecyclerListView {
         if (q.length() < 3) {
             return;
         }
-        if (LocaleController.getString("SearchTipToday", R.string.SearchTipToday).toLowerCase().startsWith(q) || "today".startsWith(q)) {
+        if (LocaleController.getString(R.string.SearchTipToday).toLowerCase().startsWith(q) || "today".startsWith(q)) {
             Calendar calendar = Calendar.getInstance();
             int year = calendar.get(Calendar.YEAR);
             int month = calendar.get(Calendar.MONTH);
@@ -295,11 +301,11 @@ public class FiltersView extends RecyclerListView {
             long minDate = calendar.getTimeInMillis();
             calendar.set(year, month, day + 1, 0, 0, 0);
             long maxDate = calendar.getTimeInMillis() - 1;
-            dates.add(new DateData(LocaleController.getString("SearchTipToday", R.string.SearchTipToday), minDate, maxDate));
+            dates.add(new DateData(LocaleController.getString(R.string.SearchTipToday), minDate, maxDate));
             return;
         }
 
-        if (LocaleController.getString("SearchTipYesterday", R.string.SearchTipYesterday).toLowerCase().startsWith(q) || "yesterday".startsWith(q)) {
+        if (LocaleController.getString(R.string.SearchTipYesterday).toLowerCase().startsWith(q) || "yesterday".startsWith(q)) {
             Calendar calendar = Calendar.getInstance();
             int year = calendar.get(Calendar.YEAR);
             int month = calendar.get(Calendar.MONTH);
@@ -308,7 +314,7 @@ public class FiltersView extends RecyclerListView {
             long minDate = calendar.getTimeInMillis() - 86400000L;
             calendar.set(year, month, day + 1, 0, 0, 0);
             long maxDate = calendar.getTimeInMillis() - 86400001L;
-            dates.add(new DateData(LocaleController.getString("SearchTipYesterday", R.string.SearchTipYesterday), minDate, maxDate));
+            dates.add(new DateData(LocaleController.getString(R.string.SearchTipYesterday), minDate, maxDate));
             return;
         }
         Matcher matcher;
@@ -328,7 +334,7 @@ public class FiltersView extends RecyclerListView {
             long minDate = calendar.getTimeInMillis();
             calendar.set(year, month, day + 1, 0, 0, 0);
             long maxDate = calendar.getTimeInMillis() - 1;
-            dates.add(new DateData(LocaleController.getInstance().formatterWeekLong.format(minDate), minDate, maxDate));
+            dates.add(new DateData(LocaleController.getInstance().getFormatterWeekLong().format(minDate), minDate, maxDate));
             return;
         }
         if ((matcher = shortDate.matcher(q)).matches()) {
@@ -376,7 +382,7 @@ public class FiltersView extends RecyclerListView {
                 long minDate = calendar.getTimeInMillis();
                 calendar.set(year, month, day + 1, 0, 0, 0);
                 long maxDate = calendar.getTimeInMillis() - 1;
-                dates.add(new DateData(LocaleController.getInstance().formatterYearMax.format(minDate), minDate, maxDate));
+                dates.add(new DateData(LocaleController.getInstance().getFormatterYearMax().format(minDate), minDate, maxDate));
                 return;
             }
 
@@ -456,7 +462,7 @@ public class FiltersView extends RecyclerListView {
                     }
                     calendar.add(Calendar.MONTH, 1);
                     long maxDate = calendar.getTimeInMillis() - 1;
-                    dates.add(new DateData(LocaleController.getInstance().formatterMonthYear.format(minDate), minDate, maxDate));
+                    dates.add(new DateData(LocaleController.getInstance().getFormatterMonthYear().format(minDate), minDate, maxDate));
                 }
             }
         }
@@ -474,7 +480,7 @@ public class FiltersView extends RecyclerListView {
             }
             calendar.add(Calendar.MONTH, 1);
             long maxDate = calendar.getTimeInMillis() - 1;
-            dates.add(new DateData(LocaleController.getInstance().formatterMonthYear.format(minDate), minDate, maxDate));
+            dates.add(new DateData(LocaleController.getInstance().getFormatterMonthYear().format(minDate), minDate, maxDate));
         }
     }
 
@@ -496,9 +502,9 @@ public class FiltersView extends RecyclerListView {
                 calendar.set(i, month, day + 2, 0, 0, 0);
                 long maxDate = calendar.getTimeInMillis() - 1;
                 if (i == currentYear) {
-                    dates.add(new DateData(LocaleController.getInstance().formatterDayMonth.format(minDate), minDate, maxDate));
+                    dates.add(new DateData(LocaleController.getInstance().getFormatterDayMonth().format(minDate), minDate, maxDate));
                 } else {
-                    dates.add(new DateData(LocaleController.getInstance().formatterYearMax.format(minDate), minDate, maxDate));
+                    dates.add(new DateData(LocaleController.getInstance().getFormatterYearMax().format(minDate), minDate, maxDate));
                 }
             }
         }
@@ -521,7 +527,7 @@ public class FiltersView extends RecyclerListView {
         SimpleDateFormat dateFormat = new SimpleDateFormat("EEEE", Locale.ENGLISH);
         for (int i = 0; i < 7; i++) {
             c.set(Calendar.DAY_OF_WEEK, i);
-            if (LocaleController.getInstance().formatterWeekLong.format(c.getTime()).toLowerCase().startsWith(q)) {
+            if (LocaleController.getInstance().getFormatterWeekLong().format(c.getTime()).toLowerCase().startsWith(q)) {
                 return i;
             }
             if (dateFormat.format(c.getTime()).toLowerCase().startsWith(q)) {
@@ -533,18 +539,18 @@ public class FiltersView extends RecyclerListView {
 
     public static int getMonth(String q) {
         String[] months = new String[]{
-                LocaleController.getString("January", R.string.January).toLowerCase(),
-                LocaleController.getString("February", R.string.February).toLowerCase(),
-                LocaleController.getString("March", R.string.March).toLowerCase(),
-                LocaleController.getString("April", R.string.April).toLowerCase(),
-                LocaleController.getString("May", R.string.May).toLowerCase(),
-                LocaleController.getString("June", R.string.June).toLowerCase(),
-                LocaleController.getString("July", R.string.July).toLowerCase(),
-                LocaleController.getString("August", R.string.August).toLowerCase(),
-                LocaleController.getString("September", R.string.September).toLowerCase(),
-                LocaleController.getString("October", R.string.October).toLowerCase(),
-                LocaleController.getString("November", R.string.November).toLowerCase(),
-                LocaleController.getString("December", R.string.December).toLowerCase()
+                LocaleController.getString(R.string.January).toLowerCase(),
+                LocaleController.getString(R.string.February).toLowerCase(),
+                LocaleController.getString(R.string.March).toLowerCase(),
+                LocaleController.getString(R.string.April).toLowerCase(),
+                LocaleController.getString(R.string.May).toLowerCase(),
+                LocaleController.getString(R.string.June).toLowerCase(),
+                LocaleController.getString(R.string.July).toLowerCase(),
+                LocaleController.getString(R.string.August).toLowerCase(),
+                LocaleController.getString(R.string.September).toLowerCase(),
+                LocaleController.getString(R.string.October).toLowerCase(),
+                LocaleController.getString(R.string.November).toLowerCase(),
+                LocaleController.getString(R.string.December).toLowerCase()
         };
 
         String[] monthsEng = new String[12];
@@ -764,9 +770,8 @@ public class FiltersView extends RecyclerListView {
             titleView.setText(data.title);
         }
 
-        private int getThemedColor(String key) {
-            Integer color = resourcesProvider != null ? resourcesProvider.getColor(key) : null;
-            return color != null ? color : Theme.getColor(key);
+        protected int getThemedColor(int key) {
+            return Theme.getColor(key, resourcesProvider);
         }
     }
 
@@ -782,21 +787,40 @@ public class FiltersView extends RecyclerListView {
 
     public static class MediaFilterData {
 
-        public final int iconRes;
-        public final int iconResFilled;
-        public final String title;
-        public final int filterType;
-        public final TLRPC.MessagesFilter filter;
+        public ReactionsLayoutInBubble.VisibleReaction reaction;
+
+        public int iconResFilled;
+        public int titleResId;
+        private String title;
+        public int filterType;
+        public TLRPC.MessagesFilter filter;
         public TLObject chat;
         public DateData dateData;
         public boolean removable = true;
 
-        public MediaFilterData(int iconRes, int iconResFilled, String title, TLRPC.MessagesFilter filter, int filterType) {
-            this.iconRes = iconRes;
+        public MediaFilterData(ReactionsLayoutInBubble.VisibleReaction reaction) {
+            this.reaction = reaction;
+        }
+
+        public MediaFilterData(int iconResFilled, String title, TLRPC.MessagesFilter filter, int filterType) {
             this.iconResFilled = iconResFilled;
             this.title = title;
             this.filter = filter;
             this.filterType = filterType;
+        }
+
+        public MediaFilterData(int iconResFilled, int titleResId, TLRPC.MessagesFilter filter, int filterType) {
+            this.iconResFilled = iconResFilled;
+            this.titleResId = titleResId;
+            this.filter = filter;
+            this.filterType = filterType;
+        }
+
+        public String getTitle() {
+            if (title != null) {
+                return title;
+            }
+            return LocaleController.getString(titleResId);
         }
 
         public void setUser(TLObject chat) {

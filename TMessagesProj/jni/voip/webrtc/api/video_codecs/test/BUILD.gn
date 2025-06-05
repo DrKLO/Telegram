@@ -1,0 +1,89 @@
+# Copyright (c) 2018 The WebRTC project authors. All Rights Reserved.
+#
+# Use of this source code is governed by a BSD-style license
+# that can be found in the LICENSE file in the root of the source
+# tree. An additional intellectual property rights grant can be found
+# in the file PATENTS.  All contributing project authors may
+# be found in the AUTHORS file in the root of the source tree.
+
+import("../../../webrtc.gni")
+
+if (rtc_include_tests) {
+  rtc_library("video_codecs_api_unittests") {
+    testonly = true
+    sources = [
+      "builtin_video_encoder_factory_unittest.cc",
+      "h264_profile_level_id_unittest.cc",
+      "sdp_video_format_unittest.cc",
+      "video_decoder_software_fallback_wrapper_unittest.cc",
+      "video_encoder_software_fallback_wrapper_unittest.cc",
+    ]
+
+    if (rtc_use_h265) {
+      sources += [ "h265_profile_tier_level_unittest.cc" ]
+    }
+
+    deps = [
+      ":video_decoder_factory_template_tests",
+      ":video_encoder_factory_template_tests",
+      "..:builtin_video_encoder_factory",
+      "..:rtc_software_fallback_wrappers",
+      "..:video_codecs_api",
+      "../..:fec_controller_api",
+      "../..:mock_video_encoder",
+      "../../../api:scoped_refptr",
+      "../../../media:media_constants",
+      "../../../media:rtc_media_base",
+      "../../../modules/video_coding:video_codec_interface",
+      "../../../modules/video_coding:video_coding_utility",
+      "../../../modules/video_coding:webrtc_vp8",
+      "../../../rtc_base:checks",
+      "../../../rtc_base:rtc_base_tests_utils",
+      "../../../test:explicit_key_value_config",
+      "../../../test:fake_video_codecs",
+      "../../../test:field_trial",
+      "../../../test:test_support",
+      "../../../test:video_test_common",
+      "../../environment",
+      "../../environment:environment_factory",
+      "../../video:encoded_image",
+      "../../video:video_bitrate_allocation",
+      "../../video:video_frame",
+      "../../video:video_rtp_headers",
+      "//testing/gtest",
+    ]
+    absl_deps = [ "//third_party/abseil-cpp/absl/types:optional" ]
+  }
+
+  rtc_library("video_encoder_factory_template_tests") {
+    testonly = true
+    sources = [ "video_encoder_factory_template_tests.cc" ]
+
+    deps = [
+      "..:video_encoder_factory_template",
+      "..:video_encoder_factory_template_libaom_av1_adapter",
+      "..:video_encoder_factory_template_libvpx_vp8_adapter",
+      "..:video_encoder_factory_template_libvpx_vp9_adapter",
+      "..:video_encoder_factory_template_open_h264_adapter",
+      "../../:mock_video_encoder",
+      "../../../test:test_support",
+      "//testing/gtest",
+    ]
+  }
+
+  rtc_library("video_decoder_factory_template_tests") {
+    testonly = true
+    sources = [ "video_decoder_factory_template_tests.cc" ]
+
+    deps = [
+      "..:video_decoder_factory_template",
+      "..:video_decoder_factory_template_dav1d_adapter",
+      "..:video_decoder_factory_template_libvpx_vp8_adapter",
+      "..:video_decoder_factory_template_libvpx_vp9_adapter",
+      "..:video_decoder_factory_template_open_h264_adapter",
+      "../../:mock_video_decoder",
+      "../../../test:test_support",
+      "//testing/gtest",
+    ]
+  }
+}

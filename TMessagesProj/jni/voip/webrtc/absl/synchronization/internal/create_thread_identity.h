@@ -36,10 +36,6 @@ namespace synchronization_internal {
 // For private use only.
 base_internal::ThreadIdentity* CreateThreadIdentity();
 
-// A per-thread destructor for reclaiming associated ThreadIdentity objects.
-// For private use only.
-void ReclaimThreadIdentity(void* v);
-
 // Returns the ThreadIdentity object representing the calling thread; guaranteed
 // to be unique for its lifetime.  The returned object will remain valid for the
 // program's lifetime; although it may be re-assigned to a subsequent thread.

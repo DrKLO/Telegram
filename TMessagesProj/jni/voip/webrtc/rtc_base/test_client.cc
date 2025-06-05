@@ -15,7 +15,9 @@
 #include <memory>
 #include <utility>
 
+#include "api/units/timestamp.h"
 #include "rtc_base/gunit.h"
+#include "rtc_base/network/received_packet.h"
 #include "rtc_base/thread.h"
 #include "rtc_base/time_utils.h"
 
@@ -30,10 +32,11 @@ TestClient::TestClient(std::unique_ptr<AsyncPacketSocket> socket)
 
 TestClient::TestClient(std::unique_ptr<AsyncPacketSocket> socket,
                        ThreadProcessingFakeClock* fake_clock)
-    : fake_clock_(fake_clock),
-      socket_(std::move(socket)),
-      prev_packet_timestamp_(-1) {
-  socket_->SignalReadPacket.connect(this, &TestClient::OnPacket);
+    : fake_clock_(fake_clock), socket_(std::move(socket)) {
+  socket_->RegisterReceivedPacketCallback(
+      [&](rtc::AsyncPacketSocket* socket, const rtc::ReceivedPacket& packet) {
+        OnPacket(socket, packet);
+      });
   socket_->SignalReadyToSend.connect(this, &TestClient::OnReadyToSend);
 }
 
@@ -100,20 +103,22 @@ bool TestClient::CheckNextPacket(const char* buf,
   bool res = false;
   std::unique_ptr<Packet> packet = NextPacket(kTimeoutMs);
   if (packet) {
-    res = (packet->size == size && memcmp(packet->buf, buf, size) == 0 &&
-           CheckTimestamp(packet->packet_time_us));
+    res = (packet->buf.size() == size &&
+           memcmp(packet->buf.data(), buf, size) == 0 &&
+           CheckTimestamp(packet->packet_time));
     if (addr)
       *addr = packet->addr;
   }
   return res;
 }
 
-bool TestClient::CheckTimestamp(int64_t packet_timestamp) {
+bool TestClient::CheckTimestamp(
+    absl::optional<webrtc::Timestamp> packet_timestamp) {
   bool res = true;
-  if (packet_timestamp == -1) {
+  if (!packet_timestamp) {
     res = false;
   }
-  if (prev_packet_timestamp_ != -1) {
+  if (prev_packet_timestamp_) {
     if (packet_timestamp < prev_packet_timestamp_) {
       res = false;
     }
@@ -145,36 +150,24 @@ int TestClient::SetOption(Socket::Option opt, int value) {
 }
 
 void TestClient::OnPacket(AsyncPacketSocket* socket,
-                          const char* buf,
-                          size_t size,
-                          const SocketAddress& remote_addr,
-                          const int64_t& packet_time_us) {
+                          const rtc::ReceivedPacket& received_packet) {
   webrtc::MutexLock lock(&mutex_);
-  packets_.push_back(
-      std::make_unique<Packet>(remote_addr, buf, size, packet_time_us));
+  packets_.push_back(std::make_unique<Packet>(received_packet));
 }
 
 void TestClient::OnReadyToSend(AsyncPacketSocket* socket) {
   ++ready_to_send_count_;
 }
 
-TestClient::Packet::Packet(const SocketAddress& a,
-                           const char* b,
-                           size_t s,
-                           int64_t packet_time_us)
-    : addr(a), buf(0), size(s), packet_time_us(packet_time_us) {
-  buf = new char[size];
-  memcpy(buf, b, size);
-}
+TestClient::Packet::Packet(const rtc::ReceivedPacket& received_packet)
+    : addr(received_packet.source_address()),
+      // Copy received_packet payload to a buffer owned by Packet.
+      buf(received_packet.payload().data(), received_packet.payload().size()),
+      packet_time(received_packet.arrival_time()) {}
 
 TestClient::Packet::Packet(const Packet& p)
-    : addr(p.addr), buf(0), size(p.size), packet_time_us(p.packet_time_us) {
-  buf = new char[size];
-  memcpy(buf, p.buf, size);
-}
-
-TestClient::Packet::~Packet() {
-  delete[] buf;
-}
+    : addr(p.addr),
+      buf(p.buf.data(), p.buf.size()),
+      packet_time(p.packet_time) {}
 
 }  // namespace rtc

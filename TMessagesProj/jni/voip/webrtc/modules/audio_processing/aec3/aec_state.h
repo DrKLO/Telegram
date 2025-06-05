@@ -14,6 +14,7 @@
 #include <stddef.h>
 
 #include <array>
+#include <atomic>
 #include <memory>
 #include <vector>
 
@@ -75,6 +76,12 @@ class AecState {
     return erle_estimator_.Erle(onset_compensated);
   }
 
+  // Returns the non-capped ERLE.
+  rtc::ArrayView<const std::array<float, kFftLengthBy2Plus1>> ErleUnbounded()
+      const {
+    return erle_estimator_.ErleUnbounded();
+  }
+
   // Returns the fullband ERLE estimate in log2 units.
   float FullBandErleLog2() const { return erle_estimator_.FullbandErleLog2(); }
 
@@ -110,8 +117,12 @@ class AecState {
   // Takes appropriate action at an echo path change.
   void HandleEchoPathChange(const EchoPathVariability& echo_path_variability);
 
-  // Returns the decay factor for the echo reverberation.
-  float ReverbDecay() const { return reverb_model_estimator_.ReverbDecay(); }
+  // Returns the decay factor for the echo reverberation. The parameter `mild`
+  // indicates which exponential decay to return. The default one or a milder
+  // one that can be used during nearend regions.
+  float ReverbDecay(bool mild) const {
+    return reverb_model_estimator_.ReverbDecay(mild);
+  }
 
   // Return the frequency response of the reverberant echo.
   rtc::ArrayView<const float> GetReverbFrequencyResponse() const {
@@ -144,7 +155,7 @@ class AecState {
   }
 
  private:
-  static int instance_count_;
+  static std::atomic<int> instance_count_;
   std::unique_ptr<ApmDataDumper> data_dumper_;
   const EchoCanceller3Config config_;
   const size_t num_capture_channels_;
@@ -262,7 +273,7 @@ class AecState {
     bool SaturatedEcho() const { return saturated_echo_; }
 
     // Updates the detection decision based on new data.
-    void Update(rtc::ArrayView<const std::vector<float>> x,
+    void Update(const Block& x,
                 bool saturated_capture,
                 bool usable_linear_estimate,
                 rtc::ArrayView<const SubtractorOutput> subtractor_output,

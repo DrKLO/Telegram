@@ -22,7 +22,6 @@
 #include "audio/voip/audio_egress.h"
 #include "audio/voip/audio_ingress.h"
 #include "modules/rtp_rtcp/source/rtp_rtcp_impl2.h"
-#include "modules/utility/include/process_thread.h"
 #include "rtc_base/ref_count.h"
 
 namespace webrtc {
@@ -35,7 +34,6 @@ class AudioChannel : public rtc::RefCountInterface {
   AudioChannel(Transport* transport,
                uint32_t local_ssrc,
                TaskQueueFactory* task_queue_factory,
-               ProcessThread* process_thread,
                AudioMixer* audio_mixer,
                rtc::scoped_refptr<AudioDecoderFactory> decoder_factory);
   ~AudioChannel() override;
@@ -119,9 +117,6 @@ class AudioChannel : public rtc::RefCountInterface {
 
   // Synchronization is handled internally by AudioMixer.
   AudioMixer* audio_mixer_;
-
-  // Synchronization is handled internally by ProcessThread.
-  ProcessThread* process_thread_;
 
   // Listed in order for safe destruction of AudioChannel object.
   // Synchronization for these are handled internally.

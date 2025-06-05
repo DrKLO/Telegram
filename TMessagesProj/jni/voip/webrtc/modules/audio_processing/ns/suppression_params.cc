@@ -42,7 +42,7 @@ SuppressionParams::SuppressionParams(
       use_attenuation_adjustment = true;
       break;
     default:
-      RTC_NOTREACHED();
+      RTC_DCHECK_NOTREACHED();
   }
 }
 

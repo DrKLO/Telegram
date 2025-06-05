@@ -40,7 +40,7 @@ extern const size_t ICE_PWD_MAX_LENGTH;
 
 RTC_EXPORT extern const int ICE_CANDIDATE_COMPONENT_RTP;
 RTC_EXPORT extern const int ICE_CANDIDATE_COMPONENT_RTCP;
-extern const int ICE_CANDIDATE_COMPONENT_DEFAULT;
+RTC_EXPORT extern const int ICE_CANDIDATE_COMPONENT_DEFAULT;
 
 // RFC 4145, SDP setup attribute values.
 extern const char CONNECTIONROLE_ACTIVE_STR[];
@@ -95,6 +95,8 @@ extern const int CONNECTION_WRITE_TIMEOUT;
 // Default value of IceConfig.stun_keepalive_interval;
 extern const int STUN_KEEPALIVE_INTERVAL;
 
+static const int MIN_PINGS_AT_WEAK_PING_INTERVAL = 3;
+
 // The following constants are used at the candidate pair level to determine the
 // state of a candidate pair.
 //
@@ -108,6 +110,19 @@ extern const int CONNECTION_RESPONSE_TIMEOUT;
 // The minimum time we will wait before destroying a connection after creating
 // it.
 extern const int MIN_CONNECTION_LIFETIME;
+
+// The type preference MUST be an integer from 0 to 126 inclusive.
+// https://datatracker.ietf.org/doc/html/rfc5245#section-4.1.2.1
+enum IcePriorityValue : uint8_t {
+  ICE_TYPE_PREFERENCE_RELAY_TLS = 0,
+  ICE_TYPE_PREFERENCE_RELAY_TCP = 1,
+  ICE_TYPE_PREFERENCE_RELAY_UDP = 2,
+  ICE_TYPE_PREFERENCE_PRFLX_TCP = 80,
+  ICE_TYPE_PREFERENCE_HOST_TCP = 90,
+  ICE_TYPE_PREFERENCE_SRFLX = 100,
+  ICE_TYPE_PREFERENCE_PRFLX = 110,
+  ICE_TYPE_PREFERENCE_HOST = 126
+};
 
 }  // namespace cricket
 

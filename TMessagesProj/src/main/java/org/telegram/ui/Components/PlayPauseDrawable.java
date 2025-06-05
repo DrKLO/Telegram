@@ -37,6 +37,10 @@ public class PlayPauseDrawable extends Drawable {
         paint.setColor(Color.WHITE);
     }
 
+    public void setColor(int color) {
+        paint.setColor(color);
+    }
+
     @Override
     public void draw(@NonNull Canvas canvas) {
         long newUpdateTime = AnimationUtils.currentAnimationTimeMillis();
@@ -84,9 +88,11 @@ public class PlayPauseDrawable extends Drawable {
         }
         canvas.scale(1.45f * size / AndroidUtilities.dp(28), 1.5f * size / AndroidUtilities.dp(28));
         canvas.rotate(rotation);
-        Theme.playPauseAnimator.draw(canvas, paint, ms);
-        canvas.scale(1.0f, -1.0f);
-        Theme.playPauseAnimator.draw(canvas, paint, ms);
+        if (Theme.playPauseAnimator != null) {
+            Theme.playPauseAnimator.draw(canvas, paint, ms);
+            canvas.scale(1.0f, -1.0f);
+            Theme.playPauseAnimator.draw(canvas, paint, ms);
+        }
         canvas.restore();
     }
 

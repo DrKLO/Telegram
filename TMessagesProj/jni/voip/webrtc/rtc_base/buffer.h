@@ -19,6 +19,7 @@
 #include <type_traits>
 #include <utility>
 
+#include "absl/strings/string_view.h"
 #include "api/array_view.h"
 #include "rtc_base/checks.h"
 #include "rtc_base/type_traits.h"
@@ -105,7 +106,10 @@ class BufferT {
                 internal::BufferCompat<T, U>::value>::type* = nullptr>
   BufferT(U* data, size_t size, size_t capacity) : BufferT(size, capacity) {
     static_assert(sizeof(T) == sizeof(U), "");
-    std::memcpy(data_.get(), data, size * sizeof(U));
+    if (size > 0) {
+      RTC_DCHECK(data);
+      std::memcpy(data_.get(), data, size * sizeof(U));
+    }
   }
 
   // Construct a buffer from the contents of an array.
@@ -116,6 +120,13 @@ class BufferT {
   BufferT(U (&array)[N]) : BufferT(array, N) {}
 
   ~BufferT() { MaybeZeroCompleteBuffer(); }
+
+  // Implicit conversion to absl::string_view if T is compatible with char.
+  template <typename U = T>
+  operator typename std::enable_if<internal::BufferCompat<U, char>::value,
+                                   absl::string_view>::type() const {
+    return absl::string_view(data<char>(), size());
+  }
 
   // Get a pointer to the data. Just .data() will give you a (const) T*, but if
   // T is a byte-sized integer, you may also use .data<U>() for any other
@@ -229,13 +240,13 @@ class BufferT {
     SetData(w.data(), w.size());
   }
 
-  // Replaces the data in the buffer with at most |max_elements| of data, using
-  // the function |setter|, which should have the following signature:
+  // Replaces the data in the buffer with at most `max_elements` of data, using
+  // the function `setter`, which should have the following signature:
   //
   //   size_t setter(ArrayView<U> view)
   //
-  // |setter| is given an appropriately typed ArrayView of length exactly
-  // |max_elements| that describes the area where it should write the data; it
+  // `setter` is given an appropriately typed ArrayView of length exactly
+  // `max_elements` that describes the area where it should write the data; it
   // should return the number of elements actually written. (If it doesn't fill
   // the whole ArrayView, it should leave the unused space at the end.)
   template <typename U = T,
@@ -259,6 +270,10 @@ class BufferT {
             typename std::enable_if<
                 internal::BufferCompat<T, U>::value>::type* = nullptr>
   void AppendData(const U* data, size_t size) {
+    if (size == 0) {
+      return;
+    }
+    RTC_DCHECK(data);
     RTC_DCHECK(IsConsistent());
     const size_t new_size = size_ + size;
     EnsureCapacityWithHeadroom(new_size, true);
@@ -290,13 +305,13 @@ class BufferT {
     AppendData(&item, 1);
   }
 
-  // Appends at most |max_elements| to the end of the buffer, using the function
-  // |setter|, which should have the following signature:
+  // Appends at most `max_elements` to the end of the buffer, using the function
+  // `setter`, which should have the following signature:
   //
   //   size_t setter(ArrayView<U> view)
   //
-  // |setter| is given an appropriately typed ArrayView of length exactly
-  // |max_elements| that describes the area where it should write the data; it
+  // `setter` is given an appropriately typed ArrayView of length exactly
+  // `max_elements` that describes the area where it should write the data; it
   // should return the number of elements actually written. (If it doesn't fill
   // the whole ArrayView, it should leave the unused space at the end.)
   template <typename U = T,

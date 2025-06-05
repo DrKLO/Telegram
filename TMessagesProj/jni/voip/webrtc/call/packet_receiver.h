@@ -10,55 +10,31 @@
 #ifndef CALL_PACKET_RECEIVER_H_
 #define CALL_PACKET_RECEIVER_H_
 
-#include <algorithm>
-#include <functional>
-#include <memory>
-#include <string>
-#include <utility>
-#include <vector>
-
+#include "absl/functional/any_invocable.h"
 #include "api/media_types.h"
+#include "modules/rtp_rtcp/source/rtp_packet_received.h"
+#include "rtc_base/checks.h"
 #include "rtc_base/copy_on_write_buffer.h"
 
 namespace webrtc {
 
 class PacketReceiver {
  public:
-  enum DeliveryStatus {
-    DELIVERY_OK,
-    DELIVERY_UNKNOWN_SSRC,
-    DELIVERY_PACKET_ERROR,
-  };
+  // Demux RTCP packets. Must be called on the worker thread.
+  virtual void DeliverRtcpPacket(rtc::CopyOnWriteBuffer packet) = 0;
 
-  // Definition of the callback to execute when packet delivery is complete.
-  // The callback will be issued on the same thread as called DeliverPacket.
-  typedef std::function<
-      void(DeliveryStatus, MediaType, rtc::CopyOnWriteBuffer, int64_t)>
-      PacketCallback;
+  // Invoked once when a packet packet is received that can not be demuxed.
+  // If the method returns true, a new attempt is made to demux the packet.
+  using OnUndemuxablePacketHandler =
+      absl::AnyInvocable<bool(const RtpPacketReceived& parsed_packet)>;
 
-  // Asynchronously handle packet delivery and report back to the caller when
-  // delivery of the packet has completed.
-  // Note that if the packet is invalid or can be processed without the need of
-  // asynchronous operations that the |callback| may have been called before
-  // the function returns.
-  // TODO(bugs.webrtc.org/11993): This function is meant to be called on the
-  // network thread exclusively but while the code is being updated to align
-  // with those goals, it may be called either on the worker or network threads.
-  // Update docs etc when the work has been completed. Once we're done with the
-  // updates, we might be able to go back to returning the status from this
-  // function instead of having to report it via a callback.
-  virtual void DeliverPacketAsync(MediaType media_type,
-                                  rtc::CopyOnWriteBuffer packet,
-                                  int64_t packet_time_us,
-                                  PacketCallback callback) {
-    DeliveryStatus status = DeliverPacket(media_type, packet, packet_time_us);
-    if (callback)
-      callback(status, media_type, std::move(packet), packet_time_us);
-  }
-
-  virtual DeliveryStatus DeliverPacket(MediaType media_type,
-                                       rtc::CopyOnWriteBuffer packet,
-                                       int64_t packet_time_us) = 0;
+  // Must be called on the worker thread.
+  // If `media_type` is not Audio or Video, packets may be used for BWE
+  // calculations but are not demuxed.
+  virtual void DeliverRtpPacket(
+      MediaType media_type,
+      RtpPacketReceived packet,
+      OnUndemuxablePacketHandler undemuxable_packet_handler) = 0;
 
  protected:
   virtual ~PacketReceiver() {}

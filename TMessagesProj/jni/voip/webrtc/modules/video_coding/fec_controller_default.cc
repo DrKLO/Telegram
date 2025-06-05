@@ -15,30 +15,28 @@
 #include <algorithm>
 #include <string>
 
+#include "api/environment/environment.h"
+#include "api/field_trials_view.h"
 #include "modules/include/module_fec_types.h"
 #include "rtc_base/logging.h"
-#include "system_wrappers/include/field_trial.h"
+#include "system_wrappers/include/clock.h"
 
 namespace webrtc {
 
 const float kProtectionOverheadRateThreshold = 0.5;
 
 FecControllerDefault::FecControllerDefault(
-    Clock* clock,
+    const Environment& env,
     VCMProtectionCallback* protection_callback)
-    : clock_(clock),
+    : env_(env),
       protection_callback_(protection_callback),
       loss_prot_logic_(new media_optimization::VCMLossProtectionLogic(
-          clock_->TimeInMilliseconds())),
+          env_.clock().TimeInMilliseconds())),
       max_payload_size_(1460),
       overhead_threshold_(GetProtectionOverheadRateThreshold()) {}
 
-FecControllerDefault::FecControllerDefault(Clock* clock)
-    : clock_(clock),
-      loss_prot_logic_(new media_optimization::VCMLossProtectionLogic(
-          clock_->TimeInMilliseconds())),
-      max_payload_size_(1460),
-      overhead_threshold_(GetProtectionOverheadRateThreshold()) {}
+FecControllerDefault::FecControllerDefault(const Environment& env)
+    : FecControllerDefault(env, nullptr) {}
 
 FecControllerDefault::~FecControllerDefault(void) {
   loss_prot_logic_->Release();
@@ -61,8 +59,8 @@ void FecControllerDefault::SetEncodingData(size_t width,
 
 float FecControllerDefault::GetProtectionOverheadRateThreshold() {
   float overhead_threshold =
-      strtof(webrtc::field_trial::FindFullName(
-                 "WebRTC-ProtectionOverheadRateThreshold")
+      strtof(env_.field_trials()
+                 .Lookup("WebRTC-ProtectionOverheadRateThreshold")
                  .c_str(),
              nullptr);
   if (overhead_threshold > 0 && overhead_threshold <= 1) {
@@ -70,8 +68,9 @@ float FecControllerDefault::GetProtectionOverheadRateThreshold() {
                      << overhead_threshold;
     return overhead_threshold;
   } else if (overhead_threshold < 0 || overhead_threshold > 1) {
-    RTC_LOG(WARNING) << "ProtectionOverheadRateThreshold field trial is set to "
-                        "an invalid value, expecting a value between (0, 1].";
+    RTC_LOG(LS_WARNING)
+        << "ProtectionOverheadRateThreshold field trial is set to "
+           "an invalid value, expecting a value between (0, 1].";
   }
   // WebRTC-ProtectionOverheadRateThreshold field trial string is not found, use
   // the default value.
@@ -106,7 +105,7 @@ uint32_t FecControllerDefault::UpdateFecRates(
     media_optimization::FilterPacketLossMode filter_mode =
         media_optimization::kMaxFilter;
     uint8_t packet_loss_enc = loss_prot_logic_->FilteredLoss(
-        clock_->TimeInMilliseconds(), filter_mode, fraction_lost);
+        env_.clock().TimeInMilliseconds(), filter_mode, fraction_lost);
     // For now use the filtered loss for computing the robustness settings.
     loss_prot_logic_->UpdateFilteredLossPr(packet_loss_enc);
     if (loss_prot_logic_->SelectedType() == media_optimization::kNone) {
@@ -125,17 +124,17 @@ uint32_t FecControllerDefault::UpdateFecRates(
     // Get the FEC code rate for Delta frames (set to 0 when NA).
     delta_fec_params.fec_rate =
         loss_prot_logic_->SelectedMethod()->RequiredProtectionFactorD();
-    // The RTP module currently requires the same |max_fec_frames| for both
+    // The RTP module currently requires the same `max_fec_frames` for both
     // key and delta frames.
     delta_fec_params.max_fec_frames =
         loss_prot_logic_->SelectedMethod()->MaxFramesFec();
     key_fec_params.max_fec_frames =
         loss_prot_logic_->SelectedMethod()->MaxFramesFec();
   }
-  // Set the FEC packet mask type. |kFecMaskBursty| is more effective for
+  // Set the FEC packet mask type. `kFecMaskBursty` is more effective for
   // consecutive losses and little/no packet re-ordering. As we currently
   // do not have feedback data on the degree of correlated losses and packet
-  // re-ordering, we keep default setting to |kFecMaskRandom| for now.
+  // re-ordering, we keep default setting to `kFecMaskRandom` for now.
   delta_fec_params.fec_mask_type = kFecMaskRandom;
   key_fec_params.fec_mask_type = kFecMaskRandom;
   // Update protection callback with protection settings.
@@ -190,11 +189,11 @@ void FecControllerDefault::UpdateWithEncodedData(
       const float min_packets_per_frame =
           encoded_length / static_cast<float>(max_payload_size_);
       if (delta_frame) {
-        loss_prot_logic_->UpdatePacketsPerFrame(min_packets_per_frame,
-                                                clock_->TimeInMilliseconds());
+        loss_prot_logic_->UpdatePacketsPerFrame(
+            min_packets_per_frame, env_.clock().TimeInMilliseconds());
       } else {
         loss_prot_logic_->UpdatePacketsPerFrameKey(
-            min_packets_per_frame, clock_->TimeInMilliseconds());
+            min_packets_per_frame, env_.clock().TimeInMilliseconds());
       }
     }
     if (!delta_frame && encoded_length > 0) {

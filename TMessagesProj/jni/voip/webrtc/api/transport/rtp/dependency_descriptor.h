@@ -20,30 +20,11 @@
 #include "absl/container/inlined_vector.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/optional.h"
+#include "api/video/render_resolution.h"
 
 namespace webrtc {
 // Structures to build and parse dependency descriptor as described in
 // https://aomediacodec.github.io/av1-rtp-spec/#dependency-descriptor-rtp-header-extension
-class RenderResolution {
- public:
-  constexpr RenderResolution() = default;
-  constexpr RenderResolution(int width, int height)
-      : width_(width), height_(height) {}
-  RenderResolution(const RenderResolution&) = default;
-  RenderResolution& operator=(const RenderResolution&) = default;
-
-  friend bool operator==(const RenderResolution& lhs,
-                         const RenderResolution& rhs) {
-    return lhs.width_ == rhs.width_ && lhs.height_ == rhs.height_;
-  }
-
-  constexpr int Width() const { return width_; }
-  constexpr int Height() const { return height_; }
-
- private:
-  int width_ = 0;
-  int height_ = 0;
-};
 
 // Relationship of a frame to a Decode target.
 enum class DecodeTargetIndication {
@@ -95,6 +76,27 @@ struct FrameDependencyStructure {
   absl::InlinedVector<int, 10> decode_target_protected_by_chain;
   absl::InlinedVector<RenderResolution, 4> resolutions;
   std::vector<FrameDependencyTemplate> templates;
+};
+
+class DependencyDescriptorMandatory {
+ public:
+  void set_frame_number(int frame_number) { frame_number_ = frame_number; }
+  int frame_number() const { return frame_number_; }
+
+  void set_template_id(int template_id) { template_id_ = template_id; }
+  int template_id() const { return template_id_; }
+
+  void set_first_packet_in_frame(bool first) { first_packet_in_frame_ = first; }
+  bool first_packet_in_frame() const { return first_packet_in_frame_; }
+
+  void set_last_packet_in_frame(bool last) { last_packet_in_frame_ = last; }
+  bool last_packet_in_frame() const { return last_packet_in_frame_; }
+
+ private:
+  int frame_number_;
+  int template_id_;
+  bool first_packet_in_frame_;
+  bool last_packet_in_frame_;
 };
 
 struct DependencyDescriptor {

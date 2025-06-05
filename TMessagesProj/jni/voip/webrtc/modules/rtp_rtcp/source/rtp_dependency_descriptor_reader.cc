@@ -14,7 +14,7 @@
 #include <vector>
 
 #include "api/transport/rtp/dependency_descriptor.h"
-#include "rtc_base/bit_buffer.h"
+#include "rtc_base/bitstream_reader.h"
 #include "rtc_base/checks.h"
 
 namespace webrtc {
@@ -23,7 +23,7 @@ RtpDependencyDescriptorReader::RtpDependencyDescriptorReader(
     rtc::ArrayView<const uint8_t> raw_data,
     const FrameDependencyStructure* structure,
     DependencyDescriptor* descriptor)
-    : descriptor_(descriptor), buffer_(raw_data.data(), raw_data.size()) {
+    : descriptor_(descriptor), buffer_(raw_data) {
   RTC_DCHECK(descriptor);
 
   ReadMandatoryFields();
@@ -33,50 +33,35 @@ RtpDependencyDescriptorReader::RtpDependencyDescriptorReader(
   structure_ = descriptor->attached_structure
                    ? descriptor->attached_structure.get()
                    : structure;
-  if (structure_ == nullptr || parsing_failed_) {
-    parsing_failed_ = true;
+  if (structure_ == nullptr) {
+    buffer_.Invalidate();
     return;
   }
   if (active_decode_targets_present_flag_) {
     descriptor->active_decode_targets_bitmask =
-        ReadBits(structure_->num_decode_targets);
+        buffer_.ReadBits(structure_->num_decode_targets);
   }
 
   ReadFrameDependencyDefinition();
 }
 
-uint32_t RtpDependencyDescriptorReader::ReadBits(size_t bit_count) {
-  uint32_t value = 0;
-  if (!buffer_.ReadBits(bit_count, value))
-    parsing_failed_ = true;
-  return value;
-}
-
-uint32_t RtpDependencyDescriptorReader::ReadNonSymmetric(size_t num_values) {
-  uint32_t value = 0;
-  if (!buffer_.ReadNonSymmetric(num_values, value))
-    parsing_failed_ = true;
-  return value;
-}
-
 void RtpDependencyDescriptorReader::ReadTemplateDependencyStructure() {
   descriptor_->attached_structure =
       std::make_unique<FrameDependencyStructure>();
-  descriptor_->attached_structure->structure_id = ReadBits(6);
-  descriptor_->attached_structure->num_decode_targets = ReadBits(5) + 1;
+  descriptor_->attached_structure->structure_id = buffer_.ReadBits(6);
+  descriptor_->attached_structure->num_decode_targets = buffer_.ReadBits(5) + 1;
 
   ReadTemplateLayers();
   ReadTemplateDtis();
   ReadTemplateFdiffs();
   ReadTemplateChains();
 
-  uint32_t has_resolutions = ReadBits(1);
-  if (has_resolutions)
+  if (buffer_.Read<bool>())
     ReadResolutions();
 }
 
 void RtpDependencyDescriptorReader::ReadTemplateLayers() {
-  enum NextLayerIdc : uint32_t {
+  enum NextLayerIdc {
     kSameLayer = 0,
     kNextTemporalLayer = 1,
     kNextSpatialLayer = 2,
@@ -89,7 +74,7 @@ void RtpDependencyDescriptorReader::ReadTemplateLayers() {
   NextLayerIdc next_layer_idc;
   do {
     if (templates.size() == DependencyDescriptor::kMaxTemplates) {
-      parsing_failed_ = true;
+      buffer_.Invalidate();
       break;
     }
     templates.emplace_back();
@@ -97,22 +82,22 @@ void RtpDependencyDescriptorReader::ReadTemplateLayers() {
     last_template.temporal_id = temporal_id;
     last_template.spatial_id = spatial_id;
 
-    next_layer_idc = static_cast<NextLayerIdc>(ReadBits(2));
+    next_layer_idc = static_cast<NextLayerIdc>(buffer_.ReadBits(2));
     if (next_layer_idc == kNextTemporalLayer) {
       temporal_id++;
       if (temporal_id >= DependencyDescriptor::kMaxTemporalIds) {
-        parsing_failed_ = true;
+        buffer_.Invalidate();
         break;
       }
     } else if (next_layer_idc == kNextSpatialLayer) {
       temporal_id = 0;
       spatial_id++;
       if (spatial_id >= DependencyDescriptor::kMaxSpatialIds) {
-        parsing_failed_ = true;
+        buffer_.Invalidate();
         break;
       }
     }
-  } while (next_layer_idc != kNoMoreTemplates && !parsing_failed_);
+  } while (next_layer_idc != kNoMoreTemplates && buffer_.Ok());
 
   descriptor_->attached_structure->templates = std::move(templates);
 }
@@ -124,7 +109,7 @@ void RtpDependencyDescriptorReader::ReadTemplateDtis() {
         structure->num_decode_targets);
     for (int i = 0; i < structure->num_decode_targets; ++i) {
       current_template.decode_target_indications[i] =
-          static_cast<DecodeTargetIndication>(ReadBits(2));
+          static_cast<DecodeTargetIndication>(buffer_.ReadBits(2));
     }
   }
 }
@@ -132,9 +117,9 @@ void RtpDependencyDescriptorReader::ReadTemplateDtis() {
 void RtpDependencyDescriptorReader::ReadTemplateFdiffs() {
   for (FrameDependencyTemplate& current_template :
        descriptor_->attached_structure->templates) {
-    for (uint32_t fdiff_follows = ReadBits(1); fdiff_follows;
-         fdiff_follows = ReadBits(1)) {
-      uint32_t fdiff_minus_one = ReadBits(4);
+    for (bool fdiff_follows = buffer_.Read<bool>(); fdiff_follows;
+         fdiff_follows = buffer_.Read<bool>()) {
+      uint64_t fdiff_minus_one = buffer_.ReadBits(4);
       current_template.frame_diffs.push_back(fdiff_minus_one + 1);
     }
   }
@@ -142,16 +127,18 @@ void RtpDependencyDescriptorReader::ReadTemplateFdiffs() {
 
 void RtpDependencyDescriptorReader::ReadTemplateChains() {
   FrameDependencyStructure* structure = descriptor_->attached_structure.get();
-  structure->num_chains = ReadNonSymmetric(structure->num_decode_targets + 1);
+  structure->num_chains =
+      buffer_.ReadNonSymmetric(structure->num_decode_targets + 1);
   if (structure->num_chains == 0)
     return;
   for (int i = 0; i < structure->num_decode_targets; ++i) {
-    uint32_t protected_by_chain = ReadNonSymmetric(structure->num_chains);
+    uint32_t protected_by_chain =
+        buffer_.ReadNonSymmetric(structure->num_chains);
     structure->decode_target_protected_by_chain.push_back(protected_by_chain);
   }
   for (FrameDependencyTemplate& frame_template : structure->templates) {
     for (int chain_id = 0; chain_id < structure->num_chains; ++chain_id) {
-      frame_template.chain_diffs.push_back(ReadBits(4));
+      frame_template.chain_diffs.push_back(buffer_.ReadBits(4));
     }
   }
 }
@@ -162,25 +149,25 @@ void RtpDependencyDescriptorReader::ReadResolutions() {
   int spatial_layers = structure->templates.back().spatial_id + 1;
   structure->resolutions.reserve(spatial_layers);
   for (int sid = 0; sid < spatial_layers; ++sid) {
-    uint16_t width_minus_1 = ReadBits(16);
-    uint16_t height_minus_1 = ReadBits(16);
+    uint16_t width_minus_1 = buffer_.Read<uint16_t>();
+    uint16_t height_minus_1 = buffer_.Read<uint16_t>();
     structure->resolutions.emplace_back(width_minus_1 + 1, height_minus_1 + 1);
   }
 }
 
 void RtpDependencyDescriptorReader::ReadMandatoryFields() {
-  descriptor_->first_packet_in_frame = ReadBits(1);
-  descriptor_->last_packet_in_frame = ReadBits(1);
-  frame_dependency_template_id_ = ReadBits(6);
-  descriptor_->frame_number = ReadBits(16);
+  descriptor_->first_packet_in_frame = buffer_.Read<bool>();
+  descriptor_->last_packet_in_frame = buffer_.Read<bool>();
+  frame_dependency_template_id_ = buffer_.ReadBits(6);
+  descriptor_->frame_number = buffer_.Read<uint16_t>();
 }
 
 void RtpDependencyDescriptorReader::ReadExtendedFields() {
-  bool template_dependency_structure_present_flag = ReadBits(1);
-  active_decode_targets_present_flag_ = ReadBits(1);
-  custom_dtis_flag_ = ReadBits(1);
-  custom_fdiffs_flag_ = ReadBits(1);
-  custom_chains_flag_ = ReadBits(1);
+  bool template_dependency_structure_present_flag = buffer_.Read<bool>();
+  active_decode_targets_present_flag_ = buffer_.Read<bool>();
+  custom_dtis_flag_ = buffer_.Read<bool>();
+  custom_fdiffs_flag_ = buffer_.Read<bool>();
+  custom_chains_flag_ = buffer_.Read<bool>();
   if (template_dependency_structure_present_flag) {
     ReadTemplateDependencyStructure();
     RTC_DCHECK(descriptor_->attached_structure);
@@ -197,7 +184,7 @@ void RtpDependencyDescriptorReader::ReadFrameDependencyDefinition() {
       DependencyDescriptor::kMaxTemplates;
 
   if (template_index >= structure_->templates.size()) {
-    parsing_failed_ = true;
+    buffer_.Invalidate();
     return;
   }
 
@@ -228,15 +215,15 @@ void RtpDependencyDescriptorReader::ReadFrameDtis() {
       descriptor_->frame_dependencies.decode_target_indications.size(),
       structure_->num_decode_targets);
   for (auto& dti : descriptor_->frame_dependencies.decode_target_indications) {
-    dti = static_cast<DecodeTargetIndication>(ReadBits(2));
+    dti = static_cast<DecodeTargetIndication>(buffer_.ReadBits(2));
   }
 }
 
 void RtpDependencyDescriptorReader::ReadFrameFdiffs() {
   descriptor_->frame_dependencies.frame_diffs.clear();
-  for (uint32_t next_fdiff_size = ReadBits(2); next_fdiff_size > 0;
-       next_fdiff_size = ReadBits(2)) {
-    uint32_t fdiff_minus_one = ReadBits(4 * next_fdiff_size);
+  for (uint64_t next_fdiff_size = buffer_.ReadBits(2); next_fdiff_size > 0;
+       next_fdiff_size = buffer_.ReadBits(2)) {
+    uint64_t fdiff_minus_one = buffer_.ReadBits(4 * next_fdiff_size);
     descriptor_->frame_dependencies.frame_diffs.push_back(fdiff_minus_one + 1);
   }
 }
@@ -245,7 +232,7 @@ void RtpDependencyDescriptorReader::ReadFrameChains() {
   RTC_DCHECK_EQ(descriptor_->frame_dependencies.chain_diffs.size(),
                 structure_->num_chains);
   for (auto& chain_diff : descriptor_->frame_dependencies.chain_diffs) {
-    chain_diff = ReadBits(8);
+    chain_diff = buffer_.Read<uint8_t>();
   }
 }
 

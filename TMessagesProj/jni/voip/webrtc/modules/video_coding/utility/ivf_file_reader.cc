@@ -15,12 +15,12 @@
 
 #include "api/video_codecs/video_codec.h"
 #include "modules/rtp_rtcp/source/byte_io.h"
+#include "modules/video_coding/utility/ivf_defines.h"
 #include "rtc_base/logging.h"
 
 namespace webrtc {
 namespace {
 
-constexpr size_t kIvfHeaderSize = 32;
 constexpr size_t kIvfFrameHeaderSize = 12;
 constexpr int kCodecTypeBytesCount = 4;
 
@@ -30,6 +30,9 @@ constexpr uint8_t kVp9Header[kCodecTypeBytesCount] = {'V', 'P', '9', '0'};
 constexpr uint8_t kAv1Header[kCodecTypeBytesCount] = {'A', 'V', '0', '1'};
 constexpr uint8_t kH264Header[kCodecTypeBytesCount] = {'H', '2', '6', '4'};
 constexpr uint8_t kH265Header[kCodecTypeBytesCount] = {'H', '2', '6', '5'};
+
+// RTP standard required 90kHz clock rate.
+constexpr int32_t kRtpClockRateHz = 90000;
 
 }  // namespace
 
@@ -78,13 +81,9 @@ bool IvfFileReader::Reset() {
     return false;
   }
 
-  uint32_t time_scale = ByteReader<uint32_t>::ReadLittleEndian(&ivf_header[16]);
-  if (time_scale == 1000) {
-    using_capture_timestamps_ = true;
-  } else if (time_scale == 90000) {
-    using_capture_timestamps_ = false;
-  } else {
-    RTC_LOG(LS_ERROR) << "Invalid IVF header: Unknown time scale";
+  time_scale_ = ByteReader<uint32_t>::ReadLittleEndian(&ivf_header[16]);
+  if (time_scale_ == 0) {
+    RTC_LOG(LS_ERROR) << "Invalid IVF header: time scale can't be 0";
     return false;
   }
 
@@ -105,10 +104,9 @@ bool IvfFileReader::Reset() {
   has_error_ = false;
 
   const char* codec_name = CodecTypeToPayloadString(codec_type_);
-  RTC_LOG(INFO) << "Opened IVF file with codec data of type " << codec_name
-                << " at resolution " << width_ << " x " << height_ << ", using "
-                << (using_capture_timestamps_ ? "1" : "90")
-                << "kHz clock resolution.";
+  RTC_LOG(LS_INFO) << "Opened IVF file with codec data of type " << codec_name
+                   << " at resolution " << width_ << " x " << height_
+                   << ", using " << time_scale_ << "Hz clock resolution.";
 
   return true;
 }
@@ -158,12 +156,9 @@ absl::optional<EncodedImage> IvfFileReader::NextFrame() {
   }
 
   EncodedImage image;
-  if (using_capture_timestamps_) {
-    image.capture_time_ms_ = current_timestamp;
-    image.SetTimestamp(static_cast<uint32_t>(90 * current_timestamp));
-  } else {
-    image.SetTimestamp(static_cast<uint32_t>(current_timestamp));
-  }
+  image.capture_time_ms_ = current_timestamp;
+  image.SetRtpTimestamp(
+      static_cast<uint32_t>(current_timestamp * kRtpClockRateHz / time_scale_));
   image.SetEncodedData(payload);
   image.SetSpatialIndex(static_cast<int>(layer_sizes.size()) - 1);
   for (size_t i = 0; i < layer_sizes.size(); ++i) {

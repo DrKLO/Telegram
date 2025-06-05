@@ -17,21 +17,25 @@
 #include <memory>
 #include <vector>
 
+#include "api/environment/environment.h"
 #include "api/fec_controller.h"
 #include "modules/video_coding/media_opt_util.h"
-#include "rtc_base/constructor_magic.h"
 #include "rtc_base/synchronization/mutex.h"
 #include "rtc_base/thread_annotations.h"
-#include "system_wrappers/include/clock.h"
 
 namespace webrtc {
 
 class FecControllerDefault : public FecController {
  public:
-  FecControllerDefault(Clock* clock,
+  FecControllerDefault(const Environment& env,
                        VCMProtectionCallback* protection_callback);
-  explicit FecControllerDefault(Clock* clock);
+  explicit FecControllerDefault(const Environment& env);
+
+  FecControllerDefault(const FecControllerDefault&) = delete;
+  FecControllerDefault& operator=(const FecControllerDefault&) = delete;
+
   ~FecControllerDefault() override;
+
   void SetProtectionCallback(
       VCMProtectionCallback* protection_callback) override;
   void SetProtectionMethod(bool enable_fec, bool enable_nack) override;
@@ -44,21 +48,20 @@ class FecControllerDefault : public FecController {
                           uint8_t fraction_lost,
                           std::vector<bool> loss_mask_vector,
                           int64_t round_trip_time_ms) override;
-  void UpdateWithEncodedData(
-      const size_t encoded_image_length,
-      const VideoFrameType encoded_image_frametype) override;
+  void UpdateWithEncodedData(size_t encoded_image_length,
+                             VideoFrameType encoded_image_frametype) override;
   bool UseLossVectorMask() override;
   float GetProtectionOverheadRateThreshold();
 
  private:
   enum { kBitrateAverageWinMs = 1000 };
-  Clock* const clock_;
+  const Environment env_;
   VCMProtectionCallback* protection_callback_;
   Mutex mutex_;
   std::unique_ptr<media_optimization::VCMLossProtectionLogic> loss_prot_logic_
       RTC_GUARDED_BY(mutex_);
   size_t max_payload_size_ RTC_GUARDED_BY(mutex_);
-  RTC_DISALLOW_COPY_AND_ASSIGN(FecControllerDefault);
+
   const float overhead_threshold_;
 };
 

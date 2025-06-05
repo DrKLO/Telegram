@@ -1,11 +1,15 @@
 {
   "algorithm" : "AES-CBC-PKCS5",
-  "generatorVersion" : "0.4.12",
+  "generatorVersion" : "0.8r12",
+  "numberOfTests" : 183,
+  "header" : [
+    "Test vectors of type IndCpaTest are intended for test that verify",
+    "encryption and decryption of symmetric ciphers without authentication."
+  ],
   "notes" : {
     "BadPadding" : "The ciphertext in this test vector is the message encrypted with an invalid or unexpected padding. This allows to find implementations that are not properly checking the padding during decryption."
   },
-  "numberOfTests" : 183,
-  "header" : [],
+  "schema" : "ind_cpa_test_schema.json",
   "testGroups" : [
     {
       "ivSize" : 128,

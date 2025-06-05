@@ -195,7 +195,7 @@ void Serialize(rtc::ByteBufferWriter &to, const rtc::CopyOnWriteBuffer &from, bo
 		assert(from.size() <= UINT16_MAX);
 		to.WriteUInt16(from.size());
 	}
-	to.WriteBytes(reinterpret_cast<const char*>(from.cdata()), from.size());
+	to.WriteBytes(reinterpret_cast<const uint8_t*>(from.cdata()), from.size());
 }
 
 bool Deserialize(rtc::CopyOnWriteBuffer &to, rtc::ByteBufferReader &from, bool singleMessagePacket) {
@@ -376,6 +376,31 @@ absl::optional<Message> DeserializeMessage(
 	return TryDeserializeRecursive(result, reader, singleMessagePacket, (Variant*)nullptr)
 		? result
 		: absl::nullopt;
+}
+
+absl::optional<rtc::CopyOnWriteBuffer> DeserializeRawMessage(
+    rtc::ByteBufferReader &reader,
+    bool singleMessagePacket) {
+    if (!reader.Length()) {
+        return absl::nullopt;
+    }
+
+    uint32_t length = 0;
+    if (!reader.ReadUInt32(&length)) {
+        return absl::nullopt;
+    }
+
+    if (/*length < 0 || */length > 1024 * 1024) {
+        return absl::nullopt;
+    }
+
+    rtc::CopyOnWriteBuffer result;
+    result.SetSize(length);
+    if (!reader.ReadBytes(rtc::ArrayView<uint8_t>((uint8_t *)result.MutableData(), result.size()))) {
+        return absl::nullopt;
+    }
+
+    return result;
 }
 
 } // namespace tgcalls

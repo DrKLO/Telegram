@@ -12,6 +12,8 @@
 
 #include <stddef.h>
 
+#include "absl/strings/string_view.h"
+
 namespace rtc {
 
 CopyOnWriteBuffer::CopyOnWriteBuffer() : offset_(0), size_(0) {
@@ -21,14 +23,14 @@ CopyOnWriteBuffer::CopyOnWriteBuffer() : offset_(0), size_(0) {
 CopyOnWriteBuffer::CopyOnWriteBuffer(const CopyOnWriteBuffer& buf)
     : buffer_(buf.buffer_), offset_(buf.offset_), size_(buf.size_) {}
 
-CopyOnWriteBuffer::CopyOnWriteBuffer(CopyOnWriteBuffer&& buf)
+CopyOnWriteBuffer::CopyOnWriteBuffer(CopyOnWriteBuffer&& buf) noexcept
     : buffer_(std::move(buf.buffer_)), offset_(buf.offset_), size_(buf.size_) {
   buf.offset_ = 0;
   buf.size_ = 0;
   RTC_DCHECK(IsConsistent());
 }
 
-CopyOnWriteBuffer::CopyOnWriteBuffer(const std::string& s)
+CopyOnWriteBuffer::CopyOnWriteBuffer(absl::string_view s)
     : CopyOnWriteBuffer(s.data(), s.length()) {}
 
 CopyOnWriteBuffer::CopyOnWriteBuffer(size_t size)

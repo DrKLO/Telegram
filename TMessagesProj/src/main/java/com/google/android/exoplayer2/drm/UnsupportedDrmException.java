@@ -15,27 +15,33 @@
  */
 package com.google.android.exoplayer2.drm;
 
+import static java.lang.annotation.ElementType.FIELD;
+import static java.lang.annotation.ElementType.LOCAL_VARIABLE;
+import static java.lang.annotation.ElementType.METHOD;
+import static java.lang.annotation.ElementType.PARAMETER;
+import static java.lang.annotation.ElementType.TYPE_USE;
+
 import androidx.annotation.IntDef;
 import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
-/**
- * Thrown when the requested DRM scheme is not supported.
- */
+/** Thrown when the requested DRM scheme is not supported. */
 public final class UnsupportedDrmException extends Exception {
 
   /**
    * The reason for the exception. One of {@link #REASON_UNSUPPORTED_SCHEME} or {@link
    * #REASON_INSTANTIATION_ERROR}.
    */
+  // @Target list includes both 'default' targets and TYPE_USE, to ensure backwards compatibility
+  // with Kotlin usages from before TYPE_USE was added.
   @Documented
   @Retention(RetentionPolicy.SOURCE)
+  @Target({FIELD, METHOD, PARAMETER, LOCAL_VARIABLE, TYPE_USE})
   @IntDef({REASON_UNSUPPORTED_SCHEME, REASON_INSTANTIATION_ERROR})
   public @interface Reason {}
-  /**
-   * The requested DRM scheme is unsupported by the device.
-   */
+  /** The requested DRM scheme is unsupported by the device. */
   public static final int REASON_UNSUPPORTED_SCHEME = 1;
   /**
    * There device advertises support for the requested DRM scheme, but there was an error
@@ -43,10 +49,8 @@ public final class UnsupportedDrmException extends Exception {
    */
   public static final int REASON_INSTANTIATION_ERROR = 2;
 
-  /**
-   * Either {@link #REASON_UNSUPPORTED_SCHEME} or {@link #REASON_INSTANTIATION_ERROR}.
-   */
-  @Reason public final int reason;
+  /** Either {@link #REASON_UNSUPPORTED_SCHEME} or {@link #REASON_INSTANTIATION_ERROR}. */
+  public final @Reason int reason;
 
   /**
    * @param reason {@link #REASON_UNSUPPORTED_SCHEME} or {@link #REASON_INSTANTIATION_ERROR}.
@@ -63,5 +67,4 @@ public final class UnsupportedDrmException extends Exception {
     super(cause);
     this.reason = reason;
   }
-
 }

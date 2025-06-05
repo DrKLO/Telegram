@@ -11,6 +11,7 @@
 #include "api/video_codecs/video_encoder.h"
 
 #include <string.h>
+
 #include <algorithm>
 
 #include "rtc_base/checks.h"
@@ -26,7 +27,6 @@ VideoCodecVP8 VideoEncoder::GetDefaultVp8Settings() {
   vp8_settings.numberOfTemporalLayers = 1;
   vp8_settings.denoisingOn = true;
   vp8_settings.automaticResizeOn = false;
-  vp8_settings.frameDroppingOn = true;
   vp8_settings.keyFrameInterval = 3000;
 
   return vp8_settings;
@@ -38,7 +38,6 @@ VideoCodecVP9 VideoEncoder::GetDefaultVp9Settings() {
 
   vp9_settings.numberOfTemporalLayers = 1;
   vp9_settings.denoisingOn = true;
-  vp9_settings.frameDroppingOn = true;
   vp9_settings.keyFrameInterval = 3000;
   vp9_settings.adaptiveQpMode = true;
   vp9_settings.automaticResizeOn = true;
@@ -53,14 +52,12 @@ VideoCodecH264 VideoEncoder::GetDefaultH264Settings() {
   VideoCodecH264 h264_settings;
   memset(&h264_settings, 0, sizeof(h264_settings));
 
-  h264_settings.frameDroppingOn = true;
   h264_settings.keyFrameInterval = 3000;
   h264_settings.numberOfTemporalLayers = 1;
 
   return h264_settings;
 }
 
-#ifndef DISABLE_H265
 VideoCodecH265 VideoEncoder::GetDefaultH265Settings() {
   VideoCodecH265 h265_settings;
   memset(&h265_settings, 0, sizeof(h265_settings));
@@ -75,7 +72,6 @@ VideoCodecH265 VideoEncoder::GetDefaultH265Settings() {
 
   return h265_settings;
 }
-#endif
 
 VideoEncoder::ScalingSettings::ScalingSettings() = default;
 
@@ -116,7 +112,6 @@ VideoEncoder::EncoderInfo::EncoderInfo()
       implementation_name("unknown"),
       has_trusted_rate_controller(false),
       is_hardware_accelerated(true),
-      has_internal_source(false),
       fps_allocation{absl::InlinedVector<uint8_t, kMaxTemporalStreams>(
           1,
           kMaxFramerateFraction)},
@@ -150,10 +145,18 @@ std::string VideoEncoder::EncoderInfo::ToString() const {
          ", has_trusted_rate_controller = "
       << has_trusted_rate_controller
       << ", is_hardware_accelerated = " << is_hardware_accelerated
-      << ", has_internal_source = " << has_internal_source
       << ", fps_allocation = [";
+  size_t num_spatial_layer_with_fps_allocation = 0;
+  for (size_t i = 0; i < kMaxSpatialLayers; ++i) {
+    if (!fps_allocation[i].empty()) {
+      num_spatial_layer_with_fps_allocation = i + 1;
+    }
+  }
   bool first = true;
-  for (size_t i = 0; i < fps_allocation->size(); ++i) {
+  for (size_t i = 0; i < num_spatial_layer_with_fps_allocation; ++i) {
+    if (fps_allocation[i].empty()) {
+      break;
+    }
     if (!first) {
       oss << ", ";
     }
@@ -195,6 +198,9 @@ std::string VideoEncoder::EncoderInfo::ToString() const {
     oss << VideoFrameBufferTypeToString(preferred_pixel_formats.at(i));
   }
   oss << "]";
+  if (is_qp_trusted.has_value()) {
+    oss << ", is_qp_trusted = " << is_qp_trusted.value();
+  }
   oss << "}";
   return oss.str();
 }
@@ -219,8 +225,7 @@ bool VideoEncoder::EncoderInfo::operator==(const EncoderInfo& rhs) const {
   if (supports_native_handle != rhs.supports_native_handle ||
       implementation_name != rhs.implementation_name ||
       has_trusted_rate_controller != rhs.has_trusted_rate_controller ||
-      is_hardware_accelerated != rhs.is_hardware_accelerated ||
-      has_internal_source != rhs.has_internal_source) {
+      is_hardware_accelerated != rhs.is_hardware_accelerated) {
     return false;
   }
 
@@ -339,10 +344,5 @@ void VideoEncoder::OnRttUpdate(int64_t rtt_ms) {}
 
 void VideoEncoder::OnLossNotification(
     const LossNotification& loss_notification) {}
-
-// TODO(webrtc:9722): Remove and make pure virtual.
-VideoEncoder::EncoderInfo VideoEncoder::GetEncoderInfo() const {
-  return EncoderInfo();
-}
 
 }  // namespace webrtc

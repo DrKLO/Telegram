@@ -16,21 +16,21 @@ namespace webrtc {
 class AudioFrame;
 class AudioProcessing;
 
-// Processes a 10 ms |frame| of the primary audio stream using the provided
+// Processes a 10 ms `frame` of the primary audio stream using the provided
 // AudioProcessing object. On the client-side, this is the near-end (or
-// captured) audio. The |sample_rate_hz_|, |num_channels_|, and
-// |samples_per_channel_| members of |frame| must be valid. If changed from the
+// captured) audio. The `sample_rate_hz_`, `num_channels_`, and
+// `samples_per_channel_` members of `frame` must be valid. If changed from the
 // previous call to this function, it will trigger an initialization of the
 // provided AudioProcessing object.
 // The function returns any error codes passed from the AudioProcessing
 // ProcessStream method.
 int ProcessAudioFrame(AudioProcessing* ap, AudioFrame* frame);
 
-// Processes a 10 ms |frame| of the reverse direction audio stream using the
+// Processes a 10 ms `frame` of the reverse direction audio stream using the
 // provided AudioProcessing object. The frame may be modified. On the
 // client-side, this is the far-end (or to be rendered) audio. The
-// |sample_rate_hz_|, |num_channels_|, and |samples_per_channel_| members of
-// |frame| must be valid. If changed from the previous call to this function, it
+// `sample_rate_hz_`, `num_channels_`, and `samples_per_channel_` members of
+// `frame` must be valid. If changed from the previous call to this function, it
 // will trigger an initialization of the provided AudioProcessing object.
 // The function returns any error codes passed from the AudioProcessing
 // ProcessReverseStream method.

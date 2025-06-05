@@ -17,15 +17,17 @@
 
 #include <cassert>
 #include <cmath>
+#include <cstdint>
 #include <istream>
 #include <limits>
 #include <ostream>
-#include <type_traits>
 
+#include "absl/base/config.h"
 #include "absl/random/internal/fast_uniform_bits.h"
 #include "absl/random/internal/fastmath.h"
 #include "absl/random/internal/generate_real.h"
 #include "absl/random/internal/iostream_state_saver.h"
+#include "absl/random/internal/traits.h"
 
 namespace absl {
 ABSL_NAMESPACE_BEGIN
@@ -47,8 +49,8 @@ ABSL_NAMESPACE_BEGIN
 // the distribution results are limited to the max() value.
 //
 // The goals of this implementation are to provide good performance while still
-// beig thread-safe: This limits the implementation to not using lgamma provided
-// by <math.h>.
+// being thread-safe: This limits the implementation to not using lgamma
+// provided by <math.h>.
 //
 template <typename IntType = int>
 class poisson_distribution {
@@ -80,7 +82,7 @@ class poisson_distribution {
     double log_k_;
     int split_;
 
-    static_assert(std::is_integral<IntType>::value,
+    static_assert(random_internal::IsIntegral<IntType>::value,
                   "Class-template absl::poisson_distribution<> must be "
                   "parameterized using an integral type.");
   };
@@ -133,7 +135,8 @@ template <typename IntType>
 poisson_distribution<IntType>::param_type::param_type(double mean)
     : mean_(mean), split_(0) {
   assert(mean >= 0);
-  assert(mean <= (std::numeric_limits<result_type>::max)());
+  assert(mean <=
+         static_cast<double>((std::numeric_limits<result_type>::max)()));
   // As a defensive measure, avoid large values of the mean.  The rejection
   // algorithm used does not support very large values well.  It my be worth
   // changing algorithms to better deal with these cases.
@@ -222,8 +225,9 @@ poisson_distribution<IntType>::operator()(
     // clang-format on
     const double lhs = 2.0 * std::log(u) + p.log_k_ + s;
     if (lhs < rhs) {
-      return x > (max)() ? (max)()
-                         : static_cast<result_type>(x);  // f(x)/k >= u^2
+      return x > static_cast<double>((max)())
+                 ? (max)()
+                 : static_cast<result_type>(x);  // f(x)/k >= u^2
     }
   }
 }

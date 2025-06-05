@@ -103,15 +103,6 @@ struct RTPHeaderExtension {
                              (1 << kAbsSendTimeFraction));
   }
 
-  TimeDelta GetAbsoluteSendTimeDelta(uint32_t previous_sendtime) const {
-    RTC_DCHECK(hasAbsoluteSendTime);
-    RTC_DCHECK(absoluteSendTime < (1ul << 24));
-    RTC_DCHECK(previous_sendtime < (1ul << 24));
-    int32_t delta =
-        static_cast<int32_t>((absoluteSendTime - previous_sendtime) << 8) >> 8;
-    return TimeDelta::Micros((delta * 1000000ll) / (1 << kAbsSendTimeFraction));
-  }
-
   bool hasTransmissionTimeOffset;
   int32_t transmissionTimeOffset;
   bool hasAbsoluteSendTime;
@@ -157,7 +148,7 @@ struct RTPHeaderExtension {
 
 enum { kRtpCsrcSize = 15 };  // RFC 3550 page 13
 
-struct RTPHeader {
+struct RTC_EXPORT RTPHeader {
   RTPHeader();
   RTPHeader(const RTPHeader& other);
   RTPHeader& operator=(const RTPHeader& other);
@@ -171,7 +162,6 @@ struct RTPHeader {
   uint32_t arrOfCSRCs[kRtpCsrcSize];
   size_t paddingLength;
   size_t headerLength;
-  int payload_type_frequency;
   RTPHeaderExtension extension;
 };
 

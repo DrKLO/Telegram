@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <style>
+            body { margin: 0; width:100%%; height:100%%;  background-color:#000; }
+            html { width:100%%; height:100%%; background-color:#000; }
+            .embed-container iframe,
+            .embed-container object,
+               .embed-container embed {
+                   position: absolute;
+                   top: 0;
+                   left: 0;
+                   width: 100%% !important;
+                   height: 100%% !important;
+               }
+        </style>
+    </head>
+    <body>
+        <div class="embed-container">
+            <div id="player"></div>
+        </div>
+        <script src="https://www.youtube.com/iframe_api"></script>
+        <script>
+               var player;
+               var posted = false;
+               YT.ready(function() {
+                   player = new YT.Player("player", {
+                                          "width": "100%%",
+                                          "events": {
+                                              "onReady": "onReady",
+                                              "onError": "onError",
+                                              "onStateChange": "onStateChange",
+                                          },
+                                          "videoId": "%1$s",
+                                          "height": "100%%",
+                                          "playerVars": {
+                                              "start": %2$d,
+                                              "rel": 1,
+                                              "showinfo": 0,
+                                              "modestbranding": 0,
+                                              "iv_load_policy": 3,
+                                              "autohide": 1,
+                                              "autoplay": 1,
+                                              "cc_load_policy": 1,
+                                              "playsinline": 1,
+                                              "controls": 0
+                                          }
+                                      });
+                   player.setSize(window.innerWidth, window.innerHeight);
+               });
+               function onError(event) {
+                   if (window.YoutubeProxy !== undefined) {
+                       YoutubeProxy.onPlayerError(event.data);
+                   }
+                   if (!posted) {
+                       if (window.YoutubeProxy !== undefined) {
+                           YoutubeProxy.onPlayerLoaded();
+                       }
+                       posted = true;
+                   }
+               }
+               function onStateChange(event) {
+                   if (event.data == YT.PlayerState.PLAYING && !posted) {
+                       if (window.YoutubeProxy !== undefined) {
+                           YoutubeProxy.onPlayerLoaded();
+                       }
+                       posted = true;
+                   }
+                   if (window.YoutubeProxy !== undefined) {
+                       YoutubeProxy.onPlayerStateChange(event.data);
+                   }
+               }
+               function onReady(event) {
+                   playVideo();
+
+                   if (window.YoutubeProxy !== undefined) {
+                       YoutubeProxy.onPlayerNotifyDuration(player.getDuration());
+                   }
+               }
+               function playVideo() {
+                   player.playVideo();
+               }
+               function pauseVideo() {
+                   player.pauseVideo();
+               }
+               function seekTo(time, seekAhead) {
+                   player.seekTo(time, seekAhead);
+               }
+               function setPlaybackSpeed(speed) {
+                   player.setPlaybackRate(speed);
+               }
+               function pollPosition() {
+                   if (window.YoutubeProxy !== undefined) {
+                       YoutubeProxy.onPlayerNotifyCurrentPosition(player.getCurrentTime());
+                       YoutubeProxy.onPlayerNotifyBufferedPosition(player.getVideoLoadedFraction());
+                   }
+               }
+               window.onresize = function() {
+                   player.setSize(window.innerWidth, window.innerHeight);
+                   playVideo();
+               }
+            </script>
+    </body>
+</html>

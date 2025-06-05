@@ -15,29 +15,53 @@
  */
 package com.google.android.exoplayer2.source;
 
-import android.os.Parcel;
-import android.os.Parcelable;
+import static com.google.android.exoplayer2.util.Assertions.checkArgument;
+
+import android.os.Bundle;
+import androidx.annotation.CheckResult;
 import androidx.annotation.Nullable;
+import com.google.android.exoplayer2.Bundleable;
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.Format;
-import com.google.android.exoplayer2.util.Assertions;
+import com.google.android.exoplayer2.Tracks;
+import com.google.android.exoplayer2.util.BundleableUtil;
+import com.google.android.exoplayer2.util.Log;
+import com.google.android.exoplayer2.util.MimeTypes;
+import com.google.android.exoplayer2.util.Util;
+import com.google.common.collect.ImmutableList;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
-// TODO: Add an allowMultipleStreams boolean to indicate where the one stream per group restriction
-// does not apply.
 /**
- * Defines a group of tracks exposed by a {@link MediaPeriod}.
+ * An immutable group of tracks available within a media stream. All tracks in a group present the
+ * same content, but their formats may differ.
  *
- * <p>A {@link MediaPeriod} is only able to provide one {@link SampleStream} corresponding to a
- * group at any given time, however this {@link SampleStream} may adapt between multiple tracks
- * within the group.
+ * <p>As an example of how tracks can be grouped, consider an adaptive playback where a main video
+ * feed is provided in five resolutions, and an alternative video feed (e.g., a different camera
+ * angle in a sports match) is provided in two resolutions. In this case there will be two video
+ * track groups, one corresponding to the main video feed containing five tracks, and a second for
+ * the alternative video feed containing two tracks.
+ *
+ * <p>Note that audio tracks whose languages differ are not grouped, because content in different
+ * languages is not considered to be the same. Conversely, audio tracks in the same language that
+ * only differ in properties such as bitrate, sampling rate, channel count and so on can be grouped.
+ * This also applies to text tracks.
+ *
+ * <p>Note also that this class only contains information derived from the media itself. Unlike
+ * {@link Tracks.Group}, it does not include runtime information such as the extent to which
+ * playback of each track is supported by the device, or which tracks are currently selected.
  */
-public final class TrackGroup implements Parcelable {
+public final class TrackGroup implements Bundleable {
 
-  /**
-   * The number of tracks in the group.
-   */
+  private static final String TAG = "TrackGroup";
+
+  /** The number of tracks in the group. */
   public final int length;
+  /** An identifier for the track group. */
+  public final String id;
+  /** The type of tracks in the group. */
+  public final @C.TrackType int type;
 
   private final Format[] formats;
 
@@ -45,20 +69,42 @@ public final class TrackGroup implements Parcelable {
   private int hashCode;
 
   /**
-   * @param formats The track formats. Must not be null, contain null elements or be of length 0.
+   * Constructs a track group containing the provided {@code formats}.
+   *
+   * @param formats The list of {@link Format Formats}. Must not be empty.
    */
   public TrackGroup(Format... formats) {
-    Assertions.checkState(formats.length > 0);
-    this.formats = formats;
-    this.length = formats.length;
+    this(/* id= */ "", formats);
   }
 
-  /* package */ TrackGroup(Parcel in) {
-    length = in.readInt();
-    formats = new Format[length];
-    for (int i = 0; i < length; i++) {
-      formats[i] = in.readParcelable(Format.class.getClassLoader());
+  /**
+   * Constructs a track group with the provided {@code id} and {@code formats}.
+   *
+   * @param id The identifier of the track group. May be an empty string.
+   * @param formats The list of {@link Format Formats}. Must not be empty.
+   */
+  public TrackGroup(String id, Format... formats) {
+    checkArgument(formats.length > 0);
+    this.id = id;
+    this.formats = formats;
+    this.length = formats.length;
+    @C.TrackType int type = MimeTypes.getTrackType(formats[0].sampleMimeType);
+    if (type == C.TRACK_TYPE_UNKNOWN) {
+      type = MimeTypes.getTrackType(formats[0].containerMimeType);
     }
+    this.type = type;
+    verifyCorrectness();
+  }
+
+  /**
+   * Returns a copy of this track group with the specified {@code id}.
+   *
+   * @param id The identifier for the copy of the track group.
+   * @return The copied track group.
+   */
+  @CheckResult
+  public TrackGroup copyWithId(String id) {
+    return new TrackGroup(id, formats);
   }
 
   /**
@@ -93,6 +139,7 @@ public final class TrackGroup implements Parcelable {
   public int hashCode() {
     if (hashCode == 0) {
       int result = 17;
+      result = 31 * result + id.hashCode();
       result = 31 * result + Arrays.hashCode(formats);
       hashCode = result;
     }
@@ -108,35 +155,91 @@ public final class TrackGroup implements Parcelable {
       return false;
     }
     TrackGroup other = (TrackGroup) obj;
-    return length == other.length && Arrays.equals(formats, other.formats);
+    return id.equals(other.id) && Arrays.equals(formats, other.formats);
   }
 
-  // Parcelable implementation.
+  // Bundleable implementation.
+  private static final String FIELD_FORMATS = Util.intToStringMaxRadix(0);
+  private static final String FIELD_ID = Util.intToStringMaxRadix(1);
 
   @Override
-  public int describeContents() {
-    return 0;
+  public Bundle toBundle() {
+    Bundle bundle = new Bundle();
+    ArrayList<Bundle> arrayList = new ArrayList<>(formats.length);
+    for (Format format : formats) {
+      arrayList.add(format.toBundle(/* excludeMetadata= */ true));
+    }
+    bundle.putParcelableArrayList(FIELD_FORMATS, arrayList);
+    bundle.putString(FIELD_ID, id);
+    return bundle;
   }
 
-  @Override
-  public void writeToParcel(Parcel dest, int flags) {
-    dest.writeInt(length);
-    for (int i = 0; i < length; i++) {
-      dest.writeParcelable(formats[i], 0);
+  /** Object that can restore {@code TrackGroup} from a {@link Bundle}. */
+  public static final Creator<TrackGroup> CREATOR =
+      bundle -> {
+        @Nullable List<Bundle> formatBundles = bundle.getParcelableArrayList(FIELD_FORMATS);
+        List<Format> formats =
+            formatBundles == null
+                ? ImmutableList.of()
+                : BundleableUtil.fromBundleList(Format.CREATOR, formatBundles);
+        String id = bundle.getString(FIELD_ID, /* defaultValue= */ "");
+        return new TrackGroup(id, formats.toArray(new Format[0]));
+      };
+
+  private void verifyCorrectness() {
+    // TrackGroups should only contain tracks with exactly the same content (but in different
+    // qualities). We only log an error instead of throwing to not break backwards-compatibility for
+    // cases where malformed TrackGroups happen to work by chance (e.g. because adaptive selections
+    // are always disabled).
+    String language = normalizeLanguage(formats[0].language);
+    @C.RoleFlags int roleFlags = normalizeRoleFlags(formats[0].roleFlags);
+    for (int i = 1; i < formats.length; i++) {
+      if (!language.equals(normalizeLanguage(formats[i].language))) {
+        logErrorMessage(
+            /* mismatchField= */ "languages",
+            /* valueIndex0= */ formats[0].language,
+            /* otherValue=* */ formats[i].language,
+            /* otherIndex= */ i);
+        return;
+      }
+      if (roleFlags != normalizeRoleFlags(formats[i].roleFlags)) {
+        logErrorMessage(
+            /* mismatchField= */ "role flags",
+            /* valueIndex0= */ Integer.toBinaryString(formats[0].roleFlags),
+            /* otherValue=* */ Integer.toBinaryString(formats[i].roleFlags),
+            /* otherIndex= */ i);
+        return;
+      }
     }
   }
 
-  public static final Parcelable.Creator<TrackGroup> CREATOR =
-      new Parcelable.Creator<TrackGroup>() {
+  private static String normalizeLanguage(@Nullable String language) {
+    // Treat all variants of undetermined or unknown languages as compatible.
+    return language == null || language.equals(C.LANGUAGE_UNDETERMINED) ? "" : language;
+  }
 
-        @Override
-        public TrackGroup createFromParcel(Parcel in) {
-          return new TrackGroup(in);
-        }
+  private static @C.RoleFlags int normalizeRoleFlags(@C.RoleFlags int roleFlags) {
+    // Treat trick-play and non-trick-play formats as compatible.
+    return roleFlags | C.ROLE_FLAG_TRICK_PLAY;
+  }
 
-        @Override
-        public TrackGroup[] newArray(int size) {
-          return new TrackGroup[size];
-        }
-      };
+  private static void logErrorMessage(
+      String mismatchField,
+      @Nullable String valueIndex0,
+      @Nullable String otherValue,
+      int otherIndex) {
+    Log.e(
+        TAG,
+        "",
+        new IllegalStateException(
+            "Different "
+                + mismatchField
+                + " combined in one TrackGroup: '"
+                + valueIndex0
+                + "' (track 0) and '"
+                + otherValue
+                + "' (track "
+                + otherIndex
+                + ")"));
+  }
 }

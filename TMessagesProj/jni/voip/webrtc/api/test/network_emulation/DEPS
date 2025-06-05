@@ -1,0 +1,7 @@
+specific_include_rules = {
+  ".*": [
+    "+rtc_base/socket_address.h",
+    "+rtc_base/ip_address.h",
+    "+rtc_base/copy_on_write_buffer.h",
+  ],
+}

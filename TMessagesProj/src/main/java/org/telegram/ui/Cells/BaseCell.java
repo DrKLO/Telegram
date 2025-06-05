@@ -9,13 +9,31 @@
 package org.telegram.ui.Cells;
 
 import android.content.Context;
+import android.content.res.ColorStateList;
+import android.graphics.Canvas;
+import android.graphics.RecordingCanvas;
+import android.graphics.RenderNode;
 import android.graphics.drawable.Drawable;
+import android.graphics.drawable.RippleDrawable;
+import android.os.Build;
+import android.util.Log;
 import android.view.HapticFeedbackConstants;
 import android.view.MotionEvent;
 import android.view.ViewConfiguration;
 import android.view.ViewGroup;
 
-public abstract class BaseCell extends ViewGroup {
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
+
+import org.telegram.messenger.FileLog;
+import org.telegram.messenger.LiteMode;
+import org.telegram.messenger.SharedConfig;
+import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ChatActivity;
+import org.telegram.ui.Components.SizeNotifierFrameLayout;
+
+public abstract class BaseCell extends ViewGroup implements SizeNotifierFrameLayout.IViewWithInvalidateCallback {
 
     private final class CheckForTap implements Runnable {
         public void run() {
@@ -33,8 +51,10 @@ public abstract class BaseCell extends ViewGroup {
         public void run() {
             if (checkingForLongPress && getParent() != null && currentPressCount == pressCount) {
                 checkingForLongPress = false;
-                performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
                 if (onLongPress()) {
+                    try {
+                        performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
+                    } catch (Exception ignore) {}
                     MotionEvent event = MotionEvent.obtain(0, 0, MotionEvent.ACTION_CANCEL, 0, 0, 0);
                     onTouchEvent(event);
                     event.recycle();
@@ -52,6 +72,7 @@ public abstract class BaseCell extends ViewGroup {
         super(context);
         setWillNotDraw(false);
         setFocusable(true);
+        setHapticFeedbackEnabled(true);
     }
 
     public static void setDrawableBounds(Drawable drawable, int x, int y) {
@@ -60,6 +81,12 @@ public abstract class BaseCell extends ViewGroup {
 
     public static void setDrawableBounds(Drawable drawable, float x, float y) {
         setDrawableBounds(drawable, (int) x, (int) y, drawable.getIntrinsicWidth(), drawable.getIntrinsicHeight());
+    }
+
+    public static float setDrawableBounds(Drawable drawable, float x, float y, float h) {
+        float w = drawable.getIntrinsicWidth() * h / drawable.getIntrinsicHeight();
+        setDrawableBounds(drawable, (int) x, (int) y, (int) w, (int) h);
+        return w;
     }
 
     public static void setDrawableBounds(Drawable drawable, int x, int y, int w, int h) {
@@ -102,5 +129,107 @@ public abstract class BaseCell extends ViewGroup {
 
     protected boolean onLongPress() {
         return true;
+    }
+
+    public int getBoundsLeft() {
+        return 0;
+    }
+
+    public int getBoundsRight() {
+        return getWidth();
+    }
+
+    protected Runnable invalidateCallback;
+    @Override
+    public void listenInvalidate(Runnable callback) {
+        invalidateCallback = callback;
+    }
+
+    public void invalidateLite() {
+        super.invalidate();
+    }
+    @Override
+    public void invalidate() {
+        if (invalidateCallback != null) {
+            invalidateCallback.run();
+        }
+        super.invalidate();
+    }
+
+    private boolean cachingTop, cachingBottom;
+    private RenderNode renderNode;
+    public void setCaching(boolean top, boolean caching) {
+        if (top) {
+            this.cachingTop = SharedConfig.useNewBlur && caching;
+        } else {
+            this.cachingBottom = SharedConfig.useNewBlur && caching;
+        }
+    }
+
+    private boolean forceNotCacheNextFrame;
+    public void forceNotCacheNextFrame() {
+        forceNotCacheNextFrame = true;
+    }
+
+    protected boolean updatedContent;
+    public void drawCached(Canvas canvas) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && renderNode != null && renderNode.hasDisplayList() && canvas.isHardwareAccelerated() && !updatedContent) {
+            canvas.drawRenderNode(renderNode);
+        } else {
+            draw(canvas);
+        }
+    }
+
+    @Override
+    public void draw(Canvas canvas) {
+        final boolean cache = (cachingTop || cachingBottom || SharedConfig.useNewBlur) && allowCaching();
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && cache != (renderNode != null)) {
+            if (cache) {
+                renderNode = new RenderNode("basecell");
+                renderNode.setClipToBounds(false);
+                updatedContent = true;
+            } else {
+                renderNode = null;
+            }
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && renderNode != null && !forceNotCacheNextFrame && canvas.isHardwareAccelerated()) {
+            renderNode.setPosition(0, 0, getWidth(), getHeight());
+            RecordingCanvas recordingCanvas = renderNode.beginRecording();
+            super.draw(recordingCanvas);
+            renderNode.endRecording();
+            canvas.drawRenderNode(renderNode);
+        } else {
+            super.draw(canvas);
+        }
+        forceNotCacheNextFrame = false;
+        updatedContent = false;
+    }
+
+    protected boolean allowCaching() {
+        return true;
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
+    public static class RippleDrawableSafe extends RippleDrawable {
+        public RippleDrawableSafe(@NonNull ColorStateList color, @Nullable Drawable content, @Nullable Drawable mask) {
+            super(color, content, mask);
+        }
+
+        @Override
+        public boolean setState(@NonNull int[] stateSet) {
+            if (getCallback() instanceof BaseCell) {
+                ((BaseCell) getCallback()).forceNotCacheNextFrame();
+            }
+            return super.setState(stateSet);
+        }
+
+        @Override
+        public void draw(@NonNull Canvas canvas) {
+            try {
+                super.draw(canvas);
+            } catch (Exception e) {
+                FileLog.e("probably forgot to put setCallback", e);
+            }
+        }
     }
 }

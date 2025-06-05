@@ -18,13 +18,16 @@
 #ifdef ABSL_INTERNAL_HAVE_DEBUGGING_STACK_CONSUMPTION
 
 #include <signal.h>
+#include <string.h>
 #include <sys/mman.h>
 #include <unistd.h>
 
-#include <string.h>
-
 #include "absl/base/attributes.h"
 #include "absl/base/internal/raw_logging.h"
+
+#if defined(MAP_ANON) && !defined(MAP_ANONYMOUS)
+#define MAP_ANONYMOUS MAP_ANON
+#endif
 
 namespace absl {
 ABSL_NAMESPACE_BEGIN
@@ -42,7 +45,8 @@ namespace {
 // one of them is null, the results of p<q, p>q, p<=q, and p>=q are
 // unspecified. Therefore, instead we hardcode the direction of the
 // stack on platforms we know about.
-#if defined(__i386__) || defined(__x86_64__) || defined(__ppc__)
+#if defined(__i386__) || defined(__x86_64__) || defined(__ppc__) || \
+    defined(__aarch64__) || defined(__riscv)
 constexpr bool kStackGrowsDown = true;
 #else
 #error Need to define kStackGrowsDown
@@ -161,7 +165,7 @@ int GetSignalHandlerStackConsumption(void (*signal_handler)(int)) {
     // versions of musl have a bug that rejects ss_size==0. Work around this by
     // setting ss_size to MINSIGSTKSZ, which should be ignored by the kernel
     // when SS_DISABLE is set.
-    old_sigstk.ss_size = MINSIGSTKSZ;
+    old_sigstk.ss_size = static_cast<size_t>(MINSIGSTKSZ);
   }
   ABSL_RAW_CHECK(sigaltstack(&old_sigstk, nullptr) == 0,
                  "sigaltstack() failed");
@@ -180,5 +184,23 @@ int GetSignalHandlerStackConsumption(void (*signal_handler)(int)) {
 }  // namespace debugging_internal
 ABSL_NAMESPACE_END
 }  // namespace absl
+
+#else
+
+// https://github.com/abseil/abseil-cpp/issues/1465
+// CMake builds on Apple platforms error when libraries are empty.
+// Our CMake configuration can avoid this error on header-only libraries,
+// but since this library is conditionally empty, including a single
+// variable is an easy workaround.
+#ifdef __APPLE__
+namespace absl {
+ABSL_NAMESPACE_BEGIN
+namespace debugging_internal {
+extern const char kAvoidEmptyStackConsumptionLibraryWarning;
+const char kAvoidEmptyStackConsumptionLibraryWarning = 0;
+}  // namespace debugging_internal
+ABSL_NAMESPACE_END
+}  // namespace absl
+#endif  // __APPLE__
 
 #endif  // ABSL_INTERNAL_HAVE_DEBUGGING_STACK_CONSUMPTION

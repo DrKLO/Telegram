@@ -16,8 +16,8 @@ private:
         bool isLowCost = false;
         bool isLowDataRequested = false;
 
-        bool operator==(const ResolvedNetworkStatus &rhs);
-        bool operator!=(const ResolvedNetworkStatus &rhs);
+        bool operator==(const ResolvedNetworkStatus &rhs) const;
+        bool operator!=(const ResolvedNetworkStatus &rhs) const;
     };
 
 public:
@@ -32,7 +32,7 @@ public:
     void sendVideoDeviceUpdated();
     void setRequestedVideoAspect(float aspect);
     void setMuteOutgoingAudio(bool mute);
-	void setIncomingVideoOutput(std::shared_ptr<rtc::VideoSinkInterface<webrtc::VideoFrame>> sink);
+	void setIncomingVideoOutput(std::weak_ptr<rtc::VideoSinkInterface<webrtc::VideoFrame>> sink);
     void setIsLowBatteryLevel(bool isLowBatteryLevel);
     void setIsLocalNetworkLowCost(bool isLocalNetworkLowCost);
     void getNetworkStats(std::function<void(TrafficStats, CallStats)> completion);
@@ -60,7 +60,7 @@ private:
     ProtocolVersion _protocolVersion = ProtocolVersion::V0;
     FilePath _statsLogPath;
 	std::vector<RtcServer> _rtcServers;
-	std::unique_ptr<Proxy> _proxy;
+    std::unique_ptr<Proxy> _proxy;
 	MediaDevicesConfig _mediaDevicesConfig;
 	std::shared_ptr<VideoCaptureInterface> _videoCapture;
 	std::function<void(State)> _stateUpdated;
@@ -69,8 +69,8 @@ private:
     std::function<void(float)> _remotePrefferedAspectRatioUpdated;
 	std::function<void(const std::vector<uint8_t> &)> _signalingDataEmitted;
     std::function<void(int)> _signalBarsUpdated;
-    std::function<void(float)> _audioLevelUpdated;
-	std::function<rtc::scoped_refptr<webrtc::AudioDeviceModule>(webrtc::TaskQueueFactory*)> _createAudioDeviceModule;
+    std::function<void(float, float)> _audioLevelsUpdated;
+	std::function<webrtc::scoped_refptr<webrtc::AudioDeviceModule>(webrtc::TaskQueueFactory*)> _createAudioDeviceModule;
 	std::function<uint32_t(const Message &)> _sendSignalingMessage;
 	std::function<void(Message&&)> _sendTransportMessage;
 	std::unique_ptr<ThreadLocalObject<NetworkManager>> _networkManager;

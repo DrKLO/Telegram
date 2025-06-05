@@ -22,16 +22,17 @@
 #include <type_traits>
 
 #include "absl/algorithm/algorithm.h"
+#include "absl/base/config.h"
 #include "absl/base/internal/throw_delegate.h"
 #include "absl/meta/type_traits.h"
 
 namespace absl {
 ABSL_NAMESPACE_BEGIN
 
-namespace span_internal {
-// A constexpr min function
-constexpr size_t Min(size_t a, size_t b) noexcept { return a < b ? a : b; }
+template <typename T>
+class Span;
 
+namespace span_internal {
 // Wrappers for access to container data pointers.
 template <typename C>
 constexpr auto GetDataImpl(C& c, char) noexcept  // NOLINT(runtime/references)
@@ -86,41 +87,52 @@ using EnableIfMutable =
     typename std::enable_if<!std::is_const<T>::value, int>::type;
 
 template <template <typename> class SpanT, typename T>
-bool EqualImpl(SpanT<T> a, SpanT<T> b) {
+ABSL_INTERNAL_CONSTEXPR_SINCE_CXX20 bool EqualImpl(SpanT<T> a, SpanT<T> b) {
   static_assert(std::is_const<T>::value, "");
-  return absl::equal(a.begin(), a.end(), b.begin(), b.end());
+  return std::equal(a.begin(), a.end(), b.begin(), b.end());
 }
 
 template <template <typename> class SpanT, typename T>
-bool LessThanImpl(SpanT<T> a, SpanT<T> b) {
+ABSL_INTERNAL_CONSTEXPR_SINCE_CXX20 bool LessThanImpl(SpanT<T> a, SpanT<T> b) {
   // We can't use value_type since that is remove_cv_t<T>, so we go the long way
   // around.
   static_assert(std::is_const<T>::value, "");
   return std::lexicographical_compare(a.begin(), a.end(), b.begin(), b.end());
 }
 
-// The `IsConvertible` classes here are needed because of the
-// `std::is_convertible` bug in libcxx when compiled with GCC. This build
-// configuration is used by Android NDK toolchain. Reference link:
-// https://bugs.llvm.org/show_bug.cgi?id=27538.
-template <typename From, typename To>
-struct IsConvertibleHelper {
- private:
-  static std::true_type testval(To);
-  static std::false_type testval(...);
-
- public:
-  using type = decltype(testval(std::declval<From>()));
-};
-
-template <typename From, typename To>
-struct IsConvertible : IsConvertibleHelper<From, To>::type {};
-
-// TODO(zhangxy): replace `IsConvertible` with `std::is_convertible` once the
-// older version of libcxx is not supported.
 template <typename From, typename To>
 using EnableIfConvertibleTo =
-    typename std::enable_if<IsConvertible<From, To>::value>::type;
+    typename std::enable_if<std::is_convertible<From, To>::value>::type;
+
+// IsView is true for types where the return type of .data() is the same for
+// mutable and const instances. This isn't foolproof, but it's only used to
+// enable a compiler warning.
+template <typename T, typename = void, typename = void>
+struct IsView {
+  static constexpr bool value = false;
+};
+
+template <typename T>
+struct IsView<
+    T, absl::void_t<decltype(span_internal::GetData(std::declval<const T&>()))>,
+    absl::void_t<decltype(span_internal::GetData(std::declval<T&>()))>> {
+ private:
+  using Container = std::remove_const_t<T>;
+  using ConstData =
+      decltype(span_internal::GetData(std::declval<const Container&>()));
+  using MutData = decltype(span_internal::GetData(std::declval<Container&>()));
+ public:
+  static constexpr bool value = std::is_same<ConstData, MutData>::value;
+};
+
+// These enablers result in 'int' so they can be used as typenames or defaults
+// in template parameters lists.
+template <typename T>
+using EnableIfIsView = std::enable_if_t<IsView<T>::value, int>;
+
+template <typename T>
+using EnableIfNotIsView = std::enable_if_t<!IsView<T>::value, int>;
+
 }  // namespace span_internal
 ABSL_NAMESPACE_END
 }  // namespace absl

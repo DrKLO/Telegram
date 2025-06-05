@@ -16,6 +16,7 @@
 package org.telegram.messenger.audioinfo;
 
 import android.graphics.Bitmap;
+import android.media.MediaMetadataRetriever;
 
 import org.telegram.messenger.audioinfo.m4a.M4AInfo;
 import org.telegram.messenger.audioinfo.mp3.MP3Info;
@@ -50,6 +51,8 @@ public abstract class AudioInfo {
 	protected String lyrics;		// song lyrics
 	protected Bitmap cover;			// cover image data
     protected Bitmap smallCover;	// cover image data
+
+	private File coverFile;
 
 	public String getBrand() {
 		return brand;
@@ -131,6 +134,14 @@ public abstract class AudioInfo {
 		return cover;
 	}
 
+	public File getCoverFile() {
+		return coverFile;
+	}
+
+	public void setCoverFile(File file) {
+		coverFile = file;
+	}
+
     public Bitmap getSmallCover() {
         return smallCover;
     }
@@ -144,13 +155,21 @@ public abstract class AudioInfo {
             InputStream input = new BufferedInputStream(new FileInputStream(file));
             if (header[4] == 'f' && header[5] == 't' && header[6] == 'y' && header[7] == 'p') {
                 return new M4AInfo(input);
-            } else if (file.getAbsolutePath().endsWith("mp3")) {
+            } else if (header[0] == 'f' && header[1] == 'L' && header[2] == 'a' && header[3] == 'c') {
+				OtherAudioInfo info = new OtherAudioInfo(file);
+				if (info.failed) return null;
+				return info;
+			} else if (file.getAbsolutePath().endsWith("mp3") || (
+				(header[0] == 'I' && header[1] == 'D' && header[2] == '3') ||
+				(header[0] == 'T' && header[1] == 'A' && header[2] == 'G')
+			)) {
                 return new MP3Info(input, file.length());
             } else {
-            	return null;
+				OtherAudioInfo info = new OtherAudioInfo(file);
+				if (info.failed) return null;
+				return info;
 			}
-        } catch (Exception e) {
-            return null;
-        }
+        } catch (Exception e) {}
+		return null;
     }
 }

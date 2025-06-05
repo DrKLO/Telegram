@@ -1,11 +1,16 @@
-/*
- * Copyright 2017 The OpenSSL Project Authors. All Rights Reserved.
- *
- * Licensed under the OpenSSL license (the "License").  You may not use
- * this file except in compliance with the License.  You can obtain a copy
- * in the file LICENSE in the source distribution or at
- * https://www.openssl.org/source/license.html
- */
+// Copyright 2017 The OpenSSL Project Authors. All Rights Reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 // Tests for X509 time functions.
 
@@ -17,10 +22,13 @@
 #include <gtest/gtest.h>
 #include <openssl/asn1.h>
 
+
+namespace {
+
 struct TestData {
   const char *data;
   int type;
-  time_t cmp_time;
+  int64_t cmp_time;
   // -1 if asn1_time <= cmp_time, 1 if asn1_time > cmp_time, 0 if error.
   int expected;
 };
@@ -211,21 +219,96 @@ static TestData kX509CmpTests[] = {
         0,
         0,
     },
+    // Test limits and unusual cases.
+    {
+        "99991231235959Z", V_ASN1_GENERALIZEDTIME,
+        // Test a very large positive time with the largest representable time
+        253402300799,
+        -1,  // TODO(bbe): This is *technically* wrong by rfc5280.
+    },
+    {
+        "99991231235959Z", V_ASN1_GENERALIZEDTIME,
+        // one second after the largest possible time should still compare
+        // correctly
+        253402300800,
+        -1,  // TODO(bbe): This is *technically* wrong by rfc5280.
+    },
+    {
+        "99991231235959Z",
+        V_ASN1_GENERALIZEDTIME,
+        // Test one second before the largest time
+        253402300798,
+        1,
+    },
+    {
+        "700101000000Z",
+        V_ASN1_UTCTIME,
+        // The epoch, which should not fail. a time of 0 must be valid.
+        0,
+        -1,
+    },
+    {
+        "700101000000Z",
+        V_ASN1_UTCTIME,
+        // One second before the epoch should compare correctly.
+        -1,
+        1,
+    },
+    {
+        "700101000000Z",
+        V_ASN1_UTCTIME,
+        // One second after the epoch should compare correctly.
+        1,
+        -1,
+    },
+    {
+        "690621025615Z",
+        V_ASN1_UTCTIME,
+        // Test a negative time, we use a time from NASA, close to but not quite
+        // at the epoch.
+        -16751025,
+        -1,
+    },
+    {
+        "690621025615Z",
+        V_ASN1_UTCTIME,
+        // Test one small second before our negative time.
+        -16751026,
+        1,
+    },
+    {
+        "690621025615Z",
+        V_ASN1_UTCTIME,
+        // Test one giant second after our negative time.
+        -16751024,
+        -1,
+    },
+    {
+        "00000101000000Z",
+        V_ASN1_GENERALIZEDTIME,
+        // Test a very large negative time with the earliest representable time
+        -62167219200,
+        -1,
+    },
+    {
+        "00000101000000Z",
+        V_ASN1_GENERALIZEDTIME,
+        // Test one second after the earliest time.
+        -62167219199,
+        -1,
+    },
+
 };
 
 TEST(X509TimeTest, TestCmpTime) {
   for (auto &test : kX509CmpTests) {
     SCOPED_TRACE(test.data);
 
-    ASN1_TIME t;
+    bssl::UniquePtr<ASN1_STRING> t(ASN1_STRING_type_new(test.type));
+    ASSERT_TRUE(t);
+    ASSERT_TRUE(ASN1_STRING_set(t.get(), test.data, strlen(test.data)));
 
-    memset(&t, 0, sizeof(t));
-    t.type = test.type;
-    t.data = (unsigned char*) test.data;
-    t.length = strlen(test.data);
-
-    EXPECT_EQ(test.expected,
-              X509_cmp_time(&t, &test.cmp_time));
+    EXPECT_EQ(test.expected, X509_cmp_time_posix(t.get(), test.cmp_time));
   }
 }
 
@@ -238,3 +321,5 @@ TEST(X509TimeTest, TestCmpTimeCurrent) {
   ASSERT_EQ(-1, X509_cmp_time(asn1_before.get(), NULL));
   ASSERT_EQ(1, X509_cmp_time(asn1_after.get(), NULL));
 }
+
+}  // namespace

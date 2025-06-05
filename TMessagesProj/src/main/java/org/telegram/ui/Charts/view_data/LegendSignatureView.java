@@ -18,13 +18,20 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.BillingController;
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ChannelMonetizationLayout;
 import org.telegram.ui.Charts.data.ChartData;
+import org.telegram.ui.Components.AnimatedEmojiSpan;
 import org.telegram.ui.Components.CombinedDrawable;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RadialProgressView;
+import org.telegram.ui.Stars.StarsIntroActivity;
 
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -34,7 +41,7 @@ public class LegendSignatureView extends FrameLayout {
 
     public boolean isTopHourChart;
     LinearLayout content;
-    Holder[] holdes;
+    Holder[] holders;
     TextView time;
     TextView hourTime;
     Drawable background;
@@ -56,6 +63,7 @@ public class LegendSignatureView extends FrameLayout {
 
     Drawable shadowDrawable;
     Drawable backgroundDrawable;
+    private Theme.ResourcesProvider resourcesProvider;
 
     Runnable showProgressRunnable = new Runnable() {
         @Override
@@ -72,17 +80,22 @@ public class LegendSignatureView extends FrameLayout {
     };
 
     public LegendSignatureView(Context context) {
+        this(context, null);
+    }
+
+    public LegendSignatureView(Context context, Theme.ResourcesProvider resourcesProvider) {
         super(context);
+        this.resourcesProvider = resourcesProvider;
         setPadding(AndroidUtilities.dp(8), AndroidUtilities.dp(8), AndroidUtilities.dp(8), AndroidUtilities.dp(8));
         content = new LinearLayout(getContext());
         content.setOrientation(LinearLayout.VERTICAL);
 
         time = new TextView(context);
         time.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-        time.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        time.setTypeface(AndroidUtilities.bold());
         hourTime = new TextView(context);
         hourTime.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-        hourTime.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        hourTime.setTypeface(AndroidUtilities.bold());
 
         chevron = new ImageView(context);
         chevron.setImageResource(R.drawable.ic_chevron_right_black_18dp);
@@ -102,13 +115,13 @@ public class LegendSignatureView extends FrameLayout {
     }
 
     public void recolor() {
-        time.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
-        hourTime.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
-        chevron.setColorFilter(Theme.getColor(Theme.key_statisticChartChevronColor));
-        progressView.setProgressColor(Theme.getColor(Theme.key_statisticChartChevronColor));
+        time.setTextColor(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
+        hourTime.setTextColor(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
+        chevron.setColorFilter(Theme.getColor(Theme.key_statisticChartChevronColor, resourcesProvider));
+        progressView.setProgressColor(Theme.getColor(Theme.key_statisticChartChevronColor, resourcesProvider));
 
         shadowDrawable = getContext().getResources().getDrawable(R.drawable.stats_tooltip).mutate();
-        backgroundDrawable = Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(4), Theme.getColor(Theme.key_dialogBackground), Theme.getColor(Theme.key_listSelector), 0xff000000);
+        backgroundDrawable = Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(4), Theme.getColor(Theme.key_dialogBackground, resourcesProvider), Theme.getColor(Theme.key_listSelector, resourcesProvider), 0xff000000);
         CombinedDrawable drawable = new CombinedDrawable(shadowDrawable, backgroundDrawable, AndroidUtilities.dp(3), AndroidUtilities.dp(3));
         drawable.setFullsize(true);
         setBackground(drawable);
@@ -116,16 +129,23 @@ public class LegendSignatureView extends FrameLayout {
 
     public void setSize(int n) {
         content.removeAllViews();
-        holdes = new Holder[n];
+        holders = new Holder[n];
         for (int i = 0; i < n; i++) {
-            holdes[i] = new Holder();
-            content.addView(holdes[i].root);
+            holders[i] = new Holder();
+            content.addView(holders[i].root);
         }
     }
 
 
-    public void setData(int index, long date, ArrayList<LineViewData> lines, boolean animateChanges) {
-        int n = holdes.length;
+    public void setData(
+        int index,
+        long date,
+        ArrayList<LineViewData> lines,
+        boolean animateChanges,
+        int formatter,
+        float k
+    ) {
+        int n = holders.length;
         if (animateChanges) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
                 TransitionSet transition = new TransitionSet();
@@ -149,35 +169,42 @@ public class LegendSignatureView extends FrameLayout {
             if (useHour) hourTime.setText(hourFormat.format(date));
         }
 
-        int sum = 0;
+        long sum = 0;
 
-        for (int i = 0; i < n; i++) {
+        for (int i = 0; i < lines.size(); i++) {
             if (lines.get(i).enabled) sum += lines.get(i).line.y[index];
         }
 
         for (int i = 0; i < n; i++) {
-            Holder h = holdes[i];
+            Holder h = holders[i];
+            int formatterIndex = i % 2;
+            LineViewData l = lines.get(formatter == ChartData.FORMATTER_TON || formatter == ChartData.FORMATTER_XTR ? i / 2 : i);
 
-            if (!lines.get(i).enabled) {
+            if (!l.enabled) {
                 h.root.setVisibility(View.GONE);
             } else {
-                ChartData.Line l = lines.get(i).line;
                 if (h.root.getMeasuredHeight() == 0) {
                     h.root.requestLayout();
                 }
                 h.root.setVisibility(View.VISIBLE);
-                h.value.setText(formatWholeNumber(l.y[index]));
-                h.signature.setText(l.name);
-                if (l.colorKey != null && Theme.hasThemeKey(l.colorKey)) {
-                    h.value.setTextColor(Theme.getColor(l.colorKey));
+                h.value.setText(formatWholeNumber(l.line.y[index], formatter, formatterIndex, h.value, k));
+                if (formatter == ChartData.FORMATTER_TON) {
+                    h.signature.setText(LocaleController.formatString(formatterIndex == 0 ? R.string.ChartInTON : R.string.ChartInUSD, l.line.name));
+                } else if (formatter == ChartData.FORMATTER_XTR) {
+                    h.signature.setText(StarsIntroActivity.replaceStarsWithPlain(LocaleController.formatString(formatterIndex == 0 ? R.string.ChartInXTR : R.string.ChartInUSD, l.line.name), .7f));
                 } else {
-                    h.value.setTextColor(Theme.getCurrentTheme().isDark() ? l.colorDark : l.color);
+                    h.signature.setText(l.line.name);
                 }
-                h.signature.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
+                if (l.line.colorKey >= 0 && Theme.hasThemeKey(l.line.colorKey)) {
+                    h.value.setTextColor(Theme.getColor(l.line.colorKey, resourcesProvider));
+                } else {
+                    h.value.setTextColor(Theme.getCurrentTheme().isDark() ? l.line.colorDark : l.line.color);
+                }
+                h.signature.setTextColor(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
 
                 if (showPercentage && h.percentage != null) {
                     h.percentage.setVisibility(VISIBLE);
-                    h.percentage.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
+                    h.percentage.setTextColor(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
                     float v = lines.get(i).line.y[index] / (float) sum;
                     if (v < 0.1f && v != 0f) {
                         h.percentage.setText(String.format(Locale.ENGLISH, "%.1f%s", (100f * v), "%"));
@@ -208,14 +235,36 @@ public class LegendSignatureView extends FrameLayout {
         return s;
     }
 
-
-    public String formatWholeNumber(int v) {
+    private DecimalFormat formatterTON;
+    public CharSequence formatWholeNumber(long v, int formatter, int formatterIndex, TextView textView, float k) {
+        if (formatter == ChartData.FORMATTER_TON) {
+            if (formatterIndex == 0) {
+                if (formatterTON == null) {
+                    DecimalFormatSymbols symbols = new DecimalFormatSymbols(Locale.US);
+                    symbols.setDecimalSeparator('.');
+                    formatterTON = new DecimalFormat("#.##", symbols);
+                    formatterTON.setMinimumFractionDigits(2);
+                    formatterTON.setMaximumFractionDigits(6);
+                    formatterTON.setGroupingUsed(false);
+                }
+                formatterTON.setMaximumFractionDigits(v > 1_000_000_000 ? 2 : 6);
+                return ChannelMonetizationLayout.replaceTON("TON " + formatterTON.format(v / 1_000_000_000.), textView.getPaint(), .82f, false);
+            } else {
+                return "≈" + BillingController.getInstance().formatCurrency((long) (v / k), "USD");
+            }
+        } else if (formatter == ChartData.FORMATTER_XTR) {
+            if (formatterIndex == 0) {
+                return StarsIntroActivity.replaceStarsWithPlain("XTR " + LocaleController.formatNumber(v, ' '), .7f);
+            } else {
+                return "≈" + BillingController.getInstance().formatCurrency((long) (v / k), "USD");
+            }
+        }
         float num_ = v;
         int count = 0;
         if (v < 10_000) {
             return String.format("%d", v);
         }
-        while (num_ >= 10_000 && count < AndroidUtilities.numbersSignatureArray.length - 1) {
+        while (num_ >= 1_000 && count < AndroidUtilities.numbersSignatureArray.length - 1) {
             num_ /= 1000;
             count++;
         }
@@ -249,7 +298,7 @@ public class LegendSignatureView extends FrameLayout {
     }
 
     class Holder {
-        final TextView value;
+        final AnimatedEmojiSpan.TextViewEmojis value;
         final TextView signature;
         TextView percentage;
         final LinearLayout root;
@@ -262,21 +311,21 @@ public class LegendSignatureView extends FrameLayout {
                 root.addView(percentage = new TextView(getContext()));
                 percentage.getLayoutParams().width = AndroidUtilities.dp(36);
                 percentage.setVisibility(GONE);
-                percentage.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+                percentage.setTypeface(AndroidUtilities.bold());
                 percentage.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
             }
 
-            root.addView(signature = new TextView(getContext()));
-            signature.getLayoutParams().width = showPercentage ? AndroidUtilities.dp(80) : AndroidUtilities.dp(96);
-            root.addView(value = new TextView(getContext()), LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+            root.addView(signature = new TextView(getContext()), LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0, 0, 20, 0));
+//            signature.getLayoutParams().width = showPercentage ? AndroidUtilities.dp(80) : AndroidUtilities.dp(96);
+            root.addView(value = new AnimatedEmojiSpan.TextViewEmojis(getContext()), LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
             signature.setGravity(Gravity.START);
             value.setGravity(Gravity.END);
 
-            value.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            value.setTypeface(AndroidUtilities.bold());
             value.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
-            value.setMinEms(4);
-            value.setMaxEms(4);
+//            value.setMinEms(4);
+//            value.setMaxEms(4);
             signature.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
         }
     }

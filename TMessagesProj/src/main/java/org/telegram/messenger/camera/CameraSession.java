@@ -16,6 +16,8 @@ import android.hardware.Camera;
 import android.media.CamcorderProfile;
 import android.media.MediaRecorder;
 import android.os.Build;
+import android.text.TextUtils;
+import android.util.Log;
 import android.view.OrientationEventListener;
 import android.view.Surface;
 import android.view.WindowManager;
@@ -29,7 +31,7 @@ import java.util.List;
 
 public class CameraSession {
 
-    protected CameraInfo cameraInfo;
+    public CameraInfo cameraInfo;
     private String currentFlashMode;
     private OrientationEventListener orientationEventListener;
     private int lastOrientation = -1;
@@ -52,6 +54,9 @@ public class CameraSession {
     private boolean isRound;
     private boolean destroyed;
 
+    public ArrayList<String> availableFlashModes = new ArrayList<>();
+
+    private int infoCameraId = -1;
     Camera.CameraInfo info = new Camera.CameraInfo();
 
     public static final int ORIENTATION_HYSTERESIS = 5;
@@ -102,6 +107,12 @@ public class CameraSession {
         }
     }
 
+    private void updateCameraInfo() {
+        if (infoCameraId != cameraInfo.getCameraId()) {
+            Camera.getCameraInfo(infoCameraId = cameraInfo.getCameraId(), this.info);
+        }
+    }
+
     private int roundOrientation(int orientation, int orientationHistory) {
         boolean changeOrientation;
         if (orientationHistory == OrientationEventListener.ORIENTATION_UNKNOWN) {
@@ -123,27 +134,42 @@ public class CameraSession {
     }
 
     public void checkFlashMode(String mode) {
-        ArrayList<String> modes = CameraController.getInstance().availableFlashModes;
+        ArrayList<String> modes = availableFlashModes;
         if (modes.contains(currentFlashMode)) {
             return;
         }
         currentFlashMode = mode;
-        configurePhotoCamera();
-        SharedPreferences sharedPreferences = ApplicationLoader.applicationContext.getSharedPreferences("camera", Activity.MODE_PRIVATE);
-        sharedPreferences.edit().putString(cameraInfo.frontCamera != 0 ? "flashMode_front" : "flashMode", mode).commit();
+        if (isRound) {
+            configureRoundCamera(false);
+        } else {
+            configurePhotoCamera();
+            SharedPreferences sharedPreferences = ApplicationLoader.applicationContext.getSharedPreferences("camera", Activity.MODE_PRIVATE);
+            sharedPreferences.edit().putString(cameraInfo.frontCamera != 0 ? "flashMode_front" : "flashMode", mode).commit();
+        }
     }
 
     public void setCurrentFlashMode(String mode) {
         currentFlashMode = mode;
-        configurePhotoCamera();
-        SharedPreferences sharedPreferences = ApplicationLoader.applicationContext.getSharedPreferences("camera", Activity.MODE_PRIVATE);
-        sharedPreferences.edit().putString(cameraInfo.frontCamera != 0 ? "flashMode_front" : "flashMode", mode).commit();
+        if (isRound) {
+            configureRoundCamera(false);
+        } else {
+            configurePhotoCamera();
+            SharedPreferences sharedPreferences = ApplicationLoader.applicationContext.getSharedPreferences("camera", Activity.MODE_PRIVATE);
+            sharedPreferences.edit().putString(cameraInfo.frontCamera != 0 ? "flashMode_front" : "flashMode", mode).commit();
+        }
     }
 
     public void setTorchEnabled(boolean enabled) {
         try {
+            String beforeFlashMode = currentFlashMode;
             currentFlashMode = enabled ? Camera.Parameters.FLASH_MODE_TORCH : Camera.Parameters.FLASH_MODE_OFF;
-            configurePhotoCamera();
+            if (!TextUtils.equals(beforeFlashMode, currentFlashMode)) {
+                if (isRound) {
+                    configureRoundCamera(false);
+                } else {
+                    configurePhotoCamera();
+                }
+            }
         } catch (Exception e) {
             FileLog.e(e);
         }
@@ -154,7 +180,7 @@ public class CameraSession {
     }
 
     public String getNextFlashMode() {
-        ArrayList<String> modes = CameraController.getInstance().availableFlashModes;
+        ArrayList<String> modes = availableFlashModes;
         for (int a = 0; a < modes.size(); a++) {
             String mode = modes.get(a);
             if (mode.equals(currentFlashMode)) {
@@ -196,7 +222,7 @@ public class CameraSession {
         return sameTakePictureOrientation;
     }
 
-    protected void configureRoundCamera(boolean initial) {
+    protected boolean configureRoundCamera(boolean initial) {
         try {
             isVideo = true;
             Camera camera = cameraInfo.camera;
@@ -208,7 +234,7 @@ public class CameraSession {
                     FileLog.e(e);
                 }
 
-                Camera.getCameraInfo(cameraInfo.getCameraId(), info);
+                updateCameraInfo();
                 updateRotation();
 
                 if (params != null) {
@@ -252,7 +278,7 @@ public class CameraSession {
                     } catch (Exception e) {
                         //
                     }
-                    params.setFlashMode(Camera.Parameters.FLASH_MODE_OFF);
+                    params.setFlashMode(currentFlashMode);
                     params.setZoom((int) (currentZoom * maxZoom));
                     try {
                         camera.setParameters(params);
@@ -268,7 +294,9 @@ public class CameraSession {
             }
         } catch (Throwable e) {
             FileLog.e(e);
+            return false;
         }
+        return true;
     }
 
     public void updateRotation() {
@@ -277,20 +305,20 @@ public class CameraSession {
         }
 
         try {
-            Camera.getCameraInfo(cameraInfo.getCameraId(), info);
+            updateCameraInfo();
         } catch (Throwable throwable) {
             FileLog.e(throwable);
             return;
         }
-        Camera camera = (cameraInfo == null || destroyed) ? null : cameraInfo.camera;
+        Camera camera = destroyed ? null : cameraInfo.camera;
 
         displayOrientation = getDisplayOrientation(info, true);
         int cameraDisplayOrientation;
 
+        int degrees = 0;
         if ("samsung".equals(Build.MANUFACTURER) && "sf2wifixx".equals(Build.PRODUCT)) {
             cameraDisplayOrientation = 0;
         } else {
-            int degrees = 0;
             int temp = displayOrientation;
             switch (temp) {
                 case Surface.ROTATION_0:
@@ -321,10 +349,7 @@ public class CameraSession {
         if (camera != null) {
             try {
                 camera.setDisplayOrientation(currentOrientation);
-            } catch (Throwable ignore) {
-
-            }
-
+            } catch (Throwable ignore) {}
         }
         diffOrientation = currentOrientation - displayOrientation;
         if (diffOrientation < 0) {
@@ -343,8 +368,7 @@ public class CameraSession {
                     FileLog.e(e);
                 }
 
-                Camera.getCameraInfo(cameraInfo.getCameraId(), info);
-
+                updateCameraInfo();
                 updateRotation();
 
                 diffOrientation = currentOrientation - displayOrientation;
@@ -409,7 +433,7 @@ public class CameraSession {
         }
     }
 
-    protected void focusToRect(Rect focusRect, Rect meteringRect) {
+    public void focusToRect(Rect focusRect, Rect meteringRect) {
         try {
             Camera camera = cameraInfo.camera;
             if (camera != null) {
@@ -467,7 +491,7 @@ public class CameraSession {
     }
 
     protected void configureRecorder(int quality, MediaRecorder recorder) {
-        Camera.getCameraInfo(cameraInfo.cameraId, info);
+        updateCameraInfo();
 
         int outputOrientation = 0;
         if (jpegOrientation != OrientationEventListener.ORIENTATION_UNKNOWN) {
@@ -492,7 +516,7 @@ public class CameraSession {
         isVideo = true;
     }
 
-    protected void stopVideoRecording() {
+    public void stopVideoRecording() {
         isVideo = false;
         useTorch = false;
         configurePhotoCamera();
@@ -546,7 +570,7 @@ public class CameraSession {
 
     public int getDisplayOrientation() {
         try {
-            Camera.getCameraInfo(cameraInfo.getCameraId(), info);
+            updateCameraInfo();
             return getDisplayOrientation(info, true);
         } catch (Exception e) {
             FileLog.e(e);
@@ -575,5 +599,13 @@ public class CameraSession {
             orientationEventListener.disable();
             orientationEventListener = null;
         }
+    }
+
+    public Camera.Size getCurrentPreviewSize() {
+        return cameraInfo.camera.getParameters().getPreviewSize();
+    }
+
+    public Camera.Size getCurrentPictureSize() {
+        return cameraInfo.camera.getParameters().getPictureSize();
     }
 }

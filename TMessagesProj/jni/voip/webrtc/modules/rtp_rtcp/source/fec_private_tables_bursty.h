@@ -20,7 +20,7 @@
 // packets, all "consecutive" losses of size <= m are completely recoverable.
 // By consecutive losses we mean consecutive with respect to the sequence
 // number ordering of the list (media and FEC) of packets. The difference
-// between these masks (|kFecMaskBursty|) and |kFecMaskRandom| type, defined
+// between these masks (`kFecMaskBursty`) and `kFecMaskRandom` type, defined
 // in fec_private_tables.h, is more significant for longer codes
 // (i.e., more packets/symbols in the code, so larger (k,m), i.e.,  k > 4,
 // m > 3).

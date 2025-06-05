@@ -16,15 +16,13 @@
 #include "absl/types/optional.h"
 #include "api/network_state_predictor.h"
 #include "api/units/data_rate.h"
+#include "api/units/time_delta.h"
 
 namespace webrtc {
 
-namespace congestion_controller {
-int GetMinBitrateBps();
-DataRate GetMinBitrate();
-}  // namespace congestion_controller
-
-static const int64_t kBitrateWindowMs = 1000;
+inline constexpr DataRate kCongestionControllerMinBitrate =
+    DataRate::BitsPerSec(5'000);
+inline constexpr TimeDelta kBitrateWindow = TimeDelta::Seconds(1);
 
 extern const char kBweTypeHistogram[];
 

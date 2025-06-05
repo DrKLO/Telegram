@@ -15,6 +15,7 @@
 #define SDK_ANDROID_SRC_JNI_JNI_HELPERS_H_
 
 #include <jni.h>
+
 #include <string>
 
 #include "sdk/android/native_api/jni/java_types.h"

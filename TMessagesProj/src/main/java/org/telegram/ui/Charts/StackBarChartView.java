@@ -8,6 +8,7 @@ import android.graphics.Paint;
 import androidx.core.graphics.ColorUtils;
 
 import org.telegram.messenger.SegmentTree;
+import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Charts.data.ChartData;
 import org.telegram.ui.Charts.data.StackBarChartData;
 import org.telegram.ui.Charts.view_data.LineViewData;
@@ -15,17 +16,21 @@ import org.telegram.ui.Charts.view_data.StackBarViewData;
 
 public class StackBarChartView extends BaseChartView<StackBarChartData, StackBarViewData> {
 
-    private int[] yMaxPoints;
+    private long[] yMaxPoints;
 
     public StackBarChartView(Context context) {
-        super(context);
+        this(context, null);
+    }
+
+    public StackBarChartView(Context context, Theme.ResourcesProvider resourcesProvider) {
+        super(context, resourcesProvider);
         superDraw = true;
         useAlphaSignature = true;
     }
 
     @Override
     public StackBarViewData createLineViewData(ChartData.Line line) {
-        return new StackBarViewData(line);
+        return new StackBarViewData(line, resourcesProvider);
     }
 
     @Override
@@ -86,7 +91,7 @@ public class StackBarChartView extends BaseChartView<StackBarChartData, StackBar
                 if (!line.enabled && line.alpha == 0) continue;
 
 
-                int[] y = line.line.y;
+                final long[] y = line.line.y;
 
 
                 float xPoint = p / 2 + chartData.xPercentage[i] * (fullWidth - p) - offset;
@@ -129,7 +134,7 @@ public class StackBarChartView extends BaseChartView<StackBarChartData, StackBar
                 if (!line.enabled && line.alpha == 0) continue;
 
 
-                int[] y = line.line.y;
+                final long[] y = line.line.y;
 
 
                 float xPoint = p / 2 + chartData.xPercentage[selectedIndex] * (fullWidth - p) - offset;
@@ -201,7 +206,7 @@ public class StackBarChartView extends BaseChartView<StackBarChartData, StackBar
             int step = Math.max(1, Math.round(n / 200f));
 
             if (yMaxPoints == null || yMaxPoints.length < nl) {
-                yMaxPoints = new int[nl];
+                yMaxPoints = new long[nl];
             }
 
             for (int i = 0; i < n; i++) {
@@ -211,7 +216,7 @@ public class StackBarChartView extends BaseChartView<StackBarChartData, StackBar
                 for (int k = 0; k < nl; k++) {
                     LineViewData line = lines.get(k);
                     if (!line.enabled && line.alpha == 0) continue;
-                    int y = line.line.y[i];
+                    final long y = line.line.y[i];
                     if (y > yMaxPoints[k]) yMaxPoints[k] = y;
                 }
 
@@ -258,7 +263,7 @@ public class StackBarChartView extends BaseChartView<StackBarChartData, StackBar
         int n = chartData.lines.get(0).y.length;
         int k = chartData.lines.size();
 
-        chartData.ySum = new int[n];
+        chartData.ySum = new long[n];
         for (int i = 0; i < n; i++) {
             chartData.ySum[i] = 0;
             for (int j = 0; j < k; j++) {
@@ -275,19 +280,19 @@ public class StackBarChartView extends BaseChartView<StackBarChartData, StackBar
 
     }
 
-    public int findMaxValue(int startXIndex, int endXIndex) {
+    public long findMaxValue(int startXIndex, int endXIndex) {
         return chartData.findMax(startXIndex, endXIndex);
     }
 
 
     protected void updatePickerMinMaxHeight() {
         if (!ANIMATE_PICKER_SIZES) return;
-        int max = 0;
+        long max = 0;
 
         int n = chartData.x.length;
         int nl = lines.size();
         for (int i = 0; i < n; i++) {
-            int h = 0;
+            long h = 0;
             for (int k = 0; k < nl; k++) {
                 StackBarViewData l = lines.get(k);
                 if (l.enabled) h += l.line.y[i];
@@ -321,7 +326,7 @@ public class StackBarChartView extends BaseChartView<StackBarChartData, StackBar
         int n = chartData.x.length;
         int nl = lines.size();
         for (int i = 0; i < n; i++) {
-            int h = 0;
+            long h = 0;
             for (int k = 0; k < nl; k++) {
                 StackBarViewData l = lines.get(k);
                 if (l.enabled) h += l.line.y[i];

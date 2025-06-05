@@ -94,8 +94,8 @@ size_t RefIndicesLength(const RTPVideoHeaderVP9& hdr) {
   if (!hdr.inter_pic_predicted || !hdr.flexible_mode)
     return 0;
 
-  RTC_DCHECK_GT(hdr.num_ref_pics, 0U);
-  RTC_DCHECK_LE(hdr.num_ref_pics, kMaxVp9RefPics);
+  RTC_CHECK_GT(hdr.num_ref_pics, 0U);
+  RTC_CHECK_LE(hdr.num_ref_pics, kMaxVp9RefPics);
   return hdr.num_ref_pics;
 }
 
@@ -123,9 +123,9 @@ size_t SsDataLength(const RTPVideoHeaderVP9& hdr) {
   if (!hdr.ss_data_available)
     return 0;
 
-  RTC_DCHECK_GT(hdr.num_spatial_layers, 0U);
-  RTC_DCHECK_LE(hdr.num_spatial_layers, kMaxVp9NumberOfSpatialLayers);
-  RTC_DCHECK_LE(hdr.gof.num_frames_in_gof, kMaxVp9FramesInGof);
+  RTC_CHECK_GT(hdr.num_spatial_layers, 0U);
+  RTC_CHECK_LE(hdr.num_spatial_layers, kMaxVp9NumberOfSpatialLayers);
+  RTC_CHECK_LE(hdr.gof.num_frames_in_gof, kMaxVp9FramesInGof);
   size_t length = 1;  // V
   if (hdr.spatial_layer_resolution_present) {
     length += 4 * hdr.num_spatial_layers;  // Y
@@ -136,7 +136,7 @@ size_t SsDataLength(const RTPVideoHeaderVP9& hdr) {
   // N_G
   length += hdr.gof.num_frames_in_gof;  // T, U, R
   for (size_t i = 0; i < hdr.gof.num_frames_in_gof; ++i) {
-    RTC_DCHECK_LE(hdr.gof.num_ref_pics[i], kMaxVp9RefPics);
+    RTC_CHECK_LE(hdr.gof.num_ref_pics[i], kMaxVp9RefPics);
     length += hdr.gof.num_ref_pics[i];  // R times
   }
   return length;
@@ -248,9 +248,9 @@ bool WriteRefIndices(const RTPVideoHeaderVP9& vp9,
 //      +-+-+-+-+-+-+-+-+              -|           -|
 //
 bool WriteSsData(const RTPVideoHeaderVP9& vp9, rtc::BitBufferWriter* writer) {
-  RTC_DCHECK_GT(vp9.num_spatial_layers, 0U);
-  RTC_DCHECK_LE(vp9.num_spatial_layers, kMaxVp9NumberOfSpatialLayers);
-  RTC_DCHECK_LE(vp9.gof.num_frames_in_gof, kMaxVp9FramesInGof);
+  RTC_CHECK_GT(vp9.num_spatial_layers, 0U);
+  RTC_CHECK_LE(vp9.num_spatial_layers, kMaxVp9NumberOfSpatialLayers);
+  RTC_CHECK_LE(vp9.gof.num_frames_in_gof, kMaxVp9FramesInGof);
   bool g_bit = vp9.gof.num_frames_in_gof > 0;
 
   RETURN_FALSE_ON_ERROR(writer->WriteBits(vp9.num_spatial_layers - 1, 3));
@@ -288,6 +288,8 @@ bool WriteSsData(const RTPVideoHeaderVP9& vp9, rtc::BitBufferWriter* writer) {
 // current API to invoke SVC is not flexible enough.
 RTPVideoHeaderVP9 RemoveInactiveSpatialLayers(
     const RTPVideoHeaderVP9& original_header) {
+  RTC_CHECK_LE(original_header.num_spatial_layers,
+               kMaxVp9NumberOfSpatialLayers);
   RTPVideoHeaderVP9 hdr(original_header);
   if (original_header.first_active_layer == 0)
     return hdr;
@@ -314,13 +316,14 @@ RtpPacketizerVp9::RtpPacketizerVp9(rtc::ArrayView<const uint8_t> payload,
       header_size_(PayloadDescriptorLengthMinusSsData(hdr_)),
       first_packet_extra_header_size_(SsDataLength(hdr_)),
       remaining_payload_(payload) {
-  RTC_DCHECK_EQ(hdr_.first_active_layer, 0);
+  RTC_CHECK_EQ(hdr_.first_active_layer, 0);
 
   limits.max_payload_len -= header_size_;
   limits.first_packet_reduction_len += first_packet_extra_header_size_;
   limits.single_packet_reduction_len += first_packet_extra_header_size_;
-
-  payload_sizes_ = SplitAboutEqually(payload.size(), limits);
+  if (!payload.empty()) {
+    payload_sizes_ = SplitAboutEqually(payload.size(), limits);
+  }
   current_packet_ = payload_sizes_.begin();
 }
 
@@ -357,8 +360,8 @@ bool RtpPacketizerVp9::NextPacket(RtpPacketToSend* packet) {
 
   // Ensure end_of_picture is always set on top spatial layer when it is not
   // dropped.
-  RTC_DCHECK(hdr_.spatial_idx < hdr_.num_spatial_layers - 1 ||
-             hdr_.end_of_picture);
+  RTC_CHECK(hdr_.spatial_idx < hdr_.num_spatial_layers - 1 ||
+            hdr_.end_of_picture);
 
   packet->SetMarker(layer_end && hdr_.end_of_picture);
   return true;

@@ -1,0 +1,8 @@
+chain: sha256-chain.pem
+last_cert_trust: TRUSTED_ANCHOR
+utc_time: DEFAULT
+key_purpose: SERVER_AUTH_STRICT
+expected_errors:
+----- Certificate i=1 (CN=Intermediate) -----
+ERROR: The extended key usage does not include server auth
+

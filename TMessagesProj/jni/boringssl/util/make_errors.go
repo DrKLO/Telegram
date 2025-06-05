@@ -1,16 +1,18 @@
-// Copyright (c) 2014, Google Inc.
+// Copyright 2014 The BoringSSL Authors
 //
-// Permission to use, copy, modify, and/or distribute this software for any
-// purpose with or without fee is hereby granted, provided that the above
-// copyright notice and this permission notice appear in all copies.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-// WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
-// MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY
-// SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-// WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION
-// OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
-// CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+//go:build ignore
 
 package main
 
@@ -34,19 +36,46 @@ const reservedReasonCode = 1000
 
 var resetFlag *bool = flag.Bool("reset", false, "If true, ignore current assignments and reassign from scratch")
 
-func makeErrors(reset bool) error {
+type libraryInfo struct {
+	sourceDirs []string
+	headerName string
+}
+
+func getLibraryInfo(lib string) libraryInfo {
+	var info libraryInfo
+	if lib == "ssl" {
+		info.sourceDirs = []string{"ssl"}
+	} else {
+		info.sourceDirs = []string{
+			filepath.Join("crypto", lib),
+			filepath.Join("crypto", lib+"_extra"),
+			filepath.Join("crypto", "fipsmodule", lib),
+		}
+	}
+	info.headerName = lib + ".h"
+
+	if lib == "evp" {
+		info.headerName = "evp_errors.h"
+		info.sourceDirs = append(info.sourceDirs, filepath.Join("crypto", "hpke"))
+	}
+
+	if lib == "x509v3" {
+		info.headerName = "x509v3_errors.h"
+		info.sourceDirs = append(info.sourceDirs, filepath.Join("crypto", "x509"))
+	}
+
+	return info
+}
+
+func makeErrors(lib string, reset bool) error {
 	topLevelPath, err := findToplevel()
 	if err != nil {
 		return err
 	}
 
-	dirName, err := os.Getwd()
-	if err != nil {
-		return err
-	}
+	info := getLibraryInfo(lib)
 
-	lib := filepath.Base(dirName)
-	headerPath := filepath.Join(topLevelPath, "include", "openssl", lib+".h")
+	headerPath := filepath.Join(topLevelPath, "include", "openssl", info.headerName)
 	errDir := filepath.Join(topLevelPath, "crypto", "err")
 	dataPath := filepath.Join(errDir, lib+".errordata")
 
@@ -79,43 +108,30 @@ func makeErrors(reset bool) error {
 		return err
 	}
 
-	dir, err := os.Open(".")
-	if err != nil {
-		return err
-	}
-	defer dir.Close()
-
-	filenames, err := dir.Readdirnames(-1)
-	if err != nil {
-		return err
-	}
-
-	if filepath.Base(filepath.Dir(dirName)) == "fipsmodule" {
-		// Search the non-FIPS half of library for error codes as well.
-		extraPath := filepath.Join(topLevelPath, "crypto", lib+"_extra")
-		extraDir, err := os.Open(extraPath)
-		if err != nil && !os.IsNotExist(err) {
+	for _, sourceDir := range info.sourceDirs {
+		fullPath := filepath.Join(topLevelPath, sourceDir)
+		dir, err := os.Open(fullPath)
+		if err != nil {
+			if os.IsNotExist(err) {
+				// Some directories in the search path may not exist.
+				continue
+			}
 			return err
 		}
-		if err == nil {
-			defer extraDir.Close()
-			extraFilenames, err := extraDir.Readdirnames(-1)
-			if err != nil {
+		defer dir.Close()
+		filenames, err := dir.Readdirnames(-1)
+		if err != nil {
+			return err
+		}
+
+		for _, name := range filenames {
+			if !strings.HasSuffix(name, ".c") && !strings.HasSuffix(name, ".cc") {
+				continue
+			}
+
+			if err := addReasons(reasons, filepath.Join(fullPath, name), prefix); err != nil {
 				return err
 			}
-			for _, extraFilename := range extraFilenames {
-				filenames = append(filenames, filepath.Join(extraPath, extraFilename))
-			}
-		}
-	}
-
-	for _, name := range filenames {
-		if !strings.HasSuffix(name, ".c") && !strings.HasSuffix(name, ".cc") {
-			continue
-		}
-
-		if err := addReasons(reasons, name, prefix); err != nil {
-			return err
 		}
 	}
 
@@ -155,12 +171,16 @@ func makeErrors(reset bool) error {
 }
 
 func findToplevel() (path string, err error) {
-	path = ".."
+	path = "."
 	buildingPath := filepath.Join(path, "BUILDING.md")
 
 	_, err = os.Stat(buildingPath)
 	for i := 0; i < 2 && err != nil && os.IsNotExist(err); i++ {
-		path = filepath.Join("..", path)
+		if i == 0 {
+			path = ".."
+		} else {
+			path = filepath.Join("..", path)
+		}
 		buildingPath = filepath.Join(path, "BUILDING.md")
 		_, err = os.Stat(buildingPath)
 	}
@@ -175,28 +195,13 @@ type assignment struct {
 	value int
 }
 
-type assignmentsSlice []assignment
-
-func (a assignmentsSlice) Len() int {
-	return len(a)
-}
-
-func (a assignmentsSlice) Less(i, j int) bool {
-	return a[i].value < a[j].value
-}
-
-func (a assignmentsSlice) Swap(i, j int) {
-	a[i], a[j] = a[j], a[i]
-}
-
 func outputAssignments(w io.Writer, assignments map[string]int) {
-	var sorted assignmentsSlice
-
+	sorted := make([]assignment, 0, len(assignments))
 	for key, value := range assignments {
 		sorted = append(sorted, assignment{key, value})
 	}
 
-	sort.Sort(sorted)
+	sort.Slice(sorted, func(i, j int) bool { return sorted[i].value < sorted[j].value })
 
 	for _, assignment := range sorted {
 		fmt.Fprintf(w, "#define %s %d\n", assignment.key, assignment.value)
@@ -321,7 +326,7 @@ func assignNewValues(assignments map[string]int, reserved int) {
 	}
 }
 
-func handleDeclareMacro(line, join, macroName string, m map[string]int) {
+func handleDeclareMacro(line, prefix, join, macroName string, m map[string]int) {
 	if i := strings.Index(line, macroName); i >= 0 {
 		contents := line[i+len(macroName):]
 		if i := strings.Index(contents, ")"); i >= 0 {
@@ -333,9 +338,11 @@ func handleDeclareMacro(line, join, macroName string, m map[string]int) {
 			if len(args) != 2 {
 				panic("Bad macro line: " + line)
 			}
-			token := args[0] + join + args[1]
-			if _, ok := m[token]; !ok {
-				m[token] = -1
+			if args[0] == prefix {
+				token := args[0] + join + args[1]
+				if _, ok := m[token]; !ok {
+					m[token] = -1
+				}
 			}
 		}
 	}
@@ -354,7 +361,7 @@ func addReasons(reasons map[string]int, filename, prefix string) error {
 	for scanner.Scan() {
 		line := scanner.Text()
 
-		handleDeclareMacro(line, "_R_", "OPENSSL_DECLARE_ERROR_REASON(", reasons)
+		handleDeclareMacro(line, prefix, "_R_", "OPENSSL_DECLARE_ERROR_REASON(", reasons)
 
 		for len(line) > 0 {
 			i := strings.Index(line, prefix+"_")
@@ -404,9 +411,15 @@ func parseHeader(lib string, file io.Reader) (reasons map[string]int, err error)
 
 func main() {
 	flag.Parse()
-
-	if err := makeErrors(*resetFlag); err != nil {
-		fmt.Fprintf(os.Stderr, "%s\n", err)
+	if flag.NArg() == 0 {
+		fmt.Fprintf(os.Stderr, "Usage: make_errors.go LIB [LIB2...]\n")
 		os.Exit(1)
+	}
+
+	for _, lib := range flag.Args() {
+		if err := makeErrors(lib, *resetFlag); err != nil {
+			fmt.Fprintf(os.Stderr, "Error generating errors for %q: %s\n", lib, err)
+			os.Exit(1)
+		}
 	}
 }

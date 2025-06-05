@@ -14,9 +14,11 @@
 #include <memory>
 #include <vector>
 
+#include "api/units/timestamp.h"
 #include "rtc_base/async_udp_socket.h"
-#include "rtc_base/constructor_magic.h"
+#include "rtc_base/buffer.h"
 #include "rtc_base/fake_clock.h"
+#include "rtc_base/network/received_packet.h"
 #include "rtc_base/synchronization/mutex.h"
 
 namespace rtc {
@@ -27,17 +29,12 @@ class TestClient : public sigslot::has_slots<> {
  public:
   // Records the contents of a packet that was received.
   struct Packet {
-    Packet(const SocketAddress& a,
-           const char* b,
-           size_t s,
-           int64_t packet_time_us);
+    Packet(const rtc::ReceivedPacket& received_packet);
     Packet(const Packet& p);
-    virtual ~Packet();
 
     SocketAddress addr;
-    char* buf;
-    size_t size;
-    int64_t packet_time_us;
+    Buffer buf;
+    absl::optional<webrtc::Timestamp> packet_time;
   };
 
   // Default timeout for NextPacket reads.
@@ -52,6 +49,9 @@ class TestClient : public sigslot::has_slots<> {
   TestClient(std::unique_ptr<AsyncPacketSocket> socket,
              ThreadProcessingFakeClock* fake_clock);
   ~TestClient() override;
+
+  TestClient(const TestClient&) = delete;
+  TestClient& operator=(const TestClient&) = delete;
 
   SocketAddress address() const { return socket_->GetLocalAddress(); }
   SocketAddress remote_address() const { return socket_->GetRemoteAddress(); }
@@ -94,14 +94,11 @@ class TestClient : public sigslot::has_slots<> {
   static const int kNoPacketTimeoutMs = 1000;
   // Workaround for the fact that AsyncPacketSocket::GetConnState doesn't exist.
   Socket::ConnState GetState();
-  // Slot for packets read on the socket.
+
   void OnPacket(AsyncPacketSocket* socket,
-                const char* buf,
-                size_t len,
-                const SocketAddress& remote_addr,
-                const int64_t& packet_time_us);
+                const rtc::ReceivedPacket& received_packet);
   void OnReadyToSend(AsyncPacketSocket* socket);
-  bool CheckTimestamp(int64_t packet_timestamp);
+  bool CheckTimestamp(absl::optional<webrtc::Timestamp> packet_timestamp);
   void AdvanceTime(int ms);
 
   ThreadProcessingFakeClock* fake_clock_ = nullptr;
@@ -109,8 +106,7 @@ class TestClient : public sigslot::has_slots<> {
   std::unique_ptr<AsyncPacketSocket> socket_;
   std::vector<std::unique_ptr<Packet>> packets_;
   int ready_to_send_count_ = 0;
-  int64_t prev_packet_timestamp_;
-  RTC_DISALLOW_COPY_AND_ASSIGN(TestClient);
+  absl::optional<webrtc::Timestamp> prev_packet_timestamp_;
 };
 
 }  // namespace rtc

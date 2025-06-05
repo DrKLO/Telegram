@@ -11,14 +11,15 @@
 #ifndef MODULES_AUDIO_PROCESSING_AEC3_BLOCK_PROCESSOR_METRICS_H_
 #define MODULES_AUDIO_PROCESSING_AEC3_BLOCK_PROCESSOR_METRICS_H_
 
-#include "rtc_base/constructor_magic.h"
-
 namespace webrtc {
 
 // Handles the reporting of metrics for the block_processor.
 class BlockProcessorMetrics {
  public:
   BlockProcessorMetrics() = default;
+
+  BlockProcessorMetrics(const BlockProcessorMetrics&) = delete;
+  BlockProcessorMetrics& operator=(const BlockProcessorMetrics&) = delete;
 
   // Updates the metric with new capture data.
   void UpdateCapture(bool underrun);
@@ -38,8 +39,6 @@ class BlockProcessorMetrics {
   int render_buffer_underruns_ = 0;
   int render_buffer_overruns_ = 0;
   int buffer_render_calls_ = 0;
-
-  RTC_DISALLOW_COPY_AND_ASSIGN(BlockProcessorMetrics);
 };
 
 }  // namespace webrtc

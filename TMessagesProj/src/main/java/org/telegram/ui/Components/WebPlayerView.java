@@ -41,6 +41,8 @@ import android.webkit.WebView;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 
+import androidx.annotation.Keep;
+
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.ExoPlayer;
 import com.google.android.exoplayer2.ui.AspectRatioFrameLayout;
@@ -70,7 +72,6 @@ import java.net.URLConnection;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.net.UnknownHostException;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Locale;
@@ -84,7 +85,7 @@ public class WebPlayerView extends ViewGroup implements VideoPlayer.VideoPlayerD
     public interface WebPlayerViewDelegate {
         void onInitFailed();
         TextureView onSwitchToFullscreen(View controlsView, boolean fullscreen, float aspectRatio, int rotation, boolean byButton);
-        TextureView onSwitchInlineMode(View controlsView, boolean inline, float aspectRatio, int rotation, boolean animated);
+        TextureView onSwitchInlineMode(View controlsView, boolean inline, int width, int height, int rotation, boolean animated);
         void onInlineSurfaceTextureReady();
         void prepareToSwitchInlineMode(boolean inline, Runnable switchInlineModeRunnable, float aspectRatio, boolean animated);
         void onSharePressed();
@@ -155,6 +156,8 @@ public class WebPlayerView extends ViewGroup implements VideoPlayer.VideoPlayerD
     private AnimatorSet progressAnimation;
 
     private ControlsView controlsView;
+
+    private int videoWidth, videoHeight;
 
     private Runnable progressRunnable = new Runnable() {
         @Override
@@ -434,6 +437,7 @@ public class WebPlayerView extends ViewGroup implements VideoPlayer.VideoPlayerD
             callJavaResultInterface = callJavaResult;
         }
 
+        @Keep
         @JavascriptInterface
         public void returnResultToJava(String value) {
             callJavaResultInterface.jsCallFinished(value);
@@ -552,7 +556,7 @@ public class WebPlayerView extends ViewGroup implements VideoPlayer.VideoPlayerD
                                 if (result == null) {
                                     result = new StringBuilder();
                                 }
-                                result.append(new String(data, 0, read, StandardCharsets.UTF_8));
+                                result.append(new String(data, 0, read, "UTF-8"));
                             } else if (read == -1) {
                                 done = true;
                                 break;
@@ -799,7 +803,7 @@ public class WebPlayerView extends ViewGroup implements VideoPlayer.VideoPlayerD
                                     } else {
                                         try {
                                             String javascript = "<script>" + functionCodeFinal + "</script>";
-                                            byte[] data = javascript.getBytes(StandardCharsets.UTF_8);
+                                            byte[] data = javascript.getBytes("UTF-8");
                                             final String base64 = Base64.encodeToString(data, Base64.DEFAULT);
                                             webView.loadUrl("data:text/html;charset=utf-8;base64," + base64);
                                         } catch (Exception e) {
@@ -1094,7 +1098,7 @@ public class WebPlayerView extends ViewGroup implements VideoPlayer.VideoPlayerD
                 source.setCharAt(a, c == lower ? Character.toUpperCase(c) : lower);
             }
             try {
-                return new String(Base64.decode(source.toString(), Base64.DEFAULT), StandardCharsets.UTF_8);
+                return new String(Base64.decode(source.toString(), Base64.DEFAULT), "UTF-8");
             } catch (Exception ignore) {
                 return null;
             }
@@ -1230,7 +1234,7 @@ public class WebPlayerView extends ViewGroup implements VideoPlayer.VideoPlayerD
             if (viewGroup != null) {
                 viewGroup.removeView(controlsView);
             }
-            changedTextureView = delegate.onSwitchInlineMode(controlsView, isInline, aspectRatioFrameLayout.getAspectRatio(), aspectRatioFrameLayout.getVideoRotation(), allowInlineAnimation);
+            changedTextureView = delegate.onSwitchInlineMode(controlsView, isInline, videoWidth, videoHeight, aspectRatioFrameLayout.getVideoRotation(), allowInlineAnimation);
             changedTextureView.setVisibility(INVISIBLE);
             ViewGroup parent = (ViewGroup) textureView.getParent();
             if (parent != null) {
@@ -1543,7 +1547,19 @@ public class WebPlayerView extends ViewGroup implements VideoPlayer.VideoPlayerD
         addView(aspectRatioFrameLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.CENTER));
 
         interfaceName = "JavaScriptInterface";
-        webView = new WebView(context);
+        webView = new WebView(context) {
+            @Override
+            protected void onAttachedToWindow() {
+                AndroidUtilities.checkAndroidTheme(context, true);
+                super.onAttachedToWindow();
+            }
+
+            @Override
+            protected void onDetachedFromWindow() {
+                AndroidUtilities.checkAndroidTheme(context, false);
+                super.onDetachedFromWindow();
+            }
+        };
         webView.addJavascriptInterface(new JavaScriptInterface(value -> {
             if (currentTask != null && !currentTask.isCancelled()) {
                 if (currentTask instanceof YoutubeVideoTask) {
@@ -1775,6 +1791,8 @@ public class WebPlayerView extends ViewGroup implements VideoPlayer.VideoPlayerD
                 width = height;
                 height = temp;
             }
+            videoWidth = (int) (width * pixelWidthHeightRatio);
+            videoHeight = height;
             float ratio = height == 0 ? 1 : (width * pixelWidthHeightRatio) / height;
             aspectRatioFrameLayout.setAspectRatio(ratio, unappliedRotationDegrees);
             if (inFullscreen) {
@@ -1819,7 +1837,7 @@ public class WebPlayerView extends ViewGroup implements VideoPlayer.VideoPlayerD
                 }
             }
             switchingInlineMode = false;
-            delegate.onSwitchInlineMode(controlsView, false, aspectRatioFrameLayout.getAspectRatio(), aspectRatioFrameLayout.getVideoRotation(), allowInlineAnimation);
+            delegate.onSwitchInlineMode(controlsView, false, videoWidth, videoHeight, aspectRatioFrameLayout.getVideoRotation(), allowInlineAnimation);
             waitingForFirstTextureUpload = 0;
         }
     }
@@ -2072,12 +2090,12 @@ public class WebPlayerView extends ViewGroup implements VideoPlayer.VideoPlayerD
     }
 
     public static String getYouTubeVideoId(String url) {
-        Matcher matcher = youtubeIdRegex.matcher(url);
-        String id = null;
-        if (matcher.find()) {
-            id = matcher.group(1);
+        if (url == null) return null;
+        final Matcher matcher = youtubeIdRegex.matcher(url);
+        if (!matcher.find()) {
+            return null;
         }
-        return id;
+        return matcher.group(1);
     }
 
     public boolean canHandleUrl(String url) {

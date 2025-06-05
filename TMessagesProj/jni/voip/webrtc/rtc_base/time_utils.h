@@ -31,6 +31,12 @@ static const int64_t kNumNanosecsPerMillisec =
 static const int64_t kNumNanosecsPerMicrosec =
     kNumNanosecsPerSec / kNumMicrosecsPerSec;
 
+// Elapsed milliseconds between NTP base, 1900 January 1 00:00 GMT
+// (see https://tools.ietf.org/html/rfc868), and January 1 00:00 GMT 1970
+// epoch. This is useful when converting between the NTP time base and the
+// time base used in RTCP reports.
+constexpr int64_t kNtpJan1970Millisecs = 2'208'988'800 * kNumMillisecsPerSec;
+
 // TODO(honghaiz): Define a type for the time value specifically.
 
 class ClockInterface {
@@ -107,17 +113,6 @@ inline int64_t TimeSince(int64_t earlier) {
 inline int64_t TimeUntil(int64_t later) {
   return later - TimeMillis();
 }
-
-class TimestampWrapAroundHandler {
- public:
-  TimestampWrapAroundHandler();
-
-  int64_t Unwrap(uint32_t ts);
-
- private:
-  uint32_t last_ts_;
-  int64_t num_wrap_;
-};
 
 // Convert from tm, which is relative to 1900-01-01 00:00 to number of
 // seconds from 1970-01-01 00:00 ("epoch"). Don't return time_t since that

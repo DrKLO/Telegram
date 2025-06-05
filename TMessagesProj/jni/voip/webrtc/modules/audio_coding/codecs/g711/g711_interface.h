@@ -11,6 +11,7 @@
 #ifndef MODULES_AUDIO_CODING_CODECS_G711_G711_INTERFACE_H_
 #define MODULES_AUDIO_CODING_CODECS_G711_G711_INTERFACE_H_
 
+#include <stddef.h>
 #include <stdint.h>
 
 // Comfort noise constants

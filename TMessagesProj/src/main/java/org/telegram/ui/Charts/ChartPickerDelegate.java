@@ -233,6 +233,12 @@ public class ChartPickerDelegate {
         return true;
     }
 
+    public void set(float start, float end) {
+        pickerStart = start;
+        pickerEnd = end;
+        view.onPickerDataChanged();
+    }
+
     public boolean uncapture(MotionEvent event, int pointerIndex) {
         if (pointerIndex == 0) {
             if (tryMoveTo) {

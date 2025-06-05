@@ -1,0 +1,56 @@
+// Copyright 2018 The WebRTC project authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+//------------------------------------------------
+// Functions from PipeWire used in capturer code.
+//------------------------------------------------
+
+// core.h
+int pw_core_disconnect(pw_core *core);
+
+// loop.h
+void pw_loop_destroy(pw_loop *loop);
+pw_loop * pw_loop_new(const spa_dict *props);
+
+
+// pipewire.h
+void pw_init(int *argc, char **argv[]);
+const char* pw_get_library_version();
+
+// properties.h
+pw_properties * pw_properties_new_string(const char *args);
+
+// stream.h
+void pw_stream_add_listener(pw_stream *stream, spa_hook *listener, const pw_stream_events *events, void *data);
+int pw_stream_connect(pw_stream *stream, enum pw_direction direction, uint32_t target_id, enum pw_stream_flags flags, const spa_pod **params, uint32_t n_params);
+int pw_stream_disconnect(pw_stream *stream);
+pw_buffer *pw_stream_dequeue_buffer(pw_stream *stream);
+void pw_stream_destroy(pw_stream *stream);
+pw_stream * pw_stream_new(pw_core *core, const char *name, pw_properties *props);
+int pw_stream_queue_buffer(pw_stream *stream, pw_buffer *buffer);
+int pw_stream_set_active(pw_stream *stream, bool active);
+int pw_stream_update_params(pw_stream *stream, const spa_pod **params, uint32_t n_params);
+uint32_t pw_stream_get_node_id(pw_stream *stream);
+pw_stream_state pw_stream_get_state(pw_stream *stream, const char **error);
+const char * pw_stream_state_as_string(enum pw_stream_state state);
+
+// thread-loop.h
+void pw_thread_loop_destroy(pw_thread_loop *loop);
+pw_thread_loop * pw_thread_loop_new(const char *name, const spa_dict *props);
+int pw_thread_loop_start(pw_thread_loop *loop);
+void pw_thread_loop_stop(pw_thread_loop *loop);
+void pw_thread_loop_lock(pw_thread_loop *loop);
+void pw_thread_loop_unlock(pw_thread_loop *loop);
+pw_loop * pw_thread_loop_get_loop(pw_thread_loop *loop);
+void pw_thread_loop_signal(pw_thread_loop *loop, bool wait_for_accept);
+void pw_thread_loop_wait(pw_thread_loop *loop);
+
+// context.h
+void pw_context_destroy(pw_context *context);
+pw_context *pw_context_new(pw_loop *main_loop, pw_properties *props, size_t user_data_size);
+pw_core * pw_context_connect(pw_context *context, pw_properties *properties, size_t user_data_size);
+pw_core * pw_context_connect_fd(pw_context *context, int fd, pw_properties *properties, size_t user_data_size);
+
+// proxy.h
+void pw_proxy_destroy(struct pw_proxy *proxy);

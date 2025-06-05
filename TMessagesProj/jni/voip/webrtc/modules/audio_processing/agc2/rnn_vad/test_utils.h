@@ -16,6 +16,7 @@
 #include <memory>
 #include <string>
 
+#include "absl/strings/string_view.h"
 #include "api/array_view.h"
 #include "modules/audio_processing/agc2/rnn_vad/common.h"
 #include "rtc_base/checks.h"
@@ -109,8 +110,8 @@ class PitchTestData {
 // Writer for binary files.
 class FileWriter {
  public:
-  explicit FileWriter(const std::string& file_path)
-      : os_(file_path, std::ios::binary) {}
+  explicit FileWriter(absl::string_view file_path)
+      : os_(std::string(file_path), std::ios::binary) {}
   FileWriter(const FileWriter&) = delete;
   FileWriter& operator=(const FileWriter&) = delete;
   ~FileWriter() = default;

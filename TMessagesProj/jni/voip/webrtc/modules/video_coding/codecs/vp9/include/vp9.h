@@ -15,6 +15,7 @@
 #include <memory>
 #include <vector>
 
+#include "api/video_codecs/scalability_mode.h"
 #include "api/video_codecs/sdp_video_format.h"
 #include "media/base/codec.h"
 #include "modules/video_coding/include/video_codec_interface.h"
@@ -23,7 +24,8 @@ namespace webrtc {
 
 // Returns a vector with all supported internal VP9 profiles that we can
 // negotiate in SDP, in order of preference.
-std::vector<SdpVideoFormat> SupportedVP9Codecs();
+std::vector<SdpVideoFormat> SupportedVP9Codecs(
+    bool add_scalability_modes = false);
 
 // Returns a vector with all supported internal VP9 decode profiles in order of
 // preference. These will be availble for receive-only connections.
@@ -34,8 +36,9 @@ class VP9Encoder : public VideoEncoder {
   // Deprecated. Returns default implementation using VP9 Profile 0.
   // TODO(emircan): Remove once this is no longer used.
   static std::unique_ptr<VP9Encoder> Create();
-  // Parses VP9 Profile from |codec| and returns the appropriate implementation.
+  // Parses VP9 Profile from `codec` and returns the appropriate implementation.
   static std::unique_ptr<VP9Encoder> Create(const cricket::VideoCodec& codec);
+  static bool SupportsScalabilityMode(ScalabilityMode scalability_mode);
 
   ~VP9Encoder() override {}
 };

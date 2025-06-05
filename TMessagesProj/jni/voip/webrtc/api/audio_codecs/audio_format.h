@@ -17,6 +17,7 @@
 #include <string>
 
 #include "absl/strings/string_view.h"
+#include "api/rtp_parameters.h"
 #include "rtc_base/checks.h"
 #include "rtc_base/system/rtc_export.h"
 
@@ -24,7 +25,8 @@ namespace webrtc {
 
 // SDP specification for a single audio codec.
 struct RTC_EXPORT SdpAudioFormat {
-  using Parameters = std::map<std::string, std::string>;
+  using Parameters [[deprecated(("Use webrtc::CodecParameterMap"))]] =
+      std::map<std::string, std::string>;
 
   SdpAudioFormat(const SdpAudioFormat&);
   SdpAudioFormat(SdpAudioFormat&&);
@@ -32,14 +34,14 @@ struct RTC_EXPORT SdpAudioFormat {
   SdpAudioFormat(absl::string_view name,
                  int clockrate_hz,
                  size_t num_channels,
-                 const Parameters& param);
+                 const CodecParameterMap& param);
   SdpAudioFormat(absl::string_view name,
                  int clockrate_hz,
                  size_t num_channels,
-                 Parameters&& param);
+                 CodecParameterMap&& param);
   ~SdpAudioFormat();
 
-  // Returns true if this format is compatible with |o|. In SDP terminology:
+  // Returns true if this format is compatible with `o`. In SDP terminology:
   // would it represent the same codec between an offer and an answer? As
   // opposed to operator==, this method disregards codec parameters.
   bool Matches(const SdpAudioFormat& o) const;
@@ -55,7 +57,7 @@ struct RTC_EXPORT SdpAudioFormat {
   std::string name;
   int clockrate_hz;
   size_t num_channels;
-  Parameters parameters;
+  CodecParameterMap parameters;
 };
 
 // Information about how an audio format is treated by the codec implementation.

@@ -95,12 +95,10 @@ void UpdateSaturationProtectorState(float peak_dbfs,
 class SaturationProtectorImpl : public SaturationProtector {
  public:
   explicit SaturationProtectorImpl(float initial_headroom_db,
-                                   float extra_headroom_db,
                                    int adjacent_speech_frames_threshold,
                                    ApmDataDumper* apm_data_dumper)
       : apm_data_dumper_(apm_data_dumper),
         initial_headroom_db_(initial_headroom_db),
-        extra_headroom_db_(extra_headroom_db),
         adjacent_speech_frames_threshold_(adjacent_speech_frames_threshold) {
     Reset();
   }
@@ -140,7 +138,7 @@ class SaturationProtectorImpl : public SaturationProtector {
 
       if (num_adjacent_speech_frames_ >= adjacent_speech_frames_threshold_) {
         // `preliminary_state_` is now reliable. Update the headroom.
-        headroom_db_ = preliminary_state_.headroom_db + extra_headroom_db_;
+        headroom_db_ = preliminary_state_.headroom_db;
       }
     }
     DumpDebugData();
@@ -148,7 +146,7 @@ class SaturationProtectorImpl : public SaturationProtector {
 
   void Reset() override {
     num_adjacent_speech_frames_ = 0;
-    headroom_db_ = initial_headroom_db_ + extra_headroom_db_;
+    headroom_db_ = initial_headroom_db_;
     ResetSaturationProtectorState(initial_headroom_db_, preliminary_state_);
     ResetSaturationProtectorState(initial_headroom_db_, reliable_state_);
   }
@@ -165,7 +163,6 @@ class SaturationProtectorImpl : public SaturationProtector {
 
   ApmDataDumper* const apm_data_dumper_;
   const float initial_headroom_db_;
-  const float extra_headroom_db_;
   const int adjacent_speech_frames_threshold_;
   int num_adjacent_speech_frames_;
   float headroom_db_;
@@ -177,12 +174,10 @@ class SaturationProtectorImpl : public SaturationProtector {
 
 std::unique_ptr<SaturationProtector> CreateSaturationProtector(
     float initial_headroom_db,
-    float extra_headroom_db,
     int adjacent_speech_frames_threshold,
     ApmDataDumper* apm_data_dumper) {
   return std::make_unique<SaturationProtectorImpl>(
-      initial_headroom_db, extra_headroom_db, adjacent_speech_frames_threshold,
-      apm_data_dumper);
+      initial_headroom_db, adjacent_speech_frames_threshold, apm_data_dumper);
 }
 
 }  // namespace webrtc

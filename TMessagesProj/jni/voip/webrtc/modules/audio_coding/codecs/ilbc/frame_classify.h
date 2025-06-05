@@ -29,6 +29,6 @@ size_t WebRtcIlbcfix_FrameClassify(
     IlbcEncoder* iLBCenc_inst,
     /* (i/o) the encoder state structure */
     int16_t* residualFIX /* (i) lpc residual signal */
-    );
+);
 
 #endif

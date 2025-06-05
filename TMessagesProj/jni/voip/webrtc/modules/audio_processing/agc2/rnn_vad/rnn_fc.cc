@@ -8,10 +8,11 @@
  *  be found in the AUTHORS file in the root of the source tree.
  */
 
+#include "modules/audio_processing/agc2/rnn_vad/rnn_fc.h"
+
 #include <algorithm>
 #include <numeric>
 
-#include "modules/audio_processing/agc2/rnn_vad/rnn_fc.h"
 #include "rtc_base/checks.h"
 #include "rtc_base/numerics/safe_conversions.h"
 #include "third_party/rnnoise/src/rnn_activations.h"
@@ -32,7 +33,7 @@ std::vector<float> GetScaledParams(rtc::ArrayView<const int8_t> params) {
 
 // TODO(bugs.chromium.org/10480): Hard-code optimized layout and remove this
 // function to improve setup time.
-// Casts and scales |weights| and re-arranges the layout.
+// Casts and scales `weights` and re-arranges the layout.
 std::vector<float> PreprocessWeights(rtc::ArrayView<const int8_t> weights,
                                      int output_size) {
   if (output_size == 1) {
@@ -56,10 +57,8 @@ rtc::FunctionView<float(float)> GetActivationFunction(
   switch (activation_function) {
     case ActivationFunction::kTansigApproximated:
       return ::rnnoise::TansigApproximated;
-      break;
     case ActivationFunction::kSigmoidApproximated:
       return ::rnnoise::SigmoidApproximated;
-      break;
   }
 }
 

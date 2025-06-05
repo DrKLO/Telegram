@@ -18,7 +18,7 @@
 
 namespace webrtc {
 namespace webrtc_impl {
-// Given two numbers |x| and |y| such that x >= y, computes the difference
+// Given two numbers `x` and `y` such that x >= y, computes the difference
 // x - y without causing undefined behavior due to signed overflow.
 template <typename T>
 typename std::make_unsigned<T>::type unsigned_difference(T x, T y) {

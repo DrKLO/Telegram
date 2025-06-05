@@ -15,12 +15,14 @@
  */
 package com.google.android.exoplayer2.upstream;
 
+import android.content.ContentResolver;
 import android.content.Context;
 import android.net.Uri;
 import androidx.annotation.Nullable;
 import com.google.android.exoplayer2.util.Assertions;
 import com.google.android.exoplayer2.util.Log;
 import com.google.android.exoplayer2.util.Util;
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -31,25 +33,88 @@ import java.util.Map;
  * A {@link DataSource} that supports multiple URI schemes. The supported schemes are:
  *
  * <ul>
- *   <li>file: For fetching data from a local file (e.g. file:///path/to/media/media.mp4, or just
- *       /path/to/media/media.mp4 because the implementation assumes that a URI without a scheme is
- *       a local file URI).
- *   <li>asset: For fetching data from an asset in the application's apk (e.g. asset:///media.mp4).
- *   <li>rawresource: For fetching data from a raw resource in the application's apk (e.g.
- *       rawresource:///resourceId, where rawResourceId is the integer identifier of the raw
- *       resource).
- *   <li>content: For fetching data from a content URI (e.g. content://authority/path/123).
- *   <li>rtmp: For fetching data over RTMP. Only supported if the project using ExoPlayer has an
- *       explicit dependency on ExoPlayer's RTMP extension.
- *   <li>data: For parsing data inlined in the URI as defined in RFC 2397.
- *   <li>udp: For fetching data over UDP (e.g. udp://something.com/media).
- *   <li>http(s): For fetching data over HTTP and HTTPS (e.g. https://www.something.com/media.mp4),
- *       if constructed using {@link #DefaultDataSource(Context, String, boolean)}, or any other
- *       schemes supported by a base data source if constructed using {@link
- *       #DefaultDataSource(Context, DataSource)}.
+ *   <li>{@code file}: For fetching data from a local file (e.g. {@code
+ *       file:///path/to/media/media.mp4}, or just {@code /path/to/media/media.mp4} because the
+ *       implementation assumes that a URI without a scheme is a local file URI).
+ *   <li>{@code asset}: For fetching data from an asset in the application's APK (e.g. {@code
+ *       asset:///media.mp4}).
+ *   <li>{@code rawresource}: For fetching data from a raw resource in the application's APK (e.g.
+ *       {@code rawresource:///resourceId}, where {@code rawResourceId} is the integer identifier of
+ *       the raw resource).
+ *   <li>{@code android.resource}: For fetching data in the application's APK (e.g. {@code
+ *       android.resource:///resourceId} or {@code android.resource://resourceType/resourceName}).
+ *       See {@link RawResourceDataSource} for more information about the URI form.
+ *   <li>{@code content}: For fetching data from a content URI (e.g. {@code
+ *       content://authority/path/123}).
+ *   <li>{@code rtmp}: For fetching data over RTMP. Only supported if the project using ExoPlayer
+ *       has an explicit dependency on ExoPlayer's RTMP extension.
+ *   <li>{@code data}: For parsing data inlined in the URI as defined in RFC 2397.
+ *   <li>{@code udp}: For fetching data over UDP (e.g. {@code udp://something.com/media}).
+ *   <li>{@code http(s)}: For fetching data over HTTP and HTTPS (e.g. {@code
+ *       https://www.something.com/media.mp4}), if constructed using {@link
+ *       #DefaultDataSource(Context, String, boolean)}, or any other schemes supported by a base
+ *       data source if constructed using {@link #DefaultDataSource(Context, DataSource)}.
  * </ul>
  */
 public final class DefaultDataSource implements DataSource {
+
+  /** {@link DataSource.Factory} for {@link DefaultDataSource} instances. */
+  public static final class Factory implements DataSource.Factory {
+
+    private final Context context;
+    private final DataSource.Factory baseDataSourceFactory;
+    @Nullable private TransferListener transferListener;
+
+    /**
+     * Creates an instance.
+     *
+     * @param context A context.
+     */
+    public Factory(Context context) {
+      this(context, new DefaultHttpDataSource.Factory());
+    }
+
+    /**
+     * Creates an instance.
+     *
+     * @param context A context.
+     * @param baseDataSourceFactory The {@link DataSource.Factory} to be used to create base {@link
+     *     DataSource DataSources} for {@link DefaultDataSource} instances. The base {@link
+     *     DataSource} is normally an {@link HttpDataSource}, and is responsible for fetching data
+     *     over HTTP and HTTPS, as well as any other URI schemes not otherwise supported by {@link
+     *     DefaultDataSource}.
+     */
+    public Factory(Context context, DataSource.Factory baseDataSourceFactory) {
+      this.context = context.getApplicationContext();
+      this.baseDataSourceFactory = baseDataSourceFactory;
+    }
+
+    /**
+     * Sets the {@link TransferListener} that will be used.
+     *
+     * <p>The default is {@code null}.
+     *
+     * <p>See {@link DataSource#addTransferListener(TransferListener)}.
+     *
+     * @param transferListener The listener that will be used.
+     * @return This factory.
+     */
+    @CanIgnoreReturnValue
+    public Factory setTransferListener(@Nullable TransferListener transferListener) {
+      this.transferListener = transferListener;
+      return this;
+    }
+
+    @Override
+    public DefaultDataSource createDataSource() {
+      DefaultDataSource dataSource =
+          new DefaultDataSource(context, baseDataSourceFactory.createDataSource());
+      if (transferListener != null) {
+        dataSource.addTransferListener(transferListener);
+      }
+      return dataSource;
+    }
+  }
 
   private static final String TAG = "DefaultDataSource";
 
@@ -57,7 +122,9 @@ public final class DefaultDataSource implements DataSource {
   private static final String SCHEME_CONTENT = "content";
   private static final String SCHEME_RTMP = "rtmp";
   private static final String SCHEME_UDP = "udp";
+  private static final String SCHEME_DATA = DataSchemeDataSource.SCHEME_DATA;
   private static final String SCHEME_RAW = RawResourceDataSource.RAW_RESOURCE_SCHEME;
+  private static final String SCHEME_ANDROID_RESOURCE = ContentResolver.SCHEME_ANDROID_RESOURCE;
 
   private final Context context;
   private final List<TransferListener> transferListeners;
@@ -78,11 +145,27 @@ public final class DefaultDataSource implements DataSource {
    * Constructs a new instance, optionally configured to follow cross-protocol redirects.
    *
    * @param context A context.
-   * @param userAgent The User-Agent to use when requesting remote data.
+   */
+  public DefaultDataSource(Context context, boolean allowCrossProtocolRedirects) {
+    this(
+        context,
+        /* userAgent= */ null,
+        DefaultHttpDataSource.DEFAULT_CONNECT_TIMEOUT_MILLIS,
+        DefaultHttpDataSource.DEFAULT_READ_TIMEOUT_MILLIS,
+        allowCrossProtocolRedirects);
+  }
+
+  /**
+   * Constructs a new instance, optionally configured to follow cross-protocol redirects.
+   *
+   * @param context A context.
+   * @param userAgent The user agent that will be used when requesting remote data, or {@code null}
+   *     to use the default user agent of the underlying platform.
    * @param allowCrossProtocolRedirects Whether cross-protocol redirects (i.e. redirects from HTTP
    *     to HTTPS and vice versa) are enabled when fetching remote data.
    */
-  public DefaultDataSource(Context context, String userAgent, boolean allowCrossProtocolRedirects) {
+  public DefaultDataSource(
+      Context context, @Nullable String userAgent, boolean allowCrossProtocolRedirects) {
     this(
         context,
         userAgent,
@@ -95,7 +178,8 @@ public final class DefaultDataSource implements DataSource {
    * Constructs a new instance, optionally configured to follow cross-protocol redirects.
    *
    * @param context A context.
-   * @param userAgent The User-Agent to use when requesting remote data.
+   * @param userAgent The user agent that will be used when requesting remote data, or {@code null}
+   *     to use the default user agent of the underlying platform.
    * @param connectTimeoutMillis The connection timeout that should be used when requesting remote
    *     data, in milliseconds. A timeout of zero is interpreted as an infinite timeout.
    * @param readTimeoutMillis The read timeout that should be used when requesting remote data, in
@@ -105,18 +189,18 @@ public final class DefaultDataSource implements DataSource {
    */
   public DefaultDataSource(
       Context context,
-      String userAgent,
+      @Nullable String userAgent,
       int connectTimeoutMillis,
       int readTimeoutMillis,
       boolean allowCrossProtocolRedirects) {
     this(
         context,
-        new DefaultHttpDataSource(
-            userAgent,
-            connectTimeoutMillis,
-            readTimeoutMillis,
-            allowCrossProtocolRedirects,
-            /* defaultRequestProperties= */ null));
+        new DefaultHttpDataSource.Factory()
+            .setUserAgent(userAgent)
+            .setConnectTimeoutMs(connectTimeoutMillis)
+            .setReadTimeoutMs(readTimeoutMillis)
+            .setAllowCrossProtocolRedirects(allowCrossProtocolRedirects)
+            .createDataSource());
   }
 
   /**
@@ -135,6 +219,7 @@ public final class DefaultDataSource implements DataSource {
 
   @Override
   public void addTransferListener(TransferListener transferListener) {
+    Assertions.checkNotNull(transferListener);
     baseDataSource.addTransferListener(transferListener);
     transferListeners.add(transferListener);
     maybeAddListenerToDataSource(fileDataSource, transferListener);
@@ -166,9 +251,9 @@ public final class DefaultDataSource implements DataSource {
       dataSource = getRtmpDataSource();
     } else if (SCHEME_UDP.equals(scheme)) {
       dataSource = getUdpDataSource();
-    } else if (DataSchemeDataSource.SCHEME_DATA.equals(scheme)) {
+    } else if (SCHEME_DATA.equals(scheme)) {
       dataSource = getDataSchemeDataSource();
-    } else if (SCHEME_RAW.equals(scheme)) {
+    } else if (SCHEME_RAW.equals(scheme) || SCHEME_ANDROID_RESOURCE.equals(scheme)) {
       dataSource = getRawResourceDataSource();
     } else {
       dataSource = baseDataSource;
@@ -178,8 +263,8 @@ public final class DefaultDataSource implements DataSource {
   }
 
   @Override
-  public int read(byte[] buffer, int offset, int readLength) throws IOException {
-    return Assertions.checkNotNull(dataSource).read(buffer, offset, readLength);
+  public int read(byte[] buffer, int offset, int length) throws IOException {
+    return Assertions.checkNotNull(dataSource).read(buffer, offset, length);
   }
 
   @Override
@@ -239,10 +324,8 @@ public final class DefaultDataSource implements DataSource {
   private DataSource getRtmpDataSource() {
     if (rtmpDataSource == null) {
       try {
-        // LINT.IfChange
         Class<?> clazz = Class.forName("com.google.android.exoplayer2.ext.rtmp.RtmpDataSource");
         rtmpDataSource = (DataSource) clazz.getConstructor().newInstance();
-        // LINT.ThenChange(../../../../../../../../proguard-rules.txt)
         addListenersToDataSource(rtmpDataSource);
       } catch (ClassNotFoundException e) {
         // Expected if the app was built without the RTMP extension.

@@ -16,21 +16,15 @@
 #include <type_traits>
 #include <utility>
 
+#include "absl/strings/string_view.h"
 #include "rtc_base/checks.h"
 #include "rtc_base/logging.h"
 #include "rtc_base/numerics/safe_conversions.h"
 
 namespace webrtc {
-namespace {
 
-int FindOrEnd(std::string str, size_t start, char delimiter) {
-  size_t pos = str.find(delimiter, start);
-  pos = (pos == std::string::npos) ? str.length() : pos;
-  return static_cast<int>(pos);
-}
-}  // namespace
-
-FieldTrialParameterInterface::FieldTrialParameterInterface(std::string key)
+FieldTrialParameterInterface::FieldTrialParameterInterface(
+    absl::string_view key)
     : key_(key) {}
 FieldTrialParameterInterface::~FieldTrialParameterInterface() {
   RTC_DCHECK(used_) << "Field trial parameter with key: '" << key_
@@ -39,8 +33,8 @@ FieldTrialParameterInterface::~FieldTrialParameterInterface() {
 
 void ParseFieldTrial(
     std::initializer_list<FieldTrialParameterInterface*> fields,
-    std::string trial_string) {
-  std::map<std::string, FieldTrialParameterInterface*> field_map;
+    absl::string_view trial_string) {
+  std::map<absl::string_view, FieldTrialParameterInterface*> field_map;
   FieldTrialParameterInterface* keyless_field = nullptr;
   for (FieldTrialParameterInterface* field : fields) {
     field->MarkAsUsed();
@@ -60,18 +54,29 @@ void ParseFieldTrial(
       field_map[field->key_] = field;
     }
   }
+  bool logged_unknown_key = false;
 
-  size_t i = 0;
-  while (i < trial_string.length()) {
-    int val_end = FindOrEnd(trial_string, i, ',');
-    int colon_pos = FindOrEnd(trial_string, i, ':');
-    int key_end = std::min(val_end, colon_pos);
-    int val_begin = key_end + 1;
-    std::string key = trial_string.substr(i, key_end - i);
+  absl::string_view tail = trial_string;
+  while (!tail.empty()) {
+    size_t key_end = tail.find_first_of(",:");
+    absl::string_view key = tail.substr(0, key_end);
     absl::optional<std::string> opt_value;
-    if (val_end >= val_begin)
-      opt_value = trial_string.substr(val_begin, val_end - val_begin);
-    i = val_end + 1;
+    if (key_end == absl::string_view::npos) {
+      tail = "";
+    } else if (tail[key_end] == ':') {
+      tail = tail.substr(key_end + 1);
+      size_t value_end = tail.find(',');
+      opt_value.emplace(tail.substr(0, value_end));
+      if (value_end == absl::string_view::npos) {
+        tail = "";
+      } else {
+        tail = tail.substr(value_end + 1);
+      }
+    } else {
+      RTC_DCHECK_EQ(tail[key_end], ',');
+      tail = tail.substr(key_end + 1);
+    }
+
     auto field = field_map.find(key);
     if (field != field_map.end()) {
       if (!field->second->Parse(std::move(opt_value))) {
@@ -79,7 +84,7 @@ void ParseFieldTrial(
                             << "' in trial: \"" << trial_string << "\"";
       }
     } else if (!opt_value && keyless_field && !key.empty()) {
-      if (!keyless_field->Parse(key)) {
+      if (!keyless_field->Parse(std::string(key))) {
         RTC_LOG(LS_WARNING) << "Failed to read empty key field with value '"
                             << key << "' in trial: \"" << trial_string << "\"";
       }
@@ -87,14 +92,17 @@ void ParseFieldTrial(
       // "_" is be used to prefix keys that are part of the string for
       // debugging purposes but not neccessarily used.
       // e.g. WebRTC-Experiment/param: value, _DebuggingString
-      RTC_LOG(LS_INFO) << "No field with key: '" << key
-                       << "' (found in trial: \"" << trial_string << "\")";
-      std::string valid_keys;
-      for (const auto& f : field_map) {
-        valid_keys += f.first;
-        valid_keys += ", ";
+      if (!logged_unknown_key) {
+        RTC_LOG(LS_INFO) << "No field with key: '" << key
+                         << "' (found in trial: \"" << trial_string << "\")";
+        std::string valid_keys;
+        for (const auto& f : field_map) {
+          valid_keys.append(f.first.data(), f.first.size());
+          valid_keys += ", ";
+        }
+        RTC_LOG(LS_INFO) << "Valid keys are: " << valid_keys;
+        logged_unknown_key = true;
       }
-      RTC_LOG(LS_INFO) << "Valid keys are: " << valid_keys;
     }
   }
 
@@ -104,7 +112,7 @@ void ParseFieldTrial(
 }
 
 template <>
-absl::optional<bool> ParseTypedParameter<bool>(std::string str) {
+absl::optional<bool> ParseTypedParameter<bool>(absl::string_view str) {
   if (str == "true" || str == "1") {
     return true;
   } else if (str == "false" || str == "0") {
@@ -114,10 +122,10 @@ absl::optional<bool> ParseTypedParameter<bool>(std::string str) {
 }
 
 template <>
-absl::optional<double> ParseTypedParameter<double>(std::string str) {
+absl::optional<double> ParseTypedParameter<double>(absl::string_view str) {
   double value;
   char unit[2]{0, 0};
-  if (sscanf(str.c_str(), "%lf%1s", &value, unit) >= 1) {
+  if (sscanf(std::string(str).c_str(), "%lf%1s", &value, unit) >= 1) {
     if (unit[0] == '%')
       return value / 100;
     return value;
@@ -127,9 +135,9 @@ absl::optional<double> ParseTypedParameter<double>(std::string str) {
 }
 
 template <>
-absl::optional<int> ParseTypedParameter<int>(std::string str) {
+absl::optional<int> ParseTypedParameter<int>(absl::string_view str) {
   int64_t value;
-  if (sscanf(str.c_str(), "%" SCNd64, &value) == 1) {
+  if (sscanf(std::string(str).c_str(), "%" SCNd64, &value) == 1) {
     if (rtc::IsValueInRangeForNumericType<int, int64_t>(value)) {
       return static_cast<int>(value);
     }
@@ -138,9 +146,9 @@ absl::optional<int> ParseTypedParameter<int>(std::string str) {
 }
 
 template <>
-absl::optional<unsigned> ParseTypedParameter<unsigned>(std::string str) {
+absl::optional<unsigned> ParseTypedParameter<unsigned>(absl::string_view str) {
   int64_t value;
-  if (sscanf(str.c_str(), "%" SCNd64, &value) == 1) {
+  if (sscanf(std::string(str).c_str(), "%" SCNd64, &value) == 1) {
     if (rtc::IsValueInRangeForNumericType<unsigned, int64_t>(value)) {
       return static_cast<unsigned>(value);
     }
@@ -149,34 +157,36 @@ absl::optional<unsigned> ParseTypedParameter<unsigned>(std::string str) {
 }
 
 template <>
-absl::optional<std::string> ParseTypedParameter<std::string>(std::string str) {
-  return std::move(str);
+absl::optional<std::string> ParseTypedParameter<std::string>(
+    absl::string_view str) {
+  return std::string(str);
 }
 
 template <>
 absl::optional<absl::optional<bool>> ParseTypedParameter<absl::optional<bool>>(
-    std::string str) {
+    absl::string_view str) {
   return ParseOptionalParameter<bool>(str);
 }
 template <>
 absl::optional<absl::optional<int>> ParseTypedParameter<absl::optional<int>>(
-    std::string str) {
+    absl::string_view str) {
   return ParseOptionalParameter<int>(str);
 }
 template <>
 absl::optional<absl::optional<unsigned>>
-ParseTypedParameter<absl::optional<unsigned>>(std::string str) {
+ParseTypedParameter<absl::optional<unsigned>>(absl::string_view str) {
   return ParseOptionalParameter<unsigned>(str);
 }
 template <>
 absl::optional<absl::optional<double>>
-ParseTypedParameter<absl::optional<double>>(std::string str) {
+ParseTypedParameter<absl::optional<double>>(absl::string_view str) {
   return ParseOptionalParameter<double>(str);
 }
 
-FieldTrialFlag::FieldTrialFlag(std::string key) : FieldTrialFlag(key, false) {}
+FieldTrialFlag::FieldTrialFlag(absl::string_view key)
+    : FieldTrialFlag(key, false) {}
 
-FieldTrialFlag::FieldTrialFlag(std::string key, bool default_value)
+FieldTrialFlag::FieldTrialFlag(absl::string_view key, bool default_value)
     : FieldTrialParameterInterface(key), value_(default_value) {}
 
 bool FieldTrialFlag::Get() const {
@@ -201,7 +211,7 @@ bool FieldTrialFlag::Parse(absl::optional<std::string> str_value) {
 }
 
 AbstractFieldTrialEnum::AbstractFieldTrialEnum(
-    std::string key,
+    absl::string_view key,
     int default_value,
     std::map<std::string, int> mapping)
     : FieldTrialParameterInterface(key),

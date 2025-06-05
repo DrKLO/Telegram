@@ -16,6 +16,8 @@
 
 package org.telegram.ui.ActionBar;
 
+import static org.telegram.messenger.AndroidUtilities.allGlobalViews;
+
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
@@ -25,6 +27,8 @@ import android.content.Context;
 import android.graphics.Color;
 import android.graphics.Outline;
 import android.graphics.Point;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffColorFilter;
 import android.graphics.Rect;
 import android.graphics.Region;
 import android.graphics.drawable.AnimatedVectorDrawable;
@@ -49,23 +53,33 @@ import android.view.animation.AnimationUtils;
 import android.view.animation.Interpolator;
 import android.view.animation.Transformation;
 import android.widget.ArrayAdapter;
+import android.widget.FrameLayout;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.PopupWindow;
 import android.widget.RelativeLayout;
+import android.widget.Space;
 import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.BotWebViewVibrationEffect;
 import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
+import org.telegram.messenger.Utilities;
+import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.LaunchActivity;
+import org.telegram.ui.PhotoViewer;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
@@ -89,6 +103,16 @@ public final class FloatingToolbar {
     public static final int STYLE_DIALOG = 0;
     public static final int STYLE_THEME = 1;
     public static final int STYLE_BLACK = 2;
+
+    private Runnable premiumLockClickListener;
+    public void setOnPremiumLockClick(Runnable listener) {
+        premiumLockClickListener = listener;
+    }
+
+    private Utilities.Callback0Return<Boolean> quoteShowCallback;
+    public void setQuoteShowVisible(Utilities.Callback0Return<Boolean> callback) {
+        quoteShowCallback = callback;
+    }
 
     private final OnLayoutChangeListener mOrientationChangeHandler = new OnLayoutChangeListener() {
         private final Rect mNewRect = new Rect();
@@ -179,6 +203,7 @@ public final class FloatingToolbar {
         }
     }
 
+    private static final int TRANSLATE = 16908353; // android.R.id.textAssist;
     private void doShow() {
         List<MenuItem> menuItems = getVisibleAndEnabledMenuItems(mMenu);
         Collections.sort(menuItems, mMenuItemComparator);
@@ -219,7 +244,9 @@ public final class FloatingToolbar {
                 Menu subMenu = menuItem.getSubMenu();
                 if (subMenu != null) {
                     menuItems.addAll(getVisibleAndEnabledMenuItems(subMenu));
-                } else {
+                } else if (menuItem.getItemId() == R.id.menu_quote && (quoteShowCallback != null && !quoteShowCallback.run())) {
+                    continue;
+                } else if (menuItem.getItemId() != TRANSLATE && (menuItem.getItemId() != R.id.menu_regular || premiumLockClickListener == null)) {
                     menuItems.add(menuItem);
                 }
             }
@@ -236,6 +263,17 @@ public final class FloatingToolbar {
         mWindowView.removeOnLayoutChangeListener(mOrientationChangeHandler);
     }
 
+    public static final List<Integer> premiumOptions = Arrays.asList(
+            R.id.menu_bold,
+            R.id.menu_italic,
+            R.id.menu_strike,
+            R.id.menu_link,
+            R.id.menu_mono,
+            R.id.menu_underline,
+            R.id.menu_spoiler,
+            R.id.menu_quote
+    );
+
     private final class FloatingToolbarPopup {
 
         private static final int MIN_OVERFLOW_SIZE = 2;
@@ -250,7 +288,10 @@ public final class FloatingToolbar {
         private final ViewGroup mContentContainer;
         private final ViewGroup mMainPanel;
         private final OverflowPanel mOverflowPanel;
-        private final ImageButton mOverflowButton;
+        private final FrameLayout mOverflowButton;
+        private final View mOverflowButtonShadow;
+        private final ImageView mOverflowButtonIcon;
+        private final TextView mOverflowButtonText;
 
         private final Drawable mArrow;
         private final Drawable mOverflow;
@@ -337,8 +378,52 @@ public final class FloatingToolbar {
             mToOverflow = (AnimatedVectorDrawable) mContext.getDrawable(R.drawable.ft_avd_tooverflow_animation).mutate();
             mToOverflow.setAutoMirrored(true);
 
-            mOverflowButton = createOverflowButton();
-            mOverflowButtonSize = measure(mOverflowButton);
+            mOverflowButton = new FrameLayout(mContext);
+            mOverflowButtonIcon = new ImageButton(mContext) {
+                @Override
+                public boolean dispatchTouchEvent(MotionEvent event) {
+                    if (mIsOverflowOpen) {
+                        return false;
+                    }
+                    return super.dispatchTouchEvent(event);
+                }
+            };
+            mOverflowButtonIcon.setLayoutParams(new ViewGroup.LayoutParams(AndroidUtilities.dp(56), AndroidUtilities.dp(48)));
+            mOverflowButtonIcon.setPaddingRelative(AndroidUtilities.dp(16), AndroidUtilities.dp(12), AndroidUtilities.dp(16), AndroidUtilities.dp(12));
+            mOverflowButtonIcon.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
+            mOverflowButtonIcon.setImageDrawable(mOverflow);
+            mOverflowButtonText = new TextView(mContext);
+            mOverflowButtonText.setText(LocaleController.getString(R.string.Back));
+            mOverflowButtonText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+            mOverflowButtonText.setAlpha(0f);
+            mOverflowButtonShadow = new View(mContext);
+            int color;
+            if (currentStyle == STYLE_DIALOG) {
+                color = getThemedColor(Theme.key_dialogTextBlack);
+                mOverflowButtonIcon.setBackground(Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector), Theme.RIPPLE_MASK_CIRCLE_20DP));
+                mOverflowButton.setBackground(Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector), Theme.RIPPLE_MASK_ALL));
+                mOverflowButtonShadow.setBackgroundColor(Theme.multAlpha(getThemedColor(Theme.key_dialogTextBlack), .4f));
+            } else if (currentStyle == STYLE_BLACK) {
+                color = 0xfffafafa;
+                mOverflowButtonIcon.setBackground(Theme.createSelectorDrawable(0x20ffffff, Theme.RIPPLE_MASK_CIRCLE_20DP));
+                mOverflowButton.setBackground(Theme.createSelectorDrawable(0x20ffffff, Theme.RIPPLE_MASK_ALL));
+                mOverflowButtonShadow.setBackgroundColor(0xff000000);
+            } else {
+                color = getThemedColor(Theme.key_windowBackgroundWhiteBlackText);
+                mOverflowButtonIcon.setBackground(Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector), Theme.RIPPLE_MASK_CIRCLE_20DP));
+                mOverflowButton.setBackground(Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector), Theme.RIPPLE_MASK_ALL));
+                mOverflowButtonShadow.setBackgroundColor(getThemedColor(Theme.key_divider));
+            }
+            mOverflow.setTint(color);
+            mArrow.setTint(color);
+            mToArrow.setTint(color);
+            mToOverflow.setTint(color);
+            mOverflowButtonText.setTextColor(color);
+            mOverflowButtonIcon.setOnClickListener(v -> onBackPressed());
+            mOverflowButton.addView(mOverflowButtonIcon, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL | Gravity.LEFT));
+            mOverflowButton.addView(mOverflowButtonText, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL | Gravity.LEFT, 56, 0, 0, 0));
+            mOverflowButton.addView(mOverflowButtonShadow, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 1f / AndroidUtilities.density, Gravity.TOP | Gravity.FILL_HORIZONTAL));
+            mOverflowButtonSize = measure(mOverflowButtonIcon);
             mMainPanel = createMainPanel();
             mOverflowPanelViewHelper = new OverflowPanelViewHelper(mContext, mIconTextSpacing);
             mOverflowPanel = createOverflowPanel();
@@ -366,6 +451,32 @@ public final class FloatingToolbar {
                     });
                 }
             });
+        }
+
+        private void onBackPressed() {
+            if (mIsOverflowOpen) {
+                mOverflowButtonIcon.setImageDrawable(mToOverflow);
+                mToOverflow.start();
+                closeOverflow();
+            } else {
+                mOverflowButtonIcon.setImageDrawable(mToArrow);
+                mToArrow.start();
+                openOverflow();
+            }
+        }
+
+        private void updateOverflowButtonClickListener() {
+            if (mIsOverflowOpen) {
+                mOverflowButton.setClickable(true);
+                mOverflowButton.setOnClickListener(v -> onBackPressed());
+                mOverflowButtonIcon.setClickable(false);
+                mOverflowButtonIcon.setOnClickListener(null);
+            } else {
+                mOverflowButton.setClickable(false);
+                mOverflowButton.setOnClickListener(null);
+                mOverflowButtonIcon.setClickable(true);
+                mOverflowButtonIcon.setOnClickListener(v -> onBackPressed());
+            }
         }
 
         public boolean setOutsideTouchable(boolean outsideTouchable, PopupWindow.OnDismissListener onDismiss) {
@@ -561,7 +672,7 @@ public final class FloatingToolbar {
                 }
             };
             final float overflowButtonStartX = mOverflowButton.getX();
-            final float overflowButtonTargetX = isInRTLMode() ? overflowButtonStartX + targetWidth - mOverflowButton.getWidth() : overflowButtonStartX - targetWidth + mOverflowButton.getWidth();
+            final float overflowButtonTargetX = isInRTLMode() ? overflowButtonStartX + targetWidth - mOverflowButtonIcon.getWidth() : overflowButtonStartX - targetWidth + mOverflowButtonIcon.getWidth();
             Animation overflowButtonAnimation = new Animation() {
                 @Override
                 protected void applyTransformation(float interpolatedTime, Transformation t) {
@@ -569,6 +680,8 @@ public final class FloatingToolbar {
                     float deltaContainerWidth = isInRTLMode() ? 0 : mContentContainer.getWidth() - startWidth;
                     float actualOverflowButtonX = overflowButtonX + deltaContainerWidth;
                     mOverflowButton.setX(actualOverflowButtonX);
+                    mOverflowButtonText.setAlpha(interpolatedTime);
+                    mOverflowButtonShadow.setAlpha(interpolatedTime);
                 }
             };
             widthAnimation.setInterpolator(mLogAccelerateInterpolator);
@@ -583,7 +696,11 @@ public final class FloatingToolbar {
             mOpenOverflowAnimation.addAnimation(overflowButtonAnimation);
             mContentContainer.startAnimation(mOpenOverflowAnimation);
             mIsOverflowOpen = true;
+            updateOverflowButtonClickListener();
             mMainPanel.animate().alpha(0).withLayer().setInterpolator(mLinearOutSlowInInterpolator).setDuration(250).start();
+            RelativeLayout.LayoutParams lp = (RelativeLayout.LayoutParams) mOverflowButton.getLayoutParams();
+            lp.width = mOverflowPanel.getWidth();
+            mOverflowButton.setLayoutParams(lp);
             mOverflowPanel.setAlpha(1);
         }
 
@@ -623,7 +740,7 @@ public final class FloatingToolbar {
                 }
             };
             final float overflowButtonStartX = mOverflowButton.getX();
-            final float overflowButtonTargetX = isInRTLMode() ? overflowButtonStartX - startWidth + mOverflowButton.getWidth() : overflowButtonStartX + startWidth - mOverflowButton.getWidth();
+            final float overflowButtonTargetX = isInRTLMode() ? overflowButtonStartX - startWidth + mOverflowButtonIcon.getWidth() : overflowButtonStartX + startWidth - mOverflowButtonIcon.getWidth();
             Animation overflowButtonAnimation = new Animation() {
                 @Override
                 protected void applyTransformation(float interpolatedTime, Transformation t) {
@@ -631,6 +748,8 @@ public final class FloatingToolbar {
                     float deltaContainerWidth = isInRTLMode() ? 0 : mContentContainer.getWidth() - startWidth;
                     float actualOverflowButtonX = overflowButtonX + deltaContainerWidth;
                     mOverflowButton.setX(actualOverflowButtonX);
+                    mOverflowButtonText.setAlpha(1f - interpolatedTime);
+                    mOverflowButtonShadow.setAlpha(1f - interpolatedTime);
                 }
             };
             widthAnimation.setInterpolator(mFastOutSlowInInterpolator);
@@ -645,6 +764,7 @@ public final class FloatingToolbar {
             mCloseOverflowAnimation.addAnimation(overflowButtonAnimation);
             mContentContainer.startAnimation(mCloseOverflowAnimation);
             mIsOverflowOpen = false;
+            updateOverflowButtonClickListener();
             mMainPanel.animate()
                     .alpha(1).withLayer()
                     .setInterpolator(mFastOutLinearInInterpolator)
@@ -667,8 +787,8 @@ public final class FloatingToolbar {
                 mMainPanel.setVisibility(View.INVISIBLE);
                 mOverflowPanel.setAlpha(1);
                 mOverflowPanel.setVisibility(View.VISIBLE);
-                mOverflowButton.setImageDrawable(mArrow);
-                mOverflowButton.setContentDescription(LocaleController.getString("AccDescrMoreOptions", R.string.AccDescrMoreOptions));
+                mOverflowButtonIcon.setImageDrawable(mArrow);
+                mOverflowButton.setContentDescription(LocaleController.getString(R.string.AccDescrMoreOptions));
 
                 if (isInRTLMode()) {
                     mContentContainer.setX(mMarginHorizontal);
@@ -699,8 +819,8 @@ public final class FloatingToolbar {
                 mMainPanel.setVisibility(View.VISIBLE);
                 mOverflowPanel.setAlpha(0);
                 mOverflowPanel.setVisibility(View.INVISIBLE);
-                mOverflowButton.setImageDrawable(mOverflow);
-                mOverflowButton.setContentDescription(LocaleController.getString("AccDescrMoreOptions", R.string.AccDescrMoreOptions));
+                mOverflowButtonIcon.setImageDrawable(mOverflow);
+                mOverflowButton.setContentDescription(LocaleController.getString(R.string.AccDescrMoreOptions));
                 if (hasOverflow()) {
                     if (isInRTLMode()) {
                         mContentContainer.setX(mMarginHorizontal);
@@ -831,22 +951,23 @@ public final class FloatingToolbar {
             mMainPanel.removeAllViews();
             mMainPanel.setPaddingRelative(0, 0, 0, 0);
             boolean isFirstItem = true;
-            while (!remainingMenuItems.isEmpty()) {
-                final MenuItem menuItem = remainingMenuItems.peek();
+            Iterator<MenuItem> it = remainingMenuItems.iterator();
+            while (it.hasNext()) {
+                final MenuItem menuItem = it.next();
+                boolean isLastItem = !it.hasNext();
+                if (menuItem != null && premiumLockClickListener != null) {
+                    if (premiumOptions.contains(menuItem.getItemId())) {
+                        continue;
+                    }
+                }
                 /*if (!isFirstItem && menuItem.requiresOverflow()) {
                     break;
                 }*/
-                final View menuItemButton = createMenuItemButton(mContext, menuItem, mIconTextSpacing);
+                final View menuItemButton = createMenuItemButton(mContext, menuItem, mIconTextSpacing, isFirstItem, isLastItem);
                 if (menuItemButton instanceof LinearLayout) {
                     ((LinearLayout) menuItemButton).setGravity(Gravity.CENTER);
                 }
-                if (isFirstItem) {
-                    menuItemButton.setPaddingRelative((int) (1.5 * menuItemButton.getPaddingStart()), menuItemButton.getPaddingTop(), menuItemButton.getPaddingEnd(), menuItemButton.getPaddingBottom());
-                }
-                boolean isLastItem = remainingMenuItems.size() == 1;
-                if (isLastItem) {
-                    menuItemButton.setPaddingRelative(menuItemButton.getPaddingStart(), menuItemButton.getPaddingTop(), (int) (1.5 * menuItemButton.getPaddingEnd()), menuItemButton.getPaddingBottom());
-                }
+                menuItemButton.setPaddingRelative((int) ((isFirstItem ? 1.5 : 1) * menuItemButton.getPaddingStart()), menuItemButton.getPaddingTop(), (int) ((isLastItem ? 1.5 : 1) * menuItemButton.getPaddingEnd()), menuItemButton.getPaddingBottom());
                 menuItemButton.measure(MeasureSpec.UNSPECIFIED, MeasureSpec.UNSPECIFIED);
                 final int menuItemButtonWidth = Math.min(menuItemButton.getMeasuredWidth(), toolbarWidth);
                 final boolean canFitWithOverflow = menuItemButtonWidth <= availableWidth - mOverflowButtonSize.getWidth();
@@ -859,7 +980,7 @@ public final class FloatingToolbar {
                     params.width = menuItemButtonWidth;
                     menuItemButton.setLayoutParams(params);
                     availableWidth -= menuItemButtonWidth;
-                    remainingMenuItems.pop();
+                    it.remove();
                 } else {
                     break;
                 }
@@ -872,13 +993,36 @@ public final class FloatingToolbar {
             return remainingMenuItems;
         }
 
+        private void updateMainPanelItemsSelectors() {
+
+        }
+
         @SuppressWarnings("unchecked")
         private void layoutOverflowPanelItems(List<MenuItem> menuItems) {
             ArrayAdapter<MenuItem> overflowPanelAdapter = (ArrayAdapter<MenuItem>) mOverflowPanel.getAdapter();
             overflowPanelAdapter.clear();
+            if (premiumLockClickListener != null) {
+                Collections.sort(menuItems, (a, b) -> {
+                    final int aPremium = premiumOptions.contains(a.getItemId()) ? 1 : 0;
+                    final int bPremium = premiumOptions.contains(b.getItemId()) ? 1 : 0;
+                    return aPremium - bPremium;
+                });
+            }
             final int size = menuItems.size();
+            final boolean premiumLocked = MessagesController.getInstance(UserConfig.selectedAccount).premiumFeaturesBlocked();
             for (int i = 0; i < size; i++) {
-                overflowPanelAdapter.add(menuItems.get(i));
+                final MenuItem menuItem = menuItems.get(i);
+                final boolean show;
+                if (premiumLockClickListener == null) {
+                    show = true;
+                } else if (premiumOptions.contains(menuItem.getItemId())) {
+                    show = !premiumLocked;
+                } else {
+                    show = true;
+                }
+                if (show) {
+                    overflowPanelAdapter.add(menuItem);
+                }
             }
             mOverflowPanel.setAdapter(overflowPanelAdapter);
             if (mOpenOverflowUpwards) {
@@ -914,6 +1058,7 @@ public final class FloatingToolbar {
             mOverflowPanelSize = null;
             mMainPanelSize = null;
             mIsOverflowOpen = false;
+            updateOverflowButtonClickListener();
             mMainPanel.removeAllViews();
             ArrayAdapter<MenuItem> overflowPanelAdapter = (ArrayAdapter<MenuItem>) mOverflowPanel.getAdapter();
             overflowPanelAdapter.clear();
@@ -987,40 +1132,7 @@ public final class FloatingToolbar {
             };
         }
 
-        private ImageButton createOverflowButton() {
-            final ImageButton overflowButton = new ImageButton(mContext);
-            overflowButton.setLayoutParams(new ViewGroup.LayoutParams(AndroidUtilities.dp(56), AndroidUtilities.dp(48)));
-            overflowButton.setPaddingRelative(AndroidUtilities.dp(16), AndroidUtilities.dp(12), AndroidUtilities.dp(16), AndroidUtilities.dp(12));
-            overflowButton.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
-            overflowButton.setImageDrawable(mOverflow);
-            int color;
-            if (currentStyle == STYLE_DIALOG) {
-                color = getThemedColor(Theme.key_dialogTextBlack);
-                overflowButton.setBackgroundDrawable(Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector), 1));
-            } else if (currentStyle == STYLE_BLACK) {
-                color = 0xfffafafa;
-                overflowButton.setBackgroundDrawable(Theme.createSelectorDrawable(0x40ffffff, 1));
-            } else {
-                color = getThemedColor(Theme.key_windowBackgroundWhiteBlackText);
-                overflowButton.setBackgroundDrawable(Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector), 1));
-            }
-            mOverflow.setTint(color);
-            mArrow.setTint(color);
-            mToArrow.setTint(color);
-            mToOverflow.setTint(color);
-            overflowButton.setOnClickListener(v -> {
-                if (mIsOverflowOpen) {
-                    overflowButton.setImageDrawable(mToOverflow);
-                    mToOverflow.start();
-                    closeOverflow();
-                } else {
-                    overflowButton.setImageDrawable(mToArrow);
-                    mToArrow.start();
-                    openOverflow();
-                }
-            });
-            return overflowButton;
-        }
+        private int shiftDp = -4;
 
         private OverflowPanel createOverflowPanel() {
             final OverflowPanel overflowPanel = new OverflowPanel(this);
@@ -1036,7 +1148,11 @@ public final class FloatingToolbar {
             overflowPanel.setAdapter(adapter);
             overflowPanel.setOnItemClickListener((parent, view, position, id) -> {
                 MenuItem menuItem = (MenuItem) overflowPanel.getAdapter().getItem(position);
-                if (mOnMenuItemClickListener != null) {
+                if (premiumLockClickListener != null && premiumOptions.contains(menuItem.getItemId())) {
+                    AndroidUtilities.shakeViewSpring(view, shiftDp = -shiftDp);
+                    BotWebViewVibrationEffect.APP_ERROR.vibrate();
+                    premiumLockClickListener.run();
+                } else if (mOnMenuItemClickListener != null) {
                     mOnMenuItemClickListener.onMenuItemClick(menuItem);
                 }
             });
@@ -1111,7 +1227,7 @@ public final class FloatingToolbar {
                 setOutlineProvider(new ViewOutlineProvider() {
                     @Override
                     public void getOutline(View view, Outline outline) {
-                        outline.setRoundRect(0, 0, view.getMeasuredWidth(), view.getMeasuredHeight(), AndroidUtilities.dp(6));
+                        outline.setRoundRect(0, 0, view.getMeasuredWidth(), view.getMeasuredHeight() + AndroidUtilities.dp(6), AndroidUtilities.dp(6));
                     }
                 });
                 setClipToOutline(true);
@@ -1167,7 +1283,7 @@ public final class FloatingToolbar {
 
             public View getView(MenuItem menuItem, int minimumWidth, View convertView) {
                 if (convertView != null) {
-                    updateMenuItemButton(convertView, menuItem, mIconTextSpacing);
+                    updateMenuItemButton(convertView, menuItem, mIconTextSpacing, premiumLockClickListener != null);
                 } else {
                     convertView = createMenuButton(menuItem);
                 }
@@ -1176,20 +1292,20 @@ public final class FloatingToolbar {
             }
 
             public int calculateWidth(MenuItem menuItem) {
-                updateMenuItemButton(mCalculator, menuItem, mIconTextSpacing);
+                updateMenuItemButton(mCalculator, menuItem, mIconTextSpacing, premiumLockClickListener != null);
                 mCalculator.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED);
                 return mCalculator.getMeasuredWidth();
             }
 
             private View createMenuButton(MenuItem menuItem) {
-                View button = createMenuItemButton(mContext, menuItem, mIconTextSpacing);
+                View button = createMenuItemButton(mContext, menuItem, mIconTextSpacing, false, false);
                 button.setPadding(mSidePadding, 0, mSidePadding, 0);
                 return button;
             }
         }
     }
 
-    private View createMenuItemButton(Context context, MenuItem menuItem, int iconTextSpacing) {
+    private View createMenuItemButton(Context context, MenuItem menuItem, int iconTextSpacing, boolean first, boolean last) {
         LinearLayout menuItemButton = new LinearLayout(context);
         menuItemButton.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         menuItemButton.setOrientation(LinearLayout.HORIZONTAL);
@@ -1201,30 +1317,48 @@ public final class FloatingToolbar {
         textView.setGravity(Gravity.CENTER);
         textView.setSingleLine(true);
         textView.setEllipsize(TextUtils.TruncateAt.END);
-        textView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        textView.setTypeface(AndroidUtilities.bold());
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         textView.setFocusable(false);
         textView.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
         textView.setFocusableInTouchMode(false);
+        int color;
+        int selectorColor = getThemedColor(Theme.key_listSelector);
         if (currentStyle == STYLE_DIALOG) {
-            textView.setTextColor(getThemedColor(Theme.key_dialogTextBlack));
-            menuItemButton.setBackgroundDrawable(Theme.getSelectorDrawable(false));
+            textView.setTextColor(color = getThemedColor(Theme.key_dialogTextBlack));
         } else if (currentStyle == STYLE_BLACK) {
-            textView.setTextColor(0xfffafafa);
-            menuItemButton.setBackgroundDrawable(Theme.getSelectorDrawable(0x40ffffff, false));
+            textView.setTextColor(color = 0xfffafafa);
+            selectorColor = 0x20ffffff;
         } else if (currentStyle == STYLE_THEME) {
-            textView.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText));
-            menuItemButton.setBackgroundDrawable(Theme.getSelectorDrawable(false));
+            textView.setTextColor(color = getThemedColor(Theme.key_windowBackgroundWhiteBlackText));
+        } else {
+            color = getThemedColor(Theme.key_windowBackgroundWhiteBlackText);
         }
+        if (first || last) {
+            menuItemButton.setBackground(Theme.createRadSelectorDrawable(selectorColor, first ? 6 : 0, last ? 6 : 0, last ? 6 : 0, first ? 6 : 0));
+        } else {
+            menuItemButton.setBackground(Theme.getSelectorDrawable(selectorColor, false));
+        }
+
         textView.setPaddingRelative(AndroidUtilities.dp(11), 0, 0, 0);
         menuItemButton.addView(textView, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, AndroidUtilities.dp(48)));
+
+        menuItemButton.addView(new Space(context), new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 1, 1));
+
+        ImageView lockView = new ImageView(context);
+        lockView.setImageResource(R.drawable.msg_mini_lock3);
+        lockView.setScaleType(ImageView.ScaleType.CENTER);
+        lockView.setColorFilter(new PorterDuffColorFilter(Theme.multAlpha(color, .4f), PorterDuff.Mode.SRC_IN));
+        lockView.setVisibility(View.GONE);
+        menuItemButton.addView(lockView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, 0, 0, 12, 0, 0, 0));
+
         if (menuItem != null) {
-            updateMenuItemButton(menuItemButton, menuItem, iconTextSpacing);
+            updateMenuItemButton(menuItemButton, menuItem, iconTextSpacing, premiumLockClickListener != null);
         }
         return menuItemButton;
     }
 
-    private static void updateMenuItemButton(View menuItemButton, MenuItem menuItem, int iconTextSpacing) {
+    private static void updateMenuItemButton(View menuItemButton, MenuItem menuItem, int iconTextSpacing, boolean containsPremium) {
         ViewGroup viewGroup = (ViewGroup) menuItemButton;
         final TextView buttonText = (TextView) viewGroup.getChildAt(0);
         buttonText.setEllipsize(null);
@@ -1235,6 +1369,9 @@ public final class FloatingToolbar {
             buttonText.setText(menuItem.getTitle());
         }
         buttonText.setPaddingRelative(0, 0, 0, 0);
+
+        final boolean premium = containsPremium && premiumOptions.contains(menuItem.getItemId());
+        viewGroup.getChildAt(2).setVisibility(premium ? View.VISIBLE : View.GONE);
         /*final CharSequence contentDescription = menuItem.getContentDescription(); TODO
         if (TextUtils.isEmpty(contentDescription)) {
             menuItemButton.setContentDescription(menuItem.getTitle());
@@ -1268,17 +1405,75 @@ public final class FloatingToolbar {
         return contentContainer;
     }
 
-    private int getThemedColor(String key) {
-        Integer color = resourcesProvider != null ? resourcesProvider.getColor(key) : null;
-        return color != null ? color : Theme.getColor(key);
+    private int getThemedColor(int key) {
+        return Theme.getColor(key, resourcesProvider);
     }
 
     private static PopupWindow createPopupWindow(ViewGroup content) {
-        ViewGroup popupContentHolder = new LinearLayout(content.getContext());
+        ViewGroup popupContentHolder = new LinearLayout(content.getContext()) {
+            @Override
+            public boolean onInterceptTouchEvent(MotionEvent ev) {
+                return super.onInterceptTouchEvent(ev);
+            }
+            private boolean isParent(View child, View parent) {
+                if (child == parent) return true;
+                if (child.getParent() == null) return false;
+                if (child.getParent() instanceof View) {
+                    return isParent((View) child.getParent(), parent);
+                } else if (child.getParent() == parent) {
+                    return true;
+                } else if (child.getRootView() == parent) {
+                    return true;
+                }
+                return false;
+            }
+
+            private final int[] p = new int[2];
+            private View downRootView = null;
+            @Override
+            public boolean dispatchTouchEvent(MotionEvent ev) {
+                boolean r = super.dispatchTouchEvent(ev);
+                if (!r) {
+                    getLocationOnScreen(p);
+                    ev.offsetLocation(p[0], p[1]);
+                    if (ev.getAction() == MotionEvent.ACTION_DOWN) {
+                        final List<View> views = allGlobalViews();
+                        if (views != null && views.size() > 1) {
+                            for (int i = views.size() - 2; i >= 0; --i) {
+                                final View view = views.get(i);
+                                if (isParent(this, view)) continue;
+                                view.getLocationOnScreen(p);
+                                ev.offsetLocation(-p[0], -p[1]);
+                                r = view.dispatchTouchEvent(ev);
+                                if (r) {
+                                    downRootView = view;
+                                    return true;
+                                }
+                                ev.offsetLocation(p[0], p[1]);
+                            }
+                        }
+                    } else if (downRootView != null) {
+                        View view = downRootView;
+                        view.getLocationOnScreen(p);
+                        ev.offsetLocation(-p[0], -p[1]);
+                        r = view.dispatchTouchEvent(ev);
+                    }
+                }
+                if (ev.getAction() == MotionEvent.ACTION_UP || ev.getAction() == MotionEvent.ACTION_CANCEL) {
+                    downRootView = null;
+                }
+                return r;
+            }
+            @Override
+            public boolean onTouchEvent(MotionEvent event) {
+                return super.onTouchEvent(event);
+            }
+        };
         PopupWindow popupWindow = new PopupWindow(popupContentHolder);
         popupWindow.setClippingEnabled(false);
         popupWindow.setAnimationStyle(0);
         popupWindow.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+        popupWindow.setSplitTouchEnabled(true);
         content.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         popupContentHolder.addView(content);
         return popupWindow;

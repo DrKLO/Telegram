@@ -13,6 +13,7 @@
 #include <cstdint>
 
 #include "absl/strings/string_view.h"
+#include "api/units/time_delta.h"
 #include "net/dcsctp/common/internal_types.h"
 #include "net/dcsctp/packet/sctp_packet.h"
 #include "net/dcsctp/public/dcsctp_socket.h"
@@ -39,11 +40,11 @@ class Context {
   // Returns the socket callbacks.
   virtual DcSctpSocketCallbacks& callbacks() const = 0;
 
-  // Observes a measured RTT value, in milliseconds.
-  virtual void ObserveRTT(DurationMs rtt_ms) = 0;
+  // Observes a measured RTT value.
+  virtual void ObserveRTT(webrtc::TimeDelta rtt_ms) = 0;
 
   // Returns the current Retransmission Timeout (rto) value, in milliseconds.
-  virtual DurationMs current_rto() const = 0;
+  virtual webrtc::TimeDelta current_rto() const = 0;
 
   // Increments the transmission error counter, given a human readable reason.
   virtual bool IncrementTxErrorCounter(absl::string_view reason) = 0;

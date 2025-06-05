@@ -8,9 +8,9 @@
  *  be found in the AUTHORS file in the root of the source tree.
  */
 
-#include <cstdarg>
-
 #include "rtc_base/strings/string_format.h"
+
+#include <cstdarg>
 
 #include "rtc_base/checks.h"
 

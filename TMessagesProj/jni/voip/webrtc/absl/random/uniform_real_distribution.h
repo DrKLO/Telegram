@@ -37,8 +37,10 @@
 #include <cstdint>
 #include <istream>
 #include <limits>
+#include <ostream>
 #include <type_traits>
 
+#include "absl/base/config.h"
 #include "absl/meta/type_traits.h"
 #include "absl/random/internal/fast_uniform_bits.h"
 #include "absl/random/internal/generate_real.h"
@@ -73,12 +75,12 @@ class uniform_real_distribution {
         : lo_(lo), hi_(hi), range_(hi - lo) {
       // [rand.dist.uni.real] preconditions 2 & 3
       assert(lo <= hi);
+
       // NOTE: For integral types, we can promote the range to an unsigned type,
       // which gives full width of the range. However for real (fp) types, this
       // is not possible, so value generation cannot use the full range of the
       // real type.
       assert(range_ <= (std::numeric_limits<result_type>::max)());
-      assert(std::isfinite(range_));
     }
 
     result_type a() const { return lo_; }

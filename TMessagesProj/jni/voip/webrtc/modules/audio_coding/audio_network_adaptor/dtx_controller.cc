@@ -33,7 +33,7 @@ void DtxController::UpdateNetworkMetrics(
 }
 
 void DtxController::MakeDecision(AudioEncoderRuntimeConfig* config) {
-  // Decision on |enable_dtx| should not have been made.
+  // Decision on `enable_dtx` should not have been made.
   RTC_DCHECK(!config->enable_dtx);
 
   if (uplink_bandwidth_bps_) {

@@ -70,12 +70,12 @@ std::unique_ptr<OpenSSLIdentity> OpenSSLIdentity::CreateInternal(
 
 // static
 std::unique_ptr<OpenSSLIdentity> OpenSSLIdentity::CreateWithExpiration(
-    const std::string& common_name,
+    absl::string_view common_name,
     const KeyParams& key_params,
     time_t certificate_lifetime) {
   SSLIdentityParams params;
   params.key_params = key_params;
-  params.common_name = common_name;
+  params.common_name = std::string(common_name);
   time_t now = time(nullptr);
   params.not_before = now + kCertificateWindowInSeconds;
   params.not_after = now + certificate_lifetime;
@@ -90,8 +90,8 @@ std::unique_ptr<OpenSSLIdentity> OpenSSLIdentity::CreateForTest(
 }
 
 std::unique_ptr<SSLIdentity> OpenSSLIdentity::CreateFromPEMStrings(
-    const std::string& private_key,
-    const std::string& certificate) {
+    absl::string_view private_key,
+    absl::string_view certificate) {
   std::unique_ptr<OpenSSLCertificate> cert(
       OpenSSLCertificate::FromPEMString(certificate));
   if (!cert) {
@@ -110,8 +110,8 @@ std::unique_ptr<SSLIdentity> OpenSSLIdentity::CreateFromPEMStrings(
 }
 
 std::unique_ptr<SSLIdentity> OpenSSLIdentity::CreateFromPEMChainStrings(
-    const std::string& private_key,
-    const std::string& certificate_chain) {
+    absl::string_view private_key,
+    absl::string_view certificate_chain) {
   BIO* bio = BIO_new_mem_buf(certificate_chain.data(),
                              rtc::dchecked_cast<int>(certificate_chain.size()));
   if (!bio)

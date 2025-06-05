@@ -13,8 +13,8 @@
 #include <utility>
 #include <vector>
 
+#include "modules/rtp_rtcp/source/frame_object.h"
 #include "modules/rtp_rtcp/source/rtp_descriptor_authentication.h"
-#include "modules/video_coding/frame_object.h"
 #include "rtc_base/logging.h"
 #include "system_wrappers/include/field_trial.h"
 
@@ -22,9 +22,10 @@ namespace webrtc {
 
 BufferedFrameDecryptor::BufferedFrameDecryptor(
     OnDecryptedFrameCallback* decrypted_frame_callback,
-    OnDecryptionStatusChangeCallback* decryption_status_change_callback)
+    OnDecryptionStatusChangeCallback* decryption_status_change_callback,
+    const FieldTrialsView& field_trials)
     : generic_descriptor_auth_experiment_(
-          !field_trial::IsDisabled("WebRTC-GenericDescriptorAuth")),
+          !field_trials.IsDisabled("WebRTC-GenericDescriptorAuth")),
       decrypted_frame_callback_(decrypted_frame_callback),
       decryption_status_change_callback_(decryption_status_change_callback) {}
 
@@ -61,11 +62,6 @@ BufferedFrameDecryptor::FrameDecision BufferedFrameDecryptor::DecryptFrame(
     RTC_LOG(LS_INFO) << "Frame decryption required but not attached to this "
                         "stream. Stashing frame.";
     return FrameDecision::kStash;
-  }
-  // When using encryption we expect the frame to have the generic descriptor.
-  if (frame->GetRtpVideoHeader().generic == absl::nullopt) {
-    RTC_LOG(LS_ERROR) << "No generic frame descriptor found dropping frame.";
-    return FrameDecision::kDrop;
   }
   // Retrieve the maximum possible size of the decrypted payload.
   const size_t max_plaintext_byte_size =

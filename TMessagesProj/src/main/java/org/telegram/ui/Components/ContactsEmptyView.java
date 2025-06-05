@@ -8,7 +8,11 @@
 
 package org.telegram.ui.Components;
 
+import static org.telegram.messenger.AndroidUtilities.dp;
+
+import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.util.TypedValue;
@@ -18,28 +22,30 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaDataController;
-import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.Theme;
 
 import java.util.ArrayList;
 
-public class ContactsEmptyView extends LinearLayout implements NotificationCenter.NotificationCenterDelegate {
+public class ContactsEmptyView extends LinearLayout {
 
     private TextView titleTextView;
+    private TextView subtitleTextView;
+    private LinkSpanDrawable.LinksTextView buttonTextView;
+
     private BackupImageView stickerView;
     private ArrayList<TextView> textViews = new ArrayList<>();
     private ArrayList<ImageView> imageViews = new ArrayList<>();
     private LoadingStickerDrawable drawable;
 
     private int currentAccount = UserConfig.selectedAccount;
-
-    private static final String stickerSetName = AndroidUtilities.STICKERS_PLACEHOLDER_PACK_NAME;
 
     public static final String svg = "m418 282.6c13.4-21.1 20.2-44.9 20.2-70.8 0-88.3-79.8-175.3-178.9-175.3-100.1 0-178.9 88-178.9 175.3 0 46.6 16.9 73.1 29.1 86.1-19.3 23.4-30.9 52.3-34.6 86.1-2.5 22.7 3.2 41.4 17.4 57.3 14.3 16 51.7 35 148.1 35 41.2 0 119.9-5.3 156.7-18.3 49.5-17.4 59.2-41.1 59.2-76.2 0-41.5-12.9-74.8-38.3-99.2z";
     public ContactsEmptyView(Context context) {
@@ -56,54 +62,44 @@ public class ContactsEmptyView extends LinearLayout implements NotificationCente
         }
 
         titleTextView = new TextView(context);
-        titleTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
+        titleTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
         titleTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
         titleTextView.setGravity(Gravity.CENTER_HORIZONTAL);
-        titleTextView.setText(LocaleController.getString("NoContactsYet", R.string.NoContactsYet));
-        titleTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
-        titleTextView.setMaxWidth(AndroidUtilities.dp(260));
-        addView(titleTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 0, 18, 0, 14));
+        titleTextView.setText(LocaleController.getString(R.string.NoContactsYet2));
+        titleTextView.setTypeface(AndroidUtilities.bold());
+        addView(titleTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 0, 18, 0, 9));
 
-        LinearLayout linesContainer = new LinearLayout(context);
-        linesContainer.setOrientation(VERTICAL);
-        addView(linesContainer, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL | Gravity.TOP));
+        subtitleTextView = new TextView(context);
+        subtitleTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+        subtitleTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+        subtitleTextView.setGravity(Gravity.CENTER_HORIZONTAL);
+        subtitleTextView.setText(LocaleController.getString(R.string.NoContactsYet2Sub));
+        subtitleTextView.setMaxWidth(AndroidUtilities.dp(260));
+        addView(subtitleTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 0, 0, 0, 14));
 
-        for (int a = 0; a < 3; a++) {
-            LinearLayout linearLayout = new LinearLayout(context);
-            linearLayout.setOrientation(LinearLayout.HORIZONTAL);
-            linesContainer.addView(linearLayout, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT, 0, 8, 0, 0));
+        buttonTextView = new LinkSpanDrawable.LinksTextView(context);
+        buttonTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
+        buttonTextView.setLinkTextColor(Theme.getColor(Theme.key_chat_messageLinkIn));
+        buttonTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+        buttonTextView.setGravity(Gravity.CENTER_HORIZONTAL);
+        buttonTextView.setPadding(dp(8), dp(2), dp(2), dp(8));
+        buttonTextView.setDisablePaddingsOffsetY(true);
+        buttonTextView.setText(AndroidUtilities.replaceArrows(AndroidUtilities.makeClickable(LocaleController.getString(R.string.NoContactsYet2Invite), () -> {
+            onInviteClick();
+        }), true, dp(8f / 3f), dp(1)));
+        buttonTextView.setMaxWidth(AndroidUtilities.dp(260));
+        addView(buttonTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 0, 0, 0, 14));
+    }
 
-            ImageView imageView = new ImageView(context);
-            imageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText), PorterDuff.Mode.MULTIPLY));
-            imageView.setImageResource(R.drawable.list_circle);
-            imageViews.add(imageView);
+    protected void onInviteClick() {
+        Activity activity = AndroidUtilities.findActivity(getContext());
+        if (activity == null || activity.isFinishing()) return;
 
-            TextView textView = new TextView(context);
-            textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
-            textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
-            textView.setMaxWidth(AndroidUtilities.dp(260));
-            textViews.add(textView);
-            textView.setGravity(Gravity.CENTER_VERTICAL | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT));
-
-            switch (a) {
-                case 0:
-                    textView.setText(LocaleController.getString("NoContactsYetLine1", R.string.NoContactsYetLine1));
-                    break;
-                case 1:
-                    textView.setText(LocaleController.getString("NoContactsYetLine2", R.string.NoContactsYetLine2));
-                    break;
-                case 2:
-                    textView.setText(LocaleController.getString("NoContactsYetLine3", R.string.NoContactsYetLine3));
-                    break;
-            }
-            if (LocaleController.isRTL) {
-                linearLayout.addView(textView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
-                linearLayout.addView(imageView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 8, 7, 0, 0));
-            } else {
-                linearLayout.addView(imageView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0, 8, 8, 0));
-                linearLayout.addView(textView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
-            }
-        }
+        Intent intent = new Intent(Intent.ACTION_SEND);
+        intent.setType("text/plain");
+        String text = ContactsController.getInstance(currentAccount).getInviteText(0);
+        intent.putExtra(Intent.EXTRA_TEXT, text);
+        activity.startActivityForResult(Intent.createChooser(intent, text), 500);
     }
 
     public void setColors() {
@@ -117,40 +113,12 @@ public class ContactsEmptyView extends LinearLayout implements NotificationCente
     }
 
     private void setSticker() {
-        TLRPC.TL_messages_stickerSet set = MediaDataController.getInstance(currentAccount).getStickerSetByName(stickerSetName);
-        if (set == null) {
-            set = MediaDataController.getInstance(currentAccount).getStickerSetByEmojiOrName(stickerSetName);
-        }
-        if (set != null && set.documents.size() >= 1) {
-            TLRPC.Document document = set.documents.get(0);
-            ImageLocation imageLocation = ImageLocation.getForDocument(document);
-            stickerView.setImage(imageLocation, "130_130", "tgs", drawable, set);
-        } else {
-            MediaDataController.getInstance(currentAccount).loadStickersByEmojiOrName(stickerSetName, false, true);
-            stickerView.setImageDrawable(drawable);
-        }
+        stickerView.setImageDrawable(new RLottieDrawable(R.raw.utyan_empty, "utyan_empty", dp(130), dp(130)));
     }
 
     @Override
     protected void onAttachedToWindow() {
         super.onAttachedToWindow();
         setSticker();
-        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.diceStickersDidLoad);
-    }
-
-    @Override
-    protected void onDetachedFromWindow() {
-        super.onDetachedFromWindow();
-        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.diceStickersDidLoad);
-    }
-
-    @Override
-    public void didReceivedNotification(int id, int account, Object... args) {
-        if (id == NotificationCenter.diceStickersDidLoad) {
-            String name = (String) args[0];
-            if (stickerSetName.equals(name)) {
-                setSticker();
-            }
-        }
     }
 }

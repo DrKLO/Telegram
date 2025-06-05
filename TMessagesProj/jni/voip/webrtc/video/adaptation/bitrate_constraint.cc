@@ -37,6 +37,10 @@ void BitrateConstraint::OnEncoderTargetBitrateUpdated(
   encoder_target_bitrate_bps_ = std::move(encoder_target_bitrate_bps);
 }
 
+// Checks if resolution is allowed to adapt up based on the current bitrate and
+// ResolutionBitrateLimits.min_start_bitrate_bps for the next higher resolution.
+// Bitrate limits usage is restricted to a single active stream/layer (e.g. when
+// quality scaling is enabled).
 bool BitrateConstraint::IsAdaptationUpAllowed(
     const VideoStreamInputState& input_state,
     const VideoSourceRestrictions& restrictions_before,
@@ -53,8 +57,9 @@ bool BitrateConstraint::IsAdaptationUpAllowed(
       return true;
     }
 
-    if (VideoStreamEncoderResourceManager::IsSimulcast(
-            encoder_settings_->encoder_config())) {
+    if (VideoStreamEncoderResourceManager::IsSimulcastOrMultipleSpatialLayers(
+            encoder_settings_->encoder_config(),
+            encoder_settings_->video_codec())) {
       // Resolution bitrate limits usage is restricted to singlecast.
       return true;
     }

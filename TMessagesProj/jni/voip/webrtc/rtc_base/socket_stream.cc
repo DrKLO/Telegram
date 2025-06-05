@@ -15,7 +15,7 @@
 
 namespace rtc {
 
-SocketStream::SocketStream(AsyncSocket* socket) : socket_(nullptr) {
+SocketStream::SocketStream(Socket* socket) : socket_(nullptr) {
   Attach(socket);
 }
 
@@ -23,7 +23,7 @@ SocketStream::~SocketStream() {
   delete socket_;
 }
 
-void SocketStream::Attach(AsyncSocket* socket) {
+void SocketStream::Attach(Socket* socket) {
   if (socket_)
     delete socket_;
   socket_ = socket;
@@ -35,8 +35,8 @@ void SocketStream::Attach(AsyncSocket* socket) {
   }
 }
 
-AsyncSocket* SocketStream::Detach() {
-  AsyncSocket* socket = socket_;
+Socket* SocketStream::Detach() {
+  Socket* socket = socket_;
   if (socket_) {
     socket_->SignalConnectEvent.disconnect(this);
     socket_->SignalReadEvent.disconnect(this);
@@ -60,42 +60,36 @@ StreamState SocketStream::GetState() const {
   }
 }
 
-StreamResult SocketStream::Read(void* buffer,
-                                size_t buffer_len,
-                                size_t* read,
-                                int* error) {
+StreamResult SocketStream::Read(rtc::ArrayView<uint8_t> buffer,
+                                size_t& read,
+                                int& error) {
   RTC_DCHECK(socket_ != nullptr);
-  int result = socket_->Recv(buffer, buffer_len, nullptr);
+  int result = socket_->Recv(buffer.data(), buffer.size(), nullptr);
   if (result < 0) {
     if (socket_->IsBlocking())
       return SR_BLOCK;
-    if (error)
-      *error = socket_->GetError();
+    error = socket_->GetError();
     return SR_ERROR;
   }
-  if ((result > 0) || (buffer_len == 0)) {
-    if (read)
-      *read = result;
+  if ((result > 0) || (buffer.size() == 0)) {
+    read = result;
     return SR_SUCCESS;
   }
   return SR_EOS;
 }
 
-StreamResult SocketStream::Write(const void* data,
-                                 size_t data_len,
-                                 size_t* written,
-                                 int* error) {
+StreamResult SocketStream::Write(rtc::ArrayView<const uint8_t> data,
+                                 size_t& written,
+                                 int& error) {
   RTC_DCHECK(socket_ != nullptr);
-  int result = socket_->Send(data, data_len);
+  int result = socket_->Send(data.data(), data.size());
   if (result < 0) {
     if (socket_->IsBlocking())
       return SR_BLOCK;
-    if (error)
-      *error = socket_->GetError();
+    error = socket_->GetError();
     return SR_ERROR;
   }
-  if (written)
-    *written = result;
+  written = result;
   return SR_SUCCESS;
 }
 
@@ -104,22 +98,22 @@ void SocketStream::Close() {
   socket_->Close();
 }
 
-void SocketStream::OnConnectEvent(AsyncSocket* socket) {
+void SocketStream::OnConnectEvent(Socket* socket) {
   RTC_DCHECK(socket == socket_);
   SignalEvent(this, SE_OPEN | SE_READ | SE_WRITE, 0);
 }
 
-void SocketStream::OnReadEvent(AsyncSocket* socket) {
+void SocketStream::OnReadEvent(Socket* socket) {
   RTC_DCHECK(socket == socket_);
   SignalEvent(this, SE_READ, 0);
 }
 
-void SocketStream::OnWriteEvent(AsyncSocket* socket) {
+void SocketStream::OnWriteEvent(Socket* socket) {
   RTC_DCHECK(socket == socket_);
   SignalEvent(this, SE_WRITE, 0);
 }
 
-void SocketStream::OnCloseEvent(AsyncSocket* socket, int err) {
+void SocketStream::OnCloseEvent(Socket* socket, int err) {
   RTC_DCHECK(socket == socket_);
   SignalEvent(this, SE_CLOSE, err);
 }

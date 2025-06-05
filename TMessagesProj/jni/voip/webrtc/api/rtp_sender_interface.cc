@@ -1,5 +1,5 @@
 /*
- *  Copyright 2018 The WebRTC Project Authors. All rights reserved.
+ *  Copyright 2022 The WebRTC project authors. All Rights Reserved.
  *
  *  Use of this source code is governed by a BSD-style license
  *  that can be found in the LICENSE file in the root of the source
@@ -10,27 +10,13 @@
 
 #include "api/rtp_sender_interface.h"
 
+#include "rtc_base/checks.h"
+
 namespace webrtc {
 
-void RtpSenderInterface::SetFrameEncryptor(
-    rtc::scoped_refptr<FrameEncryptorInterface> frame_encryptor) {}
-
-rtc::scoped_refptr<FrameEncryptorInterface>
-RtpSenderInterface::GetFrameEncryptor() const {
-  return nullptr;
+void RtpSenderInterface::SetParametersAsync(const RtpParameters& parameters,
+                                            SetParametersCallback callback) {
+  RTC_DCHECK_NOTREACHED() << "Default implementation called";
 }
-
-std::vector<RtpEncodingParameters> RtpSenderInterface::init_send_encodings()
-    const {
-  return {};
-}
-
-rtc::scoped_refptr<DtlsTransportInterface> RtpSenderInterface::dtls_transport()
-    const {
-  return nullptr;
-}
-
-void RtpSenderInterface::SetEncoderToPacketizerFrameTransformer(
-    rtc::scoped_refptr<FrameTransformerInterface> frame_transformer) {}
 
 }  // namespace webrtc

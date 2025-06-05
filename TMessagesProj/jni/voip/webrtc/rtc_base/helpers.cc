@@ -16,21 +16,17 @@
 #include <limits>
 #include <memory>
 
+#include "absl/strings/string_view.h"
 #include "rtc_base/checks.h"
 #include "rtc_base/logging.h"
+#include "rtc_base/synchronization/mutex.h"
 
 // Protect against max macro inclusion.
 #undef max
 
 namespace rtc {
 
-// Base class for RNG implementations.
-class RandomGenerator {
- public:
-  virtual ~RandomGenerator() {}
-  virtual bool Init(const void* seed, size_t len) = 0;
-  virtual bool Generate(void* buf, size_t len) = 0;
-};
+namespace {
 
 // The OpenSSL RNG.
 class SecureRandomGenerator : public RandomGenerator {
@@ -63,8 +59,6 @@ class TestRandomGenerator : public RandomGenerator {
   int seed_;
 };
 
-namespace {
-
 // TODO: Use Base64::Base64Table instead.
 static const char kBase64[64] = {
     'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
@@ -77,6 +71,13 @@ static const char kHex[16] = {'0', '1', '2', '3', '4', '5', '6', '7',
                               '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
 
 static const char kUuidDigit17[4] = {'8', '9', 'a', 'b'};
+
+// Lock for the global random generator, only needed to serialize changing the
+// generator.
+webrtc::Mutex& GetRandomGeneratorLock() {
+  static webrtc::Mutex& mutex = *new webrtc::Mutex();
+  return mutex;
+}
 
 // This round about way of creating a global RNG is to safe-guard against
 // indeterminant static initialization order.
@@ -93,7 +94,18 @@ RandomGenerator& Rng() {
 
 }  // namespace
 
+void SetDefaultRandomGenerator() {
+  webrtc::MutexLock lock(&GetRandomGeneratorLock());
+  GetGlobalRng().reset(new SecureRandomGenerator());
+}
+
+void SetRandomGenerator(std::unique_ptr<RandomGenerator> generator) {
+  webrtc::MutexLock lock(&GetRandomGeneratorLock());
+  GetGlobalRng() = std::move(generator);
+}
+
 void SetRandomTestMode(bool test) {
+  webrtc::MutexLock lock(&GetRandomGeneratorLock());
   if (!test) {
     GetGlobalRng().reset(new SecureRandomGenerator());
   } else {
@@ -145,10 +157,8 @@ bool CreateRandomString(size_t len, std::string* str) {
   return CreateRandomString(len, kBase64, 64, str);
 }
 
-bool CreateRandomString(size_t len,
-                        const std::string& table,
-                        std::string* str) {
-  return CreateRandomString(len, table.c_str(), static_cast<int>(table.size()),
+bool CreateRandomString(size_t len, absl::string_view table, std::string* str) {
+  return CreateRandomString(len, table.data(), static_cast<int>(table.size()),
                             str);
 }
 

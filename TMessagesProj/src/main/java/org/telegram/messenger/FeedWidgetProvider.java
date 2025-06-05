@@ -42,14 +42,14 @@ public class FeedWidgetProvider extends AppWidgetProvider {
         intent2.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId);
         intent2.setData(Uri.parse(intent2.toUri(Intent.URI_INTENT_SCHEME)));
         RemoteViews rv = new RemoteViews(context.getPackageName(), R.layout.feed_widget_layout);
-        rv.setRemoteAdapter(appWidgetId, R.id.list_view, intent2);
+        rv.setRemoteAdapter(R.id.list_view, intent2);
         rv.setEmptyView(R.id.list_view, R.id.empty_view);
 
         Intent intent = new Intent(ApplicationLoader.applicationContext, LaunchActivity.class);
         intent.setAction("com.tmessages.openchat" + Math.random() + Integer.MAX_VALUE);
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
         intent.addCategory(Intent.CATEGORY_LAUNCHER);
-        PendingIntent contentIntent = PendingIntent.getActivity(ApplicationLoader.applicationContext, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
+        PendingIntent contentIntent = PendingIntent.getActivity(ApplicationLoader.applicationContext, 0, intent, PendingIntent.FLAG_MUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
 
         rv.setPendingIntentTemplate(R.id.list_view, contentIntent);
 

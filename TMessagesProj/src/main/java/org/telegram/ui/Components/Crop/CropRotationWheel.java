@@ -7,11 +7,13 @@ import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.RectF;
+import android.os.Build;
+import android.text.TextPaint;
 import android.view.Gravity;
+import android.view.HapticFeedbackConstants;
 import android.view.MotionEvent;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
-import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
@@ -39,8 +41,10 @@ public class CropRotationWheel extends FrameLayout {
 
     private ImageView aspectRatioButton;
     private ImageView rotation90Button;
-    private ImageView mirrorButton;
-    private TextView degreesLabel;
+    private ImageView  mirrorButton;
+//    private TextView degreesLabel;
+    private String degreesText;
+    private TextPaint degreesTextPaint;
 
     protected float rotation;
     private RectF tempRect;
@@ -66,7 +70,7 @@ public class CropRotationWheel extends FrameLayout {
         bluePaint.setAntiAlias(true);
 
         mirrorButton = new ImageView(context);
-        mirrorButton.setImageResource(R.drawable.photo_flip);
+        mirrorButton.setImageResource(R.drawable.msg_photo_flip);
         mirrorButton.setBackgroundDrawable(Theme.createSelectorDrawable(Theme.ACTION_BAR_WHITE_SELECTOR_COLOR));
         mirrorButton.setScaleType(ImageView.ScaleType.CENTER);
         mirrorButton.setOnClickListener(v -> {
@@ -78,11 +82,11 @@ public class CropRotationWheel extends FrameLayout {
             aspectRatioButton.callOnClick();
             return true;
         });
-        mirrorButton.setContentDescription(LocaleController.getString("AccDescrMirror", R.string.AccDescrMirror));
+        mirrorButton.setContentDescription(LocaleController.getString(R.string.AccDescrMirror));
         addView(mirrorButton, LayoutHelper.createFrame(70, 64, Gravity.LEFT | Gravity.CENTER_VERTICAL));
 
         aspectRatioButton = new ImageView(context);
-        aspectRatioButton.setImageResource(R.drawable.tool_cropfix);
+        aspectRatioButton.setImageResource(R.drawable.msg_photo_cropfix);
         aspectRatioButton.setBackgroundDrawable(Theme.createSelectorDrawable(Theme.ACTION_BAR_WHITE_SELECTOR_COLOR));
         aspectRatioButton.setScaleType(ImageView.ScaleType.CENTER);
         aspectRatioButton.setOnClickListener(v -> {
@@ -91,11 +95,11 @@ public class CropRotationWheel extends FrameLayout {
             }
         });
         aspectRatioButton.setVisibility(GONE);
-        aspectRatioButton.setContentDescription(LocaleController.getString("AccDescrAspectRatio", R.string.AccDescrAspectRatio));
+        aspectRatioButton.setContentDescription(LocaleController.getString(R.string.AccDescrAspectRatio));
         addView(aspectRatioButton, LayoutHelper.createFrame(70, 64, Gravity.LEFT | Gravity.CENTER_VERTICAL));
 
         rotation90Button = new ImageView(context);
-        rotation90Button.setImageResource(R.drawable.tool_rotate);
+        rotation90Button.setImageResource(R.drawable.msg_photo_rotate);
         rotation90Button.setBackgroundDrawable(Theme.createSelectorDrawable(Theme.ACTION_BAR_WHITE_SELECTOR_COLOR));
         rotation90Button.setScaleType(ImageView.ScaleType.CENTER);
         rotation90Button.setOnClickListener(v -> {
@@ -103,12 +107,12 @@ public class CropRotationWheel extends FrameLayout {
                 setRotated(rotationListener.rotate90Pressed());
             }
         });
-        rotation90Button.setContentDescription(LocaleController.getString("AccDescrRotate", R.string.AccDescrRotate));
+        rotation90Button.setContentDescription(LocaleController.getString(R.string.AccDescrRotate));
         addView(rotation90Button, LayoutHelper.createFrame(70, 64, Gravity.RIGHT | Gravity.CENTER_VERTICAL));
 
-        degreesLabel = new TextView(context);
-        degreesLabel.setTextColor(Color.WHITE);
-        addView(degreesLabel, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.CENTER_HORIZONTAL));
+        degreesTextPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
+        degreesTextPaint.setColor(Color.WHITE);
+        degreesTextPaint.setTextSize(AndroidUtilities.dp(14));
 
         setWillNotDraw(false);
 
@@ -120,11 +124,11 @@ public class CropRotationWheel extends FrameLayout {
     }
 
     public void setMirrored(boolean value) {
-        mirrorButton.setColorFilter(value ? new PorterDuffColorFilter(Theme.getColor(Theme.key_dialogFloatingButton), PorterDuff.Mode.MULTIPLY) : null);
+        mirrorButton.setColorFilter(value ? new PorterDuffColorFilter(Theme.getColor(Theme.key_chat_editMediaButton), PorterDuff.Mode.MULTIPLY) : null);
     }
 
     public void setRotated(boolean value) {
-        rotation90Button.setColorFilter(value ? new PorterDuffColorFilter(Theme.getColor(Theme.key_dialogFloatingButton), PorterDuff.Mode.MULTIPLY) : null);
+        rotation90Button.setColorFilter(value ? new PorterDuffColorFilter(Theme.getColor(Theme.key_chat_editMediaButton), PorterDuff.Mode.MULTIPLY) : null);
     }
 
     @Override
@@ -147,12 +151,16 @@ public class CropRotationWheel extends FrameLayout {
 
     public void setRotation(float rotation, boolean animated) {
         this.rotation = rotation;
-        float value = this.rotation;
+        float value = rotation;
         if (Math.abs(value) < 0.1 - 0.001)
             value = Math.abs(value);
-        degreesLabel.setText(String.format("%.1fº", value));
+        degreesText = String.format("%.1fº", value);
 
         invalidate();
+    }
+
+    public float getRotation() {
+        return this.rotation;
     }
 
     public void setAspectLock(boolean enabled) {
@@ -167,8 +175,9 @@ public class CropRotationWheel extends FrameLayout {
         if (action == MotionEvent.ACTION_DOWN) {
             prevX = x;
 
-            if (rotationListener != null)
+            if (rotationListener != null) {
                 rotationListener.onStart();
+            }
         } else if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) {
             if (rotationListener != null)
                 rotationListener.onEnd(this.rotation);
@@ -179,14 +188,28 @@ public class CropRotationWheel extends FrameLayout {
             float newAngle = this.rotation + (float)(delta / AndroidUtilities.density / Math.PI / 1.65f);
             newAngle = Math.max(-MAX_ANGLE, Math.min(MAX_ANGLE, newAngle));
 
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
+                try {
+                    if (Math.abs(newAngle - MAX_ANGLE) < 0.001f && Math.abs(this.rotation - MAX_ANGLE) >= 0.001f ||
+                        Math.abs(newAngle - -MAX_ANGLE) < 0.001f && Math.abs(this.rotation - -MAX_ANGLE) >= 0.001f) {
+                        try {
+                            performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_VIEW_SETTING);
+                        } catch (Exception ignored) {}
+                    } else if (Math.floor(this.rotation / 2.5f) != Math.floor(newAngle / 2.5f)) {
+                        AndroidUtilities.vibrateCursor(this);
+                    }
+                } catch (Exception ignore) {}
+            }
+
             if (Math.abs(newAngle - this.rotation) > 0.001) {
                 if (Math.abs(newAngle) < 0.05)
                     newAngle = 0;
 
                 setRotation(newAngle, false);
 
-                if (rotationListener != null)
+                if (rotationListener != null) {
                     rotationListener.onChange(this.rotation);
+                }
 
                 prevX = x;
             }
@@ -228,6 +251,10 @@ public class CropRotationWheel extends FrameLayout {
         tempRect.right = (width + AndroidUtilities.dp(2.5f)) / 2;
         tempRect.bottom =  (height + AndroidUtilities.dp(22)) / 2;
         canvas.drawRoundRect(tempRect, AndroidUtilities.dp(2), AndroidUtilities.dp(2), bluePaint);
+
+        float tx = (width - degreesTextPaint.measureText(degreesText)) / 2;
+        float ty = AndroidUtilities.dp(14);
+        canvas.drawText(degreesText, tx, ty, degreesTextPaint);
     }
 
     protected void drawLine(Canvas canvas, int i, float delta, int width, int height, boolean center, Paint paint) {

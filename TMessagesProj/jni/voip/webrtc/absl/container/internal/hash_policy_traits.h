@@ -17,9 +17,11 @@
 
 #include <cstddef>
 #include <memory>
+#include <new>
 #include <type_traits>
 #include <utility>
 
+#include "absl/container/internal/common_policy_traits.h"
 #include "absl/meta/type_traits.h"
 
 namespace absl {
@@ -28,16 +30,35 @@ namespace container_internal {
 
 // Defines how slots are initialized/destroyed/moved.
 template <class Policy, class = void>
-struct hash_policy_traits {
+struct hash_policy_traits : common_policy_traits<Policy> {
+  // The type of the keys stored in the hashtable.
+  using key_type = typename Policy::key_type;
+
  private:
   struct ReturnKey {
-    // We return `Key` here.
+    // When C++17 is available, we can use std::launder to provide mutable
+    // access to the key for use in node handle.
+#if defined(__cpp_lib_launder) && __cpp_lib_launder >= 201606
+    template <class Key,
+              absl::enable_if_t<std::is_lvalue_reference<Key>::value, int> = 0>
+    static key_type& Impl(Key&& k, int) {
+      return *std::launder(
+          const_cast<key_type*>(std::addressof(std::forward<Key>(k))));
+    }
+#endif
+
+    template <class Key>
+    static Key Impl(Key&& k, char) {
+      return std::forward<Key>(k);
+    }
+
     // When Key=T&, we forward the lvalue reference.
     // When Key=T, we return by value to avoid a dangling reference.
     // eg, for string_hash_map.
     template <class Key, class... Args>
-    Key operator()(Key&& k, const Args&...) const {
-      return std::forward<Key>(k);
+    auto operator()(Key&& k, const Args&...) const
+        -> decltype(Impl(std::forward<Key>(k), 0)) {
+      return Impl(std::forward<Key>(k), 0);
     }
   };
 
@@ -51,9 +72,6 @@ struct hash_policy_traits {
  public:
   // The actual object stored in the hash table.
   using slot_type = typename Policy::slot_type;
-
-  // The type of the keys stored in the hashtable.
-  using key_type = typename Policy::key_type;
 
   // The argument type for insertions into the hashtable. This is different
   // from value_type for increased performance. See initializer_list constructor
@@ -69,43 +87,6 @@ struct hash_policy_traits {
   // containers.
   // Defaults to false if not provided by the policy.
   using constant_iterators = ConstantIteratorsImpl<>;
-
-  // PRECONDITION: `slot` is UNINITIALIZED
-  // POSTCONDITION: `slot` is INITIALIZED
-  template <class Alloc, class... Args>
-  static void construct(Alloc* alloc, slot_type* slot, Args&&... args) {
-    Policy::construct(alloc, slot, std::forward<Args>(args)...);
-  }
-
-  // PRECONDITION: `slot` is INITIALIZED
-  // POSTCONDITION: `slot` is UNINITIALIZED
-  template <class Alloc>
-  static void destroy(Alloc* alloc, slot_type* slot) {
-    Policy::destroy(alloc, slot);
-  }
-
-  // Transfers the `old_slot` to `new_slot`. Any memory allocated by the
-  // allocator inside `old_slot` to `new_slot` can be transferred.
-  //
-  // OPTIONAL: defaults to:
-  //
-  //     clone(new_slot, std::move(*old_slot));
-  //     destroy(old_slot);
-  //
-  // PRECONDITION: `new_slot` is UNINITIALIZED and `old_slot` is INITIALIZED
-  // POSTCONDITION: `new_slot` is INITIALIZED and `old_slot` is
-  //                UNINITIALIZED
-  template <class Alloc>
-  static void transfer(Alloc* alloc, slot_type* new_slot, slot_type* old_slot) {
-    transfer_impl(alloc, new_slot, old_slot, 0);
-  }
-
-  // PRECONDITION: `slot` is INITIALIZED
-  // POSTCONDITION: `slot` is INITIALIZED
-  template <class P = Policy>
-  static auto element(slot_type* slot) -> decltype(P::element(slot)) {
-    return P::element(slot);
-  }
 
   // Returns the amount of memory owned by `slot`, exclusive of `sizeof(*slot)`.
   //
@@ -156,9 +137,9 @@ struct hash_policy_traits {
   // Returns the "key" portion of the slot.
   // Used for node handle manipulation.
   template <class P = Policy>
-  static auto key(slot_type* slot)
-      -> decltype(P::apply(ReturnKey(), element(slot))) {
-    return P::apply(ReturnKey(), element(slot));
+  static auto mutable_key(slot_type* slot)
+      -> decltype(P::apply(ReturnKey(), hash_policy_traits::element(slot))) {
+    return P::apply(ReturnKey(), hash_policy_traits::element(slot));
   }
 
   // Returns the "value" (as opposed to the "key") portion of the element. Used
@@ -168,20 +149,55 @@ struct hash_policy_traits {
     return P::value(elem);
   }
 
+  using HashSlotFn = size_t (*)(const void* hash_fn, void* slot);
+
+  template <class Hash>
+  static constexpr HashSlotFn get_hash_slot_fn() {
+// get_hash_slot_fn may return nullptr to signal that non type erased function
+// should be used. GCC warns against comparing function address with nullptr.
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC diagnostic push
+// silent error: the address of * will never be NULL [-Werror=address]
+#pragma GCC diagnostic ignored "-Waddress"
+#endif
+    return Policy::template get_hash_slot_fn<Hash>() == nullptr
+               ? &hash_slot_fn_non_type_erased<Hash>
+               : Policy::template get_hash_slot_fn<Hash>();
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC diagnostic pop
+#endif
+  }
+
+  // Whether small object optimization is enabled. True by default.
+  static constexpr bool soo_enabled() { return soo_enabled_impl(Rank1{}); }
+
  private:
+  template <class Hash>
+  struct HashElement {
+    template <class K, class... Args>
+    size_t operator()(const K& key, Args&&...) const {
+      return h(key);
+    }
+    const Hash& h;
+  };
+
+  template <class Hash>
+  static size_t hash_slot_fn_non_type_erased(const void* hash_fn, void* slot) {
+    return Policy::apply(HashElement<Hash>{*static_cast<const Hash*>(hash_fn)},
+                         Policy::element(static_cast<slot_type*>(slot)));
+  }
+
+  // Use go/ranked-overloads for dispatching. Rank1 is preferred.
+  struct Rank0 {};
+  struct Rank1 : Rank0 {};
+
   // Use auto -> decltype as an enabler.
-  template <class Alloc, class P = Policy>
-  static auto transfer_impl(Alloc* alloc, slot_type* new_slot,
-                            slot_type* old_slot, int)
-      -> decltype((void)P::transfer(alloc, new_slot, old_slot)) {
-    P::transfer(alloc, new_slot, old_slot);
+  template <class P = Policy>
+  static constexpr auto soo_enabled_impl(Rank1) -> decltype(P::soo_enabled()) {
+    return P::soo_enabled();
   }
-  template <class Alloc>
-  static void transfer_impl(Alloc* alloc, slot_type* new_slot,
-                            slot_type* old_slot, char) {
-    construct(alloc, new_slot, std::move(element(old_slot)));
-    destroy(alloc, old_slot);
-  }
+
+  static constexpr bool soo_enabled_impl(Rank0) { return true; }
 };
 
 }  // namespace container_internal

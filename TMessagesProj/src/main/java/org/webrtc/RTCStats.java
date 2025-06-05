@@ -14,8 +14,8 @@ import java.util.Map;
 
 /**
  * Java version of webrtc::RTCStats. Represents an RTCStats object, as
- * described in https://w3c.github.io/webrtc-stats/. The |id|, |timestampUs|
- * and |type| accessors have the same meaning for this class as for the
+ * described in https://w3c.github.io/webrtc-stats/. The `id`, `timestampUs`
+ * and `type` accessors have the same meaning for this class as for the
  * RTCStats dictionary. Each RTCStatsReport produced by getStats contains
  * multiple RTCStats objects; one for each underlying object (codec, stream,
  * transport, etc.) that was inspected to produce the stats.
@@ -62,6 +62,7 @@ public class RTCStats {
    * - Double
    * - String
    * - The array form of any of the above (e.g., Integer[])
+   * - Map of String keys to BigInteger / Double values
    */
   public Map<String, Object> getMembers() {
     return members;

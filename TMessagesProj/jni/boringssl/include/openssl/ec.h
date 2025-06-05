@@ -1,74 +1,22 @@
-/* Originally written by Bodo Moeller for the OpenSSL project.
- * ====================================================================
- * Copyright (c) 1998-2005 The OpenSSL Project.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- *
- * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- *
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- *
- * 3. All advertising materials mentioning features or use of this
- *    software must display the following acknowledgment:
- *    "This product includes software developed by the OpenSSL Project
- *    for use in the OpenSSL Toolkit. (http://www.openssl.org/)"
- *
- * 4. The names "OpenSSL Toolkit" and "OpenSSL Project" must not be used to
- *    endorse or promote products derived from this software without
- *    prior written permission. For written permission, please contact
- *    openssl-core@openssl.org.
- *
- * 5. Products derived from this software may not be called "OpenSSL"
- *    nor may "OpenSSL" appear in their names without prior written
- *    permission of the OpenSSL Project.
- *
- * 6. Redistributions of any form whatsoever must retain the following
- *    acknowledgment:
- *    "This product includes software developed by the OpenSSL Project
- *    for use in the OpenSSL Toolkit (http://www.openssl.org/)"
- *
- * THIS SOFTWARE IS PROVIDED BY THE OpenSSL PROJECT ``AS IS'' AND ANY
- * EXPRESSED OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
- * PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE OpenSSL PROJECT OR
- * ITS CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
- * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
- * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
- * OF THE POSSIBILITY OF SUCH DAMAGE.
- * ====================================================================
- *
- * This product includes cryptographic software written by Eric Young
- * (eay@cryptsoft.com).  This product includes software written by Tim
- * Hudson (tjh@cryptsoft.com).
- *
- */
-/* ====================================================================
- * Copyright 2002 Sun Microsystems, Inc. ALL RIGHTS RESERVED.
- *
- * Portions of the attached software ("Contribution") are developed by
- * SUN MICROSYSTEMS, INC., and are contributed to the OpenSSL project.
- *
- * The Contribution is licensed pursuant to the OpenSSL open source
- * license provided above.
- *
- * The elliptic curve binary polynomial software is originally written by
- * Sheueling Chang Shantz and Douglas Stebila of Sun Microsystems
- * Laboratories. */
+// Copyright 2000-2016 The OpenSSL Project Authors. All Rights Reserved.
+// Copyright (c) 2002, Oracle and/or its affiliates. All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 #ifndef OPENSSL_HEADER_EC_H
 #define OPENSSL_HEADER_EC_H
 
-#include <openssl/base.h>
+#include <openssl/base.h>   // IWYU pragma: export
 
 #if defined(__cplusplus)
 extern "C" {
@@ -100,25 +48,48 @@ typedef enum {
 
 
 // Elliptic curve groups.
+//
+// Elliptic curve groups are represented by |EC_GROUP| objects. Unlike OpenSSL,
+// if limited to the APIs in this section, callers may treat |EC_GROUP|s as
+// static, immutable objects which do not need to be copied or released. In
+// BoringSSL, only custom |EC_GROUP|s created by |EC_GROUP_new_curve_GFp|
+// (deprecated) are dynamic.
+//
+// Callers may cast away |const| and use |EC_GROUP_dup| and |EC_GROUP_free| with
+// static groups, for compatibility with OpenSSL or dynamic groups, but it is
+// otherwise unnecessary.
 
-// EC_GROUP_new_by_curve_name returns a fresh EC_GROUP object for the elliptic
-// curve specified by |nid|, or NULL on unsupported NID or allocation failure.
+// EC_group_p224 returns an |EC_GROUP| for P-224, also known as secp224r1.
+OPENSSL_EXPORT const EC_GROUP *EC_group_p224(void);
+
+// EC_group_p256 returns an |EC_GROUP| for P-256, also known as secp256r1 or
+// prime256v1.
+OPENSSL_EXPORT const EC_GROUP *EC_group_p256(void);
+
+// EC_group_p384 returns an |EC_GROUP| for P-384, also known as secp384r1.
+OPENSSL_EXPORT const EC_GROUP *EC_group_p384(void);
+
+// EC_group_p521 returns an |EC_GROUP| for P-521, also known as secp521r1.
+OPENSSL_EXPORT const EC_GROUP *EC_group_p521(void);
+
+// EC_GROUP_new_by_curve_name returns the |EC_GROUP| object for the elliptic
+// curve specified by |nid|, or NULL on unsupported NID.  For OpenSSL
+// compatibility, this function returns a non-const pointer which may be passed
+// to |EC_GROUP_free|. However, the resulting object is actually static and
+// calling |EC_GROUP_free| is optional.
 //
 // The supported NIDs are:
-//   NID_secp224r1 (P-224),
-//   NID_X9_62_prime256v1 (P-256),
-//   NID_secp384r1 (P-384),
-//   NID_secp521r1 (P-521)
+// - |NID_secp224r1| (P-224)
+// - |NID_X9_62_prime256v1| (P-256)
+// - |NID_secp384r1| (P-384)
+// - |NID_secp521r1| (P-521)
+//
+// Calling this function causes all four curves to be linked into the binary.
+// Prefer calling |EC_group_*| to allow the static linker to drop unused curves.
 //
 // If in doubt, use |NID_X9_62_prime256v1|, or see the curve25519.h header for
 // more modern primitives.
 OPENSSL_EXPORT EC_GROUP *EC_GROUP_new_by_curve_name(int nid);
-
-// EC_GROUP_free releases a reference to |group|.
-OPENSSL_EXPORT void EC_GROUP_free(EC_GROUP *group);
-
-// EC_GROUP_dup takes a reference to |a| and returns it.
-OPENSSL_EXPORT EC_GROUP *EC_GROUP_dup(const EC_GROUP *a);
 
 // EC_GROUP_cmp returns zero if |a| and |b| are the same group and non-zero
 // otherwise.
@@ -221,24 +192,55 @@ OPENSSL_EXPORT int EC_POINT_get_affine_coordinates_GFp(const EC_GROUP *group,
                                                        BIGNUM *x, BIGNUM *y,
                                                        BN_CTX *ctx);
 
+// EC_POINT_get_affine_coordinates is an alias of
+// |EC_POINT_get_affine_coordinates_GFp|.
+OPENSSL_EXPORT int EC_POINT_get_affine_coordinates(const EC_GROUP *group,
+                                                   const EC_POINT *point,
+                                                   BIGNUM *x, BIGNUM *y,
+                                                   BN_CTX *ctx);
+
 // EC_POINT_set_affine_coordinates_GFp sets the value of |point| to be
 // (|x|, |y|). The |ctx| argument may be used if not NULL. It returns one
-// on success or zero on error. Note that, unlike with OpenSSL, it's
-// considered an error if the point is not on the curve.
+// on success or zero on error. It's considered an error if the point is not on
+// the curve.
+//
+// Note that the corresponding function in OpenSSL versions prior to 1.0.2s does
+// not check if the point is on the curve. This is a security-critical check, so
+// code additionally supporting OpenSSL should repeat the check with
+// |EC_POINT_is_on_curve| or check for older OpenSSL versions with
+// |OPENSSL_VERSION_NUMBER|.
 OPENSSL_EXPORT int EC_POINT_set_affine_coordinates_GFp(const EC_GROUP *group,
                                                        EC_POINT *point,
                                                        const BIGNUM *x,
                                                        const BIGNUM *y,
                                                        BN_CTX *ctx);
 
+// EC_POINT_set_affine_coordinates is an alias of
+// |EC_POINT_set_affine_coordinates_GFp|.
+OPENSSL_EXPORT int EC_POINT_set_affine_coordinates(const EC_GROUP *group,
+                                                   EC_POINT *point,
+                                                   const BIGNUM *x,
+                                                   const BIGNUM *y,
+                                                   BN_CTX *ctx);
+
 // EC_POINT_point2oct serialises |point| into the X9.62 form given by |form|
-// into, at most, |len| bytes at |buf|. It returns the number of bytes written
-// or zero on error if |buf| is non-NULL, else the number of bytes needed. The
-// |ctx| argument may be used if not NULL.
+// into, at most, |max_out| bytes at |buf|. It returns the number of bytes
+// written or zero on error if |buf| is non-NULL, else the number of bytes
+// needed. The |ctx| argument may be used if not NULL.
 OPENSSL_EXPORT size_t EC_POINT_point2oct(const EC_GROUP *group,
                                          const EC_POINT *point,
                                          point_conversion_form_t form,
-                                         uint8_t *buf, size_t len, BN_CTX *ctx);
+                                         uint8_t *buf, size_t max_out,
+                                         BN_CTX *ctx);
+
+// EC_POINT_point2buf serialises |point| into the X9.62 form given by |form| to
+// a newly-allocated buffer and sets |*out_buf| to point to it. It returns the
+// length of the result on success or zero on error. The caller must release
+// |*out_buf| with |OPENSSL_free| when done.
+OPENSSL_EXPORT size_t EC_POINT_point2buf(const EC_GROUP *group,
+                                         const EC_POINT *point,
+                                         point_conversion_form_t form,
+                                         uint8_t **out_buf, BN_CTX *ctx);
 
 // EC_POINT_point2cbb behaves like |EC_POINT_point2oct| but appends the
 // serialised point to |cbb|. It returns one on success and zero on error.
@@ -248,8 +250,9 @@ OPENSSL_EXPORT int EC_POINT_point2cbb(CBB *out, const EC_GROUP *group,
                                       BN_CTX *ctx);
 
 // EC_POINT_oct2point sets |point| from |len| bytes of X9.62 format
-// serialisation in |buf|. It returns one on success and zero otherwise. The
-// |ctx| argument may be used if not NULL.
+// serialisation in |buf|. It returns one on success and zero on error. The
+// |ctx| argument may be used if not NULL. It's considered an error if |buf|
+// does not represent a point on the curve.
 OPENSSL_EXPORT int EC_POINT_oct2point(const EC_GROUP *group, EC_POINT *point,
                                       const uint8_t *buf, size_t len,
                                       BN_CTX *ctx);
@@ -287,11 +290,52 @@ OPENSSL_EXPORT int EC_POINT_mul(const EC_GROUP *group, EC_POINT *r,
                                 const BIGNUM *m, BN_CTX *ctx);
 
 
+// Hash-to-curve.
+//
+// The following functions implement primitives from RFC 9380. The |dst|
+// parameter in each function is the domain separation tag and must be unique
+// for each protocol and between the |hash_to_curve| and |hash_to_scalar|
+// variants. See section 3.1 of the spec for additional guidance on this
+// parameter.
+
+// EC_hash_to_curve_p256_xmd_sha256_sswu hashes |msg| to a point on |group| and
+// writes the result to |out|, implementing the P256_XMD:SHA-256_SSWU_RO_ suite
+// from RFC 9380. It returns one on success and zero on error.
+OPENSSL_EXPORT int EC_hash_to_curve_p256_xmd_sha256_sswu(
+    const EC_GROUP *group, EC_POINT *out, const uint8_t *dst, size_t dst_len,
+    const uint8_t *msg, size_t msg_len);
+
+// EC_hash_to_curve_p384_xmd_sha384_sswu hashes |msg| to a point on |group| and
+// writes the result to |out|, implementing the P384_XMD:SHA-384_SSWU_RO_ suite
+// from RFC 9380. It returns one on success and zero on error.
+OPENSSL_EXPORT int EC_hash_to_curve_p384_xmd_sha384_sswu(
+    const EC_GROUP *group, EC_POINT *out, const uint8_t *dst, size_t dst_len,
+    const uint8_t *msg, size_t msg_len);
+
+
 // Deprecated functions.
+
+// EC_GROUP_free releases a reference to |group|, if |group| was created by
+// |EC_GROUP_new_curve_GFp|. If |group| is static, it does nothing.
+//
+// This function exists for OpenSSL compatibilty, and to manage dynamic
+// |EC_GROUP|s constructed by |EC_GROUP_new_curve_GFp|. Callers that do not need
+// either may ignore this function.
+OPENSSL_EXPORT void EC_GROUP_free(EC_GROUP *group);
+
+// EC_GROUP_dup increments |group|'s reference count and returns it, if |group|
+// was created by |EC_GROUP_new_curve_GFp|. If |group| is static, it simply
+// returns |group|.
+//
+// This function exists for OpenSSL compatibilty, and to manage dynamic
+// |EC_GROUP|s constructed by |EC_GROUP_new_curve_GFp|. Callers that do not need
+// either may ignore this function.
+OPENSSL_EXPORT EC_GROUP *EC_GROUP_dup(const EC_GROUP *group);
 
 // EC_GROUP_new_curve_GFp creates a new, arbitrary elliptic curve group based
 // on the equation y² = x³ + a·x + b. It returns the new group or NULL on
-// error.
+// error. The lifetime of the resulting object must be managed with
+// |EC_GROUP_dup| and |EC_GROUP_free|.
 //
 // This new group has no generator. It is an error to use a generator-less group
 // with any functions except for |EC_GROUP_free|, |EC_POINT_new|,
@@ -301,7 +345,15 @@ OPENSSL_EXPORT int EC_POINT_mul(const EC_GROUP *group, EC_POINT *r,
 // |EC_GROUP_cmp| (even to themselves). |EC_GROUP_get_curve_name| will always
 // return |NID_undef|.
 //
-// Avoid using arbitrary curves and use |EC_GROUP_new_by_curve_name| instead.
+// This function is provided for compatibility with some legacy applications
+// only. Avoid using arbitrary curves and use |EC_GROUP_new_by_curve_name|
+// instead. This ensures the result meets preconditions necessary for
+// elliptic curve algorithms to function correctly and securely.
+//
+// Given invalid parameters, this function may fail or it may return an
+// |EC_GROUP| which breaks these preconditions. Subsequent operations may then
+// return arbitrary, incorrect values. Callers should not pass
+// attacker-controlled values to this function.
 OPENSSL_EXPORT EC_GROUP *EC_GROUP_new_curve_GFp(const BIGNUM *p,
                                                 const BIGNUM *a,
                                                 const BIGNUM *b, BN_CTX *ctx);
@@ -321,11 +373,14 @@ OPENSSL_EXPORT int EC_GROUP_set_generator(EC_GROUP *group,
 OPENSSL_EXPORT int EC_GROUP_get_order(const EC_GROUP *group, BIGNUM *order,
                                       BN_CTX *ctx);
 
+#define OPENSSL_EC_EXPLICIT_CURVE 0
+#define OPENSSL_EC_NAMED_CURVE 1
+
 // EC_GROUP_set_asn1_flag does nothing.
 OPENSSL_EXPORT void EC_GROUP_set_asn1_flag(EC_GROUP *group, int flag);
 
-#define OPENSSL_EC_NAMED_CURVE 0
-#define OPENSSL_EC_EXPLICIT_CURVE 1
+// EC_GROUP_get_asn1_flag returns |OPENSSL_EC_NAMED_CURVE|.
+OPENSSL_EXPORT int EC_GROUP_get_asn1_flag(const EC_GROUP *group);
 
 typedef struct ec_method_st EC_METHOD;
 

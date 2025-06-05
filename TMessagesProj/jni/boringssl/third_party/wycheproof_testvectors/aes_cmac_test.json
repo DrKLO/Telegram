@@ -1,86 +1,22 @@
 {
   "algorithm" : "AES-CMAC",
-  "generatorVersion" : "0.4.12",
-  "numberOfTests" : 290,
-  "header" : [],
+  "generatorVersion" : "0.8r12",
+  "numberOfTests" : 308,
+  "header" : [
+    "Test vectors of type MacTest are intended for testing the",
+    "generation and verification of MACs."
+  ],
+  "notes" : {
+  },
+  "schema" : "mac_test_schema.json",
   "testGroups" : [
-    {
-      "keySize" : 128,
-      "tagSize" : 96,
-      "type" : "MacTest",
-      "tests" : [
-        {
-          "tcId" : 1,
-          "comment" : "empty message",
-          "key" : "1607559459d30d33548a635ab1eeab9d",
-          "msg" : "",
-          "tag" : "6a8974470fddb0a47e2b6e7d",
-          "result" : "valid",
-          "flags" : []
-        },
-        {
-          "tcId" : 2,
-          "comment" : "truncated mac",
-          "key" : "994275465065fdc96ae37b5d2feb8726",
-          "msg" : "c6",
-          "tag" : "3bfa9ec0fb0cc2b8509e7b1f",
-          "result" : "valid",
-          "flags" : []
-        },
-        {
-          "tcId" : 3,
-          "comment" : "truncated mac",
-          "key" : "ddc31fc7751a2bf5c8d2d815035622e8",
-          "msg" : "c81598f30b3e8ca8",
-          "tag" : "323c2fd67f1bc85108f391e1",
-          "result" : "valid",
-          "flags" : []
-        },
-        {
-          "tcId" : 4,
-          "comment" : "truncated mac",
-          "key" : "acef13560296fdc6b09398ae04196f2b",
-          "msg" : "25d99a552339745e24a0cb6a9669c4",
-          "tag" : "cdff8af899f61a70a97d967a",
-          "result" : "valid",
-          "flags" : []
-        },
-        {
-          "tcId" : 5,
-          "comment" : "truncated mac",
-          "key" : "33defac4ec7c7b69aa72edb23119e619",
-          "msg" : "ceabee3f13d0718779ba86acccd6d5a9",
-          "tag" : "e0b19f7e0316f276a846115f",
-          "result" : "valid",
-          "flags" : []
-        },
-        {
-          "tcId" : 6,
-          "comment" : "truncated mac",
-          "key" : "d1c61c251def47b39deb1a77a8b188d9",
-          "msg" : "0d68e86cf139677cb461a0fa76690e4afc",
-          "tag" : "2c5f2629fa41555e84c0ef0c",
-          "result" : "valid",
-          "flags" : []
-        },
-        {
-          "tcId" : 7,
-          "comment" : "truncated mac",
-          "key" : "3f71e3875f234fc569433cafa3a36330",
-          "msg" : "a3e01e9a597e57502fd849908aa7a19407cbfdc74bc5c485",
-          "tag" : "eb8e0bb4937e4a4f9fd55465",
-          "result" : "valid",
-          "flags" : []
-        }
-      ]
-    },
     {
       "keySize" : 128,
       "tagSize" : 128,
       "type" : "MacTest",
       "tests" : [
         {
-          "tcId" : 8,
+          "tcId" : 1,
           "comment" : "empty message",
           "key" : "e34f15c7bd819930fe9d66e0c166e61c",
           "msg" : "",
@@ -89,8 +25,8 @@
           "flags" : []
         },
         {
-          "tcId" : 9,
-          "comment" : "full length mac",
+          "tcId" : 2,
+          "comment" : "short message",
           "key" : "e1e726677f4893890f8c027f9d8ef80d",
           "msg" : "3f",
           "tag" : "15f856bbed3b321952a584b3c4437a63",
@@ -98,8 +34,62 @@
           "flags" : []
         },
         {
-          "tcId" : 10,
-          "comment" : "full length mac",
+          "tcId" : 3,
+          "comment" : "short message",
+          "key" : "b151f491c4c006d1f28214aa3da9a985",
+          "msg" : "27d9",
+          "tag" : "bdbbebac982dd62b9f682618a6a604e9",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 4,
+          "comment" : "short message",
+          "key" : "c36ff15f72777ee21deec07b63c1a0cd",
+          "msg" : "50b428",
+          "tag" : "be0c3ede157568af394023eb9a7cc983",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 5,
+          "comment" : "short message",
+          "key" : "32b9c5c78c3a0689a86052420fa1e8fc",
+          "msg" : "0b9262ec",
+          "tag" : "57e1506856c55dd32cd9ca821adb6c81",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 6,
+          "comment" : "short message",
+          "key" : "43151bbaef367277ebfc97509d0aa49c",
+          "msg" : "eaa91273e7",
+          "tag" : "e01adc3be6a7621824232c4285dd35b9",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 7,
+          "comment" : "short message",
+          "key" : "481440298525cc261f8159159aedf62d",
+          "msg" : "6123c556c5cc",
+          "tag" : "a281e0d2d5378dfdcc1310fd9782ca56",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 8,
+          "comment" : "short message",
+          "key" : "9ca26eb88731efbf7f810d5d95e196ac",
+          "msg" : "7e48f06183aa40",
+          "tag" : "fc81761f2f7b4ce13b53d36e32677332",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 9,
+          "comment" : "short message",
           "key" : "48f0d03e41cc55c4b58f737b5acdea32",
           "msg" : "f4a133aa6d5985a0",
           "tag" : "1f1cd0327c02e6d00086915937dd61d9",
@@ -107,8 +97,62 @@
           "flags" : []
         },
         {
+          "tcId" : 10,
+          "comment" : "short message",
+          "key" : "1c958849f31996b28939ce513087d1be",
+          "msg" : "b0d2fee11b8e2f86b7",
+          "tag" : "555f462151f7dd16de698d639fb26760",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
           "tcId" : 11,
-          "comment" : "full length mac",
+          "comment" : "short message",
+          "key" : "39de0ebea97c09b2301a90009a423253",
+          "msg" : "81e5c33b4c620852f044",
+          "tag" : "9b004f15b7f6f366374954e64bc58f5f",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 12,
+          "comment" : "short message",
+          "key" : "91656d8fc0aced60ddb1c4006d0dde53",
+          "msg" : "7b3e440fe566790064b2ec",
+          "tag" : "76672ed16c29be449e0c80785cc38e89",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 13,
+          "comment" : "short message",
+          "key" : "af7d5134720b5386158d51ea126e7cf9",
+          "msg" : "7cc6fcc925c20f3c83b5567c",
+          "tag" : "2dc5c88cf3b80ab6c0199f40be904abc",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 14,
+          "comment" : "short message",
+          "key" : "4ed56753de6f75a032ebabca3ce27971",
+          "msg" : "0c8c0f5619d9f8da5339281285",
+          "tag" : "eab4366d97e99a0850f077329ad058c0",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 15,
+          "comment" : "short message",
+          "key" : "beba50c936b696c15e25046dffb23a64",
+          "msg" : "821ea8532fbabffb6e3d212e9b46",
+          "tag" : "22f33cab09c173f75d3401fe44efeead",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 16,
+          "comment" : "short message",
           "key" : "501d81ebf912ddb87fbe3b7aac1437bc",
           "msg" : "2368e3c3636b5e8e94d2081adbf798",
           "tag" : "aeb784a3825168ddd61f72d0202125e6",
@@ -116,8 +160,8 @@
           "flags" : []
         },
         {
-          "tcId" : 12,
-          "comment" : "full length mac",
+          "tcId" : 17,
+          "comment" : "",
           "key" : "e09eaa5a3f5e56d279d5e7a03373f6ea",
           "msg" : "ef4eab37181f98423e53e947e7050fd0",
           "tag" : "40facf0e2fb51b73a7472681b033d6dc",
@@ -125,8 +169,8 @@
           "flags" : []
         },
         {
-          "tcId" : 13,
-          "comment" : "full length mac",
+          "tcId" : 18,
+          "comment" : "",
           "key" : "831e664c9e3f0c3094c0b27b9d908eb2",
           "msg" : "26603bb76dd0a0180791c4ed4d3b058807",
           "tag" : "a8144c8b24f2aa47d9c160cff4ab1716",
@@ -134,8 +178,8 @@
           "flags" : []
         },
         {
-          "tcId" : 14,
-          "comment" : "full length mac",
+          "tcId" : 19,
+          "comment" : "",
           "key" : "549bd282ee21b4d7c3b1d02e3ee20ef7",
           "msg" : "d84bf73c5eecbd38444f1a73556e2fa3253f4c54d6916545",
           "tag" : "7ed458afe02f4a513f59715b664b1bbe",
@@ -143,7 +187,16 @@
           "flags" : []
         },
         {
-          "tcId" : 15,
+          "tcId" : 20,
+          "comment" : "",
+          "key" : "9bd3902ed0996c869b572272e76f3889",
+          "msg" : "a7ba19d49ee1ea02f098aa8e30c740d893a4456ccc294040484ed8a00a55f93e",
+          "tag" : "45082218c2d05eef32247feb1133d0a3",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 21,
           "comment" : "Flipped bit 0 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f",
           "msg" : "",
@@ -152,7 +205,7 @@
           "flags" : []
         },
         {
-          "tcId" : 16,
+          "tcId" : 22,
           "comment" : "Flipped bit 0 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f",
           "msg" : "0001020304050607",
@@ -161,7 +214,7 @@
           "flags" : []
         },
         {
-          "tcId" : 17,
+          "tcId" : 23,
           "comment" : "Flipped bit 0 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f",
           "msg" : "000102030405060708090a0b0c0d0e0f",
@@ -170,7 +223,7 @@
           "flags" : []
         },
         {
-          "tcId" : 18,
+          "tcId" : 24,
           "comment" : "Flipped bit 1 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f",
           "msg" : "",
@@ -179,7 +232,7 @@
           "flags" : []
         },
         {
-          "tcId" : 19,
+          "tcId" : 25,
           "comment" : "Flipped bit 1 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f",
           "msg" : "0001020304050607",
@@ -188,7 +241,7 @@
           "flags" : []
         },
         {
-          "tcId" : 20,
+          "tcId" : 26,
           "comment" : "Flipped bit 1 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f",
           "msg" : "000102030405060708090a0b0c0d0e0f",
@@ -197,7 +250,7 @@
           "flags" : []
         },
         {
-          "tcId" : 21,
+          "tcId" : 27,
           "comment" : "Flipped bit 7 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f",
           "msg" : "",
@@ -206,7 +259,7 @@
           "flags" : []
         },
         {
-          "tcId" : 22,
+          "tcId" : 28,
           "comment" : "Flipped bit 7 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f",
           "msg" : "0001020304050607",
@@ -215,7 +268,7 @@
           "flags" : []
         },
         {
-          "tcId" : 23,
+          "tcId" : 29,
           "comment" : "Flipped bit 7 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f",
           "msg" : "000102030405060708090a0b0c0d0e0f",
@@ -224,7 +277,7 @@
           "flags" : []
         },
         {
-          "tcId" : 24,
+          "tcId" : 30,
           "comment" : "Flipped bit 8 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f",
           "msg" : "",
@@ -233,7 +286,7 @@
           "flags" : []
         },
         {
-          "tcId" : 25,
+          "tcId" : 31,
           "comment" : "Flipped bit 8 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f",
           "msg" : "0001020304050607",
@@ -242,7 +295,7 @@
           "flags" : []
         },
         {
-          "tcId" : 26,
+          "tcId" : 32,
           "comment" : "Flipped bit 8 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f",
           "msg" : "000102030405060708090a0b0c0d0e0f",
@@ -251,7 +304,7 @@
           "flags" : []
         },
         {
-          "tcId" : 27,
+          "tcId" : 33,
           "comment" : "Flipped bit 31 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f",
           "msg" : "",
@@ -260,7 +313,7 @@
           "flags" : []
         },
         {
-          "tcId" : 28,
+          "tcId" : 34,
           "comment" : "Flipped bit 31 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f",
           "msg" : "0001020304050607",
@@ -269,7 +322,7 @@
           "flags" : []
         },
         {
-          "tcId" : 29,
+          "tcId" : 35,
           "comment" : "Flipped bit 31 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f",
           "msg" : "000102030405060708090a0b0c0d0e0f",
@@ -278,7 +331,7 @@
           "flags" : []
         },
         {
-          "tcId" : 30,
+          "tcId" : 36,
           "comment" : "Flipped bit 32 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f",
           "msg" : "",
@@ -287,7 +340,7 @@
           "flags" : []
         },
         {
-          "tcId" : 31,
+          "tcId" : 37,
           "comment" : "Flipped bit 32 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f",
           "msg" : "0001020304050607",
@@ -296,7 +349,7 @@
           "flags" : []
         },
         {
-          "tcId" : 32,
+          "tcId" : 38,
           "comment" : "Flipped bit 32 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f",
           "msg" : "000102030405060708090a0b0c0d0e0f",
@@ -305,7 +358,7 @@
           "flags" : []
         },
         {
-          "tcId" : 33,
+          "tcId" : 39,
           "comment" : "Flipped bit 33 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f",
           "msg" : "",
@@ -314,7 +367,7 @@
           "flags" : []
         },
         {
-          "tcId" : 34,
+          "tcId" : 40,
           "comment" : "Flipped bit 33 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f",
           "msg" : "0001020304050607",
@@ -323,7 +376,7 @@
           "flags" : []
         },
         {
-          "tcId" : 35,
+          "tcId" : 41,
           "comment" : "Flipped bit 33 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f",
           "msg" : "000102030405060708090a0b0c0d0e0f",
@@ -332,7 +385,7 @@
           "flags" : []
         },
         {
-          "tcId" : 36,
+          "tcId" : 42,
           "comment" : "Flipped bit 63 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f",
           "msg" : "",
@@ -341,7 +394,7 @@
           "flags" : []
         },
         {
-          "tcId" : 37,
+          "tcId" : 43,
           "comment" : "Flipped bit 63 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f",
           "msg" : "0001020304050607",
@@ -350,7 +403,7 @@
           "flags" : []
         },
         {
-          "tcId" : 38,
+          "tcId" : 44,
           "comment" : "Flipped bit 63 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f",
           "msg" : "000102030405060708090a0b0c0d0e0f",
@@ -359,7 +412,7 @@
           "flags" : []
         },
         {
-          "tcId" : 39,
+          "tcId" : 45,
           "comment" : "Flipped bit 64 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f",
           "msg" : "",
@@ -368,7 +421,7 @@
           "flags" : []
         },
         {
-          "tcId" : 40,
+          "tcId" : 46,
           "comment" : "Flipped bit 64 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f",
           "msg" : "0001020304050607",
@@ -377,7 +430,7 @@
           "flags" : []
         },
         {
-          "tcId" : 41,
+          "tcId" : 47,
           "comment" : "Flipped bit 64 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f",
           "msg" : "000102030405060708090a0b0c0d0e0f",
@@ -386,7 +439,7 @@
           "flags" : []
         },
         {
-          "tcId" : 42,
+          "tcId" : 48,
           "comment" : "Flipped bit 71 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f",
           "msg" : "",
@@ -395,7 +448,7 @@
           "flags" : []
         },
         {
-          "tcId" : 43,
+          "tcId" : 49,
           "comment" : "Flipped bit 71 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f",
           "msg" : "0001020304050607",
@@ -404,7 +457,7 @@
           "flags" : []
         },
         {
-          "tcId" : 44,
+          "tcId" : 50,
           "comment" : "Flipped bit 71 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f",
           "msg" : "000102030405060708090a0b0c0d0e0f",
@@ -413,7 +466,7 @@
           "flags" : []
         },
         {
-          "tcId" : 45,
+          "tcId" : 51,
           "comment" : "Flipped bit 77 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f",
           "msg" : "",
@@ -422,7 +475,7 @@
           "flags" : []
         },
         {
-          "tcId" : 46,
+          "tcId" : 52,
           "comment" : "Flipped bit 77 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f",
           "msg" : "0001020304050607",
@@ -431,7 +484,7 @@
           "flags" : []
         },
         {
-          "tcId" : 47,
+          "tcId" : 53,
           "comment" : "Flipped bit 77 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f",
           "msg" : "000102030405060708090a0b0c0d0e0f",
@@ -440,7 +493,7 @@
           "flags" : []
         },
         {
-          "tcId" : 48,
+          "tcId" : 54,
           "comment" : "Flipped bit 80 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f",
           "msg" : "",
@@ -449,7 +502,7 @@
           "flags" : []
         },
         {
-          "tcId" : 49,
+          "tcId" : 55,
           "comment" : "Flipped bit 80 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f",
           "msg" : "0001020304050607",
@@ -458,7 +511,7 @@
           "flags" : []
         },
         {
-          "tcId" : 50,
+          "tcId" : 56,
           "comment" : "Flipped bit 80 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f",
           "msg" : "000102030405060708090a0b0c0d0e0f",
@@ -467,7 +520,7 @@
           "flags" : []
         },
         {
-          "tcId" : 51,
+          "tcId" : 57,
           "comment" : "Flipped bit 96 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f",
           "msg" : "",
@@ -476,7 +529,7 @@
           "flags" : []
         },
         {
-          "tcId" : 52,
+          "tcId" : 58,
           "comment" : "Flipped bit 96 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f",
           "msg" : "0001020304050607",
@@ -485,7 +538,7 @@
           "flags" : []
         },
         {
-          "tcId" : 53,
+          "tcId" : 59,
           "comment" : "Flipped bit 96 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f",
           "msg" : "000102030405060708090a0b0c0d0e0f",
@@ -494,7 +547,7 @@
           "flags" : []
         },
         {
-          "tcId" : 54,
+          "tcId" : 60,
           "comment" : "Flipped bit 97 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f",
           "msg" : "",
@@ -503,7 +556,7 @@
           "flags" : []
         },
         {
-          "tcId" : 55,
+          "tcId" : 61,
           "comment" : "Flipped bit 97 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f",
           "msg" : "0001020304050607",
@@ -512,7 +565,7 @@
           "flags" : []
         },
         {
-          "tcId" : 56,
+          "tcId" : 62,
           "comment" : "Flipped bit 97 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f",
           "msg" : "000102030405060708090a0b0c0d0e0f",
@@ -521,7 +574,7 @@
           "flags" : []
         },
         {
-          "tcId" : 57,
+          "tcId" : 63,
           "comment" : "Flipped bit 103 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f",
           "msg" : "",
@@ -530,7 +583,7 @@
           "flags" : []
         },
         {
-          "tcId" : 58,
+          "tcId" : 64,
           "comment" : "Flipped bit 103 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f",
           "msg" : "0001020304050607",
@@ -539,7 +592,7 @@
           "flags" : []
         },
         {
-          "tcId" : 59,
+          "tcId" : 65,
           "comment" : "Flipped bit 103 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f",
           "msg" : "000102030405060708090a0b0c0d0e0f",
@@ -548,7 +601,7 @@
           "flags" : []
         },
         {
-          "tcId" : 60,
+          "tcId" : 66,
           "comment" : "Flipped bit 120 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f",
           "msg" : "",
@@ -557,7 +610,7 @@
           "flags" : []
         },
         {
-          "tcId" : 61,
+          "tcId" : 67,
           "comment" : "Flipped bit 120 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f",
           "msg" : "0001020304050607",
@@ -566,7 +619,7 @@
           "flags" : []
         },
         {
-          "tcId" : 62,
+          "tcId" : 68,
           "comment" : "Flipped bit 120 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f",
           "msg" : "000102030405060708090a0b0c0d0e0f",
@@ -575,7 +628,7 @@
           "flags" : []
         },
         {
-          "tcId" : 63,
+          "tcId" : 69,
           "comment" : "Flipped bit 121 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f",
           "msg" : "",
@@ -584,7 +637,7 @@
           "flags" : []
         },
         {
-          "tcId" : 64,
+          "tcId" : 70,
           "comment" : "Flipped bit 121 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f",
           "msg" : "0001020304050607",
@@ -593,7 +646,7 @@
           "flags" : []
         },
         {
-          "tcId" : 65,
+          "tcId" : 71,
           "comment" : "Flipped bit 121 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f",
           "msg" : "000102030405060708090a0b0c0d0e0f",
@@ -602,7 +655,7 @@
           "flags" : []
         },
         {
-          "tcId" : 66,
+          "tcId" : 72,
           "comment" : "Flipped bit 126 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f",
           "msg" : "",
@@ -611,7 +664,7 @@
           "flags" : []
         },
         {
-          "tcId" : 67,
+          "tcId" : 73,
           "comment" : "Flipped bit 126 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f",
           "msg" : "0001020304050607",
@@ -620,7 +673,7 @@
           "flags" : []
         },
         {
-          "tcId" : 68,
+          "tcId" : 74,
           "comment" : "Flipped bit 126 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f",
           "msg" : "000102030405060708090a0b0c0d0e0f",
@@ -629,7 +682,7 @@
           "flags" : []
         },
         {
-          "tcId" : 69,
+          "tcId" : 75,
           "comment" : "Flipped bit 127 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f",
           "msg" : "",
@@ -638,7 +691,7 @@
           "flags" : []
         },
         {
-          "tcId" : 70,
+          "tcId" : 76,
           "comment" : "Flipped bit 127 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f",
           "msg" : "0001020304050607",
@@ -647,7 +700,7 @@
           "flags" : []
         },
         {
-          "tcId" : 71,
+          "tcId" : 77,
           "comment" : "Flipped bit 127 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f",
           "msg" : "000102030405060708090a0b0c0d0e0f",
@@ -656,7 +709,7 @@
           "flags" : []
         },
         {
-          "tcId" : 72,
+          "tcId" : 78,
           "comment" : "Flipped bits 0 and 64 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f",
           "msg" : "",
@@ -665,7 +718,7 @@
           "flags" : []
         },
         {
-          "tcId" : 73,
+          "tcId" : 79,
           "comment" : "Flipped bits 0 and 64 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f",
           "msg" : "0001020304050607",
@@ -674,7 +727,7 @@
           "flags" : []
         },
         {
-          "tcId" : 74,
+          "tcId" : 80,
           "comment" : "Flipped bits 0 and 64 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f",
           "msg" : "000102030405060708090a0b0c0d0e0f",
@@ -683,7 +736,7 @@
           "flags" : []
         },
         {
-          "tcId" : 75,
+          "tcId" : 81,
           "comment" : "Flipped bits 31 and 63 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f",
           "msg" : "",
@@ -692,7 +745,7 @@
           "flags" : []
         },
         {
-          "tcId" : 76,
+          "tcId" : 82,
           "comment" : "Flipped bits 31 and 63 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f",
           "msg" : "0001020304050607",
@@ -701,7 +754,7 @@
           "flags" : []
         },
         {
-          "tcId" : 77,
+          "tcId" : 83,
           "comment" : "Flipped bits 31 and 63 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f",
           "msg" : "000102030405060708090a0b0c0d0e0f",
@@ -710,7 +763,7 @@
           "flags" : []
         },
         {
-          "tcId" : 78,
+          "tcId" : 84,
           "comment" : "Flipped bits 63 and 127 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f",
           "msg" : "",
@@ -719,7 +772,7 @@
           "flags" : []
         },
         {
-          "tcId" : 79,
+          "tcId" : 85,
           "comment" : "Flipped bits 63 and 127 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f",
           "msg" : "0001020304050607",
@@ -728,7 +781,7 @@
           "flags" : []
         },
         {
-          "tcId" : 80,
+          "tcId" : 86,
           "comment" : "Flipped bits 63 and 127 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f",
           "msg" : "000102030405060708090a0b0c0d0e0f",
@@ -737,7 +790,7 @@
           "flags" : []
         },
         {
-          "tcId" : 81,
+          "tcId" : 87,
           "comment" : "all bits of tag flipped",
           "key" : "000102030405060708090a0b0c0d0e0f",
           "msg" : "",
@@ -746,7 +799,7 @@
           "flags" : []
         },
         {
-          "tcId" : 82,
+          "tcId" : 88,
           "comment" : "all bits of tag flipped",
           "key" : "000102030405060708090a0b0c0d0e0f",
           "msg" : "0001020304050607",
@@ -755,7 +808,7 @@
           "flags" : []
         },
         {
-          "tcId" : 83,
+          "tcId" : 89,
           "comment" : "all bits of tag flipped",
           "key" : "000102030405060708090a0b0c0d0e0f",
           "msg" : "000102030405060708090a0b0c0d0e0f",
@@ -764,61 +817,61 @@
           "flags" : []
         },
         {
-          "tcId" : 84,
-          "comment" : "Tag changed to all zero",
-          "key" : "000102030405060708090a0b0c0d0e0f",
-          "msg" : "",
-          "tag" : "00000000000000000000000000000000",
-          "result" : "invalid",
-          "flags" : []
-        },
-        {
-          "tcId" : 85,
-          "comment" : "Tag changed to all zero",
-          "key" : "000102030405060708090a0b0c0d0e0f",
-          "msg" : "0001020304050607",
-          "tag" : "00000000000000000000000000000000",
-          "result" : "invalid",
-          "flags" : []
-        },
-        {
-          "tcId" : 86,
-          "comment" : "Tag changed to all zero",
-          "key" : "000102030405060708090a0b0c0d0e0f",
-          "msg" : "000102030405060708090a0b0c0d0e0f",
-          "tag" : "00000000000000000000000000000000",
-          "result" : "invalid",
-          "flags" : []
-        },
-        {
-          "tcId" : 87,
-          "comment" : "tag changed to all 1",
-          "key" : "000102030405060708090a0b0c0d0e0f",
-          "msg" : "",
-          "tag" : "ffffffffffffffffffffffffffffffff",
-          "result" : "invalid",
-          "flags" : []
-        },
-        {
-          "tcId" : 88,
-          "comment" : "tag changed to all 1",
-          "key" : "000102030405060708090a0b0c0d0e0f",
-          "msg" : "0001020304050607",
-          "tag" : "ffffffffffffffffffffffffffffffff",
-          "result" : "invalid",
-          "flags" : []
-        },
-        {
-          "tcId" : 89,
-          "comment" : "tag changed to all 1",
-          "key" : "000102030405060708090a0b0c0d0e0f",
-          "msg" : "000102030405060708090a0b0c0d0e0f",
-          "tag" : "ffffffffffffffffffffffffffffffff",
-          "result" : "invalid",
-          "flags" : []
-        },
-        {
           "tcId" : 90,
+          "comment" : "Tag changed to all zero",
+          "key" : "000102030405060708090a0b0c0d0e0f",
+          "msg" : "",
+          "tag" : "00000000000000000000000000000000",
+          "result" : "invalid",
+          "flags" : []
+        },
+        {
+          "tcId" : 91,
+          "comment" : "Tag changed to all zero",
+          "key" : "000102030405060708090a0b0c0d0e0f",
+          "msg" : "0001020304050607",
+          "tag" : "00000000000000000000000000000000",
+          "result" : "invalid",
+          "flags" : []
+        },
+        {
+          "tcId" : 92,
+          "comment" : "Tag changed to all zero",
+          "key" : "000102030405060708090a0b0c0d0e0f",
+          "msg" : "000102030405060708090a0b0c0d0e0f",
+          "tag" : "00000000000000000000000000000000",
+          "result" : "invalid",
+          "flags" : []
+        },
+        {
+          "tcId" : 93,
+          "comment" : "tag changed to all 1",
+          "key" : "000102030405060708090a0b0c0d0e0f",
+          "msg" : "",
+          "tag" : "ffffffffffffffffffffffffffffffff",
+          "result" : "invalid",
+          "flags" : []
+        },
+        {
+          "tcId" : 94,
+          "comment" : "tag changed to all 1",
+          "key" : "000102030405060708090a0b0c0d0e0f",
+          "msg" : "0001020304050607",
+          "tag" : "ffffffffffffffffffffffffffffffff",
+          "result" : "invalid",
+          "flags" : []
+        },
+        {
+          "tcId" : 95,
+          "comment" : "tag changed to all 1",
+          "key" : "000102030405060708090a0b0c0d0e0f",
+          "msg" : "000102030405060708090a0b0c0d0e0f",
+          "tag" : "ffffffffffffffffffffffffffffffff",
+          "result" : "invalid",
+          "flags" : []
+        },
+        {
+          "tcId" : 96,
           "comment" : "msbs changed in tag",
           "key" : "000102030405060708090a0b0c0d0e0f",
           "msg" : "",
@@ -827,7 +880,7 @@
           "flags" : []
         },
         {
-          "tcId" : 91,
+          "tcId" : 97,
           "comment" : "msbs changed in tag",
           "key" : "000102030405060708090a0b0c0d0e0f",
           "msg" : "0001020304050607",
@@ -836,7 +889,7 @@
           "flags" : []
         },
         {
-          "tcId" : 92,
+          "tcId" : 98,
           "comment" : "msbs changed in tag",
           "key" : "000102030405060708090a0b0c0d0e0f",
           "msg" : "000102030405060708090a0b0c0d0e0f",
@@ -845,7 +898,7 @@
           "flags" : []
         },
         {
-          "tcId" : 93,
+          "tcId" : 99,
           "comment" : "lsbs changed in tag",
           "key" : "000102030405060708090a0b0c0d0e0f",
           "msg" : "",
@@ -854,7 +907,7 @@
           "flags" : []
         },
         {
-          "tcId" : 94,
+          "tcId" : 100,
           "comment" : "lsbs changed in tag",
           "key" : "000102030405060708090a0b0c0d0e0f",
           "msg" : "0001020304050607",
@@ -863,7 +916,7 @@
           "flags" : []
         },
         {
-          "tcId" : 95,
+          "tcId" : 101,
           "comment" : "lsbs changed in tag",
           "key" : "000102030405060708090a0b0c0d0e0f",
           "msg" : "000102030405060708090a0b0c0d0e0f",
@@ -875,81 +928,11 @@
     },
     {
       "keySize" : 192,
-      "tagSize" : 96,
-      "type" : "MacTest",
-      "tests" : [
-        {
-          "tcId" : 96,
-          "comment" : "empty message",
-          "key" : "78fe7087bc810abf08f15fc69804f888435a6442677c8c79",
-          "msg" : "",
-          "tag" : "48d92d311f60d51a23e56d8c",
-          "result" : "valid",
-          "flags" : []
-        },
-        {
-          "tcId" : 97,
-          "comment" : "truncated mac",
-          "key" : "7ab6fb0e3456e40c3a6c5db57a3d0548d4c8c3cfd8849dba",
-          "msg" : "c6",
-          "tag" : "d904a70715bd0ad9468f37b2",
-          "result" : "valid",
-          "flags" : []
-        },
-        {
-          "tcId" : 98,
-          "comment" : "truncated mac",
-          "key" : "f095a5d39f0b499cef0130b4eb3bfae90253a1f30270efb5",
-          "msg" : "738e196c2cb0206b",
-          "tag" : "7a3b8de1c57e7c5f7babbe42",
-          "result" : "valid",
-          "flags" : []
-        },
-        {
-          "tcId" : 99,
-          "comment" : "truncated mac",
-          "key" : "6fee9e028a35d168ffe2062338f753d3930597b341210f0c",
-          "msg" : "a1518bb8cb88f305935b91f64f2479",
-          "tag" : "7ba264b276a0849bc76a2a29",
-          "result" : "valid",
-          "flags" : []
-        },
-        {
-          "tcId" : 100,
-          "comment" : "truncated mac",
-          "key" : "304b9077a8f36fd949e38bbfb6dd71e313530ba0a34d3e77",
-          "msg" : "87e60924ae7f2ae1567cbcb07f7ae2aa",
-          "tag" : "725e51ac5b10338d940c0236",
-          "result" : "valid",
-          "flags" : []
-        },
-        {
-          "tcId" : 101,
-          "comment" : "truncated mac",
-          "key" : "fec7f37de35365c415701ba2eec2d94cb20e3e2a0c21cfcf",
-          "msg" : "cf24271e0acebd3249f996da1fe9d13e3f",
-          "tag" : "7636cec43b5b7a40787580fa",
-          "result" : "valid",
-          "flags" : []
-        },
-        {
-          "tcId" : 102,
-          "comment" : "truncated mac",
-          "key" : "5f4df68a45a5edde95907b5b002fcf3ba6747f9194536dd3",
-          "msg" : "4cc781faaa8decb281afab7dc69f380921d04c54414bb65f",
-          "tag" : "bb2de41c514dd64ebc5f5a99",
-          "result" : "valid",
-          "flags" : []
-        }
-      ]
-    },
-    {
-      "keySize" : 192,
       "tagSize" : 128,
       "type" : "MacTest",
       "tests" : [
         {
-          "tcId" : 103,
+          "tcId" : 102,
           "comment" : "empty message",
           "key" : "3d6bf9edae6d881eade0ff8c7076a4835b71320c1f36b631",
           "msg" : "",
@@ -958,8 +941,8 @@
           "flags" : []
         },
         {
-          "tcId" : 104,
-          "comment" : "full length mac",
+          "tcId" : 103,
+          "comment" : "short message",
           "key" : "915429743435c28997a33b33b6574a953d81dae0e7032e6a",
           "msg" : "58",
           "tag" : "e13b3f7f7f510c3a059df7a68c7e2ad5",
@@ -967,8 +950,62 @@
           "flags" : []
         },
         {
+          "tcId" : 104,
+          "comment" : "short message",
+          "key" : "f0c288ba26b284f9fb321b444a6517b3cdda1a799d55fdff",
+          "msg" : "0f7e",
+          "tag" : "06ef847f5f9dbf03a4f283da8c400220",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
           "tcId" : 105,
-          "comment" : "full length mac",
+          "comment" : "short message",
+          "key" : "6b55e4d4fd6847a80a6bfb0dcc0aa93f9fd797fc5c50292e",
+          "msg" : "33f530",
+          "tag" : "dd135053a47ca8f282c299e83b8c57c4",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 106,
+          "comment" : "short message",
+          "key" : "1eb21a9e995a8e45c9e71ecbd6fe615b3e0318007c64b644",
+          "msg" : "3aa73c48",
+          "tag" : "1e93fff846934a6eea0575eecb0f0e1f",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 107,
+          "comment" : "short message",
+          "key" : "710e2d5d4a9f0bc7e50796655e046a18cc5769d7764355da",
+          "msg" : "7e4c690a88",
+          "tag" : "016d4df06c68a6a788a9ea052e1b550d",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 108,
+          "comment" : "short message",
+          "key" : "d8c09ea400779b63e774bdacd0cb7b5dd6f736ca23d52acf",
+          "msg" : "e9520280973b",
+          "tag" : "8030ae9f98f5d20c6089f6b1bd87c29e",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 109,
+          "comment" : "short message",
+          "key" : "8e67e9a0863b55bed408866f1cbc05357abe3f9d79f406f2",
+          "msg" : "4880b412287a0b",
+          "tag" : "bcaf50785f062a8fb8dd3c2c4cead2e1",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 110,
+          "comment" : "short message",
           "key" : "28d8da67806410e5565bcc5a9d7ab9fb357413fa0158378c",
           "msg" : "004e3f4a4e6db955",
           "tag" : "c4c2c0876be9eabeb5a956da53846b08",
@@ -976,8 +1013,62 @@
           "flags" : []
         },
         {
-          "tcId" : 106,
-          "comment" : "full length mac",
+          "tcId" : 111,
+          "comment" : "short message",
+          "key" : "dc968dd89fd602bb7eca6f3a8a13e4f59c08d02a514b1934",
+          "msg" : "41a25354efeb1bc3b8",
+          "tag" : "f33a62caf397f9aff71fe42941ba41d8",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 112,
+          "comment" : "short message",
+          "key" : "7658951c0f620d82afd92756cc2d7983b79da3e56fdd1b78",
+          "msg" : "f0e82fb5c5666f4af49f",
+          "tag" : "4d724d05f3402967eb65ae1e32d5469e",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 113,
+          "comment" : "short message",
+          "key" : "d9574c3a221b986690931faac5258d9d3c52362b2cb9b054",
+          "msg" : "178ea8404ba54ee4e4522c",
+          "tag" : "64a0e0b6757309ab58d74f72c310e473",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 114,
+          "comment" : "short message",
+          "key" : "704409bab28085c44981f28f75dd143a4f747106f63f262e",
+          "msg" : "cda5709e7f115624e74ab031",
+          "tag" : "6ab2074334be14a95b6a241f897a43de",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 115,
+          "comment" : "short message",
+          "key" : "d8d06ef6a53bbff5c8f12d791b8f4c67e574bf440736d1cc",
+          "msg" : "a1171eae1979f48345dd9485a0",
+          "tag" : "7aa57cf98b24897cc9230e3316758e61",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 116,
+          "comment" : "short message",
+          "key" : "71129e781613f39d9ac39fbde2628b44c250c14deb5ef9e2",
+          "msg" : "967593cc64bcbf7f3c58d04cb82b",
+          "tag" : "6cc488b0a40eadbe4bcee2623239d126",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 117,
+          "comment" : "short message",
           "key" : "850fc859e9f7b89a367611dee6698f33962d8245ca8dc331",
           "msg" : "586f4f171af116519061a8e0e77940",
           "tag" : "fb11a360c9776991d73d6e41d07710a2",
@@ -985,8 +1076,8 @@
           "flags" : []
         },
         {
-          "tcId" : 107,
-          "comment" : "full length mac",
+          "tcId" : 118,
+          "comment" : "",
           "key" : "f4bfa5aa4f0f4d62cf736cd2969c43d580fdb92f2753bedb",
           "msg" : "0e239f239705b282ce2200fe20de1165",
           "tag" : "ab20a6cf60873665b1d6999b05c7f9c6",
@@ -994,8 +1085,8 @@
           "flags" : []
         },
         {
-          "tcId" : 108,
-          "comment" : "full length mac",
+          "tcId" : 119,
+          "comment" : "",
           "key" : "cfd3f68873d81a27d2bfce876c79f6e609074dec39e34614",
           "msg" : "b1973cb25aa87ef9d1a8888b0a0f5c04c6",
           "tag" : "b95a016b83a0ae4194023333c8a7345a",
@@ -1003,8 +1094,8 @@
           "flags" : []
         },
         {
-          "tcId" : 109,
-          "comment" : "full length mac",
+          "tcId" : 120,
+          "comment" : "",
           "key" : "648a44468d67bb6744b235ee7a3fcd6ed4bdc29ec5b5fa1a",
           "msg" : "c59d0d6981cca1be1d5519fc7881e6d230f39f6c12a9e827",
           "tag" : "a1b96272ae7f9aef567271795f21d1d3",
@@ -1012,7 +1103,16 @@
           "flags" : []
         },
         {
-          "tcId" : 110,
+          "tcId" : 121,
+          "comment" : "",
+          "key" : "9d11abc1fcb248a436598e695be12c3c2ed90a18ba09d62c",
+          "msg" : "aa5182cae2a8fb068c0b3fb2be3e57ae523d13dffd1a944587707c2b67447f3f",
+          "tag" : "8597d9a04d1c271d61d42f007b435175",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 122,
           "comment" : "Flipped bit 0 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f1011121314151617",
           "msg" : "",
@@ -1021,7 +1121,7 @@
           "flags" : []
         },
         {
-          "tcId" : 111,
+          "tcId" : 123,
           "comment" : "Flipped bit 0 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f1011121314151617",
           "msg" : "0001020304050607",
@@ -1030,7 +1130,7 @@
           "flags" : []
         },
         {
-          "tcId" : 112,
+          "tcId" : 124,
           "comment" : "Flipped bit 0 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f1011121314151617",
           "msg" : "000102030405060708090a0b0c0d0e0f",
@@ -1039,7 +1139,7 @@
           "flags" : []
         },
         {
-          "tcId" : 113,
+          "tcId" : 125,
           "comment" : "Flipped bit 1 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f1011121314151617",
           "msg" : "",
@@ -1048,7 +1148,7 @@
           "flags" : []
         },
         {
-          "tcId" : 114,
+          "tcId" : 126,
           "comment" : "Flipped bit 1 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f1011121314151617",
           "msg" : "0001020304050607",
@@ -1057,7 +1157,7 @@
           "flags" : []
         },
         {
-          "tcId" : 115,
+          "tcId" : 127,
           "comment" : "Flipped bit 1 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f1011121314151617",
           "msg" : "000102030405060708090a0b0c0d0e0f",
@@ -1066,7 +1166,7 @@
           "flags" : []
         },
         {
-          "tcId" : 116,
+          "tcId" : 128,
           "comment" : "Flipped bit 7 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f1011121314151617",
           "msg" : "",
@@ -1075,7 +1175,7 @@
           "flags" : []
         },
         {
-          "tcId" : 117,
+          "tcId" : 129,
           "comment" : "Flipped bit 7 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f1011121314151617",
           "msg" : "0001020304050607",
@@ -1084,7 +1184,7 @@
           "flags" : []
         },
         {
-          "tcId" : 118,
+          "tcId" : 130,
           "comment" : "Flipped bit 7 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f1011121314151617",
           "msg" : "000102030405060708090a0b0c0d0e0f",
@@ -1093,7 +1193,7 @@
           "flags" : []
         },
         {
-          "tcId" : 119,
+          "tcId" : 131,
           "comment" : "Flipped bit 8 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f1011121314151617",
           "msg" : "",
@@ -1102,7 +1202,7 @@
           "flags" : []
         },
         {
-          "tcId" : 120,
+          "tcId" : 132,
           "comment" : "Flipped bit 8 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f1011121314151617",
           "msg" : "0001020304050607",
@@ -1111,7 +1211,7 @@
           "flags" : []
         },
         {
-          "tcId" : 121,
+          "tcId" : 133,
           "comment" : "Flipped bit 8 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f1011121314151617",
           "msg" : "000102030405060708090a0b0c0d0e0f",
@@ -1120,7 +1220,7 @@
           "flags" : []
         },
         {
-          "tcId" : 122,
+          "tcId" : 134,
           "comment" : "Flipped bit 31 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f1011121314151617",
           "msg" : "",
@@ -1129,7 +1229,7 @@
           "flags" : []
         },
         {
-          "tcId" : 123,
+          "tcId" : 135,
           "comment" : "Flipped bit 31 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f1011121314151617",
           "msg" : "0001020304050607",
@@ -1138,7 +1238,7 @@
           "flags" : []
         },
         {
-          "tcId" : 124,
+          "tcId" : 136,
           "comment" : "Flipped bit 31 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f1011121314151617",
           "msg" : "000102030405060708090a0b0c0d0e0f",
@@ -1147,7 +1247,7 @@
           "flags" : []
         },
         {
-          "tcId" : 125,
+          "tcId" : 137,
           "comment" : "Flipped bit 32 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f1011121314151617",
           "msg" : "",
@@ -1156,7 +1256,7 @@
           "flags" : []
         },
         {
-          "tcId" : 126,
+          "tcId" : 138,
           "comment" : "Flipped bit 32 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f1011121314151617",
           "msg" : "0001020304050607",
@@ -1165,7 +1265,7 @@
           "flags" : []
         },
         {
-          "tcId" : 127,
+          "tcId" : 139,
           "comment" : "Flipped bit 32 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f1011121314151617",
           "msg" : "000102030405060708090a0b0c0d0e0f",
@@ -1174,7 +1274,7 @@
           "flags" : []
         },
         {
-          "tcId" : 128,
+          "tcId" : 140,
           "comment" : "Flipped bit 33 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f1011121314151617",
           "msg" : "",
@@ -1183,7 +1283,7 @@
           "flags" : []
         },
         {
-          "tcId" : 129,
+          "tcId" : 141,
           "comment" : "Flipped bit 33 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f1011121314151617",
           "msg" : "0001020304050607",
@@ -1192,7 +1292,7 @@
           "flags" : []
         },
         {
-          "tcId" : 130,
+          "tcId" : 142,
           "comment" : "Flipped bit 33 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f1011121314151617",
           "msg" : "000102030405060708090a0b0c0d0e0f",
@@ -1201,7 +1301,7 @@
           "flags" : []
         },
         {
-          "tcId" : 131,
+          "tcId" : 143,
           "comment" : "Flipped bit 63 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f1011121314151617",
           "msg" : "",
@@ -1210,7 +1310,7 @@
           "flags" : []
         },
         {
-          "tcId" : 132,
+          "tcId" : 144,
           "comment" : "Flipped bit 63 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f1011121314151617",
           "msg" : "0001020304050607",
@@ -1219,7 +1319,7 @@
           "flags" : []
         },
         {
-          "tcId" : 133,
+          "tcId" : 145,
           "comment" : "Flipped bit 63 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f1011121314151617",
           "msg" : "000102030405060708090a0b0c0d0e0f",
@@ -1228,7 +1328,7 @@
           "flags" : []
         },
         {
-          "tcId" : 134,
+          "tcId" : 146,
           "comment" : "Flipped bit 64 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f1011121314151617",
           "msg" : "",
@@ -1237,7 +1337,7 @@
           "flags" : []
         },
         {
-          "tcId" : 135,
+          "tcId" : 147,
           "comment" : "Flipped bit 64 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f1011121314151617",
           "msg" : "0001020304050607",
@@ -1246,7 +1346,7 @@
           "flags" : []
         },
         {
-          "tcId" : 136,
+          "tcId" : 148,
           "comment" : "Flipped bit 64 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f1011121314151617",
           "msg" : "000102030405060708090a0b0c0d0e0f",
@@ -1255,7 +1355,7 @@
           "flags" : []
         },
         {
-          "tcId" : 137,
+          "tcId" : 149,
           "comment" : "Flipped bit 71 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f1011121314151617",
           "msg" : "",
@@ -1264,7 +1364,7 @@
           "flags" : []
         },
         {
-          "tcId" : 138,
+          "tcId" : 150,
           "comment" : "Flipped bit 71 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f1011121314151617",
           "msg" : "0001020304050607",
@@ -1273,7 +1373,7 @@
           "flags" : []
         },
         {
-          "tcId" : 139,
+          "tcId" : 151,
           "comment" : "Flipped bit 71 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f1011121314151617",
           "msg" : "000102030405060708090a0b0c0d0e0f",
@@ -1282,7 +1382,7 @@
           "flags" : []
         },
         {
-          "tcId" : 140,
+          "tcId" : 152,
           "comment" : "Flipped bit 77 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f1011121314151617",
           "msg" : "",
@@ -1291,7 +1391,7 @@
           "flags" : []
         },
         {
-          "tcId" : 141,
+          "tcId" : 153,
           "comment" : "Flipped bit 77 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f1011121314151617",
           "msg" : "0001020304050607",
@@ -1300,7 +1400,7 @@
           "flags" : []
         },
         {
-          "tcId" : 142,
+          "tcId" : 154,
           "comment" : "Flipped bit 77 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f1011121314151617",
           "msg" : "000102030405060708090a0b0c0d0e0f",
@@ -1309,7 +1409,7 @@
           "flags" : []
         },
         {
-          "tcId" : 143,
+          "tcId" : 155,
           "comment" : "Flipped bit 80 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f1011121314151617",
           "msg" : "",
@@ -1318,7 +1418,7 @@
           "flags" : []
         },
         {
-          "tcId" : 144,
+          "tcId" : 156,
           "comment" : "Flipped bit 80 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f1011121314151617",
           "msg" : "0001020304050607",
@@ -1327,7 +1427,7 @@
           "flags" : []
         },
         {
-          "tcId" : 145,
+          "tcId" : 157,
           "comment" : "Flipped bit 80 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f1011121314151617",
           "msg" : "000102030405060708090a0b0c0d0e0f",
@@ -1336,7 +1436,7 @@
           "flags" : []
         },
         {
-          "tcId" : 146,
+          "tcId" : 158,
           "comment" : "Flipped bit 96 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f1011121314151617",
           "msg" : "",
@@ -1345,7 +1445,7 @@
           "flags" : []
         },
         {
-          "tcId" : 147,
+          "tcId" : 159,
           "comment" : "Flipped bit 96 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f1011121314151617",
           "msg" : "0001020304050607",
@@ -1354,7 +1454,7 @@
           "flags" : []
         },
         {
-          "tcId" : 148,
+          "tcId" : 160,
           "comment" : "Flipped bit 96 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f1011121314151617",
           "msg" : "000102030405060708090a0b0c0d0e0f",
@@ -1363,7 +1463,7 @@
           "flags" : []
         },
         {
-          "tcId" : 149,
+          "tcId" : 161,
           "comment" : "Flipped bit 97 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f1011121314151617",
           "msg" : "",
@@ -1372,7 +1472,7 @@
           "flags" : []
         },
         {
-          "tcId" : 150,
+          "tcId" : 162,
           "comment" : "Flipped bit 97 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f1011121314151617",
           "msg" : "0001020304050607",
@@ -1381,7 +1481,7 @@
           "flags" : []
         },
         {
-          "tcId" : 151,
+          "tcId" : 163,
           "comment" : "Flipped bit 97 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f1011121314151617",
           "msg" : "000102030405060708090a0b0c0d0e0f",
@@ -1390,7 +1490,7 @@
           "flags" : []
         },
         {
-          "tcId" : 152,
+          "tcId" : 164,
           "comment" : "Flipped bit 103 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f1011121314151617",
           "msg" : "",
@@ -1399,7 +1499,7 @@
           "flags" : []
         },
         {
-          "tcId" : 153,
+          "tcId" : 165,
           "comment" : "Flipped bit 103 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f1011121314151617",
           "msg" : "0001020304050607",
@@ -1408,7 +1508,7 @@
           "flags" : []
         },
         {
-          "tcId" : 154,
+          "tcId" : 166,
           "comment" : "Flipped bit 103 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f1011121314151617",
           "msg" : "000102030405060708090a0b0c0d0e0f",
@@ -1417,7 +1517,7 @@
           "flags" : []
         },
         {
-          "tcId" : 155,
+          "tcId" : 167,
           "comment" : "Flipped bit 120 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f1011121314151617",
           "msg" : "",
@@ -1426,7 +1526,7 @@
           "flags" : []
         },
         {
-          "tcId" : 156,
+          "tcId" : 168,
           "comment" : "Flipped bit 120 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f1011121314151617",
           "msg" : "0001020304050607",
@@ -1435,7 +1535,7 @@
           "flags" : []
         },
         {
-          "tcId" : 157,
+          "tcId" : 169,
           "comment" : "Flipped bit 120 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f1011121314151617",
           "msg" : "000102030405060708090a0b0c0d0e0f",
@@ -1444,7 +1544,7 @@
           "flags" : []
         },
         {
-          "tcId" : 158,
+          "tcId" : 170,
           "comment" : "Flipped bit 121 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f1011121314151617",
           "msg" : "",
@@ -1453,7 +1553,7 @@
           "flags" : []
         },
         {
-          "tcId" : 159,
+          "tcId" : 171,
           "comment" : "Flipped bit 121 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f1011121314151617",
           "msg" : "0001020304050607",
@@ -1462,7 +1562,7 @@
           "flags" : []
         },
         {
-          "tcId" : 160,
+          "tcId" : 172,
           "comment" : "Flipped bit 121 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f1011121314151617",
           "msg" : "000102030405060708090a0b0c0d0e0f",
@@ -1471,7 +1571,7 @@
           "flags" : []
         },
         {
-          "tcId" : 161,
+          "tcId" : 173,
           "comment" : "Flipped bit 126 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f1011121314151617",
           "msg" : "",
@@ -1480,7 +1580,7 @@
           "flags" : []
         },
         {
-          "tcId" : 162,
+          "tcId" : 174,
           "comment" : "Flipped bit 126 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f1011121314151617",
           "msg" : "0001020304050607",
@@ -1489,7 +1589,7 @@
           "flags" : []
         },
         {
-          "tcId" : 163,
+          "tcId" : 175,
           "comment" : "Flipped bit 126 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f1011121314151617",
           "msg" : "000102030405060708090a0b0c0d0e0f",
@@ -1498,7 +1598,7 @@
           "flags" : []
         },
         {
-          "tcId" : 164,
+          "tcId" : 176,
           "comment" : "Flipped bit 127 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f1011121314151617",
           "msg" : "",
@@ -1507,7 +1607,7 @@
           "flags" : []
         },
         {
-          "tcId" : 165,
+          "tcId" : 177,
           "comment" : "Flipped bit 127 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f1011121314151617",
           "msg" : "0001020304050607",
@@ -1516,7 +1616,7 @@
           "flags" : []
         },
         {
-          "tcId" : 166,
+          "tcId" : 178,
           "comment" : "Flipped bit 127 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f1011121314151617",
           "msg" : "000102030405060708090a0b0c0d0e0f",
@@ -1525,7 +1625,7 @@
           "flags" : []
         },
         {
-          "tcId" : 167,
+          "tcId" : 179,
           "comment" : "Flipped bits 0 and 64 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f1011121314151617",
           "msg" : "",
@@ -1534,7 +1634,7 @@
           "flags" : []
         },
         {
-          "tcId" : 168,
+          "tcId" : 180,
           "comment" : "Flipped bits 0 and 64 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f1011121314151617",
           "msg" : "0001020304050607",
@@ -1543,7 +1643,7 @@
           "flags" : []
         },
         {
-          "tcId" : 169,
+          "tcId" : 181,
           "comment" : "Flipped bits 0 and 64 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f1011121314151617",
           "msg" : "000102030405060708090a0b0c0d0e0f",
@@ -1552,7 +1652,7 @@
           "flags" : []
         },
         {
-          "tcId" : 170,
+          "tcId" : 182,
           "comment" : "Flipped bits 31 and 63 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f1011121314151617",
           "msg" : "",
@@ -1561,7 +1661,7 @@
           "flags" : []
         },
         {
-          "tcId" : 171,
+          "tcId" : 183,
           "comment" : "Flipped bits 31 and 63 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f1011121314151617",
           "msg" : "0001020304050607",
@@ -1570,7 +1670,7 @@
           "flags" : []
         },
         {
-          "tcId" : 172,
+          "tcId" : 184,
           "comment" : "Flipped bits 31 and 63 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f1011121314151617",
           "msg" : "000102030405060708090a0b0c0d0e0f",
@@ -1579,7 +1679,7 @@
           "flags" : []
         },
         {
-          "tcId" : 173,
+          "tcId" : 185,
           "comment" : "Flipped bits 63 and 127 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f1011121314151617",
           "msg" : "",
@@ -1588,7 +1688,7 @@
           "flags" : []
         },
         {
-          "tcId" : 174,
+          "tcId" : 186,
           "comment" : "Flipped bits 63 and 127 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f1011121314151617",
           "msg" : "0001020304050607",
@@ -1597,7 +1697,7 @@
           "flags" : []
         },
         {
-          "tcId" : 175,
+          "tcId" : 187,
           "comment" : "Flipped bits 63 and 127 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f1011121314151617",
           "msg" : "000102030405060708090a0b0c0d0e0f",
@@ -1606,7 +1706,7 @@
           "flags" : []
         },
         {
-          "tcId" : 176,
+          "tcId" : 188,
           "comment" : "all bits of tag flipped",
           "key" : "000102030405060708090a0b0c0d0e0f1011121314151617",
           "msg" : "",
@@ -1615,7 +1715,7 @@
           "flags" : []
         },
         {
-          "tcId" : 177,
+          "tcId" : 189,
           "comment" : "all bits of tag flipped",
           "key" : "000102030405060708090a0b0c0d0e0f1011121314151617",
           "msg" : "0001020304050607",
@@ -1624,7 +1724,7 @@
           "flags" : []
         },
         {
-          "tcId" : 178,
+          "tcId" : 190,
           "comment" : "all bits of tag flipped",
           "key" : "000102030405060708090a0b0c0d0e0f1011121314151617",
           "msg" : "000102030405060708090a0b0c0d0e0f",
@@ -1633,7 +1733,7 @@
           "flags" : []
         },
         {
-          "tcId" : 179,
+          "tcId" : 191,
           "comment" : "Tag changed to all zero",
           "key" : "000102030405060708090a0b0c0d0e0f1011121314151617",
           "msg" : "",
@@ -1642,7 +1742,7 @@
           "flags" : []
         },
         {
-          "tcId" : 180,
+          "tcId" : 192,
           "comment" : "Tag changed to all zero",
           "key" : "000102030405060708090a0b0c0d0e0f1011121314151617",
           "msg" : "0001020304050607",
@@ -1651,7 +1751,7 @@
           "flags" : []
         },
         {
-          "tcId" : 181,
+          "tcId" : 193,
           "comment" : "Tag changed to all zero",
           "key" : "000102030405060708090a0b0c0d0e0f1011121314151617",
           "msg" : "000102030405060708090a0b0c0d0e0f",
@@ -1660,7 +1760,7 @@
           "flags" : []
         },
         {
-          "tcId" : 182,
+          "tcId" : 194,
           "comment" : "tag changed to all 1",
           "key" : "000102030405060708090a0b0c0d0e0f1011121314151617",
           "msg" : "",
@@ -1669,7 +1769,7 @@
           "flags" : []
         },
         {
-          "tcId" : 183,
+          "tcId" : 195,
           "comment" : "tag changed to all 1",
           "key" : "000102030405060708090a0b0c0d0e0f1011121314151617",
           "msg" : "0001020304050607",
@@ -1678,7 +1778,7 @@
           "flags" : []
         },
         {
-          "tcId" : 184,
+          "tcId" : 196,
           "comment" : "tag changed to all 1",
           "key" : "000102030405060708090a0b0c0d0e0f1011121314151617",
           "msg" : "000102030405060708090a0b0c0d0e0f",
@@ -1687,7 +1787,7 @@
           "flags" : []
         },
         {
-          "tcId" : 185,
+          "tcId" : 197,
           "comment" : "msbs changed in tag",
           "key" : "000102030405060708090a0b0c0d0e0f1011121314151617",
           "msg" : "",
@@ -1696,7 +1796,7 @@
           "flags" : []
         },
         {
-          "tcId" : 186,
+          "tcId" : 198,
           "comment" : "msbs changed in tag",
           "key" : "000102030405060708090a0b0c0d0e0f1011121314151617",
           "msg" : "0001020304050607",
@@ -1705,7 +1805,7 @@
           "flags" : []
         },
         {
-          "tcId" : 187,
+          "tcId" : 199,
           "comment" : "msbs changed in tag",
           "key" : "000102030405060708090a0b0c0d0e0f1011121314151617",
           "msg" : "000102030405060708090a0b0c0d0e0f",
@@ -1714,7 +1814,7 @@
           "flags" : []
         },
         {
-          "tcId" : 188,
+          "tcId" : 200,
           "comment" : "lsbs changed in tag",
           "key" : "000102030405060708090a0b0c0d0e0f1011121314151617",
           "msg" : "",
@@ -1723,7 +1823,7 @@
           "flags" : []
         },
         {
-          "tcId" : 189,
+          "tcId" : 201,
           "comment" : "lsbs changed in tag",
           "key" : "000102030405060708090a0b0c0d0e0f1011121314151617",
           "msg" : "0001020304050607",
@@ -1732,7 +1832,7 @@
           "flags" : []
         },
         {
-          "tcId" : 190,
+          "tcId" : 202,
           "comment" : "lsbs changed in tag",
           "key" : "000102030405060708090a0b0c0d0e0f1011121314151617",
           "msg" : "000102030405060708090a0b0c0d0e0f",
@@ -1744,81 +1844,11 @@
     },
     {
       "keySize" : 256,
-      "tagSize" : 96,
-      "type" : "MacTest",
-      "tests" : [
-        {
-          "tcId" : 191,
-          "comment" : "empty message",
-          "key" : "e40992eb4f649e5d49134652aecc24bafa6b45ce8dd9e9d371ede7d5de84fa72",
-          "msg" : "",
-          "tag" : "034762bd9014d642f7f08af7",
-          "result" : "valid",
-          "flags" : []
-        },
-        {
-          "tcId" : 192,
-          "comment" : "truncated mac",
-          "key" : "298962335a075e9eacb7a7627beafa4ee5a02242423cdfb0b4f106eb61cf5663",
-          "msg" : "49",
-          "tag" : "4545f042beb65af2b7b74808",
-          "result" : "valid",
-          "flags" : []
-        },
-        {
-          "tcId" : 193,
-          "comment" : "truncated mac",
-          "key" : "2e94a84c78be80cd598366058d4f6cdf8095666dcac7a00ad832d9f33e20d13c",
-          "msg" : "b978587bf028558d",
-          "tag" : "6703f99ac094ed0e9d9973b5",
-          "result" : "valid",
-          "flags" : []
-        },
-        {
-          "tcId" : 194,
-          "comment" : "truncated mac",
-          "key" : "95b330aa5fffa6c0e29fd6fa0debdcb9cf6b448820bea24875089ec8ca5a2387",
-          "msg" : "c96596ebba6f89761b9d14dfcc8fb4",
-          "tag" : "2fc3ce831f693912d33f3fde",
-          "result" : "valid",
-          "flags" : []
-        },
-        {
-          "tcId" : 195,
-          "comment" : "truncated mac",
-          "key" : "319cd78b51a689a66b232005d66ad1962d11e52faf6aaad4ce7dc30777cd9ecc",
-          "msg" : "82ce94904b110635a8604c4f7afc786b",
-          "tag" : "a7685d0f2049015e6f3229ee",
-          "result" : "valid",
-          "flags" : []
-        },
-        {
-          "tcId" : 196,
-          "comment" : "truncated mac",
-          "key" : "b3b7c2c6d3d80918218afcd8bf2a71cf0220e2e8084ead8ba1abfb893ae36d40",
-          "msg" : "dbcf98254157727c35f367fe6e15a2d089",
-          "tag" : "09a60999f8848d19be5242c8",
-          "result" : "valid",
-          "flags" : []
-        },
-        {
-          "tcId" : 197,
-          "comment" : "truncated mac",
-          "key" : "8588a6f1fb8ccc0fed3fdb3f8a39d389fb9260748f3b45bd74ad42a60c9caf2b",
-          "msg" : "020cc9dd7f06f514bd3baf939f376b8b0083ff1b35ac90d0",
-          "tag" : "50649ef2b87c22d2731ace23",
-          "result" : "valid",
-          "flags" : []
-        }
-      ]
-    },
-    {
-      "keySize" : 256,
       "tagSize" : 128,
       "type" : "MacTest",
       "tests" : [
         {
-          "tcId" : 198,
+          "tcId" : 203,
           "comment" : "empty message",
           "key" : "7bf9e536b66a215c22233fe2daaa743a898b9acb9f7802de70b40e3d6e43ef97",
           "msg" : "",
@@ -1827,8 +1857,8 @@
           "flags" : []
         },
         {
-          "tcId" : 199,
-          "comment" : "full length mac",
+          "tcId" : 204,
+          "comment" : "short message",
           "key" : "e754076ceab3fdaf4f9bcab7d4f0df0cbbafbc87731b8f9b7cd2166472e8eebc",
           "msg" : "40",
           "tag" : "9d47482c2d9252bace43a75a8335b8b8",
@@ -1836,8 +1866,62 @@
           "flags" : []
         },
         {
-          "tcId" : 200,
-          "comment" : "full length mac",
+          "tcId" : 205,
+          "comment" : "short message",
+          "key" : "ea3b016bdd387dd64d837c71683808f335dbdc53598a4ea8c5f952473fafaf5f",
+          "msg" : "6601",
+          "tag" : "c7c44e31c466334992d6f9de3c771634",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 206,
+          "comment" : "short message",
+          "key" : "73d4709637857dafab6ad8b2b0a51b06524717fedf100296644f7cfdaae1805b",
+          "msg" : "f1d300",
+          "tag" : "b7086603a85e11fceb8cadea9bd30939",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 207,
+          "comment" : "short message",
+          "key" : "d5c81b399d4c0d1583a13da56de6d2dc45a66e7b47c24ab1192e246dc961dd77",
+          "msg" : "2ae63cbf",
+          "tag" : "ba383a3a15c9df64bba50d611113a024",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 208,
+          "comment" : "short message",
+          "key" : "2521203fa0dddf59d837b2830f87b1aa61f958155df3ca4d1df2457cb4284dc8",
+          "msg" : "af3a015ea1",
+          "tag" : "b457137c548908c629f714fe83b1ed90",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 209,
+          "comment" : "short message",
+          "key" : "665a02bc265a66d01775091da56726b6668bfd903cb7af66fb1b78a8a062e43c",
+          "msg" : "3f56935def3f",
+          "tag" : "b6d6fde93fc85de289b36b446d77b423",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 210,
+          "comment" : "short message",
+          "key" : "facd75b22221380047305bc981f570e2a1af38928ea7e2059e3af5fc6b82b493",
+          "msg" : "57bb86beed156f",
+          "tag" : "8b1ef72d0a612735b08efef981f213c2",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 211,
+          "comment" : "short message",
           "key" : "505aa98819809ef63b9a368a1e8bc2e922da45b03ce02d9a7966b15006dba2d5",
           "msg" : "2e4e7ef728fe11af",
           "tag" : "f79606b83a7706a2a19e068bce818898",
@@ -1845,8 +1929,62 @@
           "flags" : []
         },
         {
-          "tcId" : 201,
-          "comment" : "full length mac",
+          "tcId" : 212,
+          "comment" : "short message",
+          "key" : "f942093842808ba47f64e427f7351dde6b9546e66de4e7d60aa6f328182712cf",
+          "msg" : "852a21d92848e627c7",
+          "tag" : "a5a877f22ac743b7fb9e050d2e3ddb02",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 213,
+          "comment" : "short message",
+          "key" : "64be162b39c6e5f1fed9c32d9f674d9a8cde6eaa2443214d86bd4a1fb53b81b4",
+          "msg" : "195a3b292f93baff0a2c",
+          "tag" : "6ea172e5c4d2fac075ca602de5757a62",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 214,
+          "comment" : "short message",
+          "key" : "b259a555d44b8a20c5489e2f38392ddaa6be9e35b9833b67e1b5fdf6cb3e4c6c",
+          "msg" : "afd73117330c6e8528a6e4",
+          "tag" : "68020bfc9bd73fd80d3ce581ba3b1208",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 215,
+          "comment" : "short message",
+          "key" : "2c6fc62daa77ba8c6881b3dd6989898fef646663cc7b0a3db8228a707b85f2dc",
+          "msg" : "0ff54d6b6759120c2e8a51e3",
+          "tag" : "110edd727a9bf7fa11a6358afe617d9d",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 216,
+          "comment" : "short message",
+          "key" : "abab815d51df29f740e4e2079fb798e0152836e6ab57d1536ae8929e52c06eb8",
+          "msg" : "f0058d412a104e53d820b95a7f",
+          "tag" : "1fa24c6625a0f8e1fc37827ac84d3cc4",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 217,
+          "comment" : "short message",
+          "key" : "3d5da1af83f7287458bff7a7651ea5d8db72259401333f6b82096996dd7eaf19",
+          "msg" : "aacc36972f183057919ff57b49e1",
+          "tag" : "868765a8fa6aa898ddec0f4123e996be",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 218,
+          "comment" : "short message",
           "key" : "c19bdf314c6cf64381425467f42aefa17c1cc9358be16ce31b1d214859ce86aa",
           "msg" : "5d066a92c300e9b6ddd63a7c13ae33",
           "tag" : "b96818b7acaf879c7a7f8271375a6914",
@@ -1854,8 +1992,8 @@
           "flags" : []
         },
         {
-          "tcId" : 202,
-          "comment" : "full length mac",
+          "tcId" : 219,
+          "comment" : "",
           "key" : "612e837843ceae7f61d49625faa7e7494f9253e20cb3adcea686512b043936cd",
           "msg" : "cc37fae15f745a2f40e2c8b192f2b38d",
           "tag" : "4b88e193000c5a4b23e95c7f2b26530b",
@@ -1863,8 +2001,8 @@
           "flags" : []
         },
         {
-          "tcId" : 203,
-          "comment" : "full length mac",
+          "tcId" : 220,
+          "comment" : "",
           "key" : "73216fafd0022d0d6ee27198b2272578fa8f04dd9f44467fbb6437aa45641bf7",
           "msg" : "d5247b8f6c3edcbfb1d591d13ece23d2f5",
           "tag" : "86911c7da51dc0823d6e93d4290d1ad4",
@@ -1872,8 +2010,8 @@
           "flags" : []
         },
         {
-          "tcId" : 204,
-          "comment" : "full length mac",
+          "tcId" : 221,
+          "comment" : "",
           "key" : "0427a70e257528f3ab70640bba1a5de12cf3885dd4c8e284fbbb55feb35294a5",
           "msg" : "13937f8544f44270d01175a011f7670e93fa6ba7ef02336e",
           "tag" : "ccb2c51bfbe2598f9109fc70ed07f0eb",
@@ -1881,7 +2019,16 @@
           "flags" : []
         },
         {
-          "tcId" : 205,
+          "tcId" : 222,
+          "comment" : "",
+          "key" : "96e1e4896fb2cd05f133a6a100bc5609a7ac3ca6d81721e922dadd69ad07a892",
+          "msg" : "91a17e4dfcc3166a1add26ff0e7c12056e8a654f28a6de24f4ba739ceb5b5b18",
+          "tag" : "925f177d85ea297ef14b203fe409f9ab",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 223,
           "comment" : "Flipped bit 0 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
           "msg" : "",
@@ -1890,7 +2037,7 @@
           "flags" : []
         },
         {
-          "tcId" : 206,
+          "tcId" : 224,
           "comment" : "Flipped bit 0 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
           "msg" : "0001020304050607",
@@ -1899,7 +2046,7 @@
           "flags" : []
         },
         {
-          "tcId" : 207,
+          "tcId" : 225,
           "comment" : "Flipped bit 0 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
           "msg" : "000102030405060708090a0b0c0d0e0f",
@@ -1908,7 +2055,7 @@
           "flags" : []
         },
         {
-          "tcId" : 208,
+          "tcId" : 226,
           "comment" : "Flipped bit 1 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
           "msg" : "",
@@ -1917,7 +2064,7 @@
           "flags" : []
         },
         {
-          "tcId" : 209,
+          "tcId" : 227,
           "comment" : "Flipped bit 1 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
           "msg" : "0001020304050607",
@@ -1926,7 +2073,7 @@
           "flags" : []
         },
         {
-          "tcId" : 210,
+          "tcId" : 228,
           "comment" : "Flipped bit 1 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
           "msg" : "000102030405060708090a0b0c0d0e0f",
@@ -1935,7 +2082,7 @@
           "flags" : []
         },
         {
-          "tcId" : 211,
+          "tcId" : 229,
           "comment" : "Flipped bit 7 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
           "msg" : "",
@@ -1944,7 +2091,7 @@
           "flags" : []
         },
         {
-          "tcId" : 212,
+          "tcId" : 230,
           "comment" : "Flipped bit 7 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
           "msg" : "0001020304050607",
@@ -1953,7 +2100,7 @@
           "flags" : []
         },
         {
-          "tcId" : 213,
+          "tcId" : 231,
           "comment" : "Flipped bit 7 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
           "msg" : "000102030405060708090a0b0c0d0e0f",
@@ -1962,7 +2109,7 @@
           "flags" : []
         },
         {
-          "tcId" : 214,
+          "tcId" : 232,
           "comment" : "Flipped bit 8 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
           "msg" : "",
@@ -1971,7 +2118,7 @@
           "flags" : []
         },
         {
-          "tcId" : 215,
+          "tcId" : 233,
           "comment" : "Flipped bit 8 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
           "msg" : "0001020304050607",
@@ -1980,7 +2127,7 @@
           "flags" : []
         },
         {
-          "tcId" : 216,
+          "tcId" : 234,
           "comment" : "Flipped bit 8 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
           "msg" : "000102030405060708090a0b0c0d0e0f",
@@ -1989,7 +2136,7 @@
           "flags" : []
         },
         {
-          "tcId" : 217,
+          "tcId" : 235,
           "comment" : "Flipped bit 31 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
           "msg" : "",
@@ -1998,7 +2145,7 @@
           "flags" : []
         },
         {
-          "tcId" : 218,
+          "tcId" : 236,
           "comment" : "Flipped bit 31 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
           "msg" : "0001020304050607",
@@ -2007,7 +2154,7 @@
           "flags" : []
         },
         {
-          "tcId" : 219,
+          "tcId" : 237,
           "comment" : "Flipped bit 31 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
           "msg" : "000102030405060708090a0b0c0d0e0f",
@@ -2016,7 +2163,7 @@
           "flags" : []
         },
         {
-          "tcId" : 220,
+          "tcId" : 238,
           "comment" : "Flipped bit 32 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
           "msg" : "",
@@ -2025,7 +2172,7 @@
           "flags" : []
         },
         {
-          "tcId" : 221,
+          "tcId" : 239,
           "comment" : "Flipped bit 32 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
           "msg" : "0001020304050607",
@@ -2034,7 +2181,7 @@
           "flags" : []
         },
         {
-          "tcId" : 222,
+          "tcId" : 240,
           "comment" : "Flipped bit 32 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
           "msg" : "000102030405060708090a0b0c0d0e0f",
@@ -2043,7 +2190,7 @@
           "flags" : []
         },
         {
-          "tcId" : 223,
+          "tcId" : 241,
           "comment" : "Flipped bit 33 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
           "msg" : "",
@@ -2052,7 +2199,7 @@
           "flags" : []
         },
         {
-          "tcId" : 224,
+          "tcId" : 242,
           "comment" : "Flipped bit 33 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
           "msg" : "0001020304050607",
@@ -2061,7 +2208,7 @@
           "flags" : []
         },
         {
-          "tcId" : 225,
+          "tcId" : 243,
           "comment" : "Flipped bit 33 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
           "msg" : "000102030405060708090a0b0c0d0e0f",
@@ -2070,7 +2217,7 @@
           "flags" : []
         },
         {
-          "tcId" : 226,
+          "tcId" : 244,
           "comment" : "Flipped bit 63 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
           "msg" : "",
@@ -2079,7 +2226,7 @@
           "flags" : []
         },
         {
-          "tcId" : 227,
+          "tcId" : 245,
           "comment" : "Flipped bit 63 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
           "msg" : "0001020304050607",
@@ -2088,7 +2235,7 @@
           "flags" : []
         },
         {
-          "tcId" : 228,
+          "tcId" : 246,
           "comment" : "Flipped bit 63 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
           "msg" : "000102030405060708090a0b0c0d0e0f",
@@ -2097,7 +2244,7 @@
           "flags" : []
         },
         {
-          "tcId" : 229,
+          "tcId" : 247,
           "comment" : "Flipped bit 64 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
           "msg" : "",
@@ -2106,7 +2253,7 @@
           "flags" : []
         },
         {
-          "tcId" : 230,
+          "tcId" : 248,
           "comment" : "Flipped bit 64 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
           "msg" : "0001020304050607",
@@ -2115,7 +2262,7 @@
           "flags" : []
         },
         {
-          "tcId" : 231,
+          "tcId" : 249,
           "comment" : "Flipped bit 64 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
           "msg" : "000102030405060708090a0b0c0d0e0f",
@@ -2124,7 +2271,7 @@
           "flags" : []
         },
         {
-          "tcId" : 232,
+          "tcId" : 250,
           "comment" : "Flipped bit 71 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
           "msg" : "",
@@ -2133,7 +2280,7 @@
           "flags" : []
         },
         {
-          "tcId" : 233,
+          "tcId" : 251,
           "comment" : "Flipped bit 71 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
           "msg" : "0001020304050607",
@@ -2142,7 +2289,7 @@
           "flags" : []
         },
         {
-          "tcId" : 234,
+          "tcId" : 252,
           "comment" : "Flipped bit 71 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
           "msg" : "000102030405060708090a0b0c0d0e0f",
@@ -2151,7 +2298,7 @@
           "flags" : []
         },
         {
-          "tcId" : 235,
+          "tcId" : 253,
           "comment" : "Flipped bit 77 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
           "msg" : "",
@@ -2160,7 +2307,7 @@
           "flags" : []
         },
         {
-          "tcId" : 236,
+          "tcId" : 254,
           "comment" : "Flipped bit 77 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
           "msg" : "0001020304050607",
@@ -2169,7 +2316,7 @@
           "flags" : []
         },
         {
-          "tcId" : 237,
+          "tcId" : 255,
           "comment" : "Flipped bit 77 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
           "msg" : "000102030405060708090a0b0c0d0e0f",
@@ -2178,7 +2325,7 @@
           "flags" : []
         },
         {
-          "tcId" : 238,
+          "tcId" : 256,
           "comment" : "Flipped bit 80 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
           "msg" : "",
@@ -2187,7 +2334,7 @@
           "flags" : []
         },
         {
-          "tcId" : 239,
+          "tcId" : 257,
           "comment" : "Flipped bit 80 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
           "msg" : "0001020304050607",
@@ -2196,7 +2343,7 @@
           "flags" : []
         },
         {
-          "tcId" : 240,
+          "tcId" : 258,
           "comment" : "Flipped bit 80 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
           "msg" : "000102030405060708090a0b0c0d0e0f",
@@ -2205,7 +2352,7 @@
           "flags" : []
         },
         {
-          "tcId" : 241,
+          "tcId" : 259,
           "comment" : "Flipped bit 96 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
           "msg" : "",
@@ -2214,7 +2361,7 @@
           "flags" : []
         },
         {
-          "tcId" : 242,
+          "tcId" : 260,
           "comment" : "Flipped bit 96 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
           "msg" : "0001020304050607",
@@ -2223,7 +2370,7 @@
           "flags" : []
         },
         {
-          "tcId" : 243,
+          "tcId" : 261,
           "comment" : "Flipped bit 96 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
           "msg" : "000102030405060708090a0b0c0d0e0f",
@@ -2232,7 +2379,7 @@
           "flags" : []
         },
         {
-          "tcId" : 244,
+          "tcId" : 262,
           "comment" : "Flipped bit 97 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
           "msg" : "",
@@ -2241,7 +2388,7 @@
           "flags" : []
         },
         {
-          "tcId" : 245,
+          "tcId" : 263,
           "comment" : "Flipped bit 97 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
           "msg" : "0001020304050607",
@@ -2250,7 +2397,7 @@
           "flags" : []
         },
         {
-          "tcId" : 246,
+          "tcId" : 264,
           "comment" : "Flipped bit 97 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
           "msg" : "000102030405060708090a0b0c0d0e0f",
@@ -2259,7 +2406,7 @@
           "flags" : []
         },
         {
-          "tcId" : 247,
+          "tcId" : 265,
           "comment" : "Flipped bit 103 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
           "msg" : "",
@@ -2268,7 +2415,7 @@
           "flags" : []
         },
         {
-          "tcId" : 248,
+          "tcId" : 266,
           "comment" : "Flipped bit 103 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
           "msg" : "0001020304050607",
@@ -2277,7 +2424,7 @@
           "flags" : []
         },
         {
-          "tcId" : 249,
+          "tcId" : 267,
           "comment" : "Flipped bit 103 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
           "msg" : "000102030405060708090a0b0c0d0e0f",
@@ -2286,7 +2433,7 @@
           "flags" : []
         },
         {
-          "tcId" : 250,
+          "tcId" : 268,
           "comment" : "Flipped bit 120 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
           "msg" : "",
@@ -2295,7 +2442,7 @@
           "flags" : []
         },
         {
-          "tcId" : 251,
+          "tcId" : 269,
           "comment" : "Flipped bit 120 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
           "msg" : "0001020304050607",
@@ -2304,7 +2451,7 @@
           "flags" : []
         },
         {
-          "tcId" : 252,
+          "tcId" : 270,
           "comment" : "Flipped bit 120 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
           "msg" : "000102030405060708090a0b0c0d0e0f",
@@ -2313,7 +2460,7 @@
           "flags" : []
         },
         {
-          "tcId" : 253,
+          "tcId" : 271,
           "comment" : "Flipped bit 121 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
           "msg" : "",
@@ -2322,7 +2469,7 @@
           "flags" : []
         },
         {
-          "tcId" : 254,
+          "tcId" : 272,
           "comment" : "Flipped bit 121 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
           "msg" : "0001020304050607",
@@ -2331,7 +2478,7 @@
           "flags" : []
         },
         {
-          "tcId" : 255,
+          "tcId" : 273,
           "comment" : "Flipped bit 121 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
           "msg" : "000102030405060708090a0b0c0d0e0f",
@@ -2340,7 +2487,7 @@
           "flags" : []
         },
         {
-          "tcId" : 256,
+          "tcId" : 274,
           "comment" : "Flipped bit 126 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
           "msg" : "",
@@ -2349,7 +2496,7 @@
           "flags" : []
         },
         {
-          "tcId" : 257,
+          "tcId" : 275,
           "comment" : "Flipped bit 126 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
           "msg" : "0001020304050607",
@@ -2358,7 +2505,7 @@
           "flags" : []
         },
         {
-          "tcId" : 258,
+          "tcId" : 276,
           "comment" : "Flipped bit 126 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
           "msg" : "000102030405060708090a0b0c0d0e0f",
@@ -2367,7 +2514,7 @@
           "flags" : []
         },
         {
-          "tcId" : 259,
+          "tcId" : 277,
           "comment" : "Flipped bit 127 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
           "msg" : "",
@@ -2376,7 +2523,7 @@
           "flags" : []
         },
         {
-          "tcId" : 260,
+          "tcId" : 278,
           "comment" : "Flipped bit 127 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
           "msg" : "0001020304050607",
@@ -2385,7 +2532,7 @@
           "flags" : []
         },
         {
-          "tcId" : 261,
+          "tcId" : 279,
           "comment" : "Flipped bit 127 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
           "msg" : "000102030405060708090a0b0c0d0e0f",
@@ -2394,7 +2541,7 @@
           "flags" : []
         },
         {
-          "tcId" : 262,
+          "tcId" : 280,
           "comment" : "Flipped bits 0 and 64 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
           "msg" : "",
@@ -2403,7 +2550,7 @@
           "flags" : []
         },
         {
-          "tcId" : 263,
+          "tcId" : 281,
           "comment" : "Flipped bits 0 and 64 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
           "msg" : "0001020304050607",
@@ -2412,7 +2559,7 @@
           "flags" : []
         },
         {
-          "tcId" : 264,
+          "tcId" : 282,
           "comment" : "Flipped bits 0 and 64 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
           "msg" : "000102030405060708090a0b0c0d0e0f",
@@ -2421,7 +2568,7 @@
           "flags" : []
         },
         {
-          "tcId" : 265,
+          "tcId" : 283,
           "comment" : "Flipped bits 31 and 63 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
           "msg" : "",
@@ -2430,7 +2577,7 @@
           "flags" : []
         },
         {
-          "tcId" : 266,
+          "tcId" : 284,
           "comment" : "Flipped bits 31 and 63 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
           "msg" : "0001020304050607",
@@ -2439,7 +2586,7 @@
           "flags" : []
         },
         {
-          "tcId" : 267,
+          "tcId" : 285,
           "comment" : "Flipped bits 31 and 63 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
           "msg" : "000102030405060708090a0b0c0d0e0f",
@@ -2448,7 +2595,7 @@
           "flags" : []
         },
         {
-          "tcId" : 268,
+          "tcId" : 286,
           "comment" : "Flipped bits 63 and 127 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
           "msg" : "",
@@ -2457,7 +2604,7 @@
           "flags" : []
         },
         {
-          "tcId" : 269,
+          "tcId" : 287,
           "comment" : "Flipped bits 63 and 127 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
           "msg" : "0001020304050607",
@@ -2466,7 +2613,7 @@
           "flags" : []
         },
         {
-          "tcId" : 270,
+          "tcId" : 288,
           "comment" : "Flipped bits 63 and 127 in tag",
           "key" : "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
           "msg" : "000102030405060708090a0b0c0d0e0f",
@@ -2475,7 +2622,7 @@
           "flags" : []
         },
         {
-          "tcId" : 271,
+          "tcId" : 289,
           "comment" : "all bits of tag flipped",
           "key" : "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
           "msg" : "",
@@ -2484,7 +2631,7 @@
           "flags" : []
         },
         {
-          "tcId" : 272,
+          "tcId" : 290,
           "comment" : "all bits of tag flipped",
           "key" : "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
           "msg" : "0001020304050607",
@@ -2493,7 +2640,7 @@
           "flags" : []
         },
         {
-          "tcId" : 273,
+          "tcId" : 291,
           "comment" : "all bits of tag flipped",
           "key" : "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
           "msg" : "000102030405060708090a0b0c0d0e0f",
@@ -2502,7 +2649,7 @@
           "flags" : []
         },
         {
-          "tcId" : 274,
+          "tcId" : 292,
           "comment" : "Tag changed to all zero",
           "key" : "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
           "msg" : "",
@@ -2511,7 +2658,7 @@
           "flags" : []
         },
         {
-          "tcId" : 275,
+          "tcId" : 293,
           "comment" : "Tag changed to all zero",
           "key" : "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
           "msg" : "0001020304050607",
@@ -2520,7 +2667,7 @@
           "flags" : []
         },
         {
-          "tcId" : 276,
+          "tcId" : 294,
           "comment" : "Tag changed to all zero",
           "key" : "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
           "msg" : "000102030405060708090a0b0c0d0e0f",
@@ -2529,7 +2676,7 @@
           "flags" : []
         },
         {
-          "tcId" : 277,
+          "tcId" : 295,
           "comment" : "tag changed to all 1",
           "key" : "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
           "msg" : "",
@@ -2538,7 +2685,7 @@
           "flags" : []
         },
         {
-          "tcId" : 278,
+          "tcId" : 296,
           "comment" : "tag changed to all 1",
           "key" : "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
           "msg" : "0001020304050607",
@@ -2547,7 +2694,7 @@
           "flags" : []
         },
         {
-          "tcId" : 279,
+          "tcId" : 297,
           "comment" : "tag changed to all 1",
           "key" : "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
           "msg" : "000102030405060708090a0b0c0d0e0f",
@@ -2556,7 +2703,7 @@
           "flags" : []
         },
         {
-          "tcId" : 280,
+          "tcId" : 298,
           "comment" : "msbs changed in tag",
           "key" : "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
           "msg" : "",
@@ -2565,7 +2712,7 @@
           "flags" : []
         },
         {
-          "tcId" : 281,
+          "tcId" : 299,
           "comment" : "msbs changed in tag",
           "key" : "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
           "msg" : "0001020304050607",
@@ -2574,7 +2721,7 @@
           "flags" : []
         },
         {
-          "tcId" : 282,
+          "tcId" : 300,
           "comment" : "msbs changed in tag",
           "key" : "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
           "msg" : "000102030405060708090a0b0c0d0e0f",
@@ -2583,7 +2730,7 @@
           "flags" : []
         },
         {
-          "tcId" : 283,
+          "tcId" : 301,
           "comment" : "lsbs changed in tag",
           "key" : "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
           "msg" : "",
@@ -2592,7 +2739,7 @@
           "flags" : []
         },
         {
-          "tcId" : 284,
+          "tcId" : 302,
           "comment" : "lsbs changed in tag",
           "key" : "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
           "msg" : "0001020304050607",
@@ -2601,7 +2748,7 @@
           "flags" : []
         },
         {
-          "tcId" : 285,
+          "tcId" : 303,
           "comment" : "lsbs changed in tag",
           "key" : "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
           "msg" : "000102030405060708090a0b0c0d0e0f",
@@ -2617,7 +2764,7 @@
       "type" : "MacTest",
       "tests" : [
         {
-          "tcId" : 286,
+          "tcId" : 304,
           "comment" : "invalid key size",
           "key" : "",
           "msg" : "00b9449326d39416",
@@ -2633,7 +2780,7 @@
       "type" : "MacTest",
       "tests" : [
         {
-          "tcId" : 287,
+          "tcId" : 305,
           "comment" : "invalid key size",
           "key" : "0f",
           "msg" : "4538b79a1397e2aa",
@@ -2649,7 +2796,7 @@
       "type" : "MacTest",
       "tests" : [
         {
-          "tcId" : 288,
+          "tcId" : 306,
           "comment" : "invalid key size",
           "key" : "a88e385af7185148",
           "msg" : "dc63b7ef08096e4f",
@@ -2665,7 +2812,7 @@
       "type" : "MacTest",
       "tests" : [
         {
-          "tcId" : 289,
+          "tcId" : 307,
           "comment" : "invalid key size",
           "key" : "003a228008d390b645929df73a2b2bdd8298918d",
           "msg" : "ad1d3c3122ab7ac6",
@@ -2681,7 +2828,7 @@
       "type" : "MacTest",
       "tests" : [
         {
-          "tcId" : 290,
+          "tcId" : 308,
           "comment" : "invalid key size",
           "key" : "94baaac150e2645ae1ec1939c7bcefb73f6edb146fae02289b6c6326ff39bc265d612bef2727fa72",
           "msg" : "e3f75a886c4a5591",

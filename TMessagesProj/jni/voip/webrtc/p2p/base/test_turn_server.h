@@ -11,9 +11,12 @@
 #ifndef P2P_BASE_TEST_TURN_SERVER_H_
 #define P2P_BASE_TEST_TURN_SERVER_H_
 
+#include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
+#include "absl/strings/string_view.h"
 #include "api/sequence_checker.h"
 #include "api/transport/stun.h"
 #include "p2p/base/basic_packet_socket_factory.h"
@@ -51,15 +54,16 @@ class TestTurnRedirector : public TurnRedirectInterface {
 class TestTurnServer : public TurnAuthInterface {
  public:
   TestTurnServer(rtc::Thread* thread,
+                 rtc::SocketFactory* socket_factory,
                  const rtc::SocketAddress& int_addr,
                  const rtc::SocketAddress& udp_ext_addr,
                  ProtocolType int_protocol = PROTO_UDP,
                  bool ignore_bad_cert = true,
-                 const std::string& common_name = "test turn server")
-      : server_(thread), thread_(thread) {
+                 absl::string_view common_name = "test turn server")
+      : server_(thread), socket_factory_(socket_factory) {
     AddInternalSocket(int_addr, int_protocol, ignore_bad_cert, common_name);
-    server_.SetExternalSocketFactory(new rtc::BasicPacketSocketFactory(thread),
-                                     udp_ext_addr);
+    server_.SetExternalSocketFactory(
+        new rtc::BasicPacketSocketFactory(socket_factory), udp_ext_addr);
     server_.set_realm(kTestRealm);
     server_.set_software(kTestSoftware);
     server_.set_auth_hook(this);
@@ -90,34 +94,35 @@ class TestTurnServer : public TurnAuthInterface {
   void AddInternalSocket(const rtc::SocketAddress& int_addr,
                          ProtocolType proto,
                          bool ignore_bad_cert = true,
-                         const std::string& common_name = "test turn server") {
+                         absl::string_view common_name = "test turn server") {
     RTC_DCHECK(thread_checker_.IsCurrent());
     if (proto == cricket::PROTO_UDP) {
       server_.AddInternalSocket(
-          rtc::AsyncUDPSocket::Create(thread_->socketserver(), int_addr),
-          proto);
+          rtc::AsyncUDPSocket::Create(socket_factory_, int_addr), proto);
     } else if (proto == cricket::PROTO_TCP || proto == cricket::PROTO_TLS) {
       // For TCP we need to create a server socket which can listen for incoming
       // new connections.
-      rtc::AsyncSocket* socket =
-          thread_->socketserver()->CreateAsyncSocket(AF_INET, SOCK_STREAM);
+      rtc::Socket* socket = socket_factory_->CreateSocket(AF_INET, SOCK_STREAM);
+      socket->Bind(int_addr);
+      socket->Listen(5);
       if (proto == cricket::PROTO_TLS) {
         // For TLS, wrap the TCP socket with an SSL adapter. The adapter must
         // be configured with a self-signed certificate for testing.
         // Additionally, the client will not present a valid certificate, so we
         // must not fail when checking the peer's identity.
-        rtc::SSLAdapter* adapter = rtc::SSLAdapter::Create(socket);
-        adapter->SetRole(rtc::SSL_SERVER);
-        adapter->SetIdentity(
+        std::unique_ptr<rtc::SSLAdapterFactory> ssl_adapter_factory =
+            rtc::SSLAdapterFactory::Create();
+        ssl_adapter_factory->SetRole(rtc::SSL_SERVER);
+        ssl_adapter_factory->SetIdentity(
             rtc::SSLIdentity::Create(common_name, rtc::KeyParams()));
-        adapter->SetIgnoreBadCert(ignore_bad_cert);
-        socket = adapter;
+        ssl_adapter_factory->SetIgnoreBadCert(ignore_bad_cert);
+        server_.AddInternalServerSocket(socket, proto,
+                                        std::move(ssl_adapter_factory));
+      } else {
+        server_.AddInternalServerSocket(socket, proto);
       }
-      socket->Bind(int_addr);
-      socket->Listen(5);
-      server_.AddInternalServerSocket(socket, proto);
     } else {
-      RTC_NOTREACHED() << "Unknown protocol type: " << proto;
+      RTC_DCHECK_NOTREACHED() << "Unknown protocol type: " << proto;
     }
   }
 
@@ -138,15 +143,16 @@ class TestTurnServer : public TurnAuthInterface {
  private:
   // For this test server, succeed if the password is the same as the username.
   // Obviously, do not use this in a production environment.
-  virtual bool GetKey(const std::string& username,
-                      const std::string& realm,
+  virtual bool GetKey(absl::string_view username,
+                      absl::string_view realm,
                       std::string* key) {
     RTC_DCHECK(thread_checker_.IsCurrent());
-    return ComputeStunCredentialHash(username, realm, username, key);
+    return ComputeStunCredentialHash(std::string(username), std::string(realm),
+                                     std::string(username), key);
   }
 
   TurnServer server_;
-  rtc::Thread* thread_;
+  rtc::SocketFactory* socket_factory_;
   webrtc::SequenceChecker thread_checker_;
 };
 

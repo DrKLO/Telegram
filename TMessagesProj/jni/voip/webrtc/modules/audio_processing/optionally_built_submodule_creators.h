@@ -20,7 +20,7 @@ namespace webrtc {
 // These overrides are only to be used for testing purposes.
 // Each flag emulates a preprocessor macro to exclude a submodule of APM from
 // the build, e.g. WEBRTC_EXCLUDE_TRANSIENT_SUPPRESSOR. If the corresponding
-// flag |transient_suppression| is enabled, then the creators will return
+// flag `transient_suppression` is enabled, then the creators will return
 // nullptr instead of a submodule instance, as if the macro had been defined.
 struct ApmSubmoduleCreationOverrides {
   bool transient_suppression = false;
@@ -29,9 +29,13 @@ struct ApmSubmoduleCreationOverrides {
 // Creates a transient suppressor.
 // Will instead return nullptr if one of the following is true:
 // * WEBRTC_EXCLUDE_TRANSIENT_SUPPRESSOR is defined
-// * The corresponding override in |overrides| is enabled.
+// * The corresponding override in `overrides` is enabled.
 std::unique_ptr<TransientSuppressor> CreateTransientSuppressor(
-    const ApmSubmoduleCreationOverrides& overrides);
+    const ApmSubmoduleCreationOverrides& overrides,
+    TransientSuppressor::VadMode vad_mode,
+    int sample_rate_hz,
+    int detection_rate_hz,
+    int num_channels);
 
 }  // namespace webrtc
 

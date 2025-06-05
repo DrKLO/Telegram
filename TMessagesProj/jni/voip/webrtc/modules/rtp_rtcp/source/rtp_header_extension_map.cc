@@ -10,6 +10,7 @@
 
 #include "modules/rtp_rtcp/include/rtp_header_extension_map.h"
 
+#include "absl/strings/string_view.h"
 #include "modules/rtp_rtcp/source/rtp_dependency_descriptor_extension.h"
 #include "modules/rtp_rtcp/source/rtp_generic_frame_descriptor_extension.h"
 #include "modules/rtp_rtcp/source/rtp_header_extensions.h"
@@ -23,17 +24,18 @@ namespace {
 
 struct ExtensionInfo {
   RTPExtensionType type;
-  const char* uri;
+  absl::string_view uri;
 };
 
 template <typename Extension>
 constexpr ExtensionInfo CreateExtensionInfo() {
-  return {Extension::kId, Extension::kUri};
+  return {Extension::kId, Extension::Uri()};
 }
 
 constexpr ExtensionInfo kExtensions[] = {
     CreateExtensionInfo<TransmissionOffset>(),
     CreateExtensionInfo<AudioLevel>(),
+    CreateExtensionInfo<CsrcAudioLevel>(),
     CreateExtensionInfo<AbsoluteSendTime>(),
     CreateExtensionInfo<AbsoluteCaptureTimeExtension>(),
     CreateExtensionInfo<VideoOrientation>(),
@@ -79,11 +81,19 @@ RtpHeaderExtensionMap::RtpHeaderExtensionMap(
     RegisterByUri(extension.id, extension.uri);
 }
 
+void RtpHeaderExtensionMap::Reset(
+    rtc::ArrayView<const RtpExtension> extensions) {
+  for (auto& id : ids_)
+    id = kInvalidId;
+  for (const RtpExtension& extension : extensions)
+    RegisterByUri(extension.id, extension.uri);
+}
+
 bool RtpHeaderExtensionMap::RegisterByType(int id, RTPExtensionType type) {
   for (const ExtensionInfo& extension : kExtensions)
     if (type == extension.type)
       return Register(id, extension.type, extension.uri);
-  RTC_NOTREACHED();
+  RTC_DCHECK_NOTREACHED();
   return false;
 }
 
@@ -108,13 +118,6 @@ RTPExtensionType RtpHeaderExtensionMap::GetType(int id) const {
   return kInvalidType;
 }
 
-int32_t RtpHeaderExtensionMap::Deregister(RTPExtensionType type) {
-  if (IsRegistered(type)) {
-    ids_[type] = kInvalidId;
-  }
-  return 0;
-}
-
 void RtpHeaderExtensionMap::Deregister(absl::string_view uri) {
   for (const ExtensionInfo& extension : kExtensions) {
     if (extension.uri == uri) {
@@ -126,7 +129,7 @@ void RtpHeaderExtensionMap::Deregister(absl::string_view uri) {
 
 bool RtpHeaderExtensionMap::Register(int id,
                                      RTPExtensionType type,
-                                     const char* uri) {
+                                     absl::string_view uri) {
   RTC_DCHECK_GT(type, kRtpExtensionNone);
   RTC_DCHECK_LT(type, kRtpExtensionNumberOfExtensions);
 
@@ -144,14 +147,19 @@ bool RtpHeaderExtensionMap::Register(int id,
   }
 
   if (registered_type !=
-      kInvalidType) {  // |id| used by another extension type.
+      kInvalidType) {  // `id` used by another extension type.
     RTC_LOG(LS_WARNING) << "Failed to register extension uri:'" << uri
                         << "', id:" << id
                         << ". Id already in use by extension type "
                         << static_cast<int>(registered_type);
     return false;
   }
-  RTC_DCHECK(!IsRegistered(type));
+  if (IsRegistered(type)) {
+    RTC_LOG(LS_WARNING) << "Illegal reregistration for uri: " << uri
+                        << " is previously registered with id " << GetId(type)
+                        << " and cannot be reregistered with id " << id;
+    return false;
+  }
 
   // There is a run-time check above id fits into uint8_t.
   ids_[type] = static_cast<uint8_t>(id);

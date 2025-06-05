@@ -11,12 +11,13 @@
 #ifndef MODULES_CONGESTION_CONTROLLER_GOOG_CC_PROBE_BITRATE_ESTIMATOR_H_
 #define MODULES_CONGESTION_CONTROLLER_GOOG_CC_PROBE_BITRATE_ESTIMATOR_H_
 
-#include <limits>
 #include <map>
 
 #include "absl/types/optional.h"
 #include "api/transport/network_types.h"
 #include "api/units/data_rate.h"
+#include "api/units/data_size.h"
+#include "api/units/timestamp.h"
 
 namespace webrtc {
 class RtcEventLog;
@@ -45,7 +46,7 @@ class ProbeBitrateEstimator {
     DataSize size_total = DataSize::Zero();
   };
 
-  // Erases old cluster data that was seen before |timestamp|.
+  // Erases old cluster data that was seen before `timestamp`.
   void EraseOldClusters(Timestamp timestamp);
 
   std::map<int, AggregatedCluster> clusters_;

@@ -48,7 +48,6 @@ void RtpPacketReceived::GetHeader(RTPHeader* header) const {
   }
   header->paddingLength = padding_size();
   header->headerLength = headers_size();
-  header->payload_type_frequency = payload_type_frequency();
   header->extension.hasTransmissionTimeOffset =
       GetExtension<TransmissionOffset>(
           &header->extension.transmissionTimeOffset);

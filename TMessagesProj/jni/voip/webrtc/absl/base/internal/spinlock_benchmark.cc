@@ -18,22 +18,39 @@
 #include "absl/base/internal/raw_logging.h"
 #include "absl/base/internal/scheduling_mode.h"
 #include "absl/base/internal/spinlock.h"
+#include "absl/base/no_destructor.h"
 #include "absl/synchronization/internal/create_thread_identity.h"
 #include "benchmark/benchmark.h"
 
 namespace {
 
 template <absl::base_internal::SchedulingMode scheduling_mode>
-static void BM_SpinLock(benchmark::State& state) {
-  // Ensure a ThreadIdentity is installed.
+static void BM_TryLock(benchmark::State& state) {
+  // Ensure a ThreadIdentity is installed so that KERNEL_ONLY has an effect.
   ABSL_INTERNAL_CHECK(
       absl::synchronization_internal::GetOrCreateCurrentThreadIdentity() !=
           nullptr,
       "GetOrCreateCurrentThreadIdentity() failed");
 
-  static auto* spinlock = new absl::base_internal::SpinLock(scheduling_mode);
+  static absl::NoDestructor<absl::base_internal::SpinLock> spinlock(
+      scheduling_mode);
   for (auto _ : state) {
-    absl::base_internal::SpinLockHolder holder(spinlock);
+    if (spinlock->TryLock()) spinlock->Unlock();
+  }
+}
+
+template <absl::base_internal::SchedulingMode scheduling_mode>
+static void BM_SpinLock(benchmark::State& state) {
+  // Ensure a ThreadIdentity is installed so that KERNEL_ONLY has an effect.
+  ABSL_INTERNAL_CHECK(
+      absl::synchronization_internal::GetOrCreateCurrentThreadIdentity() !=
+          nullptr,
+      "GetOrCreateCurrentThreadIdentity() failed");
+
+  static absl::NoDestructor<absl::base_internal::SpinLock> spinlock(
+      scheduling_mode);
+  for (auto _ : state) {
+    absl::base_internal::SpinLockHolder holder(spinlock.get());
   }
 }
 
@@ -44,6 +61,17 @@ BENCHMARK_TEMPLATE(BM_SpinLock,
     ->ThreadPerCpu();
 
 BENCHMARK_TEMPLATE(BM_SpinLock,
+                   absl::base_internal::SCHEDULE_COOPERATIVE_AND_KERNEL)
+    ->UseRealTime()
+    ->Threads(1)
+    ->ThreadPerCpu();
+
+BENCHMARK_TEMPLATE(BM_TryLock, absl::base_internal::SCHEDULE_KERNEL_ONLY)
+    ->UseRealTime()
+    ->Threads(1)
+    ->ThreadPerCpu();
+
+BENCHMARK_TEMPLATE(BM_TryLock,
                    absl::base_internal::SCHEDULE_COOPERATIVE_AND_KERNEL)
     ->UseRealTime()
     ->Threads(1)

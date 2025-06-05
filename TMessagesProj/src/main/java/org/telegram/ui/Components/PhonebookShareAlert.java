@@ -37,6 +37,8 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.core.widget.NestedScrollView;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.ContactsController;
@@ -55,8 +57,6 @@ import org.telegram.ui.ChatActivity;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Locale;
-
-import androidx.core.widget.NestedScrollView;
 
 public class PhonebookShareAlert extends BottomSheet {
 
@@ -112,7 +112,7 @@ public class PhonebookShareAlert extends BottomSheet {
 
             AvatarDrawable avatarDrawable = new AvatarDrawable();
             avatarDrawable.setTextSize(AndroidUtilities.dp(30));
-            avatarDrawable.setInfo(currentUser);
+            avatarDrawable.setInfo(currentAccount, currentUser);
 
             BackupImageView avatarImageView = new BackupImageView(context);
             avatarImageView.setRoundRadius(AndroidUtilities.dp(40));
@@ -120,7 +120,7 @@ public class PhonebookShareAlert extends BottomSheet {
             addView(avatarImageView, LayoutHelper.createLinear(80, 80, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 0, 32, 0, 0));
 
             TextView textView = new TextView(context);
-            textView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            textView.setTypeface(AndroidUtilities.bold());
             textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 17);
             textView.setTextColor(getThemedColor(Theme.key_dialogTextBlack));
             textView.setSingleLine(true);
@@ -240,21 +240,35 @@ public class PhonebookShareAlert extends BottomSheet {
     }
 
     public PhonebookShareAlert(BaseFragment parent, ContactsController.Contact contact, TLRPC.User user, Uri uri, File file, String firstName, String lastName) {
-        this(parent, contact, user, uri, file, firstName, lastName, null);
+        this(parent, contact, user, uri, file, null, firstName, lastName);
+    }
+
+    public PhonebookShareAlert(BaseFragment parent, ContactsController.Contact contact, TLRPC.User user, Uri uri, File file, String phone, String firstName, String lastName) {
+        this(parent, contact, user, uri, file, phone, firstName, lastName, null);
     }
 
     public PhonebookShareAlert(BaseFragment parent, ContactsController.Contact contact, TLRPC.User user, Uri uri, File file, String firstName, String lastName, Theme.ResourcesProvider resourcesProvider) {
+        this(parent, contact, user, uri, file, null, firstName, lastName, resourcesProvider);
+    }
+
+    public PhonebookShareAlert(BaseFragment parent, ContactsController.Contact contact, TLRPC.User user, Uri uri, File file, String phone, String firstName, String lastName, Theme.ResourcesProvider resourcesProvider) {
         super(parent.getParentActivity(), false, resourcesProvider);
 
         String name = ContactsController.formatName(firstName, lastName);
         ArrayList<TLRPC.User> result = null;
         ArrayList<AndroidUtilities.VcardItem> items = new ArrayList<>();
-        ArrayList<TLRPC.TL_restrictionReason> vcard = null;
+        ArrayList<TLRPC.RestrictionReason> vcard = null;
         if (uri != null) {
             result = AndroidUtilities.loadVCardFromStream(uri, currentAccount, false, items, name);
         } else if (file != null) {
             result = AndroidUtilities.loadVCardFromStream(Uri.fromFile(file), currentAccount, false, items, name);
             file.delete();
+            isImport = true;
+        } else if (phone != null) {
+            AndroidUtilities.VcardItem item = new AndroidUtilities.VcardItem();
+            item.type = 0;
+            item.vcardData.add(item.fullData = "TEL;MOBILE:+" + phone);
+            phones.add(item);
             isImport = true;
         } else if (contact.key != null) {
             uri = Uri.withAppendedPath(ContactsContract.Contacts.CONTENT_VCARD_URI, contact.key);
@@ -500,13 +514,15 @@ public class PhonebookShareAlert extends BottomSheet {
                             Browser.openUrl(this.parentFragment.getParentActivity(), url);
                         } else {
                             AlertDialog.Builder builder = new AlertDialog.Builder(this.parentFragment.getParentActivity());
-                            builder.setItems(new CharSequence[]{LocaleController.getString("Copy", R.string.Copy)}, (dialogInterface, i) -> {
+                            builder.setItems(new CharSequence[]{LocaleController.getString(R.string.Copy)}, (dialogInterface, i) -> {
                                 if (i == 0) {
                                     try {
                                         android.content.ClipboardManager clipboard = (android.content.ClipboardManager) ApplicationLoader.applicationContext.getSystemService(Context.CLIPBOARD_SERVICE);
                                         android.content.ClipData clip = android.content.ClipData.newPlainText("label", item.getValue(false));
                                         clipboard.setPrimaryClip(clip);
-                                        Toast.makeText(this.parentFragment.getParentActivity(), LocaleController.getString("TextCopied", R.string.TextCopied), Toast.LENGTH_SHORT).show();
+                                        if (AndroidUtilities.shouldShowClipboardToast()) {
+                                            Toast.makeText(this.parentFragment.getParentActivity(), LocaleController.getString(R.string.TextCopied), Toast.LENGTH_SHORT).show();
+                                        }
                                     } catch (Exception e) {
                                         FileLog.e(e);
                                     }
@@ -553,16 +569,18 @@ public class PhonebookShareAlert extends BottomSheet {
                         } else {
                             final Bulletin.SimpleLayout layout = new Bulletin.SimpleLayout(context, resourcesProvider);
                             if (item.type == 0) {
-                                layout.textView.setText(LocaleController.getString("PhoneCopied", R.string.PhoneCopied));
-                                layout.imageView.setImageResource(R.drawable.menu_calls);
+                                layout.textView.setText(LocaleController.getString(R.string.PhoneCopied));
+                                layout.imageView.setImageResource(R.drawable.msg_calls);
                             } else if (item.type == 1) {
-                                layout.textView.setText(LocaleController.getString("EmailCopied", R.string.EmailCopied));
-                                layout.imageView.setImageResource(R.drawable.menu_mail);
+                                layout.textView.setText(LocaleController.getString(R.string.EmailCopied));
+                                layout.imageView.setImageResource(R.drawable.msg_mention);
                             } else {
-                                layout.textView.setText(LocaleController.getString("TextCopied", R.string.TextCopied));
-                                layout.imageView.setImageResource(R.drawable.menu_info);
+                                layout.textView.setText(LocaleController.getString(R.string.TextCopied));
+                                layout.imageView.setImageResource(R.drawable.msg_info);
                             }
-                            Bulletin.make((FrameLayout) containerView, layout, Bulletin.DURATION_SHORT).show();
+                            if (AndroidUtilities.shouldShowClipboardToast()) {
+                                Bulletin.make((FrameLayout) containerView, layout, Bulletin.DURATION_SHORT).show();
+                            }
                         }
                     }
                     return true;
@@ -585,9 +603,9 @@ public class PhonebookShareAlert extends BottomSheet {
         actionBar.setOccupyStatusBar(false);
         actionBar.setAlpha(0.0f);
         if (isImport) {
-            actionBar.setTitle(LocaleController.getString("AddContactPhonebookTitle", R.string.AddContactPhonebookTitle));
+            actionBar.setTitle(LocaleController.getString(R.string.AddContactPhonebookTitle));
         } else {
-            actionBar.setTitle(LocaleController.getString("ShareContactTitle", R.string.ShareContactTitle));
+            actionBar.setTitle(LocaleController.getString(R.string.ShareContactTitle));
         }
         containerView.addView(actionBar, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
         actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
@@ -615,21 +633,21 @@ public class PhonebookShareAlert extends BottomSheet {
         buttonTextView.setTextColor(getThemedColor(Theme.key_featuredStickers_buttonText));
         buttonTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         if (isImport) {
-            buttonTextView.setText(LocaleController.getString("AddContactPhonebookTitle", R.string.AddContactPhonebookTitle));
+            buttonTextView.setText(LocaleController.getString(R.string.AddContactPhonebookTitle));
         } else {
-            buttonTextView.setText(LocaleController.getString("ShareContactTitle", R.string.ShareContactTitle));
+            buttonTextView.setText(LocaleController.getString(R.string.ShareContactTitle));
         }
-        buttonTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
-        buttonTextView.setBackground(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(4), getThemedColor(Theme.key_featuredStickers_addButton), getThemedColor(Theme.key_featuredStickers_addButtonPressed)));
-        frameLayout.addView(buttonTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 42, Gravity.LEFT | Gravity.BOTTOM, 16, 16, 16, 16));
+        buttonTextView.setTypeface(AndroidUtilities.bold());
+        buttonTextView.setBackground(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(8), getThemedColor(Theme.key_featuredStickers_addButton), getThemedColor(Theme.key_featuredStickers_addButtonPressed)));
+        frameLayout.addView(buttonTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.LEFT | Gravity.BOTTOM, 14, 14, 14, 14));
         buttonTextView.setOnClickListener(v -> {
             if (isImport) {
                 AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
-                builder.setTitle(LocaleController.getString("AddContactTitle", R.string.AddContactTitle));
-                builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+                builder.setTitle(LocaleController.getString(R.string.AddContactTitle));
+                builder.setNegativeButton(LocaleController.getString(R.string.Cancel), null);
                 builder.setItems(new CharSequence[]{
-                        LocaleController.getString("CreateNewContact", R.string.CreateNewContact),
-                        LocaleController.getString("AddToExistingContact", R.string.AddToExistingContact)
+                        LocaleController.getString(R.string.CreateNewContact),
+                        LocaleController.getString(R.string.AddToExistingContact)
                 }, new DialogInterface.OnClickListener() {
 
                     private void fillRowWithType(String type, ContentValues row) {
@@ -902,7 +920,7 @@ public class PhonebookShareAlert extends BottomSheet {
                         }
                     }
                     currentUser.restriction_reason.clear();
-                    TLRPC.TL_restrictionReason reason = new TLRPC.TL_restrictionReason();
+                    TLRPC.RestrictionReason reason = new TLRPC.RestrictionReason();
                     reason.text = builder.toString();
                     reason.reason = "";
                     reason.platform = "";
@@ -911,12 +929,18 @@ public class PhonebookShareAlert extends BottomSheet {
                 if (parentFragment instanceof ChatActivity && ((ChatActivity) parentFragment).isInScheduleMode()) {
                     ChatActivity chatActivity = (ChatActivity) parentFragment;
                     AlertsCreator.createScheduleDatePickerDialog(getContext(), chatActivity.getDialogId(), (notify, scheduleDate) -> {
-                        delegate.didSelectContact(currentUser, notify, scheduleDate);
+                        delegate.didSelectContact(currentUser, notify, scheduleDate, 0, false, 0);
                         dismiss();
                     }, resourcesProvider);
                 } else {
-                    delegate.didSelectContact(currentUser, true, 0);
-                    dismiss();
+                    long dialogId = 0;
+                    if (parentFragment instanceof ChatActivity) {
+                        dialogId = ((ChatActivity) parentFragment).getDialogId();
+                    }
+                    AlertsCreator.ensurePaidMessageConfirmation(currentAccount, dialogId, 1, payStars -> {
+                        delegate.didSelectContact(currentUser, true, 0, 0, false, payStars);
+                        dismiss();
+                    });
                 }
             }
         });
@@ -1052,29 +1076,29 @@ public class PhonebookShareAlert extends BottomSheet {
                 int icon;
                 if (position >= phoneStartRow && position < phoneEndRow) {
                     item = phones.get(position - phoneStartRow);
-                    icon = R.drawable.menu_calls;
+                    icon = R.drawable.msg_calls;
                 } else {
                     item = other.get(position - vcardStartRow);
                     if (item.type == 1) {
-                        icon = R.drawable.menu_mail;
+                        icon = R.drawable.msg_mention;
                     } else if (item.type == 2) {
-                        icon = R.drawable.menu_location;
+                        icon = R.drawable.msg_location;
                     } else if (item.type == 3) {
                         icon = R.drawable.msg_link;
                     } else if (item.type == 4) {
-                        icon = R.drawable.profile_info;
+                        icon = R.drawable.msg_info;
                     } else if (item.type == 5) {
-                        icon = R.drawable.menu_date;
+                        icon = R.drawable.msg_calendar2;
                     } else if (item.type == 6) {
                         if ("ORG".equalsIgnoreCase(item.getRawType(true))) {
-                            icon = R.drawable.menu_work;
+                            icon = R.drawable.msg_work;
                         } else {
-                            icon = R.drawable.menu_jobtitle;
+                            icon = R.drawable.msg_jobtitle;
                         }
                     } else if (item.type == 20) {
-                        icon = R.drawable.menu_info;
+                        icon = R.drawable.msg_info;
                     } else {
-                        icon = R.drawable.menu_info;
+                        icon = R.drawable.msg_info;
                     }
                 }
                 cell.setVCardItem(item, icon, position != getItemCount() - 1);

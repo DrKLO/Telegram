@@ -1,16 +1,16 @@
-/* Copyright (c) 2015, Google Inc.
- *
- * Permission to use, copy, modify, and/or distribute this software for any
- * purpose with or without fee is hereby granted, provided that the above
- * copyright notice and this permission notice appear in all copies.
- *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
- * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY
- * SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION
- * OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
- * CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE. */
+// Copyright 2015 The BoringSSL Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 #include "file_test.h"
 
@@ -20,14 +20,17 @@
 #include <assert.h>
 #include <ctype.h>
 #include <errno.h>
+#include <limits.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include <openssl/err.h>
+#include <openssl/mem.h>
 
 #include "../internal.h"
+#include "./test_util.h"
 
 
 FileTest::FileTest(std::unique_ptr<FileTest::LineReader> reader,
@@ -55,11 +58,11 @@ static const char *FindDelimiter(const char *str) {
 // leading and trailing whitespace removed.
 static std::string StripSpace(const char *str, size_t len) {
   // Remove leading space.
-  while (len > 0 && isspace(*str)) {
+  while (len > 0 && OPENSSL_isspace(*str)) {
     str++;
     len--;
   }
-  while (len > 0 && isspace(str[len - 1])) {
+  while (len > 0 && OPENSSL_isspace(str[len - 1])) {
     len--;
   }
   return std::string(str, len);
@@ -95,7 +98,7 @@ FileTest::ReadResult FileTest::ReadNext() {
   ClearTest();
 
   static const size_t kBufLen = 8192 * 4;
-  std::unique_ptr<char[]> buf(new char[kBufLen]);
+  auto buf = std::make_unique<char[]>(kBufLen);
 
   bool in_instruction_block = false;
   is_at_new_instruction_block_ = false;
@@ -178,7 +181,7 @@ FileTest::ReadResult FileTest::ReadNext() {
       kv = std::string(kv.begin() + 1, kv.end() - 1);
 
       for (;;) {
-        size_t idx = kv.find(",");
+        size_t idx = kv.find(',');
         if (idx == std::string::npos) {
           idx = kv.size();
         }
@@ -204,11 +207,10 @@ FileTest::ReadResult FileTest::ReadNext() {
 
       // Duplicate keys are rewritten to have “/2”, “/3”, … suffixes.
       std::string mapped_key = key;
-      for (unsigned i = 2; attributes_.count(mapped_key) != 0; i++) {
-        char suffix[32];
-        snprintf(suffix, sizeof(suffix), "/%u", i);
-        suffix[sizeof(suffix)-1] = 0;
-        mapped_key = key + suffix;
+      // If absent, the value will be zero-initialized.
+      const size_t num_occurrences = ++attribute_count_[key];
+      if (num_occurrences > 1) {
+        mapped_key += "/" + std::to_string(num_occurrences);
       }
 
       unused_attributes_.insert(mapped_key);
@@ -286,6 +288,10 @@ bool FileTest::GetInstruction(std::string *out_value, const std::string &key) {
   return true;
 }
 
+void FileTest::IgnoreAllUnusedInstructions() {
+  unused_instructions_.clear();
+}
+
 const std::string &FileTest::GetInstructionOrDie(const std::string &key) {
   if (!HasInstruction(key)) {
     abort();
@@ -308,35 +314,11 @@ bool FileTest::GetBytes(std::vector<uint8_t> *out, const std::string &key) {
   return GetAttribute(&value, key) && ConvertToBytes(out, value);
 }
 
-static std::string EncodeHex(const uint8_t *in, size_t in_len) {
-  static const char kHexDigits[] = "0123456789abcdef";
-  std::string ret;
-  ret.reserve(in_len * 2);
-  for (size_t i = 0; i < in_len; i++) {
-    ret += kHexDigits[in[i] >> 4];
-    ret += kHexDigits[in[i] & 0xf];
-  }
-  return ret;
-}
-
-bool FileTest::ExpectBytesEqual(const uint8_t *expected, size_t expected_len,
-                                const uint8_t *actual, size_t actual_len) {
-  if (expected_len == actual_len &&
-      OPENSSL_memcmp(expected, actual, expected_len) == 0) {
-    return true;
-  }
-
-  std::string expected_hex = EncodeHex(expected, expected_len);
-  std::string actual_hex = EncodeHex(actual, actual_len);
-  PrintLine("Expected: %s", expected_hex.c_str());
-  PrintLine("Actual:   %s", actual_hex.c_str());
-  return false;
-}
-
 void FileTest::ClearTest() {
   start_line_ = 0;
   type_.clear();
   parameter_.clear();
+  attribute_count_.clear();
   attributes_.clear();
   unused_attributes_.clear();
   unused_instructions_.clear();
@@ -356,22 +338,6 @@ void FileTest::OnInstructionUsed(const std::string &key) {
   unused_instructions_.erase(key);
 }
 
-static bool FromHexDigit(uint8_t *out, char c) {
-  if ('0' <= c && c <= '9') {
-    *out = c - '0';
-    return true;
-  }
-  if ('a' <= c && c <= 'f') {
-    *out = c - 'a' + 10;
-    return true;
-  }
-  if ('A' <= c && c <= 'F') {
-    *out = c - 'A' + 10;
-    return true;
-  }
-  return false;
-}
-
 bool FileTest::ConvertToBytes(std::vector<uint8_t> *out,
                               const std::string &value) {
   if (value.size() >= 2 && value[0] == '"' && value[value.size() - 1] == '"') {
@@ -379,19 +345,9 @@ bool FileTest::ConvertToBytes(std::vector<uint8_t> *out,
     return true;
   }
 
-  if (value.size() % 2 != 0) {
+  if (!DecodeHex(out, value)) {
     PrintLine("Error decoding value: %s", value.c_str());
     return false;
-  }
-  out->clear();
-  out->reserve(value.size() / 2);
-  for (size_t i = 0; i < value.size(); i += 2) {
-    uint8_t hi, lo;
-    if (!FromHexDigit(&hi, value[i]) || !FromHexDigit(&lo, value[i + 1])) {
-      PrintLine("Error decoding value: %s", value.c_str());
-      return false;
-    }
-    out->push_back((hi << 4) | lo);
   }
   return true;
 }
@@ -423,7 +379,8 @@ class FileLineReader : public FileTest::LineReader {
       return FileTest::kReadError;
     }
 
-    if (fgets(out, len, file_) == nullptr) {
+    len = std::min(len, size_t{INT_MAX});
+    if (fgets(out, static_cast<int>(len), file_) == nullptr) {
       return feof(file_) ? FileTest::kReadEOF : FileTest::kReadError;
     }
 
@@ -452,8 +409,7 @@ int FileTestMain(FileTestFunc run_test, void *arg, const char *path) {
 }
 
 int FileTestMain(const FileTest::Options &opts) {
-  std::unique_ptr<FileLineReader> reader(
-      new FileLineReader(opts.path));
+  auto reader = std::make_unique<FileLineReader>(opts.path);
   if (!reader->is_open()) {
     fprintf(stderr, "Could not open file %s: %s.\n", opts.path,
             strerror(errno));
