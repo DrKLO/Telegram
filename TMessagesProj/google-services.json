@@ -39,7 +39,7 @@
       "client_info": {
         "mobilesdk_app_id": "1:368447820247:android:45fb28529f606d197afb92",
         "android_client_info": {
-          "package_name": "org.telegram_opiumfive.messenger"
+          "package_name": "org.telegram.messenger"
         }
       },
       "oauth_client": [
