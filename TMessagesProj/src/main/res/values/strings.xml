@@ -9269,4 +9269,6 @@
     <string name="RecordingTrimText">Audio outside that range will be discarded, and recording will start immediately.</string>
     <string name="MessageAuthorSentBy">Sent by **%s**</string>
     <string name="ChannelOpenDirect">Direct Messages</string>
+
+    <string name="ProfileDiscuss">Discuss</string>
 </resources>
