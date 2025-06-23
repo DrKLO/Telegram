@@ -43,6 +43,7 @@ public class ShortcutsCell extends FrameLayout {
         JOIN(R.string.VoipChatJoin, R.drawable.profile_join),
         LEAVE(R.string.VoipGroupLeave, R.drawable.profile_leave),
         LIVE_STREAM(R.string.StartVoipChannelTitle, R.drawable.profile_live_stream),
+        VOICE_CHAT(R.string.StartVoipChatTitle, R.drawable.profile_live_stream),
         MESSAGE(R.string.Message, R.drawable.profile_message),
         DISCUSS(R.string.ProfileDiscuss, R.drawable.profile_message),
         MUTE(R.string.Mute, R.drawable.profile_mute),
