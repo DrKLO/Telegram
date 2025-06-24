@@ -117,6 +117,7 @@ import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.AvatarSpan;
 import org.telegram.ui.Cells.ChatMessageCell;
 import org.telegram.ui.Cells.ShareDialogCell;
+import org.telegram.ui.Cells.ShortcutsCell;
 import org.telegram.ui.Components.AlertsCreator;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.BlurringShader;
@@ -261,6 +262,8 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
         Paint backgroundPaint;
         Drawable iconDrawable;
         int iconSize;
+        int iconBottomMargin;
+        int backgroundInitialColorAlpha = 0xFF;
         View view;
 
         protected void show(boolean sent) {}
@@ -334,6 +337,36 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
             if (peerView != null) {
                 src.view = peerView.storyContainer;
             }
+            return src;
+        }
+
+        public static SourceView fromShortcutButton(ShortcutsCell.ShortcutButton button) {
+            if (button == null) {
+                return null;
+            }
+            SourceView src = new SourceView() {
+                @Override
+                protected void show(boolean sent) {
+                    button.setVisibility(View.VISIBLE);
+                }
+                @Override
+                protected void hide() {
+                    button.post(() -> {
+                        button.setVisibility(View.INVISIBLE);
+                    });
+                }
+            };
+            int[] loc = new int[2];
+            button.getLocationOnScreen(loc);
+            src.screenRect.set(loc[0], loc[1], loc[0] + button.getWidth(), loc[1] + button.getHeight());
+            src.hasShadow = false;
+            src.backgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+            src.backgroundPaint.setColor(0x17000000);
+            src.iconDrawable = button.getContext().getResources().getDrawable(R.drawable.profile_story).mutate();
+            src.iconSize = AndroidUtilities.dp(24);
+            src.iconBottomMargin = AndroidUtilities.dp(10);
+            src.backgroundInitialColorAlpha = 0x17;
+            src.rounding = AndroidUtilities.dp(16);
             return src;
         }
 
@@ -1152,16 +1185,16 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
                         if (fromSourceView.hasShadow) {
                             fromSourceView.backgroundPaint.setShadowLayer(dp(2), 0, dp(3), Theme.multAlpha(0x33000000, alpha));
                         }
-                        fromSourceView.backgroundPaint.setAlpha((int) (0xFF * alpha));
+                        fromSourceView.backgroundPaint.setAlpha((int) (fromSourceView.backgroundInitialColorAlpha * alpha));
                         canvas.drawRoundRect(rectF, r, r, fromSourceView.backgroundPaint);
                     }
                     if (fromSourceView.iconDrawable != null) {
                         rect.set(fromSourceView.iconDrawable.getBounds());
                         fromSourceView.iconDrawable.setBounds(
                             (int) (bcx - fromSourceView.iconSize / 2),
-                            (int) (bcy - fromSourceView.iconSize / 2),
+                            (int) (bcy - fromSourceView.iconSize / 2) - fromSourceView.iconBottomMargin,
                             (int) (bcx + fromSourceView.iconSize / 2),
-                            (int) (bcy + fromSourceView.iconSize / 2)
+                            (int) (bcy + fromSourceView.iconSize / 2) - fromSourceView.iconBottomMargin
                         );
                         int wasAlpha = fromSourceView.iconDrawable.getAlpha();
                         fromSourceView.iconDrawable.setAlpha((int) (wasAlpha * alpha));

@@ -50,7 +50,7 @@ public class ShortcutsCell extends FrameLayout {
         UNMUTE(R.string.Unmute, R.drawable.profile_unmute),
         REPORT(R.string.ReportChat, R.drawable.profile_report),
         SHARE(R.string.LinkActionShare, R.drawable.profile_share),
-        STORY(R.string.Story, R.drawable.profile_story),
+        STORY(R.string.AddStory, R.drawable.profile_story),
         VIDEO(R.string.GroupCallCreateVideo, R.drawable.profile_video);
 
         private final int titleResId;
