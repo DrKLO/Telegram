@@ -209,4 +209,141 @@ public class StarGiftPatterns {
         }
     }
 
+    final static float[][] orbitConfigs = {
+            {AndroidUtilities.dp(25), AndroidUtilities.dp(10), 0.3f},
+            {AndroidUtilities.dp(35), AndroidUtilities.dp(9), 0.22f},
+            {AndroidUtilities.dp(45), AndroidUtilities.dp(8), 0.15f},
+            {AndroidUtilities.dp(55), AndroidUtilities.dp(7), 0.1f}
+    };
+
+    final static float[][] progressThresholds = {
+            {0.88f, 0.6f},
+            {0.78f, 0.5f},
+            {0.68f, 0.4f},
+            {0.60f, 0.35f}
+    };
+
+    final static double[] midAngles = {
+            0,
+            Math.PI/3,
+            Math.PI,
+            2*Math.PI/3,
+            4*Math.PI/3,
+            5*Math.PI/3
+    };
+
+    public static void calcOrbits() {
+        int width = AndroidUtilities.displaySize.x;
+        int addition = width / 35;
+        int start = AndroidUtilities.dp(21) + addition / 2;
+        orbitConfigs[0][0] = start;
+        orbitConfigs[1][0] = start + addition;
+        orbitConfigs[2][0] = start + addition * 2;
+        orbitConfigs[3][0] = start + addition * 3;
+    }
+
+    public static void drawProfilePattern(Canvas canvas, Drawable pattern, float w, float h, float alpha, float full, float avatarY, float progress) {
+        if (alpha <= 0.0f || progress <= 0.0f) return;
+
+        final float centerX = w / 2.0f;
+        final float centerY = avatarY;
+
+        for (int i = 3; i >= 0; i--) {
+            float radiusDp = orbitConfigs[i][0];
+            float sizeDp = orbitConfigs[i][1];
+            float orbitAlpha = orbitConfigs[i][2];
+            float startProgress = progressThresholds[i][0];
+            float endProgress = progressThresholds[i][1];
+
+            float factor;
+            if (progress >= startProgress) {
+                factor = 1.0f;
+            } else if (progress <= endProgress) {
+                factor = 0.0f;
+            } else {
+                factor = (progress - endProgress) / (startProgress - endProgress);
+            }
+            float currentRadius = radiusDp * factor;
+            float alphaFactor = Math.min(factor * (1f + 0.5f * i), 1f);
+            float currentAlpha = orbitAlpha * alphaFactor;
+            if (currentAlpha <= 0 || currentRadius <= 0) continue;
+            switch (i) {
+                case 0:
+                    drawHexagonOrbit(canvas, pattern, centerX, centerY, currentRadius, sizeDp * alphaFactor, currentAlpha, true, 6, 1.05f);
+                    break;
+                case 1:
+                    drawHexagonOrbit(canvas, pattern, centerX, centerY, currentRadius, sizeDp * alphaFactor, currentAlpha, false, 6, 0.95f);
+                    break;
+                case 2:
+                    drawHexagonOrbit(canvas, pattern, centerX, centerY, currentRadius, sizeDp * alphaFactor, currentAlpha, true, 6, 0.9f);
+                    break;
+                case 3:
+                    drawExtendedHexagon(canvas, pattern, centerX, centerY, currentRadius, sizeDp * alphaFactor, currentAlpha, 0.9f);
+                    break;
+            }
+        }
+    }
+
+    private static void drawHexagonOrbit(Canvas canvas, Drawable pattern,
+                                         float centerX, float centerY,
+                                         float radiusDp, float sizeDp,
+                                         float totalAlpha,
+                                         boolean pointyTop, int points,
+                                         float flattening) {
+        final float radiusPx = dpf2(radiusDp);
+        final float sizePx = dpf2(sizeDp);
+        final double startAngle = pointyTop ? Math.PI/2 : 0;
+        final double angleStep = 2 * Math.PI / points;
+        for (int i = 0; i < points; i++) {
+            double angle = startAngle + i * angleStep;
+            float x, y;
+            if (pointyTop) {
+                x = centerX + (float) (radiusPx * Math.cos(angle)* flattening);
+                y = centerY - (float) (radiusPx * Math.sin(angle) );
+            } else {
+                x = centerX + (float) (radiusPx * Math.cos(angle) );
+                y = centerY - (float) (radiusPx * Math.sin(angle)* flattening);
+            }
+            drawPatternAt(canvas, pattern, x, y, sizePx, totalAlpha);
+        }
+    }
+
+    private static void drawExtendedHexagon(Canvas canvas, Drawable pattern,
+                                            float centerX, float centerY,
+                                            float radiusDp, float sizeDp,
+                                            float totalAlpha, float flattening) {
+        final float radiusPx = dpf2(radiusDp);
+        final float sizePx = dpf2(sizeDp);
+        final double startAngle = Math.PI/2;
+
+        for (int i = 0; i < 6; i++) {
+            double angle = startAngle + i * Math.PI/3;
+            float x = centerX + (float)(radiusPx * Math.cos(angle) * flattening);
+            float y = centerY - (float)(radiusPx * Math.sin(angle) );
+            drawPatternAt(canvas, pattern, x, y, sizePx, totalAlpha);
+        }
+
+        for (double angle : midAngles) {
+            float x = centerX + (float)(radiusPx * Math.cos(angle) * flattening);
+            float y = centerY - (float)(radiusPx * Math.sin(angle));
+            drawPatternAt(canvas, pattern, x, y, sizePx, totalAlpha);
+        }
+    }
+
+    private static void drawPatternAt(Canvas canvas, Drawable pattern,
+                                      float x, float y, float sizePx,
+                                      float totalAlpha) {
+        int alphaInt = (int) (255 * totalAlpha);
+        if (alphaInt <= 0) return;
+        final float halfSize = sizePx / 2;
+        pattern.setBounds(
+                (int)(x - halfSize),
+                (int)(y - halfSize),
+                (int)(x + halfSize),
+                (int)(y + halfSize)
+        );
+        pattern.setAlpha(alphaInt);
+        pattern.draw(canvas);
+    }
+
 }
