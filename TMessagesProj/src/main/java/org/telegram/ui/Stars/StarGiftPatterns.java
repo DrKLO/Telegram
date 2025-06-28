@@ -209,4 +209,72 @@ public class StarGiftPatterns {
         }
     }
 
+    public static void drawProfilePatternCentered(Canvas canvas, Drawable pattern, float w, float h, float alpha, float full) {
+        if (alpha <= 0f) return;
+
+        float centerX = w / 2f;
+        float centerY = h / 2f + dpf2(54f);
+
+        // 1) Левая «полная» часть + центральный ряд
+        if (full > 0f) {
+            // profileLeft
+            for (int i = 0; i < profileLeft.length; i += 4) {
+                float x = profileLeft[i];
+                float y = profileLeft[i + 1];
+                float size = profileLeft[i + 2];
+                float partAlpha = profileLeft[i + 3];
+
+                int left   = (int) (centerX + dpf2(x) - dpf2(size) / 2f);
+                int top    = (int) (centerY + dpf2(y) - dpf2(size) / 2f);
+                int right  = left + (int) dpf2(size);
+                int bottom = top  + (int) dpf2(size);
+
+                pattern.setBounds(left, top, right, bottom);
+                pattern.setAlpha((int) (0xFF * alpha * partAlpha * full));
+                pattern.draw(canvas);
+            }
+
+            // центральный «змейкой» ряд
+            float dpWidth = w / AndroidUtilities.density;
+            float sl = 77.5f, sr = 173.33f;
+            float spaceDp = dpWidth - sl - sr;
+            int count = Math.max(1, Math.round(spaceDp / 27.25f));
+            if (count % 2 == 0) count++;  // нечётное, чтобы центрился
+
+            for (int i = 0; i < count; i++) {
+                float xDp     = -dpWidth / 2f + sl + spaceDp * i / (float)(count - 1);
+                float y       = (i % 2 == 0 ? 0f : -12.5f);
+                float size    = 17f;
+                float partA   = .21f;
+
+                int left   = (int) (centerX + dpf2(xDp) - dpf2(size) / 2f);
+                int top    = (int) (centerY + dpf2(y)     - dpf2(size) / 2f);
+                int right  = left + (int) dpf2(size);
+                int bottom = top  + (int) dpf2(size);
+
+                pattern.setBounds(left, top, right, bottom);
+                pattern.setAlpha((int) (0xFF * alpha * partA * full));
+                pattern.draw(canvas);
+            }
+        }
+
+        // 2) Правая часть (profileRight) всегда рисуется
+        for (int i = 0; i < profileRight.length; i += 4) {
+            float x = profileRight[i];
+            float y = profileRight[i + 1];
+            float size = profileRight[i + 2];
+            float partAlpha = profileRight[i + 3];
+
+            int left   = (int) (centerX + dpf2(x) - dpf2(size) / 2f);
+            int top    = (int) (centerY + dpf2(y) - dpf2(size) / 2f);
+            int right  = left + (int) dpf2(size);
+            int bottom = top  + (int) dpf2(size);
+
+            pattern.setBounds(left, top, right, bottom);
+            pattern.setAlpha((int) (0xFF * alpha * partAlpha));
+            pattern.draw(canvas);
+        }
+    }
+
+
 }
