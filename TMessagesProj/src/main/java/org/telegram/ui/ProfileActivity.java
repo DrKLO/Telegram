@@ -3438,8 +3438,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 AndroidUtilities.removeAdjustResize(getParentActivity(), classGuid);
 
                 listView.stopScroll();
-//                avatarContainer2.setPivotY(avatarContainer.getPivotY() + avatarContainer.getMeasuredHeight() / 2f);
-//                avatarContainer2.setPivotX(avatarContainer2.getMeasuredWidth() / 2f);
+                avatarContainer2.setPivotY(avatarContainer.getPivotY() + avatarContainer.getMeasuredHeight() / 2f);
+                avatarContainer2.setPivotX(avatarContainer2.getMeasuredWidth() / 2f);
                 AndroidUtilities.updateViewVisibilityAnimated(avatarContainer2, !expanded, 0.95f, true);
 
                 callItem.setVisibility(expanded || !callItemVisible ? GONE : INVISIBLE);
@@ -4937,8 +4937,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         fallbackImage.setRoundRadius(AndroidUtilities.dp(11));
         AndroidUtilities.updateViewVisibilityAnimated(avatarContainer2, true, 1f, false);
         frameLayout.addView(avatarContainer2, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.START, 0, 0, 0, 0));
-//        avatarContainer.setPivotX(0);
-//        avatarContainer.setPivotY(0);
+        avatarContainer.setPivotX(0);
+        avatarContainer.setPivotY(0);
         avatarContainer2.addView(avatarContainer, LayoutHelper.createFrame(avatarSizeCollapsed, avatarSizeCollapsed, Gravity.TOP | Gravity.LEFT, avatarStartMargin(), 0, 0, 0));
         avatarImage = new AvatarImageView(context) {
             @Override
@@ -7376,19 +7376,15 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 }
             }
 
-//            avatarY = (actionBar.getOccupyStatusBar() ? AndroidUtilities.statusBarHeight : 0)
-//                    + ActionBar.getCurrentActionBarHeight() / 2.0f * (1.0f + diff)
-//                    - (avatarSizeCollapsed  /2) * AndroidUtilities.density
-//                    + 27 * AndroidUtilities.density * diff
-//                    + actionBar.getTranslationY();
-            float minScale = (avatarSizeCollapsed + 18f) / avatarSizeCollapsed;
-            float maxScale = (avatarSizeCollapsed + avatarSizeCollapsed + 18f) / avatarSizeCollapsed;
-            float scaleProgress = Math.max(0f, (avatarScale - minScale) / (maxScale - minScale));
-            float offset = AndroidUtilities.dpf2(avatarSizeCollapsed  + 36f) * scaleProgress;
-//            avatarX = -offset;
+            // compensate to centralize avatar scaling because container's pivotX=pivotY=0
+            float dx = ((avatarContainer.getMeasuredWidth() * (avatarScale - 1)) / -2) * diff;
+
+            avatarX = dx;
 
             avatarY = (actionBar.getOccupyStatusBar() ? AndroidUtilities.statusBarHeight : 0)
-                    + ActionBar.getCurrentActionBarHeight() / 2.0f * (1.0f + diff) - 21 * AndroidUtilities.density + 27 * AndroidUtilities.density * diff + actionBar.getTranslationY();
+                    + ActionBar.getCurrentActionBarHeight() / 2.0f * (1.0f + diff) - 21 * AndroidUtilities.density
+                    + 27 * AndroidUtilities.density * diff
+                    + actionBar.getTranslationY();
 
             float h = openAnimationInProgress ? initialAnimationExtraHeight : extraHeight;
             if (h > AndroidUtilities.dp(88f) || isPulledDown) {
@@ -7442,8 +7438,6 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                         expandAnimator.addListener(new AnimatorListenerAdapter() {
                             @Override
                             public void onAnimationStart(Animator animation) {
-                                avatarContainer.setPivotX(0);
-                                avatarContainer.setPivotY(0);
                                 setForegroundImage(false);
                                 avatarsViewPager.setAnimatedFileMaybe(avatarImage.getImageReceiver().getAnimation());
                                 avatarsViewPager.resetCurrentItem();
@@ -7527,18 +7521,13 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                         avatarImage.setForegroundAlpha(1f);
                         avatarContainer.setVisibility(View.VISIBLE);
                         avatarsViewPager.setVisibility(View.GONE);
-                        expandAnimator.addListener(new AnimatorListenerAdapter() {
-                            @Override public void onAnimationEnd(Animator animation) {
-                                avatarContainer.setPivotX(avatarContainer.getMeasuredWidth() / 2f);
-                                avatarContainer.setPivotY(avatarContainer.getMeasuredHeight() / 2f);
-                            }
-                        });
                         Log.d("GGG", "collapse triggered");
                         expandAnimator.start(); // todo Alex Triggers collapse animation
                     }
 
                     avatarContainer.setScaleX(avatarScale);
                     avatarContainer.setScaleY(avatarScale);
+                    avatarContainer.setTranslationX(avatarX);
 
                     if (expandAnimator == null || !expandAnimator.isRunning()) {
                         refreshNameAndOnlineXY();
