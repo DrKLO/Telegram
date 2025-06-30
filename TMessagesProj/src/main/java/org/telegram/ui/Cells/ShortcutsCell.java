@@ -1,5 +1,6 @@
 package org.telegram.ui.Cells;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
@@ -37,33 +38,44 @@ import org.telegram.messenger.R;
 public class ShortcutsCell extends FrameLayout {
 
     public enum ButtonType {
-        STOP(R.string.Stop, R.drawable.profile_block),
-        CALL(R.string.Call, R.drawable.profile_call),
-        GIFT(R.string.ActionStarGift, R.drawable.profile_gift),
-        JOIN(R.string.VoipChatJoin, R.drawable.profile_join),
-        LEAVE(R.string.VoipGroupLeave, R.drawable.profile_leave),
-        LIVE_STREAM(R.string.StartVoipChannelTitle, R.drawable.profile_live_stream),
-        VOICE_CHAT(R.string.StartVoipChatTitle, R.drawable.profile_live_stream),
-        MESSAGE(R.string.Message, R.drawable.profile_message),
-        DISCUSS(R.string.ProfileDiscuss, R.drawable.profile_message),
-        MUTE(R.string.Mute, R.drawable.profile_mute),
-        UNMUTE(R.string.Unmute, R.drawable.profile_unmute),
-        REPORT(R.string.ReportChat, R.drawable.profile_report),
-        SHARE(R.string.LinkActionShare, R.drawable.profile_share),
-        STORY(R.string.AddStory, R.drawable.profile_story),
-        VIDEO(R.string.GroupCallCreateVideo, R.drawable.profile_video);
+        STOP(R.string.Stop, R.drawable.profile_block, 0, 0, 0),
+        CALL(R.string.Call, R.drawable.profile_call, 0, 0, 0),
+        GIFT(R.string.ActionStarGift, R.drawable.profile_gift, 0, 0, 0),
+        JOIN(R.string.VoipChatJoin, R.drawable.profile_join, 0, 0, 0),
+        LEAVE(R.string.VoipGroupLeave, R.drawable.profile_leave, 0, 0, 0),
+        LIVE_STREAM(R.string.StartVoipChannelTitle, R.drawable.profile_live_stream, 0, 0, 0),
+        VOICE_CHAT(R.string.StartVoipChatTitle, R.drawable.profile_live_stream, 0, 0, 0),
+        MESSAGE(R.string.Message, R.drawable.profile_message, 0, 0, 0),
+        DISCUSS(R.string.ProfileDiscuss, R.drawable.profile_message, 0, 0, 0),
+        MUTE(R.string.Mute, R.drawable.profile_mute, R.raw.anim_profilemute, R.raw.anim_profileunmute, R.string.Unmute),
+        REPORT(R.string.ReportChat, R.drawable.profile_report, 0, 0, 0),
+        SHARE(R.string.LinkActionShare, R.drawable.profile_share, 0, 0, 0),
+        STORY(R.string.AddStory, R.drawable.profile_story, 0, 0, 0),
+        VIDEO(R.string.GroupCallCreateVideo, R.drawable.profile_video, 0, 0, 0);
 
         private final int titleResId;
         private final int iconResId;
+        private final int lottieResId;
+        private final int lottieResId2;
+        private final int titleResId2;
 
-        ButtonType(int titleResId, int iconResId) {
+        private boolean state = false;
+
+        ButtonType(int titleResId, int iconResId, int lottieResId, int lottieResId2, int titleResId2) {
             this.titleResId = titleResId;
             this.iconResId = iconResId;
+            this.lottieResId = lottieResId;
+            this.lottieResId2 = lottieResId2;
+            this.titleResId2 = titleResId2;
+        }
+
+        public void setState(boolean newState) {
+            state = newState;
         }
     }
 
     public interface OnButtonClickListener {
-        void onClick(View v, int index, int type);
+        void onClick(View v, int index, ButtonType type);
     }
 
     private final Theme.ResourcesProvider resourcesProvider;
@@ -81,6 +93,7 @@ public class ShortcutsCell extends FrameLayout {
         this(context, null);
     }
 
+    @SuppressLint("ClickableViewAccessibility")
     public ShortcutsCell(Context context, Theme.ResourcesProvider resourcesProvider) {
         super(context);
         this.resourcesProvider = resourcesProvider;
@@ -104,25 +117,14 @@ public class ShortcutsCell extends FrameLayout {
         listView.setEnabled(true);
         listView.setOnItemClickListener((view, position) -> {
             if (onButtonClickListener != null) {
-                int tp = adapter.items.get(position).type;
-                long clickDelay;
+                ButtonType tp = adapter.items.get(position).type;
                 if (view instanceof ShortcutButton) {
                     ShortcutButton btn = ((ShortcutButton) view);
                     if (btn.isAnimationPlaying()) {
                         return;
                     }
-                    clickDelay = ((ShortcutButton) view).getClickDelay(true);
-                } else {
-                    clickDelay = 0;
                 }
-
-                if (clickDelay > 0) {
-                    this.postDelayed(() -> {
-                        onButtonClickListener.onClick(view, position, tp);
-                    }, clickDelay);
-                } else {
-                    onButtonClickListener.onClick(view, position, tp);
-                }
+                onButtonClickListener.onClick(view, position, tp);
             }
         });
 
@@ -188,19 +190,44 @@ public class ShortcutsCell extends FrameLayout {
         }
     }
 
-    public void setShowProgress(float pr) {
+    public void setStateForButton(ButtonType buttonType, boolean newState) {
+        int count = listView.getChildCount();
+        for (int a = 0; a < count; a++) {
+            ShortcutButton button = (ShortcutButton) listView.getChildAt(a);
+            if (button.currentItem.type == buttonType) {
+                button.animateTextTo(newState);
+                long clickDelay = button.getClickDelay(true);
+                if (clickDelay > 0) {
+                    this.postDelayed(() -> {
+                        button.setState(newState);
+                    }, clickDelay);
+                }
+                break;
+            }
+        }
+    }
+
+    public float setShowProgress(float pr) {
+        listView.setEnabled(pr > 0.5f);
         changeItems(false, shortcutButton -> {
+            int bWidth = Math.min(shortcutButton.buttonText.getTextWidth(), shortcutButton.buttonText.getMeasuredWidth());
+            shortcutButton.buttonText.setPivotY(-height / 2f);
+            shortcutButton.buttonText.setPivotX(bWidth / 2f);
+            shortcutButton.buttonImage.setPivotY(-height / 2f + shortcutButton.buttonImage.getMeasuredHeight() + AndroidUtilities.dp(5));
+            shortcutButton.buttonImage.setPivotX(shortcutButton.buttonImage.getMeasuredHeight() / 2f);
             shortcutButton.buttonImage.setScaleX(pr);
             shortcutButton.buttonImage.setScaleY(pr);
             shortcutButton.buttonText.setScaleX(pr);
             shortcutButton.buttonText.setScaleY(pr);
-            shortcutButton.getLayoutParams();
-            ViewGroup.LayoutParams lp = shortcutButton.getLayoutParams();
+            shortcutButton.setAlpha(Math.max(pr * 1.45f - 0.45f, 0f));
+            RecyclerView.LayoutParams lp = (RecyclerView.LayoutParams)shortcutButton.getLayoutParams();
             if (lp != null) {
-                lp.height = (int) ((height - spacing * 2) * pr);
+                lp.height = AndroidUtilities.lerp(1, height - spacing * 2, pr);
+                shortcutButton.requestLayout();
             }
-            shortcutButton.requestLayout();
         });
+
+        return height - spacing * 2 - (AndroidUtilities.lerp(1, height - spacing * 2, pr));
     }
 
     public Adapter getAdapter() {
@@ -214,28 +241,34 @@ public class ShortcutsCell extends FrameLayout {
     }
 
     public static class ListItem {
-        public int type;
+        public ButtonType type;
         public String text;
+        public String text2;
         public int iconResource;
         public int animatedIconResource;
+        public int animatedIconResource2;
 
-        public ListItem(int type, String text, int iconResource) {
-            this(type, text, iconResource, 0);
-        }
-
-        public ListItem(int type, String text, int iconResource, int animatedIconResource) {
+        public ListItem(ButtonType type) {
             this.type = type;
-            this.text = text;
-            this.iconResource = iconResource;
-            this.animatedIconResource = animatedIconResource;
+            this.text = LocaleController.getString(type.titleResId);
+            if (type.titleResId2 != 0) {
+                this.text2 = LocaleController.getString(type.titleResId2);
+            } else {
+                this.text2 = null;
+            }
+            this.iconResource = type.iconResId;
+            this.animatedIconResource = type.lottieResId;
+            this.animatedIconResource2 = type.lottieResId2;
         }
 
         public boolean compare(ListItem other) {
             return other != null
                     && type == other.type
                     && Objects.equals(text, other.text)
+                    && Objects.equals(text2, other.text2)
                     && iconResource == other.iconResource
-                    && animatedIconResource == other.animatedIconResource;
+                    && animatedIconResource == other.animatedIconResource
+                    && animatedIconResource2 == other.animatedIconResource2;
         }
     }
 
@@ -291,30 +324,45 @@ public class ShortcutsCell extends FrameLayout {
 
             currentItem = item;
 
-            final RLottieDrawable aDrawable;
-            Drawable drawable;
             if (item.animatedIconResource != 0) {
-                aDrawable = new RLottieDrawable(item.animatedIconResource, "" + item.animatedIconResource, AndroidUtilities.dp(24), AndroidUtilities.dp(24), true, null);
-                aDrawable.beginApplyLayerColors();
-                aDrawable.setLayerColor("*.**", getThemedColor(Theme.key_actionBarDefaultIcon));
-                aDrawable.commitApplyLayerColors();
-                drawable = aDrawable;
+                drawableUnstate = getAnimatedIcon(item.animatedIconResource);
+                drawableState = getAnimatedIcon(item.animatedIconResource2);
+                buttonImage.setAnimation(currentItem.type.state ? drawableState : drawableUnstate);
             } else {
-                drawable = ContextCompat.getDrawable(getContext(), item.iconResource);
+                Drawable drawable = ContextCompat.getDrawable(getContext(), item.iconResource);
                 if (drawable != null) {
                     drawable.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_actionBarDefaultIcon), PorterDuff.Mode.SRC_IN));
                 }
+                buttonImage.setImageDrawable(drawable);
             }
 
-            if (drawable != null) {
-                if (drawable instanceof RLottieDrawable) {
-                    buttonImage.setAnimation((RLottieDrawable) drawable);
-                } else {
-                    buttonImage.setImageDrawable(drawable);
-                }
-            }
+            buttonText.setText(currentItem.type.state ? item.text2 : item.text);
+        }
 
-            buttonText.setText(item.text);
+        private void setState(boolean newState) {
+            if (currentItem.type.state == newState) {
+                return;
+            }
+            buttonImage.stopAnimation();
+            RLottieDrawable drawable = buttonImage.getAnimatedDrawable();
+            drawable.setCurrentFrame(0);
+            currentItem.type.state = newState;
+            RLottieDrawable newDrawable = currentItem.type.state ? drawableState : drawableUnstate;
+            newDrawable.setCurrentFrame(0);
+            buttonImage.setAnimation(newDrawable);
+        }
+
+        public void animateTextTo(boolean newState) {
+            buttonText.setText(newState ? currentItem.text2 : currentItem.text);
+            buttonText.requestLayout();
+        }
+
+        private RLottieDrawable drawableUnstate, drawableState;
+
+        private RLottieDrawable getAnimatedIcon(int res) {
+            RLottieDrawable aDrawable = new RLottieDrawable(res, "" + res, AndroidUtilities.dp(36), AndroidUtilities.dp(36), true, null);
+            aDrawable.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_actionBarDefaultIcon), PorterDuff.Mode.SRC_IN));
+            return aDrawable;
         }
 
         public long getClickDelay(boolean startAnimation) {
@@ -384,15 +432,7 @@ public class ShortcutsCell extends FrameLayout {
         }
 
         public ListItem createButton(ButtonType type) {
-            return new ListItem(type.ordinal(), LocaleController.getString(type.titleResId), type.iconResId, 0);
-        }
-
-        public ListItem createButton(int type, String text, int iconResource) {
-            return new ListItem(type, text, iconResource);
-        }
-
-        public ListItem createButton(int type, String text, int iconResource, int animatedIconResource) {
-            return new ListItem(type, text, iconResource, animatedIconResource);
+            return new ListItem(type);
         }
     }
 
