@@ -171,6 +171,7 @@ import org.telegram.ui.Components.TypefaceSpan;
 import org.telegram.ui.Components.URLSpanReplacement;
 import org.telegram.ui.Components.UndoView;
 import org.telegram.ui.LaunchActivity;
+import org.telegram.ui.Stars.StarGiftPatterns;
 import org.telegram.ui.Stories.PeerStoriesView;
 import org.telegram.ui.Stories.StoryMediaAreasView;
 import org.telegram.ui.ThemePreviewActivity;
@@ -2724,6 +2725,7 @@ public class AndroidUtilities {
             ViewConfiguration vc = ViewConfiguration.get(context);
             touchSlop = vc.getScaledTouchSlop();
             isSmallScreen = null;
+            StarGiftPatterns.calcOrbits();
         } catch (Exception e) {
             FileLog.e(e);
         }
