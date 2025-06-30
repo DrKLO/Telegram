@@ -42,8 +42,10 @@ import android.text.TextUtils;
 import android.text.style.ClickableSpan;
 import android.text.style.ReplacementSpan;
 import android.text.style.StyleSpan;
+import android.view.Gravity;
 import android.view.HapticFeedbackConstants;
 import android.view.MotionEvent;
+import android.view.View;
 import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.view.animation.Interpolator;
@@ -74,7 +76,6 @@ import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.MessagesStorage;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
-import org.telegram.messenger.SavedMessagesController;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
@@ -90,11 +91,13 @@ import org.telegram.ui.AvatarSpan;
 import org.telegram.ui.Components.AnimatedEmojiDrawable;
 import org.telegram.ui.Components.AnimatedEmojiSpan;
 import org.telegram.ui.Components.AnimatedFloat;
+import org.telegram.ui.Components.AnimatedTextView;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.BubbleCounterPath;
 import org.telegram.ui.Components.ButtonBounce;
 import org.telegram.ui.Components.CanvasButton;
 import org.telegram.ui.Components.CheckBox2;
+import org.telegram.ui.Components.ClickableAnimatedTextView;
 import org.telegram.ui.Components.ColoredImageSpan;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.DialogCellTags;
@@ -102,6 +105,7 @@ import org.telegram.ui.Components.EmptyStubSpan;
 import org.telegram.ui.Components.ForegroundColorSpanThemable;
 import org.telegram.ui.Components.Forum.ForumBubbleDrawable;
 import org.telegram.ui.Components.Forum.ForumUtilities;
+import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.PhotoBubbleClip;
 import org.telegram.ui.Components.Premium.PremiumGradient;
 import org.telegram.ui.Components.PullForegroundDrawable;
@@ -190,6 +194,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
     public boolean isSavedDialog;
     public boolean isSavedDialogCell;
     public DialogCellTags tags;
+    private boolean hasPersonalChannel = false;
 
     public final StoriesUtilities.AvatarStoryParams storyParams = new StoriesUtilities.AvatarStoryParams(false) {
         @Override
@@ -761,6 +766,28 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
             lastSendState = message.messageOwner.send_state;
         }
         update(0, animated);
+    }
+
+    private AnimatedTextView hasPersonalChannelView = null;
+
+    public void setHasPersonalChannel(boolean personalChannel) {
+        this.hasPersonalChannel = personalChannel;
+        if (hasPersonalChannel) {
+            hasPersonalChannelView = new ClickableAnimatedTextView(getContext());
+            hasPersonalChannelView.getDrawable().setHacks(true, true, true);
+            hasPersonalChannelView.setAnimationProperties(.3f, 0, 165, CubicBezierInterpolator.EASE_OUT_QUINT);
+            hasPersonalChannelView.setTypeface(AndroidUtilities.bold());
+            hasPersonalChannelView.setTextSize(dp(11));
+            hasPersonalChannelView.setPadding(dp(4.33f), 0, dp(4.33f), 0);
+            hasPersonalChannelView.setGravity(Gravity.LEFT);
+            hasPersonalChannelView.cancelAnimation();
+            final int headerColor = Theme.getColor(Theme.key_windowBackgroundWhiteBlueHeader, resourcesProvider);
+            hasPersonalChannelView.setTextColor(headerColor);
+            hasPersonalChannelView.setBackground(Theme.createRoundRectDrawable(dp(4.5f), dp(4.5f), Theme.multAlpha(headerColor, .1f)));
+            hasPersonalChannelView.setText(LocaleController.getString(R.string.PersonalChannel), false);
+            hasPersonalChannelView.setLayoutParams(LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 17));
+            hasPersonalChannelView.measure(View.MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(100), View.MeasureSpec.AT_MOST), View.MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(17), View.MeasureSpec.AT_MOST));
+        }
     }
 
     public long getDialogId() {
@@ -2124,6 +2151,9 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
         }
         if (drawBotVerified) {
             nameWidth -= dp(21);
+        }
+        if (hasPersonalChannel) {
+            nameWidth -= hasPersonalChannelView.getMeasuredWidth() + dp(4);
         }
         try {
             int ellipsizeWidth = nameWidth - dp(12);
@@ -3996,6 +4026,17 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                     botVerification.setColor(Theme.getColor(Theme.key_chats_verifiedBackground, resourcesProvider));
                     botVerification.draw(canvas);
                 }
+            }
+            if (hasPersonalChannel && hasPersonalChannelView != null) {
+                int y = dp(useForceThreeLines || SharedConfig.useThreeLinesLayout ? 12.5f : 15.5f);
+                if ((!(useForceThreeLines || SharedConfig.useThreeLinesLayout) || isForumCell()) && hasTags()) {
+                    y -= dp(9);
+                }
+                y -= dp(2);
+                canvas.save();
+                canvas.translate(nameMuteLeft + (drawPremium ? dp(25): 0), y);
+                hasPersonalChannelView.draw(canvas);
+                canvas.restore();
             }
             boolean drawMuted = drawUnmute || dialogMuted;
             if (dialogsType != 2 && (drawMuted || dialogMutedProgress > 0) && !drawVerified && drawScam == 0 && !drawPremium) {
