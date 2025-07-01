@@ -66,9 +66,11 @@ public class UserConfig extends BaseController {
     public long autoDownloadConfigLoadTime;
 
     public String premiumGiftsStickerPack;
+    public String premiumTonStickerPack;
     public String genericAnimationsStickerPack;
     public String defaultTopicIcons;
     public long lastUpdatedPremiumGiftsStickerPack;
+    public long lastUpdatedTonGiftsStickerPack;
     public long lastUpdatedGenericAnimations;
     public long lastUpdatedDefaultTopicIcons;
 

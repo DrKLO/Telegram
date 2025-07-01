@@ -1,9 +1,15 @@
 package org.telegram.messenger;
 
+import static org.telegram.ui.Components.TranslateAlert2.userAgents;
+import android.app.DownloadManager;
 import android.content.Context;
 import android.content.res.Resources;
+import android.database.Cursor;
 import android.icu.text.Collator;
+import android.net.Uri;
+import android.os.SystemClock;
 import android.text.TextUtils;
+import android.util.Log;
 import android.util.LongSparseArray;
 import android.util.Pair;
 import android.view.inputmethod.InputMethodInfo;
@@ -12,16 +18,40 @@ import android.view.inputmethod.InputMethodSubtype;
 
 import androidx.annotation.Nullable;
 
+import com.google.common.base.Charsets;
+
+import org.json.JSONArray;
+import org.json.JSONTokener;
+
+//import com.google.mlkit.common.model.RemoteModelManager;
+//import com.google.mlkit.common.sdkinternal.MlKitContext;
+//import com.google.mlkit.common.sdkinternal.SharedPrefManager;
+//import com.google.mlkit.nl.translate.TranslateLanguage;
+//import com.google.mlkit.nl.translate.TranslateRemoteModel;
+//import com.google.mlkit.nl.translate.Translation;
+//import com.google.mlkit.nl.translate.Translator;
+//import com.google.mlkit.nl.translate.TranslatorOptions;
+
 import org.telegram.tgnet.InputSerializedData;
 import org.telegram.tgnet.OutputSerializedData;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.Vector;
 import org.telegram.tgnet.tl.TL_stories;
+import org.telegram.ui.ActionBar.BaseFragment;
+import org.telegram.ui.ChatActivity;
 import org.telegram.ui.Components.Bulletin;
+import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.TranslateAlert2;
+import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.RestrictedLanguagesSelectActivity;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.net.HttpURLConnection;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -39,7 +69,7 @@ public class TranslateController extends BaseController {
 
     public static final String UNKNOWN_LANGUAGE = "und";
 
-    private static final int REQUIRED_TOTAL_MESSAGES_CHECKED = 8;
+    private static final int REQUIRED_TOTAL_MESSAGES_CHECKED = 6;
     private static final int REQUIRED_TOTAL_MESSAGES_CHECKED_AUTOTRANSLATE = 2;
     private static final float REQUIRED_PERCENTAGE_MESSAGES_TRANSLATABLE = .60F;
     private static final float REQUIRED_MIN_MESSAGES_TRANSLATABLE_AUTOTRANSLATE = 2;
@@ -92,6 +122,9 @@ public class TranslateController extends BaseController {
     private Boolean contextTranslateEnabled;
 
     public boolean isChatTranslateEnabled() {
+        if (!getMessagesController().isTranslationsAutoEnabled()) {
+            return false;
+        }
         if (chatTranslateEnabled == null) {
             chatTranslateEnabled = messagesController.getMainSettings().getBoolean("translate_chat_button", true);
         }
@@ -99,6 +132,9 @@ public class TranslateController extends BaseController {
     }
 
     public boolean isContextTranslateEnabled() {
+        if (!getMessagesController().isTranslationsManualEnabled()) {
+            return false;
+        }
         if (contextTranslateEnabled == null) {
             contextTranslateEnabled = messagesController.getMainSettings().getBoolean("translate_button", MessagesController.getGlobalMainSettings().getBoolean("translate_button", false));
         }
@@ -892,6 +928,45 @@ public class TranslateController extends BaseController {
                     }
                 }
 
+                final String method = getMessagesController().translationsAutoEnabled;
+                if ("alternative".equals(method) || "system".equals(method)) {
+                    final String toLanguage = pendingTranslation1.language;
+                    for (int i = 0; i < pendingTranslation1.messageIds.size(); ++i) {
+                        final int id = pendingTranslation1.messageIds.get(i);
+                        final Utilities.Callback3<Integer, TLRPC.TL_textWithEntities, String> _callback = pendingTranslation1.callbacks.get(i);
+                        final String _text = pendingTranslation1.messageTexts.get(i).text;
+                        TranslateAlert2.alternativeTranslate(_text, null, toLanguage, (result, rateLimit) -> {
+                            if (result != null) {
+                                final TLRPC.TL_textWithEntities resultWithEntities = new TLRPC.TL_textWithEntities();
+                                resultWithEntities.text = result;
+                                _callback.run(id, resultWithEntities, toLanguage);
+                            } else {
+                                toggleTranslatingDialog(dialogId, false);
+                                NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.showBulletin, Bulletin.TYPE_ERROR, LocaleController.getString(rateLimit ? R.string.TranslationFailedAlert1 : R.string.TranslationFailedAlert2));
+                            }
+                        });
+                    }
+                    return;
+                }/* else if ("system".equals(method)) {
+                    final String toLanguage = pendingTranslation1.language;
+                    for (int i = 0; i < pendingTranslation1.messageIds.size(); ++i) {
+                        final int id = pendingTranslation1.messageIds.get(i);
+                        final Utilities.Callback3<Integer, TLRPC.TL_textWithEntities, String> _callback = pendingTranslation1.callbacks.get(i);
+                        final String _text = pendingTranslation1.messageTexts.get(i).text;
+                        systemTranslate(_text, null, toLanguage, result -> {
+                            if (result != null) {
+                                final TLRPC.TL_textWithEntities resultWithEntities = new TLRPC.TL_textWithEntities();
+                                resultWithEntities.text = result;
+                                _callback.run(id, resultWithEntities, toLanguage);
+                            } else {
+                                toggleTranslatingDialog(dialogId, false);
+                                NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.showBulletin, Bulletin.TYPE_ERROR, LocaleController.getString(R.string.TranslationFailedAlert2));
+                            }
+                        });
+                    }
+                    return;
+                }*/
+
                 TLRPC.TL_messages_translateText req = new TLRPC.TL_messages_translateText();
                 req.flags |= 1;
                 req.peer = getMessagesController().getInputPeer(dialogId);
@@ -902,16 +977,34 @@ public class TranslateController extends BaseController {
                     final ArrayList<Integer> ids;
                     final ArrayList<Utilities.Callback3<Integer, TLRPC.TL_textWithEntities, String>> callbacks;
                     final ArrayList<TLRPC.TL_textWithEntities> texts;
+                    final String toLanguage;
                     synchronized (TranslateController.this) {
                         ids = pendingTranslation1.messageIds;
                         callbacks = pendingTranslation1.callbacks;
                         texts = pendingTranslation1.messageTexts;
+                        toLanguage = pendingTranslation1.language;
                     }
                     if (res instanceof TLRPC.TL_messages_translateResult) {
                         ArrayList<TLRPC.TL_textWithEntities> translated = ((TLRPC.TL_messages_translateResult) res).result;
                         final int count = Math.min(callbacks.size(), translated.size());
                         for (int i = 0; i < count; ++i) {
-                            callbacks.get(i).run(ids.get(i), TranslateAlert2.preprocess(texts.get(i), translated.get(i)), pendingTranslation1.language);
+                            callbacks.get(i).run(ids.get(i), TranslateAlert2.preprocess(texts.get(i), translated.get(i)), toLanguage);
+                        }
+                    } else if (err != null && "TRANSLATIONS_DISABLED_ALT".equalsIgnoreCase(err.text)) {
+                        for (int i = 0; i < ids.size(); ++i) {
+                            final int id = ids.get(i);
+                            final Utilities.Callback3<Integer, TLRPC.TL_textWithEntities, String> _callback = callbacks.get(i);
+                            final String _text = texts.get(i).text;
+                            TranslateAlert2.alternativeTranslate(_text, null, toLanguage, (result, rateLimit) -> {
+                                if (result != null) {
+                                    final TLRPC.TL_textWithEntities resultWithEntities = new TLRPC.TL_textWithEntities();
+                                    resultWithEntities.text = result;
+                                    _callback.run(id, resultWithEntities, toLanguage);
+                                } else {
+                                    toggleTranslatingDialog(dialogId, false);
+                                    NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.showBulletin, Bulletin.TYPE_ERROR, LocaleController.getString(rateLimit ? R.string.TranslationFailedAlert1 : R.string.TranslationFailedAlert2));
+                                }
+                            });
                         }
                     } else if (err != null && "TO_LANG_INVALID".equals(err.text)) {
                         toggleTranslatingDialog(dialogId, false);
@@ -939,6 +1032,102 @@ public class TranslateController extends BaseController {
         }
     }
 
+//    private void systemTranslate(String text, String fromLanguage, String toLanguage, Utilities.Callback<String> done) {
+//        if (done == null) return;
+//        if (fromLanguage == null) {
+//            LanguageDetector.detectLanguage(text, lng -> {
+//                systemTranslate(text, lng, toLanguage, done);
+//            }, e -> {
+//                systemTranslate(text, "en", toLanguage, done);
+//            });
+//            return;
+//        }
+//
+//        checkModelInstalled(fromLanguage, () -> {
+//            checkModelInstalled(toLanguage, () -> {
+//
+//                TranslatorOptions.Builder options = new TranslatorOptions.Builder();
+//                options.setSourceLanguage(fromLanguage);
+//                options.setTargetLanguage(toLanguage);
+//                final Translator translator = Translation.getClient(options.build());
+//
+//                FileLog.d("[mlkit] downloadModelIfNeeded started");
+//                final long start = System.currentTimeMillis();
+//                final int[] triesCount = new int[1];
+//                final Runnable[] tryDownloadModelIfNeeded = new Runnable[1];
+//                tryDownloadModelIfNeeded[0] = () -> {
+//                    translator.downloadModelIfNeeded()
+//                        .addOnSuccessListener(v -> {
+//                            forceModelInstalled(fromLanguage);
+//                            forceModelInstalled(toLanguage);
+//
+//                            final String[] lines = text.split("\n");
+//                            final String[] result = new String[lines.length];
+//                            final boolean[] sent = new boolean[1];
+//                            final Utilities.Callback0Return<Boolean> isDone = () -> {
+//                                boolean allDone = true;
+//                                for (int i = 0; i < result.length; ++i) {
+//                                    if (result[i] == null) {
+//                                        allDone = false;
+//                                        break;
+//                                    }
+//                                }
+//                                return allDone;
+//                            };
+//
+//                            for (int i = 0; i < lines.length; ++i) {
+//                                final int index = i;
+//                                final String line = lines[i];
+//                                if (TextUtils.isEmpty(line) || line.replaceAll("[\\t\\n\\r]", "").isEmpty()) {
+//                                    result[i] = line;
+//                                    if (isDone.run() && !sent[0]) {
+//                                        sent[0] = true;
+//                                        AndroidUtilities.runOnUIThread(() -> {
+//                                            done.run(TextUtils.join("\n", result));
+//                                        });
+//                                    }
+//                                } else {
+//                                    final long start2 = System.currentTimeMillis();
+//                                    translator.translate(line)
+//                                        .addOnSuccessListener(res -> {
+//                                            FileLog.d("[mlkit] translate success took " + (System.currentTimeMillis() - start2) + "ms");
+//                                            AndroidUtilities.runOnUIThread(() -> {
+//                                                result[index] = res;
+//                                                if (isDone.run() && !sent[0]) {
+//                                                    sent[0] = true;
+//                                                    AndroidUtilities.runOnUIThread(() -> {
+//                                                        done.run(TextUtils.join("\n", result));
+//                                                    });
+//                                                }
+//                                            });
+//                                        })
+//                                        .addOnFailureListener(err -> {
+//                                            FileLog.d("[mlkit] translate fail took " + (System.currentTimeMillis() - start2) + "ms");
+//                                            FileLog.e("[mlkit] translate failed", err);
+//                                            if (!sent[0]) {
+//                                                sent[0] = true;
+//                                                done.run(null);
+//                                            }
+//                                        });
+//                                }
+//                            }
+//                        })
+//                        .addOnFailureListener(err -> {
+//                            FileLog.d("[mlkit] downloadModelIfNeeded fail took " + (System.currentTimeMillis() - start) + "ms");
+//                            FileLog.e("[mlkit] downloadModelIfNeeded failed", err);
+//                            if (triesCount[0] < 3) {
+//                                FileLog.d("[mlkit] downloadModelIfNeeded trying again (try count = "+triesCount[0]+")");
+//                                triesCount[0]++;
+//                                AndroidUtilities.runOnUIThread(tryDownloadModelIfNeeded[0], 250);
+//                                return;
+//                            }
+//                            done.run(null);
+//                        });
+//                };
+//                tryDownloadModelIfNeeded[0].run();
+//            });
+//        });
+//    }
 
     private final HashMap<Long, ArrayList<PendingPollTranslation>> pendingPollTranslations = new HashMap<>();
 
@@ -1677,4 +1866,194 @@ public class TranslateController extends BaseController {
             return true;
         }
     }
+
+//    private static DispatchQueue checkProgressQueue;
+//    public static Runnable trackDownloadingProgress(String lng, Utilities.Callback<Float> onProgress) {
+//        TranslateRemoteModel model = new TranslateRemoteModel.Builder(lng).build();
+//        boolean[] loading = new boolean[1];
+//        loading[0] = true;
+//        Runnable[] checkProgress = new Runnable[1];
+//        tryGetModelDownloadId(model, 0, downloadId -> {
+//            if (!loading[0] || downloadId == null) {
+//                return;
+//            }
+//            if (checkProgressQueue == null) {
+//                checkProgressQueue = new DispatchQueue("translationModelsProgressCheck");
+//            }
+//
+//            DownloadManager downloadManager = (DownloadManager) ApplicationLoader.applicationContext.getSystemService(Context.DOWNLOAD_SERVICE);
+//            DownloadManager.Query query = new DownloadManager.Query();
+//            query.setFilterById(downloadId);
+//            (checkProgress[0] = () -> {
+//                try {
+//                    Cursor cursor = downloadManager.query(query);
+//                    if (cursor.moveToFirst()) {
+//                        int sizeIndex = cursor.getColumnIndex(DownloadManager.COLUMN_TOTAL_SIZE_BYTES);
+//                        int downloadedIndex = cursor.getColumnIndex(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR);
+//                        long size = cursor.getInt(sizeIndex);
+//                        long downloaded = cursor.getInt(downloadedIndex);
+//                        FileLog.d("[mlkit] downloading " + lng + " model: " + ((float) (downloaded) / size * 100f) + "% (" + downloaded + "/" + size + ")");
+//                        if (size != -1) {
+//                            AndroidUtilities.runOnUIThread(() -> {
+//                                onProgress.run((float) downloaded / size);
+//                            });
+//                        }
+//                    }
+//                    cursor.close();
+//                    if (checkProgress[0] != null) {
+//                        checkProgressQueue.postRunnable(checkProgress[0], 120);
+//                    }
+//                } catch (Exception e) {
+//                    FileLog.e("[mlkit] failed to get percent", e);
+//                }
+//            }).run();
+//        });
+//        return () -> {
+//            loading[0] = false;
+//        };
+//    }
+
+//    private static void tryGetModelDownloadId(TranslateRemoteModel model, int tried, Utilities.Callback<Long> onDownloadId) {
+//        if (onDownloadId == null || tried >= 5) {
+//            return;
+//        }
+//        try {
+//            Long downloadId = SharedPrefManager.getInstance(MlKitContext.getInstance()).getDownloadingModelId(model);
+//            if (downloadId != null) {
+//                onDownloadId.run(downloadId);
+//                return;
+//            }
+//        } catch (Exception e) {
+//            FileLog.e("[mlkit] failed to get model download id", e);
+//        }
+//        AndroidUtilities.runOnUIThread(
+//            () -> tryGetModelDownloadId(model, tried + 1, onDownloadId),
+//            25
+//        );
+//    }
+//
+//    private final ArrayList<String> downloadingModels = new ArrayList<>();
+//    private final ArrayList<Float> downloadingModelsPercent = new ArrayList<>();
+//    private final ArrayList<Runnable> cancelTrackingDownloadingModels = new ArrayList<>();
+//
+//    private Bulletin downloadingModelsBulletin;
+//    private BaseFragment bulletinFragment;
+//
+//    private void checkModelInstalled(String lng, Runnable done) {
+//        RemoteModelManager.getInstance()
+//            .isModelDownloaded(new TranslateRemoteModel.Builder(lng).build())
+//            .addOnSuccessListener(downloaded -> {
+//                FileLog.d("[mlkit] isModelDownloaded " + lng + " = " + downloaded);
+//                if (!downloaded) {
+//                    trackModelDownloading(lng);
+//                }
+//                AndroidUtilities.runOnUIThread(done);
+//            })
+//            .addOnFailureListener(e -> {
+//                FileLog.e("[mlkit] isModelDownloaded " + lng + " failed", e);
+//                AndroidUtilities.runOnUIThread(done);
+//            });
+//    }
+//
+//    private void trackModelDownloading(String lng) {
+//        final int index = downloadingModels.indexOf(lng);
+//        if (index >= 0) return;
+//
+//        downloadingModels.add(lng);
+//        downloadingModelsPercent.add(0.0f);
+//        cancelTrackingDownloadingModels.add(trackDownloadingProgress(lng, percent -> {
+//            final int index2 = downloadingModels.indexOf(lng);
+//            if (index2 >= 0) {
+//                downloadingModelsPercent.set(index2, percent);
+//                updateDownloadingModelsBulletin();
+//            }
+//        }));
+//    }
+//
+//    private void forceModelInstalled(String lng) {
+//        final int index = downloadingModels.indexOf(lng);
+//        if (index < 0) return;
+//
+//        downloadingModels.remove(index);
+//        downloadingModelsPercent.remove(index);
+//        cancelTrackingDownloadingModels.remove(index).run();
+//
+//        updateDownloadingModelsBulletin();
+//    }
+//
+//    public void clearDownloadingModels() {
+//        if (downloadingModels.isEmpty()) return;
+//
+//        for (int i = 0; i < cancelTrackingDownloadingModels.size(); ++i) {
+//            cancelTrackingDownloadingModels.get(i).run();
+//        }
+//        downloadingModels.clear();
+//        downloadingModelsPercent.clear();
+//
+//        updateDownloadingModelsBulletin();
+//    }
+//
+//    private void updateDownloadingModelsBulletin() {
+//        final BaseFragment lastFragment = LaunchActivity.getSafeLastFragment();
+//        if (!(lastFragment instanceof ChatActivity) || downloadingModels.isEmpty()) {
+//            if (downloadingModelsBulletin != null) {
+//                downloadingModelsBulletin.hide();
+//            }
+//            downloadingModelsBulletin = null;
+//            bulletinFragment = null;
+//            return;
+//        }
+//
+//        float total = 0.0f;
+//        for (int i = 0; i < downloadingModelsPercent.size(); ++i) {
+//            total += downloadingModelsPercent.get(i);
+//        }
+//
+//        final ChatActivity chatActivity = ((ChatActivity) lastFragment);
+//        if (downloadingModelsBulletin != null && chatActivity != bulletinFragment) {
+//            downloadingModelsBulletin.hide();
+//            downloadingModelsBulletin = null;
+//            bulletinFragment = null;
+//        }
+//
+//        if (!isTranslatingDialog(chatActivity.getDialogId())) {
+//            if (downloadingModelsBulletin != null) {
+//                downloadingModelsBulletin.hide();
+//            }
+//            downloadingModelsBulletin = null;
+//            bulletinFragment = null;
+//            return;
+//        }
+//
+//        final ArrayList<String> languages = new ArrayList<>();
+//        for (int i = 0; i < downloadingModels.size(); ++i) {
+//            languages.add(TranslateAlert2.languageName(downloadingModels.get(i)));
+//        }
+//
+//        final String title = LocaleController.getString(R.string.DownloadingTranslationModelsTitle);
+//        final String subtitle = LocaleController.formatPluralString(
+//            "DownloadingTranslationModelsText",
+//            languages.size(),
+//            languages.size() == 2 ?
+//                LocaleController.formatString(R.string.DownloadingTranslationModelsTextAnd, languages.get(0), languages.get(1)) :
+//                TextUtils.join(", ", languages)
+//        );
+//        final float percent = !downloadingModelsPercent.isEmpty() ? total / downloadingModelsPercent.size() : 1.0f;
+//
+//        if (downloadingModelsBulletin == null) {
+//            final Bulletin.ProgressTwoLineAnimatedTitleLottieLayout layout = new Bulletin.ProgressTwoLineAnimatedTitleLottieLayout(chatActivity.getContext(), chatActivity.getResourceProvider());
+//            layout.setAnimation(R.raw.msg_translate, 36, 36);
+//            downloadingModelsBulletin =
+//                BulletinFactory.of(bulletinFragment = chatActivity)
+//                    .create(layout, Bulletin.DURATION_LONG);
+//            downloadingModelsBulletin.setCanHide(false);
+//            downloadingModelsBulletin.setCanHideOnShow = false;
+//            downloadingModelsBulletin.show(true);
+//        }
+//
+//        final Bulletin.ProgressTwoLineAnimatedTitleLottieLayout layout = (Bulletin.ProgressTwoLineAnimatedTitleLottieLayout) downloadingModelsBulletin.getLayout();
+//        layout.titleTextView.setText(title);
+//        layout.subtitleTextView.setText(subtitle);
+//        layout.setProgress(percent);
+//    }
 }

@@ -1971,9 +1971,9 @@ public class GiftSheet extends BottomSheetWithRecyclerListView implements Notifi
             rect.set(bounds);
             rect.inset(dp(3.33f), dp(4));
             if (backdrop != null) {
-                final int radius = lerp(Math.min(bounds.width(), bounds.height()), Math.max(bounds.width(), bounds.height()), 0.35f);
+                final int radius = lerp(Math.min(bounds.width(), bounds.height()), Math.max(bounds.width(), bounds.height()), 0.35f) / 2;
                 if (gradient == null || gradientRadius != radius) {
-                    gradient = new RadialGradient(0, 0, gradientRadius = radius, new int[] { backdrop.center_color | 0xFF000000, backdrop.edge_color | 0xFF000000 }, new float[] { 0, 1 }, Shader.TileMode.CLAMP);
+                    gradient = new RadialGradient(0, 0, gradientRadius = radius, new int[] { backdrop.center_color | 0xFF000000, backdrop.center_color | 0xFF000000, backdrop.edge_color | 0xFF000000 }, new float[] { 0, 0f, 1 }, Shader.TileMode.CLAMP);
                 }
                 gradientMatrix.reset();
                 gradientMatrix.postTranslate(bounds.centerX(), Math.min(dp(50), bounds.centerY()));

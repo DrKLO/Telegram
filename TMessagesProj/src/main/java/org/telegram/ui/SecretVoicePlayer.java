@@ -259,6 +259,7 @@ public class SecretVoicePlayer extends Dialog {
         }
         if (!BuildVars.DEBUG_PRIVATE_VERSION) {
             params.flags |= WindowManager.LayoutParams.FLAG_SECURE;
+            AndroidUtilities.logFlagSecure();
         }
         params.flags |= WindowManager.LayoutParams.FLAG_FULLSCREEN;
         params.flags |= WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON;

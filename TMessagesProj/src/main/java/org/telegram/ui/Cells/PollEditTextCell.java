@@ -14,6 +14,8 @@ import android.animation.Animator;
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.animation.ValueAnimator;
+import android.content.ClipData;
+import android.content.ClipboardManager;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.PorterDuff;
@@ -50,6 +52,7 @@ import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.SuggestEmojiView;
 
 import java.util.ArrayList;
+import java.util.List;
 
 public class PollEditTextCell extends FrameLayout implements SuggestEmojiView.AnchorViewDelegate {
 
@@ -57,9 +60,9 @@ public class PollEditTextCell extends FrameLayout implements SuggestEmojiView.An
     public static final int TYPE_EMOJI = 1;
     private final Theme.ResourcesProvider resourcesProvider;
 
-    private EditTextBoldCursor textView;
-    private ImageView deleteImageView;
-    private ImageView moveImageView;
+    public EditTextBoldCursor textView;
+    public ImageView deleteImageView;
+    public ImageView moveImageView;
     private SimpleTextView textView2;
     private CheckBox2 checkBox;
     private boolean showNextButton;
@@ -132,14 +135,42 @@ public class PollEditTextCell extends FrameLayout implements SuggestEmojiView.An
                 onActionModeStart(this, actionMode);
                 return actionMode;
             }
+
+            @Override
+            public boolean onTextContextMenuItem(int id) {
+                if (id == android.R.id.paste) {
+                    ClipboardManager clipboard = (ClipboardManager) getContext().getSystemService(Context.CLIPBOARD_SERVICE);
+                    ClipData clipData = clipboard.getPrimaryClip();
+                    if (clipData != null && clipData.getItemCount() == 1 && AndroidUtilities.charSequenceIndexOf(clipData.getItemAt(0).getText(), "\n") > 0) {
+                        CharSequence text = clipData.getItemAt(0).getText();
+                        ArrayList<CharSequence> parts = new ArrayList<>();
+                        StringBuilder current = new StringBuilder();
+                        for (int i = 0; i < text.length(); i++) {
+                            char c = text.charAt(i);
+                            if (c == '\n') {
+                                parts.add(current.toString());
+                                current.setLength(0);
+                            } else {
+                                current.append(c);
+                            }
+                        }
+                        if (!TextUtils.isEmpty(current)) {
+                            parts.add(current);
+                        }
+                        if (onPastedMultipleLines(parts)) {
+                            return true;
+                        }
+                    }
+                }
+                return super.onTextContextMenuItem(id);
+            }
         };
         ((EditTextCaption) textView).setAllowTextEntitiesIntersection(true);
         textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
         textView.setHintTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteHintText, resourcesProvider));
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         textView.setMaxLines(type == TYPE_EMOJI ? 4 : Integer.MAX_VALUE);
-//        textView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL);
-        textView.setBackgroundDrawable(null);
+        textView.setBackground(null);
         textView.setImeOptions(textView.getImeOptions() | EditorInfo.IME_FLAG_NO_EXTRACT_UI);
         textView.setInputType(textView.getInputType() | EditorInfo.TYPE_TEXT_FLAG_CAP_SENTENCES);
         textView.setPadding(AndroidUtilities.dp(4), AndroidUtilities.dp(10), AndroidUtilities.dp(4), AndroidUtilities.dp(11));
@@ -207,6 +238,10 @@ public class PollEditTextCell extends FrameLayout implements SuggestEmojiView.An
             });
             emojiButton.setContentDescription(LocaleController.getString(R.string.Emoji));
         }
+    }
+
+    public boolean onPastedMultipleLines(ArrayList<CharSequence> parts) {
+        return false;
     }
 
     protected void onEditTextFocusChanged(boolean focused) {

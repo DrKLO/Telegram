@@ -129,6 +129,7 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaController;
 import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.MessageObject;
+import org.telegram.messenger.MessageSuggestionParams;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.MessagesStorage;
 import org.telegram.messenger.NotificationCenter;
@@ -162,6 +163,7 @@ import org.telegram.ui.BasePermissionsActivity;
 import org.telegram.ui.Business.BusinessLinksController;
 import org.telegram.ui.Business.QuickRepliesController;
 import org.telegram.ui.ChatActivity;
+import org.telegram.ui.Components.Forum.ForumUtilities;
 import org.telegram.ui.Components.Premium.PremiumFeatureBottomSheet;
 import org.telegram.ui.Components.Premium.boosts.BoostRepository;
 import org.telegram.ui.ContentPreviewViewer;
@@ -174,6 +176,7 @@ import org.telegram.ui.MultiContactsSelectorBottomSheet;
 import org.telegram.ui.PhotoViewer;
 import org.telegram.ui.PremiumPreviewFragment;
 import org.telegram.ui.ProfileActivity;
+import org.telegram.ui.Stars.StarsController;
 import org.telegram.ui.Stars.StarsIntroActivity;
 import org.telegram.ui.StickersActivity;
 import org.telegram.ui.Stories.recorder.CaptionContainerView;
@@ -220,6 +223,7 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
     private boolean sendButtonEnabled = true;
     private TLRPC.UserFull userInfo;
     public HintView2 birthdayHint;
+    private HintView2 sendSuggestHintView;
 
     public boolean voiceOnce;
     public boolean onceVisible;
@@ -266,6 +270,8 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
         void onMessageEditEnd(boolean loading);
 
         void didPressAttachButton();
+
+        default void didPressSuggestionButton() {};
 
         void needStartRecordVideo(int state, boolean notify, int scheduleDate, int ttl, long effectId, long stars);
 
@@ -565,6 +571,7 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
     private int originalViewHeight;
     private LinearLayout attachLayout;
     private ImageView attachButton;
+    private ImageView suggestButton;
     @Nullable
     private ImageView botButton;
     @Nullable
@@ -869,7 +876,7 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
                 delegate.needStartRecordAudio(1);
                 startedDraggingX = -1;
                 TL_stories.StoryItem storyItem = delegate != null ? delegate.getReplyToStory() : null;
-                MediaController.getInstance().startRecording(currentAccount, dialog_id, replyingMessageObject, getThreadMessage(), storyItem, recordingGuid, true, parentFragment != null ? parentFragment.quickReplyShortcut : null, parentFragment != null ? parentFragment.getQuickReplyId() : 0, getSendMonoForumPeerId());
+                MediaController.getInstance().startRecording(currentAccount, dialog_id, replyingMessageObject, getThreadMessage(), storyItem, recordingGuid, true, parentFragment != null ? parentFragment.quickReplyShortcut : null, parentFragment != null ? parentFragment.getQuickReplyId() : 0, getSendMonoForumPeerId(), getSendMessageSuggestionParams());
                 recordingAudioVideo = true;
                 updateRecordInterface(RECORD_STATE_ENTER, true);
                 if (recordTimerView != null) {
@@ -3350,6 +3357,50 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
         });
     }
 
+    public void createSuggestionButton() {
+        if (suggestButton != null) {
+            return;
+        }
+
+        suggestButton = new ImageView(getContext());
+        suggestButton.setScaleType(ImageView.ScaleType.CENTER);
+        suggestButton.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_chat_messagePanelIcons), PorterDuff.Mode.MULTIPLY));
+        suggestButton.setImageResource(R.drawable.input_suggest_paid_24);
+        if (Build.VERSION.SDK_INT >= 21) {
+            suggestButton.setBackground(Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector)));
+        }
+        attachLayout.addView(suggestButton, 0, LayoutHelper.createLinear(48, 48));
+        suggestButton.setOnClickListener(v -> {
+            if (adjustPanLayoutHelper != null && adjustPanLayoutHelper.animationInProgress() || attachLayoutPaddingAlpha == 0f) {
+                return;
+            }
+            delegate.didPressSuggestionButton();
+        });
+        suggestButton.setContentDescription(getString("AccDescrAttachButton", R.string.AccDescrAttachButton));
+    }
+
+    public void setSuggestionButtonVisible(boolean visible, boolean animated) {
+        if (suggestButton == null) {
+            if (visible) {
+                createSuggestionButton();
+            } else {
+                return;
+            }
+        }
+
+        final float s = visible ? 1 : 0;
+
+        suggestButton.setEnabled(visible);
+        suggestButton.setClickable(visible);
+        if (animated) {
+            suggestButton.animate().scaleX(s).scaleY(s).alpha(s).setDuration(180).start();
+        } else {
+            suggestButton.setScaleX(s);
+            suggestButton.setScaleY(s);
+            suggestButton.setAlpha(s);
+        }
+    }
+
     private void createBotButton() {
         if (botButton != null) {
             return;
@@ -4519,6 +4570,37 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
                 sendWhenOnlineButton = options.getLast();
             }
         }
+
+        if (parentFragment != null && delegate != null && ChatObject.isMonoForum(parentFragment.getCurrentChat())) {
+            options.add(R.drawable.input_suggest_paid_24, getString(R.string.PostSuggestionsSendWithOffer), () -> {
+                if (messageSendPreview != null) {
+                    messageSendPreview.dismiss(false);
+                    messageSendPreview = null;
+                }
+                AndroidUtilities.runOnUIThread(() -> {
+                    if (delegate != null) {
+                        delegate.didPressSuggestionButton();
+                    }
+                }, 600);
+            });
+            /*
+            options.add(R.drawable.input_suggest_paid_24, getString(R.string.PostSuggestionsSendWithOffer), () -> {
+                new StarsSuggestionSheet(getContext(), currentAccount, parentFragment.getDialogId(),
+                        parentFragment.messageSuggestionParams != null ? parentFragment.messageSuggestionParams: MessageSuggestionParams.empty(),
+                        parentFragment, resourcesProvider, StarsSuggestionSheet.MODE_INPUT, (params) -> {
+
+                    parentFragment.messageSuggestionParams = params;
+                    sendMessageInternal(true, 0, 0, true);
+
+                    if (messageSendPreview != null) {
+                        messageSendPreview.dismiss(true);
+                        messageSendPreview = null;
+                    }
+                }).show();
+            })
+            ;*/
+        }
+
         if (sendWithoutSoundButtonValue) {
             options.add(R.drawable.input_notify_off, getString(R.string.SendWithoutSound), () -> {
                 sentFromPreview = System.currentTimeMillis();
@@ -4609,6 +4691,7 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
                             params.effect_id = effectId;
                             params.payStars = stars;
                             params.monoForumPeer = getSendMonoForumPeerId();
+                            params.suggestionParams = getSendMessageSuggestionParams();
                             SendMessagesHelper.getInstance(currentAccount).sendMessage(params);
                             setFieldText("");
                             botCommandsMenuContainer.dismiss();
@@ -4963,7 +5046,7 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
                     photoEntry.reset();
                     sending = true;
                     boolean updateStickersOrder = SendMessagesHelper.checkUpdateStickersOrder(info.caption);
-                    SendMessagesHelper.prepareSendingMedia(accountInstance, photos, dialog_id, replyingMessageObject, getThreadMessage(), null, replyingQuote, false, false, editingMessageObject, notify, scheduleDate, parentFragment == null ? 0 : parentFragment.getChatMode(), updateStickersOrder, null, parentFragment != null ? parentFragment.quickReplyShortcut : null, parentFragment != null ? parentFragment.getQuickReplyId() : 0, 0, false, 0, getSendMonoForumPeerId());
+                    SendMessagesHelper.prepareSendingMedia(accountInstance, photos, dialog_id, replyingMessageObject, getThreadMessage(), null, replyingQuote, false, false, editingMessageObject, notify, scheduleDate, parentFragment == null ? 0 : parentFragment.getChatMode(), updateStickersOrder, null, parentFragment != null ? parentFragment.quickReplyShortcut : null, parentFragment != null ? parentFragment.getQuickReplyId() : 0, 0, false, 0, getSendMonoForumPeerId(), parentFragment != null ? parentFragment.messageSuggestionParams : null);
                     if (delegate != null) {
                         delegate.onMessageSend(null, true, scheduleDate, 0);
                     }
@@ -6598,6 +6681,7 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
                 params.effect_id = effectId;
                 params.payStars = payStars;
                 params.monoForumPeer = getSendMonoForumPeerId();
+                params.suggestionParams = getSendMessageSuggestionParams();
                 sendButton.setEffect(effectId = 0);
                 if (!delegate.hasForwardingMessages()) {
                     MessageObject.SendAnimationData sendAnimationData = new MessageObject.SendAnimationData();
@@ -6881,6 +6965,20 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
         if (editingMessageObject == null) {
             return;
         }
+
+        if (editingMessageObject.needResendWhenEdit()) {
+            final MessageSuggestionParams params = parentFragment != null && parentFragment.messageSuggestionParams != null ?
+                parentFragment.messageSuggestionParams : MessageSuggestionParams.of(editingMessageObject.messageOwner.suggested_post);
+
+            if (!StarsController.isEnoughAmount(currentAccount, params.amount)) {
+                if (parentFragment != null) {
+                    parentFragment.showSuggestionOfferForEditMessage(params);
+                }
+
+                return;
+            }
+        }
+
         if (currentLimit - codePointCount < 0) {
             if (captionLimitView != null) {
                 AndroidUtilities.shakeViewSpring(captionLimitView, 3.5f);
@@ -6957,7 +7055,40 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
                     editingMessageObject.messageOwner.media = new TLRPC.TL_messageMediaEmpty();
                 }
             }
-            SendMessagesHelper.getInstance(currentAccount).editMessage(editingMessageObject, null, null, null, null, null, null, false, editingMessageObject.hasMediaSpoilers(), null);
+
+
+            if (editingMessageObject.needResendWhenEdit()) {
+                SendMessagesHelper.SendMessageParams sendMessageParams = SendMessagesHelper.SendMessageParams.of(
+                    editingMessageObject.editingMessage.toString(),
+                    editingMessageObject.getDialogId()
+                );
+
+                sendMessageParams.suggestionParams = parentFragment != null && parentFragment.messageSuggestionParams != null ?
+                        parentFragment.messageSuggestionParams : MessageSuggestionParams.of(editingMessageObject.messageOwner.suggested_post);
+                sendMessageParams.monoForumPeer = DialogObject.getPeerDialogId(editingMessageObject.messageOwner.saved_peer_id);
+                sendMessageParams.hasMediaSpoilers = editingMessageObject.hasMediaSpoilers();
+                sendMessageParams.replyToMsg = editingMessageObject;
+                sendMessageParams.parentObject = editingMessageObject;
+
+                if (editingMessageObject.getDocument() instanceof TLRPC.TL_document) {
+                    sendMessageParams.document = (TLRPC.TL_document) editingMessageObject.getDocument();
+                    sendMessageParams.caption = sendMessageParams.message;
+                    sendMessageParams.message = null;
+                } else if (editingMessageObject.messageOwner.media != null && !(editingMessageObject.messageOwner.media instanceof TLRPC.TL_messageMediaEmpty)) {
+                    if (editingMessageObject.messageOwner.media.photo instanceof TLRPC.TL_photo) {
+                        sendMessageParams.photo = (TLRPC.TL_photo) editingMessageObject.messageOwner.media.photo;
+                    } else {
+                        sendMessageParams.location = editingMessageObject.messageOwner.media;
+                    }
+
+                    sendMessageParams.caption = sendMessageParams.message;
+                    sendMessageParams.message = null;
+                }
+
+                SendMessagesHelper.getInstance(currentAccount).sendMessage(sendMessageParams);
+            } else {
+                SendMessagesHelper.getInstance(currentAccount).editMessage(editingMessageObject, null, null, null, null, null, null, false, editingMessageObject.hasMediaSpoilers(), null);
+            }
         }
         setEditingMessageObject(null, null, false);
     }
@@ -7055,6 +7186,7 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
                 params.effect_id = effectId;
                 params.payStars = payStars;
                 params.monoForumPeer = getSendMonoForumPeerId();
+                params.suggestionParams = getSendMessageSuggestionParams();
                 sendButton.setEffect(effectId = 0);
                 applyStoryToSendMessageParams(params);
                 params.invert_media = parentFragment != null && parentFragment.messagePreviewParams != null && parentFragment.messagePreviewParams.webpageTop;
@@ -7089,6 +7221,10 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
 
     public long getSendMonoForumPeerId() {
         return parentFragment != null ? parentFragment.getSendMonoForumPeerId() : 0;
+    }
+
+    public MessageSuggestionParams getSendMessageSuggestionParams() {
+        return parentFragment != null ? parentFragment.getSendMessageSuggestionParams() : null;
     }
 
     private void applyStoryToSendMessageParams(SendMessagesHelper.SendMessageParams params) {
@@ -7843,7 +7979,7 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
     private int lastAttachVisible;
     private void updateFieldRight(int attachVisible) {
         lastAttachVisible = attachVisible;
-        if (messageEditText == null || editingMessageObject != null) {
+        if (messageEditText == null || (editingMessageObject != null && !editingMessageObject.needResendWhenEdit())) {
             return;
         }
         FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) messageEditText.getLayoutParams();
@@ -7864,6 +8000,9 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
             }
         }
         layoutParams.rightMargin = Math.max(layoutParams.rightMargin, Math.max(0, sendButton.width() - dp(48)));
+        if (doneButton != null && doneButton.getVisibility() == VISIBLE) {
+            layoutParams.rightMargin = Math.max(layoutParams.rightMargin, Math.max(0, doneButton.width() - dp(48)));
+        }
         if (oldRightMargin != layoutParams.rightMargin) {
             messageEditText.setLayoutParams(layoutParams);
         }
@@ -8950,6 +9089,17 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
             }
             createDoneButton(false);
             doneButton.setOnClickListener(view -> doneEditingMessage());
+
+            if (editingMessageObject.needResendWhenEdit() && paidMessagesPrice > 0) {
+                doneButton.setStarsPrice(paidMessagesPrice, 1, true);
+                doneButton.setLayoutParams(LayoutHelper.createFrame(100, 48, Gravity.BOTTOM | Gravity.RIGHT, 5, 0, 5, 0));
+                doneButton.requestLayout();
+            } else {
+                doneButton.setStarsPrice(0, 1, true);
+                doneButton.setLayoutParams(LayoutHelper.createFrame(100, 38, Gravity.BOTTOM | Gravity.RIGHT, 5, 5, 5, 5));
+                doneButton.requestLayout();
+            }
+
             doneButton.setOnLongClickListener(v -> {
                 if (messageObject.isMediaEmpty()) return false;
                 if (messageEditText == null || TextUtils.isEmpty(messageEditText.getTextToUse())) return false;
@@ -9270,6 +9420,10 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
         return attachButton;
     }
 
+    public ImageView getSuggestButton() {
+        return suggestButton;
+    }
+
     public View getSendButton() {
         return getSendButtonInternal().getVisibility() == VISIBLE ? getSendButtonInternal() : audioVideoButtonContainer;
     }
@@ -9405,7 +9559,7 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
             controlsView.periodDrawable.setValue(1, voiceOnce, true);
         }
         TL_stories.StoryItem storyItem = delegate != null ? delegate.getReplyToStory() : null;
-        MediaController.getInstance().prepareResumedRecording(currentAccount, draft, dialog_id, replyingMessageObject, getThreadMessage(), storyItem, recordingGuid, parentFragment != null ? parentFragment.quickReplyShortcut : null, parentFragment != null ? parentFragment.getQuickReplyId() : 0, getSendMonoForumPeerId());
+        MediaController.getInstance().prepareResumedRecording(currentAccount, draft, dialog_id, replyingMessageObject, getThreadMessage(), storyItem, recordingGuid, parentFragment != null ? parentFragment.quickReplyShortcut : null, parentFragment != null ? parentFragment.getQuickReplyId() : 0, getSendMonoForumPeerId(), getSendMessageSuggestionParams());
     }
 
     public void setSelection(int start) {
@@ -9617,7 +9771,29 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
         birthdayHint.setMaxWidthPx(HintView2.cutInFancyHalf(birthdayHint.getText(), birthdayHint.getTextPaint()));
     }
 
+    public boolean showSendSuggestionHint() {
+        if (sendSuggestHintView == null && suggestButton != null && suggestButton.getVisibility() == VISIBLE && MessagesController.getGlobalMainSettings().getInt("channelsuggesthint2", 0) < 2) {
+            sendSuggestHintView = new HintView2(getContext(), HintView2.DIRECTION_BOTTOM);
+            sendSuggestHintView.setRounding(13);
+            sendSuggestHintView.setMultilineText(true);
+            sendSuggestHintView.setText(LocaleController.formatString(R.string.SuggestAPostBelowHint, ForumUtilities.getMonoForumTitle(currentAccount, dialog_id, true)));
+            sendSuggestHintView.setPadding(dp(12), 0, dp(12), 0);
+            sendSuggestHintView.setJointPx(1f, -(getWidth() - dp(12) - (messageEditTextContainer.getX() + attachLayout.getX() + suggestButton.getX() + suggestButton.getMeasuredWidth() / 2f)));
+            addView(sendSuggestHintView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 200, Gravity.TOP, 0, -200 + 8, 0, 0));
+            sendSuggestHintView.setOnHiddenListener(() -> AndroidUtilities.removeFromParent(sendSuggestHintView));
+            sendSuggestHintView.setDuration(8000);
+            sendSuggestHintView.show();
+            MessagesController.getGlobalMainSettings().edit().putInt("channelsuggesthint2", MessagesController.getGlobalMainSettings().getInt("channelsuggesthint2", 0) + 1).apply();
+            return true;
+        }
+
+        return false;
+    }
+
     public void hideHints() {
+        if (sendSuggestHintView != null) {
+            sendSuggestHintView.hide();
+        }
         if (birthdayHint != null) {
             birthdayHint.hide();
         }
@@ -10496,7 +10672,7 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
                             TL_stories.StoryItem storyItem = delegate != null ? delegate.getReplyToStory() : null;
                             if (gif instanceof TLRPC.Document) {
                                 TLRPC.Document document = (TLRPC.Document) gif;
-                                SendMessagesHelper.getInstance(currentAccount).sendSticker(document, query, dialog_id, replyingMessageObject, getThreadMessage(), storyItem, replyingQuote, null, notify, scheduleDate, false, parent, parentFragment != null ? parentFragment.quickReplyShortcut : null, parentFragment != null ? parentFragment.getQuickReplyId() : 0, stars, getSendMonoForumPeerId());
+                                SendMessagesHelper.getInstance(currentAccount).sendSticker(document, query, dialog_id, replyingMessageObject, getThreadMessage(), storyItem, replyingQuote, null, notify, scheduleDate, false, parent, parentFragment != null ? parentFragment.quickReplyShortcut : null, parentFragment != null ? parentFragment.getQuickReplyId() : 0, stars, getSendMonoForumPeerId(), getSendMessageSuggestionParams());
                                 MediaDataController.getInstance(currentAccount).addRecentGif(document, (int) (System.currentTimeMillis() / 1000), true);
                                 if (DialogObject.isEncryptedDialog(dialog_id)) {
                                     accountInstance.getMessagesController().saveGif(parent, document);
@@ -10521,7 +10697,7 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
                                 if (storyItem == null) {
                                     SendMessagesHelper.prepareSendingBotContextResult(parentFragment, accountInstance, result, params, dialog_id, replyingMessageObject, getThreadMessage(), null, replyingQuote, notify, scheduleDate, parentFragment != null ? parentFragment.quickReplyShortcut : null, parentFragment != null ? parentFragment.getQuickReplyId() : 0, stars);
                                 } else {
-                                    SendMessagesHelper.getInstance(currentAccount).sendSticker(result.document, query, dialog_id, replyingMessageObject, getThreadMessage(), storyItem, replyingQuote, null, notify, scheduleDate, false, parent, parentFragment != null ? parentFragment.quickReplyShortcut : null, parentFragment != null ? parentFragment.getQuickReplyId() : 0, stars, getSendMonoForumPeerId());
+                                    SendMessagesHelper.getInstance(currentAccount).sendSticker(result.document, query, dialog_id, replyingMessageObject, getThreadMessage(), storyItem, replyingQuote, null, notify, scheduleDate, false, parent, parentFragment != null ? parentFragment.quickReplyShortcut : null, parentFragment != null ? parentFragment.getQuickReplyId() : 0, stars, getSendMonoForumPeerId(), getSendMessageSuggestionParams());
                                 }
                                 if (searchingType != 0) {
                                     setSearchingTypeInternal(0, true);
@@ -10787,7 +10963,7 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
                     }
                     setStickersExpanded(false, true, false);
                     final TL_stories.StoryItem storyItem = delegate != null ? delegate.getReplyToStory() : null;
-                    SendMessagesHelper.getInstance(currentAccount).sendSticker(sticker, query, dialog_id, replyingMessageObject, getThreadMessage(), storyItem, replyingQuote, sendAnimationData, notify, scheduleDate, parent instanceof TLRPC.TL_messages_stickerSet, parent, parentFragment != null ? parentFragment.quickReplyShortcut : null, parentFragment != null ? parentFragment.getQuickReplyId() : 0, stars, getSendMonoForumPeerId());
+                    SendMessagesHelper.getInstance(currentAccount).sendSticker(sticker, query, dialog_id, replyingMessageObject, getThreadMessage(), storyItem, replyingQuote, sendAnimationData, notify, scheduleDate, parent instanceof TLRPC.TL_messages_stickerSet, parent, parentFragment != null ? parentFragment.quickReplyShortcut : null, parentFragment != null ? parentFragment.getQuickReplyId() : 0, stars, getSendMonoForumPeerId(), getSendMessageSuggestionParams());
                     if (delegate != null) {
                         delegate.onMessageSend(null, true, scheduleDate, 0);
                     }

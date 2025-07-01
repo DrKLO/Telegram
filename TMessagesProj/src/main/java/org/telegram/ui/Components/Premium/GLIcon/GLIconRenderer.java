@@ -1,5 +1,7 @@
 package org.telegram.ui.Components.Premium.GLIcon;
 
+import static org.telegram.ui.Components.Premium.GLIcon.Icon3D.TYPE_DIAMOND;
+
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.opengl.GLES20;
@@ -121,7 +123,7 @@ public class GLIconRenderer implements GLSurfaceView.Renderer {
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT | GLES20.GL_DEPTH_BUFFER_BIT);
 
         GLES20.glEnable(GLES20.GL_DEPTH_TEST);
-        Matrix.setLookAtM(mViewMatrix, 0, 0, 0, 100, 0f, 0f, 0f, 0f, 1.0f, 0.0f);
+        Matrix.setLookAtM(mViewMatrix, 0, 0, type == TYPE_DIAMOND ? 40 : 0, 100, 0f, 0f, 0f, 0f, 1.0f, 0.0f);
         Matrix.setIdentityM(mRotationMatrix, 0);
 
         Matrix.translateM(mRotationMatrix, 0, 0, angleX2, 0);
@@ -147,7 +149,13 @@ public class GLIconRenderer implements GLSurfaceView.Renderer {
         GLES20.glViewport(0, 0, mWidth, mHeight);
         float aspect = (float) width / height;
 
-        Matrix.perspectiveM(mProjectionMatrix, 0, 53.13f, aspect, Z_NEAR, Z_FAR);
+        final float fov;
+        if (type == TYPE_DIAMOND) {
+            fov = 12;
+        } else {
+            fov = 53.13f;
+        }
+        Matrix.perspectiveM(mProjectionMatrix, 0, fov, aspect, Z_NEAR, Z_FAR);
     }
 
     public void setBackground(Bitmap gradientTextureBitmap) {

@@ -196,7 +196,7 @@ public class BotPreviewsEditContainer extends FrameLayout implements Notificatio
             }
             private String lastLang;
             @Override
-            protected void onTabAnimationUpdate(boolean manual) {
+            public void onTabAnimationUpdate(boolean manual) {
                 String lang = getCurrentLang();
                 if (!TextUtils.equals(lastLang, lang)) {
                     lastLang = lang;

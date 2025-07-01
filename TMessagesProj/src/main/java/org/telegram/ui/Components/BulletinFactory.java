@@ -1007,7 +1007,7 @@ public final class BulletinFactory {
         }
     }
 
-    private Context getContext() {
+    public Context getContext() {
         Context context = null;
         if (fragment != null) {
             context = fragment.getParentActivity();
@@ -1021,6 +1021,10 @@ public final class BulletinFactory {
             context = ApplicationLoader.applicationContext;
         }
         return context;
+    }
+
+    public Theme.ResourcesProvider getResourcesProvider() {
+        return resourcesProvider;
     }
 
     //region Static Factory
@@ -1211,7 +1215,7 @@ public final class BulletinFactory {
         layout.textView.setSingleLine(false);
         layout.textView.setMaxLines(3);
         layout.textView.setText(text);
-        return Bulletin.make(fragment, layout, Bulletin.DURATION_LONG);
+        return create(layout, Bulletin.DURATION_LONG);
     }
 
     public boolean showForwardedBulletinWithTag(long did, int messagesCount) {

@@ -2,6 +2,7 @@ package org.telegram.ui.Components;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
 import static org.telegram.messenger.AndroidUtilities.hideKeyboard;
+import static org.telegram.messenger.LocaleController.getString;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
@@ -70,9 +71,11 @@ import androidx.recyclerview.widget.SimpleItemAnimator;
 
 public class ChatAttachAlertPollLayout extends ChatAttachAlert.AttachAlertLayout implements SizeNotifierFrameLayout.SizeNotifierFrameLayoutDelegate, NotificationCenter.NotificationCenterDelegate {
 
+    private final boolean todo;
+
     private ListAdapter listAdapter;
     private RecyclerListView listView;
-    private SimpleItemAnimator itemAnimator;
+    private DefaultItemAnimator itemAnimator;
     private FillLastLinearLayoutManager layoutManager;
     private SuggestEmojiView suggestEmojiPanel;
     private HintView hintView;
@@ -82,9 +85,9 @@ public class ChatAttachAlertPollLayout extends ChatAttachAlert.AttachAlertLayout
     private boolean destroyed;
     private boolean isPremium;
 
-    private final int maxAnswersCount = getAnswersMaxCount();
-    private CharSequence[] answers = new CharSequence[maxAnswersCount];
-    private boolean[] answersChecks = new boolean[maxAnswersCount];
+    private final int maxAnswersCount;
+    private CharSequence[] answers;
+    private boolean[] answersChecks;
     private int answersCount = 1;
     private CharSequence questionString;
     private CharSequence solutionString;
@@ -93,6 +96,8 @@ public class ChatAttachAlertPollLayout extends ChatAttachAlert.AttachAlertLayout
     private boolean quizPoll;
     private boolean hintShowed;
     private int quizOnly;
+    private boolean allowAdding = true;
+    private boolean allowMarking = true;
 
     private boolean allowNesterScroll;
 
@@ -117,6 +122,8 @@ public class ChatAttachAlertPollLayout extends ChatAttachAlert.AttachAlertLayout
     private int multipleRow;
     private int quizRow;
     private int settingsSectionRow;
+    private int allowAddingRow;
+    private int allowMarkingRow;
     private int emptyRow;
     private int rowCount;
 
@@ -129,7 +136,7 @@ public class ChatAttachAlertPollLayout extends ChatAttachAlert.AttachAlertLayout
     private static final int done_button = 40;
 
     public interface PollCreateActivityDelegate {
-        void sendPoll(TLRPC.TL_messageMediaPoll poll, HashMap<String, String> params, boolean notify, int scheduleDate, long payStars);
+        void sendPoll(TLRPC.MessageMedia poll, HashMap<String, String> params, boolean notify, int scheduleDate, long payStars);
     }
 
     private static class EmptyView extends View {
@@ -207,8 +214,14 @@ public class ChatAttachAlertPollLayout extends ChatAttachAlert.AttachAlertLayout
         }
     };
 
-    public ChatAttachAlertPollLayout(ChatAttachAlert alert, Context context, Theme.ResourcesProvider resourcesProvider) {
+    public ChatAttachAlertPollLayout(ChatAttachAlert alert, Context context, boolean todo, Theme.ResourcesProvider resourcesProvider) {
         super(alert, context, resourcesProvider);
+
+        this.todo = todo;
+        maxAnswersCount = getAnswersMaxCount();
+        answers = new CharSequence[maxAnswersCount];
+        answersChecks = new boolean[maxAnswersCount];
+
         updateRows();
         isPremium = AccountInstance.getInstance(parentAlert.currentAccount).getUserConfig().isPremium();
         /*if (quiz != null) {
@@ -242,9 +255,12 @@ public class ChatAttachAlertPollLayout extends ChatAttachAlert.AttachAlertLayout
                 }
             }
         });
+        itemAnimator.setSupportsChangeAnimations(false);
+        itemAnimator.setDelayAnimations(false);
+        itemAnimator.setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT);
+        itemAnimator.setDurations(350);
         listView.setClipToPadding(false);
         listView.setVerticalScrollBarEnabled(false);
-        ((DefaultItemAnimator) listView.getItemAnimator()).setDelayAnimations(false);
         listView.setLayoutManager(layoutManager = new FillLastLinearLayoutManager(context, LinearLayoutManager.VERTICAL, false, AndroidUtilities.dp(53), listView) {
 
             @Override
@@ -301,6 +317,19 @@ public class ChatAttachAlertPollLayout extends ChatAttachAlert.AttachAlertLayout
                 }
                 if (position == anonymousRow) {
                     checked = anonymousPoll = !anonymousPoll;
+                } else if (position == allowAddingRow) {
+                    checked = allowAdding = !allowAdding;
+                } else if (position == allowMarkingRow) {
+                    checked = allowMarking = !allowMarking;
+                    int prevAddingRow = allowAddingRow;
+                    updateRows();
+                    if (allowAddingRow >= 0 && prevAddingRow < 0) {
+                        listView.setItemAnimator(itemAnimator);
+                        listAdapter.notifyItemInserted(allowAddingRow);
+                    } else if (prevAddingRow >= 0 && allowAddingRow < 0) {
+                        listView.setItemAnimator(itemAnimator);
+                        listAdapter.notifyItemRemoved(prevAddingRow);
+                    }
                 } else if (position == multipleRow) {
                     checked = multipleChoise = !multipleChoise;
                     if (multipleChoise && quizPoll) {
@@ -420,7 +449,7 @@ public class ChatAttachAlertPollLayout extends ChatAttachAlert.AttachAlertLayout
         });
 
         hintView = new HintView(context, 4);
-        hintView.setText(LocaleController.getString(R.string.PollTapToSelect));
+        hintView.setText(getString(R.string.PollTapToSelect));
         hintView.setAlpha(0.0f);
         hintView.setVisibility(View.INVISIBLE);
         addView(hintView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 19, 0, 19, 0));
@@ -474,93 +503,149 @@ public class ChatAttachAlertPollLayout extends ChatAttachAlert.AttachAlertLayout
     @Override
     public void onMenuItemClick(int id) {
         if (id == done_button) {
-            if (quizPoll && parentAlert.doneItem.getAlpha() != 1.0f) {
-                int checksCount = 0;
-                for (int a = 0; a < answersChecks.length; a++) {
-                    if (!TextUtils.isEmpty(getFixedString(answers[a])) && answersChecks[a]) {
-                        checksCount++;
-                    }
-                }
-                if (checksCount <= 0) {
-                    showQuizHint();
-                }
-                return;
-            }
-
-            CharSequence questionText = getFixedString(questionString);
-            CharSequence[] questionCharSequence = new CharSequence[]{ questionText };
-            ArrayList<TLRPC.MessageEntity> questionEntities = MediaDataController.getInstance(parentAlert.currentAccount).getEntities(questionCharSequence, true);
-            questionText = questionCharSequence[0];
-            for (int a = 0, N = questionEntities.size(); a < N; a++) {
-                TLRPC.MessageEntity entity = questionEntities.get(a);
-                if (entity.offset + entity.length > questionText.length()) {
-                    entity.length = questionText.length() - entity.offset;
-                }
-            }
-
-            TLRPC.TL_messageMediaPoll poll = new TLRPC.TL_messageMediaPoll();
-            poll.poll = new TLRPC.TL_poll();
-            poll.poll.multiple_choice = multipleChoise;
-            poll.poll.quiz = quizPoll;
-            poll.poll.public_voters = !anonymousPoll;
-            poll.poll.question = new TLRPC.TL_textWithEntities();
-            poll.poll.question.text = questionText.toString();
-            poll.poll.question.entities = questionEntities;
-
-            SerializedData serializedData = new SerializedData(maxAnswersCount);
-            for (int a = 0; a < answers.length; a++) {
-                if (TextUtils.isEmpty(getFixedString(answers[a]))) {
-                    continue;
-                }
-                CharSequence answerText = getFixedString(answers[a]);
-                CharSequence[] answerCharSequence = new CharSequence[]{ answerText };
-                ArrayList<TLRPC.MessageEntity> answerEntities = MediaDataController.getInstance(parentAlert.currentAccount).getEntities(answerCharSequence, true);
-                answerText = answerCharSequence[0];
-                for (int b = 0, N = answerEntities.size(); b < N; b++) {
-                    TLRPC.MessageEntity entity = answerEntities.get(b);
-                    if (entity.offset + entity.length > answerText.length()) {
-                        entity.length = answerText.length() - entity.offset;
+            if (todo) {
+                CharSequence questionText = getFixedString(questionString);
+                CharSequence[] questionCharSequence = new CharSequence[]{questionText};
+                ArrayList<TLRPC.MessageEntity> questionEntities = MediaDataController.getInstance(parentAlert.currentAccount).getEntities(questionCharSequence, true);
+                questionText = questionCharSequence[0];
+                for (int a = 0, N = questionEntities.size(); a < N; a++) {
+                    TLRPC.MessageEntity entity = questionEntities.get(a);
+                    if (entity.offset + entity.length > questionText.length()) {
+                        entity.length = questionText.length() - entity.offset;
                     }
                 }
 
-                TLRPC.PollAnswer answer = new TLRPC.TL_pollAnswer();
-                answer.text = new TLRPC.TL_textWithEntities();
-                answer.text.text = answerText.toString();
-                answer.text.entities = answerEntities;
-                answer.option = new byte[1];
-                answer.option[0] = (byte) (48 + poll.poll.answers.size());
-                poll.poll.answers.add(answer);
-                if ((multipleChoise || quizPoll) && answersChecks[a]) {
-                    serializedData.writeByte(answer.option[0]);
+                TLRPC.TL_messageMediaToDo todo = new TLRPC.TL_messageMediaToDo();
+                todo.todo = new TLRPC.TodoList();
+                todo.todo.others_can_append = allowMarking && allowAdding;
+                todo.todo.others_can_complete = allowMarking;
+                todo.todo.title = new TLRPC.TL_textWithEntities();
+                todo.todo.title.text = questionText.toString();
+                todo.todo.title.entities = questionEntities;
+
+                for (int a = 0; a < answers.length; a++) {
+                    if (TextUtils.isEmpty(getFixedString(answers[a]))) {
+                        continue;
+                    }
+                    CharSequence answerText = getFixedString(answers[a]);
+                    CharSequence[] answerCharSequence = new CharSequence[]{answerText};
+                    ArrayList<TLRPC.MessageEntity> answerEntities = MediaDataController.getInstance(parentAlert.currentAccount).getEntities(answerCharSequence, true);
+                    answerText = answerCharSequence[0];
+                    for (int b = 0, N = answerEntities.size(); b < N; b++) {
+                        TLRPC.MessageEntity entity = answerEntities.get(b);
+                        if (entity.offset + entity.length > answerText.length()) {
+                            entity.length = answerText.length() - entity.offset;
+                        }
+                    }
+
+                    TLRPC.TodoItem task = new TLRPC.TodoItem();
+                    task.title = new TLRPC.TL_textWithEntities();
+                    task.title.text = answerText.toString();
+                    task.title.entities = answerEntities;
+                    task.id = 1 + todo.todo.list.size();
+                    todo.todo.list.add(task);
                 }
-            }
-            HashMap<String, String> params = new HashMap<>();
-            params.put("answers", Utilities.bytesToHex(serializedData.toByteArray()));
-            poll.results = new TLRPC.TL_pollResults();
-            CharSequence solution = getFixedString(solutionString);
-            if (solution != null) {
-                poll.results.solution = solution.toString();
-                CharSequence[] message = new CharSequence[]{solution};
-                ArrayList<TLRPC.MessageEntity> entities = MediaDataController.getInstance(parentAlert.currentAccount).getEntities(message, true);
-                if (entities != null && !entities.isEmpty()) {
-                    poll.results.solution_entities = entities;
-                }
-                if (!TextUtils.isEmpty(poll.results.solution)) {
-                    poll.results.flags |= 16;
-                }
-            }
-            ChatActivity chatActivity = (ChatActivity) parentAlert.baseFragment;
-            AlertsCreator.ensurePaidMessageConfirmation(parentAlert.currentAccount, parentAlert.getDialogId(), 1 + parentAlert.getAdditionalMessagesCount(), payStars -> {
-                if (chatActivity.isInScheduleMode()) {
-                    AlertsCreator.createScheduleDatePickerDialog(chatActivity.getParentActivity(), chatActivity.getDialogId(), (notify, scheduleDate) -> {
-                        delegate.sendPoll(poll, params, notify, scheduleDate, payStars);
+                ChatActivity chatActivity = (ChatActivity) parentAlert.baseFragment;
+                AlertsCreator.ensurePaidMessageConfirmation(parentAlert.currentAccount, parentAlert.getDialogId(), 1 + parentAlert.getAdditionalMessagesCount(), payStars -> {
+                    if (chatActivity.isInScheduleMode()) {
+                        AlertsCreator.createScheduleDatePickerDialog(chatActivity.getParentActivity(), chatActivity.getDialogId(), (notify, scheduleDate) -> {
+                            delegate.sendPoll(todo, null, notify, scheduleDate, payStars);
+                            parentAlert.dismiss(true);
+                        });
+                    } else {
+                        delegate.sendPoll(todo, null, true, 0, payStars);
                         parentAlert.dismiss(true);
-                    });
-                } else {
-                    delegate.sendPoll(poll, params, true, 0, payStars);
-                    parentAlert.dismiss(true);
+                    }
+                });
+            } else {
+                if (quizPoll && parentAlert.doneItem.getAlpha() != 1.0f) {
+                    int checksCount = 0;
+                    for (int a = 0; a < answersChecks.length; a++) {
+                        if (!TextUtils.isEmpty(getFixedString(answers[a])) && answersChecks[a]) {
+                            checksCount++;
+                        }
+                    }
+                    if (checksCount <= 0) {
+                        showQuizHint();
+                    }
+                    return;
                 }
-            });
+
+                CharSequence questionText = getFixedString(questionString);
+                CharSequence[] questionCharSequence = new CharSequence[]{questionText};
+                ArrayList<TLRPC.MessageEntity> questionEntities = MediaDataController.getInstance(parentAlert.currentAccount).getEntities(questionCharSequence, true);
+                questionText = questionCharSequence[0];
+                for (int a = 0, N = questionEntities.size(); a < N; a++) {
+                    TLRPC.MessageEntity entity = questionEntities.get(a);
+                    if (entity.offset + entity.length > questionText.length()) {
+                        entity.length = questionText.length() - entity.offset;
+                    }
+                }
+
+                TLRPC.TL_messageMediaPoll poll = new TLRPC.TL_messageMediaPoll();
+                poll.poll = new TLRPC.TL_poll();
+                poll.poll.multiple_choice = multipleChoise;
+                poll.poll.quiz = quizPoll;
+                poll.poll.public_voters = !anonymousPoll;
+                poll.poll.question = new TLRPC.TL_textWithEntities();
+                poll.poll.question.text = questionText.toString();
+                poll.poll.question.entities = questionEntities;
+
+                SerializedData serializedData = new SerializedData(maxAnswersCount);
+                for (int a = 0; a < answers.length; a++) {
+                    if (TextUtils.isEmpty(getFixedString(answers[a]))) {
+                        continue;
+                    }
+                    CharSequence answerText = getFixedString(answers[a]);
+                    CharSequence[] answerCharSequence = new CharSequence[]{answerText};
+                    ArrayList<TLRPC.MessageEntity> answerEntities = MediaDataController.getInstance(parentAlert.currentAccount).getEntities(answerCharSequence, true);
+                    answerText = answerCharSequence[0];
+                    for (int b = 0, N = answerEntities.size(); b < N; b++) {
+                        TLRPC.MessageEntity entity = answerEntities.get(b);
+                        if (entity.offset + entity.length > answerText.length()) {
+                            entity.length = answerText.length() - entity.offset;
+                        }
+                    }
+
+                    TLRPC.PollAnswer answer = new TLRPC.TL_pollAnswer();
+                    answer.text = new TLRPC.TL_textWithEntities();
+                    answer.text.text = answerText.toString();
+                    answer.text.entities = answerEntities;
+                    answer.option = new byte[1];
+                    answer.option[0] = (byte) (48 + poll.poll.answers.size());
+                    poll.poll.answers.add(answer);
+                    if ((multipleChoise || quizPoll) && answersChecks[a]) {
+                        serializedData.writeByte(answer.option[0]);
+                    }
+                }
+                HashMap<String, String> params = new HashMap<>();
+                params.put("answers", Utilities.bytesToHex(serializedData.toByteArray()));
+                poll.results = new TLRPC.TL_pollResults();
+                CharSequence solution = getFixedString(solutionString);
+                if (solution != null) {
+                    poll.results.solution = solution.toString();
+                    CharSequence[] message = new CharSequence[]{solution};
+                    ArrayList<TLRPC.MessageEntity> entities = MediaDataController.getInstance(parentAlert.currentAccount).getEntities(message, true);
+                    if (entities != null && !entities.isEmpty()) {
+                        poll.results.solution_entities = entities;
+                    }
+                    if (!TextUtils.isEmpty(poll.results.solution)) {
+                        poll.results.flags |= 16;
+                    }
+                }
+                ChatActivity chatActivity = (ChatActivity) parentAlert.baseFragment;
+                AlertsCreator.ensurePaidMessageConfirmation(parentAlert.currentAccount, parentAlert.getDialogId(), 1 + parentAlert.getAdditionalMessagesCount(), payStars -> {
+                    if (chatActivity.isInScheduleMode()) {
+                        AlertsCreator.createScheduleDatePickerDialog(chatActivity.getParentActivity(), chatActivity.getDialogId(), (notify, scheduleDate) -> {
+                            delegate.sendPoll(poll, params, notify, scheduleDate, payStars);
+                            parentAlert.dismiss(true);
+                        });
+                    } else {
+                        delegate.sendPoll(poll, params, true, 0, payStars);
+                        parentAlert.dismiss(true);
+                    }
+                });
+            }
         }
     }
 
@@ -714,7 +799,7 @@ public class ChatAttachAlertPollLayout extends ChatAttachAlert.AttachAlertLayout
                 count++;
             }
         }
-        if (count < 2 || quizPoll && checksCount < 1) {
+        if (count < (todo ? 1 : 2) || quizPoll && checksCount < 1) {
             enabled = false;
         }
         if (!TextUtils.isEmpty(solutionString) || !TextUtils.isEmpty(questionString) || hasAnswers) {
@@ -728,6 +813,17 @@ public class ChatAttachAlertPollLayout extends ChatAttachAlert.AttachAlertLayout
     }
 
     private void updateRows() {
+        solutionRow = -1;
+        solutionInfoRow = -1;
+        multipleRow = -1;
+        anonymousRow = -1;
+        quizRow = -1;
+        allowAddingRow = -1;
+        allowMarkingRow = -1;
+        addAnswerRow = -1;
+        answerStartRow = -1;
+        settingsSectionRow = -1;
+
         rowCount = 0;
         paddingRow = rowCount++;
 
@@ -738,39 +834,33 @@ public class ChatAttachAlertPollLayout extends ChatAttachAlert.AttachAlertLayout
         if (answersCount != 0) {
             answerStartRow = rowCount;
             rowCount += answersCount;
-        } else {
-            answerStartRow = -1;
         }
         if (answersCount != answers.length) {
             addAnswerRow = rowCount++;
-        } else {
-            addAnswerRow = -1;
         }
         answerSectionRow = rowCount++;
         settingsHeaderRow = rowCount++;
-        TLRPC.Chat chat = ((ChatActivity) parentAlert.baseFragment).getCurrentChat();
-        if (!ChatObject.isChannel(chat) || chat.megagroup) {
-            anonymousRow = rowCount++;
+        if (todo) {
+            allowMarkingRow = rowCount++;
+            if (allowMarking) {
+                allowAddingRow = rowCount++;
+            }
         } else {
-            anonymousRow = -1;
-        }
-        if (quizOnly != 1) {
-            multipleRow = rowCount++;
-        } else {
-            multipleRow = -1;
-        }
-        if (quizOnly == 0) {
-            quizRow = rowCount++;
-        } else {
-            quizRow = -1;
-        }
-        settingsSectionRow = rowCount++;
-        if (quizPoll) {
-            solutionRow = rowCount++;
-            solutionInfoRow = rowCount++;
-        } else {
-            solutionRow = -1;
-            solutionInfoRow = -1;
+            TLRPC.Chat chat = ((ChatActivity) parentAlert.baseFragment).getCurrentChat();
+            if (!ChatObject.isChannel(chat) || chat.megagroup) {
+                anonymousRow = rowCount++;
+            }
+            if (quizOnly != 1) {
+                multipleRow = rowCount++;
+            }
+            if (quizOnly == 0) {
+                quizRow = rowCount++;
+            }
+            settingsSectionRow = rowCount++;
+            if (quizPoll) {
+                solutionRow = rowCount++;
+                solutionInfoRow = rowCount++;
+            }
         }
         emptyRow = rowCount++;
     }
@@ -780,10 +870,12 @@ public class ChatAttachAlertPollLayout extends ChatAttachAlert.AttachAlertLayout
         try {
             parentAlert.actionBar.getTitleTextView().setBuildFullLayout(true);
         } catch (Exception ignore) {}
-        if (quizOnly == 1) {
-            parentAlert.actionBar.setTitle(LocaleController.getString(R.string.NewQuiz));
+        if (todo) {
+            parentAlert.actionBar.setTitle(getString(R.string.TodoTitle));
+        } else if (quizOnly == 1) {
+            parentAlert.actionBar.setTitle(getString(R.string.NewQuiz));
         } else {
-            parentAlert.actionBar.setTitle(LocaleController.getString(R.string.NewPoll));
+            parentAlert.actionBar.setTitle(getString(R.string.NewPoll));
         }
         parentAlert.doneItem.setVisibility(VISIBLE);
         layoutManager.scrollToPositionWithOffset(0, 0);
@@ -818,6 +910,14 @@ public class ChatAttachAlertPollLayout extends ChatAttachAlert.AttachAlertLayout
         return super.onBackPressed();
     }
 
+    @Override
+    public boolean onDismissWithTouchOutside() {
+        if (!checkDiscard()) {
+            return false;
+        }
+        return super.onDismissWithTouchOutside();
+    }
+
     private boolean checkDiscard() {
         boolean allowDiscard = TextUtils.isEmpty(getFixedString(questionString));
         if (allowDiscard) {
@@ -830,10 +930,10 @@ public class ChatAttachAlertPollLayout extends ChatAttachAlert.AttachAlertLayout
         }
         if (!allowDiscard) {
             AlertDialog.Builder builder = new AlertDialog.Builder(parentAlert.baseFragment.getParentActivity());
-            builder.setTitle(LocaleController.getString(R.string.CancelPollAlertTitle));
-            builder.setMessage(LocaleController.getString(R.string.CancelPollAlertText));
-            builder.setPositiveButton(LocaleController.getString(R.string.PassportDiscard), (dialogInterface, i) -> parentAlert.dismiss());
-            builder.setNegativeButton(LocaleController.getString(R.string.Cancel), null);
+            builder.setTitle(getString(todo ? R.string.CancelTodoAlertTitle : R.string.CancelPollAlertTitle));
+            builder.setMessage(getString(todo ? R.string.CancelTodoAlertText : R.string.CancelPollAlertText));
+            builder.setPositiveButton(getString(R.string.PassportDiscard), (dialogInterface, i) -> parentAlert.dismiss());
+            builder.setNegativeButton(getString(R.string.Cancel), null);
             builder.show();
         }
         return allowDiscard;
@@ -851,15 +951,23 @@ public class ChatAttachAlertPollLayout extends ChatAttachAlert.AttachAlertLayout
         int max;
         int left;
         if (index == questionRow) {
-            max = MAX_QUESTION_LENGTH;
-            left = MAX_QUESTION_LENGTH - (questionString != null ? questionString.length() : 0);
+            if (todo) {
+                max = getMessagesController().todoTitleLengthMax;
+            } else {
+                max = MAX_QUESTION_LENGTH;
+            }
+            left = max - (questionString != null ? questionString.length() : 0);
         } else if (index == solutionRow) {
             max = MAX_SOLUTION_LENGTH;
             left = MAX_SOLUTION_LENGTH - (solutionString != null ? solutionString.length() : 0);
         } else if (index >= answerStartRow && index < answerStartRow + answersCount) {
             index -= answerStartRow;
-            max = MAX_ANSWER_LENGTH;
-            left = MAX_ANSWER_LENGTH - (answers[index] != null ? answers[index].length() : 0);
+            if (todo) {
+                max = getMessagesController().todoItemLengthMax;
+            } else {
+                max = MAX_ANSWER_LENGTH;
+            }
+            left = max - (answers[index] != null ? answers[index].length() : 0);
         } else {
             return;
         }
@@ -1286,10 +1394,10 @@ public class ChatAttachAlertPollLayout extends ChatAttachAlert.AttachAlertLayout
             @Override
             public void onClearEmojiRecent() {
                 AlertDialog.Builder builder = new AlertDialog.Builder(getContext(), resourcesProvider);
-                builder.setTitle(LocaleController.getString(R.string.ClearRecentEmojiTitle));
-                builder.setMessage(LocaleController.getString(R.string.ClearRecentEmojiText));
-                builder.setPositiveButton(LocaleController.getString(R.string.ClearButton), (dialogInterface, i) -> emojiView.clearRecentEmoji());
-                builder.setNegativeButton(LocaleController.getString(R.string.Cancel), null);
+                builder.setTitle(getString(R.string.ClearRecentEmojiTitle));
+                builder.setMessage(getString(R.string.ClearRecentEmojiText));
+                builder.setPositiveButton(getString(R.string.ClearButton), (dialogInterface, i) -> emojiView.clearRecentEmoji());
+                builder.setNegativeButton(getString(R.string.Cancel), null);
                 builder.show();
             }
 
@@ -1345,17 +1453,17 @@ public class ChatAttachAlertPollLayout extends ChatAttachAlert.AttachAlertLayout
                     HeaderCell cell = (HeaderCell) holder.itemView;
                     if (position == questionHeaderRow) {
                         cell.getTextView().setGravity(Gravity.LEFT | Gravity.CENTER_VERTICAL);
-                        cell.setText(LocaleController.getString(R.string.PollQuestion));
+                        cell.setText(getString(todo ? R.string.TodoTitle : R.string.PollQuestion));
                     } else {
                         cell.getTextView().setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL);
                         if (position == answerHeaderRow) {
                             if (quizOnly == 1) {
-                                cell.setText(LocaleController.getString(R.string.QuizAnswers));
+                                cell.setText(getString(R.string.QuizAnswers));
                             } else {
-                                cell.setText(LocaleController.getString(R.string.AnswerOptions));
+                                cell.setText(getString(todo ? R.string.TodoItemsTitle : R.string.AnswerOptions));
                             }
                         } else if (position == settingsHeaderRow) {
-                            cell.setText(LocaleController.getString(R.string.Settings));
+                            cell.setText(getString(R.string.Settings));
                         }
                     }
                     break;
@@ -1367,15 +1475,17 @@ public class ChatAttachAlertPollLayout extends ChatAttachAlert.AttachAlertLayout
                     combinedDrawable.setFullsize(true);
                     cell.setBackgroundDrawable(combinedDrawable);
                     if (position == solutionInfoRow) {
-                        cell.setText(LocaleController.getString(R.string.AddAnExplanationInfo));
+                        cell.setText(getString(R.string.AddAnExplanationInfo));
                     } else if (position == settingsSectionRow) {
                         if (quizOnly != 0) {
                             cell.setText(null);
                         } else {
-                            cell.setText(LocaleController.getString(R.string.QuizInfo));
+                            cell.setText(getString(R.string.QuizInfo));
                         }
                     } else if (maxAnswersCount - answersCount <= 0) {
-                        cell.setText(LocaleController.getString(R.string.AddAnOptionInfoMax));
+                        cell.setText(getString(todo ? R.string.TodoAddTaskInfoMax : R.string.AddAnOptionInfoMax));
+                    } else if (todo) {
+                        cell.setText(LocaleController.formatPluralStringComma("TodoNewTaskInfo", maxAnswersCount - answersCount));
                     } else {
                         cell.setText(LocaleController.formatString(R.string.AddAnOptionInfo, LocaleController.formatPluralString("Option", maxAnswersCount - answersCount)));
                     }
@@ -1389,19 +1499,25 @@ public class ChatAttachAlertPollLayout extends ChatAttachAlert.AttachAlertLayout
                     drawable1.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_switchTrackChecked), PorterDuff.Mode.MULTIPLY));
                     drawable2.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_checkboxCheck), PorterDuff.Mode.MULTIPLY));
                     CombinedDrawable combinedDrawable = new CombinedDrawable(drawable1, drawable2);
-                    textCell.setTextAndIcon(LocaleController.getString(R.string.AddAnOption), combinedDrawable, false);
+                    textCell.setTextAndIcon(getString(todo ? R.string.TodoNewTask : R.string.AddAnOption), combinedDrawable, false);
                     break;
                 }
                 case 6: {
                     TextCheckCell checkCell = (TextCheckCell) holder.itemView;
-                    if (position == anonymousRow) {
-                        checkCell.setTextAndCheck(LocaleController.getString(R.string.PollAnonymous), anonymousPoll, multipleRow != -1 || quizRow != -1);
+                    if (position == allowAddingRow) {
+                        checkCell.setTextAndCheck(getString(R.string.TodoAllowAddingTasks), allowAdding, allowMarkingRow != -1);
+                        checkCell.setEnabled(true, null);
+                    } else if (position == allowMarkingRow) {
+                        checkCell.setTextAndCheck(getString(R.string.TodoAllowMarkingDone), allowMarking, false);
+                        checkCell.setEnabled(true, null);
+                    } else if (position == anonymousRow) {
+                        checkCell.setTextAndCheck(getString(R.string.PollAnonymous), anonymousPoll, multipleRow != -1 || quizRow != -1);
                         checkCell.setEnabled(true, null);
                     } else if (position == multipleRow) {
-                        checkCell.setTextAndCheck(LocaleController.getString(R.string.PollMultiple), multipleChoise, quizRow != -1);
+                        checkCell.setTextAndCheck(getString(R.string.PollMultiple), multipleChoise, quizRow != -1);
                         checkCell.setEnabled(true, null);
                     } else if (position == quizRow) {
-                        checkCell.setTextAndCheck(LocaleController.getString(R.string.PollQuiz), quizPoll, false);
+                        checkCell.setTextAndCheck(getString(R.string.PollQuiz), quizPoll, false);
                         checkCell.setEnabled(quizOnly == 0, null);
                     }
                 }
@@ -1418,7 +1534,7 @@ public class ChatAttachAlertPollLayout extends ChatAttachAlert.AttachAlertLayout
             if (viewType == 4) {
                 PollEditTextCell textCell = (PollEditTextCell) holder.itemView;
                 textCell.setTag(1);
-                textCell.setTextAndHint(questionString != null ? questionString : "", LocaleController.getString(R.string.QuestionHint), false);
+                textCell.setTextAndHint(questionString != null ? questionString : "", getString(todo ? R.string.TodoTitlePlaceholder : R.string.QuestionHint), false);
                 textCell.setTag(null);
                 setTextLeft(holder.itemView, holder.getAdapterPosition());
             } else if (viewType == 5) {
@@ -1426,7 +1542,7 @@ public class ChatAttachAlertPollLayout extends ChatAttachAlert.AttachAlertLayout
                 PollEditTextCell textCell = (PollEditTextCell) holder.itemView;
                 textCell.setTag(1);
                 int index = position - answerStartRow;
-                textCell.setTextAndHint(answers[index], LocaleController.getString(R.string.OptionHint), true);
+                textCell.setTextAndHint(answers[index], getString(todo ? R.string.TodoTaskPlaceholder : R.string.OptionHint), true);
                 textCell.setTag(null);
                 if (requestFieldFocusAtPosition == position) {
                     EditTextBoldCursor editText = textCell.getTextView();
@@ -1438,7 +1554,7 @@ public class ChatAttachAlertPollLayout extends ChatAttachAlert.AttachAlertLayout
             } else if (viewType == 7) {
                 PollEditTextCell textCell = (PollEditTextCell) holder.itemView;
                 textCell.setTag(1);
-                textCell.setTextAndHint(solutionString != null ? solutionString : "", LocaleController.getString(R.string.AddAnExplanation), false);
+                textCell.setTextAndHint(solutionString != null ? solutionString : "", getString(R.string.AddAnExplanation), false);
                 textCell.setTag(null);
                 setTextLeft(holder.itemView, holder.getAdapterPosition());
             }
@@ -1500,21 +1616,42 @@ public class ChatAttachAlertPollLayout extends ChatAttachAlert.AttachAlertLayout
                         protected void onEditTextFocusChanged(boolean focused) {
                             onCellFocusChanges(this, focused);
                         }
-
-                        @Override
-                        protected void onActionModeStart(EditTextBoldCursor editText, ActionMode actionMode) {
-                            if (editText.isFocused() && editText.hasSelection()) {
-                                Menu menu = actionMode.getMenu();
-                                if (menu.findItem(android.R.id.copy) == null) {
-                                    return;
-                                }
-                                ChatActivity.fillActionModeMenu(menu, ((ChatActivity) parentAlert.baseFragment).getCurrentEncryptedChat(), true);
-                            }
-                        }
+//
+//                        @Override
+//                        protected void onActionModeStart(EditTextBoldCursor editText, ActionMode actionMode) {
+//                            if (editText.isFocused() && editText.hasSelection()) {
+//                                Menu menu = actionMode.getMenu();
+//                                if (menu.findItem(android.R.id.copy) == null) {
+//                                    return;
+//                                }
+//                                ChatActivity.fillActionModeMenu(menu, ((ChatActivity) parentAlert.baseFragment).getCurrentEncryptedChat(), true);
+//                            }
+//                        }
 
                         @Override
                         protected void onEmojiButtonClicked(PollEditTextCell cell1) {
                             onEmojiClicked(cell1);
+                        }
+
+                        @Override
+                        public boolean onPastedMultipleLines(ArrayList<CharSequence> parts) {
+                            if (parts.isEmpty()) return false;
+                            int index = -1;
+                            textView.getText().replace(textView.getSelectionStart(), textView.getSelectionEnd(), parts.remove(0));
+                            index++;
+                            while (!parts.isEmpty() && index < maxAnswersCount) {
+                                for (int i = answers.length - 1; i > index; --i) {
+                                    answers[i] = answers[i - 1];
+                                }
+                                answers[index] = parts.remove(0);
+                                answersCount++;
+                                index++;
+                            }
+                            updateRows();
+                            requestFieldFocusAtPosition = answerStartRow + index - 1;
+                            listView.setItemAnimator(itemAnimator);
+                            listAdapter.notifyDataSetChanged();
+                            return true;
                         }
                     };
                     cell.createErrorTextView();
@@ -1690,7 +1827,19 @@ public class ChatAttachAlertPollLayout extends ChatAttachAlert.AttachAlertLayout
                                 listAdapter.notifyItemChanged(emptyRow);
                             }
                         }
-                    }) {
+                    }, resourcesProvider) {
+
+                        @Override
+                        protected void onActionModeStart(EditTextBoldCursor editText, ActionMode actionMode) {
+                            if (editText.isFocused() && editText.hasSelection()) {
+                                Menu menu = actionMode.getMenu();
+                                if (menu.findItem(android.R.id.copy) == null) {
+                                    return;
+                                }
+                                ChatActivity.fillActionModeMenu(menu, ((ChatActivity) parentAlert.baseFragment).getCurrentEncryptedChat(), true);
+                            }
+                        }
+
                         @Override
                         protected boolean drawDivider() {
                             RecyclerView.ViewHolder holder = listView.findContainingViewHolder(this);
@@ -1759,6 +1908,28 @@ public class ChatAttachAlertPollLayout extends ChatAttachAlert.AttachAlertLayout
                         @Override
                         protected void onEmojiButtonClicked(PollEditTextCell cell1) {
                             onEmojiClicked(cell1);
+                        }
+
+                        @Override
+                        public boolean onPastedMultipleLines(ArrayList<CharSequence> parts) {
+                            if (parts.isEmpty()) return false;
+                            int index = listView.getChildAdapterPosition(this) - answerStartRow;
+                            if (index < 0) return false;
+                            textView.getText().replace(textView.getSelectionStart(), textView.getSelectionEnd(), parts.remove(0));
+                            index++;
+                            while (!parts.isEmpty() && index < maxAnswersCount) {
+                                for (int i = answers.length - 1; i > index; --i) {
+                                    answers[i] = answers[i - 1];
+                                }
+                                answers[index] = parts.remove(0);
+                                answersCount++;
+                                index++;
+                            }
+                            updateRows();
+                            requestFieldFocusAtPosition = answerStartRow + index - 1;
+                            listView.setItemAnimator(itemAnimator);
+                            listAdapter.notifyDataSetChanged();
+                            return true;
                         }
                     };
                     cell.addTextWatcher(new TextWatcher() {
@@ -1864,7 +2035,7 @@ public class ChatAttachAlertPollLayout extends ChatAttachAlert.AttachAlertLayout
                 return 4;
             } else if (position == solutionRow) {
                 return 7;
-            } else if (position == anonymousRow || position == multipleRow || position == quizRow) {
+            } else if (position == anonymousRow || position == multipleRow || position == quizRow || position == allowAddingRow || position == allowMarkingRow) {
                 return 6;
             } else if (position == emptyRow) {
                 return 8;
@@ -1936,12 +2107,20 @@ public class ChatAttachAlertPollLayout extends ChatAttachAlert.AttachAlertLayout
     }
 
     private int getAnswersMaxCount() {
+        if (todo) {
+            return getMessagesController().todoItemsMax;
+        } else {
+            return getMessagesController().pollAnswersMax;
+        }
+    }
+
+    private MessagesController getMessagesController() {
         final int currentAccount;
         if (parentAlert != null) {
             currentAccount = parentAlert.currentAccount;
         } else {
             currentAccount = UserConfig.selectedAccount;
         }
-        return MessagesController.getInstance(currentAccount).pollAnswersMax;
+        return MessagesController.getInstance(currentAccount);
     }
 }

@@ -35,6 +35,7 @@ import android.text.SpannableString;
 import android.text.Spanned;
 import android.text.StaticLayout;
 import android.text.TextPaint;
+import android.text.TextUtils;
 import android.text.style.ClickableSpan;
 import android.util.StateSet;
 import android.view.MotionEvent;
@@ -375,6 +376,9 @@ public class HintView2 extends View {
 
     // returns max width
     public static int cutInFancyHalf(CharSequence text, TextPaint paint) {
+        if (TextUtils.indexOf(text, '\n') >= 0) {
+            return Integer.MAX_VALUE;
+        }
         int mid = text.length() / 2;
         float leftWidth = 0, rightWidth = 0;
         float prevLeftWidth = 0;
@@ -382,17 +386,13 @@ public class HintView2 extends View {
 
         int dir = -1;
         for (int i = 0; i < 10; ++i) {
-            // Adjust the mid to point to the nearest space on the left
             while (mid > 0 && mid < text.length() && text.charAt(mid) != ' ') {
                 mid += dir;
             }
 
-
             leftWidth = measureCorrectly(text.subSequence(0, mid), paint);
             rightWidth = measureCorrectly(AndroidUtilities.getTrimmedString(text.subSequence(mid, text.length())), paint);
 
-            // If we're not making progress, exit the loop.
-            // (This is a basic way to ensure termination when we can't improve the result.)
             if (leftWidth == prevLeftWidth && rightWidth == prevRightWidth) {
                 break;
             }
@@ -400,24 +400,19 @@ public class HintView2 extends View {
             prevLeftWidth = leftWidth;
             prevRightWidth = rightWidth;
 
-            // If left side is shorter, move midpoint to the right.
             if (leftWidth < rightWidth) {
                 dir = +1;
                 mid += dir;
-            }
-            // If right side is shorter or equal, move midpoint to the left.
-            else {
+            } else {
                 dir = -1;
                 mid += dir;
             }
 
-            // Ensure mid doesn't go out of bounds
             if (mid <= 0 || mid >= text.length()) {
                 break;
             }
         }
 
-        // Return the max width of the two parts.
         return (int) Math.ceil(Math.max(leftWidth, rightWidth));
     }
 
