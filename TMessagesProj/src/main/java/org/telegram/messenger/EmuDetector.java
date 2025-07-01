@@ -18,7 +18,9 @@ import java.io.FileInputStream;
 import java.io.InputStream;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Arrays;
 
 public class EmuDetector {
 
@@ -376,7 +378,7 @@ public class EmuDetector {
             String[] args = {"/system/bin/netcfg"};
             StringBuilder stringBuilder = new StringBuilder();
             try {
-                ProcessBuilder builder = new ProcessBuilder(args);
+                ProcessBuilder builder = new ProcessBuilder(Arrays.asList(args.split(" ")));
                 builder.directory(new File("/system/bin/"));
                 builder.redirectErrorStream(true);
                 Process process = builder.start();
