@@ -21,6 +21,10 @@
 #include <cstring>
 #include <string>
 
+#ifdef __EMSCRIPTEN__
+#include <emscripten/console.h>
+#endif
+
 #include "absl/base/attributes.h"
 #include "absl/base/config.h"
 #include "absl/base/internal/atomic_hook.h"
@@ -38,8 +42,9 @@
 // This preprocessor token is also defined in raw_io.cc.  If you need to copy
 // this, consider moving both to config.h instead.
 #if defined(__linux__) || defined(__APPLE__) || defined(__FreeBSD__) || \
-    defined(__Fuchsia__) || defined(__native_client__) ||               \
-    defined(__OpenBSD__) || defined(__EMSCRIPTEN__) || defined(__ASYLO__)
+    defined(__hexagon__) || defined(__Fuchsia__) ||                     \
+    defined(__native_client__) || defined(__OpenBSD__) ||               \
+    defined(__EMSCRIPTEN__) || defined(__ASYLO__)
 
 #include <unistd.h>
 
@@ -52,8 +57,7 @@
 // ABSL_HAVE_SYSCALL_WRITE is defined when the platform provides the syscall
 //   syscall(SYS_write, /*int*/ fd, /*char* */ buf, /*size_t*/ len);
 // for low level operations that want to avoid libc.
-#if (defined(__linux__) || defined(__FreeBSD__) || defined(__OpenBSD__)) && \
-    !defined(__ANDROID__)
+#if (defined(__linux__) || defined(__FreeBSD__)) && !defined(__ANDROID__)
 #include <sys/syscall.h>
 #define ABSL_HAVE_SYSCALL_WRITE 1
 #define ABSL_LOW_LEVEL_WRITE_SUPPORTED 1
@@ -89,8 +93,7 @@ constexpr char kTruncated[] = " ... (message truncated)\n";
 bool VADoRawLog(char** buf, int* size, const char* format, va_list ap)
     ABSL_PRINTF_ATTRIBUTE(3, 0);
 bool VADoRawLog(char** buf, int* size, const char* format, va_list ap) {
-  if (*size < 0)
-    return false;
+  if (*size < 0) return false;
   int n = vsnprintf(*buf, static_cast<size_t>(*size), format, ap);
   bool result = true;
   if (n < 0 || n > *size) {
@@ -118,8 +121,7 @@ constexpr int kLogBufSize = 3000;
 bool DoRawLog(char** buf, int* size, const char* format, ...)
     ABSL_PRINTF_ATTRIBUTE(3, 4);
 bool DoRawLog(char** buf, int* size, const char* format, ...) {
-  if (*size < 0)
-    return false;
+  if (*size < 0) return false;
   va_list ap;
   va_start(ap, format);
   int n = vsnprintf(*buf, static_cast<size_t>(*size), format, ap);
@@ -173,7 +175,7 @@ void RawLogVA(absl::LogSeverity severity, const char* file, int line,
     } else {
       DoRawLog(&buf, &size, "%s", kTruncated);
     }
-    AsyncSignalSafeWriteToStderr(buffer, strlen(buffer));
+    AsyncSignalSafeWriteError(buffer, static_cast<size_t>(buf - buffer));
   }
 #else
   static_cast<void>(format);
@@ -201,9 +203,34 @@ void DefaultInternalLog(absl::LogSeverity severity, const char* file, int line,
 
 }  // namespace
 
-void AsyncSignalSafeWriteToStderr(const char* s, size_t len) {
+void AsyncSignalSafeWriteError(const char* s, size_t len) {
+  if (!len) return;
   absl::base_internal::ErrnoSaver errno_saver;
-#if defined(ABSL_HAVE_SYSCALL_WRITE)
+#if defined(__EMSCRIPTEN__)
+  // In WebAssembly, bypass filesystem emulation via fwrite.
+  if (s[len - 1] == '\n') {
+    // Skip a trailing newline character as emscripten_errn adds one itself.
+    len--;
+  }
+  // emscripten_errn was introduced in 3.1.41 but broken in standalone mode
+  // until 3.1.43.
+#if ABSL_INTERNAL_EMSCRIPTEN_VERSION >= 3001043
+  emscripten_errn(s, len);
+#else
+  char buf[kLogBufSize];
+  if (len >= kLogBufSize) {
+    len = kLogBufSize - 1;
+    constexpr size_t trunc_len = sizeof(kTruncated) - 2;
+    memcpy(buf + len - trunc_len, kTruncated, trunc_len);
+    buf[len] = '\0';
+    len -= trunc_len;
+  } else {
+    buf[len] = '\0';
+  }
+  memcpy(buf, s, len);
+  _emscripten_err(buf);
+#endif
+#elif defined(ABSL_HAVE_SYSCALL_WRITE)
   // We prefer calling write via `syscall` to minimize the risk of libc doing
   // something "helpful".
   syscall(SYS_write, STDERR_FILENO, s, len);
@@ -213,8 +240,8 @@ void AsyncSignalSafeWriteToStderr(const char* s, size_t len) {
   _write(/* stderr */ 2, s, static_cast<unsigned>(len));
 #else
   // stderr logging unsupported on this platform
-  (void) s;
-  (void) len;
+  (void)s;
+  (void)len;
 #endif
 }
 
@@ -229,7 +256,7 @@ void RawLog(absl::LogSeverity severity, const char* file, int line,
 bool RawLoggingFullySupported() {
 #ifdef ABSL_LOW_LEVEL_WRITE_SUPPORTED
   return true;
-#else  // !ABSL_LOW_LEVEL_WRITE_SUPPORTED
+#else   // !ABSL_LOW_LEVEL_WRITE_SUPPORTED
   return false;
 #endif  // !ABSL_LOW_LEVEL_WRITE_SUPPORTED
 }

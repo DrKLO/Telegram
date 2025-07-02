@@ -52,9 +52,9 @@ class VideoEncoderSelectorWrapper
   absl::optional<SdpVideoFormat> OnResolutionChange(
       const RenderResolution& resolution) override {
     JNIEnv* jni = AttachCurrentThreadIfNeeded();
-    ScopedJavaLocalRef<jobject> codec_info = nullptr;
-//        Java_VideoEncoderSelector_onResolutionChange(
-//            jni, encoder_selector_, resolution.Width(), resolution.Height());
+    ScopedJavaLocalRef<jobject> codec_info =
+        Java_VideoEncoderSelector_onResolutionChange(
+            jni, encoder_selector_, resolution.Width(), resolution.Height());
     if (codec_info.is_null()) {
       return absl::nullopt;
     }

@@ -12,6 +12,8 @@
 #ifndef RTC_BASE_THIRD_PARTY_BASE64_BASE64_H_
 #define RTC_BASE_THIRD_PARTY_BASE64_BASE64_H_
 
+#include <cstddef>
+#include <cstdint>
 #include <string>
 #include <vector>
 

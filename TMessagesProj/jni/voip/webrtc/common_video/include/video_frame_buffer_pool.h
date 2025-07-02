@@ -18,6 +18,7 @@
 #include "api/scoped_refptr.h"
 #include "api/video/i010_buffer.h"
 #include "api/video/i210_buffer.h"
+#include "api/video/i410_buffer.h"
 #include "api/video/i420_buffer.h"
 #include "api/video/i422_buffer.h"
 #include "api/video/i444_buffer.h"
@@ -50,6 +51,7 @@ class VideoFrameBufferPool {
   rtc::scoped_refptr<I444Buffer> CreateI444Buffer(int width, int height);
   rtc::scoped_refptr<I010Buffer> CreateI010Buffer(int width, int height);
   rtc::scoped_refptr<I210Buffer> CreateI210Buffer(int width, int height);
+  rtc::scoped_refptr<I410Buffer> CreateI410Buffer(int width, int height);
   rtc::scoped_refptr<NV12Buffer> CreateNV12Buffer(int width, int height);
 
   // Changes the max amount of buffers in the pool to the new value.

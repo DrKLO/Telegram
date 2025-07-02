@@ -64,7 +64,7 @@ class PerThreadSem {
  private:
   // Create the PerThreadSem associated with "identity".  Initializes count=0.
   // REQUIRES: May only be called by ThreadIdentity.
-  static void Init(base_internal::ThreadIdentity* identity);
+  static inline void Init(base_internal::ThreadIdentity* identity);
 
   // Increments "identity"'s count.
   static inline void Post(base_internal::ThreadIdentity* identity);
@@ -91,11 +91,20 @@ ABSL_NAMESPACE_END
 // By changing our extension points to be extern "C", we dodge this
 // check.
 extern "C" {
+void ABSL_INTERNAL_C_SYMBOL(AbslInternalPerThreadSemInit)(
+    absl::base_internal::ThreadIdentity* identity);
 void ABSL_INTERNAL_C_SYMBOL(AbslInternalPerThreadSemPost)(
     absl::base_internal::ThreadIdentity* identity);
 bool ABSL_INTERNAL_C_SYMBOL(AbslInternalPerThreadSemWait)(
     absl::synchronization_internal::KernelTimeout t);
+void ABSL_INTERNAL_C_SYMBOL(AbslInternalPerThreadSemPoke)(
+    absl::base_internal::ThreadIdentity* identity);
 }  // extern "C"
+
+void absl::synchronization_internal::PerThreadSem::Init(
+    absl::base_internal::ThreadIdentity* identity) {
+  ABSL_INTERNAL_C_SYMBOL(AbslInternalPerThreadSemInit)(identity);
+}
 
 void absl::synchronization_internal::PerThreadSem::Post(
     absl::base_internal::ThreadIdentity* identity) {

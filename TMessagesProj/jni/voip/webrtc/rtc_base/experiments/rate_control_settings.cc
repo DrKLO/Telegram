@@ -68,7 +68,6 @@ std::unique_ptr<StructParametersParser> VideoRateControlConfig::Parser() {
       "vp8_min_pixels", &vp8_min_pixels,                //
       "trust_vp8", &trust_vp8,                          //
       "trust_vp9", &trust_vp9,                          //
-      "probe_max_allocation", &probe_max_allocation,    //
       "bitrate_adjuster", &bitrate_adjuster,            //
       "adjuster_use_headroom", &adjuster_use_headroom,  //
       "vp8_s0_boost", &vp8_s0_boost,                    //
@@ -171,10 +170,6 @@ bool RateControlSettings::LibvpxVp9TrustedRateController() const {
 
 bool RateControlSettings::Vp8BaseHeavyTl3RateAllocation() const {
   return video_config_.vp8_base_heavy_tl3_alloc;
-}
-
-bool RateControlSettings::TriggerProbeOnMaxAllocatedBitrateChange() const {
-  return video_config_.probe_max_allocation;
 }
 
 bool RateControlSettings::UseEncoderBitrateAdjuster() const {

@@ -114,17 +114,6 @@ inline int64_t TimeUntil(int64_t later) {
   return later - TimeMillis();
 }
 
-class TimestampWrapAroundHandler {
- public:
-  TimestampWrapAroundHandler();
-
-  int64_t Unwrap(uint32_t ts);
-
- private:
-  uint32_t last_ts_;
-  int64_t num_wrap_;
-};
-
 // Convert from tm, which is relative to 1900-01-01 00:00 to number of
 // seconds from 1970-01-01 00:00 ("epoch"). Don't return time_t since that
 // is still 32 bits on many systems.

@@ -1,3 +1,17 @@
+// Copyright 2019 The BoringSSL Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package acvp
 
 import (
@@ -9,7 +23,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"net/url"
@@ -19,21 +32,24 @@ import (
 	"time"
 )
 
+const loginEndpoint = "acvp/v1/login"
+
 // Server represents an ACVP server.
 type Server struct {
 	// PrefixTokens are access tokens that apply to URLs under a certain prefix.
 	// The keys of this map are strings like "acvp/v1/testSessions/1234" and the
 	// values are JWT access tokens.
 	PrefixTokens map[string]string
-	// SizeLimit is the maximum number of bytes that the server can accept as an
-	// upload before the large endpoint support must be used.
+	// SizeLimit is the maximum number of bytes that the server can accept
+	// as an upload before the large endpoint support must be used. Zero
+	// means that there is no limit.
 	SizeLimit uint64
 	// AccessToken is the top-level access token for the current session.
 	AccessToken string
 
-	client      *http.Client
-	prefix      string
-	totpFunc    func() string
+	client   *http.Client
+	prefix   string
+	totpFunc func() string
 }
 
 // NewServer returns a fresh Server instance representing the ACVP server at
@@ -74,7 +90,7 @@ func NewServer(prefix string, logFile string, derCertificates [][]byte, privateK
 				return conn, err
 			},
 		},
-		Timeout: 10 * time.Second,
+		Timeout: 120 * time.Second,
 	}
 
 	return &Server{client: client, prefix: prefix, totpFunc: totp, PrefixTokens: make(map[string]string)}
@@ -151,12 +167,12 @@ func parseReplyToBytes(in io.Reader) ([]byte, error) {
 		return nil, err
 	}
 
-	buf, err := ioutil.ReadAll(decoder.Buffered())
+	buf, err := io.ReadAll(decoder.Buffered())
 	if err != nil {
 		return nil, err
 	}
 
-	rest, err := ioutil.ReadAll(in)
+	rest, err := io.ReadAll(in)
 	if err != nil {
 		return nil, err
 	}
@@ -179,7 +195,7 @@ func parseReplyToBytes(in io.Reader) ([]byte, error) {
 // parseReply parses the contents of an ACVP reply (after removing the header
 // element) into out. See the documentation of the encoding/json package for
 // details of the parsing.
-func parseReply(out interface{}, in io.Reader) error {
+func parseReply(out any, in io.Reader) error {
 	if out == nil {
 		// No reply expected.
 		return nil
@@ -224,7 +240,7 @@ func expired(tokenStr string) bool {
 	if json.Unmarshal(jsonBytes, &token) != nil {
 		return false
 	}
-	return token.Expiry > 0 && token.Expiry < uint64(time.Now().Unix())
+	return token.Expiry > 0 && token.Expiry < uint64(time.Now().Add(-10*time.Second).Unix())
 }
 
 func (server *Server) getToken(endPoint string) (string, error) {
@@ -240,7 +256,7 @@ func (server *Server) getToken(endPoint string) (string, error) {
 		var reply struct {
 			AccessToken string `json:"accessToken"`
 		}
-		if err := server.postMessage(&reply, "acvp/v1/login", map[string]string{
+		if err := server.postMessage(&reply, loginEndpoint, map[string]string{
 			"password":    server.totpFunc(),
 			"accessToken": token,
 		}); err != nil {
@@ -260,10 +276,10 @@ func (server *Server) Login() error {
 	var reply struct {
 		AccessToken           string `json:"accessToken"`
 		LargeEndpointRequired bool   `json:"largeEndpointRequired"`
-		SizeLimit             uint64 `json:"sizeConstraint"`
+		SizeLimit             int64  `json:"sizeConstraint"`
 	}
 
-	if err := server.postMessage(&reply, "acvp/v1/login", map[string]string{"password": server.totpFunc()}); err != nil {
+	if err := server.postMessage(&reply, loginEndpoint, map[string]string{"password": server.totpFunc()}); err != nil {
 		return err
 	}
 
@@ -273,10 +289,10 @@ func (server *Server) Login() error {
 	server.AccessToken = reply.AccessToken
 
 	if reply.LargeEndpointRequired {
-		if reply.SizeLimit == 0 {
+		if reply.SizeLimit <= 0 {
 			return errors.New("login indicated largeEndpointRequired but didn't provide a sizeConstraint")
 		}
-		server.SizeLimit = reply.SizeLimit
+		server.SizeLimit = uint64(reply.SizeLimit)
 	}
 
 	return nil
@@ -349,21 +365,21 @@ func (query Query) toURLParams() string {
 var NotFound = errors.New("acvp: HTTP code 404")
 
 func (server *Server) newRequestWithToken(method, endpoint string, body io.Reader) (*http.Request, error) {
-    token, err := server.getToken(endpoint)
-    if err != nil {
-        return nil, err
-    }
-    req, err := http.NewRequest(method, server.prefix+endpoint, body)
-    if err != nil {
-        return nil, err
-    }
-    if len(token) != 0 {
-       req.Header.Add("Authorization", "Bearer "+token)
-    }
-    return req, nil
+	token, err := server.getToken(endpoint)
+	if err != nil {
+		return nil, err
+	}
+	req, err := http.NewRequest(method, server.prefix+endpoint, body)
+	if err != nil {
+		return nil, err
+	}
+	if len(token) != 0 && endpoint != loginEndpoint {
+		req.Header.Add("Authorization", "Bearer "+token)
+	}
+	return req, nil
 }
 
-func (server *Server) Get(out interface{}, endPoint string) error {
+func (server *Server) Get(out any, endPoint string) error {
 	req, err := server.newRequestWithToken("GET", endPoint, nil)
 	if err != nil {
 		return err
@@ -401,13 +417,13 @@ func (server *Server) GetBytes(endPoint string) ([]byte, error) {
 	return parseReplyToBytes(resp.Body)
 }
 
-func (server *Server) write(method string, reply interface{}, endPoint string, contents []byte) error {
+func (server *Server) write(method string, reply any, endPoint string, contents []byte) error {
 	var buf bytes.Buffer
 	buf.WriteString(requestPrefix)
 	buf.Write(contents)
 	buf.WriteString(requestSuffix)
 
-	req, err := server.newRequestWithToken("POST", endPoint, &buf)
+	req, err := server.newRequestWithToken(method, endPoint, &buf)
 	if err != nil {
 		return err
 	}
@@ -426,7 +442,7 @@ func (server *Server) write(method string, reply interface{}, endPoint string, c
 	return parseReply(reply, resp.Body)
 }
 
-func (server *Server) postMessage(reply interface{}, endPoint string, request interface{}) error {
+func (server *Server) postMessage(reply any, endPoint string, request any) error {
 	contents, err := json.Marshal(request)
 	if err != nil {
 		return err
@@ -434,11 +450,11 @@ func (server *Server) postMessage(reply interface{}, endPoint string, request in
 	return server.write("POST", reply, endPoint, contents)
 }
 
-func (server *Server) Post(out interface{}, endPoint string, contents []byte) error {
+func (server *Server) Post(out any, endPoint string, contents []byte) error {
 	return server.write("POST", out, endPoint, contents)
 }
 
-func (server *Server) Put(out interface{}, endPoint string, contents []byte) error {
+func (server *Server) Put(out any, endPoint string, contents []byte) error {
 	return server.write("PUT", out, endPoint, contents)
 }
 
@@ -464,8 +480,8 @@ var (
 )
 
 // GetPaged returns an array of records of some type using one or more requests to the server. See
-// https://usnistgov.github.io/ACVP/artifacts/draft-fussell-acvp-spec-00.html#paging_response
-func (server *Server) GetPaged(out interface{}, endPoint string, condition Query) error {
+// https://pages.nist.gov/ACVP/draft-fussell-acvp-spec.html#paging_response
+func (server *Server) GetPaged(out any, endPoint string, condition Query) error {
 	output := reflect.ValueOf(out)
 	if output.Kind() != reflect.Ptr {
 		panic(fmt.Sprintf("GetPaged output parameter of non-pointer type %T", out))
@@ -540,7 +556,7 @@ func (server *Server) GetPaged(out interface{}, endPoint string, condition Query
 	return nil
 }
 
-// https://usnistgov.github.io/ACVP/artifacts/draft-fussell-acvp-spec-00.html#rfc.section.11.8.3.1
+// https://pages.nist.gov/ACVP/draft-fussell-acvp-spec.html#rfc.section.11.8.3.1
 type Vendor struct {
 	URL         string    `json:"url,omitempty"`
 	Name        string    `json:"name,omitempty"`
@@ -551,7 +567,7 @@ type Vendor struct {
 	Addresses   []Address `json:"addresses,omitempty"`
 }
 
-// https://usnistgov.github.io/ACVP/artifacts/draft-fussell-acvp-spec-00.html#rfc.section.11.9
+// https://pages.nist.gov/ACVP/draft-fussell-acvp-spec.html#rfc.section.11.9
 type Address struct {
 	URL        string `json:"url,omitempty"`
 	Street1    string `json:"street1,omitempty"`
@@ -563,7 +579,7 @@ type Address struct {
 	PostalCode string `json:"postalCode,omitempty"`
 }
 
-// https://usnistgov.github.io/ACVP/artifacts/draft-fussell-acvp-spec-00.html#rfc.section.11.10
+// https://pages.nist.gov/ACVP/draft-fussell-acvp-spec.html#rfc.section.11.10
 type Person struct {
 	URL          string   `json:"url,omitempty"`
 	FullName     string   `json:"fullName,omitempty"`
@@ -575,7 +591,7 @@ type Person struct {
 	} `json:"phoneNumbers,omitempty"`
 }
 
-// https://usnistgov.github.io/ACVP/artifacts/draft-fussell-acvp-spec-00.html#rfc.section.11.11
+// https://pages.nist.gov/ACVP/draft-fussell-acvp-spec.html#rfc.section.11.11
 type Module struct {
 	URL         string   `json:"url,omitempty"`
 	Name        string   `json:"name,omitempty"`
@@ -602,22 +618,22 @@ type OperationalEnvironment struct {
 	Dependencies   []Dependency `json:"dependencies,omitempty"`
 }
 
-type Dependency map[string]interface{}
+type Dependency map[string]any
 
-type Algorithm map[string]interface{}
+type Algorithm map[string]any
 
 type TestSession struct {
-	URL           string                   `json:"url,omitempty"`
-	ACVPVersion   string                   `json:"acvpVersion,omitempty"`
-	Created       string                   `json:"createdOn,omitempty"`
-	Expires       string                   `json:"expiresOn,omitempty"`
-	VectorSetURLs []string                 `json:"vectorSetUrls,omitempty"`
-	AccessToken   string                   `json:"accessToken,omitempty"`
-	Algorithms    []map[string]interface{} `json:"algorithms,omitempty"`
-	EncryptAtRest bool                     `json:"encryptAtRest,omitempty"`
-	IsSample      bool                     `json:"isSample,omitempty"`
-	Publishable   bool                     `json:"publishable,omitempty"`
-	Passed        bool                     `json:"passed,omitempty"`
+	URL           string           `json:"url,omitempty"`
+	ACVPVersion   string           `json:"acvpVersion,omitempty"`
+	Created       string           `json:"createdOn,omitempty"`
+	Expires       string           `json:"expiresOn,omitempty"`
+	VectorSetURLs []string         `json:"vectorSetUrls,omitempty"`
+	AccessToken   string           `json:"accessToken,omitempty"`
+	Algorithms    []map[string]any `json:"algorithms,omitempty"`
+	EncryptAtRest bool             `json:"encryptAtRest,omitempty"`
+	IsSample      bool             `json:"isSample,omitempty"`
+	Publishable   bool             `json:"publishable,omitempty"`
+	Passed        bool             `json:"passed,omitempty"`
 }
 
 type Vectors struct {

@@ -25,7 +25,7 @@ class PacketSender {
                                   SendPacketStatus)> on_sent_packet);
 
   // Sends the packet, and returns true if it was sent successfully.
-  bool Send(SctpPacket::Builder& builder);
+  bool Send(SctpPacket::Builder& builder, bool write_checksum = true);
 
  private:
   DcSctpSocketCallbacks& callbacks_;

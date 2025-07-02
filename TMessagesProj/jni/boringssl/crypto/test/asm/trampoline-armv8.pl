@@ -1,17 +1,17 @@
 #!/usr/bin/env perl
-# Copyright (c) 2019, Google Inc.
+# Copyright 2019 The BoringSSL Authors
 #
-# Permission to use, copy, modify, and/or distribute this software for any
-# purpose with or without fee is hereby granted, provided that the above
-# copyright notice and this permission notice appear in all copies.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-# THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-# WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
-# MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY
-# SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-# WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION
-# OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
-# CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 # This file defines helper functions for crypto/test/abi_test.h on aarch64. See
 # that header for details on how to use this.
@@ -58,6 +58,7 @@ my $code = <<____;
 .align	4
 abi_test_trampoline:
 .Labi_test_trampoline_begin:
+	AARCH64_SIGN_LINK_REGISTER
 	// Stack layout (low to high addresses)
 	//   x29,x30 (16 bytes)
 	//    d8-d15 (64 bytes)
@@ -160,6 +161,7 @@ abi_test_trampoline:
 	ldp	x27, x28, [sp, #144]
 
 	ldp	x29, x30, [sp], #176
+	AARCH64_VALIDATE_LINK_REGISTER
 	ret
 .size	abi_test_trampoline,.-abi_test_trampoline
 ____
@@ -174,6 +176,7 @@ foreach (0..29) {
 .globl	abi_test_clobber_x$_
 .align	4
 abi_test_clobber_x$_:
+	AARCH64_VALID_CALL_TARGET
 	mov	x$_, xzr
 	ret
 .size	abi_test_clobber_x$_,.-abi_test_clobber_x$_
@@ -185,6 +188,7 @@ foreach (0..31) {
 .globl	abi_test_clobber_d$_
 .align	4
 abi_test_clobber_d$_:
+	AARCH64_VALID_CALL_TARGET
 	fmov	d$_, xzr
 	ret
 .size	abi_test_clobber_d$_,.-abi_test_clobber_d$_
@@ -199,6 +203,7 @@ foreach (8..15) {
 .globl	abi_test_clobber_v${_}_upper
 .align	4
 abi_test_clobber_v${_}_upper:
+	AARCH64_VALID_CALL_TARGET
 	fmov	v${_}.d[1], xzr
 	ret
 .size	abi_test_clobber_v${_}_upper,.-abi_test_clobber_v${_}_upper
@@ -206,4 +211,4 @@ ____
 }
 
 print $code;
-close STDOUT or die "error closing STDOUT";
+close STDOUT or die "error closing STDOUT: $!";

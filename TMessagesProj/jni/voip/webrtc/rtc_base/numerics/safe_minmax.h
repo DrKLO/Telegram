@@ -325,9 +325,9 @@ R2 SafeClamp(T x, L min, H max) {
   static_assert(IsIntlike<L>::value || std::is_floating_point<L>::value,
                 "The third argument must be integral or floating-point");
   RTC_DCHECK_LE(min, max);
-  return SafeLe(x, min)
-             ? static_cast<R2>(min)
-             : SafeGe(x, max) ? static_cast<R2>(max) : static_cast<R2>(x);
+  return SafeLe(x, min)   ? static_cast<R2>(min)
+         : SafeGe(x, max) ? static_cast<R2>(max)
+                          : static_cast<R2>(x);
 }
 
 }  // namespace rtc

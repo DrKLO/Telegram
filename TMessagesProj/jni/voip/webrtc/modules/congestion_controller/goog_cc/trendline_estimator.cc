@@ -13,10 +13,17 @@
 #include <math.h>
 
 #include <algorithm>
+#include <cstddef>
+#include <cstdint>
+#include <cstdio>
+#include <deque>
+#include <memory>
 #include <string>
+#include <utility>
 
 #include "absl/strings/match.h"
 #include "absl/types/optional.h"
+#include "api/field_trials_view.h"
 #include "api/network_state_predictor.h"
 #include "modules/remote_bitrate_estimator/test/bwe_test_logging.h"
 #include "rtc_base/checks.h"

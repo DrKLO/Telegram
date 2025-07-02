@@ -14,6 +14,7 @@
 
 #include "absl/synchronization/internal/graphcycles.h"
 
+#include <climits>
 #include <map>
 #include <random>
 #include <unordered_set>
@@ -21,8 +22,9 @@
 #include <vector>
 
 #include "gtest/gtest.h"
-#include "absl/base/internal/raw_logging.h"
 #include "absl/base/macros.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 
 namespace absl {
 ABSL_NAMESPACE_BEGIN
@@ -65,51 +67,51 @@ static bool IsReachable(Edges *edges, int from, int to,
 }
 
 static void PrintEdges(Edges *edges) {
-  ABSL_RAW_LOG(INFO, "EDGES (%zu)", edges->size());
+  LOG(INFO) << "EDGES (" << edges->size() << ")";
   for (const auto &edge : *edges) {
     int a = edge.from;
     int b = edge.to;
-    ABSL_RAW_LOG(INFO, "%d %d", a, b);
+    LOG(INFO) << a << " " << b;
   }
-  ABSL_RAW_LOG(INFO, "---");
+  LOG(INFO) << "---";
 }
 
 static void PrintGCEdges(Nodes *nodes, const IdMap &id, GraphCycles *gc) {
-  ABSL_RAW_LOG(INFO, "GC EDGES");
+  LOG(INFO) << "GC EDGES";
   for (int a : *nodes) {
     for (int b : *nodes) {
       if (gc->HasEdge(Get(id, a), Get(id, b))) {
-        ABSL_RAW_LOG(INFO, "%d %d", a, b);
+        LOG(INFO) << a << " " << b;
       }
     }
   }
-  ABSL_RAW_LOG(INFO, "---");
+  LOG(INFO) << "---";
 }
 
 static void PrintTransitiveClosure(Nodes *nodes, Edges *edges) {
-  ABSL_RAW_LOG(INFO, "Transitive closure");
+  LOG(INFO) << "Transitive closure";
   for (int a : *nodes) {
     for (int b : *nodes) {
       std::unordered_set<int> seen;
       if (IsReachable(edges, a, b, &seen)) {
-        ABSL_RAW_LOG(INFO, "%d %d", a, b);
+        LOG(INFO) << a << " " << b;
       }
     }
   }
-  ABSL_RAW_LOG(INFO, "---");
+  LOG(INFO) << "---";
 }
 
 static void PrintGCTransitiveClosure(Nodes *nodes, const IdMap &id,
                                      GraphCycles *gc) {
-  ABSL_RAW_LOG(INFO, "GC Transitive closure");
+  LOG(INFO) << "GC Transitive closure";
   for (int a : *nodes) {
     for (int b : *nodes) {
       if (gc->IsReachable(Get(id, a), Get(id, b))) {
-        ABSL_RAW_LOG(INFO, "%d %d", a, b);
+        LOG(INFO) << a << " " << b;
       }
     }
   }
-  ABSL_RAW_LOG(INFO, "---");
+  LOG(INFO) << "---";
 }
 
 static void CheckTransitiveClosure(Nodes *nodes, Edges *edges, const IdMap &id,
@@ -125,9 +127,8 @@ static void CheckTransitiveClosure(Nodes *nodes, Edges *edges, const IdMap &id,
         PrintGCEdges(nodes, id, gc);
         PrintTransitiveClosure(nodes, edges);
         PrintGCTransitiveClosure(nodes, id, gc);
-        ABSL_RAW_LOG(FATAL, "gc_reachable %s reachable %s a %d b %d",
-                     gc_reachable ? "true" : "false",
-                     reachable ? "true" : "false", a, b);
+        LOG(FATAL) << "gc_reachable " << gc_reachable << " reachable "
+                   << reachable << " a " << a << " b " << b;
       }
     }
   }
@@ -142,7 +143,7 @@ static void CheckEdges(Nodes *nodes, Edges *edges, const IdMap &id,
     if (!gc->HasEdge(Get(id, a), Get(id, b))) {
       PrintEdges(edges);
       PrintGCEdges(nodes, id, gc);
-      ABSL_RAW_LOG(FATAL, "!gc->HasEdge(%d, %d)", a, b);
+      LOG(FATAL) << "!gc->HasEdge(" << a << ", " << b << ")";
     }
   }
   for (const auto &a : *nodes) {
@@ -155,13 +156,12 @@ static void CheckEdges(Nodes *nodes, Edges *edges, const IdMap &id,
   if (count != edges->size()) {
     PrintEdges(edges);
     PrintGCEdges(nodes, id, gc);
-    ABSL_RAW_LOG(FATAL, "edges->size() %zu  count %d", edges->size(), count);
+    LOG(FATAL) << "edges->size() " << edges->size() << "  count " << count;
   }
 }
 
 static void CheckInvariants(const GraphCycles &gc) {
-  if (ABSL_PREDICT_FALSE(!gc.CheckInvariants()))
-    ABSL_RAW_LOG(FATAL, "CheckInvariants");
+  CHECK(gc.CheckInvariants()) << "CheckInvariants";
 }
 
 // Returns the index of a randomly chosen node in *nodes.
@@ -309,7 +309,7 @@ TEST(GraphCycles, RandomizedTest) {
       break;
 
     default:
-      ABSL_RAW_LOG(FATAL, "op %d", op);
+      LOG(FATAL) << "op " << op;
     }
 
     // Very rarely, test graph expansion by adding then removing many nodes.
@@ -457,6 +457,24 @@ TEST_F(GraphCyclesTest, ManyEdges) {
   CheckInvariants(g_);
   ASSERT_FALSE(AddEdge(10, 9));
   CheckInvariants(g_);
+}
+
+TEST(GraphCycles, IntegerOverflow) {
+  GraphCycles graph_cycles;
+  char *buf = (char *)nullptr;
+  GraphId prev_id = graph_cycles.GetId(buf);
+  buf += 1;
+  GraphId id = graph_cycles.GetId(buf);
+  ASSERT_TRUE(graph_cycles.InsertEdge(prev_id, id));
+
+  // INT_MAX / 40 is enough to cause an overflow when multiplied by 41.
+  graph_cycles.TestOnlyAddNodes(INT_MAX / 40);
+
+  buf += 1;
+  GraphId newid = graph_cycles.GetId(buf);
+  graph_cycles.HasEdge(prev_id, newid);
+
+  graph_cycles.RemoveNode(buf);
 }
 
 }  // namespace synchronization_internal

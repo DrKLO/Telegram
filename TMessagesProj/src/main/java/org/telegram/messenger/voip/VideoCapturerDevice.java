@@ -165,6 +165,7 @@ public class VideoCapturerDevice {
                         }
                         nativeCapturerObserver = nativeGetJavaVideoCapturerObserver(nativePtr);
                         videoCapturer.initialize(videoCapturerSurfaceTextureHelper, ApplicationLoader.applicationContext, nativeCapturerObserver);
+                        FileLog.d("VideoCapturerDevice init(" + ptr + "): videoCapturer.startCapture SCREEN");
                         videoCapturer.startCapture(size.x, size.y, CAPTURE_FPS);
                         WebRtcAudioRecord audioRecord = WebRtcAudioRecord.Instance;
                         if (audioRecord != null) {
@@ -230,9 +231,11 @@ public class VideoCapturerDevice {
                         }
                         nativeCapturerObserver = nativeGetJavaVideoCapturerObserver(nativePtr);
                         videoCapturer.initialize(videoCapturerSurfaceTextureHelper, ApplicationLoader.applicationContext, nativeCapturerObserver);
+                        FileLog.d("VideoCapturerDevice init(" + ptr + "): videoCapturer.startCapture CAMERA");
                         videoCapturer.startCapture(CAPTURE_WIDTH, CAPTURE_HEIGHT, CAPTURE_FPS);
                     });
                 } else {
+                    FileLog.d("VideoCapturerDevice init(" + ptr + "): videoCapturer.switchCamera CAMERA");
                     handler.post(() -> ((CameraVideoCapturer) videoCapturer).switchCamera(new CameraVideoCapturer.CameraSwitchHandler() {
                         @Override
                         public void onCameraSwitchDone(boolean isFrontCamera) {
@@ -286,6 +289,7 @@ public class VideoCapturerDevice {
     }
 
     private void onStateChanged(long ptr, int state) {
+        FileLog.d("VideoCapturerDevice onStateChanged(" + ptr + ", " + state + ")");
         if (Build.VERSION.SDK_INT < 18) {
             return;
         }
@@ -298,9 +302,11 @@ public class VideoCapturerDevice {
                     return;
                 }
                 if (state == Instance.VIDEO_STATE_ACTIVE) {
+                    FileLog.d("VideoCapturerDevice onStateChanged(" + ptr + ", " + state + "): videoCapturer.startCapture");
                     videoCapturer.startCapture(CAPTURE_WIDTH, CAPTURE_HEIGHT, CAPTURE_FPS);
                 } else {
                     try {
+                        FileLog.d("VideoCapturerDevice onStateChanged(" + ptr + ", " + state + "): videoCapturer.stopCapture");
                         videoCapturer.stopCapture();
                     } catch (InterruptedException e) {
                         throw new RuntimeException(e);
@@ -314,6 +320,7 @@ public class VideoCapturerDevice {
         if (Build.VERSION.SDK_INT < 18) {
             return;
         }
+        FileLog.d("VideoCapturerDevice onDestroy ptr="+nativePtr);
         nativePtr = 0;
         AndroidUtilities.runOnUIThread(() -> {
 //            if (eglBase != null) {
@@ -334,6 +341,7 @@ public class VideoCapturerDevice {
                     }
                 }
                 if (videoCapturer != null) {
+                    FileLog.d("VideoCapturerDevice onDestroy: videoCapturer.stopCapture");
                     try {
                         videoCapturer.stopCapture();
                     } catch (InterruptedException e) {

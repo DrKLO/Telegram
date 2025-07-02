@@ -13,6 +13,7 @@
 #include <stddef.h>
 
 #include <memory>
+
 #include "rtc_base/checks.h"
 #include "rtc_base/logging.h"
 #include "rtc_base/socket_factory.h"
@@ -146,10 +147,6 @@ void ProxyBinding::Write(Socket* socket, FifoBuffer* buffer) {
 
 void ProxyBinding::Destroy() {
   SignalDestroyed(this);
-}
-
-AsyncProxyServerSocket* SocksProxyServer::WrapSocket(Socket* socket) {
-  return new AsyncSocksProxyServerSocket(socket);
 }
 
 }  // namespace rtc

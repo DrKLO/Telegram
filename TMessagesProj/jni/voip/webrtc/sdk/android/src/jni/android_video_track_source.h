@@ -70,8 +70,7 @@ class AndroidVideoTrackSource : public rtc::AdaptedVideoTrackSource {
                        jlong j_timestamp_ns,
                        const JavaRef<jobject>& j_video_frame_buffer);
 
-  void SetState(JNIEnv* env,
-                jboolean j_is_live);
+  void SetState(JNIEnv* env, jboolean j_is_live);
 
   void AdaptOutputFormat(JNIEnv* env,
                          jint j_landscape_width,

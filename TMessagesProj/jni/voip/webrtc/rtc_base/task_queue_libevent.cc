@@ -36,7 +36,7 @@
 #include "rtc_base/synchronization/mutex.h"
 #include "rtc_base/thread_annotations.h"
 #include "rtc_base/time_utils.h"
-#include "base/third_party/libevent/event.h"
+#include "third_party/libevent/event.h"
 
 namespace webrtc {
 namespace {
@@ -107,11 +107,15 @@ class TaskQueueLibevent final : public TaskQueueBase {
   TaskQueueLibevent(absl::string_view queue_name, rtc::ThreadPriority priority);
 
   void Delete() override;
-  void PostTask(absl::AnyInvocable<void() &&> task) override;
-  void PostDelayedTask(absl::AnyInvocable<void() &&> task,
-                       TimeDelta delay) override;
-  void PostDelayedHighPrecisionTask(absl::AnyInvocable<void() &&> task,
-                                    TimeDelta delay) override;
+
+ protected:
+  void PostTaskImpl(absl::AnyInvocable<void() &&> task,
+                    const PostTaskTraits& traits,
+                    const Location& location) override;
+  void PostDelayedTaskImpl(absl::AnyInvocable<void() &&> task,
+                           TimeDelta delay,
+                           const PostDelayedTaskTraits& traits,
+                           const Location& location) override;
 
  private:
   struct TimerEvent;
@@ -166,10 +170,20 @@ TaskQueueLibevent::TaskQueueLibevent(absl::string_view queue_name,
           CurrentTaskQueueSetter set_current(this);
           while (is_active_)
             event_base_loop(event_base_, 0);
-        }
 
+          // Ensure remaining deleted tasks are destroyed with Current() set up
+          // to this task queue.
+          absl::InlinedVector<absl::AnyInvocable<void() &&>, 4> pending;
+          MutexLock lock(&pending_lock_);
+          pending_.swap(pending);
+        }
         for (TimerEvent* timer : pending_timers_)
           delete timer;
+
+#if RTC_DCHECK_IS_ON
+        MutexLock lock(&pending_lock_);
+        RTC_DCHECK(pending_.empty());
+#endif
       },
       queue_name, rtc::ThreadAttributes().SetPriority(priority));
 }
@@ -201,7 +215,9 @@ void TaskQueueLibevent::Delete() {
   delete this;
 }
 
-void TaskQueueLibevent::PostTask(absl::AnyInvocable<void() &&> task) {
+void TaskQueueLibevent::PostTaskImpl(absl::AnyInvocable<void() &&> task,
+                                     const PostTaskTraits& traits,
+                                     const Location& location) {
   {
     MutexLock lock(&pending_lock_);
     bool had_pending_tasks = !pending_.empty();
@@ -240,8 +256,10 @@ void TaskQueueLibevent::PostDelayedTaskOnTaskQueue(
   event_add(&timer->ev, &tv);
 }
 
-void TaskQueueLibevent::PostDelayedTask(absl::AnyInvocable<void() &&> task,
-                                        TimeDelta delay) {
+void TaskQueueLibevent::PostDelayedTaskImpl(absl::AnyInvocable<void() &&> task,
+                                            TimeDelta delay,
+                                            const PostDelayedTaskTraits& traits,
+                                            const Location& location) {
   if (IsCurrent()) {
     PostDelayedTaskOnTaskQueue(std::move(task), delay);
   } else {
@@ -253,12 +271,6 @@ void TaskQueueLibevent::PostDelayedTask(absl::AnyInvocable<void() &&> task,
           std::move(task), std::max(delay - post_time, TimeDelta::Zero()));
     });
   }
-}
-
-void TaskQueueLibevent::PostDelayedHighPrecisionTask(
-    absl::AnyInvocable<void() &&> task,
-    TimeDelta delay) {
-  PostDelayedTask(std::move(task), delay);
 }
 
 // static

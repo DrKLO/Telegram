@@ -21,6 +21,8 @@
 // reported with `#error`. This enforcement is best effort, so successfully
 // compiling this header does not guarantee a supported configuration.
 
+// SKIP_ABSL_INLINE_NAMESPACE_CHECK
+
 #ifndef ABSL_BASE_POLICY_CHECKS_H_
 #define ABSL_BASE_POLICY_CHECKS_H_
 
@@ -44,17 +46,17 @@
 // Toolchain Check
 // -----------------------------------------------------------------------------
 
-// We support Visual Studio 2017 (MSVC++ 15.0) and later.
+// We support Visual Studio 2019 (MSVC++ 16.0) and later.
 // This minimum will go up.
-#if defined(_MSC_VER) && _MSC_VER < 1910 && !defined(__clang__)
-#error "This package requires Visual Studio 2017 (MSVC++ 15.0) or higher."
+#if defined(_MSC_VER) && _MSC_VER < 1920 && !defined(__clang__)
+#error "This package requires Visual Studio 2019 (MSVC++ 16.0) or higher."
 #endif
 
-// We support gcc 5 and later.
+// We support GCC 7 and later.
 // This minimum will go up.
 #if defined(__GNUC__) && !defined(__clang__)
-#if __GNUC__ < 5
-#error "This package requires gcc 5 or higher."
+#if __GNUC__ < 7
+#error "This package requires GCC 7 or higher."
 #endif
 #endif
 
@@ -69,15 +71,15 @@
 // C++ Version Check
 // -----------------------------------------------------------------------------
 
-// Enforce C++14 as the minimum.
+// Enforce C++17 as the minimum.
 #if defined(_MSVC_LANG)
-#if _MSVC_LANG < 201402L
-#error "C++ versions less than C++14 are not supported."
-#endif  // _MSVC_LANG < 201402L
+#if _MSVC_LANG < 201703L
+#error "C++ versions less than C++17 are not supported."
+#endif  // _MSVC_LANG < 201703L
 #elif defined(__cplusplus)
-#if __cplusplus < 201402L
-#error "C++ versions less than C++14 are not supported."
-#endif  // __cplusplus < 201402L
+#if __cplusplus < 201703L
+#error "C++ versions less than C++17 are not supported."
+#endif  // __cplusplus < 201703L
 #endif
 
 // -----------------------------------------------------------------------------

@@ -50,6 +50,12 @@ bool RtpStreamReceiverController::OnRtpPacket(const RtpPacketReceived& packet) {
   return demuxer_.OnRtpPacket(packet);
 }
 
+void RtpStreamReceiverController::OnRecoveredPacket(
+    const RtpPacketReceived& packet) {
+  RTC_DCHECK_RUN_ON(&demuxer_sequence_);
+  demuxer_.OnRtpPacket(packet);
+}
+
 bool RtpStreamReceiverController::AddSink(uint32_t ssrc,
                                           RtpPacketSinkInterface* sink) {
   RTC_DCHECK_RUN_ON(&demuxer_sequence_);

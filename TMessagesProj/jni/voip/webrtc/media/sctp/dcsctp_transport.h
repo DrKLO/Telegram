@@ -57,10 +57,9 @@ class DcSctpTransport : public cricket::SctpTransportInternal,
              int max_message_size) override;
   bool OpenStream(int sid) override;
   bool ResetStream(int sid) override;
-  bool SendData(int sid,
-                const SendDataParams& params,
-                const rtc::CopyOnWriteBuffer& payload,
-                cricket::SendDataResult* result = nullptr) override;
+  RTCError SendData(int sid,
+                    const SendDataParams& params,
+                    const rtc::CopyOnWriteBuffer& payload) override;
   bool ReadyToSendData() override;
   int max_message_size() const override;
   absl::optional<int> max_outbound_streams() const override;
@@ -72,7 +71,7 @@ class DcSctpTransport : public cricket::SctpTransportInternal,
   dcsctp::SendPacketStatus SendPacketWithStatus(
       rtc::ArrayView<const uint8_t> data) override;
   std::unique_ptr<dcsctp::Timeout> CreateTimeout(
-      webrtc::TaskQueueBase::DelayPrecision precision) override;
+      TaskQueueBase::DelayPrecision precision) override;
   dcsctp::TimeMs TimeMillis() override;
   uint32_t GetRandomInt(uint32_t low, uint32_t high) override;
   void OnTotalBufferedAmountLow() override;
@@ -132,7 +131,7 @@ class DcSctpTransport : public cricket::SctpTransportInternal,
   // Map of all currently open or closing data channels
   flat_map<dcsctp::StreamID, StreamState> stream_states_
       RTC_GUARDED_BY(network_thread_);
-  bool ready_to_send_data_ = false;
+  bool ready_to_send_data_ RTC_GUARDED_BY(network_thread_) = false;
   std::function<void()> on_connected_callback_ RTC_GUARDED_BY(network_thread_);
   DataChannelSink* data_channel_sink_ RTC_GUARDED_BY(network_thread_) = nullptr;
 };

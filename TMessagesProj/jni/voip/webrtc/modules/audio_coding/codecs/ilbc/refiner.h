@@ -39,6 +39,6 @@ void WebRtcIlbcfix_Refiner(
     int16_t* surround,     /* (i/o) The contribution from this sequence
                                     summed with earlier contributions */
     int16_t gain           /* (i) Gain to use for this sequence */
-    );
+);
 
 #endif

@@ -50,6 +50,9 @@ bool Symbolize(const void* pc, char* out, int out_size) {
   if (!HaveOffsetConverter()) {
     return false;
   }
+  if (pc == nullptr || out_size <= 0) {
+    return false;
+  }
   const char* func_name = emscripten_pc_get_function(pc);
   if (func_name == nullptr) {
     return false;

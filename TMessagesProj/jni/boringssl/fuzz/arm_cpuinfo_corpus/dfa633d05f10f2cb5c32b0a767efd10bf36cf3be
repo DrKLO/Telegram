@@ -1,0 +1,23 @@
+Processor       : ARMv7 Processor rev 2 (v7l)
+processor       : 0
+BogoMIPS        : 13.53
+
+processor       : 1
+BogoMIPS        : 13.53
+
+processor       : 2
+BogoMIPS        : 13.53
+
+processor       : 3
+BogoMIPS        : 13.53
+
+Features        : swp half thumb fastmult vfp edsp neon vfpv3 tls vfpv4 
+CPU implementer : 0x51
+CPU architecture: 7
+CPU variant     : 0x0
+CPU part        : 0x06f
+CPU revision    : 2
+
+Hardware        : QCT APQ8064 MAKO
+Revision        : 000b
+Serial          : 0000000000000000

@@ -1,17 +1,22 @@
 #! /usr/bin/env perl
 # Copyright 2007-2016 The OpenSSL Project Authors. All Rights Reserved.
 #
-# Licensed under the OpenSSL license (the "License").  You may not use
-# this file except in compliance with the License.  You can obtain a copy
-# in the file LICENSE in the source distribution or at
-# https://www.openssl.org/source/license.html
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 #
 # ====================================================================
 # Written by Andy Polyakov <appro@openssl.org> for the OpenSSL
-# project. The module is, however, dual licensed under OpenSSL and
-# CRYPTOGAMS licenses depending on where you obtain it. For further
-# details see http://www.openssl.org/~appro/cryptogams/.
+# project.
 # ====================================================================
 #
 # SHA256 block transform for x86. September 2007.
@@ -76,16 +81,15 @@ require "x86asm.pl";
 $output=pop;
 open STDOUT,">$output";
 
-&asm_init($ARGV[0],$ARGV[$#ARGV] eq "386");
+&asm_init($ARGV[0]);
 
-$xmm=$avx=0;
-for (@ARGV) { $xmm=1 if (/-DOPENSSL_IA32_SSE2/); }
+$xmm = 1;
 
 # In upstream, this is controlled by shelling out to the compiler to check
 # versions, but BoringSSL is intended to be used with pre-generated perlasm
 # output, so this isn't useful anyway.
 #
-# TODO(davidben): Enable AVX2 code after testing by setting $avx to 2.
+# TODO(davidben): Enable AVX+BMI2 code after testing by setting $avx to 2.
 $avx = 1;
 
 $avx = 0 unless ($xmm);
@@ -186,9 +190,9 @@ sub BODY_00_15() {
 	 &add	($A,$T);		# h += T
 }
 
-&external_label("OPENSSL_ia32cap_P")		if (!$i386);
+&static_label("K256");
 
-&function_begin("sha256_block_data_order");
+&function_begin("sha256_block_data_order_nohw");
 	&mov	("esi",wparam(0));	# ctx
 	&mov	("edi",wparam(1));	# inp
 	&mov	("eax",wparam(2));	# num
@@ -209,28 +213,6 @@ sub BODY_00_15() {
 	&mov	(&DWP(8,"esp"),"eax");	# inp+num*128
 	&mov	(&DWP(12,"esp"),"ebx");	# saved sp
 						if (!$i386 && $xmm) {
-	&picmeup("edx","OPENSSL_ia32cap_P",$K256,&label("K256"));
-	&mov	("ecx",&DWP(0,"edx"));
-	&mov	("ebx",&DWP(4,"edx"));
-	&test	("ecx",1<<20);		# check for P4
-	&jnz	(&label("loop"));
-	&mov	("edx",&DWP(8,"edx"))	if ($xmm);
-	&test	("ecx",1<<24);		# check for FXSR
-	&jz	($unroll_after?&label("no_xmm"):&label("loop"));
-	&and	("ecx",1<<30);		# mask "Intel CPU" bit
-	&and	("ebx",1<<28|1<<9);	# mask AVX and SSSE3 bits
-	&test	("edx",1<<29)		if ($shaext);	# check for SHA
-	&jnz	(&label("shaext"))	if ($shaext);
-	&or	("ecx","ebx");
-	&and	("ecx",1<<28|1<<30);
-	&cmp	("ecx",1<<28|1<<30);
-					if ($xmm) {
-	&je	(&label("AVX"))		if ($avx);
-	&test	("ebx",1<<9);		# check for SSSE3
-	&jnz	(&label("SSSE3"));
-					} else {
-	&je	(&label("loop_shrd"));
-					}
 						if ($unroll_after) {
 &set_label("no_xmm");
 	&sub	("eax","edi");
@@ -518,6 +500,8 @@ my @AH=($A,$K256);
 	&mov	("esp",&DWP(96+12,"esp"));	# restore sp
 &function_end_A();
 }
+&function_end_B("sha256_block_data_order_nohw");
+
 						if (!$i386 && $xmm) {{{
 if ($shaext) {
 ######################################################################
@@ -536,7 +520,33 @@ sub sha256rnds2	{ sha256op38(0xcb,@_); }
 sub sha256msg1	{ sha256op38(0xcc,@_); }
 sub sha256msg2	{ sha256op38(0xcd,@_); }
 
-&set_label("shaext",32);
+&function_begin("sha256_block_data_order_hw");
+	&mov	("esi",wparam(0));	# ctx
+	&mov	("edi",wparam(1));	# inp
+	&mov	("eax",wparam(2));	# num
+	&mov	("ebx","esp");		# saved sp
+
+	&call	(&label("pic_point"));	# make it PIC!
+&set_label("pic_point");
+	&blindpop($K256);
+	&lea	($K256,&DWP(&label("K256")."-".&label("pic_point"),$K256));
+
+	&sub	("esp",16);
+	&and	("esp",-64);
+
+	&shl	("eax",6);
+	&add	("eax","edi");
+	&mov	(&DWP(0,"esp"),"esi");	# ctx
+	&mov	(&DWP(4,"esp"),"edi");	# inp
+	&mov	(&DWP(8,"esp"),"eax");	# inp+num*128
+	&mov	(&DWP(12,"esp"),"ebx");	# saved sp
+
+	# TODO(davidben): The preamble above this point comes from the original
+	# merged sha256_block_data_order function, which performed some common
+	# setup and then jumped to the particular SHA-256 implementation. The
+	# parts of the preamble that do not apply to this function can be
+	# removed.
+
 	&sub		("esp",32);
 
 	&movdqu		($ABEF,&QWP(0,$ctx));		# DCBA
@@ -656,14 +666,40 @@ for($i=4;$i<16-3;$i++) {
 	&mov		("esp",&DWP(32+12,"esp"));
 	&movdqu		(&QWP(0,$ctx),$ABEF);
 	&movdqu		(&QWP(16,$ctx),$CDGH);
-&function_end_A();
+&function_end("sha256_block_data_order_shaext");
 }
 
 my @X = map("xmm$_",(0..3));
 my ($t0,$t1,$t2,$t3) = map("xmm$_",(4..7));
 my @AH = ($A,$T);
 
-&set_label("SSSE3",32);
+&function_begin("sha256_block_data_order_ssse3");
+	&mov	("esi",wparam(0));	# ctx
+	&mov	("edi",wparam(1));	# inp
+	&mov	("eax",wparam(2));	# num
+	&mov	("ebx","esp");		# saved sp
+
+	&call	(&label("pic_point"));	# make it PIC!
+&set_label("pic_point");
+	&blindpop($K256);
+	&lea	($K256,&DWP(&label("K256")."-".&label("pic_point"),$K256));
+
+	&sub	("esp",16);
+	&and	("esp",-64);
+
+	&shl	("eax",6);
+	&add	("eax","edi");
+	&mov	(&DWP(0,"esp"),"esi");	# ctx
+	&mov	(&DWP(4,"esp"),"edi");	# inp
+	&mov	(&DWP(8,"esp"),"eax");	# inp+num*128
+	&mov	(&DWP(12,"esp"),"ebx");	# saved sp
+
+	# TODO(davidben): The preamble above this point comes from the original
+	# merged sha256_block_data_order function, which performed some common
+	# setup and then jumped to the particular SHA-256 implementation. The
+	# parts of the preamble that do not apply to this function can be
+	# removed.
+
 	&lea	("esp",&DWP(-96,"esp"));
 	# copy ctx->h[0-7] to A,B,C,D,E,F,G,H on stack
 	&mov	($AH[0],&DWP(0,"esi"));
@@ -971,14 +1007,36 @@ sub body_00_15 () {
 	&jb	(&label("grand_ssse3"));
 
 	&mov	("esp",&DWP(96+12,"esp"));	# restore sp
-&function_end_A();
+&function_end("sha256_block_data_order_ssse3");
+
 						if ($avx) {
-&set_label("AVX",32);
-						if ($avx>1) {
-	&and	("edx",1<<8|1<<3);		# check for BMI2+BMI1
-	&cmp	("edx",1<<8|1<<3);
-	&je	(&label("AVX_BMI"));
-						}
+&function_begin("sha256_block_data_order_avx");
+	&mov	("esi",wparam(0));	# ctx
+	&mov	("edi",wparam(1));	# inp
+	&mov	("eax",wparam(2));	# num
+	&mov	("ebx","esp");		# saved sp
+
+	&call	(&label("pic_point"));	# make it PIC!
+&set_label("pic_point");
+	&blindpop($K256);
+	&lea	($K256,&DWP(&label("K256")."-".&label("pic_point"),$K256));
+
+	&sub	("esp",16);
+	&and	("esp",-64);
+
+	&shl	("eax",6);
+	&add	("eax","edi");
+	&mov	(&DWP(0,"esp"),"esi");	# ctx
+	&mov	(&DWP(4,"esp"),"edi");	# inp
+	&mov	(&DWP(8,"esp"),"eax");	# inp+num*128
+	&mov	(&DWP(12,"esp"),"ebx");	# saved sp
+
+	# TODO(davidben): The preamble above this point comes from the original
+	# merged sha256_block_data_order function, which performed some common
+	# setup and then jumped to the particular SHA-256 implementation. The
+	# parts of the preamble that do not apply to this function can be
+	# removed.
+
 	&lea	("esp",&DWP(-96,"esp"));
 	&vzeroall	();
 	# copy ctx->h[0-7] to A,B,C,D,E,F,G,H on stack
@@ -1138,7 +1196,8 @@ my $insn;
 
 	&mov	("esp",&DWP(96+12,"esp"));	# restore sp
 	&vzeroall	();
-&function_end_A();
+&function_end("sha256_block_data_order_avx");
+
 						if ($avx>1) {
 sub bodyx_00_15 () {			# +10%
 	(
@@ -1175,7 +1234,34 @@ sub bodyx_00_15 () {			# +10%
 	);
 }
 
-&set_label("AVX_BMI",32);
+# If enabled, this function should be gated on AVX, BMI1, and BMI2.
+&function_begin("sha256_block_data_order_avx_bmi");
+	&mov	("esi",wparam(0));	# ctx
+	&mov	("edi",wparam(1));	# inp
+	&mov	("eax",wparam(2));	# num
+	&mov	("ebx","esp");		# saved sp
+
+	&call	(&label("pic_point"));	# make it PIC!
+&set_label("pic_point");
+	&blindpop($K256);
+	&lea	($K256,&DWP(&label("K256")."-".&label("pic_point"),$K256));
+
+	&sub	("esp",16);
+	&and	("esp",-64);
+
+	&shl	("eax",6);
+	&add	("eax","edi");
+	&mov	(&DWP(0,"esp"),"esi");	# ctx
+	&mov	(&DWP(4,"esp"),"edi");	# inp
+	&mov	(&DWP(8,"esp"),"eax");	# inp+num*128
+	&mov	(&DWP(12,"esp"),"ebx");	# saved sp
+
+	# TODO(davidben): The preamble above this point comes from the original
+	# merged sha256_block_data_order function, which performed some common
+	# setup and then jumped to the particular SHA-256 implementation. The
+	# parts of the preamble that do not apply to this function can be
+	# removed.
+
 	&lea	("esp",&DWP(-96,"esp"));
 	&vzeroall	();
 	# copy ctx->h[0-7] to A,B,C,D,E,F,G,H on stack
@@ -1279,12 +1365,11 @@ sub bodyx_00_15 () {			# +10%
 
 	&mov	("esp",&DWP(96+12,"esp"));	# restore sp
 	&vzeroall	();
-&function_end_A();
+&function_end("sha256_block_data_order_avx_bmi");
 						}
 						}
 						}}}
-&function_end_B("sha256_block_data_order");
 
 &asm_finish();
 
-close STDOUT or die "error closing STDOUT";
+close STDOUT or die "error closing STDOUT: $!";

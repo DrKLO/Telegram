@@ -11,6 +11,7 @@
 package org.webrtc;
 
 import androidx.annotation.Nullable;
+import org.webrtc.EncodedImage;
 
 /**
  * Interface for a video encoder that can be used with WebRTC. All calls will be made on the
@@ -32,14 +33,14 @@ public interface VideoEncoder {
     // TODO(bugs.webrtc.org/10720): Remove.
     @Deprecated
     public Settings(int numberOfCores, int width, int height, int startBitrate, int maxFramerate,
-                    int numberOfSimulcastStreams, boolean automaticResizeOn) {
+        int numberOfSimulcastStreams, boolean automaticResizeOn) {
       this(numberOfCores, width, height, startBitrate, maxFramerate, numberOfSimulcastStreams,
-              automaticResizeOn, new VideoEncoder.Capabilities(false /* lossNotification */));
+          automaticResizeOn, new VideoEncoder.Capabilities(false /* lossNotification */));
     }
 
     @CalledByNative("Settings")
     public Settings(int numberOfCores, int width, int height, int startBitrate, int maxFramerate,
-                    int numberOfSimulcastStreams, boolean automaticResizeOn, Capabilities capabilities) {
+        int numberOfSimulcastStreams, boolean automaticResizeOn, Capabilities capabilities) {
       this.numberOfCores = numberOfCores;
       this.width = width;
       this.height = height;
@@ -207,7 +208,7 @@ public interface VideoEncoder {
     public final int maxBitrateBps;
 
     public ResolutionBitrateLimits(
-            int frameSizePixels, int minStartBitrateBps, int minBitrateBps, int maxBitrateBps) {
+        int frameSizePixels, int minStartBitrateBps, int minBitrateBps, int maxBitrateBps) {
       this.frameSizePixels = frameSizePixels;
       this.minStartBitrateBps = minStartBitrateBps;
       this.minBitrateBps = minBitrateBps;
@@ -274,7 +275,7 @@ public interface VideoEncoder {
     public final boolean applyAlignmentToAllSimulcastLayers;
 
     public EncoderInfo(
-            int requestedResolutionAlignment, boolean applyAlignmentToAllSimulcastLayers) {
+        int requestedResolutionAlignment, boolean applyAlignmentToAllSimulcastLayers) {
       this.requestedResolutionAlignment = requestedResolutionAlignment;
       this.applyAlignmentToAllSimulcastLayers = applyAlignmentToAllSimulcastLayers;
     }
@@ -379,6 +380,6 @@ public interface VideoEncoder {
   @CalledByNative
   default EncoderInfo getEncoderInfo() {
     return new EncoderInfo(
-            /* requestedResolutionAlignment= */ 1, /* applyAlignmentToAllSimulcastLayers= */ false);
+        /* requestedResolutionAlignment= */ 1, /* applyAlignmentToAllSimulcastLayers= */ false);
   }
 }

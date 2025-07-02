@@ -44,8 +44,8 @@
 #include <cstdint>
 
 #include "absl/base/internal/endian.h"
-#include "absl/base/internal/prefetch.h"
 #include "absl/base/internal/raw_logging.h"
+#include "absl/base/prefetch.h"
 #include "absl/crc/internal/crc_internal.h"
 
 namespace absl {
@@ -176,9 +176,6 @@ CRCImpl* CRCImpl::NewInternal() {
   return result;
 }
 
-// The CRC of the empty string is always the CRC polynomial itself.
-void CRCImpl::Empty(uint32_t* crc) const { *crc = kCrc32cPoly; }
-
 //  The 32-bit implementation
 
 void CRC32::InitTables() {
@@ -261,7 +258,7 @@ void CRC32::Extend(uint32_t* crc, const void* bytes, size_t length) const {
   const uint8_t* e = p + length;
   uint32_t l = *crc;
 
-  auto step_one_byte = [this, &p, &l] () {
+  auto step_one_byte = [this, &p, &l]() {
     int c = (l & 0xff) ^ *p++;
     l = this->table0_[c] ^ (l >> 8);
   };
@@ -309,7 +306,7 @@ void CRC32::Extend(uint32_t* crc, const void* bytes, size_t length) const {
 
     // Process kStride interleaved swaths through the data in parallel.
     while ((e - p) > kPrefetchHorizon) {
-      base_internal::PrefetchNta(
+      PrefetchToLocalCacheNta(
           reinterpret_cast<const void*>(p + kPrefetchHorizon));
       // Process 64 bytes at a time
       step_stride();
@@ -359,7 +356,7 @@ void CRC32::Extend(uint32_t* crc, const void* bytes, size_t length) const {
 
 void CRC32::ExtendByZeroesImpl(uint32_t* crc, size_t length,
                                const uint32_t zeroes_table[256],
-                               const uint32_t poly_table[256]) const {
+                               const uint32_t poly_table[256]) {
   if (length != 0) {
     uint32_t l = *crc;
     // For each ZEROES_BASE_LG bits in length
@@ -433,34 +430,6 @@ CRC::CRC() {}
 CRC* CRC::Crc32c() {
   static CRC* singleton = CRCImpl::NewInternal();
   return singleton;
-}
-
-// This Concat implementation works for arbitrary polynomials.
-void CRC::Concat(uint32_t* px, uint32_t y, size_t ylen) {
-  // https://en.wikipedia.org/wiki/Mathematics_of_cyclic_redundancy_checks
-  // The CRC of a message M is the remainder of polynomial divison modulo G,
-  // where the coefficient arithmetic is performed modulo 2 (so +/- are XOR):
-  //   R(x) = M(x) x**n (mod G)
-  // (n is the degree of G)
-  // In practice, we use an initial value A and a bitmask B to get
-  //   R = (A ^ B)x**|M| ^ Mx**n ^ B (mod G)
-  // If M is the concatenation of two strings S and T, and Z is the string of
-  // len(T) 0s, then the remainder CRC(ST) can be expressed as:
-  //   R = (A ^ B)x**|ST| ^ STx**n ^ B
-  //     = (A ^ B)x**|SZ| ^ SZx**n ^ B ^ Tx**n
-  //     = CRC(SZ) ^ Tx**n
-  // CRC(Z) = (A ^ B)x**|T| ^ B
-  // CRC(T) = (A ^ B)x**|T| ^ Tx**n ^ B
-  // So R = CRC(SZ) ^ CRC(Z) ^ CRC(T)
-  //
-  // And further, since CRC(SZ) = Extend(CRC(S), Z),
-  //  CRC(SZ) ^ CRC(Z) = Extend(CRC(S) ^ CRC(''), Z).
-  uint32_t z;
-  uint32_t t;
-  Empty(&z);
-  t = *px ^ z;
-  ExtendByZeroes(&t, ylen);
-  *px = t ^ y;
 }
 
 }  // namespace crc_internal

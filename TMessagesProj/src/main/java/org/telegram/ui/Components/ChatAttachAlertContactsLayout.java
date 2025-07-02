@@ -73,9 +73,9 @@ public class ChatAttachAlertContactsLayout extends ChatAttachAlert.AttachAlertLa
     private boolean multipleSelectionAllowed;
 
     public interface PhonebookShareAlertDelegate {
-        void didSelectContact(TLRPC.User user, boolean notify, int scheduleDate, long effectId, boolean invertMedia);
+        void didSelectContact(TLRPC.User user, boolean notify, int scheduleDate, long effectId, boolean invertMedia, long payStars);
 
-        default void didSelectContacts(ArrayList<TLRPC.User> users, String caption, boolean notify, int scheduleDate, long effectId, boolean invertMedia) {
+        default void didSelectContacts(ArrayList<TLRPC.User> users, String caption, boolean notify, int scheduleDate, long effectId, boolean invertMedia, long payStars) {
 
         }
     }
@@ -484,9 +484,9 @@ public class ChatAttachAlertContactsLayout extends ChatAttachAlert.AttachAlertLa
                 }
 
                 PhonebookShareAlert phonebookShareAlert = new PhonebookShareAlert(parentAlert.baseFragment, contact, null, null, null, firstName, lastName, resourcesProvider);
-                phonebookShareAlert.setDelegate((user, notify, scheduleDate, effectId, invertMedia) -> {
+                phonebookShareAlert.setDelegate((user, notify, scheduleDate, effectId, invertMedia, payStars) -> {
                     parentAlert.dismiss(true);
-                    delegate.didSelectContact(user, notify, scheduleDate, effectId, invertMedia);
+                    delegate.didSelectContact(user, notify, scheduleDate, effectId, invertMedia, payStars);
                 });
                 phonebookShareAlert.show();
             }
@@ -691,20 +691,21 @@ public class ChatAttachAlertContactsLayout extends ChatAttachAlert.AttachAlertLa
     }
 
     @Override
-    public void sendSelectedItems(boolean notify, int scheduleDate, long effectId, boolean invertMedia) {
+    public boolean sendSelectedItems(boolean notify, int scheduleDate, long effectId, boolean invertMedia) {
         if (selectedContacts.size() == 0 && delegate == null || sendPressed) {
-            return;
+            return false;
         }
         sendPressed = true;
 
         ArrayList<TLRPC.User> users = new ArrayList<>(selectedContacts.size());
-
         for (ListItemID id : selectedContactsOrder) {
             Object object = selectedContacts.get(id);
             users.add(prepareContact(object));
         }
-
-        delegate.didSelectContacts(users, parentAlert.getCommentView().getText().toString(), notify, scheduleDate, effectId, invertMedia);
+        return AlertsCreator.ensurePaidMessageConfirmation(parentAlert.currentAccount, parentAlert.getDialogId(), users.size() + parentAlert.getAdditionalMessagesCount(), payStars -> {
+            delegate.didSelectContacts(users, parentAlert.getCommentView().getText().toString(), notify, scheduleDate, effectId, invertMedia, payStars);
+            parentAlert.dismiss();
+        });
     }
 
     public ArrayList<TLRPC.User> getSelected() {

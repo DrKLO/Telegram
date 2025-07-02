@@ -35,6 +35,6 @@ void WebRtcIlbcfix_Enhancer(
     size_t* period,        /* (i) pitch period array (pitch bward-in time) */
     const size_t* plocs,   /* (i) locations where period array values valid */
     size_t periodl         /* (i) dimension of period and plocs */
-    );
+);
 
 #endif

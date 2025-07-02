@@ -132,4 +132,36 @@ int BitstreamReader::ReadSignedExponentialGolomb() {
   }
 }
 
+uint64_t BitstreamReader::ReadLeb128() {
+  uint64_t decoded = 0;
+  size_t i = 0;
+  uint8_t byte;
+  // A LEB128 value can in theory be arbitrarily large, but for convenience sake
+  // consider it invalid if it can't fit in an uint64_t.
+  do {
+    byte = Read<uint8_t>();
+    decoded +=
+        (static_cast<uint64_t>(byte & 0x7f) << static_cast<uint64_t>(7 * i));
+    ++i;
+  } while (i < 10 && (byte & 0x80));
+
+  // The first 9 bytes represent the first 63 bits. The tenth byte can therefore
+  // not be larger than 1 as it would overflow an uint64_t.
+  if (i == 10 && byte > 1) {
+    Invalidate();
+  }
+
+  return Ok() ? decoded : 0;
+}
+
+std::string BitstreamReader::ReadString(int num_bytes) {
+  std::string res;
+  res.reserve(num_bytes);
+  for (int i = 0; i < num_bytes; ++i) {
+    res += Read<uint8_t>();
+  }
+
+  return Ok() ? res : std::string();
+}
+
 }  // namespace webrtc

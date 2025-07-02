@@ -23,21 +23,19 @@
 
 #include <vector>
 
+#include "absl/base/nullability.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/optional.h"
 #include "api/array_view.h"
 #include "api/audio/echo_canceller3_config.h"
 #include "api/audio/echo_control.h"
+#include "api/ref_count.h"
 #include "api/scoped_refptr.h"
+#include "api/task_queue/task_queue_base.h"
 #include "modules/audio_processing/include/audio_processing_statistics.h"
 #include "rtc_base/arraysize.h"
-#include "rtc_base/ref_count.h"
 #include "rtc_base/system/file_wrapper.h"
 #include "rtc_base/system/rtc_export.h"
-
-namespace rtc {
-class TaskQueue;
-}  // namespace rtc
 
 namespace webrtc {
 
@@ -81,11 +79,12 @@ class CustomProcessing;
 //      setter.
 //
 // APM accepts only linear PCM audio data in chunks of ~10 ms (see
-// AudioProcessing::GetFrameSize() for details). The int16 interfaces use
-// interleaved data, while the float interfaces use deinterleaved data.
+// AudioProcessing::GetFrameSize() for details) and sample rates ranging from
+// 8000 Hz to 384000 Hz. The int16 interfaces use interleaved data, while the
+// float interfaces use deinterleaved data.
 //
 // Usage example, omitting error checking:
-// AudioProcessing* apm = AudioProcessingBuilder().Create();
+// rtc::scoped_refptr<AudioProcessing> apm = AudioProcessingBuilder().Create();
 //
 // AudioProcessing::Config config;
 // config.echo_canceller.enabled = true;
@@ -102,9 +101,6 @@ class CustomProcessing;
 // config.high_pass_filter.enabled = true;
 //
 // apm->ApplyConfig(config)
-//
-// apm->noise_reduction()->set_level(kHighSuppression);
-// apm->noise_reduction()->Enable(true);
 //
 // // Start a voice call...
 //
@@ -127,9 +123,9 @@ class CustomProcessing;
 // apm->Initialize();
 //
 // // Close the application...
-// delete apm;
+// apm.reset();
 //
-class RTC_EXPORT AudioProcessing : public rtc::RefCountInterface {
+class RTC_EXPORT AudioProcessing : public RefCountInterface {
  public:
   // The struct below constitutes the new parameter scheme for the audio
   // processing. It is being introduced gradually and until it is fully
@@ -148,6 +144,12 @@ class RTC_EXPORT AudioProcessing : public rtc::RefCountInterface {
   struct RTC_EXPORT Config {
     // Sets the properties of the audio processing pipeline.
     struct RTC_EXPORT Pipeline {
+      // Ways to downmix a multi-channel track to mono.
+      enum class DownmixMethod {
+        kAverageChannels,  // Average across channels.
+        kUseFirstChannel   // Use the first channel.
+      };
+
       // Maximum allowed processing rate used internally. May only be set to
       // 32000 or 48000 and any differing values will be treated as 48000.
       int maximum_internal_processing_rate = 48000;
@@ -156,6 +158,9 @@ class RTC_EXPORT AudioProcessing : public rtc::RefCountInterface {
       // Allow multi-channel processing of capture audio when AEC3 is active
       // or a custom AEC is injected..
       bool multi_channel_capture = false;
+      // Indicates how to downmix multi-channel capture audio to mono (when
+      // needed).
+      DownmixMethod capture_downmix_method = DownmixMethod::kAverageChannels;
     } pipeline;
 
     // Enabled the pre-amplifier. It amplifies the capture signal
@@ -321,42 +326,56 @@ class RTC_EXPORT AudioProcessing : public rtc::RefCountInterface {
       } analog_gain_controller;
     } gain_controller1;
 
-    // Enables the next generation AGC functionality. This feature replaces the
-    // standard methods of gain control in the previous AGC. Enabling this
-    // submodule enables an adaptive digital AGC followed by a limiter. By
-    // setting `fixed_gain_db`, the limiter can be turned into a compressor that
-    // first applies a fixed gain. The adaptive digital AGC can be turned off by
-    // setting |adaptive_digital_mode=false|.
+    // Parameters for AGC2, an Automatic Gain Control (AGC) sub-module which
+    // replaces the AGC sub-module parametrized by `gain_controller1`.
+    // AGC2 brings the captured audio signal to the desired level by combining
+    // three different controllers (namely, input volume controller, adapative
+    // digital controller and fixed digital controller) and a limiter.
+    // TODO(bugs.webrtc.org:7494): Name `GainController` when AGC1 removed.
     struct RTC_EXPORT GainController2 {
       bool operator==(const GainController2& rhs) const;
       bool operator!=(const GainController2& rhs) const {
         return !(*this == rhs);
       }
 
+      // AGC2 must be created if and only if `enabled` is true.
       bool enabled = false;
-      struct FixedDigital {
-        float gain_db = 0.0f;
-      } fixed_digital;
+
+      // Parameters for the input volume controller, which adjusts the input
+      // volume applied when the audio is captured (e.g., microphone volume on
+      // a soundcard, input volume on HAL).
+      struct InputVolumeController {
+        bool operator==(const InputVolumeController& rhs) const;
+        bool operator!=(const InputVolumeController& rhs) const {
+          return !(*this == rhs);
+        }
+        bool enabled = false;
+      } input_volume_controller;
+
+      // Parameters for the adaptive digital controller, which adjusts and
+      // applies a digital gain after echo cancellation and after noise
+      // suppression.
       struct RTC_EXPORT AdaptiveDigital {
         bool operator==(const AdaptiveDigital& rhs) const;
         bool operator!=(const AdaptiveDigital& rhs) const {
           return !(*this == rhs);
         }
-
         bool enabled = false;
-        // When true, the adaptive digital controller runs but the signal is not
-        // modified.
-        bool dry_run = false;
         float headroom_db = 6.0f;
-        // TODO(bugs.webrtc.org/7494): Consider removing and inferring from
-        // `max_output_noise_level_dbfs`.
         float max_gain_db = 30.0f;
         float initial_gain_db = 8.0f;
-        int vad_reset_period_ms = 1500;
-        int adjacent_speech_frames_threshold = 12;
         float max_gain_change_db_per_second = 3.0f;
         float max_output_noise_level_dbfs = -50.0f;
       } adaptive_digital;
+
+      // Parameters for the fixed digital controller, which applies a fixed
+      // digital gain after the adaptive digital controller and before the
+      // limiter.
+      struct FixedDigital {
+        // By setting `gain_db` to a value greater than zero, the limiter can be
+        // turned into a compressor that first applies a fixed gain.
+        float gain_db = 0.0f;
+      } fixed_digital;
     } gain_controller2;
 
     std::string ToString() const;
@@ -611,12 +630,14 @@ class RTC_EXPORT AudioProcessing : public rtc::RefCountInterface {
   // return value of true indicates that the file has been
   // sucessfully opened, while a value of false indicates that
   // opening the file failed.
-  virtual bool CreateAndAttachAecDump(absl::string_view file_name,
-                                      int64_t max_log_size_bytes,
-                                      rtc::TaskQueue* worker_queue) = 0;
-  virtual bool CreateAndAttachAecDump(FILE* handle,
-                                      int64_t max_log_size_bytes,
-                                      rtc::TaskQueue* worker_queue) = 0;
+  virtual bool CreateAndAttachAecDump(
+      absl::string_view file_name,
+      int64_t max_log_size_bytes,
+      absl::Nonnull<TaskQueueBase*> worker_queue) = 0;
+  virtual bool CreateAndAttachAecDump(
+      absl::Nonnull<FILE*> handle,
+      int64_t max_log_size_bytes,
+      absl::Nonnull<TaskQueueBase*> worker_queue) = 0;
 
   // TODO(webrtc:5298) Deprecated variant.
   // Attaches provided webrtc::AecDump for recording debugging
@@ -891,7 +912,7 @@ class CustomProcessing {
 };
 
 // Interface for an echo detector submodule.
-class EchoDetector : public rtc::RefCountInterface {
+class EchoDetector : public RefCountInterface {
  public:
   // (Re-)Initializes the submodule.
   virtual void Initialize(int capture_sample_rate_hz,

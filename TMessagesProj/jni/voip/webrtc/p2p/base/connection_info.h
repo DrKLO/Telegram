@@ -15,6 +15,7 @@
 
 #include "absl/types/optional.h"
 #include "api/candidate.h"
+#include "api/units/timestamp.h"
 
 namespace cricket {
 
@@ -35,16 +36,16 @@ struct ConnectionInfo {
   ConnectionInfo(const ConnectionInfo&);
   ~ConnectionInfo();
 
-  bool best_connection;      // Is this the best connection we have?
-  bool writable;             // Has this connection received a STUN response?
-  bool receiving;            // Has this connection received anything?
-  bool timeout;              // Has this connection timed out?
-  size_t rtt;                // The STUN RTT for this connection.
+  bool best_connection;         // Is this the best connection we have?
+  bool writable;                // Has this connection received a STUN response?
+  bool receiving;               // Has this connection received anything?
+  bool timeout;                 // Has this connection timed out?
+  size_t rtt;                   // The STUN RTT for this connection.
   size_t sent_discarded_bytes;  // Number of outgoing bytes discarded due to
                                 // socket errors.
   size_t sent_total_bytes;      // Total bytes sent on this connection. Does not
                                 // include discarded bytes.
-  size_t sent_bytes_second;  // Bps over the last measurement interval.
+  size_t sent_bytes_second;     // Bps over the last measurement interval.
   size_t sent_discarded_packets;  // Number of outgoing packets discarded due to
                                   // socket errors.
   size_t sent_total_packets;  // Number of total outgoing packets attempted for
@@ -72,6 +73,10 @@ struct ConnectionInfo {
   uint64_t total_round_trip_time_ms;
   // https://w3c.github.io/webrtc-stats/#dom-rtcicecandidatepairstats-currentroundtriptime
   absl::optional<uint32_t> current_round_trip_time_ms;
+
+  // https://w3c.github.io/webrtc-stats/#dom-rtcicecandidatepairstats-lastpacketreceivedtimestamp
+  absl::optional<webrtc::Timestamp> last_data_received;
+  absl::optional<webrtc::Timestamp> last_data_sent;
 };
 
 // Information about all the candidate pairs of a channel.

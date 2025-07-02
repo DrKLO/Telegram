@@ -10,6 +10,7 @@
 #ifndef API_MAKE_REF_COUNTED_H_
 #define API_MAKE_REF_COUNTED_H_
 
+#include <type_traits>
 #include <utility>
 
 #include "rtc_base/ref_counted_object.h"

@@ -1,23 +1,22 @@
-// Copyright (c) 2018, Google Inc.
+// Copyright 2018 The BoringSSL Authors
 //
-// Permission to use, copy, modify, and/or distribute this software for any
-// purpose with or without fee is hereby granted, provided that the above
-// copyright notice and this permission notice appear in all copies.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-// WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
-// MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY
-// SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-// WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION
-// OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
-// CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE. */
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package ar
 
 import (
 	"bytes"
 	"flag"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -52,7 +51,7 @@ var arTests = []arTest{
 		"linux",
 		"libsample.a",
 		map[string]string{
-			"foo.c.o": "foo.c.o",
+			"foo.c.o":  "foo.c.o",
 			"bar.cc.o": "bar.cc.o",
 		},
 		false,
@@ -61,7 +60,7 @@ var arTests = []arTest{
 		"mac",
 		"libsample.a",
 		map[string]string{
-			"foo.c.o": "foo.c.o",
+			"foo.c.o":  "foo.c.o",
 			"bar.cc.o": "bar.cc.o",
 		},
 		true,
@@ -70,7 +69,7 @@ var arTests = []arTest{
 		"windows",
 		"sample.lib",
 		map[string]string{
-			"CMakeFiles\\sample.dir\\foo.c.obj": "foo.c.obj",
+			"CMakeFiles\\sample.dir\\foo.c.obj":  "foo.c.obj",
 			"CMakeFiles\\sample.dir\\bar.cc.obj": "bar.cc.obj",
 		},
 		false,
@@ -92,7 +91,7 @@ func TestAR(t *testing.T) {
 			}
 
 			for file, contentsPath := range test.out {
-				expected, err := ioutil.ReadFile(test.Path(contentsPath))
+				expected, err := os.ReadFile(test.Path(contentsPath))
 				if err != nil {
 					t.Fatalf("error reading %s: %s", contentsPath, err)
 				}

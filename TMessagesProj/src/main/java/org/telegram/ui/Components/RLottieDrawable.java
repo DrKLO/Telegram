@@ -10,6 +10,7 @@ package org.telegram.ui.Components;
 
 import static org.telegram.messenger.AndroidUtilities.readRes;
 
+import android.app.Activity;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.ColorFilter;
@@ -37,6 +38,8 @@ import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
 import org.telegram.messenger.utils.BitmapsCache;
+import org.telegram.ui.BubbleActivity;
+import org.telegram.ui.LaunchActivity;
 
 import java.io.File;
 import java.io.FileReader;
@@ -83,7 +86,6 @@ public class RLottieDrawable extends BitmapDrawable implements Animatable, Bitma
     protected WeakReference<Runnable> onFinishCallback;
     private int finishFrame;
 
-    private View currentParentView;
     private final ArrayList<ImageReceiver> parentViews = new ArrayList<>();
 
     protected int isDice;
@@ -1082,11 +1084,6 @@ public class RLottieDrawable extends BitmapDrawable implements Animatable, Bitma
         setCurrentFrame((int) (metaData[0] * progress), async);
     }
 
-    public void setCurrentParentView(View view) {
-        currentParentView = view;
-    }
-
-
     @Override
     public boolean isRunning() {
         return isRunning;
@@ -1247,11 +1244,13 @@ public class RLottieDrawable extends BitmapDrawable implements Animatable, Bitma
             if (renderingBitmap == null && nextRenderingBitmap == null) {
                 scheduleNextGetFrame();
             } else if (nextRenderingBitmap != null && (renderingBitmap == null || (timeDiff >= timeCheck && !skipFrameUpdate))) {
-                if (vibrationPattern != null && currentParentView != null && allowVibration) {
+                if (vibrationPattern != null && allowVibration) {
                     Integer force = vibrationPattern.get(currentFrame - 1);
                     if (force != null) {
                         try {
-                            currentParentView.performHapticFeedback(force == 1 ? HapticFeedbackConstants.LONG_PRESS : HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
+                            Activity activity = LaunchActivity.instance;
+                            if (activity == null) activity = BubbleActivity.instance;
+                            activity.getWindow().getDecorView().performHapticFeedback(force == 1 ? HapticFeedbackConstants.LONG_PRESS : HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
                         } catch (Exception ignored) {}
                     }
                 }

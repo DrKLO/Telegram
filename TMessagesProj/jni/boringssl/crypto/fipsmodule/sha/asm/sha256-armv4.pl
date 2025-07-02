@@ -1,19 +1,22 @@
 #! /usr/bin/env perl
 # Copyright 2007-2016 The OpenSSL Project Authors. All Rights Reserved.
 #
-# Licensed under the OpenSSL license (the "License").  You may not use
-# this file except in compliance with the License.  You can obtain a copy
-# in the file LICENSE in the source distribution or at
-# https://www.openssl.org/source/license.html
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 
 # ====================================================================
 # Written by Andy Polyakov <appro@openssl.org> for the OpenSSL
-# project. The module is, however, dual licensed under OpenSSL and
-# CRYPTOGAMS licenses depending on where you obtain it. For further
-# details see http://www.openssl.org/~appro/cryptogams/.
-#
-# Permission to use under GPL terms is granted.
+# project.
 # ====================================================================
 
 # SHA256 block procedure for ARMv4. May 2007.
@@ -54,7 +57,7 @@ if ($flavour && $flavour ne "void") {
     ( $xlate="${dir}../../../perlasm/arm-xlate.pl" and -f $xlate) or
     die "can't locate arm-xlate.pl";
 
-    open OUT,"| \"$^X\" $xlate $flavour $output";
+    open OUT,"| \"$^X\" \"$xlate\" $flavour \"$output\"";
     *STDOUT=*OUT;
 } else {
     open OUT,">$output";
@@ -86,7 +89,7 @@ sub BODY_00_15 {
 my ($i,$a,$b,$c,$d,$e,$f,$g,$h) = @_;
 
 $code.=<<___ if ($i<16);
-#if __ARM_ARCH__>=7
+#if __ARM_ARCH>=7
 	@ ldr	$t1,[$inp],#4			@ $i
 # if $i==15
 	str	$inp,[sp,#17*4]			@ make room for $t4
@@ -129,7 +132,7 @@ $code.=<<___;
 	cmp	$t2,#0xf2			@ done?
 #endif
 #if $i<15
-# if __ARM_ARCH__>=7
+# if __ARM_ARCH>=7
 	ldr	$t1,[$inp],#4			@ prefetch
 # else
 	ldrb	$t1,[$inp,#3]
@@ -176,10 +179,8 @@ ___
 }
 
 $code=<<___;
-#ifndef __KERNEL__
-# include <openssl/arm_arch.h>
-#else
-# define __ARM_ARCH__ __LINUX_ARM_ARCH__
+#ifdef __KERNEL__
+# define __ARM_ARCH __LINUX_ARM_ARCH__
 # define __ARM_MAX_ARCH__ 7
 #endif
 
@@ -217,39 +218,18 @@ K256:
 .word	0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2
 .size	K256,.-K256
 .word	0				@ terminator
-#if __ARM_MAX_ARCH__>=7 && !defined(__KERNEL__)
-.LOPENSSL_armcap:
-.word	OPENSSL_armcap_P-.Lsha256_block_data_order
-#endif
 .align	5
 
-.global	sha256_block_data_order
-.type	sha256_block_data_order,%function
-sha256_block_data_order:
-.Lsha256_block_data_order:
-#if __ARM_ARCH__<7 && !defined(__thumb2__)
-	sub	r3,pc,#8		@ sha256_block_data_order
-#else
-	adr	r3,.Lsha256_block_data_order
-#endif
-#if __ARM_MAX_ARCH__>=7 && !defined(__KERNEL__)
-	ldr	r12,.LOPENSSL_armcap
-	ldr	r12,[r3,r12]		@ OPENSSL_armcap_P
-#ifdef	__APPLE__
-	ldr	r12,[r12]
-#endif
-	tst	r12,#ARMV8_SHA256
-	bne	.LARMv8
-	tst	r12,#ARMV7_NEON
-	bne	.LNEON
-#endif
+.global	sha256_block_data_order_nohw
+.type	sha256_block_data_order_nohw,%function
+sha256_block_data_order_nohw:
 	add	$len,$inp,$len,lsl#6	@ len to point at the end of inp
 	stmdb	sp!,{$ctx,$inp,$len,r4-r11,lr}
 	ldmia	$ctx,{$A,$B,$C,$D,$E,$F,$G,$H}
-	sub	$Ktbl,r3,#256+32	@ K256
+	adr	$Ktbl,K256
 	sub	sp,sp,#16*4		@ alloca(X[16])
 .Loop:
-# if __ARM_ARCH__>=7
+# if __ARM_ARCH>=7
 	ldr	$t1,[$inp],#4
 # else
 	ldrb	$t1,[$inp,#3]
@@ -261,7 +241,7 @@ for($i=0;$i<16;$i++)	{ &BODY_00_15($i,@V); unshift(@V,pop(@V)); }
 $code.=".Lrounds_16_xx:\n";
 for (;$i<32;$i++)	{ &BODY_16_XX($i,@V); unshift(@V,pop(@V)); }
 $code.=<<___;
-#if __ARM_ARCH__>=7
+#if __ARM_ARCH>=7
 	ite	eq			@ Thumb2 thing, sanity check in ARM
 #endif
 	ldreq	$t3,[sp,#16*4]		@ pull ctx
@@ -292,7 +272,7 @@ $code.=<<___;
 	bne	.Loop
 
 	add	sp,sp,#`16+3`*4	@ destroy frame
-#if __ARM_ARCH__>=5
+#if __ARM_ARCH>=5
 	ldmia	sp!,{r4-r11,pc}
 #else
 	ldmia	sp!,{r4-r11,lr}
@@ -300,7 +280,7 @@ $code.=<<___;
 	moveq	pc,lr			@ be binary compatible with V4, yet
 	bx	lr			@ interoperable with Thumb ISA:-)
 #endif
-.size	sha256_block_data_order,.-sha256_block_data_order
+.size	sha256_block_data_order_nohw,.-sha256_block_data_order_nohw
 ___
 ######################################################################
 # NEON stuff
@@ -480,16 +460,37 @@ $code.=<<___;
 .arch	armv7-a
 .fpu	neon
 
+.LK256_shortcut_neon:
+@ PC is 8 bytes ahead in Arm mode and 4 bytes ahead in Thumb mode.
+#if defined(__thumb2__)
+.word	K256-(.LK256_add_neon+4)
+#else
+.word	K256-(.LK256_add_neon+8)
+#endif
+
 .global	sha256_block_data_order_neon
 .type	sha256_block_data_order_neon,%function
 .align	5
 .skip	16
 sha256_block_data_order_neon:
-.LNEON:
 	stmdb	sp!,{r4-r12,lr}
 
 	sub	$H,sp,#16*4+16
-	adr	$Ktbl,K256
+
+	@ K256 is just at the boundary of being easily referenced by an ADR from
+	@ this function. In Arm mode, when building with __ARM_ARCH=6, it does
+	@ not fit. By moving code around, we could make it fit, but this is too
+	@ fragile. For simplicity, just load the offset from
+	@ .LK256_shortcut_neon.
+	@
+	@ TODO(davidben): adrl would avoid a load, but clang-assembler does not
+	@ support it. We might be able to emulate it with a macro, but Android's
+	@ did not work when I tried it.
+	@ https://android.googlesource.com/platform/ndk/+/refs/heads/main/docs/ClangMigration.md#arm
+	ldr	$Ktbl,.LK256_shortcut_neon
+.LK256_add_neon:
+	add	$Ktbl,pc,$Ktbl
+
 	bic	$H,$H,#15		@ align for 128-bit stores
 	mov	$t2,sp
 	mov	sp,$H			@ alloca
@@ -615,12 +616,26 @@ $code.=<<___;
 #  define INST(a,b,c,d)	.byte	a,b,c,d
 # endif
 
-.type	sha256_block_data_order_armv8,%function
+.LK256_shortcut_hw:
+@ PC is 8 bytes ahead in Arm mode and 4 bytes ahead in Thumb mode.
+#if defined(__thumb2__)
+.word	K256-(.LK256_add_hw+4)
+#else
+.word	K256-(.LK256_add_hw+8)
+#endif
+
+.global	sha256_block_data_order_hw
+.type	sha256_block_data_order_hw,%function
 .align	5
-sha256_block_data_order_armv8:
-.LARMv8:
+sha256_block_data_order_hw:
+	@ K256 is too far to reference from one ADR command in Thumb mode. In
+	@ Arm mode, we could make it fit by aligning the ADR offset to a 64-byte
+	@ boundary. For simplicity, just load the offset from .LK256_shortcut_hw.
+	ldr	$Ktbl,.LK256_shortcut_hw
+.LK256_add_hw:
+	add	$Ktbl,pc,$Ktbl
+
 	vld1.32	{$ABCD,$EFGH},[$ctx]
-	sub	$Ktbl,$Ktbl,#256+32
 	add	$len,$inp,$len,lsl#6	@ len to point at the end of inp
 	b	.Loop_v8
 
@@ -682,17 +697,13 @@ $code.=<<___;
 	vst1.32		{$ABCD,$EFGH},[$ctx]
 
 	ret		@ bx lr
-.size	sha256_block_data_order_armv8,.-sha256_block_data_order_armv8
+.size	sha256_block_data_order_hw,.-sha256_block_data_order_hw
 #endif
 ___
 }}}
 $code.=<<___;
 .asciz  "SHA256 block transform for ARMv4/NEON/ARMv8, CRYPTOGAMS by <appro\@openssl.org>"
 .align	2
-#if __ARM_MAX_ARCH__>=7 && !defined(__KERNEL__)
-.comm   OPENSSL_armcap_P,4,4
-.hidden OPENSSL_armcap_P
-#endif
 ___
 
 open SELF,$0;
@@ -737,4 +748,4 @@ foreach (split($/,$code)) {
 	print $_,"\n";
 }
 
-close STDOUT or die "error closing STDOUT"; # enforce flush
+close STDOUT or die "error closing STDOUT: $!"; # enforce flush

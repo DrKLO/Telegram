@@ -26,8 +26,8 @@
 #include "modules/remote_bitrate_estimator/packet_arrival_map.h"
 #include "modules/rtp_rtcp/source/rtcp_packet.h"
 #include "modules/rtp_rtcp/source/rtcp_packet/transport_feedback.h"
-#include "rtc_base/experiments/field_trial_parser.h"
-#include "rtc_base/numerics/sequence_number_util.h"
+#include "modules/rtp_rtcp/source/rtp_packet_received.h"
+#include "rtc_base/numerics/sequence_number_unwrapper.h"
 #include "rtc_base/synchronization/mutex.h"
 
 namespace webrtc {
@@ -42,49 +42,19 @@ class RemoteEstimatorProxy {
   using TransportFeedbackSender = std::function<void(
       std::vector<std::unique_ptr<rtcp::RtcpPacket>> packets)>;
   RemoteEstimatorProxy(TransportFeedbackSender feedback_sender,
-                       const FieldTrialsView* key_value_config,
                        NetworkStateEstimator* network_state_estimator);
   ~RemoteEstimatorProxy();
 
-  struct Packet {
-    Timestamp arrival_time;
-    DataSize size;
-    uint32_t ssrc;
-    absl::optional<uint32_t> absolute_send_time_24bits;
-    absl::optional<uint16_t> transport_sequence_number;
-    absl::optional<FeedbackRequest> feedback_request;
-  };
-  void IncomingPacket(Packet packet);
-
-  void IncomingPacket(int64_t arrival_time_ms,
-                      size_t payload_size,
-                      const RTPHeader& header);
+  void IncomingPacket(const RtpPacketReceived& packet);
 
   // Sends periodic feedback if it is time to send it.
   // Returns time until next call to Process should be made.
   TimeDelta Process(Timestamp now);
 
   void OnBitrateChanged(int bitrate);
-  void SetSendPeriodicFeedback(bool send_periodic_feedback);
   void SetTransportOverhead(DataSize overhead_per_packet);
 
  private:
-  struct TransportWideFeedbackConfig {
-    FieldTrialParameter<TimeDelta> back_window{"wind", TimeDelta::Millis(500)};
-    FieldTrialParameter<TimeDelta> min_interval{"min", TimeDelta::Millis(50)};
-    FieldTrialParameter<TimeDelta> max_interval{"max", TimeDelta::Millis(250)};
-    FieldTrialParameter<TimeDelta> default_interval{"def",
-                                                    TimeDelta::Millis(100)};
-    FieldTrialParameter<double> bandwidth_fraction{"frac", 0.05};
-    explicit TransportWideFeedbackConfig(
-        const FieldTrialsView* key_value_config) {
-      ParseFieldTrial({&back_window, &min_interval, &max_interval,
-                       &default_interval, &bandwidth_fraction},
-                      key_value_config->Lookup(
-                          "WebRTC-Bwe-TransportWideFeedbackIntervals"));
-    }
-  };
-
   void MaybeCullOldPackets(int64_t sequence_number, Timestamp arrival_time)
       RTC_EXCLUSIVE_LOCKS_REQUIRED(&lock_);
   void SendPeriodicFeedbacks() RTC_EXCLUSIVE_LOCKS_REQUIRED(&lock_);
@@ -111,7 +81,6 @@ class RemoteEstimatorProxy {
       bool is_periodic_update) RTC_EXCLUSIVE_LOCKS_REQUIRED(&lock_);
 
   const TransportFeedbackSender feedback_sender_;
-  const TransportWideFeedbackConfig send_config_;
   Timestamp last_process_time_;
 
   Mutex lock_;
@@ -136,6 +105,7 @@ class RemoteEstimatorProxy {
   // Unwraps absolute send times.
   uint32_t previous_abs_send_time_ RTC_GUARDED_BY(&lock_);
   Timestamp abs_send_timestamp_ RTC_GUARDED_BY(&lock_);
+  Timestamp last_arrival_time_with_abs_send_time_ RTC_GUARDED_BY(&lock_);
 };
 
 }  // namespace webrtc

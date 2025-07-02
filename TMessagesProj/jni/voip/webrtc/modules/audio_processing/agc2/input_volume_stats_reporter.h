@@ -65,6 +65,7 @@ class InputVolumeStatsReporter {
 
   // Histograms.
   struct Histograms {
+    metrics::Histogram* const on_volume_change;
     metrics::Histogram* const decrease_rate;
     metrics::Histogram* const decrease_average;
     metrics::Histogram* const increase_rate;
@@ -72,8 +73,9 @@ class InputVolumeStatsReporter {
     metrics::Histogram* const update_rate;
     metrics::Histogram* const update_average;
     bool AllPointersSet() const {
-      return !!decrease_rate && !!decrease_average && !!increase_rate &&
-             !!increase_average && !!update_rate && !!update_average;
+      return !!on_volume_change && !!decrease_rate && !!decrease_average &&
+             !!increase_rate && !!increase_average && !!update_rate &&
+             !!update_average;
     }
   } histograms_;
 
@@ -83,6 +85,12 @@ class InputVolumeStatsReporter {
   int log_volume_update_stats_counter_ = 0;
   absl::optional<int> previous_input_volume_ = absl::nullopt;
 };
+
+// Updates the histogram that keeps track of recommended input volume changes
+// required in order to match the target level in the input volume adaptation
+// process.
+void UpdateHistogramOnRecommendedInputVolumeChangeToMatchTarget(int volume);
+
 }  // namespace webrtc
 
 #endif  // MODULES_AUDIO_PROCESSING_AGC2_INPUT_VOLUME_STATS_REPORTER_H_

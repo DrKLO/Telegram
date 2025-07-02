@@ -889,7 +889,7 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
     public void openStoryRecorder(long dialogId) {
         if (dialogId == 0) {
             final StoriesController.StoryLimit storyLimit = MessagesController.getInstance(currentAccount).getStoriesController().checkStoryLimit();
-            if (storyLimit != null) {
+            if (storyLimit != null && storyLimit.active(currentAccount)) {
                 fragment.showDialog(new LimitReachedBottomSheet(fragment, getContext(), storyLimit.getLimitReachedType(), currentAccount, null));
                 return;
             }
@@ -1361,7 +1361,7 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
                     for (int i = 0; i < uploadingOrEditingStories.size(); i++) {
                         uploadingProgress += uploadingOrEditingStories.get(i).progress;
                     }
-                    uploadingProgress = uploadingProgress / uploadingOrEditingStories.size();
+                    uploadingProgress = (storiesController.uploadedStories + uploadingProgress) / (storiesController.uploadedStories + uploadingOrEditingStories.size());
                     lastUploadingCloseFriends = closeFriends = uploadingOrEditingStories.get(uploadingOrEditingStories.size() - 1).isCloseFriends();
                 }
                 invalidate();

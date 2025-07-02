@@ -35,6 +35,8 @@ class AudioDecoderPcmU final : public AudioDecoder {
   std::vector<ParseResult> ParsePayload(rtc::Buffer&& payload,
                                         uint32_t timestamp) override;
   int PacketDuration(const uint8_t* encoded, size_t encoded_len) const override;
+  int PacketDurationRedundant(const uint8_t* encoded,
+                              size_t encoded_len) const override;
   int SampleRateHz() const override;
   size_t Channels() const override;
 
@@ -62,6 +64,8 @@ class AudioDecoderPcmA final : public AudioDecoder {
   std::vector<ParseResult> ParsePayload(rtc::Buffer&& payload,
                                         uint32_t timestamp) override;
   int PacketDuration(const uint8_t* encoded, size_t encoded_len) const override;
+  int PacketDurationRedundant(const uint8_t* encoded,
+                              size_t encoded_len) const override;
   int SampleRateHz() const override;
   size_t Channels() const override;
 

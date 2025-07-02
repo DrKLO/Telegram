@@ -15,7 +15,6 @@
 
 #include <deque>
 #include <memory>
-#include <utility>
 
 #include "api/field_trials_view.h"
 #include "api/network_state_predictor.h"

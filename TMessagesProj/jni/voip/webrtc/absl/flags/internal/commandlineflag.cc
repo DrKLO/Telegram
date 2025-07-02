@@ -19,7 +19,7 @@ namespace absl {
 ABSL_NAMESPACE_BEGIN
 namespace flags_internal {
 
-FlagStateInterface::~FlagStateInterface() {}
+FlagStateInterface::~FlagStateInterface() = default;
 
 }  // namespace flags_internal
 ABSL_NAMESPACE_END

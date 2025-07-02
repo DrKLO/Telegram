@@ -10,21 +10,32 @@
 
 #include "p2p/base/test_stun_server.h"
 
+#include <memory>
+
 #include "rtc_base/socket.h"
 #include "rtc_base/socket_server.h"
 
 namespace cricket {
 
-TestStunServer* TestStunServer::Create(rtc::SocketServer* ss,
-                                       const rtc::SocketAddress& addr) {
+std::unique_ptr<TestStunServer, std::function<void(TestStunServer*)>>
+TestStunServer::Create(rtc::SocketServer* ss,
+                       const rtc::SocketAddress& addr,
+                       rtc::Thread& network_thread) {
   rtc::Socket* socket = ss->CreateSocket(addr.family(), SOCK_DGRAM);
   rtc::AsyncUDPSocket* udp_socket = rtc::AsyncUDPSocket::Create(socket, addr);
-
-  return new TestStunServer(udp_socket);
+  TestStunServer* server = nullptr;
+  network_thread.BlockingCall(
+      [&]() { server = new TestStunServer(udp_socket, network_thread); });
+  std::unique_ptr<TestStunServer, std::function<void(TestStunServer*)>> result(
+      server, [&](TestStunServer* server) {
+        network_thread.BlockingCall([server]() { delete server; });
+      });
+  return result;
 }
 
 void TestStunServer::OnBindingRequest(StunMessage* msg,
                                       const rtc::SocketAddress& remote_addr) {
+  RTC_DCHECK_RUN_ON(&network_thread_);
   if (fake_stun_addr_.IsNil()) {
     StunServer::OnBindingRequest(msg, remote_addr);
   } else {

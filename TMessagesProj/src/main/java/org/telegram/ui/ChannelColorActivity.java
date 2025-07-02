@@ -1113,7 +1113,7 @@ public class ChannelColorActivity extends BaseFragment implements NotificationCe
                 headerCell.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundWhite));
                 view = headerCell;
             } else if (viewType == VIEW_TYPE_GIFT) {
-                PeerColorActivity.GiftCell giftCell = new PeerColorActivity.GiftCell(getContext(), resourceProvider);
+                PeerColorActivity.GiftCell giftCell = new PeerColorActivity.GiftCell(getContext(), false, resourceProvider);
                 view = giftCell;
             } else if (viewType == VIEW_TYPE_GIFT_FLICKER) {
                 FlickerLoadingView flickerLoadingView = new FlickerLoadingView(getContext(), resourceProvider);

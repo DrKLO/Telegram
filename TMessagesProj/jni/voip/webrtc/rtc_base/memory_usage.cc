@@ -22,6 +22,9 @@
 #include <windows.h>
 #include <psapi.h>  // must come after windows.h
 // clang-format on
+#elif defined(WEBRTC_FUCHSIA)
+#include <lib/zx/process.h>
+#include <zircon/status.h>
 #endif
 
 #include "rtc_base/logging.h"
@@ -61,8 +64,16 @@ int64_t GetProcessResidentSizeBytes() {
   }
   return pmc.WorkingSetSize;
 #elif defined(WEBRTC_FUCHSIA)
-  RTC_LOG_ERR(LS_ERROR) << "GetProcessResidentSizeBytes() not implemented";
-  return 0;
+  zx_info_task_stats_t task_stats;
+  zx_status_t status = zx::process::self()->get_info(
+      ZX_INFO_TASK_STATS, &task_stats, sizeof(task_stats), nullptr, nullptr);
+  if (status == ZX_OK) {
+    return task_stats.mem_mapped_bytes;
+  } else {
+    RTC_LOG_ERR(LS_ERROR) << "get_info() failed: "
+                          << zx_status_get_string(status);
+    return -1;
+  }
 #else
   // Not implemented yet.
   static_assert(false,

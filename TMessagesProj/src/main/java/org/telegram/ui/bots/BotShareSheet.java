@@ -5,21 +5,10 @@ import static org.telegram.messenger.AndroidUtilities.dp;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.os.Bundle;
-import android.provider.MediaStore;
 import android.text.TextUtils;
 import android.view.Gravity;
-import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
-
-import androidx.annotation.NonNull;
-import androidx.recyclerview.widget.ChatListItemAnimator;
-import androidx.recyclerview.widget.GridLayoutManager;
-import androidx.recyclerview.widget.GridLayoutManagerFixed;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
-
-import com.google.android.exoplayer2.source.dash.DashChunkSource;
 
 import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
@@ -28,7 +17,6 @@ import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageLoader;
 import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.MessagesStorage;
@@ -44,7 +32,6 @@ import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.ChatActionCell;
 import org.telegram.ui.Cells.ChatMessageCell;
-import org.telegram.ui.ChatActivity;
 import org.telegram.ui.Components.BottomSheetWithRecyclerListView;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RecyclerListView;
@@ -105,7 +92,7 @@ public class BotShareSheet extends BottomSheetWithRecyclerListView {
                             finalFile[0] = f;
                             progressDialog.dismiss();
                             open.run();
-                        });
+                        }, null);
                         fileLoader.setDestFile(file);
                         fileLoader.setMaxSize(8 * 1024 * 1024);
                         fileLoader.execute(url);
@@ -162,7 +149,7 @@ public class BotShareSheet extends BottomSheetWithRecyclerListView {
                 return false;
             }
         });
-        messageCell.setMessageObject(messageObject, null, false, false);
+        messageCell.setMessageObject(messageObject, null, false, false, false);
 
         chatListView = new LinearLayout(context);
         chatListView.setOrientation(LinearLayout.VERTICAL);
@@ -263,7 +250,7 @@ public class BotShareSheet extends BottomSheetWithRecyclerListView {
                     params.put("query_id", "" + message.query_id);
                     params.put("id", "" + message.result.id);
                     params.put("bot", "" + botId);
-                    SendMessagesHelper.prepareSendingBotContextResult(lastFragment, AccountInstance.getInstance(currentAccount), message.result, params, dialogId, replyToMsg, replyToMsg, null, null, notify, scheduleDate, null, 0);
+                    SendMessagesHelper.prepareSendingBotContextResult(lastFragment, AccountInstance.getInstance(currentAccount), message.result, params, dialogId, replyToMsg, replyToMsg, null, null, notify, scheduleDate, null, 0, 0);
                     if (_message != null) {
                         SendMessagesHelper.getInstance(currentAccount).sendMessage(SendMessagesHelper.SendMessageParams.of(_message.toString(), dialogId, replyToMsg, replyToMsg, null, true, null, null, null, true, 0, null, false));
                     }

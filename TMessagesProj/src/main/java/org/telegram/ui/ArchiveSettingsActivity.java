@@ -39,7 +39,7 @@ public class ArchiveSettingsActivity extends BaseFragment implements Notificatio
     private ListAdapter adapter;
 
     private boolean changed = false;
-    private TLRPC.TL_globalPrivacySettings settings;
+    private TLRPC.GlobalPrivacySettings settings;
     
     private int shiftDp = -3;
 

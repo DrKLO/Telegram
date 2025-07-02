@@ -95,6 +95,18 @@
         <item name="android:colorControlActivated">#808080</item>
     </style>
 
+    <style name="Theme.CastDialog" parent="Theme.TMessages.Dark.Dialog.Alert">
+        <item name="android:textColor">#FFFFFF</item>
+        <item name="colorPrimary">#222222</item>
+        <item name="android:colorBackground">#222222</item>
+        <item name="android:windowBackground">#222222</item>
+        <item name="android:panelBackground">#222222</item>
+        <item name="colorAccent">#4991cc</item>
+        <item name="android:textColorPrimary">#FFFFFF</item>
+        <item name="android:backgroundDimAmount">0.5</item>
+        <item name="dialogCornerRadius">16dp</item>
+    </style>
+
     <style name="Theme.TMessages.Dark.Dialog.Alert" parent="android:style/Theme.Material.Dialog.Alert">
         <item name="android:colorAccent">#4991cc</item>
         <item name="android:colorPrimary">#527da3</item>

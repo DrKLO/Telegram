@@ -17,6 +17,7 @@
 #include "api/video_codecs/bitstream_parser.h"
 #include "common_video/h265/h265_pps_parser.h"
 #include "common_video/h265/h265_sps_parser.h"
+#include "common_video/h265/h265_vps_parser.h"
 
 namespace webrtc {
 

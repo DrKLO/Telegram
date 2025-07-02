@@ -143,7 +143,7 @@ constexpr size_t kNumFlags = 0 REPLICATE(COUNT, _, _);
 #pragma clang section data = ".benchmark_flags"
 #endif
 #define DEFINE_FLAG(T, name, index) ABSL_FLAG(T, name##_##index, {}, "");
-#define FLAG_DEF(T) REPLICATE(DEFINE_FLAG, T, T##_flag);
+#define FLAG_DEF(T) REPLICATE(DEFINE_FLAG, T, T##_flag)
 BENCHMARKED_TYPES(FLAG_DEF)
 #if defined(__clang__) && defined(__linux__)
 #pragma clang section data = ""
@@ -241,10 +241,11 @@ BENCHMARK(BM_ThreadedFindCommandLineFlag)->ThreadRange(1, 16);
 
 }  // namespace
 
+#ifdef __llvm__
+// To view disassembly use: gdb ${BINARY}  -batch -ex "disassemble /s $FUNC"
 #define InvokeGetFlag(T)                                             \
   T AbslInvokeGetFlag##T() { return absl::GetFlag(SINGLE_FLAG(T)); } \
   int odr##T = (benchmark::DoNotOptimize(AbslInvokeGetFlag##T), 1);
 
 BENCHMARKED_TYPES(InvokeGetFlag)
-
-// To veiw disassembly use: gdb ${BINARY}  -batch -ex "disassemble /s $FUNC"
+#endif  // __llvm__

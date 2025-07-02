@@ -18,6 +18,9 @@
 
 namespace webrtc {
 
+using testing::_;
+using testing::Invoke;
+
 class MockDecodedImageCallback : public DecodedImageCallback {
  public:
   MOCK_METHOD(int32_t,
@@ -43,6 +46,14 @@ class MockVideoDecoder : public VideoDecoder {
     // Make `Configure` succeed by default, so that individual tests that
     // verify other methods wouldn't need to stub `Configure`.
     ON_CALL(*this, Configure).WillByDefault(testing::Return(true));
+
+    // TODO(bugs.webrtc.org/15444): Remove once all tests have been migrated to
+    // expecting calls Decode without a missing_frames param.
+    ON_CALL(*this, Decode(_, _))
+        .WillByDefault(Invoke([this](const EncodedImage& input_image,
+                                     int64_t render_time_ms) {
+          return Decode(input_image, /*missing_frames=*/false, render_time_ms);
+        }));
   }
 
   ~MockVideoDecoder() override { Destruct(); }
@@ -51,9 +62,13 @@ class MockVideoDecoder : public VideoDecoder {
   MOCK_METHOD(int32_t,
               Decode,
               (const EncodedImage& input_image,
-               bool missing_frames,
                int64_t render_time_ms),
               (override));
+  MOCK_METHOD(int32_t,
+              Decode,
+              (const EncodedImage& input_image,
+               bool missing_frames,
+               int64_t render_time_ms));
   MOCK_METHOD(int32_t,
               RegisterDecodeCompleteCallback,
               (DecodedImageCallback * callback),

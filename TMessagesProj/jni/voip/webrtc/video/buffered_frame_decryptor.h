@@ -17,7 +17,7 @@
 #include "api/crypto/crypto_options.h"
 #include "api/crypto/frame_decryptor_interface.h"
 #include "api/field_trials_view.h"
-#include "modules/video_coding/frame_object.h"
+#include "modules/rtp_rtcp/source/frame_object.h"
 
 namespace webrtc {
 

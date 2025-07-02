@@ -36,9 +36,8 @@ static jlong JNI_CallSessionFileRotatingLogSink_AddSink(
   return jlongFromPointer(sink);
 }
 
-static void JNI_CallSessionFileRotatingLogSink_DeleteSink(
-    JNIEnv* jni,
-    jlong j_sink) {
+static void JNI_CallSessionFileRotatingLogSink_DeleteSink(JNIEnv* jni,
+                                                          jlong j_sink) {
   rtc::CallSessionFileRotatingLogSink* sink =
       reinterpret_cast<rtc::CallSessionFileRotatingLogSink*>(j_sink);
   rtc::LogMessage::RemoveLogToStream(sink);

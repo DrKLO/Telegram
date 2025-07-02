@@ -30,14 +30,14 @@ struct AlrExperimentSettings {
   // reserved value to indicate absence of experiment.
   int group_id;
 
-  static const char kScreenshareProbingBweExperimentName[];
-  static const char kStrictPacingAndProbingExperimentName[];
-  static absl::optional<AlrExperimentSettings> CreateFromFieldTrial(
-      absl::string_view experiment_name);
+  static constexpr absl::string_view kScreenshareProbingBweExperimentName =
+      "WebRTC-ProbingScreenshareBwe";
+  static constexpr absl::string_view kStrictPacingAndProbingExperimentName =
+      "WebRTC-StrictPacingAndProbing";
+
   static absl::optional<AlrExperimentSettings> CreateFromFieldTrial(
       const FieldTrialsView& key_value_config,
       absl::string_view experiment_name);
-  static bool MaxOneFieldTrialEnabled();
   static bool MaxOneFieldTrialEnabled(const FieldTrialsView& key_value_config);
 
  private:

@@ -8,11 +8,10 @@
  *  be found in the AUTHORS file in the root of the source tree.
  */
 
-#include "modules/audio_processing/agc2/rnn_vad/vector_math.h"
-
 #include <immintrin.h>
 
 #include "api/array_view.h"
+#include "modules/audio_processing/agc2/rnn_vad/vector_math.h"
 #include "rtc_base/checks.h"
 #include "rtc_base/numerics/safe_conversions.h"
 

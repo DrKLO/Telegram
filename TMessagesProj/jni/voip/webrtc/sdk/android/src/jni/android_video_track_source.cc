@@ -58,15 +58,12 @@ absl::optional<bool> AndroidVideoTrackSource::needs_denoising() const {
   return false;
 }
 
-void AndroidVideoTrackSource::SetState(JNIEnv* env,
-                                       jboolean j_is_live) {
+void AndroidVideoTrackSource::SetState(JNIEnv* env, jboolean j_is_live) {
   const SourceState state = j_is_live ? kLive : kEnded;
   if (state_.exchange(state) != state) {
     if (rtc::Thread::Current() == signaling_thread_) {
       FireOnChanged();
     } else {
-      // TODO(sakal): Is this even necessary, does FireOnChanged have to be
-      // called from signaling thread?
       signaling_thread_->PostTask([this] { FireOnChanged(); });
     }
   }

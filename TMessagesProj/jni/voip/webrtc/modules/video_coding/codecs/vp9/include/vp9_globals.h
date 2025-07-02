@@ -100,6 +100,28 @@ struct GofInfoVP9 {
     }
   }
 
+  friend bool operator==(const GofInfoVP9& lhs, const GofInfoVP9& rhs) {
+    if (lhs.num_frames_in_gof != rhs.num_frames_in_gof ||
+        lhs.pid_start != rhs.pid_start)
+      return false;
+    for (size_t i = 0; i < lhs.num_frames_in_gof; ++i) {
+      if (lhs.temporal_idx[i] != rhs.temporal_idx[i] ||
+          lhs.temporal_up_switch[i] != rhs.temporal_up_switch[i] ||
+          lhs.num_ref_pics[i] != rhs.num_ref_pics[i]) {
+        return false;
+      }
+      for (uint8_t r = 0; r < lhs.num_ref_pics[i]; ++r) {
+        if (lhs.pid_diff[i][r] != rhs.pid_diff[i][r])
+          return false;
+      }
+    }
+    return true;
+  }
+
+  friend bool operator!=(const GofInfoVP9& lhs, const GofInfoVP9& rhs) {
+    return !(lhs == rhs);
+  }
+
   size_t num_frames_in_gof;
   uint8_t temporal_idx[kMaxVp9FramesInGof];
   bool temporal_up_switch[kMaxVp9FramesInGof];
@@ -128,6 +150,55 @@ struct RTPVideoHeaderVP9 {
     num_spatial_layers = 1;
     first_active_layer = 0;
     end_of_picture = true;
+  }
+
+  friend bool operator==(const RTPVideoHeaderVP9& lhs,
+                         const RTPVideoHeaderVP9& rhs) {
+    if (lhs.inter_pic_predicted != rhs.inter_pic_predicted ||
+        lhs.flexible_mode != rhs.flexible_mode ||
+        lhs.beginning_of_frame != rhs.beginning_of_frame ||
+        lhs.end_of_frame != rhs.end_of_frame ||
+        lhs.ss_data_available != rhs.ss_data_available ||
+        lhs.non_ref_for_inter_layer_pred != rhs.non_ref_for_inter_layer_pred ||
+        lhs.picture_id != rhs.picture_id ||
+        lhs.max_picture_id != rhs.max_picture_id ||
+        lhs.tl0_pic_idx != rhs.tl0_pic_idx ||
+        lhs.temporal_idx != rhs.temporal_idx ||
+        lhs.spatial_idx != rhs.spatial_idx || lhs.gof_idx != rhs.gof_idx ||
+        lhs.temporal_up_switch != rhs.temporal_up_switch ||
+        lhs.inter_layer_predicted != rhs.inter_layer_predicted ||
+        lhs.num_ref_pics != rhs.num_ref_pics ||
+        lhs.end_of_picture != rhs.end_of_picture) {
+      return false;
+    }
+    for (uint8_t i = 0; i < lhs.num_ref_pics; ++i) {
+      if (lhs.pid_diff[i] != rhs.pid_diff[i] ||
+          lhs.ref_picture_id[i] != rhs.ref_picture_id[i]) {
+        return false;
+      }
+    }
+    if (lhs.ss_data_available) {
+      if (lhs.spatial_layer_resolution_present !=
+              rhs.spatial_layer_resolution_present ||
+          lhs.num_spatial_layers != rhs.num_spatial_layers ||
+          lhs.first_active_layer != rhs.first_active_layer ||
+          lhs.gof != rhs.gof) {
+        return false;
+      }
+      if (lhs.spatial_layer_resolution_present) {
+        for (size_t i = 0; i < lhs.num_spatial_layers; i++) {
+          if (lhs.width[i] != rhs.width[i] || lhs.height[i] != rhs.height[i]) {
+            return false;
+          }
+        }
+      }
+    }
+    return true;
+  }
+
+  friend bool operator!=(const RTPVideoHeaderVP9& lhs,
+                         const RTPVideoHeaderVP9& rhs) {
+    return !(lhs == rhs);
   }
 
   bool inter_pic_predicted;  // This layer frame is dependent on previously

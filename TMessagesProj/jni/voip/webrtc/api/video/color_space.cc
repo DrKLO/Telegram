@@ -10,6 +10,8 @@
 
 #include "api/video/color_space.h"
 
+#include "rtc_base/strings/string_builder.h"
+
 namespace webrtc {
 namespace {
 // Try to convert `enum_value` into the enum class T. `enum_bitmask` is created
@@ -123,6 +125,80 @@ ColorSpace::ChromaSiting ColorSpace::chroma_siting_vertical() const {
 const HdrMetadata* ColorSpace::hdr_metadata() const {
   return hdr_metadata_ ? &*hdr_metadata_ : nullptr;
 }
+
+#define PRINT_ENUM_CASE(TYPE, NAME) \
+  case TYPE::NAME:                  \
+    ss << #NAME;                    \
+    break;
+
+std::string ColorSpace::AsString() const {
+  char buf[1024];
+  rtc::SimpleStringBuilder ss(buf);
+  ss << "{primaries:";
+  switch (primaries_) {
+    PRINT_ENUM_CASE(PrimaryID, kBT709)
+    PRINT_ENUM_CASE(PrimaryID, kUnspecified)
+    PRINT_ENUM_CASE(PrimaryID, kBT470M)
+    PRINT_ENUM_CASE(PrimaryID, kBT470BG)
+    PRINT_ENUM_CASE(PrimaryID, kSMPTE170M)
+    PRINT_ENUM_CASE(PrimaryID, kSMPTE240M)
+    PRINT_ENUM_CASE(PrimaryID, kFILM)
+    PRINT_ENUM_CASE(PrimaryID, kBT2020)
+    PRINT_ENUM_CASE(PrimaryID, kSMPTEST428)
+    PRINT_ENUM_CASE(PrimaryID, kSMPTEST431)
+    PRINT_ENUM_CASE(PrimaryID, kSMPTEST432)
+    PRINT_ENUM_CASE(PrimaryID, kJEDECP22)
+  }
+  ss << ", transfer:";
+  switch (transfer_) {
+    PRINT_ENUM_CASE(TransferID, kBT709)
+    PRINT_ENUM_CASE(TransferID, kUnspecified)
+    PRINT_ENUM_CASE(TransferID, kGAMMA22)
+    PRINT_ENUM_CASE(TransferID, kGAMMA28)
+    PRINT_ENUM_CASE(TransferID, kSMPTE170M)
+    PRINT_ENUM_CASE(TransferID, kSMPTE240M)
+    PRINT_ENUM_CASE(TransferID, kLINEAR)
+    PRINT_ENUM_CASE(TransferID, kLOG)
+    PRINT_ENUM_CASE(TransferID, kLOG_SQRT)
+    PRINT_ENUM_CASE(TransferID, kIEC61966_2_4)
+    PRINT_ENUM_CASE(TransferID, kBT1361_ECG)
+    PRINT_ENUM_CASE(TransferID, kIEC61966_2_1)
+    PRINT_ENUM_CASE(TransferID, kBT2020_10)
+    PRINT_ENUM_CASE(TransferID, kBT2020_12)
+    PRINT_ENUM_CASE(TransferID, kSMPTEST2084)
+    PRINT_ENUM_CASE(TransferID, kSMPTEST428)
+    PRINT_ENUM_CASE(TransferID, kARIB_STD_B67)
+  }
+  ss << ", matrix:";
+  switch (matrix_) {
+    PRINT_ENUM_CASE(MatrixID, kRGB)
+    PRINT_ENUM_CASE(MatrixID, kBT709)
+    PRINT_ENUM_CASE(MatrixID, kUnspecified)
+    PRINT_ENUM_CASE(MatrixID, kFCC)
+    PRINT_ENUM_CASE(MatrixID, kBT470BG)
+    PRINT_ENUM_CASE(MatrixID, kSMPTE170M)
+    PRINT_ENUM_CASE(MatrixID, kSMPTE240M)
+    PRINT_ENUM_CASE(MatrixID, kYCOCG)
+    PRINT_ENUM_CASE(MatrixID, kBT2020_NCL)
+    PRINT_ENUM_CASE(MatrixID, kBT2020_CL)
+    PRINT_ENUM_CASE(MatrixID, kSMPTE2085)
+    PRINT_ENUM_CASE(MatrixID, kCDNCLS)
+    PRINT_ENUM_CASE(MatrixID, kCDCLS)
+    PRINT_ENUM_CASE(MatrixID, kBT2100_ICTCP)
+  }
+
+  ss << ", range:";
+  switch (range_) {
+    PRINT_ENUM_CASE(RangeID, kInvalid)
+    PRINT_ENUM_CASE(RangeID, kLimited)
+    PRINT_ENUM_CASE(RangeID, kFull)
+    PRINT_ENUM_CASE(RangeID, kDerived)
+  }
+  ss << "}";
+  return ss.str();
+}
+
+#undef PRINT_ENUM_CASE
 
 bool ColorSpace::set_primaries_from_uint8(uint8_t enum_value) {
   constexpr PrimaryID kPrimaryIds[] = {

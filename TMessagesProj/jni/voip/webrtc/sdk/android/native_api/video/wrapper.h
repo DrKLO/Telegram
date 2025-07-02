@@ -12,6 +12,7 @@
 #define SDK_ANDROID_NATIVE_API_VIDEO_WRAPPER_H_
 
 #include <jni.h>
+
 #include <memory>
 
 #include "api/media_stream_interface.h"

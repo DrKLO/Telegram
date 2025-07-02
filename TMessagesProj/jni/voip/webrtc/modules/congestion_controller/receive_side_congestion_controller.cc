@@ -10,6 +10,7 @@
 
 #include "modules/congestion_controller/include/receive_side_congestion_controller.h"
 
+#include "api/media_types.h"
 #include "api/units/data_rate.h"
 #include "modules/pacing/packet_router.h"
 #include "modules/remote_bitrate_estimator/include/bwe_defines.h"
@@ -39,15 +40,16 @@ DataRate ReceiveSideCongestionController::LatestReceiveSideEstimate() const {
   return rbe_->LatestEstimate();
 }
 
-void ReceiveSideCongestionController::PickEstimatorFromHeader(
-    const RTPHeader& header) {
-  if (header.extension.hasAbsoluteSendTime) {
+void ReceiveSideCongestionController::PickEstimator(
+    bool has_absolute_send_time) {
+  if (has_absolute_send_time) {
     // If we see AST in header, switch RBE strategy immediately.
     if (!using_absolute_send_time_) {
       RTC_LOG(LS_INFO)
           << "WrappingBitrateEstimator: Switching to absolute send time RBE.";
       using_absolute_send_time_ = true;
-      PickEstimator();
+      rbe_ = std::make_unique<RemoteBitrateEstimatorAbsSendTime>(
+          &remb_throttler_, &clock_);
     }
     packets_since_absolute_send_time_ = 0;
   } else {
@@ -59,20 +61,10 @@ void ReceiveSideCongestionController::PickEstimatorFromHeader(
             << "WrappingBitrateEstimator: Switching to transmission "
                "time offset RBE.";
         using_absolute_send_time_ = false;
-        PickEstimator();
+        rbe_ = std::make_unique<RemoteBitrateEstimatorSingleStream>(
+            &remb_throttler_, &clock_);
       }
     }
-  }
-}
-
-// Instantiate RBE for Time Offset or Absolute Send Time extensions.
-void ReceiveSideCongestionController::PickEstimator() {
-  if (using_absolute_send_time_) {
-    rbe_ = std::make_unique<RemoteBitrateEstimatorAbsSendTime>(&remb_throttler_,
-                                                               &clock_);
-  } else {
-    rbe_ = std::make_unique<RemoteBitrateEstimatorSingleStream>(
-        &remb_throttler_, &clock_);
   }
 }
 
@@ -84,28 +76,31 @@ ReceiveSideCongestionController::ReceiveSideCongestionController(
     : clock_(*clock),
       remb_throttler_(std::move(remb_sender), clock),
       remote_estimator_proxy_(std::move(feedback_sender),
-                              &field_trial_config_,
                               network_state_estimator),
       rbe_(new RemoteBitrateEstimatorSingleStream(&remb_throttler_, clock)),
       using_absolute_send_time_(false),
       packets_since_absolute_send_time_(0) {}
 
 void ReceiveSideCongestionController::OnReceivedPacket(
-    int64_t arrival_time_ms,
-    size_t payload_size,
-    const RTPHeader& header) {
-  remote_estimator_proxy_.IncomingPacket(arrival_time_ms, payload_size, header);
-  if (!header.extension.hasTransportSequenceNumber) {
+    const RtpPacketReceived& packet,
+    MediaType media_type) {
+  bool has_transport_sequence_number =
+      packet.HasExtension<TransportSequenceNumber>() ||
+      packet.HasExtension<TransportSequenceNumberV2>();
+  if (media_type == MediaType::AUDIO && !has_transport_sequence_number) {
+    // For audio, we only support send side BWE.
+    return;
+  }
+
+  if (has_transport_sequence_number) {
+    // Send-side BWE.
+    remote_estimator_proxy_.IncomingPacket(packet);
+  } else {
     // Receive-side BWE.
     MutexLock lock(&mutex_);
-    PickEstimatorFromHeader(header);
-    rbe_->IncomingPacket(arrival_time_ms, payload_size, header);
+    PickEstimator(packet.HasExtension<AbsoluteSendTime>());
+    rbe_->IncomingPacket(packet);
   }
-}
-
-void ReceiveSideCongestionController::SetSendPeriodicFeedback(
-    bool send_periodic_feedback) {
-  remote_estimator_proxy_.SetSendPeriodicFeedback(send_periodic_feedback);
 }
 
 void ReceiveSideCongestionController::OnBitrateChanged(int bitrate_bps) {

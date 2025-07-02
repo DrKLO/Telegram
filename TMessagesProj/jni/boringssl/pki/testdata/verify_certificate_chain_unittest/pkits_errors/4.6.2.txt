@@ -1,0 +1,3 @@
+----- Certificate i=1 (CN=basicConstraints Critical cA False CA,O=Test Certificates 2011,C=US) -----
+ERROR: Basic Constraints indicates not a CA
+

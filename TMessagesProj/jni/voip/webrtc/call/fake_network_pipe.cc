@@ -18,6 +18,8 @@
 #include <vector>
 
 #include "api/media_types.h"
+#include "api/units/timestamp.h"
+#include "modules/rtp_rtcp/source/rtp_packet_received.h"
 #include "rtc_base/checks.h"
 #include "rtc_base/logging.h"
 #include "system_wrappers/include/clock.h"
@@ -45,6 +47,19 @@ NetworkPacket::NetworkPacket(rtc::CopyOnWriteBuffer packet,
       packet_time_us_(packet_time_us),
       transport_(transport) {}
 
+NetworkPacket::NetworkPacket(RtpPacketReceived packet_received,
+                             MediaType media_type,
+                             int64_t send_time,
+                             int64_t arrival_time)
+    : packet_(packet_received.Buffer()),
+      send_time_(send_time),
+      arrival_time_(arrival_time),
+      is_rtcp_(false),
+      media_type_(media_type),
+      packet_time_us_(packet_received.arrival_time().us()),
+      packet_received_(std::move(packet_received)),
+      transport_(nullptr) {}
+
 NetworkPacket::NetworkPacket(NetworkPacket&& o)
     : packet_(std::move(o.packet_)),
       send_time_(o.send_time_),
@@ -53,6 +68,7 @@ NetworkPacket::NetworkPacket(NetworkPacket&& o)
       is_rtcp_(o.is_rtcp_),
       media_type_(o.media_type_),
       packet_time_us_(o.packet_time_us_),
+      packet_received_(std::move(o.packet_received_)),
       transport_(o.transport_) {}
 
 NetworkPacket::~NetworkPacket() = default;
@@ -65,6 +81,7 @@ NetworkPacket& NetworkPacket::operator=(NetworkPacket&& o) {
   is_rtcp_ = o.is_rtcp_;
   media_type_ = o.media_type_;
   packet_time_us_ = o.packet_time_us_;
+  packet_received_ = o.packet_received_;
   transport_ = o.transport_;
 
   return *this;
@@ -89,34 +106,13 @@ FakeNetworkPipe::FakeNetworkPipe(
     : clock_(clock),
       network_behavior_(std::move(network_behavior)),
       receiver_(receiver),
-      global_transport_(nullptr),
       clock_offset_ms_(0),
       dropped_packets_(0),
       sent_packets_(0),
       total_packet_delay_us_(0),
       last_log_time_us_(clock_->TimeInMicroseconds()) {}
 
-FakeNetworkPipe::FakeNetworkPipe(
-    Clock* clock,
-    std::unique_ptr<NetworkBehaviorInterface> network_behavior,
-    Transport* transport)
-    : clock_(clock),
-      network_behavior_(std::move(network_behavior)),
-      receiver_(nullptr),
-      global_transport_(transport),
-      clock_offset_ms_(0),
-      dropped_packets_(0),
-      sent_packets_(0),
-      total_packet_delay_us_(0),
-      last_log_time_us_(clock_->TimeInMicroseconds()) {
-  RTC_DCHECK(global_transport_);
-  AddActiveTransport(global_transport_);
-}
-
 FakeNetworkPipe::~FakeNetworkPipe() {
-  if (global_transport_) {
-    RemoveActiveTransport(global_transport_);
-  }
   RTC_DCHECK(active_transports_.empty());
 }
 
@@ -139,49 +135,34 @@ void FakeNetworkPipe::RemoveActiveTransport(Transport* transport) {
   }
 }
 
-bool FakeNetworkPipe::SendRtp(const uint8_t* packet,
-                              size_t length,
-                              const PacketOptions& options) {
-  RTC_DCHECK(global_transport_);
-  EnqueuePacket(rtc::CopyOnWriteBuffer(packet, length), options, false,
-                global_transport_);
-  return true;
-}
-
-bool FakeNetworkPipe::SendRtcp(const uint8_t* packet, size_t length) {
-  RTC_DCHECK(global_transport_);
-  EnqueuePacket(rtc::CopyOnWriteBuffer(packet, length), absl::nullopt, true,
-                global_transport_);
-  return true;
-}
-
-bool FakeNetworkPipe::SendRtp(const uint8_t* packet,
-                              size_t length,
+bool FakeNetworkPipe::SendRtp(rtc::ArrayView<const uint8_t> packet,
                               const PacketOptions& options,
                               Transport* transport) {
   RTC_DCHECK(transport);
-  EnqueuePacket(rtc::CopyOnWriteBuffer(packet, length), options, false,
-                transport);
+  EnqueuePacket(rtc::CopyOnWriteBuffer(packet), options, false, transport);
   return true;
 }
 
-bool FakeNetworkPipe::SendRtcp(const uint8_t* packet,
-                               size_t length,
+bool FakeNetworkPipe::SendRtcp(rtc::ArrayView<const uint8_t> packet,
                                Transport* transport) {
   RTC_DCHECK(transport);
-  EnqueuePacket(rtc::CopyOnWriteBuffer(packet, length), absl::nullopt, true,
-                transport);
+  EnqueuePacket(rtc::CopyOnWriteBuffer(packet), absl::nullopt, true, transport);
   return true;
 }
 
-PacketReceiver::DeliveryStatus FakeNetworkPipe::DeliverPacket(
+void FakeNetworkPipe::DeliverRtpPacket(
     MediaType media_type,
-    rtc::CopyOnWriteBuffer packet,
-    int64_t packet_time_us) {
-  return EnqueuePacket(std::move(packet), absl::nullopt, false, media_type,
-                       packet_time_us)
-             ? PacketReceiver::DELIVERY_OK
-             : PacketReceiver::DELIVERY_PACKET_ERROR;
+    RtpPacketReceived packet,
+    OnUndemuxablePacketHandler undemuxable_packet_handler) {
+  MutexLock lock(&process_lock_);
+  int64_t time_now_us = clock_->TimeInMicroseconds();
+  EnqueuePacket(
+      NetworkPacket(std::move(packet), media_type, time_now_us, time_now_us));
+}
+
+void FakeNetworkPipe::DeliverRtcpPacket(rtc::CopyOnWriteBuffer packet) {
+  EnqueuePacket(std::move(packet), absl::nullopt, true, MediaType::ANY,
+                absl::nullopt);
 }
 
 void FakeNetworkPipe::SetClockOffset(int64_t offset_ms) {
@@ -334,10 +315,12 @@ void FakeNetworkPipe::DeliverNetworkPacket(NetworkPacket* packet) {
       return;
     }
     if (packet->is_rtcp()) {
-      transport->SendRtcp(packet->data(), packet->data_length());
+      transport->SendRtcp(
+          rtc::MakeArrayView(packet->data(), packet->data_length()));
     } else {
-      transport->SendRtp(packet->data(), packet->data_length(),
-                         packet->packet_options());
+      transport->SendRtp(
+          rtc::MakeArrayView(packet->data(), packet->data_length()),
+          packet->packet_options());
     }
   } else if (receiver_) {
     int64_t packet_time_us = packet->packet_time_us().value_or(-1);
@@ -347,8 +330,21 @@ void FakeNetworkPipe::DeliverNetworkPacket(NetworkPacket* packet) {
       packet_time_us += queue_time_us;
       packet_time_us += (clock_offset_ms_ * 1000);
     }
-    receiver_->DeliverPacket(packet->media_type(),
-                             std::move(*packet->raw_packet()), packet_time_us);
+    if (packet->is_rtcp()) {
+      receiver_->DeliverRtcpPacket(std::move(*packet->raw_packet()));
+    } else if (packet->packet_received()) {
+      packet->packet_received()->set_arrival_time(
+          Timestamp::Micros(packet_time_us));
+      receiver_->DeliverRtpPacket(
+          packet->media_type(), *packet->packet_received(),
+          [](const RtpPacketReceived& packet) {
+            RTC_LOG(LS_WARNING)
+                << "Unexpected failed demuxing packet in FakeNetworkPipe, "
+                   "Ssrc: "
+                << packet.Ssrc() << " seq : " << packet.SequenceNumber();
+            return false;
+          });
+    }
   }
 }
 

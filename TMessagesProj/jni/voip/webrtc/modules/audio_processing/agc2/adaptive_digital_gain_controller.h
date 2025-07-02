@@ -11,56 +11,54 @@
 #ifndef MODULES_AUDIO_PROCESSING_AGC2_ADAPTIVE_DIGITAL_GAIN_CONTROLLER_H_
 #define MODULES_AUDIO_PROCESSING_AGC2_ADAPTIVE_DIGITAL_GAIN_CONTROLLER_H_
 
-#include <memory>
+#include <vector>
 
-#include "absl/types/optional.h"
-#include "modules/audio_processing/agc2/adaptive_digital_gain_applier.h"
-#include "modules/audio_processing/agc2/noise_level_estimator.h"
-#include "modules/audio_processing/agc2/saturation_protector.h"
-#include "modules/audio_processing/agc2/speech_level_estimator.h"
+#include "modules/audio_processing/agc2/gain_applier.h"
 #include "modules/audio_processing/include/audio_frame_view.h"
 #include "modules/audio_processing/include/audio_processing.h"
 
 namespace webrtc {
+
 class ApmDataDumper;
 
-// Gain controller that adapts and applies a variable digital gain to meet the
-// target level, which is determined by the given configuration.
+// Selects the target digital gain, decides when and how quickly to adapt to the
+// target and applies the current gain to 10 ms frames.
 class AdaptiveDigitalGainController {
  public:
+  // Information about a frame to process.
+  struct FrameInfo {
+    float speech_probability;    // Probability of speech in the [0, 1] range.
+    float speech_level_dbfs;     // Estimated speech level (dBFS).
+    bool speech_level_reliable;  // True with reliable speech level estimation.
+    float noise_rms_dbfs;        // Estimated noise RMS level (dBFS).
+    float headroom_db;           // Headroom (dB).
+    // TODO(bugs.webrtc.org/7494): Remove `limiter_envelope_dbfs`.
+    float limiter_envelope_dbfs;  // Envelope level from the limiter (dBFS).
+  };
+
   AdaptiveDigitalGainController(
       ApmDataDumper* apm_data_dumper,
       const AudioProcessing::Config::GainController2::AdaptiveDigital& config,
-      int sample_rate_hz,
-      int num_channels);
+      int adjacent_speech_frames_threshold);
   AdaptiveDigitalGainController(const AdaptiveDigitalGainController&) = delete;
   AdaptiveDigitalGainController& operator=(
       const AdaptiveDigitalGainController&) = delete;
-  ~AdaptiveDigitalGainController();
 
-  // Detects and handles changes of sample rate and or number of channels.
-  void Initialize(int sample_rate_hz, int num_channels);
-
-  // Analyzes `frame`, adapts the current digital gain and applies it to
-  // `frame`.
-  // TODO(bugs.webrtc.org/7494): Remove `limiter_envelope`.
-  void Process(AudioFrameView<float> frame,
-               float speech_probability,
-               float limiter_envelope);
-
-  // Handles a gain change applied to the input signal (e.g., analog gain).
-  void HandleInputGainChange();
-
-  // Returns the most recent speech level (dBFs) if the estimator is confident.
-  // Otherwise returns absl::nullopt.
-  absl::optional<float> GetSpeechLevelDbfsIfConfident() const;
+  // Analyzes `info`, updates the digital gain and applies it to a 10 ms
+  // `frame`. Supports any sample rate supported by APM.
+  void Process(const FrameInfo& info, AudioFrameView<float> frame);
 
  private:
-  SpeechLevelEstimator speech_level_estimator_;
-  AdaptiveDigitalGainApplier gain_controller_;
   ApmDataDumper* const apm_data_dumper_;
-  std::unique_ptr<NoiseLevelEstimator> noise_level_estimator_;
-  std::unique_ptr<SaturationProtector> saturation_protector_;
+  GainApplier gain_applier_;
+
+  const AudioProcessing::Config::GainController2::AdaptiveDigital config_;
+  const int adjacent_speech_frames_threshold_;
+  const float max_gain_change_db_per_10ms_;
+
+  int calls_since_last_gain_log_;
+  int frames_to_gain_increase_allowed_;
+  float last_gain_db_;
 };
 
 }  // namespace webrtc

@@ -14,7 +14,7 @@ std::unique_ptr<webrtc::VideoDecoderFactory> FakeInterface::makeVideoDecoderFact
   return webrtc::CreateBuiltinVideoDecoderFactory();
 }
 
-rtc::scoped_refptr<webrtc::VideoTrackSourceInterface> FakeInterface::makeVideoSource(rtc::Thread *signalingThread,
+webrtc::scoped_refptr<webrtc::VideoTrackSourceInterface> FakeInterface::makeVideoSource(rtc::Thread *signalingThread,
                                                                                      rtc::Thread *workerThread) {
   return nullptr;
 }
@@ -24,12 +24,12 @@ bool FakeInterface::supportsEncoding(const std::string &codecName) {
   //return (codecName == cricket::kH264CodecName) || (codecName == cricket::kVp8CodecName);
 }
 
-void FakeInterface::adaptVideoSource(rtc::scoped_refptr<webrtc::VideoTrackSourceInterface> videoSource, int width,
+void FakeInterface::adaptVideoSource(webrtc::scoped_refptr<webrtc::VideoTrackSourceInterface> videoSource, int width,
                                      int height, int fps) {
 }
 
 std::unique_ptr<VideoCapturerInterface> FakeInterface::makeVideoCapturer(
-    rtc::scoped_refptr<webrtc::VideoTrackSourceInterface> source, std::string deviceId,
+    webrtc::scoped_refptr<webrtc::VideoTrackSourceInterface> source, std::string deviceId,
     std::function<void(VideoState)> stateUpdated, std::function<void(PlatformCaptureInfo)> captureInfoUpdated,
     std::shared_ptr<PlatformContext> platformContext, std::pair<int, int> &outResolution) {
   return nullptr;

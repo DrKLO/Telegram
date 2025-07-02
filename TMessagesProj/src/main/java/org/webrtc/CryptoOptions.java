@@ -29,7 +29,7 @@ public final class CryptoOptions {
     private final boolean enableGcmCryptoSuites;
     /**
      * If set to true, the (potentially insecure) crypto cipher
-     * SRTP_AES128_CM_SHA1_32 will be included in the list of supported ciphers
+     * kSrtpAes128CmSha1_32 will be included in the list of supported ciphers
      * during negotiation. It will only be used if both peers support it and no
      * other ciphers get preferred.
      */

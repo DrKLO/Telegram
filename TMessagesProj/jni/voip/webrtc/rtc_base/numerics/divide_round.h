@@ -34,13 +34,25 @@ template <typename Dividend, typename Divisor>
 inline auto constexpr DivideRoundToNearest(Dividend dividend, Divisor divisor) {
   static_assert(std::is_integral<Dividend>(), "");
   static_assert(std::is_integral<Divisor>(), "");
-  RTC_DCHECK_GE(dividend, 0);
   RTC_DCHECK_GT(divisor, 0);
+
+  if (dividend < Dividend{0}) {
+    auto half_of_divisor = divisor / 2;
+    auto quotient = dividend / divisor;
+    auto remainder = dividend % divisor;
+    if (rtc::SafeGt(-remainder, half_of_divisor)) {
+      --quotient;
+    }
+    return quotient;
+  }
 
   auto half_of_divisor = (divisor - 1) / 2;
   auto quotient = dividend / divisor;
   auto remainder = dividend % divisor;
-  return quotient + (rtc::SafeGt(remainder, half_of_divisor) ? 1 : 0);
+  if (rtc::SafeGt(remainder, half_of_divisor)) {
+    ++quotient;
+  }
+  return quotient;
 }
 
 }  // namespace webrtc

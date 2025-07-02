@@ -18,28 +18,14 @@
 
 namespace webrtc {
 
-// Bandwidth over-use detector options.  These are used to drive
-// experimentation with bandwidth estimation parameters.
-// TODO(terelius): This is only used in overuse_estimator.cc, and only in the
-// default constructed state. Can we move the relevant variables into that
-// class and delete this?
-struct OverUseDetectorOptions {
-  OverUseDetectorOptions() = default;
-  double initial_slope = 8.0 / 512.0;
-  double initial_offset = 0;
-  double initial_e[2][2] = {{100.0, 0.0}, {0.0, 1e-1}};
-  double initial_process_noise[2] = {1e-13, 1e-3};
-  double initial_avg_noise = 0.0;
-  double initial_var_noise = 50.0;
-};
-
 class OveruseEstimator {
  public:
-  explicit OveruseEstimator(const OverUseDetectorOptions& options);
-  ~OveruseEstimator();
+  OveruseEstimator();
 
   OveruseEstimator(const OveruseEstimator&) = delete;
   OveruseEstimator& operator=(const OveruseEstimator&) = delete;
+
+  ~OveruseEstimator() = default;
 
   // Update the estimator with a new sample. The deltas should represent deltas
   // between timestamp groups as defined by the InterArrival class.
@@ -59,23 +45,20 @@ class OveruseEstimator {
 
   // Returns the number of deltas which the current over-use estimator state is
   // based on.
-  unsigned int num_of_deltas() const { return num_of_deltas_; }
+  int num_of_deltas() const { return num_of_deltas_; }
 
  private:
   double UpdateMinFramePeriod(double ts_delta);
   void UpdateNoiseEstimate(double residual, double ts_delta, bool stable_state);
 
-  // Must be first member variable. Cannot be const because we need to be
-  // copyable.
-  OverUseDetectorOptions options_;
-  uint16_t num_of_deltas_;
-  double slope_;
-  double offset_;
-  double prev_offset_;
-  double E_[2][2];
-  double process_noise_[2];
-  double avg_noise_;
-  double var_noise_;
+  int num_of_deltas_ = 0;
+  double slope_ = 8.0 / 512.0;
+  double offset_ = 0;
+  double prev_offset_ = 0;
+  double E_[2][2] = {{100.0, 0.0}, {0.0, 1e-1}};
+  double process_noise_[2] = {1e-13, 1e-3};
+  double avg_noise_ = 0.0;
+  double var_noise_ = 50.0;
   std::deque<double> ts_delta_hist_;
 };
 }  // namespace webrtc

@@ -17,13 +17,9 @@
 #include <vector>
 
 #include "absl/types/optional.h"
-#include "api/audio_codecs/audio_decoder_factory.h"
 #include "api/audio_codecs/audio_encoder.h"
 #include "api/function_view.h"
-#include "api/neteq/neteq.h"
-#include "api/neteq/neteq_factory.h"
 #include "modules/audio_coding/include/audio_coding_module_typedefs.h"
-#include "system_wrappers/include/clock.h"
 
 namespace webrtc {
 
@@ -64,24 +60,8 @@ class AudioCodingModule {
   AudioCodingModule() {}
 
  public:
-  struct Config {
-    explicit Config(
-        rtc::scoped_refptr<AudioDecoderFactory> decoder_factory = nullptr);
-    Config(const Config&);
-    ~Config();
-
-    NetEq::Config neteq_config;
-    Clock* clock;
-    rtc::scoped_refptr<AudioDecoderFactory> decoder_factory;
-    NetEqFactory* neteq_factory = nullptr;
-  };
-
-  static AudioCodingModule* Create(const Config& config);
+  static std::unique_ptr<AudioCodingModule> Create();
   virtual ~AudioCodingModule() = default;
-
-  ///////////////////////////////////////////////////////////////////////////
-  //   Sender
-  //
 
   // `modifier` is called exactly once with one argument: a pointer to the
   // unique_ptr that holds the current encoder (which is null if there is no
@@ -153,88 +133,8 @@ class AudioCodingModule {
   virtual int SetPacketLossRate(int packet_loss_rate) = 0;
 
   ///////////////////////////////////////////////////////////////////////////
-  //   Receiver
-  //
-
-  ///////////////////////////////////////////////////////////////////////////
-  // int32_t InitializeReceiver()
-  // Any decoder-related state of ACM will be initialized to the
-  // same state when ACM is created. This will not interrupt or
-  // effect encoding functionality of ACM. ACM would lose all the
-  // decoding-related settings by calling this function.
-  // For instance, all registered codecs are deleted and have to be
-  // registered again.
-  //
-  // Return value:
-  //   -1 if failed to initialize,
-  //    0 if succeeded.
-  //
-  virtual int32_t InitializeReceiver() = 0;
-
-  // Replace any existing decoders with the given payload type -> decoder map.
-  virtual void SetReceiveCodecs(
-      const std::map<int, SdpAudioFormat>& codecs) = 0;
-
-  ///////////////////////////////////////////////////////////////////////////
-  // int32_t IncomingPacket()
-  // Call this function to insert a parsed RTP packet into ACM.
-  //
-  // Inputs:
-  //   -incoming_payload   : received payload.
-  //   -payload_len_bytes  : the length of payload in bytes.
-  //   -rtp_info           : the relevant information retrieved from RTP
-  //                         header.
-  //
-  // Return value:
-  //   -1 if failed to push in the payload
-  //    0 if payload is successfully pushed in.
-  //
-  virtual int32_t IncomingPacket(const uint8_t* incoming_payload,
-                                 size_t payload_len_bytes,
-                                 const RTPHeader& rtp_header) = 0;
-
-  ///////////////////////////////////////////////////////////////////////////
-  // int32_t PlayoutData10Ms(
-  // Get 10 milliseconds of raw audio data for playout, at the given sampling
-  // frequency. ACM will perform a resampling if required.
-  //
-  // Input:
-  //   -desired_freq_hz    : the desired sampling frequency, in Hertz, of the
-  //                         output audio. If set to -1, the function returns
-  //                         the audio at the current sampling frequency.
-  //
-  // Output:
-  //   -audio_frame        : output audio frame which contains raw audio data
-  //                         and other relevant parameters.
-  //   -muted              : if true, the sample data in audio_frame is not
-  //                         populated, and must be interpreted as all zero.
-  //
-  // Return value:
-  //   -1 if the function fails,
-  //    0 if the function succeeds.
-  //
-  virtual int32_t PlayoutData10Ms(int32_t desired_freq_hz,
-                                  AudioFrame* audio_frame,
-                                  bool* muted) = 0;
-
-  ///////////////////////////////////////////////////////////////////////////
   //   statistics
   //
-
-  ///////////////////////////////////////////////////////////////////////////
-  // int32_t  GetNetworkStatistics()
-  // Get network statistics. Note that the internal statistics of NetEq are
-  // reset by this call.
-  //
-  // Input:
-  //   -network_statistics : a structure that contains network statistics.
-  //
-  // Return value:
-  //   -1 if failed to set the network statistics,
-  //    0 if statistics are set successfully.
-  //
-  virtual int32_t GetNetworkStatistics(
-      NetworkStatistics* network_statistics) = 0;
 
   virtual ANAStats GetANAStats() const = 0;
 

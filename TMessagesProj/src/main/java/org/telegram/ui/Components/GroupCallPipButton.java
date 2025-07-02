@@ -459,7 +459,7 @@ public class GroupCallPipButton extends FrameLayout implements NotificationCente
             if (currentCallState == VoIPService.STATE_WAIT_INIT || currentCallState == VoIPService.STATE_WAIT_INIT_ACK || currentCallState == VoIPService.STATE_CREATING || currentCallState == VoIPService.STATE_RECONNECTING) {
                 setState(FragmentContextViewWavesDrawable.MUTE_BUTTON_STATE_CONNECTING);
             } else {
-                TLRPC.TL_groupCallParticipant participant = voIPService.groupCall.participants.get(voIPService.getSelfId());
+                TLRPC.GroupCallParticipant participant = voIPService.groupCall.participants.get(voIPService.getSelfId());
                 if (participant != null && !participant.can_self_unmute && participant.muted && !ChatObject.canManageCalls(voIPService.getChat())) {
                     if (!voIPService.isMicMute()) {
                         voIPService.setMicMute(true, false, false);

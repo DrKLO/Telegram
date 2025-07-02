@@ -1,0 +1,52 @@
+# Copyright (c) 2018 The WebRTC project authors. All Rights Reserved.
+#
+# Use of this source code is governed by a BSD-style license
+# that can be found in the LICENSE file in the root of the source
+# tree. An additional intellectual property rights grant can be found
+# in the file PATENTS.  All contributing project authors may
+# be found in the AUTHORS file in the root of the source tree.
+
+import("../../../webrtc.gni")
+
+rtc_library("function_video_factory") {
+  visibility = [ "*" ]
+  testonly = true
+  sources = [
+    "function_video_decoder_factory.h",
+    "function_video_encoder_factory.h",
+  ]
+
+  deps = [
+    "../../../rtc_base:checks",
+    "../../environment",
+    "../../video_codecs:video_codecs_api",
+  ]
+}
+
+rtc_library("video_frame_writer") {
+  visibility = [ "*" ]
+  testonly = true
+  sources = [ "video_frame_writer.h" ]
+
+  deps = [ "../../video:video_frame" ]
+}
+
+rtc_library("test_video_track_source") {
+  visibility = [ "*" ]
+  testonly = true
+  sources = [
+    "test_video_track_source.cc",
+    "test_video_track_source.h",
+  ]
+
+  deps = [
+    "../..:media_stream_interface",
+    "../..:sequence_checker",
+    "../../../rtc_base:checks",
+    "../../../rtc_base:macromagic",
+    "../../../rtc_base/system:no_unique_address",
+    "../../video:recordable_encoded_frame",
+    "../../video:video_frame",
+  ]
+  absl_deps = [ "//third_party/abseil-cpp/absl/types:optional" ]
+}

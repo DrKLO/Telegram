@@ -14,16 +14,22 @@
 
 #include "absl/strings/str_format.h"
 
+#include <cerrno>
 #include <cstdarg>
 #include <cstdint>
 #include <cstdio>
+#include <ostream>
+#include <sstream>
 #include <string>
+#include <type_traits>
 
-#include "gmock/gmock.h"
 #include "gtest/gtest.h"
+#include "absl/base/config.h"
+#include "absl/base/macros.h"
 #include "absl/strings/cord.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
+#include "absl/types/span.h"
 
 namespace absl {
 ABSL_NAMESPACE_BEGIN
@@ -143,13 +149,20 @@ TEST_F(FormatEntryPointTest, AppendFormatFailWithV) {
 }
 
 TEST_F(FormatEntryPointTest, ManyArgs) {
-  EXPECT_EQ("24", StrFormat("%24$d", 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13,
-                            14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24));
-  EXPECT_EQ("60", StrFormat("%60$d", 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13,
-                            14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26,
-                            27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39,
-                            40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52,
-                            53, 54, 55, 56, 57, 58, 59, 60));
+  EXPECT_EQ(
+      "60 59 58 57 56 55 54 53 52 51 50 49 48 47 46 45 44 43 42 41 40 39 38 37 "
+      "36 35 34 33 32 31 30 29 28 27 26 25 24 23 22 21 20 19 18 17 16 15 14 13 "
+      "12 11 10 9 8 7 6 5 4 3 2 1",
+      StrFormat("%60$d %59$d %58$d %57$d %56$d %55$d %54$d %53$d %52$d %51$d "
+                "%50$d %49$d %48$d %47$d %46$d %45$d %44$d %43$d %42$d %41$d "
+                "%40$d %39$d %38$d %37$d %36$d %35$d %34$d %33$d %32$d %31$d "
+                "%30$d %29$d %28$d %27$d %26$d %25$d %24$d %23$d %22$d %21$d "
+                "%20$d %19$d %18$d %17$d %16$d %15$d %14$d %13$d %12$d %11$d "
+                "%10$d %9$d %8$d %7$d %6$d %5$d %4$d %3$d %2$d %1$d",
+                1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18,
+                19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34,
+                35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50,
+                51, 52, 53, 54, 55, 56, 57, 58, 59, 60));
 }
 
 TEST_F(FormatEntryPointTest, Preparsed) {
@@ -503,7 +516,13 @@ TEST_F(FormatEntryPointTest, SNPrintF) {
   EXPECT_EQ(result, 17);
   EXPECT_EQ(std::string(buffer), "NUMBER: 1234567");
 
-  result = SNPrintF(nullptr, 0, "Just checking the %s of the output.", "size");
+  // The `output` parameter is annotated nonnull, but we want to test that
+  // it is never written to if the size is zero.
+  // Use a variable instead of passing nullptr directly to avoid a `-Wnonnull`
+  // warning.
+  char* null_output = nullptr;
+  result =
+      SNPrintF(null_output, 0, "Just checking the %s of the output.", "size");
   EXPECT_EQ(result, 37);
 }
 
@@ -532,7 +551,13 @@ TEST_F(FormatEntryPointTest, SNPrintFWithV) {
 
   std::string size = "size";
 
-  result = SNPrintF(nullptr, 0, "Just checking the %v of the output.", size);
+  // The `output` parameter is annotated nonnull, but we want to test that
+  // it is never written to if the size is zero.
+  // Use a variable instead of passing nullptr directly to avoid a `-Wnonnull`
+  // warning.
+  char* null_output = nullptr;
+  result =
+      SNPrintF(null_output, 0, "Just checking the %v of the output.", size);
   EXPECT_EQ(result, 37);
 }
 
@@ -621,6 +646,10 @@ TEST(StrFormat, BehavesAsDocumented) {
   const int& something = *reinterpret_cast<const int*>(ptr_value);
   EXPECT_EQ(StrFormat("%p", &something), StrFormat("0x%x", ptr_value));
 
+  // The output of formatting a null pointer is not documented as being a
+  // specific thing, but the attempt should at least compile.
+  (void)StrFormat("%p", nullptr);
+
   // Output widths are supported, with optional flags.
   EXPECT_EQ(StrFormat("%3d", 1), "  1");
   EXPECT_EQ(StrFormat("%3d", 123456), "123456");
@@ -631,6 +660,8 @@ TEST(StrFormat, BehavesAsDocumented) {
   EXPECT_EQ(StrFormat("%#o", 10), "012");
   EXPECT_EQ(StrFormat("%#x", 15), "0xf");
   EXPECT_EQ(StrFormat("%04d", 8), "0008");
+  EXPECT_EQ(StrFormat("%#04x", 0), "0000");
+  EXPECT_EQ(StrFormat("%#04x", 1), "0x01");
   // Posix positional substitution.
   EXPECT_EQ(absl::StrFormat("%2$s, %3$s, %1$s!", "vici", "veni", "vidi"),
             "veni, vidi, vici!");
@@ -1135,16 +1166,49 @@ TEST_F(FormatExtensionTest, AbslStringifyExampleUsingFormat) {
   EXPECT_EQ(absl::StrFormat("a %v z", p), "a (10, 20) z");
 }
 
-enum class EnumWithStringify { Many = 0, Choices = 1 };
+enum class EnumClassWithStringify { Many = 0, Choices = 1 };
+
+template <typename Sink>
+void AbslStringify(Sink& sink, EnumClassWithStringify e) {
+  absl::Format(&sink, "%s",
+               e == EnumClassWithStringify::Many ? "Many" : "Choices");
+}
+
+enum EnumWithStringify { Many, Choices };
 
 template <typename Sink>
 void AbslStringify(Sink& sink, EnumWithStringify e) {
   absl::Format(&sink, "%s", e == EnumWithStringify::Many ? "Many" : "Choices");
 }
 
-TEST_F(FormatExtensionTest, AbslStringifyWithEnum) {
+TEST_F(FormatExtensionTest, AbslStringifyWithEnumWithV) {
+  const auto e_class = EnumClassWithStringify::Choices;
+  EXPECT_EQ(absl::StrFormat("My choice is %v", e_class),
+            "My choice is Choices");
+
   const auto e = EnumWithStringify::Choices;
   EXPECT_EQ(absl::StrFormat("My choice is %v", e), "My choice is Choices");
+}
+
+TEST_F(FormatExtensionTest, AbslStringifyEnumWithD) {
+  const auto e_class = EnumClassWithStringify::Many;
+  EXPECT_EQ(absl::StrFormat("My choice is %d", e_class), "My choice is 0");
+
+  const auto e = EnumWithStringify::Choices;
+  EXPECT_EQ(absl::StrFormat("My choice is %d", e), "My choice is 1");
+}
+
+enum class EnumWithLargerValue { x = 32 };
+
+template <typename Sink>
+void AbslStringify(Sink& sink, EnumWithLargerValue e) {
+  absl::Format(&sink, "%s", "Many");
+}
+
+TEST_F(FormatExtensionTest, AbslStringifyEnumOtherSpecifiers) {
+  const auto e = EnumWithLargerValue::x;
+  EXPECT_EQ(absl::StrFormat("My choice is %g", e), "My choice is 32");
+  EXPECT_EQ(absl::StrFormat("My choice is %x", e), "My choice is 20");
 }
 
 }  // namespace

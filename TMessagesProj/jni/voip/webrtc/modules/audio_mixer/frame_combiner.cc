@@ -98,9 +98,7 @@ void MixToFloatFrame(rtc::ArrayView<const AudioFrame* const> mix_list,
   RTC_DCHECK_LE(samples_per_channel, FrameCombiner::kMaximumChannelSize);
   RTC_DCHECK_LE(number_of_channels, FrameCombiner::kMaximumNumberOfChannels);
   // Clear the mixing buffer.
-  for (auto& one_channel_buffer : *mixing_buffer) {
-    std::fill(one_channel_buffer.begin(), one_channel_buffer.end(), 0.f);
-  }
+  *mixing_buffer = {};
 
   // Convert to FloatS16 and mix.
   for (size_t i = 0; i < mix_list.size(); ++i) {
@@ -166,8 +164,6 @@ void FrameCombiner::Combine(rtc::ArrayView<AudioFrame* const> mix_list,
                             AudioFrame* audio_frame_for_mixing) {
   RTC_DCHECK(audio_frame_for_mixing);
 
-  LogMixingStats(mix_list, sample_rate, number_of_streams);
-
   SetAudioFrameFields(mix_list, number_of_channels, sample_rate,
                       number_of_streams, audio_frame_for_mixing);
 
@@ -212,34 +208,6 @@ void FrameCombiner::Combine(rtc::ArrayView<AudioFrame* const> mix_list,
   }
 
   InterleaveToAudioFrame(mixing_buffer_view, audio_frame_for_mixing);
-}
-
-void FrameCombiner::LogMixingStats(
-    rtc::ArrayView<const AudioFrame* const> mix_list,
-    int sample_rate,
-    size_t number_of_streams) const {
-  // Log every second.
-  uma_logging_counter_++;
-  if (uma_logging_counter_ > 1000 / AudioMixerImpl::kFrameDurationInMs) {
-    uma_logging_counter_ = 0;
-    RTC_HISTOGRAM_COUNTS_100("WebRTC.Audio.AudioMixer.NumIncomingStreams",
-                             static_cast<int>(number_of_streams));
-    RTC_HISTOGRAM_COUNTS_LINEAR(
-        "WebRTC.Audio.AudioMixer.NumIncomingActiveStreams2",
-        rtc::dchecked_cast<int>(mix_list.size()), /*min=*/1, /*max=*/16,
-        /*bucket_count=*/16);
-
-    using NativeRate = AudioProcessing::NativeRate;
-    static constexpr NativeRate native_rates[] = {
-        NativeRate::kSampleRate8kHz, NativeRate::kSampleRate16kHz,
-        NativeRate::kSampleRate32kHz, NativeRate::kSampleRate48kHz};
-    const auto* rate_position = std::lower_bound(
-        std::begin(native_rates), std::end(native_rates), sample_rate);
-    RTC_HISTOGRAM_ENUMERATION(
-        "WebRTC.Audio.AudioMixer.MixingRate",
-        std::distance(std::begin(native_rates), rate_position),
-        arraysize(native_rates));
-  }
 }
 
 }  // namespace webrtc

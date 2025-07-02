@@ -37,6 +37,7 @@ public class BusinessBotButton extends FrameLayout {
 
     private final AvatarDrawable avatarDrawable;
     private final BackupImageView avatarView;
+    private final LinearLayout textLayout;
     private final AnimatedTextView titleView;
     private final AnimatedTextView subtitleView;
     private final ClickableAnimatedTextView pauseButton;
@@ -62,7 +63,7 @@ public class BusinessBotButton extends FrameLayout {
         avatarView.setForUserOrChat(user, avatarDrawable);
         addView(avatarView, LayoutHelper.createFrame(32, 32, Gravity.CENTER_VERTICAL | Gravity.LEFT, 10, 0, 10, 0));
 
-        LinearLayout textLayout = new LinearLayout(context);
+        textLayout = new LinearLayout(context);
         textLayout.setOrientation(LinearLayout.VERTICAL);
 
         titleView = new AnimatedTextView(context);
@@ -115,14 +116,8 @@ public class BusinessBotButton extends FrameLayout {
             req.peer = MessagesController.getInstance(currentAccount).getInputPeer(dialogId);
             req.paused = paused;
             ConnectionsManager.getInstance(currentAccount).sendRequest(req, null);
-
-
         });
-        pauseButton.setOnWidthUpdatedListener(() -> {
-            float padding = pauseButton.getPaddingLeft() + pauseButton.getDrawable().getCurrentWidth() + pauseButton.getPaddingRight() + dp(12);
-            titleView.setRightPadding(padding);
-            subtitleView.setRightPadding(padding);
-        });
+        pauseButton.setOnWidthUpdatedListener(this::updateTextRightPadding);
         pauseButton.setText(LocaleController.getString(paused ? R.string.BizBotStart : R.string.BizBotStop));
         addView(pauseButton, LayoutHelper.createFrame(64, 28, Gravity.CENTER_VERTICAL | Gravity.RIGHT, 0, 0, 49, 0));
 
@@ -156,6 +151,20 @@ public class BusinessBotButton extends FrameLayout {
             itemOptions.show();
         });
         addView(menuView, LayoutHelper.createFrame(32, 32, Gravity.RIGHT | Gravity.CENTER_VERTICAL, 8, 0, 9, 0));
+    }
+
+    private float leftMargin;
+    public void setLeftMargin(float leftMargin) {
+        this.leftMargin = leftMargin;
+        avatarView.setTranslationX(leftMargin);
+        textLayout.setTranslationX(leftMargin);
+        updateTextRightPadding();
+    }
+
+    private void updateTextRightPadding() {
+        final float padding = this.leftMargin + pauseButton.getPaddingLeft() + pauseButton.getDrawable().getCurrentWidth() + pauseButton.getPaddingRight() + dp(12);
+        titleView.setRightPadding(padding);
+        subtitleView.setRightPadding(padding);
     }
 
     public void set(

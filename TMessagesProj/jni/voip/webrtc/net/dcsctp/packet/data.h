@@ -42,7 +42,7 @@ struct Data {
 
   Data(StreamID stream_id,
        SSN ssn,
-       MID message_id,
+       MID mid,
        FSN fsn,
        PPID ppid,
        std::vector<uint8_t> payload,
@@ -51,7 +51,7 @@ struct Data {
        IsUnordered is_unordered)
       : stream_id(stream_id),
         ssn(ssn),
-        message_id(message_id),
+        mid(mid),
         fsn(fsn),
         ppid(ppid),
         payload(std::move(payload)),
@@ -65,8 +65,8 @@ struct Data {
 
   // Creates a copy of this `Data` object.
   Data Clone() const {
-    return Data(stream_id, ssn, message_id, fsn, ppid, payload, is_beginning,
-                is_end, is_unordered);
+    return Data(stream_id, ssn, mid, fsn, ppid, payload, is_beginning, is_end,
+                is_unordered);
   }
 
   // The size of this data, which translates to the size of its payload.
@@ -82,7 +82,7 @@ struct Data {
   // Message Identifier (MID) per stream and ordered/unordered. Defined by
   // RFC8260, and used together with options.is_unordered and stream_id to
   // uniquely identify a message. Used only in I-DATA chunks (not DATA).
-  MID message_id;
+  MID mid;
   // Fragment Sequence Number (FSN) per stream and ordered/unordered, as above.
   FSN fsn;
 

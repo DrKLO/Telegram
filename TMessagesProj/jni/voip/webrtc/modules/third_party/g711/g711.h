@@ -201,7 +201,7 @@ static __inline int bottom_bit(unsigned int bits) {
  * John Wiley & Sons, pps 98-111 and 472-476.
  */
 
-//#define ULAW_ZEROTRAP                 /* turn on the trap as per the MIL-STD
+// #define ULAW_ZEROTRAP                 /* turn on the trap as per the MIL-STD
 //*/
 #define ULAW_BIAS 0x84 /* Bias for linear code. */
 

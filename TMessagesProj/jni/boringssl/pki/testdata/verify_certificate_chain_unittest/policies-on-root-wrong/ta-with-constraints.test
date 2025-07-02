@@ -1,0 +1,9 @@
+chain: chain.pem
+last_cert_trust: TRUSTED_ANCHOR_WITH_CONSTRAINTS
+utc_time: DEFAULT
+key_purpose: SERVER_AUTH
+expected_errors:
+----- Certificate i=0 (CN=Target) -----
+ERROR: No valid policy
+ERROR: No valid policy
+

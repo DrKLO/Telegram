@@ -521,7 +521,7 @@ void TL_emojiStatusCollectible::readParams(NativeByteBuffer *stream, int32_t ins
     pattern_color = stream->readInt32(&error);
     text_color = stream->readInt32(&error);
     if ((flags & 1) != 0) {
-        until = stream->readInt64(&error);
+        until = stream->readInt32(&error);
     }
 }
 
@@ -550,6 +550,9 @@ User *User::TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, int32_
             break;
         case TL_user::constructor:
             result = new TL_user();
+            break;
+        case TL_user_layer199::constructor:
+            result = new TL_user_layer199();
             break;
         default:
             error = true;
@@ -653,9 +656,172 @@ void TL_user::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &er
     if ((flags2 & 16384) != 0) {
         bot_verification_icon = stream->readInt64(&error);
     }
+    if ((flags2 & 32768) != 0) {
+        send_paid_messages_stars = stream->readInt64(&error);
+    }
 }
 
 void TL_user::serializeToStream(NativeByteBuffer *stream) {
+    stream->writeInt32(constructor);
+    stream->writeInt32(flags);
+    stream->writeInt32(flags2);
+    stream->writeInt64(id);
+    if ((flags & 1) != 0) {
+        stream->writeInt64(access_hash);
+    }
+    if ((flags & 2) != 0) {
+        stream->writeString(first_name);
+    }
+    if ((flags & 4) != 0) {
+        stream->writeString(last_name);
+    }
+    if ((flags & 8) != 0) {
+        stream->writeString(username);
+    }
+    if ((flags & 16) != 0) {
+        stream->writeString(phone);
+    }
+    if ((flags & 32) != 0) {
+        photo->serializeToStream(stream);
+    }
+    if ((flags & 64) != 0) {
+        status->serializeToStream(stream);
+    }
+    if ((flags & 16384) != 0) {
+        stream->writeInt32(bot_info_version);
+    }
+    if ((flags & 262144) != 0) {
+        stream->writeInt32(0x1cb5c415);
+        uint32_t count = (uint32_t) restriction_reason.size();
+        stream->writeInt32(count);
+        for (int a = 0; a < count; a++) {
+            restriction_reason[a]->serializeToStream(stream);
+        }
+    }
+    if ((flags & 524288) != 0) {
+        stream->writeString(bot_inline_placeholder);
+    }
+    if ((flags & 4194304) != 0) {
+        stream->writeString(lang_code);
+    }
+    if ((flags & 1073741824) != 0) {
+        emoji_status->serializeToStream(stream);
+    }
+    if ((flags2 & 1) != 0) {
+        stream->writeInt32(0x1cb5c415);
+        int32_t count = (int32_t) usernames.size();
+        stream->writeInt32(count);
+        for (int a = 0; a < count; a++) {
+            usernames[a]->serializeToStream(stream);
+        }
+    }
+    if ((flags2 & 32) != 0) {
+        stream->writeInt32(stories_max_id);
+    }
+    if ((flags2 & 256) != 0) {
+        color->serializeToStream(stream);
+    }
+    if ((flags2 & 512) != 0) {
+        profile_color->serializeToStream(stream);
+    }
+    if ((flags2 & 4096) != 0) {
+        stream->writeInt32(bot_active_users);
+    }
+    if ((flags2 & 16384) != 0) {
+        stream->writeInt64(bot_verification_icon);
+    }
+    if ((flags2 & 32768) != 0) {
+        stream->writeInt64(send_paid_messages_stars);
+    }
+}
+
+void TL_user_layer199::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error) {
+    flags = stream->readInt32(&error);
+    flags2 = stream->readInt32(&error);
+    id = stream->readInt64(&error);
+    if ((flags & 1) != 0) {
+        access_hash = stream->readInt64(&error);
+    }
+    if ((flags & 2) != 0) {
+        first_name = stream->readString(&error);
+    }
+    if ((flags & 4) != 0) {
+        last_name = stream->readString(&error);
+    }
+    if ((flags & 8) != 0) {
+        username = stream->readString(&error);
+    }
+    if ((flags & 16) != 0) {
+        phone = stream->readString(&error);
+    }
+    if ((flags & 32) != 0) {
+        photo = std::unique_ptr<UserProfilePhoto>(UserProfilePhoto::TLdeserialize(stream, stream->readUint32(&error), instanceNum, error));
+    }
+    if ((flags & 64) != 0) {
+        status = std::unique_ptr<UserStatus>(UserStatus::TLdeserialize(stream, stream->readUint32(&error), instanceNum, error));
+    }
+    if ((flags & 16384) != 0) {
+        bot_info_version = stream->readInt32(&error);
+    }
+    if ((flags & 262144) != 0) {
+        uint32_t magic = stream->readUint32(&error);
+        if (magic != 0x1cb5c415) {
+            error = true;
+            if (LOGS_ENABLED) DEBUG_FATAL("wrong Vector magic in TL_user, got %x", magic);
+            return;
+        }
+        int32_t count = stream->readInt32(&error);
+        for (int32_t a = 0; a < count; a++) {
+            TL_restrictionReason *object = TL_restrictionReason::TLdeserialize(stream, stream->readUint32(&error), instanceNum, error);
+            if (object == nullptr) {
+                return;
+            }
+            restriction_reason.push_back(std::unique_ptr<TL_restrictionReason>(object));
+        }
+    }
+    if ((flags & 524288) != 0) {
+        bot_inline_placeholder = stream->readString(&error);
+    }
+    if ((flags & 4194304) != 0) {
+        lang_code = stream->readString(&error);
+    }
+    if ((flags & 1073741824) != 0) {
+        emoji_status = std::unique_ptr<EmojiStatus>(EmojiStatus::TLdeserialize(stream, stream->readInt32(&error), instanceNum, error));
+    }
+    if ((flags2 & 1) != 0) {
+        uint32_t magic = stream->readUint32(&error);
+        if (magic != 0x1cb5c415) {
+            error = true;
+            if (LOGS_ENABLED) DEBUG_FATAL("wrong Vector magic in TL_user (2), got %x", magic);
+            return;
+        }
+        int32_t count = stream->readInt32(&error);
+        for (int32_t a = 0; a < count; a++) {
+            TL_username *object = TL_username::TLdeserialize(stream, stream->readUint32(&error), instanceNum, error);
+            if (object == nullptr) {
+                return;
+            }
+            usernames.push_back(std::unique_ptr<TL_username>(object));
+        }
+    }
+    if ((flags2 & 32) != 0) {
+        stories_max_id = stream->readInt32(&error);
+    }
+    if ((flags2 & 256) != 0) {
+        color = std::unique_ptr<TL_peerColor>(TL_peerColor::TLdeserialize(stream, stream->readUint32(&error), instanceNum, error));
+    }
+    if ((flags2 & 512) != 0) {
+        profile_color = std::unique_ptr<TL_peerColor>(TL_peerColor::TLdeserialize(stream, stream->readUint32(&error), instanceNum, error));
+    }
+    if ((flags2 & 4096) != 0) {
+        bot_active_users = stream->readInt32(&error);
+    }
+    if ((flags2 & 16384) != 0) {
+        bot_verification_icon = stream->readInt64(&error);
+    }
+}
+
+void TL_user_layer199::serializeToStream(NativeByteBuffer *stream) {
     stream->writeInt32(constructor);
     stream->writeInt32(flags);
     stream->writeInt32(flags2);

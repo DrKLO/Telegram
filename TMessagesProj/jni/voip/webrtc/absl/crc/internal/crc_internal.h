@@ -29,6 +29,8 @@ namespace crc_internal {
 
 // Prefetch constants used in some Extend() implementations
 constexpr int kPrefetchHorizon = ABSL_CACHELINE_SIZE * 4;  // Prefetch this far
+// Shorter prefetch distance for smaller buffers
+constexpr int kPrefetchHorizonMedium = ABSL_CACHELINE_SIZE * 1;
 static_assert(kPrefetchHorizon >= 64, "CRCPrefetchHorizon less than loop len");
 
 // We require the Scramble() function:
@@ -58,17 +60,15 @@ constexpr uint64_t kScrambleHi = (static_cast<uint64_t>(0x4f1bbcdcU) << 32) |
 constexpr uint64_t kScrambleLo = (static_cast<uint64_t>(0xf9ce6030U) << 32) |
                                  static_cast<uint64_t>(0x2e76e41bU);
 
-class CRCImpl : public CRC {  // Implemention of the abstract class CRC
+class CRCImpl : public CRC {  // Implementation of the abstract class CRC
  public:
   using Uint32By256 = uint32_t[256];
 
-  CRCImpl() {}
+  CRCImpl() = default;
   ~CRCImpl() override = default;
 
   // The internal version of CRC::New().
   static CRCImpl* NewInternal();
-
-  void Empty(uint32_t* crc) const override;
 
   // Fill in a table for updating a CRC by one word of 'word_size' bytes
   // [last_lo, last_hi] contains the answer if the last bit in the word
@@ -94,8 +94,8 @@ class CRCImpl : public CRC {  // Implemention of the abstract class CRC
 // This is the 32-bit implementation.  It handles all sizes from 8 to 32.
 class CRC32 : public CRCImpl {
  public:
-  CRC32() {}
-  ~CRC32() override {}
+  CRC32() = default;
+  ~CRC32() override = default;
 
   void Extend(uint32_t* crc, const void* bytes, size_t length) const override;
   void ExtendByZeroes(uint32_t* crc, size_t length) const override;
@@ -109,16 +109,16 @@ class CRC32 : public CRCImpl {
   // Common implementation guts for ExtendByZeroes and UnextendByZeroes().
   //
   // zeroes_table is a table as returned by FillZeroesTable(), containing
-  // polynomials representing CRCs of strings-of-zeros of various lenghts,
+  // polynomials representing CRCs of strings-of-zeros of various lengths,
   // and which can be combined by polynomial multiplication.  poly_table is
   // a table of CRC byte extension values.  These tables are determined by
   // the generator polynomial.
   //
   // These will be set to reverse_zeroes_ and reverse_table0_ for Unextend, and
   // CRC32::zeroes_ and CRC32::table0_ for Extend.
-  void ExtendByZeroesImpl(uint32_t* crc, size_t length,
-                          const uint32_t zeroes_table[256],
-                          const uint32_t poly_table[256]) const;
+  static void ExtendByZeroesImpl(uint32_t* crc, size_t length,
+                                 const uint32_t zeroes_table[256],
+                                 const uint32_t poly_table[256]);
 
   uint32_t table0_[256];  // table of byte extensions
   uint32_t zeroes_[256];  // table of zero extensions

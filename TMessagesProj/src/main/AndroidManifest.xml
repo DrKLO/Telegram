@@ -209,7 +209,8 @@
         <activity
             android:name="org.telegram.ui.LaunchActivity"
             android:theme="@style/Theme.TMessages.Start"
-            android:configChanges="keyboard|keyboardHidden|orientation|screenSize|uiMode"
+            android:configChanges="keyboard|keyboardHidden|orientation|screenSize|uiMode|smallestScreenSize|screenLayout"
+            android:supportsPictureInPicture="true"
             android:hardwareAccelerated="@bool/useHardwareAcceleration"
             android:launchMode="singleTask"
             android:windowSoftInputMode="adjustResize"
@@ -675,6 +676,9 @@ e            <intent-filter>
         <meta-data android:name="com.google.android.gms.vision.DEPENDENCIES" android:value="face,barcode" />
 
         <meta-data android:name="android.max_aspect" android:value="2.5" />
+        <meta-data
+            android:name="com.google.android.gms.cast.framework.OPTIONS_PROVIDER_CLASS_NAME"
+            android:value="org.telegram.messenger.chromecast.ChromecastOptionsProvider" />
 
     </application>
 

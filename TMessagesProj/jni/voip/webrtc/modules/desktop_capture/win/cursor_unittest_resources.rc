@@ -1,0 +1,28 @@
+/*
+ *  Copyright (c) 2013 The WebRTC project authors. All Rights Reserved.
+ *
+ *  Use of this source code is governed by a BSD-style license
+ *  that can be found in the LICENSE file in the root of the source
+ *  tree. An additional intellectual property rights grant can be found
+ *  in the file PATENTS.  All contributing project authors may
+ *  be found in the AUTHORS file in the root of the source tree.
+ */
+
+#include "modules/desktop_capture/win/cursor_unittest_resources.h"
+
+// These cursors are matched with their less than  32bpp counterparts below.
+IDD_CURSOR1_32BPP CURSOR "cursor_test_data/1_32bpp.cur"
+IDD_CURSOR2_32BPP CURSOR "cursor_test_data/2_32bpp.cur"
+IDD_CURSOR3_32BPP CURSOR "cursor_test_data/3_32bpp.cur"
+
+// Matches IDD_CURSOR1_32BPP.
+IDD_CURSOR1_24BPP CURSOR "cursor_test_data/1_24bpp.cur"
+
+// Matches IDD_CURSOR1_32BPP.
+IDD_CURSOR1_8BPP CURSOR "cursor_test_data/1_8bpp.cur"
+
+// Matches IDD_CURSOR2_32BPP.
+IDD_CURSOR2_1BPP CURSOR "cursor_test_data/2_1bpp.cur"
+
+// Matches IDD_CURSOR3_32BPP.
+IDD_CURSOR3_4BPP CURSOR "cursor_test_data/3_4bpp.cur"

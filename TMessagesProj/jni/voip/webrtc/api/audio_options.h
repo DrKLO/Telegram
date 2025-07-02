@@ -58,11 +58,6 @@ struct RTC_EXPORT AudioOptions {
   absl::optional<bool> audio_jitter_buffer_fast_accelerate;
   // Audio receiver jitter buffer (NetEq) minimum target delay in milliseconds.
   absl::optional<int> audio_jitter_buffer_min_delay_ms;
-  // Enable combined audio+bandwidth BWE.
-  // TODO(pthatcher): This flag is set from the
-  // "googCombinedAudioVideoBwe", but not used anywhere. So delete it,
-  // and check if any other AudioOptions members are unused.
-  absl::optional<bool> combined_audio_video_bwe;
   // Enable audio network adaptor.
   // TODO(webrtc:11717): Remove this API in favor of adaptivePtime in
   // RtpEncodingParameters.

@@ -16,9 +16,9 @@
 
 #include "api/field_trials_view.h"
 #include "api/sequence_checker.h"
+#include "api/video/encoded_frame.h"
 #include "api/video_codecs/video_decoder.h"
 #include "modules/video_coding/decoder_database.h"
-#include "modules/video_coding/encoded_frame.h"
 #include "modules/video_coding/generic_decoder.h"
 #include "modules/video_coding/timing/timing.h"
 #include "rtc_base/system/no_unique_address.h"
@@ -49,7 +49,7 @@ class VideoReceiver2 {
   bool IsExternalDecoderRegistered(uint8_t payload_type) const;
   int32_t RegisterReceiveCallback(VCMReceiveCallback* receive_callback);
 
-  int32_t Decode(const VCMEncodedFrame* frame);
+  int32_t Decode(const EncodedFrame* frame);
 
  private:
   RTC_NO_UNIQUE_ADDRESS SequenceChecker construction_sequence_checker_;

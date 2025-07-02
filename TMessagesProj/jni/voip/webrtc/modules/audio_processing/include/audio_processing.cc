@@ -87,20 +87,23 @@ bool Agc1Config::operator==(const Agc1Config& rhs) const {
 
 bool Agc2Config::AdaptiveDigital::operator==(
     const Agc2Config::AdaptiveDigital& rhs) const {
-  return enabled == rhs.enabled && dry_run == rhs.dry_run &&
-         headroom_db == rhs.headroom_db && max_gain_db == rhs.max_gain_db &&
+  return enabled == rhs.enabled && headroom_db == rhs.headroom_db &&
+         max_gain_db == rhs.max_gain_db &&
          initial_gain_db == rhs.initial_gain_db &&
-         vad_reset_period_ms == rhs.vad_reset_period_ms &&
-         adjacent_speech_frames_threshold ==
-             rhs.adjacent_speech_frames_threshold &&
          max_gain_change_db_per_second == rhs.max_gain_change_db_per_second &&
          max_output_noise_level_dbfs == rhs.max_output_noise_level_dbfs;
+}
+
+bool Agc2Config::InputVolumeController::operator==(
+    const Agc2Config::InputVolumeController& rhs) const {
+  return enabled == rhs.enabled;
 }
 
 bool Agc2Config::operator==(const Agc2Config& rhs) const {
   return enabled == rhs.enabled &&
          fixed_digital.gain_db == rhs.fixed_digital.gain_db &&
-         adaptive_digital == rhs.adaptive_digital;
+         adaptive_digital == rhs.adaptive_digital &&
+         input_volume_controller == rhs.input_volume_controller;
 }
 
 bool AudioProcessing::Config::CaptureLevelAdjustment::operator==(
@@ -191,20 +194,16 @@ std::string AudioProcessing::Config::ToString() const {
           << gain_controller2.fixed_digital.gain_db
           << " }, adaptive_digital: { enabled: "
           << gain_controller2.adaptive_digital.enabled
-          << ", dry_run: " << gain_controller2.adaptive_digital.dry_run
           << ", headroom_db: " << gain_controller2.adaptive_digital.headroom_db
           << ", max_gain_db: " << gain_controller2.adaptive_digital.max_gain_db
           << ", initial_gain_db: "
           << gain_controller2.adaptive_digital.initial_gain_db
-          << ", vad_reset_period_ms: "
-          << gain_controller2.adaptive_digital.vad_reset_period_ms
-          << ", adjacent_speech_frames_threshold: "
-          << gain_controller2.adaptive_digital.adjacent_speech_frames_threshold
           << ", max_gain_change_db_per_second: "
           << gain_controller2.adaptive_digital.max_gain_change_db_per_second
           << ", max_output_noise_level_dbfs: "
           << gain_controller2.adaptive_digital.max_output_noise_level_dbfs
-          << "}}";
+          << " }, input_volume_control : { enabled "
+          << gain_controller2.input_volume_controller.enabled << "}}";
   return builder.str();
 }
 

@@ -20,29 +20,14 @@
 #include "rtc_base/logging.h"
 
 namespace webrtc {
+namespace {
 
-enum { kMinFramePeriodHistoryLength = 60 };
-enum { kDeltaCounterMax = 1000 };
+constexpr int kMinFramePeriodHistoryLength = 60;
+constexpr int kDeltaCounterMax = 1000;
 
-OveruseEstimator::OveruseEstimator(const OverUseDetectorOptions& options)
-    : options_(options),
-      num_of_deltas_(0),
-      slope_(options_.initial_slope),
-      offset_(options_.initial_offset),
-      prev_offset_(options_.initial_offset),
-      E_(),
-      process_noise_(),
-      avg_noise_(options_.initial_avg_noise),
-      var_noise_(options_.initial_var_noise),
-      ts_delta_hist_() {
-  memcpy(E_, options_.initial_e, sizeof(E_));
-  memcpy(process_noise_, options_.initial_process_noise,
-         sizeof(process_noise_));
-}
+}  // namespace
 
-OveruseEstimator::~OveruseEstimator() {
-  ts_delta_hist_.clear();
-}
+OveruseEstimator::OveruseEstimator() = default;
 
 void OveruseEstimator::Update(int64_t t_delta,
                               double ts_delta,

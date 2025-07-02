@@ -946,7 +946,7 @@ class ExceptionSafetyTest {
  *   `std::unique_ptr<T> operator()() const` where T is the type being tested.
  *   It is used for reliably creating identical T instances to test on.
  *
- * - Operation: The operation object (passsed in via tester.WithOperation(...)
+ * - Operation: The operation object (passed in via tester.WithOperation(...)
  *   or tester.Test(...)) must be invocable with the signature
  *   `void operator()(T*) const` where T is the type being tested. It is used
  *   for performing steps on a T instance that may throw and that need to be

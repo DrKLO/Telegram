@@ -16,11 +16,14 @@
 
 #include <algorithm>
 #include <cassert>
-#include <cmath>
-#include <cstring>
+#include <cstddef>
+#include <cstdint>
 #include <limits>
+#include <system_error>  // NOLINT(build/c++11)
 
 #include "absl/base/casts.h"
+#include "absl/base/config.h"
+#include "absl/base/nullability.h"
 #include "absl/numeric/bits.h"
 #include "absl/numeric/int128.h"
 #include "absl/strings/internal/charconv_bigint.h"
@@ -117,11 +120,18 @@ struct FloatTraits<double> {
   // Parsing a smaller N will produce something finite.
   static constexpr int kEiselLemireMaxExclusiveExp10 = 309;
 
-  static double MakeNan(const char* tagp) {
+  static double MakeNan(absl::Nonnull<const char*> tagp) {
+#if ABSL_HAVE_BUILTIN(__builtin_nan)
+    // Use __builtin_nan() if available since it has a fix for
+    // https://bugs.llvm.org/show_bug.cgi?id=37778
+    // std::nan may use the glibc implementation.
+    return __builtin_nan(tagp);
+#else
     // Support nan no matter which namespace it's in.  Some platforms
     // incorrectly don't put it in namespace std.
     using namespace std;  // NOLINT
     return nan(tagp);
+#endif
   }
 
   // Builds a nonzero floating point number out of the provided parts.
@@ -183,11 +193,18 @@ struct FloatTraits<float> {
   static constexpr int kEiselLemireMinInclusiveExp10 = -46 - 18;
   static constexpr int kEiselLemireMaxExclusiveExp10 = 39;
 
-  static float MakeNan(const char* tagp) {
+  static float MakeNan(absl::Nonnull<const char*> tagp) {
+#if ABSL_HAVE_BUILTIN(__builtin_nanf)
+    // Use __builtin_nanf() if available since it has a fix for
+    // https://bugs.llvm.org/show_bug.cgi?id=37778
+    // std::nanf may use the glibc implementation.
+    return __builtin_nanf(tagp);
+#else
     // Support nanf no matter which namespace it's in.  Some platforms
     // incorrectly don't put it in namespace std.
     using namespace std;  // NOLINT
-    return nanf(tagp);
+    return std::nanf(tagp);
+#endif
   }
 
   static float Make(mantissa_t mantissa, int exponent, bool sign) {
@@ -203,7 +220,8 @@ struct FloatTraits<float> {
     if (mantissa > kMantissaMask) {
       // Normal value.
       // Adjust by 127 for the exponent representation bias, and an additional
-      // 23 due to the implied decimal point in the IEEE mantissa represenation.
+      // 23 due to the implied decimal point in the IEEE mantissa
+      // representation.
       flt += static_cast<uint32_t>(exponent + 127 + kTargetMantissaBits - 1)
              << 23;
       mantissa &= kMantissaMask;
@@ -327,7 +345,7 @@ int NormalizedShiftSize(int mantissa_width, int binary_exponent) {
 // `value` must be wider than the requested bit width.
 //
 // Returns the number of bits shifted.
-int TruncateToBitWidth(int bit_width, uint128* value) {
+int TruncateToBitWidth(int bit_width, absl::Nonnull<uint128*> value) {
   const int current_bit_width = BitWidth(*value);
   const int shift = current_bit_width - bit_width;
   *value >>= shift;
@@ -339,17 +357,15 @@ int TruncateToBitWidth(int bit_width, uint128* value) {
 // the appropriate double, and returns true.
 template <typename FloatType>
 bool HandleEdgeCase(const strings_internal::ParsedFloat& input, bool negative,
-                    FloatType* value) {
+                    absl::Nonnull<FloatType*> value) {
   if (input.type == strings_internal::FloatType::kNan) {
-    // A bug in both clang < 7 and gcc would cause the compiler to optimize
-    // away the buffer we are building below.  Declaring the buffer volatile
-    // avoids the issue, and has no measurable performance impact in
-    // microbenchmarks.
+    // A bug in gcc would cause the compiler to optimize away the buffer we are
+    // building below.  Declaring the buffer volatile avoids the issue, and has
+    // no measurable performance impact in microbenchmarks.
     //
-    // https://bugs.llvm.org/show_bug.cgi?id=37778
     // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=86113
     constexpr ptrdiff_t kNanBufferSize = 128;
-#if defined(__GNUC__) || (defined(__clang__) && __clang_major__ < 7)
+#if (defined(__GNUC__) && !defined(__clang__))
     volatile char n_char_sequence[kNanBufferSize];
 #else
     char n_char_sequence[kNanBufferSize];
@@ -387,7 +403,8 @@ bool HandleEdgeCase(const strings_internal::ParsedFloat& input, bool negative,
 // number is stored in *value.
 template <typename FloatType>
 void EncodeResult(const CalculatedFloat& calculated, bool negative,
-                  absl::from_chars_result* result, FloatType* value) {
+                  absl::Nonnull<absl::from_chars_result*> result,
+                  absl::Nonnull<FloatType*> value) {
   if (calculated.exponent == kOverflow) {
     result->ec = std::errc::result_out_of_range;
     *value = negative ? -std::numeric_limits<FloatType>::max()
@@ -433,7 +450,7 @@ void EncodeResult(const CalculatedFloat& calculated, bool negative,
 // Zero and negative values of `shift` are accepted, in which case the word is
 // shifted left, as necessary.
 uint64_t ShiftRightAndRound(uint128 value, int shift, bool input_exact,
-                            bool* output_exact) {
+                            absl::Nonnull<bool*> output_exact) {
   if (shift <= 0) {
     *output_exact = input_exact;
     return static_cast<uint64_t>(value << -shift);
@@ -462,7 +479,7 @@ uint64_t ShiftRightAndRound(uint128 value, int shift, bool input_exact,
     // the low bit of `value` is set.
     //
     // In inexact mode, the nonzero error means the actual value is greater
-    // than the halfway point and we must alway round up.
+    // than the halfway point and we must always round up.
     if ((value & 1) == 1 || !input_exact) {
       ++value;
     }
@@ -667,7 +684,8 @@ CalculatedFloat CalculateFromParsedDecimal(
 // this function returns false) is both fast and correct.
 template <typename FloatType>
 bool EiselLemire(const strings_internal::ParsedFloat& input, bool negative,
-                 FloatType* value, std::errc* ec) {
+                 absl::Nonnull<FloatType*> value,
+                 absl::Nonnull<std::errc*> ec) {
   uint64_t man = input.mantissa;
   int exp10 = input.exponent;
   if (exp10 < FloatTraits<FloatType>::kEiselLemireMinInclusiveExp10) {
@@ -840,7 +858,8 @@ bool EiselLemire(const strings_internal::ParsedFloat& input, bool negative,
 }
 
 template <typename FloatType>
-from_chars_result FromCharsImpl(const char* first, const char* last,
+from_chars_result FromCharsImpl(absl::Nonnull<const char*> first,
+                                absl::Nonnull<const char*> last,
                                 FloatType& value, chars_format fmt_flags) {
   from_chars_result result;
   result.ptr = first;  // overwritten on successful parse
@@ -926,12 +945,14 @@ from_chars_result FromCharsImpl(const char* first, const char* last,
 }
 }  // namespace
 
-from_chars_result from_chars(const char* first, const char* last, double& value,
+from_chars_result from_chars(absl::Nonnull<const char*> first,
+                             absl::Nonnull<const char*> last, double& value,
                              chars_format fmt) {
   return FromCharsImpl(first, last, value, fmt);
 }
 
-from_chars_result from_chars(const char* first, const char* last, float& value,
+from_chars_result from_chars(absl::Nonnull<const char*> first,
+                             absl::Nonnull<const char*> last, float& value,
                              chars_format fmt) {
   return FromCharsImpl(first, last, value, fmt);
 }

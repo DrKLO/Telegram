@@ -1,17 +1,22 @@
 #! /usr/bin/env perl
 # Copyright 2005-2016 The OpenSSL Project Authors. All Rights Reserved.
 #
-# Licensed under the OpenSSL license (the "License").  You may not use
-# this file except in compliance with the License.  You can obtain a copy
-# in the file LICENSE in the source distribution or at
-# https://www.openssl.org/source/license.html
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 
 # ====================================================================
 # Written by Andy Polyakov <appro@openssl.org> for the OpenSSL
-# project. The module is, however, dual licensed under OpenSSL and
-# CRYPTOGAMS licenses depending on where you obtain it. For further
-# details see http://www.openssl.org/~appro/cryptogams/.
+# project.
 # ====================================================================
 
 # October 2005.
@@ -65,7 +70,7 @@ open OUT,"| \"$^X\" \"$xlate\" $flavour \"$output\"";
 # output, so this isn't useful anyway.
 $addx = 1;
 
-# int bn_mul_mont(
+# void bn_mul_mont_nohw(
 $rp="%rdi";	# BN_ULONG *rp,
 $ap="%rsi";	# const BN_ULONG *ap,
 $bp="%rdx";	# const BN_ULONG *bp,
@@ -85,34 +90,15 @@ $m1="%rbp";
 $code=<<___;
 .text
 
-.extern	OPENSSL_ia32cap_P
-
-.globl	bn_mul_mont
-.type	bn_mul_mont,\@function,6
+.globl	bn_mul_mont_nohw
+.type	bn_mul_mont_nohw,\@function,6
 .align	16
-bn_mul_mont:
+bn_mul_mont_nohw:
 .cfi_startproc
+	_CET_ENDBR
 	mov	${num}d,${num}d
 	mov	%rsp,%rax
 .cfi_def_cfa_register	%rax
-	test	\$3,${num}d
-	jnz	.Lmul_enter
-	cmp	\$8,${num}d
-	jb	.Lmul_enter
-___
-$code.=<<___ if ($addx);
-	leaq	OPENSSL_ia32cap_P(%rip),%r11
-	mov	8(%r11),%r11d
-___
-$code.=<<___;
-	cmp	$ap,$bp
-	jne	.Lmul4x_enter
-	test	\$7,${num}d
-	jz	.Lsqr8x_enter
-	jmp	.Lmul4x_enter
-
-.align	16
-.Lmul_enter:
 	push	%rbx
 .cfi_push	%rbx
 	push	%rbp
@@ -329,7 +315,7 @@ $code.=<<___;
 
 	mov	8(%rsp,$num,8),%rsi	# restore %rsp
 .cfi_def_cfa	%rsi,8
-	mov	\$1,%rax
+	# No return value
 	mov	-48(%rsi),%r15
 .cfi_restore	%r15
 	mov	-40(%rsi),%r14
@@ -347,27 +333,21 @@ $code.=<<___;
 .Lmul_epilogue:
 	ret
 .cfi_endproc
-.size	bn_mul_mont,.-bn_mul_mont
+.size	bn_mul_mont_nohw,.-bn_mul_mont_nohw
 ___
 {{{
 my @A=("%r10","%r11");
 my @N=("%r13","%rdi");
 $code.=<<___;
+.globl	bn_mul4x_mont
 .type	bn_mul4x_mont,\@function,6
 .align	16
 bn_mul4x_mont:
 .cfi_startproc
+	_CET_ENDBR
 	mov	${num}d,${num}d
 	mov	%rsp,%rax
 .cfi_def_cfa_register	%rax
-.Lmul4x_enter:
-___
-$code.=<<___ if ($addx);
-	and	\$0x80100,%r11d
-	cmp	\$0x80100,%r11d
-	je	.Lmulx4x_enter
-___
-$code.=<<___;
 	push	%rbx
 .cfi_push	%rbx
 	push	%rbp
@@ -782,7 +762,7 @@ ___
 $code.=<<___;
 	mov	8(%rsp,$num,8),%rsi	# restore %rsp
 .cfi_def_cfa	%rsi, 8
-	mov	\$1,%rax
+	# No return value
 	mov	-48(%rsi),%r15
 .cfi_restore	%r15
 	mov	-40(%rsi),%r14
@@ -808,7 +788,7 @@ ___
 # void bn_sqr8x_mont(
 my $rptr="%rdi";	# const BN_ULONG *rptr,
 my $aptr="%rsi";	# const BN_ULONG *aptr,
-my $bptr="%rdx";	# not used
+my $mulx_adx_capable="%rdx"; # Different than upstream!
 my $nptr="%rcx";	# const BN_ULONG *nptr,
 my $n0  ="%r8";		# const BN_ULONG *n0);
 my $num ="%r9";		# int num, has to be divisible by 8
@@ -824,13 +804,15 @@ ___
 $code.=<<___;
 .extern	bn_sqr8x_internal		# see x86_64-mont5 module
 
+.globl	bn_sqr8x_mont
 .type	bn_sqr8x_mont,\@function,6
 .align	32
 bn_sqr8x_mont:
 .cfi_startproc
+	_CET_ENDBR
+	mov	${num}d,${num}d
 	mov	%rsp,%rax
 .cfi_def_cfa_register	%rax
-.Lsqr8x_enter:
 	push	%rbx
 .cfi_push	%rbx
 	push	%rbp
@@ -907,11 +889,8 @@ bn_sqr8x_mont:
 	movq	%r10, %xmm3		# -$num
 ___
 $code.=<<___ if ($addx);
-	leaq	OPENSSL_ia32cap_P(%rip),%rax
-	mov	8(%rax),%eax
-	and	\$0x80100,%eax
-	cmp	\$0x80100,%eax
-	jne	.Lsqr8x_nox
+	test	$mulx_adx_capable,$mulx_adx_capable
+	jz	.Lsqr8x_nox
 
 	call	bn_sqrx8x_internal	# see x86_64-mont5 module
 					# %rax	top-most carry
@@ -997,7 +976,7 @@ $code.=<<___;
 	add	\$32,$num
 	jnz	.Lsqr8x_cond_copy
 
-	mov	\$1,%rax
+	# No return value
 	mov	-48(%rsi),%r15
 .cfi_restore	%r15
 	mov	-40(%rsi),%r14
@@ -1023,13 +1002,14 @@ if ($addx) {{{
 my $bp="%rdx";	# original value
 
 $code.=<<___;
+.globl	bn_mulx4x_mont
 .type	bn_mulx4x_mont,\@function,6
 .align	32
 bn_mulx4x_mont:
 .cfi_startproc
+	_CET_ENDBR
 	mov	%rsp,%rax
 .cfi_def_cfa_register	%rax
-.Lmulx4x_enter:
 	push	%rbx
 .cfi_push	%rbx
 	push	%rbp
@@ -1365,7 +1345,7 @@ $code.=<<___;
 
 	mov	%rdx,($tptr)
 
-	mov	\$1,%rax
+	# No return value
 	mov	-48(%rsi),%r15
 .cfi_restore	%r15
 	mov	-40(%rsi),%r14
@@ -1534,9 +1514,9 @@ sqr_handler:
 
 .section	.pdata
 .align	4
-	.rva	.LSEH_begin_bn_mul_mont
-	.rva	.LSEH_end_bn_mul_mont
-	.rva	.LSEH_info_bn_mul_mont
+	.rva	.LSEH_begin_bn_mul_mont_nohw
+	.rva	.LSEH_end_bn_mul_mont_nohw
+	.rva	.LSEH_info_bn_mul_mont_nohw
 
 	.rva	.LSEH_begin_bn_mul4x_mont
 	.rva	.LSEH_end_bn_mul4x_mont
@@ -1554,7 +1534,7 @@ ___
 $code.=<<___;
 .section	.xdata
 .align	8
-.LSEH_info_bn_mul_mont:
+.LSEH_info_bn_mul_mont_nohw:
 	.byte	9,0,0,0
 	.rva	mul_handler
 	.rva	.Lmul_body,.Lmul_epilogue	# HandlerData[]
@@ -1578,4 +1558,4 @@ ___
 }
 
 print $code;
-close STDOUT or die "error closing STDOUT";
+close STDOUT or die "error closing STDOUT: $!";

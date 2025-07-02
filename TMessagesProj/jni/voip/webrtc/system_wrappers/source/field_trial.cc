@@ -17,6 +17,7 @@
 
 #include "absl/algorithm/container.h"
 #include "absl/strings/string_view.h"
+#include "experiments/registered_field_trials.h"
 #include "rtc_base/checks.h"
 #include "rtc_base/containers/flat_set.h"
 #include "rtc_base/logging.h"
@@ -115,10 +116,15 @@ std::string MergeFieldTrialsStrings(absl::string_view first,
 
 #ifndef WEBRTC_EXCLUDE_FIELD_TRIAL_DEFAULT
 std::string FindFullName(absl::string_view name) {
-#if WEBRTC_STRICT_FIELD_TRIALS
+#if WEBRTC_STRICT_FIELD_TRIALS == 1
   RTC_DCHECK(absl::c_linear_search(kRegisteredFieldTrials, name) ||
              TestKeys().contains(name))
-      << name << " is not registered.";
+      << name << " is not registered, see g3doc/field-trials.md.";
+#elif WEBRTC_STRICT_FIELD_TRIALS == 2
+  RTC_LOG_IF(LS_WARNING,
+             !(absl::c_linear_search(kRegisteredFieldTrials, name) ||
+               TestKeys().contains(name)))
+      << name << " is not registered, see g3doc/field-trials.md.";
 #endif
 
   if (trials_init_string == NULL)
@@ -167,12 +173,12 @@ const char* GetFieldTrialString() {
   return trials_init_string;
 }
 
-ScopedGlobalFieldTrialsForTesting::ScopedGlobalFieldTrialsForTesting(
+FieldTrialsAllowedInScopeForTesting::FieldTrialsAllowedInScopeForTesting(
     flat_set<std::string> keys) {
   TestKeys() = std::move(keys);
 }
 
-ScopedGlobalFieldTrialsForTesting::~ScopedGlobalFieldTrialsForTesting() {
+FieldTrialsAllowedInScopeForTesting::~FieldTrialsAllowedInScopeForTesting() {
   TestKeys().clear();
 }
 

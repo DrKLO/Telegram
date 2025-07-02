@@ -1,0 +1,141 @@
+# This is cert.pem from BoringSSL's tests.
+# https://boringssl.googlesource.com/boringssl/+/5acc423517ec9d53e6cf2cd1b968405e0972c745/ssl/test/runner/cert.pem
+
+# This file is itself valid ascii-der, however uses comments to name various
+# sections (using BEGIN and END). These named sections can be overlapping, and
+# are replaced for generating various test data.
+
+SEQUENCE {
+  SEQUENCE {
+    [0] {
+      INTEGER { 2 }
+    }
+#-----BEGIN SERIAL-----
+    INTEGER { `00fbb04c2eab109b0c` }
+#-----END SERIAL-----
+#-----BEGIN INNER_SIGNATURE_ALGORITHM-----
+    SEQUENCE {
+      # sha1WithRSAEncryption
+      OBJECT_IDENTIFIER { 1.2.840.113549.1.1.5 }
+      NULL {}
+    }
+#-----END INNER_SIGNATURE_ALGORITHM-----
+    SEQUENCE {
+      SET {
+        SEQUENCE {
+          # countryName
+          OBJECT_IDENTIFIER { 2.5.4.6 }
+          PrintableString { "AU" }
+        }
+      }
+      SET {
+        SEQUENCE {
+          # stateOrProvinceName
+          OBJECT_IDENTIFIER { 2.5.4.8 }
+          UTF8String { "Some-State" }
+        }
+      }
+      SET {
+        SEQUENCE {
+          # organizationName
+          OBJECT_IDENTIFIER { 2.5.4.10 }
+          UTF8String { "Internet Widgits Pty Ltd" }
+        }
+      }
+    }
+#-----BEGIN VALIDITY-----
+    SEQUENCE {
+      UTCTime { "140423205040Z" }
+      UTCTime { "170422205040Z" }
+    }
+#-----END VALIDITY-----
+#-----BEGIN SUBJECT-----
+    SEQUENCE {
+      SET {
+        SEQUENCE {
+          # countryName
+          OBJECT_IDENTIFIER { 2.5.4.6 }
+          PrintableString { "AU" }
+        }
+      }
+      SET {
+        SEQUENCE {
+          # stateOrProvinceName
+          OBJECT_IDENTIFIER { 2.5.4.8 }
+          UTF8String { "Some-State" }
+        }
+      }
+      SET {
+        SEQUENCE {
+          # organizationName
+          OBJECT_IDENTIFIER { 2.5.4.10 }
+          UTF8String { "Internet Widgits Pty Ltd" }
+        }
+      }
+    }
+#-----END SUBJECT-----
+    SEQUENCE {
+      SEQUENCE {
+        # rsaEncryption
+        OBJECT_IDENTIFIER { 1.2.840.113549.1.1.1 }
+        NULL {}
+      }
+      BIT_STRING {
+        `00`
+        SEQUENCE {
+          INTEGER { `00d82bc8a632e462ff4df3d0ad598b45a7bdf147bf09587b22bd35ae97258694a080c0b41f7691674631d01084b7221e70239172c8e96d793a8577800fc4951675c54a714cc8633fa3f2639c2a4f9afacbc1716e288528a0271e651cae07d55b6f2d43ed2b90b18caf246daee9173a05c1bfb81cae653b1b58c2d9aed6aa6788f1` }
+          INTEGER { 65537 }
+        }
+      }
+    }
+    [3] {
+#-----BEGIN EXTENSIONS-----
+      SEQUENCE {
+        SEQUENCE {
+          # subjectKeyIdentifier
+          OBJECT_IDENTIFIER { 2.5.29.14 }
+          OCTET_STRING {
+#-----BEGIN SUBJECT_KEY_IDENTIFIER-----
+            OCTET_STRING { `8b75d5accb08be0e1f65b7fa56be6ca775da85af` }
+#-----END SUBJECT_KEY_IDENTIFIER-----
+          }
+        }
+        SEQUENCE {
+          # authorityKeyIdentifier
+          OBJECT_IDENTIFIER { 2.5.29.35 }
+          OCTET_STRING {
+#-----BEGIN AUTHORITY_KEY_IDENTIFIER-----
+            SEQUENCE {
+              [0 PRIMITIVE] { `8b75d5accb08be0e1f65b7fa56be6ca775da85af` }
+            }
+#-----END AUTHORITY_KEY_IDENTIFIER-----
+          }
+        }
+
+        SEQUENCE {
+          # basicConstraints
+          OBJECT_IDENTIFIER { 2.5.29.19 }
+          OCTET_STRING {
+#-----BEGIN BASIC_CONSTRAINTS-----
+            SEQUENCE {
+              BOOLEAN { `ff` }
+            }
+#-----END BASIC_CONSTRAINTS-----
+          }
+        }
+#-----BEGIN EXTENSION-----
+# (For adding in another extension at the end of the list)
+#-----END EXTENSION-----
+      }
+#-----END EXTENSIONS-----
+    }
+  }
+#-----BEGIN OUTER_SIGNATURE_ALGORITHM-----
+  SEQUENCE {
+    # sha1WithRSAEncryption
+    OBJECT_IDENTIFIER { 1.2.840.113549.1.1.5 }
+    NULL {}
+  }
+#-----END OUTER_SIGNATURE_ALGORITHM-----
+  BIT_STRING { `003be8786d95d63d6af713192c1bc288ae22abf48d32f57c7167cf2dd11cc2c387e2e9be895ce434ab4891c23f95ae2b479e25786b4f9a10a472fdcff7020cb00a08a45ae2e5747e111d39606ac91f69f32e6326dc9eef6b7a0ae1545798aa729178047e1f8f654d1f0b12ac9c240f84141a552d1fbbf09d09b2085c5932658026` }
+}

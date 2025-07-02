@@ -67,8 +67,8 @@ class PacketSequencer {
 
   int8_t last_payload_type_;
   uint32_t last_rtp_timestamp_;
-  int64_t last_capture_time_ms_;
-  int64_t last_timestamp_time_ms_;
+  Timestamp last_capture_time_ = Timestamp::MinusInfinity();
+  Timestamp last_timestamp_time_ = Timestamp::MinusInfinity();
   bool last_packet_marker_bit_;
 };
 

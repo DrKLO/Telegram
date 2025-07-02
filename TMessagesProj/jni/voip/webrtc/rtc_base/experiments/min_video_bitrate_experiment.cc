@@ -94,15 +94,14 @@ absl::optional<DataRate> GetExperimentalMinVideoBitrate(VideoCodecType type) {
     switch (type) {
       case kVideoCodecVP8:
         return min_bitrate_vp8.GetOptional();
+      case kVideoCodecH265:
+      //  TODO(bugs.webrtc.org/13485): Use VP9 bitrate limits for now.
       case kVideoCodecVP9:
         return min_bitrate_vp9.GetOptional();
       case kVideoCodecAV1:
         return min_bitrate_av1.GetOptional();
       case kVideoCodecH264:
         return min_bitrate_h264.GetOptional();
-#ifndef DISABLE_H265
-      case kVideoCodecH265:
-#endif
       case kVideoCodecGeneric:
       case kVideoCodecMultiplex:
         return absl::nullopt;

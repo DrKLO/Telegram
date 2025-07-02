@@ -61,6 +61,7 @@ ABSL_NAMESPACE_END
 #include <utility>
 
 #include "absl/base/attributes.h"
+#include "absl/base/nullability.h"
 #include "absl/base/internal/inline_variable.h"
 #include "absl/meta/type_traits.h"
 #include "absl/types/bad_optional_access.h"
@@ -130,7 +131,7 @@ class optional : private optional_internal::optional_data<T>,
 
   // Constructs an `optional` holding an empty value, NOT a default constructed
   // `T`.
-  constexpr optional() noexcept {}
+  constexpr optional() noexcept = default;
 
   // Constructs an `optional` initialized with `nullopt` to hold an empty value.
   constexpr optional(nullopt_t) noexcept {}  // NOLINT(runtime/explicit)
@@ -150,7 +151,7 @@ class optional : private optional_internal::optional_data<T>,
                 std::is_same<InPlaceT, in_place_t>,
                 std::is_constructible<T, Args&&...> >::value>* = nullptr>
   constexpr explicit optional(InPlaceT, Args&&... args)
-      : data_base(in_place_t(), absl::forward<Args>(args)...) {}
+      : data_base(in_place_t(), std::forward<Args>(args)...) {}
 
   // Constructs a non-empty `optional` direct-initialized value of type `T` from
   // the arguments of an initializer_list and `std::forward<Args>(args)...`.
@@ -161,8 +162,7 @@ class optional : private optional_internal::optional_data<T>,
                 T, std::initializer_list<U>&, Args&&...>::value>::type>
   constexpr explicit optional(in_place_t, std::initializer_list<U> il,
                               Args&&... args)
-      : data_base(in_place_t(), il, absl::forward<Args>(args)...) {
-  }
+      : data_base(in_place_t(), il, std::forward<Args>(args)...) {}
 
   // Value constructor (implicit)
   template <
@@ -175,21 +175,21 @@ class optional : private optional_internal::optional_data<T>,
                             std::is_convertible<U&&, T>,
                             std::is_constructible<T, U&&> >::value,
           bool>::type = false>
-  constexpr optional(U&& v) : data_base(in_place_t(), absl::forward<U>(v)) {}
+  constexpr optional(U&& v) : data_base(in_place_t(), std::forward<U>(v)) {}
 
   // Value constructor (explicit)
   template <
       typename U = T,
       typename std::enable_if<
           absl::conjunction<absl::negation<std::is_same<
-                                in_place_t, typename std::decay<U>::type>>,
+                                in_place_t, typename std::decay<U>::type> >,
                             absl::negation<std::is_same<
-                                optional<T>, typename std::decay<U>::type>>,
-                            absl::negation<std::is_convertible<U&&, T>>,
-                            std::is_constructible<T, U&&>>::value,
+                                optional<T>, typename std::decay<U>::type> >,
+                            absl::negation<std::is_convertible<U&&, T> >,
+                            std::is_constructible<T, U&&> >::value,
           bool>::type = false>
   explicit constexpr optional(U&& v)
-      : data_base(in_place_t(), absl::forward<U>(v)) {}
+      : data_base(in_place_t(), std::forward<U>(v)) {}
 
   // Converting copy constructor (implicit)
   template <typename U,
@@ -357,7 +357,7 @@ class optional : private optional_internal::optional_data<T>,
   template <typename... Args,
             typename = typename std::enable_if<
                 std::is_constructible<T, Args&&...>::value>::type>
-  T& emplace(Args&&... args) {
+  T& emplace(Args&&... args) ABSL_ATTRIBUTE_LIFETIME_BOUND {
     this->destruct();
     this->construct(std::forward<Args>(args)...);
     return reference();
@@ -377,7 +377,8 @@ class optional : private optional_internal::optional_data<T>,
   template <typename U, typename... Args,
             typename = typename std::enable_if<std::is_constructible<
                 T, std::initializer_list<U>&, Args&&...>::value>::type>
-  T& emplace(std::initializer_list<U> il, Args&&... args) {
+  T& emplace(std::initializer_list<U> il,
+             Args&&... args) ABSL_ATTRIBUTE_LIFETIME_BOUND {
     this->destruct();
     this->construct(il, std::forward<Args>(args)...);
     return reference();
@@ -414,11 +415,11 @@ class optional : private optional_internal::optional_data<T>,
   // `optional` is empty, behavior is undefined.
   //
   // If you need myOpt->foo in constexpr, use (*myOpt).foo instead.
-  const T* operator->() const {
+  absl::Nonnull<const T*> operator->() const ABSL_ATTRIBUTE_LIFETIME_BOUND {
     ABSL_HARDENING_ASSERT(this->engaged_);
     return std::addressof(this->data_);
   }
-  T* operator->() {
+  absl::Nonnull<T*> operator->() ABSL_ATTRIBUTE_LIFETIME_BOUND {
     ABSL_HARDENING_ASSERT(this->engaged_);
     return std::addressof(this->data_);
   }
@@ -427,17 +428,19 @@ class optional : private optional_internal::optional_data<T>,
   //
   // Accesses the underlying `T` value of an `optional`. If the `optional` is
   // empty, behavior is undefined.
-  constexpr const T& operator*() const& {
-    return ABSL_HARDENING_ASSERT(this->engaged_), reference();
-  }
-  T& operator*() & {
+  constexpr const T& operator*() const& ABSL_ATTRIBUTE_LIFETIME_BOUND {
     ABSL_HARDENING_ASSERT(this->engaged_);
     return reference();
   }
-  constexpr const T&& operator*() const && {
-    return ABSL_HARDENING_ASSERT(this->engaged_), absl::move(reference());
+  T& operator*() & ABSL_ATTRIBUTE_LIFETIME_BOUND {
+    ABSL_HARDENING_ASSERT(this->engaged_);
+    return reference();
   }
-  T&& operator*() && {
+  constexpr const T&& operator*() const&& ABSL_ATTRIBUTE_LIFETIME_BOUND {
+    ABSL_HARDENING_ASSERT(this->engaged_);
+    return std::move(reference());
+  }
+  T&& operator*() && ABSL_ATTRIBUTE_LIFETIME_BOUND {
     ABSL_HARDENING_ASSERT(this->engaged_);
     return std::move(reference());
   }
@@ -472,24 +475,25 @@ class optional : private optional_internal::optional_data<T>,
   // and lvalue/rvalue-ness of the `optional` is preserved to the view of
   // the `T` sub-object. Throws `absl::bad_optional_access` when the `optional`
   // is empty.
-  constexpr const T& value() const & {
+  constexpr const T& value() const& ABSL_ATTRIBUTE_LIFETIME_BOUND {
     return static_cast<bool>(*this)
                ? reference()
                : (optional_internal::throw_bad_optional_access(), reference());
   }
-  T& value() & {
+  T& value() & ABSL_ATTRIBUTE_LIFETIME_BOUND {
     return static_cast<bool>(*this)
                ? reference()
                : (optional_internal::throw_bad_optional_access(), reference());
   }
-  T&& value() && {  // NOLINT(build/c++11)
+  T&& value() && ABSL_ATTRIBUTE_LIFETIME_BOUND {  // NOLINT(build/c++11)
     return std::move(
         static_cast<bool>(*this)
             ? reference()
             : (optional_internal::throw_bad_optional_access(), reference()));
   }
-  constexpr const T&& value() const && {  // NOLINT(build/c++11)
-    return absl::move(
+  constexpr const T&& value()
+      const&& ABSL_ATTRIBUTE_LIFETIME_BOUND {  // NOLINT(build/c++11)
+    return std::move(
         static_cast<bool>(*this)
             ? reference()
             : (optional_internal::throw_bad_optional_access(), reference()));
@@ -508,9 +512,8 @@ class optional : private optional_internal::optional_data<T>,
                   "optional<T>::value_or: T must be copy constructible");
     static_assert(std::is_convertible<U&&, value_type>::value,
                   "optional<T>::value_or: U must be convertible to T");
-    return static_cast<bool>(*this)
-               ? **this
-               : static_cast<T>(absl::forward<U>(v));
+    return static_cast<bool>(*this) ? **this
+                                    : static_cast<T>(std::forward<U>(v));
   }
   template <typename U>
   T value_or(U&& v) && {  // NOLINT(build/c++11)
@@ -570,19 +573,18 @@ void swap(optional<T>& a, optional<T>& b) noexcept(noexcept(a.swap(b))) {
 //   static_assert(opt.value() == 1, "");
 template <typename T>
 constexpr optional<typename std::decay<T>::type> make_optional(T&& v) {
-  return optional<typename std::decay<T>::type>(absl::forward<T>(v));
+  return optional<typename std::decay<T>::type>(std::forward<T>(v));
 }
 
 template <typename T, typename... Args>
 constexpr optional<T> make_optional(Args&&... args) {
-  return optional<T>(in_place_t(), absl::forward<Args>(args)...);
+  return optional<T>(in_place_t(), std::forward<Args>(args)...);
 }
 
 template <typename T, typename U, typename... Args>
 constexpr optional<T> make_optional(std::initializer_list<U> il,
                                     Args&&... args) {
-  return optional<T>(in_place_t(), il,
-                     absl::forward<Args>(args)...);
+  return optional<T>(in_place_t(), il, std::forward<Args>(args)...);
 }
 
 // Relational operators [optional.relops]

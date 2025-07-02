@@ -1,0 +1,39 @@
+specific_include_rules = {
+  ".*": [
+    "+modules/video_coding",
+  ],
+  ".*": [
+    "+video"
+  ],
+  "dummy_peer_connection\.h": [
+    "+rtc_base/ref_counted_object.h",
+  ],
+  "neteq_factory_with_codecs\.h": [
+    "+system_wrappers/include/clock.h",
+  ],
+  "network_emulation_manager\.h": [
+    "+rtc_base/thread.h",
+    "+rtc_base/network.h",
+    "+rtc_base/network_constants.h",
+  ],
+  "peer_network_dependencies\.h": [
+    "+rtc_base/network.h",
+    "+rtc_base/thread.h",
+  ],
+  "peerconnection_quality_test_fixture\.h": [
+    "+logging/rtc_event_log/rtc_event_log_factory_interface.h",
+    "+rtc_base/network.h",
+    "+rtc_base/rtc_certificate_generator.h",
+    "+rtc_base/ssl_certificate.h",
+    "+rtc_base/thread.h",
+    "+media/base/media_constants.h",
+    "+modules/audio_processing/include/audio_processing.h",
+  ],
+  "time_controller\.h": [
+    "+rtc_base/synchronization/yield_policy.h",
+    "+system_wrappers/include/clock.h",
+  ],
+  "create_frame_generator\.h": [
+    "+system_wrappers/include/clock.h",
+  ],
+}

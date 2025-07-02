@@ -1,5 +1,7 @@
 package org.telegram.ui.Components.voip;
 
+import static org.telegram.messenger.AndroidUtilities.dp;
+
 import android.content.Context;
 import android.view.View;
 import android.widget.FrameLayout;
@@ -38,13 +40,13 @@ public class GroupCallGridCell extends FrameLayout {
             super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(gridAdapter.getItemHeight(position), MeasureSpec.EXACTLY));
         } else {
             float spanCount = GroupCallActivity.isLandscapeMode ? 3f : 2f;
-            float parentWidth;
+            float parentWidth = AndroidUtilities.displaySize.x - dp(14) * 2 + (GroupCallActivity.isLandscapeMode ? -dp(90) : 0);
             float h;
-            if (getParent() != null) {
-                parentWidth = ((View) getParent()).getMeasuredWidth();
-            } else {
-                parentWidth = MeasureSpec.getSize(widthMeasureSpec);
-            }
+//            if (getParent() != null && ((View) getParent()).getMeasuredWidth() != 0) {
+//                parentWidth = ((View) getParent()).getMeasuredWidth();
+//            } else {
+//                parentWidth = MeasureSpec.getSize(widthMeasureSpec);
+//            }
             if (GroupCallActivity.isTabletMode) {
                 h = parentWidth / 2f;
             } else {

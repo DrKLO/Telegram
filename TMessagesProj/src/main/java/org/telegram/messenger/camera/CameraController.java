@@ -337,8 +337,8 @@ public class CameraController implements MediaRecorder.OnInfoListener {
 
             // Break if the marker is EXIF in APP1.
             if (marker == 0xE1 && length >= 8 &&
-                    pack(jpeg, offset + 2, 4, false) == 0x45786966 &&
-                    pack(jpeg, offset + 6, 2, false) == 0) {
+                pack(jpeg, offset + 2, 4, false) == 0x45786966 &&
+                pack(jpeg, offset + 6, 2, false) == 0) {
                 offset += 8;
                 length -= 8;
                 break;

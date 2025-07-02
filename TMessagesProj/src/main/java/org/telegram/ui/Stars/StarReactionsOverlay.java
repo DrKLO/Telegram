@@ -222,7 +222,7 @@ public class StarReactionsOverlay extends View {
 
             hash = btn.reaction.hashCode();
         }
-        canvas.translate(pos[0] - pos2[0], pos[1] - pos2[1]);
+        canvas.translate(pos[0] - pos2[0], pos[1] - pos2[1] + cell.getPaddingTop());
         if (cell instanceof ChatMessageCell) {
             final ChatMessageCell messageCell = (ChatMessageCell) cell;
             messageCell.setScrimReaction(null);

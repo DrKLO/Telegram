@@ -26,7 +26,8 @@ void IceEventLog::LogCandidatePairConfig(
   if (event_log_ == nullptr) {
     return;
   }
-  candidate_pair_desc_by_id_[candidate_pair_id] = candidate_pair_desc;
+
+  candidate_pair_desc_by_id_.emplace(candidate_pair_id, candidate_pair_desc);
   event_log_->Log(std::make_unique<RtcEventIceCandidatePairConfig>(
       type, candidate_pair_id, candidate_pair_desc));
 }

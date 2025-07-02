@@ -15,7 +15,9 @@
 
 #include "api/adaptation/resource.h"
 #include "api/fec_controller_override.h"
+#include "api/rtc_error.h"
 #include "api/rtp_parameters.h"  // For DegradationPreference.
+#include "api/rtp_sender_interface.h"
 #include "api/scoped_refptr.h"
 #include "api/units/data_rate.h"
 #include "api/video/video_bitrate_allocator.h"
@@ -97,8 +99,10 @@ class VideoStreamEncoderInterface {
   // resolution. Should be replaced by a construction time setting.
   virtual void SetStartBitrate(int start_bitrate_bps) = 0;
 
-  // Request a key frame. Used for signalling from the remote receiver.
-  virtual void SendKeyFrame() = 0;
+  // Request a key frame. Used for signalling from the remote receiver with
+  // no arguments and for RTCRtpSender.generateKeyFrame with a list of
+  // rids/layers.
+  virtual void SendKeyFrame(const std::vector<VideoFrameType>& layers = {}) = 0;
 
   // Inform the encoder that a loss has occurred.
   virtual void OnLossNotification(
@@ -129,6 +133,9 @@ class VideoStreamEncoderInterface {
   // packetization for H.264.
   virtual void ConfigureEncoder(VideoEncoderConfig config,
                                 size_t max_data_payload_length) = 0;
+  virtual void ConfigureEncoder(VideoEncoderConfig config,
+                                size_t max_data_payload_length,
+                                SetParametersCallback callback) = 0;
 
   // Permanently stop encoding. After this method has returned, it is
   // guaranteed that no encoded frames will be delivered to the sink.

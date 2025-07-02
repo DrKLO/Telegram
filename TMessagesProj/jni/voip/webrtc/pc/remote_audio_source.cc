@@ -70,8 +70,9 @@ RemoteAudioSource::~RemoteAudioSource() {
   }
 }
 
-void RemoteAudioSource::Start(cricket::VoiceMediaChannel* media_channel,
-                              absl::optional<uint32_t> ssrc) {
+void RemoteAudioSource::Start(
+    cricket::VoiceMediaReceiveChannelInterface* media_channel,
+    absl::optional<uint32_t> ssrc) {
   RTC_DCHECK_RUN_ON(worker_thread_);
 
   // Register for callbacks immediately before AddSink so that we always get
@@ -84,8 +85,9 @@ void RemoteAudioSource::Start(cricket::VoiceMediaChannel* media_channel,
              std::make_unique<AudioDataProxy>(this));
 }
 
-void RemoteAudioSource::Stop(cricket::VoiceMediaChannel* media_channel,
-                             absl::optional<uint32_t> ssrc) {
+void RemoteAudioSource::Stop(
+    cricket::VoiceMediaReceiveChannelInterface* media_channel,
+    absl::optional<uint32_t> ssrc) {
   RTC_DCHECK_RUN_ON(worker_thread_);
   RTC_DCHECK(media_channel);
   ssrc ? media_channel->SetRawAudioSink(*ssrc, nullptr)

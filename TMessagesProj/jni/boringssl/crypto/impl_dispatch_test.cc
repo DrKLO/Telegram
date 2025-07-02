@@ -1,21 +1,20 @@
-/* Copyright (c) 2018, Google Inc.
- *
- * Permission to use, copy, modify, and/or distribute this software for any
- * purpose with or without fee is hereby granted, provided that the above
- * copyright notice and this permission notice appear in all copies.
- *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
- * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY
- * SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION
- * OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
- * CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE. */
+// Copyright 2018 The BoringSSL Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 #include <openssl/base.h>
 
-#if !defined(NDEBUG) && !defined(BORINGSSL_FIPS) && \
-    !defined(BORINGSSL_SHARED_LIBRARY)
+#if defined(BORINGSSL_DISPATCH_TEST) && !defined(BORINGSSL_SHARED_LIBRARY)
 
 #include <functional>
 #include <utility>
@@ -23,7 +22,6 @@
 
 #include <openssl/aead.h>
 #include <openssl/aes.h>
-#include <openssl/cpu.h>
 #include <openssl/mem.h>
 
 #include <gtest/gtest.h>
@@ -35,9 +33,14 @@ class ImplDispatchTest : public ::testing::Test {
  public:
   void SetUp() override {
 #if defined(OPENSSL_X86) || defined(OPENSSL_X86_64)
-    aesni_ = OPENSSL_ia32cap_P[1] & (1 << (57 - 32));
-    avx_movbe_ = ((OPENSSL_ia32cap_P[1] >> 22) & 0x41) == 0x41;
-    ssse3_ = OPENSSL_ia32cap_P[1] & (1 << (41 - 32));
+    aesni_ = CRYPTO_is_AESNI_capable();
+    avx_movbe_ = CRYPTO_is_AVX_capable() && CRYPTO_is_MOVBE_capable();
+    ssse3_ = CRYPTO_is_SSSE3_capable();
+    vaes_ = CRYPTO_is_VAES_capable() && CRYPTO_is_VPCLMULQDQ_capable() &&
+            CRYPTO_is_AVX2_capable();
+    avx512_ = CRYPTO_is_AVX512BW_capable() && CRYPTO_is_AVX512VL_capable() &&
+              CRYPTO_is_BMI2_capable();
+    avoid_zmm_ = CRYPTO_cpu_avoid_zmm_registers();
     is_x86_64_ =
 #if defined(OPENSSL_X86_64)
         true;
@@ -58,7 +61,7 @@ class ImplDispatchTest : public ::testing::Test {
 
     f();
 
-    for (const auto flag : flags) {
+    for (const auto& flag : flags) {
       SCOPED_TRACE(flag.first);
 
       ASSERT_LT(flag.first, sizeof(BORINGSSL_function_hit));
@@ -77,6 +80,9 @@ class ImplDispatchTest : public ::testing::Test {
   bool avx_movbe_ = false;
   bool ssse3_ = false;
   bool is_x86_64_ = false;
+  bool vaes_ = false;
+  bool avx512_ = false;
+  bool avoid_zmm_ = false;
 #endif
 };
 
@@ -89,16 +95,23 @@ constexpr size_t kFlag_aesni_gcm_encrypt = 2;
 constexpr size_t kFlag_aes_hw_set_encrypt_key = 3;
 constexpr size_t kFlag_vpaes_encrypt = 4;
 constexpr size_t kFlag_vpaes_set_encrypt_key = 5;
+constexpr size_t kFlag_aes_gcm_enc_update_vaes_avx2 = 6;
+constexpr size_t kFlag_aes_gcm_enc_update_vaes_avx512 = 7;
 
 TEST_F(ImplDispatchTest, AEAD_AES_GCM) {
   AssertFunctionsHit(
       {
-          {kFlag_aes_hw_ctr32_encrypt_blocks, aesni_},
+          {kFlag_aes_hw_ctr32_encrypt_blocks, aesni_ && !(is_x86_64_ && vaes_)},
           {kFlag_aes_hw_encrypt, aesni_},
           {kFlag_aes_hw_set_encrypt_key, aesni_},
-          {kFlag_aesni_gcm_encrypt, is_x86_64_ && aesni_ && avx_movbe_},
+          {kFlag_aesni_gcm_encrypt,
+           is_x86_64_ && aesni_ && avx_movbe_ && !vaes_},
           {kFlag_vpaes_encrypt, ssse3_ && !aesni_},
           {kFlag_vpaes_set_encrypt_key, ssse3_ && !aesni_},
+          {kFlag_aes_gcm_enc_update_vaes_avx2,
+           is_x86_64_ && vaes_ && !(avx512_ && !avoid_zmm_)},
+          {kFlag_aes_gcm_enc_update_vaes_avx512,
+           is_x86_64_ && vaes_ && avx512_ && !avoid_zmm_},
       },
       [] {
         const uint8_t kZeros[16] = {0};
@@ -148,4 +161,4 @@ TEST_F(ImplDispatchTest, AES_single_block) {
 
 #endif  // X86 || X86_64
 
-#endif  // !NDEBUG && !FIPS && !SHARED_LIBRARY
+#endif  // DISPATCH_TEST && !SHARED_LIBRARY

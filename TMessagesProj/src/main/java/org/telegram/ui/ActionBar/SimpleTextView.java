@@ -324,7 +324,7 @@ public class SimpleTextView extends View implements Drawable.Callback {
             return;
         }
         if (layout.getLineCount() > 0) {
-            textWidth = (int) Math.max(Math.ceil(layout.getLineWidth(0)), Math.ceil(layout.getLineRight(0)));
+            textWidth = (int) Math.max(Math.ceil(layout.getLineWidth(0)), Math.ceil(layout.getLineRight(0) - layout.getLineLeft(0)));
             if (fullLayout != null) {
                 textHeight = fullLayout.getLineBottom(fullLayout.getLineCount() - 1);
             } else if (maxLines > 1 && layout.getLineCount() > 0) {
@@ -640,9 +640,9 @@ public class SimpleTextView extends View implements Drawable.Callback {
         return rightDrawable;
     }
 
-    public void setRightDrawable(Drawable drawable) {
+    public boolean setRightDrawable(Drawable drawable) {
         if (rightDrawable == drawable) {
-            return;
+            return false;
         }
         if (rightDrawable != null) {
             rightDrawable.setCallback(null);
@@ -654,11 +654,12 @@ public class SimpleTextView extends View implements Drawable.Callback {
         if (!recreateLayoutMaybe()) {
             invalidate();
         }
+        return true;
     }
 
-    public void setRightDrawable2(Drawable drawable) {
+    public boolean setRightDrawable2(Drawable drawable) {
         if (rightDrawable2 == drawable) {
-            return;
+            return false;
         }
         if (rightDrawable2 != null) {
             rightDrawable2.setCallback(null);
@@ -670,6 +671,7 @@ public class SimpleTextView extends View implements Drawable.Callback {
         if (!recreateLayoutMaybe()) {
             invalidate();
         }
+        return true;
     }
 
     public Drawable getRightDrawable2() {

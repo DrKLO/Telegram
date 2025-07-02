@@ -41,6 +41,7 @@
 #include <type_traits>
 
 #include "absl/algorithm/algorithm.h"
+#include "absl/base/attributes.h"
 #include "absl/base/config.h"
 #include "absl/base/dynamic_annotations.h"
 #include "absl/base/internal/throw_delegate.h"
@@ -62,11 +63,10 @@ constexpr static auto kFixedArrayUseDefault = static_cast<size_t>(-1);
 // A `FixedArray` provides a run-time fixed-size array, allocating a small array
 // inline for efficiency.
 //
-// Most users should not specify an `inline_elements` argument and let
-// `FixedArray` automatically determine the number of elements
-// to store inline based on `sizeof(T)`. If `inline_elements` is specified, the
-// `FixedArray` implementation will use inline storage for arrays with a
-// length <= `inline_elements`.
+// Most users should not specify the `N` template parameter and let `FixedArray`
+// automatically determine the number of elements to store inline based on
+// `sizeof(T)`. If `N` is specified, the `FixedArray` implementation will use
+// inline storage for arrays with a length <= `N`.
 //
 // Note that a `FixedArray` constructed with a `size_type` argument will
 // default-initialize its values by leaving trivially constructible types
@@ -75,7 +75,7 @@ constexpr static auto kFixedArrayUseDefault = static_cast<size_t>(-1);
 // `std::vector`.
 template <typename T, size_t N = kFixedArrayUseDefault,
           typename A = std::allocator<T>>
-class FixedArray {
+class ABSL_ATTRIBUTE_WARN_UNUSED FixedArray {
   static_assert(!std::is_array<T>::value || std::extent<T>::value > 0,
                 "Arrays with unknown bounds cannot be used with FixedArray.");
 
@@ -118,14 +118,20 @@ class FixedArray {
       (N == kFixedArrayUseDefault ? kInlineBytesDefault / sizeof(value_type)
                                   : static_cast<size_type>(N));
 
-  FixedArray(
-      const FixedArray& other,
-      const allocator_type& a = allocator_type()) noexcept(NoexceptCopyable())
+  FixedArray(const FixedArray& other) noexcept(NoexceptCopyable())
+      : FixedArray(other,
+                   AllocatorTraits::select_on_container_copy_construction(
+                       other.storage_.alloc())) {}
+
+  FixedArray(const FixedArray& other,
+             const allocator_type& a) noexcept(NoexceptCopyable())
       : FixedArray(other.begin(), other.end(), a) {}
 
-  FixedArray(
-      FixedArray&& other,
-      const allocator_type& a = allocator_type()) noexcept(NoexceptMovable())
+  FixedArray(FixedArray&& other) noexcept(NoexceptMovable())
+      : FixedArray(std::move(other), other.storage_.alloc()) {}
+
+  FixedArray(FixedArray&& other,
+             const allocator_type& a) noexcept(NoexceptMovable())
       : FixedArray(std::make_move_iterator(other.begin()),
                    std::make_move_iterator(other.end()), a) {}
 
@@ -201,18 +207,22 @@ class FixedArray {
   //
   // Returns a const T* pointer to elements of the `FixedArray`. This pointer
   // can be used to access (but not modify) the contained elements.
-  const_pointer data() const { return AsValueType(storage_.begin()); }
+  const_pointer data() const ABSL_ATTRIBUTE_LIFETIME_BOUND {
+    return AsValueType(storage_.begin());
+  }
 
   // Overload of FixedArray::data() to return a T* pointer to elements of the
   // fixed array. This pointer can be used to access and modify the contained
   // elements.
-  pointer data() { return AsValueType(storage_.begin()); }
+  pointer data() ABSL_ATTRIBUTE_LIFETIME_BOUND {
+    return AsValueType(storage_.begin());
+  }
 
   // FixedArray::operator[]
   //
   // Returns a reference the ith element of the fixed array.
   // REQUIRES: 0 <= i < size()
-  reference operator[](size_type i) {
+  reference operator[](size_type i) ABSL_ATTRIBUTE_LIFETIME_BOUND {
     ABSL_HARDENING_ASSERT(i < size());
     return data()[i];
   }
@@ -220,7 +230,7 @@ class FixedArray {
   // Overload of FixedArray::operator()[] to return a const reference to the
   // ith element of the fixed array.
   // REQUIRES: 0 <= i < size()
-  const_reference operator[](size_type i) const {
+  const_reference operator[](size_type i) const ABSL_ATTRIBUTE_LIFETIME_BOUND {
     ABSL_HARDENING_ASSERT(i < size());
     return data()[i];
   }
@@ -229,7 +239,7 @@ class FixedArray {
   //
   // Bounds-checked access.  Returns a reference to the ith element of the fixed
   // array, or throws std::out_of_range
-  reference at(size_type i) {
+  reference at(size_type i) ABSL_ATTRIBUTE_LIFETIME_BOUND {
     if (ABSL_PREDICT_FALSE(i >= size())) {
       base_internal::ThrowStdOutOfRange("FixedArray::at failed bounds check");
     }
@@ -238,7 +248,7 @@ class FixedArray {
 
   // Overload of FixedArray::at() to return a const reference to the ith element
   // of the fixed array.
-  const_reference at(size_type i) const {
+  const_reference at(size_type i) const ABSL_ATTRIBUTE_LIFETIME_BOUND {
     if (ABSL_PREDICT_FALSE(i >= size())) {
       base_internal::ThrowStdOutOfRange("FixedArray::at failed bounds check");
     }
@@ -248,14 +258,14 @@ class FixedArray {
   // FixedArray::front()
   //
   // Returns a reference to the first element of the fixed array.
-  reference front() {
+  reference front() ABSL_ATTRIBUTE_LIFETIME_BOUND {
     ABSL_HARDENING_ASSERT(!empty());
     return data()[0];
   }
 
   // Overload of FixedArray::front() to return a reference to the first element
   // of a fixed array of const values.
-  const_reference front() const {
+  const_reference front() const ABSL_ATTRIBUTE_LIFETIME_BOUND {
     ABSL_HARDENING_ASSERT(!empty());
     return data()[0];
   }
@@ -263,14 +273,14 @@ class FixedArray {
   // FixedArray::back()
   //
   // Returns a reference to the last element of the fixed array.
-  reference back() {
+  reference back() ABSL_ATTRIBUTE_LIFETIME_BOUND {
     ABSL_HARDENING_ASSERT(!empty());
     return data()[size() - 1];
   }
 
   // Overload of FixedArray::back() to return a reference to the last element
   // of a fixed array of const values.
-  const_reference back() const {
+  const_reference back() const ABSL_ATTRIBUTE_LIFETIME_BOUND {
     ABSL_HARDENING_ASSERT(!empty());
     return data()[size() - 1];
   }
@@ -278,62 +288,74 @@ class FixedArray {
   // FixedArray::begin()
   //
   // Returns an iterator to the beginning of the fixed array.
-  iterator begin() { return data(); }
+  iterator begin() ABSL_ATTRIBUTE_LIFETIME_BOUND { return data(); }
 
   // Overload of FixedArray::begin() to return a const iterator to the
   // beginning of the fixed array.
-  const_iterator begin() const { return data(); }
+  const_iterator begin() const ABSL_ATTRIBUTE_LIFETIME_BOUND { return data(); }
 
   // FixedArray::cbegin()
   //
   // Returns a const iterator to the beginning of the fixed array.
-  const_iterator cbegin() const { return begin(); }
+  const_iterator cbegin() const ABSL_ATTRIBUTE_LIFETIME_BOUND {
+    return begin();
+  }
 
   // FixedArray::end()
   //
   // Returns an iterator to the end of the fixed array.
-  iterator end() { return data() + size(); }
+  iterator end() ABSL_ATTRIBUTE_LIFETIME_BOUND { return data() + size(); }
 
   // Overload of FixedArray::end() to return a const iterator to the end of the
   // fixed array.
-  const_iterator end() const { return data() + size(); }
+  const_iterator end() const ABSL_ATTRIBUTE_LIFETIME_BOUND {
+    return data() + size();
+  }
 
   // FixedArray::cend()
   //
   // Returns a const iterator to the end of the fixed array.
-  const_iterator cend() const { return end(); }
+  const_iterator cend() const ABSL_ATTRIBUTE_LIFETIME_BOUND { return end(); }
 
   // FixedArray::rbegin()
   //
   // Returns a reverse iterator from the end of the fixed array.
-  reverse_iterator rbegin() { return reverse_iterator(end()); }
+  reverse_iterator rbegin() ABSL_ATTRIBUTE_LIFETIME_BOUND {
+    return reverse_iterator(end());
+  }
 
   // Overload of FixedArray::rbegin() to return a const reverse iterator from
   // the end of the fixed array.
-  const_reverse_iterator rbegin() const {
+  const_reverse_iterator rbegin() const ABSL_ATTRIBUTE_LIFETIME_BOUND {
     return const_reverse_iterator(end());
   }
 
   // FixedArray::crbegin()
   //
   // Returns a const reverse iterator from the end of the fixed array.
-  const_reverse_iterator crbegin() const { return rbegin(); }
+  const_reverse_iterator crbegin() const ABSL_ATTRIBUTE_LIFETIME_BOUND {
+    return rbegin();
+  }
 
   // FixedArray::rend()
   //
   // Returns a reverse iterator from the beginning of the fixed array.
-  reverse_iterator rend() { return reverse_iterator(begin()); }
+  reverse_iterator rend() ABSL_ATTRIBUTE_LIFETIME_BOUND {
+    return reverse_iterator(begin());
+  }
 
   // Overload of FixedArray::rend() for returning a const reverse iterator
   // from the beginning of the fixed array.
-  const_reverse_iterator rend() const {
+  const_reverse_iterator rend() const ABSL_ATTRIBUTE_LIFETIME_BOUND {
     return const_reverse_iterator(begin());
   }
 
   // FixedArray::crend()
   //
   // Returns a reverse iterator from the beginning of the fixed array.
-  const_reverse_iterator crend() const { return rend(); }
+  const_reverse_iterator crend() const ABSL_ATTRIBUTE_LIFETIME_BOUND {
+    return rend();
+  }
 
   // FixedArray::fill()
   //
@@ -343,7 +365,7 @@ class FixedArray {
   // Relational operators. Equality operators are elementwise using
   // `operator==`, while order operators order FixedArrays lexicographically.
   friend bool operator==(const FixedArray& lhs, const FixedArray& rhs) {
-    return absl::equal(lhs.begin(), lhs.end(), rhs.begin(), rhs.end());
+    return std::equal(lhs.begin(), lhs.end(), rhs.begin(), rhs.end());
   }
 
   friend bool operator!=(const FixedArray& lhs, const FixedArray& rhs) {
@@ -465,6 +487,9 @@ class FixedArray {
     StorageElement* begin() const { return data_; }
     StorageElement* end() const { return begin() + size(); }
     allocator_type& alloc() { return size_alloc_.template get<1>(); }
+    const allocator_type& alloc() const {
+      return size_alloc_.template get<1>();
+    }
 
    private:
     static bool UsingInlinedStorage(size_type n) {

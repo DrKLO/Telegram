@@ -51,10 +51,10 @@ class RtpPacketReceived;
 class RtpRtcp;
 
 struct CallReceiveStatistics {
-  unsigned int cumulativeLost;
+  int cumulativeLost;
   unsigned int jitterSamples;
-  int64_t payload_bytes_rcvd = 0;
-  int64_t header_and_padding_bytes_rcvd = 0;
+  int64_t payload_bytes_received = 0;
+  int64_t header_and_padding_bytes_received = 0;
   int packetsReceived;
   uint32_t nacks_sent = 0;
   // The capture NTP time (in local timebase) of the first played out audio
@@ -63,14 +63,14 @@ struct CallReceiveStatistics {
   // The timestamp at which the last packet was received, i.e. the time of the
   // local clock when it was received - not the RTP timestamp of that packet.
   // https://w3c.github.io/webrtc-stats/#dom-rtcinboundrtpstreamstats-lastpacketreceivedtimestamp
-  absl::optional<int64_t> last_packet_received_timestamp_ms;
+  absl::optional<Timestamp> last_packet_received;
   // Remote outbound stats derived by the received RTCP sender reports.
   // Note that the timestamps below correspond to the time elapsed since the
   // Unix epoch.
   // https://w3c.github.io/webrtc-stats/#remoteoutboundrtpstats-dict*
   absl::optional<int64_t> last_sender_report_timestamp_ms;
   absl::optional<int64_t> last_sender_report_remote_timestamp_ms;
-  uint32_t sender_reports_packets_sent = 0;
+  uint64_t sender_reports_packets_sent = 0;
   uint64_t sender_reports_bytes_sent = 0;
   uint64_t sender_reports_reports_count = 0;
   absl::optional<TimeDelta> round_trip_time;

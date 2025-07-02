@@ -10,6 +10,8 @@
 
 #include "modules/rtp_rtcp/source/capture_clock_offset_updater.h"
 
+#include "system_wrappers/include/ntp_time.h"
+
 namespace webrtc {
 
 absl::optional<int64_t>
@@ -23,6 +25,14 @@ CaptureClockOffsetUpdater::AdjustEstimatedCaptureClockOffset(
   // Do calculations as "unsigned" to make overflows deterministic.
   return static_cast<uint64_t>(*remote_capture_clock_offset) +
          static_cast<uint64_t>(*remote_to_local_clock_offset_);
+}
+
+absl::optional<TimeDelta> CaptureClockOffsetUpdater::ConvertsToTimeDela(
+    absl::optional<int64_t> q32x32) {
+  if (q32x32 == absl::nullopt) {
+    return absl::nullopt;
+  }
+  return TimeDelta::Millis(Q32x32ToInt64Ms(*q32x32));
 }
 
 void CaptureClockOffsetUpdater::SetRemoteToLocalClockOffset(

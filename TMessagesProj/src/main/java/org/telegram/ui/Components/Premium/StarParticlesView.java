@@ -257,6 +257,18 @@ public class StarParticlesView extends View {
                     stars[i] = SvgHelper.getBitmap(res, size, size, ColorUtils.setAlphaComponent(Theme.getColor(colorKey, resourcesProvider), 30));
                     svg[i] = true;
                     continue;
+                } else if (type == PremiumPreviewFragment.PREMIUM_FEATURE_MESSAGE_PRIVACY) {
+                    int res;
+                    if (i == 0) {
+                        res = R.raw.filled_messages_paid;
+                    } else if (i == 1) {
+                        res = R.raw.filled_crown_on;
+                    } else {
+                        res = R.raw.premium_object_star2;
+                    }
+                    stars[i] = SvgHelper.getBitmap(res, size, size, ColorUtils.setAlphaComponent(Theme.getColor(colorKey, resourcesProvider), 30));
+                    svg[i] = true;
+                    continue;
                 } else if (type == PremiumPreviewFragment.PREMIUM_FEATURE_ANIMATED_EMOJI || type == PremiumPreviewFragment.PREMIUM_FEATURE_REACTIONS) {
                     int res;
                     if (i == 0) {
@@ -338,7 +350,6 @@ public class StarParticlesView extends View {
                     if (i == 0) {
                         res = R.raw.premium_object_star2;
                         stars[i] = SvgHelper.getBitmap(res, size, size, getPathColor(i));
-//                        flip[i] = true;
                         continue;
                     }
                 }
@@ -590,7 +601,7 @@ public class StarParticlesView extends View {
                 if (type == PremiumPreviewFragment.PREMIUM_FEATURE_BUSINESS) {
                     final float rand = Utilities.fastRandom.nextFloat();
                     if (rand < .13f) starIndex = 0;
-                    else starIndex = (int) Math.floor(1 + rand * (stars.length - 1));
+                    else starIndex = (int) Math.floor(1 + rand * (stars.length - 2));
                 } else {
                     starIndex = Math.abs(Utilities.fastRandom.nextInt() % stars.length);
                 }

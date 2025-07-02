@@ -50,6 +50,7 @@ import com.google.android.exoplayer2.util.ConditionVariable;
 import com.google.android.exoplayer2.util.PriorityTaskManager;
 import com.google.android.exoplayer2.util.Size;
 import com.google.android.exoplayer2.video.VideoFrameMetadataListener;
+import com.google.android.exoplayer2.video.VideoListener;
 import com.google.android.exoplayer2.video.VideoSize;
 import com.google.android.exoplayer2.video.spherical.CameraMotionListener;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
@@ -57,6 +58,8 @@ import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import org.telegram.messenger.DispatchQueue;
 
 import java.util.List;
+
+import kotlin.NotImplementedError;
 
 /**
  * @deprecated Use {@link ExoPlayer} instead.
@@ -1328,5 +1331,16 @@ public class SimpleExoPlayer extends BasePlayer
     // The constructor may be executed on a background thread. Wait with accessing the player from
     // the app thread until the constructor finished executing.
     constructorFinished.blockUninterruptible();
+  }
+
+
+  @Override
+  public void addVideoListener(VideoListener listener) {
+    throw new NotImplementedError();
+  }
+
+  @Override
+  public void removeVideoListener(VideoListener listener) {
+    throw new NotImplementedError();
   }
 }

@@ -21,6 +21,7 @@ import android.graphics.RectF;
 import android.media.AudioManager;
 import android.net.Uri;
 import android.os.Build;
+import android.text.TextUtils;
 import android.util.LongSparseArray;
 import android.util.SparseArray;
 import android.view.GestureDetector;
@@ -69,6 +70,7 @@ import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ArticleViewer;
 import org.telegram.ui.Cells.ChatActionCell;
+import org.telegram.ui.Cells.ChatMessageCell;
 import org.telegram.ui.Components.Bulletin;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
@@ -1336,9 +1338,7 @@ public class StoryViewer implements NotificationCenter.NotificationCenterDelegat
                         scope.player = null;
                         return;
                     }
-                    String lastAutority = lastUri == null ? null : lastUri.getAuthority();
-                    String autority = uri == null ? null : uri.getAuthority();
-                    boolean sameUri = Objects.equals(lastAutority, autority);
+                    boolean sameUri = TextUtils.equals(lastUri == null ? null : lastUri.toString(), uri == null ? null : uri.toString());
                     if (!sameUri || playerHolder == null) {
                         lastUri = uri;
                         if (playerHolder != null) {
@@ -1960,6 +1960,9 @@ public class StoryViewer implements NotificationCenter.NotificationCenterDelegat
                 if (transitionViewHolder.view != null) {
                     int[] loc = new int[2];
                     transitionViewHolder.view.getLocationOnScreen(loc);
+                    if (transitionViewHolder.view instanceof ChatMessageCell) {
+                        loc[1] += transitionViewHolder.view.getPaddingTop();
+                    }
                     fromXCell = loc[0];
                     fromYCell = loc[1];
                     if (transitionViewHolder.view instanceof StoriesListPlaceProvider.AvatarOverlaysView) {
@@ -2677,15 +2680,19 @@ public class StoryViewer implements NotificationCenter.NotificationCenterDelegat
                 if (fragment.getParentActivity() != null) {
                     if (allowScreenshots) {
                         fragment.getParentActivity().getWindow().clearFlags(WindowManager.LayoutParams.FLAG_SECURE);
+                        AndroidUtilities.logFlagSecure();
                     } else {
                         fragment.getParentActivity().getWindow().addFlags(WindowManager.LayoutParams.FLAG_SECURE);
+                        AndroidUtilities.logFlagSecure();
                     }
                 }
             } else {
                 if (allowScreenshots) {
                     windowLayoutParams.flags &= ~WindowManager.LayoutParams.FLAG_SECURE;
+                    AndroidUtilities.logFlagSecure();
                 } else {
                     windowLayoutParams.flags |= WindowManager.LayoutParams.FLAG_SECURE;
+                    AndroidUtilities.logFlagSecure();
                 }
                 try {
                     windowManager.updateViewLayout(windowView, windowLayoutParams);

@@ -18,6 +18,7 @@
 #include <stdint.h>
 
 #include <algorithm>
+#include <cstdlib>
 #include <functional>
 #include <iterator>
 #include <map>
@@ -26,7 +27,10 @@
 #include <utility>
 #include <vector>
 
+#include "absl/base/attributes.h"
 #include "absl/base/config.h"
+#include "absl/base/no_destructor.h"
+#include "absl/base/thread_annotations.h"
 #include "absl/flags/commandlineflag.h"
 #include "absl/flags/flag.h"
 #include "absl/flags/internal/flag.h"
@@ -39,6 +43,8 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
+#include "absl/strings/strip.h"
+#include "absl/synchronization/mutex.h"
 
 // Dummy global variables to prevent anyone else defining these.
 bool FLAGS_help = false;
@@ -91,8 +97,16 @@ class XMLElement {
         case '>':
           out << "&gt;";
           break;
+        case '\n':
+        case '\v':
+        case '\f':
+        case '\t':
+          out << " ";
+          break;
         default:
-          out << c;
+          if (IsValidXmlCharacter(static_cast<unsigned char>(c))) {
+            out << c;
+          }
           break;
       }
     }
@@ -101,6 +115,7 @@ class XMLElement {
   }
 
  private:
+  static bool IsValidXmlCharacter(unsigned char c) { return c >= 0x20; }
   absl::string_view tag_;
   absl::string_view txt_;
 };
@@ -130,7 +145,7 @@ class FlagHelpPrettyPrinter {
       for (auto line : absl::StrSplit(str, absl::ByAnyChar("\n\r"))) {
         if (!tokens.empty()) {
           // Keep line separators in the input string.
-          tokens.push_back("\n");
+          tokens.emplace_back("\n");
         }
         for (auto token :
              absl::StrSplit(line, absl::ByAnyChar(" \t"), absl::SkipEmpty())) {
@@ -354,8 +369,8 @@ void FlagsHelp(std::ostream& out, absl::string_view filter, HelpFormat format,
 // --------------------------------------------------------------------
 // Checks all the 'usage' command line flags to see if any have been set.
 // If so, handles them appropriately.
-int HandleUsageFlags(std::ostream& out,
-                     absl::string_view program_usage_message) {
+HelpMode HandleUsageFlags(std::ostream& out,
+                          absl::string_view program_usage_message) {
   switch (GetFlagsHelpMode()) {
     case HelpMode::kNone:
       break;
@@ -363,25 +378,24 @@ int HandleUsageFlags(std::ostream& out,
       flags_internal::FlagsHelpImpl(
           out, flags_internal::GetUsageConfig().contains_help_flags,
           GetFlagsHelpFormat(), program_usage_message);
-      return 1;
+      break;
 
     case HelpMode::kShort:
       flags_internal::FlagsHelpImpl(
           out, flags_internal::GetUsageConfig().contains_helpshort_flags,
           GetFlagsHelpFormat(), program_usage_message);
-      return 1;
+      break;
 
     case HelpMode::kFull:
       flags_internal::FlagsHelp(out, "", GetFlagsHelpFormat(),
                                 program_usage_message);
-      return 1;
+      break;
 
     case HelpMode::kPackage:
       flags_internal::FlagsHelpImpl(
           out, flags_internal::GetUsageConfig().contains_helppackage_flags,
           GetFlagsHelpFormat(), program_usage_message);
-
-      return 1;
+      break;
 
     case HelpMode::kMatch: {
       std::string substr = GetFlagsHelpMatchSubstr();
@@ -400,20 +414,19 @@ int HandleUsageFlags(std::ostream& out,
         flags_internal::FlagsHelpImpl(
             out, filter_cb, HelpFormat::kHumanReadable, program_usage_message);
       }
-
-      return 1;
+      break;
     }
     case HelpMode::kVersion:
       if (flags_internal::GetUsageConfig().version_string)
         out << flags_internal::GetUsageConfig().version_string();
       // Unlike help, we may be asking for version in a script, so return 0
-      return 0;
+      break;
 
     case HelpMode::kOnlyCheckArgs:
-      return 0;
+      break;
   }
 
-  return -1;
+  return GetFlagsHelpMode();
 }
 
 // --------------------------------------------------------------------
@@ -421,45 +434,48 @@ int HandleUsageFlags(std::ostream& out,
 
 namespace {
 
-ABSL_CONST_INIT absl::Mutex help_attributes_guard(absl::kConstInit);
-ABSL_CONST_INIT std::string* match_substr
-    ABSL_GUARDED_BY(help_attributes_guard) = nullptr;
-ABSL_CONST_INIT HelpMode help_mode ABSL_GUARDED_BY(help_attributes_guard) =
+absl::Mutex* HelpAttributesMutex() {
+  static absl::NoDestructor<absl::Mutex> mutex;
+  return mutex.get();
+}
+ABSL_CONST_INIT std::string* match_substr ABSL_GUARDED_BY(HelpAttributesMutex())
+    ABSL_PT_GUARDED_BY(HelpAttributesMutex()) = nullptr;
+ABSL_CONST_INIT HelpMode help_mode ABSL_GUARDED_BY(HelpAttributesMutex()) =
     HelpMode::kNone;
-ABSL_CONST_INIT HelpFormat help_format ABSL_GUARDED_BY(help_attributes_guard) =
+ABSL_CONST_INIT HelpFormat help_format ABSL_GUARDED_BY(HelpAttributesMutex()) =
     HelpFormat::kHumanReadable;
 
 }  // namespace
 
 std::string GetFlagsHelpMatchSubstr() {
-  absl::MutexLock l(&help_attributes_guard);
+  absl::MutexLock l(HelpAttributesMutex());
   if (match_substr == nullptr) return "";
   return *match_substr;
 }
 
 void SetFlagsHelpMatchSubstr(absl::string_view substr) {
-  absl::MutexLock l(&help_attributes_guard);
+  absl::MutexLock l(HelpAttributesMutex());
   if (match_substr == nullptr) match_substr = new std::string;
   match_substr->assign(substr.data(), substr.size());
 }
 
 HelpMode GetFlagsHelpMode() {
-  absl::MutexLock l(&help_attributes_guard);
+  absl::MutexLock l(HelpAttributesMutex());
   return help_mode;
 }
 
 void SetFlagsHelpMode(HelpMode mode) {
-  absl::MutexLock l(&help_attributes_guard);
+  absl::MutexLock l(HelpAttributesMutex());
   help_mode = mode;
 }
 
 HelpFormat GetFlagsHelpFormat() {
-  absl::MutexLock l(&help_attributes_guard);
+  absl::MutexLock l(HelpAttributesMutex());
   return help_format;
 }
 
 void SetFlagsHelpFormat(HelpFormat format) {
-  absl::MutexLock l(&help_attributes_guard);
+  absl::MutexLock l(HelpAttributesMutex());
   help_format = format;
 }
 
@@ -520,6 +536,22 @@ bool DeduceUsageFlags(absl::string_view name, absl::string_view value) {
 
   return false;
 }
+
+// --------------------------------------------------------------------
+
+void MaybeExit(HelpMode mode) {
+  switch (mode) {
+    case flags_internal::HelpMode::kNone:
+      return;
+    case flags_internal::HelpMode::kOnlyCheckArgs:
+    case flags_internal::HelpMode::kVersion:
+      std::exit(0);
+    default:  // For all the other modes we exit with 1
+      std::exit(1);
+  }
+}
+
+// --------------------------------------------------------------------
 
 }  // namespace flags_internal
 ABSL_NAMESPACE_END

@@ -436,7 +436,7 @@ public:
                     if (audioChannels.empty()) {
                         break;
                     }
-
+                    
                     if (audioChannels[0].numSamples < 480) {
                         RTC_LOG(LS_INFO) << "render: got less than 10ms of audio data (" << audioChannels[0].numSamples << " samples)";
                     }

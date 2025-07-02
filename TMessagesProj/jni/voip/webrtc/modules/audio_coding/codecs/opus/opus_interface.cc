@@ -11,7 +11,6 @@
 #include "modules/audio_coding/codecs/opus/opus_interface.h"
 
 #include <cstdlib>
-
 #include <numeric>
 
 #include "api/array_view.h"
@@ -41,6 +40,9 @@ constexpr char kPlcUsePrevDecodedSamplesFieldTrial[] =
 
 constexpr char kAvoidNoisePumpingDuringDtxFieldTrial[] =
     "WebRTC-Audio-OpusAvoidNoisePumpingDuringDtx";
+
+constexpr char kSetSignalVoiceWithDtxFieldTrial[] =
+    "WebRTC-Audio-OpusSetSignalVoiceWithDtx";
 
 static int FrameSizePerChannel(int frame_size_ms, int sample_rate_hz) {
   RTC_DCHECK_GT(frame_size_ms, 0);
@@ -358,27 +360,27 @@ int16_t WebRtcOpus_DisableFec(OpusEncInst* inst) {
 }
 
 int16_t WebRtcOpus_EnableDtx(OpusEncInst* inst) {
-  if (!inst) {
+  if (inst) {
+    if (webrtc::field_trial::IsEnabled(kSetSignalVoiceWithDtxFieldTrial)) {
+      int ret = ENCODER_CTL(inst, OPUS_SET_SIGNAL(OPUS_SIGNAL_VOICE));
+      if (ret != OPUS_OK) {
+        return ret;
+      }
+    }
+    return ENCODER_CTL(inst, OPUS_SET_DTX(1));
+  } else {
     return -1;
   }
-
-  // To prevent Opus from entering CELT-only mode by forcing signal type to
-  // voice to make sure that DTX behaves correctly. Currently, DTX does not
-  // last long during a pure silence, if the signal type is not forced.
-  // TODO(minyue): Remove the signal type forcing when Opus DTX works properly
-  // without it.
-  int ret = ENCODER_CTL(inst, OPUS_SET_SIGNAL(OPUS_SIGNAL_VOICE));
-  if (ret != OPUS_OK)
-    return ret;
-
-  return ENCODER_CTL(inst, OPUS_SET_DTX(1));
 }
 
 int16_t WebRtcOpus_DisableDtx(OpusEncInst* inst) {
   if (inst) {
-    int ret = ENCODER_CTL(inst, OPUS_SET_SIGNAL(OPUS_AUTO));
-    if (ret != OPUS_OK)
-      return ret;
+    if (webrtc::field_trial::IsEnabled(kSetSignalVoiceWithDtxFieldTrial)) {
+      int ret = ENCODER_CTL(inst, OPUS_SET_SIGNAL(OPUS_AUTO));
+      if (ret != OPUS_OK) {
+        return ret;
+      }
+    }
     return ENCODER_CTL(inst, OPUS_SET_DTX(0));
   } else {
     return -1;

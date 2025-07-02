@@ -806,7 +806,7 @@ public class QuickRepliesController {
                             for (int i = 0; i < ids.size(); ++i) {
                                 req.random_id.add(Utilities.random.nextLong());
                             }
-                            ConnectionsManager.getInstance(currentAccount).sendRequest(req2, null);
+                            ConnectionsManager.getInstance(currentAccount).sendRequest(req, null);
                         } else {
                             FileLog.e("received " + res + " " + err + " on getQuickReplyMessages when trying to send quick reply");
                         }

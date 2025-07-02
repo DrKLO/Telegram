@@ -13,11 +13,12 @@
 #include <memory>
 #include <utility>
 
+#include "absl/base/nullability.h"
 #include "absl/strings/string_view.h"
+#include "api/task_queue/task_queue_base.h"
 #include "modules/audio_processing/aec_dump/aec_dump_factory.h"
 #include "rtc_base/checks.h"
 #include "rtc_base/event.h"
-#include "rtc_base/task_queue.h"
 
 namespace webrtc {
 
@@ -59,7 +60,7 @@ void CopyFromConfigToEvent(const webrtc::InternalAPMConfig& config,
 
 AecDumpImpl::AecDumpImpl(FileWrapper debug_file,
                          int64_t max_log_size_bytes,
-                         rtc::TaskQueue* worker_queue)
+                         absl::Nonnull<TaskQueueBase*> worker_queue)
     : debug_file_(std::move(debug_file)),
       num_bytes_left_for_log_(max_log_size_bytes),
       worker_queue_(worker_queue) {}
@@ -254,9 +255,10 @@ void AecDumpImpl::PostWriteToFileTask(std::unique_ptr<audioproc::Event> event) {
   });
 }
 
-std::unique_ptr<AecDump> AecDumpFactory::Create(webrtc::FileWrapper file,
-                                                int64_t max_log_size_bytes,
-                                                rtc::TaskQueue* worker_queue) {
+absl::Nullable<std::unique_ptr<AecDump>> AecDumpFactory::Create(
+    FileWrapper file,
+    int64_t max_log_size_bytes,
+    absl::Nonnull<TaskQueueBase*> worker_queue) {
   RTC_DCHECK(worker_queue);
   if (!file.is_open())
     return nullptr;
@@ -265,16 +267,18 @@ std::unique_ptr<AecDump> AecDumpFactory::Create(webrtc::FileWrapper file,
                                        worker_queue);
 }
 
-std::unique_ptr<AecDump> AecDumpFactory::Create(absl::string_view file_name,
-                                                int64_t max_log_size_bytes,
-                                                rtc::TaskQueue* worker_queue) {
+absl::Nullable<std::unique_ptr<AecDump>> AecDumpFactory::Create(
+    absl::string_view file_name,
+    int64_t max_log_size_bytes,
+    absl::Nonnull<TaskQueueBase*> worker_queue) {
   return Create(FileWrapper::OpenWriteOnly(file_name), max_log_size_bytes,
                 worker_queue);
 }
 
-std::unique_ptr<AecDump> AecDumpFactory::Create(FILE* handle,
-                                                int64_t max_log_size_bytes,
-                                                rtc::TaskQueue* worker_queue) {
+absl::Nullable<std::unique_ptr<AecDump>> AecDumpFactory::Create(
+    absl::Nonnull<FILE*> handle,
+    int64_t max_log_size_bytes,
+    absl::Nonnull<TaskQueueBase*> worker_queue) {
   return Create(FileWrapper(handle), max_log_size_bytes, worker_queue);
 }
 

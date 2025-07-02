@@ -1300,6 +1300,7 @@ void ConnectionsManager::processServerResponse(TLObject *message, int64_t messag
                         static std::string authKeyPermEmpty = "AUTH_KEY_PERM_EMPTY";
                         static std::string workerBusy = "WORKER_BUSY_TOO_LONG_RETRY";
                         static std::string integrityCheckClassic = "INTEGRITY_CHECK_CLASSIC_";
+                        static std::string captchaCheck = "RECAPTCHA_CHECK_";
                         bool processEvenFailed = error->error_code == 500 && error->error_message.find(authRestart) != std::string::npos;
                         bool isWorkerBusy = error->error_code == 500 && error->error_message.find(workerBusy) != std::string::npos;
                         if (LOGS_ENABLED) DEBUG_E("request %p rpc error %d: %s", request, error->error_code, error->error_message.c_str());
@@ -1321,10 +1322,24 @@ void ConnectionsManager::processServerResponse(TLObject *message, int64_t messag
                             std::string project = err.substr(integrityCheckClassic.size(), index - integrityCheckClassic.size());
                             std::string nonce = err.substr(integrityCheckClassic.size() + project.size() + 1, err.size() - (integrityCheckClassic.size() + project.size() + 1));
                             request->awaitingIntegrityCheck = true;
+                            request->awaitingCaptchaCheck = false;
                             request->startTime = 0;
                             request->startTimeMillis = 0;
                             if (delegate != nullptr) {
                                 delegate->onIntegrityCheckClassic(instanceNum, request->requestToken, project, nonce);
+                            }
+                        } else if (error->error_code == 403 && error->error_message.find(captchaCheck) != std::string::npos) {
+                            discardResponse = true;
+                            std::string err = error->error_message;
+                            int index = err.find('_', captchaCheck.size());
+                            std::string action = err.substr(captchaCheck.size(), index - captchaCheck.size());
+                            std::string key_id = err.substr(captchaCheck.size() + action.size() + 2, err.size() - (captchaCheck.size() + action.size() + 1));
+                            request->awaitingIntegrityCheck = false;
+                            request->awaitingCaptchaCheck = true;
+                            request->startTime = 0;
+                            request->startTimeMillis = 0;
+                            if (delegate != nullptr) {
+                                delegate->onCaptchaCheck(instanceNum, request->requestToken, action, key_id);
                             }
                         } else {
                             bool failServerErrors = (request->requestFlags & RequestFlagFailOnServerErrors) == 0 || processEvenFailed;
@@ -2196,6 +2211,7 @@ void ConnectionsManager::receivedIntegrityCheckClassic(int32_t requestToken, std
                 invokeIntegrity->token = token;
                 invokeIntegrity->query = std::move(request->rpcRequest);
                 request->rpcRequest = std::unique_ptr<invokeWithGooglePlayIntegrity>(invokeIntegrity);
+                request->serializedLength = request->rpcRequest->getObjectSize();
 
                 request->awaitingIntegrityCheck = false;
                 request->requestFlags &=~ RequestFlagFailOnServerErrors;
@@ -2209,6 +2225,37 @@ void ConnectionsManager::receivedIntegrityCheckClassic(int32_t requestToken, std
         }
 
         if (LOGS_ENABLED) DEBUG_E("account%d: received integrity token but no request %d found", instanceNum, requestToken);
+    });
+}
+
+void ConnectionsManager::receivedCaptchaResult(int32_t requestTokensCount, int32_t* requestTokens, std::string token) {
+    scheduleTask([&, requestTokensCount, requestTokens, token] {
+        for (int i = 0; i < requestTokensCount; ++i) {
+            auto requestToken = requestTokens[i];
+            for (auto iter = runningRequests.begin(); iter != runningRequests.end(); iter++) {
+                Request *request = iter->get();
+                if (requestToken != 0 && request->requestToken == requestToken) {
+                    auto invoke = new invokeWithReCaptcha();
+                    invoke->token = token;
+                    invoke->query = std::move(request->rpcRequest);
+                    request->rpcRequest = std::unique_ptr<invokeWithReCaptcha>(invoke);
+                    request->serializedLength = request->rpcRequest->getObjectSize();
+
+                    request->awaitingCaptchaCheck = false;
+                    request->requestFlags &=~ RequestFlagFailOnServerErrors;
+
+                    if (LOGS_ENABLED) DEBUG_D("account%d: received captcha result token, wrapping %s", instanceNum, token.c_str());
+
+                    processRequestQueue(request->connectionType, request->datacenterId);
+
+                    return;
+                }
+            }
+
+            if (LOGS_ENABLED) DEBUG_E("account%d: received captcha result token but no request %d found", instanceNum, requestToken);
+        }
+
+        delete[] requestTokens;
     });
 }
 
@@ -2330,6 +2377,7 @@ void ConnectionsManager::requestSaltsForDatacenter(Datacenter *datacenter, bool 
 }
 
 void ConnectionsManager::clearRequestsForDatacenter(Datacenter *datacenter, HandshakeType type) {
+    if (datacenter == nullptr) return;
     for (auto & runningRequest : runningRequests) {
         Request *request = runningRequest.get();
         Datacenter *requestDatacenter = getDatacenterWithId(request->datacenterId);
@@ -2538,7 +2586,7 @@ void ConnectionsManager::processRequestQueue(uint32_t connectionTypes, uint32_t 
                 (request->failedByFloodWait != 0 && (request->minStartTime - currentTime) > request->failedByFloodWait) ||
                 (request->failedByFloodWait == 0 && abs(currentTime - request->minStartTime) >= 60)
             )
-        )) && !request->awaitingIntegrityCheck) {
+        )) && !request->awaitingIntegrityCheck && !request->awaitingCaptchaCheck) {
             if (!forceThisRequest && request->connectionToken > 0) {
                 if ((request->connectionType & ConnectionTypeGeneric || request->connectionType & ConnectionTypeTemp) && request->connectionToken == connection->getConnectionToken()) {
 //                    if (LOGS_ENABLED) DEBUG_D("request token is valid, not retrying %s (%p)", typeInfo.name(), request->rawRequest);

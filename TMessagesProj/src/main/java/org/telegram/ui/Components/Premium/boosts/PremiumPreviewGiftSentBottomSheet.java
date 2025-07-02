@@ -89,8 +89,8 @@ public class PremiumPreviewGiftSentBottomSheet extends PremiumPreviewBottomSheet
         String subTitle;
         switch (selectedUsers.size()) {
             case 1: {
-                String names = formatString("GiftPremiumUsersOne", R.string.GiftPremiumUsersOne, UserObject.getFirstName(selectedUsers.get(0)));
-                subTitle = formatString("GiftPremiumUsersPurchasedManyZero", R.string.GiftPremiumUsersPurchasedManyZero, names);
+                String names = formatString(R.string.GiftPremiumUsersOne, UserObject.getFirstName(selectedUsers.get(0)));
+                subTitle = formatString(R.string.GiftPremiumUsersPurchasedManyZero, names);
                 break;
             }
             case 2: {

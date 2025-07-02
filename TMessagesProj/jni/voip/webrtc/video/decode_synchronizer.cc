@@ -20,6 +20,7 @@
 #include "api/units/timestamp.h"
 #include "rtc_base/checks.h"
 #include "rtc_base/logging.h"
+#include "rtc_base/trace_event.h"
 #include "video/frame_decode_scheduler.h"
 #include "video/frame_decode_timing.h"
 
@@ -66,6 +67,7 @@ DecodeSynchronizer::SynchronizedFrameDecodeScheduler::ScheduledRtpTimestamp() {
 
 DecodeSynchronizer::ScheduledFrame
 DecodeSynchronizer::SynchronizedFrameDecodeScheduler::ReleaseNextFrame() {
+  RTC_DCHECK(!stopped_);
   RTC_DCHECK(next_frame_);
   auto res = std::move(*next_frame_);
   next_frame_.reset();
@@ -82,6 +84,7 @@ void DecodeSynchronizer::SynchronizedFrameDecodeScheduler::ScheduleFrame(
     uint32_t rtp,
     FrameDecodeTiming::FrameSchedule schedule,
     FrameReleaseCallback cb) {
+  RTC_DCHECK(!stopped_);
   RTC_DCHECK(!next_frame_) << "Can not schedule two frames at once.";
   next_frame_ = ScheduledFrame(rtp, std::move(schedule), std::move(cb));
   sync_->OnFrameScheduled(this);
@@ -92,6 +95,9 @@ void DecodeSynchronizer::SynchronizedFrameDecodeScheduler::CancelOutstanding() {
 }
 
 void DecodeSynchronizer::SynchronizedFrameDecodeScheduler::Stop() {
+  if (stopped_) {
+    return;
+  }
   CancelOutstanding();
   stopped_ = true;
   sync_->RemoveFrameScheduler(this);
@@ -106,18 +112,20 @@ DecodeSynchronizer::DecodeSynchronizer(Clock* clock,
 }
 
 DecodeSynchronizer::~DecodeSynchronizer() {
-  RTC_DCHECK(schedulers_.empty());
+  RTC_DCHECK_RUN_ON(worker_queue_);
+  RTC_CHECK(schedulers_.empty());
 }
 
 std::unique_ptr<FrameDecodeScheduler>
 DecodeSynchronizer::CreateSynchronizedFrameScheduler() {
+  TRACE_EVENT0("webrtc", __func__);
   RTC_DCHECK_RUN_ON(worker_queue_);
   auto scheduler = std::make_unique<SynchronizedFrameDecodeScheduler>(this);
   auto [it, inserted] = schedulers_.emplace(scheduler.get());
   // If this is the first `scheduler` added, start listening to the metronome.
   if (inserted && schedulers_.size() == 1) {
     RTC_DLOG(LS_VERBOSE) << "Listening to metronome";
-    metronome_->AddListener(this);
+    ScheduleNextTick();
   }
 
   return std::move(scheduler);
@@ -151,6 +159,7 @@ void DecodeSynchronizer::OnFrameScheduled(
 
 void DecodeSynchronizer::RemoveFrameScheduler(
     SynchronizedFrameDecodeScheduler* scheduler) {
+  TRACE_EVENT0("webrtc", __func__);
   RTC_DCHECK_RUN_ON(worker_queue_);
   RTC_DCHECK(scheduler);
   auto it = schedulers_.find(scheduler);
@@ -160,14 +169,24 @@ void DecodeSynchronizer::RemoveFrameScheduler(
   schedulers_.erase(it);
   // If there are no more schedulers active, stop listening for metronome ticks.
   if (schedulers_.empty()) {
-    RTC_DLOG(LS_VERBOSE) << "Not listening to metronome";
-    metronome_->RemoveListener(this);
     expected_next_tick_ = Timestamp::PlusInfinity();
   }
 }
 
-void DecodeSynchronizer::OnTick() {
+void DecodeSynchronizer::ScheduleNextTick() {
   RTC_DCHECK_RUN_ON(worker_queue_);
+  if (tick_scheduled_) {
+    return;
+  }
+  tick_scheduled_ = true;
+  metronome_->RequestCallOnNextTick(
+      SafeTask(safety_.flag(), [this] { OnTick(); }));
+}
+
+void DecodeSynchronizer::OnTick() {
+  TRACE_EVENT0("webrtc", __func__);
+  RTC_DCHECK_RUN_ON(worker_queue_);
+  tick_scheduled_ = false;
   expected_next_tick_ = clock_->CurrentTime() + metronome_->TickPeriod();
 
   for (auto* scheduler : schedulers_) {
@@ -177,10 +196,9 @@ void DecodeSynchronizer::OnTick() {
       std::move(scheduled_frame).RunFrameReleaseCallback();
     }
   }
-}
 
-TaskQueueBase* DecodeSynchronizer::OnTickTaskQueue() {
-  return worker_queue_;
+  if (!schedulers_.empty())
+    ScheduleNextTick();
 }
 
 }  // namespace webrtc

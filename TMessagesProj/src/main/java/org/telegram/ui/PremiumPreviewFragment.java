@@ -211,6 +211,7 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
     public final static int PREMIUM_FEATURE_BUSINESS_INTRO = 36;
     public final static int PREMIUM_FEATURE_BUSINESS_CHAT_LINKS = 37;
     public final static int PREMIUM_FEATURE_MESSAGE_EFFECTS = 38;
+    public final static int PREMIUM_FEATURE_TODO = 39;
 
     private int statusBarHeight;
     private int firstViewHeight;
@@ -268,6 +269,8 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
                 return PREMIUM_FEATURE_TRANSLATIONS;
             case "effects":
                 return PREMIUM_FEATURE_MESSAGE_EFFECTS;
+            case "todo":
+                return PREMIUM_FEATURE_TODO;
 
             case "stories":
                 return PREMIUM_FEATURE_STORIES;
@@ -355,6 +358,8 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
                 return "translations";
             case PREMIUM_FEATURE_MESSAGE_EFFECTS:
                 return "effects";
+            case PREMIUM_FEATURE_TODO:
+                return "todo";
             case PREMIUM_FEATURE_STORIES:
                 return "stories";
             case PREMIUM_FEATURE_STORIES_STEALTH_MODE:
@@ -750,6 +755,9 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
         contentView.addView(backgroundView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
         listView.setOnItemClickListener((view, position) -> {
+            if (!getUserConfig().isClientActivated()) {
+                return;
+            }
             if (position == showAdsRow) {
                 TLRPC.UserFull userFull = getMessagesController().getUserFull(getUserConfig().getClientUserId());
                 if (userFull == null) return;
@@ -838,7 +846,9 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
 
         buttonContainer.addView(premiumButtonView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.CENTER_VERTICAL, 16, 0, 16, 0));
         buttonContainer.setBackgroundColor(getThemedColor(Theme.key_dialogBackground));
-        contentView.addView(buttonContainer, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 68, Gravity.BOTTOM));
+        if (getUserConfig().isClientActivated()) {
+            contentView.addView(buttonContainer, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 68, Gravity.BOTTOM));
+        }
 
         fragmentView = contentView;
         actionBar.setBackground(null);
@@ -891,6 +901,7 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
         premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_ANIMATED_EMOJI, R.drawable.msg_premium_emoji, getString(R.string.PremiumPreviewEmoji), getString(R.string.PremiumPreviewEmojiDescription)));
         premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_ADVANCED_CHAT_MANAGEMENT, R.drawable.menu_premium_tools, getString(R.string.PremiumPreviewAdvancedChatManagement), getString(R.string.PremiumPreviewAdvancedChatManagementDescription)));
         premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_PROFILE_BADGE, R.drawable.msg_premium_badge, getString(R.string.PremiumPreviewProfileBadge), getString(R.string.PremiumPreviewProfileBadgeDescription)));
+        premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_MESSAGE_PRIVACY, R.drawable.filled_messages_paid, getString(R.string.PremiumPreviewPaidMessages), getString(R.string.PremiumPreviewPaidMessagesDescription)));
         premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_ANIMATED_AVATARS, R.drawable.msg_premium_avatar, getString(R.string.PremiumPreviewAnimatedProfiles), getString(R.string.PremiumPreviewAnimatedProfilesDescription)));
         premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_SAVED_TAGS, R.drawable.premium_tags, getString(R.string.PremiumPreviewTags2), getString(R.string.PremiumPreviewTagsDescription2)));
         premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_APPLICATION_ICONS, R.drawable.msg_premium_icons, getString(R.string.PremiumPreviewAppIcon), getString(R.string.PremiumPreviewAppIconDescription)));
@@ -899,9 +910,9 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
         premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_WALLPAPER, R.drawable.premium_wallpaper, getString(R.string.PremiumPreviewWallpaper), getString(R.string.PremiumPreviewWallpaperDescription)));
         premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_NAME_COLOR, R.drawable.premium_colors, getString(R.string.PremiumPreviewProfileColor), getString(R.string.PremiumPreviewProfileColorDescription)));
         premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_LAST_SEEN, R.drawable.menu_premium_seen, getString(R.string.PremiumPreviewLastSeen), getString(R.string.PremiumPreviewLastSeenDescription)));
-        premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_MESSAGE_PRIVACY, R.drawable.menu_premium_privacy, getString(R.string.PremiumPreviewMessagePrivacy), getString(R.string.PremiumPreviewMessagePrivacyDescription)));
-        premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_BUSINESS, R.drawable.filled_premium_business, applyNewSpan(getString(R.string.TelegramBusiness)), getString(R.string.PremiumPreviewBusinessDescription)));
-        premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_MESSAGE_EFFECTS, R.drawable.menu_premium_effects, applyNewSpan(getString(R.string.PremiumPreviewEffects)), getString(R.string.PremiumPreviewEffectsDescription)));
+        premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_BUSINESS, R.drawable.filled_premium_business, getString(R.string.TelegramBusiness), getString(R.string.PremiumPreviewBusinessDescription)));
+        premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_MESSAGE_EFFECTS, R.drawable.menu_premium_effects, getString(R.string.PremiumPreviewEffects), getString(R.string.PremiumPreviewEffectsDescription)));
+        premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_TODO, R.drawable.msg_premium_icons, getString(R.string.PremiumPreviewTodo), getString(R.string.PremiumPreviewTodoDescription)));
 
         if (messagesController.premiumFeaturesTypesToPosition.size() > 0) {
             for (int i = 0; i < premiumFeatures.size(); i++) {
@@ -1007,6 +1018,11 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
     public static void buyPremium(BaseFragment fragment, SubscriptionTier tier, String source, boolean forcePremium, BillingFlowParams.SubscriptionUpdateParams updateParams) {
         if (BuildVars.IS_BILLING_UNAVAILABLE) {
             fragment.showDialog(new PremiumNotAvailableBottomSheet(fragment));
+            return;
+        }
+        final int account = fragment == null ? UserConfig.selectedAccount : fragment.getCurrentAccount();
+        if (MessagesController.getInstance(account).isFrozen()) {
+            AccountFrozenAlert.show(account);
             return;
         }
 
@@ -1129,7 +1145,7 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
                     }
                 });
 
-                TLRPC.TL_payments_canPurchasePremium req = new TLRPC.TL_payments_canPurchasePremium();
+                TLRPC.TL_payments_canPurchaseStore req = new TLRPC.TL_payments_canPurchaseStore();
                 TLRPC.TL_inputStorePaymentPremiumSubscription purpose = new TLRPC.TL_inputStorePaymentPremiumSubscription();
                 if (updateParams != null) {
                     purpose.upgrade = true;

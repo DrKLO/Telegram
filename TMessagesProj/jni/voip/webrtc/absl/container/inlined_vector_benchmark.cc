@@ -66,7 +66,7 @@ void BM_StdVectorFill(benchmark::State& state) {
 BENCHMARK(BM_StdVectorFill)->Range(1, 256);
 
 // The purpose of the next two benchmarks is to verify that
-// absl::InlinedVector is efficient when moving is more efficent than
+// absl::InlinedVector is efficient when moving is more efficient than
 // copying. To do so, we use strings that are larger than the short
 // string optimization.
 bool StringRepresentedInline(std::string s) {

@@ -13,11 +13,13 @@
 
 #include <stddef.h>
 
+#include <array>
 #include <deque>
 #include <list>
 #include <memory>
 #include <unordered_map>
 
+#include "absl/container/inlined_vector.h"
 #include "api/units/data_size.h"
 #include "api/units/time_delta.h"
 #include "api/units/timestamp.h"
@@ -25,9 +27,19 @@
 
 namespace webrtc {
 
+// Describes how long time a packet may stay in the queue before being dropped.
+struct PacketQueueTTL {
+  TimeDelta audio_retransmission = TimeDelta::PlusInfinity();
+  TimeDelta video_retransmission = TimeDelta::PlusInfinity();
+  TimeDelta video = TimeDelta::PlusInfinity();
+};
+
 class PrioritizedPacketQueue {
  public:
-  explicit PrioritizedPacketQueue(Timestamp creation_time);
+  explicit PrioritizedPacketQueue(
+      Timestamp creation_time,
+      bool prioritize_audio_retransmission = false,
+      PacketQueueTTL packet_queue_ttl = PacketQueueTTL());
   PrioritizedPacketQueue(const PrioritizedPacketQueue&) = delete;
   PrioritizedPacketQueue& operator=(const PrioritizedPacketQueue&) = delete;
 
@@ -61,6 +73,7 @@ class PrioritizedPacketQueue {
   // method, for the given packet type. If queue has no packets, of that type,
   // returns Timestamp::MinusInfinity().
   Timestamp LeadingPacketEnqueueTime(RtpPacketMediaType type) const;
+  Timestamp LeadingPacketEnqueueTimeForRetransmission() const;
 
   // Enqueue time of the oldest packet in the queue,
   // Timestamp::MinusInfinity() if queue is empty.
@@ -80,8 +93,15 @@ class PrioritizedPacketQueue {
   // Set the pause state, while `paused` is true queuing time is not counted.
   void SetPauseState(bool paused, Timestamp now);
 
+  // Remove any packets matching the given SSRC.
+  void RemovePacketsForSsrc(uint32_t ssrc);
+
+  // Checks if the queue for the given SSRC has original (retransmissions not
+  // counted) video packets containing keyframe data.
+  bool HasKeyframePackets(uint32_t ssrc) const;
+
  private:
-  static constexpr int kNumPriorityLevels = 4;
+  static constexpr int kNumPriorityLevels = 5;
 
   class QueuedPacket {
    public:
@@ -107,17 +127,37 @@ class PrioritizedPacketQueue {
     // count for that priority level went from zero to non-zero.
     bool EnqueuePacket(QueuedPacket packet, int priority_level);
 
-    QueuedPacket DequePacket(int priority_level);
+    QueuedPacket DequeuePacket(int priority_level);
 
     bool HasPacketsAtPrio(int priority_level) const;
     bool IsEmpty() const;
     Timestamp LeadingPacketEnqueueTime(int priority_level) const;
     Timestamp LastEnqueueTime() const;
+    bool has_keyframe_packets() const { return num_keyframe_packets_ > 0; }
+
+    std::array<std::deque<QueuedPacket>, kNumPriorityLevels> DequeueAll();
 
    private:
     std::deque<QueuedPacket> packets_[kNumPriorityLevels];
     Timestamp last_enqueue_time_;
+    int num_keyframe_packets_;
   };
+
+  // Remove the packet from the internal state, e.g. queue time / size etc.
+  void DequeuePacketInternal(QueuedPacket& packet);
+
+  // Check if the queue pointed to by `top_active_prio_level_` is empty and
+  // if so move it to the lowest non-empty index.
+  void MaybeUpdateTopPrioLevel();
+
+  void PurgeOldPacketsAtPriorityLevel(int prio_level, Timestamp now);
+
+  static absl::InlinedVector<TimeDelta, kNumPriorityLevels> ToTtlPerPrio(
+      PacketQueueTTL);
+
+  const bool prioritize_audio_retransmission_;
+  const absl::InlinedVector<TimeDelta, kNumPriorityLevels>
+      time_to_live_per_prio_;
 
   // Cumulative sum, over all packets, of time spent in the queue.
   TimeDelta queue_time_sum_;

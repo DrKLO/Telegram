@@ -16,6 +16,7 @@
 #define ABSL_HASH_INTERNAL_SPY_HASH_STATE_H_
 
 #include <algorithm>
+#include <cstdint>
 #include <ostream>
 #include <string>
 #include <vector>
@@ -149,20 +150,20 @@ class SpyHashStateImpl : public HashStateBase<SpyHashStateImpl<T>> {
                                              const unsigned char* begin,
                                              size_t size) {
     const size_t large_chunk_stride = PiecewiseChunkSize();
-    if (size > large_chunk_stride) {
-      // Combining a large contiguous buffer must have the same effect as
-      // doing it piecewise by the stride length, followed by the (possibly
-      // empty) remainder.
-      while (size >= large_chunk_stride) {
-        hash_state = SpyHashStateImpl::combine_contiguous(
-            std::move(hash_state), begin, large_chunk_stride);
-        begin += large_chunk_stride;
-        size -= large_chunk_stride;
-      }
+    // Combining a large contiguous buffer must have the same effect as
+    // doing it piecewise by the stride length, followed by the (possibly
+    // empty) remainder.
+    while (size > large_chunk_stride) {
+      hash_state = SpyHashStateImpl::combine_contiguous(
+          std::move(hash_state), begin, large_chunk_stride);
+      begin += large_chunk_stride;
+      size -= large_chunk_stride;
     }
 
-    hash_state.hash_representation_.emplace_back(
-        reinterpret_cast<const char*>(begin), size);
+    if (size > 0) {
+      hash_state.hash_representation_.emplace_back(
+          reinterpret_cast<const char*>(begin), size);
+    }
     return hash_state;
   }
 
@@ -196,6 +197,7 @@ class SpyHashStateImpl : public HashStateBase<SpyHashStateImpl<T>> {
  private:
   template <typename U>
   friend class SpyHashStateImpl;
+  friend struct CombineRaw;
 
   struct UnorderedCombinerCallback {
     std::vector<std::string> element_hash_representations;
@@ -212,6 +214,12 @@ class SpyHashStateImpl : public HashStateBase<SpyHashStateImpl<T>> {
       inner = SpyHashStateImpl<void>{};
     }
   };
+
+  // Combines raw data from e.g. integrals/floats/pointers/etc.
+  static SpyHashStateImpl combine_raw(SpyHashStateImpl state, uint64_t value) {
+    const unsigned char* data = reinterpret_cast<const unsigned char*>(&value);
+    return SpyHashStateImpl::combine_contiguous(std::move(state), data, 8);
+  }
 
   // This is true if SpyHashStateImpl<T> has been passed to a call of
   // AbslHashValue with the wrong type. This detects that the user called

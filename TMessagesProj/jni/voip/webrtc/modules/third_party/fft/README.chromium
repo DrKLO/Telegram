@@ -6,6 +6,7 @@ Date: 2018-07-26
 License: Custom license
 License File: LICENSE
 Security Critical: yes
+Shipped: yes
 
 Description:
 Multivariate complex Fourier transform, computed in place

@@ -1,5 +1,7 @@
 package org.telegram.ui.Components.spoilers;
 
+import static org.telegram.messenger.AndroidUtilities.dp;
+
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.ColorFilter;
@@ -112,7 +114,7 @@ public class SpoilersTextView extends TextView implements TextSelectionHelper.Si
                     int start = buffer.getSpanStart(pressedLink.getSpan());
                     int end = buffer.getSpanEnd(pressedLink.getSpan());
                     LinkPath path = pressedLink.obtainNewPath();
-                    path.setCurrentLayout(textLayout, start, getPaddingTop());
+                    path.setCurrentLayout(textLayout, start, disablePaddingInLinks ? 0 : getPaddingTop());
                     textLayout.getSelectionPath(start, end, path);
                     AndroidUtilities.runOnUIThread(() -> {
                         if (onLongPressListener != null && pressedLink == link) {
@@ -180,6 +182,7 @@ public class SpoilersTextView extends TextView implements TextSelectionHelper.Si
         animatedEmojiColorFilter = new PorterDuffColorFilter(color, PorterDuff.Mode.SRC_IN);
     }
 
+    protected boolean disablePaddingInLinks = true;
     private boolean disablePaddingsOffset;
     private boolean disablePaddingsOffsetX;
     private boolean disablePaddingsOffsetY;
@@ -201,7 +204,7 @@ public class SpoilersTextView extends TextView implements TextSelectionHelper.Si
 
         canvas.save();
         if (!disablePaddingsOffset) {
-            canvas.translate(disablePaddingsOffsetX ? 0 : getPaddingLeft(), disablePaddingsOffsetY ? 0 : getPaddingTop());
+            canvas.translate(disablePaddingsOffsetX ? 0 : pl, disablePaddingsOffsetY ? 0 : pt);
         }
         if (links != null && links.draw(canvas)) {
             invalidate();
@@ -233,7 +236,7 @@ public class SpoilersTextView extends TextView implements TextSelectionHelper.Si
         updateAnimatedEmoji(false);
         if (animatedEmoji != null) {
             canvas.save();
-            canvas.translate(getPaddingLeft(), getPaddingTop());
+            canvas.translate(pl, pt);
             AnimatedEmojiSpan.drawAnimatedEmojis(canvas, getLayout(), animatedEmoji, 0, spoilers, 0, getHeight(), 0, 1f, animatedEmojiColorFilter);
             canvas.restore();
         }
@@ -245,7 +248,7 @@ public class SpoilersTextView extends TextView implements TextSelectionHelper.Si
             } else {
                 canvas.save();
             }
-            canvas.translate(getPaddingLeft(), getPaddingTop() + AndroidUtilities.dp(2));
+            canvas.translate(pl, pt + dp(2));
             for (SpoilerEffect eff : spoilers) {
                 eff.setColor(getPaint().getColor());
                 eff.draw(canvas);

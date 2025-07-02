@@ -14,6 +14,7 @@
 #include <stdint.h>
 
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "absl/strings/string_view.h"
@@ -24,6 +25,7 @@
 #include "p2p/base/connection.h"
 #include "p2p/base/packet_transport_internal.h"
 #include "p2p/base/port.h"
+#include "p2p/base/stun_dictionary.h"
 #include "p2p/base/transport_description.h"
 #include "rtc_base/network_constants.h"
 #include "rtc_base/system/rtc_export.h"
@@ -103,7 +105,9 @@ webrtc::RTCError VerifyCandidates(const Candidates& candidates);
 // Information about ICE configuration.
 // TODO(deadbeef): Use absl::optional to represent unset values, instead of
 // -1.
-struct IceConfig {
+//
+// TODO(bugs.webrtc.org/15609): Define a public API for this.
+struct RTC_EXPORT IceConfig {
   // The ICE connection receiving timeout value in milliseconds.
   absl::optional<int> receiving_timeout;
   // Time interval in milliseconds to ping a backup connection when the ICE
@@ -228,16 +232,12 @@ enum class IceTransportState {
   STATE_FAILED
 };
 
-// TODO(zhihuang): Remove this once it's no longer used in
-// remoting/protocol/libjingle_transport_factory.cc
-enum IceProtocolType {
-  ICEPROTO_RFC5245  // Standard RFC 5245 version of ICE.
-};
-
 // IceTransportInternal is an internal abstract class that does ICE.
 // Once the public interface is supported,
 // (https://www.w3.org/TR/webrtc/#rtcicetransport)
 // the IceTransportInterface will be split from this class.
+//
+// TODO(bugs.webrtc.org/15609): Define a public API for this.
 class RTC_EXPORT IceTransportInternal : public rtc::PacketTransportInternal {
  public:
   IceTransportInternal();
@@ -255,10 +255,6 @@ class RTC_EXPORT IceTransportInternal : public rtc::PacketTransportInternal {
   virtual void SetIceRole(IceRole role) = 0;
 
   virtual void SetIceTiebreaker(uint64_t tiebreaker) = 0;
-
-  // TODO(zhihuang): Remove this once it's no longer called in
-  // remoting/protocol/libjingle_transport_factory.cc
-  virtual void SetIceProtocolType(IceProtocolType type) {}
 
   virtual void SetIceCredentials(absl::string_view ice_ufrag,
                                  absl::string_view ice_pwd);
@@ -303,17 +299,36 @@ class RTC_EXPORT IceTransportInternal : public rtc::PacketTransportInternal {
   virtual absl::optional<const CandidatePair> GetSelectedCandidatePair()
       const = 0;
 
+  virtual absl::optional<std::reference_wrapper<StunDictionaryWriter>>
+  GetDictionaryWriter() {
+    return absl::nullopt;
+  }
+
+  // Signal Exposed for backwards compatibility.
   sigslot::signal1<IceTransportInternal*> SignalGatheringState;
+  void SetGatheringStateCallback(
+      absl::AnyInvocable<void(IceTransportInternal*)> callback) {
+    RTC_DCHECK(!gathering_state_callback_);
+    gathering_state_callback_ = std::move(callback);
+  }
 
   // Handles sending and receiving of candidates.
   sigslot::signal2<IceTransportInternal*, const Candidate&>
       SignalCandidateGathered;
 
-  sigslot::signal2<IceTransportInternal*, const IceCandidateErrorEvent&>
-      SignalCandidateError;
+  void SetCandidateErrorCallback(
+      absl::AnyInvocable<void(IceTransportInternal*,
+                              const IceCandidateErrorEvent&)> callback) {
+    RTC_DCHECK(!candidate_error_callback_);
+    candidate_error_callback_ = std::move(callback);
+  }
 
-  sigslot::signal2<IceTransportInternal*, const Candidates&>
-      SignalCandidatesRemoved;
+  void SetCandidatesRemovedCallback(
+      absl::AnyInvocable<void(IceTransportInternal*, const Candidates&)>
+          callback) {
+    RTC_DCHECK(!candidates_removed_callback_);
+    candidates_removed_callback_ = std::move(callback);
+  }
 
   // Deprecated by PacketTransportInternal::SignalNetworkRouteChanged.
   // This signal occurs when there is a change in the way that packets are
@@ -323,8 +338,12 @@ class RTC_EXPORT IceTransportInternal : public rtc::PacketTransportInternal {
   // SignalNetworkRouteChanged.
   sigslot::signal2<IceTransportInternal*, const Candidate&> SignalRouteChange;
 
-  sigslot::signal1<const cricket::CandidatePairChangeEvent&>
-      SignalCandidatePairChanged;
+  void SetCandidatePairChangeCallback(
+      absl::AnyInvocable<void(const cricket::CandidatePairChangeEvent&)>
+          callback) {
+    RTC_DCHECK(!candidate_pair_change_callback_);
+    candidate_pair_change_callback_ = std::move(callback);
+  }
 
   // Invoked when there is conflict in the ICE role between local and remote
   // agents.
@@ -340,6 +359,58 @@ class RTC_EXPORT IceTransportInternal : public rtc::PacketTransportInternal {
 
   // Invoked when the transport is being destroyed.
   sigslot::signal1<IceTransportInternal*> SignalDestroyed;
+
+  // Invoked when remote dictionary has been updated,
+  // i.e. modifications to attributes from remote ice agent has
+  // reflected in our StunDictionaryView.
+  template <typename F>
+  void AddDictionaryViewUpdatedCallback(const void* tag, F&& callback) {
+    dictionary_view_updated_callback_list_.AddReceiver(
+        tag, std::forward<F>(callback));
+  }
+  void RemoveDictionaryViewUpdatedCallback(const void* tag) {
+    dictionary_view_updated_callback_list_.RemoveReceivers(tag);
+  }
+
+  // Invoked when local dictionary has been synchronized,
+  // i.e. remote ice agent has reported acknowledged updates from us.
+  template <typename F>
+  void AddDictionaryWriterSyncedCallback(const void* tag, F&& callback) {
+    dictionary_writer_synced_callback_list_.AddReceiver(
+        tag, std::forward<F>(callback));
+  }
+  void RemoveDictionaryWriterSyncedCallback(const void* tag) {
+    dictionary_writer_synced_callback_list_.RemoveReceivers(tag);
+  }
+
+ protected:
+  void SendGatheringStateEvent() { SignalGatheringState(this); }
+
+  webrtc::CallbackList<IceTransportInternal*,
+                       const StunDictionaryView&,
+                       rtc::ArrayView<uint16_t>>
+      dictionary_view_updated_callback_list_;
+  webrtc::CallbackList<IceTransportInternal*, const StunDictionaryWriter&>
+      dictionary_writer_synced_callback_list_;
+
+  absl::AnyInvocable<void(IceTransportInternal*)> gathering_state_callback_;
+
+  absl::AnyInvocable<void(IceTransportInternal*, const IceCandidateErrorEvent&)>
+      candidate_error_callback_;
+
+  absl::AnyInvocable<void(IceTransportInternal*, const Candidates&)>
+      candidates_removed_callback_;
+
+  absl::AnyInvocable<void(const cricket::CandidatePairChangeEvent&)>
+      candidate_pair_change_callback_;
+
+ private:
+  // TODO(bugs.webrtc.org/11943): remove when removing Signal
+  void SignalGatheringStateFired(IceTransportInternal* transport) {
+    if (gathering_state_callback_) {
+      gathering_state_callback_(transport);
+    }
+  }
 };
 
 }  // namespace cricket

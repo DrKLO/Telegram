@@ -99,6 +99,17 @@ rtc::scoped_refptr<I210BufferInterface> WrapI210Buffer(
     const uint16_t* v_plane,
     int v_stride,
     std::function<void()> no_longer_used);
+
+rtc::scoped_refptr<I410BufferInterface> WrapI410Buffer(
+    int width,
+    int height,
+    const uint16_t* y_plane,
+    int y_stride,
+    const uint16_t* u_plane,
+    int u_stride,
+    const uint16_t* v_plane,
+    int v_stride,
+    std::function<void()> no_longer_used);
 }  // namespace webrtc
 
 #endif  // COMMON_VIDEO_INCLUDE_VIDEO_FRAME_BUFFER_H_

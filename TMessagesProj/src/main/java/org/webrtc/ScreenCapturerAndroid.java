@@ -64,9 +64,9 @@ public class ScreenCapturerAndroid implements VideoCapturer, VideoSink {
    *     calling this method.
    * @param mediaProjectionCallback MediaProjection callback to implement application specific
    *     logic in events such as when the user revokes a previously granted capture permission.
-  **/
+   **/
   public ScreenCapturerAndroid(Intent mediaProjectionPermissionResultData,
-      MediaProjection.Callback mediaProjectionCallback) {
+                               MediaProjection.Callback mediaProjectionCallback) {
     this.mediaProjectionPermissionResultData = mediaProjectionPermissionResultData;
     this.mediaProjectionCallback = mediaProjectionCallback;
   }
@@ -86,7 +86,7 @@ public class ScreenCapturerAndroid implements VideoCapturer, VideoSink {
   // TODO(bugs.webrtc.org/8491): Remove NoSynchronizedMethodCheck suppression.
   @SuppressWarnings("NoSynchronizedMethodCheck")
   public synchronized void initialize(final SurfaceTextureHelper surfaceTextureHelper,
-      final Context applicationContext, final CapturerObserver capturerObserver) {
+                                      final Context applicationContext, final CapturerObserver capturerObserver) {
     checkNotDisposed();
 
     if (capturerObserver == null) {
@@ -118,7 +118,7 @@ public class ScreenCapturerAndroid implements VideoCapturer, VideoSink {
       this.height = height;
 
       mediaProjection = mediaProjectionManager.getMediaProjection(
-              Activity.RESULT_OK, mediaProjectionPermissionResultData);
+          Activity.RESULT_OK, mediaProjectionPermissionResultData);
 
       // Let MediaProjection callback use the SurfaceTextureHelper thread.
       mediaProjection.registerCallback(mediaProjectionCallback, surfaceTextureHelper.getHandler());
@@ -199,8 +199,8 @@ public class ScreenCapturerAndroid implements VideoCapturer, VideoSink {
     surfaceTextureHelper.setTextureSize(width, height);
     try {
       virtualDisplay = mediaProjection.createVirtualDisplay("WebRTC_ScreenCapture", width, height,
-              VIRTUAL_DISPLAY_DPI, DISPLAY_FLAGS, new Surface(surfaceTextureHelper.getSurfaceTexture()),
-              null /* callback */, null /* callback handler */);
+          VIRTUAL_DISPLAY_DPI, DISPLAY_FLAGS, new Surface(surfaceTextureHelper.getSurfaceTexture()),
+          null /* callback */, null /* callback handler */);
     } catch (Throwable e) {
       FileLog.e(e);
     }

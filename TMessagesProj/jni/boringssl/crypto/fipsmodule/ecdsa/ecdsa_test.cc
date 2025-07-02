@@ -1,54 +1,17 @@
-/* ====================================================================
- * Copyright (c) 1998-2005 The OpenSSL Project.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- *
- * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- *
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- *
- * 3. All advertising materials mentioning features or use of this
- *    software must display the following acknowledgment:
- *    "This product includes software developed by the OpenSSL Project
- *    for use in the OpenSSL Toolkit. (http://www.OpenSSL.org/)"
- *
- * 4. The names "OpenSSL Toolkit" and "OpenSSL Project" must not be used to
- *    endorse or promote products derived from this software without
- *    prior written permission. For written permission, please contact
- *    openssl-core@OpenSSL.org.
- *
- * 5. Products derived from this software may not be called "OpenSSL"
- *    nor may "OpenSSL" appear in their names without prior written
- *    permission of the OpenSSL Project.
- *
- * 6. Redistributions of any form whatsoever must retain the following
- *    acknowledgment:
- *    "This product includes software developed by the OpenSSL Project
- *    for use in the OpenSSL Toolkit (http://www.OpenSSL.org/)"
- *
- * THIS SOFTWARE IS PROVIDED BY THE OpenSSL PROJECT ``AS IS'' AND ANY
- * EXPRESSED OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
- * PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE OpenSSL PROJECT OR
- * ITS CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
- * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
- * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
- * OF THE POSSIBILITY OF SUCH DAMAGE.
- * ====================================================================
- *
- * This product includes cryptographic software written by Eric Young
- * (eay@cryptsoft.com).  This product includes software written by Tim
- * Hudson (tjh@cryptsoft.com). */
+// Copyright 2002-2016 The OpenSSL Project Authors. All Rights Reserved.
+// Copyright (c) 2002, Oracle and/or its affiliates. All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 #include <openssl/ecdsa.h>
 
@@ -66,6 +29,7 @@
 
 #include "../ec/internal.h"
 #include "../../test/file_test.h"
+#include "../../test/test_util.h"
 
 
 static bssl::UniquePtr<BIGNUM> HexToBIGNUM(const char *hex) {
@@ -180,7 +144,9 @@ TEST(ECDSATest, BuiltinCurves) {
   // Fill digest values with some random data.
   uint8_t digest[20], wrong_digest[20];
   ASSERT_TRUE(RAND_bytes(digest, 20));
+  CONSTTIME_DECLASSIFY(digest, 20);
   ASSERT_TRUE(RAND_bytes(wrong_digest, 20));
+  CONSTTIME_DECLASSIFY(wrong_digest, 20);
 
   static const struct {
     int nid;
@@ -222,11 +188,19 @@ TEST(ECDSATest, BuiltinCurves) {
 
     // Test ASN.1-encoded signatures.
     // Create a signature.
-    unsigned sig_len = ECDSA_size(eckey.get());
-    std::vector<uint8_t> signature(sig_len);
+    std::vector<uint8_t> signature(ECDSA_size(eckey.get()));
+    unsigned sig_len;
     ASSERT_TRUE(
         ECDSA_sign(0, digest, 20, signature.data(), &sig_len, eckey.get()));
     signature.resize(sig_len);
+
+    // ECDSA signing should be non-deterministic. This does not verify k is
+    // generated securely but at least checks it was randomized at all.
+    std::vector<uint8_t> signature2(ECDSA_size(eckey.get()));
+    ASSERT_TRUE(
+        ECDSA_sign(0, digest, 20, signature2.data(), &sig_len, eckey.get()));
+    signature2.resize(sig_len);
+    EXPECT_NE(Bytes(signature), Bytes(signature2));
 
     // Verify the signature.
     EXPECT_TRUE(ECDSA_verify(0, digest, 20, signature.data(), signature.size(),
@@ -274,6 +248,14 @@ TEST(ECDSATest, BuiltinCurves) {
 
     // Verify a tampered signature.
     TestTamperedSig(kRawAPI, digest, 20, ecdsa_sig.get(), eckey.get(), order);
+
+    // Negative components should not be accepted.
+    BN_set_negative(ecdsa_sig->r, 1);
+    EXPECT_FALSE(ECDSA_do_verify(digest, 20, ecdsa_sig.get(), eckey.get()));
+    BN_set_negative(ecdsa_sig->r, 0);
+    BN_set_negative(ecdsa_sig->s, 1);
+    EXPECT_FALSE(ECDSA_do_verify(digest, 20, ecdsa_sig.get(), eckey.get()));
+    BN_set_negative(ecdsa_sig->s, 0);
   }
 }
 
@@ -310,17 +292,16 @@ static bssl::UniquePtr<EC_GROUP> GetCurve(FileTest *t, const char *key) {
   }
 
   if (curve_name == "P-224") {
-    return bssl::UniquePtr<EC_GROUP>(EC_GROUP_new_by_curve_name(NID_secp224r1));
+    return bssl::UniquePtr<EC_GROUP>(const_cast<EC_GROUP *>(EC_group_p224()));
   }
   if (curve_name == "P-256") {
-    return bssl::UniquePtr<EC_GROUP>(
-        EC_GROUP_new_by_curve_name(NID_X9_62_prime256v1));
+    return bssl::UniquePtr<EC_GROUP>(const_cast<EC_GROUP *>(EC_group_p256()));
   }
   if (curve_name == "P-384") {
-    return bssl::UniquePtr<EC_GROUP>(EC_GROUP_new_by_curve_name(NID_secp384r1));
+    return bssl::UniquePtr<EC_GROUP>(const_cast<EC_GROUP *>(EC_group_p384()));
   }
   if (curve_name == "P-521") {
-    return bssl::UniquePtr<EC_GROUP>(EC_GROUP_new_by_curve_name(NID_secp521r1));
+    return bssl::UniquePtr<EC_GROUP>(const_cast<EC_GROUP *>(EC_group_p521()));
   }
   if (curve_name == "secp160r1") {
     return NewSecp160r1Group();
@@ -424,8 +405,8 @@ TEST(ECDSATest, SignTestVectors) {
       ASSERT_TRUE(x);
       bssl::UniquePtr<BIGNUM> y = GetBIGNUM(t, "Y");
       ASSERT_TRUE(y);
-      bssl::UniquePtr<BIGNUM> k = GetBIGNUM(t, "K");
-      ASSERT_TRUE(k);
+      std::vector<uint8_t> k;
+      ASSERT_TRUE(t->GetBytes(&k, "K"));
       bssl::UniquePtr<BIGNUM> r = GetBIGNUM(t, "R");
       ASSERT_TRUE(r);
       bssl::UniquePtr<BIGNUM> s = GetBIGNUM(t, "S");
@@ -444,10 +425,9 @@ TEST(ECDSATest, SignTestVectors) {
       ASSERT_TRUE(EC_KEY_set_public_key(key.get(), pub_key.get()));
       ASSERT_TRUE(EC_KEY_check_key(key.get()));
 
-      // Set the fixed k for testing purposes.
-      key->fixed_k = k.release();
       bssl::UniquePtr<ECDSA_SIG> sig(
-          ECDSA_do_sign(digest.data(), digest.size(), key.get()));
+          ECDSA_sign_with_nonce_and_leak_private_key_for_testing(
+              digest.data(), digest.size(), key.get(), k.data(), k.size()));
       ASSERT_TRUE(sig);
 
       EXPECT_EQ(0, BN_cmp(r.get(), sig->r));

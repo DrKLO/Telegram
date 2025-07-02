@@ -78,6 +78,27 @@ struct FrameDependencyStructure {
   std::vector<FrameDependencyTemplate> templates;
 };
 
+class DependencyDescriptorMandatory {
+ public:
+  void set_frame_number(int frame_number) { frame_number_ = frame_number; }
+  int frame_number() const { return frame_number_; }
+
+  void set_template_id(int template_id) { template_id_ = template_id; }
+  int template_id() const { return template_id_; }
+
+  void set_first_packet_in_frame(bool first) { first_packet_in_frame_ = first; }
+  bool first_packet_in_frame() const { return first_packet_in_frame_; }
+
+  void set_last_packet_in_frame(bool last) { last_packet_in_frame_ = last; }
+  bool last_packet_in_frame() const { return last_packet_in_frame_; }
+
+ private:
+  int frame_number_;
+  int template_id_;
+  bool first_packet_in_frame_;
+  bool last_packet_in_frame_;
+};
+
 struct DependencyDescriptor {
   static constexpr int kMaxSpatialIds = 4;
   static constexpr int kMaxTemporalIds = 8;

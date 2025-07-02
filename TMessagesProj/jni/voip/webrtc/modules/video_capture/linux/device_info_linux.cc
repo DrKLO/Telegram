@@ -20,16 +20,33 @@
 
 #include <vector>
 
+#if defined(WEBRTC_USE_PIPEWIRE)
+#include "modules/video_capture/linux/device_info_pipewire.h"
+#endif
 #include "modules/video_capture/linux/device_info_v4l2.h"
 #include "modules/video_capture/video_capture.h"
 #include "modules/video_capture/video_capture_defines.h"
 #include "modules/video_capture/video_capture_impl.h"
+#include "modules/video_capture/video_capture_options.h"
 #include "rtc_base/logging.h"
 
 namespace webrtc {
 namespace videocapturemodule {
 VideoCaptureModule::DeviceInfo* VideoCaptureImpl::CreateDeviceInfo() {
   return new videocapturemodule::DeviceInfoV4l2();
+}
+
+VideoCaptureModule::DeviceInfo* VideoCaptureImpl::CreateDeviceInfo(
+    VideoCaptureOptions* options) {
+#if defined(WEBRTC_USE_PIPEWIRE)
+  if (options->allow_pipewire()) {
+    return new videocapturemodule::DeviceInfoPipeWire(options);
+  }
+#endif
+  if (options->allow_v4l2())
+    return new videocapturemodule::DeviceInfoV4l2();
+
+  return nullptr;
 }
 }  // namespace videocapturemodule
 }  // namespace webrtc

@@ -144,7 +144,6 @@ void TrackMediaInfoMap::Initialize(
         // One sender is associated with at most one track.
         // One track may be associated with multiple senders.
         audio_track_by_sender_info_[&sender_info] = associated_track;
-        voice_infos_by_local_track_[associated_track].push_back(&sender_info);
       }
       if (sender_info.ssrc() == 0)
         continue;  // Unconnected SSRC. bugs.webrtc.org/8673
@@ -159,12 +158,8 @@ void TrackMediaInfoMap::Initialize(
         // One receiver is associated with at most one track, which is uniquely
         // associated with that receiver.
         audio_track_by_receiver_info_[&receiver_info] = associated_track;
-        RTC_DCHECK(voice_info_by_remote_track_.find(associated_track) ==
-                   voice_info_by_remote_track_.end());
-        voice_info_by_remote_track_[associated_track] = &receiver_info;
       } else if (unsignaled_audio_track) {
         audio_track_by_receiver_info_[&receiver_info] = unsignaled_audio_track;
-        voice_info_by_remote_track_[unsignaled_audio_track] = &receiver_info;
       }
       RTC_CHECK(voice_info_by_receiver_ssrc_.count(receiver_info.ssrc()) == 0)
           << "Duplicate voice receiver SSRC: " << receiver_info.ssrc();
@@ -187,7 +182,6 @@ void TrackMediaInfoMap::Initialize(
           // One sender is associated with at most one track.
           // One track may be associated with multiple senders.
           video_track_by_sender_info_[&sender_info] = associated_track;
-          video_infos_by_local_track_[associated_track].push_back(&sender_info);
           break;
         }
       }
@@ -211,44 +205,14 @@ void TrackMediaInfoMap::Initialize(
         // One receiver is associated with at most one track, which is uniquely
         // associated with that receiver.
         video_track_by_receiver_info_[&receiver_info] = associated_track;
-        RTC_DCHECK(video_info_by_remote_track_.find(associated_track) ==
-                   video_info_by_remote_track_.end());
-        video_info_by_remote_track_[associated_track] = &receiver_info;
       } else if (unsignaled_video_track) {
         video_track_by_receiver_info_[&receiver_info] = unsignaled_video_track;
-        video_info_by_remote_track_[unsignaled_video_track] = &receiver_info;
       }
       RTC_DCHECK(video_info_by_receiver_ssrc_.count(receiver_info.ssrc()) == 0)
           << "Duplicate video receiver SSRC: " << receiver_info.ssrc();
       video_info_by_receiver_ssrc_[receiver_info.ssrc()] = &receiver_info;
     }
   }
-}
-
-const std::vector<cricket::VoiceSenderInfo*>*
-TrackMediaInfoMap::GetVoiceSenderInfos(
-    const AudioTrackInterface& local_audio_track) const {
-  RTC_DCHECK(is_initialized_);
-  return FindAddressOrNull(voice_infos_by_local_track_, &local_audio_track);
-}
-
-const cricket::VoiceReceiverInfo* TrackMediaInfoMap::GetVoiceReceiverInfo(
-    const AudioTrackInterface& remote_audio_track) const {
-  RTC_DCHECK(is_initialized_);
-  return FindValueOrNull(voice_info_by_remote_track_, &remote_audio_track);
-}
-
-const std::vector<cricket::VideoSenderInfo*>*
-TrackMediaInfoMap::GetVideoSenderInfos(
-    const VideoTrackInterface& local_video_track) const {
-  RTC_DCHECK(is_initialized_);
-  return FindAddressOrNull(video_infos_by_local_track_, &local_video_track);
-}
-
-const cricket::VideoReceiverInfo* TrackMediaInfoMap::GetVideoReceiverInfo(
-    const VideoTrackInterface& remote_video_track) const {
-  RTC_DCHECK(is_initialized_);
-  return FindValueOrNull(video_info_by_remote_track_, &remote_video_track);
 }
 
 const cricket::VoiceSenderInfo* TrackMediaInfoMap::GetVoiceSenderInfoBySsrc(

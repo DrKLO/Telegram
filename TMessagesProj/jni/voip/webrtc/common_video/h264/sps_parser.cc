@@ -117,7 +117,7 @@ absl::optional<SpsParser::SpsState> SpsParser::ParseSpsUpToVui(
   // BitstreamReader::ReadBits, which can read at most 64 bits at a time. We
   // also have to avoid overflow when adding 4 to the on-wire golomb value,
   // e.g., for evil input data, ReadExponentialGolomb might return 0xfffc.
-  const uint32_t kMaxLog2Minus4 = 32 - 4;
+  const uint32_t kMaxLog2Minus4 = 12;
 
   // log2_max_frame_num_minus4: ue(v)
   uint32_t log2_max_frame_num_minus4 = reader.ReadExponentialGolomb();

@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2018 The WebRTC project authors. All Rights Reserved.
+ *  Copyright (c) 2023 The WebRTC project authors. All Rights Reserved.
  *
  *  Use of this source code is governed by a BSD-style license
  *  that can be found in the LICENSE file in the root of the source
@@ -9,19 +9,22 @@
  */
 
 #include "common_video/h265/h265_common.h"
+
 #include "common_video/h264/h264_common.h"
 
 namespace webrtc {
 namespace H265 {
 
-const uint8_t kNaluTypeMask = 0x7E;
+constexpr uint8_t kNaluTypeMask = 0x7E;
 
 std::vector<NaluIndex> FindNaluIndices(const uint8_t* buffer,
                                        size_t buffer_size) {
-  std::vector<H264::NaluIndex> indices = H264::FindNaluIndices(buffer, buffer_size);
+  std::vector<H264::NaluIndex> indices =
+      H264::FindNaluIndices(buffer, buffer_size);
   std::vector<NaluIndex> results;
   for (auto& index : indices) {
-    results.push_back({index.start_offset, index.payload_start_offset, index.payload_size});
+    results.push_back(
+        {index.start_offset, index.payload_start_offset, index.payload_size});
   }
   return results;
 }
@@ -36,6 +39,13 @@ std::vector<uint8_t> ParseRbsp(const uint8_t* data, size_t length) {
 
 void WriteRbsp(const uint8_t* bytes, size_t length, rtc::Buffer* destination) {
   H264::WriteRbsp(bytes, length, destination);
+}
+
+uint32_t Log2Ceiling(uint32_t value) {
+  // When n == 0, we want the function to return -1.
+  // When n == 0, (n - 1) will underflow to 0xFFFFFFFF, which is
+  // why the statement below starts with (n ? 32 : -1).
+  return (value ? 32 : -1) - WebRtcVideo_CountLeadingZeros32(value - 1);
 }
 
 uint32_t Log2(uint32_t value) {

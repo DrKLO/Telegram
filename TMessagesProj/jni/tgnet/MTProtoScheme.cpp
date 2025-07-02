@@ -948,6 +948,12 @@ void invokeWithGooglePlayIntegrity::serializeToStream(NativeByteBuffer *stream) 
     query->serializeToStream(stream);
 }
 
+void invokeWithReCaptcha::serializeToStream(NativeByteBuffer *stream) {
+    stream->writeInt32(constructor);
+    stream->writeString(token);
+    query->serializeToStream(stream);
+}
+
 void TL_inputClientProxy::serializeToStream(NativeByteBuffer *stream) {
     stream->writeInt32(constructor);
     stream->writeString(address);

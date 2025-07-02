@@ -1,0 +1,13 @@
+specific_include_rules = {
+  ".*": [
+    "+modules/audio_processing/include/audio_processing.h",
+    "+rtc_base/checks.h",
+    "+rtc_base/network.h",
+    "+rtc_base/rtc_certificate_generator.h",
+    "+rtc_base/ssl_certificate.h",
+    "+rtc_base/thread.h",
+  ],
+  "media_quality_test_params\.h": [
+    "+p2p/base/port_allocator.h",
+  ],
+}

@@ -1,23 +1,24 @@
-/* Copyright (c) 2018, Google Inc.
- *
- * Permission to use, copy, modify, and/or distribute this software for any
- * purpose with or without fee is hereby granted, provided that the above
- * copyright notice and this permission notice appear in all copies.
- *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
- * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY
- * SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION
- * OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
- * CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE. */
+// Copyright 2018 The BoringSSL Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 // testresult is an implementation of Chromium's JSON test result format. See
-// https://chromium.googlesource.com/chromium/src/+/master/docs/testing/json_test_results_format.md
+// https://chromium.googlesource.com/chromium/src/+/main/docs/testing/json_test_results_format.md
 package testresult
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"time"
 )
@@ -42,27 +43,31 @@ func NewResults() *Results {
 	}
 }
 
-func (t *Results) addResult(name, result, expected string) {
+func (t *Results) addResult(name, result, expected string, err error) {
 	if _, found := t.Tests[name]; found {
-		panic(name)
+		panic(fmt.Sprintf("duplicate test name %q", name))
 	}
-	t.Tests[name] = Result{
+	r := Result{
 		Actual:       result,
 		Expected:     expected,
 		IsUnexpected: result != expected,
 	}
+	if err != nil {
+		r.Error = err.Error()
+	}
+	t.Tests[name] = r
 	t.NumFailuresByType[result]++
 }
 
 // AddResult records a test result with the given result string. The test is a
 // failure if the result is not "PASS".
-func (t *Results) AddResult(name, result string) {
-	t.addResult(name, result, "PASS")
+func (t *Results) AddResult(name, result string, err error) {
+	t.addResult(name, result, "PASS", err)
 }
 
 // AddSkip marks a test as being skipped. It is not considered a failure.
 func (t *Results) AddSkip(name string) {
-	t.addResult(name, "SKIP", "SKIP")
+	t.addResult(name, "SKIP", "SKIP", nil)
 }
 
 func (t *Results) HasUnexpectedResults() bool {
@@ -92,4 +97,7 @@ type Result struct {
 	Actual       string `json:"actual"`
 	Expected     string `json:"expected"`
 	IsUnexpected bool   `json:"is_unexpected"`
+	// Error is not part of the Chromium test results schema, but is useful for
+	// BoGo output.
+	Error string `json:"error,omitempty"`
 }

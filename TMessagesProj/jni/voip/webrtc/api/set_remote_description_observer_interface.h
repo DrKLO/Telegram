@@ -11,8 +11,8 @@
 #ifndef API_SET_REMOTE_DESCRIPTION_OBSERVER_INTERFACE_H_
 #define API_SET_REMOTE_DESCRIPTION_OBSERVER_INTERFACE_H_
 
+#include "api/ref_count.h"
 #include "api/rtc_error.h"
-#include "rtc_base/ref_count.h"
 
 namespace webrtc {
 
@@ -20,7 +20,7 @@ namespace webrtc {
 // callback is invoked such that the state of the peer connection can be
 // examined to accurately reflect the effects of the SetRemoteDescription
 // operation.
-class SetRemoteDescriptionObserverInterface : public rtc::RefCountInterface {
+class SetRemoteDescriptionObserverInterface : public webrtc::RefCountInterface {
  public:
   // On success, `error.ok()` is true.
   virtual void OnSetRemoteDescriptionComplete(RTCError error) = 0;

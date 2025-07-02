@@ -1,16 +1,16 @@
-/* Copyright (c) 2015, Google Inc.
- *
- * Permission to use, copy, modify, and/or distribute this software for any
- * purpose with or without fee is hereby granted, provided that the above
- * copyright notice and this permission notice appear in all copies.
- *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
- * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY
- * SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION
- * OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
- * CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE. */
+// Copyright 2015 The BoringSSL Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 #include <openssl/ssl.h>
 
@@ -37,7 +37,9 @@ static_assert((SSL3_ALIGN_PAYLOAD & (SSL3_ALIGN_PAYLOAD - 1)) == 0,
               "SSL3_ALIGN_PAYLOAD must be a power of 2");
 
 void SSLBuffer::Clear() {
-  free(buf_);  // Allocated with malloc().
+  if (buf_ != inline_buf_) {
+    free(buf_);  // Allocated with malloc().
+  }
   buf_ = nullptr;
   offset_ = 0;
   size_ = 0;
@@ -54,23 +56,35 @@ bool SSLBuffer::EnsureCap(size_t header_len, size_t new_cap) {
     return true;
   }
 
-  // Add up to |SSL3_ALIGN_PAYLOAD| - 1 bytes of slack for alignment.
-  //
-  // Since this buffer gets allocated quite frequently and doesn't contain any
-  // sensitive data, we allocate with malloc rather than |OPENSSL_malloc| and
-  // avoid zeroing on free.
-  uint8_t *new_buf = (uint8_t *)malloc(new_cap + SSL3_ALIGN_PAYLOAD - 1);
-  if (new_buf == NULL) {
-    OPENSSL_PUT_ERROR(SSL, ERR_R_MALLOC_FAILURE);
-    return false;
+  uint8_t *new_buf;
+  size_t new_offset;
+  if (new_cap <= sizeof(inline_buf_)) {
+    // This function is called twice per TLS record, first for the five-byte
+    // header. To avoid allocating twice, use an inline buffer for short inputs.
+    new_buf = inline_buf_;
+    new_offset = 0;
+  } else {
+    // Add up to |SSL3_ALIGN_PAYLOAD| - 1 bytes of slack for alignment.
+    //
+    // Since this buffer gets allocated quite frequently and doesn't contain any
+    // sensitive data, we allocate with malloc rather than |OPENSSL_malloc| and
+    // avoid zeroing on free.
+    new_buf = (uint8_t *)malloc(new_cap + SSL3_ALIGN_PAYLOAD - 1);
+    if (new_buf == NULL) {
+      OPENSSL_PUT_ERROR(SSL, ERR_R_MALLOC_FAILURE);
+      return false;
+    }
+
+    // Offset the buffer such that the record body is aligned.
+    new_offset =
+        (0 - header_len - (uintptr_t)new_buf) & (SSL3_ALIGN_PAYLOAD - 1);
   }
 
-  // Offset the buffer such that the record body is aligned.
-  size_t new_offset =
-      (0 - header_len - (uintptr_t)new_buf) & (SSL3_ALIGN_PAYLOAD - 1);
+  // Note if the both old and new buffer are inline, the source and destination
+  // may alias.
+  OPENSSL_memmove(new_buf + new_offset, buf_ + offset_, size_);
 
-  if (buf_ != NULL) {
-    OPENSSL_memcpy(new_buf + new_offset, buf_ + offset_, size_);
+  if (buf_ != inline_buf_) {
     free(buf_);  // Allocated with malloc().
   }
 
@@ -153,14 +167,17 @@ int ssl_read_buffer_extend_to(SSL *ssl, size_t len) {
 
   if (SSL_is_dtls(ssl)) {
     static_assert(
-        DTLS1_RT_HEADER_LENGTH + SSL3_RT_MAX_ENCRYPTED_LENGTH <= 0xffff,
+        DTLS1_RT_MAX_HEADER_LENGTH + SSL3_RT_MAX_ENCRYPTED_LENGTH <= 0xffff,
         "DTLS read buffer is too large");
 
     // The |len| parameter is ignored in DTLS.
-    len = DTLS1_RT_HEADER_LENGTH + SSL3_RT_MAX_ENCRYPTED_LENGTH;
+    len = DTLS1_RT_MAX_HEADER_LENGTH + SSL3_RT_MAX_ENCRYPTED_LENGTH;
   }
 
-  if (!ssl->s3->read_buffer.EnsureCap(ssl_record_prefix_len(ssl), len)) {
+  // The DTLS record header can have a variable length, so the |header_len|
+  // value provided for buffer alignment only works if the header is the maximum
+  // length.
+  if (!ssl->s3->read_buffer.EnsureCap(DTLS1_RT_MAX_HEADER_LENGTH, len)) {
     return -1;
   }
 
@@ -213,6 +230,7 @@ int ssl_handle_open_record(SSL *ssl, bool *out_retry, ssl_open_record_t ret,
       return 1;
 
     case ssl_open_record_close_notify:
+      ssl->s3->rwstate = SSL_ERROR_ZERO_RETURN;
       return 0;
 
     case ssl_open_record_error:
@@ -232,7 +250,7 @@ static_assert(SSL3_RT_HEADER_LENGTH * 2 +
                   0xffff,
               "maximum TLS write buffer is too large");
 
-static_assert(DTLS1_RT_HEADER_LENGTH + SSL3_RT_SEND_MAX_ENCRYPTED_OVERHEAD +
+static_assert(DTLS1_RT_MAX_HEADER_LENGTH + SSL3_RT_SEND_MAX_ENCRYPTED_OVERHEAD +
                       SSL3_RT_MAX_PLAIN_LENGTH <=
                   0xffff,
               "maximum DTLS write buffer is too large");

@@ -1,10 +1,17 @@
 #! /usr/bin/env perl
 # Copyright 2011-2016 The OpenSSL Project Authors. All Rights Reserved.
 #
-# Licensed under the OpenSSL license (the "License").  You may not use
-# this file except in compliance with the License.  You can obtain a copy
-# in the file LICENSE in the source distribution or at
-# https://www.openssl.org/source/license.html
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 
 ######################################################################
@@ -62,14 +69,14 @@ $output = pop;
 open OUT,">$output";
 *STDOUT=*OUT;
 
-&asm_init($ARGV[0],$x86only = $ARGV[$#ARGV] eq "386");
+&asm_init($ARGV[0]);
 
 $PREFIX="vpaes";
 
 my  ($round, $base, $magic, $key, $const, $inp, $out)=
     ("eax",  "ebx", "ecx",  "edx","ebp",  "esi","edi");
 
-&preprocessor_ifndef("NDEBUG")
+&preprocessor_ifdef("BORINGSSL_DISPATCH_TEST")
 &external_label("BORINGSSL_function_hit");
 &preprocessor_endif();
 &static_label("_vpaes_consts");
@@ -920,4 +927,4 @@ $k_dsbo=0x2c0;		# decryption sbox final output
 
 &asm_finish();
 
-close STDOUT or die "error closing STDOUT";
+close STDOUT or die "error closing STDOUT: $!";

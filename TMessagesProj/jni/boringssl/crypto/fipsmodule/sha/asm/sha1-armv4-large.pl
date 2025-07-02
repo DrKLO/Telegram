@@ -1,17 +1,22 @@
 #! /usr/bin/env perl
 # Copyright 2007-2016 The OpenSSL Project Authors. All Rights Reserved.
 #
-# Licensed under the OpenSSL license (the "License").  You may not use
-# this file except in compliance with the License.  You can obtain a copy
-# in the file LICENSE in the source distribution or at
-# https://www.openssl.org/source/license.html
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 
 # ====================================================================
 # Written by Andy Polyakov <appro@openssl.org> for the OpenSSL
-# project. The module is, however, dual licensed under OpenSSL and
-# CRYPTOGAMS licenses depending on where you obtain it. For further
-# details see http://www.openssl.org/~appro/cryptogams/.
+# project.
 # ====================================================================
 
 # sha1_block procedure for ARMv4.
@@ -85,7 +90,7 @@ if ($flavour && $flavour ne "void") {
     ( $xlate="${dir}../../../perlasm/arm-xlate.pl" and -f $xlate) or
     die "can't locate arm-xlate.pl";
 
-    open OUT,"| \"$^X\" $xlate $flavour $output";
+    open OUT,"| \"$^X\" \"$xlate\" $flavour \"$output\"";
     *STDOUT=*OUT;
 } else {
     open OUT,">$output";
@@ -132,7 +137,7 @@ ___
 sub BODY_00_15 {
 my ($a,$b,$c,$d,$e)=@_;
 $code.=<<___;
-#if __ARM_ARCH__<7
+#if __ARM_ARCH<7
 	ldrb	$t1,[$inp,#2]
 	ldrb	$t0,[$inp,#3]
 	ldrb	$t2,[$inp,#1]
@@ -187,8 +192,6 @@ ___
 }
 
 $code=<<___;
-#include <openssl/arm_arch.h>
-
 .text
 #if defined(__thumb2__)
 .syntax	unified
@@ -197,24 +200,11 @@ $code=<<___;
 .code	32
 #endif
 
-.global	sha1_block_data_order
-.type	sha1_block_data_order,%function
+.global	sha1_block_data_order_nohw
+.type	sha1_block_data_order_nohw,%function
 
 .align	5
-sha1_block_data_order:
-#if __ARM_MAX_ARCH__>=7
-.Lsha1_block:
-	adr	r3,.Lsha1_block
-	ldr	r12,.LOPENSSL_armcap
-	ldr	r12,[r3,r12]		@ OPENSSL_armcap_P
-#ifdef	__APPLE__
-	ldr	r12,[r12]
-#endif
-	tst	r12,#ARMV8_SHA1
-	bne	.LARMv8
-	tst	r12,#ARMV7_NEON
-	bne	.LNEON
-#endif
+sha1_block_data_order_nohw:
 	stmdb	sp!,{r4-r12,lr}
 	add	$len,$inp,$len,lsl#6	@ $len to point at the end of $inp
 	ldmia	$ctx,{$a,$b,$c,$d,$e}
@@ -296,7 +286,7 @@ $code.=<<___;
 	teq	$inp,$len
 	bne	.Lloop			@ [+18], total 1307
 
-#if __ARM_ARCH__>=5
+#if __ARM_ARCH>=5
 	ldmia	sp!,{r4-r12,pc}
 #else
 	ldmia	sp!,{r4-r12,lr}
@@ -304,17 +294,13 @@ $code.=<<___;
 	moveq	pc,lr			@ be binary compatible with V4, yet
 	bx	lr			@ interoperable with Thumb ISA:-)
 #endif
-.size	sha1_block_data_order,.-sha1_block_data_order
+.size	sha1_block_data_order_nohw,.-sha1_block_data_order_nohw
 
 .align	5
 .LK_00_19:	.word	0x5a827999
 .LK_20_39:	.word	0x6ed9eba1
 .LK_40_59:	.word	0x8f1bbcdc
 .LK_60_79:	.word	0xca62c1d6
-#if __ARM_MAX_ARCH__>=7
-.LOPENSSL_armcap:
-.word	OPENSSL_armcap_P-.Lsha1_block
-#endif
 .asciz	"SHA1 block transform for ARMv4/NEON/ARMv8, CRYPTOGAMS by <appro\@openssl.org>"
 .align	5
 ___
@@ -530,10 +516,10 @@ $code.=<<___;
 .arch	armv7-a
 .fpu	neon
 
+.global	sha1_block_data_order_neon
 .type	sha1_block_data_order_neon,%function
 .align	4
 sha1_block_data_order_neon:
-.LNEON:
 	stmdb	sp!,{r4-r12,lr}
 	add	$len,$inp,$len,lsl#6	@ $len to point at the end of $inp
 	@ dmb				@ errata #451034 on early Cortex A8
@@ -625,10 +611,10 @@ $code.=<<___;
 #  define INST(a,b,c,d)	.byte	a,b,c,d|0x10
 # endif
 
-.type	sha1_block_data_order_armv8,%function
+.global	sha1_block_data_order_hw
+.type	sha1_block_data_order_hw,%function
 .align	5
-sha1_block_data_order_armv8:
-.LARMv8:
+sha1_block_data_order_hw:
 	vstmdb	sp!,{d8-d15}		@ ABI specification says so
 
 	veor	$E,$E,$E
@@ -693,16 +679,10 @@ $code.=<<___;
 
 	vldmia	sp!,{d8-d15}
 	ret					@ bx lr
-.size	sha1_block_data_order_armv8,.-sha1_block_data_order_armv8
+.size	sha1_block_data_order_hw,.-sha1_block_data_order_hw
 #endif
 ___
 }}}
-$code.=<<___;
-#if __ARM_MAX_ARCH__>=7
-.comm	OPENSSL_armcap_P,4,4
-.hidden	OPENSSL_armcap_P
-#endif
-___
 
 {   my  %opcode = (
 	"sha1c"		=> 0xf2000c40,	"sha1p"		=> 0xf2100c40,
@@ -742,4 +722,4 @@ foreach (split($/,$code)) {
 	print $_,$/;
 }
 
-close STDOUT or die "error closing STDOUT"; # enforce flush
+close STDOUT or die "error closing STDOUT: $!"; # enforce flush

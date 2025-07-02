@@ -18,8 +18,6 @@
 
 namespace webrtc {
 
-// TODO(bugs.webrtc.org/12000): Note that this extensions is being developed and
-// the wire format will likely change.
 class RtpVideoLayersAllocationExtension {
  public:
   using value_type = VideoLayersAllocation;

@@ -1,16 +1,16 @@
-/* Copyright (c) 2017, Google Inc.
- *
- * Permission to use, copy, modify, and/or distribute this software for any
- * purpose with or without fee is hereby granted, provided that the above
- * copyright notice and this permission notice appear in all copies.
- *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
- * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY
- * SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION
- * OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
- * CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE. */
+// Copyright 2017 The BoringSSL Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 #include <stdio.h>
 #include <vector>
@@ -84,6 +84,35 @@ TEST(SpanTest, Accessor) {
   }
   EXPECT_EQ(s.begin(), v.data());
   EXPECT_EQ(s.end(), v.data() + v.size());
+}
+
+TEST(SpanTest, ConstExpr) {
+  static constexpr int v[] = {1, 2, 3, 4};
+  constexpr bssl::Span<const int> span1(v);
+  static_assert(span1.size() == 4u, "wrong size");
+  constexpr bssl::Span<const int> span2 = MakeConstSpan(v);
+  static_assert(span2.size() == 4u, "wrong size");
+  static_assert(span2.subspan(1).size() == 3u, "wrong size");
+  static_assert(span2.first(1).size() == 1u, "wrong size");
+  static_assert(span2.last(1).size() == 1u, "wrong size");
+  static_assert(span2[0] == 1, "wrong value");
+}
+
+TEST(SpanDeathTest, BoundsChecks) {
+  // Make an array that's larger than we need, so that a failure to bounds check
+  // won't crash.
+  const int v[] = {1, 2, 3, 4};
+  Span<const int> span(v, 3);
+  // Out of bounds access.
+  EXPECT_DEATH_IF_SUPPORTED(span[3], "");
+  EXPECT_DEATH_IF_SUPPORTED(span.subspan(4), "");
+  EXPECT_DEATH_IF_SUPPORTED(span.first(4), "");
+  EXPECT_DEATH_IF_SUPPORTED(span.last(4), "");
+  // Accessing an empty span.
+  Span<const int> empty(v, 0);
+  EXPECT_DEATH_IF_SUPPORTED(empty[0], "");
+  EXPECT_DEATH_IF_SUPPORTED(empty.front(), "");
+  EXPECT_DEATH_IF_SUPPORTED(empty.back(), "");
 }
 
 }  // namespace

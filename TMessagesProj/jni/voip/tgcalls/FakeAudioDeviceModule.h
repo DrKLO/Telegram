@@ -10,7 +10,7 @@ class AudioDeviceModule;
 class TaskQueueFactory;
 }  // namespace webrtc
 
-namespace rtc {
+namespace webrtc {
 template <class T>
 class scoped_refptr;
 }
@@ -46,7 +46,7 @@ class FakeAudioDeviceModule {
     uint32_t num_channels{2};
     std::function<void(Task)> scheduler_;
   };
-  static std::function<rtc::scoped_refptr<webrtc::AudioDeviceModule>(webrtc::TaskQueueFactory *)> Creator(
+  static std::function<webrtc::scoped_refptr<webrtc::AudioDeviceModule>(webrtc::TaskQueueFactory *)> Creator(
       std::shared_ptr<Renderer> renderer,
       std::shared_ptr<Recorder> recorder,
       Options options);

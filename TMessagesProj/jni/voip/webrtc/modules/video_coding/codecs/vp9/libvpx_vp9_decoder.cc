@@ -188,7 +188,6 @@ bool LibvpxVp9Decoder::Configure(const Settings& settings) {
 }
 
 int LibvpxVp9Decoder::Decode(const EncodedImage& input_image,
-                             bool missing_frames,
                              int64_t /*render_time_ms*/) {
   if (!inited_) {
     return WEBRTC_VIDEO_CODEC_UNINITIALIZED;
@@ -247,8 +246,8 @@ int LibvpxVp9Decoder::Decode(const EncodedImage& input_image,
   vpx_codec_err_t vpx_ret =
       vpx_codec_control(decoder_, VPXD_GET_LAST_QUANTIZER, &qp);
   RTC_DCHECK_EQ(vpx_ret, VPX_CODEC_OK);
-  int ret =
-      ReturnFrame(img, input_image.Timestamp(), qp, input_image.ColorSpace());
+  int ret = ReturnFrame(img, input_image.RtpTimestamp(), qp,
+                        input_image.ColorSpace());
   if (ret != 0) {
     return ret;
   }
@@ -320,6 +319,16 @@ int LibvpxVp9Decoder::ReturnFrame(
       break;
     case VPX_IMG_FMT_I42216:
       img_wrapped_buffer = WrapI210Buffer(
+          img->d_w, img->d_h,
+          reinterpret_cast<const uint16_t*>(img->planes[VPX_PLANE_Y]),
+          img->stride[VPX_PLANE_Y] / 2,
+          reinterpret_cast<const uint16_t*>(img->planes[VPX_PLANE_U]),
+          img->stride[VPX_PLANE_U] / 2,
+          reinterpret_cast<const uint16_t*>(img->planes[VPX_PLANE_V]),
+          img->stride[VPX_PLANE_V] / 2, [img_buffer] {});
+      break;
+    case VPX_IMG_FMT_I44416:
+      img_wrapped_buffer = WrapI410Buffer(
           img->d_w, img->d_h,
           reinterpret_cast<const uint16_t*>(img->planes[VPX_PLANE_Y]),
           img->stride[VPX_PLANE_Y] / 2,

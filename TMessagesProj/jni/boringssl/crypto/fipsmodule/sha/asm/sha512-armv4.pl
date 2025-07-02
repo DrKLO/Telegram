@@ -1,19 +1,22 @@
 #! /usr/bin/env perl
 # Copyright 2007-2016 The OpenSSL Project Authors. All Rights Reserved.
 #
-# Licensed under the OpenSSL license (the "License").  You may not use
-# this file except in compliance with the License.  You can obtain a copy
-# in the file LICENSE in the source distribution or at
-# https://www.openssl.org/source/license.html
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 
 # ====================================================================
 # Written by Andy Polyakov <appro@openssl.org> for the OpenSSL
-# project. The module is, however, dual licensed under OpenSSL and
-# CRYPTOGAMS licenses depending on where you obtain it. For further
-# details see http://www.openssl.org/~appro/cryptogams/.
-#
-# Permission to use under GPL terms is granted.
+# project.
 # ====================================================================
 
 # SHA512 block procedure for ARMv4. September 2007.
@@ -67,7 +70,7 @@ if ($flavour && $flavour ne "void") {
     ( $xlate="${dir}../../../perlasm/arm-xlate.pl" and -f $xlate) or
     die "can't locate arm-xlate.pl";
 
-    open OUT,"| \"$^X\" $xlate $flavour $output";
+    open OUT,"| \"$^X\" \"$xlate\" $flavour \"$output\"";
     *STDOUT=*OUT;
 } else {
     open OUT,">$output";
@@ -159,7 +162,7 @@ $code.=<<___;
 	teq	$t0,#$magic
 
 	ldr	$t3,[sp,#$Coff+0]	@ c.lo
-#if __ARM_ARCH__>=7
+#if __ARM_ARCH>=7
 	it	eq			@ Thumb2 thing, sanity check in ARM
 #endif
 	orreq	$Ktbl,$Ktbl,#1
@@ -200,11 +203,9 @@ ___
 }
 $code=<<___;
 #ifndef __KERNEL__
-# include <openssl/arm_arch.h>
 # define VFP_ABI_PUSH	vstmdb	sp!,{d8-d15}
 # define VFP_ABI_POP	vldmia	sp!,{d8-d15}
 #else
-# define __ARM_ARCH__ __LINUX_ARM_ARCH__
 # define __ARM_MAX_ARCH__ 7
 # define VFP_ABI_PUSH
 # define VFP_ABI_POP
@@ -277,35 +278,13 @@ WORD64(0x3c9ebe0a,0x15c9bebc, 0x431d67c4,0x9c100d4c)
 WORD64(0x4cc5d4be,0xcb3e42b6, 0x597f299c,0xfc657e2a)
 WORD64(0x5fcb6fab,0x3ad6faec, 0x6c44198c,0x4a475817)
 .size	K512,.-K512
-#if __ARM_MAX_ARCH__>=7 && !defined(__KERNEL__)
-.LOPENSSL_armcap:
-.word	OPENSSL_armcap_P-.Lsha512_block_data_order
-.skip	32-4
-#else
-.skip	32
-#endif
 
-.global	sha512_block_data_order
-.type	sha512_block_data_order,%function
-sha512_block_data_order:
-.Lsha512_block_data_order:
-#if __ARM_ARCH__<7 && !defined(__thumb2__)
-	sub	r3,pc,#8		@ sha512_block_data_order
-#else
-	adr	r3,.Lsha512_block_data_order
-#endif
-#if __ARM_MAX_ARCH__>=7 && !defined(__KERNEL__)
-	ldr	r12,.LOPENSSL_armcap
-	ldr	r12,[r3,r12]		@ OPENSSL_armcap_P
-#ifdef	__APPLE__
-	ldr	r12,[r12]
-#endif
-	tst	r12,#ARMV7_NEON
-	bne	.LNEON
-#endif
+.global	sha512_block_data_order_nohw
+.type	sha512_block_data_order_nohw,%function
+sha512_block_data_order_nohw:
 	add	$len,$inp,$len,lsl#7	@ len to point at the end of inp
 	stmdb	sp!,{r4-r12,lr}
-	sub	$Ktbl,r3,#672		@ K512
+	adr	$Ktbl,K512
 	sub	sp,sp,#9*8
 
 	ldr	$Elo,[$ctx,#$Eoff+$lo]
@@ -339,7 +318,7 @@ sha512_block_data_order:
 	str	$Thi,[sp,#$Foff+4]
 
 .L00_15:
-#if __ARM_ARCH__<7
+#if __ARM_ARCH<7
 	ldrb	$Tlo,[$inp,#7]
 	ldrb	$t0, [$inp,#6]
 	ldrb	$t1, [$inp,#5]
@@ -417,7 +396,7 @@ $code.=<<___;
 ___
 	&BODY_00_15(0x17);
 $code.=<<___;
-#if __ARM_ARCH__>=7
+#if __ARM_ARCH>=7
 	ittt	eq			@ Thumb2 thing, sanity check in ARM
 #endif
 	ldreq	$t0,[sp,#`$Xoff+8*(16-1)`+0]
@@ -496,7 +475,7 @@ $code.=<<___;
 	bne	.Loop
 
 	add	sp,sp,#8*9		@ destroy frame
-#if __ARM_ARCH__>=5
+#if __ARM_ARCH>=5
 	ldmia	sp!,{r4-r12,pc}
 #else
 	ldmia	sp!,{r4-r12,lr}
@@ -504,7 +483,7 @@ $code.=<<___;
 	moveq	pc,lr			@ be binary compatible with V4, yet
 	bx	lr			@ interoperable with Thumb ISA:-)
 #endif
-.size	sha512_block_data_order,.-sha512_block_data_order
+.size	sha512_block_data_order_nohw,.-sha512_block_data_order_nohw
 ___
 
 {
@@ -615,7 +594,6 @@ $code.=<<___;
 .type	sha512_block_data_order_neon,%function
 .align	4
 sha512_block_data_order_neon:
-.LNEON:
 	dmb				@ errata #451034 on early Cortex A8
 	add	$len,$inp,$len,lsl#7	@ len to point at the end of inp
 	adr	$Ktbl,K512
@@ -653,10 +631,6 @@ ___
 $code.=<<___;
 .asciz	"SHA512 block transform for ARMv4/NEON, CRYPTOGAMS by <appro\@openssl.org>"
 .align	2
-#if __ARM_MAX_ARCH__>=7 && !defined(__KERNEL__)
-.comm	OPENSSL_armcap_P,4,4
-.hidden	OPENSSL_armcap_P
-#endif
 ___
 
 $code =~ s/\`([^\`]*)\`/eval $1/gem;
@@ -672,4 +646,4 @@ while(<SELF>) {
 close SELF;
 
 print $code;
-close STDOUT or die "error closing STDOUT"; # enforce flush
+close STDOUT or die "error closing STDOUT: $!"; # enforce flush

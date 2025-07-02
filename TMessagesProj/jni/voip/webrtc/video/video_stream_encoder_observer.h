@@ -58,6 +58,7 @@ class VideoStreamEncoderObserver : public CpuOveruseMetricsObserver {
 
   enum class DropReason {
     kSource,
+    kBadTimestamp,
     kEncoderQueue,
     kEncoder,
     kMediaOptimization,

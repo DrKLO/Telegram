@@ -761,10 +761,10 @@ public class MediaActivity extends BaseFragment implements SharedMediaLayout.Sha
                 subtitleTextView[0].setText(LocaleController.formatPluralStringSpaced("FoundStories", storiesCount));
             }
         } else if (type == TYPE_ARCHIVED_CHANNEL_STORIES) {
-            nameTextView[0].setText(LocaleController.getString("ProfileStoriesArchive"));
+            nameTextView[0].setText(LocaleController.getString(R.string.ProfileStoriesArchive));
         } else if (type == TYPE_STORIES) {
-            nameTextView[0].setText(LocaleController.getString("ProfileMyStories"));
-            nameTextView[1].setText(LocaleController.getString("ProfileStoriesArchive"));
+            nameTextView[0].setText(LocaleController.getString(R.string.ProfileMyStories));
+            nameTextView[1].setText(LocaleController.getString(R.string.ProfileStoriesArchive));
         } else if (avatarDialogId == UserObject.ANONYMOUS) {
             nameTextView[0].setText(LocaleController.getString(R.string.AnonymousForward));
             avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_ANONYMOUS);

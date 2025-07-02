@@ -36,15 +36,13 @@ class SocketStream : public StreamInterface, public sigslot::has_slots<> {
 
   StreamState GetState() const override;
 
-  StreamResult Read(void* buffer,
-                    size_t buffer_len,
-                    size_t* read,
-                    int* error) override;
+  StreamResult Read(rtc::ArrayView<uint8_t> buffer,
+                    size_t& read,
+                    int& error) override;
 
-  StreamResult Write(const void* data,
-                     size_t data_len,
-                     size_t* written,
-                     int* error) override;
+  StreamResult Write(rtc::ArrayView<const uint8_t> data,
+                     size_t& written,
+                     int& error) override;
 
   void Close() override;
 

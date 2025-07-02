@@ -244,7 +244,7 @@ public class FragmentContextViewWavesDrawable {
                 setState(FragmentContextViewWavesDrawable.MUTE_BUTTON_STATE_CONNECTING, animated);
             } else {
                 if (voIPService.groupCall != null) {
-                    TLRPC.TL_groupCallParticipant participant = voIPService.groupCall.participants.get(voIPService.getSelfId());
+                    TLRPC.GroupCallParticipant participant = voIPService.groupCall.participants.get(voIPService.getSelfId());
                     if (participant != null && !participant.can_self_unmute && participant.muted && !ChatObject.canManageCalls(voIPService.getChat()) || voIPService.groupCall.call.rtmp_stream) {
                         voIPService.setMicMute(true, false, false);
                         setState(FragmentContextViewWavesDrawable.MUTE_BUTTON_STATE_MUTED_BY_ADMIN, animated);

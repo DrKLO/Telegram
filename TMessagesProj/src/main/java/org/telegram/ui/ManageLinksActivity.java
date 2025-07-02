@@ -1118,7 +1118,8 @@ public class ManageLinksActivity extends BaseFragment implements NotificationCen
                             if (invite.link == null) return;
                             showDialog(new ShareAlert(getContext(), null, invite.link, false, invite.link, false, getResourceProvider()) {
                                 @Override
-                                protected void onSend(LongSparseArray<TLRPC.Dialog> dids, int count, TLRPC.TL_forumTopic topic) {
+                                protected void onSend(LongSparseArray<TLRPC.Dialog> dids, int count, TLRPC.TL_forumTopic topic, boolean showToast) {
+                                    if (!showToast) return;
                                     final String str;
                                     if (dids != null && dids.size() == 1) {
                                         long did = dids.valueAt(0).id;

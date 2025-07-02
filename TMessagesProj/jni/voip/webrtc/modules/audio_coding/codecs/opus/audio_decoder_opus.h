@@ -40,6 +40,8 @@ class AudioDecoderOpusImpl final : public AudioDecoder {
   bool PacketHasFec(const uint8_t* encoded, size_t encoded_len) const override;
   int SampleRateHz() const override;
   size_t Channels() const override;
+  void GeneratePlc(size_t requested_samples_per_channel,
+                   rtc::BufferT<int16_t>* concealment_audio) override;
 
  protected:
   int DecodeInternal(const uint8_t* encoded,
@@ -57,6 +59,7 @@ class AudioDecoderOpusImpl final : public AudioDecoder {
   OpusDecInst* dec_state_;
   const size_t channels_;
   const int sample_rate_hz_;
+  const bool generate_plc_;
 };
 
 }  // namespace webrtc

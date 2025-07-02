@@ -15,6 +15,7 @@
 #include "modules/audio_processing/logging/apm_data_dumper.h"
 #include "rtc_base/checks.h"
 #include "rtc_base/numerics/safe_minmax.h"
+#include "system_wrappers/include/field_trial.h"
 
 namespace webrtc {
 namespace {
@@ -123,6 +124,8 @@ MatchedFilterLagAggregator::PreEchoLagAggregator::PreEchoLagAggregator(
     size_t max_filter_lag,
     size_t down_sampling_factor)
     : block_size_log2_(GetDownSamplingBlockSizeLog2(down_sampling_factor)),
+      penalize_high_delays_initial_phase_(!field_trial::IsDisabled(
+          "WebRTC-Aec3PenalyzeHighDelaysInitialPhase")),
       histogram_(
           ((max_filter_lag + 1) * down_sampling_factor) >> kBlockSizeLog2,
           0) {
@@ -152,9 +155,32 @@ void MatchedFilterLagAggregator::PreEchoLagAggregator::Aggregate(
   histogram_data_[histogram_data_index_] = pre_echo_block_size;
   ++histogram_[histogram_data_[histogram_data_index_]];
   histogram_data_index_ = (histogram_data_index_ + 1) % histogram_data_.size();
-  int pre_echo_candidate_block_size =
-      std::distance(histogram_.begin(),
-                    std::max_element(histogram_.begin(), histogram_.end()));
+  int pre_echo_candidate_block_size = 0;
+  if (penalize_high_delays_initial_phase_ &&
+      number_updates_ < kNumBlocksPerSecond * 2) {
+    number_updates_++;
+    float penalization_per_delay = 1.0f;
+    float max_histogram_value = -1.0f;
+    for (auto it = histogram_.begin();
+         std::distance(it, histogram_.end()) >=
+         static_cast<int>(kMatchedFilterWindowSizeSubBlocks);
+         it = it + kMatchedFilterWindowSizeSubBlocks) {
+      auto it_max_element =
+          std::max_element(it, it + kMatchedFilterWindowSizeSubBlocks);
+      float weighted_max_value =
+          static_cast<float>(*it_max_element) * penalization_per_delay;
+      if (weighted_max_value > max_histogram_value) {
+        max_histogram_value = weighted_max_value;
+        pre_echo_candidate_block_size =
+            std::distance(histogram_.begin(), it_max_element);
+      }
+      penalization_per_delay *= 0.7f;
+    }
+  } else {
+    pre_echo_candidate_block_size =
+        std::distance(histogram_.begin(),
+                      std::max_element(histogram_.begin(), histogram_.end()));
+  }
   pre_echo_candidate_ = (pre_echo_candidate_block_size << block_size_log2_);
 }
 

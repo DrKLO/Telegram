@@ -1,0 +1,63 @@
+# Copyright (c) 2023 The WebRTC project authors. All Rights Reserved.
+#
+# Use of this source code is governed by a BSD-style license
+# that can be found in the LICENSE file in the root of the source
+# tree. An additional intellectual property rights grant can be found
+# in the file PATENTS.  All contributing project authors may
+# be found in the AUTHORS file in the root of the source tree.
+
+import("../../webrtc.gni")
+
+rtc_source_set("environment") {
+  visibility = [ "*" ]
+  sources = [ "environment.h" ]
+  deps = [
+    "..:refcountedbase",
+    "..:scoped_refptr",
+    "../../rtc_base/system:rtc_export",
+  ]
+  absl_deps = [ "//third_party/abseil-cpp/absl/base:nullability" ]
+}
+
+rtc_library("environment_factory") {
+  visibility = [ "*" ]
+  poisonous = [ "environment_construction" ]
+  sources = [
+    "environment_factory.cc",
+    "environment_factory.h",
+  ]
+  deps = [
+    ":environment",
+    "..:make_ref_counted",
+    "..:refcountedbase",
+    "..:scoped_refptr",
+    "../../rtc_base:checks",
+    "../../rtc_base/system:rtc_export",
+    "../../system_wrappers",
+    "../rtc_event_log",
+    "../task_queue:default_task_queue_factory",
+    "../transport:field_trial_based_config",
+  ]
+  absl_deps = [ "//third_party/abseil-cpp/absl/base:nullability" ]
+}
+
+if (rtc_include_tests) {
+  rtc_library("environment_unittests") {
+    testonly = true
+    sources = [ "environment_unittest.cc" ]
+    deps = [
+      ":environment",
+      ":environment_factory",
+      "..:field_trials_view",
+      "../../system_wrappers",
+      "../../test:test_support",
+      "../rtc_event_log",
+      "../task_queue",
+      "../units:timestamp",
+    ]
+    absl_deps = [
+      "//third_party/abseil-cpp/absl/functional:any_invocable",
+      "//third_party/abseil-cpp/absl/types:optional",
+    ]
+  }
+}

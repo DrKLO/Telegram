@@ -1,0 +1,7 @@
+----- Certificate i=0 (CN=Different Policies EE Certificate Test9,O=Test Certificates 2011,C=US) -----
+ERROR: No valid policy
+ERROR: No valid policy
+
+----- Certificate i=1 (CN=Policies P123 subsubsubCAP12P2P1,O=Test Certificates 2011,C=US) -----
+ERROR: No valid policy
+

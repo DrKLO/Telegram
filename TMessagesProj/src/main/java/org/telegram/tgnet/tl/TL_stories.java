@@ -336,13 +336,43 @@ public class TL_stories {
         }
     }
 
+    public static class canSendStoryCount extends TLObject {
+        public static final int constructor = 0xc387c04e;
+
+        public int count_remains;
+
+        public static canSendStoryCount TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
+            if (canSendStoryCount.constructor != constructor) {
+                if (exception) {
+                    throw new RuntimeException(String.format("can't parse magic %x in canSendStoryCount", constructor));
+                } else {
+                    return null;
+                }
+            }
+            canSendStoryCount result = new canSendStoryCount();
+            result.readParams(stream, exception);
+            return result;
+        }
+
+        @Override
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+            stream.writeInt32(count_remains);
+        }
+
+        @Override
+        public void readParams(InputSerializedData stream, boolean exception) {
+            count_remains = stream.readInt32(exception);
+        }
+    }
+
     public static class TL_stories_canSendStory extends TLObject {
-        public static final int constructor = 0xc7dfdfdd;
+        public static final int constructor = 0x30eb63f0;
 
         public TLRPC.InputPeer peer;
 
         public TLObject deserializeResponse(InputSerializedData stream, int constructor, boolean exception) {
-            return TLRPC.Bool.TLdeserialize(stream, constructor, exception);
+            return canSendStoryCount.TLdeserialize(stream, constructor, exception);
         }
 
         public void serializeToStream(OutputSerializedData stream) {

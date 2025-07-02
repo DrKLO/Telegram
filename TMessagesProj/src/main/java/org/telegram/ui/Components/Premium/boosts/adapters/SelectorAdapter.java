@@ -58,6 +58,7 @@ public class SelectorAdapter extends AdapterWithDiffUtils {
     private GraySectionCell topSectionCell;
 
     public boolean needChecks;
+    public boolean needChecks2;
 
     public SelectorAdapter(Context context, boolean needChecks, Theme.ResourcesProvider resourcesProvider) {
         this.context = context;
@@ -69,9 +70,37 @@ public class SelectorAdapter extends AdapterWithDiffUtils {
         });
     }
 
+    public void setNeedChecks(boolean needChecks) {
+        this.needChecks = needChecks;
+    }
+
+    public void setNeedChecks2(boolean needChecks2) {
+        this.needChecks2 = needChecks2;
+    }
+
     public void setData(List<Item> items, RecyclerListView listView) {
         this.items = items;
         this.listView = listView;
+    }
+
+    private boolean callButtonsVisible = true;
+    public void setCallButtonsVisible(boolean visible) {
+        if (callButtonsVisible != visible) {
+            callButtonsVisible = visible;
+            AndroidUtilities.forEachViews(listView, view -> {
+                if (view instanceof SelectorUserCell) {
+                    ((SelectorUserCell) view).setCallButtonsVisible(visible, true);
+                }
+            });
+        }
+    }
+
+    @Override
+    public void onViewAttachedToWindow(@NonNull RecyclerView.ViewHolder holder) {
+        super.onViewAttachedToWindow(holder);
+        if (holder.itemView instanceof SelectorUserCell) {
+            ((SelectorUserCell) holder.itemView).setCallButtonsVisible(callButtonsVisible, false);
+        }
     }
 
     public void setTopSectionClickListener(View.OnClickListener topSectionClickListener) {
@@ -101,7 +130,7 @@ public class SelectorAdapter extends AdapterWithDiffUtils {
         if (viewType == VIEW_TYPE_PAD) {
             view = new View(context);
         } else if (viewType == VIEW_TYPE_USER) {
-            view = new SelectorUserCell(context, needChecks, resourcesProvider, isGreenSelector);
+            view = new SelectorUserCell(context, needChecks, needChecks2, resourcesProvider, isGreenSelector);
         } else if (viewType == VIEW_TYPE_NO_USERS) {
             StickerEmptyView searchEmptyView = new StickerEmptyView(context, null, StickerEmptyView.STICKER_TYPE_SEARCH, resourcesProvider);
             searchEmptyView.title.setText(LocaleController.getString(R.string.NoResult));
@@ -180,6 +209,8 @@ public class SelectorAdapter extends AdapterWithDiffUtils {
                 userCell.setDivider(false);
             }
             userCell.setOptions(item.options);
+            userCell.setCallButtons(item.audioCall, item.videoCall);
+            userCell.setCallButtonsVisible(callButtonsVisible, false);
         } else if (viewType == VIEW_TYPE_COUNTRY) {
             SelectorCountryCell cell = (SelectorCountryCell) holder.itemView;
             boolean needDivider = (position < items.size() - 1) && (position + 1 < items.size() - 1) && (items.get(position + 1).viewType != VIEW_TYPE_LETTER);
@@ -313,6 +344,7 @@ public class SelectorAdapter extends AdapterWithDiffUtils {
         public int padHeight = -1;
         public View.OnClickListener callback;
         public View.OnClickListener options;
+        public View.OnClickListener audioCall, videoCall;
         public View view;
         public Drawable icon;
 
@@ -360,6 +392,12 @@ public class SelectorAdapter extends AdapterWithDiffUtils {
 
         public Item withOptions(View.OnClickListener onClickListener) {
             this.options = onClickListener;
+            return this;
+        }
+
+        public Item withCall(View.OnClickListener onAudioCallListener, View.OnClickListener onVideoCallListener) {
+            this.audioCall = onAudioCallListener;
+            this.videoCall = onVideoCallListener;
             return this;
         }
 

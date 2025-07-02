@@ -1,39 +1,29 @@
-/* Copyright (c) 2015, Google Inc.
- *
- * Permission to use, copy, modify, and/or distribute this software for any
- * purpose with or without fee is hereby granted, provided that the above
- * copyright notice and this permission notice appear in all copies.
- *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
- * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY
- * SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION
- * OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
- * CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE. */
+// Copyright 2015 The BoringSSL Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
-#ifndef OPENSSL_HEADER_CRYPTO_RAND_INTERNAL_H
-#define OPENSSL_HEADER_CRYPTO_RAND_INTERNAL_H
+#ifndef OPENSSL_HEADER_CRYPTO_FIPSMODULE_RAND_INTERNAL_H
+#define OPENSSL_HEADER_CRYPTO_FIPSMODULE_RAND_INTERNAL_H
 
 #include <openssl/aes.h>
-#include <openssl/cpu.h>
+#include <openssl/ctrdrbg.h>
 
-#include "../../internal.h"
-#include "../modes/internal.h"
+#include "../../bcm_support.h"
+#include "../aes/internal.h"
 
 #if defined(__cplusplus)
 extern "C" {
 #endif
-
-
-// RAND_bytes_with_additional_data samples from the RNG after mixing 32 bytes
-// from |user_additional_data| in.
-void RAND_bytes_with_additional_data(uint8_t *out, size_t out_len,
-                                     const uint8_t user_additional_data[32]);
-
-// CRYPTO_sysrand fills |len| bytes at |buf| with entropy from the operating
-// system.
-void CRYPTO_sysrand(uint8_t *buf, size_t len);
 
 // rand_fork_unsafe_buffering_enabled returns whether fork-unsafe buffering has
 // been enabled via |RAND_enable_fork_unsafe_buffering|.
@@ -41,20 +31,13 @@ int rand_fork_unsafe_buffering_enabled(void);
 
 // CTR_DRBG_STATE contains the state of a CTR_DRBG based on AES-256. See SP
 // 800-90Ar1.
-typedef struct {
+struct ctr_drbg_state_st {
   AES_KEY ks;
   block128_f block;
   ctr128_f ctr;
-  union {
-    uint8_t bytes[16];
-    uint32_t words[4];
-  } counter;
+  uint8_t counter[16];
   uint64_t reseed_counter;
-} CTR_DRBG_STATE;
-
-// See SP 800-90Ar1, table 3.
-#define CTR_DRBG_ENTROPY_LEN 48
-#define CTR_DRBG_MAX_GENERATE_LENGTH 65536
+};
 
 // CTR_DRBG_init initialises |*drbg| given |CTR_DRBG_ENTROPY_LEN| bytes of
 // entropy in |entropy| and, optionally, a personalization string up to
@@ -65,30 +48,15 @@ OPENSSL_EXPORT int CTR_DRBG_init(CTR_DRBG_STATE *drbg,
                                  const uint8_t *personalization,
                                  size_t personalization_len);
 
-// CTR_DRBG_reseed reseeds |drbg| given |CTR_DRBG_ENTROPY_LEN| bytes of entropy
-// in |entropy| and, optionally, up to |CTR_DRBG_ENTROPY_LEN| bytes of
-// additional data. It returns one on success or zero on error.
-OPENSSL_EXPORT int CTR_DRBG_reseed(CTR_DRBG_STATE *drbg,
-                                   const uint8_t entropy[CTR_DRBG_ENTROPY_LEN],
-                                   const uint8_t *additional_data,
-                                   size_t additional_data_len);
-
-// CTR_DRBG_generate processes to up |CTR_DRBG_ENTROPY_LEN| bytes of additional
-// data (if any) and then writes |out_len| random bytes to |out|, where
-// |out_len| <= |CTR_DRBG_MAX_GENERATE_LENGTH|. It returns one on success or
-// zero on error.
-OPENSSL_EXPORT int CTR_DRBG_generate(CTR_DRBG_STATE *drbg, uint8_t *out,
-                                     size_t out_len,
-                                     const uint8_t *additional_data,
-                                     size_t additional_data_len);
-
-// CTR_DRBG_clear zeroises the state of |drbg|.
-OPENSSL_EXPORT void CTR_DRBG_clear(CTR_DRBG_STATE *drbg);
-
-
 #if defined(OPENSSL_X86_64) && !defined(OPENSSL_NO_ASM)
-OPENSSL_INLINE int have_rdrand(void) {
-  return (OPENSSL_ia32cap_get()[1] & (1u << 30)) != 0;
+
+inline int have_rdrand(void) { return CRYPTO_is_RDRAND_capable(); }
+
+// have_fast_rdrand returns true if RDRAND is supported and it's reasonably
+// fast. Concretely the latter is defined by whether the chip is Intel (fast) or
+// not (assumed slow).
+inline int have_fast_rdrand(void) {
+  return CRYPTO_is_RDRAND_capable() && CRYPTO_is_intel_cpu();
 }
 
 // CRYPTO_rdrand writes eight bytes of random data from the hardware RNG to
@@ -99,6 +67,13 @@ int CRYPTO_rdrand(uint8_t out[8]);
 // the hardware RNG. The |len| argument must be a multiple of eight. It returns
 // one on success and zero on hardware failure.
 int CRYPTO_rdrand_multiple8_buf(uint8_t *buf, size_t len);
+
+#else  // OPENSSL_X86_64 && !OPENSSL_NO_ASM
+
+inline int have_rdrand(void) { return 0; }
+
+inline int have_fast_rdrand(void) { return 0; }
+
 #endif  // OPENSSL_X86_64 && !OPENSSL_NO_ASM
 
 
@@ -106,4 +81,4 @@ int CRYPTO_rdrand_multiple8_buf(uint8_t *buf, size_t len);
 }  // extern C
 #endif
 
-#endif  // OPENSSL_HEADER_CRYPTO_RAND_INTERNAL_H
+#endif  // OPENSSL_HEADER_CRYPTO_FIPSMODULE_RAND_INTERNAL_H

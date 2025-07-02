@@ -15,6 +15,8 @@
 #ifndef ABSL_CRC_INTERNAL_NON_TEMPORAL_ARM_INTRINSICS_H_
 #define ABSL_CRC_INTERNAL_NON_TEMPORAL_ARM_INTRINSICS_H_
 
+#include "absl/base/config.h"
+
 #ifdef __aarch64__
 #include <arm_neon.h>
 
@@ -51,7 +53,7 @@ static inline __attribute__((always_inline)) __m128i _mm_loadu_si128(
 // https://msdn.microsoft.com/en-us/library/ba08y07y%28v=vs.90%29.aspx
 static inline __attribute__((always_inline)) void _mm_stream_si128(__m128i *p,
                                                                    __m128i a) {
-#if __has_builtin(__builtin_nontemporal_store)
+#if ABSL_HAVE_BUILTIN(__builtin_nontemporal_store)
   __builtin_nontemporal_store(a, p);
 #else
   vst1q_s64((int64_t *)p, vreinterpretq_s64_m128i(a));

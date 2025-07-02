@@ -372,6 +372,9 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
         if (canEditStories() && (getClosestTab() == TAB_STORIES || getClosestTab() == TAB_BOT_PREVIEWS) && isActionModeShown()) {
             return false;
         }
+        if (giftsContainer != null && giftsContainer.isReordering()) {
+            return false;
+        }
         return !photoVideoChangeColumnsAnimation && !tabsAnimationInProgress;
     }
 
@@ -635,6 +638,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
     private ActionBarMenuItem searchItem;
     private float searchAlpha;
     private float optionsAlpha;
+    public TextView saveItem;
     public ImageView photoVideoOptionsItem;
     private RLottieImageView optionsSearchImageView;
     private ActionBarMenuItem forwardItem;
@@ -1467,12 +1471,8 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
         this.delegate = delegate;
         int[] mediaCount = preloader.getLastMediaCount();
         topicId = sharedMediaPreloader.topicId;
-        hasMedia = new int[]{mediaCount[0], mediaCount[1], mediaCount[2], mediaCount[3], mediaCount[4], mediaCount[5], topicId == 0 ? commonGroupsCount : 0};
-        if (initialTab == TAB_GIFTS) {
-            this.initialTab = initialTab;
-        } else if (initialTab == TAB_RECOMMENDED_CHANNELS) {
-            this.initialTab = initialTab;
-        } else if (initialTab == TAB_SAVED_DIALOGS) {
+        hasMedia = new int[]{ mediaCount[0], mediaCount[1], mediaCount[2], mediaCount[3], mediaCount[4], mediaCount[5], topicId == 0 ? commonGroupsCount : 0 };
+        if (initialTab == TAB_GIFTS || initialTab == TAB_RECOMMENDED_CHANNELS || initialTab == TAB_SAVED_DIALOGS || initialTab == TAB_COMMON_GROUPS) {
             this.initialTab = initialTab;
         } else if (user != null && user.bot && user.bot_has_main_app && user.bot_can_edit) {
             this.initialTab = TAB_BOT_PREVIEWS;
@@ -1736,66 +1736,144 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                 final TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(dialog_id);
                 if (tab == TAB_GIFTS) {
                     final StarsController.GiftsList list = giftsContainer.getList();
-                    ItemOptions.makeOptions(profileActivity, photoVideoOptionsItem)
-                        .addIf(!list.sort_by_date, R.drawable.menu_sort_date, getString(R.string.Gift2FilterSortByDate), () -> {
-                            list.sort_by_date = true;
-                            list.invalidate(true);
-                        })
-                        .addIf(list.sort_by_date, R.drawable.menu_sort_value, getString(R.string.Gift2FilterSortByValue), () -> {
-                            list.sort_by_date = false;
-                            list.invalidate(true);
-                        })
-                        .addGap()
-                        .addChecked(list.include_unlimited, getString(R.string.Gift2FilterUnlimited), () -> {
-                            if (list.include_unlimited && !list.include_limited && !list.include_unique) {
-                                list.include_unlimited = false;
-                                list.include_limited = true;
-                                list.include_unique = true;
-                            } else {
-                                list.include_unlimited = !list.include_unlimited;
-                            }
-                            list.invalidate(true);
-                        })
-                        .addChecked(list.include_limited, getString(R.string.Gift2FilterLimited), () -> {
-                            if (list.include_limited && !list.include_unlimited && !list.include_unique) {
-                                list.include_limited = false;
-                                list.include_unlimited = true;
-                                list.include_unique = true;
-                            } else {
-                                list.include_limited = !list.include_limited;
-                            }
-                            list.invalidate(true);
-                        })
-                        .addChecked(list.include_unique, getString(R.string.Gift2FilterUnique), () -> {
-                            if (list.include_unique && !list.include_limited && !list.include_unlimited) {
-                                list.include_unique = false;
-                                list.include_limited = true;
-                                list.include_unlimited = true;
-                            } else {
-                                list.include_unique = !list.include_unique;
-                            }
-                            list.invalidate(true);
-                        })
-                        .addGap()
-                        .addChecked(list.include_displayed, getString(R.string.Gift2FilterDisplayed), () -> {
+                    final boolean hiddenFilters = giftsContainer.canFilterHidden();
+                    final ItemOptions o = ItemOptions.makeOptions(profileActivity, photoVideoOptionsItem);
+
+                    final ActionBarMenuSubItem sorting = o.add();
+                    o.addGap();
+                    final ActionBarMenuSubItem unlimited = o.addChecked();
+                    unlimited.setText(getString(R.string.Gift2FilterUnlimited));
+                    final ActionBarMenuSubItem limited = o.addChecked();
+                    limited.setText(getString(R.string.Gift2FilterLimited));
+                    final ActionBarMenuSubItem unique = o.addChecked();
+                    unique.setText(getString(R.string.Gift2FilterUnique));
+                    final ActionBarMenuSubItem displayed, hidden;
+                    if (hiddenFilters) {
+                        o.addGap();
+                        displayed = o.addChecked();
+                        displayed.setText(getString(R.string.Gift2FilterDisplayed));
+                        hidden = o.addChecked();
+                        hidden.setText(getString(R.string.Gift2FilterHidden));
+                    } else {
+                        displayed = null;
+                        hidden = null;
+                    }
+
+                    final Runnable update = () -> {
+                        sorting.setTextAndIcon(getString(list.sort_by_date ? R.string.Gift2FilterSortByValue : R.string.Gift2FilterSortByDate), list.sort_by_date ? R.drawable.menu_sort_value : R.drawable.menu_sort_date);
+
+                        unlimited.setChecked(list.include_unlimited);
+                        limited.setChecked(list.include_limited);
+                        unique.setChecked(list.include_unique);
+
+                        if (hiddenFilters) {
+                            displayed.setChecked(list.include_displayed);
+                            hidden.setChecked(list.include_hidden);
+                        }
+                    };
+                    update.run();
+
+                    sorting.setOnClickListener(v -> {
+                        list.sort_by_date = !list.sort_by_date;
+                        update.run();
+                        list.invalidate(true);
+                    });
+                    unlimited.setOnClickListener(v -> {
+                        if (list.include_unlimited && !list.include_limited && !list.include_unique) {
+                            list.include_unlimited = false;
+                            list.include_limited = true;
+                            list.include_unique = true;
+                        } else {
+                            list.include_unlimited = !list.include_unlimited;
+                        }
+                        update.run();
+                        list.invalidate(true);
+                    });
+                    unlimited.setOnLongClickListener(v -> {
+                        list.include_unlimited = true;
+                        list.include_limited = false;
+                        list.include_unique = false;
+                        update.run();
+                        list.invalidate(true);
+                        return true;
+                    });
+                    limited.setOnClickListener(v -> {
+                        if (list.include_limited && !list.include_unlimited && !list.include_unique) {
+                            list.include_limited = false;
+                            list.include_unlimited = true;
+                            list.include_unique = true;
+                        } else {
+                            list.include_limited = !list.include_limited;
+                        }
+                        update.run();
+                        list.invalidate(true);
+                    });
+                    limited.setOnLongClickListener(v -> {
+                        list.include_unlimited = false;
+                        list.include_limited = true;
+                        list.include_unique = false;
+                        update.run();
+                        list.invalidate(true);
+                        return true;
+                    });
+                    unique.setOnClickListener(v -> {
+                        if (list.include_unique && !list.include_limited && !list.include_unlimited) {
+                            list.include_limited = true;
+                            list.include_unlimited = true;
+                            list.include_unique = false;
+                        } else {
+                            list.include_unique = !list.include_unique;
+                        }
+                        update.run();
+                        list.invalidate(true);
+                    });
+                    unique.setOnLongClickListener(v -> {
+                        list.include_unlimited = false;
+                        list.include_limited = false;
+                        list.include_unique = true;
+                        update.run();
+                        list.invalidate(true);
+                        return true;
+                    });
+                    if (hiddenFilters) {
+                        displayed.setOnClickListener(v -> {
                             if (list.include_displayed && !list.include_hidden) {
                                 list.include_displayed = false;
                                 list.include_hidden = true;
                             } else {
                                 list.include_displayed = !list.include_displayed;
                             }
+                            update.run();
                             list.invalidate(true);
-                        })
-                        .addChecked(list.include_hidden, getString(R.string.Gift2FilterHidden), () -> {
+                        });
+                        displayed.setOnLongClickListener(v -> {
+                            list.include_displayed = true;
+                            list.include_hidden = false;
+                            update.run();
+                            list.invalidate(true);
+                            return true;
+                        });
+                        hidden.setOnClickListener(v -> {
                             if (list.include_hidden && !list.include_displayed) {
                                 list.include_hidden = false;
                                 list.include_displayed = true;
                             } else {
                                 list.include_hidden = !list.include_hidden;
                             }
+                            update.run();
                             list.invalidate(true);
-                        })
+                        });
+                        hidden.setOnLongClickListener(v -> {
+                            list.include_displayed = false;
+                            list.include_hidden = true;
+                            update.run();
+                            list.invalidate(true);
+                            return true;
+                        });
+                    }
+                    o
                         .setOnTopOfScrim()
+                        .setDismissWithButtons(false)
                         .setDimAlpha(0)
                         .show();
                     return;
@@ -2362,10 +2440,41 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                 }
             };
         } else if (profileActivity instanceof ProfileActivity) {
+            saveItem = new TextView(context);
+            saveItem.setText(getString(R.string.Save).toUpperCase());
+            saveItem.setTypeface(AndroidUtilities.bold());
+            saveItem.setTextColor(getThemedColor(Theme.key_featuredStickers_addButton));
+            saveItem.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
+            saveItem.setGravity(Gravity.CENTER);
+            saveItem.setBackground(Theme.createSelectorDrawable(Theme.multAlpha(getThemedColor(Theme.key_featuredStickers_addButton), .15f), Theme.RIPPLE_MASK_CIRCLE_TO_BOUND_EDGE));
+            saveItem.setPadding(dp(19), 0, dp(19), 0);
+            actionBar.addView(saveItem, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 56, Gravity.RIGHT | Gravity.BOTTOM));
+            saveItem.setOnClickListener(view -> {
+                if (saveItem.getAlpha() < 0.1f) return;
+                giftsContainer.resetReordering();
+            });
+            saveItem.setVisibility(View.GONE);
+            saveItem.setAlpha(0.0f);
+            saveItem.setScaleX(0.4f);
+            saveItem.setScaleY(0.4f);
+
             giftsContainer = new ProfileGiftsContainer(profileActivity, context, profileActivity.getCurrentAccount(), ((ProfileActivity) profileActivity).getDialogId(), resourcesProvider) {
                 @Override
                 protected int processColor(int color) {
                     return SharedMediaLayout.this.processColor(color);
+                }
+                @Override
+                protected void updatedReordering(boolean reordering) {
+                    saveItem.setVisibility(VISIBLE);
+                    saveItem.animate()
+                        .alpha(reordering ? 1.0f : 0.0f)
+                        .scaleX(reordering ? 1.0f : 0.4f)
+                        .scaleY(reordering ? 1.0f : 0.4f)
+                        .withEndAction(() -> {
+                            if (!reordering) saveItem.setVisibility(VISIBLE);
+                        })
+                        .start();
+                    updateOptionsSearch(true);
                 }
             };
         }
@@ -4130,6 +4239,10 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
         return optionsSearchImageView;
     }
 
+    public TextView getSaveItem() {
+        return saveItem;
+    }
+
     public boolean isSearchItemVisible() {
         return isSearchItemVisible(mediaPages[0].selectedType);
     }
@@ -4246,7 +4359,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
 
     public void setNewMediaCounts(int[] mediaCounts) {
         boolean hadMedia = false;
-        for (int a = 0; a < 6; a++) {
+        for (int a = 0; a <= 6; a++) {
             if (hasMedia[a] >= 0) {
                 hadMedia = true;
                 break;
@@ -4254,9 +4367,9 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
         }
         System.arraycopy(mediaCounts, 0, hasMedia, 0, 6);
         updateTabs(true);
-        if (!hadMedia && scrollSlidingTextTabStrip.getCurrentTabId() == 6) {
-            scrollSlidingTextTabStrip.resetTab();
-        }
+//        if (!hadMedia && scrollSlidingTextTabStrip.getCurrentTabId() == 6) {
+//            scrollSlidingTextTabStrip.resetTab();
+//        }
         checkCurrentTabValid();
         if (hasMedia[0] >= 0) {
             loadFastScrollData(false);
@@ -4554,7 +4667,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                         if (message != null) {
                             profileActivity.getSendMessagesHelper().sendMessage(SendMessagesHelper.SendMessageParams.of(message.toString(), did, null, null, null, true, null, null, null, true, 0, null, false));
                         }
-                        profileActivity.getSendMessagesHelper().sendMessage(fmessages, did, false, false, true, 0);
+                        profileActivity.getSendMessagesHelper().sendMessage(fmessages, did, false, false, true, 0, 0);
                     }
                     fragment1.finishFragment();
                     UndoView undoView = null;
@@ -4755,6 +4868,9 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
             return false;
         }
         if (isActionModeShowed && mediaPages[0] != null && mediaPages[0].selectedType == TAB_BOT_PREVIEWS) {
+            return false;
+        }
+        if (giftsContainer != null && giftsContainer.isReordering()) {
             return false;
         }
         updateOptionsSearch();
@@ -6159,6 +6275,9 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
     }
 
     private void switchToCurrentSelectedMode(boolean animated) {
+        if (giftsContainer != null) {
+            giftsContainer.resetReordering();
+        }
         for (int a = 0; a < mediaPages.length; a++) {
             mediaPages[a].listView.stopScroll();
         }
@@ -9935,7 +10054,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
     }
     private void updateOptionsSearch(boolean finish) {
         if (optionsSearchImageView == null) return;
-        optionsSearchImageView.setAlpha(searching ? 0f : Utilities.clamp(searchAlpha + optionsAlpha, 1, 0));
+        optionsSearchImageView.setAlpha(searching || giftsContainer != null && giftsContainer.isReordering() ? 0f : Utilities.clamp(searchAlpha + optionsAlpha, 1, 0));
         if (finish) {
             animateSearchToOptions(getPhotoVideoOptionsAlpha(1) > 0.5f, true);
         } else if (searchItemState == 2) {

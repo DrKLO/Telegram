@@ -69,6 +69,11 @@ public class VideoCodecInfo {
     return Arrays.hashCode(values);
   }
 
+  @Override
+  public String toString() {
+    return "VideoCodec{" + name + " " + params + "}";
+  }
+
   @CalledByNative
   String getName() {
     return name;

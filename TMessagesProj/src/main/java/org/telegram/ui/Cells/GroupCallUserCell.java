@@ -76,7 +76,7 @@ public class GroupCallUserCell extends FrameLayout {
     private AvatarDrawable avatarDrawable;
 
     private ChatObject.Call currentCall;
-    private TLRPC.TL_groupCallParticipant participant;
+    private TLRPC.GroupCallParticipant participant;
     private TLRPC.User currentUser;
     private TLRPC.Chat currentChat;
 
@@ -463,7 +463,7 @@ public class GroupCallUserCell extends FrameLayout {
         return avatarImageView.getImageReceiver().hasNotThumb();
     }
 
-    public void setData(AccountInstance account, TLRPC.TL_groupCallParticipant groupCallParticipant, ChatObject.Call call, long self, TLRPC.FileLocation uploadingAvatar, boolean animated) {
+    public void setData(AccountInstance account, TLRPC.GroupCallParticipant groupCallParticipant, ChatObject.Call call, long self, TLRPC.FileLocation uploadingAvatar, boolean animated) {
         currentCall = call;
         accountInstance = account;
         selfId = self;
@@ -565,7 +565,7 @@ public class GroupCallUserCell extends FrameLayout {
         }
     }
 
-    public TLRPC.TL_groupCallParticipant getParticipant() {
+    public TLRPC.GroupCallParticipant getParticipant() {
         return participant;
     }
 
@@ -672,7 +672,7 @@ public class GroupCallUserCell extends FrameLayout {
             }
         }
 
-        TLRPC.TL_groupCallParticipant newParticipant = currentCall.participants.get(MessageObject.getPeerId(participant.peer));
+        TLRPC.GroupCallParticipant newParticipant = currentCall.participants.get(MessageObject.getPeerId(participant.peer));
         if (newParticipant != null) {
             participant = newParticipant;
         }

@@ -14,12 +14,14 @@
 
 #include "absl/time/civil_time.h"
 
+#include <iomanip>
 #include <limits>
 #include <sstream>
 #include <type_traits>
 
-#include "absl/base/macros.h"
 #include "gtest/gtest.h"
+#include "absl/base/macros.h"
+#include "absl/strings/str_format.h"
 
 namespace {
 
@@ -868,6 +870,23 @@ TEST(CivilTime, ParseEdgeCases) {
   EXPECT_FALSE(absl::ParseLenientCivilTime("9223372036854775808", &y)) << y;
 }
 
+TEST(CivilTime, AbslStringify) {
+  EXPECT_EQ("2015-01-02T03:04:05",
+            absl::StrFormat("%v", absl::CivilSecond(2015, 1, 2, 3, 4, 5)));
+
+  EXPECT_EQ("2015-01-02T03:04",
+            absl::StrFormat("%v", absl::CivilMinute(2015, 1, 2, 3, 4)));
+
+  EXPECT_EQ("2015-01-02T03",
+            absl::StrFormat("%v", absl::CivilHour(2015, 1, 2, 3)));
+
+  EXPECT_EQ("2015-01-02", absl::StrFormat("%v", absl::CivilDay(2015, 1, 2)));
+
+  EXPECT_EQ("2015-01", absl::StrFormat("%v", absl::CivilMonth(2015, 1)));
+
+  EXPECT_EQ("2015", absl::StrFormat("%v", absl::CivilYear(2015)));
+}
+
 TEST(CivilTime, OutputStream) {
   absl::CivilSecond cs(2016, 2, 3, 4, 5, 6);
   {
@@ -1228,7 +1247,7 @@ TEST(CivilTime, DocumentationExample) {
   EXPECT_EQ(0, day_floor.hour());  // 09:09:09 is floored
   EXPECT_EQ(absl::CivilDay(2015, 1, 2), day_floor);
 
-  // Unspecified fields default to their minium value
+  // Unspecified fields default to their minimum value
   absl::CivilDay day_default(2015);  // Defaults to Jan 1
   EXPECT_EQ(absl::CivilDay(2015, 1, 1), day_default);
 

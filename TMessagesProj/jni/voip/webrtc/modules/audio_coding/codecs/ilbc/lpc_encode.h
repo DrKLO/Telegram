@@ -37,6 +37,6 @@ void WebRtcIlbcfix_LpcEncode(
     int16_t* data,        /* (i) Speech to do LPC analysis on */
     IlbcEncoder* iLBCenc_inst
     /* (i/o) the encoder state structure */
-    );
+);
 
 #endif

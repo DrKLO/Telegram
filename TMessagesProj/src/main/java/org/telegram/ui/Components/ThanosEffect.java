@@ -940,8 +940,8 @@ public class ThanosEffect extends TextureView {
 
                             int left = (cell.getLeft() + cell.getBackgroundDrawableLeft());
                             int right = (cell.getLeft() + cell.getBackgroundDrawableRight());
-                            int top = (cell.getTop() + cell.getBackgroundDrawableTop());
-                            int bottom = (cell.getTop() + cell.getBackgroundDrawableBottom());
+                            int top = (cell.getTop() + cell.getPaddingTop() + cell.getBackgroundDrawableTop());
+                            int bottom = (cell.getTop() + cell.getPaddingTop() + cell.getBackgroundDrawableBottom());
 
                             if ((cell.getCurrentPosition().flags & MessageObject.POSITION_FLAG_TOP) == 0) {
                                 top -= AndroidUtilities.dp(10);
@@ -1179,10 +1179,16 @@ public class ThanosEffect extends TextureView {
                     ((ChatMessageCell) view).drawingToBitmap = true;
                 }
                 if (view instanceof ChatActionCell && ((ChatActionCell) view).hasGradientService()) {
+                    canvas.save();
+                    canvas.translate(((ChatActionCell) view).sideMenuWidth / 2.0f, view.getPaddingTop());
                     ((ChatActionCell) view).drawBackground(canvas, true);
                     ((ChatActionCell) view).drawReactions(canvas, true, null);
+                    canvas.restore();
                 } else if (view instanceof ChatMessageCell && ((ChatMessageCell) view).drawBackgroundInParent()) {
+                    canvas.save();
+                    canvas.translate(0, view.getPaddingTop());
                     ((ChatMessageCell) view).drawBackgroundInternal(canvas, true);
+                    canvas.restore();
                 }
                 view.draw(canvas);
                 if (view instanceof ChatMessageCell) {
@@ -1196,7 +1202,10 @@ public class ThanosEffect extends TextureView {
                     ((ChatMessageCell) view).drawingToBitmap = false;
                 }
                 if (view instanceof ChatMessageCell) {
+                    canvas.save();
+                    canvas.translate(0, view.getPaddingTop());
                     ((ChatMessageCell) view).drawOutboundsContent(canvas);
+                    canvas.restore();
                 } else if (view instanceof ChatActionCell) {
                     ((ChatActionCell) view).drawOutboundsContent(canvas);
                 }

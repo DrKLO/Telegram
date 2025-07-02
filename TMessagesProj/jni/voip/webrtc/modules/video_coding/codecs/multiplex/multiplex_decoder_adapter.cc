@@ -10,6 +10,7 @@
 
 #include "modules/video_coding/codecs/multiplex/include/multiplex_decoder_adapter.h"
 
+#include "api/environment/environment.h"
 #include "api/video/encoded_image.h"
 #include "api/video/i420_buffer.h"
 #include "api/video/video_frame_buffer.h"
@@ -93,10 +94,12 @@ struct MultiplexDecoderAdapter::AugmentingData {
 };
 
 MultiplexDecoderAdapter::MultiplexDecoderAdapter(
+    const Environment& env,
     VideoDecoderFactory* factory,
     const SdpVideoFormat& associated_format,
     bool supports_augmenting_data)
-    : factory_(factory),
+    : env_(env),
+      factory_(factory),
       associated_format_(associated_format),
       supports_augmenting_data_(supports_augmenting_data) {}
 
@@ -111,7 +114,7 @@ bool MultiplexDecoderAdapter::Configure(const Settings& settings) {
       PayloadStringToCodecType(associated_format_.name));
   for (size_t i = 0; i < kAlphaCodecStreams; ++i) {
     std::unique_ptr<VideoDecoder> decoder =
-        factory_->CreateVideoDecoder(associated_format_);
+        factory_->Create(env_, associated_format_);
     if (!decoder->Configure(associated_settings)) {
       return false;
     }
@@ -125,32 +128,30 @@ bool MultiplexDecoderAdapter::Configure(const Settings& settings) {
 }
 
 int32_t MultiplexDecoderAdapter::Decode(const EncodedImage& input_image,
-                                        bool missing_frames,
                                         int64_t render_time_ms) {
   MultiplexImage image = MultiplexEncodedImagePacker::Unpack(input_image);
 
   if (supports_augmenting_data_) {
-    RTC_DCHECK(decoded_augmenting_data_.find(input_image.Timestamp()) ==
+    RTC_DCHECK(decoded_augmenting_data_.find(input_image.RtpTimestamp()) ==
                decoded_augmenting_data_.end());
     decoded_augmenting_data_.emplace(
         std::piecewise_construct,
-        std::forward_as_tuple(input_image.Timestamp()),
+        std::forward_as_tuple(input_image.RtpTimestamp()),
         std::forward_as_tuple(std::move(image.augmenting_data),
                               image.augmenting_data_size));
   }
 
   if (image.component_count == 1) {
-    RTC_DCHECK(decoded_data_.find(input_image.Timestamp()) ==
+    RTC_DCHECK(decoded_data_.find(input_image.RtpTimestamp()) ==
                decoded_data_.end());
     decoded_data_.emplace(std::piecewise_construct,
-                          std::forward_as_tuple(input_image.Timestamp()),
+                          std::forward_as_tuple(input_image.RtpTimestamp()),
                           std::forward_as_tuple(kAXXStream));
   }
   int32_t rv = 0;
   for (size_t i = 0; i < image.image_components.size(); i++) {
     rv = decoders_[image.image_components[i].component_index]->Decode(
-        image.image_components[i].encoded_image, missing_frames,
-        render_time_ms);
+        image.image_components[i].encoded_image, render_time_ms);
     if (rv != WEBRTC_VIDEO_CODEC_OK)
       return rv;
   }

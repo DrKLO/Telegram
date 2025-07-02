@@ -515,8 +515,8 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
 //            pixelDualH = previewSize[1].getHeight();
 //        }
 //        if (pixelDualW <= 0) {
-            pixelDualW = getMeasuredWidth();
-            pixelDualH = getMeasuredHeight();
+        pixelDualW = getMeasuredWidth();
+        pixelDualH = getMeasuredHeight();
 //        }
     }
 
@@ -1306,14 +1306,14 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
             int[] configsCount = new int[1];
             EGLConfig[] configs = new EGLConfig[1];
             int[] configSpec = new int[]{
-                    EGL10.EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
-                    EGL10.EGL_RED_SIZE, 8,
-                    EGL10.EGL_GREEN_SIZE, 8,
-                    EGL10.EGL_BLUE_SIZE, 8,
-                    EGL10.EGL_ALPHA_SIZE, 0,
-                    EGL10.EGL_DEPTH_SIZE, 0,
-                    EGL10.EGL_STENCIL_SIZE, 0,
-                    EGL10.EGL_NONE
+                EGL10.EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
+                EGL10.EGL_RED_SIZE, 8,
+                EGL10.EGL_GREEN_SIZE, 8,
+                EGL10.EGL_BLUE_SIZE, 8,
+                EGL10.EGL_ALPHA_SIZE, 0,
+                EGL10.EGL_DEPTH_SIZE, 0,
+                EGL10.EGL_STENCIL_SIZE, 0,
+                EGL10.EGL_NONE
             };
             if (!egl10.eglChooseConfig(eglDisplay, configSpec, configs, 1, configsCount)) {
                 if (BuildVars.LOGS_ENABLED) {
@@ -1428,10 +1428,10 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
             float tX = 1.0f / scaleX / 2.0f;
             float tY = 1.0f / scaleY / 2.0f;
             float[] texData = {
-                    0.5f - tX, 0.5f - tY,
-                    0.5f + tX, 0.5f - tY,
-                    0.5f - tX, 0.5f + tY,
-                    0.5f + tX, 0.5f + tY
+                0.5f - tX, 0.5f - tY,
+                0.5f + tX, 0.5f - tY,
+                0.5f - tX, 0.5f + tY,
+                0.5f + tX, 0.5f + tY
             };
 
             vertexBuffer = ByteBuffer.allocateDirect(verticesData.length * 4).order(ByteOrder.nativeOrder()).asFloatBuffer();
@@ -1955,10 +1955,10 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
                     float tY = 1.0f / scaleY / 2.0f;
 
                     float[] texData = {
-                            0.5f - tX, 0.5f - tY,
-                            0.5f + tX, 0.5f - tY,
-                            0.5f - tX, 0.5f + tY,
-                            0.5f + tX, 0.5f + tY
+                        0.5f - tX, 0.5f - tY,
+                        0.5f + tX, 0.5f - tY,
+                        0.5f - tX, 0.5f + tY,
+                        0.5f + tX, 0.5f + tY
                     };
 
                     textureBuffer = ByteBuffer.allocateDirect(texData.length * 4).order(ByteOrder.nativeOrder()).asFloatBuffer();
@@ -3070,13 +3070,13 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
                 int renderableType = EGL14.EGL_OPENGL_ES2_BIT;
 
                 int[] attribList = {
-                        EGL14.EGL_RED_SIZE, 8,
-                        EGL14.EGL_GREEN_SIZE, 8,
-                        EGL14.EGL_BLUE_SIZE, 8,
-                        EGL14.EGL_ALPHA_SIZE, 8,
-                        EGL14.EGL_RENDERABLE_TYPE, renderableType,
-                        0x3142, 1,
-                        EGL14.EGL_NONE
+                    EGL14.EGL_RED_SIZE, 8,
+                    EGL14.EGL_GREEN_SIZE, 8,
+                    EGL14.EGL_BLUE_SIZE, 8,
+                    EGL14.EGL_ALPHA_SIZE, 8,
+                    EGL14.EGL_RENDERABLE_TYPE, renderableType,
+                    0x3142, 1,
+                    EGL14.EGL_NONE
                 };
                 android.opengl.EGLConfig[] configs = new android.opengl.EGLConfig[1];
                 int[] numConfigs = new int[1];
@@ -3085,8 +3085,8 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
                 }
 
                 int[] attrib2_list = {
-                        EGL14.EGL_CONTEXT_CLIENT_VERSION, 2,
-                        EGL14.EGL_NONE
+                    EGL14.EGL_CONTEXT_CLIENT_VERSION, 2,
+                    EGL14.EGL_NONE
                 };
                 eglContext = EGL14.eglCreateContext(eglDisplay, configs[0], sharedEglContext, attrib2_list, 0);
                 eglConfig = configs[0];
@@ -3100,7 +3100,7 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
             }
 
             int[] surfaceAttribs = {
-                    EGL14.EGL_NONE
+                EGL14.EGL_NONE
             };
             eglSurface = EGL14.eglCreateWindowSurface(eglDisplay, eglConfig, surface, surfaceAttribs, 0);
             if (eglSurface == null) {
@@ -3118,10 +3118,10 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
             float tX = 1.0f / scaleX / 2.0f;
             float tY = 1.0f / scaleY / 2.0f;
             float[] texData = {
-                    0.5f - tX, 0.5f - tY,
-                    0.5f + tX, 0.5f - tY,
-                    0.5f - tX, 0.5f + tY,
-                    0.5f + tX, 0.5f + tY
+                0.5f - tX, 0.5f - tY,
+                0.5f + tX, 0.5f - tY,
+                0.5f - tX, 0.5f + tY,
+                0.5f + tX, 0.5f + tY
             };
             textureBuffer = ByteBuffer.allocateDirect(texData.length * 4).order(ByteOrder.nativeOrder()).asFloatBuffer();
             textureBuffer.put(texData).position(0);

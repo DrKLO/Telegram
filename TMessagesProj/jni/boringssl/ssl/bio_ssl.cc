@@ -1,20 +1,23 @@
-/*
- * Copyright 1995-2016 The OpenSSL Project Authors. All Rights Reserved.
- *
- * Licensed under the OpenSSL license (the "License").  You may not use
- * this file except in compliance with the License.  You can obtain a copy
- * in the file LICENSE in the source distribution or at
- * https://www.openssl.org/source/license.html
- */
+// Copyright 1995-2016 The OpenSSL Project Authors. All Rights Reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 #include <openssl/ssl.h>
 
 #include <openssl/bio.h>
 
 
-static SSL *get_ssl(BIO *bio) {
-  return reinterpret_cast<SSL *>(bio->ptr);
-}
+static SSL *get_ssl(BIO *bio) { return reinterpret_cast<SSL *>(bio->ptr); }
 
 static int ssl_read(BIO *bio, char *out, int outl) {
   SSL *ssl = get_ssl(bio);
@@ -37,12 +40,12 @@ static int ssl_read(BIO *bio, char *out, int outl) {
 
     case SSL_ERROR_WANT_ACCEPT:
       BIO_set_retry_special(bio);
-      bio->retry_reason = BIO_RR_ACCEPT;
+      BIO_set_retry_reason(bio, BIO_RR_ACCEPT);
       break;
 
     case SSL_ERROR_WANT_CONNECT:
       BIO_set_retry_special(bio);
-      bio->retry_reason = BIO_RR_CONNECT;
+      BIO_set_retry_reason(bio, BIO_RR_CONNECT);
       break;
 
     case SSL_ERROR_NONE:
@@ -77,7 +80,7 @@ static int ssl_write(BIO *bio, const char *out, int outl) {
 
     case SSL_ERROR_WANT_CONNECT:
       BIO_set_retry_special(bio);
-      bio->retry_reason = BIO_RR_CONNECT;
+      BIO_set_retry_reason(bio, BIO_RR_CONNECT);
       break;
 
     case SSL_ERROR_NONE:
@@ -98,7 +101,18 @@ static long ssl_ctrl(BIO *bio, int cmd, long num, void *ptr) {
 
   switch (cmd) {
     case BIO_C_SET_SSL:
-      bio->shutdown = num;
+      if (ssl != NULL) {
+        // OpenSSL allows reusing an SSL BIO with a different SSL object. We do
+        // not support this.
+        OPENSSL_PUT_ERROR(SSL, ERR_R_SHOULD_NOT_HAVE_BEEN_CALLED);
+        return 0;
+      }
+
+      // Note this differs from upstream OpenSSL, which synchronizes
+      // |bio->next_bio| with |ssl|'s rbio here, and on |BIO_CTRL_PUSH|. We call
+      // into the corresponding |BIO| directly. (We can implement the upstream
+      // behavior if it ends up necessary.)
+      bio->shutdown = static_cast<int>(num);
       bio->ptr = ptr;
       bio->init = 1;
       return 1;
@@ -107,7 +121,7 @@ static long ssl_ctrl(BIO *bio, int cmd, long num, void *ptr) {
       return bio->shutdown;
 
     case BIO_CTRL_SET_CLOSE:
-      bio->shutdown = num;
+      bio->shutdown = static_cast<int>(num);
       return 1;
 
     case BIO_CTRL_WPENDING:
@@ -117,9 +131,11 @@ static long ssl_ctrl(BIO *bio, int cmd, long num, void *ptr) {
       return SSL_pending(ssl);
 
     case BIO_CTRL_FLUSH: {
+      BIO *wbio = SSL_get_wbio(ssl);
       BIO_clear_retry_flags(bio);
-      long ret = BIO_ctrl(SSL_get_wbio(ssl), cmd, num, ptr);
-      BIO_copy_next_retry(bio);
+      long ret = BIO_ctrl(wbio, cmd, num, ptr);
+      BIO_set_flags(bio, BIO_get_retry_flags(wbio));
+      BIO_set_retry_reason(bio, BIO_get_retry_reason(wbio));
       return ret;
     }
 
@@ -133,9 +149,7 @@ static long ssl_ctrl(BIO *bio, int cmd, long num, void *ptr) {
   }
 }
 
-static int ssl_new(BIO *bio) {
-  return 1;
-}
+static int ssl_new(BIO *bio) { return 1; }
 
 static int ssl_free(BIO *bio) {
   SSL *ssl = get_ssl(bio);

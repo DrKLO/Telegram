@@ -16,16 +16,17 @@
 
 #include <list>
 #include <memory>
+#include <set>
 #include <unordered_map>
 #include <utility>
 #include <vector>
 
+#include "api/sequence_checker.h"
 #include "api/transport/network_types.h"
 #include "modules/pacing/pacing_controller.h"
 #include "modules/rtp_rtcp/include/rtp_rtcp_defines.h"
 #include "modules/rtp_rtcp/source/rtcp_packet.h"
 #include "modules/rtp_rtcp/source/rtp_packet_to_send.h"
-#include "rtc_base/synchronization/mutex.h"
 #include "rtc_base/thread_annotations.h"
 
 namespace webrtc {
@@ -49,6 +50,8 @@ class PacketRouter : public PacingController::PacketSender {
   void AddSendRtpModule(RtpRtcpInterface* rtp_module, bool remb_candidate);
   void RemoveSendRtpModule(RtpRtcpInterface* rtp_module);
 
+  bool SupportsRtxPayloadPadding() const;
+
   void AddReceiveRtpModule(RtcpFeedbackSenderInterface* rtcp_sender,
                            bool remb_candidate);
   void RemoveReceiveRtpModule(RtcpFeedbackSenderInterface* rtcp_sender);
@@ -62,6 +65,7 @@ class PacketRouter : public PacingController::PacketSender {
       uint32_t ssrc,
       rtc::ArrayView<const uint16_t> sequence_numbers) override;
   absl::optional<uint32_t> GetRtxSsrcForMedia(uint32_t ssrc) const override;
+  void OnBatchComplete() override;
 
   uint16_t CurrentTransportSequenceNumber() const;
 
@@ -74,45 +78,42 @@ class PacketRouter : public PacingController::PacketSender {
 
  private:
   void AddRembModuleCandidate(RtcpFeedbackSenderInterface* candidate_module,
-                              bool media_sender)
-      RTC_EXCLUSIVE_LOCKS_REQUIRED(modules_mutex_);
+                              bool media_sender);
   void MaybeRemoveRembModuleCandidate(
       RtcpFeedbackSenderInterface* candidate_module,
-      bool media_sender) RTC_EXCLUSIVE_LOCKS_REQUIRED(modules_mutex_);
-  void UnsetActiveRembModule() RTC_EXCLUSIVE_LOCKS_REQUIRED(modules_mutex_);
-  void DetermineActiveRembModule() RTC_EXCLUSIVE_LOCKS_REQUIRED(modules_mutex_);
-  void AddSendRtpModuleToMap(RtpRtcpInterface* rtp_module, uint32_t ssrc)
-      RTC_EXCLUSIVE_LOCKS_REQUIRED(modules_mutex_);
-  void RemoveSendRtpModuleFromMap(uint32_t ssrc)
-      RTC_EXCLUSIVE_LOCKS_REQUIRED(modules_mutex_);
+      bool media_sender);
+  void UnsetActiveRembModule();
+  void DetermineActiveRembModule();
+  void AddSendRtpModuleToMap(RtpRtcpInterface* rtp_module, uint32_t ssrc);
+  void RemoveSendRtpModuleFromMap(uint32_t ssrc);
 
-  mutable Mutex modules_mutex_;
+  SequenceChecker thread_checker_;
   // Ssrc to RtpRtcpInterface module;
   std::unordered_map<uint32_t, RtpRtcpInterface*> send_modules_map_
-      RTC_GUARDED_BY(modules_mutex_);
+      RTC_GUARDED_BY(thread_checker_);
   std::list<RtpRtcpInterface*> send_modules_list_
-      RTC_GUARDED_BY(modules_mutex_);
+      RTC_GUARDED_BY(thread_checker_);
   // The last module used to send media.
-  RtpRtcpInterface* last_send_module_ RTC_GUARDED_BY(modules_mutex_);
+  RtpRtcpInterface* last_send_module_ RTC_GUARDED_BY(thread_checker_);
   // Rtcp modules of the rtp receivers.
   std::vector<RtcpFeedbackSenderInterface*> rtcp_feedback_senders_
-      RTC_GUARDED_BY(modules_mutex_);
+      RTC_GUARDED_BY(thread_checker_);
 
   // Candidates for the REMB module can be RTP sender/receiver modules, with
   // the sender modules taking precedence.
   std::vector<RtcpFeedbackSenderInterface*> sender_remb_candidates_
-      RTC_GUARDED_BY(modules_mutex_);
+      RTC_GUARDED_BY(thread_checker_);
   std::vector<RtcpFeedbackSenderInterface*> receiver_remb_candidates_
-      RTC_GUARDED_BY(modules_mutex_);
+      RTC_GUARDED_BY(thread_checker_);
   RtcpFeedbackSenderInterface* active_remb_module_
-      RTC_GUARDED_BY(modules_mutex_);
+      RTC_GUARDED_BY(thread_checker_);
 
-  uint64_t transport_seq_ RTC_GUARDED_BY(modules_mutex_);
+  uint64_t transport_seq_ RTC_GUARDED_BY(thread_checker_);
 
-  // TODO(bugs.webrtc.org/10809): Replace lock with a sequence checker once the
-  // process thread is gone.
   std::vector<std::unique_ptr<RtpPacketToSend>> pending_fec_packets_
-      RTC_GUARDED_BY(modules_mutex_);
+      RTC_GUARDED_BY(thread_checker_);
+  std::set<RtpRtcpInterface*> modules_used_in_current_batch_
+      RTC_GUARDED_BY(thread_checker_);
 };
 }  // namespace webrtc
 #endif  // MODULES_PACING_PACKET_ROUTER_H_

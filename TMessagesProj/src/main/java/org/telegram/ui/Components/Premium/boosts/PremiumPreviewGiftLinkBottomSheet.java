@@ -38,7 +38,7 @@ public class PremiumPreviewGiftLinkBottomSheet extends PremiumPreviewBottomSheet
     private final String slug;
     private final boolean isUsed;
 
-    public static void show(String slug, TLRPC.TL_premiumGiftOption giftOption, TLRPC.User user, Browser.Progress progress) {
+    public static void show(String slug, Browser.Progress progress) {
         GiftInfoBottomSheet.show(LaunchActivity.getLastFragment(), slug, progress);
     }
 
@@ -47,7 +47,7 @@ public class PremiumPreviewGiftLinkBottomSheet extends PremiumPreviewBottomSheet
         if (fragment == null || instance != null) {
             return;
         }
-        GiftPremiumBottomSheet.GiftTier tier = new GiftPremiumBottomSheet.GiftTier(giftOption);
+        GiftPremiumBottomSheet.GiftTier tier = new GiftPremiumBottomSheet.GiftTier(giftOption, null);
         PremiumPreviewGiftLinkBottomSheet sheet = new PremiumPreviewGiftLinkBottomSheet(fragment, UserConfig.selectedAccount, user, tier, slug, isUsed, fragment.getResourceProvider());
         sheet.show();
         instance = sheet;

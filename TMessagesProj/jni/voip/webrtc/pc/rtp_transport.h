@@ -17,6 +17,7 @@
 #include <string>
 
 #include "absl/types/optional.h"
+#include "api/task_queue/pending_task_safety_flag.h"
 #include "call/rtp_demuxer.h"
 #include "call/video_receive_stream.h"
 #include "modules/rtp_rtcp/include/rtp_header_extension_map.h"
@@ -97,6 +98,7 @@ class RtpTransport : public RtpTransportInternal {
                   rtc::CopyOnWriteBuffer* packet,
                   const rtc::PacketOptions& options,
                   int flags);
+  flat_set<uint32_t> GetSsrcsForSink(RtpPacketSinkInterface* sink);
 
   // Overridden by SrtpTransport.
   virtual void OnNetworkRouteChanged(
@@ -139,6 +141,10 @@ class RtpTransport : public RtpTransportInternal {
 
   // Used for identifying the MID for RtpDemuxer.
   RtpHeaderExtensionMap header_extension_map_;
+  // Guard against recursive "ready to send" signals
+  bool processing_ready_to_send_ = false;
+  bool processing_sent_packet_ = false;
+  ScopedTaskSafety safety_;
 };
 
 }  // namespace webrtc

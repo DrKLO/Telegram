@@ -58,6 +58,10 @@ class RtcEventRtpPacketOutgoing final : public RtcEvent {
     return packet_.GetExtension<ExtensionTrait>(std::forward<Args>(args)...);
   }
   template <typename ExtensionTrait>
+  rtc::ArrayView<const uint8_t> GetRawExtension() const {
+    return packet_.GetRawExtension<ExtensionTrait>();
+  }
+  template <typename ExtensionTrait>
   bool HasExtension() const {
     return packet_.HasExtension<ExtensionTrait>();
   }

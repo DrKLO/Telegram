@@ -44,6 +44,25 @@ class RTC_LOCKABLE SequenceChecker
   using Impl = webrtc_sequence_checker_internal::SequenceCheckerDoNothing;
 #endif
  public:
+  enum InitialState : bool { kDetached = false, kAttached = true };
+
+  // TODO(tommi): We could maybe join these two ctors and have fewer factory
+  // functions. At the moment they're separate to minimize code changes when
+  // we added the second ctor as well as avoiding to have unnecessary code at
+  // the SequenceChecker which much only run for the SequenceCheckerImpl
+  // implementation.
+  // In theory we could have something like:
+  //
+  //  SequenceChecker(InitialState initial_state = kAttached,
+  //                  TaskQueueBase* attached_queue = TaskQueueBase::Current());
+  //
+  // But the problem with that is having the call to `Current()` exist for
+  // `SequenceCheckerDoNothing`.
+  explicit SequenceChecker(InitialState initial_state = kAttached)
+      : Impl(initial_state) {}
+  explicit SequenceChecker(TaskQueueBase* attached_queue)
+      : Impl(attached_queue) {}
+
   // Returns true if sequence checker is attached to the current sequence.
   bool IsCurrent() const { return Impl::IsCurrent(); }
   // Detaches checker from sequence to which it is attached. Next attempt

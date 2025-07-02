@@ -25,7 +25,7 @@ public class GroupCallStatusIcon {
     boolean lastMuted;
     boolean lastRaisedHand;
     Callback callback;
-    TLRPC.TL_groupCallParticipant participant;
+    TLRPC.GroupCallParticipant participant;
 
     private Runnable shakeHandCallback = () -> {
         shakeHandDrawable.setOnFinishCallback(null, 0);
@@ -106,7 +106,7 @@ public class GroupCallStatusIcon {
         updateIcon(false);
     }
 
-    public void setParticipant(TLRPC.TL_groupCallParticipant participant, boolean animated) {
+    public void setParticipant(TLRPC.GroupCallParticipant participant, boolean animated) {
         this.participant = participant;
         updateIcon(animated);
     }

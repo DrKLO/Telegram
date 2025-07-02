@@ -1,55 +1,21 @@
-/* ====================================================================
- * Copyright (c) 2002-2006 The OpenSSL Project.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- *
- * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- *
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- *
- * 3. All advertising materials mentioning features or use of this
- *    software must display the following acknowledgment:
- *    "This product includes software developed by the OpenSSL Project
- *    for use in the OpenSSL Toolkit. (http://www.openssl.org/)"
- *
- * 4. The names "OpenSSL Toolkit" and "OpenSSL Project" must not be used to
- *    endorse or promote products derived from this software without
- *    prior written permission. For written permission, please contact
- *    openssl-core@openssl.org.
- *
- * 5. Products derived from this software may not be called "OpenSSL"
- *    nor may "OpenSSL" appear in their names without prior written
- *    permission of the OpenSSL Project.
- *
- * 6. Redistributions of any form whatsoever must retain the following
- *    acknowledgment:
- *    "This product includes software developed by the OpenSSL Project
- *    for use in the OpenSSL Toolkit (http://www.openssl.org/)"
- *
- * THIS SOFTWARE IS PROVIDED BY THE OpenSSL PROJECT ``AS IS'' AND ANY
- * EXPRESSED OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
- * PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE OpenSSL PROJECT OR
- * ITS CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
- * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
- * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
- * OF THE POSSIBILITY OF SUCH DAMAGE.
- * ==================================================================== */
+// Copyright 2002-2016 The OpenSSL Project Authors. All Rights Reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 #ifndef OPENSSL_HEADER_AES_H
 #define OPENSSL_HEADER_AES_H
 
-#include <openssl/base.h>
+#include <openssl/base.h>   // IWYU pragma: export
 
 #if defined(__cplusplus)
 extern "C" {
@@ -106,7 +72,10 @@ OPENSSL_EXPORT void AES_decrypt(const uint8_t *in, uint8_t *out,
 
 // AES_ctr128_encrypt encrypts (or decrypts, it's the same in CTR mode) |len|
 // bytes from |in| to |out|. The |num| parameter must be set to zero on the
-// first call and |ivec| will be incremented.
+// first call and |ivec| will be incremented. This function may be called
+// in-place with |in| equal to |out|, but otherwise the buffers may not
+// partially overlap. A partial overlap may overwrite input data before it is
+// read.
 OPENSSL_EXPORT void AES_ctr128_encrypt(const uint8_t *in, uint8_t *out,
                                        size_t len, const AES_KEY *key,
                                        uint8_t ivec[AES_BLOCK_SIZE],
@@ -114,39 +83,39 @@ OPENSSL_EXPORT void AES_ctr128_encrypt(const uint8_t *in, uint8_t *out,
                                        unsigned int *num);
 
 // AES_ecb_encrypt encrypts (or decrypts, if |enc| == |AES_DECRYPT|) a single,
-// 16 byte block from |in| to |out|.
+// 16 byte block from |in| to |out|. This function may be called in-place with
+// |in| equal to |out|, but otherwise the buffers may not partially overlap. A
+// partial overlap may overwrite input data before it is read.
 OPENSSL_EXPORT void AES_ecb_encrypt(const uint8_t *in, uint8_t *out,
                                     const AES_KEY *key, const int enc);
 
 // AES_cbc_encrypt encrypts (or decrypts, if |enc| == |AES_DECRYPT|) |len|
 // bytes from |in| to |out|. The length must be a multiple of the block size.
+// This function may be called in-place with |in| equal to |out|, but otherwise
+// the buffers may not partially overlap. A partial overlap may overwrite input
+// data before it is read.
 OPENSSL_EXPORT void AES_cbc_encrypt(const uint8_t *in, uint8_t *out, size_t len,
                                     const AES_KEY *key, uint8_t *ivec,
                                     const int enc);
 
 // AES_ofb128_encrypt encrypts (or decrypts, it's the same in OFB mode) |len|
 // bytes from |in| to |out|. The |num| parameter must be set to zero on the
-// first call.
+// first call. This function may be called in-place with |in| equal to |out|,
+// but otherwise the buffers may not partially overlap. A partial overlap may
+// overwrite input data before it is read.
 OPENSSL_EXPORT void AES_ofb128_encrypt(const uint8_t *in, uint8_t *out,
                                        size_t len, const AES_KEY *key,
                                        uint8_t *ivec, int *num);
 
 // AES_cfb128_encrypt encrypts (or decrypts, if |enc| == |AES_DECRYPT|) |len|
 // bytes from |in| to |out|. The |num| parameter must be set to zero on the
-// first call.
+// first call. This function may be called in-place with |in| equal to |out|,
+// but otherwise the buffers may not partially overlap. A partial overlap may
+// overwrite input data before it is read.
 OPENSSL_EXPORT void AES_cfb128_encrypt(const uint8_t *in, uint8_t *out,
                                        size_t len, const AES_KEY *key,
                                        uint8_t *ivec, int *num, int enc);
 
-/* NB: the IV is _two_ blocks long */
-OPENSSL_EXPORT void AES_ige_encrypt(const unsigned char *in, unsigned char *out,
-                                    size_t length, const AES_KEY *key,
-                                    unsigned char *ivec, const int enc);
-/* NB: the IV is _four_ blocks long */
-OPENSSL_EXPORT void AES_bi_ige_encrypt(const unsigned char *in, unsigned char *out,
-                                       size_t length, const AES_KEY *key,
-                                       const AES_KEY *key2, const unsigned char *ivec,
-                                       const int enc);
 
 // AES key wrap.
 //
@@ -196,6 +165,13 @@ OPENSSL_EXPORT int AES_unwrap_key_padded(const AES_KEY *key, uint8_t *out,
                                          size_t *out_len, size_t max_out,
                                          const uint8_t *in, size_t in_len);
 
+OPENSSL_EXPORT void AES_ige_encrypt(const unsigned char *in, unsigned char *out,
+                     size_t length, const AES_KEY *key,
+                     unsigned char *ivec, const int enc);
+OPENSSL_EXPORT void AES_bi_ige_encrypt(const unsigned char *in, unsigned char *out,
+                        size_t length, const AES_KEY *key,
+                        const AES_KEY *key2, const unsigned char *ivec,
+                        const int enc);
 
 #if defined(__cplusplus)
 }  // extern C

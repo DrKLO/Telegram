@@ -86,6 +86,11 @@ TraditionalReassemblyStreams::TraditionalReassemblyStreams(
 
 int TraditionalReassemblyStreams::UnorderedStream::Add(UnwrappedTSN tsn,
                                                        Data data) {
+  if (data.is_beginning && data.is_end) {
+    // Fastpath for already assembled chunks.
+    AssembleMessage(tsn, std::move(data));
+    return 0;
+  }
   int queued_bytes = data.size();
   auto [it, inserted] = chunks_.emplace(tsn, std::move(data));
   if (!inserted) {
@@ -124,12 +129,7 @@ size_t TraditionalReassemblyStreams::StreamBase::AssembleMessage(
 
   if (count == 1) {
     // Fast path - zero-copy
-    const Data& data = start->second;
-    size_t payload_size = start->second.size();
-    UnwrappedTSN tsns[1] = {start->first};
-    DcSctpMessage message(data.stream_id, data.ppid, std::move(data.payload));
-    parent_.on_assembled_message_(tsns, std::move(message));
-    return payload_size;
+    return AssembleMessage(start->first, std::move(start->second));
   }
 
   // Slow path - will need to concatenate the payload.
@@ -152,6 +152,17 @@ size_t TraditionalReassemblyStreams::StreamBase::AssembleMessage(
                         std::move(payload));
   parent_.on_assembled_message_(tsns, std::move(message));
 
+  return payload_size;
+}
+
+size_t TraditionalReassemblyStreams::StreamBase::AssembleMessage(
+    UnwrappedTSN tsn,
+    Data data) {
+  // Fast path - zero-copy
+  size_t payload_size = data.size();
+  UnwrappedTSN tsns[1] = {tsn};
+  DcSctpMessage message(data.stream_id, data.ppid, std::move(data.payload));
+  parent_.on_assembled_message_(tsns, std::move(message));
   return payload_size;
 }
 
@@ -202,20 +213,40 @@ size_t TraditionalReassemblyStreams::OrderedStream::TryToAssembleMessages() {
   return assembled_bytes;
 }
 
+size_t
+TraditionalReassemblyStreams::OrderedStream::TryToAssembleMessagesFastpath(
+    UnwrappedSSN ssn,
+    UnwrappedTSN tsn,
+    Data data) {
+  RTC_DCHECK(ssn == next_ssn_);
+  size_t assembled_bytes = 0;
+  if (data.is_beginning && data.is_end) {
+    assembled_bytes += AssembleMessage(tsn, std::move(data));
+    next_ssn_.Increment();
+  } else {
+    size_t queued_bytes = data.size();
+    auto [iter, inserted] = chunks_by_ssn_[ssn].emplace(tsn, std::move(data));
+    if (!inserted) {
+      // Not actually assembled, but deduplicated meaning queued size doesn't
+      // include this message.
+      return queued_bytes;
+    }
+  }
+  return assembled_bytes + TryToAssembleMessages();
+}
+
 int TraditionalReassemblyStreams::OrderedStream::Add(UnwrappedTSN tsn,
                                                      Data data) {
   int queued_bytes = data.size();
-
   UnwrappedSSN ssn = ssn_unwrapper_.Unwrap(data.ssn);
-  auto [unused, inserted] = chunks_by_ssn_[ssn].emplace(tsn, std::move(data));
+  if (ssn == next_ssn_) {
+    return queued_bytes -
+           TryToAssembleMessagesFastpath(ssn, tsn, std::move(data));
+  }
+  auto [iter, inserted] = chunks_by_ssn_[ssn].emplace(tsn, std::move(data));
   if (!inserted) {
     return 0;
   }
-
-  if (ssn == next_ssn_) {
-    queued_bytes -= TryToAssembleMessages();
-  }
-
   return queued_bytes;
 }
 

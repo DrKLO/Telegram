@@ -1,0 +1,116 @@
+# Copyright (c) 2020 The WebRTC project authors. All Rights Reserved.
+#
+# Use of this source code is governed by a BSD-style license
+# that can be found in the LICENSE file in the root of the source
+# tree. An additional intellectual property rights grant can be found
+# in the file PATENTS.  All contributing project authors may
+# be found in the AUTHORS file in the root of the source tree.
+
+import("//third_party/libaom/options.gni")
+import("../../../../webrtc.gni")
+
+rtc_library("av1_svc_config") {
+  sources = [
+    "av1_svc_config.cc",
+    "av1_svc_config.h",
+  ]
+  deps = [
+    "../../../../api/video_codecs:video_codecs_api",
+    "../../../../rtc_base:checks",
+    "../../../../rtc_base:logging",
+    "../../../../rtc_base:stringutils",
+    "../../svc:scalability_mode_util",
+    "../../svc:scalability_structures",
+    "../../svc:scalable_video_controller",
+  ]
+
+  absl_deps = [ "//third_party/abseil-cpp/absl/container:inlined_vector" ]
+}
+
+rtc_library("dav1d_decoder") {
+  visibility = [ "*" ]
+  poisonous = [ "software_video_codecs" ]
+  public = [ "dav1d_decoder.h" ]
+  sources = [ "dav1d_decoder.cc" ]
+
+  deps = [
+    "../..:video_codec_interface",
+    "../../../../api:scoped_refptr",
+    "../../../../api/video:encoded_image",
+    "../../../../api/video:video_frame",
+    "../../../../api/video_codecs:video_codecs_api",
+    "../../../../common_video",
+    "../../../../rtc_base:logging",
+    "//third_party/dav1d",
+    "//third_party/libyuv",
+  ]
+  absl_deps = [ "//third_party/abseil-cpp/absl/types:optional" ]
+}
+
+rtc_library("libaom_av1_encoder") {
+  visibility = [ "*" ]
+  poisonous = [ "software_video_codecs" ]
+  public = [ "libaom_av1_encoder.h" ]
+  sources = [ "libaom_av1_encoder.cc" ]
+  deps = [
+    "../..:video_codec_interface",
+    "../../../../api:field_trials_view",
+    "../../../../api:scoped_refptr",
+    "../../../../api/transport:field_trial_based_config",
+    "../../../../api/video:encoded_image",
+    "../../../../api/video:video_frame",
+    "../../../../api/video_codecs:scalability_mode",
+    "../../../../api/video_codecs:video_codecs_api",
+    "../../../../common_video",
+    "../../../../rtc_base:checks",
+    "../../../../rtc_base:logging",
+    "../../../../rtc_base:rtc_numerics",
+    "../../../../rtc_base/experiments:encoder_info_settings",
+    "../../svc:scalability_structures",
+    "../../svc:scalable_video_controller",
+    "//third_party/libaom",
+  ]
+  absl_deps = [
+    "//third_party/abseil-cpp/absl/algorithm:container",
+    "//third_party/abseil-cpp/absl/base:core_headers",
+    "//third_party/abseil-cpp/absl/strings:strings",
+    "//third_party/abseil-cpp/absl/types:optional",
+  ]
+}
+
+if (rtc_include_tests) {
+  rtc_library("video_coding_codecs_av1_tests") {
+    testonly = true
+
+    sources = [ "av1_svc_config_unittest.cc" ]
+    deps = [
+      ":av1_svc_config",
+      "../../../../api/video_codecs:video_codecs_api",
+      "../../../../test:test_support",
+    ]
+
+    if (enable_libaom) {
+      sources += [
+        "libaom_av1_encoder_unittest.cc",
+        "libaom_av1_unittest.cc",
+      ]
+      deps += [
+        ":dav1d_decoder",
+        ":libaom_av1_encoder",
+        "../..:encoded_video_frame_producer",
+        "../..:video_codec_interface",
+        "../../../../api:create_frame_generator",
+        "../../../../api:frame_generator_api",
+        "../../../../api:mock_video_encoder",
+        "../../../../api/units:data_size",
+        "../../../../api/units:time_delta",
+        "../../../../api/video:video_frame",
+        "../../../../test:field_trial",
+        "../../svc:scalability_mode_util",
+        "../../svc:scalability_structures",
+        "../../svc:scalable_video_controller",
+      ]
+      absl_deps = [ "//third_party/abseil-cpp/absl/types:optional" ]
+    }
+  }
+}

@@ -68,8 +68,8 @@ absl::optional<IForwardTsnChunk> IForwardTsnChunk::Parse(
 
     StreamID stream_id(sub_reader.Load16<0>());
     IsUnordered unordered(sub_reader.Load8<3>() & 0x01);
-    MID message_id(sub_reader.Load32<4>());
-    skipped_streams.emplace_back(unordered, stream_id, message_id);
+    MID mid(sub_reader.Load32<4>());
+    skipped_streams.emplace_back(unordered, stream_id, mid);
     offset += kSkippedStreamBufferSize;
   }
   RTC_DCHECK(offset == reader->variable_data_size());
@@ -89,7 +89,7 @@ void IForwardTsnChunk::SerializeTo(std::vector<uint8_t>& out) const {
 
     sub_writer.Store16<0>(*skipped[i].stream_id);
     sub_writer.Store8<3>(skipped[i].unordered ? 1 : 0);
-    sub_writer.Store32<4>(*skipped[i].message_id);
+    sub_writer.Store32<4>(*skipped[i].mid);
     offset += kSkippedStreamBufferSize;
   }
   RTC_DCHECK(offset == variable_size);

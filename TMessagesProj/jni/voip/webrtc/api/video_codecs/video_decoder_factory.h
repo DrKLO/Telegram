@@ -12,16 +12,14 @@
 #define API_VIDEO_CODECS_VIDEO_DECODER_FACTORY_H_
 
 #include <memory>
-#include <string>
 #include <vector>
 
-#include "absl/types/optional.h"
+#include "api/environment/environment.h"
 #include "api/video_codecs/sdp_video_format.h"
+#include "api/video_codecs/video_decoder.h"
 #include "rtc_base/system/rtc_export.h"
 
 namespace webrtc {
-
-class VideoDecoder;
 
 // A factory that creates VideoDecoders.
 // NOTE: This class is still under development and may change without notice.
@@ -31,6 +29,8 @@ class RTC_EXPORT VideoDecoderFactory {
     bool is_supported = false;
     bool is_power_efficient = false;
   };
+
+  virtual ~VideoDecoderFactory() = default;
 
   // Returns a list of supported video formats in order of preference, to use
   // for signaling etc.
@@ -47,21 +47,18 @@ class RTC_EXPORT VideoDecoderFactory {
   // different scalabilty modes. NOTE: QueryCodecSupport is currently an
   // experimental feature that is subject to change without notice.
   virtual CodecSupport QueryCodecSupport(const SdpVideoFormat& format,
-                                         bool reference_scaling) const {
-    // Default implementation, query for supported formats and check if the
-    // specified format is supported. Returns false if `reference_scaling` is
-    // true.
-    CodecSupport codec_support;
-    codec_support.is_supported =
-        !reference_scaling && format.IsCodecInList(GetSupportedFormats());
-    return codec_support;
-  }
+                                         bool reference_scaling) const;
 
-  // Creates a VideoDecoder for the specified format.
+  // Creates a VideoDecoder for the specified `format`.
+  // TODO: bugs.webrtc.org/15791 - Make pure virtual when implemented in all
+  // derived classes.
+  virtual std::unique_ptr<VideoDecoder> Create(const Environment& env,
+                                               const SdpVideoFormat& format);
+
+  // TODO: bugs.webrtc.org/15791 - Make private or delete when all callers are
+  // migrated to `Create`.
   virtual std::unique_ptr<VideoDecoder> CreateVideoDecoder(
-      const SdpVideoFormat& format) = 0;
-
-  virtual ~VideoDecoderFactory() {}
+      const SdpVideoFormat& format);
 };
 
 }  // namespace webrtc

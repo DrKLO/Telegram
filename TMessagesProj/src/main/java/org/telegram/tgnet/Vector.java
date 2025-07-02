@@ -198,6 +198,9 @@ public class Vector<T extends TLObject> extends TLObject {
     public static ArrayList<java.lang.String> deserializeString(InputSerializedData stream, boolean exception) {
         return deserialize(stream, stream::readString, exception);
     }
+    public static ArrayList<byte[]> deserializeByteArray(InputSerializedData stream, boolean exception) {
+        return deserialize(stream, stream::readByteArray, exception);
+    }
     public static <T extends TLObject> ArrayList<T> deserialize(InputSerializedData stream, TLDeserializer<T> deserializer, boolean exception) {
         final int magic = stream.readInt32(exception);
         if (magic != Vector.constructor) {

@@ -14,15 +14,23 @@
 
 #include "absl/container/internal/hash_function_defaults.h"
 
+#include <cstddef>
 #include <functional>
 #include <type_traits>
 #include <utility>
 
 #include "gtest/gtest.h"
+#include "absl/container/flat_hash_map.h"
+#include "absl/container/flat_hash_set.h"
+#include "absl/hash/hash.h"
 #include "absl/random/random.h"
 #include "absl/strings/cord.h"
 #include "absl/strings/cord_test_helpers.h"
 #include "absl/strings/string_view.h"
+
+#ifdef ABSL_HAVE_STD_STRING_VIEW
+#include <string_view>
+#endif
 
 namespace absl {
 ABSL_NAMESPACE_BEGIN
@@ -107,6 +115,168 @@ TYPED_TEST(HashString, Works) {
   EXPECT_EQ(h, hash(std::string("a")));
   EXPECT_NE(h, hash(absl::string_view("b")));
   EXPECT_NE(h, hash(std::string("b")));
+}
+
+TEST(BasicStringViewTest, WStringEqWorks) {
+#ifndef ABSL_HAVE_STD_STRING_VIEW
+  GTEST_SKIP();
+#else
+  hash_default_eq<std::wstring> eq;
+  EXPECT_TRUE(eq(L"a", L"a"));
+  EXPECT_TRUE(eq(L"a", std::wstring_view(L"a")));
+  EXPECT_TRUE(eq(L"a", std::wstring(L"a")));
+  EXPECT_FALSE(eq(L"a", L"b"));
+  EXPECT_FALSE(eq(L"a", std::wstring_view(L"b")));
+  EXPECT_FALSE(eq(L"a", std::wstring(L"b")));
+#endif
+}
+
+TEST(BasicStringViewTest, WStringViewEqWorks) {
+#ifndef ABSL_HAVE_STD_STRING_VIEW
+  GTEST_SKIP();
+#else
+  hash_default_eq<std::wstring_view> eq;
+  EXPECT_TRUE(eq(L"a", L"a"));
+  EXPECT_TRUE(eq(L"a", std::wstring_view(L"a")));
+  EXPECT_TRUE(eq(L"a", std::wstring(L"a")));
+  EXPECT_FALSE(eq(L"a", L"b"));
+  EXPECT_FALSE(eq(L"a", std::wstring_view(L"b")));
+  EXPECT_FALSE(eq(L"a", std::wstring(L"b")));
+#endif
+}
+
+TEST(BasicStringViewTest, U16StringEqWorks) {
+#ifndef ABSL_HAVE_STD_STRING_VIEW
+  GTEST_SKIP();
+#else
+  hash_default_eq<std::u16string> eq;
+  EXPECT_TRUE(eq(u"a", u"a"));
+  EXPECT_TRUE(eq(u"a", std::u16string_view(u"a")));
+  EXPECT_TRUE(eq(u"a", std::u16string(u"a")));
+  EXPECT_FALSE(eq(u"a", u"b"));
+  EXPECT_FALSE(eq(u"a", std::u16string_view(u"b")));
+  EXPECT_FALSE(eq(u"a", std::u16string(u"b")));
+#endif
+}
+
+TEST(BasicStringViewTest, U16StringViewEqWorks) {
+#ifndef ABSL_HAVE_STD_STRING_VIEW
+  GTEST_SKIP();
+#else
+  hash_default_eq<std::u16string_view> eq;
+  EXPECT_TRUE(eq(u"a", u"a"));
+  EXPECT_TRUE(eq(u"a", std::u16string_view(u"a")));
+  EXPECT_TRUE(eq(u"a", std::u16string(u"a")));
+  EXPECT_FALSE(eq(u"a", u"b"));
+  EXPECT_FALSE(eq(u"a", std::u16string_view(u"b")));
+  EXPECT_FALSE(eq(u"a", std::u16string(u"b")));
+#endif
+}
+
+TEST(BasicStringViewTest, U32StringEqWorks) {
+#ifndef ABSL_HAVE_STD_STRING_VIEW
+  GTEST_SKIP();
+#else
+  hash_default_eq<std::u32string> eq;
+  EXPECT_TRUE(eq(U"a", U"a"));
+  EXPECT_TRUE(eq(U"a", std::u32string_view(U"a")));
+  EXPECT_TRUE(eq(U"a", std::u32string(U"a")));
+  EXPECT_FALSE(eq(U"a", U"b"));
+  EXPECT_FALSE(eq(U"a", std::u32string_view(U"b")));
+  EXPECT_FALSE(eq(U"a", std::u32string(U"b")));
+#endif
+}
+
+TEST(BasicStringViewTest, U32StringViewEqWorks) {
+#ifndef ABSL_HAVE_STD_STRING_VIEW
+  GTEST_SKIP();
+#else
+  hash_default_eq<std::u32string_view> eq;
+  EXPECT_TRUE(eq(U"a", U"a"));
+  EXPECT_TRUE(eq(U"a", std::u32string_view(U"a")));
+  EXPECT_TRUE(eq(U"a", std::u32string(U"a")));
+  EXPECT_FALSE(eq(U"a", U"b"));
+  EXPECT_FALSE(eq(U"a", std::u32string_view(U"b")));
+  EXPECT_FALSE(eq(U"a", std::u32string(U"b")));
+#endif
+}
+
+TEST(BasicStringViewTest, WStringHashWorks) {
+#ifndef ABSL_HAVE_STD_STRING_VIEW
+  GTEST_SKIP();
+#else
+  hash_default_hash<std::wstring> hash;
+  auto h = hash(L"a");
+  EXPECT_EQ(h, hash(std::wstring_view(L"a")));
+  EXPECT_EQ(h, hash(std::wstring(L"a")));
+  EXPECT_NE(h, hash(std::wstring_view(L"b")));
+  EXPECT_NE(h, hash(std::wstring(L"b")));
+#endif
+}
+
+TEST(BasicStringViewTest, WStringViewHashWorks) {
+#ifndef ABSL_HAVE_STD_STRING_VIEW
+  GTEST_SKIP();
+#else
+  hash_default_hash<std::wstring_view> hash;
+  auto h = hash(L"a");
+  EXPECT_EQ(h, hash(std::wstring_view(L"a")));
+  EXPECT_EQ(h, hash(std::wstring(L"a")));
+  EXPECT_NE(h, hash(std::wstring_view(L"b")));
+  EXPECT_NE(h, hash(std::wstring(L"b")));
+#endif
+}
+
+TEST(BasicStringViewTest, U16StringHashWorks) {
+#ifndef ABSL_HAVE_STD_STRING_VIEW
+  GTEST_SKIP();
+#else
+  hash_default_hash<std::u16string> hash;
+  auto h = hash(u"a");
+  EXPECT_EQ(h, hash(std::u16string_view(u"a")));
+  EXPECT_EQ(h, hash(std::u16string(u"a")));
+  EXPECT_NE(h, hash(std::u16string_view(u"b")));
+  EXPECT_NE(h, hash(std::u16string(u"b")));
+#endif
+}
+
+TEST(BasicStringViewTest, U16StringViewHashWorks) {
+#ifndef ABSL_HAVE_STD_STRING_VIEW
+  GTEST_SKIP();
+#else
+  hash_default_hash<std::u16string_view> hash;
+  auto h = hash(u"a");
+  EXPECT_EQ(h, hash(std::u16string_view(u"a")));
+  EXPECT_EQ(h, hash(std::u16string(u"a")));
+  EXPECT_NE(h, hash(std::u16string_view(u"b")));
+  EXPECT_NE(h, hash(std::u16string(u"b")));
+#endif
+}
+
+TEST(BasicStringViewTest, U32StringHashWorks) {
+#ifndef ABSL_HAVE_STD_STRING_VIEW
+  GTEST_SKIP();
+#else
+  hash_default_hash<std::u32string> hash;
+  auto h = hash(U"a");
+  EXPECT_EQ(h, hash(std::u32string_view(U"a")));
+  EXPECT_EQ(h, hash(std::u32string(U"a")));
+  EXPECT_NE(h, hash(std::u32string_view(U"b")));
+  EXPECT_NE(h, hash(std::u32string(U"b")));
+#endif
+}
+
+TEST(BasicStringViewTest, U32StringViewHashWorks) {
+#ifndef ABSL_HAVE_STD_STRING_VIEW
+  GTEST_SKIP();
+#else
+  hash_default_hash<std::u32string_view> hash;
+  auto h = hash(U"a");
+  EXPECT_EQ(h, hash(std::u32string_view(U"a")));
+  EXPECT_EQ(h, hash(std::u32string(U"a")));
+  EXPECT_NE(h, hash(std::u32string_view(U"b")));
+  EXPECT_NE(h, hash(std::u32string(U"b")));
+#endif
 }
 
 struct NoDeleter {
@@ -310,26 +480,157 @@ struct StringLikeTest : public ::testing::Test {
   hash_default_hash<typename T::first_type> hash;
 };
 
-TYPED_TEST_SUITE_P(StringLikeTest);
+TYPED_TEST_SUITE(StringLikeTest, StringTypesCartesianProduct);
 
-TYPED_TEST_P(StringLikeTest, Eq) {
+TYPED_TEST(StringLikeTest, Eq) {
   EXPECT_TRUE(this->eq(this->a1, this->b1));
   EXPECT_TRUE(this->eq(this->b1, this->a1));
 }
 
-TYPED_TEST_P(StringLikeTest, NotEq) {
+TYPED_TEST(StringLikeTest, NotEq) {
   EXPECT_FALSE(this->eq(this->a1, this->b2));
   EXPECT_FALSE(this->eq(this->b2, this->a1));
 }
 
-TYPED_TEST_P(StringLikeTest, HashEq) {
+TYPED_TEST(StringLikeTest, HashEq) {
   EXPECT_EQ(this->hash(this->a1), this->hash(this->b1));
   EXPECT_EQ(this->hash(this->a2), this->hash(this->b2));
   // It would be a poor hash function which collides on these strings.
   EXPECT_NE(this->hash(this->a1), this->hash(this->b2));
 }
 
-TYPED_TEST_SUITE(StringLikeTest, StringTypesCartesianProduct);
+struct TypeWithAbslContainerHash {
+  struct absl_container_hash {
+    using is_transparent = void;
+
+    size_t operator()(const TypeWithAbslContainerHash& foo) const {
+      return absl::HashOf(foo.value);
+    }
+
+    // Extra overload to test that heterogeneity works for this hasher.
+    size_t operator()(int value) const { return absl::HashOf(value); }
+  };
+
+  friend bool operator==(const TypeWithAbslContainerHash& lhs,
+                         const TypeWithAbslContainerHash& rhs) {
+    return lhs.value == rhs.value;
+  }
+
+  friend bool operator==(const TypeWithAbslContainerHash& lhs, int rhs) {
+    return lhs.value == rhs;
+  }
+
+  int value;
+  int noise;
+};
+
+struct TypeWithAbslContainerHashAndEq {
+  struct absl_container_hash {
+    using is_transparent = void;
+
+    size_t operator()(const TypeWithAbslContainerHashAndEq& foo) const {
+      return absl::HashOf(foo.value);
+    }
+
+    // Extra overload to test that heterogeneity works for this hasher.
+    size_t operator()(int value) const { return absl::HashOf(value); }
+  };
+
+  struct absl_container_eq {
+    using is_transparent = void;
+
+    bool operator()(const TypeWithAbslContainerHashAndEq& lhs,
+                    const TypeWithAbslContainerHashAndEq& rhs) const {
+      return lhs.value == rhs.value;
+    }
+
+    // Extra overload to test that heterogeneity works for this eq.
+    bool operator()(const TypeWithAbslContainerHashAndEq& lhs, int rhs) const {
+      return lhs.value == rhs;
+    }
+  };
+
+  template <typename T>
+  bool operator==(T&& other) const = delete;
+
+  int value;
+  int noise;
+};
+
+using AbslContainerHashTypes =
+    Types<TypeWithAbslContainerHash, TypeWithAbslContainerHashAndEq>;
+
+template <typename T>
+using AbslContainerHashTest = ::testing::Test;
+
+TYPED_TEST_SUITE(AbslContainerHashTest, AbslContainerHashTypes);
+
+TYPED_TEST(AbslContainerHashTest, HasherWorks) {
+  hash_default_hash<TypeParam> hasher;
+
+  TypeParam foo1{/*value=*/1, /*noise=*/100};
+  TypeParam foo1_copy{/*value=*/1, /*noise=*/20};
+  TypeParam foo2{/*value=*/2, /*noise=*/100};
+
+  EXPECT_EQ(hasher(foo1), absl::HashOf(1));
+  EXPECT_EQ(hasher(foo2), absl::HashOf(2));
+  EXPECT_EQ(hasher(foo1), hasher(foo1_copy));
+
+  // Heterogeneity works.
+  EXPECT_EQ(hasher(foo1), hasher(1));
+  EXPECT_EQ(hasher(foo2), hasher(2));
+}
+
+TYPED_TEST(AbslContainerHashTest, EqWorks) {
+  hash_default_eq<TypeParam> eq;
+
+  TypeParam foo1{/*value=*/1, /*noise=*/100};
+  TypeParam foo1_copy{/*value=*/1, /*noise=*/20};
+  TypeParam foo2{/*value=*/2, /*noise=*/100};
+
+  EXPECT_TRUE(eq(foo1, foo1_copy));
+  EXPECT_FALSE(eq(foo1, foo2));
+
+  // Heterogeneity works.
+  EXPECT_TRUE(eq(foo1, 1));
+  EXPECT_FALSE(eq(foo1, 2));
+}
+
+TYPED_TEST(AbslContainerHashTest, HeterogeneityInMapWorks) {
+  absl::flat_hash_map<TypeParam, int> map;
+
+  TypeParam foo1{/*value=*/1, /*noise=*/100};
+  TypeParam foo1_copy{/*value=*/1, /*noise=*/20};
+  TypeParam foo2{/*value=*/2, /*noise=*/100};
+  TypeParam foo3{/*value=*/3, /*noise=*/100};
+
+  map[foo1] = 1;
+  map[foo2] = 2;
+
+  EXPECT_TRUE(map.contains(foo1_copy));
+  EXPECT_EQ(map.at(foo1_copy), 1);
+  EXPECT_TRUE(map.contains(1));
+  EXPECT_EQ(map.at(1), 1);
+  EXPECT_TRUE(map.contains(2));
+  EXPECT_EQ(map.at(2), 2);
+  EXPECT_FALSE(map.contains(foo3));
+  EXPECT_FALSE(map.contains(3));
+}
+
+TYPED_TEST(AbslContainerHashTest, HeterogeneityInSetWorks) {
+  absl::flat_hash_set<TypeParam> set;
+
+  TypeParam foo1{/*value=*/1, /*noise=*/100};
+  TypeParam foo1_copy{/*value=*/1, /*noise=*/20};
+  TypeParam foo2{/*value=*/2, /*noise=*/100};
+
+  set.insert(foo1);
+
+  EXPECT_TRUE(set.contains(foo1_copy));
+  EXPECT_TRUE(set.contains(1));
+  EXPECT_FALSE(set.contains(foo2));
+  EXPECT_FALSE(set.contains(2));
+}
 
 }  // namespace
 }  // namespace container_internal
@@ -337,7 +638,7 @@ ABSL_NAMESPACE_END
 }  // namespace absl
 
 enum Hash : size_t {
-  kStd = 0x1,       // std::hash
+  kStd = 0x1,  // std::hash
 #ifdef _MSC_VER
   kExtension = kStd,  // In MSVC, std::hash == ::hash
 #else                 // _MSC_VER

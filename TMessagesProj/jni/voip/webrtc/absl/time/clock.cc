@@ -48,16 +48,15 @@ Time Now() {
 ABSL_NAMESPACE_END
 }  // namespace absl
 
-// Decide if we should use the fast GetCurrentTimeNanos() algorithm
-// based on the cyclecounter, otherwise just get the time directly
-// from the OS on every call. This can be chosen at compile-time via
+// Decide if we should use the fast GetCurrentTimeNanos() algorithm based on the
+// cyclecounter, otherwise just get the time directly from the OS on every call.
+// By default, the fast algorithm based on the cyclecount is disabled because in
+// certain situations, for example, if the OS enters a "sleep" mode, it may
+// produce incorrect values immediately upon waking.
+// This can be chosen at compile-time via
 // -DABSL_USE_CYCLECLOCK_FOR_GET_CURRENT_TIME_NANOS=[0|1]
 #ifndef ABSL_USE_CYCLECLOCK_FOR_GET_CURRENT_TIME_NANOS
-#if ABSL_USE_UNSCALED_CYCLECLOCK
-#define ABSL_USE_CYCLECLOCK_FOR_GET_CURRENT_TIME_NANOS 1
-#else
 #define ABSL_USE_CYCLECLOCK_FOR_GET_CURRENT_TIME_NANOS 0
-#endif
 #endif
 
 #if defined(__APPLE__) || defined(_WIN32)
@@ -89,11 +88,25 @@ ABSL_NAMESPACE_END
 namespace absl {
 ABSL_NAMESPACE_BEGIN
 namespace time_internal {
+
+// On some processors, consecutive reads of the cycle counter may yield the
+// same value (weakly-increasing). In debug mode, clear the least significant
+// bits to discourage depending on a strictly-increasing Now() value.
+// In x86-64's debug mode, discourage depending on a strictly-increasing Now()
+// value.
+#if !defined(NDEBUG) && defined(__x86_64__)
+constexpr int64_t kCycleClockNowMask = ~int64_t{0xff};
+#else
+constexpr int64_t kCycleClockNowMask = ~int64_t{0};
+#endif
+
 // This is a friend wrapper around UnscaledCycleClock::Now()
 // (needed to access UnscaledCycleClock).
 class UnscaledCycleClockWrapperForGetCurrentTime {
  public:
-  static int64_t Now() { return base_internal::UnscaledCycleClock::Now(); }
+  static int64_t Now() {
+    return base_internal::UnscaledCycleClock::Now() & kCycleClockNowMask;
+  }
 };
 }  // namespace time_internal
 

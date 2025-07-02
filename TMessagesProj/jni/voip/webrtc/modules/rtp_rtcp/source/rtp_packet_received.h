@@ -39,8 +39,8 @@ class RtpPacketReceived : public RtpPacket {
 
   ~RtpPacketReceived();
 
-  // TODO(danilchap): Remove this function when all code update to use RtpPacket
-  // directly. Function is there just for easier backward compatibilty.
+  // TODO(bugs.webrtc.org/15054): Remove this function when all code is updated
+  // to use RtpPacket directly.
   void GetHeader(RTPHeader* header) const;
 
   // Time in local time base as close as it can to packet arrived on the

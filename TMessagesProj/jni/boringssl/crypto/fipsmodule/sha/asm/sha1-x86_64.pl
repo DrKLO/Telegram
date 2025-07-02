@@ -1,17 +1,22 @@
 #! /usr/bin/env perl
 # Copyright 2006-2016 The OpenSSL Project Authors. All Rights Reserved.
 #
-# Licensed under the OpenSSL license (the "License").  You may not use
-# this file except in compliance with the License.  You can obtain a copy
-# in the file LICENSE in the source distribution or at
-# https://www.openssl.org/source/license.html
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 #
 # ====================================================================
 # Written by Andy Polyakov <appro@openssl.org> for the OpenSSL
-# project. The module is, however, dual licensed under OpenSSL and
-# CRYPTOGAMS licenses depending on where you obtain it. For further
-# details see http://www.openssl.org/~appro/cryptogams/.
+# project.
 # ====================================================================
 #
 # sha1_block procedure for x86_64.
@@ -107,16 +112,8 @@ die "can't locate x86_64-xlate.pl";
 # In upstream, this is controlled by shelling out to the compiler to check
 # versions, but BoringSSL is intended to be used with pre-generated perlasm
 # output, so this isn't useful anyway.
-#
-# TODO(davidben): Enable AVX2 code after testing by setting $avx to 2. Is it
-# necessary to disable AVX2 code when SHA Extensions code is disabled? Upstream
-# did not tie them together until after $shaext was added.
-$avx = 1;
-
-# TODO(davidben): Consider enabling the Intel SHA Extensions code once it's
-# been tested.
-$shaext=0;	### set to zero if compiling for 1.0.1
-$avx=1		if (!$shaext && $avx);
+$avx = 2;
+$shaext=1;	### set to zero if compiling for 1.0.1
 
 open OUT,"| \"$^X\" \"$xlate\" $flavour \"$output\"";
 *STDOUT=*OUT;
@@ -245,41 +242,13 @@ push(@xi,shift(@xi));
 
 $code.=<<___;
 .text
-.extern	OPENSSL_ia32cap_P
 
-.globl	sha1_block_data_order
-.type	sha1_block_data_order,\@function,3
+.globl	sha1_block_data_order_nohw
+.type	sha1_block_data_order_nohw,\@function,3
 .align	16
-sha1_block_data_order:
+sha1_block_data_order_nohw:
 .cfi_startproc
-	leaq	OPENSSL_ia32cap_P(%rip),%r10
-	mov	0(%r10),%r9d
-	mov	4(%r10),%r8d
-	mov	8(%r10),%r10d
-	test	\$`1<<9`,%r8d		# check SSSE3 bit
-	jz	.Lialu
-___
-$code.=<<___ if ($shaext);
-	test	\$`1<<29`,%r10d		# check SHA bit
-	jnz	_shaext_shortcut
-___
-$code.=<<___ if ($avx>1);
-	and	\$`1<<3|1<<5|1<<8`,%r10d	# check AVX2+BMI1+BMI2
-	cmp	\$`1<<3|1<<5|1<<8`,%r10d
-	je	_avx2_shortcut
-___
-$code.=<<___ if ($avx);
-	and	\$`1<<28`,%r8d		# mask AVX bit
-	and	\$`1<<30`,%r9d		# mask "Intel CPU" bit
-	or	%r9d,%r8d
-	cmp	\$`1<<28|1<<30`,%r8d
-	je	_avx_shortcut
-___
-$code.=<<___;
-	jmp	_ssse3_shortcut
-
-.align	16
-.Lialu:
+	_CET_ENDBR
 	mov	%rsp,%rax
 .cfi_def_cfa_register	%rax
 	push	%rbx
@@ -348,7 +317,7 @@ $code.=<<___;
 .Lepilogue:
 	ret
 .cfi_endproc
-.size	sha1_block_data_order,.-sha1_block_data_order
+.size	sha1_block_data_order_nohw,.-sha1_block_data_order_nohw
 ___
 if ($shaext) {{{
 ######################################################################
@@ -359,11 +328,12 @@ my ($ABCD,$E,$E_,$BSWAP,$ABCD_SAVE,$E_SAVE)=map("%xmm$_",(0..3,8,9));
 my @MSG=map("%xmm$_",(4..7));
 
 $code.=<<___;
-.type	sha1_block_data_order_shaext,\@function,3
+.globl	sha1_block_data_order_hw
+.type	sha1_block_data_order_hw,\@function,3
 .align	32
-sha1_block_data_order_shaext:
-_shaext_shortcut:
+sha1_block_data_order_hw:
 .cfi_startproc
+	_CET_ENDBR
 ___
 $code.=<<___ if ($win64);
 	lea	`-8-4*16`(%rsp),%rsp
@@ -397,6 +367,7 @@ $code.=<<___;
 	lea		0x40($inp),%r8		# next input block
 	paddd		@MSG[0],$E
 	cmovne		%r8,$inp
+	prefetcht0	512($inp)
 	movdqa		$ABCD,$ABCD_SAVE	# offload $ABCD
 ___
 for($i=0;$i<20-4;$i+=2) {
@@ -461,9 +432,9 @@ $code.=<<___ if ($win64);
 .Lepilogue_shaext:
 ___
 $code.=<<___;
-.cfi_endproc
 	ret
-.size	sha1_block_data_order_shaext,.-sha1_block_data_order_shaext
+.cfi_endproc
+.size	sha1_block_data_order_hw,.-sha1_block_data_order_hw
 ___
 }}}
 {{{
@@ -493,11 +464,12 @@ ___
 }
 
 $code.=<<___;
+.globl	sha1_block_data_order_ssse3
 .type	sha1_block_data_order_ssse3,\@function,3
 .align	16
 sha1_block_data_order_ssse3:
-_ssse3_shortcut:
 .cfi_startproc
+	_CET_ENDBR
 	mov	%rsp,$fp	# frame pointer
 .cfi_def_cfa_register	$fp
 	push	%rbx
@@ -967,11 +939,12 @@ my $_rol=sub { &shld(@_[0],@_) };
 my $_ror=sub { &shrd(@_[0],@_) };
 
 $code.=<<___;
+.globl	sha1_block_data_order_avx
 .type	sha1_block_data_order_avx,\@function,3
 .align	16
 sha1_block_data_order_avx:
-_avx_shortcut:
 .cfi_startproc
+	_CET_ENDBR
 	mov	%rsp,$fp
 .cfi_def_cfa_register	$fp
 	push	%rbx
@@ -1346,11 +1319,12 @@ my $rx=0;
 my $frame="%r13";
 
 $code.=<<___;
+.globl	sha1_block_data_order_avx2
 .type	sha1_block_data_order_avx2,\@function,3
 .align	16
 sha1_block_data_order_avx2:
-_avx2_shortcut:
 .cfi_startproc
+	_CET_ENDBR
 	mov	%rsp,$fp
 .cfi_def_cfa_register	$fp
 	push	%rbx
@@ -1823,6 +1797,7 @@ ___
 }
 }
 $code.=<<___;
+.section .rodata
 .align	64
 K_XX_XX:
 .long	0x5a827999,0x5a827999,0x5a827999,0x5a827999	# K_00_19
@@ -1841,6 +1816,7 @@ ___
 $code.=<<___;
 .asciz	"SHA1 block transform for x86_64, CRYPTOGAMS by <appro\@openssl.org>"
 .align	64
+.text
 ___
 
 # EXCEPTION_DISPOSITION handler (EXCEPTION_RECORD *rec,ULONG64 frame,
@@ -2023,14 +1999,14 @@ ssse3_handler:
 
 .section	.pdata
 .align	4
-	.rva	.LSEH_begin_sha1_block_data_order
-	.rva	.LSEH_end_sha1_block_data_order
-	.rva	.LSEH_info_sha1_block_data_order
+	.rva	.LSEH_begin_sha1_block_data_order_nohw
+	.rva	.LSEH_end_sha1_block_data_order_nohw
+	.rva	.LSEH_info_sha1_block_data_order_nohw
 ___
 $code.=<<___ if ($shaext);
-	.rva	.LSEH_begin_sha1_block_data_order_shaext
-	.rva	.LSEH_end_sha1_block_data_order_shaext
-	.rva	.LSEH_info_sha1_block_data_order_shaext
+	.rva	.LSEH_begin_sha1_block_data_order_hw
+	.rva	.LSEH_end_sha1_block_data_order_hw
+	.rva	.LSEH_info_sha1_block_data_order_hw
 ___
 $code.=<<___;
 	.rva	.LSEH_begin_sha1_block_data_order_ssse3
@@ -2050,12 +2026,12 @@ ___
 $code.=<<___;
 .section	.xdata
 .align	8
-.LSEH_info_sha1_block_data_order:
+.LSEH_info_sha1_block_data_order_nohw:
 	.byte	9,0,0,0
 	.rva	se_handler
 ___
 $code.=<<___ if ($shaext);
-.LSEH_info_sha1_block_data_order_shaext:
+.LSEH_info_sha1_block_data_order_hw:
 	.byte	9,0,0,0
 	.rva	shaext_handler
 ___
@@ -2081,45 +2057,9 @@ ___
 
 ####################################################################
 
-sub sha1rnds4 {
-    if (@_[0] =~ /\$([x0-9a-f]+),\s*%xmm([0-7]),\s*%xmm([0-7])/) {
-      my @opcode=(0x0f,0x3a,0xcc);
-	push @opcode,0xc0|($2&7)|(($3&7)<<3);		# ModR/M
-	my $c=$1;
-	push @opcode,$c=~/^0/?oct($c):$c;
-	return ".byte\t".join(',',@opcode);
-    } else {
-	return "sha1rnds4\t".@_[0];
-    }
-}
-
-sub sha1op38 {
-    my $instr = shift;
-    my %opcodelet = (
-		"sha1nexte" => 0xc8,
-  		"sha1msg1"  => 0xc9,
-		"sha1msg2"  => 0xca	);
-
-    if (defined($opcodelet{$instr}) && @_[0] =~ /%xmm([0-9]+),\s*%xmm([0-9]+)/) {
-      my @opcode=(0x0f,0x38);
-      my $rex=0;
-	$rex|=0x04			if ($2>=8);
-	$rex|=0x01			if ($1>=8);
-	unshift @opcode,0x40|$rex	if ($rex);
-	push @opcode,$opcodelet{$instr};
-	push @opcode,0xc0|($1&7)|(($2&7)<<3);		# ModR/M
-	return ".byte\t".join(',',@opcode);
-    } else {
-	return $instr."\t".@_[0];
-    }
-}
-
 foreach (split("\n",$code)) {
 	s/\`([^\`]*)\`/eval $1/geo;
 
-	s/\b(sha1rnds4)\s+(.*)/sha1rnds4($2)/geo	or
-	s/\b(sha1[^\s]*)\s+(.*)/sha1op38($1,$2)/geo;
-
 	print $_,"\n";
 }
-close STDOUT or die "error closing STDOUT";
+close STDOUT or die "error closing STDOUT: $!";

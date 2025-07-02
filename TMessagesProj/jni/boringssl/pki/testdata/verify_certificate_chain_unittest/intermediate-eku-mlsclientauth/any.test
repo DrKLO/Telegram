@@ -1,0 +1,13 @@
+chain: chain.pem
+last_cert_trust: TRUSTED_ANCHOR
+utc_time: DEFAULT
+key_purpose: ANY_EKU
+expected_errors:
+----- Certificate i=0 (CN=MLS Cert Leaf) -----
+ERROR: Unconsumed critical extension
+  oid: 678112020104
+  value: 30080606678112020104
+ERROR: Unconsumed critical extension
+  oid: 678112020105
+  value: 30080606678112020105
+

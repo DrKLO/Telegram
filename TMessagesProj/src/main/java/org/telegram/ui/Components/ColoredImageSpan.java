@@ -1,6 +1,7 @@
 package org.telegram.ui.Components;
 
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
@@ -11,6 +12,7 @@ import android.text.style.ReplacementSpan;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
+import androidx.core.graphics.ColorUtils;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
@@ -122,6 +124,7 @@ public class ColoredImageSpan extends ReplacementSpan {
 
     @Override
     public void draw(@NonNull Canvas canvas, CharSequence text, int start, int end, float x, int top, int y, int bottom, @NonNull Paint paint) {
+        boolean drawableColorIsPaintColor = false;
         int color;
         if (checkColorDelegate != null) {
             checkColorDelegate.run();
@@ -131,13 +134,14 @@ public class ColoredImageSpan extends ReplacementSpan {
             } else if (useLinkPaintColor && paint instanceof TextPaint) {
                 color = ((TextPaint) paint).linkColor;
             } else if (usePaintColor) {
+                drawableColorIsPaintColor = true;
                 color = paint.getColor();
             } else {
                 color = Theme.getColor(colorKey);
             }
             if (drawableColor != color) {
                 drawableColor = color;
-                drawable.setColorFilter(new PorterDuffColorFilter(drawableColor, PorterDuff.Mode.MULTIPLY));
+                drawable.setColorFilter(new PorterDuffColorFilter(drawableColor, PorterDuff.Mode.SRC_IN));
             }
         }
 
@@ -161,8 +165,10 @@ public class ColoredImageSpan extends ReplacementSpan {
             if (rotate != 1f) {
                 canvas.rotate(rotate, drawable.getBounds().centerX(), drawable.getBounds().centerY());
             }
-            if (alpha != 1f || paint.getAlpha() != 0xFF) {
-                drawable.setAlpha((int) (alpha * paint.getAlpha()));
+            if (drawableColorIsPaintColor) {
+                drawable.setAlpha((int) (0xFF * alpha * (paint.getAlpha() / (float) Color.alpha(drawableColor))));
+            } else {
+                drawable.setAlpha((int) (paint.getAlpha() * alpha));
             }
             drawable.draw(canvas);
         }

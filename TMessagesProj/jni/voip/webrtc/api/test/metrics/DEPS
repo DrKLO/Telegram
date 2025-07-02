@@ -1,0 +1,14 @@
+specific_include_rules = {
+  "metrics_logger_and_exporter\.h": [
+    "+rtc_base/synchronization/mutex.h",
+    "+system_wrappers/include/clock.h",
+  ],
+  "metrics_logger\.h": [
+    "+rtc_base/synchronization/mutex.h",
+    "+system_wrappers/include/clock.h",
+  ],
+  "metrics_accumulator\.h": [
+    "+rtc_base/synchronization/mutex.h",
+    "+rtc_base/thread_annotations.h",
+  ],
+}

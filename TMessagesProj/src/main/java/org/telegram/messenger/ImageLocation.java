@@ -50,6 +50,16 @@ public class ImageLocation {
         return imageLocation;
     }
 
+    public static ImageLocation getForVideoPath(String path) {
+        if (path == null) {
+            return null;
+        }
+        ImageLocation imageLocation = new ImageLocation();
+        imageLocation.path = path;
+        imageLocation.imageType = FileLoader.IMAGE_TYPE_ANIMATION;
+        return imageLocation;
+    }
+
     public static ImageLocation getForSecureDocument(SecureDocument secureDocument) {
         if (secureDocument == null) {
             return null;

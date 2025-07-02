@@ -98,9 +98,20 @@ class RTC_EXPORT VideoDecoder {
   // times, in such case only latest `settings` are in effect.
   virtual bool Configure(const Settings& settings) = 0;
 
+  // TODO(bugs.webrtc.org/15444): Make pure virtual once all subclasses have
+  // migrated to implementing this class.
+  virtual int32_t Decode(const EncodedImage& input_image,
+                         int64_t render_time_ms) {
+    return Decode(input_image, /*missing_frame=*/false, render_time_ms);
+  }
+
+  // TODO(bugs.webrtc.org/15444): Migrate all subclasses to Decode() without
+  // missing_frame and delete this.
   virtual int32_t Decode(const EncodedImage& input_image,
                          bool missing_frames,
-                         int64_t render_time_ms) = 0;
+                         int64_t render_time_ms) {
+    return Decode(input_image, render_time_ms);
+  }
 
   virtual int32_t RegisterDecodeCompleteCallback(
       DecodedImageCallback* callback) = 0;

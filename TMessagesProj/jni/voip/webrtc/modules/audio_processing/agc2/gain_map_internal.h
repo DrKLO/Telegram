@@ -13,8 +13,14 @@
 
 namespace webrtc {
 
-static const int kGainMapSize = 256;
-// Uses parameters: si = 2, sf = 0.25, D = 8/256
+static constexpr int kGainMapSize = 256;
+// Maps input volumes, which are values in the [0, 255] range, to gains in dB.
+// The values below are generated with numpy as follows:
+// SI = 2                        # Initial slope.
+// SF = 0.25                     # Final slope.
+// D = 8/256                     # Quantization factor.
+// x = np.linspace(0, 255, 256)  # Input volumes.
+// y = (SF * x + (SI - SF) * (1 - np.exp(-D*x)) / D - 56).round()
 static const int kGainMap[kGainMapSize] = {
     -56, -54, -52, -50, -48, -47, -45, -43, -42, -40, -38, -37, -35, -34, -33,
     -31, -30, -29, -27, -26, -25, -24, -23, -22, -20, -19, -18, -17, -16, -15,

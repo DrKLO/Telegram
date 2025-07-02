@@ -35,6 +35,7 @@ struct RTC_EXPORT VideoSinkWants {
   VideoSinkWants();
   VideoSinkWants(const VideoSinkWants&);
   ~VideoSinkWants();
+
   // Tells the source whether the sink wants frames with rotation applied.
   // By default, any rotation must be applied by the sink.
   bool rotation_applied = false;
@@ -84,8 +85,12 @@ struct RTC_EXPORT VideoSinkWants {
   // This is the resolution requested by the user using RtpEncodingParameters.
   absl::optional<FrameSize> requested_resolution;
 
-  // `active` : is (any) of the layers/sink(s) active.
-  bool is_active = true;
+  // `is_active` : Is this VideoSinkWants from an encoder that is encoding any
+  // layer. IF YES, it will affect how the VideoAdapter will choose to
+  // prioritize the OnOutputFormatRequest vs. requested_resolution. IF NO,
+  // VideoAdapter consider this VideoSinkWants as a passive listener (e.g a
+  // VideoRenderer or a VideoEncoder that is not currently actively encoding).
+  bool is_active = false;
 
   // This sub-struct contains information computed by VideoBroadcaster
   // that aggregates several VideoSinkWants (and sends them to

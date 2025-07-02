@@ -35,14 +35,9 @@
 #include "pc/rtp_transceiver.h"
 #include "pc/transceiver_list.h"
 #include "pc/usage_pattern.h"
-#include "rtc_base/third_party/sigslot/sigslot.h"
 #include "rtc_base/thread.h"
 #include "rtc_base/thread_annotations.h"
 #include "rtc_base/weak_ptr.h"
-
-namespace cricket {
-class ChannelManager;
-}
 
 namespace rtc {
 class Thread;
@@ -208,8 +203,12 @@ class RtpTransmissionManager : public RtpSenderBase::SetStreamsObserver {
 
   // Plan B helpers for getting the voice/video media channels for the single
   // audio/video transceiver, if it exists.
-  cricket::VoiceMediaChannel* voice_media_channel() const;
-  cricket::VideoMediaChannel* video_media_channel() const;
+  cricket::VoiceMediaSendChannelInterface* voice_media_send_channel() const;
+  cricket::VideoMediaSendChannelInterface* video_media_send_channel() const;
+  cricket::VoiceMediaReceiveChannelInterface* voice_media_receive_channel()
+      const;
+  cricket::VideoMediaReceiveChannelInterface* video_media_receive_channel()
+      const;
 
  private:
   rtc::Thread* signaling_thread() const { return context_->signaling_thread(); }

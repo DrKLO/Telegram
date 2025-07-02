@@ -30,8 +30,8 @@
 #include "modules/rtp_rtcp/include/remote_ntp_time_estimator.h"
 #include "modules/rtp_rtcp/source/rtp_packet_received.h"
 #include "modules/rtp_rtcp/source/rtp_rtcp_interface.h"
+#include "rtc_base/numerics/sequence_number_unwrapper.h"
 #include "rtc_base/synchronization/mutex.h"
-#include "rtc_base/time_utils.h"
 
 namespace webrtc {
 
@@ -137,7 +137,7 @@ class AudioIngress : public AudioMixer::Source {
   // per payload type set when caller set via SetReceiveCodecs.
   std::map<int, int> receive_codec_info_ RTC_GUARDED_BY(lock_);
 
-  rtc::TimestampWrapAroundHandler timestamp_wrap_handler_ RTC_GUARDED_BY(lock_);
+  RtpTimestampUnwrapper timestamp_wrap_handler_ RTC_GUARDED_BY(lock_);
 };
 
 }  // namespace webrtc

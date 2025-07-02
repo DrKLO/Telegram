@@ -65,7 +65,7 @@ class AudioState : public webrtc::AudioState {
   void UpdateNullAudioPollerState() RTC_RUN_ON(&thread_checker_);
 
   SequenceChecker thread_checker_;
-  SequenceChecker process_thread_checker_;
+  SequenceChecker process_thread_checker_{SequenceChecker::kDetached};
   const webrtc::AudioState::Config config_;
   bool recording_enabled_ = true;
   bool playout_enabled_ = true;

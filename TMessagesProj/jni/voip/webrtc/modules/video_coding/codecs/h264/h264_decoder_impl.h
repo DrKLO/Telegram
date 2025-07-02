@@ -17,6 +17,10 @@
 // #ifdef unless needed and tested.
 #ifdef WEBRTC_USE_H264
 
+#if defined(WEBRTC_WIN) && !defined(__clang__)
+#error "See: bugs.webrtc.org/9213#c13."
+#endif
+
 #include <memory>
 
 #include "modules/video_coding/codecs/h264/include/h264.h"

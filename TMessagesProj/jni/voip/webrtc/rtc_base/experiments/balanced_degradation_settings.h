@@ -96,9 +96,9 @@ class BalancedDegradationSettings {
 
     int pixels = 0;  // Video frame size.
     // If the frame size is less than or equal to `pixels`:
-    int fps = 0;   // Min framerate to be used.
-    int kbps = 0;  // Min bitrate needed to adapt up (resolution/fps).
-    int kbps_res = 0;           // Min bitrate needed to adapt up in resolution.
+    int fps = 0;       // Min framerate to be used.
+    int kbps = 0;      // Min bitrate needed to adapt up (resolution/fps).
+    int kbps_res = 0;  // Min bitrate needed to adapt up in resolution.
     int fps_diff = kNoFpsDiff;  // Min fps reduction needed (input fps - `fps`)
                                 // w/o triggering a new subsequent downgrade
                                 // check.

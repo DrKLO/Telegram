@@ -14,6 +14,7 @@
 #include <stdint.h>
 
 #include "absl/types/optional.h"
+#include "api/units/time_delta.h"
 
 namespace webrtc {
 
@@ -41,6 +42,10 @@ class CaptureClockOffsetUpdater {
   //
   // Note that the value must be in Q32.32-formatted fixed-point seconds.
   void SetRemoteToLocalClockOffset(absl::optional<int64_t> offset_q32x32);
+
+  // Converts a signed Q32.32-formatted fixed-point to a TimeDelta.
+  static absl::optional<TimeDelta> ConvertsToTimeDela(
+      absl::optional<int64_t> q32x32);
 
  private:
   absl::optional<int64_t> remote_to_local_clock_offset_;

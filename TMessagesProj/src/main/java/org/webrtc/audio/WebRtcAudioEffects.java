@@ -22,7 +22,7 @@ import org.webrtc.Logging;
 // This class wraps control of three different platform effects. Supported
 // effects are: AcousticEchoCanceler (AEC) and NoiseSuppressor (NS).
 // Calling enable() will active all effects that are
-// supported by the device if the corresponding |shouldEnableXXX| member is set.
+// supported by the device if the corresponding `shouldEnableXXX` member is set.
 class WebRtcAudioEffects {
   private static final boolean DEBUG = false;
 
@@ -54,15 +54,11 @@ class WebRtcAudioEffects {
   // Returns true if all conditions for supporting HW Acoustic Echo Cancellation (AEC) are
   // fulfilled.
   public static boolean isAcousticEchoCancelerSupported() {
-    if (Build.VERSION.SDK_INT < 18)
-      return false;
     return isEffectTypeAvailable(AudioEffect.EFFECT_TYPE_AEC, AOSP_ACOUSTIC_ECHO_CANCELER);
   }
 
   // Returns true if all conditions for supporting HW Noise Suppression (NS) are fulfilled.
   public static boolean isNoiseSuppressorSupported() {
-    if (Build.VERSION.SDK_INT < 18)
-      return false;
     return isEffectTypeAvailable(AudioEffect.EFFECT_TYPE_NS, AOSP_NOISE_SUPPRESSOR);
   }
 
@@ -71,7 +67,7 @@ class WebRtcAudioEffects {
   }
 
   // Call this method to enable or disable the platform AEC. It modifies
-  // |shouldEnableAec| which is used in enable() where the actual state
+  // `shouldEnableAec` which is used in enable() where the actual state
   // of the AEC effect is modified. Returns true if HW AEC is supported and
   // false otherwise.
   public boolean setAEC(boolean enable) {
@@ -90,7 +86,7 @@ class WebRtcAudioEffects {
   }
 
   // Call this method to enable or disable the platform NS. It modifies
-  // |shouldEnableNs| which is used in enable() where the actual state
+  // `shouldEnableNs` which is used in enable() where the actual state
   // of the NS effect is modified. Returns true if HW NS is supported and
   // false otherwise.
   public boolean setNS(boolean enable) {
@@ -106,6 +102,19 @@ class WebRtcAudioEffects {
     }
     shouldEnableNs = enable;
     return true;
+  }
+
+  // Toggles an existing NoiseSuppressor to be enabled or disabled.
+  // Returns true if the toggling was successful, otherwise false is returned (this is also the case
+  // if no NoiseSuppressor was present).
+  public boolean toggleNS(boolean enable) {
+    if (ns == null) {
+      Logging.e(TAG, "Attempting to enable or disable nonexistent NoiseSuppressor.");
+      return false;
+    }
+    Logging.d(TAG, "toggleNS(" + enable + ")");
+    boolean toggling_succeeded = ns.setEnabled(enable) == AudioEffect.SUCCESS;
+    return toggling_succeeded;
   }
 
   public void enable(int audioSession) {
@@ -180,7 +189,7 @@ class WebRtcAudioEffects {
     }
   }
 
-  // Returns true for effect types in |type| that are of "VoIP" types:
+  // Returns true for effect types in `type` that are of "VoIP" types:
   // Acoustic Echo Canceler (AEC) or Automatic Gain Control (AGC) or
   // Noise Suppressor (NS). Note that, an extra check for support is needed
   // in each comparison since some devices includes effects in the
@@ -188,9 +197,6 @@ class WebRtcAudioEffects {
   // As an example: Samsung Galaxy S6 includes an AGC in the descriptor but
   // AutomaticGainControl.isAvailable() returns false.
   private boolean effectTypeIsVoIP(UUID type) {
-    if (Build.VERSION.SDK_INT < 18)
-      return false;
-
     return (AudioEffect.EFFECT_TYPE_AEC.equals(type) && isAcousticEchoCancelerSupported())
         || (AudioEffect.EFFECT_TYPE_NS.equals(type) && isNoiseSuppressorSupported());
   }
@@ -217,7 +223,7 @@ class WebRtcAudioEffects {
   }
 
   // Returns true if an effect of the specified type is available. Functionally
-  // equivalent to (NoiseSuppressor|AutomaticGainControl|...).isAvailable(), but
+  // equivalent to (NoiseSuppressor`AutomaticGainControl`...).isAvailable(), but
   // faster as it avoids the expensive OS call to enumerate effects.
   private static boolean isEffectTypeAvailable(UUID effectType, UUID blockListedUuid) {
     Descriptor[] effects = getAvailableEffects();

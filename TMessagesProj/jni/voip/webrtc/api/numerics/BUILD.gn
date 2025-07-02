@@ -1,0 +1,41 @@
+# Copyright (c) 2020 The WebRTC project authors. All Rights Reserved.
+#
+# Use of this source code is governed by a BSD-style license
+# that can be found in the LICENSE file in the root of the source
+# tree. An additional intellectual property rights grant can be found
+# in the file PATENTS.  All contributing project authors may
+# be found in the AUTHORS file in the root of the source tree.
+
+import("../../webrtc.gni")
+
+rtc_library("numerics") {
+  visibility = [ "*" ]
+
+  sources = [
+    "samples_stats_counter.cc",
+    "samples_stats_counter.h",
+  ]
+  deps = [
+    "..:array_view",
+    "../../rtc_base:checks",
+    "../../rtc_base:rtc_numerics",
+    "../../rtc_base:timeutils",
+    "../units:timestamp",
+  ]
+  absl_deps = [ "//third_party/abseil-cpp/absl/algorithm:container" ]
+}
+
+if (rtc_include_tests) {
+  rtc_library("numerics_unittests") {
+    visibility = [ "*" ]
+    testonly = true
+
+    sources = [ "samples_stats_counter_unittest.cc" ]
+
+    deps = [
+      ":numerics",
+      "../../test:test_support",
+    ]
+    absl_deps = [ "//third_party/abseil-cpp/absl/algorithm:container" ]
+  }
+}

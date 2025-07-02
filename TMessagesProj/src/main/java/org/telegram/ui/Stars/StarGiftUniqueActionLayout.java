@@ -184,6 +184,8 @@ public class StarGiftUniqueActionLayout {
             title = new Text(gift.title, 14, AndroidUtilities.bold());
         } else if (action.peer != null || UserObject.isService(messageObject.getDialogId())) {
             title = new Text(LocaleController.getString(R.string.Gift2UniqueTitle2), 14, AndroidUtilities.bold());
+        } else if (messageObject.getDialogId() == UserConfig.getInstance(currentAccount).getClientUserId()) {
+            title = new Text(LocaleController.getString(R.string.Gift2ActionSelfTitle), 14, AndroidUtilities.bold());
         } else {
             title = new Text(LocaleController.formatString(R.string.Gift2UniqueTitle, fromName), 14, AndroidUtilities.bold());
         }

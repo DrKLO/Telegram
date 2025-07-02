@@ -68,7 +68,6 @@ class GainControlImpl : public GainControl {
 
   std::unique_ptr<ApmDataDumper> data_dumper_;
 
-  const bool use_legacy_gain_applier_;
   Mode mode_;
   int minimum_capture_level_;
   int maximum_capture_level_;

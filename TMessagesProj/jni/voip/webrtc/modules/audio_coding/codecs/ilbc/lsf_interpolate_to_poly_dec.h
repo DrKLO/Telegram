@@ -32,6 +32,6 @@ void WebRtcIlbcfix_LspInterpolate2PolyDec(
     int16_t coef,  /* (i) weighting coefficient to use between
                                    lsf1 and lsf2 Q14 */
     int16_t length /* (i) length of coefficient vectors */
-    );
+);
 
 #endif

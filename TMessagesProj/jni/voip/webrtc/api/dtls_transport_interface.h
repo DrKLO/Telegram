@@ -16,9 +16,9 @@
 
 #include "absl/types/optional.h"
 #include "api/ice_transport_interface.h"
+#include "api/ref_count.h"
 #include "api/rtc_error.h"
 #include "api/scoped_refptr.h"
-#include "rtc_base/ref_count.h"
 #include "rtc_base/ssl_certificate.h"
 #include "rtc_base/system/rtc_export.h"
 
@@ -107,7 +107,7 @@ class DtlsTransportObserverInterface {
 // accessed on that thread, except for functions explicitly marked otherwise.
 // References can be held by other threads, and destruction can therefore
 // be initiated by other threads.
-class DtlsTransportInterface : public rtc::RefCountInterface {
+class DtlsTransportInterface : public webrtc::RefCountInterface {
  public:
   // Returns a pointer to the ICE transport that is owned by the DTLS transport.
   virtual rtc::scoped_refptr<IceTransportInterface> ice_transport() = 0;

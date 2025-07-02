@@ -148,7 +148,8 @@ int32_t DeviceInfoImpl::GetBestMatchedCapability(
                     (capability.videoType == requested.videoType ||
                      capability.videoType == VideoType::kI420 ||
                      capability.videoType == VideoType::kYUY2 ||
-                     capability.videoType == VideoType::kYV12)) {
+                     capability.videoType == VideoType::kYV12 ||
+                     capability.videoType == VideoType::kNV12)) {
                   bestVideoType = capability.videoType;
                   bestformatIndex = tmp;
                 }

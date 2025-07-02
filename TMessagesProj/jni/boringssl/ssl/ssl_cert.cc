@@ -1,116 +1,17 @@
-/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
- * All rights reserved.
- *
- * This package is an SSL implementation written
- * by Eric Young (eay@cryptsoft.com).
- * The implementation was written so as to conform with Netscapes SSL.
- *
- * This library is free for commercial and non-commercial use as long as
- * the following conditions are aheared to.  The following conditions
- * apply to all code found in this distribution, be it the RC4, RSA,
- * lhash, DES, etc., code; not just the SSL code.  The SSL documentation
- * included with this distribution is covered by the same copyright terms
- * except that the holder is Tim Hudson (tjh@cryptsoft.com).
- *
- * Copyright remains Eric Young's, and as such any Copyright notices in
- * the code are not to be removed.
- * If this package is used in a product, Eric Young should be given attribution
- * as the author of the parts of the library used.
- * This can be in the form of a textual message at program startup or
- * in documentation (online or textual) provided with the package.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- * 1. Redistributions of source code must retain the copyright
- *    notice, this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
- * 3. All advertising materials mentioning features or use of this software
- *    must display the following acknowledgement:
- *    "This product includes cryptographic software written by
- *     Eric Young (eay@cryptsoft.com)"
- *    The word 'cryptographic' can be left out if the rouines from the library
- *    being used are not cryptographic related :-).
- * 4. If you include any Windows specific code (or a derivative thereof) from
- *    the apps directory (application code) you must include an acknowledgement:
- *    "This product includes software written by Tim Hudson (tjh@cryptsoft.com)"
- *
- * THIS SOFTWARE IS PROVIDED BY ERIC YOUNG ``AS IS'' AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
- * SUCH DAMAGE.
- *
- * The licence and distribution terms for any publically available version or
- * derivative of this code cannot be changed.  i.e. this code cannot simply be
- * copied and put under another distribution licence
- * [including the GNU Public Licence.]
- */
-/* ====================================================================
- * Copyright (c) 1998-2007 The OpenSSL Project.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- *
- * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- *
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- *
- * 3. All advertising materials mentioning features or use of this
- *    software must display the following acknowledgment:
- *    "This product includes software developed by the OpenSSL Project
- *    for use in the OpenSSL Toolkit. (http://www.openssl.org/)"
- *
- * 4. The names "OpenSSL Toolkit" and "OpenSSL Project" must not be used to
- *    endorse or promote products derived from this software without
- *    prior written permission. For written permission, please contact
- *    openssl-core@openssl.org.
- *
- * 5. Products derived from this software may not be called "OpenSSL"
- *    nor may "OpenSSL" appear in their names without prior written
- *    permission of the OpenSSL Project.
- *
- * 6. Redistributions of any form whatsoever must retain the following
- *    acknowledgment:
- *    "This product includes software developed by the OpenSSL Project
- *    for use in the OpenSSL Toolkit (http://www.openssl.org/)"
- *
- * THIS SOFTWARE IS PROVIDED BY THE OpenSSL PROJECT ``AS IS'' AND ANY
- * EXPRESSED OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
- * PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE OpenSSL PROJECT OR
- * ITS CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
- * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
- * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
- * OF THE POSSIBILITY OF SUCH DAMAGE.
- * ====================================================================
- *
- * This product includes cryptographic software written by Eric Young
- * (eay@cryptsoft.com).  This product includes software written by Tim
- * Hudson (tjh@cryptsoft.com).
- *
- */
-/* ====================================================================
- * Copyright 2002 Sun Microsystems, Inc. ALL RIGHTS RESERVED.
- * ECC cipher suite support in OpenSSL originally developed by
- * SUN MICROSYSTEMS, INC., and contributed to the OpenSSL project. */
+// Copyright 1995-2016 The OpenSSL Project Authors. All Rights Reserved.
+// Copyright (c) 2002, Oracle and/or its affiliates. All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 #include <openssl/ssl.h>
 
@@ -121,7 +22,6 @@
 #include <utility>
 
 #include <openssl/bn.h>
-#include <openssl/buf.h>
 #include <openssl/bytestring.h>
 #include <openssl/ec_key.h>
 #include <openssl/err.h>
@@ -136,17 +36,10 @@
 BSSL_NAMESPACE_BEGIN
 
 CERT::CERT(const SSL_X509_METHOD *x509_method_arg)
-    : x509_method(x509_method_arg) {}
+    : legacy_credential(MakeUnique<SSL_CREDENTIAL>(SSLCredentialType::kX509)),
+      x509_method(x509_method_arg) {}
 
-CERT::~CERT() {
-  ssl_cert_clear_certs(this);
-  x509_method->cert_free(this);
-}
-
-static CRYPTO_BUFFER *buffer_up_ref(CRYPTO_BUFFER *buffer) {
-  CRYPTO_BUFFER_up_ref(buffer);
-  return buffer;
-}
+CERT::~CERT() { x509_method->cert_free(this); }
 
 UniquePtr<CERT> ssl_cert_dup(CERT *cert) {
   UniquePtr<CERT> ret = MakeUnique<CERT>(cert->x509_method);
@@ -154,18 +47,17 @@ UniquePtr<CERT> ssl_cert_dup(CERT *cert) {
     return nullptr;
   }
 
-  if (cert->chain) {
-    ret->chain.reset(sk_CRYPTO_BUFFER_deep_copy(
-        cert->chain.get(), buffer_up_ref, CRYPTO_BUFFER_free));
-    if (!ret->chain) {
+  // TODO(crbug.com/boringssl/431): This should just be |CopyFrom|.
+  for (const auto &cred : cert->credentials) {
+    if (!ret->credentials.Push(UpRef(cred))) {
       return nullptr;
     }
   }
 
-  ret->privatekey = UpRef(cert->privatekey);
-  ret->key_method = cert->key_method;
-
-  if (!ret->sigalgs.CopyFrom(cert->sigalgs)) {
+  // |legacy_credential| is mutable, so it must be copied. We cannot simply
+  // bump the reference count.
+  ret->legacy_credential = cert->legacy_credential->Dup();
+  if (ret->legacy_credential == nullptr) {
     return nullptr;
   }
 
@@ -174,40 +66,8 @@ UniquePtr<CERT> ssl_cert_dup(CERT *cert) {
 
   ret->x509_method->cert_dup(ret.get(), cert);
 
-  ret->signed_cert_timestamp_list = UpRef(cert->signed_cert_timestamp_list);
-  ret->ocsp_response = UpRef(cert->ocsp_response);
-
-  ret->sid_ctx_length = cert->sid_ctx_length;
-  OPENSSL_memcpy(ret->sid_ctx, cert->sid_ctx, sizeof(ret->sid_ctx));
-
-  if (cert->dc) {
-    ret->dc = cert->dc->Dup();
-    if (!ret->dc) {
-       return nullptr;
-    }
-  }
-
-  ret->dc_privatekey = UpRef(cert->dc_privatekey);
-  ret->dc_key_method = cert->dc_key_method;
-
+  ret->sid_ctx = cert->sid_ctx;
   return ret;
-}
-
-// Free up and clear all certificates and chains
-void ssl_cert_clear_certs(CERT *cert) {
-  if (cert == NULL) {
-    return;
-  }
-
-  cert->x509_method->cert_clear(cert);
-
-  cert->chain.reset();
-  cert->privatekey.reset();
-  cert->key_method = nullptr;
-
-  cert->dc.reset();
-  cert->dc_privatekey.reset();
-  cert->dc_key_method = nullptr;
 }
 
 static void ssl_cert_set_cert_cb(CERT *cert, int (*cb)(SSL *ssl, void *arg),
@@ -216,55 +76,10 @@ static void ssl_cert_set_cert_cb(CERT *cert, int (*cb)(SSL *ssl, void *arg),
   cert->cert_cb_arg = arg;
 }
 
-enum leaf_cert_and_privkey_result_t {
-  leaf_cert_and_privkey_error,
-  leaf_cert_and_privkey_ok,
-  leaf_cert_and_privkey_mismatch,
-};
-
-// check_leaf_cert_and_privkey checks whether the certificate in |leaf_buffer|
-// and the private key in |privkey| are suitable and coherent. It returns
-// |leaf_cert_and_privkey_error| and pushes to the error queue if a problem is
-// found. If the certificate and private key are valid, but incoherent, it
-// returns |leaf_cert_and_privkey_mismatch|. Otherwise it returns
-// |leaf_cert_and_privkey_ok|.
-static enum leaf_cert_and_privkey_result_t check_leaf_cert_and_privkey(
-    CRYPTO_BUFFER *leaf_buffer, EVP_PKEY *privkey) {
-  CBS cert_cbs;
-  CRYPTO_BUFFER_init_CBS(leaf_buffer, &cert_cbs);
-  UniquePtr<EVP_PKEY> pubkey = ssl_cert_parse_pubkey(&cert_cbs);
-  if (!pubkey) {
-    OPENSSL_PUT_ERROR(SSL, SSL_R_DECODE_ERROR);
-    return leaf_cert_and_privkey_error;
-  }
-
-  if (!ssl_is_key_type_supported(pubkey->type)) {
-    OPENSSL_PUT_ERROR(SSL, SSL_R_UNKNOWN_CERTIFICATE_TYPE);
-    return leaf_cert_and_privkey_error;
-  }
-
-  // An ECC certificate may be usable for ECDH or ECDSA. We only support ECDSA
-  // certificates, so sanity-check the key usage extension.
-  if (pubkey->type == EVP_PKEY_EC &&
-      !ssl_cert_check_key_usage(&cert_cbs, key_usage_digital_signature)) {
-    OPENSSL_PUT_ERROR(SSL, SSL_R_UNKNOWN_CERTIFICATE_TYPE);
-    return leaf_cert_and_privkey_error;
-  }
-
-  if (privkey != NULL &&
-      // Sanity-check that the private key and the certificate match.
-      !ssl_compare_public_and_private_key(pubkey.get(), privkey)) {
-    ERR_clear_error();
-    return leaf_cert_and_privkey_mismatch;
-  }
-
-  return leaf_cert_and_privkey_ok;
-}
-
 static int cert_set_chain_and_key(
     CERT *cert, CRYPTO_BUFFER *const *certs, size_t num_certs,
     EVP_PKEY *privkey, const SSL_PRIVATE_KEY_METHOD *privkey_method) {
-  if (num_certs == 0 ||
+  if (num_certs == 0 ||  //
       (privkey == NULL && privkey_method == NULL)) {
     OPENSSL_PUT_ERROR(SSL, ERR_R_PASSED_NULL_PARAMETER);
     return 0;
@@ -275,73 +90,33 @@ static int cert_set_chain_and_key(
     return 0;
   }
 
-  switch (check_leaf_cert_and_privkey(certs[0], privkey)) {
-    case leaf_cert_and_privkey_error:
-      return 0;
-    case leaf_cert_and_privkey_mismatch:
-      OPENSSL_PUT_ERROR(SSL, SSL_R_CERTIFICATE_AND_PRIVATE_KEY_MISMATCH);
-      return 0;
-    case leaf_cert_and_privkey_ok:
-      break;
-  }
-
-  UniquePtr<STACK_OF(CRYPTO_BUFFER)> certs_sk(sk_CRYPTO_BUFFER_new_null());
-  if (!certs_sk) {
+  cert->legacy_credential->ClearCertAndKey();
+  if (!SSL_CREDENTIAL_set1_cert_chain(cert->legacy_credential.get(), certs,
+                                      num_certs)) {
     return 0;
   }
 
-  for (size_t i = 0; i < num_certs; i++) {
-    if (!PushToStack(certs_sk.get(), UpRef(certs[i]))) {
-      return 0;
-    }
-  }
+  cert->x509_method->cert_flush_cached_leaf(cert);
+  cert->x509_method->cert_flush_cached_chain(cert);
 
-  cert->privatekey = UpRef(privkey);
-  cert->key_method = privkey_method;
-
-  cert->chain = std::move(certs_sk);
-  return 1;
+  return privkey != nullptr
+             ? SSL_CREDENTIAL_set1_private_key(cert->legacy_credential.get(),
+                                               privkey)
+             : SSL_CREDENTIAL_set_private_key_method(
+                   cert->legacy_credential.get(), privkey_method);
 }
 
 bool ssl_set_cert(CERT *cert, UniquePtr<CRYPTO_BUFFER> buffer) {
-  switch (check_leaf_cert_and_privkey(buffer.get(), cert->privatekey.get())) {
-    case leaf_cert_and_privkey_error:
-      return false;
-    case leaf_cert_and_privkey_mismatch:
-      // don't fail for a cert/key mismatch, just free current private key
-      // (when switching to a different cert & key, first this function should
-      // be used, then |ssl_set_pkey|.
-      cert->privatekey.reset();
-      break;
-    case leaf_cert_and_privkey_ok:
-      break;
+  // Don't fail for a cert/key mismatch, just free the current private key.
+  // (When switching to a different keypair, the caller should switch the
+  // certificate, then the key.)
+  if (!cert->legacy_credential->SetLeafCert(std::move(buffer),
+                                            /*discard_key_on_mismatch=*/true)) {
+    return false;
   }
 
   cert->x509_method->cert_flush_cached_leaf(cert);
-
-  if (cert->chain != nullptr) {
-    CRYPTO_BUFFER_free(sk_CRYPTO_BUFFER_value(cert->chain.get(), 0));
-    sk_CRYPTO_BUFFER_set(cert->chain.get(), 0, buffer.release());
-    return true;
-  }
-
-  cert->chain.reset(sk_CRYPTO_BUFFER_new_null());
-  if (cert->chain == nullptr) {
-    return false;
-  }
-
-  if (!PushToStack(cert->chain.get(), std::move(buffer))) {
-    cert->chain.reset();
-    return false;
-  }
-
   return true;
-}
-
-bool ssl_has_certificate(const SSL_HANDSHAKE *hs) {
-  return hs->config->cert->chain != nullptr &&
-         sk_CRYPTO_BUFFER_value(hs->config->cert->chain.get(), 0) != nullptr &&
-         ssl_has_private_key(hs);
 }
 
 bool ssl_parse_cert_chain(uint8_t *out_alert,
@@ -366,7 +141,6 @@ bool ssl_parse_cert_chain(uint8_t *out_alert,
   UniquePtr<STACK_OF(CRYPTO_BUFFER)> chain(sk_CRYPTO_BUFFER_new_null());
   if (!chain) {
     *out_alert = SSL_AD_INTERNAL_ERROR;
-    OPENSSL_PUT_ERROR(SSL, ERR_R_MALLOC_FAILURE);
     return false;
   }
 
@@ -395,10 +169,9 @@ bool ssl_parse_cert_chain(uint8_t *out_alert,
 
     UniquePtr<CRYPTO_BUFFER> buf(
         CRYPTO_BUFFER_new_from_CBS(&certificate, pool));
-    if (!buf ||
+    if (!buf ||  //
         !PushToStack(chain.get(), std::move(buf))) {
       *out_alert = SSL_AD_INTERNAL_ERROR;
-      OPENSSL_PUT_ERROR(SSL, ERR_R_MALLOC_FAILURE);
       return false;
     }
   }
@@ -406,33 +179,6 @@ bool ssl_parse_cert_chain(uint8_t *out_alert,
   *out_chain = std::move(chain);
   *out_pubkey = std::move(pubkey);
   return true;
-}
-
-bool ssl_add_cert_chain(SSL_HANDSHAKE *hs, CBB *cbb) {
-  if (!ssl_has_certificate(hs)) {
-    return CBB_add_u24(cbb, 0);
-  }
-
-  CBB certs;
-  if (!CBB_add_u24_length_prefixed(cbb, &certs)) {
-    OPENSSL_PUT_ERROR(SSL, ERR_R_INTERNAL_ERROR);
-    return false;
-  }
-
-  STACK_OF(CRYPTO_BUFFER) *chain = hs->config->cert->chain.get();
-  for (size_t i = 0; i < sk_CRYPTO_BUFFER_num(chain); i++) {
-    CRYPTO_BUFFER *buffer = sk_CRYPTO_BUFFER_value(chain, i);
-    CBB child;
-    if (!CBB_add_u24_length_prefixed(&certs, &child) ||
-        !CBB_add_bytes(&child, CRYPTO_BUFFER_data(buffer),
-                       CRYPTO_BUFFER_len(buffer)) ||
-        !CBB_flush(&certs)) {
-      OPENSSL_PUT_ERROR(SSL, ERR_R_INTERNAL_ERROR);
-      return false;
-    }
-  }
-
-  return CBB_flush(cbb);
 }
 
 // ssl_cert_skip_to_spki parses a DER-encoded, X.509 certificate from |in| and
@@ -457,13 +203,14 @@ static bool ssl_cert_skip_to_spki(const CBS *in, CBS *out_tbs_cert) {
   CBS buf = *in;
 
   CBS toplevel;
-  if (!CBS_get_asn1(&buf, &toplevel, CBS_ASN1_SEQUENCE) ||
-      CBS_len(&buf) != 0 ||
-      !CBS_get_asn1(&toplevel, out_tbs_cert, CBS_ASN1_SEQUENCE) ||
+  if (!CBS_get_asn1(&buf, &toplevel, CBS_ASN1_SEQUENCE) ||          //
+      CBS_len(&buf) != 0 ||                                         //
+      !CBS_get_asn1(&toplevel, out_tbs_cert, CBS_ASN1_SEQUENCE) ||  //
       // version
       !CBS_get_optional_asn1(
           out_tbs_cert, NULL, NULL,
-          CBS_ASN1_CONSTRUCTED | CBS_ASN1_CONTEXT_SPECIFIC | 0) ||
+          CBS_ASN1_CONSTRUCTED | CBS_ASN1_CONTEXT_SPECIFIC | 0) ||  //
+
       // serialNumber
       !CBS_get_asn1(out_tbs_cert, NULL, CBS_ASN1_INTEGER) ||
       // signature algorithm
@@ -478,6 +225,38 @@ static bool ssl_cert_skip_to_spki(const CBS *in, CBS *out_tbs_cert) {
   }
 
   return true;
+}
+
+bool ssl_cert_extract_issuer(const CBS *in, CBS *out_dn) {
+  CBS buf = *in;
+
+  CBS toplevel;
+  CBS cert;
+  if (!CBS_get_asn1(&buf, &toplevel, CBS_ASN1_SEQUENCE) ||   //
+      CBS_len(&buf) != 0 ||                                  //
+      !CBS_get_asn1(&toplevel, &cert, CBS_ASN1_SEQUENCE) ||  //
+      // version
+      !CBS_get_optional_asn1(
+          &cert, NULL, NULL,
+          CBS_ASN1_CONSTRUCTED | CBS_ASN1_CONTEXT_SPECIFIC | 0) ||  //
+      // serialNumber
+      !CBS_get_asn1(&cert, NULL, CBS_ASN1_INTEGER) ||  //
+      // signature algorithm
+      !CBS_get_asn1(&cert, NULL, CBS_ASN1_SEQUENCE) ||  //
+      // issuer
+      !CBS_get_asn1_element(&cert, out_dn, CBS_ASN1_SEQUENCE)) {
+    return false;
+  }
+  return true;
+}
+
+bool ssl_cert_matches_issuer(const CBS *in, const CBS *dn) {
+  CBS issuer;
+
+  if (!ssl_cert_extract_issuer(in, &issuer)) {
+    return false;
+  }
+  return CBS_mem_equal(&issuer, CBS_data(dn), CBS_len(dn));
 }
 
 UniquePtr<EVP_PKEY> ssl_cert_parse_pubkey(const CBS *in) {
@@ -516,30 +295,6 @@ bool ssl_compare_public_and_private_key(const EVP_PKEY *pubkey,
   return false;
 }
 
-bool ssl_cert_check_private_key(const CERT *cert, const EVP_PKEY *privkey) {
-  if (privkey == nullptr) {
-    OPENSSL_PUT_ERROR(SSL, SSL_R_NO_PRIVATE_KEY_ASSIGNED);
-    return false;
-  }
-
-  if (cert->chain == nullptr ||
-      sk_CRYPTO_BUFFER_value(cert->chain.get(), 0) == nullptr) {
-    OPENSSL_PUT_ERROR(SSL, SSL_R_NO_CERTIFICATE_ASSIGNED);
-    return false;
-  }
-
-  CBS cert_cbs;
-  CRYPTO_BUFFER_init_CBS(sk_CRYPTO_BUFFER_value(cert->chain.get(), 0),
-                         &cert_cbs);
-  UniquePtr<EVP_PKEY> pubkey = ssl_cert_parse_pubkey(&cert_cbs);
-  if (!pubkey) {
-    OPENSSL_PUT_ERROR(X509, X509_R_UNKNOWN_KEY_TYPE);
-    return false;
-  }
-
-  return ssl_compare_public_and_private_key(pubkey.get(), privkey);
-}
-
 bool ssl_cert_check_key_usage(const CBS *in, enum ssl_key_usage_t bit) {
   CBS buf = *in;
 
@@ -549,13 +304,11 @@ bool ssl_cert_check_key_usage(const CBS *in, enum ssl_key_usage_t bit) {
       // subjectPublicKeyInfo
       !CBS_get_asn1(&tbs_cert, NULL, CBS_ASN1_SEQUENCE) ||
       // issuerUniqueID
-      !CBS_get_optional_asn1(
-          &tbs_cert, NULL, NULL,
-          CBS_ASN1_CONSTRUCTED | CBS_ASN1_CONTEXT_SPECIFIC | 1) ||
+      !CBS_get_optional_asn1(&tbs_cert, NULL, NULL,
+                             CBS_ASN1_CONTEXT_SPECIFIC | 1) ||
       // subjectUniqueID
-      !CBS_get_optional_asn1(
-          &tbs_cert, NULL, NULL,
-          CBS_ASN1_CONSTRUCTED | CBS_ASN1_CONTEXT_SPECIFIC | 2) ||
+      !CBS_get_optional_asn1(&tbs_cert, NULL, NULL,
+                             CBS_ASN1_CONTEXT_SPECIFIC | 2) ||
       !CBS_get_optional_asn1(
           &tbs_cert, &outer_extensions, &has_extensions,
           CBS_ASN1_CONSTRUCTED | CBS_ASN1_CONTEXT_SPECIFIC | 3)) {
@@ -618,15 +371,14 @@ bool ssl_cert_check_key_usage(const CBS *in, enum ssl_key_usage_t bit) {
   return true;
 }
 
-UniquePtr<STACK_OF(CRYPTO_BUFFER)> ssl_parse_client_CA_list(SSL *ssl,
-                                                            uint8_t *out_alert,
-                                                            CBS *cbs) {
+UniquePtr<STACK_OF(CRYPTO_BUFFER)> SSL_parse_CA_list(SSL *ssl,
+                                                     uint8_t *out_alert,
+                                                     CBS *cbs) {
   CRYPTO_BUFFER_POOL *const pool = ssl->ctx->pool;
 
   UniquePtr<STACK_OF(CRYPTO_BUFFER)> ret(sk_CRYPTO_BUFFER_new_null());
   if (!ret) {
     *out_alert = SSL_AD_INTERNAL_ERROR;
-    OPENSSL_PUT_ERROR(SSL, ERR_R_MALLOC_FAILURE);
     return nullptr;
   }
 
@@ -647,15 +399,14 @@ UniquePtr<STACK_OF(CRYPTO_BUFFER)> ssl_parse_client_CA_list(SSL *ssl,
 
     UniquePtr<CRYPTO_BUFFER> buffer(
         CRYPTO_BUFFER_new_from_CBS(&distinguished_name, pool));
-    if (!buffer ||
+    if (!buffer ||  //
         !PushToStack(ret.get(), std::move(buffer))) {
       *out_alert = SSL_AD_INTERNAL_ERROR;
-      OPENSSL_PUT_ERROR(SSL, ERR_R_MALLOC_FAILURE);
       return nullptr;
     }
   }
 
-  if (!ssl->ctx->x509_method->check_client_CA_list(ret.get())) {
+  if (!ssl->ctx->x509_method->check_CA_list(ret.get())) {
     *out_alert = SSL_AD_DECODE_ERROR;
     OPENSSL_PUT_ERROR(SSL, SSL_R_DECODE_ERROR);
     return nullptr;
@@ -664,28 +415,30 @@ UniquePtr<STACK_OF(CRYPTO_BUFFER)> ssl_parse_client_CA_list(SSL *ssl,
   return ret;
 }
 
-bool ssl_has_client_CAs(const SSL_CONFIG *cfg) {
-  const STACK_OF(CRYPTO_BUFFER) *names = cfg->client_CA.get();
-  if (names == nullptr) {
-    names = cfg->ssl->ctx->client_CA.get();
+static bool CA_names_non_empty(const STACK_OF(CRYPTO_BUFFER) *config_names,
+                               const STACK_OF(CRYPTO_BUFFER) *ctx_names) {
+  if (config_names != nullptr) {
+    return sk_CRYPTO_BUFFER_num(config_names) > 0;
   }
-  if (names == nullptr) {
-    return false;
+  if (ctx_names != nullptr) {
+    return sk_CRYPTO_BUFFER_num(ctx_names) > 0;
   }
-  return sk_CRYPTO_BUFFER_num(names) > 0;
+  return false;
 }
 
-bool ssl_add_client_CA_list(SSL_HANDSHAKE *hs, CBB *cbb) {
+
+static bool marshal_CA_names(const STACK_OF(CRYPTO_BUFFER) *config_names,
+                             const STACK_OF(CRYPTO_BUFFER) *ctx_names,
+                             CBB *cbb) {
+  const STACK_OF(CRYPTO_BUFFER) *names =
+      config_names == nullptr ? ctx_names : config_names;
   CBB child, name_cbb;
+
   if (!CBB_add_u16_length_prefixed(cbb, &child)) {
     return false;
   }
 
-  const STACK_OF(CRYPTO_BUFFER) *names = hs->config->client_CA.get();
-  if (names == NULL) {
-    names = hs->ssl->ctx->client_CA.get();
-  }
-  if (names == NULL) {
+  if (names == nullptr) {
     return CBB_flush(cbb);
   }
 
@@ -700,12 +453,35 @@ bool ssl_add_client_CA_list(SSL_HANDSHAKE *hs, CBB *cbb) {
   return CBB_flush(cbb);
 }
 
+bool ssl_has_client_CAs(const SSL_CONFIG *cfg) {
+  return CA_names_non_empty(cfg->client_CA.get(),
+                            cfg->ssl->ctx->client_CA.get());
+}
+
+bool ssl_has_CA_names(const SSL_CONFIG *cfg) {
+  return CA_names_non_empty(cfg->CA_names.get(), cfg->ssl->ctx->CA_names.get());
+}
+
+bool ssl_add_client_CA_list(const SSL_HANDSHAKE *hs, CBB *cbb) {
+  return marshal_CA_names(hs->config->client_CA.get(),
+                          hs->ssl->ctx->client_CA.get(), cbb);
+}
+
+bool ssl_add_CA_names(const SSL_HANDSHAKE *hs, CBB *cbb) {
+  return marshal_CA_names(hs->config->CA_names.get(),
+                          hs->ssl->ctx->CA_names.get(), cbb);
+}
+
 bool ssl_check_leaf_certificate(SSL_HANDSHAKE *hs, EVP_PKEY *pkey,
                                 const CRYPTO_BUFFER *leaf) {
   assert(ssl_protocol_version(hs->ssl) < TLS1_3_VERSION);
 
-  // Check the certificate's type matches the cipher.
-  if (!(hs->new_cipher->algorithm_auth & ssl_cipher_auth_mask_for_key(pkey))) {
+  // Check the certificate's type matches the cipher. This does not check key
+  // usage restrictions, which are handled separately.
+  //
+  // TODO(davidben): Put the key type and key usage checks in one place.
+  if (!(hs->new_cipher->algorithm_auth &
+        ssl_cipher_auth_mask_for_key(pkey, /*sign_ok=*/true))) {
     OPENSSL_PUT_ERROR(SSL, SSL_R_WRONG_CERTIFICATE_TYPE);
     return false;
   }
@@ -724,156 +500,6 @@ bool ssl_check_leaf_certificate(SSL_HANDSHAKE *hs, EVP_PKEY *pkey,
   }
 
   return true;
-}
-
-bool ssl_on_certificate_selected(SSL_HANDSHAKE *hs) {
-  SSL *const ssl = hs->ssl;
-  if (!ssl_has_certificate(hs)) {
-    // Nothing to do.
-    return true;
-  }
-
-  if (!ssl->ctx->x509_method->ssl_auto_chain_if_needed(hs)) {
-    return false;
-  }
-
-  CBS leaf;
-  CRYPTO_BUFFER_init_CBS(
-      sk_CRYPTO_BUFFER_value(hs->config->cert->chain.get(), 0), &leaf);
-
-  if (ssl_signing_with_dc(hs)) {
-    hs->local_pubkey = UpRef(hs->config->cert->dc->pkey);
-  } else {
-    hs->local_pubkey = ssl_cert_parse_pubkey(&leaf);
-  }
-  return hs->local_pubkey != NULL;
-}
-
-
-// Delegated credentials.
-
-DC::DC() = default;
-DC::~DC() = default;
-
-UniquePtr<DC> DC::Dup() {
-  bssl::UniquePtr<DC> ret = MakeUnique<DC>();
-  if (!ret) {
-    return nullptr;
-  }
-
-  ret->raw = UpRef(raw);
-  ret->expected_cert_verify_algorithm = expected_cert_verify_algorithm;
-  ret->pkey = UpRef(pkey);
-  return ret;
-}
-
-// static
-UniquePtr<DC> DC::Parse(CRYPTO_BUFFER *in, uint8_t *out_alert) {
-  UniquePtr<DC> dc = MakeUnique<DC>();
-  if (!dc) {
-    *out_alert = SSL_AD_INTERNAL_ERROR;
-    return nullptr;
-  }
-
-  dc->raw = UpRef(in);
-
-  CBS pubkey, deleg, sig;
-  uint32_t valid_time;
-  uint16_t algorithm;
-  CRYPTO_BUFFER_init_CBS(dc->raw.get(), &deleg);
-  if (!CBS_get_u32(&deleg, &valid_time) ||
-      !CBS_get_u16(&deleg, &dc->expected_cert_verify_algorithm) ||
-      !CBS_get_u24_length_prefixed(&deleg, &pubkey) ||
-      !CBS_get_u16(&deleg, &algorithm) ||
-      !CBS_get_u16_length_prefixed(&deleg, &sig) ||
-      CBS_len(&deleg) != 0) {
-    OPENSSL_PUT_ERROR(SSL, SSL_R_DECODE_ERROR);
-    *out_alert = SSL_AD_DECODE_ERROR;
-    return nullptr;
-  }
-
-  dc->pkey.reset(EVP_parse_public_key(&pubkey));
-  if (dc->pkey == nullptr) {
-    OPENSSL_PUT_ERROR(SSL, SSL_R_DECODE_ERROR);
-    *out_alert = SSL_AD_DECODE_ERROR;
-    return nullptr;
-  }
-
-  return dc;
-}
-
-// ssl_can_serve_dc returns true if the host has configured a DC that it can
-// serve in the handshake. Specifically, it checks that a DC has been
-// configured and that the DC signature algorithm is supported by the peer.
-static bool ssl_can_serve_dc(const SSL_HANDSHAKE *hs) {
-  // Check that a DC has been configured.
-  const CERT *cert = hs->config->cert.get();
-  if (cert->dc == nullptr ||
-      cert->dc->raw == nullptr ||
-      (cert->dc_privatekey == nullptr && cert->dc_key_method == nullptr)) {
-    return false;
-  }
-
-  // Check that 1.3 or higher has been negotiated.
-  const DC *dc = cert->dc.get();
-  assert(hs->ssl->s3->have_version);
-  if (ssl_protocol_version(hs->ssl) < TLS1_3_VERSION) {
-    return false;
-  }
-
-  // Check that the DC signature algorithm is supported by the peer.
-  Span<const uint16_t> peer_sigalgs = tls1_get_peer_verify_algorithms(hs);
-  bool sigalg_found = false;
-  for (uint16_t peer_sigalg : peer_sigalgs) {
-    if (dc->expected_cert_verify_algorithm == peer_sigalg) {
-      sigalg_found = true;
-      break;
-    }
-  }
-
-  return sigalg_found;
-}
-
-bool ssl_signing_with_dc(const SSL_HANDSHAKE *hs) {
-  // As of draft-ietf-tls-subcert-03, only the server may use delegated
-  // credentials to authenticate itself.
-  return hs->ssl->server &&
-         hs->delegated_credential_requested &&
-         ssl_can_serve_dc(hs);
-}
-
-static int cert_set_dc(CERT *cert, CRYPTO_BUFFER *const raw, EVP_PKEY *privkey,
-                       const SSL_PRIVATE_KEY_METHOD *key_method) {
-  if (privkey == nullptr && key_method == nullptr) {
-    OPENSSL_PUT_ERROR(SSL, ERR_R_PASSED_NULL_PARAMETER);
-    return 0;
-  }
-
-  if (privkey != nullptr && key_method != nullptr) {
-    OPENSSL_PUT_ERROR(SSL, SSL_R_CANNOT_HAVE_BOTH_PRIVKEY_AND_METHOD);
-    return 0;
-  }
-
-  uint8_t alert;
-  UniquePtr<DC> dc = DC::Parse(raw, &alert);
-  if (dc == nullptr) {
-    OPENSSL_PUT_ERROR(SSL, SSL_R_INVALID_DELEGATED_CREDENTIAL);
-    return 0;
-  }
-
-  if (privkey) {
-    // Check that the public and private keys match.
-    if (!ssl_compare_public_and_private_key(dc->pkey.get(), privkey)) {
-      OPENSSL_PUT_ERROR(SSL, SSL_R_CERTIFICATE_AND_PRIVATE_KEY_MISMATCH);
-      return 0;
-    }
-  }
-
-  cert->dc = std::move(dc);
-  cert->dc_privatekey = UpRef(privkey);
-  cert->dc_key_method = key_method;
-
-  return 1;
 }
 
 BSSL_NAMESPACE_END
@@ -895,6 +521,28 @@ int SSL_CTX_set_chain_and_key(SSL_CTX *ctx, CRYPTO_BUFFER *const *certs,
                               const SSL_PRIVATE_KEY_METHOD *privkey_method) {
   return cert_set_chain_and_key(ctx->cert.get(), certs, num_certs, privkey,
                                 privkey_method);
+}
+
+void SSL_certs_clear(SSL *ssl) {
+  if (!ssl->config) {
+    return;
+  }
+
+  CERT *cert = ssl->config->cert.get();
+  cert->x509_method->cert_clear(cert);
+  cert->credentials.clear();
+  cert->legacy_credential->ClearCertAndKey();
+}
+
+const STACK_OF(CRYPTO_BUFFER) *SSL_CTX_get0_chain(const SSL_CTX *ctx) {
+  return ctx->cert->legacy_credential->chain.get();
+}
+
+const STACK_OF(CRYPTO_BUFFER) *SSL_get0_chain(const SSL *ssl) {
+  if (!ssl->config) {
+    return nullptr;
+  }
+  return ssl->config->cert->legacy_credential->chain.get();
 }
 
 int SSL_CTX_use_certificate_ASN1(SSL_CTX *ctx, size_t der_len,
@@ -944,23 +592,11 @@ const STACK_OF(CRYPTO_BUFFER) *SSL_get0_server_requested_CAs(const SSL *ssl) {
   return ssl->s3->hs->ca_names.get();
 }
 
-static int set_signed_cert_timestamp_list(CERT *cert, const uint8_t *list,
-                                          size_t list_len) {
-  CBS sct_list;
-  CBS_init(&sct_list, list, list_len);
-  if (!ssl_is_sct_list_valid(&sct_list)) {
-    OPENSSL_PUT_ERROR(SSL, SSL_R_INVALID_SCT_LIST);
-    return 0;
-  }
-
-  cert->signed_cert_timestamp_list.reset(
-      CRYPTO_BUFFER_new(CBS_data(&sct_list), CBS_len(&sct_list), nullptr));
-  return cert->signed_cert_timestamp_list != nullptr;
-}
-
 int SSL_CTX_set_signed_cert_timestamp_list(SSL_CTX *ctx, const uint8_t *list,
                                            size_t list_len) {
-  return set_signed_cert_timestamp_list(ctx->cert.get(), list, list_len);
+  UniquePtr<CRYPTO_BUFFER> buf(CRYPTO_BUFFER_new(list, list_len, nullptr));
+  return buf != nullptr && SSL_CREDENTIAL_set1_signed_cert_timestamp_list(
+                               ctx->cert->legacy_credential.get(), buf.get());
 }
 
 int SSL_set_signed_cert_timestamp_list(SSL *ssl, const uint8_t *list,
@@ -968,15 +604,18 @@ int SSL_set_signed_cert_timestamp_list(SSL *ssl, const uint8_t *list,
   if (!ssl->config) {
     return 0;
   }
-  return set_signed_cert_timestamp_list(ssl->config->cert.get(), list,
-                                        list_len);
+  UniquePtr<CRYPTO_BUFFER> buf(CRYPTO_BUFFER_new(list, list_len, nullptr));
+  return buf != nullptr &&
+         SSL_CREDENTIAL_set1_signed_cert_timestamp_list(
+             ssl->config->cert->legacy_credential.get(), buf.get());
 }
 
 int SSL_CTX_set_ocsp_response(SSL_CTX *ctx, const uint8_t *response,
                               size_t response_len) {
-  ctx->cert->ocsp_response.reset(
+  UniquePtr<CRYPTO_BUFFER> buf(
       CRYPTO_BUFFER_new(response, response_len, nullptr));
-  return ctx->cert->ocsp_response != nullptr;
+  return buf != nullptr && SSL_CREDENTIAL_set1_ocsp_response(
+                               ctx->cert->legacy_credential.get(), buf.get());
 }
 
 int SSL_set_ocsp_response(SSL *ssl, const uint8_t *response,
@@ -984,9 +623,11 @@ int SSL_set_ocsp_response(SSL *ssl, const uint8_t *response,
   if (!ssl->config) {
     return 0;
   }
-  ssl->config->cert->ocsp_response.reset(
+  UniquePtr<CRYPTO_BUFFER> buf(
       CRYPTO_BUFFER_new(response, response_len, nullptr));
-  return ssl->config->cert->ocsp_response != nullptr;
+  return buf != nullptr &&
+         SSL_CREDENTIAL_set1_ocsp_response(
+             ssl->config->cert->legacy_credential.get(), buf.get());
 }
 
 void SSL_CTX_set0_client_CAs(SSL_CTX *ctx, STACK_OF(CRYPTO_BUFFER) *name_list) {
@@ -1002,15 +643,9 @@ void SSL_set0_client_CAs(SSL *ssl, STACK_OF(CRYPTO_BUFFER) *name_list) {
   ssl->config->client_CA.reset(name_list);
 }
 
-int SSL_set1_delegated_credential(SSL *ssl, CRYPTO_BUFFER *dc, EVP_PKEY *pkey,
-                                  const SSL_PRIVATE_KEY_METHOD *key_method) {
+void SSL_set0_CA_names(SSL *ssl, STACK_OF(CRYPTO_BUFFER) *name_list) {
   if (!ssl->config) {
-    return 0;
+    return;
   }
-
-  return cert_set_dc(ssl->config->cert.get(), dc, pkey, key_method);
-}
-
-int SSL_delegated_credential_used(const SSL *ssl) {
-  return ssl->s3->delegated_credential_used;
+  ssl->config->CA_names.reset(name_list);
 }

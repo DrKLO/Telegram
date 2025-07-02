@@ -13,6 +13,7 @@ package org.webrtc;
 import android.graphics.Matrix;
 import android.opengl.GLES11Ext;
 import android.opengl.GLES20;
+import androidx.annotation.Nullable;
 import java.nio.ByteBuffer;
 
 /**
@@ -40,6 +41,7 @@ public class VideoFrame implements RefCounted {
     default int getBufferType() {
       return 0;
     }
+
     /**
      * Resolution of the buffer in pixels.
      */
@@ -50,15 +52,18 @@ public class VideoFrame implements RefCounted {
      * Returns a memory-backed frame in I420 format. If the pixel data is in another format, a
      * conversion will take place. All implementations must provide a fallback to I420 for
      * compatibility with e.g. the internal WebRTC software encoders.
+     *
+     * <p> Conversion may fail, for example if reading the pixel data from a texture fails. If the
+     * conversion fails, null is returned.
      */
-    @CalledByNative("Buffer") I420Buffer toI420();
+    @Nullable @CalledByNative("Buffer") I420Buffer toI420();
 
     @Override @CalledByNative("Buffer") void retain();
     @Override @CalledByNative("Buffer") void release();
 
     /**
-     * Crops a region defined by |cropx|, |cropY|, |cropWidth| and |cropHeight|. Scales it to size
-     * |scaleWidth| x |scaleHeight|.
+     * Crops a region defined by `cropx`, `cropY`, `cropWidth` and `cropHeight`. Scales it to size
+     * `scaleWidth` x `scaleHeight`.
      */
     @CalledByNative("Buffer")
     Buffer cropAndScale(
@@ -73,6 +78,7 @@ public class VideoFrame implements RefCounted {
     default int getBufferType() {
       return 1;
     }
+
     /**
      * Returns a direct ByteBuffer containing Y-plane data. The buffer capacity is at least
      * getStrideY() * getHeight() bytes. The position of the returned buffer is ignored and must
@@ -128,6 +134,32 @@ public class VideoFrame implements RefCounted {
      * the coordinate that should be used to sample that location from the buffer.
      */
     Matrix getTransformMatrix();
+
+    /**
+     * Create a new TextureBufferImpl with an applied transform matrix and a new size. The existing
+     * buffer is unchanged. The given transform matrix is applied first when texture coordinates are
+     * still in the unmodified [0, 1] range.
+     */
+    default TextureBuffer applyTransformMatrix(
+        Matrix transformMatrix, int newWidth, int newHeight) {
+      throw new UnsupportedOperationException("Not implemented");
+    }
+
+    /**
+     * Returns the width of the texture in memory. This should only be used for downscaling, and you
+     * should still respect the width from getWidth().
+     */
+    default public int getUnscaledWidth() {
+      return getWidth();
+    }
+
+    /**
+     * Returns the height of the texture in memory. This should only be used for downscaling, and
+     * you should still respect the height from getHeight().
+     */
+    default public int getUnscaledHeight() {
+      return getHeight();
+    }
   }
 
   private final Buffer buffer;

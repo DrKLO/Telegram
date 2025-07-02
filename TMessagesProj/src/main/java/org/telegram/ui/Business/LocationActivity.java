@@ -514,7 +514,7 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
             initialLocation.geo_point = geo;
             fragment.setInitialLocation(initialLocation);
         }
-        fragment.setDelegate((location, live, notify, scheduleDate) -> {
+        fragment.setDelegate((location, live, notify, scheduleDate, payStars) -> {
             geo = location.geo;
             if (TextUtils.isEmpty(address) && !TextUtils.isEmpty(fragment.getAddressName()) || mapAddress) {
                 mapAddress = true;

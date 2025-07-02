@@ -19,6 +19,7 @@
 #include "absl/base/config.h"
 #include "absl/base/internal/cycleclock.h"
 #include "absl/base/internal/spinlock.h"
+#include "absl/base/no_destructor.h"
 #include "absl/synchronization/blocking_counter.h"
 #include "absl/synchronization/internal/thread_pool.h"
 #include "absl/synchronization/mutex.h"
@@ -27,12 +28,40 @@
 namespace {
 
 void BM_Mutex(benchmark::State& state) {
-  static absl::Mutex* mu = new absl::Mutex;
+  static absl::NoDestructor<absl::Mutex> mu;
   for (auto _ : state) {
-    absl::MutexLock lock(mu);
+    absl::MutexLock lock(mu.get());
   }
 }
 BENCHMARK(BM_Mutex)->UseRealTime()->Threads(1)->ThreadPerCpu();
+
+void BM_ReaderLock(benchmark::State& state) {
+  static absl::NoDestructor<absl::Mutex> mu;
+  for (auto _ : state) {
+    absl::ReaderMutexLock lock(mu.get());
+  }
+}
+BENCHMARK(BM_ReaderLock)->UseRealTime()->Threads(1)->ThreadPerCpu();
+
+void BM_TryLock(benchmark::State& state) {
+  absl::Mutex mu;
+  for (auto _ : state) {
+    if (mu.TryLock()) {
+      mu.Unlock();
+    }
+  }
+}
+BENCHMARK(BM_TryLock);
+
+void BM_ReaderTryLock(benchmark::State& state) {
+  static absl::NoDestructor<absl::Mutex> mu;
+  for (auto _ : state) {
+    if (mu->ReaderTryLock()) {
+      mu->ReaderUnlock();
+    }
+  }
+}
+BENCHMARK(BM_ReaderTryLock)->UseRealTime()->Threads(1)->ThreadPerCpu();
 
 static void DelayNs(int64_t ns, int* data) {
   int64_t end = absl::base_internal::CycleClock::Now() +
@@ -105,7 +134,7 @@ void BM_MutexEnqueue(benchmark::State& state) {
     std::atomic<int> blocked_threads{0};
     std::atomic<bool> thread_has_mutex{false};
   };
-  static Shared* shared = new Shared;
+  static absl::NoDestructor<Shared> shared;
 
   // Set up 'blocked_threads' to count how many threads are currently blocked
   // in Abseil synchronization code.
@@ -183,7 +212,7 @@ void BM_Contended(benchmark::State& state) {
     MutexType mu;
     int data = 0;
   };
-  static auto* shared = new Shared;
+  static absl::NoDestructor<Shared> shared;
   int local = 0;
   for (auto _ : state) {
     // Here we model both local work outside of the critical section as well as

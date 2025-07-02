@@ -1252,7 +1252,7 @@ public class ChatThemeBottomSheet extends BottomSheet implements NotificationCen
             }
 
             @Override
-            public void didPressedButton(int button, boolean arg, boolean notify, int scheduleDate, long effectId, boolean invertMedia, boolean forceDocument) {
+            public void didPressedButton(int button, boolean arg, boolean notify, int scheduleDate, long effectId, boolean invertMedia, boolean forceDocument, long payStars) {
                 try {
                     HashMap<Object, Object> photos = chatAttachAlert.getPhotoLayout().getSelectedPhotos();
                     if (!photos.isEmpty()) {
@@ -1346,7 +1346,7 @@ public class ChatThemeBottomSheet extends BottomSheet implements NotificationCen
             }
 
             @Override
-            public void didPressedButton(int button, boolean arg, boolean notify, int scheduleDate, long effectId, boolean invertMedia, boolean forceDocument) {
+            public void didPressedButton(int button, boolean arg, boolean notify, int scheduleDate, long effectId, boolean invertMedia, boolean forceDocument, long payStars) {
                 try {
                     HashMap<Object, Object> photos = chatAttachAlert.getPhotoLayout().getSelectedPhotos();
                     if (!photos.isEmpty()) {

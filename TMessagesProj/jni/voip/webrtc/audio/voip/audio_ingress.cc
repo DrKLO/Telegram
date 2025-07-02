@@ -23,14 +23,15 @@
 #include "modules/rtp_rtcp/source/rtcp_packet/sender_report.h"
 #include "rtc_base/logging.h"
 #include "rtc_base/numerics/safe_minmax.h"
+#include "rtc_base/time_utils.h"
 
 namespace webrtc {
 
 namespace {
 
-AudioCodingModule::Config CreateAcmConfig(
+acm2::AcmReceiver::Config CreateAcmConfig(
     rtc::scoped_refptr<AudioDecoderFactory> decoder_factory) {
-  AudioCodingModule::Config acm_config;
+  acm2::AcmReceiver::Config acm_config;
   acm_config.neteq_config.enable_muted_state = true;
   acm_config.decoder_factory = decoder_factory;
   return acm_config;
@@ -209,25 +210,25 @@ void AudioIngress::ReceivedRTCPPacket(
   }
 
   // Deliver RTCP packet to RTP/RTCP module for parsing and processing.
-  rtp_rtcp_->IncomingRtcpPacket(rtcp_packet.data(), rtcp_packet.size());
+  rtp_rtcp_->IncomingRtcpPacket(rtcp_packet);
 
-  int64_t rtt = 0;
-  if (rtp_rtcp_->RTT(remote_ssrc_, &rtt, nullptr, nullptr, nullptr) != 0) {
+  absl::optional<TimeDelta> rtt = rtp_rtcp_->LastRtt();
+  if (!rtt.has_value()) {
     // Waiting for valid RTT.
     return;
   }
 
-  uint32_t ntp_secs = 0, ntp_frac = 0, rtp_timestamp = 0;
-  if (rtp_rtcp_->RemoteNTP(&ntp_secs, &ntp_frac, nullptr, nullptr,
-                           &rtp_timestamp) != 0) {
+  absl::optional<RtpRtcpInterface::SenderReportStats> last_sr =
+      rtp_rtcp_->GetSenderReportStats();
+  if (!last_sr.has_value()) {
     // Waiting for RTCP.
     return;
   }
 
   {
     MutexLock lock(&lock_);
-    ntp_estimator_.UpdateRtcpTimestamp(
-        TimeDelta::Millis(rtt), NtpTime(ntp_secs, ntp_frac), rtp_timestamp);
+    ntp_estimator_.UpdateRtcpTimestamp(*rtt, last_sr->last_remote_timestamp,
+                                       last_sr->last_remote_rtp_timestamp);
   }
 }
 
@@ -258,28 +259,22 @@ ChannelStatistics AudioIngress::GetChannelStatistics() {
   // Get RTCP report using remote SSRC.
   const std::vector<ReportBlockData>& report_data =
       rtp_rtcp_->GetLatestReportBlockData();
-  for (const ReportBlockData& block_data : report_data) {
-    const RTCPReportBlock& rtcp_report = block_data.report_block();
-    if (rtp_rtcp_->SSRC() != rtcp_report.source_ssrc ||
-        remote_ssrc_ != rtcp_report.sender_ssrc) {
+  for (const ReportBlockData& rtcp_report : report_data) {
+    if (rtp_rtcp_->SSRC() != rtcp_report.source_ssrc() ||
+        remote_ssrc_ != rtcp_report.sender_ssrc()) {
       continue;
     }
     RemoteRtcpStatistics remote_stat;
-    remote_stat.packets_lost = rtcp_report.packets_lost;
-    remote_stat.fraction_lost =
-        static_cast<double>(rtcp_report.fraction_lost) / (1 << 8);
+    remote_stat.packets_lost = rtcp_report.cumulative_lost();
+    remote_stat.fraction_lost = rtcp_report.fraction_lost();
     if (clockrate_hz > 0) {
-      remote_stat.jitter =
-          static_cast<double>(rtcp_report.jitter) / clockrate_hz;
+      remote_stat.jitter = rtcp_report.jitter(clockrate_hz).seconds<double>();
     }
-    if (block_data.has_rtt()) {
-      remote_stat.round_trip_time =
-          static_cast<double>(block_data.last_rtt_ms()) /
-          rtc::kNumMillisecsPerSec;
+    if (rtcp_report.has_rtt()) {
+      remote_stat.round_trip_time = rtcp_report.last_rtt().seconds<double>();
     }
     remote_stat.last_report_received_timestamp_ms =
-        block_data.report_block_timestamp_utc_us() /
-        rtc::kNumMicrosecsPerMillisec;
+        rtcp_report.report_block_timestamp_utc().ms();
     channel_stats.remote_rtcp = remote_stat;
 
     // Receive only channel won't send any RTP packets.

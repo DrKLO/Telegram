@@ -79,6 +79,9 @@ public class RtpParameters {
     // SSRC to be used by this encoding.
     // Can't be changed between getParameters/setParameters.
     public Long ssrc;
+    // Set to true to allow dynamic frame length changes for audio:
+    // https://w3c.github.io/webrtc-extensions/#dom-rtcrtpencodingparameters-adaptiveptime
+    public boolean adaptiveAudioPacketTime;
 
     // This constructor is useful for creating simulcast layers.
     public Encoding(String rid, boolean active, Double scaleResolutionDownBy) {
@@ -90,7 +93,8 @@ public class RtpParameters {
     @CalledByNative("Encoding")
     Encoding(String rid, boolean active, double bitratePriority, int networkPriority,
         Integer maxBitrateBps, Integer minBitrateBps, Integer maxFramerate,
-        Integer numTemporalLayers, Double scaleResolutionDownBy, Long ssrc) {
+        Integer numTemporalLayers, Double scaleResolutionDownBy, Long ssrc,
+        boolean adaptiveAudioPacketTime) {
       this.rid = rid;
       this.active = active;
       this.bitratePriority = bitratePriority;
@@ -101,6 +105,7 @@ public class RtpParameters {
       this.numTemporalLayers = numTemporalLayers;
       this.scaleResolutionDownBy = scaleResolutionDownBy;
       this.ssrc = ssrc;
+      this.adaptiveAudioPacketTime = adaptiveAudioPacketTime;
     }
 
     @Nullable
@@ -157,6 +162,11 @@ public class RtpParameters {
     @CalledByNative("Encoding")
     Long getSsrc() {
       return ssrc;
+    }
+
+    @CalledByNative("Encoding")
+    boolean getAdaptivePTime() {
+      return adaptiveAudioPacketTime;
     }
   }
 

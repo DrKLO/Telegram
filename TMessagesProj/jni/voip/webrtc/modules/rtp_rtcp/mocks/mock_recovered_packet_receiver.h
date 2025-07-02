@@ -12,6 +12,7 @@
 #define MODULES_RTP_RTCP_MOCKS_MOCK_RECOVERED_PACKET_RECEIVER_H_
 
 #include "modules/rtp_rtcp/include/flexfec_receiver.h"
+#include "modules/rtp_rtcp/source/rtp_packet_received.h"
 #include "test/gmock.h"
 
 namespace webrtc {
@@ -20,7 +21,7 @@ class MockRecoveredPacketReceiver : public RecoveredPacketReceiver {
  public:
   MOCK_METHOD(void,
               OnRecoveredPacket,
-              (const uint8_t* packet, size_t length),
+              (const RtpPacketReceived& packet),
               (override));
 };
 

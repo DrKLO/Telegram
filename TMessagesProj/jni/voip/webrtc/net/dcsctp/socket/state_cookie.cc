@@ -32,16 +32,19 @@ std::vector<uint8_t> StateCookie::Serialize() {
   BoundedByteWriter<kCookieSize> buffer(cookie);
   buffer.Store32<0>(kMagic1);
   buffer.Store32<4>(kMagic2);
-  buffer.Store32<8>(*initiate_tag_);
-  buffer.Store32<12>(*initial_tsn_);
-  buffer.Store32<16>(a_rwnd_);
-  buffer.Store32<20>(static_cast<uint32_t>(*tie_tag_ >> 32));
-  buffer.Store32<24>(static_cast<uint32_t>(*tie_tag_));
-  buffer.Store8<28>(capabilities_.partial_reliability);
-  buffer.Store8<29>(capabilities_.message_interleaving);
-  buffer.Store8<30>(capabilities_.reconfig);
-  buffer.Store16<32>(capabilities_.negotiated_maximum_incoming_streams);
-  buffer.Store16<34>(capabilities_.negotiated_maximum_outgoing_streams);
+  buffer.Store32<8>(*peer_tag_);
+  buffer.Store32<12>(*my_tag_);
+  buffer.Store32<16>(*peer_initial_tsn_);
+  buffer.Store32<20>(*my_initial_tsn_);
+  buffer.Store32<24>(a_rwnd_);
+  buffer.Store32<28>(static_cast<uint32_t>(*tie_tag_ >> 32));
+  buffer.Store32<32>(static_cast<uint32_t>(*tie_tag_));
+  buffer.Store8<36>(capabilities_.partial_reliability);
+  buffer.Store8<37>(capabilities_.message_interleaving);
+  buffer.Store8<38>(capabilities_.reconfig);
+  buffer.Store16<40>(capabilities_.negotiated_maximum_incoming_streams);
+  buffer.Store16<42>(capabilities_.negotiated_maximum_outgoing_streams);
+  buffer.Store8<44>(capabilities_.zero_checksum);
   return cookie;
 }
 
@@ -61,22 +64,25 @@ absl::optional<StateCookie> StateCookie::Deserialize(
     return absl::nullopt;
   }
 
-  VerificationTag verification_tag(buffer.Load32<8>());
-  TSN initial_tsn(buffer.Load32<12>());
-  uint32_t a_rwnd = buffer.Load32<16>();
-  uint32_t tie_tag_upper = buffer.Load32<20>();
-  uint32_t tie_tag_lower = buffer.Load32<24>();
+  VerificationTag peer_tag(buffer.Load32<8>());
+  VerificationTag my_tag(buffer.Load32<12>());
+  TSN peer_initial_tsn(buffer.Load32<16>());
+  TSN my_initial_tsn(buffer.Load32<20>());
+  uint32_t a_rwnd = buffer.Load32<24>();
+  uint32_t tie_tag_upper = buffer.Load32<28>();
+  uint32_t tie_tag_lower = buffer.Load32<32>();
   TieTag tie_tag(static_cast<uint64_t>(tie_tag_upper) << 32 |
                  static_cast<uint64_t>(tie_tag_lower));
   Capabilities capabilities;
-  capabilities.partial_reliability = buffer.Load8<28>() != 0;
-  capabilities.message_interleaving = buffer.Load8<29>() != 0;
-  capabilities.reconfig = buffer.Load8<30>() != 0;
-  capabilities.negotiated_maximum_incoming_streams = buffer.Load16<32>();
-  capabilities.negotiated_maximum_outgoing_streams = buffer.Load16<34>();
+  capabilities.partial_reliability = buffer.Load8<36>() != 0;
+  capabilities.message_interleaving = buffer.Load8<37>() != 0;
+  capabilities.reconfig = buffer.Load8<38>() != 0;
+  capabilities.negotiated_maximum_incoming_streams = buffer.Load16<40>();
+  capabilities.negotiated_maximum_outgoing_streams = buffer.Load16<42>();
+  capabilities.zero_checksum = buffer.Load8<44>() != 0;
 
-  return StateCookie(verification_tag, initial_tsn, a_rwnd, tie_tag,
-                     capabilities);
+  return StateCookie(peer_tag, my_tag, peer_initial_tsn, my_initial_tsn, a_rwnd,
+                     tie_tag, capabilities);
 }
 
 }  // namespace dcsctp

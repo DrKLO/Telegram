@@ -19,6 +19,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/algorithm/container.h"
 #include "absl/types/optional.h"
 #include "absl/types/variant.h"
 #include "common_video/h264/h264_common.h"
@@ -52,11 +53,14 @@ RtpPacketizerH264::RtpPacketizerH264(rtc::ArrayView<const uint8_t> payload,
     input_fragments_.push_back(
         payload.subview(nalu.payload_start_offset, nalu.payload_size));
   }
-
-  if (!GeneratePackets(packetization_mode)) {
-    // If failed to generate all the packets, discard already generated
-    // packets in case the caller would ignore return value and still try to
-    // call NextPacket().
+  bool has_empty_fragments = absl::c_any_of(
+      input_fragments_, [](const rtc::ArrayView<const uint8_t> fragment) {
+        return fragment.empty();
+      });
+  if (has_empty_fragments || !GeneratePackets(packetization_mode)) {
+    // If empty fragments were found or we failed to generate all the packets,
+    // discard already generated packets in case the caller would ignore the
+    // return value and still try to call NextPacket().
     num_packets_left_ = 0;
     while (!packets_.empty()) {
       packets_.pop();
@@ -73,6 +77,7 @@ size_t RtpPacketizerH264::NumPackets() const {
 bool RtpPacketizerH264::GeneratePackets(
     H264PacketizationMode packetization_mode) {
   for (size_t i = 0; i < input_fragments_.size();) {
+    RTC_DCHECK(!input_fragments_[i].empty());
     switch (packetization_mode) {
       case H264PacketizationMode::SingleNalUnit:
         if (!PacketizeSingleNalu(i))
@@ -153,34 +158,31 @@ bool RtpPacketizerH264::PacketizeFuA(size_t fragment_index) {
 size_t RtpPacketizerH264::PacketizeStapA(size_t fragment_index) {
   // Aggregate fragments into one packet (STAP-A).
   size_t payload_size_left = limits_.max_payload_len;
-  if (input_fragments_.size() == 1)
-    payload_size_left -= limits_.single_packet_reduction_len;
-  else if (fragment_index == 0)
-    payload_size_left -= limits_.first_packet_reduction_len;
   int aggregated_fragments = 0;
   size_t fragment_headers_length = 0;
   rtc::ArrayView<const uint8_t> fragment = input_fragments_[fragment_index];
   RTC_CHECK_GE(payload_size_left, fragment.size());
   ++num_packets_left_;
 
+  const bool has_first_fragment = fragment_index == 0;
   auto payload_size_needed = [&] {
     size_t fragment_size = fragment.size() + fragment_headers_length;
-    if (input_fragments_.size() == 1) {
-      // Single fragment, single packet, payload_size_left already adjusted
-      // with limits_.single_packet_reduction_len.
+    bool has_last_fragment = fragment_index == input_fragments_.size() - 1;
+    if (has_first_fragment && has_last_fragment) {
+      return fragment_size + limits_.single_packet_reduction_len;
+    } else if (has_first_fragment) {
+      return fragment_size + limits_.first_packet_reduction_len;
+    } else if (has_last_fragment) {
+      return fragment_size + limits_.last_packet_reduction_len;
+    } else {
       return fragment_size;
     }
-    if (fragment_index == input_fragments_.size() - 1) {
-      // Last fragment, so STAP-A might be the last packet.
-      return fragment_size + limits_.last_packet_reduction_len;
-    }
-    return fragment_size;
   };
-
   while (payload_size_left >= payload_size_needed()) {
     RTC_CHECK_GT(fragment.size(), 0);
-    packets_.push(PacketUnit(fragment, aggregated_fragments == 0, false, true,
-                             fragment[0]));
+
+    packets_.push(PacketUnit(fragment, /*first=*/aggregated_fragments == 0,
+                             /*last=*/false, /*aggregated=*/true, fragment[0]));
     payload_size_left -= fragment.size();
     payload_size_left -= fragment_headers_length;
 
@@ -221,9 +223,9 @@ bool RtpPacketizerH264::PacketizeSingleNalu(size_t fragment_index) {
                       << limits_.max_payload_len;
     return false;
   }
-  RTC_CHECK_GT(fragment.size(), 0u);
-  packets_.push(PacketUnit(fragment, true /* first */, true /* last */,
-                           false /* aggregated */, fragment[0]));
+  RTC_CHECK(!fragment.empty());
+  packets_.push(PacketUnit(fragment, /*first=*/true, /*last=*/true,
+                           /*aggregated=*/false, fragment[0]));
   ++num_packets_left_;
   return true;
 }

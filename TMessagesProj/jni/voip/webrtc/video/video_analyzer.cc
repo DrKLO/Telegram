@@ -34,6 +34,7 @@
 #include "test/testsupport/file_utils.h"
 #include "test/testsupport/frame_writer.h"
 #include "test/testsupport/test_artifacts.h"
+#include "test/video_test_constants.h"
 
 ABSL_FLAG(bool,
           save_worst_frame,
@@ -59,7 +60,7 @@ constexpr int kKeepAliveIntervalIterations =
     kKeepAliveInterval.ms() / kProbingInterval.ms();
 
 bool IsFlexfec(int payload_type) {
-  return payload_type == test::CallTest::kFlexfecPayloadType;
+  return payload_type == test::VideoTestConstants::kFlexfecPayloadType;
 }
 
 }  // namespace
@@ -99,8 +100,8 @@ VideoAnalyzer::VideoAnalyzer(test::LayerFilteringTransport* transport,
       mean_decode_time_ms_(0.0),
       freeze_count_(0),
       total_freezes_duration_ms_(0),
-      total_frames_duration_ms_(0),
-      sum_squared_frame_durations_(0),
+      total_inter_frame_delay_(0),
+      total_squared_inter_frame_delay_(0),
       decode_frame_rate_(0),
       render_frame_rate_(0),
       last_fec_bytes_(0),
@@ -218,43 +219,38 @@ rtc::VideoSourceInterface<VideoFrame>* VideoAnalyzer::OutputInterface() {
   return &captured_frame_forwarder_;
 }
 
-PacketReceiver::DeliveryStatus VideoAnalyzer::DeliverPacket(
-    MediaType media_type,
-    rtc::CopyOnWriteBuffer packet,
-    int64_t packet_time_us) {
-  // Ignore timestamps of RTCP packets. They're not synchronized with
-  // RTP packet timestamps and so they would confuse wrap_handler_.
-  if (IsRtcpPacket(packet)) {
-    return receiver_->DeliverPacket(media_type, std::move(packet),
-                                    packet_time_us);
-  }
+void VideoAnalyzer::DeliverRtcpPacket(rtc::CopyOnWriteBuffer packet) {
+  return receiver_->DeliverRtcpPacket(std::move(packet));
+}
 
+void VideoAnalyzer::DeliverRtpPacket(
+    MediaType media_type,
+    RtpPacketReceived packet,
+    PacketReceiver::OnUndemuxablePacketHandler undemuxable_packet_handler) {
   if (rtp_file_writer_) {
     test::RtpPacket p;
-    memcpy(p.data, packet.cdata(), packet.size());
+    memcpy(p.data, packet.Buffer().data(), packet.size());
     p.length = packet.size();
     p.original_length = packet.size();
     p.time_ms = clock_->TimeInMilliseconds() - start_ms_;
     rtp_file_writer_->WritePacket(&p);
   }
 
-  RtpPacket rtp_packet;
-  rtp_packet.Parse(packet);
-  if (!IsFlexfec(rtp_packet.PayloadType()) &&
-      (rtp_packet.Ssrc() == ssrc_to_analyze_ ||
-       rtp_packet.Ssrc() == rtx_ssrc_to_analyze_)) {
+  if (!IsFlexfec(packet.PayloadType()) &&
+      (packet.Ssrc() == ssrc_to_analyze_ ||
+       packet.Ssrc() == rtx_ssrc_to_analyze_)) {
     // Ignore FlexFEC timestamps, to avoid collisions with media timestamps.
     // (FlexFEC and media are sent on different SSRCs, which have different
     // timestamps spaces.)
     // Also ignore packets from wrong SSRC, but include retransmits.
     MutexLock lock(&lock_);
     int64_t timestamp =
-        wrap_handler_.Unwrap(rtp_packet.Timestamp() - rtp_timestamp_delta_);
+        wrap_handler_.Unwrap(packet.Timestamp() - rtp_timestamp_delta_);
     recv_times_[timestamp] = clock_->CurrentNtpInMilliseconds();
   }
 
-  return receiver_->DeliverPacket(media_type, std::move(packet),
-                                  packet_time_us);
+  return receiver_->DeliverRtpPacket(media_type, std::move(packet),
+                                     std::move(undemuxable_packet_handler));
 }
 
 void VideoAnalyzer::PreEncodeOnFrame(const VideoFrame& video_frame) {
@@ -276,15 +272,14 @@ void VideoAnalyzer::PostEncodeOnFrame(size_t stream_id, uint32_t timestamp) {
   }
 }
 
-bool VideoAnalyzer::SendRtp(const uint8_t* packet,
-                            size_t length,
+bool VideoAnalyzer::SendRtp(rtc::ArrayView<const uint8_t> packet,
                             const PacketOptions& options) {
   RtpPacket rtp_packet;
-  rtp_packet.Parse(packet, length);
+  rtp_packet.Parse(packet);
 
   int64_t current_time = clock_->CurrentNtpInMilliseconds();
 
-  bool result = transport_->SendRtp(packet, length, options);
+  bool result = transport_->SendRtp(packet, options);
   {
     MutexLock lock(&lock_);
     if (rtp_timestamp_delta_ == 0 && rtp_packet.Ssrc() == ssrc_to_analyze_) {
@@ -310,8 +305,8 @@ bool VideoAnalyzer::SendRtp(const uint8_t* packet,
   return result;
 }
 
-bool VideoAnalyzer::SendRtcp(const uint8_t* packet, size_t length) {
-  return transport_->SendRtcp(packet, length);
+bool VideoAnalyzer::SendRtcp(rtc::ArrayView<const uint8_t> packet) {
+  return transport_->SendRtcp(packet);
 }
 
 void VideoAnalyzer::OnFrame(const VideoFrame& video_frame) {
@@ -442,7 +437,7 @@ double VideoAnalyzer::GetCpuUsagePercent() {
 
 bool VideoAnalyzer::IsInSelectedSpatialAndTemporalLayer(
     const RtpPacket& rtp_packet) {
-  if (rtp_packet.PayloadType() == test::CallTest::kPayloadTypeVP8) {
+  if (rtp_packet.PayloadType() == test::VideoTestConstants::kPayloadTypeVP8) {
     auto parsed_payload = vp8_depacketizer_->Parse(rtp_packet.PayloadBuffer());
     RTC_DCHECK(parsed_payload);
     const auto& vp8_header = absl::get<RTPVideoHeaderVP8>(
@@ -452,7 +447,7 @@ bool VideoAnalyzer::IsInSelectedSpatialAndTemporalLayer(
            temporal_idx <= selected_tl_;
   }
 
-  if (rtp_packet.PayloadType() == test::CallTest::kPayloadTypeVP9) {
+  if (rtp_packet.PayloadType() == test::VideoTestConstants::kPayloadTypeVP9) {
     auto parsed_payload = vp9_depacketizer_->Parse(rtp_packet.PayloadBuffer());
     RTC_DCHECK(parsed_payload);
     const auto& vp9_header = absl::get<RTPVideoHeaderVP9>(
@@ -502,6 +497,14 @@ void VideoAnalyzer::PollStats() {
   if (receive_stream_ != nullptr) {
     VideoReceiveStreamInterface::Stats receive_stats =
         receive_stream_->GetStats();
+
+    // Freeze metrics.
+    freeze_count_ = receive_stats.freeze_count;
+    total_freezes_duration_ms_ = receive_stats.total_freezes_duration_ms;
+    total_inter_frame_delay_ = receive_stats.total_inter_frame_delay;
+    total_squared_inter_frame_delay_ =
+        receive_stats.total_squared_inter_frame_delay;
+
     // `total_decode_time_ms` gives a good estimate of the mean decode time,
     // `decode_ms` is used to keep track of the standard deviation.
     if (receive_stats.frames_decoded > 0)
@@ -518,20 +521,12 @@ void VideoAnalyzer::PollStats() {
     // `frames_decoded` and `frames_rendered` are used because they are more
     // accurate than `decode_frame_rate` and `render_frame_rate`.
     // The latter two are calculated on a momentary basis.
-    const double total_frames_duration_sec_double =
-        static_cast<double>(receive_stats.total_frames_duration_ms) / 1000.0;
-    if (total_frames_duration_sec_double > 0) {
-      decode_frame_rate_ = static_cast<double>(receive_stats.frames_decoded) /
-                           total_frames_duration_sec_double;
-      render_frame_rate_ = static_cast<double>(receive_stats.frames_rendered) /
-                           total_frames_duration_sec_double;
+    if (total_inter_frame_delay_ > 0) {
+      decode_frame_rate_ =
+          receive_stats.frames_decoded / total_inter_frame_delay_;
+      render_frame_rate_ =
+          receive_stats.frames_rendered / total_inter_frame_delay_;
     }
-
-    // Freeze metrics.
-    freeze_count_ = receive_stats.freeze_count;
-    total_freezes_duration_ms_ = receive_stats.total_freezes_duration_ms;
-    total_frames_duration_ms_ = receive_stats.total_frames_duration_ms;
-    sum_squared_frame_durations_ = receive_stats.sum_squared_frame_durations;
   }
 
   if (audio_receive_stream_ != nullptr) {
@@ -673,7 +668,7 @@ void VideoAnalyzer::PrintResults() {
   const double total_freezes_duration_ms_double =
       static_cast<double>(total_freezes_duration_ms_);
   const double total_frames_duration_ms_double =
-      static_cast<double>(total_frames_duration_ms_);
+      total_inter_frame_delay_ * rtc::kNumMillisecsPerSec;
 
   if (total_frames_duration_ms_double > 0) {
     GetGlobalMetricsLogger()->LogSingleValueMetric(
@@ -701,10 +696,11 @@ void VideoAnalyzer::PrintResults() {
           : 0,
       Unit::kMilliseconds, ImprovementDirection::kSmallerIsBetter);
 
-  if (1000 * sum_squared_frame_durations_ > 0) {
+  if (total_squared_inter_frame_delay_ > 0) {
     GetGlobalMetricsLogger()->LogSingleValueMetric(
         "harmonic_frame_rate_fps", test_label_,
-        total_frames_duration_ms_double / (1000 * sum_squared_frame_durations_),
+        total_frames_duration_ms_double /
+            (1000 * total_squared_inter_frame_delay_),
         Unit::kHertz, ImprovementDirection::kBiggerIsBetter);
   }
 

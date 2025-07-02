@@ -49,7 +49,7 @@ public:
     };
     
 public:
-    ContentNegotiationContext(const webrtc::WebRtcKeyValueConfig& fieldTrials, bool isOutgoing, rtc::UniqueRandomIdGenerator *uniqueRandomIdGenerator);
+    ContentNegotiationContext(const webrtc::FieldTrialsView &fieldTrials, bool isOutgoing, cricket::MediaEngineInterface *mediaEngine, rtc::UniqueRandomIdGenerator *uniqueRandomIdGenerator);
     ~ContentNegotiationContext();
     
     void copyCodecsFromChannelManager(cricket::MediaEngineInterface *mediaEngine, bool randomize);

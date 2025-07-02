@@ -14,6 +14,7 @@ import androidx.annotation.NonNull;
 
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.tgnet.tl.TL_account;
 import org.telegram.tgnet.tl.TL_bots;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.BackupImageView;
@@ -157,19 +158,63 @@ public class DialogObject {
 
     @NonNull
     public static String getName(long dialogId) {
-        return getName(MessagesController.getInstance(UserConfig.selectedAccount).getUserOrChat(dialogId));
+        return getName(UserConfig.selectedAccount, dialogId);
+    }
+
+    @NonNull
+    public static String getStatus(long dialogId) {
+        return getStatus(UserConfig.selectedAccount, dialogId);
+    }
+
+    @NonNull
+    public static String getName(int currentAccount, long dialogId) {
+        return getName(MessagesController.getInstance(currentAccount).getUserOrChat(dialogId));
+    }
+
+    @NonNull
+    public static String getStatus(int currentAccount, long dialogId) {
+        return getStatus(currentAccount, MessagesController.getInstance(currentAccount).getUserOrChat(dialogId));
     }
 
     @NonNull
     public static String getName(TLObject obj) {
         if (obj instanceof TLRPC.User) {
-            return UserObject.getUserName((TLRPC.User) obj);
+            return AndroidUtilities.removeRTL(AndroidUtilities.removeDiacritics(UserObject.getUserName((TLRPC.User) obj)));
         } else if (obj instanceof TLRPC.Chat) {
             final TLRPC.Chat chat = (TLRPC.Chat) obj;
             return chat != null ? chat.title : "";
         } else {
             return "";
         }
+    }
+
+    @NonNull
+    public static String getStatus(int currentAccount, TLObject obj) {
+        if (obj instanceof TLRPC.User) {
+            return LocaleController.formatUserStatus(currentAccount, (TLRPC.User) obj, null, null);
+        } else if (obj instanceof TLRPC.Chat) {
+            final TLRPC.Chat chat = (TLRPC.Chat) obj;
+            if (chat.participants_count > 1) {
+                if (ChatObject.isChannelAndNotMegaGroup(chat)) {
+                    return LocaleController.formatPluralStringComma("Subscribers", chat.participants_count);
+                } else {
+                    return LocaleController.formatPluralStringComma("Members", chat.participants_count);
+                }
+            } else {
+                if (ChatObject.isChannelAndNotMegaGroup(chat)) {
+                    return LocaleController.getString(R.string.DiscussChannel);
+                } else {
+                    return LocaleController.getString(R.string.AccDescrGroup);
+                }
+            }
+        } else {
+            return "";
+        }
+    }
+
+    @NonNull
+    public static String getShortName(int currentAccount, long dialogId) {
+        return getShortName(MessagesController.getInstance(currentAccount).getUserOrChat(dialogId));
     }
 
     @NonNull
@@ -180,10 +225,10 @@ public class DialogObject {
     @NonNull
     public static String getShortName(TLObject obj) {
         if (obj instanceof TLRPC.User) {
-            return UserObject.getForcedFirstName((TLRPC.User) obj);
+            return AndroidUtilities.removeRTL(AndroidUtilities.removeDiacritics(UserObject.getForcedFirstName((TLRPC.User) obj)));
         } else if (obj instanceof TLRPC.Chat) {
             final TLRPC.Chat chat = (TLRPC.Chat) obj;
-            return chat != null ? chat.title : "";
+            return AndroidUtilities.removeRTL(AndroidUtilities.removeDiacritics(chat != null ? chat.title : ""));
         } else {
             return "";
         }
@@ -450,4 +495,18 @@ public class DialogObject {
         }
     }
 
+    public static boolean isEmpty(TL_account.RequirementToContact value) {
+        return value == null || value instanceof TL_account.requirementToContactEmpty;
+    }
+
+    public static boolean isPremiumBlocked(TL_account.RequirementToContact value) {
+        return value instanceof TL_account.requirementToContactPremium;
+    }
+
+    public static long getMessagesStarsPrice(TL_account.RequirementToContact value) {
+        if (value instanceof TL_account.requirementToContactPaidMessages) {
+            return ((TL_account.requirementToContactPaidMessages) value).stars_amount;
+        }
+        return 0;
+    }
 }

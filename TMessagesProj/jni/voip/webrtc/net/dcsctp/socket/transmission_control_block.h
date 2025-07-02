@@ -67,8 +67,8 @@ class TransmissionControlBlock : public Context {
   TSN my_initial_tsn() const override { return my_initial_tsn_; }
   TSN peer_initial_tsn() const override { return peer_initial_tsn_; }
   DcSctpSocketCallbacks& callbacks() const override { return callbacks_; }
-  void ObserveRTT(DurationMs rtt) override;
-  DurationMs current_rto() const override { return rto_.rto(); }
+  void ObserveRTT(webrtc::TimeDelta rtt) override;
+  webrtc::TimeDelta current_rto() const override { return rto_.rto(); }
   bool IncrementTxErrorCounter(absl::string_view reason) override {
     return tx_error_counter_.Increment(reason);
   }
@@ -80,7 +80,8 @@ class TransmissionControlBlock : public Context {
     return tx_error_counter_.IsExhausted();
   }
   void Send(SctpPacket::Builder& builder) override {
-    packet_sender_.Send(builder);
+    packet_sender_.Send(builder,
+                        /*write_checksum=*/!capabilities_.zero_checksum);
   }
 
   // Other accessors
@@ -90,7 +91,7 @@ class TransmissionControlBlock : public Context {
   StreamResetHandler& stream_reset_handler() { return stream_reset_handler_; }
   HeartbeatHandler& heartbeat_handler() { return heartbeat_handler_; }
   size_t cwnd() const { return retransmission_queue_.cwnd(); }
-  DurationMs current_srtt() const { return rto_.srtt(); }
+  webrtc::TimeDelta current_srtt() const { return rto_.srtt(); }
 
   // Returns this socket's verification tag, set in all packet headers.
   VerificationTag my_verification_tag() const { return my_verification_tag_; }
@@ -107,7 +108,7 @@ class TransmissionControlBlock : public Context {
   void MaybeSendSack();
 
   // Sends a FORWARD-TSN, if it is needed and allowed (rate-limited).
-  void MaybeSendForwardTsn(SctpPacket::Builder& builder, TimeMs now);
+  void MaybeSendForwardTsn(SctpPacket::Builder& builder, webrtc::Timestamp now);
 
   // Will be set while the socket is in kCookieEcho state. In this state, there
   // can only be a single packet outstanding, and it must contain the COOKIE
@@ -128,12 +129,12 @@ class TransmissionControlBlock : public Context {
   // Fills `builder` (which may already be filled with control chunks) with
   // other control and data chunks, and sends packets as much as can be
   // allowed by the congestion control algorithm.
-  void SendBufferedPackets(SctpPacket::Builder& builder, TimeMs now);
+  void SendBufferedPackets(SctpPacket::Builder& builder, webrtc::Timestamp now);
 
   // As above, but without passing in a builder. If `cookie_echo_chunk_` is
   // present, then only one packet will be sent, with this chunk as the first
   // chunk.
-  void SendBufferedPackets(TimeMs now) {
+  void SendBufferedPackets(webrtc::Timestamp now) {
     SctpPacket::Builder builder(peer_verification_tag_, options_);
     SendBufferedPackets(builder, now);
   }
@@ -148,11 +149,11 @@ class TransmissionControlBlock : public Context {
 
  private:
   // Will be called when the retransmission timer (t3-rtx) expires.
-  absl::optional<DurationMs> OnRtxTimerExpiry();
+  webrtc::TimeDelta OnRtxTimerExpiry();
   // Will be called when the delayed ack timer expires.
-  absl::optional<DurationMs> OnDelayedAckTimerExpiry();
+  webrtc::TimeDelta OnDelayedAckTimerExpiry();
 
-  const std::string log_prefix_;
+  const absl::string_view log_prefix_;
   const DcSctpOptions options_;
   TimerManager& timer_manager_;
   // Negotiated capabilities that both peers support.
@@ -171,7 +172,7 @@ class TransmissionControlBlock : public Context {
   const std::function<bool()> is_connection_established_;
   PacketSender& packet_sender_;
   // Rate limiting of FORWARD-TSN. Next can be sent at or after this timestamp.
-  TimeMs limit_forward_tsn_until_ = TimeMs(0);
+  webrtc::Timestamp limit_forward_tsn_until_ = webrtc::Timestamp::Zero();
 
   RetransmissionTimeout rto_;
   RetransmissionErrorCounter tx_error_counter_;

@@ -23,6 +23,22 @@
 
 namespace webrtc {
 namespace {
+const int kMinAv1SpatialLayerLongSideLength = 240;
+const int kMinAv1SpatialLayerShortSideLength = 135;
+
+int GetLimitedNumSpatialLayers(int width, int height) {
+  const bool is_landscape = width >= height;
+  const int min_width = is_landscape ? kMinAv1SpatialLayerLongSideLength
+                                     : kMinAv1SpatialLayerShortSideLength;
+  const int min_height = is_landscape ? kMinAv1SpatialLayerShortSideLength
+                                      : kMinAv1SpatialLayerLongSideLength;
+  const int num_layers_fit_horz = static_cast<int>(
+      std::floor(1 + std::max(0.0f, std::log2(1.0f * width / min_width))));
+  const int num_layers_fit_vert = static_cast<int>(
+      std::floor(1 + std::max(0.0f, std::log2(1.0f * height / min_height))));
+  return std::min(num_layers_fit_horz, num_layers_fit_vert);
+}
+
 absl::optional<ScalabilityMode> BuildScalabilityMode(int num_temporal_layers,
                                                      int num_spatial_layers) {
   char name[20];
@@ -69,6 +85,19 @@ bool SetAv1SvcConfig(VideoCodec& video_codec,
     }
   }
 
+  bool requested_single_spatial_layer =
+      ScalabilityModeToNumSpatialLayers(*scalability_mode) == 1;
+
+  if (ScalabilityMode reduced = LimitNumSpatialLayers(
+          *scalability_mode,
+          GetLimitedNumSpatialLayers(video_codec.width, video_codec.height));
+      *scalability_mode != reduced) {
+    RTC_LOG(LS_WARNING) << "Reduced number of spatial layers from "
+                        << ScalabilityModeToString(*scalability_mode) << " to "
+                        << ScalabilityModeToString(reduced);
+    scalability_mode = reduced;
+  }
+
   std::unique_ptr<ScalableVideoController> structure =
       CreateScalabilityStructure(*scalability_mode);
   if (structure == nullptr) {
@@ -92,7 +121,7 @@ bool SetAv1SvcConfig(VideoCodec& video_codec,
     spatial_layer.active = true;
   }
 
-  if (info.num_spatial_layers == 1) {
+  if (requested_single_spatial_layer) {
     SpatialLayer& spatial_layer = video_codec.spatialLayers[0];
     spatial_layer.minBitrate = video_codec.minBitrate;
     spatial_layer.maxBitrate = video_codec.maxBitrate;
@@ -103,10 +132,8 @@ bool SetAv1SvcConfig(VideoCodec& video_codec,
 
   for (int sl_idx = 0; sl_idx < info.num_spatial_layers; ++sl_idx) {
     SpatialLayer& spatial_layer = video_codec.spatialLayers[sl_idx];
-    // minBitrate and maxBitrate formulas are copied from vp9 settings and
-    // are not yet tuned for av1.
     const int num_pixels = spatial_layer.width * spatial_layer.height;
-    int min_bitrate_kbps = (600.0 * std::sqrt(num_pixels) - 95'000.0) / 1000.0;
+    int min_bitrate_kbps = (480.0 * std::sqrt(num_pixels) - 95'000.0) / 1000.0;
     spatial_layer.minBitrate = std::max(min_bitrate_kbps, 20);
     spatial_layer.maxBitrate = 50 + static_cast<int>(1.6 * num_pixels / 1000.0);
     spatial_layer.targetBitrate =

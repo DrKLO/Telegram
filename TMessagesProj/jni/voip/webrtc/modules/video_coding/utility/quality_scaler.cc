@@ -13,6 +13,7 @@
 #include <memory>
 #include <utility>
 
+#include "api/field_trials_view.h"
 #include "api/units/time_delta.h"
 #include "api/video/video_adaptation_reason.h"
 #include "rtc_base/checks.h"
@@ -175,37 +176,38 @@ class QualityScaler::CheckQpTask {
 };
 
 QualityScaler::QualityScaler(QualityScalerQpUsageHandlerInterface* handler,
-                             VideoEncoder::QpThresholds thresholds)
-    : QualityScaler(handler, thresholds, kMeasureMs) {}
+                             VideoEncoder::QpThresholds thresholds,
+                             const FieldTrialsView& field_trials)
+    : QualityScaler(handler, thresholds, field_trials, kMeasureMs) {}
 
 // Protected ctor, should not be called directly.
 QualityScaler::QualityScaler(QualityScalerQpUsageHandlerInterface* handler,
                              VideoEncoder::QpThresholds thresholds,
+                             const FieldTrialsView& field_trials,
                              int64_t default_sampling_period_ms)
     : handler_(handler),
       thresholds_(thresholds),
-      sampling_period_ms_(QualityScalerSettings::ParseFromFieldTrials()
+      sampling_period_ms_(QualityScalerSettings(field_trials)
                               .SamplingPeriodMs()
                               .value_or(default_sampling_period_ms)),
       fast_rampup_(true),
       // Arbitrarily choose size based on 30 fps for 5 seconds.
-      average_qp_(QualityScalerSettings::ParseFromFieldTrials()
+      average_qp_(QualityScalerSettings(field_trials)
                       .AverageQpWindow()
                       .value_or(5 * 30)),
       framedrop_percent_media_opt_(5 * 30),
       framedrop_percent_all_(5 * 30),
-      experiment_enabled_(QualityScalingExperiment::Enabled()),
-      min_frames_needed_(
-          QualityScalerSettings::ParseFromFieldTrials().MinFrames().value_or(
-              kMinFramesNeededToScale)),
-      initial_scale_factor_(QualityScalerSettings::ParseFromFieldTrials()
+      experiment_enabled_(QualityScalingExperiment::Enabled(field_trials)),
+      min_frames_needed_(QualityScalerSettings(field_trials)
+                             .MinFrames()
+                             .value_or(kMinFramesNeededToScale)),
+      initial_scale_factor_(QualityScalerSettings(field_trials)
                                 .InitialScaleFactor()
                                 .value_or(kSamplePeriodScaleFactor)),
-      scale_factor_(
-          QualityScalerSettings::ParseFromFieldTrials().ScaleFactor()) {
+      scale_factor_(QualityScalerSettings(field_trials).ScaleFactor()) {
   RTC_DCHECK_RUN_ON(&task_checker_);
   if (experiment_enabled_) {
-    config_ = QualityScalingExperiment::GetConfig();
+    config_ = QualityScalingExperiment::GetConfig(field_trials);
     qp_smoother_high_.reset(new QpSmoother(config_.alpha_high));
     qp_smoother_low_.reset(new QpSmoother(config_.alpha_low));
   }

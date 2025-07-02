@@ -38,40 +38,6 @@ class AsyncSSLServerSocket : public BufferedReadAdapter {
   void ProcessInput(char* data, size_t* len) override;
 };
 
-// Implements a proxy server socket for the SOCKS protocol.
-class AsyncSocksProxyServerSocket : public AsyncProxyServerSocket {
- public:
-  explicit AsyncSocksProxyServerSocket(Socket* socket);
-
-  AsyncSocksProxyServerSocket(const AsyncSocksProxyServerSocket&) = delete;
-  AsyncSocksProxyServerSocket& operator=(const AsyncSocksProxyServerSocket&) =
-      delete;
-
- private:
-  void ProcessInput(char* data, size_t* len) override;
-  void DirectSend(const ByteBufferWriter& buf);
-
-  void HandleHello(ByteBufferReader* request);
-  void SendHelloReply(uint8_t method);
-  void HandleAuth(ByteBufferReader* request);
-  void SendAuthReply(uint8_t result);
-  void HandleConnect(ByteBufferReader* request);
-  void SendConnectResult(int result, const SocketAddress& addr) override;
-
-  void Error(int error);
-
-  static const int kBufferSize = 1024;
-  enum State {
-    SS_HELLO,
-    SS_AUTH,
-    SS_CONNECT,
-    SS_CONNECT_PENDING,
-    SS_TUNNEL,
-    SS_ERROR
-  };
-  State state_;
-};
-
 }  // namespace rtc
 
 #endif  // RTC_BASE_SERVER_SOCKET_ADAPTERS_H_

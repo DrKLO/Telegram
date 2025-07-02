@@ -1,10 +1,17 @@
 #! /usr/bin/env perl
-# Copyright 1999-2016 The OpenSSL Project Authors. All Rights Reserved.
+# Copyright 1999-2018 The OpenSSL Project Authors. All Rights Reserved.
 #
-# Licensed under the OpenSSL license (the "License").  You may not use
-# this file except in compliance with the License.  You can obtain a copy
-# in the file LICENSE in the source distribution or at
-# https://www.openssl.org/source/license.html
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 
 package x86nasm;
@@ -12,7 +19,7 @@ package x86nasm;
 *out=\@::out;
 
 $::lbdecor="L\$";		# local label decoration
-$nmdecor=$::netware?"":"_";	# external name decoration
+$nmdecor="_";			# external name decoration
 $drdecor=$::mwerks?".":"";	# directive decoration
 
 $initseg="";
@@ -90,15 +97,7 @@ sub ::file
 %ifidn __OUTPUT_FORMAT__,obj
 section	code	use32 class=code align=64
 %elifidn __OUTPUT_FORMAT__,win32
-%ifdef __YASM_VERSION_ID__
-%if __YASM_VERSION_ID__ < 01010000h
-%error yasm version 1.1.0 or later needed.
-%endif
-; Yasm automatically includes @feat.00 and complains about redefining it.
-; https://www.tortall.net/projects/yasm/manual/html/objfmt-win32-safeseh.html
-%else
 \$\@feat.00 equ 1
-%endif
 section	.text	code align=64
 %else
 section	.text	code
@@ -191,9 +190,9 @@ sub ::safeseh
     push(@out,"%endif\n");
 }
 
-sub ::preprocessor_ifndef
+sub ::preprocessor_ifdef
 { my($define)=@_;
-    push(@out,"%ifndef ${define}\n");
+    push(@out,"%ifdef ${define}\n");
 }
 
 sub ::preprocessor_endif

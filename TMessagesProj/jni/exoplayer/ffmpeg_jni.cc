@@ -253,6 +253,50 @@ AVCodecContext *createContext(JNIEnv *env, AVCodec *codec, jbyteArray extraData,
   return context;
 }
 
+int get_swr_context(AVCodecContext *context, SwrContext **out) {
+    AVSampleFormat sampleFormat = context->sample_fmt;
+//    int channelCount = context->channels;
+    int channelLayout = context->channel_layout;
+    int sampleRate = context->sample_rate;
+
+    SwrContext *resampleContext = nullptr;
+    if (context->opaque) {
+        resampleContext = (SwrContext *) context->opaque;
+        int64_t value;
+        if (
+            (av_opt_get_int(resampleContext, "in_channel_layout", 0, &value) < 0 || value != channelLayout) ||
+            (av_opt_get_int(resampleContext, "out_channel_layout", 0, &value) < 0 || value != channelLayout) ||
+            (av_opt_get_int(resampleContext, "in_sample_rate", 0, &value) < 0 || value != sampleRate) ||
+            (av_opt_get_int(resampleContext, "out_sample_rate", 0, &value) < 0 || value != sampleRate) ||
+            (av_opt_get_int(resampleContext, "in_sample_fmt", 0, &value) < 0 || value != sampleFormat) ||
+            (av_opt_get_int(resampleContext, "out_sample_fmt", 0, &value) < 0 || value != context->request_sample_fmt)
+        ) {
+            swr_free(&resampleContext);
+            context->opaque = NULL;
+            resampleContext = NULL;
+        }
+    }
+
+    if (resampleContext == NULL) {
+        resampleContext = swr_alloc();
+        av_opt_set_int(resampleContext, "in_channel_layout", channelLayout, 0);
+        av_opt_set_int(resampleContext, "out_channel_layout", channelLayout, 0);
+        av_opt_set_int(resampleContext, "in_sample_rate", sampleRate, 0);
+        av_opt_set_int(resampleContext, "out_sample_rate", sampleRate, 0);
+        av_opt_set_int(resampleContext, "in_sample_fmt", sampleFormat, 0);
+        // The output format is always the requested format.
+        av_opt_set_int(resampleContext, "out_sample_fmt", context->request_sample_fmt, 0);
+        int result = swr_init(resampleContext);
+        if (result < 0) {
+            return result;
+        }
+        context->opaque = resampleContext;
+    }
+
+    *out = resampleContext;
+    return 0;
+}
+
 int decodePacket(AVCodecContext *context, AVPacket *packet,
                  uint8_t *outputBuffer, int outputSize) {
   int result = 0;
@@ -284,32 +328,16 @@ int decodePacket(AVCodecContext *context, AVPacket *packet,
     // Resample output.
     AVSampleFormat sampleFormat = context->sample_fmt;
     int channelCount = context->channels;
-    int channelLayout = context->channel_layout;
-    int sampleRate = context->sample_rate;
     int sampleCount = frame->nb_samples;
-    int dataSize = av_samples_get_buffer_size(NULL, channelCount, sampleCount,
-                                              sampleFormat, 1);
+
     SwrContext *resampleContext;
-    if (context->opaque) {
-      resampleContext = (SwrContext *)context->opaque;
-    } else {
-      resampleContext = swr_alloc();
-      av_opt_set_int(resampleContext, "in_channel_layout", channelLayout, 0);
-      av_opt_set_int(resampleContext, "out_channel_layout", channelLayout, 0);
-      av_opt_set_int(resampleContext, "in_sample_rate", sampleRate, 0);
-      av_opt_set_int(resampleContext, "out_sample_rate", sampleRate, 0);
-      av_opt_set_int(resampleContext, "in_sample_fmt", sampleFormat, 0);
-      // The output format is always the requested format.
-      av_opt_set_int(resampleContext, "out_sample_fmt",
-                     context->request_sample_fmt, 0);
-      result = swr_init(resampleContext);
-      if (result < 0) {
+    int result;
+    if ((result = get_swr_context(context, &resampleContext)) < 0) {
         logError("swr_init", result);
         av_frame_free(&frame);
         return transformError(result);
-      }
-      context->opaque = resampleContext;
     }
+
     int inSampleSize = av_get_bytes_per_sample(sampleFormat);
     int outSampleSize = av_get_bytes_per_sample(context->request_sample_fmt);
     int outSamples = swr_get_out_samples(resampleContext, sampleCount);

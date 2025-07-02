@@ -33,12 +33,12 @@ class AudioReceiveStreamInterface : public MediaReceiveStreamInterface {
     Stats();
     ~Stats();
     uint32_t remote_ssrc = 0;
-    int64_t payload_bytes_rcvd = 0;
-    int64_t header_and_padding_bytes_rcvd = 0;
-    uint32_t packets_rcvd = 0;
+    int64_t payload_bytes_received = 0;
+    int64_t header_and_padding_bytes_received = 0;
+    uint32_t packets_received = 0;
     uint64_t fec_packets_received = 0;
     uint64_t fec_packets_discarded = 0;
-    uint32_t packets_lost = 0;
+    int32_t packets_lost = 0;
     uint64_t packets_discarded = 0;
     uint32_t nacks_sent = 0;
     std::string codec_name;
@@ -83,7 +83,7 @@ class AudioReceiveStreamInterface : public MediaReceiveStreamInterface {
     // The timestamp at which the last packet was received, i.e. the time of the
     // local clock when it was received - not the RTP timestamp of that packet.
     // https://w3c.github.io/webrtc-stats/#dom-rtcinboundrtpstreamstats-lastpacketreceivedtimestamp
-    absl::optional<int64_t> last_packet_received_timestamp_ms;
+    absl::optional<Timestamp> last_packet_received;
     uint64_t jitter_buffer_flushes = 0;
     double relative_packet_arrival_delay_seconds = 0.0;
     int32_t interruption_count = 0;
@@ -94,12 +94,12 @@ class AudioReceiveStreamInterface : public MediaReceiveStreamInterface {
     // https://w3c.github.io/webrtc-stats/#remoteoutboundrtpstats-dict*
     absl::optional<int64_t> last_sender_report_timestamp_ms;
     absl::optional<int64_t> last_sender_report_remote_timestamp_ms;
-    uint32_t sender_reports_packets_sent = 0;
+    uint64_t sender_reports_packets_sent = 0;
     uint64_t sender_reports_bytes_sent = 0;
     uint64_t sender_reports_reports_count = 0;
     absl::optional<TimeDelta> round_trip_time;
     TimeDelta total_round_trip_time = TimeDelta::Zero();
-    int round_trip_time_measurements;
+    int round_trip_time_measurements = 0;
   };
 
   struct Config {
@@ -197,12 +197,6 @@ class AudioReceiveStreamInterface : public MediaReceiveStreamInterface {
   // This member will not change mid-stream and can be assumed to be const
   // post initialization.
   virtual uint32_t remote_ssrc() const = 0;
-
-  // Access the currently set rtp extensions. Must be called on the packet
-  // delivery thread.
-  // TODO(tommi): This is currently only called from
-  // `WebRtcAudioReceiveStream::GetRtpParameters()`. See if we can remove it.
-  virtual const std::vector<RtpExtension>& GetRtpExtensions() const = 0;
 
  protected:
   virtual ~AudioReceiveStreamInterface() {}

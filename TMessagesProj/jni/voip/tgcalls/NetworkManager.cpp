@@ -116,7 +116,7 @@ void NetworkManager::start() {
         _turnCustomizer.reset(new TurnCustomizerImpl());
     }
     
-    _relayPortFactory.reset(new ReflectorRelayPortFactory(_rtcServers));
+    _relayPortFactory.reset(new ReflectorRelayPortFactory(_rtcServers, false, 0, _thread->socketserver()));
     
     _portAllocator.reset(new cricket::BasicPortAllocator(_networkManager.get(), _socketFactory.get(), _turnCustomizer.get(), _relayPortFactory.get()));
 
@@ -175,18 +175,18 @@ void NetworkManager::start() {
 
     _portAllocator->SetConfiguration(stunServers, turnServers, 2, webrtc::NO_PRUNE, _turnCustomizer.get());
 
-    _asyncResolverFactory = std::make_unique<webrtc::BasicAsyncResolverFactory>();
+    _asyncResolverFactory = std::make_unique<webrtc::BasicAsyncDnsResolverFactory>();
 
     webrtc::IceTransportInit iceTransportInit;
     iceTransportInit.set_port_allocator(_portAllocator.get());
-    iceTransportInit.set_async_resolver_factory(_asyncResolverFactory.get());
+    iceTransportInit.set_async_dns_resolver_factory(_asyncResolverFactory.get());
 
     _transportChannel = cricket::P2PTransportChannel::Create("transport", 0, std::move(iceTransportInit));
 
     cricket::IceConfig iceConfig;
     iceConfig.continual_gathering_policy = cricket::GATHER_CONTINUALLY;
     iceConfig.prioritize_most_likely_candidate_pairs = true;
-    iceConfig.regather_on_failed_networks_interval = 8000;
+    iceConfig.regather_on_failed_networks_interval = cricket::REGATHER_ON_FAILED_NETWORKS_INTERVAL;
     _transportChannel->SetIceConfig(iceConfig);
 
     cricket::IceParameters localIceParameters(

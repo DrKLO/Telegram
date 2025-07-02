@@ -22,6 +22,7 @@
 #include "p2p/base/port.h"
 #include "rtc_base/async_packet_socket.h"
 #include "rtc_base/containers/flat_map.h"
+#include "rtc_base/network/received_packet.h"
 
 namespace cricket {
 
@@ -101,10 +102,7 @@ class TCPPort : public Port {
 
   // Receives packet signal from the local TCP Socket.
   void OnReadPacket(rtc::AsyncPacketSocket* socket,
-                    const char* data,
-                    size_t size,
-                    const rtc::SocketAddress& remote_addr,
-                    const int64_t& packet_time_us);
+                    const rtc::ReceivedPacket& packet);
 
   void OnSentPacket(rtc::AsyncPacketSocket* socket,
                     const rtc::SentPacket& sent_packet) override;
@@ -153,22 +151,26 @@ class TCPConnection : public Connection, public sigslot::has_slots<> {
                                    StunMessage* response) override;
 
  private:
+  friend class TCPPort;  // For `MaybeReconnect()`.
+
   // Helper function to handle the case when Ping or Send fails with error
   // related to socket close.
   void MaybeReconnect();
 
-  void CreateOutgoingTcpSocket();
+  void CreateOutgoingTcpSocket() RTC_RUN_ON(network_thread());
 
-  void ConnectSocketSignals(rtc::AsyncPacketSocket* socket);
+  void ConnectSocketSignals(rtc::AsyncPacketSocket* socket)
+      RTC_RUN_ON(network_thread());
+
+  void DisconnectSocketSignals(rtc::AsyncPacketSocket* socket)
+      RTC_RUN_ON(network_thread());
 
   void OnConnect(rtc::AsyncPacketSocket* socket);
   void OnClose(rtc::AsyncPacketSocket* socket, int error);
   void OnReadPacket(rtc::AsyncPacketSocket* socket,
-                    const char* data,
-                    size_t size,
-                    const rtc::SocketAddress& remote_addr,
-                    const int64_t& packet_time_us);
+                    const rtc::ReceivedPacket& packet);
   void OnReadyToSend(rtc::AsyncPacketSocket* socket);
+  void OnDestroyed(Connection* c);
 
   TCPPort* tcp_port() {
     RTC_DCHECK_EQ(port()->GetProtocol(), PROTO_TCP);
@@ -177,7 +179,7 @@ class TCPConnection : public Connection, public sigslot::has_slots<> {
 
   std::unique_ptr<rtc::AsyncPacketSocket> socket_;
   int error_;
-  bool outgoing_;
+  const bool outgoing_;
 
   // Guard against multiple outgoing tcp connection during a reconnect.
   bool connection_pending_;
@@ -194,8 +196,6 @@ class TCPConnection : public Connection, public sigslot::has_slots<> {
   int reconnection_timeout_;
 
   webrtc::ScopedTaskSafety network_safety_;
-
-  friend class TCPPort;
 };
 
 }  // namespace cricket

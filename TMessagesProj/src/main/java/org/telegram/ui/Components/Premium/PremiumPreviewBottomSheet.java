@@ -34,9 +34,11 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ContactsController;
+import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.Emoji;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaDataController;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
@@ -104,6 +106,7 @@ public class PremiumPreviewBottomSheet extends BottomSheetWithRecyclerListView i
     public View startEnterFromView;
     public View overrideTitleIcon;
     public TLRPC.InputStickerSet statusStickerSet;
+    public TLRPC.TL_emojiStatusCollectible emojiStatusCollectible;
     public boolean isEmojiStatus;
 
     int[] coords = new int[2];
@@ -290,7 +293,17 @@ public class PremiumPreviewBottomSheet extends BottomSheetWithRecyclerListView i
         if (titleView == null || subtitleView == null) {
             return;
         }
-        if (statusStickerSet != null) {
+        if (emojiStatusCollectible != null) {
+            String collectionName = emojiStatusCollectible.title;
+            int spaceIndex;
+            if ((spaceIndex = collectionName.lastIndexOf(' ')) >= 0) {
+                collectionName = collectionName.substring(0, spaceIndex);
+            }
+            titleView[0].setText(AndroidUtilities.replaceSingleTag(LocaleController.formatString(R.string.TelegramPremiumUserStatusCollectibleDialogTitle, DialogObject.getShortName(user), collectionName), () -> {
+                Browser.openUrl(getContext(), "https://" + MessagesController.getInstance(currentAccount).linkPrefix + "/nft/" + emojiStatusCollectible.slug);
+            }));
+            subtitleView.setText(AndroidUtilities.replaceTags(LocaleController.getString(R.string.TelegramPremiumUserStatusDialogSubtitle)));
+        } else if (statusStickerSet != null) {
             final String stickerSetPlaceholder = "<STICKERSET>";
             String string = LocaleController.formatString(R.string.TelegramPremiumUserStatusDialogTitle, ContactsController.formatName(user.first_name, user.last_name), stickerSetPlaceholder);
             CharSequence charSequence = AndroidUtilities.replaceSingleLink(string, accentColor == null ? getThemedColor(Theme.key_windowBackgroundWhiteBlueButton) : accentColor);

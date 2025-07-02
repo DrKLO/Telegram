@@ -80,7 +80,7 @@ class MockDcSctpSocketCallbacks : public DcSctpSocketCallbacks {
               << log_prefix_ << "Socket abort: " << ToString(error) << "; "
               << message;
         });
-    ON_CALL(*this, TimeMillis).WillByDefault([this]() { return now_; });
+    ON_CALL(*this, Now).WillByDefault([this]() { return now_; });
   }
 
   MOCK_METHOD(SendPacketStatus,
@@ -94,7 +94,7 @@ class MockDcSctpSocketCallbacks : public DcSctpSocketCallbacks {
     return timeout_manager_.CreateTimeout();
   }
 
-  MOCK_METHOD(TimeMs, TimeMillis, (), (override));
+  MOCK_METHOD(webrtc::Timestamp, Now, (), (override));
   uint32_t GetRandomInt(uint32_t low, uint32_t high) override {
     return random_.Rand(low, high);
   }
@@ -159,16 +159,20 @@ class MockDcSctpSocketCallbacks : public DcSctpSocketCallbacks {
     return ret;
   }
 
-  void AdvanceTime(DurationMs duration_ms) { now_ = now_ + duration_ms; }
-  void SetTime(TimeMs now) { now_ = now; }
+  void AdvanceTime(webrtc::TimeDelta duration) { now_ = now_ + duration; }
+  void SetTime(webrtc::Timestamp now) { now_ = now; }
 
   absl::optional<TimeoutID> GetNextExpiredTimeout() {
     return timeout_manager_.GetNextExpiredTimeout();
   }
 
+  webrtc::TimeDelta GetTimeToNextTimeout() const {
+    return timeout_manager_.GetTimeToNextTimeout();
+  }
+
  private:
   const std::string log_prefix_;
-  TimeMs now_ = TimeMs(0);
+  webrtc::Timestamp now_ = webrtc::Timestamp::Zero();
   webrtc::Random random_;
   FakeTimeoutManager timeout_manager_;
   std::deque<std::vector<uint8_t>> sent_packets_;

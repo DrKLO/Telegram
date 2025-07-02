@@ -13,12 +13,18 @@
 
 #include <stddef.h>
 
+#include <cstdint>
 #include <memory>
 
+#include "absl/types/optional.h"
+#include "api/sequence_checker.h"
+#include "api/units/time_delta.h"
 #include "rtc_base/async_packet_socket.h"
 #include "rtc_base/socket.h"
 #include "rtc_base/socket_address.h"
 #include "rtc_base/socket_factory.h"
+#include "rtc_base/system/no_unique_address.h"
+#include "rtc_base/thread_annotations.h"
 
 namespace rtc {
 
@@ -36,7 +42,7 @@ class AsyncUDPSocket : public AsyncPacketSocket {
   static AsyncUDPSocket* Create(SocketFactory* factory,
                                 const SocketAddress& bind_address);
   explicit AsyncUDPSocket(Socket* socket);
-  ~AsyncUDPSocket() override;
+  ~AsyncUDPSocket() = default;
 
   SocketAddress GetLocalAddress() const override;
   SocketAddress GetRemoteAddress() const override;
@@ -61,9 +67,11 @@ class AsyncUDPSocket : public AsyncPacketSocket {
   // Called when the underlying socket is ready to send.
   void OnWriteEvent(Socket* socket);
 
+  RTC_NO_UNIQUE_ADDRESS webrtc::SequenceChecker sequence_checker_;
   std::unique_ptr<Socket> socket_;
-  char* buf_;
-  size_t size_;
+  rtc::Buffer buffer_ RTC_GUARDED_BY(sequence_checker_);
+  absl::optional<webrtc::TimeDelta> socket_time_offset_
+      RTC_GUARDED_BY(sequence_checker_);
 };
 
 }  // namespace rtc

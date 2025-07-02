@@ -105,7 +105,7 @@ public class CustomEmojiReactionsWindow {
     private ValueAnimator valueAnimator;
     private final int type;
 
-    public CustomEmojiReactionsWindow(int type, BaseFragment baseFragment, List<ReactionsLayoutInBubble.VisibleReaction> reactions, HashSet<ReactionsLayoutInBubble.VisibleReaction> selectedReactions, ReactionsContainerLayout reactionsContainerLayout, Theme.ResourcesProvider resourcesProvider) {
+    public CustomEmojiReactionsWindow(int type, BaseFragment baseFragment, List<ReactionsLayoutInBubble.VisibleReaction> reactions, HashSet<ReactionsLayoutInBubble.VisibleReaction> selectedReactions, ReactionsContainerLayout reactionsContainerLayout, Theme.ResourcesProvider resourcesProvider, boolean forceAttachToParent) {
         this.type = type;
         this.reactions = reactions;
         this.baseFragment = baseFragment;
@@ -166,7 +166,7 @@ public class CustomEmojiReactionsWindow {
                 dismiss();
             }
         });
-        attachToParent = type == TYPE_STORY_LIKES || type == TYPE_STICKER_SET_EMOJI || type == TYPE_MESSAGE_EFFECTS;
+        attachToParent = type == TYPE_STORY_LIKES || type == TYPE_STICKER_SET_EMOJI || type == TYPE_MESSAGE_EFFECTS || forceAttachToParent;
 
         // sizeNotifierFrameLayout.setFitsSystemWindows(true);
 

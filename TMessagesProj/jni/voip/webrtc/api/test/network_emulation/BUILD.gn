@@ -1,0 +1,52 @@
+# Copyright (c) 2019 The WebRTC project authors. All Rights Reserved.
+#
+# Use of this source code is governed by a BSD-style license
+# that can be found in the LICENSE file in the root of the source
+# tree. An additional intellectual property rights grant can be found
+# in the file PATENTS.  All contributing project authors may
+# be found in the AUTHORS file in the root of the source tree.
+
+import("../../../webrtc.gni")
+
+rtc_library("network_emulation") {
+  visibility = [ "*" ]
+
+  sources = [
+    "cross_traffic.h",
+    "network_emulation_interfaces.cc",
+    "network_emulation_interfaces.h",
+  ]
+
+  deps = [
+    "../..:array_view",
+    "../../../rtc_base:checks",
+    "../../../rtc_base:copy_on_write_buffer",
+    "../../../rtc_base:ip_address",
+    "../../../rtc_base:net_helper",
+    "../../../rtc_base:socket_address",
+    "../../numerics",
+    "../../task_queue",
+    "../../units:data_rate",
+    "../../units:data_size",
+    "../../units:time_delta",
+    "../../units:timestamp",
+  ]
+  absl_deps = [ "//third_party/abseil-cpp/absl/types:optional" ]
+}
+
+rtc_library("create_cross_traffic") {
+  visibility = [ "*" ]
+  testonly = true
+
+  sources = [
+    "create_cross_traffic.cc",
+    "create_cross_traffic.h",
+  ]
+
+  deps = [
+    ":network_emulation",
+    "../..:network_emulation_manager_api",
+    "../../../rtc_base/task_utils:repeating_task",
+    "../../../test/network:emulated_network",
+  ]
+}

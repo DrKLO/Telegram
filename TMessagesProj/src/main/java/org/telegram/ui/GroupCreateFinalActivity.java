@@ -622,7 +622,7 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
                 }
                 LocationActivity fragment = new LocationActivity(LocationActivity.LOCATION_TYPE_GROUP);
                 fragment.setDialogId(0);
-                fragment.setDelegate((location, live, notify, scheduleDate) -> {
+                fragment.setDelegate((location, live, notify, scheduleDate, payStars) -> {
                     currentGroupCreateLocation.setLatitude(location.geo.lat);
                     currentGroupCreateLocation.setLongitude(location.geo._long);
                     currentGroupCreateAddress = location.address;

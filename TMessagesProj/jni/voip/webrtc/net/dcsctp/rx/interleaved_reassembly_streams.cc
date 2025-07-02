@@ -106,8 +106,8 @@ size_t InterleavedReassemblyStreams::Stream::AssembleMessage(
   return payload_size;
 }
 
-size_t InterleavedReassemblyStreams::Stream::EraseTo(MID message_id) {
-  UnwrappedMID unwrapped_mid = mid_unwrapper_.Unwrap(message_id);
+size_t InterleavedReassemblyStreams::Stream::EraseTo(MID mid) {
+  UnwrappedMID unwrapped_mid = mid_unwrapper_.Unwrap(mid);
 
   size_t removed_bytes = 0;
   auto it = chunks_by_mid_.begin();
@@ -135,7 +135,7 @@ int InterleavedReassemblyStreams::Stream::Add(UnwrappedTSN tsn, Data data) {
   RTC_DCHECK_EQ(*data.is_unordered, *stream_id_.unordered);
   RTC_DCHECK_EQ(*data.stream_id, *stream_id_.stream_id);
   int queued_bytes = data.size();
-  UnwrappedMID mid = mid_unwrapper_.Unwrap(data.message_id);
+  UnwrappedMID mid = mid_unwrapper_.Unwrap(data.mid);
   FSN fsn = data.fsn;
   auto [unused, inserted] =
       chunks_by_mid_[mid].emplace(fsn, std::make_pair(tsn, std::move(data)));
@@ -208,7 +208,7 @@ size_t InterleavedReassemblyStreams::HandleForwardTsn(
   for (const auto& skipped : skipped_streams) {
     removed_bytes +=
         GetOrCreateStream(FullStreamId(skipped.unordered, skipped.stream_id))
-            .EraseTo(skipped.message_id);
+            .EraseTo(skipped.mid);
   }
   return removed_bytes;
 }

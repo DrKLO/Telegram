@@ -18,6 +18,7 @@
 #include <string>
 
 #include "gtest/gtest.h"
+#include "absl/strings/str_cat.h"
 
 namespace {
 
@@ -76,16 +77,6 @@ std::string StreamFormatToString(std::ios_base::fmtflags flags,
   return msg.str();
 }
 
-void CheckUint128Case(const Uint128TestCase& test_case) {
-  std::ostringstream os;
-  os.flags(test_case.flags);
-  os.width(test_case.width);
-  os.fill(kFill);
-  os << test_case.value;
-  SCOPED_TRACE(StreamFormatToString(test_case.flags, test_case.width));
-  EXPECT_EQ(test_case.expected, os.str());
-}
-
 constexpr std::ios::fmtflags kDec = std::ios::dec;
 constexpr std::ios::fmtflags kOct = std::ios::oct;
 constexpr std::ios::fmtflags kHex = std::ios::hex;
@@ -95,6 +86,19 @@ constexpr std::ios::fmtflags kRight = std::ios::right;
 constexpr std::ios::fmtflags kUpper = std::ios::uppercase;
 constexpr std::ios::fmtflags kBase = std::ios::showbase;
 constexpr std::ios::fmtflags kPos = std::ios::showpos;
+
+void CheckUint128Case(const Uint128TestCase& test_case) {
+  if (test_case.flags == kDec && test_case.width == 0) {
+    EXPECT_EQ(absl::StrCat(test_case.value), test_case.expected);
+  }
+  std::ostringstream os;
+  os.flags(test_case.flags);
+  os.width(test_case.width);
+  os.fill(kFill);
+  os << test_case.value;
+  SCOPED_TRACE(StreamFormatToString(test_case.flags, test_case.width));
+  EXPECT_EQ(os.str(), test_case.expected);
+}
 
 TEST(Uint128, OStreamValueTest) {
   CheckUint128Case({1, kDec, /*width = */ 0, "1"});
@@ -131,11 +135,11 @@ TEST(Uint128, OStreamValueTest) {
                     "2000000000000000000000000000000000000000000"});
   CheckUint128Case({absl::MakeUint128(0x8000000000000000, 0), kHex,
                     /*width = */ 0, "80000000000000000000000000000000"});
-  CheckUint128Case({absl::kuint128max, kDec, /*width = */ 0,
+  CheckUint128Case({absl::Uint128Max(), kDec, /*width = */ 0,
                     "340282366920938463463374607431768211455"});
-  CheckUint128Case({absl::kuint128max, kOct, /*width = */ 0,
+  CheckUint128Case({absl::Uint128Max(), kOct, /*width = */ 0,
                     "3777777777777777777777777777777777777777777"});
-  CheckUint128Case({absl::kuint128max, kHex, /*width = */ 0,
+  CheckUint128Case({absl::Uint128Max(), kHex, /*width = */ 0,
                     "ffffffffffffffffffffffffffffffff"});
 }
 
@@ -155,13 +159,16 @@ struct Int128TestCase {
 };
 
 void CheckInt128Case(const Int128TestCase& test_case) {
+  if (test_case.flags == kDec && test_case.width == 0) {
+    EXPECT_EQ(absl::StrCat(test_case.value), test_case.expected);
+  }
   std::ostringstream os;
   os.flags(test_case.flags);
   os.width(test_case.width);
   os.fill(kFill);
   os << test_case.value;
   SCOPED_TRACE(StreamFormatToString(test_case.flags, test_case.width));
-  EXPECT_EQ(test_case.expected, os.str());
+  EXPECT_EQ(os.str(), test_case.expected);
 }
 
 TEST(Int128, OStreamValueTest) {
@@ -194,35 +201,33 @@ TEST(Int128, OStreamValueTest) {
       {absl::MakeInt128(1, 0), kHex, /*width = */ 0, "10000000000000000"});
   CheckInt128Case({absl::MakeInt128(std::numeric_limits<int64_t>::max(),
                                     std::numeric_limits<uint64_t>::max()),
-                   std::ios::dec, /*width = */ 0,
+                   kDec, /*width = */ 0,
                    "170141183460469231731687303715884105727"});
   CheckInt128Case({absl::MakeInt128(std::numeric_limits<int64_t>::max(),
                                     std::numeric_limits<uint64_t>::max()),
-                   std::ios::oct, /*width = */ 0,
+                   kOct, /*width = */ 0,
                    "1777777777777777777777777777777777777777777"});
   CheckInt128Case({absl::MakeInt128(std::numeric_limits<int64_t>::max(),
                                     std::numeric_limits<uint64_t>::max()),
-                   std::ios::hex, /*width = */ 0,
-                   "7fffffffffffffffffffffffffffffff"});
+                   kHex, /*width = */ 0, "7fffffffffffffffffffffffffffffff"});
   CheckInt128Case({absl::MakeInt128(std::numeric_limits<int64_t>::min(), 0),
-                   std::ios::dec, /*width = */ 0,
+                   kDec, /*width = */ 0,
                    "-170141183460469231731687303715884105728"});
   CheckInt128Case({absl::MakeInt128(std::numeric_limits<int64_t>::min(), 0),
-                   std::ios::oct, /*width = */ 0,
+                   kOct, /*width = */ 0,
                    "2000000000000000000000000000000000000000000"});
   CheckInt128Case({absl::MakeInt128(std::numeric_limits<int64_t>::min(), 0),
-                   std::ios::hex, /*width = */ 0,
-                   "80000000000000000000000000000000"});
-  CheckInt128Case({-1, std::ios::dec, /*width = */ 0, "-1"});
-  CheckInt128Case({-1, std::ios::oct, /*width = */ 0,
+                   kHex, /*width = */ 0, "80000000000000000000000000000000"});
+  CheckInt128Case({-1, kDec, /*width = */ 0, "-1"});
+  CheckInt128Case({-1, kOct, /*width = */ 0,
                    "3777777777777777777777777777777777777777777"});
   CheckInt128Case(
-      {-1, std::ios::hex, /*width = */ 0, "ffffffffffffffffffffffffffffffff"});
-  CheckInt128Case({-12345, std::ios::dec, /*width = */ 0, "-12345"});
-  CheckInt128Case({-12345, std::ios::oct, /*width = */ 0,
+      {-1, kHex, /*width = */ 0, "ffffffffffffffffffffffffffffffff"});
+  CheckInt128Case({-12345, kDec, /*width = */ 0, "-12345"});
+  CheckInt128Case({-12345, kOct, /*width = */ 0,
                    "3777777777777777777777777777777777777747707"});
-  CheckInt128Case({-12345, std::ios::hex, /*width = */ 0,
-                   "ffffffffffffffffffffffffffffcfc7"});
+  CheckInt128Case(
+      {-12345, kHex, /*width = */ 0, "ffffffffffffffffffffffffffffcfc7"});
 }
 
 std::vector<Int128TestCase> GetInt128FormatCases();

@@ -46,11 +46,16 @@
 #define ABSL_BASE_DYNAMIC_ANNOTATIONS_H_
 
 #include <stddef.h>
+#include <stdint.h>
 
 #include "absl/base/attributes.h"
 #include "absl/base/config.h"
 #ifdef __cplusplus
 #include "absl/base/macros.h"
+#endif
+
+#ifdef ABSL_HAVE_HWADDRESS_SANITIZER
+#include <sanitizer/hwasan_interface.h>
 #endif
 
 // TODO(rogeeff): Remove after the backward compatibility period.
@@ -111,7 +116,7 @@
 
 #if ABSL_INTERNAL_RACE_ANNOTATIONS_ENABLED == 1
 // Some of the symbols used in this section (e.g. AnnotateBenignRaceSized) are
-// defined by the compiler-based santizer implementation, not by the Abseil
+// defined by the compiler-based sanitizer implementation, not by the Abseil
 // library. Therefore they do not use ABSL_INTERNAL_C_SYMBOL.
 
 // -------------------------------------------------------------
@@ -247,24 +252,8 @@ ABSL_INTERNAL_END_EXTERN_C
 
 #else  // !defined(ABSL_HAVE_MEMORY_SANITIZER)
 
-// TODO(rogeeff): remove this branch
-#ifdef ABSL_HAVE_THREAD_SANITIZER
-#define ABSL_ANNOTATE_MEMORY_IS_INITIALIZED(address, size) \
-  do {                                                     \
-    (void)(address);                                       \
-    (void)(size);                                          \
-  } while (0)
-#define ABSL_ANNOTATE_MEMORY_IS_UNINITIALIZED(address, size) \
-  do {                                                       \
-    (void)(address);                                         \
-    (void)(size);                                            \
-  } while (0)
-#else
-
 #define ABSL_ANNOTATE_MEMORY_IS_INITIALIZED(address, size)    // empty
 #define ABSL_ANNOTATE_MEMORY_IS_UNINITIALIZED(address, size)  // empty
-
-#endif
 
 #endif  // ABSL_HAVE_MEMORY_SANITIZER
 
@@ -455,6 +444,26 @@ ABSL_NAMESPACE_END
 #define ABSL_ADDRESS_SANITIZER_REDZONE(name) static_assert(true, "")
 
 #endif  // ABSL_HAVE_ADDRESS_SANITIZER
+
+// -------------------------------------------------------------------------
+// HWAddress sanitizer annotations
+
+#ifdef __cplusplus
+namespace absl {
+#ifdef ABSL_HAVE_HWADDRESS_SANITIZER
+// Under HWASAN changes the tag of the pointer.
+template <typename T>
+T* HwasanTagPointer(T* ptr, uintptr_t tag) {
+  return reinterpret_cast<T*>(__hwasan_tag_pointer(ptr, tag));
+}
+#else
+template <typename T>
+T* HwasanTagPointer(T* ptr, uintptr_t) {
+  return ptr;
+}
+#endif
+}  // namespace absl
+#endif
 
 // -------------------------------------------------------------------------
 // Undefine the macros intended only for this file.

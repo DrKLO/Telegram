@@ -12,6 +12,7 @@
 #define MODULES_AUDIO_PROCESSING_NS_QUANTILE_NOISE_ESTIMATOR_H_
 
 #include <math.h>
+
 #include <array>
 
 #include "api/array_view.h"

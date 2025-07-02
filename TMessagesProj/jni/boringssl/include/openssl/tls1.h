@@ -1,158 +1,25 @@
-/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
- * All rights reserved.
- *
- * This package is an SSL implementation written
- * by Eric Young (eay@cryptsoft.com).
- * The implementation was written so as to conform with Netscapes SSL.
- *
- * This library is free for commercial and non-commercial use as long as
- * the following conditions are aheared to.  The following conditions
- * apply to all code found in this distribution, be it the RC4, RSA,
- * lhash, DES, etc., code; not just the SSL code.  The SSL documentation
- * included with this distribution is covered by the same copyright terms
- * except that the holder is Tim Hudson (tjh@cryptsoft.com).
- *
- * Copyright remains Eric Young's, and as such any Copyright notices in
- * the code are not to be removed.
- * If this package is used in a product, Eric Young should be given attribution
- * as the author of the parts of the library used.
- * This can be in the form of a textual message at program startup or
- * in documentation (online or textual) provided with the package.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- * 1. Redistributions of source code must retain the copyright
- *    notice, this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
- * 3. All advertising materials mentioning features or use of this software
- *    must display the following acknowledgement:
- *    "This product includes cryptographic software written by
- *     Eric Young (eay@cryptsoft.com)"
- *    The word 'cryptographic' can be left out if the rouines from the library
- *    being used are not cryptographic related :-).
- * 4. If you include any Windows specific code (or a derivative thereof) from
- *    the apps directory (application code) you must include an acknowledgement:
- *    "This product includes software written by Tim Hudson (tjh@cryptsoft.com)"
- *
- * THIS SOFTWARE IS PROVIDED BY ERIC YOUNG ``AS IS'' AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
- * SUCH DAMAGE.
- *
- * The licence and distribution terms for any publically available version or
- * derivative of this code cannot be changed.  i.e. this code cannot simply be
- * copied and put under another distribution licence
- * [including the GNU Public Licence.]
- */
-/* ====================================================================
- * Copyright (c) 1998-2006 The OpenSSL Project.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- *
- * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- *
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- *
- * 3. All advertising materials mentioning features or use of this
- *    software must display the following acknowledgment:
- *    "This product includes software developed by the OpenSSL Project
- *    for use in the OpenSSL Toolkit. (http://www.openssl.org/)"
- *
- * 4. The names "OpenSSL Toolkit" and "OpenSSL Project" must not be used to
- *    endorse or promote products derived from this software without
- *    prior written permission. For written permission, please contact
- *    openssl-core@openssl.org.
- *
- * 5. Products derived from this software may not be called "OpenSSL"
- *    nor may "OpenSSL" appear in their names without prior written
- *    permission of the OpenSSL Project.
- *
- * 6. Redistributions of any form whatsoever must retain the following
- *    acknowledgment:
- *    "This product includes software developed by the OpenSSL Project
- *    for use in the OpenSSL Toolkit (http://www.openssl.org/)"
- *
- * THIS SOFTWARE IS PROVIDED BY THE OpenSSL PROJECT ``AS IS'' AND ANY
- * EXPRESSED OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
- * PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE OpenSSL PROJECT OR
- * ITS CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
- * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
- * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
- * OF THE POSSIBILITY OF SUCH DAMAGE.
- * ====================================================================
- *
- * This product includes cryptographic software written by Eric Young
- * (eay@cryptsoft.com).  This product includes software written by Tim
- * Hudson (tjh@cryptsoft.com).
- *
- */
-/* ====================================================================
- * Copyright 2002 Sun Microsystems, Inc. ALL RIGHTS RESERVED.
- *
- * Portions of the attached software ("Contribution") are developed by
- * SUN MICROSYSTEMS, INC., and are contributed to the OpenSSL project.
- *
- * The Contribution is licensed pursuant to the OpenSSL open source
- * license provided above.
- *
- * ECC cipher suite support in OpenSSL originally written by
- * Vipul Gupta and Sumit Gupta of Sun Microsystems Laboratories.
- *
- */
-/* ====================================================================
- * Copyright 2005 Nokia. All rights reserved.
- *
- * The portions of the attached software ("Contribution") is developed by
- * Nokia Corporation and is licensed pursuant to the OpenSSL open source
- * license.
- *
- * The Contribution, originally written by Mika Kousa and Pasi Eronen of
- * Nokia Corporation, consists of the "PSK" (Pre-Shared Key) ciphersuites
- * support (see RFC 4279) to OpenSSL.
- *
- * No patent licenses or other rights except those expressly stated in
- * the OpenSSL open source license shall be deemed granted or received
- * expressly, by implication, estoppel, or otherwise.
- *
- * No assurances are provided by Nokia that the Contribution does not
- * infringe the patent or other intellectual property rights of any third
- * party or that the license provides you with all the necessary rights
- * to make use of the Contribution.
- *
- * THE SOFTWARE IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND. IN
- * ADDITION TO THE DISCLAIMERS INCLUDED IN THE LICENSE, NOKIA
- * SPECIFICALLY DISCLAIMS ANY LIABILITY FOR CLAIMS BROUGHT BY YOU OR ANY
- * OTHER ENTITY BASED ON INFRINGEMENT OF INTELLECTUAL PROPERTY RIGHTS OR
- * OTHERWISE.
- */
+// Copyright 1995-2016 The OpenSSL Project Authors. All Rights Reserved.
+// Copyright (c) 2002, Oracle and/or its affiliates. All rights reserved.
+// Copyright 2005 Nokia. All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 #ifndef OPENSSL_HEADER_TLS1_H
 #define OPENSSL_HEADER_TLS1_H
 
-#include <openssl/base.h>
+#include <openssl/base.h>   // IWYU pragma: export
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
@@ -171,7 +38,6 @@ extern "C" {
 #define TLS1_AD_USER_CANCELLED 90
 #define TLS1_AD_NO_RENEGOTIATION 100
 #define TLS1_AD_MISSING_EXTENSION 109
-// codes 110-114 are from RFC3546
 #define TLS1_AD_UNSUPPORTED_EXTENSION 110
 #define TLS1_AD_CERTIFICATE_UNOBTAINABLE 111
 #define TLS1_AD_UNRECOGNIZED_NAME 112
@@ -179,45 +45,54 @@ extern "C" {
 #define TLS1_AD_BAD_CERTIFICATE_HASH_VALUE 114
 #define TLS1_AD_UNKNOWN_PSK_IDENTITY 115
 #define TLS1_AD_CERTIFICATE_REQUIRED 116
+#define TLS1_AD_NO_APPLICATION_PROTOCOL 120
+#define TLS1_AD_ECH_REQUIRED 121  // draft-ietf-tls-esni-13
 
-// ExtensionType values from RFC6066
+// ExtensionType values from RFC 6066
 #define TLSEXT_TYPE_server_name 0
 #define TLSEXT_TYPE_status_request 5
 
-// ExtensionType values from RFC4492
+// ExtensionType values from RFC 4492
 #define TLSEXT_TYPE_ec_point_formats 11
 
-// ExtensionType values from RFC5246
+// ExtensionType values from RFC 5246
 #define TLSEXT_TYPE_signature_algorithms 13
 
-// ExtensionType value from RFC5764
+// ExtensionType value from RFC 5764
 #define TLSEXT_TYPE_srtp 14
 
-// ExtensionType value from RFC7301
+// ExtensionType value from RFC 7301
 #define TLSEXT_TYPE_application_layer_protocol_negotiation 16
 
-// ExtensionType value from RFC7685
+// ExtensionType value from RFC 7685
 #define TLSEXT_TYPE_padding 21
 
-// ExtensionType value from RFC7627
+// ExtensionType value from RFC 7627
 #define TLSEXT_TYPE_extended_master_secret 23
 
-// ExtensionType value from draft-ietf-tokbind-negotiation-10
-#define TLSEXT_TYPE_token_binding 24
+// ExtensionType value from draft-ietf-quic-tls. Drafts 00 through 32 use
+// 0xffa5 which is part of the Private Use section of the registry, and it
+// collides with TLS-LTS and, based on scans, something else too (though this
+// hasn't been a problem in practice since it's QUIC-only). Drafts 33 onward
+// use the value 57 which was officially registered with IANA.
+#define TLSEXT_TYPE_quic_transport_parameters_legacy 0xffa5
 
-// ExtensionType value from draft-ietf-quic-tls. Note that this collides with
-// TLS-LTS and, based on scans, something else too. Since it's QUIC-only, that
-// shouldn't be a problem in practice.
-#define TLSEXT_TYPE_quic_transport_parameters 0xffa5
+// ExtensionType value from RFC 9000
+#define TLSEXT_TYPE_quic_transport_parameters 57
 
-// ExtensionType value assigned to
-// https://tools.ietf.org/html/draft-ietf-tls-certificate-compression-03
+// TLSEXT_TYPE_quic_transport_parameters_standard is an alias for
+// |TLSEXT_TYPE_quic_transport_parameters|. Use
+// |TLSEXT_TYPE_quic_transport_parameters| instead.
+#define TLSEXT_TYPE_quic_transport_parameters_standard \
+  TLSEXT_TYPE_quic_transport_parameters
+
+// ExtensionType value from RFC 8879
 #define TLSEXT_TYPE_cert_compression 27
 
-// ExtensionType value from RFC4507
+// ExtensionType value from RFC 4507
 #define TLSEXT_TYPE_session_ticket 35
 
-// ExtensionType values from RFC8446
+// ExtensionType values from RFC 8446
 #define TLSEXT_TYPE_supported_groups 10
 #define TLSEXT_TYPE_pre_shared_key 41
 #define TLSEXT_TYPE_early_data 42
@@ -228,14 +103,27 @@ extern "C" {
 #define TLSEXT_TYPE_signature_algorithms_cert 50
 #define TLSEXT_TYPE_key_share 51
 
-// ExtensionType value from RFC5746
+// ExtensionType value from RFC 5746
 #define TLSEXT_TYPE_renegotiate 0xff01
 
-// ExtensionType value from draft-ietf-tls-subcerts. This is not an IANA defined
-// extension number.
-#define TLSEXT_TYPE_delegated_credential 0xff02
+// ExtensionType value from RFC 9345
+#define TLSEXT_TYPE_delegated_credential 34
 
-// ExtensionType value from RFC6962
+// ExtensionType value from draft-vvv-tls-alps. This is not an IANA defined
+// extension number.
+#define TLSEXT_TYPE_application_settings_old 17513
+#define TLSEXT_TYPE_application_settings 17613
+
+// ExtensionType values from draft-ietf-tls-esni-13. This is not an IANA defined
+// extension number.
+#define TLSEXT_TYPE_encrypted_client_hello 0xfe0d
+#define TLSEXT_TYPE_ech_outer_extensions 0xfd00
+
+// ExtensionType values from draft-bmw-tls-pake13. This is not an IANA defined
+// extension number.
+#define TLSEXT_TYPE_pake 0x8a3b
+
+// ExtensionType value from RFC 6962
 #define TLSEXT_TYPE_certificate_timestamp 18
 
 // This is not an IANA defined extension number
@@ -245,7 +133,12 @@ extern "C" {
 #define TLSEXT_TYPE_channel_id 30032
 
 // This is not an IANA defined extension number
-#define TLSEXT_TYPE_pq_experiment_signal 54538
+// TODO(crbug.com/398275713): Replace with the final codepoint once
+// standardization completes.
+#define TLSEXT_TYPE_trust_anchors 0xca34
+
+// ExtensionType value from draft-ietf-tls-tlsflags.
+#define TLSEXT_TYPE_tls_flags 62
 
 // status request value from RFC 3546
 #define TLSEXT_STATUSTYPE_nothing (-1)
@@ -270,21 +163,21 @@ extern "C" {
 #define TLSEXT_hash_sha384 5
 #define TLSEXT_hash_sha512 6
 
-// From https://tools.ietf.org/html/draft-ietf-tls-certificate-compression-03#section-3
+// From https://www.rfc-editor.org/rfc/rfc8879.html#section-3
 #define TLSEXT_cert_compression_zlib 1
 #define TLSEXT_cert_compression_brotli 2
 
 #define TLSEXT_MAXLEN_host_name 255
 
 // PSK ciphersuites from 4279
-#define TLS1_CK_PSK_WITH_RC4_128_SHA                    0x0300008A
-#define TLS1_CK_PSK_WITH_3DES_EDE_CBC_SHA               0x0300008B
-#define TLS1_CK_PSK_WITH_AES_128_CBC_SHA                0x0300008C
-#define TLS1_CK_PSK_WITH_AES_256_CBC_SHA                0x0300008D
+#define TLS1_CK_PSK_WITH_RC4_128_SHA 0x0300008A
+#define TLS1_CK_PSK_WITH_3DES_EDE_CBC_SHA 0x0300008B
+#define TLS1_CK_PSK_WITH_AES_128_CBC_SHA 0x0300008C
+#define TLS1_CK_PSK_WITH_AES_256_CBC_SHA 0x0300008D
 
 // PSK ciphersuites from RFC 5489
-#define TLS1_CK_ECDHE_PSK_WITH_AES_128_CBC_SHA          0x0300C035
-#define TLS1_CK_ECDHE_PSK_WITH_AES_256_CBC_SHA          0x0300C036
+#define TLS1_CK_ECDHE_PSK_WITH_AES_128_CBC_SHA 0x0300C035
+#define TLS1_CK_ECDHE_PSK_WITH_AES_256_CBC_SHA 0x0300C036
 
 // Additional TLS ciphersuites from expired Internet Draft
 // draft-ietf-tls-56-bit-ciphersuites-01.txt
@@ -299,7 +192,7 @@ extern "C" {
 #define TLS1_CK_DHE_DSS_EXPORT1024_WITH_RC4_56_SHA 0x03000065
 #define TLS1_CK_DHE_DSS_WITH_RC4_128_SHA 0x03000066
 
-// AES ciphersuites from RFC3268
+// AES ciphersuites from RFC 3268
 
 #define TLS1_CK_RSA_WITH_AES_128_SHA 0x0300002F
 #define TLS1_CK_DH_DSS_WITH_AES_128_SHA 0x03000030
@@ -323,7 +216,7 @@ extern "C" {
 #define TLS1_CK_DH_RSA_WITH_AES_128_SHA256 0x0300003F
 #define TLS1_CK_DHE_DSS_WITH_AES_128_SHA256 0x03000040
 
-// Camellia ciphersuites from RFC4132
+// Camellia ciphersuites from RFC 4132
 #define TLS1_CK_RSA_WITH_CAMELLIA_128_CBC_SHA 0x03000041
 #define TLS1_CK_DH_DSS_WITH_CAMELLIA_128_CBC_SHA 0x03000042
 #define TLS1_CK_DH_RSA_WITH_CAMELLIA_128_CBC_SHA 0x03000043
@@ -340,7 +233,7 @@ extern "C" {
 #define TLS1_CK_ADH_WITH_AES_128_SHA256 0x0300006C
 #define TLS1_CK_ADH_WITH_AES_256_SHA256 0x0300006D
 
-// Camellia ciphersuites from RFC4132
+// Camellia ciphersuites from RFC 4132
 #define TLS1_CK_RSA_WITH_CAMELLIA_256_CBC_SHA 0x03000084
 #define TLS1_CK_DH_DSS_WITH_CAMELLIA_256_CBC_SHA 0x03000085
 #define TLS1_CK_DH_RSA_WITH_CAMELLIA_256_CBC_SHA 0x03000086
@@ -348,7 +241,7 @@ extern "C" {
 #define TLS1_CK_DHE_RSA_WITH_CAMELLIA_256_CBC_SHA 0x03000088
 #define TLS1_CK_ADH_WITH_CAMELLIA_256_CBC_SHA 0x03000089
 
-// SEED ciphersuites from RFC4162
+// SEED ciphersuites from RFC 4162
 #define TLS1_CK_RSA_WITH_SEED_SHA 0x03000096
 #define TLS1_CK_DH_DSS_WITH_SEED_SHA 0x03000097
 #define TLS1_CK_DH_RSA_WITH_SEED_SHA 0x03000098
@@ -356,7 +249,7 @@ extern "C" {
 #define TLS1_CK_DHE_RSA_WITH_SEED_SHA 0x0300009A
 #define TLS1_CK_ADH_WITH_SEED_SHA 0x0300009B
 
-// TLS v1.2 GCM ciphersuites from RFC5288
+// TLS v1.2 GCM ciphersuites from RFC 5288
 #define TLS1_CK_RSA_WITH_AES_128_GCM_SHA256 0x0300009C
 #define TLS1_CK_RSA_WITH_AES_256_GCM_SHA384 0x0300009D
 #define TLS1_CK_DHE_RSA_WITH_AES_128_GCM_SHA256 0x0300009E
@@ -370,7 +263,7 @@ extern "C" {
 #define TLS1_CK_ADH_WITH_AES_128_GCM_SHA256 0x030000A6
 #define TLS1_CK_ADH_WITH_AES_256_GCM_SHA384 0x030000A7
 
-// ECC ciphersuites from RFC4492
+// ECC ciphersuites from RFC 4492
 #define TLS1_CK_ECDH_ECDSA_WITH_NULL_SHA 0x0300C001
 #define TLS1_CK_ECDH_ECDSA_WITH_RC4_128_SHA 0x0300C002
 #define TLS1_CK_ECDH_ECDSA_WITH_DES_192_CBC3_SHA 0x0300C003
@@ -395,6 +288,8 @@ extern "C" {
 #define TLS1_CK_ECDHE_RSA_WITH_AES_128_CBC_SHA 0x0300C013
 #define TLS1_CK_ECDHE_RSA_WITH_AES_256_CBC_SHA 0x0300C014
 
+#define TLS1_CK_ECDHE_RSA_WITH_AES_128_CBC_SHA256 0x0300C027
+
 #define TLS1_CK_ECDH_anon_WITH_NULL_SHA 0x0300C015
 #define TLS1_CK_ECDH_anon_WITH_RC4_128_SHA 0x0300C016
 #define TLS1_CK_ECDH_anon_WITH_DES_192_CBC3_SHA 0x0300C017
@@ -412,7 +307,7 @@ extern "C" {
 #define TLS1_CK_SRP_SHA_RSA_WITH_AES_256_CBC_SHA 0x0300C021
 #define TLS1_CK_SRP_SHA_DSS_WITH_AES_256_CBC_SHA 0x0300C022
 
-// ECDH HMAC based ciphersuites from RFC5289
+// ECDH HMAC based ciphersuites from RFC 5289
 
 #define TLS1_CK_ECDHE_ECDSA_WITH_AES_128_SHA256 0x0300C023
 #define TLS1_CK_ECDHE_ECDSA_WITH_AES_256_SHA384 0x0300C024
@@ -423,7 +318,7 @@ extern "C" {
 #define TLS1_CK_ECDH_RSA_WITH_AES_128_SHA256 0x0300C029
 #define TLS1_CK_ECDH_RSA_WITH_AES_256_SHA384 0x0300C02A
 
-// ECDH GCM based ciphersuites from RFC5289
+// ECDH GCM based ciphersuites from RFC 5289
 #define TLS1_CK_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256 0x0300C02B
 #define TLS1_CK_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384 0x0300C02C
 #define TLS1_CK_ECDH_ECDSA_WITH_AES_128_GCM_SHA256 0x0300C02D
@@ -439,9 +334,15 @@ extern "C" {
 #define TLS1_CK_ECDHE_PSK_WITH_CHACHA20_POLY1305_SHA256 0x0300CCAC
 
 // TLS 1.3 ciphersuites from RFC 8446.
-#define TLS1_CK_AES_128_GCM_SHA256 0x03001301
-#define TLS1_CK_AES_256_GCM_SHA384 0x03001302
-#define TLS1_CK_CHACHA20_POLY1305_SHA256 0x03001303
+#define TLS1_3_CK_AES_128_GCM_SHA256 0x03001301
+#define TLS1_3_CK_AES_256_GCM_SHA384 0x03001302
+#define TLS1_3_CK_CHACHA20_POLY1305_SHA256 0x03001303
+
+// The following constants are legacy aliases of |TLS1_3_CK_*|.
+// TODO(davidben): Migrate callers to the new name and remove these.
+#define TLS1_CK_AES_128_GCM_SHA256 TLS1_3_CK_AES_128_GCM_SHA256
+#define TLS1_CK_AES_256_GCM_SHA384 TLS1_3_CK_AES_256_GCM_SHA384
+#define TLS1_CK_CHACHA20_POLY1305_SHA256 TLS1_3_CK_CHACHA20_POLY1305_SHA256
 
 // XXX
 // Inconsistency alert:
@@ -459,7 +360,7 @@ extern "C" {
 #define TLS1_TXT_DHE_DSS_EXPORT1024_WITH_RC4_56_SHA "EXP1024-DHE-DSS-RC4-SHA"
 #define TLS1_TXT_DHE_DSS_WITH_RC4_128_SHA "DHE-DSS-RC4-SHA"
 
-// AES ciphersuites from RFC3268
+// AES ciphersuites from RFC 3268
 #define TLS1_TXT_RSA_WITH_AES_128_SHA "AES128-SHA"
 #define TLS1_TXT_DH_DSS_WITH_AES_128_SHA "DH-DSS-AES128-SHA"
 #define TLS1_TXT_DH_RSA_WITH_AES_128_SHA "DH-RSA-AES128-SHA"
@@ -474,7 +375,7 @@ extern "C" {
 #define TLS1_TXT_DHE_RSA_WITH_AES_256_SHA "DHE-RSA-AES256-SHA"
 #define TLS1_TXT_ADH_WITH_AES_256_SHA "ADH-AES256-SHA"
 
-// ECC ciphersuites from RFC4492
+// ECC ciphersuites from RFC 4492
 #define TLS1_TXT_ECDH_ECDSA_WITH_NULL_SHA "ECDH-ECDSA-NULL-SHA"
 #define TLS1_TXT_ECDH_ECDSA_WITH_RC4_128_SHA "ECDH-ECDSA-RC4-SHA"
 #define TLS1_TXT_ECDH_ECDSA_WITH_DES_192_CBC3_SHA "ECDH-ECDSA-DES-CBC3-SHA"
@@ -498,6 +399,8 @@ extern "C" {
 #define TLS1_TXT_ECDHE_RSA_WITH_DES_192_CBC3_SHA "ECDHE-RSA-DES-CBC3-SHA"
 #define TLS1_TXT_ECDHE_RSA_WITH_AES_128_CBC_SHA "ECDHE-RSA-AES128-SHA"
 #define TLS1_TXT_ECDHE_RSA_WITH_AES_256_CBC_SHA "ECDHE-RSA-AES256-SHA"
+
+#define TLS1_TXT_ECDHE_RSA_WITH_AES_128_CBC_SHA256 "ECDHE-RSA-AES128-SHA256"
 
 #define TLS1_TXT_ECDH_anon_WITH_NULL_SHA "AECDH-NULL-SHA"
 #define TLS1_TXT_ECDH_anon_WITH_RC4_128_SHA "AECDH-RC4-SHA"
@@ -526,7 +429,7 @@ extern "C" {
 #define TLS1_TXT_SRP_SHA_RSA_WITH_AES_256_CBC_SHA "SRP-RSA-AES-256-CBC-SHA"
 #define TLS1_TXT_SRP_SHA_DSS_WITH_AES_256_CBC_SHA "SRP-DSS-AES-256-CBC-SHA"
 
-// Camellia ciphersuites from RFC4132
+// Camellia ciphersuites from RFC 4132
 #define TLS1_TXT_RSA_WITH_CAMELLIA_128_CBC_SHA "CAMELLIA128-SHA"
 #define TLS1_TXT_DH_DSS_WITH_CAMELLIA_128_CBC_SHA "DH-DSS-CAMELLIA128-SHA"
 #define TLS1_TXT_DH_RSA_WITH_CAMELLIA_128_CBC_SHA "DH-RSA-CAMELLIA128-SHA"
@@ -541,7 +444,7 @@ extern "C" {
 #define TLS1_TXT_DHE_RSA_WITH_CAMELLIA_256_CBC_SHA "DHE-RSA-CAMELLIA256-SHA"
 #define TLS1_TXT_ADH_WITH_CAMELLIA_256_CBC_SHA "ADH-CAMELLIA256-SHA"
 
-// SEED ciphersuites from RFC4162
+// SEED ciphersuites from RFC 4162
 #define TLS1_TXT_RSA_WITH_SEED_SHA "SEED-SHA"
 #define TLS1_TXT_DH_DSS_WITH_SEED_SHA "DH-DSS-SEED-SHA"
 #define TLS1_TXT_DH_RSA_WITH_SEED_SHA "DH-RSA-SEED-SHA"
@@ -564,7 +467,7 @@ extern "C" {
 #define TLS1_TXT_ADH_WITH_AES_128_SHA256 "ADH-AES128-SHA256"
 #define TLS1_TXT_ADH_WITH_AES_256_SHA256 "ADH-AES256-SHA256"
 
-// TLS v1.2 GCM ciphersuites from RFC5288
+// TLS v1.2 GCM ciphersuites from RFC 5288
 #define TLS1_TXT_RSA_WITH_AES_128_GCM_SHA256 "AES128-GCM-SHA256"
 #define TLS1_TXT_RSA_WITH_AES_256_GCM_SHA384 "AES256-GCM-SHA384"
 #define TLS1_TXT_DHE_RSA_WITH_AES_128_GCM_SHA256 "DHE-RSA-AES128-GCM-SHA256"
@@ -578,7 +481,7 @@ extern "C" {
 #define TLS1_TXT_ADH_WITH_AES_128_GCM_SHA256 "ADH-AES128-GCM-SHA256"
 #define TLS1_TXT_ADH_WITH_AES_256_GCM_SHA384 "ADH-AES256-GCM-SHA384"
 
-// ECDH HMAC based ciphersuites from RFC5289
+// ECDH HMAC based ciphersuites from RFC 5289
 
 #define TLS1_TXT_ECDHE_ECDSA_WITH_AES_128_SHA256 "ECDHE-ECDSA-AES128-SHA256"
 #define TLS1_TXT_ECDHE_ECDSA_WITH_AES_256_SHA384 "ECDHE-ECDSA-AES256-SHA384"
@@ -589,7 +492,7 @@ extern "C" {
 #define TLS1_TXT_ECDH_RSA_WITH_AES_128_SHA256 "ECDH-RSA-AES128-SHA256"
 #define TLS1_TXT_ECDH_RSA_WITH_AES_256_SHA384 "ECDH-RSA-AES256-SHA384"
 
-// ECDH GCM based ciphersuites from RFC5289
+// ECDH GCM based ciphersuites from RFC 5289
 #define TLS1_TXT_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256 \
   "ECDHE-ECDSA-AES128-GCM-SHA256"
 #define TLS1_TXT_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384 \
@@ -611,10 +514,15 @@ extern "C" {
   "ECDHE-PSK-CHACHA20-POLY1305"
 
 // TLS 1.3 ciphersuites from RFC 8446.
-#define TLS1_TXT_AES_128_GCM_SHA256 "TLS_AES_128_GCM_SHA256"
-#define TLS1_TXT_AES_256_GCM_SHA384 "TLS_AES_256_GCM_SHA384"
-#define TLS1_TXT_CHACHA20_POLY1305_SHA256 "TLS_CHACHA20_POLY1305_SHA256"
+#define TLS1_3_RFC_AES_128_GCM_SHA256 "TLS_AES_128_GCM_SHA256"
+#define TLS1_3_RFC_AES_256_GCM_SHA384 "TLS_AES_256_GCM_SHA384"
+#define TLS1_3_RFC_CHACHA20_POLY1305_SHA256 "TLS_CHACHA20_POLY1305_SHA256"
 
+// The following constants are legacy aliases of |TLS1_3_CK_*|.
+// TODO(bbe): Migrate callers to the new name and remove these.
+#define TLS1_TXT_AES_128_GCM_SHA256 TLS1_3_RFC_AES_128_GCM_SHA256
+#define TLS1_TXT_AES_256_GCM_SHA384 TLS1_3_RFC_AES_256_GCM_SHA384
+#define TLS1_TXT_CHACHA20_POLY1305_SHA256 TLS1_3_RFC_CHACHA20_POLY1305_SHA256
 
 #define TLS_CT_RSA_SIGN 1
 #define TLS_CT_DSS_SIGN 2
@@ -627,7 +535,7 @@ extern "C" {
 #define TLS_MD_MAX_CONST_SIZE 20
 
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 }  // extern C
 #endif
 

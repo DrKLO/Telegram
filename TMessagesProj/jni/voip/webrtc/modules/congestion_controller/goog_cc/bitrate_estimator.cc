@@ -10,15 +10,19 @@
 
 #include "modules/congestion_controller/goog_cc/bitrate_estimator.h"
 
-#include <stdio.h>
-
 #include <algorithm>
 #include <cmath>
-#include <string>
+#include <cstdint>
 
+#include "absl/types/optional.h"
+#include "api/field_trials_view.h"
 #include "api/units/data_rate.h"
+#include "api/units/data_size.h"
+#include "api/units/time_delta.h"
+#include "api/units/timestamp.h"
 #include "modules/remote_bitrate_estimator/test/bwe_test_logging.h"
-#include "rtc_base/logging.h"
+#include "rtc_base/checks.h"
+#include "rtc_base/experiments/field_trial_parser.h"
 
 namespace webrtc {
 

@@ -406,7 +406,7 @@ public class MessageEntityView extends EntityView {
                         ChatActionCell cell = (ChatActionCell) child;
                         if (cell.hasGradientService()) {
                             canvas.save();
-                            canvas.translate(cell.getX(), cell.getY());
+                            canvas.translate(cell.getX(), cell.getY() + cell.getPaddingTop());
                             canvas.scale(cell.getScaleX(), cell.getScaleY(), cell.getMeasuredWidth() / 2f, cell.getMeasuredHeight() / 2f);
                             cell.drawBackground(canvas, true);
                             cell.drawReactions(canvas, true, null);
@@ -454,8 +454,8 @@ public class MessageEntityView extends EntityView {
 
                             int left = (cell.getLeft() + cell.getBackgroundDrawableLeft());
                             int right = (cell.getLeft() + cell.getBackgroundDrawableRight());
-                            int top = (cell.getTop() + cell.getBackgroundDrawableTop());
-                            int bottom = (cell.getTop() + cell.getBackgroundDrawableBottom());
+                            int top = (cell.getTop() + cell.getPaddingTop() + cell.getBackgroundDrawableTop());
+                            int bottom = (cell.getTop() + cell.getPaddingTop() + cell.getBackgroundDrawableBottom());
 
                             if ((cell.getCurrentPosition().flags & MessageObject.POSITION_FLAG_TOP) == 0) {
                                 top -= AndroidUtilities.dp(10);
@@ -537,7 +537,7 @@ public class MessageEntityView extends EntityView {
                 boolean result = super.drawChild(canvas, child, drawingTime);
                 if (cell != null && cell.hasOutboundsContent()) {
                     canvas.save();
-                    canvas.translate(cell.getX(), cell.getY());
+                    canvas.translate(cell.getX(), cell.getY() + cell.getPaddingTop());
                     cell.drawOutboundsContent(canvas);
                     canvas.restore();
                 } else if (actionCell != null) {
@@ -874,7 +874,7 @@ public class MessageEntityView extends EntityView {
                             pinnedTop = p.minY != 0;
                         }
                     }
-                    cell.setMessageObject(message, groupedMessages, groupedMessages != null, pinnedTop);
+                    cell.setMessageObject(message, groupedMessages, groupedMessages != null, pinnedTop, false);
                 } else if (holder.itemView instanceof ChatActionCell) {
                     final ChatActionCell cell = (ChatActionCell) holder.itemView;
                     cell.setMessageObject(message);

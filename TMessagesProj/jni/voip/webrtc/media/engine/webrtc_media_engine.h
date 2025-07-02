@@ -11,57 +11,16 @@
 #ifndef MEDIA_ENGINE_WEBRTC_MEDIA_ENGINE_H_
 #define MEDIA_ENGINE_WEBRTC_MEDIA_ENGINE_H_
 
-#include <memory>
 #include <vector>
 
 #include "absl/strings/string_view.h"
 #include "api/array_view.h"
-#include "api/audio/audio_frame_processor.h"
-#include "api/audio/audio_mixer.h"
-#include "api/audio_codecs/audio_decoder_factory.h"
-#include "api/audio_codecs/audio_encoder_factory.h"
 #include "api/field_trials_view.h"
 #include "api/rtp_parameters.h"
-#include "api/scoped_refptr.h"
-#include "api/task_queue/task_queue_factory.h"
 #include "api/transport/bitrate_settings.h"
-#include "api/video_codecs/video_decoder_factory.h"
-#include "api/video_codecs/video_encoder_factory.h"
 #include "media/base/codec.h"
-#include "media/base/media_engine.h"
-#include "modules/audio_device/include/audio_device.h"
-#include "modules/audio_processing/include/audio_processing.h"
-#include "rtc_base/system/rtc_export.h"
 
 namespace cricket {
-
-struct MediaEngineDependencies {
-  MediaEngineDependencies() = default;
-  MediaEngineDependencies(const MediaEngineDependencies&) = delete;
-  MediaEngineDependencies(MediaEngineDependencies&&) = default;
-  MediaEngineDependencies& operator=(const MediaEngineDependencies&) = delete;
-  MediaEngineDependencies& operator=(MediaEngineDependencies&&) = default;
-  ~MediaEngineDependencies() = default;
-
-  webrtc::TaskQueueFactory* task_queue_factory = nullptr;
-  rtc::scoped_refptr<webrtc::AudioDeviceModule> adm;
-  rtc::scoped_refptr<webrtc::AudioEncoderFactory> audio_encoder_factory;
-  rtc::scoped_refptr<webrtc::AudioDecoderFactory> audio_decoder_factory;
-  rtc::scoped_refptr<webrtc::AudioMixer> audio_mixer;
-  rtc::scoped_refptr<webrtc::AudioProcessing> audio_processing;
-  webrtc::AudioFrameProcessor* audio_frame_processor = nullptr;
-
-  std::unique_ptr<webrtc::VideoEncoderFactory> video_encoder_factory;
-  std::unique_ptr<webrtc::VideoDecoderFactory> video_decoder_factory;
-
-  const webrtc::FieldTrialsView* trials = nullptr;
-};
-
-// CreateMediaEngine may be called on any thread, though the engine is
-// only expected to be used on one thread, internally called the "worker
-// thread". This is the thread Init must be called on.
-RTC_EXPORT std::unique_ptr<MediaEngineInterface> CreateMediaEngine(
-    MediaEngineDependencies dependencies);
 
 // Verify that extension IDs are within 1-byte extension range and are not
 // overlapping, and that they form a legal change from previously registerd

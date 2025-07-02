@@ -148,7 +148,7 @@ struct RTPHeaderExtension {
 
 enum { kRtpCsrcSize = 15 };  // RFC 3550 page 13
 
-struct RTPHeader {
+struct RTC_EXPORT RTPHeader {
   RTPHeader();
   RTPHeader(const RTPHeader& other);
   RTPHeader& operator=(const RTPHeader& other);
@@ -162,7 +162,6 @@ struct RTPHeader {
   uint32_t arrOfCSRCs[kRtpCsrcSize];
   size_t paddingLength;
   size_t headerLength;
-  int payload_type_frequency;
   RTPHeaderExtension extension;
 };
 

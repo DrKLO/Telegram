@@ -67,7 +67,7 @@ absl::optional<H264ProfileLevelId> ParseH264ProfileLevelId(const char* str);
 // returned if the profile-level-id key is missing. Nothing will be returned if
 // the key is present but the string is invalid.
 RTC_EXPORT absl::optional<H264ProfileLevelId> ParseSdpForH264ProfileLevelId(
-    const SdpVideoFormat::Parameters& params);
+    const CodecParameterMap& params);
 
 // Given that a decoder supports up to a given frame size (in pixels) at up to a
 // given number of frames per second, return the highest H.264 level where it
@@ -84,8 +84,8 @@ RTC_EXPORT absl::optional<std::string> H264ProfileLevelIdToString(
 
 // Returns true if the parameters have the same H264 profile (Baseline, High,
 // etc).
-RTC_EXPORT bool H264IsSameProfile(const SdpVideoFormat::Parameters& params1,
-                                  const SdpVideoFormat::Parameters& params2);
+RTC_EXPORT bool H264IsSameProfile(const CodecParameterMap& params1,
+                                  const CodecParameterMap& params2);
 
 }  // namespace webrtc
 

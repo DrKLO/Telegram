@@ -53,6 +53,7 @@
 #ifndef ABSL_TYPES_ANY_H_
 #define ABSL_TYPES_ANY_H_
 
+#include "absl/base/attributes.h"
 #include "absl/base/config.h"
 #include "absl/utility/utility.h"
 
@@ -288,7 +289,7 @@ class any {
       typename T, typename... Args, typename VT = absl::decay_t<T>,
       absl::enable_if_t<std::is_copy_constructible<VT>::value &&
                         std::is_constructible<VT, Args...>::value>* = nullptr>
-  VT& emplace(Args&&... args) {
+  VT& emplace(Args&&... args) ABSL_ATTRIBUTE_LIFETIME_BOUND {
     reset();  // NOTE: reset() is required here even in the world of exceptions.
     Obj<VT>* const object_ptr =
         new Obj<VT>(in_place, std::forward<Args>(args)...);
@@ -312,7 +313,8 @@ class any {
       absl::enable_if_t<std::is_copy_constructible<VT>::value &&
                         std::is_constructible<VT, std::initializer_list<U>&,
                                               Args...>::value>* = nullptr>
-  VT& emplace(std::initializer_list<U> ilist, Args&&... args) {
+  VT& emplace(std::initializer_list<U> ilist,
+              Args&&... args) ABSL_ATTRIBUTE_LIFETIME_BOUND {
     reset();  // NOTE: reset() is required here even in the world of exceptions.
     Obj<VT>* const object_ptr =
         new Obj<VT>(in_place, ilist, std::forward<Args>(args)...);

@@ -22,10 +22,13 @@
 #include "absl/types/optional.h"
 #include "api/array_view.h"
 #include "api/audio_codecs/audio_decoder.h"
+#include "api/audio_codecs/audio_decoder_factory.h"
 #include "api/audio_codecs/audio_format.h"
+#include "api/neteq/neteq.h"
+#include "api/neteq/neteq_factory.h"
 #include "modules/audio_coding/acm2/acm_resampler.h"
 #include "modules/audio_coding/acm2/call_statistics.h"
-#include "modules/audio_coding/include/audio_coding_module.h"
+#include "modules/audio_coding/include/audio_coding_module_typedefs.h"
 #include "rtc_base/synchronization/mutex.h"
 #include "rtc_base/thread_annotations.h"
 
@@ -39,8 +42,20 @@ namespace acm2 {
 
 class AcmReceiver {
  public:
+  struct Config {
+    explicit Config(
+        rtc::scoped_refptr<AudioDecoderFactory> decoder_factory = nullptr);
+    Config(const Config&);
+    ~Config();
+
+    NetEq::Config neteq_config;
+    Clock& clock;
+    rtc::scoped_refptr<AudioDecoderFactory> decoder_factory;
+    NetEqFactory* neteq_factory = nullptr;
+  };
+
   // Constructor of the class
-  explicit AcmReceiver(const AudioCodingModule::Config& config);
+  explicit AcmReceiver(const Config& config);
 
   // Destructor of the class.
   ~AcmReceiver();
@@ -219,7 +234,7 @@ class AcmReceiver {
   std::unique_ptr<int16_t[]> last_audio_buffer_ RTC_GUARDED_BY(mutex_);
   CallStatistics call_stats_ RTC_GUARDED_BY(mutex_);
   const std::unique_ptr<NetEq> neteq_;  // NetEq is thread-safe; no lock needed.
-  Clock* const clock_;
+  Clock& clock_;
   bool resampled_last_output_frame_ RTC_GUARDED_BY(mutex_);
 };
 

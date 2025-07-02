@@ -20,6 +20,7 @@
 #include "absl/types/optional.h"
 #include "api/rtc_event_log/rtc_event_log.h"
 #include "api/rtp_headers.h"
+#include "api/units/data_rate.h"
 #include "api/units/time_delta.h"
 #include "api/units/timestamp.h"
 #include "logging/rtc_event_log/events/rtc_event_rtcp_packet_outgoing.h"
@@ -91,9 +92,7 @@ class RTCPSender::PacketSender {
 RTCPSender::FeedbackState::FeedbackState()
     : packets_sent(0),
       media_bytes_sent(0),
-      send_bitrate(0),
-      last_rr_ntp_secs(0),
-      last_rr_ntp_frac(0),
+      send_bitrate(DataRate::Zero()),
       remote_sr(0),
       receiver(nullptr) {}
 
@@ -213,23 +212,8 @@ bool RTCPSender::Sending() const {
 
 void RTCPSender::SetSendingStatus(const FeedbackState& feedback_state,
                                   bool sending) {
-  bool sendRTCPBye = false;
-  {
-    MutexLock lock(&mutex_rtcp_sender_);
-
-    if (method_ != RtcpMode::kOff) {
-      if (sending == false && sending_ == true) {
-        // Trigger RTCP bye
-        sendRTCPBye = true;
-      }
-    }
-    sending_ = sending;
-  }
-  if (sendRTCPBye) {
-    if (SendRTCP(feedback_state, kRtcpBye) != 0) {
-      RTC_LOG(LS_WARNING) << "Failed to send RTCP BYE";
-    }
-  }
+  MutexLock lock(&mutex_rtcp_sender_);
+  sending_ = sending;
 }
 
 void RTCPSender::SetNonSenderRttMeasurement(bool enabled) {
@@ -244,7 +228,7 @@ int32_t RTCPSender::SendLossNotification(const FeedbackState& feedback_state,
                                          bool buffering_allowed) {
   int32_t error_code = -1;
   auto callback = [&](rtc::ArrayView<const uint8_t> packet) {
-    transport_->SendRtcp(packet.data(), packet.size());
+    transport_->SendRtcp(packet);
     error_code = 0;
     if (event_log_) {
       event_log_->Log(std::make_unique<RtcEventRtcpPacketOutgoing>(packet));
@@ -284,7 +268,7 @@ void RTCPSender::SetRemb(int64_t bitrate_bps, std::vector<uint32_t> ssrcs) {
   RTC_CHECK_GE(bitrate_bps, 0);
   MutexLock lock(&mutex_rtcp_sender_);
   if (method_ == RtcpMode::kOff) {
-    RTC_LOG(LS_WARNING) << "Can't send rtcp if it is disabled.";
+    RTC_LOG(LS_WARNING) << "Can't send RTCP if it is disabled.";
     return;
   }
   remb_bitrate_ = bitrate_bps;
@@ -362,65 +346,7 @@ int32_t RTCPSender::SetCNAME(absl::string_view c_name) {
   return 0;
 }
 
-bool RTCPSender::TimeToSendRTCPReport(bool sendKeyframeBeforeRTP) const {
-  /*
-      For audio we use a configurable interval (default: 5 seconds)
-
-      For video we use a configurable interval (default: 1 second) for a BW
-          smaller than 360 kbit/s, technicaly we break the max 5% RTCP BW for
-          video below 10 kbit/s but that should be extremely rare
-
-
-  From RFC 3550
-
-      MAX RTCP BW is 5% if the session BW
-          A send report is approximately 65 bytes inc CNAME
-          A receiver report is approximately 28 bytes
-
-      The RECOMMENDED value for the reduced minimum in seconds is 360
-        divided by the session bandwidth in kilobits/second.  This minimum
-        is smaller than 5 seconds for bandwidths greater than 72 kb/s.
-
-      If the participant has not yet sent an RTCP packet (the variable
-        initial is true), the constant Tmin is set to half of the configured
-        interval.
-
-      The interval between RTCP packets is varied randomly over the
-        range [0.5,1.5] times the calculated interval to avoid unintended
-        synchronization of all participants
-
-      if we send
-      If the participant is a sender (we_sent true), the constant C is
-        set to the average RTCP packet size (avg_rtcp_size) divided by 25%
-        of the RTCP bandwidth (rtcp_bw), and the constant n is set to the
-        number of senders.
-
-      if we receive only
-        If we_sent is not true, the constant C is set
-        to the average RTCP packet size divided by 75% of the RTCP
-        bandwidth.  The constant n is set to the number of receivers
-        (members - senders).  If the number of senders is greater than
-        25%, senders and receivers are treated together.
-
-      reconsideration NOT required for peer-to-peer
-        "timer reconsideration" is
-        employed.  This algorithm implements a simple back-off mechanism
-        which causes users to hold back RTCP packet transmission if the
-        group sizes are increasing.
-
-        n = number of members
-        C = avg_size/(rtcpBW/4)
-
-     3. The deterministic calculated interval Td is set to max(Tmin, n*C).
-
-     4. The calculated interval T is set to a number uniformly distributed
-        between 0.5 and 1.5 times the deterministic calculated interval.
-
-     5. The resulting value of T is divided by e-3/2=1.21828 to compensate
-        for the fact that the timer reconsideration algorithm converges to
-        a value of the RTCP bandwidth below the intended average
-  */
-
+bool RTCPSender::TimeToSendRTCPReport(bool send_keyframe_before_rtp) const {
   Timestamp now = clock_->CurrentTime();
 
   MutexLock lock(&mutex_rtcp_sender_);
@@ -430,10 +356,10 @@ bool RTCPSender::TimeToSendRTCPReport(bool sendKeyframeBeforeRTP) const {
   if (method_ == RtcpMode::kOff)
     return false;
 
-  if (!audio_ && sendKeyframeBeforeRTP) {
-    // for video key-frames we want to send the RTCP before the large key-frame
+  if (!audio_ && send_keyframe_before_rtp) {
+    // For video key-frames we want to send the RTCP before the large key-frame
     // if we have a 100 ms margin
-    now += RTCP_SEND_BEFORE_KEY_FRAME;
+    now += TimeDelta::Millis(100);
   }
 
   return now >= *next_time_to_send_rtcp_;
@@ -661,7 +587,7 @@ int32_t RTCPSender::SendRTCP(const FeedbackState& feedback_state,
                              const uint16_t* nack_list) {
   int32_t error_code = -1;
   auto callback = [&](rtc::ArrayView<const uint8_t> packet) {
-    if (transport_->SendRtcp(packet.data(), packet.size())) {
+    if (transport_->SendRtcp(packet)) {
       error_code = 0;
       if (event_log_) {
         event_log_->Log(std::make_unique<RtcEventRtcpPacketOutgoing>(packet));
@@ -690,7 +616,7 @@ absl::optional<int32_t> RTCPSender::ComputeCompoundRTCPPacket(
     const uint16_t* nack_list,
     PacketSender& sender) {
   if (method_ == RtcpMode::kOff) {
-    RTC_LOG(LS_WARNING) << "Can't send rtcp if it is disabled.";
+    RTC_LOG(LS_WARNING) << "Can't send RTCP if it is disabled.";
     return -1;
   }
   // Add the flag as volatile. Non volatile entries will not be overwritten.
@@ -761,6 +687,44 @@ absl::optional<int32_t> RTCPSender::ComputeCompoundRTCPPacket(
   return absl::nullopt;
 }
 
+TimeDelta RTCPSender::ComputeTimeUntilNextReport(DataRate send_bitrate) {
+  /*
+      For audio we use a configurable interval (default: 5 seconds)
+
+      For video we use a configurable interval (default: 1 second)
+          for a BW smaller than ~200 kbit/s, technicaly we break the max 5% RTCP
+          BW for video but that should be extremely rare
+
+  From RFC 3550, https://www.rfc-editor.org/rfc/rfc3550#section-6.2
+
+      The RECOMMENDED value for the reduced minimum in seconds is 360
+        divided by the session bandwidth in kilobits/second.  This minimum
+        is smaller than 5 seconds for bandwidths greater than 72 kb/s.
+
+      The interval between RTCP packets is varied randomly over the
+        range [0.5,1.5] times the calculated interval to avoid unintended
+        synchronization of all participants
+  */
+
+  TimeDelta min_interval = report_interval_;
+
+  if (!audio_ && sending_ && send_bitrate > DataRate::BitsPerSec(72'000)) {
+    // Calculate bandwidth for video; 360 / send bandwidth in kbit/s per
+    // https://www.rfc-editor.org/rfc/rfc3550#section-6.2 recommendation.
+    min_interval = std::min(TimeDelta::Seconds(360) / send_bitrate.kbps(),
+                            report_interval_);
+  }
+
+  // The interval between RTCP packets is varied randomly over the
+  // range [1/2,3/2] times the calculated interval.
+  int min_interval_int = rtc::dchecked_cast<int>(min_interval.ms());
+  TimeDelta time_to_next = TimeDelta::Millis(
+      random_.Rand(min_interval_int * 1 / 2, min_interval_int * 3 / 2));
+
+  // To be safer clamp the result.
+  return std::max(time_to_next, TimeDelta::Millis(1));
+}
+
 void RTCPSender::PrepareReport(const FeedbackState& feedback_state) {
   bool generate_report;
   if (IsFlagPresent(kRtcpSr) || IsFlagPresent(kRtcpRr)) {
@@ -785,26 +749,8 @@ void RTCPSender::PrepareReport(const FeedbackState& feedback_state) {
       SetFlag(kRtcpAnyExtendedReports, true);
     }
 
-    // generate next time to send an RTCP report
-    TimeDelta min_interval = report_interval_;
-
-    if (!audio_ && sending_) {
-      // Calculate bandwidth for video; 360 / send bandwidth in kbit/s.
-      int send_bitrate_kbit = feedback_state.send_bitrate / 1000;
-      if (send_bitrate_kbit != 0) {
-        min_interval = std::min(TimeDelta::Millis(360000 / send_bitrate_kbit),
-                                report_interval_);
-      }
-    }
-
-    // The interval between RTCP packets is varied randomly over the
-    // range [1/2,3/2] times the calculated interval.
-    int min_interval_int = rtc::dchecked_cast<int>(min_interval.ms());
-    TimeDelta time_to_next = TimeDelta::Millis(
-        random_.Rand(min_interval_int * 1 / 2, min_interval_int * 3 / 2));
-
-    RTC_DCHECK(!time_to_next.IsZero());
-    SetNextRtcpSendEvaluationDuration(time_to_next);
+    SetNextRtcpSendEvaluationDuration(
+        ComputeTimeUntilNextReport(feedback_state.send_bitrate));
 
     // RtcpSender expected to be used for sending either just sender reports
     // or just receiver reports.
@@ -818,24 +764,14 @@ std::vector<rtcp::ReportBlock> RTCPSender::CreateReportBlocks(
   if (!receive_statistics_)
     return result;
 
-  // TODO(danilchap): Support sending more than `RTCP_MAX_REPORT_BLOCKS` per
-  // compound rtcp packet when single rtcp module is used for multiple media
-  // streams.
   result = receive_statistics_->RtcpReportBlocks(RTCP_MAX_REPORT_BLOCKS);
 
-  if (!result.empty() && ((feedback_state.last_rr_ntp_secs != 0) ||
-                          (feedback_state.last_rr_ntp_frac != 0))) {
+  if (!result.empty() && feedback_state.last_rr.Valid()) {
     // Get our NTP as late as possible to avoid a race.
     uint32_t now = CompactNtp(clock_->CurrentNtpTime());
-
-    uint32_t receive_time = feedback_state.last_rr_ntp_secs & 0x0000FFFF;
-    receive_time <<= 16;
-    receive_time += (feedback_state.last_rr_ntp_frac & 0xffff0000) >> 16;
-
+    uint32_t receive_time = CompactNtp(feedback_state.last_rr);
     uint32_t delay_since_last_sr = now - receive_time;
-    // TODO(danilchap): Instead of setting same value on all report blocks,
-    // set only when media_ssrc match sender ssrc of the sender report
-    // remote times were taken from.
+
     for (auto& report_block : result) {
       report_block.SetLastSr(feedback_state.remote_sr);
       report_block.SetDelayLastSr(delay_since_last_sr);
@@ -889,7 +825,7 @@ void RTCPSender::SetVideoBitrateAllocation(
     const VideoBitrateAllocation& bitrate) {
   MutexLock lock(&mutex_rtcp_sender_);
   if (method_ == RtcpMode::kOff) {
-    RTC_LOG(LS_WARNING) << "Can't send rtcp if it is disabled.";
+    RTC_LOG(LS_WARNING) << "Can't send RTCP if it is disabled.";
     return;
   }
   // Check if this allocation is first ever, or has a different set of
@@ -941,7 +877,7 @@ void RTCPSender::SendCombinedRtcpPacket(
   {
     MutexLock lock(&mutex_rtcp_sender_);
     if (method_ == RtcpMode::kOff) {
-      RTC_LOG(LS_WARNING) << "Can't send rtcp if it is disabled.";
+      RTC_LOG(LS_WARNING) << "Can't send RTCP if it is disabled.";
       return;
     }
 
@@ -950,7 +886,7 @@ void RTCPSender::SendCombinedRtcpPacket(
   }
   RTC_DCHECK_LE(max_packet_size, IP_PACKET_SIZE);
   auto callback = [&](rtc::ArrayView<const uint8_t> packet) {
-    if (transport_->SendRtcp(packet.data(), packet.size())) {
+    if (transport_->SendRtcp(packet)) {
       if (event_log_)
         event_log_->Log(std::make_unique<RtcEventRtcpPacketOutgoing>(packet));
     }

@@ -1925,15 +1925,39 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
                 getMessagesController().getChannelParticipant(currentChat, user, participant -> AndroidUtilities.runOnUIThread(() -> {
                     selectedParticipant = participant;
                     if (participant != null) {
-                        if (ChatObject.canUserDoAction(currentChat, participant, ChatObject.ACTION_SEND) || ChatObject.canUserDoAction(currentChat, participant, ChatObject.ACTION_SEND_MEDIA)) {
-                            items.add(getString(R.string.Restrict));
-                            icons.add(R.drawable.msg_block2);
-                            options.add(OPTION_RESTRICT);
+
+                        boolean isAdmin = false;
+                        if (participant.peer instanceof TLRPC.TL_peerUser) {
+                            if (ChatObject.isChannel(currentChat)) {
+                                TLRPC.ChannelParticipant p = getMessagesController().getAdminInChannel(participant.peer.user_id, currentChat.id);
+                                isAdmin = p != null && (p instanceof TLRPC.TL_channelParticipantCreator || p.admin_rights.manage_call);
+                            } else {
+                                TLRPC.ChatFull chatFull = getMessagesController().getChatFull(currentChat.id);
+                                if (chatFull != null && chatFull.participants != null) {
+                                    for (int a = 0, N = chatFull.participants.participants.size(); a < N; a++) {
+                                        TLRPC.ChatParticipant chatParticipant = chatFull.participants.participants.get(a);
+                                        if (chatParticipant.user_id == participant.peer.user_id) {
+                                            isAdmin = chatParticipant instanceof TLRPC.TL_chatParticipantAdmin || chatParticipant instanceof TLRPC.TL_chatParticipantCreator;
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                        } else {
+                            isAdmin = false;
                         }
 
-                        items.add(getString(R.string.Ban));
-                        icons.add(R.drawable.msg_block);
-                        options.add(OPTION_BAN);
+                        if (!isAdmin || currentChat.creator) {
+                            if ((ChatObject.canUserDoAction(currentChat, participant, ChatObject.ACTION_SEND) || ChatObject.canUserDoAction(currentChat, participant, ChatObject.ACTION_SEND_MEDIA))) {
+                                items.add(getString(R.string.Restrict));
+                                icons.add(R.drawable.msg_block2);
+                                options.add(OPTION_RESTRICT);
+                            }
+
+                            items.add(getString(R.string.Ban));
+                            icons.add(R.drawable.msg_block);
+                            options.add(OPTION_BAN);
+                        }
                     }
                     proceed.run();
                 }));
@@ -3106,7 +3130,7 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
                     }
 
                     @Override
-                    public void didPressImage(ChatMessageCell cell, float x, float y) {
+                    public void didPressImage(ChatMessageCell cell, float x, float y, boolean fullPreview) {
                         MessageObject message = cell.getMessageObject();
                         if (message.getInputStickerSet() != null) {
                             showDialog(new StickersAlert(getParentActivity(), ChannelAdminLogActivity.this, message.getInputStickerSet(), null, null, false));
@@ -3402,7 +3426,7 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
                     } else {
                         pinnedTop = false;
                     }
-                    messageCell.setMessageObject(message, null, pinnedBotton, pinnedTop);
+                    messageCell.setMessageObject(message, null, pinnedBotton, pinnedTop, false);
                     messageCell.setHighlighted(false);
                     messageCell.setHighlightedText(searchQuery);
                 } else if (view instanceof ChatActionCell) {

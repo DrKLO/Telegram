@@ -17,6 +17,7 @@
 #include "api/video_codecs/scalability_mode.h"
 #include "api/video_codecs/sdp_video_format.h"
 #include "api/video_codecs/vp9_profile.h"
+#include "media/base/media_constants.h"
 #include "modules/video_coding/codecs/vp9/libvpx_vp9_decoder.h"
 #include "modules/video_coding/codecs/vp9/libvpx_vp9_encoder.h"
 #include "modules/video_coding/svc/create_scalability_structure.h"
@@ -82,9 +83,9 @@ std::vector<SdpVideoFormat> SupportedVP9DecoderCodecs() {
 
 std::unique_ptr<VP9Encoder> VP9Encoder::Create() {
 #ifdef RTC_ENABLE_VP9
-  return std::make_unique<LibvpxVp9Encoder>(cricket::VideoCodec(),
-                                            LibvpxInterface::Create(),
-                                            FieldTrialBasedConfig());
+  return std::make_unique<LibvpxVp9Encoder>(
+      cricket::CreateVideoCodec(cricket::kVp9CodecName),
+      LibvpxInterface::Create(), FieldTrialBasedConfig());
 #else
   RTC_DCHECK_NOTREACHED();
   return nullptr;

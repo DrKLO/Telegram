@@ -26,6 +26,7 @@ import android.text.Spanned;
 import android.text.StaticLayout;
 import android.text.TextPaint;
 import android.text.TextUtils;
+import android.util.Pair;
 import android.util.SparseArray;
 import android.view.MotionEvent;
 import android.view.View;
@@ -217,6 +218,27 @@ public class SharedPhotoVideoCell2 extends FrameLayout {
         return false;
     }
 
+    private int getPrivacyType(MessageObject messageObject) {
+        if (isStoryPinned) {
+            return 100;
+        } else if (isStory && messageObject != null && messageObject.storyItem != null) {
+            if (messageObject.storyItem.parsedPrivacy == null) {
+                messageObject.storyItem.parsedPrivacy = new StoryPrivacyBottomSheet.StoryPrivacy(currentAccount, messageObject.storyItem.privacy);
+            }
+            if (
+                messageObject.storyItem.parsedPrivacy.type == StoryPrivacyBottomSheet.TYPE_CONTACTS ||
+                messageObject.storyItem.parsedPrivacy.type == StoryPrivacyBottomSheet.TYPE_CLOSE_FRIENDS ||
+                messageObject.storyItem.parsedPrivacy.type == StoryPrivacyBottomSheet.TYPE_SELECTED_CONTACTS
+            ) {
+                return messageObject.storyItem.parsedPrivacy.type;
+            } else {
+                return -1;
+            }
+        } else {
+            return -1;
+        }
+    }
+
     public void setMessageObject(MessageObject messageObject, int parentColumnsCount) {
         int oldParentColumnsCount = currentParentColumnsCount;
         currentParentColumnsCount = parentColumnsCount;
@@ -230,7 +252,8 @@ public class SharedPhotoVideoCell2 extends FrameLayout {
             ((currentMessageObject != null ? currentMessageObject.parentStoriesList : null) == (messageObject != null ? messageObject.parentStoriesList : null)) &&
             mediaEqual(getStoryMedia(currentMessageObject), getStoryMedia(messageObject)) &&
             oldParentColumnsCount == parentColumnsCount &&
-            (privacyType == 100) == isStoryPinned
+            (privacyType == 100) == isStoryPinned &&
+            privacyType == getPrivacyType(messageObject)
         ) {
             return;
         }
@@ -308,6 +331,17 @@ public class SharedPhotoVideoCell2 extends FrameLayout {
                 } else {
                     imageReceiver.setImage(messageObject.mediaThumb, imageFilter, messageObject.mediaSmallThumb, imageFilter + "_b", null, 0, null, parentObject, 0);
                 }
+            } else if (messageObject.hasVideoCover()) {
+                TLRPC.PhotoSize currentPhotoObjectThumb = FileLoader.getClosestPhotoSizeWithSize(messageObject.photoThumbs, 50);
+                TLRPC.PhotoSize currentPhotoObject = FileLoader.getClosestPhotoSizeWithSize(messageObject.photoThumbs, stride, false, currentPhotoObjectThumb, isStory);
+                if (currentPhotoObject == currentPhotoObjectThumb) {
+                    currentPhotoObjectThumb = null;
+                }
+                if (messageObject.strippedThumb != null) {
+                    imageReceiver.setImage(ImageLocation.getForObject(currentPhotoObject, messageObject.photoThumbsObject), imageFilter, null, null, messageObject.strippedThumb, currentPhotoObject != null ? currentPhotoObject.size : 0, null, parentObject, messageObject.shouldEncryptPhotoOrVideo() ? 2 : 1);
+                } else {
+                    imageReceiver.setImage(ImageLocation.getForObject(currentPhotoObject, messageObject.photoThumbsObject), imageFilter, ImageLocation.getForObject(currentPhotoObjectThumb, messageObject.photoThumbsObject), imageFilter + "_b", currentPhotoObject != null ? currentPhotoObject.size : 0, null, parentObject, messageObject.shouldEncryptPhotoOrVideo() ? 2 : 1);
+                }
             } else {
                 TLRPC.Document document = messageObject.getDocument();
                 TLRPC.PhotoSize thumb = FileLoader.getClosestPhotoSizeWithSize(document.thumbs, 50);
@@ -372,24 +406,7 @@ public class SharedPhotoVideoCell2 extends FrameLayout {
             imageReceiver.addDecorator(new StoryWidgetsImageDecorator(messageObject.storyItem));
         }
 
-        if (isStoryPinned) {
-            setPrivacyType(100, R.drawable.msg_pin_mini);
-        } else if (isStory && messageObject.storyItem != null) {
-            if (messageObject.storyItem.parsedPrivacy == null) {
-                messageObject.storyItem.parsedPrivacy = new StoryPrivacyBottomSheet.StoryPrivacy(currentAccount, messageObject.storyItem.privacy);
-            }
-            if (messageObject.storyItem.parsedPrivacy.type == StoryPrivacyBottomSheet.TYPE_CONTACTS) {
-                setPrivacyType(messageObject.storyItem.parsedPrivacy.type, R.drawable.msg_folders_private);
-            } else if (messageObject.storyItem.parsedPrivacy.type == StoryPrivacyBottomSheet.TYPE_CLOSE_FRIENDS) {
-                setPrivacyType(messageObject.storyItem.parsedPrivacy.type, R.drawable.msg_stories_closefriends);
-            } else if (messageObject.storyItem.parsedPrivacy.type == StoryPrivacyBottomSheet.TYPE_SELECTED_CONTACTS) {
-                setPrivacyType(messageObject.storyItem.parsedPrivacy.type, R.drawable.msg_folders_groups);
-            } else {
-                setPrivacyType(-1, 0);
-            }
-        } else {
-            setPrivacyType(-1, 0);
-        }
+        setPrivacyType(getPrivacyType(messageObject));
 
         if (isSearchingHashtag) {
             final long did = messageObject.getDialogId();
@@ -404,16 +421,23 @@ public class SharedPhotoVideoCell2 extends FrameLayout {
         invalidate();
     }
 
-    private void setPrivacyType(int type, int resId) {
+    private void setPrivacyType(int type) {
         if (privacyType == type) return;
         privacyType = type;
         privacyBitmap = null;
+        int resId;
+        switch (type) {
+            case 100: resId = R.drawable.msg_pin_mini; break;
+            case StoryPrivacyBottomSheet.TYPE_CONTACTS: resId = R.drawable.msg_folders_private; break;
+            case StoryPrivacyBottomSheet.TYPE_CLOSE_FRIENDS: resId = R.drawable.msg_stories_closefriends; break;
+            case StoryPrivacyBottomSheet.TYPE_SELECTED_CONTACTS: resId = R.drawable.msg_folders_groups; break;
+            default: resId = 0;
+        }
         if (resId != 0) {
             privacyBitmap = sharedResources.getPrivacyBitmap(getContext(), resId);
         }
         invalidate();
     }
-
 
     private boolean canAutoDownload(MessageObject messageObject) {
         if (System.currentTimeMillis() - lastUpdateDownloadSettingsTime > 5000) {
@@ -995,9 +1019,9 @@ public class SharedPhotoVideoCell2 extends FrameLayout {
             textPaint.setTextSize(dp(12));
             textPaint.setColor(Color.WHITE);
             textPaint.setTypeface(AndroidUtilities.bold());
-            playDrawable = ContextCompat.getDrawable(context, R.drawable.play_mini_video);
+            playDrawable = ContextCompat.getDrawable(context, R.drawable.play_mini_video).mutate();
             playDrawable.setBounds(0, 0, playDrawable.getIntrinsicWidth(), playDrawable.getIntrinsicHeight());
-            viewDrawable = ContextCompat.getDrawable(context, R.drawable.filled_views);
+            viewDrawable = ContextCompat.getDrawable(context, R.drawable.filled_views).mutate();
             viewDrawable.setBounds(0, 0, (int) (viewDrawable.getIntrinsicWidth() * .7f), (int) (viewDrawable.getIntrinsicHeight() * .7f));
             backgroundPaint.setColor(Theme.getColor(Theme.key_sharedMedia_photoPlaceholder, resourcesProvider));
         }

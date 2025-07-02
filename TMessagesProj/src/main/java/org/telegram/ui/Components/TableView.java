@@ -168,34 +168,24 @@ public class TableView extends TableLayout {
         textView.setTextSize(14);
         AvatarSpan avatarSpan = new AvatarSpan(textView, currentAccount, 24);
         CharSequence username;
-        boolean deleted = false;
         boolean clickable = true;
-        final boolean unknown;
         if (did == UserObject.ANONYMOUS) {
-            deleted = false;
             clickable = false;
-            unknown = true;
             username = getString(R.string.StarsTransactionHidden);
             CombinedDrawable iconDrawable = getPlatformDrawable("anonymous");
             iconDrawable.setIconSize(dp(16), dp(16));
             avatarSpan.setImageDrawable(iconDrawable);
         } else if (UserObject.isService(did)) {
-            deleted = false;
-            unknown = true;
             username = getString(R.string.StarsTransactionUnknown);
             CombinedDrawable iconDrawable = getPlatformDrawable("fragment");
             iconDrawable.setIconSize(dp(16), dp(16));
             avatarSpan.setImageDrawable(iconDrawable);
         } else if (did >= 0) {
-            unknown = false;
-            TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(did);
-            deleted = user == null;
+            final TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(did);
             username = UserObject.getUserName(user);
             avatarSpan.setUser(user);
         } else {
-            unknown = false;
-            TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-did);
-            deleted = chat == null;
+            final TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-did);
             username = chat == null ? "" : chat.title;
             avatarSpan.setChat(chat);
         }
@@ -220,6 +210,17 @@ public class TableView extends TableLayout {
         final AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable emojiDrawable = new AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable(textView, dp(20));
         emojiDrawable.setColor(color);
         emojiDrawable.offset(dp(12), 0);
+        textView.addOnAttachStateChangeListener(new OnAttachStateChangeListener() {
+            @Override
+            public void onViewAttachedToWindow(@NonNull View v) {
+                emojiDrawable.attach();
+            }
+
+            @Override
+            public void onViewDetachedFromWindow(@NonNull View v) {
+                emojiDrawable.detach();
+            }
+        });
         final Drawable premiumDrawable = getContext().getResources().getDrawable(R.drawable.msg_premium_liststar).mutate();
         premiumDrawable.setColorFilter(new PorterDuffColorFilter(color, PorterDuff.Mode.SRC_IN));
         final Utilities.Callback<Object[]> updateStatus = args -> {
@@ -256,10 +257,7 @@ public class TableView extends TableLayout {
         NotificationCenter.getInstance(currentAccount).listen(textView, NotificationCenter.updateInterfaces, updateStatus);
         NotificationCenter.getInstance(currentAccount).listen(textView, NotificationCenter.userEmojiStatusUpdated, updateStatus);
         textView.setText(ssb);
-        if (!deleted) {
-            return addRowUnpadded(title, textView);
-        }
-        return null;
+        return addRowUnpadded(title, textView);
     }
 
     public TableRow addRowUser(CharSequence title, final int currentAccount, final long did, Runnable onClick) {
@@ -412,12 +410,13 @@ public class TableView extends TableLayout {
         text = Emoji.replaceEmoji(text, textView.getPaint().getFontMetricsInt(), false);
         textView.setText(text);
         NotificationCenter.listenEmojiLoading(textView);
+        textView.setPadding(dp(12.66f), dp(9.33f), dp(12.66f), dp(9.33f));
 
         final TableRow row = new TableRow(getContext());
         TableRow.LayoutParams lp;
         lp = new TableRow.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT);
         lp.span = 2;
-        final TableRowFullContent cell = new TableRowFullContent(this, textView);
+        final TableRowFullContent cell = new TableRowFullContent(this, textView, true);
         row.addView(cell, lp);
         addView(row);
         return cell;

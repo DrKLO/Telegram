@@ -151,6 +151,9 @@ class RtpDemuxer {
   // Null pointer is not allowed.
   bool RemoveSink(const RtpPacketSinkInterface* sink);
 
+  // Returns the set of SSRCs associated with a sink.
+  flat_set<uint32_t> GetSsrcsForSink(const RtpPacketSinkInterface* sink) const;
+
   // Demuxes the given packet and forwards it to the chosen sink. Returns true
   // if the packet was forwarded and false if the packet was dropped.
   bool OnRtpPacket(const RtpPacketReceived& packet);

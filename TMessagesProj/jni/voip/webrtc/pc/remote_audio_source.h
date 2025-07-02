@@ -49,9 +49,9 @@ class RemoteAudioSource : public Notifier<AudioSourceInterface> {
 
   // Register and unregister remote audio source with the underlying media
   // engine.
-  void Start(cricket::VoiceMediaChannel* media_channel,
+  void Start(cricket::VoiceMediaReceiveChannelInterface* media_channel,
              absl::optional<uint32_t> ssrc);
-  void Stop(cricket::VoiceMediaChannel* media_channel,
+  void Stop(cricket::VoiceMediaReceiveChannelInterface* media_channel,
             absl::optional<uint32_t> ssrc);
   void SetState(SourceState new_state);
 

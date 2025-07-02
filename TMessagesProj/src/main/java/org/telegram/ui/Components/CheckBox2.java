@@ -72,6 +72,10 @@ public class CheckBox2 extends View {
         checkBoxBase.setDrawUnchecked(value);
     }
 
+    public boolean getDrawUnchecked() {
+        return checkBoxBase.getDrawUnchecked();
+    }
+
     public void setDrawBackgroundAsArc(int type) {
         checkBoxBase.setBackgroundType(type);
     }

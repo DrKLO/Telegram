@@ -137,42 +137,6 @@ class AsyncHttpsProxySocket : public BufferedReadAdapter {
   std::string unknown_mechanisms_;
 };
 
-///////////////////////////////////////////////////////////////////////////////
-
-// Implements a socket adapter that speaks the SOCKS proxy protocol.
-class AsyncSocksProxySocket : public BufferedReadAdapter {
- public:
-  AsyncSocksProxySocket(Socket* socket,
-                        const SocketAddress& proxy,
-                        absl::string_view username,
-                        const CryptString& password);
-  ~AsyncSocksProxySocket() override;
-
-  AsyncSocksProxySocket(const AsyncSocksProxySocket&) = delete;
-  AsyncSocksProxySocket& operator=(const AsyncSocksProxySocket&) = delete;
-
-  int Connect(const SocketAddress& addr) override;
-  SocketAddress GetRemoteAddress() const override;
-  int Close() override;
-  ConnState GetState() const override;
-
- protected:
-  void OnConnectEvent(Socket* socket) override;
-  void ProcessInput(char* data, size_t* len) override;
-
-  void SendHello();
-  void SendConnect();
-  void SendAuth();
-  void Error(int error);
-
- private:
-  enum State { SS_INIT, SS_HELLO, SS_AUTH, SS_CONNECT, SS_TUNNEL, SS_ERROR };
-  State state_;
-  SocketAddress proxy_, dest_;
-  std::string user_;
-  CryptString pass_;
-};
-
 }  // namespace rtc
 
 #endif  // RTC_BASE_SOCKET_ADAPTERS_H_

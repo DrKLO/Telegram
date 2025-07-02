@@ -13,6 +13,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -48,6 +49,11 @@ class AbsoluteSendTime {
     RTC_DCHECK_GE(time6x18, 0);
     RTC_DCHECK_LT(time6x18, 1 << 24);
     return static_cast<uint32_t>(time6x18);
+  }
+
+  static constexpr Timestamp ToTimestamp(uint32_t time_24bits) {
+    RTC_DCHECK_LT(time_24bits, (1 << 24));
+    return Timestamp::Micros((time_24bits* int64_t{1'000'000}) >> 18);
   }
 };
 
@@ -191,9 +197,9 @@ class PlayoutDelayLimits {
   // Playout delay in milliseconds. A playout delay limit (min or max)
   // has 12 bits allocated. This allows a range of 0-4095 values which
   // translates to a range of 0-40950 in milliseconds.
-  static constexpr int kGranularityMs = 10;
+  static constexpr TimeDelta kGranularity = TimeDelta::Millis(10);
   // Maximum playout delay value in milliseconds.
-  static constexpr int kMaxMs = 0xfff * kGranularityMs;  // 40950.
+  static constexpr TimeDelta kMax = 0xfff * kGranularity;  // 40950.
 
   static bool Parse(rtc::ArrayView<const uint8_t> data,
                     VideoPlayoutDelay* playout_delay);

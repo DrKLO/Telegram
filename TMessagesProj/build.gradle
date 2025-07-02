@@ -27,6 +27,10 @@ dependencies {
     implementation 'androidx.interpolator:interpolator:1.0.0'
     implementation 'androidx.biometric:biometric:1.1.0'
 
+    implementation 'com.google.android.gms:play-services-cast-framework:21.4.0'
+    implementation "androidx.mediarouter:mediarouter:1.7.0"
+    implementation 'org.nanohttpd:nanohttpd:2.3.1'
+
     compileOnly 'org.checkerframework:checker-qual:2.5.2'
     compileOnly 'org.checkerframework:checker-compat-qual:2.5.0'
     implementation 'com.google.firebase:firebase-messaging:22.0.0'
@@ -50,6 +54,7 @@ dependencies {
 
     implementation 'com.google.android.gms:play-services-mlkit-subject-segmentation:16.0.0-beta1'
     implementation 'com.google.android.gms:play-services-mlkit-image-labeling:16.0.8'
+
     constraints {
         implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.8.0") {
             because("kotlin-stdlib-jdk7 is now a part of kotlin-stdlib")
@@ -58,6 +63,7 @@ dependencies {
             because("kotlin-stdlib-jdk8 is now a part of kotlin-stdlib")
         }
     }
+    implementation 'com.google.android.recaptcha:recaptcha:18.4.0'
 
     coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:1.1.5'
 }
@@ -120,6 +126,7 @@ android {
             ndk.debugSymbolLevel = 'FULL'
             buildConfigField "String", "BUILD_VERSION_STRING", "\"" + APP_VERSION_NAME + "\""
             buildConfigField "String", "APP_CENTER_HASH", "\"\""
+            buildConfigField "String", "BETA_URL", "\"" + getProps("BETA_PRIVATE_URL") + "\""
             buildConfigField "boolean", "DEBUG_VERSION", "true"
             buildConfigField "boolean", "DEBUG_PRIVATE_VERSION", "true"
             buildConfigField "boolean", "BUILD_HOST_IS_WINDOWS", isWindows
@@ -133,6 +140,7 @@ android {
             ndk.debugSymbolLevel = 'FULL'
             buildConfigField "String", "BUILD_VERSION_STRING", "\"" + APP_VERSION_NAME + "\""
             buildConfigField "String", "APP_CENTER_HASH", "\"" + getProps("APP_CENTER_HASH_PRIVATE") + "\""
+            buildConfigField "String", "BETA_URL", "\"" + getProps("BETA_PRIVATE_URL") + "\""
             buildConfigField "boolean", "DEBUG_VERSION", "true"
             buildConfigField "boolean", "DEBUG_PRIVATE_VERSION", "true"
             buildConfigField "boolean", "BUILD_HOST_IS_WINDOWS", isWindows
@@ -146,6 +154,7 @@ android {
             ndk.debugSymbolLevel = 'FULL'
             buildConfigField "String", "BUILD_VERSION_STRING", "\"" + APP_VERSION_NAME + "\""
             buildConfigField "String", "APP_CENTER_HASH", "\"" + getProps("APP_CENTER_HASH_PUBLIC") + "\""
+            buildConfigField "String", "BETA_URL", "\"" + getProps("BETA_PUBLIC_URL") + "\""
             buildConfigField "boolean", "DEBUG_VERSION", "true"
             buildConfigField "boolean", "DEBUG_PRIVATE_VERSION", "false"
             buildConfigField "boolean", "BUILD_HOST_IS_WINDOWS", isWindows
@@ -159,6 +168,7 @@ android {
             ndk.debugSymbolLevel = 'FULL'
             buildConfigField "String", "BUILD_VERSION_STRING", "\"" + APP_VERSION_NAME + "\""
             buildConfigField "String", "APP_CENTER_HASH", "\"" + getProps("APP_CENTER_HASH_HARDCORE") + "\""
+            buildConfigField "String", "BETA_URL", "\"" + getProps("BETA_HARDCORE_URL") + "\""
             buildConfigField "boolean", "DEBUG_VERSION", "true"
             buildConfigField "boolean", "DEBUG_PRIVATE_VERSION", "true"
             buildConfigField "boolean", "BUILD_HOST_IS_WINDOWS", isWindows
@@ -172,6 +182,7 @@ android {
             ndk.debugSymbolLevel = 'FULL'
             buildConfigField "String", "BUILD_VERSION_STRING", "\"" + APP_VERSION_NAME + "\""
             buildConfigField "String", "APP_CENTER_HASH", "\"\""
+            buildConfigField "String", "BETA_URL", "\"\""
             buildConfigField "boolean", "DEBUG_VERSION", "false"
             buildConfigField "boolean", "DEBUG_PRIVATE_VERSION", "false"
             buildConfigField "boolean", "BUILD_HOST_IS_WINDOWS", isWindows
@@ -186,6 +197,7 @@ android {
             ndk.debugSymbolLevel = 'FULL'
             buildConfigField "String", "BUILD_VERSION_STRING", "\"" + APP_VERSION_NAME + "\""
             buildConfigField "String", "APP_CENTER_HASH", "\"\""
+            buildConfigField "String", "BETA_URL", "\"\""
             buildConfigField "boolean", "DEBUG_VERSION", "false"
             buildConfigField "boolean", "DEBUG_PRIVATE_VERSION", "false"
             buildConfigField "boolean", "BUILD_HOST_IS_WINDOWS", isWindows
@@ -219,7 +231,7 @@ task checkVisibility {
     }
     doLast {
         if (project.gradle.startParameter.taskNames.find { it.contains("HA_public") }) {
-            def privateBuild = file("${projectDir}_AppHockeyApp/afat/HA_private/app.apk")
+            def privateBuild = file("${projectDir}_AppHockeyApp/afat/HA_private/Telegram-Beta.apk")
             if (privateBuild.exists()) {
                 privateBuild.delete()
             }

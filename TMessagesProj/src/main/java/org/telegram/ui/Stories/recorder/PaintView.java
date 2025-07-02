@@ -2139,7 +2139,7 @@ public class PaintView extends SizeNotifierFrameLayoutPhoto implements IPhotoPai
             }
 
             @Override
-            public void didSelectLocation(TLRPC.MessageMedia location, int locationType, boolean notify, int scheduleDate) {
+            public void didSelectLocation(TLRPC.MessageMedia location, int locationType, boolean notify, int scheduleDate, long payStars) {
                 TL_stories.MediaArea mediaArea;
                 if (location instanceof TLRPC.TL_messageMediaGeo) {
                     TL_stories.TL_mediaAreaGeoPoint areaGeo = new TL_stories.TL_mediaAreaGeoPoint();
@@ -2180,7 +2180,7 @@ public class PaintView extends SizeNotifierFrameLayoutPhoto implements IPhotoPai
         }, false, true, false, resourcesProvider);
         locationAlert.setDelegate(new ChatAttachAlert.ChatAttachViewDelegate() {
             @Override
-            public void didPressedButton(int button, boolean arg, boolean notify, int scheduleDate, long effectId, boolean invertMedia, boolean forceDocument) {
+            public void didPressedButton(int button, boolean arg, boolean notify, int scheduleDate, long effectId, boolean invertMedia, boolean forceDocument, long payStars) {
 
             }
         });
@@ -2232,7 +2232,7 @@ public class PaintView extends SizeNotifierFrameLayoutPhoto implements IPhotoPai
             }
 
             @Override
-            public void sendAudio(ArrayList<MessageObject> audios, CharSequence caption, boolean notify, int scheduleDate, long effectId, boolean invertMedia) {
+            public void sendAudio(ArrayList<MessageObject> audios, CharSequence caption, boolean notify, int scheduleDate, long effectId, boolean invertMedia, long payStars) {
                 if (audios.isEmpty()) {
                     return;
                 }
@@ -2249,7 +2249,7 @@ public class PaintView extends SizeNotifierFrameLayoutPhoto implements IPhotoPai
         audioAlert[0] = new ChatAttachAlert(getContext(), chatActivity, false, true, false, resourcesProvider);
         audioAlert[0].setDelegate(new ChatAttachAlert.ChatAttachViewDelegate() {
             @Override
-            public void didPressedButton(int button, boolean arg, boolean notify, int scheduleDate, long effectId, boolean invertMedia, boolean forceDocument) {
+            public void didPressedButton(int button, boolean arg, boolean notify, int scheduleDate, long effectId, boolean invertMedia, boolean forceDocument, long payStars) {
 
             }
         });

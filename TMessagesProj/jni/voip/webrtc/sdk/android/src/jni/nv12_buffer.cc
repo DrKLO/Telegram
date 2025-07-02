@@ -9,13 +9,13 @@
  */
 
 #include <jni.h>
-#include <vector>
 
-#include "third_party/libyuv/include/libyuv/convert.h"
-#include "third_party/libyuv/include/libyuv/scale.h"
+#include <vector>
 
 #include "rtc_base/checks.h"
 #include "sdk/android/generated_video_jni/NV12Buffer_jni.h"
+#include "third_party/libyuv/include/libyuv/convert.h"
+#include "third_party/libyuv/include/libyuv/scale.h"
 
 namespace webrtc {
 namespace jni {

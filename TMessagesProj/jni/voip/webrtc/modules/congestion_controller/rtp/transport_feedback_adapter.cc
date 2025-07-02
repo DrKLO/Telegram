@@ -85,7 +85,6 @@ bool InFlightBytesTracker::NetworkRouteComparator::operator()(
 
 TransportFeedbackAdapter::TransportFeedbackAdapter() = default;
 
-
 void TransportFeedbackAdapter::AddPacket(const RtpPacketSendInfo& packet_info,
                                          size_t overhead_bytes,
                                          Timestamp creation_time) {
@@ -212,52 +211,53 @@ TransportFeedbackAdapter::ProcessTransportFeedbackInner(
 
   size_t failed_lookups = 0;
   size_t ignored = 0;
-  TimeDelta packet_offset = TimeDelta::Zero();
-  for (const auto& packet : feedback.GetAllPackets()) {
-    int64_t seq_num = seq_num_unwrapper_.Unwrap(packet.sequence_number());
 
-    if (seq_num > last_ack_seq_num_) {
-      // Starts at history_.begin() if last_ack_seq_num_ < 0, since any valid
-      // sequence number is >= 0.
-      for (auto it = history_.upper_bound(last_ack_seq_num_);
-           it != history_.upper_bound(seq_num); ++it) {
-        in_flight_.RemoveInFlightPacketBytes(it->second);
-      }
-      last_ack_seq_num_ = seq_num;
-    }
+  feedback.ForAllPackets(
+      [&](uint16_t sequence_number, TimeDelta delta_since_base) {
+        int64_t seq_num = seq_num_unwrapper_.Unwrap(sequence_number);
 
-    auto it = history_.find(seq_num);
-    if (it == history_.end()) {
-      ++failed_lookups;
-      continue;
-    }
+        if (seq_num > last_ack_seq_num_) {
+          // Starts at history_.begin() if last_ack_seq_num_ < 0, since any
+          // valid sequence number is >= 0.
+          for (auto it = history_.upper_bound(last_ack_seq_num_);
+               it != history_.upper_bound(seq_num); ++it) {
+            in_flight_.RemoveInFlightPacketBytes(it->second);
+          }
+          last_ack_seq_num_ = seq_num;
+        }
 
-    if (it->second.sent.send_time.IsInfinite()) {
-      // TODO(srte): Fix the tests that makes this happen and make this a
-      // DCHECK.
-      RTC_DLOG(LS_ERROR)
-          << "Received feedback before packet was indicated as sent";
-      continue;
-    }
+        auto it = history_.find(seq_num);
+        if (it == history_.end()) {
+          ++failed_lookups;
+          return;
+        }
 
-    PacketFeedback packet_feedback = it->second;
-    if (packet.received()) {
-      packet_offset += packet.delta();
-      packet_feedback.receive_time =
-          current_offset_ + packet_offset.RoundDownTo(TimeDelta::Millis(1));
-      // Note: Lost packets are not removed from history because they might be
-      // reported as received by a later feedback.
-      history_.erase(it);
-    }
-    if (packet_feedback.network_route == network_route_) {
-      PacketResult result;
-      result.sent_packet = packet_feedback.sent;
-      result.receive_time = packet_feedback.receive_time;
-      packet_result_vector.push_back(result);
-    } else {
-      ++ignored;
-    }
-  }
+        if (it->second.sent.send_time.IsInfinite()) {
+          // TODO(srte): Fix the tests that makes this happen and make this a
+          // DCHECK.
+          RTC_DLOG(LS_ERROR)
+              << "Received feedback before packet was indicated as sent";
+          return;
+        }
+
+        PacketFeedback packet_feedback = it->second;
+        if (delta_since_base.IsFinite()) {
+          packet_feedback.receive_time =
+              current_offset_ +
+              delta_since_base.RoundDownTo(TimeDelta::Millis(1));
+          // Note: Lost packets are not removed from history because they might
+          // be reported as received by a later feedback.
+          history_.erase(it);
+        }
+        if (packet_feedback.network_route == network_route_) {
+          PacketResult result;
+          result.sent_packet = packet_feedback.sent;
+          result.receive_time = packet_feedback.receive_time;
+          packet_result_vector.push_back(result);
+        } else {
+          ++ignored;
+        }
+      });
 
   if (failed_lookups > 0) {
     RTC_LOG(LS_WARNING) << "Failed to lookup send time for " << failed_lookups

@@ -1,16 +1,16 @@
-/* Copyright (c) 2017, Google Inc.
- *
- * Permission to use, copy, modify, and/or distribute this software for any
- * purpose with or without fee is hereby granted, provided that the above
- * copyright notice and this permission notice appear in all copies.
- *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
- * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY
- * SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION
- * OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
- * CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE. */
+// Copyright 2017 The BoringSSL Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 #ifndef OPENSSL_HEADER_CRYPTO_TEST_GTEST_MAIN_H
 #define OPENSSL_HEADER_CRYPTO_TEST_GTEST_MAIN_H
@@ -24,20 +24,20 @@
 #include <openssl/err.h>
 
 #if defined(OPENSSL_WINDOWS)
-OPENSSL_MSVC_PRAGMA(warning(push, 3))
 #include <winsock2.h>
-OPENSSL_MSVC_PRAGMA(warning(pop))
 #else
 #include <signal.h>
 #endif
 
+#include "../internal.h"
+
 
 BSSL_NAMESPACE_BEGIN
 
-class ErrorTestEventListener : public testing::EmptyTestEventListener {
+class TestEventListener : public testing::EmptyTestEventListener {
  public:
-  ErrorTestEventListener() {}
-  ~ErrorTestEventListener() override {}
+  TestEventListener() {}
+  ~TestEventListener() override {}
 
   void OnTestEnd(const testing::TestInfo &test_info) override {
     if (test_info.result()->Failed()) {
@@ -48,14 +48,19 @@ class ErrorTestEventListener : public testing::EmptyTestEventListener {
       // error queue without printing.
       ERR_clear_error();
     }
+
+    // Malloc failure testing is quadratic in the number of mallocs. Running
+    // multiple tests sequentially thus scales badly. Reset the malloc counter
+    // between tests. This way we will test, each test with the first allocation
+    // failing, then the second, and so on, until the test with the most
+    // allocations runs out.
+    OPENSSL_reset_malloc_counter_for_testing();
   }
 };
 
 // SetupGoogleTest should be called by the test runner after
 // testing::InitGoogleTest has been called and before RUN_ALL_TESTS.
 inline void SetupGoogleTest() {
-  CRYPTO_library_init();
-
 #if defined(OPENSSL_WINDOWS)
   // Initialize Winsock.
   WORD wsa_version = MAKEWORD(2, 2);
@@ -75,8 +80,7 @@ inline void SetupGoogleTest() {
   signal(SIGPIPE, SIG_IGN);
 #endif
 
-  testing::UnitTest::GetInstance()->listeners().Append(
-      new ErrorTestEventListener);
+  testing::UnitTest::GetInstance()->listeners().Append(new TestEventListener);
 }
 
 BSSL_NAMESPACE_END

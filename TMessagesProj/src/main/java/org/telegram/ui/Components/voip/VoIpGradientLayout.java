@@ -10,13 +10,18 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.ColorFilter;
 import android.graphics.Path;
+import android.graphics.PixelFormat;
 import android.graphics.PorterDuff;
+import android.graphics.drawable.ColorDrawable;
+import android.graphics.drawable.Drawable;
 import android.view.View;
 import android.view.animation.LinearInterpolator;
 import android.widget.FrameLayout;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LiteMode;
@@ -31,18 +36,18 @@ public class VoIpGradientLayout extends FrameLayout {
         BAD_CONNECTION
     }
 
-    private final MotionBackgroundDrawable bgBlueViolet;
-    private final MotionBackgroundDrawable bgBlueGreen;
+    private final Drawable bgBlueViolet;
+    private final Drawable bgBlueGreen;
     private final MotionBackgroundDrawable bgGreen;
     private final MotionBackgroundDrawable bgOrangeRed;
 
-    private final MotionBackgroundDrawable bgBlueVioletDark;
-    private final MotionBackgroundDrawable bgBlueGreenDark;
+    private final Drawable bgBlueVioletDark;
+    private final Drawable bgBlueGreenDark;
     private final MotionBackgroundDrawable bgGreenDark;
     private final MotionBackgroundDrawable bgOrangeRedDark;
 
-    private final MotionBackgroundDrawable bgBlueVioletLight;
-    private final MotionBackgroundDrawable bgBlueGreenLight;
+    private final Drawable bgBlueVioletLight;
+    private final Drawable bgBlueGreenLight;
     private final MotionBackgroundDrawable bgGreenLight;
     private final MotionBackgroundDrawable bgOrangeRedLight;
     private final MotionBackgroundDrawable bgGreenLightReveal;
@@ -67,22 +72,41 @@ public class VoIpGradientLayout extends FrameLayout {
     private final VoIPBackgroundProvider backgroundProvider;
     private boolean allowAnimations;
 
-    public VoIpGradientLayout(@NonNull Context context, VoIPBackgroundProvider backgroundProvider) {
+    private class PureColorDrawable extends Drawable {
+        private final int color;
+        public PureColorDrawable(int color) {
+            this.color = color;
+        }
+        @Override
+        public void draw(@NonNull Canvas canvas) {
+            canvas.drawColor(color);
+        }
+        @Override
+        public void setAlpha(int alpha) {}
+        @Override
+        public void setColorFilter(@Nullable ColorFilter colorFilter) {}
+        @Override
+        public int getOpacity() {
+            return PixelFormat.TRANSPARENT;
+        }
+    }
+
+    public VoIpGradientLayout(@NonNull Context context, boolean black, VoIPBackgroundProvider backgroundProvider) {
         super(context);
         this.backgroundProvider = backgroundProvider;
         allowAnimations = LiteMode.isEnabled(LiteMode.FLAG_CALLS_ANIMATIONS);
-        bgBlueViolet = new MotionBackgroundDrawable(0xFFB456D8, 0xFF8148EC, 0xFF20A4D7, 0xFF3F8BEA, 0, false, true);
-        bgBlueGreen = new MotionBackgroundDrawable(0xFF4576E9, 0xFF3B7AF1, 0xFF08B0A3, 0xFF17AAE4, 0, false, true);
+        bgBlueViolet = black ? new PureColorDrawable(0xFF191F26) : new MotionBackgroundDrawable(0xFFB456D8, 0xFF8148EC, 0xFF20A4D7, 0xFF3F8BEA, 0, false, true);
+        bgBlueGreen = black ? new PureColorDrawable(0xFF191F26) : new MotionBackgroundDrawable(0xFF4576E9, 0xFF3B7AF1, 0xFF08B0A3, 0xFF17AAE4, 0, false, true);
         bgGreen = new MotionBackgroundDrawable(0xFF07A9AC, 0xFF07BA63, 0xFFA9CC66, 0xFF5AB147, 0, false, true);
         bgOrangeRed = new MotionBackgroundDrawable(0xFFE86958, 0xFFE7618F, 0xFFDB904C, 0xFFDE7238, 0, false, true);
 
-        bgBlueVioletDark = new MotionBackgroundDrawable(0xFFA736D0, 0xFF6A2BDD, 0xFF0F95C9, 0xFF287AE1, 0, false, true);
-        bgBlueGreenDark = new MotionBackgroundDrawable(0xFF2D60D6, 0xFF2C6ADF, 0xFF009595, 0xFF0291C9, 0, false, true);
+        bgBlueVioletDark = black ? new PureColorDrawable(0xFF191F26) : new MotionBackgroundDrawable(0xFFA736D0, 0xFF6A2BDD, 0xFF0F95C9, 0xFF287AE1, 0, false, true);
+        bgBlueGreenDark = black ? new PureColorDrawable(0xFF191F26) : new MotionBackgroundDrawable(0xFF2D60D6, 0xFF2C6ADF, 0xFF009595, 0xFF0291C9, 0, false, true);
         bgGreenDark = new MotionBackgroundDrawable(0xFF008B8E, 0xFF01934C, 0xFF8FBD37, 0xFF319D27, 0, false, true);
         bgOrangeRedDark = new MotionBackgroundDrawable(0xFFE23F29, 0xFFE6306F, 0xFFC77616, 0xFFD75A16, 0, false, true);
 
-        bgBlueVioletLight = new MotionBackgroundDrawable(0xFFD664FF, 0xFF9258FD, 0xFF2DC0F9, 0xFF57A1FF, 0, false, true);
-        bgBlueGreenLight = new MotionBackgroundDrawable(0xFF558BFF, 0xFF5FABFF, 0xFF04DCCC, 0xFF28C2FF, 0, false, true);
+        bgBlueVioletLight = black ? new PureColorDrawable(0xFF191F26) : new MotionBackgroundDrawable(0xFFD664FF, 0xFF9258FD, 0xFF2DC0F9, 0xFF57A1FF, 0, false, true);
+        bgBlueGreenLight = black ? new PureColorDrawable(0xFF191F26) : new MotionBackgroundDrawable(0xFF558BFF, 0xFF5FABFF, 0xFF04DCCC, 0xFF28C2FF, 0, false, true);
         bgGreenLight = new MotionBackgroundDrawable(0xFF00D2D5, 0xFF09E279, 0xFFC7EF60, 0xFF6DD957, 0, false, true);
         bgOrangeRedLight = new MotionBackgroundDrawable(0xFFFF7866, 0xFFFF82A5, 0xFFFEB055, 0xFFFF8E51, 0, false, true);
         bgGreenLightReveal = new MotionBackgroundDrawable(0xFF00D2D5, 0xFF09E279, 0xFFC7EF60, 0xFF6DD957, 0, false, true);

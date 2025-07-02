@@ -10,7 +10,6 @@
 
 #include "modules/audio_device/linux/audio_device_alsa_linux.h"
 
-
 #include "modules/audio_device/audio_device_config.h"
 #include "rtc_base/logging.h"
 #include "rtc_base/system/arch.h"
@@ -589,7 +588,7 @@ int32_t AudioDeviceLinuxALSA::SetPlayoutDevice(uint16_t index) {
     return -1;
   }
 
-  uint32_t nDevices = GetDevicesInfo(0, true);
+  int32_t nDevices = GetDevicesInfo(0, true);
   RTC_LOG(LS_VERBOSE) << "number of available audio output devices is "
                       << nDevices;
 
@@ -658,7 +657,7 @@ int32_t AudioDeviceLinuxALSA::SetRecordingDevice(uint16_t index) {
     return -1;
   }
 
-  uint32_t nDevices = GetDevicesInfo(0, false);
+  int32_t nDevices = GetDevicesInfo(0, false);
   RTC_LOG(LS_VERBOSE) << "number of availiable audio input devices is "
                       << nDevices;
 
@@ -1053,8 +1052,8 @@ int32_t AudioDeviceLinuxALSA::StartRecording() {
 }
 
 int32_t AudioDeviceLinuxALSA::StopRecording() {
-    MutexLock lock(&mutex_);
-    return StopRecordingLocked();
+  MutexLock lock(&mutex_);
+  return StopRecordingLocked();
 }
 
 int32_t AudioDeviceLinuxALSA::StopRecordingLocked() {
@@ -1157,8 +1156,8 @@ int32_t AudioDeviceLinuxALSA::StartPlayout() {
 }
 
 int32_t AudioDeviceLinuxALSA::StopPlayout() {
-    MutexLock lock(&mutex_);
-    return StopPlayoutLocked();
+  MutexLock lock(&mutex_);
+  return StopPlayoutLocked();
 }
 
 int32_t AudioDeviceLinuxALSA::StopPlayoutLocked() {

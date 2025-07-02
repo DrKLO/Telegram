@@ -7,7 +7,6 @@ import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.content.Context;
 import android.content.DialogInterface;
-import android.content.Intent;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
@@ -34,7 +33,6 @@ import androidx.core.graphics.ColorUtils;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
-import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
@@ -49,7 +47,6 @@ import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.DialogCell;
-import org.telegram.ui.ManageLinksActivity;
 
 import java.util.ArrayList;
 
@@ -185,7 +182,8 @@ public class LinkActionView extends LinearLayout {
                 }
                 fragment.showDialog(new ShareAlert(getContext(), null, link, false, link, false, fragment.getResourceProvider()) {
                     @Override
-                    protected void onSend(LongSparseArray<TLRPC.Dialog> dids, int count, TLRPC.TL_forumTopic topic) {
+                    protected void onSend(LongSparseArray<TLRPC.Dialog> dids, int count, TLRPC.TL_forumTopic topic, boolean showToast) {
+                        if (!showToast) return;
                         final String str;
                         if (dids != null && dids.size() == 1) {
                             long did = dids.valueAt(0).id;

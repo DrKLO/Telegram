@@ -88,7 +88,7 @@ public class ForumBubbleDrawable extends Drawable {
 
     @Override
     public void setAlpha(int alpha) {
-
+        svgDrawable.setAlpha(alpha);
     }
 
     @Override

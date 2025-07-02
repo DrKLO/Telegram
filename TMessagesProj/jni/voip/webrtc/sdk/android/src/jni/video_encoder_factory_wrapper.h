@@ -12,6 +12,7 @@
 #define SDK_ANDROID_SRC_JNI_VIDEO_ENCODER_FACTORY_WRAPPER_H_
 
 #include <jni.h>
+
 #include <vector>
 
 #include "api/video_codecs/sdp_video_format.h"

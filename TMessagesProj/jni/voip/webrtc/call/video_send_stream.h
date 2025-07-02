@@ -23,12 +23,14 @@
 #include "api/crypto/crypto_options.h"
 #include "api/frame_transformer_interface.h"
 #include "api/rtp_parameters.h"
+#include "api/rtp_sender_interface.h"
 #include "api/scoped_refptr.h"
 #include "api/video/video_content_type.h"
 #include "api/video/video_frame.h"
 #include "api/video/video_sink_interface.h"
 #include "api/video/video_source_interface.h"
 #include "api/video/video_stream_encoder_settings.h"
+#include "api/video_codecs/scalability_mode.h"
 #include "call/rtp_config.h"
 #include "common_video/frame_counts.h"
 #include "common_video/include/quality_limitation_reason.h"
@@ -92,13 +94,14 @@ class VideoSendStream {
     uint64_t total_encode_time_ms = 0;
     uint64_t total_encoded_bytes_target = 0;
     uint32_t huge_frames_sent = 0;
+    absl::optional<ScalabilityMode> scalability_mode;
   };
 
   struct Stats {
     Stats();
     ~Stats();
     std::string ToString(int64_t time_ms) const;
-    std::string encoder_implementation_name = "unknown";
+    absl::optional<std::string> encoder_implementation_name;
     double input_frame_rate = 0;
     int encode_frame_rate = 0;
     int avg_encode_time_ms = 0;
@@ -110,6 +113,7 @@ class VideoSendStream {
     uint64_t total_encoded_bytes_target = 0;
     uint32_t frames = 0;
     uint32_t frames_dropped_by_capturer = 0;
+    uint32_t frames_dropped_by_bad_timestamp = 0;
     uint32_t frames_dropped_by_encoder_queue = 0;
     uint32_t frames_dropped_by_rate_limiter = 0;
     uint32_t frames_dropped_by_congestion_window = 0;
@@ -208,29 +212,18 @@ class VideoSendStream {
     Config(const Config&);
   };
 
-  // Updates the sending state for all simulcast layers that the video send
-  // stream owns. This can mean updating the activity one or for multiple
-  // layers. The ordering of active layers is the order in which the
-  // rtp modules are stored in the VideoSendStream.
-  // Note: This starts stream activity if it is inactive and one of the layers
-  // is active. This stops stream activity if it is active and all layers are
-  // inactive.
-  virtual void UpdateActiveSimulcastLayers(std::vector<bool> active_layers) = 0;
-
   // Starts stream activity.
   // When a stream is active, it can receive, process and deliver packets.
   virtual void Start() = 0;
+
   // Stops stream activity.
   // When a stream is stopped, it can't receive, process or deliver packets.
   virtual void Stop() = 0;
 
   // Accessor for determining if the stream is active. This is an inexpensive
   // call that must be made on the same thread as `Start()` and `Stop()` methods
-  // are called on and will return `true` iff activity has been started either
-  // via `Start()` or `UpdateActiveSimulcastLayers()`. If activity is either
-  // stopped or is in the process of being stopped as a result of a call to
-  // either `Stop()` or `UpdateActiveSimulcastLayers()` where all layers were
-  // deactivated, the return value will be `false`.
+  // are called on and will return `true` iff activity has been started
+  // via `Start()`.
   virtual bool started() = 0;
 
   // If the resource is overusing, the VideoSendStream will try to reduce
@@ -251,9 +244,12 @@ class VideoSendStream {
   // with the VideoStream settings.
   virtual void ReconfigureVideoEncoder(VideoEncoderConfig config) = 0;
 
+  virtual void ReconfigureVideoEncoder(VideoEncoderConfig config,
+                                       SetParametersCallback callback) = 0;
+
   virtual Stats GetStats() = 0;
 
-  virtual void GenerateKeyFrame() = 0;
+  virtual void GenerateKeyFrame(const std::vector<std::string>& rids) = 0;
 
  protected:
   virtual ~VideoSendStream() {}

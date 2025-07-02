@@ -4,11 +4,14 @@ import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
 import android.content.Context;
+import android.view.MotionEvent;
 
+import androidx.annotation.NonNull;
 import androidx.dynamicanimation.animation.DynamicAnimation;
 import androidx.dynamicanimation.animation.SpringAnimation;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
@@ -25,14 +28,14 @@ public class GallerySheet extends BottomSheet {
 
     private final GalleryListView listView;
 
-    public GallerySheet(Context context, Theme.ResourcesProvider resourcesProvider, float aspectRatio) {
+    public GallerySheet(Context context, Theme.ResourcesProvider resourcesProvider, String title, boolean onlyPhotos, float aspectRatio) {
         super(context, false, resourcesProvider);
 
         fixNavigationBar(0xff1f1f1f);
-        listView = new GalleryListView(UserConfig.selectedAccount, context, new DarkThemeResourceProvider(), null, true, aspectRatio) {
+        listView = new GalleryListView(UserConfig.selectedAccount, context, new DarkThemeResourceProvider(), null, onlyPhotos, aspectRatio, false, false) {
             @Override
             public String getTitle() {
-                return "Choose cover";
+                return title;
             }
         };
         listView.allowSearch(false);
@@ -69,6 +72,20 @@ public class GallerySheet extends BottomSheet {
     public void dismiss() {
         animate(false, super::dismiss);
         super.dismiss();
+    }
+
+    @Override
+    protected boolean canDismissWithSwipe() {
+        return !listView.actionBarShown;
+    }
+
+    @Override
+    public boolean dispatchTouchEvent(@NonNull MotionEvent ev) {
+        if (ev.getAction() == MotionEvent.ACTION_DOWN && ev.getY() < listView.top()) {
+            dismiss();
+            return true;
+        }
+        return super.dispatchTouchEvent(ev);
     }
 
     private void animate(boolean open, Runnable done) {

@@ -28,6 +28,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <ios>
 #include <limits>
 #include <numeric>
 #include <random>
@@ -37,13 +38,15 @@
 
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
-#include "absl/base/internal/raw_logging.h"
+#include "absl/log/log.h"
+#include "absl/numeric/int128.h"
 #include "absl/random/distributions.h"
 #include "absl/random/random.h"
 #include "absl/strings/internal/numbers_test_common.h"
 #include "absl/strings/internal/ostringstream.h"
 #include "absl/strings/internal/pow10_helper.h"
 #include "absl/strings/str_cat.h"
+#include "absl/strings/string_view.h"
 
 namespace {
 
@@ -60,6 +63,7 @@ using absl::strings_internal::strtouint32_test_cases;
 using absl::strings_internal::strtouint64_test_cases;
 using testing::Eq;
 using testing::MatchesRegex;
+using testing::Pointee;
 
 // Number of floats to test with.
 // 5,000,000 is a reasonable default for a test that only takes a few seconds.
@@ -1337,11 +1341,9 @@ TEST_F(SimpleDtoaTest, ExhaustiveDoubleToSixDigits) {
     if (strcmp(sixdigitsbuf, snprintfbuf) != 0) {
       mismatches.push_back(d);
       if (mismatches.size() < 10) {
-        ABSL_RAW_LOG(ERROR, "%s",
-                     absl::StrCat("Six-digit failure with double.  ", "d=", d,
-                                  "=", d, " sixdigits=", sixdigitsbuf,
-                                  " printf(%g)=", snprintfbuf)
-                         .c_str());
+        LOG(ERROR) << "Six-digit failure with double.  d=" << d
+                   << " sixdigits=" << sixdigitsbuf
+                   << " printf(%g)=" << snprintfbuf;
       }
     }
   };
@@ -1389,12 +1391,10 @@ TEST_F(SimpleDtoaTest, ExhaustiveDoubleToSixDigits) {
       if (kFloatNumCases >= 1e9) {
         // The exhaustive test takes a very long time, so log progress.
         char buf[kSixDigitsToBufferSize];
-        ABSL_RAW_LOG(
-            INFO, "%s",
-            absl::StrCat("Exp ", exponent, " powten=", powten, "(", powten,
-                         ") (",
-                         std::string(buf, SixDigitsToBuffer(powten, buf)), ")")
-                .c_str());
+        LOG(INFO) << "Exp " << exponent << " powten=" << powten << "(" << powten
+                  << ") ("
+                  << absl::string_view(buf, SixDigitsToBuffer(powten, buf))
+                  << ")";
       }
       for (int digits : digit_testcases) {
         if (exponent == 308 && digits >= 179769) break;  // don't overflow!
@@ -1419,20 +1419,17 @@ TEST_F(SimpleDtoaTest, ExhaustiveDoubleToSixDigits) {
       double before = nextafter(d, 0.0);
       double after = nextafter(d, 1.7976931348623157e308);
       char b1[32], b2[kSixDigitsToBufferSize];
-      ABSL_RAW_LOG(
-          ERROR, "%s",
-          absl::StrCat(
-              "Mismatch #", i, "  d=", d, " (", ToNineDigits(d), ")",
-              " sixdigits='", sixdigitsbuf, "'", " snprintf='", snprintfbuf,
-              "'", " Before.=", PerfectDtoa(before), " ",
-              (SixDigitsToBuffer(before, b2), b2),
-              " vs snprintf=", (snprintf(b1, sizeof(b1), "%g", before), b1),
-              " Perfect=", PerfectDtoa(d), " ", (SixDigitsToBuffer(d, b2), b2),
-              " vs snprintf=", (snprintf(b1, sizeof(b1), "%g", d), b1),
-              " After.=.", PerfectDtoa(after), " ",
-              (SixDigitsToBuffer(after, b2), b2),
-              " vs snprintf=", (snprintf(b1, sizeof(b1), "%g", after), b1))
-              .c_str());
+      LOG(ERROR) << "Mismatch #" << i << "  d=" << d << " (" << ToNineDigits(d)
+                 << ") sixdigits='" << sixdigitsbuf << "' snprintf='"
+                 << snprintfbuf << "' Before.=" << PerfectDtoa(before) << " "
+                 << (SixDigitsToBuffer(before, b2), b2) << " vs snprintf="
+                 << (snprintf(b1, sizeof(b1), "%g", before), b1)
+                 << " Perfect=" << PerfectDtoa(d) << " "
+                 << (SixDigitsToBuffer(d, b2), b2)
+                 << " vs snprintf=" << (snprintf(b1, sizeof(b1), "%g", d), b1)
+                 << " After.=." << PerfectDtoa(after) << " "
+                 << (SixDigitsToBuffer(after, b2), b2) << " vs snprintf="
+                 << (snprintf(b1, sizeof(b1), "%g", after), b1);
     }
   }
 }
@@ -1717,6 +1714,27 @@ TEST(FastHexToBufferZeroPad16, Smoke) {
         absl::LogUniform(rng, std::numeric_limits<uint64_t>::min(),
                          std::numeric_limits<uint64_t>::max()));
   }
+}
+
+template <typename Int>
+void ExpectWritesNull() {
+  {
+    char buf[absl::numbers_internal::kFastToBufferSize];
+    Int x = std::numeric_limits<Int>::min();
+    EXPECT_THAT(absl::numbers_internal::FastIntToBuffer(x, buf), Pointee('\0'));
+  }
+  {
+    char buf[absl::numbers_internal::kFastToBufferSize];
+    Int x = std::numeric_limits<Int>::max();
+    EXPECT_THAT(absl::numbers_internal::FastIntToBuffer(x, buf), Pointee('\0'));
+  }
+}
+
+TEST(FastIntToBuffer, WritesNull) {
+  ExpectWritesNull<int32_t>();
+  ExpectWritesNull<uint32_t>();
+  ExpectWritesNull<int64_t>();
+  ExpectWritesNull<uint32_t>();
 }
 
 }  // namespace

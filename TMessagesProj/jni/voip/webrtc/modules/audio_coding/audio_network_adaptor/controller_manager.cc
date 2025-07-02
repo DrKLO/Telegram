@@ -24,18 +24,16 @@
 #include "modules/audio_coding/audio_network_adaptor/frame_length_controller.h"
 #include "modules/audio_coding/audio_network_adaptor/frame_length_controller_v2.h"
 #include "modules/audio_coding/audio_network_adaptor/util/threshold_curve.h"
-#include "rtc_base/ignore_wundef.h"
 #include "rtc_base/logging.h"
 #include "rtc_base/time_utils.h"
 
 #if WEBRTC_ENABLE_PROTOBUF
-RTC_PUSH_IGNORING_WUNDEF()
 #ifdef WEBRTC_ANDROID_PLATFORM_BUILD
 #include "external/webrtc/webrtc/modules/audio_coding/audio_network_adaptor/config.pb.h"
 #else
 #include "modules/audio_coding/audio_network_adaptor/config.pb.h"
 #endif
-RTC_POP_IGNORING_WUNDEF()
+
 #endif
 
 namespace webrtc {

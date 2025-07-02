@@ -32,6 +32,6 @@ void WebRtcIlbcfix_BwExpand(
                                     expansion */
     int16_t* coef, /* (i) the bandwidth expansion factor Q15 */
     int16_t length /* (i) the length of lpc coefficient vectors */
-    );
+);
 
 #endif

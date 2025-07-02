@@ -206,27 +206,29 @@ public class SessionBottomSheet extends BottomSheet {
             prevItem = acceptSecretChats;
         }
 
-        ItemView acceptCalls = new ItemView(context, true);
-        acceptCalls.valueText.setText(LocaleController.getString(R.string.AcceptCalls));
-        drawable = ContextCompat.getDrawable(context, R.drawable.msg_calls).mutate();
-        drawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteGrayIcon), PorterDuff.Mode.SRC_IN));
-        acceptCalls.iconView.setImageDrawable(drawable);
-        acceptCalls.switchView.setChecked(!session.call_requests_disabled, false);
-        acceptCalls.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector), 7));
-        acceptCalls.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                acceptCalls.switchView.setChecked(!acceptCalls.switchView.isChecked(), true);
-                session.call_requests_disabled = !acceptCalls.switchView.isChecked();
-                uploadSessionSettings();
+        if (acceptCallsEnabled(session)) {
+            ItemView acceptCalls = new ItemView(context, true);
+            acceptCalls.valueText.setText(LocaleController.getString(R.string.AcceptCalls));
+            drawable = ContextCompat.getDrawable(context, R.drawable.msg_calls).mutate();
+            drawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteGrayIcon), PorterDuff.Mode.SRC_IN));
+            acceptCalls.iconView.setImageDrawable(drawable);
+            acceptCalls.switchView.setChecked(!session.call_requests_disabled, false);
+            acceptCalls.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector), 7));
+            acceptCalls.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    acceptCalls.switchView.setChecked(!acceptCalls.switchView.isChecked(), true);
+                    session.call_requests_disabled = !acceptCalls.switchView.isChecked();
+                    uploadSessionSettings();
+                }
+            });
+            if (prevItem != null) {
+                prevItem.needDivider = true;
             }
-        });
 
-        if (prevItem != null) {
-            prevItem.needDivider = true;
+            acceptCalls.descriptionText.setText(LocaleController.getString(R.string.AcceptCallsChatsDescription));
+            linearLayout.addView(acceptCalls);
         }
-        acceptCalls.descriptionText.setText(LocaleController.getString(R.string.AcceptCallsChatsDescription));
-        linearLayout.addView(acceptCalls);
 
         if (!isCurrentSession) {
             TextView buttonTextView = new TextView(context);
@@ -271,11 +273,12 @@ public class SessionBottomSheet extends BottomSheet {
         setCustomView(scrollView);
     }
 
+    private boolean acceptCallsEnabled(TLRPC.TL_authorization session) {
+        return session.api_id != 22;
+    }
+
     private boolean secretChatsEnabled(TLRPC.TL_authorization session) {
-        if (session.api_id == 2040 || session.api_id == 2496) {
-            return false;
-        }
-        return true;
+        return session.api_id != 2040 && session.api_id != 2496;
     }
 
     private void uploadSessionSettings() {

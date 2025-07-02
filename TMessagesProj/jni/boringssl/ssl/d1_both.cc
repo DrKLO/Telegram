@@ -1,115 +1,16 @@
-/*
- * DTLS implementation written by Nagendra Modadugu
- * (nagendra@cs.stanford.edu) for the OpenSSL project 2005.
- */
-/* ====================================================================
- * Copyright (c) 1998-2005 The OpenSSL Project.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- *
- * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- *
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- *
- * 3. All advertising materials mentioning features or use of this
- *    software must display the following acknowledgment:
- *    "This product includes software developed by the OpenSSL Project
- *    for use in the OpenSSL Toolkit. (http://www.openssl.org/)"
- *
- * 4. The names "OpenSSL Toolkit" and "OpenSSL Project" must not be used to
- *    endorse or promote products derived from this software without
- *    prior written permission. For written permission, please contact
- *    openssl-core@openssl.org.
- *
- * 5. Products derived from this software may not be called "OpenSSL"
- *    nor may "OpenSSL" appear in their names without prior written
- *    permission of the OpenSSL Project.
- *
- * 6. Redistributions of any form whatsoever must retain the following
- *    acknowledgment:
- *    "This product includes software developed by the OpenSSL Project
- *    for use in the OpenSSL Toolkit (http://www.openssl.org/)"
- *
- * THIS SOFTWARE IS PROVIDED BY THE OpenSSL PROJECT ``AS IS'' AND ANY
- * EXPRESSED OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
- * PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE OpenSSL PROJECT OR
- * ITS CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
- * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
- * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
- * OF THE POSSIBILITY OF SUCH DAMAGE.
- * ====================================================================
- *
- * This product includes cryptographic software written by Eric Young
- * (eay@cryptsoft.com).  This product includes software written by Tim
- * Hudson (tjh@cryptsoft.com).
- *
- */
-/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
- * All rights reserved.
- *
- * This package is an SSL implementation written
- * by Eric Young (eay@cryptsoft.com).
- * The implementation was written so as to conform with Netscapes SSL.
- *
- * This library is free for commercial and non-commercial use as long as
- * the following conditions are aheared to.  The following conditions
- * apply to all code found in this distribution, be it the RC4, RSA,
- * lhash, DES, etc., code; not just the SSL code.  The SSL documentation
- * included with this distribution is covered by the same copyright terms
- * except that the holder is Tim Hudson (tjh@cryptsoft.com).
- *
- * Copyright remains Eric Young's, and as such any Copyright notices in
- * the code are not to be removed.
- * If this package is used in a product, Eric Young should be given attribution
- * as the author of the parts of the library used.
- * This can be in the form of a textual message at program startup or
- * in documentation (online or textual) provided with the package.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- * 1. Redistributions of source code must retain the copyright
- *    notice, this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
- * 3. All advertising materials mentioning features or use of this software
- *    must display the following acknowledgement:
- *    "This product includes cryptographic software written by
- *     Eric Young (eay@cryptsoft.com)"
- *    The word 'cryptographic' can be left out if the rouines from the library
- *    being used are not cryptographic related :-).
- * 4. If you include any Windows specific code (or a derivative thereof) from
- *    the apps directory (application code) you must include an acknowledgement:
- *    "This product includes software written by Tim Hudson (tjh@cryptsoft.com)"
- *
- * THIS SOFTWARE IS PROVIDED BY ERIC YOUNG ``AS IS'' AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
- * SUCH DAMAGE.
- *
- * The licence and distribution terms for any publically available version or
- * derivative of this code cannot be changed.  i.e. this code cannot simply be
- * copied and put under another distribution licence
- * [including the GNU Public Licence.] */
+// Copyright 2005-2016 The OpenSSL Project Authors. All Rights Reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 #include <openssl/ssl.h>
 
@@ -117,7 +18,8 @@
 #include <limits.h>
 #include <string.h>
 
-#include <openssl/buf.h>
+#include <algorithm>
+
 #include <openssl/err.h>
 #include <openssl/evp.h>
 #include <openssl/mem.h>
@@ -141,128 +43,182 @@ static const unsigned int kMinMTU = 256 - 28;
 // the underlying BIO supplies one.
 static const unsigned int kDefaultMTU = 1500 - 28;
 
+// BitRange returns a |uint8_t| with bits |start|, inclusive, to |end|,
+// exclusive, set.
+static uint8_t BitRange(size_t start, size_t end) {
+  assert(start <= end && end <= 8);
+  return static_cast<uint8_t>(~((1u << start) - 1) & ((1u << end) - 1));
+}
+
+// FirstUnmarkedRangeInByte returns the first unmarked range in bits |b|.
+static DTLSMessageBitmap::Range FirstUnmarkedRangeInByte(uint8_t b) {
+  size_t start, end;
+  for (start = 0; start < 8; start++) {
+    if ((b & (1u << start)) == 0) {
+      break;
+    }
+  }
+  for (end = start; end < 8; end++) {
+    if ((b & (1u << end)) != 0) {
+      break;
+    }
+  }
+  return DTLSMessageBitmap::Range{start, end};
+}
+
+bool DTLSMessageBitmap::Init(size_t num_bits) {
+  if (num_bits + 7 < num_bits) {
+    OPENSSL_PUT_ERROR(SSL, ERR_R_OVERFLOW);
+    return false;
+  }
+  size_t num_bytes = (num_bits + 7) / 8;
+  size_t bits_rounded = num_bytes * 8;
+  if (!bytes_.Init(num_bytes)) {
+    return false;
+  }
+  MarkRange(num_bits, bits_rounded);
+  first_unmarked_byte_ = 0;
+  return true;
+}
+
+void DTLSMessageBitmap::MarkRange(size_t start, size_t end) {
+  assert(start <= end);
+  // Don't bother touching bytes that have already been marked.
+  start = std::max(start, first_unmarked_byte_ << 3);
+  // Clamp everything within range.
+  start = std::min(start, bytes_.size() << 3);
+  end = std::min(end, bytes_.size() << 3);
+  if (start >= end) {
+    return;
+  }
+
+  if ((start >> 3) == (end >> 3)) {
+    bytes_[start >> 3] |= BitRange(start & 7, end & 7);
+  } else {
+    bytes_[start >> 3] |= BitRange(start & 7, 8);
+    for (size_t i = (start >> 3) + 1; i < (end >> 3); i++) {
+      bytes_[i] = 0xff;
+    }
+    if ((end & 7) != 0) {
+      bytes_[end >> 3] |= BitRange(0, end & 7);
+    }
+  }
+
+  // Maintain the |first_unmarked_byte_| invariant. This work is amortized
+  // across all |MarkRange| calls.
+  while (first_unmarked_byte_ < bytes_.size() &&
+         bytes_[first_unmarked_byte_] == 0xff) {
+    first_unmarked_byte_++;
+  }
+  // If the whole message is marked, we no longer need to spend memory on the
+  // bitmap.
+  if (first_unmarked_byte_ >= bytes_.size()) {
+    bytes_.Reset();
+    first_unmarked_byte_ = 0;
+  }
+}
+
+DTLSMessageBitmap::Range DTLSMessageBitmap::NextUnmarkedRange(
+    size_t start) const {
+  // Don't bother looking at bytes that are known to be fully marked.
+  start = std::max(start, first_unmarked_byte_ << 3);
+
+  size_t idx = start >> 3;
+  if (idx >= bytes_.size()) {
+    return Range{0, 0};
+  }
+
+  // Look at the bits from |start| up to a byte boundary.
+  uint8_t byte = bytes_[idx] | BitRange(0, start & 7);
+  if (byte == 0xff) {
+    // Nothing unmarked at this byte. Keep searching for an unmarked bit.
+    for (idx = idx + 1; idx < bytes_.size(); idx++) {
+      if (bytes_[idx] != 0xff) {
+        byte = bytes_[idx];
+        break;
+      }
+    }
+    if (idx >= bytes_.size()) {
+      return Range{0, 0};
+    }
+  }
+
+  Range range = FirstUnmarkedRangeInByte(byte);
+  assert(!range.empty());
+  bool should_extend = range.end == 8;
+  range.start += idx << 3;
+  range.end += idx << 3;
+  if (!should_extend) {
+    // The range did not end at a byte boundary. We're done.
+    return range;
+  }
+
+  // Collect all fully unmarked bytes.
+  for (idx = idx + 1; idx < bytes_.size(); idx++) {
+    if (bytes_[idx] != 0) {
+      break;
+    }
+  }
+  range.end = idx << 3;
+
+  // Add any bits from the remaining byte, if any.
+  if (idx < bytes_.size()) {
+    Range extra = FirstUnmarkedRangeInByte(bytes_[idx]);
+    if (extra.start == 0) {
+      range.end += extra.end;
+    }
+  }
+
+  return range;
+}
 
 // Receiving handshake messages.
 
-hm_fragment::~hm_fragment() {
-  OPENSSL_free(data);
-  OPENSSL_free(reassembly);
-}
-
-static UniquePtr<hm_fragment> dtls1_hm_fragment_new(
+static UniquePtr<DTLSIncomingMessage> dtls_new_incoming_message(
     const struct hm_header_st *msg_hdr) {
   ScopedCBB cbb;
-  UniquePtr<hm_fragment> frag = MakeUnique<hm_fragment>();
+  UniquePtr<DTLSIncomingMessage> frag = MakeUnique<DTLSIncomingMessage>();
   if (!frag) {
     return nullptr;
   }
   frag->type = msg_hdr->type;
   frag->seq = msg_hdr->seq;
-  frag->msg_len = msg_hdr->msg_len;
 
   // Allocate space for the reassembled message and fill in the header.
-  frag->data =
-      (uint8_t *)OPENSSL_malloc(DTLS1_HM_HEADER_LENGTH + msg_hdr->msg_len);
-  if (frag->data == NULL) {
-    OPENSSL_PUT_ERROR(SSL, ERR_R_MALLOC_FAILURE);
+  if (!frag->data.InitForOverwrite(DTLS1_HM_HEADER_LENGTH + msg_hdr->msg_len)) {
     return nullptr;
   }
 
-  if (!CBB_init_fixed(cbb.get(), frag->data, DTLS1_HM_HEADER_LENGTH) ||
+  if (!CBB_init_fixed(cbb.get(), frag->data.data(), DTLS1_HM_HEADER_LENGTH) ||
       !CBB_add_u8(cbb.get(), msg_hdr->type) ||
       !CBB_add_u24(cbb.get(), msg_hdr->msg_len) ||
       !CBB_add_u16(cbb.get(), msg_hdr->seq) ||
       !CBB_add_u24(cbb.get(), 0 /* frag_off */) ||
       !CBB_add_u24(cbb.get(), msg_hdr->msg_len) ||
       !CBB_finish(cbb.get(), NULL, NULL)) {
-    OPENSSL_PUT_ERROR(SSL, ERR_R_MALLOC_FAILURE);
     return nullptr;
   }
 
-  // If the handshake message is empty, |frag->reassembly| is NULL.
-  if (msg_hdr->msg_len > 0) {
-    // Initialize reassembly bitmask.
-    if (msg_hdr->msg_len + 7 < msg_hdr->msg_len) {
-      OPENSSL_PUT_ERROR(SSL, ERR_R_OVERFLOW);
-      return nullptr;
-    }
-    size_t bitmask_len = (msg_hdr->msg_len + 7) / 8;
-    frag->reassembly = (uint8_t *)OPENSSL_malloc(bitmask_len);
-    if (frag->reassembly == NULL) {
-      OPENSSL_PUT_ERROR(SSL, ERR_R_MALLOC_FAILURE);
-      return nullptr;
-    }
-    OPENSSL_memset(frag->reassembly, 0, bitmask_len);
+  if (!frag->reassembly.Init(msg_hdr->msg_len)) {
+    return nullptr;
   }
 
   return frag;
-}
-
-// bit_range returns a |uint8_t| with bits |start|, inclusive, to |end|,
-// exclusive, set.
-static uint8_t bit_range(size_t start, size_t end) {
-  return (uint8_t)(~((1u << start) - 1) & ((1u << end) - 1));
-}
-
-// dtls1_hm_fragment_mark marks bytes |start|, inclusive, to |end|, exclusive,
-// as received in |frag|. If |frag| becomes complete, it clears
-// |frag->reassembly|. The range must be within the bounds of |frag|'s message
-// and |frag->reassembly| must not be NULL.
-static void dtls1_hm_fragment_mark(hm_fragment *frag, size_t start,
-                                   size_t end) {
-  size_t msg_len = frag->msg_len;
-
-  if (frag->reassembly == NULL || start > end || end > msg_len) {
-    assert(0);
-    return;
-  }
-  // A zero-length message will never have a pending reassembly.
-  assert(msg_len > 0);
-
-  if (start == end) {
-    return;
-  }
-
-  if ((start >> 3) == (end >> 3)) {
-    frag->reassembly[start >> 3] |= bit_range(start & 7, end & 7);
-  } else {
-    frag->reassembly[start >> 3] |= bit_range(start & 7, 8);
-    for (size_t i = (start >> 3) + 1; i < (end >> 3); i++) {
-      frag->reassembly[i] = 0xff;
-    }
-    if ((end & 7) != 0) {
-      frag->reassembly[end >> 3] |= bit_range(0, end & 7);
-    }
-  }
-
-  // Check if the fragment is complete.
-  for (size_t i = 0; i < (msg_len >> 3); i++) {
-    if (frag->reassembly[i] != 0xff) {
-      return;
-    }
-  }
-  if ((msg_len & 7) != 0 &&
-      frag->reassembly[msg_len >> 3] != bit_range(0, msg_len & 7)) {
-    return;
-  }
-
-  OPENSSL_free(frag->reassembly);
-  frag->reassembly = NULL;
 }
 
 // dtls1_is_current_message_complete returns whether the current handshake
 // message is complete.
 static bool dtls1_is_current_message_complete(const SSL *ssl) {
   size_t idx = ssl->d1->handshake_read_seq % SSL_MAX_HANDSHAKE_FLIGHT;
-  hm_fragment *frag = ssl->d1->incoming_messages[idx].get();
-  return frag != NULL && frag->reassembly == NULL;
+  DTLSIncomingMessage *frag = ssl->d1->incoming_messages[idx].get();
+  return frag != nullptr && frag->reassembly.IsComplete();
 }
 
 // dtls1_get_incoming_message returns the incoming message corresponding to
 // |msg_hdr|. If none exists, it creates a new one and inserts it in the
 // queue. Otherwise, it checks |msg_hdr| is consistent with the existing one. It
 // returns NULL on failure. The caller does not take ownership of the result.
-static hm_fragment *dtls1_get_incoming_message(
+static DTLSIncomingMessage *dtls1_get_incoming_message(
     SSL *ssl, uint8_t *out_alert, const struct hm_header_st *msg_hdr) {
   if (msg_hdr->seq < ssl->d1->handshake_read_seq ||
       msg_hdr->seq - ssl->d1->handshake_read_seq >= SSL_MAX_HANDSHAKE_FLIGHT) {
@@ -271,13 +227,13 @@ static hm_fragment *dtls1_get_incoming_message(
   }
 
   size_t idx = msg_hdr->seq % SSL_MAX_HANDSHAKE_FLIGHT;
-  hm_fragment *frag = ssl->d1->incoming_messages[idx].get();
+  DTLSIncomingMessage *frag = ssl->d1->incoming_messages[idx].get();
   if (frag != NULL) {
     assert(frag->seq == msg_hdr->seq);
     // The new fragment must be compatible with the previous fragments from this
     // message.
-    if (frag->type != msg_hdr->type ||
-        frag->msg_len != msg_hdr->msg_len) {
+    if (frag->type != msg_hdr->type ||  //
+        frag->msg_len() != msg_hdr->msg_len) {
       OPENSSL_PUT_ERROR(SSL, SSL_R_FRAGMENT_MISMATCH);
       *out_alert = SSL_AD_ILLEGAL_PARAMETER;
       return NULL;
@@ -286,7 +242,7 @@ static hm_fragment *dtls1_get_incoming_message(
   }
 
   // This is the first fragment from this message.
-  ssl->d1->incoming_messages[idx] = dtls1_hm_fragment_new(msg_hdr);
+  ssl->d1->incoming_messages[idx] = dtls_new_incoming_message(msg_hdr);
   if (!ssl->d1->incoming_messages[idx]) {
     *out_alert = SSL_AD_INTERNAL_ERROR;
     return NULL;
@@ -294,61 +250,12 @@ static hm_fragment *dtls1_get_incoming_message(
   return ssl->d1->incoming_messages[idx].get();
 }
 
-ssl_open_record_t dtls1_open_handshake(SSL *ssl, size_t *out_consumed,
-                                       uint8_t *out_alert, Span<uint8_t> in) {
-  uint8_t type;
-  Span<uint8_t> record;
-  auto ret = dtls_open_record(ssl, &type, &record, out_consumed, out_alert, in);
-  if (ret != ssl_open_record_success) {
-    return ret;
-  }
-
-  switch (type) {
-    case SSL3_RT_APPLICATION_DATA:
-      // Unencrypted application data records are always illegal.
-      if (ssl->s3->aead_read_ctx->is_null_cipher()) {
-        OPENSSL_PUT_ERROR(SSL, SSL_R_UNEXPECTED_RECORD);
-        *out_alert = SSL_AD_UNEXPECTED_MESSAGE;
-        return ssl_open_record_error;
-      }
-
-      // Out-of-order application data may be received between ChangeCipherSpec
-      // and finished. Discard it.
-      return ssl_open_record_discard;
-
-    case SSL3_RT_CHANGE_CIPHER_SPEC:
-      // We do not support renegotiation, so encrypted ChangeCipherSpec records
-      // are illegal.
-      if (!ssl->s3->aead_read_ctx->is_null_cipher()) {
-        OPENSSL_PUT_ERROR(SSL, SSL_R_UNEXPECTED_RECORD);
-        *out_alert = SSL_AD_UNEXPECTED_MESSAGE;
-        return ssl_open_record_error;
-      }
-
-      if (record.size() != 1u || record[0] != SSL3_MT_CCS) {
-        OPENSSL_PUT_ERROR(SSL, SSL_R_BAD_CHANGE_CIPHER_SPEC);
-        *out_alert = SSL_AD_ILLEGAL_PARAMETER;
-        return ssl_open_record_error;
-      }
-
-      // Flag the ChangeCipherSpec for later.
-      ssl->d1->has_change_cipher_spec = true;
-      ssl_do_msg_callback(ssl, 0 /* read */, SSL3_RT_CHANGE_CIPHER_SPEC,
-                          record);
-      return ssl_open_record_success;
-
-    case SSL3_RT_HANDSHAKE:
-      // Break out to main processing.
-      break;
-
-    default:
-      OPENSSL_PUT_ERROR(SSL, SSL_R_UNEXPECTED_RECORD);
-      *out_alert = SSL_AD_UNEXPECTED_MESSAGE;
-      return ssl_open_record_error;
-  }
-
-  CBS cbs;
-  CBS_init(&cbs, record.data(), record.size());
+bool dtls1_process_handshake_fragments(SSL *ssl, uint8_t *out_alert,
+                                       DTLSRecordNumber record_number,
+                                       Span<const uint8_t> record) {
+  bool implicit_ack = false;
+  bool skipped_fragments = false;
+  CBS cbs = record;
   while (CBS_len(&cbs) > 0) {
     // Read a handshake fragment.
     struct hm_header_st msg_hdr;
@@ -356,53 +263,171 @@ ssl_open_record_t dtls1_open_handshake(SSL *ssl, size_t *out_consumed,
     if (!dtls1_parse_fragment(&cbs, &msg_hdr, &body)) {
       OPENSSL_PUT_ERROR(SSL, SSL_R_BAD_HANDSHAKE_RECORD);
       *out_alert = SSL_AD_DECODE_ERROR;
-      return ssl_open_record_error;
+      return false;
     }
 
     const size_t frag_off = msg_hdr.frag_off;
     const size_t frag_len = msg_hdr.frag_len;
     const size_t msg_len = msg_hdr.msg_len;
-    if (frag_off > msg_len || frag_off + frag_len < frag_off ||
-        frag_off + frag_len > msg_len ||
-        msg_len > ssl_max_handshake_message_len(ssl)) {
-      OPENSSL_PUT_ERROR(SSL, SSL_R_EXCESSIVE_MESSAGE_SIZE);
+    if (frag_off > msg_len || frag_len > msg_len - frag_off) {
+      OPENSSL_PUT_ERROR(SSL, SSL_R_BAD_HANDSHAKE_RECORD);
       *out_alert = SSL_AD_ILLEGAL_PARAMETER;
-      return ssl_open_record_error;
-    }
-
-    // The encrypted epoch in DTLS has only one handshake message.
-    if (ssl->d1->r_epoch == 1 && msg_hdr.seq != ssl->d1->handshake_read_seq) {
-      OPENSSL_PUT_ERROR(SSL, SSL_R_UNEXPECTED_RECORD);
-      *out_alert = SSL_AD_UNEXPECTED_MESSAGE;
-      return ssl_open_record_error;
+      return false;
     }
 
     if (msg_hdr.seq < ssl->d1->handshake_read_seq ||
-        msg_hdr.seq >
-            (unsigned)ssl->d1->handshake_read_seq + SSL_MAX_HANDSHAKE_FLIGHT) {
-      // Ignore fragments from the past, or ones too far in the future.
+        ssl->d1->handshake_read_overflow) {
+      // Ignore fragments from the past. This is a retransmit of data we already
+      // received.
+      //
+      // TODO(crbug.com/42290594): Use this to drive retransmits.
       continue;
     }
 
-    hm_fragment *frag = dtls1_get_incoming_message(ssl, out_alert, &msg_hdr);
-    if (frag == NULL) {
-      return ssl_open_record_error;
+    if (record_number.epoch() != ssl->d1->read_epoch.epoch ||
+        ssl->d1->next_read_epoch != nullptr) {
+      // New messages can only arrive in the latest epoch. This can fail if the
+      // record came from |prev_read_epoch|, or if it came from |read_epoch| but
+      // |next_read_epoch| exists. (It cannot come from |next_read_epoch|
+      // because |next_read_epoch| becomes |read_epoch| once it receives a
+      // record.)
+      OPENSSL_PUT_ERROR(SSL, SSL_R_EXCESS_HANDSHAKE_DATA);
+      *out_alert = SSL_AD_UNEXPECTED_MESSAGE;
+      return false;
     }
-    assert(frag->msg_len == msg_len);
 
-    if (frag->reassembly == NULL) {
+    if (msg_len > ssl_max_handshake_message_len(ssl)) {
+      OPENSSL_PUT_ERROR(SSL, SSL_R_EXCESSIVE_MESSAGE_SIZE);
+      *out_alert = SSL_AD_ILLEGAL_PARAMETER;
+      return false;
+    }
+
+    if (SSL_in_init(ssl) && ssl_has_final_version(ssl) &&
+        ssl_protocol_version(ssl) >= TLS1_3_VERSION) {
+      // During the handshake, if we receive any portion of the next flight, the
+      // peer must have received our most recent flight. In DTLS 1.3, this is an
+      // implicit ACK. See RFC 9147, Section 7.1.
+      //
+      // This only applies during the handshake. After the handshake, the next
+      // message may be part of a post-handshake transaction. It also does not
+      // apply immediately after the handshake. As a client, receiving a
+      // KeyUpdate or NewSessionTicket does not imply the server has received
+      // our Finished. The server may have sent those messages in half-RTT.
+      implicit_ack = true;
+    }
+
+    if (msg_hdr.seq - ssl->d1->handshake_read_seq > SSL_MAX_HANDSHAKE_FLIGHT) {
+      // Ignore fragments too far in the future.
+      skipped_fragments = true;
+      continue;
+    }
+
+    DTLSIncomingMessage *frag =
+        dtls1_get_incoming_message(ssl, out_alert, &msg_hdr);
+    if (frag == nullptr) {
+      return false;
+    }
+    assert(frag->msg_len() == msg_len);
+
+    if (frag->reassembly.IsComplete()) {
       // The message is already assembled.
       continue;
     }
     assert(msg_len > 0);
 
     // Copy the body into the fragment.
-    OPENSSL_memcpy(frag->data + DTLS1_HM_HEADER_LENGTH + frag_off,
-                   CBS_data(&body), CBS_len(&body));
-    dtls1_hm_fragment_mark(frag, frag_off, frag_off + frag_len);
+    Span<uint8_t> dest = frag->msg().subspan(frag_off, CBS_len(&body));
+    OPENSSL_memcpy(dest.data(), CBS_data(&body), CBS_len(&body));
+    frag->reassembly.MarkRange(frag_off, frag_off + frag_len);
   }
 
-  return ssl_open_record_success;
+  if (implicit_ack) {
+    dtls1_stop_timer(ssl);
+    dtls_clear_outgoing_messages(ssl);
+  }
+
+  if (!skipped_fragments) {
+    ssl->d1->records_to_ack.PushBack(record_number);
+
+    if (ssl_has_final_version(ssl) &&
+        ssl_protocol_version(ssl) >= TLS1_3_VERSION &&
+        !ssl->d1->ack_timer.IsSet() && !ssl->d1->sending_ack) {
+      // Schedule sending an ACK. The delay serves several purposes:
+      // - If there are more records to come, we send only one ACK.
+      // - If there are more records to come and the flight is now complete, we
+      //   will send the reply (which implicitly ACKs the previous flight) and
+      //   cancel the timer.
+      // - If there are more records to come, the flight is now complete, but
+      //   generating the response is delayed (e.g. a slow, async private key),
+      //   the timer will fire and we send an ACK anyway.
+      OPENSSL_timeval now = ssl_ctx_get_current_time(ssl->ctx.get());
+      ssl->d1->ack_timer.StartMicroseconds(
+          now, uint64_t{ssl->d1->timeout_duration_ms} * 1000 / 4);
+    }
+  }
+
+  return true;
+}
+
+ssl_open_record_t dtls1_open_handshake(SSL *ssl, size_t *out_consumed,
+                                       uint8_t *out_alert, Span<uint8_t> in) {
+  uint8_t type;
+  DTLSRecordNumber record_number;
+  Span<uint8_t> record;
+  auto ret = dtls_open_record(ssl, &type, &record_number, &record, out_consumed,
+                              out_alert, in);
+  if (ret != ssl_open_record_success) {
+    return ret;
+  }
+
+  switch (type) {
+    case SSL3_RT_APPLICATION_DATA:
+      // In DTLS 1.2, out-of-order application data may be received between
+      // ChangeCipherSpec and Finished. Discard it.
+      return ssl_open_record_discard;
+
+    case SSL3_RT_CHANGE_CIPHER_SPEC:
+      if (record.size() != 1u || record[0] != SSL3_MT_CCS) {
+        OPENSSL_PUT_ERROR(SSL, SSL_R_BAD_CHANGE_CIPHER_SPEC);
+        *out_alert = SSL_AD_ILLEGAL_PARAMETER;
+        return ssl_open_record_error;
+      }
+
+      // We do not support renegotiation, so encrypted ChangeCipherSpec records
+      // are illegal.
+      if (record_number.epoch() != 0) {
+        OPENSSL_PUT_ERROR(SSL, SSL_R_UNEXPECTED_RECORD);
+        *out_alert = SSL_AD_UNEXPECTED_MESSAGE;
+        return ssl_open_record_error;
+      }
+
+      // Ignore ChangeCipherSpec from a previous epoch.
+      if (record_number.epoch() != ssl->d1->read_epoch.epoch) {
+        return ssl_open_record_discard;
+      }
+
+      // Flag the ChangeCipherSpec for later.
+      // TODO(crbug.com/42290594): Should we reject this in DTLS 1.3?
+      ssl->d1->has_change_cipher_spec = true;
+      ssl_do_msg_callback(ssl, 0 /* read */, SSL3_RT_CHANGE_CIPHER_SPEC,
+                          record);
+      return ssl_open_record_success;
+
+    case SSL3_RT_ACK:
+      return dtls1_process_ack(ssl, out_alert, record_number, record);
+
+    case SSL3_RT_HANDSHAKE:
+      if (!dtls1_process_handshake_fragments(ssl, out_alert, record_number,
+                                             record)) {
+        return ssl_open_record_error;
+      }
+      return ssl_open_record_success;
+
+    default:
+      OPENSSL_PUT_ERROR(SSL, SSL_R_UNEXPECTED_RECORD);
+      *out_alert = SSL_AD_UNEXPECTED_MESSAGE;
+      return ssl_open_record_error;
+  }
 }
 
 bool dtls1_get_message(const SSL *ssl, SSLMessage *out) {
@@ -411,10 +436,10 @@ bool dtls1_get_message(const SSL *ssl, SSLMessage *out) {
   }
 
   size_t idx = ssl->d1->handshake_read_seq % SSL_MAX_HANDSHAKE_FLIGHT;
-  hm_fragment *frag = ssl->d1->incoming_messages[idx].get();
+  const DTLSIncomingMessage *frag = ssl->d1->incoming_messages[idx].get();
   out->type = frag->type;
-  CBS_init(&out->body, frag->data + DTLS1_HM_HEADER_LENGTH, frag->msg_len);
-  CBS_init(&out->raw, frag->data, DTLS1_HM_HEADER_LENGTH + frag->msg_len);
+  out->raw = CBS(frag->data);
+  out->body = CBS(frag->msg());
   out->is_v2_hello = false;
   if (!ssl->s3->has_message) {
     ssl_do_msg_callback(ssl, 0 /* read */, SSL3_RT_HANDSHAKE, out->raw);
@@ -429,6 +454,9 @@ void dtls1_next_message(SSL *ssl) {
   size_t index = ssl->d1->handshake_read_seq % SSL_MAX_HANDSHAKE_FLIGHT;
   ssl->d1->incoming_messages[index].reset();
   ssl->d1->handshake_read_seq++;
+  if (ssl->d1->handshake_read_seq == 0) {
+    ssl->d1->handshake_read_overflow = true;
+  }
   ssl->s3->has_message = false;
   // If we previously sent a flight, mark it as having a reply, so
   // |on_handshake_complete| can manage post-handshake retransmission.
@@ -438,10 +466,6 @@ void dtls1_next_message(SSL *ssl) {
 }
 
 bool dtls_has_unprocessed_handshake_data(const SSL *ssl) {
-  if (ssl->d1->has_change_cipher_spec) {
-    return true;
-  }
-
   size_t current = ssl->d1->handshake_read_seq % SSL_MAX_HANDSHAKE_FLIGHT;
   for (size_t i = 0; i < SSL_MAX_HANDSHAKE_FLIGHT; i++) {
     // Skip the current message.
@@ -492,29 +516,41 @@ ssl_open_record_t dtls1_open_change_cipher_spec(SSL *ssl, size_t *out_consumed,
 
 // Sending handshake messages.
 
-void DTLS_OUTGOING_MESSAGE::Clear() {
-  OPENSSL_free(data);
-  data = nullptr;
-}
-
 void dtls_clear_outgoing_messages(SSL *ssl) {
-  for (size_t i = 0; i < ssl->d1->outgoing_messages_len; i++) {
-    ssl->d1->outgoing_messages[i].Clear();
-  }
-  ssl->d1->outgoing_messages_len = 0;
+  ssl->d1->outgoing_messages.clear();
+  ssl->d1->sent_records = nullptr;
   ssl->d1->outgoing_written = 0;
   ssl->d1->outgoing_offset = 0;
   ssl->d1->outgoing_messages_complete = false;
   ssl->d1->flight_has_reply = false;
+  ssl->d1->sending_flight = false;
+  dtls_clear_unused_write_epochs(ssl);
 }
 
-bool dtls1_init_message(SSL *ssl, CBB *cbb, CBB *body, uint8_t type) {
+void dtls_clear_unused_write_epochs(SSL *ssl) {
+  ssl->d1->extra_write_epochs.EraseIf(
+      [ssl](const UniquePtr<DTLSWriteEpoch> &write_epoch) -> bool {
+        // Non-current epochs may be discarded once there are no incomplete
+        // outgoing messages that reference them.
+        //
+        // TODO(crbug.com/42290594): Epoch 1 (0-RTT) should be retained until
+        // epoch 3 (app data) is available.
+        for (const auto &msg : ssl->d1->outgoing_messages) {
+          if (msg.epoch == write_epoch->epoch() && !msg.IsFullyAcked()) {
+            return false;
+          }
+        }
+        return true;
+      });
+}
+
+bool dtls1_init_message(const SSL *ssl, CBB *cbb, CBB *body, uint8_t type) {
   // Pick a modest size hint to save most of the |realloc| calls.
-  if (!CBB_init(cbb, 64) ||
-      !CBB_add_u8(cbb, type) ||
-      !CBB_add_u24(cbb, 0 /* length (filled in later) */) ||
-      !CBB_add_u16(cbb, ssl->d1->handshake_write_seq) ||
-      !CBB_add_u24(cbb, 0 /* offset */) ||
+  if (!CBB_init(cbb, 64) ||                                   //
+      !CBB_add_u8(cbb, type) ||                               //
+      !CBB_add_u24(cbb, 0 /* length (filled in later) */) ||  //
+      !CBB_add_u16(cbb, ssl->d1->handshake_write_seq) ||      //
+      !CBB_add_u24(cbb, 0 /* offset */) ||                    //
       !CBB_add_u24_length_prefixed(cbb, body)) {
     return false;
   }
@@ -522,7 +558,7 @@ bool dtls1_init_message(SSL *ssl, CBB *cbb, CBB *body, uint8_t type) {
   return true;
 }
 
-bool dtls1_finish_message(SSL *ssl, CBB *cbb, Array<uint8_t> *out_msg) {
+bool dtls1_finish_message(const SSL *ssl, CBB *cbb, Array<uint8_t> *out_msg) {
   if (!CBBFinishArray(cbb, out_msg) ||
       out_msg->size() < DTLS1_HM_HEADER_LENGTH) {
     OPENSSL_PUT_ERROR(SSL, ERR_R_INTERNAL_ERROR);
@@ -536,20 +572,6 @@ bool dtls1_finish_message(SSL *ssl, CBB *cbb, Array<uint8_t> *out_msg) {
   return true;
 }
 
-// ssl_size_t_greater_than_32_bits returns whether |v| exceeds the bounds of a
-// 32-bit value. The obvious thing doesn't work because, in some 32-bit build
-// configurations, the compiler warns that the test is always false and breaks
-// the build.
-static bool ssl_size_t_greater_than_32_bits(size_t v) {
-#if defined(OPENSSL_64_BIT)
-  return v > 0xffffffff;
-#elif defined(OPENSSL_32_BIT)
-  return false;
-#else
-#error "Building for neither 32- nor 64-bits."
-#endif
-}
-
 // add_outgoing adds a new handshake message or ChangeCipherSpec to the current
 // outgoing flight. It returns true on success and false on error.
 static bool add_outgoing(SSL *ssl, bool is_ccs, Array<uint8_t> data) {
@@ -560,36 +582,46 @@ static bool add_outgoing(SSL *ssl, bool is_ccs, Array<uint8_t> data) {
     dtls_clear_outgoing_messages(ssl);
   }
 
-  static_assert(SSL_MAX_HANDSHAKE_FLIGHT <
-                    (1 << 8 * sizeof(ssl->d1->outgoing_messages_len)),
-                "outgoing_messages_len is too small");
-  if (ssl->d1->outgoing_messages_len >= SSL_MAX_HANDSHAKE_FLIGHT ||
-      ssl_size_t_greater_than_32_bits(data.size())) {
+  if (!is_ccs) {
+    if (ssl->d1->handshake_write_overflow) {
+      OPENSSL_PUT_ERROR(SSL, ERR_R_OVERFLOW);
+      return false;
+    }
+    // TODO(svaldez): Move this up a layer to fix abstraction for SSLTranscript
+    // on hs.
+    if (ssl->s3->hs != NULL && !ssl->s3->hs->transcript.Update(data)) {
+      OPENSSL_PUT_ERROR(SSL, ERR_R_INTERNAL_ERROR);
+      return false;
+    }
+    ssl->d1->handshake_write_seq++;
+    if (ssl->d1->handshake_write_seq == 0) {
+      ssl->d1->handshake_write_overflow = true;
+    }
+  }
+
+  DTLSOutgoingMessage msg;
+  msg.data = std::move(data);
+  msg.epoch = ssl->d1->write_epoch.epoch();
+  msg.is_ccs = is_ccs;
+  // Zero-length messages need 1 bit to track whether the peer has received the
+  // message header. (Normally the message header is implicitly received when
+  // any fragment of the message is received at all.)
+  if (!is_ccs && !msg.acked.Init(std::max(msg.msg_len(), size_t{1}))) {
+    return false;
+  }
+
+  // This should not fail if |SSL_MAX_HANDSHAKE_FLIGHT| was sized correctly.
+  //
+  // TODO(crbug.com/42290594): This can currently fail in DTLS 1.3. The caller
+  // can configure how many tickets to send, up to kMaxTickets. Additionally, if
+  // we send 0.5-RTT tickets in 0-RTT, we may even have tickets queued up with
+  // the server flight.
+  if (!ssl->d1->outgoing_messages.TryPushBack(std::move(msg))) {
     assert(false);
     OPENSSL_PUT_ERROR(SSL, ERR_R_INTERNAL_ERROR);
     return false;
   }
 
-  if (!is_ccs) {
-    // TODO(svaldez): Move this up a layer to fix abstraction for SSLTranscript
-    // on hs.
-    if (ssl->s3->hs != NULL &&
-        !ssl->s3->hs->transcript.Update(data)) {
-      OPENSSL_PUT_ERROR(SSL, ERR_R_INTERNAL_ERROR);
-      return false;
-    }
-    ssl->d1->handshake_write_seq++;
-  }
-
-  DTLS_OUTGOING_MESSAGE *msg =
-      &ssl->d1->outgoing_messages[ssl->d1->outgoing_messages_len];
-  size_t len;
-  data.Release(&msg->data, &len);
-  msg->len = len;
-  msg->epoch = ssl->d1->w_epoch;
-  msg->is_ccs = is_ccs;
-
-  ssl->d1->outgoing_messages_len++;
   return true;
 }
 
@@ -598,6 +630,11 @@ bool dtls1_add_message(SSL *ssl, Array<uint8_t> data) {
 }
 
 bool dtls1_add_change_cipher_spec(SSL *ssl) {
+  // DTLS 1.3 disables compatibility mode, which means that DTLS 1.3 never sends
+  // a ChangeCipherSpec message.
+  if (ssl_protocol_version(ssl) > TLS1_2_VERSION) {
+    return true;
+  }
   return add_outgoing(ssl, true /* ChangeCipherSpec */, Array<uint8_t>());
 }
 
@@ -624,146 +661,207 @@ static void dtls1_update_mtu(SSL *ssl) {
 
 enum seal_result_t {
   seal_error,
-  seal_no_progress,
-  seal_partial,
-  seal_success,
+  seal_continue,
+  seal_flush,
 };
 
-// seal_next_message seals |msg|, which must be the next message, to |out|. If
-// progress was made, it returns |seal_partial| or |seal_success| and sets
+// seal_next_record seals one record's worth of messages to |out| and advances
+// |ssl|'s internal state past the data that was sealed. If progress was made,
+// it returns |seal_flush| or |seal_continue| and sets
 // |*out_len| to the number of bytes written.
-static enum seal_result_t seal_next_message(SSL *ssl, uint8_t *out,
-                                            size_t *out_len, size_t max_out,
-                                            const DTLS_OUTGOING_MESSAGE *msg) {
-  assert(ssl->d1->outgoing_written < ssl->d1->outgoing_messages_len);
-  assert(msg == &ssl->d1->outgoing_messages[ssl->d1->outgoing_written]);
+//
+// If the function stopped because the next message could not be combined into
+// this record, it returns |seal_continue| and the caller should loop again.
+// Otherwise, it returns |seal_flush| and the packet is complete (either because
+// there are no more messages or the packet is full).
+static seal_result_t seal_next_record(SSL *ssl, Span<uint8_t> out,
+                                      size_t *out_len) {
+  *out_len = 0;
 
-  enum dtls1_use_epoch_t use_epoch = dtls1_use_current_epoch;
-  if (ssl->d1->w_epoch >= 1 && msg->epoch == ssl->d1->w_epoch - 1) {
-    use_epoch = dtls1_use_previous_epoch;
-  } else if (msg->epoch != ssl->d1->w_epoch) {
-    OPENSSL_PUT_ERROR(SSL, ERR_R_INTERNAL_ERROR);
-    return seal_error;
+  // Skip any fully acked messages.
+  while (ssl->d1->outgoing_written < ssl->d1->outgoing_messages.size() &&
+         ssl->d1->outgoing_messages[ssl->d1->outgoing_written].IsFullyAcked()) {
+    ssl->d1->outgoing_offset = 0;
+    ssl->d1->outgoing_written++;
   }
 
-  size_t overhead = dtls_max_seal_overhead(ssl, use_epoch);
-  size_t prefix = dtls_seal_prefix_len(ssl, use_epoch);
+  // There was nothing left to write.
+  if (ssl->d1->outgoing_written >= ssl->d1->outgoing_messages.size()) {
+    return seal_flush;
+  }
 
-  if (msg->is_ccs) {
-    // Check there is room for the ChangeCipherSpec.
+  const auto &first_msg = ssl->d1->outgoing_messages[ssl->d1->outgoing_written];
+  size_t prefix_len = dtls_seal_prefix_len(ssl, first_msg.epoch);
+  size_t max_in_len = dtls_seal_max_input_len(ssl, first_msg.epoch, out.size());
+  if (max_in_len == 0) {
+    // There is no room for a single record.
+    return seal_flush;
+  }
+
+  if (first_msg.is_ccs) {
     static const uint8_t kChangeCipherSpec[1] = {SSL3_MT_CCS};
-    if (max_out < sizeof(kChangeCipherSpec) + overhead) {
-      return seal_no_progress;
-    }
-
-    if (!dtls_seal_record(ssl, out, out_len, max_out,
+    DTLSRecordNumber record_number;
+    if (!dtls_seal_record(ssl, &record_number, out.data(), out_len, out.size(),
                           SSL3_RT_CHANGE_CIPHER_SPEC, kChangeCipherSpec,
-                          sizeof(kChangeCipherSpec), use_epoch)) {
+                          sizeof(kChangeCipherSpec), first_msg.epoch)) {
       return seal_error;
     }
 
-    ssl_do_msg_callback(ssl, 1 /* write */, SSL3_RT_CHANGE_CIPHER_SPEC,
+    ssl_do_msg_callback(ssl, /*is_write=*/1, SSL3_RT_CHANGE_CIPHER_SPEC,
                         kChangeCipherSpec);
-    return seal_success;
-  }
-
-  // DTLS messages are serialized as a single fragment in |msg|.
-  CBS cbs, body;
-  struct hm_header_st hdr;
-  CBS_init(&cbs, msg->data, msg->len);
-  if (!dtls1_parse_fragment(&cbs, &hdr, &body) ||
-      hdr.frag_off != 0 ||
-      hdr.frag_len != CBS_len(&body) ||
-      hdr.msg_len != CBS_len(&body) ||
-      !CBS_skip(&body, ssl->d1->outgoing_offset) ||
-      CBS_len(&cbs) != 0) {
-    OPENSSL_PUT_ERROR(SSL, ERR_R_INTERNAL_ERROR);
-    return seal_error;
-  }
-
-  // Determine how much progress can be made.
-  if (max_out < DTLS1_HM_HEADER_LENGTH + 1 + overhead || max_out < prefix) {
-    return seal_no_progress;
-  }
-  size_t todo = CBS_len(&body);
-  if (todo > max_out - DTLS1_HM_HEADER_LENGTH - overhead) {
-    todo = max_out - DTLS1_HM_HEADER_LENGTH - overhead;
-  }
-
-  // Assemble a fragment, to be sealed in-place.
-  ScopedCBB cbb;
-  uint8_t *frag = out + prefix;
-  size_t max_frag = max_out - prefix, frag_len;
-  if (!CBB_init_fixed(cbb.get(), frag, max_frag) ||
-      !CBB_add_u8(cbb.get(), hdr.type) ||
-      !CBB_add_u24(cbb.get(), hdr.msg_len) ||
-      !CBB_add_u16(cbb.get(), hdr.seq) ||
-      !CBB_add_u24(cbb.get(), ssl->d1->outgoing_offset) ||
-      !CBB_add_u24(cbb.get(), todo) ||
-      !CBB_add_bytes(cbb.get(), CBS_data(&body), todo) ||
-      !CBB_finish(cbb.get(), NULL, &frag_len)) {
-    OPENSSL_PUT_ERROR(SSL, ERR_R_INTERNAL_ERROR);
-    return seal_error;
-  }
-
-  ssl_do_msg_callback(ssl, 1 /* write */, SSL3_RT_HANDSHAKE,
-                      MakeSpan(frag, frag_len));
-
-  if (!dtls_seal_record(ssl, out, out_len, max_out, SSL3_RT_HANDSHAKE,
-                        out + prefix, frag_len, use_epoch)) {
-    return seal_error;
-  }
-
-  if (todo == CBS_len(&body)) {
-    // The next message is complete.
     ssl->d1->outgoing_offset = 0;
-    return seal_success;
+    ssl->d1->outgoing_written++;
+    return seal_continue;
   }
 
-  ssl->d1->outgoing_offset += todo;
-  return seal_partial;
+  // TODO(crbug.com/374991962): For now, only send one message per record in
+  // epoch 0. Sending multiple is allowed and more efficient, but breaks
+  // b/378742138.
+  const bool allow_multiple_messages = first_msg.epoch != 0;
+
+  // Pack as many handshake fragments into one record as we can. We stage the
+  // fragments in the output buffer, to be sealed in-place.
+  bool should_continue = false;
+  Span<uint8_t> fragments = out.subspan(prefix_len, max_in_len);
+  CBB cbb;
+  CBB_init_fixed(&cbb, fragments.data(), fragments.size());
+  DTLSSentRecord sent_record;
+  sent_record.first_msg = ssl->d1->outgoing_written;
+  sent_record.first_msg_start = ssl->d1->outgoing_offset;
+  while (ssl->d1->outgoing_written < ssl->d1->outgoing_messages.size()) {
+    const auto &msg = ssl->d1->outgoing_messages[ssl->d1->outgoing_written];
+    if (msg.epoch != first_msg.epoch || msg.is_ccs) {
+      // We can only pack messages if the epoch matches. There may be more room
+      // in the packet, so tell the caller to keep going.
+      should_continue = true;
+      break;
+    }
+
+    // Decode |msg|'s header.
+    CBS cbs(msg.data), body_cbs;
+    struct hm_header_st hdr;
+    if (!dtls1_parse_fragment(&cbs, &hdr, &body_cbs) ||  //
+        hdr.frag_off != 0 ||                             //
+        hdr.frag_len != CBS_len(&body_cbs) ||            //
+        hdr.msg_len != CBS_len(&body_cbs) ||             //
+        CBS_len(&cbs) != 0) {
+      OPENSSL_PUT_ERROR(SSL, ERR_R_INTERNAL_ERROR);
+      return seal_error;
+    }
+
+    // Iterate over every un-acked range in the message, if any.
+    Span<const uint8_t> body = body_cbs;
+    for (;;) {
+      auto range = msg.acked.NextUnmarkedRange(ssl->d1->outgoing_offset);
+      if (range.empty()) {
+        // Advance to the next message.
+        ssl->d1->outgoing_offset = 0;
+        ssl->d1->outgoing_written++;
+        break;
+      }
+
+      // Determine how much progress can be made (minimum one byte of progress).
+      size_t capacity = fragments.size() - CBB_len(&cbb);
+      if (capacity < DTLS1_HM_HEADER_LENGTH + 1) {
+        goto packet_full;
+      }
+      size_t todo = std::min(range.size(), capacity - DTLS1_HM_HEADER_LENGTH);
+
+      // Empty messages are special-cased in ACK tracking. We act as if they
+      // have one byte, but in reality that byte is tracking the header.
+      Span<const uint8_t> frag;
+      if (!body.empty()) {
+        frag = body.subspan(range.start, todo);
+      }
+
+      // Assemble the fragment.
+      size_t frag_start = CBB_len(&cbb);
+      CBB child;
+      if (!CBB_add_u8(&cbb, hdr.type) ||                       //
+          !CBB_add_u24(&cbb, hdr.msg_len) ||                   //
+          !CBB_add_u16(&cbb, hdr.seq) ||                       //
+          !CBB_add_u24(&cbb, range.start) ||                   //
+          !CBB_add_u24_length_prefixed(&cbb, &child) ||        //
+          !CBB_add_bytes(&child, frag.data(), frag.size()) ||  //
+          !CBB_flush(&cbb)) {
+        OPENSSL_PUT_ERROR(SSL, ERR_R_INTERNAL_ERROR);
+        return seal_error;
+      }
+      size_t frag_end = CBB_len(&cbb);
+
+      // TODO(davidben): It is odd that, on output, we inform the caller of
+      // retransmits and individual fragments, but on input we only inform the
+      // caller of complete messages.
+      ssl_do_msg_callback(ssl, /*is_write=*/1, SSL3_RT_HANDSHAKE,
+                          fragments.subspan(frag_start, frag_end - frag_start));
+
+      ssl->d1->outgoing_offset = range.start + todo;
+      if (todo < range.size()) {
+        // The packet was the limiting factor.
+        goto packet_full;
+      }
+    }
+
+    if (!allow_multiple_messages) {
+      should_continue = true;
+      break;
+    }
+  }
+
+packet_full:
+  sent_record.last_msg = ssl->d1->outgoing_written;
+  sent_record.last_msg_end = ssl->d1->outgoing_offset;
+
+  // We could not fit anything. Don't try to make a record.
+  if (CBB_len(&cbb) == 0) {
+    assert(!should_continue);
+    return seal_flush;
+  }
+
+  if (!dtls_seal_record(ssl, &sent_record.number, out.data(), out_len,
+                        out.size(), SSL3_RT_HANDSHAKE, CBB_data(&cbb),
+                        CBB_len(&cbb), first_msg.epoch)) {
+    return seal_error;
+  }
+
+  // If DTLS 1.3 (or if the version is not yet known and it may be DTLS 1.3),
+  // save the record number to match against ACKs later.
+  if (ssl->s3->version == 0 || ssl_protocol_version(ssl) >= TLS1_3_VERSION) {
+    if (ssl->d1->sent_records == nullptr) {
+      ssl->d1->sent_records =
+          MakeUnique<MRUQueue<DTLSSentRecord, DTLS_MAX_ACK_BUFFER>>();
+      if (ssl->d1->sent_records == nullptr) {
+        return seal_error;
+      }
+    }
+    ssl->d1->sent_records->PushBack(sent_record);
+  }
+
+  return should_continue ? seal_continue : seal_flush;
 }
 
 // seal_next_packet writes as much of the next flight as possible to |out| and
 // advances |ssl->d1->outgoing_written| and |ssl->d1->outgoing_offset| as
 // appropriate.
-static bool seal_next_packet(SSL *ssl, uint8_t *out, size_t *out_len,
-                             size_t max_out) {
-  bool made_progress = false;
+static bool seal_next_packet(SSL *ssl, Span<uint8_t> out, size_t *out_len) {
   size_t total = 0;
-  assert(ssl->d1->outgoing_written < ssl->d1->outgoing_messages_len);
-  for (; ssl->d1->outgoing_written < ssl->d1->outgoing_messages_len;
-       ssl->d1->outgoing_written++) {
-    const DTLS_OUTGOING_MESSAGE *msg =
-        &ssl->d1->outgoing_messages[ssl->d1->outgoing_written];
+  for (;;) {
     size_t len;
-    enum seal_result_t ret = seal_next_message(ssl, out, &len, max_out, msg);
+    seal_result_t ret = seal_next_record(ssl, out, &len);
     switch (ret) {
       case seal_error:
         return false;
 
-      case seal_no_progress:
-        goto packet_full;
-
-      case seal_partial:
-      case seal_success:
-        out += len;
-        max_out -= len;
+      case seal_flush:
+      case seal_continue:
+        out = out.subspan(len);
         total += len;
-        made_progress = true;
-
-        if (ret == seal_partial) {
-          goto packet_full;
-        }
         break;
     }
-  }
 
-packet_full:
-  // The MTU was too small to make any progress.
-  if (!made_progress) {
-    OPENSSL_PUT_ERROR(SSL, SSL_R_MTU_TOO_SMALL);
-    return false;
+    if (ret == seal_flush) {
+      break;
+    }
   }
 
   *out_len = total;
@@ -776,67 +874,197 @@ static int send_flight(SSL *ssl) {
     return -1;
   }
 
-  dtls1_update_mtu(ssl);
-
-  int ret = -1;
-  uint8_t *packet = (uint8_t *)OPENSSL_malloc(ssl->d1->mtu);
-  if (packet == NULL) {
-    OPENSSL_PUT_ERROR(SSL, ERR_R_MALLOC_FAILURE);
-    goto err;
+  if (ssl->wbio == nullptr) {
+    OPENSSL_PUT_ERROR(SSL, SSL_R_BIO_NOT_SET);
+    return -1;
   }
 
-  while (ssl->d1->outgoing_written < ssl->d1->outgoing_messages_len) {
+  if (ssl->d1->num_timeouts > DTLS1_MAX_TIMEOUTS) {
+    OPENSSL_PUT_ERROR(SSL, SSL_R_READ_TIMEOUT_EXPIRED);
+    return -1;
+  }
+
+  dtls1_update_mtu(ssl);
+
+  Array<uint8_t> packet;
+  if (!packet.InitForOverwrite(ssl->d1->mtu)) {
+    return -1;
+  }
+
+  while (ssl->d1->outgoing_written < ssl->d1->outgoing_messages.size()) {
     uint8_t old_written = ssl->d1->outgoing_written;
     uint32_t old_offset = ssl->d1->outgoing_offset;
 
     size_t packet_len;
-    if (!seal_next_packet(ssl, packet, &packet_len, ssl->d1->mtu)) {
-      goto err;
+    if (!seal_next_packet(ssl, Span(packet), &packet_len)) {
+      return -1;
     }
 
-    int bio_ret = BIO_write(ssl->wbio.get(), packet, packet_len);
-    if (bio_ret <= 0) {
-      // Retry this packet the next time around.
-      ssl->d1->outgoing_written = old_written;
-      ssl->d1->outgoing_offset = old_offset;
-      ssl->s3->rwstate = SSL_ERROR_WANT_WRITE;
-      ret = bio_ret;
-      goto err;
+    if (packet_len == 0 &&
+        ssl->d1->outgoing_written < ssl->d1->outgoing_messages.size()) {
+      // We made no progress with the packet size available, but did not reach
+      // the end.
+      OPENSSL_PUT_ERROR(SSL, SSL_R_MTU_TOO_SMALL);
+      return false;
+    }
+
+    if (packet_len != 0) {
+      int bio_ret = BIO_write(ssl->wbio.get(), packet.data(), packet_len);
+      if (bio_ret <= 0) {
+        // Retry this packet the next time around.
+        ssl->d1->outgoing_written = old_written;
+        ssl->d1->outgoing_offset = old_offset;
+        ssl->s3->rwstate = SSL_ERROR_WANT_WRITE;
+        return bio_ret;
+      }
     }
   }
 
   if (BIO_flush(ssl->wbio.get()) <= 0) {
     ssl->s3->rwstate = SSL_ERROR_WANT_WRITE;
-    goto err;
+    return -1;
   }
 
-  ret = 1;
-
-err:
-  OPENSSL_free(packet);
-  return ret;
+  return 1;
 }
 
-int dtls1_flush_flight(SSL *ssl) {
+void dtls1_finish_flight(SSL *ssl) {
+  if (ssl->d1->outgoing_messages.empty() ||
+      ssl->d1->outgoing_messages_complete) {
+    return;  // Nothing to do.
+  }
+
+  if (ssl->d1->outgoing_messages[0].epoch <= 2) {
+    // DTLS 1.3 handshake messages (epoch 2 and below) implicitly ACK the
+    // previous flight, so there is no need to ACK previous records. This
+    // clears the ACK buffer slightly earlier than the specification suggests.
+    // See the discussion in
+    // https://mailarchive.ietf.org/arch/msg/tls/kjJnquJOVaWxu5hUCmNzB35eqY0/
+    ssl->d1->records_to_ack.Clear();
+    ssl->d1->ack_timer.Stop();
+    ssl->d1->sending_ack = false;
+  }
+
   ssl->d1->outgoing_messages_complete = true;
-  // Start the retransmission timer for the next flight (if any).
-  dtls1_start_timer(ssl);
-  return send_flight(ssl);
+  ssl->d1->sending_flight = true;
+  // Stop retransmitting the previous flight. In DTLS 1.3, we'll have stopped
+  // the timer already, but DTLS 1.2 keeps it running until the next flight is
+  // ready.
+  dtls1_stop_timer(ssl);
 }
 
-int dtls1_retransmit_outgoing_messages(SSL *ssl) {
-  // Rewind to the start of the flight and write it again.
-  //
-  // TODO(davidben): This does not allow retransmits to be resumed on
-  // non-blocking write.
-  ssl->d1->outgoing_written = 0;
-  ssl->d1->outgoing_offset = 0;
-
-  return send_flight(ssl);
+void dtls1_schedule_ack(SSL *ssl) {
+  ssl->d1->ack_timer.Stop();
+  ssl->d1->sending_ack = !ssl->d1->records_to_ack.empty();
 }
 
-unsigned int dtls1_min_mtu(void) {
-  return kMinMTU;
+static int send_ack(SSL *ssl) {
+  assert(ssl_protocol_version(ssl) >= TLS1_3_VERSION);
+
+  // Ensure we don't send so many ACKs that we overflow the MTU. There is a
+  // 2-byte length prefix and each ACK is 16 bytes.
+  dtls1_update_mtu(ssl);
+  size_t max_plaintext =
+      dtls_seal_max_input_len(ssl, ssl->d1->write_epoch.epoch(), ssl->d1->mtu);
+  if (max_plaintext < 2 + 16) {
+    OPENSSL_PUT_ERROR(SSL, SSL_R_MTU_TOO_SMALL);  // No room for even one ACK.
+    return -1;
+  }
+  size_t num_acks =
+      std::min((max_plaintext - 2) / 16, ssl->d1->records_to_ack.size());
+
+  // Assemble the ACK. RFC 9147 says to sort ACKs numerically. It is unclear if
+  // other implementations do this, but go ahead and sort for now. See
+  // https://mailarchive.ietf.org/arch/msg/tls/kjJnquJOVaWxu5hUCmNzB35eqY0/.
+  // Remove this if rfc9147bis removes this requirement.
+  InplaceVector<DTLSRecordNumber, DTLS_MAX_ACK_BUFFER> sorted;
+  for (size_t i = ssl->d1->records_to_ack.size() - num_acks;
+       i < ssl->d1->records_to_ack.size(); i++) {
+    sorted.PushBack(ssl->d1->records_to_ack[i]);
+  }
+  std::sort(sorted.begin(), sorted.end());
+
+  uint8_t buf[2 + 16 * DTLS_MAX_ACK_BUFFER];
+  CBB cbb, child;
+  CBB_init_fixed(&cbb, buf, sizeof(buf));
+  BSSL_CHECK(CBB_add_u16_length_prefixed(&cbb, &child));
+  for (const auto &number : sorted) {
+    BSSL_CHECK(CBB_add_u64(&child, number.epoch()));
+    BSSL_CHECK(CBB_add_u64(&child, number.sequence()));
+  }
+  BSSL_CHECK(CBB_flush(&cbb));
+
+  // Encrypt it.
+  uint8_t record[DTLS1_3_RECORD_HEADER_WRITE_LENGTH + sizeof(buf) +
+                 1 /* record type */ + EVP_AEAD_MAX_OVERHEAD];
+  size_t record_len;
+  DTLSRecordNumber record_number;
+  if (!dtls_seal_record(ssl, &record_number, record, &record_len,
+                        sizeof(record), SSL3_RT_ACK, CBB_data(&cbb),
+                        CBB_len(&cbb), ssl->d1->write_epoch.epoch())) {
+    return -1;
+  }
+
+  ssl_do_msg_callback(ssl, /*is_write=*/1, SSL3_RT_ACK,
+                      Span(CBB_data(&cbb), CBB_len(&cbb)));
+
+  int bio_ret =
+      BIO_write(ssl->wbio.get(), record, static_cast<int>(record_len));
+  if (bio_ret <= 0) {
+    ssl->s3->rwstate = SSL_ERROR_WANT_WRITE;
+    return bio_ret;
+  }
+
+  if (BIO_flush(ssl->wbio.get()) <= 0) {
+    ssl->s3->rwstate = SSL_ERROR_WANT_WRITE;
+    return -1;
+  }
+
+  return 1;
 }
+
+int dtls1_flush(SSL *ssl) {
+  // Send the pending ACK, if any.
+  if (ssl->d1->sending_ack) {
+    int ret = send_ack(ssl);
+    if (ret <= 0) {
+      return ret;
+    }
+    ssl->d1->sending_ack = false;
+  }
+
+  // Send the pending flight, if any.
+  if (ssl->d1->sending_flight) {
+    int ret = send_flight(ssl);
+    if (ret <= 0) {
+      return ret;
+    }
+
+    // Reset state for the next send.
+    ssl->d1->outgoing_written = 0;
+    ssl->d1->outgoing_offset = 0;
+    ssl->d1->sending_flight = false;
+
+    // Schedule the next retransmit timer. In DTLS 1.3, we retransmit all
+    // flights until ACKed. In DTLS 1.2, the final Finished flight is never
+    // ACKed, so we do not keep the timer running after the handshake.
+    if (SSL_in_init(ssl) || ssl_protocol_version(ssl) >= TLS1_3_VERSION) {
+      if (ssl->d1->num_timeouts == 0) {
+        ssl->d1->timeout_duration_ms = ssl->initial_timeout_duration_ms;
+      } else {
+        ssl->d1->timeout_duration_ms =
+            std::min(ssl->d1->timeout_duration_ms * 2, uint32_t{60000});
+      }
+
+      OPENSSL_timeval now = ssl_ctx_get_current_time(ssl->ctx.get());
+      ssl->d1->retransmit_timer.StartMicroseconds(
+          now, uint64_t{ssl->d1->timeout_duration_ms} * 1000);
+    }
+  }
+
+  return 1;
+}
+
+unsigned int dtls1_min_mtu(void) { return kMinMTU; }
 
 BSSL_NAMESPACE_END

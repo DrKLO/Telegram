@@ -85,8 +85,6 @@ class AudioReceiveStreamImpl final : public webrtc::AudioReceiveStreamInterface,
   // webrtc::AudioReceiveStreamInterface implementation.
   void Start() override;
   void Stop() override;
-  bool transport_cc() const override;
-  void SetTransportCc(bool transport_cc) override;
   bool IsRunning() const override;
   void SetDepacketizerToDecoderFrameTransformer(
       rtc::scoped_refptr<webrtc::FrameTransformerInterface> frame_transformer)
@@ -96,9 +94,6 @@ class AudioReceiveStreamImpl final : public webrtc::AudioReceiveStreamInterface,
   void SetNonSenderRttMeasurement(bool enabled) override;
   void SetFrameDecryptor(rtc::scoped_refptr<webrtc::FrameDecryptorInterface>
                              frame_decryptor) override;
-  void SetRtpExtensions(std::vector<RtpExtension> extensions) override;
-  const std::vector<RtpExtension>& GetRtpExtensions() const override;
-  RtpHeaderExtensionMap GetRtpExtensionMap() const override;
 
   webrtc::AudioReceiveStreamInterface::Stats GetStats(
       bool get_and_clear_legacy_stats) const override;
@@ -159,7 +154,8 @@ class AudioReceiveStreamImpl final : public webrtc::AudioReceiveStreamInterface,
   // thread, but still serves as a mechanism of grouping together concepts
   // that belong to the network thread. Once the packets are fully delivered
   // on the network thread, this comment will be deleted.
-  RTC_NO_UNIQUE_ADDRESS SequenceChecker packet_sequence_checker_;
+  RTC_NO_UNIQUE_ADDRESS SequenceChecker packet_sequence_checker_{
+      SequenceChecker::kDetached};
   webrtc::AudioReceiveStreamInterface::Config config_;
   rtc::scoped_refptr<webrtc::AudioState> audio_state_;
   SourceTracker source_tracker_;

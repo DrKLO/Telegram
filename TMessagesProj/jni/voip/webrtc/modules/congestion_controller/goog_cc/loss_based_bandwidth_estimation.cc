@@ -11,12 +11,17 @@
 #include "modules/congestion_controller/goog_cc/loss_based_bandwidth_estimation.h"
 
 #include <algorithm>
-#include <string>
 #include <vector>
 
 #include "absl/strings/match.h"
+#include "absl/strings/string_view.h"
+#include "api/field_trials_view.h"
+#include "api/transport/network_types.h"
 #include "api/units/data_rate.h"
 #include "api/units/time_delta.h"
+#include "api/units/timestamp.h"
+#include "rtc_base/checks.h"
+#include "rtc_base/experiments/field_trial_parser.h"
 
 namespace webrtc {
 namespace {

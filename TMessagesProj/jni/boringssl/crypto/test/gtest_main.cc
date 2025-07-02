@@ -1,38 +1,32 @@
-/* Copyright (c) 2016, Google Inc.
- *
- * Permission to use, copy, modify, and/or distribute this software for any
- * purpose with or without fee is hereby granted, provided that the above
- * copyright notice and this permission notice appear in all copies.
- *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
- * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY
- * SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION
- * OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
- * CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE. */
+// Copyright 2016 The BoringSSL Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 #include <stdio.h>
 #include <string.h>
 
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include <openssl/cpu.h>
 #include <openssl/rand.h>
 
 #include "abi_test.h"
 #include "gtest_main.h"
 #include "../internal.h"
 
-#if (defined(OPENSSL_ARM) || defined(OPENSSL_AARCH64)) &&       \
-    !defined(OPENSSL_STATIC_ARMCAP)
-#include <openssl/arm_arch.h>
-#define TEST_ARM_CPUS
-#endif
-
 
 int main(int argc, char **argv) {
-  testing::InitGoogleTest(&argc, argv);
+  testing::InitGoogleMock(&argc, argv);
   bssl::SetupGoogleTest();
 
   bool unwind_tests = true;
@@ -43,7 +37,8 @@ int main(int argc, char **argv) {
     }
 #endif
 
-#if defined(TEST_ARM_CPUS)
+#if (defined(OPENSSL_ARM) || defined(OPENSSL_AARCH64)) && \
+    !defined(OPENSSL_STATIC_ARMCAP)
     if (strncmp(argv[i], "--cpu=", 6) == 0) {
       const char *cpu = argv[i] + 6;
       uint32_t armcap;
@@ -68,7 +63,7 @@ int main(int argc, char **argv) {
       printf("Simulating CPU '%s'\n", cpu);
       *armcap_ptr = armcap;
     }
-#endif  // TEST_ARM_CPUS
+#endif  // (ARM || AARCH64) && !STATIC_ARMCAP
 
     if (strcmp(argv[i], "--no_unwind_tests") == 0) {
       unwind_tests = false;
@@ -79,17 +74,5 @@ int main(int argc, char **argv) {
     abi_test::EnableUnwindTests();
   }
 
-  // Run the entire test suite under an ABI check. This is less effective than
-  // testing the individual assembly functions, but will catch issues with
-  // rarely-used registers.
-  abi_test::Result abi;
-  int ret = abi_test::Check(&abi, RUN_ALL_TESTS);
-  if (!abi.ok()) {
-    fprintf(stderr, "ABI failure in test suite:\n");
-    for (const auto &error : abi.errors) {
-      fprintf(stderr, "    %s\n", error.c_str());
-    }
-    exit(1);
-  }
-  return ret;
+  return RUN_ALL_TESTS();
 }

@@ -67,7 +67,7 @@ public class NativeInstance {
         return instance;
     }
 
-    public static NativeInstance makeGroup(String logPath, long videoCapturer, boolean screencast, boolean noiseSupression, PayloadCallback payloadCallback, AudioLevelsCallback audioLevelsCallback, VideoSourcesCallback unknownParticipantsCallback, RequestBroadcastPartCallback requestBroadcastPartCallback, RequestBroadcastPartCallback cancelRequestBroadcastPartCallback, RequestCurrentTimeCallback requestCurrentTimeCallback) {
+    public static NativeInstance makeGroup(String logPath, long videoCapturer, boolean screencast, boolean noiseSupression, PayloadCallback payloadCallback, AudioLevelsCallback audioLevelsCallback, VideoSourcesCallback unknownParticipantsCallback, RequestBroadcastPartCallback requestBroadcastPartCallback, RequestBroadcastPartCallback cancelRequestBroadcastPartCallback, RequestCurrentTimeCallback requestCurrentTimeCallback, boolean isConference) {
         ContextUtils.initialize(ApplicationLoader.applicationContext);
         NativeInstance instance = new NativeInstance();
         instance.payloadCallback = payloadCallback;
@@ -77,7 +77,7 @@ public class NativeInstance {
         instance.cancelRequestBroadcastPartCallback = cancelRequestBroadcastPartCallback;
         instance.requestCurrentTimeCallback = requestCurrentTimeCallback;
         instance.isGroup = true;
-        instance.nativePtr = makeGroupNativeInstance(instance, logPath, SharedConfig.disableVoiceAudioEffects, videoCapturer, screencast, noiseSupression);
+        instance.nativePtr = makeGroupNativeInstance(instance, logPath, SharedConfig.disableVoiceAudioEffects, videoCapturer, screencast, noiseSupression, isConference);
         return instance;
     }
 
@@ -198,18 +198,18 @@ public class NativeInstance {
         stopGroupNative();
     }
 
-    private static native long makeGroupNativeInstance(NativeInstance instance, String persistentStateFilePath, boolean highQuality, long videoCapturer, boolean screencast, boolean noiseSupression);
+    private static native long makeGroupNativeInstance(NativeInstance instance, String persistentStateFilePath, boolean highQuality, long videoCapturer, boolean screencast, boolean noiseSupression, boolean conference);
     private static native long makeNativeInstance(String version, NativeInstance instance, Instance.Config config, String persistentStateFilePath, Instance.Endpoint[] endpoints, Instance.Proxy proxy, int networkType, Instance.EncryptionKey encryptionKey, VideoSink remoteSink, long videoCapturer, float aspectRatio);
     public static native long createVideoCapturer(VideoSink localSink, int type);
     public static native void setVideoStateCapturer(long videoCapturer, int videoState);
     public static native void switchCameraCapturer(long videoCapturer, boolean front);
     public static native void destroyVideoCapturer(long videoCapturer);
 
-    public native void onMediaDescriptionAvailable(long taskPtr, int[] ssrcs);
+    public native void onMediaDescriptionAvailable(long taskPtr, VoIPService.RequestedParticipant[] ssrcs);
     public native void setNoiseSuppressionEnabled(boolean value);
     public native void activateVideoCapturer(long videoCapturer);
     public native void clearVideoCapturer();
-    public native long addIncomingVideoOutput(int quality, String endpointId, SsrcGroup[] ssrcGroups, VideoSink remoteSink);
+    public native long addIncomingVideoOutput(int quality, String endpointId, SsrcGroup[] ssrcGroups, VideoSink remoteSink, long userId);
     public native void removeIncomingVideoOutput(long nativeRemoteSink);
     public native void setVideoEndpointQuality(String endpointId, int quality);
     public native void setGlobalServerConfig(String serverConfigJson);
@@ -235,4 +235,6 @@ public class NativeInstance {
     public native void onStreamPartAvailable(long ts, ByteBuffer buffer, int size, long timestamp, int videoChannel, int quality);
     public native boolean hasVideoCapturer();
     public native void onRequestTimeComplete(long taskPtr, long time);
+    public native void setConferenceCallId(long call_id);
+    public static native String[] getAllVersions();
 }

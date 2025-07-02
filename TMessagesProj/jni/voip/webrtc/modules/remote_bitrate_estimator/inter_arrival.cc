@@ -19,13 +19,11 @@ static const int kBurstDeltaThresholdMs = 5;
 static const int kMaxBurstDurationMs = 100;
 
 InterArrival::InterArrival(uint32_t timestamp_group_length_ticks,
-                           double timestamp_to_ms_coeff,
-                           bool enable_burst_grouping)
+                           double timestamp_to_ms_coeff)
     : kTimestampGroupLengthTicks(timestamp_group_length_ticks),
       current_timestamp_group_(),
       prev_timestamp_group_(),
       timestamp_to_ms_coeff_(timestamp_to_ms_coeff),
-      burst_grouping_(enable_burst_grouping),
       num_consecutive_reordered_packets_(0) {}
 
 bool InterArrival::ComputeDeltas(uint32_t timestamp,
@@ -136,9 +134,6 @@ bool InterArrival::NewTimestampGroup(int64_t arrival_time_ms,
 
 bool InterArrival::BelongsToBurst(int64_t arrival_time_ms,
                                   uint32_t timestamp) const {
-  if (!burst_grouping_) {
-    return false;
-  }
   RTC_DCHECK_GE(current_timestamp_group_.complete_time_ms, 0);
   int64_t arrival_time_delta_ms =
       arrival_time_ms - current_timestamp_group_.complete_time_ms;

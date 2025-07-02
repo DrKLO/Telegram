@@ -288,6 +288,8 @@ public class ThemeColors {
         defaultColors[key_chat_attachLocationText] = 0xff3cab2f;
         defaultColors[key_chat_attachPollBackground] = 0xfff2c04b;
         defaultColors[key_chat_attachPollText] = 0xffdfa000;
+        defaultColors[key_chat_attachTodoBackground] = 0xffF88D4A;
+        defaultColors[key_chat_attachTodoText] = 0xffE16E25;
 
         defaultColors[key_chat_inPollCorrectAnswer] = 0xff60c255;
         defaultColors[key_chat_outPollCorrectAnswer] = 0xff60c255;
@@ -490,6 +492,7 @@ public class ThemeColors {
         defaultColors[key_chat_recordedVoicePlayPause] = 0xffffffff;
         defaultColors[key_chat_recordedVoiceDot] = 0xffda564d;
         defaultColors[key_chat_recordedVoiceBackground] = 0xff5DADE8;
+        defaultColors[key_chat_recordedVoiceDarkerBackground] = 0xff1F89DB;
         defaultColors[key_chat_recordedVoiceProgress] = 0xffB1DEFF;
         defaultColors[key_chat_recordedVoiceProgressInner] = 0xffffffff;
         defaultColors[key_chat_recordVoiceCancel] = 0xff3A95D4;
@@ -1328,6 +1331,7 @@ public class ThemeColors {
         colorKeysMap.put(key_chat_recordedVoiceProgressInner, "chat_recordedVoiceProgressInner");
         colorKeysMap.put(key_chat_recordedVoiceDot, "chat_recordedVoiceDot");
         colorKeysMap.put(key_chat_recordedVoiceBackground, "chat_recordedVoiceBackground");
+        colorKeysMap.put(key_chat_recordedVoiceDarkerBackground, "chat_recordedVoiceDarkerBackground");
         colorKeysMap.put(key_chat_recordVoiceCancel, "chat_recordVoiceCancel");
         colorKeysMap.put(key_chat_recordTime, "chat_recordTime");
         colorKeysMap.put(key_chat_messagePanelCancelInlineBot, "chat_messagePanelCancelInlineBot");

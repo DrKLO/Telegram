@@ -61,7 +61,7 @@ class SctpTransport : public SctpTransportInterface,
   void Start(int local_port, int remote_port, int max_message_size);
 
   // TODO(https://bugs.webrtc.org/10629): Move functions that need
-  // internal() to be functions on the webrtc::SctpTransport interface,
+  // internal() to be functions on the SctpTransport interface,
   // and make the internal() function private.
   cricket::SctpTransportInternal* internal() {
     RTC_DCHECK_RUN_ON(owner_thread_);

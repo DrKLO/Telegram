@@ -20,7 +20,7 @@
 #include <type_traits>
 
 #include "api/units/time_delta.h"
-#include "rtc_base/units/unit_base.h"
+#include "rtc_base/units/unit_base.h"  // IWYU pragma: export
 
 namespace webrtc {
 

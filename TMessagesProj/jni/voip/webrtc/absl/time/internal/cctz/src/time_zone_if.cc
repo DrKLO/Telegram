@@ -12,28 +12,30 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
-#include "time_zone_if.h"
+#include "absl/time/internal/cctz/src/time_zone_if.h"
 
 #include "absl/base/config.h"
-#include "time_zone_info.h"
-#include "time_zone_libc.h"
+#include "absl/time/internal/cctz/src/time_zone_info.h"
+#include "absl/time/internal/cctz/src/time_zone_libc.h"
 
 namespace absl {
 ABSL_NAMESPACE_BEGIN
 namespace time_internal {
 namespace cctz {
 
-std::unique_ptr<TimeZoneIf> TimeZoneIf::Load(const std::string& name) {
+std::unique_ptr<TimeZoneIf> TimeZoneIf::UTC() { return TimeZoneInfo::UTC(); }
+
+std::unique_ptr<TimeZoneIf> TimeZoneIf::Make(const std::string& name) {
   // Support "libc:localtime" and "libc:*" to access the legacy
   // localtime and UTC support respectively from the C library.
+  // NOTE: The "libc:*" zones are internal, test-only interfaces, and
+  // are subject to change/removal without notice. Do not use them.
   if (name.compare(0, 5, "libc:") == 0) {
-    return std::unique_ptr<TimeZoneIf>(new TimeZoneLibC(name.substr(5)));
+    return TimeZoneLibC::Make(name.substr(5));
   }
 
-  // Otherwise use the "zoneinfo" implementation by default.
-  std::unique_ptr<TimeZoneInfo> tz(new TimeZoneInfo);
-  if (!tz->Load(name)) tz.reset();
-  return std::unique_ptr<TimeZoneIf>(tz.release());
+  // Otherwise use the "zoneinfo" implementation.
+  return TimeZoneInfo::Make(name);
 }
 
 // Defined out-of-line to avoid emitting a weak vtable in all TUs.

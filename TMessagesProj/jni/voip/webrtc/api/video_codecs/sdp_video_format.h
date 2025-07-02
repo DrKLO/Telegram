@@ -17,6 +17,7 @@
 #include "absl/container/inlined_vector.h"
 #include "absl/types/optional.h"
 #include "api/array_view.h"
+#include "api/rtp_parameters.h"
 #include "api/video_codecs/scalability_mode.h"
 #include "rtc_base/system/rtc_export.h"
 
@@ -25,13 +26,14 @@ namespace webrtc {
 // SDP specification for a single video codec.
 // NOTE: This class is still under development and may change without notice.
 struct RTC_EXPORT SdpVideoFormat {
-  using Parameters = std::map<std::string, std::string>;
+  using Parameters [[deprecated(("Use webrtc::CodecParameterMap"))]] =
+      std::map<std::string, std::string>;
 
   explicit SdpVideoFormat(const std::string& name);
-  SdpVideoFormat(const std::string& name, const Parameters& parameters);
+  SdpVideoFormat(const std::string& name, const CodecParameterMap& parameters);
   SdpVideoFormat(
       const std::string& name,
-      const Parameters& parameters,
+      const CodecParameterMap& parameters,
       const absl::InlinedVector<ScalabilityMode, kScalabilityModeCount>&
           scalability_modes);
   SdpVideoFormat(const SdpVideoFormat&);
@@ -58,7 +60,7 @@ struct RTC_EXPORT SdpVideoFormat {
   }
 
   std::string name;
-  Parameters parameters;
+  CodecParameterMap parameters;
   absl::InlinedVector<ScalabilityMode, kScalabilityModeCount> scalability_modes;
 };
 

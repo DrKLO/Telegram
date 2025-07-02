@@ -38,12 +38,23 @@ class AsyncAudioProcessing final {
     ~Factory();
     Factory(AudioFrameProcessor& frame_processor,
             TaskQueueFactory& task_queue_factory);
+    Factory(std::unique_ptr<AudioFrameProcessor> frame_processor,
+            TaskQueueFactory& task_queue_factory);
 
     std::unique_ptr<AsyncAudioProcessing> CreateAsyncAudioProcessing(
         AudioFrameProcessor::OnAudioFrameCallback on_frame_processed_callback);
 
    private:
+    // TODO(bugs.webrtc.org/15111):
+    //   Remove 'AudioFrameProcessor& frame_processor_' in favour of
+    //   std::unique_ptr in the follow-up.
+    //   While transitioning this API from using AudioFrameProcessor& to using
+    //   std::unique_ptr<AudioFrameProcessor>, we have two member variable both
+    //   referencing the same object. Throughout the lifetime of the Factory
+    //   only one of the variables is used, depending on which constructor was
+    //   called.
     AudioFrameProcessor& frame_processor_;
+    std::unique_ptr<AudioFrameProcessor> owned_frame_processor_;
     TaskQueueFactory& task_queue_factory_;
   };
 
@@ -57,8 +68,21 @@ class AsyncAudioProcessing final {
   // into `on_frame_processed_callback`, which is posted back onto
   // `task_queue_`. `task_queue_` is created using the provided
   // `task_queue_factory`.
+  // TODO(bugs.webrtc.org/15111):
+  //   Remove this method in favour of the method taking the
+  //   unique_ptr<AudioFrameProcessor> in the follow-up.
   AsyncAudioProcessing(
       AudioFrameProcessor& frame_processor,
+      TaskQueueFactory& task_queue_factory,
+      AudioFrameProcessor::OnAudioFrameCallback on_frame_processed_callback);
+
+  // Creates AsyncAudioProcessing which will pass audio frames to
+  // `frame_processor` on `task_queue_` and reply with processed frames passed
+  // into `on_frame_processed_callback`, which is posted back onto
+  // `task_queue_`. `task_queue_` is created using the provided
+  // `task_queue_factory`.
+  AsyncAudioProcessing(
+      std::unique_ptr<AudioFrameProcessor> frame_processor,
       TaskQueueFactory& task_queue_factory,
       AudioFrameProcessor::OnAudioFrameCallback on_frame_processed_callback);
 
@@ -67,7 +91,16 @@ class AsyncAudioProcessing final {
 
  private:
   AudioFrameProcessor::OnAudioFrameCallback on_frame_processed_callback_;
+  // TODO(bugs.webrtc.org/15111):
+  //   Remove 'AudioFrameProcessor& frame_processor_' in favour of
+  //   std::unique_ptr in the follow-up.
+  //   While transitioning this API from using AudioFrameProcessor& to using
+  //   std::unique_ptr<AudioFrameProcessor>, we have two member variable both
+  //   referencing the same object. Throughout the lifetime of the Factory
+  //   only one of the variables is used, depending on which constructor was
+  //   called.
   AudioFrameProcessor& frame_processor_;
+  std::unique_ptr<AudioFrameProcessor> owned_frame_processor_;
   rtc::TaskQueue task_queue_;
 };
 

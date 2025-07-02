@@ -9,7 +9,12 @@ namespace tgcalls {
 
 class VideoCapturerInterfaceImpl final : public VideoCapturerInterface {
 public:
-	VideoCapturerInterfaceImpl(rtc::scoped_refptr<webrtc::JavaVideoTrackSourceInterface> source, std::string deviceId, std::function<void(VideoState)> stateUpdated, std::shared_ptr<PlatformContext> platformContext);
+	VideoCapturerInterfaceImpl(
+        rtc::scoped_refptr<webrtc::JavaVideoTrackSourceInterface> source,
+        std::string deviceId,
+        std::function<void(VideoState)> stateUpdated,
+        std::shared_ptr<PlatformContext> platformContext
+    );
 
 	void setState(VideoState state) override;
 	void setPreferredCaptureAspectRatio(float aspectRatio) override;
