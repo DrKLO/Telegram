@@ -2,12 +2,18 @@ package org.telegram.ui.Cells;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
+import android.graphics.Canvas;
+import android.graphics.Paint;
+import android.graphics.Path;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
+import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.view.Gravity;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.AccelerateDecelerateInterpolator;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 
@@ -22,6 +28,7 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Components.BlurringShader;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.PaddingItemDecoration;
 import org.telegram.ui.Components.RLottieDrawable;
@@ -51,6 +58,8 @@ public class ShortcutsCell extends FrameLayout {
         REPORT(R.string.ReportChat, R.drawable.profile_report, 0, 0, 0),
         SHARE(R.string.LinkActionShare, R.drawable.profile_share, 0, 0, 0),
         STORY(R.string.AddStory, R.drawable.profile_story, 0, 0, 0),
+        CAMERA(R.string.SetPhoto, R.drawable.profile_camera, 0, 0, 0),
+        QR(R.string.QrCode, R.drawable.msg_qr_mini, 0, 0, 0),
         VIDEO(R.string.GroupCallCreateVideo, R.drawable.profile_video, 0, 0, 0);
 
         private final int titleResId;
@@ -89,15 +98,22 @@ public class ShortcutsCell extends FrameLayout {
 
     private final int sidePadding = AndroidUtilities.dp(8);
 
-    public ShortcutsCell(Context context) {
-        this(context, null);
+    private final BlurringShader.BlurManager blurManager;
+    protected BlurringShader.StoryBlurDrawer backgroundBlur;
+
+    public ShortcutsCell(Context context, BlurringShader.BlurManager blurManager) {
+        this(context, null, blurManager);
     }
 
     @SuppressLint("ClickableViewAccessibility")
-    public ShortcutsCell(Context context, Theme.ResourcesProvider resourcesProvider) {
+    public ShortcutsCell(Context context, Theme.ResourcesProvider resourcesProvider, BlurringShader.BlurManager blurManager) {
         super(context);
         this.resourcesProvider = resourcesProvider;
+        this.blurManager = blurManager;
 
+        if (blurManager != null) {
+            backgroundBlur = new BlurringShader.StoryBlurDrawer(blurManager, this, BlurringShader.StoryBlurDrawer.BLUR_TYPE_ACTION_BACKGROUND, !customBlur());
+        }
         listView = new RecyclerListView(context);
         SpanningLinearLayoutManager lm = new SpanningLinearLayoutManager(context, LinearLayoutManager.HORIZONTAL, false, listView);
         lm.setMinimumItemWidth(AndroidUtilities.dp(36));
@@ -155,6 +171,10 @@ public class ShortcutsCell extends FrameLayout {
         addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 80, Gravity.LEFT));
     }
 
+    protected boolean customBlur() {
+        return blurManager.hasRenderNode();
+    }
+
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         super.onMeasure(
@@ -188,6 +208,17 @@ public class ShortcutsCell extends FrameLayout {
         for (int a = 0; a < count; a++) {
             func.accept((ShortcutButton) listView.getChildAt(a));
         }
+    }
+
+    public Boolean getStateForButton(ButtonType buttonType) {
+        int count = listView.getChildCount();
+        for (int a = 0; a < count; a++) {
+            ShortcutButton button = (ShortcutButton) listView.getChildAt(a);
+            if (button.currentItem.type == buttonType) {
+                return button.currentItem.type.state;
+            }
+        }
+        return null;
     }
 
     public void setStateForButton(ButtonType buttonType, boolean newState) {
@@ -291,7 +322,7 @@ public class ShortcutsCell extends FrameLayout {
             addView(buttonImage, LayoutHelper.createFrame(24, 24, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 0, 8, 0, 0));
             addView(buttonText, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 0, 36, 0, 0));
 
-            setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(16), 0x17000000)); // todo background color
+            //setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(16), 0x17000000));
         }
 
         @Override
@@ -389,10 +420,87 @@ public class ShortcutsCell extends FrameLayout {
     public class Adapter extends RecyclerListView.SelectionAdapter {
         ArrayList<ListItem> items = new ArrayList<>(4);
 
+        @SuppressLint("ClickableViewAccessibility")
         @NonNull
         @Override
         public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-            ShortcutButton view = new ShortcutButton(parent.getContext());
+            ShortcutButton view = new ShortcutButton(parent.getContext()) {
+
+                private final Path path = new Path();
+                protected Paint backgroundPaint;
+                protected Paint clipPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+
+                @Override
+                protected void dispatchDraw(@NonNull Canvas canvas) {
+
+                    if (backgroundPaint == null) {
+                        backgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+                        backgroundPaint.setColor(0x10000000);
+                    }
+
+                    if (backgroundBlur != null) {
+                        RectF bounds = new RectF(0, 0, this.getWidth(), this.getHeight());
+                        if (customBlur()) {
+                            drawBlur(backgroundBlur, canvas, bounds, -getX(), AndroidUtilities.dp(80), 1.0f);
+                            canvas.drawRoundRect(bounds, AndroidUtilities.dp(16), AndroidUtilities.dp(16), backgroundPaint);
+                        } else {
+                            Paint[] blurPaints = backgroundBlur.getPaints(1f, 0, 0);
+                            if (blurPaints == null || blurPaints[1] == null) {
+                                canvas.drawRoundRect(bounds, AndroidUtilities.dp(16), AndroidUtilities.dp(16), backgroundPaint);
+                            } else {
+                                if (blurPaints[0] != null) {
+                                    canvas.drawRoundRect(bounds, AndroidUtilities.dp(16), AndroidUtilities.dp(16), blurPaints[0]);
+                                }
+                                if (blurPaints[1] != null) {
+                                    canvas.drawRoundRect(bounds, AndroidUtilities.dp(16), AndroidUtilities.dp(16), blurPaints[1]);
+                                }
+                                canvas.drawRoundRect(bounds, AndroidUtilities.dp(16), AndroidUtilities.dp(16), backgroundPaint);
+                            }
+                        }
+                    }
+                    super.dispatchDraw(canvas);
+                    invalidate();
+                }
+
+                protected void drawBlur(BlurringShader.StoryBlurDrawer blur, Canvas canvas, RectF rect, float ox, float oy, float alpha) {
+                    if (!canvas.isHardwareAccelerated()) {
+                        return;
+                    }
+                    canvas.save();
+                    path.rewind();
+                    path.addRoundRect(rect, AndroidUtilities.dp(16), AndroidUtilities.dp(16), Path.Direction.CW);
+                    canvas.clipPath(path);
+                    canvas.translate(ox, oy);
+                    blur.drawRect(canvas, 0, 0, alpha);
+                    canvas.restore();
+                }
+            };
+
+            view.setOnTouchListener((v, event) -> {
+                switch (event.getAction()) {
+                    case MotionEvent.ACTION_DOWN:
+                        v.animate().cancel();
+                        v.animate()
+                                .scaleX(0.95f)
+                                .scaleY(0.95f)
+                                .setDuration(150)
+                                .setInterpolator(new AccelerateDecelerateInterpolator())
+                                .start();
+                       return true;
+
+                    case MotionEvent.ACTION_UP:
+                    case MotionEvent.ACTION_CANCEL:
+                        v.animate().cancel();
+                        v.animate()
+                                .scaleX(1f)
+                                .scaleY(1f)
+                                .setDuration(150)
+                                .setInterpolator(new AccelerateDecelerateInterpolator())
+                                .start();
+                        break;
+                }
+                return false; // Don't consume events (allows normal click handling)
+            });
             return new RecyclerListView.Holder(view);
         }
 
@@ -403,6 +511,9 @@ public class ShortcutsCell extends FrameLayout {
                 lp.width = -1;
                 lp.height = -1;
             }
+            holder.itemView.animate().cancel();
+            holder.itemView.setScaleX(1f);
+            holder.itemView.setScaleY(1f);
             super.onViewRecycled(holder);
         }
 
