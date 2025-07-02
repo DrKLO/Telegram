@@ -5136,7 +5136,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 nameTextView[a].setTextColor(getThemedColor(Theme.key_actionBarDefaultTitle));
             }
             nameTextView[a].setPadding(0, AndroidUtilities.dp(6), 0, AndroidUtilities.dp(a == 0 ? 12 : 4));
-            nameTextView[a].setTextSize(18);
+            nameTextView[a].setTextSize(20);
             nameTextView[a].setGravity(Gravity.LEFT);
             nameTextView[a].setTypeface(AndroidUtilities.bold());
             nameTextView[a].setLeftDrawableTopPadding(-AndroidUtilities.dp(1.3f));
@@ -5150,7 +5150,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             nameTextView[a].setFocusable(a == 0);
             nameTextView[a].setEllipsizeByGradient(true);
             nameTextView[a].setRightDrawableOutside(a == 0);
-            avatarContainer2.addView(nameTextView[a], LayoutHelper.createFrame(a == 0 ? initialTitleWidth : LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 118, -6, (a == 0 ? rightMargin - (hasTitleExpanded ? 10 : 0) : 0), 0));
+            avatarContainer2.addView(nameTextView[a], LayoutHelper.createFrame(a == 0 ? initialTitleWidth : LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 0, 0, (a == 0 ? rightMargin - (hasTitleExpanded ? 10 : 0) : 0), 0));
         }
         for (int a = 0; a < onlineTextView.length; a++) {
             if (a == 1) {
@@ -5766,6 +5766,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         final float onlineTextViewX = (1 - value) * (1 - value) * onlineX + 2 * (1 - value) * value * onlineTextViewCx + value * value * onlineTextViewXEnd;
         final float onlineTextViewY = (1 - value) * (1 - value) * onlineY + 2 * (1 - value) * value * onlineTextViewCy + value * value * onlineTextViewYEnd;
 
+        // todo Alex here we animate expand/ collapse. Mb fix this? There is a slight movement glitch
+        //  due to differences between this X calucation and overshoot one
         nameTextView[1].setTranslationX(nameTextViewX);
         nameTextView[1].setTranslationY(nameTextViewY);
         onlineTextView[1].setTranslationX(onlineTextViewX + customPhotoOffset);
@@ -7378,7 +7380,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
 
             float statusBarHeight = actionBar.getOccupyStatusBar() ? AndroidUtilities.statusBarHeight : 0;
             float minY = -statusBarHeight - avatarSizeCollapsed;
-            float maxY = statusBarHeight + ActionBar.getCurrentActionBarHeight() / 2 + actionBar.getTranslationY();
+            float maxY = statusBarHeight + ActionBar.getCurrentActionBarHeight() / 2f + actionBar.getTranslationY();
             avatarY = AndroidUtilities.lerp(minY, maxY, diff);
 
             float h = openAnimationInProgress ? initialAnimationExtraHeight : extraHeight;
@@ -7620,8 +7622,18 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     starFgItem.setTranslationX(avatarContainer.getX() + AndroidUtilities.dp(28) + extra);
                     starFgItem.setTranslationY(avatarContainer.getY() + AndroidUtilities.dp(24) + extra);
                 }
-                nameX = -21 * AndroidUtilities.density * diff;
-                nameY = (float) Math.floor(avatarY) + AndroidUtilities.dp(1.3f) + AndroidUtilities.dp(7) * diff + titleAnimationsYDiff * (1f - avatarAnimationProgress);
+                // todo Alex here we animate when avatar starts To move top of of the screen
+                DisplayMetrics displayMetrics = Resources.getSystem().getDisplayMetrics();
+                float startX = AndroidUtilities.dpf2(56f);
+                float endX = displayMetrics.widthPixels / 2f - nameTextView[1].getWidth() / 2f;
+                float startY = statusBarHeight + ActionBar.getCurrentActionBarHeight() / 2f - nameTextView[0].getHeight() / 2f;
+                float endY = statusBarHeight
+                        + ActionBar.getCurrentActionBarHeight() / 2f
+                        + actionBar.getTranslationY()
+                        + AndroidUtilities.dpf2(avatarSizeCollapsed) * avatarNormalScale
+                        + AndroidUtilities.dpf2(nameAvatarVerticalSpacing);
+                nameX = AndroidUtilities.lerp(startX, endX, diff);
+                nameY = AndroidUtilities.lerp(startY, endY, diff);
                 onlineX = -21 * AndroidUtilities.density * diff;
                 onlineY = (float) Math.floor(avatarY) + AndroidUtilities.dp(24) + (float) Math.floor(11 * AndroidUtilities.density) * diff;
                 if (showStatusButton != null) {
@@ -7664,6 +7676,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     }
 
     private final float avatarSizeCollapsed = 130;
+
+    private final float nameAvatarVerticalSpacing = 8;
     private final float avatarMinScale = 0.35f;
     private final float avatarNormalScale = 1;
 
@@ -7752,10 +7766,17 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     }
 
     private void refreshNameAndOnlineXY() {
-        nameX = AndroidUtilities.dp(-avatarSizeCollapsed / 2) + avatarContainer.getMeasuredWidth() * (avatarScale - (avatarSizeCollapsed + 18f) / avatarSizeCollapsed);
-        nameY = (float) Math.floor(avatarY) + AndroidUtilities.dp(1.3f) + AndroidUtilities.dp(7f) + avatarContainer.getMeasuredHeight() * (avatarScale - (avatarSizeCollapsed + 18f) / avatarSizeCollapsed) / 2f;
-        onlineX = AndroidUtilities.dp(-avatarSizeCollapsed / 2) + avatarContainer.getMeasuredWidth() * (avatarScale - (avatarSizeCollapsed + 18f) / avatarSizeCollapsed);
-        onlineY = (float) Math.floor(avatarY) + AndroidUtilities.dp(24) + (float) Math.floor(11 * AndroidUtilities.density) + avatarContainer.getMeasuredHeight() * (avatarScale - (avatarSizeCollapsed + 18f) / avatarSizeCollapsed) / 2f;
+        DisplayMetrics displayMetrics = Resources.getSystem().getDisplayMetrics();
+        // todo alex here we animate when scale growths from normal scale to overshoot scale
+        nameX = displayMetrics.widthPixels / 2f - nameTextView[1].getWidth() / 2f;
+        float statusBarHeight = actionBar.getOccupyStatusBar() ? AndroidUtilities.statusBarHeight : 0;
+        nameY = statusBarHeight
+                + ActionBar.getCurrentActionBarHeight() / 2f
+                + actionBar.getTranslationY()
+                + AndroidUtilities.dpf2(avatarSizeCollapsed) * avatarScale
+                + AndroidUtilities.dpf2(nameAvatarVerticalSpacing);
+        onlineX = AndroidUtilities.dp(-avatarSizeCollapsed / 2) + avatarContainer.getMeasuredWidth() * (avatarScale - avatarMinScale);
+        onlineY = (float) Math.floor(avatarY) + AndroidUtilities.dp(24) + (float) Math.floor(11 * AndroidUtilities.density) + avatarContainer.getMeasuredHeight() * (avatarScale - avatarMinScale) / 2f;
     }
 
     public RecyclerListView getListView() {
