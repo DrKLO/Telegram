@@ -214,7 +214,7 @@ public class ChatNotificationsPopupWrapper {
             muteForLastSelected.setVisibility(View.GONE);
         }
 
-        if (time2 != 0) {
+        if (time2 != 0 && time2 != time1) {
             muteForLastSelected2Time = time2;
             muteForLastSelected2.setVisibility(View.VISIBLE);
             muteForLastSelected2.getImageView().setImageDrawable(TimerDrawable.getTtlIcon(time2));
