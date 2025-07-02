@@ -17,6 +17,7 @@ import android.app.Dialog;
 import android.app.DownloadManager;
 import android.content.ClipboardManager;
 import android.content.Context;
+import android.content.ClipData;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageInfo;
