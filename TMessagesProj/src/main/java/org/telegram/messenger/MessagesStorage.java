@@ -35,6 +35,7 @@ import org.telegram.SQLite.SQLiteDatabase;
 import org.telegram.SQLite.SQLiteException;
 import org.telegram.SQLite.SQLitePreparedStatement;
 import org.telegram.messenger.support.LongSparseIntArray;
+import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.NativeByteBuffer;
 import org.telegram.tgnet.RequestDelegate;
 import org.telegram.tgnet.TLObject;
@@ -110,7 +111,7 @@ public class MessagesStorage extends BaseController {
         }
     }
 
-    public final static int LAST_DB_VERSION = 164;
+    public final static int LAST_DB_VERSION = 165;
     private boolean databaseMigrationInProgress;
     public boolean showClearDatabaseAlert;
     private final LongSparseIntArray dialogIsForum = new LongSparseIntArray();
@@ -692,7 +693,7 @@ public class MessagesStorage extends BaseController {
         database.executeFast("CREATE TABLE media_holes_topics(uid INTEGER, topic_id INTEGER, type INTEGER, start INTEGER, end INTEGER, PRIMARY KEY(uid, topic_id, type, start));").stepThis().dispose();
         database.executeFast("CREATE INDEX IF NOT EXISTS uid_end_media_holes_topics ON media_holes_topics(uid, topic_id, type, end);").stepThis().dispose();
 
-        database.executeFast("CREATE TABLE topics(did INTEGER, topic_id INTEGER, data BLOB, top_message INTEGER, topic_message BLOB, unread_count INTEGER, max_read_id INTEGER, unread_mentions INTEGER, unread_reactions INTEGER, read_outbox INTEGER, pinned INTEGER, total_messages_count INTEGER, hidden INTEGER, edit_date INTEGER, PRIMARY KEY(did, topic_id));").stepThis().dispose();
+        database.executeFast("CREATE TABLE topics(did INTEGER, topic_id INTEGER, data BLOB, top_message INTEGER, topic_message BLOB, unread_count INTEGER, max_read_id INTEGER, unread_mentions INTEGER, unread_reactions INTEGER, read_outbox INTEGER, pinned INTEGER, total_messages_count INTEGER, hidden INTEGER, edit_date INTEGER, nopaid_messages_exception INTEGER, PRIMARY KEY(did, topic_id));").stepThis().dispose();
         database.executeFast("CREATE INDEX IF NOT EXISTS did_top_message_topics ON topics(did, top_message);").stepThis().dispose();
         database.executeFast("CREATE INDEX IF NOT EXISTS did_topics ON topics(did);").stepThis().dispose();
 
@@ -1549,7 +1550,7 @@ public class MessagesStorage extends BaseController {
             if (replace) {
                 database.executeFast("DELETE FROM topics WHERE did = " + dialogId).stepThis().dispose();
             }
-            state = database.executeFast("REPLACE INTO topics VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            state = database.executeFast("REPLACE INTO topics VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
             if (inTransaction) {
                 database.beginTransaction();
             }
@@ -1584,6 +1585,7 @@ public class MessagesStorage extends BaseController {
                 state.bindInteger(12, topic.totalMessagesCount);
                 state.bindInteger(13, topic.hidden ? 1 : 0);
                 state.bindInteger(14, date);
+                state.bindInteger(15, topic.nopaid_messages_exception ? 1 : 0);
 
                 state.step();
                 messageData.reuse();
@@ -1712,7 +1714,7 @@ public class MessagesStorage extends BaseController {
             ArrayList<TLRPC.TL_forumTopic> topics = null;
             SQLiteCursor cursor = null;
             try {
-                cursor = database.queryFinalized(String.format(Locale.US, "SELECT top_message, data, topic_message, unread_count, max_read_id, unread_mentions, unread_reactions, read_outbox, pinned, total_messages_count FROM topics WHERE did = %d ORDER BY pinned ASC", dialogId));
+                cursor = database.queryFinalized(String.format(Locale.US, "SELECT top_message, data, topic_message, unread_count, max_read_id, unread_mentions, unread_reactions, read_outbox, pinned, total_messages_count, nopaid_messages_exception FROM topics WHERE did = %d ORDER BY pinned ASC", dialogId));
 
                 SparseArray<ArrayList<TLRPC.TL_forumTopic>> topicsByTopMessageId = null;
                 HashSet<Integer> topMessageIds = null;
@@ -1752,6 +1754,7 @@ public class MessagesStorage extends BaseController {
                             topic.pinnedOrder = cursor.intValue(8) - 1;
                             topic.pinned = topic.pinnedOrder >= 0;
                             topic.totalMessagesCount = cursor.intValue(9);
+                            topic.nopaid_messages_exception = cursor.intValue(10) != 0;
                         }
 
                         data.reuse();
@@ -1789,7 +1792,8 @@ public class MessagesStorage extends BaseController {
                                 if (message != null && message.reply_to != null && message.reply_to.reply_to_msg_id != 0 && (
                                     message.action instanceof TLRPC.TL_messageActionPinMessage ||
                                     message.action instanceof TLRPC.TL_messageActionPaymentSent ||
-                                    message.action instanceof TLRPC.TL_messageActionGameScore
+                                    message.action instanceof TLRPC.TL_messageActionGameScore ||
+                                    message.action instanceof TLRPC.TL_messageActionSuggestedPostApproval
                                 )) {
                                     if (!cursor2.isNull(2)) {
                                         NativeByteBuffer data2 = cursor2.byteBufferValue(2);
@@ -2306,8 +2310,10 @@ public class MessagesStorage extends BaseController {
                         try {
                             if (message.reply_to != null && message.reply_to.reply_to_msg_id != 0 && (
                                     message.action instanceof TLRPC.TL_messageActionPinMessage ||
-                                            message.action instanceof TLRPC.TL_messageActionPaymentSent ||
-                                            message.action instanceof TLRPC.TL_messageActionGameScore)) {
+                                    message.action instanceof TLRPC.TL_messageActionPaymentSent ||
+                                    message.action instanceof TLRPC.TL_messageActionGameScore ||
+                                    message.action instanceof TLRPC.TL_messageActionSuggestedPostApproval
+                            )) {
                                 if (!cursor.isNull(13)) {
                                     NativeByteBuffer data2 = cursor.byteBufferValue(13);
                                     if (data2 != null) {
@@ -2397,9 +2403,11 @@ public class MessagesStorage extends BaseController {
 
                             try {
                                 if (message.reply_to != null && message.reply_to.reply_to_msg_id != 0 && (
-                                        message.action instanceof TLRPC.TL_messageActionPinMessage ||
-                                                message.action instanceof TLRPC.TL_messageActionPaymentSent ||
-                                                message.action instanceof TLRPC.TL_messageActionGameScore)) {
+                                    message.action instanceof TLRPC.TL_messageActionPinMessage ||
+                                    message.action instanceof TLRPC.TL_messageActionPaymentSent ||
+                                    message.action instanceof TLRPC.TL_messageActionGameScore ||
+                                    message.action instanceof TLRPC.TL_messageActionSuggestedPostApproval
+                                )) {
                                     if (!cursor.isNull(6)) {
                                         NativeByteBuffer data2 = cursor.byteBufferValue(6);
                                         if (data2 != null) {
@@ -3750,9 +3758,11 @@ public class MessagesStorage extends BaseController {
 
                             try {
                                 if (message.reply_to != null && message.reply_to.reply_to_msg_id != 0 && (
-                                        message.action instanceof TLRPC.TL_messageActionPinMessage ||
-                                                message.action instanceof TLRPC.TL_messageActionPaymentSent ||
-                                                message.action instanceof TLRPC.TL_messageActionGameScore)) {
+                                    message.action instanceof TLRPC.TL_messageActionPinMessage ||
+                                    message.action instanceof TLRPC.TL_messageActionPaymentSent ||
+                                    message.action instanceof TLRPC.TL_messageActionGameScore ||
+                                    message.action instanceof TLRPC.TL_messageActionSuggestedPostApproval
+                                )) {
                                     if (!cursor.isNull(6)) {
                                         data = cursor.byteBufferValue(6);
                                         if (data != null) {
@@ -4658,6 +4668,99 @@ public class MessagesStorage extends BaseController {
                 }
                 if (state != null) {
                     state.dispose();
+                }
+            }
+        });
+    }
+
+    public void toggleTodo(long dialogId, int messageId, int taskId, boolean enable) {
+        final long myself = getUserConfig().getClientUserId();
+        final int date = getConnectionsManager().getCurrentTime();
+        storageQueue.postRunnable(() -> {
+            SQLiteCursor cursor = null;
+            SQLitePreparedStatement state = null;
+            try {
+                cursor = database.queryFinalized("SELECT data FROM messages_v2 WHERE uid = " + dialogId + " AND mid = " + messageId);
+                if (cursor.next()) {
+                    NativeByteBuffer data = cursor.byteBufferValue(0);
+                    if (data != null) {
+                        final TLRPC.Message message = TLRPC.Message.TLdeserialize(data, data.readInt32(false), false);
+                        message.readAttachPath(data, myself);
+                        data.reuse();
+
+                        if (message.media instanceof TLRPC.TL_messageMediaToDo) {
+                            final TLRPC.TL_messageMediaToDo mediaTodo = (TLRPC.TL_messageMediaToDo) message.media;
+                            MessageObject.toggleTodo(mediaTodo, taskId, enable, myself, date);
+                            cursor.dispose();
+                            cursor = null;
+
+                            state = database.executeFast("UPDATE messages_v2 SET data = ? WHERE mid = ? AND uid = ?");
+                            state.requery();
+                            data = new NativeByteBuffer(message.getObjectSize());
+                            message.serializeToStream(data);
+                            state.bindByteBuffer(1, data);
+                            state.bindInteger(2, messageId);
+                            state.bindLong(3, dialogId);
+                            state.step();
+                            state.dispose();
+                            state = null;
+                            data.reuse();
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                FileLog.e(e);
+            } finally {
+                if (cursor != null) {
+                    cursor.dispose();
+                    cursor = null;
+                }
+                if (state != null) {
+                    state.dispose();
+                    state = null;
+                }
+            }
+            if (isForumOrMonoForum(dialogId)) {
+                try {
+                    cursor = database.queryFinalized("SELECT data FROM messages_topics WHERE uid = " + dialogId + " AND mid = " + messageId);
+                    if (cursor.next()) {
+                        NativeByteBuffer data = cursor.byteBufferValue(0);
+                        if (data != null) {
+                            final TLRPC.Message message = TLRPC.Message.TLdeserialize(data, data.readInt32(false), false);
+                            message.readAttachPath(data, myself);
+                            data.reuse();
+
+                            if (message.media instanceof TLRPC.TL_messageMediaToDo) {
+                                final TLRPC.TL_messageMediaToDo mediaTodo = (TLRPC.TL_messageMediaToDo) message.media;
+                                MessageObject.toggleTodo(mediaTodo, taskId, enable, myself, date);
+                                cursor.dispose();
+                                cursor = null;
+
+                                state = database.executeFast("UPDATE messages_topics SET data = ? WHERE mid = ? AND uid = ?");
+                                state.requery();
+                                data = new NativeByteBuffer(message.getObjectSize());
+                                message.serializeToStream(data);
+                                state.bindByteBuffer(1, data);
+                                state.bindInteger(2, messageId);
+                                state.bindLong(3, dialogId);
+                                state.step();
+                                state.dispose();
+                                state = null;
+                                data.reuse();
+                            }
+                        }
+                    }
+                } catch (Exception e) {
+                    FileLog.e(e);
+                } finally {
+                    if (cursor != null) {
+                        cursor.dispose();
+                        cursor = null;
+                    }
+                    if (state != null) {
+                        state.dispose();
+                        state = null;
+                    }
                 }
             }
         });
@@ -10411,6 +10514,7 @@ public class MessagesStorage extends BaseController {
         if (chatsToLoad == null || chatsToLoad.length() == 0 || result == null) {
             return;
         }
+        ArrayList<Long> loadMore = null;
         SQLiteCursor cursor = database.queryFinalized(String.format(Locale.US, "SELECT data FROM chats WHERE uid IN(%s)", chatsToLoad));
         while (cursor.next()) {
             try {
@@ -10420,6 +10524,12 @@ public class MessagesStorage extends BaseController {
                     data.reuse();
                     if (chat != null) {
                         result.add(chat);
+                        if (chat.linked_monoforum_id != 0) {
+                            if (loadMore == null) {
+                                loadMore = new ArrayList<>();
+                            }
+                            loadMore.add(chat.linked_monoforum_id);
+                        }
                     }
                 }
             } catch (Exception e) {
@@ -10427,6 +10537,24 @@ public class MessagesStorage extends BaseController {
             }
         }
         cursor.dispose();
+        if (loadMore != null) {
+            cursor = database.queryFinalized(String.format(Locale.US, "SELECT data FROM chats WHERE uid IN(%s)", TextUtils.join(", ", loadMore)));
+            while (cursor.next()) {
+                try {
+                    NativeByteBuffer data = cursor.byteBufferValue(0);
+                    if (data != null) {
+                        TLRPC.Chat chat = TLRPC.Chat.TLdeserialize(data, data.readInt32(false), false, parseFullData);
+                        data.reuse();
+                        if (chat != null) {
+                            result.add(chat);
+                        }
+                    }
+                } catch (Exception e) {
+                    checkSQLException(e);
+                }
+            }
+            cursor.dispose();
+        }
     }
 
     public void getEncryptedChatsInternal(String chatsToLoad, ArrayList<TLRPC.EncryptedChat> result, ArrayList<Long> usersToLoad) throws Exception {
@@ -15742,8 +15870,10 @@ public class MessagesStorage extends BaseController {
                                 try {
                                     if (message.reply_to != null && message.reply_to.reply_to_msg_id != 0 && (
                                             message.action instanceof TLRPC.TL_messageActionPinMessage ||
-                                                    message.action instanceof TLRPC.TL_messageActionPaymentSent ||
-                                                    message.action instanceof TLRPC.TL_messageActionGameScore)) {
+                                            message.action instanceof TLRPC.TL_messageActionPaymentSent ||
+                                            message.action instanceof TLRPC.TL_messageActionGameScore ||
+                                            message.action instanceof TLRPC.TL_messageActionSuggestedPostApproval
+                                    )) {
                                         if (!cursor.isNull(13)) {
                                             NativeByteBuffer data2 = cursor.byteBufferValue(13);
                                             if (data2 != null) {
@@ -15837,9 +15967,11 @@ public class MessagesStorage extends BaseController {
 
                                     try {
                                         if (message.reply_to != null && message.reply_to.reply_to_msg_id != 0 && (
-                                                message.action instanceof TLRPC.TL_messageActionPinMessage ||
-                                                        message.action instanceof TLRPC.TL_messageActionPaymentSent ||
-                                                        message.action instanceof TLRPC.TL_messageActionGameScore)) {
+                                            message.action instanceof TLRPC.TL_messageActionPinMessage ||
+                                            message.action instanceof TLRPC.TL_messageActionPaymentSent ||
+                                            message.action instanceof TLRPC.TL_messageActionGameScore ||
+                                            message.action instanceof TLRPC.TL_messageActionSuggestedPostApproval
+                                        )) {
                                             if (!cursor.isNull(7)) {
                                                 NativeByteBuffer data2 = cursor.byteBufferValue(7);
                                                 if (data2 != null) {
@@ -17054,7 +17186,11 @@ public class MessagesStorage extends BaseController {
                                 }
 
                                 if (chat.monoforum) {
-                                    name = ForumUtilities.getMonoForumTitle(currentAccount, chat);
+                                    name = ForumUtilities.getMonoForumTitle(currentAccount, chat, true);
+                                    if (name == null) {
+                                        name = "";
+                                    }
+                                    name = name.toLowerCase();
                                     tName = LocaleController.getInstance().getTranslitString(name);
                                     if (name.equals(tName)) {
                                         tName = null;

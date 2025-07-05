@@ -63,7 +63,7 @@ public class GLIconTextureView extends TextureView implements TextureView.Surfac
 
     private int targetFps;
 
-    private long idleDelay = 2000;
+    private long idleDelay;
 
     private final int animationsCount;
     int animationPointer;
@@ -80,7 +80,8 @@ public class GLIconTextureView extends TextureView implements TextureView.Surfac
         super(context);
 
         this.type = type;
-        animationsCount = type == Icon3D.TYPE_COIN || type == Icon3D.TYPE_DEAL ? 1 : 5;
+        animationsCount = type == Icon3D.TYPE_COIN || type == Icon3D.TYPE_DIAMOND || type == Icon3D.TYPE_DEAL ? 1 : 5;
+        idleDelay = type == Icon3D.TYPE_DIAMOND ? 0 : 2000;
         setOpaque(false);
         setRenderer(new GLIconRenderer(context, style, type));
         initialize(context);
@@ -638,7 +639,13 @@ public class GLIconTextureView extends TextureView implements TextureView.Surfac
     private void pullAnimation() {
         int i = Math.abs(Utilities.random.nextInt() % 4);
         animatorSet = new AnimatorSet();
-        if (i == 0 && type != Icon3D.TYPE_COIN && type != Icon3D.TYPE_DEAL) {
+        if (type == Icon3D.TYPE_DIAMOND) {
+            ValueAnimator v1 = ValueAnimator.ofFloat(mRenderer.angleX, mRenderer.angleX + 360);
+            v1.addUpdateListener(xUpdater);
+            v1.setDuration(12000);
+            v1.setInterpolator(new LinearInterpolator());
+            animatorSet.playTogether(v1);
+        } else if (i == 0 && type != Icon3D.TYPE_COIN && type != Icon3D.TYPE_DEAL) {
             int a = 48;
 
             ValueAnimator v1 = ValueAnimator.ofFloat(mRenderer.angleY, a);

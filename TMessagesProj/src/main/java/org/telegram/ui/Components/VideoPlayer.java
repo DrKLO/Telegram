@@ -832,7 +832,11 @@ public class VideoPlayer implements Player.Listener, VideoListener, AnalyticsLis
         for (int i = 0; i < documents.size(); ++i) {
             try {
                 final TLRPC.Document document = documents.get(i);
-                if ("application/x-mpegurl".equalsIgnoreCase(document.mime_type)) {
+                if (
+                    "application/x-mpegurl".equalsIgnoreCase(document.mime_type) ||
+                    "application/x-tgstoryboard".equalsIgnoreCase(document.mime_type) ||
+                    "application/x-tgstoryboardmap".equalsIgnoreCase(document.mime_type)
+                ) {
                     continue;
                 }
                 VideoUri q = VideoUri.of(currentAccount, document, manifests.get(document.id), reference, useFileDatabaseQueue);

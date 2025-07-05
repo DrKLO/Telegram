@@ -18,6 +18,8 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 
+//import com.google.mlkit.nl.translate.TranslateLanguage;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.LocaleController;
@@ -35,6 +37,7 @@ import org.telegram.ui.ChatActivity;
 import org.telegram.ui.RestrictedLanguagesSelectActivity;
 
 import java.util.ArrayList;
+import java.util.List;
 
 public class TranslateButton extends FrameLayout {
 
@@ -215,14 +218,24 @@ public class TranslateButton extends FrameLayout {
             swipeBackScroll.addView(button);
         }
         swipeBackScroll.addView(new ActionBarPopupWindow.GapView(getContext(), resourcesProvider), LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 8));
+
+        List<String> systemAllLanguages = null;
+//        if ("system".equals(MessagesController.getInstance(currentAccount).translationsAutoEnabled)) {
+//            systemAllLanguages = TranslateLanguage.getAllLanguages();
+//        }
+
         for (TranslateController.Language lng : allLanguages) {
             final String code = lng.code;
             if (TextUtils.equals(code, detectedLanguage)) {
                 continue;
             }
+            final boolean checked = currentTranslateTo != null && currentTranslateTo.equals(code);
+
+            if (!checked && systemAllLanguages != null && !systemAllLanguages.contains(lng.code)) {
+                continue;
+            }
 
             ActionBarMenuSubItem button = new ActionBarMenuSubItem(getContext(), 2, false, false, resourcesProvider);
-            final boolean checked = currentTranslateTo != null && currentTranslateTo.equals(code);
             button.setChecked(checked);
             button.setText(lng.displayName);
             if (!checked) {

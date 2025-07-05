@@ -44,6 +44,7 @@ import org.telegram.ui.Components.Premium.PremiumGradient;
 import org.telegram.ui.Components.Premium.StarParticlesView;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.SimpleThemeDescription;
+import org.telegram.ui.Stories.recorder.HintView2;
 
 import java.util.ArrayList;
 
@@ -586,7 +587,7 @@ public abstract class GradientHeaderActivity extends BaseFragment {
             subtitleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             subtitleView.setLineSpacing(AndroidUtilities.dp(2), 1f);
             subtitleView.setGravity(Gravity.CENTER_HORIZONTAL);
-            addView(subtitleView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 24, 7, 24, 0));
+            addView(subtitleView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, Gravity.CENTER_HORIZONTAL, 24, 7, 24, 0));
 
             belowSubTitleLayout = new FrameLayout(context);
             addView(belowSubTitleLayout, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL));
@@ -596,6 +597,7 @@ public abstract class GradientHeaderActivity extends BaseFragment {
         public void setData(CharSequence title, CharSequence subTitle, View aboveTitleView, View underSubTitleView) {
             titleView.setText(title);
             subtitleView.setText(subTitle);
+            subtitleView.setMaxWidth(HintView2.cutInFancyHalf(subtitleView.getText(), subtitleView.getPaint()));
             if (aboveTitleView != null) {
                 aboveTitleLayout.removeAllViews();
                 aboveTitleLayout.addView(aboveTitleView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL));

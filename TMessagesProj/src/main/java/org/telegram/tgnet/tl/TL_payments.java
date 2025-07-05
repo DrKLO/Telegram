@@ -158,7 +158,7 @@ public class TL_payments {
         public int commission_permille;
         public int duration_months;
         public int end_date;
-        public TL_stars.StarsAmount daily_revenue_per_user = new TL_stars.StarsAmount(0);
+        public TL_stars.StarsAmount daily_revenue_per_user = TL_stars.StarsAmount.ofStars(0);
 
         public static starRefProgram TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
             if (starRefProgram.constructor != constructor) {

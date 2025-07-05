@@ -2649,6 +2649,14 @@ public abstract class BotWebViewContainer extends FrameLayout implements Notific
                 restoreStorageKey(secureStorage, eventData, "secure_storage_key_restored", "secure_storage_cleared");
                 break;
             }
+            case "web_app_hide_keyboard": {
+                Activity activity = AndroidUtilities.findActivity(getContext());
+                if (activity == null) activity = LaunchActivity.instance;
+                if (activity != null) {
+                    AndroidUtilities.hideKeyboard(activity.getCurrentFocus());
+                }
+                break;
+            }
             default: {
                 FileLog.d("unknown webapp event " + eventType);
                 break;

@@ -12,7 +12,6 @@ import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.SystemClock;
 import android.text.TextUtils;
-import android.util.Pair;
 import android.util.SparseArray;
 
 import androidx.annotation.IntDef;
@@ -35,7 +34,6 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class ChatObject {
 
@@ -71,6 +69,8 @@ public class ChatObject {
     public static final int ACTION_SEND_ROUND = 21;
     public static final int ACTION_SEND_PLAIN = 22;
     public static final int ACTION_SEND_GIFS = 23;
+
+    public static final int ACTION_MANAGE_DIRECT = 24;
 
     public final static int VIDEO_FRAME_NO_FRAME = 0;
     public final static int VIDEO_FRAME_REQUESTING = 1;
@@ -1753,20 +1753,36 @@ public class ChatObject {
     }
 
     public static boolean canManageMonoForum(int currentAccount, long dialogId) {
-        return canManageMonoForum(currentAccount, MessagesController.getInstance(currentAccount).getChat(-dialogId));
+        return canUserDoChannelDirectAdminAction(currentAccount, dialogId, ACTION_MANAGE_DIRECT);
     }
 
     public static boolean canManageMonoForum(int currentAccount, TLRPC.Chat chat) {
+        return canUserDoChannelDirectAdminAction(currentAccount, chat, ACTION_MANAGE_DIRECT);
+    }
+
+    public static boolean canUserDoChannelDirectAdminAction(int currentAccount, long dialogId, int action) {
+        return canUserDoAdminAction(getChannelDirectChatInternal(currentAccount, dialogId), action);
+    }
+
+    public static boolean canUserDoChannelDirectAdminAction(int currentAccount, TLRPC.Chat chat, int action) {
+        return canUserDoAdminAction(getChannelDirectChatInternal(currentAccount, chat), action);
+    }
+
+    private static TLRPC.Chat getChannelDirectChatInternal(int currentAccount, long dialogId) {
+        return getChannelDirectChatInternal(currentAccount,
+            MessagesController.getInstance(currentAccount).getChat(-dialogId));
+    }
+
+    private static TLRPC.Chat getChannelDirectChatInternal(int currentAccount, TLRPC.Chat chat) {
         if (chat == null || chat.linked_monoforum_id == 0) {
-            return false;
+            return null;
         }
 
         if (chat.monoforum) {
-            TLRPC.Chat mfChat = MessagesController.getInstance(currentAccount).getChat(chat.linked_monoforum_id);
-            return canUserDoAdminAction(mfChat, ACTION_POST);
+            return MessagesController.getInstance(currentAccount).getChat(chat.linked_monoforum_id);
         }
 
-        return canUserDoAdminAction(chat, ACTION_POST);
+        return chat;
     }
 
     public static boolean canUserDoAdminAction(TLRPC.Chat chat, int action) {
@@ -1779,6 +1795,9 @@ public class ChatObject {
         if (chat.admin_rights != null) {
             boolean value;
             switch (action) {
+                case ACTION_MANAGE_DIRECT:
+                    value = chat.admin_rights.manage_direct_messages;
+                    break;
                 case ACTION_PIN:
                     value = chat.admin_rights.pin_messages;
                     break;

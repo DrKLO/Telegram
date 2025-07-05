@@ -1,5 +1,8 @@
 package org.telegram.messenger;
 
+import static org.telegram.messenger.MessagesController.findUpdates;
+import static org.telegram.messenger.MessagesController.findUpdatesAndRemove;
+
 import android.app.Activity;
 import android.content.ActivityNotFoundException;
 import android.content.Context;
@@ -30,6 +33,9 @@ import org.telegram.messenger.utils.BillingUtilities;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.AlertDialog;
+import org.telegram.ui.ActionBar.BaseFragment;
+import org.telegram.ui.LaunchActivity;
+import org.telegram.ui.LoginActivity;
 import org.telegram.ui.PremiumPreviewFragment;
 import org.telegram.ui.Stars.StarsController;
 
@@ -358,6 +364,22 @@ public class BillingController implements PurchasesUpdatedListener, BillingClien
 
                             if (response instanceof TLRPC.Updates) {
                                 FileLog.d("BillingController.onPurchasesUpdatedInternal: " + purchase.getOrderId() + " purchase is purchased and now assigned");
+
+                                if (req.purpose instanceof TLRPC.TL_inputStorePaymentAuthCode) {
+                                    for (TLRPC.TL_updateSentPhoneCode u : findUpdatesAndRemove((TLRPC.Updates) response, TLRPC.TL_updateSentPhoneCode.class)) {
+                                        AndroidUtilities.runOnUIThread(() -> {
+                                            LoginActivity fragment = LaunchActivity.findFragment(LoginActivity.class);
+                                            if (fragment == null) {
+                                                fragment = new LoginActivity(acc.getCurrentAccount());
+                                                BaseFragment lastFragment = LaunchActivity.getSafeLastFragment();
+                                                if (lastFragment != null) {
+                                                    lastFragment.presentFragment(fragment);
+                                                }
+                                            }
+                                            fragment.open(((TLRPC.TL_inputStorePaymentAuthCode) req.purpose).phone_number, u.sent_code);
+                                        });
+                                    }
+                                }
 
                                 acc.getMessagesController().processUpdates((TLRPC.Updates) response, false);
 

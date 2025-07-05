@@ -19,7 +19,9 @@ import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.os.Build;
 import android.telephony.TelephonyManager;
+import android.text.Spannable;
 import android.text.SpannableStringBuilder;
+import android.text.Spanned;
 import android.text.TextPaint;
 import android.text.TextUtils;
 import android.text.format.DateFormat;
@@ -29,6 +31,7 @@ import androidx.annotation.StringRes;
 
 import org.telegram.messenger.time.FastDateFormat;
 import org.telegram.tgnet.Vector;
+import org.telegram.ui.Components.TypefaceSpan;
 import org.telegram.ui.Stars.StarsController;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLObject;
@@ -321,7 +324,7 @@ public class LocaleController {
         return formatterGiveawayMonthDayYear;
     }
 
-    private final FastDateFormat[] formatterScheduleSend = new FastDateFormat[15];
+    private final FastDateFormat[] formatterScheduleSend = new FastDateFormat[18];
     public FastDateFormat getFormatterScheduleSend(int n) {
         if (n < 0 || n >= formatterScheduleSend.length)
             return null;
@@ -343,6 +346,9 @@ public class LocaleController {
                 case 12: formatterScheduleSend[n] = createFormatter(locale, getStringInternal("StartsTodayAt", R.string.StartsTodayAt), "'Starts today at' HH:mm"); break;
                 case 13: formatterScheduleSend[n] = createFormatter(locale, getStringInternal("StartsDayAt", R.string.StartsDayAt), "'Starts on' MMM d 'at' HH:mm"); break;
                 case 14: formatterScheduleSend[n] = createFormatter(locale, getStringInternal("StartsDayYearAt", R.string.StartsDayYearAt), "'Starts on' MMM d yyyy 'at' HH:mm"); break;
+                case 15: formatterScheduleSend[n] = createFormatter(locale, getStringInternal("PublishTodayAt", R.string.PublishTodayAt), "'Publish today at' HH:mm"); break;
+                case 16: formatterScheduleSend[n] = createFormatter(locale, getStringInternal("PublishDayAt", R.string.PublishDayAt), "'Publish on' MMM d 'at' HH:mm"); break;
+                case 17: formatterScheduleSend[n] = createFormatter(locale, getStringInternal("PublishDayYearAt", R.string.PublishDayYearAt), "'Publish on' MMM d yyyy 'at' HH:mm"); break;
             }
         }
         return formatterScheduleSend[n];
@@ -1506,6 +1512,16 @@ public class LocaleController {
         return formatPluralStringComma(key, plural, symbol, new Object[] {});
     }
 
+    public static CharSequence bold(CharSequence text) {
+        if (text instanceof Spannable) {
+            ((Spannable) text).setSpan(new TypefaceSpan(AndroidUtilities.bold()), 0, text.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            return text;
+        } else {
+            SpannableStringBuilder ssb = new SpannableStringBuilder(text);
+            ssb.setSpan(new TypefaceSpan(AndroidUtilities.bold()), 0, text.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            return ssb;
+        }
+    }
 
     public static String formatPluralStringComma(String key, int plural, char symbol, Object... args) {
         try {
@@ -1657,6 +1673,9 @@ public class LocaleController {
                 } else if (args[i] instanceof Integer) {
                     formatter = "d";
                     replaceWith = "" + (Integer) args[i];
+                } else if (args[i] instanceof Long) {
+                    formatter = "d";
+                    replaceWith = "" + (Long) args[i];
                 } else if (args[i] == null) {
                     replaceWith = "null";
                 }
@@ -2182,6 +2201,31 @@ public class LocaleController {
                 return LocaleController.formatString(R.string.PmReadDateTimeAt, getInstance().getFormatterDayMonth().format(new Date(date)), getInstance().getFormatterDay().format(new Date(date)));
             } else {
                 return LocaleController.formatString(R.string.PmReadDateTimeAt, getInstance().getFormatterYear().format(new Date(date)), getInstance().getFormatterDay().format(new Date(date)));
+            }
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+        return "LOC_ERR";
+    }
+
+    public static String formatTodoCompletedDate(long date) {
+        try {
+            date *= 1000;
+            Calendar rightNow = Calendar.getInstance();
+            int day = rightNow.get(Calendar.DAY_OF_YEAR);
+            int year = rightNow.get(Calendar.YEAR);
+            rightNow.setTimeInMillis(date);
+            int dateDay = rightNow.get(Calendar.DAY_OF_YEAR);
+            int dateYear = rightNow.get(Calendar.YEAR);
+
+            if (dateDay == day && year == dateYear) {
+                return LocaleController.formatString(R.string.TodoCompletedTodayAt, getInstance().getFormatterDay().format(new Date(date)));
+            } else if (dateDay + 1 == day && year == dateYear) {
+                return LocaleController.formatString(R.string.TodoCompletedYesterdayAt, getInstance().getFormatterDay().format(new Date(date)));
+            } else if (Math.abs(System.currentTimeMillis() - date) < 31536000000L) {
+                return LocaleController.formatString(R.string.TodoCompletedDateTimeAt, getInstance().getFormatterDayMonth().format(new Date(date)), getInstance().getFormatterDay().format(new Date(date)));
+            } else {
+                return LocaleController.formatString(R.string.TodoCompletedDateTimeAt, getInstance().getFormatterYear().format(new Date(date)), getInstance().getFormatterDay().format(new Date(date)));
             }
         } catch (Exception e) {
             FileLog.e(e);

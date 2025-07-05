@@ -687,6 +687,13 @@ public class TopicsController extends BaseController {
         sortTopics(-dialogId, true);
     }
 
+    public void saveTopics(long chatId) {
+        ArrayList<TLRPC.TL_forumTopic> list = topicsByChatId.get(chatId);
+        if (list != null) {
+            getMessagesStorage().saveTopics(-chatId, topicsByChatId.get(chatId), true, true, getConnectionsManager().getCurrentTime());
+        }
+    }
+
     public void onTopicEdited(long dialogId, TLRPC.TL_forumTopic forumTopic) {
         getMessagesStorage().updateTopicData(dialogId, forumTopic, TOPIC_FLAG_ICON + TOPIC_FLAG_TITLE + TOPIC_FLAG_HIDE);
         sortTopics(-dialogId);

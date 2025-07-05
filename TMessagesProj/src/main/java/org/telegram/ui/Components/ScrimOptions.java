@@ -392,38 +392,39 @@ public class ScrimOptions extends Dialog {
             textblocks = messageObject.textLayoutBlocks;
             rtloffset = messageObject.textXOffset;
         }
-        if (textblocks == null) return;
+        if (textblocks != null) {
+            for (int i = 0; i < textblocks.size(); ++i) {
+                MessageObject.TextLayoutBlock textblock = textblocks.get(i);
+                StaticLayout textlayout = textblock.textLayout;
+                if (textlayout == null) continue;
+                if (!(textlayout.getText() instanceof Spanned)) continue;
 
-        for (int i = 0; i < textblocks.size(); ++i) {
-            MessageObject.TextLayoutBlock textblock = textblocks.get(i);
-            StaticLayout textlayout = textblock.textLayout;
-            if (textlayout == null) continue;
-            if (!(textlayout.getText() instanceof Spanned)) continue;
-
-            CharacterStyle[] spans = ((Spanned) textlayout.getText()).getSpans(0, textlayout.getText().length(), CharacterStyle.class);
-            if (spans == null) continue;
-            boolean found = false;
-            for (int j = 0; j < spans.length; ++j) {
-                if (spans[j] == link) {
-                    found = true;
-                    break;
+                CharacterStyle[] spans = ((Spanned) textlayout.getText()).getSpans(0, textlayout.getText().length(), CharacterStyle.class);
+                if (spans == null) continue;
+                boolean found = false;
+                for (int j = 0; j < spans.length; ++j) {
+                    if (spans[j] == link) {
+                        found = true;
+                        break;
+                    }
                 }
+                if (!found) continue;
+
+                blockNum = i;
+                layout = textlayout;
+
+                start = ((Spanned) textlayout.getText()).getSpanStart(link);
+                end = ((Spanned) textlayout.getText()).getSpanEnd(link);
+
+                x += (textblock.isRtl() ? (int) Math.ceil(rtloffset) : 0);
+                y += textblock.padTop + textblock.textYOffset(textblocks, cell.transitionParams);
+
+                layoutOriginalWidth = textblock.originalWidth;
+                break;
             }
-            if (!found) continue;
-
-            blockNum = i;
-            layout = textlayout;
-
-            start = ((Spanned) textlayout.getText()).getSpanStart(link);
-            end = ((Spanned) textlayout.getText()).getSpanEnd(link);
-
-            x += (textblock.isRtl() ? (int) Math.ceil(rtloffset) : 0);
-            y += textblock.padTop + textblock.textYOffset(textblocks, cell.transitionParams);
-
-            layoutOriginalWidth = textblock.originalWidth;
         }
 
-        if (blockNum == -1 && cell.getDescriptionlayout() != null) {
+        if (layout == null && cell.getDescriptionlayout() != null) {
             StaticLayout textlayout = cell.getDescriptionlayout();
             for (int i = 0; i == 0; ++i) {
                 if (textlayout == null) continue;
@@ -449,6 +450,40 @@ public class ScrimOptions extends Dialog {
                 y = cell.getDescriptionLayoutY();
 
                 layoutOriginalWidth = textlayout.getWidth();
+            }
+        }
+
+        if (layout == null && (messageObject.isTodo() || messageObject.isPoll())) {
+            ArrayList<ChatMessageCell.PollButton> buttons = cell.getPollButtons();
+            if (buttons != null) {
+                for (int i = 0; i < buttons.size(); ++i) {
+                    final ChatMessageCell.PollButton btn = buttons.get(i);
+                    final StaticLayout textlayout = btn.title;
+
+                    if (textlayout == null) continue;
+                    if (!(textlayout.getText() instanceof Spanned)) continue;
+
+                    CharacterStyle[] spans = ((Spanned) textlayout.getText()).getSpans(0, textlayout.getText().length(), CharacterStyle.class);
+                    if (spans == null) continue;
+                    boolean found = false;
+                    for (int j = 0; j < spans.length; ++j) {
+                        if (spans[j] == link) {
+                            found = true;
+                            break;
+                        }
+                    }
+                    if (!found) continue;
+
+                    layout = textlayout;
+
+                    start = ((Spanned) textlayout.getText()).getSpanStart(link);
+                    end = ((Spanned) textlayout.getText()).getSpanEnd(link);
+
+                    x = btn.titleX;
+                    y = btn.titleY;
+
+                    layoutOriginalWidth = textlayout.getWidth();
+                }
             }
         }
 
