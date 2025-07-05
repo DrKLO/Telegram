@@ -123,6 +123,8 @@ import androidx.recyclerview.widget.RecyclerView;
 import androidx.viewpager.widget.PagerAdapter;
 import androidx.viewpager.widget.ViewPager;
 
+import com.google.android.exoplayer2.util.Log;
+
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
@@ -171,6 +173,7 @@ import org.telegram.tgnet.tl.TL_fragment;
 import org.telegram.tgnet.tl.TL_stars;
 import org.telegram.tgnet.tl.TL_stories;
 import org.telegram.ui.ActionBar.ActionBar;
+import org.telegram.ui.ActionBar.ActionBarButton;
 import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.ActionBarMenuItem;
 import org.telegram.ui.ActionBar.ActionBarMenuSubItem;
@@ -376,6 +379,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     TimerDrawable autoDeleteItemDrawable;
     private ProfileStoriesView storyView;
     public ProfileGiftsView giftsView;
+    private ActionBarButton[] actionBarButtons = new ActionBarButton[4];
+    private int actionBarButtonHeight;
+    private LinearLayout actionBarButtonsContainer;
 
     private View scrimView = null;
     private Paint scrimPaint = new Paint(Paint.ANTI_ALIAS_FLAG) {
@@ -2223,7 +2229,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         searchTransitionProgress = 1f;
         searchMode = false;
         hasOwnBackground = true;
-        extraHeight = AndroidUtilities.dp(88f);
+        extraHeight = AndroidUtilities.dp(88f) + AndroidUtilities.dp(78f);
         actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
             @Override
             public void onItemClick(final int id) {
@@ -5164,6 +5170,11 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             onlineTextView[a].setFocusable(a == 0);
             avatarContainer2.addView(onlineTextView[a], LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 118 - (a == 1 || a == 2 || a == 3? 4 : 0), (a == 1 || a == 2 || a == 3 ? -2 : 0), (a == 0 ? rightMargin - (hasTitleExpanded ? 10 : 0) : 8) - (a == 1 || a == 2 || a == 3 ? 4 : 0), 0));
         }
+        actionBarButtonsContainer = new LinearLayout(context);
+        actionBarButtonsContainer.setOrientation(LinearLayout.HORIZONTAL);
+        actionBarButtonsContainer.setPadding(AndroidUtilities.dp(8), AndroidUtilities.dp(8), AndroidUtilities.dp(8), AndroidUtilities.dp(8));
+        actionBarButtonHeight = AndroidUtilities.dp(22);
+        configureActionButtons(frameLayout);
         checkPhotoDescriptionAlpha();
         avatarContainer2.addView(animatedStatusView);
 
@@ -5464,6 +5475,40 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
 
     private void updateAvatarRoundRadius() {
         avatarImage.setRoundRadius((int) AndroidUtilities.lerp(getSmallAvatarRoundRadius(), 0f, currentExpandAnimatorValue));
+    }
+
+    private void configureActionButtons(FrameLayout frameLayout) {
+        int backgroundColor;
+        int baseHeaderColor;
+        if (peerColor != null) {
+            baseHeaderColor = peerColor.getBgColor1(Theme.isCurrentThemeDark());
+        } else {
+            baseHeaderColor = Theme.getColor(Theme.key_avatar_backgroundActionBarBlue);
+        }
+        if (Theme.isCurrentThemeDark()) {
+            backgroundColor = ColorUtils.blendARGB(baseHeaderColor, Color.WHITE, 0.15f);
+        } else {
+            backgroundColor = ColorUtils.blendARGB(baseHeaderColor, Color.BLACK, 0.2f);
+        }
+
+        for (int i = 0; i < actionBarButtons.length; i++) {
+            actionBarButtons[i] = new ActionBarButton(frameLayout.getContext());
+            actionBarButtons[i].setIcon(ContextCompat.getDrawable(frameLayout.getContext(), R.drawable.ic_call_contest), getThemedColor(Theme.key_actionBarDefaultTitle));
+            actionBarButtons[i].setText("Call");
+            actionBarButtons[i].setTextColor(getThemedColor(Theme.key_actionBarDefaultTitle));
+            actionBarButtons[i].setBackgroundColor(backgroundColor);
+            actionBarButtons[i].setIconSize(dp(28));
+            actionBarButtons[i].setCornerRadius(dp(12));
+            actionBarButtons[i].setTextSize(14);
+            actionBarButtonsContainer.addView(actionBarButtons[i], LayoutHelper.createLinear(0, actionBarButtonHeight, 1f));
+
+            if (i < actionBarButtons.length - 1) {
+                View spacer = new View(actionBarButtonsContainer.getContext());
+                LinearLayout.LayoutParams spacerParams = new LinearLayout.LayoutParams(AndroidUtilities.dp(6), 0);
+                actionBarButtonsContainer.addView(spacer, spacerParams);
+            }
+        }
+        frameLayout.addView(actionBarButtonsContainer, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 78, Gravity.TOP | Gravity.LEFT));
     }
 
     private void createFloatingActionButton(Context context) {
@@ -7238,7 +7283,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         }
 
         if (avatarContainer != null) {
-            final float diff = Math.min(1f, extraHeight / AndroidUtilities.dp(88f));
+            final float diff = Math.max(0f, Math.min(1f, extraHeight / AndroidUtilities.dp(88f)));
 
             listView.setTopGlowOffset((int) extraHeight);
 
@@ -7470,6 +7515,20 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                         mediaCounterTextView.setTranslationX(onlineX);
                         mediaCounterTextView.setTranslationY(onlineY);
                         updateCollectibleHint();
+                    }
+                }
+            }
+
+            if (actionBarButtonsContainer != null) {
+                float iconsAnimationProgress = Math.max(0f, (diff - 0.5f) / 0.5f);
+                float backgroundFadeProcess = Math.min(1f, diff / 0.5f);
+                actionBarButtonsContainer.setTranslationY(newTop + extraHeight - AndroidUtilities.dp(78));
+                actionBarButtonsContainer.setScaleY(diff);
+                actionBarButtonsContainer.setPivotY(AndroidUtilities.dp(78));
+                actionBarButtonsContainer.setAlpha(backgroundFadeProcess);
+                for (int i = 0; i < actionBarButtons.length; i++) {
+                    if (actionBarButtons[i] != null) {
+                        actionBarButtons[i].setAnimationProgress(iconsAnimationProgress);
                     }
                 }
             }
