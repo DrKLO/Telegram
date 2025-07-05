@@ -468,6 +468,10 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     private float initialAnimationExtraHeight;
     private float avatarAnimationProgress;
 
+    private int scrollableHeaderHeight;
+    private int buttonsAreaHeight;
+    private int totalHeaderHeight;
+
     private int searchTransitionOffset;
     private float searchTransitionProgress;
     private Animator searchViewTransition;
@@ -2229,7 +2233,13 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         searchTransitionProgress = 1f;
         searchMode = false;
         hasOwnBackground = true;
-        extraHeight = AndroidUtilities.dp(88f) + AndroidUtilities.dp(78f);
+
+        scrollableHeaderHeight = AndroidUtilities.dp(88f);
+        buttonsAreaHeight = AndroidUtilities.dp(78f);
+        totalHeaderHeight = scrollableHeaderHeight + buttonsAreaHeight;
+
+        extraHeight = scrollableHeaderHeight;
+
         actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
             @Override
             public void onItemClick(final int id) {
@@ -7522,9 +7532,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             if (actionBarButtonsContainer != null) {
                 float iconsAnimationProgress = Math.max(0f, (diff - 0.5f) / 0.5f);
                 float backgroundFadeProcess = Math.min(1f, diff / 0.5f);
-                actionBarButtonsContainer.setTranslationY(newTop + extraHeight - AndroidUtilities.dp(78));
+                actionBarButtonsContainer.setTranslationY(newTop + extraHeight - buttonsAreaHeight);
                 actionBarButtonsContainer.setScaleY(diff);
-                actionBarButtonsContainer.setPivotY(AndroidUtilities.dp(78));
+                actionBarButtonsContainer.setPivotY(buttonsAreaHeight);
                 actionBarButtonsContainer.setAlpha(backgroundFadeProcess);
                 for (int i = 0; i < actionBarButtons.length; i++) {
                     if (actionBarButtons[i] != null) {
