@@ -9269,4 +9269,13 @@
     <string name="RecordingTrimText">Audio outside that range will be discarded, and recording will start immediately.</string>
     <string name="MessageAuthorSentBy">Sent by **%s**</string>
     <string name="ChannelOpenDirect">Direct Messages</string>
+    <string name="Discuss">Discuss</string>
+    <string name="Video">Video</string>
+    <string name="Gift">Gift</string>
+    <string name="Share">Share</string>
+    <string name="Join">Join</string>
+    <string name="Report">Report</string>
+    <string name="Leave">Leave</string>
+    <string name="LiveStream">Live Stream</string>
+    <string name="VoiceChat">Voice Chat</string>
 </resources>

@@ -46,6 +46,8 @@ import android.graphics.Typeface;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
+import android.graphics.drawable.GradientDrawable;
+import android.graphics.drawable.StateListDrawable;
 import android.net.Uri;
 import android.net.wifi.WifiManager;
 import android.os.Build;
@@ -6604,4 +6606,25 @@ public class AndroidUtilities {
         }
         return false;
     }
+    public static Drawable createSimpleSelectorRoundRectDrawable(int radiusDp, int colorNormal, int colorPressed) {
+        float radius = AndroidUtilities.dp(radiusDp);
+
+        // Oddiy holat (normal background)
+        GradientDrawable normalDrawable = new GradientDrawable();
+        normalDrawable.setColor(colorNormal);
+        normalDrawable.setCornerRadius(radius);
+
+        // Bosilgan (pressed) holat
+        GradientDrawable pressedDrawable = new GradientDrawable();
+        pressedDrawable.setColor(colorPressed);
+        pressedDrawable.setCornerRadius(radius);
+
+        // StateListDrawable yasash (har xil holatlar uchun)
+        StateListDrawable stateListDrawable = new StateListDrawable();
+        stateListDrawable.addState(new int[]{android.R.attr.state_pressed}, pressedDrawable);  // bosilganda
+        stateListDrawable.addState(new int[]{}, normalDrawable);                               // default holat
+
+        return stateListDrawable;
+    }
+
 }
