@@ -952,6 +952,7 @@
     <string name="Send">Enviar</string>
     <string name="Call">Llamar</string>
     <string name="VideoCall">Videollamar</string>
+    <string name="Video">Video</string>
     <string name="Copy">Copiar</string>
     <string name="Restrict">Restringir</string>
     <string name="Ban">Suspender</string>

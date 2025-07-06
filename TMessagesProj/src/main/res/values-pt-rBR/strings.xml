@@ -886,6 +886,7 @@
     <string name="Send">Enviar</string>
     <string name="Call">Ligar</string>
     <string name="VideoCall">Videochamada</string>
+    <string name="Video">Video</string>
     <string name="Copy">Copiar</string>
     <string name="Restrict">Restringir</string>
     <string name="Ban">Banir</string>

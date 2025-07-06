@@ -900,6 +900,7 @@
     <string name="Send">إرسال</string>
     <string name="Call">اتصال</string>
     <string name="VideoCall">مكالمة مرئية</string>
+    <string name="Video">مرئية</string>
     <string name="Copy">نسخ</string>
     <string name="Restrict">تقييد</string>
     <string name="Ban">حظر</string>

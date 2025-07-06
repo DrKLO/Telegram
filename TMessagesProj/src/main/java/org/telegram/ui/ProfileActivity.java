@@ -62,6 +62,7 @@ import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
+import android.graphics.drawable.Icon;
 import android.media.MediaCodecInfo;
 import android.media.MediaCodecList;
 import android.net.Uri;
@@ -108,6 +109,7 @@ import android.widget.Space;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.DrawableRes;
 import androidx.annotation.Keep;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -5214,6 +5216,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             onlineTextView[a].setGravity(Gravity.LEFT);
             onlineTextView[a].setAlpha(a == 0 ? 0.0f : 1.0f);
             if (a == 1 || a == 2 || a == 3) {
+                // todo Alex remove online padding?
                 onlineTextView[a].setPadding(AndroidUtilities.dp(4), AndroidUtilities.dp(2), AndroidUtilities.dp(4), AndroidUtilities.dp(2));
             }
             if (a > 0) {
@@ -5486,30 +5489,87 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
 
         actionItems = new LinearLayout(context);
         actionItems.setOrientation(LinearLayout.HORIZONTAL);
-        int padding = AndroidUtilities.dp(actionItemContainerPadding);
-        actionItems.setPadding(padding, padding, padding, padding);
+        int paddingHorizontal = AndroidUtilities.dp(actionItemContainerPaddingHorizontal);
+        int paddingVertical = AndroidUtilities.dp(actionItemContainerPaddingVertical);
+        actionItems.setPadding(paddingHorizontal, paddingVertical, paddingHorizontal, paddingVertical);
 
-        for (int i = 0; i < 4; i++) {
-            if (i > 0) {
-                Space space = new Space(context);
-                actionItems.addView(space, LayoutHelper.createLinear(actionItemInterItemPadding, LayoutHelper.WRAP_CONTENT));
-            }
-            LinearLayout actionItem = new LinearLayout(context);
-            actionItem.setOrientation(LinearLayout.VERTICAL);
-            actionItem.setGravity(Gravity.CENTER);
-            actionItem.setForeground(new ColorDrawable(ColorUtils.setAlphaComponent(getThemedColor(Theme.key_windowBackgroundWhite), 100)));
-            TextView textView = new TextView(context);
-            textView.setText("Message");
-            // todo Alex make sure theming works
-            textView.setTextColor(peerColor != null ? Color.WHITE : getThemedColor(Theme.key_actionBarDefaultIcon));
-            textView.setTextSize(14);
-            textView.setTypeface(AndroidUtilities.bold());
-            actionItem.addView(textView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
-            actionItems.addView(actionItem, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, AndroidUtilities.dp(actionItemHeight), 1f));
-        }
+        View actionItem = createActionItem(
+                context,
+                R.drawable.ic_message_new,
+                LocaleController.getString(R.string.Message),
+                view -> {
+                    onWriteButtonClick();
+                }
+        );
+        actionItems.addView(actionItem, LayoutHelper.createLinear(0, actionItemHeight, 1f));
+        Space space = new Space(context);
+        actionItems.addView(space, LayoutHelper.createLinear(actionItemInterItemPadding, LayoutHelper.WRAP_CONTENT));
+
+        actionItem = createActionItem(
+                context,
+                R.drawable.ic_mute_new,
+                LocaleController.getString(R.string.Mute),
+                view -> {
+
+                });
+        actionItems.addView(actionItem, LayoutHelper.createLinear(0, actionItemHeight, 1f));
+        space = new Space(context);
+        actionItems.addView(space, LayoutHelper.createLinear(actionItemInterItemPadding, LayoutHelper.WRAP_CONTENT));
+
+        actionItem = createActionItem(
+                context,
+                R.drawable.ic_call_new,
+                LocaleController.getString(R.string.Call),
+                view -> {
+
+                }
+        );
+        actionItems.addView(actionItem, LayoutHelper.createLinear(0, actionItemHeight, 1f));
+        space = new Space(context);
+        actionItems.addView(space, LayoutHelper.createLinear(actionItemInterItemPadding, LayoutHelper.WRAP_CONTENT));
+
+        actionItem = createActionItem(
+                context,
+                R.drawable.ic_video_new,
+                LocaleController.getString(R.string.Video),
+                view -> {
+
+                });
+        actionItems.addView(actionItem, LayoutHelper.createLinear(0, actionItemHeight, 1f));
+
         frameLayout.addView(actionItems, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
         return fragmentView;
+    }
+
+    private View createActionItem(Context context, @DrawableRes int icon, String label,
+                                  View.OnClickListener onClick) {
+        LinearLayout actionItem = new LinearLayout(context);
+        actionItem.setOrientation(LinearLayout.VERTICAL);
+        actionItem.setGravity(Gravity.CENTER);
+
+        GradientDrawable drawable = new GradientDrawable();
+        drawable.setColor(ColorUtils.setAlphaComponent(0x42000000, 48));
+        drawable.setCornerRadius(dp(12));
+        actionItem.setBackground(drawable);
+        actionItem.setContentDescription(label);
+        actionItem.setOnClickListener(onClick);
+        // icon
+        ImageView iconView = new ImageView(context);
+        iconView.setColorFilter(peerColor != null ? Color.WHITE : getThemedColor(Theme.key_actionBarDefaultIcon));
+        iconView.setImageResource(icon);
+        actionItem.addView(iconView, LayoutHelper.createLinear(24, 24, 0, 0, 0, 8));
+        // label
+        SimpleTextView labelView = new SimpleTextView(context);
+        labelView.setTypeface(AndroidUtilities.bold());
+        labelView.setEllipsizeByGradient(true);
+        labelView.setText(label);
+        labelView.setTextColor(peerColor != null ? Color.WHITE : getThemedColor(Theme.key_actionBarDefaultIcon));
+        labelView.setTextSize(14);
+        labelView.setGravity(Gravity.CENTER);
+        labelView.setTypeface(AndroidUtilities.bold());
+        actionItem.addView(labelView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
+        return actionItem;
     }
 
     private void updateBottomButtonY() {
@@ -7860,10 +7920,11 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     private final float avatarNormalScale = 1;
 
     private final float avatarOvershootMaxScale = 1.15f;
-    private final float actionItemHeight = 24f;
-    private final float actionItemContainerPadding = 16f;
-    private final float actionItemInterItemPadding = 16f;
-    private final float maxExtraHeight = 220f + actionItemHeight + actionItemContainerPadding * 2;
+    private final int actionItemHeight = 64;
+    private final float actionItemContainerPaddingHorizontal = 16f;
+    private final float actionItemContainerPaddingVertical = 16f;
+    private final float actionItemInterItemPadding = 8f;
+    private final float maxExtraHeight = 165f + actionItemHeight + actionItemContainerPaddingVertical * 2;
     private float nameMeasuredTextWidth;
     private float onlineMeasuredTextWidth;
 
