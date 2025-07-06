@@ -5,9 +5,9 @@ import static org.telegram.messenger.AndroidUtilities.dpf2;
 
 import android.graphics.Canvas;
 import android.graphics.drawable.Drawable;
+import android.view.View;
 
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.ui.ActionBar.Theme;
 
 public class StarGiftPatterns {
 
@@ -242,11 +242,21 @@ public class StarGiftPatterns {
         orbitConfigs[3][0] = start + addition * 3;
     }
 
-    public static void drawProfilePattern(Canvas canvas, Drawable pattern, float w, float h, float alpha, float full, float avatarY, float progress) {
+    public static void drawProfilePattern(Canvas canvas, Drawable pattern, float w, float h, float alpha, View avatarContainer, float progress) {
+
         if (alpha <= 0.0f || progress <= 0.0f) return;
 
+        final float ax = avatarContainer.getX();
+        final float ay = avatarContainer.getY();
+        final float aw = (avatarContainer.getWidth()) * avatarContainer.getScaleX();
+        final float ah = (avatarContainer.getHeight()) * avatarContainer.getScaleY();
+
+        final float acx = ax + aw / 2.0f;
+        final float acy = ay + ah / 2.0f;
+        final float ar = Math.min(aw, ah) / 2.0f;
+
         final float centerX = w / 2.0f;
-        final float centerY = avatarY;
+        final float centerY = acy;
 
         for (int i = 3; i >= 0; i--) {
             float radiusDp = orbitConfigs[i][0];
@@ -345,5 +355,4 @@ public class StarGiftPatterns {
         pattern.setAlpha(alphaInt);
         pattern.draw(canvas);
     }
-
 }
