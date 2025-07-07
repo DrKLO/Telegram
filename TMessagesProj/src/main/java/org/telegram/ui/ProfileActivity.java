@@ -104,7 +104,6 @@ import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
-import android.widget.Space;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -420,11 +419,13 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     private ActionBarMenuSubItem linkItem;
     private ActionBarMenuSubItem setUsernameItem;
 
-    private LinearLayout actionItems;
+    private ViewGroup actionItems;
     private ViewGroup actionMessage;
     private ViewGroup actionMuteUnmute;
     private ViewGroup actionCall;
     private ViewGroup actionVideo;
+    private ViewGroup actionVoiceChat;
+    private ViewGroup actionSendGift;
 
     private float actionItemsY;
     private float actionItemsScaleY;
@@ -2532,17 +2533,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 } else if (id == view_discussion) {
                     openDiscussion();
                 } else if (id == gift_premium) {
-                    if (userInfo != null && UserObject.areGiftsDisabled(userInfo)) {
-                        BaseFragment lastFragment = LaunchActivity.getSafeLastFragment();
-                        if (lastFragment != null) {
-                            BulletinFactory.of(lastFragment).createSimpleBulletin(R.raw.error, AndroidUtilities.replaceTags(LocaleController.formatString(R.string.UserDisallowedGifts, DialogObject.getShortName(getDialogId())))).show();
-                        }
-                        return;
-                    }
-                    if (currentChat != null) {
-                        MessagesController.getGlobalMainSettings().edit().putInt("channelgifthint", 3).apply();
-                    }
-                    showDialog(new GiftSheet(getContext(), currentAccount, getDialogId(), null, null));
+                    openSendGift();
                 } else if (id == channel_stories) {
                     Bundle args = new Bundle();
                     args.putInt("type", MediaActivity.TYPE_ARCHIVED_CHANNEL_STORIES);
@@ -5004,7 +4995,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 onlineTextView[a].setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
             }
             onlineTextView[a].setFocusable(a == 0);
-            avatarContainer2.addView(onlineTextView[a], LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 0, 0, (a == 0 ?  (hasTitleExpanded ? 10 : 0) : 8) - (a == 1 || a == 2 || a == 3 ? 4 : 0), 0));
+            avatarContainer2.addView(onlineTextView[a], LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 0, 0, (a == 0 ? (hasTitleExpanded ? 10 : 0) : 8) - (a == 1 || a == 2 || a == 3 ? 4 : 0), 0));
         }
         checkPhotoDescriptionAlpha();
         avatarContainer2.addView(animatedStatusView);
@@ -5219,11 +5210,18 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             AndroidUtilities.runOnUIThread(this::scrollToSharedMedia);
         }
 
-        actionItems = new LinearLayout(context);
-        actionItems.setOrientation(LinearLayout.HORIZONTAL);
-        int paddingHorizontal = AndroidUtilities.dp(actionItemContainerPaddingHorizontal);
+        actionItems = createActionItems(context, did);
+        frameLayout.addView(actionItems, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+
+        return fragmentView;
+    }
+
+    private ViewGroup createActionItems(Context context, long did) {
+        LinearLayout container = new LinearLayout(context);
+        container.setOrientation(LinearLayout.HORIZONTAL);
+        int paddingHorizontal = AndroidUtilities.dp(actionItemContainerPaddingHorizontal - actionItemInterItemPadding / 2f);
         int paddingVertical = AndroidUtilities.dp(actionItemContainerPaddingVertical);
-        actionItems.setPadding(paddingHorizontal, paddingVertical, paddingHorizontal, paddingVertical);
+        container.setPadding(paddingHorizontal, paddingVertical, paddingHorizontal, paddingVertical);
 
         actionMessage = createActionItem(
                 context,
@@ -5262,28 +5260,46 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 R.drawable.ic_video_new,
                 LocaleController.getString(R.string.Video),
                 view -> onCallOrVideoCallClick(true));
+        actionVoiceChat = createActionItem(
+                context,
+                R.drawable.ic_live_stream_new,
+                LocaleController.getString(R.string.StartVoipChatTitle),
+                view -> onCallOrVideoCallClick(true));
+        actionSendGift = createActionItem(
+                context,
+                R.drawable.ic_gift_new,
+                // todo alex create new strings for actions to not mix with existing ones?
+                LocaleController.getString(R.string.BoostingGift),
+                view -> openSendGift());
 
-        actionItems.addView(actionMessage, LayoutHelper.createLinear(0, actionItemHeight, 1f));
-        Space space = new Space(context);
-        actionItems.addView(space, LayoutHelper.createLinear(actionItemInterItemPadding, LayoutHelper.WRAP_CONTENT));
+        int itemHorizontalMargin = (int) (actionItemInterItemPadding / 2f);
+        container.addView(actionMessage, LayoutHelper.createLinear(0, actionItemHeight, 1f, itemHorizontalMargin, 0, itemHorizontalMargin, 0));
+        container.addView(actionMuteUnmute, LayoutHelper.createLinear(0, actionItemHeight, 1f, itemHorizontalMargin, 0, itemHorizontalMargin, 0));
+        container.addView(actionCall, LayoutHelper.createLinear(0, actionItemHeight, 1f, itemHorizontalMargin, 0, itemHorizontalMargin, 0));
+        container.addView(actionVideo, LayoutHelper.createLinear(0, actionItemHeight, 1f, itemHorizontalMargin, 0, itemHorizontalMargin, 0));
+        container.addView(actionVoiceChat, LayoutHelper.createLinear(0, actionItemHeight, 1f, itemHorizontalMargin, 0, itemHorizontalMargin, 0));
+        container.addView(actionSendGift, LayoutHelper.createLinear(0, actionItemHeight, 1f, itemHorizontalMargin, 0, itemHorizontalMargin, 0));
+        return container;
+    }
 
-        actionItems.addView(actionMuteUnmute, LayoutHelper.createLinear(0, actionItemHeight, 1f));
-        space = new Space(context);
-        actionItems.addView(space, LayoutHelper.createLinear(actionItemInterItemPadding, LayoutHelper.WRAP_CONTENT));
+    private int visibleActionItemsCount() {
+        int count = 1; // mute/unmute is always visible
+        if (messageActionVisible()) count++;
+        if (callItemVisible) count++;
+        if (videoCallItemVisible) count++;
+        return count;
+    }
 
-        actionItems.addView(actionCall, LayoutHelper.createLinear(0, actionItemHeight, 1f));
-        space = new Space(context);
-        actionItems.addView(space, LayoutHelper.createLinear(actionItemInterItemPadding, LayoutHelper.WRAP_CONTENT));
-
-        actionItems.addView(actionVideo, LayoutHelper.createLinear(0, actionItemHeight, 1f));
-
-        frameLayout.addView(actionItems, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
-
-        return fragmentView;
+    private boolean messageActionVisible() {
+        boolean actionMessageVisible = !searchMode && (imageUpdater == null || setAvatarRow == -1);
+        if (actionMessageVisible && chatId != 0) {
+            actionMessageVisible = ChatObject.isChannel(currentChat) && !currentChat.megagroup && chatInfo != null && chatInfo.linked_chat_id != 0 && infoHeaderRow != -1;
+        }
+        return actionMessageVisible;
     }
 
     private ViewGroup createActionItem(Context context, @DrawableRes int icon, String label,
-                                  View.OnClickListener onClick) {
+                                       View.OnClickListener onClick) {
         LinearLayout actionItem = new LinearLayout(context);
         actionItem.setOrientation(LinearLayout.VERTICAL);
         actionItem.setGravity(Gravity.CENTER);
@@ -5337,6 +5353,20 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         SimpleTextView labelView = (SimpleTextView) actionMuteUnmute.getChildAt(1);
         imageView.setImageResource(muteIcon);
         labelView.setText(muteLabel);
+    }
+
+    private void openSendGift() {
+        if (userInfo != null && UserObject.areGiftsDisabled(userInfo)) {
+            BaseFragment lastFragment = LaunchActivity.getSafeLastFragment();
+            if (lastFragment != null) {
+                BulletinFactory.of(lastFragment).createSimpleBulletin(R.raw.error, AndroidUtilities.replaceTags(LocaleController.formatString(R.string.UserDisallowedGifts, DialogObject.getShortName(getDialogId())))).show();
+            }
+            return;
+        }
+        if (currentChat != null) {
+            MessagesController.getGlobalMainSettings().edit().putInt("channelgifthint", 3).apply();
+        }
+        showDialog(new GiftSheet(getContext(), currentAccount, getDialogId(), null, null));
     }
 
     private void onNotificationsRowClick(Context context, long did) {
@@ -7342,19 +7372,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             }
         }
 
-        boolean actionMessageVisible = !searchMode && (imageUpdater == null || setAvatarRow == -1);
-        if (actionMessageVisible && chatId != 0) {
-            actionMessageVisible = ChatObject.isChannel(currentChat) && !currentChat.megagroup && chatInfo != null && chatInfo.linked_chat_id != 0 && infoHeaderRow != -1;
-        }
-        if (actionMessage != null) {
-            actionMessage.setVisibility(actionMessageVisible ? View.VISIBLE : View.GONE);
-        }
-        if (actionCall != null) {
-            actionCall.setVisibility(callItemVisible ? View.VISIBLE : View.GONE);
-        }
-        if (actionVideo !=null) {
-            actionVideo.setVisibility(videoCallItemVisible ? View.VISIBLE : View.GONE);
-        }
+        updateActionItems();
 
         final float diff = Math.min(1f, extraHeight / AndroidUtilities.dp(maxExtraHeight));
         if (avatarContainer != null) {
@@ -7807,6 +7825,29 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         updateEmojiStatusEffectPosition();
     }
 
+    private void updateActionItems() {
+        if (actionMessage != null) {
+            actionMessage.setVisibility(messageActionVisible() ? View.VISIBLE : View.GONE);
+        }
+        if (actionCall != null) {
+            actionCall.setVisibility(callItemVisible ? View.VISIBLE : View.GONE);
+        }
+        if (actionVideo != null) {
+            actionVideo.setVisibility(videoCallItemVisible ? View.VISIBLE : View.GONE);
+        }
+        if (actionVoiceChat != null) {
+            actionVoiceChat.setVisibility(hasVoiceChatItem ? View.VISIBLE : View.GONE);
+        }
+        if (actionSendGift != null) {
+            boolean giftVisible = otherItem.hasSubItem(gift_premium);
+            actionSendGift.setVisibility(
+                    giftVisible && visibleActionItemsCount() < maxVisibleActionItems
+                            ? View.VISIBLE
+                            : View.GONE
+            );
+        }
+    }
+
     private FastOutSlowInInterpolator fastOutSlowInInterpolator = new FastOutSlowInInterpolator();
     private final float avatarSizeCollapsed = 130;
 
@@ -7822,6 +7863,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     private final float maxExtraHeight = 165f + actionItemHeight + actionItemContainerPaddingVertical * 2;
     private float nameMeasuredTextWidth;
     private float onlineMeasuredTextWidth;
+    private final int maxVisibleActionItems = 4;
 
     private float avatarStartMargin() {
         DisplayMetrics displayMetrics = Resources.getSystem().getDisplayMetrics();
