@@ -779,6 +779,18 @@ public class ReportBottomSheet extends BottomSheet {
         open(currentAccount, context, dialogId, false, new ArrayList<>(), null, null, new byte[]{}, null, null);
     }
 
+    public static void openProfile(
+            ProfileActivity fragment
+    ) {
+        if (fragment == null) return;
+        final int currentAccount = fragment.getCurrentAccount();
+        final Context context = fragment.getContext();
+        final long dialogId = fragment.getDialogId();
+        if (context == null) return;
+
+        open(currentAccount, context, dialogId, false, new ArrayList<>(), null, null, new byte[]{}, null, null);
+    }
+
     public static void openMessage(
         BaseFragment fragment,
         MessageObject message

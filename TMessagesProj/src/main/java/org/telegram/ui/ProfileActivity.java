@@ -319,6 +319,7 @@ import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -429,6 +430,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     private ViewGroup actionSendGift;
     private ViewGroup actionLeaveGroup;
     private ViewGroup actionShare;
+    private ViewGroup actionReport;
 
     private float actionItemsY;
     private float actionItemsScaleY;
@@ -5233,6 +5235,11 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 R.drawable.ic_share_new,
                 LocaleController.getString(R.string.BotShare),
                 view -> share());
+        actionReport = createActionItem(
+                context,
+                R.drawable.ic_report_new,
+                LocaleController.getString(R.string.ReportChat),
+                view -> ReportBottomSheet.openProfile(ProfileActivity.this));
 
         int itemHorizontalMargin = (int) (actionItemInterItemPadding / 2f);
         container.addView(actionMessage, LayoutHelper.createLinear(0, actionItemHeight, 1f, itemHorizontalMargin, 0, itemHorizontalMargin, 0));
@@ -5244,14 +5251,20 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         container.addView(actionSendGift, LayoutHelper.createLinear(0, actionItemHeight, 1f, itemHorizontalMargin, 0, itemHorizontalMargin, 0));
         container.addView(actionLeaveGroup, LayoutHelper.createLinear(0, actionItemHeight, 1f, itemHorizontalMargin, 0, itemHorizontalMargin, 0));
         container.addView(actionShare, LayoutHelper.createLinear(0, actionItemHeight, 1f, itemHorizontalMargin, 0, itemHorizontalMargin, 0));
+        container.addView(actionReport, LayoutHelper.createLinear(0, actionItemHeight, 1f, itemHorizontalMargin, 0, itemHorizontalMargin, 0));
         return container;
     }
 
-    private int visibleActionItemsCount(ViewGroup requestingActionItem) {
+    private int visibleActionItemsCount(View requestingActionItem) {
         int count = 0;
         for (int i = 0; i < actionItems.getChildCount(); i++) {
             View child = actionItems.getChildAt(i);
-            if (child.getVisibility() == View.VISIBLE && requestingActionItem != child) {
+            if (requestingActionItem == child) {
+                // stop counting as soon as the requesting action item is found.
+                // This makes sure that the priority order from updateActionItems() is preserved
+                break;
+            }
+            if (child.getVisibility() == View.VISIBLE) {
                 count++;
             }
         }
@@ -5327,6 +5340,20 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         return otherItem.hasSubItem(share);
     }
 
+    private boolean reportVisible() {
+        // report channel
+        if (currentChat != null && !currentChat.creator && !ChatObject.hasAdminRights(currentChat)) {
+            return true;
+        }
+        TLRPC.User currentUser = getMessagesController().getUser(userId);
+        // report bot
+        if (!ChatObject.isChannel(currentChat) && getDialogId() != UserObject.VERIFY
+                && currentChat == null && currentUser != null && currentUser.bot) {
+            return true;
+        }
+        return false;
+    }
+
     private void onCallOrVideoCallClick(boolean videoCall) {
         if (userId != 0) {
             TLRPC.User user = getMessagesController().getUser(userId);
@@ -5344,6 +5371,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     }
 
     private void updateMuteUnmuteButton() {
+        if (actionMuteUnmute == null) {
+            return;
+        }
         Pair<Boolean, String> notificationsInfo = notificationsEnabled();
         boolean notificationsEnabled = notificationsInfo.first;
         int muteIcon = notificationsEnabled ? R.drawable.ic_mute_new : R.drawable.ic_unmute_new;
@@ -5355,6 +5385,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     }
 
     private void updateMessageButton() {
+        if (actionMessage == null) {
+            return;
+        }
         boolean discussion = otherItem.hasSubItem(view_discussion);
         String label = LocaleController.getString(discussion ? R.string.Discuss : R.string.Message);
         SimpleTextView labelView = (SimpleTextView) actionMessage.getChildAt(1);
@@ -5362,6 +5395,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     }
 
     private void updateVoiceChatButton() {
+        if (actionVoiceChat == null) {
+            return;
+        }
         TLRPC.Chat chat = getMessagesController().getChat(chatId);
         if (chat == null) {
             return;
@@ -7817,7 +7853,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     nameStartX = AndroidUtilities.dpf2(56f);
                     onlineStartX = AndroidUtilities.dpf2(56f);
                 }
-                float nameEndX = displayMetrics.widthPixels / 2f - nameMeasuredTextWidth / 2;
+                float nameEndX = displayMetrics.widthPixels / 2f - nameMeasuredTextWidth / 2f;
                 float nameStartY = statusBarHeight
                         + ActionBar.getCurrentActionBarHeight() / 2f
                         // center both name and online text fields combined in the action bar
@@ -7897,69 +7933,48 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     }
 
     private void updateActionItems() {
-        // order in this list defines the priority, the earlier the check is, the higher the priority.
-        // this is because we only show up to maxVisibleActionItems max
-        if (actionJoinChannelOrGroup != null) {
-            actionJoinChannelOrGroup.setVisibility(
-                    joinChannelOrGroupVisible() && visibleActionItemsCount(actionJoinChannelOrGroup) < maxVisibleActionItems
-                            ? View.VISIBLE
-                            : View.GONE
-            );
-        }
-        if (actionMessage != null) {
-            actionMessage.setVisibility(
-                    messageActionVisible() && visibleActionItemsCount(actionMessage) < maxVisibleActionItems
-                            ? View.VISIBLE
-                            : View.GONE
-            );
-            updateMessageButton();
-        }
-        if (actionMuteUnmute != null) {
-            actionMuteUnmute.setVisibility(
-                    muteUnmuteVisible() && visibleActionItemsCount(actionMuteUnmute) < maxVisibleActionItems
-                            ? View.VISIBLE
-                            : View.GONE
-            );
-        }
-        if (actionCall != null) {
-            actionCall.setVisibility(
-                    callItemVisible && visibleActionItemsCount(actionCall) < maxVisibleActionItems
-                            ? View.VISIBLE
-                            : View.GONE
-            );
-        }
-        if (actionVideo != null) {
-            actionVideo.setVisibility(
-                    videoCallItemVisible && visibleActionItemsCount(actionVideo) < maxVisibleActionItems
-                            ? View.VISIBLE
-                            : View.GONE
-            );
-        }
-        if (actionVoiceChat != null) {
-            actionVoiceChat.setVisibility(
-                    hasVoiceChatItem && visibleActionItemsCount(actionVoiceChat) < maxVisibleActionItems
-                            ? View.VISIBLE
-                            : View.GONE
-            );
-            updateVoiceChatButton();
-        }
-        if (actionSendGift != null) {
-            actionSendGift.setVisibility(
-                    sendGiftVisible() && visibleActionItemsCount(actionSendGift) < maxVisibleActionItems
-                            ? View.VISIBLE
-                            : View.GONE
-            );
-        }
-        if (actionLeaveGroup != null) {
-            actionLeaveGroup.setVisibility(
-                    leaveGroupVisible() && visibleActionItemsCount(actionLeaveGroup) < maxVisibleActionItems
-                            ? View.VISIBLE
-                            : View.GONE
-            );
-        }
-        if (actionShare != null) {
-            actionShare.setVisibility(
-                    shareVisible() && visibleActionItemsCount(actionShare) < maxVisibleActionItems
+        setActionItemVisibility(actionJoinChannelOrGroup);
+        setActionItemVisibility(actionMessage);
+        updateMessageButton();
+        setActionItemVisibility(actionMuteUnmute);
+        setActionItemVisibility(actionCall);
+        setActionItemVisibility(actionVideo);
+        setActionItemVisibility(actionVoiceChat);
+        updateVoiceChatButton();
+        setActionItemVisibility(actionSendGift);
+        setActionItemVisibility(actionLeaveGroup);
+        setActionItemVisibility(actionReport);
+        setActionItemVisibility(actionShare);
+    }
+
+    private void setActionItemVisibility(@Nullable View actionItem) {
+        if (actionItem != null) {
+            boolean visible;
+            if (actionItem.equals(actionJoinChannelOrGroup)) {
+                visible = joinChannelOrGroupVisible();
+            } else if (actionItem.equals(actionMessage)) {
+                visible = messageActionVisible();
+            } else if (actionItem.equals(actionMuteUnmute)) {
+                visible = muteUnmuteVisible();
+            } else if (actionItem.equals(actionCall)) {
+                visible = callItemVisible;
+            } else if (actionItem.equals(actionVideo)) {
+                visible = videoCallItemVisible;
+            } else if (actionItem.equals(actionVoiceChat)) {
+                visible = hasVoiceChatItem;
+            } else if (actionItem.equals(actionSendGift)) {
+                visible = sendGiftVisible();
+            } else if (actionItem.equals(actionLeaveGroup)) {
+                visible = leaveGroupVisible();
+            } else if (actionItem.equals(actionShare)) {
+                visible = shareVisible();
+            } else if (actionItem.equals(actionReport)) {
+                visible = reportVisible();
+            } else {
+                throw new IllegalArgumentException("Unknown action item: " + actionItem);
+            }
+            actionItem.setVisibility(
+                    visible && visibleActionItemsCount(actionItem) < maxVisibleActionItems
                             ? View.VISIBLE
                             : View.GONE
             );
