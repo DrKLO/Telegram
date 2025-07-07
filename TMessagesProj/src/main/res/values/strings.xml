@@ -748,6 +748,7 @@
     <string name="ChatHistoryHiddenInfo2">New members won\'t see more than 100 previous messages.</string>
     <string name="ProfileJoinChannel">Join Channel</string>
     <string name="ProfileJoinGroup">Join Group</string>
+    <string name="ProfileJoin">Join</string>
     <string name="GroupType">Group Type</string>
     <string name="ChannelType">Channel Type</string>
     <string name="GroupTypeHeader">Group type</string>
