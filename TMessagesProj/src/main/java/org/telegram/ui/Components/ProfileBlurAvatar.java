@@ -13,10 +13,12 @@ public class ProfileBlurAvatar extends FrameLayout {
 
     protected final BlurringShader.StoryBlurDrawer backgroundBlur;
     private final BlurringShader.BlurManager blurManager;
+    private final FallbackBlurManager2 fallbackBlurManager2;
 
-    public ProfileBlurAvatar(Context context, BlurringShader.BlurManager blurManager) {
+    public ProfileBlurAvatar(Context context, BlurringShader.BlurManager blurManager, FallbackBlurManager2 fallbackBlurManager2) {
         super(context);
         this.blurManager = blurManager;
+        this.fallbackBlurManager2 = fallbackBlurManager2;
         backgroundBlur = new BlurringShader.StoryBlurDrawer(blurManager, this, BlurringShader.StoryBlurDrawer.BLUR_TYPE_BACKGROUND, !customBlur());
         blurManager.invalidate();
     }
@@ -28,9 +30,11 @@ public class ProfileBlurAvatar extends FrameLayout {
             drawBlur(backgroundBlur, canvas, bounds, 0, 0, 1.0f);
         } else {
             Paint[] blurPaints = backgroundBlur.getPaints(1f, 0, 0);
+            android.util.Log.d("wwttff", "blurpaints " +  blurPaints[0] + " " + blurPaints[1]);
             if (blurPaints == null || blurPaints[1] == null) {
-                // todo some fallback?
+                drawBlur(backgroundBlur, canvas, bounds, 0, getTranslationY(), 1.0f);
             } else {
+                // todo?
                 if (blurPaints[0] != null) {
                     canvas.drawRoundRect(bounds, 0, 0, blurPaints[0]);
                 }
@@ -44,7 +48,7 @@ public class ProfileBlurAvatar extends FrameLayout {
     }
 
     protected boolean customBlur() {
-        return false;
+        return blurManager.hasRenderNode();
     }
 
     protected void drawBlur(BlurringShader.StoryBlurDrawer blur, Canvas canvas, RectF rect, float ox, float oy, float alpha) {
