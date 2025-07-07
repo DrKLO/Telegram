@@ -787,6 +787,7 @@
     <string name="AdminWillBeRemoved">%1$s will be removed from admins if you restrict them.</string>
     <string name="Discussion">Discussion</string>
     <string name="ViewDiscussion">View discussion</string>
+    <string name="Discuss">Discuss</string>
     <string name="DiscussionInfo">Add a group chat for comments</string>
     <string name="LinkedChannel">Linked Channel</string>
     <string name="DiscussionChannelHelp3">Select a group chat that will host comments from your channel.</string>
@@ -4162,9 +4163,9 @@
     <string name="VideoCallAlert">Are you sure you want to video call **%1$s**?</string>
     <string name="VideoCallAlertTitle">Video Call</string>
     <string name="VoipReconnecting">Reconnecting</string>
-    <string name="StartVoipChat">Start Voice chat</string>
+    <string name="StartVoipChat">Voice Chat</string>
     <string name="StartVoipChatTitle">Voice Chat</string>
-    <string name="StartVoipChannel">Start Live stream</string>
+    <string name="StartVoipChannel">Live Stream</string>
     <string name="StartVoipChannelTitle">Live Stream</string>
     <string name="StartVoipChatPermission">Manage Live Streams</string>
     <string name="VoipChatJoin">Join</string>

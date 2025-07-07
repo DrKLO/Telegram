@@ -296,7 +296,6 @@ import org.telegram.ui.bots.BotLocation;
 import org.telegram.ui.bots.BotWebViewAttachedSheet;
 import org.telegram.ui.bots.ChannelAffiliateProgramsFragment;
 import org.telegram.ui.bots.SetupEmojiStatusSheet;
-import org.webrtc.StatsReport;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -550,7 +549,6 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     private final static int edit_channel = 12;
     private final static int add_shortcut = 14;
     private final static int call_item = 15;
-    private final static int video_call_item = 16;
     private final static int search_members = 17;
     private final static int add_member = 18;
     private final static int statistics = 19;
@@ -5216,8 +5214,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         actionVoiceChat = createActionItem(
                 context,
                 R.drawable.ic_live_stream_new,
-                LocaleController.getString(R.string.StartVoipChatTitle),
+                LocaleController.getString(R.string.StartVoipChat),
                 view -> onCallOrVideoCallClick(true));
+        updateVoiceChatButton();
         actionSendGift = createActionItem(
                 context,
                 R.drawable.ic_gift_new,
@@ -5248,19 +5247,14 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         return container;
     }
 
-    private int visibleActionItemsCount() {
+    private int visibleActionItemsCount(ViewGroup requestingActionItem) {
         int count = 0;
-        // order in this list defines the priority, the higher it is, the higher the priority.
-        // this is because we only show up to maxVisibleActionItems max
-        if (joinChannelOrGroupVisible()) count++;
-        if (messageActionVisible()) count++;
-        if (muteUnmuteVisible()) count++;
-        if (callItemVisible) count++;
-        if (videoCallItemVisible) count++;
-        if (hasVoiceChatItem) count++;
-        if (leaveGroupVisible()) count++;
-        if (sendGiftVisible()) count++;
-        if (shareVisible()) count++;
+        for (int i = 0; i < actionItems.getChildCount(); i++) {
+            View child = actionItems.getChildAt(i);
+            if (child.getVisibility() == View.VISIBLE && requestingActionItem != child) {
+                count++;
+            }
+        }
         return count;
     }
 
@@ -5358,6 +5352,23 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         SimpleTextView labelView = (SimpleTextView) actionMuteUnmute.getChildAt(1);
         imageView.setImageResource(muteIcon);
         labelView.setText(muteLabel);
+    }
+
+    private void updateMessageButton() {
+        boolean discussion = otherItem.hasSubItem(view_discussion);
+        String label = LocaleController.getString(discussion ? R.string.Discuss : R.string.Message);
+        SimpleTextView labelView = (SimpleTextView) actionMessage.getChildAt(1);
+        labelView.setText(label);
+    }
+
+    private void updateVoiceChatButton() {
+        TLRPC.Chat chat = getMessagesController().getChat(chatId);
+        if (chat == null) {
+            return;
+        }
+        String label = LocaleController.getString(chat.megagroup && !chat.gigagroup ? R.string.StartVoipChat : R.string.StartVoipChannel);
+        SimpleTextView labelView = (SimpleTextView) actionVoiceChat.getChildAt(1);
+        labelView.setText(label);
     }
 
     private void openSendGift() {
@@ -7886,45 +7897,69 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     }
 
     private void updateActionItems() {
+        // order in this list defines the priority, the earlier the check is, the higher the priority.
+        // this is because we only show up to maxVisibleActionItems max
         if (actionJoinChannelOrGroup != null) {
-            actionJoinChannelOrGroup.setVisibility(joinChannelOrGroupVisible() ? View.VISIBLE : View.GONE);
-        }
-        if (actionMessage != null) {
-            actionMessage.setVisibility(messageActionVisible() ? View.VISIBLE : View.GONE);
-        }
-        if (actionMuteUnmute != null) {
-            actionMuteUnmute.setVisibility(muteUnmuteVisible() ? View.VISIBLE : View.GONE);
-        }
-        if (actionCall != null) {
-            actionCall.setVisibility(callItemVisible ? View.VISIBLE : View.GONE);
-        }
-        if (actionVideo != null) {
-            actionVideo.setVisibility(videoCallItemVisible ? View.VISIBLE : View.GONE);
-        }
-        if (actionVoiceChat != null) {
-            actionVoiceChat.setVisibility(
-                    hasVoiceChatItem && visibleActionItemsCount() < maxVisibleActionItems
+            actionJoinChannelOrGroup.setVisibility(
+                    joinChannelOrGroupVisible() && visibleActionItemsCount(actionJoinChannelOrGroup) < maxVisibleActionItems
                             ? View.VISIBLE
                             : View.GONE
             );
         }
+        if (actionMessage != null) {
+            actionMessage.setVisibility(
+                    messageActionVisible() && visibleActionItemsCount(actionMessage) < maxVisibleActionItems
+                            ? View.VISIBLE
+                            : View.GONE
+            );
+            updateMessageButton();
+        }
+        if (actionMuteUnmute != null) {
+            actionMuteUnmute.setVisibility(
+                    muteUnmuteVisible() && visibleActionItemsCount(actionMuteUnmute) < maxVisibleActionItems
+                            ? View.VISIBLE
+                            : View.GONE
+            );
+        }
+        if (actionCall != null) {
+            actionCall.setVisibility(
+                    callItemVisible && visibleActionItemsCount(actionCall) < maxVisibleActionItems
+                            ? View.VISIBLE
+                            : View.GONE
+            );
+        }
+        if (actionVideo != null) {
+            actionVideo.setVisibility(
+                    videoCallItemVisible && visibleActionItemsCount(actionVideo) < maxVisibleActionItems
+                            ? View.VISIBLE
+                            : View.GONE
+            );
+        }
+        if (actionVoiceChat != null) {
+            actionVoiceChat.setVisibility(
+                    hasVoiceChatItem && visibleActionItemsCount(actionVoiceChat) < maxVisibleActionItems
+                            ? View.VISIBLE
+                            : View.GONE
+            );
+            updateVoiceChatButton();
+        }
         if (actionSendGift != null) {
             actionSendGift.setVisibility(
-                    sendGiftVisible() && visibleActionItemsCount() < maxVisibleActionItems
+                    sendGiftVisible() && visibleActionItemsCount(actionSendGift) < maxVisibleActionItems
                             ? View.VISIBLE
                             : View.GONE
             );
         }
         if (actionLeaveGroup != null) {
             actionLeaveGroup.setVisibility(
-                    leaveGroupVisible() && visibleActionItemsCount() < maxVisibleActionItems
+                    leaveGroupVisible() && visibleActionItemsCount(actionLeaveGroup) < maxVisibleActionItems
                             ? View.VISIBLE
                             : View.GONE
             );
         }
         if (actionShare != null) {
             actionShare.setVisibility(
-                    shareVisible() && visibleActionItemsCount() < maxVisibleActionItems
+                    shareVisible() && visibleActionItemsCount(actionShare) < maxVisibleActionItems
                             ? View.VISIBLE
                             : View.GONE
             );
@@ -10851,7 +10886,6 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 }
                 if (chatInfo != null) {
                     if (ChatObject.canManageCalls(chat) && chatInfo.call == null) {
-                        otherItem.addSubItem(call_item, R.drawable.msg_voicechat, chat.megagroup && !chat.gigagroup ? LocaleController.getString(R.string.StartVoipChat) : LocaleController.getString(R.string.StartVoipChannel));
                         hasVoiceChatItem = true;
                     }
                     if ((chatInfo.can_view_stats || chatInfo.can_view_revenue || chatInfo.can_view_stars_revenue || getMessagesController().getStoriesController().canPostStories(getDialogId())) && topicId == 0) {
@@ -10893,7 +10927,6 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             } else {
                 if (chatInfo != null) {
                     if (ChatObject.canManageCalls(chat) && chatInfo.call == null) {
-                        otherItem.addSubItem(call_item, R.drawable.msg_voicechat, LocaleController.getString(R.string.StartVoipChat));
                         hasVoiceChatItem = true;
                     }
                     ChatObject.Call call = getMessagesController().getGroupCall(chatId, false);
