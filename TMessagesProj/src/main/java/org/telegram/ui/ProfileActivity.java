@@ -429,6 +429,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     private ViewGroup actionVoiceChat;
     private ViewGroup actionSendGift;
     private ViewGroup actionLeaveGroup;
+    private ViewGroup actionShare;
 
     private float actionItemsY;
     private float actionItemsScaleY;
@@ -2470,39 +2471,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     });
                     presentFragment(fragment);
                 } else if (id == share) {
-                    try {
-                        String text = null;
-                        if (userId != 0) {
-                            TLRPC.User user = getMessagesController().getUser(userId);
-                            if (user == null) {
-                                return;
-                            }
-                            if (botInfo != null && userInfo != null && !TextUtils.isEmpty(userInfo.about)) {
-                                text = String.format("%s https://" + getMessagesController().linkPrefix + "/%s", userInfo.about, UserObject.getPublicUsername(user));
-                            } else {
-                                text = String.format("https://" + getMessagesController().linkPrefix + "/%s", UserObject.getPublicUsername(user));
-                            }
-                        } else if (chatId != 0) {
-                            TLRPC.Chat chat = getMessagesController().getChat(chatId);
-                            if (chat == null) {
-                                return;
-                            }
-                            if (chatInfo != null && !TextUtils.isEmpty(chatInfo.about)) {
-                                text = String.format("%s\nhttps://" + getMessagesController().linkPrefix + "/%s", chatInfo.about, ChatObject.getPublicUsername(chat));
-                            } else {
-                                text = String.format("https://" + getMessagesController().linkPrefix + "/%s", ChatObject.getPublicUsername(chat));
-                            }
-                        }
-                        if (TextUtils.isEmpty(text)) {
-                            return;
-                        }
-                        Intent intent = new Intent(Intent.ACTION_SEND);
-                        intent.setType("text/plain");
-                        intent.putExtra(Intent.EXTRA_TEXT, text);
-                        startActivityForResult(Intent.createChooser(intent, LocaleController.getString(R.string.BotShare)), 500);
-                    } catch (Exception e) {
-                        FileLog.e(e);
-                    }
+                    share();
                 } else if (id == add_shortcut) {
                     try {
                         long did;
@@ -5216,6 +5185,11 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     onNotificationsRowClick(context, did);
                 }
         );
+        actionJoinChannelOrGroup = createActionItem(
+                context,
+                R.drawable.ic_join_new,
+                LocaleController.getString(R.string.ProfileJoin),
+                view -> joinChannelOrGroup(context, lastFragment));
         // immediately sync with the state
         updateMuteUnmuteButton();
 
@@ -5255,11 +5229,11 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 R.drawable.ic_leave_new,
                 LocaleController.getString(R.string.VoipGroupLeave),
                 view -> leaveChatPressed());
-        actionJoinChannelOrGroup = createActionItem(
+        actionShare = createActionItem(
                 context,
-                R.drawable.ic_join_new,
-                LocaleController.getString(R.string.ProfileJoin),
-                view -> joinChannelOrGroup(context, lastFragment));
+                R.drawable.ic_share_new,
+                LocaleController.getString(R.string.BotShare),
+                view -> share());
 
         int itemHorizontalMargin = (int) (actionItemInterItemPadding / 2f);
         container.addView(actionMessage, LayoutHelper.createLinear(0, actionItemHeight, 1f, itemHorizontalMargin, 0, itemHorizontalMargin, 0));
@@ -5270,6 +5244,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         container.addView(actionVoiceChat, LayoutHelper.createLinear(0, actionItemHeight, 1f, itemHorizontalMargin, 0, itemHorizontalMargin, 0));
         container.addView(actionSendGift, LayoutHelper.createLinear(0, actionItemHeight, 1f, itemHorizontalMargin, 0, itemHorizontalMargin, 0));
         container.addView(actionLeaveGroup, LayoutHelper.createLinear(0, actionItemHeight, 1f, itemHorizontalMargin, 0, itemHorizontalMargin, 0));
+        container.addView(actionShare, LayoutHelper.createLinear(0, actionItemHeight, 1f, itemHorizontalMargin, 0, itemHorizontalMargin, 0));
         return container;
     }
 
@@ -5285,42 +5260,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         if (hasVoiceChatItem) count++;
         if (leaveGroupVisible()) count++;
         if (sendGiftVisible()) count++;
+        if (shareVisible()) count++;
         return count;
-    }
-
-    private boolean messageActionVisible() {
-        // do not show message button for non joined channels
-        if (joinChannelOrGroupVisible()) {
-            return false;
-        }
-        boolean actionMessageVisible = !searchMode && (imageUpdater == null || setAvatarRow == -1);
-        if (actionMessageVisible && chatId != 0) {
-            actionMessageVisible = ChatObject.isChannel(currentChat) && !currentChat.megagroup && chatInfo != null && chatInfo.linked_chat_id != 0 && infoHeaderRow != -1;
-        }
-        return actionMessageVisible;
-    }
-
-    private boolean muteUnmuteVisible() {
-        // do not show mute/unmute button for non joined channels
-        return !joinChannelOrGroupVisible();
-    }
-
-    private boolean sendGiftVisible() {
-        return otherItem.hasSubItem(gift_premium);
-    }
-
-    private boolean leaveGroupVisible() {
-        return otherItem.hasSubItem(leave_group);
-    }
-
-    private boolean joinChannelOrGroupVisible() {
-        if (currentChat != null && currentChat.left && !currentChat.kicked) {
-            long requestedTime = MessagesController.getNotificationsSettings(currentAccount).getLong("dialog_join_requested_time_" + dialogId, -1);
-            if (!(requestedTime > 0 && System.currentTimeMillis() - requestedTime < 1000 * 60 * 2)) {
-                return true;
-            }
-        }
-        return false;
     }
 
     private ViewGroup createActionItem(Context context, @DrawableRes int icon, String label,
@@ -5351,6 +5292,45 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         labelView.setTypeface(AndroidUtilities.bold());
         actionItem.addView(labelView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
         return actionItem;
+    }
+
+    private boolean joinChannelOrGroupVisible() {
+        if (currentChat != null && currentChat.left && !currentChat.kicked) {
+            long requestedTime = MessagesController.getNotificationsSettings(currentAccount).getLong("dialog_join_requested_time_" + dialogId, -1);
+            if (!(requestedTime > 0 && System.currentTimeMillis() - requestedTime < 1000 * 60 * 2)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean messageActionVisible() {
+        // do not show message button for non joined channels
+        if (joinChannelOrGroupVisible()) {
+            return false;
+        }
+        boolean actionMessageVisible = !searchMode && (imageUpdater == null || setAvatarRow == -1);
+        if (actionMessageVisible && chatId != 0) {
+            actionMessageVisible = ChatObject.isChannel(currentChat) && !currentChat.megagroup && chatInfo != null && chatInfo.linked_chat_id != 0 && infoHeaderRow != -1;
+        }
+        return actionMessageVisible;
+    }
+
+    private boolean muteUnmuteVisible() {
+        // do not show mute/unmute button for non joined channels
+        return !joinChannelOrGroupVisible();
+    }
+
+    private boolean sendGiftVisible() {
+        return otherItem.hasSubItem(gift_premium);
+    }
+
+    private boolean leaveGroupVisible() {
+        return otherItem.hasSubItem(leave_group);
+    }
+
+    private boolean shareVisible() {
+        return otherItem.hasSubItem(share);
     }
 
     private void onCallOrVideoCallClick(boolean videoCall) {
@@ -5411,6 +5391,42 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             return true;
         });
         NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.closeSearchByActiveAction);
+    }
+
+    private void share() {
+        try {
+            String text = null;
+            if (userId != 0) {
+                TLRPC.User user = getMessagesController().getUser(userId);
+                if (user == null) {
+                    return;
+                }
+                if (botInfo != null && userInfo != null && !TextUtils.isEmpty(userInfo.about)) {
+                    text = String.format("%s https://" + getMessagesController().linkPrefix + "/%s", userInfo.about, UserObject.getPublicUsername(user));
+                } else {
+                    text = String.format("https://" + getMessagesController().linkPrefix + "/%s", UserObject.getPublicUsername(user));
+                }
+            } else if (chatId != 0) {
+                TLRPC.Chat chat = getMessagesController().getChat(chatId);
+                if (chat == null) {
+                    return;
+                }
+                if (chatInfo != null && !TextUtils.isEmpty(chatInfo.about)) {
+                    text = String.format("%s\nhttps://" + getMessagesController().linkPrefix + "/%s", chatInfo.about, ChatObject.getPublicUsername(chat));
+                } else {
+                    text = String.format("https://" + getMessagesController().linkPrefix + "/%s", ChatObject.getPublicUsername(chat));
+                }
+            }
+            if (TextUtils.isEmpty(text)) {
+                return;
+            }
+            Intent intent = new Intent(Intent.ACTION_SEND);
+            intent.setType("text/plain");
+            intent.putExtra(Intent.EXTRA_TEXT, text);
+            startActivityForResult(Intent.createChooser(intent, LocaleController.getString(R.string.BotShare)), 500);
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
     }
 
     private void onNotificationsRowClick(Context context, long did) {
@@ -7902,6 +7918,13 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         if (actionLeaveGroup != null) {
             actionLeaveGroup.setVisibility(
                     leaveGroupVisible() && visibleActionItemsCount() < maxVisibleActionItems
+                            ? View.VISIBLE
+                            : View.GONE
+            );
+        }
+        if (actionShare != null) {
+            actionShare.setVisibility(
+                    shareVisible() && visibleActionItemsCount() < maxVisibleActionItems
                             ? View.VISIBLE
                             : View.GONE
             );
