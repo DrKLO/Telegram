@@ -12,7 +12,7 @@ public class CameraCutoutHelper {
 
     public static android.graphics.Rect cutout = new android.graphics.Rect();
     public static boolean isTop = false;
-    public static boolean FORCE_TOP = false;
+    public static boolean FORCE_TOP = true;
 
     public static void update(View decorView) {
         cutout = getFrontCameraCutout(decorView);
