@@ -29,6 +29,7 @@ import org.telegram.messenger.MessagesController;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.BlurringShader;
+import org.telegram.ui.Components.FallbackBlurManager2;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.PaddingItemDecoration;
 import org.telegram.ui.Components.RLottieDrawable;
@@ -88,7 +89,7 @@ public class ShortcutsCell extends FrameLayout {
     }
 
     private final Theme.ResourcesProvider resourcesProvider;
-    private final int height = AndroidUtilities.dp(70);
+    private final int height = AndroidUtilities.dp(65);
     private final int spacing = AndroidUtilities.dp(4);
 
     private OnButtonClickListener onButtonClickListener = null;
@@ -100,16 +101,28 @@ public class ShortcutsCell extends FrameLayout {
 
     private final BlurringShader.BlurManager blurManager;
     protected BlurringShader.StoryBlurDrawer backgroundBlur;
+    private FallbackBlurManager2 fallbackBlurManager2;
+    private float diff = 0f;
+    private float extraHeight = 0f;
 
-    public ShortcutsCell(Context context, BlurringShader.BlurManager blurManager) {
-        this(context, null, blurManager);
+    private float expandProgress = 0f;
+
+    public ShortcutsCell(Context context, BlurringShader.BlurManager blurManager, FallbackBlurManager2 fallbackBlurManager2) {
+        this(context, null, blurManager, fallbackBlurManager2);
+    }
+
+    public void setDiffAndExtraHeight(float diff, float extraHeight, float expandProgress) {
+        this.diff = diff;
+        this.extraHeight = extraHeight;
+        this.expandProgress = expandProgress;
     }
 
     @SuppressLint("ClickableViewAccessibility")
-    public ShortcutsCell(Context context, Theme.ResourcesProvider resourcesProvider, BlurringShader.BlurManager blurManager) {
+    public ShortcutsCell(Context context, Theme.ResourcesProvider resourcesProvider, BlurringShader.BlurManager blurManager, FallbackBlurManager2 fallbackBlurManager2) {
         super(context);
         this.resourcesProvider = resourcesProvider;
         this.blurManager = blurManager;
+        this.fallbackBlurManager2 = fallbackBlurManager2;
 
         if (blurManager != null) {
             backgroundBlur = new BlurringShader.StoryBlurDrawer(blurManager, this, BlurringShader.StoryBlurDrawer.BLUR_TYPE_ACTION_BACKGROUND, !customBlur());
@@ -124,6 +137,7 @@ public class ShortcutsCell extends FrameLayout {
         adapter = new Adapter();
 
         listView.setSelectorRadius(AndroidUtilities.dp(16));
+        listView.setSelectorType(9);
         listView.setSelectorDrawableColor(getThemedColor(Theme.key_actionBarTabSelector));
 
         listView.setAdapter(adapter);
@@ -313,7 +327,8 @@ public class ShortcutsCell extends FrameLayout {
 
             buttonText = new SimpleTextView(getContext());
             buttonText.setTextColor(getThemedColor(Theme.key_actionBarDefaultIcon));
-            buttonText.setTextSize(14);
+            buttonText.setTextSize(12);
+            buttonText.setTypeface(AndroidUtilities.bold());
             buttonText.setScrollNonFitText(true);
 
             buttonImage = new RLottieImageView(getContext());
@@ -435,17 +450,26 @@ public class ShortcutsCell extends FrameLayout {
 
                     if (backgroundPaint == null) {
                         backgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-                        backgroundPaint.setColor(0x10000000);
+                        if (customBlur() || expandProgress < 0.33f) {
+                            backgroundPaint.setColor(0x17000000);
+                        } else {
+                            backgroundPaint.setColor(0x25000000);
+                        }
                     }
 
                     if (backgroundBlur != null) {
-                        RectF bounds = new RectF(0, 0, this.getWidth(), this.getHeight());
+                        int w = this.getWidth();
+                        int h = this.getHeight();
+                        float diffX = w - w * this.getScaleX();
+                        float diffH = h - h * this.getScaleY();
+                        RectF bounds = new RectF(diffX / 2f, diffH / 2f, w - diffX / 2, h - diffH / 2);
                         if (customBlur()) {
                             drawBlur(backgroundBlur, canvas, bounds, -getX(), AndroidUtilities.dp(80), 1.0f);
                             canvas.drawRoundRect(bounds, AndroidUtilities.dp(16), AndroidUtilities.dp(16), backgroundPaint);
                         } else {
                             Paint[] blurPaints = backgroundBlur.getPaints(1f, 0, 0);
-                            if (blurPaints == null || blurPaints[1] == null) {
+                            if (blurPaints == null || blurPaints[1] == null) { // todo
+                                drawBlur(backgroundBlur, canvas, bounds, -getX(), -ShortcutsCell.this.getTranslationY() + AndroidUtilities.dp(80), 1.0f);
                                 canvas.drawRoundRect(bounds, AndroidUtilities.dp(16), AndroidUtilities.dp(16), backgroundPaint);
                             } else {
                                 if (blurPaints[0] != null) {
@@ -463,15 +487,24 @@ public class ShortcutsCell extends FrameLayout {
                 }
 
                 protected void drawBlur(BlurringShader.StoryBlurDrawer blur, Canvas canvas, RectF rect, float ox, float oy, float alpha) {
-                    if (!canvas.isHardwareAccelerated()) {
+                    if (!canvas.isHardwareAccelerated() && customBlur()) {
                         return;
                     }
                     canvas.save();
                     path.rewind();
                     path.addRoundRect(rect, AndroidUtilities.dp(16), AndroidUtilities.dp(16), Path.Direction.CW);
                     canvas.clipPath(path);
-                    canvas.translate(ox, oy);
-                    blur.drawRect(canvas, 0, 0, alpha);
+                    if (expandProgress > 0.33f) {
+                        canvas.translate(ox, oy);
+                    } else {
+                        canvas.translate(ox, oy - height);
+                    }
+                    android.util.Log.d("wwttff", "diffextra " + diff + " " + extraHeight + " " + expandProgress);
+                    if (customBlur()) {
+                        blur.drawRect(canvas, 0, 0, alpha);
+                    } else {
+                        fallbackBlurManager2.draw(this, canvas);
+                    }
                     canvas.restore();
                 }
             };
