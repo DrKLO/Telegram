@@ -5150,6 +5150,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 if (animatedEmojiDrawable != null && animatedEmojiDrawable.getImageReceiver() != null) {
                     animatedEmojiDrawable.getImageReceiver().startAnimation();
                 }
+
             }
         };
         avatarImage.getImageReceiver().setAllowDecodeSingleFrame(true);
@@ -5367,6 +5368,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     @Override
                     public void setTranslationX(float translationX) {
                         super.setTranslationX(translationX);
+                        Log.d("Loc;y-da",String.valueOf(translationX));
+
                         onlineTextView[2].setTranslationX(translationX);
                         onlineTextView[3].setTranslationX(translationX);
                     }
@@ -5403,9 +5406,6 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         }
 
         int iconSize = AndroidUtilities.dp(25);
-        int containerPadding = AndroidUtilities.dp(20);
-        int buttonPadding = AndroidUtilities.dp(16); // More padding inside each button
-        int buttonMargin = AndroidUtilities.dp(8);   // More space between buttons
         int textHeight = AndroidUtilities.dp(20);
 
         int buttonPaddingV = AndroidUtilities.dp(12);
@@ -5693,7 +5693,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             int containerWidth = avatarContainer2.getWidth();
             int textWidth = onlineTextView[1].getWidth();
             Log.d("DEBUG--Spacing", "Container Width=" + containerWidth + " textWidth=" + textWidth);
-            onlineTextView[1].setX((containerWidth - textWidth) / 2f);
+            onlineTextView[1].setX(containerWidth/2f);
+            onlineTextView[1].requestLayout();
+//            onlineTextView[1].setX((containerWidth - textWidth) / 2f);
         });
         return fragmentView;
     }
@@ -7717,7 +7719,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                         nameTextView[1].setTranslationX(AndroidUtilities.dpf2(18f) - nameTextView[1].getLeft());
                         nameTextView[1].setTranslationY(newTop + h - AndroidUtilities.dpf2(38f) - nameTextView[1].getBottom() + additionalTranslationY - profileActions.getHeight());
 //                        onlineTextView[1].setTranslationX(AndroidUtilities.dpf2(18f) - onlineTextView[1].getLeft());
-                        onlineTextView[1].setTranslationY(newTop + h - AndroidUtilities.dpf2(18f) - onlineTextView[1].getBottom() + additionalTranslationY);
+                        onlineTextView[1].setTranslationY(newTop + h - AndroidUtilities.dpf2(18f) - onlineTextView[1].getBottom() + additionalTranslationY- profileActions.getHeight());
                         mediaCounterTextView.setTranslationX(onlineTextView[1].getTranslationX());
                         mediaCounterTextView.setTranslationY(onlineTextView[1].getTranslationY());
                         updateCollectibleHint();
@@ -7791,7 +7793,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                         nameTextView[1].setTranslationX(nameX);
                         nameTextView[1].setTranslationY(nameY);
 //                        onlineTextView[1].setTranslationX(onlineX + customPhotoOffset);
-                        onlineTextView[1].setTranslationY(onlineY);
+                        onlineTextView[1].setTranslationY(200);
                         avatarContainer.setTranslationY((float) (ActionBar.getCurrentActionBarHeight() / 1.5) + consumedHeight);
                         mediaCounterTextView.setTranslationX(onlineX);
                         mediaCounterTextView.setTranslationY(onlineY);
@@ -7820,7 +7822,6 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 nameTextView[0].setScaleX(1.0f);
                 nameTextView[0].setScaleY(1.0f);
 
-                nameTextView[1].setPivotY(nameTextView[1].getMeasuredHeight());
                 nameTextView[1].setScaleX(1.67f);
                 nameTextView[1].setScaleY(1.67f);
 
@@ -7883,7 +7884,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
 
                 nameY = (float) Math.floor(avatarY) + AndroidUtilities.dp(1.3f) + AndroidUtilities.dp(7) * diff + titleAnimationsYDiff * (1f - avatarAnimationProgress);
 
-                onlineX = (float) listView.getMeasuredWidth() / 2;
+                onlineX = avatarX;
                 onlineY = (float) Math.floor(avatarY) + AndroidUtilities.dp(1.3f) + AndroidUtilities.dp(7) * diff + titleAnimationsYDiff * (1f - avatarAnimationProgress);
 
                 if (expandAnimator == null || !expandAnimator.isRunning()) {
@@ -7929,9 +7930,11 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     if (nameTextView[a] == null) {
                         continue;
                     }
-                    Log.d("header postiostion", "nameX=" + nameX + "onlineX=" + onlineX + "nameY=" + nameY + "onlineY=" + onlineY + " width=");
 
                     if (expandAnimator == null || !expandAnimator.isRunning()) {
+                        Log.d("pulling-info", "nameX=" + nameX + "onlineX=" + onlineX + "nameY=" + nameY + "onlineY=" + onlineY + " width="+" avatarY="+avatarX
+                        );
+
                         nameTextView[a].setTranslationX(AndroidUtilities.lerp(((float) (-1 * (listView.getWidth() - nameTextView[a].getWidth())) / 2) + AndroidUtilities.dp(50), nameX, diff));
                         FrameLayout.LayoutParams teardropParams = (FrameLayout.LayoutParams) avatarTeardrop.getLayoutParams();
                         nameTextView[a].setTranslationY(AndroidUtilities.lerp(-((actionBar.getHeight() - atop) / 1.5f), nameY, diff));
@@ -8046,9 +8049,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     }
 
     private void refreshNameAndOnlineXY() {
-        nameX = AndroidUtilities.density;
+        nameX = avatarX;
         nameY = (float) Math.floor(avatarY) + AndroidUtilities.dp(1.3f) + AndroidUtilities.dp(7f) + avatarContainer.getMeasuredHeight() * (avatarScale - (80f + 18f) / 80f) / 2f;
-        onlineX = listView.getMeasuredWidth() / 2 + onlineTextView[1].getMeasuredWidth();
+        onlineX = avatarX;
         onlineY = (float) Math.floor(avatarY) + AndroidUtilities.dp(1.3f) + AndroidUtilities.dp(7f) + avatarContainer.getMeasuredHeight() * (avatarScale - (80f + 18f) / 80f) / 2f;
 
     }
