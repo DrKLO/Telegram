@@ -1,5 +1,8 @@
 package org.telegram.ui.Cells;
 
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
+import android.animation.ValueAnimator;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Canvas;
@@ -38,6 +41,8 @@ import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.SpanningLinearLayoutManager;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 import java.util.function.Consumer;
 
@@ -138,6 +143,7 @@ public class ShortcutsCell extends FrameLayout {
 
         listView.setSelectorRadius(AndroidUtilities.dp(16));
         listView.setSelectorType(9);
+        listView.setOverScrollMode(OVER_SCROLL_NEVER);
         listView.setSelectorDrawableColor(getThemedColor(Theme.key_actionBarTabSelector));
 
         listView.setAdapter(adapter);
@@ -512,29 +518,49 @@ public class ShortcutsCell extends FrameLayout {
             view.setOnTouchListener((v, event) -> {
                 switch (event.getAction()) {
                     case MotionEvent.ACTION_DOWN:
-                        v.animate().cancel();
-                        v.animate()
-                                .scaleX(0.95f)
-                                .scaleY(0.95f)
-                                .setDuration(150)
-                                .setInterpolator(new AccelerateDecelerateInterpolator())
-                                .start();
-                       return true;
+                        animateScaleSafely(v, 1f, 0.95f, 150);
+                        return true;
 
                     case MotionEvent.ACTION_UP:
                     case MotionEvent.ACTION_CANCEL:
-                        v.animate().cancel();
-                        v.animate()
-                                .scaleX(1f)
-                                .scaleY(1f)
-                                .setDuration(150)
-                                .setInterpolator(new AccelerateDecelerateInterpolator())
-                                .start();
+                        animateScaleSafely(v, v.getScaleX(), 1f, 150);
                         break;
                 }
-                return false; // Don't consume events (allows normal click handling)
+                return false;
             });
             return new RecyclerListView.Holder(view);
+        }
+
+        Map<View, ValueAnimator> runningAnimators = new HashMap<>();
+
+        private void animateScaleSafely(View view, float from, float to, long duration) {
+            ValueAnimator current = runningAnimators.get(view);
+            if (current != null && current.isRunning()) {
+                current.cancel();
+            }
+
+            ValueAnimator animator = ValueAnimator.ofFloat(from, to);
+            animator.setDuration(duration);
+            animator.setInterpolator(new AccelerateDecelerateInterpolator());
+            animator.addUpdateListener(a -> {
+                float value = (float) a.getAnimatedValue();
+                view.setScaleX(value);
+                view.setScaleY(value);
+            });
+            animator.addListener(new AnimatorListenerAdapter() {
+                @Override
+                public void onAnimationEnd(Animator animation) {
+                    runningAnimators.remove(view);
+                }
+
+                @Override
+                public void onAnimationCancel(Animator animation) {
+                    runningAnimators.remove(view);
+                }
+            });
+
+            runningAnimators.put(view, animator);
+            animator.start();
         }
 
         @Override
