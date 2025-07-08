@@ -41,7 +41,9 @@ import com.google.android.gms.common.GooglePlayServicesUtil;
 import org.json.JSONObject;
 import org.telegram.messenger.voip.VideoCapturerDevice;
 import org.telegram.tgnet.ConnectionsManager;
-import org.telegram.tgnet.TLRPC;
+// import org.telegram.tgnet.TLRPC; // TLRPC sería reemplazado gradualmente por TdApi
+import org.telegram.tdlib.TdApi; // TDLib Integration: Importar TdApi
+import org.telegram.tdlib.TelegramClient; // TDLib Integration: Importar TelegramClient
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.Adapters.DrawerLayoutAdapter;
 import org.telegram.ui.Components.ForegroundDetector;

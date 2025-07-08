@@ -74,12 +74,19 @@ android {
     buildToolsVersion '34.0.0'
     ndkVersion "21.4.7075529"
 
-    sourceSets.main.jniLibs.srcDirs = ['./jni/']
+    sourceSets.main.jniLibs.srcDirs = ['./jni/', 'src/main/jniLibs/'] // Añadir jniLibs para las .so precompiladas de TDLib
 
     externalNativeBuild {
         cmake {
-            path 'jni/CMakeLists.txt'
+            path 'CMakeLists.txt' // Apuntar al CMakeLists.txt en la raíz del módulo
+            version "3.22.1"      // Usar la versión de CMake de la guía
         }
+    }
+
+    packagingOptions {
+        pickFirst '**/libc++_shared.so'
+        pickFirst '**/libtdjson.so'      // Nombre de la biblioteca principal de TDLib (JSON interface)
+        pickFirst '**/libtdlib_jni_bridge.so' // Nombre de nuestra biblioteca JNI
     }
 
     lintOptions {
@@ -110,9 +117,13 @@ android {
 
         externalNativeBuild {
             cmake {
-                version '3.10.2'
-                arguments '-DANDROID_STL=c++_static', '-DANDROID_PLATFORM=android-16'
+                // La versión se define arriba en el bloque externalNativeBuild global para el módulo
+                cppFlags "-std=c++17" // Como en la guía
+                arguments "-DANDROID_STL=c++_shared" // Usar STL compartida como en la guía
             }
+        }
+        ndk {
+            abiFilters 'arm64-v8a', 'armeabi-v7a', 'x86_64' // Como en la guía
         }
     }
 

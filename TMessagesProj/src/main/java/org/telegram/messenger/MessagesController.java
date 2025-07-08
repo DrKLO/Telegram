@@ -59,11 +59,16 @@ import org.telegram.messenger.voip.VoIPDebugToSend;
 import org.telegram.messenger.voip.VoIPPreNotificationService;
 import org.telegram.messenger.voip.VoIPService;
 import org.telegram.tgnet.ConnectionsManager;
-import org.telegram.tgnet.NativeByteBuffer;
-import org.telegram.tgnet.RequestDelegate;
-import org.telegram.tgnet.SerializedData;
-import org.telegram.tgnet.TLObject;
-import org.telegram.tgnet.TLRPC;
+// TDLib Integration: ConnectionsManager y TLRPC serían reemplazados gradualmente
+// import org.telegram.tgnet.ConnectionsManager;
+// import org.telegram.tgnet.RequestDelegate;
+// import org.telegram.tgnet.SerializedData;
+// import org.telegram.tgnet.TLObject;
+// import org.telegram.tgnet.TLRPC;
+import org.telegram.tdlib.TdApi; // TDLib Integration: Importar TdApi
+import org.telegram.tdlib.TelegramClient; // TDLib Integration: Importar TelegramClient
+import org.json.JSONObject; // TDLib Integration: Para construir solicitudes JSON
+import org.json.JSONException; // TDLib Integration: Para manejar errores JSON
 import org.telegram.tgnet.Vector;
 import org.telegram.tgnet.tl.TL_account;
 import org.telegram.tgnet.tl.TL_bots;

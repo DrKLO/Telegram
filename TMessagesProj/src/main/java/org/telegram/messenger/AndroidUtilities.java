@@ -226,6 +226,140 @@ import java.util.regex.Pattern;
 import java.util.zip.GZIPOutputStream;
 
 public class AndroidUtilities {
+
+    // Configuración de la aplicación Telegram
+    public static final int APP_ID = 25919114;
+    public static final String APP_HASH = "a50324563dad5d43b30bac64a6eca809";
+
+    // Nombres de la aplicación (opcional, pero puede ser útil para referencia)
+    public static final String APP_NAME_TELEGRAPHY = "Telegraphy";
+    public static final String APP_NAME_TELEGRAPHY7 = "Telegraphy7";
+
+    // Clase interna estática para encapsular la configuración de un servidor MTProto
+    public static class MTProtoConfig {
+        public final String host;
+        public final int port;
+        public final String publicKey;
+
+        public MTProtoConfig(String host, int port, String publicKey) {
+            this.host = host;
+            this.port = port;
+            this.publicKey = publicKey;
+        }
+    }
+
+    // Configuración del servidor de Test
+    public static final MTProtoConfig TEST_CONFIG = new MTProtoConfig(
+            "149.154.167.40",
+            443,
+            "-----BEGIN RSA PUBLIC KEY-----\n" +
+            "MIIBCgKCAQEAyMEdY1aR+sCR3ZSJrtztKTKqigvO/vBfqACJLZtS7QMgCGXJ6XIR\n" +
+            "yy7mx66W0/sOFa7/1mAZtEoIokDP3ShoqF4fVNb6XeqgQfaUHd8wJpDWHcR2OFwv\n" +
+            "plUUI1PLTktZ9uW2WE23b+ixNwJjJGwBDJPQEQFBE+vfmH0JP503wr5INS1poWg/\n" +
+            "j25sIWeYPHYeOrFp/eXaqhISP6G+q2IeTaWTXpwZj4LzXq5YOpk4bYEQ6mvRq7D1\n" +
+            "aHWfYmlEGepfaYR8Q0YqvvhYtMte3ITnuSJs171+GDqpdKcSwHnd6FudwGO4pcCO\n" +
+            "j4WcDuXc2CTHgH8gFTNhp/Y8/SpDOhvn9QIDAQAB\n" +
+            "-----END RSA PUBLIC KEY-----"
+    );
+
+    // Configuración del servidor de Producción
+    public static final MTProtoConfig PRODUCTION_CONFIG = new MTProtoConfig(
+            "149.154.167.50",
+            443,
+            "-----BEGIN RSA PUBLIC KEY-----\n" +
+            "MIIBCgKCAQEA6LszBcC1LGzyr992NzE0ieY+BSaOW622Aa9Bd4ZHLl+TuFQ4lo4g\n" +
+            "5nKaMBwK/BIb9xUfg0Q29/2mgIR6Zr9krM7HjuIcCzFvDtr+L0GQjae9H0pRB2OO\n" +
+            "62cECs5HKhT5DZ98K33vmWiLowc621dQuwKWSQKjWf50XYFw42h21P2KXUGyp2y/\n" +
+            "+aEyZ+uVgLLQbRA1dEjSDZ2iGRy12Mk5gpYc397aYp438fsJoHIgJ2lgMv5h7WY9\n" +
+            "t6N/byY9Nw9p21Og3AoXSL2q/2IJ1WRUhebgAdGVMlV1fkuOQoEzR7EdpqtQD9Cs\n" +
+            "5+bfo3Nhmcyvk5ftB0WkJ9z6bNZ7yxrP8wIDAQAB\n" +
+            "-----END RSA PUBLIC KEY-----"
+    );
+
+    /**
+     * Devuelve la configuración de MTProto actual.
+     * Se podría basar en un flag de BuildConfig (por ejemplo, BuildConfig.DEBUG)
+     * o una preferencia de usuario para alternar entre Test y Producción.
+     *
+     * @param isTestEnvironment true si se debe usar la configuración de Test, false para Producción.
+     * @return La configuración de MTProto correspondiente.
+     */
+    public static MTProtoConfig getCurrentConfig(boolean isTestEnvironment) {
+        if (isTestEnvironment) {
+            return TEST_CONFIG;
+        } else {
+            return PRODUCTION_CONFIG;
+        }
+    }
+
+    // Resto de la clase AndroidUtilities...
+
+    // Configuración de la aplicación Telegram
+    public static final int APP_ID = BuildVars.APP_ID; // Tomado de BuildVars
+    public static final String APP_HASH = BuildVars.APP_HASH; // Tomado de BuildVars
+
+    // Nombres de la aplicación (opcional, pero puede ser útil para referencia)
+    public static final String APP_NAME_TELEGRAPHY = "Telegraphy";
+    public static final String APP_NAME_TELEGRAPHY7 = "Telegraphy7";
+
+    // Clase interna estática para encapsular la configuración de un servidor MTProto
+    public static class MTProtoConfig {
+        public final String host;
+        public final int port;
+        public final String publicKey;
+
+        public MTProtoConfig(String host, int port, String publicKey) {
+            this.host = host;
+            this.port = port;
+            this.publicKey = publicKey;
+        }
+    }
+
+    // Configuración del servidor de Test
+    public static final MTProtoConfig TEST_CONFIG = new MTProtoConfig(
+            "149.154.167.40",
+            443,
+            "-----BEGIN RSA PUBLIC KEY-----\n" +
+            "MIIBCgKCAQEAyMEdY1aR+sCR3ZSJrtztKTKqigvO/vBfqACJLZtS7QMgCGXJ6XIR\n" +
+            "yy7mx66W0/sOFa7/1mAZtEoIokDP3ShoqF4fVNb6XeqgQfaUHd8wJpDWHcR2OFwv\n" +
+            "plUUI1PLTktZ9uW2WE23b+ixNwJjJGwBDJPQEQFBE+vfmH0JP503wr5INS1poWg/\n" +
+            "j25sIWeYPHYeOrFp/eXaqhISP6G+q2IeTaWTXpwZj4LzXq5YOpk4bYEQ6mvRq7D1\n" +
+            "aHWfYmlEGepfaYR8Q0YqvvhYtMte3ITnuSJs171+GDqpdKcSwHnd6FudwGO4pcCO\n" +
+            "j4WcDuXc2CTHgH8gFTNhp/Y8/SpDOhvn9QIDAQAB\n" +
+            "-----END RSA PUBLIC KEY-----"
+    );
+
+    // Configuración del servidor de Producción
+    public static final MTProtoConfig PRODUCTION_CONFIG = new MTProtoConfig(
+            "149.154.167.50",
+            443,
+            "-----BEGIN RSA PUBLIC KEY-----\n" +
+            "MIIBCgKCAQEA6LszBcC1LGzyr992NzE0ieY+BSaOW622Aa9Bd4ZHLl+TuFQ4lo4g\n" +
+            "5nKaMBwK/BIb9xUfg0Q29/2mgIR6Zr9krM7HjuIcCzFvDtr+L0GQjae9H0pRB2OO\n" +
+            "62cECs5HKhT5DZ98K33vmWiLowc621dQuwKWSQKjWf50XYFw42h21P2KXUGyp2y/\n" +
+            "+aEyZ+uVgLLQbRA1dEjSDZ2iGRy12Mk5gpYc397aYp438fsJoHIgJ2lgMv5h7WY9\n" +
+            "t6N/byY9Nw9p21Og3AoXSL2q/2IJ1WRUhebgAdGVMlV1fkuOQoEzR7EdpqtQD9Cs\n" +
+            "5+bfo3Nhmcyvk5ftB0WkJ9z6bNZ7yxrP8wIDAQAB\n" +
+            "-----END RSA PUBLIC KEY-----"
+    );
+
+    /**
+     * Devuelve la configuración de MTProto actual.
+     * Se podría basar en un flag de BuildConfig (por ejemplo, BuildConfig.DEBUG)
+     * o una preferencia de usuario para alternar entre Test y Producción.
+     *
+     * @param isTestEnvironment true si se debe usar la configuración de Test, false para Producción.
+     * @return La configuración de MTProto correspondiente.
+     */
+    public static MTProtoConfig getCurrentConfig(boolean isTestEnvironment) {
+        if (isTestEnvironment) {
+            return TEST_CONFIG;
+        } else {
+            return PRODUCTION_CONFIG;
+        }
+    }
+
+    // Resto de la clase AndroidUtilities...
     public final static int LIGHT_STATUS_BAR_OVERLAY = 0x0f000000, DARK_STATUS_BAR_OVERLAY = 0x33000000;
 
     public final static int REPLACING_TAG_TYPE_LINK = 0;
@@ -5208,7 +5342,7 @@ public class AndroidUtilities {
     }
 
     private static char[] characters = new char[]{' ', ' ', '!', '"', '#', '%', '&', '\'', '(', ')', '*', ',', '-', '.', '/', ':', ';', '?', '@', '[', '\\', ']', '_', '{', '}', '¡', '§', '«', '¶', '·', '»', '¿', ';', '·', '՚', '՛', '՜', '՝', '՞', '՟', '։', '֊', '־', '׀', '׃', '׆', '׳', '״', '؉', '؊', '،', '؍', '؛', '؞', '؟', '٪', '٫', '٬', '٭', '۔', '܀', '܁', '܂', '܃', '܄', '܅', '܆', '܇', '܈', '܉', '܊', '܋', '܌', '܍', '߷', '߸', '߹', '࠰', '࠱', '࠲', '࠳', '࠴', '࠵', '࠶', '࠷', '࠸', '࠹', '࠺', '࠻', '࠼', '࠽', '࠾', '࡞', '।', '॥', '॰', '৽', '੶', '૰', '౷', '಄', '෴', '๏', '๚', '๛', '༄', '༅', '༆', '༇', '༈', '༉', '༊', '་', '༌', '།', '༎', '༏', '༐', '༑', '༒', '༔', '༺', '༻', '༼', '༽', '྅', '࿐', '࿑', '࿒', '࿓', '࿔', '࿙', '࿚', '၊', '။', '၌', '၍', '၎', '၏', '჻', '፠', '፡', '።', '፣', '፤', '፥', '፦', '፧', '፨', '᐀', '᙮', '᚛', '᚜', '᛫', '᛬', '᛭', '᜵', '᜶', '។', '៕', '៖', '៘', '៙', '៚', '᠀', '᠁', '᠂', '᠃', '᠄', '᠅', '᠆', '᠇', '᠈', '᠉', '᠊', '᥄', '᥅', '᨞', '᨟', '᪠', '᪡', '᪢', '᪣', '᪤', '᪥', '᪦', '᪨', '᪩', '᪪', '᪫', '᪬', '᪭', '᭚', '᭛', '᭜', '᭝', '᭞', '᭟', '᭠', '᯼', '᯽', '᯾', '᯿', '᰻', '᰼', '᰽', '᰾', '᰿', '᱾', '᱿', '᳀', '᳁', '᳂', '᳃', '᳄', '᳅', '᳆', '᳇', '᳓', '‐', '‑', '‒', '–', '—', '―', '‖', '‗', '‘', '’', '‚', '‛', '“', '”', '„', '‟', '†', '‡', '•', '‣', '․', '‥', '…', '‧', '‰', '‱', '′', '″', '‴', '‵', '‶', '‷', '‸', '‹', '›', '※', '‼', '‽', '‾', '‿', '⁀', '⁁', '⁂', '⁃', '⁅', '⁆', '⁇', '⁈', '⁉', '⁊', '⁋', '⁌', '⁍', '⁎', '⁏', '⁐', '⁑', '⁓', '⁔', '⁕', '⁖', '⁗', '⁘', '⁙', '⁚', '⁛', '⁜', '⁝', '⁞', '⁽', '⁾', '₍', '₎', '⌈', '⌉', '⌊', '⌋', '〈', '〉', '❨', '❩', '❪', '❫', '❬', '❭', '❮', '❯', '❰', '❱', '❲', '❳', '❴', '❵', '⟅', '⟆', '⟦', '⟧', '⟨', '⟩', '⟪', '⟫', '⟬', '⟭', '⟮', '⟯', '⦃', '⦄', '⦅', '⦆', '⦇', '⦈', '⦉', '⦊', '⦋', '⦌', '⦍', '⦎', '⦏', '⦐', '⦑', '⦒', '⦓', '⦔', '⦕', '⦖', '⦗', '⦘', '⧘', '⧙', '⧚', '⧛', '⧼', '⧽', '⳹', '⳺', '⳻', '⳼', '⳾', '⳿', '⵰', '⸀', '⸁', '⸂', '⸃', '⸄', '⸅', '⸆', '⸇', '⸈', '⸉', '⸊', '⸋', '⸌', '⸍', '⸎', '⸏', '⸐', '⸑', '⸒', '⸓', '⸔', '⸕', '⸖', '⸗', '⸘', '⸙', '⸚', '⸛', '⸜', '⸝', '⸞', '⸟', '⸠', '⸡', '⸢', '⸣', '⸤', '⸥', '⸦', '⸧', '⸨', '⸩', '⸪', '⸫', '⸬', '⸭', '⸮', '⸰', '⸱', '⸲', '⸳', '⸴', '⸵', '⸶', '⸷', '⸸', '⸹', '⸺', '⸻', '⸼', '⸽', '⸾', '⸿', '⹀', '⹁', '⹂', '⹃', '⹄', '⹅', '⹆', '⹇', '⹈', '⹉', '⹊', '⹋', '⹌', '⹍', '⹎', '⹏', '、', '。', '〃', '〈', '〉', '《', '》', '「', '」', '『', '』', '【', '】', '〔', '〕', '〖', '〗', '〘', '〙', '〚', '〛', '〜', '〝', '〞', '〟', '〰', '〽', '゠', '・', '꓾', '꓿', '꘍', '꘎', '꘏', '꙳', '꙾', '꛲', '꛳', '꛴', '꛵', '꛶', '꛷', '꡴', '꡵', '꡶', '꡷', '꣎', '꣏', '꣸', '꣹', '꣺', '꣼', '꤮', '꤯', '꥟', '꧁', '꧂', '꧃', '꧄', '꧅', '꧆', '꧇', '꧈', '꧉', '꧊', '꧋', '꧌', '꧍', '꧞', '꧟', '꩜', '꩝', '꩞', '꩟', '꫞', '꫟', '꫰', '꫱', '꯫', '﴾', '﴿', '︐', '︑', '︒', '︓', '︔', '︕', '︖', '︗', '︘', '︙', '︰', '︱', '︲', '︳', '︴', '︵', '︶', '︷', '︸', '︹', '︺', '︻', '︼', '︽', '︾', '︿', '﹀', '﹁', '﹂', '﹃', '﹄', '﹅', '﹆', '﹇', '﹈', '﹉', '﹊', '﹋', '﹌', '﹍', '﹎', '﹏', '﹐', '﹑', '﹒', '﹔', '﹕', '﹖', '﹗', '﹘', '﹙', '﹚', '﹛', '﹜', '﹝', '﹞', '﹟', '﹠', '﹡', '﹣', '﹨', '﹪', '﹫', '！', '＂', '＃', '％', '＆', '＇', '（', '）', '＊', '，', '－', '．', '／', '：', '；', '？', '＠', '［', '＼', '］', '＿', '｛', '｝', '｟', '｠', '｡', '｢', '｣', '､', '･'};
-    //private static String[] longCharacters = new String[] {"𐄀", "𐄁", "𐄂", "𐎟", "𐏐", "𐕯", "𐡗", "𐤟", "𐤿", "𐩐", "𐩑", "𐩒", "𐩓", "𐩔", "𐩕", "𐩖", "𐩗", "𐩘", "𐩿", "𐫰", "𐫱", "𐫲", "𐫳", "𐫴", "𐫵", "𐫶", "𐬹", "𐬺", "𐬻", "𐬼", "𐬽", "𐬾", "𐬿", "𐮙", "𐮚", "𐮛", "𐮜", "𐽕", "𐽖", "𐽗", "𐽘", "𐽙", "𑁇", "𑁈", "𑁉", "𑁊", "𑁋", "𑁌", "𑁍", "𑂻", "𑂼", "𑂾", "𑂿", "𑃀", "𑃁", "𑅀", "𑅁", "𑅂", "𑅃", "𑅴", "𑅵", "𑇅", "𑇆", "𑇇", "𑇈", "𑇍", "𑇛", "𑇝", "𑇞", "𑇟", "𑈸", "𑈹", "𑈺", "𑈻", "𑈼", "𑈽", "𑊩", "𑑋", "𑑌", "𑑍", "𑑎", "𑑏", "𑑛", "𑑝", "𑓆", "𑗁", "𑗂", "𑗃", "𑗄", "𑗅", "𑗆", "𑗇", "𑗈", "𑗉", "𑗊", "𑗋", "𑗌", "𑗍", "𑗎", "𑗏", "𑗐", "𑗑", "𑗒", "𑗓", "𑗔", "𑗕", "𑗖", "𑗗", "𑙁", "𑙂", "𑙃", "𑙠", "𑙡", "𑙢", "𑙣", "𑙤", "𑙥", "𑙦", "𑙧", "𑙨", "𑙩", "𑙪", "𑙫", "𑙬", "𑜼", "𑜽", "𑜾", "𑠻", "𑧢", "𑨿", "𑩀", "𑩁", "𑩂", "𑩃", "𑩄", "𑩅", "𑩆", "𑪚", "𑪛", "𑪜", "𑪞", "𑪟", "𑪠", "𑪡", "𑪢", "𑱁", "𑱂", "𑱃", "𑱄", "𑱅", "𑱰", "𑱱", "𑻷", "𑻸", "𑿿", "𒑰", "𒑱", "𒑲", "𒑳", "𒑴", "𖩮", "𖩯", "𖫵", "𖬷", "𖬸", "𖬹", "𖬺", "𖬻", "𖭄", "𖺗", "𖺘", "𖺙", "𖺚", "𖿢", "𛲟", "𝪇", "𝪈", "𝪉", "𝪊", "𝪋", "𞥞", "𞥟"};
+    //private static String[] longCharacters = new String[] {"𐄀", "𐄁", "𐄂", "𐎟", "𐏐", "𐕯", "𐡗", "𐤟", "𐤿", "𐩐", "𐩑", "𐩒", "𐩓", "𐩔", "𐩕", "𐩖", "𐩗", "𐩘", "𐩿", "𐫰", "𐫱", "𐫲", "𐫳", "𐫴", "𐫵", "𐫶", "𐬹", "𐬺", "𐬻", "𐬼", "𐬽", "𐬾", "𐬿", "𐮙", "𐮚", "𐮛", "𐮜", "𐽕", "𐽖", "𐽗", "𐽘", "𐽙", "𑁇", "𑁈", "𑁉", "𑁊", "𑁋", "𑁌", "𑁍", "𑂻", "𑂼", "𑂾", "𑂿", "𑃀", "𑃁", "𑅀", "𑅁", "𑅂", "𑅃", "𑅴", "𑅵", "𑇅", "𑇆", "𑇇", "𑇈", "𑇍", "𑇛", "𑇝", "𑇞", "𑇟", "𑈸", "𑈹", "𑈺", "𑈻", "𑈼", "𑈽", "𑊩", "𑑋", "𑑌", "𑑍", "𑑎", "𑑏", "𑑛", "𑑝", "𑓆", "𑗁", "𑗂", "𑗃", "𑗄", "𑗅", "𑗆", "𑗇", "𑗈", "𑗉", "𑗊", "𑗋", "𑗌", "𑗍", "𑗎", "𑗏", "𑗐", "𑗑", "𑗒", "𑗓", "𑗔", "𑗕", "𑗖", "𑗗", "𑙁", "𑙂", "𑙃", "𑙠", "𑙡", "𑙢", "𑙣", "𑙤", "𑙥", "𑙦", "𑙧", "𑙨", "𑙩", "𑙪", "𑙫", "𑙬", "𑜼", "𑜽", "𑜾", "𑠻", "𑧢", "𑨿", "𑩀", "𑩁", "𑩂", "𑩃", "𑩄", "𑩅", "𑩆", "𑪚", "𑪛", "𑪜", "𑪞", "𑪟", "𑪠", "𑪡", "𑪢", "𑱁", "𑱂", "𑱃", "𑱄", "𑱅", "𑱰", "𑱱", "𑻷", "𑻸", "𑿿", "英文", "中文", "한국어", "日本語", "繁體中文", "简体中文", "עברית", "العربية", "فارسی", "پښتو", "اردو", "മലയാളം", "தமிழ்", "සිංහල", "বাংলা", "অসমীয়া", "ગુજરાતી", "ಕನ್ನಡ", "ଓଡ଼ିଆ", "ਪੰਜਾਬੀ", "संस्कृत", "नेपाली", "हिन्दी", "मराठी", "తెలుగు", "සිංහල", "ລາວ", "ဗမာ", "ខ្មែរ", "ไทย", "ქართული", "հայերեն", "ελληνικά", "македонски", "български", "српски", "монгол", "қазақ", "беларуская", "українська", "русский", "čeština", "slovenčina", "polski", "latviešu", "lietuvių", "eesti", "suomi", "svenska", "norsk", "dansk", "íslenska", "føroyskt", "français", "español", "português", "italiano", "română", "magyar", "shqip", "hrvatski", "slovenščina", "català", "galego", "euskara", "gaeilge", "cymraeg", "gàidhlig", "brezhoneg", "corsu", "occitan", "català", "ייִדיש"};
     private static HashSet<Character> charactersMap;
 
     public static boolean isPunctuationCharacter(char ch) {
@@ -5831,817 +5965,3 @@ public class AndroidUtilities {
         int index = TextUtils.indexOf(from, what);
         if (index >= 0) {
             spannableStringBuilder.replace(index, index + what.length(), obj);
-        }
-        return spannableStringBuilder;
-    }
-
-    public static CharSequence replaceMultipleCharSequence(String what, CharSequence from, CharSequence obj) {
-        SpannableStringBuilder spannableStringBuilder;
-        if (from instanceof SpannableStringBuilder) {
-            spannableStringBuilder = (SpannableStringBuilder) from;
-        } else {
-            spannableStringBuilder = new SpannableStringBuilder(from);
-        }
-        int index = TextUtils.indexOf(from, what, 0);
-        while (index >= 0) {
-            spannableStringBuilder.replace(index, index + what.length(), obj);
-            index = TextUtils.indexOf(spannableStringBuilder, what, index + 1);
-        }
-        return spannableStringBuilder;
-    }
-
-    public static Bitmap makeBlurBitmap(View view) {
-        return makeBlurBitmap(view, 6f, 7);
-    }
-
-    public static Bitmap makeBlurBitmap(View view, float downscale, int maxRadius) {
-        if (view == null) {
-            return null;
-        }
-        int w = (int) (view.getWidth() / downscale);
-        int h = (int) (view.getHeight() / downscale);
-        Bitmap bitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
-        Canvas canvas = new Canvas(bitmap);
-        canvas.scale(1.0f / downscale, 1.0f / downscale);
-        canvas.drawColor(Theme.getColor(Theme.key_windowBackgroundWhite));
-        view.draw(canvas);
-        Utilities.stackBlurBitmap(bitmap, Math.max(maxRadius, Math.max(w, h) / 180));
-        return bitmap;
-    }
-
-    public static List<View> allGlobalViews() {
-        try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                return WindowInspector.getGlobalWindowViews();
-            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
-                Class wmgClass = Class.forName("android.view.WindowManagerGlobal");
-                Object wmgInstance = wmgClass.getMethod("getInstance").invoke(null, (Object[]) null);
-
-                Method getViewRootNames = wmgClass.getMethod("getViewRootNames");
-                Method getRootView = wmgClass.getMethod("getRootView", String.class);
-                String[] rootViewNames = (String[]) getViewRootNames.invoke(wmgInstance, (Object[]) null);
-
-                List<View> views = new ArrayList<>();
-                for (String viewName : rootViewNames) {
-                    views.add((View) getRootView.invoke(wmgInstance, viewName));
-                }
-                return views;
-            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.ICE_CREAM_SANDWICH) {
-                Class wmiClass = Class.forName("android.view.WindowManagerImpl");
-                Object wmiInstance = wmiClass.getMethod("getDefault").invoke(null);
-
-                Field viewsField = wmiClass.getDeclaredField("mViews");
-                viewsField.setAccessible(true);
-                Object viewsObject = viewsField.get(wmiInstance);
-
-                if (viewsObject instanceof List) {
-                    return (List<View>) viewsField.get(wmiInstance);
-                } else if (viewsObject instanceof View[]) {
-                    return Arrays.asList((View[]) viewsField.get(wmiInstance));
-                }
-            }
-        } catch (Exception e) {
-            FileLog.e("allGlobalViews()", e);
-        }
-        return null;
-    }
-
-    public static boolean hasDialogOnTop(BaseFragment fragment) {
-        if (fragment == null) return false;
-        if (fragment.visibleDialog != null && !(fragment.visibleDialog instanceof AlertDialog) && !(
-            fragment.visibleDialog instanceof BottomSheet && ((BottomSheet) fragment.visibleDialog).attachedFragment != null
-        )) return true;
-        if (fragment.getParentLayout() == null) return false;
-        List<View> globalViews = allGlobalViews();
-        if (globalViews == null || globalViews.isEmpty()) return false;
-        View lastGlobalView = null;
-        for (int i = globalViews.size() - 1; i >= 0; --i) {
-            lastGlobalView = globalViews.get(i);
-            if (fragment.visibleDialog instanceof AlertDialog) {
-                if (lastGlobalView == getRootView((((AlertDialog) fragment.visibleDialog).getContainerView()))) {
-                    continue;
-                }
-            }
-            if (!(
-                lastGlobalView instanceof AlertDialog.AlertDialogView ||
-                lastGlobalView instanceof PipRoundVideoView.PipFrameLayout
-            )) break;
-        }
-        return lastGlobalView != getRootView(fragment.getParentLayout().getView());
-    }
-
-    public static View getRootView(View v) {
-        View view = v;
-        while (view != null && view.getParent() instanceof View) {
-            view = ((View) view.getParent());
-        }
-        return view;
-    }
-
-    public static boolean makingGlobalBlurBitmap;
-    public static void makeGlobalBlurBitmap(Utilities.Callback<Bitmap> onBitmapDone, float amount) {
-        makeGlobalBlurBitmap(onBitmapDone, amount, (int) amount, null, null);
-    }
-
-    public static void makeGlobalBlurBitmap(Utilities.Callback<Bitmap> onBitmapDone, float downscale, int amount, View forView, List<View> exclude) {
-        if (onBitmapDone == null) {
-            return;
-        }
-
-        List<View> views = allGlobalViews();
-
-        if (views == null) {
-            onBitmapDone.run(null);
-            return;
-        }
-        makingGlobalBlurBitmap = true;
-
-        final List<View> finalViews = views;
-        //Utilities.themeQueue.postRunnable(() -> {
-        try {
-            int w;
-            int h;
-            if (forView == null) {
-                w = (int) (AndroidUtilities.displaySize.x / downscale);
-                h = (int) ((AndroidUtilities.displaySize.y + AndroidUtilities.statusBarHeight) / downscale);
-            } else {
-                w = (int) (forView.getWidth() / downscale);
-                h = (int) (forView.getHeight() / downscale);
-            }
-            int[] location = new int[2];
-            Bitmap bitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
-            Canvas canvas = new Canvas(bitmap);
-            if (forView != null) {
-                forView.getLocationOnScreen(location);
-                canvas.translate(-location[0] / downscale, -location[1] / downscale);
-            }
-            canvas.scale(1.0f / downscale, 1.0f / downscale);
-            canvas.drawColor(Theme.getColor(Theme.key_windowBackgroundWhite));
-            for (int i = 0; i < finalViews.size(); ++i) {
-                View view = finalViews.get(i);
-                if (view instanceof PipRoundVideoView.PipFrameLayout || (exclude != null && exclude.contains(view))) {
-                    continue;
-                }
-
-                ViewGroup.LayoutParams layoutParams = view.getLayoutParams();
-                if (layoutParams instanceof WindowManager.LayoutParams) {
-                    WindowManager.LayoutParams params = (WindowManager.LayoutParams) layoutParams;
-                    if ((params.flags & WindowManager.LayoutParams.FLAG_DIM_BEHIND) != 0) {
-                        canvas.drawColor(ColorUtils.setAlphaComponent(0xFF000000, (int) (0xFF * params.dimAmount)));
-                    }
-                }
-
-                canvas.save();
-                view.getLocationOnScreen(location);
-                canvas.translate(location[0] / downscale, location[1] / downscale);
-                try {
-                    view.draw(canvas);
-                } catch (Exception e) {
-                    FileLog.e(e);
-                }
-                canvas.restore();
-            }
-            Utilities.stackBlurBitmap(bitmap, Math.max(amount, Math.max(w, h) / 180));
-//            AndroidUtilities.runOnUIThread(() -> {
-                onBitmapDone.run(bitmap);
-//            });
-        } catch (Exception e) {
-            FileLog.e(e);
-//            AndroidUtilities.runOnUIThread(() -> {
-                onBitmapDone.run(null);
-//            });
-        } finally {
-            makingGlobalBlurBitmap = false;
-        }
-        //   });
-    }
-
-    // rounds percents to be exact 100% in sum
-    public static int[] roundPercents(float[] percents, int[] output) {
-        if (percents == null) {
-            throw new NullPointerException("percents or output is null");
-        }
-        if (output == null) {
-            output = new int[percents.length];
-        }
-        if (percents.length != output.length) {
-            throw new IndexOutOfBoundsException("percents.length != output.length");
-        }
-
-        float sum = 0;
-        for (int i = 0; i < percents.length; ++i) {
-            sum += percents[i];
-        }
-
-        int roundedSum = 0;
-        for (int i = 0; i < percents.length; ++i) {
-            roundedSum += (output[i] = (int) Math.floor(percents[i] / sum * 100));
-        }
-
-        while (roundedSum < 100) {
-            float maxError = 0;
-            int maxErrorIndex = -1;
-            for (int i = 0; i < percents.length; ++i) {
-                float error = (percents[i] / sum) - (output[i] / 100f);
-                if (percents[i] > 0 && error >= maxError) {
-                    maxErrorIndex = i;
-                    maxError = error;
-                }
-            }
-            if (maxErrorIndex < 0) {
-                break;
-            }
-            output[maxErrorIndex]++;
-            roundedSum++;
-        }
-
-        return output;
-    }
-
-    public static boolean isRTL(CharSequence text) {
-        if (text == null || text.length() <= 0) {
-            return false;
-        }
-        char c;
-        for (int i = 0; i < text.length(); ++i) {
-            c = text.charAt(i);
-            if (c >= 0x590 && c <= 0x6ff) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private static Pattern uriParse;
-
-    public static Pattern getURIParsePattern() {
-        if (uriParse == null) {
-            uriParse = Pattern.compile("^(([^:/?#]+):)?(//([^/?#]*))?([^?#]*)(\\?([^#]*))?(#(.*))?"); // RFC 3986 B
-        }
-        return uriParse;
-    }
-
-    public static String getHostAuthority(String uri) {
-        return getHostAuthority(uri, false);
-    }
-
-    public static String getHostAuthority(String uri, boolean removeWWW) {
-        if (uri == null) {
-            return null;
-        }
-        // CVE-2017-13274
-        Matcher matcher = getURIParsePattern().matcher(uri);
-        if (matcher.matches()) {
-            String authority = matcher.group(4);
-            if (authority != null) {
-                authority = authority.toLowerCase();
-            }
-            if (removeWWW && authority != null && authority.startsWith("www.")) {
-                authority = authority.substring(4);
-            }
-            return authority;
-        }
-        return null;
-    }
-
-    public static String getHostAuthority(Uri uri) {
-        if (uri == null) {
-            return null;
-        }
-        return getHostAuthority(uri.toString());
-    }
-
-    public static String getHostAuthority(Uri uri, boolean removeWWW) {
-        if (uri == null) {
-            return null;
-        }
-        return getHostAuthority(uri.toString(), removeWWW);
-    }
-
-    public static boolean intersect1d(int x1, int x2, int y1, int y2) {
-        return Math.max(x1, x2) > Math.min(y1, y2) && Math.max(y1, y2) > Math.min(x1, x2);
-    }
-
-    public static boolean intersect1d(float x1, float x2, float y1, float y2) {
-        return Math.max(x1, x2) > Math.min(y1, y2) && Math.max(y1, y2) > Math.min(x1, x2);
-    }
-
-    public static boolean intersect1dInclusive(int x1, int x2, int y1, int y2) {
-        return Math.max(x1, x2) >= Math.min(y1, y2) && Math.max(y1, y2) >= Math.min(x1, x2);
-    }
-
-    public static String getSysInfoString(String path) {
-        RandomAccessFile reader = null;
-        try {
-            reader = new RandomAccessFile(path, "r");
-            String line = reader.readLine();
-            if (line != null) {
-                return line;
-            }
-        } catch (Exception ignore) {
-
-        } finally {
-            if (reader != null) {
-                try {
-                    reader.close();
-                } catch (Exception ignore) {
-                }
-            }
-        }
-        return null;
-    }
-
-    public static Long getSysInfoLong(String path) {
-        String line = getSysInfoString(path);
-        if (line != null) {
-            try {
-                return Utilities.parseLong(line);
-            } catch (Exception e) {
-            }
-        }
-        return null;
-    }
-
-    public static boolean isActivityRunning(Activity activity) {
-        if (activity == null) {
-            return false;
-        }
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
-            return !activity.isDestroyed() && !activity.isFinishing();
-        } else {
-            return !activity.isFinishing();
-        }
-    }
-
-    public static boolean isSafeToShow(Context context) {
-        Activity activity = findActivity(context);
-        if (activity == null) return true;
-        return isActivityRunning(activity);
-    }
-
-    public static Pair<Integer, Integer> getImageOrientation(InputStream is) {
-        try {
-            return getImageOrientation(new ExifInterface(is));
-        } catch (Exception e) {
-            FileLog.e(e);
-        }
-        return new Pair<>(0, 0);
-    }
-    public static Pair<Integer, Integer> getImageOrientation(File file) {
-        try {
-            return getImageOrientation(new ExifInterface(file));
-        } catch (Exception e) {
-            FileLog.e(e);
-        }
-        return new Pair<>(0, 0);
-    }
-    public static Pair<Integer, Integer> getImageOrientation(String path) {
-        try {
-            return getImageOrientation(new ExifInterface(path));
-        } catch (Exception ignore) {}
-        return new Pair<>(0, 0);
-    }
-
-    public static Pair<Integer, Integer> getImageOrientation(ExifInterface exif) {
-        try {
-            int orientation = 0, invert = 0;
-            final int exifvalue = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL);
-            switch (exifvalue) {
-                case ExifInterface.ORIENTATION_NORMAL:
-                    break;
-                case ExifInterface.ORIENTATION_FLIP_HORIZONTAL:
-                    invert = 1;
-                    break;
-                case ExifInterface.ORIENTATION_ROTATE_180:
-                    orientation = 180;
-                    break;
-                case ExifInterface.ORIENTATION_FLIP_VERTICAL:
-                    invert = 2;
-                    break;
-                case ExifInterface.ORIENTATION_TRANSPOSE:
-                    invert = 2;
-                    orientation = 270;
-                    break;
-                case ExifInterface.ORIENTATION_ROTATE_90:
-                    orientation = 90;
-                    break;
-                case ExifInterface.ORIENTATION_TRANSVERSE:
-                    invert = 1;
-                    orientation = 270;
-                    break;
-                case ExifInterface.ORIENTATION_ROTATE_270:
-                    orientation = 270;
-                    break;
-            }
-            return new Pair<>(orientation, invert);
-        } catch (Exception e) {
-            FileLog.e(e);
-        }
-        return new Pair<>(0, 0);
-    }
-
-    public static void forEachViews(View view, Consumer<View> consumer) {
-        if (view instanceof ViewGroup) {
-            ViewGroup viewGroup = (ViewGroup) view;
-            for (int i = 0; i < viewGroup.getChildCount(); i++) {
-                consumer.accept(view);
-                forEachViews(viewGroup.getChildAt(i), consumer);
-            }
-        } else {
-            consumer.accept(view);
-        }
-    }
-
-    public static void forEachViews(RecyclerView recyclerView, Consumer<View> consumer) {
-        if (recyclerView == null) {
-            return;
-        }
-        for (int i = 0; i < recyclerView.getChildCount(); i++) {
-            consumer.accept(recyclerView.getChildAt(i));
-        }
-        for (int i = 0; i < recyclerView.getCachedChildCount(); i++) {
-            consumer.accept(recyclerView.getCachedChildAt(i));
-        }
-        for (int i = 0; i < recyclerView.getHiddenChildCount(); i++) {
-            consumer.accept(recyclerView.getHiddenChildAt(i));
-        }
-        for (int i = 0; i < recyclerView.getAttachedScrapChildCount(); i++) {
-            consumer.accept(recyclerView.getAttachedScrapChildAt(i));
-        }
-    }
-
-    public static int getDominantColor(Bitmap bitmap) {
-        if (bitmap == null) {
-            return Color.WHITE;
-        }
-        float stepH = (bitmap.getHeight() - 1) / 10f;
-        float stepW = (bitmap.getWidth() - 1) / 10f;
-        int r = 0, g = 0, b = 0;
-        int amount = 0;
-        for (int i = 0; i < 10; i++) {
-            for (int j = 0; j < 10; j++) {
-                int x = (int) (stepW * i);
-                int y = (int) (stepH * j);
-                int pixel = bitmap.getPixel(x, y);
-                if (Color.alpha(pixel) > 200) {
-                    r += Color.red(pixel);
-                    g += Color.green(pixel);
-                    b += Color.blue(pixel);
-                    amount++;
-                }
-            }
-        }
-        if (amount == 0) {
-            return 0;
-        }
-        return Color.argb(255, r / amount, g / amount, b / amount);
-    }
-
-    @NonNull
-    public static String translitSafe(String str) {
-        try {
-            if (str != null) {
-                str = str.toLowerCase();
-            }
-            String s = LocaleController.getInstance().getTranslitString(str, false);
-            if (s == null) {
-                return "";
-            }
-            return s;
-        } catch (Exception ignore) {}
-        return "";
-    }
-
-	public static void quietSleep(long millis) {
-        try {
-            Thread.sleep(millis);
-        } catch (InterruptedException ignored) {
-
-        }
-    }
-
-    public static ByteBuffer cloneByteBuffer(ByteBuffer original) {
-        ByteBuffer clone;
-        try {
-            clone = ByteBuffer.allocate(original.capacity());
-        } catch (OutOfMemoryError error) {
-            System.gc();
-            clone = ByteBuffer.allocate(original.capacity());
-        }
-        int position = original.position();
-        original.rewind();
-        clone.put(original);
-        original.rewind();
-        clone.flip();
-        clone.position(position);
-        return clone;
-    }
-
-    public static void checkAndroidTheme(Context context, boolean open) {
-        // this hack is done to support prefers-color-scheme in webviews 🤦
-        if (context == null) {
-            return;
-        }
-        context.setTheme(Theme.isCurrentThemeDark() && open ? R.style.Theme_TMessages_Dark : R.style.Theme_TMessages);
-    }
-
-    private static Boolean isHonor;
-    public static boolean isHonor() {
-        if (isHonor == null) {
-            try {
-                final String brand = Build.BRAND.toLowerCase();
-                isHonor = brand.contains("huawei") || brand.contains("honor");
-            } catch (Exception e) {
-                FileLog.e(e);
-                isHonor = false;
-            }
-        }
-        return isHonor;
-    }
-
-    public static CharSequence withLearnMore(CharSequence text, Runnable onClick) {
-        SpannableString link = new SpannableString(getString(R.string.LearnMoreArrow));
-        link.setSpan(new ClickableSpan() {
-            @Override
-            public void onClick(@NonNull View widget) {
-                if (onClick != null) {
-                    onClick.run();
-                }
-            }
-
-            @Override
-            public void updateDrawState(@NonNull TextPaint ds) {
-                ds.setUnderlineText(false);
-                ds.setColor(ds.linkColor);
-            }
-        }, 0, link.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-
-        SpannableStringBuilder result = new SpannableStringBuilder(text);
-        result.append(" ");
-        result.append(link);
-
-        return replaceArrows(result, true);
-    }
-
-    public static View findChildViewUnder(ViewGroup parent, float x, float y) {
-        if (parent == null) return null;
-        if (parent.getVisibility() != View.VISIBLE) return null;
-        for (int i = 0; i < parent.getChildCount(); ++i) {
-            View child = parent.getChildAt(i);
-            if (child == null) continue;
-            if (child.getVisibility() != View.VISIBLE) continue;
-            if (child instanceof ViewGroup) {
-                View foundChild = findChildViewUnder((ViewGroup) child, x - child.getLeft(), y - child.getTop());
-                if (foundChild != null) {
-                    return foundChild;
-                }
-            } else if (
-                x >= child.getX() && x <= child.getX() + child.getWidth() &&
-                y >= child.getY() && x <= child.getY() + child.getHeight()
-            ) {
-                return child;
-            }
-        }
-        return null;
-    }
-
-    public static void vibrateCursor(View view) {
-        try {
-            if (view == null || view.getContext() == null) return;
-            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return;
-            if (!((Vibrator) view.getContext().getSystemService(Context.VIBRATOR_SERVICE)).hasAmplitudeControl()) return;
-            view.performHapticFeedback(HapticFeedbackConstants.TEXT_HANDLE_MOVE, HapticFeedbackConstants.FLAG_IGNORE_VIEW_SETTING);
-        } catch (Exception ignore) {}
-    }
-
-    public static void vibrate(View view) {
-        try {
-            if (view == null || view.getContext() == null) return;
-            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return;
-            if (!((Vibrator) view.getContext().getSystemService(Context.VIBRATOR_SERVICE)).hasAmplitudeControl()) return;
-            view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_VIEW_SETTING);
-        } catch (Exception ignore) {}
-    }
-
-    public static void applySpring(Animator anim, double stiffness, double damping) {
-        applySpring(anim, stiffness, damping, 1, 0);
-    }
-
-    public static void applySpring(Animator anim, double stiffness, double damping, double mass) {
-        applySpring(anim, stiffness, damping, mass, 0);
-    }
-
-    public static void applySpring(Animator anim, double stiffness, double damping, double mass, double initialVelocity) {
-        final double w0 = Math.sqrt(stiffness / mass);
-        final double zeta = damping / (2.0 * Math.sqrt(stiffness * mass));
-        final double wd, A, B;
-        if (zeta < 1) {
-            wd = w0 * Math.sqrt(1.0 - zeta * zeta);
-            A = 1.0;
-            B = (zeta * w0 + -initialVelocity) / wd;
-        } else {
-            wd = 0.0;
-            A = 1.0;
-            B = -initialVelocity + w0;
-        }
-        final double threshold = 0.0025;
-        final double duration = Math.log(threshold) / (-zeta * w0);
-        anim.setDuration((long) (duration * 1000L));
-        anim.setInterpolator(new Interpolator() {
-            @Override
-            public float getInterpolation(float t) {
-                if (zeta < 1) {
-                    return (float) (1.0 - Math.exp(-t * zeta * w0) * (A * Math.cos(wd * t) + B * Math.sin(wd * t)));
-                } else {
-                    return (float) (1.0 - (A + B * t) * Math.exp(-t * w0));
-                }
-            }
-        });
-    }
-
-    public static void applySpring(Animator anim, float stiffness, float damping, float mass, long overrideDuration) {
-        final double zeta = damping / (2 * Math.sqrt(stiffness * mass));
-        final double omega = Math.sqrt(stiffness / mass);
-        final double threshold = 0.0025;
-        anim.setDuration(overrideDuration);
-        anim.setInterpolator(new Interpolator() {
-            @Override
-            public float getInterpolation(float t) {
-                if (zeta < 1) {
-                    final double dampedFrequency = omega * Math.sqrt(1 - zeta * zeta);
-                    return (float) (1 - Math.exp(-zeta * omega * t) *
-                            (Math.cos(dampedFrequency * t) + (zeta * omega / dampedFrequency) * Math.sin(dampedFrequency * t)));
-                } else {
-                    final double a = -zeta * omega * t;
-                    return (float) (1 - (1 + a) * Math.exp(a));
-                }
-            }
-        });
-    }
-
-    public static boolean isWebAppLink(String url) {
-        if (url == null) return false;
-        try {
-            Uri uri = Uri.parse(url);
-            final String scheme = uri.getScheme();
-            if (scheme == null) return false;
-            final String path = uri.getPath();
-            if (path == null) return false;
-            switch (scheme) {
-                case "http":
-                case "https": {
-                    if (path.isEmpty()) return false;
-                    String host = uri.getHost().toLowerCase();
-                    Matcher prefixMatcher = LaunchActivity.PREFIX_T_ME_PATTERN.matcher(host);
-                    boolean isPrefix = prefixMatcher.find();
-                    if (host.equals("telegram.me") || host.equals("t.me") || host.equals("telegram.dog") || isPrefix) {
-                        ArrayList<String> segments = new ArrayList<>(uri.getPathSegments());
-                        if (segments.size() > 0 && segments.get(0).equals("s")) {
-                            segments.remove(0);
-                        }
-                        if (segments.size() > 0) {
-                            if (segments.size() >= 3 && "s".equals(segments.get(1))) {
-                                return false;
-                            } else if (segments.size() > 1) {
-                                final String segment0 = segments.get(0);
-                                if (TextUtils.isEmpty(segment0)) return false;
-                                switch (segment0) {
-                                    case "joinchat":
-                                    case "login":
-                                    case "addstickers":
-                                    case "addemoji":
-                                    case "msg":
-                                    case "share":
-                                    case "confirmphone":
-                                    case "setlanguage":
-                                    case "addtheme":
-                                    case "boost":
-                                    case "c":
-                                    case "contact":
-                                    case "folder":
-                                    case "addlist":
-                                        return false;
-                                }
-                                final String segment1 = segments.get(1);
-                                if (TextUtils.isEmpty(segment1)) return false;
-                                if (segment1.matches("^\\d+$")) return false;
-                                return true;
-                            } else if (segments.size() == 1) {
-                                return !TextUtils.isEmpty(uri.getQueryParameter("startapp"));
-                            }
-                        }
-                    }
-                    break;
-                }
-                case "tg": {
-                    if (url.startsWith("tg:resolve") || url.startsWith("tg://resolve")) {
-                        return !TextUtils.isEmpty(uri.getQueryParameter("appname"));
-                    }
-                    break;
-                }
-            }
-        } catch (Exception e) {
-            FileLog.e(e);
-        }
-        return false;
-    }
-
-    public static CharSequence removeSpans(CharSequence text, Class spanClass) {
-        if (!(text instanceof Spannable)) return text;
-        final Spannable spannable = (Spannable) text;
-        final Object[] spans = spannable.getSpans(0, spannable.length(), spanClass);
-        for (int i = 0; i < spans.length; ++i) {
-            spannable.removeSpan(spans[i]);
-        }
-        return spannable;
-    }
-
-    public static void notifyDataSetChanged(RecyclerView listView) {
-        if (listView == null) return;
-        if (listView.getAdapter() == null) return;
-        if (listView.isComputingLayout()) {
-            listView.post(() -> {
-                if (listView.getAdapter() != null) {
-                    listView.getAdapter().notifyDataSetChanged();
-                }
-            });
-        } else {
-            listView.getAdapter().notifyDataSetChanged();
-        }
-    }
-
-    public static void doOnPreDraw(@NonNull View view, @NonNull Runnable action) {
-        final ViewTreeObserver observer = view.getViewTreeObserver();
-
-        ViewTreeObserver.OnPreDrawListener[] listenerHolder = new ViewTreeObserver.OnPreDrawListener[1];
-        boolean[] completed = new boolean[1];
-        listenerHolder[0] = () -> {
-            if (observer.isAlive()) {
-                observer.removeOnPreDrawListener(listenerHolder[0]);
-            }
-            if (!completed[0]) {
-                completed[0] = true;
-                action.run();
-            }
-            return true;
-        };
-        observer.addOnPreDrawListener(listenerHolder[0]);
-    }
-
-    public static boolean isInAirplaneMode(Context context) {
-        try {
-            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.JELLY_BEAN_MR1) {
-                return Settings.System.getInt(context.getContentResolver(), Settings.System.AIRPLANE_MODE_ON, 0) != 0;
-            } else {
-                return Settings.Global.getInt(context.getContentResolver(), Settings.Global.AIRPLANE_MODE_ON, 0) != 0;
-            }
-        } catch (Exception ignore) {
-            return false;
-        }
-    }
-
-    public static boolean isWifiEnabled(Context context) {
-        try {
-            WifiManager wm = (WifiManager) context.getApplicationContext().getSystemService(Context.WIFI_SERVICE);
-            return wm != null && wm.isWifiEnabled();
-        } catch (Exception ignore) {
-            return false;
-        }
-    }
-
-    public static boolean gzip(File input, File output) {
-        try (
-            BufferedInputStream in = new BufferedInputStream(new FileInputStream(input));
-            GZIPOutputStream out = new GZIPOutputStream(new BufferedOutputStream(new FileOutputStream(output)))
-        ) {
-            byte[] buffer = new byte[8 * 1024];
-            int n;
-            while ((n = in.read(buffer)) != -1) {
-                out.write(buffer, 0, n);
-            }
-            return true;
-        } catch (FileNotFoundException e) {
-            FileLog.e(e);
-        } catch (IOException e) {
-            FileLog.e(e);
-        }
-        return false;
-    }
-
-    private static void printStackTrace(String tag) {
-        StackTraceElement[] elements = Thread.currentThread().getStackTrace();
-        for (int a = 0; a < elements.length; a++) {
-            FileLog.d("[" + tag + "] " + elements[a]);
-        }
-    }
-
-    public static void logFlagSecure() {
-        if (!BuildConfig.DEBUG_VERSION) {
-            return;
-        }
-
-        FileLog.d("[FLAG_SECURE]");
-        printStackTrace("FLAG_SECURE");
-    }
-}

@@ -24,6 +24,7 @@ import com.google.firebase.remoteconfig.FirebaseRemoteConfig;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
@@ -262,7 +263,9 @@ public class ConnectionsManager extends BaseController {
         if (getUserConfig().getCurrentUser() != null) {
             userPremium = getUserConfig().getCurrentUser().premium;
         }
-        init(SharedConfig.buildVersion(), TLRPC.LAYER, BuildVars.APP_ID, deviceModel, systemVersion, appVersion, langCode, systemLangCode, configPath, FileLog.getNetworkLogPath(), pushString, fingerprint, timezoneOffset, getUserConfig().getClientUserId(), userPremium, enablePushConnection);
+        // init(SharedConfig.buildVersion(), TLRPC.LAYER, BuildVars.APP_ID, deviceModel, systemVersion, appVersion, langCode, systemLangCode, configPath, FileLog.getNetworkLogPath(), pushString, fingerprint, timezoneOffset, getUserConfig().getClientUserId(), userPremium, enablePushConnection);
+        // Usar APP_ID de AndroidUtilities
+        init(SharedConfig.buildVersion(), TLRPC.LAYER, AndroidUtilities.APP_ID, deviceModel, systemVersion, appVersion, langCode, systemLangCode, configPath, FileLog.getNetworkLogPath(), pushString, fingerprint, timezoneOffset, getUserConfig().getClientUserId(), userPremium, enablePushConnection);
     }
 
     private String getRegId() {
@@ -622,6 +625,43 @@ public class ConnectionsManager extends BaseController {
             packageId = "";
         }
 
+        // >>> MODIFICACIÓN PARA CONFIGURACIÓN DE DC INICIAL <<<
+        // Determinar si es entorno de Test. Esto normalmente vendría de BuildConfig.DEBUG
+        // o una configuración similar específica del build.
+        // Para este ejemplo, lo basamos en BuildVars.DEBUG_VERSION como proxy.
+        boolean useTestEnvironment = BuildVars.DEBUG_VERSION;
+        AndroidUtilities.MTProtoConfig currentDatacenterConfig = AndroidUtilities.getCurrentConfig(useTestEnvironment);
+
+        JSONArray initialDCsJsonArray = new JSONArray();
+        JSONObject activeDCJson = new JSONObject();
+        try {
+            if (useTestEnvironment) {
+                activeDCJson.put("id", 10001); // ID de ejemplo para DC de Test (ej. 1 + 10000)
+                                           // El ID real dependería de la configuración interna de la capa nativa
+                                           // o cómo se mapeen estos DCs.
+                activeDCJson.put("ip", currentDatacenterConfig.host);
+                activeDCJson.put("port", currentDatacenterConfig.port);
+                activeDCJson.put("public_key", currentDatacenterConfig.publicKey);
+            } else {
+                activeDCJson.put("id", 2);    // ID de ejemplo para DC de Producción (DC2 es común)
+                activeDCJson.put("ip", currentDatacenterConfig.host);
+                activeDCJson.put("port", currentDatacenterConfig.port);
+                activeDCJson.put("public_key", currentDatacenterConfig.publicKey);
+            }
+            initialDCsJsonArray.put(activeDCJson);
+
+            // Llamada a la función nativa conceptualizada (no se implementa en este paso,
+            // ya que requeriría modificar la capa C++ y la firma JNI de native_init o una nueva función)
+            // native_setInitialDatacenters(currentAccount, initialDCsJsonArray.toString());
+            if (BuildVars.LOGS_ENABLED) {
+                FileLog.d("ConnectionsManager: Attempting to set initial datacenter for account " + currentAccount + ": " + initialDCsJsonArray.toString());
+                FileLog.d("ConnectionsManager: APP_ID used: " + AndroidUtilities.APP_ID + ", APP_HASH (from BuildVars): " + BuildVars.APP_HASH);
+            }
+        } catch (Exception e) {
+            FileLog.e("ConnectionsManager: Failed to create JSON for initial DC config: " + e);
+        }
+        // >>> FIN DE MODIFICACIÓN <<<
+
         native_init(currentAccount, version, layer, apiId, deviceModel, systemVersion, appVersion, langCode, systemLangCode, configPath, logPath, regId, cFingerprint, installer, packageId, timezoneOffset, userId, userPremium, enablePushConnection, ApplicationLoader.isNetworkOnline(), ApplicationLoader.getCurrentNetworkType(), SharedConfig.measureDevicePerformanceClass());
         checkConnection();
     }
@@ -953,6 +993,7 @@ public class ConnectionsManager extends BaseController {
     public static native void native_setPushConnectionEnabled(int currentAccount, boolean value);
     public static native void native_applyDnsConfig(int currentAccount, long address, String phone, int date);
     public static native long native_checkProxy(int currentAccount, String address, int port, String username, String password, String secret, RequestTimeDelegate requestTimeDelegate);
+    // private static native void native_setInitialDatacenters(int currentAccount, String jsonDcList); // Declaración conceptual de la función JNI
     public static native void native_onHostNameResolved(String host, long address, String ip);
     public static native void native_discardConnection(int currentAccount, int datacenterId, int connectionType);
     public static native void native_failNotRunningRequest(int currentAccount, int token);
