@@ -1,5 +1,7 @@
 package org.telegram.ui.Cells;
 
+import static org.telegram.ui.ProfileActivity.COLLAPSE_HEIGHT_DP;
+
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
@@ -500,12 +502,12 @@ public class ShortcutsCell extends FrameLayout {
                     path.rewind();
                     path.addRoundRect(rect, AndroidUtilities.dp(16), AndroidUtilities.dp(16), Path.Direction.CW);
                     canvas.clipPath(path);
-                    if (expandProgress > 0.33f) {
+                    if (extraHeight > AndroidUtilities.dp(COLLAPSE_HEIGHT_DP + 28)) {
                         canvas.translate(ox, oy);
                     } else {
                         canvas.translate(ox, oy - height);
                     }
-                    android.util.Log.d("wwttff", "diffextra " + diff + " " + extraHeight + " " + expandProgress);
+                    android.util.Log.d("wwttff", "diffextra " + diff + " " + extraHeight + " " + expandProgress + " " + (AndroidUtilities.dp(COLLAPSE_HEIGHT_DP + 28)));
                     if (customBlur()) {
                         blur.drawRect(canvas, 0, 0, alpha);
                     } else {

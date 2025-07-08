@@ -409,10 +409,12 @@ public class ProfileStoriesView extends View implements NotificationCenter.Notif
 
     private float expandProgress;
     public void setExpandProgress(float progress) {
-        if (this.expandProgress != progress) {
+        setAlpha(1f - Math.min(progress / 0.3f, 1f));
+        invalidate();
+        /*if (this.expandProgress != progress) {
             this.expandProgress = progress;
             invalidate();
-        }
+        }*/
     }
 
     private float actionBarProgress;
