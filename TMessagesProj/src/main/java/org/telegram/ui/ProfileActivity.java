@@ -365,6 +365,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     private FrameLayout avatarContainer2;
     private DrawerProfileCell.AnimatedStatusView animatedStatusView;
     private AvatarImageView avatarImage;
+    private AvatarButtonsOverlayView avatarButtonsOverlay;
     private View avatarOverlay;
     private AnimatorSet avatarAnimation;
     private RadialProgressView avatarProgressView;
@@ -1000,6 +1001,44 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             }
             progressToExpand = animatedFracture;
             invalidate();
+        }
+    }
+
+    public class AvatarButtonsOverlayView extends View {
+
+        private Paint solidPaint;
+        private Paint gradientPaint;
+        private LinearGradient gradientShader;
+        private int color;
+
+        public AvatarButtonsOverlayView(Context context) {
+            super(context);
+            color = Color.GREEN;
+            solidPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+            solidPaint.setColor(color);
+            solidPaint.setAlpha((int) (255 * 0.9f));
+            gradientPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        }
+
+        @Override
+        protected void onDraw(Canvas canvas) {
+            super.onDraw(canvas);
+            float currentHeight = getHeight();
+            if (currentHeight <= 0) {
+                return;
+            }
+            float totalHeightDp = 103f;
+            float gradientHeightDp = 25f;
+            float currentGradientHeight = currentHeight * (gradientHeightDp / totalHeightDp);
+            canvas.drawRect(0, currentGradientHeight, getWidth(), currentHeight, solidPaint);
+            gradientShader = new LinearGradient(
+                    0, 0, 0, currentGradientHeight,
+                    Color.TRANSPARENT, color,
+                    Shader.TileMode.CLAMP
+            );
+            gradientPaint.setShader(gradientShader);
+            gradientPaint.setAlpha((int) (255 * 0.9f));
+            canvas.drawRect(0, 0, getWidth(), currentGradientHeight, gradientPaint);
         }
     }
 
@@ -4898,6 +4937,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         avatarContainer.setPivotX(0);
         avatarContainer.setPivotY(0);
         avatarContainer2.addView(avatarContainer, LayoutHelper.createFrame(42, 42, Gravity.TOP | Gravity.LEFT, 64, 0, 0, 0));
+        avatarButtonsOverlay = new AvatarButtonsOverlayView(context);
+        avatarButtonsOverlay.setVisibility(View.GONE);
         avatarImage = new AvatarImageView(context) {
             @Override
             public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
@@ -5038,6 +5079,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         }
         avatarContainer2.addView(avatarsViewPager);
         avatarContainer2.addView(overlaysView);
+        avatarContainer2.addView(avatarButtonsOverlay, LayoutHelper.createFrame(0, 0));
         avatarImage.setAvatarsViewPager(avatarsViewPager);
 
         avatarsViewPagerIndicatorView = new PagerIndicatorView(context);
@@ -5804,8 +5846,45 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         params.height = (int) AndroidUtilities.lerp(AndroidUtilities.dpf2(42f), (extraHeight - buttonsAreaHeight + newTop) / avatarScale, value);
         params.leftMargin = (int) AndroidUtilities.lerp(AndroidUtilities.dpf2(64f), 0f, value);
         avatarContainer.requestLayout();
-
+        updateAvatarButtonsOverlayLayout();
         updateCollectibleHint();
+    }
+
+    private void updateAvatarButtonsOverlayLayout() {
+        if (avatarButtonsOverlay == null || topView == null) {
+            return;
+        }
+        final int actionBarHeight = ActionBar.getCurrentActionBarHeight() + (actionBar.getOccupyStatusBar() ? AndroidUtilities.statusBarHeight : 0);
+        boolean isAnimating = expandAnimator != null && expandAnimator.isRunning();
+        float progress;
+        if (isAnimating) {
+            progress = currentExpandAnimatorValue;
+        } else if (isPulledDown) {
+            progress = 1.0f;
+        } else {
+            progress = 0.0f;
+        }
+        avatarButtonsOverlay.setVisibility(progress > 0.01f ? View.VISIBLE : View.GONE);
+        avatarButtonsOverlay.setAlpha(progress);
+        FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) avatarButtonsOverlay.getLayoutParams();
+        if (isAnimating) {
+            float endWidth = listView.getMeasuredWidth();
+            params.width = (int) endWidth;
+            float maxHeight = AndroidUtilities.dp(103f);
+            params.height = (int) (maxHeight * progress);
+        } else if (isPulledDown) {
+            ViewGroup.LayoutParams pagerParams = avatarsViewPager.getLayoutParams();
+            params.width = pagerParams.width;
+            params.height = AndroidUtilities.dp(103f);
+        }
+        avatarButtonsOverlay.setLayoutParams(params);
+        float finalY = extraHeight + actionBarHeight - params.height;
+        avatarButtonsOverlay.setTranslationY(finalY);
+        if (isAnimating) {
+            avatarButtonsOverlay.setTranslationX(avatarContainer.getTranslationX());
+        } else {
+            avatarButtonsOverlay.setTranslationX(0);
+        }
     }
 
     private int getSmallAvatarRoundRadius() {
@@ -7367,6 +7446,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             if (h > totalHeaderHeight || isPulledDown) {
                 expandProgress = Math.max(0f, Math.min(1f, (h - totalHeaderHeight) / (listView.getPaddingTop() - totalHeaderHeight)));
                 avatarScale = AndroidUtilities.lerp((42f + 18f) / 42f, (42f + 42f + 18f) / 42f, Math.min(1f, expandProgress * 3f));
+                updateAvatarButtonsOverlayLayout();
                 if (storyView != null) {
                     storyView.invalidate();
                 }
@@ -7423,7 +7503,6 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                             @Override
                             public void onAnimationEnd(Animator animation) {
                                 expandAnimator.removeListener(this);
-                                topView.setBackgroundColor(Color.BLACK);
                                 avatarContainer.setVisibility(View.GONE);
                                 avatarsViewPager.setVisibility(View.VISIBLE);
                             }
@@ -8486,7 +8565,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         if (SharedConfig.chatBlurEnabled()) {
             actionBarColor = ColorUtils.setAlphaComponent(actionBarColor, 0);
         }
-        topView.setBackgroundColor(ColorUtils.blendARGB(actionBarColor, color, progress));
+//        topView.setBackgroundColor(ColorUtils.blendARGB(actionBarColor, color, progress));
         timerDrawable.setBackgroundColor(ColorUtils.blendARGB(actionBarColor2, color, progress));
 
         color = AvatarDrawable.getIconColorForId(userId != 0 || ChatObject.isChannel(chatId, currentAccount) && !currentChat.megagroup ? 5 : chatId, resourcesProvider);
@@ -8545,6 +8624,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 giftsView.setProgressToStoriesInsets(avatarAnimationProgress);
             }
         }
+        updateAvatarButtonsOverlayLayout();
     }
 
     boolean profileTransitionInProgress;
