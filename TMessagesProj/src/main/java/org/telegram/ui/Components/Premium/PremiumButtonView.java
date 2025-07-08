@@ -158,6 +158,10 @@ public class PremiumButtonView extends FrameLayout implements Loadable {
         }
     }
 
+    public void setPaintOverlayColor(int color) {
+        paintOverlayPaint.setColor(color);
+    }
+
     public boolean isShowOverlay() {
         return showOverlay;
     }
