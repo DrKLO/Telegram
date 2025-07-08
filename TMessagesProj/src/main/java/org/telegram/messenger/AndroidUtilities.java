@@ -293,6 +293,73 @@ public class AndroidUtilities {
     }
 
     // Resto de la clase AndroidUtilities...
+
+    // Configuración de la aplicación Telegram
+    public static final int APP_ID = BuildVars.APP_ID; // Tomado de BuildVars
+    public static final String APP_HASH = BuildVars.APP_HASH; // Tomado de BuildVars
+
+    // Nombres de la aplicación (opcional, pero puede ser útil para referencia)
+    public static final String APP_NAME_TELEGRAPHY = "Telegraphy";
+    public static final String APP_NAME_TELEGRAPHY7 = "Telegraphy7";
+
+    // Clase interna estática para encapsular la configuración de un servidor MTProto
+    public static class MTProtoConfig {
+        public final String host;
+        public final int port;
+        public final String publicKey;
+
+        public MTProtoConfig(String host, int port, String publicKey) {
+            this.host = host;
+            this.port = port;
+            this.publicKey = publicKey;
+        }
+    }
+
+    // Configuración del servidor de Test
+    public static final MTProtoConfig TEST_CONFIG = new MTProtoConfig(
+            "149.154.167.40",
+            443,
+            "-----BEGIN RSA PUBLIC KEY-----\n" +
+            "MIIBCgKCAQEAyMEdY1aR+sCR3ZSJrtztKTKqigvO/vBfqACJLZtS7QMgCGXJ6XIR\n" +
+            "yy7mx66W0/sOFa7/1mAZtEoIokDP3ShoqF4fVNb6XeqgQfaUHd8wJpDWHcR2OFwv\n" +
+            "plUUI1PLTktZ9uW2WE23b+ixNwJjJGwBDJPQEQFBE+vfmH0JP503wr5INS1poWg/\n" +
+            "j25sIWeYPHYeOrFp/eXaqhISP6G+q2IeTaWTXpwZj4LzXq5YOpk4bYEQ6mvRq7D1\n" +
+            "aHWfYmlEGepfaYR8Q0YqvvhYtMte3ITnuSJs171+GDqpdKcSwHnd6FudwGO4pcCO\n" +
+            "j4WcDuXc2CTHgH8gFTNhp/Y8/SpDOhvn9QIDAQAB\n" +
+            "-----END RSA PUBLIC KEY-----"
+    );
+
+    // Configuración del servidor de Producción
+    public static final MTProtoConfig PRODUCTION_CONFIG = new MTProtoConfig(
+            "149.154.167.50",
+            443,
+            "-----BEGIN RSA PUBLIC KEY-----\n" +
+            "MIIBCgKCAQEA6LszBcC1LGzyr992NzE0ieY+BSaOW622Aa9Bd4ZHLl+TuFQ4lo4g\n" +
+            "5nKaMBwK/BIb9xUfg0Q29/2mgIR6Zr9krM7HjuIcCzFvDtr+L0GQjae9H0pRB2OO\n" +
+            "62cECs5HKhT5DZ98K33vmWiLowc621dQuwKWSQKjWf50XYFw42h21P2KXUGyp2y/\n" +
+            "+aEyZ+uVgLLQbRA1dEjSDZ2iGRy12Mk5gpYc397aYp438fsJoHIgJ2lgMv5h7WY9\n" +
+            "t6N/byY9Nw9p21Og3AoXSL2q/2IJ1WRUhebgAdGVMlV1fkuOQoEzR7EdpqtQD9Cs\n" +
+            "5+bfo3Nhmcyvk5ftB0WkJ9z6bNZ7yxrP8wIDAQAB\n" +
+            "-----END RSA PUBLIC KEY-----"
+    );
+
+    /**
+     * Devuelve la configuración de MTProto actual.
+     * Se podría basar en un flag de BuildConfig (por ejemplo, BuildConfig.DEBUG)
+     * o una preferencia de usuario para alternar entre Test y Producción.
+     *
+     * @param isTestEnvironment true si se debe usar la configuración de Test, false para Producción.
+     * @return La configuración de MTProto correspondiente.
+     */
+    public static MTProtoConfig getCurrentConfig(boolean isTestEnvironment) {
+        if (isTestEnvironment) {
+            return TEST_CONFIG;
+        } else {
+            return PRODUCTION_CONFIG;
+        }
+    }
+
+    // Resto de la clase AndroidUtilities...
     public final static int LIGHT_STATUS_BAR_OVERLAY = 0x0f000000, DARK_STATUS_BAR_OVERLAY = 0x33000000;
 
     public final static int REPLACING_TAG_TYPE_LINK = 0;
