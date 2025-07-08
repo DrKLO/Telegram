@@ -146,11 +146,14 @@ import org.telegram.messenger.SRPHelper;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
-import org.telegram.tgnet.ConnectionsManager;
-import org.telegram.tgnet.RequestDelegate;
-import org.telegram.tgnet.SerializedData;
-import org.telegram.tgnet.TLObject;
-import org.telegram.tgnet.TLRPC;
+// TDLib Integration: ConnectionsManager y TLRPC serían reemplazados gradualmente.
+// import org.telegram.tgnet.ConnectionsManager;
+// import org.telegram.tgnet.RequestDelegate;
+// import org.telegram.tgnet.SerializedData;
+// import org.telegram.tgnet.TLObject;
+// import org.telegram.tgnet.TLRPC;
+import org.telegram.tdlib.TdApi; // TDLib Integration: Importar TdApi
+import org.telegram.tdlib.TelegramClient; // TDLib Integration: Importar TelegramClient
 import org.telegram.tgnet.tl.TL_account;
 import org.telegram.tgnet.tl.TL_stars;
 import org.telegram.ui.ActionBar.ActionBar;
