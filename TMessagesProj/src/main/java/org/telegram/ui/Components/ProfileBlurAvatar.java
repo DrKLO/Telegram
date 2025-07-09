@@ -8,6 +8,8 @@ import android.graphics.RectF;
 import android.widget.FrameLayout;
 import androidx.annotation.NonNull;
 
+import org.telegram.ui.ProfileActivity;
+
 @SuppressLint("ViewConstructor")
 public class ProfileBlurAvatar extends FrameLayout {
 
@@ -48,7 +50,7 @@ public class ProfileBlurAvatar extends FrameLayout {
     }
 
     protected boolean customBlur() {
-        return blurManager.hasRenderNode();
+        return !ProfileActivity.FORCE_MY_BLUR && blurManager.hasRenderNode();
     }
 
     protected void drawBlur(BlurringShader.StoryBlurDrawer blur, Canvas canvas, RectF rect, float ox, float oy, float alpha) {

@@ -4,6 +4,8 @@ import android.graphics.*;
 import android.os.*;
 import androidx.annotation.*;
 import org.intellij.lang.annotations.Language;
+import org.telegram.ui.ProfileActivity;
+
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -14,7 +16,7 @@ public final class MetaMask {
     public static float ISO = 1.15f;
 
     public static void draw(Canvas cv, RectF bubble, RectF button, Paint paint, boolean pillActsAsSingle) {
-        if (Build.VERSION.SDK_INT >= 33) {
+        if (Build.VERSION.SDK_INT >= 33 && !ProfileActivity.FORCE_MY_BLUR) {
             drawShader(cv, bubble, button, paint, pillActsAsSingle, ISO);
         } else {
             drawBitmapAsync(cv, bubble, button, paint, pillActsAsSingle, ISO);

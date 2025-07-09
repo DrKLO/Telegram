@@ -8,6 +8,8 @@ import android.animation.ValueAnimator;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.ColorMatrix;
+import android.graphics.ColorMatrixColorFilter;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.PorterDuff;
@@ -49,6 +51,7 @@ import java.util.Objects;
 import java.util.function.Consumer;
 
 import org.telegram.messenger.R;
+import org.telegram.ui.ProfileActivity;
 
 public class ShortcutsCell extends FrameLayout {
 
@@ -132,7 +135,7 @@ public class ShortcutsCell extends FrameLayout {
         this.fallbackBlurManager2 = fallbackBlurManager2;
 
         if (blurManager != null) {
-            backgroundBlur = new BlurringShader.StoryBlurDrawer(blurManager, this, BlurringShader.StoryBlurDrawer.BLUR_TYPE_ACTION_BACKGROUND, !customBlur());
+            backgroundBlur = new BlurringShader.StoryBlurDrawer(blurManager, this, BlurringShader.StoryBlurDrawer.BLUR_TYPE_PROFILE_SHORTCUT, !customBlur());
         }
         listView = new RecyclerListView(context);
         SpanningLinearLayoutManager lm = new SpanningLinearLayoutManager(context, LinearLayoutManager.HORIZONTAL, false, listView);
@@ -194,7 +197,7 @@ public class ShortcutsCell extends FrameLayout {
     }
 
     protected boolean customBlur() {
-        return blurManager.hasRenderNode();
+        return !ProfileActivity.FORCE_MY_BLUR && blurManager.hasRenderNode();
     }
 
     @Override
@@ -335,7 +338,7 @@ public class ShortcutsCell extends FrameLayout {
 
             buttonText = new SimpleTextView(getContext());
             buttonText.setTextColor(getThemedColor(Theme.key_actionBarDefaultIcon));
-            buttonText.setTextSize(12);
+            buttonText.setTextSize(11);
             buttonText.setTypeface(AndroidUtilities.bold());
             buttonText.setScrollNonFitText(true);
 
@@ -453,15 +456,22 @@ public class ShortcutsCell extends FrameLayout {
                 protected Paint backgroundPaint;
                 protected Paint clipPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
+                float radius = AndroidUtilities.dp(10);
+
                 @Override
                 protected void dispatchDraw(@NonNull Canvas canvas) {
 
                     if (backgroundPaint == null) {
                         backgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-                        if (customBlur() || expandProgress < 0.33f) {
-                            backgroundPaint.setColor(0x17000000);
+                        if (customBlur()) {
+                            backgroundPaint.setColor(0x00000000);
                         } else {
                             backgroundPaint.setColor(0x25000000);
+                            ColorMatrix cm = new ColorMatrix();
+                            AndroidUtilities.adjustSaturationColorMatrix(cm, +0.75f);
+                            AndroidUtilities.adjustBrightnessColorMatrix(cm, +0.245f);
+                            AndroidUtilities.multiplyBrightnessColorMatrix(cm, 0.595f);
+                            backgroundPaint.setColorFilter(new ColorMatrixColorFilter(cm));
                         }
                     }
 
@@ -473,20 +483,20 @@ public class ShortcutsCell extends FrameLayout {
                         RectF bounds = new RectF(diffX / 2f, diffH / 2f, w - diffX / 2, h - diffH / 2);
                         if (customBlur()) {
                             drawBlur(backgroundBlur, canvas, bounds, -getX(), AndroidUtilities.dp(80), 1.0f);
-                            canvas.drawRoundRect(bounds, AndroidUtilities.dp(16), AndroidUtilities.dp(16), backgroundPaint);
+                            canvas.drawRoundRect(bounds, radius, radius, backgroundPaint);
                         } else {
                             Paint[] blurPaints = backgroundBlur.getPaints(1f, 0, 0);
                             if (blurPaints == null || blurPaints[1] == null) { // todo
                                 drawBlur(backgroundBlur, canvas, bounds, -getX(), -ShortcutsCell.this.getTranslationY() + AndroidUtilities.dp(80), 1.0f);
-                                canvas.drawRoundRect(bounds, AndroidUtilities.dp(16), AndroidUtilities.dp(16), backgroundPaint);
+                                canvas.drawRoundRect(bounds, radius, radius, backgroundPaint);
                             } else {
                                 if (blurPaints[0] != null) {
-                                    canvas.drawRoundRect(bounds, AndroidUtilities.dp(16), AndroidUtilities.dp(16), blurPaints[0]);
+                                    canvas.drawRoundRect(bounds, radius, radius, blurPaints[0]);
                                 }
                                 if (blurPaints[1] != null) {
-                                    canvas.drawRoundRect(bounds, AndroidUtilities.dp(16), AndroidUtilities.dp(16), blurPaints[1]);
+                                    canvas.drawRoundRect(bounds, radius, radius, blurPaints[1]);
                                 }
-                                canvas.drawRoundRect(bounds, AndroidUtilities.dp(16), AndroidUtilities.dp(16), backgroundPaint);
+                                canvas.drawRoundRect(bounds, radius, radius, backgroundPaint);
                             }
                         }
                     }
@@ -500,7 +510,7 @@ public class ShortcutsCell extends FrameLayout {
                     }
                     canvas.save();
                     path.rewind();
-                    path.addRoundRect(rect, AndroidUtilities.dp(16), AndroidUtilities.dp(16), Path.Direction.CW);
+                    path.addRoundRect(rect, radius, radius, Path.Direction.CW);
                     canvas.clipPath(path);
                     if (extraHeight > AndroidUtilities.dp(COLLAPSE_HEIGHT_DP + 28)) {
                         canvas.translate(ox, oy);

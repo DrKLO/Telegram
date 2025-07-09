@@ -745,6 +745,7 @@ public class BlurringShader {
         public static final int BLUR_TYPE_REPLY_BACKGROUND = 8;
         public static final int BLUR_TYPE_REPLY_TEXT_XFER = 9;
         public static final int BLUR_TYPE_ACTION_BACKGROUND = 10;
+        public static final int BLUR_TYPE_PROFILE_SHORTCUT = 11;
 
         private final BlurManager manager;
         private final View view;
@@ -791,6 +792,10 @@ public class BlurringShader {
                 AndroidUtilities.adjustSaturationColorMatrix(colorMatrix, +.35f);
                 AndroidUtilities.adjustBrightnessColorMatrix(colorMatrix, +.7f);
                 AndroidUtilities.multiplyBrightnessColorMatrix(colorMatrix, 1.5f);
+            } else if (type == BLUR_TYPE_PROFILE_SHORTCUT) {
+                AndroidUtilities.adjustSaturationColorMatrix(colorMatrix, +0.75f);
+                AndroidUtilities.adjustBrightnessColorMatrix(colorMatrix, +0.245f);
+                AndroidUtilities.multiplyBrightnessColorMatrix(colorMatrix, 0.595f);
             } else if (type == BLUR_TYPE_AUDIO_BACKGROUND) {
                 AndroidUtilities.adjustSaturationColorMatrix(colorMatrix, +.5f);
             } else if (type == BLUR_TYPE_AUDIO_WAVEFORM_BACKGROUND) {
