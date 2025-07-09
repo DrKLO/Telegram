@@ -5011,8 +5011,13 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         giftsView = new ProfileGiftsView(context, currentAccount, getDialogId(), avatarContainer, avatarImage, resourcesProvider);
         avatarContainer2.addView(giftsView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
         updateProfileData(true);
+        if (userId != 0) {
+            if (imageUpdater != null) {
+                cameraDrawable = new RLottieDrawable(R.raw.camera_outline, String.valueOf(R.raw.camera_outline), AndroidUtilities.dp(56), AndroidUtilities.dp(56), false, null);
+                cellCameraDrawable = new RLottieDrawable(R.raw.camera_outline, R.raw.camera_outline + "_cell", AndroidUtilities.dp(42), AndroidUtilities.dp(42), false, null);
+            }
+        }
         needLayout(false);
-
         listView.setOnScrollListener(new RecyclerView.OnScrollListener() {
 
             @Override
@@ -5916,6 +5921,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         avatarContainer.setAlpha(avatarAlpha);
         avatarImage.setRoundRadius((int) AndroidUtilities.lerp(getSmallAvatarRoundRadius(), 0f, value));
         actionItems.setTranslationY(actionItemsY);
+        actionItemsBlur.setTranslationY(actionItemsY);
         if (storyView != null) {
             storyView.setExpandProgress(value);
         }
@@ -7632,8 +7638,6 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 lp.height = actionItems.getMeasuredHeight();
                 actionItemsBlur.requestLayout();
             }
-            // add small offset to translation to fully cover the underlying image bottom
-            actionItemsBlur.setTranslationY(actionItems.getTranslationY() + dp(4));
         }
         updateActionItems();
         prepareAndDisplayAvatarBlurIfNeeded(true);
@@ -8067,6 +8071,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             }
             actionItemsY = extraHeight + newTop - actionItems.getMeasuredHeight();
             actionItems.setTranslationY(actionItemsY);
+            actionItemsBlur.setTranslationY(actionItemsY);
             actionItems.setScaleY(actionItemsScaleY);
             actionItems.setAlpha(actionItemsAlpha);
         }
