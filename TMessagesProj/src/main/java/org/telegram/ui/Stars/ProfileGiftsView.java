@@ -322,7 +322,6 @@ public class ProfileGiftsView extends View implements NotificationCenter.Notific
 
     private float hideProgress = 1f;
     public void setHideProgress(float progress) {
-        android.util.Log.d("wwttff", "exp prog ex " + hideProgress);
         if (hideProgress != progress) {
             hideProgress = progress;
             invalidate();

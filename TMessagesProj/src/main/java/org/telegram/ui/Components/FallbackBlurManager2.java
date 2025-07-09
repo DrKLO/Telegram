@@ -43,10 +43,8 @@ public final class FallbackBlurManager2 {
         final int back = 1 - front;
         running.set(true);
         worker.submit(() -> {
-            long before = System.currentTimeMillis();
             downScale(capture, small[back]);
             Utilities.blurBitmapIIR(small[back], sigma);
-            android.util.Log.d("wwttff", " blur time " + (System.currentTimeMillis() - before));
             front = back;
             running.set(false);
             root.postInvalidateOnAnimation();
@@ -55,15 +53,12 @@ public final class FallbackBlurManager2 {
 
     public void draw(@NonNull View requester, @NonNull Canvas canvas) {
         if (small[front] == null) return;
-
         //requester.getLocationInWindow(tmpXY);
         //int rqX = tmpXY[0], rqY = tmpXY[1];
         //root.getLocationInWindow(tmpXY);
         //int rtX = tmpXY[0], rtY = tmpXY[1];
-
         //int x = rqX - rtX;
         //int y = rqY - rtY;
-
         canvas.save();
         //canvas.clipRect(0, 0, requester.getWidth(), requester.getHeight());
         //canvas.translate(-x, -y);
