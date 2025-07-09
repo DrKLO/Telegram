@@ -25,25 +25,15 @@ public class ProfileBlurAvatar extends FrameLayout {
         blurManager.invalidate();
     }
 
+    RectF bounds = new RectF();
+
     @Override
     protected void dispatchDraw(@NonNull Canvas canvas) {
-        RectF bounds = new RectF(0, 0, this.getWidth(), this.getHeight());
+        bounds.set(0, 0, this.getWidth(), this.getHeight());
         if (customBlur()) {
             drawBlur(backgroundBlur, canvas, bounds, 0, 0, 1.0f);
         } else {
-            Paint[] blurPaints = backgroundBlur.getPaints(1f, 0, 0);
-            android.util.Log.d("wwttff", "blurpaints " +  blurPaints[0] + " " + blurPaints[1]);
-            if (blurPaints == null || blurPaints[1] == null) {
-                drawBlur(backgroundBlur, canvas, bounds, 0, getTranslationY(), 1.0f);
-            } else {
-                // todo?
-                if (blurPaints[0] != null) {
-                    canvas.drawRoundRect(bounds, 0, 0, blurPaints[0]);
-                }
-                if (blurPaints[1] != null) {
-                    canvas.drawRoundRect(bounds, 0, 0, blurPaints[1]);
-                }
-            }
+            drawBlur(backgroundBlur, canvas, bounds, 0, getTranslationY(), 1.0f);
         }
         super.dispatchDraw(canvas);
         invalidate();

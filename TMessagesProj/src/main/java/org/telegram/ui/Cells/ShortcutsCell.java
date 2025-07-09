@@ -458,6 +458,8 @@ public class ShortcutsCell extends FrameLayout {
 
                 float radius = AndroidUtilities.dp(10);
 
+                RectF bounds = new RectF();
+
                 @Override
                 protected void dispatchDraw(@NonNull Canvas canvas) {
 
@@ -480,31 +482,20 @@ public class ShortcutsCell extends FrameLayout {
                         int h = this.getHeight();
                         float diffX = w - w * this.getScaleX();
                         float diffH = h - h * this.getScaleY();
-                        RectF bounds = new RectF(diffX / 2f, diffH / 2f, w - diffX / 2, h - diffH / 2);
+                        bounds.set(diffX / 2f, diffH / 2f, w - diffX / 2, h - diffH / 2);
                         if (customBlur()) {
                             drawBlur(backgroundBlur, canvas, bounds, -getX(), AndroidUtilities.dp(80), 1.0f);
                             canvas.drawRoundRect(bounds, radius, radius, backgroundPaint);
                         } else {
-                            Paint[] blurPaints = backgroundBlur.getPaints(1f, 0, 0);
-                            if (blurPaints == null || blurPaints[1] == null) { // todo
-                                drawBlur(backgroundBlur, canvas, bounds, -getX(), -ShortcutsCell.this.getTranslationY() + AndroidUtilities.dp(80), 1.0f);
-                                canvas.drawRoundRect(bounds, radius, radius, backgroundPaint);
-                            } else {
-                                if (blurPaints[0] != null) {
-                                    canvas.drawRoundRect(bounds, radius, radius, blurPaints[0]);
-                                }
-                                if (blurPaints[1] != null) {
-                                    canvas.drawRoundRect(bounds, radius, radius, blurPaints[1]);
-                                }
-                                canvas.drawRoundRect(bounds, radius, radius, backgroundPaint);
-                            }
+                            drawBlur(backgroundBlur, canvas, bounds, -getX(), -ShortcutsCell.this.getTranslationY() + AndroidUtilities.dp(80), 1.0f);
+                            canvas.drawRoundRect(bounds, radius, radius, backgroundPaint);
                         }
                     }
                     super.dispatchDraw(canvas);
                     invalidate();
                 }
 
-                protected void drawBlur(BlurringShader.StoryBlurDrawer blur, Canvas canvas, RectF rect, float ox, float oy, float alpha) {
+                private void drawBlur(BlurringShader.StoryBlurDrawer blur, Canvas canvas, RectF rect, float ox, float oy, float alpha) {
                     if (!canvas.isHardwareAccelerated() && customBlur()) {
                         return;
                     }
@@ -517,7 +508,6 @@ public class ShortcutsCell extends FrameLayout {
                     } else {
                         canvas.translate(ox, oy - height);
                     }
-                    android.util.Log.d("wwttff", "diffextra " + diff + " " + extraHeight + " " + expandProgress + " " + (AndroidUtilities.dp(COLLAPSE_HEIGHT_DP + 28)));
                     if (customBlur()) {
                         blur.drawRect(canvas, 0, 0, alpha);
                     } else {
