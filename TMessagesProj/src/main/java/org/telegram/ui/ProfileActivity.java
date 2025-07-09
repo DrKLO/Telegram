@@ -54,6 +54,7 @@ import android.graphics.PixelFormat;
 import android.graphics.Point;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
+import android.graphics.PorterDuffXfermode;
 import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.Shader;
@@ -319,7 +320,6 @@ import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Function;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -421,6 +421,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     private ActionBarMenuSubItem setUsernameItem;
 
     private ViewGroup actionItems;
+    private FadeTopImageView actionItemsBlur;
     private ViewGroup actionJoinChannelOrGroup;
     private ViewGroup actionMessage;
     private ViewGroup actionMuteUnmute;
@@ -1740,6 +1741,13 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     invalidateIndicatorRect(prevPage != realPosition);
                     prevPage = realPosition;
                     updateAvatarItems();
+                    boolean shouldAnimate = !actionItemsBlur.hasBitmapSet();
+                    actionItemsBlur.clear();
+                    if (shouldAnimate) {
+                        AndroidUtilities.runOnUIThread(() -> prepareAndDisplayAvatarBlurIfNeeded(true));
+                    } else {
+                        prepareAndDisplayAvatarBlurIfNeeded(false);
+                    }
                 }
 
                 @Override
@@ -5158,13 +5166,16 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             AndroidUtilities.runOnUIThread(this::scrollToSharedMedia);
         }
 
-        actionItems = createActionItems(context, did, lastFragment);
+        actionItemsBlur = new FadeTopImageView(context);
+        frameLayout.addView(actionItemsBlur, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+        actionItems = createActionItems(context, did, lastFragment, (SizeNotifierFrameLayout) fragmentView);
         frameLayout.addView(actionItems, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
         return fragmentView;
     }
 
-    private ViewGroup createActionItems(Context context, long did, BaseFragment lastFragment) {
+    private ViewGroup createActionItems(Context context, long did, BaseFragment lastFragment,
+                                        SizeNotifierFrameLayout sizeNotifierFrameLayout) {
         LinearLayout container = new LinearLayout(context);
         container.setOrientation(LinearLayout.HORIZONTAL);
         int paddingHorizontal = AndroidUtilities.dp(actionItemContainerPaddingHorizontal - actionItemInterItemPadding / 2f);
@@ -5887,8 +5898,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         return false;
     }
 
-    private void setAvatarExpandProgress(
-            float animatedFracture) { // todo Alex this is where we're animating avatar to the final position
+    private void setAvatarExpandProgress(float animatedFracture) {
         final int newTop = ActionBar.getCurrentActionBarHeight() + (actionBar.getOccupyStatusBar() ? AndroidUtilities.statusBarHeight : 0);
         final float value = currentExpandAnimatorValue = AndroidUtilities.lerp(expandAnimatorValues, currentExpanAnimatorFracture = animatedFracture);
         checkPhotoDescriptionAlpha();
@@ -7467,7 +7477,135 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         }
     }
 
-    private void needLayout(boolean animated) { // todo Alex here positioning logic lives
+    private void prepareAndDisplayAvatarBlurIfNeeded(boolean animated) {
+        if (actionItemsBlur == null || actionItemsBlur.hasBitmapSet()) {
+            return;
+        }
+        BackupImageView imageView = avatarsViewPager.getCurrentItemView();
+        if (imageView == null) {
+            return;
+        }
+        ImageReceiver imageReceiver = imageView.getImageReceiver();
+        if (imageReceiver == null || imageReceiver.getImageWidth() <= 0 || imageReceiver.getImageHeight() <= 0) {
+            return;
+        }
+        Drawable drawable = imageView.getImageReceiver().getImageDrawable();
+        if (drawable == null) {
+            return;
+        }
+        int w = actionItemsBlur.getMeasuredWidth();
+        int h = actionItemsBlur.getMeasuredHeight();
+        Bitmap bitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(bitmap);
+        Rect originalBounds = drawable.getBounds();
+        drawable.setBounds(0, 0, imageView.getWidth(), imageView.getHeight());
+        canvas.save();
+        canvas.translate(0, -imageView.getHeight() + actionItems.getHeight());
+        drawable.draw(canvas);
+        canvas.restore();
+        drawable.setBounds(originalBounds);
+        Bitmap blurred = Utilities.stackBlurBitmapMax(bitmap);
+        bitmap.recycle();
+        actionItemsBlur.setBitmap(blurred);
+        if (animated) {
+            actionItemsBlur.setAlpha(0f);
+            animateActionItemsBlurVisible(true);
+        }
+    }
+
+    // todo Alex move it up
+    public static class FadeTopImageView extends View {
+
+        private Bitmap bitmap;
+        private Bitmap scaledBitmap;
+        private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final Rect srcRect = new Rect();
+        private final Rect dstRect = new Rect();
+
+        public FadeTopImageView(Context context) {
+            super(context);
+        }
+
+        public boolean hasBitmapSet() {
+            return scaledBitmap != null;
+        }
+
+        public void setBitmap(Bitmap bitmap) {
+            this.bitmap = bitmap;
+            prepareResources(getWidth(), getHeight());
+            invalidate();
+        }
+
+        public void clear() {
+            if (this.bitmap != null) {
+                this.bitmap.recycle();
+            }
+            this.bitmap = null;
+            if (this.scaledBitmap != null) {
+                this.scaledBitmap.recycle();
+            }
+            this.scaledBitmap = null;
+            invalidate();
+        }
+
+        @Override
+        protected void onSizeChanged(int w, int h, int oldw, int oldh) {
+            super.onSizeChanged(w, h, oldw, oldh);
+            prepareResources(w, h);
+        }
+
+        private void prepareResources(int width, int height) {
+            if (bitmap == null || width == 0 || height == 0) return;
+
+
+            // Create a bitmap with alpha channel
+            scaledBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+            Canvas canvas = new Canvas(scaledBitmap);
+
+            // Draw the scaled image into the new bitmap
+            Rect src = new Rect(0, 0, bitmap.getWidth(), bitmap.getHeight());
+            Rect dst = new Rect(0, 0, width, height);
+            canvas.drawBitmap(bitmap, src, dst, paint);
+
+            // Gradient shader: top transparent to bottom opaque
+            Shader shader = new LinearGradient(
+                    0, 0, 0, height,
+                    new int[]{0x00000000, 0xFF000000},
+                    new float[]{0f, 0.3f},
+                    Shader.TileMode.CLAMP
+            );
+
+            Paint fadePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+            fadePaint.setShader(shader);
+            fadePaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.DST_IN));
+
+            // Apply the fade directly to fadedBitmap
+            canvas.drawRect(0, 0, width, height, fadePaint);
+
+
+            // Update draw bounds
+            srcRect.set(0, 0, width, height);
+            dstRect.set(0, 0, width, height);
+        }
+
+        @Override
+        protected void onDraw(Canvas canvas) {
+            super.onDraw(canvas);
+            if (scaledBitmap != null) {
+                canvas.drawBitmap(scaledBitmap, srcRect, dstRect, paint);
+            }
+        }
+    }
+
+    private void animateActionItemsBlurVisible(boolean visible) {
+        if (!visible) {
+            actionItemsBlur.animate().alpha(0f).setDuration(150).start();
+        } else if (actionItemsBlur.hasBitmapSet()) {
+            actionItemsBlur.animate().alpha(1f).setDuration(150).start();
+        }
+    }
+
+    private void needLayout(boolean animated) {
         final int newTop = (actionBar.getOccupyStatusBar() ? AndroidUtilities.statusBarHeight : 0) + ActionBar.getCurrentActionBarHeight();
 
         FrameLayout.LayoutParams layoutParams;
@@ -7479,7 +7617,18 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             }
         }
 
+        if (actionItemsBlur != null) {
+            ViewGroup.LayoutParams lp = actionItemsBlur.getLayoutParams();
+            if (lp.width != actionItems.getMeasuredWidth() && lp.height != actionItems.getMeasuredHeight()) {
+                lp.width = actionItems.getMeasuredWidth();
+                lp.height = actionItems.getMeasuredHeight();
+                actionItemsBlur.requestLayout();
+            }
+            // add small offset to translation to fully cover the underlying image bottom
+            actionItemsBlur.setTranslationY(actionItems.getTranslationY() + dp(4));
+        }
         updateActionItems();
+        prepareAndDisplayAvatarBlurIfNeeded(true);
 
         final float diff = Math.min(1f, extraHeight / AndroidUtilities.dp(maxExtraHeight));
         if (avatarContainer != null) {
@@ -7606,26 +7755,6 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                                 setForegroundImage(false);
                                 avatarsViewPager.setAnimatedFileMaybe(avatarImage.getImageReceiver().getAnimation());
                                 avatarsViewPager.resetCurrentItem();
-                                // set avatar action items container
-                                // todo alex cleanup
-//                                BackupImageView imageView = avatarsViewPager.getCurrentItemView();
-//                                if (imageView != null && imageView.getImageReceiver().getImageDrawable() != null && actionItems.getBackground() == null) {
-//                                    Drawable drawable = imageView.getImageReceiver().getImageDrawable();
-//                                    int w = actionItems.getMeasuredWidth();
-//                                    int h = actionItems.getMeasuredHeight();
-//                                    Bitmap bitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
-//                                    Canvas canvas = new Canvas(bitmap);
-//                                    Rect originalBounds = drawable.getBounds();
-//                                    drawable.setBounds(0, 0, originalBounds.width(), originalBounds.height());
-//                                    canvas.scale(1.0f, 1.0f);
-//                                    canvas.save();
-//                                    canvas.translate(0, -drawable.getIntrinsicHeight() + h);
-//                                    drawable.draw(canvas);
-//                                    canvas.restore();
-//                                    drawable.setBounds(originalBounds);
-//                                    Utilities.stackBlurBitmap(bitmap, Math.max(7, Math.max(w, h) / 180));
-//                                    actionItems.setBackground(new BitmapDrawable(bitmap));
-//                                }
                             }
 
                             @Override
@@ -7634,6 +7763,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                                 topView.setBackgroundColor(Color.BLACK);
                                 avatarContainer.setVisibility(View.GONE);
                                 avatarsViewPager.setVisibility(View.VISIBLE);
+                                animateActionItemsBlurVisible(true);
                             }
                         });
                         expandAnimator.start(); // todo Alex Triggers expand animation
@@ -7718,6 +7848,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                         avatarImage.setForegroundAlpha(1f);
                         avatarContainer.setVisibility(View.VISIBLE);
                         avatarsViewPager.setVisibility(View.GONE);
+                        animateActionItemsBlurVisible(false);
                         expandAnimator.start(); // todo Alex Triggers collapse animation
                     }
 
@@ -7810,6 +7941,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 avatarContainerParams.height = (int) AndroidUtilities.lerp(avatarStartSize, targetHeight / avatarScale, avatarAnimationProgress);
                 avatarContainerParams.leftMargin = (int) AndroidUtilities.lerp(startMargin, targetWidth / 2f - avatarContainerParams.width / 2f, avatarAnimationProgress);
                 avatarContainerParams.topMargin = (int) AndroidUtilities.lerp(0f, targetHeight / 2f - avatarContainerParams.height / 2f, avatarAnimationProgress);
+                if (avatarAnimationProgress == 1f) {
+                    animateActionItemsBlurVisible(true);
+                }
                 avatarContainer.requestLayout();
 
                 updateCollectibleHint();
@@ -8651,6 +8785,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     expandAnimatorValues[1] = 0f;
                     setAvatarExpandProgress(1f);
                     avatarsViewPager.setVisibility(View.GONE);
+                    animateActionItemsBlurVisible(false);
                     extraHeight = AndroidUtilities.dp(maxExtraHeight);
                     allowPullingDown = false;
                     layoutManager.scrollToPositionWithOffset(0, AndroidUtilities.dp(maxExtraHeight) - listView.getPaddingTop());
