@@ -382,7 +382,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     TimerDrawable autoDeleteItemDrawable;
     private ProfileStoriesView storyView;
     public ProfileGiftsView giftsView;
-    private ActionBarButton[] actionBarButtons = new ActionBarButton[4];
+    private ArrayList<ActionBarButton> actionButtons = new ArrayList<>();
     private int actionBarButtonHeight;
     private LinearLayout actionBarButtonsContainer;
 
@@ -5522,6 +5522,10 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     }
 
     private void configureActionButtons(FrameLayout frameLayout) {
+        actionBarButtonsContainer.removeAllViews();
+        actionButtons.clear();
+        Context context = getContext();
+        int contentColor = getThemedColor(Theme.key_actionBarDefaultTitle);
         int backgroundColor;
         int baseHeaderColor;
         if (peerColor != null) {
@@ -5535,24 +5539,99 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             backgroundColor = ColorUtils.blendARGB(baseHeaderColor, Color.BLACK, 0.2f);
         }
 
-        for (int i = 0; i < actionBarButtons.length; i++) {
-            actionBarButtons[i] = new ActionBarButton(frameLayout.getContext());
-            actionBarButtons[i].setIcon(ContextCompat.getDrawable(frameLayout.getContext(), R.drawable.ic_call_contest), getThemedColor(Theme.key_actionBarDefaultTitle));
-            actionBarButtons[i].setText("Call");
-            actionBarButtons[i].setTextColor(getThemedColor(Theme.key_actionBarDefaultTitle));
-            actionBarButtons[i].setBackgroundColor(backgroundColor);
-            actionBarButtons[i].setIconSize(dp(28));
-            actionBarButtons[i].setCornerRadius(dp(12));
-            actionBarButtons[i].setTextSize(14);
-            actionBarButtonsContainer.addView(actionBarButtons[i], LayoutHelper.createLinear(0, actionBarButtonHeight, 1f));
+        if (userId != 0) {
+            TLRPC.User user = getMessagesController().getUser(userId);
 
-            if (i < actionBarButtons.length - 1) {
+            if (UserObject.isUserSelf(user)) {
+                actionButtons.add(new ActionBarButton(context, LocaleController.getString(R.string.Edit), ContextCompat.getDrawable(context, R.drawable.msg_edit), backgroundColor, contentColor, edit_info));
+                actionButtons.add(new ActionBarButton(context, LocaleController.getString(R.string.ChoosePhoto), ContextCompat.getDrawable(context, R.drawable.ic_camera_contest), backgroundColor, contentColor, -2));
+                actionButtons.add(new ActionBarButton(context, LocaleController.getString(R.string.QrCode), ContextCompat.getDrawable(context, R.drawable.msg_mini_qr), backgroundColor, contentColor, qr_button));
+                actionButtons.add(new ActionBarButton(context, LocaleController.getString(R.string.ShareContact), ContextCompat.getDrawable(context, R.drawable.ic_share_contest), backgroundColor, contentColor, copy_link_profile));
+            } else {
+                if (!UserObject.isService(user.id)) {
+                    if (user.bot && userBlocked) {
+                        actionButtons.add(new ActionBarButton(context, LocaleController.getString(R.string.BotRestart), ContextCompat.getDrawable(context, R.drawable.msg_retry), backgroundColor, contentColor, block_contact));
+                    } else {
+                        actionButtons.add(new ActionBarButton(context, LocaleController.getString(R.string.Message), ContextCompat.getDrawable(context, R.drawable.ic_message_contest), backgroundColor, contentColor, -1));
+                    }
+                    boolean isMuted = getNotificationsController().isGlobalNotificationsEnabled(getDialogId(), false, false);
+                    actionButtons.add(new ActionBarButton(context, isMuted ? LocaleController.getString(R.string.Unmute) : LocaleController.getString(R.string.Mute), isMuted ? ContextCompat.getDrawable(context, R.drawable.ic_unmute_contest) : ContextCompat.getDrawable(context, R.drawable.ic_mute_contest), backgroundColor, contentColor, -1));
+                    if (!user.bot) {
+                        if (userInfo != null && userInfo.phone_calls_available) {
+                            actionButtons.add(new ActionBarButton(context, LocaleController.getString(R.string.Call), ContextCompat.getDrawable(context, R.drawable.ic_call_contest), backgroundColor, contentColor, call_item));
+                        }
+                        boolean canVideoCall = Build.VERSION.SDK_INT >= 18 && userInfo != null && userInfo.video_calls_available;
+                        boolean canGift = !BuildVars.IS_BILLING_UNAVAILABLE && !getMessagesController().premiumPurchaseBlocked() && !UserObject.areGiftsDisabled(userInfo);
+
+                        if (canVideoCall) {
+                            actionButtons.add(new ActionBarButton(context, LocaleController.getString(R.string.VideoCall), ContextCompat.getDrawable(context, R.drawable.ic_video_contest), backgroundColor, contentColor, video_call_item));
+
+                        } else if (canGift) {
+                            actionButtons.add(new ActionBarButton(context, LocaleController.getString(R.string.Gift2ChannelSend), ContextCompat.getDrawable(context, R.drawable.ic_gift_contest), backgroundColor, contentColor, gift_premium));
+                        }
+                    } else {
+                        actionButtons.add(new ActionBarButton(context, LocaleController.getString(R.string.BotShare), ContextCompat.getDrawable(context, R.drawable.ic_share_contest), backgroundColor, contentColor, share));
+                        actionButtons.add(new ActionBarButton(context, LocaleController.getString(R.string.Stop), ContextCompat.getDrawable(context, R.drawable.ic_block_contest), backgroundColor, contentColor, block_contact));
+                    }
+                }
+            }
+        } else if (chatId != 0) {
+            TLRPC.Chat chat = getMessagesController().getChat(chatId);
+            if (chat != null) {
+                if (isTopic) {
+                    actionButtons.add(new ActionBarButton(context, LocaleController.getString(R.string.AccDescrOpenChat), ContextCompat.getDrawable(context, R.drawable.ic_message_contest), backgroundColor, contentColor, -1));
+                    boolean isMuted = getNotificationsController().getNotificationsSettingsFacade().isDefault(getDialogId(), topicId);
+                    actionButtons.add(new ActionBarButton(context, isMuted ? LocaleController.getString(R.string.Unmute) : LocaleController.getString(R.string.Mute), isMuted ? ContextCompat.getDrawable(context, R.drawable.ic_unmute_contest) : ContextCompat.getDrawable(context, R.drawable.ic_mute_contest), backgroundColor, contentColor, -1));
+                } else {
+                    if (!ChatObject.isLeftFromChat(chat)) {
+                        actionButtons.add(new ActionBarButton(context, LocaleController.getString(R.string.AccDescrOpenChat), ContextCompat.getDrawable(context, R.drawable.ic_message_contest), backgroundColor, contentColor, -1));
+                        boolean isMuted = getNotificationsController().isGlobalNotificationsEnabled(getDialogId(), false, false);
+                        actionButtons.add(new ActionBarButton(context, isMuted ? LocaleController.getString(R.string.Unmute) : LocaleController.getString(R.string.Mute), isMuted ? ContextCompat.getDrawable(context, R.drawable.ic_unmute_contest) : ContextCompat.getDrawable(context, R.drawable.ic_mute_contest), backgroundColor, contentColor, -1));
+                        if (chatInfo != null && chatInfo.call != null) {
+                            actionButtons.add(new ActionBarButton(context, LocaleController.getString(R.string.StartVoipChatTitle), ContextCompat.getDrawable(context, R.drawable.ic_live_stream_contest), backgroundColor, contentColor, call_item));
+                        } else if (ChatObject.canManageCalls(chat)) {
+                            actionButtons.add(new ActionBarButton(context, chat.megagroup ? LocaleController.getString(R.string.StartVoipChat) : LocaleController.getString(R.string.StartVoipChannel), ContextCompat.getDrawable(context, R.drawable.ic_live_stream_contest), backgroundColor, contentColor, call_item));
+                        }
+                    }
+
+                    if (chat.left) {
+                        actionButtons.add(new ActionBarButton(context, LocaleController.getString(R.string.ProfileJoinChannel), ContextCompat.getDrawable(context, R.drawable.ic_join_contest), backgroundColor, contentColor, joinRow));
+                    } else {
+                        actionButtons.add(new ActionBarButton(context, LocaleController.getString(R.string.LeaveChannel), ContextCompat.getDrawable(context, R.drawable.ic_leave_contest), backgroundColor, contentColor, leave_group));
+                    }
+                }
+            }
+        }
+        for (int i = 0; i < actionButtons.size(); i++) {
+            ActionBarButton button = actionButtons.get(i);
+            button.setOnActionClickListener(v -> {
+                if (button.getId() == -1) {
+                    if (button.getText() == LocaleController.getString(R.string.AccDescrOpenChat)) {
+                        onWriteButtonClick();
+                    } else if (button.getText() == LocaleController.getString(R.string.Mute) || button.getText() == LocaleController.getString(R.string.Unmute)) {
+                        long did = getDialogId();
+                        long tid = isTopic ? topicId : 0;
+                        boolean muted = getNotificationsController().getNotificationsSettingsFacade().isDefault(did, tid);
+                        getNotificationsController().muteDialog(did, tid, !muted);
+                        BulletinFactory.createMuteBulletin(ProfileActivity.this, !muted, null).show();
+//                        configureActionButtons(frameLayout);
+                        button.requestLayout();
+                        button.invalidate();
+                    }
+                } else {
+                    actionBar.getActionBarMenuOnItemClick().onItemClick(button.getId());
+                }
+            });
+            actionBarButtonsContainer.addView(button, LayoutHelper.createLinear(0, actionBarButtonHeight, 1f));
+            if (i < actionButtons.size() - 1) {
                 View spacer = new View(actionBarButtonsContainer.getContext());
                 LinearLayout.LayoutParams spacerParams = new LinearLayout.LayoutParams(AndroidUtilities.dp(6), 0);
                 actionBarButtonsContainer.addView(spacer, spacerParams);
             }
         }
-        frameLayout.addView(actionBarButtonsContainer, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 78, Gravity.TOP | Gravity.LEFT));
+        if (actionBarButtonsContainer.getParent() == null) {
+            frameLayout.addView(actionBarButtonsContainer, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 78, Gravity.TOP | Gravity.LEFT));
+        }
     }
 
     private void createFloatingActionButton(Context context) {
@@ -7607,9 +7686,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 actionBarButtonsContainer.setScaleY(diff);
                 actionBarButtonsContainer.setPivotY(buttonsAreaHeight);
                 actionBarButtonsContainer.setAlpha(backgroundFadeProcess);
-                for (int i = 0; i < actionBarButtons.length; i++) {
-                    if (actionBarButtons[i] != null) {
-                        actionBarButtons[i].setAnimationProgress(iconsAnimationProgress);
+                for (int i = 0; i < actionButtons.size(); i++) {
+                    if (actionButtons.get(i) != null) {
+                        actionButtons.get(i).setAnimationProgress(iconsAnimationProgress);
                     }
                 }
             }
@@ -9756,6 +9835,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     private void updateProfileData(boolean reload) {
         if (avatarContainer == null || nameTextView == null || getParentActivity() == null) {
             return;
+        }
+        if (actionBarButtonsContainer != null) {
+            configureActionButtons((FrameLayout) fragmentView);
         }
         String onlineTextOverride;
         int currentConnectionState = getConnectionsManager().getConnectionState();

@@ -1,7 +1,6 @@
 package org.telegram.ui.ActionBar;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
-
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
@@ -14,20 +13,19 @@ import android.graphics.PorterDuffColorFilter;
 import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
-import android.graphics.drawable.StateListDrawable;
 import android.text.TextPaint;
 import android.text.TextUtils;
-import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.animation.AccelerateDecelerateInterpolator;
 
-import androidx.annotation.Nullable;
-
 import org.telegram.messenger.AndroidUtilities;
+
+import javax.annotation.Nullable;
 
 
 public class ActionBarButton extends View {
+    private int buttonId = 0;
     private Drawable icon;
     private CharSequence text;
     private TextPaint textPaint;
@@ -51,22 +49,13 @@ public class ActionBarButton extends View {
     private float animationProgress = 1f;
     private int originalTextAlpha;
 
-    public ActionBarButton(Context context) {
+    public ActionBarButton(Context context, @Nullable CharSequence text, Drawable icon, int backgroundColor, int contentColor, int buttonId) {
         super(context);
-        init();
+        init(text, icon, backgroundColor, contentColor, buttonId);
     }
 
-    public ActionBarButton(Context context, @Nullable AttributeSet attrs) {
-        super(context, attrs);
-        init();
-    }
-
-    public ActionBarButton(Context context, @Nullable AttributeSet attrs, int defStyleAttr) {
-        super(context, attrs, defStyleAttr);
-        init();
-    }
-
-    private void init() {
+    private void init(CharSequence text, Drawable icon, int backgroundColor, int contentColor, int buttonId) {
+        this.buttonId = buttonId;
         textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
         originalTextAlpha = textPaint.getAlpha();
         textPaint.setTypeface(AndroidUtilities.bold());
@@ -76,6 +65,16 @@ public class ActionBarButton extends View {
         ripplePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         ripplePaint.setAlpha(80);
         ripplePaint.setStyle(Paint.Style.FILL);
+
+        setIconSize(dp(24));
+        setCornerRadius(dp(12));
+        if (text != null) {
+            setTextSize(12);
+            setTextColor(contentColor);
+            setText(text);
+        }
+        setIcon(icon, contentColor);
+        setBackgroundColor(backgroundColor);
     }
 
     @Override
@@ -299,6 +298,10 @@ public class ActionBarButton extends View {
         this.iconSize = size;
         requestLayout();
         invalidate();
+    }
+
+    public int getId() {
+        return buttonId;
     }
 
     public void setOnActionClickListener(OnClickListener listener) {
