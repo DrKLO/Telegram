@@ -1676,6 +1676,10 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 			if (BuildVars.LOGS_ENABLED) {
 				FileLog.d("call discarded, stopping service");
 			}
+			final MessagesController messagesController = MessagesController.getInstance(currentAccount);
+			if (messagesController.voipDebug != null) {
+				messagesController.voipDebug.done(phoneCall.id, phoneCall.need_debug);
+			}
 			if (phoneCall.reason instanceof TLRPC.TL_phoneCallDiscardReasonMigrateConferenceCall) {
 				final TLRPC.TL_phoneCallDiscardReasonMigrateConferenceCall reason = (TLRPC.TL_phoneCallDiscardReasonMigrateConferenceCall) phoneCall.reason;
 				joinConference = new TLRPC.TL_inputGroupCallSlug();
@@ -4577,7 +4581,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 	}
 
 	private void onTgVoipStop(Instance.FinalState finalState) {
-		if (user == null) {
+		if (user == null || privateCall == null || finalState == null) {
 			return;
 		}
 		if (TextUtils.isEmpty(finalState.debugLog)) {
@@ -4587,38 +4591,15 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 				e.printStackTrace();
 			}
 		}
-		if (needSendDebugLog && finalState.debugLog != null) {
-			final String logPath = lastLogFilePath;
-			lastLogFilePath = null;
+		final MessagesController messagesController = MessagesController.getInstance(currentAccount);
+		if (messagesController.voipDebug == null) {
+			messagesController.voipDebug = new VoIPDebugToSend(currentAccount);
+		}
+		messagesController.voipDebug.push(privateCall.id, privateCall.access_hash, finalState, lastLogFilePath);
+		lastLogFilePath = null;
 
-			TL_phone.saveCallDebug req = new TL_phone.saveCallDebug();
-			req.debug = new TLRPC.TL_dataJSON();
-			req.debug.data = finalState.debugLog;
-			req.peer = new TLRPC.TL_inputPhoneCall();
-			req.peer.access_hash = privateCall.access_hash;
-			req.peer.id = privateCall.id;
-			ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> {
-				if (BuildVars.LOGS_ENABLED) {
-					FileLog.d("Sent debug logs, response = " + response);
-				}
-				if (response instanceof TLRPC.TL_boolTrue && !TextUtils.isEmpty(logPath)) {
-					final File gzippedLog = new File(logPath + ".gzip");
-					Utilities.searchQueue.postRunnable(() -> {
-						if (!AndroidUtilities.gzip(new File(logPath), gzippedLog))
-							return;
-						AndroidUtilities.runOnUIThread(() -> {
-							FileLoader.getInstance(currentAccount).uploadFile(gzippedLog.getAbsolutePath(), file -> {
-								if (file == null) return;
-
-								final TL_phone.saveCallLog req2 = new TL_phone.saveCallLog();
-								req2.peer = req.peer;
-								req2.file = file;
-								ConnectionsManager.getInstance(currentAccount).sendRequest(req2, null);
-							});
-						});
-					});
-				}
-			});
+		if (needSendDebugLog) {
+			messagesController.voipDebug.done(privateCall.id, needSendDebugLog);
 			needSendDebugLog = false;
 		}
 	}

@@ -1204,7 +1204,7 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
 
         viewPager = new ViewPagerFixed(context) {
             @Override
-            protected void onTabAnimationUpdate(boolean manual) {
+            public void onTabAnimationUpdate(boolean manual) {
                 tabsView.setSelected(viewPager.getPositionAnimated());
                 colorBar.setProgressToGradient(viewPager.getPositionAnimated());
             }

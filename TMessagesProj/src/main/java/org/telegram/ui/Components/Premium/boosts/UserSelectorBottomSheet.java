@@ -1029,25 +1029,39 @@ public class UserSelectorBottomSheet extends BottomSheetWithRecyclerListView imp
         return (View view) -> {
             ItemOptions.makeOptions(container, resourcesProvider, (View) view.getParent())
                 .add(R.drawable.profile_discuss, LocaleController.getString(R.string.SendMessage), () -> {
+                    if (user == null) return;
                     BaseFragment fragment = getBaseFragment();
-                    if (user == null || fragment == null) return;
-//                    BaseFragment.BottomSheetParams bottomSheetParams = new BaseFragment.BottomSheetParams();
-//                    bottomSheetParams.transitionFromLeft = true;
-//                    bottomSheetParams.allowNestedScroll = false;
+                    if (fragment == null) {
+                        BaseFragment lastFragment = LaunchActivity.getSafeLastFragment();
+                        BaseFragment.BottomSheetParams bottomSheetParams = new BaseFragment.BottomSheetParams();
+                        bottomSheetParams.transitionFromLeft = true;
+                        bottomSheetParams.allowNestedScroll = false;
+                        if (lastFragment == null) return;
+                        Bundle args = new Bundle();
+                        args.putLong("user_id", user.id);
+                        lastFragment.showAsSheet(new ChatActivity(args), bottomSheetParams);
+                        return;
+                    }
                     Bundle args = new Bundle();
                     args.putLong("user_id", user.id);
-//                    fragment.showAsSheet(new ChatActivity(args), bottomSheetParams);
                     fragment.presentFragment(new ChatActivity(args));
                 })
                 .add(R.drawable.msg_openprofile, LocaleController.getString(R.string.OpenProfile), () -> {
+                    if (user == null) return;
                     BaseFragment fragment = getBaseFragment();
-                    if (user == null || fragment == null) return;
-//                    BaseFragment.BottomSheetParams bottomSheetParams = new BaseFragment.BottomSheetParams();
-//                    bottomSheetParams.transitionFromLeft = true;
-//                    bottomSheetParams.allowNestedScroll = false;
+                    if (fragment == null) {
+                        BaseFragment lastFragment = LaunchActivity.getSafeLastFragment();
+                        if (lastFragment == null) return;
+                        BaseFragment.BottomSheetParams bottomSheetParams = new BaseFragment.BottomSheetParams();
+                        bottomSheetParams.transitionFromLeft = true;
+                        bottomSheetParams.allowNestedScroll = false;
+                        Bundle args = new Bundle();
+                        args.putLong("user_id", user.id);
+                        lastFragment.showAsSheet(new ProfileActivity(args), bottomSheetParams);
+                        return;
+                    }
                     Bundle args = new Bundle();
                     args.putLong("user_id", user.id);
-//                    fragment.showAsSheet(new ProfileActivity(args), bottomSheetParams);
                     fragment.presentFragment(new ProfileActivity(args));
                 })
                 .show();

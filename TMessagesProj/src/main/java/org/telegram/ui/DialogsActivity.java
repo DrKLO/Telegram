@@ -11497,10 +11497,12 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         if (addToGroupAlertString == null && checkCanWrite) {
             if (DialogObject.isChatDialog(dialogId)) {
                 TLRPC.Chat chat = getMessagesController().getChat(-dialogId);
-                if (ChatObject.isChannel(chat) && !chat.megagroup && ((cantSendToChannels || !ChatObject.isCanWriteToChannel(-dialogId, currentAccount)) || hasPoll == 2)) {
+                if (ChatObject.isChannel(chat) && !chat.megagroup && ((cantSendToChannels || !ChatObject.isCanWriteToChannel(-dialogId, currentAccount)) || hasPoll == 2 || hasPoll == 3)) {
                     AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
                     builder.setTitle(LocaleController.getString(R.string.SendMessageTitle));
-                    if (hasPoll == 2) {
+                    if (hasPoll == 3) {
+                        builder.setMessage(LocaleController.getString(R.string.TodoCantForward));
+                    } else if (hasPoll == 2) {
                         builder.setMessage(LocaleController.getString(R.string.PublicPollCantForward));
                     } else {
                         builder.setMessage(LocaleController.getString(R.string.ChannelCantSendMessage));
@@ -11512,7 +11514,9 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             } else if (DialogObject.isEncryptedDialog(dialogId) && (hasPoll != 0 || hasInvoice)) {
                 AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
                 builder.setTitle(LocaleController.getString(R.string.SendMessageTitle));
-                if (hasPoll != 0) {
+                if (hasPoll == 3) {
+                    builder.setMessage(LocaleController.getString(R.string.TodoCantForwardSecretChat));
+                } else if (hasPoll != 0) {
                     builder.setMessage(LocaleController.getString(R.string.PollCantForwardSecretChat));
                 } else {
                     builder.setMessage(LocaleController.getString(R.string.InvoiceCantForwardSecretChat));

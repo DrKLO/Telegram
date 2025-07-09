@@ -61,11 +61,11 @@ public class BotStarsController {
     private final HashMap<Long, TLRPC.TL_payments_starsRevenueStats> botStarsStats = new HashMap<>();
 
     private final HashMap<Long, Long> lastLoadedTonStats = new HashMap<>();
-    private final HashMap<Long, TL_stats.TL_broadcastRevenueStats> tonStats = new HashMap<>();
+    private final HashMap<Long, TLRPC.TL_payments_starsRevenueStats> tonStats = new HashMap<>();
 
     public TL_stars.StarsAmount getBotStarsBalance(long did) {
         TLRPC.TL_payments_starsRevenueStats botStats = getStarsRevenueStats(did);
-        return botStats == null ? new TL_stars.StarsAmount(0) : botStats.status.current_balance;
+        return botStats == null ? TL_stars.StarsAmount.ofStars(0) : botStats.status.current_balance;
     }
 
     public void invalidateStarsBalance(long did) {
@@ -73,8 +73,8 @@ public class BotStarsController {
     }
 
     public long getTONBalance(long did) {
-        TL_stats.TL_broadcastRevenueStats botStats = getTONRevenueStats(did, false);
-        return botStats == null || botStats.balances == null ? 0 : botStats.balances.current_balance;
+        TLRPC.TL_payments_starsRevenueStats botStats = getTONRevenueStats(did, false);
+        return botStats == null || botStats.status == null || botStats.status.current_balance == null ? 0 : botStats.status.current_balance.amount;
     }
 
     public long getAvailableBalance(long did) {
@@ -100,8 +100,8 @@ public class BotStarsController {
     }
 
     public boolean botHasTON(long did) {
-        TL_stats.TL_broadcastRevenueStats stats = getTONRevenueStats(did, false);
-        return stats != null && (stats.balances.current_balance > 0 || stats.balances.available_balance > 0 || stats.balances.overall_revenue > 0);
+        TLRPC.TL_payments_starsRevenueStats stats = getTONRevenueStats(did, false);
+        return stats != null && stats.status != null && (stats.status.current_balance.amount > 0 || stats.status.available_balance.amount > 0 || stats.status.overall_revenue.amount > 0);
     }
 
     public void preloadStarsStats(long did) {
@@ -135,11 +135,12 @@ public class BotStarsController {
         return botStats;
     }
 
-    public TL_stats.TL_broadcastRevenueStats getTONRevenueStats(long did, boolean force) {
+    public TLRPC.TL_payments_starsRevenueStats getTONRevenueStats(long did, boolean force) {
         Long lastLoaded = lastLoadedTonStats.get(did);
-        TL_stats.TL_broadcastRevenueStats botStats = tonStats.get(did);
+        TLRPC.TL_payments_starsRevenueStats botStats = tonStats.get(did);
         if (lastLoaded == null || System.currentTimeMillis() - lastLoaded > 1000 * 60 * 5 || force) {
-            TL_stats.TL_getBroadcastRevenueStats req = new TL_stats.TL_getBroadcastRevenueStats();
+            TLRPC.TL_payments_getStarsRevenueStats req = new TLRPC.TL_payments_getStarsRevenueStats();
+            req.ton = true;
             req.dark = Theme.isCurrentThemeDark();
             req.peer = MessagesController.getInstance(currentAccount).getInputPeer(did);
             final int stats_dc;
@@ -150,8 +151,8 @@ public class BotStarsController {
                 stats_dc = ConnectionsManager.DEFAULT_DATACENTER_ID;
             }
             ConnectionsManager.getInstance(currentAccount).sendRequest(req, (res, err) -> AndroidUtilities.runOnUIThread(() -> {
-                if (res instanceof TL_stats.TL_broadcastRevenueStats) {
-                    TL_stats.TL_broadcastRevenueStats r = (TL_stats.TL_broadcastRevenueStats) res;
+                if (res instanceof TLRPC.TL_payments_starsRevenueStats) {
+                    TLRPC.TL_payments_starsRevenueStats r = (TLRPC.TL_payments_starsRevenueStats) res;
                     tonStats.put(did, r);
                 } else {
                     tonStats.put(did, null);
@@ -168,7 +169,7 @@ public class BotStarsController {
         long dialogId = DialogObject.getPeerDialogId(update.peer);
         if (dialogId < 0) {
             if (ChannelMonetizationLayout.instance != null && ChannelMonetizationLayout.instance.dialogId == DialogObject.getPeerDialogId(update.peer)) {
-                ChannelMonetizationLayout.instance.setupBalances(update.status);
+                ChannelMonetizationLayout.instance.setupBalances(update.status.current_balance instanceof TL_stars.TL_starsTonAmount, update.status);
                 ChannelMonetizationLayout.instance.reloadTransactions();
             }
         } else {

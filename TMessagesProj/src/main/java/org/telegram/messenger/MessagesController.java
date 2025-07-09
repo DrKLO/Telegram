@@ -46,6 +46,8 @@ import androidx.core.app.NotificationManagerCompat;
 import androidx.core.graphics.ColorUtils;
 import androidx.core.util.Consumer;
 
+import com.google.common.collect.Lists;
+
 import org.telegram.SQLite.SQLiteCursor;
 import org.telegram.SQLite.SQLiteDatabase;
 import org.telegram.SQLite.SQLiteException;
@@ -53,6 +55,7 @@ import org.telegram.SQLite.SQLitePreparedStatement;
 import org.telegram.messenger.browser.Browser;
 import org.telegram.messenger.support.LongSparseIntArray;
 import org.telegram.messenger.support.LongSparseLongArray;
+import org.telegram.messenger.voip.VoIPDebugToSend;
 import org.telegram.messenger.voip.VoIPPreNotificationService;
 import org.telegram.messenger.voip.VoIPService;
 import org.telegram.tgnet.ConnectionsManager;
@@ -287,6 +290,7 @@ public class MessagesController extends BaseController implements NotificationCe
     private final LongSparseArray<TLRPC.ChatFull> fullChats = new LongSparseArray<>();
     private final LongSparseArray<ChatObject.Call> groupCalls = new LongSparseArray<>();
     private final LongSparseArray<ChatObject.Call> groupCallsByChatId = new LongSparseArray<>();
+    public VoIPDebugToSend voipDebug;
     private final LongSparseArray<TLRPC.PeerSettings> userPeerSettings = new LongSparseArray<>();
     private HashSet<Long> loadingFullUsers = new HashSet<>();
     private LongSparseLongArray loadedFullUsers = new LongSparseLongArray();
@@ -724,6 +728,20 @@ public class MessagesController extends BaseController implements NotificationCe
     public int conferenceCallSizeLimit;
     public boolean callRequestsDisabled;
     public int pollAnswersMax;
+    public int todoItemsMax;
+    public int todoTitleLengthMax;
+    public int todoItemLengthMax;
+    public String translationsManualEnabled; // "enabled", "alternative", "system", "disabled"
+    public String translationsAutoEnabled; // "enabled", "alternative", "system", "disabled"
+
+    public boolean isTranslationsManualEnabled() {
+        return !"disabled".equals(translationsManualEnabled);
+    }
+    public boolean isTranslationsAutoEnabled() {
+        return !"disabled".equals(translationsAutoEnabled);
+    }
+
+    public final AppGlobalConfig config = new AppGlobalConfig();
 
     public boolean enableGiftsInProfile;
 
@@ -1612,6 +1630,11 @@ public class MessagesController extends BaseController implements NotificationCe
         conferenceCallSizeLimit = mainPreferences.getInt("conferenceCallSizeLimit", isTest ? 5 : 100);
         callRequestsDisabled = mainPreferences.getBoolean("callRequestsDisabled", false);
         pollAnswersMax = mainPreferences.getInt("pollAnswersMax", 12);
+        todoItemsMax = mainPreferences.getInt("todoItemsMax", isTest ? 10 : 30);
+        todoTitleLengthMax = mainPreferences.getInt("todoTitleLengthMax", 32);
+        todoItemLengthMax = mainPreferences.getInt("todoItemLengthMax", 64);
+        translationsManualEnabled = mainPreferences.getString("translationsManualEnabled", "enabled");
+        translationsAutoEnabled = mainPreferences.getString("translationsAutoEnabled", "enabled");
         freezeAppealUrl = mainPreferences.getString("freezeAppealUrl", "t.me/spambot");
         enableGiftsInProfile = mainPreferences.getBoolean("enableGiftsInProfile", true);
         storiesPosting = mainPreferences.getString("storiesPosting", "enabled");
@@ -1673,6 +1696,8 @@ public class MessagesController extends BaseController implements NotificationCe
         starrefMaxCommissionPermille = mainPreferences.getInt("starrefMaxCommissionPermille", 400);
         botVerificationDescriptionLengthLimit = mainPreferences.getInt("botVerificationDescriptionLengthLimit", 70);
         paidReactionsPrivacyTime = mainPreferences.getLong("paidReactionsAnonymousTime", 0);
+        config.load(mainPreferences);
+
         final boolean paidReactionsActual = (System.currentTimeMillis() - paidReactionsPrivacyTime) < 1000 * 60 * 60 * 2;
         paidReactionsPrivacy = null;
         if ((System.currentTimeMillis() - paidReactionsPrivacyTime) < 1000 * 60 * 60 * 2) {
@@ -2529,6 +2554,9 @@ public class MessagesController extends BaseController implements NotificationCe
         TLRPC.TL_jsonObject liteAppOptions = null;
         int transcribeAudioTrialWeeklyNumber = 0;
         int transcribeAudioTrialCooldownUntil = 0;
+
+        changed = config.apply(editor, object);
+
         for (int a = 0, N = object.value.size(); a < N; a++) {
             TLRPC.TL_jsonObjectValue value = object.value.get(a);
             switch (value.key) {
@@ -4777,6 +4805,61 @@ public class MessagesController extends BaseController implements NotificationCe
                     }
                     break;
                 }
+                case "todo_items_max": {
+                    if (value.value instanceof TLRPC.TL_jsonNumber) {
+                        TLRPC.TL_jsonNumber num = (TLRPC.TL_jsonNumber) value.value;
+                        if (num.value != todoItemsMax) {
+                            todoItemsMax = (int) num.value;
+                            editor.putInt("todoItemsMax", todoItemsMax);
+                            changed = true;
+                        }
+                    }
+                    break;
+                }
+                case "todo_title_length_max": {
+                    if (value.value instanceof TLRPC.TL_jsonNumber) {
+                        TLRPC.TL_jsonNumber num = (TLRPC.TL_jsonNumber) value.value;
+                        if (num.value != todoTitleLengthMax) {
+                            todoTitleLengthMax = (int) num.value;
+                            editor.putInt("todoTitleLengthMax", todoTitleLengthMax);
+                            changed = true;
+                        }
+                    }
+                    break;
+                }
+                case "todo_item_length_max": {
+                    if (value.value instanceof TLRPC.TL_jsonNumber) {
+                        TLRPC.TL_jsonNumber num = (TLRPC.TL_jsonNumber) value.value;
+                        if (num.value != todoItemLengthMax) {
+                            todoItemLengthMax = (int) num.value;
+                            editor.putInt("todoItemLengthMax", todoItemLengthMax);
+                            changed = true;
+                        }
+                    }
+                    break;
+                }
+                case "translations_manual_enabled": {
+                    if (value.value instanceof TLRPC.TL_jsonString) {
+                        TLRPC.TL_jsonString str = (TLRPC.TL_jsonString) value.value;
+                        if (!TextUtils.equals(translationsManualEnabled, str.value)) {
+                            translationsManualEnabled = str.value;
+                            editor.putString("translationsManualEnabled", translationsManualEnabled);
+                            changed = true;
+                        }
+                    }
+                    break;
+                }
+                case "translations_auto_enabled": {
+                    if (value.value instanceof TLRPC.TL_jsonString) {
+                        TLRPC.TL_jsonString str = (TLRPC.TL_jsonString) value.value;
+                        if (!TextUtils.equals(translationsAutoEnabled, str.value)) {
+                            translationsAutoEnabled = str.value;
+                            editor.putString("translationsAutoEnabled", translationsAutoEnabled);
+                            changed = true;
+                        }
+                    }
+                    break;
+                }
             }
         }
 
@@ -6896,7 +6979,11 @@ public class MessagesController extends BaseController implements NotificationCe
             if (ChatObject.isMonoForum(chat) && ChatObject.canManageMonoForum(currentAccount, chat)) {
                 return 0;
             }
-            if (chat != null) {
+
+            TLRPC.ChatFull chatFull = getChatFull(-did);
+            if (chatFull != null) {
+                return chatFull.send_paid_messages_stars;
+            } else if (chat != null) {
                 return chat.send_paid_messages_stars;
             }
             return 0;
@@ -11305,6 +11392,8 @@ public class MessagesController extends BaseController implements NotificationCe
                                 msg.generatePaymentSentMessageText(null, false);
                             } else if (msg.messageOwner.action instanceof TLRPC.TL_messageActionPaymentSentMe) {
                                 msg.generatePaymentSentMessageText(null, true);
+                            } else if (msg.messageOwner.action instanceof TLRPC.TL_messageActionSuggestedPostApproval) {
+                                msg.generateSuggestionApprovalMessageText();
                             }
                             break;
                         }
@@ -13496,7 +13585,7 @@ public class MessagesController extends BaseController implements NotificationCe
         boolean hasExpiredPolls = false;
         for (int a = 0, N = visibleObjects.size(); a < N; a++) {
             MessageObject messageObject = visibleObjects.get(a);
-            if (messageObject.type != MessageObject.TYPE_POLL) {
+            if (messageObject.type != MessageObject.TYPE_POLL || !(messageObject.messageOwner.media instanceof TLRPC.TL_messageMediaPoll)) {
                 continue;
             }
             TLRPC.TL_messageMediaPoll mediaPoll = (TLRPC.TL_messageMediaPoll) messageObject.messageOwner.media;
@@ -16339,6 +16428,9 @@ public class MessagesController extends BaseController implements NotificationCe
         if (chat == null || !ChatObject.isChannel(chatId, currentAccount) || ChatObject.isNotInChat(chat) && !ignoreLeft || chat.creator) {
             return;
         }
+        if (ChatObject.isMonoForum(chat)) {
+            return;
+        }
 
         TLRPC.TL_messageService message = new TLRPC.TL_messageService();
         message.flags = TLRPC.MESSAGE_FLAG_HAS_FROM_ID;
@@ -16406,11 +16498,15 @@ public class MessagesController extends BaseController implements NotificationCe
         });
     }
 
-    public void checkChatInviter(long chatId, boolean createMessage) {
+    public void checkChatInviter(long chatId, boolean _createMessage) {
         TLRPC.Chat chat = getChat(chatId);
         if (!ChatObject.isChannel(chat) || chat.creator || gettingChatInviters.indexOfKey(chatId) >= 0) {
             return;
         }
+        if (ChatObject.isMonoForum(chat)) {
+            _createMessage = false;
+        }
+        final boolean createMessage = _createMessage;
         gettingChatInviters.put(chatId, true);
         TLRPC.TL_channels_getParticipant req = new TLRPC.TL_channels_getParticipant();
         req.channel = getInputChannel(chatId);
@@ -17740,6 +17836,11 @@ public class MessagesController extends BaseController implements NotificationCe
                     updatesOnMainThread = new ArrayList<>();
                 }
                 updatesOnMainThread.add(baseUpdate);
+            } else if (baseUpdate instanceof TLRPC.TL_updateMonoForumNoPaidException) {
+                if (updatesOnMainThread == null) {
+                    updatesOnMainThread = new ArrayList<>();
+                }
+                updatesOnMainThread.add(baseUpdate);
             } else if (baseUpdate instanceof TLRPC.TL_updateUserPhoto) {
                 TLRPC.TL_updateUserPhoto update = (TLRPC.TL_updateUserPhoto) baseUpdate;
                 interfaceUpdateMask |= UPDATE_MASK_AVATAR;
@@ -18506,6 +18607,13 @@ public class MessagesController extends BaseController implements NotificationCe
                         if (update.user_id == getUserConfig().getClientUserId()) {
                             getNotificationsController().setLastOnlineFromOtherDevice(update.status.expires);
                         }
+                    } else if (baseUpdate instanceof TLRPC.TL_updateMonoForumNoPaidException) {
+                        TLRPC.TL_updateMonoForumNoPaidException update = (TLRPC.TL_updateMonoForumNoPaidException) baseUpdate;
+                        StarsController.getInstance(currentAccount).processUpdateMonoForumNoPaidException(
+                            update.channel_id,
+                            DialogObject.getPeerDialogId(update.saved_peer_id),
+                            update.exception
+                        );
                     } else if (baseUpdate instanceof TLRPC.TL_updatePeerWallpaper) {
                         TLRPC.TL_updatePeerWallpaper update = (TLRPC.TL_updatePeerWallpaper) baseUpdate;
                         ChatThemeController.getInstance(currentAccount).processUpdate(update);
@@ -18647,16 +18755,11 @@ public class MessagesController extends BaseController implements NotificationCe
                         }
                         messageObjects.add(message);
                         getNotificationsController().processNewMessages(messageObjects, true, false, null);
-                    } else if (baseUpdate instanceof TLRPC.TL_updateBroadcastRevenueTransactions) {
-                        TLRPC.TL_updateBroadcastRevenueTransactions update = (TLRPC.TL_updateBroadcastRevenueTransactions) baseUpdate;
-                        if (ChannelMonetizationLayout.instance != null && ChannelMonetizationLayout.instance.dialogId == DialogObject.getPeerDialogId(update.peer)) {
-                            ChannelMonetizationLayout.instance.setupBalances(update.balances);
-                            ChannelMonetizationLayout.instance.reloadTransactions();
-                        }
                     } else if (baseUpdate instanceof TLRPC.TL_updateStarsBalance) {
                         TLRPC.TL_updateStarsBalance update = (TLRPC.TL_updateStarsBalance) baseUpdate;
-                        StarsController.getInstance(currentAccount).updateBalance(update.balance);
-                        StarsController.getInstance(currentAccount).invalidateTransactions(false);
+                        final boolean ton = update.balance instanceof TL_stars.TL_starsTonAmount;
+                        StarsController.getInstance(currentAccount, ton).updateBalance(update.balance);
+                        StarsController.getInstance(currentAccount, ton).invalidateTransactions(false);
                     } else if (baseUpdate instanceof TLRPC.TL_updateUser) {
                         TLRPC.TL_updateUser update = (TLRPC.TL_updateUser) baseUpdate;
                         TLRPC.User currentUser = getUser(update.user_id);
@@ -18994,6 +19097,10 @@ public class MessagesController extends BaseController implements NotificationCe
                             FileLog.d("Received call in update: " + call);
                             FileLog.d("call id " + call.id);
                         }
+                        if (voipDebug != null && call instanceof TL_phone.TL_phoneCallDiscarded) {
+                            TL_phone.TL_phoneCallDiscarded p = (TL_phone.TL_phoneCallDiscarded) call;
+                            voipDebug.done(p.id, p.need_debug);
+                        }
                         if (call instanceof TL_phone.phoneCallRequested) {
                             if (call.date + callRingTimeout / 1000 < getConnectionsManager().getCurrentTime()) {
                                 if (BuildVars.LOGS_ENABLED) {
@@ -19079,7 +19186,7 @@ public class MessagesController extends BaseController implements NotificationCe
                                 FileLog.e(e);
                             }
                         } else {
-                            if (svc != null && call != null) {
+                            if (svc != null && svc.getAccount() == currentAccount && call != null) {
                                 svc.onCallUpdated(call);
                             } else {
                                 if (call instanceof TL_phone.TL_phoneCallDiscarded) {
@@ -19298,17 +19405,6 @@ public class MessagesController extends BaseController implements NotificationCe
                             .putLong("paidReactionsDialogId", paidReactionsPrivacy = upd.privacy.getDialogId())
                             .apply();
                         loadingArePaidReactionsAnonymous = false;
-                    } else if (baseUpdate instanceof TLRPC.TL_updateSentPhoneCode) {
-                        final TLRPC.TL_updateSentPhoneCode upd = (TLRPC.TL_updateSentPhoneCode) baseUpdate;
-                        LoginActivity fragment = LaunchActivity.findFragment(LoginActivity.class);
-                        if (fragment == null) {
-                            fragment = new LoginActivity(currentAccount);
-                            BaseFragment lastFragment = LaunchActivity.getSafeLastFragment();
-                            if (lastFragment != null) {
-                                lastFragment.presentFragment(fragment);
-                            }
-                        }
-                        fragment.open(upd.sent_code);
                     } else if (baseUpdate instanceof TLRPC.TL_updateGroupCallChainBlocks) {
                         final VoIPService service = VoIPService.getSharedInstance();
                         if (service != null && service.conference != null) {
@@ -22968,6 +23064,69 @@ public class MessagesController extends BaseController implements NotificationCe
     }
     public long getForumLastTopicId(long chatId) {
         return mainPreferences.getLong("forumlasttopic" + chatId, 1);
+    }
+
+    public void addOfferToSuggestedMessage(MessageObject msg, TLRPC.SuggestedPost suggestedPost) {
+        if (msg == null || msg.messageOwner == null) {
+            return;
+        }
+
+        ArrayList<MessageObject> messageObjects = new ArrayList<>(1);
+        messageObjects.add(msg);
+        getSendMessagesHelper().sendMessage(messageObjects, msg.getDialogId(),
+            !msg.isForwarded(), false, true, 0,
+            msg.messageOwner.suggested_post != null ? msg : null,
+            -1, 0,
+            DialogObject.getPeerDialogId(msg.messageOwner.saved_peer_id),
+            MessageSuggestionParams.of(suggestedPost)
+        );
+    }
+
+    public void approveSuggestedMessage(long dialogId, int messageId, int scheduleDate) {
+        approveOrRejectSuggestedMessageImpl(dialogId, messageId, scheduleDate, false, null);
+    }
+
+    public void rejectSuggestedMessage(long dialogId, int messageId, String reason) {
+        approveOrRejectSuggestedMessageImpl(dialogId, messageId, -1, true, reason);
+    }
+
+
+    private final HashMap<String, Boolean> sendingSuggestedMessageApprovalMap = new HashMap<>();
+
+    public boolean isSendingSuggestedMessageApproval(long dialogId, int messageId, boolean isApprove) {
+        final Boolean _isApprove = sendingSuggestedMessageApprovalMap.get(dialogId + "_" + messageId);
+        return _isApprove != null && _isApprove == isApprove;
+    }
+
+    private void approveOrRejectSuggestedMessageImpl(long dialogId, int messageId, int scheduleDate, boolean reject, String reason) {
+        if (sendingSuggestedMessageApprovalMap.containsKey(dialogId + "_" + messageId)) {
+            return;
+        }
+
+        TLRPC.TL_messages_toggleSuggestedPostApproval request = new TLRPC.TL_messages_toggleSuggestedPostApproval();
+        request.reject = reject;
+        request.peer = getMessagesController().getInputPeer(dialogId);
+        request.msg_id = messageId;
+        if (scheduleDate > 0) {
+            request.schedule_date = scheduleDate;
+            request.flags |= TLRPC.FLAG_0;
+        }
+        if (reject && !TextUtils.isEmpty(reason)) {
+            request.reject_comment = reason;
+        }
+
+        sendingSuggestedMessageApprovalMap.put(dialogId + "_" + messageId, !reject);
+        getConnectionsManager().sendRequest(request, (response, err) -> {
+            sendingSuggestedMessageApprovalMap.remove(dialogId + "_" + messageId);
+
+            if (err != null) {
+                // todo: show error
+                return;
+            }
+            if (response != null) {
+                processUpdates((TLRPC.Updates) response, false);
+            }
+        });
     }
 
 }

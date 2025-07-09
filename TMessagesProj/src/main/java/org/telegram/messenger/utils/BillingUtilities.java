@@ -57,9 +57,15 @@ public class BillingUtilities {
     }
 
     public static Pair<String, String> createDeveloperPayload(TLRPC.InputStorePaymentPurpose paymentPurpose, AccountInstance accountInstance) {
-        long currentAccountId = accountInstance.getUserConfig().getClientUserId();
-        byte[] currentAccountIdBytes = String.valueOf(currentAccountId).getBytes(Charsets.UTF_8);
-        String obfuscatedAccountId = Base64.encodeToString(currentAccountIdBytes, Base64.DEFAULT);
+        String obfuscatedAccountId;
+        if (accountInstance.getUserConfig().isClientActivated()) {
+            long currentAccountId = accountInstance.getUserConfig().getClientUserId();
+            byte[] currentAccountIdBytes = String.valueOf(currentAccountId).getBytes(Charsets.UTF_8);
+            obfuscatedAccountId = Base64.encodeToString(currentAccountIdBytes, Base64.DEFAULT);
+        } else {
+            byte[] currentAccountIdBytes = ("account-" + accountInstance.getCurrentAccount()).getBytes(Charsets.UTF_8);
+            obfuscatedAccountId = Base64.encodeToString(currentAccountIdBytes, Base64.DEFAULT);
+        }
         return Pair.create(obfuscatedAccountId, savePurpose(paymentPurpose));
     }
 
@@ -237,12 +243,20 @@ public class BillingUtilities {
             }
 
             byte[] obfuscatedAccountIdBytes = Base64.decode(obfuscatedAccountId, Base64.DEFAULT);
-            long accountId = Long.parseLong(new String(obfuscatedAccountIdBytes, Charsets.UTF_8));
+            String obfuscatedAccountIdString = new String(obfuscatedAccountIdBytes, Charsets.UTF_8);
+            FileLog.d("Billing: Extract payload. obfuscatedAccountIdString=" + obfuscatedAccountIdString);
 
-            AccountInstance acc = findAccountById(accountId);
-            if (acc == null) {
-                FileLog.d("Billing: Extract payload. AccountInstance not found, accountId=" + accountId);
-                return null;
+            AccountInstance acc;
+            if (obfuscatedAccountIdString.startsWith("account-")) {
+                int currentAccount = Integer.parseInt(obfuscatedAccountIdString.substring(8));
+                acc = AccountInstance.getInstance(currentAccount);
+            } else {
+                long accountId = Long.parseLong(obfuscatedAccountIdString);
+                acc = findAccountById(accountId);
+                if (acc == null) {
+                    FileLog.d("Billing: Extract payload. AccountInstance not found, accountId=" + accountId);
+                    return null;
+                }
             }
             return Pair.create(acc, purpose);
         } catch (Exception e) {

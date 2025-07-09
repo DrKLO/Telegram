@@ -1731,6 +1731,16 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                                         } else {
                                             messageString = "\uD83D\uDCCA " + mediaPoll.poll.question.text;
                                         }
+                                    } else if (message.messageOwner.media instanceof TLRPC.TL_messageMediaToDo) {
+                                        TLRPC.TL_messageMediaToDo mediaToDo = (TLRPC.TL_messageMediaToDo) message.messageOwner.media;
+                                        if (mediaToDo.todo.title != null && mediaToDo.todo.title.entities != null) {
+                                            SpannableString questionText = new SpannableString(mediaToDo.todo.title.text);
+                                            MediaDataController.addTextStyleRuns(mediaToDo.todo.title.entities, mediaToDo.todo.title.text, questionText);
+                                            MediaDataController.addAnimatedEmojiSpans(mediaToDo.todo.title.entities, questionText, Theme.dialogs_messagePaint[paintIndex].getFontMetricsInt());
+                                            messageString = new SpannableStringBuilder("\u2705 ").append(questionText);
+                                        } else {
+                                            messageString = "\u2705 " + mediaToDo.todo.title.text;
+                                        }
                                     } else if (message.messageOwner.media instanceof TLRPC.TL_messageMediaGame) {
                                         messageString = "\uD83C\uDFAE " + message.messageOwner.media.game.title;
                                     } else if (message.messageOwner.media instanceof TLRPC.TL_messageMediaInvoice) {
@@ -2461,7 +2471,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                 messageStringFinal = messageNameString;
                 messageNameString = null;
                 currentMessagePaint = Theme.dialogs_messagePaint[paintIndex];
-            } else if (!useForceThreeLines && !SharedConfig.useThreeLinesLayout || hasTags() || messageNameString != null) {
+            } else if (!useForceThreeLines && !SharedConfig.useThreeLinesLayout || hasTags() || messageNameString != null || ChatObject.isMonoForum(chat) && ChatObject.canManageMonoForum(currentAccount, chat)) {
                 if (!isForumCell() && messageString instanceof Spanned && ((Spanned) messageString).getSpans(0, messageString.length(), FixedWidthSpan.class).length <= 0) {
                     messageStringFinal = TextUtils.ellipsize(messageString, currentMessagePaint, messageWidth - dp(12 + (thumbsCount * (thumbSize + 2) - 2) + 5), TextUtils.TruncateAt.END);
                 } else {
@@ -3334,8 +3344,8 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                 }
                 reactionsMentionsAnimator.start();
             }
-            drawMonoforumAvatar = chat != null && chat.monoforum;
-            avatarImage.setRoundRadius(drawMonoforumAvatar ? 0 : chat != null && chat.forum && currentDialogFolderId == 0 && !useFromUserAsAvatar || !isSavedDialog && user != null && user.self && MessagesController.getInstance(currentAccount).savedViewAsChats ? dp(16) : dp(28));
+            drawMonoforumAvatar = !isFolderCell() && chat != null && chat.monoforum;
+            avatarImage.setRoundRadius(drawMonoforumAvatar ? 1 : chat != null && chat.forum && currentDialogFolderId == 0 && !useFromUserAsAvatar || !isSavedDialog && user != null && user.self && MessagesController.getInstance(currentAccount).savedViewAsChats ? dp(16) : dp(28));
         }
         if (!isTopic && (getMeasuredWidth() != 0 || getMeasuredHeight() != 0)) {
             rebuildLayout = true;
@@ -5449,6 +5459,27 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                         innerMessage = new SpannableStringBuilder("\uD83D\uDCCA ").append(questionText);
                     } else {
                         innerMessage = String.format("\uD83D\uDCCA %s", mediaPoll.poll.question.text);
+                    }
+                }
+            } else if (message.messageOwner.media instanceof TLRPC.TL_messageMediaToDo) {
+                TLRPC.TL_messageMediaToDo mediaTodo = (TLRPC.TL_messageMediaToDo) message.messageOwner.media;
+                if (Build.VERSION.SDK_INT >= 18) {
+                    if (mediaTodo.todo.title != null && mediaTodo.todo.title.entities != null) {
+                        SpannableString questionText = new SpannableString(mediaTodo.todo.title.text.replace('\n', ' '));
+                        MediaDataController.addTextStyleRuns(mediaTodo.todo.title.entities, mediaTodo.todo.title.text, questionText);
+                        MediaDataController.addAnimatedEmojiSpans(mediaTodo.todo.title.entities, questionText, Theme.dialogs_messagePaint[paintIndex].getFontMetricsInt());
+                        innerMessage = new SpannableStringBuilder("\u2705 \u2068").append(questionText).append("\u2069");
+                    } else {
+                        innerMessage = String.format("\u2705 \u2068%s\u2069", mediaTodo.todo.title.text);
+                    }
+                } else {
+                    if (mediaTodo.todo.title != null && mediaTodo.todo.title.entities != null) {
+                        SpannableString questionText = new SpannableString(mediaTodo.todo.title.text.replace('\n', ' '));
+                        MediaDataController.addTextStyleRuns(mediaTodo.todo.title.entities, mediaTodo.todo.title.text, questionText);
+                        MediaDataController.addAnimatedEmojiSpans(mediaTodo.todo.title.entities, questionText, Theme.dialogs_messagePaint[paintIndex].getFontMetricsInt());
+                        innerMessage = new SpannableStringBuilder("\u2705 ").append(questionText);
+                    } else {
+                        innerMessage = String.format("\u2705 %s", mediaTodo.todo.title.text);
                     }
                 }
             } else if (message.messageOwner.media instanceof TLRPC.TL_messageMediaGame) {

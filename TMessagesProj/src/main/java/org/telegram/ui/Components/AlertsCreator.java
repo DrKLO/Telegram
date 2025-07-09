@@ -10,7 +10,9 @@ package org.telegram.ui.Components;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
 import static org.telegram.messenger.AndroidUtilities.lerp;
+import static org.telegram.messenger.LocaleController.formatString;
 import static org.telegram.messenger.LocaleController.getString;
+import static org.telegram.messenger.MessagesController.findUpdates;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
@@ -60,6 +62,7 @@ import android.view.inputmethod.EditorInfo;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.FrameLayout;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -86,6 +89,7 @@ import org.telegram.messenger.NotificationsController;
 import org.telegram.messenger.OneUIUtilities;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SecretChatHelper;
+import org.telegram.messenger.SendMessagesHelper;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.SvgHelper;
 import org.telegram.messenger.UserConfig;
@@ -103,6 +107,7 @@ import org.telegram.tgnet.tl.TL_phone;
 import org.telegram.ui.ActionBar.ActionBarMenuItem;
 import org.telegram.ui.ActionBar.ActionBarPopupWindow;
 import org.telegram.ui.ActionBar.AlertDialog;
+import org.telegram.ui.ActionBar.AlertDialogDecor;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.SimpleTextView;
@@ -148,6 +153,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
@@ -828,6 +834,28 @@ public class AlertsCreator {
         AlertDialog.Builder builder = createSimpleAlert(baseFragment.getParentActivity(), title, text, resourcesProvider);
         Dialog dialog = builder.create();
         baseFragment.showDialog(dialog);
+        return dialog;
+    }
+
+    public static AlertDialog showSimpleConfirmAlert(BaseFragment baseFragment, final String title, final CharSequence text, final String confirm, final boolean confirmIsRed, final Runnable onConfirm) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(baseFragment.getParentActivity(), baseFragment.getResourceProvider());
+        builder.setTitle(title);
+        builder.setMessage(text);
+        builder.setPositiveButton(confirm, (dialogInterface, i) -> {
+            if (onConfirm != null) {
+                onConfirm.run();
+            }
+        });
+        builder.setNegativeButton(LocaleController.getString(R.string.Cancel), null);
+        AlertDialog dialog = builder.create();
+        baseFragment.showDialog(dialog);
+
+        if (confirmIsRed) {
+            TextView button = (TextView) dialog.getButton(DialogInterface.BUTTON_POSITIVE);
+            if (button != null) {
+                button.setTextColor(Theme.getColor(Theme.key_text_RedBold));
+            }
+        }
         return dialog;
     }
 
@@ -2071,7 +2099,7 @@ public class AlertsCreator {
                 if (chat != null) {
                     if (ChatObject.isChannel(chat)) {
                         if (chat.monoforum) {
-                            textView.setText(LocaleController.getString(R.string.LeaveСonversationMenu));
+                            textView.setText(LocaleController.getString(R.string.LeaveConversationMenu));
                         } else if (chat.megagroup) {
                             textView.setText(LocaleController.getString(R.string.LeaveMegaMenu));
                         } else {
@@ -2256,7 +2284,7 @@ public class AlertsCreator {
                 } else {
                     if (ChatObject.isChannel(chat)) {
                         if (chat.monoforum) {
-                            actionText = LocaleController.getString(R.string.LeaveСonversationMenu);
+                            actionText = LocaleController.getString(R.string.LeaveConversationMenu);
                         } else if (chat.megagroup) {
                             actionText = LocaleController.getString(R.string.LeaveMegaMenu);
                         } else {
@@ -3410,10 +3438,14 @@ public class AlertsCreator {
     }
 
     public static boolean checkScheduleDate(TextView button, TextView infoText, int type, NumberPicker dayPicker, NumberPicker hourPicker, NumberPicker minutePicker) {
-        return checkScheduleDate(button, infoText, 0, type, dayPicker, hourPicker, minutePicker);
+        return checkScheduleDate(button, infoText, 0, 0, type, dayPicker, hourPicker, minutePicker);
     }
 
     public static boolean checkScheduleDate(TextView button, TextView infoText, long maxDate, int type, NumberPicker dayPicker, NumberPicker hourPicker, NumberPicker minutePicker) {
+        return checkScheduleDate(button, infoText, 0, maxDate, type, dayPicker, hourPicker, minutePicker);
+    }
+
+    public static boolean checkScheduleDate(TextView button, TextView infoText, long minDateSeconds, long maxDate, int type, NumberPicker dayPicker, NumberPicker hourPicker, NumberPicker minutePicker) {
         int day = dayPicker.getValue();
         int hour = hourPicker.getValue();
         int minute = minutePicker.getValue();
@@ -3431,11 +3463,13 @@ public class AlertsCreator {
             calendar.set(Calendar.HOUR_OF_DAY, maxHour = 23);
             calendar.set(Calendar.MINUTE, maxMinute = 59);
             calendar.set(Calendar.SECOND, 59);
-            maxDay = 7; // ???
+            maxDay = (int) TimeUnit.MILLISECONDS.toDays(maxDate); // ???
             maxDate = calendar.getTimeInMillis();
         }
 
-        calendar.setTimeInMillis(systemTime + 60000L);
+        long minDate = minDateSeconds > 0 ? TimeUnit.SECONDS.toMillis(minDateSeconds) : 60000L;
+
+        calendar.setTimeInMillis(systemTime + minDate);
         int minDay = 1;
         int minHour = calendar.get(Calendar.HOUR_OF_DAY);
         int minMinute = calendar.get(Calendar.MINUTE);
@@ -3463,8 +3497,8 @@ public class AlertsCreator {
             minutePicker.setMaxValue(day == maxDay && hour == maxHour ? maxMinute : 59);
         }
         minute = minutePicker.getValue();
-        if (currentTime <= systemTime + 60000L) {
-            calendar.setTimeInMillis(systemTime + 60000L);
+        if (currentTime <= systemTime + minDate) {
+            calendar.setTimeInMillis(systemTime + minDate);
         } else if (maxDate > 0 && currentTime > maxDate) {
             calendar.setTimeInMillis(maxDate);
         }
@@ -3484,13 +3518,7 @@ public class AlertsCreator {
             } else {
                 num = 2;
             }
-            if (type == 1) {
-                num += 3;
-            } else if (type == 2) {
-                num += 6;
-            } else if (type == 3) {
-                num += 9;
-            }
+            num += type * 3;
             button.setText(LocaleController.getInstance().getFormatterScheduleSend(num).format(time));
         }
         if (infoText != null) {
@@ -3511,7 +3539,7 @@ public class AlertsCreator {
                 infoText.setText(LocaleController.formatString("VoipGroupScheduleInfo", R.string.VoipGroupScheduleInfo, t));
             }
         }
-        return currentTime - systemTime > 60000L;
+        return currentTime - systemTime > minDate;
     }
 
     public interface ScheduleDatePickerDelegate {
@@ -5324,6 +5352,10 @@ public class AlertsCreator {
             builder.setMessage(LocaleController.getString(R.string.ErrorSendRestrictedMusicAll));
         }  else if (result == 20) {
             builder.setMessage(LocaleController.getString(R.string.ErrorSendRestrictedMusic));
+        } else if (result == 21) {
+            builder.setMessage(getString(R.string.ErrorSendRestrictedTodoAll));
+        } else if (result == 22) {
+            builder.setMessage(getString(R.string.ErrorSendRestrictedTodo));
         }
 
         builder.setPositiveButton(LocaleController.getString(R.string.OK), null);
@@ -6297,16 +6329,37 @@ public class AlertsCreator {
 
         int currentDate = ConnectionsManager.getInstance(currentAccount).getCurrentTime();
         boolean hasNonDiceMessages = false;
+
+        final long unsafePaidSuggestedPostTime = MessagesController.getInstance(currentAccount).config.starsSuggestedPostAgeMin.get(TimeUnit.SECONDS);
+        boolean hasUnsafePaidSuggestedPostStars = false;
+        boolean hasUnsafePaidSuggestedPostTon = false;
         if (selectedMessage != null) {
             hasNonDiceMessages = !selectedMessage.isDice() || Math.abs(currentDate - selectedMessage.messageOwner.date) > 24 * 60 * 60;
+            if (selectedMessage.isPaidSuggestedPostProtected()) {
+                hasUnsafePaidSuggestedPostStars |= selectedMessage.messageOwner.paid_suggested_post_stars;
+                hasUnsafePaidSuggestedPostTon |= selectedMessage.messageOwner.paid_suggested_post_ton;
+            }
+
         } else {
             for (int a = 0; a < 2; a++) {
                 for (int b = 0; b < selectedMessages[a].size(); b++) {
                     MessageObject msg = selectedMessages[a].valueAt(b);
                     if (!msg.isDice() || Math.abs(currentDate - msg.messageOwner.date) > 24 * 60 * 60) {
                         hasNonDiceMessages = true;
-                        break;
                     }
+                    if (msg.isPaidSuggestedPostProtected()) {
+                        hasUnsafePaidSuggestedPostStars |= msg.messageOwner.paid_suggested_post_stars;
+                        hasUnsafePaidSuggestedPostTon |= msg.messageOwner.paid_suggested_post_ton;
+                    }
+                }
+            }
+        }
+        if (selectedGroup != null) {
+            for (int a = 0; a < selectedGroup.messages.size(); a++) {
+                MessageObject messageObject = selectedGroup.messages.get(a);
+                if (messageObject.isPaidSuggestedPostProtected()) {
+                    hasUnsafePaidSuggestedPostStars |= messageObject.messageOwner.paid_suggested_post_stars;
+                    hasUnsafePaidSuggestedPostTon |= messageObject.messageOwner.paid_suggested_post_ton;
                 }
             }
         }
@@ -6654,7 +6707,19 @@ public class AlertsCreator {
             }
         }
 
-        if (isActiveGiveawayAndOwner && !isSavedMessages) {
+        if (hasUnsafePaidSuggestedPostStars) {
+            final int hours = (int) MessagesController.getInstance(currentAccount).config.starsSuggestedPostAgeMin.get(TimeUnit.HOURS);
+
+            builder.setTitle(getString(R.string.SuggestionStarsWillBeLost));
+            builder.setMessage(AndroidUtilities.replaceTags(LocaleController.formatString(R.string.SuggestionStarsWillBeLostInfo, hours)));
+            builder.setPositiveButton(LocaleController.getString(R.string.SuggestionStarsWillBeLostDelete), deleteAction);
+        } else if (hasUnsafePaidSuggestedPostTon) {
+            final int hours = (int) MessagesController.getInstance(currentAccount).config.starsSuggestedPostAgeMin.get(TimeUnit.HOURS);
+
+            builder.setTitle(getString(R.string.SuggestionTONWillBeLost));
+            builder.setMessage(AndroidUtilities.replaceTags(LocaleController.formatString(R.string.SuggestionTONWillBeLostInfo, hours)));
+            builder.setPositiveButton(LocaleController.getString(R.string.SuggestionStarsWillBeLostDelete), deleteAction);
+        } else if (isActiveGiveawayAndOwner && !isSavedMessages) {
             builder.setTitle(LocaleController.getString(R.string.BoostingGiveawayDeleteMsgTitle));
             builder.setMessage(AndroidUtilities.replaceTags(LocaleController.formatString("BoostingGiveawayDeleteMsgText", R.string.BoostingGiveawayDeleteMsgText, giveawayEndDate)));
             builder.setNeutralButton(LocaleController.getString(R.string.Delete), deleteAction);
@@ -7176,11 +7241,11 @@ public class AlertsCreator {
         void didSelectValues(int time, int minute);
     }
 
-    public static void showDeclineSuggestedPostDialog(BaseFragment fragment) {
+    public static void showDeclineSuggestedPostDialog(BaseFragment fragment, long author_did, boolean useDecor, Utilities.Callback<String> onDecline) {
         Context context = fragment.getContext();
-        AlertDialog.Builder builder = new AlertDialog.Builder(context);
+        AlertDialog.Builder builder = useDecor ? new AlertDialogDecor.Builder(context) : new AlertDialog.Builder(context);
         builder.setTitle(LocaleController.getString(R.string.SuggestedMessageDecline));
-        builder.setMessage(AndroidUtilities.replaceTags(LocaleController.formatString(R.string.SuggestedMessageDeclineInfo, "Username")));
+        builder.setMessage(AndroidUtilities.replaceTags(LocaleController.formatString(R.string.SuggestedMessageDeclineInfo, MessagesController.getInstance(UserConfig.selectedAccount).getPeerName(author_did))));
 
         FrameLayout dialogView = new FrameLayout(context);
         dialogView.setClipChildren(false);
@@ -7218,6 +7283,9 @@ public class AlertsCreator {
         builder.setView(dialogView);
         AlertDialog.OnButtonClickListener onDoneListener = (dialogInterface, i) -> {
             dialogInterface.dismiss();
+            if (onDecline != null) {
+                onDecline.run(editTextView.getText().toString());
+            }
         };
         builder.setPositiveButton(LocaleController.getString(R.string.Decline), onDoneListener);
         builder.setNegativeButton(LocaleController.getString(R.string.Cancel), null);
@@ -7225,7 +7293,9 @@ public class AlertsCreator {
 
         dialogView.addView(editTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 23, 0, 23, 21));
         editTextView.requestFocus();
-        AndroidUtilities.showKeyboard(editTextView);
+        AndroidUtilities.runOnUIThread(() -> {
+            AndroidUtilities.showKeyboard(editTextView);
+        }, 100);
 
         AlertDialog dialog = builder.create();
         fragment.showDialog(dialog);
@@ -7236,11 +7306,14 @@ public class AlertsCreator {
         }
     }
 
-    public static BottomSheet.Builder createSuggestedMessageDatePickerDialog(Context context, long currentDate, final ScheduleDatePickerDelegate datePickerDelegate, Theme.ResourcesProvider resourcesProvider) {
-        return createSuggestedMessageDatePickerDialog(context, currentDate, datePickerDelegate, null, new ScheduleDatePickerColors(), resourcesProvider);
+    public static final int SUGGEST_DATE_PICKER_MODE_EDIT = 0;
+    public static final int SUGGEST_DATE_PICKER_MODE_ACCEPT = 1;
+
+    public static BottomSheet.Builder createSuggestedMessageDatePickerDialog(Context context, long currentDate, final ScheduleDatePickerDelegate datePickerDelegate, Theme.ResourcesProvider resourcesProvider, int mode) {
+        return createSuggestedMessageDatePickerDialog(context, currentDate, datePickerDelegate, null, new ScheduleDatePickerColors(), resourcesProvider, mode);
     }
 
-    public static BottomSheet.Builder createSuggestedMessageDatePickerDialog(Context context, long currentDate, final ScheduleDatePickerDelegate datePickerDelegate, final Runnable cancelRunnable, final ScheduleDatePickerColors datePickerColors, Theme.ResourcesProvider resourcesProvider) {
+    public static BottomSheet.Builder createSuggestedMessageDatePickerDialog(Context context, long currentDate, final ScheduleDatePickerDelegate datePickerDelegate, final Runnable cancelRunnable, final ScheduleDatePickerColors datePickerColors, Theme.ResourcesProvider resourcesProvider, int mode) {
         if (context == null) {
             return null;
         }
@@ -7313,7 +7386,7 @@ public class AlertsCreator {
         container.addView(titleLayout, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 22, 0, 22, 4));
 
         TextView titleView = new TextView(context);
-        titleView.setText(LocaleController.getString(R.string.PostSuggestionsAddTime));
+        titleView.setText(LocaleController.getString(mode == SUGGEST_DATE_PICKER_MODE_ACCEPT ? R.string.SuggestedPostAcceptTitle : R.string.PostSuggestionsAddTime));
         titleView.setTextColor(datePickerColors.textColor);
         titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
         titleView.setTypeface(AndroidUtilities.bold());
@@ -7321,7 +7394,6 @@ public class AlertsCreator {
         titleView.setOnTouchListener((v, event) -> true);
 
         TextView subtitleView = new TextView(context);
-        subtitleView.setText(LocaleController.getString(R.string.PostSuggestionsAddTime));
         subtitleView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2, resourcesProvider));
         subtitleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         subtitleView.setText(LocaleController.getString(R.string.PostSuggestionsAddTimeHint));
@@ -7337,6 +7409,9 @@ public class AlertsCreator {
         Calendar calendar = Calendar.getInstance();
         calendar.setTimeInMillis(currentTime);
         int currentYear = calendar.get(Calendar.YEAR);
+
+        final long minDateSeconds = MessagesController.getInstance(UserConfig.selectedAccount).config.starsSuggestedPostFutureMin.get(TimeUnit.SECONDS) * 2;
+        final long maxDateSeconds = MessagesController.getInstance(UserConfig.selectedAccount).config.starsSuggestedPostFutureMax.get(TimeUnit.SECONDS) - 86400;
 
         TextView buttonTextView = new TextView(context) {
             @Override
@@ -7367,8 +7442,9 @@ public class AlertsCreator {
                 }
             }
         });
+        final int dateFormatterType = mode == SUGGEST_DATE_PICKER_MODE_ACCEPT ? 5 : 3;
         final NumberPicker.OnValueChangeListener onValueChangeListener = (picker, oldVal, newVal) -> {
-            checkScheduleDate(buttonTextView, null, 0, dayPicker, hourPicker, minutePicker);
+            checkScheduleDate(buttonTextView, null, minDateSeconds, maxDateSeconds, dateFormatterType, dayPicker, hourPicker, minutePicker);
         };
         dayPicker.setOnValueChangedListener(onValueChangeListener);
 
@@ -7402,7 +7478,7 @@ public class AlertsCreator {
         }
         final boolean[] canceled = {true};
 
-        checkScheduleDate(buttonTextView, null, 0, dayPicker, hourPicker, minutePicker);
+        checkScheduleDate(buttonTextView, null, minDateSeconds, maxDateSeconds, dateFormatterType, dayPicker, hourPicker, minutePicker);
 
         buttonTextView.setPadding(dp(34), 0, dp(34), 0);
         buttonTextView.setGravity(Gravity.CENTER);
@@ -7413,7 +7489,7 @@ public class AlertsCreator {
         container.addView(buttonTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48, Gravity.LEFT | Gravity.BOTTOM, 16, 15, 16, 4));
         buttonTextView.setOnClickListener(v -> {
             canceled[0] = false;
-            boolean setSeconds = checkScheduleDate(null, null, 0, dayPicker, hourPicker, minutePicker);
+            boolean setSeconds = checkScheduleDate(null, null, minDateSeconds, maxDateSeconds, dateFormatterType, dayPicker, hourPicker, minutePicker);
             final long date = LocalDate.now().plusDays(dayPicker.getValue()).atStartOfDay(ZoneOffset.systemDefault()).toInstant().toEpochMilli();
             calendar.setTimeInMillis(date);
             calendar.set(Calendar.HOUR_OF_DAY, hourPicker.getValue());
@@ -7435,7 +7511,7 @@ public class AlertsCreator {
         };
         buttonAnytimeTextView.setPadding(dp(34), 0, dp(34), 0);
         buttonAnytimeTextView.setGravity(Gravity.CENTER);
-        buttonAnytimeTextView.setText(LocaleController.getString(R.string.PostSuggestionsSendAnytime));
+        buttonAnytimeTextView.setText(LocaleController.getString(mode == SUGGEST_DATE_PICKER_MODE_ACCEPT ? R.string.MessageSuggestionPublishNow: R.string.PostSuggestionsAnytime));
         buttonAnytimeTextView.setTextColor(datePickerColors.buttonBackgroundColor);
         buttonAnytimeTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         buttonAnytimeTextView.setBackground(Theme.createSimpleSelectorRoundRectDrawable(dp(8), Theme.getColor(Theme.key_windowBackgroundWhite), Theme.getColor(Theme.key_listSelector)));
@@ -7457,5 +7533,111 @@ public class AlertsCreator {
         bottomSheet.setBackgroundColor(datePickerColors.backgroundColor);
         bottomSheet.fixNavigationBar(datePickerColors.backgroundColor);
         return builder;
+    }
+
+    public static void showCallsForbidden(Context context, int currentAccount, long dialogId, Theme.ResourcesProvider resourcesProvider) {
+        BottomSheet.Builder b = new BottomSheet.Builder(context, false, resourcesProvider);
+
+        LinearLayout linearLayout = new LinearLayout(context);
+        linearLayout.setOrientation(LinearLayout.VERTICAL);
+        linearLayout.setPadding(dp(16), 0, dp(16), dp(8));
+
+        final FrameLayout topView = new FrameLayout(context);
+        topView.setClipChildren(false);
+        topView.setClipToPadding(false);
+        linearLayout.addView(topView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 92, Gravity.CENTER, 0, 0, 0, 0));
+
+        final FrameLayout circle = new FrameLayout(context);
+        ImageView imageView = new ImageView(context);
+        imageView.setScaleType(ImageView.ScaleType.CENTER);
+        imageView.setImageResource(R.drawable.story_link);
+        imageView.setScaleX(2f);
+        imageView.setScaleY(2f);
+        circle.addView(imageView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.CENTER));
+        circle.setBackground(Theme.createCircleDrawable(dp(80), Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider)));
+        topView.addView(circle, LayoutHelper.createFrame(80, 80, Gravity.CENTER_HORIZONTAL, 0, 12, 0, 0));
+
+        TextView textView = new TextView(context);
+        textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+        textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
+        textView.setTypeface(AndroidUtilities.bold());
+        textView.setText(getString(R.string.CallForbiddenInviteLinkTitle));
+        textView.setGravity(Gravity.CENTER);
+        linearLayout.addView(textView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 32, 16, 32, 8));
+
+        textView = new TextView(context);
+        textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+        textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+        textView.setText(AndroidUtilities.replaceTags(LocaleController.formatString(R.string.CallForbiddenInviteLinkText, DialogObject.getName(currentAccount, dialogId))));
+        textView.setGravity(Gravity.CENTER);
+        linearLayout.addView(textView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 32, 0, 32, 18));
+
+        ButtonWithCounterView button = new ButtonWithCounterView(context, resourcesProvider);
+        button.setText(getString(R.string.CallForbiddenInviteLinkButton), false);
+        linearLayout.addView(button, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48, 0, 0, 0, 0));
+
+        b.setCustomView(linearLayout);
+        BottomSheet sheet = b.create();
+
+        button.setOnClickListener(v -> {
+            final TL_phone.createConferenceCall req = new TL_phone.createConferenceCall();
+            req.random_id = Utilities.random.nextInt();
+            ConnectionsManager.getInstance(currentAccount).sendRequest(req, (res, err) -> AndroidUtilities.runOnUIThread(() -> {
+                if (res instanceof TLRPC.Updates) {
+                    final TLRPC.Updates updates = (TLRPC.Updates) res;
+                    MessagesController.getInstance(currentAccount).putUsers(updates.users, false);
+                    MessagesController.getInstance(currentAccount).putChats(updates.chats, false);
+
+                    TLRPC.GroupCall groupCall = null;
+                    for (TLRPC.TL_updateGroupCall upd : findUpdates(updates, TLRPC.TL_updateGroupCall.class)) {
+                        groupCall = upd.call;
+                    }
+
+                    Utilities.stageQueue.postRunnable(() -> {
+                        MessagesController.getInstance(currentAccount).processUpdates(updates, false);
+                    });
+
+                    if (groupCall == null || LaunchActivity.instance == null) {
+//                        creatingCall = false;
+                        button.setLoading(false);
+                        return;
+                    }
+//                    final TLRPC.TL_inputGroupCall inputGroupCall = new TLRPC.TL_inputGroupCall();
+//                    inputGroupCall.id = groupCall.id;
+//                    inputGroupCall.access_hash = groupCall.access_hash;
+                    sheet.dismiss();
+//                    VoIPHelper.joinConference(LaunchActivity.instance, currentAccount, inputGroupCall, false, groupCall, null);
+
+                    SendMessagesHelper.getInstance(currentAccount).sendMessage(SendMessagesHelper.SendMessageParams.of(groupCall.invite_link, dialogId));
+
+                    BaseFragment lastFragment = LaunchActivity.getSafeLastFragment();
+                    if (lastFragment != null && !(lastFragment instanceof ChatActivity && ((ChatActivity) lastFragment).getDialogId() == dialogId && ((ChatActivity) lastFragment).getChatMode() == ChatActivity.MODE_DEFAULT)) {
+                        lastFragment.presentFragment(ChatActivity.of(dialogId));
+                    }
+                } else if (res instanceof TL_phone.groupCall) {
+                    final TL_phone.groupCall r = (TL_phone.groupCall) res;
+                    MessagesController.getInstance(currentAccount).putUsers(r.users, false);
+                    MessagesController.getInstance(currentAccount).putChats(r.chats, false);
+                    if (LaunchActivity.instance == null) {
+//                        creatingCall = false;
+                        button.setLoading(false);
+                        return;
+                    }
+                    final TLRPC.TL_inputGroupCall inputGroupCall = new TLRPC.TL_inputGroupCall();
+                    inputGroupCall.id = r.call.id;
+                    inputGroupCall.access_hash = r.call.access_hash;
+                    sheet.dismiss();
+                    VoIPHelper.joinConference(LaunchActivity.instance, currentAccount, inputGroupCall, false, r.call, null);
+
+                    SendMessagesHelper.getInstance(currentAccount).sendMessage(SendMessagesHelper.SendMessageParams.of(r.call.invite_link, dialogId));
+                } else if (err != null) {
+                    BulletinFactory.of(sheet.topBulletinContainer, resourcesProvider)
+                        .showForError(err);
+                }
+            }));
+        });
+
+        sheet.fixNavigationBar();
+        sheet.show();
     }
 }

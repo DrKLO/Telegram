@@ -109,7 +109,7 @@ public class ViewPagerFixed extends FrameLayout {
     private Rect rect = new Rect();
     private boolean allowDisallowInterceptTouch = true;
 
-    protected void onTabAnimationUpdate(boolean manual) {
+    public void onTabAnimationUpdate(boolean manual) {
 
     }
 
@@ -1031,6 +1031,133 @@ public class ViewPagerFixed extends FrameLayout {
 
     public int getCurrentPosition() {
         return currentPosition;
+    }
+
+    public void cancelTouches() {
+        if (velocityTracker != null) {
+            velocityTracker.computeCurrentVelocity(1000, maximumVelocity);
+        }
+        float velX = 0;
+        float velY = 0;
+        if (startedTracking) {
+            float x = viewPages[0].getX();
+            tabsAnimation = new AnimatorSet();
+            if (additionalOffset != 0) {
+                if (Math.abs(velX) > 1500) {
+                    backAnimation = animatingForward ? velX > 0 : velX < 0;
+                } else {
+                    if (animatingForward) {
+                        if (viewPages[1] != null) {
+                            backAnimation = (viewPages[1].getX() > (viewPages[0].getMeasuredWidth() >> 1));
+                        } else {
+                            backAnimation = false;
+                        }
+                    } else {
+                        backAnimation = (viewPages[0].getX() < (viewPages[0].getMeasuredWidth() >> 1));
+                    }
+                }
+            } else {
+                backAnimation = Math.abs(x) < viewPages[0].getMeasuredWidth() / 3.0f && (Math.abs(velX) < 3500 || Math.abs(velX) < Math.abs(velY));
+            }
+            float distToMove;
+            float dx = 0;
+            if (backAnimation) {
+                dx = Math.abs(x);
+                if (animatingForward) {
+                    tabsAnimation.playTogether(translateAnimator(viewPages[0], 0));
+                    if (viewPages[1] != null) {
+                        tabsAnimation.playTogether(translateAnimator(viewPages[1], viewPages[1].getMeasuredWidth()));
+                    }
+                } else {
+                    tabsAnimation.playTogether(translateAnimator(viewPages[0], 0));
+                    if (viewPages[1] != null) {
+                        tabsAnimation.playTogether(translateAnimator(viewPages[1], -viewPages[1].getMeasuredWidth()));
+                    }
+                }
+            } else if (nextPosition >= 0) {
+                dx = viewPages[0].getMeasuredWidth() - Math.abs(x);
+                if (animatingForward) {
+                    tabsAnimation.playTogether(translateAnimator(viewPages[0], -viewPages[0].getMeasuredWidth()));
+                    if (viewPages[1] != null) {
+                        tabsAnimation.playTogether(translateAnimator(viewPages[1], 0));
+                    }
+                } else {
+                    tabsAnimation.playTogether(translateAnimator(viewPages[0], viewPages[0].getMeasuredWidth()));
+                    if (viewPages[1] != null) {
+                        tabsAnimation.playTogether(translateAnimator(viewPages[1], 0));
+                    }
+                }
+            }
+            if (nextPosition < 0) {
+                ValueAnimator backAnimator = ValueAnimator.ofFloat(backProgress, backAnimation ? 0f : 1f);
+                backAnimator.addUpdateListener(anm -> {
+                    onBackProgress(backProgress = (float) anm.getAnimatedValue());
+                });
+                tabsAnimation.playTogether(backAnimator);
+            }
+            ValueAnimator animator = ValueAnimator.ofFloat(0,1f);
+            animator.addUpdateListener(updateTabProgress);
+            tabsAnimation.playTogether(animator);
+            tabsAnimation.setInterpolator(interpolator);
+
+            int width = getMeasuredWidth();
+            int halfWidth = width / 2;
+            float distanceRatio = Math.min(1.0f, 1.0f * dx / (float) width);
+            float distance = (float) halfWidth + (float) halfWidth * distanceInfluenceForSnapDuration(distanceRatio);
+            velX = Math.abs(velX);
+            int duration;
+            if (velX > 0) {
+                duration = 4 * Math.round(1000.0f * Math.abs(distance / velX));
+            } else {
+                float pageDelta = dx / getMeasuredWidth();
+                duration = (int) ((pageDelta + 1.0f) * 100.0f);
+            }
+            duration = Math.max(150, Math.min(duration, 600));
+
+            tabsAnimation.setDuration(duration);
+            tabsAnimation.addListener(new AnimatorListenerAdapter() {
+                @Override
+                public void onAnimationEnd(Animator animator) {
+                    tabsAnimation = null;
+                    if (nextPosition < 0) {
+                        onBack();
+                    }
+                    if (viewPages[1] != null) {
+                        if (!backAnimation) {
+                            swapViews();
+                        }
+
+                        viewsByType.put(viewTypes[1], viewPages[1]);
+                        removeView(viewPages[1]);
+                        viewPages[1].setVisibility(View.GONE);
+                        viewPages[1] = null;
+                    }
+                    tabsAnimationInProgress = false;
+                    maybeStartTracking = false;
+                    if (tabsView != null) {
+                        tabsView.setEnabled(true);
+                    }
+
+                    onTabAnimationUpdate(false);
+                    onScrollEnd();
+                    notificationsLocker.unlock();
+                }
+            });
+            tabsAnimation.start();
+            tabsAnimationInProgress = true;
+            startedTracking = false;
+
+            onTabAnimationUpdate(false);
+        } else {
+            maybeStartTracking = false;
+            if (tabsView != null) {
+                tabsView.setEnabled(true);
+            }
+        }
+        if (velocityTracker != null) {
+            velocityTracker.recycle();
+            velocityTracker = null;
+        }
     }
 
     public static class TabsView extends FrameLayout {

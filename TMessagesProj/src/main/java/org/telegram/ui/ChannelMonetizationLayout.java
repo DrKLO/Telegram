@@ -6,6 +6,7 @@ import static org.telegram.messenger.AndroidUtilities.makeBlurBitmap;
 import static org.telegram.messenger.LocaleController.formatPluralString;
 import static org.telegram.messenger.LocaleController.formatString;
 import static org.telegram.messenger.LocaleController.getString;
+import static org.telegram.tgnet.ConnectionsManager.DEFAULT_DATACENTER_ID;
 import static org.telegram.ui.ChatEditActivity.applyNewSpan;
 
 import android.app.Activity;
@@ -129,7 +130,7 @@ public class ChannelMonetizationLayout extends SizeNotifierFrameLayout implement
     private int starsBalanceBlockedUntil;
     private final LinearLayout starsBalanceLayout;
     private final RelativeSizeSpan starsBalanceTitleSizeSpan;
-    private TL_stars.StarsAmount starsBalance = new TL_stars.StarsAmount(0);
+    private TL_stars.StarsAmount starsBalance = TL_stars.StarsAmount.ofStars(0);
     private final AnimatedTextView starsBalanceTitle;
     private final AnimatedTextView starsBalanceSubtitle;
     private final ButtonWithCounterView starsBalanceButton;
@@ -525,12 +526,15 @@ public class ChannelMonetizationLayout extends SizeNotifierFrameLayout implement
         TLObject r;
         if (stars) {
             TLRPC.TL_payments_getStarsRevenueWithdrawalUrl req = new TLRPC.TL_payments_getStarsRevenueWithdrawalUrl();
+            req.ton = false;
             req.peer = MessagesController.getInstance(currentAccount).getInputPeer(dialogId);
             req.password = password != null ? password : new TLRPC.TL_inputCheckPasswordEmpty();
-            req.stars = starsBalanceEditTextValue;
+            req.flags |= 2;
+            req.amount = starsBalanceEditTextValue;
             r = req;
         } else {
-            TL_stats.TL_getBroadcastRevenueWithdrawalUrl req = new TL_stats.TL_getBroadcastRevenueWithdrawalUrl();
+            TLRPC.TL_payments_getStarsRevenueWithdrawalUrl req = new TLRPC.TL_payments_getStarsRevenueWithdrawalUrl();
+            req.ton = true;
             req.peer = MessagesController.getInstance(currentAccount).getInputPeer(dialogId);
             req.password = password != null ? password : new TLRPC.TL_inputCheckPasswordEmpty();
             r = req;
@@ -638,11 +642,11 @@ public class ChannelMonetizationLayout extends SizeNotifierFrameLayout implement
             } else {
                 passwordFragment.needHideProgress();
                 passwordFragment.finishFragment();
-                if (response instanceof TL_stats.TL_broadcastRevenueWithdrawalUrl) {
-                    Browser.openUrl(getContext(), ((TL_stats.TL_broadcastRevenueWithdrawalUrl) response).url);
-                } else if (response instanceof TLRPC.TL_payments_starsRevenueWithdrawalUrl) {
+                if (response instanceof TLRPC.TL_payments_starsRevenueWithdrawalUrl) {
                     Browser.openUrl(getContext(), ((TLRPC.TL_payments_starsRevenueWithdrawalUrl) response).url);
-                    loadStarsStats(true);
+                    if (stars) {
+                        loadStarsStats(true);
+                    }
                 }
                 reloadTransactions();
             }
@@ -734,7 +738,7 @@ public class ChannelMonetizationLayout extends SizeNotifierFrameLayout implement
             starsRevenueChart.chartData.lines.get(0).colorKey = Theme.key_statisticChartLine_golden;
             starsRevenueChart.chartData.yRate = (float) (1.0 / stars_rate / 100.0);
         }
-        setupBalances(stats.status);
+        setupBalances(false, stats.status);
 
         if (!tonRevenueAvailable && progress != null) {
             progress.animate().alpha(0).setDuration(380).setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT).withEndAction(() -> {
@@ -768,19 +772,20 @@ public class ChannelMonetizationLayout extends SizeNotifierFrameLayout implement
         loadStarsStats(false);
 
         if (tonRevenueAvailable) {
-            TL_stats.TL_getBroadcastRevenueStats req = new TL_stats.TL_getBroadcastRevenueStats();
+            TLRPC.TL_payments_getStarsRevenueStats req = new TLRPC.TL_payments_getStarsRevenueStats();
             req.dark = Theme.isCurrentThemeDark();
+            req.ton = true;
             req.peer = MessagesController.getInstance(currentAccount).getInputPeer(dialogId);
-            int stats_dc = -1;
+//            int stats_dc = -1;
             TLRPC.ChatFull chatFull = MessagesController.getInstance(currentAccount).getChatFull(-dialogId);
             if (chatFull != null) {
-                stats_dc = chatFull.stats_dc;
+//                stats_dc = chatFull.stats_dc;
                 initialSwitchOffValue = switchOffValue = chatFull.restricted_sponsored;
             }
-            if (stats_dc == -1) return;
+//            if (stats_dc == -1) return;
             ConnectionsManager.getInstance(currentAccount).sendRequest(req, (res, err) -> AndroidUtilities.runOnUIThread(() -> {
-                if (res instanceof TL_stats.TL_broadcastRevenueStats) {
-                    TL_stats.TL_broadcastRevenueStats stats = (TL_stats.TL_broadcastRevenueStats) res;
+                if (res instanceof TLRPC.TL_payments_starsRevenueStats) {
+                    TLRPC.TL_payments_starsRevenueStats stats = (TLRPC.TL_payments_starsRevenueStats) res;
 
                     impressionsChart = StatisticActivity.createViewData(stats.top_hours_graph, getString(R.string.MonetizationGraphImpressions), 0);
                     if (stats.revenue_graph != null) {
@@ -792,7 +797,7 @@ public class ChannelMonetizationLayout extends SizeNotifierFrameLayout implement
                     }
 
                     ton_rate = stats.usd_rate;
-                    setupBalances(stats.balances);
+                    setupBalances(true, stats.status);
 
                     progress.animate().alpha(0).setDuration(380).setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT).withEndAction(() -> {
                         progress.setVisibility(View.GONE);
@@ -800,57 +805,51 @@ public class ChannelMonetizationLayout extends SizeNotifierFrameLayout implement
 
                     checkLearnSheet();
                 }
-            }), null, null, 0, stats_dc, ConnectionsManager.ConnectionTypeGeneric, true);
+            }), null, null, 0, DEFAULT_DATACENTER_ID, ConnectionsManager.ConnectionTypeGeneric, true);
         }
     }
 
-    public void setupBalances(TLRPC.BroadcastRevenueBalances balances) {
-        if (ton_rate == 0) {
-            return;
-        }
-        availableValue.contains1 = true;
-        availableValue.crypto_amount = balances.available_balance;
-        availableValue.amount = (long) (availableValue.crypto_amount / 1_000_000_000.0 * ton_rate * 100.0);
-        setBalance(availableValue.crypto_amount, availableValue.amount);
-        availableValue.currency = "USD";
-        lastWithdrawalValue.contains1 = true;
-        lastWithdrawalValue.crypto_amount = balances.current_balance;
-        lastWithdrawalValue.amount = (long) (lastWithdrawalValue.crypto_amount / 1_000_000_000.0 * ton_rate * 100.0);
-        lastWithdrawalValue.currency = "USD";
-        lifetimeValue.contains1 = true;
-        lifetimeValue.crypto_amount = balances.overall_revenue;
-        lifetimeValue.amount = (long) (lifetimeValue.crypto_amount / 1_000_000_000.0 * ton_rate * 100.0);
-        lifetimeValue.currency = "USD";
-        proceedsAvailable = true;
-        balanceButton.setVisibility(balances.available_balance > 0 && balances.withdrawal_enabled ? View.VISIBLE : View.GONE);
-
-        if (listView != null && listView.adapter != null) {
-            listView.adapter.update(true);
-        }
-    }
-    public void setupBalances(TLRPC.TL_starsRevenueStatus balances) {
-        if (stars_rate == 0) {
-            return;
-        }
-        availableValue.contains2 = true;
-        availableValue.crypto_amount2 = balances.available_balance;
-        availableValue.amount2 = (long) (availableValue.crypto_amount2.amount * stars_rate * 100.0);
-        setStarsBalance(availableValue.crypto_amount2, balances.next_withdrawal_at);
-        availableValue.currency = "USD";
-        lastWithdrawalValue.contains2 = true;
-        lastWithdrawalValue.crypto_amount2 = balances.current_balance;
-        lastWithdrawalValue.amount2 = (long) (lastWithdrawalValue.crypto_amount2.amount * stars_rate * 100.0);
-        lastWithdrawalValue.currency = "USD";
-        lifetimeValue.contains2 = true;
-        lifetimeValue.crypto_amount2 = balances.overall_revenue;
-        lifetimeValue.amount2 = (long) (lifetimeValue.crypto_amount2.amount * stars_rate * 100.0);
-        lifetimeValue.currency = "USD";
-        proceedsAvailable = true;
-        if (starsBalanceButtonsLayout != null) {
-            starsBalanceButtonsLayout.setVisibility(balances.withdrawal_enabled ? View.VISIBLE : View.GONE);
-        }
-        if (starsBalanceButton != null) {
-            starsBalanceButton.setVisibility(balances.available_balance.amount > 0 || BuildVars.DEBUG_PRIVATE_VERSION ? View.VISIBLE : View.GONE);
+    public void setupBalances(boolean ton, TLRPC.TL_starsRevenueStatus balances) {
+        if (ton) {
+            availableValue.contains1 = true;
+            availableValue.crypto_amount = balances.available_balance.amount;
+            availableValue.amount = (long) (availableValue.crypto_amount / 1_000_000_000.0 * ton_rate * 100.0);
+            setBalance(availableValue.crypto_amount, availableValue.amount);
+            availableValue.currency = "USD";
+            lastWithdrawalValue.contains1 = true;
+            lastWithdrawalValue.crypto_amount = balances.current_balance.amount;
+            lastWithdrawalValue.amount = (long) (lastWithdrawalValue.crypto_amount / 1_000_000_000.0 * ton_rate * 100.0);
+            lastWithdrawalValue.currency = "USD";
+            lifetimeValue.contains1 = true;
+            lifetimeValue.crypto_amount = balances.overall_revenue.amount;
+            lifetimeValue.amount = (long) (lifetimeValue.crypto_amount / 1_000_000_000.0 * ton_rate * 100.0);
+            lifetimeValue.currency = "USD";
+            proceedsAvailable = true;
+            balanceButton.setVisibility(balances.available_balance.amount > 0 && balances.withdrawal_enabled ? View.VISIBLE : View.GONE);
+        } else {
+            if (stars_rate == 0) {
+                return;
+            }
+            availableValue.contains2 = true;
+            availableValue.crypto_amount2 = balances.available_balance;
+            availableValue.amount2 = (long) (availableValue.crypto_amount2.amount * stars_rate * 100.0);
+            setStarsBalance(availableValue.crypto_amount2, balances.next_withdrawal_at);
+            availableValue.currency = "USD";
+            lastWithdrawalValue.contains2 = true;
+            lastWithdrawalValue.crypto_amount2 = balances.current_balance;
+            lastWithdrawalValue.amount2 = (long) (lastWithdrawalValue.crypto_amount2.amount * stars_rate * 100.0);
+            lastWithdrawalValue.currency = "USD";
+            lifetimeValue.contains2 = true;
+            lifetimeValue.crypto_amount2 = balances.overall_revenue;
+            lifetimeValue.amount2 = (long) (lifetimeValue.crypto_amount2.amount * stars_rate * 100.0);
+            lifetimeValue.currency = "USD";
+            proceedsAvailable = true;
+            if (starsBalanceButtonsLayout != null) {
+                starsBalanceButtonsLayout.setVisibility(balances.withdrawal_enabled ? View.VISIBLE : View.GONE);
+            }
+            if (starsBalanceButton != null) {
+                starsBalanceButton.setVisibility(balances.available_balance.amount > 0 || BuildVars.DEBUG_PRIVATE_VERSION ? View.VISIBLE : View.GONE);
+            }
         }
 
         if (listView != null && listView.adapter != null) {
@@ -1180,7 +1179,7 @@ public class ChannelMonetizationLayout extends SizeNotifierFrameLayout implement
 
         public boolean contains2;
         public String crypto_currency2;
-        public TL_stars.StarsAmount crypto_amount2 = new TL_stars.StarsAmount(0);
+        public TL_stars.StarsAmount crypto_amount2 = TL_stars.StarsAmount.ofStars(0);
         public long amount2;
 
         public static ProceedOverview as(String cryptoCurrency, CharSequence text) {
@@ -1658,8 +1657,8 @@ public class ChannelMonetizationLayout extends SizeNotifierFrameLayout implement
         public static final int STARS_TRANSACTIONS = 0;
         public static final int TON_TRANSACTIONS = 1;
 
-        private final ArrayList<TL_stats.BroadcastRevenueTransaction> tonTransactions = new ArrayList<>();
-        private int tonTransactionsTotalCount;
+        private String tonTransactionsLastOffset = "";
+        private final ArrayList<TL_stars.StarsTransaction> tonTransactions = new ArrayList<>();
 
         private final ArrayList<TL_stars.StarsTransaction> starsTransactions = new ArrayList<>();
         private String starsLastOffset = "";
@@ -1766,7 +1765,7 @@ public class ChannelMonetizationLayout extends SizeNotifierFrameLayout implement
                 if (loadingTransactions[type]) return;
                 if (type == TON_TRANSACTIONS) {
                     tonTransactions.clear();
-                    tonTransactionsTotalCount = 3;
+                    tonTransactionsLastOffset = "";
                 } else {
                     starsTransactions.clear();
                     starsLastOffset = "";
@@ -1808,19 +1807,21 @@ public class ChannelMonetizationLayout extends SizeNotifierFrameLayout implement
             final boolean hadTransactions = hasTransactions();
             final boolean hadTheseTransactions = hasTransactions(type);
             if (type == TON_TRANSACTIONS) {
-                if (tonTransactions.size() >= tonTransactionsTotalCount && tonTransactionsTotalCount != 0 || !tonRevenueAvailable)
+                if (tonTransactionsLastOffset == null || !tonRevenueAvailable)
                     return;
                 loadingTransactions[type] = true;
-                TL_stats.TL_getBroadcastRevenueTransactions req = new TL_stats.TL_getBroadcastRevenueTransactions();
+                TL_stars.TL_payments_getStarsTransactions req = new TL_stars.TL_payments_getStarsTransactions();
+                req.ton = true;
                 req.peer = MessagesController.getInstance(currentAccount).getInputPeer(dialogId);
-                req.offset = tonTransactions.size();
+                req.offset = tonTransactionsLastOffset;
                 req.limit = tonTransactions.isEmpty() ? 5 : 20;
                 ConnectionsManager.getInstance(currentAccount).sendRequest(req, (res, err) -> AndroidUtilities.runOnUIThread(() -> {
-                    if (res instanceof TL_stats.TL_broadcastRevenueTransactions) {
-                        TL_stats.TL_broadcastRevenueTransactions r = (TL_stats.TL_broadcastRevenueTransactions) res;
-                        tonTransactionsTotalCount = r.count;
-                        tonTransactions.addAll(r.transactions);
-
+                    if (res instanceof TL_stars.StarsStatus) {
+                        TL_stars.StarsStatus r = (TL_stars.StarsStatus) res;
+                        MessagesController.getInstance(currentAccount).putUsers(r.users, false);
+                        MessagesController.getInstance(currentAccount).putChats(r.chats, false);
+                        tonTransactions.addAll(r.history);
+                        tonTransactionsLastOffset = r.next_offset;
                         updateLists(true, true);
                         loadingTransactions[type] = false;
                     } else if (err != null) {
@@ -1838,8 +1839,10 @@ public class ChannelMonetizationLayout extends SizeNotifierFrameLayout implement
                     return;
                 loadingTransactions[type] = true;
                 TL_stars.TL_payments_getStarsTransactions req = new TL_stars.TL_payments_getStarsTransactions();
+                req.ton = false;
                 req.peer = MessagesController.getInstance(currentAccount).getInputPeer(dialogId);
                 req.offset = starsLastOffset;
+                req.limit = starsTransactions.isEmpty() ? 5 : 20;
                 ConnectionsManager.getInstance(currentAccount).sendRequest(req, (res, err) -> AndroidUtilities.runOnUIThread(() -> {
                     if (res instanceof TL_stars.StarsStatus) {
                         TL_stars.StarsStatus r = (TL_stars.StarsStatus) res;
@@ -1923,10 +1926,10 @@ public class ChannelMonetizationLayout extends SizeNotifierFrameLayout implement
                         items.add(UItem.asFlicker(items.size(), FlickerLoadingView.DIALOG_CELL_TYPE));
                     }
                 } else if (type == TON_TRANSACTIONS) {
-                    for (TL_stats.BroadcastRevenueTransaction t : tonTransactions) {
-                        items.add(UItem.asTransaction(t));
+                    for (TL_stars.StarsTransaction t : tonTransactions) {
+                        items.add(StarsIntroActivity.StarsTransactionView.Factory.asTransaction(t, true));
                     }
-                    if (tonTransactionsTotalCount - tonTransactions.size() > 0) {
+                    if (!TextUtils.isEmpty(tonTransactionsLastOffset)) {
                         items.add(UItem.asFlicker(items.size(), FlickerLoadingView.DIALOG_CELL_TYPE));
                         items.add(UItem.asFlicker(items.size(), FlickerLoadingView.DIALOG_CELL_TYPE));
                         items.add(UItem.asFlicker(items.size(), FlickerLoadingView.DIALOG_CELL_TYPE));

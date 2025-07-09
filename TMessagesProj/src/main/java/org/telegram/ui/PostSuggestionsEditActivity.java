@@ -73,7 +73,7 @@ public class PostSuggestionsEditActivity extends BaseFragment {
 
         final long stars = monoforumChat == null ? 0 : monoforumChat.send_paid_messages_stars;
         initialSuggestionsEnabled = currentChat != null && currentChat.broadcast_messages_allowed;
-        initialSuggestionsStarsCount = Utilities.clamp(initialSuggestionsEnabled ? stars : 10, getMessagesController().starsPaidMessageAmountMax, 0);
+        initialSuggestionsStarsCount = Utilities.clamp(initialSuggestionsEnabled ? stars : getMessagesController().config.starsPaidMessagesChannelAmountDefault.get(), getMessagesController().starsPaidMessageAmountMax, 0);
         isSuggestionsEnabled = initialSuggestionsEnabled;
         suggestionsStarsCount = initialSuggestionsStarsCount;
     }
@@ -348,9 +348,11 @@ public class PostSuggestionsEditActivity extends BaseFragment {
                         view.setTopPadding(12);
                         view.setBottomPadding(16);
 
-                        final float revenuePercent = getMessagesController().starsPaidMessageCommissionPermille / 1000.0f;
+                        final int percent = getMessagesController().starsPaidMessageCommissionPermille;
+                        final float revenuePercent = percent / 1000.0f;
                         final String income = String.valueOf((int) ((suggestionsStarsCount * revenuePercent / 1000.0 * getMessagesController().starsUsdWithdrawRate1000)) / 100.0);
-                        view.setText(formatString(R.string.PostSuggestionsPriceInfo, percents(850), income));
+
+                        view.setText(formatString(R.string.PostSuggestionsPriceInfo, percents(percent), income));
                     }
                 }
             }

@@ -69,6 +69,8 @@ public class ForumUtilities {
             if (mfChat != null) {
                 return showChannelName ? mfChat.title : LocaleController.formatString(R.string.MonoforumTitle, mfChat.title);
             }
+        } else if (chat != null && chat.linked_monoforum_id != 0) {
+            return showChannelName ? chat.title : LocaleController.formatString(R.string.MonoforumTitle, chat.title);
         }
 
         return chat != null ? chat.title : null;
@@ -525,6 +527,8 @@ public class ForumUtilities {
         result.draft = tlMonoForumDialog.draft;
         result.notify_settings = new TLRPC.TL_peerNotifySettings();
         result.from_id = tlMonoForumDialog.peer;
+
+        result.nopaid_messages_exception = tlMonoForumDialog.nopaid_messages_exception;
 
         return result;
     }

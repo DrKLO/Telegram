@@ -3960,11 +3960,13 @@ public class TL_account {
         }
     }
 
-    public static class addNoPaidMessagesException extends TLObject {
-        public static final int constructor = 0x6f688aa7;
+    public static class toggleNoPaidMessagesException extends TLObject {
+        public static final int constructor = 0xfe2eda76;
 
         public int flags;
         public boolean refund_charged;
+        public boolean require_payment;
+        public TLRPC.InputPeer parent_peer;
         public TLRPC.InputUser user_id;
 
         @Override
@@ -3975,15 +3977,22 @@ public class TL_account {
         @Override
         public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
-            flags = refund_charged ? flags | 1 : flags &~ 1;
+            flags = refund_charged ? (flags | 1) : (flags &~ 1);
+            flags = parent_peer != null ? (flags | 2) : (flags &~ 2);
+            flags = require_payment ? (flags | 4) : (flags &~ 4);
             stream.writeInt32(flags);
+            if ((flags & 2) != 0) {
+                parent_peer.serializeToStream(stream);
+            }
             user_id.serializeToStream(stream);
         }
     }
 
     public static class getPaidMessagesRevenue extends TLObject {
-        public static final int constructor = 0xf1266f38;
+        public static final int constructor = 0x19ba4a67;
 
+        public int flags;
+        public TLRPC.InputPeer parent_peer;
         public TLRPC.InputUser user_id;
 
         @Override
@@ -3994,6 +4003,11 @@ public class TL_account {
         @Override
         public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
+            flags = parent_peer != null ? (flags | 1) : (flags &~ 1);
+            stream.writeInt32(flags);
+            if ((flags & 1) != 0) {
+                parent_peer.serializeToStream(stream);
+            }
             user_id.serializeToStream(stream);
         }
     }
