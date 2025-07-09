@@ -2153,7 +2153,11 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
             nameWidth -= dp(21);
         }
         if (hasPersonalChannel) {
-            nameWidth -= hasPersonalChannelView.getMeasuredWidth() + dp(4);
+            int w = hasPersonalChannelView.getMeasuredWidth() + dp(4);
+            nameWidth -= w;
+            if (LocaleController.isRTL) {
+                nameLeft += w;
+            }
         }
         try {
             int ellipsizeWidth = nameWidth - dp(12);
@@ -4034,7 +4038,11 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                 }
                 y -= dp(2);
                 canvas.save();
-                canvas.translate(nameMuteLeft + (drawPremium ? dp(25): 0), y);
+                if (LocaleController.isRTL) {
+                    canvas.translate(nameLeft - (drawPremium ? dp(25) : 0) - hasPersonalChannelView.getMeasuredWidth() - AndroidUtilities.dp(4), y);
+                } else {
+                    canvas.translate(nameMuteLeft + (drawPremium ? dp(25) : 0), y);
+                }
                 hasPersonalChannelView.draw(canvas);
                 canvas.restore();
             }
