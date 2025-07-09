@@ -80,6 +80,7 @@ import android.text.style.ForegroundColorSpan;
 import android.text.style.URLSpan;
 import android.text.util.Linkify;
 import android.util.DisplayMetrics;
+import android.util.Log;
 import android.util.Pair;
 import android.util.Property;
 import android.util.SparseArray;
@@ -1741,19 +1742,24 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     invalidateIndicatorRect(prevPage != realPosition);
                     prevPage = realPosition;
                     updateAvatarItems();
-                    boolean shouldAnimate = !actionItemsBlur.hasBitmapSet();
                     actionItemsBlur.clear();
-                    if (shouldAnimate) {
-                        AndroidUtilities.runOnUIThread(() -> prepareAndDisplayAvatarBlurIfNeeded(true));
-                    } else {
-                        prepareAndDisplayAvatarBlurIfNeeded(false);
-                    }
+                    prepareAndDisplayAvatarBlurIfNeeded(false);
                 }
 
                 @Override
                 public void onPageScrollStateChanged(int state) {
                 }
             });
+            avatarsViewPager.setOnPageInstantiatedListener((page) -> {
+                        if (page == avatarsViewPager.getRealPosition()) {
+                            avatarsViewPager.getCurrentItemView().setOnImageFullyRenderedListener(
+                                    () -> {
+                                        AndroidUtilities.runOnUIThread(() -> prepareAndDisplayAvatarBlurIfNeeded(true));
+                                    }
+                            );
+                        }
+                    }
+            );
             adapter.registerDataSetObserver(new DataSetObserver() {
                 @Override
                 public void onChanged() {
@@ -1767,6 +1773,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 }
             });
         }
+
 
         private void updateAvatarItemsInternal() {
             if (otherItem == null || avatarsViewPager == null) {
@@ -7482,17 +7489,18 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             return;
         }
         BackupImageView imageView = avatarsViewPager.getCurrentItemView();
-        if (imageView == null) {
+        if (imageView == null || imageView.getWidth() <= 0 || imageView.getHeight() <= 0) {
             return;
         }
         ImageReceiver imageReceiver = imageView.getImageReceiver();
-        if (imageReceiver == null || imageReceiver.getImageWidth() <= 0 || imageReceiver.getImageHeight() <= 0) {
+        if (imageReceiver == null) {
             return;
         }
         Drawable drawable = imageView.getImageReceiver().getImageDrawable();
-        if (drawable == null) {
+        if (drawable == null || drawable.getIntrinsicWidth() <= 0 || drawable.getIntrinsicHeight() <= 0) {
             return;
         }
+
         int w = actionItemsBlur.getMeasuredWidth();
         int h = actionItemsBlur.getMeasuredHeight();
         Bitmap bitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);

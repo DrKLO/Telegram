@@ -48,6 +48,18 @@ public class BackupImageView extends View {
     protected boolean hasBlur;
     protected boolean blurAllowed;
     public boolean drawFromStart;
+    onImageFullyRenderedListener onImageFullyRenderedListener;
+
+    public void setOnImageFullyRenderedListener(onImageFullyRenderedListener listener) {
+        this.onImageFullyRenderedListener = listener;
+        if (imageReceiver.getImageDrawable() != null) {
+            listener.onImageFullyRendered();
+        }
+    }
+
+    public interface onImageFullyRenderedListener {
+        void onImageFullyRendered();
+    }
 
     public BackupImageView(Context context) {
         super(context);
@@ -56,6 +68,9 @@ public class BackupImageView extends View {
         imageReceiver.setAllowLoadingOnAttachedOnly(true);
         imageReceiver.setDelegate((imageReceiver1, set, thumb, memCache) -> {
             if (set && !thumb) {
+                if (onImageFullyRenderedListener != null) {
+                    onImageFullyRenderedListener.onImageFullyRendered();
+                }
                 checkCreateBlurredImage();
             }
         });
