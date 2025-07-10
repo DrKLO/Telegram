@@ -190,15 +190,15 @@ public class StarGiftPatterns {
                 angle = i * (360 / 8f);
                 expandedRadiusRadiusX = awScaled / 2f * 1.25f;
                 expandedRadiusRadiusY = ahScaled / 2f * 0.6f;
-                offsetExpandedRadiusX = expandedRadiusRadiusX + dp(30);
+                offsetExpandedRadiusX = expandedRadiusRadiusX + dp(26);
                 offsetExpandedRadiusY = expandedRadiusRadiusY + dp(42);
             } else { // outer circle
                 expandedSize = dp(26);
                 expandedAlpha = 0.15f;
-                expandedRadiusRadiusX = awScaled / 2f * 1.5f;
+                expandedRadiusRadiusX = awScaled / 2f * 1.6f;
                 expandedRadiusRadiusY = ahScaled / 2f * 0.7f;
                 angle = 72 + i * (360 / 10f); // offset by 68 degrees
-                offsetExpandedRadiusX = expandedRadiusRadiusX + dp(80);
+                offsetExpandedRadiusX = expandedRadiusRadiusX + dp(60);
                 offsetExpandedRadiusY = expandedRadiusRadiusY + dp(80);
             }
             final float delayed = remapRange(collapseProgress, 0.7f, 0.5f);
