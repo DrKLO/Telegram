@@ -655,15 +655,16 @@ public class ProfileStoriesView extends View implements NotificationCenter.Notif
                         canvas.scale(bounceScale, bounceScale, rect2.centerX(), rect2.centerY());
                     }
 
+                    float avatarAlpha = avatarContainer.getAlpha();
                     if (read < 1) {
                         unreadPaint = gradientTools.getPaint(rect2);
-                        unreadPaint.setAlpha((int) (0xFF * (1f - read) * segmentsAlpha));
+                        unreadPaint.setAlpha((int) (0xFF * (1f - read) * segmentsAlpha * avatarAlpha));
                         unreadPaint.setStrokeWidth(dpf2(2.33f));
                         drawArc(canvas, rect2, a, -widthAngle * appear, false, unreadPaint);
                     }
 
                     if (read > 0) {
-                        readPaint.setAlpha((int) (readPaintAlpha * read * segmentsAlpha));
+                        readPaint.setAlpha((int) (readPaintAlpha * read * segmentsAlpha * avatarAlpha));
                         readPaint.setStrokeWidth(dpf2(1.5f));
                         drawArc(canvas, rect3, a, -widthAngle * appear, false, readPaint);
                     }
