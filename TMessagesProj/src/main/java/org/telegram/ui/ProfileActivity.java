@@ -3780,6 +3780,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 if (notificationsSimpleRow >= 0 && listAdapter != null) {
                     listAdapter.notifyItemChanged(notificationsSimpleRow);
                 }
+                // make sure mute unmute quick action is updated
+                updateMuteUnmuteButton();
             } else if (position == addToContactsRow) {
                 TLRPC.User user = getMessagesController().getUser(userId);
                 Bundle args = new Bundle();
@@ -5408,7 +5410,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         if (chat == null) {
             return;
         }
-        String label = LocaleController.getString(chat.megagroup && !chat.gigagroup ? R.string.StartVoipChat : R.string.StartVoipChannel);
+        String label = LocaleController.getString(chat.megagroup && !chat.gigagroup ? R.string.StartVoipChat : R.string.StartVoipChannelNew);
         SimpleTextView labelView = (SimpleTextView) actionVoiceChat.getChildAt(1);
         labelView.setText(label);
     }
@@ -5572,6 +5574,10 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     }
                     updateExceptions();
                     updateMuteUnmuteButton();
+                    // make sure simple row is updated
+                    if (notificationsSimpleRow >= 0 && listAdapter != null) {
+                        listAdapter.notifyItemChanged(notificationsSimpleRow);
+                    }
                 }
             }
 
@@ -5594,6 +5600,10 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 }
                 updateExceptions();
                 updateMuteUnmuteButton();
+                // make sure simple row is updated
+                if (notificationsSimpleRow >= 0 && listAdapter != null) {
+                    listAdapter.notifyItemChanged(notificationsSimpleRow);
+                }
             }
 
             @Override
@@ -7675,7 +7685,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             }
         }
 
-        if (actionItemsBlur != null) {
+        if (actionItemsBlur != null && actionItems != null) {
             ViewGroup.LayoutParams lp = actionItemsBlur.getLayoutParams();
             if (lp.width != actionItems.getMeasuredWidth() && lp.height != actionItems.getMeasuredHeight()) {
                 lp.width = actionItems.getMeasuredWidth();

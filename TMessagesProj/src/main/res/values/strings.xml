@@ -4167,6 +4167,7 @@
     <string name="StartVoipChat">Voice Chat</string>
     <string name="StartVoipChatTitle">Voice Chat</string>
     <string name="StartVoipChannel">Live Stream</string>
+    <string name="StartVoipChannelNew">Live Stream</string>
     <string name="StartVoipChannelTitle">Live Stream</string>
     <string name="StartVoipChatPermission">Manage Live Streams</string>
     <string name="VoipChatJoin">Join</string>
