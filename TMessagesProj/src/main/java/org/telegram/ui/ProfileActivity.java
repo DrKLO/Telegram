@@ -8192,7 +8192,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     private final float actionItemContainerPaddingHorizontal = 16f;
     private final float actionItemContainerPaddingVertical = 16f;
     private final float actionItemInterItemPadding = 8f;
-    private final float maxExtraHeight = 165f + actionItemHeight + actionItemContainerPaddingVertical * 2;
+    private final float maxExtraHeight = 170f + actionItemHeight + actionItemContainerPaddingVertical * 2;
     private float nameMeasuredMoveTextWidth;
     private float nameMeasuredTextWidth;
     private float onlineMeasuredTextWidth;
