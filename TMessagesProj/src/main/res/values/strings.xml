@@ -1326,6 +1326,7 @@
     <string name="ReportMessages">REPORT MESSAGES</string>
     <string name="ReportMessagesCount">REPORT %1$s</string>
     <string name="ReportChat">Report</string>
+    <string name="BlockChat">Block</string>
     <string name="ReportBot">Report</string>
     <string name="ReportProfilePhoto">Report</string>
     <string name="ReportChatSent">Report sent</string>

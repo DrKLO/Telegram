@@ -69,7 +69,6 @@ import android.text.style.ForegroundColorSpan;
 import android.text.style.URLSpan;
 import android.text.util.Linkify;
 import android.util.DisplayMetrics;
-import android.util.Log;
 import android.util.Pair;
 import android.util.Property;
 import android.util.SparseArray;
@@ -434,6 +433,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     private ViewGroup actionLeaveGroup;
     private ViewGroup actionShare;
     private ViewGroup actionReport;
+    private ViewGroup actionBlock;
 
     private float actionItemsY;
     private float actionItemsScaleY;
@@ -2293,65 +2293,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 if (id == -1) {
                     finishFragment();
                 } else if (id == block_contact) {
-                    TLRPC.User user = getMessagesController().getUser(userId);
-                    if (user == null) {
-                        return;
-                    }
-                    if (!isBot || MessagesController.isSupportUser(user)) {
-                        if (userBlocked) {
-                            getMessagesController().unblockPeer(userId);
-                            if (BulletinFactory.canShowBulletin(ProfileActivity.this)) {
-                                BulletinFactory.createBanBulletin(ProfileActivity.this, false).show();
-                            }
-                        } else {
-                            if (reportSpam) {
-                                AlertsCreator.showBlockReportSpamAlert(ProfileActivity.this, userId, user, null, currentEncryptedChat, false, null, param -> {
-                                    if (param == 1) {
-                                        getNotificationCenter().removeObserver(ProfileActivity.this, NotificationCenter.closeChats);
-                                        getNotificationCenter().postNotificationName(NotificationCenter.closeChats);
-                                        playProfileAnimation = 0;
-                                        finishFragment();
-                                    } else {
-                                        getNotificationCenter().postNotificationName(NotificationCenter.peerSettingsDidLoad, userId);
-                                    }
-                                }, resourcesProvider);
-                            } else {
-                                AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity(), resourcesProvider);
-                                builder.setTitle(LocaleController.getString(R.string.BlockUser));
-                                builder.setMessage(AndroidUtilities.replaceTags(formatString("AreYouSureBlockContact2", R.string.AreYouSureBlockContact2, ContactsController.formatName(user.first_name, user.last_name))));
-                                builder.setPositiveButton(LocaleController.getString(R.string.BlockContact), (dialogInterface, i) -> {
-                                    getMessagesController().blockPeer(userId);
-                                    if (BulletinFactory.canShowBulletin(ProfileActivity.this)) {
-                                        BulletinFactory.createBanBulletin(ProfileActivity.this, true).show();
-                                    }
-                                });
-                                builder.setNegativeButton(LocaleController.getString(R.string.Cancel), null);
-                                AlertDialog dialog = builder.create();
-                                showDialog(dialog);
-                                TextView button = (TextView) dialog.getButton(DialogInterface.BUTTON_POSITIVE);
-                                if (button != null) {
-                                    button.setTextColor(getThemedColor(Theme.key_text_RedBold));
-                                }
-                            }
-                        }
-                    } else {
-                        if (!userBlocked) {
-                            AlertsCreator.createClearOrDeleteDialogAlert(ProfileActivity.this, false, currentChat, user, currentEncryptedChat != null, true, true, (param) -> {
-                                if (getParentLayout() != null) {
-                                    List<BaseFragment> fragmentStack = getParentLayout().getFragmentStack();
-                                    BaseFragment prevFragment = fragmentStack == null || fragmentStack.size() < 2 ? null : fragmentStack.get(fragmentStack.size() - 2);
-                                    if (prevFragment instanceof ChatActivity) {
-                                        getParentLayout().removeFragmentFromStack(fragmentStack.size() - 2);
-                                    }
-                                }
-                                finishFragment();
-                                getNotificationCenter().postNotificationName(NotificationCenter.needDeleteDialog, dialogId, user, currentChat, param);
-                            }, getResourceProvider());
-                        } else {
-                            getMessagesController().unblockPeer(userId, () -> getSendMessagesHelper().sendMessage(SendMessagesHelper.SendMessageParams.of("/start", userId, null, null, null, false, null, null, null, true, 0, null, false)));
-                            finishFragment();
-                        }
-                    }
+                    blockContact();
                 } else if (id == add_contact) {
                     TLRPC.User user = getMessagesController().getUser(userId);
                     Bundle args = new Bundle();
@@ -5294,6 +5236,11 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 R.drawable.ic_report_new,
                 LocaleController.getString(R.string.ReportChat),
                 view -> ReportBottomSheet.openProfile(ProfileActivity.this));
+        actionBlock = createActionItem(
+                context,
+                R.drawable.ic_block_new,
+                LocaleController.getString(R.string.BlockChat),
+                view -> blockContact());
 
         int itemHorizontalMargin = (int) (actionItemInterItemPadding / 2f);
         container.addView(actionMessage, LayoutHelper.createLinear(0, actionItemHeight, 1f, itemHorizontalMargin, 0, itemHorizontalMargin, 0));
@@ -5305,6 +5252,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         container.addView(actionSendGift, LayoutHelper.createLinear(0, actionItemHeight, 1f, itemHorizontalMargin, 0, itemHorizontalMargin, 0));
         container.addView(actionLeaveGroup, LayoutHelper.createLinear(0, actionItemHeight, 1f, itemHorizontalMargin, 0, itemHorizontalMargin, 0));
         container.addView(actionShare, LayoutHelper.createLinear(0, actionItemHeight, 1f, itemHorizontalMargin, 0, itemHorizontalMargin, 0));
+        container.addView(actionBlock, LayoutHelper.createLinear(0, actionItemHeight, 1f, itemHorizontalMargin, 0, itemHorizontalMargin, 0));
         container.addView(actionReport, LayoutHelper.createLinear(0, actionItemHeight, 1f, itemHorizontalMargin, 0, itemHorizontalMargin, 0));
         return container;
     }
@@ -5406,6 +5354,10 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             return true;
         }
         return false;
+    }
+
+    private boolean blockVisible() {
+        return otherItem.hasSubItem(block_contact);
     }
 
     private void onCallOrVideoCallClick(boolean videoCall) {
@@ -5527,6 +5479,68 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             startActivityForResult(Intent.createChooser(intent, LocaleController.getString(R.string.BotShare)), 500);
         } catch (Exception e) {
             FileLog.e(e);
+        }
+    }
+
+    private void blockContact() {
+        TLRPC.User user = getMessagesController().getUser(userId);
+        if (user == null) {
+            return;
+        }
+        if (!isBot || MessagesController.isSupportUser(user)) {
+            if (userBlocked) {
+                getMessagesController().unblockPeer(userId);
+                if (BulletinFactory.canShowBulletin(ProfileActivity.this)) {
+                    BulletinFactory.createBanBulletin(ProfileActivity.this, false).show();
+                }
+            } else {
+                if (reportSpam) {
+                    AlertsCreator.showBlockReportSpamAlert(ProfileActivity.this, userId, user, null, currentEncryptedChat, false, null, param -> {
+                        if (param == 1) {
+                            getNotificationCenter().removeObserver(ProfileActivity.this, NotificationCenter.closeChats);
+                            getNotificationCenter().postNotificationName(NotificationCenter.closeChats);
+                            playProfileAnimation = 0;
+                            finishFragment();
+                        } else {
+                            getNotificationCenter().postNotificationName(NotificationCenter.peerSettingsDidLoad, userId);
+                        }
+                    }, resourcesProvider);
+                } else {
+                    AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity(), resourcesProvider);
+                    builder.setTitle(LocaleController.getString(R.string.BlockUser));
+                    builder.setMessage(AndroidUtilities.replaceTags(formatString("AreYouSureBlockContact2", R.string.AreYouSureBlockContact2, ContactsController.formatName(user.first_name, user.last_name))));
+                    builder.setPositiveButton(LocaleController.getString(R.string.BlockContact), (dialogInterface, i) -> {
+                        getMessagesController().blockPeer(userId);
+                        if (BulletinFactory.canShowBulletin(ProfileActivity.this)) {
+                            BulletinFactory.createBanBulletin(ProfileActivity.this, true).show();
+                        }
+                    });
+                    builder.setNegativeButton(LocaleController.getString(R.string.Cancel), null);
+                    AlertDialog dialog = builder.create();
+                    showDialog(dialog);
+                    TextView button = (TextView) dialog.getButton(DialogInterface.BUTTON_POSITIVE);
+                    if (button != null) {
+                        button.setTextColor(getThemedColor(Theme.key_text_RedBold));
+                    }
+                }
+            }
+        } else {
+            if (!userBlocked) {
+                AlertsCreator.createClearOrDeleteDialogAlert(ProfileActivity.this, false, currentChat, user, currentEncryptedChat != null, true, true, (param) -> {
+                    if (getParentLayout() != null) {
+                        List<BaseFragment> fragmentStack = getParentLayout().getFragmentStack();
+                        BaseFragment prevFragment = fragmentStack == null || fragmentStack.size() < 2 ? null : fragmentStack.get(fragmentStack.size() - 2);
+                        if (prevFragment instanceof ChatActivity) {
+                            getParentLayout().removeFragmentFromStack(fragmentStack.size() - 2);
+                        }
+                    }
+                    finishFragment();
+                    getNotificationCenter().postNotificationName(NotificationCenter.needDeleteDialog, dialogId, user, currentChat, param);
+                }, getResourceProvider());
+            } else {
+                getMessagesController().unblockPeer(userId, () -> getSendMessagesHelper().sendMessage(SendMessagesHelper.SendMessageParams.of("/start", userId, null, null, null, false, null, null, null, true, 0, null, false)));
+                finishFragment();
+            }
         }
     }
 
@@ -7700,7 +7714,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
 
             float statusBarHeight = actionBar.getOccupyStatusBar() ? AndroidUtilities.statusBarHeight : 0;
             float avatarMinY;
-            if (openAnimationInProgress) {
+            // [avatar animation] return to previous chat
+            if (openAnimationInProgress && previousTransitionFragment != null) {
                 float avatarStartSize = previousTransitionFragment.getAvatarContainer().getAvatarImageView().getWidth();
                 avatarMinY = statusBarHeight
                         + ActionBar.getCurrentActionBarHeight() / 2.0f
@@ -7716,7 +7731,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             final FrameLayout.LayoutParams avatarContainerParams = (FrameLayout.LayoutParams) avatarContainer.getLayoutParams();
             // todo Alex, this and playProfileAnimation == 2 can be consolidated into 1 place w/ a different
             //    targetW/targetH values
-            if (openAnimationInProgress && playProfileAnimation == 1) {
+            if (openAnimationInProgress && playProfileAnimation == 1 && previousTransitionFragment != null) {
                 float avatarStartSize = previousTransitionFragment.getAvatarContainer().getAvatarImageView().getWidth();
                 float avatarEndSize = AndroidUtilities.dp(avatarSizeCollapsed);
                 float animationStartValue = ((FrameLayout.LayoutParams) previousTransitionFragment.getAvatarContainer().getLayoutParams()).leftMargin
@@ -7912,7 +7927,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 }
             }
 
-            if (openAnimationInProgress && playProfileAnimation == 2) {
+            if (openAnimationInProgress && playProfileAnimation == 2 && previousTransitionFragment != null) {
                 // [avatar animation] here we animate the opening from the chat activity. E.g. the initial animation
 
                 // take width since width == height
@@ -8018,7 +8033,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 // [avatar animation] here we animate when avatar starts to move from the top of the screen
                 float nameStartX;
                 float onlineStartX;
-                if (openAnimationInProgress && playProfileAnimation == 1) {
+                if (openAnimationInProgress && playProfileAnimation == 1 && previousTransitionFragment != null) {
                     float avatarNameSpacing = AndroidUtilities.dp(19.5f);
                     float avatarStartSize = previousTransitionFragment.getAvatarContainer().getAvatarImageView().getWidth();
                     float avatarOffset = AndroidUtilities.dp(56) + avatarStartSize + avatarNameSpacing;
@@ -8028,11 +8043,13 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     nameStartX = AndroidUtilities.dpf2(56f);
                     onlineStartX = AndroidUtilities.dpf2(56f);
                 }
+                // add offset to name and online text to make transition seamless
+                final float nameAndOnlineOffset  = AndroidUtilities.dpf2(1.5f);
                 float nameEndX = displayMetrics.widthPixels / 2f - nameMeasuredTextWidth / 2f;
                 float nameStartY = statusBarHeight
                         + ActionBar.getCurrentActionBarHeight() / 2f
                         // center both name and online text fields combined in the action bar
-                        - (nameTextView[1].getHeight() + onlineTextView[1].getHeight()) / 2f;
+                        - (nameTextView[1].getHeight() + onlineTextView[1].getHeight()) / 2f + nameAndOnlineOffset;
                 float nameEndY = statusBarHeight
                         + ActionBar.getCurrentActionBarHeight() / 2f
                         + actionBar.getTranslationY()
@@ -8048,7 +8065,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 nameX = AndroidUtilities.lerp(nameStartX, nameEndX, progress);
                 nameY = AndroidUtilities.lerp(nameStartY, nameEndY, progress);
                 float onlineEndX = displayMetrics.widthPixels / 2f - onlineMeasuredTextWidth / 2f;
-                float onlineStartY = nameStartY + nameTextView[1].getHeight();
+                float onlineStartY = nameStartY + nameTextView[1].getHeight() + nameAndOnlineOffset;
                 float onlineEndY = nameEndY + nameTextView[1].getHeight();
                 onlineX = AndroidUtilities.lerp(onlineStartX, onlineEndX, progress);
                 onlineY = AndroidUtilities.lerp(onlineStartY, onlineEndY, progress);
@@ -8108,6 +8125,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     }
 
     private void updateActionItems() {
+        // order here is effectively a priority order of which actions to show
+        // when
         setActionItemVisibility(actionJoinChannelOrGroup);
         setActionItemVisibility(actionMessage);
         updateMessageButton();
@@ -8118,6 +8137,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         updateVoiceChatButton();
         setActionItemVisibility(actionSendGift);
         setActionItemVisibility(actionLeaveGroup);
+        setActionItemVisibility(actionBlock);
         setActionItemVisibility(actionReport);
         setActionItemVisibility(actionShare);
     }
@@ -8143,6 +8163,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 visible = leaveGroupVisible();
             } else if (actionItem.equals(actionShare)) {
                 visible = shareVisible();
+            } else if (actionItem.equals(actionBlock)) {
+                visible = blockVisible();
             } else if (actionItem.equals(actionReport)) {
                 visible = reportVisible();
             } else {
@@ -11141,6 +11163,10 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             if (topicId == 0) {
                 otherItem.addSubItem(add_shortcut, R.drawable.msg_home, LocaleController.getString(R.string.AddShortcut));
             }
+        }
+
+        if (reportVisible() && !otherItem.hasSubItem(report)) {
+            otherItem.addSubItem(report, R.drawable.ic_report_new, LocaleController.getString(R.string.ReportChat)).setColors(getThemedColor(Theme.key_text_RedRegular), getThemedColor(Theme.key_text_RedRegular));
         }
 
         if (imageUpdater != null) {
