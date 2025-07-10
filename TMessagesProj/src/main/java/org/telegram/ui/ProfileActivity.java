@@ -5320,6 +5320,10 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         if (joinChannelOrGroupVisible()) {
             return false;
         }
+        // do not show message button for my user
+        if (getMessagesController().getUser(userId).self) {
+            return false;
+        }
         boolean actionMessageVisible = !searchMode && (imageUpdater == null || setAvatarRow == -1);
         if (actionMessageVisible && chatId != 0) {
             actionMessageVisible = ChatObject.isChannel(currentChat) && !currentChat.megagroup && chatInfo != null && chatInfo.linked_chat_id != 0 && infoHeaderRow != -1;
@@ -5328,8 +5332,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     }
 
     private boolean muteUnmuteVisible() {
-        // do not show mute/unmute button for non joined channels
-        return !joinChannelOrGroupVisible();
+        // do not show mute/unmute button for non joined channels and for my user
+        return !joinChannelOrGroupVisible() && !getMessagesController().getUser(userId).self;
     }
 
     private boolean sendGiftVisible() {
@@ -7546,6 +7550,10 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
 
     private void prepareAndDisplayAvatarBlurIfNeeded(boolean animated) {
         if (actionItemsBlur == null || actionItemsBlur.hasBitmapSet()) {
+            return;
+        }
+        // do not blur if there are no quick actions
+        if (visibleActionItemsCount(null) == 0) {
             return;
         }
         BackupImageView imageView = avatarsViewPager.getCurrentItemView();
