@@ -64,6 +64,7 @@ import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
+import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.SvgHelper;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
@@ -904,6 +905,11 @@ public class GiftSheet extends BottomSheetWithRecyclerListView implements Notifi
 
         private Runnable cancel;
 
+        @Override
+        public boolean hasOverlappingRendering() {
+            return false;
+        }
+
         public GiftCell(Context context, int currentAccount, Theme.ResourcesProvider resourcesProvider) {
             super(context);
 
@@ -1011,21 +1017,25 @@ public class GiftSheet extends BottomSheetWithRecyclerListView implements Notifi
                 view.invalidate();
             }
 
-            if (lockView.getVisibility() == View.VISIBLE && lockView.getAlpha() > 0) {
+            if (lockView.getVisibility() == View.VISIBLE && lockView.getAlpha() > 0f) {
                 canvas.save();
-                canvas.translate((width - lockView.getMeasuredWidth()) / 2.0f, lerp(lockView.getY(), (height - topPadding - lockView.getMeasuredHeight()) / 2, progress));
-                canvas.saveLayerAlpha(0, 0, lockView.getWidth(), lockView.getHeight(), (int) (0xFF * (1.0f - progress) * lockView.getAlpha()), Canvas.ALL_SAVE_FLAG);
-                lockView.draw(canvas);
-                canvas.restore();
+                canvas.translate((width - lockView.getMeasuredWidth()) / 2f, lerp(lockView.getY(), (height - topPadding - lockView.getMeasuredHeight()) / 2f, progress));
+                float tmpAlpha = lockView.getAlpha() * (1f - progress);
+                if (tmpAlpha > 0f) {
+                    float prev = lockView.getAlpha();
+                    lockView.setAlpha(tmpAlpha);
+                    lockView.draw(canvas);
+                    lockView.setAlpha(prev);
+                }
                 canvas.restore();
             }
 
-            if (pinnedView.getVisibility() == View.VISIBLE && pinnedView.getAlpha() > 0) {
+            if (pinnedView.getVisibility() == View.VISIBLE && pinnedView.getAlpha() > 0f) {
                 canvas.save();
-                canvas.translate(cardBackgroundPadding.left + dp(2), cardBackgroundPadding.top + dp(2));
-                canvas.saveLayerAlpha(0, 0, pinnedView.getWidth(), pinnedView.getHeight(), (int) (0xFF * pinnedView.getAlpha()), Canvas.ALL_SAVE_FLAG);
+                canvas.translate(cardBackgroundPadding.left + dp(2), cardBackgroundPadding.top  + dp(2));
+                float prev = pinnedView.getAlpha();
+                pinnedView.setAlpha(prev);
                 pinnedView.draw(canvas);
-                canvas.restore();
                 canvas.restore();
             }
 
@@ -1063,12 +1073,14 @@ public class GiftSheet extends BottomSheetWithRecyclerListView implements Notifi
                     .draw(canvas, (width - subtitle.getWidth()) / 2.0f, height - dp(19) - subtitle.getHeight() / 2.0f + dp(50) * (1f - progress), 0xFFFFFFFF, .6f * progress);
             }
 
-            if (priceView != null && priceView.getVisibility() == View.VISIBLE) {
+            if (priceView.getVisibility() == View.VISIBLE) {
                 canvas.save();
-                canvas.translate(width / 2.0f - priceView.getWidth() / 2.0f, priceView.getY());
-                canvas.saveLayerAlpha(0, 0, priceView.getWidth(), priceView.getHeight(), (int) (0xFF * priceView.getAlpha() * (1.0f - progress)), Canvas.ALL_SAVE_FLAG);
+                canvas.translate(width / 2f - priceView.getWidth()  / 2f, priceView.getY());
+                float tmpAlpha = priceView.getAlpha() * (1f - progress);
+                float prev = priceView.getAlpha();
+                priceView.setAlpha(tmpAlpha);
                 priceView.draw(canvas);
-                canvas.restore();
+                priceView.setAlpha(prev);
                 canvas.restore();
             }
 
@@ -1255,12 +1267,26 @@ public class GiftSheet extends BottomSheetWithRecyclerListView implements Notifi
             TLRPC.PhotoSize photoSize = FileLoader.getClosestPhotoSizeWithSize(document.thumbs, dp(100));
             SvgHelper.SvgDrawable svgThumb = DocumentObject.getSvgThumb(document, Theme.key_windowBackgroundGray, 0.3f);
 
-            imageView.setImage(
-                ImageLocation.getForDocument(document), "100_100",
-                ImageLocation.getForDocument(photoSize, document), "100_100",
-                svgThumb,
-                parentObject
-            );
+            if (SharedConfig.deviceIsHigh()) {
+                imageView.setImage(
+                        ImageLocation.getForDocument(document), "100_100",
+                        ImageLocation.getForDocument(photoSize, document), "100_100",
+                        svgThumb,
+                        parentObject
+                );
+            } else {
+                if (Utilities.fastRandom.nextInt(3) != 2) {
+                    imageView.getImageReceiver().setAutoRepeat(3);
+                    imageView.getImageReceiver().setAllowDecodeSingleFrame(true);
+                    imageView.getImageReceiver().setAllowStartAnimation(false);
+                }
+                imageView.setImage(
+                        ImageLocation.getForDocument(document), "80_80",
+                        ImageLocation.getForDocument(photoSize, document), "80_80",
+                        svgThumb,
+                        parentObject
+                );
+            }
         }
 
         public void setStarsGift(TL_stars.StarGift gift, boolean mine, boolean includeUpgradeInPrice, boolean allowResaleInGifts, boolean inResalePage) {
