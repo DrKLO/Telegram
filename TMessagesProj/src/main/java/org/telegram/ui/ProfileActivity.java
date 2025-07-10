@@ -8,19 +8,6 @@
 
 package org.telegram.ui;
 
-import static androidx.core.view.ViewCompat.TYPE_TOUCH;
-import static org.telegram.messenger.AndroidUtilities.accelerateInterpolator;
-import static org.telegram.messenger.AndroidUtilities.density;
-import static org.telegram.messenger.AndroidUtilities.dp;
-import static org.telegram.messenger.AndroidUtilities.lerp;
-import static org.telegram.messenger.AndroidUtilities.remapRange;
-import static org.telegram.messenger.ContactsController.PRIVACY_RULES_TYPE_ADDED_BY_PHONE;
-import static org.telegram.messenger.LocaleController.formatPluralString;
-import static org.telegram.messenger.LocaleController.formatString;
-import static org.telegram.messenger.LocaleController.getString;
-import static org.telegram.ui.Stars.StarsIntroActivity.formatStarsAmountShort;
-import static org.telegram.ui.bots.AffiliateProgramFragment.percents;
-
 import android.Manifest;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
@@ -110,27 +97,6 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
-
-import androidx.annotation.DrawableRes;
-import androidx.annotation.Keep;
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import androidx.collection.LongSparseArray;
-import androidx.core.content.ContextCompat;
-import androidx.core.content.FileProvider;
-import androidx.core.graphics.ColorUtils;
-import androidx.core.math.MathUtils;
-import androidx.core.view.NestedScrollingParent3;
-import androidx.core.view.NestedScrollingParentHelper;
-import androidx.core.view.ViewCompat;
-import androidx.interpolator.view.animation.FastOutSlowInInterpolator;
-import androidx.recyclerview.widget.DefaultItemAnimator;
-import androidx.recyclerview.widget.DiffUtil;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.LinearSmoothScrollerCustom;
-import androidx.recyclerview.widget.RecyclerView;
-import androidx.viewpager.widget.PagerAdapter;
-import androidx.viewpager.widget.ViewPager;
 
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.AccountInstance;
@@ -325,6 +291,39 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
+
+import androidx.annotation.DrawableRes;
+import androidx.annotation.Keep;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.collection.LongSparseArray;
+import androidx.core.content.ContextCompat;
+import androidx.core.content.FileProvider;
+import androidx.core.graphics.ColorUtils;
+import androidx.core.math.MathUtils;
+import androidx.core.view.NestedScrollingParent3;
+import androidx.core.view.NestedScrollingParentHelper;
+import androidx.core.view.ViewCompat;
+import androidx.interpolator.view.animation.FastOutSlowInInterpolator;
+import androidx.recyclerview.widget.DefaultItemAnimator;
+import androidx.recyclerview.widget.DiffUtil;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.LinearSmoothScrollerCustom;
+import androidx.recyclerview.widget.RecyclerView;
+import androidx.viewpager.widget.PagerAdapter;
+import androidx.viewpager.widget.ViewPager;
+
+import static androidx.core.view.ViewCompat.TYPE_TOUCH;
+import static org.telegram.messenger.AndroidUtilities.accelerateInterpolator;
+import static org.telegram.messenger.AndroidUtilities.density;
+import static org.telegram.messenger.AndroidUtilities.dp;
+import static org.telegram.messenger.AndroidUtilities.lerp;
+import static org.telegram.messenger.ContactsController.PRIVACY_RULES_TYPE_ADDED_BY_PHONE;
+import static org.telegram.messenger.LocaleController.formatPluralString;
+import static org.telegram.messenger.LocaleController.formatString;
+import static org.telegram.messenger.LocaleController.getString;
+import static org.telegram.ui.Stars.StarsIntroActivity.formatStarsAmountShort;
+import static org.telegram.ui.bots.AffiliateProgramFragment.percents;
 
 public class ProfileActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate, DialogsActivity.DialogsActivityDelegate, SharedMediaLayout.SharedMediaPreloaderDelegate, ImageUpdater.ImageUpdaterDelegate, SharedMediaLayout.Delegate {
     private final static int PHONE_OPTION_CALL = 0,
@@ -722,6 +721,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     HashSet<Integer> notificationsExceptionTopics = new HashSet<>();
 
     private CharacterStyle loadingSpan;
+
+    private DisplayMetrics displayMetrics = Resources.getSystem().getDisplayMetrics();
 
     private final Property<ProfileActivity, Float> HEADER_SHADOW = new AnimationProperties.FloatProperty<ProfileActivity>("headerShadow") {
         @Override
@@ -2881,8 +2882,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                         }
                         nameTextView[1].setTextColor(Color.WHITE);
                         nameTextView[1].setPivotY(nameTextView[1].getMeasuredHeight());
-                        nameTextView[1].setScaleX(1.67f);
-                        nameTextView[1].setScaleY(1.67f);
+                        nameTextView[1].setScaleX(nameAndOnlineExpandedScale);
+                        nameTextView[1].setScaleY(nameAndOnlineExpandedScale);
                         if (scamDrawable != null) {
                             scamDrawable.setColor(Color.argb(179, 255, 255, 255));
                         }
@@ -5009,7 +5010,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             }
         };
         mediaCounterTextView.setAlpha(0.0f);
-        avatarContainer2.addView(mediaCounterTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 118.33f, -2, 8, 0));
+        avatarContainer2.addView(mediaCounterTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 0, -2, 8, 0));
         storyView = new ProfileStoriesView(context, currentAccount, getDialogId(), isTopic, avatarContainer, avatarImage, resourcesProvider) {
             @Override
             protected void onTap(StoryViewer.PlaceProvider provider) {
@@ -6002,7 +6003,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
 
         final float k = AndroidUtilities.dpf2(8f);
 
-        final float nameTextViewXEnd = AndroidUtilities.dpf2(18f) - nameTextView[1].getLeft();
+        final float nameTextViewXEnd = AndroidUtilities.dpf2(nameAndOnlineExpandedStateLeftSpace) - nameTextView[1].getLeft();
         final float nameTextViewYEnd = newTop + extraHeight
                 - nameTextView[1].getBottom()
                 - onlineTextView[1].getBottom()
@@ -6012,7 +6013,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         final float nameTextViewX = (1 - value) * (1 - value) * nameX + 2 * (1 - value) * value * nameTextViewCx + value * value * nameTextViewXEnd;
         final float nameTextViewY = (1 - value) * (1 - value) * nameY + 2 * (1 - value) * value * nameTextViewCy + value * value * nameTextViewYEnd;
 
-        final float onlineTextViewXEnd = AndroidUtilities.dpf2(16f) - onlineTextView[1].getLeft();
+        final float onlineTextViewXEnd = AndroidUtilities.dpf2(nameAndOnlineExpandedStateLeftSpace) - onlineTextView[1].getLeft();
         final float onlineTextViewYEnd = newTop + extraHeight
                 - actionItems.getMeasuredHeight()
                 - onlineTextView[1].getBottom();
@@ -6021,8 +6022,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         final float onlineTextViewX = (1 - value) * (1 - value) * onlineX + 2 * (1 - value) * value * onlineTextViewCx + value * value * onlineTextViewXEnd;
         final float onlineTextViewY = (1 - value) * (1 - value) * onlineY + 2 * (1 - value) * value * onlineTextViewCy + value * value * onlineTextViewYEnd;
 
-        // todo Alex here we animate expand/ collapse. Mb fix this? There is a slight movement glitch
-        //  due to differences between this X calucation and overshoot one
+        // [avatar animation] here we animate expand/ collapse
         nameTextView[1].setTranslationX(nameTextViewX);
         nameTextView[1].setTranslationY(nameTextViewY);
         onlineTextView[1].setTranslationX(onlineTextViewX + customPhotoOffset);
@@ -6041,8 +6041,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         onlineTextView[1].setTextColor(ColorUtils.blendARGB(applyPeerColor(statusColor, true, online), 0xB3FFFFFF, value));
         if (extraHeight > AndroidUtilities.dp(maxExtraHeight)) {
             nameTextView[1].setPivotY(AndroidUtilities.lerp(0, nameTextView[1].getMeasuredHeight(), value));
-            nameTextView[1].setScaleX(AndroidUtilities.lerp(1.12f, 1.67f, value));
-            nameTextView[1].setScaleY(AndroidUtilities.lerp(1.12f, 1.67f, value));
+            nameTextView[1].setScaleX(AndroidUtilities.lerp(nameAndOnlineMoveScale, nameAndOnlineExpandedScale, value));
+            nameTextView[1].setScaleY(AndroidUtilities.lerp(nameAndOnlineMoveScale, nameAndOnlineExpandedScale, value));
         }
         if (showStatusButton != null) {
             showStatusButton.setBackgroundColor(ColorUtils.blendARGB(Theme.multAlpha(Theme.adaptHSV(actionBarBackgroundColor, +0.18f, -0.1f), 0.5f), 0x23ffffff, currentExpandAnimatorValue));
@@ -7707,7 +7707,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                         - avatarStartSize / 2f
                         + actionBar.getTranslationY();
             } else {
-                avatarMinY = -avatarSizeCollapsed + ActionBar.getCurrentActionBarHeight()/ 2f;
+                avatarMinY = -avatarSizeCollapsed + ActionBar.getCurrentActionBarHeight() / 2f;
             }
             float avatarMaxY = statusBarHeight
                     + ActionBar.getCurrentActionBarHeight() / 2f
@@ -7809,20 +7809,20 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                                 animateActionItemsBlurVisible(true);
                             }
                         });
-                        expandAnimator.start(); // todo Alex Triggers expand animation
+                        expandAnimator.start(); // [avatar animation] Triggers expand animation
                     }
                     ViewGroup.LayoutParams params = avatarsViewPager.getLayoutParams();
                     params.width = listView.getMeasuredWidth();
                     params.height = (int) (h + newTop);
                     avatarsViewPager.requestLayout();
                     if (!expandAnimator.isRunning()) {
+                        // here we final translation to expanded state happens
                         float additionalTranslationY = 0;
                         if (openAnimationInProgress && playProfileAnimation == 2) {
                             additionalTranslationY = -(1.0f - avatarAnimationProgress) * AndroidUtilities.dp(50);
                         }
-                        onlineX = AndroidUtilities.dpf2(16f) - onlineTextView[1].getLeft();
-                        // todo Alex final Translation in expanded state
-                        nameTextView[1].setTranslationX(AndroidUtilities.dpf2(18f) - nameTextView[1].getLeft());
+                        onlineX = AndroidUtilities.dpf2(nameAndOnlineExpandedStateLeftSpace) - onlineTextView[1].getLeft();
+                        nameTextView[1].setTranslationX(AndroidUtilities.dpf2(nameAndOnlineExpandedStateLeftSpace) - nameTextView[1].getLeft());
                         nameTextView[1].setTranslationY(
                                 newTop + h
                                         - nameTextView[1].getBottom()
@@ -7892,7 +7892,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                         avatarContainer.setVisibility(View.VISIBLE);
                         avatarsViewPager.setVisibility(View.GONE);
                         animateActionItemsBlurVisible(false);
-                        expandAnimator.start(); // todo Alex Triggers collapse animation
+                        expandAnimator.start(); // [avatar animation] Triggers collapse animation
                     }
 
                     avatarContainer.setScaleX(avatarScale);
@@ -7913,7 +7913,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             }
 
             if (openAnimationInProgress && playProfileAnimation == 2) {
-                // todo Alex here we animate the opening from the chat activity. E.g. the initial animation
+                // [avatar animation] here we animate the opening from the chat activity. E.g. the initial animation
+
                 // take width since width == height
                 float avatarStartSize = previousTransitionFragment.getAvatarContainer().getAvatarImageView().getWidth();
                 float avX = 0;
@@ -7932,8 +7933,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 nameTextView[0].setScaleY(1.0f);
 
                 nameTextView[1].setPivotY(nameTextView[1].getMeasuredHeight());
-                nameTextView[1].setScaleX(1.67f);
-                nameTextView[1].setScaleY(1.67f);
+                nameTextView[1].setScaleX(nameAndOnlineExpandedScale);
+                nameTextView[1].setScaleY(nameAndOnlineExpandedScale);
 
                 if (storyView != null) {
                     storyView.setExpandProgress(1f);
@@ -8014,10 +8015,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     starFgItem.setTranslationX(avatarContainer.getX() + AndroidUtilities.dp(28) + extra);
                     starFgItem.setTranslationY(avatarContainer.getY() + AndroidUtilities.dp(24) + extra);
                 }
-                // todo Alex here we animate the when avatar starts To move top of of the screen
-
-                // todo Alex extract displayMetrics
-                DisplayMetrics displayMetrics = Resources.getSystem().getDisplayMetrics();
+                // [avatar animation] here we animate when avatar starts to move from the top of the screen
                 float nameStartX;
                 float onlineStartX;
                 if (openAnimationInProgress && playProfileAnimation == 1) {
@@ -8049,7 +8047,6 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 }
                 nameX = AndroidUtilities.lerp(nameStartX, nameEndX, progress);
                 nameY = AndroidUtilities.lerp(nameStartY, nameEndY, progress);
-
                 float onlineEndX = displayMetrics.widthPixels / 2f - onlineMeasuredTextWidth / 2f;
                 float onlineStartY = nameStartY + nameTextView[1].getHeight();
                 float onlineEndY = nameEndY + nameTextView[1].getHeight();
@@ -8163,6 +8160,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     private final float avatarSizeCollapsed = 130;
 
     private final float nameAvatarVerticalSpacing = 12;
+    private final float nameAndOnlineExpandedStateLeftSpace = 16;
+
     private final float avatarMinScale = 0.35f;
     private final float avatarNormalScale = 1;
 
@@ -8172,14 +8171,16 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     private final float actionItemContainerPaddingVertical = 16f;
     private final float actionItemInterItemPadding = 8f;
     private final float maxExtraHeight = 165f + actionItemHeight + actionItemContainerPaddingVertical * 2;
+    private float nameMeasuredMoveTextWidth;
     private float nameMeasuredTextWidth;
     private float onlineMeasuredTextWidth;
     private final int maxVisibleActionItems = 4;
 
+    private final float nameAndOnlineMoveScale = 1.12f;
+    private final float nameAndOnlineExpandedScale = 1.67f;
+
     private float avatarStartMargin() {
-        DisplayMetrics displayMetrics = Resources.getSystem().getDisplayMetrics();
-        return displayMetrics.widthPixels / 2f
-                - (AndroidUtilities.dpf2(avatarSizeCollapsed)) / 2f;
+        return displayMetrics.widthPixels / 2f - (AndroidUtilities.dpf2(avatarSizeCollapsed)) / 2f;
     }
 
     public void updateQrItemVisibility(boolean animated) {
@@ -8258,9 +8259,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     }
 
     private void refreshNameAndOnlineXY() {
-        // todo alex extract display metrics into a variable
-        DisplayMetrics displayMetrics = Resources.getSystem().getDisplayMetrics();
-        // todo alex here we animate when scale growths from normal scale to overshoot scale
+        // [avatar animation] here we animate when scale growths from normal scale to overshoot scale
+//        nameX = displayMetrics.widthPixels / 2f - nameMeasuredTextWidth / 2f;
         nameX = displayMetrics.widthPixels / 2f - nameMeasuredTextWidth / 2f;
         float statusBarHeight = actionBar.getOccupyStatusBar() ? AndroidUtilities.statusBarHeight : 0;
         nameY = statusBarHeight
@@ -8279,7 +8279,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     private void needLayoutText(float diff) {
         FrameLayout.LayoutParams layoutParams;
         float scale = nameTextView[1].getScaleX();
-        float maxScale = extraHeight > AndroidUtilities.dp(maxExtraHeight) ? 1.67f : 1.12f;
+        float maxScale = extraHeight > AndroidUtilities.dp(maxExtraHeight) ? nameAndOnlineExpandedScale : nameAndOnlineMoveScale;
 
         if (extraHeight > AndroidUtilities.dp(maxExtraHeight) && scale != maxScale) {
             return;
@@ -9135,10 +9135,10 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
 
                 if (playProfileAnimation != 2) {
                     int width = (int) Math.ceil(AndroidUtilities.displaySize.x - AndroidUtilities.dp(118 + 8) + 21 * AndroidUtilities.density);
-                    float width2 = nameTextView[1].getPaint().measureText(nameTextView[1].getText().toString()) * 1.12f + nameTextView[1].getSideDrawablesSize();
+                    float width2 = nameTextView[1].getPaint().measureText(nameTextView[1].getText().toString()) * nameAndOnlineMoveScale + nameTextView[1].getSideDrawablesSize();
                     FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) nameTextView[1].getLayoutParams();
                     if (width < width2) {
-                        layoutParams.width = (int) Math.ceil(width / 1.12f);
+                        layoutParams.width = (int) Math.ceil(width / nameAndOnlineMoveScale);
                     } else {
                         layoutParams.width = LayoutHelper.WRAP_CONTENT;
                     }
@@ -9147,7 +9147,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     initialAnimationExtraHeight = AndroidUtilities.dp(maxExtraHeight);
                 } else {
                     FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) nameTextView[1].getLayoutParams();
-                    layoutParams.width = (int) ((AndroidUtilities.displaySize.x - AndroidUtilities.dp(32)) / 1.67f);
+                    layoutParams.width = (int) ((AndroidUtilities.displaySize.x - AndroidUtilities.dp(32)) / nameAndOnlineExpandedScale);
                     nameTextView[1].setLayoutParams(layoutParams);
                 }
                 fragmentView.setBackgroundColor(0);
