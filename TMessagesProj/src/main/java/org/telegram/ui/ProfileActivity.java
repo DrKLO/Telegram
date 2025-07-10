@@ -6704,7 +6704,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             profileBlurAvatar.setAlpha(0f);
             return;
         }
-        if (expandAnimator != null && expandAnimator.isRunning() || playProfileAnimation == 2 || endAnim) {
+        if (expandAnimator != null && expandAnimator.isRunning() || playProfileAnimation == 2 ) {
             if (avatarContainer == null) return;
             if (profileBlurAvatar.getMeasuredWidth() == 0) return;
 
@@ -6725,7 +6725,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             }
             profileBlurAvatar.setAlpha(alpha2);
             profileBlurAvatarScale = alpha2;
-            if (Build.VERSION.SDK_INT >= 31) {
+            if (!FORCE_MY_BLUR && Build.VERSION.SDK_INT >= 31) {
                 profileBlurAvatar.invalidateOutline();
             }
 
@@ -6733,12 +6733,13 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             float calculatedTranslationY = avatarY + params.height * avatarScale - (1f - scaleBlur) * AndroidUtilities.dp(73) - scaleBlur * AndroidUtilities.dp(AVATAR_ADDITIONAL_HEIGHT_DP + BOTTOM_BLUR_ADD_DP - 21);
 
             float bestTranslationY = calculatedTranslationY;
-            float alignStartExpand = 0.45f;
-            float alignStartCollapse = 0.55f;
+            float alignStartExpand = 0.8f;
+            float alignStartCollapse = 0.8f;
             if (expanding && scaleBlur >= alignStartExpand) {
+                float pr = (scaleBlur - alignStartExpand) / (1f - alignStartExpand);
                 bestTranslationY = lerp(calculatedTranslationY,
                         realFinalDestinationTranslationY,
-                        (scaleBlur - alignStartExpand) / (1f - alignStartExpand));
+                        pr);
             } else if (!expanding && scaleBlur > alignStartCollapse) {
                 bestTranslationY = lerp(calculatedTranslationY,
                         realFinalDestinationTranslationY,
@@ -6746,9 +6747,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             }
             profileBlurAvatar.setTranslationY(bestTranslationY);
 
-            if (endAnim) {
-                updateAvatarBlurPosition();
-            }
+
         } else if (isPulledDown) {
             profileBlurAvatar.setAlpha(1f);
             profileBlurAvatar.setTranslationY((actionBar.getOccupyStatusBar() ? AndroidUtilities.statusBarHeight : 0) + ActionBar.getCurrentActionBarHeight() + extraHeight + searchTransitionOffset - AndroidUtilities.dp(AVATAR_ADDITIONAL_HEIGHT_DP + BOTTOM_BLUR_ADD_DP));
@@ -9801,13 +9800,15 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     animators.add(ObjectAnimator.ofFloat(nameTextView[a], View.ALPHA, a == 0 ? 0.0f : 1.0f));
                 }
                 if (storyView != null) {
-                    if (getDialogId() > 0) {
-                        storyView.setAlpha(0f);
-                        animators.add(ObjectAnimator.ofFloat(storyView, View.ALPHA, 1.0f));
-                    } else {
-                        storyView.setAlpha(1f);
-                        storyView.setFragmentTransitionProgress(0);
-                        animators.add(ObjectAnimator.ofFloat(storyView, ProfileStoriesView.FRAGMENT_TRANSITION_PROPERTY, 1.0f));
+                    if (playProfileAnimation != 2) {
+                        if (getDialogId() > 0) {
+                            storyView.setAlpha(0f);
+                            animators.add(ObjectAnimator.ofFloat(storyView, View.ALPHA, 1.0f));
+                        } else {
+                            storyView.setAlpha(1f);
+                            storyView.setFragmentTransitionProgress(0);
+                            animators.add(ObjectAnimator.ofFloat(storyView, ProfileStoriesView.FRAGMENT_TRANSITION_PROPERTY, 1.0f));
+                        }
                     }
                 }
                 if (giftsView != null) {
