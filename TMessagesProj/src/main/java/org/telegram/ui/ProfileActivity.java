@@ -1184,7 +1184,11 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     if (loadedScale > 0) {
                         canvas.save();
                         canvas.clipRect(0, 0, getMeasuredWidth(), y1);
-                        StarGiftPatterns.drawProfilePattern(canvas, emoji, getMeasuredWidth(), ((actionBar.getOccupyStatusBar() ? AndroidUtilities.statusBarHeight : 0) + dp(144)) - (1f - extraHeight / dp(88)) * dp(50), Math.min(1f, extraHeight / dp(88)), full);
+                        float patternWidth = getMeasuredWidth();
+                        float maxHeight = AndroidUtilities.dp(maxExtraHeight);
+                        float patternHeight = gradientHeight - (1f - extraHeight / maxHeight) * dp(50);
+                        float alpha = extraHeight / maxHeight;
+                        StarGiftPatterns.drawProfilePattern(canvas, emoji, patternWidth, patternHeight, Math.min(1f, alpha), full);
                         canvas.restore();
                     }
                 }
@@ -4699,8 +4703,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         fallbackImage.setRoundRadius(AndroidUtilities.dp(11));
         AndroidUtilities.updateViewVisibilityAnimated(avatarContainer2, true, 1f, false);
         frameLayout.addView(avatarContainer2, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.START, 0, 0, 0, 0));
-//        avatarContainer.setPivotX(0);
-//        avatarContainer.setPivotY(0);
+        // add gifts view before the avatar so gifts will be hiding behind
+        giftsView = new ProfileGiftsView(context, currentAccount, getDialogId(), avatarContainer, avatarImage, resourcesProvider);
+        avatarContainer2.addView(giftsView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
         // divide avatarStartMargin by density because createFrame uses AndroidUitilitis.dp() under the hood
         avatarContainer2.addView(avatarContainer, LayoutHelper.createFrame(avatarSizeCollapsed, avatarSizeCollapsed, Gravity.TOP | Gravity.LEFT, avatarStartMargin() / density, 0, 0, 0));
         avatarImage = new AvatarImageView(context) {
@@ -4951,8 +4956,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             onlineTextView[a].setGravity(Gravity.LEFT);
             onlineTextView[a].setAlpha(a == 0 ? 0.0f : 1.0f);
             if (a == 1 || a == 2 || a == 3) {
-                // todo Alex remove online padding?
-                onlineTextView[a].setPadding(AndroidUtilities.dp(4), AndroidUtilities.dp(2), AndroidUtilities.dp(4), AndroidUtilities.dp(2));
+                onlineTextView[a].setPadding(0, AndroidUtilities.dp(2), 0, AndroidUtilities.dp(2));
             }
             if (a > 0) {
                 onlineTextView[a].setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
@@ -5007,9 +5011,11 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         if (avatarImage != null) {
             avatarImage.setHasStories(needInsetForStories());
         }
+        actionItemsBlur = new FadeTopImageView(context);
+        frameLayout.addView(actionItemsBlur, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+        actionItems = createActionItems(context, did, lastFragment, (SizeNotifierFrameLayout) fragmentView);
+        frameLayout.addView(actionItems, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
         avatarContainer2.addView(storyView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
-        giftsView = new ProfileGiftsView(context, currentAccount, getDialogId(), avatarContainer, avatarImage, resourcesProvider);
-        avatarContainer2.addView(giftsView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
         updateProfileData(true);
         if (userId != 0) {
             if (imageUpdater != null) {
@@ -5177,11 +5183,6 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         if (openGifts || openCommonChats) {
             AndroidUtilities.runOnUIThread(this::scrollToSharedMedia);
         }
-
-        actionItemsBlur = new FadeTopImageView(context);
-        frameLayout.addView(actionItemsBlur, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
-        actionItems = createActionItems(context, did, lastFragment, (SizeNotifierFrameLayout) fragmentView);
-        frameLayout.addView(actionItems, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
         return fragmentView;
     }
@@ -7677,7 +7678,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                         - avatarStartSize / 2f
                         + actionBar.getTranslationY();
             } else {
-                avatarMinY = -statusBarHeight - avatarSizeCollapsed;
+                avatarMinY = -avatarSizeCollapsed + ActionBar.getCurrentActionBarHeight()/ 2f;
             }
             float avatarMaxY = statusBarHeight
                     + ActionBar.getCurrentActionBarHeight() / 2f
@@ -7699,6 +7700,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             }
 
             avatarY = AndroidUtilities.lerp(avatarMinY, avatarMaxY, diff);
+            giftsView.setCollapseProgress(diff);
             float avatarAlphaThreshold = 0.35f;
             float avatarAlphaProgress;
             if (diff > avatarAlphaThreshold) {
@@ -8009,7 +8011,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                         + actionBar.getTranslationY()
                         + AndroidUtilities.dpf2(avatarSizeCollapsed) * avatarNormalScale
                         + AndroidUtilities.dpf2(nameAvatarVerticalSpacing);
-                float moveThreshold = 0.35f;
+                float moveThreshold = 0.25f;
                 float progress;
                 if (diff < moveThreshold) {
                     progress = 0f;
@@ -8131,8 +8133,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     private FastOutSlowInInterpolator fastOutSlowInInterpolator = new FastOutSlowInInterpolator();
     private final float avatarSizeCollapsed = 130;
 
-    private final float nameAvatarVerticalSpacing = 8;
-    private final float avatarMinScale = 0.45f;
+    private final float nameAvatarVerticalSpacing = 12;
+    private final float avatarMinScale = 0.35f;
     private final float avatarNormalScale = 1;
 
     private final float avatarOvershootMaxScale = 1.15f;
