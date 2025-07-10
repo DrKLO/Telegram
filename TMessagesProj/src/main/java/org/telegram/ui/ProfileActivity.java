@@ -393,6 +393,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     private ImageView starBgItem, starFgItem;
     private TimerDrawable timerDrawable;
     private ProfileGalleryView avatarsViewPager;
+    private FrameLayout viewPagerContainer;
     private PagerIndicatorView avatarsViewPagerIndicatorView;
     private AvatarDrawable avatarDrawable;
     private ImageUpdater imageUpdater;
@@ -1124,9 +1125,10 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
 
             if (redrawAvatar) {
                 int saveCount = canvas.save();
-
+                float avRad = getSmallAvatarRoundRadius() * avatarScale;
                 clipPath.reset();
-                clipPath.addCircle(acx, acy, ar, Path.Direction.CW);
+                AndroidUtilities.rectTmp.set(acx - ar + 1, acy - ar + 1, acx + ar - 1, acy + ar - 1);
+                clipPath.addRoundRect(AndroidUtilities.rectTmp, avRad, avRad, Path.Direction.CW);
                 canvas.clipPath(clipPath);
 
                 float blurDiff = 1f - diff;
@@ -1150,16 +1152,14 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     }
 
                     if (averageColor == 0) {
-                        averageColor = getAverageColor(avatarImage.getImageReceiver());
+                        averageColor = getAverageEdgeColor(avatarImage.getImageReceiver());
                     }
-                    avatarBitmap.eraseColor(averageColor); // todo or bg color
+                    avatarBitmap.eraseColor(averageColor);
 
                     avatarCanvas.save();
                     avatarCanvas.scale(avatarContainer.getScaleX() * PRE_BLUR_SCALE, avatarContainer.getScaleY() * PRE_BLUR_SCALE);
                     avatarContainer.draw(avatarCanvas);
                     avatarCanvas.restore();
-
-                    long before2 = System.nanoTime();
 
                     if (blurDiff > 0.05f) {
                         float radius = 40f * blurDiff;
@@ -1173,9 +1173,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     canvas.restore();
 
                     if (blurDiff > 0.05f) {
-                        blurDiff = Math.min(blurDiff / 0.6f, 1f);
+                        blurDiff = Math.min(blurDiff / 0.4f, 1f);
                         bubblePaint.setAlpha((int) (blurDiff * 255));
-                        canvas.drawCircle(acx, acy, ar, bubblePaint);
+                        canvas.drawCircle(acx, acy, ar + 1, bubblePaint);
                         bubblePaint.setAlpha(255);
                     }
                 }
@@ -5104,7 +5104,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         }
 
 
-        FrameLayout viewPagerContainer = new FrameLayout(context) {
+        viewPagerContainer = new FrameLayout(context) {
 
             private RenderNode renderNode;
             @Override
@@ -5181,7 +5181,6 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             protected void drawBlur(BlurringShader.StoryBlurDrawer blur, Canvas canvas, RectF rect, float ox, float oy, float alpha) {
                 if (!canvas.isHardwareAccelerated() && customBlur()) return;
                 if (profileBlurAvatar.getAlpha() == 0f) return;
-                if (pinchToZoomHelper.isInOverlayMode()) return;
 
                 canvas.saveLayerAlpha(0, 0, getWidth(), getHeight(), 0xFF, Canvas.ALL_SAVE_FLAG);
 
@@ -5976,6 +5975,12 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 int color = ColorUtils.blendARGB(getAverageColor(pinchToZoomHelper.getPhotoImage()), getThemedColor(Theme.key_windowBackgroundWhite), 0.1f);
                 topView.setBackgroundColor(color);
                 //fragmentView.setBackgroundColor(peerColor != null ? topView.color1 : actionBarBackgroundColor);
+                profileBlurAvatar.setAlpha(0f);
+            }
+
+            @Override
+            public void onZoomFinished(MessageObject messageObject) {
+                profileBlurAvatar.animate().alpha(1f).start();
             }
         });
         avatarsViewPager.setPinchToZoomHelper(pinchToZoomHelper);
@@ -6612,15 +6617,10 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
 
         updateEmojiStatusDrawableColor(value);
 
-        float k = AndroidUtilities.dpf2(8f);
+        float k = expandAnimatorValues[1] == 0f ? -AndroidUtilities.dpf2(36f) : AndroidUtilities.dpf2(8f);
         float midpoint = 0.5f;
-        float valueClean = value;
 
         if (expandAnimatorValues[1] == 0f && !veryFastCollapse) {
-            midpoint = 0.95f;
-            valueClean = AndroidUtilities.lerp(expandAnimatorValues, cleanValue);
-            valueClean = textUpInterpolator.getInterpolation(valueClean);
-
             if (extraHeight < AndroidUtilities.dp(COLLAPSE_HEIGHT_DP)) {
                 veryFastCollapse = true;
                 veryFastCollapseStartY = avatarY;
@@ -6639,14 +6639,14 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         final float nameTextViewCx = k + nameX + (nameTextViewXEnd - nameX) / 2f;
         final float nameTextViewCy = k + nameY + (nameTextViewYEnd - nameY)  * midpoint;
         final float nameTextViewX = (1 - value) * (1 - value) * nameX + 2 * (1 - value) * value * nameTextViewCx + value * value * nameTextViewXEnd;
-        final float nameTextViewY = (1 - valueClean) * (1 - valueClean) * nameY + 2 * (1 - valueClean) * valueClean * nameTextViewCy + valueClean * valueClean * nameTextViewYEnd;
+        final float nameTextViewY = (1 - value) * (1 - value) * nameY + 2 * (1 - value) * value * nameTextViewCy + value * value * nameTextViewYEnd;
 
         final float onlineTextViewXEnd = AndroidUtilities.dpf2(16f) - onlineTextView[1].getLeft();
         final float onlineTextViewYEnd = newTop + extraHeight - AndroidUtilities.dpf2(88f) - onlineTextView[1].getBottom();
         final float onlineTextViewCx = k + onlineX + (onlineTextViewXEnd - onlineX) / 2f;
         final float onlineTextViewCy = k + onlineY + (onlineTextViewYEnd - onlineY) * midpoint;
         final float onlineTextViewX = (1 - value) * (1 - value) * onlineX + 2 * (1 - value) * value * onlineTextViewCx + value * value * onlineTextViewXEnd;
-        final float onlineTextViewY = (1 - valueClean) * (1 - valueClean) * onlineY + 2 * (1 - valueClean) * valueClean * onlineTextViewCy + valueClean * valueClean * onlineTextViewYEnd;
+        final float onlineTextViewY = (1 - value) * (1 - value) * onlineY + 2 * (1 - value) * value * onlineTextViewCy + value * value * onlineTextViewYEnd;
 
         nameTextView[1].setTranslationX(nameTextViewX);
         nameTextView[1].setTranslationY(nameTextViewY);
@@ -8744,10 +8744,10 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 if (openAnimationInProgress) {
                     float width2 = nameTextView[1].getPaint().measureText(nameTextView[1].getText().toString()) * nameScale + nameTextView[1].getSideDrawablesSize();
                     nameX = (listView.getMeasuredWidth() / 2f - width2 / 2f - AndroidUtilities.dp(118)) * diff;
-                    nameY = avatarY  + AndroidUtilities.dp(1)+ (AndroidUtilities.dp(42) * 2.24f + AndroidUtilities.dp(10)) * diff;
+                    nameY = avatarY  + AndroidUtilities.dp(1)+ (AndroidUtilities.dp(42) * 2.24f + AndroidUtilities.dp(10)) * diff - diff * AndroidUtilities.dpf2(1f);
                     width2 = onlineTextView[1].getPaint().measureText(onlineTextView[1].getText().toString()) + onlineTextView[1].getRightDrawableWidth();
                     onlineX = (listView.getMeasuredWidth() / 2f - width2 / 2f - AndroidUtilities.dp(118)) * diff;
-                    onlineY = nameY + onlineTextView[1].getMeasuredHeight() * nameScale + AndroidUtilities.dp(2);
+                    onlineY = nameY + onlineTextView[1].getMeasuredHeight() * nameScale + AndroidUtilities.dp(2) + diff * AndroidUtilities.dpf2(4.5f);
                 } else {
                     float diff2 = Math.max(diff * 1.45f - 0.45f, 0f);
                     nameScale = 1.0f + 0.12f * diff2;
@@ -10022,6 +10022,13 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             return ((VectorAvatarThumbDrawable)imageReceiver.getDrawable()).gradientTools.getAverageColor();
         }
         return AndroidUtilities.calcBitmapColor(avatarImage.getImageReceiver().getBitmap());
+    }
+
+    private int getAverageEdgeColor(ImageReceiver imageReceiver) {
+        if (imageReceiver.getDrawable() instanceof VectorAvatarThumbDrawable) {
+            return ((VectorAvatarThumbDrawable)imageReceiver.getDrawable()).gradientTools.getAverageColor();
+        }
+        return AndroidUtilities.calcCircularEdgeAverageColor(avatarImage.getImageReceiver().getBitmap());
     }
 
     private void updateOnlineCount(boolean notify) {
