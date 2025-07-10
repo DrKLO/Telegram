@@ -692,7 +692,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                                     presentFragment(ChatActivity.of(dialogId));
                                 })
                                 .add(R.drawable.msg_openprofile, LocaleController.getString(R.string.OpenProfile), () -> {
-                                    presentFragment(ProfileActivity.of(dialogId));
+                                    presentFragment(ProfileNewActivity.of(dialogId));
                                 })
                                 .addIf(!muted, R.drawable.msg_mute, LocaleController.getString(R.string.NotificationsStoryMute), () -> {
                                     MessagesController.getNotificationsSettings(currentAccount).edit().putBoolean("stories_" + key, false).apply();

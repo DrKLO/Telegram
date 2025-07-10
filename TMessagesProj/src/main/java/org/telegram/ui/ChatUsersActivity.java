@@ -1309,7 +1309,7 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
                         } else {
                             args.putLong("chat_id", -peerId);
                         }
-                        presentFragment(new ProfileActivity(args));
+                        presentFragment(new ProfileNewActivity(args));
                     } else {
                         if (bannedRights == null) {
                             bannedRights = new TLRPC.TL_chatBannedRights();

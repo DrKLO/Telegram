@@ -4001,6 +4001,7 @@ public class Theme {
     public static final int key_profile_creatorIcon = colorsCount++;
     public static final int key_profile_title = colorsCount++;
     public static final int key_profile_actionIcon = colorsCount++;
+    public static final int key_profile_actionText = colorsCount++;
     public static final int key_profile_actionBackground = colorsCount++;
     public static final int key_profile_actionPressedBackground = colorsCount++;
     public static final int key_profile_verifiedBackground = colorsCount++;
@@ -4011,6 +4012,13 @@ public class Theme {
     public static final int key_profile_tabSelectedText = colorsCount++;
     public static final int key_profile_tabSelectedLine = colorsCount++;
     public static final int key_profile_tabSelector = colorsCount++;
+
+    // Profile header animation colors
+    public static final int key_profile_headerAnimationBackground = colorsCount++;
+    public static final int key_profile_headerAnimationAccent = colorsCount++;
+    public static final int key_profile_headerAnimationOverlay = colorsCount++;
+    public static final int key_profile_headerAnimationGradientStart = colorsCount++;
+    public static final int key_profile_headerAnimationGradientEnd = colorsCount++;
 
     public static final int key_sharedMedia_startStopLoadIcon = colorsCount++;
     public static final int key_sharedMedia_linkPlaceholder = colorsCount++;

@@ -26,6 +26,10 @@ dependencies {
     implementation "androidx.sharetarget:sharetarget:1.2.0"
     implementation 'androidx.interpolator:interpolator:1.0.0'
     implementation 'androidx.biometric:biometric:1.1.0'
+    
+    // Material Design Components for CollapsingToolbarLayout
+    implementation 'com.google.android.material:material:1.9.0'
+    implementation 'androidx.coordinatorlayout:coordinatorlayout:1.2.0'
 
     implementation 'com.google.android.gms:play-services-cast-framework:21.4.0'
     implementation "androidx.mediarouter:mediarouter:1.7.0"
