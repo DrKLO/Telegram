@@ -369,7 +369,7 @@ public class ProfileGiftsView extends View implements NotificationCenter.Notific
         final float ahScaled = ah * scaleY;
 
         final float collapsedRadius = 0;
-        final float expandedRadius = Math.min(awScaled, ahScaled) / 2.0f + dp(18);
+        final float expandedRadius = Math.min(awScaled, ahScaled) / 2.0f + dp(24);
         final float cacx = Math.min(acx, dp(48));
         final float cx = getWidth() / 2.0f;
 
@@ -385,8 +385,6 @@ public class ProfileGiftsView extends View implements NotificationCenter.Notific
         canvas.save();
         canvas.clipRect(0, 0, getWidth(), expandY);
 
-        final float closedAlpha = collapseProgress;
-
         for (int i = 0; i < gifts.size(); ++i) {
             final Gift gift = gifts.get(i);
             final float alpha = gift.animatedFloat.set(1.0f);
@@ -396,13 +394,22 @@ public class ProfileGiftsView extends View implements NotificationCenter.Notific
             float shiftX = 0;
             float shiftY = 0;
             if (index == 0) {
-//                angle = -35;
-//                final float delayed = remapRange(collapseProgress, 0.7f, 0.5f);
-//                final float interpolated = CubicBezierInterpolator.DEFAULT.getInterpolation(delayed);
-//                final float radius = AndroidUtilities.lerp(collapsedRadius, expandedRadius, interpolated);
-//                shiftX = AndroidUtilities.lerp(0, dp(25), interpolated);
                 gift.draw(canvas, nameEnd, nameCy, 1.0f, 0, 1.0f, 1.0f);
             } else if (index == 1) {
+                angle = -35;
+                final float delayed = remapRange(collapseProgress, 0.7f, 0.5f);
+                final float interpolated = CubicBezierInterpolator.DEFAULT.getInterpolation(delayed);
+                final float radius = AndroidUtilities.lerp(collapsedRadius, expandedRadius, interpolated);
+                shiftX = AndroidUtilities.lerp(0, dp(25), interpolated);
+                gift.draw(
+                        canvas,
+                        (float) (acx + radius * Math.cos(angle / 180.0f * Math.PI)) + shiftX,
+                        (float) (acy + radius * Math.sin(angle / 180.0f * Math.PI)) + shiftY,
+                        scale, angle + 90,
+                        alpha * alpha * (1.0f - expandProgress) * (1.0f - actionBarProgress) * (interpolated),
+                        1.0f
+                );
+            } else if (index == 2) {
                 angle = -5;
                 final float delayed = remapRange(collapseProgress, 0.6f, 0.3f);
                 final float interpolated = CubicBezierInterpolator.DEFAULT.getInterpolation(delayed);
@@ -413,10 +420,10 @@ public class ProfileGiftsView extends View implements NotificationCenter.Notific
                         (float) (acx + radius * Math.cos(angle / 180.0f * Math.PI)) + shiftX,
                         (float) (acy + radius * Math.sin(angle / 180.0f * Math.PI)) + shiftY,
                         scale, angle + 90,
-                        alpha * alpha * (1.0f - expandProgress) * (1.0f - actionBarProgress) * (closedAlpha),
+                        alpha * alpha * (1.0f - expandProgress) * (1.0f - actionBarProgress) * (interpolated),
                         1.0f
                 );
-            } else if (index == 2) {
+            } else if (index == 3) {
                 angle = 35;
                 final float delayed = remapRange(collapseProgress, 0.9f, 0.6f);
                 final float interpolated = CubicBezierInterpolator.DEFAULT.getInterpolation(delayed);
@@ -427,10 +434,10 @@ public class ProfileGiftsView extends View implements NotificationCenter.Notific
                         (float) (acx + radius * Math.cos(angle / 180.0f * Math.PI)) + shiftX,
                         (float) (acy + radius * Math.sin(angle / 180.0f * Math.PI)) + shiftY,
                         scale, angle + 90,
-                        alpha * alpha * (1.0f - expandProgress) * (1.0f - actionBarProgress) * (closedAlpha),
+                        alpha * (1.0f - expandProgress) * (1.0f - actionBarProgress) * (interpolated),
                         1.0f
                 );
-            } else if (index == 3) {
+            } else if (index == 4) {
                 angle = 145;
                 final float delayed = remapRange(collapseProgress, 0.7f, 0.5f);
                 final float interpolated = CubicBezierInterpolator.DEFAULT.getInterpolation(delayed);
@@ -441,10 +448,10 @@ public class ProfileGiftsView extends View implements NotificationCenter.Notific
                         (float) (acx + radius * Math.cos(angle / 180.0f * Math.PI)) + shiftX,
                         (float) (acy + radius * Math.sin(angle / 180.0f * Math.PI)) + shiftY,
                         scale, angle + 90,
-                        alpha * (1.0f - expandProgress) * (1.0f - actionBarProgress) * (closedAlpha),
+                        alpha * (1.0f - expandProgress) * (1.0f - actionBarProgress) * (interpolated),
                         1.0f
                 );
-            } else if (index == 4) {
+            } else if (index == 5) {
                 angle = 180;
                 final float delayed = remapRange(collapseProgress, 0.6f, 0.3f);
                 final float interpolated = CubicBezierInterpolator.DEFAULT.getInterpolation(delayed);
@@ -455,10 +462,10 @@ public class ProfileGiftsView extends View implements NotificationCenter.Notific
                         (float) (acx + radius * Math.cos(angle / 180.0f * Math.PI)) + shiftX,
                         (float) (acy + radius * Math.sin(angle / 180.0f * Math.PI)) + shiftY,
                         scale, angle + 90,
-                        alpha * (1.0f - expandProgress) * (1.0f - actionBarProgress) * (closedAlpha),
+                        alpha * (1.0f - expandProgress) * (1.0f - actionBarProgress) * (interpolated),
                         1.0f
                 );
-            } else if (index == 5) {
+            } else if (index == 6) {
                 angle = 215;
                 final float delayed = remapRange(collapseProgress, 0.9f, 0.6f);
                 final float interpolated = CubicBezierInterpolator.DEFAULT.getInterpolation(delayed);
@@ -469,31 +476,35 @@ public class ProfileGiftsView extends View implements NotificationCenter.Notific
                         (float) (acx + radius * Math.cos(angle / 180.0f * Math.PI)) + shiftX,
                         (float) (acy + radius * Math.sin(angle / 180.0f * Math.PI)) + shiftY,
                         scale, angle + 90,
-                        alpha * (1.0f - expandProgress) * (1.0f - actionBarProgress) * (closedAlpha),
-                        1.0f
-                );
-            } else if (index == 6) {
-                gift.draw(
-                        canvas,
-                        cacx + Math.min(getWidth() * .38f, dp(102)), expandY - dp(12),
-                        scale, 0,
-                        alpha * (1.0f - expandProgress) * (1.0f - actionBarProgress) * (closedAlpha),
+                        alpha * (1.0f - expandProgress) * (1.0f - actionBarProgress) * (interpolated),
                         1.0f
                 );
             } else if (index == 7) {
+                angle = 30;
+                final float delayed = remapRange(collapseProgress, 0.55f, 0.3f);
+                final float interpolated = CubicBezierInterpolator.DEFAULT.getInterpolation(delayed);
+                final float radius = AndroidUtilities.lerp(collapsedRadius, expandedRadius, interpolated);
+                shiftX = AndroidUtilities.lerp(0, dp(80), interpolated);
                 gift.draw(
                         canvas,
-                        cacx + Math.min(getWidth() * .135f, dp(36)), expandY - dp(17.6f),
-                        scale, -5.0f,
-                        alpha * (1.0f - expandProgress) * (1.0f - actionBarProgress) * (closedAlpha),
+                        (float) (acx + radius * Math.cos(angle / 180.0f * Math.PI)) + shiftX,
+                        (float) (acy + radius * Math.sin(angle / 180.0f * Math.PI)) + shiftY,
+                        scale, angle + 90,
+                        alpha * alpha * (1.0f - expandProgress) * (1.0f - actionBarProgress) * (interpolated),
                         1.0f
                 );
             } else if (index == 8) {
+                angle = 120;
+                final float delayed = remapRange(collapseProgress, 0.55f, 0.3f);
+                final float interpolated = CubicBezierInterpolator.DEFAULT.getInterpolation(delayed);
+                final float radius = AndroidUtilities.lerp(collapsedRadius, expandedRadius, interpolated);
+                shiftX = AndroidUtilities.lerp(0, dp(-100), interpolated);
                 gift.draw(
                         canvas,
-                        cacx + Math.min(getWidth() * .76f, dp(178)), expandY - dp(21.66f),
-                        scale, 5.0f,
-                        alpha * (1.0f - expandProgress) * (1.0f - actionBarProgress) * (closedAlpha),
+                        (float) (acx + radius * Math.cos(angle / 180.0f * Math.PI)) + shiftX,
+                        (float) (acy + radius * Math.sin(angle / 180.0f * Math.PI)) + shiftY,
+                        scale, angle + 90,
+                        alpha * alpha * (1.0f - expandProgress) * (1.0f - actionBarProgress) * (interpolated),
                         1.0f
                 );
             }
