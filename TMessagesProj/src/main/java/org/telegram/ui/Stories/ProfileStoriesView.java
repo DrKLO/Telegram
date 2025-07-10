@@ -489,10 +489,25 @@ public class ProfileStoriesView extends View implements NotificationCenter.Notif
         float avatarPullProgress = Utilities.clamp((avatarContainer.getScaleX() - 1f) / 0.4f, 1f, 0f);
         float insetMain = AndroidUtilities.lerp(AndroidUtilities.dpf2(4f), AndroidUtilities.dpf2(3.5f), avatarPullProgress);
         insetMain *= progressToInsets;
-        float ax = avatarContainer.getX() + insetMain * avatarContainer.getScaleX();
-        float ay = avatarContainer.getY() + insetMain * avatarContainer.getScaleY();
-        float aw = (avatarContainer.getWidth() - insetMain * 2) * avatarContainer.getScaleX();
-        float ah = (avatarContainer.getHeight() - insetMain * 2) * avatarContainer.getScaleY();
+
+        float scaleX = avatarContainer.getScaleX();
+        float scaleY = avatarContainer.getScaleY();
+        float pivotX = avatarContainer.getPivotX();
+        float pivotY = avatarContainer.getPivotY();
+
+        float rawX = avatarContainer.getX();
+        float rawY = avatarContainer.getY();
+        float width = avatarContainer.getWidth();
+        float height = avatarContainer.getHeight();
+
+        float scaledX = rawX + (1 - scaleX) * pivotX;
+        float scaledY = rawY + (1 - scaleY) * pivotY;
+
+        float ax = scaledX + insetMain * scaleX;
+        float ay = scaledY + insetMain * scaleY;
+        float aw = (width - 2 * insetMain) * scaleX;
+        float ah = (height - 2 * insetMain) * scaleY;
+
         rect1.set(ax, ay, ax + aw, ay + ah);
 
         float maxX = this.left;
