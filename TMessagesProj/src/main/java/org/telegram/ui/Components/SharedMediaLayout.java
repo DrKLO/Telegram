@@ -8697,7 +8697,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
             }
             final BaseFragment fragment = new ChatActivity(args);
             if (profileActivity instanceof ProfileActivity) {
-                ((ProfileActivity) profileActivity).prepareBlurBitmap();
+                ((ProfileActivity) profileActivity).prepareBlurBitmap(null);
             }
 
             ActionBarPopupWindow.ActionBarPopupWindowLayout previewMenu = new ActionBarPopupWindow.ActionBarPopupWindowLayout(getContext(), R.drawable.popup_fixed_alert, resourcesProvider, ActionBarPopupWindow.ActionBarPopupWindowLayout.FLAG_SHOWN_FROM_BOTTOM);

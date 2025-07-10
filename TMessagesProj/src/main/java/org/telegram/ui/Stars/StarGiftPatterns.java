@@ -6,8 +6,11 @@ import static org.telegram.messenger.AndroidUtilities.dpf2;
 import android.graphics.Canvas;
 import android.graphics.drawable.Drawable;
 
+import androidx.core.math.MathUtils;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Components.CubicBezierInterpolator;
 
 public class StarGiftPatterns {
 
@@ -95,6 +98,61 @@ public class StarGiftPatterns {
             -62.66f, -109.66f, 21.33f, .11f
         }
     };
+
+    private static final float[] profile2 = {
+
+        270     , 0  , +0.1f , 0.4f,
+        270 - 30, -15, +0.2f, 0.575f,
+        180 + 30, -15, 0     , 0.425f,
+        180 + 30, 0  , -0.15f, 0.675f,
+        180     , -15, 0     , 0.5f,
+        180     , -60, -0.05f, 0.8f,
+        270 + 30, +15, +0.3f , 0.575f,
+        270 + 60, +15, -0.02f, 0.425f,
+            - 30, 0  , -0.18f, 0.675f,
+        0       , +15, +0.05f, 0.5f,
+        0       , +60, -0.1f , 0.8f,
+        90      , 0  , -0.03f, 0.425f,
+        90 - 30 , +15, 0.27f , 0.575f,
+        90 - 60 , +45, -0.03f, 0.425f,
+        30      , +45, -0.2f , 0.675f,
+        90 +  30, -15, 0.25f , 0.575f,
+        180 - 30 , -45, -0.04f, 0.425f,
+        180 - 30, -45, -0.22f, 0.675f,
+    };
+
+    public static void drawProfilePattern2(Canvas canvas, Drawable pattern, float w, float listWidth, float alpha, float full, float stableAvatarCy, float avatarCy, float collapseProgress) {
+        if (alpha <= 0.0f) return;
+
+        float avatarCx = w / 2f;
+        float radius = listWidth * 0.45f;
+        int size = AndroidUtilities.dp(24);
+        for (int i = 0; i < profile2.length; i+=4) {
+            float angle = profile2[i];
+            float toAngle = angle + profile2[i + 1];
+            float bias = profile2[i + 2];
+            float len = profile2[i + 3];
+
+            // Top/bottom fade
+            float fade = Math.max(1f - Math.min(Math.abs(90 - angle), 45f) / 45f, 1f - Math.min(Math.abs(270 - angle), 45f) / 45f);
+
+            float start = Math.max(0, (len + bias) / 10f);
+            float max = MathUtils.clamp(len + bias, 0.1f, 1f) * 0.8f;
+            float v = (MathUtils.clamp(collapseProgress, start, max) - start) / (max - start);
+            v = CubicBezierInterpolator.EASE_BOTH.getInterpolation(v);
+            float a = (float) Math.toRadians(AndroidUtilities.lerpAngle(angle, toAngle, v));
+
+            float l = len + len * full * 1.5f;
+            float cx = (float) (avatarCx + Math.cos(a) * radius * l), cy = (float) (stableAvatarCy + Math.sin(a) * radius * l);
+            cx = AndroidUtilities.lerp(cx, avatarCx, v);
+            cy = AndroidUtilities.lerp(cy, avatarCy, v);
+
+            float s = AndroidUtilities.lerp(1f + full * 0.75f, 0.4f, v) * (len >= 0.5f ? size * 0.9f : size);
+            pattern.setAlpha((int) (0xFF * alpha * 0.6f * (1f - fade * 0.5f) * (1f - len)));
+            pattern.setBounds((int) (cx - s / 2f), (int) (cy - s / 2f), (int) (cx + s / 2f), (int) (cy + s / 2f));
+            pattern.draw(canvas);
+        }
+    }
 
     public static void drawPattern(Canvas canvas, Drawable pattern, float w, float h, float alpha, float scale) {
         drawPattern(canvas, TYPE_DEFAULT, pattern, w, h, alpha, scale);
