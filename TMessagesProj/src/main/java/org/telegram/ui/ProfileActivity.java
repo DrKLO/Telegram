@@ -1170,8 +1170,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 if (backgroundGradient == null || backgroundGradientColor1 != color1 || backgroundGradientColor2 != color2 || backgroundGradientHeight != gradientHeight) {
                     float radius = (float) Math.hypot(getMeasuredWidth() / 2f, gradientHeight / 2f);
                     backgroundGradient = new RadialGradient(
-                            getMeasuredWidth() / 2f,
-                            backgroundGradientHeight = gradientHeight / 2 + dp(48),
+                            avatarCenterX(),
+                            avatarCenterY(),
                             radius,
                             new int[]{backgroundGradientColor1 = color1, backgroundGradientColor2 = color2},
                             new float[]{0, 1},
@@ -2247,6 +2247,26 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         if (layout != null && layout.getParentActivity() != null) {
             flagSecure = new FlagSecureReason(layout.getParentActivity().getWindow(), () -> currentEncryptedChat != null || getMessagesController().isChatNoForwards(currentChat));
         }
+    }
+
+    private float avatarCenterX() {
+        final float ax = avatarContainer.getX();
+        final float scaleX = avatarContainer.getScaleX();
+        final float pivotX = avatarContainer.getPivotX();
+        final float aw = avatarContainer.getWidth();
+        final float scaledX = ax + (1 - scaleX) * pivotX;
+        final float acx = scaledX + aw * scaleX / 2f;
+        return acx;
+    }
+
+    private float avatarCenterY() {
+        final float ay = avatarContainer.getY();
+        final float scaleY = avatarContainer.getScaleY();
+        final float pivotY = avatarContainer.getPivotY();
+        final float ah = avatarContainer.getHeight();
+        final float scaledY = ay + (1 - scaleY) * pivotY;
+        final float acy = scaledY + ah * scaleY / 2f;
+        return acy;
     }
 
     @Override

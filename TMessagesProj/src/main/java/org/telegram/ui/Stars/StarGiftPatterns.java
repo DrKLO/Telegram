@@ -1,16 +1,15 @@
 package org.telegram.ui.Stars;
 
-import static org.telegram.messenger.AndroidUtilities.dp;
-import static org.telegram.messenger.AndroidUtilities.dpf2;
-import static org.telegram.messenger.AndroidUtilities.remapRange;
-
 import android.graphics.Canvas;
 import android.graphics.drawable.Drawable;
 import android.view.View;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.ui.Components.CubicBezierInterpolator;
-import org.webrtc.StatsReport;
+
+import static org.telegram.messenger.AndroidUtilities.dp;
+import static org.telegram.messenger.AndroidUtilities.dpf2;
+import static org.telegram.messenger.AndroidUtilities.remapRange;
 
 public class StarGiftPatterns {
 
@@ -151,7 +150,8 @@ public class StarGiftPatterns {
             43.33f, 1, 18.66f, .3186f
     };
 
-    public static void drawProfilePattern(Canvas canvas, Drawable pattern, float collapseProgress, View avatarContainer) {
+    public static void drawProfilePattern(Canvas canvas, Drawable pattern, float collapseProgress,
+                                          View avatarContainer) {
         if (collapseProgress <= 0.0f) return;
 
         final float ax = avatarContainer.getX();
@@ -179,12 +179,19 @@ public class StarGiftPatterns {
         final float collapsedRadius = 0;
         float expandedRadiusRadiusX;
         float expandedRadiusRadiusY;
-        for (int i = 0; i < 18; i ++) {
+        final float collapsedAlpha = 0f;
+        final float collapsedSize = dp(20);
+        final float nonceRange = 0.25f;
+        final int totalItems = 18;
+        final int innerCircleItems = 8;
+        final int outerCircleItems = 10;
+        for (int i = 0; i < totalItems; i++) {
             float angle;
             float offsetExpandedRadiusX;
             float offsetExpandedRadiusY;
+            float delayed;
             // inner circle
-            if (i < 8) {
+            if (i < innerCircleItems) {
                 expandedSize = dp(28);
                 expandedAlpha = 0.32f;
                 angle = i * (360 / 8f);
@@ -192,6 +199,12 @@ public class StarGiftPatterns {
                 expandedRadiusRadiusY = ahScaled / 2f * 0.6f;
                 offsetExpandedRadiusX = expandedRadiusRadiusX + dp(26);
                 offsetExpandedRadiusY = expandedRadiusRadiusY + dp(42);
+                float nonce = i * (nonceRange / totalItems);
+                if (i % 2 == 1) {
+                    delayed = remapRange(collapseProgress, 0.9f + nonce, 0.6f + nonce);
+                } else {
+                    delayed = remapRange(collapseProgress, 0.7f + nonce, 0.4f + nonce);
+                }
             } else { // outer circle
                 expandedSize = dp(26);
                 expandedAlpha = 0.15f;
@@ -200,8 +213,13 @@ public class StarGiftPatterns {
                 angle = 72 + i * (360 / 10f); // offset by 68 degrees
                 offsetExpandedRadiusX = expandedRadiusRadiusX + dp(60);
                 offsetExpandedRadiusY = expandedRadiusRadiusY + dp(80);
+                float nonce = i * (nonceRange / totalItems);
+                if (i % 2 == 1) {
+                    delayed = remapRange(collapseProgress, 0.75f + nonce, 0.4f + nonce);
+                } else {
+                    delayed = remapRange(collapseProgress, 0.6f + nonce, 0.3f + nonce);
+                }
             }
-            final float delayed = remapRange(collapseProgress, 0.7f, 0.5f);
             final float interpolated = CubicBezierInterpolator.DEFAULT.getInterpolation(delayed);
             final float radiusX = AndroidUtilities.lerp(collapsedRadius, offsetExpandedRadiusX, interpolated);
             final float radiusY = AndroidUtilities.lerp(collapsedRadius, offsetExpandedRadiusY, interpolated);
@@ -209,13 +227,15 @@ public class StarGiftPatterns {
             final float shiftY = 0;
             float cx = (float) (acx + radiusX * Math.cos(angle / 180.0f * Math.PI)) + shiftX;
             float cy = (float) (acy + radiusY * Math.sin(angle / 180.0f * Math.PI)) + shiftY;
+            float size = AndroidUtilities.lerp(collapsedSize, expandedSize, interpolated);
             pattern.setBounds(
-                    (int) (cx - expandedSize / 2f),
-                    (int) (cy - expandedSize / 2f),
-                    (int) (cx + expandedSize / 2f),
-                    (int) (cy + expandedSize / 2f)
+                    (int) (cx - size / 2f),
+                    (int) (cy - size / 2f),
+                    (int) (cx + size / 2f),
+                    (int) (cy + size / 2f)
             );
-            pattern.setAlpha((int) (255 * expandedAlpha));
+            float alpha = AndroidUtilities.lerp(collapsedAlpha, expandedAlpha, interpolated);
+            pattern.setAlpha((int) (255 * alpha));
             pattern.draw(canvas);
         }
     }
