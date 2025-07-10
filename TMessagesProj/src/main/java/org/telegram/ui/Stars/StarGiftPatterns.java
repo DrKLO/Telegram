@@ -183,10 +183,10 @@ public class StarGiftPatterns {
                 final float thisAlpha = profileLeft[i + 3];
 
                 pattern.setBounds(
-                    (int) (l + dpf2(x) - dpf2(size) / 2.0f),
-                    (int) (b + dpf2(y) - dpf2(size) / 2.0f),
-                    (int) (l + dpf2(x) + dpf2(size) / 2.0f),
-                    (int) (b + dpf2(y) + dpf2(size) / 2.0f)
+                        (int) (l + dpf2(x) - dpf2(size) / 2.0f),
+                        (int) (b + dpf2(y) - dpf2(size) / 2.0f),
+                        (int) (l + dpf2(x) + dpf2(size) / 2.0f),
+                        (int) (b + dpf2(y) + dpf2(size) / 2.0f)
                 );
                 pattern.setAlpha((int) (0xFF * alpha * thisAlpha * full));
                 pattern.draw(canvas);
@@ -205,10 +205,10 @@ public class StarGiftPatterns {
                 final float thisAlpha = .21f;
 
                 pattern.setBounds(
-                    (int) (l + dpf2(x) - dpf2(size) / 2.0f),
-                    (int) (b + dpf2(y) - dpf2(size) / 2.0f),
-                    (int) (l + dpf2(x) + dpf2(size) / 2.0f),
-                    (int) (b + dpf2(y) + dpf2(size) / 2.0f)
+                        (int) (l + dpf2(x) - dpf2(size) / 2.0f),
+                        (int) (b + dpf2(y) - dpf2(size) / 2.0f),
+                        (int) (l + dpf2(x) + dpf2(size) / 2.0f),
+                        (int) (b + dpf2(y) + dpf2(size) / 2.0f)
                 );
                 pattern.setAlpha((int) (0xFF * alpha * thisAlpha * full));
                 pattern.draw(canvas);
@@ -222,31 +222,38 @@ public class StarGiftPatterns {
             final float thisAlpha = profileRight[i + 3];
 
             pattern.setBounds(
-                (int) (r + dpf2(x) - dpf2(size) / 2.0f),
-                (int) (b + dpf2(y) - dpf2(size) / 2.0f),
-                (int) (r + dpf2(x) + dpf2(size) / 2.0f),
-                (int) (b + dpf2(y) + dpf2(size) / 2.0f)
+                    (int) (r + dpf2(x) - dpf2(size) / 2.0f),
+                    (int) (b + dpf2(y) - dpf2(size) / 2.0f),
+                    (int) (r + dpf2(x) + dpf2(size) / 2.0f),
+                    (int) (b + dpf2(y) + dpf2(size) / 2.0f)
             );
             pattern.setAlpha((int) (0xFF * alpha * thisAlpha));
             pattern.draw(canvas);
         }
     }
+
     public static void drawCircularProfilePattern(Canvas canvas, Drawable pattern, float w, float h, float alpha) {
         if (alpha <= 0.0f) return;
 
         float centerX = w / 2f;
-        float centerY = h / 2f; // Avatar markazi deb hisoblaymiz
+        float centerY = h / 2f;
+
+        float targetX = w / 2f;
+        float targetY = 0f;
 
         float density = AndroidUtilities.density;
 
         for (int i = 0; i < circleProfilePattern.length; i += 4) {
-            float dx = circleProfilePattern[i] * density;
-            float dy = circleProfilePattern[i + 1] * density;
+            float originalDx = circleProfilePattern[i] * density;
+            float originalDy = circleProfilePattern[i + 1] * density;
             float size = circleProfilePattern[i + 2] * density;
             float thisAlpha = circleProfilePattern[i + 3];
 
-            float x = centerX + dx;
-            float y = centerY + dy;
+            float originalX = centerX + originalDx;
+            float originalY = centerY + originalDy;
+
+            float x = AndroidUtilities.lerp(targetX, originalX, alpha * alpha);
+            float y = AndroidUtilities.lerp(targetY, originalY, alpha * alpha );
 
             pattern.setBounds(
                     (int) (x - size / 2),
