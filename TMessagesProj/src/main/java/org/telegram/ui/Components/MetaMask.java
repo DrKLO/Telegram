@@ -184,7 +184,9 @@ public final class MetaMask {
                     alpha[idx] = (v >= j.iso) ? 0xFF000000 : 0x00000000;
                 }
             }
-            bitmap.setPixels(alpha,0,w,0,0, w, h);
+            if (bitmap != null && !bitmap.isRecycled()) {
+                bitmap.setPixels(alpha, 0, w, 0, 0, w, h);
+            }
             return bitmap;
         }
 
