@@ -466,7 +466,11 @@ public class ShortcutsCell extends FrameLayout {
                     if (backgroundPaint == null) {
                         backgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
                         if (customBlur()) {
-                            backgroundPaint.setColor(0x00000000);
+                            if (Theme.isCurrentThemeDark()) {
+                                backgroundPaint.setColor(0x11000000);
+                            } else {
+                                backgroundPaint.setColor(0x00000000);
+                            }
                         } else {
                             backgroundPaint.setColor(0x25000000);
                             ColorMatrix cm = new ColorMatrix();

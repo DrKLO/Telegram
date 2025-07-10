@@ -311,7 +311,7 @@ public class StarGiftPatterns {
                                          float flattening, float flatteningOther) {
         final float radiusPx = dpf2(radius);
         final float sizePx = dpf2(sizeDp);
-        final double startAngle = pointyTop ? Math.PI/2 : 0;
+        final double startAngle = pointyTop ? Math.PI / 2 : 0;
         final double angleStep = 2 * Math.PI / points;
 
         for (int i = 0; i < points; i++) {
@@ -376,7 +376,6 @@ public class StarGiftPatterns {
 
         pointsOrbitCorners[0][0] = width * flattening;
         pointsOrbitCorners[0][1] = 0;
-
         pointsOrbitCorners[1][0] = -width * flattening;
         pointsOrbitCorners[1][1] = 0;
 
@@ -394,10 +393,10 @@ public class StarGiftPatterns {
         if (alphaInt <= 0) return;
         final float halfSize = sizePx / 2;
         pattern.setBounds(
-                (int)(x - halfSize),
-                (int)(y - halfSize),
-                (int)(x + halfSize),
-                (int)(y + halfSize)
+            (int) (x - halfSize),
+            (int) (y - halfSize),
+            (int) (x + halfSize),
+            (int) (y + halfSize)
         );
         pattern.setAlpha(alphaInt);
         pattern.draw(canvas);
