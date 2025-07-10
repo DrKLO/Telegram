@@ -1,9 +1,5 @@
 package org.telegram.ui.Stars;
 
-import static org.telegram.messenger.AndroidUtilities.dp;
-import static org.telegram.messenger.AndroidUtilities.lerp;
-import static org.telegram.ui.Stars.StarsController.findAttribute;
-
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Matrix;
@@ -15,13 +11,9 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.animation.Interpolator;
 
-import androidx.annotation.NonNull;
-import androidx.interpolator.view.animation.FastOutLinearInInterpolator;
-
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
-import org.telegram.messenger.Utilities;
 import org.telegram.messenger.browser.Browser;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.tl.TL_stars;
@@ -31,10 +23,17 @@ import org.telegram.ui.Components.AnimatedEmojiDrawable;
 import org.telegram.ui.Components.AnimatedFloat;
 import org.telegram.ui.Components.ButtonBounce;
 import org.telegram.ui.Components.CubicBezierInterpolator;
-import org.telegram.ui.ProfileActivity;
 
 import java.util.ArrayList;
 import java.util.HashSet;
+
+import androidx.annotation.NonNull;
+import androidx.interpolator.view.animation.FastOutLinearInInterpolator;
+
+import static org.telegram.messenger.AndroidUtilities.dp;
+import static org.telegram.messenger.AndroidUtilities.lerp;
+import static org.telegram.messenger.AndroidUtilities.remapRange;
+import static org.telegram.ui.Stars.StarsController.findAttribute;
 
 public class ProfileGiftsView extends View implements NotificationCenter.NotificationCenterDelegate {
 
@@ -511,20 +510,6 @@ public class ProfileGiftsView extends View implements NotificationCenter.Notific
         }
 
         canvas.restore();
-    }
-
-    /**
-     * Remaps range from delayStart to delayEnd within the progress range. Progress should be
-     * between 0f and 1f
-     */
-    public static float remapRange(float progress, float delayStart, float delayEnd) {
-        if (progress >= delayStart) {
-            return 1f;
-        } else if (progress <= delayEnd) {
-            return 0f;
-        } else {
-            return (progress - delayEnd) / (delayStart - delayEnd);
-        }
     }
 
     public Gift getGiftUnder(float x, float y) {

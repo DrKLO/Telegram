@@ -6644,4 +6644,18 @@ public class AndroidUtilities {
         FileLog.d("[FLAG_SECURE]");
         printStackTrace("FLAG_SECURE");
     }
+
+    /**
+     * Remaps range from delayStart to delayEnd within the progress range. Progress should be
+     * between 0f and 1f
+     */
+    public static float remapRange(float progress, float delayStart, float delayEnd) {
+        if (progress >= delayStart) {
+            return 1f;
+        } else if (progress <= delayEnd) {
+            return 0f;
+        } else {
+            return (progress - delayEnd) / (delayStart - delayEnd);
+        }
+    }
 }

@@ -1184,11 +1184,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     if (loadedScale > 0) {
                         canvas.save();
                         canvas.clipRect(0, 0, getMeasuredWidth(), y1);
-                        float patternWidth = getMeasuredWidth();
                         float maxHeight = AndroidUtilities.dp(maxExtraHeight);
-                        float patternHeight = gradientHeight - (1f - extraHeight / maxHeight) * dp(50);
-                        float alpha = extraHeight / maxHeight;
-                        StarGiftPatterns.drawProfilePattern(canvas, emoji, patternWidth, patternHeight, Math.min(1f, alpha), full);
+                        float progress = extraHeight / maxHeight;
+                        StarGiftPatterns.drawProfilePattern(canvas, emoji, progress, avatarContainer);
                         canvas.restore();
                     }
                 }
