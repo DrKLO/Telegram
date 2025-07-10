@@ -13,6 +13,7 @@ import static org.telegram.messenger.AndroidUtilities.accelerateInterpolator;
 import static org.telegram.messenger.AndroidUtilities.density;
 import static org.telegram.messenger.AndroidUtilities.dp;
 import static org.telegram.messenger.AndroidUtilities.lerp;
+import static org.telegram.messenger.AndroidUtilities.remapRange;
 import static org.telegram.messenger.ContactsController.PRIVACY_RULES_TYPE_ADDED_BY_PHONE;
 import static org.telegram.messenger.LocaleController.formatPluralString;
 import static org.telegram.messenger.LocaleController.formatString;
@@ -5040,9 +5041,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             avatarImage.setHasStories(needInsetForStories());
         }
         actionItemsBlur = new FadeTopImageView(context);
-        frameLayout.addView(actionItemsBlur, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+        avatarContainer2.addView(actionItemsBlur, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
         actionItems = createActionItems(context, did, lastFragment, (SizeNotifierFrameLayout) fragmentView);
-        frameLayout.addView(actionItems, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+        avatarContainer2.addView(actionItems, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
         avatarContainer2.addView(storyView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
         updateProfileData(true);
         if (userId != 0) {
