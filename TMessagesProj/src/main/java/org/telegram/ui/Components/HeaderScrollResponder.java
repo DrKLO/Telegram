@@ -21,6 +21,11 @@ public class HeaderScrollResponder {
     private DecelerateInterpolator decelerateInterpolator;
     private LinearInterpolator linearInterpolator;
     
+    // Animation helpers for collapsing header
+    private AvatarAnimationHelper avatarAnimationHelper;
+    private TextTransitionHelper textTransitionHelper;
+    private HeaderButtonsAnimationHelper buttonAnimationHelper;
+    
     // Scroll state
     private float currentScrollProgress = 0f;
     private float targetScrollProgress = 0f;
@@ -47,6 +52,21 @@ public class HeaderScrollResponder {
     
     public void setAnimationView(ProfileHeaderAnimationView animationView) {
         this.animationView = animationView;
+    }
+    
+    /**
+     * Set animation helpers for collapsing header animations
+     */
+    public void setAnimationHelpers(AvatarAnimationHelper avatarHelper, TextTransitionHelper textHelper) {
+        this.avatarAnimationHelper = avatarHelper;
+        this.textTransitionHelper = textHelper;
+    }
+    
+    /**
+     * Set button animation helper
+     */
+    public void setButtonAnimationHelper(HeaderButtonsAnimationHelper buttonHelper) {
+        this.buttonAnimationHelper = buttonHelper;
     }
     
     public void onScrollChanged(float scrollProgress) {
@@ -90,13 +110,25 @@ public class HeaderScrollResponder {
     }
     
     private void updateAnimation() {
-        if (animationView == null) return;
+        // Update collapsing header animations
+        if (avatarAnimationHelper != null) {
+            avatarAnimationHelper.updateAnimation(currentScrollProgress);
+        }
         
-        // Calculate animation intensity based on scroll progress and velocity
-        float intensity = calculateIntensity();
+        if (textTransitionHelper != null) {
+            textTransitionHelper.updateAnimation(currentScrollProgress);
+        }
         
-        // Update the animation view
-        animationView.setScrollProgress(currentScrollProgress);
+        if (buttonAnimationHelper != null) {
+            buttonAnimationHelper.updateAnimation(currentScrollProgress);
+        }
+        
+        // Update particle animation view if present
+        if (animationView != null) {
+            // Calculate animation intensity based on scroll progress and velocity
+            float intensity = calculateIntensity();
+            animationView.setScrollProgress(currentScrollProgress);
+        }
         
         // Check if we should trigger special effects
         checkForSpecialEffects();
@@ -186,6 +218,19 @@ public class HeaderScrollResponder {
         targetScrollProgress = 0f;
         scrollVelocity = 0f;
         isScrolling = false;
+        
+        // Reset collapsing header animations
+        if (avatarAnimationHelper != null) {
+            avatarAnimationHelper.reset();
+        }
+        
+        if (textTransitionHelper != null) {
+            textTransitionHelper.reset();
+        }
+        
+        if (buttonAnimationHelper != null) {
+            buttonAnimationHelper.reset();
+        }
         
         if (animationView != null) {
             animationView.setScrollProgress(0f);

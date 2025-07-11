@@ -35,6 +35,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowManager;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -82,6 +83,11 @@ import org.telegram.ui.Components.UndoView;
 import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.SharedMediaLayout;
 import org.telegram.ui.Components.voip.VoIPHelper;
+import org.telegram.ui.Components.AvatarAnimationHelper;
+import org.telegram.ui.Components.TextTransitionHelper;
+import org.telegram.ui.Components.HeaderButtonsAnimationHelper;
+import org.telegram.ui.Components.HeaderScrollResponder;
+import org.telegram.ui.Components.CollapsingHeaderOffsetListener;
 import org.telegram.ui.Cells.TextDetailCell;
 import org.telegram.ui.Cells.TextCell;
 import org.telegram.ui.Cells.TextInfoPrivacyCell;
@@ -134,7 +140,7 @@ public class ProfileNewActivity extends BaseFragment implements NotificationCent
     private CoordinatorLayout coordinatorLayout;
     private AppBarLayout appBarLayout;
     private CollapsingToolbarLayout collapsingToolbarLayout;
-    private Toolbar toolbar;
+//    private Toolbar toolbar;
     private NestedScrollView nestedScrollView;
 
     // Header content containers
@@ -164,6 +170,13 @@ public class ProfileNewActivity extends BaseFragment implements NotificationCent
 
     // Gift particle system
     private HeaderGiftParticleSystem giftParticleSystem;
+
+    // Animation helpers for collapsing header
+    private AvatarAnimationHelper avatarAnimationHelper;
+    private TextTransitionHelper textTransitionHelper;
+    private HeaderButtonsAnimationHelper buttonAnimationHelper;
+    private HeaderScrollResponder scrollResponder;
+    private CollapsingHeaderOffsetListener offsetListener;
 
     // Profile data
     private long dialogId;
@@ -407,12 +420,29 @@ public class ProfileNewActivity extends BaseFragment implements NotificationCent
         }
         sharedMediaPreloader.addDelegate(this);
 
+        // Initialize animation helpers for collapsing header
+        avatarAnimationHelper = new AvatarAnimationHelper();
+        textTransitionHelper = new TextTransitionHelper();
+        buttonAnimationHelper = new HeaderButtonsAnimationHelper();
+        scrollResponder = new HeaderScrollResponder();
+        offsetListener = new CollapsingHeaderOffsetListener();
+
+        // Connect animation helpers
+        scrollResponder.setAnimationHelpers(avatarAnimationHelper, textTransitionHelper);
+        scrollResponder.setButtonAnimationHelper(buttonAnimationHelper);
+        offsetListener.setAnimationHelpers(avatarAnimationHelper, textTransitionHelper, buttonAnimationHelper);
+        offsetListener.setScrollResponder(scrollResponder);
+
+        // Set status bar color callback for dynamic color changes
+        offsetListener.setStatusBarColorCallback(this::setStatusBarColorForCollapse);
+
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.updateInterfaces);
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.contactsDidLoad);
-        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.notificationsSettingsUpdated);
+        NotificationCenter.getInstance(currentAccount).addObserver(this,
+                NotificationCenter.notificationsSettingsUpdated);
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.userInfoDidLoad);
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.chatInfoDidLoad);
-        
+
         return super.onFragmentCreate();
     }
 
@@ -431,16 +461,20 @@ public class ProfileNewActivity extends BaseFragment implements NotificationCent
 
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.updateInterfaces);
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.contactsDidLoad);
-        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.notificationsSettingsUpdated);
+        NotificationCenter.getInstance(currentAccount).removeObserver(this,
+                NotificationCenter.notificationsSettingsUpdated);
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.userInfoDidLoad);
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.chatInfoDidLoad);
     }
 
     @Override
     public View createView(Context context) {
+        // Configure transparent status bar for collapsing header
+        configureTransparentStatusBar();
+
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
-        actionBar.setAllowOverlayTitle(true);
-        actionBar.setTitle(LocaleController.getString("Profile", R.string.AppName));
+        actionBar.setAllowOverlayTitle(false); // Disable overlay title
+        actionBar.setTitle(""); // Remove title - we'll use translated text from header
         actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
             @Override
             public void onItemClick(int id) {
@@ -519,7 +553,7 @@ public class ProfileNewActivity extends BaseFragment implements NotificationCent
 
         // Create the action bar menu
         createActionBarMenu(false);
-        
+
         // Mark SharedMediaLayout as attached for proper integration
         sharedMediaLayoutAttached = true;
 
@@ -530,7 +564,7 @@ public class ProfileNewActivity extends BaseFragment implements NotificationCent
         // Get references to views
         appBarLayout = coordinatorLayout.findViewById(R.id.app_bar_layout);
         collapsingToolbarLayout = coordinatorLayout.findViewById(R.id.collapsing_toolbar_layout);
-        toolbar = coordinatorLayout.findViewById(R.id.collapsed_toolbar);
+//        toolbar = coordinatorLayout.findViewById(R.id.collapsed_toolbar);
 
         // Get header containers
         avatarContainer = coordinatorLayout.findViewById(R.id.avatar_container);
@@ -558,6 +592,9 @@ public class ProfileNewActivity extends BaseFragment implements NotificationCent
         // Setup scroll behavior for collapsing
         setupScrollBehavior();
 
+        // Configure layout containers to prevent clipping during animations
+        setupLayoutClipping();
+
         // Setup theme
         updateTheme();
 
@@ -565,27 +602,91 @@ public class ProfileNewActivity extends BaseFragment implements NotificationCent
         return fragmentView;
     }
 
+    // IMPORTANT FOR NEW PROFILE LAYOUT TO SET TRANSPARENCY HERE
+    @Override
+    public ActionBar createActionBar(Context context) {
+        ActionBar actionBar = new ActionBar(context, getResourceProvider());
+        actionBar.setBackgroundColor(Color.TRANSPARENT);
+        actionBar.setItemsBackgroundColor(getThemedColor(Theme.key_actionBarDefaultSelector), false);
+        actionBar.setItemsBackgroundColor(getThemedColor(Theme.key_actionBarActionModeDefaultSelector), true);
+        actionBar.setItemsColor(getThemedColor(Theme.key_actionBarDefaultIcon), false);
+        actionBar.setItemsColor(getThemedColor(Theme.key_actionBarActionModeDefaultIcon), true);
+        actionBar.setElevation(0);
+        actionBar.setCastShadows(false);
+
+        // Completely remove any shadow or bottom line
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            actionBar.setOutlineProvider(null);
+        }
+
+        // Remove any background drawable that might cause a line
+        actionBar.setBackgroundDrawable(null);
+        actionBar.setBackground(null);
+
+        if (inPreviewMode || inBubbleMode) {
+            actionBar.setOccupyStatusBar(false);
+        }
+        return actionBar;
+    }
+
     private void setupToolbar() {
         // Set up toolbar navigation (back button) - use existing back button string
         // reference
-        toolbar.setNavigationOnClickListener(v -> finishFragment());
+//        toolbar.setNavigationOnClickListener(v -> finishFragment());
+//
+//        // Set up toolbar menu
+//        Menu toolbarMenu = toolbar.getMenu();
+//        toolbarMenu.add(0, 10, 0,
+//                "").setIcon(R.drawable.ic_ab_other).setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS);
+//
+//        toolbar.setOnMenuItemClickListener(item -> {
+//            if (item.getItemId() == 10) {
+//                // The 3-dot menu is handled by the ActionBar menu system
+//                return true;
+//            }
+//
+//            return false;
+//        });
+//
+//        // Apply complete toolbar transparency using multiple methods
+//        // Method 1: Remove titles and backgrounds
+//        toolbar.setTitle(""); // Remove any default title
+//        toolbar.setBackgroundColor(Color.TRANSPARENT); // Make background transparent
+//        toolbar.setBackgroundDrawable(null); // Remove any background drawable
+//        toolbar.setBackground(null); // Ensure no background is set
+//
+//        // Method 2: Set transparent overlay
+//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+//            toolbar.setElevation(0f); // Remove elevation shadow
+//            toolbar.setOutlineProvider(null); // Remove outline/shadow
+//        }
+//
+//        // Method 3: Setup collapsing toolbar to be transparent with no titles
+//        collapsingToolbarLayout.setTitle(""); // No title in collapsing toolbar
+//        collapsingToolbarLayout.setCollapsedTitleTextColor(Color.TRANSPARENT); // Hide any title text
+//        collapsingToolbarLayout.setExpandedTitleColor(Color.TRANSPARENT); // Hide expanded title
+//        collapsingToolbarLayout.setContentScrimColor(Color.TRANSPARENT); // Transparent scrim
+//        collapsingToolbarLayout.setStatusBarScrimColor(Color.TRANSPARENT); // Transparent status bar scrim
+//        collapsingToolbarLayout.setBackgroundColor(Color.TRANSPARENT); // Make sure background is transparent
+//        collapsingToolbarLayout.setBackground(null); // Remove any background drawable
+//
+//        // Remove any elevation or shadow from collapsing toolbar
+//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+//            collapsingToolbarLayout.setElevation(0f);
+//            collapsingToolbarLayout.setOutlineProvider(null);
+//        }
+//
+//        // Method 4: Set AppBar transparency
+//        appBarLayout.setBackgroundColor(Color.TRANSPARENT);
+//        appBarLayout.setBackground(null);
+//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+//            appBarLayout.setElevation(0f); // Remove elevation shadow
+//            appBarLayout.setOutlineProvider(null); // Remove outline/shadow
+//        }
 
-        // Set up toolbar menu
-        Menu toolbarMenu = toolbar.getMenu();
-        toolbarMenu.add(0, 10, 0, "").setIcon(R.drawable.ic_ab_other).setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS);
-
-        toolbar.setOnMenuItemClickListener(item -> {
-            if (item.getItemId() == 10) {
-                // The 3-dot menu is handled by the ActionBar menu system
-                return true;
-            }
-            return false;
-        });
-
-        // Setup collapsing toolbar
-        collapsingToolbarLayout.setTitle("");
-        collapsingToolbarLayout.setCollapsedTitleTextColor(getThemedColor(Theme.key_actionBarDefaultTitle));
-        collapsingToolbarLayout.setExpandedTitleColor(Color.TRANSPARENT);
+        // Method 5: Apply status bar transparency using multiple techniques from Stack
+        // Overflow
+        setupStatusBarTransparency();
     }
 
     private void setupHeaderContent(Context context) {
@@ -598,16 +699,16 @@ public class ProfileNewActivity extends BaseFragment implements NotificationCent
         // Initialize avatar drawable
         avatarDrawable = new AvatarDrawable();
 
-        // Create name text view
+        // Create name text view - identical settings to onlineTextView for consistent
+        // animation behavior
         nameTextView = new TextView(context);
         nameTextView.setTextColor(Color.WHITE);
         nameTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
         nameTextView.setTypeface(AndroidUtilities.bold());
-        nameTextView.setSingleLine(true);
-        nameTextView.setEllipsize(TextUtils.TruncateAt.END);
         nameTextView.setGravity(Gravity.CENTER);
+        // Use match_parent width to allow for translation animation space
         nameContainer.addView(nameTextView,
-                LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER));
+                LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER));
 
         // Create online status text view
         onlineTextView = new TextView(context);
@@ -615,8 +716,15 @@ public class ProfileNewActivity extends BaseFragment implements NotificationCent
         onlineTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         onlineTextView.setGravity(Gravity.CENTER);
         onlineTextView.setAlpha(0.8f);
+        // Use match_parent width to match name container layout
         onlineContainer.addView(onlineTextView,
-                LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER));
+                LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER));
+
+        // CRITICAL: Ensure all containers allow text to translate beyond their bounds
+        setupContainerClippingForTranslation();
+
+        // ADDITIONAL: Configure FrameLayouts to prevent internal text clipping
+        setupFrameLayoutsForTranslation();
 
         // Create header buttons using provided vector drawable icons
         messageButton = new BubbleButton(context, R.drawable.profile_header_message,
@@ -754,9 +862,8 @@ public class ProfileNewActivity extends BaseFragment implements NotificationCent
         collapsedNameTextView.setTextColor(Color.WHITE);
         collapsedNameTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
         collapsedNameTextView.setTypeface(AndroidUtilities.bold());
-        collapsedNameTextView.setSingleLine(true);
-        collapsedNameTextView.setEllipsize(TextUtils.TruncateAt.END);
         collapsedNameTextView.setGravity(Gravity.START);
+        collapsedNameTextView.setAlpha(0.8f);
         collapsedNameContainer.addView(collapsedNameTextView,
                 LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.START));
 
@@ -771,26 +878,105 @@ public class ProfileNewActivity extends BaseFragment implements NotificationCent
     }
 
     private void setupScrollBehavior() {
-        // Add scroll listener to handle collapse/expand animations
-        appBarLayout.addOnOffsetChangedListener(new AppBarLayout.OnOffsetChangedListener() {
-            @Override
-            public void onOffsetChanged(AppBarLayout appBarLayout, int verticalOffset) {
-                int totalScrollRange = appBarLayout.getTotalScrollRange();
-                float offsetAlpha = (float) Math.abs(verticalOffset) / totalScrollRange;
+        // Set up views for the animation helpers
+        offsetListener.setAnimatedViews(avatarImageView, nameContainer, collapsedTitleContainer,
+                headerButtonsContainer);
+        offsetListener.setTextViews(nameTextView, onlineTextView); // Pass individual text views
+        textTransitionHelper.setTextViews(nameTextView, onlineTextView, collapsedNameTextView, collapsedOnlineTextView);
 
-                // Fade out avatar and buttons as we scroll up
-                avatarContainer.setAlpha(1f - offsetAlpha);
-                headerButtonsContainer.setAlpha(1f - offsetAlpha);
+        // Set up button animation helper with bubble button views
+        buttonAnimationHelper.setButtonViews(headerButtonsContainer, messageButton, muteButton, callButton,
+                videoButton);
+        buttonAnimationHelper.initializeLayout(AndroidUtilities.dp(320)); // Header height
 
-                // Fade in collapsed title as we scroll up
-                collapsedTitleContainer.setAlpha(offsetAlpha);
+        // Add our sophisticated animation listener to the AppBarLayout
+        appBarLayout.addOnOffsetChangedListener(offsetListener);
+    }
 
-                // Scale avatar down as we scroll
-                float scale = 1f - (offsetAlpha * 0.3f); // Scale down to 70%
-                avatarContainer.setScaleX(scale);
-                avatarContainer.setScaleY(scale);
-            }
-        });
+    private void setupLayoutClipping() {
+        // Configure layout containers to prevent text and avatar clipping during
+        // animations
+        // This ensures smooth translation animations without content vanishing
+
+        if (appBarLayout instanceof ViewGroup) {
+            ((ViewGroup) appBarLayout).setClipChildren(false);
+            ((ViewGroup) appBarLayout).setClipToPadding(false);
+        }
+
+        if (collapsingToolbarLayout instanceof ViewGroup) {
+            ((ViewGroup) collapsingToolbarLayout).setClipChildren(false);
+            ((ViewGroup) collapsingToolbarLayout).setClipToPadding(false);
+        }
+
+        // Find the expanded header container
+        View expandedHeaderContainer = coordinatorLayout.findViewById(R.id.expanded_header_container);
+        if (expandedHeaderContainer instanceof ViewGroup) {
+            ((ViewGroup) expandedHeaderContainer).setClipChildren(false);
+            ((ViewGroup) expandedHeaderContainer).setClipToPadding(false);
+        }
+
+        if (collapsedTitleContainer instanceof ViewGroup) {
+            ((ViewGroup) collapsedTitleContainer).setClipChildren(false);
+            ((ViewGroup) collapsedTitleContainer).setClipToPadding(false);
+        }
+
+//        if (toolbar instanceof ViewGroup) {
+//            ((ViewGroup) toolbar).setClipChildren(false);
+//            ((ViewGroup) toolbar).setClipToPadding(false);
+//        }
+
+        // Also configure the main coordinator layout to allow overflow
+        if (coordinatorLayout instanceof ViewGroup) {
+            coordinatorLayout.setClipChildren(false);
+            coordinatorLayout.setClipToPadding(false);
+        }
+
+        // Configure text containers to prevent clipping during translation animations
+        if (nameContainer instanceof ViewGroup) {
+            ((ViewGroup) nameContainer).setClipChildren(false);
+            ((ViewGroup) nameContainer).setClipToPadding(false);
+        }
+
+        if (onlineContainer instanceof ViewGroup) {
+            ((ViewGroup) onlineContainer).setClipChildren(false);
+            ((ViewGroup) onlineContainer).setClipToPadding(false);
+        }
+
+        if (avatarContainer instanceof ViewGroup) {
+            ((ViewGroup) avatarContainer).setClipChildren(false);
+            ((ViewGroup) avatarContainer).setClipToPadding(false);
+        }
+    }
+
+    private void setupStatusBarTransparency() {
+        // Apply status bar transparency using multiple research-backed techniques from
+        // Stack Overflow
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            // Method 1: Set status bar color to transparent
+            getParentActivity().getWindow().setStatusBarColor(Color.TRANSPARENT);
+
+            // Method 2: Use FLAG_LAYOUT_NO_LIMITS for complete transparency
+            getParentActivity().getWindow().setFlags(
+                    WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
+                    WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
+
+            // Method 3: Set proper system UI visibility flags
+            getParentActivity().getWindow().getDecorView().setSystemUiVisibility(
+                    View.SYSTEM_UI_FLAG_LAYOUT_STABLE |
+                            View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN);
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+            // For KitKat, use translucent status bar
+            getParentActivity().getWindow().setFlags(
+                    WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS,
+                    WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
+        }
+
+        // Method 4: Configure CoordinatorLayout for status bar transparency
+        if (coordinatorLayout != null) {
+            coordinatorLayout.setFitsSystemWindows(true);
+            coordinatorLayout.setStatusBarBackground(null);
+        }
     }
 
     private void updateRowsIds() {
@@ -1361,16 +1547,19 @@ public class ProfileNewActivity extends BaseFragment implements NotificationCent
             } else if (position == birthdayRow && userInfo != null && userInfo.birthday != null) {
                 TextDetailCell cell = (TextDetailCell) view;
                 String birthdayText = formatBirthday(userInfo.birthday);
-                cell.setTextAndValue(LocaleController.getString("ContactBirthday", R.string.ContactBirthday), birthdayText, false);
+                cell.setTextAndValue(LocaleController.getString("ContactBirthday", R.string.ContactBirthday),
+                        birthdayText, false);
             } else if (position == userInfoRow && currentUser != null) {
                 TextDetailCell cell = (TextDetailCell) view;
                 String about = userInfo != null && !TextUtils.isEmpty(userInfo.about) ? userInfo.about : "";
                 cell.setTextAndValue(LocaleController.getString("UserBio", R.string.UserBio), about, false);
-            } else if (position == locationRow && chatInfo != null && chatInfo.location instanceof TLRPC.TL_channelLocation) {
+            } else if (position == locationRow && chatInfo != null
+                    && chatInfo.location instanceof TLRPC.TL_channelLocation) {
                 TextDetailCell cell = (TextDetailCell) view;
                 TLRPC.TL_channelLocation location = (TLRPC.TL_channelLocation) chatInfo.location;
                 String locationText = formatLocation(location);
-                cell.setTextAndValue(LocaleController.getString("AttachLocation", R.string.AttachLocation), locationText, false);
+                cell.setTextAndValue(LocaleController.getString("AttachLocation", R.string.AttachLocation),
+                        locationText, false);
             } else if (position == channelInfoRow && currentChat != null) {
                 TextDetailCell cell = (TextDetailCell) view;
                 String about = chatInfo != null && !TextUtils.isEmpty(chatInfo.about) ? chatInfo.about : "";
@@ -1386,59 +1575,79 @@ public class ProfileNewActivity extends BaseFragment implements NotificationCent
                 cell.setText(bio, false);
             } else if (position == chatRow) {
                 TextCell cell = (TextCell) view;
-                cell.setTextAndIcon(LocaleController.getString("ChatSettings", R.string.ChatSettings), R.drawable.msg_settings, true);
+                cell.setTextAndIcon(LocaleController.getString("ChatSettings", R.string.ChatSettings),
+                        R.drawable.msg_settings, true);
             } else if (position == privacyRow) {
                 TextCell cell = (TextCell) view;
-                cell.setTextAndIcon(LocaleController.getString("PrivacySettings", R.string.PrivacySettings), R.drawable.msg_secret, true);
+                cell.setTextAndIcon(LocaleController.getString("PrivacySettings", R.string.PrivacySettings),
+                        R.drawable.msg_secret, true);
             } else if (position == dataRow) {
                 TextCell cell = (TextCell) view;
-                cell.setTextAndIcon(LocaleController.getString("DataSettings", R.string.DataSettings), R.drawable.msg_settings, true);
+                cell.setTextAndIcon(LocaleController.getString("DataSettings", R.string.DataSettings),
+                        R.drawable.msg_settings, true);
             } else if (position == liteModeRow) {
                 TextCell cell = (TextCell) view;
-                cell.setTextAndIcon(LocaleController.getString("LiteMode", R.string.LiteMode), R.drawable.msg_settings, true);
+                cell.setTextAndIcon(LocaleController.getString("LiteMode", R.string.LiteMode), R.drawable.msg_settings,
+                        true);
             } else if (position == languageRow) {
                 TextCell cell = (TextCell) view;
-                cell.setTextAndIcon(LocaleController.getString("Language", R.string.Language), R.drawable.msg_language, true);
+                cell.setTextAndIcon(LocaleController.getString("Language", R.string.Language), R.drawable.msg_language,
+                        true);
             } else if (position == devicesRow) {
                 TextCell cell = (TextCell) view;
-                cell.setTextAndIcon(LocaleController.getString("Devices", R.string.Devices), R.drawable.msg_settings, true);
+                cell.setTextAndIcon(LocaleController.getString("Devices", R.string.Devices), R.drawable.msg_settings,
+                        true);
             } else if (position == questionRow) {
                 TextCell cell = (TextCell) view;
-                cell.setTextAndIcon(LocaleController.getString("AskAQuestion", R.string.AskAQuestion), R.drawable.msg_settings, true);
+                cell.setTextAndIcon(LocaleController.getString("AskAQuestion", R.string.AskAQuestion),
+                        R.drawable.msg_settings, true);
             } else if (position == faqRow) {
                 TextCell cell = (TextCell) view;
-                cell.setTextAndIcon(LocaleController.getString("TelegramFAQ", R.string.TelegramFAQ), R.drawable.msg_settings, true);
+                cell.setTextAndIcon(LocaleController.getString("TelegramFAQ", R.string.TelegramFAQ),
+                        R.drawable.msg_settings, true);
             } else if (position == policyRow) {
                 TextCell cell = (TextCell) view;
-                cell.setTextAndIcon(LocaleController.getString("PrivacyPolicy", R.string.PrivacyPolicy), R.drawable.msg_policy, true);
+                cell.setTextAndIcon(LocaleController.getString("PrivacyPolicy", R.string.PrivacyPolicy),
+                        R.drawable.msg_policy, true);
             } else if (position == premiumRow) {
                 TextCell cell = (TextCell) view;
-                cell.setTextAndIcon(LocaleController.getString("TelegramPremium", R.string.TelegramPremium), R.drawable.msg_settings, true);
+                cell.setTextAndIcon(LocaleController.getString("TelegramPremium", R.string.TelegramPremium),
+                        R.drawable.msg_settings, true);
             } else if (position == starsRow) {
                 TextCell cell = (TextCell) view;
-                cell.setTextAndIcon(LocaleController.getString("TelegramStars", R.string.TelegramStars), R.drawable.menu_premium_main, true);
+                cell.setTextAndIcon(LocaleController.getString("TelegramStars", R.string.TelegramStars),
+                        R.drawable.menu_premium_main, true);
             } else if (position == businessRow) {
                 TextCell cell = (TextCell) view;
-                cell.setTextAndIcon(LocaleController.getString("TelegramBusiness", R.string.TelegramBusiness), R.drawable.menu_premium_main, true);
+                cell.setTextAndIcon(LocaleController.getString("TelegramBusiness", R.string.TelegramBusiness),
+                        R.drawable.menu_premium_main, true);
             } else if (position == sendMessageRow) {
                 TextCell cell = (TextCell) view;
-                cell.setTextAndIcon(LocaleController.getString("SendMessage", R.string.SendMessage), R.drawable.msg_message, true);
+                cell.setTextAndIcon(LocaleController.getString("SendMessage", R.string.SendMessage),
+                        R.drawable.msg_message, true);
             } else if (position == addToContactsRow) {
                 TextCell cell = (TextCell) view;
-                cell.setTextAndIcon(LocaleController.getString("AddContact", R.string.AddContact), R.drawable.msg_addcontact, true);
+                cell.setTextAndIcon(LocaleController.getString("AddContact", R.string.AddContact),
+                        R.drawable.msg_addcontact, true);
             } else if (position == reportRow) {
                 TextCell cell = (TextCell) view;
-                cell.setTextAndIcon(LocaleController.getString("ReportChat", R.string.ReportChat), R.drawable.msg_report, true);
+                cell.setTextAndIcon(LocaleController.getString("ReportChat", R.string.ReportChat),
+                        R.drawable.msg_report, true);
             } else if (position == subscribersRow) {
                 TextCell cell = (TextCell) view;
-                int count = chatInfo != null ? chatInfo.participants_count : currentChat != null ? currentChat.participants_count : 0;
-                cell.setTextAndValueAndIcon(LocaleController.getString("ChannelSubscribers", R.string.ChannelSubscribers), String.valueOf(count), R.drawable.msg_groups, true);
+                int count = chatInfo != null ? chatInfo.participants_count
+                        : currentChat != null ? currentChat.participants_count : 0;
+                cell.setTextAndValueAndIcon(
+                        LocaleController.getString("ChannelSubscribers", R.string.ChannelSubscribers),
+                        String.valueOf(count), R.drawable.msg_groups, true);
             } else if (position == administratorsRow) {
                 TextCell cell = (TextCell) view;
-                cell.setTextAndIcon(LocaleController.getString("ChannelAdministrators", R.string.ChannelAdministrators), R.drawable.msg_settings, true);
+                cell.setTextAndIcon(LocaleController.getString("ChannelAdministrators", R.string.ChannelAdministrators),
+                        R.drawable.msg_settings, true);
             } else if (position == addMemberRow) {
                 TextCell cell = (TextCell) view;
-                cell.setTextAndIcon(LocaleController.getString("AddMember", R.string.AddMember), R.drawable.msg_contact_add, true);
+                cell.setTextAndIcon(LocaleController.getString("AddMember", R.string.AddMember),
+                        R.drawable.msg_contact_add, true);
             } else if (position == sendLogsRow) {
                 TextCell cell = (TextCell) view;
                 cell.setText("Send Logs", false);
@@ -1487,6 +1696,11 @@ public class ProfileNewActivity extends BaseFragment implements NotificationCent
             nameTextView.setText(name);
             onlineTextView.setText(onlineStatus);
 
+            // Update text transition helper with new text
+            if (textTransitionHelper != null) {
+                textTransitionHelper.setText(name, onlineStatus);
+            }
+
             // Set up avatar drawable and load avatar image using ProfileActivity patterns
             avatarDrawable.setInfo(currentAccount, currentUser);
             ImageLocation imageLocation = ImageLocation.getForUserOrChat(currentUser, ImageLocation.TYPE_BIG);
@@ -1497,7 +1711,7 @@ public class ProfileNewActivity extends BaseFragment implements NotificationCent
             } else {
                 avatarImageView.setImageDrawable(avatarDrawable);
             }
-            
+
             // Update avatar click handler for photo viewing
             avatarImageView.setOnClickListener(v -> openAvatar());
 
@@ -1519,6 +1733,11 @@ public class ProfileNewActivity extends BaseFragment implements NotificationCent
             nameTextView.setText(name);
             onlineTextView.setText(onlineStatus);
 
+            // Update text transition helper with new text
+            if (textTransitionHelper != null) {
+                textTransitionHelper.setText(name, onlineStatus);
+            }
+
             // Set up avatar drawable and load chat avatar image
             avatarDrawable.setInfo(currentAccount, currentChat);
             ImageLocation imageLocation = ImageLocation.getForUserOrChat(currentChat, ImageLocation.TYPE_BIG);
@@ -1529,7 +1748,7 @@ public class ProfileNewActivity extends BaseFragment implements NotificationCent
             } else {
                 avatarImageView.setImageDrawable(avatarDrawable);
             }
-            
+
             // Update avatar click handler for photo viewing
             avatarImageView.setOnClickListener(v -> openAvatar());
 
@@ -1550,10 +1769,10 @@ public class ProfileNewActivity extends BaseFragment implements NotificationCent
 
         // Update mute button state
         updateMuteButton();
-        
+
         // Update stories display
         updateStoriesDisplay();
-        
+
         // Update premium status
         updatePremiumStatus();
     }
@@ -1573,21 +1792,6 @@ public class ProfileNewActivity extends BaseFragment implements NotificationCent
         // Update theme colors - use the same color for both header and toolbar
         int headerColor = getThemedColor(Theme.key_avatar_backgroundActionBarBlue);
         appBarLayout.setBackgroundColor(headerColor);
-        toolbar.setBackgroundColor(headerColor); // Match toolbar to header color
-
-        toolbar.setNavigationIcon(getParentActivity().getDrawable(R.drawable.ic_ab_back));
-        if (toolbar.getNavigationIcon() != null) {
-            toolbar.getNavigationIcon().setColorFilter(new PorterDuffColorFilter(Color.WHITE, PorterDuff.Mode.SRC_IN));
-        }
-
-        // Update menu icon color to white for visibility
-        Menu menu = toolbar.getMenu();
-        for (int i = 0; i < menu.size(); i++) {
-            MenuItem item = menu.getItem(i);
-            if (item.getIcon() != null) {
-                item.getIcon().setColorFilter(new PorterDuffColorFilter(Color.WHITE, PorterDuff.Mode.SRC_IN));
-            }
-        }
     }
 
     // Button click handlers
@@ -2115,7 +2319,7 @@ public class ProfileNewActivity extends BaseFragment implements NotificationCent
                 }
             }
         }
-        
+
         if (listView == null || listView.getVisibility() != View.VISIBLE) {
             return;
         }
@@ -2141,7 +2345,7 @@ public class ProfileNewActivity extends BaseFragment implements NotificationCent
             return;
         }
         mediaHeaderVisible = visible;
-        
+
         // Update toolbar menu items visibility based on media header state
         if (otherItem != null) {
             otherItem.setVisibility(visible ? View.GONE : View.VISIBLE);
@@ -2170,8 +2374,9 @@ public class ProfileNewActivity extends BaseFragment implements NotificationCent
     }
 
     private String formatUserStatus(TLRPC.User user) {
-        if (user == null) return "";
-        
+        if (user == null)
+            return "";
+
         if (user.bot) {
             return LocaleController.getString("Bot", R.string.Bot);
         } else if (UserObject.isUserSelf(user)) {
@@ -2182,8 +2387,9 @@ public class ProfileNewActivity extends BaseFragment implements NotificationCent
     }
 
     private String formatChatStatus(TLRPC.Chat chat) {
-        if (chat == null) return "";
-        
+        if (chat == null)
+            return "";
+
         if (ChatObject.isChannel(chat)) {
             int count = chat.participants_count;
             if (chatInfo != null) {
@@ -2205,11 +2411,15 @@ public class ProfileNewActivity extends BaseFragment implements NotificationCent
     }
 
     private boolean isUserOnline(TLRPC.User user) {
-        if (user == null) return false;
-        if (user.bot) return false;
-        if (UserObject.isUserSelf(user)) return true;
-        
-        return user.status != null && user.status.expires > ConnectionsManager.getInstance(currentAccount).getCurrentTime();
+        if (user == null)
+            return false;
+        if (user.bot)
+            return false;
+        if (UserObject.isUserSelf(user))
+            return true;
+
+        return user.status != null
+                && user.status.expires > ConnectionsManager.getInstance(currentAccount).getCurrentTime();
     }
 
     private void updateProfileData(boolean reload) {
@@ -2221,7 +2431,7 @@ public class ProfileNewActivity extends BaseFragment implements NotificationCent
                 getMessagesController().loadFullChat(currentChat.id, classGuid, true);
             }
         }
-        
+
         updateHeaderContent();
         updateRowsIds();
         if (listAdapter != null) {
@@ -2241,7 +2451,8 @@ public class ProfileNewActivity extends BaseFragment implements NotificationCent
     private PhotoViewer.PhotoViewerProvider provider = new PhotoViewer.EmptyPhotoViewerProvider() {
 
         @Override
-        public PhotoViewer.PlaceProviderObject getPlaceForPhoto(MessageObject messageObject, TLRPC.FileLocation fileLocation, int index, boolean needPreview, boolean closing) {
+        public PhotoViewer.PlaceProviderObject getPlaceForPhoto(MessageObject messageObject,
+                TLRPC.FileLocation fileLocation, int index, boolean needPreview, boolean closing) {
             if (fileLocation == null) {
                 return null;
             }
@@ -2259,7 +2470,8 @@ public class ProfileNewActivity extends BaseFragment implements NotificationCent
                 }
             }
 
-            if (photoBig != null && photoBig.local_id == fileLocation.local_id && photoBig.volume_id == fileLocation.volume_id && photoBig.dc_id == fileLocation.dc_id) {
+            if (photoBig != null && photoBig.local_id == fileLocation.local_id
+                    && photoBig.volume_id == fileLocation.volume_id && photoBig.dc_id == fileLocation.dc_id) {
                 int[] coords = new int[2];
                 avatarImageView.getLocationInWindow(coords);
                 PhotoViewer.PlaceProviderObject object = new PhotoViewer.PlaceProviderObject();
@@ -2290,16 +2502,16 @@ public class ProfileNewActivity extends BaseFragment implements NotificationCent
 
     // Birthday formatting helper
     private String formatBirthday(TL_account.TL_birthday birthday) {
-        if (birthday == null) return "";
-        
+        if (birthday == null)
+            return "";
+
         try {
             Calendar calendar = Calendar.getInstance();
             calendar.set(
-                birthday.year != 0 ? birthday.year : calendar.get(Calendar.YEAR),
-                birthday.month - 1, // Calendar months are 0-based
-                birthday.day
-            );
-            
+                    birthday.year != 0 ? birthday.year : calendar.get(Calendar.YEAR),
+                    birthday.month - 1, // Calendar months are 0-based
+                    birthday.day);
+
             java.text.DateFormat dateFormat = java.text.DateFormat.getDateInstance(java.text.DateFormat.MEDIUM);
             return dateFormat.format(calendar.getTime());
         } catch (Exception e) {
@@ -2309,7 +2521,8 @@ public class ProfileNewActivity extends BaseFragment implements NotificationCent
 
     // Location formatting helper
     private String formatLocation(TLRPC.TL_channelLocation location) {
-        if (location == null || TextUtils.isEmpty(location.address)) return "";
+        if (location == null || TextUtils.isEmpty(location.address))
+            return "";
         return location.address;
     }
 
@@ -2332,8 +2545,10 @@ public class ProfileNewActivity extends BaseFragment implements NotificationCent
                     chat.photo.photo_big.dc_id = chat.photo.dc_id;
                 }
                 ImageLocation videoLocation;
-                if (chatInfo != null && (chatInfo.chat_photo instanceof TLRPC.TL_photo) && !chatInfo.chat_photo.video_sizes.isEmpty()) {
-                    videoLocation = ImageLocation.getForPhoto(chatInfo.chat_photo.video_sizes.get(0), chatInfo.chat_photo);
+                if (chatInfo != null && (chatInfo.chat_photo instanceof TLRPC.TL_photo)
+                        && !chatInfo.chat_photo.video_sizes.isEmpty()) {
+                    videoLocation = ImageLocation.getForPhoto(chatInfo.chat_photo.video_sizes.get(0),
+                            chatInfo.chat_photo);
                 } else {
                     videoLocation = null;
                 }
@@ -2353,7 +2568,6 @@ public class ProfileNewActivity extends BaseFragment implements NotificationCent
         boolean hasStories = needInsetForStories();
         // TODO: Implement story ring display for Material Design avatar
     }
-
 
     // Premium status handling
     private void updatePremiumStatus() {
@@ -2523,6 +2737,189 @@ public class ProfileNewActivity extends BaseFragment implements NotificationCent
         updateRowsIds();
         if (listAdapter != null) {
             listAdapter.notifyDataSetChanged();
+        }
+    }
+
+    /**
+     * Configure transparent status bar for collapsing header animation
+     * Comprehensive solution supporting minSDK 19+ with proper API level handling
+     */
+    private void configureTransparentStatusBar() {
+        if (getParentActivity() == null)
+            return;
+
+        android.view.Window window = getParentActivity().getWindow();
+
+        // Apply API 19+ layout flags for full screen content
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+            window.getDecorView().setSystemUiVisibility(
+                    View.SYSTEM_UI_FLAG_LAYOUT_STABLE |
+                            View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN);
+        }
+
+        // Handle API 19-20 (KitKat) - Use translucent status bar
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT &&
+                Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
+
+            setWindowFlag(window, WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS, true);
+
+            // Adjust layout for translucent status bar on KitKat
+            if (coordinatorLayout != null) {
+                coordinatorLayout.setFitsSystemWindows(true);
+            }
+        }
+
+        // Handle API 21+ (Lollipop and above) - Use fully transparent status bar
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            // Remove translucent flag if it was set
+            setWindowFlag(window, WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS, false);
+
+            // Set transparent status bar
+            window.setStatusBarColor(Color.TRANSPARENT);
+
+            // Add system bar background flag
+            window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
+
+            // Ensure layout extends behind status bar
+            if (coordinatorLayout != null) {
+                coordinatorLayout.setFitsSystemWindows(false);
+            }
+        }
+
+        // Handle API 30+ (Android 11+) - Use modern edge-to-edge approach
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            window.setStatusBarColor(Color.TRANSPARENT);
+            window.setDecorFitsSystemWindows(false);
+        }
+    }
+
+    /**
+     * Helper method to set window flags safely across API levels
+     */
+    private void setWindowFlag(android.view.Window window, final int bits, boolean on) {
+        WindowManager.LayoutParams winParams = window.getAttributes();
+        if (on) {
+            winParams.flags |= bits;
+        } else {
+            winParams.flags &= ~bits;
+        }
+        window.setAttributes(winParams);
+    }
+
+    /**
+     * Set status bar color dynamically during collapse animation
+     * Adapts to the current collapse state for smooth transitions
+     */
+    private void setStatusBarColorForCollapse(float collapseProgress) {
+        if (getParentActivity() == null || Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
+            return;
+        }
+
+        android.view.Window window = getParentActivity().getWindow();
+
+        // Interpolate between transparent (expanded) and theme color (collapsed)
+        int themeColor = Theme.getColor(Theme.key_actionBarDefault);
+        int alpha = (int) (collapseProgress * 255);
+        int statusBarColor = Color.argb(alpha, Color.red(themeColor), Color.green(themeColor), Color.blue(themeColor));
+
+        window.setStatusBarColor(statusBarColor);
+    }
+
+    /**
+     * Setup container clipping to allow smooth text translation beyond bounds
+     * This is critical for preventing username text from being clipped during
+     * animation
+     */
+    private void setupContainerClippingForTranslation() {
+        // Disable clipping on all containers in the hierarchy to allow text translation
+
+        // Primary text containers (already set in XML but ensuring programmatically)
+        if (nameContainer instanceof ViewGroup) {
+            ((ViewGroup) nameContainer).setClipChildren(false);
+            ((ViewGroup) nameContainer).setClipToPadding(false);
+        }
+
+        if (onlineContainer instanceof ViewGroup) {
+            ((ViewGroup) onlineContainer).setClipChildren(false);
+            ((ViewGroup) onlineContainer).setClipToPadding(false);
+        }
+
+        // Parent containers - critical for allowing text to move beyond normal bounds
+        if (appBarLayout instanceof ViewGroup) {
+            ((ViewGroup) appBarLayout).setClipChildren(false);
+            ((ViewGroup) appBarLayout).setClipToPadding(false);
+        }
+
+        if (collapsingToolbarLayout instanceof ViewGroup) {
+            ((ViewGroup) collapsingToolbarLayout).setClipChildren(false);
+            ((ViewGroup) collapsingToolbarLayout).setClipToPadding(false);
+        }
+
+        if (coordinatorLayout instanceof ViewGroup) {
+            ((ViewGroup) coordinatorLayout).setClipChildren(false);
+            ((ViewGroup) coordinatorLayout).setClipToPadding(false);
+        }
+
+        // Header content container
+        View expandedHeaderContainer = coordinatorLayout.findViewById(R.id.expanded_header_container);
+        if (expandedHeaderContainer instanceof ViewGroup) {
+            ((ViewGroup) expandedHeaderContainer).setClipChildren(false);
+            ((ViewGroup) expandedHeaderContainer).setClipToPadding(false);
+        }
+
+        // Root coordinator layout - ensure no clipping at top level
+        if (coordinatorLayout.getParent() instanceof ViewGroup) {
+            ((ViewGroup) coordinatorLayout.getParent()).setClipChildren(false);
+            ((ViewGroup) coordinatorLayout.getParent()).setClipToPadding(false);
+        }
+    }
+
+    /**
+     * Configure FrameLayouts specifically to prevent text clipping during
+     * translation
+     * This addresses the specific issue where TextViews are clipped by their
+     * FrameLayout containers
+     */
+    private void setupFrameLayoutsForTranslation() {
+        // Configure name container FrameLayout
+        if (nameContainer instanceof FrameLayout) {
+            FrameLayout nameFrame = (FrameLayout) nameContainer;
+            // Ensure FrameLayout doesn't constrain child TextView during translation
+            nameFrame.setClipChildren(false);
+            nameFrame.setClipToPadding(false);
+            nameFrame.setClipBounds(null); // Remove any clip bounds
+
+            // Ensure the FrameLayout allows overflow
+            nameFrame.getLayoutParams().width = ViewGroup.LayoutParams.MATCH_PARENT;
+        }
+
+        // Configure online container FrameLayout (apply same settings for consistency)
+        if (onlineContainer instanceof FrameLayout) {
+            FrameLayout onlineFrame = (FrameLayout) onlineContainer;
+            // Apply identical settings to ensure both text views behave the same
+            onlineFrame.setClipChildren(false);
+            onlineFrame.setClipToPadding(false);
+            onlineFrame.setClipBounds(null); // Remove any clip bounds
+
+            // Ensure the FrameLayout allows overflow
+            onlineFrame.getLayoutParams().width = ViewGroup.LayoutParams.MATCH_PARENT;
+        }
+
+        // Additional TextView configuration to prevent clipping
+        if (nameTextView != null) {
+            // Ensure TextView itself doesn't have constraints
+            nameTextView.setIncludeFontPadding(false);
+            nameTextView.setSingleLine(false); // Allow text to flow freely
+            nameTextView.setEllipsize(null); // Never ellipsize
+            nameTextView.setHorizontallyScrolling(true); // Allow horizontal overflow
+        }
+
+        if (onlineTextView != null) {
+            // Apply identical settings to online text view
+            onlineTextView.setIncludeFontPadding(false);
+            onlineTextView.setSingleLine(false); // Allow text to flow freely
+            onlineTextView.setEllipsize(null); // Never ellipsize
+            onlineTextView.setHorizontallyScrolling(true); // Allow horizontal overflow
         }
     }
 }

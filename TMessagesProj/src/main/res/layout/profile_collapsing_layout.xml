@@ -12,6 +12,9 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:fitsSystemWindows="true"
+        android:background="@android:color/transparent"
+        android:clipChildren="false"
+        android:clipToPadding="false"
         android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar">
 
         <com.google.android.material.appbar.CollapsingToolbarLayout
@@ -19,9 +22,13 @@
             android:layout_width="match_parent"
             android:layout_height="320dp"
             android:fitsSystemWindows="true"
-            android:translationY="-48dp"
+            android:translationY="-20dp"
+            android:clipChildren="false"
+            android:clipToPadding="false"
             app:layout_scrollFlags="scroll|exitUntilCollapsed"
-            app:scrimAnimationDuration="250">
+            app:scrimAnimationDuration="250"
+            app:contentScrim="@android:color/transparent"
+            app:statusBarScrim="@android:color/transparent">
 
             <!-- Expanded header content with proper LinearLayout structure -->
             <LinearLayout
@@ -32,29 +39,33 @@
                 android:gravity="center_horizontal"
                 android:padding="16dp"
                 android:fitsSystemWindows="true"
+                android:clipChildren="false"
+                android:clipToPadding="false"
                 app:layout_collapseMode="parallax"
                 app:layout_collapseParallaxMultiplier="0.7">
 
-                <!-- Avatar - will fade out on collapse -->
+                <!-- Avatar - will fade out on collapse (moved to back for proper z-order) -->
                 <FrameLayout
                     android:id="@+id/avatar_container"
                     android:layout_width="84dp"
                     android:layout_height="84dp"
                     android:layout_marginTop="65dp" />
 
-                <!-- Name -->
                 <FrameLayout
                     android:id="@+id/name_container"
-                    android:layout_width="wrap_content"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp" />
+                    android:layout_marginTop="12dp"
+                    android:clipChildren="false"
+                    android:clipToPadding="false" />
 
-                <!-- Online Status -->
                 <FrameLayout
                     android:id="@+id/online_container"
-                    android:layout_width="wrap_content"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp" />
+                    android:layout_marginTop="4dp"
+                    android:clipChildren="false"
+                    android:clipToPadding="false" />
 
                 <!-- Header Buttons Container - will fade out on collapse -->
                 <LinearLayout
@@ -68,16 +79,16 @@
 
             </LinearLayout>
 
-            <!-- Collapsed toolbar with pinned title area -->
+            <!-- Collapsed toolbar with pinned title area - transparent background -->
             <androidx.appcompat.widget.Toolbar
                 android:id="@+id/collapsed_toolbar"
                 android:layout_width="match_parent"
                 android:layout_height="?attr/actionBarSize"
+                android:background="@android:color/transparent"
                 app:layout_collapseMode="pin"
                 app:popupTheme="@style/ThemeOverlay.AppCompat.Light"
-                app:navigationIcon="@drawable/ic_ab_back"
-                app:navigationContentDescription="@string/AccDescrGoBack">
-                
+                app:theme="@style/TransparentToolbar">
+
                 <!-- Title area for collapsed name and status -->
                 <LinearLayout
                     android:id="@+id/collapsed_title_container"
@@ -86,22 +97,24 @@
                     android:layout_marginStart="16dp"
                     android:orientation="vertical"
                     android:gravity="start"
+                    android:clipChildren="false"
+                    android:clipToPadding="false"
                     android:alpha="0">
-                    
+
                     <!-- Collapsed name -->
                     <FrameLayout
                         android:id="@+id/collapsed_name_container"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content" />
-                    
+
                     <!-- Collapsed online status -->
                     <FrameLayout
                         android:id="@+id/collapsed_online_container"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content" />
-                        
+
                 </LinearLayout>
-                
+
             </androidx.appcompat.widget.Toolbar>
 
         </com.google.android.material.appbar.CollapsingToolbarLayout>
