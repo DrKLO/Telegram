@@ -470,7 +470,7 @@ public class ShortcutsCell extends FrameLayout {
                 @Override
                 protected void dispatchDraw(@NonNull Canvas canvas) {
 
-                    boolean canDrawBlur = showProgress > 0.8f ;
+                    boolean canDrawBlur = showProgress > 0.25f;
 
                     if (backgroundPaint == null) {
                         backgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
