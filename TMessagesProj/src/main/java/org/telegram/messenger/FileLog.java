@@ -180,7 +180,7 @@ public class FileLog {
     private static void checkGson() {
         if (gson == null) {
             privateFields = new HashSet<>();
-//            privateFields.add("message");
+            privateFields.add("message");
             privateFields.add("phone");
             privateFields.add("about");
             privateFields.add("status_text");

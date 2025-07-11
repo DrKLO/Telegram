@@ -27,6 +27,7 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.ForegroundColorSpanThemable;
+import org.telegram.ui.Components.Forum.ForumUtilities;
 import org.telegram.ui.EditWidgetActivity;
 
 import java.io.File;
@@ -120,9 +121,19 @@ class ChatsRemoteViewsFactory implements RemoteViewsService.RemoteViewsFactory {
         } else {
             chat = accountInstance.getMessagesController().getChat(-id);
             if (chat != null) {
-                name = chat.title;
-                if (chat.photo != null && chat.photo.photo_small != null && chat.photo.photo_small.volume_id != 0 && chat.photo.photo_small.local_id != 0) {
-                    photoPath = chat.photo.photo_small;
+                if (ChatObject.isMonoForum(chat)) {
+                    name = ForumUtilities.getMonoForumTitle(accountInstance.getCurrentAccount(), chat);
+                    TLRPC.Chat mfChat = accountInstance.getMessagesController().getChat(chat.linked_monoforum_id);
+                    if (mfChat != null) {
+                        if (mfChat.photo != null && mfChat.photo.photo_small != null && mfChat.photo.photo_small.volume_id != 0 && mfChat.photo.photo_small.local_id != 0) {
+                            photoPath = mfChat.photo.photo_small;
+                        }
+                    }
+                } else {
+                    name = chat.title;
+                    if (chat.photo != null && chat.photo.photo_small != null && chat.photo.photo_small.volume_id != 0 && chat.photo.photo_small.local_id != 0) {
+                        photoPath = chat.photo.photo_small;
+                    }
                 }
             }
         }

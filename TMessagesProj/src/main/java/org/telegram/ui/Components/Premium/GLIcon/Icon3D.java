@@ -25,6 +25,9 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
 import java.nio.charset.StandardCharsets;
+import java.util.Locale;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class Icon3D {
     private int mProgramObject;
@@ -71,7 +74,8 @@ public class Icon3D {
     int specColorHandle;
     int resolutionHandle;
     int gradientPositionHandle;
-    int modelIndexHandle;
+    int modelIndexHandle, modelIndex2Handle;
+    int behindHandle;
     int typeHandle;
     int nightHandle;
     int timeHandle;
@@ -86,9 +90,15 @@ public class Icon3D {
     public static final int TYPE_COIN = 1;
     public static final int TYPE_GOLDEN_STAR = 2;
     public static final int TYPE_DEAL = 3;
+    public static final int TYPE_DIAMOND = 4;
 
     private static final String[] starModel = new String[] {
         "models/star.binobj"
+    };
+    private static final String[] diamondModel = new String[] {
+        "models/diamond_outer_2.binobj",
+        "models/diamond_outer.binobj",
+        "models/diamond.binobj"
     };
     private static final String[] coinModel = new String[] {
         "models/coin_outer.binobj",
@@ -106,12 +116,16 @@ public class Icon3D {
     public Icon3D(Context context, int type) {
         this.type = type;
         String[] modelPaths;
+        float modelScale = 1.0f;
         if (type == TYPE_COIN) {
             modelPaths = coinModel;
         } else if (type == TYPE_DEAL) {
             modelPaths = dealModel;
         } else if (type == TYPE_STAR || type == TYPE_GOLDEN_STAR) {
             modelPaths = starModel;
+        } else if (type == TYPE_DIAMOND) {
+            modelPaths = diamondModel;
+            modelScale = 8.0f;
         } else {
             modelPaths = new String[0];
         }
@@ -122,7 +136,7 @@ public class Icon3D {
         mNormals = new FloatBuffer[N];
         trianglesCount = new int[N];
         for (int i = 0; i < N; ++i) {
-            ObjLoader obj = new ObjLoader(context, modelPaths[i]);
+            ObjLoader obj = new ObjLoader(context, modelPaths[i], modelScale);
 
             mVertices[i] = ByteBuffer.allocateDirect(obj.positions.length * 4)
                     .order(ByteOrder.nativeOrder()).asFloatBuffer();
@@ -146,14 +160,17 @@ public class Icon3D {
         int programObject;
         int[] linked = new int[1];
 
-        vertexShader = GLIconRenderer.loadShader(GLES20.GL_VERTEX_SHADER, loadFromAsset(context, "shaders/vertex2.glsl"));
         String fragmentShaderSource;
         if (type == TYPE_STAR || type == TYPE_GOLDEN_STAR) {
             fragmentShaderSource = "shaders/fragment4.glsl";
+        } else if (type == TYPE_DIAMOND) {
+            fragmentShaderSource = "shaders/fragment5.glsl";
         } else {
             fragmentShaderSource = "shaders/fragment3.glsl";
         }
-        fragmentShader = GLIconRenderer.loadShader(GLES20.GL_FRAGMENT_SHADER, loadFromAsset(context, fragmentShaderSource));
+        String vertexShaderSource = "shaders/vertex2.glsl";
+        vertexShader = GLIconRenderer.loadShader(GLES20.GL_VERTEX_SHADER, preprocessShader(loadFromAsset(context, vertexShaderSource)));
+        fragmentShader = GLIconRenderer.loadShader(GLES20.GL_FRAGMENT_SHADER, preprocessShader(loadFromAsset(context, fragmentShaderSource)));
 
         programObject = GLES20.glCreateProgram();
         GLES20.glAttachShader(programObject, vertexShader);
@@ -196,6 +213,8 @@ public class Icon3D {
         resolutionHandle = GLES20.glGetUniformLocation(mProgramObject, "resolution");
         gradientPositionHandle = GLES20.glGetUniformLocation(mProgramObject, "gradientPosition");
         modelIndexHandle = GLES20.glGetUniformLocation(mProgramObject, "modelIndex");
+        modelIndex2Handle = GLES20.glGetUniformLocation(mProgramObject, "modelIndex2");
+        behindHandle = GLES20.glGetUniformLocation(mProgramObject, "behind");
         typeHandle = GLES20.glGetUniformLocation(mProgramObject, "type");
         nightHandle = GLES20.glGetUniformLocation(mProgramObject, "night");
         timeHandle = GLES20.glGetUniformLocation(mProgramObject, "time");
@@ -283,6 +302,12 @@ public class Icon3D {
         GLES20.glActiveTexture(GLES20.GL_TEXTURE2);
         GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, backgroundBitmapHandel[0]);
         GLES20.glUniform1i(mBackgroundTextureUniformHandle, 2);
+
+        if (type == TYPE_DIAMOND) {
+            GLES20.glEnable(GLES20.GL_CULL_FACE);
+            GLES20.glEnable(GLES20.GL_BLEND);
+            GLES20.glBlendFunc(GLES20.GL_SRC_ALPHA, GLES20.GL_ONE_MINUS_SRC_ALPHA);
+        }
     }
 
     private void generateTexture() {
@@ -335,16 +360,19 @@ public class Icon3D {
         time += dt;
         GLES20.glUniform1f(timeHandle, time);
 
-        for (int i = 0; i < N; ++i) {
-            GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, buffers[3 * i + 0]);
-            GLES20.glVertexAttribPointer(mTextureCoordinateHandle, 2, GLES20.GL_FLOAT, false, 0, 0);
-            GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, buffers[3 * i + 1]);
-            GLES20.glVertexAttribPointer(mNormalCoordinateHandle, 3, GLES20.GL_FLOAT, false, 0, 0);
-            GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, buffers[3 * i + 2]);
-            GLES20.glVertexAttribPointer(mVerticesHandle, 3, GLES20.GL_FLOAT, false, 0, 0);
-            GLES20.glUniform1i(modelIndexHandle, i);
-            GLES20.glUniform1i(typeHandle, type);
-            GLES20.glDrawArrays(GLES20.GL_TRIANGLES, 0, trianglesCount[i] / 3);
+        if (type == TYPE_DIAMOND) {
+            drawModel(0, true);
+            GLES20.glClear(GLES20.GL_DEPTH_BUFFER_BIT);
+            drawModel(1, true);
+            GLES20.glClear(GLES20.GL_DEPTH_BUFFER_BIT);
+
+            drawModel(2, false);
+            drawModel(1, false);
+            drawModel(0, false);
+        } else {
+            for (int i = 0; i < N; ++i) {
+                drawModel(i, false);
+            }
         }
 
         if (enterAlpha < 1f) {
@@ -357,6 +385,39 @@ public class Icon3D {
         if (xOffset > 1) {
             xOffset -= 1f;
         }
+    }
+
+    private void drawModel(int modelIndex, boolean behind) {
+        final int i = modelIndex;
+        GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, buffers[3 * i + 0]);
+        GLES20.glVertexAttribPointer(mTextureCoordinateHandle, 2, GLES20.GL_FLOAT, false, 0, 0);
+        GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, buffers[3 * i + 1]);
+        GLES20.glVertexAttribPointer(mNormalCoordinateHandle, 3, GLES20.GL_FLOAT, false, 0, 0);
+        GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, buffers[3 * i + 2]);
+        GLES20.glVertexAttribPointer(mVerticesHandle, 3, GLES20.GL_FLOAT, false, 0, 0);
+        GLES20.glUniform1i(modelIndexHandle, i);
+        GLES20.glUniform1i(modelIndex2Handle, i);
+        GLES20.glUniform1i(behindHandle, behind ? 1 : 0);
+        GLES20.glUniform1i(typeHandle, type);
+        GLES20.glDrawArrays(GLES20.GL_TRIANGLES, 0, trianglesCount[i] / 3);
+    }
+
+    private String preprocessShader(String code) {
+        final Pattern pattern = Pattern.compile("RGB#([0-9a-fA-F]{6})");
+        final Matcher matcher = pattern.matcher(code);
+
+        StringBuffer result = new StringBuffer();
+        while (matcher.find()) {
+            String hex = matcher.group(1);
+            int r = Integer.parseInt(hex.substring(0, 2), 16);
+            int g = Integer.parseInt(hex.substring(2, 4), 16);
+            int b = Integer.parseInt(hex.substring(4, 6), 16);
+            String replacement = String.format(Locale.US, "vec3(%.3f, %.3f, %.3f)", r / 255.0, g / 255.0, b / 255.0);
+            matcher.appendReplacement(result, replacement);
+        }
+        matcher.appendTail(result);
+
+        return result.toString();
     }
 
     public String loadFromAsset(Context context, String name) {

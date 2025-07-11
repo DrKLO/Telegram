@@ -551,7 +551,9 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
         if (sendingMessageObjects != null) {
             for (int a = 0, N = sendingMessageObjects.size(); a < N; a++) {
                 MessageObject messageObject = sendingMessageObjects.get(a);
-                if (messageObject.isPoll()) {
+                if (messageObject.isTodo()) {
+                    hasPoll = 3;
+                } else if (messageObject.isPoll()) {
                     hasPoll = messageObject.isPublicPoll() ? 2 : 1;
                     if (hasPoll == 2) {
                         break;
@@ -1854,10 +1856,16 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
 
         if (DialogObject.isChatDialog(dialog.id)) {
             TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-dialog.id);
-            if (ChatObject.isChannel(chat) && !chat.megagroup && (!ChatObject.isCanWriteToChannel(-dialog.id, currentAccount) || hasPoll == 2)) {
+            if (ChatObject.isChannel(chat) && !chat.megagroup && (!ChatObject.isCanWriteToChannel(-dialog.id, currentAccount) || hasPoll == 2 || hasPoll == 3)) {
                 AlertDialog.Builder builder = new AlertDialog.Builder(parentActivity);
                 builder.setTitle(LocaleController.getString(R.string.SendMessageTitle));
-                if (hasPoll == 2) {
+                if (hasPoll == 3) {
+                    if (ChatObject.isActionBannedByDefault(chat, ChatObject.ACTION_SEND_POLLS)) {
+                        builder.setMessage(LocaleController.getString(R.string.ErrorSendRestrictedTodoAll));
+                    } else {
+                        builder.setMessage(LocaleController.getString(R.string.ErrorSendRestrictedTodo));
+                    }
+                } else if (hasPoll == 2) {
                     if (isChannel) {
                         builder.setMessage(LocaleController.getString(R.string.PublicPollCantForward));
                     } else if (ChatObject.isActionBannedByDefault(chat, ChatObject.ACTION_SEND_POLLS)) {
@@ -1875,7 +1883,9 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
         } else if (DialogObject.isEncryptedDialog(dialog.id) && (hasPoll != 0)) {
             AlertDialog.Builder builder = new AlertDialog.Builder(parentActivity);
             builder.setTitle(LocaleController.getString(R.string.SendMessageTitle));
-            if (hasPoll != 0) {
+            if (hasPoll == 3) {
+                builder.setMessage(LocaleController.getString(R.string.TodoCantForwardSecretChat));
+            } else if (hasPoll != 0) {
                 builder.setMessage(LocaleController.getString(R.string.PollCantForwardSecretChat));
             } else {
                 builder.setMessage(LocaleController.getString(R.string.InvoiceCantForwardSecretChat));
@@ -2378,7 +2388,7 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
                         params.monoForumPeer = monoForumPeerId;
                         SendMessagesHelper.getInstance(currentAccount).sendMessage(params);
                     }
-                    result = SendMessagesHelper.getInstance(currentAccount).sendMessage(sendingMessageObjects, key, !showSendersName,false, withSound, 0, replyTopMsg, video_timestamp, price == null ? 0 : price, monoForumPeerId);
+                    result = SendMessagesHelper.getInstance(currentAccount).sendMessage(sendingMessageObjects, key, !showSendersName,false, withSound, 0, replyTopMsg, video_timestamp, price == null ? 0 : price, monoForumPeerId, null);
                     if (result != 0) {
                         removeKeys.add(key);
                     }

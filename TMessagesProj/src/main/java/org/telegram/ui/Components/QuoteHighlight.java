@@ -22,12 +22,17 @@ import androidx.annotation.NonNull;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.MessageObject;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Cells.ChatMessageCell;
 
 import java.util.ArrayList;
 
 public class QuoteHighlight extends Path {
 
+    public final ChatMessageCell cell;
     public final int id, start, end;
+    public final boolean todo;
+
+    private int cornerPathEffectSize;
     public final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final CornerPath path = new CornerPath();
 
@@ -50,12 +55,31 @@ public class QuoteHighlight extends Path {
     private Rect lastRect;
 
     public QuoteHighlight(
+        ChatMessageCell cell,
+        int id,
+        int taskId
+    ) {
+        this.cell = cell;
+        this.t = new AnimatedFloat(0, () -> {
+            if (cell != null) cell.invalidate();
+            if (cell.getParent() instanceof View) ((View) cell.getParent()).invalidate();
+        }, 350, 420, CubicBezierInterpolator.EASE_OUT_QUINT);
+        this.id = id;
+        this.start = -taskId;
+        this.end = -taskId;
+        this.todo = true;
+
+        paint.setPathEffect(new CornerPathEffect(cornerPathEffectSize = dp(4)));
+    }
+
+    public QuoteHighlight(
         View view, ViewParent parent,
         int id,
         ArrayList<MessageObject.TextLayoutBlock> blocks,
         int start, int end,
         float offsetX
     ) {
+        this.cell = null;
         this.t = new AnimatedFloat(0, () -> {
             if (view != null) view.invalidate();
             if (parent instanceof View) ((View) parent).invalidate();
@@ -63,9 +87,10 @@ public class QuoteHighlight extends Path {
         this.id = id;
         this.start = start;
         this.end = end;
+        this.todo = false;
         if (blocks == null) return;
 
-        paint.setPathEffect(new CornerPathEffect(dp(4)));
+        paint.setPathEffect(new CornerPathEffect(cornerPathEffectSize = dp(4)));
 
         boolean isRtl = false;
         for (int i = 0; i < blocks.size(); ++i) {
@@ -159,19 +184,32 @@ public class QuoteHighlight extends Path {
         final float t = this.t.set(1);
 
         canvas.save();
-        canvas.translate(textX, textY);
-        path.rewind();
-        for (int i = 0; i < rectangles.size(); ++i) {
-            final Rect rect = rectangles.get(i);
-            path.addRect(
-                lerp(bounds.left - textX, rect.left, t),
-                lerp(rect.first ? bounds.top - textY : rect.prevTop, rect.top, t),
-                lerp(bounds.right - textX, rect.right, t),
-                lerp(rect.last ? bounds.bottom - textY : rect.nextBottom, rect.bottom, t),
-                Path.Direction.CW
-            );
+        if (todo) {
+            final int cornerRadius = lerp(dp(4), 0, t);
+            if (cornerPathEffectSize != cornerRadius) {
+                paint.setPathEffect(new CornerPathEffect(cornerPathEffectSize = cornerRadius));
+            }
+            path.rewind();
+            final int index = cell.getTodoIndex(-start);
+            AndroidUtilities.rectTmp.set(cell.getBackgroundDrawableLeft(), cell.getPollButtonTop(index), cell.getBackgroundDrawableRight(), cell.getPollButtonBottom(index));
+            lerp(bounds, AndroidUtilities.rectTmp, t, AndroidUtilities.rectTmp);
+            path.addRect(AndroidUtilities.rectTmp, Path.Direction.CW);
+            path.closeRects();
+        } else {
+            canvas.translate(textX, textY);
+            path.rewind();
+            for (int i = 0; i < rectangles.size(); ++i) {
+                final Rect rect = rectangles.get(i);
+                path.addRect(
+                    lerp(bounds.left - textX, rect.left, t),
+                    lerp(rect.first ? bounds.top - textY : rect.prevTop, rect.top, t),
+                    lerp(bounds.right - textX, rect.right, t),
+                    lerp(rect.last ? bounds.bottom - textY : rect.nextBottom, rect.bottom, t),
+                    Path.Direction.CW
+                );
+            }
+            path.closeRects();
         }
-        path.closeRects();
 
         int wasAlpha = paint.getAlpha();
         paint.setAlpha((int) (wasAlpha * alpha));

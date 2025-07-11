@@ -789,7 +789,9 @@ public class ResaleGiftsFragment extends BaseFragment {
                                     .createSimpleBulletin(boughtGift.getDocument(), getString(R.string.BoughtResoldGiftToTitle), formatString(R.string.BoughtResoldGiftToText, DialogObject.getShortName(currentAccount, dialogId)))
                                     .hideAfterBottomSheet(false)
                                     .show();
-                                fireworksOverlay.start(true);
+                                if (super.fireworksOverlay != null) {
+                                    super.fireworksOverlay.start(true);
+                                }
                             }
                         }
                     };

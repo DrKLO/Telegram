@@ -844,67 +844,6 @@ public class TL_stats {
         }
     }
 
-    public static class TL_getBroadcastRevenueStats extends TLObject {
-        public static final int constructor = 0xf788ee19;
-
-        public int flags;
-        public boolean dark;
-        public TLRPC.InputPeer peer;
-
-        @Override
-        public TLObject deserializeResponse(InputSerializedData stream, int constructor, boolean exception) {
-            return TL_broadcastRevenueStats.TLdeserialize(stream, constructor, exception);
-        }
-
-        @Override
-        public void serializeToStream(OutputSerializedData stream) {
-            stream.writeInt32(constructor);
-            flags = dark ? (flags | 1) : (flags & ~1);
-            stream.writeInt32(flags);
-            peer.serializeToStream(stream);
-        }
-    }
-
-    public static class TL_getBroadcastRevenueWithdrawalUrl extends TLObject {
-        public static final int constructor = 0x9df4faad;
-
-        public TLRPC.InputPeer peer;
-        public TLRPC.InputCheckPasswordSRP password;
-
-        @Override
-        public TLObject deserializeResponse(InputSerializedData stream, int constructor, boolean exception) {
-            return TL_broadcastRevenueWithdrawalUrl.TLdeserialize(stream, constructor, exception);
-        }
-
-        @Override
-        public void serializeToStream(OutputSerializedData stream) {
-            stream.writeInt32(constructor);
-            peer.serializeToStream(stream);
-            password.serializeToStream(stream);
-        }
-    }
-
-    public static class TL_getBroadcastRevenueTransactions extends TLObject {
-        public static final int constructor = 0x70990b6d;
-
-        public TLRPC.InputPeer peer;
-        public int offset;
-        public int limit;
-
-        @Override
-        public TLObject deserializeResponse(InputSerializedData stream, int constructor, boolean exception) {
-            return TL_broadcastRevenueTransactions.TLdeserialize(stream, constructor, exception);
-        }
-
-        @Override
-        public void serializeToStream(OutputSerializedData stream) {
-            stream.writeInt32(constructor);
-            peer.serializeToStream(stream);
-            stream.writeInt32(offset);
-            stream.writeInt32(limit);
-        }
-    }
-
     public static class TL_statsAbsValueAndPrev extends TLObject {
         public static final int constructor = 0xcb43acde;
 

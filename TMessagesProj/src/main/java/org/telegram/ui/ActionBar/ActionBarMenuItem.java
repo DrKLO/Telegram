@@ -26,6 +26,7 @@ import android.os.Build;
 import android.text.Editable;
 import android.text.TextUtils;
 import android.text.TextWatcher;
+import android.text.method.LinkMovementMethod;
 import android.transition.ChangeBounds;
 import android.transition.Transition;
 import android.transition.TransitionManager;
@@ -73,6 +74,7 @@ import org.telegram.ui.Components.CombinedDrawable;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.EditTextBoldCursor;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.LinkSpanDrawable;
 import org.telegram.ui.Components.RLottieDrawable;
 import org.telegram.ui.Components.RLottieImageView;
 import org.telegram.ui.Components.Reactions.ReactionsLayoutInBubble;
@@ -2313,6 +2315,7 @@ public class ActionBarMenuItem extends FrameLayout {
     public static final int VIEW_TYPE_SUBITEM = 0;
     public static final int VIEW_TYPE_COLORED_GAP = 1;
     public static final int VIEW_TYPE_SWIPEBACKITEM = 2;
+    public static final int VIEW_TYPE_TEXT = 3;
 
     private ArrayList<Item> lazyList;
     private HashMap<Integer, Item> lazyMap;
@@ -2326,6 +2329,7 @@ public class ActionBarMenuItem extends FrameLayout {
         public CharSequence text;
         public boolean dismiss, needCheck;
         public View viewToSwipeBack;
+        public int textSizeDp;
 
         private View view;
         private View.OnClickListener overrideClickListener;
@@ -2356,6 +2360,12 @@ public class ActionBarMenuItem extends FrameLayout {
             item.iconDrawable = iconDrawable;
             item.text = text;
             item.viewToSwipeBack = viewToSwipeBack;
+            return item;
+        }
+        private static Item asText(CharSequence text, int textSizeDp) {
+            Item item = new Item(VIEW_TYPE_TEXT);
+            item.text = text;
+            item.textSizeDp = textSizeDp;
             return item;
         }
 
@@ -2429,6 +2439,18 @@ public class ActionBarMenuItem extends FrameLayout {
                     cell.setColors(textColor, iconColor);
                 }
                 view = cell;
+            } else if (viewType == VIEW_TYPE_TEXT) {
+                LinkSpanDrawable.LinksTextView textView = new LinkSpanDrawable.LinksTextView(parent.getContext());
+                textView.setTag(R.id.fit_width_tag, 1);
+                textView.setPadding(AndroidUtilities.dp(13), 0, AndroidUtilities.dp(13), AndroidUtilities.dp(8));
+                textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, textSizeDp);
+                textView.setTextColor(Theme.getColor(Theme.key_actionBarDefaultSubmenuItem));
+                textView.setMovementMethod(LinkMovementMethod.getInstance());
+                textView.setLinkTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteLinkText));
+                textView.setText(text);
+                textView.setMaxWidth(dp(200));
+                parent.popupLayout.addView(textView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 8, 0, 0));
+                view = textView;
             }
             if (view != null) {
                 view.setVisibility(visibility);
@@ -2463,6 +2485,8 @@ public class ActionBarMenuItem extends FrameLayout {
             this.text = text;
             if (view instanceof ActionBarMenuSubItem) {
                 ((ActionBarMenuSubItem) view).setText(text);
+            } else if (view instanceof TextView) {
+                ((TextView) view).setText(text);
             }
         }
 
@@ -2508,6 +2532,9 @@ public class ActionBarMenuItem extends FrameLayout {
     }
     public Item lazilyAddColoredGap() {
         return putLazyItem(Item.asColoredGap());
+    }
+    public Item lazilyAddText(CharSequence text, int textSizeDp) {
+        return putLazyItem(Item.asText(text, textSizeDp));
     }
 
     private Item putLazyItem(Item item) {

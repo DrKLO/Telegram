@@ -1,5 +1,7 @@
 package org.telegram.ui.Components;
 
+import static org.telegram.messenger.AndroidUtilities.dp;
+
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
@@ -14,6 +16,7 @@ import android.view.View;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BuildVars;
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.Utilities;
@@ -87,12 +90,12 @@ public class FireworksOverlay extends View {
 
         private void draw(Canvas canvas) {
             if (type == 0) {
-                canvas.drawCircle(x, y, AndroidUtilities.dp(typeSize), paint[colorType]);
+                canvas.drawCircle(x, y, dp(typeSize), paint[colorType]);
             } else if (type == 1) {
-                rect.set(x - AndroidUtilities.dp(typeSize), y - AndroidUtilities.dp(2), x + AndroidUtilities.dp(typeSize), y + AndroidUtilities.dp(2));
+                rect.set(x - dp(typeSize), y - dp(2), x + dp(typeSize), y + dp(2));
                 canvas.save();
                 canvas.rotate(rotation, rect.centerX(), rect.centerY());
-                canvas.drawRoundRect(rect, AndroidUtilities.dp(2), AndroidUtilities.dp(2), paint[colorType]);
+                canvas.drawRoundRect(rect, dp(2), dp(2), paint[colorType]);
                 canvas.restore();
             } else if (type == 2) {
                 Drawable drawable = null;
@@ -120,7 +123,7 @@ public class FireworksOverlay extends View {
             x += moveX * moveCoef;
             y += moveY * moveCoef;
             if (xFinished != 0) {
-                float dp = AndroidUtilities.dp(1) * 0.5f;
+                float dp = dp(1) * 0.5f;
                 if (xFinished == 1) {
                     moveX += dp * moveCoef * 0.05f;
                     if (moveX >= dp) {
@@ -151,12 +154,12 @@ public class FireworksOverlay extends View {
                     }
                 }
             }
-            float yEdge = -AndroidUtilities.dp(1.0f) / 2.0f;
+            float yEdge = -dp(1.0f) / 2.0f;
             boolean wasNegative = moveY < yEdge;
             if (moveY > yEdge) {
-                moveY += AndroidUtilities.dp(1.0f) / 3.0f * moveCoef * speedCoef;
+                moveY += dp(1.0f) / 3.0f * moveCoef * speedCoef;
             } else {
-                moveY += AndroidUtilities.dp(1.0f) / 3.0f * moveCoef;
+                moveY += dp(1.0f) / 3.0f * moveCoef;
             }
             if (wasNegative && moveY > yEdge) {
                 fallingDownCount++;
@@ -215,38 +218,42 @@ public class FireworksOverlay extends View {
 
     private Particle createParticle(boolean fall) {
         Particle particle = new Particle();
-        particle.type = (byte) Utilities.random.nextInt(2);
-        if (isFebruary14 && particle.type == 0) {
-            particle.type = 2;
-            particle.colorType = (byte) Utilities.random.nextInt(heartColors.length);
-        } else if (withStars && Utilities.random.nextBoolean()) {
-            particle.type = 2;
-            particle.colorType = (byte) Utilities.random.nextInt(starsColors.length);
-        } else {
-            particle.colorType = (byte) Utilities.random.nextInt(colors.length);
-        }
-        particle.side = (byte) Utilities.random.nextInt(2);
-        particle.finishedStart = (byte) (1 + Utilities.random.nextInt(2));
-        if (particle.type == 0 || particle.type == 2) {
-            particle.typeSize = (byte) (4 + Utilities.random.nextFloat() * 2);
-        } else {
-            particle.typeSize = (byte) (4 + Utilities.random.nextFloat() * 4);
-        }
-        if (fall) {
-            particle.y = -Utilities.random.nextFloat() * getHeightForAnimation() * 1.2f;
-            particle.x = AndroidUtilities.dp(5) + Utilities.random.nextInt(getWidthForAnimation() - AndroidUtilities.dp(10));
-            particle.xFinished = particle.finishedStart;
-        } else {
-            int xOffset = AndroidUtilities.dp(4 + Utilities.random.nextInt(10));
-            int yOffset = getHeightForAnimation() / 4;
-            if (particle.side == 0) {
-                particle.x = -xOffset;
+        try {
+            particle.type = (byte) Utilities.random.nextInt(2);
+            if (isFebruary14 && particle.type == 0) {
+                particle.type = 2;
+                particle.colorType = (byte) Utilities.random.nextInt(heartColors.length);
+            } else if (withStars && Utilities.random.nextBoolean()) {
+                particle.type = 2;
+                particle.colorType = (byte) Utilities.random.nextInt(starsColors.length);
             } else {
-                particle.x = getWidthForAnimation() + xOffset;
+                particle.colorType = (byte) Utilities.random.nextInt(colors.length);
             }
-            particle.moveX = (particle.side == 0 ? 1 : -1) * (AndroidUtilities.dp(1.2f) + Utilities.random.nextFloat() * AndroidUtilities.dp(4));
-            particle.moveY = -(AndroidUtilities.dp(4) + Utilities.random.nextFloat() * AndroidUtilities.dp(4));
-            particle.y = yOffset / 2 + Utilities.random.nextInt(yOffset * 2);
+            particle.side = (byte) Utilities.random.nextInt(2);
+            particle.finishedStart = (byte) (1 + Utilities.random.nextInt(2));
+            if (particle.type == 0 || particle.type == 2) {
+                particle.typeSize = (byte) (4 + Utilities.random.nextFloat() * 2);
+            } else {
+                particle.typeSize = (byte) (4 + Utilities.random.nextFloat() * 4);
+            }
+            if (fall) {
+                particle.y = -Utilities.random.nextFloat() * getHeightForAnimation() * 1.2f;
+                particle.x = dp(5) + Utilities.random.nextInt(Math.max(1, getWidthForAnimation() - dp(10)));
+                particle.xFinished = particle.finishedStart;
+            } else {
+                int xOffset = dp(4 + Utilities.random.nextInt(10));
+                int yOffset = getHeightForAnimation() / 4;
+                if (particle.side == 0) {
+                    particle.x = -xOffset;
+                } else {
+                    particle.x = getWidthForAnimation() + xOffset;
+                }
+                particle.moveX = (particle.side == 0 ? 1 : -1) * (dp(1.2f) + Utilities.random.nextFloat() * dp(4));
+                particle.moveY = -(dp(4) + Utilities.random.nextFloat() * dp(4));
+                particle.y = yOffset / 2 + Utilities.random.nextInt(Math.max(1, yOffset * 2));
+            }
+        } catch (Exception e) {
+            FileLog.e(e);
         }
         return particle;
     }

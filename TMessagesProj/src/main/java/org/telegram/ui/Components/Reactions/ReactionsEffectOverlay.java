@@ -331,8 +331,10 @@ public class ReactionsEffectOverlay {
                         if (messageCell.drawPinnedBottom && !messageCell.shouldDrawTimeOnMedia()) {
                             toY += AndroidUtilities.dp(2);
                         }
+                        toY += messageCell.getPaddingTop();
                     } else if (drawingCell instanceof ChatActionCell) {
                         reactionButton = ((ChatActionCell) drawingCell).getReactionButton(reaction);
+                        toY += drawingCell.getPaddingTop();
                     }
                     if (reactionButton != null) {
                         toX += reactionButton.drawingImageRect.left;
