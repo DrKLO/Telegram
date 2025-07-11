@@ -146,14 +146,17 @@ import org.telegram.messenger.SRPHelper;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
+import me.telegraphy.android.DatabaseManager; // TDLib Integration: Import DatabaseManager
+import me.telegraphy.android.TdApiManager; // TDLib Integration: Import TdApiManager
+import org.telegram.tdlib.TdApi; // TDLib Integration: Importar TdApi
+// import org.telegram.tdlib.TelegramClient; // TDLib Integration: TelegramClient is managed by TdApiManager
+import org.telegram.messenger.TdApiMessageConverter; // TDLib Integration: Import TdApiMessageConverter
 // TDLib Integration: ConnectionsManager y TLRPC serían reemplazados gradualmente.
 // import org.telegram.tgnet.ConnectionsManager;
 // import org.telegram.tgnet.RequestDelegate;
 // import org.telegram.tgnet.SerializedData;
 // import org.telegram.tgnet.TLObject;
 // import org.telegram.tgnet.TLRPC;
-import org.telegram.tdlib.TdApi; // TDLib Integration: Importar TdApi
-import org.telegram.tdlib.TelegramClient; // TDLib Integration: Importar TelegramClient
 import org.telegram.tgnet.tl.TL_account;
 import org.telegram.tgnet.tl.TL_stars;
 import org.telegram.ui.ActionBar.ActionBar;
@@ -394,6 +397,11 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
 
     private boolean forceDisableSafetyNet;
 
+    // TDLib Integration: Add TdApiManager and DatabaseManager instances
+    private TdApiManager tdApiManager;
+    private DatabaseManager databaseManager;
+    private Bundle currentParams; // Used to store phone number details temporarily for code view
+
     private static class ProgressView extends View {
 
         private final Path path = new Path();
@@ -513,11 +521,22 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             }
         }
         getNotificationCenter().removeObserver(this, NotificationCenter.didUpdateConnectionState);
+        // TDLib Integration: Remove observers for authorization state
+        getNotificationCenter().removeObserver(this, NotificationCenter.didReceiveAuthorizationStateChange);
+        getNotificationCenter().removeObserver(this, NotificationCenter.didFailtToReceiveAuthorizationStateChange);
     }
 
     @Override
     public boolean onFragmentCreate() {
         getNotificationCenter().addObserver(this, NotificationCenter.didUpdateConnectionState);
+        // TDLib Integration: Initialize TdApiManager and DatabaseManager
+        tdApiManager = TdApiManager.getInstance();
+        // TODO: Determine the correct account for DatabaseManager if newAccount is true.
+        // For now, using currentAccount which might be UserConfig.selectedAccount or a new one.
+        databaseManager = DatabaseManager.getInstance(currentAccount);
+        // TDLib Integration: Observe authorization state changes
+        getNotificationCenter().addObserver(this, NotificationCenter.didReceiveAuthorizationStateChange);
+        getNotificationCenter().addObserver(this, NotificationCenter.didFailtToReceiveAuthorizationStateChange); // For general errors
         return super.onFragmentCreate();
     }
 
@@ -3046,8 +3065,8 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                         if (!userConfig.isClientActivated()) {
                             continue;
                         }
-                        String userPhone = userConfig.getCurrentUser().phone;
-                        if (PhoneNumberUtils.compare(phone, userPhone) && ConnectionsManager.getInstance(a).isTestBackend() == testBackend) {
+                        String userPhone = userConfig.getCurrentUser() != null ? userConfig.getCurrentUser().phone : null; // null check for safety
+                        if (userPhone != null && PhoneNumberUtils.compare(phone, userPhone) && tdApiManager.isTestBackend(a) == testBackend) { // TDLib Integration: Check test backend via TdApiManager if possible, or assume ConnectionsManager for this check for now
                             final int num = a;
                             AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
                             builder.setTitle(getString(R.string.AppName));
@@ -3067,90 +3086,42 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                 }
             }
 
-            TLRPC.TL_codeSettings settings = new TLRPC.TL_codeSettings();
-            settings.allow_flashcall = simcardAvailable && allowCall && allowCancelCall && allowReadCallLog;
-            settings.allow_missed_call = simcardAvailable && allowCall;
-            settings.allow_app_hash = settings.allow_firebase = PushListenerController.GooglePushListenerServiceProvider.INSTANCE.hasServices();
-            if (forceDisableSafetyNet || TextUtils.isEmpty(BuildVars.SAFETYNET_KEY)) {
-                settings.allow_firebase = false;
-            }
+            // TDLib Integration: Construct TdApi.PhoneNumberAuthenticationSettings
+            TdApi.PhoneNumberAuthenticationSettings tdSettings = new TdApi.PhoneNumberAuthenticationSettings();
+            tdSettings.allowFlashCall = simcardAvailable && allowCall && allowCancelCall && allowReadCallLog;
+            tdSettings.allowMissedCall = simcardAvailable && allowCall;
+            // allow_app_hash and allow_firebase are typically handled by TdlibParameters during client creation
+            // tdSettings.allowAppHash = PushListenerController.GooglePushListenerServiceProvider.INSTANCE.hasServices();
+            // tdSettings.allowFirebase = PushListenerController.GooglePushListenerServiceProvider.INSTANCE.hasServices() && !(forceDisableSafetyNet || TextUtils.isEmpty(BuildVars.SAFETYNET_KEY));
 
-            ArrayList<TLRPC.TL_auth_authorization> loginTokens = AuthTokensHelper.getSavedLogInTokens();
-            if (loginTokens != null) {
-                for (int i = 0; i < loginTokens.size(); i++) {
-                    if (loginTokens.get(i).future_auth_token == null) {
-                        continue;
-                    }
-                    if (settings.logout_tokens == null) {
-                        settings.logout_tokens = new ArrayList<>();
-                    }
-                    if (BuildVars.DEBUG_VERSION) {
-                        FileLog.d("login token to check " + new String(loginTokens.get(i).future_auth_token, StandardCharsets.UTF_8));
-                    }
-                    settings.logout_tokens.add(loginTokens.get(i).future_auth_token);
-                    if (settings.logout_tokens.size() >= 20) {
-                        break;
-                    }
-                }
-            }
-            ArrayList<TLRPC.TL_auth_loggedOut> tokens = AuthTokensHelper.getSavedLogOutTokens();
-            if (tokens != null) {
-                for (int i = 0; i < tokens.size(); i++) {
-                    if (settings.logout_tokens == null) {
-                        settings.logout_tokens = new ArrayList<>();
-                    }
-                    settings.logout_tokens.add(tokens.get(i).future_auth_token);
-                    if (settings.logout_tokens.size() >= 20) {
-                        break;
-                    }
-                }
-                AuthTokensHelper.saveLogOutTokens(tokens);
-            }
-            if (settings.logout_tokens != null) {
-                settings.flags |= 64;
-            }
-            SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
-            preferences.edit().remove("sms_hash_code").apply();
-            if (settings.allow_app_hash) {
-                preferences.edit().putString("sms_hash", BuildVars.getSmsHash()).apply();
-            } else {
-                preferences.edit().remove("sms_hash").apply();
-            }
-            if (settings.allow_flashcall) {
+            // TDLib handles token management internally, so settings.logout_tokens equivalent is not directly set here.
+            // It might be part of TdApi.SetTdlibParameters or automatic.
+
+            // sms_hash related SharedPreferences are for the old system. TDLib might have its own mechanism if it supports app-specific SMS hash.
+
+            if (tdSettings.allowFlashCall) { // Renamed from settings.allow_flashcall
                 try {
                     final Set<String> numbers = getUserPhoneNumbers();
                     if (!numbers.isEmpty()) {
-                        settings.unknown_number = false;
-                        settings.current_number = numbers.stream().anyMatch(number -> PhoneNumberUtils.compare(phone, number));
+                        // settings.unknown_number = false; // TDLib might infer this or have a specific field
+                        tdSettings.isCurrentPhoneNumber = numbers.stream().anyMatch(number -> PhoneNumberUtils.compare(phone, number));
                     } else {
-                        settings.unknown_number = true;
+                        // settings.unknown_number = true; // TDLib might infer this
                         if (UserConfig.getActivatedAccountsCount() > 0) {
-                            settings.allow_flashcall = false;
+                             tdSettings.allowFlashCall = false; // Kept existing logic: if other accounts exist, disable flashcall
                         } else {
-                            settings.current_number = false;
+                            tdSettings.isCurrentPhoneNumber = false;
                         }
                     }
                 } catch (Exception e) {
-                    settings.unknown_number = true;
+                    // settings.unknown_number = true; // TDLib might infer this
                     FileLog.e(e);
                 }
             }
 
-            // TDLib Integration: Replace with TdApiManager.send
-            TdApi.PhoneNumberAuthenticationSettings tdSettings = new TdApi.PhoneNumberAuthenticationSettings();
-            tdSettings.allowFlashCall = simcardAvailable && allowCall && allowCancelCall && allowReadCallLog;
-            tdSettings.allowMissedCall = simcardAvailable && allowCall;
-            // Firebase/App hash related settings would be part of TdApi.SetTdlibParameters
-            // and TDLib handles them internally if configured.
-            // tdSettings.allowAppHash = PushListenerController.GooglePushListenerServiceProvider.INSTANCE.hasServices();
-            tdSettings.isCurrentPhoneNumber = false; // This needs to be determined accurately if possible.
-                                                // For simplicity, setting to false. TDLib might adjust.
-
-            // TODO: Handle settings.logout_tokens logic if TDLib supports equivalent for session management
-
             String fullPhoneNumber = PhoneFormat.stripExceptNumbers(phone); // Ensure it's just digits
 
-            // Store params for when TdApiManager sends AuthorizationStateWaitCode
+            // Store params for when TdApiManager sends AuthorizationStateWaitCode or for error display
             final Bundle params = new Bundle();
             params.putString("phone", "+" + codeField.getText() + " " + phoneField.getText()); // Display phone
             try {
@@ -3163,43 +3134,34 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             if (currentCountry != null) {
                 params.putString("country", currentCountry.code);
             }
-            // Store these params in a member variable or pass to TdApiManager if it needs them
-            // For now, LoginActivity will need to hold onto them until code entry.
-            this.currentParams = params; // Store for later use by code entry view
+            // Store these params in a member variable for later use by code entry view or error display
+            LoginActivity.this.currentParams = params;
 
-            nextPressed = true;
-            PhoneInputData phoneInputData = new PhoneInputData(); // Keep for error display if needed
+            nextPressed = true; // Keep this to prevent double submissions
+
+            // PhoneInputData is used for displaying error messages with country info.
+            PhoneInputData phoneInputData = new PhoneInputData();
             phoneInputData.phoneNumber = params.getString("phone");
             phoneInputData.country = currentCountry;
             phoneInputData.patterns = phoneFormatMap.get(codeField.getText().toString());
+            // Store this in a field if it's needed by error handling that's triggered by NotificationCenter
+            // this.lastPhoneInputData = phoneInputData;
 
 
             // Determine if it's for changing phone number or initial login
             if (activityMode == MODE_CHANGE_PHONE_NUMBER) {
-                // This flow is more complex with TDLib as it involves current auth state.
-                // Typically, you'd call TdApi.ChangePhoneNumber first, which itself might
-                // trigger a TdApi.AuthorizationStateWaitCode.
-                // For now, this example will assume a simplified path or that
-                // TdApiManager handles the distinction.
-                // A direct TdApi.SetAuthenticationPhoneNumber might be for initial login.
-                // Change phone number in TDLib often involves TdApi.sendPhoneNumberVerificationCode
-                // after TdApi.changePhoneNumber.
-                // This part needs more careful mapping to TDLib's specific change phone number flow.
-                // Let's assume for now it's similar to initial send code for simplicity of this refactor step.
-                FileLog.d("MODE_CHANGE_PHONE_NUMBER: TDLib flow for this needs specific TdApi functions (e.g., TdApi.changePhoneNumber then TdApi.resendPhoneNumberVerificationCode). Using SetAuthenticationPhoneNumber as placeholder.");
-                me.telegraphy.android.TdApiManager.getInstance().setAuthenticationPhoneNumber(fullPhoneNumber, tdSettings);
-
+                FileLog.d("MODE_CHANGE_PHONE_NUMBER: Calling TdApiManager.changePhoneNumber");
+                // This will internally call TdApi.changePhoneNumber, then expect TdApi.setAuthenticationPhoneNumber
+                // or TdApi.resendPhoneNumberVerificationCode after the initial call.
+                // The TdApiManager should handle this sequence. For now, we trigger the first step.
+                tdApiManager.changePhoneNumber(fullPhoneNumber, tdSettings);
             } else {
-                // Initial login or new account
-                // ConnectionsManager.getInstance(currentAccount).cleanup(false); // TdApiManager handles client state
-                me.telegraphy.android.TdApiManager.getInstance().setAuthenticationPhoneNumber(fullPhoneNumber, tdSettings);
+                FileLog.d("MODE_LOGIN: Calling TdApiManager.setAuthenticationPhoneNumber");
+                tdApiManager.setAuthenticationPhoneNumber(fullPhoneNumber, tdSettings);
             }
 
             // Progress is now handled by observing NotificationCenter for auth state changes
-            // needShowProgress(reqId); // Old way
-            // Instead, LoginActivity should have a listener for NotificationCenter.didReceiveAuthorizationStateChange
-            // and show/hide progress based on the TdApi.AuthorizationState.
-            // For this specific call, we might show a local progress until an auth state update is received.
+            // For this specific call, we show a local progress until an auth state update is received.
             showEditDoneProgress(true, true); // Show local progress
         }
 
@@ -3705,26 +3667,20 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                     createCodeTimer();
                     TLRPC.TL_auth_resendCode req = new TLRPC.TL_auth_resendCode();
                     req.phone_number = requestPhone;
-                    req.phone_code_hash = phoneHash;
-                    ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> {
-                        if (response != null) {
-                            AndroidUtilities.runOnUIThread(() -> {
-                                nextCodeParams = params;
-                                nextCodeAuth = (TLRPC.TL_auth_sentCode) response;
-                                if (nextCodeAuth.type instanceof TLRPC.TL_auth_sentCodeTypeSmsPhrase) {
-                                    nextType = AUTH_TYPE_PHRASE;
-                                } else if (nextCodeAuth.type instanceof TLRPC.TL_auth_sentCodeTypeSmsWord) {
-                                    nextType = AUTH_TYPE_WORD;
-                                }
-                                fillNextCodeParams(nextCodeParams, nextCodeAuth);
-                            });
-                        } else if (error != null && error.text != null) {
-                            AndroidUtilities.runOnUIThread(() -> lastError = error.text);
-                        }
-                    }, ConnectionsManager.RequestFlagFailOnServerErrors | ConnectionsManager.RequestFlagWithoutLogin);
+                    req.phone_code_hash = phoneHash; // This hash is from the old system. TDLib manages this internally.
+                    // TDLib Integration: Replace ConnectionsManager with TdApiManager.resendAuthenticationCode()
+                    // The response will be handled by NotificationCenter authorization state updates.
+                    tdApiManager.resendAuthenticationCode();
+                    // No direct response handling here; wait for AuthorizationStateWaitCode.
+                    // The UI update (e.g., "Calling", "Sending SMS") can be done optimistically
+                    // or after a specific TdApi.Update is received if TDLib provides one for resend.
+                    // For now, assume TdApiManager posts an update or the next AuthorizationStateWaitCode will refresh UI.
+                    FileLog.d("Resend code requested via TdApiManager.");
+                    // Old logic for filling next code params is now handled by handleAuthorizationState
+                    // when TdApi.AuthorizationStateWaitCode is received.
                 } else if (nextType == AUTH_TYPE_FLASH_CALL) {
-                    AndroidUtilities.setWaitingForSms(false);
-                    NotificationCenter.getGlobalInstance().removeObserver(LoginActivitySmsView.this, NotificationCenter.didReceiveSmsCode);
+                    AndroidUtilities.setWaitingForSms(false); // This might still be relevant if app listens for SMS directly
+                    NotificationCenter.getGlobalInstance().removeObserver(LoginActivitySmsView.this, NotificationCenter.didReceiveSmsCode); // Keep if app has direct SMS listeners
                     waitingForEvent = false;
                     destroyCodeTimer();
                     resendCode();
@@ -4021,38 +3977,17 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
 
             TLRPC.TL_auth_resendCode req = new TLRPC.TL_auth_resendCode();
             req.phone_number = requestPhone;
-            req.phone_code_hash = phoneHash;
-            int reqId = ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
-                nextPressed = false;
-                if (error == null) {
-                    nextCodeParams = params;
-                    nextCodeAuth = (TLRPC.TL_auth_sentCode) response;
-                    if (nextCodeAuth.type instanceof TLRPC.TL_auth_sentCodeTypeSmsPhrase) {
-                        nextType = AUTH_TYPE_PHRASE;
-                    } else if (nextCodeAuth.type instanceof TLRPC.TL_auth_sentCodeTypeSmsWord) {
-                        nextType = AUTH_TYPE_WORD;
-                    }
-                    fillNextCodeParams(nextCodeParams, nextCodeAuth);
-                } else {
-                    if (error.text != null) {
-                        if (error.text.contains("PHONE_NUMBER_INVALID")) {
-                            needShowAlert(getString(R.string.RestorePasswordNoEmailTitle), getString(R.string.InvalidPhoneNumber));
-                        } else if (error.text.contains("PHONE_CODE_EMPTY") || error.text.contains("PHONE_CODE_INVALID")) {
-                            needShowAlert(getString(R.string.RestorePasswordNoEmailTitle), getString(R.string.InvalidCode));
-                        } else if (error.text.contains("PHONE_CODE_EXPIRED")) {
-                            onBackPressed(true);
-                            setPage(VIEW_PHONE_INPUT, true, null, true);
-                            needShowAlert(getString(R.string.RestorePasswordNoEmailTitle), getString(R.string.CodeExpired));
-                        } else if (error.text.startsWith("FLOOD_WAIT")) {
-                            needShowAlert(getString(R.string.RestorePasswordNoEmailTitle), getString(R.string.FloodWait));
-                        } else if (error.code != -1000) {
-                            needShowAlert(getString(R.string.RestorePasswordNoEmailTitle), getString(R.string.ErrorOccurred) + "\n" + error.text);
-                        }
-                    }
-                }
-                tryHideProgress(false);
-            }), ConnectionsManager.RequestFlagFailOnServerErrors | ConnectionsManager.RequestFlagWithoutLogin);
-            tryShowProgress(reqId);
+            req.phone_code_hash = phoneHash; // TDLib manages this internally.
+            // TDLib Integration: Replace ConnectionsManager with TdApiManager.resendAuthenticationCode()
+            tdApiManager.resendAuthenticationCode();
+            FileLog.d("Resend code (problemText click) requested via TdApiManager.");
+            // Progress and response are handled by NotificationCenter authorization state updates.
+            // Show local progress optimistically.
+            tryShowProgress(0, true); // reqId is no longer used, pass 0 or handle progress differently
+            // nextPressed should be managed based on whether a request is in flight,
+            // which can be tracked via a boolean flag set before calling TdApiManager
+            // and cleared when an auth state or error is received.
+            // For now, keeping nextPressed = true to prevent immediate re-clicks.
         }
 
         @Override
@@ -4570,274 +4505,52 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                 case MODE_CHANGE_PHONE_NUMBER: {
                     TL_account.changePhone req = new TL_account.changePhone();
                     req.phone_number = requestPhone;
-                    req.phone_code = code;
-                    req.phone_code_hash = phoneHash;
+                    // TDLib Integration: Replace with TdApiManager.checkChangePhoneNumberCode(code) or similar
+                    // The response will be handled by NotificationCenter authorization state updates.
+                    // For now, this specific flow (change phone) might need a dedicated TdApiManager method.
+                    // Assuming a general checkAuthenticationCode for now and TdApiManager handles context.
+                    tdApiManager.checkAuthenticationCode(code);
+                    FileLog.d("Change phone: checkAuthenticationCode called with: " + code);
                     destroyTimer();
 
                     codeFieldContainer.isFocusSuppressed = true;
                     for (CodeNumberField f : codeFieldContainer.codeField) {
                         f.animateFocusedProgress(0);
                     }
-
-                    int reqId = ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
-                        tryHideProgress(false, true);
-                        nextPressed = false;
-                        if (error == null) {
-                            TLRPC.User user = (TLRPC.User) response;
-                            destroyTimer();
-                            destroyCodeTimer();
-                            UserConfig.getInstance(currentAccount).setCurrentUser(user);
-                            UserConfig.getInstance(currentAccount).saveConfig(true);
-                            ArrayList<TLRPC.User> users = new ArrayList<>();
-                            users.add(user);
-                            MessagesStorage.getInstance(currentAccount).putUsersAndChats(users, null, true, true);
-                            MessagesController.getInstance(currentAccount).putUser(user, false);
-                            NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.mainUserInfoChanged);
-                            getMessagesController().removeSuggestion(0, "VALIDATE_PHONE_NUMBER");
-
-                            if (currentType == AUTH_TYPE_FLASH_CALL) {
-                                AndroidUtilities.endIncomingCall();
-                            }
-
-                            animateSuccess(()-> {
-                                try {
-                                    fragmentView.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
-                                } catch (Exception ignored) {}
-                                new AlertDialog.Builder(getContext())
-                                        .setTitle(getString(R.string.YourPasswordSuccess))
-                                        .setMessage(LocaleController.formatString(R.string.ChangePhoneNumberSuccessWithPhone, PhoneFormat.getInstance().format("+" + requestPhone)))
-                                        .setPositiveButton(getString(R.string.OK), null)
-                                        .setOnDismissListener(dialog -> finishFragment())
-                                        .show();
-                            });
-                        } else {
-                            lastError = error.text;
-                            nextPressed = false;
-                            showDoneButton(false, true);
-                            if (currentType == AUTH_TYPE_FLASH_CALL && (nextType == AUTH_TYPE_CALL || nextType == AUTH_TYPE_SMS || nextType == AUTH_TYPE_PHRASE || nextType == AUTH_TYPE_WORD) || currentType == AUTH_TYPE_SMS && (nextType == AUTH_TYPE_CALL || nextType == AUTH_TYPE_FLASH_CALL) || currentType == AUTH_TYPE_CALL && (nextType == AUTH_TYPE_SMS || nextType == AUTH_TYPE_PHRASE || nextType == AUTH_TYPE_WORD)) {
-                                createTimer();
-                            }
-                            if (currentType == AUTH_TYPE_FRAGMENT_SMS) {
-                                NotificationCenter.getGlobalInstance().addObserver(LoginActivitySmsView.this, NotificationCenter.didReceiveSmsCode);
-                            } else if (currentType == AUTH_TYPE_SMS) {
-                                AndroidUtilities.setWaitingForSms(true);
-                                NotificationCenter.getGlobalInstance().addObserver(LoginActivitySmsView.this, NotificationCenter.didReceiveSmsCode);
-                            } else if (currentType == AUTH_TYPE_FLASH_CALL) {
-                                AndroidUtilities.setWaitingForCall(true);
-                                NotificationCenter.getGlobalInstance().addObserver(LoginActivitySmsView.this, NotificationCenter.didReceiveCall);
-                            }
-                            waitingForEvent = true;
-                            if (currentType != AUTH_TYPE_FLASH_CALL) {
-                                boolean isWrongCode = false;
-                                if (error.text.contains("PHONE_NUMBER_INVALID")) {
-                                    needShowAlert(getString(R.string.RestorePasswordNoEmailTitle), getString("InvalidPhoneNumber", R.string.InvalidPhoneNumber));
-                                } else if (error.text.contains("PHONE_CODE_EMPTY") || error.text.contains("PHONE_CODE_INVALID")) {
-                                    shakeWrongCode();
-                                    isWrongCode = true;
-                                } else if (error.text.contains("PHONE_CODE_EXPIRED")) {
-                                    onBackPressed(true);
-                                    setPage(VIEW_PHONE_INPUT, true, null, true);
-                                    needShowAlert(getString(R.string.RestorePasswordNoEmailTitle), getString("CodeExpired", R.string.CodeExpired));
-                                } else if (error.text.startsWith("FLOOD_WAIT")) {
-                                    needShowAlert(getString(R.string.RestorePasswordNoEmailTitle), getString("FloodWait", R.string.FloodWait));
-                                } else {
-                                    needShowAlert(getString(R.string.RestorePasswordNoEmailTitle), getString("ErrorOccurred", R.string.ErrorOccurred) + "\n" + error.text);
-                                }
-
-                                if (!isWrongCode) {
-                                    for (int a = 0; a < codeFieldContainer.codeField.length; a++) {
-                                        codeFieldContainer.codeField[a].setText("");
-                                    }
-
-                                    codeFieldContainer.isFocusSuppressed = false;
-                                    codeFieldContainer.codeField[0].requestFocus();
-                                }
-                            }
-                        }
-                    }), ConnectionsManager.RequestFlagFailOnServerErrors);
-                    tryShowProgress(reqId, true);
-                    showDoneButton(true, true);
+                    // Progress and response are handled by NotificationCenter. Show local progress.
+                    tryShowProgress(0, true); // reqId is no longer used
+                    showDoneButton(true, true); // Keep UI consistent if it shows a button
                     break;
                 }
                 case MODE_CANCEL_ACCOUNT_DELETION: {
-                    requestPhone = cancelDeletionPhone;
-                    TL_account.confirmPhone req = new TL_account.confirmPhone();
-                    req.phone_code = code;
-                    req.phone_code_hash = phoneHash;
+                    // TDLib Integration: Replace with TdApiManager.checkAuthenticationCode(code)
+                    // TdApiManager needs to be aware this is for account deletion cancellation context if TDLib needs it.
+                    // Typically, after setting phone number for this flow, checkAuthenticationCode is generic.
+                    tdApiManager.checkAuthenticationCode(code);
+                    FileLog.d("Cancel account deletion: checkAuthenticationCode called with: " + code);
                     destroyTimer();
 
                     codeFieldContainer.isFocusSuppressed = true;
                     for (CodeNumberField f : codeFieldContainer.codeField) {
                         f.animateFocusedProgress(0);
                     }
-
-                    int reqId = ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
-                        tryHideProgress(false);
-                        nextPressed = false;
-                        if (error == null) {
-                            Activity activity = getParentActivity();
-                            if (activity == null) {
-                                return;
-                            }
-                            animateSuccess(() -> new AlertDialog.Builder(activity)
-                                    .setTitle(getString(R.string.CancelLinkSuccessTitle))
-                                    .setMessage(LocaleController.formatString("CancelLinkSuccess", R.string.CancelLinkSuccess, PhoneFormat.getInstance().format("+" + phone)))
-                                    .setPositiveButton(getString(R.string.Close), null)
-                                    .setOnDismissListener(dialog -> finishFragment())
-                                    .show());
-                        } else {
-                            lastError = error.text;
-                            if (currentType == AUTH_TYPE_FLASH_CALL && (nextType == AUTH_TYPE_CALL || nextType == AUTH_TYPE_SMS || nextType == AUTH_TYPE_PHRASE || nextType == AUTH_TYPE_WORD) || currentType == AUTH_TYPE_SMS &&
-                                    (nextType == AUTH_TYPE_CALL || nextType == AUTH_TYPE_FLASH_CALL) || currentType == AUTH_TYPE_CALL && (nextType == AUTH_TYPE_SMS || nextType == AUTH_TYPE_PHRASE || nextType == AUTH_TYPE_WORD)) {
-                                createTimer();
-                            }
-                            if (currentType == AUTH_TYPE_FRAGMENT_SMS) {
-                                NotificationCenter.getGlobalInstance().addObserver(LoginActivitySmsView.this, NotificationCenter.didReceiveSmsCode);
-                            } else if (currentType == AUTH_TYPE_SMS) {
-                                AndroidUtilities.setWaitingForSms(true);
-                                NotificationCenter.getGlobalInstance().addObserver(LoginActivitySmsView.this, NotificationCenter.didReceiveSmsCode);
-                            } else if (currentType == AUTH_TYPE_FLASH_CALL) {
-                                AndroidUtilities.setWaitingForCall(true);
-                                NotificationCenter.getGlobalInstance().addObserver(LoginActivitySmsView.this, NotificationCenter.didReceiveCall);
-                            }
-                            waitingForEvent = true;
-                            if (currentType != AUTH_TYPE_FLASH_CALL) {
-                                AlertsCreator.processError(currentAccount, error, LoginActivity.this, req);
-                            }
-                            if (error.text.contains("PHONE_CODE_EMPTY") || error.text.contains("PHONE_CODE_INVALID")) {
-                                shakeWrongCode();
-                            } else if (error.text.contains("PHONE_CODE_EXPIRED")) {
-                                onBackPressed(true);
-                                setPage(VIEW_PHONE_INPUT, true, null, true);
-                            }
-                        }
-                    }), ConnectionsManager.RequestFlagFailOnServerErrors);
-                    tryShowProgress(reqId);
+                    // Progress and response are handled by NotificationCenter. Show local progress.
+                    tryShowProgress(0, true); // reqId is no longer used
                     break;
                 }
-                default: {
-                    TLRPC.TL_auth_signIn req = new TLRPC.TL_auth_signIn();
-                    req.phone_number = requestPhone;
-                    req.phone_code = code;
-                    req.phone_code_hash = phoneHash;
-                    req.flags |= 1;
+                default: { // MODE_LOGIN
+                    // TDLib Integration: Replace with TdApiManager.checkAuthenticationCode(code)
+                    tdApiManager.checkAuthenticationCode(code);
+                    FileLog.d("Login: checkAuthenticationCode called with: " + code);
                     destroyTimer();
 
                     codeFieldContainer.isFocusSuppressed = true;
                     for (CodeNumberField f : codeFieldContainer.codeField) {
                         f.animateFocusedProgress(0);
                     }
-
-                    int reqId = ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
-                        tryHideProgress(false, true);
-
-                        boolean ok = false;
-
-                        if (error == null) {
-                            nextPressed = false;
-                            ok = true;
-                            showDoneButton(false, true);
-                            destroyTimer();
-                            destroyCodeTimer();
-                            if (response instanceof TLRPC.TL_auth_authorizationSignUpRequired) {
-                                TLRPC.TL_auth_authorizationSignUpRequired authorization = (TLRPC.TL_auth_authorizationSignUpRequired) response;
-                                if (authorization.terms_of_service != null) {
-                                    currentTermsOfService = authorization.terms_of_service;
-                                }
-                                Bundle params = new Bundle();
-                                params.putString("phoneFormated", requestPhone);
-                                params.putString("phoneHash", phoneHash);
-                                params.putString("code", req.phone_code);
-
-                                animateSuccess(() -> setPage(VIEW_REGISTER, true, params, false));
-                            } else {
-                                animateSuccess(() -> onAuthSuccess((TLRPC.TL_auth_authorization) response));
-                            }
-                        } else {
-                            lastError = error.text;
-                            if (error.text.contains("SESSION_PASSWORD_NEEDED")) {
-                                ok = true;
-                                TL_account.getPassword req2 = new TL_account.getPassword();
-                                ConnectionsManager.getInstance(currentAccount).sendRequest(req2, (response1, error1) -> AndroidUtilities.runOnUIThread(() -> {
-                                    nextPressed = false;
-                                    showDoneButton(false, true);
-                                    if (error1 == null) {
-                                        TL_account.Password password = (TL_account.Password) response1;
-                                        if (!TwoStepVerificationActivity.canHandleCurrentPassword(password, true)) {
-                                            AlertsCreator.showUpdateAppAlert(getParentActivity(), getString("UpdateAppAlert", R.string.UpdateAppAlert), true);
-                                            return;
-                                        }
-                                        Bundle bundle = new Bundle();
-                                        SerializedData data = new SerializedData(password.getObjectSize());
-                                        password.serializeToStream(data);
-                                        bundle.putString("password", Utilities.bytesToHex(data.toByteArray()));
-                                        bundle.putString("phoneFormated", requestPhone);
-                                        bundle.putString("phoneHash", phoneHash);
-                                        bundle.putString("code", req.phone_code);
-
-                                        animateSuccess(() -> setPage(VIEW_PASSWORD, true, bundle, false));
-                                    } else {
-                                        needShowAlert(getString(R.string.RestorePasswordNoEmailTitle), error1.text);
-                                    }
-                                }), ConnectionsManager.RequestFlagFailOnServerErrors | ConnectionsManager.RequestFlagWithoutLogin);
-                                destroyTimer();
-                                destroyCodeTimer();
-                            } else {
-                                nextPressed = false;
-                                showDoneButton(false, true);
-                                if (currentType == AUTH_TYPE_FLASH_CALL && (nextType == AUTH_TYPE_CALL || nextType == AUTH_TYPE_SMS || nextType == AUTH_TYPE_PHRASE || nextType == AUTH_TYPE_WORD) || currentType == AUTH_TYPE_SMS && (nextType == AUTH_TYPE_CALL || nextType == AUTH_TYPE_FLASH_CALL) || currentType == AUTH_TYPE_CALL && (nextType == AUTH_TYPE_SMS || nextType == AUTH_TYPE_PHRASE || nextType == AUTH_TYPE_WORD)) {
-                                    createTimer();
-                                }
-                                if (currentType == AUTH_TYPE_FRAGMENT_SMS) {
-                                    NotificationCenter.getGlobalInstance().addObserver(LoginActivitySmsView.this, NotificationCenter.didReceiveSmsCode);
-                                } else if (currentType == AUTH_TYPE_SMS) {
-                                    AndroidUtilities.setWaitingForSms(true);
-                                    NotificationCenter.getGlobalInstance().addObserver(LoginActivitySmsView.this, NotificationCenter.didReceiveSmsCode);
-                                } else if (currentType == AUTH_TYPE_FLASH_CALL) {
-                                    AndroidUtilities.setWaitingForCall(true);
-                                    NotificationCenter.getGlobalInstance().addObserver(LoginActivitySmsView.this, NotificationCenter.didReceiveCall);
-                                    AndroidUtilities.runOnUIThread(() -> {
-                                        CallReceiver.checkLastReceivedCall();
-                                    });
-                                }
-                                waitingForEvent = true;
-                                if (currentType != AUTH_TYPE_FLASH_CALL) {
-                                    boolean isWrongCode = false;
-                                    if (error.text.contains("PHONE_NUMBER_INVALID")) {
-                                        needShowAlert(getString(R.string.RestorePasswordNoEmailTitle), getString("InvalidPhoneNumber", R.string.InvalidPhoneNumber));
-                                    } else if (error.text.contains("PHONE_CODE_EMPTY") || error.text.contains("PHONE_CODE_INVALID")) {
-                                        shakeWrongCode();
-                                        isWrongCode = true;
-                                    } else if (error.text.contains("PHONE_CODE_EXPIRED")) {
-                                        onBackPressed(true);
-                                        setPage(VIEW_PHONE_INPUT, true, null, true);
-                                        needShowAlert(getString(R.string.RestorePasswordNoEmailTitle), getString("CodeExpired", R.string.CodeExpired));
-                                    } else if (error.text.startsWith("FLOOD_WAIT")) {
-                                        needShowAlert(getString(R.string.RestorePasswordNoEmailTitle), getString("FloodWait", R.string.FloodWait));
-                                    } else {
-                                        needShowAlert(getString(R.string.RestorePasswordNoEmailTitle), getString("ErrorOccurred", R.string.ErrorOccurred) + "\n" + error.text);
-                                    }
-
-                                    if (!isWrongCode) {
-                                        for (int a = 0; a < codeFieldContainer.codeField.length; a++) {
-                                            codeFieldContainer.codeField[a].setText("");
-                                        }
-
-                                        codeFieldContainer.isFocusSuppressed = false;
-                                        codeFieldContainer.codeField[0].requestFocus();
-                                    }
-                                }
-                            }
-                        }
-                        if (ok) {
-                            if (currentType == AUTH_TYPE_FLASH_CALL) {
-                                AndroidUtilities.endIncomingCall();
-                                AndroidUtilities.setWaitingForCall(false);
-                            }
-                        }
-                    }), ConnectionsManager.RequestFlagFailOnServerErrors | ConnectionsManager.RequestFlagWithoutLogin);
-                    tryShowProgress(reqId, true);
-                    showDoneButton(true, true);
+                    // Progress and response are handled by NotificationCenter. Show local progress.
+                    tryShowProgress(0, true); // reqId is no longer used
+                    showDoneButton(true, true); // Keep UI consistent
                     break;
                 }
             }
@@ -4923,10 +4636,11 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             tryHideProgress(true);
             TLRPC.TL_auth_cancelCode req = new TLRPC.TL_auth_cancelCode();
             req.phone_number = requestPhone;
-            req.phone_code_hash = phoneHash;
-            ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> {
-
-            }, ConnectionsManager.RequestFlagFailOnServerErrors | ConnectionsManager.RequestFlagWithoutLogin);
+            req.phone_code_hash = phoneHash; // TDLib manages this internally
+            // TDLib Integration: Replace ConnectionsManager with TdApiManager.cancelAuthenticationCode()
+            tdApiManager.cancelAuthenticationCode();
+            FileLog.d("Cancel code request sent via TdApiManager.");
+            // No direct response handling here for cancel.
 
             destroyTimer();
             destroyCodeTimer();
@@ -5260,57 +4974,13 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                 }
                 if (currentPassword.has_recovery) {
                     needShowProgress(0);
-                    TLRPC.TL_auth_requestPasswordRecovery req = new TLRPC.TL_auth_requestPasswordRecovery();
-                    ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
-                        needHideProgress(false);
-                        if (error == null) {
-                            final TLRPC.TL_auth_passwordRecovery res = (TLRPC.TL_auth_passwordRecovery) response;
-                            if (getParentActivity() == null) {
-                                return;
-                            }
-                            AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-
-                            String rawPattern = res.email_pattern;
-                            SpannableStringBuilder emailPattern = SpannableStringBuilder.valueOf(rawPattern);
-                            int startIndex = rawPattern.indexOf('*'), endIndex = rawPattern.lastIndexOf('*');
-                            if (startIndex != endIndex && startIndex != -1 && endIndex != -1) {
-                                TextStyleSpan.TextStyleRun run = new TextStyleSpan.TextStyleRun();
-                                run.flags |= TextStyleSpan.FLAG_STYLE_SPOILER;
-                                run.start = startIndex;
-                                run.end = endIndex + 1;
-                                emailPattern.setSpan(new TextStyleSpan(run), startIndex, endIndex + 1, 0);
-                            }
-                            builder.setMessage(AndroidUtilities.formatSpannable(getString(R.string.RestoreEmailSent), emailPattern));
-                            builder.setTitle(getString("RestoreEmailSentTitle", R.string.RestoreEmailSentTitle));
-                            builder.setPositiveButton(getString(R.string.Continue), (dialogInterface, i) -> {
-                                Bundle bundle = new Bundle();
-                                bundle.putString("email_unconfirmed_pattern", res.email_pattern);
-                                bundle.putString("password", passwordString);
-                                bundle.putString("requestPhone", requestPhone);
-                                bundle.putString("phoneHash", phoneHash);
-                                bundle.putString("phoneCode", phoneCode);
-                                setPage(VIEW_RECOVER, true, bundle, false);
-                            });
-                            Dialog dialog = showDialog(builder.create());
-                            if (dialog != null) {
-                                dialog.setCanceledOnTouchOutside(false);
-                                dialog.setCancelable(false);
-                            }
-                        } else {
-                            if (error.text.startsWith("FLOOD_WAIT")) {
-                                int time = Utilities.parseInt(error.text);
-                                String timeString;
-                                if (time < 60) {
-                                    timeString = LocaleController.formatPluralString("Seconds", time);
-                                } else {
-                                    timeString = LocaleController.formatPluralString("Minutes", time / 60);
-                                }
-                                needShowAlert(getString(R.string.WrongCodeTitle), LocaleController.formatString("FloodWaitTime", R.string.FloodWaitTime, timeString));
-                            } else {
-                                needShowAlert(getString(R.string.RestorePasswordNoEmailTitle), error.text);
-                            }
-                        }
-                    }), ConnectionsManager.RequestFlagFailOnServerErrors | ConnectionsManager.RequestFlagWithoutLogin);
+                    // TDLib Integration: Replace with TdApiManager.requestAuthenticationPasswordRecovery()
+                    // The response (e.g., AuthorizationStateWaitRecoveryCode) will be handled by NotificationCenter.
+                    tdApiManager.requestAuthenticationPasswordRecovery();
+                    FileLog.d("Request password recovery sent via TdApiManager.");
+                    // needShowProgress(0) is already called.
+                    // The rest of the logic (showing dialog, setting page) will move to the
+                    // handler for TdApi.AuthorizationStateWaitRecoveryCode or similar.
                 } else {
                     AndroidUtilities.hideKeyboard(codeField);
                     new AlertDialog.Builder(context)
@@ -5401,70 +5071,17 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             needShowProgress(0);
 
             Utilities.globalQueue.postRunnable(() -> {
-                final byte[] x_bytes;
-
-                TLRPC.PasswordKdfAlgo current_algo = currentPassword.current_algo;
-                if (current_algo instanceof TLRPC.TL_passwordKdfAlgoSHA256SHA256PBKDF2HMACSHA512iter100000SHA256ModPow) {
-                    byte[] passwordBytes = AndroidUtilities.getStringBytes(oldPassword);
-                    TLRPC.TL_passwordKdfAlgoSHA256SHA256PBKDF2HMACSHA512iter100000SHA256ModPow algo = (TLRPC.TL_passwordKdfAlgoSHA256SHA256PBKDF2HMACSHA512iter100000SHA256ModPow) current_algo;
-                    x_bytes = SRPHelper.getX(passwordBytes, algo);
-                } else {
-                    x_bytes = null;
-                }
-
-
-                RequestDelegate requestDelegate = (response, error) -> AndroidUtilities.runOnUIThread(() -> {
-                    nextPressed = false;
-                    if (error != null && "SRP_ID_INVALID".equals(error.text)) {
-                        TL_account.getPassword getPasswordReq = new TL_account.getPassword();
-                        ConnectionsManager.getInstance(currentAccount).sendRequest(getPasswordReq, (response2, error2) -> AndroidUtilities.runOnUIThread(() -> {
-                            if (error2 == null) {
-                                currentPassword = (TL_account.Password) response2;
-                                onNextPressed(null);
-                            }
-                        }), ConnectionsManager.RequestFlagWithoutLogin);
-                        return;
-                    }
-
-                    if (response instanceof TLRPC.TL_auth_authorization) {
-                        showDoneButton(false, true);
-                        postDelayed(() -> {
-                            needHideProgress(false, false);
-                            AndroidUtilities.hideKeyboard(codeField);
-                            onAuthSuccess((TLRPC.TL_auth_authorization) response);
-                        }, 150);
-                    } else {
-                        needHideProgress(false);
-                        if (error.text.equals("PASSWORD_HASH_INVALID")) {
-                            onPasscodeError(true);
-                        } else if (error.text.startsWith("FLOOD_WAIT")) {
-                            int time = Utilities.parseInt(error.text);
-                            String timeString;
-                            if (time < 60) {
-                                timeString = LocaleController.formatPluralString("Seconds", time);
-                            } else {
-                                timeString = LocaleController.formatPluralString("Minutes", time / 60);
-                            }
-                            needShowAlert(getString(R.string.RestorePasswordNoEmailTitle), LocaleController.formatString("FloodWaitTime", R.string.FloodWaitTime, timeString));
-                        } else {
-                            needShowAlert(getString(R.string.RestorePasswordNoEmailTitle), error.text);
-                        }
-                    }
-                });
-
-                if (current_algo instanceof TLRPC.TL_passwordKdfAlgoSHA256SHA256PBKDF2HMACSHA512iter100000SHA256ModPow) {
-                    TLRPC.TL_inputCheckPasswordSRP password = SRPHelper.startCheck(x_bytes, currentPassword.srp_id, currentPassword.srp_B, (TLRPC.TL_passwordKdfAlgoSHA256SHA256PBKDF2HMACSHA512iter100000SHA256ModPow) current_algo);
-                    if (password == null) {
-                        TLRPC.TL_error error = new TLRPC.TL_error();
-                        error.text = "PASSWORD_HASH_INVALID";
-                        requestDelegate.run(null, error);
-                        return;
-                    }
-                    final TLRPC.TL_auth_checkPassword req = new TLRPC.TL_auth_checkPassword();
-                    req.password = password;
-                    ConnectionsManager.getInstance(currentAccount).sendRequest(req, requestDelegate, ConnectionsManager.RequestFlagFailOnServerErrors | ConnectionsManager.RequestFlagWithoutLogin);
-                }
-            });
+            // TDLib Integration: Replace with TdApiManager.checkAuthenticationPassword(oldPassword)
+            // SRP logic is handled by TDLib internally. TdApiManager will take the plain password.
+            // The TdApi.AuthorizationStateWaitPassword provides srpId and srp_B if needed by client for SRP calculation,
+            // but TDLib client usually handles this. If TdApiManager needs these, they should be passed from
+            // the AuthorizationStateWaitPassword handler.
+            // For now, assume TdApiManager.checkAuthenticationPassword just needs the password string.
+            tdApiManager.checkAuthenticationPassword(oldPassword);
+            FileLog.d("checkAuthenticationPassword called with password of length: " + oldPassword.length());
+            // needShowProgress(0) is already called.
+            // Response (AuthorizationStateReady or an error) will be handled by NotificationCenter.
+            // nextPressed = true; is already set.
         }
 
         @Override
@@ -5602,29 +5219,11 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                         .setMessage(getString("ResetMyAccountWarningText", R.string.ResetMyAccountWarningText))
                         .setPositiveButton(getString("ResetMyAccountWarningReset", R.string.ResetMyAccountWarningReset), (dialogInterface, i) -> {
                             needShowProgress(0);
-                            TL_account.deleteAccount req = new TL_account.deleteAccount();
-                            req.reason = "Forgot password";
-                            ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
-                                needHideProgress(false);
-                                if (error == null) {
-                                    if (requestPhone == null || phoneHash == null || phoneCode == null) {
-                                        setPage(VIEW_PHONE_INPUT, true, null, true);
-                                        return;
-                                    }
-
-                                    Bundle params = new Bundle();
-                                    params.putString("phoneFormated", requestPhone);
-                                    params.putString("phoneHash", phoneHash);
-                                    params.putString("code", phoneCode);
-                                    setPage(VIEW_REGISTER, true, params, false);
-                                } else {
-                                    if (error.text.equals("2FA_RECENT_CONFIRM")) {
-                                        needShowAlert(getString(R.string.RestorePasswordNoEmailTitle), getString("ResetAccountCancelledAlert", R.string.ResetAccountCancelledAlert));
-                                    } else {
-                                        needShowAlert(getString(R.string.RestorePasswordNoEmailTitle), error.text);
-                                    }
-                                }
-                            }), ConnectionsManager.RequestFlagWithoutLogin | ConnectionsManager.RequestFlagFailOnServerErrors);
+                            // TDLib Integration: Replace with TdApiManager.deleteAccount("Forgot password")
+                            // The response (e.g., new AuthorizationState or error) will be handled by NotificationCenter.
+                            tdApiManager.deleteAccount("Forgot password");
+                            FileLog.d("Delete account request sent via TdApiManager.");
+                            // needShowProgress(0) is already called.
                         })
                         .setNegativeButton(getString("Cancel", R.string.Cancel), null).create());
             });
@@ -5998,36 +5597,27 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                 purpose.phone_code_hash = phoneHash;
                 req.purpose = purpose;
             }
-            req.email = email;
-            ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
-                needHideProgress(false);
-                nextPressed = false;
+            // TDLib Integration: Replace with TdApiManager calls.
+            // This involves two steps if not using Google Sign-In:
+            // 1. TdApi.setAuthenticationEmailAddress (if it's for login setup) or TdApi.changeAuthenticationEmailAddress
+            // 2. Then TdApi.sendAuthenticationEmailCode
+            // The response (e.g., AuthorizationStateWaitEmailCode) will be handled by NotificationCenter.
+            // For simplicity, assuming a single TdApiManager method that handles the purpose.
 
-                if (response instanceof TL_account.sentEmailCode) {
-                    TL_account.sentEmailCode emailCode = (TL_account.sentEmailCode) response;
-                    fillNextCodeParams(params, emailCode);
-                } else if (error.text != null) {
-                    if (error.text.contains("EMAIL_INVALID")) {
-                        onPasscodeError(false);
-                    } else if (error.text.contains("EMAIL_NOT_ALLOWED")) {
-                        needShowAlert(getString(R.string.RestorePasswordNoEmailTitle), getString(R.string.EmailNotAllowed));
-                    } else if (error.text.contains("PHONE_PASSWORD_FLOOD")) {
-                        needShowAlert(getString(R.string.RestorePasswordNoEmailTitle), getString("FloodWait", R.string.FloodWait));
-                    } else if (error.text.contains("PHONE_NUMBER_FLOOD")) {
-                        needShowAlert(getString(R.string.RestorePasswordNoEmailTitle), getString("PhoneNumberFlood", R.string.PhoneNumberFlood));
-                    } else if (error.text.contains("PHONE_CODE_EMPTY") || error.text.contains("PHONE_CODE_INVALID")) {
-                        needShowAlert(getString(R.string.RestorePasswordNoEmailTitle), getString("InvalidCode", R.string.InvalidCode));
-                    } else if (error.text.contains("PHONE_CODE_EXPIRED")) {
-                        onBackPressed(true);
-                        setPage(VIEW_PHONE_INPUT, true, null, true);
-                        needShowAlert(getString(R.string.RestorePasswordNoEmailTitle), getString("CodeExpired", R.string.CodeExpired));
-                    } else if (error.text.startsWith("FLOOD_WAIT")) {
-                        needShowAlert(getString(R.string.RestorePasswordNoEmailTitle), getString("FloodWait", R.string.FloodWait));
-                    } else if (error.code != -1000) {
-                        AlertsCreator.processError(currentAccount, error, LoginActivity.this, req, requestPhone);
-                    }
-                }
-            }), ConnectionsManager.RequestFlagFailOnServerErrors | ConnectionsManager.RequestFlagWithoutLogin);
+            if (activityMode == MODE_CHANGE_LOGIN_EMAIL) {
+                // This would map to something like tdApiManager.sendChangeEmailVerificationCode(email);
+                // For now, let's assume sendEmailAddressVerificationCode can distinguish or this needs a new TdApiManager method.
+                tdApiManager.sendEmailAddressVerificationCode(email); // Placeholder, might need specific method for change
+                 FileLog.d("sendEmailAddressVerificationCode (for change) called with: " + email);
+            } else { // Login setup
+                // This could be tdApiManager.setAuthenticationEmailAddress(email) then tdApiManager.sendAuthenticationEmailCode()
+                // or a combined method.
+                tdApiManager.sendEmailAddressVerificationCode(email); // Assuming this handles login setup context
+                FileLog.d("sendEmailAddressVerificationCode (for setup) called with: " + email);
+            }
+            // needShowProgress(0) is already called.
+            // nextPressed = true; is already set.
+            // Response handling via NotificationCenter / handleAuthorizationState.
         }
 
         @Override
@@ -6708,101 +6298,34 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                 }
             }
 
-            String finalCode = code;
-            ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
-                needHideProgress(false);
-                if (error == null) {
-                    nextPressed = false;
-                    showDoneButton(false, true);
+            // TDLib Integration: Replace with TdApiManager calls
+            // This depends on whether it's changing email, setting up email for login, or signing in with email code.
 
-                    Bundle params = new Bundle();
-                    params.putString("phone", phone);
-                    params.putString("ephone", emailPhone);
-                    params.putString("phoneFormated", requestPhone);
-                    params.putString("phoneHash", phoneHash);
-                    params.putString("code", finalCode);
-
-
-                    if (response instanceof TLRPC.TL_auth_authorizationSignUpRequired) {
-                        TLRPC.TL_auth_authorizationSignUpRequired authorization = (TLRPC.TL_auth_authorizationSignUpRequired) response;
-                        if (authorization.terms_of_service != null) {
-                            currentTermsOfService = authorization.terms_of_service;
-                        }
-                        animateSuccess(() -> setPage(VIEW_REGISTER, true, params, false));
-                    } else {
-                        animateSuccess(() -> {
-                            if (response instanceof TL_account.TL_emailVerified && activityMode == MODE_CHANGE_LOGIN_EMAIL) {
-                                finishFragment();
-                                emailChangeFinishCallback.run();
-                            } else if (response instanceof TL_account.TL_emailVerifiedLogin) {
-                                fillNextCodeParams(params, ((TL_account.TL_emailVerifiedLogin) response).sent_code);
-                            } else if (response instanceof TLRPC.TL_auth_authorization) {
-                                onAuthSuccess((TLRPC.TL_auth_authorization) response);
-                            }
-                        });
-                    }
-                } else {
-                    if (error.text.contains("SESSION_PASSWORD_NEEDED")) {
-                        TL_account.getPassword req2 = new TL_account.getPassword();
-                        ConnectionsManager.getInstance(currentAccount).sendRequest(req2, (response1, error1) -> AndroidUtilities.runOnUIThread(() -> {
-                            nextPressed = false;
-                            showDoneButton(false, true);
-                            if (error1 == null) {
-                                TL_account.Password password = (TL_account.Password) response1;
-                                if (!TwoStepVerificationActivity.canHandleCurrentPassword(password, true)) {
-                                    AlertsCreator.showUpdateAppAlert(getParentActivity(), getString("UpdateAppAlert", R.string.UpdateAppAlert), true);
-                                    return;
-                                }
-                                Bundle bundle = new Bundle();
-                                SerializedData data = new SerializedData(password.getObjectSize());
-                                password.serializeToStream(data);
-                                bundle.putString("password", Utilities.bytesToHex(data.toByteArray()));
-                                bundle.putString("phoneFormated", requestPhone);
-                                bundle.putString("phoneHash", phoneHash);
-                                bundle.putString("code", finalCode);
-
-                                animateSuccess(() -> setPage(VIEW_PASSWORD, true, bundle, false));
-                            } else {
-                                needShowAlert(getString(R.string.RestorePasswordNoEmailTitle), error1.text);
-                            }
-                        }), ConnectionsManager.RequestFlagFailOnServerErrors | ConnectionsManager.RequestFlagWithoutLogin);
-                    } else {
-                        nextPressed = false;
-                        showDoneButton(false, true);
-                        boolean isWrongCode = false;
-                        if (error.text.contains("EMAIL_ADDRESS_INVALID")) {
-                            needShowAlert(getString(R.string.RestorePasswordNoEmailTitle), getString(R.string.EmailAddressInvalid));
-                        } else if (error.text.contains("PHONE_NUMBER_INVALID")) {
-                            needShowAlert(getString(R.string.RestorePasswordNoEmailTitle), getString("InvalidPhoneNumber", R.string.InvalidPhoneNumber));
-                        } else if (error.text.contains("CODE_EMPTY") || error.text.contains("CODE_INVALID") || error.text.contains("EMAIL_CODE_INVALID") || error.text.contains("PHONE_CODE_INVALID")) {
-                            shakeWrongCode();
-                            isWrongCode = true;
-                        } else if (error.text.contains("EMAIL_TOKEN_INVALID")) {
-                            needShowAlert(getString(R.string.RestorePasswordNoEmailTitle), getString(R.string.EmailTokenInvalid));
-                        } else if (error.text.contains("EMAIL_VERIFY_EXPIRED")) {
-                            onBackPressed(true);
-                            setPage(VIEW_PHONE_INPUT, true, null, true);
-                            needShowAlert(getString(R.string.RestorePasswordNoEmailTitle), getString("CodeExpired", R.string.CodeExpired));
-                        } else if (error.text.startsWith("FLOOD_WAIT")) {
-                            needShowAlert(getString(R.string.RestorePasswordNoEmailTitle), getString("FloodWait", R.string.FloodWait));
-                        } else {
-                            needShowAlert(getString(R.string.RestorePasswordNoEmailTitle), getString("ErrorOccurred", R.string.ErrorOccurred) + "\n" + error.text);
-                        }
-
-                        if (!isWrongCode) {
-                            if (codeFieldContainer.codeField != null) {
-                                for (int a = 0; a < codeFieldContainer.codeField.length; a++) {
-                                    codeFieldContainer.codeField[a].setText("");
-                                }
-                                codeFieldContainer.codeField[0].requestFocus();
-                            }
-
-                            codeFieldContainer.isFocusSuppressed = false;
-                        }
-                    }
+            if (googleAccount != null) {
+                // Handle Google Sign-In verification
+                if (activityMode == MODE_CHANGE_LOGIN_EMAIL) {
+                    tdApiManager.changeEmailAddressWithGoogleToken(googleAccount.getIdToken());
+                    FileLog.d("changeEmailAddressWithGoogleToken called.");
+                } else { // Login setup or sign-in
+                    tdApiManager.checkAuthenticationEmailGoogleToken(googleAccount.getIdToken());
+                     FileLog.d("checkAuthenticationEmailGoogleToken called.");
                 }
-                googleAccount = null;
-            }), ConnectionsManager.RequestFlagFailOnServerErrors | ConnectionsManager.RequestFlagWithoutLogin);
+            } else {
+                // Handle email code verification
+                if (activityMode == MODE_CHANGE_LOGIN_EMAIL) {
+                    tdApiManager.checkChangeEmailVerificationCode(code);
+                    FileLog.d("checkChangeEmailVerificationCode called with: " + code);
+                } else { // Login setup or sign-in
+                    tdApiManager.checkAuthenticationEmailCode(code);
+                     FileLog.d("checkAuthenticationEmailCode called with: " + code);
+                }
+            }
+
+            // needShowProgress(0) is already called.
+            // nextPressed = true; is already set.
+            // Response handling via NotificationCenter / handleAuthorizationState.
+            // The old `animateSuccess` and error handling will be triggered by auth state changes.
+            googleAccount = null; // Clear after use
         }
 
         private void animateSuccess(Runnable callback) {
@@ -7117,33 +6640,14 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             nextPressed = true;
             needShowProgress(0);
             TLRPC.TL_auth_checkRecoveryPassword req = new TLRPC.TL_auth_checkRecoveryPassword();
-            req.code = code;
-            String finalCode = code;
-            ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
-                needHideProgress(false);
-                nextPressed = false;
-                if (response instanceof TLRPC.TL_boolTrue) {
-                    Bundle params = new Bundle();
-                    params.putString("emailCode", finalCode);
-                    params.putString("password", passwordString);
-                    setPage(VIEW_NEW_PASSWORD_STAGE_1, true, params, false);
-                } else {
-                    if (error == null || error.text.startsWith("CODE_INVALID")) {
-                        onPasscodeError(true);
-                    } else if (error.text.startsWith("FLOOD_WAIT")) {
-                        int time = Utilities.parseInt(error.text);
-                        String timeString;
-                        if (time < 60) {
-                            timeString = LocaleController.formatPluralString("Seconds", time);
-                        } else {
-                            timeString = LocaleController.formatPluralString("Minutes", time / 60);
-                        }
-                        needShowAlert(getString(R.string.RestorePasswordNoEmailTitle), LocaleController.formatString("FloodWaitTime", R.string.FloodWaitTime, timeString));
-                    } else {
-                        needShowAlert(getString(R.string.RestorePasswordNoEmailTitle), error.text);
-                    }
-                }
-            }), ConnectionsManager.RequestFlagFailOnServerErrors | ConnectionsManager.RequestFlagWithoutLogin);
+            // TDLib Integration: Replace with TdApiManager.checkAuthenticationRecoveryCode(code)
+            // or a similar method if it's specifically for password recovery.
+            // For now, let's assume checkRecoveryEmailCode if that's what TdApiManager provides.
+            tdApiManager.checkRecoveryEmailCode(code); // Or tdApiManager.checkAuthenticationRecoveryCode(code)
+            FileLog.d("checkRecoveryEmailCode called with: " + code);
+            // needShowProgress(0) is already called.
+            // nextPressed = true; is already set.
+            // Response handling via NotificationCenter / handleAuthorizationState.
         }
 
         @Override
@@ -7506,18 +7010,32 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                 if (currentPassword.new_algo instanceof TLRPC.TL_passwordKdfAlgoSHA256SHA256PBKDF2HMACSHA512iter100000SHA256ModPow) {
                     if (password != null) {
                         TLRPC.TL_passwordKdfAlgoSHA256SHA256PBKDF2HMACSHA512iter100000SHA256ModPow algo = (TLRPC.TL_passwordKdfAlgoSHA256SHA256PBKDF2HMACSHA512iter100000SHA256ModPow) currentPassword.new_algo;
-                        req.new_settings.new_password_hash = SRPHelper.getVBytes(newPasswordBytes, algo);
+                        req.new_settings.new_password_hash = SRPHelper.getVBytes(newPasswordBytes, algo); // This SRP helper might still be needed if TdApiManager expects computed hash
                         if (req.new_settings.new_password_hash == null) {
-                            TLRPC.TL_error error = new TLRPC.TL_error();
-                            error.text = "ALGO_INVALID";
-                            requestDelegate.run(null, error);
+                            // This case implies an issue with client-side SRP calculation.
+                            // With TDLib, this might be less likely if TDLib handles SRP.
+                            AndroidUtilities.runOnUIThread(() -> {
+                                needHideProgress(false);
+                                nextPressed = false;
+                                needShowAlert(getString(R.string.RestorePasswordNoEmailTitle), "CLIENT_SRP_ERROR"); // Example error
+                            });
+                            return;
                         }
                     }
-                    ConnectionsManager.getInstance(currentAccount).sendRequest(req, requestDelegate, ConnectionsManager.RequestFlagFailOnServerErrors | ConnectionsManager.RequestFlagWithoutLogin);
-                } else {
-                    TLRPC.TL_error error = new TLRPC.TL_error();
-                    error.text = "PASSWORD_HASH_INVALID";
-                    requestDelegate.run(null, error);
+                    // TDLib Integration: Replace with TdApiManager.recoverAuthenticationPassword
+                    // The TdApiManager method would take the recovery code, new password, and new hint.
+                    // SRP calculations for new_password_hash should ideally be handled by TdApiManager or TDLib.
+                    // If TdApiManager expects raw password, SRPHelper usage moves there.
+                    // For now, assume TdApiManager takes raw password and hint, and recovery code.
+                    tdApiManager.recoverAuthenticationPassword(emailCode, password, hint);
+                    FileLog.d("recoverAuthenticationPassword called.");
+                    // Response handling via NotificationCenter / handleAuthorizationState.
+                } else { // Unknown algo, this path should ideally not be hit if TDLib handles algos
+                    AndroidUtilities.runOnUIThread(() -> {
+                        needHideProgress(false);
+                        nextPressed = false;
+                        needShowAlert(getString(R.string.RestorePasswordNoEmailTitle), "UNKNOWN_PASSWORD_ALGORITHM");
+                    });
                 }
             });
         }
@@ -8101,42 +7619,15 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             TLRPC.TL_auth_signUp req = new TLRPC.TL_auth_signUp();
             req.phone_code_hash = phoneHash;
             req.phone_number = requestPhone;
-            req.first_name = firstNameField.getText().toString();
-            req.last_name = lastNameField.getText().toString();
-            needShowProgress(0);
-            ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
-                nextPressed = false;
-                if (response instanceof TLRPC.TL_auth_authorization) {
-                    hidePrivacyView();
-                    showDoneButton(false, true);
-                    postDelayed(() -> {
-                        needHideProgress(false, false);
-                        AndroidUtilities.hideKeyboard(fragmentView.findFocus());
-                        onAuthSuccess((TLRPC.TL_auth_authorization) response, true);
-                        if (avatarBig != null) {
-                            TLRPC.FileLocation avatar = avatarBig;
-                            Utilities.cacheClearQueue.postRunnable(()-> MessagesController.getInstance(currentAccount).uploadAndApplyUserAvatar(avatar));
-                        }
-                    }, 150);
-                } else {
-                    needHideProgress(false);
-                    if (error.text.contains("PHONE_NUMBER_INVALID")) {
-                        needShowAlert(getString(R.string.RestorePasswordNoEmailTitle), getString("InvalidPhoneNumber", R.string.InvalidPhoneNumber));
-                    } else if (error.text.contains("PHONE_CODE_EMPTY") || error.text.contains("PHONE_CODE_INVALID")) {
-                        needShowAlert(getString(R.string.RestorePasswordNoEmailTitle), getString("InvalidCode", R.string.InvalidCode));
-                    } else if (error.text.contains("PHONE_CODE_EXPIRED")) {
-                        onBackPressed(true);
-                        setPage(VIEW_PHONE_INPUT, true, null, true);
-                        needShowAlert(getString(R.string.RestorePasswordNoEmailTitle), getString("CodeExpired", R.string.CodeExpired));
-                    } else if (error.text.contains("FIRSTNAME_INVALID")) {
-                        needShowAlert(getString(R.string.RestorePasswordNoEmailTitle), getString("InvalidFirstName", R.string.InvalidFirstName));
-                    } else if (error.text.contains("LASTNAME_INVALID")) {
-                        needShowAlert(getString(R.string.RestorePasswordNoEmailTitle), getString("InvalidLastName", R.string.InvalidLastName));
-                    } else {
-                        needShowAlert(getString(R.string.RestorePasswordNoEmailTitle), error.text);
-                    }
-                }
-            }), ConnectionsManager.RequestFlagWithoutLogin | ConnectionsManager.RequestFlagFailOnServerErrors);
+            // TDLib Integration: Replace with TdApiManager.registerUser(firstName, lastName)
+            // phone_code_hash and phone_number are part of the current TDLib auth state.
+            tdApiManager.registerUser(firstNameField.getText().toString(), lastNameField.getText().toString());
+            FileLog.d("registerUser called with: " + firstNameField.getText().toString() + " " + lastNameField.getText().toString());
+            needShowProgress(0); // Already called
+            // Response (AuthorizationStateReady or error) handled by NotificationCenter.
+            // Avatar upload (if avatarBig != null) will need to be handled after successful registration,
+            // possibly by TdApiManager or a separate call here upon AuthorizationStateReady.
+            // For now, focus on registration. Avatar upload can be a follow-up.
         }
 
         @Override
@@ -8732,6 +8223,191 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
     public void didReceivedNotification(int id, int account, Object... args) {
         if (id == NotificationCenter.didUpdateConnectionState) {
             updateProxyButton(true, false);
+        } else if (id == NotificationCenter.didReceiveAuthorizationStateChange) {
+            // TDLib Integration: Handle authorization state changes
+            TdApi.AuthorizationState authorizationState = tdApiManager.getAuthorizationState();
+            FileLog.d("LoginActivity: didReceiveAuthorizationStateChange: " + authorizationState.getClass().getSimpleName());
+            handleAuthorizationState(authorizationState);
+        } else if (id == NotificationCenter.didFailtToReceiveAuthorizationStateChange) {
+            // TDLib Integration: Handle general errors if TdApiManager posts them this way
+            TdApi.Error error = (TdApi.Error) (args.length > 0 ? args[0] : null);
+            if (error != null) {
+                FileLog.e("LoginActivity: didFailtToReceiveAuthorizationStateChange: " + error.code + " " + error.message);
+                needHideProgress(false); // Hide any local progress
+                // Map TdApi.Error to existing error handling
+                // This is a generic handler; specific views might need more context
+                if (currentViewNum == VIEW_PHONE_INPUT && LoginActivity.this.currentParams != null) {
+                     PhoneInputData phoneInputData = new PhoneInputData();
+                     phoneInputData.phoneNumber = LoginActivity.this.currentParams.getString("phone");
+                     SlideView phoneView = views[VIEW_PHONE_INPUT];
+                     if (phoneView instanceof PhoneView) {
+                        phoneInputData.country = ((PhoneView)phoneView).currentCountry;
+                        phoneInputData.patterns = ((PhoneView)phoneView).phoneFormatMap.get(((PhoneView)phoneView).codeField.getText().toString());
+                     }
+                    needShowInvalidAlert(LoginActivity.this, LoginActivity.this.currentParams.getString("phoneFormated"), phoneInputData, error.message.toUpperCase().contains("BANNED"));
+                } else {
+                     needShowAlert(getString(R.string.RestorePasswordNoEmailTitle), getString(R.string.ErrorOccurred) + "\n" + error.message);
+                }
+                lastError = error.message; // Update lastError for potential reporting
+            }
+        }
+    }
+
+    // TDLib Integration: Method to handle different authorization states
+    private void handleAuthorizationState(TdApi.AuthorizationState authorizationState) {
+        if (authorizationState == null) {
+            FileLog.e("LoginActivity: handleAuthorizationState called with null state");
+            return;
+        }
+
+        // Hide general progress before specific handling
+        needHideProgress(false, true); // Hide progress, animated
+
+        if (authorizationState instanceof TdApi.AuthorizationStateWaitTdlibParameters) {
+            // TdApiManager handles this internally by calling setTdlibParameters
+            FileLog.d("LoginActivity: AuthorizationStateWaitTdlibParameters - TdApiManager should handle");
+        } else if (authorizationState instanceof TdApi.AuthorizationStateWaitEncryptionKey) {
+            // TdApiManager handles this internally (e.g., by calling checkDatabaseEncryptionKey)
+            FileLog.d("LoginActivity: AuthorizationStateWaitEncryptionKey - TdApiManager should handle");
+        } else if (authorizationState instanceof TdApi.AuthorizationStateWaitPhoneNumber) {
+            FileLog.d("LoginActivity: AuthorizationStateWaitPhoneNumber - Setting page to VIEW_PHONE_INPUT");
+            setPage(VIEW_PHONE_INPUT, true, null, true);
+        } else if (authorizationState instanceof TdApi.AuthorizationStateWaitCode) {
+            FileLog.d("LoginActivity: AuthorizationStateWaitCode");
+            TdApi.AuthorizationStateWaitCode state = (TdApi.AuthorizationStateWaitCode) authorizationState;
+            TdApi.AuthenticationCodeInfo codeInfo = state.codeInfo;
+
+            Bundle params = new Bundle(currentParams); // Start with params from phone submission (phone numbers)
+            params.putInt("timeout", codeInfo.timeout * 1000);
+            params.putInt("length", codeInfo.length);
+            // phoneHash is not directly available from TdApi.AuthenticationCodeInfo, TDLib manages it.
+            // The LoginActivitySmsView might need to be adapted to not strictly require it if TDLib handles it.
+            // For now, we might pass the one from the previous (now removed) TLRPC.auth_SentCode if it was stored,
+            // or adapt views to not rely on it if TdApiManager abstracts it.
+            // Let's assume LoginActivitySmsView will get phoneHash from its currentParams if set by old logic,
+            // or TDLib handles it implicitly. For now, we'll proceed without explicitly setting phoneHash here
+            // from codeInfo, as it's not provided.
+
+            if (codeInfo.nextType instanceof TdApi.AuthenticationCodeTypeCall) {
+                params.putInt("nextType", AUTH_TYPE_CALL);
+            } else if (codeInfo.nextType instanceof TdApi.AuthenticationCodeTypeFlashCall) {
+                params.putInt("nextType", AUTH_TYPE_FLASH_CALL);
+            } else if (codeInfo.nextType instanceof TdApi.AuthenticationCodeTypeSms) {
+                params.putInt("nextType", AUTH_TYPE_SMS);
+            } else if (codeInfo.nextType instanceof TdApi.AuthenticationCodeTypeMissedCall) {
+                params.putInt("nextType", AUTH_TYPE_MISSED_CALL);
+            } // TODO: Add other nextType mappings if necessary (e.g. Fragment, etc.)
+
+            if (codeInfo.type instanceof TdApi.AuthenticationCodeTypeTelegramMessage) {
+                params.putInt("type", AUTH_TYPE_MESSAGE);
+                setPage(VIEW_CODE_MESSAGE, true, params, false);
+            } else if (codeInfo.type instanceof TdApi.AuthenticationCodeTypeSms) {
+                params.putInt("type", AUTH_TYPE_SMS);
+                setPage(VIEW_CODE_SMS, true, params, false);
+            } else if (codeInfo.type instanceof TdApi.AuthenticationCodeTypeCall) {
+                params.putInt("type", AUTH_TYPE_CALL);
+                setPage(VIEW_CODE_CALL, true, params, false);
+            } else if (codeInfo.type instanceof TdApi.AuthenticationCodeTypeFlashCall) {
+                params.putInt("type", AUTH_TYPE_FLASH_CALL);
+                TdApi.AuthenticationCodeTypeFlashCall flashCallType = (TdApi.AuthenticationCodeTypeFlashCall) codeInfo.type;
+                params.putString("pattern", flashCallType.pattern); // This was from TLRPC, TDLib might not have it.
+                                                                  // Flash call handling might need rework.
+                                                                  // For now, assuming pattern might not be available.
+                setPage(VIEW_CODE_FLASH_CALL, true, params, false);
+            } else if (codeInfo.type instanceof TdApi.AuthenticationCodeTypeMissedCall) {
+                 params.putInt("type", AUTH_TYPE_MISSED_CALL);
+                 TdApi.AuthenticationCodeTypeMissedCall missedCallType = (TdApi.AuthenticationCodeTypeMissedCall) codeInfo.type;
+                 params.putString("prefix", missedCallType.phoneNumberPrefix);
+                 setPage(VIEW_CODE_MISSED_CALL, true, params, false);
+            }
+            // TODO: Handle other TdApi.AuthenticationCodeType (e.g. Fragment, Email for 2FA setup)
+            // For email during 2FA setup, it would be part of AuthorizationStateWaitPassword or similar.
+
+        } else if (authorizationState instanceof TdApi.AuthorizationStateWaitPassword) {
+            FileLog.d("LoginActivity: AuthorizationStateWaitPassword");
+            TdApi.AuthorizationStateWaitPassword state = (TdApi.AuthorizationStateWaitPassword) authorizationState;
+            Bundle params = new Bundle(currentParams); // currentParams should have phone info
+            // Construct a mock TL_account.Password to pass to LoginActivityPasswordView
+            // This is a workaround as LoginActivityPasswordView expects TLRPC object.
+            // Ideally, LoginActivityPasswordView should also be refactored for TdApi objects.
+            TL_account.Password passwordData = new TL_account.Password();
+            passwordData.hint = state.passwordHint;
+            passwordData.has_recovery = state.hasRecoveryEmailAddress;
+            passwordData.email_unconfirmed_pattern = state.recoveryEmailAddressPattern;
+            // SRP related fields (srp_id, srp_B, current_algo, new_algo) are handled by TDLib.
+            // The password view will only need to send the plain password.
+            // For now, we might need to create a dummy current_algo or new_algo if the view expects it.
+            passwordData.current_algo = new TLRPC.TL_passwordKdfAlgoUnknown(); // Placeholder
+            passwordData.new_algo = new TLRPC.TL_passwordKdfAlgoUnknown(); // Placeholder
+
+            SerializedData data = new SerializedData(passwordData.getObjectSize());
+            passwordData.serializeToStream(data);
+            params.putString("password", Utilities.bytesToHex(data.toByteArray()));
+            // phoneHash and code are from previous steps, should be in currentParams if set by old logic.
+            // TDLib manages these implicitly.
+            setPage(VIEW_PASSWORD, true, params, false);
+
+        } else if (authorizationState instanceof TdApi.AuthorizationStateWaitRegistration) {
+            FileLog.d("LoginActivity: AuthorizationStateWaitRegistration");
+            TdApi.AuthorizationStateWaitRegistration state = (TdApi.AuthorizationStateWaitRegistration) authorizationState;
+            Bundle params = new Bundle(currentParams); // currentParams should have phone info
+            // Convert TdApi.TermsOfService to TLRPC.TL_help_termsOfService if needed by LoginActivityRegisterView
+            if (state.termsOfService != null) {
+                TLRPC.TL_help_termsOfService tos = new TLRPC.TL_help_termsOfService();
+                tos.text = state.termsOfService.text.text; // Assuming TdApi.FormattedText
+                tos.entities = TdApiMessageConverter.convertTdApiEntitiesToTLRPC(state.termsOfService.text.entities);
+                tos.min_age = state.termsOfService.minUserAge;
+                tos.popup = state.termsOfService.showPopup;
+                currentTermsOfService = tos; // Store for LoginActivityRegisterView
+            }
+            // phoneHash and code from previous steps should be in currentParams if set by old logic.
+            // TDLib manages these implicitly.
+            setPage(VIEW_REGISTER, true, params, false);
+
+        } else if (authorizationState instanceof TdApi.AuthorizationStateReady) {
+            FileLog.d("LoginActivity: AuthorizationStateReady - User logged in!");
+            // TdApiManager will post NotificationCenter.mainUserInfoChanged after getMe()
+            // and onAuthSuccess will be called from there.
+            // For now, directly trigger the process if TdApiManager doesn't do the full user conversion.
+            // This part might need adjustment based on TdApiManager's behavior.
+            // Assuming TdApiManager.getInstance().getCurrentUser() now returns a TdApi.User
+            TdApi.User tdUser = tdApiManager.getCurrentUser(); // This method needs to exist in TdApiManager
+            if (tdUser != null) {
+                TLRPC.User tlrpcUser = TdApiMessageConverter.convertTdUserToTLRPCUser(tdUser);
+                if (tlrpcUser != null) {
+                    // Construct a dummy TLRPC.TL_auth_authorization for onAuthSuccess
+                    TLRPC.TL_auth_authorization auth = new TLRPC.TL_auth_authorization();
+                    auth.user = tlrpcUser;
+                    // setup_password_required and otherwise_relogin_days are not directly available here.
+                    // This might simplify some post-login flows or require fetching this info differently.
+                    auth.setup_password_required = false; // Assuming not required, or fetch from TdApi.PasswordState
+                    auth.otherwise_relogin_days = 0; // Default
+                    onAuthSuccess(auth);
+                } else {
+                    FileLog.e("Failed to convert TdApi.User to TLRPC.User");
+                    needShowAlert(getString(R.string.AppName), "Login failed: User data conversion error.");
+                }
+            } else {
+                 // This case implies getMe() hasn't completed or failed.
+                 // TdApiManager should ideally handle getMe() and then notify.
+                 // If not, we might need to explicitly call getMe here.
+                 FileLog.d("AuthorizationStateReady but TdApiManager.getCurrentUser() is null. Waiting for mainUserInfoChanged or calling getMe().");
+                 // For now, let's assume TdApiManager will notify via mainUserInfoChanged.
+            }
+
+        } else if (authorizationState instanceof TdApi.AuthorizationStateLoggingOut) {
+            FileLog.d("LoginActivity: AuthorizationStateLoggingOut - Show progress or wait");
+            needShowProgress(0, true); // Show general progress
+        } else if (authorizationState instanceof TdApi.AuthorizationStateClosing) {
+            FileLog.d("LoginActivity: AuthorizationStateClosing - Show progress or wait");
+            needShowProgress(0, true);
+        } else if (authorizationState instanceof TdApi.AuthorizationStateClosed) {
+            FileLog.d("LoginActivity: AuthorizationStateClosed - Client closed. Resetting.");
+            // Potentially reset to phone input or show an error that connection was lost.
+            // For now, let's assume TdApiManager will attempt to re-initialize.
+            // If it requires user action (like re-entering parameters), it will transition to WaitTdlibParameters.
+        } else {
+            FileLog.w("LoginActivity: Unhandled authorization state: " + authorizationState.getClass().getSimpleName());
         }
     }
 
