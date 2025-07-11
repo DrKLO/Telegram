@@ -7,6 +7,7 @@ import android.graphics.drawable.Drawable;
 import android.view.View;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.ui.Components.CubicBezierInterpolator;
 
 public class StarGiftPatterns {
 
@@ -216,10 +217,10 @@ public class StarGiftPatterns {
     };
 
     final static float[][] progressThresholds = {
-            {0.94f, 0.76f},
-            {0.94f, 0.70f},
-            {0.91f, 0.45f},
-            {0.91f, 0.40f}
+            {0.86f, 0.69f},
+            {0.86f, 0.61f},
+            {0.84f, 0.43f},
+            {0.84f, 0.38f}
     };
 
     public static void calcOrbits() {
@@ -269,6 +270,8 @@ public class StarGiftPatterns {
             } else {
                 factor = (progress - endProgress) / (startProgress - endProgress);
             }
+
+            factor = CubicBezierInterpolator.EASE_OUT.getInterpolation(factor);
 
             centerY = AndroidUtilities.lerp(stableY, acy, 1f - factor);
 
