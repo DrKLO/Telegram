@@ -8116,14 +8116,14 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
 
                     if (expandAnimator == null || !expandAnimator.isRunning()) {
 
-                        Log.d("pulling-info", "i="+a+"nameX=" + nameX + "onlineX=" + onlineX + "nameY=" + nameY + "onlineY=" + onlineY + " width=" + " avatarY=" + onlineTextView[a].getX()
+                        Log.d("pulling-info", "i="+a+" nameX="+nameX+" diff="+diff+ " OnlineX="+onlineTextView[a].getLeft()
                         );
 
                         nameTextView[a].setTranslationX(AndroidUtilities.lerp(((float) -nameTextView[a].getLeft())+AndroidUtilities.dp(50), nameX, diff));
                         nameTextView[a].setTranslationY(AndroidUtilities.lerp(-((actionBar.getHeight() - atop) / 1.1f), nameY, diff));
 
-                        onlineTextView[a].setTranslationX(AndroidUtilities.lerp(((float) -onlineTextView[a].getLeft())+AndroidUtilities.dp(50), onlineX, diff));
-                        onlineTextView[a].setTranslationY(AndroidUtilities.lerp(-(actionBar.getHeight() - atop)/1.2f + AndroidUtilities.dp(50), onlineY, diff));
+                        onlineTextView[a].setTranslationX(AndroidUtilities.lerp(AndroidUtilities.dp(50), onlineX, diff));
+                        onlineTextView[a].setTranslationY(AndroidUtilities.lerp(-(actionBar.getHeight() - atop)/1.2f, onlineY, diff));
                         if (a == 1) {
                             mediaCounterTextView.setTranslationX(AndroidUtilities.dp(50));
                             mediaCounterTextView.setTranslationY(AndroidUtilities.lerp(-(actionBar.getHeight() - atop) + AndroidUtilities.dp(5), onlineY, diff));
