@@ -33,7 +33,7 @@ android {
     compileSdkVersion 34
     buildToolsVersion '34.0.0'
 
-    defaultConfig.applicationId = APP_PACKAGE
+    defaultConfig.applicationId = "org.telegram.messenger"
 
     sourceSets.main.jniLibs.srcDirs = ['../TMessagesProj/jni/']
 
