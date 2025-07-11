@@ -367,6 +367,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     private AnimatorSet avatarAnimation;
     private RadialProgressView avatarProgressView;
     private SingleRowButtonGrid singleRowButtonGrid;
+    private TextView avatarEmojis;
     private ImageView bellCurveOverlay;
     private ImageView timeItem;
     private ImageView starBgItem, starFgItem;
@@ -5368,6 +5369,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
 
         updateSelectedMediaTabText();
 
+        avatarEmojis = new TextView(getContext());
+        avatarContainer2.addView(avatarEmojis, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 12, 12, 12, 12));
+
         fwdRestrictedHint = new HintView(getParentActivity(), 9);
         fwdRestrictedHint.setAlpha(0);
         frameLayout.addView(fwdRestrictedHint, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 12, 0, 12, 0));
@@ -7533,8 +7537,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
 
                 nameTextView[0].setTranslationX(AndroidUtilities.dp(68f));
                 nameTextView[0].setTranslationY((float) Math.floor(avY) + AndroidUtilities.dp(1.3f));
-                onlineTextView[0].setTranslationX(AndroidUtilities.dp(68f));
-                onlineTextView[0].setTranslationY((float) Math.floor(avY) + AndroidUtilities.dp(24));
+                onlineTextView[1].setTranslationX(AndroidUtilities.dp(-40));
+                onlineTextView[1].setTranslationY((float) Math.floor(avY) + AndroidUtilities.dp(24));
                 nameTextView[0].setScaleX(1.0f);
                 nameTextView[0].setScaleY(1.0f);
 
@@ -7848,6 +7852,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             }
         }
         fixLayout();
+        needLayout(false);
     }
 
     private void invalidateIsInLandscapeMode() {
@@ -8301,7 +8306,6 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
 
         updateProfileData(true);
         fixLayout();
-        needLayout(false);
         if (nameTextView[1] != null) {
             setParentActivityTitle(nameTextView[1].getText());
         }
@@ -8324,6 +8328,11 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             flagSecure.attach();
         }
         updateItemsUsername();
+        // TODO: Testing animated avatar emojis(gifts). Bumped into deadline
+        if (sharedMediaLayout.giftsContainer != null) {
+            CharSequence emojis = sharedMediaLayout.giftsContainer.getLastEmojis(null);
+            avatarEmojis.setText(emojis);
+        }
     }
 
     @Override
@@ -8434,18 +8443,15 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             nameTextView[0].setPivotY(0);
             onlineTextView[0].setPivotX(0);
             onlineTextView[0].setPivotY(0);
-            onlineTextView[1].setPivotX(0);
-            onlineTextView[1].setPivotY(0);
             avatarContainer.setPivotX(0);
             avatarContainer.setPivotY(0);
             nameTextViewLayoutParams.leftMargin = 128;
-            onlineTextViewLayoutParams.leftMargin = 128;
+            onlineTextViewLayoutParams.leftMargin = 188;
         } else {
             avatarImage.resetPivot();
             nameTextView[0].resetPivot();
             avatarContainer.resetPivot();
             onlineTextView[0].resetPivot();
-            onlineTextView[1].resetPivot();
             avatarImage.setTranslationX(AndroidUtilities.dp(0));
             nameTextViewLayoutParams.leftMargin = 60;
             onlineTextViewLayoutParams.leftMargin = 60;
