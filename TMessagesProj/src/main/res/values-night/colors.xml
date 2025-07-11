@@ -8,4 +8,12 @@
     <color name="widget_divider">#000000</color>
     <color name="widget_action_text">#75ADE5</color>
     <color name="widget_edit_text">#8D949B</color>
+
+    <!-- Gift specific night theme colors (from user prompt) -->
+    <!-- These override or specify the night versions -->
+    <color name="gift_background_glow">@color/gift_background_glow_night</color>
+    <color name="gift_background_circle">@color/gift_background_circle_night</color>
+    <!-- Note: gift_background_glow_night and gift_background_circle_night themselves should be defined in the main values/colors.xml
+         if this @color/ reference style is used, or defined directly here if preferred.
+         The prompt had them in the main colors.xml, so this reference is correct based on that. -->
 </resources>

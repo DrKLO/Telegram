@@ -1,0 +1,330 @@
+<resources>
+    <!-- Profile Enhanced dimensions (from user prompt) -->
+    <dimen name="profile_header_collapsed_height">120dp</dimen>
+    <dimen name="profile_header_expanded_height">240dp</dimen>
+    <dimen name="profile_avatar_size">80dp</dimen>
+    <dimen name="profile_avatar_border_width">3dp</dimen>
+    <dimen name="profile_cover_height">180dp</dimen>
+    <dimen name="profile_info_padding">16dp</dimen>
+    <dimen name="profile_stats_item_padding">12dp</dimen>
+    <dimen name="profile_action_button_height">48dp</dimen>
+    <dimen name="profile_action_button_width">120dp</dimen>
+    <dimen name="profile_tab_height">48dp</dimen>
+    <dimen name="profile_content_padding">16dp</dimen>
+
+    <!-- Navigation dimensions -->
+    <dimen name="nav_header_height">160dp</dimen>
+    <dimen name="nav_item_height">48dp</dimen>
+    <dimen name="nav_item_padding">16dp</dimen>
+    <dimen name="nav_icon_size">24dp</dimen>
+    <dimen name="nav_text_margin_start">32dp</dimen>
+    <dimen name="nav_divider_height">1dp</dimen>
+    <dimen name="nav_section_margin">8dp</dimen>
+
+    <!-- Card dimensions -->
+    <dimen name="card_corner_radius">12dp</dimen>
+    <dimen name="card_elevation">4dp</dimen>
+    <dimen name="card_margin">8dp</dimen>
+    <dimen name="card_padding">16dp</dimen>
+    <dimen name="card_image_height">200dp</dimen>
+    <dimen name="card_title_margin_bottom">8dp</dimen>
+    <dimen name="card_content_spacing">12dp</dimen>
+
+    <!-- Button dimensions -->
+    <dimen name="button_height">48dp</dimen>
+    <dimen name="button_height_large">56dp</dimen>
+    <dimen name="button_height_small">40dp</dimen>
+    <dimen name="button_corner_radius">8dp</dimen>
+    <dimen name="button_corner_radius_large">12dp</dimen>
+    <dimen name="button_padding_horizontal">24dp</dimen>
+    <dimen name="button_padding_vertical">12dp</dimen>
+    <dimen name="button_icon_size">20dp</dimen>
+    <dimen name="button_icon_margin">8dp</dimen>
+    <dimen name="button_elevation">2dp</dimen>
+    <dimen name="button_min_width">88dp</dimen>
+
+    <!-- Input field dimensions -->
+    <dimen name="input_field_height">56dp</dimen>
+    <dimen name="input_field_corner_radius">8dp</dimen>
+    <dimen name="input_field_padding">16dp</dimen>
+    <dimen name="input_field_margin_bottom">16dp</dimen>
+    <dimen name="input_field_stroke_width">1dp</dimen>
+    <dimen name="input_field_stroke_width_focused">2dp</dimen>
+    <dimen name="input_hint_margin_top">4dp</dimen>
+    <dimen name="input_error_margin_top">4dp</dimen>
+
+    <!-- Dialog dimensions -->
+    <dimen name="dialog_corner_radius">16dp</dimen>
+    <dimen name="dialog_elevation">8dp</dimen>
+    <dimen name="dialog_margin">24dp</dimen>
+    <dimen name="dialog_padding">24dp</dimen>
+    <dimen name="dialog_title_margin_bottom">16dp</dimen>
+    <dimen name="dialog_content_margin_bottom">24dp</dimen>
+    <dimen name="dialog_button_height">40dp</dimen>
+    <dimen name="dialog_button_spacing">8dp</dimen>
+    <dimen name="dialog_max_width">400dp</dimen>
+
+    <!-- List item dimensions -->
+    <dimen name="list_item_height">72dp</dimen>
+    <dimen name="list_item_height_single_line">48dp</dimen>
+    <dimen name="list_item_height_two_line">72dp</dimen>
+    <dimen name="list_item_height_three_line">88dp</dimen>
+    <dimen name="list_item_padding">16dp</dimen>
+    <dimen name="list_item_avatar_size">40dp</dimen>
+    <dimen name="list_item_icon_size">24dp</dimen>
+    <dimen name="list_item_margin_start">16dp</dimen>
+    <dimen name="list_item_margin_end">16dp</dimen>
+    <dimen name="list_item_text_margin_start">16dp</dimen>
+    <dimen name="list_divider_height">1dp</dimen>
+    <dimen name="list_section_header_height">48dp</dimen>
+
+    <!-- Toolbar dimensions -->
+    <dimen name="toolbar_height">56dp</dimen>
+    <dimen name="toolbar_elevation">4dp</dimen>
+    <dimen name="toolbar_padding">16dp</dimen>
+    <dimen name="toolbar_icon_size">24dp</dimen>
+    <dimen name="toolbar_title_margin_start">16dp</dimen>
+    <dimen name="toolbar_menu_padding">12dp</dimen>
+
+    <!-- Tab dimensions -->
+    <dimen name="tab_height">48dp</dimen>
+    <dimen name="tab_min_width">72dp</dimen>
+    <dimen name="tab_padding">16dp</dimen>
+    <dimen name="tab_indicator_height">3dp</dimen>
+    <dimen name="tab_text_size">14sp</dimen>
+    <dimen name="tab_icon_size">20dp</dimen>
+    <dimen name="tab_icon_margin_bottom">4dp</dimen>
+
+    <!-- FAB dimensions -->
+    <dimen name="fab_size">56dp</dimen>
+    <dimen name="fab_size_mini">40dp</dimen>
+    <dimen name="fab_margin">16dp</dimen>
+    <dimen name="fab_elevation">6dp</dimen>
+    <dimen name="fab_pressed_translation_z">12dp</dimen>
+    <dimen name="fab_icon_size">24dp</dimen>
+
+    <!-- Chip dimensions -->
+    <dimen name="chip_height">32dp</dimen>
+    <dimen name="chip_corner_radius">16dp</dimen>
+    <dimen name="chip_padding_horizontal">12dp</dimen>
+    <dimen name="chip_icon_size">18dp</dimen>
+    <dimen name="chip_icon_margin_end">8dp</dimen>
+    <dimen name="chip_close_icon_size">16dp</dimen>
+    <dimen name="chip_close_icon_margin_start">4dp</dimen>
+    <dimen name="chip_group_spacing">8dp</dimen>
+
+    <!-- Progress indicator dimensions -->
+    <dimen name="progress_circular_size">48dp</dimen>
+    <dimen name="progress_circular_size_small">32dp</dimen>
+    <dimen name="progress_circular_size_large">64dp</dimen>
+    <dimen name="progress_linear_height">4dp</dimen>
+    <dimen name="progress_linear_corner_radius">2dp</dimen>
+
+    <!-- Snackbar dimensions -->
+    <dimen name="snackbar_min_height">48dp</dimen>
+    <dimen name="snackbar_padding">16dp</dimen>
+    <dimen name="snackbar_corner_radius">8dp</dimen>
+    <dimen name="snackbar_elevation">6dp</dimen>
+    <dimen name="snackbar_margin">16dp</dimen>
+    <dimen name="snackbar_action_margin_start">16dp</dimen>
+
+    <!-- Bottom sheet dimensions -->
+    <dimen name="bottom_sheet_corner_radius">16dp</dimen>
+    <dimen name="bottom_sheet_elevation">8dp</dimen>
+    <dimen name="bottom_sheet_handle_width">40dp</dimen>
+    <dimen name="bottom_sheet_handle_height">4dp</dimen>
+    <dimen name="bottom_sheet_handle_margin_top">8dp</dimen>
+    <dimen name="bottom_sheet_handle_margin_bottom">8dp</dimen>
+    <dimen name="bottom_sheet_content_padding">16dp</dimen>
+    <dimen name="bottom_sheet_peek_height">200dp</dimen>
+
+    <!-- Switch dimensions -->
+    <dimen name="switch_width">52dp</dimen>
+    <dimen name="switch_height">32dp</dimen>
+    <dimen name="switch_thumb_size">28dp</dimen>
+    <dimen name="switch_track_corner_radius">16dp</dimen>
+    <dimen name="switch_thumb_corner_radius">14dp</dimen>
+    <dimen name="switch_elevation">2dp</dimen>
+
+    <!-- Slider dimensions -->
+    <dimen name="slider_height">48dp</dimen>
+    <dimen name="slider_track_height">4dp</dimen>
+    <dimen name="slider_thumb_size">20dp</dimen>
+    <dimen name="slider_thumb_elevation">2dp</dimen>
+    <dimen name="slider_label_padding">8dp</dimen>
+    <dimen name="slider_label_corner_radius">4dp</dimen>
+
+    <!-- Badge dimensions -->
+    <dimen name="badge_size">16dp</dimen>
+    <dimen name="badge_size_large">20dp</dimen>
+    <dimen name="badge_offset_horizontal">8dp</dimen>
+    <dimen name="badge_offset_vertical">8dp</dimen>
+    <dimen name="badge_text_size">10sp</dimen>
+
+    <!-- Avatar dimensions -->
+    <dimen name="avatar_size_small">32dp</dimen>
+    <dimen name="avatar_size_medium">48dp</dimen>
+    <dimen name="avatar_size_large">64dp</dimen>
+    <dimen name="avatar_size_xlarge">80dp</dimen>
+    <dimen name="avatar_border_width">2dp</dimen>
+    <dimen name="avatar_online_indicator_size">12dp</dimen>
+    <dimen name="avatar_online_indicator_border">2dp</dimen>
+
+    <!-- Search dimensions -->
+    <dimen name="search_bar_height">48dp</dimen>
+    <dimen name="search_bar_corner_radius">24dp</dimen>
+    <dimen name="search_bar_padding">16dp</dimen>
+    <dimen name="search_bar_icon_size">20dp</dimen>
+    <dimen name="search_bar_icon_margin">8dp</dimen>
+    <dimen name="search_suggestion_height">48dp</dimen>
+    <dimen name="search_suggestion_padding">16dp</dimen>
+
+    <!-- Menu dimensions -->
+    <dimen name="menu_item_height">48dp</dimen>
+    <dimen name="menu_item_padding">16dp</dimen>
+    <dimen name="menu_icon_size">24dp</dimen>
+    <dimen name="menu_icon_margin_end">16dp</dimen>
+    <dimen name="menu_corner_radius">8dp</dimen>
+    <dimen name="menu_elevation">8dp</dimen>
+    <dimen name="menu_margin">8dp</dimen>
+
+    <!-- Stepper dimensions -->
+    <dimen name="stepper_height">72dp</dimen>
+    <dimen name="stepper_circle_size">24dp</dimen>
+    <dimen name="stepper_line_height">1dp</dimen>
+    <dimen name="stepper_line_margin">8dp</dimen>
+    <dimen name="stepper_content_padding">16dp</dimen>
+    <dimen name="stepper_text_margin_start">16dp</dimen>
+
+    <!-- Timeline dimensions -->
+    <dimen name="timeline_dot_size">12dp</dimen>
+    <dimen name="timeline_line_width">2dp</dimen>
+    <dimen name="timeline_content_margin_start">32dp</dimen>
+    <dimen name="timeline_item_padding">16dp</dimen>
+    <dimen name="timeline_item_margin_bottom">16dp</dimen>
+
+    <!-- Rating dimensions -->
+    <dimen name="rating_star_size">24dp</dimen>
+    <dimen name="rating_star_size_small">16dp</dimen>
+    <dimen name="rating_star_size_large">32dp</dimen>
+    <dimen name="rating_star_spacing">4dp</dimen>
+
+    <!-- Divider dimensions -->
+    <!-- <dimen name="divider_height">1dp</dimen> --> <!-- Already defined in nav_divider_height -->
+    <dimen name="divider_margin">16dp</dimen>
+    <dimen name="divider_inset">72dp</dimen>
+
+    <!-- Shadow dimensions -->
+    <dimen name="shadow_elevation_low">2dp</dimen>
+    <dimen name="shadow_elevation_medium">4dp</dimen>
+    <dimen name="shadow_elevation_high">8dp</dimen>
+    <dimen name="shadow_elevation_highest">12dp</dimen>
+
+    <!-- Animation dimensions -->
+    <dimen name="animation_offset_small">4dp</dimen>
+    <dimen name="animation_offset_medium">8dp</dimen>
+    <dimen name="animation_offset_large">16dp</dimen>
+
+    <!-- Responsive breakpoints -->
+    <dimen name="breakpoint_small">600dp</dimen>
+    <dimen name="breakpoint_medium">840dp</dimen>
+    <dimen name="breakpoint_large">1024dp</dimen>
+
+    <!-- Content max widths -->
+    <dimen name="content_max_width_small">400dp</dimen>
+    <dimen name="content_max_width_medium">600dp</dimen>
+    <dimen name="content_max_width_large">800dp</dimen>
+
+    <!-- Status bar and navigation bar -->
+    <dimen name="status_bar_height">24dp</dimen>
+    <dimen name="navigation_bar_height">48dp</dimen>
+
+    <!-- Gesture dimensions -->
+    <dimen name="gesture_exclusion_size">48dp</dimen>
+    <dimen name="gesture_navigation_bar_height">24dp</dimen>
+
+    <!-- Accessibility dimensions -->
+    <dimen name="accessibility_min_touch_target">48dp</dimen>
+    <dimen name="accessibility_focus_indicator_width">2dp</dimen>
+
+    <!-- Loading dimensions -->
+    <dimen name="loading_shimmer_corner_radius">8dp</dimen>
+    <dimen name="loading_skeleton_height">16dp</dimen>
+    <dimen name="loading_skeleton_margin">8dp</dimen>
+
+    <!-- Grid dimensions -->
+    <dimen name="grid_spacing">8dp</dimen>
+    <dimen name="grid_item_corner_radius">8dp</dimen>
+    <dimen name="grid_item_elevation">2dp</dimen>
+
+    <!-- Calendar dimensions -->
+    <dimen name="calendar_day_size">48dp</dimen>
+    <dimen name="calendar_header_height">56dp</dimen>
+    <dimen name="calendar_week_height">48dp</dimen>
+    <dimen name="calendar_month_padding">16dp</dimen>
+
+    <!-- Map dimensions -->
+    <dimen name="map_marker_size">32dp</dimen>
+    <dimen name="map_info_window_padding">16dp</dimen>
+    <dimen name="map_control_margin">16dp</dimen>
+    <dimen name="map_control_size">48dp</dimen>
+
+    <!-- Chat dimensions -->
+    <dimen name="chat_bubble_corner_radius">18dp</dimen>
+    <dimen name="chat_bubble_padding">12dp</dimen>
+    <dimen name="chat_bubble_margin">8dp</dimen>
+    <dimen name="chat_bubble_max_width">280dp</dimen>
+    <dimen name="chat_input_height">48dp</dimen>
+    <dimen name="chat_input_max_height">120dp</dimen>
+    <dimen name="chat_attachment_size">40dp</dimen>
+
+    <!-- Video player dimensions -->
+    <dimen name="video_control_size">48dp</dimen>
+    <dimen name="video_control_margin">16dp</dimen>
+    <dimen name="video_progress_height">4dp</dimen>
+    <dimen name="video_progress_thumb_size">16dp</dimen>
+
+    <!-- Image dimensions -->
+    <dimen name="image_corner_radius">8dp</dimen>
+    <dimen name="image_placeholder_size">120dp</dimen>
+    <dimen name="image_overlay_padding">16dp</dimen>
+
+    <!-- Notification dimensions -->
+    <dimen name="notification_icon_size">24dp</dimen>
+    <dimen name="notification_large_icon_size">64dp</dimen>
+    <dimen name="notification_padding">16dp</dimen>
+    <dimen name="notification_action_height">48dp</dimen>
+
+    <!-- Widget dimensions -->
+    <dimen name="widget_corner_radius">16dp</dimen>
+    <dimen name="widget_padding">16dp</dimen>
+    <dimen name="widget_margin">8dp</dimen>
+    <dimen name="widget_min_height">72dp</dimen>
+
+    <!-- Onboarding dimensions -->
+    <dimen name="onboarding_image_size">200dp</dimen>
+    <dimen name="onboarding_content_padding">32dp</dimen>
+    <dimen name="onboarding_button_margin_top">32dp</dimen>
+    <dimen name="onboarding_indicator_size">8dp</dimen>
+    <dimen name="onboarding_indicator_margin">4dp</dimen>
+
+    <!-- Form dimensions -->
+    <dimen name="form_section_margin">24dp</dimen>
+    <dimen name="form_field_spacing">16dp</dimen>
+    <dimen name="form_label_margin_bottom">8dp</dimen>
+    <dimen name="form_checkbox_size">20dp</dimen>
+    <dimen name="form_radio_size">20dp</dimen>
+
+    <!-- Drawer dimensions -->
+    <dimen name="drawer_width">300dp</dimen>
+    <dimen name="drawer_header_height">160dp</dimen>
+    <dimen name="drawer_item_height">48dp</dimen>
+    <dimen name="drawer_item_padding">16dp</dimen>
+    <dimen name="drawer_elevation">16dp</dimen>
+
+    <!-- Gift specific dimensions (from user prompt, ensuring they are included) -->
+    <dimen name="gift_icon_size">32dp</dimen>
+    <dimen name="gift_floating_amplitude">3dp</dimen>
+    <dimen name="gift_orbit_radius">50dp</dimen>
+    <dimen name="gift_background_glow">2dp</dimen>
+</resources>

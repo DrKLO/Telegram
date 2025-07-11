@@ -1,4 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <integer name="splash_screen_duration">450</integer>
+
+    <!-- Gift specific integers (from user prompt) -->
+    <integer name="gift_animation_duration">400</integer>
+    <integer name="gift_animation_stagger_delay">150</integer>
+    <integer name="gift_floating_duration">2000</integer>
+    <integer name="gift_auto_trigger_min_delay">30000</integer>
+    <integer name="gift_auto_trigger_max_delay">60000</integer>
 </resources>

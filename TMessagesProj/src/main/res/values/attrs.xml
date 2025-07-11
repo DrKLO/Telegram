@@ -7,4 +7,11 @@
     <attr name="widgetPreviewTime" format="string" />
     <attr name="widgetPreviewImage" format="reference" />
     <attr name="widgetPreviewDot" format="integer" />
+
+    <declare-styleable name="ProfileGiftCell">
+        <attr name="giftAnimationDuration" format="integer" />
+        <attr name="giftAnimationDelay" format="integer" />
+        <attr name="giftFloatingAmplitude" format="dimension" />
+        <attr name="giftIconSize" format="dimension" />
+    </declare-styleable>
 </resources>
