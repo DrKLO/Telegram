@@ -412,9 +412,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
 
     private boolean[] isOnline = new boolean[1];
 
-    private boolean callItemVisible;
-    private boolean videoCallItemVisible;
-    private boolean editItemVisible;
+    private boolean callItemVisible = false;
+    private boolean videoCallItemVisible = false;
+    private boolean editItemVisible = false;
     private ActionBarMenuItem animatingItem;
     private ActionBarMenuItem callItem;
     private ActionBarMenuItem videoCallItem;
@@ -1212,10 +1212,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     if (loadedScale > 0) {
                         canvas.save();
 
-                        if (avatarClipProgress > 0) {
-                            float currentScale = lerp(1.0f, 0.1f, avatarClipProgress);
-                            canvas.scale(currentScale, currentScale, clipAvatarCX, clipAvatarCY);
-                        }
+
                         canvas.clipRect(0, 0, getMeasuredWidth(), y1);
                         StarGiftPatterns.drawProfilePattern(canvas, emoji, getMeasuredWidth(), ((actionBar.getOccupyStatusBar() ? AndroidUtilities.statusBarHeight : 0) + dp(144)) - (1f - extraHeight / totalHeaderHeight) * dp(50), Math.min(1f, extraHeight / totalHeaderHeight), full);
                         canvas.restore();
@@ -2829,12 +2826,10 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 } else if (id == add_photo) {
                     onWriteButtonClick();
                 } else if (id == qr_button) {
-                    if (qrItem != null && qrItem.getAlpha() > 0) {
-                        Bundle args = new Bundle();
-                        args.putLong("chat_id", chatId);
-                        args.putLong("user_id", userId);
-                        presentFragment(new QrActivity(args));
-                    }
+                    Bundle args = new Bundle();
+                    args.putLong("chat_id", chatId);
+                    args.putLong("user_id", userId);
+                    presentFragment(new QrActivity(args));
                 }
             }
         });
@@ -3470,8 +3465,6 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 AndroidUtilities.removeAdjustResize(getParentActivity(), classGuid);
 
                 listView.stopScroll();
-//                avatarContainer2.setPivotX(avatarContainer2.getMeasuredWidth() / 2f);
-//                avatarContainer2.setPivotY(avatarContainer.getPivotY() + avatarContainer.getMeasuredHeight() / 2f);
                 AndroidUtilities.updateViewVisibilityAnimated(avatarContainer2, !expanded, 0.95f, true);
 
                 callItem.setVisibility(expanded || !callItemVisible ? GONE : INVISIBLE);
@@ -3479,7 +3472,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 editItem.setVisibility(expanded || !editItemVisible ? GONE : INVISIBLE);
                 otherItem.setVisibility(expanded ? GONE : INVISIBLE);
                 if (qrItem != null) {
-                    qrItem.setVisibility(expanded ? GONE : INVISIBLE);
+                    qrItem.setVisibility(GONE);
                 }
                 updateStoriesViewBounds(false);
             }
@@ -3592,6 +3585,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         if (userId == getUserConfig().clientUserId && !myProfile) {
             qrItem = menu.addItem(qr_button, R.drawable.msg_qr_mini, getResourceProvider());
             qrItem.setContentDescription(LocaleController.getString(R.string.GetQRCode));
+            qrItem.setVisibility(View.GONE);
             updateQrItemVisibility(false);
             if (ContactsController.getInstance(currentAccount).getPrivacyRules(PRIVACY_RULES_TYPE_ADDED_BY_PHONE) == null) {
                 ContactsController.getInstance(currentAccount).loadPrivacySettings();
@@ -3662,7 +3656,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         int scrollTo;
         int scrollToPosition = 0;
         Object writeButtonTag = null;
-        if (listView != null && imageUpdater != null) {
+        if (listView != null && imageUpdater != null && writeButton != null) {
             scrollTo = layoutManager.findFirstVisibleItemPosition();
             View topView = layoutManager.findViewByPosition(scrollTo);
             if (topView != null) {
@@ -5291,6 +5285,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         configureActionButtons(frameLayout);
 
         writeButton = new RLottieImageView(context);
+        writeButton.setVisibility(View.INVISIBLE);
         writeButtonSetBackground();
         if (userId != 0) {
             if (imageUpdater != null) {
@@ -5364,6 +5359,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
 
         expandAnimator = ValueAnimator.ofFloat(0f, 1f);
         expandAnimator.addUpdateListener(anim -> {
+            needLayout(false);
             setAvatarExpandProgress(anim.getAnimatedFraction());
         });
         expandAnimator.setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT);
@@ -5565,15 +5561,17 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 actionButtons.add(new ActionBarButton(context, LocaleController.getString(R.string.Edit), ContextCompat.getDrawable(context, R.drawable.msg_edit), backgroundColor, contentColor, edit_info));
                 actionButtons.add(new ActionBarButton(context, LocaleController.getString(R.string.ChoosePhoto), ContextCompat.getDrawable(context, R.drawable.ic_camera_contest), backgroundColor, contentColor, -2));
                 actionButtons.add(new ActionBarButton(context, LocaleController.getString(R.string.QrCode), ContextCompat.getDrawable(context, R.drawable.msg_mini_qr), backgroundColor, contentColor, qr_button));
-                actionButtons.add(new ActionBarButton(context, LocaleController.getString(R.string.ShareContact), ContextCompat.getDrawable(context, R.drawable.ic_share_contest), backgroundColor, contentColor, copy_link_profile));
+                if (UserObject.getPublicUsername(user) != null) {
+                    actionButtons.add(new ActionBarButton(context, LocaleController.getString(R.string.ShareContact), ContextCompat.getDrawable(context, R.drawable.ic_share_contest), backgroundColor, contentColor, copy_link_profile));
+                }
             } else {
                 if (!UserObject.isService(user.id)) {
                     if (user.bot && userBlocked) {
                         actionButtons.add(new ActionBarButton(context, LocaleController.getString(R.string.BotRestart), ContextCompat.getDrawable(context, R.drawable.msg_retry), backgroundColor, contentColor, block_contact));
                     } else {
-                        actionButtons.add(new ActionBarButton(context, LocaleController.getString(R.string.Message), ContextCompat.getDrawable(context, R.drawable.ic_message_contest), backgroundColor, contentColor, -1));
+                        actionButtons.add(new ActionBarButton(context, LocaleController.getString(R.string.Message), ContextCompat.getDrawable(context, R.drawable.ic_message_contest), backgroundColor, contentColor, -4));
                     }
-                    boolean isMuted = getNotificationsController().isGlobalNotificationsEnabled(getDialogId(), false, false);
+                    boolean isMuted = getMessagesController().isDialogMuted(getDialogId(), isTopic ? topicId : 0);
                     actionButtons.add(new ActionBarButton(context, isMuted ? LocaleController.getString(R.string.Unmute) : LocaleController.getString(R.string.Mute), isMuted ? ContextCompat.getDrawable(context, R.drawable.ic_unmute_contest) : ContextCompat.getDrawable(context, R.drawable.ic_mute_contest), backgroundColor, contentColor, -1));
                     if (!user.bot) {
                         if (userInfo != null && userInfo.phone_calls_available) {
@@ -5582,7 +5580,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                         boolean canVideoCall = Build.VERSION.SDK_INT >= 18 && userInfo != null && userInfo.video_calls_available;
                         boolean canGift = !BuildVars.IS_BILLING_UNAVAILABLE && !getMessagesController().premiumPurchaseBlocked() && !UserObject.areGiftsDisabled(userInfo);
 
-                        if (canVideoCall) {
+                        if (canVideoCall && Build.VERSION.SDK_INT >= 18 && userInfo.video_calls_available) {
                             actionButtons.add(new ActionBarButton(context, LocaleController.getString(R.string.VideoCall), ContextCompat.getDrawable(context, R.drawable.ic_video_contest), backgroundColor, contentColor, video_call_item));
 
                         } else if (canGift) {
@@ -5598,13 +5596,13 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             TLRPC.Chat chat = getMessagesController().getChat(chatId);
             if (chat != null) {
                 if (isTopic) {
-                    actionButtons.add(new ActionBarButton(context, LocaleController.getString(R.string.AccDescrOpenChat), ContextCompat.getDrawable(context, R.drawable.ic_message_contest), backgroundColor, contentColor, -1));
-                    boolean isMuted = getNotificationsController().getNotificationsSettingsFacade().isDefault(getDialogId(), topicId);
+                    actionButtons.add(new ActionBarButton(context, LocaleController.getString(R.string.AccDescrOpenChat), ContextCompat.getDrawable(context, R.drawable.ic_message_contest), backgroundColor, contentColor, -4));
+                    boolean isMuted = getMessagesController().isDialogMuted(getDialogId(), isTopic ? topicId : 0);
                     actionButtons.add(new ActionBarButton(context, isMuted ? LocaleController.getString(R.string.Unmute) : LocaleController.getString(R.string.Mute), isMuted ? ContextCompat.getDrawable(context, R.drawable.ic_unmute_contest) : ContextCompat.getDrawable(context, R.drawable.ic_mute_contest), backgroundColor, contentColor, -1));
                 } else {
                     if (!ChatObject.isLeftFromChat(chat)) {
-                        actionButtons.add(new ActionBarButton(context, LocaleController.getString(R.string.AccDescrOpenChat), ContextCompat.getDrawable(context, R.drawable.ic_message_contest), backgroundColor, contentColor, -1));
-                        boolean isMuted = getNotificationsController().isGlobalNotificationsEnabled(getDialogId(), false, false);
+                        actionButtons.add(new ActionBarButton(context, LocaleController.getString(R.string.AccDescrOpenChat), ContextCompat.getDrawable(context, R.drawable.ic_message_contest), backgroundColor, contentColor, -4));
+                        boolean isMuted = getMessagesController().isDialogMuted(getDialogId(), isTopic ? topicId : 0);
                         actionButtons.add(new ActionBarButton(context, isMuted ? LocaleController.getString(R.string.Unmute) : LocaleController.getString(R.string.Mute), isMuted ? ContextCompat.getDrawable(context, R.drawable.ic_unmute_contest) : ContextCompat.getDrawable(context, R.drawable.ic_mute_contest), backgroundColor, contentColor, -1));
                         if (chatInfo != null && chatInfo.call != null) {
                             actionButtons.add(new ActionBarButton(context, LocaleController.getString(R.string.StartVoipChatTitle), ContextCompat.getDrawable(context, R.drawable.ic_live_stream_contest), backgroundColor, contentColor, call_item));
@@ -5614,7 +5612,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     }
 
                     if (chat.left) {
-                        actionButtons.add(new ActionBarButton(context, LocaleController.getString(R.string.ProfileJoinChannel), ContextCompat.getDrawable(context, R.drawable.ic_join_contest), backgroundColor, contentColor, joinRow));
+                        actionButtons.add(new ActionBarButton(context, LocaleController.getString(R.string.ProfileJoinChannel), ContextCompat.getDrawable(context, R.drawable.ic_join_contest), backgroundColor, contentColor, -3));
                     } else {
                         actionButtons.add(new ActionBarButton(context, LocaleController.getString(R.string.LeaveChannel), ContextCompat.getDrawable(context, R.drawable.ic_leave_contest), backgroundColor, contentColor, leave_group));
                     }
@@ -5625,21 +5623,114 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             ActionBarButton button = actionButtons.get(i);
             button.setOnActionClickListener(v -> {
                 if (button.getId() == -1) {
-                    if (button.getText() == LocaleController.getString(R.string.AccDescrOpenChat)) {
-                        onWriteButtonClick();
-                    } else if (button.getText() == LocaleController.getString(R.string.Mute) || button.getText() == LocaleController.getString(R.string.Unmute)) {
-                        long did = getDialogId();
-                        long tid = isTopic ? topicId : 0;
-                        boolean muted = getNotificationsController().getNotificationsSettingsFacade().isDefault(did, tid);
-                        getNotificationsController().muteDialog(did, tid, !muted);
-                        BulletinFactory.createMuteBulletin(ProfileActivity.this, !muted, null).show();
-//                        configureActionButtons(frameLayout);
-                        button.requestLayout();
-                        button.invalidate();
+                    long did = getDialogId();
+                    long tid = isTopic ? topicId : 0;
+
+                    ChatNotificationsPopupWrapper chatNotificationsPopupWrapper = new ChatNotificationsPopupWrapper(v.getContext(), currentAccount, null, true, true, new ChatNotificationsPopupWrapper.Callback() {
+                        @Override
+                        public void toggleSound() {
+                            SharedPreferences preferences = MessagesController.getNotificationsSettings(currentAccount);
+                            boolean enabled = !preferences.getBoolean("sound_enabled_" + NotificationsController.getSharedPrefKey(did, tid), true);
+                            preferences.edit().putBoolean("sound_enabled_" + NotificationsController.getSharedPrefKey(did, tid), enabled).apply();
+                            if (BulletinFactory.canShowBulletin(ProfileActivity.this)) {
+                                BulletinFactory.createSoundEnabledBulletin(ProfileActivity.this, enabled ? NotificationsController.SETTING_SOUND_ON : NotificationsController.SETTING_SOUND_OFF, getResourceProvider()).show();
+                            }
+                        }
+
+                        @Override
+                        public void muteFor(int timeInSeconds) {
+                            if (timeInSeconds == 0) {
+                                if (getMessagesController().isDialogMuted(did, tid)) {
+                                    toggleMute();
+                                }
+                                if (BulletinFactory.canShowBulletin(ProfileActivity.this)) {
+                                    BulletinFactory.createMuteBulletin(ProfileActivity.this, NotificationsController.SETTING_MUTE_UNMUTE, timeInSeconds, getResourceProvider()).show();
+                                }
+                            } else {
+                                getNotificationsController().muteUntil(did, tid, timeInSeconds);
+                                if (BulletinFactory.canShowBulletin(ProfileActivity.this)) {
+                                    BulletinFactory.createMuteBulletin(ProfileActivity.this, NotificationsController.SETTING_MUTE_CUSTOM, timeInSeconds, getResourceProvider()).show();
+                                }
+                                configureActionButtons(frameLayout);
+                            }
+                        }
+
+                        @Override
+                        public void showCustomize() {
+                            if (did != 0) {
+                                Bundle args = new Bundle();
+                                args.putLong("dialog_id", did);
+                                args.putLong("topic_id", tid);
+                                presentFragment(new ProfileNotificationsActivity(args, resourcesProvider));
+                            }
+                        }
+
+                        @Override
+                        public void toggleMute() {
+                            boolean muted = getMessagesController().isDialogMuted(did, tid);
+                            getNotificationsController().muteDialog(did, tid, !muted);
+                            if (ProfileActivity.this.fragmentView != null) {
+                                BulletinFactory.createMuteBulletin(ProfileActivity.this, !muted, null).show();
+                            }
+                            configureActionButtons(frameLayout);
+                        }
+
+                        @Override
+                        public void openExceptions() {
+                        }
+                    }, getResourceProvider());
+                    chatNotificationsPopupWrapper.update(did, tid, notificationsExceptionTopics);
+                    chatNotificationsPopupWrapper.showAsOptions(ProfileActivity.this, v, 0, 0);
+                } else if (button.getId() == -2) {
+                    onWriteButtonClick();
+                } else if (button.getId() == -3) {
+                    getMessagesController().addUserToChat(currentChat.id, getUserConfig().getCurrentUser(), 0, null, ProfileActivity.this, true, () -> {
+                        updateRowsIds();
+                        if (listAdapter != null) {
+                            listAdapter.notifyDataSetChanged();
+                        }
+                    }, err -> {
+                        if (err != null && "INVITE_REQUEST_SENT".equals(err.text)) {
+                            SharedPreferences preferences = MessagesController.getNotificationsSettings(currentAccount);
+                            preferences.edit().putLong("dialog_join_requested_time_" + dialogId, System.currentTimeMillis()).commit();
+                            JoinGroupAlert.showBulletin(context, ProfileActivity.this, ChatObject.isChannel(currentChat) && !currentChat.megagroup);
+                            updateRowsIds();
+                            if (listAdapter != null) {
+                                listAdapter.notifyDataSetChanged();
+                            }
+                            BaseFragment lastFragment = LaunchActivity.getSafeLastFragment();
+                            if (lastFragment instanceof ChatActivity) {
+                                ((ChatActivity) lastFragment).showBottomOverlayProgress(false, true);
+                            }
+                            return false;
+                        }
+                        return true;
+                    });
+                    NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.closeSearchByActiveAction);
+                } else if (button.getId() == -4) {
+                    Bundle args = new Bundle();
+                    if (userId != 0) {
+                        args.putLong("user_id", userId);
+                    } else if (chatId != 0) {
+                        args.putLong("chat_id", chatId);
+                    }
+
+                    if (parentLayout != null && parentLayout.getFragmentStack().size() > 1 && parentLayout.getFragmentStack().get(parentLayout.getFragmentStack().size() - 2) instanceof ChatActivity) {
+                        ChatActivity prevChat = (ChatActivity) parentLayout.getFragmentStack().get(parentLayout.getFragmentStack().size() - 2);
+                        if (prevChat.getDialogId() == getDialogId()) {
+                            finishFragment();
+                            return;
+                        }
+                    }
+
+                    if (getMessagesController().checkCanOpenChat(args, ProfileActivity.this)) {
+                        presentFragment(new ChatActivity(args), true);
                     }
                 } else {
                     actionBar.getActionBarMenuOnItemClick().onItemClick(button.getId());
                 }
+                button.requestLayout();
+                button.invalidate();
             });
             actionBarButtonsContainer.addView(button, LayoutHelper.createLinear(0, actionBarButtonHeight, 1f));
             if (i < actionButtons.size() - 1) {
@@ -6251,11 +6342,13 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     cellCameraDrawable.setCurrentFrame(0);
                 }, dialog -> {
                     if (!imageUpdater.isUploadingImage()) {
-                        cameraDrawable.setCustomEndFrame(86);
-                        cellCameraDrawable.setCustomEndFrame(86);
-                        writeButton.playAnimation();
-                        if (setAvatarCell != null) {
-                            setAvatarCell.getImageView().playAnimation();
+                        if (cameraDrawable != null) {
+                            cameraDrawable.setCustomEndFrame(86);
+                            cellCameraDrawable.setCustomEndFrame(86);
+                            writeButton.playAnimation();
+                            if (setAvatarCell != null) {
+                                setAvatarCell.getImageView().playAnimation();
+                            }
                         }
                     } else {
                         cameraDrawable.setCurrentFrame(0, false);
@@ -7891,7 +7984,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 qrItem.setClickable(isQrItemVisible);
                 qrItemAnimation = new AnimatorSet();
                 if (!(qrItem.getVisibility() == View.GONE && !setQrVisible)) {
-                    qrItem.setVisibility(View.VISIBLE);
+                    qrItem.setVisibility(View.GONE);
                 }
                 if (setQrVisible) {
                     qrItemAnimation.setInterpolator(new DecelerateInterpolator());
@@ -7925,7 +8018,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             isQrItemVisible = setQrVisible;
             qrItem.setClickable(isQrItemVisible);
             qrItem.setAlpha(setQrVisible ? 1.0f : 0.0f);
-            qrItem.setVisibility(setQrVisible ? View.VISIBLE : View.GONE);
+            qrItem.setVisibility(View.GONE);
         }
     }
 
@@ -10699,7 +10792,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 return;
             }
             if (UserObject.isUserSelf(user)) {
-                editItemVisible = myProfile;
+                editItemVisible = false;
                 otherItem.addSubItem(edit_info, R.drawable.msg_edit, LocaleController.getString(R.string.EditInfo));
                 if (imageUpdater != null) {
                     otherItem.addSubItem(add_photo, R.drawable.msg_addphoto, LocaleController.getString(R.string.AddPhoto));
@@ -10714,12 +10807,12 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 selfUser = true;
             } else {
                 if (user.bot && user.bot_can_edit) {
-                    editItemVisible = true;
+                    editItemVisible = false;
                 }
 
                 if (userInfo != null && userInfo.phone_calls_available) {
-                    callItemVisible = true;
-                    videoCallItemVisible = Build.VERSION.SDK_INT >= 18 && userInfo.video_calls_available;
+                    callItemVisible = false;
+                    videoCallItemVisible = false;
                 }
                 if (isBot || getContactsController().contactsDict.get(userId) == null) {
                     if (MessagesController.isSupportUser(user)) {
@@ -10790,11 +10883,11 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             if (ChatObject.isChannel(chat)) {
                 if (isTopic) {
                     if (ChatObject.canManageTopic(currentAccount, chat, topicId)) {
-                        editItemVisible = true;
+                        editItemVisible = false;
                     }
                 } else {
                     if (ChatObject.hasAdminRights(chat) || chat.megagroup && ChatObject.canChangeChatInfo(chat)) {
-                        editItemVisible = true;
+                        editItemVisible = false;
                     }
                 }
                 if (chatInfo != null) {
@@ -10806,7 +10899,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                         otherItem.addSubItem(statistics, R.drawable.msg_stats, LocaleController.getString(R.string.Statistics));
                     }
                     ChatObject.Call call = getMessagesController().getGroupCall(chatId, false);
-                    callItemVisible = call != null;
+                    callItemVisible = false;
                 }
                 if (chat.megagroup) {
                     if (chatInfo == null || !chatInfo.participants_hidden || ChatObject.hasAdminRights(chat)) {
@@ -10845,10 +10938,10 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                         hasVoiceChatItem = true;
                     }
                     ChatObject.Call call = getMessagesController().getGroupCall(chatId, false);
-                    callItemVisible = call != null;
+                    callItemVisible = false;
                 }
                 if (ChatObject.canChangeChatInfo(chat)) {
-                    editItemVisible = true;
+                    editItemVisible = false;
                 }
                 if (!ChatObject.isKickedFromChat(chat) && !ChatObject.isLeftFromChat(chat)) {
                     if (chatInfo == null || !chatInfo.participants_hidden || ChatObject.hasAdminRights(chat)) {
@@ -11258,7 +11351,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         }
         if (qrItem != null) {
             qrItem.setAlpha(1f);
-            qrItem.setVisibility(enter || !isQrNeedVisible() ? View.GONE : View.VISIBLE);
+            qrItem.setVisibility(View.GONE);
         }
         searchItem.setVisibility(hide);
 

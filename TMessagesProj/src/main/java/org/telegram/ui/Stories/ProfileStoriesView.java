@@ -489,8 +489,14 @@ public class ProfileStoriesView extends View implements NotificationCenter.Notif
         float avatarPullProgress = Utilities.clamp((avatarContainer.getScaleX() - 1f) / 0.4f, 1f, 0f);
         float insetMain = AndroidUtilities.lerp(AndroidUtilities.dpf2(4f), AndroidUtilities.dpf2(3.5f), avatarPullProgress);
         insetMain *= progressToInsets;
-        float ax = avatarContainer.getX() + insetMain * avatarContainer.getScaleX();
-        float ay = avatarContainer.getY() + insetMain * avatarContainer.getScaleY();
+        float scaleX = avatarContainer.getScaleX();
+        float scaleY = avatarContainer.getScaleY();
+
+        float offsetX = (avatarContainer.getWidth() * (scaleX - 1)) / 2f;
+        float offsetY = (avatarContainer.getHeight() * (scaleY - 1)) / 2f;
+
+        float ax = avatarContainer.getX() - offsetX + insetMain * scaleX;
+        float ay = avatarContainer.getY() - offsetY + insetMain * scaleY;
         float aw = (avatarContainer.getWidth() - insetMain * 2) * avatarContainer.getScaleX();
         float ah = (avatarContainer.getHeight() - insetMain * 2) * avatarContainer.getScaleY();
         rect1.set(ax, ay, ax + aw, ay + ah);
