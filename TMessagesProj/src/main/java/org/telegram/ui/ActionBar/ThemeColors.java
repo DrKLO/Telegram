@@ -535,6 +535,7 @@ public class ThemeColors {
 
         defaultColors[key_profile_creatorIcon] = 0xff3a95d5;
         defaultColors[key_profile_actionIcon] = 0xff81868a;
+        defaultColors[key_profile_actionText] = 0xff000000;
         defaultColors[key_profile_actionBackground] = 0xffffffff;
         defaultColors[key_profile_actionPressedBackground] = 0xfff2f2f2;
         defaultColors[key_profile_verifiedBackground] = 0xffb2d6f8;
@@ -546,6 +547,13 @@ public class ThemeColors {
         defaultColors[key_profile_tabSelectedText] = 0xff3a95d5;
         defaultColors[key_profile_tabSelectedLine] = 0xff4fa6e9;
         defaultColors[key_profile_tabSelector] = 0x0f000000;
+
+        // Profile header animation colors
+        defaultColors[key_profile_headerAnimationBackground] = 0x80000000; // Semi-transparent black
+        defaultColors[key_profile_headerAnimationAccent] = 0x60ffffff; // Semi-transparent white
+        defaultColors[key_profile_headerAnimationOverlay] = 0x20000000; // Light overlay
+        defaultColors[key_profile_headerAnimationGradientStart] = 0xff3a95d5; // Blue gradient start
+        defaultColors[key_profile_headerAnimationGradientEnd] = 0xff6ab7ff; // Light blue gradient end
 
         defaultColors[key_player_actionBarSelector] = 0x0f000000;
         defaultColors[key_player_actionBarTitle] = 0xff2f3438;
@@ -1420,6 +1428,7 @@ public class ThemeColors {
         colorKeysMap.put(key_profile_creatorIcon, "profile_creatorIcon");
         colorKeysMap.put(key_profile_title, "profile_title");
         colorKeysMap.put(key_profile_actionIcon, "profile_actionIcon");
+        colorKeysMap.put(key_profile_actionText, "profile_actionText");
         colorKeysMap.put(key_profile_actionBackground, "profile_actionBackground");
         colorKeysMap.put(key_profile_actionPressedBackground, "profile_actionPressedBackground");
         colorKeysMap.put(key_profile_verifiedBackground, "profile_verifiedBackground");
@@ -1429,6 +1438,12 @@ public class ThemeColors {
         colorKeysMap.put(key_profile_tabSelectedText, "profile_tabSelectedText");
         colorKeysMap.put(key_profile_tabSelectedLine, "profile_tabSelectedLine");
         colorKeysMap.put(key_profile_tabSelector, "profile_tabSelector");
+        // Profile header animation color mappings
+        colorKeysMap.put(key_profile_headerAnimationBackground, "profile_headerAnimationBackground");
+        colorKeysMap.put(key_profile_headerAnimationAccent, "profile_headerAnimationAccent");
+        colorKeysMap.put(key_profile_headerAnimationOverlay, "profile_headerAnimationOverlay");
+        colorKeysMap.put(key_profile_headerAnimationGradientStart, "profile_headerAnimationGradientStart");
+        colorKeysMap.put(key_profile_headerAnimationGradientEnd, "profile_headerAnimationGradientEnd");
         colorKeysMap.put(key_sharedMedia_startStopLoadIcon, "sharedMedia_startStopLoadIcon");
         colorKeysMap.put(key_sharedMedia_linkPlaceholder, "sharedMedia_linkPlaceholder");
         colorKeysMap.put(key_sharedMedia_linkPlaceholderText, "sharedMedia_linkPlaceholderText");

@@ -31,7 +31,7 @@ import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ChatActivity;
 import org.telegram.ui.Components.Forum.ForumUtilities;
 import org.telegram.ui.DialogsActivity;
-import org.telegram.ui.ProfileActivity;
+import org.telegram.ui.ProfileNewActivity;
 import org.telegram.ui.TopicsFragment;
 
 import java.util.ArrayList;
@@ -178,9 +178,9 @@ public class BackButtonMenu {
                         if (nextFragment instanceof ChatActivity) {
                             nextFragmentDialogId = ((ChatActivity) nextFragment).getDialogId();
                             nextFragmentTopicId = ((ChatActivity) nextFragment).getTopicId();
-                        } else if (nextFragment instanceof ProfileActivity) {
-                            nextFragmentDialogId = ((ProfileActivity) nextFragment).getDialogId();
-                            nextFragmentTopicId = ((ProfileActivity) nextFragment).getTopicId();
+                        } else if (nextFragment instanceof ProfileNewActivity) {
+                            nextFragmentDialogId = ((ProfileNewActivity) nextFragment).getDialogId();
+                            nextFragmentTopicId = ((ProfileNewActivity) nextFragment).getTopicId();
                         }
                     }
                     if (nextFragmentDialogId != null && nextFragmentDialogId != pDialog.dialogId || topic != null && nextFragmentTopicId != null && topic.id != nextFragmentTopicId) {
@@ -308,10 +308,10 @@ public class BackButtonMenu {
             } else {
                 fragment.presentFragment(new ChatActivity(bundle), true);
             }
-        } else if (dialog.activity == ProfileActivity.class) {
+        } else if (dialog.activity == ProfileNewActivity.class) {
             Bundle bundle = new Bundle();
             bundle.putLong("dialog_id", dialog.dialogId);
-            fragment.presentFragment(new ProfileActivity(bundle), true);
+            fragment.presentFragment(new ProfileNewActivity(bundle), true);
         } if (dialog.activity == TopicsFragment.class) {
             Bundle bundle = new Bundle();
             bundle.putLong("chat_id", dialog.chat.id);
@@ -351,9 +351,9 @@ public class BackButtonMenu {
                     dialogId = chatActivity.getDialogId();
                     folderId = chatActivity.getDialogFolderId();
                     filterId = chatActivity.getDialogFilterId();
-                } else if (fragment instanceof ProfileActivity) {
-                    activity = ProfileActivity.class;
-                    ProfileActivity profileActivity = (ProfileActivity) fragment;
+                } else if (fragment instanceof ProfileNewActivity) {
+                    activity = ProfileNewActivity.class;
+                    ProfileNewActivity profileActivity = (ProfileNewActivity) fragment;
                     chat = profileActivity.getCurrentChat();
                     try {
                         user = profileActivity.getUserInfo().user;

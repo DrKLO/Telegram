@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(rg:*)",
+      "Bash(grep:*)",
+      "WebFetch(domain:stackoverflow.com)",
+      "Bash(../gradlew compileDebugJavaWithJavac:*)",
+      "Bash(./gradlew compileDebugJavaWithJavac:*)",
+      "Bash(find:*)"
+    ],
+    "deny": []
+  }
+}
