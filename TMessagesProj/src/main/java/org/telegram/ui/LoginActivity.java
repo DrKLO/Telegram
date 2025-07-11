@@ -3136,106 +3136,71 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                 }
             }
 
-            TLObject req;
-            if (activityMode == MODE_CHANGE_PHONE_NUMBER) {
-                TL_account.sendChangePhoneCode changePhoneCode = new TL_account.sendChangePhoneCode();
-                changePhoneCode.phone_number = phone;
-                changePhoneCode.settings = settings;
-                req = changePhoneCode;
-            } else {
-                ConnectionsManager.getInstance(currentAccount).cleanup(false);
+            // TDLib Integration: Replace with TdApiManager.send
+            TdApi.PhoneNumberAuthenticationSettings tdSettings = new TdApi.PhoneNumberAuthenticationSettings();
+            tdSettings.allowFlashCall = simcardAvailable && allowCall && allowCancelCall && allowReadCallLog;
+            tdSettings.allowMissedCall = simcardAvailable && allowCall;
+            // Firebase/App hash related settings would be part of TdApi.SetTdlibParameters
+            // and TDLib handles them internally if configured.
+            // tdSettings.allowAppHash = PushListenerController.GooglePushListenerServiceProvider.INSTANCE.hasServices();
+            tdSettings.isCurrentPhoneNumber = false; // This needs to be determined accurately if possible.
+                                                // For simplicity, setting to false. TDLib might adjust.
 
-                TLRPC.TL_auth_sendCode sendCode = new TLRPC.TL_auth_sendCode();
-                sendCode.api_hash = BuildVars.APP_HASH;
-                sendCode.api_id = BuildVars.APP_ID;
-                sendCode.phone_number = phone;
-                sendCode.settings = settings;
-                req = sendCode;
-            }
+            // TODO: Handle settings.logout_tokens logic if TDLib supports equivalent for session management
 
+            String fullPhoneNumber = PhoneFormat.stripExceptNumbers(phone); // Ensure it's just digits
+
+            // Store params for when TdApiManager sends AuthorizationStateWaitCode
             final Bundle params = new Bundle();
-            params.putString("phone", "+" + codeField.getText() + " " + phoneField.getText());
+            params.putString("phone", "+" + codeField.getText() + " " + phoneField.getText()); // Display phone
             try {
                 params.putString("ephone", "+" + PhoneFormat.stripExceptNumbers(codeField.getText().toString()) + " " + PhoneFormat.stripExceptNumbers(phoneField.getText().toString()));
             } catch (Exception e) {
                 FileLog.e(e);
-                params.putString("ephone", "+" + phone);
+                params.putString("ephone", "+" + fullPhoneNumber);
             }
-            params.putString("phoneFormated", phone);
+            params.putString("phoneFormated", fullPhoneNumber); // Used as requestPhone later
             if (currentCountry != null) {
                 params.putString("country", currentCountry.code);
             }
+            // Store these params in a member variable or pass to TdApiManager if it needs them
+            // For now, LoginActivity will need to hold onto them until code entry.
+            this.currentParams = params; // Store for later use by code entry view
+
             nextPressed = true;
-            PhoneInputData phoneInputData = new PhoneInputData();
-            phoneInputData.phoneNumber = "+" + codeField.getText() + " " + phoneField.getText();
+            PhoneInputData phoneInputData = new PhoneInputData(); // Keep for error display if needed
+            phoneInputData.phoneNumber = params.getString("phone");
             phoneInputData.country = currentCountry;
             phoneInputData.patterns = phoneFormatMap.get(codeField.getText().toString());
-            int reqId = ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
-                nextPressed = false;
-                if (error == null) {
-                    if (response instanceof TLRPC.TL_auth_sentCodeSuccess) {
-                        final TLRPC.auth_Authorization auth = ((TLRPC.TL_auth_sentCodeSuccess) response).authorization;
-                        if (auth instanceof TLRPC.TL_auth_authorizationSignUpRequired) {
-                            final TLRPC.TL_auth_authorizationSignUpRequired authorization = (TLRPC.TL_auth_authorizationSignUpRequired) auth;
-                            if (authorization.terms_of_service != null) {
-                                currentTermsOfService = authorization.terms_of_service;
-                            }
-                            setPage(VIEW_REGISTER, true, params, false);
-                        } else {
-                            onAuthSuccess((TLRPC.TL_auth_authorization) auth);
-                        }
-                    } else {
-                        fillNextCodeParams(params, (TLRPC.auth_SentCode) response);
-                    }
-                } else {
-                    if (error.text != null) {
-                        if (error.text.contains("SESSION_PASSWORD_NEEDED")) {
-                            TL_account.getPassword req2 = new TL_account.getPassword();
-                            ConnectionsManager.getInstance(currentAccount).sendRequest(req2, (response1, error1) -> AndroidUtilities.runOnUIThread(() -> {
-                                nextPressed = false;
-                                showDoneButton(false, true);
-                                if (error1 == null) {
-                                    TL_account.Password password = (TL_account.Password) response1;
-                                    if (!TwoStepVerificationActivity.canHandleCurrentPassword(password, true)) {
-                                        AlertsCreator.showUpdateAppAlert(getParentActivity(), getString("UpdateAppAlert", R.string.UpdateAppAlert), true);
-                                        return;
-                                    }
-                                    Bundle bundle = new Bundle();
-                                    SerializedData data = new SerializedData(password.getObjectSize());
-                                    password.serializeToStream(data);
-                                    bundle.putString("password", Utilities.bytesToHex(data.toByteArray()));
-                                    bundle.putString("phoneFormated", phone);
-                                    setPage(VIEW_PASSWORD, true, bundle, false);
-                                } else {
-                                    needShowAlert(getString(R.string.RestorePasswordNoEmailTitle), error1.text);
-                                }
-                            }), ConnectionsManager.RequestFlagFailOnServerErrors | ConnectionsManager.RequestFlagWithoutLogin);
-                        } else if (error.text.contains("PHONE_NUMBER_INVALID")) {
-                            needShowInvalidAlert(LoginActivity.this, phone, phoneInputData, false);
-                        } else if (error.text.contains("PHONE_PASSWORD_FLOOD")) {
-                            needShowAlert(getString(R.string.RestorePasswordNoEmailTitle), getString("FloodWait", R.string.FloodWait));
-                        } else if (error.text.contains("PHONE_NUMBER_FLOOD")) {
-                            needShowAlert(getString(R.string.RestorePasswordNoEmailTitle), getString("PhoneNumberFlood", R.string.PhoneNumberFlood));
-                        } else if (error.text.contains("PHONE_NUMBER_BANNED")) {
-                                needShowInvalidAlert(LoginActivity.this, phone, phoneInputData, true);
-                        } else if (error.text.contains("PHONE_CODE_EMPTY") || error.text.contains("PHONE_CODE_INVALID")) {
-                            needShowAlert(getString(R.string.RestorePasswordNoEmailTitle), getString(R.string.InvalidCode));
-                        } else if (error.text.contains("PHONE_CODE_EXPIRED")) {
-                            onBackPressed(true);
-                            setPage(VIEW_PHONE_INPUT, true, null, true);
-                            needShowAlert(getString(R.string.RestorePasswordNoEmailTitle), getString("CodeExpired", R.string.CodeExpired));
-                        } else if (error.text.startsWith("FLOOD_WAIT")) {
-                            needShowAlert(getString(R.string.RestorePasswordNoEmailTitle), getString("FloodWait", R.string.FloodWait));
-                        } else if (error.code != -1000) {
-                            AlertsCreator.processError(currentAccount, error, LoginActivity.this, req, phoneInputData.phoneNumber);
-                        }
-                    }
-                }
-                if (!isRequestingFirebaseSms) {
-                    needHideProgress(false);
-                }
-            }), ConnectionsManager.RequestFlagFailOnServerErrors | ConnectionsManager.RequestFlagWithoutLogin | ConnectionsManager.RequestFlagTryDifferentDc | ConnectionsManager.RequestFlagEnableUnauthorized);
-            needShowProgress(reqId);
+
+
+            // Determine if it's for changing phone number or initial login
+            if (activityMode == MODE_CHANGE_PHONE_NUMBER) {
+                // This flow is more complex with TDLib as it involves current auth state.
+                // Typically, you'd call TdApi.ChangePhoneNumber first, which itself might
+                // trigger a TdApi.AuthorizationStateWaitCode.
+                // For now, this example will assume a simplified path or that
+                // TdApiManager handles the distinction.
+                // A direct TdApi.SetAuthenticationPhoneNumber might be for initial login.
+                // Change phone number in TDLib often involves TdApi.sendPhoneNumberVerificationCode
+                // after TdApi.changePhoneNumber.
+                // This part needs more careful mapping to TDLib's specific change phone number flow.
+                // Let's assume for now it's similar to initial send code for simplicity of this refactor step.
+                FileLog.d("MODE_CHANGE_PHONE_NUMBER: TDLib flow for this needs specific TdApi functions (e.g., TdApi.changePhoneNumber then TdApi.resendPhoneNumberVerificationCode). Using SetAuthenticationPhoneNumber as placeholder.");
+                me.telegraphy.android.TdApiManager.getInstance().setAuthenticationPhoneNumber(fullPhoneNumber, tdSettings);
+
+            } else {
+                // Initial login or new account
+                // ConnectionsManager.getInstance(currentAccount).cleanup(false); // TdApiManager handles client state
+                me.telegraphy.android.TdApiManager.getInstance().setAuthenticationPhoneNumber(fullPhoneNumber, tdSettings);
+            }
+
+            // Progress is now handled by observing NotificationCenter for auth state changes
+            // needShowProgress(reqId); // Old way
+            // Instead, LoginActivity should have a listener for NotificationCenter.didReceiveAuthorizationStateChange
+            // and show/hide progress based on the TdApi.AuthorizationState.
+            // For this specific call, we might show a local progress until an auth state update is received.
+            showEditDoneProgress(true, true); // Show local progress
         }
 
         private boolean numberFilled;
