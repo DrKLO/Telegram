@@ -5019,6 +5019,27 @@ public class AndroidUtilities {
         return a + f * (b - a);
     }
 
+    public static float lerpWithThreshold(float a, float b, float fraction, float startThreshold, float endThreshold) {
+        if (startThreshold >= endThreshold) {
+            return (fraction < startThreshold) ? a : b;
+        }
+
+        if (fraction < startThreshold) {
+            return a;
+        } else if (fraction >= endThreshold) {
+            return b;
+        } else {
+            float windowDuration = endThreshold - startThreshold;
+            float progressInWindow = fraction - startThreshold;
+
+            float effectiveFraction = progressInWindow / windowDuration;
+
+            effectiveFraction = Math.max(0.0f, Math.min(1.0f, effectiveFraction));
+
+            return a + effectiveFraction * (b - a);
+        }
+    }
+
     public static float lerp(boolean a, boolean b, float f) {
         return (a ? 1.0f : 0.0f) + f * ((b ? 1.0f : 0.0f) - (a ? 1.0f : 0.0f));
     }

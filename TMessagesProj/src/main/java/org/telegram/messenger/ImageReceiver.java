@@ -1092,6 +1092,13 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
         ImageLoader.getInstance().cancelLoadingForImageReceiver(this, true);
     }
 
+    public void clearDrawables() {
+        currentMediaDrawable = null;
+        currentImageDrawable = null;
+        currentThumbDrawable = null;
+        staticThumbDrawable = null;
+    }
+
     public void onDetachedFromWindow() {
         if (!attachedToWindow) {
             return;
