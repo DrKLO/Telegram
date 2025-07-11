@@ -475,6 +475,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
 
     private long banFromGroup;
     private boolean openAnimationInProgress;
+    private float backwardAnimationAvatarStartY = Float.MIN_VALUE;
+    private float backwardAnimationAvatarStartScale = -1;
     private boolean transitionAnimationInProress;
     private boolean recreateMenuAfterAnimation;
     private int playProfileAnimation;
@@ -7742,13 +7744,16 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             } else {
                 avatarMinY = -avatarSizeCollapsed + ActionBar.getCurrentActionBarHeight() / 2f;
             }
-            float avatarMaxY = statusBarHeight
-                    + ActionBar.getCurrentActionBarHeight() / 2f
-                    + actionBar.getTranslationY();
+            float avatarMaxY;
+            if (backwardAnimationAvatarStartY != Float.MIN_VALUE) {
+                avatarMaxY = backwardAnimationAvatarStartY;
+            } else {
+                avatarMaxY = statusBarHeight
+                        + ActionBar.getCurrentActionBarHeight() / 2f
+                        + actionBar.getTranslationY();
+            }
 
             final FrameLayout.LayoutParams avatarContainerParams = (FrameLayout.LayoutParams) avatarContainer.getLayoutParams();
-            // todo Alex, this and playProfileAnimation == 2 can be consolidated into 1 place w/ a different
-            //    targetW/targetH values
             if (openAnimationInProgress && playProfileAnimation == 1 && previousTransitionFragment != null) {
                 float avatarStartSize = previousTransitionFragment.getAvatarContainer().getAvatarImageView().getWidth();
                 float avatarEndSize = AndroidUtilities.dp(avatarSizeCollapsed);
@@ -7760,8 +7765,12 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 avatarContainerParams.leftMargin = (int) AndroidUtilities.lerp(animationStartValue, animationEndValue, avatarAnimationProgress);
                 avatarContainer.requestLayout();
             }
+            if (backwardAnimationAvatarStartY != Float.MIN_VALUE) {
+                avatarY = AndroidUtilities.lerp(avatarMinY, avatarMaxY, avatarAnimationProgress);
+            } else {
+                avatarY = AndroidUtilities.lerp(avatarMinY, avatarMaxY, diff);
+            }
 
-            avatarY = AndroidUtilities.lerp(avatarMinY, avatarMaxY, diff);
             giftsView.setCollapseProgress(diff);
             float avatarAlphaThreshold = 0.35f;
             float avatarAlphaProgress;
@@ -8025,8 +8034,14 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
 
                 updateCollectibleHint();
             } else if (extraHeight <= AndroidUtilities.dp(maxExtraHeight)) {
-                float minScale = openAnimationInProgress && playProfileAnimation == 1 ? 1.0f : avatarMinScale;
-                avatarScale = AndroidUtilities.lerp(minScale, avatarNormalScale, accelerateInterpolator.getInterpolation(diff));
+                boolean animation = openAnimationInProgress && playProfileAnimation == 1;
+                boolean exitAnimation = animation && backwardAnimationAvatarStartScale >= 0;
+                if (exitAnimation) {
+                    avatarScale = AndroidUtilities.lerp(1.0f, backwardAnimationAvatarStartScale, avatarAnimationProgress);
+                } else {
+                    // if animation == true, then it is open animation
+                    avatarScale = AndroidUtilities.lerp(animation ? 1.0f : avatarMinScale, avatarNormalScale, diff);
+                }
                 if (storyView != null) {
                     storyView.invalidate();
                 }
@@ -8062,7 +8077,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     onlineStartX = AndroidUtilities.dpf2(56f);
                 }
                 // add offset to name and online text to make transition seamless
-                final float nameAndOnlineOffset  = AndroidUtilities.dpf2(1.5f);
+                final float nameAndOnlineOffset = AndroidUtilities.dpf2(1.5f);
                 float nameEndX = displayMetrics.widthPixels / 2f - nameMeasuredTextWidth / 2f;
                 float nameStartY = statusBarHeight
                         + ActionBar.getCurrentActionBarHeight() / 2f
@@ -8979,8 +8994,14 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     public void onTransitionAnimationStart(boolean isOpen, boolean backward) {
         super.onTransitionAnimationStart(isOpen, backward);
         isFragmentOpened = isOpen;
+        backwardAnimationAvatarStartY = Float.MIN_VALUE;
+        backwardAnimationAvatarStartScale = -1;
         if ((!isOpen && backward || isOpen && !backward) && playProfileAnimation != 0 && allowProfileAnimation && !isPulledDown) {
             openAnimationInProgress = true;
+            if (backward) {
+                backwardAnimationAvatarStartY = avatarY;
+                backwardAnimationAvatarStartScale = avatarScale;
+            }
         }
         if (isOpen) {
             if (imageUpdater != null) {
@@ -9023,6 +9044,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 blurredView.setBackground(null);
             }
         }
+        backwardAnimationAvatarStartY = Float.MIN_VALUE;
+        backwardAnimationAvatarStartScale = -1;
         transitionAnimationInProress = false;
         checkPhotoDescriptionAlpha();
     }
