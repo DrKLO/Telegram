@@ -15,8 +15,10 @@ public final class MetaMask {
 
     public static float ISO = 1.15f;
 
+    public static boolean FORCE_SW_MASK = false;
+
     public static void draw(Canvas cv, RectF bubble, RectF button, Paint paint, boolean pillActsAsSingle) {
-        if (Build.VERSION.SDK_INT >= 33 && !ProfileActivity.FORCE_MY_BLUR) {
+        if (Build.VERSION.SDK_INT >= 33 && !ProfileActivity.FORCE_MY_BLUR && !FORCE_SW_MASK) {
             drawShader(cv, bubble, button, paint, pillActsAsSingle, ISO);
         } else {
             drawBitmapAsync(cv, bubble, button, paint, pillActsAsSingle, ISO);
