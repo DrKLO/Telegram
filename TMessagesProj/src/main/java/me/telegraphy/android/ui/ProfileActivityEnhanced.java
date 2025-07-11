@@ -135,6 +135,10 @@ import me.telegraphy.android.ui.Cells.TextDetailCell;
 import me.telegraphy.android.ui.Cells.TextInfoPrivacyCell;
 import me.telegraphy.android.ui.Cells.UserCell;
 import me.telegraphy.android.ProfileViewHolder; // Assuming ProfileViewHolder is in me.telegraphy.android
+import me.telegraphy.android.TdApiManager;
+import me.telegraphy.android.DatabaseManager;
+import org.telegram.tdlib.TdApi; // Import TdApi
+import org.telegram.messenger.ApplicationLoader; // For context
 
 // GiftObject might be an inner class or a separate file in me.telegraphy.android.model perhaps
 // For now, keeping it as defined in the prompt for ProfileActivityEnhanced
@@ -180,13 +184,22 @@ public class ProfileActivityEnhanced extends BaseFragment implements
     private long dialogId;
     private boolean isCurrentUser;
 
-    private TLRPC.User currentUser;
-    private TLRPC.Chat currentChat;
-    private TLRPC.UserFull currentUserFull;
-    private TLRPC.ChatFull currentChatFull;
-    private TLRPC.EncryptedChat currentEncryptedChat;
-    private TL_bots.BotInfo botInfo;
-    private boolean userBlocked;
+    // private TLRPC.User currentUser; // Will be replaced by TdApi.User
+    // private TLRPC.Chat currentChat; // Will be replaced by TdApi.Chat
+    // private TLRPC.UserFull currentUserFull; // Will be replaced by TdApi.UserFullInfo
+    // private TLRPC.ChatFull currentChatFull; // Will be replaced by TdApi.ChatFull
+
+    private TdApi.User tdCurrentUser;
+    private TdApi.Chat tdCurrentChat;
+    private TdApi.UserFullInfo tdCurrentUserFullInfo;
+    private TdApi.ChatFullInfo tdCurrentChatFullInfo;
+
+    private TdApiManager tdApiManager;
+    private DatabaseManager databaseManager;
+
+    private TLRPC.EncryptedChat currentEncryptedChat; // Keep if secret chats are handled outside TdApiManager initially
+    private TL_bots.BotInfo botInfo; // This might map to TdApi.BotInfo or TdApi.UserTypeBot
+    private boolean userBlocked; // Will be determined from TdApi.UserFullInfo or TdApi.BlockList
 
     public enum ProfileType { USER, BOT, BUSINESS, CHANNEL, GROUP, GROUP_TOPIC, GIFT_PROFILE }
     private ProfileType profileType = ProfileType.USER;
@@ -314,63 +327,117 @@ public class ProfileActivityEnhanced extends BaseFragment implements
     @Override
     public boolean onFragmentCreate() {
         super.onFragmentCreate();
-        // currentAccount = UserConfig.getInstance(UserConfig.selectedAccount).getCurrentUser().id; // Already set in constructor
-        // Ensure currentAccount is valid before proceeding
+
+        // Initialize TdApiManager and DatabaseManager
+        tdApiManager = TdApiManager.getInstance();
+        databaseManager = DatabaseManager.getInstance(ApplicationLoader.getApplicationContext());
+
+        // Ensure currentAccount is valid (from original code)
         if (UserConfig.getInstance(currentAccount).getCurrentUser() == null && UserConfig.getActivatedAccountsCount() > 0) {
-             // If current selected account is bad, switch to another valid one
             for (int i=0; i < UserConfig.MAX_ACCOUNT_COUNT; ++i) {
                 if (UserConfig.getInstance(i).isClientActivated()) {
-                    currentAccount = UserConfig.getInstance(i).getCurrentUser().id;
-                    UserConfig.selectedAccount = i; // Also update selectedAccount
+                    UserConfig.selectedAccount = i;
+                    currentAccount = i;
                     break;
                 }
             }
         } else if (UserConfig.getInstance(currentAccount).getCurrentUser() == null) {
-            // No active accounts, cannot proceed
             return false;
         }
 
+        // Set the account for TdApiManager if it's not implicitly handling it based on UserConfig.selectedAccount
+        // tdApiManager.switchAccountIfNeeded(currentAccount); // Assuming such a method exists or is handled internally
 
         if (userId != 0) {
-            currentUser = MessagesController.getInstance(currentAccount).getUser(userId);
-            if (currentUser == null) {
-                // Try to load from storage synchronously, this is not ideal for UI thread
-                // In a real scenario, show loading and fetch async.
-                // For now, if not found, we might fail or proceed with limited data.
-                // This will be replaced by TdApiManager logic later.
-                currentUser = MessagesStorage.getInstance(currentAccount).getUserSync(userId);
-                if (currentUser != null) MessagesController.getInstance(currentAccount).putUser(currentUser, true);
-                else return false; // Cannot proceed if user is essential and not found
-            }
-            currentUserFull = MessagesController.getInstance(currentAccount).getUserFull(userId);
-            if (currentUserFull == null) {
-                MessagesController.getInstance(currentAccount).loadFullUser(currentUser, classGuid, true);
+            // Load from DatabaseManager first
+            tdCurrentUser = databaseManager.getUser(userId);
+            tdCurrentUserFullInfo = databaseManager.getUserFullInfo(userId);
+
+            // Request from TdApiManager
+            tdApiManager.getUser(userId, user -> {
+                if (user != null && getParentActivity() != null) { // Check activity context
+                    getParentActivity().runOnUiThread(() -> {
+                        tdCurrentUser = user;
+                        databaseManager.addUser(user);
+                        determineProfileType();
+                        updateRows();
+                        updateProfileData();
+                        // Also request full info if basic user info is fetched
+                        tdApiManager.getUserFullInfo(userId, userFullInfo -> {
+                            if (userFullInfo != null && getParentActivity() != null) {
+                                getParentActivity().runOnUiThread(() -> {
+                                    tdCurrentUserFullInfo = userFullInfo;
+                                    databaseManager.addUserFullInfo(userFullInfo);
+                                    determineProfileType();
+                                    updateRows();
+                                    updateProfileData();
+                                });
+                            }
+                        });
+                    });
+                }
+            });
+            if (tdCurrentUserFullInfo == null) { // Request if not in DB or to refresh
+                 tdApiManager.getUserFullInfo(userId, userFullInfo -> {
+                    if (userFullInfo != null && getParentActivity() != null) {
+                        getParentActivity().runOnUiThread(() -> {
+                            tdCurrentUserFullInfo = userFullInfo;
+                            databaseManager.addUserFullInfo(userFullInfo);
+                            determineProfileType();
+                            updateRows();
+                            updateProfileData();
+                        });
+                    }
+                });
             }
             determineProfileType();
-            userBlocked = MessagesController.getInstance(currentAccount).blockedPeers.indexOfKey(userId) >= 0;
 
         } else if (chatId != 0) {
-            currentChat = MessagesController.getInstance(currentAccount).getChat(chatId);
-            if (currentChat == null) {
-                currentChat = MessagesStorage.getInstance(currentAccount).getChatSync(chatId);
-                if (currentChat != null) MessagesController.getInstance(currentAccount).putChat(currentChat, true);
-                else return false;
-            }
-            currentChatFull = MessagesController.getInstance(currentAccount).getChatFull(chatId);
-            if (currentChatFull == null && ChatObject.isChannel(currentChat)) {
-                 MessagesController.getInstance(currentAccount).loadFullChat(chatId, classGuid, true);
-            } else if (currentChatFull == null && !ChatObject.isChannel(currentChat)) {
-                // For groups, loadFullChat might also be needed or specific group participant info
-                MessagesController.getInstance(currentAccount).loadFullChat(chatId, classGuid, true);
+            tdCurrentChat = databaseManager.getChat(chatId);
+            tdCurrentChatFullInfo = databaseManager.getChatFullInfo(chatId);
+
+            tdApiManager.getChat(chatId, chat -> {
+                if (chat != null && getParentActivity() != null) {
+                    getParentActivity().runOnUiThread(() -> {
+                        tdCurrentChat = chat;
+                        databaseManager.addChat(chat);
+                        determineProfileType();
+                        updateRows();
+                        updateProfileData();
+                        // For chats, full info is often needed for permissions, members etc.
+                        tdApiManager.getChatFullInfo(chatId, chatFullInfo -> {
+                            if (chatFullInfo != null && getParentActivity() != null) {
+                                getParentActivity().runOnUiThread(() -> {
+                                    tdCurrentChatFullInfo = chatFullInfo;
+                                    databaseManager.addChatFullInfo(chatFullInfo);
+                                    determineProfileType();
+                                    updateRows();
+                                    updateProfileData();
+                                });
+                            }
+                        });
+                    });
+                }
+            });
+             if (tdCurrentChatFullInfo == null) { // Request if not in DB or to refresh
+                 tdApiManager.getChatFullInfo(chatId, chatFullInfo -> {
+                    if (chatFullInfo != null && getParentActivity() != null) {
+                         getParentActivity().runOnUiThread(() -> {
+                            tdCurrentChatFullInfo = chatFullInfo;
+                            databaseManager.addChatFullInfo(chatFullInfo);
+                            determineProfileType();
+                            updateRows();
+                            updateProfileData();
+                        });
+                    }
+                });
             }
             determineProfileType();
         } else {
             return false;
         }
 
-        // Initialize extraHeight for ProfileCoverCell
-        extraHeight = AndroidUtilities.dp(280); // Default, will be adjusted by ProfileCoverCell's actual height
-
+        extraHeight = AndroidUtilities.dp(280);
         setupNotificationListeners();
         updateRows();
         loadGiftData();
@@ -379,80 +446,80 @@ public class ProfileActivityEnhanced extends BaseFragment implements
     }
 
     private void determineProfileType() {
-        if (currentUser != null) {
-            if (currentUser.bot) {
+        if (tdCurrentUser != null) {
+            if (tdCurrentUser.type instanceof TdApi.UserTypeBot) {
                 profileType = ProfileType.BOT;
-                if (currentUserFull != null && currentUserFull.bot_info != null) {
-                    botInfo = currentUserFull.bot_info;
-                } else if (currentUserFull == null) { // If full info not loaded yet, try to load bot specific
-                    MessagesController.getInstance(currentAccount).loadBotInfo(currentUser.id, true, classGuid);
+                 if (tdCurrentUserFullInfo != null && tdCurrentUserFullInfo.botInfo != null) {
+                    // botInfo = mapTdApiBotInfo(tdCurrentUserFullInfo.botInfo); // Conceptual mapping
                 }
-            } else if (currentUserFull != null && currentUserFull.business_info != null) {
+            } else if (tdCurrentUserFullInfo != null && tdCurrentUserFullInfo.businessInfo != null) {
                 profileType = ProfileType.BUSINESS;
-            }
-            // Gift profile determination might be more complex, e.g. based on a flag or specific gift data presence
-            // For now, let's assume openGifts argument might trigger it, or if userGifts list is populated.
-            else if (openGifts || (userGifts != null && !userGifts.isEmpty())) {
+            } else if (openGifts || (userGifts != null && !userGifts.isEmpty())) {
                 profileType = ProfileType.GIFT_PROFILE;
-            }
-            else {
+            } else {
                 profileType = ProfileType.USER;
             }
-        } else if (currentChat != null) {
-            if (ChatObject.isChannel(currentChat) && !currentChat.megagroup) {
-                profileType = ProfileType.CHANNEL;
-            } else if (isTopic) { // isTopic flag from constructor arguments
-                profileType = ProfileType.GROUP_TOPIC;
-            } else {
-                profileType = ProfileType.GROUP;
+        } else if (tdCurrentChat != null) {
+            if (tdCurrentChat.type instanceof TdApi.ChatTypeSupergroup) {
+                TdApi.ChatTypeSupergroup supergroupType = (TdApi.ChatTypeSupergroup) tdCurrentChat.type;
+                if (supergroupType.isChannel) {
+                    profileType = ProfileType.CHANNEL;
+                } else if (isTopic) {
+                     profileType = ProfileType.GROUP_TOPIC;
+                } else {
+                    profileType = ProfileType.GROUP; // Megagroup
+                }
+            } else if (tdCurrentChat.type instanceof TdApi.ChatTypeBasicGroup) {
+                 if (isTopic) {
+                    profileType = ProfileType.GROUP_TOPIC;
+                } else {
+                    profileType = ProfileType.GROUP; // Basic group
+                }
             }
+        }
+
+        if (userId != 0 && tdCurrentUserFullInfo != null) {
+            userBlocked = tdCurrentUserFullInfo.isBlocked;
+        } else if (userId != 0 && tdCurrentUser != null && tdCurrentUser.isBlocked) { // Fallback if full info not yet available
+            userBlocked = tdCurrentUser.isBlocked;
+        }
+        else {
+            userBlocked = false;
         }
     }
 
     private void setupNotificationListeners() {
         NotificationCenter nc = NotificationCenter.getInstance(currentAccount);
-        nc.addObserver(this, NotificationCenter.updateInterfaces);
-        nc.addObserver(this, NotificationCenter.userFullDidLoad);
-        nc.addObserver(this, NotificationCenter.chatInfoDidLoad);
-        nc.addObserver(this, NotificationCenter.blockedUsersDidLoad);
-        nc.addObserver(this, NotificationCenter.botInfoDidLoad);
-        nc.addObserver(this, NotificationCenter.contactsDidLoad);
-        nc.addObserver(this, NotificationCenter.encryptedChatCreated);
-        nc.addObserver(this, NotificationCenter.encryptedChatUpdated);
-        nc.addObserver(this, NotificationCenter.currentUserFullDidLoad); // From original ProfileActivity
-        nc.addObserver(this, NotificationCenter.didReceiveNewMessages);   // From original ProfileActivity
-        nc.addObserver(this, NotificationCenter.messagesDeleted);         // From original ProfileActivity
-        nc.addObserver(this, NotificationCenter.messageReceivedByServer); // From original ProfileActivity
+        // TDLib related updates will come from TdApiManager's internal handler,
+        // which should post specific NotificationCenter events that this activity will listen to.
+        nc.addObserver(this, NotificationCenter.tdLibUpdateUser); // Posted by TdApiManager
+        nc.addObserver(this, NotificationCenter.tdLibUpdateUserFullInfo); // Posted by TdApiManager
+        nc.addObserver(this, NotificationCenter.tdLibUpdateChat); // Posted by TdApiManager
+        nc.addObserver(this, NotificationCenter.tdLibUpdateChatFullInfo); // Posted by TdApiManager
+        nc.addObserver(this, NotificationCenter.tdLibUpdateBlockList); // For block status changes
 
-
+        // Keep global theme updates and other non-TDLib specific UI updates if needed
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.didSetNewTheme);
-        // For gifts if they are global or specific to account
-        // NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.giftsReceived);
+        // nc.addObserver(this, NotificationCenter.updateInterfaces); // If still needed for some UI updates
     }
 
     private void loadGiftData() {
-        // This should use a proper data source, e.g., currentUserFull.gifts or fetch via API
-        // Placeholder:
-        if (profileType == ProfileType.GIFT_PROFILE || (currentUserFull != null && currentUserFull.premium_gifts != null && !currentUserFull.premium_gifts.isEmpty())) {
-            // Convert TLRPC.PremiumGiftOption or similar to ProfileGiftCell.GiftItem
-            // This is a conceptual mapping
-            if (currentUserFull != null && currentUserFull.premium_gifts != null) {
-                for (TLRPC.PremiumGiftOption option : currentUserFull.premium_gifts) {
-                    // This conversion is highly dependent on how you want to represent TLRPC.PremiumGiftOption
-                    // as a ProfileGiftCell.GiftItem. You might need specific icons or lottie animations.
-                    userGifts.add(new ProfileGiftCell.GiftItem(
-                        "gift_months_" + option.months,
-                        LocaleController.formatPluralString("Months", option.months) + " Premium",
-                        R.drawable.msg_premium_gift, // Placeholder icon
-                        null, // No specific Lottie here, could be mapped
-                        false, // 'isNew' status would need separate logic
-                        System.currentTimeMillis() - (long)option.months * 30 * 24 * 60 * 60 * 1000, // Approx date
-                        "Gift of " + option.months + " months"
-                    ));
-                }
-            }
-        }
-        // If userGifts is populated, updateRows will add the gift cell.
+        // Gift data will likely come from TdApi.UserFullInfo or a specific TdApi call.
+        // For now, this is a placeholder. Adapt when TdApi structure for gifts is known.
+        // if (profileType == ProfileType.GIFT_PROFILE || (tdCurrentUserFullInfo != null && tdCurrentUserFullInfo.premiumGifts != null)) {
+        //     userGifts.clear(); // Clear before loading new ones
+        //     for (TdApi.PremiumGiftOption option : tdCurrentUserFullInfo.premiumGifts) { // Assuming TdApi.PremiumGiftOption structure
+        //         userGifts.add(new ProfileGiftCell.GiftItem(
+        //             "gift_months_" + option.months,
+        //             LocaleController.formatPluralString("Months", option.months) + " Premium",
+        //             R.drawable.msg_premium_gift,
+        //             null,
+        //             false,
+        //             System.currentTimeMillis() - (long)option.months * 30 * 24 * 60 * 60 * 1000,
+        //             "Gift of " + option.months + " months"
+        //         ));
+        //     }
+        // }
     }
 
 
@@ -470,40 +537,63 @@ public class ProfileActivityEnhanced extends BaseFragment implements
                 if (id == -1) {
                     finishFragment();
                 } else if (id == BLOCK_CONTACT_ID) {
-                    if (currentUser == null) return;
+                    if (tdCurrentUser == null) return;
                     if (userBlocked) {
-                        MessagesController.getInstance(currentAccount).unblockPeer(currentUser.id);
-                        // BulletinFactory.of(ProfileActivityEnhanced.this).createBanBulletin(false).show();
+                        tdApiManager.unblockUser(userId, success -> {
+                            if (success && getParentActivity() != null) getParentActivity().runOnUiThread(() -> {
+                                userBlocked = false;
+                                // Optimistically update UI or wait for tdLibUpdateBlockList
+                                updateRows();
+                                createActionBarMenu(); // Recreate to update block/unblock text
+                                // Show bulletin if needed
+                            });
+                        });
                     } else {
-                        MessagesController.getInstance(currentAccount).blockPeer(currentUser.id);
+                        tdApiManager.blockUser(userId, success -> {
+                             if (success && getParentActivity() != null) getParentActivity().runOnUiThread(() -> {
+                                userBlocked = true;
+                                updateRows();
+                                createActionBarMenu(); // Recreate to update block/unblock text
+                            });
+                        });
                     }
                 } else if (id == ADD_CONTACT_ID) {
-                    if (currentUser == null) return;
+                    if (tdCurrentUser == null) return;
                     Bundle args = new Bundle();
-                    args.putLong("user_id", currentUser.id);
+                    args.putLong("user_id", tdCurrentUser.id);
                     args.putBoolean("addContact", true);
+                    // ContactAddActivity will need to use TdApiManager
                     presentFragment(new ContactAddActivity(args));
                 } else if (id == EDIT_CONTACT_ID) {
-                     if (currentUser == null) return;
+                     if (tdCurrentUser == null) return;
                      Bundle args = new Bundle();
-                     args.putLong("user_id", currentUser.id);
+                     args.putLong("user_id", tdCurrentUser.id);
                      presentFragment(new ContactAddActivity(args));
                 } else if (id == DELETE_CONTACT_ID) {
-                    if (currentUser == null) return;
-                    AlertsCreator.createDeleteContactAlert(ProfileActivityEnhanced.this, currentUser, null);
+                    if (tdCurrentUser == null) return;
+                    // Adapt AlertsCreator or use TdApiManager directly
+                     tdApiManager.deleteContact(userId, success -> {
+                        if (success && getParentActivity() != null) getParentActivity().runOnUiThread(() -> {
+                            // Update UI, maybe show bulletin
+                            updateRows(); // Contact status might change rows
+                        });
+                    });
                 } else if (id == SHARE_CONTACT_ID || id == SHARE_PROFILE_ID) {
-                    // Share logic from original ProfileActivity or your enhanced version
-                    // ...
+                    // Share logic will need to be adapted for TdApi.User/Chat
+                    // Example: Create a TdApi.InputMessageContact or TdApi.InputMessageText with profile link
                 } else if (id == CALL_ITEM_ID) {
-                    if (currentUser != null) {
-                        VoIPHelper.startCall(currentUser, false, currentUserFull != null && currentUserFull.video_calls_available, getParentActivity(), currentUserFull, AccountInstance.getInstance(currentAccount));
+                    if (tdCurrentUser != null && tdCurrentUserFullInfo != null && tdCurrentUserFullInfo.canBeCalled) {
+                        // VoIPHelper and AccountInstance might need adaptation for TdApi types or TdApiManager handles call creation
+                        // VoIPHelper.startCall(tdCurrentUser, false, tdCurrentUserFullInfo.hasVideoCalls, getParentActivity(), tdCurrentUserFullInfo, AccountInstance.getInstance(currentAccount));
+                        tdApiManager.createCall(tdCurrentUser.id, false, callId -> { /* Handle call UI */ });
                     }
                 } else if (id == VIDEO_CALL_ITEM_ID) {
-                     if (currentUser != null) {
-                        VoIPHelper.startCall(currentUser, true, currentUserFull != null && currentUserFull.video_calls_available, getParentActivity(), currentUserFull, AccountInstance.getInstance(currentAccount));
+                     if (tdCurrentUser != null && tdCurrentUserFullInfo != null && tdCurrentUserFullInfo.canBeCalled && tdCurrentUserFullInfo.hasVideoCalls) {
+                        // VoIPHelper.startCall(tdCurrentUser, true, tdCurrentUserFullInfo.hasVideoCalls, getParentActivity(), tdCurrentUserFullInfo, AccountInstance.getInstance(currentAccount));
+                        tdApiManager.createCall(tdCurrentUser.id, true, callId -> { /* Handle call UI */ });
                     }
                 }
-                // ... Handle other menu items from your list ...
+                // ... Other menu items ...
             }
         });
         createActionBarMenu();
@@ -710,81 +800,68 @@ public class ProfileActivityEnhanced extends BaseFragment implements
         // 1. Cover Cell
         coverRow = addRow(TYPE_COVER_CELL, null); // Data for cover cell will be currentUser or currentChat
 
-        // 2. Main Info Cell (Default, Bot, Business, Channel, Group)
+        // 2. Main Info Cell
         switch (profileType) {
             case USER:
             case GIFT_PROFILE:
-                defaultInfoRow = addRow(TYPE_DEFAULT_CELL, currentUser);
+                defaultInfoRow = addRow(TYPE_DEFAULT_CELL, tdCurrentUser);
                 break;
             case BOT:
-                botInfoRow = addRow(TYPE_BOT_CELL, currentUser); // Cell will use currentUser and botInfo
+                botInfoRow = addRow(TYPE_BOT_CELL, tdCurrentUser);
                 break;
             case BUSINESS:
-                businessInfoRow = addRow(TYPE_BUSINESS_CELL, currentUserFull);
+                businessInfoRow = addRow(TYPE_BUSINESS_CELL, tdCurrentUserFullInfo);
                 break;
             case CHANNEL:
-                channelInfoRow = addRow(TYPE_CHANNEL_CELL, currentChat);
+                channelInfoRow = addRow(TYPE_CHANNEL_CELL, tdCurrentChat);
                 break;
             case GROUP:
             case GROUP_TOPIC:
-                groupInfoRow = addRow(TYPE_GROUP_CELL, currentChat);
+                groupInfoRow = addRow(TYPE_GROUP_CELL, tdCurrentChat);
                 break;
         }
 
         // 3. Gift Display Cell
-        if (userGifts != null && !userGifts.isEmpty()) {
+        if (profileType == ProfileType.GIFT_PROFILE && userGifts != null && !userGifts.isEmpty()) {
             giftDisplayRow = addRow(TYPE_GIFT_CELL, userGifts);
         }
 
         // 4. Standard Info Rows (Phone, Username, Bio)
-        // These might be integrated into ProfileDefaultCell or other specific cells now.
-        // If they are separate rows:
         if (profileType == ProfileType.USER || profileType == ProfileType.BOT || profileType == ProfileType.BUSINESS) {
-            if (currentUser != null && !TextUtils.isEmpty(currentUser.phone)) {
-                phoneRow = addRow(TYPE_PHONE_ROW, currentUser.phone);
+            if (tdCurrentUser != null && !TextUtils.isEmpty(tdCurrentUser.phoneNumber)) {
+                phoneRow = addRow(TYPE_PHONE_ROW, tdCurrentUser.phoneNumber);
             }
-            if (currentUser != null && !TextUtils.isEmpty(currentUser.username)) {
-                usernameRow = addRow(TYPE_USERNAME_ROW, "@" + currentUser.username);
+            if (tdCurrentUser != null && tdCurrentUser.usernames != null && tdCurrentUser.usernames.activeUsernames.length > 0 && !TextUtils.isEmpty(tdCurrentUser.usernames.activeUsernames[0])) {
+                usernameRow = addRow(TYPE_USERNAME_ROW, "@" + tdCurrentUser.usernames.activeUsernames[0]);
             }
-            if (currentUserFull != null && !TextUtils.isEmpty(currentUserFull.about)) {
-                bioRow = addRow(TYPE_BIO_ROW, currentUserFull.about);
+            if (tdCurrentUserFullInfo != null && tdCurrentUserFullInfo.bio != null && !TextUtils.isEmpty(tdCurrentUserFullInfo.bio.text)) {
+                bioRow = addRow(TYPE_BIO_ROW, tdCurrentUserFullInfo.bio.text);
             }
         }
 
         // 5. Shared Media, Notifications
-        if (dialogId != 0) { // Only show if we have a valid dialog
-            sharedMediaRow = addRow(TYPE_SHARED_MEDIA_ROW, dialogId); // Pass dialogId for context
+        if (dialogId != 0) {
+            sharedMediaRow = addRow(TYPE_SHARED_MEDIA_ROW, dialogId);
             notificationsRow = addRow(TYPE_NOTIFICATIONS_ROW, dialogId);
         }
 
-        // 6. Group/Channel Members
-        if ((profileType == ProfileType.GROUP || profileType == ProfileType.CHANNEL || profileType == ProfileType.GROUP_TOPIC) && currentChatFull != null) {
-            if (currentChatFull.participants != null && !currentChatFull.participants.participants.isEmpty() || ChatObject.canAddUsers(currentChat)) {
-                 membersHeaderRow = addRow(TYPE_HEADER_TEXT_ROW, LocaleController.getString(ChatObject.isChannel(currentChat) && !currentChat.megagroup ? "ChannelSubscribers" : "ChannelMembers",
-                        ChatObject.isChannel(currentChat) && !currentChat.megagroup ? R.string.ChannelSubscribers : R.string.ChannelMembers));
+        // 6. Group/Channel Members - Adapt with TdApi.ChatMember and TdApiManager.getChatMembers
+        // if ((profileType == ProfileType.GROUP || profileType == ProfileType.CHANNEL || profileType == ProfileType.GROUP_TOPIC) && tdCurrentChatFullInfo != null) {
+        //     if (tdCurrentChatFullInfo.members != null && tdCurrentChatFullInfo.members.length > 0 /* || canAddUsers(tdCurrentChatFullInfo) */) {
+        //         membersHeaderRow = addRow(TYPE_HEADER_TEXT_ROW, "Members"); // Placeholder text
+        //         // if (canAddUsers(tdCurrentChatFullInfo)) { addMemberRow = addRow(TYPE_ADD_MEMBER_ROW, null); }
+        //         membersStartRow = rowTypes.size();
+        //         for (TdApi.ChatMember member : tdCurrentChatFullInfo.members) {
+        //             if (rowTypes.size() - membersStartRow < 5) {
+        //                  TdApi.User user = databaseManager.getUser(member.memberId.getUserId()); // Or fetch if not in DB
+        //                  if (user != null) addRow(TYPE_MEMBER_ROW, user);
+        //             } else { break; }
+        //         }
+        //         membersEndRow = rowTypes.size();
+        //     }
+        // }
 
-                if (ChatObject.canAddUsers(currentChat)) {
-                    addMemberRow = addRow(TYPE_ADD_MEMBER_ROW, null);
-                }
-                if (currentChatFull.participants != null && !currentChatFull.participants.participants.isEmpty()) {
-                    membersStartRow = rowTypes.size();
-                    for (TLRPC.ChatParticipant p : currentChatFull.participants.participants) {
-                        // Limit number of members shown directly, or link to full list
-                        if (rowTypes.size() - membersStartRow < 5) { // Example: show max 5 members
-                             addRow(TYPE_MEMBER_ROW, MessagesController.getInstance(currentAccount).getUser(p.user_id));
-                        } else {
-                            // Add a "View All Members" row if needed
-                            break;
-                        }
-                    }
-                    membersEndRow = rowTypes.size();
-                }
-            }
-        }
-
-        // Add empty row at the end for bottom padding/spacing, especially for undo view
-        addRow(TYPE_EMPTY_ROW, AndroidUtilities.dp(56)); // Height for empty row
-
+        addRow(TYPE_EMPTY_ROW, AndroidUtilities.dp(56));
 
         if (profileAdapter != null) {
             profileAdapter.notifyDataSetChanged();
@@ -865,6 +942,8 @@ public class ProfileActivityEnhanced extends BaseFragment implements
                             object.dialogId = dialogId;
                             object.thumb = object.imageReceiver.getBitmapSafe();
                             object.radius = avatarView.getImageReceiver().getRoundRadius()[0];
+                            // For TdApi, object.fileLocation would be TdApi.File or its local path
+                            // object.tdFile = tdPhoto.big; // Example if PlaceProviderObject is adapted
                             return object;
                         }
                     }
@@ -877,7 +956,8 @@ public class ProfileActivityEnhanced extends BaseFragment implements
                         ((ProfileCoverCell)coverCellView).getAvatarImageView().getImageReceiver().setVisible(true, true);
                     }
                 }
-            });
+            //    });
+            // }
         }
     }
 
@@ -917,67 +997,94 @@ public class ProfileActivityEnhanced extends BaseFragment implements
                     ProfileCoverCell coverCell = new ProfileCoverCell(context);
                     coverCell.setDelegate(ProfileActivityEnhanced.this);
                     coverCell.setStoriesListener(ProfileActivityEnhanced.this);
-                    // Set initial height for cover cell. This is important.
-                    coverCell.setInitialCoverHeight(AndroidUtilities.dp(280)); // Or a more dynamic value
+                    coverCell.setInitialCoverHeight(AndroidUtilities.dp(280));
                     view = coverCell;
+                    holder = new RecyclerListView.Holder(view);
                     break;
+                // ... other cases similarly assign to holder ...
                 case TYPE_DEFAULT_CELL:
                     ProfileDefaultCell defaultCell = new ProfileDefaultCell(context);
-                    // defaultCell.setDelegate(...);
                     view = defaultCell;
+                    holder = new RecyclerListView.Holder(view);
                     break;
                 case TYPE_GIFT_CELL:
                     ProfileGiftCell giftCell = new ProfileGiftCell(context);
                     giftCell.setAnimationListener(ProfileActivityEnhanced.this);
                     view = giftCell;
+                    holder = new RecyclerListView.Holder(view);
                     break;
                 case TYPE_CHANNEL_CELL:
-                    // Pass 'this' (ProfileActivityEnhanced) as BaseFragment
                     view = new ProfileChannelCell(ProfileActivityEnhanced.this, ProfileActivityEnhanced.this.getResourceProvider());
+                    holder = new RecyclerListView.Holder(view);
                     break;
                 case TYPE_GROUP_CELL:
                     view = new ProfileGroupCell(context);
+                    holder = new RecyclerListView.Holder(view);
                     break;
                 case TYPE_BUSINESS_CELL:
                     view = new ProfileBusinessCell(context);
+                    holder = new RecyclerListView.Holder(view);
                     break;
                 case TYPE_BOT_CELL:
                     view = new ProfileBotCell(context);
+                    holder = new RecyclerListView.Holder(view);
                     break;
                 case TYPE_PHONE_ROW:
                 case TYPE_USERNAME_ROW:
                     view = new TextDetailCell(context);
+                    holder = new RecyclerListView.Holder(view);
                     break;
                 case TYPE_BIO_ROW:
                     view = new AboutLinkCell(context, ProfileActivityEnhanced.this);
+                    holder = new RecyclerListView.Holder(view);
                     break;
                 case TYPE_SHARED_MEDIA_ROW:
                 case TYPE_NOTIFICATIONS_ROW:
                 case TYPE_ADD_MEMBER_ROW:
                     view = new TextCell(context);
+                    holder = new RecyclerListView.Holder(view);
                     break;
                 case TYPE_HEADER_TEXT_ROW:
                 case TYPE_MEMBERS_HEADER_ROW:
                     view = new HeaderCell(context);
+                    holder = new RecyclerListView.Holder(view);
                     break;
                 case TYPE_MEMBER_ROW:
                     view = new UserCell(context, AndroidUtilities.dp(16), 0, true);
+                    holder = new RecyclerListView.Holder(view);
                     break;
                 case TYPE_EMPTY_ROW:
                 default:
-                    int height = (rowData != null && holder.getAdapterPosition() < rowData.size() && rowData.get(holder.getAdapterPosition()) instanceof Integer) ? (Integer) rowData.get(holder.getAdapterPosition()) : AndroidUtilities.dp(8);
+                    // Access rowData safely using holder.getAdapterPosition() - but holder is null here
+                    // This was problematic. Let's define holder before switch or handle default differently.
+                    // For now, assuming a fixed height for safety if holder is not available.
+                    int height = AndroidUtilities.dp(8);
+                    // The following line was causing an error because holder was not initialized for all paths.
+                    // It's now initialized in each case block.
+                    // int currentPosition = holder != null ? holder.getAdapterPosition() : RecyclerView.NO_POSITION;
+                    // if (rowData != null && currentPosition != RecyclerView.NO_POSITION && currentPosition < rowData.size() && rowData.get(currentPosition) instanceof Integer) {
+                    //    height = (Integer) rowData.get(currentPosition);
+                    // }
+                    // A better way for default, if holder is guaranteed:
+                    if (holder != null) {
+                         int currentPositionInDefault = holder.getAdapterPosition();
+                         if (rowData != null && currentPositionInDefault != RecyclerView.NO_POSITION && currentPositionInDefault < rowData.size() && rowData.get(currentPositionInDefault) instanceof Integer) {
+                            height = (Integer) rowData.get(currentPositionInDefault);
+                         }
+                    }
                     view = new EmptyCell(context, height);
+                    if (holder == null) holder = new RecyclerListView.Holder(view); // Should not happen if all cases assign holder
                     break;
             }
             view.setLayoutParams(new RecyclerView.LayoutParams(RecyclerView.LayoutParams.MATCH_PARENT, RecyclerView.LayoutParams.WRAP_CONTENT));
-            return new RecyclerListView.Holder(view);
+            // return new RecyclerListView.Holder(view); // This was original, now return holder
+            return holder;
         }
 
         @Override
         public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
             int viewType = getItemViewType(position);
             Object data = (position >= 0 && position < rowData.size()) ? rowData.get(position) : null;
-
 
             boolean needsDivider = true;
             if (position + 1 < getItemCount()) {
@@ -988,42 +1095,43 @@ public class ProfileActivityEnhanced extends BaseFragment implements
             } else {
                 needsDivider = false;
             }
-            if (viewType == TYPE_COVER_CELL) needsDivider = false; // Cover cell usually doesn't have divider below
+            if (viewType == TYPE_COVER_CELL) needsDivider = false;
+
 
             switch (viewType) {
                 case TYPE_COVER_CELL:
                     ProfileCoverCell coverCell = (ProfileCoverCell) holder.itemView;
-                    if (currentUser != null) coverCell.setUser(currentUser, currentUserFull);
-                    else if (currentChat != null) coverCell.setChat(currentChat, currentChatFull);
+                    if (tdCurrentUser != null) coverCell.setTdUser(tdCurrentUser, tdCurrentUserFullInfo);
+                    else if (tdCurrentChat != null) coverCell.setTdChat(tdCurrentChat, tdCurrentChatFullInfo);
                     break;
                 case TYPE_DEFAULT_CELL:
                     ProfileDefaultCell defaultCell = (ProfileDefaultCell) holder.itemView;
-                    if (data instanceof TLRPC.User) defaultCell.setUser((TLRPC.User) data, currentUserFull);
+                    if (data instanceof TdApi.User) defaultCell.setTdUser((TdApi.User) data, tdCurrentUserFullInfo);
                     defaultCell.setDrawDivider(needsDivider);
                     break;
                 case TYPE_GIFT_CELL:
                     ProfileGiftCell giftCell = (ProfileGiftCell) holder.itemView;
-                    if (data instanceof List) giftCell.setData(currentUser, (List<ProfileGiftCell.GiftItem>) data);
+                    if (data instanceof List) giftCell.setTdData(tdCurrentUser, (List<ProfileGiftCell.GiftItem>) data); // Assuming GiftItem is compatible
                     giftCell.setDrawDivider(needsDivider);
                     break;
                 case TYPE_CHANNEL_CELL:
                     ProfileChannelCell channelCell = (ProfileChannelCell) holder.itemView;
-                    if (data instanceof TLRPC.Chat) channelCell.set((TLRPC.Chat)data, null, true);
+                    if (data instanceof TdApi.Chat) channelCell.setTdChat((TdApi.Chat)data, tdCurrentChatFullInfo);
                     channelCell.setDrawDivider(needsDivider);
                     break;
                 case TYPE_GROUP_CELL:
                     ProfileGroupCell groupCell = (ProfileGroupCell) holder.itemView;
-                    if (data instanceof TLRPC.Chat) groupCell.setData((TLRPC.Chat)data, currentChatFull);
+                    if (data instanceof TdApi.Chat) groupCell.setTdData((TdApi.Chat)data, tdCurrentChatFullInfo);
                     groupCell.setDrawDivider(needsDivider);
                     break;
                 case TYPE_BUSINESS_CELL:
                     ProfileBusinessCell businessCell = (ProfileBusinessCell) holder.itemView;
-                    if (data instanceof TLRPC.UserFull) businessCell.setData((TLRPC.UserFull)data);
+                    if (data instanceof TdApi.UserFullInfo) businessCell.setTdData((TdApi.UserFullInfo)data);
                     businessCell.setDrawDivider(needsDivider);
                     break;
                 case TYPE_BOT_CELL:
                     ProfileBotCell botCell = (ProfileBotCell) holder.itemView;
-                    if (data instanceof TLRPC.User) botCell.setData((TLRPC.User)data, currentUserFull); // Pass full for bot_info
+                    if (data instanceof TdApi.User) botCell.setTdData((TdApi.User)data, tdCurrentUserFullInfo);
                     botCell.setDrawDivider(needsDivider);
                     break;
                 case TYPE_PHONE_ROW:
@@ -1044,7 +1152,16 @@ public class ProfileActivityEnhanced extends BaseFragment implements
                     break;
                 case TYPE_NOTIFICATIONS_ROW:
                     TextCell notifications = (TextCell) holder.itemView;
-                    boolean muted = dialogId != 0 && MessagesController.getInstance(currentAccount).isDialogMuted(dialogId, topicId);
+                    // Mute status will need to come from TdApi.Chat.notificationSettings or similar
+                    boolean muted = false; // Placeholder
+                    if (tdCurrentChat != null && tdCurrentChat.notificationSettings != null) {
+                        // Check if mute_for is in the future
+                        muted = tdCurrentChat.notificationSettings.muteFor > (System.currentTimeMillis() / 1000);
+                    } else if (tdCurrentUser != null && tdCurrentUser.id != 0 && tdCurrentUserFullInfo != null) {
+                        // For user chats, check global notification settings or if TdApi.User has notification settings
+                        // This part needs more detailed logic based on how TdApi stores user notification settings
+                        // Example: if (tdCurrentUserFullInfo.notificationSettings != null) muted = ...
+                    }
                     notifications.setTextAndIconAndValue(LocaleController.getString("NotificationsAndSounds", R.string.NotificationsAndSounds), R.drawable.profile_notifications, muted ? LocaleController.getString("NotificationsMuted", R.string.NotificationsMuted) : LocaleController.getString("NotificationsUnmuted", R.string.NotificationsUnmuted), needsDivider);
                     break;
                 case TYPE_ADD_MEMBER_ROW:
@@ -1059,11 +1176,10 @@ public class ProfileActivityEnhanced extends BaseFragment implements
                     break;
                 case TYPE_MEMBER_ROW:
                     UserCell memberCell = (UserCell) holder.itemView;
-                    if (data instanceof TLRPC.User) memberCell.setData((TLRPC.User)data, null, null, 0);
+                    if (data instanceof TdApi.User) memberCell.setTdData((TdApi.User)data, null, null, 0);
                     memberCell.setNeedDivider(needsDivider);
                     break;
                 case TYPE_EMPTY_ROW:
-                    // EmptyCell might take height from its data if it's an Integer
                     if (holder.itemView instanceof EmptyCell && data instanceof Integer) {
                         ((EmptyCell) holder.itemView).setHeight((Integer)data);
                     }
