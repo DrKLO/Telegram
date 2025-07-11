@@ -1,11 +1,11 @@
 package org.telegram.ui.Stars;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
-import static org.telegram.messenger.AndroidUtilities.lerp;
+import static org.telegram.messenger.AndroidUtilities.dpf2;
 import static org.telegram.ui.Stars.StarsController.findAttribute;
-
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.RadialGradient;
@@ -13,18 +13,13 @@ import android.graphics.RectF;
 import android.graphics.Shader;
 import android.view.MotionEvent;
 import android.view.View;
-
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
-import org.telegram.messenger.Utilities;
 import org.telegram.messenger.browser.Browser;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.tl.TL_stars;
-import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.AnimatedEmojiDrawable;
 import org.telegram.ui.Components.AnimatedFloat;
@@ -203,13 +198,13 @@ public class ProfileGiftsView extends View implements NotificationCenter.Notific
             final float scale = ascale * bounce.getScale(0.1f);
             canvas.scale(scale, scale);
             if (gradientPaint != null) {
-                gradientPaint.setAlpha((int) (0xFF * alpha * gradientAlpha));
+                gradientPaint.setAlpha((int) (0xFF * alpha));
                 canvas.drawRect(-gsz / 2.0f, -gsz / 2.0f, gsz / 2.0f, gsz / 2.0f, gradientPaint);
             }
             if (emojiDrawable != null) {
                 final int sz = dp(24);
                 emojiDrawable.setBounds(-sz / 2, -sz / 2, sz / 2, sz / 2);
-                emojiDrawable.setAlpha((int) (0xFF * alpha));
+                emojiDrawable.setAlpha((int) (0xFF * alpha * gradientAlpha));
                 emojiDrawable.draw(canvas);
             }
             canvas.restore();
@@ -318,7 +313,18 @@ public class ProfileGiftsView extends View implements NotificationCenter.Notific
             invalidate();
     }
 
-    public final AnimatedFloat animatedCount = new AnimatedFloat(this, 0, 320, CubicBezierInterpolator.EASE_OUT_QUINT);
+    private Paint giftPaint;
+    private final float[] giftsLocation = new float[] {
+        // order of movement, 6,1,2,5,3,4
+        -60f, -46f, 0.16f,
+        80f, -38f,  0.3f,
+        -98f, -8, 0.38f,
+        100f, -10, 0.4f,
+        -68f, 28f, 0.35f,
+        65f, 32f, 0.06f,
+        -145f, 35, 0.34f,
+        145f, 35, 0.50f
+    };
 
     @Override
     protected void dispatchDraw(@NonNull Canvas canvas) {
@@ -326,98 +332,57 @@ public class ProfileGiftsView extends View implements NotificationCenter.Notific
 
         final float ax = avatarContainer.getX();
         final float ay = avatarContainer.getY();
-        final float aw = (avatarContainer.getWidth()) * avatarContainer.getScaleX();
+        final float aw = avatarContainer.getWidth();
         final float ah = (avatarContainer.getHeight()) * avatarContainer.getScaleY();
 
         canvas.save();
         canvas.clipRect(0, 0, getWidth(), expandY);
 
-        final float acx = ax + aw / 2.0f;
-        final float cacx = Math.min(acx, dp(48));
-        final float acy = ay + ah / 2.0f;
-        final float ar = Math.min(aw, ah) / 2.0f + dp(6);
-        final float cx = getWidth() / 2.0f;
+        if (giftPaint == null) {
+            giftPaint = new Paint();
+            giftPaint.setColor(Color.BLACK);
+            giftPaint.setAntiAlias(true);
+            giftPaint.setStyle(Paint.Style.FILL);
+        }
 
-        final float closedAlpha = Utilities.clamp01((float) (expandY - (AndroidUtilities.statusBarHeight + ActionBar.getCurrentActionBarHeight())) / dp(50));
+        float progress = Math.max(1f - (avatarContainer.getScaleX() / 1.2f), 0);
+        final float centerX = ax + aw / 2f;
+        float centerY = AndroidUtilities.lerp((ay + ah / 2f) / (1 - progress), -dp(16), progress);
 
-        for (int i = 0; i < gifts.size(); ++i) {
-            final Gift gift = gifts.get(i);
-            final float alpha = gift.animatedFloat.set(1.0f);
-            final float scale = lerp(0.5f, 1.0f, alpha);
-            final int index = i; // gifts.size() == maxCount ? i - 1 : i;
-            if (index == 0) {
-                gift.draw(
-                    canvas,
-                    (float) (acx + ar * Math.cos(-65 / 180.0f * Math.PI)),
-                    (float) (acy + ar * Math.sin(-65 / 180.0f * Math.PI)),
-                    scale, -65 + 90,
-                    alpha * (1.0f - expandProgress), lerp(0.9f, 0.25f, actionBarProgress)
-                );
-            } else if (index == 1) {
-                gift.draw(
-                    canvas,
-                    lerp(cacx + Math.min(getWidth() * .27f, dp(62)), cx, 0.5f * actionBarProgress), acy - dp(52),
-                    scale, -4.0f,
-                    alpha * alpha * (1.0f - expandProgress) * (1.0f - actionBarProgress) * (closedAlpha),
-                    1.0f
-                );
-            } else if (index == 2) {
-                gift.draw(
-                    canvas,
-                    lerp(cacx + Math.min(getWidth() * .46f, dp(105)), cx, 0.5f * actionBarProgress), acy - dp(72),
-                    scale, 8.0f,
-                    alpha * (1.0f - expandProgress) * (1.0f - actionBarProgress) * (closedAlpha),
-                    1.0f
-                );
-            } else if (index == 3) {
-                gift.draw(
-                    canvas,
-                    lerp(cacx + Math.min(getWidth() * .60f, dp(136)), cx, 0.5f * actionBarProgress), acy - dp(46),
-                    scale, 3.0f,
-                    alpha * (1.0f - expandProgress) * (1.0f - actionBarProgress) * (closedAlpha),
-                    1.0f
-                );
-            } else if (index == 4) {
-                gift.draw(
-                    canvas,
-                    lerp(cacx + Math.min(getWidth() * .08f, dp(21.6f)), cx, 0.5f * actionBarProgress), acy - dp(82f),
-                    scale, -3.0f,
-                    alpha * (1.0f - expandProgress) * (1.0f - actionBarProgress) * (closedAlpha),
-                    1.0f
-                );
-            } else if (index == 5) {
-                gift.draw(
-                    canvas,
-                    lerp(cacx + Math.min(getWidth() * .745f, dp(186)), cx, 0.5f * actionBarProgress), acy - dp(39),
-                    scale, 2.0f,
-                    alpha * (1.0f - expandProgress) * (1.0f - actionBarProgress) * (closedAlpha),
-                    1.0f
-                );
-            } else if (index == 6) {
-                gift.draw(
-                    canvas,
-                    cacx + Math.min(getWidth() * .38f, dp(102)), expandY - dp(12),
-                    scale, 0,
-                    alpha * (1.0f - expandProgress) * (1.0f - actionBarProgress) * (closedAlpha),
-                    1.0f
-                );
-            } else if (index == 7) {
-                gift.draw(
-                    canvas,
-                    cacx + Math.min(getWidth() * .135f, dp(36)), expandY - dp(17.6f),
-                    scale, -5.0f,
-                    alpha * (1.0f - expandProgress) * (1.0f - actionBarProgress) * (closedAlpha),
-                    1.0f
-                );
-            } else if (index == 8) {
-                gift.draw(
-                    canvas,
-                    cacx + Math.min(getWidth() * .76f, dp(178)), expandY - dp(21.66f),
-                    scale, 5.0f,
-                    alpha * (1.0f - expandProgress) * (1.0f - actionBarProgress) * (closedAlpha),
-                    1.0f
-                );
+
+        for (int a = 0; a < Math.min(gifts.size(), 8); a++) {
+            int i = a * 3;
+            float t = giftsLocation[i + 2];
+            if (t == 0) {
+                t = 1;
             }
+            float x = AndroidUtilities.lerp(giftsLocation[i], 0f, Math.min(progress * 1 / t, 1));
+            float y = AndroidUtilities.lerp(giftsLocation[i + 1], 0f, Math.min(progress * 1 / t, 1));
+
+            final Gift gift = gifts.get(a);
+            float scale = AndroidUtilities.lerp(1f, 0f, Math.min(progress / 0.5f, 1f));
+            float toRotate = 45f;
+            if (giftsLocation[i] < 0) {
+                toRotate = -toRotate;
+            }
+            float rotate = AndroidUtilities.lerp(0f, toRotate, Math.min(progress / 0.5f, 1f));
+
+            gift.draw(
+                canvas,
+                centerX + AndroidUtilities.dpf2(x),
+                centerY + AndroidUtilities.dpf2(y) + dpf2(AndroidUtilities.lerp(0, 12f, Math.min(progress * 1 / t, 1))),
+                scale,
+                rotate,
+                1f,
+                1f
+            );
+        }
+
+        float radius = Math.min(AndroidUtilities.dp(62), ((avatarContainer.getMeasuredWidth() * avatarContainer.getScaleX()) / 2));
+        centerY = avatarContainer.getY() + radius;
+        if (avatarContainer.getScaleY() < 1.2f) {
+            // draw a circle overlay gifts
+            canvas.drawCircle(centerX, centerY, radius, giftPaint);
         }
 
         canvas.restore();
