@@ -263,7 +263,14 @@ public class ShortcutsCell extends FrameLayout {
         }
     }
 
-    public float setShowProgress(float pr) {
+    private float showProgress = 0f;
+    private boolean openingAnimation = false;
+    private int actionBarColor = -1;
+
+    public float setShowProgress(float pr, boolean openingAnimation, int actionBarColor) {
+        showProgress = pr;
+        this.openingAnimation = openingAnimation;
+        this.actionBarColor = actionBarColor;
         listView.setEnabled(pr > 0.5f);
         changeItems(false, shortcutButton -> {
             int bWidth = Math.min(shortcutButton.buttonText.getTextWidth(), shortcutButton.buttonText.getMeasuredWidth());
@@ -453,7 +460,7 @@ public class ShortcutsCell extends FrameLayout {
             ShortcutButton view = new ShortcutButton(parent.getContext()) {
 
                 private final Path path = new Path();
-                protected Paint backgroundPaint;
+                protected Paint backgroundPaint, fallbackPaint;
                 protected Paint clipPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
                 float radius = AndroidUtilities.dp(10);
@@ -462,6 +469,8 @@ public class ShortcutsCell extends FrameLayout {
 
                 @Override
                 protected void dispatchDraw(@NonNull Canvas canvas) {
+
+                    boolean canDrawBlur = showProgress > 0.8f ;
 
                     if (backgroundPaint == null) {
                         backgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -481,6 +490,16 @@ public class ShortcutsCell extends FrameLayout {
                         }
                     }
 
+                    if (fallbackPaint == null && actionBarColor != -1) {
+                        fallbackPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+                        fallbackPaint.setColor(actionBarColor);
+                        ColorMatrix cm = new ColorMatrix();
+                        AndroidUtilities.adjustSaturationColorMatrix(cm, +0.75f);
+                        AndroidUtilities.adjustBrightnessColorMatrix(cm, +0.245f);
+                        AndroidUtilities.multiplyBrightnessColorMatrix(cm, 0.595f);
+                        fallbackPaint.setColorFilter(new ColorMatrixColorFilter(cm));
+                    }
+
                     if (backgroundBlur != null) {
                         int w = this.getWidth();
                         int h = this.getHeight();
@@ -488,11 +507,19 @@ public class ShortcutsCell extends FrameLayout {
                         float diffH = h - h * this.getScaleY();
                         bounds.set(diffX / 2f, diffH / 2f, w - diffX / 2, h - diffH / 2);
                         if (customBlur()) {
-                            drawBlur(backgroundBlur, canvas, bounds, -getX(), AndroidUtilities.dp(80), 1.0f);
-                            canvas.drawRoundRect(bounds, radius, radius, backgroundPaint);
+                            if (canDrawBlur) {
+                                drawBlur(backgroundBlur, canvas, bounds, -getX(), AndroidUtilities.dp(80), 1.0f);
+                                canvas.drawRoundRect(bounds, radius, radius, backgroundPaint);
+                            } else {
+                                canvas.drawRoundRect(bounds, radius, radius, fallbackPaint);
+                            }
                         } else {
-                            drawBlur(backgroundBlur, canvas, bounds, -getX(), -ShortcutsCell.this.getTranslationY() + AndroidUtilities.dp(80), 1.0f);
-                            canvas.drawRoundRect(bounds, radius, radius, backgroundPaint);
+                            if (canDrawBlur) {
+                                drawBlur(backgroundBlur, canvas, bounds, -getX(), -ShortcutsCell.this.getTranslationY() + AndroidUtilities.dp(80), 1.0f);
+                                canvas.drawRoundRect(bounds, radius, radius, backgroundPaint);
+                            } else {
+                                canvas.drawRoundRect(bounds, radius, radius, fallbackPaint);
+                            }
                         }
                     }
                     super.dispatchDraw(canvas);
