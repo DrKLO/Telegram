@@ -1917,6 +1917,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         myProfile = arguments.getBoolean("my_profile", false);
         openGifts = arguments.getBoolean("open_gifts", false);
         openCommonChats = arguments.getBoolean("open_common", false);
+        if (getUserConfig().getCurrentUser().id != userId) {
+            maxExtraHeight += actionItemHeight + actionItemContainerPaddingVertical * 2;
+        }
         if (!expandPhoto) {
             expandPhoto = arguments.getBoolean("expandPhoto", false);
             if (expandPhoto) {
@@ -5323,7 +5326,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             return false;
         }
         // do not show message button for my user
-        if (getMessagesController().getUser(userId).self) {
+        if (getUserConfig().getCurrentUser().id == userId) {
             return false;
         }
         boolean actionMessageVisible = !searchMode && (imageUpdater == null || setAvatarRow == -1);
@@ -5335,7 +5338,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
 
     private boolean muteUnmuteVisible() {
         // do not show mute/unmute button for non joined channels and for my user
-        return !joinChannelOrGroupVisible() && !getMessagesController().getUser(userId).self;
+        return !joinChannelOrGroupVisible() && getUserConfig().getCurrentUser().id != userId;
     }
 
     private boolean sendGiftVisible() {
@@ -8225,7 +8228,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     private final float actionItemContainerPaddingHorizontal = 16f;
     private final float actionItemContainerPaddingVertical = 16f;
     private final float actionItemInterItemPadding = 8f;
-    private final float maxExtraHeight = 170f + actionItemHeight + actionItemContainerPaddingVertical * 2;
+    private float maxExtraHeight = 170f;
     private float nameMeasuredMoveTextWidth;
     private float nameMeasuredTextWidth;
     private float onlineMeasuredTextWidth;
