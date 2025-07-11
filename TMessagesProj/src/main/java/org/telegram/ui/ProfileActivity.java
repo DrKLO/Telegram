@@ -1889,6 +1889,89 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         }
     }
 
+    public static class FadeTopImageView extends View {
+
+        private Bitmap bitmap;
+        private Bitmap scaledBitmap;
+        private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final Rect srcRect = new Rect();
+        private final Rect dstRect = new Rect();
+
+        public FadeTopImageView(Context context) {
+            super(context);
+        }
+
+        public boolean hasBitmapSet() {
+            return scaledBitmap != null;
+        }
+
+        public void setBitmap(Bitmap bitmap) {
+            this.bitmap = bitmap;
+            prepareResources(getWidth(), getHeight());
+            invalidate();
+        }
+
+        public void clear() {
+            if (this.bitmap != null) {
+                this.bitmap.recycle();
+            }
+            this.bitmap = null;
+            if (this.scaledBitmap != null) {
+                this.scaledBitmap.recycle();
+            }
+            this.scaledBitmap = null;
+            invalidate();
+        }
+
+        @Override
+        protected void onSizeChanged(int w, int h, int oldw, int oldh) {
+            super.onSizeChanged(w, h, oldw, oldh);
+            prepareResources(w, h);
+        }
+
+        private void prepareResources(int width, int height) {
+            if (bitmap == null || width == 0 || height == 0) return;
+
+
+            // Create a bitmap with alpha channel
+            scaledBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+            Canvas canvas = new Canvas(scaledBitmap);
+
+            // Draw the scaled image into the new bitmap
+            Rect src = new Rect(0, 0, bitmap.getWidth(), bitmap.getHeight());
+            Rect dst = new Rect(0, 0, width, height);
+            canvas.drawBitmap(bitmap, src, dst, paint);
+
+            // Gradient shader: top transparent to bottom opaque
+            Shader shader = new LinearGradient(
+                    0, 0, 0, height,
+                    new int[]{0x00000000, 0xFF000000},
+                    new float[]{0f, 0.3f},
+                    Shader.TileMode.CLAMP
+            );
+
+            Paint fadePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+            fadePaint.setShader(shader);
+            fadePaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.DST_IN));
+
+            // Apply the fade directly to fadedBitmap
+            canvas.drawRect(0, 0, width, height, fadePaint);
+
+
+            // Update draw bounds
+            srcRect.set(0, 0, width, height);
+            dstRect.set(0, 0, width, height);
+        }
+
+        @Override
+        protected void onDraw(Canvas canvas) {
+            super.onDraw(canvas);
+            if (scaledBitmap != null) {
+                canvas.drawBitmap(scaledBitmap, srcRect, dstRect, paint);
+            }
+        }
+    }
+
     public ProfileActivity(Bundle args) {
         this(args, null);
     }
@@ -4870,7 +4953,6 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             } else {
                 nameTextView[a].setTextColor(getThemedColor(Theme.key_actionBarDefaultTitle));
             }
-            // todo Alex
 //            nameTextView[a].setPadding(0, AndroidUtilities.dp(6), 0, AndroidUtilities.dp(a == 0 ? 12 : 4));
             nameTextView[a].setTextSize(18);
             nameTextView[a].setGravity(Gravity.LEFT);
@@ -5225,7 +5307,6 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         actionSendGift = createActionItem(
                 context,
                 R.drawable.ic_gift_new,
-                // todo alex create new strings for actions to not mix with existing ones?
                 LocaleController.getString(R.string.BoostingGift),
                 view -> openSendGift());
         actionLeaveGroup = createActionItem(
@@ -7594,90 +7675,6 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         }
     }
 
-    // todo Alex move it up
-    public static class FadeTopImageView extends View {
-
-        private Bitmap bitmap;
-        private Bitmap scaledBitmap;
-        private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        private final Rect srcRect = new Rect();
-        private final Rect dstRect = new Rect();
-
-        public FadeTopImageView(Context context) {
-            super(context);
-        }
-
-        public boolean hasBitmapSet() {
-            return scaledBitmap != null;
-        }
-
-        public void setBitmap(Bitmap bitmap) {
-            this.bitmap = bitmap;
-            prepareResources(getWidth(), getHeight());
-            invalidate();
-        }
-
-        public void clear() {
-            if (this.bitmap != null) {
-                this.bitmap.recycle();
-            }
-            this.bitmap = null;
-            if (this.scaledBitmap != null) {
-                this.scaledBitmap.recycle();
-            }
-            this.scaledBitmap = null;
-            invalidate();
-        }
-
-        @Override
-        protected void onSizeChanged(int w, int h, int oldw, int oldh) {
-            super.onSizeChanged(w, h, oldw, oldh);
-            prepareResources(w, h);
-        }
-
-        private void prepareResources(int width, int height) {
-            if (bitmap == null || width == 0 || height == 0) return;
-
-
-            // Create a bitmap with alpha channel
-            scaledBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
-            Canvas canvas = new Canvas(scaledBitmap);
-
-            // Draw the scaled image into the new bitmap
-            Rect src = new Rect(0, 0, bitmap.getWidth(), bitmap.getHeight());
-            Rect dst = new Rect(0, 0, width, height);
-            canvas.drawBitmap(bitmap, src, dst, paint);
-
-            // Gradient shader: top transparent to bottom opaque
-            Shader shader = new LinearGradient(
-                    0, 0, 0, height,
-                    new int[]{0x00000000, 0xFF000000},
-                    new float[]{0f, 0.3f},
-                    Shader.TileMode.CLAMP
-            );
-
-            Paint fadePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-            fadePaint.setShader(shader);
-            fadePaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.DST_IN));
-
-            // Apply the fade directly to fadedBitmap
-            canvas.drawRect(0, 0, width, height, fadePaint);
-
-
-            // Update draw bounds
-            srcRect.set(0, 0, width, height);
-            dstRect.set(0, 0, width, height);
-        }
-
-        @Override
-        protected void onDraw(Canvas canvas) {
-            super.onDraw(canvas);
-            if (scaledBitmap != null) {
-                canvas.drawBitmap(scaledBitmap, srcRect, dstRect, paint);
-            }
-        }
-    }
-
     private void animateActionItemsBlurVisible(boolean visible) {
         if (!visible) {
             actionItemsBlur.animate().alpha(0f).setDuration(150).start();
@@ -7716,7 +7713,6 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
 
             listView.setOverScrollMode(extraHeight > AndroidUtilities.dp(maxExtraHeight) && extraHeight < listView.getMeasuredWidth() - newTop ? View.OVER_SCROLL_NEVER : View.OVER_SCROLL_ALWAYS);
 
-            // todo Alex was inside the writeButton != null block
             if (qrItem != null) {
                 updateQrItemVisibility(animated);
                 if (!animated) {
@@ -7919,7 +7915,6 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                         } else {
                             expandAnimator.setDuration(0);
                         }
-                        // todo alex changing top view color
                         topView.setBackgroundColor(getThemedColor(Theme.key_avatar_backgroundActionBarBlue));
 
                         if (!doNotSetForeground) {
