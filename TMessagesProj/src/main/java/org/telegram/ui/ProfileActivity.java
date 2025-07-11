@@ -1344,16 +1344,18 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     backgroundPaint.setAlpha((int) (0xFF * progressToGradient));
                     canvas.drawRect(0, 0, getMeasuredWidth(), y1, backgroundPaint);
                 }
+                final float diff = Math.min(1f, extraHeight / AndroidUtilities.dp(COLLAPSE_HEIGHT_DP));
                 if (hasEmoji) {
                     final float loadedScale = emojiLoadedT.set(isEmojiLoaded());
                     if (loadedScale > 0) {
                         canvas.save();
                         canvas.clipRect(0, 0, getMeasuredWidth(), y1);
-                        final float diff = Math.min(1f, extraHeight / AndroidUtilities.dp(COLLAPSE_HEIGHT_DP));
                         giftsView.setHideProgress(diff);
                         StarGiftPatterns.drawProfilePattern(canvas, emoji, getMeasuredWidth(), ((actionBar.getOccupyStatusBar() ? AndroidUtilities.statusBarHeight : 0) + dp(144)) - (1f - extraHeight / dp(COLLAPSE_HEIGHT_DP)) * dp(50), Math.min(1f, extraHeight / dp(COLLAPSE_HEIGHT_DP)), avatarContainer, diff);
                         canvas.restore();
                     }
+                } else {
+                    giftsView.setHideProgress(diff);
                 }
                 if (previousTransitionFragment != null) {
                     ActionBar actionBar = previousTransitionFragment.getActionBar();
