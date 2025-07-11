@@ -276,7 +276,19 @@ public class StarGiftPatterns {
             centerY = AndroidUtilities.lerp(stableY, acy, 1f - factor);
 
             float currentRadius = radiusDp * factor;
-            float alphaFactor = Math.min(factor * (1f + 0.5f * i), 1f);
+            float alphaFactor = factor;
+            float scaleFactor = factor;
+            if (i == 0) {
+                alphaFactor = Math.min(factor * 1.4f, 1f);
+            } else if (i == 1) {
+                alphaFactor = Math.min(factor * 3f, 1f);
+            } else if (i == 2) {
+                alphaFactor = Math.min(factor * 3f, 1f);
+            } else {
+                alphaFactor = Math.min(factor * 4f, 1f);
+            }
+            scaleFactor = alphaFactor;
+            sizeDp = sizeDp * scaleFactor;
             float currentAlpha = orbitAlpha * alphaFactor * alpha;
 
             if (currentAlpha <= 0 || currentRadius <= 0) continue;
@@ -284,22 +296,22 @@ public class StarGiftPatterns {
             switch (i) {
                 case 0:
                     drawHexagonOrbit(canvas, pattern, centerX, centerY,
-                            currentRadius, factor, sizeDp * alphaFactor,
+                            currentRadius, factor, sizeDp,
                             currentAlpha, true, 6, 1.12f, 1f);
                     break;
                 case 1:
                     drawRectangleOrbit(canvas, pattern, centerX, centerY,
-                            currentRadius, factor, sizeDp * alphaFactor,
+                            currentRadius, factor, sizeDp,
                             currentAlpha, 1.0f);
                     break;
                 case 2:
                     drawPointsOrbit(canvas, pattern, centerX, centerY,
-                            currentRadius, sizeDp * alphaFactor,
+                            currentRadius, sizeDp,
                             currentAlpha, 1f);
                     break;
                 case 3:
                     drawHexagonOrbit(canvas, pattern, centerX, centerY,
-                            currentRadius, 1f, sizeDp * alphaFactor,
+                            currentRadius, 1f, sizeDp,
                             currentAlpha, false, 6, 0.7f, 0.7f);
                     break;
             }
