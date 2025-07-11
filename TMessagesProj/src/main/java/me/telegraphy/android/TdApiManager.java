@@ -180,6 +180,76 @@ public class TdApiManager {
         send(new TdApi.GetChatHistory(chatId, fromMessageId, offset, limit, onlyLocal), resultHandler);
     }
 
+    public void sendMessage(
+            long chatId,
+            TdApi.InputMessageReplyTo replyTo,
+            TdApi.MessageSendOptions options,
+            TdApi.ReplyMarkup replyMarkup,
+            TdApi.InputMessageContent inputMessageContent,
+            Client.ResultHandler resultHandler
+    ) {
+        TdApi.SendMessage sendMessageRequest = new TdApi.SendMessage(
+                chatId,
+                0, // message_thread_id - for now, assuming sending to main chat, not a topic
+                replyTo,
+                options,
+                replyMarkup,
+                inputMessageContent
+        );
+        client.send(sendMessageRequest, resultHandler);
+    }
+
+    // Overloaded for convenience if some parameters are not needed
+    public void sendMessageText(
+            long chatId,
+            String text,
+            ArrayList<TdApi.TextEntity> entities,
+            TdApi.LinkPreviewOptions linkPreviewOptions,
+            TdApi.InputMessageReplyTo replyTo,
+            TdApi.MessageSendOptions options,
+            TdApi.ReplyMarkup replyMarkup,
+            Client.ResultHandler resultHandler
+    ) {
+        TdApi.FormattedText formattedText = new TdApi.FormattedText(text, entities);
+        TdApi.InputMessageText inputMessageText = new TdApi.InputMessageText(formattedText, linkPreviewOptions, true); // clear_draft = true by default for new messages
+
+        TdApi.SendMessage sendMessageRequest = new TdApi.SendMessage(
+                chatId,
+                0, // message_thread_id
+                replyTo,
+                options,
+                replyMarkup,
+                inputMessageText
+        );
+        client.send(sendMessageRequest, resultHandler);
+    }
+
+    public void sendMedia(
+            long chatId,
+            TdApi.InputMessageContent inputMessageContent,
+            TdApi.InputMessageReplyTo replyTo,
+            TdApi.MessageSendOptions options,
+            TdApi.ReplyMarkup replyMarkup,
+            Client.ResultHandler resultHandler
+    ) {
+         TdApi.SendMessage sendMessageRequest = new TdApi.SendMessage(
+                chatId,
+                0, // message_thread_id
+                replyTo,
+                options,
+                replyMarkup,
+                inputMessageContent
+        );
+        client.send(sendMessageRequest, resultHandler);
+    }
+
+
+    // Placeholder for future forwardMessages, editMessageText, editMessageMedia
+    // public void forwardMessages(...)
+    // public void editMessageText(...)
+    // public void editMessageMedia(...)
+
+
     public static void sendMessage(long chatId, long messageThreadId, TdApi.InputMessageContent inputMessageContent, TdApi.ReplyTo replyTo, TdApi.MessageSendOptions options, Client.ResultHandler resultHandler) {
         TdApi.SendMessage message = new TdApi.SendMessage(chatId, messageThreadId, replyTo, options, inputMessageContent);
         send(message, resultHandler);
