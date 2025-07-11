@@ -45,6 +45,25 @@
     },
     {
       "client_info": {
+        "mobilesdk_app_id": "1:361807476143:android:977315c9d392235ac36b5a",
+        "android_client_info": {
+          "package_name": "org.telegram.legobyte.web"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDoYAevKXSDMwvGka1YTWBdVsbR2Z3PKdw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
         "mobilesdk_app_id": "1:361807476143:android:e8149cf0ba53809cc36b5a",
         "android_client_info": {
           "package_name": "org.telegram.messenger"
