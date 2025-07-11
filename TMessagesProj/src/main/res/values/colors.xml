@@ -8,4 +8,10 @@
     <color name="widget_divider">#d9d9d9</color>
     <color name="widget_action_text">#8B8D8F</color>
     <color name="widget_edit_text">#999999</color>
+
+    <!-- Gift specific colors (from user prompt) -->
+    <color name="gift_background_glow">#1A74D4FF</color>
+    <color name="gift_background_circle">#74D4FF</color>
+    <color name="gift_background_glow_night">#1AFFFFFF</color> <!-- Defined here for reference, primarily used in values-night -->
+    <color name="gift_background_circle_night">#FFFFFF</color> <!-- Defined here for reference, primarily used in values-night -->
 </resources>
