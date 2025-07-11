@@ -17,8 +17,12 @@ public final class MetaMask {
 
     public static boolean FORCE_SW_MASK = false;
 
+    public static boolean useShader() {
+        return Build.VERSION.SDK_INT >= 33 && !ProfileActivity.FORCE_MY_BLUR && !FORCE_SW_MASK;
+    }
+
     public static void draw(Canvas cv, RectF bubble, RectF button, Paint paint, boolean pillActsAsSingle) {
-        if (Build.VERSION.SDK_INT >= 33 && !ProfileActivity.FORCE_MY_BLUR && !FORCE_SW_MASK) {
+        if (useShader()) {
             drawShader(cv, bubble, button, paint, pillActsAsSingle, ISO);
         } else {
             drawBitmapAsync(cv, bubble, button, paint, pillActsAsSingle, ISO);
@@ -26,20 +30,17 @@ public final class MetaMask {
     }
 
     public static void shutdown() {
+        dropLastBitmap();
         try {
-            if (worker.bitmap != null) {
-                worker.bitmap.recycle();
-                worker.bitmap = null;
-            }
-            if (worker.lastMask != null) {
-                worker.lastMask.recycle();
-                worker.lastMask = null;
-            }
+            worker.shutdown();
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    public static void dropLastBitmap() {
         try {
-            worker.shutdown();
+            worker.skipBitmap();
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -94,10 +95,11 @@ public final class MetaMask {
     private static final Worker worker = new Worker();
 
     private static void drawBitmapAsync(Canvas cv, RectF bubble, RectF button, Paint paint, boolean pillSingle, float iso) {
-        Bitmap mask = worker.lastMask;
+        Bitmap mask = worker.frontBuffer;
         RectF dst = worker.lastDst;
         if (mask != null && !mask.isRecycled() && dst != null) {
-            paint.setFilterBitmap(true);
+            // No bilinear filtering on ALPHA_8 to avoid GPU driver issues
+            paint.setFilterBitmap(false);
             try {
                 cv.drawBitmap(mask, null, dst, paint);
             } catch (Exception e) {
@@ -108,20 +110,23 @@ public final class MetaMask {
     }
 
     private static final class Worker {
-
-        volatile Bitmap lastMask;
+        volatile Bitmap frontBuffer;
         volatile RectF  lastDst;
+
         private final AtomicReference<Job> pending = new AtomicReference<>();
 
-        private ExecutorService exec =
-                Executors.newSingleThreadExecutor(r -> {
-                    Thread t = new Thread(r, "MetaMaskWorker");
-                    t.setPriority(Thread.MIN_PRIORITY);
-                    return t;
-                });
-        private Bitmap bitmap;
-        private int[]  alpha;
-        private int mw, mh;
+        void skipBitmap() {
+            frontBuffer = null;
+            lastDst = null;
+        }
+
+        private ExecutorService exec = Executors.newSingleThreadExecutor(r -> {
+            Thread t = new Thread(r, "MetaMaskWorker");
+            t.setPriority(Thread.MIN_PRIORITY);
+            return t;
+        });
+
+        private int[] alpha;
 
         void request(RectF bubble, RectF button, boolean pillSingle, float iso) {
             Job j = new Job(new RectF(bubble), new RectF(button), pillSingle, iso);
@@ -148,17 +153,20 @@ public final class MetaMask {
             Job j;
             while ((j = pending.getAndSet(null)) != null) {
                 Bitmap bmp = render(j);
-                lastMask = bmp;
+                frontBuffer = bmp;
                 lastDst = j.dst;
             }
         }
 
         private Bitmap render(Job j) {
-            int STEP = (j.dst.width() > LARGE_MASK_PX || j.dst.height()> LARGE_MASK_PX) ? 3 : 2;
+            int STEP = (j.dst.width() > LARGE_MASK_PX || j.dst.height() > LARGE_MASK_PX) ? 3 : 2;
             int w = Math.max(1, (int) (j.dst.width()  / STEP));
             int h = Math.max(1, (int) (j.dst.height() / STEP));
 
-            ensureBitmap(w,h);
+            if (alpha == null || alpha.length < w * h) {
+                alpha = new int[w * h];
+            }
+
             boolean pill = j.bubble.width() > j.bubble.height() + 0.5f;
             float rb = j.bubble.height() * 0.5f;
             float cbx = j.bubble.centerX(), cby = j.bubble.centerY();
@@ -168,16 +176,16 @@ public final class MetaMask {
             float cBx = j.button.centerX(), cBy = j.button.centerY();
 
             int idx = 0;
-            for(int y = 0; y < h; y++){
+            for (int y = 0; y < h; y++) {
                 float wy = j.dst.top + (y + 0.5f) * STEP;
-                for(int x=0; x < w; x++, idx++){
-                    float wx=j.dst.left+(x+.5f) * STEP;
+                for (int x = 0; x < w; x++, idx++) {
+                    float wx = j.dst.left + (x + 0.5f) * STEP;
                     float v;
                     if (!pill) {
                         v = r2(wx, wy, cbx, cby, rb);
                     } else if (j.pillSingle) {
                         float s = j.bubble.width() / j.bubble.height();
-                        float dx = (wx-cbx) / s, dy = wy - cby;
+                        float dx = (wx - cbx) / s, dy = wy - cby;
                         v = (rb * rb) / (dx * dx + dy * dy + 1f);
                     } else {
                         v = r2(wx, wy, cbLx, cby, rb) + r2(wx, wy, cbRx, cby, rb);
@@ -186,19 +194,13 @@ public final class MetaMask {
                     alpha[idx] = (v >= j.iso) ? 0xFF000000 : 0x00000000;
                 }
             }
-            if (bitmap != null && !bitmap.isRecycled()) {
-                bitmap.setPixels(alpha, 0, w, 0, 0, w, h);
-            }
-            return bitmap;
+
+            Bitmap bmp = Bitmap.createBitmap(w, h, Bitmap.Config.ALPHA_8);
+            bmp.setPixels(alpha, 0, w, 0, 0, w, h);
+            return bmp;
         }
 
-        private void ensureBitmap(int w, int h){
-            if (bitmap != null && w == mw && h == mh) return;
-            if (bitmap != null) bitmap.recycle();
-            bitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ALPHA_8);
-            alpha = new int[w * h]; mw = w; mh = h;
-        }
-        private static float r2(float x,float y,float cx,float cy,float r){
+        private static float r2(float x, float y, float cx, float cy, float r) {
             float dx = cx - x, dy = cy - y;
             return (r * r) / (dx * dx + dy * dy + 1f);
         }

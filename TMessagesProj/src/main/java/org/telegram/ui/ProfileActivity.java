@@ -1053,6 +1053,12 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 return;
             }
 
+            if (veryFastCollapseAfterlife && !MetaMask.useShader()) {
+                MetaMask.dropLastBitmap();
+                invalidate();
+                return;
+            }
+
             if (expandAnimator != null && expandAnimator.isRunning() || isPulledDown) {
                 avatarContainer.setAlpha(1f);
                 invalidate();
@@ -1097,6 +1103,11 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 if (!CameraCutoutHelper.isTop) {
                     MetaMask.ISO = 1.6f;
                 }
+                return;
+            }
+
+            if (diff <= 0f) {
+                invalidate();
                 return;
             }
 
@@ -3153,6 +3164,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                         paddingTop = listView.getMeasuredWidth() + AndroidUtilities.dp(AVATAR_ADDITIONAL_HEIGHT_DP);
                         paddingBottom = Math.max(0, getMeasuredHeight() - (listContentHeight + AndroidUtilities.dp(COLLAPSE_HEIGHT_DP) + actionBarHeight));
                     }
+                    if (paddingBottom > 0) {
+                        paddingBottom += AndroidUtilities.dp(COLLAPSE_HEIGHT_DP);
+                    }
                     if (banFromGroup != 0) {
                         paddingBottom += AndroidUtilities.dp(48);
                         listView.setBottomGlowOffset(AndroidUtilities.dp(48));
@@ -3180,6 +3194,10 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                         paddingTop = listView.getMeasuredWidth() + AndroidUtilities.dp(AVATAR_ADDITIONAL_HEIGHT_DP);
                         paddingBottom = Math.max(0, getMeasuredHeight() - (listContentHeight + AndroidUtilities.dp(COLLAPSE_HEIGHT_DP) + actionBarHeight));
                     }
+                    if (paddingBottom > 0) {
+                        paddingBottom += AndroidUtilities.dp(COLLAPSE_HEIGHT_DP);
+                    }
+
                     if (banFromGroup != 0) {
                         paddingBottom += AndroidUtilities.dp(48);
                         listView.setBottomGlowOffset(AndroidUtilities.dp(48));
@@ -5889,7 +5907,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 actionBar.setItemsBackgroundColor(isPulledDown ? Theme.ACTION_BAR_WHITE_SELECTOR_COLOR : peerColor != null ? 0x20ffffff : getThemedColor(Theme.key_avatar_actionBarSelectorBlue), false);
                 avatarImage.clearForeground();
                 doNotSetForeground = false;
-                veryFastCollapse = false;
+                setupVeryFastCollapseGuard();
                 updateStoriesViewBounds(false);
                 updateAvatarBlurPosition(true);
             }
@@ -6503,9 +6521,22 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         return false;
     }
 
+    boolean veryFastCollapseAfterlife = false;
     boolean veryFastCollapse = false;
     float veryFastCollapseStartValue = 0f;
     float veryFastCollapseStartY = 0f;
+
+    Runnable clearVeryFastCollapseAfterlife = () -> {
+        veryFastCollapseAfterlife = false;
+    };
+
+    private void setupVeryFastCollapseGuard() {
+        if (!veryFastCollapse) return;
+        veryFastCollapse = false;
+        veryFastCollapseAfterlife = true;
+        AndroidUtilities.cancelRunOnUIThread(clearVeryFastCollapseAfterlife);
+        AndroidUtilities.runOnUIThread(clearVeryFastCollapseAfterlife, 150);
+    }
 
 
     private void setAvatarExpandProgress(float animatedFracture, float cleanValue) {
@@ -8358,7 +8389,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
 
                 float diff2 = Math.min(diff * 1.55f, 1f);
 
-                float addTrans = shortcutsCell.setShowProgress(diff2);
+                float addTrans = shortcutsCell.setShowProgress(diff2, openAnimationInProgress, actionBarBackgroundColor);
 
                 float shortcutsTranslationY = addTrans + (actionBar.getOccupyStatusBar() ? AndroidUtilities.statusBarHeight : 0) + ActionBar.getCurrentActionBarHeight() + extraHeight + searchTransitionOffset - AndroidUtilities.dp(73);
                 shortcutsCell.setTranslationY(shortcutsTranslationY);
@@ -8512,7 +8543,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                             @Override
                             public void onAnimationEnd(Animator animation) {
                                 expandAnimator.removeListener(this);
-                                veryFastCollapse = false;
+                                setupVeryFastCollapseGuard();
                                 topView.setBackgroundColor(Color.BLACK);
                                 //fragmentView.setBackgroundColor(Color.BLACK);
                                 avatarContainer.setVisibility(View.GONE);
@@ -8521,6 +8552,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                             }
                         });
                         veryFastCollapse = false;
+                        veryFastCollapseAfterlife = false;
                         expandAnimator.start();
                     }
                     ViewGroup.LayoutParams params = avatarsViewPager.getLayoutParams();
@@ -8598,6 +8630,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                         avatarContainer.setVisibility(View.VISIBLE);
                         avatarsViewPager.setVisibility(View.GONE);
                         veryFastCollapse = false;
+                        veryFastCollapseAfterlife = false;
                         expandAnimator.start();
                     }
 
