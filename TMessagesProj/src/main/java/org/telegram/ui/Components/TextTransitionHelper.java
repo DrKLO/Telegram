@@ -19,14 +19,13 @@ import org.telegram.ui.Components.CubicBezierInterpolator;
 
 /**
  * Helper class for smooth text transitions during collapsing header animations.
- * Manages dual text views (expanded and collapsed) with synchronized fade
- * transitions.
+ * Manages dual text views (expanded and collapsed) with synchronized
+ * translation
+ * transitions. Texts are always fully visible - no fading effects.
  */
 public class TextTransitionHelper {
 
     // Animation configuration
-    private static final float FADE_START_THRESHOLD = 0.3f; // When expanded text starts fading
-    private static final float FADE_END_THRESHOLD = 0.7f; // When collapsed text appears
     private static final float TRANSLATION_THRESHOLD = 0.8f; // When text translation completes
 
     // Material Design animation interpolators for smooth text transitions
@@ -43,8 +42,6 @@ public class TextTransitionHelper {
 
     // Animation state
     private float currentProgress = 0f;
-    private float expandedAlpha = 1f;
-    private float collapsedAlpha = 1f; // always visible for now
     private float nameTranslationX = 0f;
     private float nameTranslationY = 0f;
     private float statusTranslationX = 0f;
@@ -72,12 +69,12 @@ public class TextTransitionHelper {
         this.collapsedNameView = collapsedName;
         this.collapsedStatusView = collapsedStatus;
 
-        // Initialize collapsed views as not invisible
+        // Initialize collapsed views as hidden since we use translated expanded text
         if (collapsedNameView != null) {
-            collapsedNameView.setAlpha(1f);
+            collapsedNameView.setAlpha(0f);
         }
         if (collapsedStatusView != null) {
-            collapsedStatusView.setAlpha(1f);
+            collapsedStatusView.setAlpha(0f);
         }
     }
 
@@ -120,23 +117,20 @@ public class TextTransitionHelper {
         // Implement actual translation movement instead of fade effects
         // Text should visually move from center to toolbar position with "left upward
         // motion"
+        // Text should only start moving when the collapsing header is near the text
 
-        // Keep text visible throughout animation - no fading
-        expandedAlpha = 1f; // Always visible during translation
-        collapsedAlpha = 0f; // Keep collapsed hidden, use translated expanded text
-
-        // Apply the same smooth technique as button animations for consistent feel
-        // Extended range for slower, more visible left upward motion
-        if (currentProgress <= 0.1f) {
-            // Still in center position - no translation yet (same as button start
-            // threshold)
+        // Text should only start moving when the collapsing header is near the text
+        // Use much later threshold for more natural animation
+        if (currentProgress <= 0.7f) {
+            // Text stays in center position until collapsing header is very near
+            // No translation until 70% of scroll progress
             nameTranslationX = 0f;
             nameTranslationY = 0f;
             statusTranslationX = 0f;
             statusTranslationY = 0f;
             nameScale = 1f;
             statusScale = 1f;
-        } else if (currentProgress >= 0.9f) {
+        } else if (currentProgress >= 0.98f) {
             // Fully translated to toolbar position - text should be visible next to back
             // button
             nameTranslationX = targetNameX;
@@ -146,24 +140,24 @@ public class TextTransitionHelper {
             nameScale = 0.92f; // Match button scaling for consistency
             statusScale = 0.92f;
         } else {
-            // Extended gradual translation zone (10% to 90% - matching button animation
-            // range)
-            float transitionProgress = (currentProgress - 0.1f) / 0.8f; // 80% range for smooth movement
+            // Ultra-slow translation zone (70% to 98% - much longer range for ultra-slow
+            // movement)
+            float transitionProgress = (currentProgress - 0.7f) / 0.28f; // 28% range for ultra-slow movement
 
-            // Use exact same interpolation as avatar animation for perfect consistency
-            float symmetricProgress = CubicBezierInterpolator.EASE_OUT_QUINT.getInterpolation(transitionProgress);
+            // Use very slow EASE_OUT for ultra-slow text movement
+            float smoothProgress = CubicBezierInterpolator.EASE_OUT.getInterpolation(transitionProgress);
 
-            // Apply EXACT same smooth left upward motion for BOTH username and status
-            nameTranslationX = symmetricProgress * targetNameX;
-            nameTranslationY = symmetricProgress * targetNameY;
+            // Apply ultra-slow left upward motion for BOTH username and status
+            nameTranslationX = smoothProgress * targetNameX;
+            nameTranslationY = smoothProgress * targetNameY;
 
-            // Apply EXACT same technique to status - no stagger, same smooth movement
-            statusTranslationX = symmetricProgress * targetStatusX;
-            statusTranslationY = symmetricProgress * targetStatusY;
+            // Apply same technique to status - synchronized movement
+            statusTranslationX = smoothProgress * targetStatusX;
+            statusTranslationY = smoothProgress * targetStatusY;
 
-            // Apply EXACT same gentle scaling to both - no differences
-            nameScale = 1f - (symmetricProgress * 0.08f); // Same gentle scaling as individual buttons
-            statusScale = 1f - (symmetricProgress * 0.08f); // Identical to name scaling
+            // Apply gentle scaling to both
+            nameScale = 1f - (smoothProgress * 0.08f); // Same gentle scaling as individual buttons
+            statusScale = 1f - (smoothProgress * 0.08f); // Identical to name scaling
         }
     }
 
@@ -189,8 +183,8 @@ public class TextTransitionHelper {
         if (expandedStatusView != null) {
             // ALWAYS fully visible - no alpha transitions ever (identical to username)
             expandedStatusView.setAlpha(1f);
-            expandedStatusView.setTranslationX(statusTranslationX);
             expandedStatusView.setTranslationY(statusTranslationY);
+            expandedStatusView.setTranslationX(statusTranslationX);
             expandedStatusView.setScaleX(statusScale);
             expandedStatusView.setScaleY(statusScale);
 
@@ -205,11 +199,11 @@ public class TextTransitionHelper {
 
         // Keep collapsed text views hidden - we use translated expanded text instead
         if (collapsedNameView != null) {
-            collapsedNameView.setAlpha(collapsedAlpha); // Always 0f - keep hidden
+            collapsedNameView.setAlpha(0f); // Always 0f - keep hidden
         }
 
         if (collapsedStatusView != null) {
-            collapsedStatusView.setAlpha(collapsedAlpha); // Always 0f - keep hidden
+            collapsedStatusView.setAlpha(0f); // Always 0f - keep hidden
         }
     }
 
@@ -239,31 +233,17 @@ public class TextTransitionHelper {
     }
 
     /**
-     * Get current expanded text alpha
-     */
-    public float getExpandedAlpha() {
-        return expandedAlpha;
-    }
-
-    /**
-     * Get current collapsed text alpha
-     */
-    public float getCollapsedAlpha() {
-        return collapsedAlpha;
-    }
-
-    /**
      * Check if expanded text is visible
      */
     public boolean isExpandedTextVisible() {
-        return expandedAlpha > 0f;
+        return true; // Always visible
     }
 
     /**
      * Check if collapsed text is visible
      */
     public boolean isCollapsedTextVisible() {
-        return collapsedAlpha > 0f;
+        return false; // Always hidden since we use translated expanded text
     }
 
     /**
@@ -271,8 +251,6 @@ public class TextTransitionHelper {
      */
     public void reset() {
         currentProgress = 0f;
-        expandedAlpha = 1f;
-        collapsedAlpha = 0f;
         nameTranslationX = 0f;
         nameTranslationY = 0f;
         statusTranslationX = 0f;

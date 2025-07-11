@@ -10,11 +10,6 @@ package org.telegram.ui;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
 
-import android.animation.Animator;
-import android.animation.AnimatorListenerAdapter;
-import android.animation.AnimatorSet;
-import android.animation.ObjectAnimator;
-import android.animation.ValueAnimator;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -31,8 +26,6 @@ import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.LayoutInflater;
-import android.view.Menu;
-import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
@@ -45,11 +38,9 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.ArrayList;
-import java.util.List;
 import java.io.File;
 
 import androidx.annotation.NonNull;
-import androidx.appcompat.widget.Toolbar;
 import androidx.coordinatorlayout.widget.CoordinatorLayout;
 import androidx.core.widget.NestedScrollView;
 
@@ -58,15 +49,12 @@ import com.google.android.material.appbar.CollapsingToolbarLayout;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
-import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.NotificationCenter;
-import org.telegram.messenger.NotificationsController;
 import org.telegram.messenger.R;
-import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
@@ -76,6 +64,7 @@ import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.BackupImageView;
+import org.telegram.ui.Components.AnimatedAvatarView;
 import org.telegram.ui.Components.HeaderGiftParticleSystem;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RecyclerListView;
@@ -90,39 +79,19 @@ import org.telegram.ui.Components.HeaderScrollResponder;
 import org.telegram.ui.Components.CollapsingHeaderOffsetListener;
 import org.telegram.ui.Cells.TextDetailCell;
 import org.telegram.ui.Cells.TextCell;
-import org.telegram.ui.Cells.TextInfoPrivacyCell;
 import org.telegram.ui.Cells.ShadowSectionCell;
 import org.telegram.ui.Cells.HeaderCell;
 import org.telegram.ui.Cells.AboutLinkCell;
-import org.telegram.ui.Cells.NotificationsCheckCell;
 import org.telegram.ui.Cells.DividerCell;
 import org.telegram.ui.Cells.UserCell;
-import org.telegram.ui.Cells.GraySectionCell;
-import org.telegram.ui.Cells.SettingsSearchCell;
-import org.telegram.ui.Cells.SettingsSuggestionCell;
 import org.telegram.ui.Business.ProfileHoursCell;
 import org.telegram.ui.Business.ProfileLocationCell;
-import org.telegram.ui.ContactAddActivity;
-import org.telegram.ui.DialogsActivity;
-import org.telegram.ui.PhotoViewer;
-import org.telegram.ui.TopicsFragment;
 import org.telegram.messenger.MessageObject;
 import org.telegram.tgnet.tl.TL_account;
 import java.util.Calendar;
-import org.telegram.ui.ChatActivity;
-import org.telegram.ui.ChatUsersActivity;
-import org.telegram.ui.GroupCreateActivity;
-import org.telegram.ui.ChatEditActivity;
-import org.telegram.ui.ThemeActivity;
-import org.telegram.ui.PrivacySettingsActivity;
-import org.telegram.ui.DataSettingsActivity;
-import org.telegram.ui.LiteModeSettingsActivity;
-import org.telegram.ui.LanguageSelectActivity;
-import org.telegram.ui.SessionsActivity;
-import org.telegram.ui.PremiumPreviewFragment;
+
 import org.telegram.ui.Stars.StarsIntroActivity;
 import org.telegram.ui.Business.BusinessLinksActivity;
-import org.telegram.ui.ChangeBioActivity;
 import org.telegram.ui.Components.AlertsCreator;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.messenger.ChatObject;
@@ -140,7 +109,6 @@ public class ProfileNewActivity extends BaseFragment implements NotificationCent
     private CoordinatorLayout coordinatorLayout;
     private AppBarLayout appBarLayout;
     private CollapsingToolbarLayout collapsingToolbarLayout;
-//    private Toolbar toolbar;
     private NestedScrollView nestedScrollView;
 
     // Header content containers
@@ -155,6 +123,7 @@ public class ProfileNewActivity extends BaseFragment implements NotificationCent
     private FrameLayout collapsedOnlineContainer;
 
     // Header elements
+    // private AnimatedAvatarView avatarImageView;
     private BackupImageView avatarImageView;
     private AvatarDrawable avatarDrawable;
     private TextView nameTextView;
@@ -564,7 +533,6 @@ public class ProfileNewActivity extends BaseFragment implements NotificationCent
         // Get references to views
         appBarLayout = coordinatorLayout.findViewById(R.id.app_bar_layout);
         collapsingToolbarLayout = coordinatorLayout.findViewById(R.id.collapsing_toolbar_layout);
-//        toolbar = coordinatorLayout.findViewById(R.id.collapsed_toolbar);
 
         // Get header containers
         avatarContainer = coordinatorLayout.findViewById(R.id.avatar_container);
@@ -577,8 +545,9 @@ public class ProfileNewActivity extends BaseFragment implements NotificationCent
         collapsedNameContainer = coordinatorLayout.findViewById(R.id.collapsed_name_container);
         collapsedOnlineContainer = coordinatorLayout.findViewById(R.id.collapsed_online_container);
 
-        // Setup toolbar
-        setupToolbar();
+        // Setup StatusBarTransparency - TODO not sure if working or not, but leaving in
+        // for now
+        setupStatusBarTransparency();
 
         // Setup header content
         setupHeaderContent(context);
@@ -611,7 +580,6 @@ public class ProfileNewActivity extends BaseFragment implements NotificationCent
         actionBar.setItemsBackgroundColor(getThemedColor(Theme.key_actionBarActionModeDefaultSelector), true);
         actionBar.setItemsColor(getThemedColor(Theme.key_actionBarDefaultIcon), false);
         actionBar.setItemsColor(getThemedColor(Theme.key_actionBarActionModeDefaultIcon), true);
-        actionBar.setElevation(0);
         actionBar.setCastShadows(false);
 
         // Completely remove any shadow or bottom line
@@ -627,66 +595,6 @@ public class ProfileNewActivity extends BaseFragment implements NotificationCent
             actionBar.setOccupyStatusBar(false);
         }
         return actionBar;
-    }
-
-    private void setupToolbar() {
-        // Set up toolbar navigation (back button) - use existing back button string
-        // reference
-//        toolbar.setNavigationOnClickListener(v -> finishFragment());
-//
-//        // Set up toolbar menu
-//        Menu toolbarMenu = toolbar.getMenu();
-//        toolbarMenu.add(0, 10, 0,
-//                "").setIcon(R.drawable.ic_ab_other).setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS);
-//
-//        toolbar.setOnMenuItemClickListener(item -> {
-//            if (item.getItemId() == 10) {
-//                // The 3-dot menu is handled by the ActionBar menu system
-//                return true;
-//            }
-//
-//            return false;
-//        });
-//
-//        // Apply complete toolbar transparency using multiple methods
-//        // Method 1: Remove titles and backgrounds
-//        toolbar.setTitle(""); // Remove any default title
-//        toolbar.setBackgroundColor(Color.TRANSPARENT); // Make background transparent
-//        toolbar.setBackgroundDrawable(null); // Remove any background drawable
-//        toolbar.setBackground(null); // Ensure no background is set
-//
-//        // Method 2: Set transparent overlay
-//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-//            toolbar.setElevation(0f); // Remove elevation shadow
-//            toolbar.setOutlineProvider(null); // Remove outline/shadow
-//        }
-//
-//        // Method 3: Setup collapsing toolbar to be transparent with no titles
-//        collapsingToolbarLayout.setTitle(""); // No title in collapsing toolbar
-//        collapsingToolbarLayout.setCollapsedTitleTextColor(Color.TRANSPARENT); // Hide any title text
-//        collapsingToolbarLayout.setExpandedTitleColor(Color.TRANSPARENT); // Hide expanded title
-//        collapsingToolbarLayout.setContentScrimColor(Color.TRANSPARENT); // Transparent scrim
-//        collapsingToolbarLayout.setStatusBarScrimColor(Color.TRANSPARENT); // Transparent status bar scrim
-//        collapsingToolbarLayout.setBackgroundColor(Color.TRANSPARENT); // Make sure background is transparent
-//        collapsingToolbarLayout.setBackground(null); // Remove any background drawable
-//
-//        // Remove any elevation or shadow from collapsing toolbar
-//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-//            collapsingToolbarLayout.setElevation(0f);
-//            collapsingToolbarLayout.setOutlineProvider(null);
-//        }
-//
-//        // Method 4: Set AppBar transparency
-//        appBarLayout.setBackgroundColor(Color.TRANSPARENT);
-//        appBarLayout.setBackground(null);
-//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-//            appBarLayout.setElevation(0f); // Remove elevation shadow
-//            appBarLayout.setOutlineProvider(null); // Remove outline/shadow
-//        }
-
-        // Method 5: Apply status bar transparency using multiple techniques from Stack
-        // Overflow
-        setupStatusBarTransparency();
     }
 
     private void setupHeaderContent(Context context) {
@@ -715,7 +623,7 @@ public class ProfileNewActivity extends BaseFragment implements NotificationCent
         onlineTextView.setTextColor(Color.WHITE);
         onlineTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         onlineTextView.setGravity(Gravity.CENTER);
-        onlineTextView.setAlpha(0.8f);
+        onlineTextView.setAlpha(1f);
         // Use match_parent width to match name container layout
         onlineContainer.addView(onlineTextView,
                 LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER));
@@ -863,7 +771,7 @@ public class ProfileNewActivity extends BaseFragment implements NotificationCent
         collapsedNameTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
         collapsedNameTextView.setTypeface(AndroidUtilities.bold());
         collapsedNameTextView.setGravity(Gravity.START);
-        collapsedNameTextView.setAlpha(0.8f);
+        collapsedNameTextView.setAlpha(1f);
         collapsedNameContainer.addView(collapsedNameTextView,
                 LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.START));
 
@@ -872,12 +780,15 @@ public class ProfileNewActivity extends BaseFragment implements NotificationCent
         collapsedOnlineTextView.setTextColor(Color.WHITE);
         collapsedOnlineTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
         collapsedOnlineTextView.setGravity(Gravity.START);
-        collapsedOnlineTextView.setAlpha(0.8f);
+        collapsedOnlineTextView.setAlpha(1f);
         collapsedOnlineContainer.addView(collapsedOnlineTextView,
                 LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.START));
     }
 
     private void setupScrollBehavior() {
+        // Connect avatar view with animation helper for black circle effect
+        // avatarImageView.setAnimationHelper(avatarAnimationHelper);
+
         // Set up views for the animation helpers
         offsetListener.setAnimatedViews(avatarImageView, nameContainer, collapsedTitleContainer,
                 headerButtonsContainer);
@@ -919,11 +830,6 @@ public class ProfileNewActivity extends BaseFragment implements NotificationCent
             ((ViewGroup) collapsedTitleContainer).setClipChildren(false);
             ((ViewGroup) collapsedTitleContainer).setClipToPadding(false);
         }
-
-//        if (toolbar instanceof ViewGroup) {
-//            ((ViewGroup) toolbar).setClipChildren(false);
-//            ((ViewGroup) toolbar).setClipToPadding(false);
-//        }
 
         // Also configure the main coordinator layout to allow overflow
         if (coordinatorLayout instanceof ViewGroup) {

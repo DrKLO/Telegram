@@ -178,11 +178,11 @@ public class CollapsingHeaderOffsetListener implements AppBarLayout.OnOffsetChan
     }
 
     private void initializeAvatarAnimation() {
-        // Use simple, predictable movements based on Telegram's proven patterns
-        // Avatar should move LEFT and UP to toolbar area, then disappear at top border
+        // Avatar should move only UPWARD and very slowly
+        // Remove leftward movement and reduce upward movement for slower animation
 
-        float leftMovement = AndroidUtilities.dp(-200); // Move left toward back button
-        float upwardMovement = AndroidUtilities.dp(-300); // Move UP to top border (negative = upward)
+        float leftMovement = 0f; // No leftward movement
+        float upwardMovement = AndroidUtilities.dp(-50); // Even smaller upward movement for very slow animation
 
         float avatarSize = AndroidUtilities.dp(84); // Standard avatar size
         float toolbarHeight = AndroidUtilities.dp(56); // Standard toolbar height
@@ -190,22 +190,25 @@ public class CollapsingHeaderOffsetListener implements AppBarLayout.OnOffsetChan
         // Initialize with simple relative movements - no complex calculations
         avatarAnimationHelper.initializeLayout(
                 0f, 0f, // Initial position (relative)
-                leftMovement, upwardMovement, // Target movement (left and UP)
+                leftMovement, upwardMovement, // Target movement (only UP, no left)
                 avatarSize, toolbarHeight);
     }
 
     private void initializeTextAnimation() {
-        // Use simple, fixed translation values instead of complex calculations
-        // Text should move leftward and upward to toolbar position
+        // Text should move to the exact position next to the back button in the action
+        // bar
+        // Calculate proper position for text to end up next to back button
 
-        float leftMovement = AndroidUtilities.dp(-200); // Move left toward back button area
-        float upwardMovement = AndroidUtilities.dp(-150); // Move up to toolbar level
+        // Move text to the left to position next to back button (back button is
+        // typically at left edge)
+        float leftMovement = AndroidUtilities.dp(-280); // Move further left to reach back button area
+        float upwardMovement = AndroidUtilities.dp(-200); // Move up to action bar level
 
-        // Initialize with simple relative movements
+        // Initialize with proper positioning for action bar placement
         textTransitionHelper.initializeLayout(
                 0f, 0f, 0f, AndroidUtilities.dp(20), // Initial positions (relative)
-                leftMovement, upwardMovement, // Name movement (left and up)
-                leftMovement, upwardMovement - AndroidUtilities.dp(10) // Status movement (left and up, slightly higher)
+                leftMovement, upwardMovement, // Name movement (left and up to action bar)
+                leftMovement, upwardMovement - AndroidUtilities.dp(15) // Status movement (left and up, slightly higher)
         );
     }
 
@@ -268,23 +271,20 @@ public class CollapsingHeaderOffsetListener implements AppBarLayout.OnOffsetChan
     }
 
     private void updateAvatarAnimationWithConditionalTransitions(float scrollProgress) {
-        // Make avatar animate when text animations start (at 10% progress, same as
-        // text)
-        // This synchronizes avatar movement with text "left upward motion"
+        // Make avatar animate only when collapsing header is near it
+        // Synchronize with text animation timing
 
-        if (scrollProgress <= 0.1f) {
-            // Expanded state - avatar is in original position (same threshold as text
-            // start)
+        if (scrollProgress <= 0.7f) {
+            // Avatar stays in original position until collapsing header is very near
             avatarAnimationHelper.updateAnimation(0f);
-        } else if (scrollProgress >= 0.9f) {
-            // Collapsed state - avatar is in toolbar position (same threshold as text
-            // complete)
+        } else if (scrollProgress >= 0.98f) {
+            // Collapsed state - avatar is in toolbar position
             avatarAnimationHelper.updateAnimation(1f);
         } else {
-            // Gradual animation zone (10% to 90% - synchronized with text animation)
-            float transitionProgress = (scrollProgress - 0.1f) / 0.8f;
-            // Apply same ultra-smooth interpolation as text for perfect synchronization
-            float smoothProgress = CubicBezierInterpolator.EASE_OUT_QUINT.getInterpolation(transitionProgress);
+            // Ultra-slow animation zone (70% to 98% - synchronized with text)
+            float transitionProgress = (scrollProgress - 0.7f) / 0.28f;
+            // Apply very slow EASE_OUT for ultra-slow avatar motion
+            float smoothProgress = CubicBezierInterpolator.EASE_OUT.getInterpolation(transitionProgress);
             avatarAnimationHelper.updateAnimation(smoothProgress);
         }
 

@@ -20,9 +20,9 @@
         <com.google.android.material.appbar.CollapsingToolbarLayout
             android:id="@+id/collapsing_toolbar_layout"
             android:layout_width="match_parent"
-            android:layout_height="320dp"
+            android:layout_height="310dp"
             android:fitsSystemWindows="true"
-            android:translationY="-20dp"
+            android:translationY="-10dp"
             android:clipChildren="false"
             android:clipToPadding="false"
             app:layout_scrollFlags="scroll|exitUntilCollapsed"
@@ -83,7 +83,8 @@
             <androidx.appcompat.widget.Toolbar
                 android:id="@+id/collapsed_toolbar"
                 android:layout_width="match_parent"
-                android:layout_height="?attr/actionBarSize"
+                android:layout_height="@dimen/toolbar_extra_space"
+                android:fitsSystemWindows="true"
                 android:background="@android:color/transparent"
                 app:layout_collapseMode="pin"
                 app:popupTheme="@style/ThemeOverlay.AppCompat.Light"

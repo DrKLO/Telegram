@@ -30,7 +30,7 @@ public class AvatarAnimationHelper {
     // Animation configuration
     private static final float SCALE_THRESHOLD = 0.7f; // When avatar starts scaling
     private static final float DISAPPEAR_THRESHOLD = 0.95f; // When avatar disappears
-    private static final float MIN_SCALE = 0.15f; // Minimum avatar scale
+    private static final float MIN_SCALE = 0.5f; // Minimum avatar scale - only half as small
     private static final float BLACK_CIRCLE_THRESHOLD = 0.85f; // When avatar becomes black circle
 
     // Material Design animation interpolators for smooth transitions
@@ -93,17 +93,17 @@ public class AvatarAnimationHelper {
     }
 
     private void calculateAnimationValues() {
-        // Use smooth interpolation for ultra-smooth avatar transitions
-        // Consistent with Material Design principles and Telegram's smooth animations
+        // Use smooth interpolation for avatar transitions
+        // Make avatar move only upward when collapsing header is near
 
-        if (currentProgress <= 0.1f) {
-            // Start state - avatar in original position, full size, normal appearance
+        if (currentProgress <= 0.7f) {
+            // Start state - avatar stays in original position until header is very near
             currentScale = 1f;
             currentTranslationX = 0f;
             currentTranslationY = 0f;
             currentAlpha = 1f;
             isBlackCircle = false;
-        } else if (currentProgress >= 0.9f) {
+        } else if (currentProgress >= 0.98f) {
             // End state - avatar moved to toolbar, small black circle, then disappear
             currentScale = MIN_SCALE;
             currentTranslationX = targetX;
@@ -111,24 +111,24 @@ public class AvatarAnimationHelper {
             currentAlpha = 0.3f; // Partially visible black circle
             isBlackCircle = true;
         } else {
-            // Smooth interpolation zone (10% to 90% - matching text animation range)
-            float transitionProgress = (currentProgress - 0.1f) / 0.8f; // 80% range for smooth movement
+            // Ultra-slow interpolation zone (70% to 98% - synchronized with text)
+            float transitionProgress = (currentProgress - 0.7f) / 0.28f; // 28% range for ultra-slow movement
 
-            // Apply ultra-smooth EASE_OUT_QUINT for silky smooth avatar motion
-            float smoothProgress = EASE_OUT_QUINT.getInterpolation(transitionProgress);
+            // Apply very slow EASE_OUT for ultra-slow avatar motion
+            float smoothProgress = EASE_OUT.getInterpolation(transitionProgress);
 
             // Smooth scale transition
             currentScale = 1f - (smoothProgress * (1f - MIN_SCALE));
 
-            // Smooth translation with perfect easing
+            // Smooth translation with gentle easing
             currentTranslationX = smoothProgress * targetX;
             currentTranslationY = smoothProgress * targetY;
 
-            // Smooth alpha transition - start fading at 70% progress
-            if (currentProgress >= 0.7f) {
-                float fadeProgress = (currentProgress - 0.7f) / 0.2f; // 20% fade range
+            // Start black circle transformation earlier for better visual effect
+            if (currentProgress >= 0.85f) {
+                float fadeProgress = (currentProgress - 0.85f) / 0.13f; // 13% fade range (85% to 98%)
                 currentAlpha = 1f - (EASE_OUT.getInterpolation(fadeProgress) * 0.7f); // Fade to 30%
-                isBlackCircle = true;
+                // isBlackCircle = true;
             } else {
                 currentAlpha = 1f;
                 isBlackCircle = false;
