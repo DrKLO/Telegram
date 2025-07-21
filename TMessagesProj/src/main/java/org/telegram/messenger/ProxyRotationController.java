@@ -10,17 +10,24 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+// Controller responsible for managing proxy rotation in Telegram
 public class ProxyRotationController implements NotificationCenter.NotificationCenterDelegate {
+    // Singleton instance
     private final static ProxyRotationController INSTANCE = new ProxyRotationController();
 
+    // Default timeout index used when no specific value is configured
     public final static int DEFAULT_TIMEOUT_INDEX = 1;
-    public final static List<Integer> ROTATION_TIMEOUTS = Arrays.asList(
-            5, 10, 15, 30, 60
-    );
 
+    // List of predefined timeout values (in seconds) for proxy rotation intervals
+    public final static List<Integer> ROTATION_TIMEOUTS = Arrays.asList(5, 10, 15, 30, 60);
+
+    // Indicates whether a proxy check is currently ongoing
     private boolean isCurrentlyChecking;
+
+    // Flag to prevent switching to multiple proxies during a single check run
     private volatile boolean hasSwitched = false;
 
+    // Runnable to check all proxies and switch if necessary
     private Runnable checkProxyAndSwitchRunnable = () -> {
         isCurrentlyChecking = true;
         hasSwitched = false;
@@ -30,14 +37,20 @@ public class ProxyRotationController implements NotificationCenter.NotificationC
 
         for (int i = 0; i < SharedConfig.proxyList.size(); i++) {
             SharedConfig.ProxyInfo proxyInfo = SharedConfig.proxyList.get(i);
+
+            // ⚠️ Skip proxy if it's already being checked or recently checked (<2 minutes ago)
             if (proxyInfo.checking || SystemClock.elapsedRealtime() - proxyInfo.availableCheckTime < 2 * 60 * 1000) {
                 continue;
             }
+
             startedCheck = true;
             proxyInfo.checking = true;
 
+            // Starts ping check for this proxy
             proxyInfo.proxyCheckPingId = ConnectionsManager.getInstance(currentAccount).checkProxy(
                 proxyInfo.address, proxyInfo.port, proxyInfo.username, proxyInfo.password, proxyInfo.secret,
+
+                // Callback once ping completes
                 time -> AndroidUtilities.runOnUIThread(() -> {
                     proxyInfo.availableCheckTime = SystemClock.elapsedRealtime();
                     proxyInfo.checking = false;
@@ -49,28 +62,32 @@ public class ProxyRotationController implements NotificationCenter.NotificationC
                         proxyInfo.ping = time;
                         proxyInfo.available = true;
 
-                        // 🚀 Immediately switch if we haven't yet
+                        // ✅ Immediately switch to this proxy if it's the first working one
                         if (!hasSwitched) {
                             hasSwitched = true;
                             switchToProxy(proxyInfo);
                         }
                     }
 
+                    // Notify UI and listeners that the check is done
                     NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.proxyCheckDone, proxyInfo);
                 })
             );
         }
 
         if (!startedCheck) {
+            // ⚠️ No eligible proxy found to check; fallback to best available
             isCurrentlyChecking = false;
-            switchToAvailable(); // fallback
+            switchToAvailable();
         }
     };
 
+    // Public entry point for setting up the controller
     public static void init() {
         INSTANCE.initInternal();
     }
 
+    // Apply the given proxy configuration and notify system components
     private void switchToProxy(SharedConfig.ProxyInfo info) {
         if (info == null || info == SharedConfig.currentProxy || !info.available) return;
 
@@ -82,15 +99,21 @@ public class ProxyRotationController implements NotificationCenter.NotificationC
         editor.putString("proxy_secret", info.secret);
         editor.putBoolean("proxy_enabled", true);
 
+        // If MTProto proxy is used, disable calls
         if (!info.secret.isEmpty()) {
             editor.putBoolean("proxy_enabled_calls", false);
         }
 
         editor.apply();
 
+        // Update in-memory proxy info
         SharedConfig.currentProxy = info;
+
+        // Notify listeners that settings and proxy have changed
         NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.proxySettingsChanged);
         NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.proxyChangedByRotation);
+
+        // Apply settings to connection manager
         ConnectionsManager.setProxySettings(
             true,
             info.address,
@@ -101,56 +124,68 @@ public class ProxyRotationController implements NotificationCenter.NotificationC
         );
     }
 
-    private void switchToAvailable()
-    {
-    isCurrentlyChecking = false;
-    hasSwitched = false; // 🔧 Reset switch flag for future checks
+    // Fallback method to switch to the best available proxy based on ping
+    private void switchToAvailable() {
+        isCurrentlyChecking = false;
+        hasSwitched = false; // 🔧 Reset switch flag after fallback
 
-    if (!SharedConfig.proxyRotationEnabled) return;
+        if (!SharedConfig.proxyRotationEnabled) return;
 
-    List<SharedConfig.ProxyInfo> sortedList = new ArrayList<>(SharedConfig.proxyList);
-    Collections.sort(sortedList, (o1, o2) -> Long.compare(o1.ping, o2.ping));
+        List<SharedConfig.ProxyInfo> sortedList = new ArrayList<>(SharedConfig.proxyList);
+        Collections.sort(sortedList, (o1, o2) -> Long.compare(o1.ping, o2.ping));
 
-    for (SharedConfig.ProxyInfo info : sortedList)
-    {
-        if (info == SharedConfig.currentProxy || info.checking || !info.available) continue;
+        for (SharedConfig.ProxyInfo info : sortedList) {
+            // ⚠️ Skip current, unavailable, or still checking proxies
+            if (info == SharedConfig.currentProxy || info.checking || !info.available) continue;
 
-        switchToProxy(info);
-        hasSwitched = true; // 🔧 Mark switch to prevent duplicate switching elsewhere
-        break;
+            switchToProxy(info);
+            hasSwitched = true; // 🔧 Prevent further switching
+            break;
+        }
     }
-    }
 
+    // Internal setup for observers to listen for relevant events
     private void initInternal() {
         for (int i = 0; i < UserConfig.MAX_ACCOUNT_COUNT; i++) {
             NotificationCenter.getInstance(i).addObserver(this, NotificationCenter.didUpdateConnectionState);
         }
+
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.proxyCheckDone);
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.proxySettingsChanged);
     }
 
+    // Reacts to relevant system notifications
     @Override
     public void didReceivedNotification(int id, int account, Object... args) {
         if (id == NotificationCenter.proxyCheckDone) {
-            if (!SharedConfig.isProxyEnabled() || !SharedConfig.proxyRotationEnabled || SharedConfig.proxyList.size() <= 1 || !isCurrentlyChecking) {
+            // ✅ This is handled in the proxy ping callback above
+            if (!SharedConfig.isProxyEnabled() || !SharedConfig.proxyRotationEnabled ||
+                SharedConfig.proxyList.size() <= 1 || !isCurrentlyChecking) {
                 return;
             }
 
-            // no switchToAvailable here, handled in ping callback
         } else if (id == NotificationCenter.proxySettingsChanged) {
+            // ⚠️ Cancel rotation if manual proxy change happened
             AndroidUtilities.cancelRunOnUIThread(checkProxyAndSwitchRunnable);
+
         } else if (id == NotificationCenter.didUpdateConnectionState && account == UserConfig.selectedAccount) {
-            if (!SharedConfig.isProxyEnabled() && !SharedConfig.proxyRotationEnabled || SharedConfig.proxyList.size() <= 1) {
+            if (!SharedConfig.isProxyEnabled() && !SharedConfig.proxyRotationEnabled ||
+                SharedConfig.proxyList.size() <= 1) {
                 return;
             }
 
             int state = ConnectionsManager.getInstance(account).getConnectionState();
 
             if (state == ConnectionsManager.ConnectionStateConnectingToProxy) {
+                // ✅ Schedule proxy check if not already checking
                 if (!isCurrentlyChecking) {
-                    AndroidUtilities.runOnUIThread(checkProxyAndSwitchRunnable, ROTATION_TIMEOUTS.get(SharedConfig.proxyRotationTimeout) * 1000L);
+                    AndroidUtilities.runOnUIThread(
+                        checkProxyAndSwitchRunnable,
+                        ROTATION_TIMEOUTS.get(SharedConfig.proxyRotationTimeout) * 1000L
+                    );
                 }
             } else {
+                // 🔄 Cancel check if connection state is no longer "connecting to proxy"
                 AndroidUtilities.cancelRunOnUIThread(checkProxyAndSwitchRunnable);
             }
         }
