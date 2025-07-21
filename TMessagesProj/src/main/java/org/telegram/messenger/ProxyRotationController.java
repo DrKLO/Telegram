@@ -101,20 +101,24 @@ public class ProxyRotationController implements NotificationCenter.NotificationC
         );
     }
 
-    private void switchToAvailable() {
-        isCurrentlyChecking = false;
+    private void switchToAvailable()
+    {
+    isCurrentlyChecking = false;
+    hasSwitched = false; // 🔧 Reset switch flag for future checks
 
-        if (!SharedConfig.proxyRotationEnabled) return;
+    if (!SharedConfig.proxyRotationEnabled) return;
 
-        List<SharedConfig.ProxyInfo> sortedList = new ArrayList<>(SharedConfig.proxyList);
-        Collections.sort(sortedList, (o1, o2) -> Long.compare(o1.ping, o2.ping));
+    List<SharedConfig.ProxyInfo> sortedList = new ArrayList<>(SharedConfig.proxyList);
+    Collections.sort(sortedList, (o1, o2) -> Long.compare(o1.ping, o2.ping));
 
-        for (SharedConfig.ProxyInfo info : sortedList) {
-            if (info == SharedConfig.currentProxy || info.checking || !info.available) continue;
+    for (SharedConfig.ProxyInfo info : sortedList)
+    {
+        if (info == SharedConfig.currentProxy || info.checking || !info.available) continue;
 
-            switchToProxy(info);
-            break;
-        }
+        switchToProxy(info);
+        hasSwitched = true; // 🔧 Mark switch to prevent duplicate switching elsewhere
+        break;
+    }
     }
 
     private void initInternal() {
