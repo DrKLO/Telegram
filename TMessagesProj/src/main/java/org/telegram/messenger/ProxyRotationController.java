@@ -191,3 +191,88 @@ public class ProxyRotationController implements NotificationCenter.NotificationC
         }
     }
 }
+
+
+
+
+
+
+
+
+
+    //private int proxiesBeingChecked = 0;
+
+    /**
+    checkProxyAndSwitchRunnable = () -> {
+    isCurrentlyChecking = true;
+    hasSwitched = false;
+    proxiesBeingChecked = 0;
+
+    int currentAccount = UserConfig.selectedAccount;
+    boolean startedCheck = false;
+
+    for (int i = 0; i < SharedConfig.proxyList.size(); i++) {
+        SharedConfig.ProxyInfo proxyInfo = SharedConfig.proxyList.get(i);
+
+        if (proxyInfo.checking || SystemClock.elapsedRealtime() - proxyInfo.availableCheckTime < 2 * 60 * 1000) {
+            continue;
+        }
+
+        startedCheck = true;
+        proxyInfo.checking = true;
+        proxiesBeingChecked++;
+
+        proxyInfo.proxyCheckPingId = ConnectionsManager.getInstance(currentAccount).checkProxy(
+            proxyInfo.address, proxyInfo.port, proxyInfo.username, proxyInfo.password, proxyInfo.secret,
+
+            time -> AndroidUtilities.runOnUIThread(() -> {
+                proxyInfo.availableCheckTime = SystemClock.elapsedRealtime();
+                proxyInfo.checking = false;
+
+                if (time == -1) {
+                    proxyInfo.available = false;
+                    proxyInfo.ping = Long.MAX_VALUE;
+                } else {
+                    proxyInfo.ping = time;
+                    proxyInfo.available = true;
+                }
+
+                NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.proxyCheckDone, proxyInfo);
+
+                proxiesBeingChecked--;
+                if (proxiesBeingChecked == 0) {
+                    // ✅ All checks done — switch to lowest ping
+                    switchToBestAvailable();
+                }
+            })
+        );
+    }
+
+    if (!startedCheck) {
+        isCurrentlyChecking = false;
+        switchToAvailable();
+    }
+};
+    */
+
+    /**
+    private void switchToBestAvailable() {
+    isCurrentlyChecking = false;
+
+    if (!SharedConfig.proxyRotationEnabled) return;
+
+    List<SharedConfig.ProxyInfo> availableProxies = new ArrayList<>();
+    for (SharedConfig.ProxyInfo info : SharedConfig.proxyList) {
+        if (info.available && info != SharedConfig.currentProxy) {
+            availableProxies.add(info);
+        }
+    }
+
+    if (availableProxies.isEmpty()) return;
+
+    SharedConfig.ProxyInfo bestProxy = Collections.min(availableProxies, (a, b) -> Long.compare(a.ping, b.ping));
+
+    switchToProxy(bestProxy);
+    hasSwitched = true;
+    }
+    */
