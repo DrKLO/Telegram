@@ -37,6 +37,7 @@ import android.text.StaticLayout;
 import android.text.TextPaint;
 import android.text.TextUtils;
 import android.text.style.ClickableSpan;
+import android.text.style.ReplacementSpan;
 import android.util.StateSet;
 import android.view.MotionEvent;
 import android.view.View;
@@ -322,28 +323,28 @@ public class HintView2 extends View {
         }
         Spanned spanned = (Spanned) text;
         TypefaceSpan[] spans = spanned.getSpans(0, text.length(), TypefaceSpan.class);
-        AnimatedEmojiSpan[] animatedSpans = spanned.getSpans(0, text.length(), AnimatedEmojiSpan.class);
-        Emoji.EmojiSpan[] emojiSpans = spanned.getSpans(0, text.length(), Emoji.EmojiSpan.class);
-        ColoredImageSpan[] imageSpans = spanned.getSpans(0, text.length(), ColoredImageSpan.class);
+//        AnimatedEmojiSpan[] animatedSpans = spanned.getSpans(0, text.length(), AnimatedEmojiSpan.class);
+//        Emoji.EmojiSpan[] emojiSpans = spanned.getSpans(0, text.length(), Emoji.EmojiSpan.class);
+        ReplacementSpan[] replacementSpans = spanned.getSpans(0, text.length(), ReplacementSpan.class);
         int add = 0;
-        for (int i = 0; i < emojiSpans.length; ++i) {
-            Emoji.EmojiSpan span = emojiSpans[i];
-            final int start = spanned.getSpanStart(span);
-            final int end = spanned.getSpanEnd(span);
-            add += Math.max(0, span.size - paint.measureText(spanned, start, end));
-        }
-        for (int i = 0; i < imageSpans.length; ++i) {
-            ColoredImageSpan span = imageSpans[i];
-            final int start = spanned.getSpanStart(span);
-            final int end = spanned.getSpanEnd(span);
-            add += Math.max(0, span.getSize(paint, text, start, end, paint.getFontMetricsInt()) - paint.measureText(spanned, start, end));
-        }
-        for (int i = 0; i < animatedSpans.length; ++i) {
-            AnimatedEmojiSpan span = animatedSpans[i];
+//        for (int i = 0; i < emojiSpans.length; ++i) {
+//            Emoji.EmojiSpan span = emojiSpans[i];
+//            final int start = spanned.getSpanStart(span);
+//            final int end = spanned.getSpanEnd(span);
+//            add += Math.max(0, span.size - paint.measureText(spanned, start, end));
+//        }
+        for (int i = 0; i < replacementSpans.length; ++i) {
+            ReplacementSpan span = replacementSpans[i];
             final int start = spanned.getSpanStart(span);
             final int end = spanned.getSpanEnd(span);
             add += Math.max(0, span.getSize(paint, text, start, end, paint.getFontMetricsInt()) - paint.measureText(spanned, start, end));
         }
+//        for (int i = 0; i < animatedSpans.length; ++i) {
+//            AnimatedEmojiSpan span = animatedSpans[i];
+//            final int start = spanned.getSpanStart(span);
+//            final int end = spanned.getSpanEnd(span);
+//            add += Math.max(0, span.getSize(paint, text, start, end, paint.getFontMetricsInt()) - paint.measureText(spanned, start, end));
+//        }
         if (spans == null || spans.length == 0) {
             return paint.measureText(text.toString()) + add;
         }

@@ -1354,7 +1354,7 @@ public class RecyclerListView extends RecyclerView {
         resetSelectorOnChanged = value;
     }
 
-    private AdapterDataObserver observer = new AdapterDataObserver() {
+    private final AdapterDataObserver observer = new AdapterDataObserver() {
         @Override
         public void onChanged() {
             checkIfEmpty(true);

@@ -3139,6 +3139,17 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
                             }
                         }
                     })
+                    .whenSelectedAlbums(albums -> {
+                        if (outputEntry == null) {
+                            return;
+                        }
+                        outputEntry.albums = albums;
+                        if (entries != null) {
+                            for (StoryEntry entry : entries) {
+                                entry.albums = albums;
+                            }
+                        }
+                    })
                     .whenSelectedRules((privacy, allowScreenshots, keepInProfile, sendAs, whenDone) -> {
                         if (outputEntry == null) {
                             return;

@@ -13,7 +13,6 @@ import static org.telegram.messenger.MessagesController.LOAD_AROUND_MESSAGE;
 import static org.telegram.messenger.MessagesController.LOAD_BACKWARD;
 import static org.telegram.messenger.MessagesController.LOAD_FORWARD;
 import static org.telegram.messenger.MessagesController.LOAD_FROM_UNREAD;
-import static org.telegram.messenger.MessagesController.findUpdates;
 
 import android.appwidget.AppWidgetManager;
 import android.content.SharedPreferences;
@@ -35,7 +34,6 @@ import org.telegram.SQLite.SQLiteDatabase;
 import org.telegram.SQLite.SQLiteException;
 import org.telegram.SQLite.SQLitePreparedStatement;
 import org.telegram.messenger.support.LongSparseIntArray;
-import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.NativeByteBuffer;
 import org.telegram.tgnet.RequestDelegate;
 import org.telegram.tgnet.TLObject;
@@ -52,6 +50,7 @@ import org.telegram.ui.Components.Reactions.ReactionsLayoutInBubble;
 import org.telegram.ui.Components.VideoPlayer;
 import org.telegram.ui.DialogsActivity;
 import org.telegram.ui.EditWidgetActivity;
+import org.telegram.ui.Stories.StoriesController;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -111,7 +110,7 @@ public class MessagesStorage extends BaseController {
         }
     }
 
-    public final static int LAST_DB_VERSION = 165;
+    public final static int LAST_DB_VERSION = 166;
     private boolean databaseMigrationInProgress;
     public boolean showClearDatabaseAlert;
     private final LongSparseIntArray dialogIsForum = new LongSparseIntArray();
@@ -710,6 +709,8 @@ public class MessagesStorage extends BaseController {
         database.executeFast("CREATE TABLE stories_counter (dialog_id INTEGER PRIMARY KEY, count INTEGER, max_read INTEGER);").stepThis().dispose();
 
         database.executeFast("CREATE TABLE profile_stories (dialog_id INTEGER, story_id INTEGER, data BLOB, type INTEGER, seen INTEGER, pin INTEGER, PRIMARY KEY(dialog_id, story_id));").stepThis().dispose();
+        database.executeFast("CREATE TABLE profile_stories_albums (dialog_id INTEGER, album_id INTEGER, order_index INTEGER, data BLOB, PRIMARY KEY(dialog_id, album_id));").stepThis().dispose();
+        database.executeFast("CREATE TABLE profile_stories_albums_links (dialog_id INTEGER, album_id INTEGER, story_id INTEGER, order_index INTEGER, PRIMARY KEY (dialog_id, album_id, story_id));").stepThis().dispose();
 
         database.executeFast("CREATE TABLE story_drafts (id INTEGER PRIMARY KEY, date INTEGER, data BLOB, type INTEGER);").stepThis().dispose();
 
@@ -1410,6 +1411,8 @@ public class MessagesStorage extends BaseController {
                 database.executeFast("DELETE FROM chat_pinned_v2").stepThis().dispose();
                 database.executeFast("DELETE FROM chat_pinned_count").stepThis().dispose();
                 database.executeFast("DELETE FROM profile_stories").stepThis().dispose();
+                database.executeFast("DELETE FROM profile_stories_albums").stepThis().dispose();
+                database.executeFast("DELETE FROM profile_stories_albums_links").stepThis().dispose();
                 database.executeFast("DELETE FROM story_pushes").stepThis().dispose();
                 database.executeFast("DELETE FROM dialog_photos").stepThis().dispose();
                 database.executeFast("DELETE FROM dialog_photos_count").stepThis().dispose();
@@ -17619,6 +17622,76 @@ public class MessagesStorage extends BaseController {
                 }
             }
         });
+    }
+
+    public void saveStoryAlbumsCache(long dialog_id, List<StoriesController.StoryAlbum> albums) {
+        storageQueue.postRunnable(() -> saveStoryAlbumsCacheInternal(dialog_id, albums));
+    }
+
+    private void saveStoryAlbumsCacheInternal(long dialogId, List<StoriesController.StoryAlbum> albums) {
+        SQLitePreparedStatement state = null;
+        try {
+            database.beginTransaction();
+            database.executeFast("DELETE FROM profile_stories_albums WHERE dialog_id = " + dialogId).stepThis().dispose();
+
+            state = database.executeFast("REPLACE INTO profile_stories_albums VALUES(?, ?, ?, ?)");
+            for (int i = 0; i < albums.size(); i++) {
+                StoriesController.StoryAlbum album = albums.get(i);
+
+                state.requery();
+                state.bindLong(1, dialogId);
+                state.bindInteger(2, album.album_id);
+                state.bindInteger(3, i);
+
+                TL_stories.TL_storyAlbum tl = album.toTl();
+                NativeByteBuffer data = new NativeByteBuffer(tl.getObjectSize());
+                tl.serializeToStream(data);
+
+                state.bindByteBuffer(4, data);
+                state.step();
+                data.reuse();
+            }
+        } catch (Exception e) {
+            checkSQLException(e);
+        } finally {
+            if (state != null) {
+                state.dispose();
+            }
+            database.commitTransaction();
+        }
+    }
+
+    public void loadStoryAlbumsCache(long dialogId, Consumer<List<StoriesController.StoryAlbum>> callback) {
+        storageQueue.postRunnable(() -> {
+            ArrayList<StoriesController.StoryAlbum> albums = new ArrayList<>();
+            SQLiteCursor cursor = null;
+            try {
+                cursor = database.queryFinalized(String.format(Locale.US, "SELECT data FROM profile_stories_albums WHERE dialog_id = %d ORDER BY order_index ASC", dialogId));
+                while (cursor.next()) {
+                    final NativeByteBuffer data = cursor.byteBufferValue(0);
+                    if (data != null) {
+                        final TL_stories.TL_storyAlbum album = TL_stories.TL_storyAlbum.TLdeserialize(data, data.readInt32(false), false);
+                        data.reuse();
+                        if (album == null) {
+                            continue;
+                        }
+
+                        albums.add(StoriesController.StoryAlbum.from(album));
+                    }
+                }
+            } catch (Exception e) {
+                checkSQLException(e);
+            } finally {
+                if (cursor != null) {
+                    cursor.dispose();
+                }
+            }
+            callback.accept(albums);
+        });
+    }
+
+    public SQLiteCursor createLoadStoriesCursor(long dialogId, int albumId, int type) throws SQLiteException {
+        return database.queryFinalized(String.format(Locale.US, "SELECT data, seen, pin FROM profile_stories JOIN profile_stories_albums_links ON profile_stories.story_id = profile_stories_albums_links.story_id WHERE profile_stories.dialog_id = %d AND profile_stories_albums_links.dialog_id = %d  AND profile_stories_albums_links.album_id = %d AND profile_stories.type = %d ORDER BY profile_stories_albums_links.order_index ASC;", dialogId, dialogId, albumId, type));
     }
 
     private boolean isForum(long dialogId) {

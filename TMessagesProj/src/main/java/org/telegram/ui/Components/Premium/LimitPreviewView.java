@@ -18,6 +18,7 @@ import android.graphics.PorterDuff;
 import android.graphics.PorterDuffXfermode;
 import android.text.Layout;
 import android.text.SpannableStringBuilder;
+import android.text.Spanned;
 import android.text.StaticLayout;
 import android.text.TextPaint;
 import android.text.style.RelativeSizeSpan;
@@ -39,10 +40,12 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
+import org.telegram.tgnet.tl.TL_stars;
 import org.telegram.tgnet.tl.TL_stories;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.ColoredImageSpan;
 import org.telegram.ui.Components.CubicBezierInterpolator;
+import org.telegram.ui.Components.EllipsizeSpanAnimator;
 import org.telegram.ui.Components.EmptyStubSpan;
 import org.telegram.ui.Components.LayoutHelper;
 
@@ -77,10 +80,12 @@ public class LimitPreviewView extends LinearLayout {
     boolean animationCanPlay = true;
     FrameLayout limitsContainer;
     private boolean premiumLocked;
+    private final Paint ratingPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final TextView defaultText;
     private final TextView premiumText;
     private boolean isBoostsStyle;
     private boolean isSimpleStyle;
+    private boolean isRatingStyle;
 
     Theme.ResourcesProvider resourcesProvider;
     private boolean animateIncrease;
@@ -186,7 +191,7 @@ public class LimitPreviewView extends LinearLayout {
             @Override
             protected void dispatchDraw(Canvas canvas) {
                 if (isBoostsStyle) {
-                    if (isStatistic) {
+                    if (isStatistic || isRatingStyle) {
                         grayPaint.setColor(Theme.getColor(Theme.key_listSelector, resourcesProvider));
                     } else {
                         grayPaint.setColor(Theme.getColor(Theme.key_graySection, resourcesProvider));
@@ -207,7 +212,7 @@ public class LimitPreviewView extends LinearLayout {
                 if (!isBoostsStyle) {
                     canvas.clipRect(width1, 0, getMeasuredWidth(), getMeasuredHeight());
                 }
-                Paint paint = hasDarkGradientProvider() ? whitePaint : PremiumGradient.getInstance().getMainGradientPaint();
+                Paint paint = isRatingStyle ? ratingPaint : hasDarkGradientProvider() ? whitePaint : PremiumGradient.getInstance().getMainGradientPaint();
                 if (parentVideForGradient != null) {
                     View parent = parentVideForGradient;
                     if (staticGradient != null) {
@@ -316,10 +321,25 @@ public class LimitPreviewView extends LinearLayout {
         SpannableStringBuilder spannableStringBuilder = new SpannableStringBuilder();
         spannableStringBuilder.append("d").setSpan(new ColoredImageSpan(icon), 0, 1, 0);
         spannableStringBuilder.append(" ").setSpan(new RelativeSizeSpan(0.8f), 1, 2, 0);
-        spannableStringBuilder.append(Integer.toString(currentValue));
+        spannableStringBuilder.append(LocaleController.formatNumber(currentValue, ','));
         limitIcon.setText(spannableStringBuilder, animated);
         limitIcon.requestLayout();
     }
+
+    public void setIconValue(int currentValue, int totalValue, boolean animated) {
+        SpannableStringBuilder spannableStringBuilder = new SpannableStringBuilder();
+        spannableStringBuilder.append("d").setSpan(new ColoredImageSpan(icon), 0, 1, 0);
+        spannableStringBuilder.append(" ").setSpan(new RelativeSizeSpan(0.8f), 1, 2, 0);
+        spannableStringBuilder.append(LocaleController.formatNumber(currentValue, ','));
+        final int startIndex = spannableStringBuilder.length();
+        spannableStringBuilder.append(" / ");
+        spannableStringBuilder.append(LocaleController.formatNumber(totalValue, ','));
+        spannableStringBuilder.setSpan(new EllipsizeSpanAnimator.TextAlphaSpan(0xAA), startIndex, spannableStringBuilder.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        spannableStringBuilder.setSpan(new RelativeSizeSpan(.65f), startIndex, spannableStringBuilder.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        limitIcon.setText(spannableStringBuilder, animated);
+        limitIcon.requestLayout();
+    }
+
 
     private float getGlobalXOffset() {
         return -LimitPreviewView.this.getMeasuredWidth() * 0.1f * progress - LimitPreviewView.this.getMeasuredWidth() * 0.2f;
@@ -553,6 +573,33 @@ public class LimitPreviewView extends LinearLayout {
         isBoostsStyle = true;
     }
 
+    public void setStarRating(TL_stars.Tl_starsRating rating, boolean animated) {
+        long k = rating.current_level_stars;
+        if (rating.next_level_stars == 0) {
+            percent = 1f;
+            defaultText.setText(LocaleController.formatString(R.string.StarRatingLevel, rating.level - 1));
+            premiumCount.setText(LocaleController.formatString(R.string.StarRatingLevel, rating.level));
+        } else {
+            percent = MathUtils.clamp((rating.stars - k) / (float) (rating.next_level_stars - k), 0, 1f);
+            defaultText.setText(LocaleController.formatString(R.string.StarRatingLevel, rating.level));
+            premiumCount.setText(LocaleController.formatString(R.string.StarRatingLevel, rating.level + 1));
+        }
+        ((FrameLayout.LayoutParams) premiumCount.getLayoutParams()).gravity = Gravity.RIGHT;
+        setType(LimitReachedBottomSheet.TYPE_BOOSTS);
+        defaultCount.setVisibility(View.GONE);
+        premiumText.setVisibility(View.GONE);
+
+        premiumCount.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+        defaultText.setTextColor(Color.WHITE);
+
+        setIconValue((int) rating.stars, (int) rating.next_level_stars, animated);
+        isBoostsStyle = true;
+        isSimpleStyle = true;
+        isRatingStyle = true;
+    }
+
+
+
     @Keep
     public void setStatus(int currentLevel, int maxLevel, boolean animated) {
         if (currentValue == currentLevel) {
@@ -651,6 +698,10 @@ public class LimitPreviewView extends LinearLayout {
         protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
             textWidth = textPaint.measureText(text, 0, text.length());
             textLayout = new StaticLayout(text, textPaint, (int) textWidth + dp(12), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
+            textWidth = 0;
+            for (int i = 0; i < textLayout.getLineCount(); ++i) {
+                textWidth = Math.max(textWidth, textLayout.getLineWidth(i));
+            }
             setMeasuredDimension((int) (textWidth + getPaddingRight() + getPaddingLeft()), dp(44) + dp(8));
             updatePath();
         }
@@ -678,6 +729,8 @@ public class LimitPreviewView extends LinearLayout {
 
         @Override
         protected void onDraw(Canvas canvas) {
+            ratingPaint.setColor(Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider));
+
             int h = getMeasuredHeight() - dp(8);
             if (premiumLocked) {
                 h = getMeasuredHeight();
@@ -691,12 +744,12 @@ public class LimitPreviewView extends LinearLayout {
                 }
                 PremiumGradient.getInstance().updateMainGradientMatrix(0, 0, LimitPreviewView.this.getMeasuredWidth(), LimitPreviewView.this.getMeasuredHeight(), getGlobalXOffset() - getX(), -getTop());
                 AndroidUtilities.rectTmp.set(0, 0, getMeasuredWidth(), h);
-                canvas.drawRoundRect(AndroidUtilities.rectTmp, h / 2f, h / 2f, hasDarkGradientProvider() ? textPaint : PremiumGradient.getInstance().getMainGradientPaint());
+                canvas.drawRoundRect(AndroidUtilities.rectTmp, h / 2f, h / 2f, isRatingStyle ? ratingPaint : hasDarkGradientProvider() ? textPaint : PremiumGradient.getInstance().getMainGradientPaint());
                 PremiumGradient.getInstance().getMainGradientPaint().setPathEffect(pathEffect);
                 if (hasDarkGradientProvider()) {
                     textPaint.setPathEffect(pathEffect);
                 }
-                canvas.drawPath(path, hasDarkGradientProvider() ? textPaint : PremiumGradient.getInstance().getMainGradientPaint());
+                canvas.drawPath(path, isRatingStyle ? ratingPaint : hasDarkGradientProvider() ? textPaint : PremiumGradient.getInstance().getMainGradientPaint());
                 PremiumGradient.getInstance().getMainGradientPaint().setPathEffect(null);
                 if (hasDarkGradientProvider()) {
                     textPaint.setPathEffect(null);
@@ -710,7 +763,7 @@ public class LimitPreviewView extends LinearLayout {
                 canvas.saveLayer(0, 0, getMeasuredWidth(), getMeasuredHeight(), dstOutPaint, ALL_SAVE_FLAG);
             }
 
-            float x = (getMeasuredWidth() - textLayout.getWidth()) / 2f;
+            float x = (getMeasuredWidth() - textWidth) / 2f;
             float y = (h - textLayout.getHeight()) / 2f;
             if (!animationInProgress) {
                 if (textLayout != null) {

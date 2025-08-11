@@ -26,6 +26,7 @@ import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.SpannedString;
 import android.text.TextPaint;
+import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.transition.TransitionManager;
 import android.util.Pair;
@@ -45,6 +46,7 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.collection.LongSparseArray;
 import androidx.recyclerview.widget.DefaultItemAnimator;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.ItemTouchHelper;
@@ -97,6 +99,7 @@ import org.telegram.ui.Components.Premium.boosts.UserSelectorBottomSheet;
 import org.telegram.ui.Components.RLottieDrawable;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.ScaleStateListAnimator;
+import org.telegram.ui.Components.ShareAlert;
 import org.telegram.ui.Components.TextHelper;
 import org.telegram.ui.Components.TransitionExt;
 import org.telegram.ui.Components.UItem;
@@ -151,6 +154,7 @@ public class ProfileGiftsContainer extends FrameLayout implements NotificationCe
     private void fillTabs(boolean animated) {
         if (viewPager == null || tabsView == null) return;
         viewPager.fillTabs(animated);
+        checkScrollToCollection();
     }
 
     public static class Page extends FrameLayout implements NotificationCenter.NotificationCenterDelegate {
@@ -926,12 +930,18 @@ public class ProfileGiftsContainer extends FrameLayout implements NotificationCe
             public void onTabAnimationUpdate(boolean manual) {
                 super.onTabAnimationUpdate(manual);
                 updateButton();
+                if (fragment instanceof ProfileActivity) {
+                    ((ProfileActivity) fragment).updateSelectedMediaTabText();
+                }
             }
 
             @Override
             protected void onTabScrollEnd(int position) {
                 super.onTabScrollEnd(position);
                 updateButton();
+                if (fragment instanceof ProfileActivity) {
+                    ((ProfileActivity) fragment).updateSelectedMediaTabText();
+                }
             }
 
             @Override
@@ -1079,6 +1089,8 @@ public class ProfileGiftsContainer extends FrameLayout implements NotificationCe
             final int index = _index;
             final TL_stars.TL_starGiftCollection collection = _collection;
 
+            final String username = DialogObject.getPublicUsername(MessagesController.getInstance(currentAccount).getUserOrChat(dialogId));
+
             currentMenu = ItemOptions.makeOptions(fragment, view)
                 .setScrimViewBackground(new Drawable() {
                     private final Drawable bg = Theme.createRoundRectDrawable(dp(16), dp(16), backgroundColor);
@@ -1101,7 +1113,37 @@ public class ProfileGiftsContainer extends FrameLayout implements NotificationCe
                         return PixelFormat.TRANSPARENT;
                     }
                 })
-                .add(R.drawable.msg_addbot, getString(R.string.Gift2CollectionsAdd), this::addGifts)
+                .add(R.drawable.menu_gift_add, getString(R.string.Gift2CollectionsAdd), this::addGifts)
+                .addIf(!TextUtils.isEmpty(username), R.drawable.msg_share, getString(R.string.Gift2CollectionsShare), () -> {
+                    final String link = MessagesController.getInstance(currentAccount).linkPrefix + "/" + username + "/c/" + collection.collection_id;
+                    new ShareAlert(context, null, link, false, link, false, resourcesProvider) {
+                        @Override
+                        protected void onSend(LongSparseArray<TLRPC.Dialog> dids, int count, TLRPC.TL_forumTopic topic, boolean showToast) {
+                            if (!showToast) return;
+                            final BulletinFactory bulletinFactory = BulletinFactory.of(fragment);
+                            if (bulletinFactory != null) {
+                                if (dids.size() == 1) {
+                                    long did = dids.keyAt(0);
+                                    if (did == UserConfig.getInstance(currentAccount).clientUserId) {
+                                        bulletinFactory.createSimpleBulletin(R.raw.saved_messages, AndroidUtilities.replaceTags(LocaleController.formatString(R.string.GiftCollectionSharedToSavedMessages)), Bulletin.DURATION_PROLONG).hideAfterBottomSheet(false).show();
+                                    } else if (did < 0) {
+                                        final TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-did);
+                                        bulletinFactory.createSimpleBulletin(R.raw.forward, AndroidUtilities.replaceTags(LocaleController.formatString(R.string.GiftCollectionSharedTo, topic != null ? topic.title : chat.title)), Bulletin.DURATION_PROLONG).hideAfterBottomSheet(false).show();
+                                    } else {
+                                        final TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(did);
+                                        bulletinFactory.createSimpleBulletin(R.raw.forward, AndroidUtilities.replaceTags(LocaleController.formatString(R.string.GiftCollectionSharedTo, user.first_name)), Bulletin.DURATION_PROLONG).hideAfterBottomSheet(false).show();
+                                    }
+                                } else {
+                                    bulletinFactory.createSimpleBulletin(R.raw.forward, AndroidUtilities.replaceTags(LocaleController.formatPluralString("GiftCollectionSharedToManyChats", dids.size(), dids.size()))).hideAfterBottomSheet(false).show();
+                                }
+                                try {
+                                    performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
+                                } catch (Exception ignored) {}
+                            }
+                        }
+                    }
+                        .show();
+                })
                 .add(R.drawable.msg_edit, getString(R.string.Gift2CollectionsRename), () -> {
                     openEnterNameAlert(collection.title, newName -> {
                         collections.rename(collection.collection_id, newName);
@@ -1261,6 +1303,30 @@ public class ProfileGiftsContainer extends FrameLayout implements NotificationCe
         }
     }
 
+    private int pendingScrollToCollectionId;
+    public void scrollToCollectionId(int collectionId) {
+        pendingScrollToCollectionId = collectionId;
+        checkScrollToCollection();
+    }
+
+    private void checkScrollToCollection() {
+        if (pendingScrollToCollectionId <= 0) return;
+        int index = -1;
+        TL_stars.TL_starGiftCollection collection = null;
+        final ArrayList<TL_stars.TL_starGiftCollection> collections = this.collections.getCollections();
+        for (int i = 0; i < collections.size(); ++i) {
+            if (collections.get(i).collection_id == pendingScrollToCollectionId) {
+                collection = collections.get(i);
+                index = i;
+                break;
+            }
+        }
+        if (index >= 0 && collection != null) {
+            pendingScrollToCollectionId = 0;
+            tabsView.scrollToTab(collection.collection_id, 1 + index);
+        }
+    }
+
     private final Runnable sendCollectionsOrder = () -> {
         ProfileGiftsContainer.this.collections.sendOrder();
     };
@@ -1295,7 +1361,7 @@ public class ProfileGiftsContainer extends FrameLayout implements NotificationCe
 
     public boolean canAdd() {
         if (!collections.isMine()) return false;
-        return (collections.getCollections().size() + 1) < MessagesController.getInstance(currentAccount).config.stargiftsCollectionsLimit.get();
+        return collections.getCollections().size() < MessagesController.getInstance(currentAccount).config.stargiftsCollectionsLimit.get();
     }
 
     private boolean shouldHideButton(int page) {
@@ -1439,7 +1505,12 @@ public class ProfileGiftsContainer extends FrameLayout implements NotificationCe
     }
 
     public int getGiftsCount() {
-        if (list != null && list.totalCount > 0) return list.totalCount;
+        final Page page = getCurrentPage();
+        if (page == null || page.list == list) {
+            if (list != null && list.totalCount > 0) return list.totalCount;
+        } else {
+            if (page.list != null && page.list.totalCount > 0) return page.list.totalCount;
+        }
         if (dialogId >= 0) {
             final TLRPC.UserFull userFull = MessagesController.getInstance(currentAccount).getUserFull(dialogId);
             return userFull != null ? userFull.stargifts_count : 0;

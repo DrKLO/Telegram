@@ -68,6 +68,7 @@ import org.telegram.messenger.SvgHelper;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
 import org.telegram.messenger.Utilities;
+import org.telegram.messenger.utils.tlutils.AmountUtils;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.tl.TL_stars;
@@ -465,6 +466,26 @@ public class GiftSheet extends BottomSheetWithRecyclerListView implements Notifi
                         });
                         return;
                     }
+                    if (item.accent && gift.availability_resale > 0) {
+                        final BaseFragment lastFragment = LaunchActivity.getSafeLastFragment();
+                        if (lastFragment == null) return;
+                        final BaseFragment.BottomSheetParams bottomSheetParams = new BaseFragment.BottomSheetParams();
+                        bottomSheetParams.transitionFromLeft = true;
+                        bottomSheetParams.allowNestedScroll = false;
+                        final ResaleGiftsFragment fragment = new ResaleGiftsFragment(dialogId, gift.title, gift.id, resourcesProvider);
+                        fragment.setCloseParentSheet(() -> {
+                            if (closeParentSheet != null) {
+                                closeParentSheet.run();
+                            }
+                            dismiss();
+                        });
+                        lastFragment.showAsSheet(fragment, bottomSheetParams);
+                        return;
+                    }
+                    if (gift.sold_out) {
+                        StarsIntroActivity.showSoldOutGiftSheet(context, currentAccount, gift, resourcesProvider);
+                        return;
+                    }
                     if (gift.limited_per_user && gift.per_user_remains <= 0) {
                         BulletinFactory.of(GiftSheet.this.container, GiftSheet.this.resourcesProvider)
                             .createSimpleMultiBulletin(gift.getDocument(), AndroidUtilities.replaceTags(formatPluralStringComma("Gift2PerUserLimit", gift.per_user_total)))
@@ -492,26 +513,6 @@ public class GiftSheet extends BottomSheetWithRecyclerListView implements Notifi
                         sheet.overrideTitleIcon = icon;
                         sheet.show();
                         drawable.play();
-                        return;
-                    }
-                    if (item.accent && gift.availability_resale > 0) {
-                        final BaseFragment lastFragment = LaunchActivity.getSafeLastFragment();
-                        if (lastFragment == null) return;
-                        final BaseFragment.BottomSheetParams bottomSheetParams = new BaseFragment.BottomSheetParams();
-                        bottomSheetParams.transitionFromLeft = true;
-                        bottomSheetParams.allowNestedScroll = false;
-                        final ResaleGiftsFragment fragment = new ResaleGiftsFragment(dialogId, gift.title, gift.id, resourcesProvider);
-                        fragment.setCloseParentSheet(() -> {
-                            if (closeParentSheet != null) {
-                                closeParentSheet.run();
-                            }
-                            dismiss();
-                        });
-                        lastFragment.showAsSheet(fragment, bottomSheetParams);
-                        return;
-                    }
-                    if (gift.sold_out) {
-                        StarsIntroActivity.showSoldOutGiftSheet(context, currentAccount, gift, resourcesProvider);
                         return;
                     }
                     new SendGiftSheet(context, currentAccount, gift, this.dialogId, () -> {
@@ -933,6 +934,7 @@ public class GiftSheet extends BottomSheetWithRecyclerListView implements Notifi
         private final BackupImageView avatarView;
         private final FrameLayout pinnedView;
         private final ImageView pinnedImageView;
+        private final ImageView tonOnlySaleView;
         public final BackupImageView imageView;
         private final FrameLayout.LayoutParams imageViewLayoutParams;
         private final PremiumLockIconView lockView;
@@ -1025,6 +1027,12 @@ public class GiftSheet extends BottomSheetWithRecyclerListView implements Notifi
             pinnedView.addView(pinnedImageView, LayoutHelper.createFrame(12.66f, 12.66f, Gravity.CENTER));
 
             card.addView(pinnedView, LayoutHelper.createFrame(20, 20, Gravity.TOP | Gravity.LEFT, 2, 2, 2, 2));
+
+            tonOnlySaleView = new ImageView(context);
+            tonOnlySaleView.setImageResource(R.drawable.ton_16);
+            tonOnlySaleView.setVisibility(GONE);
+            tonOnlySaleView.setScaleType(ImageView.ScaleType.CENTER);
+            card.addView(tonOnlySaleView, LayoutHelper.createFrame(20, 20, Gravity.TOP | Gravity.LEFT, 3, 3, 3, 3));
         }
 
         public void invalidateCustom() {
@@ -1320,11 +1328,12 @@ public class GiftSheet extends BottomSheetWithRecyclerListView implements Notifi
             final TL_stars.starGiftAttributeBackdrop backdrop = findAttribute(gift.attributes, TL_stars.starGiftAttributeBackdrop.class);
             cardBackground.setBackdrop(backdrop);
             cardBackground.setPattern(findAttribute(gift.attributes, TL_stars.starGiftAttributePattern.class));
-            cardBackground.setStrokeColors(gift.require_premium ? PREMIUM_STROKE : null);
+            cardBackground.setStrokeColors(gift.require_premium && !(allowResaleInGifts && gift.availability_resale > 0) ? PREMIUM_STROKE : null);
             titleView.setVisibility(View.GONE);
             subtitleView.setVisibility(View.GONE);
             imageView.setTranslationY(0);
             lockView.setVisibility(View.GONE);
+            tonOnlySaleView.setVisibility(gift.resale_ton_only ? View.VISIBLE: View.GONE);
 
             imageViewLayoutParams.gravity = Gravity.TOP | Gravity.CENTER_HORIZONTAL;
             imageView.setLayoutParams(imageViewLayoutParams);
@@ -1343,20 +1352,26 @@ public class GiftSheet extends BottomSheetWithRecyclerListView implements Notifi
                 }
                 priceView.setBackground(Theme.createSimpleSelectorRoundRectDrawable(dp(13), backgroundColor, Theme.blendOver(backgroundColor, 0x30FFFFFF)));
                 priceView.setTextColor(0xFFFFFFFF);
+
+                tonOnlySaleView.setColorFilter(0xFFFFFFFF);
+                tonOnlySaleView.setBackground(Theme.createSimpleSelectorRoundRectDrawable(dp(13), backgroundColor, Theme.blendOver(backgroundColor, 0x30FFFFFF)));
             } else if (inResalePage) {
                 priceView.setPadding(dp(8), 0, dp(10), 0);
-                final long stars = gift.resell_stars;
+                final long stars = gift.getResellStars();
                 final int backgroundColor = Theme.blendOver(backdrop.center_color | 0xFF000000, Theme.multAlpha(backdrop.pattern_color | 0xFF000000, .55f));
                 priceView.setText(StarsIntroActivity.replaceStars("XTR " + LocaleController.formatNumber(stars, ',')));
                 priceView.setBackground(new StarsBackground(0x70FFFFFF, backgroundColor));
                 priceView.setTextColor(0xFFFFFFFF);
+
+                tonOnlySaleView.setColorFilter(0xFFFFFFFF);
+                tonOnlySaleView.setBackground(new StarsBackground(0x70FFFFFF, backgroundColor));
             } else {
                 priceView.setPadding(dp(8), 0, dp(10), 0);
                 boolean plus = false;
                 final long stars;
                 if (allowResaleInGifts && gift.availability_resale > 0) {
                     stars = gift.resell_min_stars;
-                    if (gift.availability_resale > 1 && stars < MessagesController.getInstance(currentAccount).starsStargiftResaleAmountMax) {
+                    if (gift.availability_resale > 1 && stars < MessagesController.getInstance(currentAccount).config.starsStarGiftResaleAmountMax.get()) {
                         plus = true;
                     }
                 } else {
@@ -1365,6 +1380,9 @@ public class GiftSheet extends BottomSheetWithRecyclerListView implements Notifi
                 priceView.setText(StarsIntroActivity.replaceStarsWithPlain("XTR " + LocaleController.formatNumber(stars, ',') + (plus ? "+" : ""), .71f));
                 priceView.setBackground(new StarsBackground(gift instanceof TL_stars.TL_starGiftUnique ? 0x40FFFFFF : (Theme.isCurrentThemeDark() ? 0x1EEBA52D : 0x40E8AB02)));
                 priceView.setTextColor(Theme.isCurrentThemeDark() ? 0xFFEBA52D : 0xFFD67722);
+
+                tonOnlySaleView.setColorFilter(Theme.isCurrentThemeDark() ? 0xFFEBA52D : 0xFFD67722);
+                tonOnlySaleView.setBackground(new StarsBackground(gift instanceof TL_stars.TL_starGiftUnique ? 0x40FFFFFF : (Theme.isCurrentThemeDark() ? 0x1EEBA52D : 0x40E8AB02)));
             }
             ((MarginLayoutParams) priceView.getLayoutParams()).topMargin = dp(103);
             ((FrameLayout.LayoutParams) priceView.getLayoutParams()).gravity = Gravity.TOP | Gravity.CENTER_HORIZONTAL;
@@ -1408,6 +1426,7 @@ public class GiftSheet extends BottomSheetWithRecyclerListView implements Notifi
             lockView.setBlendWithColor(backdrop != null ? Theme.multAlpha(backdrop.center_color | 0xFF000000, .75f) : null);
             pinView.setWaitingImage();
             pinView.setBlendWithColor(backdrop != null ? Theme.multAlpha(backdrop.center_color | 0xFF000000, .75f) : null);
+            tonOnlySaleView.setVisibility(userGift.gift.resale_ton_only ? View.VISIBLE: View.GONE);
             if (backdrop != null) {
                 pinnedView.setBackground(Theme.createCircleDrawable(dp(20), Theme.adaptHSV(backdrop.center_color | 0xFF000000, +0.1f, -0.2f)));
             } else {
@@ -1463,20 +1482,26 @@ public class GiftSheet extends BottomSheetWithRecyclerListView implements Notifi
                 }
             }
 
-            if (backdrop != null && userGift.gift.resell_stars > 0) {
+            if (backdrop != null && userGift.gift.resell_amount != null) {
                 priceView.setVisibility(View.VISIBLE);
                 imageViewLayoutParams.topMargin = 0;
                 imageViewLayoutParams.bottomMargin = 0;
                 priceView.setPadding(dp(8), 0, dp(10), 0);
                 priceView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
                 ColoredImageSpan[] spans = new ColoredImageSpan[1];
-                priceView.setText(StarsIntroActivity.replaceStars("XTR " + LocaleController.formatNumber(userGift.gift.resell_stars, ','), .95f, spans));
+                if (userGift.gift.resale_ton_only && DialogObject.getPeerDialogId(userGift.gift.owner_id) == UserConfig.getInstance(currentAccount).getClientUserId()) {
+                    priceView.setText(StarsIntroActivity.replaceStars(true, "XTR " + StarsIntroActivity.formatStarsAmount(userGift.gift.getResellAmount(AmountUtils.Currency.TON).toTl(), 1, ','), .95f, spans));
+                } else {
+                    priceView.setText(StarsIntroActivity.replaceStars("XTR " + LocaleController.formatNumber(userGift.gift.getResellStars(), ','), .95f, spans));
+                }
                 if (spans[0] != null) {
                     spans[0].translate(0, dp(0.5f));
                 }
                 final int backgroundColor = Theme.blendOver(backdrop.center_color | 0xFF000000, Theme.multAlpha(backdrop.pattern_color | 0xFF000000, .55f));
                 priceView.setBackground(new StarsBackground(0x70FFFFFF, backgroundColor));
                 priceView.setTextColor(0xFFFFFFFF);
+                tonOnlySaleView.setBackground(new StarsBackground(0x70FFFFFF, backgroundColor));
+                tonOnlySaleView.setColorFilter(0xFFFFFFFF);
                 ((FrameLayout.LayoutParams) priceView.getLayoutParams()).gravity = Gravity.TOP | Gravity.CENTER_HORIZONTAL;
                 ((MarginLayoutParams) priceView.getLayoutParams()).topMargin = dp(69);
             } else {
@@ -1500,6 +1525,8 @@ public class GiftSheet extends BottomSheetWithRecyclerListView implements Notifi
                 }
                 priceView.setTextColor(unique ? 0xFFFFFFFF : (Theme.isCurrentThemeDark() ? 0xFFEBA52D : 0xFFBF7600));
                 priceView.setBackground(new StarsBackground(unique ? 0x40FFFFFF : (Theme.isCurrentThemeDark() ? 0x1EEBA52D : 0x40E8AB02)));
+                tonOnlySaleView.setBackground(new StarsBackground(unique ? 0x40FFFFFF : (Theme.isCurrentThemeDark() ? 0x1EEBA52D : 0x40E8AB02)));
+                tonOnlySaleView.setColorFilter(unique ? 0xFFFFFFFF : (Theme.isCurrentThemeDark() ? 0xFFEBA52D : 0xFFBF7600));
                 ((FrameLayout.LayoutParams) priceView.getLayoutParams()).gravity = Gravity.TOP | Gravity.CENTER_HORIZONTAL;
                 ((MarginLayoutParams) priceView.getLayoutParams()).topMargin = dp(103);
             }
@@ -1540,7 +1567,7 @@ public class GiftSheet extends BottomSheetWithRecyclerListView implements Notifi
             if (userGift != null) {
                 if (userGift.gift instanceof TL_stars.TL_starGiftUnique) {
                     ribbon.setVisibility(View.VISIBLE);
-                    if (userGift.gift.resell_stars > 0) {
+                    if (userGift.gift.resell_amount != null) {
                         final int backgroundColor = Theme.blendOver(
                             Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider),
                             Theme.multAlpha(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider), 0.04f)

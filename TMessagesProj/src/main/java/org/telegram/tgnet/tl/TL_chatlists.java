@@ -189,6 +189,7 @@ public class TL_chatlists {
             stream.writeInt32(constructor);
             stream.writeInt32(filter_id);
             Vector.serialize(stream, missing_peers);
+            Vector.serialize(stream, already_peers);
             Vector.serialize(stream, chats);
             Vector.serialize(stream, users);
         }

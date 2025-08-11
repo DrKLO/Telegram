@@ -5,23 +5,16 @@ import static org.telegram.messenger.LocaleController.formatString;
 import static org.telegram.messenger.LocaleController.getString;
 import static org.telegram.ui.Stars.StarsIntroActivity.formatStarsAmount;
 
-import android.animation.Animator;
-import android.animation.AnimatorListenerAdapter;
-import android.animation.ValueAnimator;
 import android.content.Context;
-import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
-import android.graphics.drawable.Drawable;
-import android.text.SpannableString;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.animation.OvershootInterpolator;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -45,7 +38,6 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
-import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.browser.Browser;
 import org.telegram.messenger.utils.tlutils.AmountUtils;
 import org.telegram.tgnet.tl.TL_stars;
@@ -61,14 +53,12 @@ import org.telegram.ui.Components.ColoredImageSpan;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.FireworksOverlay;
 import org.telegram.ui.Components.LayoutHelper;
-import org.telegram.ui.Components.LoadingSpan;
 import org.telegram.ui.Components.Premium.GLIcon.GLIconRenderer;
 import org.telegram.ui.Components.Premium.GLIcon.GLIconTextureView;
 import org.telegram.ui.Components.Premium.GLIcon.Icon3D;
 import org.telegram.ui.Components.Premium.StarParticlesView;
 import org.telegram.ui.Components.Premium.boosts.UserSelectorBottomSheet;
 import org.telegram.ui.Components.RecyclerListView;
-import org.telegram.ui.Components.ScaleStateListAnimator;
 import org.telegram.ui.Components.UItem;
 import org.telegram.ui.Components.UniversalAdapter;
 import org.telegram.ui.GradientHeaderActivity;
@@ -580,7 +570,7 @@ public class TONIntroActivity extends GradientHeaderActivity implements Notifica
 
                 AmountUtils.Amount balance = StarsController.getTonInstance(currentAccount).getBalanceAmount();
                 headerView.titleView.setText(formatString(R.string.TonNeededTitle,
-                    AmountUtils.Amount.fromNano(requiredAmount.asNano() - balance.asNano(), AmountUtils.Currency.TON).asDecimalString()));
+                    AmountUtils.Amount.fromNano(requiredAmount.asNano() - balance.asNano(), AmountUtils.Currency.TON).asFormatString()));
                 if (actionBar != null) {
                     actionBar.setTitle(getTitle());
                 }
@@ -657,7 +647,7 @@ public class TONIntroActivity extends GradientHeaderActivity implements Notifica
 
             final AmountUtils.Amount balance = StarsController.getTonInstance(currentAccount).getBalanceAmount();
             headerView.titleView.setText(formatString(R.string.TonNeededTitle,
-                AmountUtils.Amount.fromNano(requiredAmount.asNano() - balance.asNano(), AmountUtils.Currency.TON).asDecimalString()));
+                AmountUtils.Amount.fromNano(requiredAmount.asNano() - balance.asNano(), AmountUtils.Currency.TON).asFormatString()));
 
             headerView.subtitleView.setText(AndroidUtilities.replaceTags(getString(R.string.FragmentAddFunds)));
             headerView.subtitleView.setMaxWidth(HintView2.cutInFancyHalf(headerView.subtitleView.getText(), headerView.subtitleView.getPaint()));

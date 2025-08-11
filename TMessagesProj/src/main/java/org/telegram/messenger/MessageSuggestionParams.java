@@ -2,6 +2,7 @@ package org.telegram.messenger;
 
 import androidx.annotation.Nullable;
 
+import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.messenger.utils.tlutils.AmountUtils;
 
@@ -22,7 +23,7 @@ public class MessageSuggestionParams {
         }
         if (time > 0) {
             suggestedPost.schedule_date = (int) time;
-            suggestedPost.flags |= TLRPC.FLAG_0;
+            suggestedPost.flags |= TLObject.FLAG_0;
         }
 
         return suggestedPost;

@@ -30,8 +30,17 @@ public class AppGlobalConfig {
     public final ConfigString starsRatingLearnMoreUrl = ofString("stars_rating_learnmore_url", "https://telegram.org/blog/telegram-stars");
     public final ConfigBoolean needAgeVideoVerification = ofBoolean("need_age_video_verification", false);
 
+    public final ConfigInt starsStarGiftResaleCommissionPermille = ofInt("stars_stargift_resale_commission_permille", 800);
+    public final ConfigInt tonStarGiftResaleCommissionPermille = ofInt("ton_stargift_resale_commission_permille", 800);
+    public final ConfigInt starsStarGiftResaleAmountMin = ofInt("stars_stargift_resale_amount_min", 125);
+    public final ConfigInt starsStarGiftResaleAmountMax = ofInt("stars_stargift_resale_amount_max", 35000);
+    public final ConfigLong tonStarGiftResaleAmountMin = ofLong("ton_stargift_resale_amount_min", 10_000_000L);
+    public final ConfigLong tonStarGiftResaleAmountMax = ofLong("ton_stargift_resale_amount_max", 10_000_000_000_000L);
+
     public final ConfigInt stargiftsCollectionsLimit = ofInt("stargifts_collections_limit", 100);
     public final ConfigInt stargiftsCollectionGiftsLimit = ofInt("stargifts_collection_gifts_limit", 100);
+    public final ConfigInt storiesAlbumsLimit = ofInt("stories_albums_limit", 100);
+    public final ConfigInt storiesAlbumStoriesLimit = ofInt("stories_album_stories_limit", 100);
 
     /* * */
 

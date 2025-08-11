@@ -46,8 +46,6 @@ import androidx.core.app.NotificationManagerCompat;
 import androidx.core.graphics.ColorUtils;
 import androidx.core.util.Consumer;
 
-import com.google.common.collect.Lists;
-
 import org.telegram.SQLite.SQLiteCursor;
 import org.telegram.SQLite.SQLiteDatabase;
 import org.telegram.SQLite.SQLiteException;
@@ -77,7 +75,6 @@ import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Business.QuickRepliesController;
 import org.telegram.ui.Cells.CheckBoxCell;
-import org.telegram.ui.ChannelMonetizationLayout;
 import org.telegram.ui.ChatActivity;
 import org.telegram.ui.ChatReactionsEditActivity;
 import org.telegram.ui.ChatRightsEditActivity;
@@ -95,7 +92,6 @@ import org.telegram.ui.Components.TranscribeButton;
 import org.telegram.ui.DialogsActivity;
 import org.telegram.ui.EditWidgetActivity;
 import org.telegram.ui.LaunchActivity;
-import org.telegram.ui.LoginActivity;
 import org.telegram.ui.PremiumPreviewFragment;
 import org.telegram.ui.ProfileActivity;
 import org.telegram.ui.SecretMediaViewer;
@@ -670,9 +666,6 @@ public class MessagesController extends BaseController implements NotificationCe
     public int uploadMaxFilePartsPremium;
     public String premiumBotUsername;
     public String premiumInvoiceSlug;
-    public long starsStargiftResaleAmountMax;
-    public long starsStargiftResaleAmountMin;
-    public int starsStargiftResaleCommisionPermille;
     public String verifyAgeBotUsername;
     public String verifyAgeCountry;
     public int verifyAgeMin;
@@ -1565,9 +1558,6 @@ public class MessagesController extends BaseController implements NotificationCe
         uploadMaxFileParts = mainPreferences.getInt("uploadMaxFileParts", (int) (FileLoader.DEFAULT_MAX_FILE_SIZE / 1024L / 512L));
         uploadMaxFilePartsPremium = mainPreferences.getInt("uploadMaxFilePartsPremium", uploadMaxFileParts * 2);
         premiumInvoiceSlug = mainPreferences.getString("premiumInvoiceSlug", null);
-        starsStargiftResaleAmountMax = mainPreferences.getLong("starsStargiftResaleAmountMax", 35000L);
-        starsStargiftResaleAmountMin = mainPreferences.getLong("starsStargiftResaleAmountMin", 125L);
-        starsStargiftResaleCommisionPermille = mainPreferences.getInt("starsStargiftResaleCommisionPermille", 800);
         verifyAgeBotUsername = mainPreferences.getString("verifyAgeBotUsername", null);
         verifyAgeCountry = mainPreferences.getString("verifyAgeCountry", "GB");
         verifyAgeMin = mainPreferences.getInt("verifyAgeMin", 18);
@@ -4783,39 +4773,6 @@ public class MessagesController extends BaseController implements NotificationCe
                         if (num.value != conferenceCallSizeLimit) {
                             conferenceCallSizeLimit = (int) num.value;
                             editor.putInt("conferenceCallSizeLimit", conferenceCallSizeLimit);
-                            changed = true;
-                        }
-                    }
-                    break;
-                }
-                case "stars_stargift_resale_amount_min": {
-                    if (value.value instanceof TLRPC.TL_jsonNumber) {
-                        TLRPC.TL_jsonNumber num = (TLRPC.TL_jsonNumber) value.value;
-                        if (num.value != starsStargiftResaleAmountMin) {
-                            starsStargiftResaleAmountMin = (long) num.value;
-                            editor.putLong("starsStargiftResaleAmountMax", starsStargiftResaleAmountMin);
-                            changed = true;
-                        }
-                    }
-                    break;
-                }
-                case "stars_stargift_resale_amount_max": {
-                    if (value.value instanceof TLRPC.TL_jsonNumber) {
-                        TLRPC.TL_jsonNumber num = (TLRPC.TL_jsonNumber) value.value;
-                        if (num.value != starsStargiftResaleAmountMax) {
-                            starsStargiftResaleAmountMax = (long) num.value;
-                            editor.putLong("starsStargiftResaleAmountMax", starsStargiftResaleAmountMax);
-                            changed = true;
-                        }
-                    }
-                    break;
-                }
-                case "stars_stargift_resale_commission_permille": {
-                    if (value.value instanceof TLRPC.TL_jsonNumber) {
-                        TLRPC.TL_jsonNumber num = (TLRPC.TL_jsonNumber) value.value;
-                        if (num.value != starsStargiftResaleCommisionPermille) {
-                            starsStargiftResaleCommisionPermille = (int) num.value;
-                            editor.putInt("starsStargiftResaleCommisionPermille", starsStargiftResaleCommisionPermille);
                             changed = true;
                         }
                     }
@@ -23198,7 +23155,7 @@ public class MessagesController extends BaseController implements NotificationCe
         request.msg_id = messageId;
         if (scheduleDate > 0) {
             request.schedule_date = scheduleDate;
-            request.flags |= TLRPC.FLAG_0;
+            request.flags |= TLObject.FLAG_0;
         }
         if (reject && !TextUtils.isEmpty(reason)) {
             request.reject_comment = reason;

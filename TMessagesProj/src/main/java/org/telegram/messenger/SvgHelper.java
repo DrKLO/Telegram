@@ -726,6 +726,10 @@ public class SvgHelper {
     }
 
     public static Path doPath(String s) {
+        if (ApplicationLoader.isAndroidTestEnvironment()) {
+            return new Path();
+        }
+
         int n = s.length();
         ParserHelper ph = new ParserHelper(s, 0);
         ph.skipWhitespace();

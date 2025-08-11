@@ -4697,7 +4697,8 @@ public class MessageObject {
                 } else if (messageOwner.action instanceof TLRPC.TL_messageActionStarGiftUnique) {
                     TLRPC.TL_messageActionStarGiftUnique action = (TLRPC.TL_messageActionStarGiftUnique) messageOwner.action;
                     TLRPC.User user = getUser(users, sUsers, getDialogId());
-                    if (action.resale_stars > 0) {
+                    if (action.resale_amount != null) {
+                        final AmountUtils.Amount amount = AmountUtils.Amount.ofSafe(action.resale_amount);
                         long fromId = getDialogId();
                         if (action.from_id != null) {
                             fromId = DialogObject.getPeerDialogId(action.from_id);
@@ -4716,11 +4717,19 @@ public class MessageObject {
                             } else {
                                 peer = getChat(chats, sChats, -peerId);
                             }
-                            messageText = AndroidUtilities.replaceTags(formatPluralStringComma("ActionUniqueGiftResaleService", (int) action.resale_stars));
+                            if (amount.currency == AmountUtils.Currency.TON) {
+                                messageText = AndroidUtilities.replaceTags(LocaleController.formatString(R.string.ActionUniqueGiftResaleServiceTON, amount.asFormatString()));
+                            } else {
+                                messageText = AndroidUtilities.replaceTags(formatPluralStringComma("ActionUniqueGiftResaleService", (int) amount.asDecimal()));
+                            }
                             messageText = replaceWithLink(messageText, "un1", obj);
                             messageText = replaceWithLink(messageText, "un2", peer);
                         } else {
-                            messageText = replaceWithLink(AndroidUtilities.replaceTags(formatPluralStringComma(isOutOwner() ? "ActionUniqueGiftResaleOutbound" : "ActionUniqueGiftResaleInbound", (int) action.resale_stars)), "un1", obj);
+                            if (amount.currency == AmountUtils.Currency.TON) {
+                                messageText = replaceWithLink(AndroidUtilities.replaceTags(formatString(isOutOwner() ? R.string.ActionUniqueGiftResaleOutboundTON : R.string.ActionUniqueGiftResaleInboundTON, amount.asFormatString())), "un1", obj);
+                            } else {
+                                messageText = replaceWithLink(AndroidUtilities.replaceTags(formatPluralStringComma(isOutOwner() ? "ActionUniqueGiftResaleOutbound" : "ActionUniqueGiftResaleInbound", (int) amount.asDecimal())), "un1", obj);
+                            }
                         }
                     } else if (action.upgrade) {
                         if (action.peer != null) {

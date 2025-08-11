@@ -609,7 +609,16 @@ public class AlertDialog extends Dialog implements Drawable.Callback, Notificati
         return this;
     }
 
+    public FrameLayout getFullscreenContainerView() {
+        return fullscreenContainerView;
+    }
+
     private FrameLayout fullscreenContainerView;
+
+    public BalanceCloud getStarsBalanceCloud() {
+        return starsBalanceCloud;
+    }
+
     private BalanceCloud starsBalanceCloud;
 
     private AlertDialogView containerView;
@@ -1234,8 +1243,14 @@ public class AlertDialog extends Dialog implements Drawable.Callback, Notificati
 
     @NonNull
     public Browser.Progress makeButtonLoading(int type) {
+        return makeButtonLoading(type, true, true);
+    }
+
+    public Browser.Progress makeButtonLoading(int type, boolean dismissWhenEnd, boolean clearDismissDialogByButtons) {
         final View button = getButton(type);
-        dismissDialogByButtons = false;
+        if (clearDismissDialogByButtons) {
+            dismissDialogByButtons = false;
+        }
         return new Browser.Progress(() -> {
             if (button instanceof TextViewWithLoading) {
                 ((TextViewWithLoading) button).setLoading(true, true);
@@ -1244,7 +1259,9 @@ public class AlertDialog extends Dialog implements Drawable.Callback, Notificati
             if (button instanceof TextViewWithLoading) {
                 ((TextViewWithLoading) button).setLoading(false, true);
             }
-            dismiss();
+            if (dismissWhenEnd) {
+                dismiss();
+            }
         });
     }
 

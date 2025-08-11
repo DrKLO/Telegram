@@ -190,6 +190,10 @@ public class ViewPagerFixed extends FrameLayout {
         fillTabs(false);
     }
 
+    protected void onTabPageSelected(int position, boolean forward) {
+        onTabPageSelected(position);
+    }
+
     protected void onTabPageSelected(int position) {
 
     }
@@ -217,7 +221,7 @@ public class ViewPagerFixed extends FrameLayout {
         nextPosition = page;
         updateViewForIndex(1);
 
-        onTabPageSelected(page);
+        onTabPageSelected(page, forward);
         final int tX = viewPages[0] != null ? viewPages[0].getMeasuredWidth() : 0;
         if (forward) {
             setTranslationX(viewPages[1], tX);
@@ -240,6 +244,11 @@ public class ViewPagerFixed extends FrameLayout {
             }
             currentProgress = progress;
             onTabAnimationUpdate(true);
+            if (tabsView != null) {
+                tabsView.listView.invalidate();
+                tabsView.listView.invalidateViews();
+                tabsView.invalidate();
+            }
         });
         manualScrolling.addListener(new AnimatorListenerAdapter() {
             @Override
@@ -251,8 +260,14 @@ public class ViewPagerFixed extends FrameLayout {
                     setTranslationX(viewPages[0], 0);
                     viewPages[1] = null;
                 }
+                currentPosition = nextPosition;
                 manualScrolling = null;
                 onTabAnimationUpdate(true);
+                if (tabsView != null) {
+                    tabsView.listView.invalidate();
+                    tabsView.listView.invalidateViews();
+                    tabsView.invalidate();
+                }
                 onScrollEnd();
                 notificationsLocker.unlock();
             }
@@ -268,7 +283,7 @@ public class ViewPagerFixed extends FrameLayout {
             @Override
             public void selectTab(int currentPosition, int nextPosition, float progress) {
                 super.selectTab(currentPosition, nextPosition, progress);
-                onTabPageSelected(progress <= 0.5f ? currentPosition : nextPosition);
+                onTabPageSelected(progress <= 0.5f ? currentPosition : nextPosition, currentPosition < nextPosition);
             }
         };
         tabsView.tabMarginDp = tabMarginDp();
@@ -279,7 +294,7 @@ public class ViewPagerFixed extends FrameLayout {
                 nextPosition = page;
                 updateViewForIndex(1);
 
-                onTabPageSelected(page);
+                onTabPageSelected(page, forward);
                 int trasnlationX = viewPages[0] != null ? viewPages[0].getMeasuredWidth() : 0;
                 if (viewPages[1] != null) {
                     if (forward) {
@@ -1770,6 +1785,10 @@ public class ViewPagerFixed extends FrameLayout {
 
         public int getNextPageId(boolean forward) {
             return positionToId.get(currentPosition + (forward ? 1 : -1), -1);
+        }
+
+        public int getPageIdByPosition(int position) {
+            return positionToId.get(position, -1);
         }
 
         public void addTab(int id, CharSequence text) {

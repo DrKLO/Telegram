@@ -56,6 +56,7 @@ import org.telegram.ui.Components.RLottieDrawable;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 
 public class StoryEntry {
@@ -142,6 +143,7 @@ public class StoryEntry {
     public float roundVolume = 1;
 
     public TLRPC.InputPeer peer;
+    public HashSet<Integer> albums;
 
     public Drawable backgroundDrawable;
     public boolean isDark = Theme.isCurrentThemeDark();
@@ -1675,6 +1677,7 @@ public class StoryEntry {
         newEntry.scheduleDate = scheduleDate;
         newEntry.blurredVideoThumb = blurredVideoThumb;
         newEntry.uploadThumbFile = uploadThumbFile;
+        newEntry.albums = albums;
         if (uploadThumbFile != null && uploadThumbFile.exists()) {
             newEntry.uploadThumbFile = StoryEntry.makeCacheFile(currentAccount, ext(uploadThumbFile));
             AndroidUtilities.copyFileSafe(uploadThumbFile, newEntry.uploadThumbFile);
