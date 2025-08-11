@@ -440,6 +440,11 @@ public class SvgHelper {
     public static Bitmap getBitmap(int res, int width, int height, int color, float scale) {
         try (InputStream stream = ApplicationLoader.applicationContext.getResources().openRawResource(res)) {
             SAXParserFactory spf = SAXParserFactory.newInstance();
+            try {
+                factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
             SAXParser sp = spf.newSAXParser();
             XMLReader xr = sp.getXMLReader();
             SVGHandler handler = new SVGHandler(width, height, color, false, scale);
@@ -455,6 +460,11 @@ public class SvgHelper {
     public static Bitmap getBitmap(InputStream stream, int width, int height, boolean white) {
         try {
             SAXParserFactory spf = SAXParserFactory.newInstance();
+            try {
+                factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
             SAXParser sp = spf.newSAXParser();
             XMLReader xr = sp.getXMLReader();
             SVGHandler handler = new SVGHandler(width, height, white ? 0xffffffff : null, false, 1f);
@@ -470,6 +480,11 @@ public class SvgHelper {
     public static Bitmap getBitmap(File file, int width, int height, boolean white) {
         try (FileInputStream stream = new FileInputStream(file)) {
             SAXParserFactory spf = SAXParserFactory.newInstance();
+            try {
+                factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
             SAXParser sp = spf.newSAXParser();
             XMLReader xr = sp.getXMLReader();
             SVGHandler handler = new SVGHandler(width, height, white ? 0xffffffff : null, false, 1f);
@@ -488,6 +503,11 @@ public class SvgHelper {
     public static Bitmap getBitmap(String xml, int width, int height, boolean white) {
         try {
             SAXParserFactory spf = SAXParserFactory.newInstance();
+            try {
+                factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
             SAXParser sp = spf.newSAXParser();
             XMLReader xr = sp.getXMLReader();
             SVGHandler handler = new SVGHandler(width, height, white ? 0xffffffff : null, false, 1f);
@@ -503,6 +523,11 @@ public class SvgHelper {
     public static SvgDrawable getDrawable(String xml) {
         try {
             SAXParserFactory spf = SAXParserFactory.newInstance();
+            try {
+                factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
             SAXParser sp = spf.newSAXParser();
             XMLReader xr = sp.getXMLReader();
             SVGHandler handler = new SVGHandler(0, 0, null, true, 1f);
@@ -518,6 +543,11 @@ public class SvgHelper {
     public static SvgDrawable getDrawable(int resId, Integer color) {
         try {
             SAXParserFactory spf = SAXParserFactory.newInstance();
+            try {
+                factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
             SAXParser sp = spf.newSAXParser();
             XMLReader xr = sp.getXMLReader();
             SVGHandler handler = new SVGHandler(0, 0, color, true, 1f);
