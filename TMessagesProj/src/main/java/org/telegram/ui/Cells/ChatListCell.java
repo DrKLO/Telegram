@@ -45,6 +45,7 @@ public class ChatListCell extends LinearLayout {
                     ListView.this.invalidate();
                 }
             };
+            button.setColor(Theme.getColor(Theme.key_radioBackground), Theme.getColor(Theme.key_radioBackgroundChecked));
             button.setSize(AndroidUtilities.dp(20));
             addView(button, LayoutHelper.createFrame(22, 22, Gravity.RIGHT | Gravity.TOP, 0, 26, 10, 0));
             button.setChecked(isThreeLines && SharedConfig.useThreeLinesLayout || !isThreeLines && !SharedConfig.useThreeLinesLayout, false);
@@ -57,7 +58,11 @@ public class ChatListCell extends LinearLayout {
             int g = Color.green(color);
             int b = Color.blue(color);
 
-            button.setColor(Theme.getColor(Theme.key_radioBackground), Theme.getColor(Theme.key_radioBackgroundChecked));
+            int buttonColor = Theme.getColor(Theme.key_radioBackground);
+            int buttonCheckedColor = Theme.getColor(Theme.key_radioBackgroundChecked);
+            if (button.getColor() != buttonColor || button.getCheckedColor() != buttonCheckedColor) {
+                button.setColor(buttonColor, buttonCheckedColor);
+            }
 
             rect.set(AndroidUtilities.dp(1), AndroidUtilities.dp(1), getMeasuredWidth() - AndroidUtilities.dp(1), AndroidUtilities.dp(73));
             Theme.chat_instantViewRectPaint.setColor(Color.argb((int) (43 * button.getProgress()), r, g, b));
