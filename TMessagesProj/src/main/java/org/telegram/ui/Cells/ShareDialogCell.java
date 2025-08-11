@@ -31,6 +31,7 @@ import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.FrameLayout;
 import android.widget.TextView;
 
+import androidx.annotation.DrawableRes;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.dynamicanimation.animation.FloatValueHolder;
@@ -474,6 +475,14 @@ public class ShareDialogCell extends FrameLayout implements NotificationCenter.N
         private final Drawable drawable;
 
         public RepostStoryDrawable(Context context, View parentView, boolean animate, Theme.ResourcesProvider resourcesProvider) {
+            this(context, parentView, animate, R.drawable.large_repost_story, resourcesProvider);
+        }
+
+        public RepostStoryDrawable(Context context, View parentView, @DrawableRes int drawableRes, Theme.ResourcesProvider resourcesProvider) {
+            this(context, parentView, false, drawableRes, resourcesProvider);
+        }
+
+        public RepostStoryDrawable(Context context, View parentView, boolean animate, @DrawableRes int drawableRes, Theme.ResourcesProvider resourcesProvider) {
             gradient = new LinearGradient(0, 0, dp(56), dp(56), new int[] {
                 Theme.getColor(Theme.key_stories_circle1, resourcesProvider),
                 Theme.getColor(Theme.key_stories_circle2, resourcesProvider)
@@ -487,7 +496,7 @@ public class ShareDialogCell extends FrameLayout implements NotificationCenter.N
                 drawable = null;
             } else {
                 lottieDrawable = null;
-                drawable = context.getResources().getDrawable(R.drawable.large_repost_story).mutate();
+                drawable = context.getResources().getDrawable(drawableRes).mutate();
                 drawable.setColorFilter(new PorterDuffColorFilter(Color.WHITE, PorterDuff.Mode.SRC_IN));
             }
         }

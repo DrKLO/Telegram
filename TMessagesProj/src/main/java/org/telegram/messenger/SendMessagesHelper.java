@@ -156,7 +156,10 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
             replyTo.flags |= 1;
             replyTo.top_msg_id = topMessageId;
         }
-        if (replyQuote != null) {
+        if (replyQuote != null && replyQuote.todo && replyQuote.task != null) {
+            replyTo.flags |= 64;
+            replyTo.todo_item_id = replyQuote.task.id;
+        } else if (replyQuote != null && !replyQuote.todo) {
             replyTo.quote_text = replyQuote.getText();
             if (!TextUtils.isEmpty(replyTo.quote_text)) {
                 replyTo.flags |= 4;
@@ -204,6 +207,10 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                 replyTo.flags |= 16;
                 replyTo.quote_offset = replyHeader.quote_offset;
             }
+        }
+        if ((replyHeader.flags & 2048) != 0) {
+            replyTo.flags |= 64;
+            replyTo.todo_item_id = replyHeader.todo_item_id;
         }
         return replyTo;
     }
@@ -3290,6 +3297,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
             options = new byte[answers.size()];
             for (int a = 0; a < answers.size(); a++) {
                 TLRPC.PollAnswer answer = answers.get(a);
+                if (answer == null) continue;
                 req.options.add(answer.option);
                 options[a] = answer.option[0];
             }
@@ -4371,7 +4379,10 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                         newMsg.reply_to.flags |= 8;
                     }
                 }
-                if (replyQuote != null) {
+                if (replyQuote != null && replyQuote.todo && replyQuote.task != null) {
+                    newMsg.reply_to.flags |= 2048;
+                    newMsg.reply_to.todo_item_id = replyQuote.task.id;
+                } else if (replyQuote != null && !replyQuote.todo) {
                     newMsg.reply_to.quote_text = replyQuote.getText();
                     if (!TextUtils.isEmpty(newMsg.reply_to.quote_text)) {
                         newMsg.reply_to.quote = true;
@@ -4490,7 +4501,10 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                         newMsg.reply_to.quote = false;
                         replyQuote = ChatActivity.ReplyQuote.from(replyToMsg);
                     }
-                    if (replyQuote != null) {
+                    if (replyQuote != null && replyQuote.todo && replyQuote.task != null) {
+                        newMsg.reply_to.flags |= 2048;
+                        newMsg.reply_to.todo_item_id = replyQuote.task.id;
+                    } else if (replyQuote != null && !replyQuote.todo) {
                         if (replyToMsg.messageOwner != null && replyToMsg.messageOwner.media != null) {
                             newMsg.reply_to.flags |= 256;
                             newMsg.reply_to.reply_media = replyToMsg.messageOwner.media;

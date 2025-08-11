@@ -603,14 +603,30 @@ public class LanguageSelectActivity extends BaseFragment implements Notification
                 }
                 return searchResult.size();
             } else {
-                int count = sortedLanguages.size();
-                if (count != 0) {
+                int count = 0;
+                count++;
+                if (getMessagesController().isTranslationsManualEnabled() || getMessagesController().isTranslationsAutoEnabled()) {
                     count++;
+                    if (getMessagesController().isTranslationsManualEnabled()) {
+                        count++;
+                    }
+                    if (getMessagesController().isTranslationsAutoEnabled() && !getMessagesController().premiumFeaturesBlocked()) {
+                        count++;
+                    }
+                    if (getChatValue() || getContextValue()) {
+                        count++;
+                    }
+                    count++;
+                    if (!("system".equals(getMessagesController().translationsManualEnabled) && "system".equals(getMessagesController().translationsAutoEnabled))) {
+                        count++;
+                    }
                 }
+                count++;
+                count += sortedLanguages.size();
                 if (!unofficialLanguages.isEmpty()) {
                     count += unofficialLanguages.size() + 1;
                 }
-                return 4 + (getMessagesController().premiumFeaturesBlocked() ? 0 : 1) + (getChatValue() || getContextValue() ? 1 : 0) + 1 + count;
+                return count;
             }
         }
 
@@ -789,7 +805,7 @@ public class LanguageSelectActivity extends BaseFragment implements Notification
                 }
                 case VIEW_TYPE_HEADER: {
                     HeaderCell header = (HeaderCell) holder.itemView;
-                    header.setText(position == 0 ? LocaleController.getString(R.string.TranslateMessages) : LocaleController.getString(R.string.Language));
+                    header.setText(position == 0 && (getMessagesController().isTranslationsManualEnabled() || getMessagesController().isTranslationsAutoEnabled()) ? LocaleController.getString(R.string.TranslateMessages) : LocaleController.getString(R.string.Language));
                     break;
                 }
             }

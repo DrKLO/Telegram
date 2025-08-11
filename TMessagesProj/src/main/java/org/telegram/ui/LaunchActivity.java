@@ -42,6 +42,7 @@ import android.os.StatFs;
 import android.os.StrictMode;
 import android.os.SystemClock;
 import android.provider.ContactsContract;
+import android.provider.MediaStore;
 import android.provider.Settings;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
@@ -211,6 +212,7 @@ import org.telegram.ui.Stars.SuperRippleFallback;
 import org.telegram.ui.Stories.StoriesController;
 import org.telegram.ui.Stories.StoriesListPlaceProvider;
 import org.telegram.ui.Stories.StoryViewer;
+import org.telegram.ui.Stories.recorder.StoryEntry;
 import org.telegram.ui.Stories.recorder.StoryRecorder;
 import org.telegram.ui.bots.BotWebViewAttachedSheet;
 import org.telegram.ui.bots.BotWebViewSheet;
@@ -219,6 +221,7 @@ import org.webrtc.voiceengine.WebRtcAudioTrack;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
@@ -3708,7 +3711,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                 ((ChatActivity) lastFragment).setHighlightQuote(messageId, quote, quoteOffset);
             }
             ((ChatActivity) lastFragment).highlightTaskId = taskId;
-            ((ChatActivity) lastFragment).scrollToMessageId(messageId, fromMessageId, true, 0, true, 0, null);
+            ((ChatActivity) lastFragment).scrollToMessageId(messageId, fromMessageId, true, 0, true, 0, null, null);
         } else {
             Bundle args = new Bundle();
             args.putLong("chat_id", chat.id);
@@ -3733,7 +3736,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                     chatActivity.highlightTaskId = taskId;
                     chatActivity.setHighlightMessageId(messageId);
                 }
-                chatActivity.scrollToMessageId(messageId, fromMessageId, true, 0, true, 0, null);
+                chatActivity.scrollToMessageId(messageId, fromMessageId, true, 0, true, 0, null, null);
             }
             presentFragment(chatActivity);
         }
@@ -3926,14 +3929,14 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         VoIPHelper.startCall(chat, null, hash, false, this, mainFragmentsStack.get(mainFragmentsStack.size() - 1), accountInstance);
     }
 
-    public void openMessage(long dialogId, int messageId, String quote, final Browser.Progress progress, int fromMessageId, final int quoteOffset) {
+    public void openMessage(long dialogId, int messageId, String quote, final Browser.Progress progress, int fromMessageId, final int quoteOffset, Integer task_id) {
         if (dialogId < 0) {
             TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-dialogId);
             if (chat != null && ChatObject.isForum(chat)) {
                 if (progress != null) {
                     progress.init();
                 }
-                openForumFromLink(dialogId, messageId, quote, null, () -> {
+                openForumFromLink(dialogId, messageId, quote, task_id, () -> {
                     if (progress != null) {
                         progress.end();
                     }
@@ -3950,7 +3953,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         } else {
             TLRPC.Chat chatLocal = MessagesController.getInstance(currentAccount).getChat(-dialogId);
             if (chatLocal != null && chatLocal.forum) {
-                openForumFromLink(dialogId, messageId, quote, null, () -> {
+                openForumFromLink(dialogId, messageId, quote, task_id, () -> {
                     if (progress != null) {
                         progress.end();
                     }
@@ -3964,7 +3967,11 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         if (lastFragment == null || MessagesController.getInstance(currentAccount).checkCanOpenChat(args, lastFragment)) {
             AndroidUtilities.runOnUIThread(() -> {
                 ChatActivity chatActivity = new ChatActivity(args);
-                chatActivity.setHighlightQuote(messageId, quote, quoteOffset);
+                if (task_id != null) {
+                    chatActivity.highlightTaskId = task_id;
+                } else {
+                    chatActivity.setHighlightQuote(messageId, quote, quoteOffset);
+                }
                 if (!(AndroidUtilities.isTablet() ? rightActionBarLayout : getActionBarLayout()).presentFragment(chatActivity) && dialogId < 0) {
                     TLRPC.TL_channels_getChannels req = new TLRPC.TL_channels_getChannels();
                     TLRPC.TL_inputChannel inputChannel = new TLRPC.TL_inputChannel();
@@ -3982,7 +3989,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                                 MessagesController.getInstance(currentAccount).putChats(res.chats, false);
                                 TLRPC.Chat chat = res.chats.get(0);
                                 if (chat != null && chat.forum) {
-                                    openForumFromLink(-dialogId, messageId, null);
+                                    openForumFromLink(-dialogId, messageId, null, task_id, null, 0, -1);
                                 }
                                 if (lastFragment == null || MessagesController.getInstance(currentAccount).checkCanOpenChat(args, lastFragment)) {
                                     ChatActivity chatActivity2 = new ChatActivity(args);
@@ -4631,6 +4638,9 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                             }
                             if (messageId != null) {
                                 args.putInt("message_id", messageId);
+                                if (taskId != null) {
+                                    args.putInt("task_id", taskId);
+                                }
                             }
                             if (voicechat != null) {
                                 args.putString("voicechat", voicechat);
@@ -4679,13 +4689,13 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                                             topicId = (long) (int) messageId;
                                         }
                                         if (topicId != null && topicId != 0) {
-                                            openForumFromLink(dialog_id, messageId, () -> {
+                                            openForumFromLink(dialog_id, messageId, null, taskId, () -> {
                                                 try {
                                                     dismissLoading.run();
                                                 } catch (Exception e) {
                                                     FileLog.e(e);
                                                 }
-                                            });
+                                            }, 0, -1);
                                         } else {
                                             Bundle bundle = new Bundle();
                                             bundle.putLong("chat_id", -dialog_id);
@@ -5742,10 +5752,6 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         }));
     }
 
-    private void openForumFromLink(long dialogId, Integer messageId, Runnable onOpened) {
-        openForumFromLink(dialogId, messageId, null, null, onOpened, 0, -1);
-    }
-
     private void openForumFromLink(long dialogId, Integer messageId, String quote, Integer taskId, Runnable onOpened, int fromMessageId, int quoteOffset) {
         if (messageId == null) {
             Bundle bundle = new Bundle();
@@ -6048,6 +6054,74 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
     public void onNewIntent(Intent intent, Browser.Progress progress) {
         super.onNewIntent(intent);
         handleIntent(intent, true, false, false, progress, true, false);
+    }
+
+    @Override
+    public boolean canSelectStories() {
+        return photoPathsArray != null && photoPathsArray.size() == 1 || videoPath != null;
+    }
+
+    @Override
+    public boolean didSelectStories(DialogsActivity dialogsFragment) {
+        StoryEntry entry = null;
+        if (photoPathsArray != null && !photoPathsArray.isEmpty()) {
+            entry = StoryEntry.fromMedia(photoPathsArray);
+        } else if (videoPath != null) {
+            MediaController.PhotoEntry pEntry = new MediaController.PhotoEntry(0, 0, 0, videoPath, 0, true, 0, 0, 0);
+            try {
+                final Bitmap bitmap = SendMessagesHelper.createVideoThumbnail(videoPath, MediaStore.Video.Thumbnails.MINI_KIND);
+                final String fileName = Integer.MIN_VALUE + "_" + SharedConfig.getLastLocalId() + ".jpg";
+                File cacheFile = new File(FileLoader.getDirectory(FileLoader.MEDIA_DIR_CACHE), fileName);
+                FileOutputStream stream = null;
+                try {
+                    stream = new FileOutputStream(cacheFile);
+                    bitmap.compress(Bitmap.CompressFormat.JPEG, 87, stream);
+                    pEntry.thumbPath = cacheFile.getAbsolutePath();
+                } catch (Throwable e) {
+                    cacheFile = null;
+                    FileLog.e(e);
+                } finally {
+                    if (stream != null) {
+                        try {
+                            stream.close();
+                        } catch (Throwable ignore) {
+                        }
+                    }
+                }
+            } catch (Throwable t) {}
+            entry = StoryEntry.fromPhotoEntry(pEntry);
+        }
+
+        if (entry == null) {
+            return false;
+        }
+
+        final StoriesController.StoryLimit storyLimit = MessagesController.getInstance(currentAccount).getStoriesController().checkStoryLimit();
+        if (dialogsFragment != null && storyLimit != null && storyLimit.active(currentAccount, 1)) {
+            dialogsFragment.showDialog(new LimitReachedBottomSheet(dialogsFragment, this, storyLimit.getLimitReachedType(), currentAccount, null));
+            return false;
+        }
+
+        entry.isShare = true;
+        entry.fileDeletable = false;
+
+        StoryRecorder editor = StoryRecorder.getInstance(this, currentAccount);
+        editor.openEdit(null, entry, 0, true);
+
+        if (dialogsFragment != null) {
+            dialogsFragment.finishFragment();
+        }
+
+        photoPathsArray = null;
+        videoPath = null;
+        voicePath = null;
+        sendingText = null;
+        documentsPathsArray = null;
+        documentsOriginalPathsArray = null;
+        contactsToSend = null;
+        contactsToSendUri = null;
+        exportingChatUri = null;
+        return true;
     }
 
     @Override

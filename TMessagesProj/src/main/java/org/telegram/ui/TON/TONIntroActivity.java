@@ -666,7 +666,7 @@ public class TONIntroActivity extends GradientHeaderActivity implements Notifica
             footerView = new FrameLayout(context);
 
             topUpButton = new ButtonWithCounterView(getContext(), getResourcesProvider());
-            footerView.addView(topUpButton, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48, Gravity.CENTER, 20, 20, 20, 20));
+            footerView.addView(topUpButton, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48, Gravity.CENTER, 20, 10, 20, 20));
 
             if (canToUpFragment || allowTopUp()) {
                 topUpButton.setText(getString(R.string.TopUpViaFragment), false);
@@ -743,7 +743,7 @@ public class TONIntroActivity extends GradientHeaderActivity implements Notifica
                 topView.addView(iconView, LayoutHelper.createFrame(170, 170, Gravity.CENTER, 0, 32, 0, 24));
                 iconView.setPaused(false);
 
-                addView(topView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 150));
+                addView(topView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 180));
 
                 titleView = new TextView(context);
                 titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);

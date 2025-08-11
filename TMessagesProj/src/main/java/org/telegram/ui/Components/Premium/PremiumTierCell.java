@@ -250,7 +250,11 @@ public class PremiumTierCell extends ViewGroup {
 
         switch (tier.getMonths()) {
             default:
-                titleView.setText(LocaleController.formatPluralString("Months", tier.getMonths()));
+                titleView.setText(
+                    tier.getMonths() > 12 && tier.getMonths() % 12 == 0 ?
+                        LocaleController.formatPluralString("PremiumTierAnnualYears", tier.getMonths() / 12) :
+                        LocaleController.formatPluralString("Months", tier.getMonths())
+                );
                 break;
             case 12:
                 titleView.setText(LocaleController.getString(R.string.PremiumTierAnnual));

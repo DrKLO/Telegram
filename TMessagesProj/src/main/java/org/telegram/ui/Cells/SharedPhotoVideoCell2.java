@@ -2,6 +2,7 @@ package org.telegram.ui.Cells;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
 import static org.telegram.messenger.AndroidUtilities.dpf2;
+import static org.telegram.messenger.LocaleController.getString;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
@@ -53,6 +54,7 @@ import org.telegram.ui.Components.AnimatedFloat;
 import org.telegram.ui.Components.AnimatedTextView;
 import org.telegram.ui.Components.CanvasButton;
 import org.telegram.ui.Components.CheckBoxBase;
+import org.telegram.ui.Components.ColoredImageSpan;
 import org.telegram.ui.Components.CombinedDrawable;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.FlickerLoadingView;
@@ -123,6 +125,8 @@ public class SharedPhotoVideoCell2 extends FrameLayout {
     private float spoilerRevealY;
     private float spoilerMaxRadius;
     private SpoilerEffect2 mediaSpoilerEffect2;
+    private final Path rectPath = new Path();
+    private Text sensitiveText, sensitiveTextShort, sensitiveTextShort2;
 
     public final static int STYLE_SHARED_MEDIA = 0;
     public final static int STYLE_CACHE = 1;
@@ -579,6 +583,63 @@ public class SharedPhotoVideoCell2 extends FrameLayout {
                     mediaSpoilerEffect.draw(canvas);
                 }
                 canvas.restore();
+
+                if (currentMessageObject.isSensitive()) {
+                    if (sensitiveText == null) {
+                        SpannableStringBuilder sensitiveTextString = new SpannableStringBuilder("x " + getString(R.string.MessageSensitiveContent));
+                        ColoredImageSpan span = new ColoredImageSpan(R.drawable.filled_sensitive);
+                        sensitiveTextString.setSpan(span, 0, 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                        sensitiveText = new Text(sensitiveTextString, 14, AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+                    }
+                    int textPadding = 13, textHeight = 32;
+                    Text text = sensitiveText;
+                    if (imageWidth < 2 * dp(textPadding) + text.getCurrentWidth()) {
+                        if (sensitiveTextShort == null) {
+                            SpannableStringBuilder sensitiveTextString = new SpannableStringBuilder("x " + getString(R.string.MessageSensitiveContentShort));
+                            ColoredImageSpan span = new ColoredImageSpan(R.drawable.filled_sensitive);
+                            sensitiveTextString.setSpan(span, 0, 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                            sensitiveTextShort = new Text(sensitiveTextString, 14, AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+                        }
+                        text = sensitiveTextShort;
+                    }
+                    if (imageWidth < 2 * dp(textPadding + textPadding) + text.getCurrentWidth()) {
+                        if (sensitiveTextShort2 == null) {
+                            SpannableStringBuilder sensitiveTextString = new SpannableStringBuilder(getString(R.string.MessageSensitiveContentShort));
+                            sensitiveTextShort2 = new Text(sensitiveTextString, 13, AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+                        }
+                        text = sensitiveTextShort2;
+                        textPadding = 10;
+                        textHeight = 28;
+                    }
+
+                    final float cx = imageReceiver.getImageX() + imageReceiver.getImageWidth() / 2f;
+                    final float cy = imageReceiver.getImageY() + imageReceiver.getImageHeight() / 2f;
+                    final float w = text.getCurrentWidth() + dp(textPadding + textPadding);
+                    final float h = dp(textHeight), r = h / 2f;
+                    float s = AndroidUtilities.lerp(.8f, 1f, 1f - spoilerRevealProgress);
+                    AndroidUtilities.rectTmp.set(cx - w / 2f * s, cy - h / 2f * s, cx + w / 2f * s, cy + h / 2f * s);
+
+                    rectPath.reset();
+                    rectPath.addRoundRect(AndroidUtilities.rectTmp, r, r, Path.Direction.CW);
+                    canvas.save();
+                    canvas.clipPath(rectPath);
+                    float wasAlpha = blurImageReceiver.getAlpha();
+                    blurImageReceiver.setAlpha((1f - spoilerRevealProgress) * wasAlpha);
+                    blurImageReceiver.draw(canvas);
+                    blurImageReceiver.setAlpha(wasAlpha);
+                    canvas.restore();
+
+                    final Paint timeBackgroundPaint = Theme.getThemePaint(Theme.key_paint_chatTimeBackground);
+                    int oldAlpha = timeBackgroundPaint.getAlpha();
+                    timeBackgroundPaint.setAlpha((int) (oldAlpha * (1f - spoilerRevealProgress) * .35f));
+                    canvas.drawRoundRect(AndroidUtilities.rectTmp, r, r, timeBackgroundPaint);
+                    timeBackgroundPaint.setAlpha(oldAlpha);
+
+                    canvas.save();
+                    canvas.scale(s, s, cx, cy);
+                    text.draw(canvas, cx - w / 2f + dp(textPadding), cy, 0xFFFFFFFF, 1f - spoilerRevealProgress);
+                    canvas.restore();
+                }
 
                 invalidate();
             }

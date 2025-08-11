@@ -5369,6 +5369,7 @@
     <string name="PremiumPreviewAnimatedProfilesDescription">Video avatars animated in chat lists and chats to allow for additional self-expression.</string>
     <string name="SubscribeToPremium">Subscribe for %s per month</string>
     <string name="SubscribeToPremiumPerYear">Subscribe for %s per year</string>
+    <string name="SubscribeToPremiumPerCustom">Subscribe for %1$s / %2$s</string>
     <string name="UpgradePremiumPerMonth">Upgrade for %s per year</string>
     <string name="UpgradePremiumPerYear">Upgrade for %s per year</string>
     <string name="SubscribeToPremiumNoPrice">Subscribe</string>
@@ -5435,6 +5436,8 @@
     <string name="AboutPremiumTitle">About Telegram Premium</string>
     <string name="AboutPremiumDescription">While the free version of Telegram already gives its users more than any other messaging application, **Telegram Premium** pushes its capabilities even further.</string>
     <string name="AboutPremiumDescription2">**Telegram Premium** is a paid option, because most Premium Features require additional expenses from Telegram to third parties such as data center providers and server manufacturers. Contributions from **Telegram Premium** users allow us to cover such costs and also help Telegram stay free for everyone.</string>
+    <string name="PremiumTierAnnualYears_one">%d-Year</string>
+    <string name="PremiumTierAnnualYears_other">%d-Year</string>
     <string name="PremiumTierAnnual">Annual</string>
     <string name="PremiumTierSemiannual">Semiannual</string>
     <string name="PremiumTierMonthly">Monthly</string>
@@ -7081,6 +7084,8 @@
     <string name="ReplyToDialog">Reply to…</string>
     <string name="ReplyTo">Reply to %s</string>
     <string name="ReplyToQuote">Reply to quote by %s</string>
+    <string name="ReplyToTask">Reply to checklist task</string>
+    <string name="ReplyToTaskIn">Reply to item in %s</string>
     <string name="PreviewQuoteUpdate">Update Quote</string>
     <string name="PreviewQuoteUpdateSubtitle">You can edit or remove the quote</string>
     <string name="ClearQuote">Clear Quote</string>
@@ -7941,7 +7946,11 @@
     <string name="MessageShowSensitiveContentMediaTitle">18+ Content</string>
     <string name="MessageShowSensitiveContentChannelTitle">18+ Content</string>
     <string name="MessageShowSensitiveContentMediaText">This media may contain sensitive content suitable only for adults. Do you still want to view it?</string>
+    <string name="MessageShowSensitiveContentMediaTextClosed">This media may contain sensitive content suitable only for adults.</string>
+    <string name="MessageShowSensitiveContentMediaTextClosedButton">Cancel</string>
     <string name="MessageShowSensitiveContentChannelText">This chat may contain sensitive content suitable only for adults. Do you still want to view it?</string>
+    <string name="MessageShowSensitiveContentChannelTextClosed">This chat may contain sensitive content suitable only for adults.</string>
+    <string name="MessageShowSensitiveContentChannelTextClosedButton">Cancel</string>
     <string name="MessageShowSensitiveContentAlways">Always show 18+ media</string>
     <string name="MessageShowSensitiveContentButton">View Anyway</string>
     <string name="SensitiveContentSettingsToast">You can update the visibility of sensitive media in **Chat Settings > Show 18+ Content**</string>
@@ -8534,6 +8543,7 @@
     <string name="Gift2TabResale">Resale</string>
     <string name="Gift2TransferMine">Transfer</string>
     <string name="Gift2LimitedRibbon">limited</string>
+    <string name="Gift2LimitedPremium">premium</string>
     <string name="Gift2LimitedSlider">Limited</string>
     <string name="Gift2Limited1OfRibbon">1 of %s</string>
     <string name="StarsGiftCompleted">Gift sent!</string>
@@ -8958,6 +8968,8 @@
     <string name="Gift2ChannelDoesntSupportGiftsText">This channel can\'t receive any star gifts.</string>
     <string name="Gift2CollectionNumber_one">Collectible #%d</string>
     <string name="Gift2CollectionNumber_other">Collectible #%d</string>
+    <string name="Gift2CollectionNumberBy_one">Collectible #%1$d by **%2$s**</string>
+    <string name="Gift2CollectionNumberBy_other">Collectible #%1$d by **%2$s**</string>
     <string name="Gift2Owner">Owner</string>
     <string name="Gift2OwnerChange">transfer</string>
     <string name="Gift2AttributeModel">Model</string>
@@ -9351,10 +9363,15 @@
 
     <string name="SuggestionAgreementReachedUser2">💰 You have been charged ⭐️ **%s**.</string>
     <string name="SuggestionAgreementReachedAdmin2">💰 **%s** has been charged ⭐️ **%s**.</string>
-    <string name="SuggestionAgreementReachedUser3">⏳ **%s** will receive your Stars once the post has been live for **%d** hours.</string>
-    <string name="SuggestionAgreementReachedAdmin3">⏳ **%s** will receive the Stars once the post has been live for **%d** hours.</string>
-    <string name="SuggestionAgreementReachedUser4">🔁 If **%s** removes the post before it has been live for **%d** hours, your Stars will be refunded.</string>
-    <string name="SuggestionAgreementReachedAdmin4">🔁 If **%s** removes the post before it has been live for **%d** hours, Stars will be refunded to user.</string>
+    <string name="SuggestionAgreementReachedUser3Stars">⏳ **%s** will receive your **Stars** once the post has been live for **%d** hours.</string>
+    <string name="SuggestionAgreementReachedAdmin3Stars">⏳ **%s** will receive the **Stars** once the post has been live for **%d** hours.</string>
+    <string name="SuggestionAgreementReachedUser4Stars">🔁 If **%s** removes the post before it has been live for **%d** hours, your **Stars** will be refunded.</string>
+    <string name="SuggestionAgreementReachedAdmin4Stars">🔁 If **%s** removes the post before it has been live for **%d** hours, **Stars** will be refunded to user.</string>
+
+    <string name="SuggestionAgreementReachedUser3TON">⏳ **%s** will receive your **TON** once the post has been live for **%d** hours.</string>
+    <string name="SuggestionAgreementReachedAdmin3TON">⏳ **%s** will receive the **TON** once the post has been live for **%d** hours.</string>
+    <string name="SuggestionAgreementReachedUser4TON">🔁 If **%s** removes the post before it has been live for **%d** hours, your **TON** will be refunded.</string>
+    <string name="SuggestionAgreementReachedAdmin4TON">🔁 If **%s** removes the post before it has been live for **%d** hours, **TON** will be refunded to user.</string>
 
     <string name="SuggestionAgreementDeclinedYou">❌ **%s** rejected your message.</string>
     <string name="SuggestionAgreementDeclinedThis">❌ **%s** rejected this message.</string>
@@ -9386,13 +9403,13 @@
     <string name="SuggestedOfferStars">Offer Stars</string>
     <string name="SuggestedOfferTON">Offer TON</string>
 
-    <string name="SuggestedOfferRefundByAdminAmount">⭐️ %3$s was returned to %1$s because %2$s deleted the message</string>
-    <string name="SuggestedOfferRefundByUserAmount">%2$s will not receive ⭐️ %3$s because %1$s requested a refund</string>
+    <string name="SuggestedOfferRefundByAdminAmountF">⭐️ %3$s was returned to %1$s because %2$s deleted the message</string>
+    <string name="SuggestedOfferRefundByUserAmountF">%2$s will not receive ⭐️ %3$s because %1$s requested a refund</string>
 
     <string name="SuggestedOfferRefundByAdminAmountUnknown">The funds was returned to %1$s because %2$s deleted the message</string>
     <string name="SuggestedOfferRefundByUserAmountUnknown">%2$s will not receive funds because %1$s requested a refund</string>
 
-    <string name="SuggestedOfferCompleteAmount">%1$s has received ⭐️ %2$s for publishing post</string>
+    <string name="SuggestedOfferCompleteAmountF">%1$s has received ⭐️ %2$s for publishing post</string>
     <string name="SuggestedOfferCompleteAmountUnknown">%1$s has received funds for publishing post</string>
 
     <string name="TopicsTitle">Topics</string>
@@ -9483,4 +9500,51 @@
     <string name="MessageTodoList">Checklist</string>
     <string name="TodoCheck">Check</string>
     <string name="TodoUncheck">Uncheck</string>
+    <string name="Gift2ReleasedBy">released by **%s**</string>
+    <string name="Gift2ActionReleasedBy">Released by **%s**</string>
+    <string name="StoriesRemoveFromRecent">Remove from Recent</string>
+    <string name="TodoItemQuote">Reply to Item</string>
+    <string name="Gift2CollectionAll">All Gifts</string>
+    <string name="ProfileGiftsAdd">Add Gifts</string>
+    <string name="AgeVerificationTitle">Age Verification</string>
+    <string name="AgeVerificationTextGB">To access such content, you must confirm that you are at least **18** years old as required by UK law.\n\nThis is a one-time process using your phone\'s camera. Your selfie will not be stored by Telegram.</string>
+    <string name="AgeVerificationButton">Verify My Age</string>
+    <string name="AgeVerificationFailedTitle">Age Check Failed</string>
+    <string name="AgeVerificationFailedText">Sorry, you can\'t view 18+ content.</string>
+    <string name="AgeVerificationPassedTitle">Age Check Passed</string>
+    <string name="AgeVerificationNeedCameraPermission">Telegram needs access to your camera so that you can confirm your age.</string>
+    <string name="ProfileLevelInfo">Profile level reflects the\nuser\'s payment reliability.</string>
+    <string name="ProfileLevelLevel">Level</string>
+    <string name="StoriesForwardTitle">Your Stories</string>
+    <string name="StoriesForwardText">Forward to stories</string>
+    <string name="Gift2CollectionEmptyTitle">Organize Your Gifts</string>
+    <string name="Gift2CollectionEmptyText">Add some of your gifts to this collection.</string>
+    <string name="Gift2CollectionEmptyButton">Add to Collection</string>
+    <string name="Gift2AddToCollection">Add to Collection</string>
+    <string name="Gift2NewCollection">Add Collection</string>
+    <string name="Gift2EditCollectionNameTitle">Edit Name</string>
+    <string name="Gift2NewCollectionTitle">Create a New Collection</string>
+    <string name="Gift2NewCollectionText">Choose a name for your collection and start adding your gifts there.</string>
+    <string name="Gift2NewCollectionHint">Title</string>
+    <string name="Gift2CollectionAddGiftsTitle">Add Gifts</string>
+    <string name="Gift2CollectionAddGiftsButton">Add Gifts</string>
+    <string name="Gift2RemoveFromCollection">Remove From Collection</string>
+    <string name="Gift2CollectionsAdd">Add Gifts</string>
+    <string name="Gift2CollectionsReorder">Reorder</string>
+    <string name="Gift2CollectionsRename">Edit Name</string>
+    <string name="Gift2CollectionsDelete">Delete Collection</string>
+    <string name="Gift2PremiumTitle">Premium Gift</string>
+    <string name="Gift2PremiumSubtitle">Subscribe to **Telegram Premium** to send these gifts and unlock access to multiple additional features.</string>
+    <string name="Gift2PremiumSubtitleMany_one">Subscribe to **Telegram Premium** to send up to **%d** of these gifts and unlock access to multiple additional features.</string>
+    <string name="Gift2PremiumSubtitleMany_other">Subscribe to **Telegram Premium** to send up to **%d** of these gifts and unlock access to multiple additional features.</string>
+    <string name="Gift2SentRemainsLimit_one">You can send **%d** more.</string>
+    <string name="Gift2SentRemainsLimit_other">You can send **%d** more.</string>
+    <string name="Gift2PerUserLimit_one">You\'ve already sent **%d** of these gifts, and it\'s the limit.</string>
+    <string name="Gift2PerUserLimit_other">You\'ve already sent **%d** of these gifts, and it\'s the limit.</string>
+    <string name="Gift2AddedToCollection">**%1$s** added to **%2$s**.</string>
+    <string name="Gift2AddedToCollectionMany_one">**%1$d gift** added to **%2$s**.</string>
+    <string name="Gift2AddedToCollectionMany_other">**%1$d gifts** added to **%2$s**.</string>
+    <string name="Gift2RemovedFromCollection">**%1$s** removed from **%2$s**.</string>
+    <string name="Gift2RemovedFromCollectionMany_one">**%1$d gift** removed from **%2$s**.</string>
+    <string name="Gift2RemovedFromCollectionMany_other">**%1$d gifts** removed from **%2$s**.</string>
 </resources>

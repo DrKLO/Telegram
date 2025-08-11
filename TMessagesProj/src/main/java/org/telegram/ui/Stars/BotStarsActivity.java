@@ -590,7 +590,7 @@ public class BotStarsActivity extends BaseFragment implements NotificationCenter
     private final ArrayList<TL_stars.StarsTransaction> tonTransactions = new ArrayList<>();
     private String tonTransactionsLastOffset = "";
     private void loadTonTransactions() {
-        if (tonTransactionsLoading || tonTransactionsEndReached) return;
+        if (tonTransactionsLoading || tonTransactionsEndReached || tonTransactionsLastOffset == null) return;
         tonTransactionsLoading = true;
         TL_stars.TL_payments_getStarsTransactions req = new TL_stars.TL_payments_getStarsTransactions();
         req.ton = true;
@@ -600,9 +600,11 @@ public class BotStarsActivity extends BaseFragment implements NotificationCenter
         ConnectionsManager.getInstance(currentAccount).sendRequest(req, (res, err) -> AndroidUtilities.runOnUIThread(() -> {
             if (res instanceof TL_stars.StarsStatus) {
                 TL_stars.StarsStatus r = (TL_stars.StarsStatus) res;
+                MessagesController.getInstance(currentAccount).putUsers(r.users, false);
+                MessagesController.getInstance(currentAccount).putChats(r.chats, false);
                 tonTransactionsLastOffset = r.next_offset;
                 tonTransactions.addAll(r.history);
-                tonTransactionsEndReached = r.history.isEmpty();
+                tonTransactionsEndReached = r.history.isEmpty() || r.next_offset == null;
             } else if (err != null) {
                 BulletinFactory.showError(err);
                 tonTransactionsEndReached = true;

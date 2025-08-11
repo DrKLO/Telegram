@@ -65,7 +65,7 @@ public class StoryPrivacyButton extends View {
             setIcon(R.drawable.msg_folders_private, 17.33f);
             setupGradient(0xFFC468F2, 0xFF965CFA);
             crossfadeT.set(animated, true);
-        } else if (storyItem.selected_contacts) {
+        } else if (storyItem.selected_contacts || mine && (storyItem.privacy == null || storyItem.privacy.isEmpty())) {
             setIcon(R.drawable.msg_folders_groups, 17.33f);
             setupGradient(0xFFFFB743, 0xFFF68E34);
             crossfadeT.set(animated, true);

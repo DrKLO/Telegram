@@ -1,34 +1,63 @@
 package org.telegram.ui.Gifts;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
+import static org.telegram.messenger.AndroidUtilities.ilerp;
+import static org.telegram.messenger.AndroidUtilities.lerp;
+import static org.telegram.messenger.LocaleController.formatPluralStringComma;
 import static org.telegram.messenger.LocaleController.formatString;
 import static org.telegram.messenger.LocaleController.getString;
+import static org.telegram.messenger.Utilities.clamp01;
 import static org.telegram.ui.Stars.StarGiftSheet.getGiftName;
 import static org.telegram.ui.Stars.StarGiftSheet.isMineWithActions;
 
+import android.app.Activity;
 import android.content.Context;
+import android.content.DialogInterface;
+import android.graphics.Canvas;
+import android.graphics.ColorFilter;
 import android.graphics.Paint;
+import android.graphics.PixelFormat;
+import android.graphics.Rect;
+import android.graphics.drawable.Drawable;
+import android.text.Editable;
+import android.text.InputType;
+import android.text.SpannableString;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
+import android.text.SpannedString;
+import android.text.TextPaint;
+import android.text.TextWatcher;
+import android.transition.TransitionManager;
 import android.util.Pair;
 import android.util.TypedValue;
 import android.view.Gravity;
+import android.view.HapticFeedbackConstants;
+import android.view.KeyEvent;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowManager;
+import android.view.inputmethod.EditorInfo;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
+import android.widget.ScrollView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.recyclerview.widget.DefaultItemAnimator;
+import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import org.aspectj.lang.annotation.AdviceName;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.BirthdayController;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
@@ -38,14 +67,28 @@ import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.tl.TL_stars;
+import org.telegram.ui.ActionBar.ActionBar;
+import org.telegram.ui.ActionBar.ActionBarMenu;
+import org.telegram.ui.ActionBar.ActionBarMenuItem;
+import org.telegram.ui.ActionBar.ActionBarMenuSubItem;
+import org.telegram.ui.ActionBar.AlertDialog;
+import org.telegram.ui.ActionBar.AlertDialogDecor;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Components.AnimatedColor;
+import org.telegram.ui.Components.AnimatedEmojiDrawable;
 import org.telegram.ui.Components.AnimatedEmojiSpan;
+import org.telegram.ui.Components.AnimatedTextView;
 import org.telegram.ui.Components.BackupImageView;
+import org.telegram.ui.Components.BottomSheetWithRecyclerListView;
+import org.telegram.ui.Components.Bulletin;
 import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.CheckBox2;
 import org.telegram.ui.Components.ColoredImageSpan;
+import org.telegram.ui.Components.CubicBezierInterpolator;
+import org.telegram.ui.Components.EditTextCaption;
+import org.telegram.ui.Components.ExtendedGridLayoutManager;
 import org.telegram.ui.Components.FlickerLoadingView;
 import org.telegram.ui.Components.ItemOptions;
 import org.telegram.ui.Components.LayoutHelper;
@@ -55,9 +98,11 @@ import org.telegram.ui.Components.RLottieDrawable;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.ScaleStateListAnimator;
 import org.telegram.ui.Components.TextHelper;
+import org.telegram.ui.Components.TransitionExt;
 import org.telegram.ui.Components.UItem;
 import org.telegram.ui.Components.UniversalAdapter;
 import org.telegram.ui.Components.UniversalRecyclerView;
+import org.telegram.ui.Components.ViewPagerFixed;
 import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.PeerColorActivity;
 import org.telegram.ui.ProfileActivity;
@@ -76,19 +121,18 @@ public class ProfileGiftsContainer extends FrameLayout implements NotificationCe
     private final int currentAccount;
     private final long dialogId;
     private final StarsController.GiftsList list;
+    public final StarsController.GiftsCollections collections;
     private final Theme.ResourcesProvider resourcesProvider;
+    private int backgroundColor;
 
-    private final FrameLayout emptyView;
-    private final TextView emptyViewTitle;
-    private final TextView emptyViewButton;
+    private final ViewPagerFixed viewPager;
+    private final ViewPagerFixed.TabsView tabsView;
 
-    private final UniversalRecyclerView listView;
-    private final ItemTouchHelper reorder;
     private final FrameLayout buttonContainer;
     private final View buttonShadow;
+    private final CharSequence sendGiftsToFriendsText, addGiftsText;
     private final ButtonWithCounterView button;
     private int buttonContainerHeightDp;
-    private boolean reordering;
 
     private final LinearLayout checkboxLayout;
     private final TextView checkboxTextView;
@@ -97,8 +141,760 @@ public class ProfileGiftsContainer extends FrameLayout implements NotificationCe
 
     private int checkboxRequestId = -1;
 
+    public ItemOptions currentMenu;
+
     protected int processColor(int color) {
         return color;
+    }
+
+    private CharSequence addCollectionTabText;
+    private void fillTabs(boolean animated) {
+        if (viewPager == null || tabsView == null) return;
+        viewPager.fillTabs(animated);
+    }
+
+    public static class Page extends FrameLayout implements NotificationCenter.NotificationCenterDelegate {
+
+        private final ProfileGiftsContainer parent;
+        private final int currentAccount;
+        private final Theme.ResourcesProvider resourcesProvider;
+
+        public boolean isCollection;
+        @Nullable
+        public StarsController.GiftsList list;
+
+        private final UniversalRecyclerView listView;
+        private final ItemTouchHelper reorder;
+
+        private boolean reordering;
+
+        public void update(boolean animated) {
+            if (listView == null || listView.adapter == null) return;
+            final boolean atTop = !listView.canScrollVertically(-1);
+            listView.adapter.update(animated);
+            if (atTop) {
+                listView.scrollToPosition(0);
+            }
+        }
+
+        public Page(ProfileGiftsContainer parent, int currentAccount, Theme.ResourcesProvider resourcesProvider) {
+            super(parent.getContext());
+
+            final Context context = parent.getContext();
+            this.parent = parent;
+            this.currentAccount = currentAccount;
+            this.resourcesProvider = resourcesProvider;
+
+            listView = new UniversalRecyclerView(context, currentAccount, 0, false, this::fillItems, this::onItemClick, this::onItemLongPress, resourcesProvider, 3, LinearLayoutManager.VERTICAL);
+            listView.adapter.setApplyBackground(false);
+            listView.setSelectorType(9);
+            listView.setSelectorDrawableColor(0);
+            listView.setPadding(dp(9), dp(12), dp(9), dp(30));
+            listView.setClipToPadding(false);
+            listView.setClipChildren(false);
+            addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.FILL));
+            listView.addOnScrollListener(new RecyclerView.OnScrollListener() {
+                @Override
+                public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
+                    if (isAttachedToWindow() && (!listView.canScrollVertically(1) || isLoadingVisible())) {
+                        list.load();
+                    }
+                }
+            });
+
+            reorder = new ItemTouchHelper(new ItemTouchHelper.Callback() {
+                private TL_stars.SavedStarGift getSavedGift(RecyclerView.ViewHolder holder) {
+                    if (holder.itemView instanceof GiftSheet.GiftCell) {
+                        final GiftSheet.GiftCell cell = (GiftSheet.GiftCell) holder.itemView;
+                        return cell.getSavedGift();
+                    }
+                    return null;
+                }
+                private boolean isPinnedAndSaved(TL_stars.SavedStarGift gift) {
+                    return gift != null && gift.pinned_to_top && !gift.unsaved;
+                }
+
+                private boolean canReorder(TL_stars.SavedStarGift gift) {
+                    if (!reordering) return false;
+                    if (list == parent.list) {
+                        return gift != null && gift.pinned_to_top;
+                    } else {
+                        return true;
+                    }
+                }
+
+                @Override
+                public boolean isLongPressDragEnabled() {
+                    return reordering;
+                }
+
+                @Override
+                public boolean isItemViewSwipeEnabled() {
+                    return reordering;
+                }
+
+                @Override
+                public int getMovementFlags(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder) {
+                    final TL_stars.SavedStarGift savedStarGift = getSavedGift(viewHolder);
+                    if (canReorder(savedStarGift)) {
+                        return makeMovementFlags(ItemTouchHelper.UP | ItemTouchHelper.DOWN | ItemTouchHelper.LEFT | ItemTouchHelper.RIGHT, 0);
+                    }
+                    return makeMovementFlags(0, 0);
+                }
+
+                @Override
+                public boolean onMove(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder, @NonNull RecyclerView.ViewHolder target) {
+                    if (list == null || !reordering) {
+                        return false;
+                    }
+                    if (!canReorder(getSavedGift(viewHolder)) || !canReorder(getSavedGift(target))) {
+                        return false;
+                    }
+                    final int fromPosition = viewHolder.getAdapterPosition();
+                    final int toPosition = target.getAdapterPosition();
+                    if (isCollection) {
+                        list.reorder(fromPosition, toPosition);
+                        parent.collections.updateIcon(list.collectionId);
+                    } else {
+                        list.reorderPinned(fromPosition, toPosition);
+                    }
+                    listView.adapter.notifyItemMoved(fromPosition, toPosition);
+                    listView.adapter.updateWithoutNotify();
+                    if (isCollection) {
+                        parent.fillTabs(true);
+                    }
+                    final BaseFragment lastFragment = LaunchActivity.getSafeLastFragment();
+                    if (lastFragment instanceof ProfileActivity && ((ProfileActivity) lastFragment).giftsView != null) {
+                        ((ProfileActivity) lastFragment).giftsView.update();
+                    }
+                    return true;
+                }
+
+                @Override
+                public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
+
+                }
+
+                @Override
+                public void onSelectedChanged(RecyclerView.ViewHolder viewHolder, int actionState) {
+                    if (actionState == ItemTouchHelper.ACTION_STATE_IDLE) {
+                        if (list != null) {
+                            list.reorderDone();
+                        }
+                    } else {
+                        if (listView != null) {
+                            listView.cancelClickRunnables(false);
+                        }
+                        if (viewHolder != null) {
+                            viewHolder.itemView.setPressed(true);
+                        }
+                    }
+                    super.onSelectedChanged(viewHolder, actionState);
+                }
+
+                @Override
+                public void clearView(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder) {
+                    super.clearView(recyclerView, viewHolder);
+                    viewHolder.itemView.setPressed(false);
+                }
+            });
+            reorder.attachToRecyclerView(listView);
+            updateEmptyView();
+        }
+
+        public void bind(boolean isCollection, StarsController.GiftsList list) {
+            if (this.list != null) {
+                NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.starUserGiftsLoaded);
+            }
+            this.isCollection = isCollection;
+            this.list = list;
+            if (list != null) {
+                list.load();
+            }
+            update(false);
+            if (this.list != null) {
+                NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.starUserGiftsLoaded);
+            }
+            if (emptyView2Layout != null) {
+                emptyView2Layout.setVisibility(parent.collections.isMine() ? View.VISIBLE : View.GONE);
+            }
+        }
+
+        private int visibleHeight = AndroidUtilities.displaySize.y;
+        public void setVisibleHeight(int height) {
+            this.visibleHeight = height;
+            final float alpha = clamp01(ilerp((float) visibleHeight, dp(150), dp(220)));
+            final float scale = lerp(0.6f, 1.0f, alpha);
+            if (emptyView1Layout != null) {
+                emptyView1Layout.setAlpha(alpha);
+                emptyView1Layout.setScaleX(scale);
+                emptyView1Layout.setScaleY(scale);
+            }
+            if (emptyView1 != null) {
+                emptyView1.setTranslationY(-(getMeasuredHeight() - visibleHeight) / 2.0f);
+            }
+            if (emptyView2Layout != null) {
+                emptyView2Layout.setAlpha(alpha);
+                emptyView2Layout.setScaleX(scale);
+                emptyView2Layout.setScaleY(scale);
+            }
+            if (emptyView2 != null) {
+                emptyView2.setTranslationY(-(getMeasuredHeight() - visibleHeight) / 2.0f);
+            }
+        }
+
+        @Override
+        protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+            super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+            setVisibleHeight(visibleHeight);
+        }
+
+        @Override
+        protected void onAttachedToWindow() {
+            super.onAttachedToWindow();
+            if (list != null) {
+                NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.starUserGiftsLoaded);
+            }
+        }
+
+        @Override
+        protected void onDetachedFromWindow() {
+            super.onDetachedFromWindow();
+            if (list != null) {
+                NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.starUserGiftsLoaded);
+            }
+        }
+
+        @Override
+        public void didReceivedNotification(int id, int account, Object... args) {
+            if (id == NotificationCenter.starUserGiftsLoaded) {
+                if (args[1] != list)
+                    return;
+
+                update(true);
+                if (list != null && isAttachedToWindow() && (!listView.canScrollVertically(1) || isLoadingVisible())) {
+                    list.load();
+                }
+            }
+        }
+
+        private FrameLayout emptyView1;
+        private LinearLayout emptyView1Layout;
+        private TextView emptyView1Title;
+        private TextView emptyView1Button;
+
+        private FrameLayout emptyView2;
+        private LinearLayout emptyView2Layout;
+        private TextView emptyView2Title;
+        private TextView emptyView2Subtitle;
+        private ButtonWithCounterView emptyView2Button;
+        private void updateEmptyView() {
+            if (emptyView1 != null) {
+                removeView(emptyView1);
+            }
+            if (emptyView2 != null) {
+                removeView(emptyView2);
+            }
+            if (parent.list == list) {
+                emptyView2 = null;
+                emptyView2Title = null;
+                emptyView2Subtitle = null;
+                emptyView2Button = null;
+                emptyView2Layout = null;
+
+                emptyView1 = new FrameLayout(getContext());
+
+                emptyView1Layout = new LinearLayout(getContext());
+                emptyView1Layout.setOrientation(LinearLayout.VERTICAL);
+                emptyView1.addView(emptyView1Layout, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER));
+
+                BackupImageView emptyView1Image = new BackupImageView(getContext());
+                emptyView1Image.setImageDrawable(new RLottieDrawable(R.raw.utyan_empty, "utyan_empty", dp(120), dp(120)));
+                emptyView1Layout.addView(emptyView1Image, LayoutHelper.createLinear(120, 120, Gravity.CENTER_HORIZONTAL, 0, 0, 0, 0));
+
+                emptyView1Title = new TextView(getContext());
+                emptyView1Title.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 17);
+                emptyView1Title.setTypeface(AndroidUtilities.bold());
+                emptyView1Title.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+                emptyView1Title.setText(LocaleController.getString(R.string.ProfileGiftsNotFoundTitle));
+                emptyView1Layout.addView(emptyView1Title, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 0, 12, 0, 0));
+
+                emptyView1Button = new TextView(getContext());
+                emptyView1Button.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+                emptyView1Button.setTextColor(Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider));
+                emptyView1Button.setText(LocaleController.getString(R.string.ProfileGiftsNotFoundButton));
+                emptyView1Button.setOnClickListener(v -> {
+                    if (list != null) {
+                        list.resetFilters();
+                    }
+                });
+                emptyView1Button.setPadding(dp(10), dp(4), dp(10), dp(4));
+                emptyView1Button.setBackground(Theme.createRadSelectorDrawable(Theme.multAlpha(Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider), .10f), 4, 4));
+                ScaleStateListAnimator.apply(emptyView1Button);
+                emptyView1Layout.addView(emptyView1Button, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 0, 8, 0, 0));
+
+                addView(emptyView1, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.FILL));
+                listView.setEmptyView(emptyView1);
+            } else {
+                emptyView1 = null;
+                emptyView1Title = null;
+                emptyView1Button = null;
+                emptyView1Layout = null;
+
+                emptyView2 = new FrameLayout(getContext());
+
+                emptyView2Layout = new LinearLayout(getContext());
+                emptyView2Layout.setOrientation(LinearLayout.VERTICAL);
+                emptyView2.addView(emptyView2Layout, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER));
+
+                emptyView2Title = new TextView(getContext());
+                emptyView2Title.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
+                emptyView2Title.setTypeface(AndroidUtilities.bold());
+                emptyView2Title.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+                emptyView2Title.setText(getString(R.string.Gift2CollectionEmptyTitle));
+                emptyView2Layout.addView(emptyView2Title, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 0, 0, 0, 0));
+
+                emptyView2Subtitle = new TextView(getContext());
+                emptyView2Subtitle.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+                emptyView2Subtitle.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText, resourcesProvider));
+                emptyView2Subtitle.setText(getString(R.string.Gift2CollectionEmptyText));
+                emptyView2Layout.addView(emptyView2Subtitle, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 0, 10, 0, 0));
+
+                emptyView2Button = new ButtonWithCounterView(getContext(), resourcesProvider);
+                emptyView2Button.setText(getString(R.string.Gift2CollectionEmptyButton), false);
+                emptyView2Layout.addView(emptyView2Button, LayoutHelper.createLinear(200, 44, Gravity.CENTER_HORIZONTAL, 0, 19, 0, 12));
+                emptyView2Button.setOnClickListener(v -> {
+                    parent.addGifts();
+                });
+
+                addView(emptyView2, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.FILL, 0, -12, 0, 0));
+                listView.setEmptyView(emptyView2);
+
+                if (emptyView2Layout != null) {
+                    emptyView2Layout.setVisibility(parent.collections.isMine() ? View.VISIBLE : View.GONE);
+                }
+            }
+        }
+
+        private boolean isLoadingVisible() {
+            for (int i = 0; i < listView.getChildCount(); ++i) {
+                if (listView.getChildAt(i) instanceof FlickerLoadingView)
+                    return true;
+            }
+            return false;
+        }
+
+        private void setReordering(boolean reordering) {
+            if (this.reordering == reordering) return;
+            this.reordering = reordering;
+            parent.updatedReordering(parent.isReordering());
+            for (int i = 0; i < listView.getChildCount(); ++i) {
+                final View child = listView.getChildAt(i);
+                if (child instanceof GiftSheet.GiftCell) {
+                    ((GiftSheet.GiftCell) child).setReordering(reordering, true);
+                }
+            }
+            if (listView.adapter != null) {
+                listView.adapter.updateWithoutNotify();
+            }
+            if (reordering) {
+                final BaseFragment lastFragment = LaunchActivity.getSafeLastFragment();
+                if (lastFragment instanceof ProfileActivity) {
+                    ((ProfileActivity) lastFragment).scrollToSharedMedia(false);
+                    AndroidUtilities.runOnUIThread(() -> {
+                        ((ProfileActivity) lastFragment).scrollToSharedMedia(true);
+                    });
+                }
+            }
+        }
+
+        public void resetReordering() {
+            if (!reordering) return;
+            if (list != null) {
+                list.sendPinnedOrder();
+            }
+            setReordering(false);
+        }
+
+        public boolean isReordering() {
+            return reordering;
+        }
+
+        public void fillItems(ArrayList<UItem> items, UniversalAdapter adapter) {
+            if (list == null)
+                return;
+            if (list.hasFilters() && list.gifts.size() <= 0 && list.endReached && !list.loading)
+                return;
+            final int spanCount = Math.max(1, list == null || list.totalCount == 0 ? 3 : Math.min(3, list.totalCount));
+            if (list != null) {
+                int spanCountLeft = 3;
+                for (TL_stars.SavedStarGift userGift : list.gifts) {
+                    items.add(
+                        GiftSheet.GiftCell.Factory.asStarGift(0, userGift, true, false, isCollection)
+                            .setReordering(reordering && (list == parent.list ? userGift.pinned_to_top : true))
+                    );
+                    spanCountLeft--;
+                    if (spanCountLeft == 0) {
+                        spanCountLeft = 3;
+                    }
+                }
+                if (list.loading || !list.endReached) {
+                    for (int i = 0; i < (spanCountLeft <= 0 ? 3 : spanCountLeft); ++i) {
+                        items.add(UItem.asFlicker(1 + i, FlickerLoadingView.STAR_GIFT).setSpanCount(1));
+                    }
+                }
+            }
+            if (parent.list == list) {
+                items.add(UItem.asSpace(dp(20)));
+                if (parent.dialogId == UserConfig.getInstance(currentAccount).getClientUserId()) {
+                    items.add(TextFactory.asText(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2, resourcesProvider), Gravity.CENTER, 14, LocaleController.getString(R.string.ProfileGiftsInfo), true, dp(24)));
+                }
+                items.add(UItem.asSpace(dp(24 + 48 + 10)));
+            } else if (!items.isEmpty()) {
+                items.add(UItem.asSpace(dp(24 + 48 + 10)));
+            }
+
+            if (listView.getSpanCount() != spanCount) {
+                AndroidUtilities.runOnUIThread(() -> {
+                    if (listView != null) {
+                        listView.setSpanCount(spanCount);
+                    }
+                });
+            }
+        }
+
+        public void onItemClick(UItem item, View view, int position, float x, float y) {
+            if (list == null) return;
+            if (item.object instanceof TL_stars.SavedStarGift) {
+                final TL_stars.SavedStarGift userGift = (TL_stars.SavedStarGift) item.object;
+                if (reordering) {
+                    if (isCollection) return;
+                    if (!(userGift.gift instanceof TL_stars.TL_starGiftUnique)) {
+                        return;
+                    }
+                    final boolean newPinned = !userGift.pinned_to_top;
+                    if (newPinned && userGift.unsaved) {
+                        userGift.unsaved = false;
+
+                        final TL_stars.saveStarGift req = new TL_stars.saveStarGift();
+                        req.stargift = list.getInput(userGift);
+                        req.unsave = userGift.unsaved;
+                        ConnectionsManager.getInstance(currentAccount).sendRequest(req, null, ConnectionsManager.RequestFlagInvokeAfter);
+                    }
+                    if (list.togglePinned(userGift, newPinned, true)) {
+                        BulletinFactory.of(parent.fragment)
+                            .createSimpleBulletin(R.raw.chats_infotip, LocaleController.formatPluralStringComma("GiftsPinLimit", MessagesController.getInstance(currentAccount).stargiftsPinnedToTopLimit))
+                            .show();
+                    }
+                    if (newPinned) {
+                        listView.scrollToPosition(0);
+                    }
+                } else {
+                    new StarGiftSheet(getContext(), currentAccount, parent.dialogId, resourcesProvider)
+                        .setOnGiftUpdatedListener(() -> {
+                            update(false);
+                        })
+                        .setOnBoughtGift((boughtGift, dialogId) -> {
+                            list.gifts.remove(userGift);
+                            update(true);
+
+                            if (dialogId == UserConfig.getInstance(currentAccount).getClientUserId()) {
+                                BulletinFactory.of(parent.fragment)
+                                    .createSimpleBulletin(boughtGift.getDocument(), getString(R.string.BoughtResoldGiftTitle), formatString(R.string.BoughtResoldGiftText, boughtGift.title + " #" + LocaleController.formatNumber(boughtGift.num, ',')))
+                                    .hideAfterBottomSheet(false)
+                                    .show();
+                            } else {
+                                BulletinFactory.of(parent.fragment)
+                                    .createSimpleBulletin(boughtGift.getDocument(), getString(R.string.BoughtResoldGiftToTitle), formatString(R.string.BoughtResoldGiftToText, DialogObject.getShortName(currentAccount, dialogId)))
+                                    .hideAfterBottomSheet(false)
+                                    .show();
+                            }
+                            if (LaunchActivity.instance != null) {
+                                LaunchActivity.instance.getFireworksOverlay().start(true);
+                            }
+                        })
+                        .set(userGift, list)
+                        .show();
+                }
+            }
+        }
+
+        public boolean onItemLongPress(UItem item, View view, int position, float x, float y) {
+            if (list == null) return false;
+            if (view instanceof GiftSheet.GiftCell && item.object instanceof TL_stars.SavedStarGift) {
+                final GiftSheet.GiftCell cell = (GiftSheet.GiftCell) view;
+                final TL_stars.SavedStarGift savedStarGift = (TL_stars.SavedStarGift) item.object;
+                final ItemOptions o = ItemOptions.makeOptions(parent.fragment, view, true);
+                parent.currentMenu = o;
+                if (parent.collections.isMine() && (isCollection || parent.collections.getCollections().size() > 0 || true)) {
+                    final ItemOptions so = o.makeSwipeback();
+                    so.add(R.drawable.ic_ab_back, getString(R.string.Back), () -> {
+                        o.closeSwipeback();
+                    });
+                    so.addGap();
+
+                    final ScrollView collectionsScrollView = new ScrollView(getContext()) {
+                        @Override
+                        protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+                            super.onMeasure(
+                                widthMeasureSpec,
+                                MeasureSpec.makeMeasureSpec(Math.min(dp(260), MeasureSpec.getSize(heightMeasureSpec)), MeasureSpec.getMode(heightMeasureSpec))
+                            );
+                        }
+                    };
+                    final LinearLayout collectionsLayout = new LinearLayout(getContext());
+                    collectionsScrollView.addView(collectionsLayout);
+                    collectionsLayout.setOrientation(LinearLayout.VERTICAL);
+                    so.addView(collectionsScrollView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+
+                    if (parent.collections.getCollections().size() + 1 < MessagesController.getInstance(currentAccount).config.stargiftsCollectionsLimit.get()) {
+                        final ActionBarMenuSubItem subitem = new ActionBarMenuSubItem(getContext(), false, false, resourcesProvider);
+                        subitem.setPadding(dp(18), 0, dp(18), 0);
+                        subitem.setColors(Theme.getColor(Theme.key_actionBarDefaultSubmenuItem, resourcesProvider), Theme.getColor(Theme.key_actionBarDefaultSubmenuItemIcon, resourcesProvider));
+                        subitem.setSelectorColor(Theme.multAlpha(Theme.getColor(Theme.key_actionBarDefaultSubmenuItem, resourcesProvider), .12f));
+                        subitem.setTextAndIcon(getString(R.string.Gift2NewCollection), R.drawable.menu_folder_add);
+                        subitem.setOnClickListener(v -> {
+                            o.dismiss();
+                            parent.openEnterNameAlert(null, name -> {
+                                parent.collections.createCollection(name, collection -> {
+                                    parent.collections.addGift(collection.collection_id, savedStarGift, true);
+                                    parent.fillTabs(true);
+                                    parent.tabsView.scrollToTab(collection.collection_id, 1 + parent.collections.indexOf(collection.collection_id));
+                                    if (parent.fragment instanceof ProfileActivity) {
+                                        ((ProfileActivity) parent.fragment).scrollToSharedMedia(true);
+                                    }
+                                    parent.updateTabsShown(true);
+
+                                    BulletinFactory.of(parent.fragment)
+                                        .createSimpleMultiBulletin(
+                                            savedStarGift.gift.getDocument(),
+                                            AndroidUtilities.replaceTags(formatString(R.string.Gift2AddedToCollection, getGiftName(savedStarGift.gift), collection.title))
+                                        )
+                                        .show();
+                                });
+                            });
+                        });
+                        collectionsLayout.addView(subitem, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+                    }
+                    for (final TL_stars.TL_starGiftCollection collection : parent.collections.getCollections()) {
+                        final StarsController.GiftsList list = parent.collections.getListById(collection.collection_id);
+                        final boolean contains = list.contains(savedStarGift);
+                        final ActionBarMenuSubItem subitem = new ActionBarMenuSubItem(getContext(), 2, false, false, resourcesProvider);
+                        subitem.setChecked(contains);
+                        subitem.setPadding(dp(18), 0, dp(18), 0);
+                        subitem.setColors(Theme.getColor(Theme.key_actionBarDefaultSubmenuItem, resourcesProvider), Theme.getColor(Theme.key_actionBarDefaultSubmenuItemIcon, resourcesProvider));
+                        subitem.setSelectorColor(Theme.multAlpha(Theme.getColor(Theme.key_actionBarDefaultSubmenuItem, resourcesProvider), .12f));
+                        if (collection.icon != null) {
+                            AnimatedEmojiDrawable drawable = new AnimatedEmojiDrawable(AnimatedEmojiDrawable.CACHE_TYPE_ALERT_PREVIEW, currentAccount, collection.icon) {
+                                @Override
+                                public int getIntrinsicHeight() {
+                                    return dp(24);
+                                }
+                                @Override
+                                public int getIntrinsicWidth() {
+                                    return dp(24);
+                                }
+                            };
+                            drawable.addViewListening(subitem.getImageView());
+                            subitem.setTextAndIcon(collection.title, 0, drawable);
+                        } else {
+                            subitem.setTextAndIcon(collection.title, R.drawable.msg_folders);
+                        }
+                        subitem.setOnClickListener(v -> {
+                            if (!contains) {
+                                parent.collections.addGift(collection.collection_id, savedStarGift, true);
+                                BulletinFactory.of(parent.fragment)
+                                    .createSimpleMultiBulletin(
+                                        savedStarGift.gift.getDocument(),
+                                        AndroidUtilities.replaceTags(formatString(R.string.Gift2AddedToCollection, getGiftName(savedStarGift.gift), collection.title))
+                                    )
+                                    .show();
+                            } else {
+                                parent.collections.removeGift(collection.collection_id, savedStarGift);
+                                BulletinFactory.of(parent.fragment)
+                                    .createSimpleMultiBulletin(
+                                        savedStarGift.gift.getDocument(),
+                                        AndroidUtilities.replaceTags(formatString(R.string.Gift2RemovedFromCollection, getGiftName(savedStarGift.gift), collection.title))
+                                    )
+                                    .show();
+                            }
+                            o.dismiss();
+                            parent.updateTabsShown(true);
+                        });
+                        collectionsLayout.addView(subitem, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+                    }
+
+                    o.add(R.drawable.msg_addfolder, getString(R.string.Gift2AddToCollection), () -> {
+                        o.openSwipeback(so);
+                    });
+                    o.addGap();
+                }
+                if (savedStarGift.gift instanceof TL_stars.TL_starGiftUnique) {
+                    if (parent.canReorder() && !isCollection && (!savedStarGift.unsaved || !savedStarGift.pinned_to_top)) {
+                        o.add(savedStarGift.pinned_to_top ? R.drawable.msg_unpin : R.drawable.msg_pin, savedStarGift.pinned_to_top ? getString(R.string.Gift2Unpin) : getString(R.string.Gift2Pin), () -> {
+                            if (savedStarGift.unsaved) {
+                                savedStarGift.unsaved = false;
+                                cell.setStarsGift(savedStarGift, true, false);
+
+                                final TL_stars.saveStarGift req = new TL_stars.saveStarGift();
+                                req.stargift = list.getInput(savedStarGift);
+                                req.unsave = savedStarGift.unsaved;
+                                ConnectionsManager.getInstance(currentAccount).sendRequest(req, null, ConnectionsManager.RequestFlagInvokeAfter);
+                            }
+
+                            final boolean newPinned = !savedStarGift.pinned_to_top;
+                            if (list.togglePinned(savedStarGift, newPinned, false)) {
+                                new UnpinSheet(getContext(), parent.dialogId, savedStarGift, resourcesProvider, () -> {
+                                    ((GiftSheet.GiftCell) view).setPinned(newPinned, true);
+                                    listView.scrollToPosition(0);
+                                    return BulletinFactory.of(parent.fragment);
+                                }).show();
+                                return;
+                            } else if (newPinned) {
+                                BulletinFactory.of(parent.fragment)
+                                    .createSimpleBulletin(R.raw.ic_pin, getString(R.string.Gift2PinnedTitle), getString(R.string.Gift2PinnedSubtitle))
+                                    .show();
+                            } else {
+                                BulletinFactory.of(parent.fragment)
+                                    .createSimpleBulletin(R.raw.ic_unpin, getString(R.string.Gift2Unpinned))
+                                    .show();
+                            }
+                            ((GiftSheet.GiftCell) view).setPinned(newPinned, true);
+                            listView.scrollToPosition(0);
+                        });
+                        o.addIf(savedStarGift.pinned_to_top, R.drawable.tabs_reorder, getString(R.string.Gift2Reorder), () -> {
+                            setReordering(true);
+                        });
+                    } else if (parent.canReorder() && isCollection) {
+                        o.add(R.drawable.tabs_reorder, getString(R.string.Gift2Reorder), () -> {
+                            setReordering(true);
+                        });
+                    }
+
+                    final TL_stars.TL_starGiftUnique gift = (TL_stars.TL_starGiftUnique) savedStarGift.gift;
+                    final String link;
+                    if (savedStarGift.gift.slug != null) {
+                        link = MessagesController.getInstance(currentAccount).linkPrefix + "/nft/" + savedStarGift.gift.slug;
+                    } else {
+                        link = null;
+                    }
+                    if (isMineWithActions(currentAccount, DialogObject.getPeerDialogId(gift.owner_id))) {
+                        final boolean worn = StarGiftSheet.isWorn(currentAccount, gift);
+                        o.add(worn ? R.drawable.menu_takeoff : R.drawable.menu_wear, getString(worn ? R.string.Gift2Unwear : R.string.Gift2Wear), () -> {
+                            new StarGiftSheet(getContext(), currentAccount, parent.dialogId, resourcesProvider) {
+                                @Override
+                                public BulletinFactory getBulletinFactory() {
+                                    return BulletinFactory.of(parent.fragment);
+                                }
+                            }
+                                .set(savedStarGift, null)
+                                .toggleWear(false);
+                        });
+                    }
+                    o.addIf(link != null, R.drawable.msg_link2, getString(R.string.CopyLink), () -> {
+                        AndroidUtilities.addToClipboard(link);
+                        BulletinFactory.of(parent.fragment)
+                            .createCopyLinkBulletin(false)
+                            .show();
+                    });
+                    o.addIf(link != null, R.drawable.msg_share, getString(R.string.ShareFile), () -> {
+                        new StarGiftSheet(getContext(), currentAccount, parent.dialogId, resourcesProvider) {
+                            @Override
+                            public BulletinFactory getBulletinFactory() {
+                                return BulletinFactory.of(parent.fragment);
+                            }
+                        }
+                            .set(savedStarGift, null)
+                            .onSharePressed(null);
+                    });
+                } else if (parent.canReorder() && isCollection) {
+                    o.add(R.drawable.tabs_reorder, getString(R.string.Gift2Reorder), () -> {
+                        setReordering(true);
+                    });
+                }
+                if (isMineWithActions(currentAccount, parent.dialogId)) {
+                    o.add(savedStarGift.unsaved ? R.drawable.msg_message : R.drawable.menu_hide_gift, getString(savedStarGift.unsaved ? R.string.Gift2ShowGift : R.string.Gift2HideGift), () -> {
+                        if (!isCollection && savedStarGift.pinned_to_top && !savedStarGift.unsaved) {
+                            cell.setPinned(false, true);
+                            list.togglePinned(savedStarGift, false, false);
+                        }
+
+                        savedStarGift.unsaved = !savedStarGift.unsaved;
+                        cell.setStarsGift(savedStarGift, true, isCollection);
+                        parent.collections.updateGiftsUnsaved(savedStarGift, savedStarGift.unsaved);
+
+                        final TL_stars.saveStarGift req = new TL_stars.saveStarGift();
+                        req.stargift = list.getInput(savedStarGift);
+                        req.unsave = savedStarGift.unsaved;
+                        ConnectionsManager.getInstance(currentAccount).sendRequest(req, null);
+                    });
+                }
+                if (savedStarGift.gift instanceof TL_stars.TL_starGiftUnique) {
+                    final TL_stars.TL_starGiftUnique gift = (TL_stars.TL_starGiftUnique) savedStarGift.gift;
+                    final long selfId = UserConfig.getInstance(currentAccount).getClientUserId();
+                    final boolean canTransfer = DialogObject.getPeerDialogId(gift.owner_id) == selfId;
+                    o.addIf(canTransfer, R.drawable.menu_transfer, getString(R.string.Gift2TransferOption), () -> {
+                        new StarGiftSheet(getContext(), currentAccount, parent.dialogId, resourcesProvider) {
+                            @Override
+                            public BulletinFactory getBulletinFactory() {
+                                return BulletinFactory.of(parent.fragment);
+                            }
+                        }
+                            .set(savedStarGift, null)
+                            .openTransfer();
+                    });
+                }
+                if (parent.collections.isMine() && isCollection) {
+                    o.add(R.drawable.msg_removefolder, getString(R.string.Gift2RemoveFromCollection), true, () -> {
+                        parent.collections.removeGift(list.collectionId, savedStarGift);
+                        o.dismiss();
+                        parent.updateTabsShown(true);
+
+                        final TL_stars.TL_starGiftCollection collection = parent.collections.findById(list.collectionId);
+                        if (collection != null) {
+                            BulletinFactory.of(parent.fragment)
+                                .createSimpleMultiBulletin(
+                                    savedStarGift.gift.getDocument(),
+                                    AndroidUtilities.replaceTags(formatString(R.string.Gift2RemovedFromCollection, getGiftName(savedStarGift.gift), collection.title))
+                                )
+                                .show();
+                        }
+                    }).makeMultiline(false).cutTextInFancyHalf();
+                }
+                if (o.getItemsCount() <= 0) {
+                    return false;
+                }
+                o.setGravity(Gravity.RIGHT);
+                o.setBlur(true);
+                o.allowMoveScrim();
+                final int min = Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y);
+                o.animateToSize(min - dp(32), (int) (min * .6f));
+                o.hideScrimUnder();
+                o.forceBottom(true);
+                o.show();
+                ((GiftSheet.GiftCell) view).imageView.getImageReceiver().startAnimation(true);
+                return true;
+            }
+            return false;
+        }
+
+        public void updateColors() {
+            if (emptyView1 != null) {
+                emptyView1Title.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+                emptyView1Button.setTextColor(Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider));
+                emptyView1Button.setBackground(Theme.createRadSelectorDrawable(Theme.multAlpha(Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider), .10f), 4, 4));
+            } else {
+                emptyView2Title.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+                emptyView2Subtitle.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText, resourcesProvider));
+                emptyView2Button.updateColors();
+            }
+        }
+    }
+
+    public boolean canScroll(boolean forward) {
+        if (forward)
+            return viewPager.getCurrentPosition() >= collections.getCollections().size();
+        return viewPager.getCurrentPosition() <= 0;
     }
 
     public ProfileGiftsContainer(BaseFragment fragment, Context context, int currentAccount, long did, Theme.ResourcesProvider resourcesProvider) {
@@ -118,143 +914,217 @@ public class ProfileGiftsContainer extends FrameLayout implements NotificationCe
         }
         StarsController.getInstance(currentAccount).invalidateProfileGifts(dialogId);
         this.list = StarsController.getInstance(currentAccount).getProfileGiftsList(dialogId);
+        this.collections = StarsController.getInstance(currentAccount).getProfileGiftCollectionsList(dialogId, true);
+        this.collections.all = list;
         this.list.shown = true;
         this.list.resetFilters();
         this.list.load();
         this.resourcesProvider = resourcesProvider;
 
-        setBackgroundColor(Theme.blendOver(
-            Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider),
-            Theme.multAlpha(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider), 0.04f)
-        ));
-
-        listView = new UniversalRecyclerView(context, currentAccount, 0, false, this::fillItems, this::onItemClick, this::onItemLongPress, resourcesProvider, 3, LinearLayoutManager.VERTICAL);
-        listView.adapter.setApplyBackground(false);
-        listView.setSelectorType(9);
-        listView.setSelectorDrawableColor(0);
-        listView.setPadding(dp(9), 0, dp(9), 0);
-        listView.setClipToPadding(false);
-        listView.setClipChildren(false);
-        addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.FILL));
-        listView.addOnScrollListener(new RecyclerView.OnScrollListener() {
+        viewPager = new ViewPagerFixed(context) {
             @Override
-            public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
-                if (!listView.canScrollVertically(1) || isLoadingVisible()) {
-                    list.load();
+            public void onTabAnimationUpdate(boolean manual) {
+                super.onTabAnimationUpdate(manual);
+                updateButton();
+            }
+
+            @Override
+            protected void onTabScrollEnd(int position) {
+                super.onTabScrollEnd(position);
+                updateButton();
+            }
+
+            @Override
+            protected boolean canScroll(MotionEvent e) {
+                return !isReordering();
+            }
+
+            @Override
+            protected void addMoreTabs() {
+                if (canAdd() && tabsView != null) {
+                    if (addCollectionTabText == null) {
+                        final SpannableStringBuilder sb = new SpannableStringBuilder("+ " + getString(R.string.Gift2NewCollection));
+                        final ColoredImageSpan span = new ColoredImageSpan(R.drawable.poll_add_plus);
+                        span.spaceScaleX = .8f;
+                        sb.setSpan(span, 0, 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                        addCollectionTabText = sb;
+                    }
+                    tabsView.addTab(-1, addCollectionTabText);
                 }
             }
-        });
+        };
+        viewPager.setAllowDisallowInterceptTouch(true);
+        viewPager.setAdapter(new ViewPagerFixed.Adapter() {
+            @Override
+            public int getItemCount() {
+                return 1 + collections.getCollections().size();
+            }
 
-        reorder = new ItemTouchHelper(new ItemTouchHelper.Callback() {
-            private TL_stars.SavedStarGift getSavedGift(RecyclerView.ViewHolder holder) {
-                if (holder.itemView instanceof GiftSheet.GiftCell) {
-                    final GiftSheet.GiftCell cell = (GiftSheet.GiftCell) holder.itemView;
-                    return cell.getSavedGift();
+            @Override
+            public View createView(int viewType) {
+                if (viewType == -1) {
+                    return null;
                 }
-                return null;
-            }
-            private boolean isPinnedAndSaved(TL_stars.SavedStarGift gift) {
-                return gift != null && gift.pinned_to_top && !gift.unsaved;
+                return new Page(ProfileGiftsContainer.this, currentAccount, resourcesProvider);
             }
 
             @Override
-            public boolean isLongPressDragEnabled() {
-                return reordering;
+            public int getItemId(int position) {
+                if (position == 0) return -2;
+                return collections.getCollections().get(position - 1).collection_id;
             }
 
             @Override
-            public boolean isItemViewSwipeEnabled() {
-                return reordering;
-            }
-
-            @Override
-            public int getMovementFlags(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder) {
-                final TL_stars.SavedStarGift savedStarGift = getSavedGift(viewHolder);
-                if (reordering && savedStarGift != null && savedStarGift.pinned_to_top) {
-                    return makeMovementFlags(ItemTouchHelper.UP | ItemTouchHelper.DOWN | ItemTouchHelper.LEFT | ItemTouchHelper.RIGHT, 0);
+            public void bindView(View view, int position, int viewType) {
+                final Page page = (Page) view;
+                final StarsController.GiftsList thisList;
+                final boolean isCollection;
+                if (viewType == 0) {
+                    isCollection = false;
+                    thisList = list;
+                } else {
+                    isCollection = true;
+                    thisList = collections.getListByIndex(position - 1);
                 }
-                return makeMovementFlags(0, 0);
+                page.bind(isCollection, thisList);
+                page.setVisibleHeight(visibleHeight);
             }
 
             @Override
-            public boolean onMove(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder, @NonNull RecyclerView.ViewHolder target) {
-                if (!reordering) {
+            public int getItemViewType(int position) {
+                if (position == 0)
+                    return 0;
+                return 1;
+            }
+
+            @Override
+            public CharSequence getItemTitle(int position) {
+                if (position == 0) {
+                    return getString(R.string.Gift2CollectionAll);
+                }
+
+                final TL_stars.TL_starGiftCollection collection = collections.getCollections().get(position - 1);
+                if (collection == null) {
+                    return null;
+                }
+                final SpannableStringBuilder sb = new SpannableStringBuilder(collection.title);
+                if (collection.icon != null) {
+                    final TextPaint textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
+                    textPaint.setTextSize(dp(16));
+                    final SpannableStringBuilder emoji = new SpannableStringBuilder("e ");
+                    final AnimatedEmojiSpan span = new AnimatedEmojiSpan(collection.icon, textPaint.getFontMetricsInt());
+                    emoji.setSpan(span, 0, 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                    sb.insert(0, emoji);
+                }
+                return sb;
+            }
+
+            @Override
+            public boolean canReorder(int position) {
+                if (position == 0)
                     return false;
-                }
-                if (!isPinnedAndSaved(getSavedGift(viewHolder)) || !isPinnedAndSaved(getSavedGift(target))) {
-                    return false;
-                }
-                final int fromPosition = viewHolder.getAdapterPosition();
-                final int toPosition = target.getAdapterPosition();
-                list.reorderPinned(fromPosition - 1, toPosition - 1);
-                listView.adapter.notifyItemMoved(fromPosition, toPosition);
-                listView.adapter.updateWithoutNotify();
-                if (fragment instanceof ProfileActivity && ((ProfileActivity) fragment).giftsView != null) {
-                    ((ProfileActivity) fragment).giftsView.update();
-                }
                 return true;
             }
 
             @Override
-            public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
-
-            }
-
-            @Override
-            public void onSelectedChanged(RecyclerView.ViewHolder viewHolder, int actionState) {
-                if (actionState == ItemTouchHelper.ACTION_STATE_IDLE) {
-                    list.reorderDone();
-                } else {
-                    if (listView != null) {
-                        listView.cancelClickRunnables(false);
-                    }
-                    if (viewHolder != null) {
-                        viewHolder.itemView.setPressed(true);
-                    }
+            public void applyReorder(ArrayList<Integer> itemIds) {
+                final ArrayList<Integer> collectionIds = new ArrayList<>();
+                for (final int itemId : itemIds) {
+                    if (itemId == -1 || itemId == -2) continue;
+                    collectionIds.add(itemId);
                 }
-                super.onSelectedChanged(viewHolder, actionState);
-            }
+                collections.reorder(collectionIds);
 
-            @Override
-            public void clearView(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder) {
-                super.clearView(recyclerView, viewHolder);
-                viewHolder.itemView.setPressed(false);
+                final Page current = getCurrentPage();
+                if (current != null) {
+                    final int position =
+                        !current.isCollection ?
+                            0 :
+                            1 + collections.indexOf(current.list.collectionId);
+                    tabsView.selectTab(position, position, 0.0f);
+                }
+
+                AndroidUtilities.cancelRunOnUIThread(sendCollectionsOrder);
+                AndroidUtilities.runOnUIThread(sendCollectionsOrder, 1000);
             }
         });
-        reorder.attachToRecyclerView(listView);
+        addView(viewPager, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.FILL));
 
-
-        emptyView = new FrameLayout(context);
-
-        LinearLayout emptyViewLayout = new LinearLayout(context);
-        emptyViewLayout.setOrientation(LinearLayout.VERTICAL);
-        emptyView.addView(emptyViewLayout, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER));
-
-        BackupImageView emptyViewImage = new BackupImageView(context);
-        emptyViewImage.setImageDrawable(new RLottieDrawable(R.raw.utyan_empty, "utyan_empty", dp(120), dp(120)));
-        emptyViewLayout.addView(emptyViewImage, LayoutHelper.createLinear(120, 120, Gravity.CENTER_HORIZONTAL, 0, 0, 0, 0));
-
-        emptyViewTitle = new TextView(context);
-        emptyViewTitle.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 17);
-        emptyViewTitle.setTypeface(AndroidUtilities.bold());
-        emptyViewTitle.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
-        emptyViewTitle.setText(LocaleController.getString(R.string.ProfileGiftsNotFoundTitle));
-        emptyViewLayout.addView(emptyViewTitle, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 0, 12, 0, 0));
-
-        emptyViewButton = new TextView(context);
-        emptyViewButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-        emptyViewButton.setTextColor(Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider));
-        emptyViewButton.setText(LocaleController.getString(R.string.ProfileGiftsNotFoundButton));
-        emptyViewButton.setOnClickListener(v -> {
-            list.resetFilters();
+        tabsView = viewPager.createTabsView(true, 9);
+        tabsView.tabMarginDp = 12;
+        tabsView.setPreTabClick((id, pos) -> {
+            resetReordering();
+            if (id == -1) {
+                createCollection();
+                return true;
+            }
+            return false;
         });
-        emptyViewButton.setPadding(dp(10), dp(4), dp(10), dp(4));
-        emptyViewButton.setBackground(Theme.createRadSelectorDrawable(Theme.multAlpha(Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider), .10f), 4, 4));
-        ScaleStateListAnimator.apply(emptyViewButton);
-        emptyViewLayout.addView(emptyViewButton, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 0, 8, 0, 0));
+        tabsView.setOnTabLongClick((page, view) -> {
+            if (page == -1 || page == -2 || page == 0 || reorderingCollections)
+                return false;
 
-        addView(emptyView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.FILL));
-        listView.setEmptyView(emptyView);
+            if (!collections.isMine())
+                return false;
+
+            int _index = -1;
+            TL_stars.TL_starGiftCollection _collection = null;
+            for (int i = 0; i < collections.getCollections().size(); ++i) {
+                if (collections.getCollections().get(i).collection_id == page) {
+                    _index = i;
+                    _collection = collections.getCollections().get(i);
+                    break;
+                }
+            }
+            final int index = _index;
+            final TL_stars.TL_starGiftCollection collection = _collection;
+
+            currentMenu = ItemOptions.makeOptions(fragment, view)
+                .setScrimViewBackground(new Drawable() {
+                    private final Drawable bg = Theme.createRoundRectDrawable(dp(16), dp(16), backgroundColor);
+                    private final Rect bgBounds = new Rect();
+                    @Override
+                    public void draw(@NonNull Canvas canvas) {
+                        bgBounds.set(getBounds());
+                        bgBounds.inset(dp(2), dp(8));
+                        bg.setBounds(bgBounds);
+                        bg.draw(canvas);
+                    }
+                    @Override
+                    public void setAlpha(int alpha) {
+                        bg.setAlpha(alpha);
+                    }
+                    @Override
+                    public void setColorFilter(@Nullable ColorFilter colorFilter) {}
+                    @Override
+                    public int getOpacity() {
+                        return PixelFormat.TRANSPARENT;
+                    }
+                })
+                .add(R.drawable.msg_addbot, getString(R.string.Gift2CollectionsAdd), this::addGifts)
+                .add(R.drawable.msg_edit, getString(R.string.Gift2CollectionsRename), () -> {
+                    openEnterNameAlert(collection.title, newName -> {
+                        collections.rename(collection.collection_id, newName);
+                        collection.title = newName;
+                        fillTabs(true);
+                    });
+                })
+                .add(R.drawable.tabs_reorder, getString(R.string.Gift2CollectionsReorder), () -> {
+                    setReorderingCollections(true);
+                })
+                .add(R.drawable.msg_delete, getString(R.string.Gift2CollectionsDelete), true, () -> {
+                    if (index != -1) {
+                        collections.removeCollection(collection.collection_id);
+                        fillTabs(true);
+                        tabsView.scrollToTab(-1, index >= collections.getCollections().size() ? (1 + index - 1) : (1 + index));
+                        updateTabsShown(true);
+                    }
+                });
+            currentMenu.show();
+            return true;
+        });
+        tabsView.setBackgroundColor(backgroundColor);
+        addView(tabsView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 42, Gravity.TOP));
 
         buttonContainer = new FrameLayout(context);
         buttonContainer.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider));
@@ -312,19 +1182,31 @@ public class ProfileGiftsContainer extends FrameLayout implements NotificationCe
 
         final TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(dialogId);
         final boolean sendToSpecificDialog = dialogId < 0 || user != null && !UserObject.isUserSelf(user) && !UserObject.isBot(user);
-        button = new ButtonWithCounterView(context, resourcesProvider);
+
         final SpannableStringBuilder sb = new SpannableStringBuilder("G " + (sendToSpecificDialog ? (dialogId < 0 ? getString(R.string.ProfileGiftsSendChannel) : formatString(R.string.ProfileGiftsSendUser, DialogObject.getShortName(dialogId))) : getString(R.string.ProfileGiftsSend)));
         final ColoredImageSpan span = new ColoredImageSpan(R.drawable.filled_gift_simple);
         sb.setSpan(span, 0, 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-        button.setText(sb, false);
+        sendGiftsToFriendsText = sb;
+
+        final SpannableStringBuilder sb2 = new SpannableStringBuilder("+ " + getString(R.string.ProfileGiftsAdd));
+        final ColoredImageSpan span2 = new ColoredImageSpan(R.drawable.filled_add_album);
+        sb2.setSpan(span2, 0, 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        addGiftsText = sb2;
+
+        button = new ButtonWithCounterView(context, resourcesProvider);
+        button.setText(sendGiftsToFriendsText, false);
         buttonContainer.addView(button, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.FILL, 10, 10 + 1f / AndroidUtilities.density, 10, 10));
         button.setOnClickListener(v -> {
-            if (sendToSpecificDialog) {
-                new GiftSheet(getContext(), currentAccount, dialogId, null, null)
-                    .setBirthday(BirthdayController.getInstance(currentAccount).isToday(dialogId))
-                    .show();
+            if (!collections.isMine() || viewPager.getCurrentPosition() == 0) {
+                if (sendToSpecificDialog) {
+                    new GiftSheet(getContext(), currentAccount, dialogId, null, null)
+                        .setBirthday(BirthdayController.getInstance(currentAccount).isToday(dialogId))
+                        .show();
+                } else {
+                    UserSelectorBottomSheet.open(UserSelectorBottomSheet.TYPE_STAR_GIFT, 0, BirthdayController.getInstance(currentAccount).getState());
+                }
             } else {
-                UserSelectorBottomSheet.open(UserSelectorBottomSheet.TYPE_STAR_GIFT, 0, BirthdayController.getInstance(currentAccount).getState());
+                addGifts();
             }
         });
 
@@ -333,25 +1215,29 @@ public class ProfileGiftsContainer extends FrameLayout implements NotificationCe
         buttonContainerHeightDp = canSwitchNotify() ? 50 : 10 + 48 + 10;
 
         addView(bulletinContainer, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 200, Gravity.FILL_HORIZONTAL | Gravity.BOTTOM));
+
+        updateColors();
+        updateTabsShown(false);
     }
 
-    private void setReordering(boolean reordering) {
-        if (this.reordering == reordering) return;
-        this.reordering = reordering;
-        updatedReordering(reordering);
-        for (int i = 0; i < listView.getChildCount(); ++i) {
-            final View child = listView.getChildAt(i);
-            if (child instanceof GiftSheet.GiftCell) {
-                ((GiftSheet.GiftCell) child).setReordering(reordering, true);
-            }
-        }
-        if (listView.adapter != null) {
-            listView.adapter.updateWithoutNotify();
-        }
-        if (reordering) {
-            if (fragment instanceof ProfileActivity) {
-                ((ProfileActivity) fragment).scrollToSharedMedia(true);
-            }
+    public void updateTabsShown(boolean animated) {
+        final boolean shown = !collections.getCollections().isEmpty();
+        if (animated) {
+            tabsView.animate()
+                .translationY(shown ? 0 : dp(-42))
+                .setDuration(200)
+                .setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT)
+                .start();
+            viewPager.animate()
+                .translationY(shown ? dp(30) : 0)
+                .setDuration(200)
+                .setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT)
+                .start();
+        } else {
+            tabsView.animate().cancel();
+            tabsView.setTranslationY(shown ? 0 : dp(-42));
+            viewPager.animate().cancel();
+            viewPager.setTranslationY(shown ? dp(30) : 0);
         }
     }
 
@@ -359,14 +1245,95 @@ public class ProfileGiftsContainer extends FrameLayout implements NotificationCe
 
     }
 
-    public void resetReordering() {
-        if (!reordering) return;
-        list.sendPinnedOrder();
-        setReordering(false);
-    }
+    private boolean reorderingCollections;
 
     public boolean isReordering() {
-        return reordering;
+        if (reorderingCollections)
+            return true;
+        final Page currentPage = getCurrentPage();
+        return currentPage != null && currentPage.isReordering();
+    }
+
+    public void setReordering(boolean reordering) {
+        final Page currentPage = getCurrentPage();
+        if (currentPage != null) {
+            currentPage.setReordering(reordering);
+        }
+    }
+
+    private final Runnable sendCollectionsOrder = () -> {
+        ProfileGiftsContainer.this.collections.sendOrder();
+    };
+
+    public void setReorderingCollections(boolean reordering) {
+        if (this.reorderingCollections == reordering) return;
+        this.reorderingCollections = reordering;
+        updatedReordering(isReordering());
+        tabsView.setReordering(reordering);
+        if (reordering) {
+            final BaseFragment lastFragment = LaunchActivity.getSafeLastFragment();
+            if (lastFragment instanceof ProfileActivity) {
+                ((ProfileActivity) lastFragment).scrollToSharedMedia(false);
+                AndroidUtilities.runOnUIThread(() -> {
+                    ((ProfileActivity) lastFragment).scrollToSharedMedia(true);
+                });
+            }
+        }
+        if (!reordering) {
+            AndroidUtilities.cancelRunOnUIThread(sendCollectionsOrder);
+            AndroidUtilities.runOnUIThread(sendCollectionsOrder);
+        }
+    }
+
+    public void resetReordering() {
+        final Page currentPage = getCurrentPage();
+        if (currentPage != null) {
+            currentPage.resetReordering();
+        }
+        setReorderingCollections(false);
+    }
+
+    public boolean canAdd() {
+        if (!collections.isMine()) return false;
+        return (collections.getCollections().size() + 1) < MessagesController.getInstance(currentAccount).config.stargiftsCollectionsLimit.get();
+    }
+
+    private boolean shouldHideButton(int page) {
+        if (page == 0) return false;
+        final int index = page - 1;
+        if (index < 0 || index >= collections.getCollections().size()) return true;
+        final StarsController.GiftsList list = collections.getListByIndex(index);
+        if (list == null) return true;
+        return list.gifts.isEmpty();
+    }
+
+    public void updateButton() {
+        if (viewPager == null) return;
+        float ty;
+        if (viewPager.getCurrentPosition() == viewPager.getNextPosition()) {
+            final float hide = shouldHideButton(viewPager.getCurrentPosition()) ? 1.0f : 0.0f;
+            ty = (dp(10 + 48 + 10) + 2) * hide;
+        } else {
+            final float hide = (
+                (shouldHideButton(viewPager.getCurrentPosition()) ? 1.0f : 0.0f) * viewPager.getCurrentPositionAlpha() +
+                (shouldHideButton(viewPager.getNextPosition()) ? 1.0f : 0.0f) * viewPager.getNextPositionAlpha()
+            );
+            ty = (dp(10 + 48 + 10) + 2) * hide;
+        }
+        ty += -buttonContainer.getTop() + Math.max(dp(240), visibleHeight) - dp(buttonContainerHeightDp) - 1;
+        bulletinContainer.setTranslationY(ty - dp(200));
+        buttonContainer.setTranslationY(ty);
+        button.setText(!collections.isMine() || viewPager.getPositionAnimated() < 0.5f ? sendGiftsToFriendsText : addGiftsText, true);
+        Bulletin.updateCurrentPosition();
+    }
+
+    public int getBottomOffset() {
+        float ty = buttonContainer.getTranslationY();
+        ty -= -buttonContainer.getTop() + Math.max(dp(240), visibleHeight) - dp(buttonContainerHeightDp) - 1;
+        if (visibleHeight < dp(240)) {
+            ty += Math.min(dp(240) - visibleHeight, dp(buttonContainerHeightDp));
+        }
+        return (int) (dp(buttonContainerHeightDp) - ty);
     }
 
     public boolean canFilter() {
@@ -394,21 +1361,18 @@ public class ProfileGiftsContainer extends FrameLayout implements NotificationCe
     @Override
     public void didReceivedNotification(int id, int account, Object... args) {
         if (id == NotificationCenter.starUserGiftsLoaded) {
-            if ((Long) args[0] == dialogId) {
-                button.setVisibility(canSwitchNotify() ? View.GONE : View.VISIBLE);
-                checkboxLayout.setVisibility(canSwitchNotify() ? View.VISIBLE : View.GONE);
-                buttonContainerHeightDp = canSwitchNotify() ? 50 : 10 + 48 + 10;
-                if (list.chat_notifications_enabled != null) {
-                    checkbox.setChecked(list.chat_notifications_enabled, true);
-                }
+            if ((Long) args[0] != dialogId) return;
 
-                if (listView != null && listView.adapter != null) {
-                    listView.adapter.update(true);
-                }
-                if (!listView.canScrollVertically(1) || isLoadingVisible()) {
-                    list.load();
-                }
+            button.setVisibility(canSwitchNotify() ? View.GONE : View.VISIBLE);
+            checkboxLayout.setVisibility(canSwitchNotify() ? View.VISIBLE : View.GONE);
+            buttonContainerHeightDp = canSwitchNotify() ? 50 : 10 + 48 + 10;
+            if (list.chat_notifications_enabled != null) {
+                checkbox.setChecked(list.chat_notifications_enabled, true);
             }
+        } else if (id == NotificationCenter.starUserGiftCollectionsLoaded) {
+            if ((Long) args[0] != dialogId) return;
+            fillTabs(true);
+            updateTabsShown(true);
         } else if (id == NotificationCenter.updateInterfaces) {
             button.setVisibility(canSwitchNotify() ? View.GONE : View.VISIBLE);
             checkboxLayout.setVisibility(canSwitchNotify() ? View.VISIBLE : View.GONE);
@@ -417,40 +1381,60 @@ public class ProfileGiftsContainer extends FrameLayout implements NotificationCe
         }
     }
 
-    private boolean isLoadingVisible() {
-        for (int i = 0; i < listView.getChildCount(); ++i) {
-            if (listView.getChildAt(i) instanceof FlickerLoadingView)
-                return true;
+    public Page getCurrentPage() {
+        final View view = viewPager.getCurrentView();
+        if (view == null) {
+            return null;
         }
-        return false;
+        return (Page) view;
     }
 
     @Override
     protected void onAttachedToWindow() {
         super.onAttachedToWindow();
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.starUserGiftsLoaded);
+        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.starUserGiftCollectionsLoaded);
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.updateInterfaces);
-        if (listView != null && listView.adapter != null) {
-            listView.adapter.update(false);
+        final Page currentPage = getCurrentPage();
+        if (currentPage != null) {
+            currentPage.update(false);
         }
+        fillTabs(false);
+        updateTabsShown(false);
         if (list != null) {
             list.shown = true;
             list.load();
+        }
+        if (collections != null) {
+            collections.shown = true;
+            collections.load();
         }
     }
 
     @Override
     protected void onDetachedFromWindow() {
+        final Page currentPage = getCurrentPage();
         resetReordering();
+        if (currentPage != null) {
+            currentPage.resetReordering();
+        }
         super.onDetachedFromWindow();
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.starUserGiftsLoaded);
+        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.starUserGiftCollectionsLoaded);
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.updateInterfaces);
         if (list != null) {
             list.shown = false;
         }
+        if (collections != null) {
+            collections.shown = false;
+        }
     }
 
-    public StarsController.GiftsList getList() {
+    public StarsController.GiftsList getCurrentList() {
+        Page currentPage = getCurrentPage();
+        if (currentPage != null) {
+            return currentPage.list;
+        }
         return list;
     }
 
@@ -525,233 +1509,22 @@ public class ProfileGiftsContainer extends FrameLayout implements NotificationCe
     private int visibleHeight = AndroidUtilities.displaySize.y;
     public void setVisibleHeight(int height) {
         visibleHeight = height;
-        if (canSwitchNotify()) {
-            bulletinContainer.setTranslationY(-bulletinContainer.getTop() + height - dp(buttonContainerHeightDp) - 1 - dp(200));
-            buttonContainer.setTranslationY(-buttonContainer.getTop() + height - dp(buttonContainerHeightDp) - 1);
-        } else {
-            bulletinContainer.setTranslationY(0);
-            buttonContainer.setTranslationY(0);
-        }
-    }
-
-    public void fillItems(ArrayList<UItem> items, UniversalAdapter adapter) {
-        if (list.hasFilters() && list.gifts.size() <= 0 && list.endReached && !list.loading) {
-            return;
-        }
-        final int spanCount = Math.max(1, list == null || list.totalCount == 0 ? 3 : Math.min(3, list.totalCount));
-        if (listView != null) {
-            listView.setSpanCount(spanCount);
-        }
-        items.add(UItem.asSpace(dp(12)));
-        if (list != null) {
-            int spanCountLeft = 3;
-            for (TL_stars.SavedStarGift userGift : list.gifts) {
-                items.add(GiftSheet.GiftCell.Factory.asStarGift(0, userGift, true).setReordering(reordering));
-                spanCountLeft--;
-                if (spanCountLeft == 0) {
-                    spanCountLeft = 3;
-                }
-            }
-            if (list.loading || !list.endReached) {
-                for (int i = 0; i < (spanCountLeft <= 0 ? 3 : spanCountLeft); ++i) {
-                    items.add(UItem.asFlicker(1 + i, FlickerLoadingView.STAR_GIFT).setSpanCount(1));
+        updateButton();
+        if (viewPager != null) {
+            for (View view : viewPager.getViewPages()) {
+                if (view instanceof Page) {
+                    ((Page) view).setVisibleHeight(visibleHeight);
                 }
             }
         }
-        items.add(UItem.asSpace(dp(20)));
-        if (dialogId == UserConfig.getInstance(currentAccount).getClientUserId()) {
-            items.add(TextFactory.asText(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2, resourcesProvider), Gravity.CENTER, 14, LocaleController.getString(R.string.ProfileGiftsInfo), true, dp(24)));
-        }
-        items.add(UItem.asSpace(dp(24 + 48 + 10)));
-    }
-
-    public void onItemClick(UItem item, View view, int position, float x, float y) {
-        if (item.object instanceof TL_stars.SavedStarGift) {
-            final TL_stars.SavedStarGift userGift = (TL_stars.SavedStarGift) item.object;
-            if (reordering) {
-                if (!(userGift.gift instanceof TL_stars.TL_starGiftUnique)) {
-                    return;
-                }
-                final boolean newPinned = !userGift.pinned_to_top;
-                if (newPinned && userGift.unsaved) {
-                    userGift.unsaved = false;
-
-                    final TL_stars.saveStarGift req = new TL_stars.saveStarGift();
-                    req.stargift = list.getInput(userGift);
-                    req.unsave = userGift.unsaved;
-                    ConnectionsManager.getInstance(currentAccount).sendRequest(req, null, ConnectionsManager.RequestFlagInvokeAfter);
-                }
-                if (list.togglePinned(userGift, newPinned, true)) {
-                    BulletinFactory.of(fragment)
-                        .createSimpleBulletin(R.raw.chats_infotip, LocaleController.formatPluralStringComma("GiftsPinLimit", MessagesController.getInstance(currentAccount).stargiftsPinnedToTopLimit))
-                        .show();
-                }
-                if (newPinned) {
-                    listView.scrollToPosition(0);
-                }
-            } else {
-                new StarGiftSheet(getContext(), currentAccount, dialogId, resourcesProvider)
-                    .setOnGiftUpdatedListener(() -> {
-                        if (listView != null && listView.adapter != null) {
-                            listView.adapter.update(false);
-                        }
-                    })
-                    .setOnBoughtGift((boughtGift, dialogId) -> {
-                        list.gifts.remove(userGift);
-                        listView.adapter.update(true);
-
-                        if (dialogId == UserConfig.getInstance(currentAccount).getClientUserId()) {
-                            BulletinFactory.of(fragment)
-                                .createSimpleBulletin(boughtGift.getDocument(), getString(R.string.BoughtResoldGiftTitle), formatString(R.string.BoughtResoldGiftText, boughtGift.title + " #" + LocaleController.formatNumber(boughtGift.num, ',')))
-                                .hideAfterBottomSheet(false)
-                                .show();
-                        } else {
-                            BulletinFactory.of(fragment)
-                                .createSimpleBulletin(boughtGift.getDocument(), getString(R.string.BoughtResoldGiftToTitle), formatString(R.string.BoughtResoldGiftToText, DialogObject.getShortName(currentAccount, dialogId)))
-                                .hideAfterBottomSheet(false)
-                                .show();
-                        }
-                        if (LaunchActivity.instance != null) {
-                            LaunchActivity.instance.getFireworksOverlay().start(true);
-                        }
-                    })
-                    .set(userGift, list)
-                    .show();
-            }
-        }
-    }
-
-    public boolean onItemLongPress(UItem item, View view, int position, float x, float y) {
-        if (view instanceof GiftSheet.GiftCell && item.object instanceof TL_stars.SavedStarGift) {
-            final GiftSheet.GiftCell cell = (GiftSheet.GiftCell) view;
-            final TL_stars.SavedStarGift savedStarGift = (TL_stars.SavedStarGift) item.object;
-            final ItemOptions o = ItemOptions.makeOptions(fragment, view);
-//            o.setScrimViewDrawable(cell.makeDrawable(), listView.getWidth() - dp(18), (int) Math.min(dp(220), AndroidUtilities.displaySize.y * 0.3f));
-            if (savedStarGift.gift instanceof TL_stars.TL_starGiftUnique) {
-                if (canReorder() && (!savedStarGift.unsaved || !savedStarGift.pinned_to_top)) {
-                    o.add(savedStarGift.pinned_to_top ? R.drawable.msg_unpin : R.drawable.msg_pin, savedStarGift.pinned_to_top ? getString(R.string.Gift2Unpin) : getString(R.string.Gift2Pin), () -> {
-                        if (savedStarGift.unsaved) {
-                            savedStarGift.unsaved = false;
-                            cell.setStarsGift(savedStarGift, true);
-
-                            final TL_stars.saveStarGift req = new TL_stars.saveStarGift();
-                            req.stargift = list.getInput(savedStarGift);
-                            req.unsave = savedStarGift.unsaved;
-                            ConnectionsManager.getInstance(currentAccount).sendRequest(req, null, ConnectionsManager.RequestFlagInvokeAfter);
-                        }
-
-                        final boolean newPinned = !savedStarGift.pinned_to_top;
-                        if (list.togglePinned(savedStarGift, newPinned, false)) {
-                            new UnpinSheet(getContext(), dialogId, savedStarGift, resourcesProvider, () -> {
-                                ((GiftSheet.GiftCell) view).setPinned(newPinned, true);
-                                listView.scrollToPosition(0);
-                                return BulletinFactory.of(fragment);
-                            }).show();
-                            return;
-                        } else if (newPinned) {
-                            BulletinFactory.of(fragment)
-                                    .createSimpleBulletin(R.raw.ic_pin, getString(R.string.Gift2PinnedTitle), getString(R.string.Gift2PinnedSubtitle))
-                                    .show();
-                        } else {
-                            BulletinFactory.of(fragment)
-                                    .createSimpleBulletin(R.raw.ic_unpin, getString(R.string.Gift2Unpinned))
-                                    .show();
-                        }
-                        ((GiftSheet.GiftCell) view).setPinned(newPinned, true);
-                        listView.scrollToPosition(0);
-                    });
-                    o.addIf(savedStarGift.pinned_to_top, R.drawable.tabs_reorder, getString(R.string.Gift2Reorder), () -> {
-                        setReordering(true);
-                    });
-                }
-
-                final TL_stars.TL_starGiftUnique gift = (TL_stars.TL_starGiftUnique) savedStarGift.gift;
-                final String link;
-                if (savedStarGift.gift.slug != null) {
-                    link = MessagesController.getInstance(currentAccount).linkPrefix + "/nft/" + savedStarGift.gift.slug;
-                } else {
-                    link = null;
-                }
-                if (isMineWithActions(currentAccount, DialogObject.getPeerDialogId(gift.owner_id))) {
-                    final boolean worn = StarGiftSheet.isWorn(currentAccount, gift);
-                    o.add(worn ? R.drawable.menu_takeoff : R.drawable.menu_wear, getString(worn ? R.string.Gift2Unwear : R.string.Gift2Wear), () -> {
-                        new StarGiftSheet(getContext(), currentAccount, dialogId, resourcesProvider) {
-                            @Override
-                            public BulletinFactory getBulletinFactory() {
-                                return BulletinFactory.of(fragment);
-                            }
-                        }
-                            .set(savedStarGift, null)
-                            .toggleWear(false);
-                    });
-                }
-                o.addIf(link != null, R.drawable.msg_link2, getString(R.string.CopyLink), () -> {
-                    AndroidUtilities.addToClipboard(link);
-                    BulletinFactory.of(fragment)
-                        .createCopyLinkBulletin(false)
-                        .show();
-                });
-                o.addIf(link != null, R.drawable.msg_share, getString(R.string.ShareFile), () -> {
-                    new StarGiftSheet(getContext(), currentAccount, dialogId, resourcesProvider) {
-                        @Override
-                        public BulletinFactory getBulletinFactory() {
-                            return BulletinFactory.of(fragment);
-                        }
-                    }
-                        .set(savedStarGift, null)
-                        .onSharePressed(null);
-                });
-            }
-            if (isMineWithActions(currentAccount, dialogId)) {
-                o.add(savedStarGift.unsaved ? R.drawable.msg_message : R.drawable.menu_hide_gift, getString(savedStarGift.unsaved ? R.string.Gift2ShowGift : R.string.Gift2HideGift), () -> {
-                    if (savedStarGift.pinned_to_top && !savedStarGift.unsaved) {
-                        cell.setPinned(false, true);
-                        list.togglePinned(savedStarGift, false, false);
-                    }
-
-                    savedStarGift.unsaved = !savedStarGift.unsaved;
-                    cell.setStarsGift(savedStarGift, true);
-
-                    final TL_stars.saveStarGift req = new TL_stars.saveStarGift();
-                    req.stargift = list.getInput(savedStarGift);
-                    req.unsave = savedStarGift.unsaved;
-                    ConnectionsManager.getInstance(currentAccount).sendRequest(req, null);
-                });
-            }
-            if (savedStarGift.gift instanceof TL_stars.TL_starGiftUnique) {
-                final TL_stars.TL_starGiftUnique gift = (TL_stars.TL_starGiftUnique) savedStarGift.gift;
-                final long selfId = UserConfig.getInstance(currentAccount).getClientUserId();
-                final boolean canTransfer = DialogObject.getPeerDialogId(gift.owner_id) == selfId;
-                o.addIf(canTransfer, R.drawable.menu_transfer, getString(R.string.Gift2TransferOption), () -> {
-                    new StarGiftSheet(getContext(), currentAccount, dialogId, resourcesProvider) {
-                        @Override
-                        public BulletinFactory getBulletinFactory() {
-                            return BulletinFactory.of(fragment);
-                        }
-                    }
-                        .set(savedStarGift, null)
-                        .openTransfer();
-                });
-            }
-            if (o.getItemsCount() <= 0) {
-                return false;
-            }
-            o.setGravity(Gravity.RIGHT);
-            o.setBlur(true);
-            o.allowMoveScrim();
-            final int min = Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y);
-            o.animateToSize(min - dp(32), (int) (min * .6f));
-            o.hideScrimUnder();
-            o.forceBottom(true);
-            o.show();
-            ((GiftSheet.GiftCell) view).imageView.getImageReceiver().startAnimation(true);
-            return true;
-        }
-        return false;
     }
 
     public RecyclerListView getCurrentListView() {
-        return listView;
+        final Page currentPage = getCurrentPage();
+        if (currentPage != null) {
+            return currentPage.listView;
+        }
+        return null;
     }
 
     public static class TextFactory extends UItem.UItemFactory<LinkSpanDrawable.LinksTextView> {
@@ -802,11 +1575,21 @@ public class ProfileGiftsContainer extends FrameLayout implements NotificationCe
     }
 
     public void updateColors() {
+        setBackgroundColor(backgroundColor = Theme.blendOver(
+            Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider),
+            Theme.multAlpha(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider), 0.04f)
+        ));
+        tabsView.setBackgroundColor(backgroundColor);
         button.updateColors();
         button.setBackground(Theme.createRoundRectDrawable(dp(8), processColor(Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider))));
-        emptyViewTitle.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
-        emptyViewButton.setTextColor(Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider));
-        emptyViewButton.setBackground(Theme.createRadSelectorDrawable(Theme.multAlpha(Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider), .10f), 4, 4));
+        View[] pages = viewPager.getViewPages();
+        if (pages != null) {
+            for (int i = 0; i < pages.length; ++i) {
+                if (pages[i] != null) {
+                    ((Page) pages[i]).updateColors();
+                }
+            }
+        }
         buttonContainer.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider));
         buttonShadow.setBackgroundColor(Theme.getColor(Theme.key_dialogGrayLine, resourcesProvider));
         checkboxTextView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
@@ -893,6 +1676,590 @@ public class ProfileGiftsContainer extends FrameLayout implements NotificationCe
             });
 
             setCustomView(layout);
+        }
+    }
+
+    private void openEnterNameAlert(String editing, Utilities.Callback<String> whenDone) {
+        final Context context = getContext();
+
+        Activity activity = AndroidUtilities.findActivity(context);
+        View currentFocus = activity != null ? activity.getCurrentFocus() : null;
+        final boolean adaptive = false;
+        AlertDialog[] dialog = new AlertDialog[1];
+        AlertDialog.Builder builder;
+        if (adaptive) {
+            builder = new AlertDialogDecor.Builder(context, resourcesProvider);
+        } else {
+            builder = new AlertDialog.Builder(context, resourcesProvider);
+        }
+        TextView[] positiveButton = new TextView[1];
+
+        if (editing != null) {
+            builder.setTitle(getString(R.string.Gift2EditCollectionNameTitle));
+        } else {
+            builder.setTitle(getString(R.string.Gift2NewCollectionTitle));
+            builder.setMessage(getString(R.string.Gift2NewCollectionText));
+        }
+        final int MAX_LENGTH = 12;
+        EditTextCaption editText = new EditTextCaption(context, resourcesProvider) {
+            AnimatedColor limitColor = new AnimatedColor(this);
+            private int limitCount;
+            AnimatedTextView.AnimatedTextDrawable limit = new AnimatedTextView.AnimatedTextDrawable(false, true, true); {
+                limit.setAnimationProperties(.2f, 0, 160, CubicBezierInterpolator.EASE_OUT_QUINT);
+                limit.setTextSize(dp(15.33f));
+                limit.setCallback(this);
+                limit.setGravity(Gravity.RIGHT);
+            }
+
+            @Override
+            protected boolean verifyDrawable(@NonNull Drawable who) {
+                return who == limit || super.verifyDrawable(who);
+            }
+
+            @Override
+            protected void onTextChanged(CharSequence text, int start, int lengthBefore, int lengthAfter) {
+                super.onTextChanged(text, start, lengthBefore, lengthAfter);
+
+                if (limit != null) {
+                    limitCount = MAX_LENGTH - text.length();
+                    limit.cancelAnimation();
+                    limit.setText(limitCount > 4 ? "" : "" + limitCount);
+                }
+            }
+
+            @Override
+            protected void dispatchDraw(Canvas canvas) {
+                super.dispatchDraw(canvas);
+
+                limit.setTextColor(limitColor.set(Theme.getColor(limitCount < 0 ? Theme.key_text_RedRegular : Theme.key_dialogSearchHint, resourcesProvider)));
+                limit.setBounds(getScrollX(), 0, getScrollX() + getWidth(), getHeight());
+                limit.draw(canvas);
+            }
+        };
+        editText.lineYFix = true;
+        editText.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+            @Override
+            public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+                if (actionId == EditorInfo.IME_ACTION_DONE) {
+                    String text = editText.getText().toString();
+                    if (text.length() <= 0 || text.length() > MAX_LENGTH) {
+                        AndroidUtilities.shakeView(editText);
+                        return true;
+                    }
+
+                    whenDone.run(text);
+
+                    if (dialog[0] != null) {
+                        dialog[0].dismiss();
+                    }
+                    if (currentFocus != null) {
+                        currentFocus.requestFocus();
+                    }
+                    return true;
+                }
+                return false;
+            }
+        });
+        MediaDataController.getInstance(currentAccount).fetchNewEmojiKeywords(AndroidUtilities.getCurrentKeyboardLanguage(), true);
+        editText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
+        editText.setTextColor(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
+        editText.setHintColor(Theme.getColor(Theme.key_groupcreate_hintText, resourcesProvider));
+        editText.setHintText(getString(R.string.Gift2NewCollectionHint));
+        editText.setFocusable(true);
+        editText.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_MULTI_LINE | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
+        editText.setLineColors(Theme.getColor(Theme.key_windowBackgroundWhiteInputField, resourcesProvider), Theme.getColor(Theme.key_windowBackgroundWhiteInputFieldActivated, resourcesProvider), Theme.getColor(Theme.key_text_RedRegular, resourcesProvider));
+        editText.setImeOptions(EditorInfo.IME_ACTION_DONE);
+        editText.setBackgroundDrawable(null);
+        editText.setPadding(0, dp(6), 0, dp(6));
+
+        editText.addTextChangedListener(new TextWatcher() {
+            boolean ignoreTextChange;
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {}
+            @Override
+            public void afterTextChanged(Editable s) {
+                if (ignoreTextChange) {
+                    return;
+                }
+                if (s.length() > MAX_LENGTH) {
+                    ignoreTextChange = true;
+                    s.delete(MAX_LENGTH, s.length());
+                    AndroidUtilities.shakeView(editText);
+                    try {
+                        editText.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
+                    } catch (Exception ignore) {}
+                    ignoreTextChange = false;
+                }
+            }
+        });
+
+        LinearLayout container = new LinearLayout(context);
+        container.setOrientation(LinearLayout.VERTICAL);
+
+        editText.setText(editing);
+        container.addView(editText, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 24, 0, 24, 10));
+        builder.makeCustomMaxHeight();
+        builder.setView(container);
+        builder.setWidth(dp(292));
+
+        builder.setPositiveButton(getString(editing != null ? R.string.Edit : R.string.Create), (dialogInterface, i) -> {
+            String text = editText.getText().toString();
+            if (text.length() <= 0 || text.length() > MAX_LENGTH) {
+                AndroidUtilities.shakeView(editText);
+                return;
+            }
+
+            whenDone.run(text);
+
+            dialogInterface.dismiss();
+        });
+        builder.setNegativeButton(getString(R.string.Cancel), (dialogInterface, i) -> {
+            dialogInterface.dismiss();
+        });
+        dialog[0] = builder.create();
+        if (currentMenu != null && currentMenu.actionBarPopupWindow != null) {
+            currentMenu.actionBarPopupWindow.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_NOTHING);
+        }
+        AndroidUtilities.requestAdjustNothing(activity, fragment.getClassGuid());
+        dialog[0].setOnDismissListener(d -> {
+            AndroidUtilities.hideKeyboard(editText);
+            AndroidUtilities.requestAdjustResize(activity, fragment.getClassGuid());
+        });
+        dialog[0].setOnShowListener(d -> {
+            editText.requestFocus();
+            AndroidUtilities.showKeyboard(editText);
+        });
+        dialog[0].show();
+        dialog[0].setDismissDialogByButtons(false);
+        View button = dialog[0].getButton(DialogInterface.BUTTON_POSITIVE);
+        if (button instanceof TextView) {
+            positiveButton[0] = (TextView) button;
+        }
+        editText.setSelection(editText.getText().length());
+    }
+
+    public void createCollection() {
+        openEnterNameAlert(null, name -> {
+            collections.createCollection(name, collection -> {
+                fillTabs(true);
+                tabsView.scrollToTab(collection.collection_id, 1 + collections.indexOf(collection.collection_id));
+                if (fragment instanceof ProfileActivity) {
+                    ((ProfileActivity) fragment).scrollToSharedMedia(true);
+                }
+                updateTabsShown(true);
+            });
+        });
+    }
+
+    public void addGifts() {
+        final Page currentPage = getCurrentPage();
+        if (currentPage == null || currentPage.list == null || !currentPage.isCollection) return;
+        final int collectionId = currentPage.list.collectionId;
+        new SelectGiftsBottomSheet(fragment, dialogId, collectionId, gifts -> {
+            collections.addGifts(collectionId, gifts, true);
+            currentPage.update(true);
+            fillTabs(true);
+            updateTabsShown(true);
+
+            final TL_stars.TL_starGiftCollection collection = collections.findById(collectionId);
+            if (collection != null) {
+                if (gifts.size() > 1) {
+                    final TL_stars.SavedStarGift firstGift = gifts.get(0);
+                    final Bulletin bulletin = BulletinFactory.of(fragment)
+                        .createSimpleMultiBulletin(
+                            firstGift.gift.getDocument(),
+                            AndroidUtilities.replaceTags(formatPluralStringComma("Gift2AddedToCollectionMany", gifts.size(), collection.title))
+                        );
+                    bulletin.hideAfterBottomSheet = false;
+                    bulletin.show();
+                } else if (gifts.size() == 1) {
+                    final TL_stars.SavedStarGift gift = gifts.get(0);
+                    final Bulletin bulletin = BulletinFactory.of(fragment)
+                        .createSimpleMultiBulletin(
+                            gift.gift.getDocument(),
+                            AndroidUtilities.replaceTags(formatString(R.string.Gift2AddedToCollection, getGiftName(gift.gift), collection.title))
+                        );
+                    bulletin.hideAfterBottomSheet = false;
+                    bulletin.show();
+                }
+            }
+        }).show();
+    }
+
+    public static class SelectGiftsBottomSheet extends BottomSheetWithRecyclerListView implements NotificationCenter.NotificationCenterDelegate {
+
+        private final long dialogId;
+        private final int collectionId;
+        private final StarsController.GiftsList list;
+        private final HashSet<Integer> selectedGiftIds = new HashSet<>();
+
+        private final ExtendedGridLayoutManager layoutManager;
+
+        private final FrameLayout buttonContainer;
+        private final ButtonWithCounterView button;
+
+        private ItemOptions lastMenu;
+
+        public SelectGiftsBottomSheet(
+            BaseFragment fragment,
+            long dialogId,
+            int collectionId,
+
+            Utilities.Callback<ArrayList<TL_stars.SavedStarGift>> whenSelected
+        ) {
+            super(fragment, false, false, ActionBarType.SLIDING);
+
+            ignoreTouchActionBar = false;
+            headerMoveTop = dp(12);
+
+            fixNavigationBar();
+            setSlidingActionBar();
+
+            this.dialogId = dialogId;
+            this.collectionId = collectionId;
+            this.list = new StarsController.GiftsList(currentAccount, dialogId);
+
+            final ActionBarMenu menu = actionBar.createMenu();
+            final ActionBarMenuItem other = menu.addItem(1, R.drawable.ic_ab_other);
+            actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
+                @Override
+                public void onItemClick(int id) {
+                    if (id == 1) {
+                        if (lastMenu != null) {
+                            lastMenu.dismiss();
+                        }
+                        final ItemOptions o = lastMenu = ItemOptions.makeOptions(container, resourcesProvider, other);
+                        final boolean hiddenFilters;
+
+                        if (dialogId == UserConfig.getInstance(currentAccount).getClientUserId()) {
+                            hiddenFilters = true;
+                        } else if (dialogId >= 0) {
+                            hiddenFilters = false;
+                        } else {
+                            final TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-dialogId);
+                            hiddenFilters = ChatObject.canUserDoAction(chat, ChatObject.ACTION_POST);
+                        }
+
+                        final ActionBarMenuSubItem sorting = o.add();
+                        o.addGap();
+                        final ActionBarMenuSubItem unlimited = o.addChecked();
+                        unlimited.setText(getString(R.string.Gift2FilterUnlimited));
+                        final ActionBarMenuSubItem limited = o.addChecked();
+                        limited.setText(getString(R.string.Gift2FilterLimited));
+                        final ActionBarMenuSubItem unique = o.addChecked();
+                        unique.setText(getString(R.string.Gift2FilterUnique));
+                        final ActionBarMenuSubItem displayed, hidden;
+                        if (hiddenFilters) {
+                            o.addGap();
+                            displayed = o.addChecked();
+                            displayed.setText(getString(R.string.Gift2FilterDisplayed));
+                            hidden = o.addChecked();
+                            hidden.setText(getString(R.string.Gift2FilterHidden));
+                        } else {
+                            displayed = null;
+                            hidden = null;
+                        }
+
+                        final Runnable update = () -> {
+                            if (sorting != null) {
+                                sorting.setTextAndIcon(getString(list.sort_by_date ? R.string.Gift2FilterSortByValue : R.string.Gift2FilterSortByDate), list.sort_by_date ? R.drawable.menu_sort_value : R.drawable.menu_sort_date);
+                            }
+
+                            unlimited.setChecked(list.include_unlimited);
+                            limited.setChecked(list.include_limited);
+                            unique.setChecked(list.include_unique);
+
+                            if (hiddenFilters) {
+                                displayed.setChecked(list.include_displayed);
+                                hidden.setChecked(list.include_hidden);
+                            }
+                        };
+                        update.run();
+
+                        if (sorting != null) {
+                            sorting.setOnClickListener(v -> {
+                                list.sort_by_date = !list.sort_by_date;
+                                update.run();
+                                list.invalidate(true);
+                            });
+                        }
+                        unlimited.setOnClickListener(v -> {
+                            if (list.include_unlimited && !list.include_limited && !list.include_unique) {
+                                list.include_unlimited = false;
+                                list.include_limited = true;
+                                list.include_unique = true;
+                            } else {
+                                list.include_unlimited = !list.include_unlimited;
+                            }
+                            update.run();
+                            list.invalidate(true);
+                        });
+                        unlimited.setOnLongClickListener(v -> {
+                            list.include_unlimited = true;
+                            list.include_limited = false;
+                            list.include_unique = false;
+                            update.run();
+                            list.invalidate(true);
+                            return true;
+                        });
+                        limited.setOnClickListener(v -> {
+                            if (list.include_limited && !list.include_unlimited && !list.include_unique) {
+                                list.include_limited = false;
+                                list.include_unlimited = true;
+                                list.include_unique = true;
+                            } else {
+                                list.include_limited = !list.include_limited;
+                            }
+                            update.run();
+                            list.invalidate(true);
+                        });
+                        limited.setOnLongClickListener(v -> {
+                            list.include_unlimited = false;
+                            list.include_limited = true;
+                            list.include_unique = false;
+                            update.run();
+                            list.invalidate(true);
+                            return true;
+                        });
+                        unique.setOnClickListener(v -> {
+                            if (list.include_unique && !list.include_limited && !list.include_unlimited) {
+                                list.include_limited = true;
+                                list.include_unlimited = true;
+                                list.include_unique = false;
+                            } else {
+                                list.include_unique = !list.include_unique;
+                            }
+                            update.run();
+                            list.invalidate(true);
+                        });
+                        unique.setOnLongClickListener(v -> {
+                            list.include_unlimited = false;
+                            list.include_limited = false;
+                            list.include_unique = true;
+                            update.run();
+                            list.invalidate(true);
+                            return true;
+                        });
+                        if (hiddenFilters) {
+                            displayed.setOnClickListener(v -> {
+                                if (list.include_displayed && !list.include_hidden) {
+                                    list.include_displayed = false;
+                                    list.include_hidden = true;
+                                } else {
+                                    list.include_displayed = !list.include_displayed;
+                                }
+                                update.run();
+                                list.invalidate(true);
+                            });
+                            displayed.setOnLongClickListener(v -> {
+                                list.include_displayed = true;
+                                list.include_hidden = false;
+                                update.run();
+                                list.invalidate(true);
+                                return true;
+                            });
+                            hidden.setOnClickListener(v -> {
+                                if (list.include_hidden && !list.include_displayed) {
+                                    list.include_hidden = false;
+                                    list.include_displayed = true;
+                                } else {
+                                    list.include_hidden = !list.include_hidden;
+                                }
+                                update.run();
+                                list.invalidate(true);
+                            });
+                            hidden.setOnLongClickListener(v -> {
+                                list.include_displayed = false;
+                                list.include_hidden = true;
+                                update.run();
+                                list.invalidate(true);
+                                return true;
+                            });
+                        }
+                        o
+                            .setOnTopOfScrim()
+                            .setDismissWithButtons(false)
+                            .setDimAlpha(0)
+                            .show();
+                    } else if (id == -1) {
+                        dismiss();
+                    }
+                }
+            });
+
+            buttonContainer = new FrameLayout(getContext());
+            buttonContainer.setBackgroundColor(Theme.getColor(Theme.key_dialogBackground, resourcesProvider));
+            buttonContainer.setPadding(backgroundPaddingLeft, 0, backgroundPaddingLeft, 0);
+            containerView.addView(buttonContainer, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM | Gravity.FILL_HORIZONTAL, 0, 0, 0, 0));
+
+            View buttonShadow = new View(getContext());
+            buttonShadow.setBackgroundColor(Theme.getColor(Theme.key_divider, resourcesProvider));
+            buttonContainer.addView(buttonShadow, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 1.0f / AndroidUtilities.density, Gravity.FILL_HORIZONTAL | Gravity.TOP));
+
+            button = new ButtonWithCounterView(getContext(), resourcesProvider);
+            button.setText(getString(R.string.Gift2CollectionAddGiftsButton), false);
+            button.setEnabled(false);
+            button.setOnClickListener(v -> {
+                if (selectedGiftIds.isEmpty()) return;
+
+                final ArrayList<TL_stars.SavedStarGift> selectedGifts = new ArrayList<>();
+                for (int msg_id : selectedGiftIds) {
+                    TL_stars.SavedStarGift gift = null;
+                    for (TL_stars.SavedStarGift g : list.gifts) {
+                        if (g.msg_id == msg_id) {
+                            gift = g;
+                            break;
+                        }
+                    }
+
+                    if (gift != null) {
+                        selectedGifts.add(gift);
+                    }
+                }
+
+                whenSelected.run(selectedGifts);
+                dismiss();
+            });
+            buttonContainer.addView(button, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.FILL, 10, 10 + (1.0f / AndroidUtilities.density), 10, 10));
+
+            layoutManager = new ExtendedGridLayoutManager(getContext(), 3);
+            layoutManager.setSpanSizeLookup(new GridLayoutManager.SpanSizeLookup() {
+                @Override
+                public int getSpanSize(int position) {
+                    if (adapter == null)
+                        return layoutManager.getSpanCount();
+                    final UItem item = adapter.getItem(position - 1);
+                    if (item == null || item.spanCount == UItem.MAX_SPAN_COUNT)
+                        return layoutManager.getSpanCount();
+                    return item.spanCount;
+                }
+            });
+            this.recyclerListView.setPadding(backgroundPaddingLeft + dp(9), 0, backgroundPaddingLeft + dp(9), 0);
+            this.recyclerListView.setSelectorType(9);
+            this.recyclerListView.setSelectorDrawableColor(0);
+            this.recyclerListView.setLayoutManager(layoutManager);
+            this.recyclerListView.setOnItemClickListener((view, position) -> {
+                if (adapter == null)
+                    return;
+                final UItem item = adapter.getItem(position - 1);
+                if (item != null && item.object instanceof TL_stars.SavedStarGift) {
+                    TL_stars.SavedStarGift g = (TL_stars.SavedStarGift) item.object;
+                    final int id = g.msg_id;
+                    if (selectedGiftIds.contains(id)) {
+                        selectedGiftIds.remove(id);
+                        ((GiftSheet.GiftCell) view).setChecked(false, true);
+                    } else {
+                        selectedGiftIds.add(id);
+                        ((GiftSheet.GiftCell) view).setChecked(true, true);
+                    }
+
+                    button.setEnabled(selectedGiftIds.size() > 0);
+                    button.setCount(selectedGiftIds.size(), true);
+                }
+            });
+            this.recyclerListView.addOnScrollListener(new RecyclerView.OnScrollListener() {
+                @Override
+                public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
+                    if (isLoadingVisible()) {
+                        list.load();
+                    }
+                }
+            });
+            final DefaultItemAnimator itemAnimator = new DefaultItemAnimator();
+            itemAnimator.setSupportsChangeAnimations(false);
+            itemAnimator.setDelayAnimations(false);
+            itemAnimator.setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT);
+            itemAnimator.setDurations(350);
+            this.recyclerListView.setItemAnimator(itemAnimator);
+
+            adapter.update(true);
+
+            NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.starUserGiftsLoaded);
+        }
+
+        @Override
+        public void didReceivedNotification(int id, int account, Object... args) {
+            if (id == NotificationCenter.starUserGiftsLoaded) {
+                if (this.adapter != null) {
+                    this.adapter.update(true);
+                    if (isLoadingVisible()) {
+                        list.load();
+                    }
+                }
+            }
+        }
+
+        private boolean isLoadingVisible() {
+            if (this.recyclerListView == null || !this.recyclerListView.isAttachedToWindow())
+                return false;
+            for (int i = 0; i < this.recyclerListView.getChildCount(); ++i) {
+                if (this.recyclerListView.getChildAt(i) instanceof FlickerLoadingView)
+                    return true;
+            }
+            return false;
+        }
+
+        @Override
+        public void dismiss() {
+            NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.starUserGiftsLoaded);
+            super.dismiss();
+        }
+
+        @Override
+        protected CharSequence getTitle() {
+            return getString(R.string.Gift2CollectionAddGiftsTitle);
+        }
+
+        private UniversalAdapter adapter;
+        @Override
+        protected RecyclerListView.SelectionAdapter createAdapter(RecyclerListView listView) {
+            adapter = new UniversalAdapter(listView, getContext(), currentAccount, 0, this::fillItems, resourcesProvider);
+            adapter.setApplyBackground(false);
+            return adapter;
+        }
+
+        private void fillItems(ArrayList<UItem> items, UniversalAdapter adapter) {
+            if (list == null) return;
+
+            items.add(UItem.asSpace(dp(16)));
+
+            if (list.loading && list.gifts.isEmpty()) {
+                items.add(UItem.asFlicker(1, FlickerLoadingView.STAR_GIFT).setSpanCount(1));
+                items.add(UItem.asFlicker(2, FlickerLoadingView.STAR_GIFT).setSpanCount(1));
+                items.add(UItem.asFlicker(3, FlickerLoadingView.STAR_GIFT).setSpanCount(1));
+
+                items.add(UItem.asFlicker(4, FlickerLoadingView.STAR_GIFT).setSpanCount(1));
+                items.add(UItem.asFlicker(5, FlickerLoadingView.STAR_GIFT).setSpanCount(1));
+                items.add(UItem.asFlicker(6, FlickerLoadingView.STAR_GIFT).setSpanCount(1));
+
+                items.add(UItem.asFlicker(7, FlickerLoadingView.STAR_GIFT).setSpanCount(1));
+                items.add(UItem.asFlicker(8, FlickerLoadingView.STAR_GIFT).setSpanCount(1));
+                items.add(UItem.asFlicker(9, FlickerLoadingView.STAR_GIFT).setSpanCount(1));
+            } else {
+                int spanCountLeft = 3;
+                for (TL_stars.SavedStarGift g : list.gifts) {
+                    if (g.collection_id.contains(collectionId))
+                        continue;
+                    items.add(
+                        GiftSheet.GiftCell.Factory.asStarGift(0, g, true, true, false)
+                            .setChecked(selectedGiftIds.contains(g.msg_id))
+                            .setSpanCount(1)
+                    );
+                    spanCountLeft--;
+                    if (spanCountLeft == 0) {
+                        spanCountLeft = 3;
+                    }
+                }
+                if (list.loading || !list.endReached) {
+                    for (int i = 0; i < (spanCountLeft <= 0 ? 3 : spanCountLeft); ++i) {
+                        items.add(UItem.asFlicker(1 + i, FlickerLoadingView.STAR_GIFT).setSpanCount(1));
+                    }
+                }
+            }
+
+            items.add(UItem.asSpace(dp(10 + 48 + 10)));
         }
     }
 

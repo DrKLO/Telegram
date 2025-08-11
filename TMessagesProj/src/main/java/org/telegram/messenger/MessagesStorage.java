@@ -1419,6 +1419,7 @@ public class MessagesStorage extends BaseController {
                 database.executeFast("DELETE FROM effects").stepThis().dispose();
                 database.executeFast("DELETE FROM app_config").stepThis().dispose();
                 database.executeFast("DELETE FROM star_gifts2").stepThis().dispose();
+                database.executeFast("DELETE FROM premium_promo").stepThis().dispose();
 
 
                 cursor = database.queryFinalized("SELECT did FROM dialogs WHERE 1");
@@ -15613,6 +15614,17 @@ public class MessagesStorage extends BaseController {
                 } else if (emojiToLoad != null && entity instanceof TLRPC.TL_messageEntityCustomEmoji) {
                     emojiToLoad.add(((TLRPC.TL_messageEntityCustomEmoji) entity).document_id);
                 }
+            }
+        }
+        if (message.action instanceof TLRPC.TL_messageActionStarGift) {
+            TLRPC.TL_messageActionStarGift action = (TLRPC.TL_messageActionStarGift) message.action;
+            if (action.gift != null && action.gift.released_by != null) {
+                addLoadPeerInfo(action.gift.released_by, usersToLoad, chatsToLoad);
+            }
+        } else if (message.action instanceof TLRPC.TL_messageActionStarGiftUnique) {
+            TLRPC.TL_messageActionStarGiftUnique action = (TLRPC.TL_messageActionStarGiftUnique) message.action;
+            if (action.gift != null && action.gift.released_by != null) {
+                addLoadPeerInfo(action.gift.released_by, usersToLoad, chatsToLoad);
             }
         }
         if (message.media != null) {

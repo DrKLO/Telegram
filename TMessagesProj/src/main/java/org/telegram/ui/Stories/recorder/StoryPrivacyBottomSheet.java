@@ -3902,8 +3902,8 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
                     this.rules.add(rule);
                 }
             } else if (type == TYPE_SELECTED_CONTACTS) {
+                final TLRPC.TL_inputPrivacyValueAllowUsers rule = new TLRPC.TL_inputPrivacyValueAllowUsers();
                 if (currentAccount >= 0 && userIds != null && !userIds.isEmpty()) {
-                    final TLRPC.TL_inputPrivacyValueAllowUsers rule = new TLRPC.TL_inputPrivacyValueAllowUsers();
                     for (int i = 0; i < userIds.size(); ++i) {
                         long userId = userIds.get(i);
                         selectedUserIds.add(userId);
@@ -3913,8 +3913,8 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
                             selectedInputUsers.add(user);
                         }
                     }
-                    this.rules.add(rule);
                 }
+                this.rules.add(rule);
             } else if (type == TYPE_AS_MESSAGE) {
                 if (userIds != null) {
                     this.sendToUsers.addAll(userIds);
@@ -3955,8 +3955,8 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
                     this.rules.add(rule);
                 }
             } else if (type == TYPE_SELECTED_CONTACTS) {
+                final TLRPC.TL_inputPrivacyValueAllowUsers rule = new TLRPC.TL_inputPrivacyValueAllowUsers();
                 if (inputUserIds != null && !inputUserIds.isEmpty()) {
-                    final TLRPC.TL_inputPrivacyValueAllowUsers rule = new TLRPC.TL_inputPrivacyValueAllowUsers();
                     for (int i = 0; i < inputUserIds.size(); ++i) {
                         TLRPC.InputUser user = inputUserIds.get(i);
                         if (user != null) {
@@ -3965,8 +3965,8 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
                             selectedInputUsers.add(user);
                         }
                     }
-                    this.rules.add(rule);
                 }
+                this.rules.add(rule);
             } else if (type == TYPE_AS_MESSAGE) {
                 if (inputUserIds != null) {
                     for (int i = 0; i < inputUserIds.size(); ++i) {

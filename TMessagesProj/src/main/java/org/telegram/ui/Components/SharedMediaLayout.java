@@ -108,6 +108,8 @@ import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Adapters.SearchAdapterHelper;
 import org.telegram.ui.CalendarActivity;
 import org.telegram.ui.Cells.ChatActionCell;
+import org.telegram.ui.Cells.ChatMessageCell;
+import org.telegram.ui.Cells.CheckBoxCell;
 import org.telegram.ui.Cells.ContextLinkCell;
 import org.telegram.ui.Cells.DialogCell;
 import org.telegram.ui.Cells.DividerCell;
@@ -141,6 +143,7 @@ import org.telegram.ui.Stories.ViewsForPeerStoriesRequester;
 import org.telegram.ui.Stories.bots.BotPreviewsEditContainer;
 import org.telegram.ui.Stories.recorder.ButtonWithCounterView;
 import org.telegram.ui.Stories.recorder.StoryRecorder;
+import org.telegram.ui.ThemeActivity;
 import org.telegram.ui.TopicsFragment;
 
 import java.util.ArrayList;
@@ -1735,12 +1738,37 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                 final int currentAccount = profileActivity.getCurrentAccount();
                 final TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(dialog_id);
                 if (tab == TAB_GIFTS) {
-                    final StarsController.GiftsList list = giftsContainer.getList();
+                    final ProfileGiftsContainer.Page page = giftsContainer.getCurrentPage();
+                    final StarsController.GiftsList list = page.list;
+                    if (list == null) return;
                     final boolean hiddenFilters = giftsContainer.canFilterHidden();
-                    final ItemOptions o = ItemOptions.makeOptions(profileActivity, photoVideoOptionsItem);
 
-                    final ActionBarMenuSubItem sorting = o.add();
-                    o.addGap();
+                    final ItemOptions o = ItemOptions.makeOptions(profileActivity, photoVideoOptionsItem);
+                    final ActionBarMenuSubItem sorting;
+                    boolean gap = false;
+                    if (!list.isCollection) {
+                        sorting = o.add();
+                        gap = true;
+                    } else {
+                        sorting = null;
+                    }
+                    if (giftsContainer.canAdd()) {
+                        o.add(R.drawable.menu_folder_add, getString(R.string.Gift2NewCollection), () -> {
+                            giftsContainer.createCollection();
+                            o.dismiss();
+                        });
+                        gap = true;
+                    }
+                    if (giftsContainer.collections.isMine()) {
+                        if (!list.getPinned().isEmpty() || page.isCollection) {
+                            o.add(R.drawable.tabs_reorder, getString(R.string.Gift2Reorder), () -> {
+                                giftsContainer.setReordering(true);
+                                o.dismiss();
+                            });
+                        }
+                        gap = true;
+                    }
+                    if (gap) o.addGap();
                     final ActionBarMenuSubItem unlimited = o.addChecked();
                     unlimited.setText(getString(R.string.Gift2FilterUnlimited));
                     final ActionBarMenuSubItem limited = o.addChecked();
@@ -1760,7 +1788,9 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                     }
 
                     final Runnable update = () -> {
-                        sorting.setTextAndIcon(getString(list.sort_by_date ? R.string.Gift2FilterSortByValue : R.string.Gift2FilterSortByDate), list.sort_by_date ? R.drawable.menu_sort_value : R.drawable.menu_sort_date);
+                        if (sorting != null) {
+                            sorting.setTextAndIcon(getString(list.sort_by_date ? R.string.Gift2FilterSortByValue : R.string.Gift2FilterSortByDate), list.sort_by_date ? R.drawable.menu_sort_value : R.drawable.menu_sort_date);
+                        }
 
                         unlimited.setChecked(list.include_unlimited);
                         limited.setChecked(list.include_limited);
@@ -1773,11 +1803,13 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                     };
                     update.run();
 
-                    sorting.setOnClickListener(v -> {
-                        list.sort_by_date = !list.sort_by_date;
-                        update.run();
-                        list.invalidate(true);
-                    });
+                    if (sorting != null) {
+                        sorting.setOnClickListener(v -> {
+                            list.sort_by_date = !list.sort_by_date;
+                            update.run();
+                            list.invalidate(true);
+                        });
+                    }
                     unlimited.setOnClickListener(v -> {
                         if (list.include_unlimited && !list.include_limited && !list.include_unique) {
                             list.include_unlimited = false;
@@ -2982,12 +3014,85 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                 } else if (mediaPage.selectedType == TAB_GIF && view instanceof ContextLinkCell) {
                     onItemClick(position, view, (MessageObject) ((ContextLinkCell) view).getParentObject(), 0, mediaPage.selectedType);
                 } else if (mediaPage.selectedType == TAB_PHOTOVIDEO && view instanceof SharedPhotoVideoCell2) {
-                    SharedPhotoVideoCell2 cell = (SharedPhotoVideoCell2) view;
+                    final SharedPhotoVideoCell2 cell = (SharedPhotoVideoCell2) view;
+                    final MessageObject messageObject = cell.getMessageObject();
+                    if (messageObject != null && messageObject.isSensitive()) {
+                        if (profileActivity == null) return;
+                        final int currentAccount = profileActivity.getCurrentAccount();
+                        final MessagesController messagesController = MessagesController.getInstance(currentAccount);
+                        final AlertDialog progressDialog = new AlertDialog(context, AlertDialog.ALERT_TYPE_SPINNER);
+                        progressDialog.showDelayed(200);
+                        messagesController.getContentSettings(settings -> {
+                            progressDialog.dismissUnless(200);
+                            final boolean needsVerification = messagesController.config.needAgeVideoVerification.get() && !TextUtils.isEmpty(messagesController.verifyAgeBotUsername);
+                            final boolean cannotView = !(settings != null && settings.sensitive_can_change) && needsVerification;
+                            boolean[] always = new boolean[1];
+                            FrameLayout frameLayout = new FrameLayout(context);
+                            if (needsVerification) {
+                                always[0] = true;
+                            } else if (settings != null && settings.sensitive_can_change) {
+                                CheckBoxCell checkbox = new CheckBoxCell(context, 1, profileActivity == null ? null : profileActivity.getResourceProvider());
+                                checkbox.setBackground(Theme.getSelectorDrawable(false));
+                                checkbox.setText(getString(R.string.MessageShowSensitiveContentAlways), "", always[0], false);
+                                checkbox.setPadding(LocaleController.isRTL ? dp(16) : dp(8), 0, LocaleController.isRTL ? dp(8) : dp(16), 0);
+                                frameLayout.addView(checkbox, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.TOP | Gravity.LEFT, 0, 0, 0, 0));
+                                checkbox.setOnClickListener(v -> {
+                                    CheckBoxCell cell1 = (CheckBoxCell) v;
+                                    always[0] = !always[0];
+                                    cell1.setChecked(always[0], true);
+                                });
+                            }
+                            final AlertDialog.Builder alert = new AlertDialog.Builder(context, profileActivity == null ? null : profileActivity.getResourceProvider())
+                                .setTitle(getString(R.string.MessageShowSensitiveContentMediaTitle))
+                                .setMessage(getString(cannotView ? R.string.MessageShowSensitiveContentMediaTextClosed : R.string.MessageShowSensitiveContentMediaText))
+                                .setView(frameLayout).setCustomViewOffset(9)
+                                .setNegativeButton(getString(cannotView ? R.string.MessageShowSensitiveContentMediaTextClosedButton : R.string.Cancel), null);
+                            if (!cannotView) {
+                                alert.setPositiveButton(getString(R.string.MessageShowSensitiveContentButton), (di, w) -> {
+                                    final Utilities.Callback<Boolean> reveal = (all) -> {
+                                        cell.startRevealMedia(x, y);
+                                    };
+                                    if (always[0]) {
+                                        if (needsVerification || settings != null && settings.sensitive_can_change) {
+                                            final BaseFragment lastFragment1 = LaunchActivity.getSafeLastFragment();
+                                            ThemeActivity.verifyAge(context, currentAccount, passed -> {
+                                                final BaseFragment lastFragment2 = LaunchActivity.getSafeLastFragment();
+                                                if (passed) {
+                                                    messagesController.setContentSettings(true);
+                                                    if (lastFragment2 != null) {
+                                                        BulletinFactory.of(lastFragment2)
+                                                            .createSimpleBulletinDetail(R.raw.chats_infotip, AndroidUtilities.replaceArrows(AndroidUtilities.premiumText(getString(R.string.SensitiveContentSettingsToast), () -> {
+                                                                lastFragment2.presentFragment(new ThemeActivity(ThemeActivity.THEME_TYPE_BASIC).highlightSensitiveRow());
+                                                            }), true))
+                                                            .show(true);
+                                                    }
+                                                    reveal.run(true);
+                                                } else if (lastFragment2 != null) {
+                                                    BulletinFactory.of(lastFragment2)
+                                                        .createSimpleBulletin(R.raw.error, getString(R.string.AgeVerificationFailedTitle), getString(R.string.AgeVerificationFailedText))
+                                                        .show();
+                                                }
+                                            }, lastFragment1 == null ? null : lastFragment1.getResourceProvider());
+                                        } else {
+                                            reveal.run(true);
+                                        }
+                                    } else {
+                                        reveal.run(false);
+                                    }
+                                });
+                            }
+                            if (profileActivity != null && profileActivity.getContext() != null) {
+                                profileActivity.showDialog(alert.create());
+                            } else {
+                                alert.show();
+                            }
+                        });
+                        return;
+                    }
                     if (cell.canRevealSpoiler()) {
                         cell.startRevealMedia(x, y);
                         return;
                     }
-                    MessageObject messageObject = cell.getMessageObject();
                     if (messageObject != null) {
                         onItemClick(position, view, messageObject, 0, mediaPage.selectedType);
                     }
@@ -4865,6 +4970,9 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
             return false;
         }
         if (mediaPages[0] != null && mediaPages[0].selectedType == TAB_BOT_PREVIEWS && botPreviewsContainer != null && !botPreviewsContainer.canScroll(forward)) {
+            return false;
+        }
+        if (mediaPages[0] != null && mediaPages[0].selectedType == TAB_GIFTS && giftsContainer != null && !giftsContainer.canScroll(forward)) {
             return false;
         }
         if (isActionModeShowed && mediaPages[0] != null && mediaPages[0].selectedType == TAB_BOT_PREVIEWS) {

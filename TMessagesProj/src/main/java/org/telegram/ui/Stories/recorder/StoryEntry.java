@@ -21,6 +21,7 @@ import android.text.TextUtils;
 import android.util.Pair;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
@@ -34,12 +35,12 @@ import org.telegram.messenger.ImageLoader;
 import org.telegram.messenger.MediaController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.SendMessagesHelper;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.messenger.VideoEditedInfo;
 import org.telegram.messenger.video.MediaCodecVideoConvertor;
-import org.telegram.tgnet.AbstractSerializedData;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.RequestDelegate;
 import org.telegram.tgnet.TLObject;
@@ -47,14 +48,13 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.Vector;
 import org.telegram.tgnet.tl.TL_stories;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ChatActivity;
 import org.telegram.ui.Components.AnimatedFileDrawable;
 import org.telegram.ui.Components.PhotoFilterView;
 import org.telegram.ui.Components.RLottieDrawable;
 
 import java.io.File;
 import java.io.FileOutputStream;
-import java.nio.file.Files;
-import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -76,6 +76,7 @@ public class StoryEntry {
     public ArrayList<TL_stories.MediaArea> editedMediaAreas;
 
     public boolean isRepost;
+    public boolean isShare;
     public CharSequence repostPeerName;
     public TLRPC.Peer repostPeer;
     public int repostStoryId;
@@ -1022,6 +1023,25 @@ public class StoryEntry {
         return entry;
     }
 
+    @Nullable
+    public static StoryEntry fromMedia(ArrayList<SendMessagesHelper.SendingMediaInfo> photoPathes) {
+        final ArrayList<MediaController.PhotoEntry> entries = ChatActivity.createEntriesFromMedia(photoPathes, false, null);
+        if (entries.isEmpty()) {
+            return null;
+        }
+
+        //if (entries.size() == 1) {
+            return fromPhotoEntry(entries.get(0));
+        /*}
+
+        final ArrayList<StoryEntry> entries1 = new ArrayList<>(entries.size());
+        for (MediaController.PhotoEntry entry: entries) {
+            entries1.add(fromPhotoEntry(entry));
+        }
+
+        return asCollage(CollageLayout.of(entries1.size()), entries1);*/
+    }
+
     public void decodeBounds(String path) {
         if (path != null) {
             try {
@@ -1708,6 +1728,7 @@ public class StoryEntry {
         newEntry.fromCamera = fromCamera;
         newEntry.thumbPathBitmap = thumbPathBitmap;
         newEntry.isRepost = isRepost;
+        newEntry.isShare = isShare;
         newEntry.round = round;
         newEntry.roundLeft = roundLeft;
         newEntry.roundRight = roundRight;

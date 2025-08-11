@@ -3125,7 +3125,7 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
                 if (target == listView && sharedMediaLayout != null && sharedMediaLayout.isAttachedToWindow()) {
                     RecyclerListView innerListView = sharedMediaLayout.getCurrentListView();
                     int top = sharedMediaLayout.getTop();
-                    if (top == 0) {
+                    if (innerListView != null && top == 0) {
                         consumed[1] = dyUnconsumed;
                         innerListView.scrollBy(0, dyUnconsumed);
                     }

@@ -1282,7 +1282,9 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
                         String str = currentStory.isVideo() ? LocaleController.getString(R.string.SaveVideo) : LocaleController.getString(R.string.SaveImage);
 
                         if (isSelf) {
-                            final StoryPrivacyBottomSheet.StoryPrivacy storyPrivacy = new StoryPrivacyBottomSheet.StoryPrivacy(currentAccount, storyItem.privacy);
+                            final StoryPrivacyBottomSheet.StoryPrivacy storyPrivacy = storyItem.privacy.isEmpty() ?
+                                new StoryPrivacyBottomSheet.StoryPrivacy(StoryPrivacyBottomSheet.TYPE_SELECTED_CONTACTS, currentAccount, new ArrayList<>()):
+                                new StoryPrivacyBottomSheet.StoryPrivacy(currentAccount, storyItem.privacy);
                             ActionBarMenuSubItem item = ActionBarMenuItem.addItem(popupLayout, R.drawable.msg_view_file, LocaleController.getString(R.string.WhoCanSee), false, resourcesProvider);
                             item.setSubtext(storyPrivacy.toString());
                             item.setOnClickListener(v -> {
@@ -1642,6 +1644,8 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
                                 });
                                 item.setMultiline(false);
                             }
+                            MediaDataController.getInstance(currentAccount).loadHints(true);
+                            final boolean fromTopPeer = user != null && !user.contact && MediaDataController.getInstance(currentAccount).containsTopPeer(dialogId);
                             boolean canShowArchive;
                             boolean storiesIsHidden;
                             if (dialogId > 0) {
@@ -1651,7 +1655,15 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
                                 canShowArchive = chat != null && !ChatObject.isNotInChat(chat);
                                 storiesIsHidden = chat != null && chat.stories_hidden;
                             }
-                            if (canShowArchive) {
+                            if (fromTopPeer) {
+                                ActionBarMenuItem.addItem(popupLayout, R.drawable.msg_delete, LocaleController.getString(R.string.StoriesRemoveFromRecent), false, resourcesProvider).setOnClickListener(v -> {
+                                    MediaDataController.getInstance(currentAccount).removePeer(dialogId);
+                                    storiesController.toggleHidden(dialogId, true, false, true);
+                                    if (popupMenu != null) {
+                                        popupMenu.dismiss();
+                                    }
+                                });
+                            } else if (canShowArchive) {
                                 if (!storiesIsHidden) {
                                     ActionBarMenuItem.addItem(popupLayout, R.drawable.msg_archive, LocaleController.getString(R.string.ArchivePeerStories), false, resourcesProvider).setOnClickListener(v -> {
                                         toggleArchiveForStory(dialogId);
@@ -1850,7 +1862,9 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
                 return;
             }
             if (isSelf) {
-                StoryPrivacyBottomSheet.StoryPrivacy privacy = new StoryPrivacyBottomSheet.StoryPrivacy(currentAccount, storyItem.privacy);
+                StoryPrivacyBottomSheet.StoryPrivacy privacy = storyItem.privacy.isEmpty() ?
+                    new StoryPrivacyBottomSheet.StoryPrivacy(StoryPrivacyBottomSheet.TYPE_SELECTED_CONTACTS, currentAccount, new ArrayList<>()) :
+                    new StoryPrivacyBottomSheet.StoryPrivacy(currentAccount, storyItem.privacy);
                 editPrivacy(privacy, storyItem);
             } else {
                 if (privacyHint == null) {

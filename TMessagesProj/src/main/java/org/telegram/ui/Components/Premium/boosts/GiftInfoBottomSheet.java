@@ -156,7 +156,7 @@ public class GiftInfoBottomSheet extends BottomSheetWithRecyclerListView {
             @Override
             protected void afterCodeApplied() {
                 AndroidUtilities.runOnUIThread(() -> {
-                    PremiumPreviewBottomSheet previewBottomSheet = new PremiumPreviewBottomSheet(getBaseFragment(), currentAccount, null, null, resourcesProvider)
+                    PremiumPreviewBottomSheet previewBottomSheet = new PremiumPreviewBottomSheet(getBaseFragment(), currentAccount, null, null, null, resourcesProvider)
                             .setAnimateConfetti(true)
                             .setOutboundGift(true);
                     getBaseFragment().showDialog(previewBottomSheet);
