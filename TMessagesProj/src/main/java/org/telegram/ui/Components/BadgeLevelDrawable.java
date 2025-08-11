@@ -48,7 +48,7 @@ public class BadgeLevelDrawable extends Drawable implements Drawable.Callback {
 
     public void setBadgeLevel(int level, boolean animated) {
         if (this.level != level || inner == null || outer == null) {
-            text.setText(Integer.toString(level), animated);
+            text.setText(level >= 0 ? Integer.toString(level) : "!", animated);
             setLevelIndex(getIndexByLevel(this.level = level));
             invalidateSelf();
         }
@@ -196,11 +196,15 @@ public class BadgeLevelDrawable extends Drawable implements Drawable.Callback {
             R.drawable.profile_level60_inner, R.drawable.profile_level60_outer,
             R.drawable.profile_level70_inner, R.drawable.profile_level70_outer,
             R.drawable.profile_level80_inner, R.drawable.profile_level80_outer,
-            R.drawable.profile_level90_inner, R.drawable.profile_level90_outer
+            R.drawable.profile_level90_inner, R.drawable.profile_level90_outer,
+            R.drawable.profile_level_minus_inner, R.drawable.profile_level_minus_outer
         };
     }
 
     private static int getIndexByLevel(int level) {
+        if (level < 0) {
+            return 18;
+        }
         return MathUtils.clamp(level <= 10 ? (level - 1) : (8 + level / 10), 0, 17);
     }
 }

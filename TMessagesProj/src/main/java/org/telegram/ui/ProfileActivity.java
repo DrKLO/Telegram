@@ -77,7 +77,6 @@ import android.text.style.ClickableSpan;
 import android.text.style.ForegroundColorSpan;
 import android.text.style.URLSpan;
 import android.text.util.Linkify;
-import android.util.Log;
 import android.util.Property;
 import android.util.SparseArray;
 import android.util.SparseIntArray;
@@ -3359,7 +3358,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                             getMessagesController().getStoriesController().removeStoriesFromAlbum(dialogId, albumId, storyItems);
                             BulletinFactory.of(this).createSimpleBulletin(
                                     R.raw.chats_archived,
-                                    AndroidUtilities.replaceTags(LocaleController.formatPluralString("StoryAddedToAlbumTitle", storyItems.size(), albumName)),
+                                    AndroidUtilities.replaceTags(LocaleController.formatPluralString("StoryRemovedFromAlbumTitle", storyItems.size(), albumName)),
                                     LocaleController.getString(R.string.Undo), undo
                             ).show();
                         } else {
@@ -3538,7 +3537,6 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     if (bottomButtonContainer[0] != null) {
                         final float x = sharedMediaLayout.getTabTranslationX(SharedMediaLayout.TAB_STORIES, true);
                         bottomButtonContainer[0].setTranslationX(x);
-                        bottomButtonContainer[0].setTranslationY(dp(72) * (1f - sharedMediaLayout.getBottomButtonVisibility()));
                     }
                     if (bottomButtonContainer[1] != null) {
                         final float x = sharedMediaLayout.getTabTranslationX(SharedMediaLayout.TAB_ARCHIVED_STORIES, false);
@@ -3546,6 +3544,14 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     }
                     checkStoriesButtonText(lastStoriesSelectedCount, true);
                     updateBottomButtonY();
+                }
+            }
+
+            @Override
+            protected void onBottomButtonVisibilityChange() {
+                super.onBottomButtonVisibilityChange();
+                if (myProfile && bottomButtonContainer[0] != null && sharedMediaLayout != null) {
+                    bottomButtonContainer[0].setTranslationY(dp(72) * (1f - sharedMediaLayout.getBottomButtonStoriesVisibility()));
                 }
             }
 
@@ -3564,7 +3570,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     final int count = messageObjects.size();
 
                     int type = getSelectedTab();
-                    int a = SharedMediaLayout.isStoryAlbumPageType(type) ? 0 :
+                    int a = (SharedMediaLayout.isStoryAlbumPageType(type) || type == SharedMediaLayout.TAB_STORIES) ? 0 :
                         (type == SharedMediaLayout.TAB_ARCHIVED_STORIES ? 1 : -1);
                     if (a < 0 || a > 1) return;
                     if (a == 0) {
@@ -9929,7 +9935,11 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                         fallbackImage.setImage(ImageLocation.getForPhoto(smallSize, getUserInfo().fallback_photo), "50_50", (Drawable) null, 0, null, UserConfig.getInstance(currentAccount).getCurrentUser(), 0);
                     }
                 } else {
-                    newString2 = LocaleController.getString(R.string.Online);
+                    if (userInfo != null && userInfo.stars_rating != null && userInfo.stars_rating.stars < 0) {
+                        newString2 = getString(R.string.StarRatingLevelNegative).toLowerCase(Locale.ROOT);
+                    } else {
+                        newString2 = LocaleController.getString(R.string.Online);
+                    }
                 }
             } else if (user.id == UserObject.VERIFY) {
                 newString2 = LocaleController.getString(R.string.VerifyCodesNotifications);
@@ -10131,7 +10141,11 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
 
             if (userId == UserConfig.getInstance(currentAccount).clientUserId) {
                 onlineTextView[2].setText(LocaleController.getString(R.string.FallbackTooltip));
-                onlineTextView[3].setText(LocaleController.getString(R.string.Online));
+                if (userInfo != null && userInfo.stars_rating != null && userInfo.stars_rating.stars < 0) {
+                    onlineTextView[3].setText(newString2 = getString(R.string.StarRatingLevelNegative).toLowerCase(Locale.ROOT));
+                } else {
+                    onlineTextView[3].setText(LocaleController.getString(R.string.Online));
+                }
             } else {
                 if (user.photo != null && user.photo.personal && user.photo.has_video) {
                     SpannableStringBuilder spannableStringBuilder = new SpannableStringBuilder(newString2);
@@ -14851,51 +14865,111 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         final LimitPreviewView limitPreviewView;
         {
             limitPreviewView = new LimitPreviewView(getContext(), R.drawable.filled_rating_crown, 0, 0, resourcesProvider);
-            limitPreviewView.setStarRating(userFull.stars_rating, false);
+            limitPreviewView.setHideNegativeValues(getDialogId() != UserConfig.getInstance(currentAccount).getClientUserId());
+            limitPreviewView.setStarRating(userFull.stars_rating);
             limitPreviewView.setTranslationY(-dp(14));
             linearLayout.addView(limitPreviewView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER, 0, 20, 0, 10));
         }
 
-        if (userFull.stars_my_pending_rating != null) {
-            final LinkSpanDrawable.LinksTextView textView = new LinkSpanDrawable.LinksTextView(context);
-            textView.setGravity(Gravity.CENTER);
-            textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
-            textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
-            textView.setLinkTextColor(Theme.getColor(Theme.key_chat_messageLinkIn));
-            linearLayout.addView(textView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER, 20, -12, 20, 20));
+        if (BuildVars.DEBUG_PRIVATE_VERSION && userFull.stars_my_pending_rating == null) {
+            userFull.stars_my_pending_rating = new TL_stars.Tl_starsRating();
+            userFull.stars_my_pending_rating.current_level_stars = userFull.stars_rating.stars < 0 ? 0 : userFull.stars_rating.current_level_stars;
+            userFull.stars_my_pending_rating.next_level_stars = userFull.stars_rating.next_level_stars + 1000;
+            userFull.stars_my_pending_rating.level = userFull.stars_rating.level + 1;
+            userFull.stars_my_pending_rating.stars = userFull.stars_rating.next_level_stars + 500;
+            userFull.stars_my_pending_rating_date = ConnectionsManager.getInstance(currentAccount).getCurrentTime() + 60 * 60 * 24 * 21;
+        }
 
+        if (userFull.stars_my_pending_rating != null) {
+            final FrameLayout textLayout = new FrameLayout(context);
+            linearLayout.addView(textLayout, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER, 40, -12, 40, 20));
+
+            final LinkSpanDrawable.LinksTextView[] textView = new LinkSpanDrawable.LinksTextView[2];
+            for (int i = 0; i < 2; ++i) {
+                textView[i] = new LinkSpanDrawable.LinksTextView(context) {
+                    @Override
+                    public boolean dispatchTouchEvent(MotionEvent event) {
+                        if (this.getAlpha() < 0.9f)
+                            return false;
+                        return super.dispatchTouchEvent(event);
+                    }
+                };
+                textView[i].setGravity(Gravity.CENTER);
+                textView[i].setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
+                textView[i].setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
+                textView[i].setLinkTextColor(Theme.getColor(Theme.key_chat_messageLinkIn));
+                textLayout.addView(textView[i], LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.FILL));
+                textView[i].setAlpha(i == 0 ? 1.0f : 0.0f);
+                textView[i].setScaleX(i == 0 ? 1.0f : 0.8f);
+                textView[i].setScaleY(i == 0 ? 1.0f : 0.8f);
+            }
+
+            final Utilities.Callback<Boolean> update = preview -> {
+                textView[0].animate()
+                    .alpha(preview ? 0.0f : 1.0f)
+                    .scaleX(preview ? 0.8f : 1.0f)
+                    .scaleY(preview ? 0.8f : 1.0f)
+                    .setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT)
+                    .setDuration(600)
+                    .start();
+                textView[1].animate()
+                    .alpha(!preview ? 0.0f : 1.0f)
+                    .scaleX(!preview ? 0.8f : 1.0f)
+                    .scaleY(!preview ? 0.8f : 1.0f)
+                    .setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT)
+                    .setDuration(600)
+                    .start();
+            };
+
+            final boolean isSelf = getDialogId() == UserConfig.getInstance(currentAccount).getClientUserId();
+
+            final long dcurrent = userFull.stars_rating.stars;
+            final long dpoints = userFull.stars_my_pending_rating != null ? userFull.stars_my_pending_rating.stars - userFull.stars_rating.stars : 0;
+            final long debt = -dcurrent - dpoints;
             final int days = Math.max(1, (userFull.stars_my_pending_rating_date - ConnectionsManager.getInstance(currentAccount).getCurrentTime()) / (24 * 60 * 60));
             final long points = userFull.stars_my_pending_rating.stars - userFull.stars_rating.stars;
-//            final Utilities.Callback<Boolean>[] updateText = new Utilities.Callback[1];
-//            updateText[0] = preview -> {
-                SpannableStringBuilder sb = new SpannableStringBuilder();
-                if (userFull.stars_my_pending_rating.level > userFull.stars_rating.level) {
-                    sb.append(TextUtils.concat(
-                        formatPluralStringComma("StarRatingFuture", days), "\n",
-                        formatPluralStringComma("StarRatingFuturePendingPointsAndLevel1", (int) points), " ",
-                        formatPluralStringComma("StarRatingFuturePendingPointsAndLevel2", (int) userFull.stars_my_pending_rating.level)
-                    ));
+
+            SpannableStringBuilder sb;
+            if (userFull.stars_rating.stars < 0 && !isSelf || isSelf && debt > 0) {
+                textView[0].setTextColor(Theme.getColor(Theme.key_text_RedBold));
+                if (isSelf) {
+                    textView[0].setText(AndroidUtilities.replaceTags(formatPluralStringComma("StarRatingLevelNegativeYou", (int) debt)));
                 } else {
-                    sb.append(TextUtils.concat(
-                        formatPluralStringComma("StarRatingFuture", days), "\n",
-                        formatPluralStringComma("StarRatingFuturePendingPoints", (int) points)
-                    ));
+                    textView[0].setText(AndroidUtilities.replaceTags(formatString(R.string.StarRatingLevelNegativeOther, DialogObject.getName(getDialogId()))));
                 }
-//                sb.append(" ");
-//                if (preview) {
-//                    sb.append(AndroidUtilities.replaceArrows(AndroidUtilities.premiumText(getString(R.string.StarRatingFuturePendingPointsPreview), () -> {
-//                        limitPreviewView.setStarRating(userFull.stars_my_pending_rating, true);
-//                        updateText[0].run(false);
-//                    }), true));
-//                } else {
-//                    sb.append(AndroidUtilities.replaceArrows(AndroidUtilities.premiumText(getString(R.string.StarRatingFuturePendingPointsPreviewBack), () -> {
-//                        limitPreviewView.setStarRating(userFull.stars_rating, true);
-//                        updateText[0].run(true);
-//                    }), true));
-//                }
-                textView.setText(sb);
-//            };
-//            updateText[0].run(true);
+            } else {
+                sb = new SpannableStringBuilder();
+                sb.append(TextUtils.concat(
+                    formatPluralStringComma("StarRatingFuture", days), "\n",
+                    formatPluralStringComma("StarRatingFuturePendingPoints", (int) points)
+                ));
+                sb.append(" ");
+                sb.append(AndroidUtilities.replaceArrows(AndroidUtilities.premiumText(getString(R.string.StarRatingFuturePendingPointsPreview), () -> {
+                    limitPreviewView.animateStarRating(userFull.stars_rating, userFull.stars_my_pending_rating);
+                    update.run(true);
+                }), true));
+                textView[0].setOnClickListener(v -> {
+                    limitPreviewView.animateStarRating(userFull.stars_rating, userFull.stars_my_pending_rating);
+                    update.run(true);
+                });
+                textView[0].setText(sb);
+            }
+
+            sb = new SpannableStringBuilder();
+            sb.append(TextUtils.concat(
+                formatPluralStringComma("StarRatingFuturePreview1", days), "\n",
+                formatPluralStringComma("StarRatingFuturePreview2", (int) points)
+            ));
+            sb.append(" ");
+            sb.append(AndroidUtilities.replaceArrows(AndroidUtilities.premiumText(getString(R.string.StarRatingFuturePendingPointsPreviewBack), () -> {
+                limitPreviewView.animateStarRating(userFull.stars_my_pending_rating, userFull.stars_rating);
+                update.run(false);
+            }), true));
+            textView[1].setOnClickListener(v -> {
+                limitPreviewView.animateStarRating(userFull.stars_my_pending_rating, userFull.stars_rating);
+                update.run(false);
+            });
+            textView[1].setText(sb);
         }
 
         final TextView titleView = new TextView(context);
@@ -14920,7 +14994,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         {
             PremiumFeatureCell cell = new PremiumFeatureCell(context, resourcesProvider);
             cell.title.setText(getString(R.string.StarRatingTitle1));
-            cell.description.setText(LocaleController.formatSpannable(R.string.StarRatingDescription1, createNewSpan(getString(R.string.StarRatingAdded), Theme.getColor(Theme.key_premiumGradient1))));
+            cell.description.setText(LocaleController.formatSpannable(R.string.StarRatingDescription1, createNewSpan(getString(R.string.StarRatingAdded), Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider))));
             cell.nextIcon.setVisibility(View.GONE);
             cell.imageView.setImageResource(R.drawable.menu_gift);
             cell.imageView.setColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
@@ -14929,7 +15003,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         {
             PremiumFeatureCell cell = new PremiumFeatureCell(context, resourcesProvider);
             cell.title.setText(getString(R.string.StarRatingTitle2));
-            cell.description.setText(LocaleController.formatSpannable(R.string.StarRatingDescription2, createNewSpan(getString(R.string.StarRatingAdded), Theme.getColor(Theme.key_premiumGradient1))));
+            cell.description.setText(LocaleController.formatSpannable(R.string.StarRatingDescription2, createNewSpan(getString(R.string.StarRatingAdded), Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider))));
             cell.nextIcon.setVisibility(View.GONE);
             cell.imageView.setImageResource(R.drawable.menu_stars_gift);
             cell.imageView.setColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
@@ -14938,7 +15012,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         {
             PremiumFeatureCell cell = new PremiumFeatureCell(context, resourcesProvider);
             cell.title.setText(getString(R.string.StarRatingTitle3));
-            cell.description.setText(LocaleController.formatSpannable(R.string.StarRatingDescription3, createNewSpan(getString(R.string.StarRatingDeduces), Theme.getColor(Theme.key_windowBackgroundWhiteGrayText))));
+            cell.description.setText(LocaleController.formatSpannable(R.string.StarRatingDescription3, createNewSpan(getString(R.string.StarRatingDeduces), Theme.isCurrentThemeDark() ? ColorUtils.blendARGB(Theme.getColor(Theme.key_windowBackgroundWhiteGrayIcon, resourcesProvider), Color.BLACK, 0.25f): Theme.getColor(Theme.key_windowBackgroundWhiteGrayText, resourcesProvider))));
             cell.nextIcon.setVisibility(View.GONE);
             cell.imageView.setImageResource(R.drawable.menu_refund);
             cell.imageView.setColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));

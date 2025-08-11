@@ -2009,7 +2009,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                 ItemOptions options = ItemOptions.makeOptions(profileActivity, photoVideoOptionsItem);
                 if (canEditStoryAlbums) {
                     options.add(R.drawable.menu_album_add, getString(R.string.StoriesAlbumAddAlbum), () -> {
-                        AlertsCreator.createStoriesAlbumEnterNameForCreate(getContext(), profileActivity, resourcesProvider, name -> getStoriesController().getStoryAlbumsList(dialog_id).createCollection(name, null));
+                        AlertsCreator.createStoriesAlbumEnterNameForCreate(getContext(), profileActivity, resourcesProvider, name -> getStoriesController().createAlbum(dialog_id, name, SharedMediaLayout.this::onStoryAlbumCreate));
                         options.dismiss();
                     });
                     options.addGap();
@@ -2555,7 +2555,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                     @Override
                     public void onTabAlbumCreateCollection() {
                         AlertsCreator.createStoriesAlbumEnterNameForCreate(context, parent, resourcesProvider, name -> {
-                            getStoriesController().createAlbum(dialog_id, name);
+                            getStoriesController().createAlbum(dialog_id, name, SharedMediaLayout.this::onStoryAlbumCreate);
                         });
                     }
 
@@ -3450,8 +3450,14 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                 mediaPages[a].setVisibility(View.GONE);
             }
 
-            mediaPages[a].emptyView = new StickerEmptyView(context, mediaPages[a].progressView, StickerEmptyView.STICKER_TYPE_SEARCH);
-            mediaPages[a].emptyView.setVisibility(View.GONE);
+            mediaPages[a].emptyView = new StickerEmptyView(context, mediaPages[a].progressView, StickerEmptyView.STICKER_TYPE_SEARCH) {
+                @Override
+                protected void onVisibilityChange(float factor) {
+                    super.onVisibilityChange(factor);
+                    onBottomButtonVisibilityChange();
+                }
+            };
+            mediaPages[a].emptyView.setVisibility(View.GONE, false);
             mediaPages[a].emptyView.setAnimateLayoutChange(true);
             mediaPages[a].addView(mediaPages[a].emptyView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
             mediaPages[a].emptyView.setOnTouchListener((v, event) -> true);
@@ -5335,6 +5341,9 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
         if (fragmentContextView != null) {
             fragmentContextView.setTranslationY(dp(48) + top);
         }
+        if (storiesContainer != null) {
+            storiesContainer.setTranslationY(top);
+        }
         additionalFloatingTranslation = top;
         floatingDateView.setTranslationY((floatingDateView.getTag() == null ? -dp(48) : 0) + additionalFloatingTranslation);
     }
@@ -7143,7 +7152,10 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
             oi.addGap();
             ItemOptions.addAlbumsItemOptions(oi, getStoriesController().getStoryAlbumsList(dialog_id), albumsSet, true, () -> {
                 AlertsCreator.createStoriesAlbumEnterNameForCreate(getContext(), null, resourcesProvider, name -> {
-                    getStoriesController().getStoryAlbumsList(dialog_id).createCollection(name, null);
+                    getStoriesController().createAlbum(dialog_id, name, album -> {
+                        getStoriesController().addStoryToAlbum(dialog_id, album.album_id, storyItem);
+                        onStoryAlbumCreate(album);
+                    });
                 });
                 options.dismiss();
             }, (b) -> {
@@ -7183,7 +7195,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                     getStoriesController().removeStoryFromAlbum(dialog_id, albumId, storyItem);
                     BulletinFactory.of(profileActivity).createSimpleBulletin(
                             R.raw.chats_archived,
-                            AndroidUtilities.replaceTags(LocaleController.formatPluralString("StoryAddedToAlbumTitle", 1, albumName)),
+                            AndroidUtilities.replaceTags(LocaleController.formatPluralString("StoryRemovedFromAlbumTitle", 1, albumName)),
                             LocaleController.getString(R.string.Undo), undo
                     ).show();
                 });
@@ -9610,7 +9622,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                     isBot = user != null && user.bot;
                 }
                 if (albumId > 0) {
-                    storiesList = profileActivity.getMessagesController().getStoriesController().getStoriesList(dialog_id, StoriesController.StoriesList.TYPE_PINNED, albumId);
+                    storiesList = profileActivity.getMessagesController().getStoriesController().getStoriesList(dialog_id, StoriesController.StoriesList.TYPE_ALBUMS, albumId);
                 } else {
                     storiesList = profileActivity.getMessagesController().getStoriesController().getStoriesList(dialog_id, isBot ? StoriesController.StoriesList.TYPE_BOTS : isArchive ? StoriesController.StoriesList.TYPE_ARCHIVE : StoriesController.StoriesList.TYPE_PINNED);
                 }
@@ -10545,7 +10557,13 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
     protected boolean drawChild(Canvas canvas, View child, long drawingTime) {
         if (child == fragmentContextView) {
             canvas.save();
-            canvas.clipRect(0, mediaPages[0].getTop(), child.getMeasuredWidth(),mediaPages[0].getTop() + child.getMeasuredHeight() + dp(12));
+
+            float y = mediaPages[0].getTop();
+            if (storiesContainer != null && (mediaPages[0].selectedType == TAB_STORIES || isStoryAlbumPageType(mediaPages[0].selectedType))) {
+                y -= storiesContainer.getVisualHeight();
+            }
+
+            canvas.clipRect(0, y, child.getMeasuredWidth(),y + child.getMeasuredHeight() + dp(12));
             boolean b = super.drawChild(canvas, child, drawingTime);
             canvas.restore();
             return b;
@@ -10613,14 +10631,49 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
         return type == targetType;
     }
 
-    public float getBottomButtonVisibility() {
-        if (mediaPages == null || mediaPages[0] == null) {
+    protected void onBottomButtonVisibilityChange() {
+
+    }
+
+    public float getBottomButtonStoriesVisibility() {
+        if (mediaPages == null || mediaPages[0] == null || mediaPages[1] == null || mediaPages[0].emptyView == null || mediaPages[1].emptyView == null) {
             return 1;
         }
 
+        int typeA = mediaPages[0].selectedType;
+        int typeB = mediaPages[1].selectedType;
+        boolean isStoryA = isStoryAlbumPageType(typeA) || typeA == TAB_STORIES;
+        boolean isStoryB = isStoryAlbumPageType(typeB) || typeB == TAB_STORIES;
+
+        if (!isStoryA && !isStoryB) {
+            return 1;
+        }
+
+        float visA = 1 - mediaPages[0].emptyView.getVisibilityFactor();
+        float visB = 1 - mediaPages[1].emptyView.getVisibilityFactor();
+
+        StoriesAdapter a = storyAlbums_getStoriesAdapterByTabType(mediaPages[0].selectedType);
+        if (typeA == TAB_STORIES || a != null && a.storiesList != null && a.storiesList.getCount() > 0) {
+            visA = 1;
+        }
+
+        StoriesAdapter b = storyAlbums_getStoriesAdapterByTabType(typeB);
+        if (typeB == TAB_STORIES || b != null && b.storiesList != null && b.storiesList.getCount() > 0) {
+            visB = 1;
+        }
+
+        if (!isStoryA) {
+            visA = visB;
+        }
+        if (!isStoryB) {
+            visB = visA;
+        }
+
+        return lerp(visA, visB, Math.abs(mediaPages[0].getTranslationX() / mediaPages[0].getMeasuredWidth()));
+
+        /*
         boolean buttonVisibleA = true;
         boolean buttonVisibleB = true;
-
         {
             StoriesAdapter a = storyAlbums_getStoriesAdapterByTabType(mediaPages[0].selectedType);
             if (a != null && a.storiesList != null) {
@@ -10639,6 +10692,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
         }
 
         return lerp(buttonVisibleA ? 1f:  0f, buttonVisibleB ? 1f: 0f, Math.abs(mediaPages[0].getTranslationX() / mediaPages[0].getMeasuredWidth()));
+        */
     }
 
 
@@ -10714,7 +10768,9 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
         }
     }
 
-    protected void onTabProgress(float progress) {}
+    protected void onTabProgress(float progress) {
+        onBottomButtonVisibilityChange();
+    }
     protected void onTabScroll(boolean scrolling) {}
 
     public static class InternalListView extends BlurredRecyclerView implements StoriesListPlaceProvider.ClippedView {
@@ -11289,6 +11345,14 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
             zoom[1].setEnabled(false);
             zoom[1].setAlpha(0.5f);
         }
+    }
+
+    private void onStoryAlbumCreate(StoriesController.StoryAlbum album) {
+        AndroidUtilities.runOnUIThread(() -> {
+            if (storiesContainer != null) {
+                storiesContainer.scrollToAlbumId(album.album_id);
+            }
+        }, 100);
     }
 
     /* Story Albums Binding */

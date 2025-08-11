@@ -214,6 +214,7 @@ import org.telegram.ui.Stories.StoriesListPlaceProvider;
 import org.telegram.ui.Stories.StoryViewer;
 import org.telegram.ui.Stories.recorder.StoryEntry;
 import org.telegram.ui.Stories.recorder.StoryRecorder;
+import org.telegram.ui.TON.TONIntroActivity;
 import org.telegram.ui.bots.BotWebViewAttachedSheet;
 import org.telegram.ui.bots.BotWebViewSheet;
 import org.telegram.ui.bots.WebViewRequestProps;
@@ -2963,6 +2964,12 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                                         }
                                         String purpose = data.getQueryParameter("purpose");
                                         StarsController.getInstance(intentAccount[0]).showStarsTopup(this, balance, purpose);
+                                    } else if (url.startsWith("tg:ton") || url.startsWith("tg://ton")) {
+                                        if (progress != null) {
+                                            progress.end();
+                                        }
+                                        presentFragment(new TONIntroActivity());
+                                        return pushOpened;
                                     } else if (url.startsWith("tg:stars") || url.startsWith("tg://stars")) {
                                         if (progress != null) {
                                             progress.end();

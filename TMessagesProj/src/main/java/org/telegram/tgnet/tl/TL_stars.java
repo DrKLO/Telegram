@@ -1464,6 +1464,7 @@ public class TL_stars {
         public boolean premium_gift;
         public boolean business_transfer;
         public boolean stargift_resale;
+        public boolean posts_search;
         public String id;
         public StarsAmount amount = StarsAmount.ofStars(0);
         public int date;
@@ -1737,6 +1738,7 @@ public class TL_stars {
             premium_gift = (flags & 1048576) != 0;
             business_transfer = (flags & 2097152) != 0;
             stargift_resale = (flags & 4194304) != 0;
+            posts_search = (flags & 16777216) != 0;
             id = stream.readString(exception);
             amount = StarsAmount.TLdeserialize(stream, stream.readInt32(exception), exception);
             date = stream.readInt32(exception);
@@ -1808,6 +1810,7 @@ public class TL_stars {
             flags = premium_gift ? flags | 1048576 : flags &~ 1048576;
             flags = business_transfer ? flags | 2097152 : flags &~ 2097152;
             flags = stargift_resale ? flags | 4194304 : flags &~ 4194304;
+            flags = posts_search ? flags | 16777216 : flags &~ 16777216;
             stream.writeInt32(flags);
             stream.writeString(id);
             amount.serializeToStream(stream);

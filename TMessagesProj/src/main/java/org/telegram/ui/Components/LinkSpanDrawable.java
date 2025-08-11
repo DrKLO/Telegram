@@ -768,6 +768,10 @@ public class LinkSpanDrawable<S extends CharacterStyle> {
             ClickableSpan[] spans = spanned.getSpans(0, spanned.length(), ClickableSpan.class);
             return spans != null && spans.length > 0;
         }
+
+        public void clear() {
+            links.clear(false);
+        }
     }
 
     public static class LinksSimpleTextView extends SimpleTextView {

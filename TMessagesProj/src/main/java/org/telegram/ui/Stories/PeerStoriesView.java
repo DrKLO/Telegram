@@ -1293,7 +1293,13 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
                         storiesController.canCreateNewAlbum(dialogId),
                         () -> {
                             AlertsCreator.createStoriesAlbumEnterNameForCreate(getContext(), null, resourcesProvider, name -> {
-                                getStoriesController().createAlbum(dialogId, name);
+                                getStoriesController().createAlbum(dialogId, name, album -> {
+                                    storiesController.addStoryToAlbum(dialogId, album.album_id, storyItem);
+                                    BulletinFactory.of(storyContainer, resourcesProvider).createSimpleBulletin(
+                                        R.raw.contact_check,
+                                        AndroidUtilities.replaceTags(LocaleController.formatString(R.string.StoryAddedToAlbumX, album.title))
+                                    ).show();
+                                });
                             });
                             if (popupMenu != null) {
                                 popupMenu.dismiss();

@@ -2642,24 +2642,24 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
             if (savedStarGift.gift.limited && !refunded) {
                 addAvailabilityRow(tableView, currentAccount, savedStarGift.gift, resourcesProvider);
             }
-            if (!refunded && savedStarGift.can_upgrade) {
-                tableView.addRow(getString(R.string.Gift2Status), getString(R.string.Gift2StatusNonUnique), getString(R.string.Gift2StatusUpgrade), this::openUpgrade);
-            }
+//            if (!refunded && savedStarGift.can_upgrade) {
+//                tableView.addRow(getString(R.string.Gift2Status), getString(R.string.Gift2StatusNonUnique), getString(R.string.Gift2StatusUpgrade), this::openUpgrade);
+//            }
             if (savedStarGift.message != null && !TextUtils.isEmpty(savedStarGift.message.text) && !refunded) {
                 tableView.addFullRow(savedStarGift.message.text, savedStarGift.message.entities);
             }
 
             if (myProfile && savedStarGift.can_upgrade) {
-                SpannableStringBuilder sb = new SpannableStringBuilder(
+                SpannableStringBuilder sb = new SpannableStringBuilder("^  ");
+                if (upgradeIconSpan == null) {
+                    upgradeIconSpan = new ColoredImageSpan(new UpgradeIcon(button, Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider)));
+                }
+                sb.setSpan(upgradeIconSpan, 0, 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                sb.append(
                     savedStarGift.upgrade_stars > 0 ?
                         getString(R.string.Gift2UpgradeButtonFree) :
                         getString(R.string.Gift2UpgradeButtonGift)
                 );
-                sb.append(" ^");
-                if (upgradeIconSpan == null) {
-                    upgradeIconSpan = new ColoredImageSpan(new UpgradeIcon(button, Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider)));
-                }
-                sb.setSpan(upgradeIconSpan, sb.length() - 1, sb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                 button.setText(sb, !firstSet);
                 button.setSubText(null, !firstSet);
                 button.setOnClickListener(v -> openUpgrade());
@@ -2691,7 +2691,15 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
             afterTableTextView.setVisibility(View.VISIBLE);
         } else if (myProfile && isMine(currentAccount, dialogId)) {
             if (dialogId >= 0) {
-                afterTableTextView.setText(AndroidUtilities.replaceArrows(AndroidUtilities.replaceSingleTag(getString(!savedStarGift.unsaved ? R.string.Gift2ProfileVisible3 : R.string.Gift2ProfileInvisible3), this::toggleShow), true, dp(8f / 3f), dp(.66f)));
+                final SpannableStringBuilder sb = new SpannableStringBuilder();
+                if (savedStarGift.unsaved) {
+                    sb.append(". ");
+                    final ColoredImageSpan span = new ColoredImageSpan(R.drawable.menu_hide_gift);
+                    span.setScale(0.65f, 0.65f);
+                    sb.setSpan(span, 0, 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                }
+                sb.append(AndroidUtilities.replaceSingleTag(getString(!savedStarGift.unsaved ? R.string.Gift2ProfileVisible4 : R.string.Gift2ProfileInvisible4), this::toggleShow));
+                afterTableTextView.setText(AndroidUtilities.replaceArrows(sb, true, dp(8f / 3f), dp(.66f)));
             } else {
                 afterTableTextView.setText(AndroidUtilities.replaceArrows(AndroidUtilities.replaceSingleTag(getString(!savedStarGift.unsaved ? R.string.Gift2ChannelProfileVisible3 : R.string.Gift2ChannelProfileInvisible3), this::toggleShow), true, dp(8f / 3f), dp(.66f)));
             }
@@ -2876,47 +2884,47 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
             if (stargift != null && stargift.limited && !refunded) {
                 addAvailabilityRow(tableView, currentAccount, stargift, resourcesProvider);
             }
-            if (!out && !refunded) {
-                if (!messageObjectRepolled && !upgraded) {
-                    final TableRow row = tableView.addRow(getString(R.string.Gift2Status), "");
-                    final TextView rowTextView = (TextView) ((TableView.TableRowContent) row.getChildAt(1)).getChildAt(0);
-                    final SpannableStringBuilder sb = new SpannableStringBuilder("x ");
-                    final LoadingSpan span = new LoadingSpan(rowTextView, dp(90), 0, resourcesProvider);
-                    span.setColors(
-                        Theme.multAlpha(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider), .21f),
-                        Theme.multAlpha(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider), .08f)
-                    );
-                    sb.setSpan(span, 0, 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-                    rowTextView.setText(sb, TextView.BufferType.SPANNABLE);
-
-                    repollMessage();
-                } else {
-                    if (can_upgrade) {
-                        SpannableStringBuilder ssb = new SpannableStringBuilder();
-                        ssb.append(getString(R.string.Gift2StatusNonUnique));
-                        ssb.append(" ");
-                        ssb.append(ButtonSpan.make(getString(R.string.Gift2StatusUpgrade), this::openUpgrade, resourcesProvider));
-                        tableView.addRow(getString(R.string.Gift2Status), ssb);
-                    } else {
-                        tableView.addRow(getString(R.string.Gift2Status), getString(R.string.Gift2StatusNonUnique));
-                    }
-                }
-            }
+//            if (!out && !refunded) {
+//                if (!messageObjectRepolled && !upgraded) {
+//                    final TableRow row = tableView.addRow(getString(R.string.Gift2Status), "");
+//                    final TextView rowTextView = (TextView) ((TableView.TableRowContent) row.getChildAt(1)).getChildAt(0);
+//                    final SpannableStringBuilder sb = new SpannableStringBuilder("x ");
+//                    final LoadingSpan span = new LoadingSpan(rowTextView, dp(90), 0, resourcesProvider);
+//                    span.setColors(
+//                        Theme.multAlpha(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider), .21f),
+//                        Theme.multAlpha(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider), .08f)
+//                    );
+//                    sb.setSpan(span, 0, 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+//                    rowTextView.setText(sb, TextView.BufferType.SPANNABLE);
+//
+//                    repollMessage();
+//                } else {
+//                    if (can_upgrade) {
+//                        SpannableStringBuilder ssb = new SpannableStringBuilder();
+//                        ssb.append(getString(R.string.Gift2StatusNonUnique));
+//                        ssb.append(" ");
+//                        ssb.append(ButtonSpan.make(getString(R.string.Gift2StatusUpgrade), this::openUpgrade, resourcesProvider));
+//                        tableView.addRow(getString(R.string.Gift2Status), ssb);
+//                    } else {
+//                        tableView.addRow(getString(R.string.Gift2Status), getString(R.string.Gift2StatusNonUnique));
+//                    }
+//                }
+//            }
             if (message != null && !TextUtils.isEmpty(message.text) && !refunded) {
                 tableView.addFullRow(message.text, message.entities);
             }
 
             if (!out && can_upgrade && !refunded) {
-                SpannableStringBuilder sb = new SpannableStringBuilder(
+                SpannableStringBuilder sb = new SpannableStringBuilder("^  ");
+                if (upgradeIconSpan == null) {
+                    upgradeIconSpan = new ColoredImageSpan(new UpgradeIcon(button, Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider)));
+                }
+                sb.setSpan(upgradeIconSpan, 0, 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                sb.append(
                     upgrade_stars > 0 ?
                         getString(R.string.Gift2UpgradeButtonFree) :
                         getString(R.string.Gift2UpgradeButtonGift)
                 );
-                sb.append(" ^");
-                if (upgradeIconSpan == null) {
-                    upgradeIconSpan = new ColoredImageSpan(new UpgradeIcon(button, Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider)));
-                }
-                sb.setSpan(upgradeIconSpan, sb.length() - 1, sb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                 button.setText(sb, !firstSet);
                 button.setSubText(null, !firstSet);
                 button.setOnClickListener(v -> openUpgrade());
@@ -2973,7 +2981,15 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
         } else if (!converted && !refunded && stargift != null && isMine(currentAccount, getDialogId())) {
             afterTableTextView.setVisibility(View.VISIBLE);
             if (getDialogId() >= 0) {
-                afterTableTextView.setText(AndroidUtilities.replaceArrows(AndroidUtilities.replaceSingleTag(getString(saved ? R.string.Gift2ProfileVisible3 : R.string.Gift2ProfileInvisible3), this::toggleShow), true, dp(8f / 3f), dp(.66f)));
+                final SpannableStringBuilder sb = new SpannableStringBuilder();
+                if (!saved) {
+                    sb.append(". ");
+                    final ColoredImageSpan span = new ColoredImageSpan(R.drawable.menu_hide_gift);
+                    span.setScale(0.65f, 0.65f);
+                    sb.setSpan(span, 0, 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                }
+                sb.append(AndroidUtilities.replaceSingleTag(getString(saved ? R.string.Gift2ProfileVisible4 : R.string.Gift2ProfileInvisible4), this::toggleShow));
+                afterTableTextView.setText(AndroidUtilities.replaceArrows(sb, true, dp(8f / 3f), dp(.66f)));
             } else {
                 afterTableTextView.setText(AndroidUtilities.replaceArrows(AndroidUtilities.replaceSingleTag(getString(saved ? R.string.Gift2ChannelProfileVisible3 : R.string.Gift2ChannelProfileInvisible3), this::toggleShow), true, dp(8f / 3f), dp(.66f)));
             }
@@ -4729,10 +4745,13 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
 
         @Override
         public void draw(@NonNull Canvas canvas) {
+            paint.setAlpha((int) (0xFF * alpha));
             canvas.drawCircle(getBounds().centerX(), getBounds().centerY(), getBounds().width() / 2.0f, paint);
 
             final float t = (System.currentTimeMillis() - start) % 400 / 400.0f;
 
+            final int wasAlpha = strokePaint.getAlpha();
+            strokePaint.setAlpha((int) (wasAlpha * alpha));
             strokePaint.setStrokeWidth(dpf2(1.33f));
             canvas.save();
             final float arrowsHeight = dpf2(2.16f) * 3 + dpf2(1.166f) * 2;
@@ -4753,10 +4772,17 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
                 canvas.translate(0, dpf2(2.16f + 1.166f) * alpha);
             }
             canvas.restore();
+            strokePaint.setAlpha(wasAlpha);
 
             if (view != null) {
                 view.invalidate();
             }
+        }
+
+        private float alpha = 1.0f;
+        @Override
+        public void setAlpha(int alpha) {
+            this.alpha = alpha / 255.0f;
         }
 
         @Override

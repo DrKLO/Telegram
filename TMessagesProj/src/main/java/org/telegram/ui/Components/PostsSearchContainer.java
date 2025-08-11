@@ -6,6 +6,7 @@ import static org.telegram.messenger.LocaleController.formatString;
 import static org.telegram.messenger.LocaleController.getString;
 import static org.telegram.ui.DialogsActivity.highlightFoundQuote;
 
+import android.app.Activity;
 import android.content.Context;
 import android.os.Bundle;
 import android.text.SpannableStringBuilder;
@@ -25,6 +26,7 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
@@ -39,8 +41,12 @@ import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.DialogCell;
 import org.telegram.ui.ChatActivity;
 import org.telegram.ui.Components.Premium.PremiumPreviewBottomSheet;
+import org.telegram.ui.LaunchActivity;
+import org.telegram.ui.PhotoViewer;
 import org.telegram.ui.PremiumPreviewFragment;
+import org.telegram.ui.Stars.StarsController;
 import org.telegram.ui.Stars.StarsIntroActivity;
+import org.telegram.ui.Stories.DarkThemeResourceProvider;
 import org.telegram.ui.Stories.recorder.ButtonWithCounterView;
 
 import java.util.ArrayList;
@@ -214,13 +220,12 @@ public class PostsSearchContainer extends FrameLayout {
                 req.offset_peer = new TLRPC.TL_inputPeerEmpty();
             }
         }
+        final long paying;
         if (pay && flood != null) {
             req.flags |= 4;
-            req.allow_paid_stars = flood.stars_amount;
-
-            BulletinFactory.of(fragment)
-                .createSimpleBulletin(R.raw.stars_topup, AndroidUtilities.replaceTags("**" + flood.stars_amount + " Stars** spent on extra search."))
-                .show();
+            req.allow_paid_stars = paying = flood.stars_amount;
+        } else {
+            paying = 0;
         }
 
         reqId = connectionsManager.sendRequest(req, (res, err) -> AndroidUtilities.runOnUIThread(() -> {
@@ -283,6 +288,12 @@ public class PostsSearchContainer extends FrameLayout {
                     });
                 }
 
+                if (pay && paying > 0 && !news) {
+                    BulletinFactory.of(fragment)
+                        .createSimpleBulletin(R.raw.stars_topup, AndroidUtilities.replaceTags(formatPluralStringComma("SearchPaidStars", (int) paying)))
+                        .show();
+                }
+
             } else if (err != null && err.text.startsWith("FLOOD_WAIT_") && err.text.contains("_OR_STARS_")) {
                 final Pattern pattern = Pattern.compile("FLOOD_WAIT_(\\d+)_OR_STARS_(\\d+)");
                 final Matcher matcher = pattern.matcher(err.text);
@@ -299,9 +310,20 @@ public class PostsSearchContainer extends FrameLayout {
                     updateEmptyView();
                     listView.adapter.update(true);
                 }
-            } else if (err != null && err.text.equalsIgnoreCase("PREMIUM_ACCOUNT_REQUIRED")) {
+            } else if (err != null && "PREMIUM_ACCOUNT_REQUIRED".equalsIgnoreCase(err.text)) {
                 updateEmptyView();
                 listView.adapter.update(true);
+            } else if (err != null && "BALANCE_TOO_LOW".equalsIgnoreCase(err.text)) {
+                updateEmptyView();
+                listView.adapter.update(true);
+                StarsController.getInstance(currentAccount).getBalance(true, () -> {
+                    final Activity activity = AndroidUtilities.getActivity();
+                    final BaseFragment lastFragment = LaunchActivity.getSafeLastFragment();
+                    final Theme.ResourcesProvider resourcesProvider = PhotoViewer.getInstance().isVisible() || lastFragment != null && lastFragment.hasShownSheet() ? new DarkThemeResourceProvider() : (lastFragment != null ? lastFragment.getResourceProvider() : null);
+                    new StarsIntroActivity.StarsNeededSheet(activity, resourcesProvider, paying, StarsIntroActivity.StarsNeededSheet.TYPE_SEARCH, "", () -> {
+                        load(true);
+                    }).show();
+                }, true);
             }
         }), ConnectionsManager.RequestFlagDoNotWaitFloodWait);
 
@@ -390,6 +412,8 @@ public class PostsSearchContainer extends FrameLayout {
             MessagesController.getGlobalMainSettings().edit()
                 .putInt("searchpostsnew", MessagesController.getGlobalMainSettings().getInt("searchpostsnew", 0) + 1)
                 .apply();
+
+            StarsController.getInstance(currentAccount).getBalance();
         }
     }
 
@@ -468,7 +492,7 @@ public class PostsSearchContainer extends FrameLayout {
             });
             emptyUnderButtonTextView.setVisibility(View.VISIBLE);
             emptyUnderButtonTextView.setText(getString(R.string.SearchPostsPremium));
-        } else if (messages.isEmpty() && endReached) {
+        } else if (!TextUtils.isEmpty(lastQuery) && messages.isEmpty() && endReached) {
             if (emptyImageView.getImageReceiver().getImageDrawable() == null) {
                 emptyImageView.setImageDrawable(new RLottieDrawable(R.raw.utyan_empty, "utyan_empty", dp(130), dp(130)));
             }
@@ -477,7 +501,7 @@ public class PostsSearchContainer extends FrameLayout {
             emptyTextView.setText(formatString(R.string.SearchPostsNotFoundText, TextUtils.ellipsize(lastQuery, emptyTextView.getPaint(), dp(100), TextUtils.TruncateAt.END)));
             emptyButton.setVisibility(View.GONE);
             emptyUnderButtonTextView.setVisibility(View.GONE);
-        } else if (flood != null && (flood.flags & 2) != 0 && now < flood.wait_till) {
+        } else if (!TextUtils.isEmpty(lastQuery) && flood != null && (flood.flags & 2) != 0 && now < flood.wait_till) {
             emptyImageView.setVisibility(View.GONE);
             emptyTitleView.setText(getString(R.string.SearchPostsLimitReached));
             emptyTextView.setText(formatPluralStringComma("SearchPostsLimitReachedText", flood.total_daily));
@@ -537,6 +561,17 @@ public class PostsSearchContainer extends FrameLayout {
                 emptyButton.setLoading(true);
                 load(false);
             });
+            if (flood != null) {
+                emptyUnderButtonTextView.setVisibility(View.VISIBLE);
+                emptyUnderButtonTextView.setText(formatPluralStringComma("SearchPostsFreeSearches", flood.remains < 1 ? flood.total_daily : flood.remains));
+            } else {
+                emptyUnderButtonTextView.setVisibility(View.GONE);
+            }
+        } else /*if (newsMessages.isEmpty() && newsMessagesEndReached)*/ {
+            emptyImageView.setVisibility(View.GONE);
+            emptyTitleView.setText(getString(R.string.SearchPostsTitle));
+            emptyTextView.setText(getString(R.string.SearchPostsText));
+            emptyButton.setVisibility(View.GONE);
             if (flood != null) {
                 emptyUnderButtonTextView.setVisibility(View.VISIBLE);
                 emptyUnderButtonTextView.setText(formatPluralStringComma("SearchPostsFreeSearches", flood.remains < 1 ? flood.total_daily : flood.remains));

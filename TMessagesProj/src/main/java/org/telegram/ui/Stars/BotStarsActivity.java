@@ -373,7 +373,7 @@ public class BotStarsActivity extends BaseFragment implements NotificationCenter
 
         tonBalanceButton = new ButtonWithCounterView(context, resourceProvider);
         tonBalanceButton.setEnabled(MessagesController.getInstance(currentAccount).channelRevenueWithdrawalEnabled);
-        tonBalanceButton.setText(getString(R.string.MonetizationWithdraw), false);
+        tonBalanceButton.setText(getString(self ? R.string.MonetizationSelfWithdraw : R.string.MonetizationWithdraw), false);
         tonBalanceButton.setVisibility(View.GONE);
         tonBalanceButton.setOnClickListener(v -> {
             if (!v.isEnabled() || tonBalanceButton.isLoading()) {
@@ -505,12 +505,14 @@ public class BotStarsActivity extends BaseFragment implements NotificationCenter
             }
         } else if (type == TYPE_TON) {
             TLRPC.TL_payments_starsRevenueStats stats = s.getTONRevenueStats(bot_id, true);
-            if (titleInfo == null) {
-                titleInfo = AndroidUtilities.replaceArrows(AndroidUtilities.replaceSingleTag(formatString(R.string.BotMonetizationInfo, 50), -1, REPLACING_TAG_TYPE_LINK_NBSP, () -> {
-                    showDialog(ChannelMonetizationLayout.makeLearnSheet(getContext(), true, resourceProvider));
-                }, resourceProvider), true);
+            if (!self) {
+                if (titleInfo == null) {
+                    titleInfo = AndroidUtilities.replaceArrows(AndroidUtilities.replaceSingleTag(formatString(R.string.BotMonetizationInfo, 50), -1, REPLACING_TAG_TYPE_LINK_NBSP, () -> {
+                        showDialog(ChannelMonetizationLayout.makeLearnSheet(getContext(), true, resourceProvider));
+                    }, resourceProvider), true);
+                }
+                items.add(UItem.asCenterShadow(titleInfo));
             }
-            items.add(UItem.asCenterShadow(titleInfo));
             if (impressionsChart == null && stats != null) {
                 impressionsChart = StatisticActivity.createViewData(stats.top_hours_graph, getString(R.string.BotMonetizationGraphImpressions), 0);
                 if (impressionsChart != null) {

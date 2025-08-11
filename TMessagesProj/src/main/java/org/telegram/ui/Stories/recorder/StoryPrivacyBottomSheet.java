@@ -514,7 +514,13 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
                         ItemOptions options = ItemOptions.makeOptions(this, resourcesProvider, view);
                         options.add(R.drawable.msg_addfolder, getString(R.string.StoriesAlbumNewAlbum), () -> {
                             AlertsCreator.createStoriesAlbumEnterNameForCreate(getContext(), attachedFragment, resourcesProvider, name -> {
-                                getStoriesController().createAlbum(dialogId, name);
+                                getStoriesController().createAlbum(dialogId, name, album -> {
+                                    selectedAlbums.add(album.album_id);
+                                    updateItems(true);
+                                    if (onSelectedAlbums != null) {
+                                        onSelectedAlbums.run(new HashSet<>(selectedAlbums));
+                                    }
+                                });
                             });
                         });
                         options.addGap();
