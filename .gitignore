@@ -7,6 +7,7 @@ local.properties
 TMessagesProj/.cxx/
 TMessagesProj/jniLibs/
 TMessagesProj/jniRes/
+TMessagesProj/config/release.keystore
 **/.DS_Store
 TMessagesProj/afat/
 TMessagesProj_App/afat/

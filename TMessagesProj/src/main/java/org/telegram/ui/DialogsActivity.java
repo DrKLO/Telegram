@@ -2787,8 +2787,8 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         getNotificationCenter().addObserver(this, NotificationCenter.onDatabaseOpened);
         getNotificationCenter().addObserver(this, NotificationCenter.didClearDatabase);
         getNotificationCenter().addObserver(this, NotificationCenter.onDatabaseReset);
-        getNotificationCenter().addObserver(this, NotificationCenter.storiesUpdated);
-        getNotificationCenter().addObserver(this, NotificationCenter.storiesEnabledUpdate);
+//        getNotificationCenter().addObserver(this, NotificationCenter.storiesUpdated);
+//        getNotificationCenter().addObserver(this, NotificationCenter.storiesEnabledUpdate);
         getNotificationCenter().addObserver(this, NotificationCenter.unconfirmedAuthUpdate);
         getNotificationCenter().addObserver(this, NotificationCenter.premiumPromoUpdated);
 
@@ -2801,7 +2801,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         getNotificationCenter().addObserver(this, NotificationCenter.appConfigUpdated);
 
         loadDialogs(getAccountInstance());
-        getMessagesController().getStoriesController().loadAllStories();
+//        getMessagesController().getStoriesController().loadAllStories();
         getMessagesController().loadPinnedDialogs(folderId, 0, null);
         if (databaseMigrationHint != null && !getMessagesStorage().isDatabaseMigrationInProgress()) {
             View localView = databaseMigrationHint;
@@ -2810,11 +2810,11 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             }
             databaseMigrationHint = null;
         }
-        if (isArchive()) {
-            getMessagesController().getStoriesController().loadHiddenStories();
-        } else {
-            getMessagesController().getStoriesController().loadStories();
-        }
+//        if (isArchive()) {
+//            getMessagesController().getStoriesController().loadHiddenStories();
+//        } else {
+//            getMessagesController().getStoriesController().loadStories();
+//        }
 
         getContactsController().loadGlobalPrivacySetting();
 
@@ -2956,8 +2956,8 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         getNotificationCenter().removeObserver(this, NotificationCenter.onDatabaseOpened);
         getNotificationCenter().removeObserver(this, NotificationCenter.didClearDatabase);
         getNotificationCenter().removeObserver(this, NotificationCenter.onDatabaseReset);
-        getNotificationCenter().removeObserver(this, NotificationCenter.storiesUpdated);
-        getNotificationCenter().removeObserver(this, NotificationCenter.storiesEnabledUpdate);
+//        getNotificationCenter().removeObserver(this, NotificationCenter.storiesUpdated);
+//        getNotificationCenter().removeObserver(this, NotificationCenter.storiesEnabledUpdate);
         getNotificationCenter().removeObserver(this, NotificationCenter.unconfirmedAuthUpdate);
         getNotificationCenter().removeObserver(this, NotificationCenter.premiumPromoUpdated);
 
@@ -8835,9 +8835,9 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         }
     }
 
-    public boolean storiesEnabled = true;
+    public boolean storiesEnabled = false;
     private void updateStoriesPosting() {
-        final boolean storiesEnabled = getMessagesController().storiesEnabled();
+        final boolean storiesEnabled = false;
         if (this.storiesEnabled != storiesEnabled) {
             if (floatingButton2Container != null) {
                 floatingButton2Container.setVisibility(onlySelect && initialDialogsType != 10 || folderId != 0 || !storiesEnabled || (searchItem != null && searchItem.isSearchFieldVisible()) || isInPreviewMode() ? View.GONE : View.VISIBLE);
@@ -8863,9 +8863,9 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             if (floatingButton2 != null) {
                 floatingButton2.setImageResource(R.drawable.fab_compose_small);
                 floatingButton2Container.setContentDescription(LocaleController.getString(R.string.NewMessageTitle));
-                if (floatingButtonContainer.getVisibility() == View.VISIBLE) {
-                    floatingButton2Container.setVisibility(View.VISIBLE);
-                }
+//                if (floatingButtonContainer.getVisibility() == View.VISIBLE) {
+//                    floatingButton2Container.setVisibility(View.VISIBLE);
+//                }
             }
         } else {
             floatingButton.setAnimation(R.raw.write_contacts_fab_icon, 52, 52);
@@ -8874,9 +8874,9 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             if (floatingButton2 != null) {
                 floatingButton2.setImageResource(R.drawable.filled_premium_camera);
                 floatingButton2Container.setContentDescription(LocaleController.getString(R.string.AccDescrCaptureStory));
-                if (floatingButtonContainer.getVisibility() == View.VISIBLE) {
-                    floatingButton2Container.setVisibility(View.VISIBLE);
-                }
+//                if (floatingButtonContainer.getVisibility() == View.VISIBLE) {
+//                    floatingButton2Container.setVisibility(View.VISIBLE);
+//                }
             }
         }
     }

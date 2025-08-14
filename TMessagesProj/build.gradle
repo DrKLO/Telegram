@@ -209,6 +209,8 @@ android {
             buildConfigField "boolean", "DEBUG_PRIVATE_VERSION", "false"
             buildConfigField "boolean", "BUILD_HOST_IS_WINDOWS", isWindows
             buildConfigField "int", "VERSION_NUM", "7"
+            buildConfigField "int", "APP_ID", getProps("APP_ID")
+            buildConfigField "String", "APP_HASH", getProps("APP_HASH")
         }
     }
     namespace 'org.telegram.messenger'
@@ -225,7 +227,7 @@ def getProps(String propName) {
         return "";
     }
 }
-apply plugin: 'com.google.gms.google-services'
+//apply plugin: 'com.google.gms.google-services'
 
 task checkVisibility {
     doFirst {
