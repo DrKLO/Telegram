@@ -210,7 +210,7 @@ android {
             buildConfigField "boolean", "BUILD_HOST_IS_WINDOWS", isWindows
             buildConfigField "int", "VERSION_NUM", "7"
             buildConfigField "int", "APP_ID", getProps("APP_ID")
-            buildConfigField "String", "APP_HASH", getProps("APP_HASH")
+            buildConfigField "String", "APP_HASH", "\"" + getProps("APP_HASH") + "\""
         }
     }
     namespace 'org.telegram.messenger'
