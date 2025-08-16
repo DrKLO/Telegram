@@ -1,4 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Emoji PNG packer</title>
+    <style>
+        body {
+            font-family: system-ui;
+            margin: 2rem;
+        }
+
+        button {
+            font-size: 1rem;
+            padding: .6rem 1.2rem;
+            margin-bottom: .8rem;
+        }
+
+        progress {
+            width: 100%;
+            height: 1rem;
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+</head>
+
 <body>
+<button id="actionBtn">…</button>
+<div id="status"></div>
+<progress id="progress" value="0" max="100" hidden></progress>
+
 <script>
   const EMOJI_DATA = [
   [
@@ -19,34 +48,100 @@
                     "🏳", "🏴", "🏴‍☠", "🏁", "🚩", "🏳‍🌈", "🏳‍⚧", "🇺🇳", "🇦🇫", "🇦🇽", "🇦🇱", "🇩🇿", "🇦🇸", "🇦🇩", "🇦🇴", "🇦🇮", "🇦🇶", "🇦🇬", "🇦🇷", "🇦🇲", "🇦🇼", "🇦🇺", "🇦🇹", "🇦🇿", "🇧🇸", "🇧🇭", "🇧🇩", "🇧🇧", "🇧🇾", "🇧🇪", "🇧🇿", "🇧🇯", "🇧🇲", "🇧🇹", "🇧🇴", "🇧🇦", "🇧🇼", "🇧🇷", "🇻🇬", "🇧🇳", "🇧🇬", "🇧🇫", "🇧🇮", "🇰🇭", "🇨🇲", "🇨🇦", "🇮🇨", "🇨🇻", "🇧🇶", "🇰🇾", "🇨🇫", "🇹🇩", "🇮🇴", "🇨🇱", "🇨🇳", "🇨🇽", "🇨🇨", "🇨🇴", "🇰🇲", "🇨🇬", "🇨🇩", "🇨🇰", "🇨🇷", "🇨🇮", "🇭🇷", "🇨🇺", "🇨🇼", "🇨🇾", "🇨🇿", "🇩🇰", "🇩🇯", "🇩🇲", "🇩🇴", "🇪🇨", "🇪🇬", "🇸🇻", "🇬🇶", "🇪🇷", "🇪🇪", "🇸🇿", "🇪🇹", "🇪🇺", "🇫🇰", "🇫🇴", "🇫🇯", "🇫🇮", "🇫🇷", "🇬🇫", "🇵🇫", "🇹🇫", "🇬🇦", "🇬🇲", "🇬🇪", "🇩🇪", "🇬🇭", "🇬🇮", "🇬🇷", "🇬🇱", "🇬🇩", "🇬🇵", "🇬🇺", "🇬🇹", "🇬🇬", "🇬🇳", "🇬🇼", "🇬🇾", "🇭🇹", "🇭🇳", "🇭🇰", "🇭🇺", "🇮🇸", "🇮🇳", "🇮🇩", "🇮🇷", "🇮🇶", "🇮🇪", "🇮🇲", "🇮🇱", "🇮🇹", "🇯🇲", "🇯🇵", "🎌", "🇯🇪", "🇯🇴", "🇰🇿", "🇰🇪", "🇰🇮", "🇽🇰", "🇰🇼", "🇰🇬", "🇱🇦", "🇱🇻", "🇱🇧", "🇱🇸", "🇱🇷", "🇱🇾", "🇱🇮", "🇱🇹", "🇱🇺", "🇲🇴", "🇲🇬", "🇲🇼", "🇲🇾", "🇲🇻", "🇲🇱", "🇲🇹", "🇲🇭", "🇲🇶", "🇲🇷", "🇲🇺", "🇾🇹", "🇲🇽", "🇫🇲", "🇲🇩", "🇲🇨", "🇲🇳", "🇲🇪", "🇲🇸", "🇲🇦", "🇲🇿", "🇲🇲", "🇳🇦", "🇳🇷", "🇳🇵", "🇳🇱", "🇳🇨", "🇳🇿", "🇳🇮", "🇳🇪", "🇳🇬", "🇳🇺", "🇳🇫", "🇰🇵", "🇲🇰", "🇲🇵", "🇳🇴", "🇴🇲", "🇵🇰", "🇵🇼", "🇵🇸", "🇵🇦", "🇵🇬", "🇵🇾", "🇵🇪", "🇵🇭", "🇵🇳", "🇵🇱", "🇵🇹", "🇵🇷", "🇶🇦", "🇷🇪", "🇷🇴", "🇷🇺", "🇷🇼", "🇼🇸", "🇸🇲", "🇸🇹", "🇨🇶", "🇸🇦", "🇸🇳", "🇷🇸", "🇸🇨", "🇸🇱", "🇸🇬", "🇸🇽", "🇸🇰", "🇸🇮", "🇬🇸", "🇸🇧", "🇸🇴", "🇿🇦", "🇰🇷", "🇸🇸", "🇪🇸", "🇱🇰", "🇧🇱", "🇸🇭", "🇰🇳", "🇱🇨", "🇵🇲", "🇻🇨", "🇸🇩", "🇸🇷", "🇸🇪", "🇨🇭", "🇸🇾", "🇹🇼", "🇹🇯", "🇹🇿", "🇹🇭", "🇹🇱", "🇹🇬", "🇹🇰", "🇹🇴", "🇹🇹", "🇹🇳", "🇹🇷", "🇹🇲", "🇹🇨", "🇹🇻", "🇺🇬", "🇺🇦", "🇦🇪", "🇬🇧", "🏴󠁧󠁢󠁥󠁮󠁧󠁿", "🏴󠁧󠁢󠁳󠁣󠁴󠁿", "🏴󠁧󠁢󠁷󠁬󠁳󠁿", "🇺🇸", "🇺🇾", "🇻🇮", "🇺🇿", "🇻🇺", "🇻🇦", "🇻🇪", "🇻🇳", "🇼🇫", "🇪🇭", "🇾🇪", "🇿🇲", "🇿🇼"
             ]
 ]
-</script>
-<button onclick="doThing()">Render emojis</button><br />
-<script>
-  const draw = text => {
-    const canvas = document.createElement('canvas')
-    canvas.width = canvas.height = 66
-    const ctx = canvas.getContext('2d')
-    ctx.font = '66px AppleColorEmoji'
-    ctx.fillText(text, 0, 66 - (ctx.measureText(text)?.actualBoundingBoxDescent || 0) / 6 * 4)
-    document.body.appendChild(canvas)
-    return new Promise(resolve => canvas.toBlob(resolve))
-  }
 
-  async function doThing() {
-    const handle = await window.showDirectoryPicker()
-    for (let i = 0; i < EMOJI_DATA.length; ++i) {
-      for (let j = 0; j < EMOJI_DATA[i].length; ++j) {
-        const file = await handle.getFileHandle(`${i}_${j}.png`, { create: true })
-        const writable = await file.createWritable()
-        await writable.write(await draw(EMOJI_DATA[i][j]))
-        await writable.close()
-      }
+    const totalEmojis = EMOJI_DATA.flat().length;
+
+    async function emojiToBlob(emoji) {
+        const size = 68;
+        const canvas = document.createElement('canvas');
+        canvas.width = canvas.height = size;
+        const ctx = canvas.getContext('2d');
+
+        ctx.textBaseline = 'middle';
+        ctx.textAlign = 'center';
+        ctx.font = `${size}px "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif`;
+        ctx.fillText(emoji, size / 2, size / 2);
+
+        return new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
     }
-    alert('done')
-  }
 
-  // then do
-  // for f in *; do pngquant $f --quality 35 --speed 1 --posterize 1 --output $f -f; done
-  // for f in *; do oxipng -o max --strip all $f; done
+    async function renderWithFS() {
+        const status = document.getElementById('status');
+        const bar = document.getElementById('progress');
+        bar.hidden = false;
+        bar.value = 0;
+        let count = 0;
+        try {
+            const folderHandle = await window.showDirectoryPicker();
+            status.textContent = 'Creating PNGs…';
+            for (let i = 0; i < EMOJI_DATA.length; ++i) {
+                for (let j = 0; j < EMOJI_DATA[i].length; ++j) {
+                    const blob = await emojiToBlob(EMOJI_DATA[i][j]);
+                    const fileHandle = await folderHandle.getFileHandle(`${i}_${j}.png`, {create: true});
+                    const writable = await fileHandle.createWritable();
+                    await writable.write(blob);
+                    await writable.close();
+                    count++;
+                    bar.value = (count / totalEmojis) * 100;
+                    status.textContent = `Saved ${count}/${totalEmojis}`;
+                }
+            }
+            status.textContent = 'Done!';
+        } catch (err) {
+            console.error(err);
+            alert('Error! See console for details.');
+            status.textContent = 'Error.';
+        }
+        bar.hidden = true;
+    }
+
+    async function renderWithZip() {
+        const status = document.getElementById('status');
+        const bar = document.getElementById('progress');
+        bar.hidden = false;
+        bar.value = 0;
+        let count = 0;
+        status.textContent = 'Creating PNGs…';
+        const zip = new JSZip();
+        for (let i = 0; i < EMOJI_DATA.length; ++i) {
+            for (let j = 0; j < EMOJI_DATA[i].length; ++j) {
+                const blob = await emojiToBlob(EMOJI_DATA[i][j]);
+                zip.file(`${i}_${j}.png`, blob);
+                count++;
+                bar.value = (count / totalEmojis) * 100;
+                status.textContent = `Packed ${count}/${totalEmojis}`;
+            }
+        }
+        status.textContent = 'Creating ZIP…';
+        const zipBlob = await zip.generateAsync({type: 'blob'});
+
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(zipBlob);
+        a.download = 'emoji.zip';
+        document.body.appendChild(a);
+        a.click();
+        URL.revokeObjectURL(a.href);
+        a.remove();
+
+        status.textContent = 'ZIP ready – click again to download another.';
+        bar.hidden = true;
+    }
+
+    const actionBtn = document.getElementById('actionBtn');
+    const supportsFS = 'showDirectoryPicker' in window;
+    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+
+    if (supportsFS && !isSafari) {
+        actionBtn.textContent = 'Render emojis → folder';
+        actionBtn.onclick = renderWithFS;
+    } else {
+        actionBtn.textContent = 'Download zip with emojis';
+        // Safari does not support the File System Access API, so we use JSZip to create a ZIP file instead.
+        actionBtn.onclick = renderWithZip;
+    }
+    // then do
+    // for f in *; do pngquant $f --quality 35 --speed 1 --posterize 1 --output $f -f; done
+    // for f in *; do oxipng -o max --strip all $f; done
 </script>
 </body>
+</html>
