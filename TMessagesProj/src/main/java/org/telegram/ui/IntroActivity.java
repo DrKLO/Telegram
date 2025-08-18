@@ -123,20 +123,27 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
         MessagesController.getGlobalMainSettings().edit().putLong("intro_crashed_time", System.currentTimeMillis()).apply();
 
         titles = new String[]{
-                LocaleController.getString(R.string.Page1Title),
-                LocaleController.getString(R.string.Page2Title),
-                LocaleController.getString(R.string.Page3Title),
-                LocaleController.getString(R.string.Page5Title),
-                LocaleController.getString(R.string.Page4Title),
-                LocaleController.getString(R.string.Page6Title)
+                "XabarChi",
+                "Swift",
+                "Zero-cost",
+                "High-performance",
+                "SafeSafe",
+                "Cloud-powered"
         };
         messages = new String[]{
-                LocaleController.getString(R.string.Page1Message),
-                LocaleController.getString(R.string.Page2Message),
-                LocaleController.getString(R.string.Page3Message),
-                LocaleController.getString(R.string.Page5Message),
-                LocaleController.getString(R.string.Page4Message),
-                LocaleController.getString(R.string.Page6Message)
+//                LocaleController.getString(R.string.Page1Message),
+//                LocaleController.getString(R.string.Page2Message),
+//                LocaleController.getString(R.string.Page3Message),
+//                LocaleController.getString(R.string.Page5Message),
+//                LocaleController.getString(R.string.Page4Message),
+//                LocaleController.getString(R.string.Page6Message)
+
+                "This is the fastest messaging app on the planet — completely free and highly secure.",
+                "No app sends your messages quicker than XabarChi does.",
+                "Unlimited cloud storage for chats and media — totally free with XabarChi.",
+                "Your messages stay protected from hackers thanks to XabarChi.",
+                "Share media and chats of any size — XabarChi puts no limits.",
+                "Access all your messages across several devices using XabarChi"
         };
         return true;
     }
@@ -186,7 +193,7 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
         };
         scrollView.addView(frameContainerView, LayoutHelper.createScroll(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP));
 
-        darkThemeDrawable = new RLottieDrawable(R.raw.sun, String.valueOf(R.raw.sun), AndroidUtilities.dp(28), AndroidUtilities.dp(28), true, null);
+        darkThemeDrawable = new RLottieDrawable(R.raw.sun_outline, String.valueOf(R.raw.sun_outline), AndroidUtilities.dp(28), AndroidUtilities.dp(28), true, null);
         darkThemeDrawable.setPlayInDirectionOfCustomEndFrame(true);
         darkThemeDrawable.beginApplyLayerColors();
         darkThemeDrawable.commitApplyLayerColors();
@@ -216,8 +223,8 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
             Theme.saveAutoNightThemeConfig();
             Theme.cancelAutoNightThemeCallbacks();
 
-            darkThemeDrawable.setCustomEndFrame(toDark ? darkThemeDrawable.getFramesCount() - 1 : 0);
-            themeIconView.playAnimation();
+//            darkThemeDrawable.setCustomEndFrame(toDark ? darkThemeDrawable.getFramesCount() - 1 : 0);
+//            themeIconView.playAnimation();
 
             int[] pos = new int[2];
             themeIconView.getLocationInWindow(pos);
@@ -342,7 +349,7 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
                 }
             }
         };
-        startMessagingButton.setText(LocaleController.getString(R.string.StartMessaging));
+        startMessagingButton.setText("Send your first message");
         startMessagingButton.setGravity(Gravity.CENTER);
         startMessagingButton.setTypeface(AndroidUtilities.bold());
         startMessagingButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
@@ -404,6 +411,13 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
         justCreated = true;
 
         updateColors(false);
+
+        if (Theme.isCurrentThemeDark()) {
+            Theme.selectedAutoNightType = Theme.AUTO_NIGHT_TYPE_NONE;
+            Theme.saveAutoNightThemeConfig();
+            Theme.cancelAutoNightThemeCallbacks();
+            NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.needSetDayNightTheme, Theme.getTheme("Blue"), false, null, -1);
+        }
 
         return fragmentView;
     }
@@ -769,10 +783,10 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
             loadTexture(R.drawable.intro_powerful_star, 18);
             loadTexture(R.drawable.intro_private_door, 19);
             loadTexture(R.drawable.intro_private_screw, 20);
-            loadTexture(R.drawable.intro_tg_plane, 21);
+            loadTexture(R.drawable.logo_ic, 21);
             loadTexture(v -> {
                 Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
-                paint.setColor(0xFF2CA5E0); // It's logo color, it should not be colored by the theme
+                paint.setColor(0xFF8C52FF); // It's logo color, it should not be colored by the theme
                 int size = AndroidUtilities.dp(ICON_HEIGHT_DP);
                 Bitmap bm = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);
                 Canvas c = new Canvas(bm);

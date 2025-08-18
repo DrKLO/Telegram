@@ -8,6 +8,7 @@ import android.util.SparseArray;
 import androidx.core.graphics.ColorUtils;
 
 import java.util.HashMap;
+import org.msger.utils.MainColors;
 
 public class ThemeColors {
 
@@ -20,8 +21,8 @@ public class ThemeColors {
         defaultColors[key_dialogBackground] = 0xffffffff;
         defaultColors[key_dialogBackgroundGray] = 0xfff0f0f0;
         defaultColors[key_dialogTextBlack] = 0xff222222;
-        defaultColors[key_dialogTextLink] = 0xff2678b6;
-        defaultColors[key_dialogLinkSelection] = 0x3362a9e3;
+        defaultColors[key_dialogTextLink] = MainColors.INSTANCE.getMainColor();
+        defaultColors[key_dialogLinkSelection] = MainColors.INSTANCE.getMainColor();
         defaultColors[key_dialogTextBlue] = 0xff2f8cc9;
         defaultColors[key_dialogTextBlue2] = 0xff3a95d5;
         defaultColors[key_dialogTextBlue4] = 0xff19a7e8;
@@ -32,7 +33,7 @@ public class ThemeColors {
         defaultColors[key_dialogTextHint] = 0xff979797;
         defaultColors[key_dialogIcon] = 0xff676b70;
         defaultColors[key_dialogGrayLine] = 0xffd2d2d2;
-        defaultColors[key_dialogTopBackground] = 0xff6fb2e5;
+        defaultColors[key_dialogTopBackground] = MainColors.INSTANCE.getMainColor();
         defaultColors[key_dialogInputField] = 0xffdbdbdb;
         defaultColors[key_dialogInputFieldActivated] = 0xff37a9f0;
         defaultColors[key_dialogCheckboxSquareBackground] = 0xff43a0df;
@@ -40,10 +41,10 @@ public class ThemeColors {
         defaultColors[key_dialogCheckboxSquareUnchecked] = 0xff737373;
         defaultColors[key_dialogCheckboxSquareDisabled] = 0xffb0b0b0;
         defaultColors[key_dialogRadioBackground] = 0xffb3b3b3;
-        defaultColors[key_dialogRadioBackgroundChecked] = 0xff37a9f0;
+        defaultColors[key_dialogRadioBackgroundChecked] = MainColors.INSTANCE.getMainColor();
         defaultColors[key_dialogLineProgress] = 0xff527da3;
         defaultColors[key_dialogLineProgressBackground] = 0xffdbdbdb;
-        defaultColors[key_dialogButton] = 0xff4991cc;
+        defaultColors[key_dialogButton] = MainColors.INSTANCE.getMainColor();
         defaultColors[key_dialogButtonSelector] = 0x0f000000;
         defaultColors[key_dialogScrollGlow] = 0xfff5f6f7;
         defaultColors[key_dialogRoundCheckBox] = 0xff4cb4f5;
@@ -75,19 +76,19 @@ public class ThemeColors {
 
         defaultColors[key_windowBackgroundWhite] = 0xffffffff;
         defaultColors[key_windowBackgroundUnchecked] = 0xff9da7b1;
-        defaultColors[key_windowBackgroundChecked] = 0xff579ed9;
+        defaultColors[key_windowBackgroundChecked] = MainColors.INSTANCE.getSecondActionBarColor();
         defaultColors[key_windowBackgroundCheckText] = 0xffffffff;
         defaultColors[key_progressCircle] = 0xff1c93e3;
         defaultColors[key_windowBackgroundWhiteGrayIcon] = 0xff81868b;
-        defaultColors[key_windowBackgroundWhiteBlueText] = 0xff4092cd;
-        defaultColors[key_windowBackgroundWhiteBlueText2] = 0xff3a95d5;
+        defaultColors[key_windowBackgroundWhiteBlueText] = MainColors.INSTANCE.getMainColor();
+        defaultColors[key_windowBackgroundWhiteBlueText2] = MainColors.INSTANCE.getMainColor();
         defaultColors[key_windowBackgroundWhiteBlueText3] = 0xff2678b6;
-        defaultColors[key_windowBackgroundWhiteBlueText4] = 0xff1c93e3;
+        defaultColors[key_windowBackgroundWhiteBlueText4] = MainColors.INSTANCE.getMainColor();
         defaultColors[key_windowBackgroundWhiteBlueText5] = 0xff4c8eca;
         defaultColors[key_windowBackgroundWhiteBlueText6] = 0xff3a8ccf;
         defaultColors[key_windowBackgroundWhiteBlueText7] = 0xff377aae;
-        defaultColors[key_windowBackgroundWhiteBlueButton] = 0xff1e88d3;
-        defaultColors[key_windowBackgroundWhiteBlueIcon] = 0xff379de5;
+        defaultColors[key_windowBackgroundWhiteBlueButton] = MainColors.INSTANCE.getMainColor();
+        defaultColors[key_windowBackgroundWhiteBlueIcon] = MainColors.INSTANCE.getMainColor();
         defaultColors[key_windowBackgroundWhiteGreenText] = 0xff26972c;
         defaultColors[key_windowBackgroundWhiteGreenText2] = 0xff37a818;
         defaultColors[key_text_RedRegular] = 0xffcc2929;
@@ -103,29 +104,29 @@ public class ThemeColors {
         defaultColors[key_windowBackgroundWhiteGrayText8] = 0xff6d6d72;
         defaultColors[key_windowBackgroundWhiteBlackText] = 0xff222222;
         defaultColors[key_windowBackgroundWhiteHintText] = 0xffa8a8a8;
-        defaultColors[key_windowBackgroundWhiteValueText] = 0xff3a95d5;
-        defaultColors[key_windowBackgroundWhiteLinkText] = 0xff2678b6;
-        defaultColors[key_windowBackgroundWhiteLinkSelection] = 0x3362a9e3;
-        defaultColors[key_windowBackgroundWhiteBlueHeader] = 0xff3a95d5;
+        defaultColors[key_windowBackgroundWhiteValueText] = MainColors.INSTANCE.getMainColor();
+        defaultColors[key_windowBackgroundWhiteLinkText] = MainColors.INSTANCE.getMainColor();
+        defaultColors[key_windowBackgroundWhiteLinkSelection] = MainColors.INSTANCE.getMainColor();
+        defaultColors[key_windowBackgroundWhiteBlueHeader] = MainColors.INSTANCE.getMainColor();
         defaultColors[key_windowBackgroundWhiteInputField] = 0xffdbdbdb;
-        defaultColors[key_windowBackgroundWhiteInputFieldActivated] = 0xff37a9f0;
+        defaultColors[key_windowBackgroundWhiteInputFieldActivated] = MainColors.INSTANCE.getMainColor();
         defaultColors[key_switchTrack] = 0xffb0b5ba;
-        defaultColors[key_switchTrackChecked] = 0xff52ade9;
+        defaultColors[key_switchTrackChecked] = MainColors.INSTANCE.getMainColor();
         defaultColors[key_switchTrackBlue] = 0xff828e99;
-        defaultColors[key_switchTrackBlueChecked] = 0xff3c88c7;
+        defaultColors[key_switchTrackBlueChecked] = MainColors.INSTANCE.getMainColor();
         defaultColors[key_switchTrackBlueThumb] = 0xffffffff;
         defaultColors[key_switchTrackBlueThumbChecked] = 0xffffffff;
         defaultColors[key_switchTrackBlueSelector] = 0x17404a53;
         defaultColors[key_switchTrackBlueSelectorChecked] = 0x21024781;
         defaultColors[key_switch2Track] = 0xfff57e7e;
-        defaultColors[key_switch2TrackChecked] = 0xff52ade9;
-        defaultColors[key_checkboxSquareBackground] = 0xff43a0df;
+        defaultColors[key_switch2TrackChecked] = MainColors.INSTANCE.getMainColor();
+        defaultColors[key_checkboxSquareBackground] = MainColors.INSTANCE.getMainColor();
         defaultColors[key_checkboxSquareCheck] = 0xffffffff;
-        defaultColors[key_checkboxSquareUnchecked] = 0xff737373;
+        defaultColors[key_checkboxSquareUnchecked] = MainColors.INSTANCE.getMainColor();
         defaultColors[key_checkboxSquareDisabled] = 0xffb0b0b0;
         defaultColors[key_listSelector] = 0x0f000000;
         defaultColors[key_radioBackground] = 0xffb3b3b3;
-        defaultColors[key_radioBackgroundChecked] = 0xff37a9f0;
+        defaultColors[key_radioBackgroundChecked] = MainColors.INSTANCE.getMainColor();
         defaultColors[key_windowBackgroundGray] = 0xfff0f0f0;
         defaultColors[key_windowBackgroundGrayShadow] = 0xff000000;
         defaultColors[key_emptyListPlaceholder] = 0xff959595;
@@ -168,7 +169,7 @@ public class ThemeColors {
 
 
         defaultColors[key_avatar_backgroundInProfileBlue] = 0xff5085b1;
-        defaultColors[key_avatar_backgroundActionBarBlue] = 0xff598fba;
+        defaultColors[key_avatar_backgroundActionBarBlue] = MainColors.INSTANCE.getMainColor();
         defaultColors[key_avatar_subtitleInProfileBlue] = 0xffd7eafa;
         defaultColors[key_avatar_actionBarSelectorBlue] = 0xff4981ad;
         defaultColors[key_avatar_actionBarIconBlue] = 0xffffffff;
@@ -181,7 +182,7 @@ public class ThemeColors {
         defaultColors[key_avatar_nameInMessageBlue] = 0xff368AD1;
         defaultColors[key_avatar_nameInMessagePink] = 0xffC7508B;
 
-        defaultColors[key_actionBarDefault] = 0xff527da3;
+        defaultColors[key_actionBarDefault] = MainColors.INSTANCE.getMainColor();
         defaultColors[key_actionBarDefaultIcon] = 0xffffffff;
         defaultColors[key_actionBarActionModeDefault] = 0xffffffff;
         defaultColors[key_actionBarActionModeDefaultTop] = 0x10000000;
@@ -220,7 +221,7 @@ public class ThemeColors {
         defaultColors[key_chats_unreadCounter] = 0xff4ecc5e;
         defaultColors[key_chats_unreadCounterMuted] = 0xffc6c9cc;
         defaultColors[key_chats_unreadCounterText] = 0xffffffff;
-        defaultColors[key_chats_archiveBackground] = 0xff66a9e0;
+        defaultColors[key_chats_archiveBackground] = MainColors.INSTANCE.getMainColor();
         defaultColors[key_chats_archivePinBackground] = 0xff9faab3;
         defaultColors[key_chats_archiveIcon] = 0xffffffff;
         defaultColors[key_chats_archiveText] = 0xffffffff;
@@ -259,9 +260,9 @@ public class ThemeColors {
         defaultColors[key_chats_menuPhone] = 0xffffffff;
         defaultColors[key_chats_menuPhoneCats] = 0xffc2e5ff;
         defaultColors[key_chats_actionIcon] = 0xffffffff;
-        defaultColors[key_chats_actionBackground] = 0xff65a9e0;
-        defaultColors[key_chats_actionPressedBackground] = 0xff569dd6;
-        defaultColors[key_chats_menuTopBackgroundCats] = 0xff598fba;
+        defaultColors[key_chats_actionBackground] = MainColors.INSTANCE.getMainColor();
+        defaultColors[key_chats_actionPressedBackground] = MainColors.INSTANCE.getMainColor();
+        defaultColors[key_chats_menuTopBackgroundCats] = MainColors.INSTANCE.getMainColor();
         defaultColors[key_chats_archivePullDownBackground] = 0xffc6c9cc;
         defaultColors[key_chats_archivePullDownBackgroundActive] = 0xff66a9e0;
 
@@ -541,8 +542,8 @@ public class ThemeColors {
         defaultColors[key_profile_status] = 0xffd7eafa;
 
         defaultColors[key_profile_tabText] = 0xff878c90;
-        defaultColors[key_profile_tabSelectedText] = 0xff3a95d5;
-        defaultColors[key_profile_tabSelectedLine] = 0xff4fa6e9;
+        defaultColors[key_profile_tabSelectedText] = MainColors.INSTANCE.getMainColor();
+        defaultColors[key_profile_tabSelectedLine] = MainColors.INSTANCE.getMainColor();
         defaultColors[key_profile_tabSelector] = 0x0f000000;
 
         defaultColors[key_player_actionBarSelector] = 0x0f000000;
@@ -553,7 +554,7 @@ public class ThemeColors {
         defaultColors[key_player_time] = 0xff8c9296;
         defaultColors[key_player_progressBackground] = 0xffEBEDF0;
         defaultColors[key_player_progressCachedBackground] = 0xffC5DCF0;
-        defaultColors[key_player_progress] = 0xff54AAEB;
+        defaultColors[key_player_progress] = MainColors.INSTANCE.getMainColor();
         defaultColors[key_player_button] = 0xff333333;
         defaultColors[key_player_buttonActive] = 0xff4ca8ea;
 
@@ -588,13 +589,13 @@ public class ThemeColors {
         defaultColors[key_calls_callReceivedGreenIcon] = 0xff00c853;
         defaultColors[key_calls_callReceivedRedIcon] = 0xffff4848;
 
-        defaultColors[key_featuredStickers_addedIcon] = 0xff50a8eb;
+        defaultColors[key_featuredStickers_addedIcon] = MainColors.INSTANCE.getMainColor();
         defaultColors[key_featuredStickers_buttonProgress] = 0xffffffff;
-        defaultColors[key_featuredStickers_addButton] = 0xff50a8eb;
+        defaultColors[key_featuredStickers_addButton] = MainColors.INSTANCE.getMainColor();
         defaultColors[key_featuredStickers_addButtonPressed] = 0xff439bde;
         defaultColors[key_featuredStickers_removeButtonText] = 0xff5093d3;
         defaultColors[key_featuredStickers_buttonText] = 0xffffffff;
-        defaultColors[key_featuredStickers_unread] = 0xff4da6ea;
+        defaultColors[key_featuredStickers_unread] = MainColors.INSTANCE.getMainColor();
 
         defaultColors[key_inappPlayerPerformer] = 0xff2f3438;
         defaultColors[key_inappPlayerTitle] = 0xff2f3438;
@@ -618,7 +619,7 @@ public class ThemeColors {
         defaultColors[key_stickers_menu] = 0xffb6bdc5;
         defaultColors[key_stickers_menuSelector] = 0x0f000000;
 
-        defaultColors[key_changephoneinfo_image2] = 0xff50a7ea;
+        defaultColors[key_changephoneinfo_image2] = MainColors.INSTANCE.getMainColor();
 
         defaultColors[key_groupcreate_hintText] = 0xffa1aab3;
         defaultColors[key_groupcreate_cursor] = 0xff52a3db;

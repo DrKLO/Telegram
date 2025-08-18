@@ -1,6 +1,7 @@
 import org.gradle.nativeplatform.platform.internal.DefaultNativePlatform
 
 apply plugin: 'com.android.library'
+apply plugin: 'kotlin-android'
 
 repositories {
     mavenCentral()
@@ -66,6 +67,9 @@ dependencies {
     implementation 'com.google.android.recaptcha:recaptcha:18.4.0'
 
     coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:1.1.5'
+
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.9.20"
+
 }
 
 def isWindows = String.valueOf(DefaultNativePlatform.currentOperatingSystem.toFamilyName() == OperatingSystemFamily.WINDOWS)
@@ -97,6 +101,10 @@ android {
         targetCompatibility JavaVersion.VERSION_1_8
 
         coreLibraryDesugaringEnabled true
+
+        kotlinOptions {
+            jvmTarget = '1.8'
+        }
     }
 
 
@@ -204,6 +212,10 @@ android {
         }
     }
     namespace 'org.telegram.messenger'
+
+    buildFeatures {
+        viewBinding true
+    }
 }
 
 

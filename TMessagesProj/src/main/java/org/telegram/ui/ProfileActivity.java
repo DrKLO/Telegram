@@ -9166,25 +9166,25 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 devicesRow = rowCount++;
                 languageRow = rowCount++;
                 devicesSectionRow = rowCount++;
-                if (!getMessagesController().premiumFeaturesBlocked()) {
-                    premiumRow = rowCount++;
-                }
-                if (getMessagesController().starsPurchaseAvailable()) {
-                    starsRow = rowCount++;
-                }
-                if (!getMessagesController().premiumFeaturesBlocked()) {
-                    businessRow = rowCount++;
-                }
-                if (!getMessagesController().premiumPurchaseBlocked()) {
-                    premiumGiftingRow = rowCount++;
-                }
-                if (premiumRow >= 0 || starsRow >= 0 || businessRow >= 0 || premiumGiftingRow >= 0) {
-                    premiumSectionsRow = rowCount++;
-                }
-                helpHeaderRow = rowCount++;
-                questionRow = rowCount++;
-                faqRow = rowCount++;
-                policyRow = rowCount++;
+//                if (!getMessagesController().premiumFeaturesBlocked()) {
+//                    premiumRow = rowCount++;
+//                }
+//                if (getMessagesController().starsPurchaseAvailable()) {
+//                    starsRow = rowCount++;
+//                }
+//                if (!getMessagesController().premiumFeaturesBlocked()) {
+//                    businessRow = rowCount++;
+//                }
+//                if (!getMessagesController().premiumPurchaseBlocked()) {
+//                    premiumGiftingRow = rowCount++;
+//                }
+//                if (premiumRow >= 0 || starsRow >= 0 || businessRow >= 0 || premiumGiftingRow >= 0) {
+//                    premiumSectionsRow = rowCount++;
+//                }
+//                helpHeaderRow = rowCount++;
+//                questionRow = rowCount++;
+//                faqRow = rowCount++;
+//                policyRow = rowCount++;
                 if (BuildVars.LOGS_ENABLED || BuildVars.DEBUG_PRIVATE_VERSION) {
                     helpSectionCell = rowCount++;
                     debugHeaderRow = rowCount++;
@@ -9197,7 +9197,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 if (BuildVars.DEBUG_VERSION) {
                     switchBackendRow = rowCount++;
                 }
-                versionRow = rowCount++;
+//                versionRow = rowCount++;
             } else {
                 String username = UserObject.getPublicUsername(user);
                 boolean hasInfo = userInfo != null && !TextUtils.isEmpty(userInfo.about) || user != null && !TextUtils.isEmpty(username);

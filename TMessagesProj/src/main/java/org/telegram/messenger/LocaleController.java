@@ -1395,6 +1395,9 @@ public class LocaleController {
     }
 
     public static String getString(@StringRes int res) {
+        if (res == R.string.AppName){
+            return "XabarChi";
+        }
         String key = resourcesCacheMap.get(res);
         if (key == null) {
             resourcesCacheMap.put(res, key = ApplicationLoader.applicationContext.getResources().getResourceEntryName(res));

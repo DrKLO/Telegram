@@ -294,7 +294,8 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter {
             //newChannelIcon = R.drawable.msg_channel;
             contactsIcon = R.drawable.msg_contacts;
             callsIcon = R.drawable.msg_calls;
-            savedIcon = R.drawable.msg_saved;
+//            savedIcon = R.drawable.msg_saved;
+            savedIcon = R.drawable.msg_saved_ic;
             settingsIcon = R.drawable.msg_settings_old;
             inviteIcon = R.drawable.msg_invite;
             helpIcon = R.drawable.msg_help;
@@ -320,29 +321,31 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter {
                 showDivider = true;
             }
         }
-        TLRPC.TL_attachMenuBots menuBots = MediaDataController.getInstance(UserConfig.selectedAccount).getAttachMenuBots();
-        if (menuBots != null && menuBots.bots != null) {
-            for (int i = 0; i < menuBots.bots.size(); i++) {
-                TLRPC.TL_attachMenuBot bot = menuBots.bots.get(i);
-                if (bot.show_in_side_menu) {
-                    items.add(new Item(bot));
-                    showDivider = true;
-                }
-            }
-        }
-        if (showDivider) {
-            items.add(null); // divider
-        }
-        items.add(new Item(2, LocaleController.getString(R.string.NewGroup), newGroupIcon));
+//        TLRPC.TL_attachMenuBots menuBots = MediaDataController.getInstance(UserConfig.selectedAccount).getAttachMenuBots();
+//        if (menuBots != null && menuBots.bots != null) {
+//            for (int i = 0; i < menuBots.bots.size(); i++) {
+//                TLRPC.TL_attachMenuBot bot = menuBots.bots.get(i);
+//                if (bot.show_in_side_menu) {
+//                    items.add(new Item(bot));
+//                    showDivider = true;
+//                }
+//            }
+//        }
+//        if (showDivider) {
+//            items.add(null); // divider
+//        }
+//        items.add(new Item(2, LocaleController.getString(R.string.NewGroup), newGroupIcon));
         //items.add(new Item(3, LocaleController.getString(R.string.NewSecretChat), newSecretIcon));
         //items.add(new Item(4, LocaleController.getString(R.string.NewChannel), newChannelIcon));
-        items.add(new Item(6, LocaleController.getString(R.string.Contacts), contactsIcon));
+//        items.add(new Item(6, LocaleController.getString(R.string.Contacts), contactsIcon));
         items.add(new Item(10, LocaleController.getString(R.string.Calls), callsIcon));
-        items.add(new Item(11, LocaleController.getString(R.string.SavedMessages), savedIcon));
         items.add(new Item(8, LocaleController.getString(R.string.Settings), settingsIcon));
-        items.add(null); // divider
-        items.add(new Item(7, LocaleController.getString(R.string.InviteFriends), inviteIcon));
-        items.add(new Item(13, LocaleController.getString(R.string.TelegramFeatures), helpIcon));
+        items.add(new Item(1001, LocaleController.getString(R.string.AuthAnotherClient), R.drawable.msg_mini_qr));
+        items.add(new Item(11, LocaleController.getString(R.string.SavedMessages), savedIcon));
+        items.add(new Item(1000, LocaleController.getString(R.string.ArchivedChats), R.drawable.archive_ic));
+//        items.add(null); // divider
+//        items.add(new Item(7, LocaleController.getString(R.string.InviteFriends), inviteIcon));
+//        items.add(new Item(13, LocaleController.getString(R.string.TelegramFeatures), helpIcon));
     }
 
     public boolean click(View view, int position) {
