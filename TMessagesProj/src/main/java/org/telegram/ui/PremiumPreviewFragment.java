@@ -1242,6 +1242,7 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
                 return getString(R.string.Loading);
             }
             final boolean isPremium = UserConfig.getInstance(currentAccount).isPremium();
+            final boolean isManyYearsTier = tier.getMonths() > 12 && tier.getMonths() % 12 == 0;
             final boolean isYearTier = tier.getMonths() == 12;
             String price = isYearTier ? tier.getFormattedPricePerYear() : tier.getFormattedPricePerMonth();
             final int resId;
@@ -1255,6 +1256,17 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
                     } else {
                         resId = R.string.SubscribeToPremiumPerYear;
                         price = tier.getFormattedPrice();
+                    }
+                } else if (isManyYearsTier) {
+                    if (MessagesController.getInstance(currentAccount).showAnnualPerMonth) {
+                        resId = R.string.SubscribeToPremium;
+                        price = tier.getFormattedPricePerMonth();
+                    } else {
+                        return LocaleController.formatString(
+                            R.string.SubscribeToPremiumPerCustom,
+                            tier.getFormattedPrice(),
+                            LocaleController.formatPluralString("Years", tier.getMonths() / 12)
+                        );
                     }
                 } else {
                     resId = R.string.SubscribeToPremium;
@@ -1875,11 +1887,26 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
             } else if (BillingController.getInstance().isReady() && BillingController.PREMIUM_PRODUCT_DETAILS != null) {
                 long pricePerMonthMaxStore = 0;
 
+                boolean hasSomeLoaded = false;
                 for (SubscriptionTier subscriptionTier : subscriptionTiers) {
                     subscriptionTier.setGooglePlayProductDetails(BillingController.PREMIUM_PRODUCT_DETAILS);
 
                     if (subscriptionTier.getPricePerYear() > pricePerMonthMaxStore) {
                         pricePerMonthMaxStore = subscriptionTier.getPricePerYear();
+                    }
+
+                    if (subscriptionTier.getOfferDetails() != null) {
+                        hasSomeLoaded = true;
+                    }
+                }
+
+                if (hasSomeLoaded) {
+                    for (int i = 0; i < subscriptionTiers.size(); ++i) {
+                        final SubscriptionTier tier = subscriptionTiers.get(i);
+                        if (tier.getOfferDetails() == null) {
+                            subscriptionTiers.remove(i);
+                            --i;
+                        }
                     }
                 }
 

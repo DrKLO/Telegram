@@ -43,6 +43,7 @@ public class UItem extends AdapterWithDiffUtils.Item {
     public String[] texts;
     public boolean accent, red, transparent, locked;
     public int spanCount = MAX_SPAN_COUNT;
+    public int parentSpanCount;
 
     public boolean include;
     public long dialogId;

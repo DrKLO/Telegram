@@ -24,7 +24,7 @@ import java.util.ArrayList;
 public class HorizontalRoundTabsLayout extends HorizontalScrollView {
     private final AnimatedFloat selectorStartX;
     private final AnimatedFloat selectorEndX;
-    private final LinearLayout linearLayout;
+    public final LinearLayout linearLayout;
 
     private final Paint bgPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final TextPaint textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);

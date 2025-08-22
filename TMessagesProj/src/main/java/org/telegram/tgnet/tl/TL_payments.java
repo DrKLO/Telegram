@@ -141,6 +141,7 @@ public class TL_payments {
         @Override
         public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
+            stream.writeInt32(flags);
             stream.writeInt32(count);
             Vector.serialize(stream, suggested_bots);
             Vector.serialize(stream, users);

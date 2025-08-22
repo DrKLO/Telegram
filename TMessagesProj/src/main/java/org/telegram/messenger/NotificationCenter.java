@@ -236,6 +236,7 @@ public class NotificationCenter {
     public static final int savedMessagesDialogsUpdate = totalEvents++;
     public static final int savedReactionTagsUpdate = totalEvents++;
     public static final int userIsPremiumBlockedUpadted = totalEvents++;
+    public static final int storyAlbumsCollectionsUpdate = totalEvents++;
     public static final int savedMessagesForwarded = totalEvents++;
     public static final int emojiKeywordsLoaded = totalEvents++;
     public static final int smsJobStatusUpdate = totalEvents++;
@@ -262,6 +263,7 @@ public class NotificationCenter {
     public static final int updateAllMessages = totalEvents++;
     public static final int starGiftsLoaded = totalEvents++;
     public static final int starUserGiftsLoaded = totalEvents++;
+    public static final int starUserGiftCollectionsLoaded = totalEvents++;
     public static final int starGiftSoldOut = totalEvents++;
     public static final int updateStories = totalEvents++;
     public static final int botDownloadsUpdate = totalEvents++;
@@ -272,6 +274,7 @@ public class NotificationCenter {
     public static final int commonChatsLoaded = totalEvents++;
     public static final int appConfigUpdated = totalEvents++;
     public static final int conferenceEmojiUpdated = totalEvents++;
+    public static final int contentSettingsLoaded = totalEvents++;
 
     //global
     public static final int pushMessagesUpdated = totalEvents++;

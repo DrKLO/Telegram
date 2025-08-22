@@ -144,6 +144,7 @@ public class LinkActionView extends LinearLayout {
         removeView.setTypeface(AndroidUtilities.bold());
         removeView.setSingleLine(true);
         linearLayout.addView(removeView, LayoutHelper.createLinear(0, 42, 1f, containerPadding, 0, containerPadding, 0));
+        linearLayout.setClickable(true);
         removeView.setVisibility(View.GONE);
 
         addView(linearLayout, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 12, 0, 0));

@@ -1023,7 +1023,7 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
         listView.setLayoutManager(layoutManager = new LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false));
         if (searchStoriesArea != null) {
             sharedMediaHeader = new GraySectionCell(context, resourceProvider);
-            sharedMediaLayout = new SharedMediaLayout(context, 0, new SharedMediaLayout.SharedMediaPreloader(this), 0, null, null, null, SharedMediaLayout.TAB_STORIES, this, new SharedMediaLayout.Delegate() {
+            sharedMediaLayout = new SharedMediaLayout(context, 0, new SharedMediaLayout.SharedMediaPreloader(this), 0, null, null, null, SharedMediaLayout.TAB_STORIES, 0, this, new SharedMediaLayout.Delegate() {
                 @Override
                 public void scrollToSharedMedia() {
 
@@ -3125,7 +3125,7 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
                 if (target == listView && sharedMediaLayout != null && sharedMediaLayout.isAttachedToWindow()) {
                     RecyclerListView innerListView = sharedMediaLayout.getCurrentListView();
                     int top = sharedMediaLayout.getTop();
-                    if (top == 0) {
+                    if (innerListView != null && top == 0) {
                         consumed[1] = dyUnconsumed;
                         innerListView.scrollBy(0, dyUnconsumed);
                     }

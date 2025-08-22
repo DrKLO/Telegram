@@ -1568,6 +1568,10 @@ public class LocaleController {
     }
 
     public static String formatNumber(long count, char symbol) {
+        if (count < 0) {
+            return "-" + formatNumber(-count, symbol);
+        }
+
         StringBuilder stringBuilder = new StringBuilder(String.format("%d", count));
         for (int a = stringBuilder.length() - 3; a > 0; a -= 3) {
             stringBuilder.insert(a, symbol);

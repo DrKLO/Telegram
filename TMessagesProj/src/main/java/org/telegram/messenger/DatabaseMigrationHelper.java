@@ -1584,6 +1584,20 @@ public class DatabaseMigrationHelper {
             version = 165;
         }
 
+        if (version == 165) {
+            database.executeFast("CREATE TABLE profile_stories_albums (dialog_id INTEGER, album_id INTEGER, order_index INTEGER, data BLOB, PRIMARY KEY(dialog_id, album_id));").stepThis().dispose();
+            database.executeFast("CREATE TABLE profile_stories_albums_links (dialog_id INTEGER, album_id INTEGER, story_id INTEGER, order_index INTEGER, PRIMARY KEY (dialog_id, album_id, story_id));").stepThis().dispose();
+            database.executeFast("PRAGMA user_version = 166").stepThis().dispose();
+            version = 166;
+        }
+
+        if (version == 166) {
+            database.executeFast("DROP TABLE profile_stories").stepThis().dispose();
+            database.executeFast("CREATE TABLE profile_stories (dialog_id INTEGER, story_id INTEGER, data BLOB, type INTEGER, seen INTEGER, pin INTEGER, PRIMARY KEY(dialog_id, story_id, type));").stepThis().dispose();
+            database.executeFast("PRAGMA user_version = 167").stepThis().dispose();
+            version = 167;
+        }
+
         return version;
     }
 

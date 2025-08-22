@@ -12,6 +12,7 @@ import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.drawable.Drawable;
+import android.text.TextPaint;
 import android.text.TextUtils;
 import android.view.Gravity;
 import android.view.MotionEvent;
@@ -187,6 +188,10 @@ public class ButtonWithCounterView extends FrameLayout implements Loadable {
         text.setText(newText, animated, moveDown);
         setContentDescription(newText);
         invalidate();
+    }
+
+    public TextPaint getTextPaint() {
+        return text.getPaint();
     }
 
     private float subTextT = 0f;

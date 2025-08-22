@@ -30,6 +30,7 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.text.Layout;
+import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.KeyEvent;
@@ -55,6 +56,7 @@ import com.google.android.exoplayer2.util.Util;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.ChatObject;
+import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaController;
@@ -303,10 +305,6 @@ public class TodoItemMenu extends Dialog {
                 WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS |
                 WindowManager.LayoutParams.FLAG_TRANSLUCENT_NAVIGATION;
         }
-        if (!BuildVars.DEBUG_PRIVATE_VERSION) {
-            params.flags |= WindowManager.LayoutParams.FLAG_SECURE;
-            AndroidUtilities.logFlagSecure();
-        }
         params.flags |= WindowManager.LayoutParams.FLAG_FULLSCREEN;
         params.flags |= WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON;
         if (Build.VERSION.SDK_INT >= 28) {
@@ -479,6 +477,21 @@ public class TodoItemMenu extends Dialog {
             }
         }
         if (task != null) {
+            if (chatActivity != null) {
+                taskOptions.add(R.drawable.menu_reply, getString(R.string.TodoItemQuote), () -> {
+                    chatActivity.showFieldPanelForReplyQuote(messageObject, ChatActivity.ReplyQuote.from(messageObject, task.id));
+                    dismiss(false);
+                });
+            }
+            if (messageObject.getDialogId() < 0) {
+                final MessagesController messagesController = MessagesController.getInstance(messageObject.currentAccount);
+                final String username = DialogObject.getPublicUsername(messagesController.getUserOrChat(messageObject.getDialogId()));
+                final String link = "https://" + messagesController.linkPrefix + "/" + (TextUtils.isEmpty(username) ? "c/" + (-messageObject.getDialogId()) : username) + "/" + messageObject.getId() + "?task=" + task.id;
+                taskOptions.add(R.drawable.msg_link, getString(R.string.CopyLink), () -> {
+                    AndroidUtilities.addToClipboard(link);
+                    dismiss(true);
+                });
+            }
             taskOptions.add(R.drawable.msg_copy, getString(R.string.Copy), () -> {
                 AndroidUtilities.addToClipboard(MessageObject.formatTextWithEntities(task.title, false));
                 dismiss(true);

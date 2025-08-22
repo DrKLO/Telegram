@@ -99,6 +99,7 @@ public class PollCreateActivity extends BaseFragment implements NotificationCent
 
     private final int maxAnswersCount;
     private int[] answerIds;
+    private int maxAnswerId;
     private final CharSequence[] answers;
     private final boolean[] answersChecks;
     private int oldAnswersCount;
@@ -311,6 +312,7 @@ public class PollCreateActivity extends BaseFragment implements NotificationCent
             MessageObject.addEntitiesToText(questionString, m.todo.title.entities, false, false, false, false);
 
             oldAnswersCount = answersCount = m.todo.list.size();
+            maxAnswerId = 0;
             answerIds = new int[answersCount];
             for (int i = 0; i < answersCount; ++i) {
                 TLRPC.TL_textWithEntities text = m.todo.list.get(i).title;
@@ -320,6 +322,7 @@ public class PollCreateActivity extends BaseFragment implements NotificationCent
                 MessageObject.addEntitiesToText(answers[i], text.entities, false, false, false, false);
 
                 answerIds[i] = m.todo.list.get(i).id;
+                maxAnswerId = Math.max(maxAnswerId, answerIds[i]);
             }
 
             allowMarking = m.todo.others_can_complete;
@@ -1084,12 +1087,8 @@ public class PollCreateActivity extends BaseFragment implements NotificationCent
         answersCount++;
         if (answerIds != null) {
             int[] newAnswerIds = new int[answersCount];
-            int maxId = 0;
-            for (int i = 0; i < answerIds.length; ++i) {
-                maxId = Math.max(maxId, answerIds[i]);
-            }
             for (int i = 0; i < newAnswerIds.length; ++i) {
-                newAnswerIds[i] = i < answerIds.length ? answerIds[i] : (++maxId);
+                newAnswerIds[i] = i < answerIds.length ? answerIds[i] : (++maxAnswerId);
             }
             answerIds = newAnswerIds;
         }
@@ -1862,60 +1861,7 @@ public class PollCreateActivity extends BaseFragment implements NotificationCent
                     break;
                 }
                 default: {
-                    PollEditTextCell cell = new PollEditTextCell(mContext, false, isPremium ? PollEditTextCell.TYPE_EMOJI : PollEditTextCell.TYPE_DEFAULT, v -> {
-                        if (v.getTag() != null) {
-                            return;
-                        }
-                        v.setTag(1);
-                        PollEditTextCell p = (PollEditTextCell) v.getParent();
-                        RecyclerView.ViewHolder holder = listView.findContainingViewHolder(p);
-                        if (holder != null) {
-                            int position = holder.getAdapterPosition();
-                            if (position != RecyclerView.NO_POSITION) {
-                                int index = position - answerStartRow;
-                                if (onlyAdding && index < oldAnswersCount) {
-                                    AndroidUtilities.shakeViewSpring(p, shiftDp = -shiftDp);
-                                    BotWebViewVibrationEffect.APP_ERROR.vibrate();
-                                    return;
-                                }
-                                listAdapter.notifyItemRemoved(position);
-                                System.arraycopy(answers, index + 1, answers, index, answers.length - 1 - index);
-                                System.arraycopy(answersChecks, index + 1, answersChecks, index, answersChecks.length - 1 - index);
-                                answers[answers.length - 1] = null;
-                                answersChecks[answersChecks.length - 1] = false;
-                                answersCount--;
-                                if (answerIds != null) {
-                                    int[] newAnswerIds = new int[answersCount];
-                                    for (int i = 0; i < newAnswerIds.length; ++i) {
-                                        newAnswerIds[i] = answerIds[i > index ? i - 1 : i];
-                                    }
-                                    answerIds = newAnswerIds;
-                                }
-                                if (answersCount == answers.length - 1) {
-                                    listAdapter.notifyItemInserted(answerStartRow + answers.length - 1);
-                                }
-                                holder = listView.findViewHolderForAdapterPosition(position - 1);
-                                EditTextBoldCursor editText = p.getTextView();
-                                if (holder != null && holder.itemView instanceof PollEditTextCell) {
-                                    PollEditTextCell editTextCell = (PollEditTextCell) holder.itemView;
-                                    editTextCell.getTextView().requestFocus();
-                                } else if (editText.isFocused()) {
-                                    AndroidUtilities.hideKeyboard(editText);
-                                    hideEmojiPopup(true);
-                                } else if (isEmojiSearchOpened) {
-                                    hideEmojiPopup(true);
-                                }
-                                editText.clearFocus();
-                                checkDoneButton();
-                                updateRows();
-                                if (suggestEmojiPanel != null) {
-                                    suggestEmojiPanel.forceClose();
-                                    suggestEmojiPanel.setDelegate(null);
-                                }
-                                listAdapter.notifyItemChanged(answerSectionRow);
-                            }
-                        }
-                    }) {
+                    PollEditTextCell cell = new PollEditTextCell(mContext, false, isPremium ? PollEditTextCell.TYPE_EMOJI : PollEditTextCell.TYPE_DEFAULT, PollCreateActivity.this::deleteItem) {
 
                         @Override
                         protected void onActionModeStart(EditTextBoldCursor editText, ActionMode actionMode) {
@@ -2191,5 +2137,60 @@ public class PollCreateActivity extends BaseFragment implements NotificationCent
     @Override
     protected boolean hideKeyboardOnShow() {
         return requestFieldFocusAtPosition < 0;
+    }
+
+    public void deleteItem(View v) {
+        if (v.getTag() != null) {
+            return;
+        }
+        v.setTag(1);
+        PollEditTextCell p = (PollEditTextCell) v.getParent();
+        RecyclerView.ViewHolder holder = listView.findContainingViewHolder(p);
+        if (holder != null) {
+            int position = holder.getAdapterPosition();
+            if (position != RecyclerView.NO_POSITION) {
+                int index = position - answerStartRow;
+                if (onlyAdding && index < oldAnswersCount) {
+                    AndroidUtilities.shakeViewSpring(p, shiftDp = -shiftDp);
+                    BotWebViewVibrationEffect.APP_ERROR.vibrate();
+                    return;
+                }
+                listAdapter.notifyItemRemoved(position);
+                System.arraycopy(answers, index + 1, answers, index, answers.length - 1 - index);
+                System.arraycopy(answersChecks, index + 1, answersChecks, index, answersChecks.length - 1 - index);
+                answers[answers.length - 1] = null;
+                answersChecks[answersChecks.length - 1] = false;
+                answersCount--;
+                if (answerIds != null) {
+                    int[] newAnswerIds = new int[answersCount];
+                    for (int i = 0; i < newAnswerIds.length; ++i) {
+                        newAnswerIds[i] = answerIds[i >= index ? i + 1 : i];
+                    }
+                    answerIds = newAnswerIds;
+                }
+                if (answersCount == answers.length - 1) {
+                    listAdapter.notifyItemInserted(answerStartRow + answers.length - 1);
+                }
+                holder = listView.findViewHolderForAdapterPosition(position - 1);
+                EditTextBoldCursor editText = p.getTextView();
+                if (holder != null && holder.itemView instanceof PollEditTextCell) {
+                    PollEditTextCell editTextCell = (PollEditTextCell) holder.itemView;
+                    editTextCell.getTextView().requestFocus();
+                } else if (editText.isFocused()) {
+                    AndroidUtilities.hideKeyboard(editText);
+                    hideEmojiPopup(true);
+                } else if (isEmojiSearchOpened) {
+                    hideEmojiPopup(true);
+                }
+                editText.clearFocus();
+                checkDoneButton();
+                updateRows();
+                if (suggestEmojiPanel != null) {
+                    suggestEmojiPanel.forceClose();
+                    suggestEmojiPanel.setDelegate(null);
+                }
+                listAdapter.notifyItemChanged(answerSectionRow);
+            }
+        }
     }
 }

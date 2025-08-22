@@ -175,7 +175,7 @@ public class HashtagActivity extends BaseFragment implements NotificationCenter.
 
         contentView.addView(chatContainer, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.FILL));
 
-        sharedMediaLayout = new SharedMediaLayout(context, 0, new SharedMediaLayout.SharedMediaPreloader(null), 0, null, null, null, SharedMediaLayout.TAB_STORIES, this, new SharedMediaLayout.Delegate() {
+        sharedMediaLayout = new SharedMediaLayout(context, 0, new SharedMediaLayout.SharedMediaPreloader(null), 0, null, null, null, SharedMediaLayout.TAB_STORIES, 0, this, new SharedMediaLayout.Delegate() {
             @Override
             public void scrollToSharedMedia() {}
             @Override

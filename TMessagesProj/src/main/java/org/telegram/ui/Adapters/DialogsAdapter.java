@@ -103,7 +103,8 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter implements
             VIEW_TYPE_FOLDER_UPDATE_HINT = 17,
             VIEW_TYPE_STORIES = 18,
             VIEW_TYPE_ARCHIVE_FULLSCREEN = 19,
-            VIEW_TYPE_GRAY_SECTION = 20;
+            VIEW_TYPE_GRAY_SECTION = 20,
+            VIEW_TYPE_FORWARD_TO_STORIES_CELL = 21;
 
     private Context mContext;
     private ArchiveHintCell archiveHintCell;
@@ -113,6 +114,7 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter implements
     private int prevContactsCount;
     private int prevDialogsCount;
     private int dialogsType;
+    private boolean allowForwardAsStories;
     private int folderId;
     private long openedDialogId;
     private int currentCount;
@@ -177,6 +179,9 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter implements
         if (hasHints) {
             position -= 2 + MessagesController.getInstance(currentAccount).hintDialogs.size();
         }
+        if (allowForwardAsStories && dialogsType == DialogsActivity.DIALOGS_TYPE_FORWARD) {
+            position -= 1;
+        }
         if (dialogsType == DialogsActivity.DIALOGS_TYPE_IMPORT_HISTORY_GROUPS || dialogsType == DialogsActivity.DIALOGS_TYPE_IMPORT_HISTORY) {
             position -= 2;
         } else if (dialogsType == DialogsActivity.DIALOGS_TYPE_IMPORT_HISTORY_USERS) {
@@ -192,6 +197,14 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter implements
     public void setDialogsType(int type) {
         dialogsType = type;
         notifyDataSetChanged();
+    }
+
+    public void setAllowForwardAsStories(boolean allowForwardAsStories) {
+        this.allowForwardAsStories = allowForwardAsStories;
+    }
+
+    public boolean isAllowForwardAsStories() {
+        return allowForwardAsStories;
     }
 
     public int getDialogsType() {
@@ -568,6 +581,7 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter implements
     public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup viewGroup, int viewType) {
         View view;
         switch (viewType) {
+            case VIEW_TYPE_FORWARD_TO_STORIES_CELL:
             case VIEW_TYPE_DIALOG:
                 if (dialogsType == DialogsActivity.DIALOGS_TYPE_ADD_USERS_TO ||
                     dialogsType == DialogsActivity.DIALOGS_TYPE_BOT_REQUEST_PEER) {
@@ -581,6 +595,9 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter implements
                     dialogCell.setPreloader(preloader);
                     dialogCell.setDialogCellDelegate(this);
                     dialogCell.setIsTransitionSupport(isTransitionSupport);
+                    if (viewType == VIEW_TYPE_FORWARD_TO_STORIES_CELL) {
+                        dialogCell.setIsShareToStoryCell();
+                    }
                     view = dialogCell;
                 }
                 if (dialogsType == DialogsActivity.DIALOGS_TYPE_BOT_REQUEST_PEER) {
@@ -797,6 +814,21 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter implements
     @Override
     public void onBindViewHolder(RecyclerView.ViewHolder holder, int i) {
         switch (holder.getItemViewType()) {
+            case VIEW_TYPE_FORWARD_TO_STORIES_CELL: {
+                TLRPC.Dialog nextDialog = (TLRPC.Dialog) getItem(i + 1);
+
+                DialogCell cell = (DialogCell) holder.itemView;
+                DialogCell.CustomDialog customDialog = new DialogCell.CustomDialog();
+                customDialog.name = getString(R.string.StoriesForwardTitle);
+                customDialog.message = getString(R.string.StoriesForwardText);
+
+                cell.useSeparator = nextDialog != null;
+                cell.fullSeparator = nextDialog != null && !nextDialog.pinned;
+
+                cell.setDialog(customDialog);
+                cell.checkHeight();
+                break;
+            }
             case VIEW_TYPE_DIALOG: {
                 TLRPC.Dialog dialog = (TLRPC.Dialog) getItem(i);
                 TLRPC.Dialog nextDialog = (TLRPC.Dialog) getItem(i + 1);
@@ -1572,6 +1604,10 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter implements
 
         if ((requestPeerType instanceof TLRPC.TL_requestPeerTypeBroadcast || requestPeerType instanceof TLRPC.TL_requestPeerTypeChat) && dialogsCount > 0) {
             itemInternals.add(new ItemInternal(VIEW_TYPE_TEXT));
+        }
+
+        if (allowForwardAsStories && dialogsType == DialogsActivity.DIALOGS_TYPE_FORWARD) {
+            itemInternals.add(new ItemInternal(VIEW_TYPE_FORWARD_TO_STORIES_CELL));
         }
 
         if (!stopUpdate) {

@@ -513,8 +513,8 @@ public class ProfileSearchCell extends BaseCell implements NotificationCenter.No
             nameString = AndroidUtilities.removeRTL(AndroidUtilities.removeDiacritics(UserObject.getUserName(user)));
         }
         nameString = AndroidUtilities.replaceNewLines(nameString);
-        if (nameString.length() == 0) {
-            if (user != null && user.phone != null && user.phone.length() != 0) {
+        if (TextUtils.isEmpty(nameString)) {
+            if (user != null && !TextUtils.isEmpty(user.phone)) {
                 nameString = PhoneFormat.getInstance().format("+" + user.phone);
             } else {
                 nameString = getString(R.string.HiddenName);

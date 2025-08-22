@@ -4,7 +4,9 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
+import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.tl.TL_stars;
 
 import java.math.BigDecimal;
@@ -34,11 +36,41 @@ public class AmountUtils {
             return (double) nanos / getDecimals(currency);
         }
 
+        // todo rename: asPlainString
         public String asDecimalString() {
             return new BigDecimal(asNano())
                 .divide(BigDecimal.valueOf(getDecimals(currency)), MathContext.UNLIMITED)
                 .stripTrailingZeros()
                 .toPlainString();
+        }
+
+        public String asFormatString() {
+            return asFormatString(',');
+        }
+
+        public String asFormatString(char thousandsSeparator) {
+            StringBuilder sb = new StringBuilder(LocaleController.formatNumber(asDecimal(), thousandsSeparator));
+
+            final long part = nanos % getDecimals(currency);
+            if (part == 0) {
+                return sb.toString();
+            }
+
+            sb.append('.');
+            String part2 = Long.toString(part);
+
+            final int zerosCount = getTenPow(currency) - part2.length();
+            for (int a = 0; a < zerosCount; a++) {
+                sb.append('0');
+            }
+
+            int end = part2.length();
+            while (end > 0 && part2.charAt(end - 1) == '0') {
+                end--;
+            }
+
+            sb.append(part2, 0, end);
+            return sb.toString();
         }
 
         public boolean isZero() {
@@ -69,6 +101,8 @@ public class AmountUtils {
             return "";
         }
 
+
+
         @Override
         public boolean equals(Object o) {
             if (this == o) return true;
@@ -77,6 +111,33 @@ public class AmountUtils {
                 return equals(this, (Amount) o);
             }
             return false;
+        }
+
+        public Amount applyPerMille(int perMille) {
+            return fromNano(this.nanos * perMille / 1000, this.currency);
+        }
+
+        public Amount convertTo(Currency currency) {
+            if (this.currency == currency) {
+                return this;
+            }
+
+            final double usd;
+            if (this.currency == Currency.STARS) {
+                usd = this.asDouble() / 1000 * MessagesController.getInstance(UserConfig.selectedAccount).starsUsdSellRate1000 / 100;
+            } else if (this.currency == Currency.TON) {
+                usd = this.asDouble() * MessagesController.getInstance(UserConfig.selectedAccount).config.tonUsdRate.get();
+            } else {
+                usd = 0;
+            }
+
+            if (currency == Currency.STARS) {
+                return fromDecimal(usd * 100 / MessagesController.getInstance(UserConfig.selectedAccount).starsUsdSellRate1000 * 1000, currency);
+            } else if (currency == Currency.TON) {
+                return fromDecimal(usd / MessagesController.getInstance(UserConfig.selectedAccount).config.tonUsdRate.get(), currency);
+            } else {
+                return fromNano(0, currency);
+            }
         }
 
         public TL_stars.StarsAmount toTl() {
@@ -111,6 +172,14 @@ public class AmountUtils {
             }
 
             return new Amount(currency, decimal * getDecimals(currency));
+        }
+
+        public static Amount fromDecimal(double decimal, Currency currency) {
+            if (currency == null) {
+                return null;
+            }
+
+            return new Amount(currency, (long) (decimal * getDecimals(currency)));
         }
 
         @Nullable
@@ -158,6 +227,11 @@ public class AmountUtils {
             }
 
             return a.currency == b.currency && a.nanos == b.nanos;
+        }
+
+
+        private static int getTenPow(Currency ignoredCurrency) {
+            return 9;
         }
 
         private static long getDecimals(Currency ignoredCurrency) {

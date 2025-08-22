@@ -37,6 +37,7 @@ public class CheckBoxBase {
     private static Paint paint;
     private static Paint eraser;
     private Paint checkPaint;
+    public float checkScale = 1.0f;
     private Paint backgroundPaint;
     private TextPaint textPaint;
     private static Paint forbidPaint;
@@ -45,6 +46,14 @@ public class CheckBoxBase {
     public void setAlpha(float alpha) {
         this.alpha = alpha;
         invalidate();
+    }
+
+    private boolean cutCheck;
+    public void setCuttingCheck(boolean cutCheck) {
+        if (this.cutCheck == cutCheck) return;
+        this.cutCheck = cutCheck;
+
+        checkPaint.setXfermode(cutCheck ? new PorterDuffXfermode(PorterDuff.Mode.CLEAR) : null);
     }
 
     private Path path = new Path();
@@ -307,6 +316,10 @@ public class CheckBoxBase {
         int cx = bounds.centerX();
         int cy = bounds.centerY();
 
+        if (cutCheck) {
+            canvas.saveLayerAlpha(cx - rad, cy - rad, cx + rad, cy + rad, 255, Canvas.ALL_SAVE_FLAG);
+        }
+
         if (backgroundColorKey >= 0) {
             if (drawUnchecked) {
                 if (backgroundType == 12 || backgroundType == 13) {
@@ -507,9 +520,21 @@ public class CheckBoxBase {
                     path.lineTo(x, y);
                     side = (float) Math.sqrt(checkSide * checkSide / 2.0f);
                     path.lineTo(x + side, y - side);
+                    boolean restore = false;
+                    if (cutCheck || checkScale != 1.0f) {
+                        canvas.save();
+                        canvas.scale(checkScale, checkScale, cx, cy);
+                        restore = true;
+                    }
                     canvas.drawPath(path, checkPaint);
+                    if (restore) {
+                        canvas.restore();
+                    }
                 }
             }
+        }
+        if (cutCheck) {
+            canvas.restore();
         }
     }
 

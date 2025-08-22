@@ -1078,6 +1078,7 @@ public class TL_bots {
             stream.writeInt32(constructor);
             flags = can_modify_custom_description ? flags | 2 : flags &~ 2;
             stream.writeInt32(flags);
+            stream.writeInt64(icon);
             stream.writeString(company);
             if ((flags & 1) != 0) {
                 stream.writeString(custom_description);

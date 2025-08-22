@@ -2778,14 +2778,14 @@ public class TL_account {
         public ArrayList<TLRPC.InputUser> users = new ArrayList<>();
         public ArrayList<TLRPC.InputUser> exclude_users = new ArrayList<>();
 
-        public static TL_inputBusinessRecipients TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
-            if (constructor != TL_inputBusinessRecipients.constructor) {
+        public static TL_inputBusinessBotRecipients TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
+            if (constructor != TL_inputBusinessBotRecipients.constructor) {
                 if (exception) {
-                    throw new RuntimeException(String.format("can't parse magic %x in TL_inputBusinessRecipients", constructor));
+                    throw new RuntimeException(String.format("can't parse magic %x in TL_inputBusinessBotRecipients", constructor));
                 }
                 return null;
             }
-            TL_inputBusinessRecipients result = new TL_inputBusinessRecipients();
+            TL_inputBusinessBotRecipients result = new TL_inputBusinessBotRecipients();
             result.readParams(stream, exception);
             return result;
         }

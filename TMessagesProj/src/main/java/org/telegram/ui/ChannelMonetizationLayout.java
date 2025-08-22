@@ -1559,17 +1559,17 @@ public class ChannelMonetizationLayout extends SizeNotifierFrameLayout implement
 
         layout.addView(
                 new FeatureCell(context, R.drawable.msg_channel, getString(bots ? R.string.BotMonetizationInfoFeature1Name : R.string.MonetizationInfoFeature1Name), getString(bots ? R.string.BotMonetizationInfoFeature1Text : R.string.MonetizationInfoFeature1Text), resourcesProvider),
-                LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 0, 0, 0, 16)
+                LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 8, 0, 8, 16)
         );
 
         layout.addView(
                 new FeatureCell(context, R.drawable.menu_feature_split, getString(bots ? R.string.BotMonetizationInfoFeature2Name : R.string.MonetizationInfoFeature2Name), getString(bots ? R.string.BotMonetizationInfoFeature2Text : R.string.MonetizationInfoFeature2Text), resourcesProvider),
-                LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 0, 0, 0, 16)
+                LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 8, 0, 8, 16)
         );
 
         layout.addView(
                 new FeatureCell(context, R.drawable.menu_feature_withdrawals, getString(bots ? R.string.BotMonetizationInfoFeature3Name : R.string.MonetizationInfoFeature3Name), getString(bots ? R.string.BotMonetizationInfoFeature3Text : R.string.MonetizationInfoFeature3Text), resourcesProvider),
-                LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 0, 0, 0, 16)
+                LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 8, 0, 8, 16)
         );
 
         View separator = new View(context);
@@ -1822,8 +1822,8 @@ public class ChannelMonetizationLayout extends SizeNotifierFrameLayout implement
                         MessagesController.getInstance(currentAccount).putChats(r.chats, false);
                         tonTransactions.addAll(r.history);
                         tonTransactionsLastOffset = r.next_offset;
-                        updateLists(true, true);
                         loadingTransactions[type] = false;
+                        updateLists(true, true);
                     } else if (err != null) {
                         BulletinFactory.showError(err);
                     }
@@ -1850,8 +1850,8 @@ public class ChannelMonetizationLayout extends SizeNotifierFrameLayout implement
                         MessagesController.getInstance(currentAccount).putChats(r.chats, false);
                         starsTransactions.addAll(r.history);
                         starsLastOffset = r.next_offset;
-                        updateLists(true, true);
                         loadingTransactions[type] = false;
+                        updateLists(true, true);
                     } else if (err != null) {
                         BulletinFactory.showError(err);
                     }

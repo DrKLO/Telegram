@@ -1305,6 +1305,7 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
                         ConnectionsManager.getInstance(currentAccount).cancelRequest(searchHashtagRequest, true);
                     }
                     TLRPC.TL_channels_searchPosts req = new TLRPC.TL_channels_searchPosts();
+                    req.flags |= 1;
                     req.hashtag = finalHashtag;
                     req.limit = 3;
                     req.offset_peer = new TLRPC.TL_inputPeerEmpty();

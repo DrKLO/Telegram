@@ -30,8 +30,8 @@ import org.telegram.ui.Components.UniversalRecyclerView;
 
 public class PremiumFeatureCell extends FrameLayout {
 
-    private final SimpleTextView title;
-    private final TextView description;
+    public final SimpleTextView title;
+    public final TextView description;
     public ImageView imageView;
     public final ImageView nextIcon;
     boolean drawDivider;

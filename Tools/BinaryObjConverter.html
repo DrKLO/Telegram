@@ -57,6 +57,7 @@ const readBINOBJ = async file => {
         ])
     }
 
+    console.log('read uv ', textures)
     console.log(position, intArray.length)
 
     return {
@@ -77,6 +78,7 @@ const writeBINOBJ = ({ vertices, textures, normals, faceIndexes }) => {
     for (const v of vertices)
         view.setFloat32(4 * (position++), v, false)
 
+    console.log('write uv ', textures)
     view.setInt32(4 * (position++), textures.length, false)
     for (const vt of textures)
         view.setFloat32(4 * (position++), vt, false)

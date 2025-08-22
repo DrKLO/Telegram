@@ -2,6 +2,7 @@ package org.telegram.ui.Cells;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
 import static org.telegram.messenger.AndroidUtilities.dpf2;
+import static org.telegram.messenger.LocaleController.getString;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
@@ -53,6 +54,7 @@ import org.telegram.ui.Components.AnimatedFloat;
 import org.telegram.ui.Components.AnimatedTextView;
 import org.telegram.ui.Components.CanvasButton;
 import org.telegram.ui.Components.CheckBoxBase;
+import org.telegram.ui.Components.ColoredImageSpan;
 import org.telegram.ui.Components.CombinedDrawable;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.FlickerLoadingView;
@@ -70,6 +72,7 @@ import java.util.HashMap;
 public class SharedPhotoVideoCell2 extends FrameLayout {
 
     public int imageReceiverColor = 0;
+    public ImageReceiver imageReceiverFullSize = new ImageReceiver();
     public ImageReceiver imageReceiver = new ImageReceiver();
     public ImageReceiver blurImageReceiver = new ImageReceiver();
     private Shaker shaker;
@@ -123,6 +126,8 @@ public class SharedPhotoVideoCell2 extends FrameLayout {
     private float spoilerRevealY;
     private float spoilerMaxRadius;
     private SpoilerEffect2 mediaSpoilerEffect2;
+    private final Path rectPath = new Path();
+    private Text sensitiveText, sensitiveTextShort, sensitiveTextShort2;
 
     public final static int STYLE_SHARED_MEDIA = 0;
     public final static int STYLE_CACHE = 1;
@@ -150,6 +155,7 @@ public class SharedPhotoVideoCell2 extends FrameLayout {
 
         setChecked(false, false);
         imageReceiver.setParentView(this);
+        imageReceiverFullSize.setParentView(this);
         blurImageReceiver.setParentView(this);
 
         imageReceiver.setDelegate((imageReceiver1, set, thumb, memCache) -> {
@@ -240,6 +246,18 @@ public class SharedPhotoVideoCell2 extends FrameLayout {
     }
 
     public void setMessageObject(MessageObject messageObject, int parentColumnsCount) {
+        setMessageObject(messageObject, parentColumnsCount, false);
+    }
+
+    public void initFullSizeReceiver() {
+        setMessageObject(currentMessageObject, currentParentColumnsCount, true);
+    }
+
+    private void setMessageObject(MessageObject messageObject, int parentColumnsCount, boolean fullSize) {
+        if (parentColumnsCount < 1) {
+            parentColumnsCount = 1;
+        }
+
         int oldParentColumnsCount = currentParentColumnsCount;
         currentParentColumnsCount = parentColumnsCount;
         if (currentMessageObject == null && messageObject == null) {
@@ -253,7 +271,8 @@ public class SharedPhotoVideoCell2 extends FrameLayout {
             mediaEqual(getStoryMedia(currentMessageObject), getStoryMedia(messageObject)) &&
             oldParentColumnsCount == parentColumnsCount &&
             (privacyType == 100) == isStoryPinned &&
-            privacyType == getPrivacyType(messageObject)
+            privacyType == getPrivacyType(messageObject) &&
+            !fullSize
         ) {
             return;
         }
@@ -263,6 +282,7 @@ public class SharedPhotoVideoCell2 extends FrameLayout {
         updateSpoilers2();
         if (messageObject == null) {
             imageReceiver.onDetachedFromWindow();
+            imageReceiverFullSize.onDetachedFromWindow();
             blurImageReceiver.onDetachedFromWindow();
             videoText = null;
             drawViews = false;
@@ -279,16 +299,23 @@ public class SharedPhotoVideoCell2 extends FrameLayout {
         } else {
             if (attached) {
                 imageReceiver.onAttachedToWindow();
+                imageReceiverFullSize.onAttachedToWindow();
                 blurImageReceiver.onAttachedToWindow();
             }
         }
+
+        final ImageReceiver imageReceiver = fullSize ? imageReceiverFullSize : this.imageReceiver;
+
         String restrictionReason = MessagesController.getInstance(currentAccount).getRestrictionReason(messageObject.messageOwner.restriction_reason);
         String imageFilter;
         int stride;
         int width = (int) (AndroidUtilities.displaySize.x / parentColumnsCount / AndroidUtilities.density);
+        if (fullSize) {
+            width = (int) (AndroidUtilities.displaySize.x / AndroidUtilities.density) * 3 / 5;
+        }
         imageFilter = sharedResources.getFilterString(width);
         boolean showImageStub = false;
-        if (parentColumnsCount <= 2) {
+        if (parentColumnsCount <= 2 || fullSize) {
             stride = AndroidUtilities.getPhotoSize();
         } else if (parentColumnsCount == 3) {
             stride = 320;
@@ -300,7 +327,8 @@ public class SharedPhotoVideoCell2 extends FrameLayout {
         videoText = null;
         videoInfoLayot = null;
         showVideoLayout = false;
-        imageReceiver.clearDecorators();
+        this.imageReceiver.clearDecorators();
+        this.imageReceiverFullSize.clearDecorators();
         if (isStory && messageObject.storyItem.views != null) {
             drawViews = messageObject.storyItem.views.views_count > 0;
             viewsText.setText(AndroidUtilities.formatWholeNumber(messageObject.storyItem.views.views_count, 0), false);
@@ -376,7 +404,7 @@ public class SharedPhotoVideoCell2 extends FrameLayout {
                     if (messageObject.strippedThumb != null) {
                         imageReceiver.setImage(ImageLocation.getForObject(currentPhotoObject, messageObject.photoThumbsObject), imageFilter, null, null, messageObject.strippedThumb, currentPhotoObject != null ? currentPhotoObject.size : 0, null, parentObject, messageObject.shouldEncryptPhotoOrVideo() ? 2 : 1);
                     } else {
-                        imageReceiver.setImage(ImageLocation.getForObject(currentPhotoObject, messageObject.photoThumbsObject), imageFilter, ImageLocation.getForObject(currentPhotoObjectThumb, messageObject.photoThumbsObject), imageFilter + "_b", currentPhotoObject != null ? currentPhotoObject.size : 0, null, parentObject, messageObject.shouldEncryptPhotoOrVideo() ? 2 : 1);
+                        imageReceiver.setImage(ImageLocation.getForObject(currentPhotoObject, messageObject.photoThumbsObject), imageFilter, fullSize ? null : ImageLocation.getForObject(currentPhotoObjectThumb, messageObject.photoThumbsObject), imageFilter + "_b", currentPhotoObject != null ? currentPhotoObject.size : 0, null, parentObject, messageObject.shouldEncryptPhotoOrVideo() ? 2 : 1);
                     }
                 }
             } else {
@@ -471,19 +499,26 @@ public class SharedPhotoVideoCell2 extends FrameLayout {
     private final RectF bounds = new RectF();
 
     @Override
-    protected void onDraw(Canvas canvas) {
+    protected void onDraw(@NonNull Canvas canvas) {
         super.onDraw(canvas);
+        drawImpl(canvas, false, 1f, 1f, 1f);
+    }
 
-        final float padding = getPadding();
+    private void drawImpl(Canvas canvas, boolean useFullSize, float sizeProgress, float receiverAlpha, float customsAlpha) {
+        final float padding = getPadding() * sizeProgress;
         final float leftpadding = isStory && isFirst ? 0 : padding;
         final float rightpadding = isStory && isLast ? 0 : padding;
+        final float reorderingF = animatedReordering.set(reordering);
 
         float imageWidth = (getMeasuredWidth() - leftpadding - rightpadding) * imageScale;
         float imageHeight = (getMeasuredHeight() - padding * 2) * imageScale;
 
+        final ImageReceiver imageReceiver = useFullSize ? imageReceiverFullSize : this.imageReceiver;
+        imageReceiver.setAlpha(receiverAlpha);
+
         if (crossfadeProgress > 0.5f && crossfadeToColumnsCount != 9 && currentParentColumnsCount != 9) {
-            imageWidth -= 2;
-            imageHeight -= 2;
+            imageWidth -= 2 * (sizeProgress);
+            imageHeight -= 2 * (sizeProgress);
         }
 
         if ((currentMessageObject == null && style != STYLE_CACHE) || !imageReceiver.hasBitmapImage() || imageReceiver.getCurrentAlpha() != 1.0f || imageAlpha != 1f) {
@@ -544,10 +579,11 @@ public class SharedPhotoVideoCell2 extends FrameLayout {
         if (check2) {
             imageReceiver.setRoundRadius(AndroidUtilities.lerp(0, dp(8), checkBoxProgress));
             canvas.save();
-            if (reorder) {
+            if (reorder || reordering) {
                 canvas.translate(imageReceiver.getCenterX(), imageReceiver.getCenterY());
                 if (shaker == null) shaker = new Shaker(this);
-                shaker.concat(canvas, checkBoxProgress);
+                shaker.concat(canvas, Math.max(checkBoxProgress, reorderingF));
+                canvas.scale(1f - reorderingF * 0.075f, 1f - reorderingF * 0.075f);
                 canvas.translate(-imageReceiver.getCenterX(), -imageReceiver.getCenterY());
             }
         }
@@ -580,6 +616,63 @@ public class SharedPhotoVideoCell2 extends FrameLayout {
                 }
                 canvas.restore();
 
+                if (currentMessageObject.isSensitive()) {
+                    if (sensitiveText == null) {
+                        SpannableStringBuilder sensitiveTextString = new SpannableStringBuilder("x " + getString(R.string.MessageSensitiveContent));
+                        ColoredImageSpan span = new ColoredImageSpan(R.drawable.filled_sensitive);
+                        sensitiveTextString.setSpan(span, 0, 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                        sensitiveText = new Text(sensitiveTextString, 14, AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+                    }
+                    int textPadding = 13, textHeight = 32;
+                    Text text = sensitiveText;
+                    if (imageWidth < 2 * dp(textPadding) + text.getCurrentWidth()) {
+                        if (sensitiveTextShort == null) {
+                            SpannableStringBuilder sensitiveTextString = new SpannableStringBuilder("x " + getString(R.string.MessageSensitiveContentShort));
+                            ColoredImageSpan span = new ColoredImageSpan(R.drawable.filled_sensitive);
+                            sensitiveTextString.setSpan(span, 0, 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                            sensitiveTextShort = new Text(sensitiveTextString, 14, AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+                        }
+                        text = sensitiveTextShort;
+                    }
+                    if (imageWidth < 2 * dp(textPadding + textPadding) + text.getCurrentWidth()) {
+                        if (sensitiveTextShort2 == null) {
+                            SpannableStringBuilder sensitiveTextString = new SpannableStringBuilder(getString(R.string.MessageSensitiveContentShort));
+                            sensitiveTextShort2 = new Text(sensitiveTextString, 13, AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+                        }
+                        text = sensitiveTextShort2;
+                        textPadding = 10;
+                        textHeight = 28;
+                    }
+
+                    final float cx = imageReceiver.getImageX() + imageReceiver.getImageWidth() / 2f;
+                    final float cy = imageReceiver.getImageY() + imageReceiver.getImageHeight() / 2f;
+                    final float w = text.getCurrentWidth() + dp(textPadding + textPadding);
+                    final float h = dp(textHeight), r = h / 2f;
+                    float s = AndroidUtilities.lerp(.8f, 1f, 1f - spoilerRevealProgress);
+                    AndroidUtilities.rectTmp.set(cx - w / 2f * s, cy - h / 2f * s, cx + w / 2f * s, cy + h / 2f * s);
+
+                    rectPath.reset();
+                    rectPath.addRoundRect(AndroidUtilities.rectTmp, r, r, Path.Direction.CW);
+                    canvas.save();
+                    canvas.clipPath(rectPath);
+                    float wasAlpha = blurImageReceiver.getAlpha();
+                    blurImageReceiver.setAlpha((1f - spoilerRevealProgress) * wasAlpha);
+                    blurImageReceiver.draw(canvas);
+                    blurImageReceiver.setAlpha(wasAlpha);
+                    canvas.restore();
+
+                    final Paint timeBackgroundPaint = Theme.getThemePaint(Theme.key_paint_chatTimeBackground);
+                    int oldAlpha = timeBackgroundPaint.getAlpha();
+                    timeBackgroundPaint.setAlpha((int) (oldAlpha * (1f - spoilerRevealProgress) * .35f));
+                    canvas.drawRoundRect(AndroidUtilities.rectTmp, r, r, timeBackgroundPaint);
+                    timeBackgroundPaint.setAlpha(oldAlpha);
+
+                    canvas.save();
+                    canvas.scale(s, s, cx, cy);
+                    text.draw(canvas, cx - w / 2f + dp(textPadding), cy, 0xFFFFFFFF, 1f - spoilerRevealProgress);
+                    canvas.restore();
+                }
+
                 invalidate();
             }
             if (!isSearchingHashtag && highlightProgress > 0) {
@@ -606,12 +699,12 @@ public class SharedPhotoVideoCell2 extends FrameLayout {
         }
 
         bounds.set(imageReceiver.getImageX(), imageReceiver.getImageY(), imageReceiver.getImageX2(), imageReceiver.getImageY2());
-        drawDuration(canvas, bounds, 1f);
-        drawViews(canvas, bounds, 1f);
+        drawDuration(canvas, bounds, customsAlpha);
+        drawViews(canvas, bounds, customsAlpha);
         if (!isSearchingHashtag) {
-            drawPrivacy(canvas, bounds, 1f);
+            drawPrivacy(canvas, bounds, customsAlpha);
         } else {
-            drawAuthor(canvas, bounds, 1f);
+            drawAuthor(canvas, bounds, customsAlpha);
         }
         if (check2) {
             canvas.restore();
@@ -619,10 +712,11 @@ public class SharedPhotoVideoCell2 extends FrameLayout {
 
         if (checkBoxBase != null && (style == STYLE_CACHE || checkBoxBase.getProgress() != 0)) {
             canvas.save();
-            if (check2 && reorder) {
+            if (check2 && (reorder || reordering)) {
                 canvas.translate(imageReceiver.getCenterX(), imageReceiver.getCenterY());
                 if (shaker == null) shaker = new Shaker(this);
-                shaker.concat(canvas, .5f * checkBoxProgress);
+                shaker.concat(canvas, .5f * Math.max(checkBoxProgress, reorderingF));
+                canvas.scale(1f - reorderingF * 0.075f, 1f - reorderingF * 0.075f);
                 canvas.translate(-imageReceiver.getCenterX(), -imageReceiver.getCenterY());
             }
             float x, y;
@@ -643,6 +737,37 @@ public class SharedPhotoVideoCell2 extends FrameLayout {
                 canvasButton.setRect(AndroidUtilities.rectTmp);
             }
             canvas.restore();
+        }
+
+        canvas.restore();
+    }
+
+    private Path clipPath;
+
+    public void customDraw(View view, Canvas canvas, float width, float height, float progress) {
+        canvas.save();
+
+        if (clipPath == null) {
+            clipPath = new Path();
+        }
+        clipPath.rewind();
+
+        AndroidUtilities.rectTmp.set(0, 0, width, height);
+        // AndroidUtilities.rectTmp.inset(getPadding(), getPadding());
+        float r = dp(12) * progress;
+        clipPath.addRoundRect(AndroidUtilities.rectTmp, r, r, Path.Direction.CW);
+        clipPath.close();
+
+        canvas.clipPath(clipPath);
+        canvas.scale(width / getWidth(), height / getHeight());
+
+        boolean fullSizeReady = imageReceiverFullSize.hasImageLoaded();
+
+        if (!fullSizeReady || progress < 1) {
+            drawImpl(canvas, false, 1f - progress, 1f, 1f - progress);
+        }
+        if (fullSizeReady && progress > 0) {
+            drawImpl(canvas, true, 1f - progress, progress, 0f);
         }
 
         canvas.restore();
@@ -829,6 +954,7 @@ public class SharedPhotoVideoCell2 extends FrameLayout {
         }
         if (currentMessageObject != null) {
             imageReceiver.onAttachedToWindow();
+            imageReceiverFullSize.onAttachedToWindow();
             blurImageReceiver.onAttachedToWindow();
         }
         if (mediaSpoilerEffect2 != null) {
@@ -849,6 +975,7 @@ public class SharedPhotoVideoCell2 extends FrameLayout {
         }
         if (currentMessageObject != null) {
             imageReceiver.onDetachedFromWindow();
+            imageReceiverFullSize.onDetachedFromWindow();
             blurImageReceiver.onDetachedFromWindow();
         }
         if (mediaSpoilerEffect2 != null) {
@@ -1082,5 +1209,16 @@ public class SharedPhotoVideoCell2 extends FrameLayout {
     @Override
     protected boolean verifyDrawable(@NonNull Drawable who) {
         return viewsText == who || super.verifyDrawable(who);
+    }
+
+    private boolean reordering;
+    private final AnimatedFloat animatedReordering = new AnimatedFloat(this, 0, 320, CubicBezierInterpolator.EASE_OUT_QUINT);
+    public void setReordering(boolean reordering, boolean animated) {
+        if (this.reordering == reordering) return;
+        this.reordering = reordering;
+        if (!animated) {
+            animatedReordering.force(reordering);
+        }
+        invalidate();
     }
 }

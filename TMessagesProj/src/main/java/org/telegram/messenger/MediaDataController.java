@@ -5425,6 +5425,15 @@ public class MediaDataController extends BaseController {
         }
     }
 
+    public boolean containsTopPeer(long uid) {
+        for (int a = 0; a < hints.size(); a++) {
+            if (DialogObject.getPeerDialogId(hints.get(a).peer) == uid) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public void removePeer(long uid) {
         for (int a = 0; a < hints.size(); a++) {
             if (hints.get(a).peer.user_id == uid) {

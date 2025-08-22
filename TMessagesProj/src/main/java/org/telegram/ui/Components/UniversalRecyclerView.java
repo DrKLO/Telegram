@@ -184,6 +184,13 @@ public class UniversalRecyclerView extends RecyclerListView {
         }
     }
 
+    public int getSpanCount() {
+        if (layoutManager instanceof ExtendedGridLayoutManager) {
+            return ((ExtendedGridLayoutManager) layoutManager).getSpanCount();
+        }
+        return UItem.MAX_SPAN_COUNT;
+    }
+
     public void listenReorder(Utilities.Callback2<Integer, ArrayList<UItem>> onReordered) {
         listenReorder(onReordered, false);
     }

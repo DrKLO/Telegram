@@ -27,7 +27,7 @@ import org.telegram.ui.ActionBar.Theme;
 
 public class Text {
 
-    private final TextPaint paint;
+    public final TextPaint paint;
     private StaticLayout layout;
     private float width, left;
     private float maxWidth = 9999;
@@ -79,6 +79,10 @@ public class Text {
             }
         });
         return this;
+    }
+
+    public void detach() {
+        AnimatedEmojiSpan.release(parentView, animatedEmojis);
     }
 
     public Text setEmojiCacheType(int cacheType) {
