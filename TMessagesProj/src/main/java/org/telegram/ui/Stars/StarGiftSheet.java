@@ -72,6 +72,7 @@ import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.MessagesStorage;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
@@ -122,6 +123,7 @@ import org.telegram.ui.Components.TableView;
 import org.telegram.ui.Components.TextHelper;
 import org.telegram.ui.Components.ViewPagerFixed;
 import org.telegram.ui.Components.spoilers.SpoilersTextView;
+import org.telegram.ui.DialogsActivity;
 import org.telegram.ui.Gifts.GiftSheet;
 import org.telegram.ui.Gifts.ProfileGiftsContainer;
 import org.telegram.ui.LaunchActivity;
@@ -133,6 +135,7 @@ import org.telegram.ui.Stories.recorder.HintView2;
 import org.telegram.ui.Stories.recorder.StoryEntry;
 import org.telegram.ui.Stories.recorder.StoryRecorder;
 import org.telegram.ui.TON.TONIntroActivity;
+import org.telegram.ui.TopicsFragment;
 import org.telegram.ui.TwoStepVerificationActivity;
 import org.telegram.ui.TwoStepVerificationSetupActivity;
 import org.telegram.ui.bots.AffiliateProgramFragment;
@@ -143,7 +146,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 
-public class StarGiftSheet extends BottomSheetWithRecyclerListView implements NotificationCenter.NotificationCenterDelegate {
+public class StarGiftSheet extends BottomSheetWithRecyclerListView implements NotificationCenter.NotificationCenterDelegate, DialogsActivity.DialogsActivityDelegate {
 
     private final long dialogId;
     private ContainerView container;
@@ -530,6 +533,12 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
         }
     }
 
+    @Override
+    public boolean didSelectDialogs(DialogsActivity fragment, ArrayList<MessagesStorage.TopicKey> dids, CharSequence message, boolean param, boolean notify, int scheduleDate, TopicsFragment topicsFragment) {
+        //TODO dids[0].dialogId
+        return true;
+    }
+
     private int getListPosition() {
         if (giftsList == null) return -1;
         int index;
@@ -735,6 +744,7 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
             .addIf(link != null, R.drawable.msg_share, getString(R.string.ShareFile), () -> {
                 onSharePressed(null);
             })
+            .addIf(canSetAsTheme(), R.drawable.msg_colors, getString(R.string.Gift2SetAsThemeIn), this::onSetThemePressed)
             .addIf(canTransfer(), R.drawable.menu_feature_transfer, getString(R.string.Gift2TransferOption), this::openTransfer)
             .addIf(savedStarGift == null && getDialogId() != 0, R.drawable.msg_view_file, getString(R.string.Gift2ViewInProfile), this::openInProfile)
             .setDrawScrim(false)
@@ -2280,6 +2290,20 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
             return false;
         }
         return isMineWithActions(currentAccount, DialogObject.getPeerDialogId(gift.owner_id));
+    }
+
+    public boolean canSetAsTheme() {
+        final TL_stars.TL_starGiftUnique gift = getUniqueGift();
+        return gift != null && gift.theme_available;
+    }
+
+    private void onSetThemePressed() {
+        Bundle args = new Bundle();
+        args.putBoolean("onlySelect", true);
+        args.putInt("dialogsType", DialogsActivity.DIALOGS_TYPE_USERS_ONLY);
+        DialogsActivity dialogFragment = new DialogsActivity(args);
+        dialogFragment.setDelegate(this);
+        presentFragment(dialogFragment);
     }
 
     private void addAttributeRow(TL_stars.StarGiftAttribute attr) {

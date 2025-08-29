@@ -9047,6 +9047,7 @@
     <string name="Gift2ActionUpgradeOut">%s can turn this gift into a unique collectible.</string>
     <string name="Gift2TransferOption">Transfer</string>
     <string name="Gift2ViewInProfile">View in Profile</string>
+    <string name="Gift2SetAsThemeIn">Set as Theme in…</string>
     <string name="EditorMuteHint">Sound is now muted, so the video will play and loop like a GIF.</string>
     <string name="YourProfilePhotoUploading">Your profile photo is uploading...</string>
     <string name="YourProfileVideoUploading">Your profile video is uploading...</string>
