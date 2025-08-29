@@ -235,7 +235,7 @@ public class ChatThemeController extends BaseController {
         if (dialogId >= 0) {
             TLRPC.UserFull userFull = getMessagesController().getUserFull(dialogId);
             if (userFull != null) {
-                userFull.theme_emoticon = emoticon;
+                userFull.theme = TLRPC.ChatTheme.ofEmoticon(emoticon);
                 getMessagesStorage().updateUserInfo(userFull, true);
             }
         } else {
@@ -252,7 +252,13 @@ public class ChatThemeController extends BaseController {
 
         if (sendRequest) {
             TLRPC.TL_messages_setChatTheme request = new TLRPC.TL_messages_setChatTheme();
-            request.emoticon = emoticon != null ? emoticon : "";
+            if (!TextUtils.isEmpty(emoticon)) {
+                TLRPC.Tl_inputChatTheme inputTheme = new TLRPC.Tl_inputChatTheme();
+                inputTheme.emoticon = emoticon;
+                request.theme = inputTheme;
+            } else {
+                request.theme = new TLRPC.Tl_inputChatThemeEmpty();
+            }
             request.peer = getMessagesController().getInputPeer(dialogId);
             getConnectionsManager().sendRequest(request, null);
         }

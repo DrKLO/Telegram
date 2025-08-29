@@ -3484,7 +3484,6 @@ public class StarsController {
             loading = true;
             final TL_stars.getSavedStarGifts req = new TL_stars.getSavedStarGifts();
             req.sort_by_value = !sort_by_date;
-            req.exclude_limited = !include_limited;
             req.exclude_unlimited = !include_unlimited;
             req.exclude_unique = !include_unique;
             req.exclude_saved = !include_displayed;
