@@ -572,6 +572,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
     public ArrayList<MessageObject> getFilteredMessages() {
         return chatAdapter != null ? chatAdapter.filteredMessages : null;
     }
+    private long preselectedGiftTheme;
     private boolean searchingFiltered;
     private boolean searching;
     private String searchingQuery;
@@ -2481,6 +2482,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         if (highlightMessageId != 0 && highlightMessageId != Integer.MAX_VALUE) {
             startLoadFromMessageId = highlightMessageId;
         }
+        preselectedGiftTheme = arguments.getLong("preselectedGiftTheme", 0);
         migrated_to = arguments.getInt("migrated_to", 0);
         scrollToTopOnResume = arguments.getBoolean("scrollToTopOnResume", false);
         needRemovePreviousSameChatActivity = arguments.getBoolean("need_remove_previous_same_chat_activity", true);
@@ -2931,6 +2933,10 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         }
         if (chatMode == MODE_SAVED) {
             getMessagesController().getSavedMessagesController().checkSavedDialogCount(getTopicId());
+        }
+
+        if (preselectedGiftTheme != 0) {
+            AndroidUtilities.runOnUIThread(this::showChatThemeBottomSheet);
         }
 
         return true;
@@ -41820,6 +41826,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             chatListView.setOnInterceptTouchListener(null);
             setChildrenEnabled(contentView, true);
             ChatThemeController.getInstance(currentAccount).clearWallpaperThumbImages();
+            if (preselectedGiftTheme != 0) {
+                finishFragment();
+            }
         });
     }
 

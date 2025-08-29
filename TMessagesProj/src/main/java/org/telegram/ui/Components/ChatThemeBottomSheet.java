@@ -126,6 +126,7 @@ public class ChatThemeBottomSheet extends BottomSheet implements NotificationCen
     public ChatAttachAlert chatAttachAlert;
     private FrameLayout chatAttachButton;
     private AnimatedTextView chatAttachButtonText;
+    private long preselectedGiftId = 0;
 
 
     public ChatThemeBottomSheet(final ChatActivity chatActivity, ChatActivity.ThemeDelegate themeDelegate) {
@@ -786,6 +787,10 @@ public class ChatThemeBottomSheet extends BottomSheet implements NotificationCen
         }
     }
 
+    public void setSelectedGiftTheme(long giftThemeId) {
+        preselectedGiftId = giftThemeId;
+    }
+
     private void onDataLoaded(List<EmojiThemes> result) {
         if (result == null || result.isEmpty()) {
             return;
@@ -840,12 +845,23 @@ public class ChatThemeBottomSheet extends BottomSheet implements NotificationCen
         if (currentTheme != null) {
             int selectedPosition = -1;
             for (int i = 0; i != items.size(); ++i) {
-                if (items.get(i).chatTheme.getEmoticon().equals(currentTheme.getEmoticon())) {
+                //TODO
+                if (preselectedGiftId != 0 && preselectedGiftId == -1) {
                     selectedItem = items.get(i);
                     selectedPosition = i;
                     break;
                 }
             }
+            if  (selectedPosition != -1) {
+                for (int i = 0; i != items.size(); ++i) {
+                    if (items.get(i).chatTheme.getEmoticon().equals(currentTheme.getEmoticon())) {
+                        selectedItem = items.get(i);
+                        selectedPosition = i;
+                        break;
+                    }
+                }
+            }
+
             if (selectedPosition != -1) {
                 prevSelectedPosition = selectedPosition;
                 adapter.setSelectedItem(selectedPosition);

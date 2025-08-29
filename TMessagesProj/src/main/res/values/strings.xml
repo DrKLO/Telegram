@@ -8614,6 +8614,7 @@
     <string name="Gift2OutSenderMessageHidden2">Only %s can see the senderʼs name and message.</string>
     <string name="Gift2ProfileVisible4">This gift is visible. **Hide from profile >**</string>
     <string name="Gift2ProfileInvisible4">This gift is hidden. **Show on Profile >**</string>
+    <string name="Gift2ChatTheme">This gift is the chatʼs theme. **Change Theme >**</string>
     <string name="Gift2ChannelProfileVisible3">This gift is visible in your channel\'s Gifts. **Hide >**</string>
     <string name="Gift2ChannelProfileInvisible3">This gift is hidden from visitors of your channel. **Show >**</string>
     <string name="Gift2More">**More about Stars >**</string>

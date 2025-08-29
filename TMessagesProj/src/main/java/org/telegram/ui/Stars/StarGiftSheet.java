@@ -535,7 +535,10 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
 
     @Override
     public boolean didSelectDialogs(DialogsActivity fragment, ArrayList<MessagesStorage.TopicKey> dids, CharSequence message, boolean param, boolean notify, int scheduleDate, TopicsFragment topicsFragment) {
-        //TODO dids[0].dialogId
+        if (!dids.isEmpty()) {
+            openChatWithThemeSelector(dids.get(0).dialogId);
+            AndroidUtilities.runOnUIThread(fragment::finishFragment, 500);
+        }
         return true;
     }
 
@@ -744,7 +747,7 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
             .addIf(link != null, R.drawable.msg_share, getString(R.string.ShareFile), () -> {
                 onSharePressed(null);
             })
-            .addIf(canSetAsTheme(), R.drawable.msg_colors, getString(R.string.Gift2SetAsThemeIn), this::onSetThemePressed)
+            .addIf(canSetAsTheme(), R.drawable.msg_colors, getString(R.string.Gift2SetAsThemeIn), () -> onSetThemePressed(null))
             .addIf(canTransfer(), R.drawable.menu_feature_transfer, getString(R.string.Gift2TransferOption), this::openTransfer)
             .addIf(savedStarGift == null && getDialogId() != 0, R.drawable.msg_view_file, getString(R.string.Gift2ViewInProfile), this::openInProfile)
             .setDrawScrim(false)
@@ -2297,13 +2300,29 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
         return gift != null && gift.theme_available;
     }
 
-    private void onSetThemePressed() {
+    private void onSetThemePressed(TLRPC.Peer peer) {
+        if (peer != null) {
+            openChatWithThemeSelector(peer.user_id);
+        } else {
+            Bundle args = new Bundle();
+            args.putBoolean("onlySelect", true);
+            args.putInt("dialogsType", DialogsActivity.DIALOGS_TYPE_USERS_ONLY);
+            DialogsActivity dialogFragment = new DialogsActivity(args);
+            dialogFragment.setDelegate(this);
+            presentFragment(dialogFragment);
+        }
+    }
+
+    private void openChatWithThemeSelector(long did) {
         Bundle args = new Bundle();
-        args.putBoolean("onlySelect", true);
-        args.putInt("dialogsType", DialogsActivity.DIALOGS_TYPE_USERS_ONLY);
-        DialogsActivity dialogFragment = new DialogsActivity(args);
-        dialogFragment.setDelegate(this);
-        presentFragment(dialogFragment);
+        args.putBoolean("need_remove_previous_same_chat_activity", true);
+        args.putLong("preselectedGiftTheme", getUniqueGift().gift_id);
+        if (did >= 0) {
+            args.putLong("user_id", did);
+        } else {
+            args.putLong("chat_id", -did);
+        }
+        presentFragment(new ChatActivity(args));
     }
 
     private void addAttributeRow(TL_stars.StarGiftAttribute attr) {
@@ -2714,7 +2733,12 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
             }), true, dp(8f / 3f), dp(.66f)));
             afterTableTextView.setVisibility(View.VISIBLE);
         } else if (myProfile && isMine(currentAccount, dialogId)) {
-            if (dialogId >= 0) {
+            final TL_stars.TL_starGiftUnique gift = getUniqueGift();
+            if (gift != null && gift.theme_available && gift.theme_peer != null) {
+                final SpannableStringBuilder sb = new SpannableStringBuilder();
+                sb.append(AndroidUtilities.replaceSingleTag(getString(R.string.Gift2ChatTheme),() -> onSetThemePressed(gift.theme_peer)));
+                afterTableTextView.setText(AndroidUtilities.replaceArrows(sb, true, dp(8f / 3f), dp(.66f)));
+            } else if (dialogId >= 0) {
                 final SpannableStringBuilder sb = new SpannableStringBuilder();
                 if (savedStarGift.unsaved) {
                     sb.append(". ");
@@ -3004,7 +3028,12 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
             }), true, dp(8f / 3f), dp(.66f)));
         } else if (!converted && !refunded && stargift != null && isMine(currentAccount, getDialogId())) {
             afterTableTextView.setVisibility(View.VISIBLE);
-            if (getDialogId() >= 0) {
+            final TL_stars.TL_starGiftUnique gift = getUniqueGift();
+            if (gift != null && gift.theme_available && gift.theme_peer != null) {
+                final SpannableStringBuilder sb = new SpannableStringBuilder();
+                sb.append(AndroidUtilities.replaceSingleTag(getString(R.string.Gift2ChatTheme),() -> onSetThemePressed(gift.theme_peer)));
+                afterTableTextView.setText(AndroidUtilities.replaceArrows(sb, true, dp(8f / 3f), dp(.66f)));
+            } else if (getDialogId() >= 0) {
                 final SpannableStringBuilder sb = new SpannableStringBuilder();
                 if (!saved) {
                     sb.append(". ");
