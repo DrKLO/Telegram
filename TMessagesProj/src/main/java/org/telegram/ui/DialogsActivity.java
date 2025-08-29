@@ -72,6 +72,7 @@ import android.view.ViewTreeObserver;
 import android.view.WindowManager;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.view.animation.AccelerateDecelerateInterpolator;
+import android.view.animation.BounceInterpolator;
 import android.view.animation.DecelerateInterpolator;
 import android.view.animation.Interpolator;
 import android.widget.Button;
@@ -546,6 +547,8 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
     private boolean floatingProgressVisible;
     private AnimatorSet floatingProgressAnimator;
     private final AccelerateDecelerateInterpolator floatingInterpolator = new AccelerateDecelerateInterpolator();
+
+    private final Interpolator bounceStoriesInterpolator = new BounceInterpolator();
 
     private boolean checkPermission = true;
 
@@ -5464,11 +5467,11 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             if (scrollY != 0 && scrollY != actionBarHeight) {
                 if (scrollY < actionBarHeight / 2) {
                     if (viewPage.listView.canScrollVertically(-1)) {
-                        viewPage.scroller.smoothScrollBy(-scrollY);
+                        viewPage.scroller.smoothScrollBy(-scrollY, 1000, bounceStoriesInterpolator);
                         return true;
                     }
                 } else if (viewPage.listView.canScrollVertically(1)) {
-                    viewPage.scroller.smoothScrollBy(actionBarHeight - scrollY);
+                    viewPage.scroller.smoothScrollBy(actionBarHeight - scrollY, 1000, bounceStoriesInterpolator);
                     return true;
                 }
             }

@@ -803,6 +803,9 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
                     public void onAnimationEnd(Animator animation) {
                         collapsedProgress2 = newCollapsed ? 1f : 0;
                         checkCollapsedProgres();
+                        try {
+                            performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
+                        } catch (Exception ignored) {}
                     }
                 });
                 valueAnimator.setDuration(450);
