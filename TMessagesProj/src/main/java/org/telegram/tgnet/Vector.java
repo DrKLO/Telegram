@@ -140,7 +140,7 @@ public class Vector<T extends TLObject> extends TLObject {
         ArrayList<java.lang.Long> result = new ArrayList<>();
         for (T item : objects) {
             if (item instanceof Vector.Long) {
-                result.add(((Vector.Long) item).value);
+                result.add(((Long) item).value);
             }
         }
         return result;
@@ -164,7 +164,7 @@ public class Vector<T extends TLObject> extends TLObject {
             write.run(objects.get(i));
         }
     }
-    public static void serializeInt(OutputSerializedData stream, final ArrayList<java.lang.Integer> objects) {
+    public static void serializeInt(OutputSerializedData stream, final ArrayList<Integer> objects) {
         serialize(stream, stream::writeInt32, objects);
     }
     public static void serializeLong(OutputSerializedData stream, final ArrayList<java.lang.Long> objects) {
@@ -189,13 +189,13 @@ public class Vector<T extends TLObject> extends TLObject {
         }
         return result;
     }
-    public static ArrayList<java.lang.Integer> deserializeInt(InputSerializedData stream, boolean exception) {
+    public static ArrayList<Integer> deserializeInt(InputSerializedData stream, boolean exception) {
         return deserialize(stream, stream::readInt32, exception);
     }
     public static ArrayList<java.lang.Long> deserializeLong(InputSerializedData stream, boolean exception) {
         return deserialize(stream, stream::readInt64, exception);
     }
-    public static ArrayList<java.lang.String> deserializeString(InputSerializedData stream, boolean exception) {
+    public static ArrayList<String> deserializeString(InputSerializedData stream, boolean exception) {
         return deserialize(stream, stream::readString, exception);
     }
     public static ArrayList<byte[]> deserializeByteArray(InputSerializedData stream, boolean exception) {

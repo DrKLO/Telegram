@@ -1344,7 +1344,7 @@ public class TL_stories {
                 next_level_boosts = stream.readInt32(exception);
             }
             if ((flags & 2) != 0) {
-                premium_audience = TL_stats.TL_statsPercentValue.TLdeserialize(stream, stream.readInt32(exception), exception);
+                premium_audience = TL_statsPercentValue.TLdeserialize(stream, stream.readInt32(exception), exception);
             }
             boost_url = stream.readString(exception);
             if ((flags & 8) != 0) {

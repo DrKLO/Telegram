@@ -598,8 +598,8 @@ public class TL_stats {
         public static PublicForward TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
             PublicForward result = null;
             switch (constructor) {
-                case TL_stats.TL_publicForwardMessage.constructor:
-                    result = new TL_stats.TL_publicForwardMessage();
+                case TL_publicForwardMessage.constructor:
+                    result = new TL_publicForwardMessage();
                     break;
                 case TL_stories.TL_publicForwardStory.constructor:
                     result = new TL_stories.TL_publicForwardStory();

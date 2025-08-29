@@ -173,7 +173,7 @@ public class TL_bots {
     public static class previewInfo extends TLObject {
         public static final int constructor = 0xca71d64;
 
-        public ArrayList<TL_bots.botPreviewMedia> media = new ArrayList<>();
+        public ArrayList<botPreviewMedia> media = new ArrayList<>();
         public ArrayList<String> lang_codes = new ArrayList<>();
 
         public static previewInfo TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
