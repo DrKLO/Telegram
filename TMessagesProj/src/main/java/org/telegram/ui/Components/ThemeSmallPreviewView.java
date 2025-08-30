@@ -195,8 +195,12 @@ public class ThemeSmallPreviewView extends FrameLayout implements NotificationCe
         this.chatThemeItem = item;
         hasAnimatedEmoji = false;
         TLRPC.Document document = null;
-        if (item.chatTheme.getEmoticon() != null) {
-            document = MediaDataController.getInstance(currentAccount).getEmojiAnimatedSticker(item.chatTheme.getEmoticon());
+        if (item.chatTheme instanceof EmojiThemes.Default) {
+            if (((EmojiThemes.Default) item.chatTheme).tlTheme != null) {
+                document = MediaDataController.getInstance(currentAccount).getEmojiAnimatedSticker(((EmojiThemes.Default) item.chatTheme).getEmoticon());
+            }
+        } else if (item.chatTheme instanceof EmojiThemes.Gift && ((EmojiThemes.Gift) item.chatTheme).starGift != null) {
+            document = ((EmojiThemes.Gift) item.chatTheme).starGift.getDocument();
         }
         if (itemChanged) {
             if (animationCancelRunnable != null) {
@@ -213,8 +217,13 @@ public class ThemeSmallPreviewView extends FrameLayout implements NotificationCe
                 thumb = DocumentObject.getSvgThumb(document, Theme.key_emptyListPlaceholder, 0.2f);
             }
             if (thumb == null) {
-                Emoji.preloadEmoji(item.chatTheme.getEmoticon());
-                thumb = Emoji.getEmojiDrawable(item.chatTheme.getEmoticon());
+                if (item.chatTheme instanceof EmojiThemes.Default) {
+                    Emoji.preloadEmoji(((EmojiThemes.Default) item.chatTheme).emoji);
+                    thumb = Emoji.getEmojiDrawable(((EmojiThemes.Default) item.chatTheme).emoji);
+                } else if (item.chatTheme instanceof  EmojiThemes.Gift) {
+                    thumb = DocumentObject.getSvgThumb(document, Theme.key_emptyListPlaceholder, 0.2f);
+                }
+
             }
             backupImageView.setImage(ImageLocation.getForDocument(document), "50_50", thumb, null);
             TLRPC.WallPaper wallPaper = item.chatTheme.wallpaper;
@@ -249,9 +258,8 @@ public class ThemeSmallPreviewView extends FrameLayout implements NotificationCe
                 changeThemeProgress = 1f;
             }
             updatePreviewBackground(themeDrawable);
-            TLRPC.TL_theme theme = item.chatTheme.getTlTheme(lastThemeIndex);
-            if (theme != null) {
-                final long themeId = theme.id;
+            final long themeId = item.chatTheme.getThemeId();
+            if (themeId != 0) {
                 TLRPC.WallPaper wallPaper = item.chatTheme.getWallpaper(lastThemeIndex);
                 if (wallPaper != null) {
                     final int intensity = wallPaper.settings.intensity;
@@ -335,7 +343,11 @@ public class ThemeSmallPreviewView extends FrameLayout implements NotificationCe
         if (chatThemeItem.chatTheme == null || chatThemeItem.chatTheme.isAnyStub()) {
             setContentDescription(LocaleController.getString(R.string.ChatNoTheme));
         } else {
-            setContentDescription(chatThemeItem.chatTheme.getEmoticon());
+            if (chatThemeItem.chatTheme instanceof EmojiThemes.Gift) {
+                setContentDescription(((EmojiThemes.Gift)chatThemeItem.chatTheme).starGift.title);
+            } else if (chatThemeItem.chatTheme instanceof EmojiThemes.Default) {
+                setContentDescription(((EmojiThemes.Default)chatThemeItem.chatTheme).getEmoticon());
+            }
         }
     }
 
@@ -430,16 +442,14 @@ public class ThemeSmallPreviewView extends FrameLayout implements NotificationCe
         themeDrawable.strokePaint.setColor(strokeColor);
         themeDrawable.strokePaint.setAlpha(strokeAlpha);
 
+        int index = chatThemeItem.chatTheme.getSettingsIndex(chatThemeItem.themeIndex);
+        TLRPC.ThemeSettings themeSettings = chatThemeItem.chatTheme.getThemeSettings(index);
 
-        TLRPC.TL_theme tlTheme = chatThemeItem.chatTheme.getTlTheme(chatThemeItem.themeIndex);
-
-        if (tlTheme != null) {
-            int index = chatThemeItem.chatTheme.getSettingsIndex(chatThemeItem.themeIndex);
-            TLRPC.ThemeSettings themeSettings = tlTheme.settings.get(index);
+        if (themeSettings != null) {
             fillOutBubblePaint(themeDrawable.outBubblePaintSecond, themeSettings.message_colors);
 
             themeDrawable.outBubblePaintSecond.setAlpha(255);
-            getPreviewDrawable(tlTheme, index);
+            getPreviewDrawable(themeSettings);
         } else {
             EmojiThemes.ThemeItem item = chatThemeItem.chatTheme.getThemeItem(chatThemeItem.themeIndex);
             getPreviewDrawable(item);
@@ -448,25 +458,17 @@ public class ThemeSmallPreviewView extends FrameLayout implements NotificationCe
         invalidate();
     }
 
-    private Drawable getPreviewDrawable(TLRPC.TL_theme theme, int settingsIndex) {
+    private Drawable getPreviewDrawable(TLRPC.ThemeSettings settings) {
         if (chatThemeItem == null) {
             return null;
         }
 
-        int color1 = 0;
-        int color2 = 0;
-        int color3 = 0;
-        int color4 = 0;
-
         Drawable drawable;
-        if (settingsIndex >= 0) {
-            TLRPC.ThemeSettings themeSettings = theme.settings.get(settingsIndex);
-            TLRPC.WallPaperSettings wallPaperSettings = themeSettings.wallpaper.settings;
-            color1 = wallPaperSettings.background_color;
-            color2 = wallPaperSettings.second_background_color;
-            color3 = wallPaperSettings.third_background_color;
-            color4 = wallPaperSettings.fourth_background_color;
-        }
+        TLRPC.WallPaperSettings wallPaperSettings = settings.wallpaper.settings;
+        int color1 = wallPaperSettings.background_color;
+        int color2 = wallPaperSettings.second_background_color;
+        int color3 = wallPaperSettings.third_background_color;
+        int color4 = wallPaperSettings.fourth_background_color;
         if (color2 != 0) {
             MotionBackgroundDrawable motionBackgroundDrawable = new MotionBackgroundDrawable(color1, color2, color3, color4, true);
             patternColor = motionBackgroundDrawable.getPatternColor();

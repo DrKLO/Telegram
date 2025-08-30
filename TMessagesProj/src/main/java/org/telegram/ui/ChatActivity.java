@@ -42070,10 +42070,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             if (parentLayout == null || parentThemeDelegate != null) {
                 return;
             }
-            final EmojiThemes prevTheme = this.chatTheme;
             boolean newIsDark = forceDark != null ? forceDark : this.isDark;//Theme.getActiveTheme().isDark();
-            String newEmoticon = chatTheme != null ? chatTheme.getEmoticon() : null;
-            String oldEmoticon = this.chatTheme != null ? this.chatTheme.getEmoticon() : null;
+            String newEmoticon = chatTheme != null ? chatTheme.getStickerUniqueKey() : null;
+            String oldEmoticon = this.chatTheme != null ? this.chatTheme.getStickerUniqueKey() : null;
             TLRPC.WallPaper oldWallpaper = this.wallpaper;
             if (!force && (!isThemeChangeAvailable(false) || (TextUtils.equals(oldEmoticon, newEmoticon) && this.isDark == newIsDark && ChatThemeController.equals(newWallpaper, oldWallpaper)))) {
                 return;
@@ -42633,7 +42632,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     }
                     long themeId = pair.first;
                     Bitmap bitmap = pair.second;
-                    if (this.chatTheme != null && themeId == this.chatTheme.getTlTheme(isDark ? 1 : 0).id && bitmap != null) {
+                    if (this.chatTheme != null && themeId == this.chatTheme.getThemeId() && bitmap != null) {
                         if (patternIntensityAnimator != null) {
                             patternIntensityAnimator.cancel();
                         }

@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class ChatThemeController extends BaseController {
 
@@ -32,6 +33,9 @@ public class ChatThemeController extends BaseController {
     private List<EmojiThemes> allChatThemes;
     private volatile long themesHash;
     private volatile long lastReloadTimeMs;
+    private volatile int giftThemesOffset;
+    private volatile long starGiftHash;
+    public boolean starGiftRefreshRequired = true;
 
     private ChatThemeController(int num) {
         super(num);
@@ -42,9 +46,11 @@ public class ChatThemeController extends BaseController {
         SharedPreferences preferences = getSharedPreferences();
         themesHash = 0;
         lastReloadTimeMs = 0;
+        giftThemesOffset = 0;
         try {
             themesHash = preferences.getLong("hash", 0);
             lastReloadTimeMs = preferences.getLong("lastReload", 0);
+            starGiftHash = preferences.getLong("starGiftHash", 0);
         } catch (Exception e) {
             FileLog.e(e);
         }
@@ -54,7 +60,17 @@ public class ChatThemeController extends BaseController {
         preloadSticker("❌");
         if (!allChatThemes.isEmpty()) {
             for (EmojiThemes chatTheme : allChatThemes) {
-               preloadSticker(chatTheme.getEmoticon());
+                ImageReceiver imageReceiver = new ImageReceiver();
+                TLRPC.Document document = null;
+                if (chatTheme instanceof EmojiThemes.Default) {
+                    Emoji.preloadEmoji(((EmojiThemes.Default)chatTheme).emoji);
+                    document = MediaDataController.getInstance(UserConfig.selectedAccount).getEmojiAnimatedSticker(((EmojiThemes.Default)chatTheme).emoji);
+                } else if (chatTheme instanceof EmojiThemes.Gift) {
+                    if (((EmojiThemes.Gift) chatTheme).starGift != null) {
+                        document = ((EmojiThemes.Gift) chatTheme).starGift.getDocument();
+                    }
+                }
+                imageReceiver.setImage(ImageLocation.getForDocument(document), "50_50", null, null, null, 0);
             }
         }
     }
@@ -95,14 +111,14 @@ public class ChatThemeController extends BaseController {
                         SerializedData data = new SerializedData(tlChatTheme.getObjectSize());
                         tlChatTheme.serializeToStream(data);
                         editor.putString("theme_" + i, Utilities.bytesToHex(data.toByteArray()));
-                        EmojiThemes chatTheme = new EmojiThemes(currentAccount, tlChatTheme, false);
+                        EmojiThemes chatTheme = new EmojiThemes.Default(currentAccount, tlChatTheme, false);
                         chatTheme.preloadWallpaper();
                         chatThemes.add(chatTheme);
                     }
                     editor.apply();
                 } else if (response instanceof TL_account.TL_themesNotModified) {
-                   // if (allChatThemes == null || allChatThemes.isEmpty()) {
-                        chatThemes = getAllChatThemesFromPrefs();
+                    // if (allChatThemes == null || allChatThemes.isEmpty()) {
+                    chatThemes = getAllChatThemesFromPrefs();
 //                    } else {
 //                   //     return;
 //                    }
@@ -155,7 +171,7 @@ public class ChatThemeController extends BaseController {
             try {
                 TLRPC.TL_theme chatTheme = TLRPC.Theme.TLdeserialize(serializedData, serializedData.readInt32(true), true);
                 if (chatTheme != null) {
-                    themes.add(new EmojiThemes(currentAccount, chatTheme, false));
+                    themes.add(new EmojiThemes.Default(currentAccount, chatTheme, false));
                 }
             } catch (Throwable e) {
                 FileLog.e(e);
@@ -173,7 +189,7 @@ public class ChatThemeController extends BaseController {
             @Override
             public void onComplete(List<EmojiThemes> result) {
                 for (EmojiThemes theme : result) {
-                    if (emoticon.equals(theme.getEmoticon())) {
+                    if (emoticon.equals(theme.getStickerUniqueKey())) {
                         theme.initColors();
                         callback.onComplete(theme);
                         break;
@@ -273,10 +289,10 @@ public class ChatThemeController extends BaseController {
         return getTheme(emoticon);
     }
 
-    public EmojiThemes getTheme(String emoticon) {
-        if (emoticon != null) {
+    public EmojiThemes getTheme(String key) {
+        if (key != null) {
             for (EmojiThemes theme : allChatThemes) {
-                if (emoticon.equals(theme.getEmoticon())) {
+                if (key.equals(theme.getStickerUniqueKey())) {
                     return theme;
                 }
             }
@@ -329,26 +345,16 @@ public class ChatThemeController extends BaseController {
 
     public void preloadAllWallpaperImages(boolean isDark) {
         for (EmojiThemes chatTheme : allChatThemes) {
-            TLRPC.TL_theme theme = chatTheme.getTlTheme(isDark ? 1 : 0);
-            if (theme == null) {
-                continue;
-            }
-            long themeId = theme.id;
-            if (getPatternFile(themeId).exists()) {
-                continue;
-            }
+            long themeId = chatTheme.getThemeId();
+            if (themeId == 0 || getPatternFile(themeId).exists()) continue;
             chatTheme.loadWallpaper(isDark ? 1 : 0, null);
         }
     }
 
     public void preloadAllWallpaperThumbs(boolean isDark) {
         for (EmojiThemes chatTheme : allChatThemes) {
-            TLRPC.TL_theme theme = chatTheme.getTlTheme(isDark ? 1 : 0);
-            if (theme == null) {
-                continue;
-            }
-            long themeId = theme.id;
-            if (themeIdWallpaperThumbMap.containsKey(themeId)) {
+            long themeId = chatTheme.getThemeId();
+            if (themeId == 0 || themeIdWallpaperThumbMap.containsKey(themeId)) {
                 continue;
             }
             chatTheme.loadWallpaperThumb(isDark ? 1 : 0, result -> {

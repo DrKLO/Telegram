@@ -854,7 +854,7 @@ public class ChatThemeBottomSheet extends BottomSheet implements NotificationCen
             }
             if  (selectedPosition != -1) {
                 for (int i = 0; i != items.size(); ++i) {
-                    if (items.get(i).chatTheme.getEmoticon().equals(currentTheme.getEmoticon())) {
+                    if (items.get(i).chatTheme.getStickerUniqueKey().equals(currentTheme.getStickerUniqueKey())) {
                         selectedItem = items.get(i);
                         selectedPosition = i;
                         break;
@@ -960,7 +960,7 @@ public class ChatThemeBottomSheet extends BottomSheet implements NotificationCen
         EmojiThemes newTheme = selectedItem.chatTheme;
         if (selectedItem != null && newTheme != currentTheme) {
             EmojiThemes chatTheme = selectedItem.chatTheme;
-            String emoticon = !chatTheme.showAsDefaultStub ? chatTheme.getEmoticon() : null;
+            String emoticon = !chatTheme.showAsDefaultStub ? chatTheme.getStickerUniqueKey() : null;
             ChatThemeController.getInstance(currentAccount).clearWallpaper(chatActivity.getDialogId(), false);
             ChatThemeController.getInstance(currentAccount).setDialogTheme(chatActivity.getDialogId(), emoticon, true);
             TLRPC.WallPaper wallpaper = hasChanges() ? null : themeDelegate.getCurrentWallpaper();
@@ -1000,11 +1000,11 @@ public class ChatThemeBottomSheet extends BottomSheet implements NotificationCen
         if (selectedItem == null) {
             return false;
         } else {
-            String oldEmoticon = currentTheme != null ? currentTheme.getEmoticon() : null;
+            String oldEmoticon = currentTheme != null ? currentTheme.getStickerUniqueKey() : null;
             if (TextUtils.isEmpty(oldEmoticon)) {
                 oldEmoticon = "❌";
             }
-            String newEmoticon = selectedItem.chatTheme != null ? selectedItem.chatTheme.getEmoticon() : null;
+            String newEmoticon = selectedItem.chatTheme != null ? selectedItem.chatTheme.getStickerUniqueKey() : null;
             if (TextUtils.isEmpty(newEmoticon)) {
                 newEmoticon = "❌";
             }
@@ -1051,7 +1051,7 @@ public class ChatThemeBottomSheet extends BottomSheet implements NotificationCen
             }
             boolean animated = true;
             ChatThemeItem newItem = items.get(position);
-            if (view.chatThemeItem == null || !view.chatThemeItem.chatTheme.getEmoticon().equals(newItem.chatTheme.getEmoticon()) || DrawerProfileCell.switchingTheme || view.lastThemeIndex != newItem.themeIndex) {
+            if (view.chatThemeItem == null || !view.chatThemeItem.chatTheme.getStickerUniqueKey().equals(newItem.chatTheme.getStickerUniqueKey()) || DrawerProfileCell.switchingTheme || view.lastThemeIndex != newItem.themeIndex) {
                 animated = false;
             }
 
@@ -1574,7 +1574,7 @@ public class ChatThemeBottomSheet extends BottomSheet implements NotificationCen
             if (chatTheme == null || chatTheme.showAsDefaultStub) {
                 return null;
             }
-            return chatTheme.getEmoticon();
+            return chatTheme.getStickerUniqueKey();
         }
     }
 }

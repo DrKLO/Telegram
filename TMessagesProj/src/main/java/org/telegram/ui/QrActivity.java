@@ -533,7 +533,7 @@ public class QrActivity extends BaseFragment {
 
         int selectedPosition = -1;
         for (int i = 0; i != items.size(); ++i) {
-            if (items.get(i).chatTheme.getEmoticon().equals(currentTheme.getEmoticon())) {
+            if (items.get(i).chatTheme.getStickerUniqueKey().equals(currentTheme.getStickerUniqueKey())) {
                 themesViewController.selectedItem = items.get(i);
                 selectedPosition = i;
                 break;
@@ -548,22 +548,24 @@ public class QrActivity extends BaseFragment {
 
     private Bitmap getEmojiThemeIcon(EmojiThemes theme, boolean isDark) {
         if (isDark) {
-            Bitmap bitmap = emojiThemeDarkIcons.get(theme.emoji);
+            Bitmap bitmap = emojiThemeDarkIcons.get(theme.getStickerUniqueKey());
             if (bitmap == null) {
                 bitmap = Bitmap.createBitmap(emojiThemeIcon.getWidth(), emojiThemeIcon.getHeight(), Bitmap.Config.ARGB_8888);
                 Canvas canvas = new Canvas(bitmap);
-                int[] colors = qrColorsMap.get(theme.emoji + "n");
-                if (colors != null) {
-                    if (tempMotionDrawable == null) {
-                        tempMotionDrawable = new MotionBackgroundDrawable(0, 0, 0, 0, true);
+                if (theme instanceof EmojiThemes.Default) {
+                    int[] colors = qrColorsMap.get(((EmojiThemes.Default)theme).emoji + "n");
+                    if (colors != null) {
+                        if (tempMotionDrawable == null) {
+                            tempMotionDrawable = new MotionBackgroundDrawable(0, 0, 0, 0, true);
+                        }
+                        tempMotionDrawable.setColors(colors[0], colors[1], colors[2], colors[3]);
+                        tempMotionDrawable.setBounds(AndroidUtilities.dp(6), AndroidUtilities.dp(6), canvas.getWidth() - AndroidUtilities.dp(6), canvas.getHeight() - AndroidUtilities.dp(6));
+                        tempMotionDrawable.draw(canvas);
                     }
-                    tempMotionDrawable.setColors(colors[0], colors[1], colors[2], colors[3]);
-                    tempMotionDrawable.setBounds(AndroidUtilities.dp(6), AndroidUtilities.dp(6), canvas.getWidth() - AndroidUtilities.dp(6), canvas.getHeight() - AndroidUtilities.dp(6));
-                    tempMotionDrawable.draw(canvas);
                 }
                 canvas.drawBitmap(emojiThemeIcon, 0, 0, null);
                 canvas.setBitmap(null);
-                emojiThemeDarkIcons.put(theme.emoji, bitmap);
+                emojiThemeDarkIcons.put(theme.getStickerUniqueKey(), bitmap);
             }
             return bitmap;
         } else {
@@ -621,10 +623,10 @@ public class QrActivity extends BaseFragment {
             currMotionDrawable.setPatternBitmap(wallPaper.settings.intensity);
             final long startedLoading = SystemClock.elapsedRealtime();
             currentTheme.loadWallpaper(isDarkTheme ? 1 : 0, pair -> {
-                if (pair != null && currentTheme.getTlTheme(isDarkTheme ? 1 : 0) != null) {
+                if (pair != null) {
                     final long themeId = pair.first;
                     final Bitmap bitmap = pair.second;
-                    if (themeId == currentTheme.getTlTheme(isDarkTheme ? 1 : 0).id && bitmap != null) {
+                    if (themeId == currentTheme.getThemeId() && bitmap != null) {
                         long elapsed = SystemClock.elapsedRealtime() - startedLoading;
                         onPatternLoaded(bitmap, currMotionDrawable.getIntensity(), elapsed > 150);
                     }
@@ -640,7 +642,7 @@ public class QrActivity extends BaseFragment {
         }
         currMotionDrawable.setPatternColorFilter(currMotionDrawable.getPatternColor());
 
-        int[] newQrColors = qrColorsMap.get(newTheme.emoji + (isDarkTheme ? "n" : "d"));
+        int[] newQrColors = qrColorsMap.get(newTheme.getStickerUniqueKey() + (isDarkTheme ? "n" : "d"));
         if (withAnimation) {
             if (prevQrColors == null) {
                 prevQrColors = new int[4];

@@ -2779,40 +2779,47 @@ public class Theme {
             return createNewAccent(info, account, false, 0);
         }
 
+        public ThemeAccent createNewAccent(EmojiThemes info, int account) {
+            return createNewAccent(info, account, false, 0);
+        }
+
         public ThemeAccent createNewAccent(TLRPC.TL_theme info, int account, boolean ignoreThemeInfoId, int settingsIndex) {
-            if (info == null) {
+            EmojiThemes.Default theme = new EmojiThemes.Default(account);
+            theme.tlTheme = info;
+            return createNewAccent(theme, account,ignoreThemeInfoId, settingsIndex);
+        }
+
+        public ThemeAccent createNewAccent(EmojiThemes theme, int account, boolean ignoreThemeInfoId, int settingsIndex) {
+            if (theme == null || theme.getThemeId() == 0) {
                 return null;
             }
-            TLRPC.ThemeSettings settings = null;
-            if (settingsIndex < info.settings.size()) {
-                settings = info.settings.get(settingsIndex);
-            }
+            final TLRPC.ThemeSettings settings = theme.getThemeSettings(settingsIndex);
             if (ignoreThemeInfoId) {
-                ThemeAccent themeAccent = chatAccentsByThemeId.get(info.id);
+                ThemeAccent themeAccent = chatAccentsByThemeId.get(theme.getThemeId());
                 if (themeAccent != null) {
                     return themeAccent;
                 }
                 int id = ++lastChatThemeId;
                 themeAccent = createNewAccent(settings);
                 themeAccent.id = id;
-                themeAccent.info = info;
+                themeAccent.info = theme instanceof EmojiThemes.Default ? ((EmojiThemes.Default)theme).tlTheme : info;
                 themeAccent.account = account;
                 chatAccentsByThemeId.put(id, themeAccent);
                 return themeAccent;
             } else {
-                ThemeAccent themeAccent = accentsByThemeId.get(info.id);
+                ThemeAccent themeAccent = accentsByThemeId.get(theme.getThemeId());
                 if (themeAccent != null) {
                     return themeAccent;
                 }
                 int id = ++lastAccentId;
                 themeAccent = createNewAccent(settings);
                 themeAccent.id = id;
-                themeAccent.info = info;
+                themeAccent.info = theme instanceof EmojiThemes.Default ? ((EmojiThemes.Default)theme).tlTheme : info;
                 themeAccent.account = account;
                 themeAccentsMap.put(id, themeAccent);
                 themeAccents.add(0, themeAccent);
                 sortAccents(this);
-                accentsByThemeId.put(info.id, themeAccent);
+                accentsByThemeId.put(theme.getThemeId(), themeAccent);
                 return themeAccent;
             }
         }

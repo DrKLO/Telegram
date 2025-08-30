@@ -27,6 +27,7 @@ import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.tgnet.tl.TL_stars;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.EmojiThemes;
 import org.telegram.ui.ActionBar.Theme;
@@ -40,6 +41,7 @@ import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.ThemeSmallPreviewView;
 
 import java.util.ArrayList;
+import java.util.List;
 
 @SuppressLint("ViewConstructor")
 public class DefaultThemesPreviewCell extends LinearLayout {
@@ -95,20 +97,19 @@ public class DefaultThemesPreviewCell extends LinearLayout {
             ChatThemeBottomSheet.ChatThemeItem chatTheme = adapter.items.get(position);
             Theme.ThemeInfo info = chatTheme.chatTheme.getThemeInfo(themeIndex);
             int accentId = -1;
-            if (chatTheme.chatTheme.getEmoticon().equals("\uD83C\uDFE0") || chatTheme.chatTheme.getEmoticon().equals("\uD83C\uDFA8")) {
+            if (chatTheme.chatTheme.getStickerUniqueKey().equals("\uD83C\uDFE0") || chatTheme.chatTheme.getStickerUniqueKey().equals("\uD83C\uDFA8")) {
                 accentId = chatTheme.chatTheme.getAccentId(themeIndex);
             }
             if (info == null) {
-                TLRPC.TL_theme theme = chatTheme.chatTheme.getTlTheme(themeIndex);
                 int settingsIndex = chatTheme.chatTheme.getSettingsIndex(themeIndex);
-                TLRPC.ThemeSettings settings = theme.settings.get(settingsIndex);
+                TLRPC.ThemeSettings settings = chatTheme.chatTheme.getThemeSettings(settingsIndex);
                 String key = Theme.getBaseThemeKey(settings);
                 info = Theme.getTheme(key);
 
                 if (info != null) {
-                    Theme.ThemeAccent accent = info.accentsByThemeId.get(theme.id);
+                    Theme.ThemeAccent accent = info.accentsByThemeId.get(chatTheme.chatTheme.getThemeId());
                     if (accent == null) {
-                        accent = info.createNewAccent(theme, parentFragment.getCurrentAccount());
+                        accent = info.createNewAccent(chatTheme.chatTheme, parentFragment.getCurrentAccount());
                     }
                     accentId = accent.id;
                     info.setCurrentAccentId(accentId);
@@ -386,17 +387,17 @@ public class DefaultThemesPreviewCell extends LinearLayout {
         }
         selectedPosition = -1;
         for (int i = 0; i < adapter.items.size(); i++) {
-            TLRPC.TL_theme theme = adapter.items.get(i).chatTheme.getTlTheme(themeIndex);
             Theme.ThemeInfo themeInfo = adapter.items.get(i).chatTheme.getThemeInfo(themeIndex);
-            if (theme != null) {
-                int settingsIndex = adapter.items.get(i).chatTheme.getSettingsIndex(themeIndex);
-                String key = Theme.getBaseThemeKey(theme.settings.get(settingsIndex));
+            int settingsIndex = adapter.items.get(i).chatTheme.getSettingsIndex(themeIndex);
+            TLRPC.ThemeSettings settings = adapter.items.get(i).chatTheme.getThemeSettings(settingsIndex);
+            if (settings != null) {
+                String key = Theme.getBaseThemeKey(settings);
                 if (Theme.getActiveTheme().name.equals(key)) {
                     if (Theme.getActiveTheme().accentsByThemeId == null) {
                         selectedPosition = i;
                         break;
                     } else {
-                        Theme.ThemeAccent accent = Theme.getActiveTheme().accentsByThemeId.get(theme.id);
+                        Theme.ThemeAccent accent = Theme.getActiveTheme().accentsByThemeId.get(adapter.items.get(i).chatTheme.getThemeId());
                         if (accent != null && accent.id == Theme.getActiveTheme().currentAccentId) {
                             selectedPosition = i;
                             break;

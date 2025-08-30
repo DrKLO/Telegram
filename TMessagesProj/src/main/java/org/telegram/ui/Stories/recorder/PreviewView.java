@@ -1986,7 +1986,7 @@ public class PreviewView extends FrameLayout {
                 }
                 long themeId = pair.first;
                 Bitmap bitmap = pair.second;
-                if (themeId == chatTheme.getTlTheme(isDark ? 1 : 0).id && bitmap != null) {
+                if (themeId == chatTheme.getThemeId() && bitmap != null) {
                     int intensity = chatTheme.getWallpaper(isDarkTheme ? 1 : 0).settings.intensity;
                     motionDrawable.setPatternBitmap(intensity, bitmap);
                     motionDrawable.setPatternColorFilter(patternColor);
