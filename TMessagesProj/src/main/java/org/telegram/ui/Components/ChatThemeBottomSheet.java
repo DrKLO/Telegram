@@ -510,7 +510,7 @@ public class ChatThemeBottomSheet extends BottomSheet implements NotificationCen
                 public void onError(TLRPC.TL_error error) {
                     Toast.makeText(getContext(), error.text, Toast.LENGTH_SHORT).show();
                 }
-            }, true);
+            }, true, true);
         } else {
             onDataLoaded(cachedThemes);
         }
