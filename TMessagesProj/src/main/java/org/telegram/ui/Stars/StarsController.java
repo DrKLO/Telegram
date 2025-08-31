@@ -2268,6 +2268,12 @@ public class StarsController {
         }
     }
 
+    public void setPeerForThemeGift(TL_stars.StarGift starGift, TLRPC.Peer peer) {
+        if (starGift == null || !giftsLoaded) return;
+        starGift.theme_peer = peer;
+        saveStarGiftsCached(gifts, giftsHash, giftsRemoteTime);
+    }
+
     public void makeStarGiftSoldOut(TL_stars.StarGift starGift) {
         if (starGift == null || !giftsLoaded) return;
         starGift.availability_remains = 0;

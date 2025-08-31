@@ -51,6 +51,7 @@ import org.telegram.messenger.ImageLoader;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaController;
 import org.telegram.messenger.MediaDataController;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
@@ -74,6 +75,7 @@ import org.telegram.ui.Cells.ThemesHorizontalListCell;
 import org.telegram.ui.ChatActivity;
 import org.telegram.ui.Components.Premium.LimitReachedBottomSheet;
 import org.telegram.ui.PhotoViewer;
+import org.telegram.ui.Stars.StarsController;
 import org.telegram.ui.StatisticActivity;
 import org.telegram.ui.ThemePreviewActivity;
 import org.telegram.ui.WallpapersListActivity;
@@ -127,6 +129,8 @@ public class ChatThemeBottomSheet extends BottomSheet implements NotificationCen
     private FrameLayout chatAttachButton;
     private AnimatedTextView chatAttachButtonText;
     private long preselectedGiftId = 0;
+    private boolean isLoadingGiftThemes = false;
+    private boolean hasMoreGiftThemes = true;
 
 
     public ChatThemeBottomSheet(final ChatActivity chatActivity, ChatActivity.ThemeDelegate themeDelegate) {
@@ -256,7 +260,13 @@ public class ChatThemeBottomSheet extends BottomSheet implements NotificationCen
             }
             updateState(true);
         });
-
+        recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
+            @Override
+            public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
+                super.onScrolled(recyclerView, dx, dy);
+                checkLoadMore();
+            }
+        });
         progressView = new FlickerLoadingView(getContext(), resourcesProvider);
         progressView.setViewType(FlickerLoadingView.CHAT_THEMES_TYPE);
         progressView.setVisibility(View.VISIBLE);
@@ -769,6 +779,51 @@ public class ChatThemeBottomSheet extends BottomSheet implements NotificationCen
         });
     }
 
+    private void checkLoadMore() {
+        if (isLoadingGiftThemes || !hasMoreGiftThemes) return;
+        
+        LinearLayoutManager layoutManager = (LinearLayoutManager) recyclerView.getLayoutManager();
+        int visibleItemCount = layoutManager.getChildCount();
+        int totalItemCount = layoutManager.getItemCount();
+        int firstVisibleItemPosition = layoutManager.findFirstVisibleItemPosition();
+        
+        if (totalItemCount - (firstVisibleItemPosition + visibleItemCount) <= 10) {
+            loadMoreGiftThemes();
+        }
+    }
+    
+    private void loadMoreGiftThemes() {
+        if (isLoadingGiftThemes || !hasMoreGiftThemes) return;
+        
+        isLoadingGiftThemes = true;
+        ChatThemeController.getInstance(currentAccount).requestGiftChatThemes(new ResultCallback<List<EmojiThemes>>() {
+            @Override
+            public void onComplete(List<EmojiThemes> result) {
+                isLoadingGiftThemes = false;
+                if (result != null && !result.isEmpty()) {
+                    addGiftThemesToList(result);
+                } else {
+                    hasMoreGiftThemes = false;
+                }
+            }
+            
+            @Override
+            public void onError(TLRPC.TL_error error) {
+                isLoadingGiftThemes = false;
+            }
+        });
+    }
+    
+    private void addGiftThemesToList(List<EmojiThemes> newThemes) {
+        int startPosition = adapter.items.size();
+        for (EmojiThemes theme : newThemes) {
+            ChatThemeItem item = new ChatThemeItem(theme);
+            item.themeIndex = forceDark ? 1 : 0;
+            adapter.items.add(item);
+        }
+        adapter.notifyItemRangeInserted(startPosition, newThemes.size());
+    }
+
     @Override
     protected boolean onContainerTouchEvent(MotionEvent event) {
         if (event == null || !hasChanges()) {
@@ -963,6 +1018,10 @@ public class ChatThemeBottomSheet extends BottomSheet implements NotificationCen
             String emoticon = !chatTheme.showAsDefaultStub ? chatTheme.getStickerUniqueKey() : null;
             ChatThemeController.getInstance(currentAccount).clearWallpaper(chatActivity.getDialogId(), false);
             ChatThemeController.getInstance(currentAccount).setDialogTheme(chatActivity.getDialogId(), emoticon, true);
+            if (chatTheme instanceof EmojiThemes.Gift && ((EmojiThemes.Gift) chatTheme).starGift != null) {
+                TLRPC.Peer peer = MessagesController.getInstance(currentAccount).getPeer(chatActivity.getDialogId());
+                StarsController.getInstance(currentAccount).setPeerForThemeGift(((EmojiThemes.Gift) chatTheme).starGift, peer);
+            }
             TLRPC.WallPaper wallpaper = hasChanges() ? null : themeDelegate.getCurrentWallpaper();
             if (!chatTheme.showAsDefaultStub) {
                 themeDelegate.setCurrentTheme(chatTheme, wallpaper, true, originalIsDark);
@@ -976,9 +1035,13 @@ public class ChatThemeBottomSheet extends BottomSheet implements NotificationCen
                 boolean themeDisabled = false;
                 if (TextUtils.isEmpty(emoticon)) {
                     themeDisabled = true;
-                    emoticon = "❌";
                 }
-                TLRPC.Document document = emoticon != null ? MediaDataController.getInstance(currentAccount).getEmojiAnimatedSticker(emoticon) : null;
+                TLRPC.Document document = null;
+                if (chatTheme instanceof EmojiThemes.Default) {
+                    document = ((EmojiThemes.Default) chatTheme).emoji != null ? MediaDataController.getInstance(currentAccount).getEmojiAnimatedSticker(((EmojiThemes.Default) chatTheme).emoji) : null;
+                } else if (chatTheme instanceof EmojiThemes.Gift) {
+                    document = ((EmojiThemes.Gift) chatTheme).starGift.getDocument();
+                }
                 StickerSetBulletinLayout layout = new StickerSetBulletinLayout(getContext(), null, StickerSetBulletinLayout.TYPE_EMPTY, document, chatActivity.getResourceProvider());
                 layout.subtitleTextView.setVisibility(View.GONE);
                 if (themeDisabled) {

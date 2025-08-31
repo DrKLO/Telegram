@@ -22,7 +22,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
-import java.util.concurrent.atomic.AtomicInteger;
 
 public class ChatThemeController extends BaseController {
 
@@ -35,6 +34,7 @@ public class ChatThemeController extends BaseController {
     private volatile long lastReloadTimeMs;
     private volatile int giftThemesOffset;
     private volatile long starGiftHash;
+    private volatile boolean hasMoreGiftThemes;
 
     private ChatThemeController(int num) {
         super(num);
@@ -46,10 +46,12 @@ public class ChatThemeController extends BaseController {
         themesHash = 0;
         lastReloadTimeMs = 0;
         giftThemesOffset = 0;
+        hasMoreGiftThemes = true;
         try {
             themesHash = preferences.getLong("hash", 0);
             lastReloadTimeMs = preferences.getLong("lastReload", 0);
             starGiftHash = preferences.getLong("starGiftHash", 0);
+            hasMoreGiftThemes = preferences.getBoolean("hasMoreGiftThemes", true);
         } catch (Exception e) {
             FileLog.e(e);
         }
@@ -62,8 +64,8 @@ public class ChatThemeController extends BaseController {
                 ImageReceiver imageReceiver = new ImageReceiver();
                 TLRPC.Document document = null;
                 if (chatTheme instanceof EmojiThemes.Default) {
-                    Emoji.preloadEmoji(((EmojiThemes.Default)chatTheme).emoji);
-                    document = MediaDataController.getInstance(UserConfig.selectedAccount).getEmojiAnimatedSticker(((EmojiThemes.Default)chatTheme).emoji);
+                    Emoji.preloadEmoji(((EmojiThemes.Default) chatTheme).emoji);
+                    document = MediaDataController.getInstance(UserConfig.selectedAccount).getEmojiAnimatedSticker(((EmojiThemes.Default) chatTheme).emoji);
                 } else if (chatTheme instanceof EmojiThemes.Gift) {
                     if (((EmojiThemes.Gift) chatTheme).starGift != null) {
                         document = ((EmojiThemes.Gift) chatTheme).starGift.getDocument();
@@ -143,6 +145,8 @@ public class ChatThemeController extends BaseController {
                 }
                 if (withGifts) {
                     boolean finalIsError = isError;
+                    hasMoreGiftThemes = true;
+                    giftThemesOffset = 0;
                     requestGiftChatThemes(new ResultCallback<List<EmojiThemes>>() {
                         @Override
                         public void onComplete(List<EmojiThemes> result) {
@@ -185,54 +189,65 @@ public class ChatThemeController extends BaseController {
             for (EmojiThemes theme : chatThemes) {
                 theme.initColors();
             }
-            callback.onComplete(chatThemes);
+            AndroidUtilities.runOnUIThread(() -> callback.onComplete(chatThemes));
         }
     }
 
-    private void requestGiftChatThemes(final ResultCallback<List<EmojiThemes>> callback) {
+    public void requestGiftChatThemes(final ResultCallback<List<EmojiThemes>> callback) {
         if (starGiftHash == 0) {
             init();
         }
 
-        if (giftThemesOffset == 0) {
-            TL_account.Tl_getUniqueGiftChatThemes request = new TL_account.Tl_getUniqueGiftChatThemes();
-            request.hash = starGiftHash;
-            request.offset = giftThemesOffset;
-            request.limit = 20;
-            ConnectionsManager.getInstance(UserConfig.selectedAccount).sendRequest(request, (response, error) -> chatThemeQueue.postRunnable(() -> {
-                boolean isError = false;
-                List<EmojiThemes> chatThemes = new ArrayList<>();
-                if (response instanceof TL_account.Tl_chatThemes) {
-                    TL_account.Tl_chatThemes resp = (TL_account.Tl_chatThemes) response;
-                    starGiftHash = resp.hash;
-                    giftThemesOffset = resp.next_offset;
-
-                    SharedPreferences.Editor editor = getSharedPreferences().edit();
-                    editor.putLong("starGiftHash", starGiftHash);
-                    editor.putLong("giftThemesOffset", giftThemesOffset);
-                    editor.putInt("giftThemesCount", resp.themes.size());
-                    chatThemes = new ArrayList<>(resp.themes.size());
-                    for (int i = 0; i < resp.themes.size(); ++i) {
-                        TLRPC.ChatTheme tlChatTheme = resp.themes.get(i);
-                        SerializedData data = new SerializedData(tlChatTheme.getObjectSize());
-                        tlChatTheme.serializeToStream(data);
-                        editor.putString("gift_theme_" + i, Utilities.bytesToHex(data.toByteArray()));
-                        EmojiThemes chatTheme = EmojiThemes.createPreviewGiftTheme(currentAccount, tlChatTheme);
-                        chatTheme.preloadWallpaper();
-                        chatThemes.add(chatTheme);
-                    }
-                    editor.apply();
-                } else if (response instanceof TL_account.TL_chatThemesNotModified) {
-
-                } else {
-                    isError = true;
-                    callback.onError(error);
-                }
-                if (!isError && !chatThemes.isEmpty()) {
-                    callback.onComplete(chatThemes);
-                }
-            }));
+        if (!hasMoreGiftThemes) {
+            callback.onComplete(new ArrayList<>());
+            return;
         }
+
+        TL_account.Tl_getUniqueGiftChatThemes request = new TL_account.Tl_getUniqueGiftChatThemes();
+        request.hash = starGiftHash;
+        request.offset = giftThemesOffset;
+        request.limit = 20;
+        ConnectionsManager.getInstance(UserConfig.selectedAccount).sendRequest(request, (response, error) -> chatThemeQueue.postRunnable(() -> {
+            boolean isError = false;
+            List<EmojiThemes> chatThemes = new ArrayList<>();
+            if (response instanceof TL_account.Tl_chatThemes) {
+                TL_account.Tl_chatThemes resp = (TL_account.Tl_chatThemes) response;
+                starGiftHash = resp.hash;
+
+                SharedPreferences.Editor editor = getSharedPreferences().edit();
+                editor.putLong("starGiftHash", starGiftHash);
+                editor.putLong("giftThemesOffset", giftThemesOffset);
+                editor.putInt("giftThemesCount", giftThemesOffset + resp.themes.size());
+                chatThemes = new ArrayList<>(resp.themes.size());
+                for (int i = 0; i < resp.themes.size(); ++i) {
+                    TLRPC.ChatTheme tlChatTheme = resp.themes.get(i);
+                    SerializedData data = new SerializedData(tlChatTheme.getObjectSize());
+                    tlChatTheme.serializeToStream(data);
+                    editor.putString("gift_theme_" + (giftThemesOffset + i), Utilities.bytesToHex(data.toByteArray()));
+                    EmojiThemes chatTheme = EmojiThemes.createPreviewGiftTheme(currentAccount, tlChatTheme);
+                    chatTheme.preloadWallpaper();
+                    chatThemes.add(chatTheme);
+                }
+                if (resp.next_offset == 0) {
+                    giftThemesOffset = 0;
+                    hasMoreGiftThemes = false;
+                } else {
+                    giftThemesOffset = resp.next_offset;
+                    hasMoreGiftThemes = true;
+                }
+                editor.putBoolean("hasMoreGiftThemes", hasMoreGiftThemes);
+                editor.apply();
+                    
+            } else if (response instanceof TL_account.TL_chatThemesNotModified) {
+
+            } else {
+                isError = true;
+                callback.onError(error);
+            }
+            if (!isError && !chatThemes.isEmpty()) {
+                callback.onComplete(chatThemes);
+            }
+        }));
     }
 
     private SharedPreferences getSharedPreferences() {
@@ -291,6 +306,7 @@ public class ChatThemeController extends BaseController {
                     }
                 }
             }
+
             @Override
             public void onError(TLRPC.TL_error error) {
                 callback.onComplete(null);
@@ -307,6 +323,7 @@ public class ChatThemeController extends BaseController {
                     }
                 }
             }
+
             @Override
             public void onError(TLRPC.TL_error error) {
                 callback.onComplete(null);
@@ -550,7 +567,7 @@ public class ChatThemeController extends BaseController {
                 } else {
                     userFull.wallpaper_overridden = false;
                     userFull.wallpaper = null;
-                    userFull.flags &=~ 16777216;
+                    userFull.flags &= ~16777216;
                 }
                 getMessagesStorage().updateUserInfo(userFull, false);
                 saveChatWallpaper(dialogId, userFull.wallpaper);
@@ -570,7 +587,7 @@ public class ChatThemeController extends BaseController {
                     chatFull.flags2 |= 128;
                 } else {
                     chatFull.wallpaper = null;
-                    chatFull.flags2 &=~ 128;
+                    chatFull.flags2 &= ~128;
                 }
                 getMessagesStorage().updateChatInfo(chatFull, false);
                 saveChatWallpaper(dialogId, chatFull.wallpaper);
