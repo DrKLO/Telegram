@@ -40,7 +40,6 @@ import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.FileRefController;
 import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.MessagesStorage;
@@ -740,10 +739,15 @@ public class StarsController {
         }
         new StarsIntroActivity.StarsNeededSheet(activity, null, amount, StarsIntroActivity.StarsNeededSheet.TYPE_LINK, purpose, () -> {
 
-        }).show();
+        }, 0).show();
     }
 
-    public void buy(Activity activity, TL_stars.TL_starsTopupOption option, Utilities.Callback2<Boolean, String> whenDone) {
+    public void buy(
+        Activity activity,
+        TL_stars.TL_starsTopupOption option,
+        Utilities.Callback2<Boolean, String> whenDone,
+        TLRPC.InputPeer purposePeer
+    ) {
         if (activity == null) {
             return;
         }
@@ -759,15 +763,11 @@ public class StarsController {
         }
 
         if (BuildVars.useInvoiceBilling() || !BillingController.getInstance().isReady()) {
-            TLRPC.TL_inputStorePaymentStarsTopup payload = new TLRPC.TL_inputStorePaymentStarsTopup();
-            payload.stars = option.stars;
-            payload.currency = option.currency;
-            payload.amount = option.amount;
-
-            TLRPC.TL_inputStorePaymentStarsTopup purpose = new TLRPC.TL_inputStorePaymentStarsTopup();
+            final TLRPC.TL_inputStorePaymentStarsTopup purpose = new TLRPC.TL_inputStorePaymentStarsTopup();
             purpose.stars = option.stars;
             purpose.amount = option.amount;
             purpose.currency = option.currency;
+            purpose.spend_purpose_peer = purposePeer;
 
             TLRPC.TL_inputInvoiceStars invoice = new TLRPC.TL_inputInvoiceStars();
             invoice.purpose = purpose;
@@ -1308,7 +1308,7 @@ public class StarsController {
                             whenDone.run(true);
                         }
                     });
-                });
+                }, dialogId);
                 sheet.setOnDismissListener(d -> {
                     if (whenDone != null && !purchased[0]) {
                         whenDone.run(false);
@@ -1381,7 +1381,7 @@ public class StarsController {
                             whenDone.run(true);
                         }
                     });
-                });
+                }, 0); // TODO: purpose peer for chat invite?
                 sheet.setOnDismissListener(d -> {
                     if (whenDone != null && !purchased[0]) {
                         whenDone.run(false);
@@ -1523,7 +1523,7 @@ public class StarsController {
                             whenDone.run(success);
                         }
                     });
-                });
+                }, dialogId);
                 sheet.setOnDismissListener(d -> {
                     if (whenDone != null && !purchased[0]) {
                         whenDone.run(false);
@@ -1639,7 +1639,7 @@ public class StarsController {
                             whenDone.run(did, success);
                         }
                     });
-                });
+                }, 0); // TODO: purpose peer for chat invite?
                 sheet.setOnDismissListener(d -> {
                     if (whenDone != null && !purchased[0]) {
                         whenDone.run(0L, false);
@@ -2026,7 +2026,7 @@ public class StarsController {
                 if (context == null) context = ApplicationLoader.applicationContext;
                 new StarsIntroActivity.StarsNeededSheet(context, chatActivity.getResourceProvider(), totalStars, StarsIntroActivity.StarsNeededSheet.TYPE_REACTIONS, name, () -> {
                     sendPaidReaction(messageObject, chatActivity, totalStars, true, true, peer);
-                }).show();
+                }, 0).show();
 
                 return;
             }
@@ -2074,7 +2074,7 @@ public class StarsController {
                         if (context == null) context = ApplicationLoader.applicationContext;
                         new StarsIntroActivity.StarsNeededSheet(context, chatActivity.getResourceProvider(), totalStars, StarsIntroActivity.StarsNeededSheet.TYPE_REACTIONS, name, () -> {
                             sendPaidReaction(messageObject, chatActivity, totalStars, true, true, peer);
-                        }).show();
+                        }, 0).show();
                     }
 
                     invalidateTransactions(false);
@@ -2124,7 +2124,7 @@ public class StarsController {
             if (context == null) return null;
             new StarsIntroActivity.StarsNeededSheet(context, chatActivity.getResourceProvider(), totalStars, StarsIntroActivity.StarsNeededSheet.TYPE_REACTIONS, name, () -> {
                 sendPaidReaction(messageObject, chatActivity, totalStars, true, true, peer);
-            }).show();
+            }, 0).show();
             return null;
         }
         if (currentPendingReactions == null || !currentPendingReactions.message.equals(key)) {
@@ -2152,7 +2152,7 @@ public class StarsController {
             }
             new StarsIntroActivity.StarsNeededSheet(context, chatActivity.getResourceProvider(), totalStars2, StarsIntroActivity.StarsNeededSheet.TYPE_REACTIONS, name, () -> {
                 sendPaidReaction(messageObject, chatActivity, totalStars2, true, true, peer);
-            }).show();
+            }, 0).show();
             return null;
         }
         currentPendingReactions.add(amount, (messageObject != null && !messageObject.doesPaidReactionExist()) || affect);
@@ -2508,7 +2508,7 @@ public class StarsController {
                         StarsIntroActivity.StarsNeededSheet sheet = new StarsIntroActivity.StarsNeededSheet(context, resourcesProvider, stars, StarsIntroActivity.StarsNeededSheet.TYPE_STAR_GIFT_BUY, name, () -> {
                             purchased[0] = true;
                             buyPremiumGift(dialogId, option, text, whenDone);
-                        });
+                        }, 0);
                         sheet.setOnDismissListener(d -> {
                             if (whenDone != null && !purchased[0]) {
                                 whenDone.run(false, null);
@@ -2672,7 +2672,7 @@ public class StarsController {
                         StarsIntroActivity.StarsNeededSheet sheet = new StarsIntroActivity.StarsNeededSheet(context, resourcesProvider, stars, StarsIntroActivity.StarsNeededSheet.TYPE_STAR_GIFT_BUY, name, () -> {
                             purchased[0] = true;
                             buyStarGift(gift, anonymous, upgraded, dialogId, text, whenDone);
-                        });
+                        }, 0);
                         sheet.setOnDismissListener(d -> {
                             if (whenDone != null && !purchased[0]) {
                                 whenDone.run(false, null);
@@ -2754,6 +2754,8 @@ public class StarsController {
                     if (fragment instanceof ChatActivity && ((ChatActivity) fragment).getDialogId() == dialogId) {
                         BulletinFactory.of(fragment).createEmojiBulletin(gift.sticker, getString(R.string.StarsGiftCompleted), overrideToastSubtitle != null ? overrideToastSubtitle : AndroidUtilities.replaceTags(formatPluralString("StarsGiftCompletedText", (int) stars/*, UserObject.getForcedFirstName(user)*/))).show(true);
                     } else {
+                        NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.closeProfileActivity, dialogId, false);
+                        NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.closeChatActivity, dialogId, false);
                         final ChatActivity chatActivity = ChatActivity.of(dialogId);
                         chatActivity.whenFullyVisible(() -> {
                             BulletinFactory.of(chatActivity).createEmojiBulletin(gift.sticker, getString(R.string.StarsGiftCompleted), overrideToastSubtitle != null ? overrideToastSubtitle : AndroidUtilities.replaceTags(formatPluralString("StarsGiftCompletedText", (int) stars/*, UserObject.getForcedFirstName(user)*/))).show(true);
@@ -2892,7 +2894,7 @@ public class StarsController {
                     StarsIntroActivity.StarsNeededSheet sheet = new StarsIntroActivity.StarsNeededSheet(context, resourcesProvider, stars, StarsIntroActivity.StarsNeededSheet.TYPE_STAR_GIFT_BUY, name, () -> {
                         purchased[0] = true;
                         buyResellingGift(form, gift, dialogId, whenDone);
-                    });
+                    }, 0);
                     sheet.setOnDismissListener(d -> {
                         if (whenDone != null && !purchased[0]) {
                             whenDone.run(false, null);
@@ -3358,11 +3360,16 @@ public class StarsController {
     }
 
     public interface IGiftsList {
+        void notifyUpdate();
+
         int getLoadedCount();
+        void set(int index, Object obj);
         Object get(int index);
         int indexOf(Object object);
         int getTotalCount();
         void load();
+
+        int findGiftToUpgrade(int from);
     }
 
     public static class GiftsList implements IGiftsList {
@@ -3384,6 +3391,11 @@ public class StarsController {
         public void setCollectionId(int collection_id) {
             isCollection = true;
             collectionId = collection_id;
+        }
+
+        @Override
+        public void notifyUpdate() {
+            NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.starUserGiftsLoaded, dialogId, GiftsList.this);
         }
 
         public void updateGiftsCollections(TL_stars.SavedStarGift gift, int collection_id, boolean included) {
@@ -3412,30 +3424,121 @@ public class StarsController {
             }
         }
 
+        public int findGiftToUpgrade(int fromIndex) {
+            if (!StarGiftSheet.isMineWithActions(currentAccount, dialogId)) return -1;
+            for (int index = fromIndex + 1; index < gifts.size(); ++index) {
+                final TL_stars.SavedStarGift gift = gifts.get(index);
+                if (gift.can_upgrade) {
+                    return index;
+                }
+            }
+            for (int index = fromIndex - 1; index >= 0; --index) {
+                final TL_stars.SavedStarGift gift = gifts.get(index);
+                if (gift.can_upgrade) {
+                    return index;
+                }
+            }
+            return -1;
+        }
+
+        public void set(int index, Object obj) {
+            if (obj instanceof TL_stars.SavedStarGift) {
+                try {
+                    this.gifts.set(index, (TL_stars.SavedStarGift) obj);
+                } catch (Exception e) {
+                    FileLog.e(e);
+                }
+            }
+        }
+
         public boolean sort_by_date = true; // false => sort_by_value
 
-        public boolean include_unlimited = true;
-        public boolean include_limited = true;
-        public boolean include_unique = true;
+        public static final int INCLUDE_TYPE_UNLIMITED_FLAG = 1;
+        public static final int INCLUDE_TYPE_LIMITED_FLAG = 1 << 1;
+        public static final int INCLUDE_TYPE_UPGRADABLE_FLAG = 1 << 2;
+        public static final int INCLUDE_TYPE_UNIQUE_FLAG = 1 << 3;
+        private static final int INCLUDE_TYPE_MASK = INCLUDE_TYPE_UNLIMITED_FLAG | INCLUDE_TYPE_LIMITED_FLAG | INCLUDE_TYPE_UPGRADABLE_FLAG | INCLUDE_TYPE_UNIQUE_FLAG;
 
-        public boolean include_displayed = true;
-        public boolean include_hidden = true;
+        public static final int INCLUDE_VISIBILITY_DISPLAYED_FLAG = 1 << 8;
+        public static final int INCLUDE_VISIBILITY_HIDDEN_FLAG = 1 << 9;
+        private static final int INCLUDE_VISIBILITY_MASK = INCLUDE_VISIBILITY_DISPLAYED_FLAG | INCLUDE_VISIBILITY_HIDDEN_FLAG;
+
+        private int includeFlags = INCLUDE_TYPE_MASK | INCLUDE_VISIBILITY_MASK;
+
+        private int getMask(int flag) {
+            if ((flag & INCLUDE_TYPE_MASK) != 0) {
+                return INCLUDE_TYPE_MASK;
+            }
+            if ((flag & INCLUDE_VISIBILITY_MASK) != 0) {
+                return INCLUDE_VISIBILITY_MASK;
+            }
+            return 0;
+        }
+
+        public void forceTypeIncludeFlag(int flag, boolean invalidate) {
+            final int mask = getMask(flag);
+
+            int newFlags = includeFlags & ~mask | flag;
+            if (this.includeFlags != newFlags) {
+                this.includeFlags = newFlags;
+                if (invalidate) {
+                    invalidate(true);
+                }
+            }
+        }
+
+        public void toggleTypeIncludeFlag(int flag) {
+            final int mask = getMask(flag);
+
+            int flags = includeFlags & mask;
+            flags = TLObject.setFlag(flags, flag, !TLObject.hasFlag(flags, flag));
+            if (flags == 0) {
+                flags = mask & ~flag;
+            }
+
+            int newFlags = includeFlags & ~mask | flags;
+
+            if (this.includeFlags != newFlags) {
+                this.includeFlags = newFlags;
+                invalidate(true);
+            }
+        }
 
         public Boolean chat_notifications_enabled;
 
         public void resetFilters() {
             if (!hasFilters()) return;
+            includeFlags = INCLUDE_TYPE_MASK | INCLUDE_VISIBILITY_MASK;
             sort_by_date = true;
-            include_unlimited = true;
-            include_limited = true;
-            include_unique = true;
-            include_displayed = true;
-            include_hidden = true;
             invalidate(true);
         }
 
         public boolean hasFilters() {
-            return !(sort_by_date && include_unlimited && include_limited && include_unique && include_displayed && include_hidden);
+            return !(sort_by_date && includeFlags == (INCLUDE_TYPE_MASK | INCLUDE_VISIBILITY_MASK));
+        }
+
+        public boolean isInclude_unlimited() {
+            return TLObject.hasFlag(includeFlags, INCLUDE_TYPE_UNLIMITED_FLAG);
+        }
+
+        public boolean isInclude_limited() {
+            return TLObject.hasFlag(includeFlags, INCLUDE_TYPE_LIMITED_FLAG);
+        }
+
+        public boolean isInclude_upgradable() {
+            return TLObject.hasFlag(includeFlags, INCLUDE_TYPE_UPGRADABLE_FLAG);
+        }
+
+        public boolean isInclude_unique() {
+            return TLObject.hasFlag(includeFlags, INCLUDE_TYPE_UNIQUE_FLAG);
+        }
+
+        public boolean isInclude_displayed() {
+            return TLObject.hasFlag(includeFlags, INCLUDE_VISIBILITY_DISPLAYED_FLAG);
+        }
+
+        public boolean isInclude_hidden() {
+            return TLObject.hasFlag(includeFlags, INCLUDE_VISIBILITY_HIDDEN_FLAG);
         }
 
         public boolean loading;
@@ -3484,11 +3587,12 @@ public class StarsController {
             loading = true;
             final TL_stars.getSavedStarGifts req = new TL_stars.getSavedStarGifts();
             req.sort_by_value = !sort_by_date;
-            req.exclude_limited = !include_limited;
-            req.exclude_unlimited = !include_unlimited;
-            req.exclude_unique = !include_unique;
-            req.exclude_saved = !include_displayed;
-            req.exclude_unsaved = !include_hidden;
+            req.exclude_unupgradable = !isInclude_limited();
+            req.exclude_upgradable = !isInclude_upgradable();
+            req.exclude_unlimited = !isInclude_unlimited();
+            req.exclude_unique = !isInclude_unique();
+            req.exclude_saved = !isInclude_displayed();
+            req.exclude_unsaved = !isInclude_hidden();
             if (dialogId == 0) {
                 req.peer = new TLRPC.TL_inputPeerSelf();
             } else {

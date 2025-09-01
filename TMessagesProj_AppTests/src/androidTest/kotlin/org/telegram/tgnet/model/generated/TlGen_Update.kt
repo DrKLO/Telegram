@@ -1091,8 +1091,8 @@ public sealed class TlGen_Update : TlGen_Object {
       stream.writeInt64(channel_id)
       stream.writeInt32(top_msg_id)
       stream.writeInt32(read_max_id)
-      multiflags_0?.broadcast_id?.let { stream.writeInt64(it) }
-      multiflags_0?.broadcast_post?.let { stream.writeInt32(it) }
+      multiflags_0?.let { stream.writeInt64(it.broadcast_id) }
+      multiflags_0?.let { stream.writeInt32(it.broadcast_post) }
     }
 
     public data class Multiflags_0(
@@ -1518,14 +1518,31 @@ public sealed class TlGen_Update : TlGen_Object {
     }
   }
 
+  public data class TL_updateStoryID(
+    public val id: Int,
+    public val random_id: Long,
+  ) : TlGen_Update() {
+    public override fun serializeToStream(stream: OutputSerializedData) {
+      stream.writeInt32(MAGIC.toInt())
+      stream.writeInt32(id)
+      stream.writeInt64(random_id)
+    }
+
+    public companion object {
+      public const val MAGIC: UInt = 0x1BF335B9U
+    }
+  }
+
   public data class TL_updateNewAuthorization(
     public val hash: Long,
     public val multiflags_0: Multiflags_0?,
   ) : TlGen_Update() {
+    public val unconfirmed: Boolean = multiflags_0 != null
+
     internal val flags: UInt
       get() {
         var result = 0U
-        if (multiflags_0 != null) result = result or 1U
+        if (unconfirmed) result = result or 1U
         return result
       }
 
@@ -1533,13 +1550,12 @@ public sealed class TlGen_Update : TlGen_Object {
       stream.writeInt32(MAGIC.toInt())
       stream.writeInt32(flags.toInt())
       stream.writeInt64(hash)
-      multiflags_0?.date?.let { stream.writeInt32(it) }
-      multiflags_0?.device?.let { stream.writeString(it) }
-      multiflags_0?.location?.let { stream.writeString(it) }
+      multiflags_0?.let { stream.writeInt32(it.date) }
+      multiflags_0?.let { stream.writeString(it.device) }
+      multiflags_0?.let { stream.writeString(it.location) }
     }
 
     public data class Multiflags_0(
-      public val unconfirmed: Boolean,
       public val date: Int,
       public val device: String,
       public val location: String,
@@ -1628,21 +1644,6 @@ public sealed class TlGen_Update : TlGen_Object {
 
     public companion object {
       public const val MAGIC: UInt = 0xF74E932BU
-    }
-  }
-
-  public data class TL_updateStoryID(
-    public val id: Int,
-    public val random_id: Long,
-  ) : TlGen_Update() {
-    public override fun serializeToStream(stream: OutputSerializedData) {
-      stream.writeInt32(MAGIC.toInt())
-      stream.writeInt32(id)
-      stream.writeInt64(random_id)
-    }
-
-    public companion object {
-      public const val MAGIC: UInt = 0x1BF335B9U
     }
   }
 

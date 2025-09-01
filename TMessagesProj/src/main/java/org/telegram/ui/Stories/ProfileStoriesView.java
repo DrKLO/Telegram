@@ -678,8 +678,8 @@ public class ProfileStoriesView extends View implements NotificationCenter.Notif
                 float read = circle.cachedRead;
 
                 float r = dp(28) / 2f * scale;
-//                float cx = left + r + ix;
-                float cx = expandRight - w + r + ix;
+                float cx = left + r + ix;
+//                float cx = expandRight - w + r + ix;
                 ix += dp(18) * scale;
 
                 maxX = Math.max(maxX, cx + r);
@@ -697,25 +697,25 @@ public class ProfileStoriesView extends View implements NotificationCenter.Notif
             unreadPaint = gradientTools.getPaint(rect2);
             unreadPaint.setStrokeWidth(lerp(dpf2(2.33f), dpf2(1.5f), expandProgress));
             readPaint.setStrokeWidth(lerp(dpf2(1.125f), dpf2(1.5f), expandProgress));
-            if (expandProgress > 0) {
-                for (int i = 0; i < circles.size(); ++i) {
-                    StoryCircle circle = circles.get(i);
-                    int wasAlpha = whitePaint.getAlpha();
-                    whitePaint.setAlpha((int) (wasAlpha * expandProgress));
-                    canvas.drawCircle(
-                            circle.cachedRect.centerX(),
-                            circle.cachedRect.centerY(),
-                            Math.min(circle.cachedRect.width(), circle.cachedRect.height()) / 2f +
-                                    lerp(
-                                            dpf2(2.66f) + unreadPaint.getStrokeWidth() / 2f,
-                                            dpf2(2.33f) - readPaint.getStrokeWidth() / 2f,
-                                            circle.cachedRead
-                                    ) * expandProgress,
-                            whitePaint
-                    );
-                    whitePaint.setAlpha(wasAlpha);
-                }
-            }
+//            if (expandProgress > 0) {
+//                for (int i = 0; i < circles.size(); ++i) {
+//                    StoryCircle circle = circles.get(i);
+//                    int wasAlpha = whitePaint.getAlpha();
+//                    whitePaint.setAlpha((int) (wasAlpha * expandProgress));
+//                    canvas.drawCircle(
+//                            circle.cachedRect.centerX(),
+//                            circle.cachedRect.centerY(),
+//                            Math.min(circle.cachedRect.width(), circle.cachedRect.height()) / 2f +
+//                                    lerp(
+//                                            dpf2(2.66f) + unreadPaint.getStrokeWidth() / 2f,
+//                                            dpf2(2.33f) - readPaint.getStrokeWidth() / 2f,
+//                                            circle.cachedRead
+//                                    ) * expandProgress,
+//                            whitePaint
+//                    );
+//                    whitePaint.setAlpha(wasAlpha);
+//                }
+//            }
             for (int i = 0; i < circles.size(); ++i) {
                 StoryCircle B = circles.get(i);
                 StoryCircle A = nearest(i - 2 >= 0 ? circles.get(i - 2) : null, i - 1 >= 0 ? circles.get(i - 1) : null, B);
@@ -764,6 +764,16 @@ public class ProfileStoriesView extends View implements NotificationCenter.Notif
         }
 
         canvas.restore();
+
+        float titleAlpha = Math.max(0, (expandProgress - .5f) * 2f);
+        if (titleAlpha > 0) {
+            float left = lerp(rect1.right + dp(16), maxX + dp(12), expandProgress);
+            float right = lerp(getWidth(), rright, expandProgress);
+            float y = lerp(rect1.centerY(), this.cy, expandProgress);
+            titleDrawable.setBounds((int) (left), (int) (y - dp(18)), (int) (right), (int) (y  + dp(18)));
+            titleDrawable.setAlpha((int) (0xFF * titleAlpha));
+            titleDrawable.draw(canvas);
+        }
     }
 
     private void animateBounce() {
@@ -1118,7 +1128,7 @@ public class ProfileStoriesView extends View implements NotificationCenter.Notif
         if (expandProgress < .9f) {
             hit = rect2.contains(event.getX(), event.getY());
         } else {
-            hit = event.getX() >= getExpandRight() - w - dp(32) && event.getX() <= getExpandRight() + dp(32) && Math.abs(event.getY() - expandY) < dp(32);
+            hit = event.getX() >= left && event.getX() <= right && Math.abs(event.getY() - cy) < dp(32);
         }
         if (hit && event.getAction() == MotionEvent.ACTION_DOWN) {
             tapTime = System.currentTimeMillis();

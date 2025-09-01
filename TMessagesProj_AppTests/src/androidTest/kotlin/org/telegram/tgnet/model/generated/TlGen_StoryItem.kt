@@ -120,6 +120,60 @@ public sealed class TlGen_StoryItem : TlGen_Object {
     }
   }
 
+  public data class TL_storyItem_layer160(
+    public val pinned: Boolean,
+    public val `public`: Boolean,
+    public val close_friends: Boolean,
+    public val min: Boolean,
+    public val noforwards: Boolean,
+    public val edited: Boolean,
+    public val contacts: Boolean,
+    public val selected_contacts: Boolean,
+    public val id: Int,
+    public val date: Int,
+    public val expire_date: Int,
+    public val caption: String?,
+    public val entities: List<TlGen_MessageEntity>?,
+    public val media: TlGen_MessageMedia,
+    public val privacy: List<TlGen_PrivacyRule>?,
+    public val views: TlGen_StoryViews?,
+  ) : TlGen_Object {
+    internal val flags: UInt
+      get() {
+        var result = 0U
+        if (caption != null) result = result or 1U
+        if (entities != null) result = result or 2U
+        if (privacy != null) result = result or 4U
+        if (views != null) result = result or 8U
+        if (pinned) result = result or 32U
+        if (public) result = result or 128U
+        if (close_friends) result = result or 256U
+        if (min) result = result or 512U
+        if (noforwards) result = result or 1024U
+        if (edited) result = result or 2048U
+        if (contacts) result = result or 4096U
+        if (selected_contacts) result = result or 8192U
+        return result
+      }
+
+    public override fun serializeToStream(stream: OutputSerializedData) {
+      stream.writeInt32(MAGIC.toInt())
+      stream.writeInt32(flags.toInt())
+      stream.writeInt32(id)
+      stream.writeInt32(date)
+      stream.writeInt32(expire_date)
+      caption?.let { stream.writeString(it) }
+      entities?.let { TlGen_Vector.serialize(stream, it) }
+      media.serializeToStream(stream)
+      privacy?.let { TlGen_Vector.serialize(stream, it) }
+      views?.serializeToStream(stream)
+    }
+
+    public companion object {
+      public const val MAGIC: UInt = 0x562AA637U
+    }
+  }
+
   public data class TL_storyItem_layer173(
     public val pinned: Boolean,
     public val `public`: Boolean,

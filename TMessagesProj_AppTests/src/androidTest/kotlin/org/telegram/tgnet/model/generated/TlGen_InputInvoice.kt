@@ -193,4 +193,19 @@ public sealed class TlGen_InputInvoice : TlGen_Object {
       public const val MAGIC: UInt = 0xC39F5324U
     }
   }
+
+  public data class TL_inputInvoiceStarGiftPrepaidUpgrade(
+    public val peer: TlGen_InputPeer,
+    public val hash: String,
+  ) : TlGen_InputInvoice() {
+    public override fun serializeToStream(stream: OutputSerializedData) {
+      stream.writeInt32(MAGIC.toInt())
+      peer.serializeToStream(stream)
+      stream.writeString(hash)
+    }
+
+    public companion object {
+      public const val MAGIC: UInt = 0x9A0B48B8U
+    }
+  }
 }

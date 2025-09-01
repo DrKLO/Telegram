@@ -123,7 +123,7 @@ public class BottomSheetTabsOverlay extends FrameLayout {
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(heightMeasureSpec) + AndroidUtilities.navigationBarHeight, MeasureSpec.EXACTLY));
+        super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(heightMeasureSpec) + (Build.VERSION.SDK_INT < 35 ? AndroidUtilities.navigationBarHeight : 0), MeasureSpec.EXACTLY));
     }
 
     public void setTabsView(BottomSheetTabs tabsView) {

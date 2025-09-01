@@ -187,6 +187,9 @@ public class SizeNotifierFrameLayout extends FrameLayout {
                 if (attached && backgroundDrawable instanceof ChatBackgroundDrawable) {
                     ((ChatBackgroundDrawable) backgroundDrawable).onAttachedToWindow(this);
                 }
+                if (attached && backgroundDrawable instanceof MotionBackgroundDrawable) {
+                    ((MotionBackgroundDrawable) backgroundDrawable).onAttachedToWindow();
+                }
                 backgroundMotion = newMotion;
                 themeAnimationValue = 0f;
                 checkMotion();
@@ -330,6 +333,9 @@ public class SizeNotifierFrameLayout extends FrameLayout {
                     if (attached && oldBackgroundDrawable instanceof ChatBackgroundDrawable) {
                         ((ChatBackgroundDrawable) oldBackgroundDrawable).onDetachedFromWindow(backgroundView);
                     }
+                    if (attached && oldBackgroundDrawable instanceof MotionBackgroundDrawable) {
+                        ((MotionBackgroundDrawable) oldBackgroundDrawable).onDetachedFromWindow();
+                    }
                     oldBackgroundDrawable = null;
                     oldBackgroundMotion = false;
                     checkMotion();
@@ -360,6 +366,12 @@ public class SizeNotifierFrameLayout extends FrameLayout {
         backgroundDrawable = bitmap;
         if (attached && backgroundDrawable instanceof ChatBackgroundDrawable) {
             ((ChatBackgroundDrawable) backgroundDrawable).onAttachedToWindow(backgroundView);
+        }
+        if (attached && backgroundDrawable instanceof MotionBackgroundDrawable) {
+            ((MotionBackgroundDrawable) backgroundDrawable).onDetachedFromWindow();
+        }
+        if (attached && backgroundDrawable instanceof MotionBackgroundDrawable) {
+            ((MotionBackgroundDrawable) backgroundDrawable).onAttachedToWindow();
         }
         checkMotion();
         backgroundView.invalidate();
@@ -843,8 +855,14 @@ public class SizeNotifierFrameLayout extends FrameLayout {
         if (backgroundDrawable instanceof ChatBackgroundDrawable) {
             ((ChatBackgroundDrawable) backgroundDrawable).onAttachedToWindow(backgroundView);
         }
+        if (backgroundDrawable instanceof MotionBackgroundDrawable) {
+            ((MotionBackgroundDrawable) backgroundDrawable).onAttachedToWindow();
+        }
         if (oldBackgroundDrawable instanceof ChatBackgroundDrawable) {
             ((ChatBackgroundDrawable) oldBackgroundDrawable).onAttachedToWindow(backgroundView);
+        }
+        if (oldBackgroundDrawable instanceof MotionBackgroundDrawable) {
+            ((MotionBackgroundDrawable) oldBackgroundDrawable).onAttachedToWindow();
         }
     }
 
@@ -876,6 +894,12 @@ public class SizeNotifierFrameLayout extends FrameLayout {
         }
         if (oldBackgroundDrawable instanceof ChatBackgroundDrawable) {
             ((ChatBackgroundDrawable) oldBackgroundDrawable).onDetachedFromWindow(backgroundView);
+        }
+        if (backgroundDrawable instanceof MotionBackgroundDrawable) {
+            ((MotionBackgroundDrawable) backgroundDrawable).onDetachedFromWindow();
+        }
+        if (oldBackgroundDrawable instanceof MotionBackgroundDrawable) {
+            ((MotionBackgroundDrawable) oldBackgroundDrawable).onDetachedFromWindow();
         }
     }
 

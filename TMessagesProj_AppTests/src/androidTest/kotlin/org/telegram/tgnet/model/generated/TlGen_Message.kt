@@ -203,8 +203,8 @@ public sealed class TlGen_Message : TlGen_Object {
       media?.serializeToStream(stream)
       reply_markup?.serializeToStream(stream)
       entities?.let { TlGen_Vector.serialize(stream, it) }
-      multiflags_10?.views?.let { stream.writeInt32(it) }
-      multiflags_10?.forwards?.let { stream.writeInt32(it) }
+      multiflags_10?.let { stream.writeInt32(it.views) }
+      multiflags_10?.let { stream.writeInt32(it.forwards) }
       replies?.serializeToStream(stream)
       edit_date?.let { stream.writeInt32(it) }
       post_author?.let { stream.writeString(it) }
@@ -433,8 +433,8 @@ public sealed class TlGen_Message : TlGen_Object {
       stream.writeInt32(id)
       stream.writeInt32(from_id)
       to_id.serializeToStream(stream)
-      multiflags_2?.fwd_from_id?.let { stream.writeInt32(it) }
-      multiflags_2?.fwd_date?.let { stream.writeInt32(it) }
+      multiflags_2?.let { stream.writeInt32(it.fwd_from_id) }
+      multiflags_2?.let { stream.writeInt32(it.fwd_date) }
       reply_to_msg_id?.let { stream.writeInt32(it) }
       stream.writeInt32(date)
       stream.writeString(message)
@@ -485,8 +485,8 @@ public sealed class TlGen_Message : TlGen_Object {
       stream.writeInt32(id)
       stream.writeInt32(from_id)
       to_id.serializeToStream(stream)
-      multiflags_2?.fwd_from_id?.let { stream.writeInt32(it) }
-      multiflags_2?.fwd_date?.let { stream.writeInt32(it) }
+      multiflags_2?.let { stream.writeInt32(it.fwd_from_id) }
+      multiflags_2?.let { stream.writeInt32(it.fwd_date) }
       reply_to_msg_id?.let { stream.writeInt32(it) }
       stream.writeInt32(date)
       stream.writeString(message)
@@ -540,8 +540,8 @@ public sealed class TlGen_Message : TlGen_Object {
       stream.writeInt32(id)
       stream.writeInt32(from_id)
       to_id.serializeToStream(stream)
-      multiflags_2?.fwd_from_id?.let { stream.writeInt32(it) }
-      multiflags_2?.fwd_date?.let { stream.writeInt32(it) }
+      multiflags_2?.let { stream.writeInt32(it.fwd_from_id) }
+      multiflags_2?.let { stream.writeInt32(it.fwd_date) }
       reply_to_msg_id?.let { stream.writeInt32(it) }
       stream.writeInt32(date)
       stream.writeString(message)
@@ -597,8 +597,8 @@ public sealed class TlGen_Message : TlGen_Object {
       stream.writeInt32(id)
       stream.writeInt32(from_id)
       to_id.serializeToStream(stream)
-      multiflags_2?.fwd_from_id?.let { stream.writeInt32(it) }
-      multiflags_2?.fwd_date?.let { stream.writeInt32(it) }
+      multiflags_2?.let { stream.writeInt32(it.fwd_from_id) }
+      multiflags_2?.let { stream.writeInt32(it.fwd_date) }
       reply_to_msg_id?.let { stream.writeInt32(it) }
       stream.writeInt32(date)
       stream.writeString(message)
@@ -657,8 +657,8 @@ public sealed class TlGen_Message : TlGen_Object {
       stream.writeInt32(id)
       from_id?.let { stream.writeInt32(it) }
       to_id.serializeToStream(stream)
-      multiflags_2?.fwd_from_id?.serializeToStream(stream)
-      multiflags_2?.fwd_date?.let { stream.writeInt32(it) }
+      multiflags_2?.let { it.fwd_from_id.serializeToStream(stream) }
+      multiflags_2?.let { stream.writeInt32(it.fwd_date) }
       reply_to_msg_id?.let { stream.writeInt32(it) }
       stream.writeInt32(date)
       stream.writeString(message)
@@ -761,8 +761,8 @@ public sealed class TlGen_Message : TlGen_Object {
       stream.writeInt32(id)
       from_id?.let { stream.writeInt32(it) }
       to_id.serializeToStream(stream)
-      multiflags_2?.fwd_from_id?.serializeToStream(stream)
-      multiflags_2?.fwd_date?.let { stream.writeInt32(it) }
+      multiflags_2?.let { it.fwd_from_id.serializeToStream(stream) }
+      multiflags_2?.let { stream.writeInt32(it.fwd_date) }
       via_bot_id?.let { stream.writeInt32(it) }
       reply_to_msg_id?.let { stream.writeInt32(it) }
       stream.writeInt32(date)
@@ -1175,8 +1175,8 @@ public sealed class TlGen_Message : TlGen_Object {
       media?.serializeToStream(stream)
       reply_markup?.serializeToStream(stream)
       entities?.let { TlGen_Vector.serialize(stream, it) }
-      multiflags_10?.views?.let { stream.writeInt32(it) }
-      multiflags_10?.forwards?.let { stream.writeInt32(it) }
+      multiflags_10?.let { stream.writeInt32(it.views) }
+      multiflags_10?.let { stream.writeInt32(it.forwards) }
       replies?.serializeToStream(stream)
       edit_date?.let { stream.writeInt32(it) }
       post_author?.let { stream.writeString(it) }
@@ -1310,8 +1310,8 @@ public sealed class TlGen_Message : TlGen_Object {
       media?.serializeToStream(stream)
       reply_markup?.serializeToStream(stream)
       entities?.let { TlGen_Vector.serialize(stream, it) }
-      multiflags_10?.views?.let { stream.writeInt32(it) }
-      multiflags_10?.forwards?.let { stream.writeInt32(it) }
+      multiflags_10?.let { stream.writeInt32(it.views) }
+      multiflags_10?.let { stream.writeInt32(it.forwards) }
       replies?.serializeToStream(stream)
       edit_date?.let { stream.writeInt32(it) }
       post_author?.let { stream.writeString(it) }
@@ -1451,8 +1451,8 @@ public sealed class TlGen_Message : TlGen_Object {
       media?.serializeToStream(stream)
       reply_markup?.serializeToStream(stream)
       entities?.let { TlGen_Vector.serialize(stream, it) }
-      multiflags_10?.views?.let { stream.writeInt32(it) }
-      multiflags_10?.forwards?.let { stream.writeInt32(it) }
+      multiflags_10?.let { stream.writeInt32(it.views) }
+      multiflags_10?.let { stream.writeInt32(it.forwards) }
       replies?.serializeToStream(stream)
       edit_date?.let { stream.writeInt32(it) }
       post_author?.let { stream.writeString(it) }
@@ -1549,8 +1549,8 @@ public sealed class TlGen_Message : TlGen_Object {
       media?.serializeToStream(stream)
       reply_markup?.serializeToStream(stream)
       entities?.let { TlGen_Vector.serialize(stream, it) }
-      multiflags_10?.views?.let { stream.writeInt32(it) }
-      multiflags_10?.forwards?.let { stream.writeInt32(it) }
+      multiflags_10?.let { stream.writeInt32(it.views) }
+      multiflags_10?.let { stream.writeInt32(it.forwards) }
       replies?.serializeToStream(stream)
       edit_date?.let { stream.writeInt32(it) }
       post_author?.let { stream.writeString(it) }
@@ -1651,8 +1651,8 @@ public sealed class TlGen_Message : TlGen_Object {
       media?.serializeToStream(stream)
       reply_markup?.serializeToStream(stream)
       entities?.let { TlGen_Vector.serialize(stream, it) }
-      multiflags_10?.views?.let { stream.writeInt32(it) }
-      multiflags_10?.forwards?.let { stream.writeInt32(it) }
+      multiflags_10?.let { stream.writeInt32(it.views) }
+      multiflags_10?.let { stream.writeInt32(it.forwards) }
       replies?.serializeToStream(stream)
       edit_date?.let { stream.writeInt32(it) }
       post_author?.let { stream.writeString(it) }
@@ -1756,8 +1756,8 @@ public sealed class TlGen_Message : TlGen_Object {
       media?.serializeToStream(stream)
       reply_markup?.serializeToStream(stream)
       entities?.let { TlGen_Vector.serialize(stream, it) }
-      multiflags_10?.views?.let { stream.writeInt32(it) }
-      multiflags_10?.forwards?.let { stream.writeInt32(it) }
+      multiflags_10?.let { stream.writeInt32(it.views) }
+      multiflags_10?.let { stream.writeInt32(it.forwards) }
       replies?.serializeToStream(stream)
       edit_date?.let { stream.writeInt32(it) }
       post_author?.let { stream.writeString(it) }
@@ -1863,8 +1863,8 @@ public sealed class TlGen_Message : TlGen_Object {
       media?.serializeToStream(stream)
       reply_markup?.serializeToStream(stream)
       entities?.let { TlGen_Vector.serialize(stream, it) }
-      multiflags_10?.views?.let { stream.writeInt32(it) }
-      multiflags_10?.forwards?.let { stream.writeInt32(it) }
+      multiflags_10?.let { stream.writeInt32(it.views) }
+      multiflags_10?.let { stream.writeInt32(it.forwards) }
       replies?.serializeToStream(stream)
       edit_date?.let { stream.writeInt32(it) }
       post_author?.let { stream.writeString(it) }
@@ -1983,8 +1983,8 @@ public sealed class TlGen_Message : TlGen_Object {
       media?.serializeToStream(stream)
       reply_markup?.serializeToStream(stream)
       entities?.let { TlGen_Vector.serialize(stream, it) }
-      multiflags_10?.views?.let { stream.writeInt32(it) }
-      multiflags_10?.forwards?.let { stream.writeInt32(it) }
+      multiflags_10?.let { stream.writeInt32(it.views) }
+      multiflags_10?.let { stream.writeInt32(it.forwards) }
       replies?.serializeToStream(stream)
       edit_date?.let { stream.writeInt32(it) }
       post_author?.let { stream.writeString(it) }
@@ -2105,8 +2105,8 @@ public sealed class TlGen_Message : TlGen_Object {
       media?.serializeToStream(stream)
       reply_markup?.serializeToStream(stream)
       entities?.let { TlGen_Vector.serialize(stream, it) }
-      multiflags_10?.views?.let { stream.writeInt32(it) }
-      multiflags_10?.forwards?.let { stream.writeInt32(it) }
+      multiflags_10?.let { stream.writeInt32(it.views) }
+      multiflags_10?.let { stream.writeInt32(it.forwards) }
       replies?.serializeToStream(stream)
       edit_date?.let { stream.writeInt32(it) }
       post_author?.let { stream.writeString(it) }
@@ -2232,8 +2232,8 @@ public sealed class TlGen_Message : TlGen_Object {
       media?.serializeToStream(stream)
       reply_markup?.serializeToStream(stream)
       entities?.let { TlGen_Vector.serialize(stream, it) }
-      multiflags_10?.views?.let { stream.writeInt32(it) }
-      multiflags_10?.forwards?.let { stream.writeInt32(it) }
+      multiflags_10?.let { stream.writeInt32(it.views) }
+      multiflags_10?.let { stream.writeInt32(it.forwards) }
       replies?.serializeToStream(stream)
       edit_date?.let { stream.writeInt32(it) }
       post_author?.let { stream.writeString(it) }
@@ -2362,8 +2362,8 @@ public sealed class TlGen_Message : TlGen_Object {
       media?.serializeToStream(stream)
       reply_markup?.serializeToStream(stream)
       entities?.let { TlGen_Vector.serialize(stream, it) }
-      multiflags_10?.views?.let { stream.writeInt32(it) }
-      multiflags_10?.forwards?.let { stream.writeInt32(it) }
+      multiflags_10?.let { stream.writeInt32(it.views) }
+      multiflags_10?.let { stream.writeInt32(it.forwards) }
       replies?.serializeToStream(stream)
       edit_date?.let { stream.writeInt32(it) }
       post_author?.let { stream.writeString(it) }
@@ -2547,8 +2547,8 @@ public sealed class TlGen_Message : TlGen_Object {
       media?.serializeToStream(stream)
       reply_markup?.serializeToStream(stream)
       entities?.let { TlGen_Vector.serialize(stream, it) }
-      multiflags_10?.views?.let { stream.writeInt32(it) }
-      multiflags_10?.forwards?.let { stream.writeInt32(it) }
+      multiflags_10?.let { stream.writeInt32(it.views) }
+      multiflags_10?.let { stream.writeInt32(it.forwards) }
       replies?.serializeToStream(stream)
       edit_date?.let { stream.writeInt32(it) }
       post_author?.let { stream.writeString(it) }

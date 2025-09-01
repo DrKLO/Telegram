@@ -30,8 +30,13 @@ public class Shaker {
     }
 
     public void concat(Canvas canvas, float alpha) {
+        concat(canvas, alpha, 0, 0);
+    }
+
+    public void concat(Canvas canvas, float alpha, float cx, float cy) {
         final float t = (System.currentTimeMillis() - start) / 1000f;
 
+        canvas.translate(cx, cy);
         canvas.rotate(
             (float) Math.sin(t * r * Math.PI) * 1 * alpha
         );
@@ -39,6 +44,7 @@ public class Shaker {
             (float) Math.cos(t * sx * Math.PI) * dp(.5f) * alpha,
             (float) Math.sin(t * sy * Math.PI) * dp(.5f) * alpha
         );
+        canvas.translate(-cx, -cy);
 
         if (alpha > 0 && invalidate != null) {
             invalidate.run();

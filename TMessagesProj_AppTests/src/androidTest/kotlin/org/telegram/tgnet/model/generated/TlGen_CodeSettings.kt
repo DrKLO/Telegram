@@ -38,8 +38,8 @@ public sealed class TlGen_CodeSettings : TlGen_Object {
       stream.writeInt32(MAGIC.toInt())
       stream.writeInt32(flags.toInt())
       logout_tokens?.let { TlGen_Vector.serializeBytes(stream, it) }
-      multiflags_8?.token?.let { stream.writeString(it) }
-      multiflags_8?.app_sandbox?.let { stream.writeBool(it) }
+      multiflags_8?.let { stream.writeString(it.token) }
+      multiflags_8?.let { stream.writeBool(it.app_sandbox) }
     }
 
     public data class Multiflags_8(

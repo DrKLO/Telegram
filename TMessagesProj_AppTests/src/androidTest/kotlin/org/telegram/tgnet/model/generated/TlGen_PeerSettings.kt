@@ -60,10 +60,10 @@ public sealed class TlGen_PeerSettings : TlGen_Object {
       stream.writeInt32(MAGIC.toInt())
       stream.writeInt32(flags.toInt())
       geo_distance?.let { stream.writeInt32(it) }
-      multiflags_9?.request_chat_title?.let { stream.writeString(it) }
-      multiflags_9?.request_chat_date?.let { stream.writeInt32(it) }
-      multiflags_13?.business_bot_id?.let { stream.writeInt64(it) }
-      multiflags_13?.business_bot_manage_url?.let { stream.writeString(it) }
+      multiflags_9?.let { stream.writeString(it.request_chat_title) }
+      multiflags_9?.let { stream.writeInt32(it.request_chat_date) }
+      multiflags_13?.let { stream.writeInt64(it.business_bot_id) }
+      multiflags_13?.let { stream.writeString(it.business_bot_manage_url) }
       charge_paid_message_stars?.let { stream.writeInt64(it) }
       registration_month?.let { stream.writeString(it) }
       phone_country?.let { stream.writeString(it) }
@@ -187,8 +187,8 @@ public sealed class TlGen_PeerSettings : TlGen_Object {
       stream.writeInt32(MAGIC.toInt())
       stream.writeInt32(flags.toInt())
       geo_distance?.let { stream.writeInt32(it) }
-      multiflags_9?.request_chat_title?.let { stream.writeString(it) }
-      multiflags_9?.request_chat_date?.let { stream.writeInt32(it) }
+      multiflags_9?.let { stream.writeString(it.request_chat_title) }
+      multiflags_9?.let { stream.writeInt32(it.request_chat_date) }
     }
 
     public data class Multiflags_9(
@@ -241,10 +241,10 @@ public sealed class TlGen_PeerSettings : TlGen_Object {
       stream.writeInt32(MAGIC.toInt())
       stream.writeInt32(flags.toInt())
       geo_distance?.let { stream.writeInt32(it) }
-      multiflags_9?.request_chat_title?.let { stream.writeString(it) }
-      multiflags_9?.request_chat_date?.let { stream.writeInt32(it) }
-      multiflags_13?.business_bot_id?.let { stream.writeInt64(it) }
-      multiflags_13?.business_bot_manage_url?.let { stream.writeString(it) }
+      multiflags_9?.let { stream.writeString(it.request_chat_title) }
+      multiflags_9?.let { stream.writeInt32(it.request_chat_date) }
+      multiflags_13?.let { stream.writeInt64(it.business_bot_id) }
+      multiflags_13?.let { stream.writeString(it.business_bot_manage_url) }
     }
 
     public data class Multiflags_9(

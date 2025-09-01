@@ -90,6 +90,14 @@ public class SpoilersTextView extends TextView implements TextSelectionHelper.Si
         });
     }
 
+    public void setOnLinkPressListener(LinkSpanDrawable.LinksTextView.OnLinkPress listener) {
+        onPressListener = listener;
+    }
+
+    public void setOnLinkLongPressListener(LinkSpanDrawable.LinksTextView.OnLinkPress listener) {
+        onLongPressListener = listener;
+    }
+
     public int overrideLinkColor() {
         return Theme.getColor(Theme.key_chat_linkSelectBackground, resourcesProvider);
     }

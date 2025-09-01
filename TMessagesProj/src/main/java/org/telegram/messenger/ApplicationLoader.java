@@ -181,6 +181,19 @@ public class ApplicationLoader extends Application {
         return new File("/data/data/org.telegram.messenger/files");
     }
 
+    public static File getFilesDirFixed(String child) {
+        try {
+            File path = getFilesDirFixed();
+            File dir = new File(path, child);
+            dir.mkdirs();
+
+            return dir;
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+        return null;
+    }
+
     public static void postInitApplication() {
         if (applicationInited || applicationContext == null) {
             return;

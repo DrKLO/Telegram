@@ -1415,7 +1415,7 @@ public class MessagePreviewView extends FrameLayout {
                 } else {
                     minTop -= dp(4);
                     chatTopOffset = Math.max(0, minTop);
-                    chatTopOffset = Math.min((chatTopOffset + (chatListView.getMeasuredHeight() - chatTopOffset)) - (int) (AndroidUtilities.displaySize.y * .8f - buttonsHeight - dp(8)), chatTopOffset);
+                    chatTopOffset = Math.min((chatTopOffset + (chatListView.getMeasuredHeight() - chatTopOffset)) - (int) ((AndroidUtilities.displaySize.y - (Build.VERSION.SDK_INT >= 35 ? AndroidUtilities.navigationBarHeight: 0)) * .8f - buttonsHeight - dp(8)), chatTopOffset);
                 }
 
                 float totalViewsHeight = buttonsHeight - dp(8) + (chatPreviewContainer.getMeasuredHeight() - chatTopOffset);
