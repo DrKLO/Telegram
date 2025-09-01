@@ -591,13 +591,26 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
             }
             for (int i = 0; i < recyclerListView.getChildCount(); i++) {
                 StoryCell cell = (StoryCell) recyclerListView.getChildAt(i);
-                cell.setProgressToCollapsed(collapsedProgress, collapsedProgress2, overscrollPrgoress, overscrollSelectedPosition == cell.position);
+                int adapterPosition = recyclerListView.getChildAdapterPosition(cell);
+                float cellCollapsedProgress = collapsedProgress;
+                if (adapterPosition >= animateFromPosition && adapterPosition < animateFromPosition + animateToDialogIds.size()) {
+                    int positionOffset = adapterPosition - animateFromPosition;
+                    int lastPosition = animateToDialogIds.size() - 1;
+                    
+                    if (positionOffset == lastPosition) {
+                        cellCollapsedProgress = collapsedProgress;
+                    } else if (positionOffset == lastPosition - 1) {
+                        cellCollapsedProgress = (float) Math.pow(collapsedProgress, 0.7f);
+                    } else {
+                        cellCollapsedProgress = (float) Math.pow(collapsedProgress, 0.5f);
+                    }
+                }
+                cell.setProgressToCollapsed(cellCollapsedProgress, collapsedProgress2, overscrollPrgoress, overscrollSelectedPosition == cell.position);
                 float ovescrollSelectProgress = Utilities.clamp((overscrollPrgoress - 0.5f) / 0.5f, 1f, 0f);
                 float overScrollOffset = AndroidUtilities.dp(16) * ovescrollSelectProgress;
                 float overscrollAlpha = (float) (0.5 + 0.5f * (1f - ovescrollSelectProgress));
                 if (collapsedProgress > 0) {
                     float toX = 0;
-                    int adapterPosition = recyclerListView.getChildAdapterPosition(cell);
                     boolean drawInParent = adapterPosition >= animateFromPosition && adapterPosition <= animateFromPosition + 2;
                     if (crossfade) {
                         int p = adapterPosition - animateFromPosition;
@@ -621,7 +634,18 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
                         toX = AndroidUtilities.dp(COLLAPSED_DIS) * 2;
                     }
                     toX += AndroidUtilities.dp(68);
-                    cell.setTranslationX(AndroidUtilities.lerp(0, toX - cell.getLeft(), CubicBezierInterpolator.EASE_OUT.getInterpolation(collapsedProgress)));
+                    
+                    float maxYOffset = AndroidUtilities.dp(10);
+                    int positionOffset = adapterPosition - animateFromPosition;
+                    
+                    float step = 1.0f / (animateToDialogIds.size() - 1);
+                    int positionFromEnd = animateToDialogIds.size() - 1 - positionOffset;
+                    float amplitudeMultiplier = step * positionFromEnd;
+                    float sineProgress = -(float) Math.sin(collapsedProgress * Math.PI);
+                     
+                    cell.setTranslationX(AndroidUtilities.lerp(0, toX - cell.getLeft(), CubicBezierInterpolator.EASE_OUT_QUINT.getInterpolation(collapsedProgress)));
+                    cell.setTranslationY(sineProgress * maxYOffset * amplitudeMultiplier * collapsedProgress * (1f - collapsedProgress) * 4f);
+                    
                     if (drawInParent) {
                         viewsDrawInParent.add(cell);
                     }
@@ -779,6 +803,9 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
                     public void onAnimationEnd(Animator animation) {
                         collapsedProgress2 = newCollapsed ? 1f : 0;
                         checkCollapsedProgres();
+                        try {
+                            performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
+                        } catch (Exception ignored) {}
                     }
                 });
                 valueAnimator.setDuration(450);
