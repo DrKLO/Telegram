@@ -877,8 +877,10 @@ public class GiftSheet extends BottomSheetWithRecyclerListView implements Notifi
             }).collect(Collectors.toCollection(ArrayList::new));
         }
         boolean myGiftsHaveUnique = false;
+        boolean myGiftsHaveAny = false;
         if (dialogId != UserConfig.getInstance(currentAccount).getClientUserId()) {
             if (myGifts != null) {
+                myGiftsHaveAny = !myGifts.gifts.isEmpty() || myGifts.totalCount > 0;
                 for (TL_stars.SavedStarGift savedStarGift : myGifts.gifts) {
                     if (savedStarGift.gift instanceof TL_stars.TL_starGiftUnique) {
                         myGiftsHaveUnique = true;
@@ -912,7 +914,7 @@ public class GiftSheet extends BottomSheetWithRecyclerListView implements Notifi
                 TAB_ALL = tabs.size();
                 tabs.add(getString(R.string.Gift2TabAll));
             }
-            if ((userSettings == null || !userSettings.disallow_unique_stargifts) && myGiftsHaveUnique) {
+            if ((userSettings == null || !userSettings.disallow_unique_stargifts) && myGiftsHaveAny) {
                 TAB_MY_GIFTS = tabs.size();
                 tabs.add(getString(R.string.Gift2TabMine));
             }
@@ -933,6 +935,10 @@ public class GiftSheet extends BottomSheetWithRecyclerListView implements Notifi
                 tabs.add(StarsIntroActivity.replaceStarsWithPlain("⭐️ " + LocaleController.formatNumber(price, ','), .8f));
                 pricesArray.add(price);
             }
+            // Ensure selectedTab is valid after tab configuration changes
+            if (selectedTab >= tabs.size()) {
+                selectedTab = 0;
+            }
             items.add(Tabs.Factory.asTabs(1, tabs, selectedTab, this::selectTab));
 
             final long selectedPrice = selectedTab - firstTabsCount >= 0 && selectedTab - firstTabsCount < pricesArray.size() ? pricesArray.get(selectedTab - firstTabsCount) : 0;
@@ -940,9 +946,7 @@ public class GiftSheet extends BottomSheetWithRecyclerListView implements Notifi
             if (myGifts != null && selectedTab == TAB_MY_GIFTS) {
                 finalGifts = new ArrayList<>();
                 for (TL_stars.SavedStarGift savedStarGift : myGifts.gifts) {
-                    if (savedStarGift.gift instanceof TL_stars.TL_starGiftUnique) {
-                        finalGifts.add(savedStarGift.gift);
-                    }
+                    finalGifts.add(savedStarGift.gift);
                 }
             } else {
                 finalGifts = gifts;
@@ -966,7 +970,7 @@ public class GiftSheet extends BottomSheetWithRecyclerListView implements Notifi
                     giftsCount++;
                 }
             }
-            if (selectedTab == TAB_MY_GIFTS && myGifts != null && !myGifts.endReached) {
+            if (selectedTab == TAB_MY_GIFTS && myGifts != null && (!myGifts.endReached || myGifts.gifts.isEmpty())) {
                 myGifts.load();
                 items.add(UItem.asFlicker(4, FlickerLoadingView.STAR_GIFT).setSpanCount(1));
                 items.add(UItem.asFlicker(5, FlickerLoadingView.STAR_GIFT).setSpanCount(1));
