@@ -75839,6 +75839,13 @@ public class TLRPC {
             theme.emoticon = emoticon;
             return theme;
         }
+
+        public static ChatTheme ofGift(TL_stars.StarGift gift, ArrayList<ThemeSettings> theme_settings) {
+            TL_chatThemeUniqueGift theme = new TL_chatThemeUniqueGift();
+            theme.gift = gift;
+            theme.theme_settings = theme_settings;
+            return theme;
+        }
     }
 
     public static class TL_chatTheme extends ChatTheme {
