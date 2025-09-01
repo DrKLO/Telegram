@@ -45,6 +45,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.ChatThemeController;
+import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageLoader;
@@ -75,7 +76,6 @@ import org.telegram.ui.Cells.ThemesHorizontalListCell;
 import org.telegram.ui.ChatActivity;
 import org.telegram.ui.Components.Premium.LimitReachedBottomSheet;
 import org.telegram.ui.PhotoViewer;
-import org.telegram.ui.Stars.StarsController;
 import org.telegram.ui.StatisticActivity;
 import org.telegram.ui.ThemePreviewActivity;
 import org.telegram.ui.WallpapersListActivity;
@@ -1011,6 +1011,29 @@ public class ChatThemeBottomSheet extends BottomSheet implements NotificationCen
             });
             return;
         }
+
+        if (selectedItem != null && selectedItem.chatTheme instanceof EmojiThemes.Gift) {
+            EmojiThemes.Gift giftTheme = (EmojiThemes.Gift) selectedItem.chatTheme;
+            if (giftTheme.starGift != null && giftTheme.starGift.theme_peer != null) {
+                long themePeerDialogId = DialogObject.getPeerDialogId(giftTheme.starGift.theme_peer);
+                if (themePeerDialogId != 0 && themePeerDialogId != chatActivity.getDialogId()) {
+                    String name = UserObject.getFirstName(MessagesController.getInstance(currentAccount).getUser(themePeerDialogId));
+                    new AlertDialog.Builder(getContext(), resourcesProvider)
+                        .setMessage(LocaleController.formatString(R.string.ReplaceUniqueGiftChatTheme, name))
+                        .setPositiveButton(LocaleController.getString(R.string.ReplaceUniqueGiftChatThemeYes), (dialogInterface, i) -> {
+                            applySelectedThemeInternal();
+                        })
+                        .setNegativeButton(LocaleController.getString(R.string.Cancel), null)
+                        .show();
+                    return;
+                }
+            }
+        }
+
+        applySelectedThemeInternal();
+    }
+
+    private void applySelectedThemeInternal() {
         Bulletin bulletin = null;
         EmojiThemes newTheme = selectedItem.chatTheme;
         if (selectedItem != null && newTheme != currentTheme) {
@@ -1018,10 +1041,6 @@ public class ChatThemeBottomSheet extends BottomSheet implements NotificationCen
             String emoticon = !chatTheme.showAsDefaultStub ? chatTheme.getStickerUniqueKey() : null;
             ChatThemeController.getInstance(currentAccount).clearWallpaper(chatActivity.getDialogId(), false);
             ChatThemeController.getInstance(currentAccount).setDialogTheme(chatActivity.getDialogId(), emoticon, true);
-            if (chatTheme instanceof EmojiThemes.Gift && ((EmojiThemes.Gift) chatTheme).starGift != null) {
-                TLRPC.Peer peer = MessagesController.getInstance(currentAccount).getPeer(chatActivity.getDialogId());
-                StarsController.getInstance(currentAccount).setPeerForThemeGift(((EmojiThemes.Gift) chatTheme).starGift, peer);
-            }
             TLRPC.WallPaper wallpaper = hasChanges() ? null : themeDelegate.getCurrentWallpaper();
             if (!chatTheme.showAsDefaultStub) {
                 themeDelegate.setCurrentTheme(chatTheme, wallpaper, true, originalIsDark);

@@ -539,7 +539,42 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
     @Override
     public boolean didSelectDialogs(DialogsActivity fragment, ArrayList<MessagesStorage.TopicKey> dids, CharSequence message, boolean param, boolean notify, int scheduleDate, TopicsFragment topicsFragment) {
         if (!dids.isEmpty()) {
+            TL_stars.StarGift gift = getGift();
+            if (gift != null && gift.theme_peer != null) {
+                long themePeerDialogId = DialogObject.getPeerDialogId(gift.theme_peer);
+                if (themePeerDialogId != 0 && themePeerDialogId != dids.get(0).dialogId) {
+                    String name = UserObject.getFirstName(MessagesController.getInstance(currentAccount).getUser(themePeerDialogId));
+                    new AlertDialog.Builder(fragment.getParentActivity(), fragment.getResourceProvider())
+                        .setMessage(LocaleController.formatString(R.string.ReplaceUniqueGiftChatTheme, name))
+                        .setPositiveButton(LocaleController.getString(R.string.ReplaceUniqueGiftChatThemeYes), (dialogInterface, i) -> {
+                            ChatThemeController.getInstance(currentAccount).setDialogTheme(dids.get(0).dialogId, getUniqueGift().slug, true);
+                            StarsController.getInstance(currentAccount).invalidateProfileGifts(getDialogId());
+                        })
+                        .setNegativeButton(LocaleController.getString(R.string.Cancel), null)
+                        .show();
+                    return true;
+                }
+            }
             ChatThemeController.getInstance(currentAccount).setDialogTheme(dids.get(0).dialogId, getUniqueGift().slug, true);
+            StarsController.getInstance(currentAccount).invalidateProfileGifts(getDialogId());
+            if (gift != null && gift.theme_available && gift.theme_peer != null) {
+                final SpannableStringBuilder sb = new SpannableStringBuilder();
+                sb.append(AndroidUtilities.replaceSingleTag(getString(R.string.Gift2ChatTheme),() -> onSetThemePressed(gift.theme_peer)));
+                afterTableTextView.setText(AndroidUtilities.replaceArrows(sb, true, dp(8f / 3f), dp(.66f)));
+            } else if (dialogId >= 0) {
+                final SpannableStringBuilder sb = new SpannableStringBuilder();
+                if (savedStarGift.unsaved) {
+                    sb.append(". ");
+                    final ColoredImageSpan span = new ColoredImageSpan(R.drawable.menu_hide_gift);
+                    span.setScale(0.65f, 0.65f);
+                    sb.setSpan(span, 0, 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                }
+                sb.append(AndroidUtilities.replaceSingleTag(getString(!savedStarGift.unsaved ? R.string.Gift2ProfileVisible4 : R.string.Gift2ProfileInvisible4), this::toggleShow));
+                afterTableTextView.setText(AndroidUtilities.replaceArrows(sb, true, dp(8f / 3f), dp(.66f)));
+            } else {
+                afterTableTextView.setText(AndroidUtilities.replaceArrows(AndroidUtilities.replaceSingleTag(getString(!savedStarGift.unsaved ? R.string.Gift2ChannelProfileVisible3 : R.string.Gift2ChannelProfileInvisible3), this::toggleShow), true, dp(8f / 3f), dp(.66f)));
+            }
+            afterTableTextView.setVisibility(View.VISIBLE);
         }
         return true;
     }

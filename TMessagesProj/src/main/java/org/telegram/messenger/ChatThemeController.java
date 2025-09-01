@@ -17,6 +17,7 @@ import org.telegram.tgnet.tl.TL_account;
 import org.telegram.ui.ActionBar.EmojiThemes;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ChatBackgroundDrawable;
+import org.telegram.ui.Stars.StarsController;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -390,12 +391,21 @@ public class ChatThemeController extends BaseController {
             return;
         }
 
+        if (theme instanceof EmojiThemes.Gift && ((EmojiThemes.Gift) theme).starGift != null && ((EmojiThemes.Gift) theme).starGift.theme_peer != null) {
+            long did = DialogObject.getPeerDialogId(((EmojiThemes.Gift) theme).starGift.theme_peer);
+            TLRPC.UserFull userFull = getMessagesController().getUserFull(did);
+            userFull.theme = null;
+            clearWallpaper(did, true);
+            getMessagesStorage().updateUserInfo(userFull, true);
+            dialogEmoticonsMap.remove(did);
+        }
         dialogEmoticonsMap.put(dialogId, theme);
 
         if (dialogId >= 0) {
             TLRPC.UserFull userFull = getMessagesController().getUserFull(dialogId);
             if (userFull != null) {
                 if (theme instanceof EmojiThemes.Gift) {
+                    ((EmojiThemes.Gift) theme).starGift.theme_peer = getMessagesController().getPeer(dialogId);
                     userFull.theme = TLRPC.ChatTheme.ofGift(((EmojiThemes.Gift) theme).starGift, ((EmojiThemes.Gift) theme).theme_settings);
                 } else {
                     userFull.theme = TLRPC.ChatTheme.ofEmoticon(theme.getStickerUniqueKey());

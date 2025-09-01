@@ -3859,6 +3859,8 @@
     <string name="DeleteMessagesOptionAlso">Also delete for %1$s</string>
     <string name="DeleteMessagesForBothSidesWherePossible">Delete for both sides where possible</string>
     <string name="ClearHistoryOptionAlso">Also clear history for %1$s</string>
+    <string name="ReplaceUniqueGiftChatTheme">This gift is already your theme in the chat with %1$s. Remove it there and use it here instead?</string>
+    <string name="ReplaceUniqueGiftChatThemeYes">Yes</string>
     <string name="SendMessageTitle">Send message</string>
     <string name="SendMessagesToGroupText">Do you want to send this message to **%1$s**?</string>
     <string name="SendGameToGroupText">Do you want to share this game to **%1$s**?</string>
