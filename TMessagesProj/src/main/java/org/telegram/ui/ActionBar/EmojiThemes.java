@@ -4,12 +4,16 @@ import android.app.Activity;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
 import android.graphics.drawable.BitmapDrawable;
 import android.util.Pair;
 import android.util.SparseIntArray;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
+import org.telegram.messenger.Bitmaps;
 import org.telegram.messenger.ChatThemeController;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
@@ -18,9 +22,9 @@ import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.ResultCallback;
-import org.telegram.tgnet.SerializedData;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.tl.TL_stars;
+import org.telegram.ui.Stars.StarsController;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -411,8 +415,80 @@ public abstract class EmojiThemes {
             return;
         }
 
-        long themeId = getThemeId();
-        loadWallpaperImage(currentAccount, themeId, wallPaper, callback);
+        if (this instanceof Gift) {
+            loadWallpaperImage(currentAccount, (Gift) this, wallPaper, callback);
+
+        } else {
+            loadWallpaperImage(currentAccount, getThemeId(), wallPaper, callback);
+        }
+    }
+
+    public static void loadWallpaperImage(int currentAccount, EmojiThemes.Gift giftTheme, TLRPC.WallPaper wallPaper, ResultCallback<Pair<Long, Bitmap>> callback) {
+        if (giftTheme == null) return;
+        if (giftTheme.starGift == null) {
+            loadWallpaperImage(currentAccount, giftTheme.getThemeId(), wallPaper, callback);
+        } else {
+            ChatThemeController.getInstance(currentAccount).getWallpaperBitmap(giftTheme.getThemeId(), cachedBitmap -> {
+                if (cachedBitmap != null && callback != null) {
+                    callback.onComplete(new Pair<>(giftTheme.getThemeId(), cachedBitmap));
+                    return;
+                }
+                if (giftTheme.starGift.getDocument() == null) {
+                    loadWallpaperImage(currentAccount, giftTheme.getThemeId(), wallPaper, callback);
+                    return;
+                }
+                ArrayList<Bitmap> images = new ArrayList<>();
+                
+                ImageLocation giftImageLocation = ImageLocation.getForDocument(giftTheme.starGift.getDocument());
+                ImageReceiver giftReceiver = new ImageReceiver();
+                giftReceiver.setAllowLoadingOnAttachedOnly(false);
+                giftReceiver.setImage(giftImageLocation, "100_100", null, ".jpg", null, 1);
+                giftReceiver.setDelegate((receiver, set, thumb, memCache) -> {
+                    ImageReceiver.BitmapHolder holder = receiver.getBitmapSafe();
+                    if (set && holder != null && !holder.bitmap.isRecycled()) {
+                        Bitmap resultBitmap = holder.bitmap;
+                        if (resultBitmap == null && (holder.drawable instanceof BitmapDrawable)) {
+                            resultBitmap = ((BitmapDrawable) holder.drawable).getBitmap();
+                        }
+
+                        if (resultBitmap != null) {
+                            images.add(resultBitmap);
+                        }
+                    }
+                    
+                    TL_stars.starGiftAttributePattern pattern = StarsController.findAttribute(giftTheme.starGift.attributes, TL_stars.starGiftAttributePattern.class);
+                    if (pattern != null && pattern.document != null) {
+                        ImageLocation modelImageLocation = ImageLocation.getForDocument(pattern.document);
+                        ImageReceiver modelReceiver = new ImageReceiver();
+                        modelReceiver.setAllowLoadingOnAttachedOnly(false);
+                        modelReceiver.setImage(modelImageLocation, "50_50", null, ".jpg", null, 1);
+                        modelReceiver.setDelegate((modelReceiver2, set2, thumb2, memCache2) -> {
+                            ImageReceiver.BitmapHolder modelHolder = modelReceiver2.getBitmapSafe();
+                            if (set2 && modelHolder != null && !modelHolder.bitmap.isRecycled()) {
+                                Bitmap modelBitmap = modelHolder.bitmap;
+                                if (modelBitmap == null && (modelHolder.drawable instanceof BitmapDrawable)) {
+                                    modelBitmap = ((BitmapDrawable) modelHolder.drawable).getBitmap();
+                                }
+
+                                if (modelBitmap != null) {
+                                    images.add(modelBitmap);
+                                }
+                            }
+                            
+                            ImageLocation finalImageLocation = ImageLocation.getForDocument(wallPaper.document);
+                            finalImageLocation.additionalImages = images;
+                            loadBitmap(finalImageLocation, currentAccount, giftTheme.getThemeId(), wallPaper, callback, cachedBitmap);
+                        });
+                        ImageLoader.getInstance().loadImageForImageReceiver(modelReceiver);
+                    } else {
+                        ImageLocation finalImageLocation = ImageLocation.getForDocument(wallPaper.document);
+                        finalImageLocation.additionalImages = images;
+                        loadBitmap(finalImageLocation, currentAccount, giftTheme.getThemeId(), wallPaper, callback, cachedBitmap);
+                    }
+                });
+                ImageLoader.getInstance().loadImageForImageReceiver(giftReceiver);
+            });
+        }
     }
 
     public static void loadWallpaperImage(int currentAccount, long hash, TLRPC.WallPaper wallPaper, ResultCallback<Pair<Long, Bitmap>> callback) {
@@ -422,31 +498,35 @@ public abstract class EmojiThemes {
                 return;
             }
             ImageLocation imageLocation = ImageLocation.getForDocument(wallPaper.document);
-            ImageReceiver imageReceiver = new ImageReceiver();
-            imageReceiver.setAllowLoadingOnAttachedOnly(false);
-
-            String imageFilter;
-            int w = Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y);
-            int h = Math.max(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y);
-            imageFilter = (int) (w / AndroidUtilities.density) + "_" + (int) (h / AndroidUtilities.density) + "_f";
-
-            imageReceiver.setImage(imageLocation, imageFilter, null, ".jpg", wallPaper, 1);
-            imageReceiver.setDelegate((receiver, set, thumb, memCache) -> {
-                ImageReceiver.BitmapHolder holder = receiver.getBitmapSafe();
-                if (!set || holder == null) {
-                    return;
-                }
-                Bitmap bitmap = holder.bitmap;
-                if (bitmap == null && (holder.drawable instanceof BitmapDrawable)) {
-                    bitmap = ((BitmapDrawable) holder.drawable).getBitmap();
-                }
-                if (callback != null) {
-                    callback.onComplete(new Pair<>(hash, bitmap));
-                }
-                ChatThemeController.getInstance(currentAccount).saveWallpaperBitmap(bitmap, hash);
-            });
-            ImageLoader.getInstance().loadImageForImageReceiver(imageReceiver);
+            loadBitmap(imageLocation, currentAccount, hash, wallPaper, callback, cachedBitmap);
         });
+    }
+
+    private static void loadBitmap(ImageLocation imageLocation, int currentAccount, long hash, TLRPC.WallPaper wallPaper, ResultCallback<Pair<Long, Bitmap>> callback, Bitmap cachedBitmap) {
+
+        String imageFilter;
+        int w = Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y);
+        int h = Math.max(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y);
+        imageFilter = (int) (w / AndroidUtilities.density) + "_" + (int) (h / AndroidUtilities.density) + "_f";
+
+        ImageReceiver imageReceiver = new ImageReceiver();
+        imageReceiver.setAllowLoadingOnAttachedOnly(false);
+        imageReceiver.setImage(imageLocation, imageFilter, null, ".jpg", wallPaper, 1);
+        imageReceiver.setDelegate((receiver, set, thumb, memCache) -> {
+            ImageReceiver.BitmapHolder holder = receiver.getBitmapSafe();
+            if (!set || holder == null) {
+                return;
+            }
+            Bitmap bitmap = holder.bitmap;
+            if (bitmap == null && (holder.drawable instanceof BitmapDrawable)) {
+                bitmap = ((BitmapDrawable) holder.drawable).getBitmap();
+            }
+            if (callback != null) {
+                callback.onComplete(new Pair<>(hash, bitmap));
+            }
+            ChatThemeController.getInstance(currentAccount).saveWallpaperBitmap(bitmap, hash);
+        });
+        ImageLoader.getInstance().loadImageForImageReceiver(imageReceiver);
     }
 
     public void loadWallpaperThumb(int index, ResultCallback<Pair<Long, Bitmap>> callback) {

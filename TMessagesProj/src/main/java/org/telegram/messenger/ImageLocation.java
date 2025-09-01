@@ -1,9 +1,12 @@
 package org.telegram.messenger;
 
+import android.graphics.Bitmap;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.web.WebInstantView;
+
+import java.util.List;
 
 public class ImageLocation {
 
@@ -28,6 +31,7 @@ public class ImageLocation {
     public TLRPC.InputPeer photoPeer;
     public TLRPC.InputStickerSet stickerSet;
     public int imageType;
+    public List<Bitmap> additionalImages;
 
     public int thumbVersion;
 

@@ -8,8 +8,10 @@ import android.text.TextUtils;
 import android.util.LongSparseArray;
 
 import org.telegram.tgnet.ConnectionsManager;
+import org.telegram.tgnet.RequestDelegate;
 import org.telegram.tgnet.ResultCallback;
 import org.telegram.tgnet.SerializedData;
+import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.tl.TL_account;
 import org.telegram.ui.ActionBar.EmojiThemes;
@@ -35,6 +37,7 @@ public class ChatThemeController extends BaseController {
     private volatile int giftThemesOffset;
     private volatile long starGiftHash;
     private volatile boolean hasMoreGiftThemes;
+    private volatile boolean updateRequired;
 
     private ChatThemeController(int num) {
         super(num);
@@ -47,6 +50,7 @@ public class ChatThemeController extends BaseController {
         lastReloadTimeMs = 0;
         giftThemesOffset = 0;
         hasMoreGiftThemes = true;
+        updateRequired = false;
         try {
             themesHash = preferences.getLong("hash", 0);
             lastReloadTimeMs = preferences.getLong("lastReload", 0);
@@ -93,8 +97,10 @@ public class ChatThemeController extends BaseController {
         }
 
         boolean needReload = System.currentTimeMillis() - lastReloadTimeMs > reloadTimeoutMs;
-        if (allChatThemes == null || allChatThemes.isEmpty() || needReload) {
+        if (allChatThemes == null || allChatThemes.isEmpty() || needReload || updateRequired) {
             TL_account.getChatThemes request = new TL_account.getChatThemes();
+            getSharedPreferences().edit().clear().apply();
+
             request.hash = themesHash;
             ConnectionsManager.getInstance(UserConfig.selectedAccount).sendRequest(request, (response, error) -> chatThemeQueue.postRunnable(() -> {
                 boolean isError = false;
@@ -132,7 +138,7 @@ public class ChatThemeController extends BaseController {
                     AndroidUtilities.runOnUIThread(() -> callback.onError(error));
                 }
                 if (!isError) {
-                    if (withDefault && !chatThemes.get(0).showAsDefaultStub) {
+                    if (withDefault && !chatThemes.isEmpty() && !chatThemes.get(0).showAsDefaultStub) {
                         chatThemes.add(0, EmojiThemes.createChatThemesDefault(currentAccount));
                     }
                     for (EmojiThemes theme : chatThemes) {
@@ -150,6 +156,7 @@ public class ChatThemeController extends BaseController {
                     requestGiftChatThemes(new ResultCallback<List<EmojiThemes>>() {
                         @Override
                         public void onComplete(List<EmojiThemes> result) {
+                            updateRequired = false;
                             if (result != null && !result.isEmpty()) {
                                 if (!finalIsError) {
                                     AndroidUtilities.runOnUIThread(() -> {
@@ -191,6 +198,10 @@ public class ChatThemeController extends BaseController {
             }
             AndroidUtilities.runOnUIThread(() -> callback.onComplete(chatThemes));
         }
+    }
+
+    public void setNeedUpdate(boolean needUpdate) {
+        updateRequired = needUpdate;
     }
 
     public void requestGiftChatThemes(final ResultCallback<List<EmojiThemes>> callback) {

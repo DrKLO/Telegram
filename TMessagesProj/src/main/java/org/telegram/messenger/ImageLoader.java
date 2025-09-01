@@ -55,7 +55,6 @@ import org.telegram.ui.Components.Point;
 import org.telegram.ui.Components.RLottieDrawable;
 import org.telegram.ui.Components.SlotsDrawable;
 import org.telegram.ui.Components.ThemePreviewDrawable;
-import org.telegram.ui.PhotoViewer;
 import org.telegram.ui.web.WebInstantView;
 
 import java.io.BufferedReader;
@@ -74,8 +73,6 @@ import java.net.SocketTimeoutException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.net.UnknownHostException;
-import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -897,7 +894,7 @@ public class ImageLoader {
                 }
                 Bitmap bitmap = null;
                 try {
-                    bitmap = SvgHelper.getBitmap(cacheImage.finalFilePath, w, h, cacheImage.imageType == FileLoader.IMAGE_TYPE_SVG_WHITE);
+                    bitmap = SvgHelper.getSvgBitmapWithImages(cacheImage.finalFilePath, w, h, cacheImage.imageType == FileLoader.IMAGE_TYPE_SVG_WHITE, cacheImage.imageLocation);
                 } catch (Throwable e) {
                     FileLog.e(e);
                 }

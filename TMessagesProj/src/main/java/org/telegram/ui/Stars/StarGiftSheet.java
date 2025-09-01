@@ -11,7 +11,6 @@ import static org.telegram.messenger.LocaleController.getString;
 import static org.telegram.ui.Stars.StarsController.findAttribute;
 import static org.telegram.ui.Stars.StarsController.findAttributes;
 import static org.telegram.ui.Stars.StarsController.showNoSupportDialog;
-import static org.telegram.ui.Stars.StarsIntroActivity.StarsTransactionView.getPlatformDrawable;
 import static org.telegram.ui.Stars.StarsIntroActivity.addAvailabilityRow;
 import static org.telegram.ui.Stars.StarsIntroActivity.replaceStars;
 import static org.telegram.ui.Stars.StarsIntroActivity.replaceStarsWithPlain;
@@ -66,10 +65,12 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BirthdayController;
 import org.telegram.messenger.ChatObject;
+import org.telegram.messenger.ChatThemeController;
 import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.Emoji;
 import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.MessagesStorage;
@@ -88,6 +89,7 @@ import org.telegram.tgnet.tl.TL_stars;
 import org.telegram.ui.AccountFrozenAlert;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
+import org.telegram.ui.ActionBar.EmojiThemes;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.SessionCell;
@@ -119,6 +121,7 @@ import org.telegram.ui.Components.RLottieImageView;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.ScaleStateListAnimator;
 import org.telegram.ui.Components.ShareAlert;
+import org.telegram.ui.Components.StickerSetBulletinLayout;
 import org.telegram.ui.Components.TableView;
 import org.telegram.ui.Components.TextHelper;
 import org.telegram.ui.Components.ViewPagerFixed;
@@ -536,8 +539,7 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
     @Override
     public boolean didSelectDialogs(DialogsActivity fragment, ArrayList<MessagesStorage.TopicKey> dids, CharSequence message, boolean param, boolean notify, int scheduleDate, TopicsFragment topicsFragment) {
         if (!dids.isEmpty()) {
-            openChatWithThemeSelector(dids.get(0).dialogId);
-            AndroidUtilities.runOnUIThread(fragment::finishFragment, 500);
+            ChatThemeController.getInstance(currentAccount).setDialogTheme(dids.get(0).dialogId, getUniqueGift().slug, true);
         }
         return true;
     }
@@ -3792,6 +3794,7 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
 
                     Utilities.stageQueue.postRunnable(() -> {
                         MessagesController.getInstance(currentAccount).processUpdates((TLRPC.Updates) res, false);
+                        ChatThemeController.getInstance(currentAccount).setNeedUpdate(true);
                     });
                 });
             });

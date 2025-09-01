@@ -43,8 +43,6 @@ import android.util.SparseArray;
 
 import androidx.core.graphics.ColorUtils;
 
-import com.google.android.exoplayer2.util.Log;
-
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.DrawingInBackgroundThreadDrawable;
 import org.xml.sax.Attributes;
@@ -59,6 +57,7 @@ import java.io.StringReader;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
 import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
@@ -97,9 +96,24 @@ public class SvgHelper {
     private static class RoundRect {
         RectF rect;
         float rx;
+
         public RoundRect(RectF rect, float rx) {
             this.rect = rect;
             this.rx = rx;
+        }
+    }
+
+    private static class ImageCommand {
+        int index;
+        float x, y, width, height, alpha;
+
+        public ImageCommand(int index, float x, float y, float width, float height, float alpha) {
+            this.index = index;
+            this.x = x;
+            this.y = y;
+            this.width = width;
+            this.height = height;
+            this.alpha = alpha;
         }
     }
 
@@ -129,9 +143,11 @@ public class SvgHelper {
         private Theme.ResourcesProvider currentResourcesProvider;
         private float colorAlpha;
         private float crossfadeAlpha = 1.0f;
+        private Bitmap[] images;
         SparseArray<Paint> overridePaintByPosition = new SparseArray<>();
 
         private static boolean lite = LiteMode.isEnabled(LiteMode.FLAG_CHAT_BACKGROUND);
+
         public static void updateLiteValues() {
             lite = LiteMode.isEnabled(LiteMode.FLAG_CHAT_BACKGROUND);
         }
@@ -160,6 +176,10 @@ public class SvgHelper {
         public void overrideWidthAndHeight(int w, int h) {
             width = w;
             height = h;
+        }
+
+        public void setImages(Bitmap[] images) {
+            this.images = images;
         }
 
         @Override
@@ -260,7 +280,9 @@ public class SvgHelper {
                         paint = paints.get(object);
                     }
                     int originalAlpha = paint.getAlpha();
-                    paint.setAlpha((int) (crossfadeAlpha * originalAlpha));
+                    if (!(object instanceof ImageCommand)) {
+                        paint.setAlpha((int) (crossfadeAlpha * originalAlpha));
+                    }
                     if (object instanceof Path) {
                         canvas.drawPath((Path) object, paint);
                     } else if (object instanceof Rect) {
@@ -279,11 +301,32 @@ public class SvgHelper {
                     } else if (object instanceof RoundRect) {
                         RoundRect rect = (RoundRect) object;
                         canvas.drawRoundRect(rect.rect, rect.rx, rect.rx, paint);
+                    } else if (object instanceof ImageCommand) {
+                        ImageCommand imageCmd = (ImageCommand) object;
+                        Bitmap imageBitmap = getImageByIndex(imageCmd.index);
+                        if (imageBitmap != null) {
+                            RectF dstRect = new RectF(imageCmd.x, imageCmd.y,
+                                    imageCmd.x + imageCmd.width,
+                                    imageCmd.y + imageCmd.height);
+                            Paint normalPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+                            normalPaint.setAlpha((int) (imageCmd.alpha * 255));
+                            canvas.drawBitmap(imageBitmap, null, dstRect, normalPaint);
+
+                        }
                     }
-                    paint.setAlpha(originalAlpha);
+                    if (!(object instanceof ImageCommand)) {
+                        paint.setAlpha(originalAlpha);
+                    }
                 }
             }
             canvas.restore();
+        }
+
+        private Bitmap getImageByIndex(int index) {
+            if (images != null && index >= 0 && index < images.length) {
+                return images[index];
+            }
+            return null;
         }
 
         public float getScale(int viewWidth, int viewHeight) {
@@ -467,6 +510,43 @@ public class SvgHelper {
         }
     }
 
+    public static Bitmap getSvgBitmapWithImages(File file, int width, int height, boolean white, ImageLocation imageLocation) {
+        List<Bitmap> images = imageLocation.additionalImages != null ? imageLocation.additionalImages : new ArrayList<>();
+        try {
+            String fileContent;
+            try (FileInputStream stream = new FileInputStream(file)) {
+                int fileSize = (int) file.length();
+                byte[] buffer = new byte[fileSize];
+                stream.read(buffer);
+                fileContent = new String(buffer);
+            }
+            int index = 0;
+            String modifiedContent = fileContent;
+            while (modifiedContent.contains("#f0f")) {
+                float alpha = (index % 2 == 0) ? 0.8f : 0.5f;
+                modifiedContent = modifiedContent.replaceFirst(
+                        "<rect([^>]*)fill\\s*=\\s*[\"']#f0f[\"']([^>/]*)\\s*(/?)>",
+                        "<image$1$2 index=\"" + index + "\" alpha=\"" + alpha + "\"$3>"
+                );
+                if (++index >= images.size()) index = 0;
+            }
+
+            SAXParserFactory spf = SAXParserFactory.newInstance();
+            SAXParser sp = spf.newSAXParser();
+            XMLReader xr = sp.getXMLReader();
+            SVGHandler handler = new SVGHandler(width, height, white ? 0xffffffff : null, false, 1f, imageLocation);
+            if (!white) {
+                handler.alphaOnly = true;
+            }
+            xr.setContentHandler(handler);
+            xr.parse(new InputSource(new StringReader(modifiedContent)));
+            return handler.getBitmap();
+        } catch (Exception e) {
+            FileLog.e(e);
+            return null;
+        }
+    }
+
     public static Bitmap getBitmap(File file, int width, int height, boolean white) {
         try (FileInputStream stream = new FileInputStream(file)) {
             SAXParserFactory spf = SAXParserFactory.newInstance();
@@ -567,7 +647,7 @@ public class SvgHelper {
             canvas.scale(width / (float) svgWidth, height / (float) svgHeight);
             Paint paint = new Paint();
             paint.setColor(Color.WHITE);
-            canvas.drawPath(path,paint);
+            canvas.drawPath(path, paint);
             return bitmap;
         } catch (Exception e) {
             FileLog.e(e);
@@ -964,6 +1044,19 @@ public class SvgHelper {
         }
     }
 
+    private static Integer getIntAttr(String name, Attributes attributes) {
+        String v = getStringAttr(name, attributes);
+        if (v == null) {
+            return null;
+        } else {
+            try {
+                return Integer.parseInt(v);
+            } catch (NumberFormatException nfe) {
+                return null;
+            }
+        }
+    }
+
     private static Integer getHexAttr(String name, Attributes attributes) {
         String v = getStringAttr(name, attributes);
         if (v == null) {
@@ -1141,14 +1234,23 @@ public class SvgHelper {
 
         private HashMap<String, StyleSet> globalStyles = new HashMap<>();
         private boolean alphaOnly;
+        private ImageLocation imageLocation;
 
         private SVGHandler(int dw, int dh, Integer color, boolean asDrawable, float scale) {
+            this(dw, dh, color, asDrawable, scale, null);
+        }
+
+        private SVGHandler(int dw, int dh, Integer color, boolean asDrawable, float scale, ImageLocation imageLocation) {
             globalScale = scale;
             desiredWidth = dw;
             desiredHeight = dh;
             paintColor = color;
+            this.imageLocation = imageLocation;
             if (asDrawable) {
                 drawable = new SvgDrawable();
+                if (imageLocation != null && imageLocation.additionalImages != null) {
+                    drawable.setImages(imageLocation.additionalImages.toArray(new Bitmap[0]));
+                }
             }
         }
 
@@ -1187,6 +1289,14 @@ public class SvgHelper {
                 }
             }
             return false;
+        }
+
+        private Bitmap getImageByIndex(int index) {
+            if (imageLocation != null && imageLocation.additionalImages != null &&
+                    index >= 0 && index < imageLocation.additionalImages.size()) {
+                return imageLocation.additionalImages.get(index);
+            }
+            return null;
         }
 
         private boolean doStroke(Properties atts) {
@@ -1497,6 +1607,31 @@ public class SvgHelper {
                         }
                     }
                     popTransform();
+                    break;
+                }
+                case "image": {
+                    Integer index = getIntAttr("index", atts);
+                    Float x = getFloatAttr("x", atts);
+                    Float y = getFloatAttr("y", atts);
+                    Float width = getFloatAttr("width", atts);
+                    Float height = getFloatAttr("height", atts);
+                    Float alpha = getFloatAttr("alpha", atts);
+
+                    if (index != null && x != null && y != null && width != null && height != null) {
+                        pushTransform(atts);
+                        if (drawable != null) {
+                            drawable.addCommand(new ImageCommand(index, x, y, width, height, alpha != null ? alpha : 1.0f), paint);
+                        } else {
+                            Bitmap imageBitmap = getImageByIndex(index);
+                            if (imageBitmap != null) {
+                                RectF dstRect = new RectF(x, y, x + width, y + height);
+                                Paint normalPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+                                normalPaint.setAlpha((int) (alpha != null ? alpha * 255 : (index == 0 ? 0.5 : 0.8) * 255));
+                                canvas.drawBitmap(imageBitmap, null, dstRect, normalPaint);
+                            }
+                        }
+                        popTransform();
+                    }
                     break;
                 }
             }
