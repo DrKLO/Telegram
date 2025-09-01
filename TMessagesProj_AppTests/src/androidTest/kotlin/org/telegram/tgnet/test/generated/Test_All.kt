@@ -776,14 +776,14 @@ public class Test_All {
 
     @Test
     public fun test_InputPrivacyKey_TL_inputPrivacyKeyStatusTimestamp() {
-      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_InputPrivacyKey.TL_inputPrivacyKeyStatusTimestamp::class,
+      test_TLdeserializeEnum(org.telegram.tgnet.model.generated.TlGen_InputPrivacyKey.TL_inputPrivacyKeyStatusTimestamp::class,
           org.telegram.tgnet.TLRPC.InputPrivacyKey::TLdeserialize, null)
 
     }
 
     @Test
     public fun test_PrivacyKey_TL_privacyKeyStatusTimestamp() {
-      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_PrivacyKey.TL_privacyKeyStatusTimestamp::class,
+      test_TLdeserializeEnum(org.telegram.tgnet.model.generated.TlGen_PrivacyKey.TL_privacyKeyStatusTimestamp::class,
           org.telegram.tgnet.TLRPC.PrivacyKey::TLdeserialize, null)
 
     }
@@ -1266,14 +1266,14 @@ public class Test_All {
 
     @Test
     public fun test_InputPrivacyKey_TL_inputPrivacyKeyChatInvite() {
-      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_InputPrivacyKey.TL_inputPrivacyKeyChatInvite::class,
+      test_TLdeserializeEnum(org.telegram.tgnet.model.generated.TlGen_InputPrivacyKey.TL_inputPrivacyKeyChatInvite::class,
           org.telegram.tgnet.TLRPC.InputPrivacyKey::TLdeserialize, null)
 
     }
 
     @Test
     public fun test_PrivacyKey_TL_privacyKeyChatInvite() {
-      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_PrivacyKey.TL_privacyKeyChatInvite::class,
+      test_TLdeserializeEnum(org.telegram.tgnet.model.generated.TlGen_PrivacyKey.TL_privacyKeyChatInvite::class,
           org.telegram.tgnet.TLRPC.PrivacyKey::TLdeserialize, null)
 
     }
@@ -1868,14 +1868,14 @@ public class Test_All {
 
     @Test
     public fun test_InputPrivacyKey_TL_inputPrivacyKeyPhoneCall() {
-      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_InputPrivacyKey.TL_inputPrivacyKeyPhoneCall::class,
+      test_TLdeserializeEnum(org.telegram.tgnet.model.generated.TlGen_InputPrivacyKey.TL_inputPrivacyKeyPhoneCall::class,
           org.telegram.tgnet.TLRPC.InputPrivacyKey::TLdeserialize, null)
 
     }
 
     @Test
     public fun test_PrivacyKey_TL_privacyKeyPhoneCall() {
-      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_PrivacyKey.TL_privacyKeyPhoneCall::class,
+      test_TLdeserializeEnum(org.telegram.tgnet.model.generated.TlGen_PrivacyKey.TL_privacyKeyPhoneCall::class,
           org.telegram.tgnet.TLRPC.PrivacyKey::TLdeserialize, null)
 
     }
@@ -3320,14 +3320,14 @@ public class Test_All {
 
     @Test
     public fun test_InputPrivacyKey_TL_inputPrivacyKeyPhoneP2P() {
-      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_InputPrivacyKey.TL_inputPrivacyKeyPhoneP2P::class,
+      test_TLdeserializeEnum(org.telegram.tgnet.model.generated.TlGen_InputPrivacyKey.TL_inputPrivacyKeyPhoneP2P::class,
           org.telegram.tgnet.TLRPC.InputPrivacyKey::TLdeserialize, null)
 
     }
 
     @Test
     public fun test_PrivacyKey_TL_privacyKeyPhoneP2P() {
-      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_PrivacyKey.TL_privacyKeyPhoneP2P::class,
+      test_TLdeserializeEnum(org.telegram.tgnet.model.generated.TlGen_PrivacyKey.TL_privacyKeyPhoneP2P::class,
           org.telegram.tgnet.TLRPC.PrivacyKey::TLdeserialize, null)
 
     }
@@ -3537,28 +3537,28 @@ public class Test_All {
 
     @Test
     public fun test_InputPrivacyKey_TL_inputPrivacyKeyForwards() {
-      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_InputPrivacyKey.TL_inputPrivacyKeyForwards::class,
+      test_TLdeserializeEnum(org.telegram.tgnet.model.generated.TlGen_InputPrivacyKey.TL_inputPrivacyKeyForwards::class,
           org.telegram.tgnet.TLRPC.InputPrivacyKey::TLdeserialize, null)
 
     }
 
     @Test
     public fun test_PrivacyKey_TL_privacyKeyForwards() {
-      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_PrivacyKey.TL_privacyKeyForwards::class,
+      test_TLdeserializeEnum(org.telegram.tgnet.model.generated.TlGen_PrivacyKey.TL_privacyKeyForwards::class,
           org.telegram.tgnet.TLRPC.PrivacyKey::TLdeserialize, null)
 
     }
 
     @Test
     public fun test_InputPrivacyKey_TL_inputPrivacyKeyProfilePhoto() {
-      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_InputPrivacyKey.TL_inputPrivacyKeyProfilePhoto::class,
+      test_TLdeserializeEnum(org.telegram.tgnet.model.generated.TlGen_InputPrivacyKey.TL_inputPrivacyKeyProfilePhoto::class,
           org.telegram.tgnet.TLRPC.InputPrivacyKey::TLdeserialize, null)
 
     }
 
     @Test
     public fun test_PrivacyKey_TL_privacyKeyProfilePhoto() {
-      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_PrivacyKey.TL_privacyKeyProfilePhoto::class,
+      test_TLdeserializeEnum(org.telegram.tgnet.model.generated.TlGen_PrivacyKey.TL_privacyKeyProfilePhoto::class,
           org.telegram.tgnet.TLRPC.PrivacyKey::TLdeserialize, null)
 
     }
@@ -3670,14 +3670,14 @@ public class Test_All {
 
     @Test
     public fun test_InputPrivacyKey_TL_inputPrivacyKeyPhoneNumber() {
-      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_InputPrivacyKey.TL_inputPrivacyKeyPhoneNumber::class,
+      test_TLdeserializeEnum(org.telegram.tgnet.model.generated.TlGen_InputPrivacyKey.TL_inputPrivacyKeyPhoneNumber::class,
           org.telegram.tgnet.TLRPC.InputPrivacyKey::TLdeserialize, null)
 
     }
 
     @Test
     public fun test_PrivacyKey_TL_privacyKeyPhoneNumber() {
-      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_PrivacyKey.TL_privacyKeyPhoneNumber::class,
+      test_TLdeserializeEnum(org.telegram.tgnet.model.generated.TlGen_PrivacyKey.TL_privacyKeyPhoneNumber::class,
           org.telegram.tgnet.TLRPC.PrivacyKey::TLdeserialize, null)
 
     }
@@ -3873,14 +3873,14 @@ public class Test_All {
 
     @Test
     public fun test_InputPrivacyKey_TL_inputPrivacyKeyAddedByPhone() {
-      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_InputPrivacyKey.TL_inputPrivacyKeyAddedByPhone::class,
+      test_TLdeserializeEnum(org.telegram.tgnet.model.generated.TlGen_InputPrivacyKey.TL_inputPrivacyKeyAddedByPhone::class,
           org.telegram.tgnet.TLRPC.InputPrivacyKey::TLdeserialize, null)
 
     }
 
     @Test
     public fun test_PrivacyKey_TL_privacyKeyAddedByPhone() {
-      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_PrivacyKey.TL_privacyKeyAddedByPhone::class,
+      test_TLdeserializeEnum(org.telegram.tgnet.model.generated.TlGen_PrivacyKey.TL_privacyKeyAddedByPhone::class,
           org.telegram.tgnet.TLRPC.PrivacyKey::TLdeserialize, null)
 
     }
@@ -6082,14 +6082,14 @@ public class Test_All {
 
     @Test
     public fun test_InputPrivacyKey_TL_inputPrivacyKeyVoiceMessages() {
-      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_InputPrivacyKey.TL_inputPrivacyKeyVoiceMessages::class,
+      test_TLdeserializeEnum(org.telegram.tgnet.model.generated.TlGen_InputPrivacyKey.TL_inputPrivacyKeyVoiceMessages::class,
           org.telegram.tgnet.TLRPC.InputPrivacyKey::TLdeserialize, null)
 
     }
 
     @Test
     public fun test_PrivacyKey_TL_privacyKeyVoiceMessages() {
-      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_PrivacyKey.TL_privacyKeyVoiceMessages::class,
+      test_TLdeserializeEnum(org.telegram.tgnet.model.generated.TlGen_PrivacyKey.TL_privacyKeyVoiceMessages::class,
           org.telegram.tgnet.TLRPC.PrivacyKey::TLdeserialize, null)
 
     }
@@ -6924,14 +6924,14 @@ public class Test_All {
 
     @Test
     public fun test_InputPrivacyKey_TL_inputPrivacyKeyAbout() {
-      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_InputPrivacyKey.TL_inputPrivacyKeyAbout::class,
+      test_TLdeserializeEnum(org.telegram.tgnet.model.generated.TlGen_InputPrivacyKey.TL_inputPrivacyKeyAbout::class,
           org.telegram.tgnet.TLRPC.InputPrivacyKey::TLdeserialize, null)
 
     }
 
     @Test
     public fun test_PrivacyKey_TL_privacyKeyAbout() {
-      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_PrivacyKey.TL_privacyKeyAbout::class,
+      test_TLdeserializeEnum(org.telegram.tgnet.model.generated.TlGen_PrivacyKey.TL_privacyKeyAbout::class,
           org.telegram.tgnet.TLRPC.PrivacyKey::TLdeserialize, null)
 
     }
@@ -7908,14 +7908,14 @@ public class Test_All {
 
     @Test
     public fun test_InputPrivacyKey_TL_inputPrivacyKeyBirthday() {
-      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_InputPrivacyKey.TL_inputPrivacyKeyBirthday::class,
+      test_TLdeserializeEnum(org.telegram.tgnet.model.generated.TlGen_InputPrivacyKey.TL_inputPrivacyKeyBirthday::class,
           org.telegram.tgnet.TLRPC.InputPrivacyKey::TLdeserialize, null)
 
     }
 
     @Test
     public fun test_PrivacyKey_TL_privacyKeyBirthday() {
-      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_PrivacyKey.TL_privacyKeyBirthday::class,
+      test_TLdeserializeEnum(org.telegram.tgnet.model.generated.TlGen_PrivacyKey.TL_privacyKeyBirthday::class,
           org.telegram.tgnet.TLRPC.PrivacyKey::TLdeserialize, null)
 
     }
@@ -8689,14 +8689,14 @@ public class Test_All {
 
     @Test
     public fun test_InputPrivacyKey_TL_inputPrivacyKeyStarGiftsAutoSave() {
-      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_InputPrivacyKey.TL_inputPrivacyKeyStarGiftsAutoSave::class,
+      test_TLdeserializeEnum(org.telegram.tgnet.model.generated.TlGen_InputPrivacyKey.TL_inputPrivacyKeyStarGiftsAutoSave::class,
           org.telegram.tgnet.TLRPC.InputPrivacyKey::TLdeserialize, null)
 
     }
 
     @Test
     public fun test_PrivacyKey_TL_privacyKeyStarGiftsAutoSave() {
-      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_PrivacyKey.TL_privacyKeyStarGiftsAutoSave::class,
+      test_TLdeserializeEnum(org.telegram.tgnet.model.generated.TlGen_PrivacyKey.TL_privacyKeyStarGiftsAutoSave::class,
           org.telegram.tgnet.TLRPC.PrivacyKey::TLdeserialize, null)
 
     }
@@ -9039,14 +9039,14 @@ public class Test_All {
 
     @Test
     public fun test_InputPrivacyKey_TL_inputPrivacyKeyNoPaidMessages() {
-      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_InputPrivacyKey.TL_inputPrivacyKeyNoPaidMessages::class,
+      test_TLdeserializeEnum(org.telegram.tgnet.model.generated.TlGen_InputPrivacyKey.TL_inputPrivacyKeyNoPaidMessages::class,
           org.telegram.tgnet.TLRPC.InputPrivacyKey::TLdeserialize, null)
 
     }
 
     @Test
     public fun test_PrivacyKey_TL_privacyKeyNoPaidMessages() {
-      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_PrivacyKey.TL_privacyKeyNoPaidMessages::class,
+      test_TLdeserializeEnum(org.telegram.tgnet.model.generated.TlGen_PrivacyKey.TL_privacyKeyNoPaidMessages::class,
           org.telegram.tgnet.TLRPC.PrivacyKey::TLdeserialize, null)
 
     }
@@ -9684,56 +9684,56 @@ public class Test_All {
 
     @Test
     public fun test_ProfileTab_TL_profileTabPosts() {
-      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_ProfileTab.TL_profileTabPosts::class,
+      test_TLdeserializeEnum(org.telegram.tgnet.model.generated.TlGen_ProfileTab.TL_profileTabPosts::class,
           org.telegram.tgnet.TLRPC.ProfileTab::TLdeserialize, null)
 
     }
 
     @Test
     public fun test_ProfileTab_TL_profileTabGifts() {
-      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_ProfileTab.TL_profileTabGifts::class,
+      test_TLdeserializeEnum(org.telegram.tgnet.model.generated.TlGen_ProfileTab.TL_profileTabGifts::class,
           org.telegram.tgnet.TLRPC.ProfileTab::TLdeserialize, null)
 
     }
 
     @Test
     public fun test_ProfileTab_TL_profileTabMedia() {
-      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_ProfileTab.TL_profileTabMedia::class,
+      test_TLdeserializeEnum(org.telegram.tgnet.model.generated.TlGen_ProfileTab.TL_profileTabMedia::class,
           org.telegram.tgnet.TLRPC.ProfileTab::TLdeserialize, null)
 
     }
 
     @Test
     public fun test_ProfileTab_TL_profileTabFiles() {
-      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_ProfileTab.TL_profileTabFiles::class,
+      test_TLdeserializeEnum(org.telegram.tgnet.model.generated.TlGen_ProfileTab.TL_profileTabFiles::class,
           org.telegram.tgnet.TLRPC.ProfileTab::TLdeserialize, null)
 
     }
 
     @Test
     public fun test_ProfileTab_TL_profileTabMusic() {
-      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_ProfileTab.TL_profileTabMusic::class,
+      test_TLdeserializeEnum(org.telegram.tgnet.model.generated.TlGen_ProfileTab.TL_profileTabMusic::class,
           org.telegram.tgnet.TLRPC.ProfileTab::TLdeserialize, null)
 
     }
 
     @Test
     public fun test_ProfileTab_TL_profileTabVoice() {
-      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_ProfileTab.TL_profileTabVoice::class,
+      test_TLdeserializeEnum(org.telegram.tgnet.model.generated.TlGen_ProfileTab.TL_profileTabVoice::class,
           org.telegram.tgnet.TLRPC.ProfileTab::TLdeserialize, null)
 
     }
 
     @Test
     public fun test_ProfileTab_TL_profileTabLinks() {
-      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_ProfileTab.TL_profileTabLinks::class,
+      test_TLdeserializeEnum(org.telegram.tgnet.model.generated.TlGen_ProfileTab.TL_profileTabLinks::class,
           org.telegram.tgnet.TLRPC.ProfileTab::TLdeserialize, null)
 
     }
 
     @Test
     public fun test_ProfileTab_TL_profileTabGifs() {
-      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_ProfileTab.TL_profileTabGifs::class,
+      test_TLdeserializeEnum(org.telegram.tgnet.model.generated.TlGen_ProfileTab.TL_profileTabGifs::class,
           org.telegram.tgnet.TLRPC.ProfileTab::TLdeserialize, null)
 
     }

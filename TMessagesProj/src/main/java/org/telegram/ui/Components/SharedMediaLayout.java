@@ -1515,19 +1515,19 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
             this.initialTab = TAB_BOT_PREVIEWS;
         } else if (userInfo != null && userInfo.bot_info != null && userInfo.bot_info.has_preview_medias) {
             this.initialTab = TAB_STORIES;
-        } else if (main_tab instanceof TLRPC.TL_profileTabPosts && (userInfo != null && userInfo.stories_pinned_available || chatInfo != null && chatInfo.stories_pinned_available || isStoriesView())) {
+        } else if (main_tab == TLRPC.ProfileTab.profileTabPosts && (userInfo != null && userInfo.stories_pinned_available || chatInfo != null && chatInfo.stories_pinned_available || isStoriesView())) {
             this.initialTab = TAB_STORIES;
-        } else if (main_tab instanceof TLRPC.TL_profileTabGifts && (userInfo != null && userInfo.stargifts_count > 0 || chatInfo != null && chatInfo.stargifts_count > 0)) {
+        } else if (main_tab == TLRPC.ProfileTab.profileTabGifts && (userInfo != null && userInfo.stargifts_count > 0 || chatInfo != null && chatInfo.stargifts_count > 0)) {
             this.initialTab = TAB_GIFTS;
-        } else if (main_tab instanceof TLRPC.TL_profileTabFiles && (hasMedia[1] == -1 || hasMedia[1] > 0)) {
+        } else if (main_tab == TLRPC.ProfileTab.profileTabFiles && (hasMedia[1] == -1 || hasMedia[1] > 0)) {
             this.initialTab = TAB_FILES;
-        } else if (main_tab instanceof TLRPC.TL_profileTabGifs && (hasMedia[5] == -1 || hasMedia[5] > 0)) {
+        } else if (main_tab == TLRPC.ProfileTab.profileTabGifs && (hasMedia[5] == -1 || hasMedia[5] > 0)) {
             this.initialTab = TAB_GIF;
-        } else if (main_tab instanceof TLRPC.TL_profileTabLinks && (hasMedia[3] == -1 || hasMedia[3] > 0)) {
+        } else if (main_tab == TLRPC.ProfileTab.profileTabLinks && (hasMedia[3] == -1 || hasMedia[3] > 0)) {
             this.initialTab = TAB_LINKS;
-        } else if (main_tab instanceof TLRPC.TL_profileTabMusic && (hasMedia[4] == -1 || hasMedia[4] > 0)) {
+        } else if (main_tab == TLRPC.ProfileTab.profileTabMusic && (hasMedia[4] == -1 || hasMedia[4] > 0)) {
             this.initialTab = TAB_AUDIO;
-        } else if (main_tab instanceof TLRPC.TL_profileTabVoice && (hasMedia[2] == -1 || hasMedia[2] > 0)) {
+        } else if (main_tab == TLRPC.ProfileTab.profileTabVoice && (hasMedia[2] == -1 || hasMedia[2] > 0)) {
             this.initialTab = TAB_VOICE;
         } else if (userInfo != null && userInfo.stories_pinned_available || chatInfo != null && chatInfo.stories_pinned_available || isStoriesView()) {
             this.initialTab = getInitialTab();
@@ -11587,14 +11587,14 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
         if (id != TAB_STORIES && id != TAB_GIFTS && !isChannel)
             return null;
         switch (id) {
-            case TAB_STORIES:    return new TLRPC.TL_profileTabPosts();
-            case TAB_PHOTOVIDEO: return new TLRPC.TL_profileTabMedia();
-            case TAB_GIFTS:      return new TLRPC.TL_profileTabGifts();
-            case TAB_AUDIO:      return new TLRPC.TL_profileTabMusic();
-            case TAB_VOICE:      return new TLRPC.TL_profileTabVoice();
-            case TAB_LINKS:      return new TLRPC.TL_profileTabLinks();
-            case TAB_FILES:      return new TLRPC.TL_profileTabFiles();
-            case TAB_GIF:        return new TLRPC.TL_profileTabGifs();
+            case TAB_STORIES:    return TLRPC.ProfileTab.profileTabPosts;
+            case TAB_PHOTOVIDEO: return TLRPC.ProfileTab.profileTabMedia;
+            case TAB_GIFTS:      return TLRPC.ProfileTab.profileTabGifts;
+            case TAB_AUDIO:      return TLRPC.ProfileTab.profileTabMusic;
+            case TAB_VOICE:      return TLRPC.ProfileTab.profileTabVoice;
+            case TAB_LINKS:      return TLRPC.ProfileTab.profileTabLinks;
+            case TAB_FILES:      return TLRPC.ProfileTab.profileTabFiles;
+            case TAB_GIF:        return TLRPC.ProfileTab.profileTabGifs;
         }
         return null;
     }
@@ -11614,14 +11614,14 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
     }
 
     public static int getTabId(TLRPC.ProfileTab tab) {
-        if (tab instanceof TLRPC.TL_profileTabPosts) return TAB_STORIES;
-        if (tab instanceof TLRPC.TL_profileTabMedia) return TAB_PHOTOVIDEO;
-        if (tab instanceof TLRPC.TL_profileTabGifts) return TAB_GIFTS;
-        if (tab instanceof TLRPC.TL_profileTabMusic) return TAB_AUDIO;
-        if (tab instanceof TLRPC.TL_profileTabVoice) return TAB_VOICE;
-        if (tab instanceof TLRPC.TL_profileTabLinks) return TAB_LINKS;
-        if (tab instanceof TLRPC.TL_profileTabFiles) return TAB_FILES;
-        if (tab instanceof TLRPC.TL_profileTabGifs)  return TAB_GIF;
+        if (tab == TLRPC.ProfileTab.profileTabPosts) return TAB_STORIES;
+        if (tab == TLRPC.ProfileTab.profileTabMedia) return TAB_PHOTOVIDEO;
+        if (tab == TLRPC.ProfileTab.profileTabGifts) return TAB_GIFTS;
+        if (tab == TLRPC.ProfileTab.profileTabMusic) return TAB_AUDIO;
+        if (tab == TLRPC.ProfileTab.profileTabVoice) return TAB_VOICE;
+        if (tab == TLRPC.ProfileTab.profileTabLinks) return TAB_LINKS;
+        if (tab == TLRPC.ProfileTab.profileTabFiles) return TAB_FILES;
+        if (tab == TLRPC.ProfileTab.profileTabGifs)  return TAB_GIF;
         return -1;
     }
 

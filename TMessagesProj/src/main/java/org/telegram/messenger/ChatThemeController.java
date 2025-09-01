@@ -943,7 +943,7 @@ public class ChatThemeController extends BaseController {
             final TL_account.Tl_getUniqueGiftChatThemes req = new TL_account.Tl_getUniqueGiftChatThemes();
             req.offset = giftsThemeList.offset;
             req.hash = giftsThemeList.hash;
-            req.limit = 10;
+            req.limit = 50;
 
             getConnectionsManager().sendRequestTyped(req, chatThemeQueue::postRunnable, (response, error) -> {
                 if (error != null) {

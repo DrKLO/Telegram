@@ -9684,6 +9684,7 @@
     <string name="SearchPaidStars_one">**%d Star** spent on extra search.</string>
     <string name="SearchPaidStars_other">**%d Stars** spent on extra search.</string>
     <string name="Gift2UpgradeNext">Upgrade Next Gift</string>
+    <string name="Gift2GiftAnUpgrade">Gift an Upgrade</string>
     <string name="ProfileActionsMessage">Message</string>
     <string name="ProfileActionsDiscuss">Discuss</string>
     <string name="ProfileActionsGift">Gift</string>

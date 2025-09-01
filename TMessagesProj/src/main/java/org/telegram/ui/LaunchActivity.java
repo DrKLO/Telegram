@@ -8696,6 +8696,10 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
     private @Nullable CustomNavigationBar customNavigationBar;
 
     public void requestCustomNavigationBar() {
+        if (Build.VERSION.SDK_INT < 35) {
+            return;
+        }
+
         if (customNavigationBar == null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             customNavigationBar = new CustomNavigationBar(this);
             FrameLayout decorView = (FrameLayout) getWindow().getDecorView();

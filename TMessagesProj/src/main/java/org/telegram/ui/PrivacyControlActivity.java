@@ -901,7 +901,7 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
                 if (!initialPlus.equals(currentPlus)) {
                     done[0] = false;
                     TL_account.setPrivacy req = new TL_account.setPrivacy();
-                    req.key = new TLRPC.TL_inputPrivacyKeyNoPaidMessages();
+                    req.key = TLRPC.InputPrivacyKey.inputPrivacyKeyNoPaidMessages;
                     req.rules.add(new TLRPC.TL_inputPrivacyValueAllowContacts());
                     if (currentType != 0 && currentPlus.size() > 0) {
                         TLRPC.TL_inputPrivacyValueAllowUsers usersRule = new TLRPC.TL_inputPrivacyValueAllowUsers();
@@ -994,10 +994,10 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
 
         TL_account.setPrivacy req = new TL_account.setPrivacy();
         if (rulesType == PRIVACY_RULES_TYPE_PHONE) {
-            req.key = new TLRPC.TL_inputPrivacyKeyPhoneNumber();
+            req.key = TLRPC.InputPrivacyKey.inputPrivacyKeyPhoneNumber;
             if (currentType == TYPE_NOBODY) {
                 TL_account.setPrivacy req2 = new TL_account.setPrivacy();
-                req2.key = new TLRPC.TL_inputPrivacyKeyAddedByPhone();
+                req2.key = TLRPC.InputPrivacyKey.inputPrivacyKeyAddedByPhone;
                 if (currentSubType == 0) {
                     req2.rules.add(new TLRPC.TL_inputPrivacyValueAllowAll());
                 } else {
@@ -1017,25 +1017,25 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
                 }), ConnectionsManager.RequestFlagFailOnServerErrors);
             }
         } else if (rulesType == PRIVACY_RULES_TYPE_FORWARDS) {
-            req.key = new TLRPC.TL_inputPrivacyKeyForwards();
+            req.key = TLRPC.InputPrivacyKey.inputPrivacyKeyForwards;
         } else if (rulesType == PRIVACY_RULES_TYPE_PHOTO) {
-            req.key = new TLRPC.TL_inputPrivacyKeyProfilePhoto();
+            req.key = TLRPC.InputPrivacyKey.inputPrivacyKeyProfilePhoto;
         } else if (rulesType == PRIVACY_RULES_TYPE_BIO) {
-            req.key = new TLRPC.TL_inputPrivacyKeyAbout();
+            req.key = TLRPC.InputPrivacyKey.inputPrivacyKeyAbout;
         } else if (rulesType == PRIVACY_RULES_TYPE_P2P) {
-            req.key = new TLRPC.TL_inputPrivacyKeyPhoneP2P();
+            req.key = TLRPC.InputPrivacyKey.inputPrivacyKeyPhoneP2P;
         } else if (rulesType == PRIVACY_RULES_TYPE_CALLS) {
-            req.key = new TLRPC.TL_inputPrivacyKeyPhoneCall();
+            req.key = TLRPC.InputPrivacyKey.inputPrivacyKeyPhoneCall;
         } else if (rulesType == PRIVACY_RULES_TYPE_INVITE) {
-            req.key = new TLRPC.TL_inputPrivacyKeyChatInvite();
+            req.key = TLRPC.InputPrivacyKey.inputPrivacyKeyChatInvite;
         } else if (rulesType == PRIVACY_RULES_TYPE_VOICE_MESSAGES) {
-            req.key = new TLRPC.TL_inputPrivacyKeyVoiceMessages();
+            req.key = TLRPC.InputPrivacyKey.inputPrivacyKeyVoiceMessages;
         } else if (rulesType == PRIVACY_RULES_TYPE_BIRTHDAY) {
-            req.key = new TLRPC.TL_inputPrivacyKeyBirthday();
+            req.key = TLRPC.InputPrivacyKey.inputPrivacyKeyBirthday;
         } else if (rulesType == PRIVACY_RULES_TYPE_GIFTS) {
-            req.key = new TLRPC.TL_inputPrivacyKeyStarGiftsAutoSave();
+            req.key = TLRPC.InputPrivacyKey.inputPrivacyKeyStarGiftsAutoSave;
         } else {
-            req.key = new TLRPC.TL_inputPrivacyKeyStatusTimestamp();
+            req.key = TLRPC.InputPrivacyKey.inputPrivacyKeyStatusTimestamp;
         }
         if (currentType != 0 && currentPlus.size() > 0) {
             TLRPC.TL_inputPrivacyValueAllowUsers usersRule = new TLRPC.TL_inputPrivacyValueAllowUsers();

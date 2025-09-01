@@ -4871,165 +4871,6 @@ public class TLRPC {
         }
     }
 
-    public static abstract class PrivacyKey extends TLObject {
-
-        public static PrivacyKey TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
-            PrivacyKey result = null;
-            switch (constructor) {
-                case TL_privacyKeyStatusTimestamp.constructor:
-                    result = new TL_privacyKeyStatusTimestamp();
-                    break;
-                case TL_privacyKeyPhoneP2P.constructor:
-                    result = new TL_privacyKeyPhoneP2P();
-                    break;
-                case TL_privacyKeyChatInvite.constructor:
-                    result = new TL_privacyKeyChatInvite();
-                    break;
-                case TL_privacyKeyAddedByPhone.constructor:
-                    result = new TL_privacyKeyAddedByPhone();
-                    break;
-                case TL_privacyKeyVoiceMessages.constructor:
-                    result = new TL_privacyKeyVoiceMessages();
-                    break;
-                case TL_privacyKeyAbout.constructor:
-                    result = new TL_privacyKeyAbout();
-                    break;
-                case TL_privacyKeyPhoneCall.constructor:
-                    result = new TL_privacyKeyPhoneCall();
-                    break;
-                case TL_privacyKeyForwards.constructor:
-                    result = new TL_privacyKeyForwards();
-                    break;
-                case TL_privacyKeyPhoneNumber.constructor:
-                    result = new TL_privacyKeyPhoneNumber();
-                    break;
-                case TL_privacyKeyProfilePhoto.constructor:
-                    result = new TL_privacyKeyProfilePhoto();
-                    break;
-                case TL_privacyKeyBirthday.constructor:
-                    result = new TL_privacyKeyBirthday();
-                    break;
-                case TL_privacyKeyStarGiftsAutoSave.constructor:
-                    result = new TL_privacyKeyStarGiftsAutoSave();
-                    break;
-                case TL_privacyKeyNoPaidMessages.constructor:
-                    result = new TL_privacyKeyNoPaidMessages();
-                    break;
-            }
-            if (result == null && exception) {
-                throw new RuntimeException(String.format("can't parse magic %x in PrivacyKey", constructor));
-            }
-            if (result != null) {
-                result.readParams(stream, exception);
-            }
-            return result;
-        }
-    }
-
-    public static class TL_privacyKeyStatusTimestamp extends PrivacyKey {
-        public static final int constructor = 0xbc2eab30;
-
-        public void serializeToStream(OutputSerializedData stream) {
-            stream.writeInt32(constructor);
-        }
-    }
-
-    public static class TL_privacyKeyPhoneP2P extends PrivacyKey {
-        public static final int constructor = 0x39491cc8;
-
-        public void serializeToStream(OutputSerializedData stream) {
-            stream.writeInt32(constructor);
-        }
-    }
-
-    public static class TL_privacyKeyChatInvite extends PrivacyKey {
-        public static final int constructor = 0x500e6dfa;
-
-        public void serializeToStream(OutputSerializedData stream) {
-            stream.writeInt32(constructor);
-        }
-    }
-
-    public static class TL_privacyKeyPhoneCall extends PrivacyKey {
-        public static final int constructor = 0x3d662b7b;
-
-        public void serializeToStream(OutputSerializedData stream) {
-            stream.writeInt32(constructor);
-        }
-    }
-
-    public static class TL_privacyKeyAddedByPhone extends PrivacyKey {
-        public static final int constructor = 0x42ffd42b;
-
-        public void serializeToStream(OutputSerializedData stream) {
-            stream.writeInt32(constructor);
-        }
-    }
-
-    public static class TL_privacyKeyAbout extends PrivacyKey {
-        public static final int constructor = 0xa486b761;
-
-        public void serializeToStream(OutputSerializedData stream) {
-            stream.writeInt32(constructor);
-        }
-    }
-
-    public static class TL_privacyKeyVoiceMessages extends PrivacyKey {
-        public static final int constructor = 0x697f414;
-
-        public void serializeToStream(OutputSerializedData stream) {
-            stream.writeInt32(constructor);
-        }
-    }
-
-    public static class TL_privacyKeyForwards extends PrivacyKey {
-        public static final int constructor = 0x69ec56a3;
-
-        public void serializeToStream(OutputSerializedData stream) {
-            stream.writeInt32(constructor);
-        }
-    }
-
-    public static class TL_privacyKeyPhoneNumber extends PrivacyKey {
-        public static final int constructor = 0xd19ae46d;
-
-        public void serializeToStream(OutputSerializedData stream) {
-            stream.writeInt32(constructor);
-        }
-    }
-
-    public static class TL_privacyKeyProfilePhoto extends PrivacyKey {
-        public static final int constructor = 0x96151fed;
-
-        public void serializeToStream(OutputSerializedData stream) {
-            stream.writeInt32(constructor);
-        }
-    }
-
-    public static class TL_privacyKeyBirthday extends PrivacyKey {
-        public static final int constructor = 0x2000a518;
-
-        public void serializeToStream(OutputSerializedData stream) {
-            stream.writeInt32(constructor);
-        }
-    }
-
-    public static class TL_privacyKeyStarGiftsAutoSave extends PrivacyKey {
-        public static final int constructor = 0x2ca4fdf8;
-
-        public void serializeToStream(OutputSerializedData stream) {
-            stream.writeInt32(constructor);
-        }
-    }
-
-    public static class TL_privacyKeyNoPaidMessages extends PrivacyKey {
-        public static final int constructor = 0x17d348d2;
-
-        public void serializeToStream(OutputSerializedData stream) {
-            stream.writeInt32(constructor);
-        }
-    }
-
     public static abstract class GeoPoint extends TLObject {
         public int flags;
         public double _long;
@@ -5125,6 +4966,37 @@ public class TLRPC {
             if ((flags & 1) != 0) {
                 stream.writeInt32(accuracy_radius);
             }
+        }
+    }
+
+    public enum PrivacyKey implements TLEnum.Constructor {
+        privacyKeyStatusTimestamp(0xbc2eab30),
+        privacyKeyChatInvite(0x500e6dfa),
+        privacyKeyPhoneCall(0x3d662b7b),
+        privacyKeyPhoneP2P(0x39491cc8),
+        privacyKeyForwards(0x69ec56a3),
+        privacyKeyProfilePhoto(0x96151fed),
+        privacyKeyPhoneNumber(0xd19ae46d),
+        privacyKeyAddedByPhone(0x42ffd42b),
+        privacyKeyVoiceMessages(0x697f414),
+        privacyKeyAbout(0xa486b761),
+        privacyKeyBirthday(0x2000a518),
+        privacyKeyStarGiftsAutoSave(0x2ca4fdf8),
+        privacyKeyNoPaidMessages(0x17d348d2);
+
+        public final int constructor;
+
+        PrivacyKey(int constructor) {
+            this.constructor = constructor;
+        }
+
+        @Override
+        public int getConstructor() {
+            return constructor;
+        }
+
+        public static PrivacyKey TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
+            return TLEnum.TLdeserialize(PrivacyKey.class, constructor, exception);
         }
     }
 
@@ -10956,165 +10828,6 @@ public class TLRPC {
         }
     }
 
-    public static abstract class InputPrivacyKey extends TLObject {
-
-        public static InputPrivacyKey TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
-            InputPrivacyKey result = null;
-            switch (constructor) {
-                case TL_inputPrivacyKeyStatusTimestamp.constructor:
-                    result = new TL_inputPrivacyKeyStatusTimestamp();
-                    break;
-                case TL_inputPrivacyKeyChatInvite.constructor:
-                    result = new TL_inputPrivacyKeyChatInvite();
-                    break;
-                case TL_inputPrivacyKeyPhoneCall.constructor:
-                    result = new TL_inputPrivacyKeyPhoneCall();
-                    break;
-                case TL_inputPrivacyKeyForwards.constructor:
-                    result = new TL_inputPrivacyKeyForwards();
-                    break;
-                case TL_inputPrivacyKeyProfilePhoto.constructor:
-                    result = new TL_inputPrivacyKeyProfilePhoto();
-                    break;
-                case TL_inputPrivacyKeyPhoneNumber.constructor:
-                    result = new TL_inputPrivacyKeyPhoneNumber();
-                    break;
-                case TL_inputPrivacyKeyAddedByPhone.constructor:
-                    result = new TL_inputPrivacyKeyAddedByPhone();
-                    break;
-                case TL_inputPrivacyKeyVoiceMessages.constructor:
-                    result = new TL_inputPrivacyKeyVoiceMessages();
-                    break;
-                case TL_inputPrivacyKeyPhoneP2P.constructor:
-                    result = new TL_inputPrivacyKeyPhoneP2P();
-                    break;
-                case TL_inputPrivacyKeyAbout.constructor:
-                    result = new TL_inputPrivacyKeyAbout();
-                    break;
-                case TL_inputPrivacyKeyBirthday.constructor:
-                    result = new TL_inputPrivacyKeyBirthday();
-                    break;
-                case TL_inputPrivacyKeyStarGiftsAutoSave.constructor:
-                    result = new TL_inputPrivacyKeyStarGiftsAutoSave();
-                    break;
-                case TL_inputPrivacyKeyNoPaidMessages.constructor:
-                    result = new TL_inputPrivacyKeyNoPaidMessages();
-                    break;
-            }
-            if (result == null && exception) {
-                throw new RuntimeException(String.format("can't parse magic %x in InputPrivacyKey", constructor));
-            }
-            if (result != null) {
-                result.readParams(stream, exception);
-            }
-            return result;
-        }
-    }
-
-    public static class TL_inputPrivacyKeyStatusTimestamp extends InputPrivacyKey {
-        public static final int constructor = 0x4f96cb18;
-
-        public void serializeToStream(OutputSerializedData stream) {
-            stream.writeInt32(constructor);
-        }
-    }
-
-    public static class TL_inputPrivacyKeyChatInvite extends InputPrivacyKey {
-        public static final int constructor = 0xbdfb0426;
-
-        public void serializeToStream(OutputSerializedData stream) {
-            stream.writeInt32(constructor);
-        }
-    }
-
-    public static class TL_inputPrivacyKeyPhoneCall extends InputPrivacyKey {
-        public static final int constructor = 0xfabadc5f;
-
-        public void serializeToStream(OutputSerializedData stream) {
-            stream.writeInt32(constructor);
-        }
-    }
-
-    public static class TL_inputPrivacyKeyForwards extends InputPrivacyKey {
-        public static final int constructor = 0xa4dd4c08;
-
-        public void serializeToStream(OutputSerializedData stream) {
-            stream.writeInt32(constructor);
-        }
-    }
-
-    public static class TL_inputPrivacyKeyPhoneNumber extends InputPrivacyKey {
-        public static final int constructor = 0x352dafa;
-
-        public void serializeToStream(OutputSerializedData stream) {
-            stream.writeInt32(constructor);
-        }
-    }
-
-    public static class TL_inputPrivacyKeyAddedByPhone extends InputPrivacyKey {
-        public static final int constructor = 0xd1219bdd;
-
-        public void serializeToStream(OutputSerializedData stream) {
-            stream.writeInt32(constructor);
-        }
-    }
-
-    public static class TL_inputPrivacyKeyVoiceMessages extends InputPrivacyKey {
-        public static final int constructor = 0xaee69d68;
-
-        public void serializeToStream(OutputSerializedData stream) {
-            stream.writeInt32(constructor);
-        }
-    }
-
-    public static class TL_inputPrivacyKeyAbout extends InputPrivacyKey {
-        public static final int constructor = 0x3823cc40;
-
-        public void serializeToStream(OutputSerializedData stream) {
-            stream.writeInt32(constructor);
-        }
-    }
-
-    public static class TL_inputPrivacyKeyBirthday extends InputPrivacyKey {
-        public static final int constructor = 0xd65a11cc;
-
-        public void serializeToStream(OutputSerializedData stream) {
-            stream.writeInt32(constructor);
-        }
-    }
-
-    public static class TL_inputPrivacyKeyStarGiftsAutoSave extends InputPrivacyKey {
-        public static final int constructor = 0xe1732341;
-
-        public void serializeToStream(OutputSerializedData stream) {
-            stream.writeInt32(constructor);
-        }
-    }
-
-    public static class TL_inputPrivacyKeyNoPaidMessages extends InputPrivacyKey {
-        public static final int constructor = 0xbdc597b4;
-
-        public void serializeToStream(OutputSerializedData stream) {
-            stream.writeInt32(constructor);
-        }
-    }
-
-    public static class TL_inputPrivacyKeyProfilePhoto extends InputPrivacyKey {
-        public static final int constructor = 0x5719bacc;
-
-        public void serializeToStream(OutputSerializedData stream) {
-            stream.writeInt32(constructor);
-        }
-    }
-
-    public static class TL_inputPrivacyKeyPhoneP2P extends InputPrivacyKey {
-        public static final int constructor = 0xdb9e70d2;
-
-        public void serializeToStream(OutputSerializedData stream) {
-            stream.writeInt32(constructor);
-        }
-    }
-
     public static abstract class messages_ExportedChatInvite extends TLObject {
 
         public ExportedChatInvite invite;
@@ -11171,6 +10884,37 @@ public class TLRPC {
             stream.writeInt32(constructor);
             invite.serializeToStream(stream);
             Vector.serialize(stream, users);
+        }
+    }
+
+    public enum InputPrivacyKey implements TLEnum.Constructor {
+        inputPrivacyKeyStatusTimestamp(0x4f96cb18),
+        inputPrivacyKeyChatInvite(0xbdfb0426),
+        inputPrivacyKeyPhoneCall(0xfabadc5f),
+        inputPrivacyKeyPhoneP2P(0xdb9e70d2),
+        inputPrivacyKeyForwards(0xa4dd4c08),
+        inputPrivacyKeyProfilePhoto(0x5719bacc),
+        inputPrivacyKeyPhoneNumber(0x352dafa),
+        inputPrivacyKeyAddedByPhone(0xd1219bdd),
+        inputPrivacyKeyVoiceMessages(0xaee69d68),
+        inputPrivacyKeyAbout(0x3823cc40),
+        inputPrivacyKeyBirthday(0xd65a11cc),
+        inputPrivacyKeyStarGiftsAutoSave(0xe1732341),
+        inputPrivacyKeyNoPaidMessages(0xbdc597b4);
+
+        public final int constructor;
+
+        InputPrivacyKey(int constructor) {
+            this.constructor = constructor;
+        }
+
+        @Override
+        public int getConstructor() {
+            return constructor;
+        }
+
+        public static InputPrivacyKey TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
+            return TLEnum.TLdeserialize(InputPrivacyKey.class, constructor, exception);
         }
     }
 
@@ -72482,24 +72226,6 @@ public class TLRPC {
     public static class TL_messageActionStarGift_layer211 extends TL_messageActionStarGift {
         public static final int constructor = 0x4717e8a4;
 
-        public boolean name_hidden;
-        public boolean saved;
-        public boolean converted;
-        public boolean upgraded;
-        public boolean transferred;
-        public boolean can_upgrade;
-        public boolean refunded;
-        public boolean prepaid_upgrade;
-        public TL_stars.StarGift gift;
-        public TL_textWithEntities message;
-        public long convert_stars;
-        public int upgrade_msg_id;
-        public long upgrade_stars;
-        public Peer from_id;
-        public long saved_id;
-
-        public boolean forceIn; //custom
-
         @Override
         public void readParams(InputSerializedData stream, boolean exception) {
             flags = stream.readInt32(exception);
@@ -75576,109 +75302,6 @@ public class TLRPC {
         }
     }
 
-    public static class ProfileTab extends TLObject {
-        public static ProfileTab TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
-            ProfileTab result = null;
-            switch (constructor) {
-                case TL_profileTabPosts.constructor:
-                    result = new TL_profileTabPosts();
-                    break;
-                case TL_profileTabGifts.constructor:
-                    result = new TL_profileTabGifts();
-                    break;
-                case TL_profileTabMedia.constructor:
-                    result = new TL_profileTabMedia();
-                    break;
-                case TL_profileTabFiles.constructor:
-                    result = new TL_profileTabFiles();
-                    break;
-                case TL_profileTabMusic.constructor:
-                    result = new TL_profileTabMusic();
-                    break;
-                case TL_profileTabVoice.constructor:
-                    result = new TL_profileTabVoice();
-                    break;
-                case TL_profileTabLinks.constructor:
-                    result = new TL_profileTabLinks();
-                    break;
-                case TL_profileTabGifs.constructor:
-                    result = new TL_profileTabGifs();
-                    break;
-            }
-            if (result == null && exception) {
-                throw new RuntimeException(String.format("can't parse magic %x in ProfileTab", constructor));
-            }
-            if (result != null) {
-                result.readParams(stream, exception);
-            }
-            return result;
-        }
-    }
-
-    public static class TL_profileTabPosts extends ProfileTab {
-        public static final int constructor = 0xb98cd696;
-        @Override
-        public void serializeToStream(OutputSerializedData stream) {
-            stream.writeInt32(constructor);
-        }
-    }
-
-    public static class TL_profileTabGifts extends ProfileTab {
-        public static final int constructor = 0x4d4bd46a;
-        @Override
-        public void serializeToStream(OutputSerializedData stream) {
-            stream.writeInt32(constructor);
-        }
-    }
-
-    public static class TL_profileTabMedia extends ProfileTab {
-        public static final int constructor = 0x72c64955;
-        @Override
-        public void serializeToStream(OutputSerializedData stream) {
-            stream.writeInt32(constructor);
-        }
-    }
-
-    public static class TL_profileTabFiles extends ProfileTab {
-        public static final int constructor = 0xab339c00;
-        @Override
-        public void serializeToStream(OutputSerializedData stream) {
-            stream.writeInt32(constructor);
-        }
-    }
-
-    public static class TL_profileTabMusic extends ProfileTab {
-        public static final int constructor = 0x9f27d26e;
-        @Override
-        public void serializeToStream(OutputSerializedData stream) {
-            stream.writeInt32(constructor);
-        }
-    }
-
-    public static class TL_profileTabVoice extends ProfileTab {
-        public static final int constructor = 0xe477092e;
-        @Override
-        public void serializeToStream(OutputSerializedData stream) {
-            stream.writeInt32(constructor);
-        }
-    }
-
-    public static class TL_profileTabLinks extends ProfileTab {
-        public static final int constructor = 0xd3656499;
-        @Override
-        public void serializeToStream(OutputSerializedData stream) {
-            stream.writeInt32(constructor);
-        }
-    }
-
-    public static class TL_profileTabGifs extends ProfileTab {
-        public static final int constructor = 0xa2c0f695;
-        @Override
-        public void serializeToStream(OutputSerializedData stream) {
-            stream.writeInt32(constructor);
-        }
-    }
-
     public static class SavedMusic extends TLObject {
 
         public int count;
@@ -75776,6 +75399,31 @@ public class TLRPC {
         }
     }
 
+    public enum ProfileTab implements TLEnum.Constructor {
+        profileTabPosts(0xb98cd696),
+        profileTabGifts(0x4d4bd46a),
+        profileTabMedia(0x72c64955),
+        profileTabFiles(0xab339c00),
+        profileTabMusic(0x9f27d26e),
+        profileTabVoice(0xe477092e),
+        profileTabLinks(0xd3656499),
+        profileTabGifs(0xa2c0f695);
+
+        public final int constructor;
+
+        ProfileTab(int constructor) {
+            this.constructor = constructor;
+        }
+
+        @Override
+        public int getConstructor() {
+            return constructor;
+        }
+
+        public static ProfileTab TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
+            return TLEnum.TLdeserialize(ProfileTab.class, constructor, exception);
+        }
+    }
 
     public static class TL_channels_setMainProfileTab extends TLObject {
         public static final int constructor = 0x3583fcb1;

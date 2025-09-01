@@ -18560,29 +18560,29 @@ public class MessagesController extends BaseController implements NotificationCe
                     TLRPC.Update baseUpdate = updatesOnMainThreadFinal.get(a);
                     if (baseUpdate instanceof TLRPC.TL_updatePrivacy) {
                         TLRPC.TL_updatePrivacy update = (TLRPC.TL_updatePrivacy) baseUpdate;
-                        if (update.key instanceof TLRPC.TL_privacyKeyStatusTimestamp) {
+                        if (update.key == TLRPC.PrivacyKey.privacyKeyStatusTimestamp) {
                             getContactsController().setPrivacyRules(update.rules, ContactsController.PRIVACY_RULES_TYPE_LASTSEEN);
-                        } else if (update.key instanceof TLRPC.TL_privacyKeyChatInvite) {
+                        } else if (update.key == TLRPC.PrivacyKey.privacyKeyChatInvite) {
                             getContactsController().setPrivacyRules(update.rules, ContactsController.PRIVACY_RULES_TYPE_INVITE);
-                        } else if (update.key instanceof TLRPC.TL_privacyKeyPhoneCall) {
+                        } else if (update.key == TLRPC.PrivacyKey.privacyKeyPhoneCall) {
                             getContactsController().setPrivacyRules(update.rules, ContactsController.PRIVACY_RULES_TYPE_CALLS);
-                        } else if (update.key instanceof TLRPC.TL_privacyKeyPhoneP2P) {
+                        } else if (update.key == TLRPC.PrivacyKey.privacyKeyPhoneP2P) {
                             getContactsController().setPrivacyRules(update.rules, ContactsController.PRIVACY_RULES_TYPE_P2P);
-                        } else if (update.key instanceof TLRPC.TL_privacyKeyProfilePhoto) {
+                        } else if (update.key == TLRPC.PrivacyKey.privacyKeyProfilePhoto) {
                             getContactsController().setPrivacyRules(update.rules, ContactsController.PRIVACY_RULES_TYPE_PHOTO);
-                        } else if (update.key instanceof TLRPC.TL_privacyKeyForwards) {
+                        } else if (update.key == TLRPC.PrivacyKey.privacyKeyForwards) {
                             getContactsController().setPrivacyRules(update.rules, ContactsController.PRIVACY_RULES_TYPE_FORWARDS);
-                        } else if (update.key instanceof TLRPC.TL_privacyKeyPhoneNumber) {
+                        } else if (update.key == TLRPC.PrivacyKey.privacyKeyPhoneNumber) {
                             getContactsController().setPrivacyRules(update.rules, ContactsController.PRIVACY_RULES_TYPE_PHONE);
-                        } else if (update.key instanceof TLRPC.TL_privacyKeyAddedByPhone) {
+                        } else if (update.key == TLRPC.PrivacyKey.privacyKeyAddedByPhone) {
                             getContactsController().setPrivacyRules(update.rules, ContactsController.PRIVACY_RULES_TYPE_ADDED_BY_PHONE);
-                        } else if (update.key instanceof TLRPC.TL_privacyKeyVoiceMessages) {
+                        } else if (update.key == TLRPC.PrivacyKey.privacyKeyVoiceMessages) {
                             getContactsController().setPrivacyRules(update.rules, ContactsController.PRIVACY_RULES_TYPE_VOICE_MESSAGES);
-                        } else if (update.key instanceof TLRPC.TL_privacyKeyAbout) {
+                        } else if (update.key == TLRPC.PrivacyKey.privacyKeyAbout) {
                             getContactsController().setPrivacyRules(update.rules, ContactsController.PRIVACY_RULES_TYPE_BIO);
-                        } else if (update.key instanceof TLRPC.TL_privacyKeyBirthday) {
+                        } else if (update.key == TLRPC.PrivacyKey.privacyKeyBirthday) {
                             getContactsController().setPrivacyRules(update.rules, ContactsController.PRIVACY_RULES_TYPE_BIRTHDAY);
-                        } else if (update.key instanceof TLRPC.TL_privacyKeyStarGiftsAutoSave) {
+                        } else if (update.key == TLRPC.PrivacyKey.privacyKeyStarGiftsAutoSave) {
                             getContactsController().setPrivacyRules(update.rules, ContactsController.PRIVACY_RULES_TYPE_GIFTS);
                         }
                     } else if (baseUpdate instanceof TLRPC.TL_updateStarsRevenueStatus) {

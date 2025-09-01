@@ -3904,7 +3904,7 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
                     upgradeIconSpan = new ColoredImageSpan(new UpgradeIcon(button, Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider)));
                 }
                 sb.setSpan(upgradeIconSpan, 0, 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-                sb.append("Gift an Upgrade");
+                sb.append(getString(R.string.Gift2GiftAnUpgrade));
                 button.setFilled(true);
                 button.setText(sb, !firstSet);
                 button.setSubText(null, !firstSet);
@@ -4046,7 +4046,7 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
                 out = false;
             }
             final int date = messageObject.messageOwner.date;
-            boolean can_upgrade, upgraded;
+            boolean can_upgrade, upgraded, prepaid_upgrade;
             long convert_stars, upgrade_stars;
             TLRPC.Peer from_id, peer;
             String prepaid_upgrade_hash;
@@ -4064,6 +4064,7 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
                 upgraded = action.upgraded;
                 from_id = action.from_id;
                 peer = action.peer;
+                prepaid_upgrade = action.prepaid_upgrade;
                 prepaid_upgrade_hash = action.prepaid_upgrade_hash;
             } else {
                 final TLRPC.TL_messageActionStarGiftUnique action = (TLRPC.TL_messageActionStarGiftUnique) messageObject.messageOwner.action;
@@ -4079,6 +4080,7 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
                 upgraded = true;
                 from_id = action.from_id;
                 peer = action.peer;
+                prepaid_upgrade = false;
                 prepaid_upgrade_hash = null;
             }
 
@@ -4130,7 +4132,7 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
             final long fromId = from_id != null ? DialogObject.getPeerDialogId(from_id) : out ? selfId : dialogId;
             final long toId = peer != null ? DialogObject.getPeerDialogId(peer) : out ? dialogId : selfId;
             final TLRPC.User fromUser = MessagesController.getInstance(currentAccount).getUser(fromId);
-            if (fromId != selfId || isForChannel) {
+            if (fromId != selfId || prepaid_upgrade || isForChannel) {
                 tableView.addRowUser(getString(R.string.Gift2From), currentAccount, fromId, () -> openProfile(fromId), fromId != selfId && fromId != UserObject.ANONYMOUS && !UserObject.isDeleted(fromUser) && !fromBot && !isForChannel ? getString(R.string.Gift2ButtonSendGift) : null, isForChannel ? null : () -> {
                     new GiftSheet(getContext(), currentAccount, fromId, this::dismiss).show();
                 });
@@ -4217,7 +4219,7 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
                     upgradeIconSpan = new ColoredImageSpan(new UpgradeIcon(button, Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider)));
                 }
                 sb.setSpan(upgradeIconSpan, 0, 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-                sb.append("Gift an Upgrade");
+                sb.append(getString(R.string.Gift2GiftAnUpgrade));
                 button.setFilled(true);
                 button.setText(sb, !firstSet);
                 button.setSubText(null, !firstSet);
@@ -4846,7 +4848,7 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
         String prepaid_upgrade_hash;
         final TL_stars.InputSavedStarGift inputStarGift = getInputStarGift();
         if (inputStarGift == null) return;
-        final boolean isForChannel;
+        final boolean isForChannel, was_prepaid_by_not_gift_sender;
         if (messageObject != null) {
             TLRPC.MessageAction _action = messageObject.messageOwner.action;
             if (_action instanceof TLRPC.TL_messageActionStarGift) {
@@ -4857,6 +4859,10 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
                 hasMessage = action.message != null && !TextUtils.isEmpty(action.message.text);
                 isForChannel = action.peer instanceof TLRPC.TL_peerChannel;
                 prepaid_upgrade_hash = action.prepaid_upgrade_hash;
+                was_prepaid_by_not_gift_sender =
+                    action.prepaid_upgrade ?
+                        DialogObject.getPeerDialogId(action.from_id) != messageObject.getFromChatId() :
+                        action.upgrade_separate;
             } else {
                 return;
             }
@@ -4867,6 +4873,7 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
             hasMessage = savedStarGift.message != null && !TextUtils.isEmpty(savedStarGift.message.text);
             isForChannel = dialogId < 0;
             prepaid_upgrade_hash = savedStarGift.prepaid_upgrade_hash;
+            was_prepaid_by_not_gift_sender = savedStarGift.upgrade_separate;
         } else {
             return;
         }
@@ -4880,7 +4887,7 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
                 checkboxTextView.setText(getString(R.string.Gift2AddSenderName));
             }
         }
-        checkbox.setChecked(!name_hidden && paid_stars > 0, false);
+        checkbox.setChecked(!name_hidden && paid_stars > 0 && !was_prepaid_by_not_gift_sender, false);
 
         if (sample_attributes == null || paid_stars <= 0 && upgrade_form == null) {
             if (sample_attributes == null) {
