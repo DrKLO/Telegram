@@ -54,6 +54,7 @@ import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.SerializedData;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.tgnet.tl.TL_stars;
 import org.telegram.tgnet.tl.TL_stories;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Business.QuickRepliesController;
@@ -5298,7 +5299,19 @@ public class MessageObject {
                     messageText = formatString(R.string.ActionBotWebViewData, dataSent.text);
                 } else if (messageOwner.action instanceof TLRPC.TL_messageActionSetChatTheme) {
                     TLRPC.TL_messageActionSetChatTheme action = (TLRPC.TL_messageActionSetChatTheme) messageOwner.action;
-                    String emoticon = action.theme instanceof TLRPC.TL_chatTheme ? ((TLRPC.TL_chatTheme) action.theme).emoticon : null;
+                    String emoticon;
+                    if (action.theme instanceof TLRPC.TL_chatTheme) {
+                        emoticon = ((TLRPC.TL_chatTheme) action.theme).emoticon;
+                    } else if (action.theme instanceof TLRPC.TL_chatThemeUniqueGift) {
+                        TL_stars.StarGift starGift = ((TLRPC.TL_chatThemeUniqueGift) action.theme).gift;
+                        if (starGift != null) {
+                            emoticon = starGift.title + " #" + LocaleController.formatNumber(starGift.num, ',');
+                        } else {
+                            emoticon = null;
+                        }
+                    } else {
+                        emoticon = null;
+                    }
                     String userName = UserObject.getFirstName(fromUser);
                     boolean isChannel = fromUser == null && fromChat != null;
                     if (isChannel) {

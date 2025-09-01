@@ -37,7 +37,6 @@ public class ChatThemeController extends BaseController {
     private volatile int giftThemesOffset;
     private volatile long starGiftHash;
     private volatile boolean hasMoreGiftThemes;
-    private volatile boolean updateRequired;
 
     private ChatThemeController(int num) {
         super(num);
@@ -50,7 +49,6 @@ public class ChatThemeController extends BaseController {
         lastReloadTimeMs = 0;
         giftThemesOffset = 0;
         hasMoreGiftThemes = true;
-        updateRequired = false;
         try {
             themesHash = preferences.getLong("hash", 0);
             lastReloadTimeMs = preferences.getLong("lastReload", 0);
@@ -97,7 +95,7 @@ public class ChatThemeController extends BaseController {
         }
 
         boolean needReload = System.currentTimeMillis() - lastReloadTimeMs > reloadTimeoutMs;
-        if (allChatThemes == null || allChatThemes.isEmpty() || needReload || updateRequired) {
+        if (allChatThemes == null || allChatThemes.isEmpty() || needReload) {
             TL_account.getChatThemes request = new TL_account.getChatThemes();
             getSharedPreferences().edit().clear().apply();
 
@@ -153,10 +151,10 @@ public class ChatThemeController extends BaseController {
                     boolean finalIsError = isError;
                     hasMoreGiftThemes = true;
                     giftThemesOffset = 0;
+
                     requestGiftChatThemes(new ResultCallback<List<EmojiThemes>>() {
                         @Override
                         public void onComplete(List<EmojiThemes> result) {
-                            updateRequired = false;
                             if (result != null && !result.isEmpty()) {
                                 if (!finalIsError) {
                                     AndroidUtilities.runOnUIThread(() -> {
@@ -201,7 +199,7 @@ public class ChatThemeController extends BaseController {
     }
 
     public void setNeedUpdate(boolean needUpdate) {
-        updateRequired = needUpdate;
+        hasMoreGiftThemes = needUpdate;
     }
 
     public void requestGiftChatThemes(final ResultCallback<List<EmojiThemes>> callback) {
@@ -220,7 +218,7 @@ public class ChatThemeController extends BaseController {
         request.limit = 20;
         ConnectionsManager.getInstance(UserConfig.selectedAccount).sendRequest(request, (response, error) -> chatThemeQueue.postRunnable(() -> {
             boolean isError = false;
-            List<EmojiThemes> chatThemes = new ArrayList<>();
+            List<EmojiThemes> chatThemes;
             if (response instanceof TL_account.Tl_chatThemes) {
                 TL_account.Tl_chatThemes resp = (TL_account.Tl_chatThemes) response;
                 starGiftHash = resp.hash;
@@ -240,23 +238,27 @@ public class ChatThemeController extends BaseController {
                     chatThemes.add(chatTheme);
                 }
                 if (resp.next_offset == 0) {
-                    giftThemesOffset = 0;
+                    giftThemesOffset = giftThemesOffset + resp.themes.size();
                     hasMoreGiftThemes = false;
                 } else {
                     giftThemesOffset = resp.next_offset;
                     hasMoreGiftThemes = true;
                 }
                 editor.putBoolean("hasMoreGiftThemes", hasMoreGiftThemes);
+                editor.putInt("giftThemesOffset", giftThemesOffset);
                 editor.apply();
                     
-            } else if (response instanceof TL_account.TL_chatThemesNotModified) {
-
             } else {
-                isError = true;
-                callback.onError(error);
+                chatThemes = new ArrayList<>();
+                if (response instanceof TL_account.TL_chatThemesNotModified) {
+
+                } else {
+                    isError = true;
+                    AndroidUtilities.runOnUIThread(() -> callback.onError(error));
+                }
             }
             if (!isError && !chatThemes.isEmpty()) {
-                callback.onComplete(chatThemes);
+                AndroidUtilities.runOnUIThread(() -> callback.onComplete(chatThemes));
             }
         }));
     }
