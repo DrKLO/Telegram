@@ -47,7 +47,6 @@ import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.ColorFilter;
-import android.graphics.ImageFormat;
 import android.graphics.Matrix;
 import android.graphics.Outline;
 import android.graphics.Paint;
@@ -81,7 +80,6 @@ import android.text.style.ClickableSpan;
 import android.text.style.ForegroundColorSpan;
 import android.text.style.URLSpan;
 import android.text.util.Linkify;
-import android.util.Log;
 import android.util.Property;
 import android.util.SparseArray;
 import android.util.SparseIntArray;
@@ -517,6 +515,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     private boolean isInLandscapeMode;
     private boolean allowPullingDown;
     private boolean isPulledDown;
+    private boolean musicViewEnterAnimation;
 
     private Paint whitePaint = new Paint();
 
@@ -6252,8 +6251,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         float onlineX = this.onlineX;
 
         if (diff < 1f) {
-            nameX = AndroidUtilities.lerp(-dpf2(42 + 21), nameX, diff);
-            onlineX = AndroidUtilities.lerp(-dpf2(42 + 21), onlineX, diff);
+            nameX = AndroidUtilities.lerp(-dpf2(42 + 4), nameX, diff);
+            onlineX = AndroidUtilities.lerp(-dpf2(42 + 4), onlineX, diff);
         }
         final float kx = dpf2(8);
         final float ky = isPulledDown ? dpf2(8) : dpf2(-24);
@@ -8714,7 +8713,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     FrameLayout.LayoutParams params1 = (FrameLayout.LayoutParams) nameTextView[a].getLayoutParams();
                     float nameX = viewportWidth / 2f - (params1.leftMargin + Math.min(nameTextView[a].getExactWidth(), a == 1 ? params1.width : viewportWidth) * nameScale * 0.5f);
                     FrameLayout.LayoutParams params2 = (FrameLayout.LayoutParams) onlineTextView[a].getLayoutParams();
-                    float onlineX = viewportWidth / 2f - (params2.leftMargin + Math.min(onlineTextView[hasFallbackPhoto ? 3 : a].getExactWidth(), a == 1 ? params2.width : viewportWidth) * 0.5f);
+                    float onlineX = viewportWidth / 2f - (params2.leftMargin + onlineTextView[a].getPaddingLeft() - getRatingViewXSizeToCenter() + Math.min(onlineTextView[hasFallbackPhoto ? 3 : a].getExactWidth(), a == 1 ? params2.width : viewportWidth) * 0.5f);
 
                     if (a == 1) {
                         this.nameX = nameX;
@@ -9397,20 +9396,45 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 if (newUserInfo != null) {
                     userInfo = newUserInfo;
                 }
-                updateRowsIds();
                 updateSelectedMediaTabText();
-                if (listView != null && listView.isComputingLayout()) {
-                    listView.post(() -> {
-                        if (listView.isComputingLayout()) {
-                            return;
-                        }
-                        if (listAdapter != null) {
-                            listAdapter.notifyDataSetChanged();
-                        }
-                    });
-                } else if (listAdapter != null) {
+                updateMusicRow();
+            }
+        }
+    }
+
+    private void updateMusicRow() {
+        boolean wasMusicRowVisible = musicView != null && musicRow != -1;
+        boolean isMusicRowVisible = userInfo != null &&
+                userInfo.saved_music != null &&
+                (imageUpdater == null || myProfile);
+
+        boolean canAnimate = layoutManager != null && (expandAnimator == null || !expandAnimator.isRunning());
+        if (canAnimate && wasMusicRowVisible && !isMusicRowVisible) {
+            int currentExtraHeight = (int) extraHeight;
+            musicView.setAnimatedVisibility(false, animating -> {
+                final View view = layoutManager.findViewByPosition(0);
+                if (view != null) {
+                    listView.scrollBy(0, view.getTop() - currentExtraHeight);
+                }
+                if (!animating) {
+                    updateRowsIds();
                     listAdapter.notifyDataSetChanged();
                 }
+            });
+        } else {
+            updateRowsIds();
+            if (listView != null && listView.isComputingLayout()) {
+                listView.post(() -> {
+                    if (listView.isComputingLayout()) {
+                        return;
+                    }
+                    if (listAdapter != null) {
+                        listAdapter.notifyDataSetChanged();
+                    }
+                });
+            } else if (listAdapter != null) {
+                musicViewEnterAnimation = canAnimate && !wasMusicRowVisible && isMusicRowVisible;
+                listAdapter.notifyDataSetChanged();
             }
         }
     }
@@ -13890,6 +13914,16 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     if (userInfo != null && userInfo.saved_music != null) {
                         cell.setMusicDocument(userInfo.saved_music);
                     }
+                    if (musicViewEnterAnimation) {
+                        int currentExtraHeight = (int) extraHeight;
+                        cell.setAnimatedVisibility(true, animating -> {
+                            final View view = layoutManager.findViewByPosition(0);
+                            if (view != null) {
+                                listView.scrollBy(0, view.getTop() - currentExtraHeight);
+                            }
+                        });
+                        musicViewEnterAnimation = false;
+                    }
                     break;
             }
         }
@@ -15537,6 +15571,16 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     private float lastRatingViewTranslationXOffset;
     private float getRatingViewTranslationXOffset() {
         return (ratingView != null) ? dp(22) * ratingView.getVisibilityFactor() : 0;
+    }
+
+    private float getRatingViewXSizeToCenter() {
+        if (ratingView == null || userInfo == null || userInfo.stars_rating == null) {
+            return 0;
+        }
+        if (openAnimationInProgress && isFragmentOpened) {
+            return dpf2(11);
+        }
+        return dpf2(11) * ratingView.getVisibilityFactor();
     }
 
     private float lastRatingViewTranslationYOffset;

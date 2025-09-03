@@ -24,11 +24,8 @@ import androidx.core.graphics.ColorUtils;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.FileLoader;
-import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
-import org.telegram.messenger.UserConfig;
-import org.telegram.messenger.UserObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ProfileActivity;
@@ -37,15 +34,25 @@ public class ProfileMusicView extends View {
 
     private final Theme.ResourcesProvider resourcesProvider;
 
+    private Text prevAuthor, prevTitle;
     private Text author, title;
     private final Paint iconPaint = new Paint();
     private final Paint arrowPaint = new Paint();
     private final Path arrowPath = new Path();
     private final Drawable icon;
+    private boolean firstLoad;
+
+    private final AnimatedFloat switchMusicAnimator = new AnimatedFloat(this::invalidate, 380, CubicBezierInterpolator.DEFAULT);
+    private final AnimatedFloat isVisibleAnimator = new AnimatedFloat(this::onUpdateHeight, 380, CubicBezierInterpolator.EASE_OUT_QUINT);
+    private AnimationUpdateCallback animationUpdateCallback;
+    private int height = 0;
 
     public ProfileMusicView(Context context, Theme.ResourcesProvider resourcesProvider) {
         super(context);
         this.resourcesProvider = resourcesProvider;
+        isVisibleAnimator.set(true, true);
+        switchMusicAnimator.set(false, true);
+        height = getMaxViewHeight();
 
         icon = context.getResources().getDrawable(R.drawable.files_music).mutate();
         icon.setColorFilter(new PorterDuffColorFilter(Color.WHITE, PorterDuff.Mode.SRC_IN));
@@ -61,6 +68,7 @@ public class ProfileMusicView extends View {
 
         setColor(null);
         setText("Author", " - Title");
+        firstLoad = true;
     }
 
     @Override
@@ -71,10 +79,42 @@ public class ProfileMusicView extends View {
                 MeasureSpec.EXACTLY
             ),
             MeasureSpec.makeMeasureSpec(
-                dp(22),
+                height,
                 MeasureSpec.EXACTLY
             )
         );
+    }
+
+    public void setAnimatedVisibility(boolean isVisible, AnimationUpdateCallback animationUpdateCallback) {
+        if (isVisible) {
+            height = 0;
+            isVisibleAnimator.set(false, true);
+        }
+        isVisibleAnimator.set(isVisible);
+        this.animationUpdateCallback = animationUpdateCallback;
+    }
+
+    private void onUpdateHeight() {
+        if (getLayoutParams() != null) {
+            height = getAnimatedHeight();
+            getLayoutParams().height = getAnimatedHeight();
+            requestLayout();
+
+            if (animationUpdateCallback != null) {
+                animationUpdateCallback.onUpdate(isVisibleAnimator.isInProgress());
+                if (!isVisibleAnimator.isInProgress()) {
+                    animationUpdateCallback = null;
+                }
+            }
+        }
+    }
+
+    private int getMaxViewHeight() {
+        return dp(22);
+    }
+
+    private int getAnimatedHeight() {
+        return Math.max(1, (int) (getMaxViewHeight() * isVisibleAnimator.get()));
     }
 
     public void setColor(MessagesController.PeerColor peerColor) {
@@ -151,8 +191,21 @@ public class ProfileMusicView extends View {
     }
 
     public void setText(CharSequence author, CharSequence title) {
-        this.author = new Text(author, 11, AndroidUtilities.bold());
-        this.title = new Text(title, 11);
+        Text newAuthor = new Text(author, 11, AndroidUtilities.bold());
+        Text newTitle = new Text(title, 11);
+
+        if (!firstLoad &&
+                ((this.author != null && !this.author.getText().equals(newAuthor.getText())) ||
+                        (this.title != null && !this.title.getText().equals(newTitle.getText())))) {
+            switchMusicAnimator.set(false, true);
+            switchMusicAnimator.set(true);
+        }
+
+        this.firstLoad = false;
+        this.prevAuthor = this.author;
+        this.prevTitle = this.title;
+        this.author = newAuthor;
+        this.title = newTitle;
     }
 
     private ProfileActivity.AvatarImageView avatarView;
@@ -183,7 +236,7 @@ public class ProfileMusicView extends View {
 
     @Override
     protected void onDraw(@NonNull Canvas canvas) {
-        if (this.author == null || this.title == null) return;
+        if (this.author == null || this.title == null || this.isVisibleAnimator.getValue() == 0f) return;
 
         if (!ignoreRect && renderNode != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && canvas.isHardwareAccelerated()) {
             canvas.save();
@@ -193,23 +246,9 @@ public class ProfileMusicView extends View {
             canvas.restore();
         }
 
-        final int padding = dp(12);
-        final int maxWidth = getWidth() - padding * 2;
+        // final long now = System.currentTimeMillis();
+        final float cy = getMaxViewHeight() / 2f; //, hh = dp(6), w = dp(2);
 
-        this.author.ellipsize((maxWidth - dp(35)) / 2f);
-        this.title.ellipsize(maxWidth - this.author.getWidth() - dp(35));
-
-        final float width = dp(16.6f) + this.author.getWidth() + this.title.getWidth() + dp(8);
-
-        canvas.save();
-        canvas.translate((getWidth() - width) / 2f, 0);
-
-        final long now = System.currentTimeMillis();
-        final float cy = getHeight() / 2f, hh = dp(6), w = dp(2);
-
-        final int iconSz = dp(14);
-        icon.setBounds(0, (int) cy - iconSz / 2, iconSz, (int) cy + iconSz / 2);
-        icon.draw(canvas);
 //        final float h1 = lerp(0.1f, 1.0f, (float) Math.sin((now - start - 50) % 600 / 600f * Math.PI) / 2.0f + 0.5f);
 //        final float h2 = lerp(0.1f, 1.0f, (float) Math.sin((now - start - 250) % 600 / 600f * Math.PI) / 2.0f + 0.5f);
 //        final float h3 = lerp(0.1f, 1.0f, (float) Math.sin((now - start - 400) % 600 / 600f * Math.PI) / 2.0f + 0.5f);
@@ -218,16 +257,49 @@ public class ProfileMusicView extends View {
 //        canvas.drawRoundRect(dp(4), cy - hh * h2, dp(4) + w, cy + hh * h2, w, w, iconPaint);
 //        canvas.drawRoundRect(dp(8), cy - hh * h3, dp(8) + w, cy + hh * h3, w, w, iconPaint);
 
+        float switchAnimation = switchMusicAnimator.getValue();
+        if (!switchMusicAnimator.isInProgress()) {
+            prevTitle = prevAuthor = null;
+        }
+
+        if (prevAuthor != null && prevTitle != null) {
+            drawMusicDocument(canvas, this.author, this.title, lerp(cy - height, cy, switchAnimation));
+            drawMusicDocument(canvas, this.prevAuthor, this.prevTitle, lerp(cy, cy + height, switchAnimation));
+        } else {
+            drawMusicDocument(canvas, this.author, this.title, cy);
+        }
+    }
+
+    private void drawMusicDocument(Canvas canvas, Text author, Text title, float cy) {
+        canvas.save();
+        final int padding = dp(12);
+        final int maxWidth = getWidth() - padding * 2;
+
+        author.ellipsize((maxWidth - dp(35)) / 2f);
+        title.ellipsize(maxWidth - author.getWidth() - dp(35));
+
+        final float width = dp(16.6f) + author.getWidth() + title.getWidth() + dp(8);
+
+        canvas.translate((getWidth() - width) / 2f, 0);
+
+        final int iconSz = dp(14);
+        icon.setBounds(0, (int) cy - iconSz / 2, iconSz, (int) cy + iconSz / 2);
+        icon.draw(canvas);
+
         canvas.translate(dp(16.6f), 0);
-        this.author.draw(canvas, 0, cy, 0xFFFFFFFF, 1.0f);
-        canvas.translate(this.author.getWidth(), 0);
-        this.title.draw(canvas, 0, cy, 0xFFFFFFFF, 0.85f);
-        canvas.translate(this.title.getWidth(), 0);
+
+        author.draw(canvas, 0, cy, 0xFFFFFFFF, 1.0f);
+        canvas.translate(author.getWidth(), 0);
+        title.draw(canvas, 0, cy, 0xFFFFFFFF, 0.85f);
+        canvas.translate(title.getWidth(), 0);
 
         arrowPaint.setStrokeWidth(dpf2(1.16f));
         canvas.translate(dpf2(3.8f), cy);
         canvas.drawPath(arrowPath, arrowPaint);
-
         canvas.restore();
+    }
+
+    public interface AnimationUpdateCallback {
+        void onUpdate(boolean isRunning);
     }
 }

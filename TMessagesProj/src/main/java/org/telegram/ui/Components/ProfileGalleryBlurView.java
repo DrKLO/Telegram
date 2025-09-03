@@ -667,10 +667,11 @@ public class ProfileGalleryBlurView extends View {
             }
         }
         if (musicView != null) {
+            float dy = -size + dp(22) + (actionSize == 0 ? dp(4) : 0);
             if (avatarImageView != null) {
-                musicView.drawingBlur(actionsBlurNode, avatarImageView, scale / openingScale, -size + dp(22));
+                musicView.drawingBlur(actionsBlurNode, avatarImageView, scale / openingScale, dy);
             } else {
-                musicView.drawingBlur(actionsBlurNode, null, scale, -size + dp(22));
+                musicView.drawingBlur(actionsBlurNode, null, scale, dy);
             }
         }
     }
