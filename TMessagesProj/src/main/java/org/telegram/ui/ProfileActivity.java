@@ -8713,7 +8713,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     FrameLayout.LayoutParams params1 = (FrameLayout.LayoutParams) nameTextView[a].getLayoutParams();
                     float nameX = viewportWidth / 2f - (params1.leftMargin + Math.min(nameTextView[a].getExactWidth(), a == 1 ? params1.width : viewportWidth) * nameScale * 0.5f);
                     FrameLayout.LayoutParams params2 = (FrameLayout.LayoutParams) onlineTextView[a].getLayoutParams();
-                    float onlineX = viewportWidth / 2f - (params2.leftMargin + onlineTextView[a].getPaddingLeft() - getRatingViewXSizeToCenter() + Math.min(onlineTextView[hasFallbackPhoto ? 3 : a].getExactWidth(), a == 1 ? params2.width : viewportWidth) * 0.5f);
+                    float onlineX = viewportWidth / 2f - (params2.leftMargin + onlineTextView[a].getPaddingLeft() + Math.min(onlineTextView[hasFallbackPhoto ? 3 : a].getExactWidth(), a == 1 ? params2.width : viewportWidth) * 0.5f);
 
                     if (a == 1) {
                         this.nameX = nameX;
@@ -15571,16 +15571,6 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     private float lastRatingViewTranslationXOffset;
     private float getRatingViewTranslationXOffset() {
         return (ratingView != null) ? dp(22) * ratingView.getVisibilityFactor() : 0;
-    }
-
-    private float getRatingViewXSizeToCenter() {
-        if (ratingView == null || userInfo == null || userInfo.stars_rating == null) {
-            return 0;
-        }
-        if (openAnimationInProgress && isFragmentOpened) {
-            return dpf2(11);
-        }
-        return dpf2(11) * ratingView.getVisibilityFactor();
     }
 
     private float lastRatingViewTranslationYOffset;
