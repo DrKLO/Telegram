@@ -44,7 +44,7 @@ public class ProfileMusicView extends View {
 
     private final AnimatedFloat switchMusicAnimator = new AnimatedFloat(this::invalidate, 380, CubicBezierInterpolator.DEFAULT);
     private final AnimatedFloat isVisibleAnimator = new AnimatedFloat(this::onUpdateHeight, 380, CubicBezierInterpolator.EASE_OUT_QUINT);
-    private AnimationUpdateCallback animationUpdateCallback;
+    private Runnable animationUpdateCallback;
     private int height = 0;
 
     public ProfileMusicView(Context context, Theme.ResourcesProvider resourcesProvider) {
@@ -85,8 +85,8 @@ public class ProfileMusicView extends View {
         );
     }
 
-    public void setAnimatedVisibility(boolean isVisible, AnimationUpdateCallback animationUpdateCallback) {
-        if (isVisible) {
+    public void setAnimatedVisibility(boolean isVisible, Runnable animationUpdateCallback) {
+        if (isVisible && !isVisibleAnimator.isInProgress()) {
             height = 0;
             isVisibleAnimator.set(false, true);
         }
@@ -94,17 +94,24 @@ public class ProfileMusicView extends View {
         this.animationUpdateCallback = animationUpdateCallback;
     }
 
+    public boolean isVisible() {
+        return isVisibleAnimator.getTargetValue() >= 1f;
+    }
+
     private void onUpdateHeight() {
         if (getLayoutParams() != null) {
             height = getAnimatedHeight();
-            getLayoutParams().height = getAnimatedHeight();
+            getLayoutParams().height = height;
             requestLayout();
+            notifyLayoutUpdate();
+        }
+    }
 
-            if (animationUpdateCallback != null) {
-                animationUpdateCallback.onUpdate(isVisibleAnimator.isInProgress());
-                if (!isVisibleAnimator.isInProgress()) {
-                    animationUpdateCallback = null;
-                }
+    private void notifyLayoutUpdate() {
+        if (animationUpdateCallback != null) {
+            animationUpdateCallback.run();
+            if (!isVisibleAnimator.isInProgress()) {
+                animationUpdateCallback = null;
             }
         }
     }
@@ -114,6 +121,9 @@ public class ProfileMusicView extends View {
     }
 
     private int getAnimatedHeight() {
+        if (isVisibleAnimator.get() <= 0f && !isVisibleAnimator.isInProgress()) {
+            return 0;
+        }
         return Math.max(1, (int) (getMaxViewHeight() * isVisibleAnimator.get()));
     }
 
@@ -236,7 +246,11 @@ public class ProfileMusicView extends View {
 
     @Override
     protected void onDraw(@NonNull Canvas canvas) {
-        if (this.author == null || this.title == null || this.isVisibleAnimator.getValue() == 0f) return;
+        if (this.author == null || this.title == null) return;
+        if (this.isVisibleAnimator.getValue() == 0f) {
+            notifyLayoutUpdate();
+            return;
+        }
 
         if (!ignoreRect && renderNode != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && canvas.isHardwareAccelerated()) {
             canvas.save();
@@ -297,9 +311,5 @@ public class ProfileMusicView extends View {
         canvas.translate(dpf2(3.8f), cy);
         canvas.drawPath(arrowPath, arrowPaint);
         canvas.restore();
-    }
-
-    public interface AnimationUpdateCallback {
-        void onUpdate(boolean isRunning);
     }
 }

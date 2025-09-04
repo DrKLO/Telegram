@@ -9403,25 +9403,22 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     }
 
     private void updateMusicRow() {
-        boolean wasMusicRowVisible = musicView != null && musicRow != -1;
+        boolean wasMusicRowVisible = musicView != null &&
+                musicView.isVisible() &&
+                musicRow != -1;
         boolean isMusicRowVisible = userInfo != null &&
                 userInfo.saved_music != null &&
                 (imageUpdater == null || myProfile);
 
         boolean canAnimate = layoutManager != null && (expandAnimator == null || !expandAnimator.isRunning());
         if (canAnimate && wasMusicRowVisible && !isMusicRowVisible) {
-            int currentExtraHeight = (int) extraHeight;
-            musicView.setAnimatedVisibility(false, animating -> {
-                final View view = layoutManager.findViewByPosition(0);
-                if (view != null) {
-                    listView.scrollBy(0, view.getTop() - currentExtraHeight);
-                }
-                if (!animating) {
-                    updateRowsIds();
-                    listAdapter.notifyDataSetChanged();
-                }
-            });
-        } else {
+            animateMusicRow(false);
+        } else if (canAnimate && musicView != null && !musicView.isVisible() && isMusicRowVisible && musicRow != -1) {
+            musicView.setMusicDocument(userInfo.saved_music);
+            animateMusicRow(true);
+        } else if (wasMusicRowVisible && isMusicRowVisible) {
+            musicView.setMusicDocument(userInfo.saved_music);
+        } else if (wasMusicRowVisible != isMusicRowVisible) {
             updateRowsIds();
             if (listView != null && listView.isComputingLayout()) {
                 listView.post(() -> {
@@ -9437,6 +9434,19 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 listAdapter.notifyDataSetChanged();
             }
         }
+    }
+
+    private void animateMusicRow(boolean isVisible) {
+        if (musicView == null) return;
+        int currentExtraHeight = (int) extraHeight;
+        musicView.setAnimatedVisibility(isVisible, () -> {
+            if (musicRow != -1) {
+                final View view = layoutManager.findViewByPosition(0);
+                if (view != null) {
+                    listView.scrollBy(0, view.getTop() - currentExtraHeight);
+                }
+            }
+        });
     }
 
     private void updateAutoDeleteItem() {
@@ -13915,13 +13925,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                         cell.setMusicDocument(userInfo.saved_music);
                     }
                     if (musicViewEnterAnimation) {
-                        int currentExtraHeight = (int) extraHeight;
-                        cell.setAnimatedVisibility(true, animating -> {
-                            final View view = layoutManager.findViewByPosition(0);
-                            if (view != null) {
-                                listView.scrollBy(0, view.getTop() - currentExtraHeight);
-                            }
-                        });
+                        animateMusicRow(true);
                         musicViewEnterAnimation = false;
                     }
                     break;
