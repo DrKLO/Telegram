@@ -89,6 +89,7 @@ public class ProfileMusicView extends View {
         if (isVisible && !isVisibleAnimator.isInProgress()) {
             height = 0;
             isVisibleAnimator.set(false, true);
+            switchMusicAnimator.set(false, true);
         }
         isVisibleAnimator.set(isVisible);
         this.animationUpdateCallback = animationUpdateCallback;
