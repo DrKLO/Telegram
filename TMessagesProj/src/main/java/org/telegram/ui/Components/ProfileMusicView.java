@@ -99,6 +99,10 @@ public class ProfileMusicView extends View {
         return isVisibleAnimator.getTargetValue() >= 1f;
     }
 
+    public boolean isAnimating() {
+        return isVisibleAnimator.isInProgress();
+    }
+
     private void onUpdateHeight() {
         if (getLayoutParams() != null) {
             height = getAnimatedHeight();
@@ -243,15 +247,14 @@ public class ProfileMusicView extends View {
         invalidate();
     }
 
-    private final long start = System.currentTimeMillis();
+    // private final long start = System.currentTimeMillis();
 
     @Override
     protected void onDraw(@NonNull Canvas canvas) {
         if (this.author == null || this.title == null) return;
-        if (this.isVisibleAnimator.getValue() == 0f) {
-            notifyLayoutUpdate();
-            return;
-        }
+        float visibleFactor = this.isVisibleAnimator.getValue();
+        if (!isVisibleAnimator.isInProgress()) notifyLayoutUpdate();
+        if (visibleFactor <= 0f) return;
 
         if (!ignoreRect && renderNode != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && canvas.isHardwareAccelerated()) {
             canvas.save();

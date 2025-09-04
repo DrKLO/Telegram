@@ -489,6 +489,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     private float extraHeight;
     private float initialAnimationExtraHeight;
     private float avatarAnimationProgress;
+    private int musicViewFixedExtraHeight;
 
     private int searchTransitionOffset;
     private float searchTransitionProgress;
@@ -8001,6 +8002,10 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         }
         setMediaHeaderVisible(mediaHeaderVisible);
 
+        if (musicView != null && musicRow != -1 && musicView.isAnimating()) {
+            newOffset = musicViewFixedExtraHeight;
+            avatarsBlurView.invalidate();
+        }
         if (extraHeight != newOffset && !transitionAnimationInProress) {
             extraHeight = newOffset;
             topView.invalidate();
@@ -9438,12 +9443,12 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
 
     private void animateMusicRow(boolean isVisible) {
         if (musicView == null) return;
-        int currentExtraHeight = (int) extraHeight;
+        musicViewFixedExtraHeight = (int) extraHeight;
         musicView.setAnimatedVisibility(isVisible, () -> {
             if (musicRow != -1) {
                 final View view = layoutManager.findViewByPosition(0);
                 if (view != null) {
-                    listView.scrollBy(0, view.getTop() - currentExtraHeight);
+                    listView.scrollBy(0, view.getTop() - musicViewFixedExtraHeight);
                 }
             }
         });
