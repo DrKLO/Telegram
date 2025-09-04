@@ -155,6 +155,7 @@ public sealed class TlGen_Chat : TlGen_Object {
     public val username: String?,
     public val photo: TlGen_ChatPhoto,
     public val date: Int,
+    public val restriction_reason: List<TlGen_RestrictionReason>?,
     public val admin_rights: TlGen_ChatAdminRights?,
     public val banned_rights: TlGen_ChatBannedRights?,
     public val default_banned_rights: TlGen_ChatBannedRights?,
@@ -169,8 +170,9 @@ public sealed class TlGen_Chat : TlGen_Object {
     public val bot_verification_icon: Long?,
     public val send_paid_messages_stars: Long?,
     public val linked_monoforum_id: Long?,
-    public val multiflags_9: Multiflags_9?,
   ) : TlGen_Chat() {
+    public val restricted: Boolean = restriction_reason != null
+
     internal val flags: UInt
       get() {
         var result = 0U
@@ -180,7 +182,7 @@ public sealed class TlGen_Chat : TlGen_Object {
         if (username != null) result = result or 64U
         if (verified) result = result or 128U
         if (megagroup) result = result or 256U
-        if (multiflags_9 != null) result = result or 512U
+        if (restricted) result = result or 512U
         if (signatures) result = result or 2048U
         if (min) result = result or 4096U
         if (access_hash != null) result = result or 8192U
@@ -237,7 +239,7 @@ public sealed class TlGen_Chat : TlGen_Object {
       username?.let { stream.writeString(it) }
       photo.serializeToStream(stream)
       stream.writeInt32(date)
-      multiflags_9?.restriction_reason?.let { TlGen_Vector.serialize(stream, it) }
+      restriction_reason?.let { TlGen_Vector.serialize(stream, it) }
       admin_rights?.serializeToStream(stream)
       banned_rights?.serializeToStream(stream)
       default_banned_rights?.serializeToStream(stream)
@@ -253,11 +255,6 @@ public sealed class TlGen_Chat : TlGen_Object {
       send_paid_messages_stars?.let { stream.writeInt64(it) }
       linked_monoforum_id?.let { stream.writeInt64(it) }
     }
-
-    public data class Multiflags_9(
-      public val restricted: Boolean,
-      public val restriction_reason: List<TlGen_RestrictionReason>,
-    )
 
     public companion object {
       public const val MAGIC: UInt = 0xFE685355U
@@ -505,8 +502,10 @@ public sealed class TlGen_Chat : TlGen_Object {
     public val photo: TlGen_ChatPhoto,
     public val date: Int,
     public val version: Int,
-    public val multiflags_9: Multiflags_9?,
+    public val restriction_reason: String?,
   ) : TlGen_Object {
+    public val restricted: Boolean = restriction_reason != null
+
     internal val flags: UInt
       get() {
         var result = 0U
@@ -519,7 +518,7 @@ public sealed class TlGen_Chat : TlGen_Object {
         if (username != null) result = result or 64U
         if (verified) result = result or 128U
         if (megagroup) result = result or 256U
-        if (multiflags_9 != null) result = result or 512U
+        if (restricted) result = result or 512U
         if (democracy) result = result or 1024U
         if (signatures) result = result or 2048U
         return result
@@ -535,13 +534,8 @@ public sealed class TlGen_Chat : TlGen_Object {
       photo.serializeToStream(stream)
       stream.writeInt32(date)
       stream.writeInt32(version)
-      multiflags_9?.restriction_reason?.let { stream.writeString(it) }
+      restriction_reason?.let { stream.writeString(it) }
     }
-
-    public data class Multiflags_9(
-      public val restricted: Boolean,
-      public val restriction_reason: String,
-    )
 
     public companion object {
       public const val MAGIC: UInt = 0x4B1B7506U
@@ -567,8 +561,10 @@ public sealed class TlGen_Chat : TlGen_Object {
     public val photo: TlGen_ChatPhoto,
     public val date: Int,
     public val version: Int,
-    public val multiflags_9: Multiflags_9?,
+    public val restriction_reason: String?,
   ) : TlGen_Object {
+    public val restricted: Boolean = restriction_reason != null
+
     internal val flags: UInt
       get() {
         var result = 0U
@@ -581,7 +577,7 @@ public sealed class TlGen_Chat : TlGen_Object {
         if (username != null) result = result or 64U
         if (verified) result = result or 128U
         if (megagroup) result = result or 256U
-        if (multiflags_9 != null) result = result or 512U
+        if (restricted) result = result or 512U
         if (democracy) result = result or 1024U
         if (signatures) result = result or 2048U
         if (min) result = result or 4096U
@@ -599,13 +595,8 @@ public sealed class TlGen_Chat : TlGen_Object {
       photo.serializeToStream(stream)
       stream.writeInt32(date)
       stream.writeInt32(version)
-      multiflags_9?.restriction_reason?.let { stream.writeString(it) }
+      restriction_reason?.let { stream.writeString(it) }
     }
-
-    public data class Multiflags_9(
-      public val restricted: Boolean,
-      public val restriction_reason: String,
-    )
 
     public companion object {
       public const val MAGIC: UInt = 0xA14DCA52U
@@ -657,10 +648,12 @@ public sealed class TlGen_Chat : TlGen_Object {
     public val photo: TlGen_ChatPhoto,
     public val date: Int,
     public val version: Int,
+    public val restriction_reason: String?,
     public val admin_rights: TlGen_ChannelAdminRights?,
     public val banned_rights: TlGen_ChannelBannedRights?,
-    public val multiflags_9: Multiflags_9?,
   ) : TlGen_Object {
+    public val restricted: Boolean = restriction_reason != null
+
     internal val flags: UInt
       get() {
         var result = 0U
@@ -671,7 +664,7 @@ public sealed class TlGen_Chat : TlGen_Object {
         if (username != null) result = result or 64U
         if (verified) result = result or 128U
         if (megagroup) result = result or 256U
-        if (multiflags_9 != null) result = result or 512U
+        if (restricted) result = result or 512U
         if (democracy) result = result or 1024U
         if (signatures) result = result or 2048U
         if (min) result = result or 4096U
@@ -691,15 +684,10 @@ public sealed class TlGen_Chat : TlGen_Object {
       photo.serializeToStream(stream)
       stream.writeInt32(date)
       stream.writeInt32(version)
-      multiflags_9?.restriction_reason?.let { stream.writeString(it) }
+      restriction_reason?.let { stream.writeString(it) }
       admin_rights?.serializeToStream(stream)
       banned_rights?.serializeToStream(stream)
     }
-
-    public data class Multiflags_9(
-      public val restricted: Boolean,
-      public val restriction_reason: String,
-    )
 
     public companion object {
       public const val MAGIC: UInt = 0x0CB44B1CU
@@ -754,11 +742,13 @@ public sealed class TlGen_Chat : TlGen_Object {
     public val photo: TlGen_ChatPhoto,
     public val date: Int,
     public val version: Int,
+    public val restriction_reason: String?,
     public val admin_rights: TlGen_ChannelAdminRights?,
     public val banned_rights: TlGen_ChannelBannedRights?,
     public val participants_count: Int?,
-    public val multiflags_9: Multiflags_9?,
   ) : TlGen_Object {
+    public val restricted: Boolean = restriction_reason != null
+
     internal val flags: UInt
       get() {
         var result = 0U
@@ -769,7 +759,7 @@ public sealed class TlGen_Chat : TlGen_Object {
         if (username != null) result = result or 64U
         if (verified) result = result or 128U
         if (megagroup) result = result or 256U
-        if (multiflags_9 != null) result = result or 512U
+        if (restricted) result = result or 512U
         if (democracy) result = result or 1024U
         if (signatures) result = result or 2048U
         if (min) result = result or 4096U
@@ -790,16 +780,11 @@ public sealed class TlGen_Chat : TlGen_Object {
       photo.serializeToStream(stream)
       stream.writeInt32(date)
       stream.writeInt32(version)
-      multiflags_9?.restriction_reason?.let { stream.writeString(it) }
+      restriction_reason?.let { stream.writeString(it) }
       admin_rights?.serializeToStream(stream)
       banned_rights?.serializeToStream(stream)
       participants_count?.let { stream.writeInt32(it) }
     }
-
-    public data class Multiflags_9(
-      public val restricted: Boolean,
-      public val restriction_reason: String,
-    )
 
     public companion object {
       public const val MAGIC: UInt = 0x450B7115U
@@ -823,11 +808,13 @@ public sealed class TlGen_Chat : TlGen_Object {
     public val photo: TlGen_ChatPhoto,
     public val date: Int,
     public val version: Int,
+    public val restriction_reason: String?,
     public val admin_rights: TlGen_ChannelAdminRights?,
     public val banned_rights: TlGen_ChannelBannedRights?,
     public val participants_count: Int?,
-    public val multiflags_9: Multiflags_9?,
   ) : TlGen_Object {
+    public val restricted: Boolean = restriction_reason != null
+
     internal val flags: UInt
       get() {
         var result = 0U
@@ -838,7 +825,7 @@ public sealed class TlGen_Chat : TlGen_Object {
         if (username != null) result = result or 64U
         if (verified) result = result or 128U
         if (megagroup) result = result or 256U
-        if (multiflags_9 != null) result = result or 512U
+        if (restricted) result = result or 512U
         if (democracy) result = result or 1024U
         if (signatures) result = result or 2048U
         if (min) result = result or 4096U
@@ -859,16 +846,11 @@ public sealed class TlGen_Chat : TlGen_Object {
       photo.serializeToStream(stream)
       stream.writeInt32(date)
       stream.writeInt32(version)
-      multiflags_9?.restriction_reason?.let { stream.writeString(it) }
+      restriction_reason?.let { stream.writeString(it) }
       admin_rights?.serializeToStream(stream)
       banned_rights?.serializeToStream(stream)
       participants_count?.let { stream.writeInt32(it) }
     }
-
-    public data class Multiflags_9(
-      public val restricted: Boolean,
-      public val restriction_reason: String,
-    )
 
     public companion object {
       public const val MAGIC: UInt = 0xC88974ACU
@@ -945,12 +927,14 @@ public sealed class TlGen_Chat : TlGen_Object {
     public val photo: TlGen_ChatPhoto,
     public val date: Int,
     public val version: Int,
+    public val restriction_reason: String?,
     public val admin_rights: TlGen_ChatAdminRights?,
     public val banned_rights: TlGen_ChatBannedRights?,
     public val default_banned_rights: TlGen_ChatBannedRights?,
     public val participants_count: Int?,
-    public val multiflags_9: Multiflags_9?,
   ) : TlGen_Object {
+    public val restricted: Boolean = restriction_reason != null
+
     internal val flags: UInt
       get() {
         var result = 0U
@@ -960,7 +944,7 @@ public sealed class TlGen_Chat : TlGen_Object {
         if (username != null) result = result or 64U
         if (verified) result = result or 128U
         if (megagroup) result = result or 256U
-        if (multiflags_9 != null) result = result or 512U
+        if (restricted) result = result or 512U
         if (signatures) result = result or 2048U
         if (min) result = result or 4096U
         if (access_hash != null) result = result or 8192U
@@ -985,17 +969,12 @@ public sealed class TlGen_Chat : TlGen_Object {
       photo.serializeToStream(stream)
       stream.writeInt32(date)
       stream.writeInt32(version)
-      multiflags_9?.restriction_reason?.let { stream.writeString(it) }
+      restriction_reason?.let { stream.writeString(it) }
       admin_rights?.serializeToStream(stream)
       banned_rights?.serializeToStream(stream)
       default_banned_rights?.serializeToStream(stream)
       participants_count?.let { stream.writeInt32(it) }
     }
-
-    public data class Multiflags_9(
-      public val restricted: Boolean,
-      public val restriction_reason: String,
-    )
 
     public companion object {
       public const val MAGIC: UInt = 0x4DF30834U
@@ -1025,12 +1004,14 @@ public sealed class TlGen_Chat : TlGen_Object {
     public val photo: TlGen_ChatPhoto,
     public val date: Int,
     public val version: Int,
+    public val restriction_reason: List<TlGen_RestrictionReason>?,
     public val admin_rights: TlGen_ChatAdminRights?,
     public val banned_rights: TlGen_ChatBannedRights?,
     public val default_banned_rights: TlGen_ChatBannedRights?,
     public val participants_count: Int?,
-    public val multiflags_9: Multiflags_9?,
   ) : TlGen_Object {
+    public val restricted: Boolean = restriction_reason != null
+
     internal val flags: UInt
       get() {
         var result = 0U
@@ -1040,7 +1021,7 @@ public sealed class TlGen_Chat : TlGen_Object {
         if (username != null) result = result or 64U
         if (verified) result = result or 128U
         if (megagroup) result = result or 256U
-        if (multiflags_9 != null) result = result or 512U
+        if (restricted) result = result or 512U
         if (signatures) result = result or 2048U
         if (min) result = result or 4096U
         if (access_hash != null) result = result or 8192U
@@ -1069,17 +1050,12 @@ public sealed class TlGen_Chat : TlGen_Object {
       photo.serializeToStream(stream)
       stream.writeInt32(date)
       stream.writeInt32(version)
-      multiflags_9?.restriction_reason?.let { TlGen_Vector.serialize(stream, it) }
+      restriction_reason?.let { TlGen_Vector.serialize(stream, it) }
       admin_rights?.serializeToStream(stream)
       banned_rights?.serializeToStream(stream)
       default_banned_rights?.serializeToStream(stream)
       participants_count?.let { stream.writeInt32(it) }
     }
-
-    public data class Multiflags_9(
-      public val restricted: Boolean,
-      public val restriction_reason: List<TlGen_RestrictionReason>,
-    )
 
     public companion object {
       public const val MAGIC: UInt = 0xD31A961EU
@@ -1111,12 +1087,14 @@ public sealed class TlGen_Chat : TlGen_Object {
     public val username: String?,
     public val photo: TlGen_ChatPhoto,
     public val date: Int,
+    public val restriction_reason: List<TlGen_RestrictionReason>?,
     public val admin_rights: TlGen_ChatAdminRights?,
     public val banned_rights: TlGen_ChatBannedRights?,
     public val default_banned_rights: TlGen_ChatBannedRights?,
     public val participants_count: Int?,
-    public val multiflags_9: Multiflags_9?,
   ) : TlGen_Object {
+    public val restricted: Boolean = restriction_reason != null
+
     internal val flags: UInt
       get() {
         var result = 0U
@@ -1126,7 +1104,7 @@ public sealed class TlGen_Chat : TlGen_Object {
         if (username != null) result = result or 64U
         if (verified) result = result or 128U
         if (megagroup) result = result or 256U
-        if (multiflags_9 != null) result = result or 512U
+        if (restricted) result = result or 512U
         if (signatures) result = result or 2048U
         if (min) result = result or 4096U
         if (access_hash != null) result = result or 8192U
@@ -1157,17 +1135,12 @@ public sealed class TlGen_Chat : TlGen_Object {
       username?.let { stream.writeString(it) }
       photo.serializeToStream(stream)
       stream.writeInt32(date)
-      multiflags_9?.restriction_reason?.let { TlGen_Vector.serialize(stream, it) }
+      restriction_reason?.let { TlGen_Vector.serialize(stream, it) }
       admin_rights?.serializeToStream(stream)
       banned_rights?.serializeToStream(stream)
       default_banned_rights?.serializeToStream(stream)
       participants_count?.let { stream.writeInt32(it) }
     }
-
-    public data class Multiflags_9(
-      public val restricted: Boolean,
-      public val restriction_reason: List<TlGen_RestrictionReason>,
-    )
 
     public companion object {
       public const val MAGIC: UInt = 0x8261AC61U
@@ -1200,13 +1173,15 @@ public sealed class TlGen_Chat : TlGen_Object {
     public val username: String?,
     public val photo: TlGen_ChatPhoto,
     public val date: Int,
+    public val restriction_reason: List<TlGen_RestrictionReason>?,
     public val admin_rights: TlGen_ChatAdminRights?,
     public val banned_rights: TlGen_ChatBannedRights?,
     public val default_banned_rights: TlGen_ChatBannedRights?,
     public val participants_count: Int?,
     public val usernames: List<TlGen_Username>?,
-    public val multiflags_9: Multiflags_9?,
   ) : TlGen_Object {
+    public val restricted: Boolean = restriction_reason != null
+
     internal val flags: UInt
       get() {
         var result = 0U
@@ -1216,7 +1191,7 @@ public sealed class TlGen_Chat : TlGen_Object {
         if (username != null) result = result or 64U
         if (verified) result = result or 128U
         if (megagroup) result = result or 256U
-        if (multiflags_9 != null) result = result or 512U
+        if (restricted) result = result or 512U
         if (signatures) result = result or 2048U
         if (min) result = result or 4096U
         if (access_hash != null) result = result or 8192U
@@ -1256,18 +1231,13 @@ public sealed class TlGen_Chat : TlGen_Object {
       username?.let { stream.writeString(it) }
       photo.serializeToStream(stream)
       stream.writeInt32(date)
-      multiflags_9?.restriction_reason?.let { TlGen_Vector.serialize(stream, it) }
+      restriction_reason?.let { TlGen_Vector.serialize(stream, it) }
       admin_rights?.serializeToStream(stream)
       banned_rights?.serializeToStream(stream)
       default_banned_rights?.serializeToStream(stream)
       participants_count?.let { stream.writeInt32(it) }
       usernames?.let { TlGen_Vector.serialize(stream, it) }
     }
-
-    public data class Multiflags_9(
-      public val restricted: Boolean,
-      public val restriction_reason: List<TlGen_RestrictionReason>,
-    )
 
     public companion object {
       public const val MAGIC: UInt = 0x83259464U
@@ -1303,6 +1273,7 @@ public sealed class TlGen_Chat : TlGen_Object {
     public val username: String?,
     public val photo: TlGen_ChatPhoto,
     public val date: Int,
+    public val restriction_reason: List<TlGen_RestrictionReason>?,
     public val admin_rights: TlGen_ChatAdminRights?,
     public val banned_rights: TlGen_ChatBannedRights?,
     public val default_banned_rights: TlGen_ChatBannedRights?,
@@ -1313,8 +1284,9 @@ public sealed class TlGen_Chat : TlGen_Object {
     public val profile_color: TlGen_PeerColor?,
     public val emoji_status: TlGen_EmojiStatus?,
     public val level: Int?,
-    public val multiflags_9: Multiflags_9?,
   ) : TlGen_Object {
+    public val restricted: Boolean = restriction_reason != null
+
     internal val flags: UInt
       get() {
         var result = 0U
@@ -1324,7 +1296,7 @@ public sealed class TlGen_Chat : TlGen_Object {
         if (username != null) result = result or 64U
         if (verified) result = result or 128U
         if (megagroup) result = result or 256U
-        if (multiflags_9 != null) result = result or 512U
+        if (restricted) result = result or 512U
         if (signatures) result = result or 2048U
         if (min) result = result or 4096U
         if (access_hash != null) result = result or 8192U
@@ -1372,7 +1344,7 @@ public sealed class TlGen_Chat : TlGen_Object {
       username?.let { stream.writeString(it) }
       photo.serializeToStream(stream)
       stream.writeInt32(date)
-      multiflags_9?.restriction_reason?.let { TlGen_Vector.serialize(stream, it) }
+      restriction_reason?.let { TlGen_Vector.serialize(stream, it) }
       admin_rights?.serializeToStream(stream)
       banned_rights?.serializeToStream(stream)
       default_banned_rights?.serializeToStream(stream)
@@ -1384,11 +1356,6 @@ public sealed class TlGen_Chat : TlGen_Object {
       emoji_status?.serializeToStream(stream)
       level?.let { stream.writeInt32(it) }
     }
-
-    public data class Multiflags_9(
-      public val restricted: Boolean,
-      public val restriction_reason: List<TlGen_RestrictionReason>,
-    )
 
     public companion object {
       public const val MAGIC: UInt = 0x0AADFC8FU
@@ -1424,14 +1391,16 @@ public sealed class TlGen_Chat : TlGen_Object {
     public val username: String?,
     public val photo: TlGen_ChatPhoto,
     public val date: Int,
+    public val restriction_reason: List<TlGen_RestrictionReason>?,
     public val admin_rights: TlGen_ChatAdminRights?,
     public val banned_rights: TlGen_ChatBannedRights?,
     public val default_banned_rights: TlGen_ChatBannedRights?,
     public val participants_count: Int?,
     public val usernames: List<TlGen_Username>?,
     public val stories_max_id: Int?,
-    public val multiflags_9: Multiflags_9?,
   ) : TlGen_Object {
+    public val restricted: Boolean = restriction_reason != null
+
     internal val flags: UInt
       get() {
         var result = 0U
@@ -1441,7 +1410,7 @@ public sealed class TlGen_Chat : TlGen_Object {
         if (username != null) result = result or 64U
         if (verified) result = result or 128U
         if (megagroup) result = result or 256U
-        if (multiflags_9 != null) result = result or 512U
+        if (restricted) result = result or 512U
         if (signatures) result = result or 2048U
         if (min) result = result or 4096U
         if (access_hash != null) result = result or 8192U
@@ -1485,7 +1454,7 @@ public sealed class TlGen_Chat : TlGen_Object {
       username?.let { stream.writeString(it) }
       photo.serializeToStream(stream)
       stream.writeInt32(date)
-      multiflags_9?.restriction_reason?.let { TlGen_Vector.serialize(stream, it) }
+      restriction_reason?.let { TlGen_Vector.serialize(stream, it) }
       admin_rights?.serializeToStream(stream)
       banned_rights?.serializeToStream(stream)
       default_banned_rights?.serializeToStream(stream)
@@ -1493,11 +1462,6 @@ public sealed class TlGen_Chat : TlGen_Object {
       usernames?.let { TlGen_Vector.serialize(stream, it) }
       stories_max_id?.let { stream.writeInt32(it) }
     }
-
-    public data class Multiflags_9(
-      public val restricted: Boolean,
-      public val restriction_reason: List<TlGen_RestrictionReason>,
-    )
 
     public companion object {
       public const val MAGIC: UInt = 0x94F592DBU
@@ -1533,6 +1497,7 @@ public sealed class TlGen_Chat : TlGen_Object {
     public val username: String?,
     public val photo: TlGen_ChatPhoto,
     public val date: Int,
+    public val restriction_reason: List<TlGen_RestrictionReason>?,
     public val admin_rights: TlGen_ChatAdminRights?,
     public val banned_rights: TlGen_ChatBannedRights?,
     public val default_banned_rights: TlGen_ChatBannedRights?,
@@ -1541,8 +1506,9 @@ public sealed class TlGen_Chat : TlGen_Object {
     public val stories_max_id: Int?,
     public val color: Int?,
     public val background_emoji_id: Long?,
-    public val multiflags_9: Multiflags_9?,
   ) : TlGen_Object {
+    public val restricted: Boolean = restriction_reason != null
+
     internal val flags: UInt
       get() {
         var result = 0U
@@ -1552,7 +1518,7 @@ public sealed class TlGen_Chat : TlGen_Object {
         if (username != null) result = result or 64U
         if (verified) result = result or 128U
         if (megagroup) result = result or 256U
-        if (multiflags_9 != null) result = result or 512U
+        if (restricted) result = result or 512U
         if (signatures) result = result or 2048U
         if (min) result = result or 4096U
         if (access_hash != null) result = result or 8192U
@@ -1598,7 +1564,7 @@ public sealed class TlGen_Chat : TlGen_Object {
       username?.let { stream.writeString(it) }
       photo.serializeToStream(stream)
       stream.writeInt32(date)
-      multiflags_9?.restriction_reason?.let { TlGen_Vector.serialize(stream, it) }
+      restriction_reason?.let { TlGen_Vector.serialize(stream, it) }
       admin_rights?.serializeToStream(stream)
       banned_rights?.serializeToStream(stream)
       default_banned_rights?.serializeToStream(stream)
@@ -1608,11 +1574,6 @@ public sealed class TlGen_Chat : TlGen_Object {
       color?.let { stream.writeInt32(it) }
       background_emoji_id?.let { stream.writeInt64(it) }
     }
-
-    public data class Multiflags_9(
-      public val restricted: Boolean,
-      public val restriction_reason: List<TlGen_RestrictionReason>,
-    )
 
     public companion object {
       public const val MAGIC: UInt = 0x1981EA7EU
@@ -1648,6 +1609,7 @@ public sealed class TlGen_Chat : TlGen_Object {
     public val username: String?,
     public val photo: TlGen_ChatPhoto,
     public val date: Int,
+    public val restriction_reason: List<TlGen_RestrictionReason>?,
     public val admin_rights: TlGen_ChatAdminRights?,
     public val banned_rights: TlGen_ChatBannedRights?,
     public val default_banned_rights: TlGen_ChatBannedRights?,
@@ -1655,8 +1617,9 @@ public sealed class TlGen_Chat : TlGen_Object {
     public val usernames: List<TlGen_Username>?,
     public val stories_max_id: Int?,
     public val color: TlGen_PeerColor?,
-    public val multiflags_9: Multiflags_9?,
   ) : TlGen_Object {
+    public val restricted: Boolean = restriction_reason != null
+
     internal val flags: UInt
       get() {
         var result = 0U
@@ -1666,7 +1629,7 @@ public sealed class TlGen_Chat : TlGen_Object {
         if (username != null) result = result or 64U
         if (verified) result = result or 128U
         if (megagroup) result = result or 256U
-        if (multiflags_9 != null) result = result or 512U
+        if (restricted) result = result or 512U
         if (signatures) result = result or 2048U
         if (min) result = result or 4096U
         if (access_hash != null) result = result or 8192U
@@ -1711,7 +1674,7 @@ public sealed class TlGen_Chat : TlGen_Object {
       username?.let { stream.writeString(it) }
       photo.serializeToStream(stream)
       stream.writeInt32(date)
-      multiflags_9?.restriction_reason?.let { TlGen_Vector.serialize(stream, it) }
+      restriction_reason?.let { TlGen_Vector.serialize(stream, it) }
       admin_rights?.serializeToStream(stream)
       banned_rights?.serializeToStream(stream)
       default_banned_rights?.serializeToStream(stream)
@@ -1720,11 +1683,6 @@ public sealed class TlGen_Chat : TlGen_Object {
       stories_max_id?.let { stream.writeInt32(it) }
       color?.serializeToStream(stream)
     }
-
-    public data class Multiflags_9(
-      public val restricted: Boolean,
-      public val restriction_reason: List<TlGen_RestrictionReason>,
-    )
 
     public companion object {
       public const val MAGIC: UInt = 0x8E87CCD8U
@@ -1761,6 +1719,7 @@ public sealed class TlGen_Chat : TlGen_Object {
     public val username: String?,
     public val photo: TlGen_ChatPhoto,
     public val date: Int,
+    public val restriction_reason: List<TlGen_RestrictionReason>?,
     public val admin_rights: TlGen_ChatAdminRights?,
     public val banned_rights: TlGen_ChatBannedRights?,
     public val default_banned_rights: TlGen_ChatBannedRights?,
@@ -1772,8 +1731,9 @@ public sealed class TlGen_Chat : TlGen_Object {
     public val emoji_status: TlGen_EmojiStatus?,
     public val level: Int?,
     public val subscription_until_date: Int?,
-    public val multiflags_9: Multiflags_9?,
   ) : TlGen_Object {
+    public val restricted: Boolean = restriction_reason != null
+
     internal val flags: UInt
       get() {
         var result = 0U
@@ -1783,7 +1743,7 @@ public sealed class TlGen_Chat : TlGen_Object {
         if (username != null) result = result or 64U
         if (verified) result = result or 128U
         if (megagroup) result = result or 256U
-        if (multiflags_9 != null) result = result or 512U
+        if (restricted) result = result or 512U
         if (signatures) result = result or 2048U
         if (min) result = result or 4096U
         if (access_hash != null) result = result or 8192U
@@ -1833,7 +1793,7 @@ public sealed class TlGen_Chat : TlGen_Object {
       username?.let { stream.writeString(it) }
       photo.serializeToStream(stream)
       stream.writeInt32(date)
-      multiflags_9?.restriction_reason?.let { TlGen_Vector.serialize(stream, it) }
+      restriction_reason?.let { TlGen_Vector.serialize(stream, it) }
       admin_rights?.serializeToStream(stream)
       banned_rights?.serializeToStream(stream)
       default_banned_rights?.serializeToStream(stream)
@@ -1846,11 +1806,6 @@ public sealed class TlGen_Chat : TlGen_Object {
       level?.let { stream.writeInt32(it) }
       subscription_until_date?.let { stream.writeInt32(it) }
     }
-
-    public data class Multiflags_9(
-      public val restricted: Boolean,
-      public val restriction_reason: List<TlGen_RestrictionReason>,
-    )
 
     public companion object {
       public const val MAGIC: UInt = 0xFE4478BDU
@@ -1887,6 +1842,7 @@ public sealed class TlGen_Chat : TlGen_Object {
     public val username: String?,
     public val photo: TlGen_ChatPhoto,
     public val date: Int,
+    public val restriction_reason: List<TlGen_RestrictionReason>?,
     public val admin_rights: TlGen_ChatAdminRights?,
     public val banned_rights: TlGen_ChatBannedRights?,
     public val default_banned_rights: TlGen_ChatBannedRights?,
@@ -1899,8 +1855,9 @@ public sealed class TlGen_Chat : TlGen_Object {
     public val level: Int?,
     public val subscription_until_date: Int?,
     public val bot_verification_icon: Long?,
-    public val multiflags_9: Multiflags_9?,
   ) : TlGen_Object {
+    public val restricted: Boolean = restriction_reason != null
+
     internal val flags: UInt
       get() {
         var result = 0U
@@ -1910,7 +1867,7 @@ public sealed class TlGen_Chat : TlGen_Object {
         if (username != null) result = result or 64U
         if (verified) result = result or 128U
         if (megagroup) result = result or 256U
-        if (multiflags_9 != null) result = result or 512U
+        if (restricted) result = result or 512U
         if (signatures) result = result or 2048U
         if (min) result = result or 4096U
         if (access_hash != null) result = result or 8192U
@@ -1961,7 +1918,7 @@ public sealed class TlGen_Chat : TlGen_Object {
       username?.let { stream.writeString(it) }
       photo.serializeToStream(stream)
       stream.writeInt32(date)
-      multiflags_9?.restriction_reason?.let { TlGen_Vector.serialize(stream, it) }
+      restriction_reason?.let { TlGen_Vector.serialize(stream, it) }
       admin_rights?.serializeToStream(stream)
       banned_rights?.serializeToStream(stream)
       default_banned_rights?.serializeToStream(stream)
@@ -1975,11 +1932,6 @@ public sealed class TlGen_Chat : TlGen_Object {
       subscription_until_date?.let { stream.writeInt32(it) }
       bot_verification_icon?.let { stream.writeInt64(it) }
     }
-
-    public data class Multiflags_9(
-      public val restricted: Boolean,
-      public val restriction_reason: List<TlGen_RestrictionReason>,
-    )
 
     public companion object {
       public const val MAGIC: UInt = 0xE00998B7U
@@ -2017,6 +1969,7 @@ public sealed class TlGen_Chat : TlGen_Object {
     public val username: String?,
     public val photo: TlGen_ChatPhoto,
     public val date: Int,
+    public val restriction_reason: List<TlGen_RestrictionReason>?,
     public val admin_rights: TlGen_ChatAdminRights?,
     public val banned_rights: TlGen_ChatBannedRights?,
     public val default_banned_rights: TlGen_ChatBannedRights?,
@@ -2030,8 +1983,9 @@ public sealed class TlGen_Chat : TlGen_Object {
     public val subscription_until_date: Int?,
     public val bot_verification_icon: Long?,
     public val send_paid_messages_stars: Long?,
-    public val multiflags_9: Multiflags_9?,
   ) : TlGen_Object {
+    public val restricted: Boolean = restriction_reason != null
+
     internal val flags: UInt
       get() {
         var result = 0U
@@ -2041,7 +1995,7 @@ public sealed class TlGen_Chat : TlGen_Object {
         if (username != null) result = result or 64U
         if (verified) result = result or 128U
         if (megagroup) result = result or 256U
-        if (multiflags_9 != null) result = result or 512U
+        if (restricted) result = result or 512U
         if (signatures) result = result or 2048U
         if (min) result = result or 4096U
         if (access_hash != null) result = result or 8192U
@@ -2094,7 +2048,7 @@ public sealed class TlGen_Chat : TlGen_Object {
       username?.let { stream.writeString(it) }
       photo.serializeToStream(stream)
       stream.writeInt32(date)
-      multiflags_9?.restriction_reason?.let { TlGen_Vector.serialize(stream, it) }
+      restriction_reason?.let { TlGen_Vector.serialize(stream, it) }
       admin_rights?.serializeToStream(stream)
       banned_rights?.serializeToStream(stream)
       default_banned_rights?.serializeToStream(stream)
@@ -2109,11 +2063,6 @@ public sealed class TlGen_Chat : TlGen_Object {
       bot_verification_icon?.let { stream.writeInt64(it) }
       send_paid_messages_stars?.let { stream.writeInt64(it) }
     }
-
-    public data class Multiflags_9(
-      public val restricted: Boolean,
-      public val restriction_reason: List<TlGen_RestrictionReason>,
-    )
 
     public companion object {
       public const val MAGIC: UInt = 0x7482147EU

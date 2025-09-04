@@ -51,17 +51,19 @@ public sealed class TlGen_ChannelParticipant : TlGen_Object {
   public data class TL_channelParticipantAdmin(
     public val can_edit: Boolean,
     public val user_id: Long,
+    public val inviter_id: Long?,
     public val promoted_by: Long,
     public val date: Int,
     public val admin_rights: TlGen_ChatAdminRights,
     public val rank: String?,
-    public val multiflags_1: Multiflags_1?,
   ) : TlGen_ChannelParticipant() {
+    public val self: Boolean = inviter_id != null
+
     internal val flags: UInt
       get() {
         var result = 0U
         if (can_edit) result = result or 1U
-        if (multiflags_1 != null) result = result or 2U
+        if (self) result = result or 2U
         if (rank != null) result = result or 4U
         return result
       }
@@ -70,17 +72,12 @@ public sealed class TlGen_ChannelParticipant : TlGen_Object {
       stream.writeInt32(MAGIC.toInt())
       stream.writeInt32(flags.toInt())
       stream.writeInt64(user_id)
-      multiflags_1?.inviter_id?.let { stream.writeInt64(it) }
+      inviter_id?.let { stream.writeInt64(it) }
       stream.writeInt64(promoted_by)
       stream.writeInt32(date)
       admin_rights.serializeToStream(stream)
       rank?.let { stream.writeString(it) }
     }
-
-    public data class Multiflags_1(
-      public val self: Boolean,
-      public val inviter_id: Long,
-    )
 
     public companion object {
       public const val MAGIC: UInt = 0x34C3BB53U

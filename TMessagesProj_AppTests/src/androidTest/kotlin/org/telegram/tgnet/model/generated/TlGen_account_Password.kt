@@ -24,12 +24,14 @@ public sealed class TlGen_account_Password : TlGen_Object {
     public val login_email_pattern: String?,
     public val multiflags_2: Multiflags_2?,
   ) : TlGen_account_Password() {
+    public val has_password: Boolean = multiflags_2 != null
+
     internal val flags: UInt
       get() {
         var result = 0U
         if (has_recovery) result = result or 1U
         if (has_secure_values) result = result or 2U
-        if (multiflags_2 != null) result = result or 4U
+        if (has_password) result = result or 4U
         if (hint != null) result = result or 8U
         if (email_unconfirmed_pattern != null) result = result or 16U
         if (pending_reset_date != null) result = result or 32U
@@ -40,9 +42,9 @@ public sealed class TlGen_account_Password : TlGen_Object {
     public override fun serializeToStream(stream: OutputSerializedData) {
       stream.writeInt32(MAGIC.toInt())
       stream.writeInt32(flags.toInt())
-      multiflags_2?.current_algo?.serializeToStream(stream)
-      multiflags_2?.srp_B?.let { stream.writeByteArray(it.toByteArray()) }
-      multiflags_2?.srp_id?.let { stream.writeInt64(it) }
+      multiflags_2?.let { it.current_algo.serializeToStream(stream) }
+      multiflags_2?.let { stream.writeByteArray(it.srp_B.toByteArray()) }
+      multiflags_2?.let { stream.writeInt64(it.srp_id) }
       hint?.let { stream.writeString(it) }
       email_unconfirmed_pattern?.let { stream.writeString(it) }
       new_algo.serializeToStream(stream)
@@ -53,7 +55,6 @@ public sealed class TlGen_account_Password : TlGen_Object {
     }
 
     public data class Multiflags_2(
-      public val has_password: Boolean,
       public val current_algo: TlGen_PasswordKdfAlgo,
       public val srp_B: List<Byte>,
       public val srp_id: Long,

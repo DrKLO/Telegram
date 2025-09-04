@@ -35,8 +35,8 @@ public sealed class TlGen_PollResults : TlGen_Object {
       results?.let { TlGen_Vector.serialize(stream, it) }
       total_voters?.let { stream.writeInt32(it) }
       recent_voters?.let { TlGen_Vector.serialize(stream, it) }
-      multiflags_4?.solution?.let { stream.writeString(it) }
-      multiflags_4?.solution_entities?.let { TlGen_Vector.serialize(stream, it) }
+      multiflags_4?.let { stream.writeString(it.solution) }
+      multiflags_4?.let { TlGen_Vector.serialize(stream, it.solution_entities) }
     }
 
     public data class Multiflags_4(
@@ -128,8 +128,8 @@ public sealed class TlGen_PollResults : TlGen_Object {
       results?.let { TlGen_Vector.serialize(stream, it) }
       total_voters?.let { stream.writeInt32(it) }
       recent_voters?.let { TlGen_Vector.serializeInt(stream, it) }
-      multiflags_4?.solution?.let { stream.writeString(it) }
-      multiflags_4?.solution_entities?.let { TlGen_Vector.serialize(stream, it) }
+      multiflags_4?.let { stream.writeString(it.solution) }
+      multiflags_4?.let { TlGen_Vector.serialize(stream, it.solution_entities) }
     }
 
     public data class Multiflags_4(
@@ -166,8 +166,8 @@ public sealed class TlGen_PollResults : TlGen_Object {
       results?.let { TlGen_Vector.serialize(stream, it) }
       total_voters?.let { stream.writeInt32(it) }
       recent_voters?.let { TlGen_Vector.serializeLong(stream, it) }
-      multiflags_4?.solution?.let { stream.writeString(it) }
-      multiflags_4?.solution_entities?.let { TlGen_Vector.serialize(stream, it) }
+      multiflags_4?.let { stream.writeString(it.solution) }
+      multiflags_4?.let { TlGen_Vector.serialize(stream, it.solution_entities) }
     }
 
     public data class Multiflags_4(

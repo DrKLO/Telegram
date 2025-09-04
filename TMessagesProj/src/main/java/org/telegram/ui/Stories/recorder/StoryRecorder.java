@@ -4906,7 +4906,7 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
                 storiesSelector.set(entries, selectedEntriesOrder, selectedEntries);
                 storiesSelector.setSelected(entries.indexOf(outputEntry));
             }
-            timelineView.setMaxCount(!isBot && !isEdit && entries == null && (outputEntry == null || !outputEntry.isCollage()) ? 3 : 1);
+            timelineView.setMaxCount(!isBot && !isEdit && entries == null && (outputEntry == null || !outputEntry.isCollage() && outputEntry.isVideo) ? 3 : 1);
             if (outputEntry != null && (outputEntry.isDraft || outputEntry.isEdit || isReposting)) {
                 if (outputEntry.paintFile != null) {
                     destroyPhotoPaintView();

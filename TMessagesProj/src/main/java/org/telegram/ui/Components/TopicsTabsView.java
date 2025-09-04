@@ -73,9 +73,6 @@ public class TopicsTabsView extends FrameLayout implements NotificationCenter.No
     private final BaseFragment fragment;
     private final boolean canShowProgress;
 
-    private int lastTabId = 0;
-    private final LongSparseLongArray tabToDialog = new LongSparseLongArray();
-
     private final BlurredFrameLayout topTabsContainer;
     private final View topTabsShadowView;
     private final UniversalRecyclerView topTabs;
@@ -576,7 +573,7 @@ public class TopicsTabsView extends FrameLayout implements NotificationCenter.No
             items.add(VerticalTabView.Factory.asLoading(-3));
             items.add(VerticalTabView.Factory.asLoading(-4));
         }
-        if (!mono && ChatObject.canManageTopics(currentChat)) {
+        if (!mono && ChatObject.canCreateTopic(currentChat)) {
             items.add(VerticalTabView.Factory.asAdd(false));
         }
     }
@@ -608,7 +605,7 @@ public class TopicsTabsView extends FrameLayout implements NotificationCenter.No
             items.add(HorizontalTabView.Factory.asLoading(-3));
             items.add(HorizontalTabView.Factory.asLoading(-4));
         }
-        if (!mono && ChatObject.canManageTopics(currentChat)) {
+        if (!mono && ChatObject.canCreateTopic(currentChat)) {
             items.add(HorizontalTabView.Factory.asAdd());
         }
     }

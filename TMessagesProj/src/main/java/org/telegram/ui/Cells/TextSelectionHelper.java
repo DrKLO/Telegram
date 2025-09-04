@@ -2749,7 +2749,7 @@ public abstract class TextSelectionHelper<Cell extends TextSelectionHelper.Selec
             arrayList.clear();
             view.fillTextLayoutBlocks(arrayList);
 
-            if (!arrayList.isEmpty()) {
+            if (i >= 0 && i < arrayList.size()) {
                 TextLayoutBlock layoutBlock = arrayList.get(i);
 
                 if (layoutBlock != null && layoutBlock.getLayout() != null && layoutBlock.getLayout().getText() != null) {

@@ -56,8 +56,8 @@ public sealed class TlGen_SponsoredMessage : TlGen_Object {
       stream.writeString(button_text)
       sponsor_info?.let { stream.writeString(it) }
       additional_info?.let { stream.writeString(it) }
-      multiflags_15?.min_display_duration?.let { stream.writeInt32(it) }
-      multiflags_15?.max_display_duration?.let { stream.writeInt32(it) }
+      multiflags_15?.let { stream.writeInt32(it.min_display_duration) }
+      multiflags_15?.let { stream.writeInt32(it.max_display_duration) }
     }
 
     public data class Multiflags_15(

@@ -37,11 +37,11 @@ public sealed class TlGen_WallPaperSettings : TlGen_Object {
       stream.writeInt32(MAGIC.toInt())
       stream.writeInt32(flags.toInt())
       background_color?.let { stream.writeInt32(it) }
-      multiflags_4?.second_background_color?.let { stream.writeInt32(it) }
+      multiflags_4?.let { stream.writeInt32(it.second_background_color) }
       third_background_color?.let { stream.writeInt32(it) }
       fourth_background_color?.let { stream.writeInt32(it) }
       intensity?.let { stream.writeInt32(it) }
-      multiflags_4?.rotation?.let { stream.writeInt32(it) }
+      multiflags_4?.let { stream.writeInt32(it.rotation) }
       emoticon?.let { stream.writeString(it) }
     }
 
@@ -77,9 +77,9 @@ public sealed class TlGen_WallPaperSettings : TlGen_Object {
       stream.writeInt32(MAGIC.toInt())
       stream.writeInt32(flags.toInt())
       background_color?.let { stream.writeInt32(it) }
-      multiflags_4?.second_background_color?.let { stream.writeInt32(it) }
+      multiflags_4?.let { stream.writeInt32(it.second_background_color) }
       intensity?.let { stream.writeInt32(it) }
-      multiflags_4?.rotation?.let { stream.writeInt32(it) }
+      multiflags_4?.let { stream.writeInt32(it.rotation) }
     }
 
     public data class Multiflags_4(
@@ -118,11 +118,11 @@ public sealed class TlGen_WallPaperSettings : TlGen_Object {
       stream.writeInt32(MAGIC.toInt())
       stream.writeInt32(flags.toInt())
       background_color?.let { stream.writeInt32(it) }
-      multiflags_4?.second_background_color?.let { stream.writeInt32(it) }
+      multiflags_4?.let { stream.writeInt32(it.second_background_color) }
       third_background_color?.let { stream.writeInt32(it) }
       fourth_background_color?.let { stream.writeInt32(it) }
       intensity?.let { stream.writeInt32(it) }
-      multiflags_4?.rotation?.let { stream.writeInt32(it) }
+      multiflags_4?.let { stream.writeInt32(it.rotation) }
     }
 
     public data class Multiflags_4(

@@ -39,8 +39,8 @@ public sealed class TlGen_AvailableReaction : TlGen_Object {
       select_animation.serializeToStream(stream)
       activate_animation.serializeToStream(stream)
       effect_animation.serializeToStream(stream)
-      multiflags_1?.around_animation?.serializeToStream(stream)
-      multiflags_1?.center_icon?.serializeToStream(stream)
+      multiflags_1?.let { it.around_animation.serializeToStream(stream) }
+      multiflags_1?.let { it.center_icon.serializeToStream(stream) }
     }
 
     public data class Multiflags_1(

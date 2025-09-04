@@ -2669,43 +2669,43 @@ public class ContactsController extends BaseController {
 
             switch (num) {
                 case PRIVACY_RULES_TYPE_LASTSEEN:
-                    req.key = new TLRPC.TL_inputPrivacyKeyStatusTimestamp();
+                    req.key = TLRPC.InputPrivacyKey.inputPrivacyKeyStatusTimestamp;
                     break;
                 case PRIVACY_RULES_TYPE_INVITE:
-                    req.key = new TLRPC.TL_inputPrivacyKeyChatInvite();
+                    req.key = TLRPC.InputPrivacyKey.inputPrivacyKeyChatInvite;
                     break;
                 case PRIVACY_RULES_TYPE_CALLS:
-                    req.key = new TLRPC.TL_inputPrivacyKeyPhoneCall();
+                    req.key = TLRPC.InputPrivacyKey.inputPrivacyKeyPhoneCall;
                     break;
                 case PRIVACY_RULES_TYPE_P2P:
-                    req.key = new TLRPC.TL_inputPrivacyKeyPhoneP2P();
+                    req.key = TLRPC.InputPrivacyKey.inputPrivacyKeyPhoneP2P;
                     break;
                 case PRIVACY_RULES_TYPE_PHOTO:
-                    req.key = new TLRPC.TL_inputPrivacyKeyProfilePhoto();
+                    req.key = TLRPC.InputPrivacyKey.inputPrivacyKeyProfilePhoto;
                     break;
                 case PRIVACY_RULES_TYPE_BIO:
-                    req.key = new TLRPC.TL_inputPrivacyKeyAbout();
+                    req.key = TLRPC.InputPrivacyKey.inputPrivacyKeyAbout;
                     break;
                 case PRIVACY_RULES_TYPE_FORWARDS:
-                    req.key = new TLRPC.TL_inputPrivacyKeyForwards();
+                    req.key = TLRPC.InputPrivacyKey.inputPrivacyKeyForwards;
                     break;
                 case PRIVACY_RULES_TYPE_PHONE:
-                    req.key = new TLRPC.TL_inputPrivacyKeyPhoneNumber();
+                    req.key = TLRPC.InputPrivacyKey.inputPrivacyKeyPhoneNumber;
                     break;
                 case PRIVACY_RULES_TYPE_VOICE_MESSAGES:
-                    req.key = new TLRPC.TL_inputPrivacyKeyVoiceMessages();
+                    req.key = TLRPC.InputPrivacyKey.inputPrivacyKeyVoiceMessages;
                     break;
                 case PRIVACY_RULES_TYPE_BIRTHDAY:
-                    req.key = new TLRPC.TL_inputPrivacyKeyBirthday();
+                    req.key = TLRPC.InputPrivacyKey.inputPrivacyKeyBirthday;
                     break;
                 case PRIVACY_RULES_TYPE_GIFTS:
-                    req.key = new TLRPC.TL_inputPrivacyKeyStarGiftsAutoSave();
+                    req.key = TLRPC.InputPrivacyKey.inputPrivacyKeyStarGiftsAutoSave;
                     break;
                 case PRIVACY_RULES_TYPE_NO_PAID_MESSAGES:
-                    req.key = new TLRPC.TL_inputPrivacyKeyNoPaidMessages();
+                    req.key = TLRPC.InputPrivacyKey.inputPrivacyKeyNoPaidMessages;
                     break;
                 case PRIVACY_RULES_TYPE_ADDED_BY_PHONE:
-                    req.key = new TLRPC.TL_inputPrivacyKeyAddedByPhone();
+                    req.key = TLRPC.InputPrivacyKey.inputPrivacyKeyAddedByPhone;
                     break;
                 default:
                     continue;

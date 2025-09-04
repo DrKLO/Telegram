@@ -87,4 +87,22 @@ public class TLObject {
         serializeToStream(sizeCalculator.get());
         return byteBuffer.length();
     }
+
+    protected static <T extends TLObject> T TLdeserialize(
+            Class<T> tClass,
+            T object,
+            InputSerializedData stream,
+            int constructor,
+            boolean exception
+    ) {
+        if (object == null) {
+            if (exception) {
+                throw new RuntimeException(String.format("can't parse magic %x in %s", constructor, tClass.getName()));
+            }
+            return null;
+        }
+
+        object.readParams(stream, exception);
+        return object;
+    }
 }

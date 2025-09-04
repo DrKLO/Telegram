@@ -48,8 +48,8 @@ public sealed class TlGen_MessageFwdHeader : TlGen_Object {
       stream.writeInt32(date)
       channel_post?.let { stream.writeInt32(it) }
       post_author?.let { stream.writeString(it) }
-      multiflags_4?.saved_from_peer?.serializeToStream(stream)
-      multiflags_4?.saved_from_msg_id?.let { stream.writeInt32(it) }
+      multiflags_4?.let { it.saved_from_peer.serializeToStream(stream) }
+      multiflags_4?.let { stream.writeInt32(it.saved_from_msg_id) }
       saved_from_id?.serializeToStream(stream)
       saved_from_name?.let { stream.writeString(it) }
       saved_date?.let { stream.writeInt32(it) }
@@ -154,8 +154,8 @@ public sealed class TlGen_MessageFwdHeader : TlGen_Object {
       channel_id?.let { stream.writeInt32(it) }
       channel_post?.let { stream.writeInt32(it) }
       post_author?.let { stream.writeString(it) }
-      multiflags_4?.saved_from_peer?.serializeToStream(stream)
-      multiflags_4?.saved_from_msg_id?.let { stream.writeInt32(it) }
+      multiflags_4?.let { it.saved_from_peer.serializeToStream(stream) }
+      multiflags_4?.let { stream.writeInt32(it.saved_from_msg_id) }
     }
 
     public data class Multiflags_4(
@@ -198,8 +198,8 @@ public sealed class TlGen_MessageFwdHeader : TlGen_Object {
       channel_id?.let { stream.writeInt32(it) }
       channel_post?.let { stream.writeInt32(it) }
       post_author?.let { stream.writeString(it) }
-      multiflags_4?.saved_from_peer?.serializeToStream(stream)
-      multiflags_4?.saved_from_msg_id?.let { stream.writeInt32(it) }
+      multiflags_4?.let { it.saved_from_peer.serializeToStream(stream) }
+      multiflags_4?.let { stream.writeInt32(it.saved_from_msg_id) }
     }
 
     public data class Multiflags_4(
@@ -244,8 +244,8 @@ public sealed class TlGen_MessageFwdHeader : TlGen_Object {
       channel_id?.let { stream.writeInt32(it) }
       channel_post?.let { stream.writeInt32(it) }
       post_author?.let { stream.writeString(it) }
-      multiflags_4?.saved_from_peer?.serializeToStream(stream)
-      multiflags_4?.saved_from_msg_id?.let { stream.writeInt32(it) }
+      multiflags_4?.let { it.saved_from_peer.serializeToStream(stream) }
+      multiflags_4?.let { stream.writeInt32(it.saved_from_msg_id) }
       psa_type?.let { stream.writeString(it) }
     }
 
@@ -290,8 +290,8 @@ public sealed class TlGen_MessageFwdHeader : TlGen_Object {
       stream.writeInt32(date)
       channel_post?.let { stream.writeInt32(it) }
       post_author?.let { stream.writeString(it) }
-      multiflags_4?.saved_from_peer?.serializeToStream(stream)
-      multiflags_4?.saved_from_msg_id?.let { stream.writeInt32(it) }
+      multiflags_4?.let { it.saved_from_peer.serializeToStream(stream) }
+      multiflags_4?.let { stream.writeInt32(it.saved_from_msg_id) }
       psa_type?.let { stream.writeString(it) }
     }
 

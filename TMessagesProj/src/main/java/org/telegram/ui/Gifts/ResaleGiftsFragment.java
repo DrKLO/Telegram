@@ -856,12 +856,27 @@ public class ResaleGiftsFragment extends BaseFragment {
             }
         }
 
+        @Override
+        public void notifyUpdate() {
+
+        }
+
         private String last_offset;
 
         public ResaleGiftsList(int account, long gift_id, Utilities.Callback<Boolean> onUpdate) {
             this.account = account;
             this.gift_id = gift_id;
             this.onUpdate = onUpdate;
+        }
+
+        @Override
+        public int findGiftToUpgrade(int from) {
+            return -1;
+        }
+
+        @Override
+        public void set(int index, Object obj) {
+
         }
 
         private boolean loading;

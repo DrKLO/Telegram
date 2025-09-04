@@ -171,8 +171,10 @@ import org.telegram.ui.Components.CustomPhoneKeyboardView;
 import org.telegram.ui.Components.Easings;
 import org.telegram.ui.Components.EditTextBoldCursor;
 import org.telegram.ui.Components.ImageUpdater;
+import org.telegram.ui.Components.ItemOptions;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.LinkPath;
+import org.telegram.ui.Components.LinkSpanDrawable;
 import org.telegram.ui.Components.LoadingDrawable;
 import org.telegram.ui.Components.LoginOrView;
 import org.telegram.ui.Components.OutlineTextContainerView;
@@ -322,6 +324,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
     private final SlideView[] views = new SlideView[19];
     private CustomPhoneKeyboardView keyboardView;
     private ValueAnimator keyboardAnimator;
+    private boolean paid;
 
     private boolean restoringState;
 
@@ -1787,6 +1790,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
     }
 
     public void open(String phone, TLRPC.auth_SentCode res) {
+        paid = true;
         Bundle params = new Bundle();
         params.putString("phone", "+" + phone);
         params.putString("ephone", "+" + phone);
@@ -1800,6 +1804,8 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             final TLRPC.TL_auth_sentCodePaymentRequired auth = (TLRPC.TL_auth_sentCodePaymentRequired) res;
             params.putString("product", auth.store_product);
             params.putString("phoneHash", auth.phone_code_hash);
+            params.putString("support_email_address", auth.support_email_address);
+            params.putString("support_email_subject", auth.support_email_subject);
             setPage(VIEW_PAY, true, params, true);
             return;
         }
@@ -3895,7 +3901,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                                         Intent mailer = new Intent(Intent.ACTION_SENDTO);
                                         mailer.setData(Uri.parse("mailto:"));
                                         mailer.putExtra(Intent.EXTRA_EMAIL, new String[]{"sms@telegram.org"});
-                                        mailer.putExtra(Intent.EXTRA_SUBJECT, emailPhone + " Android Registration/Login Issue " + version);
+                                        mailer.putExtra(Intent.EXTRA_SUBJECT, emailPhone + " Android Registration/Login Issue " + version + (paid ? " #paidauth" : ""));
                                         StringBuilder text = new StringBuilder();
                                         text.append("Phone: ").append(requestPhone).append("\n");
                                         try {
@@ -9672,6 +9678,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
     public class LoginPayView extends SlideView {
 
         private StarParticlesView starParticlesView;
+        private ImageView optionsButton;
         private ButtonWithCounterView button;
 
         private ExplainStarsSheet.FeatureCell[] cells = new ExplainStarsSheet.FeatureCell[3];
@@ -9713,6 +9720,13 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                 }
             };
             topView.addView(starParticlesView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 200, Gravity.FILL));
+
+            optionsButton = new ImageView(context);
+            optionsButton.setImageResource(R.drawable.ic_ab_other);
+            optionsButton.setScaleType(ImageView.ScaleType.CENTER);
+            optionsButton.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourceProvider), PorterDuff.Mode.SRC_IN));
+            optionsButton.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector)));
+            topView.addView(optionsButton, LayoutHelper.createFrame(32, 32, Gravity.RIGHT | Gravity.TOP, 0, 16, -2, 0));
 
             GLIconTextureView iconTextureView = new GLIconTextureView(context, GLIconRenderer.DIALOG_STYLE, Icon3D.TYPE_COIN) {
                 @Override
@@ -9785,6 +9799,107 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             final String product = params == null ? null : params.getString("product");
             final String phone = params == null ? null : params.getString("phoneFormated");
             final String phoneHash = params == null ? null : params.getString("phoneHash");
+            final String support_email_email = params == null ? null : params.getString("support_email_email");
+            final String support_email_subject = params == null ? null : params.getString("support_email_subject");
+
+            final String[] lastError = new String[1];
+
+            optionsButton.setOnClickListener(v -> {
+                ItemOptions.makeOptions(LoginActivity.this, optionsButton)
+                    .add(R.drawable.msg_help, getString(R.string.SettingsHelp), () -> {
+                        try {
+                            PackageInfo pInfo = ApplicationLoader.applicationContext.getPackageManager().getPackageInfo(ApplicationLoader.applicationContext.getPackageName(), 0);
+                            String version = String.format(Locale.US, "%s (%d)", pInfo.versionName, pInfo.versionCode);
+
+                            Intent mailer = new Intent(Intent.ACTION_SENDTO);
+                            mailer.setData(Uri.parse("mailto:"));
+                            if (!TextUtils.isEmpty(support_email_email)) {
+                                mailer.putExtra(Intent.EXTRA_EMAIL, new String[]{support_email_email});
+                            } else {
+                                mailer.putExtra(Intent.EXTRA_EMAIL, new String[]{"sms@telegram.org"});
+                            }
+                            if (!TextUtils.isEmpty(support_email_subject)) {
+                                mailer.putExtra(Intent.EXTRA_SUBJECT, support_email_subject);
+                            } else {
+                                mailer.putExtra(Intent.EXTRA_SUBJECT, "Android Registration/Login Billing Issue #billing_issue");
+                            }
+                            StringBuilder text = new StringBuilder();
+                            try {
+                                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP_MR1) {
+                                    final SubscriptionManager subscriptionManager = SubscriptionManager.from(getContext());
+                                    List<SubscriptionInfo> infos = null;
+                                    if (Build.VERSION.SDK_INT >= 30) {
+                                        infos = subscriptionManager.getCompleteActiveSubscriptionInfoList();
+                                    }
+                                    if ((infos == null || infos.isEmpty()) && Build.VERSION.SDK_INT >= 28) {
+                                        infos = subscriptionManager.getAccessibleSubscriptionInfoList();
+                                    }
+                                    if (infos == null || infos.isEmpty()) {
+                                        infos = subscriptionManager.getActiveSubscriptionInfoList();
+                                    }
+                                    if (infos != null) {
+                                        for (SubscriptionInfo info : infos) {
+                                            final String number = info.getNumber();
+                                            if (!TextUtils.isEmpty(number)) {
+                                                text.append("SIM");
+                                                text.append(info.getSimSlotIndex());
+                                                text.append(": ").append(number);
+                                                if (!TextUtils.isEmpty(info.getCarrierName())) {
+                                                    text.append(" (").append(info.getCarrierName()).append(")");
+                                                }
+                                                text.append("\n");
+                                            }
+                                        }
+                                    }
+                                } else {
+                                    try {
+                                        final TelephonyManager tm = (TelephonyManager) ApplicationLoader.applicationContext.getSystemService(Context.TELEPHONY_SERVICE);
+                                        final String number = tm.getLine1Number();
+                                        if (!TextUtils.isEmpty(number)) {
+                                            text.append("SIM: ").append(number).append("\n");
+                                        }
+                                    } catch (Exception e) {
+                                        FileLog.e(e);
+                                    }
+                                }
+                            } catch (Exception e) {
+                                FileLog.e(e);
+                            }
+                            text.append("App version: ").append(version).append("\n");
+                            text.append("OS version: SDK ").append(Build.VERSION.SDK_INT).append("\n");
+                            text.append("Device: ").append(Build.MANUFACTURER + " " + Build.MODEL + " (" + Build.DEVICE + ")").append("\n");
+                            text.append("Locale: ").append(Locale.getDefault()).append("\n");
+                            if (AndroidUtilities.isInAirplaneMode(ApplicationLoader.applicationContext)) {
+                                text.append("In airplane mode\n");
+                            }
+                            text.append("Wi-Fi: ").append(AndroidUtilities.isWifiEnabled(ApplicationLoader.applicationContext) ? "Enabled" : "Disabled").append("\n");
+                            if (Build.VERSION.SDK_INT >= 23) {
+                                try {
+                                    TelephonyManager tm = ApplicationLoader.applicationContext.getSystemService(TelephonyManager.class);
+                                    ConnectivityManager cm = ApplicationLoader.applicationContext.getSystemService(ConnectivityManager.class);
+                                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                                        SignalStrength signal = tm.getSignalStrength();
+                                        if (signal != null) {
+                                            text.append("Signal: ").append(signal.getLevel()).append("/4\n");
+                                        }
+                                    }
+                                } catch (Exception e) {
+                                    FileLog.e(e);
+                                }
+                            }
+                            if (!TextUtils.isEmpty(lastError[0])) {
+                                text.append("Error: ").append(lastError[0]).append("\n");
+                            }
+                            text.append("\n\n#billing_issue");
+                            mailer.putExtra(Intent.EXTRA_TEXT, text.toString());
+                            getContext().startActivity(Intent.createChooser(mailer, "Send email..."));
+                        } catch (Exception e) {
+                            needShowAlert(getString(R.string.AppName), getString("NoMailInstalled", R.string.NoMailInstalled));
+                        }
+                    })
+                    .setGravity(Gravity.RIGHT)
+                    .show();
+            });
 
             button.setEnabled(true);
             button.setOnClickListener(null);
@@ -9811,6 +9926,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                     BillingController.getInstance().queryProductDetails(productQueries, (result, list) -> AndroidUtilities.runOnUIThread(() -> {
                         FileLog.d("LoginBilling queried \"" + product + "\" product: " + BillingController.getResponseCodeString(result.getResponseCode()));
                         if (result.getResponseCode() != BillingClient.BillingResponseCode.OK) {
+                            lastError[0] = "BILLING_" + BillingController.getResponseCodeString(result.getResponseCode());
                             BulletinFactory.of(slideViewsContainer, null).createSimpleBulletin(R.raw.error, formatString(R.string.UnknownErrorCode, BillingController.getResponseCodeString(result.getResponseCode())));
                             return;
                         }
@@ -9849,6 +9965,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                                         FileLog.d("LoginBilling, querying done purchases...");
 
                                         Runnable buy = () -> {
+                                            paid = true;
                                             BillingController.getInstance().addResultListener(productDetails.getProductId(), billingResult2 -> {
                                                 final boolean success = billingResult2.getResponseCode() == BillingClient.BillingResponseCode.OK;
                                                 final String error = success ? null : BillingController.getResponseCodeString(billingResult2.getResponseCode());
@@ -9872,7 +9989,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                                                 if (paidList != null && !paidList.isEmpty()) {
                                                     for (Purchase purchase : paidList) {
                                                         if (purchase.getProducts().contains(product)) {
-                                                            TLRPC.TL_payments_assignPlayMarketTransaction req2 = new TLRPC.TL_payments_assignPlayMarketTransaction();
+                                                            final TLRPC.TL_payments_assignPlayMarketTransaction req2 = new TLRPC.TL_payments_assignPlayMarketTransaction();
                                                             req2.receipt = new TLRPC.TL_dataJSON();
                                                             req2.receipt.data = purchase.getOriginalJson();
                                                             purpose.restore = true;
@@ -9881,6 +9998,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                                                                 if (response instanceof TLRPC.Updates) {
                                                                     for (TLRPC.TL_updateSentPhoneCode u : findUpdatesAndRemove((TLRPC.Updates) response, TLRPC.TL_updateSentPhoneCode.class)) {
                                                                         AndroidUtilities.runOnUIThread(() -> {
+                                                                            paid = true;
                                                                             LoginActivity fragment = LaunchActivity.findFragment(LoginActivity.class);
                                                                             if (fragment == null) {
                                                                                 fragment = new LoginActivity(currentAccount);
@@ -9914,12 +10032,15 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                                         }));
                                     });
                                 } else if (res instanceof TLRPC.TL_boolFalse) {
+                                    lastError[0] = "RESPONSE_FALSE";
                                     BulletinFactory.of(slideViewsContainer, null).createSimpleBulletin(R.raw.error, formatString(R.string.UnknownErrorCode, "RESPONSE_FALSE"));
                                 } else if (err != null) {
+                                    lastError[0] = err.text;
                                     BulletinFactory.of(slideViewsContainer, null).showForError(err);
                                 }
                             }), ConnectionsManager.RequestFlagFailOnServerErrors | ConnectionsManager.RequestFlagWithoutLogin);
                         } else {
+                            lastError[0] = "PRODUCT_NOT_FOUND";
                             BulletinFactory.of(slideViewsContainer, null).createSimpleBulletin(R.raw.error, formatString(R.string.UnknownErrorCode, "PRODUCT_NOT_FOUND"));
                         }
                     }));

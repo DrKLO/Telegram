@@ -322,7 +322,7 @@ public class PostsSearchContainer extends FrameLayout {
                     final Theme.ResourcesProvider resourcesProvider = PhotoViewer.getInstance().isVisible() || lastFragment != null && lastFragment.hasShownSheet() ? new DarkThemeResourceProvider() : (lastFragment != null ? lastFragment.getResourceProvider() : null);
                     new StarsIntroActivity.StarsNeededSheet(activity, resourcesProvider, paying, StarsIntroActivity.StarsNeededSheet.TYPE_SEARCH, "", () -> {
                         load(true);
-                    }).show();
+                    }, 0).show();
                 }, true);
             }
         }), ConnectionsManager.RequestFlagDoNotWaitFloodWait);

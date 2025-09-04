@@ -9698,7 +9698,7 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
             !MessagesController.getInstance(currentAccount).premiumPurchaseBlocked() &&
             getParentFragment() != null && user != null &&
             !BuildVars.IS_BILLING_UNAVAILABLE &&
-            !UserObject.isUserSelf(user) &&
+            (!UserObject.isUserSelf(user) || myUserInfo != null && myUserInfo.display_gifts_button) &&
             !UserObject.isBot(user) &&
             !MessagesController.isSupportUser(user) &&
             userInfo != null &&

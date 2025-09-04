@@ -107,6 +107,21 @@ public sealed class TlGen_MessageReplyHeader : TlGen_Object {
     }
   }
 
+  public data class TL_messageReplyStoryHeader_layer173(
+    public val user_id: Long,
+    public val story_id: Int,
+  ) : TlGen_Object {
+    public override fun serializeToStream(stream: OutputSerializedData) {
+      stream.writeInt32(MAGIC.toInt())
+      stream.writeInt64(user_id)
+      stream.writeInt32(story_id)
+    }
+
+    public companion object {
+      public const val MAGIC: UInt = 0x9C98BFC1U
+    }
+  }
+
   public data class TL_messageReplyHeader_layer207(
     public val reply_to_scheduled: Boolean,
     public val forum_topic: Boolean,
@@ -152,21 +167,6 @@ public sealed class TlGen_MessageReplyHeader : TlGen_Object {
 
     public companion object {
       public const val MAGIC: UInt = 0xAFBC09DBU
-    }
-  }
-
-  public data class TL_messageReplyStoryHeader_layer173(
-    public val user_id: Long,
-    public val story_id: Int,
-  ) : TlGen_Object {
-    public override fun serializeToStream(stream: OutputSerializedData) {
-      stream.writeInt32(MAGIC.toInt())
-      stream.writeInt64(user_id)
-      stream.writeInt32(story_id)
-    }
-
-    public companion object {
-      public const val MAGIC: UInt = 0x9C98BFC1U
     }
   }
 

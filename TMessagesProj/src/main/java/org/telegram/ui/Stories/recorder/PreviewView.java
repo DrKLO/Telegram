@@ -53,6 +53,7 @@ import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.EmojiThemes;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.theme.ThemeKey;
 import org.telegram.ui.ChatBackgroundDrawable;
 import org.telegram.ui.Components.AnimatedFloat;
 import org.telegram.ui.Components.BlurringShader;
@@ -1831,7 +1832,7 @@ public class PreviewView extends FrameLayout {
 
         EmojiThemes theme = null;
         if (wallpaper != null && wallpaper.settings != null) {
-            theme = ChatThemeController.getInstance(currentAccount).getTheme(wallpaper.settings.emoticon);
+            theme = ChatThemeController.getInstance(currentAccount).getTheme(ThemeKey.ofEmoticon(wallpaper.settings.emoticon));
         }
         if (theme != null) {
             return getBackgroundDrawableFromTheme(currentAccount, theme, 0, isDark);
@@ -1946,7 +1947,7 @@ public class PreviewView extends FrameLayout {
     }
 
     public static Drawable getBackgroundDrawableFromTheme(int currentAccount, String emoticon, boolean isDark, boolean preview) {
-        EmojiThemes theme = ChatThemeController.getInstance(currentAccount).getTheme(emoticon);
+        EmojiThemes theme = ChatThemeController.getInstance(currentAccount).getTheme(ThemeKey.ofEmoticon(emoticon));
         if (theme == null) {
             return Theme.getCachedWallpaper();
         }
@@ -1985,8 +1986,8 @@ public class PreviewView extends FrameLayout {
                     return;
                 }
                 long themeId = pair.first;
-                Bitmap bitmap = pair.second;
-                if (themeId == chatTheme.getTlTheme(isDark ? 1 : 0).id && bitmap != null) {
+                Bitmap bitmap = pair.second.bitmap;
+                if (themeId == chatTheme.getThemeId(isDark ? 1 : 0) && bitmap != null) {
                     int intensity = chatTheme.getWallpaper(isDarkTheme ? 1 : 0).settings.intensity;
                     motionDrawable.setPatternBitmap(intensity, bitmap);
                     motionDrawable.setPatternColorFilter(patternColor);

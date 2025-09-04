@@ -143,7 +143,7 @@ public class StarReactionsOverlay extends View {
                 }
                 new StarsIntroActivity.StarsNeededSheet(chatActivity.getContext(), chatActivity.getResourceProvider(), totalStars, StarsIntroActivity.StarsNeededSheet.TYPE_REACTIONS, name, () -> {
                     starsController.sendPaidReaction(msg, chatActivity, totalStars, true, true, null);
-                }).show();
+                }, 0).show();
             }
         }
     }

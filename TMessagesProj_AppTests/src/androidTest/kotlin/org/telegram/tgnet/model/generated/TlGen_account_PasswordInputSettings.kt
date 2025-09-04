@@ -26,9 +26,9 @@ public sealed class TlGen_account_PasswordInputSettings : TlGen_Object {
     public override fun serializeToStream(stream: OutputSerializedData) {
       stream.writeInt32(MAGIC.toInt())
       stream.writeInt32(flags.toInt())
-      multiflags_0?.new_algo?.serializeToStream(stream)
-      multiflags_0?.new_password_hash?.let { stream.writeByteArray(it.toByteArray()) }
-      multiflags_0?.hint?.let { stream.writeString(it) }
+      multiflags_0?.let { it.new_algo.serializeToStream(stream) }
+      multiflags_0?.let { stream.writeByteArray(it.new_password_hash.toByteArray()) }
+      multiflags_0?.let { stream.writeString(it.hint) }
       email?.let { stream.writeString(it) }
       new_secure_settings?.serializeToStream(stream)
     }

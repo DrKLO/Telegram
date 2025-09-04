@@ -44,6 +44,29 @@ public sealed class TlGen_StoryViews : TlGen_Object {
     }
   }
 
+  public data class TL_storyViews_layer160(
+    public val views_count: Int,
+    public val recent_viewers: List<Long>?,
+  ) : TlGen_Object {
+    internal val flags: UInt
+      get() {
+        var result = 0U
+        if (recent_viewers != null) result = result or 1U
+        return result
+      }
+
+    public override fun serializeToStream(stream: OutputSerializedData) {
+      stream.writeInt32(MAGIC.toInt())
+      stream.writeInt32(flags.toInt())
+      stream.writeInt32(views_count)
+      recent_viewers?.let { TlGen_Vector.serializeLong(stream, it) }
+    }
+
+    public companion object {
+      public const val MAGIC: UInt = 0xD36760CFU
+    }
+  }
+
   public data class TL_storyViews_layer163(
     public val has_viewers: Boolean,
     public val views_count: Int,

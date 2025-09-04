@@ -764,7 +764,7 @@ public class StarsIntroActivity extends GradientHeaderActivity implements Notifi
                     } else if (error != null) {
                         BulletinFactory.of(this).createSimpleBulletin(R.raw.error, LocaleController.formatString(R.string.UnknownErrorCode, error)).show();
                     }
-                });
+                }, null);
             }
         } else if (item.instanceOf(StarsSubscriptionView.Factory.class)) {
             if (item.object instanceof TL_stars.StarsSubscription) {
@@ -2567,7 +2567,7 @@ public class StarsIntroActivity extends GradientHeaderActivity implements Notifi
                         } else if (error != null) {
                             BulletinFactory.of(lastFragment).createSimpleBulletin(R.raw.error, LocaleController.formatString(R.string.UnknownErrorCode, error)).show();
                         }
-                    });
+                    }, null);
                 }
             }
         }
@@ -2580,6 +2580,7 @@ public class StarsIntroActivity extends GradientHeaderActivity implements Notifi
         private final FrameLayout footerView;
         private final FireworksOverlay fireworksOverlay;
         private Runnable whenPurchased;
+        private final TLRPC.InputPeer purposePeer;
 
         @Override
         public void didReceivedNotification(int id, int account, Object... args) {
@@ -2653,13 +2654,15 @@ public class StarsIntroActivity extends GradientHeaderActivity implements Notifi
             Theme.ResourcesProvider resourcesProvider,
             long starsNeeded,
             int type, String botName,
-            Runnable whenPurchased
+            Runnable whenPurchased,
+            long purposePeerDialogId
         ) {
             super(context, null, false, false, false, resourcesProvider);
 
             topPadding = .2f;
 
             this.whenPurchased = whenPurchased;
+            this.purposePeer = purposePeerDialogId == 0 ? null : MessagesController.getInstance(currentAccount).getInputPeer(purposePeerDialogId);
 
             fixNavigationBar();
             recyclerListView.setPadding(backgroundPaddingLeft, 0, backgroundPaddingLeft, 0);
@@ -2853,7 +2856,7 @@ public class StarsIntroActivity extends GradientHeaderActivity implements Notifi
                         } else if (error != null) {
                             BulletinFactory.of((FrameLayout) containerView, resourcesProvider).createSimpleBulletin(R.raw.error, LocaleController.formatString(R.string.UnknownErrorCode, error)).show();
                         }
-                    });
+                    }, purposePeer);
                 }
             }
         }
@@ -4650,7 +4653,7 @@ public class StarsIntroActivity extends GradientHeaderActivity implements Notifi
                         }));
                     };
                     if (c.balance.amount < subscription.pricing.amount) {
-                        new StarsNeededSheet(context, resourcesProvider, subscription.pricing.amount, business ? StarsNeededSheet.TYPE_BIZ_SUBSCRIPTION_KEEP : did < 0 ? StarsNeededSheet.TYPE_SUBSCRIPTION_KEEP : StarsNeededSheet.TYPE_BOT_SUBSCRIPTION_KEEP, peerName, refulfill).show();
+                        new StarsNeededSheet(context, resourcesProvider, subscription.pricing.amount, business ? StarsNeededSheet.TYPE_BIZ_SUBSCRIPTION_KEEP : did < 0 ? StarsNeededSheet.TYPE_SUBSCRIPTION_KEEP : StarsNeededSheet.TYPE_BOT_SUBSCRIPTION_KEEP, peerName, refulfill, did).show();
                     } else {
                         refulfill.run();
                     }

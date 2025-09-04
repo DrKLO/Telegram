@@ -260,7 +260,6 @@ public class ViewPagerFixed extends FrameLayout {
                     setTranslationX(viewPages[0], 0);
                     viewPages[1] = null;
                 }
-                currentPosition = nextPosition;
                 manualScrolling = null;
                 onTabAnimationUpdate(true);
                 if (tabsView != null) {

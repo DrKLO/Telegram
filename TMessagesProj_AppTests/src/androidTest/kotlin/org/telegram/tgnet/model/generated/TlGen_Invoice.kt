@@ -50,8 +50,8 @@ public sealed class TlGen_Invoice : TlGen_Object {
       stream.writeInt32(flags.toInt())
       stream.writeString(currency)
       TlGen_Vector.serialize(stream, prices)
-      multiflags_8?.max_tip_amount?.let { stream.writeInt64(it) }
-      multiflags_8?.suggested_tip_amounts?.let { TlGen_Vector.serializeLong(stream, it) }
+      multiflags_8?.let { stream.writeInt64(it.max_tip_amount) }
+      multiflags_8?.let { TlGen_Vector.serializeLong(stream, it.suggested_tip_amounts) }
       terms_url?.let { stream.writeString(it) }
       subscription_period?.let { stream.writeInt32(it) }
     }

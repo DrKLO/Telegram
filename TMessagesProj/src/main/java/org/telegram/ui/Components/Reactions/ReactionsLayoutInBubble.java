@@ -338,6 +338,8 @@ public class ReactionsLayoutInBubble {
                     button.width += button.textDrawable.getAnimateToWidth() + dp(8);
                 } else if (button.counterDrawable.getCurrentWidth() > 0) {
                     button.width += button.counterDrawable.getCurrentWidth() + dp(8);
+                } else {
+                    button.width -= dp(1);
                 }
                 button.height = dp(26);
             }

@@ -4,6 +4,7 @@ import androidx.annotation.Nullable;
 
 import org.telegram.tgnet.InputSerializedData;
 import org.telegram.tgnet.OutputSerializedData;
+import org.telegram.tgnet.TLMethod;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.Vector;
@@ -1042,12 +1043,13 @@ public class TL_account {
         }
     }
 
-    public static class getChatThemes extends TLObject {
+    public static class getChatThemes extends TLMethod<Themes> {
         public static final int constructor = 0xd638de89;
 
         public long hash;
 
-        public TLObject deserializeResponse(InputSerializedData stream, int constructor, boolean exception) {
+        @Override
+        public Themes deserializeResponseT(InputSerializedData stream, int constructor, boolean exception) {
             return Themes.TLdeserialize(stream, constructor, exception);
         }
 
@@ -1993,9 +1995,10 @@ public class TL_account {
     }
 
     public static class webPagePreview extends TLObject {
-        public static final int constructor = 0xb53e8b21;
+        public static final int constructor = 0x8c9a88ac;
 
         public TLRPC.MessageMedia media;
+        public ArrayList<TLRPC.Chat> chats = new ArrayList<>();
         public ArrayList<TLRPC.User> users = new ArrayList<>();
 
         public static webPagePreview TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
@@ -2014,6 +2017,7 @@ public class TL_account {
         @Override
         public void readParams(InputSerializedData stream, boolean exception) {
             media = TLRPC.MessageMedia.TLdeserialize(stream, stream.readInt32(exception), exception);
+            chats = Vector.deserialize(stream, TLRPC.Chat::TLdeserialize, exception);
             users = Vector.deserialize(stream, TLRPC.User::TLdeserialize, exception);
         }
 
@@ -2021,6 +2025,7 @@ public class TL_account {
         public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
             media.serializeToStream(stream);
+            Vector.serialize(stream, chats);
             Vector.serialize(stream, users);
         }
     }
@@ -4093,6 +4098,174 @@ public class TL_account {
         }
     }
 
+    public static class SavedMusicIds extends TLObject {
 
+        public ArrayList<Long> ids = new ArrayList<>();
+
+        public static SavedMusicIds TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
+            SavedMusicIds result = null;
+            switch (constructor) {
+                case TL_savedMusicIdsNotModified.constructor:
+                    result = new TL_savedMusicIdsNotModified();
+                    break;
+                case TL_savedMusicIds.constructor:
+                    result = new TL_savedMusicIds();
+                    break;
+            }
+            if (result == null && exception) {
+                throw new RuntimeException(String.format("can't parse magic %x in SavedMusicIds", constructor));
+            }
+            if (result != null) {
+                result.readParams(stream, exception);
+            }
+            return result;
+        }
+    }
+
+    public static class TL_savedMusicIds extends SavedMusicIds {
+        public static final int constructor = 0x998d6636;
+
+        @Override
+        public void readParams(InputSerializedData stream, boolean exception) {
+            ids = Vector.deserializeLong(stream, exception);
+        }
+
+        @Override
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+            Vector.serializeLong(stream, ids);
+        }
+    }
+
+    public static class TL_savedMusicIdsNotModified extends SavedMusicIds {
+        public static final int constructor = 0x4fc81d6e;
+
+        @Override
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+        }
+    }
+
+    public static class getSavedMusicIds extends TLObject {
+        public static final int constructor = 0xe09d5faf;
+
+        public long hash;
+
+        @Override
+        public TLObject deserializeResponse(InputSerializedData stream, int constructor, boolean exception) {
+            return SavedMusicIds.TLdeserialize(stream, constructor, exception);
+        }
+
+        @Override
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+            stream.writeInt64(hash);
+        }
+    }
+
+    public static class getSavedMusicByID extends TLObject {
+        public static final int constructor = 0x7573a4e9;
+
+        public TLRPC.InputUser id;
+        public ArrayList<TLRPC.InputDocument> documents = new ArrayList<>();
+
+        @Override
+        public TLObject deserializeResponse(InputSerializedData stream, int constructor, boolean exception) {
+            return TLRPC.SavedMusic.TLdeserialize(stream, constructor, exception);
+        }
+
+        @Override
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+            id.serializeToStream(stream);
+            Vector.serialize(stream, documents);
+        }
+    }
+
+
+    public static class Tl_getUniqueGiftChatThemes extends TLMethod<ChatThemes> {
+        public static final int constructor = 0xfe74ef9f;
+
+        public int offset;
+        public int limit;
+        public long hash;
+
+        @Override
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+            stream.writeInt32(offset);
+            stream.writeInt32(limit);
+            stream.writeInt64(hash);
+        }
+
+        @Override
+        public ChatThemes deserializeResponseT(InputSerializedData stream, int constructor, boolean exception) {
+            return ChatThemes.TLdeserialize(stream, constructor, exception);
+        }
+    }
+
+    public static abstract class ChatThemes extends TLObject {
+        public static ChatThemes TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
+            return TLdeserialize(ChatThemes.class, fromConstructor(constructor), stream, constructor, exception);
+        }
+
+        private static ChatThemes fromConstructor(int constructor) {
+            switch (constructor) {
+                case Tl_chatThemes.constructor:            return new Tl_chatThemes();
+                case TL_chatThemesNotModified.constructor: return new TL_chatThemesNotModified();
+            }
+            return null;
+        }
+    }
+
+    public static class TL_chatThemesNotModified extends ChatThemes {
+        public static final int constructor = 0xe011e1c4;
+
+        @Override
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+        }
+
+        @Override
+        public void readParams(InputSerializedData stream, boolean exception) {
+
+        }
+    }
+
+    public static class Tl_chatThemes extends ChatThemes {
+        public static final int constructor = 0x16484857;
+        public int flags;
+        public long hash;
+
+        public ArrayList<TLRPC.ChatTheme> themes;
+        public ArrayList<TLRPC.Chat> chats;
+        public ArrayList<TLRPC.User> users;
+        public int next_offset;
+
+        @Override
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+            stream.writeInt32(flags);
+            stream.writeInt64(hash);
+            Vector.serialize(stream, themes);
+            Vector.serialize(stream, chats);
+            Vector.serialize(stream, users);
+            if (hasFlag(flags, FLAG_0)) {
+                stream.writeInt32(next_offset);
+            }
+        }
+
+        @Override
+        public void readParams(InputSerializedData stream, boolean exception) {
+            flags = stream.readInt32(exception);
+            hash = stream.readInt64(exception);
+            themes = Vector.deserialize(stream, TLRPC.ChatTheme::TLdeserialize, exception);
+            chats = Vector.deserialize(stream, TLRPC.Chat::TLdeserialize, exception);
+            users = Vector.deserialize(stream, TLRPC.User::TLdeserialize, exception);
+            if (hasFlag(flags, FLAG_0)) {
+                next_offset = stream.readInt32(exception);
+            }
+        }
+    }
 
 }

@@ -354,6 +354,7 @@ public class StoryLinkSheet extends BottomSheetWithRecyclerListView implements N
             if (res instanceof TL_account.webPagePreview) {
                 final TL_account.webPagePreview preview = (TL_account.webPagePreview) res;
                 MessagesController.getInstance(currentAccount).putUsers(preview.users, false);
+                MessagesController.getInstance(currentAccount).putChats(preview.chats, false);
                 if (preview.media instanceof TLRPC.TL_messageMediaWebPage) {
                     media = (TLRPC.TL_messageMediaWebPage) preview.media;
                 }

@@ -234,8 +234,8 @@ public sealed class TlGen_PageBlock : TlGen_Object {
       stream.writeInt32(flags.toInt())
       stream.writeInt64(photo_id)
       caption.serializeToStream(stream)
-      multiflags_0?.url?.let { stream.writeString(it) }
-      multiflags_0?.webpage_id?.let { stream.writeInt64(it) }
+      multiflags_0?.let { stream.writeString(it.url) }
+      multiflags_0?.let { stream.writeInt64(it.webpage_id) }
     }
 
     public data class Multiflags_0(
@@ -301,8 +301,8 @@ public sealed class TlGen_PageBlock : TlGen_Object {
       url?.let { stream.writeString(it) }
       html?.let { stream.writeString(it) }
       poster_photo_id?.let { stream.writeInt64(it) }
-      multiflags_5?.w?.let { stream.writeInt32(it) }
-      multiflags_5?.h?.let { stream.writeInt32(it) }
+      multiflags_5?.let { stream.writeInt32(it.w) }
+      multiflags_5?.let { stream.writeInt32(it.h) }
       caption.serializeToStream(stream)
     }
 

@@ -184,8 +184,8 @@ public sealed class TlGen_InputMedia : TlGen_Object {
       stream.writeInt32(flags.toInt())
       poll.serializeToStream(stream)
       correct_answers?.let { TlGen_Vector.serializeBytes(stream, it) }
-      multiflags_1?.solution?.let { stream.writeString(it) }
-      multiflags_1?.solution_entities?.let { TlGen_Vector.serialize(stream, it) }
+      multiflags_1?.let { stream.writeString(it.solution) }
+      multiflags_1?.let { TlGen_Vector.serialize(stream, it.solution_entities) }
     }
 
     public data class Multiflags_1(

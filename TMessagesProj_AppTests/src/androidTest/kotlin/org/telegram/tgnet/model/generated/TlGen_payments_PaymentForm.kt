@@ -51,8 +51,8 @@ public sealed class TlGen_payments_PaymentForm : TlGen_Object {
       invoice.serializeToStream(stream)
       stream.writeInt64(provider_id)
       stream.writeString(url)
-      multiflags_4?.native_provider?.let { stream.writeString(it) }
-      multiflags_4?.native_params?.serializeToStream(stream)
+      multiflags_4?.let { stream.writeString(it.native_provider) }
+      multiflags_4?.let { it.native_params.serializeToStream(stream) }
       additional_methods?.let { TlGen_Vector.serialize(stream, it) }
       saved_info?.serializeToStream(stream)
       saved_credentials?.let { TlGen_Vector.serialize(stream, it) }

@@ -63,10 +63,10 @@ public sealed class TlGen_WebPage : TlGen_Object {
       title?.let { stream.writeString(it) }
       description?.let { stream.writeString(it) }
       photo?.serializeToStream(stream)
-      multiflags_5?.embed_url?.let { stream.writeString(it) }
-      multiflags_5?.embed_type?.let { stream.writeString(it) }
-      multiflags_6?.embed_width?.let { stream.writeInt32(it) }
-      multiflags_6?.embed_height?.let { stream.writeInt32(it) }
+      multiflags_5?.let { stream.writeString(it.embed_url) }
+      multiflags_5?.let { stream.writeString(it.embed_type) }
+      multiflags_6?.let { stream.writeInt32(it.embed_width) }
+      multiflags_6?.let { stream.writeInt32(it.embed_height) }
       duration?.let { stream.writeInt32(it) }
       author?.let { stream.writeString(it) }
       document?.serializeToStream(stream)
@@ -226,10 +226,10 @@ public sealed class TlGen_WebPage : TlGen_Object {
       title?.let { stream.writeString(it) }
       description?.let { stream.writeString(it) }
       photo?.serializeToStream(stream)
-      multiflags_5?.embed_url?.let { stream.writeString(it) }
-      multiflags_5?.embed_type?.let { stream.writeString(it) }
-      multiflags_6?.embed_width?.let { stream.writeInt32(it) }
-      multiflags_6?.embed_height?.let { stream.writeInt32(it) }
+      multiflags_5?.let { stream.writeString(it.embed_url) }
+      multiflags_5?.let { stream.writeString(it.embed_type) }
+      multiflags_6?.let { stream.writeInt32(it.embed_width) }
+      multiflags_6?.let { stream.writeInt32(it.embed_height) }
       duration?.let { stream.writeInt32(it) }
       author?.let { stream.writeString(it) }
     }
@@ -291,10 +291,10 @@ public sealed class TlGen_WebPage : TlGen_Object {
       title?.let { stream.writeString(it) }
       description?.let { stream.writeString(it) }
       photo?.serializeToStream(stream)
-      multiflags_5?.embed_url?.let { stream.writeString(it) }
-      multiflags_5?.embed_type?.let { stream.writeString(it) }
-      multiflags_6?.embed_width?.let { stream.writeInt32(it) }
-      multiflags_6?.embed_height?.let { stream.writeInt32(it) }
+      multiflags_5?.let { stream.writeString(it.embed_url) }
+      multiflags_5?.let { stream.writeString(it.embed_type) }
+      multiflags_6?.let { stream.writeInt32(it.embed_width) }
+      multiflags_6?.let { stream.writeInt32(it.embed_height) }
       duration?.let { stream.writeInt32(it) }
       author?.let { stream.writeString(it) }
       document?.serializeToStream(stream)
@@ -361,10 +361,10 @@ public sealed class TlGen_WebPage : TlGen_Object {
       title?.let { stream.writeString(it) }
       description?.let { stream.writeString(it) }
       photo?.serializeToStream(stream)
-      multiflags_5?.embed_url?.let { stream.writeString(it) }
-      multiflags_5?.embed_type?.let { stream.writeString(it) }
-      multiflags_6?.embed_width?.let { stream.writeInt32(it) }
-      multiflags_6?.embed_height?.let { stream.writeInt32(it) }
+      multiflags_5?.let { stream.writeString(it.embed_url) }
+      multiflags_5?.let { stream.writeString(it.embed_type) }
+      multiflags_6?.let { stream.writeInt32(it.embed_width) }
+      multiflags_6?.let { stream.writeInt32(it.embed_height) }
       duration?.let { stream.writeInt32(it) }
       author?.let { stream.writeString(it) }
       document?.serializeToStream(stream)
@@ -442,10 +442,10 @@ public sealed class TlGen_WebPage : TlGen_Object {
       title?.let { stream.writeString(it) }
       description?.let { stream.writeString(it) }
       photo?.serializeToStream(stream)
-      multiflags_5?.embed_url?.let { stream.writeString(it) }
-      multiflags_5?.embed_type?.let { stream.writeString(it) }
-      multiflags_6?.embed_width?.let { stream.writeInt32(it) }
-      multiflags_6?.embed_height?.let { stream.writeInt32(it) }
+      multiflags_5?.let { stream.writeString(it.embed_url) }
+      multiflags_5?.let { stream.writeString(it.embed_type) }
+      multiflags_6?.let { stream.writeInt32(it.embed_width) }
+      multiflags_6?.let { stream.writeInt32(it.embed_height) }
       duration?.let { stream.writeInt32(it) }
       author?.let { stream.writeString(it) }
       document?.serializeToStream(stream)

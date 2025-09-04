@@ -117,9 +117,9 @@ public sealed class TlGen_Config : TlGen_Object {
       stream.writeInt32(caption_length_max)
       stream.writeInt32(message_length_max)
       stream.writeInt32(webfile_dc_id)
-      multiflags_2?.suggested_lang_code?.let { stream.writeString(it) }
-      multiflags_2?.lang_pack_version?.let { stream.writeInt32(it) }
-      multiflags_2?.base_lang_pack_version?.let { stream.writeInt32(it) }
+      multiflags_2?.let { stream.writeString(it.suggested_lang_code) }
+      multiflags_2?.let { stream.writeInt32(it.lang_pack_version) }
+      multiflags_2?.let { stream.writeInt32(it.base_lang_pack_version) }
       reactions_default?.serializeToStream(stream)
       autologin_token?.let { stream.writeString(it) }
     }

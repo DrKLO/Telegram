@@ -157,8 +157,8 @@ public sealed class TlGen_InputFileLocation : TlGen_Object {
       call.serializeToStream(stream)
       stream.writeInt64(time_ms)
       stream.writeInt32(scale)
-      multiflags_0?.video_channel?.let { stream.writeInt32(it) }
-      multiflags_0?.video_quality?.let { stream.writeInt32(it) }
+      multiflags_0?.let { stream.writeInt32(it.video_channel) }
+      multiflags_0?.let { stream.writeInt32(it.video_quality) }
     }
 
     public data class Multiflags_0(

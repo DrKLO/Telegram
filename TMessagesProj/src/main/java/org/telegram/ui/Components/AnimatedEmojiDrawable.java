@@ -1276,6 +1276,10 @@ public class AnimatedEmojiDrawable extends Drawable {
             return drawables[0] == null;
         }
 
+        public boolean isStable() {
+            return drawables[0] != null && changeProgress.get() == 1;
+        }
+
         public boolean set(long documentId, int cacheType, boolean animated) {
             if (drawables[0] instanceof AnimatedEmojiDrawable && ((AnimatedEmojiDrawable) drawables[0]).getDocumentId() == documentId) {
                 return false;

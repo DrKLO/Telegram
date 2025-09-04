@@ -25,8 +25,8 @@ public sealed class TlGen_FactCheck : TlGen_Object {
     public override fun serializeToStream(stream: OutputSerializedData) {
       stream.writeInt32(MAGIC.toInt())
       stream.writeInt32(flags.toInt())
-      multiflags_1?.country?.let { stream.writeString(it) }
-      multiflags_1?.text?.serializeToStream(stream)
+      multiflags_1?.let { stream.writeString(it.country) }
+      multiflags_1?.let { it.text.serializeToStream(stream) }
       stream.writeInt64(hash)
     }
 

@@ -48,10 +48,23 @@ public class ButtonWithCounterView extends FrameLayout implements Loadable {
     private float countAlpha;
     private final AnimatedFloat countAlphaAnimated = new AnimatedFloat(350, CubicBezierInterpolator.EASE_OUT_QUINT);
     public final View rippleView;
-    private final boolean filled;
+    private boolean filled;
 
     public ButtonWithCounterView(Context context, Theme.ResourcesProvider resourcesProvider) {
         this(context, true, resourcesProvider);
+    }
+
+    public void setFilled(boolean filled) {
+        if (this.filled == filled) return;
+        this.filled = filled;
+        if (filled) {
+            setBackground(Theme.createRoundRectDrawable(dp(8), Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider)));
+            text.setTypeface(AndroidUtilities.bold());
+        } else {
+            setBackground(null);
+            text.setTypeface(null);
+        }
+        updateColors();
     }
 
     public ButtonWithCounterView(Context context, boolean filled, Theme.ResourcesProvider resourcesProvider) {

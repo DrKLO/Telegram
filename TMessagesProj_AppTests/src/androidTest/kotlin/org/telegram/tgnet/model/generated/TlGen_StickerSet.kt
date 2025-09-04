@@ -53,9 +53,9 @@ public sealed class TlGen_StickerSet : TlGen_Object {
       stream.writeInt64(access_hash)
       stream.writeString(title)
       stream.writeString(short_name)
-      multiflags_4?.thumbs?.let { TlGen_Vector.serialize(stream, it) }
-      multiflags_4?.thumb_dc_id?.let { stream.writeInt32(it) }
-      multiflags_4?.thumb_version?.let { stream.writeInt32(it) }
+      multiflags_4?.let { TlGen_Vector.serialize(stream, it.thumbs) }
+      multiflags_4?.let { stream.writeInt32(it.thumb_dc_id) }
+      multiflags_4?.let { stream.writeInt32(it.thumb_version) }
       thumb_document_id?.let { stream.writeInt64(it) }
       stream.writeInt32(count)
       stream.writeInt32(hash)
@@ -225,8 +225,8 @@ public sealed class TlGen_StickerSet : TlGen_Object {
       stream.writeInt64(access_hash)
       stream.writeString(title)
       stream.writeString(short_name)
-      multiflags_4?.thumb?.serializeToStream(stream)
-      multiflags_4?.thumb_dc_id?.let { stream.writeInt32(it) }
+      multiflags_4?.let { it.thumb.serializeToStream(stream) }
+      multiflags_4?.let { stream.writeInt32(it.thumb_dc_id) }
       stream.writeInt32(count)
       stream.writeInt32(hash)
     }
@@ -275,8 +275,8 @@ public sealed class TlGen_StickerSet : TlGen_Object {
       stream.writeInt64(access_hash)
       stream.writeString(title)
       stream.writeString(short_name)
-      multiflags_4?.thumbs?.let { TlGen_Vector.serialize(stream, it) }
-      multiflags_4?.thumb_dc_id?.let { stream.writeInt32(it) }
+      multiflags_4?.let { TlGen_Vector.serialize(stream, it.thumbs) }
+      multiflags_4?.let { stream.writeInt32(it.thumb_dc_id) }
       stream.writeInt32(count)
       stream.writeInt32(hash)
     }
@@ -329,9 +329,9 @@ public sealed class TlGen_StickerSet : TlGen_Object {
       stream.writeInt64(access_hash)
       stream.writeString(title)
       stream.writeString(short_name)
-      multiflags_4?.thumbs?.let { TlGen_Vector.serialize(stream, it) }
-      multiflags_4?.thumb_dc_id?.let { stream.writeInt32(it) }
-      multiflags_4?.thumb_version?.let { stream.writeInt32(it) }
+      multiflags_4?.let { TlGen_Vector.serialize(stream, it.thumbs) }
+      multiflags_4?.let { stream.writeInt32(it.thumb_dc_id) }
+      multiflags_4?.let { stream.writeInt32(it.thumb_version) }
       stream.writeInt32(count)
       stream.writeInt32(hash)
     }

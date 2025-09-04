@@ -2,6 +2,7 @@
 #include <math.h>
 #include <stdlib.h>
 #include <jni.h>
+#include <string.h>
 
 static int32_t is_initialized = 0;
 static float _coefficientsX[TIMING_NUM][4], _coefficientsY[TIMING_NUM][4];

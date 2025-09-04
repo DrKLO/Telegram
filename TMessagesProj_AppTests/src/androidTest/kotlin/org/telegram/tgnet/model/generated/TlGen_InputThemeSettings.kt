@@ -34,8 +34,8 @@ public sealed class TlGen_InputThemeSettings : TlGen_Object {
       stream.writeInt32(accent_color)
       outbox_accent_color?.let { stream.writeInt32(it) }
       message_colors?.let { TlGen_Vector.serializeInt(stream, it) }
-      multiflags_1?.wallpaper?.serializeToStream(stream)
-      multiflags_1?.wallpaper_settings?.serializeToStream(stream)
+      multiflags_1?.let { it.wallpaper.serializeToStream(stream) }
+      multiflags_1?.let { it.wallpaper_settings.serializeToStream(stream) }
     }
 
     public data class Multiflags_1(

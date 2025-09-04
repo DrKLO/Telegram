@@ -1598,6 +1598,12 @@ public class DatabaseMigrationHelper {
             version = 167;
         }
 
+        if (version == 167) {
+            database.executeFast("CREATE TABLE gift_themes (slug TEXT PRIMARY KEY, data BLOB);").stepThis().dispose();
+            database.executeFast("PRAGMA user_version = 168").stepThis().dispose();
+            version = 168;
+        }
+
         return version;
     }
 

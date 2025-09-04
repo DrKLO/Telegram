@@ -14,14 +14,16 @@ public sealed class TlGen_MessageReplies : TlGen_Object {
     public val replies: Int,
     public val replies_pts: Int,
     public val recent_repliers: List<TlGen_Peer>?,
+    public val channel_id: Long?,
     public val max_id: Int?,
     public val read_max_id: Int?,
-    public val multiflags_0: Multiflags_0?,
   ) : TlGen_MessageReplies() {
+    public val comments: Boolean = channel_id != null
+
     internal val flags: UInt
       get() {
         var result = 0U
-        if (multiflags_0 != null) result = result or 1U
+        if (comments) result = result or 1U
         if (recent_repliers != null) result = result or 2U
         if (max_id != null) result = result or 4U
         if (read_max_id != null) result = result or 8U
@@ -34,15 +36,10 @@ public sealed class TlGen_MessageReplies : TlGen_Object {
       stream.writeInt32(replies)
       stream.writeInt32(replies_pts)
       recent_repliers?.let { TlGen_Vector.serialize(stream, it) }
-      multiflags_0?.channel_id?.let { stream.writeInt64(it) }
+      channel_id?.let { stream.writeInt64(it) }
       max_id?.let { stream.writeInt32(it) }
       read_max_id?.let { stream.writeInt32(it) }
     }
-
-    public data class Multiflags_0(
-      public val comments: Boolean,
-      public val channel_id: Long,
-    )
 
     public companion object {
       public const val MAGIC: UInt = 0x83D60FC2U
@@ -53,14 +50,16 @@ public sealed class TlGen_MessageReplies : TlGen_Object {
     public val replies: Int,
     public val replies_pts: Int,
     public val recent_repliers: List<TlGen_Peer>?,
+    public val channel_id: Int?,
     public val max_id: Int?,
     public val read_max_id: Int?,
-    public val multiflags_0: Multiflags_0?,
   ) : TlGen_Object {
+    public val comments: Boolean = channel_id != null
+
     internal val flags: UInt
       get() {
         var result = 0U
-        if (multiflags_0 != null) result = result or 1U
+        if (comments) result = result or 1U
         if (recent_repliers != null) result = result or 2U
         if (max_id != null) result = result or 4U
         if (read_max_id != null) result = result or 8U
@@ -73,15 +72,10 @@ public sealed class TlGen_MessageReplies : TlGen_Object {
       stream.writeInt32(replies)
       stream.writeInt32(replies_pts)
       recent_repliers?.let { TlGen_Vector.serialize(stream, it) }
-      multiflags_0?.channel_id?.let { stream.writeInt32(it) }
+      channel_id?.let { stream.writeInt32(it) }
       max_id?.let { stream.writeInt32(it) }
       read_max_id?.let { stream.writeInt32(it) }
     }
-
-    public data class Multiflags_0(
-      public val comments: Boolean,
-      public val channel_id: Int,
-    )
 
     public companion object {
       public const val MAGIC: UInt = 0x4128FAACU

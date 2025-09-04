@@ -800,6 +800,33 @@ public sealed class TlGen_MessageMedia : TlGen_Object {
     }
   }
 
+  public data class TL_messageMediaStory_layer163(
+    public val via_mention: Boolean,
+    public val user_id: Long,
+    public val id: Int,
+    public val story: TlGen_StoryItem?,
+  ) : TlGen_Object {
+    internal val flags: UInt
+      get() {
+        var result = 0U
+        if (story != null) result = result or 1U
+        if (via_mention) result = result or 2U
+        return result
+      }
+
+    public override fun serializeToStream(stream: OutputSerializedData) {
+      stream.writeInt32(MAGIC.toInt())
+      stream.writeInt32(flags.toInt())
+      stream.writeInt64(user_id)
+      stream.writeInt32(id)
+      story?.serializeToStream(stream)
+    }
+
+    public companion object {
+      public const val MAGIC: UInt = 0xCBB20D88U
+    }
+  }
+
   public data class TL_messageMediaGiveaway_layer186(
     public val only_new_subscribers: Boolean,
     public val winners_are_visible: Boolean,
@@ -875,33 +902,6 @@ public sealed class TlGen_MessageMedia : TlGen_Object {
 
     public companion object {
       public const val MAGIC: UInt = 0xC6991068U
-    }
-  }
-
-  public data class TL_messageMediaStory_layer163(
-    public val via_mention: Boolean,
-    public val user_id: Long,
-    public val id: Int,
-    public val story: TlGen_StoryItem?,
-  ) : TlGen_Object {
-    internal val flags: UInt
-      get() {
-        var result = 0U
-        if (story != null) result = result or 1U
-        if (via_mention) result = result or 2U
-        return result
-      }
-
-    public override fun serializeToStream(stream: OutputSerializedData) {
-      stream.writeInt32(MAGIC.toInt())
-      stream.writeInt32(flags.toInt())
-      stream.writeInt64(user_id)
-      stream.writeInt32(id)
-      story?.serializeToStream(stream)
-    }
-
-    public companion object {
-      public const val MAGIC: UInt = 0xCBB20D88U
     }
   }
 

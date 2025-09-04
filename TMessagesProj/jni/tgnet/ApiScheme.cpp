@@ -476,7 +476,7 @@ void TL_emojiStatus::readParams(NativeByteBuffer *stream, int32_t instanceNum, b
     flags = stream->readInt32(&error);
     document_id = stream->readInt64(&error);
     if ((flags & 1) != 0) {
-        until = stream->readInt64(&error);
+        until = stream->readInt32(&error);
     }
 }
 
