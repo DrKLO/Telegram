@@ -160,6 +160,14 @@ public class SharedConfig {
                 .apply();
     }
 
+    public static void toggleUseShamsiCalendar() {
+        useShamsiCalendar = !useShamsiCalendar;
+        ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE)
+                .edit()
+                .putBoolean("useShamsiCalendar", useShamsiCalendar)
+                .apply();
+    }
+
     private static String goodHevcEncoder;
     private static HashSet<String> hevcEncoderWhitelist = new HashSet<>();
     static {
@@ -321,6 +329,8 @@ public class SharedConfig {
     public static int emojiInteractionsHintCount;
     public static int dayNightThemeSwitchHintCount;
     public static int callEncryptionHintDisplayedCount;
+    public static boolean useShamsiCalendar;
+    public static String customFont;
 
     public static TLRPC.TL_help_appUpdate pendingAppUpdate;
     public static int pendingAppUpdateBuildVersion;
@@ -430,6 +440,7 @@ public class SharedConfig {
             try {
                 SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("userconfing", Context.MODE_PRIVATE);
                 SharedPreferences.Editor editor = preferences.edit();
+        editor.putString("customFont", customFont);
                 editor.putBoolean("saveIncomingPhotos", saveIncomingPhotos);
                 editor.putString("passcodeHash1", passcodeHash);
                 editor.putString("passcodeSalt", passcodeSalt.length > 0 ? Base64.encodeToString(passcodeSalt, Base64.DEFAULT) : "");
@@ -670,6 +681,8 @@ public class SharedConfig {
             multipleReactionsPromoShowed = preferences.getBoolean("multipleReactionsPromoShowed", false);
             callEncryptionHintDisplayedCount = preferences.getInt("callEncryptionHintDisplayedCount", 0);
             debugVideoQualities = preferences.getBoolean("debugVideoQualities", false);
+            useShamsiCalendar = preferences.getBoolean("useShamsiCalendar", false);
+            customFont = preferences.getString("customFont", "Default");
 
             loadDebugConfig(preferences);
 

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="AppName">تيليجرام</string>
+    <string name="AppName">TeleTux</string>
     <string name="AppNameBeta">(Beta) تيليجرام</string>
     <string name="LanguageName">العربية</string>
     <string name="English">الإنجليزية</string>

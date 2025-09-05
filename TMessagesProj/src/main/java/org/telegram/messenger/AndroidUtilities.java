@@ -246,6 +246,9 @@ public class AndroidUtilities {
     public static ThreadLocal<byte[]> bufferLocal = new ThreadLocal<>();
 
     public static Typeface bold() {
+        if ("Vazir".equals(SharedConfig.customFont)) {
+            return getTypeface("fonts/vazir.ttf");
+        }
         if (mediumTypeface == null) {
             if (SharedConfig.useSystemBoldFont && Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
                 mediumTypeface = Typeface.create(null, 500, false);

@@ -36,6 +36,7 @@ import org.telegram.ui.Stars.StarsController;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.ui.Components.Shamsi.PersianDate;
 import org.telegram.ui.RestrictedLanguagesSelectActivity;
 import org.xmlpull.v1.XmlPullParser;
 
@@ -2070,6 +2071,10 @@ public class LocaleController {
     }
 
     public static String formatDateChat(long date, boolean checkYear) {
+        if (SharedConfig.useShamsiCalendar) {
+            PersianDate persianDate = new PersianDate(date * 1000);
+            return persianDate.format("ww dd MMMM yyyy");
+        }
         try {
             Calendar calendar = Calendar.getInstance();
             calendar.setTimeInMillis(System.currentTimeMillis());
@@ -2109,6 +2114,10 @@ public class LocaleController {
     }
 
     public static String formatDate(long date) {
+        if (SharedConfig.useShamsiCalendar) {
+            PersianDate persianDate = new PersianDate(date * 1000);
+            return persianDate.format("ww dd MMMM yyyy");
+        }
         try {
             date *= 1000;
             Calendar rightNow = Calendar.getInstance();
@@ -2134,6 +2143,10 @@ public class LocaleController {
     }
 
     public static String formatDateAudio(long date, boolean shortFormat) {
+        if (SharedConfig.useShamsiCalendar) {
+            PersianDate persianDate = new PersianDate(date * 1000);
+            return persianDate.format("ww dd MMMM yyyy, HH:mm");
+        }
         try {
             date *= 1000;
             Calendar rightNow = Calendar.getInstance();
@@ -2402,6 +2415,10 @@ public class LocaleController {
     }
 
     public static String formatDateCallLog(long date) {
+        if (SharedConfig.useShamsiCalendar) {
+            PersianDate persianDate = new PersianDate(date * 1000);
+            return persianDate.format("ww dd MMMM yyyy, HH:mm");
+        }
         try {
             date *= 1000;
             Calendar rightNow = Calendar.getInstance();
@@ -2450,6 +2467,10 @@ public class LocaleController {
     }
 
     public static String formatDateTime(long date, boolean useToday) {
+        if (SharedConfig.useShamsiCalendar) {
+            PersianDate persianDate = new PersianDate(date * 1000);
+            return persianDate.format("ww dd MMMM yyyy, HH:mm");
+        }
         try {
             date *= 1000;
             Calendar rightNow = Calendar.getInstance();
@@ -2538,6 +2559,10 @@ public class LocaleController {
     }
 
     public static String formatDateOnline(long date, boolean[] madeShorter) {
+        if (SharedConfig.useShamsiCalendar) {
+            PersianDate persianDate = new PersianDate(date * 1000);
+            return persianDate.format("ww dd MMMM yyyy, HH:mm");
+        }
         try {
             date *= 1000;
             Calendar rightNow = Calendar.getInstance();
@@ -2749,6 +2774,10 @@ public class LocaleController {
     }
 
     public static String formatDateForBan(long date) {
+        if (SharedConfig.useShamsiCalendar) {
+            PersianDate persianDate = new PersianDate(date * 1000);
+            return persianDate.format("ww dd MMMM yyyy, HH:mm");
+        }
         try {
             date *= 1000;
             Calendar rightNow = Calendar.getInstance();
@@ -2768,6 +2797,10 @@ public class LocaleController {
     }
 
     public static String stringForMessageListDate(long date) {
+        if (SharedConfig.useShamsiCalendar) {
+            PersianDate persianDate = new PersianDate(date * 1000);
+            return persianDate.format("dd MMMM");
+        }
         try {
             date *= 1000;
             if (Math.abs(System.currentTimeMillis() - date) >= 31536000000L) {

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="AppName">Telegram</string>
+    <string name="AppName">TeleTux</string>
     <string name="AppNameBeta">Telegram Beta</string>
     <string name="LanguageName">English</string>
     <string name="English">English</string>
@@ -2326,6 +2326,7 @@
     <string name="TranslateMessagesInfo1">The ‘Translate’ button will appear when you make a single tap on a text message.</string>
     <string name="TranslateMessagesInfo2">Google may have access to the messages you translate.</string>
     <string name="Language">Language</string>
+    <string name="UseShamsiCalendar">Use Shamsi Calendar</string>
     <string name="LanguageCustom">Custom</string>
     <string name="LanguageTitle">Change language?</string>
     <string name="LanguageAlert">You are about to apply a language pack (**%1$s**) that is %2$d%% complete.\n\nThis will translate the entire interface. You can suggest corrections via the [translation platform].\n\nYou can change your language back at any time in Settings.</string>
@@ -9741,4 +9742,9 @@
     <string name="GiftThemesSetByOther">**%1$s** set **%2$s** as a new theme for this chat.</string>
     <string name="GiftThemesSetActionView">View</string>
     <string name="GiftLocked">Gift Locked</string>
+    <string name="TeleTuxSettings">TeleTux Settings</string>
+    <string name="Font">Font</string>
+    <string name="SelectFont">Select Font</string>
+    <string name="Vazir">Vazir</string>
+    <string name="FontChangedRestart">Font changed. Please restart the app to apply.</string>
 </resources>

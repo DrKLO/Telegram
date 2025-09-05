@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="AppName">Telegram</string>
+    <string name="AppName">TeleTux</string>
     <string name="AppNameBeta">Telegram-bèta</string>
     <string name="LanguageName">Nederlands</string>
     <string name="English">Engels</string>

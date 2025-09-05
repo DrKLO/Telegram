@@ -1,0 +1,39 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: gradle
+
+      - name: Configure API keys
+        run: |
+          sed -i 's/public static int APP_ID = 0; \/\/ PLEASE FILL IN YOUR OWN APP ID/public static int APP_ID = ${{ secrets.API_ID }};/' TMessagesProj/src/main/java/org/telegram/messenger/BuildVars.java
+          sed -i 's/public static String APP_HASH = "YOUR_APP_HASH"; \/\/ PLEASE FILL IN YOUR OWN APP HASH/public static String APP_HASH = "${{ secrets.API_HASH }}";/' TMessagesProj/src/main/java/org/telegram/messenger/BuildVars.java
+
+      - name: Grant execute permission to gradlew
+        run: chmod +x gradlew
+
+      - name: Build with Gradle
+        run: ./gradlew :TMessagesProj:assembleDebug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: tmessages-debug-apk
+          path: TMessagesProj/build/outputs/apk/debug/TMessagesProj-debug.apk
