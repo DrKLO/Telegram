@@ -13888,7 +13888,50 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     final ProfileMusicView cell = (ProfileMusicView) holder.itemView;
                     musicView = cell;
                     if (userInfo != null && userInfo.saved_music != null) {
-                        cell.setMusicDocument(userInfo.saved_music);
+                        TLRPC.Document doc = userInfo.saved_music;
+
+                        cell.setMusicDocument(doc);
+
+                        String title = null, artist = null;
+                        for (int i = 0; i < doc.attributes.size(); i++) {
+                            TLRPC.DocumentAttribute attr = doc.attributes.get(i);
+                            if (attr instanceof TLRPC.TL_documentAttributeAudio) {
+                                TLRPC.TL_documentAttributeAudio audio = (TLRPC.TL_documentAttributeAudio) attr;
+                                if (!audio.voice) {
+                                    title = audio.title;
+                                    artist = audio.performer;
+                                }
+                            }
+                        }
+                        if (TextUtils.isEmpty(title)) {
+                            title = org.telegram.messenger.FileLoader.getDocumentFileName(doc);
+                        }
+
+                        String header = LocaleController.getString("Music", R.string.Music);
+
+                        String safeArtist = !TextUtils.isEmpty(artist)
+                                ? artist
+                                : LocaleController.getString("AudioUnknownArtist", R.string.AudioUnknownArtist);
+                        String safeTitle = !TextUtils.isEmpty(title)
+                                ? title
+                                : LocaleController.getString("AudioUnknownTitle", R.string.AudioUnknownTitle);
+
+                        String info = LocaleController.formatString(
+                                "AccDescrMusicInfo",
+                                R.string.AccDescrMusicInfo,
+                                safeArtist,
+                                safeTitle
+                        );
+
+                        String cd = header + "\n" + info;
+
+                        cell.setFocusable(true);
+                        cell.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_YES);
+                        cell.setContentDescription(cd);
+
+                    } else {
+                        cell.setContentDescription(null);
+                        cell.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
                     }
                     break;
             }
@@ -14364,7 +14407,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     new SearchResult(310, getString(R.string.RaiseToSpeak), "raiseToSpeakRow", getString(R.string.ChatSettings), R.drawable.msg2_discussion, () -> presentFragment(new ThemeActivity(ThemeActivity.THEME_TYPE_BASIC))),
                     new SearchResult(326, getString(R.string.PauseMusicOnMedia), "pauseOnMediaRow", getString(R.string.ChatSettings), R.drawable.msg2_discussion, () -> presentFragment(new ThemeActivity(ThemeActivity.THEME_TYPE_BASIC))),
                     new SearchResult(325, getString(R.string.MicrophoneForVoiceMessages), "bluetoothScoRow", getString(R.string.ChatSettings), R.drawable.msg2_discussion, () -> presentFragment(new ThemeActivity(ThemeActivity.THEME_TYPE_BASIC))),
-                    new SearchResult(308, getString(R.string.DirectShare), "directShareRow", getString(R.string.ChatSettings), R.drawable.msg2_discussion, () -> presentFragment(new ThemeActivity(ThemeActivity.THEME_TYPE_BASIC))),
+                    new SearchResult(308, getString(R.string.DirectShare), "di  rectShareRow", getString(R.string.ChatSettings), R.drawable.msg2_discussion, () -> presentFragment(new ThemeActivity(ThemeActivity.THEME_TYPE_BASIC))),
                     new SearchResult(311, getString(R.string.SendByEnter), "sendByEnterRow", getString(R.string.ChatSettings), R.drawable.msg2_discussion, () -> presentFragment(new ThemeActivity(ThemeActivity.THEME_TYPE_BASIC))),
                     new SearchResult(318, getString(R.string.DistanceUnits), "distanceRow", getString(R.string.ChatSettings), R.drawable.msg2_discussion, () -> presentFragment(new ThemeActivity(ThemeActivity.THEME_TYPE_BASIC))),
 
