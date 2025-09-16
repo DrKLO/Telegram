@@ -54,7 +54,6 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
-import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
 import androidx.core.graphics.ColorUtils;
@@ -1229,6 +1228,12 @@ public class ActionBarMenuItem extends FrameLayout {
     }
 
     public void setSearchFieldHint(CharSequence hint) {
+        searchFieldHint = hint;
+        if (searchFieldCaption == null) {
+            return;
+        }
+        searchField.setHint(hint);
+        setContentDescription(hint);
     }
 
     public void setSearchFieldText(CharSequence text, boolean animated) {
@@ -1252,6 +1257,7 @@ public class ActionBarMenuItem extends FrameLayout {
     }
 
     public void setSearchAdditionalButton(View searchAdditionalButton) {
+        this.searchAdditionalButton = searchAdditionalButton;
     }
 
     public ActionBarMenuItem setIsSearchField(boolean value, boolean wrapInScrollView) {
@@ -1448,6 +1454,12 @@ public class ActionBarMenuItem extends FrameLayout {
                 @Override
                 public boolean onTouchEvent(MotionEvent event) {
                     boolean result = super.onTouchEvent(event);
+                    if (event.getAction() == MotionEvent.ACTION_UP) { //hack to fix android bug with not opening keyboard
+                        if (!AndroidUtilities.showKeyboard(this)) {
+                            clearFocus();
+                            requestFocus();
+                        }
+                    }
                     return result;
                 }
             };
@@ -1484,6 +1496,9 @@ public class ActionBarMenuItem extends FrameLayout {
             searchField.setOnEditorActionListener((v, actionId, event) -> {
                 if (event != null && (event.getAction() == KeyEvent.ACTION_UP && event.getKeyCode() == KeyEvent.KEYCODE_SEARCH || event.getAction() == KeyEvent.ACTION_DOWN && event.getKeyCode() == KeyEvent.KEYCODE_ENTER)) {
                     AndroidUtilities.hideKeyboard(searchField);
+                    if (listener != null) {
+                        listener.onSearchPressed(searchField);
+                    }
                 }
                 return false;
             });
@@ -1511,6 +1526,9 @@ public class ActionBarMenuItem extends FrameLayout {
             if (searchFieldHint != null) {
                 searchField.setHint(searchFieldHint);
                 setContentDescription(searchFieldHint);
+            }
+            if (searchFieldText != null) {
+                searchField.setText(searchFieldText);
             }
 
             searchFilterLayout = new LinearLayout(getContext());
@@ -1727,7 +1745,8 @@ public class ActionBarMenuItem extends FrameLayout {
         if (TextUtils.isEmpty(caption)) {
             searchFieldCaption.setVisibility(GONE);
         } else {
-            searchFieldCaption.setVisibility(GONE);
+            searchFieldCaption.setVisibility(VISIBLE);
+            searchFieldCaption.setText(caption);
         }
     }
 
