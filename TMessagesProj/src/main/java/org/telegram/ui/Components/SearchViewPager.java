@@ -667,8 +667,6 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
         }
 
         if (view == channelsSearchContainer) {
-            MessagesController.getInstance(currentAccount).getChannelRecommendations(0);
-            channelsSearchAdapter.search(query);
             channelsEmptyView.setKeyboardHeight(keyboardSize, false);
         } else if (view == botsSearchContainer) {
             botsSearchAdapter.search(query);
