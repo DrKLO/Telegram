@@ -7,19 +7,25 @@ import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.SharedPreferences;
 import android.graphics.Canvas;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.drawable.AnimatedVectorDrawable;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
+import android.text.InputType;
 import android.text.SpannableStringBuilder;
 import android.text.TextUtils;
 import android.view.Gravity;
 import android.view.View;
 import android.view.animation.OvershootInterpolator;
+import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -29,6 +35,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.BuildConfig;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.LocaleController;
@@ -140,6 +147,7 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
     private int keyboardSize;
 
     private boolean showOnlyDialogsAdapter;
+
     protected boolean includeDownloads() {
         return true;
     }
@@ -149,6 +157,13 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
 
     private final int folderId;
     int animateFromCount = 0;
+
+    //CHILDSAFE OPTIONS
+    private static final String CHILD_PREFS = "childsafe_prefs";
+    private static final String KEY_SEARCH_UNLOCKED_UNTIL = "search_unlocked_until";
+    private static final long UNLOCK_DURATION_MS = 3 * 60 * 1000L; // 3 минуты
+    private boolean searchPasswordDialogShown = false;
+    private final Handler mainHandler = new Handler(Looper.getMainLooper());
 
     public SearchViewPager(Context context, DialogsActivity fragment, int type, int initialDialogsType, int folderId, ChatPreviewDelegate chatPreviewDelegate) {
         super(context);
@@ -164,7 +179,7 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
         itemAnimator.setMoveInterpolator(new OvershootInterpolator(1.1f));
         itemAnimator.setTranslationInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT);
 
-        dialogsSearchAdapter = new DialogsSearchAdapter(context, fragment, type, initialDialogsType, itemAnimator, fragment.getAllowGlobalSearch(), null) {
+        dialogsSearchAdapter = new DialogsSearchAdapter(context, fragment, type, initialDialogsType, itemAnimator, false, null) {
             @Override
             public void notifyDataSetChanged() {
                 int itemCount = getCurrentItemCount();
@@ -204,56 +219,35 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
             protected void openSponsoredOptions(ProfileSearchCell cell, TLRPC.TL_sponsoredPeer sponsoredPeer) {
                 AndroidUtilities.hideKeyboard(fragment.getParentActivity().getCurrentFocus());
                 final ItemOptions o = ItemOptions.makeOptions(fragment, cell, true);
-                if (!TextUtils.isEmpty(sponsoredPeer.sponsor_info) || !TextUtils.isEmpty(sponsoredPeer.additional_info)) {
-                    final ItemOptions oi = o.makeSwipeback()
-                        .add(R.drawable.ic_ab_back, getString(R.string.Back), () -> o.closeSwipeback())
-                        .addGap();
-                    if (!TextUtils.isEmpty(sponsoredPeer.sponsor_info)) {
-                        oi.addText(sponsoredPeer.sponsor_info, 13);
-                    }
-                    if (!TextUtils.isEmpty(sponsoredPeer.additional_info)) {
-                        if (!TextUtils.isEmpty(sponsoredPeer.sponsor_info)) {
-                            oi.addGap();
-                        }
-                        oi.addText(sponsoredPeer.additional_info, 13);
-                    }
-                    o.add(R.drawable.msg_channel, getString(R.string.SponsoredMessageSponsorReportable), () -> {
-                        o.openSwipeback(oi);
-                    });
-                }
                 o
-                    .add(R.drawable.msg_info, getString(R.string.AboutRevenueSharingAds), () -> {
-                        fragment.showDialog(new SearchAdsInfoBottomSheet(context, fragment.getResourceProvider(), () -> {
-                            removeAllAds();
-                            BulletinFactory.of(fragment)
-                                .createAdReportedBulletin(LocaleController.getString(R.string.AdHidden))
-                                .show();
-                        }));
-                        o.dismiss();
-                    })
-                    .add(R.drawable.msg_block2, getString(R.string.ReportAd), () -> {
-                        ReportBottomSheet.openSponsoredPeer(fragment, sponsoredPeer.random_id, fragment.getResourceProvider(), () -> {
-                            removeAd(sponsoredPeer);
-                        });
-                        o.dismiss();
-                    })
-                    .addGap()
-                    .add(R.drawable.msg_cancel, getString(R.string.RemoveAds), () -> {
-                        if (UserConfig.getInstance(currentAccount).isPremium()) {
+                        .add(R.drawable.msg_info, getString(R.string.AboutRevenueSharingAds), () -> {
+                            fragment.showDialog(new SearchAdsInfoBottomSheet(context, fragment.getResourceProvider(), () -> {
+                                removeAllAds();
+                                BulletinFactory.of(fragment)
+                                        .createAdReportedBulletin(LocaleController.getString(R.string.AdHidden))
+                                        .show();
+                            }));
+                            o.dismiss();
+                        })
+                        .add(R.drawable.msg_block2, getString(R.string.ReportAd), () -> {
+                            ReportBottomSheet.openSponsoredPeer(fragment, sponsoredPeer.random_id, fragment.getResourceProvider(), () -> {
+                                removeAd(sponsoredPeer);
+                            });
+                            o.dismiss();
+                        })
+                        .addGap()
+                        .add(R.drawable.msg_cancel, getString(R.string.RemoveAds), () -> {
                             fragment.getMessagesController().disableAds(true);
                             removeAllAds();
                             BulletinFactory.of(fragment)
-                                .createAdReportedBulletin(LocaleController.getString(R.string.AdHidden))
-                                .show();
-                        } else {
-                            new PremiumFeatureBottomSheet(fragment, PremiumPreviewFragment.PREMIUM_FEATURE_ADS, true).show();
-                        }
-                        o.dismiss();
-                    })
-                    .setGravity(LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT)
-                    .setOnTopOfScrim()
-                    .setDrawScrim(false)
-                    .show();
+                                    .createAdReportedBulletin(LocaleController.getString(R.string.AdHidden))
+                                    .show();
+                            o.dismiss();
+                        })
+                        .setGravity(LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT)
+                        .setOnTopOfScrim()
+                        .setDrawScrim(false)
+                        .show();
             }
         };
         if (initialDialogsType == DialogsActivity.DIALOGS_TYPE_BOT_REQUEST_PEER) {
@@ -316,8 +310,8 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
                 int visibleItemCount = Math.abs(searchLayoutManager.findLastVisibleItemPosition() - firstVisibleItem) + 1;
                 int totalItemCount = recyclerView.getAdapter().getItemCount();
                 if (visibleItemCount > 0 && !dialogsSearchAdapter.isMessagesSearchEndReached() && (
-                    lastVisibleItem == totalItemCount - 1 ||
-                    dialogsSearchAdapter.delegate != null && dialogsSearchAdapter.delegate.getSearchForumDialogId() != 0 && dialogsSearchAdapter.localMessagesLoadingRow >= 0 && firstVisibleItem <= dialogsSearchAdapter.localMessagesLoadingRow && lastVisibleItem >= dialogsSearchAdapter.localMessagesLoadingRow
+                        lastVisibleItem == totalItemCount - 1 ||
+                                dialogsSearchAdapter.delegate != null && dialogsSearchAdapter.delegate.getSearchForumDialogId() != 0 && dialogsSearchAdapter.localMessagesLoadingRow >= 0 && firstVisibleItem <= dialogsSearchAdapter.localMessagesLoadingRow && lastVisibleItem >= dialogsSearchAdapter.localMessagesLoadingRow
                 )) {
                     dialogsSearchAdapter.loadMoreSearchMessages();
                 }
@@ -431,6 +425,7 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
                     AndroidUtilities.hideKeyboard(fragment.getParentActivity().getCurrentFocus());
                 }
             }
+
             @Override
             public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
                 channelsSearchAdapter.checkBottom();
@@ -502,6 +497,7 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
                     AndroidUtilities.hideKeyboard(fragment.getParentActivity().getCurrentFocus());
                 }
             }
+
             @Override
             public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
                 botsSearchAdapter.checkBottom();
@@ -573,6 +569,7 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
                     AndroidUtilities.hideKeyboard(fragment.getParentActivity().getCurrentFocus());
                 }
             }
+
             @Override
             public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
                 hashtagSearchAdapter.checkBottom();
@@ -666,8 +663,74 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
             collapsePublicPosts();
         }
 
-        if (view == channelsSearchContainer) {
+
+        if (view == channelsSearchContainer) { //тут блокируется отображение найденных channels с разделе Channels, поиска
             channelsEmptyView.setKeyboardHeight(keyboardSize, false);
+
+            final Context ctx = channelsSearchContainer.getContext();
+            final String pendingQuery = query; // сохраняем, чтобы использовать после разблокировки
+
+            Runnable doSearchAndRecs = new Runnable() {
+                @Override
+                public void run() {
+                    // Выполняем вызовы на основном потоке, как было раньше
+                    MessagesController.getInstance(currentAccount).getChannelRecommendations(0);
+                    channelsSearchAdapter.search(pendingQuery);
+                }
+            };
+
+            // Если уже разблокировано — делаем сразу
+            if (isSearchUnlocked(ctx)) {
+                doSearchAndRecs.run();
+            } else {
+                // Если диалог уже показывается — просто игнорируем новый запрос (или можно показать toast)
+                if (searchPasswordDialogShown) {
+                    // опционально: дать фидбек
+                    // Toast.makeText(ctx, "Требуется пароль", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                searchPasswordDialogShown = true;
+
+                final EditText input = new EditText(ctx);
+                input.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
+                input.setHint("Пароль");
+
+                android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(ctx);
+                builder.setTitle("Требуется пароль")
+                        .setMessage("Введите пароль, чтобы выполнить поиск и просмотреть рекомендации")
+                        .setView(input)
+                        .setCancelable(false)
+                        .setPositiveButton("ОК", new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                searchPasswordDialogShown = false;
+                                String entered = input.getText() != null ? input.getText().toString() : "";
+                                if (checkPassword(entered)) {
+                                    // Успех — ставим таймер и выполняем запросы
+                                    unlockSearchFor(ctx, UNLOCK_DURATION_MS);
+                                    // Выполняем на UI-потоке
+                                    mainHandler.post(doSearchAndRecs);
+                                } else {
+                                    // Неверный пароль — фидбек
+                                    Toast.makeText(ctx, "Неверный пароль", Toast.LENGTH_SHORT).show();
+                                }
+                            }
+                        })
+                        .setNegativeButton("Отмена", new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                searchPasswordDialogShown = false;
+                                // ничего не делаем
+                            }
+                        });
+                try {
+                    android.app.AlertDialog dlg = builder.create();
+                    dlg.show();
+                } catch (Exception e) {
+                    // на всякий случай: сбросим флаг и выполним молча (или ничего)
+                    searchPasswordDialogShown = false;
+                }
+            }
         } else if (view == botsSearchContainer) {
             botsSearchAdapter.search(query);
             botsEmptyView.setKeyboardHeight(keyboardSize, false);
@@ -743,6 +806,30 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
             ((SearchDownloadsContainer) view).search(query);
         }
     }
+
+    private boolean isSearchUnlocked(Context ctx) {
+        try {
+            SharedPreferences prefs = ctx.getSharedPreferences(CHILD_PREFS, Context.MODE_PRIVATE);
+            long until = prefs.getLong(KEY_SEARCH_UNLOCKED_UNTIL, 0L);
+            return System.currentTimeMillis() <= until;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    private void unlockSearchFor(Context ctx, long durationMs) {
+        SharedPreferences prefs = ctx.getSharedPreferences(CHILD_PREFS, Context.MODE_PRIVATE);
+        long until = System.currentTimeMillis() + durationMs;
+        prefs.edit().putLong(KEY_SEARCH_UNLOCKED_UNTIL, until).apply();
+    }
+
+    /**
+     * Проверка пароля: сначала из prefs (runtime), иначе из BuildConfig (если задано).
+     */
+    private boolean checkPassword(String entered) {
+        return entered != null && entered.equals(BuildConfig.SEARCH_PASSWORD);
+    }
+
 
     @Nullable
     public SearchDownloadsContainer getDownloadsContainer() {
@@ -831,7 +918,7 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
             selectedFiles.clear();
             for (int i = 0; i < getChildCount(); i++) {
                 if (getChildAt(i) instanceof FilteredSearchView) {
-                    ((FilteredSearchView)getChildAt(i)).update();
+                    ((FilteredSearchView) getChildAt(i)).update();
                 }
                 if (getChildAt(i) instanceof SearchDownloadsContainer) {
                     ((SearchDownloadsContainer) getChildAt(i)).update(true);
@@ -924,7 +1011,7 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
                         if (message != null) {
                             AccountInstance.getInstance(currentAccount).getSendMessagesHelper().sendMessage(SendMessagesHelper.SendMessageParams.of(message.toString(), did, null, null, null, true, null, null, null, true, 0, null, false));
                         }
-                        AccountInstance.getInstance(currentAccount).getSendMessagesHelper().sendMessage(fmessages, did, false,false, true, 0, 0);
+                        AccountInstance.getInstance(currentAccount).getSendMessagesHelper().sendMessage(fmessages, did, false, false, true, 0, 0);
                     }
                     fragment1.finishFragment();
                 } else {
@@ -1114,7 +1201,7 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
 
         arrayList.add(new ThemeDescription(emptyView.title, ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteBlackText));
         arrayList.add(new ThemeDescription(emptyView.subtitle, ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteGrayText));
-        arrayList.addAll(SimpleThemeDescription.createThemeDescriptions(()-> {
+        arrayList.addAll(SimpleThemeDescription.createThemeDescriptions(() -> {
             if (selectedMessagesCountTextView != null) {
                 selectedMessagesCountTextView.setTextColor(Theme.getColor(Theme.key_actionBarActionModeDefaultIcon));
             }
@@ -1218,7 +1305,7 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
         for (int i = 0; i < n; i++) {
             View v = viewsByType.valueAt(i);
             if (v instanceof FilteredSearchView) {
-               ((FilteredSearchView) v).messagesDeleted(channelId, markAsDeletedMessages);
+                ((FilteredSearchView) v).messagesDeleted(channelId, markAsDeletedMessages);
             }
         }
 
@@ -1333,7 +1420,7 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
 
     public int getPositionForType(int initialSearchType) {
         for (int i = 0; i < viewPagerAdapter.items.size(); i++) {
-            if (viewPagerAdapter.items.get(i).type == ViewPagerAdapter.FILTER_TYPE &&  viewPagerAdapter.items.get(i).filterIndex == initialSearchType) {
+            if (viewPagerAdapter.items.get(i).type == ViewPagerAdapter.FILTER_TYPE && viewPagerAdapter.items.get(i).filterIndex == initialSearchType) {
                 return i;
             }
         }
@@ -1493,7 +1580,9 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
 
     public interface ChatPreviewDelegate {
         void startChatPreview(RecyclerListView listView, DialogCell cell);
+
         void move(float dy);
+
         void finish();
     }
 

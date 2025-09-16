@@ -129,6 +129,8 @@ android {
             buildConfigField "boolean", "DEBUG_PRIVATE_VERSION", "true"
             buildConfigField "boolean", "BUILD_HOST_IS_WINDOWS", isWindows
             buildConfigField "int", "VERSION_NUM", "0"
+            def pwd = project.hasProperty('SEARCH_PASSWORD') ? project.property('SEARCH_PASSWORD') : "36952"
+            buildConfigField "String", "SEARCH_PASSWORD", "\"${pwd}\""
         }
 
         HA_private {
@@ -144,6 +146,8 @@ android {
             buildConfigField "boolean", "DEBUG_PRIVATE_VERSION", "true"
             buildConfigField "boolean", "BUILD_HOST_IS_WINDOWS", isWindows
             buildConfigField "int", "VERSION_NUM", "1"
+            def pwd = project.hasProperty('SEARCH_PASSWORD') ? project.property('SEARCH_PASSWORD') : "36952"
+            buildConfigField "String", "SEARCH_PASSWORD", "\"${pwd}\""
         }
 
         HA_public {
@@ -159,6 +163,8 @@ android {
             buildConfigField "boolean", "DEBUG_PRIVATE_VERSION", "false"
             buildConfigField "boolean", "BUILD_HOST_IS_WINDOWS", isWindows
             buildConfigField "int", "VERSION_NUM", "4"
+            def pwd = project.hasProperty('SEARCH_PASSWORD') ? project.property('SEARCH_PASSWORD') : "36952"
+            buildConfigField "String", "SEARCH_PASSWORD", "\"${pwd}\""
         }
 
         HA_hardcore {
@@ -174,6 +180,8 @@ android {
             buildConfigField "boolean", "DEBUG_PRIVATE_VERSION", "true"
             buildConfigField "boolean", "BUILD_HOST_IS_WINDOWS", isWindows
             buildConfigField "int", "VERSION_NUM", "5"
+            def pwd = project.hasProperty('SEARCH_PASSWORD') ? project.property('SEARCH_PASSWORD') : "36952"
+            buildConfigField "String", "SEARCH_PASSWORD", "\"${pwd}\""
         }
 
         standalone {
@@ -189,6 +197,8 @@ android {
             buildConfigField "boolean", "DEBUG_PRIVATE_VERSION", "false"
             buildConfigField "boolean", "BUILD_HOST_IS_WINDOWS", isWindows
             buildConfigField "int", "VERSION_NUM", "6"
+            def pwd = project.hasProperty('SEARCH_PASSWORD') ? project.property('SEARCH_PASSWORD') : "36952"
+            buildConfigField "String", "SEARCH_PASSWORD", "\"${pwd}\""
         }
 
         release {
@@ -205,6 +215,8 @@ android {
             buildConfigField "boolean", "DEBUG_PRIVATE_VERSION", "false"
             buildConfigField "boolean", "BUILD_HOST_IS_WINDOWS", isWindows
             buildConfigField "int", "VERSION_NUM", "7"
+            def pwd = project.hasProperty('SEARCH_PASSWORD') ? project.property('SEARCH_PASSWORD') : "36952"
+            buildConfigField "String", "SEARCH_PASSWORD", "\"${pwd}\""
         }
     }
 

@@ -94,6 +94,8 @@ android {
             multiDexEnabled true
             proguardFiles getDefaultProguardFile('proguard-android.txt'), '../TMessagesProj/proguard-rules.pro'
             ndk.debugSymbolLevel = 'FULL'
+            def pwd = project.hasProperty('SEARCH_PASSWORD') ? project.property('SEARCH_PASSWORD') : "36952"
+            buildConfigField "String", "SEARCH_PASSWORD", "\"${pwd}\""
         }
     }
 

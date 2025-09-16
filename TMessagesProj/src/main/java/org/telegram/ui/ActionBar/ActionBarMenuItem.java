@@ -1237,9 +1237,21 @@ public class ActionBarMenuItem extends FrameLayout {
     }
 
     public void setSearchFieldText(CharSequence text, boolean animated) {
+        searchFieldText = text;
+        if (searchFieldCaption == null) {
+            return;
+        }
+        animateClear = animated;
+        searchField.setText(text);
+        if (!TextUtils.isEmpty(text)) {
+            searchField.setSelection(text.length());
+        }
     }
 
     public void onSearchPressed() {
+        if (listener != null) {
+            listener.onSearchPressed(searchField);
+        }
     }
 
     public EditTextBoldCursor getSearchField() {
@@ -1502,20 +1514,31 @@ public class ActionBarMenuItem extends FrameLayout {
                 }
                 return false;
             });
+
             searchField.addTextChangedListener(new TextWatcher() {
                 @Override
-                public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+                public void beforeTextChanged(CharSequence s, int start, int count, int after) { }
 
+                @Override
+                public void onTextChanged(CharSequence s, int start, int before, int count) { //тут блокируется GlobalSearch и прочее, это скорее побочная история, лучше бы блокировать точечно только channels
+                    if (ignoreOnTextChange) {
+                        ignoreOnTextChange = false;
+                        return;
+                    }
+                    if (listener != null) {
+                        listener.onTextChanged(searchField);
+                    }
+                    checkClearButton();
+                    if (!currentSearchFilters.isEmpty()) {
+                        if (!TextUtils.isEmpty(searchField.getText()) && selectedFilterIndex >= 0) {
+                            selectedFilterIndex = -1;
+                            onFiltersChanged();
+                        }
+                    }
                 }
 
                 @Override
-                public void onTextChanged(CharSequence s, int start, int before, int count) {
-                }
-
-                @Override
-                public void afterTextChanged(Editable s) {
-
-                }
+                public void afterTextChanged(Editable s) { }
             });
 
             searchField.setImeOptions(EditorInfo.IME_FLAG_NO_FULLSCREEN | EditorInfo.IME_ACTION_SEARCH | EditorInfo.IME_FLAG_NAVIGATE_PREVIOUS | EditorInfo.IME_FLAG_NAVIGATE_NEXT);
