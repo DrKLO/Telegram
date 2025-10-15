@@ -16,6 +16,7 @@ public class CustomNavigationBar extends View {
     private static final boolean USE_INSETS = Build.VERSION.SDK_INT >= 35;
 
     private final Paint paint = new Paint();
+    private View activityContentView;
     private int height;
 
     public CustomNavigationBar(Context context) {
@@ -24,6 +25,10 @@ public class CustomNavigationBar extends View {
         if (USE_INSETS) {
             ViewCompat.setOnApplyWindowInsetsListener(this, this::onApplyWindowInsets);
         }
+    }
+
+    public void setActivityContentView(View activityContentView) {
+        this.activityContentView = activityContentView;
     }
 
     public void setColor(int color) {
@@ -54,6 +59,16 @@ public class CustomNavigationBar extends View {
             height = AndroidUtilities.navigationBarHeight;
         }
         super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(height, MeasureSpec.EXACTLY));
+    }
+
+    @Override
+    protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
+        super.onLayout(changed, left, top, right, bottom);
+        if (!USE_INSETS && (getParent() instanceof View) && activityContentView.getMeasuredHeight() >= ((View) getParent()).getMeasuredHeight()) {
+            setTranslationY(height);
+        } else {
+            setTranslationY(0);
+        }
     }
 
     @Override

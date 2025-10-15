@@ -38,6 +38,9 @@ public sealed class TlGen_GroupCall : TlGen_Object {
     public val listeners_hidden: Boolean,
     public val conference: Boolean,
     public val creator: Boolean,
+    public val messages_enabled: Boolean,
+    public val can_change_messages_enabled: Boolean,
+    public val min: Boolean,
     public val id: Long,
     public val access_hash: Long,
     public val participants_count: Int,
@@ -69,6 +72,9 @@ public sealed class TlGen_GroupCall : TlGen_Object {
         if (conference) result = result or 16384U
         if (creator) result = result or 32768U
         if (invite_link != null) result = result or 65536U
+        if (messages_enabled) result = result or 131072U
+        if (can_change_messages_enabled) result = result or 262144U
+        if (min) result = result or 524288U
         return result
       }
 

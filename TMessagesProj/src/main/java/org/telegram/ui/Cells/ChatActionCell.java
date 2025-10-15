@@ -113,6 +113,7 @@ import org.telegram.ui.Components.RadialProgressView;
 import org.telegram.ui.Components.Reactions.ReactionsLayoutInBubble;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.ScaleStateListAnimator;
+import org.telegram.ui.Components.SuggestBirthdayActionLayout;
 import org.telegram.ui.Components.Text;
 import org.telegram.ui.Components.TopicSeparator;
 import org.telegram.ui.Components.TypefaceSpan;
@@ -157,7 +158,7 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
 
     private int backgroundRectHeight;
     private int backgroundButtonTop;
-    private ButtonBounce bounce = new ButtonBounce(this);
+    private final ButtonBounce bounce = new ButtonBounce(this);
     private LoadingDrawable loadingDrawable;
 
     @Override
@@ -335,6 +336,8 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
     public final ReactionsLayoutInBubble reactionsLayoutInBubble = new ReactionsLayoutInBubble(this);
     public float starGiftLayoutX, starGiftLayoutY;
     public final StarGiftUniqueActionLayout starGiftLayout;
+
+    public SuggestBirthdayActionLayout birthdayLayout;
 
     private MessageObject currentMessageObject;
     private int customDate;
@@ -604,6 +607,18 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
             } else {
                 reactionsLayoutInBubble.setMessage(null, false, false, themeDelegate);
             }
+        }
+        if (messageObject.type == MessageObject.TYPE_SUGGEST_BIRTHDAY) {
+            if (birthdayLayout == null) {
+                birthdayLayout = new SuggestBirthdayActionLayout(currentAccount, this, themeDelegate);
+                if (isCellAttachedToWindow()) {
+                    birthdayLayout.attach();
+                }
+            }
+            birthdayLayout.set(messageObject);
+        } else if (birthdayLayout != null) {
+            birthdayLayout.detach();
+            birthdayLayout = null;
         }
         starGiftLayout.set(messageObject, !messageIdChanged);
         imageReceiver.setAutoRepeatCount(0);
@@ -1036,6 +1051,9 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
         if (topicSeparator != null) {
             topicSeparator.detach();
         }
+        if (birthdayLayout != null) {
+            birthdayLayout.detach();
+        }
     }
 
     private boolean attachedToWindow;
@@ -1067,6 +1085,9 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
         if (topicSeparator != null) {
             topicSeparator.attach();
         }
+        if (birthdayLayout != null) {
+            birthdayLayout.attach();
+        }
     }
 
     private void setStarsPaused(boolean paused) {
@@ -1093,6 +1114,10 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
         }
 
         if (topicSeparator != null && topicSeparator.onTouchEvent(event, false)) {
+            return true;
+        }
+
+        if (birthdayLayout != null && birthdayLayout.onTouchEvent(event)) {
             return true;
         }
 
@@ -1162,6 +1187,9 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
                                     ((RecyclerListView) getParent()).smoothScrollBy(0, dy + dp(24));
                                 }
                             }
+                            return true;
+                        } else if (birthdayLayout != null && backgroundRect.contains(event.getX(), event.getY())) {
+                            birthdayLayout.open();
                             return true;
                         }
                         break;
@@ -1615,10 +1643,11 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
             if (!AndroidUtilities.isTablet() && (messageObject.type == MessageObject.TYPE_GIFT_PREMIUM || messageObject.type == MessageObject.TYPE_GIFT_STARS || isMessageActionSuggestedPostApproval())) {
                 giftRectSize = (int) (giftRectSize * 1.2f);
             }
-            if (messageObject.type == MessageObject.TYPE_GIFT_THEME_UPDATE) {
-                giftRectSize = (int) (giftRectSize * 0.95);
-            }
             stickerSize = giftRectSize - dp(106);
+            if (messageObject.type == MessageObject.TYPE_GIFT_THEME_UPDATE) {
+                giftRectSize = Math.min(giftRectSize, dp(192));
+                stickerSize = dp(78);
+            }
             if (isNewStyleButtonLayout()) {
                 imageReceiver.setRoundRadius(stickerSize / 2);
             } else {
@@ -1646,6 +1675,12 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
                 exactlyHeight += textY + textHeight + dp(4 + 6 + 6);
             }
             exactlyHeight += (int) starGiftLayout.getHeight() + dp(4 + 4);
+            if (!reactionsLayoutInBubble.isEmpty) {
+                reactionsLayoutInBubble.totalHeight = reactionsLayoutInBubble.height + dp(8);
+                exactlyHeight += reactionsLayoutInBubble.totalHeight;
+            }
+        } else if (birthdayLayout != null) {
+            exactlyHeight += birthdayLayout.height() + dp(12);
             if (!reactionsLayoutInBubble.isEmpty) {
                 reactionsLayoutInBubble.totalHeight = reactionsLayoutInBubble.height + dp(8);
                 exactlyHeight += reactionsLayoutInBubble.totalHeight;
@@ -1774,6 +1809,7 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
 
     private boolean isNewStyleButtonLayout() {
         return starGiftLayout.has()
+            || birthdayLayout != null
             || currentMessageObject.type == MessageObject.TYPE_GIFT_THEME_UPDATE
             || currentMessageObject.type == MessageObject.TYPE_SUGGEST_PHOTO
             || currentMessageObject.type == MessageObject.TYPE_ACTION_WALLPAPER
@@ -1855,6 +1891,13 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
             }
         }
         createLayout(text, previousWidth);
+        if (birthdayLayout != null) {
+            textLayout = null;
+            textHeight = 0;
+            titleLayout = null;
+            titleHeight = 0;
+            textY = 0;
+        }
         if (messageObject != null) {
             if (messageObject.messageOwner != null && messageObject.messageOwner.action instanceof TLRPC.TL_messageActionSuggestedPostApproval && ((TLRPC.TL_messageActionSuggestedPostApproval) messageObject.messageOwner.action).balance_too_low) {
                 final TLRPC.TL_messageActionSuggestedPostApproval approval = (TLRPC.TL_messageActionSuggestedPostApproval) messageObject.messageOwner.action;
@@ -2202,18 +2245,18 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
         CharSequence monthsStr = months == 12 ? LocaleController.formatPluralString("BoldYears", 1) : LocaleController.formatPluralString("BoldMonths", months);
         if (isPrize) {
             if (gifCodeAction.unclaimed) {
-                subtitle = new SpannableStringBuilder(AndroidUtilities.replaceTags(formatString("BoostingYouHaveUnclaimedPrize", R.string.BoostingYouHaveUnclaimedPrize, from)));
+                subtitle = new SpannableStringBuilder(AndroidUtilities.replaceTags(formatString(R.string.BoostingYouHaveUnclaimedPrize, from)));
                 subtitle.append("\n\n");
-                subtitle.append(AndroidUtilities.replaceTags(formatString("BoostingUnclaimedPrizeDuration", R.string.BoostingUnclaimedPrizeDuration, monthsStr)));
+                subtitle.append(AndroidUtilities.replaceTags(formatString(R.string.BoostingUnclaimedPrizeDuration, monthsStr)));
             } else {
-                subtitle = new SpannableStringBuilder(AndroidUtilities.replaceTags(formatString("BoostingReceivedPrizeFrom", R.string.BoostingReceivedPrizeFrom, from)));
+                subtitle = new SpannableStringBuilder(AndroidUtilities.replaceTags(formatString(R.string.BoostingReceivedPrizeFrom, from)));
                 subtitle.append("\n\n");
-                subtitle.append(AndroidUtilities.replaceTags(formatString("BoostingReceivedPrizeDuration", R.string.BoostingReceivedPrizeDuration, monthsStr)));
+                subtitle.append(AndroidUtilities.replaceTags(formatString(R.string.BoostingReceivedPrizeDuration, monthsStr)));
             }
         } else {
-            subtitle = new SpannableStringBuilder(AndroidUtilities.replaceTags(from == null ? getString("BoostingReceivedGiftNoName", R.string.BoostingReceivedGiftNoName) : formatString("BoostingReceivedGiftFrom", R.string.BoostingReceivedGiftFrom, from)));
+            subtitle = new SpannableStringBuilder(AndroidUtilities.replaceTags(from == null ? getString(R.string.BoostingReceivedGiftNoName) : formatString("BoostingReceivedGiftFrom", R.string.BoostingReceivedGiftFrom, from)));
             subtitle.append("\n\n");
-            subtitle.append(AndroidUtilities.replaceTags(formatString("BoostingReceivedGiftDuration", R.string.BoostingReceivedGiftDuration, monthsStr)));
+            subtitle.append(AndroidUtilities.replaceTags(formatString(R.string.BoostingReceivedGiftDuration, monthsStr)));
         }
 
         String btnText = getString("BoostingReceivedGiftOpenBtn", R.string.BoostingReceivedGiftOpenBtn);
@@ -2367,7 +2410,7 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
         MessageObject messageObject = currentMessageObject;
         final float expanded = giftPremiumTextExpandedAnimated.set(!giftPremiumTextCollapsed);
         int imageSize = stickerSize;
-        if (!starGiftLayout.has() && isButtonLayout(messageObject)) {
+        if (!starGiftLayout.has() && birthdayLayout == null && isButtonLayout(messageObject)) {
             stickerSize = giftRectSize - dp(106);
             if (isNewStyleButtonLayout()) {
                 imageSize = getImageSize(messageObject);
@@ -2378,7 +2421,14 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
                     avatarStoryParams.storyItem = messageObject.messageOwner.media.storyItem;
                 }
                 avatarStoryParams.originalAvatarRect.set(x, y, x + imageSize, y + imageSize);
+                if (messageObject.type == MessageObject.TYPE_GIFT_THEME_UPDATE) {
+                    x += dp(10);
+                    y += dp(10);
+                    imageSize -= dp(20);
+                }
                 imageReceiver.setImageCoords(x, y, imageSize, imageSize);
+                imageSize += dp(20);
+
             } else if (messageObject.type == MessageObject.TYPE_ACTION_PHOTO) {
                 imageReceiver.setImageCoords((previousWidth - stickerSize) / 2f, textY + textHeight + giftRectSize * 0.075f, stickerSize, stickerSize);
             } else if (messageObject.type == MessageObject.TYPE_GIFT_PREMIUM_CHANNEL) {
@@ -2423,13 +2473,17 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
                 starGiftLayout.drawOutbounds(canvas);
             }
             canvas.restore();
+        } else if (birthdayLayout != null) {
+            canvas.save();
+            birthdayLayout.draw(canvas);
+            canvas.restore();
         } else if (isButtonLayout(messageObject) || (messageObject != null && messageObject.type == MessageObject.TYPE_ACTION_PHOTO)) {
             if (cardBackground != null && messageObject.type == MessageObject.TYPE_GIFT_THEME_UPDATE) {
                 cardBackground.setBounds(
-                    (int) (imageReceiver.getImageX() - dp(11)),
-                    (int) (imageReceiver.getImageY() - dp(11)),
-                    (int) (imageReceiver.getImageX() + imageReceiver.getImageWidth() + dp(11)),
-                    (int) (imageReceiver.getImageY() + imageReceiver.getImageHeight() + dp(11))
+                    (int) (imageReceiver.getImageX() - dp(10 + GiftSheet.CardBackground.PADDING_HORIZONTAL_DP)),
+                    (int) (imageReceiver.getImageY() - dp(10 + GiftSheet.CardBackground.PADDING_VERTICAL_DP)),
+                    (int) (imageReceiver.getImageX() + imageReceiver.getImageWidth() + dp(10 + GiftSheet.CardBackground.PADDING_HORIZONTAL_DP)),
+                    (int) (imageReceiver.getImageY() + imageReceiver.getImageHeight() + dp(10 + GiftSheet.CardBackground.PADDING_VERTICAL_DP))
                 );
                 cardBackground.draw(canvas);
             }
@@ -2554,6 +2608,9 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
                 } else if (messageObject.type == MessageObject.TYPE_GIFT_STARS && !messageObject.isStarGiftAction()) {
                     y -= dp(3.66f);
                 }
+            }
+            if (messageObject.type == MessageObject.TYPE_GIFT_THEME_UPDATE) {
+                y -= dp(3.66f);
             }
 
             final float sy = y;
@@ -2753,6 +2810,14 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
                 }
                 if (dimAmount > 0) {
                     canvas.drawRoundRect(giftButtonRect, dp(16), dp(16), dimPaint);
+                }
+
+                if (getMessageObject().type == MessageObject.TYPE_GIFT_THEME_UPDATE) {
+                    final boolean isDark = themeDelegate != null ? themeDelegate.isDark() : Theme.isCurrentThemeDark();
+                    int sC = dimPaint.getColor();
+                    dimPaint.setColor(isDark ? 0x24FFFFFF : 0x10000000);
+                    canvas.drawRoundRect(giftButtonRect, dp(16), dp(16), dimPaint);
+                    dimPaint.setColor(sC);
                 }
 
                 if (getMessageObject().type != MessageObject.TYPE_GIFT_THEME_UPDATE && getMessageObject().type != MessageObject.TYPE_SUGGEST_PHOTO && getMessageObject().type != MessageObject.TYPE_ACTION_WALLPAPER && getMessageObject().type != MessageObject.TYPE_STORY_MENTION) {
@@ -3118,6 +3183,19 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
                 backgroundRect = new RectF();
             }
             backgroundRect.set(AndroidUtilities.rectTmp);
+            canvas.drawRoundRect(backgroundRect, dp(16), dp(16), backgroundPaint);
+
+            if (hasGradientService()) {
+                canvas.drawRoundRect(backgroundRect, dp(16), dp(16), darkenBackgroundPaint);
+            }
+        } else if (birthdayLayout != null) {
+            final float w = birthdayLayout.width();
+            final float h = birthdayLayout.height();
+            final float x = (getWidth() - w) / 2f;
+            if (backgroundRect == null) {
+                backgroundRect = new RectF();
+            }
+            backgroundRect.set(x, dp(4), x + w, dp(4) + h);
             canvas.drawRoundRect(backgroundRect, dp(16), dp(16), backgroundPaint);
 
             if (hasGradientService()) {

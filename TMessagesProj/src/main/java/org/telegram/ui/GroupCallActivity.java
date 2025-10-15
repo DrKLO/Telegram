@@ -39,6 +39,8 @@ import android.graphics.PorterDuffColorFilter;
 import android.graphics.RadialGradient;
 import android.graphics.Rect;
 import android.graphics.RectF;
+import android.graphics.RenderEffect;
+import android.graphics.RenderNode;
 import android.graphics.Shader;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
@@ -48,14 +50,12 @@ import android.media.projection.MediaProjectionManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.SystemClock;
-import android.provider.CallLog;
 import android.text.Editable;
+import android.text.InputFilter;
 import android.text.InputType;
 import android.text.SpannableStringBuilder;
 import android.text.TextUtils;
 import android.text.TextWatcher;
-import android.util.Pair;
-import android.util.Property;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.HapticFeedbackConstants;
@@ -81,6 +81,9 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.collection.LongSparseArray;
 import androidx.core.graphics.ColorUtils;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
 import androidx.recyclerview.widget.DefaultItemAnimator;
 import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.GridLayoutManager;
@@ -91,6 +94,7 @@ import androidx.viewpager.widget.ViewPager;
 
 import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.BotWebViewVibrationEffect;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.DialogObject;
@@ -101,6 +105,7 @@ import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageLoader;
 import org.telegram.messenger.ImageLocation;
+import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.LiteMode;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaDataController;
@@ -115,6 +120,8 @@ import org.telegram.messenger.Utilities;
 import org.telegram.messenger.pip.PipSource;
 import org.telegram.messenger.pip.utils.PipUtils;
 import org.telegram.messenger.support.LongSparseIntArray;
+import org.telegram.messenger.voip.GroupCallMessage;
+import org.telegram.messenger.voip.GroupCallMessagesController;
 import org.telegram.messenger.voip.Instance;
 import org.telegram.messenger.voip.VoIPService;
 import org.telegram.messenger.voip.VoipAudioManager;
@@ -128,6 +135,7 @@ import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenuItem;
 import org.telegram.ui.ActionBar.ActionBarMenuSubItem;
 import org.telegram.ui.ActionBar.ActionBarPopupWindow;
+import org.telegram.ui.ActionBar.AdjustPanLayoutHelper;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.BottomSheet;
@@ -154,6 +162,8 @@ import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.CheckBoxSquare;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.EditTextBoldCursor;
+import org.telegram.ui.Components.EditTextEmoji;
+import org.telegram.ui.Components.EmojiView;
 import org.telegram.ui.Components.FillLastGridLayoutManager;
 import org.telegram.ui.Components.GroupCallFullscreenAdapter;
 import org.telegram.ui.Components.GroupCallPip;
@@ -172,15 +182,23 @@ import org.telegram.ui.Components.ProfileGalleryView;
 import org.telegram.ui.Components.RLottieDrawable;
 import org.telegram.ui.Components.RLottieImageView;
 import org.telegram.ui.Components.RadialProgressView;
+import org.telegram.ui.Components.Reactions.CustomEmojiReactionsWindow;
+import org.telegram.ui.Components.Reactions.ReactionsEffectOverlay;
+import org.telegram.ui.Components.Reactions.ReactionsLayoutInBubble;
+import org.telegram.ui.Components.ReactionsContainerLayout;
 import org.telegram.ui.Components.RecordStatusDrawable;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.ScaleStateListAnimator;
 import org.telegram.ui.Components.ShareAlert;
+import org.telegram.ui.Components.SizeNotifierFrameLayout;
 import org.telegram.ui.Components.Text;
 import org.telegram.ui.Components.TypefaceSpan;
 import org.telegram.ui.Components.UndoView;
 import org.telegram.ui.Components.WaveDrawable;
+import org.telegram.ui.Components.conference.message.GroupCallMessageCell;
+import org.telegram.ui.Components.conference.message.GroupCallMessagesListView;
 import org.telegram.ui.Components.voip.CellFlickerDrawable;
+import org.telegram.ui.Components.conference.GroupCallActivityButtonsLayout;
 import org.telegram.ui.Components.voip.GroupCallGridCell;
 import org.telegram.ui.Components.voip.GroupCallMiniTextureView;
 import org.telegram.ui.Components.voip.GroupCallRenderersContainer;
@@ -189,7 +207,6 @@ import org.telegram.ui.Components.voip.PrivateVideoPreviewDialog;
 import org.telegram.ui.Components.voip.RTMPStreamPipOverlay;
 import org.telegram.ui.Components.voip.VoIPTextureView;
 import org.telegram.ui.Components.voip.VoIPToggleButton;
-import org.telegram.ui.Stories.DarkThemeResourceProvider;
 import org.telegram.ui.Stories.recorder.DominantColors;
 import org.webrtc.voiceengine.WebRtcAudioTrack;
 
@@ -203,7 +220,10 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
-public class GroupCallActivity extends BottomSheet implements NotificationCenter.NotificationCenterDelegate, VoIPService.StateListener {
+import me.vkryl.android.animator.BoolAnimator;
+import me.vkryl.android.animator.FactorAnimator;
+
+public class GroupCallActivity extends BottomSheet implements NotificationCenter.NotificationCenterDelegate, VoIPService.StateListener, FactorAnimator.Target {
 
     public final static int TABLET_LIST_SIZE = 320;
     public static final long TRANSITION_DURATION = 350;
@@ -219,6 +239,8 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
     private static final int screen_capture_item = 9;
     private static final int sound_item = 10;
     private static final int noise_item = 11;
+    private static final int comments_enable_item = 12;
+    private static final int comments_disable_item = 13;
     private static final int user_item_gap = 0;
 
     private static final int MUTE_BUTTON_STATE_UNMUTE = 0;
@@ -230,18 +252,40 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
     private static final int MUTE_BUTTON_STATE_SET_REMINDER = 6;
     private static final int MUTE_BUTTON_STATE_CANCEL_REMINDER = 7;
 
-    public static int currentScreenOrientation;
-
     public static GroupCallActivity groupCallInstance;
     public static boolean groupCallUiVisible;
     private final ProfileGalleryView avatarsViewPager;
     private final GridLayoutManager.SpanSizeLookup spanSizeLookup;
 
-    private AccountInstance accountInstance;
+    private final AccountInstance accountInstance;
 
-    private View actionBarBackground;
-    private ActionBar actionBar;
-    private ListAdapter listAdapter;
+    private final GroupCallActivityButtonsLayout buttonsContainer;
+
+    private final VoIPToggleButton flipButton;
+    private final VoIPToggleButton speakerButton;
+    private final VoIPToggleButton cameraButton;
+    private final VoIPToggleButton soundButton;
+    private final VoIPToggleButton leaveButton;
+    private final VoIPToggleButton messageButton;
+    private final VoIPToggleButton muteButton;
+    private final RLottieImageView muteButtonIcon;
+    private final ImageView expandOrMinimizeButton;
+
+    private final Paint callMessageEnterContainerBgPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final FrameLayout callMessageEnterContainer;
+    private final FrameLayout callMessageEnterUnderContainer;
+    private final EditTextEmoji callMessageEnterView;
+    private final ImageView callMessageSendButton;
+    private final ImageView callMessageHideButton;
+
+    private @Nullable ReactionsContainerLayout reactionsContainerLayout;
+    private final SizeNotifierFrameLayout sizeNotifierFrameLayout;
+    private final AnimatedTextView limitTextView;
+
+
+    private final View actionBarBackground;
+    private final ActionBar actionBar;
+    private final ListAdapter listAdapter;
     private RecyclerListView listView;
     private LinearLayout scheduleTimerContainer;
     private TextView scheduleInfoTextView;
@@ -249,42 +293,33 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
     private SimpleTextView scheduleStartInTextView;
     private SimpleTextView scheduleTimeTextView;
     private SimpleTextView scheduleStartAtTextView;
-    private GroupCallItemAnimator itemAnimator;
-    private FillLastGridLayoutManager layoutManager;
-    private VoIPToggleButton flipButton;
-    private FrameLayout speakerButtonContainer;
-    private VoIPToggleButton speakerButton;
+    private final GroupCallItemAnimator itemAnimator;
+    private final FillLastGridLayoutManager layoutManager;
+
+    private final ImageReceiver reactionEffectImageReceiver;
+
     private int speakerIcon;
-    private ImageView speakerImageView;
-    private VoIPToggleButton cameraButton;
-    private VoIPToggleButton soundButton;
-    private float soundButtonScale;
-    private float cameraButtonScale;
-    private VoIPToggleButton leaveButton;
-    private RLottieImageView muteButton;
-    private TextView[] muteLabel = new TextView[2];
-    private FrameLayout buttonsContainer;
-    private RadialProgressView radialProgressView;
-    private Drawable shadowDrawable;
-    private View actionBarShadow;
+    private final ImageView speakerImageView;
+
+    private final GroupCallMessagesListView groupCallMessagesListView;
+    private final int maxGroupCallMessageLength;
+
+    private final RadialProgressView radialProgressView;
+    private final Drawable shadowDrawable;
+    private final View actionBarShadow;
     private AnimatorSet actionBarAnimation;
     private LaunchActivity parentActivity;
-    private UndoView[] undoView = new UndoView[2];
-    private FrameLayout bulletinContainer;
-    private AccountSelectCell accountSelectCell;
-    private View accountGap;
+    private final UndoView[] undoView = new UndoView[2];
+    private final FrameLayout bulletinContainer;
+    private final AccountSelectCell accountSelectCell;
+    private final View accountGap;
     private boolean changingPermissions;
     private HintView recordHintView;
     private HintView reminderHintView;
     private int buttonsVisibility;
     private CallEncryptionCellDrawable encryptionDrawable;
 
-    private ImageView expandButton;
-    private ImageView minimizeButton;
-
     public final ArrayList<ChatObject.VideoParticipant> visibleVideoParticipants = new ArrayList<>();
-
-    float progressToHideUi;
 
     private ShareAlert shareAlert;
 
@@ -293,7 +328,7 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
     private long creatingServiceTime;
     private boolean callInitied;
 
-    private RectF rect = new RectF();
+    private final RectF rect = new RectF();
 
     private boolean enterEventSent;
     private boolean anyEnterEventSent;
@@ -305,17 +340,17 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
     private TLRPC.Peer selfPeer;
     private TLObject userSwitchObject;
 
-    private Paint listViewBackgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint listViewBackgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
-    private ArrayList<TLRPC.GroupCallParticipant> oldParticipants = new ArrayList<>();
-    private ArrayList<ChatObject.VideoParticipant> oldVideoParticipants = new ArrayList<>();
-    private ArrayList<Long> oldInvited = new ArrayList<>();
-    private ArrayList<Long> oldShadyJoin = new ArrayList<>();
-    private ArrayList<Long> oldShadyLeft = new ArrayList<>();
+    private final ArrayList<TLRPC.GroupCallParticipant> oldParticipants = new ArrayList<>();
+    private final ArrayList<ChatObject.VideoParticipant> oldVideoParticipants = new ArrayList<>();
+    private final ArrayList<Long> oldInvited = new ArrayList<>();
+    private final ArrayList<Long> oldShadyJoin = new ArrayList<>();
+    private final ArrayList<Long> oldShadyLeft = new ArrayList<>();
     private int oldCount;
 
-    private RLottieDrawable bigMicDrawable;
-    private RLottieDrawable handDrawables;
+    private final RLottieDrawable bigMicDrawable;
+    private final RLottieDrawable handDrawables;
     private boolean playingHandAnimation;
 
     private final BlobDrawable tinyWaveDrawable;
@@ -333,42 +368,39 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
 
     private float switchToButtonProgress;
     private float switchToButtonInt2;
-    private float scheduleButtonsScale;
     private ValueAnimator scheduleAnimator;
-
-    private ValueAnimator muteButtonAnimator;
-    private ValueAnimator expandAnimator;
-    private ValueAnimator expandSizeAnimator;
 
     private TLRPC.InputPeer schedulePeer;
     @Nullable
     public TLRPC.Chat currentChat;
     public ChatObject.Call call;
-    private boolean scheduleHasFewPeers;
-    private String scheduledHash;
+    private final boolean scheduleHasFewPeers;
+    private final String scheduledHash;
 
     private RecordCallDrawable recordCallDrawable;
-    private AudioPlayerAlert.ClippingTextViewSwitcher titleTextView;
-    private TextView liveLabelTextView;
-    private Paint liveLabelPaint;
+    private final AudioPlayerAlert.ClippingTextViewSwitcher titleTextView;
+    private final TextView liveLabelTextView;
+    private final Paint liveLabelPaint;
     private ValueAnimator liveLabelBgColorAnimator;
     private float textureLightningViewAnimatingAlpha;
-    private LinearLayout titleLayout;
-    private ActionBarMenuItem otherItem;
-    private ActionBarMenuItem pipItem;
-    private ActionBarMenuItem screenShareItem;
-    private ActionBarMenuSubItem inviteItem;
-    private ActionBarMenuSubItem editTitleItem;
+    private final LinearLayout titleLayout;
+    private final ActionBarMenuItem otherItem;
+    private final ActionBarMenuItem pipItem;
+    private final ActionBarMenuItem screenShareItem;
+    private final ActionBarMenuSubItem inviteItem;
+    private final ActionBarMenuSubItem editTitleItem;
     private ActionBarMenuSubItem soundItem;
-    private ActionBarMenuSubItem noiseItem;
-    private ActionBarMenuSubItem permissionItem;
-    private ActionBarMenuSubItem recordItem;
-    private ActionBarMenuSubItem screenItem;
+    private final ActionBarMenuSubItem noiseItem;
+    private final ActionBarMenuSubItem permissionItem;
+    private final ActionBarMenuSubItem recordItem;
+    private final ActionBarMenuSubItem screenItem;
     private ActionBarMenuSubItem everyoneItem;
     private ActionBarMenuSubItem adminItem;
-    private ActionBarMenuSubItem leaveItem;
+    private final ActionBarMenuSubItem leaveItem;
+    private final ActionBarMenuSubItem enableComments;
+    private final ActionBarMenuSubItem disableComments;
     private final LinearLayout menuItemsContainer;
-    private View soundItemDivider;
+    private final View soundItemDivider;
     private WatchersView watchersView;
 
     private Runnable updateCallRecordRunnable;
@@ -382,13 +414,12 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
 
     private Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.DITHER_FLAG | Paint.FILTER_BITMAP_FLAG);
     private Paint paintTmp = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.DITHER_FLAG | Paint.FILTER_BITMAP_FLAG);
-    private Paint leaveBackgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+
     private WeavingState[] states = new WeavingState[8];
     private float switchProgress = 1.0f;
     private WeavingState prevState;
     private WeavingState currentState;
     private long lastUpdateTime;
-    private int shaderBitmapSize = 200;
     private float showWavesProgress;
     private float showLightingProgress;
 
@@ -407,7 +438,7 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
     private final ArrayList<GroupCallMiniTextureView> attachedRenderersTmp = new ArrayList<>();
     private GroupCallRenderersContainer renderersContainer;
 
-    private View blurredView;
+    private final View blurredView;
     PinchToZoomHelper pinchToZoomHelper;
 
     private float progressToAvatarPreview;
@@ -434,19 +465,16 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
     ViewTreeObserver.OnPreDrawListener requestFullscreenListener;
     public CellFlickerDrawable cellFlickerDrawable = new CellFlickerDrawable();
     private PipSource pipSource;
+    private boolean isInDrawRenderNodeBlur;
 
     public static boolean isLandscapeMode;
     public static boolean isTabletMode;
     public final ArrayList<GroupCallStatusIcon> statusIconPool = new ArrayList<>();
     private boolean drawSpeakingSubtitle;
 
-    private HashMap<View, Float> buttonsAnimationParamsX = new HashMap<>();
-    private HashMap<View, Float> buttonsAnimationParamsY = new HashMap<>();
-    boolean animateButtonsOnNextLayout;
+    private final Runnable onUserLeaveHintListener = this::onUserLeaveHint;
 
-    private Runnable onUserLeaveHintListener = this::onUserLeaveHint;
-
-    private Runnable updateSchedeulRunnable = new Runnable() {
+    private final Runnable updateSchedeulRunnable = new Runnable() {
         @Override
         public void run() {
             if (scheduleTimeTextView == null || isDismissed()) {
@@ -476,14 +504,16 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
         }
     };
 
-    private Runnable unmuteRunnable = () -> {
+    private final Runnable unmuteRunnable = () -> {
         if (VoIPService.getSharedInstance() == null) {
             return;
         }
         VoIPService.getSharedInstance().setMicMute(false, true, false);
     };
 
-    private Runnable pressRunnable = () -> {
+    private final Runnable pressRunnable = this::pressRunnableImpl;
+
+    private void pressRunnableImpl() {
         if (call == null || !scheduled || VoIPService.getSharedInstance() == null) {
             return;
         }
@@ -494,7 +524,7 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
         AndroidUtilities.runOnUIThread(unmuteRunnable, 80);
         scheduled = false;
         pressed = true;
-    };
+    }
 
     public static volatile DispatchQueue updateTextureLightningQueue = new DispatchQueue("updateTextureLightningQueue");
 
@@ -546,17 +576,6 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
 
     LongSparseIntArray visiblePeerIds = new LongSparseIntArray();
 
-    public static final Property<GroupCallActivity, Float> COLOR_PROGRESS = new AnimationProperties.FloatProperty<GroupCallActivity>("colorProgress") {
-        @Override
-        public void setValue(GroupCallActivity object, float value) {
-            object.setColorProgress(value);
-        }
-
-        @Override
-        public Float get(GroupCallActivity object) {
-            return object.getColorProgress();
-        }
-    };
     private final FrameLayout avatarPreviewContainer;
     private final AvatarPreviewPagerIndicator avatarPagerIndicator;
     private ViewGroup currentOptionsLayout;
@@ -567,7 +586,7 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
     private final View buttonsBackgroundGradientView;
     private final View buttonsBackgroundGradientView2;
     private GradientDrawable buttonsBackgroundGradient;
-    private int[] gradientColors = new int[2];
+    private final int[] gradientColors = new int[2];
     private final DefaultItemAnimator fullscreenListItemAnimator;
     private boolean previewTextureTransitionEnabled;
     private boolean listViewVideoVisibility = true;
@@ -600,7 +619,7 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
         }
 
         @Override
-        public void draw(Canvas canvas) {
+        public void draw(@NonNull Canvas canvas) {
             int cx = getBounds().centerX();
             int cy = getBounds().centerY();
             if (parentView instanceof SimpleTextView) {
@@ -943,7 +962,7 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
         }
 
         @Override
-        protected void onDraw(Canvas canvas) {
+        protected void onDraw(@NonNull Canvas canvas) {
             int prevColor = currentColor;
             if (currentProgress < 0.25f) {
                 currentColor = 0xffCC5757;
@@ -1037,7 +1056,7 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
         private float duration;
         private float time;
         public Shader shader;
-        private Matrix matrix = new Matrix();
+        private final Matrix matrix = new Matrix();
         public int currentState;
 
         public WeavingState(int state) {
@@ -1098,42 +1117,6 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
         return VoIPService.getSharedInstance() != null && VoIPService.getSharedInstance().groupCall != null && VoIPService.getSharedInstance().groupCall.call.rtmp_stream || state == MUTE_BUTTON_STATE_MUTED_BY_ADMIN || state == MUTE_BUTTON_STATE_RAISED_HAND || state == MUTE_BUTTON_STATE_START_NOW || state == MUTE_BUTTON_STATE_SET_REMINDER || state == MUTE_BUTTON_STATE_CANCEL_REMINDER;
     }
 
-    @SuppressWarnings("FieldCanBeLocal")
-    private static class LabeledButton extends FrameLayout {
-
-        private ImageView imageView;
-        private TextView textView;
-
-        public LabeledButton(Context context, String text, int resId, int color) {
-            super(context);
-
-            imageView = new ImageView(context);
-            if (Build.VERSION.SDK_INT >= 21) {
-                imageView.setBackground(Theme.createSimpleSelectorCircleDrawable(dp(50), color, 0x1fffffff));
-            } else {
-                imageView.setBackground(Theme.createSimpleSelectorCircleDrawable(dp(50), color, color));
-            }
-            imageView.setImageResource(resId);
-            imageView.setScaleType(ImageView.ScaleType.CENTER);
-            addView(imageView, LayoutHelper.createFrame(50, 50, Gravity.CENTER_HORIZONTAL | Gravity.TOP));
-
-            textView = new TextView(context);
-            textView.setTextColor(Theme.getColor(Theme.key_voipgroup_actionBarItems));
-            textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
-            textView.setGravity(Gravity.CENTER_HORIZONTAL);
-            textView.setText(text);
-            addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 0, 50 + 5, 0, 0));
-        }
-
-        public void setColor(int color) {
-            Theme.setSelectorDrawableColor(imageView.getBackground(), color, false);
-            if (Build.VERSION.SDK_INT < 21) {
-                Theme.setSelectorDrawableColor(imageView.getBackground(), color, true);
-            }
-            imageView.invalidate();
-        }
-    }
-
     private void prepareBlurBitmap() {
         if (blurredView == null) {
             return;
@@ -1159,6 +1142,7 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
         blurredView.setBackground(new BitmapDrawable(bitmap));
         blurredView.setAlpha(0.0f);
         blurredView.setVisibility(View.VISIBLE);
+        blurredView.bringToFront();
     }
 
     @Override
@@ -1620,7 +1604,8 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
             autoPinEnabled = true;
         }
 
-        boolean hasVideoLocal = !call.visibleVideoParticipants.isEmpty();
+        boolean hasVideoLocal = call != null && !call.visibleVideoParticipants.isEmpty();
+        animatorHasVideo.setValue(hasVideoLocal, animated);
         if (hasVideoLocal != hasVideo) {
             hasVideo = hasVideoLocal;
             if (isTabletMode) {
@@ -1677,6 +1662,14 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
             inviteItem.setVisibility(View.GONE);
         }
 
+        if (call != null && call.call != null && call.call.can_change_messages_enabled) {
+            enableComments.setVisibility(call.call.messages_enabled ? View.GONE : View.VISIBLE);
+            disableComments.setVisibility(call.call.messages_enabled ? View.VISIBLE : View.GONE);
+        } else {
+            enableComments.setVisibility(View.GONE);
+            disableComments.setVisibility(View.GONE);
+        }
+
         TLRPC.GroupCallParticipant participant = call.participants.get(MessageObject.getPeerId(selfPeer));
 
         if (call == null || call.isScheduled() || participant != null && !participant.can_self_unmute && participant.muted) {
@@ -1705,7 +1698,7 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
                 recordItem.setVisibility(View.GONE);
                 editTitleItem.setVisibility(View.GONE);
             }
-            if (!call.canRecordVideo() || call.isScheduled() || Build.VERSION.SDK_INT < 21 || isRtmpStream()) {
+            if (!call.canRecordVideo() || call.isScheduled() || isRtmpStream()) {
                 screenItem.setVisibility(View.GONE);
             } else {
                 screenItem.setVisibility(View.VISIBLE);
@@ -1736,7 +1729,7 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
         } else {
             boolean mutedByAdmin = participant != null && !participant.can_self_unmute && participant.muted && !canManageCall();
             boolean sharingScreen = VoIPService.getSharedInstance() != null && VoIPService.getSharedInstance().getVideoState(true) == Instance.VIDEO_STATE_ACTIVE;
-            if (Build.VERSION.SDK_INT >= 21 && !mutedByAdmin && (call.canRecordVideo() || sharingScreen) && !call.isScheduled() && !isRtmpStream()) {
+            if (!mutedByAdmin && (call.canRecordVideo() || sharingScreen) && !call.isScheduled() && !isRtmpStream()) {
                 if (sharingScreen) {
                     screenShareItem.setVisibility(View.GONE);
                     screenItem.setVisibility(View.VISIBLE);
@@ -1869,8 +1862,12 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
         });
     }
 
+    private RenderNode renderNodeBlur;
+    private float renderNodeBlurScale;
+
     private GroupCallActivity(Activity context, AccountInstance account, ChatObject.Call groupCall, TLRPC.Chat chat, TLRPC.InputPeer schedulePeer, boolean scheduleHasFewPeers, String scheduledHash) {
-        super(context, false);
+        super(context, true, true, null);
+
         setOpenNoDelay(true);
         this.accountInstance = account;
         this.call = groupCall;
@@ -1879,6 +1876,13 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
         this.scheduledHash = scheduledHash;
         this.currentAccount = account.getCurrentAccount();
         this.scheduleHasFewPeers = scheduleHasFewPeers;
+        this.resourcesProvider = new DarkBlueThemeResourcesProvider();
+
+        this.smoothKeyboardAnimationEnabled = true;
+        this.smoothKeyboardByBottom = true;
+        this.maxGroupCallMessageLength = MessagesController.getInstance(currentAccount)
+            .config.groupCallMessageLengthLimit.get();
+
         fullWidth = true;
         isTabletMode = false;
         isLandscapeMode = false;
@@ -1992,6 +1996,10 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
                     toggleAdminSpeak();
                 } else if (id == share_invite_link_item) {
                     getLink(false);
+                } else if (id == comments_enable_item) {
+                    setCommentsEnabled(true);
+                } else if (id == comments_disable_item) {
+                    setCommentsEnabled(false);
                 } else if (id == leave_item) {
                     AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
 
@@ -2142,6 +2150,8 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
 
                     accountGap.setVisibility(View.GONE);
                     inviteItem.setVisibility(View.GONE);
+                    enableComments.setVisibility(View.GONE);
+                    disableComments.setVisibility(View.GONE);
                     leaveItem.setVisibility(View.GONE);
                     permissionItem.setVisibility(View.GONE);
                     editTitleItem.setVisibility(View.GONE);
@@ -2445,11 +2455,10 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
 
         shadowDrawable = context.getResources().getDrawable(R.drawable.sheet_shadow_round).mutate();
 
-        bigMicDrawable = new RLottieDrawable(R.raw.voip_filled, "" + R.raw.voip_filled, dp(72), dp(72), true, null);
-        handDrawables = new RLottieDrawable(R.raw.hand_2, "" + R.raw.hand_2, dp(72), dp(72), true, null);
+        bigMicDrawable = new RLottieDrawable(R.raw.voip_filled, "" + R.raw.voip_filled, dp(46), dp(46), true, null);
+        handDrawables = new RLottieDrawable(R.raw.hand_2, "" + R.raw.hand_2, dp(46), dp(46), true, null);
 
-        containerView = new FrameLayout(context) {
-
+        containerView = sizeNotifierFrameLayout = new SizeNotifierFrameLayout(context) {
             private boolean ignoreLayout = false;
             private RectF rect = new RectF();
             private int lastSize;
@@ -2457,6 +2466,18 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
 
             boolean localHasVideo;
             boolean wasLayout;
+
+            @Override
+            protected void onAttachedToWindow() {
+                super.onAttachedToWindow();
+                reactionEffectImageReceiver.onAttachedToWindow();
+            }
+
+            @Override
+            protected void onDetachedFromWindow() {
+                super.onDetachedFromWindow();
+                reactionEffectImageReceiver.onDetachedFromWindow();
+            }
 
             @Override
             protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
@@ -2471,27 +2492,6 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
                     int measuredWidth = muteButton.getMeasuredWidth();
                     if (measuredWidth == 0) {
                         measuredWidth = muteButton.getLayoutParams().width;
-                    }
-                    float muteButtonScale = dp(52) / (float) (measuredWidth - dp(8));
-                    float multiplier = isLandscapeMode || isRtmpStream() ? muteButtonScale : renderersContainer.inFullscreenMode ? muteButtonScale : 1f;
-
-                    boolean isExpanded = renderersContainer.inFullscreenMode && (AndroidUtilities.isTablet() || isLandscapeMode == isRtmpLandscapeMode());
-                    View expandView = isExpanded ? minimizeButton : expandButton;
-                    View expandOtherView = isExpanded ? expandButton : minimizeButton;
-                    expandView.setAlpha(1f);
-                    expandView.setScaleX(multiplier);
-                    expandView.setScaleY(multiplier);
-                    expandOtherView.setAlpha(0f);
-
-                    muteLabel[0].setAlpha(1f);
-                    muteLabel[1].setAlpha(1f);
-
-                    if (!renderersContainer.inFullscreenMode && (!isLandscapeMode || AndroidUtilities.isTablet())) {
-                        muteLabel[0].setScaleX(1f);
-                        muteLabel[1].setScaleY(1f);
-                    } else {
-                        muteLabel[0].setScaleX(0.687f);
-                        muteLabel[1].setScaleY(0.687f);
                     }
 
                     invalidateLayoutFullscreen();
@@ -2547,9 +2547,6 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
                         attachedRenderersTmp.get(i).updateAttachState(true);
                     }
                 }
-                if (Build.VERSION.SDK_INT >= 21) {
-                    setPadding(backgroundPaddingLeft, getStatusBarHeight(), backgroundPaddingLeft, 0);
-                }
                 int availableHeight = totalHeight - getPaddingTop();
                 if (isRtmpStream()) {
                     availableHeight -= dp(72);
@@ -2580,7 +2577,12 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
                     layoutParams.topMargin = ActionBar.getCurrentActionBarHeight();
                 }
 
-                int buttonsGradientSize = dp(isRtmpStream() ? 100 : 150);
+                if (callMessageEnterView.getEmojiView() != null) {
+                    layoutParams = (LayoutParams) callMessageEnterView.getEmojiView().getLayoutParams();
+                    layoutParams.gravity = Gravity.BOTTOM;
+                }
+
+                int buttonsGradientSize = dp(isRtmpStream() ? 40 : 90);
                 //listView layoutParams
                 layoutParams = (LayoutParams) listView.getLayoutParams();
                 if (isTabletMode) {
@@ -2644,7 +2646,7 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
                 layoutParams = (LayoutParams) buttonsContainer.getLayoutParams();
                 if (isTabletMode) {
                     layoutParams.width = dp(TABLET_LIST_SIZE);
-                    layoutParams.height = dp(200);
+                    layoutParams.height = dp(120);
                     layoutParams.gravity = hasVideo ? Gravity.RIGHT | Gravity.BOTTOM : Gravity.CENTER_HORIZONTAL | Gravity.BOTTOM;
                     layoutParams.rightMargin = 0;
                 } else if (isLandscapeMode) {
@@ -2653,7 +2655,7 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
                     layoutParams.gravity = Gravity.RIGHT | Gravity.TOP;
                 } else {
                     layoutParams.width = LayoutHelper.MATCH_PARENT;
-                    layoutParams.height = dp(200);
+                    layoutParams.height = dp(120);
                     layoutParams.gravity = Gravity.CENTER_HORIZONTAL | Gravity.BOTTOM;
                     layoutParams.rightMargin = 0;
                 }
@@ -2700,6 +2702,20 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
                 }
                 layoutParams = (LayoutParams) actionBarShadow.getLayoutParams();
                 layoutParams.topMargin = ActionBar.getCurrentActionBarHeight();
+
+
+                callMessageEnterUnderContainer.invalidate();
+                layoutParams = (LayoutParams) callMessageEnterUnderContainer.getLayoutParams();
+                layoutParams.height = totalHeight;
+                layoutParams.topMargin = -getPaddingTop();
+
+                // layoutParams.bottomMargin = -getPaddingBottom();
+
+                if (callMessageEnterView.getEmojiView() != null) {
+                    layoutParams = (LayoutParams) callMessageEnterView.getEmojiView().getLayoutParams();
+                    layoutParams.bottomMargin = -getPaddingBottom();
+                }
+
 
                 int contentSize = Math.max(dp(64 + 50 + 58 * 2.5f), availableHeight / 5 * 3);
                 int padding = isTabletMode ? 0 : Math.max(0, availableHeight - contentSize + dp(8));
@@ -2756,11 +2772,13 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
                 ignoreLayout = false;
                 super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(totalHeight, MeasureSpec.EXACTLY));
                 int currentSize = getMeasuredHeight() + (getMeasuredWidth() << 16);
-                 if (currentSize != lastSize) {
+                if (currentSize != lastSize) {
                     lastSize = currentSize;
                     dismissAvatarPreview(false);
                 }
                 cellFlickerDrawable.setParentWidth(getMeasuredWidth());
+
+                checkGroupCallUiPositions_MessagesList();
             }
 
             @Override
@@ -2898,27 +2916,57 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
                     }
                 }
 
+                {
+                    float x = getMeasuredWidth() / 2f - dp(30);
+                    float y = getMeasuredHeight() / 2f - dp(30);
+
+                    reactionEffectImageReceiver.setImageCoords(x, y, dp(60), dp(60));
+                    reactionEffectImageReceiver.draw(canvas);
+                }
+
+
             }
 
             HashMap<Object, View> listCells = new HashMap<>();
 
             @Override
             protected void dispatchDraw(Canvas canvas) {
-                if (isTabletMode) {
-                    buttonsContainer.setTranslationY(0);
-                    fullscreenUsersListView.setTranslationY(0);
-                    buttonsContainer.setTranslationX(0);
-                    fullscreenUsersListView.setTranslationY(0);
-                } else if (isLandscapeMode) {
-                    buttonsContainer.setTranslationY(0);
-                    fullscreenUsersListView.setTranslationY(0);
-                    buttonsContainer.setTranslationX(progressToHideUi * dp(94));
-                    fullscreenUsersListView.setTranslationX(progressToHideUi * dp(94));
-                } else {
-                    buttonsContainer.setTranslationX(0);
-                    fullscreenUsersListView.setTranslationX(0);
-                    buttonsContainer.setTranslationY(progressToHideUi * dp(94));
-                    fullscreenUsersListView.setTranslationY(progressToHideUi * dp(94));
+                if (!isInDrawRenderNodeBlur && !drawingForBlur && Build.VERSION.SDK_INT >= 31 && canvas.isHardwareAccelerated() && !AndroidUtilities.makingGlobalBlurBitmap) {
+                    if (renderNodeBlur == null) {
+                        renderNodeBlur = new RenderNode("CallActivity.Blur");
+                        renderNodeBlurScale = SizeNotifierFrameLayout.getRenderNodeScale();
+
+                        float alpha = 0.5f;
+                        float c1 = 17f * alpha;
+                        float scale = 1f - alpha;
+
+                        ColorMatrix colorMatrix = new ColorMatrix(new float[]{
+                            scale, 0,     0,     0, c1,
+                            0,     scale, 0,     0, c1,
+                            0,     0,     scale, 0, c1,
+                            0,     0,     0,     1, 0
+                        });
+
+                        final float br = SizeNotifierFrameLayout.getBlurRadius();
+                        renderNodeBlur.setRenderEffect(RenderEffect.createChainEffect(
+                            RenderEffect.createBlurEffect(br, br, Shader.TileMode.DECAL),
+                            RenderEffect.createColorFilterEffect(new ColorMatrixColorFilter(colorMatrix))
+                        ));
+                        groupCallMessagesListView.setBlurRoot(this);
+                        groupCallMessagesListView.setRenderNode(renderNodeBlur, renderNodeBlurScale);
+                    }
+
+
+                    int rnW = Math.round(getMeasuredWidth() / renderNodeBlurScale);
+                    int rnH = Math.round(getMeasuredHeight() / renderNodeBlurScale);
+
+                    isInDrawRenderNodeBlur = true;
+                    renderNodeBlur.setPosition(0, 0, rnW, rnH);
+                    Canvas c2 = renderNodeBlur.beginRecording();
+                    c2.scale(1f / renderNodeBlurScale, 1f / renderNodeBlurScale);
+                    dispatchDraw(c2);
+                    renderNodeBlur.endRecording();
+                    isInDrawRenderNodeBlur = false;
                 }
 
                 for (int i = 0; i < listView.getChildCount(); i++) {
@@ -3130,7 +3178,7 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
                         }
                     }
 
-
+                    /* what is
                     if (progressToAvatarPreview != 1f && scrimFullscreenView == null) {
                         canvas.saveLayerAlpha((int) buttonsBackgroundGradientView2.getX(), (int) buttonsBackgroundGradientView.getY(), (int) (buttonsBackgroundGradientView2.getX() + buttonsBackgroundGradientView2.getMeasuredWidth()), getMeasuredHeight(), (int) (255 * (1f - progressToAvatarPreview)), Canvas.ALL_SAVE_FLAG);
 
@@ -3160,6 +3208,7 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
 
                         canvas.restore();
                     }
+                    */
                 } else {
                     if (scrimView != null) {
                         canvas.drawRect(0, 0, getMeasuredWidth(), getMeasuredHeight(), scrimPaint);
@@ -3224,7 +3273,26 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
             }
 
             @Override
-            protected boolean drawChild(Canvas canvas, View child, long drawingTime) {
+            protected boolean drawChild(@NonNull Canvas canvas, View child, long drawingTime) {
+                if (isInDrawRenderNodeBlur) {
+                    if (child == listView) {
+                        for (int i = 0, N = listView.getChildCount(); i < N; i++) {
+                            View listChild = listView.getChildAt(i);
+                            if (listChild.getVisibility() == View.VISIBLE) {
+                                canvas.save();
+                                canvas.translate(listChild.getX(), listChild.getY());
+                                listChild.draw(canvas);
+                                canvas.restore();
+                            }
+                        }
+                    }
+
+                    if (child == renderersContainer || child == buttonsContainer) {
+                        return super.drawChild(canvas, child, drawingTime);
+                    }
+                    return true;
+                }
+
                 if (!isTabletMode && renderersContainer.progressToFullscreenMode == 1f && (child == actionBar || child == actionBarShadow || child == actionBarBackground || child == titleTextView || child == menuItemsContainer || child == textureLightningView)) {
                     return true;
                 }
@@ -3239,13 +3307,15 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
                     return true;
                 }
                 if (contentFullyOverlayed && useBlur) {
-                    if (child == listView || child == buttonsContainer) {
+                    if (child == listView || child == buttonsContainer || child == groupCallMessagesListView) {
                         return true;
                     }
                 }
+                /* what is
                 if (scrimFullscreenView == null && !drawingForBlur && avatarsPreviewShowed && (child == buttonsBackgroundGradientView2 || child == buttonsBackgroundGradientView || child == buttonsContainer || child == undoView[0] || child == undoView[1])) {
                     return true;
                 }
+                */
                 return super.drawChild(canvas, child, drawingTime);
             }
 
@@ -3258,6 +3328,8 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
                 return super.onKeyDown(keyCode, event);
             }
         };
+
+        containerView.setClipToPadding(false);
         containerView.setFocusable(true);
         containerView.setFocusableInTouchMode(true);
         containerView.setWillNotDraw(false);
@@ -3265,6 +3337,7 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
         containerView.setKeepScreenOn(true);
         containerView.setClipChildren(false);
 
+        reactionEffectImageReceiver = new ImageReceiver(containerView);
 
         if (schedulePeer != null) {
             scheduleStartInTextView = new SimpleTextView(context);
@@ -3484,7 +3557,7 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
         listView.setItemAnimator(itemAnimator);
         listView.setOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
-            public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
+            public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
                 if (listView.getChildCount() <= 0 || call == null) {
                     return;
                 }
@@ -3499,7 +3572,7 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
             }
 
             @Override
-            public void onScrollStateChanged(RecyclerView recyclerView, int newState) {
+            public void onScrollStateChanged(@NonNull RecyclerView recyclerView, int newState) {
                 if (newState == RecyclerView.SCROLL_STATE_IDLE) {
                     int offset = dp(74);
                     float top = scrollOffsetY - offset;
@@ -3627,7 +3700,7 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
                         return;
                     }
 
-                    ItemOptions.makeOptions(container, new DarkBlueThemeResourcesProvider(), cell)
+                    ItemOptions.makeOptions(container, resourcesProvider, cell)
                         .addIf(invited.isCalling(), R.drawable.msg_endcall, getString(R.string.GroupCallStopCallingInvite), () -> {
                             final TL_phone.declineConferenceCallInvite req = new TL_phone.declineConferenceCallInvite();
                             req.msg_id = invited.msg_id;
@@ -3896,268 +3969,12 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
         tabletGridAdapter.setVisibility(tabletVideoGridView, false, false);
         tabletVideoGridView.setVisibility(View.GONE);
 
-        buttonsContainer = new FrameLayout(context) {
-
-            AnimatorSet currentButtonsAnimation;
-            @Override
-            protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-                if (!isLandscapeMode) {
-                    widthMeasureSpec = MeasureSpec.makeMeasureSpec(Math.min(dp(460), MeasureSpec.getSize(widthMeasureSpec)), MeasureSpec.EXACTLY);
-                }
-                for (int i = 0; i < 2; i++) {
-                    if (isLandscapeMode && !isTabletMode) {
-                        muteLabel[i].getLayoutParams().width = (int) (MeasureSpec.getSize(widthMeasureSpec) / 0.68f);
-                    } else {
-                        muteLabel[i].getLayoutParams().width = LayoutHelper.WRAP_CONTENT;
-                    }
-                }
-                super.onMeasure(widthMeasureSpec, heightMeasureSpec);
-            }
-
-            @Override
-            protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
-                int cw = dp(122);
-                int w = (getMeasuredWidth() - cw) / 2;
-                int h = getMeasuredHeight();
-
-                int buttonsCount = 6;
-                if (cameraButton.getVisibility() != View.VISIBLE) {
-                    buttonsCount--;
-                }
-                if (soundButton.getVisibility() != View.VISIBLE) {
-                    buttonsCount--;
-                }
-                if (flipButton.getVisibility() != View.VISIBLE) {
-                    buttonsCount--;
-                }
-                if (speakerButtonContainer.getVisibility() != View.VISIBLE) {
-                    buttonsCount--;
-                }
-
-                if (isLandscapeMode && !isTabletMode) {
-                    int part = getMeasuredHeight() / buttonsCount;
-
-                    int y, x;
-
-                    if (soundButton.getVisibility() == View.VISIBLE) {
-                        y = part / 2 - cameraButton.getMeasuredHeight() / 2;
-                        x = (getMeasuredWidth() - cameraButton.getMeasuredWidth()) >> 1;
-                        cameraButton.layout(x, y, x + cameraButton.getMeasuredWidth(), y + cameraButton.getMeasuredHeight());
-
-                        int partOffset = buttonsCount == 4 ? part : 0;
-                        y = part / 2 + partOffset - soundButton.getMeasuredHeight() / 2;
-                        x = (getMeasuredWidth() - soundButton.getMeasuredWidth()) >> 1;
-                        soundButton.layout(x, y, x + soundButton.getMeasuredWidth(), y + soundButton.getMeasuredHeight());
-                    } else {
-                        y = part / 2 - flipButton.getMeasuredHeight() / 2;
-                        x = (getMeasuredWidth() - flipButton.getMeasuredWidth()) >> 1;
-                        flipButton.layout(x, y, x + flipButton.getMeasuredWidth(), y + flipButton.getMeasuredHeight());
-
-                        y = part / 2 - speakerButtonContainer.getMeasuredHeight() / 2;
-                        x = (getMeasuredWidth() - speakerButtonContainer.getMeasuredWidth()) >> 1;
-                        speakerButtonContainer.layout(x, y, x + speakerButtonContainer.getMeasuredWidth(), y + speakerButtonContainer.getMeasuredHeight());
-
-                        int partOffset = buttonsCount == 4 ? part : 0;
-                        y = part / 2 + partOffset - cameraButton.getMeasuredHeight() / 2;
-                        x = (getMeasuredWidth() - cameraButton.getMeasuredWidth()) >> 1;
-                        cameraButton.layout(x, y, x + cameraButton.getMeasuredWidth(), y + cameraButton.getMeasuredHeight());
-                    }
-
-                    int partOffset = buttonsCount == 4 ? part * 3 : part * 2;
-                    y = part / 2 + partOffset - leaveButton.getMeasuredHeight() / 2;
-                    x = (getMeasuredWidth() - leaveButton.getMeasuredWidth()) >> 1;
-                    leaveButton.layout(x, y, x + leaveButton.getMeasuredWidth(), y + leaveButton.getMeasuredHeight());
-
-                    partOffset = buttonsCount == 4 ? part * 2 : part;
-                    y = part / 2 + partOffset - muteButton.getMeasuredWidth() / 2 - dp(4);
-                    x = (getMeasuredWidth() - muteButton.getMeasuredWidth()) >> 1;
-                    if (buttonsCount == 3) {
-                        y -= dp(6);
-                    }
-                    muteButton.layout(x, y, x + muteButton.getMeasuredWidth(), y + muteButton.getMeasuredHeight());
-                    minimizeButton.layout(x, y, x + minimizeButton.getMeasuredWidth(), y + minimizeButton.getMeasuredHeight());
-                    expandButton.layout(x, y, x + expandButton.getMeasuredWidth(), y + expandButton.getMeasuredHeight());
-
-                    float muteButtonScale = dp(52) / (float) (muteButton.getMeasuredWidth() - dp(8));
-                    muteButton.animate().cancel();
-                    muteButton.setScaleX(muteButtonScale);
-                    muteButton.setScaleY(muteButtonScale);
-
-                    for (int a = 0; a < 2; a++) {
-                        x = (getMeasuredWidth() - muteLabel[a].getMeasuredWidth()) >> 1;
-                        partOffset = buttonsCount == 4 ? part * 2 : part;
-
-                        y = part / 2 + partOffset - muteButton.getMeasuredWidth() / 2 - dp(4);
-                        if (buttonsCount == 3) {
-                            y -= dp(6);
-                        }
-                        y += muteButton.getMeasuredWidth() * 0.687f + dp(4);
-                        if (y + muteLabel[a].getMeasuredHeight() > partOffset + part) {
-                            y -= dp(4);
-                        }
-
-                        muteLabel[a].layout(x, y, x + muteLabel[a].getMeasuredWidth(), y + muteLabel[a].getMeasuredHeight());
-                        muteLabel[a].setScaleX(0.687f);
-                        muteLabel[a].setScaleY(0.687f);
-                    }
-                } else if (renderersContainer.inFullscreenMode && !isTabletMode || isRtmpStream()) {
-                    int part = getMeasuredWidth() / buttonsCount;
-                    boolean isRtmpNotFullMode = !renderersContainer.inFullscreenMode && isRtmpStream();
-                    int yOffset = (isRtmpNotFullMode) ? dp(27) : 0;
-                    int x, y;
-                    if (soundButton.getVisibility() == View.VISIBLE) {
-                        x = part / 2 - cameraButton.getMeasuredWidth() / 2;
-                        y = getMeasuredHeight() - cameraButton.getMeasuredHeight();
-                        cameraButton.layout(x, y, x + cameraButton.getMeasuredWidth(), y + cameraButton.getMeasuredHeight());
-
-                        int partOffset = buttonsCount == 4 ? part : 0;
-                        x = part / 2 + partOffset - leaveButton.getMeasuredWidth() / 2;
-                        y = getMeasuredHeight() - soundButton.getMeasuredHeight() - yOffset;
-                        soundButton.layout(x, y, x + soundButton.getMeasuredWidth(), y + soundButton.getMeasuredHeight());
-                    } else {
-                        int partOffset = buttonsCount == 4 ? part : 0;
-                        x = part / 2 + partOffset - cameraButton.getMeasuredWidth() / 2;
-                        y = getMeasuredHeight() - cameraButton.getMeasuredHeight();
-                        cameraButton.layout(x, y, x + cameraButton.getMeasuredWidth(), y + cameraButton.getMeasuredHeight());
-
-                        x = part / 2 - flipButton.getMeasuredWidth() / 2;
-                        y = getMeasuredHeight() - flipButton.getMeasuredHeight();
-                        flipButton.layout(x, y, x + flipButton.getMeasuredWidth(), y + flipButton.getMeasuredHeight());
-
-                        x = part / 2 - speakerButtonContainer.getMeasuredWidth() / 2;
-                        y = getMeasuredHeight() - speakerButtonContainer.getMeasuredHeight();
-                        speakerButtonContainer.layout(x, y, x + speakerButtonContainer.getMeasuredWidth(), y + speakerButtonContainer.getMeasuredHeight());
-                    }
-
-                    int partOffset = buttonsCount == 4 ? part * 3 : part * 2;
-                    x = part / 2 + partOffset - leaveButton.getMeasuredWidth() / 2;
-                    y = getMeasuredHeight() - leaveButton.getMeasuredHeight() - yOffset;
-                    leaveButton.layout(x, y, x + leaveButton.getMeasuredWidth(), y + leaveButton.getMeasuredHeight());
-
-
-                    partOffset = buttonsCount == 4 ? part * 2 : part;
-                    x = part / 2 + partOffset - muteButton.getMeasuredWidth() / 2;
-                    y = getMeasuredHeight() - leaveButton.getMeasuredHeight() - (muteButton.getMeasuredWidth() - dp(52)) / 2 - yOffset;
-                    muteButton.layout(x, y, x + muteButton.getMeasuredWidth(), y + muteButton.getMeasuredHeight());
-                    minimizeButton.layout(x, y, x + minimizeButton.getMeasuredWidth(), y + minimizeButton.getMeasuredHeight());
-                    expandButton.layout(x, y, x + expandButton.getMeasuredWidth(), y + expandButton.getMeasuredHeight());
-
-                    float muteButtonScale = dp(52) / (float) (muteButton.getMeasuredWidth() - dp(8));
-                    muteButton.animate().scaleX(muteButtonScale).scaleY(muteButtonScale).setDuration(TRANSITION_DURATION).setInterpolator(CubicBezierInterpolator.DEFAULT).start();
-
-                    for (int a = 0; a < 2; a++) {
-                        partOffset = buttonsCount == 4 ? part * 2 : part;
-                        x = partOffset + (part - muteLabel[a].getMeasuredWidth()) / 2;
-                        y = h - dp(27);
-                        if (isRtmpNotFullMode) {
-                            if (renderersContainer.inFullscreenMode) {
-                                y -= dp(2);
-                            } else {
-                                y -= dp(25);
-                            }
-                        }
-                        muteLabel[a].layout(x, y, x + muteLabel[a].getMeasuredWidth(), y + muteLabel[a].getMeasuredHeight());
-                        muteLabel[a].animate().scaleX(0.687f).scaleY(0.687f).setDuration(TRANSITION_DURATION).setInterpolator(CubicBezierInterpolator.DEFAULT).start();
-                    }
-                } else {
-                    int x, y;
-                    int buttonsYOffset = dp(0);
-                    if (soundButton.getVisibility() == View.VISIBLE) {
-                        if (cameraButton.getVisibility() == View.VISIBLE) {
-                            x = (w - cameraButton.getMeasuredWidth()) / 2;
-                            y = (h - cameraButton.getMeasuredHeight()) / 2;// - AndroidUtilities.dp(32);
-                            cameraButton.layout(x, y, x + cameraButton.getMeasuredWidth(), y + cameraButton.getMeasuredHeight());
-
-                            x = (w - soundButton.getMeasuredWidth()) / 2;
-                            y = (h - leaveButton.getMeasuredHeight()) / 2;// + AndroidUtilities.dp(32);
-                            soundButton.layout(x, y, x + soundButton.getMeasuredWidth(), y + soundButton.getMeasuredHeight());
-                        } else {
-                            x = (w - soundButton.getMeasuredWidth()) / 2;
-                            y = (h - soundButton.getMeasuredHeight()) / 2;
-                            soundButton.layout(x, y, x + soundButton.getMeasuredWidth(), y + soundButton.getMeasuredHeight());
-                        }
-                    } else {
-                        int offset = flipButton.getVisibility() == View.VISIBLE || speakerButtonContainer.getVisibility() == View.VISIBLE ? dp(28) : 0;
-
-                        x = (w - flipButton.getMeasuredWidth()) / 2;
-                        y = (h - flipButton.getMeasuredHeight()) / 2 + buttonsYOffset - offset;
-                        flipButton.layout(x, y, x + flipButton.getMeasuredWidth(), y + flipButton.getMeasuredHeight());
-
-                        x = (w - speakerButtonContainer.getMeasuredWidth()) / 2;
-                        y = (h - speakerButtonContainer.getMeasuredHeight()) / 2 + buttonsYOffset - offset;
-                        speakerButtonContainer.layout(x, y, x + speakerButtonContainer.getMeasuredWidth(), y + speakerButtonContainer.getMeasuredHeight());
-
-                        x = (w - cameraButton.getMeasuredWidth()) / 2;
-                        y = (h - cameraButton.getMeasuredHeight()) / 2 + buttonsYOffset + offset;
-                        cameraButton.layout(x, y, x + cameraButton.getMeasuredWidth(), y + cameraButton.getMeasuredHeight());
-                    }
-
-                    y = (h - leaveButton.getMeasuredHeight()) / 2 + buttonsYOffset;
-                    x = getMeasuredWidth() - w + (w - leaveButton.getMeasuredWidth()) / 2;
-                    leaveButton.layout(x, y, x + leaveButton.getMeasuredWidth(), y + leaveButton.getMeasuredHeight());
-
-                    x = (getMeasuredWidth() - muteButton.getMeasuredWidth()) / 2;
-                    y = (h - muteButton.getMeasuredHeight()) / 2 - dp(9);
-                    muteButton.layout(x, y, x + muteButton.getMeasuredWidth(), y + muteButton.getMeasuredHeight());
-                    minimizeButton.layout(x, y, x + minimizeButton.getMeasuredWidth(), y + minimizeButton.getMeasuredHeight());
-                    expandButton.layout(x, y, x + expandButton.getMeasuredWidth(), y + expandButton.getMeasuredHeight());
-
-                    muteButton.animate().setDuration(TRANSITION_DURATION).setInterpolator(CubicBezierInterpolator.DEFAULT).scaleX(1f).scaleY(1f).start();
-
-                    for (int a = 0; a < 2; a++) {
-                        x = (getMeasuredWidth() - muteLabel[a].getMeasuredWidth()) / 2;
-                        y = h - dp(12) - muteLabel[a].getMeasuredHeight();
-                        muteLabel[a].layout(x, y, x + muteLabel[a].getMeasuredWidth(), y + muteLabel[a].getMeasuredHeight());
-                        muteLabel[a].animate().scaleX(1f).scaleY(1f).setDuration(TRANSITION_DURATION).setInterpolator(CubicBezierInterpolator.DEFAULT).start();
-                    }
-                }
-
-                if (animateButtonsOnNextLayout) {
-                    AnimatorSet animatorSet = new AnimatorSet();
-                    boolean hasAnimation = false;
-                    for (int i = 0; i < getChildCount(); i++) {
-                        View child = getChildAt(i);
-                        Float fromX = buttonsAnimationParamsX.get(child);
-                        Float fromY = buttonsAnimationParamsY.get(child);
-                        if (fromX != null && fromY != null) {
-                            hasAnimation = true;
-                            animatorSet.playTogether(ObjectAnimator.ofFloat(child, TRANSLATION_X, fromX - child.getLeft(), 0));
-                            animatorSet.playTogether(ObjectAnimator.ofFloat(child, TRANSLATION_Y, fromY - child.getTop(), 0));
-                        }
-                    }
-                    if (hasAnimation) {
-                        if (currentButtonsAnimation != null) {
-                            currentButtonsAnimation.removeAllListeners();
-                            currentButtonsAnimation.cancel();
-                        }
-                        currentButtonsAnimation = animatorSet;
-                        animatorSet.setDuration(TRANSITION_DURATION);
-                        animatorSet.setInterpolator(CubicBezierInterpolator.DEFAULT);
-                        animatorSet.addListener(new AnimatorListenerAdapter() {
-                            @Override
-                            public void onAnimationEnd(Animator animation) {
-                                currentButtonsAnimation = null;
-                                for (int i = 0; i < getChildCount(); i++) {
-                                    View child = getChildAt(i);
-                                    child.setTranslationX(0);
-                                    child.setTranslationY(0);
-                                }
-                            }
-                        });
-                        animatorSet.start();
-                    }
-                    buttonsAnimationParamsX.clear();
-                    buttonsAnimationParamsY.clear();
-                }
-                animateButtonsOnNextLayout = false;
-            }
-
+        buttonsContainer = new GroupCallActivityButtonsLayout(context) {
             final OvershootInterpolator overshootInterpolator = new OvershootInterpolator(1.5f);
             int currentLightColor;
 
-            @SuppressLint("DrawAllocation")
             @Override
-            protected void dispatchDraw(Canvas canvas) {
+            protected void dispatchDraw(@NonNull Canvas canvas) {
                 if (contentFullyOverlayed && useBlur) {
                     return;
                 }
@@ -4174,11 +3991,11 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
                     currentState.update(0, offset, getMeasuredHeight(), dt, amplitude);
                 }
 
-                tinyWaveDrawable.minRadius = dp(62);
-                tinyWaveDrawable.maxRadius = dp(62) + dp(20) * BlobDrawable.FORM_SMALL_MAX;
+                tinyWaveDrawable.minRadius = dp(62) * (25f / 54f);
+                tinyWaveDrawable.maxRadius = (dp(62) + dp(20) * BlobDrawable.FORM_SMALL_MAX) * (25f / 52f);
 
-                bigWaveDrawable.minRadius = dp(65);
-                bigWaveDrawable.maxRadius = dp(65) + dp(20) * BlobDrawable.FORM_BIG_MAX;
+                bigWaveDrawable.minRadius = dp(65) * (25f / 54f);
+                bigWaveDrawable.maxRadius = (dp(65) + dp(20) * BlobDrawable.FORM_BIG_MAX) * (25f / 52f);
 
                 if (animateToAmplitude != amplitude) {
                     amplitude += animateAmplitudeDiff * dt;
@@ -4245,14 +4062,16 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
                             activeColor = colorsTmp[3];
                         }
                         if (currentLightColor != lightingColor) {
-                            radialGradient = new RadialGradient(0, 0, dp(100), new int[]{ColorUtils.setAlphaComponent(lightingColor, 60), ColorUtils.setAlphaComponent(lightingColor, 0)}, null, Shader.TileMode.CLAMP);
+                            radialGradient = new RadialGradient(0, 0, dp(100 * (25f / 55f)), new int[]{ColorUtils.setAlphaComponent(lightingColor, 60), ColorUtils.setAlphaComponent(lightingColor, 0)}, null, Shader.TileMode.CLAMP);
                             radialPaint.setShader(radialGradient);
                             currentLightColor = lightingColor;
                         }
 
+                        messageButton.setBackgroundColor(soundButtonColor, soundButtonColorChecked);
                         soundButton.setBackgroundColor(soundButtonColor, soundButtonColorChecked);
                         cameraButton.setBackgroundColor(soundButtonColor, soundButtonColorChecked);
                         flipButton.setBackgroundColor(soundButtonColor, soundButtonColorChecked);
+                        leaveButton.setBackgroundColor(Theme.getColor(Theme.key_voipgroup_leaveButton), Theme.getColor(Theme.key_voipgroup_leaveButton));
                         speakerButton.setBackgroundColor(soundButtonColorChecked, activeColor);
                     }
 
@@ -4314,17 +4133,12 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
 
                     paintTmp.setColor(AndroidUtilities.getOffsetColor(Theme.getColor(Theme.key_voipgroup_listViewBackgroundUnscrolled), Theme.getColor(Theme.key_voipgroup_disabledButton), colorProgress, 1.0f));
 
-                    int cx = (int) (muteButton.getX() + muteButton.getMeasuredWidth() / 2);
-                    int cy = (int) (muteButton.getY() + muteButton.getMeasuredHeight() / 2);
+                    int cx = (int) (muteButton.getX() + muteButton.getMeasuredWidth() / 2f);
+                    int cy = (int) (muteButton.getY() + dp(25));
                     radialMatrix.setTranslate(cx, cy);
                     radialGradient.setLocalMatrix(radialMatrix);
 
                     paint.setAlpha(76);
-
-                    if (call != null) {
-                        float radius = dp(52) / 2f;
-                        canvas.drawCircle(leaveButton.getX() + leaveButton.getMeasuredWidth() / 2f, leaveButton.getY() + radius, radius, leaveBackgroundPaint);
-                    }
 
                     canvas.save();
                     canvas.scale(BlobDrawable.GLOBAL_SCALE * muteButton.getScaleX(), BlobDrawable.GLOBAL_SCALE  * muteButton.getScaleY(), cx, cy);
@@ -4342,13 +4156,13 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
 
                     if (call != null) {
                         canvas.save();
-                        scale = BlobDrawable.SCALE_BIG_MIN + BlobDrawable.SCALE_BIG * amplitude * scheduleButtonsScale;
+                        scale = BlobDrawable.SCALE_BIG_MIN + BlobDrawable.SCALE_BIG * amplitude;
                         canvas.scale(scale * showWavesProgressInterpolated, scale * showWavesProgressInterpolated, cx, cy);
                         bigWaveDrawable.draw(cx, cy, canvas, paint);
                         canvas.restore();
 
                         canvas.save();
-                        scale = BlobDrawable.SCALE_SMALL_MIN + BlobDrawable.SCALE_SMALL * amplitude * scheduleButtonsScale;
+                        scale = BlobDrawable.SCALE_SMALL_MIN + BlobDrawable.SCALE_SMALL * amplitude;
                         canvas.scale(scale * showWavesProgressInterpolated, scale * showWavesProgressInterpolated, cx, cy);
                         tinyWaveDrawable.draw(cx, cy, canvas, paint);
                         canvas.restore();
@@ -4357,15 +4171,15 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
                     paint.setAlpha(255);
 
                     if (canSwitchProgress) {
-                        canvas.drawCircle(cx, cy, dp(57), paint);
+                        canvas.drawCircle(cx, cy, dp(57 * (25f / 55f)), paint);
                         paint.setColor(Theme.getColor(Theme.key_voipgroup_connectingProgress));
                         if (progress != 0) {
                             paint.setAlpha((int) (255 * progress));
                             paint.setShader(null);
-                            canvas.drawCircle(cx, cy, dp(57), paint);
+                            canvas.drawCircle(cx, cy, dp(57 * (25f / 55f)), paint);
                         }
                     }
-                    canvas.drawCircle(cx, cy, dp(55) * progress, paintTmp);
+                    canvas.drawCircle(cx, cy, dp(25) * progress, paintTmp);
                     if (!canSwitchProgress) {
                         radialProgressView.draw(canvas, cx, cy);
                     }
@@ -4373,7 +4187,7 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
                 } else {
                     for (int i = 0; i < 2; i++) {
                         float alpha;
-                        float buttonRadius = dp(57);
+                        float buttonRadius = dp(57 * (25f / 55f));
                         if (i == 0 && prevState != null) {
                             if (!isRtmpStream()) {
                                 paint.setShader(prevState.shader);
@@ -4402,44 +4216,29 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
                             paint.setColor(bgColor);
                             paint.setShader(null);
                             soundButton.setBackgroundColor(AndroidUtilities.getOffsetColor(Theme.getColor(Theme.key_voipgroup_listViewBackgroundUnscrolled), Theme.getColor(Theme.key_voipgroup_disabledButton), colorProgress, 1.0f), bgColor);
+                            messageButton.setBackgroundColor(AndroidUtilities.getOffsetColor(Theme.getColor(Theme.key_voipgroup_listViewBackgroundUnscrolled), Theme.getColor(Theme.key_voipgroup_disabledButton), colorProgress, 1.0f), bgColor);
                         }
 
-                        int cx = (int) (muteButton.getX() + muteButton.getMeasuredWidth() / 2);
-                        int cy = (int) (muteButton.getY() + muteButton.getMeasuredHeight() / 2);
+                        int cx = (int) (muteButton.getX() + muteButton.getMeasuredWidth() / 2f);
+                        int cy = (int) (muteButton.getY() + dp(25));
                         radialMatrix.setTranslate(cx, cy);
                         radialGradient.setLocalMatrix(radialMatrix);
 
                         paint.setAlpha((int) (76 * alpha * switchToButtonProgress));
-                        if (switchToButtonProgress > 0) {
-                            if (i == 1) {
-                                int a = leaveBackgroundPaint.getAlpha();
-                                leaveBackgroundPaint.setAlpha((int) (a * switchToButtonProgress));
-                                float radius = dp(52) / 2f;
-                                canvas.drawCircle(leaveButton.getX() + leaveButton.getMeasuredWidth() / 2, leaveButton.getY() + radius, radius, leaveBackgroundPaint);
-                                leaveBackgroundPaint.setAlpha(a);
-                            }
-                        }
 
                         canvas.save();
                         canvas.scale(BlobDrawable.GLOBAL_SCALE * muteButton.getScaleX(), BlobDrawable.GLOBAL_SCALE * muteButton.getScaleX(), cx, cy);
 
                         canvas.save();
 
-                        float translation;
-                        if (isLandscapeMode) {
-                            translation = 0;
-                        } else {
-                            translation = dp(65) * (1.0f - switchToButtonInt2);
-                        }
-                       // cy += translation;
                         float scale = BlobDrawable.SCALE_BIG_MIN + BlobDrawable.SCALE_BIG * amplitude * 0.5f;
                         canvas.scale(scale * showLightingProgress, scale * showLightingProgress, cx, cy);
                         if (i == 1 && !isRtmpStream() && LiteMode.isEnabled(LiteMode.FLAG_CALLS_ANIMATIONS)) {
-                            float scaleLight = 0.7f + BlobDrawable.LIGHT_GRADIENT_SIZE * scheduleButtonsScale;
+                            float scaleLight = 0.7f + BlobDrawable.LIGHT_GRADIENT_SIZE;
                             canvas.save();
                             canvas.scale(scaleLight, scaleLight, cx, cy);
                             int a = radialPaint.getAlpha();
-                            radialPaint.setAlpha((int) (a * switchToButtonProgress * (1f - progressToHideUi)));
+                            radialPaint.setAlpha((int) (a * switchToButtonProgress * (1f - animatorHideButtons.getFloatValue())));
                             canvas.drawCircle(cx, cy, dp(160), radialPaint);
                             radialPaint.setAlpha(a);
                             canvas.restore();
@@ -4447,13 +4246,13 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
                         canvas.restore();
                         if (!isRtmpStream() && switchToButtonProgress > 0) {
                             canvas.save();
-                            scale = BlobDrawable.SCALE_BIG_MIN + BlobDrawable.SCALE_BIG * amplitude * showWavesProgressInterpolated * scheduleButtonsScale;
+                            scale = BlobDrawable.SCALE_BIG_MIN + BlobDrawable.SCALE_BIG * amplitude * showWavesProgressInterpolated;
                             canvas.scale(scale,  scale, cx, cy);
                             bigWaveDrawable.draw(cx, cy, canvas, paint);
                             canvas.restore();
 
                             canvas.save();
-                            scale = BlobDrawable.SCALE_SMALL_MIN + BlobDrawable.SCALE_SMALL * amplitude * showWavesProgressInterpolated * scheduleButtonsScale;
+                            scale = BlobDrawable.SCALE_SMALL_MIN + BlobDrawable.SCALE_SMALL * amplitude * showWavesProgressInterpolated;
                             canvas.scale(scale, scale, cx, cy);
                             tinyWaveDrawable.draw(cx, cy, canvas, paint);
                             canvas.restore();
@@ -4473,17 +4272,15 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
                             }
                         }
 
-                        if (currentButtonsAnimation == null) {
-                            muteButton.setTranslationY(translation);
-                        }
-                        float switchButtonProgrss = isLandscapeMode ? 1f : switchToButtonInt2;
-                        float startX = getMeasuredWidth() / 2 - dp(21);
+                        float startX = getMeasuredWidth() / 2f - dp(21);
+
                         float startY = dp(24);
-                        float w = (startX + (buttonRadius - startX) * switchButtonProgrss) * scheduleButtonsScale;
-                        float h = (startY + (buttonRadius  - startY) * switchButtonProgrss) * scheduleButtonsScale;
+                        float w = (startX + (buttonRadius - startX)) * switchToButtonProgress;
+                        float h = (startY + (buttonRadius  - startY)) * switchToButtonProgress;
 
                         rect.set(cx - w, cy - h, cx + w, cy + h);
-                        float rad = dp(4) + (buttonRadius - dp(4)) * switchButtonProgrss;
+                        float rad = dp(4) + (buttonRadius - dp(4));
+                        paint.setAlpha((int) (paint.getAlpha() * switchToButtonProgress));
                         canvas.drawRoundRect(rect, rad, rad, paint);
 
                         if (i == 1 && currentState.currentState == MUTE_BUTTON_STATE_CONNECTING) {
@@ -4495,34 +4292,22 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
 
                         canvas.restore();
 
-                        if (isLandscapeMode && switchToButtonInt2 == 0) {
-                            paint.setAlpha(255);
+                        if (scheduleButtonTextView != null && scheduleButtonTextView.getVisibility() == VISIBLE) {
+                            paint.setAlpha((int) (255 * scheduleButtonTextView.getAlpha()));
                             float x = scheduleButtonTextView.getX() - getX();
                             float y = scheduleButtonTextView.getY() - getY();
                             rect.set(x, y, x + scheduleButtonTextView.getMeasuredWidth(),  y + scheduleButtonTextView.getMeasuredHeight());
-                            canvas.drawRoundRect(rect, dp(4), dp(4), paint);
-                        }
 
+                            canvas.save();
+                            canvas.scale(scheduleButtonTextView.getScaleX(), scheduleButtonTextView.getScaleY(), rect.centerX(), rect.centerY());
+                            canvas.drawRoundRect(rect, dp(4), dp(4), paint);
+                            canvas.restore();
+                        }
                     }
                 }
                 super.dispatchDraw(canvas);
                 if (!renderersContainer.isAnimating()) {
                     invalidate();
-                }
-            }
-
-            @Override
-            protected boolean drawChild(Canvas canvas, View child, long drawingTime) {
-                if (child == muteButton && child.getScaleX() != 1f) {
-                    canvas.save();
-                    float s = 1f / muteButton.getScaleX();
-                    s = 1f + (s - 1f) * 0.2f;
-                    canvas.scale(s, s, child.getX() + child.getMeasuredWidth() / 2f, child.getY() + child.getMeasuredHeight() / 2f);
-                    boolean b = super.drawChild(canvas, child, drawingTime);
-                    canvas.restore();
-                    return b;
-                } else {
-                    return super.drawChild(canvas, child, drawingTime);
                 }
             }
         };
@@ -4532,28 +4317,28 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
         int g = Color.green(color);
         int b = Color.blue(color);
         radialMatrix = new Matrix();
-        radialGradient = new RadialGradient(0, 0, dp(160), new int[]{Color.argb(50, r, g, b), Color.argb(0, r, g, b)}, null, Shader.TileMode.CLAMP);
+        radialGradient = new RadialGradient(0, 0, dp(160 * (25f / 55f)), new int[]{Color.argb(50, r, g, b), Color.argb(0, r, g, b)}, null, Shader.TileMode.CLAMP);
         radialPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         radialPaint.setShader(radialGradient);
 
         tinyWaveDrawable = new BlobDrawable(9);
         bigWaveDrawable = new BlobDrawable(12);
 
-        tinyWaveDrawable.minRadius = dp(62);
-        tinyWaveDrawable.maxRadius = dp(72);
+        tinyWaveDrawable.minRadius = dp(62) * (25f / 55f);
+        tinyWaveDrawable.maxRadius = dp(72) * (25f / 55f);
         tinyWaveDrawable.generateBlob();
 
-        bigWaveDrawable.minRadius = dp(65);
-        bigWaveDrawable.maxRadius = dp(75);
+        bigWaveDrawable.minRadius = dp(65) * (25f / 55f);
+        bigWaveDrawable.maxRadius = dp(75) * (25f / 55f);
         bigWaveDrawable.generateBlob();
 
         tinyWaveDrawable.paint.setColor(ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_voipgroup_unmuteButton), (int) (255 * WaveDrawable.CIRCLE_ALPHA_2)));
         bigWaveDrawable.paint.setColor(ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_voipgroup_unmuteButton), (int) (255 * WaveDrawable.CIRCLE_ALPHA_1)));
 
-        soundButton = new VoIPToggleButton(context);
+        soundButton = new VoIPToggleButton(context, 50f);
         soundButton.setCheckable(true);
         soundButton.setTextSize(12);
-        buttonsContainer.addView(soundButton, LayoutHelper.createFrame(68, 80));
+        buttonsContainer.addButton(soundButton);
         soundButton.setOnClickListener(v -> {
             if (call == null || call.isScheduled() || isRtmpStream()) {
                 getLink(false);
@@ -4565,20 +4350,21 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
             VoIPService.getSharedInstance().toggleSpeakerphoneOrShowRouteSheet(getContext(), false);
         });
 
-        cameraButton = new VoIPToggleButton(context);
+        cameraButton = new VoIPToggleButton(context, 50f);
         cameraButton.setCheckable(true);
         cameraButton.setTextSize(12);
         cameraButton.showText(false, false);
         cameraButton.setCrossOffset(-AndroidUtilities.dpf2(3.5f));
-        cameraButton.setVisibility(View.GONE);
-        buttonsContainer.addView(cameraButton, LayoutHelper.createFrame(68, 80));
+        cameraButton.setData(R.drawable.calls_video, Color.WHITE, 0, 1f, true, getString(R.string.VoipCamera), false, false);
 
-        flipButton = new VoIPToggleButton(context);
+
+
+        flipButton = new VoIPToggleButton(context, 50f);
         flipButton.setCheckable(true);
         flipButton.setTextSize(12);
         flipButton.showText(false, false);
         RLottieImageView flipIconView = new RLottieImageView(context);
-        flipButton.addView(flipIconView, LayoutHelper.createFrame(32, 32, 0, 18, 10, 18, 0));
+        flipButton.addView(flipIconView, LayoutHelper.createFrame(32, 32, Gravity.CENTER_HORIZONTAL, 0, 10, 0, 0));
         flipIcon = new RLottieDrawable(R.raw.camera_flip, "" + R.raw.camera_flip, dp(24), dp(24), true, null);
         flipIconView.setAnimation(flipIcon);
         flipButton.setOnClickListener(view -> {
@@ -4603,10 +4389,9 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
                 }
             }
         });
-        flipButton.setVisibility(View.GONE);
-        buttonsContainer.addView(flipButton, LayoutHelper.createFrame(68, 80));
+        buttonsContainer.addButton(flipButton);
 
-        speakerButton = new VoIPToggleButton(context);
+        speakerButton = new VoIPToggleButton(context, 50f);
         speakerButton.setCheckable(true);
         speakerButton.setTextSize(12);
         speakerButton.showText(false, false);
@@ -4616,8 +4401,7 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
         speakerImageView.setColorFilter(new PorterDuffColorFilter(0xFFFFFFFF, PorterDuff.Mode.SRC_IN));
         speakerImageView.setScaleX(1.11f);
         speakerImageView.setScaleY(1.11f);
-        ScaleStateListAnimator.apply(speakerButton);
-        speakerButton.addView(speakerImageView, LayoutHelper.createFrame(30, 30, 0, 19, 11, 18, 0));
+        speakerButton.addView(speakerImageView, LayoutHelper.createFrame(30, 30, Gravity.CENTER_HORIZONTAL, 0, 11, 0, 0));
         speakerButton.setOnClickListener(view -> {
             int newValue = getNextAudioOutputValue();
             cacheAudioOutputValue = newValue;
@@ -4631,16 +4415,13 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
                     .show(isBulletinTop());
             });
         });
-        speakerButtonContainer = new FrameLayout(context);
-        speakerButtonContainer.setVisibility(View.GONE);
-        speakerButtonContainer.addView(speakerButton, LayoutHelper.createFrame(68, 80));
-        buttonsContainer.addView(speakerButtonContainer, LayoutHelper.createFrame(68, 80));
+        buttonsContainer.addButton(speakerButton);
+        buttonsContainer.addButton(cameraButton);
 
-        leaveButton = new VoIPToggleButton(context);
-        leaveButton.setDrawBackground(false);
+        leaveButton = new VoIPToggleButton(context, 50f);
         leaveButton.setTextSize(12);
-        leaveButton.setData(R.drawable.msg_voiceclose, 0xffffffff, Theme.getColor(Theme.key_voipgroup_leaveButton), 0.3f, false, getString(R.string.VoipGroupLeave), false, false);
-        buttonsContainer.addView(leaveButton, LayoutHelper.createFrame(68, 80));
+        leaveButton.setData(R.drawable.calls_decline, 0xffffffff, Theme.getColor(Theme.key_voipgroup_leaveButton), 0.3f, false, getString(R.string.VoipGroupLeave), false, false);
+
         leaveButton.setOnClickListener(v -> {
             renderersContainer.delayHideUi();
             if (call == null || call.isScheduled()) {
@@ -4651,14 +4432,20 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
             onLeaveClick(context, this::dismiss, false);
         });
 
-        muteButton = new RLottieImageView(context) {
+        messageButton = new VoIPToggleButton(context, 50f);
+        messageButton.setCheckable(true);
+        messageButton.setChecked(true, false);
+        messageButton.setTextSize(12);
+        messageButton.setData(R.drawable.filled_voice_comment_32, Color.WHITE, 0, 1f, true, getString(R.string.VoipMessage), false, false);
+
+        muteButtonIcon = new RLottieImageView(context) {
 
             @Override
             public boolean onTouchEvent(MotionEvent event) {
                 if (isRtmpStream()) {
                     return super.onTouchEvent(event);
                 }
-                //pinnedVideoView.delayHideUi();
+
                 if (event.getAction() == MotionEvent.ACTION_DOWN && muteButtonState == MUTE_BUTTON_STATE_UNMUTE && call != null) {
                     AndroidUtilities.runOnUIThread(pressRunnable, 300);
                     scheduled = true;
@@ -4697,20 +4484,30 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
                 info.setClassName(Button.class.getName());
                 info.setEnabled(muteButtonState == MUTE_BUTTON_STATE_UNMUTE || muteButtonState == MUTE_BUTTON_STATE_MUTE);
 
-                if (muteButtonState == MUTE_BUTTON_STATE_MUTE && Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                if (muteButtonState == MUTE_BUTTON_STATE_MUTE) {
                     info.addAction(new AccessibilityNodeInfo.AccessibilityAction(AccessibilityNodeInfo.ACTION_CLICK, getString(R.string.VoipMute)));
                 }
             }
         };
-        muteButton.setAnimation(bigMicDrawable);
-        muteButton.setScaleType(ImageView.ScaleType.CENTER);
-        buttonsContainer.addView(muteButton, LayoutHelper.createFrame(122, 122, Gravity.CENTER_HORIZONTAL | Gravity.TOP));
+        muteButtonIcon.setAnimation(bigMicDrawable);
+        muteButtonIcon.setScaleType(ImageView.ScaleType.CENTER);
+
+
+        muteButton = new VoIPToggleButton(context, 50f);
+        // muteButton.setDrawRipple(false);
+        muteButton.setDrawBackground(false);
+        muteButton.setTextSize(12);
+        muteButton.setData(0, 0, 0, "Text", false, false);
+
+        muteButton.addView(muteButtonIcon, LayoutHelper.createFrame(50, 50, Gravity.CENTER_HORIZONTAL | Gravity.TOP));
+
+        buttonsContainer.addButton(muteButton);
         muteButton.setOnClickListener(new View.OnClickListener() {
 
             Runnable finishRunnable = new Runnable() {
                 @Override
                 public void run() {
-                    muteButton.setAnimation(bigMicDrawable);
+                    muteButtonIcon.setAnimation(bigMicDrawable);
                     playingHandAnimation = false;
                 }
             };
@@ -4728,7 +4525,6 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
                         if (isLandscapeMode) {
                             AndroidUtilities.runOnUIThread(() -> {
                                 wasNotInLayoutFullscreen = null;
-                                wasExpandBigSize = null;
                                 updateMuteButton(muteButtonState, true);
                             }, 200);
                         }
@@ -4793,7 +4589,7 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
                             return;
                         }
                         playingHandAnimation = true;
-                        AndroidUtilities.shakeView(muteLabel[0]);
+                        AndroidUtilities.shakeView(muteButton.getTextView());
                         try {
                             v.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
                         } catch (Exception ignored) {}
@@ -4818,9 +4614,9 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
                         }
                         handDrawables.setCustomEndFrame(endFrame);
                         handDrawables.setOnFinishCallback(finishRunnable, endFrame - 1);
-                        muteButton.setAnimation(handDrawables);
+                        muteButtonIcon.setAnimation(handDrawables);
                         handDrawables.setCurrentFrame(startFrame);
-                        muteButton.playAnimation();
+                        muteButtonIcon.playAnimation();
                         if (muteButtonState == MUTE_BUTTON_STATE_MUTED_BY_ADMIN) {
                             TLRPC.GroupCallParticipant participant = call.participants.get(MessageObject.getPeerId(selfPeer));
                             TLObject object;
@@ -4858,49 +4654,23 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
             }
         });
 
-        int padding = dp(38);
-        expandButton = new ImageView(context);
-        expandButton.setScaleX(0.1f);
-        expandButton.setScaleY(0.1f);
-        expandButton.setAlpha(0f);
-        expandButton.setImageResource(R.drawable.voice_expand);
-        expandButton.setPadding(padding, padding, padding, padding);
-        buttonsContainer.addView(expandButton, LayoutHelper.createFrame(122, 122, Gravity.CENTER_HORIZONTAL | Gravity.TOP));
+        buttonsContainer.addButton(messageButton);
+        buttonsContainer.addButton(leaveButton);
 
-        minimizeButton = new ImageView(context);
-        minimizeButton.setScaleX(0.1f);
-        minimizeButton.setScaleY(0.1f);
-        minimizeButton.setAlpha(0f);
-        minimizeButton.setImageResource(R.drawable.voice_minimize);
-        minimizeButton.setPadding(padding, padding, padding, padding);
-        buttonsContainer.addView(minimizeButton, LayoutHelper.createFrame(122, 122, Gravity.CENTER_HORIZONTAL | Gravity.TOP));
+        expandOrMinimizeButton = new ImageView(context);
+        expandOrMinimizeButton.setVisibility(View.GONE);
+        expandOrMinimizeButton.setImageResource(R.drawable.voice_expand);
+        muteButton.addView(expandOrMinimizeButton, LayoutHelper.createFrame(24, 24, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 0, 13, 0, 0));
 
         if (call != null && isRtmpStream() && !call.isScheduled()) {
-            int measuredWidth = expandButton.getMeasuredWidth();
-            if (measuredWidth == 0) {
-                measuredWidth = expandButton.getLayoutParams().width;
-            }
-            float expandButtonScale = dp(52) / (float) (measuredWidth - dp(8));
-            expandButton.setAlpha(1f);
-            expandButton.setScaleX(expandButtonScale);
-            expandButton.setScaleY(expandButtonScale);
-            muteButton.setAlpha(0f);
+            expandOrMinimizeButton.setVisibility(View.VISIBLE);
+            muteButtonIcon.setVisibility(View.GONE);
         }
 
         radialProgressView = new RadialProgressView(context);
-        radialProgressView.setSize(dp(110));
-        radialProgressView.setStrokeWidth(4);
+        radialProgressView.setSize(dp(110 * 25 / 55f));
+        radialProgressView.setStrokeWidth(2);
         radialProgressView.setProgressColor(Theme.getColor(Theme.key_voipgroup_connectingProgress));
-
-        for (int a = 0; a < 2; a++) {
-            muteLabel[a] = new TextView(context);
-            muteLabel[a].setTextColor(Theme.getColor(Theme.key_voipgroup_actionBarItems));
-            muteLabel[a].setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
-            muteLabel[a].setGravity(Gravity.CENTER_HORIZONTAL);
-            buttonsContainer.addView(muteLabel[a], LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL | Gravity.BOTTOM, 0, 0, 0, 26));
-        }
-
-       // buttonsContainer.addView(muteLabelContainer, LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT);
 
         actionBar.setAlpha(0.0f);
         actionBar.getBackButton().setScaleX(0.9f);
@@ -4972,7 +4742,7 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
                 if (PipUtils.checkAnyPipPermissions(parentActivity)) {
                     RTMPStreamPipOverlay.show(parentActivity);
                     dismiss();
-                } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                } else {
                     AlertsCreator.createDrawOverlayPermissionDialog(parentActivity, null, true).show();
                 }
                 return;
@@ -5085,9 +4855,7 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
                 }
             };
             undoView[a].setAdditionalTranslationY(dp(10));
-            if (Build.VERSION.SDK_INT >= 21) {
-                undoView[a].setTranslationZ(dp(5));
-            }
+            undoView[a].setTranslationZ(dp(5));
             containerView.addView(undoView[a], LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM | Gravity.LEFT, 8, 0, 8, 8));
         }
 
@@ -5128,10 +4896,16 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
         screenItem = otherItem.addSubItem(screen_capture_item, R.drawable.msg_screencast, getString(R.string.VoipChatStartScreenCapture));
         recordItem = otherItem.addSubItem(start_record_item, 0, recordCallDrawable, getString(R.string.VoipGroupRecordCall), true, false);
         recordCallDrawable.setParentView(recordItem.getImageView());
+
+        enableComments = otherItem.addSubItem(comments_enable_item, R.drawable.menu_stream_comments_24, getString(R.string.VoipChannelEnableComments));
+        disableComments = otherItem.addSubItem(comments_disable_item, R.drawable._menu_stream_comments_off_24, getString(R.string.VoipChannelDisableComments));
+
         leaveItem = otherItem.addSubItem(leave_item, R.drawable.msg_cancel, isConference() ? getString(R.string.VoipGroupEndConference) : ChatObject.isChannelOrGiga(currentChat) ? getString(R.string.VoipChannelEndChat) : getString(R.string.VoipGroupEndChat));
         otherItem.setPopupItemsSelectorColor(Theme.getColor(Theme.key_voipgroup_listSelector));
         otherItem.getPopupLayout().setFitItems(true);
 
+        enableComments.setColors(Theme.getColor(Theme.key_voipgroup_actionBarItems), Theme.getColor(Theme.key_voipgroup_actionBarItems));
+        disableComments.setColors(Theme.getColor(Theme.key_voipgroup_actionBarItems), Theme.getColor(Theme.key_voipgroup_actionBarItems));
         soundItem.setColors(Theme.getColor(Theme.key_voipgroup_actionBarItems), Theme.getColor(Theme.key_voipgroup_actionBarItems));
         noiseItem.setColors(Theme.getColor(Theme.key_voipgroup_actionBarItems), Theme.getColor(Theme.key_voipgroup_actionBarItems));
         leaveItem.setColors(Theme.getColor(Theme.key_voipgroup_leaveCallMenu), Theme.getColor(Theme.key_voipgroup_leaveCallMenu));
@@ -5149,9 +4923,6 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
             VoIPService voip = VoIPService.getSharedInstance();
             encryptionDrawable.setEmojis(voip != null && voip.conference != null ? voip.conference.getEmojis() : null);
         }
-
-
-        leaveBackgroundPaint.setColor(Theme.getColor(Theme.key_voipgroup_leaveButton));
 
         updateTitle(false);
         actionBar.getTitleTextView().setOnClickListener(v -> {
@@ -5325,45 +5096,12 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
                 }
             }
 
-            ValueAnimator uiVisibilityAnimator;
-
             public void onUiVisibilityChanged() {
                 if (renderersContainer == null) {
                     return;
                 }
                 boolean uiVisible = renderersContainer.isUiVisible();
-                if (uiVisibilityAnimator != null) {
-                    uiVisibilityAnimator.removeAllListeners();
-                    uiVisibilityAnimator.cancel();
-                }
-                uiVisibilityAnimator = ValueAnimator.ofFloat(progressToHideUi, uiVisible ? 0 : 1f);
-                uiVisibilityAnimator.addUpdateListener(valueAnimator -> {
-                    progressToHideUi = (float) valueAnimator.getAnimatedValue();
-                    renderersContainer.setProgressToHideUi(progressToHideUi);
-                    fullscreenUsersListView.invalidate();
-                    containerView.invalidate();
-                    buttonsContainer.invalidate();
-                });
-                uiVisibilityAnimator.setDuration(TRANSITION_DURATION);
-                uiVisibilityAnimator.setInterpolator(CubicBezierInterpolator.DEFAULT);
-                uiVisibilityAnimator.addListener(new AnimatorListenerAdapter() {
-                    @Override
-                    public void onAnimationStart(Animator animation) {
-                        invalidateLayoutFullscreen();
-                    }
-
-                    @Override
-                    public void onAnimationEnd(Animator animation) {
-                        uiVisibilityAnimator = null;
-                        progressToHideUi = uiVisible ? 0 : 1f;
-                        renderersContainer.setProgressToHideUi(progressToHideUi);
-                        fullscreenUsersListView.invalidate();
-                        containerView.invalidate();
-                        buttonsContainer.invalidate();
-                    }
-                });
-                uiVisibilityAnimator.start();
-
+                animatorHideButtons.setValue(!uiVisible, true);
             }
 
             @Override
@@ -5381,7 +5119,20 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
         if (tabletVideoGridView != null) {
             tabletGridAdapter.setRenderersPool(attachedRenderers, renderersContainer);
         }
-        avatarPagerIndicator = new AvatarPreviewPagerIndicator(context);
+        avatarPagerIndicator = new AvatarPreviewPagerIndicator(context) {
+            @Override
+            public void onPhotosLoaded() {
+                super.onPhotosLoaded();
+
+                final long dialogId = avatarsViewPager.getDialogId();
+                if (dialogId > 0) {
+                    TLRPC.User user = accountInstance.getMessagesController().getUser(dialogId);
+                    final ImageLocation imageLocation = ImageLocation.getForUserOrChat(user, ImageLocation.TYPE_BIG);
+                    final ImageLocation thumbLocation = ImageLocation.getForUserOrChat(user, ImageLocation.TYPE_SMALL);
+                    avatarsViewPager.initIfEmpty(null, imageLocation, thumbLocation, false);
+                }
+            }
+        };
         avatarsViewPager = new ProfileGalleryView(context, actionBar, listView, avatarPagerIndicator) {
             @Override
             public void invalidate() {
@@ -5394,9 +5145,9 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
         avatarPagerIndicator.setProfileGalleryView(avatarsViewPager);
         avatarPreviewContainer = new FrameLayout(context) {
 
-            Rect rect = new Rect();
-            RectF rectF = new RectF();
-            Path path = new Path();
+            final Rect rect = new Rect();
+            final RectF rectF = new RectF();
+            final Path path = new Path();
 
             @Override
             protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
@@ -5510,7 +5261,264 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
         buttonsBackgroundGradientView2 = new View(context);
         buttonsBackgroundGradientView2.setBackgroundColor(gradientColors[0]);
         containerView.addView(buttonsBackgroundGradientView2, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 0, Gravity.LEFT | Gravity.BOTTOM));
-        containerView.addView(buttonsContainer, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 200, Gravity.CENTER_HORIZONTAL | Gravity.BOTTOM));
+
+        groupCallMessagesListView = new GroupCallMessagesListView(context);
+        groupCallMessagesListView.setDelegate(new GroupCallMessagesListView.Delegate() {
+            @Override
+            public void showReaction(GroupCallMessageCell cell, ReactionsLayoutInBubble.VisibleReaction reaction) {
+                ReactionsEffectOverlay effectOverlay = new ReactionsEffectOverlay(
+                    getContext(), null,
+                    reactionsContainerLayout, cell,
+                    null, 0, 0,
+                    reaction, currentAccount,
+                    ReactionsEffectOverlay.SHORT_ANIMATION, false);
+
+                ReactionsEffectOverlay.currentOverlay = effectOverlay;
+                effectOverlay.windowView.setTag(R.id.parent_tag, 1);
+                container.addView(effectOverlay.windowView);
+                effectOverlay.started = true;
+                effectOverlay.startTime = System.currentTimeMillis();
+            }
+        });
+        groupCallMessagesListView.setClickCellDelegate(new GroupCallMessageCell.Delegate() {
+            @Override
+            public void didClickAvatar(GroupCallMessageCell cell, GroupCallMessage message, float x, float y) {
+                openSenderProfile(message);
+            }
+
+            @Override
+            public void didClickSenderName(GroupCallMessageCell cell, GroupCallMessage message) {
+                openSenderProfile(message);
+            }
+
+            private void openSenderProfile(GroupCallMessage message) {
+                final BaseFragment fragment = LaunchActivity.getLastFragment();
+                if (fragment == null) {
+                    return;
+                }
+
+                if (fragment instanceof ProfileActivity) {
+                    if (((ProfileActivity) fragment).getDialogId() == message.fromId) {
+                        dismiss();
+                        return;
+                    }
+                }
+
+                final int scrollPosition = calculateScrollTopOffset();
+
+                final Bundle args = new Bundle();
+                if (message.fromId > 0) {
+                    args.putLong("user_id", message.fromId);
+                } else {
+                    args.putLong("chat_id", -message.fromId);
+                }
+
+                if (message.fromId == accountInstance.getUserConfig().getClientUserId()) {
+                    args.putBoolean("my_profile", true);
+                }
+
+                fragment.presentFragment(new ProfileActivity(args), false,
+                    scrollPosition <= 0 || scrollPosition == Integer.MAX_VALUE);
+                dismiss();
+            }
+        });
+
+        if (call != null) {
+            groupCallMessagesListView.setGroupCall(accountInstance.getCurrentAccount(), call.getInputGroupCall(false));
+        }
+        containerView.addView(groupCallMessagesListView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, 0, 0, 0, 0, 0));
+
+        limitTextView = new AnimatedTextView(context, false, true, true);
+        limitTextView.setGravity(Gravity.CENTER);
+        limitTextView.setTextSize(dp(15));
+        limitTextView.setTextColor(0xffffffff);
+        limitTextView.setAnimationProperties(.4f, 0, 320, CubicBezierInterpolator.EASE_OUT_QUINT);
+        limitTextView.setTypeface(AndroidUtilities.bold());
+
+        containerView.addView(buttonsContainer);
+        callMessageEnterView = new EditTextEmoji(context, sizeNotifierFrameLayout, LaunchActivity.getLastFragment(), EditTextEmoji.STYLE_CALL, true, resourcesProvider) {
+            @Override
+            protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+                super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+                if (animatorMessageInputHeight.getFactor() == 0) {
+                    animatorMessageInputHeight.forceFactor(getMeasuredHeight());
+                } else {
+                    animatorMessageInputHeight.animateTo(getMeasuredHeight());
+                }
+            }
+
+            @Override
+            protected boolean drawChild(@NonNull Canvas canvas, View child, long drawingTime) {
+                if (child == getEditText()) {
+                    canvas.save();
+                    callMessageEnterView.getEditText()
+                        .setTranslationY(child.getMeasuredHeight() - animatorMessageInputHeight.getFactor());
+
+                    final boolean result = super.drawChild(canvas, child, drawingTime);
+                    canvas.restore();
+                    return result;
+                }
+
+                return super.drawChild(canvas, child, drawingTime);
+            }
+
+            @Override
+            protected boolean allowSearch() {
+                return true;
+            }
+
+            @Override
+            protected void updatedEmojiExpanded() {
+                super.updatedEmojiExpanded();
+                containerView.requestApplyInsets();
+            }
+
+            @Override
+            protected void createEmojiView() {
+                super.createEmojiView();
+                EmojiView emojiView = getEmojiView();
+                if (emojiView != null) {
+                    emojiView.shouldLightenBackground = false;
+                    emojiView.fixBottomTabContainerTranslation = false;
+                    emojiView.setShouldDrawBackground(false);
+                    emojiView.setBottomInset(containerView.getPaddingBottom());
+                }
+            }
+        };
+        callMessageEnterView.includeNavigationBar = true;
+        callMessageEnterView.setFilters(new InputFilter[]{
+            new InputFilter.LengthFilter(maxGroupCallMessageLength)
+        });
+        callMessageEnterView.getEditText().setLinkTextColor(0xFF4db8ff);
+        callMessageEnterView.setHint(getString(R.string.TypeMessage));
+        callMessageEnterView.getEditText().addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                animatorMessageIsEmpty.setValue(TextUtils.isEmpty(s), true);
+
+                int codePointCount = Character.codePointCount(s, 0, s.length());
+                String limitText = null;
+                final int limit = maxGroupCallMessageLength;
+                if (codePointCount + 25 > limit) {
+                    limitText = "" + (limit - codePointCount);
+                }
+                limitTextView.cancelAnimation();
+                limitTextView.setText(limitText);
+                limitTextView.setTextColor(codePointCount >= limit ? 0xffEC7777 : 0xffffffff);
+                if (codePointCount > limit) {
+                    // AndroidUtilities.shakeViewSpring(limitTextView, shiftDp = -shiftDp);
+                    BotWebViewVibrationEffect.APP_ERROR.vibrate();
+                }
+            }
+        });
+        callMessageEnterView.onResume();
+
+        callMessageEnterUnderContainer = new FrameLayout(context) {
+            private final RectF tmpRect = new RectF();
+            private final RectF tmpRect2 = new RectF();
+            private final RectF tmpRect3 = new RectF();
+            private final Paint backgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+
+            @Override
+            protected void dispatchDraw(@NonNull Canvas canvas) {
+                tmpRect.set(
+                    0,
+                    callMessageEnterContainer.getY() + callMessageEnterContainer.getMeasuredHeight() - animatorMessageInputHeight.getFactor(),
+                    getMeasuredWidth(), getMeasuredHeight());
+                tmpRect2.set(
+                    0,
+                    callMessageEnterContainer.getY() + callMessageEnterContainer.getMeasuredHeight(),
+                    getMeasuredWidth(), getMeasuredHeight());
+                tmpRect3.set(
+                    0,
+                    callMessageEnterContainer.getY() + callMessageEnterContainer.getMeasuredHeight() - animatorMessageInputHeight.getFactor(),
+                    getMeasuredWidth(),
+                    callMessageEnterContainer.getY() + callMessageEnterContainer.getMeasuredHeight());
+
+                if (Build.VERSION.SDK_INT >= 29 && renderNodeBlur != null && canvas.isHardwareAccelerated()) {
+                    backgroundPaint.setColor(0xFF1c2229);
+                    canvas.drawRect(tmpRect, backgroundPaint);
+
+                    canvas.save();
+                    canvas.clipRect(tmpRect);
+                    canvas.translate(-getX(), -getY());
+                    canvas.scale(renderNodeBlurScale, renderNodeBlurScale);
+                    canvas.drawRenderNode(renderNodeBlur);
+                    canvas.restore();
+
+                    backgroundPaint.setColor(0x0DFFFFFF);
+                    canvas.drawRect(tmpRect2, backgroundPaint);
+                } else {
+                    backgroundPaint.setColor(0xFF1c2229);
+                    canvas.drawRect(tmpRect3, backgroundPaint);
+
+                    backgroundPaint.setColor(ColorUtils.compositeColors(0x0DFFFFFF, 0xFF1c2229));
+                    canvas.drawRect(tmpRect2, backgroundPaint);
+                }
+
+                super.dispatchDraw(canvas);
+            }
+        };
+
+        containerView.addView(callMessageEnterUnderContainer, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+
+
+        callMessageEnterContainer = new FrameLayout(context) {
+            @Override
+            public boolean dispatchTouchEvent(MotionEvent ev) {
+                if (getAlpha() <= 0.95f) {
+                    return false;
+                }
+                return super.dispatchTouchEvent(ev);
+            }
+        };
+
+        callMessageEnterContainer.addView(callMessageEnterView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM, 0, 0, 48, 0));
+        callMessageEnterContainer.addView(limitTextView, LayoutHelper.createFrame(52, 16, Gravity.RIGHT | Gravity.BOTTOM, 0, 0, 0, 32));
+        limitTextView.setTranslationY(-dp(20));
+
+        containerView.addView(callMessageEnterContainer, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM));
+
+
+        callMessageHideButton = new ImageView(context);
+        callMessageHideButton.setBackground(Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector)));
+        callMessageHideButton.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_graySectionText, resourcesProvider), PorterDuff.Mode.MULTIPLY));
+        callMessageHideButton.setScaleType(ImageView.ScaleType.CENTER);
+        callMessageHideButton.setImageResource(R.drawable.arrow_more);
+        callMessageHideButton.setOnClickListener(v -> hideKeyboardOrEmojiView());
+
+        callMessageSendButton = new ImageView(context);
+        callMessageSendButton.setBackground(Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector)));
+        callMessageSendButton.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteBlueIcon, resourcesProvider), PorterDuff.Mode.MULTIPLY));
+        callMessageSendButton.setScaleType(ImageView.ScaleType.CENTER);
+        callMessageSendButton.setImageResource(R.drawable.ic_send);
+        callMessageSendButton.setOnClickListener(v -> {
+            CharSequence text = callMessageEnterView.getText();
+            TLRPC.TL_textWithEntities toSend = new TLRPC.TL_textWithEntities();
+            toSend.text = text.toString();
+
+            CharSequence[] message = new CharSequence[]{ text };
+            toSend.entities = MediaDataController.getInstance(currentAccount).getEntities(message, true);
+
+            sendGroupCallMessage(toSend);
+        });
+
+        callMessageEnterContainer.addView(callMessageHideButton, LayoutHelper.createFrame(48, 48, Gravity.RIGHT | Gravity.BOTTOM));
+        callMessageEnterContainer.addView(callMessageSendButton, LayoutHelper.createFrame(48, 48, Gravity.RIGHT | Gravity.BOTTOM));
+
+
+
+
         containerView.addView(blurredView);
 
         avatarPreviewContainer.addView(avatarsViewPager, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
@@ -5561,12 +5569,48 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
             minutePicker.setSelectorColor(0xff6D89ED);
             minutePicker.setTextOffset(-dp(34));
 
-            scheduleButtonTextView = new TextView(context);
+            scheduleButtonTextView = new TextView(context) {
+                private final RectF tmpRectF = new RectF();
+                private final Paint tmpPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+
+                {
+                    tmpPaint.setStyle(Paint.Style.FILL);
+                    tmpPaint.setColor(0xFF00FF00);
+                    // tmpPaint.setShader(new LinearGradient(0, 400, 400, 0, new int[]{Theme.getColor(Theme.key_voipgroup_mutedByAdminGradient), Theme.getColor(Theme.key_voipgroup_mutedByAdminGradient3), Theme.getColor(Theme.key_voipgroup_mutedByAdminGradient2)}, null, Shader.TileMode.CLAMP));
+                }
+
+                @Override
+                protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+                    super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+                }
+
+                @Override
+                public void draw(@NonNull Canvas canvas) {
+                    super.draw(canvas);
+                }
+
+                @Override
+                protected void onDraw(Canvas canvas) {
+                    tmpPaint.setColor(0xFF00FF00);
+                    tmpRectF.set(0, 0, getMeasuredWidth(),  getMeasuredHeight());
+                    canvas.drawRoundRect(tmpRectF, dp(8), dp(8), tmpPaint);
+                    super.onDraw(canvas);
+                }
+
+                @Override
+                protected void dispatchDraw(@NonNull Canvas canvas) {
+
+
+                    tmpRectF.set(0, 0, getMeasuredWidth(),  getMeasuredHeight());
+                    canvas.drawRoundRect(tmpRectF, dp(8), dp(8), tmpPaint);
+                    super.dispatchDraw(canvas);
+                }
+            };
             scheduleButtonTextView.setLines(1);
             scheduleButtonTextView.setSingleLine(true);
             scheduleButtonTextView.setEllipsize(TextUtils.TruncateAt.END);
             scheduleButtonTextView.setGravity(Gravity.CENTER);
-            scheduleButtonTextView.setBackground(Theme.createSimpleSelectorRoundRectDrawable(dp(8), 0, 0x3f000000));
+            // scheduleButtonTextView.setBackground(Theme.createSimpleSelectorRoundRectDrawable(dp(8), 0, 0x3f000000));
             scheduleButtonTextView.setTextColor(0xffffffff);
             scheduleButtonTextView.setTypeface(AndroidUtilities.bold());
             scheduleButtonTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
@@ -5634,6 +5678,7 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
                                     fullscreenAdapter.setGroupCall(call);
                                     renderersContainer.setGroupCall(call);
                                     tabletGridAdapter.setGroupCall(call);
+                                    groupCallMessagesListView.setGroupCall(accountInstance.getCurrentAccount(), call.getInputGroupCall(false));
                                     accountInstance.getMessagesController().putGroupCall(call.chatId, call);
                                 });
                                 break;
@@ -5743,11 +5788,7 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
         }
 
         ViewGroup decorView;
-        if (Build.VERSION.SDK_INT >= 21) {
-            decorView = (ViewGroup) getWindow().getDecorView();
-        } else {
-            decorView = containerView;
-        }
+        decorView = (ViewGroup) getWindow().getDecorView();
         pinchToZoomHelper = new PinchToZoomHelper(decorView, containerView) {
             @Override
             protected void invalidateViews() {
@@ -5829,6 +5870,7 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
                             }
                         }
                     };
+                    previewDialog.setBottomPadding(containerView.getPaddingBottom());
                     container.addView(previewDialog);
                     if (voIPService != null && !voIPService.isFrontFaceCamera()) {
                         voIPService.switchCamera();
@@ -5849,23 +5891,93 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
         updateState(false, false);
         setColorProgress(0.0f);
         updateSubtitle();
-        /*if (isRtmpStream()) {
-            todo
-            if (PipNativeApiController.checkPermissions(context) == PipNativeApiController.PIP_GRANTED_PIP) {
-                pipSource = new PipSource.Builder(context, this)
-                    .setTagPrefix("group-call-activity")
-                    .build();
-            }
-        }*/
 
         bulletinContainer = new FrameLayout(context);
         containerView.addView(bulletinContainer, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 200, Gravity.BOTTOM | Gravity.FILL_HORIZONTAL));
+
+        messageButton.setOnClickListener(v -> {
+            int scroll = calculateScrollTopOffset();
+            if (scroll > 0 && scroll != Integer.MAX_VALUE) {
+                listView.smoothScrollBy(0, scroll);
+            }
+            callMessageEnterView.openKeyboard();
+        });
+
+
+        checkGroupCallUi();
+
+        ScaleStateListAnimator.apply(cameraButton);
+        ScaleStateListAnimator.apply(soundButton);
+        ScaleStateListAnimator.apply(flipButton);
+        ScaleStateListAnimator.apply(speakerButton);
+        ScaleStateListAnimator.apply(muteButton);
+        ScaleStateListAnimator.apply(leaveButton);
+        ScaleStateListAnimator.apply(messageButton);
+
+        ViewCompat.setOnApplyWindowInsetsListener(containerView, this::onApplyWindowInsets);
+    }
+
+
+
+    @NonNull
+    private WindowInsetsCompat onApplyWindowInsets(@NonNull View v, @NonNull WindowInsetsCompat insets) {
+        final Insets systemInsets = insets.getInsets(WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout());
+        final Insets imeInsets = insets.getInsets(WindowInsetsCompat.Type.ime());
+
+        final int emojiInsetHeight = callMessageEnterView.isWaitingForKeyboardOpen() || callMessageEnterView.isPopupShowing() ? (callMessageEnterView.getKeyboardHeight()): 0;
+        final int imeInsetHeight = Math.max(imeInsets.bottom, emojiInsetHeight);
+
+        ViewGroup.LayoutParams lp = blurredView.getLayoutParams();
+        if (lp instanceof ViewGroup.MarginLayoutParams) {
+            ((ViewGroup.MarginLayoutParams) lp).bottomMargin = -systemInsets.bottom;
+        }
+
+        if (callMessageEnterView.getEmojiView() != null) {
+            callMessageEnterView.getEmojiView().setBottomInset(systemInsets.bottom);
+        }
+
+        if (isInFullscreen) {
+            containerView.setPadding(
+                backgroundPaddingLeft, 0,
+                backgroundPaddingLeft, 0
+            );
+        } else {
+            containerView.setPadding(
+                backgroundPaddingLeft + systemInsets.left, systemInsets.top,
+                backgroundPaddingLeft + systemInsets.right, systemInsets.bottom
+            );
+        }
+
+        containerView.requestLayout();
+        if (imeInsetHeight == 0) {
+            if (!callMessageEnterView.isWaitingForKeyboardOpen() && !callMessageEnterView.isPopupShowing() && !callMessageEnterView.isAnimatePopupClosing()) {
+                callMessageEnterView.hideEmojiView();
+            }
+        }
+
+        if (imeInsetHeight > 0) {
+            reactionsContainerLayout = createReactionsLayout();
+
+            animatorKeyboardVisible.setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT);
+            animatorKeyboardHeight.setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT);
+        } else {
+            animatorKeyboardVisible.setInterpolator(CubicBezierInterpolator.EASE_OUT);
+            animatorKeyboardHeight.setInterpolator(CubicBezierInterpolator.EASE_OUT);
+        }
+
+        animatorKeyboardVisible.setValue(imeInsetHeight > 0, true);
+        animatorKeyboardHeight.animateTo(Math.max(0, imeInsetHeight - systemInsets.bottom));
+
+        callMessageEnterView.onSizeChanged(imeInsets.bottom, false);
+
+        return WindowInsetsCompat.CONSUMED;
     }
 
     public LaunchActivity getParentActivity() {
         return parentActivity;
     }
 
+    private boolean isInFullscreen;
     private void invalidateLayoutFullscreen() {
         if (isRtmpStream()) {
             boolean notFullscreen = renderersContainer.isUiVisible() || !renderersContainer.inFullscreenMode || isLandscapeMode != isRtmpLandscapeMode() && !AndroidUtilities.isTablet();
@@ -5887,6 +5999,10 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
             }
             containerView.setSystemUiVisibility(systemUiVisibility);
             wasNotInLayoutFullscreen = notFullscreen;
+            isInFullscreen = !notFullscreen;
+            containerView.requestApplyInsets();
+        } else {
+            isFullscreen = false;
         }
     }
 
@@ -6001,6 +6117,7 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
                     } else {
                         applyCallParticipantUpdates(true);
                     }
+                    containerView.requestLayout();
                     return false;
                 }
             });
@@ -6025,6 +6142,7 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
                             requestFullscreenListener = null;
                             renderersContainer.requestFullscreen(videoParticipant);
                             AndroidUtilities.updateVisibleRows(fullscreenUsersListView);
+                            containerView.requestLayout();
                             return false;
                         }
                     });
@@ -6043,6 +6161,7 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
                             listView.getViewTreeObserver().removeOnPreDrawListener(this);
                             renderersContainer.requestFullscreen(null);
                             AndroidUtilities.updateVisibleRows(fullscreenUsersListView);
+                            containerView.requestLayout();
                             return false;
                         }
                     });
@@ -6053,6 +6172,7 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
                             listView.getViewTreeObserver().removeOnPreDrawListener(this);
                             renderersContainer.requestFullscreen(null);
                             AndroidUtilities.updateVisibleRows(fullscreenUsersListView);
+                            containerView.requestLayout();
                             return false;
                         }
                     });
@@ -6078,7 +6198,6 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
 
     private void updateScheduleUI(boolean animation) {
         if ((scheduleTimerContainer == null || call != null) && scheduleAnimator == null) {
-            scheduleButtonsScale = 1.0f;
             switchToButtonInt2 = 1.0f;
             switchToButtonProgress = 1.0f;
             if (scheduleTimerContainer == null) {
@@ -6102,48 +6221,28 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
         float scheduleButtonsScale2;
         float alpha;
         if (switchToButtonProgress > 0.6f) {
-            scheduleButtonsScale = scheduleButtonsScale2 = 1.05f - CubicBezierInterpolator.DEFAULT.getInterpolation((switchToButtonProgress - 0.6f) / 0.4f) * 0.05f;
+            scheduleButtonsScale2 = 1.05f - CubicBezierInterpolator.DEFAULT.getInterpolation((switchToButtonProgress - 0.6f) / 0.4f) * 0.05f;
             switchToButtonInt2 = 1.0f;
             alpha = 1.0f;
         } else {
-            scheduleButtonsScale = 1.0f + CubicBezierInterpolator.DEFAULT.getInterpolation(switchToButtonProgress / 0.6f) * 0.05f;
             switchToButtonInt2 = CubicBezierInterpolator.DEFAULT.getInterpolation(switchToButtonProgress / 0.6f);
             scheduleButtonsScale2 = 1.05f * CubicBezierInterpolator.DEFAULT.getInterpolation(switchToButtonProgress / 0.6f);
             alpha = switchToButtonProgress / 0.6f;
         }
 
-        float muteButtonScale = isLandscapeMode ? scheduleButtonsScale2 * dp(52) / (float) (muteButton.getMeasuredWidth() - dp(8)) : scheduleButtonsScale2;
+        updateButtonsVisibility(true);
 
         float reversedAlpha = 1.0f - alpha;
-        leaveButton.setAlpha(alpha);
-        soundButton.setAlpha(alpha * (soundButton.isEnabled() ? 1.0f : 0.5f));
-        muteButton.setAlpha(alpha);
         scheduleTimerContainer.setAlpha(reversedAlpha);
         scheduleStartInTextView.setAlpha(alpha);
         scheduleStartAtTextView.setAlpha(alpha);
         scheduleTimeTextView.setAlpha(alpha);
-        muteLabel[0].setAlpha(alpha);
         scheduleTimeTextView.setScaleX(scheduleButtonsScale2);
         scheduleTimeTextView.setScaleY(scheduleButtonsScale2);
-        leaveButton.setScaleX(scheduleButtonsScale2);
-        leaveButton.setScaleY(scheduleButtonsScale2);
-        soundButton.setScaleX(scheduleButtonsScale2);
-        soundButton.setScaleY(scheduleButtonsScale2);
-        muteButton.setScaleX(muteButtonScale);
-        muteButton.setScaleY(muteButtonScale);
         scheduleButtonTextView.setScaleX(reversedAlpha);
         scheduleButtonTextView.setScaleY(reversedAlpha);
         scheduleButtonTextView.setAlpha(reversedAlpha);
         scheduleInfoTextView.setAlpha(reversedAlpha);
-        cameraButton.setAlpha(alpha);
-        cameraButton.setScaleY(scheduleButtonsScale2);
-        cameraButton.setScaleX(scheduleButtonsScale2);
-        flipButton.setAlpha(alpha);
-        flipButton.setScaleY(scheduleButtonsScale2);
-        flipButton.setScaleX(scheduleButtonsScale2);
-        speakerButton.setAlpha(alpha);
-        speakerButtonContainer.setScaleY(scheduleButtonsScale2);
-        speakerButtonContainer.setScaleX(scheduleButtonsScale2);
         otherItem.setAlpha(alpha);
         int newVisibility = reversedAlpha == 0.0f ? View.INVISIBLE : View.VISIBLE;
         if (newVisibility != scheduleTimerContainer.getVisibility()) {
@@ -6173,11 +6272,14 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
             renderersContainer.setGroupCall(call);
             tabletGridAdapter.setGroupCall(call);
         }
+        if (groupCallMessagesListView != null) {
+            groupCallMessagesListView.setGroupCall(accountInstance.getCurrentAccount(), call.getInputGroupCall(false));
+        }
         actionBar.setTitleRightMargin(dp(48) * 2);
         call.saveActiveDates();
         VoIPService.getSharedInstance().registerStateListener(this);
         if (scheduleTimeTextView != null && scheduleTimeTextView.getVisibility() == View.VISIBLE) {
-            leaveButton.setData(R.drawable.msg_voiceclose, 0xffffffff, Theme.getColor(Theme.key_voipgroup_leaveButton), 0.3f, false, getString(R.string.VoipGroupLeave), false, true);
+            leaveButton.setData(R.drawable.calls_decline, 0xffffffff, Theme.getColor(Theme.key_voipgroup_leaveButton), 0.3f, false, getString(R.string.VoipGroupLeave), false, true);
             updateSpeakerPhoneIcon(true);
             leaveItem.setText(ChatObject.isChannelOrGiga(currentChat) ? getString(R.string.VoipChannelEndChat) : getString(R.string.VoipGroupEndChat));
             listView.setVisibility(View.VISIBLE);
@@ -6238,17 +6340,9 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
                     spannableStringBuilder.append(", ");
                 }
                 if (user != null) {
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                        spannableStringBuilder.append(UserObject.getFirstName(user), new TypefaceSpan(AndroidUtilities.bold()), 0);
-                    } else {
-                        spannableStringBuilder.append(UserObject.getFirstName(user));
-                    }
+                    spannableStringBuilder.append(UserObject.getFirstName(user), new TypefaceSpan(AndroidUtilities.bold()), 0);
                 } else {
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                        spannableStringBuilder.append(chat.title, new TypefaceSpan(AndroidUtilities.bold()), 0);
-                    } else {
-                        spannableStringBuilder.append(chat.title);
-                    }
+                    spannableStringBuilder.append(chat.title, new TypefaceSpan(AndroidUtilities.bold()), 0);
                 }
             }
             speakingIndex++;
@@ -6285,7 +6379,7 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
 
     @Override
     public void show() {
-        NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.stopAllHeavyOperations, 2048);
+        // NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.stopAllHeavyOperations, 2048);
         super.show();
 
         if (RTMPStreamPipOverlay.isVisible()) {
@@ -6315,7 +6409,7 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
                 containerView.removeView(renderersContainer);
             }
         }
-        NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.startAllHeavyOperations, 2048);
+        // NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.startAllHeavyOperations, 2048);
         super.dismissInternal();
         if (VoIPService.getSharedInstance() != null) {
             VoIPService.getSharedInstance().unregisterStateListener(this);
@@ -6456,6 +6550,9 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
             encryptionDrawable.setPaintBackgroundColor(color);
         }
         listViewBackgroundPaint.setColor(color);
+        callMessageEnterContainerBgPaint.setColor(color);
+        callMessageEnterContainer.invalidate();
+
         listView.setGlowColor(color);
 
         if (muteButtonState == MUTE_BUTTON_STATE_CONNECTING || isGradientState(muteButtonState)) {
@@ -6697,6 +6794,18 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
         actionBar.setAlpha((actionBar.getTag() != null ? 1f : 0f) * (1f - renderersContainer.progressToFullscreenMode));
     }
 
+    private int calculateScrollTopOffset() {
+        int minY = Integer.MAX_VALUE;
+        for (int a = 0, N = listView.getChildCount(); a < N; a++) {
+            View child = listView.getChildAt(a);
+            if (listView.getChildAdapterPosition(child) >= 0) {
+                minY = Math.min(minY, child.getTop());
+            }
+        }
+
+        return minY;
+    }
+
     private void updateLayout(boolean animated) {
         float minY = Integer.MAX_VALUE;
         int N = listView.getChildCount();
@@ -6819,6 +6928,7 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
                 setColorProgress(0.0f);
             }
         }
+        checkGroupCallUiPositions_MessagesList();
 
         menuItemsContainer.setTranslationY(Math.max(dp(4), scrollOffsetY - dp(53) - diff));
         titleLayout.setTranslationY(Math.max(dp(4), scrollOffsetY - dp(44) - diff));
@@ -6854,10 +6964,12 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
                 state = call.call.schedule_start_subscribed ? MUTE_BUTTON_STATE_CANCEL_REMINDER : MUTE_BUTTON_STATE_SET_REMINDER;
             }
             updateMuteButton(state, animated);
-            leaveButton.setData(R.drawable.msg_voiceclose, 0xffffffff, Theme.getColor(Theme.key_voipgroup_leaveButton), 0.3f, false, getString(R.string.Close), false, false);
+            leaveButton.setData(R.drawable.calls_decline, 0xffffffff, Theme.getColor(Theme.key_voipgroup_leaveButton), 0.3f, false, getString(R.string.Close), false, false);
             updateScheduleUI(false);
             return;
         }
+        updateButtonsVisibility(animated);
+
         VoIPService voIPService = VoIPService.getSharedInstance();
         if (voIPService == null) {
             return;
@@ -6913,33 +7025,19 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
         }
 
         if (outgoingVideoIsActive) {
-            if (animated && flipButton.getVisibility() != View.VISIBLE) {
-                flipButton.setScaleX(0.3f);
-                flipButton.setScaleY(0.3f);
-            }
             flipButtonVisible = true;
             speakerButtonVisible = false;
         } else {
-            if (animated && speakerButtonContainer.getVisibility() != View.VISIBLE) {
-                speakerButtonContainer.setScaleX(0.3f);
-                speakerButtonContainer.setScaleY(0.3f);
-            }
             flipButtonVisible = false;
             speakerButtonVisible = !mutedByAdmin;
         }
 
-        int newButtonsVisibility = (flipButtonVisible ? 1 : 0) + (soundButtonVisible ? 2 : 0) + (cameraButtonVisible ? 4 : 0) + (renderersContainer != null && renderersContainer.inFullscreenMode ? 8 : 0) + (speakerButtonVisible ? 16 : 0);
-
-        if (buttonsVisibility != 0 && buttonsVisibility != newButtonsVisibility && animated) {
-            for (int i = 0; i < buttonsContainer.getChildCount(); i++) {
-                View child = buttonsContainer.getChildAt(i);
-                if (child.getVisibility() == View.VISIBLE) {
-                    buttonsAnimationParamsX.put(child, child.getX());
-                    buttonsAnimationParamsY.put(child, child.getY());
-                }
-            }
-            animateButtonsOnNextLayout = true;
+        if (isLandscapeMode) {
+            speakerButtonVisible = false;
+            flipButtonVisible = false;
         }
+
+        int newButtonsVisibility = (flipButtonVisible ? 1 : 0) + (soundButtonVisible ? 2 : 0) + (cameraButtonVisible ? 4 : 0) + (renderersContainer != null && renderersContainer.inFullscreenMode ? 8 : 0) + (speakerButtonVisible ? 16 : 0);
 
         boolean soundButtonChanged = (buttonsVisibility | 2) != (newButtonsVisibility | 2);
         buttonsVisibility = newButtonsVisibility;
@@ -6947,15 +7045,11 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
         if (cameraButtonVisible) {
             cameraButton.setData(R.drawable.calls_video, Color.WHITE, 0, 1f, true, getString(R.string.VoipCamera), !outgoingVideoIsActive, animated);
             cameraButton.setChecked(true, false);
-        } else {
-            cameraButton.setVisibility(View.GONE);
         }
 
         if (flipButtonVisible) {
             flipButton.setData(0, Color.WHITE, 0, 1f, true, getString(R.string.VoipFlip), false, false);
             flipButton.setChecked(true, false);
-        } else {
-            flipButton.setVisibility(View.GONE);
         }
 
         if (speakerButtonVisible) {
@@ -6963,102 +7057,22 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
             if (speakerIcon != icon) {
                 AndroidUtilities.updateImageViewImageAnimated(speakerImageView, speakerIcon = icon);
             }
-            speakerButtonContainer.setVisibility(View.VISIBLE);
-            speakerButton.setData(0, Color.WHITE, 0, 1f, true, getAudioOutputName(getAudioOutputValue()), false, false);
+            speakerButton.setData(0, Color.WHITE, 0, 1f, true, getAudioOutputName(getAudioOutputValue()), false, animated);
             speakerButton.setChecked(getAudioOutputActive(getAudioOutputValue()), animated);
-        } else {
-            speakerButtonContainer.setVisibility(View.GONE);
         }
 
-        boolean soundButtonWasVisible = soundButton.getVisibility() == View.VISIBLE;
-        soundButton.setVisibility(soundButtonVisible ? View.VISIBLE : View.GONE);
+        leaveButton.setData(isRtmpStream() ? R.drawable.msg_voiceclose: R.drawable.calls_decline,
+            0xffffffff,
+            Theme.getColor(Theme.key_voipgroup_leaveButton), 0.3f, false,
+            getString(R.string.VoipGroupLeave), false, false);
+
         if (soundButtonChanged && soundButtonVisible) {
             updateSpeakerPhoneIcon(false);
         }
 
-        if (soundButtonChanged) {
-            float s = soundButtonVisible ? 1f : 0.3f;
-            if (!animated) {
-                soundButton.animate().cancel();
-                soundButton.setScaleX(s);
-                soundButton.setScaleY(s);
-            } else {
-                if (soundButtonVisible && !soundButtonWasVisible) {
-                    soundButton.setScaleX(0.3f);
-                    soundButton.setScaleY(0.3f);
-                }
-                soundButton.animate().scaleX(s).scaleY(s).setDuration(TRANSITION_DURATION).setInterpolator(CubicBezierInterpolator.DEFAULT).start();
-            }
-        }
-
-        float cameraScale;
-        if (cameraButton.getVisibility() == View.VISIBLE) {
-            cameraScale = 1f;
-            cameraButton.showText(cameraScale == 1f, animated);
-        } else {
-            cameraScale = 0.3f;
-        }
-
-        if (this.cameraButtonScale != cameraScale) {
-            cameraButtonScale = cameraScale;
-            if (!animated) {
-                cameraButton.animate().cancel();
-                cameraButton.setScaleX(cameraScale);
-                cameraButton.setScaleY(cameraScale);
-            } else {
-                cameraButton.animate().scaleX(cameraScale).scaleY(cameraScale).setDuration(TRANSITION_DURATION).setInterpolator(CubicBezierInterpolator.DEFAULT).start();
-            }
-        }
-
-        float flipButtonScale;
-        if (isTabletMode) {
-            flipButtonScale = 0.8f;
-        } else {
-            flipButtonScale = isLandscapeMode || (renderersContainer != null && renderersContainer.inFullscreenMode) ? 1f : 0.8f;
-        }
-
-        if (!outgoingVideoIsActive) {
-            flipButtonScale = 0.3f;
-        }
-        if (!animated) {
-            flipButton.animate().cancel();
-            flipButton.setScaleX(flipButtonScale);
-            flipButton.setScaleY(flipButtonScale);
-        } else {
-            flipButton.animate().scaleX(flipButtonScale).scaleY(flipButtonScale).setDuration(TRANSITION_DURATION).setInterpolator(CubicBezierInterpolator.DEFAULT).start();
-        }
-        flipButton.showText(flipButtonScale == 1f, animated);
-
-        float speakerButtonScale;
-        if (isTabletMode) {
-            speakerButtonScale = 0.8f;
-        } else {
-            speakerButtonScale = isLandscapeMode || (renderersContainer != null && renderersContainer.inFullscreenMode) ? 1f : 0.8f;
-        }
-
-        if (outgoingVideoIsActive) {
-            speakerButtonScale = 0.3f;
-        }
-        if (!animated) {
-            speakerButtonContainer.animate().cancel();
-            speakerButtonContainer.setScaleX(speakerButtonScale);
-            speakerButtonContainer.setScaleY(speakerButtonScale);
-        } else {
-            speakerButtonContainer.animate().scaleX(speakerButtonScale).scaleY(speakerButtonScale).setDuration(TRANSITION_DURATION).setInterpolator(CubicBezierInterpolator.DEFAULT).start();
-        }
-        speakerButton.showText(speakerButtonScale == 1f, animated);
-
-        float soundButtonScale = outgoingVideoIsActive ? 0.3f : 1f;
-        if (this.soundButtonScale != soundButtonScale) {
-            this.soundButtonScale = soundButtonScale;
-            if (!animated) {
-                soundButton.animate().cancel();
-                soundButton.setScaleX(soundButtonScale);
-                soundButton.setScaleY(soundButtonScale);
-            } else {
-                soundButton.animate().scaleX(soundButtonScale).scaleY(soundButtonScale).setDuration(TRANSITION_DURATION).setInterpolator(CubicBezierInterpolator.DEFAULT).start();
-            }
-        }
+        cameraButton.showText(true, animated);
+        flipButton.showText(true, animated);
+        speakerButton.showText(true, animated);
 
         updateLiveLabel(animated);
         if (isRtmpStream() && LiteMode.isEnabled(LiteMode.FLAG_CALLS_ANIMATIONS)) {
@@ -7071,6 +7085,65 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
             }
         }
     }
+
+
+    private void updateButtonsVisibility(boolean animated) {
+        if (call == null || call.isScheduled()) {
+            buttonsContainer.setButtonVisibility(muteButton, switchToButtonProgress > 0.1f, animated);
+            buttonsContainer.setButtonVisibility(leaveButton, switchToButtonProgress > 0.1f, animated);
+            buttonsContainer.setButtonVisibility(soundButton, switchToButtonProgress > 0.1f, animated);
+            buttonsContainer.setButtonVisibility(cameraButton, false, animated);
+            buttonsContainer.setButtonVisibility(flipButton, false, animated);
+            buttonsContainer.setButtonVisibility(speakerButton, false, animated);
+            buttonsContainer.setButtonVisibility(messageButton, false, animated);
+            return;
+        }
+
+        final boolean outgoingVideoIsActive = VoIPService.getSharedInstance() != null && VoIPService.getSharedInstance().getVideoState(false) == Instance.VIDEO_STATE_ACTIVE;
+        TLRPC.GroupCallParticipant participant = call.participants.get(MessageObject.getPeerId(selfPeer));
+        boolean mutedByAdmin = participant != null && !participant.can_self_unmute && participant.muted && !canManageCall();
+        boolean cameraButtonVisible;
+        boolean flipButtonVisible;
+        boolean soundButtonVisible;
+        boolean speakerButtonVisible;
+        boolean messageButtonVisible;
+
+        if (pendingCommentsEnabled != null) {
+            messageButtonVisible = pendingCommentsEnabled;
+        } else {
+            messageButtonVisible = call.call != null && call.call.messages_enabled;
+        }
+
+        if ((!mutedByAdmin && call.canRecordVideo() || outgoingVideoIsActive) && !isRtmpStream()) {
+            cameraButtonVisible = true;
+            soundButtonVisible = false;
+        } else {
+            cameraButtonVisible = false;
+            soundButtonVisible = true;
+        }
+
+        if (outgoingVideoIsActive) {
+            flipButtonVisible = true;
+            speakerButtonVisible = false;
+        } else {
+            flipButtonVisible = false;
+            speakerButtonVisible = !mutedByAdmin;
+        }
+
+        if (isLandscapeMode) {
+            speakerButtonVisible = false;
+            flipButtonVisible = false;
+        }
+
+        buttonsContainer.setButtonVisibility(muteButton, true, animated);
+        buttonsContainer.setButtonVisibility(leaveButton, true, animated);
+        buttonsContainer.setButtonVisibility(cameraButton, cameraButtonVisible, animated);
+        buttonsContainer.setButtonVisibility(flipButton, flipButtonVisible, animated);
+        buttonsContainer.setButtonVisibility(soundButton, soundButtonVisible, animated);
+        buttonsContainer.setButtonVisibility(speakerButton, speakerButtonVisible, animated);
+        buttonsContainer.setButtonVisibility(messageButton, messageButtonVisible, animated);
+    }
+
 
     private void updateLiveLabel(boolean animated) {
         if (isRtmpStream()) {
@@ -7145,11 +7218,11 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
         VoIPService service = VoIPService.getSharedInstance();
         if (service == null || isRtmpStream()) {
             soundButton.setData(R.drawable.msg_voiceshare, Color.WHITE, 0, 0.3f, true, getString(R.string.VoipChatShare), false, animated);
-            soundButton.setEnabled(ChatObject.isPublic(currentChat) || ChatObject.hasAdminRights(currentChat) && ChatObject.canAddUsers(currentChat), false);
+            buttonsContainer.setButtonEnabled(soundButton, ChatObject.isPublic(currentChat) || ChatObject.hasAdminRights(currentChat) && ChatObject.canAddUsers(currentChat), animated);
             soundButton.setChecked(true, false);
             return;
         } else {
-            soundButton.setEnabled(true, animated);
+            buttonsContainer.setButtonEnabled(soundButton, true, animated);
         }
 
         boolean bluetooth = service.isBluetoothOn() || service.isBluetoothWillOn();
@@ -7172,8 +7245,8 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
         if (speakerIcon != icon) {
             AndroidUtilities.updateImageViewImageAnimated(speakerImageView, speakerIcon = icon);
         }
-        if (speakerButtonContainer.getVisibility() == View.VISIBLE) {
-            speakerButton.setData(0, Color.WHITE, 0, 1f, true, getAudioOutputName(getAudioOutputValue()), false, false);
+        if (speakerButton.getVisibility() == View.VISIBLE) {
+            speakerButton.setData(0, Color.WHITE, 0, 1f, true, getAudioOutputName(getAudioOutputValue()), false, animated);
             speakerButton.setChecked(getAudioOutputActive(getAudioOutputValue()), animated);
         }
     }
@@ -7183,14 +7256,6 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
         if (!isRtmpStream() && muteButtonState == state && animated) {
             return;
         }
-        if (muteButtonAnimator != null) {
-            muteButtonAnimator.cancel();
-            muteButtonAnimator = null;
-        }
-        if (expandAnimator != null) {
-            expandAnimator.cancel();
-            expandAnimator = null;
-        }
 
         String newText;
         String newSubtext;
@@ -7198,19 +7263,19 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
         boolean changed;
         boolean mutedByAdmin = false;
         if (state == MUTE_BUTTON_STATE_CANCEL_REMINDER) {
-            newText = getString(R.string.VoipGroupCancelReminder);
+            newText = getString(R.string.VoipGroupCancelReminderShort);
             newSubtext = "";
             changed = bigMicDrawable.setCustomEndFrame(202);
         } else if (state == MUTE_BUTTON_STATE_SET_REMINDER) {
-            newText = getString(R.string.VoipGroupSetReminder);
+            newText = getString(R.string.VoipGroupSetReminderShort);
             newSubtext = "";
             changed = bigMicDrawable.setCustomEndFrame(344);
         } else if (state == MUTE_BUTTON_STATE_START_NOW) {
-            newText = getString(R.string.VoipGroupStartNow);
+            newText = getString(R.string.VoipGroupStartNowShort);
             newSubtext = "";
             changed = bigMicDrawable.setCustomEndFrame(377);
         } else if (state == MUTE_BUTTON_STATE_UNMUTE) {
-            newText = getString(R.string.VoipGroupUnmute);
+            newText = getString(R.string.VoipGroupUnmuteShort);
             newSubtext = getString(R.string.VoipHoldAndTalk);
             if (muteButtonState == MUTE_BUTTON_STATE_CONNECTING) {
                 int endFrame = bigMicDrawable.getCustomEndFrame();
@@ -7231,15 +7296,15 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
                 changed = bigMicDrawable.setCustomEndFrame(99);
             }
         } else if (state == MUTE_BUTTON_STATE_MUTE) {
-            newText = getString(isConference() ? R.string.VoipTapToMuteConference : R.string.VoipTapToMute);
+            newText = getString(isConference() ? R.string.VoipTapToMuteConferenceShort : R.string.VoipTapToMuteShort);
             newSubtext = "";
             changed = bigMicDrawable.setCustomEndFrame(muteButtonState == MUTE_BUTTON_STATE_RAISED_HAND ? 99 : 69);
         } else if (isConference() && state == MUTE_BUTTON_STATE_MUTED_BY_ADMIN) {
-            newText = getString(R.string.VoipMutedByAdmin);
+            newText = getString(R.string.VoipMutedByAdminShort);
             newSubtext = "";
             changed = bigMicDrawable.setCustomEndFrame(99);
         } else if (state == MUTE_BUTTON_STATE_RAISED_HAND) {
-            newText = getString(R.string.VoipMutedTapedForSpeak);
+            newText = getString(R.string.VoipMutedTapedForSpeakShort);
             newSubtext = getString(R.string.VoipMutedTapedForSpeakInfo);
             changed = bigMicDrawable.setCustomEndFrame(136);
         } else {
@@ -7271,7 +7336,7 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
                 newText = getString(R.string.Connecting);
                 newSubtext = "";
             } else {
-                newText = getString(R.string.VoipMutedByAdmin);
+                newText = getString(R.string.VoipMutedByAdminShort);
                 newSubtext = getString(R.string.VoipMutedTapForSpeak);
             }
         }
@@ -7289,6 +7354,8 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
             contentDescription = newText;
         }
         muteButton.setContentDescription(contentDescription);
+
+        muteButton.setData(0, 0, 0, newText, false, animated);
 
         if (animated) {
             if (changed) {
@@ -7340,142 +7407,29 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
                     }
                 }
             }
-            muteButton.playAnimation();
-            muteLabel[1].setVisibility(View.VISIBLE);
-            muteLabel[1].setAlpha(0.0f);
-            muteLabel[1].setTranslationY(-dp(5));
-            muteLabel[1].setText(newText);
-
+            muteButtonIcon.playAnimation();
             if (isRtmpStream() && !call.isScheduled()) {
-                muteButton.setAlpha(0f);
-                boolean isExpanded = renderersContainer.inFullscreenMode && (AndroidUtilities.isTablet() || isLandscapeMode == isRtmpLandscapeMode());
-                View hideView = isExpanded ? expandButton : minimizeButton;
-                View showView = isExpanded ? minimizeButton : expandButton;
-                float muteButtonScale = dp(52) / (float) (muteButton.getMeasuredWidth() - dp(8));
-                boolean bigSize = AndroidUtilities.isTablet() ? !renderersContainer.inFullscreenMode : !renderersContainer.inFullscreenMode && !isLandscapeMode;
-                boolean changedSize = wasExpandBigSize == null || bigSize != wasExpandBigSize;
-                wasExpandBigSize = bigSize;
-
-                if (expandSizeAnimator != null) {
-                    expandSizeAnimator.cancel();
-                    expandSizeAnimator = null;
-                }
-
-                if (changedSize) {
-                    expandSizeAnimator = ValueAnimator.ofFloat(0, 1);
-                    expandSizeAnimator.addUpdateListener(animation -> {
-                        float multiplier = isLandscapeMode || isRtmpStream() ? muteButtonScale : lerp(1f, muteButtonScale, renderersContainer.progressToFullscreenMode);
-                        showView.setScaleY(multiplier);
-                    });
-                    expandSizeAnimator.addListener(new AnimatorListenerAdapter() {
-                        @Override
-                        public void onAnimationEnd(Animator animation) {
-                            expandSizeAnimator = null;
-                        }
-                    });
-                    expandSizeAnimator.start();
-                } else {
-                    float multiplier = isLandscapeMode || isRtmpStream() ? muteButtonScale : lerp(1f, muteButtonScale, renderersContainer.progressToFullscreenMode);
-                    showView.setAlpha(1f);
-                    showView.setScaleX(multiplier);
-                    showView.setScaleY(multiplier);
-                    hideView.setAlpha(0f);
-                }
-
-                if (changed) {
-                    expandAnimator = ValueAnimator.ofFloat(0, 1);
-                    expandAnimator.addUpdateListener(animation -> {
-                        float val = (float) animation.getAnimatedValue();
-
-                        float multiplier = isLandscapeMode || isRtmpStream() ? muteButtonScale : lerp(1f, muteButtonScale, renderersContainer.progressToFullscreenMode);
-
-                        hideView.setAlpha(1f - val);
-                        float scale = (0.1f + (1f - val) * 0.9f) * multiplier;
-                        hideView.setScaleX(scale);
-                        hideView.setScaleY(scale);
-
-                        showView.setAlpha(val);
-                        scale = (0.1f + val * 0.9f) * multiplier;
-                        showView.setScaleX(scale);
-                        showView.setScaleY(scale);
-                    });
-                    expandAnimator.addListener(new AnimatorListenerAdapter() {
-                        @Override
-                        public void onAnimationEnd(Animator animation) {
-                            expandAnimator = null;
-                        }
-                    });
-                    expandAnimator.start();
-                } else {
-                    float multiplier = isLandscapeMode || isRtmpStream() ? muteButtonScale : lerp(1f, muteButtonScale, renderersContainer.progressToFullscreenMode);
-
-                    showView.setAlpha(1f);
-                    showView.setScaleX(multiplier);
-                    showView.setScaleY(multiplier);
-                    hideView.setAlpha(0f);
-                }
+                boolean isExpanded = renderersContainer != null && renderersContainer.inFullscreenMode && (AndroidUtilities.isTablet() || isLandscapeMode == isRtmpLandscapeMode());
+                expandOrMinimizeButton.setImageResource(isExpanded ? R.drawable.voice_minimize : R.drawable.voice_expand);
+                expandOrMinimizeButton.setVisibility(View.VISIBLE);
+                muteButtonIcon.setVisibility(View.GONE);
             } else {
-                muteButton.setAlpha(1f);
-                expandButton.setAlpha(0f);
-                minimizeButton.setAlpha(0f);
-            }
-
-            if (changed) {
-                muteButtonAnimator = ValueAnimator.ofFloat(0.0f, 1.0f);
-                muteButtonAnimator.addUpdateListener(animation -> {
-                    float v = (float) animation.getAnimatedValue();
-                    muteLabel[0].setAlpha(1.0f - v);
-                    muteLabel[0].setTranslationY(dp(5) * v);
-                    muteLabel[1].setAlpha(v);
-                    muteLabel[1].setTranslationY(dp(-5 + 5 * v));
-                });
-                muteButtonAnimator.addListener(new AnimatorListenerAdapter() {
-                    @Override
-                    public void onAnimationEnd(Animator animation) {
-                        if (muteButtonAnimator != null) {
-                            muteButtonAnimator = null;
-                            TextView temp = muteLabel[0];
-                            muteLabel[0] = muteLabel[1];
-                            muteLabel[1] = temp;
-                            temp.setVisibility(View.INVISIBLE);
-                            for (int a = 0; a < 2; a++) {
-                                muteLabel[a].setTranslationY(0);
-                            }
-                        }
-                    }
-                });
-                muteButtonAnimator.setDuration(180);
-                muteButtonAnimator.start();
-            } else {
-                muteLabel[0].setAlpha(0f);
-                muteLabel[1].setAlpha(1f);
-
-                TextView temp = muteLabel[0];
-                muteLabel[0] = muteLabel[1];
-                muteLabel[1] = temp;
-                temp.setVisibility(View.INVISIBLE);
-                for (int a = 0; a < 2; a++) {
-                    muteLabel[a].setTranslationY(0);
-                }
+                expandOrMinimizeButton.setVisibility(View.GONE);
+                muteButtonIcon.setVisibility(View.VISIBLE);
             }
             muteButtonState = state;
         } else {
             muteButtonState = state;
             bigMicDrawable.setCurrentFrame(bigMicDrawable.getCustomEndFrame() - 1, false, true);
-            muteLabel[0].setText(newText);
 
             if (isRtmpStream() && !call.isScheduled()) {
-                muteButton.setAlpha(0f);
                 boolean isExpanded = renderersContainer != null && renderersContainer.inFullscreenMode && (AndroidUtilities.isTablet() || isLandscapeMode == isRtmpLandscapeMode());
-                View hideView = isExpanded ? expandButton : minimizeButton;
-                View showView = isExpanded ? minimizeButton : expandButton;
-
-                showView.setAlpha(1f);
-                hideView.setAlpha(0f);
+                expandOrMinimizeButton.setImageResource(isExpanded ? R.drawable.voice_minimize : R.drawable.voice_expand);
+                expandOrMinimizeButton.setVisibility(View.VISIBLE);
+                muteButtonIcon.setVisibility(View.GONE);
             } else {
-                muteButton.setAlpha(1f);
-                expandButton.setAlpha(0f);
-                minimizeButton.setAlpha(0f);
+                expandOrMinimizeButton.setVisibility(View.GONE);
+                muteButtonIcon.setVisibility(View.VISIBLE);
             }
         }
         updateMuteButtonState(animated);
@@ -8059,17 +8013,13 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
         linearLayout.addView(buttonsLayout, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0, volumeSlider != null ? -8 : 0, 0, 0));
 
         ScrollView scrollView;
-        if (Build.VERSION.SDK_INT >= 21) {
-            scrollView = new ScrollView(getContext(), null, 0, R.style.scrollbarShapeStyle) {
-                @Override
-                protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-                    super.onMeasure(widthMeasureSpec, heightMeasureSpec);
-                    setMeasuredDimension(linearLayout.getMeasuredWidth(), getMeasuredHeight());
-                }
-            };
-        } else {
-            scrollView = new ScrollView(getContext());
-        }
+        scrollView = new ScrollView(getContext(), null, 0, R.style.scrollbarShapeStyle) {
+            @Override
+            protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+                super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+                setMeasuredDimension(linearLayout.getMeasuredWidth(), getMeasuredHeight());
+            }
+        };
         scrollView.setClipToPadding(false);
         popupLayout.addView(scrollView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
 
@@ -8378,7 +8328,7 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
     }
 
     private void startScreenCapture() {
-        if (parentActivity == null || Build.VERSION.SDK_INT < 21) {
+        if (parentActivity == null) {
             return;
         }
         MediaProjectionManager mediaProjectionManager = (MediaProjectionManager) parentActivity.getSystemService(Context.MEDIA_PROJECTION_SERVICE);
@@ -8785,11 +8735,11 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
                 case VIEW_TYPE_INVITE_MEMBERS:
                     final GroupCallTextCell textCell = (GroupCallTextCell) holder.itemView;
                     if (position == conferenceAddPeopleRow) {
-                        final int color = Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider);
+                        final int color = Theme.getColor(Theme.key_windowBackgroundWhiteBlueIcon, resourcesProvider);
                         textCell.setColors(color, color);
                         textCell.setTextAndIcon(getString(R.string.VoipConferenceAddPeople), R.drawable.msg_contact_add, true);
                     } else if (position == conferenceShareLinkRow) {
-                        final int color = Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider);
+                        final int color = Theme.getColor(Theme.key_windowBackgroundWhiteBlueIcon, resourcesProvider);
                         textCell.setColors(color, color);
                         textCell.setTextAndIcon(getString(R.string.VoipConferenceShareLink), R.drawable.msg_link2, false);
                     } else {
@@ -9224,14 +9174,41 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
     }
 
     private void toggleAdminSpeak() {
+        if (call == null || call.call == null) {
+            return;
+        }
+
         final TL_phone.toggleGroupCallSettings req = new TL_phone.toggleGroupCallSettings();
         req.call = call.getInputGroupCall();
         req.join_muted = call.call.join_muted;
-        req.flags |= 1;
-        accountInstance.getConnectionsManager().sendRequest(req, (response, error) -> {
-            if (response != null) {
-                accountInstance.getMessagesController().processUpdates((TLRPC.Updates) response, false);
+        accountInstance.getConnectionsManager().sendRequestTyped(req, Utilities.stageQueue::postRunnable, (updates, error) -> {
+            if (updates != null) {
+                accountInstance.getMessagesController().processUpdates(updates, false);
             }
+        });
+    }
+
+    private Boolean pendingCommentsEnabled;
+
+    private void setCommentsEnabled(boolean enabled) {
+        if (call == null) {
+            return;
+        }
+
+        final TL_phone.toggleGroupCallSettings req = new TL_phone.toggleGroupCallSettings();
+        req.call = call.getInputGroupCall();
+        req.messages_enabled = enabled;
+        pendingCommentsEnabled = enabled;
+        updateButtonsVisibility(true);
+
+        accountInstance.getConnectionsManager().sendRequestTyped(req, Utilities.stageQueue::postRunnable, (updates, error) -> {
+            if (updates != null) {
+                accountInstance.getMessagesController().processUpdates(updates, false);
+            }
+            AndroidUtilities.runOnUIThread(() -> {
+                pendingCommentsEnabled = null;
+                updateButtonsVisibility(true);
+            });
         });
     }
 
@@ -9582,6 +9559,8 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
         for (int i = 0; i < attachedRenderersTmp.size(); i++) {
             attachedRenderersTmp.get(i).updateAttachState(true);
         }
+        sizeNotifierFrameLayout.onResume();
+        callMessageEnterView.onResume();
     }
 
     public void onPause() {
@@ -9591,6 +9570,9 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
         for (int i = 0; i < attachedRenderersTmp.size(); i++) {
             attachedRenderersTmp.get(i).updateAttachState(false);
         }
+        sizeNotifierFrameLayout.onPause();
+        callMessageEnterView.onPause();
+
     }
 
     public boolean isRtmpLandscapeMode() {
@@ -10032,16 +10014,16 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
             final int eb = (int) AndroidUtilities.rectTmp.centerY() + es / 2;
             {
                 fromRect.set(
-                    (int) AndroidUtilities.rectTmp.left + dp(7) + dp(10) - es / 2,
+                    (int) AndroidUtilities.rectTmp.left + dp(7) + dp(10) - es / 2f,
                     et,
-                    (int) AndroidUtilities.rectTmp.left + dp(7) + dp(10) + es / 2,
+                    (int) AndroidUtilities.rectTmp.left + dp(7) + dp(10) + es / 2f,
                     eb
                 );
                 final int toCX = (int) (totalWidth / 2.0f - 2 * es2p + es2p * .5f);
                 toRect.set(
-                    toCX - es2 / 2,
+                    toCX - es2 / 2f,
                     (int) (AndroidUtilities.rectTmp.top + dp(27.33f) - es2 / 2f),
-                    toCX + es2 / 2,
+                    toCX + es2 / 2f,
                     (int) (AndroidUtilities.rectTmp.top + dp(27.33f) + es2 / 2f)
                 );
                 AndroidUtilities.lerpCentered(fromRect, toRect, alertProgress, toRect);
@@ -10051,16 +10033,16 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
             }
             {
                 fromRect.set(
-                    (int) AndroidUtilities.rectTmp.left + dp(7 + 20) + dp(10) - es / 2,
+                    (int) AndroidUtilities.rectTmp.left + dp(7 + 20) + dp(10) - es / 2f,
                     et,
-                    (int) AndroidUtilities.rectTmp.left + dp(7 + 20) + dp(10) + es / 2,
+                    (int) AndroidUtilities.rectTmp.left + dp(7 + 20) + dp(10) + es / 2f,
                     eb
                 );
                 final int toCX = (int) (totalWidth / 2.0f - 2 * es2p + es2p * 1.5f);
                 toRect.set(
-                    toCX - es2 / 2,
+                    toCX - es2 / 2f,
                     (int) (AndroidUtilities.rectTmp.top + dp(27.33f) - es2 / 2f),
-                    toCX + es2 / 2,
+                    toCX + es2 / 2f,
                     (int) (AndroidUtilities.rectTmp.top + dp(27.33f) + es2 / 2f)
                 );
                 AndroidUtilities.lerpCentered(fromRect, toRect, alertProgress, toRect);
@@ -10074,16 +10056,16 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
             text1.draw(canvas, totalWidth / 2.0f - text1.getWidth() / 2.0f, height1 / 2.0f, 0xFFFFFFFF, (1.0f - alertProgress) * lerp(1.0f, .75f, loading));
             {
                 fromRect.set(
-                    (int) AndroidUtilities.rectTmp.right - dp(7 + 40) + dp(10) - es / 2,
+                    (int) AndroidUtilities.rectTmp.right - dp(7 + 40) + dp(10) - es / 2f,
                     et,
-                    (int) AndroidUtilities.rectTmp.right - dp(7 + 40) + dp(10) + es / 2,
+                    (int) AndroidUtilities.rectTmp.right - dp(7 + 40) + dp(10) + es / 2f,
                     eb
                 );
                 final int toCX = (int) (totalWidth / 2.0f - 2 * es2p + es2p * 2.5f);
                 toRect.set(
-                    toCX - es2 / 2,
+                    toCX - es2 / 2f,
                     (int) (AndroidUtilities.rectTmp.top + dp(27.33f) - es2 / 2f),
-                    toCX + es2 / 2,
+                    toCX + es2 / 2f,
                     (int) (AndroidUtilities.rectTmp.top + dp(27.33f) + es2 / 2f)
                 );
                 AndroidUtilities.lerpCentered(fromRect, toRect, alertProgress, toRect);
@@ -10093,16 +10075,16 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
             }
             {
                 fromRect.set(
-                    (int) AndroidUtilities.rectTmp.right - dp(7 + 20) + dp(10) - es / 2,
+                    (int) AndroidUtilities.rectTmp.right - dp(7 + 20) + dp(10) - es / 2f,
                     et,
-                    (int) AndroidUtilities.rectTmp.right - dp(7 + 20) + dp(10) + es / 2,
+                    (int) AndroidUtilities.rectTmp.right - dp(7 + 20) + dp(10) + es / 2f,
                     eb
                 );
                 final int toCX = (int) (totalWidth / 2.0f - 2 * es2p + es2p * 3.5f);
                 toRect.set(
-                    toCX - es2 / 2,
+                    toCX - es2 / 2f,
                     (int) (AndroidUtilities.rectTmp.top + dp(27.33f) - es2 / 2f),
-                    toCX + es2 / 2,
+                    toCX + es2 / 2f,
                     (int) (AndroidUtilities.rectTmp.top + dp(27.33f) + es2 / 2f)
                 );
                 AndroidUtilities.lerpCentered(fromRect, toRect, alertProgress, toRect);
@@ -10255,12 +10237,10 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
                 params.flags &= ~WindowManager.LayoutParams.FLAG_DIM_BEHIND;
                 params.softInputMode = WindowManager.LayoutParams.SOFT_INPUT_ADJUST_NOTHING;
                 params.flags |= WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM;
-                if (Build.VERSION.SDK_INT >= 21) {
-                    params.flags |= WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN |
-                        WindowManager.LayoutParams.FLAG_LAYOUT_INSET_DECOR |
-                        WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS |
-                        WindowManager.LayoutParams.FLAG_TRANSLUCENT_NAVIGATION;
-                }
+                params.flags |= WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN |
+                    WindowManager.LayoutParams.FLAG_LAYOUT_INSET_DECOR |
+                    WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS |
+                    WindowManager.LayoutParams.FLAG_TRANSLUCENT_NAVIGATION;
                 if (!BuildVars.DEBUG_PRIVATE_VERSION) {
                     params.flags |= WindowManager.LayoutParams.FLAG_SECURE;
                     AndroidUtilities.logFlagSecure();
@@ -10345,7 +10325,7 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
             progressDialog.dismiss();
             if (res instanceof TL_phone.exportedGroupCallInvite) {
                 final TL_phone.exportedGroupCallInvite r = (TL_phone.exportedGroupCallInvite) res;
-                CallLogActivity.showCallLinkSheet(getContext(), currentAccount, req.call, r.link, new DarkBlueThemeResourcesProvider(), false, call != null && call.call != null && call.call.creator);
+                CallLogActivity.showCallLinkSheet(getContext(), currentAccount, req.call, r.link, resourcesProvider, false, call != null && call.call != null && call.call.creator);
             } else if (err != null) {
                 BulletinFactory.of(topBulletinContainer, new DarkBlueThemeResourcesProvider())
                     .showForError(err);
@@ -10470,6 +10450,324 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
         final Bulletin bulletin = Bulletin.getVisibleBulletin();
         if (bulletin != null && bulletin.getLayout() != null && bulletin.getLayout().getParent() != null && bulletin.getLayout().getParent().getParent() == topBulletinContainer) {
             bulletin.getLayout().setTop(moveProgress > 0.5f);
+        }
+    }
+
+    private ReactionsContainerLayout createReactionsLayout() {
+        if (reactionsContainerLayout != null) {
+            return reactionsContainerLayout;
+        }
+
+        BaseFragment fragment = LaunchActivity.getLastFragment();
+        if (fragment == null) {
+            return null;
+        }
+        reactionsContainerLayout = new ReactionsContainerLayout(ReactionsContainerLayout.TYPE_STORY, fragment, getContext(), currentAccount, resourcesProvider);
+        reactionsContainerLayout.setDelegate(new ReactionsContainerLayout.ReactionsContainerDelegate() {
+            @Override
+            public boolean drawBackground() {
+                return true;
+            }
+
+            private final Path clipPath = new Path();
+
+            private final Paint bgPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+
+            {
+                bgPaint.setColor(0xFF212b35);
+            }
+
+            @Override
+            public boolean allowLongPress() {
+                return false;
+            }
+
+            @Override
+            public void drawRoundRect(Canvas canvas, RectF rect, float radius, float offsetX, float offsetY, int alpha, boolean isWindow) {
+                if (radius > 0) {
+                    canvas.drawRoundRect(rect, radius, radius, bgPaint);
+                } else {
+                    canvas.drawRect(rect, bgPaint);
+                }
+
+                if (Build.VERSION.SDK_INT >= 29 && canvas.isHardwareAccelerated() && renderNodeBlur != null) {
+                    canvas.save();
+
+                    if (radius > 0) {
+                        clipPath.rewind();
+                        clipPath.addRoundRect(rect, radius, radius, Path.Direction.CW);
+                        clipPath.close();
+                        canvas.clipPath(clipPath);
+                    } else {
+                        canvas.clipRect(rect);
+                    }
+
+                    canvas.translate(-reactionsContainerLayout.getX(), -reactionsContainerLayout.getY());
+                    canvas.scale(renderNodeBlurScale, renderNodeBlurScale);
+                    canvas.drawRenderNode(renderNodeBlur);
+                    canvas.restore();
+                }
+            }
+
+            @Override
+            public void onReactionClicked(View view, ReactionsLayoutInBubble.VisibleReaction visibleReaction, boolean longpress, boolean addToRecent) {
+                TLRPC.TL_messageEntityCustomEmoji emoji = new TLRPC.TL_messageEntityCustomEmoji();
+                String emoticon = visibleReaction.emojicon != null ? visibleReaction.emojicon : "\uD83D\uDC4D";
+                TLRPC.TL_textWithEntities text = new TLRPC.TL_textWithEntities();
+                text.text = emoticon;
+
+                if (visibleReaction.documentId != 0) {
+                    emoji.document_id = visibleReaction.documentId;
+                    emoji.offset = 0;
+                    emoji.length = emoticon.length();
+                    text.entities.add(emoji);
+                }
+
+                sendGroupCallMessage(text);
+                hideKeyboardOrEmojiView();
+
+                CustomEmojiReactionsWindow customEmojiReactionsWindow =
+                    reactionsContainerLayout.getReactionsWindow();
+
+                if (customEmojiReactionsWindow != null && customEmojiReactionsWindow.isShowing()) {
+                    reactionsContainerLayout.getReactionsWindow().dismissWithAlpha();
+                    reactionsContainerLayout.reset();
+                }
+            }
+        });
+
+        containerView.addView(reactionsContainerLayout, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 52, Gravity.CENTER_HORIZONTAL | Gravity.BOTTOM));
+        reactionsContainerLayout.setMessage(null, null, false);
+
+        callMessageEnterUnderContainer.bringToFront();
+        callMessageEnterContainer.bringToFront();
+
+        return reactionsContainerLayout;
+    }
+
+    private void hideKeyboardOrEmojiView() {
+        if (callMessageEnterView.isPopupVisible()) {
+            callMessageEnterView.hideEmojiView();
+        } else {
+            callMessageEnterView.closeKeyboard();
+        }
+    }
+
+    private void sendGroupCallMessage(TLRPC.TL_textWithEntities message) {
+        callMessageEnterView.setText("");
+
+        if (call == null) {
+            return;
+        }
+
+        final TLRPC.InputGroupCall inputGroupCall = call.getInputGroupCall(false);
+        if (inputGroupCall == null) {
+            return;
+        }
+
+        final long senderPeerId = call.selfPeer != null ?
+            DialogObject.getPeerDialogId(call.selfPeer):
+            UserConfig.getInstance(currentAccount).clientUserId;
+
+        GroupCallMessagesController.getInstance(currentAccount)
+            .sendCallMessage(senderPeerId, message, inputGroupCall);
+    }
+
+
+
+
+
+    /* Animations */
+
+    private static final int ANIMATOR_ID_KEYBOARD_VISIBLE = 0;
+    private static final int ANIMATOR_ID_KEYBOARD_HEIGHT = 1;
+    private static final int ANIMATOR_ID_HIDE_BUTTONS = 2;
+    private static final int ANIMATOR_ID_MESSAGE_INPUT_IS_EMPTY = 3;
+    private static final int ANIMATOR_ID_MESSAGE_INPUT_HEIGHT = 4;
+    private static final int ANIMATOR_ID_HAS_VIDEO = 5;
+
+    private final BoolAnimator animatorKeyboardVisible = new BoolAnimator(ANIMATOR_ID_KEYBOARD_VISIBLE, this, CubicBezierInterpolator.EASE_OUT_QUINT, TRANSITION_DURATION);
+    private final FactorAnimator animatorKeyboardHeight = new FactorAnimator(ANIMATOR_ID_KEYBOARD_HEIGHT, this, AdjustPanLayoutHelper.keyboardInterpolator, AdjustPanLayoutHelper.keyboardDuration);
+    private final BoolAnimator animatorHideButtons = new BoolAnimator(ANIMATOR_ID_HIDE_BUTTONS, this, CubicBezierInterpolator.DEFAULT, TRANSITION_DURATION);
+    private final BoolAnimator animatorMessageIsEmpty = new BoolAnimator(ANIMATOR_ID_MESSAGE_INPUT_IS_EMPTY, this, CubicBezierInterpolator.DEFAULT, 220L, true);
+    private final FactorAnimator animatorMessageInputHeight = new FactorAnimator(ANIMATOR_ID_MESSAGE_INPUT_HEIGHT, this, CubicBezierInterpolator.DEFAULT, TRANSITION_DURATION);
+    private final BoolAnimator animatorHasVideo = new BoolAnimator(ANIMATOR_ID_HAS_VIDEO, this, CubicBezierInterpolator.DEFAULT, TRANSITION_DURATION);
+
+    @Override
+    public void onFactorChanged(int id, float factor, float fraction, FactorAnimator callee) {
+        if (id == ANIMATOR_ID_KEYBOARD_VISIBLE) {
+            checkGroupCallUiPositions_MessagesList();
+            checkGroupCallUiAlpha_ReactionsLayout();
+            checkGroupCallUiAlpha_EnterView();
+            containerView.invalidate();
+        }
+
+        if (id == ANIMATOR_ID_KEYBOARD_HEIGHT) {
+            checkGroupCallUiPositions_EnterView();
+            checkGroupCallUiPositions_ReactionsLayout();
+            checkGroupCallUiPositions_MessagesList();
+            containerView.invalidate();
+        }
+
+        if (id == ANIMATOR_ID_HIDE_BUTTONS) {
+            checkGroupCallUiPositions_MessagesList();
+            checkGroupCallUiPositions_ButtonsList();
+            checkGroupCallUiPositions_FullscreenUsersList();
+            checkGroupCallUiAlpha_ButtonsList();
+            renderersContainer.setProgressToHideUi(factor);
+            fullscreenUsersListView.invalidate();
+            containerView.invalidate();
+            buttonsContainer.invalidate();
+        }
+
+        if (id == ANIMATOR_ID_MESSAGE_INPUT_IS_EMPTY) {
+            checkGroupCallUiPositions_ReactionsLayout();
+            checkGroupCallUiPositions_MessagesList();
+            checkGroupCallUiPositions_SendButton();
+            checkGroupCallUiAlpha_ReactionsLayout();
+            containerView.invalidate();
+        }
+
+        if (id == ANIMATOR_ID_MESSAGE_INPUT_HEIGHT) {
+            checkGroupCallUiPositions_MessagesList();
+            callMessageEnterUnderContainer.invalidate();
+            callMessageEnterView.invalidate();
+        }
+
+        if (id == ANIMATOR_ID_HAS_VIDEO) {
+            checkGroupCallUiPositions_MessagesList();
+            containerView.invalidate();
+        }
+    }
+
+    private void checkGroupCallUi() {
+        checkGroupCallUiPositions_EnterView();
+        checkGroupCallUiPositions_ReactionsLayout();
+        checkGroupCallUiPositions_MessagesList();
+        checkGroupCallUiPositions_ButtonsList();
+        checkGroupCallUiPositions_FullscreenUsersList();
+        checkGroupCallUiPositions_SendButton();
+        checkGroupCallUiAlpha_ButtonsList();
+        checkGroupCallUiAlpha_EnterView();
+        checkGroupCallUiAlpha_ReactionsLayout();
+    }
+
+    private void checkGroupCallUiPositions_EnterView() {
+        callMessageEnterContainer.setTranslationY(-animatorKeyboardHeight.getFactor());
+        callMessageEnterUnderContainer.invalidate();
+    }
+
+    private void checkGroupCallUiPositions_ReactionsLayout() {
+        if (reactionsContainerLayout != null) {
+            final float y1 = -animatorKeyboardHeight.getFactor();
+            final float y2 = -animatorMessageIsEmpty.getFloatValue() * dp(64);
+
+            reactionsContainerLayout.setTranslationY(y1 + y2);
+        }
+    }
+
+    private void checkGroupCallUiPositions_MessagesList() {
+        final float heightOfInputView = animatorMessageInputHeight.getFactor();
+        final float heightOfKeyboard = animatorKeyboardHeight.getFactor();
+        final float reactionsLayoutHeight = dp(68) * animatorMessageIsEmpty.getFloatValue();
+        
+        final float imeOffset = -(heightOfKeyboard + heightOfInputView + reactionsLayoutHeight + dp(10));
+        final float defaultOffset;
+
+        if (isTabletMode) {
+            defaultOffset = (1f - animatorHasVideo.getFloatValue()) * dp(-91);
+        } else if (isLandscapeMode) {
+            defaultOffset = 0;
+        } else {
+            defaultOffset = (animatorHideButtons.getFloatValue() * dp(94) - dp(104) * renderersContainer.progressToFullscreenMode) - dp(91);
+        }
+
+        final float translationY = lerp(defaultOffset, imeOffset, animatorKeyboardVisible.getFloatValue());
+        float visibleHeight = containerView.getMeasuredHeight() - scrollOffsetY + translationY - backgroundPaddingTop;
+        visibleHeight = Math.max(visibleHeight / 3 * 2, visibleHeight - dp(250));
+
+        groupCallMessagesListView.setTranslationY(translationY);
+        groupCallMessagesListView.setVisibleHeight((int) (visibleHeight));
+    }
+
+    private void checkGroupCallUiPositions_ButtonsList() {
+        if (isTabletMode) {
+            buttonsContainer.setTranslationX(0);
+            buttonsContainer.setTranslationY(0);
+        } else if (isLandscapeMode) {
+            buttonsContainer.setTranslationX(animatorHideButtons.getFloatValue() * dp(94));
+            buttonsContainer.setTranslationY(0);
+        } else {
+            buttonsContainer.setTranslationX(0);
+            buttonsContainer.setTranslationY(animatorHideButtons.getFloatValue() * dp(94));
+        }
+    }
+
+    private void checkGroupCallUiPositions_FullscreenUsersList() {
+        if (isTabletMode) {
+            fullscreenUsersListView.setTranslationX(0);
+            fullscreenUsersListView.setTranslationY(0);
+        } else if (isLandscapeMode) {
+            fullscreenUsersListView.setTranslationX(animatorHideButtons.getFloatValue() * dp(94));
+            fullscreenUsersListView.setTranslationY(0);
+        } else {
+            fullscreenUsersListView.setTranslationX(0);
+            fullscreenUsersListView.setTranslationY(animatorHideButtons.getFloatValue() * dp(94));
+        }
+    }
+
+    private void checkGroupCallUiPositions_SendButton() {
+        final float f = animatorMessageIsEmpty.getFloatValue();
+        callMessageHideButton.setScaleX(lerp(0.25f, 1f, f));
+        callMessageHideButton.setScaleY(lerp(0.25f, 1f, f));
+        callMessageHideButton.setAlpha(f);
+        callMessageHideButton.setClickable(f > 0.9f);
+
+        callMessageSendButton.setScaleX(lerp(0.25f, 1f, 1f - f));
+        callMessageSendButton.setScaleY(lerp(0.25f, 1f, 1f - f));
+        callMessageSendButton.setAlpha(1f - f);
+        callMessageSendButton.setClickable((1f - f) > 0.9f);
+    }
+
+    private void checkGroupCallUiAlpha_ButtonsList() {
+        buttonsContainer.setAlpha(1f - animatorHideButtons.getFloatValue());
+    }
+
+    private void checkGroupCallUiAlpha_EnterView() {
+        final float factor = animatorKeyboardVisible.getFloatValue();
+        final int visibility = factor > 0 ? View.VISIBLE : View.GONE;
+
+        callMessageEnterContainer.setAlpha(factor);
+        callMessageEnterUnderContainer.setAlpha(factor);
+
+        if (callMessageEnterContainer.getVisibility() != visibility) {
+            callMessageEnterContainer.setVisibility(visibility);
+            callMessageEnterUnderContainer.setVisibility(visibility);
+            if (visibility == View.GONE && callMessageEnterView.isFocused()) {
+                callMessageEnterView.clearFocus();
+            }
+        }
+    }
+
+    private void checkGroupCallUiAlpha_ReactionsLayout() {
+        if (reactionsContainerLayout != null) {
+            final float a1 = animatorKeyboardVisible.getFloatValue();
+            final float a2 = animatorMessageIsEmpty.getFloatValue();
+            final float alpha = a1 * a2;
+
+            reactionsContainerLayout.setAlpha(alpha);
+
+            final int visibility = alpha > 0 ? View.VISIBLE : View.GONE;
+            if (reactionsContainerLayout.getVisibility() != visibility) {
+                reactionsContainerLayout.setVisibility(visibility);
+                if (visibility == View.GONE) {
+                    reactionsContainerLayout.reset();
+                }
+            }
+
+            if (!reactionsContainerLayout.skipEnterAnimation && alpha == 1) {
+                reactionsContainerLayout.skipEnterAnimation = true;
+            }
         }
     }
 }

@@ -53,6 +53,7 @@ import org.telegram.SQLite.SQLitePreparedStatement;
 import org.telegram.messenger.browser.Browser;
 import org.telegram.messenger.support.LongSparseIntArray;
 import org.telegram.messenger.support.LongSparseLongArray;
+import org.telegram.messenger.voip.GroupCallMessagesController;
 import org.telegram.messenger.voip.VoIPDebugToSend;
 import org.telegram.messenger.voip.VoIPPreNotificationService;
 import org.telegram.messenger.voip.VoIPService;
@@ -65,6 +66,7 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.Vector;
 import org.telegram.tgnet.tl.TL_account;
 import org.telegram.tgnet.tl.TL_bots;
+import org.telegram.tgnet.tl.TL_forum;
 import org.telegram.tgnet.tl.TL_phone;
 import org.telegram.tgnet.tl.TL_stars;
 import org.telegram.tgnet.tl.TL_stories;
@@ -950,8 +952,13 @@ public class MessagesController extends BaseController implements NotificationCe
     }
 
     public boolean isForum(long dialogId) {
-        TLRPC.Chat chatLocal = getChat(-dialogId);
-        return chatLocal != null && chatLocal.forum;
+        if (dialogId < 0) {
+            TLRPC.Chat chatLocal = getChat(-dialogId);
+            return chatLocal != null && chatLocal.forum;
+        } else {
+            TLRPC.User userLocal = getUser(dialogId);
+            return UserObject.isBotForum(userLocal);
+        }
     }
 
     public boolean isMonoForum(long dialogId) {
@@ -5280,6 +5287,16 @@ public class MessagesController extends BaseController implements NotificationCe
                 }
             }
             sb.append("}");
+        }
+
+        public static PeerColor fromPeerCollectible(TLRPC.PeerColor peer_color) {
+            if (!(peer_color instanceof TLRPC.TL_peerColorCollectible)) return null;
+            final TLRPC.TL_peerColorCollectible color = (TLRPC.TL_peerColorCollectible) peer_color;
+            final PeerColor peerColor = new PeerColor();
+            peerColor.id = -1;
+            peerColor.hidden = true;
+            // TODO
+            return peerColor;
         }
 
         public static PeerColor fromCollectible(TLRPC.EmojiStatus status) {
@@ -16700,10 +16717,12 @@ public class MessagesController extends BaseController implements NotificationCe
             return ((TLRPC.TL_updateDeleteChannelMessages) update).channel_id;
         } else if (update instanceof TLRPC.TL_updateReadChannelInbox) {
             return ((TLRPC.TL_updateReadChannelInbox) update).channel_id;
-        } else if (update instanceof TLRPC.TL_updateChannelPinnedTopic) {
-            return ((TLRPC.TL_updateChannelPinnedTopic) update).channel_id;
-        } else if (update instanceof TLRPC.TL_updateChannelPinnedTopics) {
-            return ((TLRPC.TL_updateChannelPinnedTopics) update).channel_id;
+        } else if (update instanceof TLRPC.TL_updatePinnedForumTopic) {
+            final TLRPC.Peer peer = ((TLRPC.TL_updatePinnedForumTopic) update).peer;
+            return peer.channel_id;
+        } else if (update instanceof TLRPC.TL_updatePinnedForumTopics) {
+            final TLRPC.Peer peer = ((TLRPC.TL_updatePinnedForumTopics) update).peer;
+            return peer.channel_id;
         } else if (update instanceof TLRPC.TL_updateReadChannelDiscussionInbox) {
             return ((TLRPC.TL_updateReadChannelDiscussionInbox) update).channel_id;
         } else if (update instanceof TLRPC.TL_updateReadChannelDiscussionOutbox) {
@@ -17545,6 +17564,12 @@ public class MessagesController extends BaseController implements NotificationCe
                         pushMessages.add(obj);
                     }
                 }
+            } else if (baseUpdate instanceof TLRPC.TL_updateGroupCallMessage) {
+                GroupCallMessagesController.getInstance(currentAccount)
+                    .processUpdate((TLRPC.TL_updateGroupCallMessage) baseUpdate);
+            } else if (baseUpdate instanceof TLRPC.TL_updateGroupCallEncryptedMessage) {
+                GroupCallMessagesController.getInstance(currentAccount)
+                    .processUpdate((TLRPC.TL_updateGroupCallEncryptedMessage) baseUpdate);
             } else if (baseUpdate instanceof TLRPC.TL_updateReadMessagesContents) {
                 TLRPC.TL_updateReadMessagesContents update = (TLRPC.TL_updateReadMessagesContents) baseUpdate;
                 markContentAsReadMessagesDate = update.date;
@@ -17705,7 +17730,7 @@ public class MessagesController extends BaseController implements NotificationCe
                     userId = update.user_id;
                     action = update.action;
                     chatId = 0;
-                    threadId = 0;
+                    threadId = update.top_msg_id;
                     if (update.action instanceof TLRPC.TL_sendMessageEmojiInteraction) {
                         AndroidUtilities.runOnUIThread(() -> getNotificationCenter().postNotificationName(NotificationCenter.onEmojiInteractionsReceived, update.user_id, update.action));
                         continue;
@@ -17732,7 +17757,10 @@ public class MessagesController extends BaseController implements NotificationCe
                 if (uid == 0) {
                     uid = userId;
                 }
-                if (action instanceof TLRPC.TL_sendMessageHistoryImportAction) {
+                if (action instanceof TLRPC.TL_sendMessageTextDraftAction) {
+                    AndroidUtilities.runOnUIThread(() -> BotForumHelper.getInstance(currentAccount)
+                        .onBotForumDraftUpdate(userId, threadId, ((TLRPC.TL_sendMessageTextDraftAction) action).random_id, ((TLRPC.TL_sendMessageTextDraftAction) action).text));
+                } else if (action instanceof TLRPC.TL_sendMessageHistoryImportAction) {
                     if (importingActions == null) {
                         importingActions = new LongSparseIntArray();
                     }
@@ -18126,8 +18154,8 @@ public class MessagesController extends BaseController implements NotificationCe
                 dialogs_read_inbox_max.put(dialogId, Math.max(value, update.max_id));
                 FileLog.d("TL_updateReadChannelInbox " + dialogId + "  new unread = " + update.still_unread_count + " max id = " + update.max_id + " from get diff " + fromGetDifference);
             } else if (
-                baseUpdate instanceof TLRPC.TL_updateChannelPinnedTopic ||
-                baseUpdate instanceof TLRPC.TL_updateChannelPinnedTopics
+                baseUpdate instanceof TLRPC.TL_updatePinnedForumTopic ||
+                baseUpdate instanceof TLRPC.TL_updatePinnedForumTopics
             ) {
                 if (updatesOnMainThread == null) {
                     updatesOnMainThread = new ArrayList<>();
@@ -18560,29 +18588,29 @@ public class MessagesController extends BaseController implements NotificationCe
                     TLRPC.Update baseUpdate = updatesOnMainThreadFinal.get(a);
                     if (baseUpdate instanceof TLRPC.TL_updatePrivacy) {
                         TLRPC.TL_updatePrivacy update = (TLRPC.TL_updatePrivacy) baseUpdate;
-                        if (update.key == TLRPC.PrivacyKey.privacyKeyStatusTimestamp) {
+                        if (update.key instanceof TLRPC.TL_privacyKeyStatusTimestamp) {
                             getContactsController().setPrivacyRules(update.rules, ContactsController.PRIVACY_RULES_TYPE_LASTSEEN);
-                        } else if (update.key == TLRPC.PrivacyKey.privacyKeyChatInvite) {
+                        } else if (update.key instanceof TLRPC.TL_privacyKeyChatInvite) {
                             getContactsController().setPrivacyRules(update.rules, ContactsController.PRIVACY_RULES_TYPE_INVITE);
-                        } else if (update.key == TLRPC.PrivacyKey.privacyKeyPhoneCall) {
+                        } else if (update.key instanceof TLRPC.TL_privacyKeyPhoneCall) {
                             getContactsController().setPrivacyRules(update.rules, ContactsController.PRIVACY_RULES_TYPE_CALLS);
-                        } else if (update.key == TLRPC.PrivacyKey.privacyKeyPhoneP2P) {
+                        } else if (update.key instanceof TLRPC.TL_privacyKeyPhoneP2P) {
                             getContactsController().setPrivacyRules(update.rules, ContactsController.PRIVACY_RULES_TYPE_P2P);
-                        } else if (update.key == TLRPC.PrivacyKey.privacyKeyProfilePhoto) {
+                        } else if (update.key instanceof TLRPC.TL_privacyKeyProfilePhoto) {
                             getContactsController().setPrivacyRules(update.rules, ContactsController.PRIVACY_RULES_TYPE_PHOTO);
-                        } else if (update.key == TLRPC.PrivacyKey.privacyKeyForwards) {
+                        } else if (update.key instanceof TLRPC.TL_privacyKeyForwards) {
                             getContactsController().setPrivacyRules(update.rules, ContactsController.PRIVACY_RULES_TYPE_FORWARDS);
-                        } else if (update.key == TLRPC.PrivacyKey.privacyKeyPhoneNumber) {
+                        } else if (update.key instanceof TLRPC.TL_privacyKeyPhoneNumber) {
                             getContactsController().setPrivacyRules(update.rules, ContactsController.PRIVACY_RULES_TYPE_PHONE);
-                        } else if (update.key == TLRPC.PrivacyKey.privacyKeyAddedByPhone) {
+                        } else if (update.key instanceof TLRPC.TL_privacyKeyAddedByPhone) {
                             getContactsController().setPrivacyRules(update.rules, ContactsController.PRIVACY_RULES_TYPE_ADDED_BY_PHONE);
-                        } else if (update.key == TLRPC.PrivacyKey.privacyKeyVoiceMessages) {
+                        } else if (update.key instanceof TLRPC.TL_privacyKeyVoiceMessages) {
                             getContactsController().setPrivacyRules(update.rules, ContactsController.PRIVACY_RULES_TYPE_VOICE_MESSAGES);
-                        } else if (update.key == TLRPC.PrivacyKey.privacyKeyAbout) {
+                        } else if (update.key instanceof TLRPC.TL_privacyKeyAbout) {
                             getContactsController().setPrivacyRules(update.rules, ContactsController.PRIVACY_RULES_TYPE_BIO);
-                        } else if (update.key == TLRPC.PrivacyKey.privacyKeyBirthday) {
+                        } else if (update.key instanceof TLRPC.TL_privacyKeyBirthday) {
                             getContactsController().setPrivacyRules(update.rules, ContactsController.PRIVACY_RULES_TYPE_BIRTHDAY);
-                        } else if (update.key == TLRPC.PrivacyKey.privacyKeyStarGiftsAutoSave) {
+                        } else if (update.key instanceof TLRPC.TL_privacyKeyStarGiftsAutoSave) {
                             getContactsController().setPrivacyRules(update.rules, ContactsController.PRIVACY_RULES_TYPE_GIFTS);
                         }
                     } else if (baseUpdate instanceof TLRPC.TL_updateStarsRevenueStatus) {
@@ -19040,23 +19068,23 @@ public class MessagesController extends BaseController implements NotificationCe
                     } else if (baseUpdate instanceof TLRPC.TL_updateMoveStickerSetToTop) {
                         TLRPC.TL_updateMoveStickerSetToTop update = (TLRPC.TL_updateMoveStickerSetToTop) baseUpdate;
                         getMediaDataController().moveStickerSetToTop(update.stickerset, update.emojis, update.masks);
-                    } else if (baseUpdate instanceof TLRPC.TL_updateChannelPinnedTopic) {
-                        TLRPC.TL_updateChannelPinnedTopic update = (TLRPC.TL_updateChannelPinnedTopic) baseUpdate;
-
-                        ArrayList<Integer> newOrder = getTopicsController().getCurrentPinnedOrder(update.channel_id);
+                    } else if (baseUpdate instanceof TLRPC.TL_updatePinnedForumTopic) {
+                        TLRPC.TL_updatePinnedForumTopic update = (TLRPC.TL_updatePinnedForumTopic) baseUpdate;
+                        final long dialogId = DialogObject.getPeerDialogId(update.peer);
+                        ArrayList<Integer> newOrder = getTopicsController().getCurrentPinnedOrder(-dialogId);
                         newOrder.remove((Integer) update.topic_id);
                         if (update.pinned) {
                             newOrder.add(0, update.topic_id);
                         }
-                        getTopicsController().applyPinnedOrder(update.channel_id, newOrder);
+                        getTopicsController().applyPinnedOrder(-dialogId, newOrder);
 
-                    } else if (baseUpdate instanceof TLRPC.TL_updateChannelPinnedTopics) {
-                        TLRPC.TL_updateChannelPinnedTopics update = (TLRPC.TL_updateChannelPinnedTopics) baseUpdate;
-
+                    } else if (baseUpdate instanceof TLRPC.TL_updatePinnedForumTopics) {
+                        TLRPC.TL_updatePinnedForumTopics update = (TLRPC.TL_updatePinnedForumTopics) baseUpdate;
+                        final long dialogId = DialogObject.getPeerDialogId(update.peer);
                         if ((update.flags & 1) != 0) {
-                            getTopicsController().applyPinnedOrder(update.channel_id, update.order);
+                            getTopicsController().applyPinnedOrder(-dialogId, update.order);
                         } else {
-                            getTopicsController().reloadTopics(update.channel_id, false);
+                            getTopicsController().reloadTopics(-dialogId, false);
                         }
                     } else if (baseUpdate instanceof TLRPC.TL_updatePhoneCallSignalingData) {
                         TLRPC.TL_updatePhoneCallSignalingData data = (TLRPC.TL_updatePhoneCallSignalingData) baseUpdate;
@@ -19971,9 +19999,9 @@ public class MessagesController extends BaseController implements NotificationCe
                         }
                     });
                 } else {
-                    TLRPC.TL_channels_getForumTopicsByID req = new TLRPC.TL_channels_getForumTopicsByID();
+                    TL_forum.TL_messages_getForumTopicsByID req = new TL_forum.TL_messages_getForumTopicsByID();
                     req.topics.add((int) topicId);
-                    req.channel = getMessagesController().getInputChannel(-dialogId);
+                    req.peer = getMessagesController().getInputPeer(dialogId);
                     ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> {
                         if (response != null) {
                             TLRPC.TL_messages_forumTopics topics = (TLRPC.TL_messages_forumTopics) response;
@@ -23067,6 +23095,25 @@ public class MessagesController extends BaseController implements NotificationCe
 
     public boolean isFrozen() {
         return freezeSinceDate != 0 && freezeUntilDate != 0;
+    }
+
+    @Nullable
+    public static <T extends TLRPC.Update> T findUpdateFirst(TLRPC.Updates updates, Class<T> clazz) {
+        final ArrayList<T> list = new ArrayList<>();
+        if (updates == null) return null;
+        if (clazz.isInstance(updates.update)) {
+            TLRPC.Update u = updates.update;
+            return clazz.cast(u);
+        }
+        if (updates.updates != null) {
+            for (int i = 0; i < updates.updates.size(); ++i) {
+                final TLRPC.Update update = updates.updates.get(i);
+                if (clazz.isInstance(update)) {
+                    return clazz.cast(update);
+                }
+            }
+        }
+        return null;
     }
 
     public static <T extends TLRPC.Update> ArrayList<T> findUpdates(TLRPC.Updates updates, Class<T> clazz) {

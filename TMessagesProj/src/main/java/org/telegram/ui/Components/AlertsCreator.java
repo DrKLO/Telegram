@@ -4180,7 +4180,15 @@ public class AlertsCreator {
         return builder;
     }
 
-    public static BottomSheet.Builder createBirthdayPickerDialog(Context context, String title, String button, TL_account.TL_birthday currentBirthday, final Utilities.Callback<TL_account.TL_birthday> whenSelectedBirthday, Runnable addPrivacyText, Theme.ResourcesProvider resourcesProvider) {
+    public static BottomSheet.Builder createBirthdayPickerDialog(
+        Context context,
+        String title, String button,
+        TL_account.TL_birthday currentBirthday,
+        final Utilities.Callback<TL_account.TL_birthday> whenSelectedBirthday,
+        Runnable addPrivacyText,
+        boolean showRemoveYear,
+        Theme.ResourcesProvider resourcesProvider
+    ) {
         if (context == null) {
             return null;
         }
@@ -4404,6 +4412,16 @@ public class AlertsCreator {
             ContactsController.getInstance(currentAccount).loadPrivacySettings();
         }
 
+        if (showRemoveYear) {
+            final ButtonWithCounterView button2 = new ButtonWithCounterView(context, false, resourcesProvider);
+            button2.setText(getString(R.string.DateOfBirthHideYear), false);
+            button2.setOnClickListener(v -> {
+                yearPicker.setValue(undefinedYear);
+                check.run();
+            });
+            container.addView(button2, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48, Gravity.LEFT | Gravity.BOTTOM, 16, 15, 16, 4));
+        }
+
         buttonTextView.setPadding(dp(34), 0, dp(34), 0);
         buttonTextView.setGravity(Gravity.CENTER);
         buttonTextView.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText, resourcesProvider));
@@ -4411,7 +4429,7 @@ public class AlertsCreator {
         buttonTextView.setTypeface(AndroidUtilities.bold());
         buttonTextView.setText(button);
         buttonTextView.setBackground(Theme.createSimpleSelectorRoundRectDrawable(dp(8), Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider), Theme.getColor(Theme.key_featuredStickers_addButtonPressed, resourcesProvider)));
-        container.addView(buttonTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48, Gravity.LEFT | Gravity.BOTTOM, 16, 15, 16, 16));
+        container.addView(buttonTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48, Gravity.LEFT | Gravity.BOTTOM, 16, showRemoveYear ? 0 : 15, 16, 16));
         buttonTextView.setOnClickListener(v -> {
             TL_account.TL_birthday b = new TL_account.TL_birthday();
             b.day   = dayPicker.getValue();

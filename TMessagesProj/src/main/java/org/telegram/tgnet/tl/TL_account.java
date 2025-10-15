@@ -2399,12 +2399,11 @@ public class TL_account {
     }
 
     public static class updateColor extends TLObject {
-        public static final int constructor = 0x7cefa15d;
+        public static final int constructor = 0x684d214e;
 
         public int flags;
         public boolean for_profile;
-        public int color;
-        public long background_emoji_id;
+        public TLRPC.PeerColor color;
 
         public TLObject deserializeResponse(InputSerializedData stream, int constructor, boolean exception) {
             return TLRPC.Bool.TLdeserialize(stream, constructor, exception);
@@ -2415,10 +2414,7 @@ public class TL_account {
             flags = for_profile ? (flags | 2) : (flags &~ 2);
             stream.writeInt32(flags);
             if ((flags & 4) != 0) {
-                stream.writeInt32(color);
-            }
-            if ((flags & 1) != 0) {
-                stream.writeInt64(background_emoji_id);
+                color.serializeToStream(stream);
             }
         }
     }
@@ -4184,16 +4180,16 @@ public class TL_account {
 
 
     public static class Tl_getUniqueGiftChatThemes extends TLMethod<ChatThemes> {
-        public static final int constructor = 0xfe74ef9f;
+        public static final int constructor = 0xe42ce9c9;
 
-        public int offset;
+        public String offset;
         public int limit;
         public long hash;
 
         @Override
         public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
-            stream.writeInt32(offset);
+            stream.writeString(offset);
             stream.writeInt32(limit);
             stream.writeInt64(hash);
         }
@@ -4233,14 +4229,14 @@ public class TL_account {
     }
 
     public static class Tl_chatThemes extends ChatThemes {
-        public static final int constructor = 0x16484857;
+        public static final int constructor = 0xBE098173;
         public int flags;
         public long hash;
 
         public ArrayList<TLRPC.ChatTheme> themes;
         public ArrayList<TLRPC.Chat> chats;
         public ArrayList<TLRPC.User> users;
-        public int next_offset;
+        public String next_offset;
 
         @Override
         public void serializeToStream(OutputSerializedData stream) {
@@ -4251,7 +4247,7 @@ public class TL_account {
             Vector.serialize(stream, chats);
             Vector.serialize(stream, users);
             if (hasFlag(flags, FLAG_0)) {
-                stream.writeInt32(next_offset);
+                stream.writeString(next_offset);
             }
         }
 
@@ -4263,7 +4259,7 @@ public class TL_account {
             chats = Vector.deserialize(stream, TLRPC.Chat::TLdeserialize, exception);
             users = Vector.deserialize(stream, TLRPC.User::TLdeserialize, exception);
             if (hasFlag(flags, FLAG_0)) {
-                next_offset = stream.readInt32(exception);
+                next_offset = stream.readString(exception);
             }
         }
     }

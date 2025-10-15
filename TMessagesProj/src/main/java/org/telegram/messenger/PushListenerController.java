@@ -541,6 +541,18 @@ public class PushListenerController {
                                             message1 = getString(R.string.Gift2UniqueUpgradeNotification);
                                             break;
                                         }
+                                        case "MESSAGE_STARGIFT_PREPAID_UPGRADE": {
+                                            userName = args[0];
+                                            messageText = LocaleController.formatPluralStringComma("NotificationMessageUniqueStarGiftPrepaidUpgrade", Integer.parseInt(args[1]), args[0]);
+                                            message1 = getString(R.string.Gift2UniquePrepaidUpgradeNotification);
+                                            break;
+                                        }
+                                        case "MESSAGE_STARGIFT_UNPACK_UPGRADE": {
+                                            userName = args[0];
+                                            messageText = LocaleController.formatString(R.string.NotificationMessageUniqueStarGiftUnpackUpgrade, args[0]);
+                                            message1 = getString(R.string.Gift2UniqueUnpackUpgradeNotification);
+                                            break;
+                                        }
                                         case "MESSAGE_PAID_MEDIA": {
                                             int stars = Integer.parseInt(args[1]);
                                             messageText = LocaleController.formatPluralString("NotificationMessagePaidMedia", stars, args[0]);
@@ -729,8 +741,12 @@ public class PushListenerController {
                                             localMessage = true;
                                             break;
                                         }
+                                        case "MESSAGE_SUGGEST_BIRTHDAY": {
+                                            messageText = LocaleController.formatString(R.string.NotificationMessageSuggestBirthday, args[0]);
+                                            break;
+                                        }
                                         case "MESSAGES": {
-                                            messageText = LocaleController.formatString("NotificationMessageAlbum", R.string.NotificationMessageAlbum, args[0]);
+                                            messageText = LocaleController.formatString(R.string.NotificationMessageAlbum, args[0]);
                                             localMessage = true;
                                             break;
                                         }

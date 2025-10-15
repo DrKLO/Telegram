@@ -48,6 +48,7 @@ public sealed class TlGen_User : TlGen_Object {
     public val contact_require_premium: Boolean,
     public val bot_business: Boolean,
     public val bot_has_main_app: Boolean,
+    public val bot_forum_view: Boolean,
     public val id: Long,
     public val access_hash: Long?,
     public val first_name: String?,
@@ -124,6 +125,7 @@ public sealed class TlGen_User : TlGen_Object {
         if (bot_has_main_app) result = result or 8192U
         if (bot_verification_icon != null) result = result or 16384U
         if (send_paid_messages_stars != null) result = result or 32768U
+        if (bot_forum_view) result = result or 65536U
         return result
       }
 

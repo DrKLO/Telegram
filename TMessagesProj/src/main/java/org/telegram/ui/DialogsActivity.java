@@ -124,7 +124,6 @@ import org.telegram.messenger.UserObject;
 import org.telegram.messenger.Utilities;
 import org.telegram.messenger.XiaomiUtilities;
 import org.telegram.messenger.browser.Browser;
-import org.telegram.messenger.voip.ConferenceCall;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.SerializedData;
 import org.telegram.tgnet.TLObject;
@@ -5993,7 +5992,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     getConnectionsManager().sendRequest(req, (res, err) -> AndroidUtilities.runOnUIThread(() -> {
                         if (res instanceof TLRPC.TL_boolTrue) {
                             BulletinFactory.of(DialogsActivity.this)
-                                .createSimpleBulletin(R.raw.contact_check, LocaleController.getString(R.string.PrivacyBirthdaySetDone))
+                                .createSimpleBulletin(R.raw.gift, getString(R.string.PrivacyBirthdaySetDone), getString(R.string.PrivacyBirthdaySetDoneInfo))
                                 .setDuration(Bulletin.DURATION_PROLONG).show();
                         } else {
                             if (userFull != null) {
@@ -6031,7 +6030,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     params.transitionFromLeft = true;
                     params.allowNestedScroll = false;
                     showAsSheet(new PrivacyControlActivity(PrivacyControlActivity.PRIVACY_RULES_TYPE_BIRTHDAY), params);
-                }, getResourceProvider()).create());
+                }, false, getResourceProvider()).create());
             });
             dialogsHintCell.setText(Emoji.replaceWithRestrictedEmoji(LocaleController.getString(R.string.BirthdaySetupTitle), dialogsHintCell.titleView, this::updateDialogsHint), LocaleController.formatString(R.string.BirthdaySetupMessage));
             dialogsHintCell.setOnCloseListener(v -> {

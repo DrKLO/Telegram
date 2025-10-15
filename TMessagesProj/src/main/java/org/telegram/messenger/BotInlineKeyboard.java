@@ -35,6 +35,7 @@ public class BotInlineKeyboard {
         public static final int SUGGESTION_DECLINE = 1;
         public static final int SUGGESTION_ACCEPT = 2;
         public static final int SUGGESTION_EDIT = 3;
+        public static final int OPEN_MESSAGE_THREAD = 4;
 
         public final int id;
         public final @DrawableRes int icon;
@@ -67,46 +68,6 @@ public class BotInlineKeyboard {
         }
     }
 
-    public static Source fromBot(TLRPC.TL_replyInlineMarkup replyInlineMarkup, boolean withSuggestion) {
-        final Button[][] buttons = new Button[replyInlineMarkup.rows.size() + (withSuggestion ? 2 : 0)][];
-        int separators = 0;
-        for (int a = 0; a < replyInlineMarkup.rows.size(); a++) {
-            ArrayList<TLRPC.KeyboardButton> row = replyInlineMarkup.rows.get(a).buttons;
-            buttons[a] = new ButtonBot[row.size()];
-            for (int b = 0; b < row.size(); b++) {
-                buttons[a][b] = new ButtonBot(row.get(b));
-            }
-        }
-
-        if (withSuggestion) {
-            if (!replyInlineMarkup.rows.isEmpty()) {
-                separators |= (1 << (replyInlineMarkup.rows.size() - 1));
-            }
-
-            buttons[replyInlineMarkup.rows.size()] = new Button[]{
-                new ButtonCustom(ButtonCustom.SUGGESTION_DECLINE, R.string.PostSuggestionsInlineDecline, R.drawable.filled_bot_decline_24),
-                new ButtonCustom(ButtonCustom.SUGGESTION_ACCEPT, R.string.PostSuggestionsInlineAccept, R.drawable.filled_bot_approve_24),
-            };
-            buttons[replyInlineMarkup.rows.size() + 1] = new Button[]{
-                new ButtonCustom(ButtonCustom.SUGGESTION_EDIT, R.string.PostSuggestionsInlineEdit, R.drawable.filled_bot_suggest_24)
-            };
-        }
-
-        return new KeyboardSourceArray(buttons, separators);
-    }
-
-    public static Source fromSuggestion() {
-        return new KeyboardSourceArray(new Button[][]{
-            new Button[]{
-                new ButtonCustom(ButtonCustom.SUGGESTION_DECLINE, R.string.PostSuggestionsInlineDecline, R.drawable.filled_bot_decline_24),
-                new ButtonCustom(ButtonCustom.SUGGESTION_ACCEPT, R.string.PostSuggestionsInlineAccept, R.drawable.filled_bot_approve_24),
-            },
-            new Button[]{
-                new ButtonCustom(ButtonCustom.SUGGESTION_EDIT, R.string.PostSuggestionsInlineEdit, R.drawable.filled_bot_suggest_24)
-            }
-        }, 0);
-    }
-
     private static class KeyboardSourceArray implements Source {
         private final Button[][] buttons;
         private final int separators;
@@ -134,6 +95,74 @@ public class BotInlineKeyboard {
         @Override
         public boolean hasSeparator(int row) {
             return (separators & (1 << row)) != 0;
+        }
+    }
+
+    public static class Builder {
+        private final ArrayList<Button[]> buttons = new ArrayList<>();
+        private int separators;
+
+        public void addBotKeyboard(TLRPC.TL_replyInlineMarkup replyInlineMarkup) {
+            for (int a = 0; a < replyInlineMarkup.rows.size(); a++) {
+                ArrayList<TLRPC.KeyboardButton> row = replyInlineMarkup.rows.get(a).buttons;
+                ButtonBot[] arr = new ButtonBot[row.size()];
+                for (int b = 0; b < row.size(); b++) {
+                    arr[b] = new ButtonBot(row.get(b));
+                }
+                buttons.add(arr);
+            }
+        }
+
+        public void addSuggestionKeyboard() {
+            buttons.add(new Button[]{
+                new ButtonCustom(ButtonCustom.SUGGESTION_DECLINE, R.string.PostSuggestionsInlineDecline, R.drawable.filled_bot_decline_24),
+                new ButtonCustom(ButtonCustom.SUGGESTION_ACCEPT, R.string.PostSuggestionsInlineAccept, R.drawable.filled_bot_approve_24),
+            });
+            buttons.add(new Button[]{
+                    new ButtonCustom(ButtonCustom.SUGGESTION_EDIT, R.string.PostSuggestionsInlineEdit, R.drawable.filled_bot_suggest_24)
+            });
+        }
+
+        public void addContinueThreadKeyboard() {
+            buttons.add(new Button[]{
+                new ButtonCustom(ButtonCustom.OPEN_MESSAGE_THREAD, R.string.BotForumContinueChat, 0)
+            });
+        }
+
+        public void addKeyboardSource(Source source) {
+            if (source == null) {
+                return;
+            }
+
+            int rows = source.getRowsCount();
+            for (int a = 0; a < rows; a++) {
+                Button[] buttons = new Button[source.getColumnsCount(a)];
+                for (int b = 0; b < buttons.length; b++) {
+                    buttons[b] = source.getButton(a, b);
+                }
+                this.buttons.add(buttons);
+                if (source.hasSeparator(a)) {
+                    addSeparator();
+                }
+            }
+        }
+
+        public void addSeparator() {
+            if (!buttons.isEmpty()) {
+                separators |= (1 << (buttons.size() - 1));
+            }
+        }
+
+        public boolean isEmpty() {
+            return buttons.isEmpty();
+        }
+
+        public boolean isNotEmpty() {
+            return !buttons.isEmpty();
+        }
+
+        public Source build() {
+            return new KeyboardSourceArray(buttons.toArray(new Button[buttons.size()][]), separators);
         }
     }
 }

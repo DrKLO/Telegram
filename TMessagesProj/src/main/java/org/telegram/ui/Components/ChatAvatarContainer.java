@@ -36,6 +36,7 @@ import androidx.core.content.ContextCompat;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
+import org.telegram.messenger.BotForumHelper;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.Emoji;
@@ -46,7 +47,6 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
-import org.telegram.messenger.SavedMessagesController;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
 import org.telegram.tgnet.ConnectionsManager;
@@ -236,7 +236,7 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
             }
         };
         if (baseFragment instanceof ChatActivity || baseFragment instanceof TopicsFragment) {
-            if (parentFragment == null || (parentFragment.getChatMode() != ChatActivity.MODE_QUICK_REPLIES && parentFragment.getChatMode() != ChatActivity.MODE_EDIT_BUSINESS_LINK) && parentFragment.getChatMode() != ChatActivity.MODE_SUGGESTIONS) {
+            if (parentFragment == null || (parentFragment.getChatMode() != ChatActivity.MODE_QUICK_REPLIES && parentFragment.getChatMode() != ChatActivity.MODE_EDIT_BUSINESS_LINK) && parentFragment.getChatMode() != ChatActivity.MODE_SUGGESTIONS && !parentFragment.isInBotForumMode()) {
                 sharedMediaPreloader = new SharedMediaLayout.SharedMediaPreloader(baseFragment);
             }
             if (parentFragment != null && (parentFragment.isThreadChat() || parentFragment.getChatMode() == ChatActivity.MODE_PINNED || parentFragment.getChatMode() == ChatActivity.MODE_QUICK_REPLIES || parentFragment.getChatMode() == ChatActivity.MODE_EDIT_BUSINESS_LINK)) {
@@ -571,6 +571,9 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
                         args.putLong("dialog_id", parentFragment.getDialogId());
                     }
                 }
+                if (UserObject.isBotForum(user)) {
+                    args.putLong("topic_id", parentFragment.getTopicId());
+                }
                 args.putBoolean("reportSpam", parentFragment.hasReportSpam());
                 args.putInt("actionBarColor", getThemedColor(Theme.key_actionBarDefault));
                 ProfileActivity fragment = new ProfileActivity(args, sharedMediaPreloader);
@@ -863,9 +866,9 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
                 rightDrawableIsScamOrVerified = true;
             }
         } else if (verified) {
-            Drawable verifiedBackground = getResources().getDrawable(R.drawable.verified_area).mutate();
+            verifiedBackground = getResources().getDrawable(R.drawable.verified_area).mutate();
             verifiedBackground.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_profile_verifiedBackground), PorterDuff.Mode.MULTIPLY));
-            Drawable verifiedCheck = getResources().getDrawable(R.drawable.verified_check).mutate();
+            verifiedCheck = getResources().getDrawable(R.drawable.verified_check).mutate();
             verifiedCheck.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_profile_verifiedCheck), PorterDuff.Mode.MULTIPLY));
             Drawable verifiedDrawable = new CombinedDrawable(verifiedBackground, verifiedCheck);
             titleTextView.setRightDrawable2(verifiedDrawable);
@@ -884,9 +887,9 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
             if (DialogObject.getEmojiStatusDocumentId(emojiStatus) != 0) {
                 emojiStatusDrawable.set(DialogObject.getEmojiStatusDocumentId(emojiStatus), animated);
             } else if (premium) {
-                Drawable drawable = ContextCompat.getDrawable(ApplicationLoader.applicationContext, R.drawable.msg_premium_liststar).mutate();
-                drawable.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_profile_verifiedBackground), PorterDuff.Mode.MULTIPLY));
-                emojiStatusDrawable.set(drawable, animated);
+                emojiStatusDefaultDrawable = ContextCompat.getDrawable(ApplicationLoader.applicationContext, R.drawable.msg_premium_liststar).mutate();
+                emojiStatusDefaultDrawable.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_profile_verifiedBackground), PorterDuff.Mode.MULTIPLY));
+                emojiStatusDrawable.set(emojiStatusDefaultDrawable, animated);
             } else {
                 emojiStatusDrawable.set((Drawable) null, animated);
             }
@@ -899,6 +902,11 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
             rightDrawableContentDescription = null;
         }
     }
+
+    private Drawable emojiStatusDefaultDrawable;
+    private Drawable verifiedBackground;
+    private Drawable verifiedCheck;
+
 
     public void setSubtitle(CharSequence value) {
         if (lastSubtitle == null) {
@@ -944,7 +952,7 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
         if (subtitleTextView == null) return;
         if (start) {
             try {
-                int type = MessagesController.getInstance(currentAccount).getPrintingStringType(parentFragment.getDialogId(), parentFragment.getThreadId());
+                int type = subtitleIsThinkingBot ? 0 : MessagesController.getInstance(currentAccount).getPrintingStringType(parentFragment.getDialogId(), parentFragment.getThreadId());
                 if (statusDrawables[type] == null) return;
                 if (type == 5) {
                     subtitleTextView.replaceTextWithDrawable(statusDrawables[type], "**oo**");
@@ -983,6 +991,8 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
         updateSubtitle(false);
     }
 
+    private boolean subtitleIsThinkingBot;
+
     public void updateSubtitle(boolean animated) {
         if (parentFragment == null) {
             return;
@@ -1000,7 +1010,15 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
             return;
         }
 
+        subtitleIsThinkingBot = false;
         CharSequence printString = MessagesController.getInstance(currentAccount).getPrintingString(parentFragment.getDialogId(), parentFragment.getThreadId(), false);
+        if (printString == null && UserObject.isBotForum(user)) {
+            if (BotForumHelper.getInstance(currentAccount).isThinking(user.id, (int) parentFragment.getTopicId())) {
+                printString = "thinking";
+                subtitleIsThinkingBot = true;
+            }
+        }
+
         if (printString != null) {
             printString = TextUtils.replace(printString, new String[]{"..."}, new String[]{""});
         }
@@ -1145,7 +1163,8 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
                 }
             }
             newSubtitle = printString;
-            if (MessagesController.getInstance(currentAccount).getPrintingStringType(parentFragment.getDialogId(), parentFragment.getThreadId()) == 5) {
+            Integer type = MessagesController.getInstance(currentAccount).getPrintingStringType(parentFragment.getDialogId(), parentFragment.getThreadId());
+            if (type != null && type == 5) {
                 newSubtitle = Emoji.replaceEmoji(newSubtitle, getSubtitlePaint().getFontMetricsInt(), false);
             }
             useOnlineColor = true;
@@ -1548,5 +1567,21 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
         if (currentTypingDrawable != null) {
             currentTypingDrawable.setColor(getThemedColor(Theme.key_chat_status));
         }
+        if (emojiStatusDefaultDrawable != null) {
+            emojiStatusDefaultDrawable.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_profile_verifiedBackground), PorterDuff.Mode.MULTIPLY));
+        }
+        if (botVerificationDrawable != null) {
+            botVerificationDrawable.setColor(getThemedColor(Theme.key_profile_verifiedBackground));
+        }
+        if (emojiStatusDrawable != null) {
+            emojiStatusDrawable.setColor(getThemedColor(Theme.key_profile_verifiedBackground));
+        }
+        if (verifiedBackground != null) {
+            verifiedBackground.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_profile_verifiedBackground), PorterDuff.Mode.MULTIPLY));
+        }
+        if (verifiedCheck != null) {
+            verifiedCheck.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_profile_verifiedCheck), PorterDuff.Mode.MULTIPLY));
+        }
+        invalidate();
     }
 }

@@ -26,7 +26,6 @@ import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Cells.ChatMessageCell;
 
 public class TopicSeparator {
 
@@ -123,6 +122,10 @@ public class TopicSeparator {
             }
         }
         return text != null;
+    }
+
+    public void setText(String text) {
+        this.text = new Text(text, 14, AndroidUtilities.bold());
     }
 
     public void attach() {

@@ -357,6 +357,7 @@ public sealed class TlGen_MessageAction : TlGen_Object {
   }
 
   public data class TL_messageActionTopicCreate(
+    public val title_missing: Boolean,
     public val title: String,
     public val icon_color: Int,
     public val icon_emoji_id: Long?,
@@ -365,6 +366,7 @@ public sealed class TlGen_MessageAction : TlGen_Object {
       get() {
         var result = 0U
         if (icon_emoji_id != null) result = result or 1U
+        if (title_missing) result = result or 2U
         return result
       }
 
@@ -1012,63 +1014,6 @@ public sealed class TlGen_MessageAction : TlGen_Object {
     }
   }
 
-  public data class TL_messageActionStarGiftUnique(
-    public val upgrade: Boolean,
-    public val transferred: Boolean,
-    public val saved: Boolean,
-    public val refunded: Boolean,
-    public val prepaid_upgrade: Boolean,
-    public val gift: TlGen_StarGift,
-    public val can_export_at: Int?,
-    public val transfer_stars: Long?,
-    public val from_id: TlGen_Peer?,
-    public val resale_amount: TlGen_StarsAmount?,
-    public val can_transfer_at: Int?,
-    public val can_resell_at: Int?,
-    public val multiflags_7: Multiflags_7?,
-  ) : TlGen_MessageAction() {
-    internal val flags: UInt
-      get() {
-        var result = 0U
-        if (upgrade) result = result or 1U
-        if (transferred) result = result or 2U
-        if (saved) result = result or 4U
-        if (can_export_at != null) result = result or 8U
-        if (transfer_stars != null) result = result or 16U
-        if (refunded) result = result or 32U
-        if (from_id != null) result = result or 64U
-        if (multiflags_7 != null) result = result or 128U
-        if (resale_amount != null) result = result or 256U
-        if (can_transfer_at != null) result = result or 512U
-        if (can_resell_at != null) result = result or 1024U
-        if (prepaid_upgrade) result = result or 2048U
-        return result
-      }
-
-    public override fun serializeToStream(stream: OutputSerializedData) {
-      stream.writeInt32(MAGIC.toInt())
-      stream.writeInt32(flags.toInt())
-      gift.serializeToStream(stream)
-      can_export_at?.let { stream.writeInt32(it) }
-      transfer_stars?.let { stream.writeInt64(it) }
-      from_id?.serializeToStream(stream)
-      multiflags_7?.let { it.peer.serializeToStream(stream) }
-      multiflags_7?.let { stream.writeInt64(it.saved_id) }
-      resale_amount?.serializeToStream(stream)
-      can_transfer_at?.let { stream.writeInt32(it) }
-      can_resell_at?.let { stream.writeInt32(it) }
-    }
-
-    public data class Multiflags_7(
-      public val peer: TlGen_Peer,
-      public val saved_id: Long,
-    )
-
-    public companion object {
-      public const val MAGIC: UInt = 0x34F762F3U
-    }
-  }
-
   public data class TL_messageActionStarGift(
     public val name_hidden: Boolean,
     public val saved: Boolean,
@@ -1145,6 +1090,81 @@ public sealed class TlGen_MessageAction : TlGen_Object {
 
     public companion object {
       public const val MAGIC: UInt = 0xB91BBD3AU
+    }
+  }
+
+  public data class TL_messageActionStarGiftUnique(
+    public val upgrade: Boolean,
+    public val transferred: Boolean,
+    public val saved: Boolean,
+    public val refunded: Boolean,
+    public val prepaid_upgrade: Boolean,
+    public val assigned: Boolean,
+    public val gift: TlGen_StarGift,
+    public val can_export_at: Int?,
+    public val transfer_stars: Long?,
+    public val from_id: TlGen_Peer?,
+    public val resale_amount: TlGen_StarsAmount?,
+    public val can_transfer_at: Int?,
+    public val can_resell_at: Int?,
+    public val drop_original_details_stars: Long?,
+    public val multiflags_7: Multiflags_7?,
+  ) : TlGen_MessageAction() {
+    internal val flags: UInt
+      get() {
+        var result = 0U
+        if (upgrade) result = result or 1U
+        if (transferred) result = result or 2U
+        if (saved) result = result or 4U
+        if (can_export_at != null) result = result or 8U
+        if (transfer_stars != null) result = result or 16U
+        if (refunded) result = result or 32U
+        if (from_id != null) result = result or 64U
+        if (multiflags_7 != null) result = result or 128U
+        if (resale_amount != null) result = result or 256U
+        if (can_transfer_at != null) result = result or 512U
+        if (can_resell_at != null) result = result or 1024U
+        if (prepaid_upgrade) result = result or 2048U
+        if (drop_original_details_stars != null) result = result or 4096U
+        if (assigned) result = result or 8192U
+        return result
+      }
+
+    public override fun serializeToStream(stream: OutputSerializedData) {
+      stream.writeInt32(MAGIC.toInt())
+      stream.writeInt32(flags.toInt())
+      gift.serializeToStream(stream)
+      can_export_at?.let { stream.writeInt32(it) }
+      transfer_stars?.let { stream.writeInt64(it) }
+      from_id?.serializeToStream(stream)
+      multiflags_7?.let { it.peer.serializeToStream(stream) }
+      multiflags_7?.let { stream.writeInt64(it.saved_id) }
+      resale_amount?.serializeToStream(stream)
+      can_transfer_at?.let { stream.writeInt32(it) }
+      can_resell_at?.let { stream.writeInt32(it) }
+      drop_original_details_stars?.let { stream.writeInt64(it) }
+    }
+
+    public data class Multiflags_7(
+      public val peer: TlGen_Peer,
+      public val saved_id: Long,
+    )
+
+    public companion object {
+      public const val MAGIC: UInt = 0x95728543U
+    }
+  }
+
+  public data class TL_messageActionSuggestBirthday(
+    public val birthday: TlGen_Birthday,
+  ) : TlGen_MessageAction() {
+    public override fun serializeToStream(stream: OutputSerializedData) {
+      stream.writeInt32(MAGIC.toInt())
+      birthday.serializeToStream(stream)
+    }
+
+    public companion object {
+      public const val MAGIC: UInt = 0x2C8F2A25U
     }
   }
 
@@ -1930,6 +1950,63 @@ public sealed class TlGen_MessageAction : TlGen_Object {
 
     public companion object {
       public const val MAGIC: UInt = 0x2E3AE60EU
+    }
+  }
+
+  public data class TL_messageActionStarGiftUnique_layer214(
+    public val upgrade: Boolean,
+    public val transferred: Boolean,
+    public val saved: Boolean,
+    public val refunded: Boolean,
+    public val prepaid_upgrade: Boolean,
+    public val gift: TlGen_StarGift,
+    public val can_export_at: Int?,
+    public val transfer_stars: Long?,
+    public val from_id: TlGen_Peer?,
+    public val resale_amount: TlGen_StarsAmount?,
+    public val can_transfer_at: Int?,
+    public val can_resell_at: Int?,
+    public val multiflags_7: Multiflags_7?,
+  ) : TlGen_Object {
+    internal val flags: UInt
+      get() {
+        var result = 0U
+        if (upgrade) result = result or 1U
+        if (transferred) result = result or 2U
+        if (saved) result = result or 4U
+        if (can_export_at != null) result = result or 8U
+        if (transfer_stars != null) result = result or 16U
+        if (refunded) result = result or 32U
+        if (from_id != null) result = result or 64U
+        if (multiflags_7 != null) result = result or 128U
+        if (resale_amount != null) result = result or 256U
+        if (can_transfer_at != null) result = result or 512U
+        if (can_resell_at != null) result = result or 1024U
+        if (prepaid_upgrade) result = result or 2048U
+        return result
+      }
+
+    public override fun serializeToStream(stream: OutputSerializedData) {
+      stream.writeInt32(MAGIC.toInt())
+      stream.writeInt32(flags.toInt())
+      gift.serializeToStream(stream)
+      can_export_at?.let { stream.writeInt32(it) }
+      transfer_stars?.let { stream.writeInt64(it) }
+      from_id?.serializeToStream(stream)
+      multiflags_7?.let { it.peer.serializeToStream(stream) }
+      multiflags_7?.let { stream.writeInt64(it.saved_id) }
+      resale_amount?.serializeToStream(stream)
+      can_transfer_at?.let { stream.writeInt32(it) }
+      can_resell_at?.let { stream.writeInt32(it) }
+    }
+
+    public data class Multiflags_7(
+      public val peer: TlGen_Peer,
+      public val saved_id: Long,
+    )
+
+    public companion object {
+      public const val MAGIC: UInt = 0x34F762F3U
     }
   }
 }

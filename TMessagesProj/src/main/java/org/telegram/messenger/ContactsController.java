@@ -2354,11 +2354,15 @@ public class ContactsController extends BaseController {
     }
 
     public void addContact(TLRPC.User user, boolean exception) {
+        addContact(user, null, exception);
+    }
+
+    public void addContact(TLRPC.User user, TLRPC.TL_textWithEntities note, boolean exception) {
         if (user == null) {
             return;
         }
 
-        TLRPC.TL_contacts_addContact req = new TLRPC.TL_contacts_addContact();
+        final TLRPC.TL_contacts_addContact req = new TLRPC.TL_contacts_addContact();
         req.id = getMessagesController().getInputUser(user);
         req.first_name = user.first_name;
         req.last_name = user.last_name;
@@ -2368,6 +2372,10 @@ public class ContactsController extends BaseController {
             req.phone = "";
         } else if (req.phone.length() > 0 && !req.phone.startsWith("+")) {
             req.phone = "+" + req.phone;
+        }
+        if (note != null) {
+            req.flags |= 2;
+            req.note = note;
         }
         getConnectionsManager().sendRequest(req, (response, error) -> {
             if (error != null) {
@@ -2389,18 +2397,18 @@ public class ContactsController extends BaseController {
                     continue;
                 }
                 Utilities.phoneBookQueue.postRunnable(() -> addContactToPhoneBook(u, true));
-                TLRPC.TL_contact newContact = new TLRPC.TL_contact();
+                final TLRPC.TL_contact newContact = new TLRPC.TL_contact();
                 newContact.user_id = u.id;
-                ArrayList<TLRPC.TL_contact> arrayList = new ArrayList<>();
+                final ArrayList<TLRPC.TL_contact> arrayList = new ArrayList<>();
                 arrayList.add(newContact);
                 getMessagesStorage().putContacts(arrayList, false);
 
                 if (!TextUtils.isEmpty(u.phone)) {
-                    CharSequence name = formatName(u.first_name, u.last_name);
+                    final CharSequence name = formatName(u.first_name, u.last_name);
                     getMessagesStorage().applyPhoneBookUpdates(u.phone, "");
-                    Contact contact = contactsBookSPhones.get(u.phone);
+                    final Contact contact = contactsBookSPhones.get(u.phone);
                     if (contact != null) {
-                        int index = contact.shortPhones.indexOf(u.phone);
+                        final int index = contact.shortPhones.indexOf(u.phone);
                         if (index != -1) {
                             contact.phoneDeleted.set(index, 0);
                         }
@@ -2669,43 +2677,43 @@ public class ContactsController extends BaseController {
 
             switch (num) {
                 case PRIVACY_RULES_TYPE_LASTSEEN:
-                    req.key = TLRPC.InputPrivacyKey.inputPrivacyKeyStatusTimestamp;
+                    req.key = new TLRPC.TL_inputPrivacyKeyStatusTimestamp();
                     break;
                 case PRIVACY_RULES_TYPE_INVITE:
-                    req.key = TLRPC.InputPrivacyKey.inputPrivacyKeyChatInvite;
+                    req.key = new TLRPC.TL_inputPrivacyKeyChatInvite();
                     break;
                 case PRIVACY_RULES_TYPE_CALLS:
-                    req.key = TLRPC.InputPrivacyKey.inputPrivacyKeyPhoneCall;
+                    req.key = new TLRPC.TL_inputPrivacyKeyPhoneCall();
                     break;
                 case PRIVACY_RULES_TYPE_P2P:
-                    req.key = TLRPC.InputPrivacyKey.inputPrivacyKeyPhoneP2P;
+                    req.key = new TLRPC.TL_inputPrivacyKeyPhoneP2P();
                     break;
                 case PRIVACY_RULES_TYPE_PHOTO:
-                    req.key = TLRPC.InputPrivacyKey.inputPrivacyKeyProfilePhoto;
+                    req.key = new TLRPC.TL_inputPrivacyKeyProfilePhoto();
                     break;
                 case PRIVACY_RULES_TYPE_BIO:
-                    req.key = TLRPC.InputPrivacyKey.inputPrivacyKeyAbout;
+                    req.key = new TLRPC.TL_inputPrivacyKeyAbout();
                     break;
                 case PRIVACY_RULES_TYPE_FORWARDS:
-                    req.key = TLRPC.InputPrivacyKey.inputPrivacyKeyForwards;
+                    req.key = new TLRPC.TL_inputPrivacyKeyForwards();
                     break;
                 case PRIVACY_RULES_TYPE_PHONE:
-                    req.key = TLRPC.InputPrivacyKey.inputPrivacyKeyPhoneNumber;
+                    req.key = new TLRPC.TL_inputPrivacyKeyPhoneNumber();
                     break;
                 case PRIVACY_RULES_TYPE_VOICE_MESSAGES:
-                    req.key = TLRPC.InputPrivacyKey.inputPrivacyKeyVoiceMessages;
+                    req.key = new TLRPC.TL_inputPrivacyKeyVoiceMessages();
                     break;
                 case PRIVACY_RULES_TYPE_BIRTHDAY:
-                    req.key = TLRPC.InputPrivacyKey.inputPrivacyKeyBirthday;
+                    req.key = new TLRPC.TL_inputPrivacyKeyBirthday();
                     break;
                 case PRIVACY_RULES_TYPE_GIFTS:
-                    req.key = TLRPC.InputPrivacyKey.inputPrivacyKeyStarGiftsAutoSave;
+                    req.key = new TLRPC.TL_inputPrivacyKeyStarGiftsAutoSave();
                     break;
                 case PRIVACY_RULES_TYPE_NO_PAID_MESSAGES:
-                    req.key = TLRPC.InputPrivacyKey.inputPrivacyKeyNoPaidMessages;
+                    req.key = new TLRPC.TL_inputPrivacyKeyNoPaidMessages();
                     break;
                 case PRIVACY_RULES_TYPE_ADDED_BY_PHONE:
-                    req.key = TLRPC.InputPrivacyKey.inputPrivacyKeyAddedByPhone;
+                    req.key = new TLRPC.TL_inputPrivacyKeyAddedByPhone();
                     break;
                 default:
                     continue;

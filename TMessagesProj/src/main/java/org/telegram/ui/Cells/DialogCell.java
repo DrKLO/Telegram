@@ -2040,6 +2040,12 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                             }
                             nameString = getString(R.string.SavedMessages);
                         }
+                    } else if (isTopic) {
+                        if (topicIconInName == null) {
+                            topicIconInName = new Drawable[1];
+                        }
+                        topicIconInName[0] = null;
+                        nameString = showTopicIconInName ? ForumUtilities.getTopicSpannedName(forumTopic, Theme.dialogs_namePaint[paintIndex], topicIconInName, false) : AndroidUtilities.escape(forumTopic.title);
                     } else {
                         nameString = AndroidUtilities.escape(UserObject.getUserName(user));
                     }

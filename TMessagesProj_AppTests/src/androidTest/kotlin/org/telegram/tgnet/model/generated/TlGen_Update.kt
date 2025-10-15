@@ -463,37 +463,6 @@ public sealed class TlGen_Update : TlGen_Object {
     }
   }
 
-  public data class TL_updateReadHistoryInbox(
-    public val folder_id: Int?,
-    public val peer: TlGen_Peer,
-    public val max_id: Int,
-    public val still_unread_count: Int,
-    public val pts: Int,
-    public val pts_count: Int,
-  ) : TlGen_Update() {
-    internal val flags: UInt
-      get() {
-        var result = 0U
-        if (folder_id != null) result = result or 1U
-        return result
-      }
-
-    public override fun serializeToStream(stream: OutputSerializedData) {
-      stream.writeInt32(MAGIC.toInt())
-      stream.writeInt32(flags.toInt())
-      folder_id?.let { stream.writeInt32(it) }
-      peer.serializeToStream(stream)
-      stream.writeInt32(max_id)
-      stream.writeInt32(still_unread_count)
-      stream.writeInt32(pts)
-      stream.writeInt32(pts_count)
-    }
-
-    public companion object {
-      public const val MAGIC: UInt = 0x9C974FDFU
-    }
-  }
-
   public data class TL_updateDialogPinned(
     public val pinned: Boolean,
     public val folder_id: Int?,
@@ -783,21 +752,6 @@ public sealed class TlGen_Update : TlGen_Object {
 
     public companion object {
       public const val MAGIC: UInt = 0x0B783982U
-    }
-  }
-
-  public data class TL_updateUserTyping(
-    public val user_id: Long,
-    public val action: TlGen_SendMessageAction,
-  ) : TlGen_Update() {
-    public override fun serializeToStream(stream: OutputSerializedData) {
-      stream.writeInt32(MAGIC.toInt())
-      stream.writeInt64(user_id)
-      action.serializeToStream(stream)
-    }
-
-    public companion object {
-      public const val MAGIC: UInt = 0xC01E857FU
     }
   }
 
@@ -1436,53 +1390,6 @@ public sealed class TlGen_Update : TlGen_Object {
 
     public companion object {
       public const val MAGIC: UInt = 0xA7848924U
-    }
-  }
-
-  public data class TL_updateChannelPinnedTopic(
-    public val pinned: Boolean,
-    public val channel_id: Long,
-    public val topic_id: Int,
-  ) : TlGen_Update() {
-    internal val flags: UInt
-      get() {
-        var result = 0U
-        if (pinned) result = result or 1U
-        return result
-      }
-
-    public override fun serializeToStream(stream: OutputSerializedData) {
-      stream.writeInt32(MAGIC.toInt())
-      stream.writeInt32(flags.toInt())
-      stream.writeInt64(channel_id)
-      stream.writeInt32(topic_id)
-    }
-
-    public companion object {
-      public const val MAGIC: UInt = 0x192EFBE3U
-    }
-  }
-
-  public data class TL_updateChannelPinnedTopics(
-    public val channel_id: Long,
-    public val order: List<Int>?,
-  ) : TlGen_Update() {
-    internal val flags: UInt
-      get() {
-        var result = 0U
-        if (order != null) result = result or 1U
-        return result
-      }
-
-    public override fun serializeToStream(stream: OutputSerializedData) {
-      stream.writeInt32(MAGIC.toInt())
-      stream.writeInt32(flags.toInt())
-      stream.writeInt64(channel_id)
-      order?.let { TlGen_Vector.serializeInt(stream, it) }
-    }
-
-    public companion object {
-      public const val MAGIC: UInt = 0xFE198602U
     }
   }
 
@@ -2173,6 +2080,148 @@ public sealed class TlGen_Update : TlGen_Object {
 
     public companion object {
       public const val MAGIC: UInt = 0x9F812B08U
+    }
+  }
+
+  public data class TL_updateUserTyping(
+    public val user_id: Long,
+    public val top_msg_id: Int?,
+    public val action: TlGen_SendMessageAction,
+  ) : TlGen_Update() {
+    internal val flags: UInt
+      get() {
+        var result = 0U
+        if (top_msg_id != null) result = result or 1U
+        return result
+      }
+
+    public override fun serializeToStream(stream: OutputSerializedData) {
+      stream.writeInt32(MAGIC.toInt())
+      stream.writeInt32(flags.toInt())
+      stream.writeInt64(user_id)
+      top_msg_id?.let { stream.writeInt32(it) }
+      action.serializeToStream(stream)
+    }
+
+    public companion object {
+      public const val MAGIC: UInt = 0x2A17BF5CU
+    }
+  }
+
+  public data class TL_updateReadHistoryInbox(
+    public val folder_id: Int?,
+    public val peer: TlGen_Peer,
+    public val top_msg_id: Int?,
+    public val max_id: Int,
+    public val still_unread_count: Int,
+    public val pts: Int,
+    public val pts_count: Int,
+  ) : TlGen_Update() {
+    internal val flags: UInt
+      get() {
+        var result = 0U
+        if (folder_id != null) result = result or 1U
+        if (top_msg_id != null) result = result or 2U
+        return result
+      }
+
+    public override fun serializeToStream(stream: OutputSerializedData) {
+      stream.writeInt32(MAGIC.toInt())
+      stream.writeInt32(flags.toInt())
+      folder_id?.let { stream.writeInt32(it) }
+      peer.serializeToStream(stream)
+      top_msg_id?.let { stream.writeInt32(it) }
+      stream.writeInt32(max_id)
+      stream.writeInt32(still_unread_count)
+      stream.writeInt32(pts)
+      stream.writeInt32(pts_count)
+    }
+
+    public companion object {
+      public const val MAGIC: UInt = 0x9E84BC99U
+    }
+  }
+
+  public data class TL_updateGroupCallMessage(
+    public val call: TlGen_InputGroupCall,
+    public val from_id: TlGen_Peer,
+    public val random_id: Long,
+    public val message: TlGen_TextWithEntities,
+  ) : TlGen_Update() {
+    public override fun serializeToStream(stream: OutputSerializedData) {
+      stream.writeInt32(MAGIC.toInt())
+      call.serializeToStream(stream)
+      from_id.serializeToStream(stream)
+      stream.writeInt64(random_id)
+      message.serializeToStream(stream)
+    }
+
+    public companion object {
+      public const val MAGIC: UInt = 0x78C314E0U
+    }
+  }
+
+  public data class TL_updateGroupCallEncryptedMessage(
+    public val call: TlGen_InputGroupCall,
+    public val from_id: TlGen_Peer,
+    public val encrypted_message: List<Byte>,
+  ) : TlGen_Update() {
+    public override fun serializeToStream(stream: OutputSerializedData) {
+      stream.writeInt32(MAGIC.toInt())
+      call.serializeToStream(stream)
+      from_id.serializeToStream(stream)
+      stream.writeByteArray(encrypted_message.toByteArray())
+    }
+
+    public companion object {
+      public const val MAGIC: UInt = 0xC957A766U
+    }
+  }
+
+  public data class TL_updatePinnedForumTopic(
+    public val pinned: Boolean,
+    public val peer: TlGen_Peer,
+    public val topic_id: Int,
+  ) : TlGen_Update() {
+    internal val flags: UInt
+      get() {
+        var result = 0U
+        if (pinned) result = result or 1U
+        return result
+      }
+
+    public override fun serializeToStream(stream: OutputSerializedData) {
+      stream.writeInt32(MAGIC.toInt())
+      stream.writeInt32(flags.toInt())
+      peer.serializeToStream(stream)
+      stream.writeInt32(topic_id)
+    }
+
+    public companion object {
+      public const val MAGIC: UInt = 0x683B2C52U
+    }
+  }
+
+  public data class TL_updatePinnedForumTopics(
+    public val peer: TlGen_Peer,
+    public val order: List<Int>?,
+  ) : TlGen_Update() {
+    internal val flags: UInt
+      get() {
+        var result = 0U
+        if (order != null) result = result or 1U
+        return result
+      }
+
+    public override fun serializeToStream(stream: OutputSerializedData) {
+      stream.writeInt32(MAGIC.toInt())
+      stream.writeInt32(flags.toInt())
+      peer.serializeToStream(stream)
+      order?.let { TlGen_Vector.serializeInt(stream, it) }
+    }
+
+    public companion object {
+      public const val MAGIC: UInt = 0xDEF143D0U
     }
   }
 }

@@ -335,7 +335,27 @@ public abstract class BottomSheetWithRecyclerListView extends BottomSheet {
                 return BottomSheetWithRecyclerListView.this.canHighlightChildAt(child, x, y);
             }
         };
-        layoutManager = new LinearLayoutManager(context);
+        layoutManager = new LinearLayoutManager(context) {
+            @Override
+            public void scrollToPositionWithOffset(int position, int offset) {
+                super.scrollToPositionWithOffset(position, offset);
+            }
+
+            @Override
+            public void scrollToPosition(int position) {
+                super.scrollToPosition(position);
+            }
+
+            @Override
+            public void scrollToPositionWithOffset(int position, int offset, boolean bottom) {
+                super.scrollToPositionWithOffset(position, offset, bottom);
+            }
+
+            @Override
+            public void smoothScrollToPosition(RecyclerView recyclerView, RecyclerView.State state, int position) {
+                super.smoothScrollToPosition(recyclerView, state, position);
+            }
+        };
         if (stackFromEnd) {
             layoutManager.setStackFromEnd(true);
         }

@@ -896,7 +896,13 @@ public class ProfileGiftsContainer extends FrameLayout implements NotificationCe
         return viewPager.getCurrentPosition() <= 0;
     }
 
-    public ProfileGiftsContainer(BaseFragment fragment, Context context, int currentAccount, long did, Theme.ResourcesProvider resourcesProvider) {
+    public ProfileGiftsContainer(
+        BaseFragment fragment,
+        Context context,
+        int currentAccount,
+        long did,
+        Theme.ResourcesProvider resourcesProvider
+    ) {
         super(context);
         this.fragment = fragment;
 
@@ -916,7 +922,11 @@ public class ProfileGiftsContainer extends FrameLayout implements NotificationCe
         this.collections = StarsController.getInstance(currentAccount).getProfileGiftCollectionsList(dialogId, true);
         this.collections.all = list;
         this.list.shown = true;
-        this.list.resetFilters();
+        if (fragment instanceof ProfileActivity && ((ProfileActivity) fragment).openGiftsUpgradable) {
+            this.list.setFilters(StarsController.GiftsList.INCLUDE_TYPE_UPGRADABLE_FLAG);
+        } else {
+            this.list.resetFilters();
+        }
         this.list.load();
         this.resourcesProvider = resourcesProvider;
 
@@ -1069,9 +1079,6 @@ public class ProfileGiftsContainer extends FrameLayout implements NotificationCe
             if (page == -1 || page == -2 || page == 0 || reorderingCollections)
                 return false;
 
-            if (!collections.isMine())
-                return false;
-
             int _index = -1;
             TL_stars.TL_starGiftCollection _collection = null;
             for (int i = 0; i < collections.getCollections().size(); ++i) {
@@ -1085,6 +1092,10 @@ public class ProfileGiftsContainer extends FrameLayout implements NotificationCe
             final TL_stars.TL_starGiftCollection collection = _collection;
 
             final String username = DialogObject.getPublicUsername(MessagesController.getInstance(currentAccount).getUserOrChat(dialogId));
+            final boolean isMine = collections.isMine();
+            if (TextUtils.isEmpty(username) && !isMine) {
+                return false;
+            }
 
             currentMenu = ItemOptions.makeOptions(fragment, view)
                 .setScrimViewBackground(new Drawable() {
@@ -1108,7 +1119,7 @@ public class ProfileGiftsContainer extends FrameLayout implements NotificationCe
                         return PixelFormat.TRANSPARENT;
                     }
                 })
-                .add(R.drawable.menu_gift_add, getString(R.string.Gift2CollectionsAdd), this::addGifts)
+                .addIf(isMine, R.drawable.menu_gift_add, getString(R.string.Gift2CollectionsAdd), this::addGifts)
                 .addIf(!TextUtils.isEmpty(username), R.drawable.msg_share, getString(R.string.Gift2CollectionsShare), () -> {
                     final String link = MessagesController.getInstance(currentAccount).linkPrefix + "/" + username + "/c/" + collection.collection_id;
                     new ShareAlert(context, null, link, false, link, false, resourcesProvider) {
@@ -1139,17 +1150,17 @@ public class ProfileGiftsContainer extends FrameLayout implements NotificationCe
                     }
                         .show();
                 })
-                .add(R.drawable.msg_edit, getString(R.string.Gift2CollectionsRename), () -> {
+                .addIf(isMine, R.drawable.msg_edit, getString(R.string.Gift2CollectionsRename), () -> {
                     openEnterNameAlert(collection.title, newName -> {
                         collections.rename(collection.collection_id, newName);
                         collection.title = newName;
                         fillTabs(true);
                     });
                 })
-                .add(R.drawable.tabs_reorder, getString(R.string.Gift2CollectionsReorder), () -> {
+                .addIf(isMine, R.drawable.tabs_reorder, getString(R.string.Gift2CollectionsReorder), () -> {
                     setReorderingCollections(true);
                 })
-                .add(R.drawable.msg_delete, getString(R.string.Gift2CollectionsDelete), true, () -> {
+                .addIf(isMine, R.drawable.msg_delete, getString(R.string.Gift2CollectionsDelete), true, () -> {
                     if (index != -1) {
                         collections.removeCollection(collection.collection_id);
                         fillTabs(true);
