@@ -42,6 +42,13 @@ public class AppGlobalConfig {
     public final ConfigInt storiesAlbumsLimit = ofInt("stories_albums_limit", 100);
     public final ConfigInt storiesAlbumStoriesLimit = ofInt("stories_album_stories_limit", 100);
 
+    public final ConfigTime messageTypingDraftTtl = ofTime("message_typing_draft_ttl", 30, TimeUnit.SECONDS);
+
+    public final ConfigTime groupCallMessageTtl = ofTime("group_call_message_ttl", 10, TimeUnit.SECONDS);
+    public final ConfigInt groupCallMessageLengthLimit = ofInt("group_call_message_length_limit", 128);
+
+    public final ConfigInt contactNoteLengthLimit = ofInt("contact_note_length_limit", 128);
+
     /* * */
 
     public boolean apply(SharedPreferences.Editor editor, TLRPC.TL_jsonObject object) {

@@ -51,6 +51,7 @@ import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ChatActivity;
 import org.telegram.ui.LaunchActivity;
+import org.telegram.ui.PeerColorActivity;
 import org.telegram.ui.PremiumPreviewFragment;
 import org.telegram.ui.Stories.recorder.HintView2;
 
@@ -436,6 +437,9 @@ public final class BulletinFactory {
     public Bulletin createSimpleBulletin(Drawable drawable, CharSequence text) {
         final Bulletin.LottieLayout layout = new Bulletin.LottieLayout(getContext(), resourcesProvider);
         layout.imageView.setImageDrawable(drawable);
+        if (drawable instanceof PeerColorActivity.PeerColorDrawable) {
+            ((PeerColorActivity.PeerColorDrawable) drawable).setView(layout.imageView);
+        }
         layout.textView.setText(text);
         layout.textView.setSingleLine(false);
         layout.textView.setMaxLines(2);

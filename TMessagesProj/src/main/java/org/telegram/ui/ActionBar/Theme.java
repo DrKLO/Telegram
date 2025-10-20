@@ -5570,7 +5570,12 @@ public class Theme {
         return getSelectorDrawable(getColor(key_listSelector), whiteBackground);
     }
     public static Drawable getSelectorDrawable(boolean whiteBackground, ResourcesProvider resourcesProvider) {
-        return getSelectorDrawable(getColor(key_listSelector, resourcesProvider), whiteBackground);
+        final int color = getColor(key_listSelector, resourcesProvider);
+        if (whiteBackground) {
+            return getSelectorDrawable(color, key_windowBackgroundWhite, resourcesProvider);
+        } else {
+            return createSelectorDrawable(color, 2);
+        }
     }
 
     public static Drawable getSelectorDrawable(int color, boolean whiteBackground) {
@@ -5582,6 +5587,9 @@ public class Theme {
     }
 
     public static Drawable getSelectorDrawable(int color, int backgroundColor) {
+        return getSelectorDrawable(color, backgroundColor, null);
+    }
+    public static Drawable getSelectorDrawable(int color, int backgroundColor, Theme.ResourcesProvider resourcesProvider) {
         if (backgroundColor >= 0) {
             if (Build.VERSION.SDK_INT >= 21) {
                 Drawable maskDrawable = new ColorDrawable(0xffffffff);
@@ -5589,12 +5597,12 @@ public class Theme {
                         new int[][]{StateSet.WILD_CARD},
                         new int[]{color}
                 );
-                return new BaseCell.RippleDrawableSafe(colorStateList, new ColorDrawable(getColor(backgroundColor)), maskDrawable);
+                return new BaseCell.RippleDrawableSafe(colorStateList, new ColorDrawable(getColor(backgroundColor, resourcesProvider)), maskDrawable);
             } else {
                 StateListDrawable stateListDrawable = new StateListDrawable();
                 stateListDrawable.addState(new int[]{android.R.attr.state_pressed}, new ColorDrawable(color));
                 stateListDrawable.addState(new int[]{android.R.attr.state_selected}, new ColorDrawable(color));
-                stateListDrawable.addState(StateSet.WILD_CARD, new ColorDrawable(getColor(backgroundColor)));
+                stateListDrawable.addState(StateSet.WILD_CARD, new ColorDrawable(getColor(backgroundColor, resourcesProvider)));
                 return stateListDrawable;
             }
         } else {

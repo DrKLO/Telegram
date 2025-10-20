@@ -817,7 +817,7 @@ public class ChatAttachAlertPollLayout extends ChatAttachAlert.AttachAlertLayout
             allowNesterScroll = true;
         }
         parentAlert.setAllowNestedScroll(allowNesterScroll);
-        doneItemEnabled = quizPoll && checksCount == 0 || enabled;
+        doneItemEnabled = enabled;
         parentAlert.updateDoneItemEnabled();
     }
 

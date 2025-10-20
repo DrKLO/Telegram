@@ -714,6 +714,24 @@ public class ResaleGiftsFragment extends BaseFragment {
             items.add(UItem.asFlicker(-1, FlickerLoadingView.STAR_GIFT).setSpanCount(1));
             items.add(UItem.asFlicker(-2, FlickerLoadingView.STAR_GIFT).setSpanCount(1));
             items.add(UItem.asFlicker(-3, FlickerLoadingView.STAR_GIFT).setSpanCount(1));
+
+            if (list.gifts.isEmpty()) {
+                items.add(UItem.asFlicker(-4, FlickerLoadingView.STAR_GIFT).setSpanCount(1));
+                items.add(UItem.asFlicker(-5, FlickerLoadingView.STAR_GIFT).setSpanCount(1));
+                items.add(UItem.asFlicker(-6, FlickerLoadingView.STAR_GIFT).setSpanCount(1));
+
+                items.add(UItem.asFlicker(-7, FlickerLoadingView.STAR_GIFT).setSpanCount(1));
+                items.add(UItem.asFlicker(-8, FlickerLoadingView.STAR_GIFT).setSpanCount(1));
+                items.add(UItem.asFlicker(-9, FlickerLoadingView.STAR_GIFT).setSpanCount(1));
+
+                items.add(UItem.asFlicker(-10, FlickerLoadingView.STAR_GIFT).setSpanCount(1));
+                items.add(UItem.asFlicker(-11, FlickerLoadingView.STAR_GIFT).setSpanCount(1));
+                items.add(UItem.asFlicker(-12, FlickerLoadingView.STAR_GIFT).setSpanCount(1));
+
+                items.add(UItem.asFlicker(-13, FlickerLoadingView.STAR_GIFT).setSpanCount(1));
+                items.add(UItem.asFlicker(-14, FlickerLoadingView.STAR_GIFT).setSpanCount(1));
+                items.add(UItem.asFlicker(-15, FlickerLoadingView.STAR_GIFT).setSpanCount(1));
+            }
         }
         updateEmptyView(items.isEmpty() && !list.loading);
     }
@@ -812,7 +830,7 @@ public class ResaleGiftsFragment extends BaseFragment {
 
     public static class ResaleGiftsList implements StarsController.IGiftsList {
         private final int account;
-        private final long gift_id;
+        public final long gift_id;
         private final Utilities.Callback<Boolean> onUpdate;
 
         public final ArrayList<TL_stars.TL_starGiftUnique> gifts = new ArrayList<>();
@@ -879,8 +897,8 @@ public class ResaleGiftsFragment extends BaseFragment {
 
         }
 
-        private boolean loading;
-        private boolean endReached = false;
+        public boolean loading;
+        public boolean endReached = false;
         private int reqId = -1;
         public void load() {
             load(false);

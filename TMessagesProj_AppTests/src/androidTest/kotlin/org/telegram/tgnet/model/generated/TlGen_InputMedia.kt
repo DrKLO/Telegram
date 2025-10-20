@@ -470,4 +470,150 @@ public sealed class TlGen_InputMedia : TlGen_Object {
       public const val MAGIC: UInt = 0x9FC55FDEU
     }
   }
+
+  public data class TL_inputMediaUploadedDocument_layer197(
+    public val nosound_video: Boolean,
+    public val force_file: Boolean,
+    public val spoiler: Boolean,
+    public val `file`: TlGen_InputFile,
+    public val thumb: TlGen_InputFile?,
+    public val mime_type: String,
+    public val attributes: List<TlGen_DocumentAttribute>,
+    public val stickers: List<TlGen_InputDocument>?,
+    public val ttl_seconds: Int?,
+  ) : TlGen_Object {
+    internal val flags: UInt
+      get() {
+        var result = 0U
+        if (stickers != null) result = result or 1U
+        if (ttl_seconds != null) result = result or 2U
+        if (thumb != null) result = result or 4U
+        if (nosound_video) result = result or 8U
+        if (force_file) result = result or 16U
+        if (spoiler) result = result or 32U
+        return result
+      }
+
+    public override fun serializeToStream(stream: OutputSerializedData) {
+      stream.writeInt32(MAGIC.toInt())
+      stream.writeInt32(flags.toInt())
+      file.serializeToStream(stream)
+      thumb?.serializeToStream(stream)
+      stream.writeString(mime_type)
+      TlGen_Vector.serialize(stream, attributes)
+      stickers?.let { TlGen_Vector.serialize(stream, it) }
+      ttl_seconds?.let { stream.writeInt32(it) }
+    }
+
+    public companion object {
+      public const val MAGIC: UInt = 0x5B38C6C1U
+    }
+  }
+
+  public data class TL_inputMediaDocumentExternal_layer197(
+    public val spoiler: Boolean,
+    public val url: String,
+    public val ttl_seconds: Int?,
+  ) : TlGen_Object {
+    internal val flags: UInt
+      get() {
+        var result = 0U
+        if (ttl_seconds != null) result = result or 1U
+        if (spoiler) result = result or 2U
+        return result
+      }
+
+    public override fun serializeToStream(stream: OutputSerializedData) {
+      stream.writeInt32(MAGIC.toInt())
+      stream.writeInt32(flags.toInt())
+      stream.writeString(url)
+      ttl_seconds?.let { stream.writeInt32(it) }
+    }
+
+    public companion object {
+      public const val MAGIC: UInt = 0xFB52DC99U
+    }
+  }
+
+  public data class TL_inputMediaDocument_layer197(
+    public val spoiler: Boolean,
+    public val id: TlGen_InputDocument,
+    public val ttl_seconds: Int?,
+    public val query: String?,
+  ) : TlGen_Object {
+    internal val flags: UInt
+      get() {
+        var result = 0U
+        if (ttl_seconds != null) result = result or 1U
+        if (query != null) result = result or 2U
+        if (spoiler) result = result or 4U
+        return result
+      }
+
+    public override fun serializeToStream(stream: OutputSerializedData) {
+      stream.writeInt32(MAGIC.toInt())
+      stream.writeInt32(flags.toInt())
+      id.serializeToStream(stream)
+      ttl_seconds?.let { stream.writeInt32(it) }
+      query?.let { stream.writeString(it) }
+    }
+
+    public companion object {
+      public const val MAGIC: UInt = 0x33473058U
+    }
+  }
+
+  public data class TL_inputMediaInvoice_layer180(
+    public val title: String,
+    public val description: String,
+    public val photo: TlGen_InputWebDocument?,
+    public val invoice: TlGen_Invoice,
+    public val payload: List<Byte>,
+    public val provider: String,
+    public val provider_data: TlGen_DataJSON,
+    public val start_param: String?,
+    public val extended_media: TlGen_InputMedia?,
+  ) : TlGen_Object {
+    internal val flags: UInt
+      get() {
+        var result = 0U
+        if (photo != null) result = result or 1U
+        if (start_param != null) result = result or 2U
+        if (extended_media != null) result = result or 4U
+        return result
+      }
+
+    public override fun serializeToStream(stream: OutputSerializedData) {
+      stream.writeInt32(MAGIC.toInt())
+      stream.writeInt32(flags.toInt())
+      stream.writeString(title)
+      stream.writeString(description)
+      photo?.serializeToStream(stream)
+      invoice.serializeToStream(stream)
+      stream.writeByteArray(payload.toByteArray())
+      stream.writeString(provider)
+      provider_data.serializeToStream(stream)
+      start_param?.let { stream.writeString(it) }
+      extended_media?.serializeToStream(stream)
+    }
+
+    public companion object {
+      public const val MAGIC: UInt = 0x8EB5A6D5U
+    }
+  }
+
+  public data class TL_inputMediaPaidMedia_layer186(
+    public val stars_amount: Long,
+    public val extended_media: List<TlGen_InputMedia>,
+  ) : TlGen_Object {
+    public override fun serializeToStream(stream: OutputSerializedData) {
+      stream.writeInt32(MAGIC.toInt())
+      stream.writeInt64(stars_amount)
+      TlGen_Vector.serialize(stream, extended_media)
+    }
+
+    public companion object {
+      public const val MAGIC: UInt = 0xAA661FC3U
+    }
+  }
 }

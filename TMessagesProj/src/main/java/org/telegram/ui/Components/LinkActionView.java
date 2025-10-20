@@ -103,6 +103,7 @@ public class LinkActionView extends LinearLayout {
         linearLayout.setOrientation(HORIZONTAL);
 
         copyView = new TextView(context);
+        ScaleStateListAnimator.apply(copyView, .025f, 1.2f);
         copyView.setGravity(Gravity.CENTER);
         SpannableStringBuilder spannableStringBuilder = new SpannableStringBuilder();
         spannableStringBuilder.append("..").setSpan(new ColoredImageSpan(ContextCompat.getDrawable(context, R.drawable.msg_copy_filled)), 0, 1, 0);
@@ -117,6 +118,7 @@ public class LinkActionView extends LinearLayout {
         linearLayout.addView(copyView, LayoutHelper.createLinear(0, 42, 1f, 0, containerPadding, 0, 4, 0));
 
         shareView = new TextView(context);
+        ScaleStateListAnimator.apply(shareView, .025f, 1.2f);
         shareView.setGravity(Gravity.CENTER);
         spannableStringBuilder = new SpannableStringBuilder();
         spannableStringBuilder.append("..").setSpan(new ColoredImageSpan(ContextCompat.getDrawable(context, R.drawable.msg_share_filled)), 0, 1, 0);
@@ -132,6 +134,7 @@ public class LinkActionView extends LinearLayout {
 
 
         removeView = new TextView(context);
+        ScaleStateListAnimator.apply(removeView, .025f, 1.2f);
         removeView.setGravity(Gravity.CENTER);
         spannableStringBuilder = new SpannableStringBuilder();
         spannableStringBuilder.append("..").setSpan(new ColoredImageSpan(ContextCompat.getDrawable(context, R.drawable.msg_delete_filled)), 0, 1, 0);
@@ -387,7 +390,8 @@ public class LinkActionView extends LinearLayout {
     }
 
     private void showQrCode() {
-        qrCodeBottomSheet = new QRCodeBottomSheet(getContext(), LocaleController.getString(R.string.InviteByQRCode), link, qrText == null ? (isChannel ? LocaleController.getString(R.string.QRCodeLinkHelpChannel) : LocaleController.getString(R.string.QRCodeLinkHelpGroup)) : qrText, false) {
+        final boolean direct = link != null && link.endsWith("?direct");
+        qrCodeBottomSheet = new QRCodeBottomSheet(getContext(), LocaleController.getString(R.string.InviteByQRCode), link, qrText == null ? (isChannel ? LocaleController.getString(direct ? R.string.QRCodeLinkHelpChannelDirect : R.string.QRCodeLinkHelpChannel) : LocaleController.getString(R.string.QRCodeLinkHelpGroup)) : qrText, false) {
             @Override
             public void dismiss() {
                 super.dismiss();

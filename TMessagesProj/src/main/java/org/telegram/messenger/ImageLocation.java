@@ -86,8 +86,12 @@ public class ImageLocation {
             return null;
         }
         ImageLocation imageLocation = new ImageLocation();
-        imageLocation.webFile = webFile;
-        imageLocation.currentSize = webFile.size;
+        if (webFile.noproxy) {
+            imageLocation.path = webFile.url;
+        } else {
+            imageLocation.webFile = webFile;
+            imageLocation.currentSize = webFile.size;
+        }
         return imageLocation;
     }
 

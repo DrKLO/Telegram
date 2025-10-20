@@ -22,6 +22,9 @@ import java.io.IOException;
 import java.io.InputStream;
 
 public class MP3Input extends PositionInputStream {
+
+	public int exceptionsCount = 0;
+
 	public MP3Input(InputStream delegate) throws IOException {
 		super(delegate);
 	}

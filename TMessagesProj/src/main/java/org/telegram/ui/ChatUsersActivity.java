@@ -2024,18 +2024,20 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
 
     private int getCurrentSlowmode() {
         if (info != null) {
-            if (info.slowmode_seconds == 10) {
+            if (info.slowmode_seconds == 5) {
                 return 1;
-            } else if (info.slowmode_seconds == 30) {
+            } else if (info.slowmode_seconds == 10) {
                 return 2;
-            } else if (info.slowmode_seconds == 60) {
+            } else if (info.slowmode_seconds == 30) {
                 return 3;
-            } else if (info.slowmode_seconds == 5 * 60) {
+            } else if (info.slowmode_seconds == 60) {
                 return 4;
-            } else if (info.slowmode_seconds == 15 * 60) {
+            } else if (info.slowmode_seconds == 5 * 60) {
                 return 5;
-            } else if (info.slowmode_seconds == 60 * 60) {
+            } else if (info.slowmode_seconds == 15 * 60) {
                 return 6;
+            } else if (info.slowmode_seconds == 60 * 60) {
+                return 7;
             }
         }
         return 0;
@@ -2043,16 +2045,18 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
 
     private int getSecondsForIndex(int index) {
         if (index == 1) {
-            return 10;
+            return 5;
         } else if (index == 2) {
-            return 30;
+            return 10;
         } else if (index == 3) {
-            return 60;
+            return 30;
         } else if (index == 4) {
-            return 5 * 60;
+            return 60;
         } else if (index == 5) {
-            return 15 * 60;
+            return 5 * 60;
         } else if (index == 6) {
+            return 15 * 60;
+        } else if (index == 7) {
             return 60 * 60;
         }
         return 0;
@@ -3264,12 +3268,13 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
                     chooseView.setOptions(
                             selectedSlowmode,
                             getString("SlowmodeOff", R.string.SlowmodeOff),
-                            LocaleController.formatString("SlowmodeSeconds", R.string.SlowmodeSeconds, 10),
-                            LocaleController.formatString("SlowmodeSeconds", R.string.SlowmodeSeconds, 30),
-                            LocaleController.formatString("SlowmodeMinutes", R.string.SlowmodeMinutes, 1),
-                            LocaleController.formatString("SlowmodeMinutes", R.string.SlowmodeMinutes, 5),
-                            LocaleController.formatString("SlowmodeMinutes", R.string.SlowmodeMinutes, 15),
-                            LocaleController.formatString("SlowmodeHours", R.string.SlowmodeHours, 1)
+                            LocaleController.formatString(R.string.SlowmodeSeconds, 5),
+                            LocaleController.formatString(R.string.SlowmodeSeconds, 10),
+                            LocaleController.formatString(R.string.SlowmodeSeconds, 30),
+                            LocaleController.formatString(R.string.SlowmodeMinutes, 1),
+                            LocaleController.formatString(R.string.SlowmodeMinutes, 5),
+                            LocaleController.formatString(R.string.SlowmodeMinutes, 15),
+                            LocaleController.formatString(R.string.SlowmodeHours, 1)
                     );
                     chooseView.setCallback(which -> {
                         if (info == null) {

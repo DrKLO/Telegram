@@ -28,7 +28,11 @@ import androidx.annotation.NonNull;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.MediaDataController;
+import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.R;
+import org.telegram.messenger.UserConfig;
+import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.AnimatedColor;
 import org.telegram.ui.Components.AnimatedTextView;
@@ -37,6 +41,8 @@ import org.telegram.ui.Components.EditTextCaption;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.TextStyleSpan;
 import org.telegram.ui.Components.TypefaceSpan;
+
+import java.util.ArrayList;
 
 public class EditTextCell extends FrameLayout {
 
@@ -254,8 +260,23 @@ public class EditTextCell extends FrameLayout {
         ignoreEditText = false;
     }
 
+    public void setText(TLRPC.TL_textWithEntities text) {
+        ignoreEditText = true;
+        editText.setText(MessageObject.formatTextWithEntities(text, false));
+        editText.setSelection(editText.getText().length());
+        ignoreEditText = false;
+    }
+
     public CharSequence getText() {
         return editText.getText();
+    }
+
+    public TLRPC.TL_textWithEntities getTextWithEntities() {
+        final TLRPC.TL_textWithEntities text = new TLRPC.TL_textWithEntities();
+        final CharSequence[] message = new CharSequence[]{ getText() };
+        text.entities = MediaDataController.getInstance(UserConfig.selectedAccount).getEntities(message, true);
+        text.text = message[0].toString();
+        return text;
     }
 
     public boolean validate() {

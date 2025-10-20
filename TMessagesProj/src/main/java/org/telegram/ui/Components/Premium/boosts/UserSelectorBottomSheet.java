@@ -64,7 +64,6 @@ import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.CheckBox2;
 import org.telegram.ui.Components.CombinedDrawable;
 import org.telegram.ui.Components.CubicBezierInterpolator;
-import org.telegram.ui.Components.HideViewAfterAnimation;
 import org.telegram.ui.Components.ItemOptions;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.Premium.boosts.adapters.SelectorAdapter;
@@ -1232,6 +1231,6 @@ public class UserSelectorBottomSheet extends BottomSheetWithRecyclerListView imp
             params.transitionFromLeft = true;
             params.allowNestedScroll = false;
             getBaseFragment().showAsSheet(new PrivacyControlActivity(PrivacyControlActivity.PRIVACY_RULES_TYPE_BIRTHDAY), params);
-        }, resourcesProvider).show();
+        }, false, resourcesProvider).show();
     }
 }
