@@ -2,8 +2,8 @@ package org.telegram.tgnet;
 
 public interface OutputSerializedData {
 
-    void writeInt32(int x);
-    void writeInt64(long x);
+    void writeInt32(int value);
+    void writeInt64(long value);
     void writeBool(boolean value);
     void writeBytes(byte[] b);
     void writeBytes(byte[] b, int offset, int count);

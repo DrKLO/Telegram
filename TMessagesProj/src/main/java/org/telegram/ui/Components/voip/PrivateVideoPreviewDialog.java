@@ -304,6 +304,9 @@ public abstract class PrivateVideoPreviewDialog extends FrameLayout implements V
 
         layoutParams = (FrameLayout.LayoutParams) titlesLayout.getLayoutParams();
         layoutParams.bottomMargin = padding;
+
+        layoutParams = (FrameLayout.LayoutParams) micIconView.getLayoutParams();
+        layoutParams.bottomMargin = AndroidUtilities.dp(136) + padding;
     }
 
     private void updateTitlesLayout() {

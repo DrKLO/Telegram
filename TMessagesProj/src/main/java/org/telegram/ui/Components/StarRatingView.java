@@ -35,6 +35,10 @@ public class StarRatingView extends View {
         checkVisibility();
     }
 
+    public void setResourcesProvider(Theme.ResourcesProvider resourcesProvider) {
+        this.colors.resourcesProvider = resourcesProvider;
+    }
+
     @Override
     protected boolean verifyDrawable(@NonNull Drawable who) {
         return super.verifyDrawable(who) || who == drawable;
@@ -135,6 +139,7 @@ public class StarRatingView extends View {
 
     private static class Colors {
         public MessagesController.PeerColor peerColor;
+        private Theme.ResourcesProvider resourcesProvider;
 
         public int backgroundColor = 0xFF000000;
         public int fillingColor = 0xFFFFFFFF;
@@ -153,17 +158,17 @@ public class StarRatingView extends View {
             int color2 = peerColor.getBgColor2(Theme.isCurrentThemeDark());
             int textColor = AndroidUtilities.computePerceivedBrightness(backgroundColor) > .721f ? Color.BLACK : Color.WHITE;
 
-            backgroundColor = fillingTextColor = getTabsViewBackgroundColor(null, color2, color1, parentExpanded);
-            backgroundTextColor = fillingColor = ColorUtils.blendARGB(textColor, Theme.getColor(Theme.key_actionBarDefaultTitle), parentExpanded);
+            backgroundColor = fillingTextColor = getTabsViewBackgroundColor(resourcesProvider, color2, color1, parentExpanded);
+            backgroundTextColor = fillingColor = ColorUtils.blendARGB(textColor, Theme.getColor(Theme.key_actionBarDefaultTitle, resourcesProvider), parentExpanded);
             fillingTextColor |= 0xFF000000;
         }
 
         public void reset() {
-            int color1 = Theme.getColor(Theme.key_actionBarDefault);
-            int color2 = Theme.getColor(Theme.key_actionBarDefault);
+            int color1 = Theme.getColor(Theme.key_actionBarDefault, resourcesProvider);
+            int color2 = Theme.getColor(Theme.key_actionBarDefault, resourcesProvider);
 
-            backgroundColor = fillingTextColor = getTabsViewBackgroundColor(null, color2, color1, parentExpanded);//Theme.blendOver(Theme.getColor(Theme.key_avatar_backgroundActionBarBlue), Theme.multAlpha(Color.BLACK, 0.1f));
-            backgroundTextColor = fillingColor = Theme.getColor(Theme.key_actionBarDefaultTitle); //0xFFFFFFFF;
+            backgroundColor = fillingTextColor = getTabsViewBackgroundColor(resourcesProvider, color2, color1, parentExpanded);
+            backgroundTextColor = fillingColor = Theme.getColor(Theme.key_actionBarDefaultTitle, resourcesProvider);
             fillingTextColor |= 0xFF000000;
         }
 

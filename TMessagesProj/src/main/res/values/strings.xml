@@ -561,6 +561,7 @@
     <string name="ActionUniqueGiftTransferInbound">**un1** transferred you a gift!</string>
     <string name="ActionUniqueGiftTransferService">**un1** transferred a gift to **un2**!</string>
     <string name="ActionUniqueGiftTransferOutbound">You transferred a gift to **un1**</string>
+    <string name="ActionUniqueGiftTransferOutboundAssigned">You started displaying %s on your Telegram profile page.</string>
     <string name="ActionUniqueGiftResaleService_one">**un1** sent a gift to **un2** for %d Star!</string>
     <string name="ActionUniqueGiftResaleService_other">**un1** sent a gift to **un2** for %d Stars!</string>
     <string name="ActionUniqueGiftResaleServiceTON">**un1** sent a gift to **un2** for %s TON!</string>
@@ -1594,6 +1595,9 @@
     <string name="NotificationMessageStarGift_other">%2$s sent you a Gift worth of %1$d Stars</string>
     <string name="NotificationMessageUniqueStarGift">%1$s transferred you a Gift!</string>
     <string name="NotificationMessageUniqueStarGiftUpgrade">%1$s upgraded your Gift</string>
+    <string name="NotificationMessageUniqueStarGiftPrepaidUpgrade_one">%2$s sent an Upgrade worth %1$d Star for your gift</string>
+    <string name="NotificationMessageUniqueStarGiftPrepaidUpgrade_other">%2$s sent an Upgrade worth %1$d Stars for your gift</string>
+    <string name="NotificationMessageUniqueStarGiftUnpackUpgrade">%1$s unpacked the Gift that you helped upgrade</string>
     <string name="NotificationMessageFew">%1$s sent you %2$s</string>
     <string name="NotificationMessageAlbum">%1$s sent you an album</string>
     <string name="NotificationMessageForwardFew">%1$s forwarded you %2$s</string>
@@ -1874,8 +1878,8 @@
     <string name="BlockUsersMessage">Do you want to block **%1$s** from messaging and calling you on Telegram?</string>
     <string name="UserBlocked">User blocked</string>
     <string name="UserUnblocked">User unblocked</string>
-    <string name="EditContact">Edit contact</string>
-    <string name="DeleteContact">Delete contact</string>
+    <string name="EditContact">Edit Contact</string>
+    <string name="DeleteContact">Delete Contact</string>
     <string name="StoryDeleteContact">Delete Contact</string>
     <string name="PhoneHome">Home</string>
     <string name="PhoneMobile">Mobile</string>
@@ -2493,6 +2497,8 @@
     <string name="DebugClearLogs">Clear Logs</string>
     <string name="DebugMenuEnableLogs">Enable Logs</string>
     <string name="DebugMenuDisableLogs">Disable Logs</string>
+    <string name="DebugMenuLoginToast_one">Click %d more time to open debug menu.</string>
+    <string name="DebugMenuLoginToast_other">Click %d more times to open debug menu.</string>
     <string name="DebugMenuImportContacts">Import Contacts</string>
     <string name="DebugMenuReloadContacts">Reload Contacts</string>
     <string name="DebugMenuResetDialogs">Reset Dialogs</string>
@@ -4143,11 +4149,13 @@
     <string name="VoipUnmute">Unmute</string>
     <string name="VoipHoldAndTalk">or hold and talk</string>
     <string name="VoipTapToMute">You\'re Live</string>
-    <string name="VoipTapToMuteConference">You\'re Live</string>
+    <string name="VoipTapToMuteShort">You\'re Live</string>
+    <string name="VoipTapToMuteConferenceShort">You\'re Live</string>
     <string name="VoipMutedByAdmin">Muted by admin</string>
     <string name="VoipMutedByAdminShort">Muted</string>
     <string name="VoipMutedTapForSpeak">tap if you want to speak</string>
     <string name="VoipMutedTapedForSpeak">You asked to speak</string>
+    <string name="VoipMutedTapedForSpeakShort">Wait...</string>
     <string name="VoipMutedTapedForSpeakInfo">We let the speakers know</string>
     <string name="VoipMute">Mute</string>
     <string name="VoipStartVideo">Start Video</string>
@@ -4206,6 +4214,8 @@
     <string name="VoipGroupEndConference">End group call</string>
     <string name="VoipGroupCancelChat">Cancel voice chat</string>
     <string name="VoipChannelEndChat">End live stream</string>
+    <string name="VoipChannelEnableComments">Enable Comments</string>
+    <string name="VoipChannelDisableComments">Disable Comments</string>
     <string name="VoipChannelCancelChat">Cancel live stream</string>
     <string name="VoipGroupConnecting">Connecting...</string>
     <string name="VoipConferenceLeave">Leave video chat</string>
@@ -4251,7 +4261,7 @@
     <string name="VoipGroupSearchMembers">Search members to invite...</string>
     <string name="VoipGroupCopyInviteLink">Copy Invite Link</string>
     <string name="VoipGroupCopyInviteLinkCopied">Invite link copied to clipboard.</string>
-    <string name="VoipGroupUnmute">Unmute</string>
+    <string name="VoipGroupUnmuteShort">Unmute</string>
     <string name="VoipGroupAddMemberTitle">Add Member</string>
     <string name="VoipGroupAddMemberText">Do you want to add **%1$s** to **%2$s**?</string>
     <string name="VoipGroupInvitedUser">You invited **%1$s** to the voice chat.</string>
@@ -4325,9 +4335,9 @@
     <string name="VoipChannelStartVoiceChat">Start Live Stream</string>
     <string name="VoipChannelStartStreaming">Start Streaming</string>
     <string name="VoipChannelScheduleVoiceChat">Schedule Live Stream</string>
-    <string name="VoipGroupStartNow">Start Now</string>
-    <string name="VoipGroupSetReminder">Set Reminder</string>
-    <string name="VoipGroupCancelReminder">Cancel Reminder</string>
+    <string name="VoipGroupStartNowShort">Start Now</string>
+    <string name="VoipGroupSetReminderShort">Remind me</string>
+    <string name="VoipGroupCancelReminderShort">Don\'t Remind</string>
     <string name="VoipGroupScheduleInfo">Members of the group will be notified that the voice chat will start in %1$s.</string>
     <string name="VoipChannelScheduleInfo">Subscribers of the channel will be notified that the live stream will start in %1$s.</string>
     <string name="VoipChatStartsIn">Starts in</string>
@@ -4360,6 +4370,7 @@
     <string name="VoipEditTitleHint">Title</string>
     <string name="VoipSetNewPhoto">Set New Photo</string>
     <string name="VoipCamera">Camera</string>
+    <string name="VoipMessage">Message</string>
     <string name="CallVideoPin">Pin</string>
     <string name="CallVideoUnpin">Unpin</string>
     <string name="VoipGroupAudio">Audio</string>
@@ -4440,6 +4451,7 @@
     <string name="LinksCreatedByOtherAdmins">Invite links created by other admins</string>
     <string name="PermanentLinkForThisAdmin">Invite link for this admin</string>
     <string name="QRCodeLinkHelpChannel">Everyone on Telegram can scan this code to join your channel.</string>
+    <string name="QRCodeLinkHelpChannelDirect">Everyone on Telegram can scan this code to write to your channel.</string>
     <string name="QRCodeLinkHelpProxy">Your friends can add this proxy by scanning this code with phone or in-app camera.</string>
     <string name="QRCodeLinkHelpFolder">Everyone on Telegram can scan this code to add this folder and join the chats included in this invite link.</string>
     <string name="QRCodeLinkGroupCall">Everyone on Telegram can scan this code to join your group call.</string>
@@ -5506,6 +5518,7 @@
     <string name="AdditionalReactionsDescription">Unlock a wider range of reactions on messages by subscribing to Telegram Premium.</string>
     <string name="PremiumPreviewAppIconDescription2">Unlock a wider range of app icons by subscribing to Telegram Premium.</string>
     <string name="PaymentCheckoutAcceptRecurrent">I accept the *Terms of Service* of %1$s.</string>
+    <string name="PaymentCheckoutAcceptRecurrentFee">I accept the *Terms of Service*.</string>
     <string name="RevokeLinksAlert">Are you sure you want to revoke these links?\n\nThe groups will become private.</string>
     <string name="RevokeLinksAlertChannel">Are you sure you want to revoke these links?\n\nThe channels will become private.</string>
     <string name="ClearRecentStickersAlertMessage">Do you want to clear all your recent stickers?</string>
@@ -5658,6 +5671,7 @@
     <string name="DeleteTopics_one">Delete topic</string>
     <string name="DeleteTopics_other">Delete topics</string>
     <string name="Topics">Topics</string>
+    <string name="TopicsTitleMedia">Media</string>
     <string name="DiscussionInfoShort">Add</string>
     <string name="ChatHistoryShort">Chat History</string>
     <string name="NoIconsFound">No icons found</string>
@@ -5991,6 +6005,7 @@
     <string name="LiteOptionsCalls">Animations in Calls</string>
     <string name="LiteOptionsAutoplayVideo">Autoplay Videos</string>
     <string name="LiteOptionsAutoplayGifs">Autoplay GIFs</string>
+    <string name="LiteOptionsParticles">Particles</string>
     <string name="LiteSmoothTransitions">Enable Smooth Transitions</string>
     <string name="LiteSmoothTransitionsInfo">You can disable animated transitions between different sections of the apps.</string>
     <string name="DynamicPackOrder">Dynamic Pack Order</string>
@@ -7147,10 +7162,12 @@
     <string name="UserColorPreviewLinkTitle">Link Preview</string>
     <string name="UserColorPreviewLinkDescription">Your selected color will also tint the link preview.</string>
     <string name="UserColorApplyIcon">Apply Color and Icon</string>
+    <string name="UserColorApply">Apply Style</string>
     <string name="UserColorApplyCollectible">Wear Collectible</string>
     <string name="UserReplyIcon">Add Icons to Replies</string>
     <string name="UserProfileIcon">Add Icons to Profile</string>
     <string name="UserProfileHint">Choose a color and an icon for your profile</string>
+    <string name="UserProfileHint2">You can also change color of your name and customize replies to you. **Change >**</string>
     <string name="UserReplyIconOff">Off</string>
     <string name="ChannelReplyIconOff">Off</string>
     <string name="ChannelColorTitle2">Appearance</string>
@@ -7788,6 +7805,7 @@
     <string name="PrivacyBirthdayInfo3">You can add users or entire groups as exception that will override the settings above.</string>
     <string name="PrivacyBirthdaySet">You haven’t entered your date of birth yet.\n**Add my birthday >**</string>
     <string name="PrivacyBirthdaySetDone">Date of birth added.</string>
+    <string name="PrivacyBirthdaySetDoneInfo">You can change your birth of date in settings.</string>
     <string name="PrivacyBirthdayTooOftenTitle">Oops</string>
     <string name="PrivacyBirthdayTooOftenMessage">Sorry, you can’t change your birthday so often.</string>
     <string name="GiftsBirthdaySetup">Add Your Birthday</string>
@@ -7933,6 +7951,7 @@
     <string name="BackEnteringPhrase">&lt; Back to entering the phrase</string>
     <string name="BackEnteringCode">&lt; Back to entering the code</string>
     <string name="ReturnEnteringSMS">Return to entering the code ></string>
+    <string name="ReturnPhoneCall">Return to phone call ></string>
     <string name="ReturnEnteringWord">Return to entering the word ></string>
     <string name="ReturnEnteringPhrase">Return to entering the word ></string>
     <string name="SmsAvailableIn2">You can request another\nSMS in %1$d:%2$02d</string>
@@ -8048,6 +8067,7 @@
     <string name="StarsNeededTextGiftTransfer">Buy **Stars** to transfer your gifts.</string>
     <string name="StarsNeededTextGiftBuyResale">Buy **Stars** to buy gifts.</string>
     <string name="StarsNeededTextSearch">Buy **Stars** to search posts.</string>
+    <string name="StarsNeededRemoveGiftDescription">Buy **Stars** to remove gifts\' descriptions.</string>
     <string name="TonNeededTextGiftBuyResale">Buy **TON** to buy gifts.</string>
     <string name="StarsNeededTextLink">Buy **Stars** to keep your channel subscriptions.</string>
     <string name="StarsNeededTextLink_subs">Buy **Stars** to keep your channel subscriptions.</string>
@@ -8447,6 +8467,7 @@
     <string name="StarGiftReasonUpgrade">Gift Upgraded</string>
     <string name="StarGiftReasonUpgradeView">view</string>
     <string name="StarGiftReasonTransfer">Gift Transferred</string>
+    <string name="StarGiftReasonRemovedDescription">Removed Description</string>
     <string name="StarGiftReasonSale">Gift Sale</string>
     <string name="StarGiftReasonPurchase">Gift Purchase</string>
     <string name="StarGiftUpgradeGiftFrom">Gift From</string>
@@ -8485,6 +8506,7 @@
     <string name="Gift2PremiumInfoLink">See Features ></string>
     <string name="Gift2Stars">Send a Gift</string>
     <string name="Gift2StarsInfo">Give **%s** gifts that can be kept on the profile or converted to Stars.</string>
+    <string name="Gift2StarsCollectibleInfo">Collectible gifts are unique digital items you exchange or sell.</string>
     <string name="Gift2StarsSelf">Buy a gift</string>
     <string name="Gift2StarsSelfInfo1">Buy yourself a gift to display on your page or reserve for later.</string>
     <string name="Gift2StarsSelfInfo2">Limited-edition gifts upgraded to collectibles can be gifted to others later.</string>
@@ -8567,6 +8589,7 @@
     <string name="Gift2TabInStock">In Stock</string>
     <string name="Gift2TabLimited">Limited</string>
     <string name="Gift2TabMine">My Gifts</string>
+    <string name="Gift2TabCollectibles">Collectibles</string>
     <string name="Gift2TabResale">Resale</string>
     <string name="Gift2TransferMine">Transfer</string>
     <string name="Gift2LimitedRibbon">limited</string>
@@ -8578,6 +8601,7 @@
     <string name="StarsGiftCompletedText_other">You spent **%1$d** Stars from your balance.</string>
     <string name="StarsGiftUpgradeCompleted">Gift Upgrade sent!</string>
     <string name="StarsGiftUpgradeCompletedText">%s can now upgrade this gift for free.</string>
+    <string name="StarsGiftUpgradeCompletedMoreButton">Gift More</string>
     <string name="StarsGiftCompletedChannelText_one">You sent a gift to **%2$s** for **%1$d** Star.</string>
     <string name="StarsGiftCompletedChannelText_other">You sent a gift to **%2$s** for **%1$d** Stars.</string>
     <string name="Gift2ChannelSend">Send Gift</string>
@@ -8701,6 +8725,8 @@
     <string name="Gift2Notification_other">sent a Gift worth of %d Stars</string>
     <string name="Gift2UniqueNotification">sent a Unique Gift!</string>
     <string name="Gift2UniqueUpgradeNotification">upgraded your Gift</string>
+    <string name="Gift2UniquePrepaidUpgradeNotification">sent an Upgrade for your Gift</string>
+    <string name="Gift2UniqueUnpackUpgradeNotification">unpacked the Gift</string>
     <string name="YourStarsBalance">your balance</string>
     <string name="YourTonBalance">your balance</string>
     <string name="StarsBuy">Buy Stars</string>
@@ -8956,13 +8982,16 @@
     <string name="Gift2PrepayUpgradeText">Let %s turn your gift into a unique collectible.</string>
     <string name="Gift2UpgradeFeature1Title">Unique</string>
     <string name="Gift2UpgradeFeature1Text">Get a unique number, model, backdrop and a symbol for your gift.</string>
+    <string name="Gift2PrepayUpgradeFeature1Text">%s will get a unique number, model, backdrop, and symbol for the gift.</string>
     <string name="Gift2UpgradeFeature1TextLearn">The recipient will get a unique number, model, backdrop, and symbol for the gift.</string>
     <string name="Gift2UpgradeFeature2Title">Transferable</string>
     <string name="Gift2UpgradeFeature2Text">Send your upgraded gift to any of your friends on Telegram.</string>
+    <string name="Gift2PrepayUpgradeFeature2Text">%s will be able to send the gift to anyone on Telegram.</string>
     <string name="Gift2UpgradeFeature2TextLearn">The recipient will be able to send the gift to anyone on Telegram.</string>
     <string name="Gift2UpgradeFeature3Title">Tradable</string>
     <string name="Gift2UpgradeFeatureSoon">SOON</string>
     <string name="Gift2UpgradeFeature3Text">Sell or auction your gift on third-party NFT marketplaces.</string>
+    <string name="Gift2PrepayUpgradeFeature3Text">%s will be able to auction the gift on third-party NFT marketplaces.</string>
     <string name="Gift2UpgradeFeature3TextLearn">The recipient will be able to auction the gift on third-party NFT marketplaces.</string>
     <string name="Gift2WearTitle">Wear %s</string>
     <string name="Gift2WearSubtitle">and get these benefits</string>
@@ -8987,6 +9016,7 @@
     <string name="Gift2LearnMoreTitle">Make Unique</string>
     <string name="Gift2LearnMoreText">Let %s turn your gift into a unique collectible.</string>
     <string name="Gift2UpgradeButton">Upgrade for ⭐️%d</string>
+    <string name="Gift2UpgradeButtonDecreasesIn">Price decreases in %s</string>
     <string name="Gift2PrepayUpgradeButton">Pay ⭐️%d for Upgrade</string>
     <string name="Gift2UpgradeButtonFree">Upgrade for Free</string>
     <string name="Gift2UpgradeButtonGift">Upgrade</string>
@@ -9004,6 +9034,10 @@
     <string name="Gift2CollectionNumberBy_one">Collectible #%1$d by **%2$s**</string>
     <string name="Gift2CollectionNumberBy_other">Collectible #%1$d by **%2$s**</string>
     <string name="Gift2Owner">Owner</string>
+    <string name="Gift2Host">Telegram</string>
+    <string name="Gift2HostAddress">Owner</string>
+    <string name="Gift2CantDoTitle">Action Locked</string>
+    <string name="Gift2CantDoText">Transfer this gift to your Telegram account on Fragment to unlock this action.</string>
     <string name="Gift2OwnerChange">transfer</string>
     <string name="Gift2AttributeModel">Model</string>
     <string name="Gift2AttributeBackdrop">Backdrop</string>
@@ -9023,6 +9057,9 @@
     <string name="Gift2TransferPriceText_other">Do you want to transfer ownership of **%2$s** to **%3$s** for **%1$d Stars**?</string>
     <string name="Gift2TransferDo">Transfer</string>
     <string name="Gift2TransferDoPrice">Transfer for ⭐️%d</string>
+    <string name="Gift2RemoveDescriptionTitle">Remove Description</string>
+    <string name="Gift2RemoveDescriptionText">Do you want to permanently remove this description from your gift?</string>
+    <string name="Gift2RemoveDescriptionButton">Remove for ⭐️%d</string>
     <string name="Gift2UpgradedTitle">Gift Upgraded</string>
     <string name="Gift2UpgradedText">Your gift **%s** now has unique attributes and can be transferred to others.</string>
     <string name="Gift2UniqueTitle">Gift from %s</string>
@@ -9237,6 +9274,7 @@
     <string name="GroupCallCreateVoice">Voice</string>
     <string name="GroupCallCreateVideo">Video</string>
     <string name="GroupCallCreate">Start New Call</string>
+    <string name="GroupCalMessageDecryptionError">Unsupported message</string>
     <string name="GroupCallCreateInfo_one">You can add up to %d participant to a call.</string>
     <string name="GroupCallCreateInfo_other">You can add up to %d participants to a call.</string>
     <string name="GroupCallCreateLink">Create Call Link</string>
@@ -9374,9 +9412,10 @@
     <string name="PostSuggestionsOff">Off</string>
     <string name="PostSuggestionsStars">⭐️ %d</string>
     <string name="AllowPostSuggestions">Allow Direct Messages</string>
-    <string name="AllowPostSuggestionsHint">Allow users to send messages to your channel, with the option to charge a fee for each message. </string>
+    <string name="AllowPostSuggestionsHint2">Allow users to send messages to your channel, with an optional fee per message.</string>
     <string name="PriceForEachSuggestion">Price for each message</string>
     <string name="Suggest2ChannelSendHint">Send a message to the channel\'s admin</string>
+    <string name="ChannelLinkDirectMessages">Link to direct messages</string>
 
     <string name="PostSuggestionsOfferTitle">Suggest a Message</string>
     <string name="PostSuggestionsOfferChangeTitle">Suggest Changes</string>
@@ -9400,7 +9439,7 @@
     <string name="PostSuggestionsAddTime">Edit Time</string>
     <string name="PostSuggestionsAddTimeHint">Select the date and time you want the message to be published.</string>
     <string name="PostSuggestionsAddTimeHint2">The post will remain available for at least %d hours from this date.</string>
-    <string name="PostSuggestionsPriceInfo">You will receive %1$s of the selected fee (~%2$s$) for each incoming message.</string>
+    <string name="PostSuggestionsPriceInfo2">You will receive %1$s of the selected fee (~%2$s$) for each incoming message.</string>
 
     <string name="SuggestAPostBelow">Suggest a Post Below</string>
     <string name="SuggestAPostBelowHint">Tap here to suggest a post for %s</string>
@@ -9741,4 +9780,44 @@
     <string name="GiftThemesSetByOther">**%1$s** set **%2$s** as a new theme for this chat.</string>
     <string name="GiftThemesSetActionView">View</string>
     <string name="GiftLocked">Gift Locked</string>
+    <string name="Gift2UpgradeCostsInfo">See how this price will decrease ></string>
+    <string name="Gift2UpgradeCostsTitle">Upgrade Cost</string>
+    <string name="Gift2UpgradeCostsText">Users who upgrade their gift first get collectibles with shorter numbers.</string>
+    <string name="Gift2UpgradeCostsFooter">Upgrade cost drops every minute.</string>
+    <string name="Understood">👌 Understood</string>
+    <string name="GiftTopAction">**%1$s** sent you this gift on **%2$s**</string>
+    <string name="GiftSelfTopAction">You bought this gift on **%1$s**</string>
+    <string name="BotForumNewTopic">New Chat</string>
+    <string name="BotForumContinueChat">Continue last thread</string>
+    <string name="BotForumAskForStartNewChatTitle">New Thread</string>
+    <string name="BotForumAskForStartNewChat">Type any message to create a new thread.</string>
+    <string name="TypeMessageAskBot">Ask %1$s</string>
+    <string name="AddNotes">Add Notes...</string>
+    <string name="AddNotesInfo">Notes are only visible to you.</string>
+    <string name="ProfileNotesRemoveTitle">Delete Note</string>
+    <string name="ProfileNotesRemoveText">Are you sure you want to remove the note?</string>
+    <string name="ProfileNotes">Notes</string>
+    <string name="ProfileNotesInfo">only visible to you</string>
+    <string name="AddContactShareNumber">Share My Phone Number</string>
+    <string name="AddContactShareNumberInfo">Turn this off to prevent %s from seeing your phone number.</string>
+    <string name="UserSuggestBirthday">Suggest Date of Birth</string>
+    <string name="UserSuggestBirthdayTitle">%s\'s Date Of Birth</string>
+    <string name="UserSuggestBirthdayButton">Suggest Date of Birth</string>
+    <string name="ActionSuggestBirthday">**un1** suggests you to add your date of birth</string>
+    <string name="ActionYouSuggestBirthday">You suggest to add date of birth</string>
+    <string name="DateDay">Day</string>
+    <string name="DateMonth">Month</string>
+    <string name="DateYear">Year</string>
+    <string name="GiftRemovedDescription">Removed **%s**\'s Description!</string>
+    <string name="NotificationMessageSuggestBirthday">%s suggested you your birthday</string>
+    <string name="StarsTransactionRemovedDescription">Removed Gift Description</string>
+    <string name="Gift2TransactionRemovedDescription">Removed Gift Description</string>
+    <string name="Gift2TransactionPrepaidUpgrade">Gift Upgrade</string>
+    <string name="Gift2PeerColorProfileEmptyTitle">You don\'t have any gifts you can use as profile covers.</string>
+    <string name="Gift2PeerColorReplyEmptyTitle">You don\'t have any gifts you can use as reply color.</string>
+    <string name="Gift2PeerColorEmptyButton">**Browse gifts available for purchase >**</string>
+    <string name="DateOfBirth">Date Of Birth</string>
+    <string name="DateOfBirthHideYear">Hide Year</string>
+    <string name="DateOfBirthAddToProfile">Add to My Profile</string>
+    <string name="SuggestedDateOfBirthView">View</string>
 </resources>

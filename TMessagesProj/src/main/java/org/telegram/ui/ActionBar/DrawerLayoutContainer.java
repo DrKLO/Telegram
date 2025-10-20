@@ -179,20 +179,6 @@ public class DrawerLayoutContainer extends FrameLayout {
         addView(drawerLayout);
         drawerLayout.setVisibility(INVISIBLE);
         drawerListView.setVisibility(GONE);
-        drawerLayout.setFitsSystemWindows(true);
-        if (Build.VERSION.SDK_INT >= 35 && drawerListView instanceof RecyclerView) {
-            ((RecyclerView) drawerListView).setClipToPadding(false);
-            drawerLayout.setOnApplyWindowInsetsListener(new OnApplyWindowInsetsListener() {
-                @NonNull
-                @Override
-                public WindowInsets onApplyWindowInsets(@NonNull View v, @NonNull WindowInsets insets) {
-                    Insets r = insets.getInsets(WindowInsetsCompat.Type.displayCutout() | WindowInsetsCompat.Type.systemBars());
-                    drawerListView.setPadding(0, 0, 0, r.bottom);
-                    drawerLayout.requestLayout();
-                    return WindowInsets.CONSUMED;
-                }
-            });
-        }
         AndroidUtilities.runOnUIThread(() -> {
             drawerListView.setVisibility(View.VISIBLE);
         }, 2500);
@@ -574,22 +560,16 @@ public class DrawerLayoutContainer extends FrameLayout {
             }
 
             final LayoutParams lp = (LayoutParams) child.getLayoutParams();
-
-            if (BuildVars.DEBUG_VERSION) {
+            try {
                 if (drawerLayout != child) {
                     child.layout(lp.leftMargin, lp.topMargin + getPaddingTop(), lp.leftMargin + child.getMeasuredWidth(), lp.topMargin + child.getMeasuredHeight() + getPaddingTop());
                 } else {
                     child.layout(-child.getMeasuredWidth(), lp.topMargin + getPaddingTop(), 0, lp.topMargin + child.getMeasuredHeight() + +getPaddingTop());
                 }
-            } else {
-                try {
-                    if (drawerLayout != child) {
-                        child.layout(lp.leftMargin, lp.topMargin + getPaddingTop(), lp.leftMargin + child.getMeasuredWidth(), lp.topMargin + child.getMeasuredHeight() + getPaddingTop());
-                    } else {
-                        child.layout(-child.getMeasuredWidth(), lp.topMargin + getPaddingTop(), 0, lp.topMargin + child.getMeasuredHeight() + +getPaddingTop());
-                    }
-                } catch (Exception e) {
-                    FileLog.e(e);
+            } catch (Exception e) {
+                FileLog.e(e);
+                if (BuildVars.DEBUG_VERSION) {
+                    throw e;
                 }
             }
         }

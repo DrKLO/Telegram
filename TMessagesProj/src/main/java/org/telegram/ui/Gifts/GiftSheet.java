@@ -34,9 +34,9 @@ import android.os.Bundle;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.TextUtils;
-import android.util.Log;
 import android.util.TypedValue;
 import android.view.Gravity;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewTreeObserver;
 import android.widget.FrameLayout;
@@ -65,6 +65,7 @@ import org.telegram.messenger.Emoji;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.ImageReceiver;
+import org.telegram.messenger.LiteMode;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.MessageObject;
@@ -157,6 +158,9 @@ public class GiftSheet extends BottomSheetWithRecyclerListView implements Notifi
     private final ExtendedGridLayoutManager layoutManager;
     private final DefaultItemAnimator itemAnimator;
 
+    private final LinkSpanDrawable.LinksTextView subtitleStarsView;
+    private final LinkSpanDrawable.LinksTextView subtitleCollectiblesStarsView;
+
     private final ArrayList<GiftPremiumBottomSheet.GiftTier> premiumTiers = new ArrayList<>();
 
     private final StarsController.GiftsList myGifts;
@@ -165,6 +169,7 @@ public class GiftSheet extends BottomSheetWithRecyclerListView implements Notifi
     private int TAB_LIMITED = -1;
     private int TAB_IN_STOCK = -1;
     private int TAB_RESALE = -1;
+    private int TAB_COLLECTIBLES = -1;
     private final ArrayList<CharSequence> tabs = new ArrayList<>();
     private int selectedTab;
 
@@ -301,15 +306,40 @@ public class GiftSheet extends BottomSheetWithRecyclerListView implements Notifi
         titleStarsView.setGravity(Gravity.CENTER);
         starsHeaderView.addView(titleStarsView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 4, 0, 4, 0));
 
-        final LinkSpanDrawable.LinksTextView subtitleStarsView = new LinkSpanDrawable.LinksTextView(context, resourcesProvider);
+        subtitleStarsView = new LinkSpanDrawable.LinksTextView(context, resourcesProvider) {
+            @Override
+            public boolean dispatchTouchEvent(MotionEvent event) {
+                if (getAlpha() < 0.95f) return false;
+                return super.dispatchTouchEvent(event);
+            }
+        };
         subtitleStarsView.setLinkTextColor(Theme.getColor(Theme.key_chat_messageLinkIn, resourcesProvider));
         subtitleStarsView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         subtitleStarsView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
         subtitleStarsView.setGravity(Gravity.CENTER);
 
+        subtitleCollectiblesStarsView = new LinkSpanDrawable.LinksTextView(context, resourcesProvider) {
+            @Override
+            public boolean dispatchTouchEvent(MotionEvent event) {
+                if (getAlpha() < 0.95f) return false;
+                return super.dispatchTouchEvent(event);
+            }
+        };
+        subtitleCollectiblesStarsView.setLinkTextColor(Theme.getColor(Theme.key_chat_messageLinkIn, resourcesProvider));
+        subtitleCollectiblesStarsView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+        subtitleCollectiblesStarsView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
+        subtitleCollectiblesStarsView.setGravity(Gravity.CENTER);
+        subtitleCollectiblesStarsView.setAlpha(0.0f);
+        subtitleCollectiblesStarsView.setScaleX(0.85f);
+        subtitleCollectiblesStarsView.setScaleY(0.85f);
+
+        FrameLayout subtitleLayout = new FrameLayout(context);
+        subtitleLayout.addView(subtitleStarsView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 26, 0, 26, 0));
+        subtitleLayout.addView(subtitleCollectiblesStarsView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 26, 0, 26, 0));
+
         titleStarsView.setText(getString(dialogId < 0 ? R.string.Gift2StarsChannel : self ? R.string.Gift2StarsSelf : R.string.Gift2Stars));
         if (self) {
-            starsHeaderView.addView(subtitleStarsView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 26, 9, 26, 4));
+            starsHeaderView.addView(subtitleLayout, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 0, 9, 0, 4));
 
             final LinkSpanDrawable.LinksTextView subtitleStarsView2 = new LinkSpanDrawable.LinksTextView(context, resourcesProvider);
             subtitleStarsView2.setLinkTextColor(Theme.getColor(Theme.key_chat_messageLinkIn, resourcesProvider));
@@ -321,57 +351,61 @@ public class GiftSheet extends BottomSheetWithRecyclerListView implements Notifi
             subtitleStarsView.setText(getString(R.string.Gift2StarsSelfInfo1));
             subtitleStarsView2.setText(getString(R.string.Gift2StarsSelfInfo2));
         } else if (dialogId < 0) {
-            starsHeaderView.addView(subtitleStarsView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 26, 9, 26, 4));
+            starsHeaderView.addView(subtitleLayout, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 0, 9, 0, 4));
             NotificationCenter.listenEmojiLoading(subtitleStarsView);
             subtitleStarsView.setText(Emoji.replaceEmoji(AndroidUtilities.replaceTags(formatString(R.string.Gift2StarsChannelInfo, name)), subtitleStarsView.getPaint().getFontMetricsInt(), false));
         } else {
-            starsHeaderView.addView(subtitleStarsView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 4, 9, 4, 6));
+            starsHeaderView.addView(subtitleLayout, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 0, 9, 0, 6));
 
             final StarsController.GiftsList list = StarsController.getInstance(currentAccount).getProfileGiftsList(dialogId);
-            Runnable setSubtitle = () -> {
-                final SpannableStringBuilder subtitle = new SpannableStringBuilder();
-                subtitle.append(AndroidUtilities.replaceTags(formatString(R.string.Gift2StarsInfo, name)));
-                subtitle.append(" ");
-                final HashSet<Long> emojiDocumentIds = new HashSet<>();
-                final HashSet<TLRPC.Document> emojiDocuments = new HashSet<>();
-                for (int i = 0; i < list.gifts.size() && emojiDocumentIds.size() < 3; ++i) {
-                    final TL_stars.SavedStarGift savedStarGift = list.gifts.get(i);
-                    if (savedStarGift != null && savedStarGift.gift != null) {
-                        final TLRPC.Document document = savedStarGift.gift.getDocument();
-                        if (document != null && !emojiDocumentIds.contains(document.id)) {
-                            emojiDocuments.add(document);
-                            emojiDocumentIds.add(document.id);
+            final Runnable setSubtitle = () -> {
+                for (int a = 0; a < 2; ++a) {
+                    final SpannableStringBuilder subtitle = new SpannableStringBuilder();
+                    subtitle.append(AndroidUtilities.replaceTags(a == 1 ? getString(R.string.Gift2StarsCollectibleInfo) : formatString(R.string.Gift2StarsInfo, name)));
+                    subtitle.append(" ");
+                    final HashSet<Long> emojiDocumentIds = new HashSet<>();
+                    final HashSet<TLRPC.Document> emojiDocuments = new HashSet<>();
+                    for (int i = 0; i < list.gifts.size() && emojiDocumentIds.size() < 3; ++i) {
+                        final TL_stars.SavedStarGift savedStarGift = list.gifts.get(i);
+                        if (savedStarGift != null && savedStarGift.gift != null) {
+                            final TLRPC.Document document = savedStarGift.gift.getDocument();
+                            if (document != null && !emojiDocumentIds.contains(document.id)) {
+                                emojiDocuments.add(document);
+                                emojiDocumentIds.add(document.id);
+                            }
                         }
                     }
-                }
-                if (emojiDocuments.size() > 0) {
-                    final SpannableStringBuilder link = new SpannableStringBuilder();
-                    link.append(formatString(R.string.Gift2StarsInfoProfileLink, DialogObject.getShortName(dialogId)).replaceAll(" ", " "));
-                    link.append(" ");
-                    for (final TLRPC.Document document : emojiDocuments) {
-                        link.append("\u2060e");
-                        link.setSpan(new AnimatedEmojiSpan(document, subtitleStarsView.getPaint().getFontMetricsInt()), link.length() - 1, link.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-                    }
-                    link.append(" >");
-                    subtitle.append(AndroidUtilities.replaceArrows(AndroidUtilities.makeClickable(link, () -> {
-                        BaseFragment lastFragment = LaunchActivity.getSafeLastFragment();
-                        if (lastFragment == null) return;
-                        dismiss();
-                        if (closeParentSheet != null) {
-                            closeParentSheet.run();
+                    if (emojiDocuments.size() > 0) {
+                        final SpannableStringBuilder link = new SpannableStringBuilder();
+                        link.append(formatString(R.string.Gift2StarsInfoProfileLink, DialogObject.getShortName(dialogId)).replaceAll(" ", " "));
+                        link.append(" ");
+                        for (final TLRPC.Document document : emojiDocuments) {
+                            link.append("\u2060e");
+                            link.setSpan(new AnimatedEmojiSpan(document, subtitleStarsView.getPaint().getFontMetricsInt()), link.length() - 1, link.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                         }
-                        final Bundle args = new Bundle();
-                        args.putLong("user_id", dialogId);
-                        args.putBoolean("open_gifts", true);
-                        lastFragment.presentFragment(new ProfileActivity(args));
-                    }), true));
-                } else {
-                    subtitle.append(AndroidUtilities.replaceArrows(AndroidUtilities.makeClickable(getString(R.string.Gift2StarsInfoLink), () -> {
-                        new ExplainStarsSheet(context).show();
-                    }), true));
+                        link.append(" >");
+                        subtitle.append(AndroidUtilities.replaceArrows(AndroidUtilities.makeClickable(link, () -> {
+                            BaseFragment lastFragment = LaunchActivity.getSafeLastFragment();
+                            if (lastFragment == null) return;
+                            dismiss();
+                            if (closeParentSheet != null) {
+                                closeParentSheet.run();
+                            }
+                            final Bundle args = new Bundle();
+                            args.putLong("user_id", dialogId);
+                            args.putBoolean("open_gifts", true);
+                            lastFragment.presentFragment(new ProfileActivity(args));
+                        }), true));
+                    } else {
+                        subtitle.append(AndroidUtilities.replaceArrows(AndroidUtilities.makeClickable(getString(R.string.Gift2StarsInfoLink), () -> {
+                            new ExplainStarsSheet(context).show();
+                        }), true));
+                    }
+
+                    final LinkSpanDrawable.LinksTextView textView = a == 0 ? subtitleStarsView : subtitleCollectiblesStarsView;
+                    textView.setText(subtitle);
+                    textView.setMaxWidth(HintView2.cutInFancyHalf(textView.getText(), textView.getPaint()));
                 }
-                subtitleStarsView.setText(subtitle);
-                subtitleStarsView.setMaxWidth(HintView2.cutInFancyHalf(subtitleStarsView.getText(), subtitleStarsView.getPaint()));
             };
             setSubtitle.run();
             subtitleStarsView.addOnAttachStateChangeListener(new View.OnAttachStateChangeListener() {
@@ -615,6 +649,27 @@ public class GiftSheet extends BottomSheetWithRecyclerListView implements Notifi
 
         actionBar.setTitle(getTitle());
         NotificationCenter.listenEmojiLoading(actionBar.getTitleTextView());
+    }
+
+    private boolean shownCollectiblesInfo;
+    public void setShowCollectiblesInfo(boolean show) {
+        if (show == shownCollectiblesInfo) return;
+
+        shownCollectiblesInfo = show;
+        subtitleStarsView.animate()
+            .alpha(!show ? 1.0f : 0.0f)
+            .scaleX(!show ? 1.0f : 0.85f)
+            .scaleY(!show ? 1.0f : 0.85f)
+            .setDuration(380)
+            .setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT)
+            .start();
+        subtitleCollectiblesStarsView.animate()
+            .alpha(show ? 1.0f : 0.0f)
+            .scaleX(show ? 1.0f : 0.85f)
+            .scaleY(show ? 1.0f : 0.85f)
+            .setDuration(380)
+            .setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT)
+            .start();
     }
 
     @Override
@@ -916,26 +971,12 @@ public class GiftSheet extends BottomSheetWithRecyclerListView implements Notifi
                 TAB_MY_GIFTS = tabs.size();
                 tabs.add(getString(R.string.Gift2TabMine));
             }
-            if (userSettings == null || !userSettings.disallow_limited_stargifts) {
-                TAB_LIMITED = tabs.size();
-                tabs.add(getString(R.string.Gift2TabLimited));
-            }
-            if (hasResale) {
-                TAB_RESALE = tabs.size();
-                tabs.add(getString(R.string.Gift2TabResale));
-            }
-            TAB_IN_STOCK = tabs.size(); tabs.add(getString(R.string.Gift2TabInStock));
-            int firstTabsCount = tabs.size();
-            final Iterator<Long> priceIt = prices.iterator();
-            final ArrayList<Long> pricesArray = new ArrayList<>();
-            while (priceIt.hasNext()) {
-                final long price = priceIt.next();
-                tabs.add(StarsIntroActivity.replaceStarsWithPlain("⭐️ " + LocaleController.formatNumber(price, ','), .8f));
-                pricesArray.add(price);
-            }
-            items.add(Tabs.Factory.asTabs(1, tabs, selectedTab, this::selectTab));
+            TAB_COLLECTIBLES = tabs.size();
+            tabs.add(getString(R.string.Gift2TabCollectibles));
 
-            final long selectedPrice = selectedTab - firstTabsCount >= 0 && selectedTab - firstTabsCount < pricesArray.size() ? pricesArray.get(selectedTab - firstTabsCount) : 0;
+            items.add(Tabs.Factory.asTabs(1, tabs, selectedTab, this::selectTab));
+            setShowCollectiblesInfo(selectedTab == TAB_COLLECTIBLES && !self && dialogId >= 0);
+
             final ArrayList<TL_stars.StarGift> finalGifts;
             if (myGifts != null && selectedTab == TAB_MY_GIFTS) {
                 finalGifts = new ArrayList<>();
@@ -952,13 +993,10 @@ public class GiftSheet extends BottomSheetWithRecyclerListView implements Notifi
                 final TL_stars.StarGift gift = finalGifts.get(i);
                 if (
                     selectedTab == TAB_ALL ||
-                    selectedTab == TAB_LIMITED && gift.limited ||
                     selectedTab == TAB_MY_GIFTS ||
-                    selectedTab == TAB_IN_STOCK && !gift.sold_out ||
-                    selectedTab == TAB_RESALE && gift.availability_resale > 0 ||
-                    selectedTab >= firstTabsCount && gift.stars == selectedPrice
+                    selectedTab == TAB_COLLECTIBLES && (gift.availability_resale > 0 || gift.require_premium || gift.locked_until_date != 0)
                 ) {
-                    if (!gift.sold_out && gift.availability_resale > 0 && selectedTab != TAB_RESALE) {
+                    if (!gift.sold_out && gift.availability_resale > 0 && selectedTab != TAB_COLLECTIBLES) {
                         items.add(GiftCell.Factory.asStarGift(selectedTab, gift, selectedTab == TAB_MY_GIFTS, gift.limited && userSettings != null && userSettings.disallow_limited_stargifts, false, false));
                         giftsCount++;
                     }
@@ -1082,7 +1120,7 @@ public class GiftSheet extends BottomSheetWithRecyclerListView implements Notifi
             priceView.setGravity(Gravity.CENTER);
 
             priceView.setTextColor(0xFF3391D4);
-            card.addView(priceLayout, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 0, 130, 0, 11));
+            card.addView(priceLayout, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL | Gravity.BOTTOM, 0, 0, 0, 11));
 
             priceBackground = new StarsBackgroundView(context);
             priceBackground.setBackgroundColor(0xFF0000FF);
@@ -1124,6 +1162,22 @@ public class GiftSheet extends BottomSheetWithRecyclerListView implements Notifi
             tonOnlySaleView.setVisibility(GONE);
             tonOnlySaleView.setScaleType(ImageView.ScaleType.CENTER);
             card.addView(tonOnlySaleView, LayoutHelper.createFrame(20, 20, Gravity.TOP | Gravity.LEFT, 3, 3, 3, 3));
+        }
+
+        public void setSelected(boolean selected, boolean animated) {
+            cardBackground.setSelected(selected, animated);
+            if (animated) {
+                tonOnlySaleView.animate()
+                    .translationX(selected ? dp(6) : 0)
+                    .translationY(selected ? dp(6) : 0)
+                    .setDuration(320)
+                    .setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT)
+                    .start();
+            } else {
+                tonOnlySaleView.animate().cancel();
+                tonOnlySaleView.setTranslationX(selected ? dp(6) : 0);
+                tonOnlySaleView.setTranslationY(selected ? dp(6) : 0);
+            }
         }
 
         public void invalidateCustom() {
@@ -1203,11 +1257,20 @@ public class GiftSheet extends BottomSheetWithRecyclerListView implements Notifi
                     .draw(canvas, (width - subtitle.getWidth()) / 2.0f, height - dp(19) - subtitle.getHeight() / 2.0f + dp(50) * (1f - progress), 0xFFFFFFFF, .6f * progress);
             }
 
-            if (priceView != null && priceView.getVisibility() == View.VISIBLE) {
+            if (priceLayout != null && priceLayout.getVisibility() == View.VISIBLE) {
                 canvas.save();
-                canvas.translate(width / 2.0f - priceView.getWidth() / 2.0f, priceView.getY());
-                canvas.saveLayerAlpha(0, 0, priceView.getWidth(), priceView.getHeight(), (int) (0xFF * priceView.getAlpha() * (1.0f - progress)), Canvas.ALL_SAVE_FLAG);
-                priceView.draw(canvas);
+                canvas.translate(priceLayout.getX(), priceLayout.getY());
+                canvas.saveLayerAlpha(0, 0, priceLayout.getWidth(), priceLayout.getHeight(), (int) (0xFF * (1.0f - progress) * priceLayout.getAlpha()), Canvas.ALL_SAVE_FLAG);
+                priceLayout.draw(canvas);
+                canvas.restore();
+                canvas.restore();
+            }
+
+            if (tonOnlySaleView != null && tonOnlySaleView.getVisibility() == View.VISIBLE) {
+                canvas.save();
+                canvas.translate(tonOnlySaleView.getX(), tonOnlySaleView.getY());
+                canvas.saveLayerAlpha(0, 0, tonOnlySaleView.getWidth(), tonOnlySaleView.getHeight(), (int) (0xFF * (1.0f - progress) * tonOnlySaleView.getAlpha()), Canvas.ALL_SAVE_FLAG);
+                tonOnlySaleView.draw(canvas);
                 canvas.restore();
                 canvas.restore();
             }
@@ -1505,6 +1568,13 @@ public class GiftSheet extends BottomSheetWithRecyclerListView implements Notifi
             return false;
         }
 
+        public long getGiftId() {
+            if (gift != null) {
+                return gift.id;
+            }
+            return 0;
+        }
+
         private TL_stars.SavedStarGift lastUserGift;
 
         public boolean setStarsGift(TL_stars.SavedStarGift userGift, boolean noprice, boolean inCollection) {
@@ -1604,7 +1674,7 @@ public class GiftSheet extends BottomSheetWithRecyclerListView implements Notifi
                 tonOnlySaleView.setBackground(Theme.createRoundRectDrawable(dp(13), backgroundColor));
                 tonOnlySaleView.setColorFilter(0xFFFFFFFF);
                 ((FrameLayout.LayoutParams) priceLayout.getLayoutParams()).gravity = Gravity.TOP | Gravity.CENTER_HORIZONTAL;
-                ((MarginLayoutParams) priceLayout.getLayoutParams()).topMargin = dp(69);
+                ((MarginLayoutParams) priceLayout.getLayoutParams()).topMargin = dp(79);
             } else {
                 if (noprice) {
                     priceView.setVisibility(View.GONE);
@@ -2019,7 +2089,6 @@ public class GiftSheet extends BottomSheetWithRecyclerListView implements Notifi
 
     private static class StarsBackground extends Drawable {
         private static int tickIndex;
-        private int ti;
 
         private final int particlesColor;
         private final int color;
@@ -2048,10 +2117,12 @@ public class GiftSheet extends BottomSheetWithRecyclerListView implements Notifi
         @Override
         public void draw(@NonNull Canvas canvas) {
             canvas.drawPath(path, backgroundPaint);
-            if (particles != null) {
+            if (particles != null && (particlesAllowed || !isAttached)) {
                 canvas.save();
                 canvas.clipPath(path);
-                particles.process();
+                if (invalidateRunnable == null) {
+                    particles.process();
+                }
                 particles.draw(canvas, particlesColor);
                 canvas.restore();
 
@@ -2061,22 +2132,50 @@ public class GiftSheet extends BottomSheetWithRecyclerListView implements Notifi
             }
         }
 
-        private Runnable invalidateRunnable;
-        public void attach() {
-            if (particles == null) {
+        private void invalidateParticles() {
+            if (particles != null) {
+                particles.process();
+                invalidateSelf();
+            }
+        }
+
+        private boolean particlesAllowed;
+        private void checkParticlesAllowed() {
+            boolean particlesAllowed = particles != null && isAttached && LiteMode.isEnabled(LiteMode.FLAG_PARTICLES);
+
+            if (this.particlesAllowed == particlesAllowed) {
                 return;
             }
+            this.particlesAllowed = particlesAllowed;
 
-            final int sparse = FrameTickScheduler.getFrameSparseness(15);
-            FrameTickScheduler.subscribe(invalidateRunnable = this::invalidateSelf, sparse, ti = (tickIndex++) % sparse);
+            if (particlesAllowed) {
+                final int sparse = FrameTickScheduler.getFrameSparseness(15);
+                FrameTickScheduler.subscribe(invalidateRunnable = this::invalidateParticles, sparse, 0/*(tickIndex++) % sparse*/);
+            } else {
+                FrameTickScheduler.unsubscribe(invalidateRunnable);
+            }
+            invalidateSelf();
+        }
+
+
+        private Runnable invalidateRunnable;
+        private Utilities.Callback<Boolean> liteModeCallback;
+        private boolean isAttached;
+
+        public void attach() {
+            if (!isAttached) {
+                isAttached = true;
+                checkParticlesAllowed();
+                LiteMode.addOnPowerSaverAppliedListener(liteModeCallback = b -> checkParticlesAllowed());
+            }
         }
 
         public void detach() {
-            if (particles == null) {
-                return;
+            if (isAttached) {
+                isAttached = false;
+                checkParticlesAllowed();
+                LiteMode.removeOnPowerSaverAppliedListener(liteModeCallback);
             }
-
-            FrameTickScheduler.unsubscribe(invalidateRunnable);
         }
 
 
@@ -2265,11 +2364,14 @@ public class GiftSheet extends BottomSheetWithRecyclerListView implements Notifi
             draw(canvas, 0.0f);
         }
 
+        public static final float PADDING_HORIZONTAL_DP = 3.33f;
+        public static final float PADDING_VERTICAL_DP = 4;
+
         public void draw(@NonNull Canvas canvas, float largerParticlesAlpha) {
             Rect bounds = getBounds();
             final float selected = animatedSelected.set(this.selected);
             rect.set(bounds);
-            rect.inset(dp(3.33f), dp(4));
+            rect.inset(dp(PADDING_HORIZONTAL_DP), dp(PADDING_VERTICAL_DP));
             if (backdrop != null) {
                 final int radius = lerp(Math.min(bounds.width(), bounds.height()), Math.max(bounds.width(), bounds.height()), 0.35f) / 2;
                 if (gradient == null || gradientRadius != radius) {
@@ -2461,10 +2563,11 @@ public class GiftSheet extends BottomSheetWithRecyclerListView implements Notifi
         }
     }
 
-    public static class Tabs extends HorizontalScrollView {
+    public static class Tabs extends FrameLayout {
 
         private final Theme.ResourcesProvider resourcesProvider;
 
+        private final HorizontalScrollView scrollView;
         private final LinearLayout layout;
         private int selected;
         private AnimatedFloat animatedSelected;
@@ -2474,7 +2577,7 @@ public class GiftSheet extends BottomSheetWithRecyclerListView implements Notifi
         private final RectF selectedRect = new RectF();
         private final Paint selectedPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
-        public Tabs(Context context, Theme.ResourcesProvider resourcesProvider) {
+        public Tabs(Context context, boolean center, Theme.ResourcesProvider resourcesProvider) {
             super(context);
 
             this.resourcesProvider = resourcesProvider;
@@ -2517,13 +2620,34 @@ public class GiftSheet extends BottomSheetWithRecyclerListView implements Notifi
             layout.setClipChildren(false);
             layout.setOrientation(LinearLayout.HORIZONTAL);
             layout.setPadding(0, dp(8), 0, dp(10));
-            addView(layout);
+
+            if (center) {
+                scrollView = null;
+                addView(layout, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.CENTER_HORIZONTAL));
+            } else {
+                layout.setPadding(dp(12), dp(8), dp(12), dp(3));
+
+                scrollView = new HorizontalScrollView(context);
+                scrollView.setHorizontalScrollBarEnabled(false);
+                scrollView.setClipToPadding(false);
+                scrollView.setClipChildren(false);
+                scrollView.addView(layout, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.FILL));
+                addView(scrollView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.FILL));
+            }
 
             setHorizontalScrollBarEnabled(false);
             setClipToPadding(false);
             setClipChildren(false);
 
             animatedSelected = new AnimatedFloat(layout, 0, 320, CubicBezierInterpolator.EASE_OUT_QUINT);
+        }
+
+        public void setSelected(int selected, boolean animated) {
+            this.selected = selected;
+            if (!animated) {
+                animatedSelected.set(selected, true);
+            }
+            layout.invalidate();
         }
 
         private int lastId = Integer.MIN_VALUE;
@@ -2544,7 +2668,7 @@ public class GiftSheet extends BottomSheetWithRecyclerListView implements Notifi
                     a++;
                 }
                 for (; a < tabs.size(); ++a) {
-                    final TextView tab = new TextView(getContext());
+                    final LinkSpanDrawable.LinksTextView tab = new LinkSpanDrawable.LinksTextView(getContext());
                     tab.setGravity(Gravity.CENTER);
                     tab.setText(tabs.get(a));
                     tab.setTypeface(AndroidUtilities.bold());
@@ -2566,8 +2690,8 @@ public class GiftSheet extends BottomSheetWithRecyclerListView implements Notifi
             for (int i = 0; i < this.tabs.size(); ++i) {
                 final int tabIndex = i;
                 this.tabs.get(i).setOnClickListener(v -> {
-                    final TextView tab = this.tabs.get(tabIndex);
-                    smoothScrollTo(tab.getLeft() + tab.getWidth() / 2 - getWidth() / 2, 0);
+//                    final TextView tab = this.tabs.get(tabIndex);
+//                    smoothScrollTo(tab.getLeft() + tab.getWidth() / 2 - getWidth() / 2, 0);
                     if (whenTabSelected != null) {
                         whenTabSelected.run(tabIndex);
                     }
@@ -2583,12 +2707,20 @@ public class GiftSheet extends BottomSheetWithRecyclerListView implements Notifi
             );
         }
 
+        public void updateColors() {
+            for (int i = 0; i < this.tabs.size(); ++i) {
+                final TextView textView = this.tabs.get(i);
+                textView.setTextColor(Theme.blendOver(Theme.getColor(Theme.key_dialogGiftsBackground), Theme.getColor(Theme.key_dialogGiftsTabText)));
+            }
+            layout.invalidate();
+        }
+
         public static class Factory extends UItem.UItemFactory<Tabs> {
             static { setup(new Factory()); }
 
             @Override
             public Tabs createView(Context context, int currentAccount, int classGuid, Theme.ResourcesProvider resourcesProvider) {
-                return new Tabs(context, resourcesProvider);
+                return new Tabs(context, true, resourcesProvider);
             }
 
             @Override

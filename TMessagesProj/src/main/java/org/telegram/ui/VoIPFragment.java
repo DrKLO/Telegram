@@ -1087,7 +1087,7 @@ public class VoIPFragment implements
         bottomSpeakerBtn = new VoIpSwitchLayout(context, backgroundProvider);
         bottomVideoBtn = new VoIpSwitchLayout(context, backgroundProvider);
         bottomMuteBtn = new VoIpSwitchLayout(context, backgroundProvider);
-        bottomEndCallBtn = new VoIPToggleButton(context) {
+        bottomEndCallBtn = new VoIPToggleButton(context, 52f) {
             @Override
             protected void dispatchSetPressed(boolean pressed) {
                 super.dispatchSetPressed(pressed);

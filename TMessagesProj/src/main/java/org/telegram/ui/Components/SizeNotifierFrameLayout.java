@@ -939,7 +939,7 @@ public class SizeNotifierFrameLayout extends FrameLayout {
         return false;
     }
 
-    private float getRenderNodeScale() {
+    public static float getRenderNodeScale() {
         switch (SharedConfig.getDevicePerformanceClass()) {
             case SharedConfig.PERFORMANCE_CLASS_HIGH:
                 return AndroidUtilities.density;
@@ -951,7 +951,7 @@ public class SizeNotifierFrameLayout extends FrameLayout {
         }
     }
 
-    private float getBlurRadius() {
+    public static float getBlurRadius() {
         switch (SharedConfig.getDevicePerformanceClass()) {
             case SharedConfig.PERFORMANCE_CLASS_HIGH:
                 return 60;

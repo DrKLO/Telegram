@@ -38,6 +38,7 @@ public class UItem extends AdapterWithDiffUtils.Item {
     public int pad;
     public boolean hideDivider;
     public int iconResId;
+    public Drawable drawable;
     public CharSequence text, subtext, textValue;
     public CharSequence animatedText;
     public String[] texts;
@@ -627,6 +628,7 @@ public class UItem extends AdapterWithDiffUtils.Item {
             intValue == item.intValue &&
             Math.abs(floatValue - item.floatValue) < 0.01f &&
             longValue == item.longValue &&
+            drawable == item.drawable &&
             Objects.equals(object, item.object) &&
             Objects.equals(object2, item.object2)
         );

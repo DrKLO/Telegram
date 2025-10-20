@@ -901,7 +901,7 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
                 if (!initialPlus.equals(currentPlus)) {
                     done[0] = false;
                     TL_account.setPrivacy req = new TL_account.setPrivacy();
-                    req.key = TLRPC.InputPrivacyKey.inputPrivacyKeyNoPaidMessages;
+                    req.key = new TLRPC.TL_inputPrivacyKeyNoPaidMessages();
                     req.rules.add(new TLRPC.TL_inputPrivacyValueAllowContacts());
                     if (currentType != 0 && currentPlus.size() > 0) {
                         TLRPC.TL_inputPrivacyValueAllowUsers usersRule = new TLRPC.TL_inputPrivacyValueAllowUsers();
@@ -994,10 +994,10 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
 
         TL_account.setPrivacy req = new TL_account.setPrivacy();
         if (rulesType == PRIVACY_RULES_TYPE_PHONE) {
-            req.key = TLRPC.InputPrivacyKey.inputPrivacyKeyPhoneNumber;
+            req.key = new TLRPC.TL_inputPrivacyKeyPhoneNumber();
             if (currentType == TYPE_NOBODY) {
                 TL_account.setPrivacy req2 = new TL_account.setPrivacy();
-                req2.key = TLRPC.InputPrivacyKey.inputPrivacyKeyAddedByPhone;
+                req2.key = new TLRPC.TL_inputPrivacyKeyAddedByPhone();
                 if (currentSubType == 0) {
                     req2.rules.add(new TLRPC.TL_inputPrivacyValueAllowAll());
                 } else {
@@ -1017,25 +1017,25 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
                 }), ConnectionsManager.RequestFlagFailOnServerErrors);
             }
         } else if (rulesType == PRIVACY_RULES_TYPE_FORWARDS) {
-            req.key = TLRPC.InputPrivacyKey.inputPrivacyKeyForwards;
+            req.key = new TLRPC.TL_inputPrivacyKeyForwards();
         } else if (rulesType == PRIVACY_RULES_TYPE_PHOTO) {
-            req.key = TLRPC.InputPrivacyKey.inputPrivacyKeyProfilePhoto;
+            req.key = new TLRPC.TL_inputPrivacyKeyProfilePhoto();
         } else if (rulesType == PRIVACY_RULES_TYPE_BIO) {
-            req.key = TLRPC.InputPrivacyKey.inputPrivacyKeyAbout;
+            req.key = new TLRPC.TL_inputPrivacyKeyAbout();
         } else if (rulesType == PRIVACY_RULES_TYPE_P2P) {
-            req.key = TLRPC.InputPrivacyKey.inputPrivacyKeyPhoneP2P;
+            req.key = new TLRPC.TL_inputPrivacyKeyPhoneP2P();
         } else if (rulesType == PRIVACY_RULES_TYPE_CALLS) {
-            req.key = TLRPC.InputPrivacyKey.inputPrivacyKeyPhoneCall;
+            req.key = new TLRPC.TL_inputPrivacyKeyPhoneCall();
         } else if (rulesType == PRIVACY_RULES_TYPE_INVITE) {
-            req.key = TLRPC.InputPrivacyKey.inputPrivacyKeyChatInvite;
+            req.key = new TLRPC.TL_inputPrivacyKeyChatInvite();
         } else if (rulesType == PRIVACY_RULES_TYPE_VOICE_MESSAGES) {
-            req.key = TLRPC.InputPrivacyKey.inputPrivacyKeyVoiceMessages;
+            req.key = new TLRPC.TL_inputPrivacyKeyVoiceMessages();
         } else if (rulesType == PRIVACY_RULES_TYPE_BIRTHDAY) {
-            req.key = TLRPC.InputPrivacyKey.inputPrivacyKeyBirthday;
+            req.key = new TLRPC.TL_inputPrivacyKeyBirthday();
         } else if (rulesType == PRIVACY_RULES_TYPE_GIFTS) {
-            req.key = TLRPC.InputPrivacyKey.inputPrivacyKeyStarGiftsAutoSave;
+            req.key = new TLRPC.TL_inputPrivacyKeyStarGiftsAutoSave();
         } else {
-            req.key = TLRPC.InputPrivacyKey.inputPrivacyKeyStatusTimestamp;
+            req.key = new TLRPC.TL_inputPrivacyKeyStatusTimestamp();
         }
         if (currentType != 0 && currentPlus.size() > 0) {
             TLRPC.TL_inputPrivacyValueAllowUsers usersRule = new TLRPC.TL_inputPrivacyValueAllowUsers();
@@ -1970,7 +1970,7 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
 
                                 NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.premiumPromoUpdated);
                                 updateRows(true);
-                            }, null, getResourceProvider()).create());
+                            }, null, false, getResourceProvider()).create());
                         }), true));
                         backgroundResId = R.drawable.greydivider;
                     } else if (position == detailRow) {

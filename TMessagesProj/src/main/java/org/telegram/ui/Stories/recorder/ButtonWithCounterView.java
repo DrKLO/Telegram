@@ -112,6 +112,14 @@ public class ButtonWithCounterView extends FrameLayout implements Loadable {
         updateColors();
     }
 
+    public void setTextHacks(boolean splitByWords, boolean preserveIndex, boolean startFromEnd, boolean enforceByLetter) {
+        text.setHacks(splitByWords, preserveIndex, startFromEnd, enforceByLetter);
+    }
+
+    public void setSubTextHacks(boolean splitByWords, boolean preserveIndex, boolean startFromEnd, boolean enforceByLetter) {
+        subText.setHacks(splitByWords, preserveIndex, startFromEnd, enforceByLetter);
+    }
+
     protected boolean subTextSplitToWords() {
         return true;
     }

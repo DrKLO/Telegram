@@ -546,6 +546,63 @@ JNIEXPORT jlong JNICALL Java_org_telegram_messenger_voip_NativeInstance_makeGrou
     return reinterpret_cast<jlong>(holder);
 }
 
+extern "C" JNIEXPORT jbyteArray JNICALL Java_org_telegram_messenger_voip_GroupCallMessagesController_groupCallMessageDecryptImpl(
+    JNIEnv *env, jclass clazz,
+    jlong callId,
+    jlong userId,
+    jbyteArray encrypted
+) {
+    jsize length = env->GetArrayLength(encrypted);
+    std::vector<uint8_t> data(length);
+    env->GetByteArrayRegion(encrypted, 0, length, reinterpret_cast<jbyte*>(data.data()));
+
+    auto result = tde2e_api::call_decrypt(
+        callId,
+        userId,
+        0,
+        std::string_view{ (const char*) data.data(), data.size() }
+    );
+
+    if (result.is_ok()) {
+        auto str = result.value();
+
+        jbyteArray byteArray = env->NewByteArray(str.size());
+        if (byteArray == nullptr) {
+            return nullptr;
+        }
+        env->SetByteArrayRegion(byteArray, 0, str.size(), reinterpret_cast<const jbyte*>(str.data()));
+        return byteArray;
+    } else {
+        DEBUG_D("[tde2e] e2eEncryptDecrypt failed: err %s", result.error().message.c_str());
+        return nullptr;
+    }
+}
+
+extern "C" JNIEXPORT jbyteArray JNICALL Java_org_telegram_messenger_voip_GroupCallMessagesController_groupCallMessageEncryptImpl(
+        JNIEnv *env, jclass clazz,
+        jlong callId,
+        jbyteArray decrypted
+) {
+    jsize length = env->GetArrayLength(decrypted);
+    std::vector<uint8_t> data(length);
+    env->GetByteArrayRegion(decrypted, 0, length, reinterpret_cast<jbyte*>(data.data()));
+
+    auto result = tde2e_api::call_encrypt(callId, 0, std::string_view{ (const char*) data.data(), data.size() }, 0);
+    if (result.is_ok()) {
+        auto str = result.value();
+
+        jbyteArray byteArray = env->NewByteArray(str.size());
+        if (byteArray == nullptr) {
+            return nullptr;
+        }
+        env->SetByteArrayRegion(byteArray, 0, str.size(), reinterpret_cast<const jbyte*>(str.data()));
+        return byteArray;
+    } else {
+        DEBUG_D("[tde2e] e2eEncryptDecrypt failed: err %s", result.error().message.c_str());
+        return nullptr;
+    }
+}
+
 extern "C"
 JNIEXPORT void JNICALL Java_org_telegram_messenger_voip_NativeInstance_setJoinResponsePayload(JNIEnv *env, jobject obj, jstring payload) {
     InstanceHolder *instance = getInstanceHolder(env, obj);

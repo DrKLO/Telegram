@@ -9,6 +9,7 @@
 package org.telegram.ui.Components;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
+import static org.telegram.messenger.AndroidUtilities.lerp;
 import static org.telegram.messenger.AndroidUtilities.translitSafe;
 
 import android.animation.Animator;
@@ -143,6 +144,9 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+
+import me.vkryl.android.animator.BoolAnimator;
+import me.vkryl.android.animator.FactorAnimator;
 
 public class EmojiView extends FrameLayout implements NotificationCenter.NotificationCenterDelegate {
 
@@ -2526,9 +2530,7 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
         if (needSearch) {
             addView(bottomTabContainer, new FrameLayout.LayoutParams(LayoutParams.MATCH_PARENT, AndroidUtilities.dp(40) + AndroidUtilities.getShadowHeight(), Gravity.LEFT | Gravity.BOTTOM));
             bottomTabContainer.addView(backspaceButton, LayoutHelper.createFrame(47, 40, Gravity.BOTTOM | Gravity.RIGHT));
-            if (Build.VERSION.SDK_INT >= 21) {
-                backspaceButton.setBackground(Theme.createSelectorDrawable(color, Theme.RIPPLE_MASK_CIRCLE_20DP, AndroidUtilities.dp(18)));
-            }
+            backspaceButton.setBackground(Theme.createSelectorDrawable(color, Theme.RIPPLE_MASK_CIRCLE_20DP, AndroidUtilities.dp(18)));
 
             if (needStickers) {
                 stickerSettingsButton = new ImageView(context);
@@ -2536,9 +2538,7 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
                 stickerSettingsButton.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_chat_emojiPanelBackspace), PorterDuff.Mode.MULTIPLY));
                 stickerSettingsButton.setScaleType(ImageView.ScaleType.CENTER);
                 stickerSettingsButton.setFocusable(true);
-                if (Build.VERSION.SDK_INT >= 21) {
-                    stickerSettingsButton.setBackground(Theme.createSelectorDrawable(color, Theme.RIPPLE_MASK_CIRCLE_20DP, AndroidUtilities.dp(18)));
-                }
+                stickerSettingsButton.setBackground(Theme.createSelectorDrawable(color, Theme.RIPPLE_MASK_CIRCLE_20DP, AndroidUtilities.dp(18)));
                 stickerSettingsButton.setContentDescription(LocaleController.getString(R.string.Settings));
                 bottomTabContainer.addView(stickerSettingsButton, LayoutHelper.createFrame(47, 40, Gravity.BOTTOM | Gravity.RIGHT));
                 stickerSettingsButton.setOnClickListener(new OnClickListener() {
@@ -2629,9 +2629,7 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
             searchButton.setContentDescription(LocaleController.getString(R.string.Search));
             searchButton.setFocusable(true);
             searchButton.setVisibility(View.GONE);
-            if (Build.VERSION.SDK_INT >= 21) {
-                searchButton.setBackground(Theme.createSelectorDrawable(color, Theme.RIPPLE_MASK_CIRCLE_20DP, AndroidUtilities.dp(18)));
-            }
+            searchButton.setBackground(Theme.createSelectorDrawable(color, Theme.RIPPLE_MASK_CIRCLE_20DP, AndroidUtilities.dp(18)));
             bottomTabContainer.addView(searchButton, LayoutHelper.createFrame(47, 40, Gravity.BOTTOM | Gravity.LEFT));
             searchButton.setOnClickListener(new OnClickListener() {
                 @Override
@@ -2658,7 +2656,7 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
                 }
             });
         } else {
-            addView(bottomTabContainer, LayoutHelper.createFrame((Build.VERSION.SDK_INT >= 21 ? 40 : 44) + 16, (Build.VERSION.SDK_INT >= 21 ? 40 : 44) + 8, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.BOTTOM, 0, 0, 2, 0));
+            addView(bottomTabContainer, LayoutHelper.createFrame(40 + 16, 40 + 8, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.BOTTOM, 0, 0, 2, 0));
 
             Drawable drawable = Theme.createSimpleSelectorCircleDrawable(AndroidUtilities.dp(56), getThemedColor(Theme.key_chat_emojiPanelBackground), getThemedColor(Theme.key_chat_emojiPanelBackground));
             if (Build.VERSION.SDK_INT < 21) {
@@ -2724,6 +2722,26 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
 
         setAllow(needStickers, needGif, false);
     }
+
+    private int bottomInset;
+
+    public void setBottomInset(int bottomInset) {
+        if (this.bottomInset != bottomInset) {
+            this.bottomInset = bottomInset;
+
+            applyBottomInsetAsPadding(emojiGridView, AndroidUtilities.dp(44) + bottomInset);
+            applyBottomInsetAsPadding(stickersGridView, AndroidUtilities.dp(44) + bottomInset);
+            applyBottomInsetAsPadding(gifGridView, AndroidUtilities.dp(44) + bottomInset);
+
+            updateBottomTabContainerPosition();
+        }
+    }
+
+    private static void applyBottomInsetAsPadding(View v, int padding) {
+        if (v == null) return;
+        v.setPadding(v.getPaddingLeft(), v.getPaddingTop(), v.getPaddingRight(), padding);
+    }
+
 
     private View animateExpandFromButton;
     private int animateExpandFromPosition = -1, animateExpandToPosition = -1;
@@ -4175,7 +4193,11 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
             if (bottomTabContainer.getTop() - y < 0 || !fixBottomTabContainerTranslation) {
                 y = 0;
             }
-            bottomTabMainTranslation = -y;
+            final float bottomTabMainTranslation = -y;
+            final float bottomTabAdditionalTranslation = lerp(
+                AndroidUtilities.dp(needEmojiSearch ? 45 : 50), -bottomInset,
+                bottomTabVisibility.getFloatValue());
+
             bottomTabContainer.setTranslationY(bottomTabMainTranslation + bottomTabAdditionalTranslation);
             if (needEmojiSearch) {
                 bulletinContainer.setTranslationY(bottomTabMainTranslation + bottomTabAdditionalTranslation);
@@ -4771,9 +4793,12 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
         }
     }
 
-    private ValueAnimator bottomTabContainerAnimator;
-    private float bottomTabMainTranslation, bottomTabAdditionalTranslation;
     private long shownBottomTabAfterClick;
+
+    private final BoolAnimator bottomTabVisibility = new BoolAnimator(0,
+        (id, factor, fraction, callee) -> updateBottomTabContainerPosition(),
+        CubicBezierInterpolator.EASE_OUT_QUINT, 380L, true);
+
     private void showBottomTab(boolean show, boolean animated) {
         lastBottomScrollDy = 0;
         if (delegate != null && delegate.isSearchOpened()) {
@@ -4782,35 +4807,8 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
         if (show && bottomTabContainer.getTag() == null || !show && bottomTabContainer.getTag() != null) {
             return;
         }
-        if (bottomTabContainerAnimator != null) {
-            bottomTabContainerAnimator.cancel();
-            bottomTabContainerAnimator = null;
-        }
         bottomTabContainer.setTag(show ? null : 1);
-        if (animated) {
-            bottomTabContainerAnimator = ValueAnimator.ofFloat(bottomTabAdditionalTranslation, show ? 0 : AndroidUtilities.dp(needEmojiSearch ? 45 : 50));
-            bottomTabContainerAnimator.addUpdateListener(anm -> {
-                bottomTabAdditionalTranslation = (float) anm.getAnimatedValue();
-                updateBottomTabContainerPosition();
-            });
-            bottomTabContainerAnimator.addListener(new AnimatorListenerAdapter() {
-                @Override
-                public void onAnimationEnd(Animator animation) {
-                    if (bottomTabContainerAnimator != animation) {
-                        return;
-                    }
-                    bottomTabAdditionalTranslation = (float) bottomTabContainerAnimator.getAnimatedValue();
-                    updateBottomTabContainerPosition();
-                    bottomTabContainerAnimator = null;
-                }
-            });
-            bottomTabContainerAnimator.setDuration(380);
-            bottomTabContainerAnimator.setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT);
-            bottomTabContainerAnimator.start();
-        } else {
-            bottomTabAdditionalTranslation = show ? 0 : AndroidUtilities.dp(needEmojiSearch ? 45 : 50);
-            updateBottomTabContainerPosition();
-        }
+        bottomTabVisibility.setValue(show, animated);
     }
 
     private void checkTabsY(@Type int type, int dy) {

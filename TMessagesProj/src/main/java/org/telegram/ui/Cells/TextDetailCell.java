@@ -35,6 +35,7 @@ public class TextDetailCell extends FrameLayout {
 
     public final LinkSpanDrawable.LinksTextView textView;
     public final LinkSpanDrawable.LinksTextView valueTextView;
+    public final LinkSpanDrawable.LinksTextView rightValueTextView;
     private final TextView showMoreTextView = null;
     private final ImageView imageView;
     private boolean needDivider;
@@ -48,12 +49,13 @@ public class TextDetailCell extends FrameLayout {
     }
 
     public TextDetailCell(Context context, Theme.ResourcesProvider resourcesProvider) {
-        this(context, resourcesProvider, false);
+        this(context, resourcesProvider, false, false);
     }
 
-    public TextDetailCell(Context context, Theme.ResourcesProvider resourcesProvider, boolean multiline) {
+    public TextDetailCell(Context context, Theme.ResourcesProvider resourcesProvider, boolean textMultiline, boolean valueMultiline) {
         super(context);
         this.resourcesProvider = resourcesProvider;
+        this.multiline = textMultiline || valueMultiline;
 
         textView = new LinkSpanDrawable.LinksTextView(context, resourcesProvider) {
             @Override
@@ -76,13 +78,17 @@ public class TextDetailCell extends FrameLayout {
         });
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         textView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
-        textView.setLines(1);
-        textView.setMaxLines(1);
-        textView.setSingleLine(true);
+        if (textMultiline) {
+            setMinimumHeight(dp(60));
+        } else {
+            textView.setLines(1);
+            textView.setMaxLines(1);
+            textView.setSingleLine(true);
+        }
         textView.setEllipsize(TextUtils.TruncateAt.END);
         textView.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);
         textView.setPadding(dp(6), dp(2), dp(6), dp(5));
-        addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT, 23 - 6, 8 - 2, 23 - 6, 0));
+        addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT, 23 - 6, 8 - 2, 23 - 6, textMultiline ? 27 : 0));
 
         valueTextView = new LinkSpanDrawable.LinksTextView(context, resourcesProvider) {
             @Override
@@ -102,7 +108,7 @@ public class TextDetailCell extends FrameLayout {
                 span.onClick(valueTextView);
             }
         });
-        if (this.multiline = multiline) {
+        if (valueMultiline) {
             setMinimumHeight(dp(60));
         } else {
             valueTextView.setLines(1);
@@ -113,7 +119,46 @@ public class TextDetailCell extends FrameLayout {
         valueTextView.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);
         valueTextView.setEllipsize(TextUtils.TruncateAt.END);
         valueTextView.setPadding(0, dp(1), 0, dp(6));
-        addView(valueTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT, 23, 33 - 1, 23, 10 - 6));
+        if (textMultiline) {
+            addView(valueTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT), 23, 33 - 1, 23, 10 - 6));
+        } else {
+            addView(valueTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT, 23, 33 - 1, 23, 10 - 6));
+        }
+
+        rightValueTextView = new LinkSpanDrawable.LinksTextView(context, resourcesProvider) {
+            @Override
+            protected int processColor(int color) {
+                return TextDetailCell.this.processColor(color);
+            }
+            @Override
+            public int overrideColor() {
+                return processColor(super.overrideColor());
+            }
+        };
+        rightValueTextView.setOnLinkLongPressListener(span -> {
+            if (span != null) {
+                try {
+                    performHapticFeedback(HapticFeedbackConstants.LONG_PRESS, HapticFeedbackConstants.FLAG_IGNORE_VIEW_SETTING);
+                } catch (Exception ignore) {};
+                span.onClick(valueTextView);
+            }
+        });
+        if (this.multiline = multiline) {
+            setMinimumHeight(dp(60));
+        } else {
+            rightValueTextView.setLines(1);
+            rightValueTextView.setSingleLine(true);
+        }
+        rightValueTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
+        rightValueTextView.setGravity(LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT);
+        rightValueTextView.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);
+        rightValueTextView.setEllipsize(TextUtils.TruncateAt.END);
+        rightValueTextView.setPadding(0, dp(1), 0, dp(6));
+        if (textMultiline) {
+            addView(rightValueTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT), 23, 33 - 1, 23, 10 - 6));
+        } else {
+            addView(rightValueTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT, 23, 33 - 1, 23, 10 - 6));
+        }
 
         updateColors();
 
@@ -150,6 +195,16 @@ public class TextDetailCell extends FrameLayout {
     public void setTextAndValue(CharSequence text, CharSequence value, boolean divider) {
         textView.setText(text);
         valueTextView.setText(value);
+        rightValueTextView.setVisibility(View.GONE);
+        needDivider = divider;
+        setWillNotDraw(!needDivider);
+    }
+
+    public void setTextAndValue(CharSequence text, CharSequence value, CharSequence value2, boolean divider) {
+        textView.setText(text);
+        valueTextView.setText(value);
+        rightValueTextView.setVisibility(View.VISIBLE);
+        rightValueTextView.setText(value2);
         needDivider = divider;
         setWillNotDraw(!needDivider);
     }
@@ -240,6 +295,7 @@ public class TextDetailCell extends FrameLayout {
         textView.invalidate();
         valueTextView.setLinkTextColor(processColor(Theme.getColor(Theme.key_chat_messageLinkIn, resourcesProvider)));
         valueTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2, resourcesProvider));
+        rightValueTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2, resourcesProvider));
         valueTextView.invalidate();
     }
 }
