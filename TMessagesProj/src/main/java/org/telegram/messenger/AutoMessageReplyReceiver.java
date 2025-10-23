@@ -18,24 +18,31 @@ import androidx.core.app.RemoteInput;
 
 public class AutoMessageReplyReceiver extends BroadcastReceiver {
 
+    private static final String TAG = "AutoMessageReplyReceiver";
+
     @Override
     public void onReceive(Context context, Intent intent) {
         ApplicationLoader.postInitApplication();
         Bundle remoteInput = RemoteInput.getResultsFromIntent(intent);
         if (remoteInput == null) {
+            android.util.Log.d(TAG, "reply action ignored (no remote input)");
             return;
         }
         CharSequence text = remoteInput.getCharSequence(NotificationsController.EXTRA_VOICE_REPLY);
         if (TextUtils.isEmpty(text)) {
+            android.util.Log.d(TAG, "reply action ignored (empty text)");
             return;
         }
         long dialogId = intent.getLongExtra("dialog_id", 0);
         int maxId = intent.getIntExtra("max_id", 0);
         int currentAccount = intent.getIntExtra("currentAccount", 0);
+        android.util.Log.d(TAG, "reply action dialog=" + dialogId + " maxId=" + maxId + " account=" + currentAccount);
         if (dialogId == 0 || maxId == 0 || !UserConfig.isValidAccount(currentAccount)) {
+            android.util.Log.d(TAG, "reply action ignored (invalid extras)");
             return;
         }
         SendMessagesHelper.getInstance(currentAccount).sendMessage(SendMessagesHelper.SendMessageParams.of(text.toString(), dialogId, null, null, null, true, null, null, null, true, 0, null, false));
         MessagesController.getInstance(currentAccount).markDialogAsRead(dialogId, maxId, maxId, 0, false, 0, 0, true, 0);
+        android.util.Log.d(TAG, "reply action sent + marked read dialog=" + dialogId);
     }
 }
