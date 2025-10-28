@@ -73,7 +73,7 @@ class RTC_EXPORT RateStatistics {
 
   struct Bucket {
     explicit Bucket(int64_t timestamp);
-    int64_t sum;  // Sum of all samples in this bucket.
+    int64_t sum;              // Sum of all samples in this bucket.
     int num_samples;          // Number of samples in this bucket.
     const int64_t timestamp;  // Timestamp this bucket corresponds to.
   };

@@ -15,6 +15,7 @@
 #include <utility>
 
 #include "api/array_view.h"
+#include "media/base/media_constants.h"
 #include "rtc_base/strings/string_builder.h"
 
 namespace webrtc {
@@ -44,6 +45,17 @@ RtcpFeedback::RtcpFeedback(RtcpFeedbackType type,
 RtcpFeedback::RtcpFeedback(const RtcpFeedback& rhs) = default;
 RtcpFeedback::~RtcpFeedback() = default;
 
+RtpCodec::RtpCodec() = default;
+RtpCodec::RtpCodec(const RtpCodec&) = default;
+RtpCodec::~RtpCodec() = default;
+bool RtpCodec::IsResiliencyCodec() const {
+  return name == cricket::kRtxCodecName || name == cricket::kRedCodecName ||
+         name == cricket::kUlpfecCodecName ||
+         name == cricket::kFlexfecCodecName;
+}
+bool RtpCodec::IsMediaCodec() const {
+  return !IsResiliencyCodec() && name != cricket::kComfortNoiseCodecName;
+}
 RtpCodecCapability::RtpCodecCapability() = default;
 RtpCodecCapability::~RtpCodecCapability() = default;
 

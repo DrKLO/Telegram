@@ -1,11 +1,16 @@
 {
   "algorithm" : "AES-SIV-CMAC",
-  "generatorVersion" : "0.4.12",
+  "generatorVersion" : "0.8r12",
+  "numberOfTests" : 442,
+  "header" : [
+    "Test vectors of type DaeadTest are intended for verifying",
+    "encryption and decryption of deterministic authenticated encryption",
+    "with additional data."
+  ],
   "notes" : {
     "EdgeCaseSiv" : "The SIV of this test vector has an edge case value. One purpose of these test vectors is to detect implementations where integer overflows of the counter is incorrectly implemented. AES-SIV itself prevents such overflow problems by clearing some msbs in the IV."
   },
-  "numberOfTests" : 442,
-  "header" : [],
+  "schema" : "daead_test_schema.json",
   "testGroups" : [
     {
       "keySize" : 256,

@@ -15,6 +15,7 @@
 #include <memory>
 #include <vector>
 
+#include "api/environment/environment.h"
 #include "api/video_codecs/sdp_video_format.h"
 #include "api/video_codecs/video_decoder.h"
 #include "api/video_codecs/video_decoder_factory.h"
@@ -25,7 +26,8 @@ namespace webrtc {
 class MultiplexDecoderAdapter : public VideoDecoder {
  public:
   // `factory` is not owned and expected to outlive this class.
-  MultiplexDecoderAdapter(VideoDecoderFactory* factory,
+  MultiplexDecoderAdapter(const Environment& env,
+                          VideoDecoderFactory* factory,
                           const SdpVideoFormat& associated_format,
                           bool supports_augmenting_data = false);
   virtual ~MultiplexDecoderAdapter();
@@ -33,7 +35,6 @@ class MultiplexDecoderAdapter : public VideoDecoder {
   // Implements VideoDecoder
   bool Configure(const Settings& settings) override;
   int32_t Decode(const EncodedImage& input_image,
-                 bool missing_frames,
                  int64_t render_time_ms) override;
   int32_t RegisterDecodeCompleteCallback(
       DecodedImageCallback* callback) override;
@@ -63,6 +64,7 @@ class MultiplexDecoderAdapter : public VideoDecoder {
                         std::unique_ptr<uint8_t[]> augmenting_data,
                         uint16_t augmenting_data_length);
 
+  const Environment env_;
   VideoDecoderFactory* const factory_;
   const SdpVideoFormat associated_format_;
   std::vector<std::unique_ptr<VideoDecoder>> decoders_;

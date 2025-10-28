@@ -11,7 +11,9 @@
 
 #include <stdio.h>
 
+#include <map>
 #include <string>
+#include <utility>
 
 #include "api/test/metrics/metric.h"
 #include "rtc_base/logging.h"
@@ -124,10 +126,17 @@ MetricsSetProtoFileExporter::Options::Options(
     bool export_whole_time_series)
     : export_file_path(export_file_path),
       export_whole_time_series(export_whole_time_series) {}
+MetricsSetProtoFileExporter::Options::Options(
+    absl::string_view export_file_path,
+    std::map<std::string, std::string> metadata)
+    : export_file_path(export_file_path), metadata(std::move(metadata)) {}
 
 bool MetricsSetProtoFileExporter::Export(rtc::ArrayView<const Metric> metrics) {
 #if WEBRTC_ENABLE_PROTOBUF
   webrtc::test_metrics::MetricsSet metrics_set;
+  for (const auto& [key, value] : options_.metadata) {
+    metrics_set.mutable_metadata()->insert({key, value});
+  }
   for (const Metric& metric : metrics) {
     webrtc::test_metrics::Metric* metric_proto = metrics_set.add_metrics();
     metric_proto->set_name(metric.name);

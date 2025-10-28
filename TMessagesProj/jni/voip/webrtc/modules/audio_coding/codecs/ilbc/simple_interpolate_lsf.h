@@ -43,6 +43,6 @@ void WebRtcIlbcfix_SimpleInterpolateLsf(
     int16_t length,       /* (i) should equate FILTERORDER */
     IlbcEncoder* iLBCenc_inst
     /* (i/o) the encoder state structure */
-    );
+);
 
 #endif

@@ -123,7 +123,7 @@ template <typename T>
 struct LambdaTypeTraits : public LambdaTypeTraits<decltype(&T::operator())> {};
 
 template <typename ClassType, typename RetType, typename SourceType>
-struct LambdaTypeTraits<RetType* (ClassType::*)(SourceType*)const> {
+struct LambdaTypeTraits<RetType* (ClassType::*)(SourceType*) const> {
   using ret = RetType;
   using src = SourceType;
 };

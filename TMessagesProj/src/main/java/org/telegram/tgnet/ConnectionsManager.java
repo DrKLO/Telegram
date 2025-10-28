@@ -29,6 +29,7 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BaseController;
 import org.telegram.messenger.BuildVars;
+import org.telegram.messenger.CaptchaController;
 import org.telegram.messenger.EmuDetector;
 import org.telegram.messenger.FileLoadOperation;
 import org.telegram.messenger.FileLoader;
@@ -304,6 +305,23 @@ public class ConnectionsManager extends BaseController {
         return native_getTimeDifference(currentAccount);
     }
 
+    public <T extends TLObject> int sendRequestTyped(TLMethod<T> method, Utilities.Callback2<T, TLRPC.TL_error> completionBlock) {
+        return sendRequestTyped(method, null, completionBlock);
+    }
+
+    public <T extends TLObject> int sendRequestTyped(TLMethod<T> method, Executor executor, Utilities.Callback2<T, TLRPC.TL_error> completionBlock) {
+        return sendRequest(method, (res, err) -> {
+            //noinspection unchecked
+            T result = (T) res;
+
+            if (executor != null) {
+                executor.execute(() -> completionBlock.run(result, err));
+            } else {
+                completionBlock.run(result, err);
+            }
+        });
+    }
+
     public int sendRequest(TLObject object, RequestDelegate completionBlock) {
         return sendRequest(object, completionBlock, null, 0);
     }
@@ -401,9 +419,9 @@ public class ConnectionsManager extends BaseController {
                         resp.networkType = networkType;
                     }
                     if (BuildVars.LOGS_ENABLED) {
-                        FileLog.d("java received " + resp + " error = " + error + " messageId = " + requestMsgId);
+                        FileLog.d("java received " + resp + (error != null ? " error = " + error : "") + " messageId = 0x" + Long.toHexString(requestMsgId));
+                        FileLog.dumpResponseAndRequest(currentAccount, object, resp, error, requestMsgId, finalStartRequestTime, requestToken);
                     }
-                    FileLog.dumpResponseAndRequest(currentAccount, object, resp, error, requestMsgId, finalStartRequestTime, requestToken);
                     final TLObject finalResponse = resp;
                     final TLRPC.TL_error finalError = error;
                     Utilities.stageQueue.postRunnable(() -> {
@@ -411,6 +429,9 @@ public class ConnectionsManager extends BaseController {
                             onComplete.run(finalResponse, finalError);
                         } else if (onCompleteTimestamp != null) {
                             onCompleteTimestamp.run(finalResponse, finalError, timestamp);
+                        } else if (finalResponse instanceof TLRPC.Updates) {
+                            KeepAliveJob.finishJob();
+                            AccountInstance.getInstance(currentAccount).getMessagesController().processUpdates((TLRPC.Updates) finalResponse, false);
                         }
                         if (finalResponse != null) {
                             finalResponse.freeResources();
@@ -953,6 +974,7 @@ public class ConnectionsManager extends BaseController {
     public static native void native_discardConnection(int currentAccount, int datacenterId, int connectionType);
     public static native void native_failNotRunningRequest(int currentAccount, int token);
     public static native void native_receivedIntegrityCheckClassic(int currentAccount, int requestToken, String nonce, String token);
+    public static native void native_receivedCaptchaResult(int currentAccount, int[] requestTokens, String token);
     public static native boolean native_isGoodPrime(byte[] prime, int g);
 
     public static int generateClassGuid() {
@@ -1547,5 +1569,10 @@ public class ConnectionsManager extends BaseController {
                     native_receivedIntegrityCheckClassic(currentAccount, requestToken, nonce, "PLAYINTEGRITY_FAILED_EXCEPTION_" + LoginActivity.errorString(e));
                 });
         });
+    }
+
+    @Keep
+    public static void onCaptchaCheck(final int currentAccount, final int requestToken, final String action, final String key_id) {
+        CaptchaController.request(currentAccount, requestToken, action, key_id);
     }
 }

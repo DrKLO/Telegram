@@ -53,6 +53,14 @@ public class DualCameraView extends CameraView {
     }
 
     @Override
+    public boolean onInterceptTouchEvent(MotionEvent ev) {
+        if (ev.getAction() == MotionEvent.ACTION_DOWN && isAtDual(ev.getX(), ev.getY())) {
+            return touchEvent(ev);
+        }
+        return super.onInterceptTouchEvent(ev);
+    }
+
+    @Override
     public void destroy(boolean async, Runnable beforeDestroyRunnable) {
         saveDual();
         super.destroy(async, beforeDestroyRunnable);
@@ -82,10 +90,26 @@ public class DualCameraView extends CameraView {
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+        setupToScreenMatrix();
+    }
+
+//    @Override
+//    protected void updatedDualRotation() {
+//        setupToScreenMatrix();
+//    }
+
+    private void setupToScreenMatrix() {
         toScreen.reset();
+//        if (applyCameraRotation()) {
+//            toScreen.postRotate(getDualRotation());
+//        }
         toScreen.postTranslate(1f, -1f);
         toScreen.postScale(getMeasuredWidth() / 2f, -getMeasuredHeight() / 2f);
         toScreen.invert(toGL);
+    }
+
+    protected boolean applyCameraRotation() {
+        return false;
     }
 
     @Override

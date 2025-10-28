@@ -1,20 +1,27 @@
-# Copyright (c) 2017, Google Inc.
+# Copyright 2017 The BoringSSL Authors
 #
-# Permission to use, copy, modify, and/or distribute this software for any
-# purpose with or without fee is hereby granted, provided that the above
-# copyright notice and this permission notice appear in all copies.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-# THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-# WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
-# MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY
-# SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-# WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION
-# OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
-# CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE. */
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
-# This is a rough parser for x86-64 and ppc64le assembly designed to work with
+# This is a rough parser for x86-64 and aarch64 assembly designed to work with
 # https://github.com/pointlander/peg. delocate.go has a go:generate line for
 # rebuilding delocate.peg.go from this file.
+
+# To regenerate delocate.peg.go:
+#
+# go install github.com/pointlander/peg@latest
+# ~/go/bin/peg <path-to-this-file>
+#
+# this will generate delocate.peg.go next to delocate.peg.
 
 package main
 
@@ -23,6 +30,7 @@ type Asm Peg {}
 AsmFile <- Statement* !.
 Statement <- WS? (Label / ((GlobalDirective /
                             LocationDirective /
+                            SymbolDefiningDirective /
                             LabelContainingDirective /
                             Instruction /
                             Directive /
@@ -30,50 +38,84 @@ Statement <- WS? (Label / ((GlobalDirective /
 GlobalDirective <- (".global" / ".globl") WS SymbolName
 Directive <- '.' DirectiveName (WS Args)?
 DirectiveName <- [[A-Z0-9_]]+
-LocationDirective <- (".file" / ".loc") WS [^#\n]+
+LocationDirective <- FileDirective / LocDirective
+FileDirective <- ".file" WS [^#\n]+
+LocDirective <- ".loc" WS [^#/\n]+
 Args <- Arg ((WS? ',' WS?) Arg)*
-Arg <- QuotedArg / [[0-9a-z%+\-*_@.]]*
+Arg <- QuotedArg / [[0-9a-z%+\-*_@.$]]*
 QuotedArg <- '"' QuotedText '"'
 QuotedText <- (EscapedChar / [^"])*
+SymbolDefiningDirective <- SymbolDefiningDirectiveName WS (LocalSymbol / SymbolName) WS? ',' WS? SymbolArg
+SymbolDefiningDirectiveName <- ".equiv" / ".equ" / ".set"
 LabelContainingDirective <- LabelContainingDirectiveName WS SymbolArgs
-LabelContainingDirectiveName <- ".long" / ".set" / ".8byte" / ".4byte" / ".quad" / ".tc" / ".localentry" / ".size" / ".type" / ".uleb128" / ".sleb128"
+LabelContainingDirectiveName <- ".xword" / ".word" / ".hword" / ".long" / ".byte" / ".8byte" / ".4byte" / ".quad" / ".tc" / ".localentry" / ".size" / ".type" / ".uleb128" / ".sleb128"
 SymbolArgs <- SymbolArg ((WS? ',' WS?) SymbolArg)*
-SymbolArg <- Offset /
-             SymbolType /
-             (Offset / LocalSymbol / SymbolName / Dot) WS? Operator WS? (Offset / LocalSymbol / SymbolName) /
-             LocalSymbol TCMarker? /
-             SymbolName Offset /
-             SymbolName TCMarker?
-SymbolType <- '@function' / '@object'
+
+SymbolArg <- SymbolExpr
+SymbolExpr <- SymbolAtom (WS? SymbolOperator WS? SymbolExpr)?
+SymbolAtom <- LocalLabelRef / Offset / SymbolType / LocalSymbol TCMarker? / SymbolName Offset / SymbolName TCMarker? / Dot / OpenParen WS? SymbolExpr WS? CloseParen
+SymbolOperator <- '+' / '-' / '|' / '<<' / '>>'
+OpenParen <- '('
+CloseParen <- ')'
+
+SymbolType <- [@%] ('function' / 'object')
 Dot <- '.'
 TCMarker <- '[TC]'
 EscapedChar <- '\\' .
 WS <- [ \t]+
-Comment <- '#' [^\n]*
+Comment <- ("//" / '#') [^\n]*
 Label <- (LocalSymbol / LocalLabel / SymbolName) ':'
 SymbolName <- [[A-Z._]][[A-Z.0-9$_]]*
-LocalSymbol <- '.L' [[A-Z.0-9$_]]+
+LocalSymbol <- '.L' [[A-Za-z.0-9$_]]+
 LocalLabel <- [0-9][0-9$]*
 LocalLabelRef <- [0-9][0-9$]*[bf]
-Instruction <- InstructionName (WS InstructionArg ((WS? ',' WS?) InstructionArg)*)?
-InstructionName <- [[A-Z]][[A-Z0-9]]* [.+\-]?
-InstructionArg <- IndirectionIndicator? (RegisterOrConstant / LocalLabelRef / TOCRefHigh / TOCRefLow / MemoryRef) AVX512Token*
+InstructionPrefix <- "notrack"
+Instruction <- (InstructionPrefix WS)? InstructionName (WS InstructionArg ((WS? ',' WS?) InstructionArg)*)?
+InstructionName <- [[A-Z]][[A-Z.0-9]]* [.+\-]?
+InstructionArg <- IndirectionIndicator? (ARMConstantTweak / RegisterOrConstant / LocalLabelRef / TOCRefHigh / TOCRefLow / GOTLocation / GOTAddress / GOTSymbolOffset / MemoryRef) AVX512Token*
+GOTLocation <- '$_GLOBAL_OFFSET_TABLE_-' LocalSymbol
+GOTAddress <- '_GLOBAL_OFFSET_TABLE_(%rip)'
+GOTSymbolOffset <- ('$' SymbolName '@GOT' 'OFF'?) / (":got:" SymbolName)
 AVX512Token <- WS? '{' '%'? [0-9a-z]* '}'
 TOCRefHigh <- '.TOC.-' ('0b' / ('.L' [a-zA-Z_0-9]+)) "@ha"
 TOCRefLow <- '.TOC.-' ('0b' / ('.L' [a-zA-Z_0-9]+)) "@l"
 IndirectionIndicator <- '*'
-RegisterOrConstant <- (('%'[[A-Z]][[A-Z0-9]]*) / ('$'? ((Offset Offset) / Offset))) ![fb:(+\-]
+Float <- [0-9]+ '.' [0-9]*
+RegisterOrConstant <- (('%'[[A-Z]][[A-Z0-9]]*) /
+                       ('$'? ((Offset Offset) / Offset)) /
+                       ('#' Float ) /
+                       ('#' Offset ('*' [0-9]+ ('-' [0-9] [0-9]*)?)? ) /
+                       ('#' '~'? '(' [0-9] WS? "<<" WS? [0-9] ')' ) /
+                       ARMRegister)
+                      ![fb:(+\-]
+ARMConstantTweak <- ((([us] "xt" [xwhb]) / "lsl" / "lsr" / "ror" / "asr" / "msl") (WS '#' Offset)?) /
+                    "mul vl"  / # multiply offset by the hardware's vector length
+                    "mul #" [0-9]
+ARMRegister <- "sp" /
+               ([xwdqshb] [0-9] [0-9]?) /
+               "xzr" / "wzr" / "NZCV" / SVE2PredicateRegister / ARMVectorRegister / SVE2SpecialValue /
+               ('{' WS? ARMVectorRegister (',' WS? ARMVectorRegister)* WS? '}' ('[' [0-9] [0-9]? ']')? )
+ARMVectorRegister <- [pvz] [0-9] [0-9]? ![[0-9a-z_]] ('.' [0-9]* [bsdhq] ('[' [0-9] [0-9]? ']')? )?
+SVE2PredicateRegister <- "p" [0-9] [0-9]? "/" [[mz]]
+# https://developer.arm.com/documentation/ddi0596/2020-12/SVE-Instructions/INCD--INCH--INCW--vector---Increment-vector-by-multiple-of-predicate-constraint-element-count-
+SVE2SpecialValue <- ("pow2" / ("vl" [12345678] ![0-9] ) / "vl16" / "vl32" / "vl64" / "vl128" / "vl256" / "mul3" / "mul4" / "all") ![[0-9a-z_]]
 # Compilers only output a very limited number of expression forms. Rather than
 # implement a full expression parser, this enumerate those forms plus a few
 # that appear in our hand-written assembly.
 MemoryRef <- (SymbolRef BaseIndexScale /
               SymbolRef /
+              Low12BitsSymbolRef /
               Offset* BaseIndexScale /
               SegmentRegister Offset BaseIndexScale /
               SegmentRegister BaseIndexScale /
               SegmentRegister Offset /
+              ARMBaseIndexScale /
               BaseIndexScale)
 SymbolRef <- (Offset* '+')? (LocalSymbol / SymbolName) Offset* ('@' Section Offset*)?
+Low12BitsSymbolRef <- ":lo12:" (LocalSymbol / SymbolName) Offset?
+ARMBaseIndexScale <- '[' ARMRegister (',' WS? (('#' Offset (('*' [0-9]+) / ('*' '(' [0-9]+ Operator [0-9]+ ')') / (('+' [0-9]+)*))? ) / ARMGOTLow12 / Low12BitsSymbolRef / ARMRegister) (',' WS? ARMConstantTweak)?)? ']' ARMPostincrement?
+ARMGOTLow12 <- ":got_lo12:" SymbolName
+ARMPostincrement <- '!'
 BaseIndexScale <- '(' RegisterOrConstant? WS? (',' WS? RegisterOrConstant WS? (',' [0-9]+)? )? ')'
 Operator <- [+\-]
 Offset <- '+'? '-'? (("0b" [01]+) / ("0x" [[0-9A-F]]+) / [0-9]+)

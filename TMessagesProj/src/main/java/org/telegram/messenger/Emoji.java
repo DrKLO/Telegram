@@ -24,6 +24,7 @@ import android.text.TextPaint;
 import android.text.TextUtils;
 import android.text.style.DynamicDrawableSpan;
 import android.text.style.ImageSpan;
+import android.util.SparseIntArray;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
@@ -33,7 +34,10 @@ import org.telegram.ui.Components.AnimatedEmojiDrawable;
 import org.telegram.ui.Components.AnimatedEmojiSpan;
 import org.telegram.ui.Components.ColoredImageSpan;
 
+import java.io.IOException;
 import java.io.InputStream;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -111,7 +115,45 @@ public class Emoji {
             }
             loadingEmoji[page][page2] = true;
             Utilities.globalQueue.postRunnable(() -> {
-                final Bitmap bitmap = loadBitmap("emoji/" + String.format(Locale.US, "%d_%d.png", page, page2));
+                Bitmap bitmap = loadBitmap("emoji/" + String.format(Locale.US, "%d_%d.png", page, page2));
+                try {
+                    if (emojiAlphaMasks == null) {
+                        emojiAlphaMasks = loadEmojiAlphaMasks();
+                    }
+
+                    int maskIndex = -1;
+                    if (emojiAlphaMasks != null) {
+                        maskIndex = emojiAlphaMasks.get(page * 4096 + page2, -1);
+                    }
+
+                    if (bitmap != null && maskIndex != -1) {
+                        final Bitmap alphaBitmap = loadBitmap("emoji/masks/" + String.format(Locale.US, "%d.png", maskIndex));
+                        if (alphaBitmap != null) {
+                            final int w = bitmap.getWidth();
+                            final int h = bitmap.getHeight();
+
+                            final int[] rgbPixels = new int[w * h];
+                            final int[] alphaPixels = new int[w * h];
+
+                            bitmap.getPixels(rgbPixels, 0, w, 0, 0, w, h);
+                            alphaBitmap.getPixels(alphaPixels, 0, w, 0, 0, w, h);
+                            alphaBitmap.recycle();
+
+                            for (int i = 0; i < rgbPixels.length; i++) {
+                                int c = rgbPixels[i];
+                                c = (c & 0x00FFFFFF) | ((alphaPixels[i] & 0xFF) << 24);
+
+                                rgbPixels[i] = c;
+                            }
+
+                            bitmap.recycle();
+                            bitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
+                            bitmap.setPixels(rgbPixels, 0, w, 0, 0, w, h);
+                        }
+                    }
+                } catch (Exception e) {
+                    FileLog.e(e);
+                }
                 if (bitmap != null) {
                     emojiBmp[page][page2] = bitmap;
                     AndroidUtilities.cancelRunOnUIThread(invalidateUiRunnable);
@@ -120,6 +162,44 @@ public class Emoji {
                 loadingEmoji[page][page2] = false;
             });
         }
+    }
+
+    private static SparseIntArray emojiAlphaMasks;
+
+    private static SparseIntArray loadEmojiAlphaMasks() {
+        try (InputStream is = ApplicationLoader.applicationContext.getAssets().open("emoji/metadata.bin")) {
+            ArrayList<byte[]> chunks = new ArrayList<>();
+            int total = 0;
+            byte[] buf = new byte[8192];
+            int read;
+            while ((read = is.read(buf)) != -1) {
+                byte[] copy = new byte[read];
+                System.arraycopy(buf, 0, copy, 0, read);
+                chunks.add(copy);
+                total += read;
+            }
+
+            byte[] all = new byte[total];
+            int pos = 0;
+            for (byte[] c : chunks) {
+                System.arraycopy(c, 0, all, pos, c.length);
+                pos += c.length;
+            }
+
+            ByteBuffer bb = ByteBuffer.wrap(all).order(ByteOrder.LITTLE_ENDIAN);
+            int pairs = total / 4;
+
+            SparseIntArray map = new SparseIntArray(pairs);
+            for (int i = 0; i < pairs; i++) {
+                int emojiIndex = bb.getShort() & 0xFFFF;
+                int maskId     = bb.getShort() & 0xFFFF;
+                map.put(emojiIndex, maskId);
+            }
+            return map;
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+        return null;
     }
 
     public static Bitmap loadBitmap(String path) {

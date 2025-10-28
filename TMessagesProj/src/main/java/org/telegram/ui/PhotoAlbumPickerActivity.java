@@ -658,6 +658,7 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
                     info.path = photoEntry.path;
                 }
                 info.thumbPath = photoEntry.thumbPath;
+                info.coverPath = photoEntry.coverPath;
                 info.videoEditedInfo = photoEntry.editedInfo;
                 info.isVideo = photoEntry.isVideo;
                 info.caption = photoEntry.caption != null ? photoEntry.caption.toString() : null;
@@ -672,6 +673,7 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
                     info.searchImage = searchImage;
                 }
                 info.thumbPath = searchImage.thumbPath;
+                info.coverPath = searchImage.coverPath;
                 info.videoEditedInfo = searchImage.editedInfo;
                 info.caption = searchImage.caption != null ? searchImage.caption.toString() : null;
                 info.entities = searchImage.entities;

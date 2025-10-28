@@ -61,8 +61,10 @@ void DtlsSrtpTransport::SetDtlsTransports(
            "should never happen.";
   }
 
-  RTC_LOG(LS_INFO) << "Setting RTCP Transport on " << transport_name
-                   << " transport " << rtcp_dtls_transport;
+  if (rtcp_dtls_transport) {
+    RTC_LOG(LS_INFO) << "Setting RTCP Transport on " << transport_name
+                     << " transport " << rtcp_dtls_transport;
+  }
   SetRtcpDtlsTransport(rtcp_dtls_transport);
   SetRtcpPacketTransport(rtcp_dtls_transport);
 

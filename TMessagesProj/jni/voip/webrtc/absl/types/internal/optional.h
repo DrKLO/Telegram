@@ -25,34 +25,6 @@
 #include "absl/meta/type_traits.h"
 #include "absl/utility/utility.h"
 
-// ABSL_OPTIONAL_USE_INHERITING_CONSTRUCTORS
-//
-// Inheriting constructors is supported in GCC 4.8+, Clang 3.3+ and MSVC 2015.
-// __cpp_inheriting_constructors is a predefined macro and a recommended way to
-// check for this language feature, but GCC doesn't support it until 5.0 and
-// Clang doesn't support it until 3.6.
-// Also, MSVC 2015 has a bug: it doesn't inherit the constexpr template
-// constructor. For example, the following code won't work on MSVC 2015 Update3:
-// struct Base {
-//   int t;
-//   template <typename T>
-//   constexpr Base(T t_) : t(t_) {}
-// };
-// struct Foo : Base {
-//   using Base::Base;
-// }
-// constexpr Foo foo(0);  // doesn't work on MSVC 2015
-#if defined(__clang__)
-#if __has_feature(cxx_inheriting_constructors)
-#define ABSL_OPTIONAL_USE_INHERITING_CONSTRUCTORS 1
-#endif
-#elif (defined(__GNUC__) &&                                       \
-       (__GNUC__ > 4 || __GNUC__ == 4 && __GNUC_MINOR__ >= 8)) || \
-    (__cpp_inheriting_constructors >= 200802) ||                  \
-    (defined(_MSC_VER) && _MSC_VER >= 1910)
-#define ABSL_OPTIONAL_USE_INHERITING_CONSTRUCTORS 1
-#endif
-
 namespace absl {
 ABSL_NAMESPACE_BEGIN
 
@@ -109,7 +81,7 @@ class optional_data_dtor_base {
 
   template <typename... Args>
   constexpr explicit optional_data_dtor_base(in_place_t, Args&&... args)
-      : engaged_(true), data_(absl::forward<Args>(args)...) {}
+      : engaged_(true), data_(std::forward<Args>(args)...) {}
 
   ~optional_data_dtor_base() { destruct(); }
 };
@@ -138,22 +110,14 @@ class optional_data_dtor_base<T, true> {
 
   template <typename... Args>
   constexpr explicit optional_data_dtor_base(in_place_t, Args&&... args)
-      : engaged_(true), data_(absl::forward<Args>(args)...) {}
+      : engaged_(true), data_(std::forward<Args>(args)...) {}
 };
 
 template <typename T>
 class optional_data_base : public optional_data_dtor_base<T> {
  protected:
   using base = optional_data_dtor_base<T>;
-#ifdef ABSL_OPTIONAL_USE_INHERITING_CONSTRUCTORS
   using base::base;
-#else
-  optional_data_base() = default;
-
-  template <typename... Args>
-  constexpr explicit optional_data_base(in_place_t t, Args&&... args)
-      : base(t, absl::forward<Args>(args)...) {}
-#endif
 
   template <typename... Args>
   void construct(Args&&... args) {
@@ -188,27 +152,13 @@ class optional_data;
 template <typename T>
 class optional_data<T, true> : public optional_data_base<T> {
  protected:
-#ifdef ABSL_OPTIONAL_USE_INHERITING_CONSTRUCTORS
   using optional_data_base<T>::optional_data_base;
-#else
-  optional_data() = default;
-
-  template <typename... Args>
-  constexpr explicit optional_data(in_place_t t, Args&&... args)
-      : optional_data_base<T>(t, absl::forward<Args>(args)...) {}
-#endif
 };
 
 template <typename T>
 class optional_data<T, false> : public optional_data_base<T> {
  protected:
-#ifdef ABSL_OPTIONAL_USE_INHERITING_CONSTRUCTORS
   using optional_data_base<T>::optional_data_base;
-#else
-  template <typename... Args>
-  constexpr explicit optional_data(in_place_t t, Args&&... args)
-      : optional_data_base<T>(t, absl::forward<Args>(args)...) {}
-#endif
 
   optional_data() = default;
 
@@ -398,7 +348,5 @@ struct optional_hash_base<T, decltype(std::hash<absl::remove_const_t<T> >()(
 }  // namespace optional_internal
 ABSL_NAMESPACE_END
 }  // namespace absl
-
-#undef ABSL_OPTIONAL_USE_INHERITING_CONSTRUCTORS
 
 #endif  // ABSL_TYPES_INTERNAL_OPTIONAL_H_

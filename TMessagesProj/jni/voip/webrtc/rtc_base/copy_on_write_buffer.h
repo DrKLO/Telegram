@@ -36,7 +36,7 @@ class RTC_EXPORT CopyOnWriteBuffer {
   // Share the data with an existing buffer.
   CopyOnWriteBuffer(const CopyOnWriteBuffer& buf);
   // Move contents from an existing buffer.
-  CopyOnWriteBuffer(CopyOnWriteBuffer&& buf);
+  CopyOnWriteBuffer(CopyOnWriteBuffer&& buf) noexcept;
 
   // Construct a buffer from a string, convenient for unittests.
   explicit CopyOnWriteBuffer(absl::string_view s);
@@ -83,6 +83,17 @@ class RTC_EXPORT CopyOnWriteBuffer {
   explicit CopyOnWriteBuffer(const VecT& v)
       : CopyOnWriteBuffer(v.data(), v.size()) {}
 
+  // Construct a buffer from a vector like type and a capacity argument
+  template <typename VecT,
+            typename ElemT = typename std::remove_pointer_t<
+                decltype(std::declval<VecT>().data())>,
+            typename std::enable_if_t<
+                !std::is_same<VecT, CopyOnWriteBuffer>::value &&
+                HasDataAndSize<VecT, ElemT>::value &&
+                internal::BufferCompat<uint8_t, ElemT>::value>* = nullptr>
+  explicit CopyOnWriteBuffer(const VecT& v, size_t capacity)
+      : CopyOnWriteBuffer(v.data(), v.size(), capacity) {}
+
   ~CopyOnWriteBuffer();
 
   // Get a pointer to the data. Just .data() will give you a (const) uint8_t*,
@@ -120,6 +131,8 @@ class RTC_EXPORT CopyOnWriteBuffer {
     }
     return buffer_->data<T>() + offset_;
   }
+
+  bool empty() const { return size_ == 0; }
 
   size_t size() const {
     RTC_DCHECK(IsConsistent());

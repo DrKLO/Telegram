@@ -28,6 +28,7 @@
 #include "test/field_trial.h"
 #include "test/gtest.h"
 #include "test/run_test.h"
+#include "test/test_flags.h"
 #include "video/video_quality_test.h"
 
 // Flags for video.
@@ -310,15 +311,6 @@ ABSL_FLAG(bool,
           "Enable audio DTX (no effect if audio is false)");
 
 ABSL_FLAG(bool, video, true, "Add video stream");
-
-ABSL_FLAG(
-    std::string,
-    force_fieldtrials,
-    "",
-    "Field trials control experimental feature code which can be forced. "
-    "E.g. running with --force_fieldtrials=WebRTC-FooFeature/Enable/"
-    " will assign the group Enable to field trial WebRTC-FooFeature. Multiple "
-    "trials are separated by \"/\"");
 
 // Video-specific flags.
 ABSL_FLAG(std::string,

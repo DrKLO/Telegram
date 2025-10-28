@@ -22,10 +22,10 @@
 #include "api/frame_transformer_interface.h"
 #include "api/media_stream_interface.h"
 #include "api/media_types.h"
+#include "api/ref_count.h"
 #include "api/rtp_parameters.h"
 #include "api/scoped_refptr.h"
 #include "api/transport/rtp/rtp_source.h"
-#include "rtc_base/ref_count.h"
 #include "rtc_base/system/rtc_export.h"
 
 namespace webrtc {
@@ -44,7 +44,7 @@ class RtpReceiverObserverInterface {
   virtual ~RtpReceiverObserverInterface() {}
 };
 
-class RTC_EXPORT RtpReceiverInterface : public rtc::RefCountInterface {
+class RTC_EXPORT RtpReceiverInterface : public webrtc::RefCountInterface {
  public:
   virtual rtc::scoped_refptr<MediaStreamTrackInterface> track() const = 0;
 

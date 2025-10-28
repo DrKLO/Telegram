@@ -12,6 +12,7 @@
 #define RTC_BASE_SYSTEM_FILE_WRAPPER_H_
 
 #include <stddef.h>
+#include <stdint.h>
 #include <stdio.h>
 
 #include <string>

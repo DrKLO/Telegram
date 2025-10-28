@@ -32,13 +32,13 @@ Data DataGenerator::Ordered(std::vector<uint8_t> payload,
   } else {
     fsn_ = FSN(*fsn_ + 1);
   }
-  MID message_id = opts.message_id.value_or(message_id_);
-  Data ret = Data(opts.stream_id, SSN(static_cast<uint16_t>(*message_id)),
-                  message_id, fsn_, opts.ppid, std::move(payload), is_beginning,
-                  is_end, IsUnordered(false));
+  MID mid = opts.mid.value_or(mid_);
+  Data ret = Data(opts.stream_id, SSN(static_cast<uint16_t>(*mid)), mid, fsn_,
+                  opts.ppid, std::move(payload), is_beginning, is_end,
+                  IsUnordered(false));
 
   if (is_end) {
-    message_id_ = MID(*message_id + 1);
+    mid_ = MID(*mid + 1);
   }
   return ret;
 }
@@ -54,11 +54,11 @@ Data DataGenerator::Unordered(std::vector<uint8_t> payload,
   } else {
     fsn_ = FSN(*fsn_ + 1);
   }
-  MID message_id = opts.message_id.value_or(message_id_);
-  Data ret = Data(opts.stream_id, SSN(0), message_id, fsn_, kPpid,
-                  std::move(payload), is_beginning, is_end, IsUnordered(true));
+  MID mid = opts.mid.value_or(mid_);
+  Data ret = Data(opts.stream_id, SSN(0), mid, fsn_, kPpid, std::move(payload),
+                  is_beginning, is_end, IsUnordered(true));
   if (is_end) {
-    message_id_ = MID(*message_id + 1);
+    mid_ = MID(*mid + 1);
   }
   return ret;
 }

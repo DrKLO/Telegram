@@ -23,6 +23,7 @@
 #include <chrono>
 #include <cstdint>
 #include <limits>
+#include <ratio>  // NOLINT: We use std::ratio in this header
 #include <string>
 #include <utility>
 

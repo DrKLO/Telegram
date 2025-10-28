@@ -62,7 +62,7 @@ public class GroupVoipInviteAlert extends UsersAlertBase {
     private boolean loadingUsers;
     private boolean firstLoaded;
 
-    private LongSparseArray<TLRPC.TL_groupCallParticipant> ignoredUsers;
+    private LongSparseArray<TLRPC.GroupCallParticipant> ignoredUsers;
     private HashSet<Long> invitedUsers;
 
     private GroupVoipInviteAlertDelegate delegate;
@@ -104,7 +104,7 @@ public class GroupVoipInviteAlert extends UsersAlertBase {
         keySearchIconUnscrolled = Theme.key_voipgroup_mutedIconUnscrolled;
     }
 
-    public GroupVoipInviteAlert(final Context context, int account, TLRPC.Chat chat, TLRPC.ChatFull chatFull, LongSparseArray<TLRPC.TL_groupCallParticipant> participants, HashSet<Long> invited) {
+    public GroupVoipInviteAlert(final Context context, int account, TLRPC.Chat chat, TLRPC.ChatFull chatFull, LongSparseArray<TLRPC.GroupCallParticipant> participants, HashSet<Long> invited) {
         super(context, false, account, null);
 
         setDimBehindAlpha(75);
@@ -469,7 +469,7 @@ public class GroupVoipInviteAlert extends UsersAlertBase {
                 }
 
                 @Override
-                public LongSparseArray<TLRPC.TL_groupCallParticipant> getExcludeCallParticipants() {
+                public LongSparseArray<TLRPC.GroupCallParticipant> getExcludeCallParticipants() {
                     return ignoredUsers;
                 }
             });

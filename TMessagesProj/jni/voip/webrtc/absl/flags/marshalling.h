@@ -200,6 +200,7 @@
 #define ABSL_FLAGS_MARSHALLING_H_
 
 #include "absl/base/config.h"
+#include "absl/numeric/int128.h"
 
 #if defined(ABSL_HAVE_STD_OPTIONAL) && !defined(ABSL_USES_STD_OPTIONAL)
 #include <optional>
@@ -233,6 +234,8 @@ bool AbslParseFlag(absl::string_view, unsigned long*, std::string*);   // NOLINT
 bool AbslParseFlag(absl::string_view, long long*, std::string*);       // NOLINT
 bool AbslParseFlag(absl::string_view, unsigned long long*,             // NOLINT
                    std::string*);
+bool AbslParseFlag(absl::string_view, absl::int128*, std::string*);    // NOLINT
+bool AbslParseFlag(absl::string_view, absl::uint128*, std::string*);   // NOLINT
 bool AbslParseFlag(absl::string_view, float*, std::string*);
 bool AbslParseFlag(absl::string_view, double*, std::string*);
 bool AbslParseFlag(absl::string_view, std::string*, std::string*);
@@ -310,6 +313,8 @@ std::string Unparse(long v);                // NOLINT
 std::string Unparse(unsigned long v);       // NOLINT
 std::string Unparse(long long v);           // NOLINT
 std::string Unparse(unsigned long long v);  // NOLINT
+std::string Unparse(absl::int128 v);
+std::string Unparse(absl::uint128 v);
 std::string Unparse(float v);
 std::string Unparse(double v);
 

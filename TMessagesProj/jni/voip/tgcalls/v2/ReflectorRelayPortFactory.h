@@ -5,11 +5,17 @@
 
 #include "Instance.h"
 
+namespace rtc {
+
+class SocketFactory;
+
+}
+
 namespace tgcalls {
 
 class ReflectorRelayPortFactory : public cricket::RelayPortFactoryInterface {
 public:
-    ReflectorRelayPortFactory(std::vector<RtcServer> servers);
+    ReflectorRelayPortFactory(std::vector<RtcServer> servers, bool standaloneReflectorMode, uint32_t standaloneReflectorRoleId, rtc::SocketFactory *underlyingSocketFactory);
     ~ReflectorRelayPortFactory() override;
     
     // This variant is used for UDP connection to the relay server
@@ -21,6 +27,9 @@ public:
     
 private:
     std::vector<RtcServer> _servers;
+    bool _standaloneReflectorMode = false;
+    uint32_t _standaloneReflectorRoleId = 0;
+    rtc::SocketFactory *_underlyingSocketFactory = nullptr;
 };
 
 } // namespace tgcalls

@@ -87,12 +87,13 @@ rtc::scoped_refptr<I422Buffer> I422Buffer::Copy(
   const int width = source.width();
   const int height = source.height();
   rtc::scoped_refptr<I422Buffer> buffer = Create(width, height);
-  RTC_CHECK_EQ(
-      0, libyuv::I420ToI422(
-             source.DataY(), source.StrideY(), source.DataU(), source.StrideU(),
-             source.DataV(), source.StrideV(), buffer->MutableDataY(),
-             buffer->StrideY(), buffer->MutableDataU(), buffer->StrideU(),
-             buffer->MutableDataV(), buffer->StrideV(), width, height));
+  int res = libyuv::I420ToI422(
+      source.DataY(), source.StrideY(), source.DataU(), source.StrideU(),
+      source.DataV(), source.StrideV(), buffer->MutableDataY(),
+      buffer->StrideY(), buffer->MutableDataU(), buffer->StrideU(),
+      buffer->MutableDataV(), buffer->StrideV(), width, height);
+  RTC_DCHECK_EQ(res, 0);
+
   return buffer;
 }
 
@@ -107,11 +108,13 @@ rtc::scoped_refptr<I422Buffer> I422Buffer::Copy(int width,
                                                 int stride_v) {
   // Note: May use different strides than the input data.
   rtc::scoped_refptr<I422Buffer> buffer = Create(width, height);
-  RTC_CHECK_EQ(0, libyuv::I422Copy(data_y, stride_y, data_u, stride_u, data_v,
-                                   stride_v, buffer->MutableDataY(),
-                                   buffer->StrideY(), buffer->MutableDataU(),
-                                   buffer->StrideU(), buffer->MutableDataV(),
-                                   buffer->StrideV(), width, height));
+  int res = libyuv::I422Copy(data_y, stride_y, data_u, stride_u, data_v,
+                             stride_v, buffer->MutableDataY(),
+                             buffer->StrideY(), buffer->MutableDataU(),
+                             buffer->StrideU(), buffer->MutableDataV(),
+                             buffer->StrideV(), width, height);
+  RTC_DCHECK_EQ(res, 0);
+
   return buffer;
 }
 
@@ -133,13 +136,13 @@ rtc::scoped_refptr<I422Buffer> I422Buffer::Rotate(
   rtc::scoped_refptr<webrtc::I422Buffer> buffer =
       I422Buffer::Create(rotated_width, rotated_height);
 
-  RTC_CHECK_EQ(0,
-               libyuv::I422Rotate(
-                   src.DataY(), src.StrideY(), src.DataU(), src.StrideU(),
-                   src.DataV(), src.StrideV(), buffer->MutableDataY(),
-                   buffer->StrideY(), buffer->MutableDataU(), buffer->StrideU(),
-                   buffer->MutableDataV(), buffer->StrideV(), src.width(),
-                   src.height(), static_cast<libyuv::RotationMode>(rotation)));
+  int res = libyuv::I422Rotate(
+      src.DataY(), src.StrideY(), src.DataU(), src.StrideU(), src.DataV(),
+      src.StrideV(), buffer->MutableDataY(), buffer->StrideY(),
+      buffer->MutableDataU(), buffer->StrideU(), buffer->MutableDataV(),
+      buffer->StrideV(), src.width(), src.height(),
+      static_cast<libyuv::RotationMode>(rotation));
+  RTC_DCHECK_EQ(res, 0);
 
   return buffer;
 }
@@ -147,11 +150,13 @@ rtc::scoped_refptr<I422Buffer> I422Buffer::Rotate(
 rtc::scoped_refptr<I420BufferInterface> I422Buffer::ToI420() {
   rtc::scoped_refptr<I420Buffer> i420_buffer =
       I420Buffer::Create(width(), height());
-  libyuv::I422ToI420(DataY(), StrideY(), DataU(), StrideU(), DataV(), StrideV(),
-                     i420_buffer->MutableDataY(), i420_buffer->StrideY(),
-                     i420_buffer->MutableDataU(), i420_buffer->StrideU(),
-                     i420_buffer->MutableDataV(), i420_buffer->StrideV(),
-                     width(), height());
+  int res = libyuv::I422ToI420(
+      DataY(), StrideY(), DataU(), StrideU(), DataV(), StrideV(),
+      i420_buffer->MutableDataY(), i420_buffer->StrideY(),
+      i420_buffer->MutableDataU(), i420_buffer->StrideU(),
+      i420_buffer->MutableDataV(), i420_buffer->StrideV(), width(), height());
+  RTC_DCHECK_EQ(res, 0);
+
   return i420_buffer;
 }
 
@@ -222,12 +227,10 @@ void I422Buffer::CropAndScaleFrom(const I422BufferInterface& src,
       src.DataV() + src.StrideV() * uv_offset_y + uv_offset_x;
 
   int res =
-          //TODO  no member named 'I422Scale' in namespace
-      libyuv::I420Scale(y_plane, src.StrideY(), u_plane, src.StrideU(), v_plane,
+      libyuv::I422Scale(y_plane, src.StrideY(), u_plane, src.StrideU(), v_plane,
                         src.StrideV(), crop_width, crop_height, MutableDataY(),
                         StrideY(), MutableDataU(), StrideU(), MutableDataV(),
                         StrideV(), width(), height(), libyuv::kFilterBox);
-
   RTC_DCHECK_EQ(res, 0);
 }
 

@@ -14,7 +14,7 @@ package org.webrtc;
  * Wraps a native webrtc::VideoDecoder.
  */
 public abstract class WrappedNativeVideoDecoder implements VideoDecoder {
-  @Override public abstract long createNativeVideoDecoder();
+  @Override public abstract long createNative(long webrtcEnvRef);
 
   @Override
   public final VideoCodecStatus initDecode(Settings settings, Callback decodeCallback) {
@@ -28,11 +28,6 @@ public abstract class WrappedNativeVideoDecoder implements VideoDecoder {
 
   @Override
   public final VideoCodecStatus decode(EncodedImage frame, DecodeInfo info) {
-    throw new UnsupportedOperationException("Not implemented.");
-  }
-
-  @Override
-  public final boolean getPrefersLateDecoding() {
     throw new UnsupportedOperationException("Not implemented.");
   }
 

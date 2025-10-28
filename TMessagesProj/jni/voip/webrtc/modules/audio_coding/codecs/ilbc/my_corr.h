@@ -31,6 +31,6 @@ void WebRtcIlbcfix_MyCorr(int32_t* corr, /* (o) correlation of seq1 and seq2 */
                           size_t dim1,         /* (i) dimension first seq1 */
                           const int16_t* seq2, /* (i) second sequence */
                           size_t dim2          /* (i) dimension seq2 */
-                          );
+);
 
 #endif

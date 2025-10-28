@@ -64,7 +64,7 @@ public class SurfaceViewRenderer extends SurfaceView
   }
 
   /**
-   * Initialize this class, sharing resources with |sharedContext|. It is allowed to call init() to
+   * Initialize this class, sharing resources with `sharedContext`. It is allowed to call init() to
    * reinitialize the renderer after a previous init()/release() cycle.
    */
   public void init(EglBase.Context sharedContext, RendererCommon.RendererEvents rendererEvents) {
@@ -72,9 +72,9 @@ public class SurfaceViewRenderer extends SurfaceView
   }
 
   /**
-   * Initialize this class, sharing resources with |sharedContext|. The custom |drawer| will be used
+   * Initialize this class, sharing resources with `sharedContext`. The custom `drawer` will be used
    * for drawing frames on the EGLSurface. This class is responsible for calling release() on
-   * |drawer|. It is allowed to call init() to reinitialize the renderer after a previous
+   * `drawer`. It is allowed to call init() to reinitialize the renderer after a previous
    * init()/release() cycle.
    */
   public void init(final EglBase.Context sharedContext,

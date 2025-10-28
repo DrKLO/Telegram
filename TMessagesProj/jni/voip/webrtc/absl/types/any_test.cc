@@ -25,8 +25,8 @@
 #include "gtest/gtest.h"
 #include "absl/base/config.h"
 #include "absl/base/internal/exception_testing.h"
-#include "absl/base/internal/raw_logging.h"
 #include "absl/container/internal/test_instance_tracker.h"
+#include "absl/log/log.h"
 
 namespace {
 using absl::test_internal::CopyableOnlyInstance;
@@ -704,7 +704,7 @@ struct BadCopyable {
 #ifdef ABSL_HAVE_EXCEPTIONS
     throw BadCopy();
 #else
-    ABSL_RAW_LOG(FATAL, "Bad copy");
+    LOG(FATAL) << "Bad copy";
 #endif
   }
 };

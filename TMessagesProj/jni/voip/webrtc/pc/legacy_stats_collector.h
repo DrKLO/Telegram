@@ -26,11 +26,12 @@
 #include <vector>
 
 #include "absl/types/optional.h"
+#include "api/candidate.h"
 #include "api/field_trials_view.h"
+#include "api/legacy_stats_types.h"
 #include "api/media_stream_interface.h"
 #include "api/peer_connection_interface.h"
 #include "api/scoped_refptr.h"
-#include "api/stats_types.h"
 #include "p2p/base/connection_info.h"
 #include "p2p/base/port.h"
 #include "pc/legacy_stats_collector_interface.h"
@@ -45,7 +46,7 @@ namespace webrtc {
 
 // Conversion function to convert candidate type string to the corresponding one
 // from  enum RTCStatsIceCandidateType.
-const char* IceCandidateTypeToStatsType(const std::string& candidate_type);
+const char* IceCandidateTypeToStatsType(const cricket::Candidate& candidate);
 
 // Conversion function to convert adapter type to report string which are more
 // fitting to the general style of http://w3c.github.io/webrtc-stats. This is
@@ -165,19 +166,21 @@ class LegacyStatsCollector : public LegacyStatsCollectorInterface {
                                        const StatsReport::Id& channel_report_id,
                                        const cricket::ConnectionInfo& info);
 
-  void ExtractDataInfo();
+  void ExtractDataInfo_n(StatsCollection* reports);
 
   // Returns the `transport_names_by_mid` member from the SessionStats as
-  // gathered and used to populate the stats.
-  std::map<std::string, std::string> ExtractSessionInfo();
+  // gathered and used to populate the stats. Contains one synchronous hop
+  // to the network thread to get this information along with querying data
+  // channel stats at the same time and populating `reports_`.
+  std::map<std::string, std::string> ExtractSessionAndDataInfo();
 
   void ExtractBweInfo();
   void ExtractMediaInfo(
       const std::map<std::string, std::string>& transport_names_by_mid);
   void ExtractSenderInfo();
-  webrtc::StatsReport* GetReport(const StatsReport::StatsType& type,
-                                 const std::string& id,
-                                 StatsReport::Direction direction);
+  StatsReport* GetReport(const StatsReport::StatsType& type,
+                         const std::string& id,
+                         StatsReport::Direction direction);
 
   // Helper method to get stats from the local audio tracks.
   void UpdateStatsFromExistingLocalAudioTracks(bool has_remote_tracks);

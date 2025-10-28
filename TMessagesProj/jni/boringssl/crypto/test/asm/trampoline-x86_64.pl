@@ -1,17 +1,17 @@
 #!/usr/bin/env perl
-# Copyright (c) 2018, Google Inc.
+# Copyright 2018 The BoringSSL Authors
 #
-# Permission to use, copy, modify, and/or distribute this software for any
-# purpose with or without fee is hereby granted, provided that the above
-# copyright notice and this permission notice appear in all copies.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-# THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-# WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
-# MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY
-# SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-# WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION
-# OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
-# CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 # This file defines helper functions for crypto/test/abi_test.h on x86_64. See
 # that header for details on how to use this.
@@ -139,8 +139,9 @@ my $code = <<____;
 .globl	abi_test_trampoline
 .align	16
 abi_test_trampoline:
-.Labi_test_trampoline_seh_begin:
 .cfi_startproc
+.seh_startproc
+	_CET_ENDBR
 	# Stack layout:
 	#   8 bytes - align
 	#   $caller_state_size bytes - saved caller registers
@@ -178,7 +179,7 @@ my $caller_state_offset = $scratch_offset + 8;
 $code .= <<____;
 	subq	\$$stack_alloc_size, %rsp
 .cfi_adjust_cfa_offset	$stack_alloc_size
-.Labi_test_trampoline_seh_prolog_alloc:
+.seh_stackalloc	$stack_alloc_size
 ____
 $code .= <<____ if (!$win64);
 	movq	$unwind, $unwind_offset(%rsp)
@@ -186,20 +187,21 @@ ____
 # Store our caller's state. This is needed because we modify it ourselves, and
 # also to isolate the test infrastruction from the function under test failing
 # to save some register.
-my %reg_offsets;
 $code .= store_caller_state($caller_state_offset, "%rsp", sub {
   my ($off, $reg) = @_;
   $reg = substr($reg, 1);
-  $reg_offsets{$reg} = $off;
-  $off -= $stack_alloc_size + 8;
+  # SEH records offsets relative to %rsp (when there is no frame pointer), while
+  # CFI records them relative to the CFA, the value of the parent's stack
+  # pointer just before the call.
+  my $cfi_off = $off - $stack_alloc_size - 8;
+  my $seh_dir = ".seh_savereg";
+  $seh_dir = ".seh_savexmm" if ($reg =~ /^xmm/);
   return <<____;
-.cfi_offset	$reg, $off
-.Labi_test_trampoline_seh_prolog_$reg:
+.cfi_offset	$reg, $cfi_off
+$seh_dir	\%$reg, $off
 ____
 });
-$code .= <<____;
-.Labi_test_trampoline_seh_prolog_end:
-____
+$code .= ".seh_endprologue\n";
 
 $code .= load_caller_state(0, $state);
 $code .= <<____;
@@ -295,7 +297,7 @@ $code .= <<____;
 	# %rax already contains \$func's return value, unmodified.
 	ret
 .cfi_endproc
-.Labi_test_trampoline_seh_end:
+.seh_endproc
 .size	abi_test_trampoline,.-abi_test_trampoline
 ____
 
@@ -307,6 +309,7 @@ foreach ("ax", "bx", "cx", "dx", "di", "si", "bp", 8..15) {
 .globl	abi_test_clobber_r$_
 .align	16
 abi_test_clobber_r$_:
+	_CET_ENDBR
 	xorq	%r$_, %r$_
 	ret
 .size	abi_test_clobber_r$_,.-abi_test_clobber_r$_
@@ -319,6 +322,7 @@ foreach (0..15) {
 .globl	abi_test_clobber_xmm$_
 .align	16
 abi_test_clobber_xmm$_:
+	_CET_ENDBR
 	pxor	%xmm$_, %xmm$_
 	ret
 .size	abi_test_clobber_xmm$_,.-abi_test_clobber_xmm$_
@@ -334,10 +338,12 @@ $code .= <<____;
 .align	16
 abi_test_bad_unwind_wrong_register:
 .cfi_startproc
-.Labi_test_bad_unwind_wrong_register_seh_begin:
+.seh_startproc
+	_CET_ENDBR
 	pushq	%r12
-.cfi_push	%r13	# This should be %r12
-.Labi_test_bad_unwind_wrong_register_seh_push_r13:
+.cfi_push	%r13	# This should be %r13
+.seh_pushreg	%r13	# This should be %r13
+.seh_endprologue
 	# Windows evaluates epilogs directly in the unwinder, rather than using
 	# unwind codes. Add a nop so there is one non-epilog point (immediately
 	# before the nop) where the unwinder can observe the mistake.
@@ -345,7 +351,7 @@ abi_test_bad_unwind_wrong_register:
 	popq	%r12
 .cfi_pop	%r12
 	ret
-.Labi_test_bad_unwind_wrong_register_seh_end:
+.seh_endproc
 .cfi_endproc
 .size	abi_test_bad_unwind_wrong_register,.-abi_test_bad_unwind_wrong_register
 
@@ -357,10 +363,12 @@ abi_test_bad_unwind_wrong_register:
 .align	16
 abi_test_bad_unwind_temporary:
 .cfi_startproc
-.Labi_test_bad_unwind_temporary_seh_begin:
+.seh_startproc
+	_CET_ENDBR
 	pushq	%r12
 .cfi_push	%r12
-.Labi_test_bad_unwind_temporary_seh_push_r12:
+.seh_pushreg	%r12
+.seh_endprologue
 
 	movq	%r12, %rax
 	inc	%rax
@@ -374,8 +382,8 @@ abi_test_bad_unwind_temporary:
 	popq	%r12
 .cfi_pop	%r12
 	ret
-.Labi_test_bad_unwind_temporary_seh_end:
 .cfi_endproc
+.seh_endproc
 .size	abi_test_bad_unwind_temporary,.-abi_test_bad_unwind_temporary
 
 # abi_test_get_and_clear_direction_flag clears the direction flag. If the flag
@@ -384,6 +392,7 @@ abi_test_bad_unwind_temporary:
 .type	abi_test_set_direction_flag, \@abi-omnipotent
 .globl	abi_test_get_and_clear_direction_flag
 abi_test_get_and_clear_direction_flag:
+	_CET_ENDBR
 	pushfq
 	popq	%rax
 	andq	\$0x400, %rax
@@ -397,6 +406,7 @@ abi_test_get_and_clear_direction_flag:
 .type	abi_test_set_direction_flag, \@abi-omnipotent
 .globl	abi_test_set_direction_flag
 abi_test_set_direction_flag:
+	_CET_ENDBR
 	std
 	ret
 .size abi_test_set_direction_flag,.-abi_test_set_direction_flag
@@ -412,9 +422,10 @@ if ($win64) {
 .globl	abi_test_bad_unwind_epilog
 .align	16
 abi_test_bad_unwind_epilog:
-.Labi_test_bad_unwind_epilog_seh_begin:
+.seh_startproc
 	pushq	%r12
-.Labi_test_bad_unwind_epilog_seh_push_r12:
+.seh_pushreg	%r12
+.seh_endprologue
 
 	nop
 
@@ -422,138 +433,10 @@ abi_test_bad_unwind_epilog:
 	popq	%r12
 	nop
 	ret
-.Labi_test_bad_unwind_epilog_seh_end:
+.seh_endproc
 .size	abi_test_bad_unwind_epilog,.-abi_test_bad_unwind_epilog
-____
-
-  # Add unwind metadata for SEH.
-  #
-  # TODO(davidben): This is all manual right now. Once we've added SEH tests,
-  # add support for emitting these in x86_64-xlate.pl, probably based on MASM
-  # and Yasm's unwind directives, and unify with CFI. (Sadly, NASM does not
-  # support these directives.) Then push that upstream to replace the
-  # error-prone and non-standard custom handlers.
-
-  # See https://docs.microsoft.com/en-us/cpp/build/struct-unwind-code?view=vs-2017
-  my $UWOP_PUSH_NONVOL = 0;
-  my $UWOP_ALLOC_LARGE = 1;
-  my $UWOP_ALLOC_SMALL = 2;
-  my $UWOP_SAVE_NONVOL = 4;
-  my $UWOP_SAVE_XMM128 = 8;
-
-  my %UWOP_REG_NUMBER = (rax => 0, rcx => 1, rdx => 2, rbx => 3, rsp => 4,
-                         rbp => 5, rsi => 6, rdi => 7,
-                         map(("r$_" => $_), (8..15)));
-
-  my $unwind_codes = "";
-  my $num_slots = 0;
-  foreach my $reg (reverse @caller_state) {
-    $reg = substr($reg, 1);
-    die "unknown register $reg" unless exists($reg_offsets{$reg});
-    if ($reg =~ /^r/) {
-      die "unknown register $reg" unless exists($UWOP_REG_NUMBER{$reg});
-      my $info = $UWOP_SAVE_NONVOL | ($UWOP_REG_NUMBER{$reg} << 4);
-      my $value = $reg_offsets{$reg} / 8;
-      $unwind_codes .= <<____;
-	.byte	.Labi_test_trampoline_seh_prolog_$reg-.Labi_test_trampoline_seh_begin
-	.byte	$info
-	.value	$value
-____
-      $num_slots += 2;
-    } elsif ($reg =~ /^xmm/) {
-      my $info = $UWOP_SAVE_XMM128 | (substr($reg, 3) << 4);
-      my $value = $reg_offsets{$reg} / 16;
-      $unwind_codes .= <<____;
-	.byte	.Labi_test_trampoline_seh_prolog_$reg-.Labi_test_trampoline_seh_begin
-	.byte	$info
-	.value	$value
-____
-      $num_slots += 2;
-    } else {
-      die "unknown register $reg";
-    }
-  }
-
-  if ($stack_alloc_size <= 128) {
-    my $info = $UWOP_ALLOC_SMALL | ((($stack_alloc_size - 8) / 8) << 4);
-    $unwind_codes .= <<____;
-	.byte	.Labi_test_trampoline_seh_prolog_alloc-.Labi_test_trampoline_seh_begin
-	.byte	$info
-____
-    $num_slots++;
-  } else {
-    die "stack allocation needs three unwind slots" if ($stack_alloc_size > 512 * 1024 + 8);
-    my $info = $UWOP_ALLOC_LARGE;
-    my $value = $stack_alloc_size / 8;
-    $unwind_codes .= <<____;
-	.byte	.Labi_test_trampoline_seh_prolog_alloc-.Labi_test_trampoline_seh_begin
-	.byte	$info
-	.value	$value
-____
-    $num_slots += 2;
-  }
-
-  $code .= <<____;
-.section	.pdata
-.align	4
-	# https://docs.microsoft.com/en-us/cpp/build/struct-runtime-function?view=vs-2017
-	.rva	.Labi_test_trampoline_seh_begin
-	.rva	.Labi_test_trampoline_seh_end
-	.rva	.Labi_test_trampoline_seh_info
-
-	.rva	.Labi_test_bad_unwind_wrong_register_seh_begin
-	.rva	.Labi_test_bad_unwind_wrong_register_seh_end
-	.rva	.Labi_test_bad_unwind_wrong_register_seh_info
-
-	.rva	.Labi_test_bad_unwind_temporary_seh_begin
-	.rva	.Labi_test_bad_unwind_temporary_seh_end
-	.rva	.Labi_test_bad_unwind_temporary_seh_info
-
-	.rva	.Labi_test_bad_unwind_epilog_seh_begin
-	.rva	.Labi_test_bad_unwind_epilog_seh_end
-	.rva	.Labi_test_bad_unwind_epilog_seh_info
-
-.section	.xdata
-.align	8
-.Labi_test_trampoline_seh_info:
-	# https://docs.microsoft.com/en-us/cpp/build/struct-unwind-info?view=vs-2017
-	.byte	1	# version 1, no flags
-	.byte	.Labi_test_trampoline_seh_prolog_end-.Labi_test_trampoline_seh_begin
-	.byte	$num_slots
-	.byte	0	# no frame register
-$unwind_codes
-
-.align	8
-.Labi_test_bad_unwind_wrong_register_seh_info:
-	.byte	1	# version 1, no flags
-	.byte	.Labi_test_bad_unwind_wrong_register_seh_push_r13-.Labi_test_bad_unwind_wrong_register_seh_begin
-	.byte	1	# one slot
-	.byte	0	# no frame register
-
-	.byte	.Labi_test_bad_unwind_wrong_register_seh_push_r13-.Labi_test_bad_unwind_wrong_register_seh_begin
-	.byte	@{[$UWOP_PUSH_NONVOL | ($UWOP_REG_NUMBER{r13} << 4)]}
-
-.align	8
-.Labi_test_bad_unwind_temporary_seh_info:
-	.byte	1	# version 1, no flags
-	.byte	.Labi_test_bad_unwind_temporary_seh_push_r12-.Labi_test_bad_unwind_temporary_seh_begin
-	.byte	1	# one slot
-	.byte	0	# no frame register
-
-	.byte	.Labi_test_bad_unwind_temporary_seh_push_r12-.Labi_test_bad_unwind_temporary_seh_begin
-	.byte	@{[$UWOP_PUSH_NONVOL | ($UWOP_REG_NUMBER{r12} << 4)]}
-
-.align	8
-.Labi_test_bad_unwind_epilog_seh_info:
-	.byte	1	# version 1, no flags
-	.byte	.Labi_test_bad_unwind_epilog_seh_push_r12-.Labi_test_bad_unwind_epilog_seh_begin
-	.byte	1	# one slot
-	.byte	0	# no frame register
-
-	.byte	.Labi_test_bad_unwind_epilog_seh_push_r12-.Labi_test_bad_unwind_epilog_seh_begin
-	.byte	@{[$UWOP_PUSH_NONVOL | ($UWOP_REG_NUMBER{r12} << 4)]}
 ____
 }
 
 print $code;
-close STDOUT or die "error closing STDOUT";
+close STDOUT or die "error closing STDOUT: $!";

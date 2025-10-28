@@ -36,6 +36,6 @@ void WebRtcIlbcfix_StateSearch(
     int16_t* residual,       /* (i) target residual vector */
     int16_t* syntDenum,      /* (i) lpc synthesis filter */
     int16_t* weightDenum     /* (i) weighting filter denuminator */
-    );
+);
 
 #endif

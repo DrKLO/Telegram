@@ -11,7 +11,6 @@
 #ifndef MODULES_AUDIO_PROCESSING_AGC_LEGACY_ANALOG_AGC_H_
 #define MODULES_AUDIO_PROCESSING_AGC_LEGACY_ANALOG_AGC_H_
 
-
 #include "modules/audio_processing/agc/legacy/digital_agc.h"
 #include "modules/audio_processing/agc/legacy/gain_control.h"
 
@@ -63,7 +62,7 @@ typedef struct {
   int32_t upperSecondaryLimit;  // = kRxxBufferLen * 2677832;      -17 dBfs
   int32_t lowerSecondaryLimit;  // = kRxxBufferLen * 267783;       -27 dBfs
   uint16_t targetIdx;           // Table index for corresponding target level
-  int16_t analogTarget;  // Digital reference level in ENV scale
+  int16_t analogTarget;         // Digital reference level in ENV scale
 
   // Analog AGC specific variables
   int32_t filterState[8];  // For downsampling wb to nb
@@ -74,8 +73,8 @@ typedef struct {
   int32_t Rxx160_LPw32;    // Low pass filtered frame energies
   int32_t Rxx16_LPw32Max;  // Keeps track of largest energy subframe
   int32_t Rxx16_vectorw32[kRxxBufferLen];  // Array with subframe energies
-  int32_t Rxx16w32_array[2][5];  // Energy values of microphone signal
-  int32_t env[2][10];            // Envelope values of subframes
+  int32_t Rxx16w32_array[2][5];            // Energy values of microphone signal
+  int32_t env[2][10];                      // Envelope values of subframes
 
   int16_t Rxx16pos;          // Current position in the Rxx16_vectorw32
   int16_t envSum;            // Filtered scaled envelope in subframes

@@ -1,8 +1,18 @@
 {
   "algorithm" : "AES-CCM",
-  "generatorVersion" : "0.4.12",
-  "numberOfTests" : 501,
-  "header" : [],
+  "generatorVersion" : "0.8r12",
+  "numberOfTests" : 510,
+  "header" : [
+    "Test vectors of type AeadTest test authenticated encryption with",
+    "additional data. The test vectors are intended for testing both",
+    "encryption and decryption."
+  ],
+  "notes" : {
+    "InvalidNonceSize" : "AES-CCM is only defined for nonces of size 7 .. 13. No other nonce sizes should be used. The encoding of the octet B0 is undefined in these cases.",
+    "InvalidTagSize" : "AES-CCM is only defined for tags of size 4, 6, 8, 10, 12, 14, 16. No other tags sizes should be used. The encoding of the octet B0 is undefined in these cases.",
+    "LongIv" : "CVE-2017-18330: Overflow with large IVs"
+  },
+  "schema" : "aead_test_schema.json",
   "testGroups" : [
     {
       "ivSize" : 96,
@@ -5696,7 +5706,9 @@
           "ct" : "be1722a5817195c503814be1bd093110",
           "tag" : "6f79a8cf92c856b8f16dee92",
           "result" : "invalid",
-          "flags" : []
+          "flags" : [
+            "InvalidNonceSize"
+          ]
         }
       ]
     },
@@ -5716,7 +5728,9 @@
           "ct" : "210389226958def4b44f1e168632113c",
           "tag" : "d4e97a100800a5c16bea4fdf",
           "result" : "invalid",
-          "flags" : []
+          "flags" : [
+            "InvalidNonceSize"
+          ]
         }
       ]
     },
@@ -5736,7 +5750,9 @@
           "ct" : "95bf208e8673b9f9a38f9609b5e78f2a",
           "tag" : "df814191696cf3129fb40dc0",
           "result" : "invalid",
-          "flags" : []
+          "flags" : [
+            "InvalidNonceSize"
+          ]
         }
       ]
     },
@@ -5756,7 +5772,9 @@
           "ct" : "a7dab4bfcf3e2afa4b319cfdc17f15f1",
           "tag" : "c4e8b1fa0d791777417ce52c",
           "result" : "invalid",
-          "flags" : []
+          "flags" : [
+            "InvalidNonceSize"
+          ]
         }
       ]
     },
@@ -5776,7 +5794,9 @@
           "ct" : "a89a23f4f32ba009c3aa8fa0191f84c5",
           "tag" : "659621c2ad5bc61de2ce8046",
           "result" : "invalid",
-          "flags" : []
+          "flags" : [
+            "InvalidNonceSize"
+          ]
         }
       ]
     },
@@ -5796,7 +5816,9 @@
           "ct" : "f9d0078bcd568bf97924e6d71f406087",
           "tag" : "095c0da2ea6dda5a87121c2a",
           "result" : "invalid",
-          "flags" : []
+          "flags" : [
+            "InvalidNonceSize"
+          ]
         }
       ]
     },
@@ -5816,7 +5838,9 @@
           "ct" : "670cd068e65b08fcefb9c0afa7bb5c33",
           "tag" : "daa02810e997e797dda9755d",
           "result" : "invalid",
-          "flags" : []
+          "flags" : [
+            "InvalidNonceSize"
+          ]
         }
       ]
     },
@@ -5836,7 +5860,9 @@
           "ct" : "5edbebec6c533dac8ca89faf60d8c137",
           "tag" : "9453d6a8ff91b714f32c0b71",
           "result" : "invalid",
-          "flags" : []
+          "flags" : [
+            "InvalidNonceSize"
+          ]
         }
       ]
     },
@@ -5856,7 +5882,9 @@
           "ct" : "5edbebec6c533dac8ca89faf60d8c137",
           "tag" : "9453d6a8ff91b714f32c0b71",
           "result" : "invalid",
-          "flags" : []
+          "flags" : [
+            "InvalidNonceSize"
+          ]
         }
       ]
     },
@@ -5876,72 +5904,83 @@
           "ct" : "5edbebec6c533dac8ca89faf60d8c137",
           "tag" : "9453d6a8ff91b714f32c0b71",
           "result" : "invalid",
-          "flags" : []
+          "flags" : [
+            "InvalidNonceSize"
+          ]
         }
       ]
     },
     {
-      "ivSize" : 0,
-      "keySize" : 192,
+      "ivSize" : 512,
+      "keySize" : 128,
       "tagSize" : 96,
       "type" : "AeadTest",
       "tests" : [
         {
           "tcId" : 458,
-          "comment" : "Invalid nonce size",
-          "key" : "000102030405060708090a0b0c0d0e0f1011121314151617",
-          "iv" : "",
+          "comment" : "Very long nonce",
+          "key" : "000102030405060708090a0b0c0d0e0f",
+          "iv" : "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f",
           "aad" : "",
           "msg" : "202122232425262728292a2b2c2d2e2f",
-          "ct" : "15699c20198688b9e4882a6542811ada",
-          "tag" : "c69317b99b43086b621eb14a",
+          "ct" : "c32a7643ab0f6ea3458d7e63b0ed6499",
+          "tag" : "8fc9b6f40b3a81fd5fd6c53c",
           "result" : "invalid",
-          "flags" : []
+          "flags" : [
+            "LongIv",
+            "InvalidNonceSize"
+          ]
         }
       ]
     },
     {
-      "ivSize" : 8,
-      "keySize" : 192,
+      "ivSize" : 1024,
+      "keySize" : 128,
       "tagSize" : 96,
       "type" : "AeadTest",
       "tests" : [
         {
           "tcId" : 459,
-          "comment" : "Invalid nonce size",
-          "key" : "000102030405060708090a0b0c0d0e0f1011121314151617",
-          "iv" : "40",
+          "comment" : "Very long nonce",
+          "key" : "000102030405060708090a0b0c0d0e0f",
+          "iv" : "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f404142434445464748494a4b4c4d4e4f505152535455565758595a5b5c5d5e5f606162636465666768696a6b6c6d6e6f707172737475767778797a7b7c7d7e7f",
           "aad" : "",
           "msg" : "202122232425262728292a2b2c2d2e2f",
-          "ct" : "7e84b5aa41d2212b3a5d730df5b20eaa",
-          "tag" : "5924d8bd85318b033bf4f2fd",
+          "ct" : "c32a7643ab0f6ea3458d7e63b0ed6499",
+          "tag" : "8fc9b6f40b3a81fd5fd6c53c",
           "result" : "invalid",
-          "flags" : []
+          "flags" : [
+            "LongIv",
+            "InvalidNonceSize"
+          ]
         }
       ]
     },
     {
-      "ivSize" : 16,
-      "keySize" : 192,
+      "ivSize" : 2144,
+      "keySize" : 128,
       "tagSize" : 96,
       "type" : "AeadTest",
       "tests" : [
         {
           "tcId" : 460,
-          "comment" : "Invalid nonce size",
-          "key" : "000102030405060708090a0b0c0d0e0f1011121314151617",
-          "iv" : "4041",
+          "comment" : "Very long nonce",
+          "key" : "000102030405060708090a0b0c0d0e0f",
+          "iv" : "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f404142434445464748494a4b4c4d4e4f505152535455565758595a5b5c5d5e5f606162636465666768696a6b6c6d6e6f707172737475767778797a7b7c7d7e7f808182838485868788898a8b8c8d8e8f909192939495969798999a9b9c9d9e9fa0a1a2a3a4a5a6a7a8a9aaabacadaeafb0b1b2b3b4b5b6b7b8b9babbbcbdbebfc0c1c2c3c4c5c6c7c8c9cacbcccdcecfd0d1d2d3d4d5d6d7d8d9dadbdcdddedfe0e1e2e3e4e5e6e7e8e9eaebecedeeeff0f1f2f3f4f5f6f7f8f9fafbfcfdfeff000102030405060708090a0b",
           "aad" : "",
           "msg" : "202122232425262728292a2b2c2d2e2f",
-          "ct" : "eb813367e3d1fa4ee4c402450f2946d1",
-          "tag" : "cf6eee495f94c08fef7ce5b5",
+          "ct" : "c32a7643ab0f6ea3458d7e63b0ed6499",
+          "tag" : "8fc9b6f40b3a81fd5fd6c53c",
           "result" : "invalid",
-          "flags" : []
+          "flags" : [
+            "LongIv",
+            "InvalidNonceSize"
+          ]
         }
       ]
     },
     {
-      "ivSize" : 32,
+      "ivSize" : 0,
       "keySize" : 192,
       "tagSize" : 96,
       "type" : "AeadTest",
@@ -5950,13 +5989,81 @@
           "tcId" : 461,
           "comment" : "Invalid nonce size",
           "key" : "000102030405060708090a0b0c0d0e0f1011121314151617",
+          "iv" : "",
+          "aad" : "",
+          "msg" : "202122232425262728292a2b2c2d2e2f",
+          "ct" : "15699c20198688b9e4882a6542811ada",
+          "tag" : "c69317b99b43086b621eb14a",
+          "result" : "invalid",
+          "flags" : [
+            "InvalidNonceSize"
+          ]
+        }
+      ]
+    },
+    {
+      "ivSize" : 8,
+      "keySize" : 192,
+      "tagSize" : 96,
+      "type" : "AeadTest",
+      "tests" : [
+        {
+          "tcId" : 462,
+          "comment" : "Invalid nonce size",
+          "key" : "000102030405060708090a0b0c0d0e0f1011121314151617",
+          "iv" : "40",
+          "aad" : "",
+          "msg" : "202122232425262728292a2b2c2d2e2f",
+          "ct" : "7e84b5aa41d2212b3a5d730df5b20eaa",
+          "tag" : "5924d8bd85318b033bf4f2fd",
+          "result" : "invalid",
+          "flags" : [
+            "InvalidNonceSize"
+          ]
+        }
+      ]
+    },
+    {
+      "ivSize" : 16,
+      "keySize" : 192,
+      "tagSize" : 96,
+      "type" : "AeadTest",
+      "tests" : [
+        {
+          "tcId" : 463,
+          "comment" : "Invalid nonce size",
+          "key" : "000102030405060708090a0b0c0d0e0f1011121314151617",
+          "iv" : "4041",
+          "aad" : "",
+          "msg" : "202122232425262728292a2b2c2d2e2f",
+          "ct" : "eb813367e3d1fa4ee4c402450f2946d1",
+          "tag" : "cf6eee495f94c08fef7ce5b5",
+          "result" : "invalid",
+          "flags" : [
+            "InvalidNonceSize"
+          ]
+        }
+      ]
+    },
+    {
+      "ivSize" : 32,
+      "keySize" : 192,
+      "tagSize" : 96,
+      "type" : "AeadTest",
+      "tests" : [
+        {
+          "tcId" : 464,
+          "comment" : "Invalid nonce size",
+          "key" : "000102030405060708090a0b0c0d0e0f1011121314151617",
           "iv" : "40414243",
           "aad" : "",
           "msg" : "202122232425262728292a2b2c2d2e2f",
           "ct" : "3be9c621dbe057b86acaef8ad0e38ee0",
           "tag" : "6dd33d42278bb2f27eab7a0b",
           "result" : "invalid",
-          "flags" : []
+          "flags" : [
+            "InvalidNonceSize"
+          ]
         }
       ]
     },
@@ -5967,7 +6074,7 @@
       "type" : "AeadTest",
       "tests" : [
         {
-          "tcId" : 462,
+          "tcId" : 465,
           "comment" : "Invalid nonce size",
           "key" : "000102030405060708090a0b0c0d0e0f1011121314151617",
           "iv" : "404142434445",
@@ -5976,7 +6083,9 @@
           "ct" : "41bd6e626ef1d4fa33e3e62b6b71b247",
           "tag" : "b03506df38085e4f93ee9ea4",
           "result" : "invalid",
-          "flags" : []
+          "flags" : [
+            "InvalidNonceSize"
+          ]
         }
       ]
     },
@@ -5987,7 +6096,7 @@
       "type" : "AeadTest",
       "tests" : [
         {
-          "tcId" : 463,
+          "tcId" : 466,
           "comment" : "Invalid nonce size",
           "key" : "000102030405060708090a0b0c0d0e0f1011121314151617",
           "iv" : "404142434445464748494a4b4c4d",
@@ -5996,7 +6105,9 @@
           "ct" : "390f24acc113b433e4b785e9183d4838",
           "tag" : "9bc0397fee59e6990c3bbc81",
           "result" : "invalid",
-          "flags" : []
+          "flags" : [
+            "InvalidNonceSize"
+          ]
         }
       ]
     },
@@ -6007,7 +6118,7 @@
       "type" : "AeadTest",
       "tests" : [
         {
-          "tcId" : 464,
+          "tcId" : 467,
           "comment" : "Invalid nonce size",
           "key" : "000102030405060708090a0b0c0d0e0f1011121314151617",
           "iv" : "404142434445464748494a4b4c4d4e",
@@ -6016,7 +6127,9 @@
           "ct" : "b2d108590625ee4af66b7cb663df50c1",
           "tag" : "cfeabe252650d12584478bd0",
           "result" : "invalid",
-          "flags" : []
+          "flags" : [
+            "InvalidNonceSize"
+          ]
         }
       ]
     },
@@ -6027,7 +6140,7 @@
       "type" : "AeadTest",
       "tests" : [
         {
-          "tcId" : 465,
+          "tcId" : 468,
           "comment" : "Nonce is too long",
           "key" : "000102030405060708090a0b0c0d0e0f1011121314151617",
           "iv" : "202122232425262728292a2b2c2d2e2f",
@@ -6036,7 +6149,9 @@
           "ct" : "17ef53d925bba4e1f335d00186b7c38e",
           "tag" : "8f6477da94ef6f63c4d1a071",
           "result" : "invalid",
-          "flags" : []
+          "flags" : [
+            "InvalidNonceSize"
+          ]
         }
       ]
     },
@@ -6047,7 +6162,7 @@
       "type" : "AeadTest",
       "tests" : [
         {
-          "tcId" : 466,
+          "tcId" : 469,
           "comment" : "Nonce is too long",
           "key" : "000102030405060708090a0b0c0d0e0f1011121314151617",
           "iv" : "202122232425262728292a2b2c2d2e2f30313233",
@@ -6056,7 +6171,9 @@
           "ct" : "17ef53d925bba4e1f335d00186b7c38e",
           "tag" : "8f6477da94ef6f63c4d1a071",
           "result" : "invalid",
-          "flags" : []
+          "flags" : [
+            "InvalidNonceSize"
+          ]
         }
       ]
     },
@@ -6067,7 +6184,7 @@
       "type" : "AeadTest",
       "tests" : [
         {
-          "tcId" : 467,
+          "tcId" : 470,
           "comment" : "Nonce is too long",
           "key" : "000102030405060708090a0b0c0d0e0f1011121314151617",
           "iv" : "202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f",
@@ -6076,7 +6193,78 @@
           "ct" : "17ef53d925bba4e1f335d00186b7c38e",
           "tag" : "8f6477da94ef6f63c4d1a071",
           "result" : "invalid",
-          "flags" : []
+          "flags" : [
+            "InvalidNonceSize"
+          ]
+        }
+      ]
+    },
+    {
+      "ivSize" : 512,
+      "keySize" : 192,
+      "tagSize" : 96,
+      "type" : "AeadTest",
+      "tests" : [
+        {
+          "tcId" : 471,
+          "comment" : "Very long nonce",
+          "key" : "000102030405060708090a0b0c0d0e0f1011121314151617",
+          "iv" : "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f",
+          "aad" : "",
+          "msg" : "202122232425262728292a2b2c2d2e2f",
+          "ct" : "81a8a087cf96d58f64868b189edd0bb4",
+          "tag" : "c5cc4f2b5a460c1d229a6ba8",
+          "result" : "invalid",
+          "flags" : [
+            "LongIv",
+            "InvalidNonceSize"
+          ]
+        }
+      ]
+    },
+    {
+      "ivSize" : 1024,
+      "keySize" : 192,
+      "tagSize" : 96,
+      "type" : "AeadTest",
+      "tests" : [
+        {
+          "tcId" : 472,
+          "comment" : "Very long nonce",
+          "key" : "000102030405060708090a0b0c0d0e0f1011121314151617",
+          "iv" : "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f404142434445464748494a4b4c4d4e4f505152535455565758595a5b5c5d5e5f606162636465666768696a6b6c6d6e6f707172737475767778797a7b7c7d7e7f",
+          "aad" : "",
+          "msg" : "202122232425262728292a2b2c2d2e2f",
+          "ct" : "81a8a087cf96d58f64868b189edd0bb4",
+          "tag" : "c5cc4f2b5a460c1d229a6ba8",
+          "result" : "invalid",
+          "flags" : [
+            "LongIv",
+            "InvalidNonceSize"
+          ]
+        }
+      ]
+    },
+    {
+      "ivSize" : 2144,
+      "keySize" : 192,
+      "tagSize" : 96,
+      "type" : "AeadTest",
+      "tests" : [
+        {
+          "tcId" : 473,
+          "comment" : "Very long nonce",
+          "key" : "000102030405060708090a0b0c0d0e0f1011121314151617",
+          "iv" : "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f404142434445464748494a4b4c4d4e4f505152535455565758595a5b5c5d5e5f606162636465666768696a6b6c6d6e6f707172737475767778797a7b7c7d7e7f808182838485868788898a8b8c8d8e8f909192939495969798999a9b9c9d9e9fa0a1a2a3a4a5a6a7a8a9aaabacadaeafb0b1b2b3b4b5b6b7b8b9babbbcbdbebfc0c1c2c3c4c5c6c7c8c9cacbcccdcecfd0d1d2d3d4d5d6d7d8d9dadbdcdddedfe0e1e2e3e4e5e6e7e8e9eaebecedeeeff0f1f2f3f4f5f6f7f8f9fafbfcfdfeff000102030405060708090a0b",
+          "aad" : "",
+          "msg" : "202122232425262728292a2b2c2d2e2f",
+          "ct" : "81a8a087cf96d58f64868b189edd0bb4",
+          "tag" : "c5cc4f2b5a460c1d229a6ba8",
+          "result" : "invalid",
+          "flags" : [
+            "LongIv",
+            "InvalidNonceSize"
+          ]
         }
       ]
     },
@@ -6087,7 +6275,7 @@
       "type" : "AeadTest",
       "tests" : [
         {
-          "tcId" : 468,
+          "tcId" : 474,
           "comment" : "Invalid nonce size",
           "key" : "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
           "iv" : "",
@@ -6096,7 +6284,9 @@
           "ct" : "3cd9bace5f5dc77c89c2bc139065e797",
           "tag" : "99f6058eeb8e3a8036aadab8",
           "result" : "invalid",
-          "flags" : []
+          "flags" : [
+            "InvalidNonceSize"
+          ]
         }
       ]
     },
@@ -6107,7 +6297,7 @@
       "type" : "AeadTest",
       "tests" : [
         {
-          "tcId" : 469,
+          "tcId" : 475,
           "comment" : "Invalid nonce size",
           "key" : "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
           "iv" : "40",
@@ -6116,7 +6306,9 @@
           "ct" : "b5f044211e18b13572e2ea70ed178353",
           "tag" : "24cf3f3f369b692fe730970c",
           "result" : "invalid",
-          "flags" : []
+          "flags" : [
+            "InvalidNonceSize"
+          ]
         }
       ]
     },
@@ -6127,7 +6319,7 @@
       "type" : "AeadTest",
       "tests" : [
         {
-          "tcId" : 470,
+          "tcId" : 476,
           "comment" : "Invalid nonce size",
           "key" : "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
           "iv" : "4041",
@@ -6136,7 +6328,9 @@
           "ct" : "c000746ed8246d20edda90c04f380ba8",
           "tag" : "af82093487d3a5d4872ff9e2",
           "result" : "invalid",
-          "flags" : []
+          "flags" : [
+            "InvalidNonceSize"
+          ]
         }
       ]
     },
@@ -6147,7 +6341,7 @@
       "type" : "AeadTest",
       "tests" : [
         {
-          "tcId" : 471,
+          "tcId" : 477,
           "comment" : "Invalid nonce size",
           "key" : "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
           "iv" : "40414243",
@@ -6156,7 +6350,9 @@
           "ct" : "b00bd7b8cd031c168e37407eb09f062e",
           "tag" : "bfcae110c737bbe757967f4e",
           "result" : "invalid",
-          "flags" : []
+          "flags" : [
+            "InvalidNonceSize"
+          ]
         }
       ]
     },
@@ -6167,7 +6363,7 @@
       "type" : "AeadTest",
       "tests" : [
         {
-          "tcId" : 472,
+          "tcId" : 478,
           "comment" : "Invalid nonce size",
           "key" : "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
           "iv" : "404142434445",
@@ -6176,7 +6372,9 @@
           "ct" : "ae2865f86ba6328ce131a49cd499f936",
           "tag" : "4390b54f3b7cbf9e54a22048",
           "result" : "invalid",
-          "flags" : []
+          "flags" : [
+            "InvalidNonceSize"
+          ]
         }
       ]
     },
@@ -6187,7 +6385,7 @@
       "type" : "AeadTest",
       "tests" : [
         {
-          "tcId" : 473,
+          "tcId" : 479,
           "comment" : "Invalid nonce size",
           "key" : "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
           "iv" : "404142434445464748494a4b4c4d",
@@ -6196,7 +6394,9 @@
           "ct" : "5680ebd16ae446e9e2d07fbaac7abd0b",
           "tag" : "d72d015782fd94d76d2f682f",
           "result" : "invalid",
-          "flags" : []
+          "flags" : [
+            "InvalidNonceSize"
+          ]
         }
       ]
     },
@@ -6207,7 +6407,7 @@
       "type" : "AeadTest",
       "tests" : [
         {
-          "tcId" : 474,
+          "tcId" : 480,
           "comment" : "Invalid nonce size",
           "key" : "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
           "iv" : "404142434445464748494a4b4c4d4e",
@@ -6216,7 +6416,9 @@
           "ct" : "6a611e6fb67d831b4b096169f2e86647",
           "tag" : "0c39bb2462bbaff71939ee1f",
           "result" : "invalid",
-          "flags" : []
+          "flags" : [
+            "InvalidNonceSize"
+          ]
         }
       ]
     },
@@ -6227,7 +6429,7 @@
       "type" : "AeadTest",
       "tests" : [
         {
-          "tcId" : 475,
+          "tcId" : 481,
           "comment" : "Nonce is too long",
           "key" : "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
           "iv" : "202122232425262728292a2b2c2d2e2f",
@@ -6236,7 +6438,9 @@
           "ct" : "681841a0a013923907c669efd3ffd069",
           "tag" : "054cd6f1cda1b1bf91e0100f",
           "result" : "invalid",
-          "flags" : []
+          "flags" : [
+            "InvalidNonceSize"
+          ]
         }
       ]
     },
@@ -6247,7 +6451,7 @@
       "type" : "AeadTest",
       "tests" : [
         {
-          "tcId" : 476,
+          "tcId" : 482,
           "comment" : "Nonce is too long",
           "key" : "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
           "iv" : "202122232425262728292a2b2c2d2e2f30313233",
@@ -6256,7 +6460,9 @@
           "ct" : "681841a0a013923907c669efd3ffd069",
           "tag" : "054cd6f1cda1b1bf91e0100f",
           "result" : "invalid",
-          "flags" : []
+          "flags" : [
+            "InvalidNonceSize"
+          ]
         }
       ]
     },
@@ -6267,7 +6473,7 @@
       "type" : "AeadTest",
       "tests" : [
         {
-          "tcId" : 477,
+          "tcId" : 483,
           "comment" : "Nonce is too long",
           "key" : "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
           "iv" : "202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f",
@@ -6276,7 +6482,78 @@
           "ct" : "681841a0a013923907c669efd3ffd069",
           "tag" : "054cd6f1cda1b1bf91e0100f",
           "result" : "invalid",
-          "flags" : []
+          "flags" : [
+            "InvalidNonceSize"
+          ]
+        }
+      ]
+    },
+    {
+      "ivSize" : 512,
+      "keySize" : 256,
+      "tagSize" : 96,
+      "type" : "AeadTest",
+      "tests" : [
+        {
+          "tcId" : 484,
+          "comment" : "Very long nonce",
+          "key" : "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+          "iv" : "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f",
+          "aad" : "",
+          "msg" : "202122232425262728292a2b2c2d2e2f",
+          "ct" : "e73cc2ee050a0e7b345aeb1000c481c3",
+          "tag" : "182dabaff0400de708746b6a",
+          "result" : "invalid",
+          "flags" : [
+            "LongIv",
+            "InvalidNonceSize"
+          ]
+        }
+      ]
+    },
+    {
+      "ivSize" : 1024,
+      "keySize" : 256,
+      "tagSize" : 96,
+      "type" : "AeadTest",
+      "tests" : [
+        {
+          "tcId" : 485,
+          "comment" : "Very long nonce",
+          "key" : "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+          "iv" : "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f404142434445464748494a4b4c4d4e4f505152535455565758595a5b5c5d5e5f606162636465666768696a6b6c6d6e6f707172737475767778797a7b7c7d7e7f",
+          "aad" : "",
+          "msg" : "202122232425262728292a2b2c2d2e2f",
+          "ct" : "e73cc2ee050a0e7b345aeb1000c481c3",
+          "tag" : "182dabaff0400de708746b6a",
+          "result" : "invalid",
+          "flags" : [
+            "LongIv",
+            "InvalidNonceSize"
+          ]
+        }
+      ]
+    },
+    {
+      "ivSize" : 2144,
+      "keySize" : 256,
+      "tagSize" : 96,
+      "type" : "AeadTest",
+      "tests" : [
+        {
+          "tcId" : 486,
+          "comment" : "Very long nonce",
+          "key" : "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+          "iv" : "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f404142434445464748494a4b4c4d4e4f505152535455565758595a5b5c5d5e5f606162636465666768696a6b6c6d6e6f707172737475767778797a7b7c7d7e7f808182838485868788898a8b8c8d8e8f909192939495969798999a9b9c9d9e9fa0a1a2a3a4a5a6a7a8a9aaabacadaeafb0b1b2b3b4b5b6b7b8b9babbbcbdbebfc0c1c2c3c4c5c6c7c8c9cacbcccdcecfd0d1d2d3d4d5d6d7d8d9dadbdcdddedfe0e1e2e3e4e5e6e7e8e9eaebecedeeeff0f1f2f3f4f5f6f7f8f9fafbfcfdfeff000102030405060708090a0b",
+          "aad" : "",
+          "msg" : "202122232425262728292a2b2c2d2e2f",
+          "ct" : "e73cc2ee050a0e7b345aeb1000c481c3",
+          "tag" : "182dabaff0400de708746b6a",
+          "result" : "invalid",
+          "flags" : [
+            "LongIv",
+            "InvalidNonceSize"
+          ]
         }
       ]
     },
@@ -6287,7 +6564,7 @@
       "type" : "AeadTest",
       "tests" : [
         {
-          "tcId" : 478,
+          "tcId" : 487,
           "comment" : "Invalid tag size",
           "key" : "000102030405060708090a0b0c0d0e0f",
           "iv" : "464748494a4b4c4d4e4f5051",
@@ -6296,7 +6573,9 @@
           "ct" : "d3dab1ee494cc229099d6cac7df14add",
           "tag" : "198c",
           "result" : "invalid",
-          "flags" : []
+          "flags" : [
+            "InvalidTagSize"
+          ]
         }
       ]
     },
@@ -6307,7 +6586,7 @@
       "type" : "AeadTest",
       "tests" : [
         {
-          "tcId" : 479,
+          "tcId" : 488,
           "comment" : "Invalid tag size",
           "key" : "000102030405060708090a0b0c0d0e0f",
           "iv" : "464748494a4b4c4d4e4f5051",
@@ -6316,7 +6595,9 @@
           "ct" : "d3dab1ee494cc229099d6cac7df14add",
           "tag" : "198c08",
           "result" : "invalid",
-          "flags" : []
+          "flags" : [
+            "InvalidTagSize"
+          ]
         }
       ]
     },
@@ -6327,7 +6608,7 @@
       "type" : "AeadTest",
       "tests" : [
         {
-          "tcId" : 480,
+          "tcId" : 489,
           "comment" : "Invalid tag size",
           "key" : "000102030405060708090a0b0c0d0e0f",
           "iv" : "464748494a4b4c4d4e4f5051",
@@ -6336,7 +6617,9 @@
           "ct" : "d3dab1ee494cc229099d6cac7df14add",
           "tag" : "231a2d8f6a",
           "result" : "invalid",
-          "flags" : []
+          "flags" : [
+            "InvalidTagSize"
+          ]
         }
       ]
     },
@@ -6347,7 +6630,7 @@
       "type" : "AeadTest",
       "tests" : [
         {
-          "tcId" : 481,
+          "tcId" : 490,
           "comment" : "Invalid tag size",
           "key" : "000102030405060708090a0b0c0d0e0f",
           "iv" : "464748494a4b4c4d4e4f5051",
@@ -6356,7 +6639,9 @@
           "ct" : "d3dab1ee494cc229099d6cac7df14add",
           "tag" : "b1bbf3883507cd",
           "result" : "invalid",
-          "flags" : []
+          "flags" : [
+            "InvalidTagSize"
+          ]
         }
       ]
     },
@@ -6367,7 +6652,7 @@
       "type" : "AeadTest",
       "tests" : [
         {
-          "tcId" : 482,
+          "tcId" : 491,
           "comment" : "Invalid tag size",
           "key" : "000102030405060708090a0b0c0d0e0f",
           "iv" : "464748494a4b4c4d4e4f5051",
@@ -6376,7 +6661,9 @@
           "ct" : "d3dab1ee494cc229099d6cac7df14add",
           "tag" : "cd0ae63f3a30f7fb5b",
           "result" : "invalid",
-          "flags" : []
+          "flags" : [
+            "InvalidTagSize"
+          ]
         }
       ]
     },
@@ -6387,7 +6674,7 @@
       "type" : "AeadTest",
       "tests" : [
         {
-          "tcId" : 483,
+          "tcId" : 492,
           "comment" : "Invalid tag size",
           "key" : "000102030405060708090a0b0c0d0e0f",
           "iv" : "464748494a4b4c4d4e4f5051",
@@ -6396,7 +6683,9 @@
           "ct" : "d3dab1ee494cc229099d6cac7df14add",
           "tag" : "535e32ac416816615e5a20",
           "result" : "invalid",
-          "flags" : []
+          "flags" : [
+            "InvalidTagSize"
+          ]
         }
       ]
     },
@@ -6407,7 +6696,7 @@
       "type" : "AeadTest",
       "tests" : [
         {
-          "tcId" : 484,
+          "tcId" : 493,
           "comment" : "Invalid tag size",
           "key" : "000102030405060708090a0b0c0d0e0f",
           "iv" : "464748494a4b4c4d4e4f5051",
@@ -6416,7 +6705,9 @@
           "ct" : "d3dab1ee494cc229099d6cac7df14add",
           "tag" : "a6c58458d3969da9cb0849f95e",
           "result" : "invalid",
-          "flags" : []
+          "flags" : [
+            "InvalidTagSize"
+          ]
         }
       ]
     },
@@ -6427,7 +6718,7 @@
       "type" : "AeadTest",
       "tests" : [
         {
-          "tcId" : 485,
+          "tcId" : 494,
           "comment" : "Invalid tag size",
           "key" : "000102030405060708090a0b0c0d0e0f",
           "iv" : "464748494a4b4c4d4e4f5051",
@@ -6436,7 +6727,9 @@
           "ct" : "d3dab1ee494cc229099d6cac7df14add",
           "tag" : "f7879fb7fe88dd74cb8e96fda1d2eb",
           "result" : "invalid",
-          "flags" : []
+          "flags" : [
+            "InvalidTagSize"
+          ]
         }
       ]
     },
@@ -6447,7 +6740,7 @@
       "type" : "AeadTest",
       "tests" : [
         {
-          "tcId" : 486,
+          "tcId" : 495,
           "comment" : "Invalid tag size",
           "key" : "000102030405060708090a0b0c0d0e0f1011121314151617",
           "iv" : "464748494a4b4c4d4e4f5051",
@@ -6456,7 +6749,9 @@
           "ct" : "1c49324515a346d424eed6fed9bddc17",
           "tag" : "95eb",
           "result" : "invalid",
-          "flags" : []
+          "flags" : [
+            "InvalidTagSize"
+          ]
         }
       ]
     },
@@ -6467,7 +6762,7 @@
       "type" : "AeadTest",
       "tests" : [
         {
-          "tcId" : 487,
+          "tcId" : 496,
           "comment" : "Invalid tag size",
           "key" : "000102030405060708090a0b0c0d0e0f1011121314151617",
           "iv" : "464748494a4b4c4d4e4f5051",
@@ -6476,7 +6771,9 @@
           "ct" : "1c49324515a346d424eed6fed9bddc17",
           "tag" : "95eb98",
           "result" : "invalid",
-          "flags" : []
+          "flags" : [
+            "InvalidTagSize"
+          ]
         }
       ]
     },
@@ -6487,7 +6784,7 @@
       "type" : "AeadTest",
       "tests" : [
         {
-          "tcId" : 488,
+          "tcId" : 497,
           "comment" : "Invalid tag size",
           "key" : "000102030405060708090a0b0c0d0e0f1011121314151617",
           "iv" : "464748494a4b4c4d4e4f5051",
@@ -6496,7 +6793,9 @@
           "ct" : "1c49324515a346d424eed6fed9bddc17",
           "tag" : "3fd40dd8e0",
           "result" : "invalid",
-          "flags" : []
+          "flags" : [
+            "InvalidTagSize"
+          ]
         }
       ]
     },
@@ -6507,7 +6806,7 @@
       "type" : "AeadTest",
       "tests" : [
         {
-          "tcId" : 489,
+          "tcId" : 498,
           "comment" : "Invalid tag size",
           "key" : "000102030405060708090a0b0c0d0e0f1011121314151617",
           "iv" : "464748494a4b4c4d4e4f5051",
@@ -6516,7 +6815,9 @@
           "ct" : "1c49324515a346d424eed6fed9bddc17",
           "tag" : "793ca5d351e68c",
           "result" : "invalid",
-          "flags" : []
+          "flags" : [
+            "InvalidTagSize"
+          ]
         }
       ]
     },
@@ -6527,7 +6828,7 @@
       "type" : "AeadTest",
       "tests" : [
         {
-          "tcId" : 490,
+          "tcId" : 499,
           "comment" : "Invalid tag size",
           "key" : "000102030405060708090a0b0c0d0e0f1011121314151617",
           "iv" : "464748494a4b4c4d4e4f5051",
@@ -6536,7 +6837,9 @@
           "ct" : "1c49324515a346d424eed6fed9bddc17",
           "tag" : "63a0987ffff1313caa",
           "result" : "invalid",
-          "flags" : []
+          "flags" : [
+            "InvalidTagSize"
+          ]
         }
       ]
     },
@@ -6547,7 +6850,7 @@
       "type" : "AeadTest",
       "tests" : [
         {
-          "tcId" : 491,
+          "tcId" : 500,
           "comment" : "Invalid tag size",
           "key" : "000102030405060708090a0b0c0d0e0f1011121314151617",
           "iv" : "464748494a4b4c4d4e4f5051",
@@ -6556,7 +6859,9 @@
           "ct" : "1c49324515a346d424eed6fed9bddc17",
           "tag" : "0ee40f14475b7e28752983",
           "result" : "invalid",
-          "flags" : []
+          "flags" : [
+            "InvalidTagSize"
+          ]
         }
       ]
     },
@@ -6567,7 +6872,7 @@
       "type" : "AeadTest",
       "tests" : [
         {
-          "tcId" : 492,
+          "tcId" : 501,
           "comment" : "Invalid tag size",
           "key" : "000102030405060708090a0b0c0d0e0f1011121314151617",
           "iv" : "464748494a4b4c4d4e4f5051",
@@ -6576,7 +6881,9 @@
           "ct" : "1c49324515a346d424eed6fed9bddc17",
           "tag" : "40a4fc82d429a0091c962d7152",
           "result" : "invalid",
-          "flags" : []
+          "flags" : [
+            "InvalidTagSize"
+          ]
         }
       ]
     },
@@ -6587,7 +6894,7 @@
       "type" : "AeadTest",
       "tests" : [
         {
-          "tcId" : 493,
+          "tcId" : 502,
           "comment" : "Invalid tag size",
           "key" : "000102030405060708090a0b0c0d0e0f1011121314151617",
           "iv" : "464748494a4b4c4d4e4f5051",
@@ -6596,7 +6903,9 @@
           "ct" : "1c49324515a346d424eed6fed9bddc17",
           "tag" : "f8f9bdc6b8506afd3ae54a0a67e185",
           "result" : "invalid",
-          "flags" : []
+          "flags" : [
+            "InvalidTagSize"
+          ]
         }
       ]
     },
@@ -6607,7 +6916,7 @@
       "type" : "AeadTest",
       "tests" : [
         {
-          "tcId" : 494,
+          "tcId" : 503,
           "comment" : "Invalid tag size",
           "key" : "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
           "iv" : "464748494a4b4c4d4e4f5051",
@@ -6616,7 +6925,9 @@
           "ct" : "3b6829d5deb47ca9f10abf481564aee1",
           "tag" : "8f8b",
           "result" : "invalid",
-          "flags" : []
+          "flags" : [
+            "InvalidTagSize"
+          ]
         }
       ]
     },
@@ -6627,7 +6938,7 @@
       "type" : "AeadTest",
       "tests" : [
         {
-          "tcId" : 495,
+          "tcId" : 504,
           "comment" : "Invalid tag size",
           "key" : "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
           "iv" : "464748494a4b4c4d4e4f5051",
@@ -6636,7 +6947,9 @@
           "ct" : "3b6829d5deb47ca9f10abf481564aee1",
           "tag" : "8f8b32",
           "result" : "invalid",
-          "flags" : []
+          "flags" : [
+            "InvalidTagSize"
+          ]
         }
       ]
     },
@@ -6647,7 +6960,7 @@
       "type" : "AeadTest",
       "tests" : [
         {
-          "tcId" : 496,
+          "tcId" : 505,
           "comment" : "Invalid tag size",
           "key" : "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
           "iv" : "464748494a4b4c4d4e4f5051",
@@ -6656,7 +6969,9 @@
           "ct" : "3b6829d5deb47ca9f10abf481564aee1",
           "tag" : "a94e19f34c",
           "result" : "invalid",
-          "flags" : []
+          "flags" : [
+            "InvalidTagSize"
+          ]
         }
       ]
     },
@@ -6667,7 +6982,7 @@
       "type" : "AeadTest",
       "tests" : [
         {
-          "tcId" : 497,
+          "tcId" : 506,
           "comment" : "Invalid tag size",
           "key" : "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
           "iv" : "464748494a4b4c4d4e4f5051",
@@ -6676,7 +6991,9 @@
           "ct" : "3b6829d5deb47ca9f10abf481564aee1",
           "tag" : "5e90218caca470",
           "result" : "invalid",
-          "flags" : []
+          "flags" : [
+            "InvalidTagSize"
+          ]
         }
       ]
     },
@@ -6687,7 +7004,7 @@
       "type" : "AeadTest",
       "tests" : [
         {
-          "tcId" : 498,
+          "tcId" : 507,
           "comment" : "Invalid tag size",
           "key" : "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
           "iv" : "464748494a4b4c4d4e4f5051",
@@ -6696,7 +7013,9 @@
           "ct" : "3b6829d5deb47ca9f10abf481564aee1",
           "tag" : "385cef2c2599faa960",
           "result" : "invalid",
-          "flags" : []
+          "flags" : [
+            "InvalidTagSize"
+          ]
         }
       ]
     },
@@ -6707,7 +7026,7 @@
       "type" : "AeadTest",
       "tests" : [
         {
-          "tcId" : 499,
+          "tcId" : 508,
           "comment" : "Invalid tag size",
           "key" : "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
           "iv" : "464748494a4b4c4d4e4f5051",
@@ -6716,7 +7035,9 @@
           "ct" : "3b6829d5deb47ca9f10abf481564aee1",
           "tag" : "e81c270020edd93ba7e564",
           "result" : "invalid",
-          "flags" : []
+          "flags" : [
+            "InvalidTagSize"
+          ]
         }
       ]
     },
@@ -6727,7 +7048,7 @@
       "type" : "AeadTest",
       "tests" : [
         {
-          "tcId" : 500,
+          "tcId" : 509,
           "comment" : "Invalid tag size",
           "key" : "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
           "iv" : "464748494a4b4c4d4e4f5051",
@@ -6736,7 +7057,9 @@
           "ct" : "3b6829d5deb47ca9f10abf481564aee1",
           "tag" : "c5d5f29af5c0db444ac2618b9d",
           "result" : "invalid",
-          "flags" : []
+          "flags" : [
+            "InvalidTagSize"
+          ]
         }
       ]
     },
@@ -6747,7 +7070,7 @@
       "type" : "AeadTest",
       "tests" : [
         {
-          "tcId" : 501,
+          "tcId" : 510,
           "comment" : "Invalid tag size",
           "key" : "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
           "iv" : "464748494a4b4c4d4e4f5051",
@@ -6756,7 +7079,9 @@
           "ct" : "3b6829d5deb47ca9f10abf481564aee1",
           "tag" : "f2f6d8b6ab69c8e10039b5754f5537",
           "result" : "invalid",
-          "flags" : []
+          "flags" : [
+            "InvalidTagSize"
+          ]
         }
       ]
     }

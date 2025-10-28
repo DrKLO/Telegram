@@ -16,14 +16,12 @@
 #include <vector>
 
 #include "absl/types/optional.h"
-#include "api/crypto_params.h"
 #include "api/dtls_transport_interface.h"
 #include "api/rtc_error.h"
 #include "p2p/base/dtls_transport_internal.h"
 #include "p2p/base/packet_transport_internal.h"
 #include "pc/srtp_transport.h"
 #include "rtc_base/buffer.h"
-#include "rtc_base/third_party/sigslot/sigslot.h"
 
 namespace webrtc {
 
@@ -49,15 +47,6 @@ class DtlsSrtpTransport : public SrtpTransport {
       const std::vector<int>& recv_extension_ids);
 
   void SetOnDtlsStateChange(std::function<void(void)> callback);
-
-  RTCError SetSrtpSendKey(const cricket::CryptoParams& params) override {
-    return RTCError(RTCErrorType::UNSUPPORTED_OPERATION,
-                    "Set SRTP keys for DTLS-SRTP is not supported.");
-  }
-  RTCError SetSrtpReceiveKey(const cricket::CryptoParams& params) override {
-    return RTCError(RTCErrorType::UNSUPPORTED_OPERATION,
-                    "Set SRTP keys for DTLS-SRTP is not supported.");
-  }
 
   // If `active_reset_srtp_params_` is set to be true, the SRTP parameters will
   // be reset whenever the DtlsTransports are reset.

@@ -33,7 +33,9 @@ import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.SeekBarView;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 public class SlideIntChooseView extends FrameLayout {
 
@@ -43,8 +45,6 @@ public class SlideIntChooseView extends FrameLayout {
     private final AnimatedTextView valueText;
     private final AnimatedTextView maxText;
     private final SeekBarView seekBarView;
-
-    private int stepsCount;
 
     public SlideIntChooseView(Context context, Theme.ResourcesProvider resourcesProvider) {
         super(context);
@@ -94,13 +94,15 @@ public class SlideIntChooseView extends FrameLayout {
                 if (options == null || whenChanged == null) {
                     return;
                 }
-                int newValue = (int) Math.round(options.min + stepsCount * progress);
+                int newValue = getValue(progress);
                 if (minValueAllowed != Integer.MIN_VALUE) {
                     newValue = Math.max(newValue, minValueAllowed);
                 }
                 if (value != newValue) {
+                    if (getStep(value) != getStep(newValue)) {
+                        AndroidUtilities.vibrateCursor(seekBarView);
+                    }
                     value = newValue;
-                    AndroidUtilities.vibrateCursor(seekBarView);
                     updateTexts(value, true);
                     if (whenChanged != null) {
                         whenChanged.run(value);
@@ -110,7 +112,12 @@ public class SlideIntChooseView extends FrameLayout {
 
             @Override
             public int getStepsCount() {
-                return stepsCount;
+                return options.getStepsCount();
+            }
+
+            @Override
+            public boolean needVisuallyDivideSteps() {
+                return false;// options.steps != null;
             }
         });
         addView(seekBarView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 38, Gravity.TOP | Gravity.FILL_HORIZONTAL, 6, 30, 6, 0));
@@ -130,10 +137,45 @@ public class SlideIntChooseView extends FrameLayout {
         this.options = options;
         this.whenChanged = whenChanged;
 
-        stepsCount = options.max - options.min;
-        seekBarView.setProgress((value - options.min) / (float) stepsCount, false);
+        seekBarView.setProgress(getProgress(value), false);
 
         updateTexts(value, false);
+    }
+
+    public float getProgress(int value) {
+        if (options.steps != null) {
+            for (int i = 1; i < options.steps.length; ++i) {
+                final int l = options.steps[i - 1];
+                final int r = options.steps[i];
+                if (value >= l && value <= r) {
+                    return 1.0f / (options.steps.length - 1) * (float) ((i - 1) + Math.round((value - l) / (float) (r - l) * options.betweenSteps) / options.betweenSteps);
+                }
+            }
+        }
+        return Utilities.clamp01((value - options.getMin()) / (float) (options.getMax() - options.getMin()));
+    }
+
+    public int getValue(float progress) {
+        if (options.steps != null) {
+            final float p = progress * (options.steps.length - 1);
+            int l = Utilities.clamp((int) Math.floor(p), options.steps.length - 1, 0);
+            int r = Utilities.clamp((int) Math.ceil(p), options.steps.length - 1, 0);
+            return Math.round(AndroidUtilities.lerp(options.steps[l], options.steps[r], Math.round((float) (p - Math.floor(p)) * options.betweenSteps) / (float) options.betweenSteps));
+        }
+        return Math.round(options.getMin() + (options.getMax() - options.getMin()) * progress);
+    }
+
+    public int getStep(int value) {
+        if (options.steps != null) {
+            for (int i = 1; i < options.steps.length; ++i) {
+                final int l = options.steps[i - 1];
+                final int r = options.steps[i];
+                if (value >= l && value <= r) {
+                    return i - 1;
+                }
+            }
+        }
+        return value;
     }
 
     public void setMinValueAllowed(int value) {
@@ -141,7 +183,7 @@ public class SlideIntChooseView extends FrameLayout {
         if (this.value < minValueAllowed) {
             this.value = minValueAllowed;
         }
-        seekBarView.setMinProgress(Utilities.clamp01((float) (value - options.min) / stepsCount));
+        seekBarView.setMinProgress(getProgress(value));
         updateTexts(this.value, false);
         invalidate();
     }
@@ -151,10 +193,10 @@ public class SlideIntChooseView extends FrameLayout {
         maxText.cancelAnimation();
         valueText.cancelAnimation();
         valueText.setText(options.toString.run(0, value), animated);
-        minText.setText(options.toString.run(-1, options.min), animated);
-        maxText.setText(options.toString.run(+1, options.max), animated);
-        maxText.setTextColor(Theme.getColor(value >= options.max ? Theme.key_windowBackgroundWhiteValueText : Theme.key_windowBackgroundWhiteGrayText, resourcesProvider), animated);
-        setMaxTextEmojiSaturation(value >= options.max ? 1f : 0f, animated);
+        minText.setText(options.toString.run(-1, options.getMin()), animated);
+        maxText.setText(options.toString.run(+1, options.getMax()), animated);
+        maxText.setTextColor(Theme.getColor(value >= options.getMax() ? Theme.key_windowBackgroundWhiteValueText : Theme.key_windowBackgroundWhiteGrayText, resourcesProvider), animated);
+        setMaxTextEmojiSaturation(value >= options.getMax() ? 1f : 0f, animated);
     }
 
     private float maxTextEmojiSaturation;
@@ -217,24 +259,69 @@ public class SlideIntChooseView extends FrameLayout {
         }
     }
 
+    public static int[] cut(int[] steps, int max) {
+        int count = 0;
+        boolean hadMax = false;
+        for (int i = 0; i < steps.length; ++i) {
+            if (steps[i] <= max) {
+                ++count;
+                if (steps[i] == max) {
+                    hadMax = true;
+                }
+            }
+        }
+        if (!hadMax) {
+            ++count;
+        }
+        if (count == steps.length) {
+            return steps;
+        }
+        int[] newSteps = new int[count];
+        int j = 0;
+        for (int i = 0; i < steps.length; ++i) {
+            if (steps[i] <= max) {
+                newSteps[j++] = steps[i];
+            }
+        }
+        if (!hadMax) {
+            newSteps[j++] = max;
+        }
+        return newSteps;
+    }
+
     public static class Options {
         public int style;
 
-        public int min;
-        public int max;
+        private int min;
+        private int max;
+        public int[] steps = null;
+        public int betweenSteps = 1;
 
-        public Utilities.Callback2Return<Integer, Integer, String> toString;
+        public Utilities.Callback2Return<Integer, Integer, CharSequence> toString;
 
         public static Options make(
             int style,
             int min, int max,
-            Utilities.CallbackReturn<Integer, String> toString
+            Utilities.CallbackReturn<Integer, CharSequence> toString
         ) {
             Options o = new Options();
             o.style = style;
             o.min = min;
             o.max = max;
             o.toString = (type, val) -> toString.run(val);
+            return o;
+        }
+
+        public static Options make(
+            int style,
+            int[] steps, int between,
+            Utilities.Callback2Return<Integer, Integer, CharSequence> toString
+        ) {
+            Options o = new Options();
+            o.style = style;
+            o.steps = steps;
+            o.betweenSteps = between;
+            o.toString = toString;
             return o;
         }
 
@@ -248,6 +335,23 @@ public class SlideIntChooseView extends FrameLayout {
             o.max = max;
             o.toString = (type, val) -> type == 0 ? LocaleController.formatPluralString(resId, val) : "" + val;
             return o;
+        }
+
+        public int getMin() {
+            if (steps != null) return steps[0];
+            return min;
+        }
+
+        public int getMax() {
+            if (steps != null) return steps[steps.length - 1];
+            return max;
+        }
+
+        public int getStepsCount() {
+            if (steps != null) {
+                return (steps.length - 1) * betweenSteps;
+            }
+            return getMax() - getMin();
         }
     }
 }

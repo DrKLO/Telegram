@@ -27,9 +27,11 @@ namespace webrtc {
 class DecisionLogic : public NetEqController {
  public:
   DecisionLogic(NetEqController::Config config);
-  DecisionLogic(NetEqController::Config config,
-                std::unique_ptr<DelayManager> delay_manager,
-                std::unique_ptr<BufferLevelFilter> buffer_level_filter);
+  DecisionLogic(
+      NetEqController::Config config,
+      std::unique_ptr<DelayManager> delay_manager,
+      std::unique_ptr<BufferLevelFilter> buffer_level_filter,
+      std::unique_ptr<PacketArrivalHistory> packet_arrival_history = nullptr);
 
   ~DecisionLogic() override;
 
@@ -58,13 +60,6 @@ class DecisionLogic : public NetEqController {
   NetEq::Operation GetDecision(const NetEqController::NetEqStatus& status,
                                bool* reset_decoder) override;
 
-  // These methods test the `cng_state_` for different conditions.
-  bool CngRfc3389On() const override { return cng_state_ == kCngRfc3389On; }
-  bool CngOff() const override { return cng_state_ == kCngOff; }
-
-  // Resets the `cng_state_` to kCngOff.
-  void SetCngOff() override { cng_state_ = kCngOff; }
-
   void ExpandDecision(NetEq::Operation operation) override {}
 
   // Adds `value` to `sample_memory_`.
@@ -79,8 +74,6 @@ class DecisionLogic : public NetEqController {
                                     const PacketArrivedInfo& info) override;
 
   void RegisterEmptyPacket() override {}
-
-  void NotifyMutedState() override;
 
   bool SetMaximumDelay(int delay_ms) override {
     return delay_manager_->SetMaximumDelay(delay_ms);
@@ -113,8 +106,6 @@ class DecisionLogic : public NetEqController {
   // The value 5 sets maximum time-stretch rate to about 100 ms/s.
   static const int kMinTimescaleInterval = 5;
 
-  enum CngState { kCngOff, kCngRfc3389On, kCngInternalOn };
-
   // Updates the `buffer_level_filter_` with the current buffer level
   // `buffer_size_samples`.
   void FilterBufferLevel(size_t buffer_size_samples);
@@ -145,56 +136,47 @@ class DecisionLogic : public NetEqController {
   // Checks if the current (filtered) buffer level is under the target level.
   bool UnderTargetLevel() const;
 
-  // Checks if `timestamp_leap` is so long into the future that a reset due
-  // to exceeding kReinitAfterExpands will be done.
-  bool ReinitAfterExpands(uint32_t timestamp_leap) const;
+  // Checks if an ongoing concealment should be continued due to low buffer
+  // level, even though the next packet is available.
+  bool PostponeDecode(NetEqController::NetEqStatus status) const;
+
+  // Checks if the timestamp leap is so long into the future that a reset due
+  // to exceeding the expand limit will be done.
+  bool ReinitAfterExpands(NetEqController::NetEqStatus status) const;
 
   // Checks if we still have not done enough expands to cover the distance from
-  // the last decoded packet to the next available packet, the distance beeing
-  // conveyed in `timestamp_leap`.
-  bool PacketTooEarly(uint32_t timestamp_leap) const;
-
-  bool MaxWaitForPacket() const;
-
+  // the last decoded packet to the next available packet.
+  bool PacketTooEarly(NetEqController::NetEqStatus status) const;
+  bool MaxWaitForPacket(NetEqController::NetEqStatus status) const;
   bool ShouldContinueExpand(NetEqController::NetEqStatus status) const;
-
-  int GetNextPacketDelayMs(NetEqController::NetEqStatus status) const;
   int GetPlayoutDelayMs(NetEqController::NetEqStatus status) const;
-
-  int LowThreshold() const;
-  int HighThreshold() const;
-  int LowThresholdCng() const;
-  int HighThresholdCng() const;
 
   // Runtime configurable options through field trial
   // WebRTC-Audio-NetEqDecisionLogicConfig.
   struct Config {
     Config();
 
-    bool enable_stable_playout_delay = false;
-    int reinit_after_expands = 100;
+    bool enable_stable_delay_mode = true;
+    bool combine_concealment_decision = true;
     int deceleration_target_level_offset_ms = 85;
     int packet_history_size_ms = 2000;
+    absl::optional<int> cng_timeout_ms = 1000;
   };
   Config config_;
   std::unique_ptr<DelayManager> delay_manager_;
   std::unique_ptr<BufferLevelFilter> buffer_level_filter_;
-  PacketArrivalHistory packet_arrival_history_;
+  std::unique_ptr<PacketArrivalHistory> packet_arrival_history_;
   const TickTimer* tick_timer_;
   int sample_rate_khz_;
   size_t output_size_samples_;
-  CngState cng_state_ = kCngOff;  // Remember if comfort noise is interrupted by
-                                  // other event (e.g., DTMF).
   size_t noise_fast_forward_ = 0;
   size_t packet_length_samples_ = 0;
   int sample_memory_ = 0;
   bool prev_time_scale_ = false;
   bool disallow_time_stretching_;
   std::unique_ptr<TickTimer::Countdown> timescale_countdown_;
-  int num_consecutive_expands_ = 0;
   int time_stretched_cn_samples_ = 0;
   bool buffer_flush_ = false;
-  int last_playout_delay_ms_ = 0;
 };
 
 }  // namespace webrtc

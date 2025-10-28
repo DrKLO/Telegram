@@ -1,0 +1,55 @@
+# Copyright (c) 2018 The WebRTC project authors. All Rights Reserved.
+#
+# Use of this source code is governed by a BSD-style license
+# that can be found in the LICENSE file in the root of the source
+# tree. An additional intellectual property rights grant can be found
+# in the file PATENTS.  All contributing project authors may
+# be found in the AUTHORS file in the root of the source tree.
+
+import("../../../../../webrtc.gni")
+
+visibility = [
+  ":*",
+  "../../../:*",
+]
+
+if (rtc_include_tests) {
+  rtc_library("test") {
+    testonly = true
+
+    sources = [
+      "audio_ring_buffer.cc",
+      "audio_ring_buffer.h",
+      "blocker.cc",
+      "blocker.h",
+      "lapped_transform.cc",
+      "lapped_transform.h",
+    ]
+
+    deps = [
+      "../../../../../common_audio",
+      "../../../../../common_audio:common_audio_c",
+      "../../../../../rtc_base:checks",
+      "../../../../../rtc_base/memory:aligned_malloc",
+    ]
+  }
+
+  rtc_library("test_unittest") {
+    testonly = true
+
+    sources = [
+      "audio_ring_buffer_unittest.cc",
+      "blocker_unittest.cc",
+      "lapped_transform_unittest.cc",
+    ]
+
+    deps = [
+      ":test",
+      "../../../../../common_audio",
+      "../../../../../common_audio:common_audio_c",
+      "../../../../../rtc_base:macromagic",
+      "../../../../../test:test_support",
+      "//testing/gtest",
+    ]
+  }
+}

@@ -18,8 +18,8 @@
 
 #include "absl/types/optional.h"
 #include "api/sequence_checker.h"
+#include "api/video/encoded_frame.h"
 #include "api/video_codecs/video_decoder.h"
-#include "modules/video_coding/encoded_frame.h"
 #include "modules/video_coding/generic_decoder.h"
 
 namespace webrtc {
@@ -49,11 +49,11 @@ class VCMDecoderDatabase {
   // nullptr is returned if no decoder with the specified payload type was found
   // and the function failed to create one.
   VCMGenericDecoder* GetDecoder(
-      const VCMEncodedFrame& frame,
+      const EncodedFrame& frame,
       VCMDecodedFrameCallback* decoded_frame_callback);
 
  private:
-  void CreateAndInitDecoder(const VCMEncodedFrame& frame)
+  void CreateAndInitDecoder(const EncodedFrame& frame)
       RTC_RUN_ON(decoder_sequence_checker_);
 
   SequenceChecker decoder_sequence_checker_;

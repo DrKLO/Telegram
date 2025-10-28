@@ -1,17 +1,22 @@
 #! /usr/bin/env perl
 # Copyright 2011-2016 The OpenSSL Project Authors. All Rights Reserved.
 #
-# Licensed under the OpenSSL license (the "License").  You may not use
-# this file except in compliance with the License.  You can obtain a copy
-# in the file LICENSE in the source distribution or at
-# https://www.openssl.org/source/license.html
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 
 # ====================================================================
 # Written by Andy Polyakov <appro@openssl.org> for the OpenSSL
-# project. The module is, however, dual licensed under OpenSSL and
-# CRYPTOGAMS licenses depending on where you obtain it. For further
-# details see http://www.openssl.org/~appro/cryptogams/.
+# project.
 # ====================================================================
 
 # August 2011.
@@ -50,7 +55,7 @@ open OUT,"| \"$^X\" \"$xlate\" $flavour \"$output\"";
 # output, so this isn't useful anyway.
 $addx = 1;
 
-# int bn_mul_mont_gather5(
+# int bn_mul_mont_gather5_nohw(
 $rp="%rdi";	# BN_ULONG *rp,
 $ap="%rsi";	# const BN_ULONG *ap,
 $bp="%rdx";	# const BN_ULONG *bp,
@@ -72,28 +77,17 @@ $m1="%rbp";
 $code=<<___;
 .text
 
-.extern	OPENSSL_ia32cap_P
-
-.globl	bn_mul_mont_gather5
-.type	bn_mul_mont_gather5,\@function,6
+.globl	bn_mul_mont_gather5_nohw
+.type	bn_mul_mont_gather5_nohw,\@function,6
 .align	64
-bn_mul_mont_gather5:
+bn_mul_mont_gather5_nohw:
 .cfi_startproc
+	_CET_ENDBR
+	# num is declared as an int, a 32-bit parameter, so the upper half is
+	# undefined. Zero the upper half to normalize it.
 	mov	${num}d,${num}d
 	mov	%rsp,%rax
 .cfi_def_cfa_register	%rax
-	test	\$7,${num}d
-	jnz	.Lmul_enter
-___
-$code.=<<___ if ($addx);
-	leaq	OPENSSL_ia32cap_P(%rip),%r11
-	mov	8(%r11),%r11d
-___
-$code.=<<___;
-	jmp	.Lmul4x_enter
-
-.align	16
-.Lmul_enter:
 	movd	`($win64?56:8)`(%rsp),%xmm5	# load 7th argument
 	push	%rbx
 .cfi_push	%rbx
@@ -158,8 +152,12 @@ $code.=<<___;
 	movdqa	%xmm1,%xmm2
 ___
 ########################################################################
-# calculate mask by comparing 0..31 to index and save result to stack
+# Calculate masks by comparing 0..31 to $idx and save result to stack.
 #
+# We compute sixteen 16-byte masks and store them on the stack. Mask i is stored
+# in `16*i - 128`(%rax) and contains the comparisons for idx == 2*i and
+# idx == 2*i + 1 in its lower and upper halves, respectively. Mask calculations
+# are scheduled in groups of four.
 $code.=<<___;
 	paddd	%xmm0,%xmm1
 	pcmpeqd	%xmm5,%xmm0		# compare to 1,0
@@ -228,7 +226,8 @@ ___
 }
 $code.=<<___;
 	por	%xmm1,%xmm0
-	pshufd	\$0x4e,%xmm0,%xmm1
+	# Combine the upper and lower halves of %xmm0.
+	pshufd	\$0x4e,%xmm0,%xmm1	# Swap upper and lower halves.
 	por	%xmm1,%xmm0
 	lea	$STRIDE($bp),$bp
 	movq	%xmm0,$m0		# m0=bp[0]
@@ -321,7 +320,8 @@ ___
 }
 $code.=<<___;
 	por	%xmm5,%xmm4
-	pshufd	\$0x4e,%xmm4,%xmm0
+	# Combine the upper and lower halves of %xmm4 as %xmm0.
+	pshufd	\$0x4e,%xmm4,%xmm0	# Swap upper and lower halves.
 	por	%xmm4,%xmm0
 	lea	$STRIDE($bp),$bp
 
@@ -447,27 +447,21 @@ $code.=<<___;
 .Lmul_epilogue:
 	ret
 .cfi_endproc
-.size	bn_mul_mont_gather5,.-bn_mul_mont_gather5
+.size	bn_mul_mont_gather5_nohw,.-bn_mul_mont_gather5_nohw
 ___
 {{{
 my @A=("%r10","%r11");
 my @N=("%r13","%rdi");
 $code.=<<___;
+.globl	bn_mul4x_mont_gather5
 .type	bn_mul4x_mont_gather5,\@function,6
 .align	32
 bn_mul4x_mont_gather5:
 .cfi_startproc
+	_CET_ENDBR
 	.byte	0x67
 	mov	%rsp,%rax
 .cfi_def_cfa_register	%rax
-.Lmul4x_enter:
-___
-$code.=<<___ if ($addx);
-	and	\$0x80108,%r11d
-	cmp	\$0x80108,%r11d		# check for AD*X+BMI2+BMI1
-	je	.Lmulx4x_enter
-___
-$code.=<<___;
 	push	%rbx
 .cfi_push	%rbx
 	push	%rbp
@@ -483,6 +477,9 @@ $code.=<<___;
 .Lmul4x_prologue:
 
 	.byte	0x67
+	# num is declared as an int, a 32-bit parameter, so the upper half is
+	# undefined. It is important that this write to ${num}, which zeros the
+	# upper half, predates the first access.
 	shl	\$3,${num}d		# convert $num to bytes
 	lea	($num,$num,2),%r10	# 3*$num in bytes
 	neg	$num			# -$num
@@ -575,7 +572,6 @@ mul4x_internal:
 ___
 		$bp="%r12";
 		$STRIDE=2**5*8;		# 5 is "window size"
-		$N=$STRIDE/4;		# should match cache line size
 		$tp=$i;
 $code.=<<___;
 	movdqa	0(%rax),%xmm0		# 00000001000000010000000000000000
@@ -589,8 +585,12 @@ $code.=<<___;
 	movdqa	%xmm1,%xmm2
 ___
 ########################################################################
-# calculate mask by comparing 0..31 to index and save result to stack
+# Calculate masks by comparing 0..31 to $idx and save result to stack.
 #
+# We compute sixteen 16-byte masks and store them on the stack. Mask i is stored
+# in `16*i - 128`(%rax) and contains the comparisons for idx == 2*i and
+# idx == 2*i + 1 in its lower and upper halves, respectively. Mask calculations
+# are scheduled in groups of four.
 $code.=<<___;
 	paddd	%xmm0,%xmm1
 	pcmpeqd	%xmm5,%xmm0		# compare to 1,0
@@ -659,7 +659,8 @@ ___
 }
 $code.=<<___;
 	por	%xmm1,%xmm0
-	pshufd	\$0x4e,%xmm0,%xmm1
+	# Combine the upper and lower halves of %xmm0.
+	pshufd	\$0x4e,%xmm0,%xmm1	# Swap upper and lower halves.
 	por	%xmm1,%xmm0
 	lea	$STRIDE($bp),$bp
 	movq	%xmm0,$m0		# m0=bp[0]
@@ -836,7 +837,8 @@ ___
 }
 $code.=<<___;
 	por	%xmm5,%xmm4
-	pshufd	\$0x4e,%xmm4,%xmm0
+	# Combine the upper and lower halves of %xmm4 as %xmm0.
+	pshufd	\$0x4e,%xmm4,%xmm0	# Swap upper and lower halves.
 	por	%xmm4,%xmm0
 	lea	$STRIDE($bp),$bp
 	movq	%xmm0,$m0		# m0=bp[i]
@@ -1067,7 +1069,7 @@ ___
 }}}
 {{{
 ######################################################################
-# void bn_power5(
+# void bn_power5_nohw(
 my $rptr="%rdi";	# BN_ULONG *rptr,
 my $aptr="%rsi";	# const BN_ULONG *aptr,
 my $bptr="%rdx";	# const BN_ULONG *table,
@@ -1082,22 +1084,14 @@ my @A1=("%r12","%r13");
 my ($a0,$a1,$ai)=("%r14","%r15","%rbx");
 
 $code.=<<___;
-.globl	bn_power5
-.type	bn_power5,\@function,6
+.globl	bn_power5_nohw
+.type	bn_power5_nohw,\@function,6
 .align	32
-bn_power5:
+bn_power5_nohw:
 .cfi_startproc
+	_CET_ENDBR
 	mov	%rsp,%rax
 .cfi_def_cfa_register	%rax
-___
-$code.=<<___ if ($addx);
-	leaq	OPENSSL_ia32cap_P(%rip),%r11
-	mov	8(%r11),%r11d
-	and	\$0x80108,%r11d
-	cmp	\$0x80108,%r11d		# check for AD*X+BMI2+BMI1
-	je	.Lpowerx5_enter
-___
-$code.=<<___;
 	push	%rbx
 .cfi_push	%rbx
 	push	%rbp
@@ -1112,6 +1106,9 @@ $code.=<<___;
 .cfi_push	%r15
 .Lpower5_prologue:
 
+	# num is declared as an int, a 32-bit parameter, so the upper half is
+	# undefined. It is important that this write to ${num}, which zeros the
+	# upper half, come before the first access.
 	shl	\$3,${num}d		# convert $num to bytes
 	lea	($num,$num,2),%r10d	# 3*$num
 	neg	$num
@@ -1220,7 +1217,7 @@ $code.=<<___;
 .Lpower5_epilogue:
 	ret
 .cfi_endproc
-.size	bn_power5,.-bn_power5
+.size	bn_power5_nohw,.-bn_power5_nohw
 
 .globl	bn_sqr8x_internal
 .hidden	bn_sqr8x_internal
@@ -1229,6 +1226,7 @@ $code.=<<___;
 bn_sqr8x_internal:
 __bn_sqr8x_internal:
 .cfi_startproc
+	_CET_ENDBR
 	##############################################################
 	# Squaring part:
 	#
@@ -2088,207 +2086,20 @@ __bn_post4x_internal:
 .size	__bn_post4x_internal,.-__bn_post4x_internal
 ___
 }
-{
-$code.=<<___;
-.globl	bn_from_montgomery
-.type	bn_from_montgomery,\@abi-omnipotent
-.align	32
-bn_from_montgomery:
-.cfi_startproc
-	testl	\$7,`($win64?"48(%rsp)":"%r9d")`
-	jz	bn_from_mont8x
-	xor	%eax,%eax
-	ret
-.cfi_endproc
-.size	bn_from_montgomery,.-bn_from_montgomery
-
-.type	bn_from_mont8x,\@function,6
-.align	32
-bn_from_mont8x:
-.cfi_startproc
-	.byte	0x67
-	mov	%rsp,%rax
-.cfi_def_cfa_register	%rax
-	push	%rbx
-.cfi_push	%rbx
-	push	%rbp
-.cfi_push	%rbp
-	push	%r12
-.cfi_push	%r12
-	push	%r13
-.cfi_push	%r13
-	push	%r14
-.cfi_push	%r14
-	push	%r15
-.cfi_push	%r15
-.Lfrom_prologue:
-
-	shl	\$3,${num}d		# convert $num to bytes
-	lea	($num,$num,2),%r10	# 3*$num in bytes
-	neg	$num
-	mov	($n0),$n0		# *n0
-
-	##############################################################
-	# Ensure that stack frame doesn't alias with $rptr+3*$num
-	# modulo 4096, which covers ret[num], am[num] and n[num]
-	# (see bn_exp.c). The stack is allocated to aligned with
-	# bn_power5's frame, and as bn_from_montgomery happens to be
-	# last operation, we use the opportunity to cleanse it.
-	#
-	lea	-320(%rsp,$num,2),%r11
-	mov	%rsp,%rbp
-	sub	$rptr,%r11
-	and	\$4095,%r11
-	cmp	%r11,%r10
-	jb	.Lfrom_sp_alt
-	sub	%r11,%rbp		# align with $aptr
-	lea	-320(%rbp,$num,2),%rbp	# future alloca(frame+2*$num*8+256)
-	jmp	.Lfrom_sp_done
-
-.align	32
-.Lfrom_sp_alt:
-	lea	4096-320(,$num,2),%r10
-	lea	-320(%rbp,$num,2),%rbp	# future alloca(frame+2*$num*8+256)
-	sub	%r10,%r11
-	mov	\$0,%r10
-	cmovc	%r10,%r11
-	sub	%r11,%rbp
-.Lfrom_sp_done:
-	and	\$-64,%rbp
-	mov	%rsp,%r11
-	sub	%rbp,%r11
-	and	\$-4096,%r11
-	lea	(%rbp,%r11),%rsp
-	mov	(%rsp),%r10
-	cmp	%rbp,%rsp
-	ja	.Lfrom_page_walk
-	jmp	.Lfrom_page_walk_done
-
-.Lfrom_page_walk:
-	lea	-4096(%rsp),%rsp
-	mov	(%rsp),%r10
-	cmp	%rbp,%rsp
-	ja	.Lfrom_page_walk
-.Lfrom_page_walk_done:
-
-	mov	$num,%r10
-	neg	$num
-
-	##############################################################
-	# Stack layout
-	#
-	# +0	saved $num, used in reduction section
-	# +8	&t[2*$num], used in reduction section
-	# +32	saved *n0
-	# +40	saved %rsp
-	# +48	t[2*$num]
-	#
-	mov	$n0,  32(%rsp)
-	mov	%rax, 40(%rsp)		# save original %rsp
-.cfi_cfa_expression	%rsp+40,deref,+8
-.Lfrom_body:
-	mov	$num,%r11
-	lea	48(%rsp),%rax
-	pxor	%xmm0,%xmm0
-	jmp	.Lmul_by_1
-
-.align	32
-.Lmul_by_1:
-	movdqu	($aptr),%xmm1
-	movdqu	16($aptr),%xmm2
-	movdqu	32($aptr),%xmm3
-	movdqa	%xmm0,(%rax,$num)
-	movdqu	48($aptr),%xmm4
-	movdqa	%xmm0,16(%rax,$num)
-	.byte	0x48,0x8d,0xb6,0x40,0x00,0x00,0x00	# lea	64($aptr),$aptr
-	movdqa	%xmm1,(%rax)
-	movdqa	%xmm0,32(%rax,$num)
-	movdqa	%xmm2,16(%rax)
-	movdqa	%xmm0,48(%rax,$num)
-	movdqa	%xmm3,32(%rax)
-	movdqa	%xmm4,48(%rax)
-	lea	64(%rax),%rax
-	sub	\$64,%r11
-	jnz	.Lmul_by_1
-
-	movq	$rptr,%xmm1
-	movq	$nptr,%xmm2
-	.byte	0x67
-	mov	$nptr,%rbp
-	movq	%r10, %xmm3		# -num
-___
-$code.=<<___ if ($addx);
-	leaq	OPENSSL_ia32cap_P(%rip),%r11
-	mov	8(%r11),%r11d
-	and	\$0x80108,%r11d
-	cmp	\$0x80108,%r11d		# check for AD*X+BMI2+BMI1
-	jne	.Lfrom_mont_nox
-
-	lea	(%rax,$num),$rptr
-	call	__bn_sqrx8x_reduction
-	call	__bn_postx4x_internal
-
-	pxor	%xmm0,%xmm0
-	lea	48(%rsp),%rax
-	jmp	.Lfrom_mont_zero
-
-.align	32
-.Lfrom_mont_nox:
-___
-$code.=<<___;
-	call	__bn_sqr8x_reduction
-	call	__bn_post4x_internal
-
-	pxor	%xmm0,%xmm0
-	lea	48(%rsp),%rax
-	jmp	.Lfrom_mont_zero
-
-.align	32
-.Lfrom_mont_zero:
-	mov	40(%rsp),%rsi		# restore %rsp
-.cfi_def_cfa	%rsi,8
-	movdqa	%xmm0,16*0(%rax)
-	movdqa	%xmm0,16*1(%rax)
-	movdqa	%xmm0,16*2(%rax)
-	movdqa	%xmm0,16*3(%rax)
-	lea	16*4(%rax),%rax
-	sub	\$32,$num
-	jnz	.Lfrom_mont_zero
-
-	mov	\$1,%rax
-	mov	-48(%rsi),%r15
-.cfi_restore	%r15
-	mov	-40(%rsi),%r14
-.cfi_restore	%r14
-	mov	-32(%rsi),%r13
-.cfi_restore	%r13
-	mov	-24(%rsi),%r12
-.cfi_restore	%r12
-	mov	-16(%rsi),%rbp
-.cfi_restore	%rbp
-	mov	-8(%rsi),%rbx
-.cfi_restore	%rbx
-	lea	(%rsi),%rsp
-.cfi_def_cfa_register	%rsp
-.Lfrom_epilogue:
-	ret
-.cfi_endproc
-.size	bn_from_mont8x,.-bn_from_mont8x
-___
-}
 }}}
 
 if ($addx) {{{
 my $bp="%rdx";	# restore original value
 
 $code.=<<___;
+.globl	bn_mulx4x_mont_gather5
 .type	bn_mulx4x_mont_gather5,\@function,6
 .align	32
 bn_mulx4x_mont_gather5:
 .cfi_startproc
+	_CET_ENDBR
 	mov	%rsp,%rax
 .cfi_def_cfa_register	%rax
-.Lmulx4x_enter:
 	push	%rbx
 .cfi_push	%rbx
 	push	%rbp
@@ -2303,6 +2114,9 @@ bn_mulx4x_mont_gather5:
 .cfi_push	%r15
 .Lmulx4x_prologue:
 
+	# num is declared as an int, a 32-bit parameter, so the upper half is
+	# undefined. It is important that this write to ${num}, which zeros the
+	# upper half, predates the first access.
 	shl	\$3,${num}d		# convert $num to bytes
 	lea	($num,$num,2),%r10	# 3*$num in bytes
 	neg	$num			# -$num
@@ -2415,7 +2229,6 @@ my ($aptr, $bptr, $nptr, $tptr, $mi,  $bi,  $zero, $num)=
    ("%rsi","%rdi","%rcx","%rbx","%r8","%r9","%rbp","%rax");
 my $rptr=$bptr;
 my $STRIDE=2**5*8;		# 5 is "window size"
-my $N=$STRIDE/4;		# should match cache line size
 $code.=<<___;
 	movdqa	0(%rax),%xmm0		# 00000001000000010000000000000000
 	movdqa	16(%rax),%xmm1		# 00000002000000020000000200000002
@@ -2428,8 +2241,12 @@ $code.=<<___;
 	movdqa	%xmm1,%xmm2
 ___
 ########################################################################
-# calculate mask by comparing 0..31 to index and save result to stack
+# Calculate masks by comparing 0..31 to $idx and save result to stack.
 #
+# We compute sixteen 16-byte masks and store them on the stack. Mask i is stored
+# in `16*i - 128`(%rax) and contains the comparisons for idx == 2*i and
+# idx == 2*i + 1 in its lower and upper halves, respectively. Mask calculations
+# are scheduled in groups of four.
 $code.=<<___;
 	.byte	0x67
 	paddd	%xmm0,%xmm1
@@ -2498,7 +2315,8 @@ ___
 }
 $code.=<<___;
 	pxor	%xmm1,%xmm0
-	pshufd	\$0x4e,%xmm0,%xmm1
+	# Combine the upper and lower halves of %xmm0.
+	pshufd	\$0x4e,%xmm0,%xmm1	# Swap upper and lower halves.
 	por	%xmm1,%xmm0
 	lea	$STRIDE($bptr),$bptr
 	movq	%xmm0,%rdx		# bp[0]
@@ -2618,7 +2436,8 @@ ___
 }
 $code.=<<___;
 	por	%xmm5,%xmm4
-	pshufd	\$0x4e,%xmm4,%xmm0
+	# Combine the upper and lower halves of %xmm4 as %xmm0.
+	pshufd	\$0x4e,%xmm4,%xmm0	# Swap upper and lower halves.
 	por	%xmm4,%xmm0
 	lea	$STRIDE($bptr),$bptr
 	movq	%xmm0,%rdx		# m0=bp[i]
@@ -2752,7 +2571,7 @@ $code.=<<___;
 ___
 }{
 ######################################################################
-# void bn_power5(
+# void bn_powerx5(
 my $rptr="%rdi";	# BN_ULONG *rptr,
 my $aptr="%rsi";	# const BN_ULONG *aptr,
 my $bptr="%rdx";	# const BN_ULONG *table,
@@ -2767,13 +2586,14 @@ my @A1=("%r12","%r13");
 my ($a0,$a1,$ai)=("%r14","%r15","%rbx");
 
 $code.=<<___;
+.globl	bn_powerx5
 .type	bn_powerx5,\@function,6
 .align	32
 bn_powerx5:
 .cfi_startproc
+	_CET_ENDBR
 	mov	%rsp,%rax
 .cfi_def_cfa_register	%rax
-.Lpowerx5_enter:
 	push	%rbx
 .cfi_push	%rbx
 	push	%rbp
@@ -2788,6 +2608,9 @@ bn_powerx5:
 .cfi_push	%r15
 .Lpowerx5_prologue:
 
+	# num is declared as an int, a 32-bit parameter, so the upper half is
+	# undefined. It is important that this write to ${num}, which zeros the
+	# upper half, predates the first access.
 	shl	\$3,${num}d		# convert $num to bytes
 	lea	($num,$num,2),%r10	# 3*$num in bytes
 	neg	$num
@@ -2909,6 +2732,7 @@ bn_powerx5:
 bn_sqrx8x_internal:
 __bn_sqrx8x_internal:
 .cfi_startproc
+	_CET_ENDBR
 	##################################################################
 	# Squaring part:
 	#
@@ -3620,8 +3444,18 @@ $code.=<<___;
 .align	16
 bn_scatter5:
 .cfi_startproc
+	_CET_ENDBR
 	cmp	\$0, $num
 	jz	.Lscatter_epilogue
+
+	# $tbl stores 32 entries, t0 through t31. Each entry has $num words.
+	# They are interleaved in memory as follows:
+	#
+	#  t0[0]      t1[0]      t2[0]      ... t31[0]
+	#  t0[1]      t1[1]      t2[1]      ... t31[1]
+	#  ...
+	#  t0[$num-1] t1[$num-1] t2[$num-1] ... t31[$num-1]
+
 	lea	($tbl,$idx,8),$tbl
 .Lscatter:
 	mov	($inp),%rax
@@ -3641,6 +3475,7 @@ bn_scatter5:
 bn_gather5:
 .cfi_startproc
 .LSEH_begin_bn_gather5:			# Win64 thing, but harmless in other cases
+	_CET_ENDBR
 	# I can't trust assembler to use specific encoding:-(
 	.byte	0x4c,0x8d,0x14,0x24			#lea    (%rsp),%r10
 .cfi_def_cfa_register	%r10
@@ -3659,8 +3494,12 @@ bn_gather5:
 	movdqa	%xmm1,%xmm2
 ___
 ########################################################################
-# calculate mask by comparing 0..31 to $idx and save result to stack
+# Calculate masks by comparing 0..31 to $idx and save result to stack.
 #
+# We compute sixteen 16-byte masks and store them on the stack. Mask i is stored
+# in `16*i - 128`(%rax) and contains the comparisons for idx == 2*i and
+# idx == 2*i + 1 in its lower and upper halves, respectively. Mask calculations
+# are scheduled in groups of four.
 for($i=0;$i<$STRIDE/16;$i+=4) {
 $code.=<<___;
 	paddd	%xmm0,%xmm1
@@ -3698,6 +3537,8 @@ $code.=<<___;
 	pxor	%xmm5,%xmm5
 ___
 for($i=0;$i<$STRIDE/16;$i+=4) {
+# Combine the masks with the corresponding table entries to select the correct
+# entry.
 $code.=<<___;
 	movdqa	`16*($i+0)-128`(%r11),%xmm0
 	movdqa	`16*($i+1)-128`(%r11),%xmm1
@@ -3716,7 +3557,8 @@ ___
 $code.=<<___;
 	por	%xmm5,%xmm4
 	lea	$STRIDE(%r11),%r11
-	pshufd	\$0x4e,%xmm4,%xmm0
+	# Combine the upper and lower halves of %xmm0.
+	pshufd	\$0x4e,%xmm4,%xmm0	# Swap upper and lower halves.
 	por	%xmm4,%xmm0
 	movq	%xmm0,($out)		# m0=bp[0]
 	lea	8($out),$out
@@ -3732,11 +3574,13 @@ $code.=<<___;
 ___
 }
 $code.=<<___;
+.section .rodata
 .align	64
 .Linc:
 	.long	0,0, 1,1
 	.long	2,2, 2,2
 .asciz	"Montgomery Multiplication with scatter/gather for x86_64, CRYPTOGAMS by <appro\@openssl.org>"
+.text
 ___
 
 # EXCEPTION_DISPOSITION handler (EXCEPTION_RECORD *rec,ULONG64 frame,
@@ -3853,21 +3697,17 @@ mul_handler:
 
 .section	.pdata
 .align	4
-	.rva	.LSEH_begin_bn_mul_mont_gather5
-	.rva	.LSEH_end_bn_mul_mont_gather5
-	.rva	.LSEH_info_bn_mul_mont_gather5
+	.rva	.LSEH_begin_bn_mul_mont_gather5_nohw
+	.rva	.LSEH_end_bn_mul_mont_gather5_nohw
+	.rva	.LSEH_info_bn_mul_mont_gather5_nohw
 
 	.rva	.LSEH_begin_bn_mul4x_mont_gather5
 	.rva	.LSEH_end_bn_mul4x_mont_gather5
 	.rva	.LSEH_info_bn_mul4x_mont_gather5
 
-	.rva	.LSEH_begin_bn_power5
-	.rva	.LSEH_end_bn_power5
-	.rva	.LSEH_info_bn_power5
-
-	.rva	.LSEH_begin_bn_from_mont8x
-	.rva	.LSEH_end_bn_from_mont8x
-	.rva	.LSEH_info_bn_from_mont8x
+	.rva	.LSEH_begin_bn_power5_nohw
+	.rva	.LSEH_end_bn_power5_nohw
+	.rva	.LSEH_info_bn_power5_nohw
 ___
 $code.=<<___ if ($addx);
 	.rva	.LSEH_begin_bn_mulx4x_mont_gather5
@@ -3885,7 +3725,7 @@ $code.=<<___;
 
 .section	.xdata
 .align	8
-.LSEH_info_bn_mul_mont_gather5:
+.LSEH_info_bn_mul_mont_gather5_nohw:
 	.byte	9,0,0,0
 	.rva	mul_handler
 	.rva	.Lmul_body,.Lmul_body,.Lmul_epilogue		# HandlerData[]
@@ -3895,15 +3735,10 @@ $code.=<<___;
 	.rva	mul_handler
 	.rva	.Lmul4x_prologue,.Lmul4x_body,.Lmul4x_epilogue		# HandlerData[]
 .align	8
-.LSEH_info_bn_power5:
+.LSEH_info_bn_power5_nohw:
 	.byte	9,0,0,0
 	.rva	mul_handler
 	.rva	.Lpower5_prologue,.Lpower5_body,.Lpower5_epilogue	# HandlerData[]
-.align	8
-.LSEH_info_bn_from_mont8x:
-	.byte	9,0,0,0
-	.rva	mul_handler
-	.rva	.Lfrom_prologue,.Lfrom_body,.Lfrom_epilogue		# HandlerData[]
 ___
 $code.=<<___ if ($addx);
 .align	8
@@ -3930,4 +3765,4 @@ ___
 $code =~ s/\`([^\`]*)\`/eval($1)/gem;
 
 print $code;
-close STDOUT or die "error closing STDOUT";
+close STDOUT or die "error closing STDOUT: $!";

@@ -255,6 +255,19 @@ bool RtpDemuxer::RemoveSink(const RtpPacketSinkInterface* sink) {
   return num_removed > 0;
 }
 
+flat_set<uint32_t> RtpDemuxer::GetSsrcsForSink(
+    const RtpPacketSinkInterface* sink) const {
+  flat_set<uint32_t> ssrcs;
+  if (sink) {
+    for (const auto& it : sink_by_ssrc_) {
+      if (it.second == sink) {
+        ssrcs.insert(it.first);
+      }
+    }
+  }
+  return ssrcs;
+}
+
 bool RtpDemuxer::OnRtpPacket(const RtpPacketReceived& packet) {
   RtpPacketSinkInterface* sink = ResolveSink(packet);
   if (sink != nullptr) {

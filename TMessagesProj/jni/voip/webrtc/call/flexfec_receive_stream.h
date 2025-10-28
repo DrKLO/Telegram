@@ -21,6 +21,7 @@
 #include "api/rtp_parameters.h"
 #include "call/receive_stream.h"
 #include "call/rtp_packet_sink_interface.h"
+#include "modules/rtp_rtcp/include/receive_statistics.h"
 
 namespace webrtc {
 
@@ -69,6 +70,8 @@ class FlexfecReceiveStream : public RtpPacketSinkInterface,
   // Called to change the payload type after initialization.
   virtual void SetPayloadType(int payload_type) = 0;
   virtual int payload_type() const = 0;
+
+  virtual const ReceiveStatistics* GetStats() const = 0;
 };
 
 }  // namespace webrtc

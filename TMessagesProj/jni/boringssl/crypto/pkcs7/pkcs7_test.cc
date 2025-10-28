@@ -1,22 +1,23 @@
-/* Copyright (c) 2014, Google Inc.
- *
- * Permission to use, copy, modify, and/or distribute this software for any
- * purpose with or without fee is hereby granted, provided that the above
- * copyright notice and this permission notice appear in all copies.
- *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
- * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY
- * SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION
- * OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
- * CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE. */
+// Copyright 2014 The BoringSSL Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 #include <gtest/gtest.h>
 
 #include <openssl/bytestring.h>
 #include <openssl/crypto.h>
 #include <openssl/mem.h>
+#include <openssl/pem.h>
 #include <openssl/pkcs7.h>
 #include <openssl/stack.h>
 #include <openssl/x509.h>
@@ -492,6 +493,9 @@ static void TestCertReparse(const uint8_t *der_bytes, size_t der_len) {
   ASSERT_TRUE(PKCS7_get_certificates(certs2.get(), &pkcs7));
   EXPECT_EQ(0u, CBS_len(&pkcs7));
 
+  // PKCS#7 stores certificates in a SET OF, so |PKCS7_bundle_certificates| may
+  // not preserve the original order. All of our test inputs are already sorted,
+  // but this check should be relaxed if we add others.
   ASSERT_EQ(sk_X509_num(certs.get()), sk_X509_num(certs2.get()));
   for (size_t i = 0; i < sk_X509_num(certs.get()); i++) {
     X509 *a = sk_X509_value(certs.get(), i);
@@ -574,6 +578,9 @@ static void TestCRLReparse(const uint8_t *der_bytes, size_t der_len) {
   ASSERT_TRUE(PKCS7_get_CRLs(crls2.get(), &pkcs7));
   EXPECT_EQ(0u, CBS_len(&pkcs7));
 
+  // PKCS#7 stores CRLs in a SET OF, so |PKCS7_bundle_CRLs| may not preserve the
+  // original order. All of our test inputs are already sorted, but this check
+  // should be relaxed if we add others.
   ASSERT_EQ(sk_X509_CRL_num(crls.get()), sk_X509_CRL_num(crls.get()));
   for (size_t i = 0; i < sk_X509_CRL_num(crls.get()); i++) {
     X509_CRL *a = sk_X509_CRL_value(crls.get(), i);
@@ -632,6 +639,7 @@ static void TestPEMCRLs(const char *pem) {
   bssl::UniquePtr<BIO> bio(BIO_new_mem_buf(pem, strlen(pem)));
   ASSERT_TRUE(bio);
   bssl::UniquePtr<STACK_OF(X509_CRL)> crls(sk_X509_CRL_new_null());
+  ASSERT_TRUE(crls);
 
   ASSERT_TRUE(PKCS7_get_PEM_CRLs(crls.get(), bio.get()));
   ASSERT_EQ(1u, sk_X509_CRL_num(crls.get()));
@@ -655,4 +663,364 @@ TEST(PKCS7Test, PEMCerts) {
 
 TEST(PKCS7Test, PEMCRLs) {
   TestPEMCRLs(kPEMCRL);
+}
+
+// Test that we output certificates in the canonical DER order.
+TEST(PKCS7Test, SortCerts) {
+  // kPKCS7NSS contains three certificates in the canonical DER order.
+  CBS pkcs7;
+  CBS_init(&pkcs7, kPKCS7NSS, sizeof(kPKCS7NSS));
+  bssl::UniquePtr<STACK_OF(X509)> certs(sk_X509_new_null());
+  ASSERT_TRUE(certs);
+  ASSERT_TRUE(PKCS7_get_certificates(certs.get(), &pkcs7));
+  ASSERT_EQ(3u, sk_X509_num(certs.get()));
+
+  X509 *cert1 = sk_X509_value(certs.get(), 0);
+  X509 *cert2 = sk_X509_value(certs.get(), 1);
+  X509 *cert3 = sk_X509_value(certs.get(), 2);
+
+  auto check_order = [&](X509 *new_cert1, X509 *new_cert2, X509 *new_cert3) {
+    // Bundle the certificates in the new order.
+    bssl::UniquePtr<STACK_OF(X509)> new_certs(sk_X509_new_null());
+    ASSERT_TRUE(new_certs);
+    ASSERT_TRUE(bssl::PushToStack(new_certs.get(), bssl::UpRef(new_cert1)));
+    ASSERT_TRUE(bssl::PushToStack(new_certs.get(), bssl::UpRef(new_cert2)));
+    ASSERT_TRUE(bssl::PushToStack(new_certs.get(), bssl::UpRef(new_cert3)));
+    bssl::ScopedCBB cbb;
+    ASSERT_TRUE(CBB_init(cbb.get(), sizeof(kPKCS7NSS)));
+    ASSERT_TRUE(PKCS7_bundle_certificates(cbb.get(), new_certs.get()));
+
+    // The bundle should be sorted back to the original order.
+    CBS cbs;
+    CBS_init(&cbs, CBB_data(cbb.get()), CBB_len(cbb.get()));
+    bssl::UniquePtr<STACK_OF(X509)> result(sk_X509_new_null());
+    ASSERT_TRUE(result);
+    ASSERT_TRUE(PKCS7_get_certificates(result.get(), &cbs));
+    ASSERT_EQ(sk_X509_num(certs.get()), sk_X509_num(result.get()));
+    for (size_t i = 0; i < sk_X509_num(certs.get()); i++) {
+      X509 *a = sk_X509_value(certs.get(), i);
+      X509 *b = sk_X509_value(result.get(), i);
+      EXPECT_EQ(0, X509_cmp(a, b));
+    }
+  };
+
+  check_order(cert1, cert2, cert3);
+  check_order(cert3, cert2, cert1);
+  check_order(cert2, cert3, cert1);
+}
+
+// Test that we output certificates in the canonical DER order, using the
+// CRYPTO_BUFFER version of the parse and bundle functions.
+TEST(PKCS7Test, SortCertsRaw) {
+  // kPKCS7NSS contains three certificates in the canonical DER order.
+  CBS pkcs7;
+  CBS_init(&pkcs7, kPKCS7NSS, sizeof(kPKCS7NSS));
+  bssl::UniquePtr<STACK_OF(CRYPTO_BUFFER)> certs(sk_CRYPTO_BUFFER_new_null());
+  ASSERT_TRUE(certs);
+  ASSERT_TRUE(PKCS7_get_raw_certificates(certs.get(), &pkcs7, nullptr));
+  ASSERT_EQ(3u, sk_CRYPTO_BUFFER_num(certs.get()));
+
+  CRYPTO_BUFFER *cert1 = sk_CRYPTO_BUFFER_value(certs.get(), 0);
+  CRYPTO_BUFFER *cert2 = sk_CRYPTO_BUFFER_value(certs.get(), 1);
+  CRYPTO_BUFFER *cert3 = sk_CRYPTO_BUFFER_value(certs.get(), 2);
+
+  auto check_order = [&](CRYPTO_BUFFER *new_cert1, CRYPTO_BUFFER *new_cert2,
+                         CRYPTO_BUFFER *new_cert3) {
+    // Bundle the certificates in the new order.
+    bssl::UniquePtr<STACK_OF(CRYPTO_BUFFER)> new_certs(
+        sk_CRYPTO_BUFFER_new_null());
+    ASSERT_TRUE(new_certs);
+    ASSERT_TRUE(bssl::PushToStack(new_certs.get(), bssl::UpRef(new_cert1)));
+    ASSERT_TRUE(bssl::PushToStack(new_certs.get(), bssl::UpRef(new_cert2)));
+    ASSERT_TRUE(bssl::PushToStack(new_certs.get(), bssl::UpRef(new_cert3)));
+    bssl::ScopedCBB cbb;
+    ASSERT_TRUE(CBB_init(cbb.get(), sizeof(kPKCS7NSS)));
+    ASSERT_TRUE(PKCS7_bundle_raw_certificates(cbb.get(), new_certs.get()));
+
+    // The bundle should be sorted back to the original order.
+    CBS cbs;
+    CBS_init(&cbs, CBB_data(cbb.get()), CBB_len(cbb.get()));
+    bssl::UniquePtr<STACK_OF(CRYPTO_BUFFER)> result(
+        sk_CRYPTO_BUFFER_new_null());
+    ASSERT_TRUE(result);
+    ASSERT_TRUE(PKCS7_get_raw_certificates(result.get(), &cbs, nullptr));
+    ASSERT_EQ(sk_CRYPTO_BUFFER_num(certs.get()),
+              sk_CRYPTO_BUFFER_num(result.get()));
+    for (size_t i = 0; i < sk_CRYPTO_BUFFER_num(certs.get()); i++) {
+      CRYPTO_BUFFER *a = sk_CRYPTO_BUFFER_value(certs.get(), i);
+      CRYPTO_BUFFER *b = sk_CRYPTO_BUFFER_value(result.get(), i);
+      EXPECT_EQ(Bytes(CRYPTO_BUFFER_data(a), CRYPTO_BUFFER_len(a)),
+                Bytes(CRYPTO_BUFFER_data(b), CRYPTO_BUFFER_len(b)));
+    }
+  };
+
+  check_order(cert1, cert2, cert3);
+  check_order(cert3, cert2, cert1);
+  check_order(cert2, cert3, cert1);
+}
+
+// Test that we output CRLs in the canonical DER order.
+TEST(PKCS7Test, SortCRLs) {
+  static const char kCRL1[] = R"(
+-----BEGIN X509 CRL-----
+MIIBpzCBkAIBATANBgkqhkiG9w0BAQsFADBOMQswCQYDVQQGEwJVUzETMBEGA1UE
+CAwKQ2FsaWZvcm5pYTEWMBQGA1UEBwwNTW91bnRhaW4gVmlldzESMBAGA1UECgwJ
+Qm9yaW5nU1NMFw0xNjA5MjYxNTEwNTVaFw0xNjEwMjYxNTEwNTVaoA4wDDAKBgNV
+HRQEAwIBATANBgkqhkiG9w0BAQsFAAOCAQEAnrBKKgvd9x9zwK9rtUvVeFeJ7+LN
+ZEAc+a5oxpPNEsJx6hXoApYEbzXMxuWBQoCs5iEBycSGudct21L+MVf27M38KrWo
+eOkq0a2siqViQZO2Fb/SUFR0k9zb8xl86Zf65lgPplALun0bV/HT7MJcl04Tc4os
+dsAReBs5nqTGNEd5AlC1iKHvQZkM//MD51DspKnDpsDiUVi54h9C1SpfZmX8H2Vv
+diyu0fZ/bPAM3VAGawatf/SyWfBMyKpoPXEG39oAzmjjOj8en82psn7m474IGaho
+/vBbhl1ms5qQiLYPjm4YELtnXQoFyC72tBjbdFd/ZE9k4CNKDbxFUXFbkw==
+-----END X509 CRL-----
+)";
+  static const char kCRL2[] = R"(
+-----BEGIN X509 CRL-----
+MIIBvjCBpwIBATANBgkqhkiG9w0BAQsFADBOMQswCQYDVQQGEwJVUzETMBEGA1UE
+CAwKQ2FsaWZvcm5pYTEWMBQGA1UEBwwNTW91bnRhaW4gVmlldzESMBAGA1UECgwJ
+Qm9yaW5nU1NMFw0xNjA5MjYxNTEyNDRaFw0xNjEwMjYxNTEyNDRaMBUwEwICEAAX
+DTE2MDkyNjE1MTIyNlqgDjAMMAoGA1UdFAQDAgECMA0GCSqGSIb3DQEBCwUAA4IB
+AQCUGaM4DcWzlQKrcZvI8TMeR8BpsvQeo5BoI/XZu2a8h//PyRyMwYeaOM+3zl0d
+sjgCT8b3C1FPgT+P2Lkowv7rJ+FHJRNQkogr+RuqCSPTq65ha4WKlRGWkMFybzVH
+NloxC+aU3lgp/NlX9yUtfqYmJek1CDrOOGPrAEAwj1l/BUeYKNGqfBWYJQtPJu+5
+OaSvIYGpETCZJscUWODmLEb/O3DM438vLvxonwGqXqS0KX37+CHpUlyhnSovxXxp
+Pz4aF+L7OtczxL0GYtD2fR9B7TDMqsNmHXgQrixvvOY7MUdLGbd4RfJL3yA53hyO
+xzfKY2TzxLiOmctG0hXFkH5J
+-----END X509 CRL-----
+)";
+
+  bssl::UniquePtr<BIO> bio(BIO_new_mem_buf(kCRL1, strlen(kCRL1)));
+  ASSERT_TRUE(bio);
+  bssl::UniquePtr<X509_CRL> crl1(
+      PEM_read_bio_X509_CRL(bio.get(), nullptr, nullptr, nullptr));
+  ASSERT_TRUE(crl1);
+  bio.reset(BIO_new_mem_buf(kCRL2, strlen(kCRL2)));
+  ASSERT_TRUE(bio);
+  bssl::UniquePtr<X509_CRL> crl2(
+      PEM_read_bio_X509_CRL(bio.get(), nullptr, nullptr, nullptr));
+  ASSERT_TRUE(crl2);
+
+  // DER's SET OF ordering sorts by tag, then length, so |crl1| comes before
+  // |crl2|.
+  auto check_order = [&](X509_CRL *new_crl1, X509_CRL *new_crl2) {
+    // Bundle the CRLs in the new order.
+    bssl::UniquePtr<STACK_OF(X509_CRL)> new_crls(sk_X509_CRL_new_null());
+    ASSERT_TRUE(new_crls);
+    ASSERT_TRUE(bssl::PushToStack(new_crls.get(), bssl::UpRef(new_crl1)));
+    ASSERT_TRUE(bssl::PushToStack(new_crls.get(), bssl::UpRef(new_crl2)));
+    bssl::ScopedCBB cbb;
+    ASSERT_TRUE(CBB_init(cbb.get(), 64));
+    ASSERT_TRUE(PKCS7_bundle_CRLs(cbb.get(), new_crls.get()));
+
+    // The bundle should be sorted back to the original order.
+    CBS cbs;
+    CBS_init(&cbs, CBB_data(cbb.get()), CBB_len(cbb.get()));
+    bssl::UniquePtr<STACK_OF(X509_CRL)> result(sk_X509_CRL_new_null());
+    ASSERT_TRUE(result);
+    ASSERT_TRUE(PKCS7_get_CRLs(result.get(), &cbs));
+    ASSERT_EQ(2u, sk_X509_CRL_num(result.get()));
+    EXPECT_EQ(0, X509_CRL_cmp(crl1.get(), sk_X509_CRL_value(result.get(), 0)));
+    EXPECT_EQ(0, X509_CRL_cmp(crl2.get(), sk_X509_CRL_value(result.get(), 1)));
+  };
+
+  check_order(crl1.get(), crl2.get());
+  check_order(crl2.get(), crl1.get());
+}
+
+TEST(PKCS7Test, KernelModuleSigning) {
+  // Sign a message with the same call that the Linux kernel's sign-file.c
+  // makes.
+  static const char kCert[] = R"(
+-----BEGIN CERTIFICATE-----
+MIIFazCCA1OgAwIBAgIURVkPzF/4dwy7419Qk75uhIuyf0EwDQYJKoZIhvcNAQEL
+BQAwRTELMAkGA1UEBhMCQVUxEzARBgNVBAgMClNvbWUtU3RhdGUxITAfBgNVBAoM
+GEludGVybmV0IFdpZGdpdHMgUHR5IEx0ZDAeFw0yMTA5MjExOTIyMTJaFw0yMjA5
+MjExOTIyMTJaMEUxCzAJBgNVBAYTAkFVMRMwEQYDVQQIDApTb21lLVN0YXRlMSEw
+HwYDVQQKDBhJbnRlcm5ldCBXaWRnaXRzIFB0eSBMdGQwggIiMA0GCSqGSIb3DQEB
+AQUAA4ICDwAwggIKAoICAQC1+MOn+BopcEVR4QMvjXdAxGkWFllXyQFDToL+qOiP
+RU1yN7C8KCtkbOAFttJIO4O/i0iZ7KqYbnmB6YUA/ONAcakocnrdoESgRJcVMeAx
+Dk/11OtMF5yIfeOOO/TUeVNmAUaT63gFbKy/adpqhzJtOv9BBl5VcYNGGSE+0wtb
+mjpmNsxunEQR1KLDc97fGYHeRfKoSyrCIEE8IaAEpKGR2Sku3v9Jwh7RpjupgiUA
+kH6pJk7VMZm5vl2wFjYvfysgjeN5ZtsxFDMaPYZStpxMxpNd5C9DsO2Ljp5NMpGf
+NGmG4ZqiaQg8z2cIM6ESmN1zDJdUh5IXed1fOxBZD/poUFH0wDRFWnvzlaPmjJEF
+rYLMK8svnE5nEQp9vu93ISFBx7cofs+niMaUXPEqaRSqruifN2M1it3kOf/8YZl1
+vurs+VtHD6nOJo6bd11+37aBidIB/BaWnzLrDmSTcPFa1tkTHwoLqc9+jThTq9jZ
+6w3lAMPpsoenyD19UmQB589+4kNp2SIO/TtzVQCGgQPXE2jDCl6G9aIPMkfvpPZK
+4THVil3WQRCFYnYdDO4HQXo2ZuC4RiqgY5ygfeoL+fa9k383lgxxAHQLS7xsbaVB
+40RmfdbdevgPYIwZNNO78ddRmMdSv6IknSW9gydGzY//btY+t1SWcBZWzn1Ewq8g
+2QIDAQABo1MwUTAdBgNVHQ4EFgQUotZD9ajEvnQYVezIWzcW4pzvMcUwHwYDVR0j
+BBgwFoAUotZD9ajEvnQYVezIWzcW4pzvMcUwDwYDVR0TAQH/BAUwAwEB/zANBgkq
+hkiG9w0BAQsFAAOCAgEAqCe42PIWoyLDx9bR+5cSp99N5xo5lLiSLtWx2emDbZB2
+AunqKYeEgIV+TWNF2w1SZ/ckFgV7SlL2Yl73N/veSNRfNAnpjLksGDFpdJb7YXrx
+cUvxdy1mr8oau6J7PC9JGjBTBrnhqwCQX1FtcAxODKll2Lsfuj6+bdC3rCK7KBEo
+ENamMJZIeo8lRP9qFF2xwCEzZjRv2zvB6O5o9045aTUcdCrwUfKE2sqY6EXRzFTC
+waK0HRCd1FLv9omhz/Ug5PMHP4d6MZfnAbFm+AzAhnpkrk/9TJYSOoNTNLWsuqhp
+dN0rKqiFWv1zIwfknXvTh1P1Ap+G5jffAca0zWUH1oKjE7ZZioSsaZ6gySnD8+WQ
+TPbOYtG+n0mhCH1TrU8Dqi3rd8g5IbC8loYLRH94QtodOnevD4Qo9Orfrsr8hGOW
+ABespanZArhoQ03DAtpNhtHm2NWJQF2uHNqcTrkq0omqZBTbMD1GKMBujoNooAUu
+w51U9r+RycPJTFqEGHb0nd7EjoyXEXtuX1Ld5fTZjQ9SszmQKQ8w3lHqRGNlkSiO
+e3IOOq2ruXmq1jykxpmi82IcTRUE8TZBfL/yz0nxpHKAYC1VwMezrkgZDGz4npxf
+1z2+qd58xU6/jsf7/+3xdPFubeEJujdbCkWQsQC5Rzm48zDWGq/pyzFji44K3TA=
+-----END CERTIFICATE-----
+)";
+
+  static const char kKey[] = R"(
+-----BEGIN PRIVATE KEY-----
+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
+hJTbHtjEDJ7BHLC/CNUhXbpyyu1y
+-----END PRIVATE KEY-----
+)";
+
+  bssl::UniquePtr<BIO> cert_bio(
+      BIO_new_mem_buf(const_cast<char *>(kCert), sizeof(kCert) - 1));
+  bssl::UniquePtr<X509> cert(
+      PEM_read_bio_X509(cert_bio.get(), nullptr, nullptr, nullptr));
+
+  bssl::UniquePtr<BIO> key_bio(
+      BIO_new_mem_buf(const_cast<char *>(kKey), sizeof(kKey) - 1));
+  bssl::UniquePtr<EVP_PKEY> key(
+      PEM_read_bio_PrivateKey(key_bio.get(), nullptr, nullptr, nullptr));
+
+  static const char kSignedData[] = "signed data";
+  bssl::UniquePtr<BIO> data_bio(BIO_new_mem_buf(const_cast<char *>(kSignedData),
+                                                sizeof(kSignedData) - 1));
+
+  bssl::UniquePtr<PKCS7> pkcs7(
+      PKCS7_sign(cert.get(), key.get(), /*certs=*/nullptr, data_bio.get(),
+                 PKCS7_NOATTR | PKCS7_BINARY | PKCS7_NOCERTS | PKCS7_DETACHED));
+  ASSERT_TRUE(pkcs7);
+
+  uint8_t *pkcs7_bytes = nullptr;
+  const int pkcs7_len = i2d_PKCS7(pkcs7.get(), &pkcs7_bytes);
+  ASSERT_GE(pkcs7_len, 0);
+  bssl::UniquePtr<uint8_t> pkcs7_storage(pkcs7_bytes);
+
+  // RSA signatures are deterministic so the output should not change.
+  static const uint8_t kExpectedOutput[] = {
+      0x30, 0x82, 0x02, 0xbc, 0x06, 0x09, 0x2a, 0x86, 0x48, 0x86, 0xf7, 0x0d,
+      0x01, 0x07, 0x02, 0xa0, 0x82, 0x02, 0xad, 0x30, 0x82, 0x02, 0xa9, 0x02,
+      0x01, 0x01, 0x31, 0x0d, 0x30, 0x0b, 0x06, 0x09, 0x60, 0x86, 0x48, 0x01,
+      0x65, 0x03, 0x04, 0x02, 0x01, 0x30, 0x0b, 0x06, 0x09, 0x2a, 0x86, 0x48,
+      0x86, 0xf7, 0x0d, 0x01, 0x07, 0x01, 0x31, 0x82, 0x02, 0x86, 0x30, 0x82,
+      0x02, 0x82, 0x02, 0x01, 0x01, 0x30, 0x5d, 0x30, 0x45, 0x31, 0x0b, 0x30,
+      0x09, 0x06, 0x03, 0x55, 0x04, 0x06, 0x13, 0x02, 0x41, 0x55, 0x31, 0x13,
+      0x30, 0x11, 0x06, 0x03, 0x55, 0x04, 0x08, 0x0c, 0x0a, 0x53, 0x6f, 0x6d,
+      0x65, 0x2d, 0x53, 0x74, 0x61, 0x74, 0x65, 0x31, 0x21, 0x30, 0x1f, 0x06,
+      0x03, 0x55, 0x04, 0x0a, 0x0c, 0x18, 0x49, 0x6e, 0x74, 0x65, 0x72, 0x6e,
+      0x65, 0x74, 0x20, 0x57, 0x69, 0x64, 0x67, 0x69, 0x74, 0x73, 0x20, 0x50,
+      0x74, 0x79, 0x20, 0x4c, 0x74, 0x64, 0x02, 0x14, 0x45, 0x59, 0x0f, 0xcc,
+      0x5f, 0xf8, 0x77, 0x0c, 0xbb, 0xe3, 0x5f, 0x50, 0x93, 0xbe, 0x6e, 0x84,
+      0x8b, 0xb2, 0x7f, 0x41, 0x30, 0x0b, 0x06, 0x09, 0x60, 0x86, 0x48, 0x01,
+      0x65, 0x03, 0x04, 0x02, 0x01, 0x30, 0x0d, 0x06, 0x09, 0x2a, 0x86, 0x48,
+      0x86, 0xf7, 0x0d, 0x01, 0x01, 0x01, 0x05, 0x00, 0x04, 0x82, 0x02, 0x00,
+      0x54, 0xd4, 0x7c, 0xdc, 0x19, 0x86, 0xa1, 0xb2, 0xbe, 0xe3, 0xa4, 0x5e,
+      0xad, 0x16, 0x6f, 0x7c, 0xf9, 0xa6, 0x40, 0x90, 0xb8, 0x78, 0x85, 0xf1,
+      0x02, 0x59, 0xe5, 0x9f, 0x83, 0xfb, 0x20, 0xcf, 0x29, 0x52, 0xb6, 0x35,
+      0x5c, 0xf9, 0xef, 0x4e, 0xc5, 0xd3, 0xa6, 0x45, 0x6e, 0xfa, 0x0a, 0xa7,
+      0x53, 0xc8, 0xf4, 0xf9, 0xd6, 0xc5, 0xd8, 0xd8, 0x04, 0x3d, 0xb4, 0x15,
+      0xa7, 0x7a, 0x53, 0xdd, 0x27, 0xfa, 0x58, 0x2e, 0x5e, 0xc4, 0xcd, 0x45,
+      0xaa, 0xc2, 0x7b, 0xf9, 0x3d, 0xd7, 0x22, 0x20, 0x90, 0xbb, 0xa5, 0x62,
+      0xd5, 0xaa, 0x39, 0x8f, 0xc1, 0x00, 0xef, 0x4b, 0x03, 0x2c, 0x32, 0xc0,
+      0xad, 0x27, 0xb6, 0xfe, 0x86, 0xe5, 0x9d, 0xf0, 0xbe, 0xb1, 0x0d, 0xa4,
+      0xa3, 0x40, 0xe0, 0xaa, 0x0a, 0x13, 0x6e, 0x61, 0x9a, 0x3b, 0xae, 0x78,
+      0xd4, 0x6f, 0x2d, 0x1d, 0x40, 0x4b, 0xe3, 0x5f, 0xf8, 0xe8, 0x21, 0x89,
+      0x35, 0x73, 0x6d, 0x7e, 0x41, 0xc6, 0x0f, 0x0c, 0x01, 0x64, 0x61, 0xa8,
+      0x37, 0xef, 0x2b, 0x95, 0xb7, 0x34, 0xac, 0xc7, 0xdb, 0x66, 0x87, 0x45,
+      0xb4, 0x0f, 0x60, 0x01, 0x07, 0x29, 0x74, 0x32, 0x0b, 0xae, 0xbc, 0x08,
+      0x88, 0x15, 0xc3, 0x79, 0x4a, 0x1c, 0x5a, 0x9c, 0xc2, 0xfb, 0x4f, 0xd3,
+      0x17, 0xc2, 0x40, 0x71, 0x37, 0xea, 0xa6, 0x1e, 0xf0, 0x5b, 0xa5, 0xd7,
+      0x9b, 0x9e, 0x57, 0x44, 0x74, 0xc5, 0xd5, 0x5f, 0xba, 0xbc, 0xd7, 0xe1,
+      0xae, 0xd0, 0xd3, 0xb5, 0x10, 0xc6, 0x8b, 0xb1, 0x83, 0x7c, 0xaa, 0x3a,
+      0xbb, 0xe8, 0x7f, 0x56, 0xc4, 0x3b, 0x9d, 0x45, 0x09, 0x9b, 0x34, 0xc9,
+      0xfb, 0x5a, 0xa1, 0xab, 0xd0, 0x07, 0x79, 0x43, 0x58, 0x44, 0xd7, 0x40,
+      0xc4, 0xa7, 0xd3, 0xe9, 0x18, 0xb9, 0x78, 0x1d, 0x93, 0x0b, 0xc1, 0xdb,
+      0xc3, 0xae, 0xc9, 0xe8, 0x2c, 0xa7, 0x8c, 0x7e, 0x31, 0x1e, 0xec, 0x1c,
+      0xab, 0x83, 0xa0, 0x5d, 0x0e, 0xc3, 0x6a, 0x7c, 0x97, 0x09, 0xcf, 0x00,
+      0xa9, 0x66, 0xda, 0x21, 0x85, 0xaa, 0x47, 0xd8, 0xea, 0x8f, 0x72, 0x54,
+      0x03, 0x6c, 0xbc, 0x4b, 0xf9, 0x92, 0xae, 0x82, 0x75, 0x33, 0x10, 0x4d,
+      0x65, 0x4d, 0x0e, 0x73, 0x5d, 0x6f, 0x09, 0xee, 0x56, 0x78, 0x87, 0x0b,
+      0xa3, 0xaa, 0xc2, 0x5f, 0x49, 0x73, 0x0d, 0x78, 0xfa, 0x40, 0xc1, 0x25,
+      0x2f, 0x5d, 0x8a, 0xe1, 0xbf, 0x38, 0x2c, 0xd0, 0x26, 0xbd, 0xf5, 0x6e,
+      0x02, 0x01, 0x2e, 0x9e, 0x27, 0x64, 0x4b, 0x61, 0x8c, 0x68, 0x6e, 0x09,
+      0xfe, 0x0b, 0xf8, 0x36, 0x4e, 0x84, 0xb7, 0x76, 0xcb, 0x41, 0xf0, 0x40,
+      0x72, 0xc9, 0x74, 0x64, 0x5f, 0xbe, 0x9e, 0xfe, 0x9e, 0xce, 0x89, 0x84,
+      0x68, 0x81, 0x57, 0x2a, 0xdb, 0xd6, 0x01, 0xa8, 0x1b, 0x6e, 0x5d, 0xc4,
+      0x65, 0xbd, 0x0d, 0x98, 0x54, 0xa3, 0x18, 0x23, 0x09, 0x4a, 0x8d, 0x6c,
+      0xc6, 0x2e, 0xfe, 0x7a, 0xa9, 0x11, 0x92, 0x8b, 0xd0, 0xc1, 0xe7, 0x76,
+      0x71, 0xec, 0x34, 0xfc, 0xc8, 0x2a, 0x5e, 0x38, 0x52, 0xe6, 0xc8, 0xa5,
+      0x1d, 0x0b, 0xce, 0xf5, 0xc0, 0xe5, 0x0b, 0x88, 0xa9, 0x55, 0x88, 0x6c,
+      0xfa, 0xea, 0xaa, 0x39, 0x66, 0xdd, 0x80, 0x52, 0xe0, 0x7e, 0x45, 0x8e,
+      0x51, 0x2c, 0x36, 0x07, 0xd7, 0x2b, 0xf1, 0x46, 0x00, 0x66, 0xb2, 0x5a,
+      0x39, 0xbe, 0xf7, 0x26, 0x15, 0xbc, 0x55, 0xdb, 0xe9, 0x01, 0xdd, 0x54,
+      0x27, 0x2b, 0xfe, 0x86, 0x52, 0xef, 0xc6, 0x27, 0xa3, 0xf7, 0x55, 0x55,
+      0xb8, 0xe2, 0x1f, 0xcb, 0x32, 0xd8, 0xba, 0xd6, 0x69, 0xde, 0x8d, 0xa7,
+      0xfa, 0xad, 0xf6, 0x2a, 0xc0, 0x6f, 0x86, 0x50, 0x27, 0x5a, 0xe2, 0xe3,
+      0xf6, 0xb9, 0x01, 0xec, 0x01, 0x37, 0x84, 0x01,
+  };
+  EXPECT_EQ(Bytes(pkcs7_bytes, pkcs7_len),
+            Bytes(kExpectedOutput, sizeof(kExpectedOutput)));
+
+  // Other option combinations should fail.
+  EXPECT_FALSE(
+      PKCS7_sign(cert.get(), key.get(), /*certs=*/nullptr, data_bio.get(),
+                 PKCS7_NOATTR | PKCS7_BINARY | PKCS7_NOCERTS));
+  EXPECT_FALSE(
+      PKCS7_sign(cert.get(), key.get(), /*certs=*/nullptr, data_bio.get(),
+                 PKCS7_BINARY | PKCS7_NOCERTS | PKCS7_DETACHED));
+  EXPECT_FALSE(
+      PKCS7_sign(cert.get(), key.get(), /*certs=*/nullptr, data_bio.get(),
+                 PKCS7_NOATTR | PKCS7_TEXT | PKCS7_NOCERTS | PKCS7_DETACHED));
+  EXPECT_FALSE(
+      PKCS7_sign(cert.get(), key.get(), /*certs=*/nullptr, data_bio.get(),
+                 PKCS7_NOATTR | PKCS7_BINARY | PKCS7_DETACHED));
+
+  ERR_clear_error();
 }

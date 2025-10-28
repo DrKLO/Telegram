@@ -350,10 +350,9 @@ std::vector<webrtc::VideoStream> GetNormalSimulcastLayers(
     bool base_heavy_tl3_rate_alloc,
     const webrtc::FieldTrialsView& trials) {
   std::vector<webrtc::VideoStream> layers(layer_count);
-
   const bool enable_lowres_bitrate_interpolation =
       EnableLowresBitrateInterpolation(trials);
-
+  const int num_temporal_layers = DefaultNumberOfTemporalLayers(trials);
   // Format width and height has to be divisible by |2 ^ num_simulcast_layers -
   // 1|.
   width = NormalizeSimulcastSize(width, layer_count);
@@ -366,7 +365,7 @@ std::vector<webrtc::VideoStream> GetNormalSimulcastLayers(
     // TODO(pbos): Fill actual temporal-layer bitrate thresholds.
     layers[s].max_qp = max_qp;
     layers[s].num_temporal_layers =
-        temporal_layers_supported ? DefaultNumberOfTemporalLayers(trials) : 1;
+        temporal_layers_supported ? num_temporal_layers : 1;
     layers[s].max_bitrate_bps =
         FindSimulcastMaxBitrate(width, height,
                                 enable_lowres_bitrate_interpolation)
@@ -375,7 +374,6 @@ std::vector<webrtc::VideoStream> GetNormalSimulcastLayers(
         FindSimulcastTargetBitrate(width, height,
                                    enable_lowres_bitrate_interpolation)
             .bps();
-    int num_temporal_layers = DefaultNumberOfTemporalLayers(trials);
     if (s == 0) {
       // If alternative temporal rate allocation is selected, adjust the
       // bitrate of the lowest simulcast stream so that absolute bitrate for

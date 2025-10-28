@@ -195,7 +195,7 @@ void Serialize(rtc::ByteBufferWriter &to, const rtc::CopyOnWriteBuffer &from, bo
 		assert(from.size() <= UINT16_MAX);
 		to.WriteUInt16(from.size());
 	}
-	to.WriteBytes(reinterpret_cast<const char*>(from.cdata()), from.size());
+	to.WriteBytes(reinterpret_cast<const uint8_t*>(from.cdata()), from.size());
 }
 
 bool Deserialize(rtc::CopyOnWriteBuffer &to, rtc::ByteBufferReader &from, bool singleMessagePacket) {
@@ -396,7 +396,7 @@ absl::optional<rtc::CopyOnWriteBuffer> DeserializeRawMessage(
 
     rtc::CopyOnWriteBuffer result;
     result.SetSize(length);
-    if (!reader.ReadBytes((char *)result.MutableData(), result.size())) {
+    if (!reader.ReadBytes(rtc::ArrayView<uint8_t>((uint8_t *)result.MutableData(), result.size()))) {
         return absl::nullopt;
     }
 

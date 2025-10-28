@@ -220,6 +220,15 @@ RTCError ParseIceServerUrl(
   // GetServiceTypeAndHostnameFromUri should never give an empty hoststring
   RTC_DCHECK(!hoststring.empty());
 
+  // stun with ?transport (or any ?) is not valid.
+  if ((service_type == ServiceType::STUN ||
+       service_type == ServiceType::STUNS) &&
+      tokens.size() > 1) {
+    LOG_AND_RETURN_ERROR(
+        RTCErrorType::SYNTAX_ERROR,
+        "ICE server parsing failed: Invalid stun url with query parameters");
+  }
+
   int default_port = kDefaultStunPort;
   if (service_type == ServiceType::TURNS) {
     default_port = kDefaultStunTlsPort;
@@ -337,13 +346,6 @@ RTCError ParseIceServersOrError(
       LOG_AND_RETURN_ERROR(RTCErrorType::SYNTAX_ERROR,
                            "ICE server parsing failed: Empty uri.");
     }
-  }
-  // Candidates must have unique priorities, so that connectivity checks
-  // are performed in a well-defined order.
-  int priority = static_cast<int>(turn_servers->size() - 1);
-  for (cricket::RelayServerConfig& turn_server : *turn_servers) {
-    // First in the list gets highest priority.
-    turn_server.priority = priority--;
   }
   return RTCError::OK();
 }

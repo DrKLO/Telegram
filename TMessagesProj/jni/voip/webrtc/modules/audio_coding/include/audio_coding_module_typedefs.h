@@ -64,7 +64,7 @@ struct AudioDecodingCallStats {
   int calls_to_silence_generator;  // Number of calls where silence generated,
                                    // and NetEq was disengaged from decoding.
   int calls_to_neteq;              // Number of calls to NetEq.
-  int decoded_normal;  // Number of calls where audio RTP packet decoded.
+  int decoded_normal;     // Number of calls where audio RTP packet decoded.
   int decoded_neteq_plc;  // Number of calls resulted in NetEq PLC.
   int decoded_codec_plc;  // Number of calls resulted in codec PLC.
   int decoded_cng;  // Number of calls where comfort noise generated due to DTX.

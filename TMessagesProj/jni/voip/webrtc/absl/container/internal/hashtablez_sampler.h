@@ -40,15 +40,20 @@
 #define ABSL_CONTAINER_INTERNAL_HASHTABLEZ_SAMPLER_H_
 
 #include <atomic>
+#include <cstddef>
+#include <cstdint>
 #include <functional>
 #include <memory>
 #include <vector>
 
+#include "absl/base/attributes.h"
 #include "absl/base/config.h"
 #include "absl/base/internal/per_thread_tls.h"
 #include "absl/base/optimization.h"
+#include "absl/base/thread_annotations.h"
 #include "absl/profiling/internal/sample_recorder.h"
 #include "absl/synchronization/mutex.h"
+#include "absl/time/time.h"
 #include "absl/utility/utility.h"
 
 namespace absl {
@@ -67,7 +72,9 @@ struct HashtablezInfo : public profiling_internal::Sample<HashtablezInfo> {
 
   // Puts the object into a clean state, fills in the logically `const` members,
   // blocking for any readers that are currently sampling the object.
-  void PrepareForSampling(int64_t stride, size_t inline_element_size_value)
+  void PrepareForSampling(int64_t stride, size_t inline_element_size_value,
+                          size_t key_size, size_t value_size,
+                          uint16_t soo_capacity_value)
       ABSL_EXCLUSIVE_LOCKS_REQUIRED(init_mu);
 
   // These fields are mutated by the various Record* APIs and need to be
@@ -91,59 +98,30 @@ struct HashtablezInfo : public profiling_internal::Sample<HashtablezInfo> {
   static constexpr int kMaxStackDepth = 64;
   absl::Time create_time;
   int32_t depth;
+  // The SOO capacity for this table in elements (not bytes). Note that sampled
+  // tables are never SOO because we need to store the infoz handle on the heap.
+  // Tables that would be SOO if not sampled should have: soo_capacity > 0 &&
+  // size <= soo_capacity && max_reserve <= soo_capacity.
+  uint16_t soo_capacity;
   void* stack[kMaxStackDepth];
-  size_t inline_element_size;  // How big is the slot?
+  size_t inline_element_size;  // How big is the slot in bytes?
+  size_t key_size;             // sizeof(key_type)
+  size_t value_size;           // sizeof(value_type)
 };
 
-inline void RecordRehashSlow(HashtablezInfo* info, size_t total_probe_length) {
-#ifdef ABSL_INTERNAL_HAVE_SSE2
-  total_probe_length /= 16;
-#else
-  total_probe_length /= 8;
-#endif
-  info->total_probe_length.store(total_probe_length, std::memory_order_relaxed);
-  info->num_erases.store(0, std::memory_order_relaxed);
-  // There is only one concurrent writer, so `load` then `store` is sufficient
-  // instead of using `fetch_add`.
-  info->num_rehashes.store(
-      1 + info->num_rehashes.load(std::memory_order_relaxed),
-      std::memory_order_relaxed);
-}
+void RecordRehashSlow(HashtablezInfo* info, size_t total_probe_length);
 
-inline void RecordReservationSlow(HashtablezInfo* info,
-                                  size_t target_capacity) {
-  info->max_reserve.store(
-      (std::max)(info->max_reserve.load(std::memory_order_relaxed),
-                 target_capacity),
-      std::memory_order_relaxed);
-}
+void RecordReservationSlow(HashtablezInfo* info, size_t target_capacity);
 
-inline void RecordClearedReservationSlow(HashtablezInfo* info) {
-  info->max_reserve.store(0, std::memory_order_relaxed);
-}
+void RecordClearedReservationSlow(HashtablezInfo* info);
 
-inline void RecordStorageChangedSlow(HashtablezInfo* info, size_t size,
-                                     size_t capacity) {
-  info->size.store(size, std::memory_order_relaxed);
-  info->capacity.store(capacity, std::memory_order_relaxed);
-  if (size == 0) {
-    // This is a clear, reset the total/num_erases too.
-    info->total_probe_length.store(0, std::memory_order_relaxed);
-    info->num_erases.store(0, std::memory_order_relaxed);
-  }
-}
+void RecordStorageChangedSlow(HashtablezInfo* info, size_t size,
+                              size_t capacity);
 
 void RecordInsertSlow(HashtablezInfo* info, size_t hash,
                       size_t distance_from_desired);
 
-inline void RecordEraseSlow(HashtablezInfo* info) {
-  info->size.fetch_sub(1, std::memory_order_relaxed);
-  // There is only one concurrent writer, so `load` then `store` is sufficient
-  // instead of using `fetch_add`.
-  info->num_erases.store(
-      1 + info->num_erases.load(std::memory_order_relaxed),
-      std::memory_order_relaxed);
-}
+void RecordEraseSlow(HashtablezInfo* info);
 
 struct SamplingState {
   int64_t next_sample;
@@ -153,7 +131,8 @@ struct SamplingState {
 };
 
 HashtablezInfo* SampleSlow(SamplingState& next_sample,
-                           size_t inline_element_size);
+                           size_t inline_element_size, size_t key_size,
+                           size_t value_size, uint16_t soo_capacity);
 void UnsampleSlow(HashtablezInfo* info);
 
 #if defined(ABSL_INTERNAL_HASHTABLEZ_SAMPLE)
@@ -165,23 +144,15 @@ class HashtablezInfoHandle {
  public:
   explicit HashtablezInfoHandle() : info_(nullptr) {}
   explicit HashtablezInfoHandle(HashtablezInfo* info) : info_(info) {}
-  ~HashtablezInfoHandle() {
+
+  // We do not have a destructor. Caller is responsible for calling Unregister
+  // before destroying the handle.
+  void Unregister() {
     if (ABSL_PREDICT_TRUE(info_ == nullptr)) return;
     UnsampleSlow(info_);
   }
 
-  HashtablezInfoHandle(const HashtablezInfoHandle&) = delete;
-  HashtablezInfoHandle& operator=(const HashtablezInfoHandle&) = delete;
-
-  HashtablezInfoHandle(HashtablezInfoHandle&& o) noexcept
-      : info_(absl::exchange(o.info_, nullptr)) {}
-  HashtablezInfoHandle& operator=(HashtablezInfoHandle&& o) noexcept {
-    if (ABSL_PREDICT_FALSE(info_ != nullptr)) {
-      UnsampleSlow(info_);
-    }
-    info_ = absl::exchange(o.info_, nullptr);
-    return *this;
-  }
+  inline bool IsSampled() const { return ABSL_PREDICT_FALSE(info_ != nullptr); }
 
   inline void RecordStorageChanged(size_t size, size_t capacity) {
     if (ABSL_PREDICT_TRUE(info_ == nullptr)) return;
@@ -230,6 +201,8 @@ class HashtablezInfoHandle {
   explicit HashtablezInfoHandle() = default;
   explicit HashtablezInfoHandle(std::nullptr_t) {}
 
+  inline void Unregister() {}
+  inline bool IsSampled() const { return false; }
   inline void RecordStorageChanged(size_t /*size*/, size_t /*capacity*/) {}
   inline void RecordRehash(size_t /*total_probe_length*/) {}
   inline void RecordReservation(size_t /*target_capacity*/) {}
@@ -246,19 +219,41 @@ class HashtablezInfoHandle {
 extern ABSL_PER_THREAD_TLS_KEYWORD SamplingState global_next_sample;
 #endif  // defined(ABSL_INTERNAL_HASHTABLEZ_SAMPLE)
 
-// Returns an RAII sampling handle that manages registration and unregistation
-// with the global sampler.
-inline HashtablezInfoHandle Sample(
-    size_t inline_element_size ABSL_ATTRIBUTE_UNUSED) {
+// Returns true if the next table should be sampled.
+// This function updates the global state.
+// If the function returns true, actual sampling should be done by calling
+// ForcedTrySample().
+inline bool ShouldSampleNextTable() {
 #if defined(ABSL_INTERNAL_HASHTABLEZ_SAMPLE)
   if (ABSL_PREDICT_TRUE(--global_next_sample.next_sample > 0)) {
+    return false;
+  }
+  return true;
+#else
+  return false;
+#endif  // ABSL_INTERNAL_HASHTABLEZ_SAMPLE
+}
+
+// Returns a sampling handle.
+// Must be called only if HashSetShouldBeSampled() returned true.
+// Returned handle still can be unsampled if sampling is not possible.
+HashtablezInfoHandle ForcedTrySample(size_t inline_element_size,
+                                     size_t key_size, size_t value_size,
+                                     uint16_t soo_capacity);
+
+// In case sampling needs to be disabled and re-enabled in tests, this function
+// can be used to reset the sampling state for the current thread.
+// It is useful to avoid sampling attempts and sampling delays in tests.
+void TestOnlyRefreshSamplingStateForCurrentThread();
+
+// Returns a sampling handle.
+inline HashtablezInfoHandle Sample(size_t inline_element_size, size_t key_size,
+                                   size_t value_size, uint16_t soo_capacity) {
+  if (ABSL_PREDICT_TRUE(!ShouldSampleNextTable())) {
     return HashtablezInfoHandle(nullptr);
   }
-  return HashtablezInfoHandle(
-      SampleSlow(global_next_sample, inline_element_size));
-#else
-  return HashtablezInfoHandle(nullptr);
-#endif  // !ABSL_PER_THREAD_TLS
+  return ForcedTrySample(inline_element_size, key_size, value_size,
+                         soo_capacity);
 }
 
 using HashtablezSampler =

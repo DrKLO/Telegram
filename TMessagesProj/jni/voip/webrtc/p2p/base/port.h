@@ -11,19 +11,26 @@
 #ifndef P2P_BASE_PORT_H_
 #define P2P_BASE_PORT_H_
 
+#include <stddef.h>
+#include <stdint.h>
+
+#include <functional>
 #include <map>
 #include <memory>
 #include <set>
 #include <string>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
+#include "absl/base/attributes.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/optional.h"
 #include "api/candidate.h"
 #include "api/field_trials_view.h"
 #include "api/packet_socket_factory.h"
 #include "api/rtc_error.h"
+#include "api/sequence_checker.h"
 #include "api/task_queue/task_queue_base.h"
 #include "api/transport/field_trial_based_config.h"
 #include "api/transport/stun.h"
@@ -36,44 +43,31 @@
 #include "p2p/base/p2p_constants.h"
 #include "p2p/base/port_interface.h"
 #include "p2p/base/stun_request.h"
+#include "p2p/base/transport_description.h"
 #include "rtc_base/async_packet_socket.h"
 #include "rtc_base/callback_list.h"
 #include "rtc_base/checks.h"
+#include "rtc_base/dscp.h"
 #include "rtc_base/memory/always_valid_pointer.h"
 #include "rtc_base/net_helper.h"
 #include "rtc_base/network.h"
+#include "rtc_base/network/received_packet.h"
+#include "rtc_base/network/sent_packet.h"
 #include "rtc_base/proxy_info.h"
 #include "rtc_base/rate_tracker.h"
 #include "rtc_base/socket_address.h"
 #include "rtc_base/system/rtc_export.h"
 #include "rtc_base/third_party/sigslot/sigslot.h"
+#include "rtc_base/thread_annotations.h"
 #include "rtc_base/weak_ptr.h"
 
 namespace cricket {
-
-RTC_EXPORT extern const char LOCAL_PORT_TYPE[];
-RTC_EXPORT extern const char STUN_PORT_TYPE[];
-RTC_EXPORT extern const char PRFLX_PORT_TYPE[];
-RTC_EXPORT extern const char RELAY_PORT_TYPE[];
 
 // RFC 6544, TCP candidate encoding rules.
 extern const int DISCARD_PORT;
 extern const char TCPTYPE_ACTIVE_STR[];
 extern const char TCPTYPE_PASSIVE_STR[];
 extern const char TCPTYPE_SIMOPEN_STR[];
-
-// The type preference MUST be an integer from 0 to 126 inclusive.
-// https://datatracker.ietf.org/doc/html/rfc5245#section-4.1.2.1
-enum IcePriorityValue : uint8_t {
-  ICE_TYPE_PREFERENCE_RELAY_TLS = 0,
-  ICE_TYPE_PREFERENCE_RELAY_TCP = 1,
-  ICE_TYPE_PREFERENCE_RELAY_UDP = 2,
-  ICE_TYPE_PREFERENCE_PRFLX_TCP = 80,
-  ICE_TYPE_PREFERENCE_HOST_TCP = 90,
-  ICE_TYPE_PREFERENCE_SRFLX = 100,
-  ICE_TYPE_PREFERENCE_PRFLX = 110,
-  ICE_TYPE_PREFERENCE_HOST = 126
-};
 
 enum class MdnsNameRegistrationStatus {
   // IP concealment with mDNS is not enabled or the name registration process is
@@ -176,7 +170,7 @@ typedef std::set<rtc::SocketAddress> ServerAddresses;
 // Represents a local communication mechanism that can be used to create
 // connections to similar mechanisms of the other client.  Subclasses of this
 // one add support for specific mechanisms like local UDP ports.
-class Port : public PortInterface, public sigslot::has_slots<> {
+class RTC_EXPORT Port : public PortInterface, public sigslot::has_slots<> {
  public:
   // INIT: The state when a port is just created.
   // KEEP_ALIVE_UNTIL_PRUNED: A port should not be destroyed even if no
@@ -185,14 +179,14 @@ class Port : public PortInterface, public sigslot::has_slots<> {
   // 30 seconds.
   enum class State { INIT, KEEP_ALIVE_UNTIL_PRUNED, PRUNED };
   Port(webrtc::TaskQueueBase* thread,
-       absl::string_view type,
+       absl::string_view type ABSL_ATTRIBUTE_LIFETIME_BOUND,
        rtc::PacketSocketFactory* factory,
        const rtc::Network* network,
        absl::string_view username_fragment,
        absl::string_view password,
        const webrtc::FieldTrialsView* field_trials = nullptr);
   Port(webrtc::TaskQueueBase* thread,
-       absl::string_view type,
+       absl::string_view type ABSL_ATTRIBUTE_LIFETIME_BOUND,
        rtc::PacketSocketFactory* factory,
        const rtc::Network* network,
        uint16_t min_port,
@@ -205,9 +199,9 @@ class Port : public PortInterface, public sigslot::has_slots<> {
   // Note that the port type does NOT uniquely identify different subclasses of
   // Port. Use the 2-tuple of the port type AND the protocol (GetProtocol()) to
   // uniquely identify subclasses. Whenever a new subclass of Port introduces a
-  // conflit in the value of the 2-tuple, make sure that the implementation that
-  // relies on this 2-tuple for RTTI is properly changed.
-  const std::string& Type() const override;
+  // conflict in the value of the 2-tuple, make sure that the implementation
+  // that relies on this 2-tuple for RTTI is properly changed.
+  const absl::string_view Type() const override;
   const rtc::Network* Network() const override;
 
   // Methods to set/get ICE role and tiebreaker values.
@@ -230,13 +224,13 @@ class Port : public PortInterface, public sigslot::has_slots<> {
   void CancelPendingTasks();
 
   // The thread on which this port performs its I/O.
-  webrtc::TaskQueueBase* thread() { return thread_; }
+  webrtc::TaskQueueBase* thread() override { return thread_; }
 
   // The factory used to create the sockets of this port.
-  rtc::PacketSocketFactory* socket_factory() const { return factory_; }
+  rtc::PacketSocketFactory* socket_factory() const override { return factory_; }
 
   // For debugging purposes.
-  const std::string& content_name() const { return content_name_; }
+  const std::string& content_name() const override { return content_name_; }
   void set_content_name(absl::string_view content_name) {
     content_name_ = std::string(content_name);
   }
@@ -244,7 +238,7 @@ class Port : public PortInterface, public sigslot::has_slots<> {
   int component() const { return component_; }
   void set_component(int component) { component_ = component; }
 
-  bool send_retransmit_count_attribute() const {
+  bool send_retransmit_count_attribute() const override {
     return send_retransmit_count_attribute_;
   }
   void set_send_retransmit_count_attribute(bool enable) {
@@ -252,10 +246,12 @@ class Port : public PortInterface, public sigslot::has_slots<> {
   }
 
   // Identifies the generation that this port was created in.
-  uint32_t generation() const { return generation_; }
-  void set_generation(uint32_t generation) { generation_ = generation; }
+  uint32_t generation() const override { return generation_; }
+  void set_generation(uint32_t generation) override {
+    generation_ = generation;
+  }
 
-  const std::string username_fragment() const;
+  const std::string& username_fragment() const;
   const std::string& password() const { return password_; }
 
   // May be called when this port was initially created by a pooled
@@ -299,11 +295,11 @@ class Port : public PortInterface, public sigslot::has_slots<> {
   // defers the `delete` operation to when the call stack has been unwound.
   // Async may be needed when deleting a connection object from within a
   // callback.
-  void DestroyConnection(Connection* conn) {
+  void DestroyConnection(Connection* conn) override {
     DestroyConnectionInternal(conn, false);
   }
 
-  void DestroyConnectionAsync(Connection* conn) {
+  void DestroyConnectionAsync(Connection* conn) override {
     DestroyConnectionInternal(conn, true);
   }
 
@@ -312,10 +308,7 @@ class Port : public PortInterface, public sigslot::has_slots<> {
   // port implemented this method.
   // TODO(mallinath) - Make it pure virtual.
   virtual bool HandleIncomingPacket(rtc::AsyncPacketSocket* socket,
-                                    const char* data,
-                                    size_t size,
-                                    const rtc::SocketAddress& remote_addr,
-                                    int64_t packet_time_us);
+                                    const rtc::ReceivedPacket& packet);
 
   // Shall the port handle packet from this `remote_addr`.
   // This method is overridden by TurnPort.
@@ -336,8 +329,8 @@ class Port : public PortInterface, public sigslot::has_slots<> {
     user_agent_ = std::string(user_agent);
     proxy_ = proxy;
   }
-  const std::string& user_agent() { return user_agent_; }
-  const rtc::ProxyInfo& proxy() { return proxy_; }
+  const std::string& user_agent() override { return user_agent_; }
+  const rtc::ProxyInfo& proxy() override { return proxy_; }
 
   void EnablePortPackets() override;
 
@@ -356,12 +349,13 @@ class Port : public PortInterface, public sigslot::has_slots<> {
   // stun username attribute if present.
   bool ParseStunUsername(const StunMessage* stun_msg,
                          std::string* local_username,
-                         std::string* remote_username) const;
-  std::string CreateStunUsername(absl::string_view remote_username) const;
+                         std::string* remote_username) const override;
+  std::string CreateStunUsername(
+      absl::string_view remote_username) const override;
 
   bool MaybeIceRoleConflict(const rtc::SocketAddress& addr,
                             IceMessage* stun_msg,
-                            absl::string_view remote_ufrag);
+                            absl::string_view remote_ufrag) override;
 
   // Called when a packet has been sent to the socket.
   // This is made pure virtual to notify subclasses of Port that they MUST
@@ -374,9 +368,9 @@ class Port : public PortInterface, public sigslot::has_slots<> {
   void OnReadyToSend();
 
   // Called when the Connection discovers a local peer reflexive candidate.
-  void AddPrflxCandidate(const Candidate& local);
+  void AddPrflxCandidate(const Candidate& local) override;
 
-  int16_t network_cost() const { return network_cost_; }
+  int16_t network_cost() const override { return network_cost_; }
 
   void GetStunStats(absl::optional<StunStats>* stats) override {}
 
@@ -386,15 +380,14 @@ class Port : public PortInterface, public sigslot::has_slots<> {
   //   then the foundation will be different.  Two candidate pairs with
   //   the same foundation pairs are likely to have similar network
   //   characteristics. Foundations are used in the frozen algorithm.
-  std::string ComputeFoundation(absl::string_view type,
-                                absl::string_view protocol,
-                                absl::string_view relay_protocol,
-                                const rtc::SocketAddress& base_address);
+  std::string ComputeFoundation(
+      absl::string_view type,
+      absl::string_view protocol,
+      absl::string_view relay_protocol,
+      const rtc::SocketAddress& base_address) override;
 
  protected:
-  virtual void UpdateNetworkCost();
-
-  void set_type(absl::string_view type) { type_ = std::string(type); }
+  void UpdateNetworkCost() override;
 
   rtc::WeakPtr<Port> NewWeakPtr() { return weak_factory_.GetWeakPtr(); }
 
@@ -423,10 +416,19 @@ class Port : public PortInterface, public sigslot::has_slots<> {
   // Called when a packet is received from an unknown address that is not
   // currently a connection.  If this is an authenticated STUN binding request,
   // then we will signal the client.
-  void OnReadPacket(const char* data,
-                    size_t size,
-                    const rtc::SocketAddress& addr,
-                    ProtocolType proto);
+  void OnReadPacket(const rtc::ReceivedPacket& packet, ProtocolType proto);
+
+  [[deprecated(
+      "Use OnReadPacket(const rtc::ReceivedPacket& packet, ProtocolType "
+      "proto)")]] void
+  OnReadPacket(const char* data,
+               size_t size,
+               const rtc::SocketAddress& addr,
+               ProtocolType proto) {
+    OnReadPacket(rtc::ReceivedPacket::CreateFromLegacy(
+                     data, size, /*packet_time_us = */ -1, addr),
+                 proto);
+  }
 
   // If the given data comprises a complete and correct STUN message then the
   // return value is true, otherwise false. If the message username corresponds
@@ -437,13 +439,13 @@ class Port : public PortInterface, public sigslot::has_slots<> {
                       size_t size,
                       const rtc::SocketAddress& addr,
                       std::unique_ptr<IceMessage>* out_msg,
-                      std::string* out_username);
+                      std::string* out_username) override;
 
   // Checks if the address in addr is compatible with the port's ip.
   bool IsCompatibleAddress(const rtc::SocketAddress& addr);
 
   // Returns DSCP value packets generated by the port itself should use.
-  virtual rtc::DiffServCodePoint StunDscpValue() const;
+  rtc::DiffServCodePoint StunDscpValue() const override;
 
   // Extra work to be done in subclasses when a connection is destroyed.
   virtual void HandleConnectionDestroyed(Connection* conn) {}
@@ -484,7 +486,7 @@ class Port : public PortInterface, public sigslot::has_slots<> {
 
   webrtc::TaskQueueBase* const thread_;
   rtc::PacketSocketFactory* const factory_;
-  std::string type_;
+  const absl::string_view type_;
   bool send_retransmit_count_attribute_;
   const rtc::Network* network_;
   uint16_t min_port_;
@@ -496,12 +498,8 @@ class Port : public PortInterface, public sigslot::has_slots<> {
   // sent through), the other side must send us a STUN binding request that is
   // authenticated with this username_fragment and password.
   // PortAllocatorSession will provide these username_fragment and password.
-  //
-  // Note: we should always use username_fragment() instead of using
-  // `ice_username_fragment_` directly. For the details see the comment on
-  // username_fragment().
-  std::string ice_username_fragment_;
-  std::string password_;
+  std::string ice_username_fragment_ RTC_GUARDED_BY(thread_);
+  std::string password_ RTC_GUARDED_BY(thread_);
   std::vector<Candidate> candidates_ RTC_GUARDED_BY(thread_);
   AddressMap connections_;
   int timeout_delay_;
@@ -527,11 +525,9 @@ class Port : public PortInterface, public sigslot::has_slots<> {
                              webrtc::FieldTrialBasedConfig>
       field_trials_;
 
-  bool MaybeObfuscateAddress(Candidate* c,
-                             absl::string_view type,
-                             bool is_final) RTC_RUN_ON(thread_);
+  bool MaybeObfuscateAddress(const Candidate& c, bool is_final)
+      RTC_RUN_ON(thread_);
 
-  friend class Connection;
   webrtc::CallbackList<PortInterface*> port_destroyed_callback_list_;
 };
 

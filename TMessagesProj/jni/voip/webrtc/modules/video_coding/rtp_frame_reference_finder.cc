@@ -13,7 +13,7 @@
 #include <utility>
 
 #include "absl/types/variant.h"
-#include "modules/video_coding/frame_object.h"
+#include "modules/rtp_rtcp/source/frame_object.h"
 #include "modules/video_coding/rtp_frame_id_only_ref_finder.h"
 #include "modules/video_coding/rtp_generic_ref_finder.h"
 #include "modules/video_coding/rtp_seq_num_only_ref_finder.h"
@@ -145,8 +145,7 @@ T& RtpFrameReferenceFinderImpl::GetRefFinderAs() {
 RtpFrameReferenceFinder::RtpFrameReferenceFinder()
     : RtpFrameReferenceFinder(0) {}
 
-RtpFrameReferenceFinder::RtpFrameReferenceFinder(
-    int64_t picture_id_offset)
+RtpFrameReferenceFinder::RtpFrameReferenceFinder(int64_t picture_id_offset)
     : picture_id_offset_(picture_id_offset),
       impl_(std::make_unique<internal::RtpFrameReferenceFinderImpl>()) {}
 

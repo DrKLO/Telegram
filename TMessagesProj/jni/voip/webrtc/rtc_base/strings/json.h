@@ -15,12 +15,7 @@
 #include <vector>
 
 #include "absl/strings/string_view.h"
-
-#if !defined(WEBRTC_EXTERNAL_JSON)
-#include "json/json.h"
-#else
 #include "third_party/jsoncpp/json.h"
-#endif
 
 namespace rtc {
 

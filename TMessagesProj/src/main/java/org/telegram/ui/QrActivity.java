@@ -1,5 +1,6 @@
 package org.telegram.ui;
 
+import android.Manifest;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
@@ -7,6 +8,7 @@ import android.annotation.SuppressLint;
 import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.BitmapShader;
@@ -23,6 +25,7 @@ import android.graphics.RectF;
 import android.graphics.Shader;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.SystemClock;
 import android.os.Vibrator;
@@ -43,6 +46,7 @@ import android.view.Window;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -65,6 +69,7 @@ import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.ChatThemeController;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.Emoji;
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
@@ -74,18 +79,22 @@ import org.telegram.messenger.SvgHelper;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
 import org.telegram.messenger.Utilities;
+import org.telegram.messenger.browser.Browser;
 import org.telegram.tgnet.ResultCallback;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBarLayout;
+import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.EmojiThemes;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeDescription;
+import org.telegram.ui.ActionBar.theme.ThemeKey;
 import org.telegram.ui.Cells.SettingsSearchCell;
 import org.telegram.ui.Components.AnimatedFloat;
 import org.telegram.ui.Components.AnimatedTextView;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.BackupImageView;
+import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.ChatThemeBottomSheet;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.Easings;
@@ -199,7 +208,7 @@ public class QrActivity extends BaseFragment {
                     themeLayout.measure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.AT_MOST), MeasureSpec.makeMeasureSpec(height, MeasureSpec.AT_MOST));
                     qrView.measure(MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(260), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(330), MeasureSpec.EXACTLY));
                 } else {
-                    themeLayout.measure(MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(256), MeasureSpec.EXACTLY), heightMeasureSpec);
+                    themeLayout.measure(MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(273), MeasureSpec.EXACTLY), heightMeasureSpec);
                     qrView.measure(MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(260), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(310), MeasureSpec.EXACTLY));
                 }
                 if (prevIsPortrait != isPortrait) {
@@ -369,6 +378,18 @@ public class QrActivity extends BaseFragment {
             themesViewController.shareButton.setClickable(false);
             performShare();
         });
+        if (themesViewController.scanButtonWrap != null) {
+            themesViewController.scanButtonWrap.setOnClickListener(v -> {
+                if (getParentActivity() == null) {
+                    return;
+                }
+                if (Build.VERSION.SDK_INT >= 23 && getParentActivity().checkSelfPermission(Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+                    getParentActivity().requestPermissions(new String[]{Manifest.permission.CAMERA}, ActionIntroActivity.CAMERA_PERMISSION_REQUEST_CODE);
+                    return;
+                }
+                openCameraScanActivity();
+            });
+        }
         rootLayout.addView(themeLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM));
 
         currMotionDrawable.setIndeterminateAnimation(true);
@@ -513,7 +534,7 @@ public class QrActivity extends BaseFragment {
 
         int selectedPosition = -1;
         for (int i = 0; i != items.size(); ++i) {
-            if (items.get(i).chatTheme.getEmoticon().equals(currentTheme.getEmoticon())) {
+            if (ThemeKey.equals(items.get(i).chatTheme.getThemeKey(), currentTheme.getThemeKey())) {
                 themesViewController.selectedItem = items.get(i);
                 selectedPosition = i;
                 break;
@@ -601,10 +622,11 @@ public class QrActivity extends BaseFragment {
             currMotionDrawable.setPatternBitmap(wallPaper.settings.intensity);
             final long startedLoading = SystemClock.elapsedRealtime();
             currentTheme.loadWallpaper(isDarkTheme ? 1 : 0, pair -> {
-                if (pair != null && currentTheme.getTlTheme(isDarkTheme ? 1 : 0) != null) {
+                final long currentThemeId = currentTheme.getThemeId(isDarkTheme ? 1 : 0);
+                if (pair != null && currentThemeId != 0) {
                     final long themeId = pair.first;
-                    final Bitmap bitmap = pair.second;
-                    if (themeId == currentTheme.getTlTheme(isDarkTheme ? 1 : 0).id && bitmap != null) {
+                    final Bitmap bitmap = pair.second.bitmap;
+                    if (themeId == currentThemeId && bitmap != null) {
                         long elapsed = SystemClock.elapsedRealtime() - startedLoading;
                         onPatternLoaded(bitmap, currMotionDrawable.getIntensity(), elapsed > 150);
                     }
@@ -702,6 +724,9 @@ public class QrActivity extends BaseFragment {
             };
 
             parentLayout.animateThemedValues(animationSettings, null);
+            if (themesViewController.scanButtonWrap != null) {
+                themesViewController.scanButtonWrap.setBackground(Theme.AdaptiveRipple.createRect(ColorUtils.setAlphaComponent(Theme.AdaptiveRipple.calcRippleColor(getThemedColor(Theme.key_featuredStickers_addButton)), 25), 6f));
+            }
         });
     }
 
@@ -761,6 +786,63 @@ public class QrActivity extends BaseFragment {
         }, 500);
     }
 
+
+    private void openCameraScanActivity() {
+        CameraScanActivity.showAsSheet(this, false, CameraScanActivity.TYPE_QR, new CameraScanActivity.CameraScanActivityDelegate() {
+            @Override
+            public void didFindQr(String text) {
+                final String username = Browser.extractUsername(text);
+                if (!TextUtils.isEmpty(username)) {
+                    MessagesController.getInstance(currentAccount).getUserNameResolver().resolve(username, peerId -> {
+                        if (isFinished) {
+                            return;
+                        }
+                        if (peerId == null || peerId == Long.MAX_VALUE) {
+                            AndroidUtilities.runOnUIThread(() -> BulletinFactory.global().createSimpleBulletin(
+                                    LocaleController.getString(R.string.ScanQrCode),
+                                    LocaleController.getString(R.string.ErrorOccurred)
+                            ).show());
+                            return;
+                        }
+                        presentFragment(ProfileActivity.of(peerId), true);
+                    });
+                } else {
+                    AndroidUtilities.runOnUIThread(() -> BulletinFactory.global().createSimpleBulletin(
+                            LocaleController.getString(R.string.ScanQrCode),
+                            LocaleController.getString(R.string.ErrorOccurred)
+                    ).show());
+                }
+            }
+        });
+    }
+
+    @Override
+    public void onRequestPermissionsResultFragment(int requestCode, String[] permissions, int[] grantResults) {
+        if (getParentActivity() == null) {
+            return;
+        }
+        if (requestCode == ActionIntroActivity.CAMERA_PERMISSION_REQUEST_CODE) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                openCameraScanActivity();
+            } else {
+                new AlertDialog.Builder(getParentActivity())
+                        .setMessage(AndroidUtilities.replaceTags(LocaleController.getString(R.string.QRCodePermissionNoCameraWithHint)))
+                        .setPositiveButton(LocaleController.getString(R.string.PermissionOpenSettings), (dialogInterface, i) -> {
+                            try {
+                                Intent intent = new Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+                                intent.setData(Uri.parse("package:" + ApplicationLoader.applicationContext.getPackageName()));
+                                getParentActivity().startActivity(intent);
+                            } catch (Exception e) {
+                                FileLog.e(e);
+                            }
+                        })
+                        .setNegativeButton(LocaleController.getString(R.string.ContactsPermissionAlertNotNow), null)
+                        .setTopAnimation(R.raw.permission_request_camera, 72, false, Theme.getColor(Theme.key_dialogTopBackground))
+                        .show();
+            }
+        }
+    }
+
     @Override
     public ArrayList<ThemeDescription> getThemeDescriptions() {
         ArrayList<ThemeDescription> themeDescriptions = super.getThemeDescriptions();
@@ -768,6 +850,11 @@ public class QrActivity extends BaseFragment {
         ThemeDescription.ThemeDescriptionDelegate delegate = () -> setNavigationBarColor(getThemedColor(Theme.key_windowBackgroundGray));
         themeDescriptions.add(new ThemeDescription(themesViewController.shareButton, ThemeDescription.FLAG_BACKGROUNDFILTER, null, null, null, delegate, Theme.key_featuredStickers_addButton));
         themeDescriptions.add(new ThemeDescription(themesViewController.shareButton, ThemeDescription.FLAG_BACKGROUNDFILTER | ThemeDescription.FLAG_DRAWABLESELECTEDSTATE, null, null, null, null, Theme.key_featuredStickers_addButtonPressed));
+        if (themesViewController.scanButton != null) {
+            themeDescriptions.add(new ThemeDescription(themesViewController.scanButton, ThemeDescription.FLAG_TEXTCOLOR, null, null, null, delegate, Theme.key_featuredStickers_addButton));
+            themeDescriptions.add(new ThemeDescription(themesViewController.scanButtonIcon, ThemeDescription.FLAG_IMAGECOLOR, null, null, null, delegate, Theme.key_featuredStickers_addButton));
+        }
+
         for (ThemeDescription description : themeDescriptions) {
             description.resourcesProvider = getResourceProvider();
         }
@@ -1282,6 +1369,9 @@ public class QrActivity extends BaseFragment {
         public final TextView titleView;
         public final FlickerLoadingView progressView;
         public final TextView shareButton;
+        public final LinearLayout scanButtonWrap;
+        public final TextView scanButton;
+        public final ImageView scanButtonIcon;
         private final RecyclerListView recyclerView;
         private final RLottieDrawable darkThemeDrawable;
         private final RLottieImageView darkThemeView;
@@ -1331,18 +1421,30 @@ public class QrActivity extends BaseFragment {
                     if (isPortrait) {
                         recyclerView.setLayoutParams(LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 104, Gravity.START, 0, 44, 0, 0));
                         recyclerView.setPadding(recyclerPadding, 0, recyclerPadding, 0);
-                        shareButton.setLayoutParams(LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.START, 16, 162, 16, 16));
+                        if (scanButtonWrap != null) {
+                            shareButton.setLayoutParams(LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.START, 16, 162, 16, 8 + 48 + 16));
+                            scanButtonWrap.setLayoutParams(LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.START | Gravity.BOTTOM, 16, 162, 16, 16));
+                        } else {
+                            shareButton.setLayoutParams(LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.START, 16, 162, 16, 16));
+                        }
                     } else {
-                        recyclerView.setLayoutParams(LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.START, 0, 44, 0, 80));
                         recyclerView.setPadding(recyclerPadding, recyclerPadding / 2, recyclerPadding, recyclerPadding);
-                        shareButton.setLayoutParams(LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.BOTTOM, 16, 0, 16, 16));
+                        if (scanButtonWrap != null) {
+                            recyclerView.setLayoutParams(LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.START, 0, 44, 0, 8 + 48 + 80));
+                            shareButton.setLayoutParams(LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.BOTTOM, 16, 0, 16, 8 + 48 + 16));
+                            scanButtonWrap.setLayoutParams(LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.BOTTOM, 16, 0, 16, 16));
+                        } else {
+                            recyclerView.setLayoutParams(LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.START, 0, 44, 0, 80));
+                            shareButton.setLayoutParams(LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.BOTTOM, 16, 0, 16, 16));
+                        }
                     }
                     if (isPortrait) {
                         bottomShadow.setVisibility(View.GONE);
                         topShadow.setVisibility(View.GONE);
                     } else {
+                        final int bottomBottomMargin = shareButton != null ? (80 + 56) : 80;
                         bottomShadow.setVisibility(View.VISIBLE);
-                        bottomShadow.setLayoutParams(LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, AndroidUtilities.dp(2), Gravity.BOTTOM, 0, 0, 0, 80));
+                        bottomShadow.setLayoutParams(LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, AndroidUtilities.dp(2), Gravity.BOTTOM, 0, 0, 0, bottomBottomMargin));
                         topShadow.setVisibility(View.VISIBLE);
                         topShadow.setLayoutParams(LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, AndroidUtilities.dp(2), Gravity.TOP, 0, 44, 0, 0));
                     }
@@ -1462,6 +1564,37 @@ public class QrActivity extends BaseFragment {
             shareButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
             shareButton.setTypeface(AndroidUtilities.bold());
             rootLayout.addView(shareButton);
+
+
+            if (UserConfig.getInstance(currentAccount).getClientUserId() == userId) {
+                scanButtonWrap = new LinearLayout(context);
+                scanButtonWrap.setBackground(Theme.AdaptiveRipple.createRect(ColorUtils.setAlphaComponent(Theme.AdaptiveRipple.calcRippleColor(fragment.getThemedColor(Theme.key_featuredStickers_addButton)), 25), 6f));
+                scanButtonWrap.setOrientation(LinearLayout.HORIZONTAL);
+                scanButtonWrap.setGravity(Gravity.CENTER);
+
+                scanButtonIcon = new ImageView(context);
+                scanButtonIcon.setLayoutParams(LayoutHelper.createLinear(24, 24, Gravity.CENTER, 0, 0, 10, 0));
+                scanButtonIcon.setImageResource(R.drawable.profile_qr_scan_24);
+                scanButtonIcon.setColorFilter(new PorterDuffColorFilter(fragment.getThemedColor(Theme.key_featuredStickers_addButton), PorterDuff.Mode.MULTIPLY));
+                scanButtonWrap.addView(scanButtonIcon);
+
+                scanButton = new TextView(context);
+                scanButton.setEllipsize(TextUtils.TruncateAt.END);
+                scanButton.setGravity(Gravity.CENTER);
+                scanButton.setLines(1);
+                scanButton.setSingleLine(true);
+                scanButton.setText(LocaleController.getString(R.string.ScanQrCode));
+                scanButton.setTextColor(fragment.getThemedColor(Theme.key_featuredStickers_addButton));
+                scanButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
+                scanButton.setTypeface(AndroidUtilities.bold());
+                scanButtonWrap.addView(scanButton);
+
+                rootLayout.addView(scanButtonWrap);
+            } else {
+                scanButtonWrap = null;
+                scanButtonIcon = null;
+                scanButton = null;
+            }
         }
 
         public void onCreate() {
@@ -1518,9 +1651,9 @@ public class QrActivity extends BaseFragment {
             rootLayout.postDelayed(() -> {
                 RecyclerView.LayoutManager layoutManager = recyclerView.getLayoutManager();
                 if (layoutManager != null) {
-                    final int targetPosition = position > prevSelectedPosition
+                    final int targetPosition = prevIsPortrait ? (position > prevSelectedPosition
                             ? Math.min(position + 1, adapter.items.size() - 1)
-                            : Math.max(position - 1, 0);
+                            : Math.max(position - 1, 0)) : position;
                     scroller.setTargetPosition(targetPosition);
                     layoutManager.startSmoothScroll(scroller);
                 }

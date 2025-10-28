@@ -23,6 +23,7 @@
 
 #include "absl/base/attributes.h"
 #include "absl/base/config.h"
+#include "absl/base/nullability.h"
 
 // unaligned APIs
 
@@ -35,29 +36,35 @@ namespace absl {
 ABSL_NAMESPACE_BEGIN
 namespace base_internal {
 
-inline uint16_t UnalignedLoad16(const void *p) {
+inline uint16_t UnalignedLoad16(absl::Nonnull<const void *> p) {
   uint16_t t;
   memcpy(&t, p, sizeof t);
   return t;
 }
 
-inline uint32_t UnalignedLoad32(const void *p) {
+inline uint32_t UnalignedLoad32(absl::Nonnull<const void *> p) {
   uint32_t t;
   memcpy(&t, p, sizeof t);
   return t;
 }
 
-inline uint64_t UnalignedLoad64(const void *p) {
+inline uint64_t UnalignedLoad64(absl::Nonnull<const void *> p) {
   uint64_t t;
   memcpy(&t, p, sizeof t);
   return t;
 }
 
-inline void UnalignedStore16(void *p, uint16_t v) { memcpy(p, &v, sizeof v); }
+inline void UnalignedStore16(absl::Nonnull<void *> p, uint16_t v) {
+  memcpy(p, &v, sizeof v);
+}
 
-inline void UnalignedStore32(void *p, uint32_t v) { memcpy(p, &v, sizeof v); }
+inline void UnalignedStore32(absl::Nonnull<void *> p, uint32_t v) {
+  memcpy(p, &v, sizeof v);
+}
 
-inline void UnalignedStore64(void *p, uint64_t v) { memcpy(p, &v, sizeof v); }
+inline void UnalignedStore64(absl::Nonnull<void *> p, uint64_t v) {
+  memcpy(p, &v, sizeof v);
+}
 
 }  // namespace base_internal
 ABSL_NAMESPACE_END

@@ -89,10 +89,10 @@ std::string DataChunk::ToString() const {
   rtc::StringBuilder sb;
   sb << "DATA, type=" << (options().is_unordered ? "unordered" : "ordered")
      << "::"
-     << (*options().is_beginning && *options().is_end
-             ? "complete"
-             : *options().is_beginning ? "first"
-                                       : *options().is_end ? "last" : "middle")
+     << (*options().is_beginning && *options().is_end ? "complete"
+         : *options().is_beginning                    ? "first"
+         : *options().is_end                          ? "last"
+                                                      : "middle")
      << ", tsn=" << *tsn() << ", sid=" << *stream_id() << ", ssn=" << *ssn()
      << ", ppid=" << *ppid() << ", length=" << payload().size();
   return sb.Release();

@@ -58,6 +58,11 @@ int AudioDecoderPcmU::PacketDuration(const uint8_t* encoded,
   return static_cast<int>(encoded_len / Channels());
 }
 
+int AudioDecoderPcmU::PacketDurationRedundant(const uint8_t* encoded,
+                                              size_t encoded_len) const {
+  return PacketDuration(encoded, encoded_len);
+}
+
 void AudioDecoderPcmA::Reset() {}
 
 std::vector<AudioDecoder::ParseResult> AudioDecoderPcmA::ParsePayload(
@@ -97,6 +102,11 @@ int AudioDecoderPcmA::PacketDuration(const uint8_t* encoded,
                                      size_t encoded_len) const {
   // One encoded byte per sample per channel.
   return static_cast<int>(encoded_len / Channels());
+}
+
+int AudioDecoderPcmA::PacketDurationRedundant(const uint8_t* encoded,
+                                              size_t encoded_len) const {
+  return PacketDuration(encoded, encoded_len);
 }
 
 }  // namespace webrtc

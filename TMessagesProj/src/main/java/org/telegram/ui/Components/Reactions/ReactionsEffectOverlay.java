@@ -37,6 +37,7 @@ import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.RLottieDrawable;
 import org.telegram.ui.Components.ReactionsContainerLayout;
+import org.telegram.ui.Components.conference.message.GroupCallMessageCell;
 import org.telegram.ui.SelectAnimatedEmojiDialog;
 
 import java.util.ArrayList;
@@ -58,7 +59,6 @@ public class ReactionsEffectOverlay {
     private final AnimationView emojiImageView;
     private final AnimationView emojiStaticImageView;
     private final FrameLayout container;
-    private final BaseFragment fragment;
     private final int currentAccount;
     private ReactionsEffectOverlay nextReactionOverlay;
     boolean animateIn;
@@ -92,7 +92,6 @@ public class ReactionsEffectOverlay {
     boolean isFinished;
 
     public ReactionsEffectOverlay(Context context, BaseFragment fragment, ReactionsContainerLayout reactionsLayout, View cell, View fromAnimationView, float x, float y, ReactionsLayoutInBubble.VisibleReaction visibleReaction, int currentAccount, int animationType, boolean isStories) {
-        this.fragment = fragment;
         this.isStories = isStories;
         final MessageObject messageObject;
         if (cell instanceof ChatMessageCell) {
@@ -241,7 +240,7 @@ public class ReactionsEffectOverlay {
         } else if (cell != null) {
             ((View) cell.getParent()).getLocationInWindow(loc);
             fromX = loc[0] + x;
-            fromY = loc[1] + y;
+            fromY = loc[1] + y + (cell instanceof ChatMessageCell ? ((ChatMessageCell) cell).starsPriceTopPadding : 0);
             fromHeight = 0;
         } else {
             fromX = x;
@@ -333,8 +332,13 @@ public class ReactionsEffectOverlay {
                         if (messageCell.drawPinnedBottom && !messageCell.shouldDrawTimeOnMedia()) {
                             toY += AndroidUtilities.dp(2);
                         }
+                        toY += messageCell.getPaddingTop();
                     } else if (drawingCell instanceof ChatActionCell) {
                         reactionButton = ((ChatActionCell) drawingCell).getReactionButton(reaction);
+                        toY += drawingCell.getPaddingTop();
+                    } else if (drawingCell instanceof GroupCallMessageCell) {
+                        toX += ((GroupCallMessageCell) drawingCell).getReactionCenterX();
+                        toY += drawingCell.getMeasuredHeight() / 2f;
                     }
                     if (reactionButton != null) {
                         toX += reactionButton.drawingImageRect.left;
@@ -356,11 +360,17 @@ public class ReactionsEffectOverlay {
                 if (fragment != null && fragment.getParentActivity() != null && fragment.getFragmentView() != null && fragment.getFragmentView().getParent() != null && fragment.getFragmentView().getVisibility() == View.VISIBLE && fragment.getFragmentView() != null) {
                     fragment.getFragmentView().getLocationOnScreen(loc);
                     setAlpha(((View) fragment.getFragmentView().getParent()).getAlpha());
-                } else if (!isStories){
+                } else if (!isStories && !(drawingCell instanceof GroupCallMessageCell)){
                     return;
                 }
-                float previewX = toX - (emojiSize - toH) / 2f;
-                float previewY = toY - (emojiSize - toH) / 2f;
+                float previewX, previewY;
+                if (drawingCell instanceof GroupCallMessageCell) {
+                    previewX = toX - emojiSize / 2f;
+                    previewY = toY - emojiSize / 2f;
+                } else {
+                    previewX = toX - (emojiSize - toH) / 2f;
+                    previewY = toY - (emojiSize - toH) / 2f;
+                }
                 if (isStories && animationType == LONG_ANIMATION) {
                     previewX += AndroidUtilities.dp(40);
                 }
@@ -815,7 +825,9 @@ public class ReactionsEffectOverlay {
             currentShortOverlay.startTime = System.currentTimeMillis();
             if (currentShortOverlay.animationType == SHORT_ANIMATION && System.currentTimeMillis() - lastHapticTime > 200) {
                 lastHapticTime = System.currentTimeMillis();
-                currentShortOverlay.cell.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
+                if (currentShortOverlay.cell != null) {
+                    currentShortOverlay.cell.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
+                }
             }
         }
     }

@@ -16,6 +16,7 @@ import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.PointF;
+import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.Shader;
 import android.graphics.SurfaceTexture;
@@ -52,6 +53,7 @@ import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.EmojiThemes;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.theme.ThemeKey;
 import org.telegram.ui.ChatBackgroundDrawable;
 import org.telegram.ui.Components.AnimatedFloat;
 import org.telegram.ui.Components.BlurringShader;
@@ -70,6 +72,9 @@ public class PreviewView extends FrameLayout {
 
     private Bitmap bitmap;
     private Bitmap thumbBitmap;
+
+    private final Rect bitmapSrc = new Rect();
+    private final Rect bitmapDst = new Rect();
 
     private StoryEntry entry;
     private VideoPlayer videoPlayer;
@@ -302,7 +307,8 @@ public class PreviewView extends FrameLayout {
                 } else {
                     duration = entry.audioDuration;
                 }
-                entry.audioRight = entry.audioDuration == 0 ? 1 : Math.min(1, Math.min(duration, TimelineView.MAX_SELECT_DURATION) / (float) entry.audioDuration);
+                final int maxCount = timelineView == null ? 1 : timelineView.getMaxCount();
+                entry.audioRight = entry.audioDuration == 0 ? 1 : Math.min(1, Math.min(duration, maxCount * TimelineView.MAX_SELECT_DURATION) / (float) entry.audioDuration);
             }
         }
         setupAudio(entry, animated);
@@ -610,89 +616,89 @@ public class PreviewView extends FrameLayout {
     }
 
     private void setupImage(StoryEntry entry) {
-        if (bitmap != null && !bitmap.isRecycled()) {
-            bitmap.recycle();
-        }
-        bitmap = null;
-        if (thumbBitmap != null && !thumbBitmap.isRecycled()) {
-            thumbBitmap.recycle();
-        }
-        thumbBitmap = null;
-        if (entry != null) {
-            final int rw = getMeasuredWidth() <= 0 ? AndroidUtilities.displaySize.x : getMeasuredWidth();
-            final int rh = (int) (rw * 16 / 9f);
-            long imageId = -1L;
-            if (entry.isVideo) {
-                if (entry.blurredVideoThumb != null) {
-                    bitmap = entry.blurredVideoThumb;
-                }
-                if (bitmap == null && entry.thumbPath != null && entry.thumbPath.startsWith("vthumb://")) {
-                    imageId = Long.parseLong(entry.thumbPath.substring(9));
+//        if (thumbBitmap != null && !thumbBitmap.isRecycled()) {
+//            thumbBitmap.recycle();
+//        }
+//        thumbBitmap = null;
+        Utilities.searchQueue.postRunnable(() -> {
+            final Bitmap[] resultedBitmap = new Bitmap[1];
+            final boolean[] setupMatrix = new boolean[] { true };
+            if (entry != null) {
+                final int rw = getMeasuredWidth() <= 0 ? AndroidUtilities.displaySize.x : getMeasuredWidth();
+                final int rh = (int) (rw * 16 / 9f);
+                long imageId = -1L;
+                if (entry.isVideo) {
+                    if (entry.blurredVideoThumb != null) {
+                        resultedBitmap[0] = entry.blurredVideoThumb;
+                    }
+                    if (resultedBitmap[0] == null && entry.thumbPath != null && entry.thumbPath.startsWith("vthumb://")) {
+                        imageId = Long.parseLong(entry.thumbPath.substring(9));
 
-                    if (bitmap == null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                        try {
-                            Uri uri;
-                            if (entry.isVideo) {
-                                uri = ContentUris.withAppendedId(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, imageId);
-                            } else {
-                                uri = ContentUris.withAppendedId(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, imageId);
-                            }
-                            bitmap = getContext().getContentResolver().loadThumbnail(uri, new Size(rw, rh), null);
-                        } catch (Exception ignore) {}
+                        if (resultedBitmap[0] == null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                            try {
+                                Uri uri;
+                                if (entry.isVideo) {
+                                    uri = ContentUris.withAppendedId(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, imageId);
+                                } else {
+                                    uri = ContentUris.withAppendedId(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, imageId);
+                                }
+                                resultedBitmap[0] = getContext().getContentResolver().loadThumbnail(uri, new Size(rw, rh), null);
+                            } catch (Exception ignore) {}
+                        }
                     }
                 }
-            }
-            if (imageId < 0 && entry.isVideo && entry.thumbPath == null) {
-                invalidate();
-                return;
-            }
-            if (bitmap == null) {
-                File file = entry.getOriginalFile();
-                if (file == null) {
+                if (imageId < 0 && entry.isVideo && entry.thumbPath == null) {
+                    invalidate();
                     return;
                 }
-                String path = file.getPath();
-
-                final long imageIdFinal = imageId;
-                bitmap = StoryEntry.getScaledBitmap(opts -> {
-                    if (entry.isVideo) {
-                        if (entry.thumbPath != null) {
-                            return BitmapFactory.decodeFile(entry.thumbPath, opts);
-                        } else {
-                            try {
-                                return MediaStore.Video.Thumbnails.getThumbnail(getContext().getContentResolver(), imageIdFinal, MediaStore.Video.Thumbnails.MINI_KIND, opts);
-                            } catch (Throwable e) {
-                                invalidate();
-                                return null;
-                            }
-                        }
-                    } else {
-                        return BitmapFactory.decodeFile(path, opts);
+                if (resultedBitmap[0] == null) {
+                    File file = entry.getOriginalFile();
+                    if (file == null) {
+                        return;
                     }
-                }, rw, rh, false, true);
-                if (entry != null && blurManager != null && bitmap != null) {
+                    String path = file.getPath();
+
+                    final long imageIdFinal = imageId;
+                    resultedBitmap[0] = StoryEntry.getScaledBitmap(opts -> {
+                        if (entry.isVideo) {
+                            if (entry.thumbPath != null) {
+                                return BitmapFactory.decodeFile(entry.thumbPath, opts);
+                            } else {
+                                try {
+                                    return MediaStore.Video.Thumbnails.getThumbnail(getContext().getContentResolver(), imageIdFinal, MediaStore.Video.Thumbnails.MINI_KIND, opts);
+                                } catch (Throwable e) {
+                                    invalidate();
+                                    return null;
+                                }
+                            }
+                        } else {
+                            return BitmapFactory.decodeFile(path, opts);
+                        }
+                    }, rw, rh, false, false);
+                    setupMatrix[0] = false;
+                }
+            }
+            AndroidUtilities.runOnUIThread(() -> {
+                if (bitmap != null && !bitmap.isRecycled()) {
+                    bitmap.recycle();
+                }
+                bitmap = resultedBitmap[0];
+                if (entry != null && !entry.isDraft && entry.isVideo && bitmap != null) {
+                    entry.width = bitmap.getWidth();
+                    entry.height = bitmap.getHeight();
+                    entry.setupMatrix();
+                }
+                if (setupMatrix[0] && entry != null && blurManager != null && bitmap != null) {
                     blurManager.resetBitmap();
                     blurManager.setFallbackBlur(entry.buildBitmap(0.2f, bitmap), 0);
                     if (invalidateBlur != null) {
                         invalidateBlur.run();
                     }
                 }
-                return;
-            }
-            if (!entry.isDraft && entry.isVideo && bitmap != null) {
-                entry.width = bitmap.getWidth();
-                entry.height = bitmap.getHeight();
-                entry.setupMatrix();
-            }
-        }
-        if (entry != null && blurManager != null && bitmap != null) {
-            blurManager.resetBitmap();
-            blurManager.setFallbackBlur(entry.buildBitmap(0.2f, bitmap), 0);
-            if (invalidateBlur != null) {
-                invalidateBlur.run();
-            }
-        }
-        invalidate();
+                setupGradient();
+                invalidate();
+            });
+        });
     }
 
     private void setupCollage(StoryEntry entry) {
@@ -702,6 +708,7 @@ public class PreviewView extends FrameLayout {
     }
 
     private void setupGradient() {
+        if (entry == null) return;
         final int height = getMeasuredHeight() > 0 ? getMeasuredHeight() : AndroidUtilities.displaySize.y;
         if (entry.gradientTopColor == 0 || entry.gradientBottomColor == 0) {
             if (bitmap != null) {
@@ -1210,7 +1217,7 @@ public class PreviewView extends FrameLayout {
 
         final long duration = (long) ((entry.audioRight - entry.audioLeft) * entry.audioDuration);
         boolean shouldPlaying = playing && pos >= entry.audioOffset && pos <= entry.audioOffset + duration;
-        long audioPos = pos - entry.audioOffset + (long) (entry.audioLeft * entry.audioDuration);
+        long audioPos = pos - (entry.audioOffset - (long) (entry.audioLeft * entry.audioDuration));
         if (audioPlayer.isPlaying() != shouldPlaying) {
             audioPlayer.setPlayWhenReady(shouldPlaying);
             audioPlayer.seekTo(audioPos);
@@ -1426,9 +1433,10 @@ public class PreviewView extends FrameLayout {
                     canvas.rotate(entry.orientation);
                     canvas.translate(-entry.width / 2.0f, -entry.height / 2.0f);
                 }
-                canvas.scale((float) entry.width / bitmap.getWidth(), (float) entry.height / bitmap.getHeight());
                 bitmapPaint.setAlpha((int) (0xFF * (1.0f - alpha)));
-                canvas.drawBitmap(bitmap, 0, 0, bitmapPaint);
+                bitmapSrc.set(0, 0, bitmap.getWidth(), bitmap.getHeight());
+                bitmapDst.set(0, 0, entry.width, entry.height);
+                canvas.drawBitmap(bitmap, bitmapSrc, bitmapDst, bitmapPaint);
                 canvas.restore();
             }
         }
@@ -1824,7 +1832,7 @@ public class PreviewView extends FrameLayout {
 
         EmojiThemes theme = null;
         if (wallpaper != null && wallpaper.settings != null) {
-            theme = ChatThemeController.getInstance(currentAccount).getTheme(wallpaper.settings.emoticon);
+            theme = ChatThemeController.getInstance(currentAccount).getTheme(ThemeKey.ofEmoticon(wallpaper.settings.emoticon));
         }
         if (theme != null) {
             return getBackgroundDrawableFromTheme(currentAccount, theme, 0, isDark);
@@ -1939,7 +1947,7 @@ public class PreviewView extends FrameLayout {
     }
 
     public static Drawable getBackgroundDrawableFromTheme(int currentAccount, String emoticon, boolean isDark, boolean preview) {
-        EmojiThemes theme = ChatThemeController.getInstance(currentAccount).getTheme(emoticon);
+        EmojiThemes theme = ChatThemeController.getInstance(currentAccount).getTheme(ThemeKey.ofEmoticon(emoticon));
         if (theme == null) {
             return Theme.getCachedWallpaper();
         }
@@ -1978,8 +1986,8 @@ public class PreviewView extends FrameLayout {
                     return;
                 }
                 long themeId = pair.first;
-                Bitmap bitmap = pair.second;
-                if (themeId == chatTheme.getTlTheme(isDark ? 1 : 0).id && bitmap != null) {
+                Bitmap bitmap = pair.second.bitmap;
+                if (themeId == chatTheme.getThemeId(isDark ? 1 : 0) && bitmap != null) {
                     int intensity = chatTheme.getWallpaper(isDarkTheme ? 1 : 0).settings.intensity;
                     motionDrawable.setPatternBitmap(intensity, bitmap);
                     motionDrawable.setPatternColorFilter(patternColor);

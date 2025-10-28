@@ -34,7 +34,7 @@ inline bool ExtendCrc32cInline(uint32_t* crc, const char* p, size_t n) {
   constexpr uint32_t kCrc32Xor = 0xffffffffU;
   *crc ^= kCrc32Xor;
   if (n & 1) {
-    *crc = CRC32_u8(*crc, *p);
+    *crc = CRC32_u8(*crc, static_cast<uint8_t>(*p));
     n--;
     p++;
   }

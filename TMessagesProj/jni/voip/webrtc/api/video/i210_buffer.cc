@@ -31,140 +31,6 @@ int I210DataSize(int height, int stride_y, int stride_u, int stride_v) {
          (stride_y * height + stride_u * height + stride_v * height);
 }
 
-void webrtcRotatePlane90_16(const uint16_t* src,
-                            int src_stride,
-                            uint16_t* dst,
-                            int dst_stride,
-                            int width,
-                            int height) {
-  for (int x = 0; x < width; x++) {
-    for (int y = 0; y < height; y++) {
-      int dest_x = height - y - 1;
-      int dest_y = x;
-      dst[dest_x + dst_stride * dest_y] = src[x + src_stride * y];
-    }
-  }
-}
-
-void webrtcRotatePlane180_16(const uint16_t* src,
-                             int src_stride,
-                             uint16_t* dst,
-                             int dst_stride,
-                             int width,
-                             int height) {
-  for (int x = 0; x < width; x++) {
-    for (int y = 0; y < height; y++) {
-      int dest_x = width - x - 1;
-      int dest_y = height - y - 1;
-      dst[dest_x + dst_stride * dest_y] = src[x + src_stride * y];
-    }
-  }
-}
-
-void webrtcRotatePlane270_16(const uint16_t* src,
-                             int src_stride,
-                             uint16_t* dst,
-                             int dst_stride,
-                             int width,
-                             int height) {
-  for (int x = 0; x < width; x++) {
-    for (int y = 0; y < height; y++) {
-      int dest_x = y;
-      int dest_y = width - x - 1;
-      dst[dest_x + dst_stride * dest_y] = src[x + src_stride * y];
-    }
-  }
-}
-
-// TODO(sergio.garcia.murillo@gmail.com): Remove as soon it is available in
-// libyuv. Due to the rotate&scale required, this function may not be merged in
-// to libyuv inmediatelly.
-// https://bugs.chromium.org/p/libyuv/issues/detail?id=926
-// This method assumes continuous allocation of the y-plane, possibly clobbering
-// any padding between pixel rows.
-int webrtcI210Rotate(const uint16_t* src_y,
-                     int src_stride_y,
-                     const uint16_t* src_u,
-                     int src_stride_u,
-                     const uint16_t* src_v,
-                     int src_stride_v,
-                     uint16_t* dst_y,
-                     int dst_stride_y,
-                     uint16_t* dst_u,
-                     int dst_stride_u,
-                     uint16_t* dst_v,
-                     int dst_stride_v,
-                     int width,
-                     int height,
-                     enum libyuv::RotationMode mode) {
-  int halfwidth = (width + 1) >> 1;
-  int halfheight = (height + 1) >> 1;
-  if (!src_y || !src_u || !src_v || width <= 0 || height == 0 || !dst_y ||
-      !dst_u || !dst_v || dst_stride_y < 0) {
-    return -1;
-  }
-  // Negative height means invert the image.
-  if (height < 0) {
-    height = -height;
-    src_y = src_y + (height - 1) * src_stride_y;
-    src_u = src_u + (height - 1) * src_stride_u;
-    src_v = src_v + (height - 1) * src_stride_v;
-    src_stride_y = -src_stride_y;
-    src_stride_u = -src_stride_u;
-    src_stride_v = -src_stride_v;
-  }
-
-  switch (mode) {
-    case libyuv::kRotate0:
-      // copy frame
-      libyuv::CopyPlane_16(src_y, src_stride_y, dst_y, dst_stride_y, width,
-                           height);
-      libyuv::CopyPlane_16(src_u, src_stride_u, dst_u, dst_stride_u, halfwidth,
-                           height);
-      libyuv::CopyPlane_16(src_v, src_stride_v, dst_v, dst_stride_v, halfwidth,
-                           height);
-      return 0;
-    case libyuv::kRotate90:
-      // We need to rotate and rescale, we use plane Y as temporal storage.
-      webrtcRotatePlane90_16(src_u, src_stride_u, dst_y, height, halfwidth,
-                             height);
-      libyuv::ScalePlane_16(dst_y, height, height, halfwidth, dst_u, halfheight,
-                            halfheight, width, libyuv::kFilterBilinear);
-      webrtcRotatePlane90_16(src_v, src_stride_v, dst_y, height, halfwidth,
-                             height);
-      libyuv::ScalePlane_16(dst_y, height, height, halfwidth, dst_v, halfheight,
-                            halfheight, width, libyuv::kFilterLinear);
-      webrtcRotatePlane90_16(src_y, src_stride_y, dst_y, dst_stride_y, width,
-                             height);
-      return 0;
-    case libyuv::kRotate270:
-      // We need to rotate and rescale, we use plane Y as temporal storage.
-      webrtcRotatePlane270_16(src_u, src_stride_u, dst_y, height, halfwidth,
-                              height);
-      libyuv::ScalePlane_16(dst_y, height, height, halfwidth, dst_u, halfheight,
-                            halfheight, width, libyuv::kFilterBilinear);
-      webrtcRotatePlane270_16(src_v, src_stride_v, dst_y, height, halfwidth,
-                              height);
-      libyuv::ScalePlane_16(dst_y, height, height, halfwidth, dst_v, halfheight,
-                            halfheight, width, libyuv::kFilterLinear);
-      webrtcRotatePlane270_16(src_y, src_stride_y, dst_y, dst_stride_y, width,
-                              height);
-
-      return 0;
-    case libyuv::kRotate180:
-      webrtcRotatePlane180_16(src_y, src_stride_y, dst_y, dst_stride_y, width,
-                              height);
-      webrtcRotatePlane180_16(src_u, src_stride_u, dst_u, dst_stride_u,
-                              halfwidth, height);
-      webrtcRotatePlane180_16(src_v, src_stride_v, dst_v, dst_stride_v,
-                              halfwidth, height);
-      return 0;
-    default:
-      break;
-  }
-  return -1;
-}
-
 }  // namespace
 
 I210Buffer::I210Buffer(int width,
@@ -246,7 +112,7 @@ rtc::scoped_refptr<I210Buffer> I210Buffer::Rotate(
       I210Buffer::Create(rotated_width, rotated_height);
 
   RTC_CHECK_EQ(0,
-               webrtcI210Rotate(
+               libyuv::I210Rotate(
                    src.DataY(), src.StrideY(), src.DataU(), src.StrideU(),
                    src.DataV(), src.StrideV(), buffer->MutableDataY(),
                    buffer->StrideY(), buffer->MutableDataU(), buffer->StrideU(),

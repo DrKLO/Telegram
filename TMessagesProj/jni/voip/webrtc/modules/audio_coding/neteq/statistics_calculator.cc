@@ -300,6 +300,7 @@ void StatisticsCalculator::LogDelayedPacketOutageEvent(int num_samples,
                        100 /* bucket count */);
   delayed_packet_outage_counter_.RegisterSample();
   lifetime_stats_.delayed_packet_outage_samples += num_samples;
+  ++lifetime_stats_.delayed_packet_outage_events;
 }
 
 void StatisticsCalculator::StoreWaitingTime(int waiting_time_ms) {

@@ -1,0 +1,5 @@
+chain: rsa-keyAgreement.pem
+last_cert_trust: TRUSTED_ANCHOR
+utc_time: DEFAULT
+key_purpose: SERVER_AUTH
+expected_errors:

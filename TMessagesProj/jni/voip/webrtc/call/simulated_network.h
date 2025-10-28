@@ -28,16 +28,27 @@
 
 namespace webrtc {
 
-// Class simulating a network link. This is a simple and naive solution just
-// faking capacity and adding an extra transport delay in addition to the
-// capacity introduced delay.
-class SimulatedNetwork : public SimulatedNetworkInterface {
+// Class simulating a network link.
+//
+// This is a basic implementation of NetworkBehaviorInterface that supports:
+// - Packet loss
+// - Capacity delay
+// - Extra delay with or without packets reorder
+// - Packet overhead
+// - Queue max capacity
+class RTC_EXPORT SimulatedNetwork : public SimulatedNetworkInterface {
  public:
   using Config = BuiltInNetworkBehaviorConfig;
   explicit SimulatedNetwork(Config config, uint64_t random_seed = 1);
   ~SimulatedNetwork() override;
 
-  // Sets a new configuration. This won't affect packets already in the pipe.
+  // Sets a new configuration. This will affect packets that will be sent with
+  // EnqueuePacket but also packets in the network that have not left the
+  // network emulation. Packets that are ready to be retrieved by
+  // DequeueDeliverablePackets are not affected by the new configuration.
+  // TODO(bugs.webrtc.org/14525): Fix SetConfig and make it apply only to the
+  // part of the packet that is currently being sent (instead of applying to
+  // all of it).
   void SetConfig(const Config& config) override;
   void UpdateConfig(std::function<void(BuiltInNetworkBehaviorConfig*)>
                         config_modifier) override;
@@ -53,6 +64,7 @@ class SimulatedNetwork : public SimulatedNetworkInterface {
  private:
   struct PacketInfo {
     PacketInFlightInfo packet;
+    // Time when the packet has left (or will leave) the network.
     int64_t arrival_time_us;
   };
   // Contains current configuration state.
@@ -75,25 +87,46 @@ class SimulatedNetwork : public SimulatedNetworkInterface {
 
   mutable Mutex config_lock_;
 
-  // `process_checker_` guards the data structures involved in delay and loss
-  // processes, such as the packet queues.
+  // Guards the data structures involved in delay and loss processing, such as
+  // the packet queues.
   rtc::RaceChecker process_checker_;
+  // Models the capacity of the network by rejecting packets if the queue is
+  // full and keeping them in the queue until they are ready to exit (according
+  // to the link capacity, which cannot be violated, e.g. a 1 kbps link will
+  // only be able to deliver 1000 bits per second).
+  //
+  // Invariant:
+  // The head of the `capacity_link_` has arrival_time_us correctly set to the
+  // time when the packet is supposed to be delivered (without accounting
+  // potential packet loss or potential extra delay and without accounting for a
+  // new configuration of the network, which requires a re-computation of the
+  // arrival_time_us).
   std::queue<PacketInfo> capacity_link_ RTC_GUARDED_BY(process_checker_);
-  Random random_;
-
+  // Models the extra delay of the network (see `queue_delay_ms`
+  // and `delay_standard_deviation_ms` in BuiltInNetworkBehaviorConfig), packets
+  // in the `delay_link_` have technically already left the network and don't
+  // use its capacity but they are not delivered yet.
   std::deque<PacketInfo> delay_link_ RTC_GUARDED_BY(process_checker_);
+  // Represents the next moment in time when the network is supposed to deliver
+  // packets to the client (either by pulling them from `delay_link_` or
+  // `capacity_link_` or both).
+  absl::optional<int64_t> next_process_time_us_
+      RTC_GUARDED_BY(process_checker_);
 
   ConfigState config_state_ RTC_GUARDED_BY(config_lock_);
 
+  Random random_ RTC_GUARDED_BY(process_checker_);
   // Are we currently dropping a burst of packets?
   bool bursting_;
 
-  int64_t queue_size_bytes_ RTC_GUARDED_BY(process_checker_) = 0;
-  int64_t pending_drain_bits_ RTC_GUARDED_BY(process_checker_) = 0;
-  absl::optional<int64_t> last_capacity_link_visit_us_
-      RTC_GUARDED_BY(process_checker_);
-  absl::optional<int64_t> next_process_time_us_
-      RTC_GUARDED_BY(process_checker_);
+  // The send time of the last enqueued packet, this is only used to check that
+  // the send time of enqueued packets is monotonically increasing.
+  int64_t last_enqueue_time_us_;
+
+  // The last time a packet left the capacity_link_ (used to enforce
+  // the capacity of the link and avoid packets starts to get sent before
+  // the link it free).
+  int64_t last_capacity_link_exit_time_;
 };
 
 }  // namespace webrtc

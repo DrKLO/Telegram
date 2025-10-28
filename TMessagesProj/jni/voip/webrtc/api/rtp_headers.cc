@@ -44,7 +44,6 @@ RTPHeader::RTPHeader()
       arrOfCSRCs(),
       paddingLength(0),
       headerLength(0),
-      payload_type_frequency(0),
       extension() {}
 
 RTPHeader::RTPHeader(const RTPHeader& other) = default;

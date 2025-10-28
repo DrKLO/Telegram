@@ -1404,9 +1404,9 @@ public class StoriesUtilities {
 
         public void setChat(TLRPC.Chat chat, boolean animated) {
             int colorId = -1;
-//            if (chat != null && chat.profile_color != null) {
-//                colorId = chat.profile_color.color;
-//            }
+            if (chat != null && chat.profile_color != null) {
+                colorId = chat.profile_color.color;
+            }
             setColorId(colorId, animated);
         }
 

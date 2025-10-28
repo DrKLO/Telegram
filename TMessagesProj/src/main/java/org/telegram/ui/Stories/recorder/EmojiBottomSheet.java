@@ -1542,7 +1542,7 @@ public class EmojiBottomSheet extends BottomSheet implements NotificationCenter.
         containerView = new ContainerView(context);
         viewPager = new ViewPagerFixed(context) {
             @Override
-            protected void onTabAnimationUpdate(boolean manual) {
+            public void onTabAnimationUpdate(boolean manual) {
                 if (tabsView != null) {
                     tabsView.setType(viewPager.getPositionAnimated());
                 }

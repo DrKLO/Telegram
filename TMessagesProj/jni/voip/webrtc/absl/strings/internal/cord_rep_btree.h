@@ -32,6 +32,14 @@ namespace absl {
 ABSL_NAMESPACE_BEGIN
 namespace cord_internal {
 
+// `SetCordBtreeExhaustiveValidation()` can be set to force exhaustive
+// validation in debug assertions, and code that calls `IsValid()`
+// explicitly. By default, assertions should be relatively cheap and
+// AssertValid() can easily lead to O(n^2) complexity as recursive / full tree
+// validation is O(n).
+void SetCordBtreeExhaustiveValidation(bool do_exaustive_validation);
+bool IsCordBtreeExhaustiveValidationEnabled();
+
 class CordRepBtreeNavigator;
 
 // CordRepBtree is as the name implies a btree implementation of a Cordrep tree.
@@ -446,9 +454,9 @@ class CordRepBtree : public CordRep {
   template <EdgeType edge_type>
   static CordRepBtree* NewLeaf(absl::string_view data, size_t extra);
 
-  // Creates a raw copy of this Btree node, copying all properties, but
-  // without adding any references to existing edges.
-  CordRepBtree* CopyRaw() const;
+  // Creates a raw copy of this Btree node with the specified length, copying
+  // all properties, but without adding any references to existing edges.
+  CordRepBtree* CopyRaw(size_t new_length) const;
 
   // Creates a full copy of this Btree node, adding a reference on all edges.
   CordRepBtree* Copy() const;
@@ -666,15 +674,28 @@ inline void CordRepBtree::Unref(absl::Span<CordRep* const> edges) {
   }
 }
 
-inline CordRepBtree* CordRepBtree::CopyRaw() const {
-  auto* tree = static_cast<CordRepBtree*>(::operator new(sizeof(CordRepBtree)));
-  memcpy(static_cast<void*>(tree), this, sizeof(CordRepBtree));
-  new (&tree->refcount) RefcountAndFlags;
+inline CordRepBtree* CordRepBtree::CopyRaw(size_t new_length) const {
+  CordRepBtree* tree = new CordRepBtree;
+
+  // `length` and `refcount` are the first members of `CordRepBtree`.
+  // We initialize `length` using the given length, have `refcount` be set to
+  // ref = 1 through its default constructor, and copy all data beyond
+  // 'refcount' which starts with `tag` using a single memcpy: all contents
+  // except `refcount` is trivially copyable, and the compiler does not
+  // efficiently coalesce member-wise copy of these members.
+  // See https://gcc.godbolt.org/z/qY8zsca6z
+  // LINT.IfChange(copy_raw)
+  tree->length = new_length;
+  uint8_t* dst = &tree->tag;
+  const uint8_t* src = &tag;
+  const ptrdiff_t offset = src - reinterpret_cast<const uint8_t*>(this);
+  memcpy(dst, src, sizeof(CordRepBtree) - static_cast<size_t>(offset));
   return tree;
+  // LINT.ThenChange()
 }
 
 inline CordRepBtree* CordRepBtree::Copy() const {
-  CordRepBtree* tree = CopyRaw();
+  CordRepBtree* tree = CopyRaw(length);
   for (CordRep* rep : Edges()) CordRep::Ref(rep);
   return tree;
 }
@@ -683,8 +704,7 @@ inline CordRepBtree* CordRepBtree::CopyToEndFrom(size_t begin,
                                                  size_t new_length) const {
   assert(begin >= this->begin());
   assert(begin <= this->end());
-  CordRepBtree* tree = CopyRaw();
-  tree->length = new_length;
+  CordRepBtree* tree = CopyRaw(new_length);
   tree->set_begin(begin);
   for (CordRep* edge : tree->Edges()) CordRep::Ref(edge);
   return tree;
@@ -694,8 +714,7 @@ inline CordRepBtree* CordRepBtree::CopyBeginTo(size_t end,
                                                size_t new_length) const {
   assert(end <= capacity());
   assert(end >= this->begin());
-  CordRepBtree* tree = CopyRaw();
-  tree->length = new_length;
+  CordRepBtree* tree = CopyRaw(new_length);
   tree->set_end(end);
   for (CordRep* edge : tree->Edges()) CordRep::Ref(edge);
   return tree;

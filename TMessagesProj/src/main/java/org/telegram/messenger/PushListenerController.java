@@ -19,8 +19,10 @@ import com.google.firebase.messaging.FirebaseMessaging;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.telegram.messenger.voip.VoIPGroupNotification;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.NativeByteBuffer;
+import org.telegram.tgnet.SerializedData;
 import org.telegram.tgnet.TLRPC;
 
 import java.lang.annotation.Retention;
@@ -313,7 +315,25 @@ public class PushListenerController {
                     }
                     boolean canRelease = true;
                     if (dialogId != 0) {
-                        if ("READ_HISTORY".equals(loc_key)) {
+                        if ("CONF_CALL_REQUEST".equals(loc_key) || "CONF_VIDEOCALL_REQUEST".equals(loc_key)) {
+                            final long call_id = custom.getLong("call_id");
+                            final int msg_id = custom.getInt("msg_id");
+                            String[] args;
+                            if (json.has("loc_args")) {
+                                JSONArray loc_args = json.getJSONArray("loc_args");
+                                args = new String[loc_args.length()];
+                                for (int a = 0; a < args.length; a++) {
+                                    args[a] = loc_args.getString(a);
+                                }
+                            } else {
+                                args = null;
+                            }
+                            if ((System.currentTimeMillis() - time) < MessagesController.getInstance(account).callRingTimeout) {
+                                VoIPGroupNotification.request(ApplicationLoader.applicationContext, account, dialogId, args != null && args.length > 2 ? args[2] : null, call_id, msg_id, "CONF_VIDEOCALL_REQUEST".equals(loc_key));
+                            } else {
+                                VoIPGroupNotification.hide(ApplicationLoader.applicationContext, account, msg_id);
+                            }
+                        } else if ("READ_HISTORY".equals(loc_key)) {
                             int max_id = custom.getInt("max_id");
                             final ArrayList<TLRPC.Update> updates = new ArrayList<>();
                             if (BuildVars.LOGS_ENABLED) {
@@ -521,6 +541,18 @@ public class PushListenerController {
                                             message1 = getString(R.string.Gift2UniqueUpgradeNotification);
                                             break;
                                         }
+                                        case "MESSAGE_STARGIFT_PREPAID_UPGRADE": {
+                                            userName = args[0];
+                                            messageText = LocaleController.formatPluralStringComma("NotificationMessageUniqueStarGiftPrepaidUpgrade", Integer.parseInt(args[1]), args[0]);
+                                            message1 = getString(R.string.Gift2UniquePrepaidUpgradeNotification);
+                                            break;
+                                        }
+                                        case "MESSAGE_STARGIFT_UNPACK_UPGRADE": {
+                                            userName = args[0];
+                                            messageText = LocaleController.formatString(R.string.NotificationMessageUniqueStarGiftUnpackUpgrade, args[0]);
+                                            message1 = getString(R.string.Gift2UniqueUnpackUpgradeNotification);
+                                            break;
+                                        }
                                         case "MESSAGE_PAID_MEDIA": {
                                             int stars = Integer.parseInt(args[1]);
                                             messageText = LocaleController.formatPluralString("NotificationMessagePaidMedia", stars, args[0]);
@@ -630,6 +662,11 @@ public class PushListenerController {
                                             message1 = getString(R.string.Poll);
                                             break;
                                         }
+                                        case "MESSAGE_TODO": {
+                                            messageText = LocaleController.formatString(R.string.NotificationMessageTodo2, args[0], args[1]);
+                                            message1 = getString(R.string.Todo);
+                                            break;
+                                        }
                                         case "MESSAGE_GEO": {
                                             messageText = LocaleController.formatString("NotificationMessageMap", R.string.NotificationMessageMap, args[0]);
                                             message1 = getString(R.string.AttachLocation);
@@ -704,8 +741,12 @@ public class PushListenerController {
                                             localMessage = true;
                                             break;
                                         }
+                                        case "MESSAGE_SUGGEST_BIRTHDAY": {
+                                            messageText = LocaleController.formatString(R.string.NotificationMessageSuggestBirthday, args[0]);
+                                            break;
+                                        }
                                         case "MESSAGES": {
-                                            messageText = LocaleController.formatString("NotificationMessageAlbum", R.string.NotificationMessageAlbum, args[0]);
+                                            messageText = LocaleController.formatString(R.string.NotificationMessageAlbum, args[0]);
                                             localMessage = true;
                                             break;
                                         }
@@ -779,8 +820,21 @@ public class PushListenerController {
                                             break;
                                         }
                                         case "CHANNEL_MESSAGE_POLL": {
-                                            messageText = LocaleController.formatString("ChannelMessagePoll2", R.string.ChannelMessagePoll2, args[0], args[1]);
+                                            messageText = LocaleController.formatString(R.string.ChannelMessagePoll2, args[0], args[1]);
                                             message1 = getString(R.string.Poll);
+                                            break;
+                                        }
+                                        case "CHANNEL_MESSAGE_TODO": {
+                                            messageText = LocaleController.formatString(R.string.ChannelMessageTodo2, args[0], args[1]);
+                                            message1 = getString(R.string.Todo);
+                                            break;
+                                        }
+                                        case "CHANNEL_MESSAGE_TODO_DONE": {
+                                            messageText = LocaleController.formatString(R.string.ChannelMessageTodoDone2, args[0], args[2]);
+                                            break;
+                                        }
+                                        case "CHANNEL_MESSAGE_TODO_APPEND": {
+                                            messageText = LocaleController.formatString(R.string.ChannelMessageTodoAppend2, args[0], args[2]);
                                             break;
                                         }
                                         case "CHANNEL_MESSAGE_GEO": {
@@ -908,8 +962,21 @@ public class PushListenerController {
                                             break;
                                         }
                                         case "CHAT_MESSAGE_POLL": {
-                                            messageText = LocaleController.formatString("NotificationMessageGroupPoll2", R.string.NotificationMessageGroupPoll2, args[0], args[1], args[2]);
+                                            messageText = LocaleController.formatString(R.string.NotificationMessageGroupPoll2, args[0], args[1], args[2]);
                                             message1 = getString(R.string.Poll);
+                                            break;
+                                        }
+                                        case "CHAT_MESSAGE_TODO": {
+                                            messageText = LocaleController.formatString(R.string.NotificationMessageGroupTodo2, args[0], args[1], args[2]);
+                                            message1 = getString(R.string.Todo);
+                                            break;
+                                        }
+                                        case "CHAT_MESSAGE_TODO_DONE": {
+                                            messageText = LocaleController.formatString(R.string.NotificationMessageGroupTodoDone2, args[0], args[1], args[2]);
+                                            break;
+                                        }
+                                        case "CHAT_MESSAGE_TODO_APPEND": {
+                                            messageText = LocaleController.formatString(R.string.NotificationMessageGroupTodoAppend2, args[0], args[1], args[2]);
                                             break;
                                         }
                                         case "CHAT_MESSAGE_GEO": {
@@ -1149,101 +1216,113 @@ public class PushListenerController {
                                             break;
                                         }
                                         case "PINNED_GIVEAWAY": {
-                                            messageText = LocaleController.formatString("NotificationPinnedGiveaway", R.string.NotificationPinnedGiveaway, args[0]);
+                                            messageText = LocaleController.formatString(R.string.NotificationPinnedGiveaway, args[0]);
                                             break;
                                         }
                                         case "PINNED_QUIZ": {
                                             if (dialogId > 0) {
-                                                messageText = LocaleController.formatString("NotificationActionPinnedQuizUser", R.string.NotificationActionPinnedQuizUser, args[0], args[1]);
+                                                messageText = LocaleController.formatString(R.string.NotificationActionPinnedQuizUser, args[0], args[1]);
                                             } else {
                                                 if (isGroup) {
-                                                    messageText = LocaleController.formatString("NotificationActionPinnedQuiz2", R.string.NotificationActionPinnedQuiz2, args[0], args[2], args[1]);
+                                                    messageText = LocaleController.formatString(R.string.NotificationActionPinnedQuiz2, args[0], args[2], args[1]);
                                                 } else {
-                                                    messageText = LocaleController.formatString("NotificationActionPinnedQuizChannel2", R.string.NotificationActionPinnedQuizChannel2, args[0], args[1]);
+                                                    messageText = LocaleController.formatString(R.string.NotificationActionPinnedQuizChannel2, args[0], args[1]);
                                                 }
                                             }
                                             break;
                                         }
                                         case "PINNED_POLL": {
                                             if (dialogId > 0) {
-                                                messageText = LocaleController.formatString("NotificationActionPinnedPollUser", R.string.NotificationActionPinnedPollUser, args[0], args[1]);
+                                                messageText = LocaleController.formatString(R.string.NotificationActionPinnedPollUser, args[0], args[1]);
                                             } else {
                                                 if (isGroup) {
-                                                    messageText = LocaleController.formatString("NotificationActionPinnedPoll2", R.string.NotificationActionPinnedPoll2, args[0], args[2], args[1]);
+                                                    messageText = LocaleController.formatString(R.string.NotificationActionPinnedPoll2, args[0], args[2], args[1]);
                                                 } else {
-                                                    messageText = LocaleController.formatString("NotificationActionPinnedPollChannel2", R.string.NotificationActionPinnedPollChannel2, args[0], args[1]);
+                                                    messageText = LocaleController.formatString(R.string.NotificationActionPinnedPollChannel2, args[0], args[1]);
+                                                }
+                                            }
+                                            break;
+                                        }
+                                        case "PINNED_TODO": {
+                                            if (dialogId > 0) {
+                                                messageText = LocaleController.formatString(R.string.NotificationActionPinnedTodoUser, args[0], args[1]);
+                                            } else {
+                                                if (isGroup) {
+                                                    messageText = LocaleController.formatString(R.string.NotificationActionPinnedTodo2, args[0], args[2], args[1]);
+                                                } else {
+                                                    messageText = LocaleController.formatString(R.string.NotificationActionPinnedTodoChannel2, args[0], args[1]);
                                                 }
                                             }
                                             break;
                                         }
                                         case "PINNED_GEO": {
                                             if (dialogId > 0) {
-                                                messageText = LocaleController.formatString("NotificationActionPinnedGeoUser", R.string.NotificationActionPinnedGeoUser, args[0], args[1]);
+                                                messageText = LocaleController.formatString(R.string.NotificationActionPinnedGeoUser, args[0], args[1]);
                                             } else {
                                                 if (isGroup) {
-                                                    messageText = LocaleController.formatString("NotificationActionPinnedGeo", R.string.NotificationActionPinnedGeo, args[0], args[1]);
+                                                    messageText = LocaleController.formatString(R.string.NotificationActionPinnedGeo, args[0], args[1]);
                                                 } else {
-                                                    messageText = LocaleController.formatString("NotificationActionPinnedGeoChannel", R.string.NotificationActionPinnedGeoChannel, args[0]);
+                                                    messageText = LocaleController.formatString(R.string.NotificationActionPinnedGeoChannel, args[0]);
                                                 }
                                             }
                                             break;
                                         }
                                         case "PINNED_GEOLIVE": {
                                             if (dialogId > 0) {
-                                                messageText = LocaleController.formatString("NotificationActionPinnedGeoLiveUser", R.string.NotificationActionPinnedGeoLiveUser, args[0], args[1]);
+                                                messageText = LocaleController.formatString(R.string.NotificationActionPinnedGeoLiveUser, args[0], args[1]);
                                             } else {
                                                 if (isGroup) {
-                                                    messageText = LocaleController.formatString("NotificationActionPinnedGeoLive", R.string.NotificationActionPinnedGeoLive, args[0], args[1]);
+                                                    messageText = LocaleController.formatString(R.string.NotificationActionPinnedGeoLive, args[0], args[1]);
                                                 } else {
-                                                    messageText = LocaleController.formatString("NotificationActionPinnedGeoLiveChannel", R.string.NotificationActionPinnedGeoLiveChannel, args[0]);
+                                                    messageText = LocaleController.formatString(R.string.NotificationActionPinnedGeoLiveChannel, args[0]);
                                                 }
                                             }
                                             break;
                                         }
                                         case "PINNED_GAME": {
                                             if (dialogId > 0) {
-                                                messageText = LocaleController.formatString("NotificationActionPinnedGameUser", R.string.NotificationActionPinnedGameUser, args[0], args[1]);
+                                                messageText = LocaleController.formatString(R.string.NotificationActionPinnedGameUser, args[0], args[1]);
                                             } else {
                                                 if (isGroup) {
-                                                    messageText = LocaleController.formatString("NotificationActionPinnedGame", R.string.NotificationActionPinnedGame, args[0], args[1]);
+                                                    messageText = LocaleController.formatString(R.string.NotificationActionPinnedGame, args[0], args[1]);
                                                 } else {
-                                                    messageText = LocaleController.formatString("NotificationActionPinnedGameChannel", R.string.NotificationActionPinnedGameChannel, args[0]);
+                                                    messageText = LocaleController.formatString(R.string.NotificationActionPinnedGameChannel, args[0]);
                                                 }
                                             }
                                             break;
                                         }
                                         case "PINNED_GAME_SCORE": {
                                             if (dialogId > 0) {
-                                                messageText = LocaleController.formatString("NotificationActionPinnedGameScoreUser", R.string.NotificationActionPinnedGameScoreUser, args[0], args[1]);
+                                                messageText = LocaleController.formatString(R.string.NotificationActionPinnedGameScoreUser, args[0], args[1]);
                                             } else {
                                                 if (isGroup) {
-                                                    messageText = LocaleController.formatString("NotificationActionPinnedGameScore", R.string.NotificationActionPinnedGameScore, args[0], args[1]);
+                                                    messageText = LocaleController.formatString(R.string.NotificationActionPinnedGameScore, args[0], args[1]);
                                                 } else {
-                                                    messageText = LocaleController.formatString("NotificationActionPinnedGameScoreChannel", R.string.NotificationActionPinnedGameScoreChannel, args[0]);
+                                                    messageText = LocaleController.formatString(R.string.NotificationActionPinnedGameScoreChannel, args[0]);
                                                 }
                                             }
                                             break;
                                         }
                                         case "PINNED_INVOICE": {
                                             if (dialogId > 0) {
-                                                messageText = LocaleController.formatString("NotificationActionPinnedInvoiceUser", R.string.NotificationActionPinnedInvoiceUser, args[0], args[1]);
+                                                messageText = LocaleController.formatString(R.string.NotificationActionPinnedInvoiceUser, args[0], args[1]);
                                             } else {
                                                 if (isGroup) {
-                                                    messageText = LocaleController.formatString("NotificationActionPinnedInvoice", R.string.NotificationActionPinnedInvoice, args[0], args[1]);
+                                                    messageText = LocaleController.formatString(R.string.NotificationActionPinnedInvoice, args[0], args[1]);
                                                 } else {
-                                                    messageText = LocaleController.formatString("NotificationActionPinnedInvoiceChannel", R.string.NotificationActionPinnedInvoiceChannel, args[0]);
+                                                    messageText = LocaleController.formatString(R.string.NotificationActionPinnedInvoiceChannel, args[0]);
                                                 }
                                             }
                                             break;
                                         }
                                         case "PINNED_GIF": {
                                             if (dialogId > 0) {
-                                                messageText = LocaleController.formatString("NotificationActionPinnedGifUser", R.string.NotificationActionPinnedGifUser, args[0], args[1]);
+                                                messageText = LocaleController.formatString(R.string.NotificationActionPinnedGifUser, args[0], args[1]);
                                             } else {
                                                 if (isGroup) {
-                                                    messageText = LocaleController.formatString("NotificationActionPinnedGif", R.string.NotificationActionPinnedGif, args[0], args[1]);
+                                                    messageText = LocaleController.formatString(R.string.NotificationActionPinnedGif, args[0], args[1]);
                                                 } else {
-                                                    messageText = LocaleController.formatString("NotificationActionPinnedGifChannel", R.string.NotificationActionPinnedGifChannel, args[0]);
+                                                    messageText = LocaleController.formatString(R.string.NotificationActionPinnedGifChannel, args[0]);
                                                 }
                                             }
                                             break;
@@ -1252,6 +1331,17 @@ public class PushListenerController {
                                             messageText = getString(R.string.YouHaveNewMessage);
                                             name = getString(R.string.SecretChatName);
                                             localMessage = true;
+                                            break;
+                                        }
+                                        case "CONF_CALL_MISSED": {
+                                            final long call_id = custom.getLong("call_id");
+                                            VoIPGroupNotification.hideByCallId(ApplicationLoader.applicationContext, account, call_id);
+                                            final int others = Integer.parseInt(args[1]);
+                                            if (others <= 0) {
+                                                messageText = LocaleController.formatString(R.string.NotificationActionMissedCallConference, args[0]);
+                                            } else {
+                                                messageText = LocaleController.formatPluralStringComma("NotificationActionMissedCallConferenceOther", others, args[0]);
+                                            }
                                             break;
                                         }
                                         case "REACT_TEXT": {
@@ -1347,6 +1437,9 @@ public class PushListenerController {
                                     }
                                     NotificationsController.getInstance(currentAccount).processNewMessages(arrayList, true, true, countDownLatch);
                                 }
+                            } else if ("CONF_CALL_MISSED".equalsIgnoreCase(loc_key)) {
+                                final long call_id = custom.getLong("call_id");
+                                VoIPGroupNotification.hideByCallId(ApplicationLoader.applicationContext, account, call_id);
                             }
                         }
                     }
@@ -1422,6 +1515,9 @@ public class PushListenerController {
             case "REACT_POLL": {
                 return LocaleController.formatString(R.string.PushReactPoll, args);
             }
+            case "REACT_TODO": {
+                return LocaleController.formatString(R.string.PushReactTodo, args);
+            }
             case "REACT_QUIZ": {
                 return LocaleController.formatString(R.string.PushReactQuiz, args);
             }
@@ -1475,6 +1571,9 @@ public class PushListenerController {
             }
             case "CHAT_REACT_POLL": {
                 return LocaleController.formatString(R.string.PushChatReactPoll, args);
+            }
+            case "CHAT_REACT_TODO": {
+                return LocaleController.formatString(R.string.PushChatReactTodo, args);
             }
             case "CHAT_REACT_QUIZ": {
                 return LocaleController.formatString(R.string.PushChatReactQuiz, args);

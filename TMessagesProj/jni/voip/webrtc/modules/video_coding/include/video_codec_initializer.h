@@ -19,17 +19,12 @@
 
 namespace webrtc {
 
-class VideoBitrateAllocator;
 class VideoCodec;
 
 class VideoCodecInitializer {
  public:
   // Takes a VideoEncoderConfig and the VideoStream configuration and
   // translates them into the old school VideoCodec type.
-  // It also creates a VideoBitrateAllocator instance, suitable for the codec
-  // type used. For instance, VP8 will create an allocator than can handle
-  // simulcast and temporal layering.
-  // GetBitrateAllocator is called implicitly from here, no need to call again.
   static bool SetupCodec(const VideoEncoderConfig& config,
                          const std::vector<VideoStream>& streams,
                          VideoCodec* codec);

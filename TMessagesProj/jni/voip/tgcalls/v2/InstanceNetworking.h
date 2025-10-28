@@ -22,6 +22,8 @@
 #include "ThreadLocalObject.h"
 #include "Instance.h"
 
+#include "third-party/json11.hpp"
+
 namespace rtc {
 class BasicPacketSocketFactory;
 class BasicNetworkManager;
@@ -144,6 +146,7 @@ public:
         std::function<void(std::string const &)> dataChannelMessageReceived;
         std::shared_ptr<Threads> threads;
         std::shared_ptr<DirectConnectionChannel> directConnectionChannel;
+        std::map<std::string, json11::Json> customParameters;
     };
     
     static webrtc::CryptoOptions getDefaulCryptoOptions();

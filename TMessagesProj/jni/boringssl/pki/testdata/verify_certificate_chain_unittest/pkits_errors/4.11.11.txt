@@ -1,0 +1,4 @@
+----- Certificate i=0 (CN=Invalid Self-Issued inhibitPolicyMapping EE Certificate Test11,O=Test Certificates 2011,C=US) -----
+ERROR: No valid policy
+ERROR: No valid policy
+

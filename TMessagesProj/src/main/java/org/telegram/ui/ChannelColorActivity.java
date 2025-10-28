@@ -589,7 +589,7 @@ public class ChannelColorActivity extends BaseFragment implements NotificationCe
             req.for_profile = false;
 
             if (channel.color == null) {
-                channel.color = new TLRPC.TL_peerColor();
+                channel.color = new TLRPC.PeerColor();
                 channel.flags2 |= 128;
             }
             req.flags |= 4;
@@ -624,7 +624,7 @@ public class ChannelColorActivity extends BaseFragment implements NotificationCe
             req.for_profile = true;
 
             if (channel.profile_color == null) {
-                channel.profile_color = new TLRPC.TL_peerColor();
+                channel.profile_color = new TLRPC.PeerColor();
                 channel.flags2 |= 256;
             }
             if (selectedProfileColor >= 0) {
@@ -1113,7 +1113,7 @@ public class ChannelColorActivity extends BaseFragment implements NotificationCe
                 headerCell.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundWhite));
                 view = headerCell;
             } else if (viewType == VIEW_TYPE_GIFT) {
-                PeerColorActivity.GiftCell giftCell = new PeerColorActivity.GiftCell(getContext(), resourceProvider);
+                PeerColorActivity.GiftCell giftCell = new PeerColorActivity.GiftCell(getContext(), false, resourceProvider);
                 view = giftCell;
             } else if (viewType == VIEW_TYPE_GIFT_FLICKER) {
                 FlickerLoadingView flickerLoadingView = new FlickerLoadingView(getContext(), resourceProvider);
@@ -1450,7 +1450,7 @@ public class ChannelColorActivity extends BaseFragment implements NotificationCe
             backgroundView = new PeerColorActivity.ColoredActionBar(getContext(), resourceProvider);
             backgroundView.setProgressToGradient(1f);
             backgroundView.ignoreMeasure = true;
-            addView(backgroundView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, isGroup ? 194 : 134, Gravity.FILL));
+            addView(backgroundView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, isGroup ? 320 : 260, Gravity.FILL));
             profileView = new PeerColorActivity.ProfilePreview(getContext(), currentAccount, dialogId, resourceProvider){
                 @Override
                 public void setColor(int colorId, boolean animated) {
@@ -1460,7 +1460,7 @@ public class ChannelColorActivity extends BaseFragment implements NotificationCe
                     }
                 }
             };
-            addView(profileView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 104, Gravity.BOTTOM, 0, 0, 0, isGroup ? 24: 0));
+            addView(profileView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 230, Gravity.BOTTOM, 0, 0, 0, isGroup ? 24: 0));
 
             if (needBoostInfoSection()) {
                 title = new SimpleTextView(getContext());

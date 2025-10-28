@@ -3,6 +3,7 @@ package org.telegram.ui.Stories.recorder;
 import static org.telegram.messenger.AndroidUtilities.dp;
 import static org.telegram.messenger.AndroidUtilities.dpf2;
 import static org.telegram.messenger.AndroidUtilities.translitSafe;
+import static org.telegram.messenger.LocaleController.formatPluralStringComma;
 import static org.telegram.messenger.LocaleController.getString;
 
 import android.animation.Animator;
@@ -78,6 +79,7 @@ import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.GraySectionCell;
 import org.telegram.ui.Cells.TextCell;
 import org.telegram.ui.Cells.TextInfoPrivacyCell;
+import org.telegram.ui.Components.AlertsCreator;
 import org.telegram.ui.Components.AnimatedFloat;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.BackupImageView;
@@ -88,6 +90,7 @@ import org.telegram.ui.Components.ColoredImageSpan;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.EditTextBoldCursor;
 import org.telegram.ui.Components.GroupCreateSpan;
+import org.telegram.ui.Components.ItemOptions;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.ListView.AdapterWithDiffUtils;
 import org.telegram.ui.Components.RadioButton;
@@ -135,10 +138,13 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
     private final HashMap<Long, ArrayList<Long>> selectedContactsByGroup = new HashMap<>();
     private int selectedContactsCount = 0;
 
+    private final HashSet<Integer> selectedAlbums = new HashSet<>();
+
     private boolean allowScreenshots = true;
     private boolean keepOnMyPage = false;
     private boolean allowCover = true;
     private boolean canChangePeer = true;
+    private int storiesCount = 1;
 
     private HashSet<Long> mergeUsers(ArrayList<Long> users, HashMap<Long, ArrayList<Long>> usersByGroup) {
         HashSet<Long> set = new HashSet<>();
@@ -284,8 +290,12 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
                     if (item.sendAs && canChangePeer) {
                         new ChoosePeerSheet(context, currentAccount, selectedPeer, peer -> {
                             selectedPeer = peer;
+                            selectedAlbums.clear();
                             if (onSelectedPeer != null) {
                                 onSelectedPeer.run(selectedPeer);
+                            }
+                            if (onSelectedAlbums != null) {
+                                onSelectedAlbums.run(new HashSet<>(selectedAlbums));
                             }
                             updateItems(true);
                         }, resourcesProvider).show();
@@ -490,13 +500,38 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
                                     .setDuration(5000)
                                     .show(true);
                         }
-                        if (whenCoverClicked != null) {
+                        //if (whenCoverClicked != null) {
                             updateItems(true);
-                        }
+                        //}
                     }
                 } else if (item.viewType == VIEW_TYPE_BUTTON) {
-                    if (whenCoverClicked != null) {
-                        whenCoverClicked.run();
+                    if (item.id == OPTION_EDIT_COVER) {
+                        if (whenCoverClicked != null) {
+                            whenCoverClicked.run();
+                        }
+                    } else if (item.id == OPTION_EDIT_ALBUMS) {
+                        long dialogId = getDialogId();
+                        ItemOptions options = ItemOptions.makeOptions(this, resourcesProvider, view);
+                        options.add(R.drawable.msg_addfolder, getString(R.string.StoriesAlbumNewAlbum), () -> {
+                            AlertsCreator.createStoriesAlbumEnterNameForCreate(getContext(), attachedFragment, resourcesProvider, name -> {
+                                getStoriesController().createAlbum(dialogId, name, album -> {
+                                    selectedAlbums.add(album.album_id);
+                                    updateItems(true);
+                                    if (onSelectedAlbums != null) {
+                                        onSelectedAlbums.run(new HashSet<>(selectedAlbums));
+                                    }
+                                });
+                            });
+                        });
+                        options.addGap();
+                        ItemOptions.addAlbumsItemOptions(options, getStoriesController().getStoryAlbumsList(dialogId), selectedAlbums, false, null, (b) -> {
+                            options.dismiss();
+                            updateItems(true);
+                            if (onSelectedAlbums != null) {
+                                onSelectedAlbums.run(new HashSet<>(selectedAlbums));
+                            }
+                        });
+                        options.show();
                     }
                 }
             });
@@ -1098,16 +1133,51 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
                     )));
                     pad.subtractHeight += dp(80);
                 }
+
                 if (!isEdit) {
                     items.add(ItemInner.asCheck(getString(R.string.StoryAllowScreenshots), 0, allowScreenshots));
                     pad.subtractHeight += dp(50);
                     items.add(ItemInner.asCheck(getString(containsPrivacy ? R.string.StoryKeep : (isChannel ? R.string.StoryKeepChannel : R.string.StoryKeepGroup)), 1, keepOnMyPage));
                     pad.subtractHeight += dp(50);
+                }
+
+                if (!isEdit && allowCover && whenCoverClicked != null) {
                     items.add(ItemInner.asShadow(LocaleController.formatPluralString(containsPrivacy ? "StoryKeepInfo" : (isChannel ? "StoryKeepChannelInfo" : "StoryKeepGroupInfo"), (storyPeriod == Integer.MAX_VALUE ? 86400 : storyPeriod) / 3600)));
                     pad.subtractHeight += dp(80);
                 }
+                if (keepOnMyPage) {
+                    long dialogId = getDialogId();
+                    getStoriesController().getStoryAlbumsList(dialogId);
+
+                    StringBuilder sb = new StringBuilder();
+                    if (selectedAlbums.isEmpty()) {
+                        sb.append(getString(R.string.StoriesAlbumNameAllStories));
+                    } else if (selectedAlbums.size() < 3) {
+                        for (int albumId : selectedAlbums) {
+                            StoriesController.StoryAlbum album = getStoriesController()
+                                    .getStoryAlbumsList(dialogId).findById(albumId);
+                            if (album == null) {
+                                continue;
+                            }
+                            if (sb.length() != 0) {
+                                sb.append(", ");
+                            }
+                            sb.append(album.title);
+                        }
+                    } else {
+                        sb.append(LocaleController.formatPluralString("StoriesAlbumCount", selectedAlbums.size()));
+                    }
+
+                    items.add(ItemInner.asButton(OPTION_EDIT_ALBUMS, getString(R.string.StoriesAlbum), sb));
+                    pad.subtractHeight += dp(50);
+                }
+                if (!isEdit && !(allowCover && whenCoverClicked != null)) {
+                    items.add(ItemInner.asShadow(LocaleController.formatPluralString(containsPrivacy ? "StoryKeepInfo" : (isChannel ? "StoryKeepChannelInfo" : "StoryKeepGroupInfo"), (storyPeriod == Integer.MAX_VALUE ? 86400 : storyPeriod) / 3600)));
+                    pad.subtractHeight += dp(80);
+                }
+
                 if (keepOnMyPage && allowCover && whenCoverClicked != null) {
-                    items.add(ItemInner.asButton(getString(R.string.StoryEditCover), coverDrawable));
+                    items.add(ItemInner.asButton(OPTION_EDIT_COVER, getString(R.string.StoryEditCover), coverDrawable));
                     pad.subtractHeight += dp(50);
                     items.add(ItemInner.asShadow(getString(R.string.StoryEditCoverInfo)));
                     pad.subtractHeight += dp(72);
@@ -1440,6 +1510,13 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
             headerView.setTranslationY(Math.max(AndroidUtilities.statusBarHeight, top));
         }
 
+        private long getDialogId() {
+            if (selectedPeer != null) {
+                return DialogObject.getPeerDialogId(selectedPeer);
+            }
+            return UserConfig.getInstance(currentAccount).getClientUserId();
+        }
+
         public void updateButton(boolean animated) {
             if (pageType == PAGE_TYPE_SHARE) {
                 button.setShowZero(false);
@@ -1448,7 +1525,11 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
                 if (isEdit) {
                     button.setText(getString(R.string.StoryPrivacyButtonSave), animated);
                 } else {
-                    button.setText(getString(R.string.StoryPrivacyButtonPost), animated);
+                    if (storiesCount == 1) {
+                        button.setText(getString(R.string.StoryPrivacyButtonPost), animated);
+                    } else {
+                        button.setText(formatPluralStringComma("StoryPrivacyButtonPostMultiple", storiesCount), animated);
+                    }
 //                    if (selectedType == TYPE_CLOSE_FRIENDS) {
 //                        button.setText(LocaleController.getString(R.string.StoryPrivacyButtonCloseFriends), animated);
 //                        button.setCount(getCloseFriends().size(), animated);
@@ -1866,7 +1947,7 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
                 final ItemInner item = items.get(position);
                 final int viewType = holder.getItemViewType();
                 final ItemInner neighbour = reversedLayout ? (position > 0 ? items.get(position - 1) : null) : (position + 1 < items.size() ? items.get(position + 1) : null);
-                final boolean divider = neighbour != null && neighbour.viewType == viewType;
+                final boolean divider = neighbour != null && (neighbour.viewType == viewType || neighbour.viewType == VIEW_TYPE_BUTTON && neighbour.id == OPTION_EDIT_ALBUMS);
                 if (viewType == VIEW_TYPE_USER) {
                     UserCell userCell = (UserCell) holder.itemView;
                     userCell.setIsSendAs(item.sendAs, !item.sendAs);
@@ -2017,7 +2098,7 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
 
         viewPager = new ViewPagerFixed(context) {
             @Override
-            protected void onTabAnimationUpdate(boolean manual) {
+            public void onTabAnimationUpdate(boolean manual) {
                 containerView.invalidate();
             }
 
@@ -2293,6 +2374,7 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
     private Utilities.Callback<StoryPrivacy> onDismiss;
     private Utilities.Callback<ArrayList<Long>> onDone2;
     private Utilities.Callback<TLRPC.InputPeer> onSelectedPeer;
+    private Utilities.Callback<HashSet<Integer>> onSelectedAlbums;
     private boolean applyWhenDismiss = false;
     private boolean allowSmallChats = true;
     private boolean isEdit = false;
@@ -2313,8 +2395,25 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
         this.onSelectedPeer = onSelectedPeer;
         return this;
     }
+    public StoryPrivacyBottomSheet whenSelectedAlbums(Utilities.Callback<HashSet<Integer>> onSelectedAlbums) {
+        this.onSelectedAlbums = onSelectedAlbums;
+        return this;
+    }
     public StoryPrivacyBottomSheet allowCover(boolean allowCover) {
         this.allowCover = allowCover;
+        if (viewPager != null) {
+            View[] viewPages = viewPager.getViewPages();
+            for (int i = 0; i < viewPages.length; ++i) {
+                View view = viewPages[i];
+                if (view instanceof Page) {
+                    ((Page) view).updateButton(false);
+                }
+            }
+        }
+        return this;
+    }
+    public StoryPrivacyBottomSheet setCount(int storiesCount) {
+        this.storiesCount = storiesCount;
         if (viewPager != null) {
             View[] viewPages = viewPager.getViewPages();
             for (int i = 0; i < viewPages.length; ++i) {
@@ -2364,6 +2463,7 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
 
     public StoryPrivacyBottomSheet setPeer(TLRPC.InputPeer inputPeer) {
         selectedPeer = inputPeer;
+        selectedAlbums.clear();
         View[] viewPages = viewPager.getViewPages();
         if (viewPages[0] instanceof Page) {
             ((Page) viewPages[0]).bind(((Page) viewPages[0]).pageType);
@@ -2425,6 +2525,9 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
     public static final int VIEW_TYPE_HEADER_CELL = 8;
     public static final int VIEW_TYPE_BUTTON = 9;
 
+    private static final int OPTION_EDIT_COVER = 0;
+    private static final int OPTION_EDIT_ALBUMS = 1;
+
     private static class ItemInner extends AdapterWithDiffUtils.Item {
 
         public int resId;
@@ -2440,6 +2543,7 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
         public boolean sendAs;
         public int subtractHeight;
         public int padHeight = -1;
+        public int id;
 
         private ItemInner(int viewType, boolean selectable) {
             super(viewType, selectable);
@@ -2512,16 +2616,18 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
             item.checked = checked;
             return item;
         }
-        public static ItemInner asButton(CharSequence text, CharSequence text2) {
+        public static ItemInner asButton(int id, CharSequence text, CharSequence text2) {
             ItemInner item = new ItemInner(VIEW_TYPE_BUTTON, false);
             item.text = text;
             item.text2 = text2;
+            item.id = id;
             return item;
         }
-        public static ItemInner asButton(CharSequence text, Drawable drawable) {
+        public static ItemInner asButton(int id, CharSequence text, Drawable drawable) {
             ItemInner item = new ItemInner(VIEW_TYPE_BUTTON, false);
             item.text = text;
             item.drawable = drawable;
+            item.id = id;
             return item;
         }
 
@@ -2558,7 +2664,7 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
                 return false;
             } else if (viewType == VIEW_TYPE_CHECK && (resId != i.resId || !TextUtils.equals(text, i.text) || checked != i.checked)) {
                 return false;
-            } else if (viewType == VIEW_TYPE_BUTTON && (drawable != i.drawable || !TextUtils.equals(text, i.text) || !TextUtils.equals(text2, i.text2))) {
+            } else if (viewType == VIEW_TYPE_BUTTON && (id != i.id || drawable != i.drawable || !TextUtils.equals(text, i.text) || !TextUtils.equals(text2, i.text2))) {
                 return false;
             }
             return true;
@@ -3883,8 +3989,8 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
                     this.rules.add(rule);
                 }
             } else if (type == TYPE_SELECTED_CONTACTS) {
+                final TLRPC.TL_inputPrivacyValueAllowUsers rule = new TLRPC.TL_inputPrivacyValueAllowUsers();
                 if (currentAccount >= 0 && userIds != null && !userIds.isEmpty()) {
-                    final TLRPC.TL_inputPrivacyValueAllowUsers rule = new TLRPC.TL_inputPrivacyValueAllowUsers();
                     for (int i = 0; i < userIds.size(); ++i) {
                         long userId = userIds.get(i);
                         selectedUserIds.add(userId);
@@ -3894,8 +4000,8 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
                             selectedInputUsers.add(user);
                         }
                     }
-                    this.rules.add(rule);
                 }
+                this.rules.add(rule);
             } else if (type == TYPE_AS_MESSAGE) {
                 if (userIds != null) {
                     this.sendToUsers.addAll(userIds);
@@ -3936,8 +4042,8 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
                     this.rules.add(rule);
                 }
             } else if (type == TYPE_SELECTED_CONTACTS) {
+                final TLRPC.TL_inputPrivacyValueAllowUsers rule = new TLRPC.TL_inputPrivacyValueAllowUsers();
                 if (inputUserIds != null && !inputUserIds.isEmpty()) {
-                    final TLRPC.TL_inputPrivacyValueAllowUsers rule = new TLRPC.TL_inputPrivacyValueAllowUsers();
                     for (int i = 0; i < inputUserIds.size(); ++i) {
                         TLRPC.InputUser user = inputUserIds.get(i);
                         if (user != null) {
@@ -3946,8 +4052,8 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
                             selectedInputUsers.add(user);
                         }
                     }
-                    this.rules.add(rule);
                 }
+                this.rules.add(rule);
             } else if (type == TYPE_AS_MESSAGE) {
                 if (inputUserIds != null) {
                     for (int i = 0; i < inputUserIds.size(); ++i) {
@@ -4524,5 +4630,10 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
                 return 2 + peers.size();
             }
         }
+    }
+
+    public StoriesController getStoriesController() {
+        return MessagesController.getInstance(currentAccount)
+                .getStoriesController();
     }
 }

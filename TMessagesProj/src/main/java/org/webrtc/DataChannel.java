@@ -63,7 +63,7 @@ public class DataChannel {
     public final ByteBuffer data;
 
     /**
-     * Indicates whether |data| contains UTF-8 text or "binary data"
+     * Indicates whether `data` contains UTF-8 text or "binary data"
      * (i.e. anything else).
      */
     public final boolean binary;
@@ -82,7 +82,7 @@ public class DataChannel {
     /** The data channel state has changed. */
     @CalledByNative("Observer") public void onStateChange();
     /**
-     * A data buffer was successfully received.  NOTE: |buffer.data| will be
+     * A data buffer was successfully received.  NOTE: `buffer.data` will be
      * freed once this function returns so callers who want to use the data
      * asynchronously must make sure to copy it first.
      */
@@ -110,7 +110,7 @@ public class DataChannel {
     this.nativeDataChannel = nativeDataChannel;
   }
 
-  /** Register |observer|, replacing any previously-registered observer. */
+  /** Register `observer`, replacing any previously-registered observer. */
   public void registerObserver(Observer observer) {
     checkDataChannelExists();
     if (nativeObserver != 0) {
@@ -123,6 +123,7 @@ public class DataChannel {
   public void unregisterObserver() {
     checkDataChannelExists();
     nativeUnregisterObserver(nativeObserver);
+    nativeObserver = 0;
   }
 
   public String label() {
@@ -156,7 +157,7 @@ public class DataChannel {
     nativeClose();
   }
 
-  /** Send |data| to the remote peer; return success. */
+  /** Send `data` to the remote peer; return success. */
   public boolean send(Buffer buffer) {
     checkDataChannelExists();
     // TODO(fischman): this could be cleverer about avoiding copies if the

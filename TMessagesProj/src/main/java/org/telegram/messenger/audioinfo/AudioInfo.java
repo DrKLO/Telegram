@@ -52,6 +52,8 @@ public abstract class AudioInfo {
 	protected Bitmap cover;			// cover image data
     protected Bitmap smallCover;	// cover image data
 
+	private File coverFile;
+
 	public String getBrand() {
 		return brand;
 	}
@@ -130,6 +132,14 @@ public abstract class AudioInfo {
 
 	public Bitmap getCover() {
 		return cover;
+	}
+
+	public File getCoverFile() {
+		return coverFile;
+	}
+
+	public void setCoverFile(File file) {
+		coverFile = file;
 	}
 
     public Bitmap getSmallCover() {

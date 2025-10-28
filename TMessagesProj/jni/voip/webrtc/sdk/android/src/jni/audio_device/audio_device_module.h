@@ -66,6 +66,9 @@ class AudioOutput {
   virtual absl::optional<uint32_t> MinSpeakerVolume() const = 0;
   virtual void AttachAudioBuffer(AudioDeviceBuffer* audioBuffer) = 0;
   virtual int GetPlayoutUnderrunCount() = 0;
+  virtual absl::optional<AudioDeviceModule::Stats> GetStats() const {
+    return absl::nullopt;
+  }
 };
 
 // Extract an android.media.AudioManager from an android.content.Context.
@@ -85,6 +88,10 @@ void GetAudioParameters(JNIEnv* env,
                         bool use_stereo_output,
                         AudioParameters* input_parameters,
                         AudioParameters* output_parameters);
+
+bool IsLowLatencyInputSupported(JNIEnv* env, const JavaRef<jobject>& j_context);
+
+bool IsLowLatencyOutputSupported(JNIEnv* env, const JavaRef<jobject>& j_context);
 
 // Glue together an audio input and audio output to get an AudioDeviceModule.
 rtc::scoped_refptr<AudioDeviceModule> CreateAudioDeviceModuleFromInputAndOutput(

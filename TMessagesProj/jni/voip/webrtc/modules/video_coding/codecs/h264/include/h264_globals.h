@@ -14,6 +14,7 @@
 #ifndef MODULES_VIDEO_CODING_CODECS_H264_INCLUDE_H264_GLOBALS_H_
 #define MODULES_VIDEO_CODING_CODECS_H264_INCLUDE_H264_GLOBALS_H_
 
+#include <algorithm>
 #include <string>
 
 #include "modules/video_coding/codecs/interface/common_constants.h"
@@ -60,6 +61,15 @@ struct NaluInfo {
   uint8_t type;
   int sps_id;
   int pps_id;
+
+  friend bool operator==(const NaluInfo& lhs, const NaluInfo& rhs) {
+    return lhs.type == rhs.type && lhs.sps_id == rhs.sps_id &&
+           lhs.pps_id == rhs.pps_id;
+  }
+
+  friend bool operator!=(const NaluInfo& lhs, const NaluInfo& rhs) {
+    return !(lhs == rhs);
+  }
 };
 
 const size_t kMaxNalusPerPacket = 10;
@@ -78,6 +88,20 @@ struct RTPVideoHeaderH264 {
   // The packetization mode of this transport. Packetization mode
   // determines which packetization types are allowed when packetizing.
   H264PacketizationMode packetization_mode;
+
+  friend bool operator==(const RTPVideoHeaderH264& lhs,
+                         const RTPVideoHeaderH264& rhs) {
+    return lhs.nalu_type == rhs.nalu_type &&
+           lhs.packetization_type == rhs.packetization_type &&
+           std::equal(lhs.nalus, lhs.nalus + lhs.nalus_length, rhs.nalus,
+                      rhs.nalus + rhs.nalus_length) &&
+           lhs.packetization_mode == rhs.packetization_mode;
+  }
+
+  friend bool operator!=(const RTPVideoHeaderH264& lhs,
+                         const RTPVideoHeaderH264& rhs) {
+    return !(lhs == rhs);
+  }
 };
 
 }  // namespace webrtc

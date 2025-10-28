@@ -19,7 +19,6 @@
 #include <vector>
 
 #include "api/crypto/crypto_options.h"
-#include "api/field_trials_view.h"
 #include "api/media_types.h"
 #include "api/rtp_parameters.h"
 #include "api/rtp_transceiver_direction.h"
@@ -46,7 +45,6 @@ class ConnectionContext;
 
 namespace cricket {
 
-class ChannelManager;
 class MediaEngineInterface;
 
 // Default RTCP CNAME for unit tests.
@@ -140,16 +138,11 @@ struct MediaSessionOptions {
 // of the various fields to determine the proper result.
 class MediaSessionDescriptionFactory {
  public:
-  // Simple constructor that does not set any configuration for the factory.
-  // When using this constructor, the methods below can be used to set the
-  // configuration.
+  // This constructor automatically sets up the factory to get its configuration
+  // from the specified MediaEngine (when provided).
   // The TransportDescriptionFactory and the UniqueRandomIdGenerator are not
   // owned by MediaSessionDescriptionFactory, so they must be kept alive by the
   // user of this class.
-  MediaSessionDescriptionFactory(const TransportDescriptionFactory* factory,
-                                 rtc::UniqueRandomIdGenerator* ssrc_generator);
-  // This helper automatically sets up the factory to get its configuration
-  // from the specified MediaEngine
   MediaSessionDescriptionFactory(cricket::MediaEngineInterface* media_engine,
                                  bool rtx_enabled,
                                  rtc::UniqueRandomIdGenerator* ssrc_generator,
@@ -167,8 +160,6 @@ class MediaSessionDescriptionFactory {
                         const VideoCodecs& recv_codecs);
   RtpHeaderExtensions filtered_rtp_header_extensions(
       RtpHeaderExtensions extensions) const;
-  SecurePolicy secure() const { return secure_; }
-  void set_secure(SecurePolicy s) { secure_ = s; }
 
   void set_enable_encrypted_rtp_header_extensions(bool enable) {
     enable_encrypted_rtp_header_extensions_ = enable;
@@ -178,10 +169,10 @@ class MediaSessionDescriptionFactory {
     is_unified_plan_ = is_unified_plan;
   }
 
-  std::unique_ptr<SessionDescription> CreateOffer(
+  webrtc::RTCErrorOr<std::unique_ptr<SessionDescription>> CreateOfferOrError(
       const MediaSessionOptions& options,
       const SessionDescription* current_description) const;
-  std::unique_ptr<SessionDescription> CreateAnswer(
+  webrtc::RTCErrorOr<std::unique_ptr<SessionDescription>> CreateAnswerOrError(
       const SessionDescription* offer,
       const MediaSessionOptions& options,
       const SessionDescription* current_description) const;
@@ -216,11 +207,12 @@ class MediaSessionDescriptionFactory {
       bool extmap_allow_mixed,
       const std::vector<MediaDescriptionOptions>& media_description_options)
       const;
-  bool AddTransportOffer(const std::string& content_name,
-                         const TransportOptions& transport_options,
-                         const SessionDescription* current_desc,
-                         SessionDescription* offer,
-                         IceCredentialsIterator* ice_credentials) const;
+  webrtc::RTCError AddTransportOffer(
+      const std::string& content_name,
+      const TransportOptions& transport_options,
+      const SessionDescription* current_desc,
+      SessionDescription* offer,
+      IceCredentialsIterator* ice_credentials) const;
 
   std::unique_ptr<TransportDescription> CreateTransportAnswer(
       const std::string& content_name,
@@ -230,37 +222,24 @@ class MediaSessionDescriptionFactory {
       bool require_transport_attributes,
       IceCredentialsIterator* ice_credentials) const;
 
-  bool AddTransportAnswer(const std::string& content_name,
-                          const TransportDescription& transport_desc,
-                          SessionDescription* answer_desc) const;
+  webrtc::RTCError AddTransportAnswer(
+      const std::string& content_name,
+      const TransportDescription& transport_desc,
+      SessionDescription* answer_desc) const;
 
-  // Helpers for adding media contents to the SessionDescription. Returns true
-  // it succeeds or the media content is not needed, or false if there is any
-  // error.
-
-  bool AddAudioContentForOffer(
+  // Helpers for adding media contents to the SessionDescription.
+  webrtc::RTCError AddRtpContentForOffer(
       const MediaDescriptionOptions& media_description_options,
       const MediaSessionOptions& session_options,
       const ContentInfo* current_content,
       const SessionDescription* current_description,
-      const RtpHeaderExtensions& audio_rtp_extensions,
-      const AudioCodecs& audio_codecs,
+      const RtpHeaderExtensions& header_extensions,
+      const std::vector<Codec>& codecs,
       StreamParamsVec* current_streams,
       SessionDescription* desc,
       IceCredentialsIterator* ice_credentials) const;
 
-  bool AddVideoContentForOffer(
-      const MediaDescriptionOptions& media_description_options,
-      const MediaSessionOptions& session_options,
-      const ContentInfo* current_content,
-      const SessionDescription* current_description,
-      const RtpHeaderExtensions& video_rtp_extensions,
-      const VideoCodecs& video_codecs,
-      StreamParamsVec* current_streams,
-      SessionDescription* desc,
-      IceCredentialsIterator* ice_credentials) const;
-
-  bool AddDataContentForOffer(
+  webrtc::RTCError AddDataContentForOffer(
       const MediaDescriptionOptions& media_description_options,
       const MediaSessionOptions& session_options,
       const ContentInfo* current_content,
@@ -269,7 +248,7 @@ class MediaSessionDescriptionFactory {
       SessionDescription* desc,
       IceCredentialsIterator* ice_credentials) const;
 
-  bool AddUnsupportedContentForOffer(
+  webrtc::RTCError AddUnsupportedContentForOffer(
       const MediaDescriptionOptions& media_description_options,
       const MediaSessionOptions& session_options,
       const ContentInfo* current_content,
@@ -277,7 +256,7 @@ class MediaSessionDescriptionFactory {
       SessionDescription* desc,
       IceCredentialsIterator* ice_credentials) const;
 
-  bool AddAudioContentForAnswer(
+  webrtc::RTCError AddRtpContentForAnswer(
       const MediaDescriptionOptions& media_description_options,
       const MediaSessionOptions& session_options,
       const ContentInfo* offer_content,
@@ -285,27 +264,13 @@ class MediaSessionDescriptionFactory {
       const ContentInfo* current_content,
       const SessionDescription* current_description,
       const TransportInfo* bundle_transport,
-      const AudioCodecs& audio_codecs,
-      const RtpHeaderExtensions& default_audio_rtp_header_extensions,
+      const std::vector<Codec>& codecs,
+      const RtpHeaderExtensions& header_extensions,
       StreamParamsVec* current_streams,
       SessionDescription* answer,
       IceCredentialsIterator* ice_credentials) const;
 
-  bool AddVideoContentForAnswer(
-      const MediaDescriptionOptions& media_description_options,
-      const MediaSessionOptions& session_options,
-      const ContentInfo* offer_content,
-      const SessionDescription* offer_description,
-      const ContentInfo* current_content,
-      const SessionDescription* current_description,
-      const TransportInfo* bundle_transport,
-      const VideoCodecs& video_codecs,
-      const RtpHeaderExtensions& default_video_rtp_header_extensions,
-      StreamParamsVec* current_streams,
-      SessionDescription* answer,
-      IceCredentialsIterator* ice_credentials) const;
-
-  bool AddDataContentForAnswer(
+  webrtc::RTCError AddDataContentForAnswer(
       const MediaDescriptionOptions& media_description_options,
       const MediaSessionOptions& session_options,
       const ContentInfo* offer_content,
@@ -317,7 +282,7 @@ class MediaSessionDescriptionFactory {
       SessionDescription* answer,
       IceCredentialsIterator* ice_credentials) const;
 
-  bool AddUnsupportedContentForAnswer(
+  webrtc::RTCError AddUnsupportedContentForAnswer(
       const MediaDescriptionOptions& media_description_options,
       const MediaSessionOptions& session_options,
       const ContentInfo* offer_content,
@@ -353,9 +318,6 @@ class MediaSessionDescriptionFactory {
   webrtc::AlwaysValidPointer<rtc::UniqueRandomIdGenerator> const
       ssrc_generator_;
   bool enable_encrypted_rtp_header_extensions_ = false;
-  // TODO(zhihuang): Rename secure_ to sdec_policy_; rename the related getter
-  // and setter.
-  SecurePolicy secure_ = SEC_DISABLED;
   const TransportDescriptionFactory* transport_desc_factory_;
 };
 
@@ -398,26 +360,6 @@ VideoContentDescription* GetFirstVideoContentDescription(
     SessionDescription* sdesc);
 SctpDataContentDescription* GetFirstSctpDataContentDescription(
     SessionDescription* sdesc);
-
-// Helper functions to return crypto suites used for SDES.
-void GetSupportedAudioSdesCryptoSuites(
-    const webrtc::CryptoOptions& crypto_options,
-    std::vector<int>* crypto_suites);
-void GetSupportedVideoSdesCryptoSuites(
-    const webrtc::CryptoOptions& crypto_options,
-    std::vector<int>* crypto_suites);
-void GetSupportedDataSdesCryptoSuites(
-    const webrtc::CryptoOptions& crypto_options,
-    std::vector<int>* crypto_suites);
-void GetSupportedAudioSdesCryptoSuiteNames(
-    const webrtc::CryptoOptions& crypto_options,
-    std::vector<std::string>* crypto_suite_names);
-void GetSupportedVideoSdesCryptoSuiteNames(
-    const webrtc::CryptoOptions& crypto_options,
-    std::vector<std::string>* crypto_suite_names);
-void GetSupportedDataSdesCryptoSuiteNames(
-    const webrtc::CryptoOptions& crypto_options,
-    std::vector<std::string>* crypto_suite_names);
 
 }  // namespace cricket
 

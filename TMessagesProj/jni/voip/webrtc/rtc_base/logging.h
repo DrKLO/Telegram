@@ -647,17 +647,17 @@ class LogMessage {
       ::rtc::webrtc_logging_impl::LogStreamer<>() \
           << ::rtc::webrtc_logging_impl::LogMetadata(file, line, sev)
 
-#define RTC_LOG(sev)                        \
-  !rtc::LogMessage::IsNoop<::rtc::sev>() && \
+#define RTC_LOG(sev)                          \
+  !::rtc::LogMessage::IsNoop<::rtc::sev>() && \
       RTC_LOG_FILE_LINE(::rtc::sev, __FILE__, __LINE__)
 
-#define RTC_LOG_IF(sev, condition)                         \
-  !rtc::LogMessage::IsNoop<::rtc::sev>() && (condition) && \
+#define RTC_LOG_IF(sev, condition)                           \
+  !::rtc::LogMessage::IsNoop<::rtc::sev>() && (condition) && \
       RTC_LOG_FILE_LINE(::rtc::sev, __FILE__, __LINE__)
 
 // The _V version is for when a variable is passed in.
 #define RTC_LOG_V(sev) \
-  !rtc::LogMessage::IsNoop(sev) && RTC_LOG_FILE_LINE(sev, __FILE__, __LINE__)
+  !::rtc::LogMessage::IsNoop(sev) && RTC_LOG_FILE_LINE(sev, __FILE__, __LINE__)
 
 // The _F version prefixes the message with the current function name.
 #if (defined(__GNUC__) && !defined(NDEBUG)) || defined(WANT_PRETTY_LOG_F)
@@ -681,7 +681,7 @@ inline bool LogCheckLevel(LoggingSeverity sev) {
 }
 
 #define RTC_LOG_E(sev, ctx, err)                                 \
-  !rtc::LogMessage::IsNoop<::rtc::sev>() &&                      \
+  !::rtc::LogMessage::IsNoop<::rtc::sev>() &&                    \
       ::rtc::webrtc_logging_impl::LogCall() &                    \
           ::rtc::webrtc_logging_impl::LogStreamer<>()            \
               << ::rtc::webrtc_logging_impl::LogMetadataErr {    \
@@ -719,7 +719,7 @@ inline const char* AdaptString(const std::string& str) {
 }  // namespace webrtc_logging_impl
 
 #define RTC_LOG_TAG(sev, tag)                                 \
-  !rtc::LogMessage::IsNoop(sev) &&                            \
+  !::rtc::LogMessage::IsNoop(sev) &&                          \
       ::rtc::webrtc_logging_impl::LogCall() &                 \
           ::rtc::webrtc_logging_impl::LogStreamer<>()         \
               << ::rtc::webrtc_logging_impl::LogMetadataTag { \

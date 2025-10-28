@@ -51,6 +51,8 @@ struct SpinLockTest {
   static int64_t DecodeWaitCycles(uint32_t lock_value) {
     return SpinLock::DecodeWaitCycles(lock_value);
   }
+
+  static bool IsCooperative(const SpinLock& l) { return l.IsCooperative(); }
 };
 
 namespace {
@@ -264,6 +266,17 @@ TEST(SpinLockWithThreads, DoesNotDeadlock) {
                        base_internal::NumCPUs() * 2);
   Helper::DeadlockTest(&static_noncooperative_spinlock,
                        base_internal::NumCPUs() * 2);
+}
+
+TEST(SpinLockTest, IsCooperative) {
+  SpinLock default_constructor;
+  EXPECT_TRUE(SpinLockTest::IsCooperative(default_constructor));
+
+  SpinLock cooperative(base_internal::SCHEDULE_COOPERATIVE_AND_KERNEL);
+  EXPECT_TRUE(SpinLockTest::IsCooperative(cooperative));
+
+  SpinLock kernel_only(base_internal::SCHEDULE_KERNEL_ONLY);
+  EXPECT_FALSE(SpinLockTest::IsCooperative(kernel_only));
 }
 
 }  // namespace

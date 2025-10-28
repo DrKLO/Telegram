@@ -101,7 +101,8 @@ public class HashtagsSearchAdapter extends UniversalAdapter {
                 list.load(true, 4);
             }
             hasList = true;
-            TLRPC.TL_channels_searchPosts req = new TLRPC.TL_channels_searchPosts();
+            final TLRPC.TL_channels_searchPosts req = new TLRPC.TL_channels_searchPosts();
+            req.flags |= 1;
             req.hashtag = this.hashtagQuery = hashtag;
             req.limit = 10;
             if (!messages.isEmpty()) {

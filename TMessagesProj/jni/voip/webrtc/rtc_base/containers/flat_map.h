@@ -19,7 +19,7 @@
 #include <vector>
 
 #include "rtc_base/checks.h"
-#include "rtc_base/containers/flat_tree.h"
+#include "rtc_base/containers/flat_tree.h"  // IWYU pragma: export
 
 namespace webrtc {
 

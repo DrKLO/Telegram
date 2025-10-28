@@ -17,12 +17,13 @@
 #include <string>
 
 #include "api/units/time_delta.h"
+#include "rtc_base/system/rtc_export.h"
 
 namespace webrtc {
 
 // Video timing timestamps in ms counted from capture_time_ms of a frame.
 // This structure represents data sent in video-timing RTP header extension.
-struct VideoSendTiming {
+struct RTC_EXPORT VideoSendTiming {
   enum TimingFrameFlags : uint8_t {
     kNotTriggered = 0,  // Timing info valid, but not to be transmitted.
                         // Used on send-side only.
@@ -51,7 +52,7 @@ struct VideoSendTiming {
 // timestamps for a lifetime of that specific frame. Reported as a string via
 // GetStats(). Only frame which took the longest between two GetStats calls is
 // reported.
-struct TimingFrameInfo {
+struct RTC_EXPORT TimingFrameInfo {
   TimingFrameInfo();
 
   // Returns end-to-end delay of a frame, if sender and receiver timestamps are
@@ -106,26 +107,43 @@ struct TimingFrameInfo {
 // Minimum and maximum playout delay values from capture to render.
 // These are best effort values.
 //
-// A value < 0 indicates no change from previous valid value.
-//
 // min = max = 0 indicates that the receiver should try and render
 // frame as soon as possible.
 //
 // min = x, max = y indicates that the receiver is free to adapt
 // in the range (x, y) based on network jitter.
-struct VideoPlayoutDelay {
-  VideoPlayoutDelay() = default;
-  VideoPlayoutDelay(int min_ms, int max_ms) : min_ms(min_ms), max_ms(max_ms) {}
-  int min_ms = -1;
-  int max_ms = -1;
+// This class ensures invariant 0 <= min <= max <= kMax.
+class RTC_EXPORT VideoPlayoutDelay {
+ public:
+  // Maximum supported value for the delay limit.
+  static constexpr TimeDelta kMax = TimeDelta::Millis(10) * 0xFFF;
 
-  bool operator==(const VideoPlayoutDelay& rhs) const {
-    return min_ms == rhs.min_ms && max_ms == rhs.max_ms;
+  // Creates delay limits that indicates receiver should try to render frame
+  // as soon as possible.
+  static VideoPlayoutDelay Minimal() {
+    return VideoPlayoutDelay(TimeDelta::Zero(), TimeDelta::Zero());
   }
-};
 
-// TODO(bugs.webrtc.org/7660): Old name, delete after downstream use is updated.
-using PlayoutDelay = VideoPlayoutDelay;
+  // Creates valid, but unspecified limits.
+  VideoPlayoutDelay() = default;
+  VideoPlayoutDelay(const VideoPlayoutDelay&) = default;
+  VideoPlayoutDelay& operator=(const VideoPlayoutDelay&) = default;
+  VideoPlayoutDelay(TimeDelta min, TimeDelta max);
+
+  bool Set(TimeDelta min, TimeDelta max);
+
+  TimeDelta min() const { return min_; }
+  TimeDelta max() const { return max_; }
+
+  friend bool operator==(const VideoPlayoutDelay& lhs,
+                         const VideoPlayoutDelay& rhs) {
+    return lhs.min_ == rhs.min_ && lhs.max_ == rhs.max_;
+  }
+
+ private:
+  TimeDelta min_ = TimeDelta::Zero();
+  TimeDelta max_ = kMax;
+};
 
 }  // namespace webrtc
 

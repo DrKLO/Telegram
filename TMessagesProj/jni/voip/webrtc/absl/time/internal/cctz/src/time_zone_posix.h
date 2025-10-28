@@ -104,7 +104,7 @@ struct PosixTransition {
 
 // The entirety of a POSIX-string specified time-zone rule. The standard
 // abbreviation and offset are always given. If the time zone includes
-// daylight saving, then the daylight abbrevation is non-empty and the
+// daylight saving, then the daylight abbreviation is non-empty and the
 // remaining fields are also valid. Note that the start/end transitions
 // are not ordered---in the southern hemisphere the transition to end
 // daylight time occurs first in any particular year.

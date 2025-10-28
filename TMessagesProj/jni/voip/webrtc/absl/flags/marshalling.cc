@@ -19,6 +19,7 @@
 
 #include <cmath>
 #include <limits>
+#include <sstream>
 #include <string>
 #include <type_traits>
 #include <vector>
@@ -26,6 +27,7 @@
 #include "absl/base/config.h"
 #include "absl/base/log_severity.h"
 #include "absl/base/macros.h"
+#include "absl/numeric/int128.h"
 #include "absl/strings/ascii.h"
 #include "absl/strings/match.h"
 #include "absl/strings/numbers.h"
@@ -68,8 +70,10 @@ bool AbslParseFlag(absl::string_view text, bool* dst, std::string*) {
 // puts us in base 16.  But leading 0 does not put us in base 8. It
 // caused too many bugs when we had that behavior.
 static int NumericBase(absl::string_view text) {
-  const bool hex = (text.size() >= 2 && text[0] == '0' &&
-                    (text[1] == 'x' || text[1] == 'X'));
+  if (text.empty()) return 0;
+  size_t num_start = (text[0] == '-' || text[0] == '+') ? 1 : 0;
+  const bool hex = (text.size() >= num_start + 2 && text[num_start] == '0' &&
+                    (text[num_start + 1] == 'x' || text[num_start + 1] == 'X'));
   return hex ? 16 : 10;
 }
 
@@ -125,6 +129,32 @@ bool AbslParseFlag(absl::string_view text, unsigned long long* dst,
   return ParseFlagImpl(text, *dst);
 }
 
+bool AbslParseFlag(absl::string_view text, absl::int128* dst, std::string*) {
+  text = absl::StripAsciiWhitespace(text);
+
+  // check hex
+  int base = NumericBase(text);
+  if (!absl::numbers_internal::safe_strto128_base(text, dst, base)) {
+    return false;
+  }
+
+  return base == 16 ? absl::SimpleHexAtoi(text, dst)
+                    : absl::SimpleAtoi(text, dst);
+}
+
+bool AbslParseFlag(absl::string_view text, absl::uint128* dst, std::string*) {
+  text = absl::StripAsciiWhitespace(text);
+
+  // check hex
+  int base = NumericBase(text);
+  if (!absl::numbers_internal::safe_strtou128_base(text, dst, base)) {
+    return false;
+  }
+
+  return base == 16 ? absl::SimpleHexAtoi(text, dst)
+                    : absl::SimpleAtoi(text, dst);
+}
+
 // --------------------------------------------------------------------
 // AbslParseFlag for floating point types.
 
@@ -171,6 +201,17 @@ std::string Unparse(long v) { return absl::StrCat(v); }
 std::string Unparse(unsigned long v) { return absl::StrCat(v); }
 std::string Unparse(long long v) { return absl::StrCat(v); }
 std::string Unparse(unsigned long long v) { return absl::StrCat(v); }
+std::string Unparse(absl::int128 v) {
+  std::stringstream ss;
+  ss << v;
+  return ss.str();
+}
+std::string Unparse(absl::uint128 v) {
+  std::stringstream ss;
+  ss << v;
+  return ss.str();
+}
+
 template <typename T>
 std::string UnparseFloatingPointVal(T v) {
   // digits10 is guaranteed to roundtrip correctly in string -> value -> string
@@ -206,6 +247,14 @@ bool AbslParseFlag(absl::string_view text, absl::LogSeverity* dst,
     *err = "no value provided";
     return false;
   }
+  if (absl::EqualsIgnoreCase(text, "dfatal")) {
+    *dst = absl::kLogDebugFatal;
+    return true;
+  }
+  if (absl::EqualsIgnoreCase(text, "klogdebugfatal")) {
+    *dst = absl::kLogDebugFatal;
+    return true;
+  }
   if (text.front() == 'k' || text.front() == 'K') text.remove_prefix(1);
   if (absl::EqualsIgnoreCase(text, "info")) {
     *dst = absl::LogSeverity::kInfo;
@@ -228,7 +277,8 @@ bool AbslParseFlag(absl::string_view text, absl::LogSeverity* dst,
     *dst = static_cast<absl::LogSeverity>(numeric_value);
     return true;
   }
-  *err = "only integers and absl::LogSeverity enumerators are accepted";
+  *err =
+      "only integers, absl::LogSeverity enumerators, and DFATAL are accepted";
   return false;
 }
 

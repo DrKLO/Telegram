@@ -10,6 +10,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.BuildVars;
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.MessagesController;
 import org.telegram.ui.Cells.ChatMessageCell;
 
@@ -51,8 +52,21 @@ public class RecyclerAnimationScrollHelper {
     }
 
     public void scrollToPosition(int position, int offset, final boolean bottom, boolean smooth) {
-        if (recyclerView.fastScrollAnimationRunning || (recyclerView.getItemAnimator() != null && recyclerView.getItemAnimator().isRunning())) {
+        scrollToPosition(position, offset, bottom, smooth, false);
+    }
+
+    public void scrollToPosition(int position, int offset, final boolean bottom, boolean smooth, boolean waitForAnimations) {
+        if (recyclerView.fastScrollAnimationRunning) {
             return;
+        }
+        if (recyclerView.getItemAnimator() != null) {
+            if (waitForAnimations) {
+                if (recyclerView.getItemAnimator().isRunning(() -> scrollToPosition(position, offset, bottom, smooth, false))) {
+                    return;
+                }
+            } else if (recyclerView.getItemAnimator().isRunning()) {
+                return;
+            }
         }
         if (!smooth || scrollDirection == SCROLL_DIRECTION_UNSET) {
             layoutManager.scrollToPositionWithOffset(position, offset, bottom);

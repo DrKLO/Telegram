@@ -49,9 +49,7 @@ class ReportBlock {
 
   uint32_t source_ssrc() const { return source_ssrc_; }
   uint8_t fraction_lost() const { return fraction_lost_; }
-  int32_t cumulative_lost_signed() const { return cumulative_lost_; }
-  // Deprecated - returns max(0, cumulative_lost_), not negative values.
-  uint32_t cumulative_lost() const;
+  int32_t cumulative_lost() const { return cumulative_lost_; }
   uint32_t extended_high_seq_num() const { return extended_high_seq_num_; }
   uint32_t jitter() const { return jitter_; }
   uint32_t last_sr() const { return last_sr_; }

@@ -16,6 +16,7 @@
 #include <utility>
 #include <vector>
 
+#include "api/environment/environment.h"
 #include "api/video_codecs/sdp_video_format.h"
 #include "api/video_codecs/video_decoder.h"
 #include "api/video_codecs/video_decoder_factory.h"
@@ -29,17 +30,20 @@ class FunctionVideoDecoderFactory final : public VideoDecoderFactory {
  public:
   explicit FunctionVideoDecoderFactory(
       std::function<std::unique_ptr<VideoDecoder>()> create)
-      : create_([create = std::move(create)](const SdpVideoFormat&) {
+      : create_([create = std::move(create)](const Environment&,
+                                             const SdpVideoFormat&) {
           return create();
         }) {}
   explicit FunctionVideoDecoderFactory(
-      std::function<std::unique_ptr<VideoDecoder>(const SdpVideoFormat&)>
+      std::function<std::unique_ptr<VideoDecoder>(const Environment&,
+                                                  const SdpVideoFormat&)>
           create)
       : create_(std::move(create)) {}
   FunctionVideoDecoderFactory(
       std::function<std::unique_ptr<VideoDecoder>()> create,
       std::vector<SdpVideoFormat> sdp_video_formats)
-      : create_([create = std::move(create)](const SdpVideoFormat&) {
+      : create_([create = std::move(create)](const Environment&,
+                                             const SdpVideoFormat&) {
           return create();
         }),
         sdp_video_formats_(std::move(sdp_video_formats)) {}
@@ -48,13 +52,14 @@ class FunctionVideoDecoderFactory final : public VideoDecoderFactory {
     return sdp_video_formats_;
   }
 
-  std::unique_ptr<VideoDecoder> CreateVideoDecoder(
-      const SdpVideoFormat& format) override {
-    return create_(format);
+  std::unique_ptr<VideoDecoder> Create(const Environment& env,
+                                       const SdpVideoFormat& format) override {
+    return create_(env, format);
   }
 
  private:
-  const std::function<std::unique_ptr<VideoDecoder>(const SdpVideoFormat&)>
+  const std::function<std::unique_ptr<VideoDecoder>(const Environment& env,
+                                                    const SdpVideoFormat&)>
       create_;
   const std::vector<SdpVideoFormat> sdp_video_formats_;
 };

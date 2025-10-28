@@ -28,6 +28,11 @@ class RtpPacketSender {
   // packets and the current target send rate.
   virtual void EnqueuePackets(
       std::vector<std::unique_ptr<RtpPacketToSend>> packets) = 0;
+
+  // Clear any pending packets with the given SSRC from the queue.
+  // TODO(crbug.com/1395081): Make pure virtual when downstream code has been
+  // updated.
+  virtual void RemovePacketsForSsrc(uint32_t ssrc) {}
 };
 
 }  // namespace webrtc

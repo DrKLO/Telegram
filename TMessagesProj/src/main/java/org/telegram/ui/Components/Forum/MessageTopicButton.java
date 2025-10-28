@@ -39,13 +39,13 @@ import org.telegram.ui.Components.StaticLayoutEx;
 
 public class MessageTopicButton {
 
-    private final static float[] lightHueRanges = { 0,    43,   56,   86,   169,  183,  249,  289,  360 };
-    private final static float[] lightSatValues = { .60f, 1f,   .95f, .98f, .80f, .88f, .51f, .55f, .60f };
-    private final static float[] lightValValues = { .79f, .77f, .60f, .62f, .60f, .61f, .80f, .70f, .79f };
+    public final static float[] lightHueRanges = { 0,    43,   56,   86,   169,  183,  249,  289,  360 };
+    public final static float[] lightSatValues = { .60f, 1f,   .95f, .98f, .80f, .88f, .51f, .55f, .60f };
+    public final static float[] lightValValues = { .79f, .77f, .60f, .62f, .60f, .61f, .80f, .70f, .79f };
 
-    private final static float[] darkHueRanges = { 0,    43,   56,   63,   86,   122,  147,  195,  205,  249,   270,  312,  388,  360 };
-    private final static float[] darkSatValues = { .64f, .89f, .84f, .87f, .74f, .66f, .81f, .81f, .71f, .51f,  .61f, .55f, .62f, .64f };
-    private final static float[] darkValValues = { .92f, .90f, .82f, .82f, .84f, .84f, .82f, .88f, .96f, .100f, .93f, .88f, .96f, .92f };
+    public final static float[] darkHueRanges = { 0,    43,   56,   63,   86,   122,  147,  195,  205,  249,   270,  312,  388,  360 };
+    public final static float[] darkSatValues = { .64f, .89f, .84f, .87f, .74f, .66f, .81f, .81f, .71f, .51f,  .61f, .55f, .62f, .64f };
+    public final static float[] darkValValues = { .92f, .90f, .82f, .82f, .84f, .84f, .82f, .88f, .96f, .100f, .93f, .88f, .96f, .92f };
 
     private int topicWidth;
     private int topicHeight;
@@ -59,7 +59,7 @@ public class MessageTopicButton {
     private Drawable topicSelectorDrawable;
     private Drawable topicIconDrawable;
     private Rect topicIconDrawableBounds;
-    private float[] topicHSV;
+    public float[] topicHSV;
     private int topicBackgroundColor;
     private int topicNameColor;
     private int topicArrowColor;

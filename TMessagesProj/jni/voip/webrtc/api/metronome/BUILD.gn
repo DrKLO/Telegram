@@ -1,0 +1,19 @@
+# Copyright (c) 2022 The WebRTC project authors. All Rights Reserved.
+#
+# Use of this source code is governed by a BSD-style license
+# that can be found in the LICENSE file in the root of the source
+# tree. An additional intellectual property rights grant can be found
+# in the file PATENTS.  All contributing project authors may
+# be found in the AUTHORS file in the root of the source tree.
+
+import("../../webrtc.gni")
+
+rtc_source_set("metronome") {
+  visibility = [ "*" ]
+  sources = [ "metronome.h" ]
+  deps = [
+    "../../rtc_base/system:rtc_export",
+    "../units:time_delta",
+  ]
+  absl_deps = [ "//third_party/abseil-cpp/absl/functional:any_invocable" ]
+}

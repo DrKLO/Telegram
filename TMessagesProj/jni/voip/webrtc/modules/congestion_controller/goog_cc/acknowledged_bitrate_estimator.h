@@ -18,6 +18,7 @@
 #include "api/field_trials_view.h"
 #include "api/transport/network_types.h"
 #include "api/units/data_rate.h"
+#include "api/units/timestamp.h"
 #include "modules/congestion_controller/goog_cc/acknowledged_bitrate_estimator_interface.h"
 #include "modules/congestion_controller/goog_cc/bitrate_estimator.h"
 

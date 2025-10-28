@@ -1,70 +1,23 @@
-/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
- * All rights reserved.
- *
- * This package is an SSL implementation written
- * by Eric Young (eay@cryptsoft.com).
- * The implementation was written so as to conform with Netscapes SSL.
- *
- * This library is free for commercial and non-commercial use as long as
- * the following conditions are aheared to.  The following conditions
- * apply to all code found in this distribution, be it the RC4, RSA,
- * lhash, DES, etc., code; not just the SSL code.  The SSL documentation
- * included with this distribution is covered by the same copyright terms
- * except that the holder is Tim Hudson (tjh@cryptsoft.com).
- *
- * Copyright remains Eric Young's, and as such any Copyright notices in
- * the code are not to be removed.
- * If this package is used in a product, Eric Young should be given attribution
- * as the author of the parts of the library used.
- * This can be in the form of a textual message at program startup or
- * in documentation (online or textual) provided with the package.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- * 1. Redistributions of source code must retain the copyright
- *    notice, this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
- * 3. All advertising materials mentioning features or use of this software
- *    must display the following acknowledgement:
- *    "This product includes cryptographic software written by
- *     Eric Young (eay@cryptsoft.com)"
- *    The word 'cryptographic' can be left out if the rouines from the library
- *    being used are not cryptographic related :-).
- * 4. If you include any Windows specific code (or a derivative thereof) from
- *    the apps directory (application code) you must include an acknowledgement:
- *    "This product includes software written by Tim Hudson (tjh@cryptsoft.com)"
- *
- * THIS SOFTWARE IS PROVIDED BY ERIC YOUNG ``AS IS'' AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
- * SUCH DAMAGE.
- *
- * The licence and distribution terms for any publically available version or
- * derivative of this code cannot be changed.  i.e. this code cannot simply be
- * copied and put under another distribution licence
- * [including the GNU Public Licence.]
- *
- * The DSS routines are based on patches supplied by
- * Steven Schoch <schoch@sheba.arc.nasa.gov>. */
+// Copyright 1995-2016 The OpenSSL Project Authors. All Rights Reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 #ifndef OPENSSL_HEADER_DSA_H
 #define OPENSSL_HEADER_DSA_H
 
-#include <openssl/base.h>
+#include <openssl/base.h>   // IWYU pragma: export
 
-#include <openssl/engine.h>
 #include <openssl/ex_data.h>
-#include <openssl/thread.h>
 
 #if defined(__cplusplus)
 extern "C" {
@@ -80,6 +33,12 @@ extern "C" {
 
 
 // Allocation and destruction.
+//
+// A |DSA| object represents a DSA key or group parameters. A given object may
+// be used concurrently on multiple threads by non-mutating functions, provided
+// no other thread is concurrently calling a mutating function. Unless otherwise
+// documented, functions which take a |const| pointer are non-mutating and
+// functions which take a non-|const| pointer are mutating.
 
 // DSA_new returns a new, empty DSA object or NULL on error.
 OPENSSL_EXPORT DSA *DSA_new(void);
@@ -88,11 +47,35 @@ OPENSSL_EXPORT DSA *DSA_new(void);
 // reference count drops to zero.
 OPENSSL_EXPORT void DSA_free(DSA *dsa);
 
-// DSA_up_ref increments the reference count of |dsa| and returns one.
+// DSA_up_ref increments the reference count of |dsa| and returns one. It does
+// not mutate |dsa| for thread-safety purposes and may be used concurrently.
 OPENSSL_EXPORT int DSA_up_ref(DSA *dsa);
 
 
 // Properties.
+
+// OPENSSL_DSA_MAX_MODULUS_BITS is the maximum supported DSA group modulus, in
+// bits.
+#define OPENSSL_DSA_MAX_MODULUS_BITS 10000
+
+// DSA_bits returns the size of |dsa|'s group modulus, in bits.
+OPENSSL_EXPORT unsigned DSA_bits(const DSA *dsa);
+
+// DSA_get0_pub_key returns |dsa|'s public key.
+OPENSSL_EXPORT const BIGNUM *DSA_get0_pub_key(const DSA *dsa);
+
+// DSA_get0_priv_key returns |dsa|'s private key, or NULL if |dsa| is a public
+// key.
+OPENSSL_EXPORT const BIGNUM *DSA_get0_priv_key(const DSA *dsa);
+
+// DSA_get0_p returns |dsa|'s group modulus.
+OPENSSL_EXPORT const BIGNUM *DSA_get0_p(const DSA *dsa);
+
+// DSA_get0_q returns the size of |dsa|'s subgroup.
+OPENSSL_EXPORT const BIGNUM *DSA_get0_q(const DSA *dsa);
+
+// DSA_get0_g returns |dsa|'s group generator.
+OPENSSL_EXPORT const BIGNUM *DSA_get0_g(const DSA *dsa);
 
 // DSA_get0_key sets |*out_pub_key| and |*out_priv_key|, if non-NULL, to |dsa|'s
 // public and private key, respectively. If |dsa| is a public key, the private
@@ -173,6 +156,16 @@ OPENSSL_EXPORT DSA_SIG *DSA_SIG_new(void);
 // DSA_SIG_free frees the contents of |sig| and then frees |sig| itself.
 OPENSSL_EXPORT void DSA_SIG_free(DSA_SIG *sig);
 
+// DSA_SIG_get0 sets |*out_r| and |*out_s|, if non-NULL, to the two components
+// of |sig|.
+OPENSSL_EXPORT void DSA_SIG_get0(const DSA_SIG *sig, const BIGNUM **out_r,
+                                 const BIGNUM **out_s);
+
+// DSA_SIG_set0 sets |sig|'s components to |r| and |s|, neither of which may be
+// NULL. On success, it takes ownership of each argument and returns one.
+// Otherwise, it returns zero.
+OPENSSL_EXPORT int DSA_SIG_set0(DSA_SIG *sig, BIGNUM *r, BIGNUM *s);
+
 // DSA_do_sign returns a signature of the hash in |digest| by the key in |dsa|
 // and returns an allocated, DSA_SIG structure, or NULL on error.
 OPENSSL_EXPORT DSA_SIG *DSA_do_sign(const uint8_t *digest, size_t digest_len,
@@ -189,7 +182,7 @@ OPENSSL_EXPORT DSA_SIG *DSA_do_sign(const uint8_t *digest, size_t digest_len,
 //
 // TODO(fork): deprecate.
 OPENSSL_EXPORT int DSA_do_verify(const uint8_t *digest, size_t digest_len,
-                                 DSA_SIG *sig, const DSA *dsa);
+                                 const DSA_SIG *sig, const DSA *dsa);
 
 // DSA_do_check_signature sets |*out_valid| to zero. Then it verifies that |sig|
 // is a valid signature, by the public key in |dsa| of the hash in |digest|
@@ -198,7 +191,7 @@ OPENSSL_EXPORT int DSA_do_verify(const uint8_t *digest, size_t digest_len,
 // It returns one if it was able to verify the signature as valid or invalid,
 // and zero on error.
 OPENSSL_EXPORT int DSA_do_check_signature(int *out_valid, const uint8_t *digest,
-                                          size_t digest_len, DSA_SIG *sig,
+                                          size_t digest_len, const DSA_SIG *sig,
                                           const DSA *dsa);
 
 
@@ -283,7 +276,7 @@ OPENSSL_EXPORT int DSA_marshal_private_key(CBB *cbb, const DSA *dsa);
 OPENSSL_EXPORT DSA *DSA_parse_parameters(CBS *cbs);
 
 // DSA_marshal_parameters marshals |dsa| as a DER-encoded Dss-Parms structure
-// (RFC 3447) and appends the result to |cbb|. It returns one on success and
+// (RFC 3279) and appends the result to |cbb|. It returns one on success and
 // zero on failure.
 OPENSSL_EXPORT int DSA_marshal_parameters(CBB *cbb, const DSA *dsa);
 
@@ -310,75 +303,51 @@ OPENSSL_EXPORT void *DSA_get_ex_data(const DSA *dsa, int idx);
 
 // Deprecated functions.
 
-// d2i_DSA_SIG parses an ASN.1, DER-encoded, DSA signature from |len| bytes at
-// |*inp|. If |out_sig| is not NULL then, on exit, a pointer to the result is
-// in |*out_sig|. Note that, even if |*out_sig| is already non-NULL on entry, it
-// will not be written to. Rather, a fresh |DSA_SIG| is allocated and the
-// previous one is freed. On successful exit, |*inp| is advanced past the DER
-// structure. It returns the result or NULL on error.
+// d2i_DSA_SIG parses a DER-encoded DSA-Sig-Value structure from |len| bytes at
+// |*inp|, as described in |d2i_SAMPLE|.
 //
 // Use |DSA_SIG_parse| instead.
 OPENSSL_EXPORT DSA_SIG *d2i_DSA_SIG(DSA_SIG **out_sig, const uint8_t **inp,
                                     long len);
 
-// i2d_DSA_SIG marshals |in| to an ASN.1, DER structure. If |outp| is not NULL
-// then the result is written to |*outp| and |*outp| is advanced just past the
-// output. It returns the number of bytes in the result, whether written or not,
-// or a negative value on error.
+// i2d_DSA_SIG marshals |in| to a DER-encoded DSA-Sig-Value structure, as
+// described in |i2d_SAMPLE|.
 //
 // Use |DSA_SIG_marshal| instead.
 OPENSSL_EXPORT int i2d_DSA_SIG(const DSA_SIG *in, uint8_t **outp);
 
-// d2i_DSAPublicKey parses an ASN.1, DER-encoded, DSA public key from |len|
-// bytes at |*inp|. If |out| is not NULL then, on exit, a pointer to the result
-// is in |*out|. Note that, even if |*ou| is already non-NULL on entry, it will
-// not be written to. Rather, a fresh |DSA| is allocated and the previous one is
-// freed. On successful exit, |*inp| is advanced past the DER structure. It
-// returns the result or NULL on error.
+// d2i_DSAPublicKey parses a DER-encoded DSA public key from |len| bytes at
+// |*inp|, as described in |d2i_SAMPLE|.
 //
 // Use |DSA_parse_public_key| instead.
 OPENSSL_EXPORT DSA *d2i_DSAPublicKey(DSA **out, const uint8_t **inp, long len);
 
-// i2d_DSAPublicKey marshals a public key from |in| to an ASN.1, DER structure.
-// If |outp| is not NULL then the result is written to |*outp| and |*outp| is
-// advanced just past the output. It returns the number of bytes in the result,
-// whether written or not, or a negative value on error.
+// i2d_DSAPublicKey marshals |in| as a DER-encoded DSA public key, as described
+// in |i2d_SAMPLE|.
 //
 // Use |DSA_marshal_public_key| instead.
 OPENSSL_EXPORT int i2d_DSAPublicKey(const DSA *in, uint8_t **outp);
 
-// d2i_DSAPrivateKey parses an ASN.1, DER-encoded, DSA private key from |len|
-// bytes at |*inp|. If |out| is not NULL then, on exit, a pointer to the result
-// is in |*out|. Note that, even if |*out| is already non-NULL on entry, it will
-// not be written to. Rather, a fresh |DSA| is allocated and the previous one is
-// freed. On successful exit, |*inp| is advanced past the DER structure. It
-// returns the result or NULL on error.
+// d2i_DSAPrivateKey parses a DER-encoded DSA private key from |len| bytes at
+// |*inp|, as described in |d2i_SAMPLE|.
 //
 // Use |DSA_parse_private_key| instead.
 OPENSSL_EXPORT DSA *d2i_DSAPrivateKey(DSA **out, const uint8_t **inp, long len);
 
-// i2d_DSAPrivateKey marshals a private key from |in| to an ASN.1, DER
-// structure. If |outp| is not NULL then the result is written to |*outp| and
-// |*outp| is advanced just past the output. It returns the number of bytes in
-// the result, whether written or not, or a negative value on error.
+// i2d_DSAPrivateKey marshals |in| as a DER-encoded DSA private key, as
+// described in |i2d_SAMPLE|.
 //
 // Use |DSA_marshal_private_key| instead.
 OPENSSL_EXPORT int i2d_DSAPrivateKey(const DSA *in, uint8_t **outp);
 
-// d2i_DSAparams parses ASN.1, DER-encoded, DSA parameters from |len| bytes at
-// |*inp|. If |out| is not NULL then, on exit, a pointer to the result is in
-// |*out|. Note that, even if |*out| is already non-NULL on entry, it will not
-// be written to. Rather, a fresh |DSA| is allocated and the previous one is
-// freed. On successful exit, |*inp| is advanced past the DER structure. It
-// returns the result or NULL on error.
+// d2i_DSAparams parses a DER-encoded Dss-Parms structure (RFC 3279) from |len|
+// bytes at |*inp|, as described in |d2i_SAMPLE|.
 //
 // Use |DSA_parse_parameters| instead.
 OPENSSL_EXPORT DSA *d2i_DSAparams(DSA **out, const uint8_t **inp, long len);
 
-// i2d_DSAparams marshals DSA parameters from |in| to an ASN.1, DER structure.
-// If |outp| is not NULL then the result is written to |*outp| and |*outp| is
-// advanced just past the output. It returns the number of bytes in the result,
-// whether written or not, or a negative value on error.
+// i2d_DSAparams marshals |in|'s parameters as a DER-encoded Dss-Parms structure
+// (RFC 3279), as described in |i2d_SAMPLE|.
 //
 // Use |DSA_marshal_parameters| instead.
 OPENSSL_EXPORT int i2d_DSAparams(const DSA *in, uint8_t **outp);
@@ -391,25 +360,6 @@ OPENSSL_EXPORT DSA *DSA_generate_parameters(int bits, unsigned char *seed,
                                             unsigned long *h_ret,
                                             void (*callback)(int, int, void *),
                                             void *cb_arg);
-
-
-struct dsa_st {
-  long version;
-  BIGNUM *p;
-  BIGNUM *q;  // == 20
-  BIGNUM *g;
-
-  BIGNUM *pub_key;   // y public key
-  BIGNUM *priv_key;  // x private key
-
-  int flags;
-  // Normally used to cache montgomery values
-  CRYPTO_MUTEX method_mont_lock;
-  BN_MONT_CTX *method_mont_p;
-  BN_MONT_CTX *method_mont_q;
-  CRYPTO_refcount_t references;
-  CRYPTO_EX_DATA ex_data;
-};
 
 
 #if defined(__cplusplus)
@@ -437,5 +387,6 @@ BSSL_NAMESPACE_END
 #define DSA_R_DECODE_ERROR 105
 #define DSA_R_ENCODE_ERROR 106
 #define DSA_R_INVALID_PARAMETERS 107
+#define DSA_R_TOO_MANY_ITERATIONS 108
 
 #endif  // OPENSSL_HEADER_DSA_H

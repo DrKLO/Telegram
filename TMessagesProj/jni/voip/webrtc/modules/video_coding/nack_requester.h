@@ -78,8 +78,8 @@ class NackRequester final : public NackRequesterBase {
 
   void ProcessNacks() override;
 
-  int OnReceivedPacket(uint16_t seq_num, bool is_keyframe);
-  int OnReceivedPacket(uint16_t seq_num, bool is_keyframe, bool is_recovered);
+  int OnReceivedPacket(uint16_t seq_num);
+  int OnReceivedPacket(uint16_t seq_num, bool is_recovered);
 
   void ClearUpTo(uint16_t seq_num);
   void UpdateRtt(int64_t rtt_ms);
@@ -108,10 +108,6 @@ class NackRequester final : public NackRequesterBase {
   void AddPacketsToNack(uint16_t seq_num_start, uint16_t seq_num_end)
       RTC_EXCLUSIVE_LOCKS_REQUIRED(worker_thread_);
 
-  // Removes packets from the nack list until the next keyframe. Returns true
-  // if packets were removed.
-  bool RemovePacketsUntilKeyFrame()
-      RTC_EXCLUSIVE_LOCKS_REQUIRED(worker_thread_);
   std::vector<uint16_t> GetNackBatch(NackFilterOptions options)
       RTC_EXCLUSIVE_LOCKS_REQUIRED(worker_thread_);
 
@@ -133,8 +129,6 @@ class NackRequester final : public NackRequesterBase {
   // known thread (e.g. see `initialized_`). Those probably do not need
   // synchronized access.
   std::map<uint16_t, NackInfo, DescendingSeqNumComp<uint16_t>> nack_list_
-      RTC_GUARDED_BY(worker_thread_);
-  std::set<uint16_t, DescendingSeqNumComp<uint16_t>> keyframe_list_
       RTC_GUARDED_BY(worker_thread_);
   std::set<uint16_t, DescendingSeqNumComp<uint16_t>> recovered_list_
       RTC_GUARDED_BY(worker_thread_);

@@ -19,6 +19,7 @@
 #include <regex>  // NOLINT
 #include <vector>
 
+#include "absl/base/no_destructor.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/internal/hash_function_defaults.h"
 #include "absl/container/internal/hashtable_debug.h"
@@ -29,6 +30,7 @@
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
 #include "absl/strings/strip.h"
+#include "absl/types/optional.h"
 
 namespace {
 
@@ -68,10 +70,15 @@ struct Policy {
       -> decltype(std::forward<F>(f)(arg, arg)) {
     return std::forward<F>(f)(arg, arg);
   }
+
+  template <class Hash>
+  static constexpr auto get_hash_slot_fn() {
+    return nullptr;
+  }
 };
 
 absl::BitGen& GlobalBitGen() {
-  static auto* value = new absl::BitGen;
+  static absl::NoDestructor<absl::BitGen> value;
   return *value;
 }
 
@@ -112,7 +119,7 @@ class RandomizedAllocator {
   static constexpr size_t kRandomPool = 20;
 
   static std::vector<T*>& GetPointers(size_t n) {
-    static auto* m = new absl::flat_hash_map<size_t, std::vector<T*>>();
+    static absl::NoDestructor<absl::flat_hash_map<size_t, std::vector<T*>>> m;
     return (*m)[n];
   }
 };
@@ -460,12 +467,12 @@ constexpr int kNameWidth = 15;
 constexpr int kDistWidth = 16;
 
 bool CanRunBenchmark(absl::string_view name) {
-  static std::regex* const filter = []() -> std::regex* {
+  static const absl::NoDestructor<absl::optional<std::regex>> filter([] {
     return benchmarks.empty() || benchmarks == "all"
-               ? nullptr
-               : new std::regex(std::string(benchmarks));
-  }();
-  return filter == nullptr || std::regex_search(std::string(name), *filter);
+               ? absl::nullopt
+               : absl::make_optional(std::regex(std::string(benchmarks)));
+  }());
+  return !filter->has_value() || std::regex_search(std::string(name), **filter);
 }
 
 struct Result {

@@ -6,6 +6,7 @@ Date: 2018-06-25
 License: Custom license
 License File: LICENSE
 Security Critical: yes
+Shipped: yes
 
 Description:
 The ITU G.722 codec, encode and decode part.

@@ -66,6 +66,7 @@ import android.view.animation.DecelerateInterpolator;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 
+import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
 import androidx.core.graphics.ColorUtils;
 
@@ -127,7 +128,6 @@ import javax.microedition.khronos.egl.EGLSurface;
 @TargetApi(18)
 public class InstantCameraView extends FrameLayout implements NotificationCenter.NotificationCenterDelegate {
 
-    private static int A = 0;
     public boolean WRITE_TO_FILE_IN_BACKGROUND;
 
     private int currentAccount = UserConfig.selectedAccount;
@@ -152,6 +152,7 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
     private byte[] iv;
     private long size;
     private boolean isSecretChat;
+    @Nullable
     private VideoEditedInfo videoEditedInfo;
     private VideoPlayer videoPlayer;
     private Bitmap lastBitmap;
@@ -715,6 +716,10 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
         }
     }
 
+    public boolean isPaused() {
+        return !recording;
+    }
+
     public void showCamera(boolean fromPaused) {
         if (textureView != null) {
             return;
@@ -971,7 +976,7 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
         }
     }
 
-    public void send(int state, boolean notify, int scheduleDate, int ttl, long effectId) {
+    public void send(int state, boolean notify, int scheduleDate, int ttl, long effectId, long stars) {
         if (textureView == null) {
             return;
         }
@@ -982,11 +987,16 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
         }
         if (state == 4) {
             if (videoEncoder != null && recordedTime > 800) {
-                videoEncoder.stopRecording(VideoRecorder.ENCODER_SEND_SEND, new SendOptions(notify, scheduleDate, ttl, effectId));
+                videoEncoder.stopRecording(VideoRecorder.ENCODER_SEND_SEND, new SendOptions(notify, scheduleDate, ttl, effectId, stars));
                 return;
             }
             if (BuildVars.DEBUG_VERSION && !cameraFile.exists()) {
                 FileLog.e(new RuntimeException("file not found :( round video"));
+            }
+            if (videoEditedInfo == null) {
+                videoEditedInfo = new VideoEditedInfo();
+                videoEditedInfo.startTime = -1;
+                videoEditedInfo.endTime = -1;
             }
             if (videoEditedInfo.needConvert()) {
                 file = null;
@@ -1016,7 +1026,7 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
             MediaController.PhotoEntry entry = new MediaController.PhotoEntry(0, 0, 0, cameraFile.getAbsolutePath(), 0, true, 0, 0, 0);
             entry.ttl = ttl;
             entry.effectId = effectId;
-            delegate.sendMedia(entry, videoEditedInfo, notify, scheduleDate, false);
+            delegate.sendMedia(entry, videoEditedInfo, notify, scheduleDate, false, stars);
             if (scheduleDate != 0) {
                 startAnimation(false, false);
             }
@@ -1091,7 +1101,7 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
             cameraThread.shutdown(0, true, 0, 0, 0);
             cameraThread = null;
         } else if (videoEncoder != null) {
-            videoEncoder.stopRecording(VideoRecorder.ENCODER_SEND_CANCEL, new SendOptions(true, 0, 0, 0));
+            videoEncoder.stopRecording(VideoRecorder.ENCODER_SEND_CANCEL, new SendOptions(true, 0, 0, 0, 0));
         }
         if (cameraFile != null) {
             if (BuildVars.LOGS_ENABLED) {
@@ -2015,7 +2025,7 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
         public void shutdown(int send, boolean notify, int scheduleDate, int ttl, long effectId) {
             Handler handler = getHandler();
             if (handler != null) {
-                sendMessage(handler.obtainMessage(DO_SHUTDOWN_MESSAGE, send, 0, new SendOptions(notify, scheduleDate, ttl, effectId)), 0);
+                sendMessage(handler.obtainMessage(DO_SHUTDOWN_MESSAGE, send, 0, new SendOptions(notify, scheduleDate, ttl, effectId, 0)), 0);
             }
         }
 
@@ -2109,11 +2119,14 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
         int scheduleDate;
         int ttl;
         long effectId;
-        public SendOptions(boolean notify, int scheduleDate, int ttl, long effectId) {
+        long stars;
+
+        public SendOptions(boolean notify, int scheduleDate, int ttl, long effectId, long stars) {
             this.notify = notify;
             this.scheduleDate = scheduleDate;
             this.ttl = ttl;
             this.effectId = effectId;
+            this.stars = stars;
         }
     }
 
@@ -2211,6 +2224,7 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
         private int alphaHandle;
         private int zeroTimeStamps;
         private Integer lastCameraId = 0;
+        private InstantCameraVideoEncoderOverlayHelper overlayHelper;
 
         private AudioRecord audioRecorder;
 
@@ -2335,7 +2349,6 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
         private boolean started;
 
         public void startRecording(File outputFile, android.opengl.EGLContext sharedContext) {
-            final int a = A++;
             if (started && (handler != null && handler.getLooper() != null && handler.getLooper().getThread() != null && handler.getLooper().getThread().isAlive())) {
                 sharedEglContext = sharedContext;
                 handler.sendMessage(handler.obtainMessage(MSG_START_RECORDING, 1, 0));
@@ -2650,6 +2663,10 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
                 return;
             }
 
+            if (overlayHelper != null) {
+                overlayHelper.bind();
+            }
+
             GLES20.glUseProgram(drawProgram);
             GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
             GLES20.glVertexAttribPointer(positionHandle, 3, GLES20.GL_FLOAT, false, 12, vertexBuffer);
@@ -2693,6 +2710,13 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
             GLES20.glDisableVertexAttribArray(textureHandle);
             GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, 0);
             GLES20.glUseProgram(0);
+
+            if (overlayHelper != null) {
+                overlayHelper.render();
+                if (blendEnabled) {
+                    GLES20.glEnable(GLES20.GL_BLEND);
+                }
+            }
 
             EGLExt.eglPresentationTimeANDROID(eglDisplay, eglSurface, currentTimestamp);
             EGL14.eglSwapBuffers(eglDisplay, eglSurface);
@@ -2838,7 +2862,7 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
                     if (videoPlayer == null) {
                         return;
                     }
-                    if (videoPlayer.isPlaying() && playbackState == ExoPlayer.STATE_ENDED) {
+                    if (videoPlayer.isPlaying() && playbackState == ExoPlayer.STATE_ENDED && videoEditedInfo != null) {
                         videoPlayer.seekTo(videoEditedInfo.startTime > 0 ? videoEditedInfo.startTime : 0);
                     }
                 }
@@ -2936,7 +2960,7 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
                             entry.ttl = sendOptions.ttl;
                             entry.effectId = sendOptions.effectId;
                         }
-                        delegate.sendMedia(entry, videoEditedInfo, sendOptions == null || sendOptions.notify, sendOptions != null ? sendOptions.scheduleDate : 0, false);
+                        delegate.sendMedia(entry, videoEditedInfo, sendOptions == null || sendOptions.notify, sendOptions != null ? sendOptions.scheduleDate : 0, false, sendOptions != null ? sendOptions.stars : 0);
                     });
                 }
             } else {
@@ -3079,6 +3103,7 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
                         videoEditedInfo.resultWidth = videoEditedInfo.originalWidth = 360;
                         videoEditedInfo.resultHeight = videoEditedInfo.originalHeight = 360;
                         videoEditedInfo.originalPath = videoFile.getAbsolutePath();
+                        final VideoEditedInfo info = videoEditedInfo;
                         if (send == ENCODER_SEND_SEND) {
                             if (delegate.isInScheduleMode()) {
                                 AlertsCreator.createScheduleDatePickerDialog(delegate.getParentActivity(), delegate.getDialogId(), (notify, scheduleDate) -> {
@@ -3087,7 +3112,7 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
                                         entry.ttl = sendOptions.ttl;
                                         entry.effectId = sendOptions.effectId;
                                     }
-                                    delegate.sendMedia(entry, videoEditedInfo, notify || sendOptions == null || sendOptions.notify, scheduleDate != 0 ? scheduleDate : sendOptions != null ? sendOptions.scheduleDate : 0, false);
+                                    delegate.sendMedia(entry, info, notify || sendOptions == null || sendOptions.notify, scheduleDate != 0 ? scheduleDate : sendOptions != null ? sendOptions.scheduleDate : 0, false, sendOptions != null ? sendOptions.stars : 0);
                                     startAnimation(false, false);
                                 }, () -> {
                                     startAnimation(false, false);
@@ -3098,12 +3123,13 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
                                     entry.ttl = sendOptions.ttl;
                                     entry.effectId = sendOptions.effectId;
                                 }
-                                delegate.sendMedia(entry, videoEditedInfo, sendOptions == null || sendOptions.notify, sendOptions != null ? sendOptions.scheduleDate : 0, false);
+                                delegate.sendMedia(entry, info, sendOptions == null || sendOptions.notify, sendOptions != null ? sendOptions.scheduleDate : 0, false, sendOptions != null ? sendOptions.stars : 0);
                             }
+                            videoEditedInfo = null;
                         } else {
                             setupVideoPlayer(videoFile);
-                            videoEditedInfo.estimatedDuration = recordedTime;
-                            NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.audioDidSent, recordingGuid, videoEditedInfo, videoFile.getAbsolutePath(), keyframeThumbs);
+                            info.estimatedDuration = recordedTime;
+                            NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.audioDidSent, recordingGuid, info, videoFile.getAbsolutePath(), keyframeThumbs);
                         }
                     });
                 }
@@ -3131,6 +3157,10 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
             eglContext = EGL14.EGL_NO_CONTEXT;
             eglConfig = null;
             handler.exit();
+            if (overlayHelper != null) {
+                overlayHelper.destroy();
+                overlayHelper = null;
+            }
             AndroidUtilities.runOnUIThread(() -> {
                 InstantCameraView.this.videoEncoder = null;
             });
@@ -3354,8 +3384,17 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
             }
             GLES20.glBlendFunc(GLES20.GL_SRC_ALPHA, GLES20.GL_ONE_MINUS_SRC_ALPHA);
 
+            if (overlayHelper != null) {
+                overlayHelper.destroy();
+                overlayHelper = null;
+            }
+            overlayHelper = new InstantCameraVideoEncoderOverlayHelper(videoWidth, videoHeight);
+
             String vertexShaderSource, fragmentShaderSource;
-            if (useCamera2) {
+            if (overlayHelper != null) {
+                vertexShaderSource = VERTEX_SHADER;
+                fragmentShaderSource = FRAGMENT_SCREEN_SHADER;
+            } else if (useCamera2) {
                 vertexShaderSource = AndroidUtilities.readRes(R.raw.instant_lanczos_vert);
                 fragmentShaderSource = AndroidUtilities.readRes(R.raw.instant_lanczos_frag_oes);
             } else {
@@ -3606,6 +3645,10 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
                 fileWriteQueue.recycle();
                 fileWriteQueue = null;
             }
+            if (overlayHelper != null) {
+                overlayHelper.destroy();
+                overlayHelper = null;
+            }
             try {
                 if (eglDisplay != EGL14.EGL_NO_DISPLAY) {
                     EGL14.eglMakeCurrent(eglDisplay, EGL14.EGL_NO_SURFACE, EGL14.EGL_NO_SURFACE, EGL14.EGL_NO_CONTEXT);
@@ -3848,7 +3891,7 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
     public interface Delegate {
 
         View getFragmentView();
-        void sendMedia(MediaController.PhotoEntry entry, VideoEditedInfo videoEditedInfo, boolean b, int i, boolean b1);
+        void sendMedia(MediaController.PhotoEntry entry, VideoEditedInfo videoEditedInfo, boolean notify, int scheduleDate, boolean b1, long stars);
         Activity getParentActivity();
         int getClassGuid();
         long getDialogId();

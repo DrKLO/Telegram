@@ -7,7 +7,6 @@ import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.content.Context;
 import android.content.DialogInterface;
-import android.content.Intent;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
@@ -34,7 +33,6 @@ import androidx.core.graphics.ColorUtils;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
-import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
@@ -49,7 +47,6 @@ import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.DialogCell;
-import org.telegram.ui.ManageLinksActivity;
 
 import java.util.ArrayList;
 
@@ -106,6 +103,7 @@ public class LinkActionView extends LinearLayout {
         linearLayout.setOrientation(HORIZONTAL);
 
         copyView = new TextView(context);
+        ScaleStateListAnimator.apply(copyView, .025f, 1.2f);
         copyView.setGravity(Gravity.CENTER);
         SpannableStringBuilder spannableStringBuilder = new SpannableStringBuilder();
         spannableStringBuilder.append("..").setSpan(new ColoredImageSpan(ContextCompat.getDrawable(context, R.drawable.msg_copy_filled)), 0, 1, 0);
@@ -120,6 +118,7 @@ public class LinkActionView extends LinearLayout {
         linearLayout.addView(copyView, LayoutHelper.createLinear(0, 42, 1f, 0, containerPadding, 0, 4, 0));
 
         shareView = new TextView(context);
+        ScaleStateListAnimator.apply(shareView, .025f, 1.2f);
         shareView.setGravity(Gravity.CENTER);
         spannableStringBuilder = new SpannableStringBuilder();
         spannableStringBuilder.append("..").setSpan(new ColoredImageSpan(ContextCompat.getDrawable(context, R.drawable.msg_share_filled)), 0, 1, 0);
@@ -135,6 +134,7 @@ public class LinkActionView extends LinearLayout {
 
 
         removeView = new TextView(context);
+        ScaleStateListAnimator.apply(removeView, .025f, 1.2f);
         removeView.setGravity(Gravity.CENTER);
         spannableStringBuilder = new SpannableStringBuilder();
         spannableStringBuilder.append("..").setSpan(new ColoredImageSpan(ContextCompat.getDrawable(context, R.drawable.msg_delete_filled)), 0, 1, 0);
@@ -147,6 +147,7 @@ public class LinkActionView extends LinearLayout {
         removeView.setTypeface(AndroidUtilities.bold());
         removeView.setSingleLine(true);
         linearLayout.addView(removeView, LayoutHelper.createLinear(0, 42, 1f, containerPadding, 0, containerPadding, 0));
+        linearLayout.setClickable(true);
         removeView.setVisibility(View.GONE);
 
         addView(linearLayout, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 12, 0, 0));
@@ -185,7 +186,8 @@ public class LinkActionView extends LinearLayout {
                 }
                 fragment.showDialog(new ShareAlert(getContext(), null, link, false, link, false, fragment.getResourceProvider()) {
                     @Override
-                    protected void onSend(LongSparseArray<TLRPC.Dialog> dids, int count, TLRPC.TL_forumTopic topic) {
+                    protected void onSend(LongSparseArray<TLRPC.Dialog> dids, int count, TLRPC.TL_forumTopic topic, boolean showToast) {
+                        if (!showToast) return;
                         final String str;
                         if (dids != null && dids.size() == 1) {
                             long did = dids.valueAt(0).id;
@@ -388,7 +390,8 @@ public class LinkActionView extends LinearLayout {
     }
 
     private void showQrCode() {
-        qrCodeBottomSheet = new QRCodeBottomSheet(getContext(), LocaleController.getString(R.string.InviteByQRCode), link, qrText == null ? (isChannel ? LocaleController.getString(R.string.QRCodeLinkHelpChannel) : LocaleController.getString(R.string.QRCodeLinkHelpGroup)) : qrText, false) {
+        final boolean direct = link != null && link.endsWith("?direct");
+        qrCodeBottomSheet = new QRCodeBottomSheet(getContext(), LocaleController.getString(R.string.InviteByQRCode), link, qrText == null ? (isChannel ? LocaleController.getString(direct ? R.string.QRCodeLinkHelpChannelDirect : R.string.QRCodeLinkHelpChannel) : LocaleController.getString(R.string.QRCodeLinkHelpGroup)) : qrText, false) {
             @Override
             public void dismiss() {
                 super.dismiss();

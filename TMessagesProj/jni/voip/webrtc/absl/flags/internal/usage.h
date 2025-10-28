@@ -17,11 +17,11 @@
 #define ABSL_FLAGS_INTERNAL_USAGE_H_
 
 #include <iosfwd>
+#include <ostream>
 #include <string>
 
 #include "absl/base/config.h"
 #include "absl/flags/commandlineflag.h"
-#include "absl/flags/declare.h"
 #include "absl/strings/string_view.h"
 
 // --------------------------------------------------------------------
@@ -34,6 +34,18 @@ namespace flags_internal {
 // The format to report the help messages in.
 enum class HelpFormat {
   kHumanReadable,
+};
+
+// The kind of usage help requested.
+enum class HelpMode {
+  kNone,
+  kImportant,
+  kShort,
+  kFull,
+  kPackage,
+  kMatch,
+  kVersion,
+  kOnlyCheckArgs
 };
 
 // Streams the help message describing `flag` to `out`.
@@ -57,28 +69,18 @@ void FlagsHelp(std::ostream& out, absl::string_view filter,
 
 // If any of the 'usage' related command line flags (listed on the bottom of
 // this file) has been set this routine produces corresponding help message in
-// the specified output stream and returns:
-//  0 - if "version" or "only_check_flags" flags were set and handled.
-//  1 - if some other 'usage' related flag was set and handled.
-// -1 - if no usage flags were set on a commmand line.
-// Non negative return values are expected to be used as an exit code for a
-// binary.
-int HandleUsageFlags(std::ostream& out,
-                     absl::string_view program_usage_message);
+// the specified output stream and returns HelpMode that was handled. Otherwise
+// it returns HelpMode::kNone.
+HelpMode HandleUsageFlags(std::ostream& out,
+                          absl::string_view program_usage_message);
+
+// --------------------------------------------------------------------
+// Encapsulates the logic of exiting the binary depending on handled help mode.
+
+void MaybeExit(HelpMode mode);
 
 // --------------------------------------------------------------------
 // Globals representing usage reporting flags
-
-enum class HelpMode {
-  kNone,
-  kImportant,
-  kShort,
-  kFull,
-  kPackage,
-  kMatch,
-  kVersion,
-  kOnlyCheckArgs
-};
 
 // Returns substring to filter help output (--help=substr argument)
 std::string GetFlagsHelpMatchSubstr();

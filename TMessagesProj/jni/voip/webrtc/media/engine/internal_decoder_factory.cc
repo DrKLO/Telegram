@@ -29,7 +29,6 @@
 
 namespace webrtc {
 namespace {
-constexpr char kDav1dFieldTrial[] = "WebRTC-Dav1dDecoder";
 #if defined(RTC_DAV1D_IN_INTERNAL_DECODER_FACTORY)
 constexpr bool kDav1dIsIncluded = true;
 #else
@@ -50,11 +49,12 @@ std::vector<SdpVideoFormat> InternalDecoderFactory::GetSupportedFormats()
   for (const SdpVideoFormat& h264_format : SupportedH264DecoderCodecs())
     formats.push_back(h264_format);
 
-  if (kDav1dIsIncluded && !field_trial::IsDisabled(kDav1dFieldTrial)) {
+  if (kDav1dIsIncluded) {
     formats.push_back(SdpVideoFormat(cricket::kAv1CodecName));
-    formats.push_back(SdpVideoFormat(
-        cricket::kAv1CodecName,
-        {{kAV1FmtpProfile, AV1ProfileToString(AV1Profile::kProfile1).data()}}));
+    formats.push_back(
+        SdpVideoFormat(cricket::kAv1CodecName,
+                       {{cricket::kAv1FmtpProfile,
+                         AV1ProfileToString(AV1Profile::kProfile1).data()}}));
   }
 
   return formats;
@@ -94,7 +94,7 @@ std::unique_ptr<VideoDecoder> InternalDecoderFactory::CreateVideoDecoder(
     return H264Decoder::Create();
 
   if (absl::EqualsIgnoreCase(format.name, cricket::kAv1CodecName) &&
-      kDav1dIsIncluded && !field_trial::IsDisabled(kDav1dFieldTrial)) {
+      kDav1dIsIncluded) {
     return CreateDav1dDecoder();
   }
 

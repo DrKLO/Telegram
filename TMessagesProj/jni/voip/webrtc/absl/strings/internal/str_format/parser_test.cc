@@ -15,10 +15,18 @@
 #include "absl/strings/internal/str_format/parser.h"
 
 #include <string.h>
+#include <algorithm>
+#include <initializer_list>
+#include <string>
+#include <utility>
 
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
+#include "absl/base/config.h"
 #include "absl/base/macros.h"
+#include "absl/strings/internal/str_format/constexpr_parser.h"
+#include "absl/strings/internal/str_format/extension.h"
+#include "absl/strings/string_view.h"
 
 namespace absl {
 ABSL_NAMESPACE_BEGIN
@@ -117,6 +125,7 @@ TEST_F(ConsumeUnboundConversionTest, ConsumeSpecification) {
     {__LINE__, "dzz",  "d",    "zz"},  // length mod as suffix
     {__LINE__, "3v",   "",     "3v"},  // 'v' cannot have modifiers
     {__LINE__, "hv",   "",     "hv"},  // 'v' cannot have modifiers
+    {__LINE__, "1$v",   "1$v",     ""},  // 'v' can have use posix syntax
     {__LINE__, "1$*2$d", "1$*2$d", ""  },  // arg indexing and * allowed.
     {__LINE__, "0-14.3hhd", "0-14.3hhd", ""},  // precision, width
     {__LINE__, " 0-+#14.3hhd", " 0-+#14.3hhd", ""},  // flags
@@ -302,7 +311,7 @@ TEST_F(ConsumeUnboundConversionTest, BasicFlag) {
   }
 
   // Flag is off
-  for (const char* fmt : {"3d", ".llx", "-G", "1$#X"}) {
+  for (const char* fmt : {"3d", ".llx", "-G", "1$#X", "lc"}) {
     SCOPED_TRACE(fmt);
     EXPECT_TRUE(Run(fmt));
     EXPECT_NE(o.flags, Flags::kBasic);

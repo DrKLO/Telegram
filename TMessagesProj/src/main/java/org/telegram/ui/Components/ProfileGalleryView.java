@@ -10,6 +10,7 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.PointF;
+import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.text.TextUtils;
@@ -19,6 +20,7 @@ import android.view.View;
 import android.view.ViewConfiguration;
 import android.view.ViewGroup;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -93,7 +95,7 @@ public class ProfileGalleryView extends CircularViewPager implements Notificatio
     private boolean hasActiveVideo;
     private int customAvatarIndex = -1;
     private int fallbackPhotoIndex = -1;
-    private TLRPC.TL_groupCallParticipant participant;
+    private TLRPC.GroupCallParticipant participant;
 
     private int imagesLayerNum;
 
@@ -139,9 +141,12 @@ public class ProfileGalleryView extends CircularViewPager implements Notificatio
     int selectedPage;
     int prevPage;
 
+    private ProfileGalleryBlurView blurView;
+
     public ProfileGalleryView(Context context, ActionBar parentActionBar, RecyclerListView parentListView, Callback callback) {
         super(context);
         setOffscreenPageLimit(2);
+        blurView = null;
 
         this.isProfileFragment = false;
         this.parentListView = parentListView;
@@ -252,7 +257,7 @@ public class ProfileGalleryView extends CircularViewPager implements Notificatio
                 progressToCustomAvatar = 2f - progressToCustomAvatar;
             }
 
-            progressToCustomAvatar = Utilities.clamp(progressToCustomAvatar, 1f ,0);
+            progressToCustomAvatar = Utilities.clamp(progressToCustomAvatar, 1f, 0);
         }
         setCustomAvatarProgress(progressToCustomAvatar);
     }
@@ -265,8 +270,12 @@ public class ProfileGalleryView extends CircularViewPager implements Notificatio
         imagesLayerNum = value;
     }
 
-    public ProfileGalleryView(Context context, long dialogId, ActionBar parentActionBar, RecyclerListView parentListView, ProfileActivity.AvatarImageView parentAvatarImageView, int parentClassGuid, Callback callback) {
+    public ProfileGalleryView(Context context, long dialogId, ActionBar parentActionBar, RecyclerListView parentListView, ProfileActivity.AvatarImageView parentAvatarImageView, int parentClassGuid, Callback callback, ProfileGalleryBlurView blurView) {
         super(context);
+        this.blurView = blurView;
+        setPadding(0, 0, 0, blurView.actionSize);
+        blurView.setView(this);
+
         setVisibility(View.GONE);
         setOverScrollMode(View.OVER_SCROLL_NEVER);
         setOffscreenPageLimit(2);
@@ -354,7 +363,37 @@ public class ProfileGalleryView extends CircularViewPager implements Notificatio
         dialogPhotos.loadCache();
     }
 
+    @Override
+    public void setVisibility(int visibility) {
+        super.setVisibility(visibility);
+        if (blurView != null) {
+            blurView.setVisibility(visibility);
+        }
+    }
+
+    @Override
+    public void setAlpha(float alpha) {
+        super.setAlpha(alpha);
+        if (blurView != null) {
+            blurView.setAlpha(alpha);
+        }
+    }
+
+    @Override
+    protected void onLayout(boolean changed, int l, int t, int r, int b) {
+        super.onLayout(changed, l, t, r, b);
+        if (blurView != null) {
+            blurView.setTranslationY(getHeight() - blurView.getMeasuredHeight());
+        }
+    }
+
+    public ProfileGalleryBlurView getBlurDrawer() {
+        return blurView;
+    }
+
     public void onDestroy() {
+        blurView = null;
+
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.dialogPhotosLoaded);
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.fileLoaded);
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.fileLoadProgressChanged);
@@ -425,7 +464,7 @@ public class ProfileGalleryView extends CircularViewPager implements Notificatio
         if (pinchToZoomHelper != null && getCurrentItemView() != null) {
             if (action != MotionEvent.ACTION_DOWN && isDownReleased && !pinchToZoomHelper.isInOverlayMode()) {
                 pinchToZoomHelper.checkPinchToZoom(MotionEvent.obtain(0, 0, MotionEvent.ACTION_CANCEL, 0, 0, 0), this, getCurrentItemView().getImageReceiver(), null, null, null);
-            } else if (pinchToZoomHelper.checkPinchToZoom(ev, this, getCurrentItemView().getImageReceiver(), null, null,null)) {
+            } else if (pinchToZoomHelper.checkPinchToZoom(ev, this, getCurrentItemView().getImageReceiver(), null, null, null)) {
                 if (!isDownReleased) {
                     isDownReleased = true;
                     callback.onRelease();
@@ -631,6 +670,19 @@ public class ProfileGalleryView extends CircularViewPager implements Notificatio
     public BackupImageView getCurrentItemView() {
         if (adapter != null && !adapter.objects.isEmpty()) {
             return adapter.objects.get(getCurrentItem()).imageView;
+        } else {
+            return null;
+        }
+    }
+
+    public View getItemViewAt(int index) {
+        if (adapter != null && adapter.objects.size() > index && index >= 0) {
+            Item i = adapter.objects.get(index);
+            View v = i.textureViewStubView;
+            if (v == null) {
+                v = i.imageView;
+            }
+            return v;
         } else {
             return null;
         }
@@ -1316,7 +1368,7 @@ public class ProfileGalleryView extends CircularViewPager implements Notificatio
         imagesLocationsSizes.clear();
         imagesUploadProgress.clear();
         adapter.notifyDataSetChanged();
-        setCurrentItem(0 , false);
+        setCurrentItem(0, false);
         selectedPage = 0;
         uploadingImageLocation = null;
         prevImageLocation = null;
@@ -1362,7 +1414,19 @@ public class ProfileGalleryView extends CircularViewPager implements Notificatio
         this.createThumbFromParent = createThumbFromParent;
     }
 
-    private class AvatarImageView extends BackupImageView {
+    public boolean isZooming() {
+        return pinchToZoomHelper != null && pinchToZoomHelper.isInOverlayMode();
+    }
+
+    @Override
+    protected void onSizeChanged(int w, int h, int oldw, int oldh) {
+        super.onSizeChanged(w, h, oldw, oldh);
+        if (blurView != null) {
+            blurView.notifyUpdateSize();
+        }
+    }
+
+    private class AvatarImageView extends BackupImageView implements SizeNotifierFrameLayout.IViewWithInvalidateCallback {
 
         private final int radialProgressSize = AndroidUtilities.dp(64f);
 
@@ -1474,11 +1538,36 @@ public class ProfileGalleryView extends CircularViewPager implements Notificatio
             }
         }
 
+        Runnable invalidateCallback;
+        @Override
+        public void listenInvalidate(Runnable callback) {
+            invalidateCallback = callback;
+        }
+
+        @Override
+        public void invalidate(int l, int t, int r, int b) {
+            super.invalidate(l, t, r, b);
+            if (invalidateCallback != null) {
+                invalidateCallback.run();
+            }
+        }
+
+        @Override
+        public void invalidate(Rect dirty) {
+            super.invalidate(dirty);
+            if (invalidateCallback != null) {
+                invalidateCallback.run();
+            }
+        }
+
         @Override
         public void invalidate() {
             super.invalidate();
             if (invalidateWithParent) {
                 ProfileGalleryView.this.invalidate();
+            }
+            if (invalidateCallback != null) {
+                invalidateCallback.run();
             }
         }
     }

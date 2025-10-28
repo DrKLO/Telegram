@@ -12,10 +12,10 @@
 #define SDK_ANDROID_SRC_JNI_ENCODED_IMAGE_H_
 
 #include <jni.h>
+
 #include <vector>
 
 #include "api/video/video_frame_type.h"
-
 #include "sdk/android/native_api/jni/scoped_java_ref.h"
 
 namespace webrtc {

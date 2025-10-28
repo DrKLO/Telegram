@@ -11,25 +11,21 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-//
-
-// An optional absolute timeout, with nanosecond granularity,
-// compatible with absl::Time. Suitable for in-register
-// parameter-passing (e.g. syscalls.)
-// Constructible from a absl::Time (for a timeout to be respected) or {}
-// (for "no timeout".)
-// This is a private low-level API for use by a handful of low-level
-// components that are friends of this class. Higher-level components
-// should build APIs based on absl::Time and absl::Duration.
 
 #ifndef ABSL_SYNCHRONIZATION_INTERNAL_KERNEL_TIMEOUT_H_
 #define ABSL_SYNCHRONIZATION_INTERNAL_KERNEL_TIMEOUT_H_
 
-#include <time.h>
+#ifndef _WIN32
+#include <sys/types.h>
+#endif
 
 #include <algorithm>
+#include <chrono>  // NOLINT(build/c++11)
+#include <cstdint>
+#include <ctime>
 #include <limits>
 
+#include "absl/base/config.h"
 #include "absl/base/internal/raw_logging.h"
 #include "absl/time/clock.h"
 #include "absl/time/time.h"
@@ -38,56 +34,73 @@ namespace absl {
 ABSL_NAMESPACE_BEGIN
 namespace synchronization_internal {
 
-class Futex;
-class Waiter;
-
+// An optional timeout, with nanosecond granularity.
+//
+// This is a private low-level API for use by a handful of low-level
+// components. Higher-level components should build APIs based on
+// absl::Time and absl::Duration.
 class KernelTimeout {
  public:
-  // A timeout that should expire at <t>.  Any value, in the full
-  // InfinitePast() to InfiniteFuture() range, is valid here and will be
-  // respected.
-  explicit KernelTimeout(absl::Time t) : ns_(MakeNs(t)) {}
-  // No timeout.
-  KernelTimeout() : ns_(0) {}
+  // Construct an absolute timeout that should expire at `t`.
+  explicit KernelTimeout(absl::Time t);
 
-  // A more explicit factory for those who prefer it.  Equivalent to {}.
-  static KernelTimeout Never() { return {}; }
+  // Construct a relative timeout that should expire after `d`.
+  explicit KernelTimeout(absl::Duration d);
 
-  // We explicitly do not support other custom formats: timespec, int64_t nanos.
-  // Unify on this and absl::Time, please.
+  // Infinite timeout.
+  constexpr KernelTimeout() : rep_(kNoTimeout) {}
 
-  bool has_timeout() const { return ns_ != 0; }
+  // A more explicit factory for those who prefer it.
+  // Equivalent to `KernelTimeout()`.
+  static constexpr KernelTimeout Never() { return KernelTimeout(); }
 
-  // Convert to parameter for sem_timedwait/futex/similar.  Only for approved
-  // users.  Do not call if !has_timeout.
-  struct timespec MakeAbsTimespec();
+  // Returns true if there is a timeout that will eventually expire.
+  // Returns false if the timeout is infinite.
+  bool has_timeout() const { return rep_ != kNoTimeout; }
 
- private:
-  // internal rep, not user visible: ns after unix epoch.
-  // zero = no timeout.
-  // Negative we treat as an unlikely (and certainly expired!) but valid
-  // timeout.
-  int64_t ns_;
+  // If `has_timeout()` is true, returns true if the timeout was provided as an
+  // `absl::Time`. The return value is undefined if `has_timeout()` is false
+  // because all indefinite timeouts are equivalent.
+  bool is_absolute_timeout() const { return (rep_ & 1) == 0; }
 
-  static int64_t MakeNs(absl::Time t) {
-    // optimization--InfiniteFuture is common "no timeout" value
-    // and cheaper to compare than convert.
-    if (t == absl::InfiniteFuture()) return 0;
-    int64_t x = ToUnixNanos(t);
+  // If `has_timeout()` is true, returns true if the timeout was provided as an
+  // `absl::Duration`. The return value is undefined if `has_timeout()` is false
+  // because all indefinite timeouts are equivalent.
+  bool is_relative_timeout() const { return (rep_ & 1) == 1; }
 
-    // A timeout that lands exactly on the epoch (x=0) needs to be respected,
-    // so we alter it unnoticably to 1.  Negative timeouts are in
-    // theory supported, but handled poorly by the kernel (long
-    // delays) so push them forward too; since all such times have
-    // already passed, it's indistinguishable.
-    if (x <= 0) x = 1;
-    // A time larger than what can be represented to the kernel is treated
-    // as no timeout.
-    if (x == (std::numeric_limits<int64_t>::max)()) x = 0;
-    return x;
-  }
+  // Convert to `struct timespec` for interfaces that expect an absolute
+  // timeout. If !has_timeout() or is_relative_timeout(), attempts to convert to
+  // a reasonable absolute timeout, but callers should to test has_timeout() and
+  // is_relative_timeout() and prefer to use a more appropriate interface.
+  struct timespec MakeAbsTimespec() const;
 
-#ifdef _WIN32
+  // Convert to `struct timespec` for interfaces that expect a relative
+  // timeout. If !has_timeout() or is_absolute_timeout(), attempts to convert to
+  // a reasonable relative timeout, but callers should to test has_timeout() and
+  // is_absolute_timeout() and prefer to use a more appropriate interface. Since
+  // the return value is a relative duration, it should be recomputed by calling
+  // this method in the case of a spurious wakeup.
+  struct timespec MakeRelativeTimespec() const;
+
+#ifndef _WIN32
+  // Convert to `struct timespec` for interfaces that expect an absolute timeout
+  // on a specific clock `c`. This is similar to `MakeAbsTimespec()`, but
+  // callers usually want to use this method with `CLOCK_MONOTONIC` when
+  // relative timeouts are requested, and when the appropriate interface expects
+  // an absolute timeout relative to a specific clock (for example,
+  // pthread_cond_clockwait() or sem_clockwait()). If !has_timeout(), attempts
+  // to convert to a reasonable absolute timeout, but callers should to test
+  // has_timeout() prefer to use a more appropriate interface.
+  struct timespec MakeClockAbsoluteTimespec(clockid_t c) const;
+#endif
+
+  // Convert to unix epoch nanos for interfaces that expect an absolute timeout
+  // in nanoseconds. If !has_timeout() or is_relative_timeout(), attempts to
+  // convert to a reasonable absolute timeout, but callers should to test
+  // has_timeout() and is_relative_timeout() and prefer to use a more
+  // appropriate interface.
+  int64_t MakeAbsNanos() const;
+
   // Converts to milliseconds from now, or INFINITE when
   // !has_timeout(). For use by SleepConditionVariableSRW on
   // Windows. Callers should recognize that the return value is a
@@ -97,58 +110,66 @@ class KernelTimeout {
   // so we define our own DWORD and INFINITE instead of getting them from
   // <intsafe.h> and <WinBase.h>.
   typedef unsigned long DWord;  // NOLINT
-  DWord InMillisecondsFromNow() const {
-    constexpr DWord kInfinite = (std::numeric_limits<DWord>::max)();
-    if (!has_timeout()) {
-      return kInfinite;
-    }
-    // The use of absl::Now() to convert from absolute time to
-    // relative time means that absl::Now() cannot use anything that
-    // depends on KernelTimeout (for example, Mutex) on Windows.
-    int64_t now = ToUnixNanos(absl::Now());
-    if (ns_ >= now) {
-      // Round up so that Now() + ms_from_now >= ns_.
-      constexpr uint64_t max_nanos =
-          (std::numeric_limits<int64_t>::max)() - 999999u;
-      uint64_t ms_from_now =
-          ((std::min)(max_nanos, static_cast<uint64_t>(ns_ - now)) + 999999u) /
-          1000000u;
-      if (ms_from_now > kInfinite) {
-        return kInfinite;
-      }
-      return static_cast<DWord>(ms_from_now);
-    }
-    return 0;
-  }
-#endif
+  DWord InMillisecondsFromNow() const;
 
-  friend class Futex;
-  friend class Waiter;
+  // Convert to std::chrono::time_point for interfaces that expect an absolute
+  // timeout, like std::condition_variable::wait_until(). If !has_timeout() or
+  // is_relative_timeout(), attempts to convert to a reasonable absolute
+  // timeout, but callers should test has_timeout() and is_relative_timeout()
+  // and prefer to use a more appropriate interface.
+  std::chrono::time_point<std::chrono::system_clock> ToChronoTimePoint() const;
+
+  // Convert to std::chrono::time_point for interfaces that expect a relative
+  // timeout, like std::condition_variable::wait_for(). If !has_timeout() or
+  // is_absolute_timeout(), attempts to convert to a reasonable relative
+  // timeout, but callers should test has_timeout() and is_absolute_timeout()
+  // and prefer to use a more appropriate interface. Since the return value is a
+  // relative duration, it should be recomputed by calling this method in the
+  // case of a spurious wakeup.
+  std::chrono::nanoseconds ToChronoDuration() const;
+
+  // Returns true if steady (aka monotonic) clocks are supported by the system.
+  // This method exists because go/btm requires synchronized clocks, and
+  // thus requires we use the system (aka walltime) clock.
+  static constexpr bool SupportsSteadyClock() { return true; }
+
+ private:
+  // Returns the current time, expressed as a count of nanoseconds since the
+  // epoch used by an arbitrary clock. The implementation tries to use a steady
+  // (monotonic) clock if one is available.
+  static int64_t SteadyClockNow();
+
+  // Internal representation.
+  //   - If the value is kNoTimeout, then the timeout is infinite, and
+  //     has_timeout() will return true.
+  //   - If the low bit is 0, then the high 63 bits is the number of nanoseconds
+  //     after the unix epoch.
+  //   - If the low bit is 1, then the high 63 bits is the number of nanoseconds
+  //     after the epoch used by SteadyClockNow().
+  //
+  // In all cases the time is stored as an absolute time, the only difference is
+  // the clock epoch. The use of absolute times is important since in the case
+  // of a relative timeout with a spurious wakeup, the program would have to
+  // restart the wait, and thus needs a way of recomputing the remaining time.
+  uint64_t rep_;
+
+  // Returns the number of nanoseconds stored in the internal representation.
+  // When combined with the clock epoch indicated by the low bit (which is
+  // accessed through is_absolute_timeout() and is_relative_timeout()), the
+  // return value is used to compute when the timeout should occur.
+  int64_t RawAbsNanos() const { return static_cast<int64_t>(rep_ >> 1); }
+
+  // Converts to nanoseconds from now. Since the return value is a relative
+  // duration, it should be recomputed by calling this method in the case of a
+  // spurious wakeup.
+  int64_t InNanosecondsFromNow() const;
+
+  // A value that represents no timeout (or an infinite timeout).
+  static constexpr uint64_t kNoTimeout = (std::numeric_limits<uint64_t>::max)();
+
+  // The maximum value that can be stored in the high 63 bits.
+  static constexpr int64_t kMaxNanos = (std::numeric_limits<int64_t>::max)();
 };
-
-inline struct timespec KernelTimeout::MakeAbsTimespec() {
-  int64_t n = ns_;
-  static const int64_t kNanosPerSecond = 1000 * 1000 * 1000;
-  if (n == 0) {
-    ABSL_RAW_LOG(
-        ERROR, "Tried to create a timespec from a non-timeout; never do this.");
-    // But we'll try to continue sanely.  no-timeout ~= saturated timeout.
-    n = (std::numeric_limits<int64_t>::max)();
-  }
-
-  // Kernel APIs validate timespecs as being at or after the epoch,
-  // despite the kernel time type being signed.  However, no one can
-  // tell the difference between a timeout at or before the epoch (since
-  // all such timeouts have expired!)
-  if (n < 0) n = 0;
-
-  struct timespec abstime;
-  int64_t seconds = (std::min)(n / kNanosPerSecond,
-                               int64_t{(std::numeric_limits<time_t>::max)()});
-  abstime.tv_sec = static_cast<time_t>(seconds);
-  abstime.tv_nsec = static_cast<decltype(abstime.tv_nsec)>(n % kNanosPerSecond);
-  return abstime;
-}
 
 }  // namespace synchronization_internal
 ABSL_NAMESPACE_END

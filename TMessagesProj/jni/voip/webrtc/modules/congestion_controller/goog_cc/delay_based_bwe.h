@@ -11,7 +11,6 @@
 #ifndef MODULES_CONGESTION_CONTROLLER_GOOG_CC_DELAY_BASED_BWE_H_
 #define MODULES_CONGESTION_CONTROLLER_GOOG_CC_DELAY_BASED_BWE_H_
 
-#include <stddef.h>
 #include <stdint.h>
 
 #include <memory>
@@ -21,8 +20,12 @@
 #include "api/field_trials_view.h"
 #include "api/network_state_predictor.h"
 #include "api/transport/network_types.h"
+#include "api/units/data_rate.h"
+#include "api/units/time_delta.h"
+#include "api/units/timestamp.h"
 #include "modules/congestion_controller/goog_cc/delay_increase_detector_interface.h"
 #include "modules/congestion_controller/goog_cc/inter_arrival_delta.h"
+#include "modules/congestion_controller/goog_cc/link_capacity_estimator.h"
 #include "modules/congestion_controller/goog_cc/probe_bitrate_estimator.h"
 #include "modules/remote_bitrate_estimator/aimd_rate_control.h"
 #include "modules/remote_bitrate_estimator/inter_arrival.h"
@@ -82,6 +85,7 @@ class DelayBasedBwe {
   DataRate TriggerOveruse(Timestamp at_time,
                           absl::optional<DataRate> link_capacity);
   DataRate last_estimate() const { return prev_bitrate_; }
+  BandwidthUsage last_state() const { return prev_state_; }
 
  private:
   friend class GoogCcStatePrinter;

@@ -217,7 +217,7 @@ public class BoostRepository {
             payload.currency = offerDetails.getPriceCurrencyCode();
             payload.amount = (long) ((offerDetails.getPriceAmountMicros() / Math.pow(10, 6)) * Math.pow(10, BillingController.getInstance().getCurrencyExp(option.currency)));
 
-            TLRPC.TL_payments_canPurchasePremium req = new TLRPC.TL_payments_canPurchasePremium();
+            TLRPC.TL_payments_canPurchaseStore req = new TLRPC.TL_payments_canPurchaseStore();
             req.purpose = payload;
             connection.sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
                 if (error != null) {
@@ -457,7 +457,7 @@ public class BoostRepository {
             payload.currency = offerDetails.getPriceCurrencyCode();
             payload.amount = (long) ((offerDetails.getPriceAmountMicros() / Math.pow(10, 6)) * Math.pow(10, BillingController.getInstance().getCurrencyExp(option.currency)));
 
-            TLRPC.TL_payments_canPurchasePremium req = new TLRPC.TL_payments_canPurchasePremium();
+            TLRPC.TL_payments_canPurchaseStore req = new TLRPC.TL_payments_canPurchaseStore();
             req.purpose = payload;
             connection.sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
                 if (error != null) {
@@ -759,7 +759,7 @@ public class BoostRepository {
                 List<TLRPC.InputPeer> result = new ArrayList<>();
                 for (int a = 0; a < res.participants.size(); a++) {
                     TLRPC.Peer peer = res.participants.get(a).peer;
-                    if (MessageObject.getPeerId(peer) != selfId) {
+                    if (peer != null && MessageObject.getPeerId(peer) != selfId) {
                         TLRPC.User user = controller.getUser(peer.user_id);
                         if (user != null && !UserObject.isDeleted(user) && !user.bot) {
                             result.add(controller.getInputPeer(peer));

@@ -1,71 +1,17 @@
-/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
- * All rights reserved.
- *
- * This package is an SSL implementation written
- * by Eric Young (eay@cryptsoft.com).
- * The implementation was written so as to conform with Netscapes SSL.
- *
- * This library is free for commercial and non-commercial use as long as
- * the following conditions are aheared to.  The following conditions
- * apply to all code found in this distribution, be it the RC4, RSA,
- * lhash, DES, etc., code; not just the SSL code.  The SSL documentation
- * included with this distribution is covered by the same copyright terms
- * except that the holder is Tim Hudson (tjh@cryptsoft.com).
- *
- * Copyright remains Eric Young's, and as such any Copyright notices in
- * the code are not to be removed.
- * If this package is used in a product, Eric Young should be given attribution
- * as the author of the parts of the library used.
- * This can be in the form of a textual message at program startup or
- * in documentation (online or textual) provided with the package.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- * 1. Redistributions of source code must retain the copyright
- *    notice, this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
- * 3. All advertising materials mentioning features or use of this software
- *    must display the following acknowledgement:
- *    "This product includes cryptographic software written by
- *     Eric Young (eay@cryptsoft.com)"
- *    The word 'cryptographic' can be left out if the rouines from the library
- *    being used are not cryptographic related :-).
- * 4. If you include any Windows specific code (or a derivative thereof) from
- *    the apps directory (application code) you must include an acknowledgement:
- *    "This product includes software written by Tim Hudson (tjh@cryptsoft.com)"
- *
- * THIS SOFTWARE IS PROVIDED BY ERIC YOUNG ``AS IS'' AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
- * SUCH DAMAGE.
- *
- * The licence and distribution terms for any publically available version or
- * derivative of this code cannot be changed.  i.e. this code cannot simply be
- * copied and put under another distribution licence
- * [including the GNU Public Licence.]
- */
-/* ====================================================================
- * Copyright 2002 Sun Microsystems, Inc. ALL RIGHTS RESERVED.
- *
- * Portions of the attached software ("Contribution") are developed by
- * SUN MICROSYSTEMS, INC., and are contributed to the OpenSSL project.
- *
- * The Contribution is licensed pursuant to the Eric Young open source
- * license provided above.
- *
- * The binary polynomial arithmetic software is originally written by
- * Sheueling Chang Shantz and Douglas Stebila of Sun Microsystems
- * Laboratories. */
+// Copyright 1995-2016 The OpenSSL Project Authors. All Rights Reserved.
+// Copyright (c) 2002, Oracle and/or its affiliates. All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 #include <assert.h>
 #include <errno.h>
@@ -73,6 +19,8 @@
 #include <stdio.h>
 #include <string.h>
 
+#include <algorithm>
+#include <limits>
 #include <utility>
 
 #include <gtest/gtest.h>
@@ -85,13 +33,16 @@
 #include <openssl/mem.h>
 #include <openssl/rand.h>
 
-#include "./internal.h"
-#include "./rsaz_exp.h"
 #include "../../internal.h"
 #include "../../test/abi_test.h"
 #include "../../test/file_test.h"
 #include "../../test/test_util.h"
+#include "../../test/wycheproof_util.h"
+#include "./internal.h"
+#include "./rsaz_exp.h"
 
+
+namespace {
 
 static int HexToBIGNUM(bssl::UniquePtr<BIGNUM> *out, const char *in) {
   BIGNUM *raw = NULL;
@@ -157,10 +108,12 @@ class BIGNUMFileTest {
   unsigned num_bignums_;
 };
 
-static testing::AssertionResult AssertBIGNUMSEqual(
-    const char *operation_expr, const char *expected_expr,
-    const char *actual_expr, const char *operation, const BIGNUM *expected,
-    const BIGNUM *actual) {
+static testing::AssertionResult AssertBIGNUMSEqual(const char *operation_expr,
+                                                   const char *expected_expr,
+                                                   const char *actual_expr,
+                                                   const char *operation,
+                                                   const BIGNUM *expected,
+                                                   const BIGNUM *actual) {
   if (BN_cmp(expected, actual) == 0) {
     return testing::AssertionSuccess();
   }
@@ -455,8 +408,8 @@ static void TestSquare(BIGNUMFileTest *t, BN_CTX *ctx) {
       SCOPED_TRACE(num_a);
       size_t num_r = 2 * num_a;
       // Use newly-allocated buffers so ASan will catch out-of-bounds writes.
-      std::unique_ptr<BN_ULONG[]> a_words(new BN_ULONG[num_a]),
-          r_words(new BN_ULONG[num_r]);
+      auto a_words = std::make_unique<BN_ULONG[]>(num_a);
+      auto r_words = std::make_unique<BN_ULONG[]>(num_r);
       ASSERT_TRUE(bn_copy_words(a_words.get(), num_a, a.get()));
 
       bn_mul_small(r_words.get(), num_r, a_words.get(), num_a, a_words.get(),
@@ -522,8 +475,9 @@ static void TestProduct(BIGNUMFileTest *t, BN_CTX *ctx) {
         SCOPED_TRACE(num_b);
         size_t num_r = num_a + num_b;
         // Use newly-allocated buffers so ASan will catch out-of-bounds writes.
-        std::unique_ptr<BN_ULONG[]> a_words(new BN_ULONG[num_a]),
-            b_words(new BN_ULONG[num_b]), r_words(new BN_ULONG[num_r]);
+        auto a_words = std::make_unique<BN_ULONG[]>(num_a);
+        auto b_words = std::make_unique<BN_ULONG[]>(num_b);
+        auto r_words = std::make_unique<BN_ULONG[]>(num_r);
         ASSERT_TRUE(bn_copy_words(a_words.get(), num_a, a.get()));
         ASSERT_TRUE(bn_copy_words(b_words.get(), num_b, b.get()));
 
@@ -553,6 +507,19 @@ static void TestQuotient(BIGNUMFileTest *t, BN_CTX *ctx) {
   ASSERT_TRUE(BN_div(ret.get(), ret2.get(), a.get(), b.get(), ctx));
   EXPECT_BIGNUMS_EQUAL("A / B", quotient.get(), ret.get());
   EXPECT_BIGNUMS_EQUAL("A % B", remainder.get(), ret2.get());
+
+  ASSERT_TRUE(BN_copy(ret.get(), a.get()));
+  ASSERT_TRUE(BN_copy(ret2.get(), b.get()));
+  ASSERT_TRUE(BN_div(ret.get(), ret2.get(), ret.get(), ret2.get(), ctx));
+  EXPECT_BIGNUMS_EQUAL("A / B (in-place)", quotient.get(), ret.get());
+  EXPECT_BIGNUMS_EQUAL("A % B (in-place)", remainder.get(), ret2.get());
+
+  ASSERT_TRUE(BN_copy(ret2.get(), a.get()));
+  ASSERT_TRUE(BN_copy(ret.get(), b.get()));
+  ASSERT_TRUE(BN_div(ret.get(), ret2.get(), ret2.get(), ret.get(), ctx));
+  EXPECT_BIGNUMS_EQUAL("A / B (in-place, swapped)", quotient.get(), ret.get());
+  EXPECT_BIGNUMS_EQUAL("A % B (in-place, swapped)", remainder.get(),
+                       ret2.get());
 
   ASSERT_TRUE(BN_mul(ret.get(), quotient.get(), b.get(), ctx));
   ASSERT_TRUE(BN_add(ret.get(), ret.get(), remainder.get()));
@@ -598,9 +565,17 @@ static void TestQuotient(BIGNUMFileTest *t, BN_CTX *ctx) {
     }
   }
 
-  ASSERT_TRUE(bn_div_consttime(ret.get(), ret2.get(), a.get(), b.get(), ctx));
+  ASSERT_TRUE(bn_div_consttime(ret.get(), ret2.get(), a.get(), b.get(),
+                               /*divisor_min_bits=*/0, ctx));
   EXPECT_BIGNUMS_EQUAL("A / B (constant-time)", quotient.get(), ret.get());
   EXPECT_BIGNUMS_EQUAL("A % B (constant-time)", remainder.get(), ret2.get());
+
+  ASSERT_TRUE(bn_div_consttime(ret.get(), ret2.get(), a.get(), b.get(),
+                               /*divisor_min_bits=*/BN_num_bits(b.get()), ctx));
+  EXPECT_BIGNUMS_EQUAL("A / B (constant-time, public width)", quotient.get(),
+                       ret.get());
+  EXPECT_BIGNUMS_EQUAL("A % B (constant-time, public width)", remainder.get(),
+                       ret2.get());
 }
 
 static void TestModMul(BIGNUMFileTest *t, BN_CTX *ctx) {
@@ -625,8 +600,7 @@ static void TestModMul(BIGNUMFileTest *t, BN_CTX *ctx) {
     ASSERT_TRUE(mont);
 
     // Sanity-check that the constant-time version computes the same n0 and RR.
-    bssl::UniquePtr<BN_MONT_CTX> mont2(
-        BN_MONT_CTX_new_consttime(m.get(), ctx));
+    bssl::UniquePtr<BN_MONT_CTX> mont2(BN_MONT_CTX_new_consttime(m.get(), ctx));
     ASSERT_TRUE(mont2);
     EXPECT_BIGNUMS_EQUAL("RR (mod M) (constant-time)", &mont->RR, &mont2->RR);
     EXPECT_EQ(mont->n0[0], mont2->n0[0]);
@@ -648,8 +622,9 @@ static void TestModMul(BIGNUMFileTest *t, BN_CTX *ctx) {
 #if !defined(BORINGSSL_SHARED_LIBRARY)
     size_t m_width = static_cast<size_t>(bn_minimal_width(m.get()));
     if (m_width <= BN_SMALL_MAX_WORDS) {
-      std::unique_ptr<BN_ULONG[]> a_words(new BN_ULONG[m_width]),
-          b_words(new BN_ULONG[m_width]), r_words(new BN_ULONG[m_width]);
+      auto a_words = std::make_unique<BN_ULONG[]>(m_width);
+      auto b_words = std::make_unique<BN_ULONG[]>(m_width);
+      auto r_words = std::make_unique<BN_ULONG[]>(m_width);
       ASSERT_TRUE(bn_copy_words(a_words.get(), m_width, a.get()));
       ASSERT_TRUE(bn_copy_words(b_words.get(), m_width, b.get()));
       bn_to_montgomery_small(a_words.get(), a_words.get(), m_width, mont.get());
@@ -657,7 +632,22 @@ static void TestModMul(BIGNUMFileTest *t, BN_CTX *ctx) {
       bn_mod_mul_montgomery_small(r_words.get(), a_words.get(), b_words.get(),
                                   m_width, mont.get());
       // Use the second half of |tmp| so ASan will catch out-of-bounds writes.
-      bn_from_montgomery_small(r_words.get(), r_words.get(), m_width,
+      bn_from_montgomery_small(r_words.get(), m_width, r_words.get(), m_width,
+                               mont.get());
+      ASSERT_TRUE(bn_set_words(ret.get(), r_words.get(), m_width));
+      EXPECT_BIGNUMS_EQUAL("A * B (mod M) (Montgomery, words)", mod_mul.get(),
+                           ret.get());
+
+      // |bn_from_montgomery_small| must additionally work on double-width
+      // inputs. Test this by running |bn_from_montgomery_small| on the result
+      // of a product. Note |a_words| * |b_words| has an extra factor of R^2, so
+      // we must reduce twice.
+      auto prod_words = std::make_unique<BN_ULONG[]>(m_width * 2);
+      bn_mul_small(prod_words.get(), m_width * 2, a_words.get(), m_width,
+                   b_words.get(), m_width);
+      bn_from_montgomery_small(r_words.get(), m_width, prod_words.get(),
+                               m_width * 2, mont.get());
+      bn_from_montgomery_small(r_words.get(), m_width, r_words.get(), m_width,
                                mont.get());
       ASSERT_TRUE(bn_set_words(ret.get(), r_words.get(), m_width));
       EXPECT_BIGNUMS_EQUAL("A * B (mod M) (Montgomery, words)", mod_mul.get(),
@@ -713,13 +703,15 @@ static void TestModSquare(BIGNUMFileTest *t, BN_CTX *ctx) {
 #if !defined(BORINGSSL_SHARED_LIBRARY)
     size_t m_width = static_cast<size_t>(bn_minimal_width(m.get()));
     if (m_width <= BN_SMALL_MAX_WORDS) {
-      std::unique_ptr<BN_ULONG[]> a_words(new BN_ULONG[m_width]),
-          a_copy_words(new BN_ULONG[m_width]), r_words(new BN_ULONG[m_width]);
+      auto a_words = std::make_unique<BN_ULONG[]>(m_width);
+      auto a_copy_words = std::make_unique<BN_ULONG[]>(m_width);
+      auto r_words = std::make_unique<BN_ULONG[]>(m_width);
       ASSERT_TRUE(bn_copy_words(a_words.get(), m_width, a.get()));
       bn_to_montgomery_small(a_words.get(), a_words.get(), m_width, mont.get());
       bn_mod_mul_montgomery_small(r_words.get(), a_words.get(), a_words.get(),
                                   m_width, mont.get());
-      bn_from_montgomery_small(r_words.get(), r_words.get(), m_width, mont.get());
+      bn_from_montgomery_small(r_words.get(), m_width, r_words.get(), m_width,
+                               mont.get());
       ASSERT_TRUE(bn_set_words(ret.get(), r_words.get(), m_width));
       EXPECT_BIGNUMS_EQUAL("A * A (mod M) (Montgomery, words)",
                            mod_square.get(), ret.get());
@@ -730,7 +722,7 @@ static void TestModSquare(BIGNUMFileTest *t, BN_CTX *ctx) {
       bn_mod_mul_montgomery_small(r_words.get(), a_words.get(),
                                   a_copy_words.get(), m_width, mont.get());
       // Use the second half of |tmp| so ASan will catch out-of-bounds writes.
-      bn_from_montgomery_small(r_words.get(), r_words.get(), m_width,
+      bn_from_montgomery_small(r_words.get(), m_width, r_words.get(), m_width,
                                mont.get());
       ASSERT_TRUE(bn_set_words(ret.get(), r_words.get(), m_width));
       EXPECT_BIGNUMS_EQUAL("A * A_copy (mod M) (Montgomery, words)",
@@ -775,13 +767,13 @@ static void TestModExp(BIGNUMFileTest *t, BN_CTX *ctx) {
       bssl::UniquePtr<BN_MONT_CTX> mont(
           BN_MONT_CTX_new_for_modulus(m.get(), ctx));
       ASSERT_TRUE(mont.get());
-      std::unique_ptr<BN_ULONG[]> r_words(new BN_ULONG[m_width]),
-          a_words(new BN_ULONG[m_width]);
+      auto r_words = std::make_unique<BN_ULONG[]>(m_width);
+      auto a_words = std::make_unique<BN_ULONG[]>(m_width);
       ASSERT_TRUE(bn_copy_words(a_words.get(), m_width, a.get()));
       bn_to_montgomery_small(a_words.get(), a_words.get(), m_width, mont.get());
       bn_mod_exp_mont_small(r_words.get(), a_words.get(), m_width, e->d,
                             e->width, mont.get());
-      bn_from_montgomery_small(r_words.get(), r_words.get(), m_width,
+      bn_from_montgomery_small(r_words.get(), m_width, r_words.get(), m_width,
                                mont.get());
       ASSERT_TRUE(bn_set_words(ret.get(), r_words.get(), m_width));
       EXPECT_BIGNUMS_EQUAL("A ^ E (mod M) (Montgomery, words)", mod_exp.get(),
@@ -841,9 +833,7 @@ static void TestNotModSquare(BIGNUMFileTest *t, BN_CTX *ctx) {
   EXPECT_FALSE(BN_mod_sqrt(ret.get(), not_mod_square.get(), p.get(), ctx))
       << "BN_mod_sqrt unexpectedly succeeded.";
 
-  uint32_t err = ERR_peek_error();
-  EXPECT_EQ(ERR_LIB_BN, ERR_GET_LIB(err));
-  EXPECT_EQ(BN_R_NOT_A_SQUARE, ERR_GET_REASON(err));
+  EXPECT_TRUE(ErrorEquals(ERR_peek_error(), ERR_LIB_BN, BN_R_NOT_A_SQUARE));
   ERR_clear_error();
 }
 
@@ -869,6 +859,14 @@ static void TestModInv(BIGNUMFileTest *t, BN_CTX *ctx) {
       bn_mod_inverse_consttime(ret.get(), &no_inverse, a.get(), m.get(), ctx));
   EXPECT_BIGNUMS_EQUAL("inv(A) (mod M) (constant-time)", mod_inv.get(),
                        ret.get());
+
+  ASSERT_TRUE(BN_copy(ret.get(), m.get()));
+  ASSERT_TRUE(BN_mod_inverse(ret.get(), a.get(), ret.get(), ctx));
+  EXPECT_BIGNUMS_EQUAL("inv(A) (mod M) (ret == m)", mod_inv.get(), ret.get());
+
+  ASSERT_TRUE(BN_copy(ret.get(), a.get()));
+  ASSERT_TRUE(BN_mod_inverse(ret.get(), ret.get(), m.get(), ctx));
+  EXPECT_BIGNUMS_EQUAL("inv(A) (mod M) (ret == a)", mod_inv.get(), ret.get());
 }
 
 static void TestGCD(BIGNUMFileTest *t, BN_CTX *ctx) {
@@ -939,7 +937,7 @@ class BNTest : public testing::Test {
   bssl::UniquePtr<BN_CTX> ctx_;
 };
 
-TEST_F(BNTest, TestVectors) {
+static void RunBNFileTest(FileTest *t, BN_CTX *ctx) {
   static const struct {
     const char *name;
     void (*func)(BIGNUMFileTest *t, BN_CTX *ctx);
@@ -960,37 +958,84 @@ TEST_F(BNTest, TestVectors) {
       {"ModInv", TestModInv},
       {"GCD", TestGCD},
   };
-
-  FileTestGTest("crypto/fipsmodule/bn/bn_tests.txt", [&](FileTest *t) {
-    void (*func)(BIGNUMFileTest *t, BN_CTX *ctx) = nullptr;
-    for (const auto &test : kTests) {
-      if (t->GetType() == test.name) {
-        func = test.func;
-        break;
-      }
+  void (*func)(BIGNUMFileTest *t, BN_CTX *ctx) = nullptr;
+  for (const auto &test : kTests) {
+    if (t->GetType() == test.name) {
+      func = test.func;
+      break;
     }
-    if (!func) {
-      FAIL() << "Unknown test type: " << t->GetType();
-      return;
-    }
+  }
+  if (!func) {
+    FAIL() << "Unknown test type: " << t->GetType();
+    return;
+  }
 
-    // Run the test with normalize-sized |BIGNUM|s.
-    BIGNUMFileTest bn_test(t, 0);
-    BN_CTX_start(ctx());
-    func(&bn_test, ctx());
-    BN_CTX_end(ctx());
-    unsigned num_bignums = bn_test.num_bignums();
+  // Run the test with normalize-sized |BIGNUM|s.
+  BIGNUMFileTest bn_test(t, 0);
+  BN_CTX_start(ctx);
+  func(&bn_test, ctx);
+  BN_CTX_end(ctx);
+  unsigned num_bignums = bn_test.num_bignums();
 
-    // Repeat the test with all combinations of large and small |BIGNUM|s.
-    for (unsigned large_mask = 1; large_mask < (1u << num_bignums);
-         large_mask++) {
-      SCOPED_TRACE(large_mask);
-      BIGNUMFileTest bn_test2(t, large_mask);
-      BN_CTX_start(ctx());
-      func(&bn_test2, ctx());
-      BN_CTX_end(ctx());
-    }
-  });
+  // Repeat the test with all combinations of large and small |BIGNUM|s.
+  for (unsigned large_mask = 1; large_mask < (1u << num_bignums);
+       large_mask++) {
+    SCOPED_TRACE(large_mask);
+    BIGNUMFileTest bn_test2(t, large_mask);
+    BN_CTX_start(ctx);
+    func(&bn_test2, ctx);
+    BN_CTX_end(ctx);
+  }
+}
+
+TEST_F(BNTest, ExpTestVectors) {
+  FileTestGTest("crypto/fipsmodule/bn/test/exp_tests.txt",
+                [&](FileTest *t) { RunBNFileTest(t, ctx()); });
+}
+
+TEST_F(BNTest, GCDTestVectors) {
+  FileTestGTest("crypto/fipsmodule/bn/test/gcd_tests.txt",
+                [&](FileTest *t) { RunBNFileTest(t, ctx()); });
+}
+
+TEST_F(BNTest, ModExpTestVectors) {
+  FileTestGTest("crypto/fipsmodule/bn/test/mod_exp_tests.txt",
+                [&](FileTest *t) { RunBNFileTest(t, ctx()); });
+}
+
+TEST_F(BNTest, ModInvTestVectors) {
+  FileTestGTest("crypto/fipsmodule/bn/test/mod_inv_tests.txt",
+                [&](FileTest *t) { RunBNFileTest(t, ctx()); });
+}
+
+TEST_F(BNTest, ModMulTestVectors) {
+  FileTestGTest("crypto/fipsmodule/bn/test/mod_mul_tests.txt",
+                [&](FileTest *t) { RunBNFileTest(t, ctx()); });
+}
+
+TEST_F(BNTest, ModSqrtTestVectors) {
+  FileTestGTest("crypto/fipsmodule/bn/test/mod_sqrt_tests.txt",
+                [&](FileTest *t) { RunBNFileTest(t, ctx()); });
+}
+
+TEST_F(BNTest, ProductTestVectors) {
+  FileTestGTest("crypto/fipsmodule/bn/test/product_tests.txt",
+                [&](FileTest *t) { RunBNFileTest(t, ctx()); });
+}
+
+TEST_F(BNTest, QuotientTestVectors) {
+  FileTestGTest("crypto/fipsmodule/bn/test/quotient_tests.txt",
+                [&](FileTest *t) { RunBNFileTest(t, ctx()); });
+}
+
+TEST_F(BNTest, ShiftTestVectors) {
+  FileTestGTest("crypto/fipsmodule/bn/test/shift_tests.txt",
+                [&](FileTest *t) { RunBNFileTest(t, ctx()); });
+}
+
+TEST_F(BNTest, SumTestVectors) {
+  FileTestGTest("crypto/fipsmodule/bn/test/sum_tests.txt",
+                [&](FileTest *t) { RunBNFileTest(t, ctx()); });
 }
 
 TEST_F(BNTest, BN2BinPadded) {
@@ -1060,8 +1105,8 @@ TEST_F(BNTest, LittleEndian) {
   ASSERT_TRUE(BN_bn2le_padded(out, sizeof(out), x.get()));
   EXPECT_EQ(Bytes(zeros), Bytes(out));
 
-  ASSERT_TRUE(BN_le2bn(out, sizeof(out), y.get()));
-  EXPECT_BIGNUMS_EQUAL("BN_le2bn round-trip", x.get(), y.get());
+  ASSERT_TRUE(BN_lebin2bn(out, sizeof(out), y.get()));
+  EXPECT_BIGNUMS_EQUAL("BN_lebin2bn round-trip", x.get(), y.get());
 
   // Test random numbers at various byte lengths.
   for (size_t bytes = 128 - 7; bytes <= 128; bytes++) {
@@ -1084,8 +1129,8 @@ TEST_F(BNTest, LittleEndian) {
     EXPECT_EQ(Bytes(out), Bytes(expected));
 
     // Make sure the decoding produces the same BIGNUM.
-    ASSERT_TRUE(BN_le2bn(out, bytes, y.get()));
-    EXPECT_BIGNUMS_EQUAL("BN_le2bn round-trip", x.get(), y.get());
+    ASSERT_TRUE(BN_lebin2bn(out, bytes, y.get()));
+    EXPECT_BIGNUMS_EQUAL("BN_lebin2bn round-trip", x.get(), y.get());
   }
 }
 
@@ -1209,12 +1254,12 @@ struct MPITest {
 };
 
 static const MPITest kMPITests[] = {
-  { "0", "\x00\x00\x00\x00", 4 },
-  { "1", "\x00\x00\x00\x01\x01", 5 },
-  { "-1", "\x00\x00\x00\x01\x81", 5 },
-  { "128", "\x00\x00\x00\x02\x00\x80", 6 },
-  { "256", "\x00\x00\x00\x02\x01\x00", 6 },
-  { "-256", "\x00\x00\x00\x02\x81\x00", 6 },
+    {"0", "\x00\x00\x00\x00", 4},
+    {"1", "\x00\x00\x00\x01\x01", 5},
+    {"-1", "\x00\x00\x00\x01\x81", 5},
+    {"128", "\x00\x00\x00\x02\x00\x80", 6},
+    {"256", "\x00\x00\x00\x02\x01\x00", 6},
+    {"-256", "\x00\x00\x00\x02\x81\x00", 6},
 };
 
 TEST_F(BNTest, MPI) {
@@ -1321,8 +1366,8 @@ TEST_F(BNTest, RandRange) {
     ASSERT_TRUE(BN_rand_range_ex(bn.get(), 1, six.get()));
 
     BN_ULONG word = BN_get_word(bn.get());
-    if (BN_is_negative(bn.get()) ||
-        word < 1 ||
+    if (BN_is_negative(bn.get()) ||  //
+        word < 1 ||                  //
         word >= 6) {
       FAIL() << "BN_rand_range_ex generated invalid value: " << word;
     }
@@ -1352,10 +1397,8 @@ static const ASN1Test kASN1Tests[] = {
     {"127", "\x02\x01\x7f", 3},
     {"128", "\x02\x02\x00\x80", 4},
     {"0xdeadbeef", "\x02\x05\x00\xde\xad\xbe\xef", 7},
-    {"0x0102030405060708",
-     "\x02\x08\x01\x02\x03\x04\x05\x06\x07\x08", 10},
-    {"0xffffffffffffffff",
-      "\x02\x09\x00\xff\xff\xff\xff\xff\xff\xff\xff", 11},
+    {"0x0102030405060708", "\x02\x08\x01\x02\x03\x04\x05\x06\x07\x08", 10},
+    {"0xffffffffffffffff", "\x02\x09\x00\xff\xff\xff\xff\xff\xff\xff\xff", 11},
 };
 
 struct ASN1InvalidTest {
@@ -1385,7 +1428,7 @@ TEST_F(BNTest, ASN1) {
     bssl::UniquePtr<BIGNUM> bn2(BN_new());
     ASSERT_TRUE(bn2);
     CBS cbs;
-    CBS_init(&cbs, reinterpret_cast<const uint8_t*>(test.der), test.der_len);
+    CBS_init(&cbs, reinterpret_cast<const uint8_t *>(test.der), test.der_len);
     ASSERT_TRUE(BN_parse_asn1_unsigned(&cbs, bn2.get()));
     EXPECT_EQ(0u, CBS_len(&cbs));
     EXPECT_BIGNUMS_EQUAL("decode ASN.1", bn.get(), bn2.get());
@@ -1402,7 +1445,7 @@ TEST_F(BNTest, ASN1) {
   }
 
   for (const ASN1InvalidTest &test : kASN1InvalidTests) {
-    SCOPED_TRACE(Bytes(test.der, test.der_len));;
+    SCOPED_TRACE(Bytes(test.der, test.der_len));
     bssl::UniquePtr<BIGNUM> bn(BN_new());
     ASSERT_TRUE(bn);
     CBS cbs;
@@ -1592,7 +1635,7 @@ TEST_F(BNTest, SmallPrime) {
   bssl::UniquePtr<BIGNUM> r(BN_new());
   ASSERT_TRUE(r);
   ASSERT_TRUE(BN_generate_prime_ex(r.get(), static_cast<int>(kBits), 0, NULL,
-                                  NULL, NULL));
+                                   NULL, NULL));
   EXPECT_EQ(kBits, BN_num_bits(r.get()));
 }
 
@@ -1675,7 +1718,7 @@ TEST_F(BNTest, SetGetU64) {
       {"ffffffffffffffff", UINT64_C(0xffffffffffffffff)},
   };
 
-  for (const auto& test : kU64Tests) {
+  for (const auto &test : kU64Tests) {
     SCOPED_TRACE(test.hex);
     bssl::UniquePtr<BIGNUM> bn(BN_new()), expected;
     ASSERT_TRUE(bn);
@@ -1972,7 +2015,7 @@ TEST_F(BNTest, PrimeChecking) {
   int is_probably_prime_1 = 0, is_probably_prime_2 = 0;
   enum bn_primality_result_t result_3;
 
-  const int max_prime = kPrimes[OPENSSL_ARRAY_SIZE(kPrimes)-1];
+  const int max_prime = kPrimes[OPENSSL_ARRAY_SIZE(kPrimes) - 1];
   size_t next_prime_index = 0;
 
   for (int i = 0; i <= max_prime; i++) {
@@ -1986,16 +2029,17 @@ TEST_F(BNTest, PrimeChecking) {
 
     ASSERT_TRUE(BN_set_word(p.get(), i));
     ASSERT_TRUE(BN_primality_test(
-        &is_probably_prime_1, p.get(), BN_prime_checks, ctx(),
+        &is_probably_prime_1, p.get(), BN_prime_checks_for_generation, ctx(),
         false /* do_trial_division */, nullptr /* callback */));
     EXPECT_EQ(is_prime ? 1 : 0, is_probably_prime_1);
     ASSERT_TRUE(BN_primality_test(
-        &is_probably_prime_2, p.get(), BN_prime_checks, ctx(),
+        &is_probably_prime_2, p.get(), BN_prime_checks_for_generation, ctx(),
         true /* do_trial_division */, nullptr /* callback */));
     EXPECT_EQ(is_prime ? 1 : 0, is_probably_prime_2);
     if (i > 3 && i % 2 == 1) {
       ASSERT_TRUE(BN_enhanced_miller_rabin_primality_test(
-          &result_3, p.get(), BN_prime_checks, ctx(), nullptr /* callback */));
+          &result_3, p.get(), BN_prime_checks_for_generation, ctx(),
+          nullptr /* callback */));
       EXPECT_EQ(is_prime, result_3 == bn_probably_prime);
     }
   }
@@ -2003,19 +2047,19 @@ TEST_F(BNTest, PrimeChecking) {
   // Negative numbers are not prime.
   ASSERT_TRUE(BN_set_word(p.get(), 7));
   BN_set_negative(p.get(), 1);
-  ASSERT_TRUE(BN_primality_test(&is_probably_prime_1, p.get(), BN_prime_checks,
-                                ctx(), false /* do_trial_division */,
-                                nullptr /* callback */));
+  ASSERT_TRUE(BN_primality_test(
+      &is_probably_prime_1, p.get(), BN_prime_checks_for_generation, ctx(),
+      false /* do_trial_division */, nullptr /* callback */));
   EXPECT_EQ(0, is_probably_prime_1);
-  ASSERT_TRUE(BN_primality_test(&is_probably_prime_2, p.get(), BN_prime_checks,
-                                ctx(), true /* do_trial_division */,
-                                nullptr /* callback */));
+  ASSERT_TRUE(BN_primality_test(
+      &is_probably_prime_2, p.get(), BN_prime_checks_for_generation, ctx(),
+      true /* do_trial_division */, nullptr /* callback */));
   EXPECT_EQ(0, is_probably_prime_2);
 
-  // The following composite numbers come from http://oeis.org/A014233 and are
-  // such that the first several primes are not a Rabin-Miller composite
-  // witness.
-  static const char *kA014233[] = {
+  static const char *kComposites[] = {
+      // The following composite numbers come from http://oeis.org/A014233 and
+      // are such that the first several primes are not a Miller-Rabin composite
+      // witness.
       "2047",
       "1373653",
       "25326001",
@@ -2026,32 +2070,324 @@ TEST_F(BNTest, PrimeChecking) {
       "3825123056546413051",
       "318665857834031151167461",
       "3317044064679887385961981",
+
+      // The following composite numbers come from https://oeis.org/A033181
+      // which lists Euler pseudoprimes. These are false positives for the
+      // Fermat primality
+      // test.
+      "1729",
+      "2465",
+      "15841",
+      "41041",
+      "46657",
+      "75361",
+      "162401",
+      "172081",
+      "399001",
+      "449065",
+      "488881",
+      "530881",
+      "656601",
+      "670033",
+      "838201",
+      "997633",
+      "1050985",
+      "1615681",
+      "1773289",
+      "1857241",
+      "2113921",
+      "2433601",
+      "2455921",
+      "2704801",
+      "3057601",
+      "3224065",
+      "3581761",
+      "3664585",
+      "3828001",
+      "4463641",
+      "4903921",
   };
-  for (const char *str : kA014233) {
+  for (const char *str : kComposites) {
     SCOPED_TRACE(str);
     EXPECT_NE(0, DecimalToBIGNUM(&p, str));
 
     ASSERT_TRUE(BN_primality_test(
-        &is_probably_prime_1, p.get(), BN_prime_checks, ctx(),
+        &is_probably_prime_1, p.get(), BN_prime_checks_for_generation, ctx(),
         false /* do_trial_division */, nullptr /* callback */));
     EXPECT_EQ(0, is_probably_prime_1);
 
     ASSERT_TRUE(BN_primality_test(
-        &is_probably_prime_2, p.get(), BN_prime_checks, ctx(),
+        &is_probably_prime_2, p.get(), BN_prime_checks_for_generation, ctx(),
         true /* do_trial_division */, nullptr /* callback */));
     EXPECT_EQ(0, is_probably_prime_2);
 
     ASSERT_TRUE(BN_enhanced_miller_rabin_primality_test(
-        &result_3, p.get(), BN_prime_checks, ctx(), nullptr /* callback */));
+        &result_3, p.get(), BN_prime_checks_for_generation, ctx(),
+        nullptr /* callback */));
     EXPECT_EQ(bn_composite, result_3);
+  }
+
+  static const char *kPrimesHex[] = {
+      // Various primes extracted from openssl genrsa:
+      // 512-bit primes.
+      "ebb00348b1308e29166f0401f7415cc3bf9c746460bcadfd1ad6838b6472f48f3afba0c1"
+      "446eddc4708c68e307a882771794fbba45799f5b062e090613ee8203",
+      "d9a896e15c5d0091e81825948f3111c615a32aa0bd9305b9591232138388176fe22ff765"
+      "63c893b95c0f9898029be67543144c5e76c837333f109a0ffc0fa3db",
+      "fdecb71e997f234111706cabdfdc515b7e7a2a8d77b3c3a4b4819493d39de84e791be692"
+      "9ce1c3f5136808504f351eca19884894f581f96fba2b8d652265efe9",
+      "dc37a778aa89eb4048267573421ac5b9d81a231d05191393bdf06a6a64c684968fd17c4f"
+      "41fbd5745df2ee447fcc04693e2e3fecec270145388032149da63b3f",
+      "fbf34841baa2dd4ecf9055328f4902532d80e82f6d8ea186311564b3680b39ea2162fed4"
+      "701f02bec9d5be19f2e505c58a68620ee8873e8ab8fe98506a8bf9bb",
+      "c3b3c3156c9d0bf3b27f9bf8274ddc8c8505bacbb4a9595d90354d1a472553d6ae3daa97"
+      "1396c0361f6355531de29bf8ef1d7b471b5f2267d4b49cbe48ced5f1",
+      "f8d1216de820efb437ca8070c5f4f34838c46cf354c998e253557cfc400eae7883d0a758"
+      "0b2e617cca527d9d6c598cbc03ca743791f88a5a065fea9583068f1b",
+      "cc12d224273b56e6765f6b42583d8da3c89ff531f14961351b5173a9017579cd7bb736e2"
+      "78e626a426ee5a583b8d6c7b3006687ca9df596902a281e9e9cf3ad5",
+
+      // 1024-bit primes.
+      "f3244013a1b0ec2fe53a684260077d2afc3b35ed77026c594091d92b2eb47fd1266095b8"
+      "7456cc451942f907079b8a9cd333d4bf22a892dbc632904a6423c5b19bb41fd43764a558"
+      "0e9a5960d84fadbebfbbfaa5ec39acb78a94937d11d7a62c54a0f983bc8b5507479290de"
+      "f4e979d3f24ce81f4c506ba3bfca4f402a3b11cf",
+      "e4a70bdbb96fefd5732e9e94f9d04b9ef16635642ee728d40626861db00d57950697e892"
+      "d0306de25ee35d5ccce1220e1b19fd2f98af2fdcac5796d860fd75aec31ed48baf5b39cf"
+      "77ebda6727e33e6f72735ab0121395deb54fd430212499043cd1e11f7d5852f146997952"
+      "d9959c83542b6cbad3c3a2ebb8698a0172e0c6d1",
+      "e85ad4595ea74bf886977f4a06120b6ae28ec2d7ee44b4bc8658a8a90a2a55311814dfed"
+      "ebd08f93e8241dcc87d91d6f6b498c6ec0576a7dad6e5d53b71f89fb985de290c0f02a78"
+      "f2143217c0b7ae1487a751ec27dfbd46046a06f5ebe337e05ed5d6fe8620b7f82b349c37"
+      "924d96128e42307fd708a74d608848cbdf6bc799",
+      "cc890f5fe88bfc4028a2ab5eff9dea7b150ffe75fb29f1904adb4709e86f74eaed44218c"
+      "d8058341a4b828d4fefeed5e34f50198bf643040037933f4305e1e01c3518279b9fa4131"
+      "e5afbc462efe9b5ddc4ab91ec2c12abf95b526bb2a6bd7b2bb1ce8203364502f7c3b87ff"
+      "585c94765505c20f728078a46759615ad23d4fb7",
+      "ebd8cd32804c6c1e7264de4f9bf1e4d2dbdaa23292c8f4688aa2770f664fe03513974e13"
+      "0a10ccc6b6ca95846dfecbd2d42285cf0212ff427ddb7cc222bfa459215ad4cc0f1f5fc7"
+      "4186bbbe96ca4de0d7c793ee050f8e10a242ab9bf03aae5b017b42c405ccee34f59ff501"
+      "5dbe4cab310bbb3ab50604f663cdb5af070d4a8d",
+      "e1dab2efc6ba8c980b86164e11fc6c6c4abb53701031de431db2b608ec75fd03c7cf07e6"
+      "e9d6c36da2a2aafe759f9c3e1522237d4dcae66ef03c86481428d58d4bcdffb919bb8da4"
+      "4b0ac1cc922d2d904c543b1a09961faf7304af4482dc839091b258523ab5e36302e1157f"
+      "3e6810513922c5d5c1f559e3a90b91e4cf2f0c9f",
+      "d76a082eb03584a6253555cf9813206a06c9fc2112b6425e030f12d7d807656175f4c58e"
+      "e367826ec0d89f03339fb520d7c8a735905e458f849827581e9db22fde302fc55db031fd"
+      "8f3afe1910eaaa8ed4d122de99fa0a66bf69b932ce84d095ffcb3f98e231199817ebc316"
+      "460df0c0769fef3f91777a9cf86ccf2e8233818b",
+      "d506fd2c6557a7f8cd0ac8f0f098bffdede4ee79f74ce6e9478d8651058ec56aa1f4683c"
+      "20729ee8d11d14b34170ce0cf419a7b22943d5fb443afb22e6a430fe993ac64737428f50"
+      "37d19398ee226484b5ca64af71012245d87aefbcbd71e867f6fbcc52e0e1c49f1363aec1"
+      "88c776abb67cda2fd6ce7be4bdbeee57fbafb07b",
+
+      // 1536-bit primes.
+      "f6aa5b151ea2cd151a720174d58c157e8dbbf3dbd93b102fcfb7ad3767cca8543d4fb168"
+      "7fb907561da1330c7878853859bc2b4b9d639d9b9bba4fce3a95cfd9151c19365e6ad634"
+      "7edc87acd4b79d2a7ce942c2a391c475cef2d4e347675487cc36a43f157562e32aff9d74"
+      "e15f228a0ecc8eca2392e04ddea8eda995789c94b9f85dde65e66b074c7843260ebdcd60"
+      "1cd49e2bf3ab83780281e4a56ada38b16e085f00c05bcce442daf1c9374a3ec2a2345309"
+      "5570aaa6bb3a3e4945312aed",
+      "e396e3ede4b0a33fe90b749b3dbc01fdb7d15e37cc3febe3f2b0ee6140204666fa4acb93"
+      "da893d0ce19d9e5eb09b7395394ced79261ba8b1a40ee977d1954a98031256c0e3f83c5b"
+      "ee234afddb80d4251b5f6f7493b3eb6156011e202fd4d8319445eb5bb3c0782e9e75077c"
+      "87f9f3a25a2d117793fc98441ce74255d7bd55bdb0f17710737ab4aaca99271600f03503"
+      "91ffbc9a5d5458414716e0c26b239096f6c6e4a680b0cccaebc4f200fa0500618d719493"
+      "becacf936525680233273679",
+      "e5e7d43632d844bd04fce45213257415a4c9c3f4bf9b6a1b74e8c31e3c66fbf3b42da531"
+      "aaa9cdaac160d565cd81430983c18120e98be41df6d178d0e974cc9ce6ced673423c7727"
+      "267ba1ba07b457a1557bffaf2c90957372c0f5f08c4940ccd858e0bc392e3050bb2adae8"
+      "0f509dc129a49279c01c55434b383d359b7b255f55c33be445a3dc05e0c1b3d7486a8142"
+      "675a3b6e7b3d3d27fbf54764d9f73ea98304612e5e1a4d566986efa53b62ad18f4ecad64"
+      "f197c7d48a2732745a1e5ec9",
+      "daa7795c70b8df8af978f9e66a19eed2a92b6f665aee3d58f3e450ac0f18772ed5cf8b2b"
+      "381eb55facd93b32106d0d703f2316b50069b6db38cd62b12a4b7fdd6f8f93c4f110091a"
+      "d972e5808afd6acf6bd6eaa0b846b50b7fe1786702a3382b8b637b8ea91ffe3225e9ad50"
+      "3f1f9593ea6f19d6dc2d556e5d6f3a26134df4a964e67d789e7849eaf698c976ef592052"
+      "6b023f2f96e96e2b89adf0ee4544e32029cfca972f824cb7af805c556a6143dcb93cb6b7"
+      "91ebb8dba30cbc94dff782f3",
+      "f48f534acee47a482ba43abc70aa8c7d4b6df27b957583fa2b23cbc1d34d9da7eb89fa3f"
+      "881b9db1dfa8925f38328574ca8ff7256ae0bf163ee61b471d29f5e72d98f92775693091"
+      "2bfbddb695a64137783232596d6c7892b89b4fb54abd5b077ccf532aaf5b9b29cf25b366"
+      "3845987a0a947b97000c05bfc7a239e1cb962cc43e1dceaf91935353d2d6dad7eda20798"
+      "9a2f0f8e367f3df5c1ee3b56209bd85832c35ff2cd7b9a67db801691c946b0a7a9a875e8"
+      "9e1f65198caf1ca6f3037ff9",
+      "ee5bc8c8d3ecd753b4c0e4e5934d8e44a9ab5d8dda127db28b32bfb357636d0c144dee78"
+      "8c2a901af3b02439a8a3d2125954feeac722a72272f5595a91cf4ee5ae8e69159986cc50"
+      "054c3a259c80ed84e7b793733eed05330b2a2ad11dee4140b5fe1f3706a0b1b28407e84c"
+      "27e19e3a3d9d640629c35deaa9061d33b5888a88e4220340f488f764219f9e8edb2b1d04"
+      "15253f5fd53835cdc6935898ecba173c5b2db3a6578fdc16e1221cac1e454864ada9f772"
+      "1ecd24bc77ed5cf353d5f909",
+      "f2f5ca816781cbae4fcea9587321497c252bfe84127f2d8ac7d6da7a34d1faa2f428911d"
+      "a876a42299d2cb4af35c944df51f1421b74fe11b047f871b37f1f37a0c6d0753c28a3e52"
+      "91a9cf54c5892408591bc932269626d1392f8c8c67d87300febbc63e4a779104ba6191f8"
+      "a5bbfbcf6c675a6ad8a853ac1e9a86dc16a95a9566b5287b7862f6a962bf79626a82961f"
+      "c378b4751da35e25d761469ad4e22072bd43951631a96026b37d7932ca8fabf22fb757b4"
+      "e903252c416f0f96ca0eb663",
+      "e01c620e4b80840816a99b5c1eed80c8bfdc040253889b2ce81e78de2f5511ea453d1492"
+      "56bb53b64f4f43441e464867cfd40571c2c5527f1c79eb4b8b1022018e362ae51f13b8b5"
+      "2426239c09369370575d873755e3bee630424e35a8024f76553f5635d26d791b5e4a8903"
+      "d09be560c322837c29283aee2feb6864b724007334f1af2008db7eaf773d9f4e1e8fc396"
+      "07969c43d7c1d106274fa24c3068d347244d5821e10153b5e1e84fef7c08c19e4f79b71e"
+      "ebd1205c057812a74f6e09ab",
+
+      // 2048-bit primes.
+      "ff9166fd6945a3f692e99001528d5f4db6a36990f755275c3b34bded64bdd9c8e0cd190b"
+      "3df421be41525d496478bb2c07400ea1abe2bda65aa95efaecfada8230df64405ace2594"
+      "3193755ecf24db8fe8cda7a399cebe66f6d760cd9815bdcc65a5ad53c5b97dad21deed9b"
+      "e24ba048f621a095b3ffc48d05de12e16fb53d1e81ba0ed20c601599ce3833c7f36bc481"
+      "ab84ba7f38e3baeb19ad27e45dfd74fd5d03073426200c4b5ebf3323b3e16a0534b8df9b"
+      "0359c8e56f2e8c3950803b28954f8b6f14cee76623481f3479638c4908ce88ee56a5940b"
+      "c9e79198fedf83e5f931740346916d745c6279f13f4ca59e1534dba4f3eaeee8d20ddf20"
+      "6459fac7",
+      "d17eaffaad2b87da90b280b3879908ef3ed395b0d7cf12daee62dd4a0bf73e536f912635"
+      "f109908c8ceb26f31950dbcce65e443e452ac0eddf35aef2ae03a15f57bbb5d7800c9d61"
+      "bae6d87f10927643bd5a2cd77bd5a70d84b0da28494e5cb7cd7ced9dd0a57177cade57d9"
+      "53c80efa99ff09588dc7f6cab76d18fc86ccfc74fe5acca9aba2b4c143977d7abdae2a67"
+      "7cb50810f6b60ccc0f77f75e9ea5733d8c7d6795f95350d91fafacd9d9ad00bafaadf558"
+      "d95237ff53f090c674c326f38f728dbc4a42f2978d91c19686f3793862375adb2bc8b241"
+      "ce9816e8e36ff105bb06e7a77ea0077371b28bbdf745dd0bf537e43a0bed8ddeff5eb29e"
+      "28931d17",
+      "df859ae517fac8682a715f666c70ad29421cb8a0186fe6016c5bd8a0fabf65ee2b018fcc"
+      "53c50a29daf82a2a9f7bceac45c13a2458af34998cf16eecec02fe3254758eff63b60e25"
+      "3e118fb1494d78de1d38b49ac0b528a04208d2b57d95a9edd7b7b02afeb2c47a628bef6b"
+      "4a6a0f7b91cb5b8d5900f8ad3f332360a07f3ac00907cadfe6cacc7e696e897ca541a2e7"
+      "12a5d419215712716b71e2a2a8b8c809bbf0cc3b24e55e7ec72cfdc5e8c9651f8a2f36a8"
+      "abd0ebd77ddf59b7f096b788f8081e22465e4a6082c3ad4bcdf27bf5f51f3326eb87ac9e"
+      "330fb6d68645299da63a1d977fb246e176afcfbc2474fca3ae40d75125f755f5a50c3080"
+      "e7816235",
+      "c6aea46d1fb7d2d1107e31399cc613a1db56174c96898e3e32688ce2a26c000486528f05"
+      "4cc0dc3e448016944528183a2a90ca54a1029aedc519fe6d7b599097b214aab0d16b35cb"
+      "b7948e2e301f4fe65fc35340a82eb25111150cd968e12ec063ac0901ec4bf5d490a39714"
+      "b128848ee3852dce7bfdd66a4751abe8f365d1e83fd7a86a192d02bc892c6cd9558bacdf"
+      "c55a61cb06be8d74c44c2d03245d9b5f003c7280e82f3f1204dc7abc3e5fa11f2168bc17"
+      "c73fb1dc8b84e632a26420b32118fc8aa6a98c037b662d676370d10bfb47955e9b4f4c64"
+      "062d32345677199b36abe1d6b1bb0badbb57ae4a65b643da7f122c1b38dad9df0318d3c9"
+      "d96a96bf",
+      "da64c031f133da1d014777b6f8c8d599f54b7e67dc3ac3883f0b78cfe27d1cb1849c72a3"
+      "37a6d6a0ee53633c8382a416e8851fe9c81141121d702fa8b12dc6ba62a3dbb87faec66c"
+      "6389e9e1df47015db6ff12ded83d2fc242e58e55cf7924b70e4cf463559705e382745006"
+      "1aa88b38d3795042ab0e8657ed1c77e91e39d5a29e86f9572a3ce91b8d0ca12ef6ee5f1f"
+      "f3930c5de357eaabe7497d7319461be00cbb1db36329baa6c298608aa7288a6926396abc"
+      "9a662dc2c413311ec821cb4564c247fcdd32d57cae8dd37882377f9139aea9a5a6ae1e01"
+      "1a356fc395682f64c08cb3130711bb759d16ed2eaf0da976876f156aa0965cb7292a5726"
+      "1ad31ab7",
+      "ce705e04e5abb0d0f3058bff82c457ef6308f2b4279026c906c0679f382d92c96ae0d11f"
+      "3004dfbdfd7950cc4f0aa1bcb7b06e4be6628b249e90339d8e1891e512c40f7b38ce9ad4"
+      "ad7c37791b833cf668b4807c2b4d4638cb10af745e349c70ae7bc8396611725c43899131"
+      "751729e98651b4250d680ddb1f208e971b8abaca2ba79a7665dd71fa532702f54930865c"
+      "52ca536f04218aeb626ff94bc4e0886ffbccba910f879e000f363b0864dfc883d2de2af5"
+      "70c2c4125c5b0e478f87f7b934b66af864fb63f4d13fa21db3e4cef03c395fe207764ae3"
+      "1b64bbc301cdeb795c580885605b11bcaa53d32a1fa72381e524ef269748ce77deb0cd37"
+      "ceb403ab",
+      "f4f7bb8ab2983afc83b6ac060dcc4d96331dbbf800b321bbde2d8f8a9fa750e7c2b42fc4"
+      "6baf9a167a7389812f65b52b283ad5dd95709e81f8f602031ee8a5f4929bee7b3da97b92"
+      "f53f61ff25de8170aeef9a6c464d4be77fa3e5aea041f51d49932d30480f33bb44fd3af5"
+      "e7bfad562acaaed5069b2dc003fdb207ee7db9061d02136cb4b59c2ba071ca6aa2747675"
+      "bf86d601a9197d92091b36299cad0d6adceca87b16ee54b48ee19a9e9df20955cdc1ca2c"
+      "fa07fd2b054377d6242fb1ae69209ac5ac2d98a2929dec9eb076e0c9d74083bab0797851"
+      "b6eca68e3de7440001706cebee6adc8b317b0ef8332863aad26ec18f8156998566f32207"
+      "3777e817",
+      "da20f268b7254f3ed0ad35372ad4c78c1fc89465fc1a256ee0064b3c11980917d4d0b6fe"
+      "c8546c5e4cea1e18ccd23f20dc096506062afeb57be9edd2443ec1cecd84108911c99ac0"
+      "2d388bc7c415aa41b7a4396c3ed823f3c0921163e85e2dec186862e945affa069dee3dea"
+      "3b382d7c5a9695aa76e2e25a516457d4eee12ef0c18bf09076c8f739189887492e4aecae"
+      "2999ec305c2e66d444d14251caa1b546deb3c07c6d9c0ed9d1a33f405e780661684be318"
+      "61db7030b2f0b5b6e6f1616ab017955a6025c89c6945329aa10567a5f26724dc074cae1a"
+      "623c64fcda5241674bb4c9954342b1bac8cb13a4b98e893ee42b4ccebf788c2267de2d70"
+      "8a5b93ed",
+  };
+  for (const char *str : kPrimesHex) {
+    SCOPED_TRACE(str);
+    EXPECT_NE(0, HexToBIGNUM(&p, str));
+
+    ASSERT_TRUE(BN_primality_test(
+        &is_probably_prime_1, p.get(), BN_prime_checks_for_generation, ctx(),
+        false /* do_trial_division */, nullptr /* callback */));
+    EXPECT_EQ(1, is_probably_prime_1);
+
+    ASSERT_TRUE(BN_primality_test(
+        &is_probably_prime_2, p.get(), BN_prime_checks_for_generation, ctx(),
+        true /* do_trial_division */, nullptr /* callback */));
+    EXPECT_EQ(1, is_probably_prime_2);
+
+    ASSERT_TRUE(BN_enhanced_miller_rabin_primality_test(
+        &result_3, p.get(), BN_prime_checks_for_generation, ctx(),
+        nullptr /* callback */));
+    EXPECT_EQ(bn_probably_prime, result_3);
   }
 
   // BN_primality_test works with null |BN_CTX|.
   ASSERT_TRUE(BN_set_word(p.get(), 5));
-  ASSERT_TRUE(BN_primality_test(
-      &is_probably_prime_1, p.get(), BN_prime_checks, nullptr /* ctx */,
-      false /* do_trial_division */, nullptr /* callback */));
+  ASSERT_TRUE(
+      BN_primality_test(&is_probably_prime_1, p.get(),
+                        BN_prime_checks_for_generation, nullptr /* ctx */,
+                        false /* do_trial_division */, nullptr /* callback */));
   EXPECT_EQ(1, is_probably_prime_1);
+}
+
+TEST_F(BNTest, MillerRabinIteration) {
+  FileTestGTest(
+      "crypto/fipsmodule/bn/test/miller_rabin_tests.txt", [&](FileTest *t) {
+        BIGNUMFileTest bn_test(t, /*large_mask=*/0);
+
+        bssl::UniquePtr<BIGNUM> w = bn_test.GetBIGNUM("W");
+        ASSERT_TRUE(w);
+        bssl::UniquePtr<BIGNUM> b = bn_test.GetBIGNUM("B");
+        ASSERT_TRUE(b);
+        bssl::UniquePtr<BN_MONT_CTX> mont(
+            BN_MONT_CTX_new_consttime(w.get(), ctx()));
+        ASSERT_TRUE(mont);
+
+        bssl::BN_CTXScope scope(ctx());
+        BN_MILLER_RABIN miller_rabin;
+        ASSERT_TRUE(bn_miller_rabin_init(&miller_rabin, mont.get(), ctx()));
+        int possibly_prime;
+        ASSERT_TRUE(bn_miller_rabin_iteration(&miller_rabin, &possibly_prime,
+                                              b.get(), mont.get(), ctx()));
+
+        std::string result;
+        ASSERT_TRUE(t->GetAttribute(&result, "Result"));
+        EXPECT_EQ(result, possibly_prime ? "PossiblyPrime" : "Composite");
+      });
+}
+
+// These tests are very slow, so we disable them by default to avoid timing out
+// downstream consumers. They are enabled when running tests standalone via
+// all_tests.go.
+TEST_F(BNTest, DISABLED_WycheproofPrimality) {
+  FileTestGTest(
+      "third_party/wycheproof_testvectors/primality_test.txt",
+      [&](FileTest *t) {
+        WycheproofResult result;
+        ASSERT_TRUE(GetWycheproofResult(t, &result));
+        bssl::UniquePtr<BIGNUM> value = GetWycheproofBIGNUM(t, "value", false);
+        ASSERT_TRUE(value);
+
+        for (int checks :
+             {BN_prime_checks_for_validation, BN_prime_checks_for_generation}) {
+          SCOPED_TRACE(checks);
+          if (checks == BN_prime_checks_for_generation &&
+              std::find(result.flags.begin(), result.flags.end(),
+                        "WorstCaseMillerRabin") != result.flags.end()) {
+            // Skip the worst case Miller-Rabin cases.
+            // |BN_prime_checks_for_generation| relies on such values being rare
+            // when generating primes.
+            continue;
+          }
+
+          int is_probably_prime;
+          ASSERT_TRUE(BN_primality_test(&is_probably_prime, value.get(), checks,
+                                        ctx(),
+                                        /*do_trial_division=*/false, nullptr));
+          EXPECT_EQ(result.IsValid() ? 1 : 0, is_probably_prime);
+
+          ASSERT_TRUE(BN_primality_test(&is_probably_prime, value.get(), checks,
+                                        ctx(),
+                                        /*do_trial_division=*/true, nullptr));
+          EXPECT_EQ(result.IsValid() ? 1 : 0, is_probably_prime);
+        }
+      });
 }
 
 TEST_F(BNTest, NumBitsWord) {
@@ -2291,16 +2627,14 @@ TEST_F(BNTest, NonMinimal) {
   bssl::UniquePtr<BN_MONT_CTX> mont(
       BN_MONT_CTX_new_for_modulus(p.get(), ctx()));
   ASSERT_TRUE(mont);
-  bssl::UniquePtr<BN_MONT_CTX> mont2(
-      BN_MONT_CTX_new_consttime(p.get(), ctx()));
+  bssl::UniquePtr<BN_MONT_CTX> mont2(BN_MONT_CTX_new_consttime(p.get(), ctx()));
   ASSERT_TRUE(mont2);
 
   ASSERT_TRUE(bn_resize_words(p.get(), 32));
   bssl::UniquePtr<BN_MONT_CTX> mont3(
       BN_MONT_CTX_new_for_modulus(p.get(), ctx()));
   ASSERT_TRUE(mont3);
-  bssl::UniquePtr<BN_MONT_CTX> mont4(
-      BN_MONT_CTX_new_consttime(p.get(), ctx()));
+  bssl::UniquePtr<BN_MONT_CTX> mont4(BN_MONT_CTX_new_consttime(p.get(), ctx()));
   ASSERT_TRUE(mont4);
 
   EXPECT_EQ(mont->N.width, mont2->N.width);
@@ -2380,6 +2714,99 @@ TEST_F(BNTest, WriteIntoNegative) {
   EXPECT_FALSE(BN_is_negative(r.get()));
 }
 
+TEST_F(BNTest, ModSqrtInvalid) {
+  bssl::UniquePtr<BIGNUM> bn2140141 = ASCIIToBIGNUM("2140141");
+  ASSERT_TRUE(bn2140141);
+  bssl::UniquePtr<BIGNUM> bn2140142 = ASCIIToBIGNUM("2140142");
+  ASSERT_TRUE(bn2140142);
+  bssl::UniquePtr<BIGNUM> bn4588033 = ASCIIToBIGNUM("4588033");
+  ASSERT_TRUE(bn4588033);
+
+  // |BN_mod_sqrt| may fail or return an arbitrary value, so we do not use
+  // |TestModSqrt| or |TestNotModSquare|. We only promise it will not crash or
+  // infinite loop. (For some invalid inputs, it may even be non-deterministic.)
+  // See CVE-2022-0778.
+  BN_free(BN_mod_sqrt(nullptr, bn2140141.get(), bn4588033.get(), ctx()));
+  BN_free(BN_mod_sqrt(nullptr, bn2140142.get(), bn4588033.get(), ctx()));
+}
+
+// Test that constructing Montgomery contexts for large bignums is not possible.
+// Our Montgomery reduction implementation stack-allocates temporaries, so we
+// cap how large of moduli we accept.
+TEST_F(BNTest, MontgomeryLarge) {
+  std::vector<uint8_t> large_bignum_bytes(16 * 1024, 0xff);
+  bssl::UniquePtr<BIGNUM> large_bignum(
+      BN_bin2bn(large_bignum_bytes.data(), large_bignum_bytes.size(), nullptr));
+  ASSERT_TRUE(large_bignum);
+  bssl::UniquePtr<BN_MONT_CTX> mont(
+      BN_MONT_CTX_new_for_modulus(large_bignum.get(), ctx()));
+  EXPECT_FALSE(mont);
+
+  // The same limit should apply when |BN_mod_exp_mont_consttime| internally
+  // constructs a |BN_MONT_CTX|.
+  bssl::UniquePtr<BIGNUM> r(BN_new());
+  ASSERT_TRUE(r);
+  EXPECT_FALSE(BN_mod_exp_mont_consttime(r.get(), BN_value_one(),
+                                         large_bignum.get(), large_bignum.get(),
+                                         ctx(), nullptr));
+}
+
+TEST_F(BNTest, FormatWord) {
+  char buf[32];
+  snprintf(buf, sizeof(buf), BN_DEC_FMT1, BN_ULONG{1234});
+  EXPECT_STREQ(buf, "1234");
+  snprintf(buf, sizeof(buf), BN_HEX_FMT1, BN_ULONG{1234});
+  EXPECT_STREQ(buf, "4d2");
+
+  // |BN_HEX_FMT2| is zero-padded up to the maximum value.
+#if defined(OPENSSL_64_BIT)
+  snprintf(buf, sizeof(buf), BN_HEX_FMT2, BN_ULONG{1234});
+  EXPECT_STREQ(buf, "00000000000004d2");
+  snprintf(buf, sizeof(buf), BN_HEX_FMT2, std::numeric_limits<BN_ULONG>::max());
+  EXPECT_STREQ(buf, "ffffffffffffffff");
+#else
+  snprintf(buf, sizeof(buf), BN_HEX_FMT2, BN_ULONG{1234});
+  EXPECT_STREQ(buf, "000004d2");
+  snprintf(buf, sizeof(buf), BN_HEX_FMT2, std::numeric_limits<BN_ULONG>::max());
+  EXPECT_STREQ(buf, "ffffffff");
+#endif
+}
+
+#if defined(SUPPORTS_ABI_TEST)
+// These functions are not always implemented in assembly, but they sometimes
+// are, so include ABI tests for each.
+TEST_F(BNTest, ArithmeticABI) {
+  EXPECT_EQ(0u, CHECK_ABI(bn_add_words, nullptr, nullptr, nullptr, 0));
+  EXPECT_EQ(0u, CHECK_ABI(bn_sub_words, nullptr, nullptr, nullptr, 0));
+
+  for (size_t num :
+       {1, 2, 3, 4, 5, 6, 7, 8, 9, 15, 16, 17, 31, 32, 33, 63, 64, 65}) {
+    SCOPED_TRACE(num);
+    std::vector<BN_ULONG> a(num, 123456789);
+    std::vector<BN_ULONG> b(num, static_cast<BN_ULONG>(-1));
+    std::vector<BN_ULONG> r(num);
+
+    CHECK_ABI(bn_add_words, r.data(), a.data(), b.data(), num);
+    CHECK_ABI(bn_sub_words, r.data(), a.data(), b.data(), num);
+
+    CHECK_ABI(bn_mul_words, r.data(), a.data(), num, 42);
+    CHECK_ABI(bn_mul_add_words, r.data(), a.data(), num, 42);
+
+    r.resize(2 * num);
+    CHECK_ABI(bn_sqr_words, r.data(), a.data(), num);
+
+    if (num == 4) {
+      CHECK_ABI(bn_mul_comba4, r.data(), a.data(), b.data());
+      CHECK_ABI(bn_sqr_comba4, r.data(), a.data());
+    }
+    if (num == 8) {
+      CHECK_ABI(bn_mul_comba8, r.data(), a.data(), b.data());
+      CHECK_ABI(bn_sqr_comba8, r.data(), a.data());
+    }
+  }
+}
+#endif
+
 #if defined(OPENSSL_BN_ASM_MONT) && defined(SUPPORTS_ABI_TEST)
 TEST_F(BNTest, BNMulMontABI) {
   for (size_t words : {4, 5, 6, 7, 8, 16, 32}) {
@@ -2397,13 +2824,47 @@ TEST_F(BNTest, BNMulMontABI) {
     a[0] = 1;
     b[0] = 42;
 
+#if defined(OPENSSL_X86_64)
+    if (bn_mulx4x_mont_capable(words)) {
+      CHECK_ABI(bn_mulx4x_mont, r.data(), a.data(), b.data(), mont->N.d,
+                mont->n0, words);
+      CHECK_ABI(bn_mulx4x_mont, r.data(), a.data(), a.data(), mont->N.d,
+                mont->n0, words);
+    }
+    if (bn_mul4x_mont_capable(words)) {
+      CHECK_ABI(bn_mul4x_mont, r.data(), a.data(), b.data(), mont->N.d,
+                mont->n0, words);
+      CHECK_ABI(bn_mul4x_mont, r.data(), a.data(), a.data(), mont->N.d,
+                mont->n0, words);
+    }
+    CHECK_ABI(bn_mul_mont_nohw, r.data(), a.data(), b.data(), mont->N.d,
+              mont->n0, words);
+    CHECK_ABI(bn_mul_mont_nohw, r.data(), a.data(), a.data(), mont->N.d,
+              mont->n0, words);
+    if (bn_sqr8x_mont_capable(words)) {
+      CHECK_ABI(bn_sqr8x_mont, r.data(), a.data(), bn_mulx_adx_capable(),
+                mont->N.d, mont->n0, words);
+    }
+#elif defined(OPENSSL_ARM)
+    if (bn_mul8x_mont_neon_capable(words)) {
+      CHECK_ABI(bn_mul8x_mont_neon, r.data(), a.data(), b.data(), mont->N.d,
+                mont->n0, words);
+      CHECK_ABI(bn_mul8x_mont_neon, r.data(), a.data(), a.data(), mont->N.d,
+                mont->n0, words);
+    }
+    CHECK_ABI(bn_mul_mont_nohw, r.data(), a.data(), b.data(), mont->N.d,
+              mont->n0, words);
+    CHECK_ABI(bn_mul_mont_nohw, r.data(), a.data(), a.data(), mont->N.d,
+              mont->n0, words);
+#else
     CHECK_ABI(bn_mul_mont, r.data(), a.data(), b.data(), mont->N.d, mont->n0,
               words);
     CHECK_ABI(bn_mul_mont, r.data(), a.data(), a.data(), mont->N.d, mont->n0,
               words);
+#endif
   }
 }
-#endif   // OPENSSL_BN_ASM_MONT && SUPPORTS_ABI_TEST
+#endif  // OPENSSL_BN_ASM_MONT && SUPPORTS_ABI_TEST
 
 #if defined(OPENSSL_BN_ASM_MONT5) && defined(SUPPORTS_ABI_TEST)
 TEST_F(BNTest, BNMulMont5ABI) {
@@ -2430,25 +2891,34 @@ TEST_F(BNTest, BNMulMont5ABI) {
     }
     CHECK_ABI(bn_gather5, r.data(), words, table.data(), 13);
 
-    CHECK_ABI(bn_mul_mont_gather5, r.data(), r.data(), table.data(), m->d,
+    if (bn_mulx4x_mont_gather5_capable(words)) {
+      CHECK_ABI(bn_mulx4x_mont_gather5, r.data(), r.data(), table.data(), m->d,
+                mont->n0, words, 13);
+      CHECK_ABI(bn_mulx4x_mont_gather5, r.data(), a.data(), table.data(), m->d,
+                mont->n0, words, 13);
+    }
+    if (bn_mul4x_mont_gather5_capable(words)) {
+      CHECK_ABI(bn_mul4x_mont_gather5, r.data(), r.data(), table.data(), m->d,
+                mont->n0, words, 13);
+      CHECK_ABI(bn_mul4x_mont_gather5, r.data(), a.data(), table.data(), m->d,
+                mont->n0, words, 13);
+    }
+    CHECK_ABI(bn_mul_mont_gather5_nohw, r.data(), r.data(), table.data(), m->d,
               mont->n0, words, 13);
-    CHECK_ABI(bn_mul_mont_gather5, r.data(), a.data(), table.data(), m->d,
+    CHECK_ABI(bn_mul_mont_gather5_nohw, r.data(), a.data(), table.data(), m->d,
               mont->n0, words, 13);
 
-    if (words % 8 == 0) {
-      CHECK_ABI(bn_power5, r.data(), r.data(), table.data(), m->d, mont->n0,
+    if (bn_powerx5_capable(words)) {
+      CHECK_ABI(bn_powerx5, r.data(), r.data(), table.data(), m->d, mont->n0,
                 words, 13);
-      CHECK_ABI(bn_power5, r.data(), a.data(), table.data(), m->d, mont->n0,
+      CHECK_ABI(bn_powerx5, r.data(), a.data(), table.data(), m->d, mont->n0,
                 words, 13);
-      EXPECT_EQ(1, CHECK_ABI(bn_from_montgomery, r.data(), r.data(), nullptr,
-                             m->d, mont->n0, words));
-      EXPECT_EQ(1, CHECK_ABI(bn_from_montgomery, r.data(), a.data(), nullptr,
-                             m->d, mont->n0, words));
-    } else {
-      EXPECT_EQ(0, CHECK_ABI(bn_from_montgomery, r.data(), r.data(), nullptr,
-                             m->d, mont->n0, words));
-      EXPECT_EQ(0, CHECK_ABI(bn_from_montgomery, r.data(), a.data(), nullptr,
-                             m->d, mont->n0, words));
+    }
+    if (bn_power5_capable(words)) {
+      CHECK_ABI(bn_power5_nohw, r.data(), r.data(), table.data(), m->d,
+                mont->n0, words, 13);
+      CHECK_ABI(bn_power5_nohw, r.data(), a.data(), table.data(), m->d,
+                mont->n0, words, 13);
     }
   }
 }
@@ -2484,4 +2954,6 @@ TEST_F(BNTest, RSAZABI) {
   CHECK_ABI(rsaz_1024_gather5_avx2, rsaz1, table, 7);
   CHECK_ABI(rsaz_1024_red2norm_avx2, norm, rsaz1);
 }
-#endif   // RSAZ_ENABLED && SUPPORTS_ABI_TEST
+#endif  // RSAZ_ENABLED && SUPPORTS_ABI_TEST
+
+}  // namespace

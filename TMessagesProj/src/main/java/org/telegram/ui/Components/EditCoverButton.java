@@ -4,6 +4,7 @@ import static org.telegram.messenger.AndroidUtilities.dp;
 
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Path;
@@ -18,8 +19,12 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.FileLoader;
+import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.R;
+import org.telegram.messenger.Utilities;
+import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.PhotoViewer;
 
@@ -29,14 +34,16 @@ public class EditCoverButton extends View {
     private final PhotoViewerBlurDrawable blur;
     private final Drawable arrowDrawable;
 
+    private ImageReceiver imageReceiver;
+
     private final ButtonBounce bounce = new ButtonBounce(this);
-    private final Path clipPath = new Path();
-    private Bitmap image;
-    private final Paint imagePaint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
     private final RectF imageBounds = new RectF();
 
     public EditCoverButton(Context context, PhotoViewer photoViewer, CharSequence text, boolean withArrow) {
         super(context);
+
+        imageReceiver = new ImageReceiver(this);
+        imageReceiver.setRoundRadius(dp(22.66f));
 
         this.text = new Text(text, 14, AndroidUtilities.bold());
         this.blur = new PhotoViewerBlurDrawable(photoViewer, photoViewer.blurManager, this).setApplyBounds(false);
@@ -49,9 +56,51 @@ public class EditCoverButton extends View {
 
     }
 
+    @Override
+    protected void onAttachedToWindow() {
+        super.onAttachedToWindow();
+        imageReceiver.onAttachedToWindow();
+    }
+
+    @Override
+    protected void onDetachedFromWindow() {
+        super.onDetachedFromWindow();
+        imageReceiver.onDetachedFromWindow();
+    }
+
     public void setImage(Bitmap bitmap) {
-        this.image = bitmap;
+        this.imageReceiver.setImageBitmap(bitmap);
         invalidate();
+    }
+
+    public void setImage(TLRPC.Photo photo, Object parentObject) {
+        if (photo == null) {
+            setImage((Bitmap) null);
+            return;
+        }
+        final TLRPC.PhotoSize size1 = FileLoader.getClosestPhotoSizeWithSize(photo.sizes, dp(48), false, null, true);
+        final TLRPC.PhotoSize size2 = FileLoader.getClosestPhotoSizeWithSize(photo.sizes, dp(24), false, size1, false);
+        this.imageReceiver.setImage(ImageLocation.getForPhoto(size1, photo), "24_24", ImageLocation.getForPhoto(size2, photo), "24_24", 0, null, parentObject, 0);
+    }
+
+    public void setImage(String path) {
+        if (path == null) {
+            setImage((Bitmap) null);
+            return;
+        }
+
+        Utilities.globalQueue.postRunnable(() -> {
+            final Bitmap frame = BitmapFactory.decodeFile(path);
+            final Bitmap bitmap = Bitmap.createBitmap(dp(26), dp(26), Bitmap.Config.ARGB_8888);
+            final Canvas canvas = new Canvas(bitmap);
+            final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
+            canvas.translate(bitmap.getWidth() / 2.0f, bitmap.getHeight() / 2.0f);
+            final float scale = Math.max((float) bitmap.getWidth() / frame.getWidth(), (float) bitmap.getHeight() / frame.getHeight());
+            canvas.scale(scale, scale);
+            canvas.drawBitmap(frame, -frame.getWidth() / 2.0f, -frame.getHeight() / 2.0f, paint);
+
+            AndroidUtilities.runOnUIThread(() -> setImage(frame));
+        });
     }
 
     @Override
@@ -60,7 +109,8 @@ public class EditCoverButton extends View {
         canvas.save();
         canvas.scale(scale, scale, getWidth() / 2.0f, getHeight() / 2.0f);
 
-        final int leftPadding = (image != null ? dp(30.33f) : dp(11.33f));
+        final boolean hasImage = imageReceiver.hasBitmapImage();
+        final int leftPadding = (hasImage ? dp(30.33f) : dp(11.33f));
         final int width = leftPadding + (int) Math.ceil(text.getCurrentWidth()) + dp(19);
         final int height = dp(24);
         final int left = (getWidth() - width) / 2, cy = getHeight() / 2;
@@ -68,18 +118,10 @@ public class EditCoverButton extends View {
         blur.setBounds(left, cy - height / 2, left + width, cy + height / 2);
         blur.draw(canvas);
 
-        if (image != null) {
+        if (hasImage) {
             imageBounds.set(left + dp(.66f), cy - dp(22.66f) / 2, left + dp(.66f + 22.66f), cy + dp(22.66f) / 2);
-            canvas.save();
-            clipPath.rewind();
-            clipPath.addRoundRect(imageBounds, dp(22.66f), dp(22.66f), Path.Direction.CW);
-            canvas.clipPath(clipPath);
-            float imageScale = Math.max((float) dp(22.66f) / image.getWidth(), (float) dp(22.66f) / image.getHeight());
-            canvas.translate(imageBounds.centerX(), imageBounds.centerY());
-            canvas.scale(imageScale, imageScale);
-            canvas.translate(-image.getWidth() / 2.0f, -image.getHeight() / 2.0f);
-            canvas.drawBitmap(image, 0, 0, imagePaint);
-            canvas.restore();
+            imageReceiver.setImageCoords(imageBounds);
+            imageReceiver.draw(canvas);
         }
 
         text.draw(canvas, left + leftPadding, cy, 0xFFFFFFFF, 1.0f);

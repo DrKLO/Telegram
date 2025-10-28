@@ -95,6 +95,7 @@ import com.google.android.exoplayer2.util.Size;
 import com.google.android.exoplayer2.util.Util;
 import com.google.android.exoplayer2.video.VideoDecoderOutputBufferRenderer;
 import com.google.android.exoplayer2.video.VideoFrameMetadataListener;
+import com.google.android.exoplayer2.video.VideoListener;
 import com.google.android.exoplayer2.video.VideoRendererEventListener;
 import com.google.android.exoplayer2.video.VideoSize;
 import com.google.android.exoplayer2.video.spherical.CameraMotionListener;
@@ -3228,5 +3229,19 @@ import java.util.concurrent.TimeoutException;
       }
       return new PlayerId(listener.getLogSessionId());
     }
+  }
+
+  /*  */
+
+  private final ArrayList<VideoListener> videoListeners = new ArrayList<>();
+
+  @Override
+  public void addVideoListener(VideoListener listener) {
+    videoListeners.add(listener);
+  }
+
+  @Override
+  public void removeVideoListener(VideoListener listener) {
+    videoListeners.remove(listener);
   }
 }

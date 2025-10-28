@@ -77,7 +77,7 @@ rtc::CopyOnWriteBuffer SerializeRawMessageWithSeq(
     writer.WriteUInt32(seq);
     writer.WriteUInt8(kCustomId);
     writer.WriteUInt32((uint32_t)message.size());
-    writer.WriteBytes((const char *)message.data(), message.size());
+    writer.WriteBytes((const uint8_t *)message.data(), message.size());
 
     auto result = rtc::CopyOnWriteBuffer();
     result.AppendData(writer.Data(), writer.Length());
@@ -487,9 +487,9 @@ auto EncryptedConnection::processPacket(
 
     auto currentSeq = packetSeq;
     auto currentCounter = CounterFromSeq(currentSeq);
-    rtc::ByteBufferReader reader(
-        reinterpret_cast<const char*>(fullBuffer.data() + 4), // Skip seq.
-        fullBuffer.size() - 4);
+    rtc::ByteBufferReader reader(rtc::ArrayView<const uint8_t>(
+        reinterpret_cast<const uint8_t *>(fullBuffer.data() + 4), // Skip seq.
+        fullBuffer.size() - 4));
 
     auto result = absl::optional<DecryptedPacket>();
     while (true) {
@@ -573,9 +573,9 @@ auto EncryptedConnection::processRawPacket(
 
     auto currentSeq = packetSeq;
     auto currentCounter = CounterFromSeq(currentSeq);
-    rtc::ByteBufferReader reader(
-        reinterpret_cast<const char*>(fullBuffer.data() + 4), // Skip seq.
-        fullBuffer.size() - 4);
+    rtc::ByteBufferReader reader(rtc::ArrayView<const uint8_t>(
+        reinterpret_cast<const uint8_t *>(fullBuffer.data() + 4), // Skip seq.
+        fullBuffer.size() - 4));
 
     auto result = absl::optional<DecryptedRawPacket>();
     while (true) {

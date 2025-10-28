@@ -28,6 +28,7 @@
 #include "test/field_trial.h"
 #include "test/gtest.h"
 #include "test/run_test.h"
+#include "test/test_flags.h"
 #include "video/video_quality_test.h"
 
 using ::webrtc::BitrateConstraints;
@@ -255,15 +256,6 @@ ABSL_FLAG(bool, send_side_bwe, true, "Use send-side bandwidth estimation");
 ABSL_FLAG(bool, generic_descriptor, false, "Use the generic frame descriptor.");
 
 ABSL_FLAG(bool, allow_reordering, false, "Allow packet reordering to occur");
-
-ABSL_FLAG(
-    std::string,
-    force_fieldtrials,
-    "",
-    "Field trials control experimental feature code which can be forced. "
-    "E.g. running with --force_fieldtrials=WebRTC-FooFeature/Enable/"
-    " will assign the group Enable to field trial WebRTC-FooFeature. Multiple "
-    "trials are separated by \"/\"");
 
 // Screenshare-specific flags.
 ABSL_FLAG(int,

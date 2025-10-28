@@ -34,6 +34,6 @@ void WebRtcIlbcfix_FilteredCbVecs(
                                               second CB section */
     size_t lMem,        /* (i) Length of codebook memory */
     size_t samples      /* (i) Number of samples to filter */
-    );
+);
 
 #endif

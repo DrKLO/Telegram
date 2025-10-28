@@ -16,7 +16,7 @@
 namespace webrtc {
 
 // List of features in x86.
-typedef enum { kSSE2, kSSE3, kAVX2 } CPUFeature;
+typedef enum { kSSE2, kSSE3, kAVX2, kFMA3 } CPUFeature;
 
 // List of features in ARM.
 enum {

@@ -13,7 +13,7 @@
 #include <algorithm>
 
 #include "absl/types/optional.h"
-#include "modules/include/module_common_types_public.h"
+#include "rtc_base/numerics/sequence_number_unwrapper.h"
 
 namespace webrtc {
 
@@ -47,7 +47,7 @@ void TimestampExtrapolator::Reset(Timestamp start) {
   p_[0][0] = 1;
   p_[1][1] = kP11;
   p_[0][1] = p_[1][0] = 0;
-  unwrapper_ = TimestampUnwrapper();
+  unwrapper_ = RtpTimestampUnwrapper();
   packet_count_ = 0;
   detector_accumulator_pos_ = 0;
   detector_accumulator_neg_ = 0;
@@ -124,7 +124,7 @@ void TimestampExtrapolator::Update(Timestamp now, uint32_t ts90khz) {
 
 absl::optional<Timestamp> TimestampExtrapolator::ExtrapolateLocalTime(
     uint32_t timestamp90khz) const {
-  int64_t unwrapped_ts90khz = unwrapper_.UnwrapWithoutUpdate(timestamp90khz);
+  int64_t unwrapped_ts90khz = unwrapper_.PeekUnwrap(timestamp90khz);
 
   if (!first_unwrapped_timestamp_) {
     return absl::nullopt;
@@ -132,13 +132,24 @@ absl::optional<Timestamp> TimestampExtrapolator::ExtrapolateLocalTime(
     constexpr double kRtpTicksPerMs = 90;
     TimeDelta diff = TimeDelta::Millis(
         (unwrapped_ts90khz - *prev_unwrapped_timestamp_) / kRtpTicksPerMs);
+    if (prev_.us() + diff.us() < 0) {
+      // Prevent the construction of a negative Timestamp.
+      // This scenario can occur when the RTP timestamp wraps around.
+      return absl::nullopt;
+    }
     return prev_ + diff;
   } else if (w_[0] < 1e-3) {
     return start_;
   } else {
     double timestampDiff = unwrapped_ts90khz - *first_unwrapped_timestamp_;
-    auto diff_ms = static_cast<int64_t>((timestampDiff - w_[1]) / w_[0] + 0.5);
-    return start_ + TimeDelta::Millis(diff_ms);
+    TimeDelta diff = TimeDelta::Millis(
+        static_cast<int64_t>((timestampDiff - w_[1]) / w_[0] + 0.5));
+    if (start_.us() + diff.us() < 0) {
+      // Prevent the construction of a negative Timestamp.
+      // This scenario can occur when the RTP timestamp wraps around.
+      return absl::nullopt;
+    }
+    return start_ + diff;
   }
 }
 

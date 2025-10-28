@@ -44,6 +44,7 @@ import org.json.JSONObject;
 import org.telegram.DispatchQueuePriority;
 import org.telegram.messenger.secretmedia.EncryptedFileInputStream;
 import org.telegram.messenger.utils.BitmapsCache;
+import org.telegram.messenger.wallpaper.WallpaperGiftBitmapDrawable;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
@@ -73,8 +74,6 @@ import java.net.SocketTimeoutException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.net.UnknownHostException;
-import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -894,16 +893,19 @@ public class ImageLoader {
                         h = (int) (h_filter * AndroidUtilities.density);
                     }
                 }
+
+                SvgHelper.SvgResult svgResult = null;
                 Bitmap bitmap = null;
                 try {
-                    bitmap = SvgHelper.getBitmap(cacheImage.finalFilePath, w, h, cacheImage.imageType == FileLoader.IMAGE_TYPE_SVG_WHITE);
+                    svgResult = SvgHelper.getSvgBitmap(cacheImage.finalFilePath, w, h, cacheImage.imageType == FileLoader.IMAGE_TYPE_SVG_WHITE);
+                    bitmap = svgResult.getBitmap();
                 } catch (Throwable e) {
                     FileLog.e(e);
                 }
                 if (bitmap != null && !TextUtils.isEmpty(cacheImage.filter) && cacheImage.filter.contains("wallpaper") && cacheImage.parentObject instanceof TLRPC.WallPaper) {
                     bitmap = applyWallpaperSetting(bitmap, (TLRPC.WallPaper) cacheImage.parentObject);
                 }
-                onPostExecute(bitmap != null ? new BitmapDrawable(bitmap) : null);
+                onPostExecute(WallpaperGiftBitmapDrawable.create(bitmap, svgResult != null ? svgResult.getGiftPatternPositions(): null));
             } else if (cacheImage.imageType == FileLoader.IMAGE_TYPE_LOTTIE) {
                 int w = Math.min(512, AndroidUtilities.dp(170.6f));
                 int h = Math.min(512, AndroidUtilities.dp(170.6f));
@@ -3118,7 +3120,7 @@ public class ImageLoader {
                             String location = imageLocation.path;
                             if (!location.startsWith("vthumb") && !location.startsWith("thumb")) {
                                 String trueExt = getHttpUrlExtension(location, "jpg");
-                                if (trueExt.equals("webm") || trueExt.equals("mp4") || trueExt.equals("gif")) {
+                                if (trueExt.equalsIgnoreCase("webm") || trueExt.equalsIgnoreCase("mp4") || trueExt.equalsIgnoreCase("gif")) {
                                     img.imageType = FileLoader.IMAGE_TYPE_ANIMATION;
                                 } else if ("tgs".equals(ext)) {
                                     img.imageType = FileLoader.IMAGE_TYPE_LOTTIE;
@@ -3680,11 +3682,11 @@ public class ImageLoader {
 
     private void httpFileLoadError(final String location) {
         imageLoadQueue.postRunnable(() -> {
-            CacheImage img = imageLoadingByUrl.get(location);
+            final CacheImage img = imageLoadingByUrl.get(location);
             if (img == null) {
                 return;
             }
-            HttpImageTask oldTask = img.httpTask;
+            final HttpImageTask oldTask = img.httpTask;
             if (oldTask != null) {
                 img.httpTask = new HttpImageTask(oldTask.cacheImage, oldTask.imageSize);
                 httpTasks.add(img.httpTask);
@@ -4128,6 +4130,19 @@ public class ImageLoader {
         photoSize.size = (int) cacheFile.length();
 
         return photoSize;
+    }
+
+    public static class PhotoSizeFromPhoto extends TLRPC.PhotoSize {
+        public final TLRPC.Photo photo;
+        public final TLRPC.InputPhoto inputPhoto;
+        public PhotoSizeFromPhoto(TLRPC.Photo photo) {
+            this.photo = photo;
+            final TLRPC.TL_inputPhoto i = new TLRPC.TL_inputPhoto();
+            i.id = photo.id;
+            i.file_reference = photo.file_reference;
+            i.access_hash = photo.access_hash;
+            this.inputPhoto = i;
+        }
     }
 
     private static TLRPC.PhotoSize scaleAndSaveImageInternal(TLRPC.PhotoSize photoSize, Bitmap bitmap, Bitmap.CompressFormat compressFormat, boolean progressive, int w, int h, float photoW, float photoH, float scaleFactor, int quality, boolean cache, boolean scaleAnyway, boolean forceCacheDir) throws Exception {

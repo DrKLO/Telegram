@@ -20,9 +20,6 @@
 
 namespace webrtc {
 
-// Profile information for AV1 video.
-extern RTC_EXPORT const char kAV1FmtpProfile[];
-
 // Profiles can be found at:
 // https://aomedia.org/av1/specification/annex-a/#profiles
 // The enum values match the number specified in the SDP.
@@ -45,12 +42,12 @@ absl::optional<AV1Profile> StringToAV1Profile(absl::string_view profile);
 // specified and an empty value if the profile key is present but contains an
 // invalid value.
 RTC_EXPORT absl::optional<AV1Profile> ParseSdpForAV1Profile(
-    const SdpVideoFormat::Parameters& params);
+    const CodecParameterMap& params);
 
 // Returns true if the parameters have the same AV1 profile or neither contains
 // an AV1 profile, otherwise false.
-bool AV1IsSameProfile(const SdpVideoFormat::Parameters& params1,
-                      const SdpVideoFormat::Parameters& params2);
+bool AV1IsSameProfile(const CodecParameterMap& params1,
+                      const CodecParameterMap& params2);
 
 }  // namespace webrtc
 

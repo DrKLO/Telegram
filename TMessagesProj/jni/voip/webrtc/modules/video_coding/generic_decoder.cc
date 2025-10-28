@@ -25,8 +25,10 @@
 #include "modules/video_coding/include/video_error_codes.h"
 #include "rtc_base/checks.h"
 #include "rtc_base/logging.h"
+#include "rtc_base/string_encode.h"
 #include "rtc_base/trace_event.h"
 #include "system_wrappers/include/clock.h"
+#include "system_wrappers/include/metrics.h"
 
 namespace webrtc {
 
@@ -185,6 +187,15 @@ void VCMDecodedFrameCallback::Decoded(VideoFrame& decodedImage,
         frame_info->timing.network_timestamp_ms - sender_delta_ms;
     timing_frame_info.network2_timestamp_ms =
         frame_info->timing.network2_timestamp_ms - sender_delta_ms;
+    RTC_HISTOGRAM_COUNTS_1000(
+        "WebRTC.Video.GenericDecoder.CaptureToEncodeDelay",
+        timing_frame_info.encode_start_ms - timing_frame_info.capture_time_ms);
+    RTC_HISTOGRAM_COUNTS_1000(
+        "WebRTC.Video.GenericDecoder.EncodeDelay",
+        timing_frame_info.encode_finish_ms - timing_frame_info.encode_start_ms);
+    RTC_HISTOGRAM_COUNTS_1000(
+        "WebRTC.Video.GenericDecoder.PacerAndPacketizationDelay",
+        timing_frame_info.pacer_exit_ms - timing_frame_info.encode_finish_ms);
   }
 
   timing_frame_info.flags = frame_info->timing.flags;
@@ -195,12 +206,22 @@ void VCMDecodedFrameCallback::Decoded(VideoFrame& decodedImage,
   timing_frame_info.rtp_timestamp = decodedImage.timestamp();
   timing_frame_info.receive_start_ms = frame_info->timing.receive_start_ms;
   timing_frame_info.receive_finish_ms = frame_info->timing.receive_finish_ms;
+  RTC_HISTOGRAM_COUNTS_1000(
+      "WebRTC.Video.GenericDecoder.PacketReceiveDelay",
+      timing_frame_info.receive_finish_ms - timing_frame_info.receive_start_ms);
+  RTC_HISTOGRAM_COUNTS_1000(
+      "WebRTC.Video.GenericDecoder.JitterBufferDelay",
+      timing_frame_info.decode_start_ms - timing_frame_info.receive_finish_ms);
+  RTC_HISTOGRAM_COUNTS_1000(
+      "WebRTC.Video.GenericDecoder.DecodeDelay",
+      timing_frame_info.decode_finish_ms - timing_frame_info.decode_start_ms);
   _timing->SetTimingFrameInfo(timing_frame_info);
 
   decodedImage.set_timestamp_us(
       frame_info->render_time ? frame_info->render_time->us() : -1);
   _receiveCallback->FrameToRender(decodedImage, qp, decode_time,
-                                  frame_info->content_type);
+                                  frame_info->content_type,
+                                  frame_info->frame_type);
 }
 
 void VCMDecodedFrameCallback::OnDecoderInfoChanged(
@@ -260,19 +281,29 @@ bool VCMGenericDecoder::Configure(const VideoDecoder::Settings& settings) {
   return ok;
 }
 
+int32_t VCMGenericDecoder::Decode(const EncodedFrame& frame, Timestamp now) {
+  return Decode(frame, now, frame.RenderTimeMs());
+}
+
 int32_t VCMGenericDecoder::Decode(const VCMEncodedFrame& frame, Timestamp now) {
+  return Decode(frame, now, frame.RenderTimeMs());
+}
+
+int32_t VCMGenericDecoder::Decode(const EncodedImage& frame,
+                                  Timestamp now,
+                                  int64_t render_time_ms) {
   TRACE_EVENT1("webrtc", "VCMGenericDecoder::Decode", "timestamp",
-               frame.Timestamp());
+               frame.RtpTimestamp());
   FrameInfo frame_info;
-  frame_info.rtp_timestamp = frame.Timestamp();
+  frame_info.rtp_timestamp = frame.RtpTimestamp();
   frame_info.decode_start = now;
   frame_info.render_time =
-      frame.RenderTimeMs() >= 0
-          ? absl::make_optional(Timestamp::Millis(frame.RenderTimeMs()))
+      render_time_ms >= 0
+          ? absl::make_optional(Timestamp::Millis(render_time_ms))
           : absl::nullopt;
   frame_info.rotation = frame.rotation();
   frame_info.timing = frame.video_timing();
-  frame_info.ntp_time_ms = frame.EncodedImage().ntp_time_ms_;
+  frame_info.ntp_time_ms = frame.ntp_time_ms_;
   frame_info.packet_infos = frame.PacketInfos();
 
   // Set correctly only for key frames. Thus, use latest key frame
@@ -284,10 +315,10 @@ int32_t VCMGenericDecoder::Decode(const VCMEncodedFrame& frame, Timestamp now) {
   } else {
     frame_info.content_type = _last_keyframe_content_type;
   }
+  frame_info.frame_type = frame.FrameType();
   _callback->Map(std::move(frame_info));
 
-  int32_t ret = decoder_->Decode(frame.EncodedImage(), frame.MissingFrame(),
-                                 frame.RenderTimeMs());
+  int32_t ret = decoder_->Decode(frame, render_time_ms);
   VideoDecoder::DecoderInfo decoder_info = decoder_->GetDecoderInfo();
   if (decoder_info != decoder_info_) {
     RTC_LOG(LS_INFO) << "Changed decoder implementation to: "
@@ -298,12 +329,7 @@ int32_t VCMGenericDecoder::Decode(const VCMEncodedFrame& frame, Timestamp now) {
     }
     _callback->OnDecoderInfoChanged(std::move(decoder_info));
   }
-  if (ret < WEBRTC_VIDEO_CODEC_OK) {
-    RTC_LOG(LS_WARNING) << "Failed to decode frame with timestamp "
-                        << frame.Timestamp() << ", error code: " << ret;
-    _callback->ClearTimestampMap();
-  } else if (ret == WEBRTC_VIDEO_CODEC_NO_OUTPUT) {
-    // No output.
+  if (ret < WEBRTC_VIDEO_CODEC_OK || ret == WEBRTC_VIDEO_CODEC_NO_OUTPUT) {
     _callback->ClearTimestampMap();
   }
   return ret;

@@ -101,20 +101,26 @@ public class NetworkMonitor {
    * multi-networking. This requires the embedding app have the platform ACCESS_NETWORK_STATE and
    * CHANGE_NETWORK_STATE permission.
    */
-  public void startMonitoring(Context applicationContext) {
+  public void startMonitoring(Context applicationContext, String fieldTrialsString) {
     synchronized (networkChangeDetectorLock) {
       ++numObservers;
       if (networkChangeDetector == null) {
-        networkChangeDetector = createNetworkChangeDetector(applicationContext);
+        networkChangeDetector = createNetworkChangeDetector(applicationContext, fieldTrialsString);
       }
       currentConnectionType = networkChangeDetector.getCurrentConnectionType();
     }
   }
 
+  /** Deprecated, use startMonitoring with fieldTrialsStringString argument. */
+  @Deprecated
+  public void startMonitoring(Context applicationContext) {
+    startMonitoring(applicationContext, "");
+  }
+
   /** Deprecated, pass in application context in startMonitoring instead. */
   @Deprecated
   public void startMonitoring() {
-    startMonitoring(ContextUtils.getApplicationContext());
+    startMonitoring(ContextUtils.getApplicationContext(), "");
   }
 
   /**
@@ -123,15 +129,20 @@ public class NetworkMonitor {
    * CHANGE_NETWORK_STATE permission.
    */
   @CalledByNative
-  private void startMonitoring(@Nullable Context applicationContext, long nativeObserver) {
-    Logging.d(TAG, "Start monitoring with native observer " + nativeObserver);
+  private void startMonitoring(
+      @Nullable Context applicationContext, long nativeObserver, String fieldTrialsString) {
+    Logging.d(TAG,
+        "Start monitoring with native observer " + nativeObserver
+            + " fieldTrialsString: " + fieldTrialsString);
 
     startMonitoring(
-        applicationContext != null ? applicationContext : ContextUtils.getApplicationContext());
-    // The native observers expect a network list update after they call startMonitoring.
+        applicationContext != null ? applicationContext : ContextUtils.getApplicationContext(),
+        fieldTrialsString);
+
     synchronized (nativeNetworkObservers) {
       nativeNetworkObservers.add(nativeObserver);
     }
+    // The native observer expects a network list update after startMonitoring.
     updateObserverActiveNetworkList(nativeObserver);
     // currentConnectionType was updated in startMonitoring().
     // Need to notify the native observers here.
@@ -177,7 +188,8 @@ public class NetworkMonitor {
     return currentConnectionType;
   }
 
-  private NetworkChangeDetector createNetworkChangeDetector(Context appContext) {
+  private NetworkChangeDetector createNetworkChangeDetector(
+      Context appContext, String fieldTrialsString) {
     return networkChangeDetectorFactory.create(new NetworkChangeDetector.Observer() {
       @Override
       public void onConnectionTypeChanged(NetworkChangeDetector.ConnectionType newConnectionType) {
@@ -255,7 +267,7 @@ public class NetworkMonitor {
       networkInfoList =
           (networkChangeDetector == null) ? null : networkChangeDetector.getActiveNetworkList();
     }
-    if (networkInfoList == null || networkInfoList.size() == 0) {
+    if (networkInfoList == null) {
       return;
     }
 
@@ -339,10 +351,11 @@ public class NetworkMonitor {
   }
 
   // For testing only.
-  static NetworkMonitorAutoDetect createAndSetAutoDetectForTest(Context context) {
+  static NetworkMonitorAutoDetect createAndSetAutoDetectForTest(
+      Context context, String fieldTrialsString) {
     NetworkMonitor networkMonitor = getInstance();
     NetworkChangeDetector networkChangeDetector =
-        networkMonitor.createNetworkChangeDetector(context);
+        networkMonitor.createNetworkChangeDetector(context, fieldTrialsString);
     networkMonitor.networkChangeDetector = networkChangeDetector;
     return (NetworkMonitorAutoDetect) networkChangeDetector;
   }

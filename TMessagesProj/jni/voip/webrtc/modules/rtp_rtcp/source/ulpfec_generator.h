@@ -21,8 +21,8 @@
 #include "modules/include/module_fec_types.h"
 #include "modules/rtp_rtcp/source/forward_error_correction.h"
 #include "modules/rtp_rtcp/source/video_fec_generator.h"
+#include "rtc_base/bitrate_tracker.h"
 #include "rtc_base/race_checker.h"
-#include "rtc_base/rate_statistics.h"
 #include "rtc_base/synchronization/mutex.h"
 
 namespace webrtc {
@@ -115,7 +115,7 @@ class UlpfecGenerator : public VideoFecGenerator {
 
   mutable Mutex mutex_;
   absl::optional<Params> pending_params_ RTC_GUARDED_BY(mutex_);
-  RateStatistics fec_bitrate_ RTC_GUARDED_BY(mutex_);
+  BitrateTracker fec_bitrate_ RTC_GUARDED_BY(mutex_);
 };
 
 }  // namespace webrtc

@@ -1980,7 +1980,7 @@ public class FilterShaders {
         if (bitmap != null && !bitmap.isRecycled()) {
             GLES20.glGenTextures(1, bitmapTextre, 0);
 
-            float maxSize = AndroidUtilities.getPhotoSize();
+            float maxSize = AndroidUtilities.getPhotoSize(true);
             if (scaleBitmap && (renderBufferWidth > maxSize || renderBufferHeight > maxSize) || orientation % 360 != 0) {
                 float scale = 1;
                 if (scaleBitmap && (renderBufferWidth > maxSize || renderBufferHeight > maxSize)) {

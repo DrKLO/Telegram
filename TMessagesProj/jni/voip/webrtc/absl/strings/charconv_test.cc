@@ -14,14 +14,19 @@
 
 #include "absl/strings/charconv.h"
 
+#include <cfloat>
+#include <cmath>
 #include <cstdlib>
+#include <functional>
+#include <limits>
 #include <string>
+#include <system_error>  // NOLINT(build/c++11)
 
-#include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "absl/strings/internal/pow10_helper.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
+#include "absl/strings/string_view.h"
 
 #ifdef _MSC_FULL_VER
 #define ABSL_COMPILER_DOES_EXACT_ROUNDING 0

@@ -1,0 +1,3 @@
+----- Certificate i=0 (CN=Invalid DNS nameConstraints EE Certificate Test33,O=Test Certificates 2011,C=US) -----
+ERROR: Not permitted by name constraints
+

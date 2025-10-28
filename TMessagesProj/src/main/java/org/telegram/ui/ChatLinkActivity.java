@@ -636,7 +636,8 @@ public class ChatLinkActivity extends BaseFragment implements NotificationCenter
                 chats = res.chats;
                 Iterator<TLRPC.Chat> i = chats.iterator();
                 while (i.hasNext()) {
-                    if (ChatObject.isForum(i.next()))
+                    TLRPC.Chat chat = i.next();
+                    if (ChatObject.isForum(chat) || ChatObject.isMonoForum(chat))
                         i.remove();
                 }
             }

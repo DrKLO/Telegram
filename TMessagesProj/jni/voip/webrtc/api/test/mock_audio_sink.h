@@ -17,7 +17,7 @@
 
 namespace webrtc {
 
-class MockAudioSink final : public webrtc::AudioTrackSinkInterface {
+class MockAudioSink : public webrtc::AudioTrackSinkInterface {
  public:
   MOCK_METHOD(void,
               OnData,

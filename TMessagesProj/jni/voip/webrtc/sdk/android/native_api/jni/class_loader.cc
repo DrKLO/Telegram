@@ -33,7 +33,6 @@ class ClassLoader {
  public:
   explicit ClassLoader(JNIEnv* env)
       : class_loader_(jni::Java_WebRtcClassLoader_getClassLoader(env)) {
-    DEBUG_REF("webrtc class_loader");
     class_loader_class_ = reinterpret_cast<jclass>(
         env->NewGlobalRef(env->FindClass("java/lang/ClassLoader")));
     CHECK_EXCEPTION(env);
@@ -70,12 +69,20 @@ void InitClassLoader(JNIEnv* env) {
   g_class_loader = new ClassLoader(env);
 }
 
-ScopedJavaLocalRef<jclass> GetClass(JNIEnv* env, const char* name) {
-  // The class loader will be null in the JNI code called from the ClassLoader
-  // ctor when we are bootstrapping ourself.
-  return (g_class_loader == nullptr)
-             ? ScopedJavaLocalRef<jclass>(env, env->FindClass(name))
-             : g_class_loader->FindClass(env, name);
+ScopedJavaLocalRef<jclass> GetClass(JNIEnv* env, const char* c_name) {
+  if (g_class_loader != nullptr) {
+    // The class loader will be null in the JNI code called from the ClassLoader
+    // ctor when we are bootstrapping ourself.
+    return g_class_loader->FindClass(env, c_name);
+  }
+  // jni_zero generated code uses dots instead of slashes.
+  // Convert to use slashes since that's what JNI's FindClass expects.
+  // See
+  // https://cs.android.com/android/platform/superproject/main/+/main:art/runtime/jni/check_jni.cc;l=349;drc=0f62043c1670cd365aba1894ad8046cdfc1c905d
+
+  std::string name(c_name);
+  std::replace(name.begin(), name.end(), '.', '/');
+  return ScopedJavaLocalRef<jclass>(env, env->FindClass(name.c_str()));
 }
 
 }  // namespace webrtc

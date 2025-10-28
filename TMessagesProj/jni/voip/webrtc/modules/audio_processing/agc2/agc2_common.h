@@ -29,10 +29,15 @@ constexpr int kMaximalNumberOfSamplesPerChannel = 480;
 // At what limiter levels should we start decreasing the adaptive digital gain.
 constexpr float kLimiterThresholdForAgcGainDbfs = -1.0f;
 
-// This is the threshold for speech. Speech frames are used for updating the
-// speech level, measuring the amount of speech, and decide when to allow target
-// gain changes.
+// Number of milliseconds to wait to periodically reset the VAD.
+constexpr int kVadResetPeriodMs = 1500;
+
+// Speech probability threshold to detect speech activity.
 constexpr float kVadConfidenceThreshold = 0.95f;
+
+// Minimum number of adjacent speech frames having a sufficiently high speech
+// probability to reliably detect speech activity.
+constexpr int kAdjacentSpeechFramesThreshold = 12;
 
 // Number of milliseconds of speech frames to observe to make the estimator
 // confident.

@@ -110,7 +110,7 @@ class FakeNetworkManager : public NetworkManagerBase {
       IPAddress prefix = TruncateIP(it->socket_address.ipaddr(), prefix_length);
       auto net = std::make_unique<Network>(
           it->socket_address.hostname(), it->socket_address.hostname(), prefix,
-          prefix_length, it->adapter_type, /*field_trials=*/nullptr);
+          prefix_length, it->adapter_type);
       if (it->underlying_vpn_adapter_type.has_value()) {
         net->set_underlying_type_for_vpn(*it->underlying_vpn_adapter_type);
       }

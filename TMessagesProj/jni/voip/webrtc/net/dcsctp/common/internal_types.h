@@ -40,5 +40,10 @@ using VerificationTag = webrtc::StrongAlias<class VerificationTagTag, uint32_t>;
 // Tie Tag, used as a nonce when connecting.
 using TieTag = webrtc::StrongAlias<class TieTagTag, uint64_t>;
 
+// An ID for every outgoing message, to correlate outgoing data chunks with the
+// message it was carved from.
+using OutgoingMessageId =
+    webrtc::StrongAlias<class OutgoingMessageIdTag, uint32_t>;
+
 }  // namespace dcsctp
 #endif  // NET_DCSCTP_COMMON_INTERNAL_TYPES_H_

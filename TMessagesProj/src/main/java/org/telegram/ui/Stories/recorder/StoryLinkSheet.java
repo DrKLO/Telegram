@@ -49,6 +49,7 @@ import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.ScaleStateListAnimator;
 import org.telegram.ui.Components.UItem;
 import org.telegram.ui.Components.UniversalAdapter;
+import org.telegram.ui.Components.UniversalRecyclerView;
 
 import java.util.ArrayList;
 import java.util.regex.Pattern;
@@ -95,7 +96,7 @@ public class StoryLinkSheet extends BottomSheetWithRecyclerListView implements N
         ScaleStateListAnimator.apply(pasteTextView, .1f, 1.5f);
         urlEditText.addView(pasteTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 26, Gravity.RIGHT | Gravity.CENTER_VERTICAL, 0, 4, 24, 3));
 
-        Runnable checkPaste = () -> {
+        final Runnable checkPaste = () -> {
             ClipboardManager clipboardManager = (ClipboardManager) getContext().getSystemService(Context.CLIPBOARD_SERVICE);
             final boolean show = (TextUtils.isEmpty(urlEditText.editText.getText()) || TextUtils.equals(urlEditText.editText.getText(), def) || TextUtils.isEmpty(urlEditText.editText.getText().toString())) && clipboardManager != null && clipboardManager.hasPrimaryClip();
             pasteTextView.animate()
@@ -353,6 +354,7 @@ public class StoryLinkSheet extends BottomSheetWithRecyclerListView implements N
             if (res instanceof TL_account.webPagePreview) {
                 final TL_account.webPagePreview preview = (TL_account.webPagePreview) res;
                 MessagesController.getInstance(currentAccount).putUsers(preview.users, false);
+                MessagesController.getInstance(currentAccount).putChats(preview.chats, false);
                 if (preview.media instanceof TLRPC.TL_messageMediaWebPage) {
                     media = (TLRPC.TL_messageMediaWebPage) preview.media;
                 }
@@ -538,7 +540,7 @@ public class StoryLinkSheet extends BottomSheetWithRecyclerListView implements N
             }
 
             @Override
-            public void bindView(View view, UItem item, boolean divider) {
+            public void bindView(View view, UItem item, boolean divider, UniversalAdapter adapter, UniversalRecyclerView listView) {
                 ((WebpagePreviewView) view).set(
                     item.object instanceof TLRPC.WebPage ? (TLRPC.WebPage) item.object : null,
                     item.clickCallback,

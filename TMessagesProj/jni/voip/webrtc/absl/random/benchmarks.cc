@@ -62,7 +62,7 @@ class PrecompiledSeedSeq {
  public:
   using result_type = uint32_t;
 
-  PrecompiledSeedSeq() {}
+  PrecompiledSeedSeq() = default;
 
   template <typename Iterator>
   PrecompiledSeedSeq(Iterator begin, Iterator end) {}
@@ -291,7 +291,7 @@ void BM_Thread(benchmark::State& state) {
   BENCHMARK_TEMPLATE(BM_Shuffle, Engine, 100)->ThreadPerCpu();      \
   BENCHMARK_TEMPLATE(BM_Shuffle, Engine, 1000)->ThreadPerCpu();     \
   BENCHMARK_TEMPLATE(BM_ShuffleReuse, Engine, 100)->ThreadPerCpu(); \
-  BENCHMARK_TEMPLATE(BM_ShuffleReuse, Engine, 1000)->ThreadPerCpu();
+  BENCHMARK_TEMPLATE(BM_ShuffleReuse, Engine, 1000)->ThreadPerCpu()
 
 #define BM_EXTENDED(Engine)                                                    \
   /* -------------- Extended Uniform -----------------------*/                 \
@@ -355,11 +355,11 @@ void BM_Thread(benchmark::State& state) {
   BENCHMARK_TEMPLATE(BM_Beta, Engine, absl::beta_distribution<float>, 410,     \
                      580);                                                     \
   BENCHMARK_TEMPLATE(BM_Gamma, Engine, std::gamma_distribution<float>, 199);   \
-  BENCHMARK_TEMPLATE(BM_Gamma, Engine, std::gamma_distribution<double>, 199);
+  BENCHMARK_TEMPLATE(BM_Gamma, Engine, std::gamma_distribution<double>, 199)
 
 // ABSL Recommended interfaces.
 BM_BASIC(absl::InsecureBitGen);  // === pcg64_2018_engine
-BM_BASIC(absl::BitGen);    // === randen_engine<uint64_t>.
+BM_BASIC(absl::BitGen);          // === randen_engine<uint64_t>.
 BM_THREAD(absl::BitGen);
 BM_EXTENDED(absl::BitGen);
 

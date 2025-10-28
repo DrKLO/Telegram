@@ -28,8 +28,7 @@ struct LibvpxVp8EncoderTemplateAdapter {
       scalability_modes.push_back(scalability_mode);
     }
 
-    return {
-        SdpVideoFormat("VP8", SdpVideoFormat::Parameters(), scalability_modes)};
+    return {SdpVideoFormat("VP8", CodecParameterMap(), scalability_modes)};
   }
 
   static std::unique_ptr<VideoEncoder> CreateEncoder(

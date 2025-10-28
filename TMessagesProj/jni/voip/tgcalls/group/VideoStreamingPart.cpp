@@ -317,7 +317,7 @@ bool areCodecParametersEqual(AVCodecParameters const &lhs, AVCodecParameters con
     if (lhs.chroma_location != rhs.chroma_location) {
         return false;
     }
-
+    
     return true;
 }
 
@@ -341,23 +341,23 @@ public:
             return nullptr;
         } else {
             codecContext->pkt_timebase = pktTimebase;
-
+            
             PlatformInterface::SharedInstance()->setupVideoDecoding(codecContext);
-
+            
             ret = avcodec_open2(codecContext, codec, nullptr);
             if (ret < 0) {
                 avcodec_free_context(&codecContext);
                 return nullptr;
             }
         }
-
+        
         return std::make_unique<VideoStreamingDecoderState>(
             codecContext,
             codecParameters,
             pktTimebase
         );
     }
-
+    
 public:
     VideoStreamingDecoderState(
         AVCodecContext *codecContext,
@@ -369,7 +369,7 @@ public:
         avcodec_parameters_copy(_codecParameters, codecParameters);
         _pktTimebase = pktTimebase;
     }
-
+    
     ~VideoStreamingDecoderState() {
         if (_codecContext) {
             avcodec_close(_codecContext);
@@ -379,7 +379,7 @@ public:
             avcodec_parameters_free(&_codecParameters);
         }
     }
-
+    
     bool supportsDecoding(
         AVCodecParameters const *codecParameters,
         AVRational pktTimebase
@@ -395,7 +395,7 @@ public:
         }
         return true;
     }
-
+    
     int sendFrame(std::shared_ptr<DecodableFrame> frame) {
         if (frame) {
             int status = avcodec_send_packet(_codecContext, frame->packet().packet());
@@ -405,16 +405,16 @@ public:
             return status;
         }
     }
-
+    
     int receiveFrame(Frame &frame) {
         int status = avcodec_receive_frame(_codecContext, frame.frame());
         return status;
     }
-
+    
     void reset() {
         avcodec_flush_buffers(_codecContext);
     }
-
+    
 private:
     AVCodecContext *_codecContext = nullptr;
     AVCodecParameters *_codecParameters = nullptr;
@@ -427,10 +427,10 @@ class VideoStreamingSharedStateInternal {
 public:
     VideoStreamingSharedStateInternal() {
     }
-
+    
     ~VideoStreamingSharedStateInternal() {
     }
-
+    
     void updateDecoderState(
         AVCodecParameters const *codecParameters,
         AVRational pktTimebase
@@ -438,32 +438,32 @@ public:
         if (_decoderState && _decoderState->supportsDecoding(codecParameters, pktTimebase)) {
             return;
         }
-
+        
         _decoderState.reset();
         _decoderState = VideoStreamingDecoderState::create(codecParameters, pktTimebase);
     }
-
+    
     int sendFrame(std::shared_ptr<DecodableFrame> frame) {
         if (!_decoderState) {
             return AVERROR(EIO);
         }
         return _decoderState->sendFrame(frame);
     }
-
+    
     int receiveFrame(Frame &frame) {
         if (!_decoderState) {
             return AVERROR(EIO);
         }
         return _decoderState->receiveFrame(frame);
     }
-
+    
     void reset() {
         if (!_decoderState) {
             return;
         }
         _decoderState->reset();
     }
-
+    
 private:
     std::unique_ptr<VideoStreamingDecoderState> _decoderState;
 };
@@ -534,7 +534,7 @@ public:
             _videoCodecParameters = avcodec_parameters_alloc();
             avcodec_parameters_copy(_videoCodecParameters, videoCodecParameters);
             _videoStream = videoStream;
-
+            
             /*const AVCodec *codec = avcodec_find_decoder(videoCodecParameters->codec_id);
             if (codec) {
                 _codecContext = avcodec_alloc_context3(codec);
@@ -614,7 +614,7 @@ public:
 
             return VideoStreamingPartFrame(_endpointId, videoFrame, _frame.pts(_videoStream, _firstFramePts), _frameIndex);
         } else {
-            rtc::scoped_refptr<webrtc::I420Buffer> i420Buffer = webrtc::I420Buffer::Copy(
+            webrtc::scoped_refptr<webrtc::I420Buffer> i420Buffer = webrtc::I420Buffer::Copy(
                 _frame.frame()->width,
                 _frame.frame()->height,
                 _frame.frame()->data[0],
@@ -644,7 +644,7 @@ public:
         if (!_videoCodecParameters) {
             return {};
         }
-
+        
         sharedState->impl()->updateDecoderState(_videoCodecParameters, _videoStream->time_base);
 
         while (true) {
@@ -719,7 +719,7 @@ private:
     AVFormatContext *_inputFormatContext = nullptr;
     AVStream *_videoStream = nullptr;
     Frame _frame;
-
+    
     AVCodecParameters *_videoCodecParameters = nullptr;
 
     std::vector<VideoStreamingPartFrame> _finalFrames;

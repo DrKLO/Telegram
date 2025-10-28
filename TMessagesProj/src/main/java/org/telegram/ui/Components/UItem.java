@@ -5,12 +5,8 @@ import android.content.Context;
 import android.graphics.drawable.Drawable;
 import android.text.TextUtils;
 import android.util.LongSparseArray;
-import android.util.SparseIntArray;
-import android.util.SparseLongArray;
 import android.view.View;
-import android.widget.FrameLayout;
 
-import org.telegram.messenger.FileLog;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.TLObject;
@@ -25,7 +21,6 @@ import org.telegram.ui.ChannelMonetizationLayout;
 import org.telegram.ui.Components.ListView.AdapterWithDiffUtils;
 import org.telegram.ui.StatisticActivity;
 
-import java.lang.reflect.Constructor;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Objects;
@@ -39,14 +34,17 @@ public class UItem extends AdapterWithDiffUtils.Item {
     public boolean checked;
     public boolean collapsed;
     public boolean enabled = true;
+    public boolean reordering;
     public int pad;
     public boolean hideDivider;
     public int iconResId;
+    public Drawable drawable;
     public CharSequence text, subtext, textValue;
     public CharSequence animatedText;
     public String[] texts;
     public boolean accent, red, transparent, locked;
     public int spanCount = MAX_SPAN_COUNT;
+    public int parentSpanCount;
 
     public boolean include;
     public long dialogId;
@@ -143,6 +141,14 @@ public class UItem extends AdapterWithDiffUtils.Item {
         return i;
     }
 
+    public static UItem asTopViewStatic(CharSequence text, int iconResId) {
+        UItem i = new UItem(UniversalAdapter.VIEW_TYPE_TOPVIEW, false);
+        i.text = text;
+        i.accent = true;
+        i.iconResId = iconResId;
+        return i;
+    }
+
     public static UItem asButton(int id, CharSequence text) {
         UItem i = new UItem(UniversalAdapter.VIEW_TYPE_TEXT, false);
         i.id = id;
@@ -201,6 +207,12 @@ public class UItem extends AdapterWithDiffUtils.Item {
     public static UItem asRippleCheck(int id, CharSequence text) {
         UItem i = new UItem(UniversalAdapter.VIEW_TYPE_CHECKRIPPLE, false);
         i.id = id;
+        i.text = text;
+        return i;
+    }
+
+    public static UItem asCheck(CharSequence text) {
+        UItem i = new UItem(UniversalAdapter.VIEW_TYPE_CHECK, false);
         i.text = text;
         return i;
     }
@@ -301,7 +313,7 @@ public class UItem extends AdapterWithDiffUtils.Item {
     public static UItem asIntSlideView(
         int style,
         int min, int value, int max,
-        Utilities.CallbackReturn<Integer, String> toString,
+        Utilities.CallbackReturn<Integer, CharSequence> toString,
         Utilities.Callback<Integer> whenChose
     ) {
         UItem item = new UItem(UniversalAdapter.VIEW_TYPE_INTSLIDE, false);
@@ -357,6 +369,12 @@ public class UItem extends AdapterWithDiffUtils.Item {
     public static UItem asSpace(int height) {
         UItem item = new UItem(UniversalAdapter.VIEW_TYPE_SPACE, false);
         item.intValue = height;
+        return item;
+    }
+
+    public static UItem asRoundCheckbox(CharSequence text) {
+        UItem item = new UItem(UniversalAdapter.VIEW_TYPE_ROUND_CHECKBOX, false);
+        item.text = text;
         return item;
     }
 
@@ -533,6 +551,11 @@ public class UItem extends AdapterWithDiffUtils.Item {
         return this;
     }
 
+    public UItem setReordering(boolean reordering) {
+        this.reordering = reordering;
+        return this;
+    }
+
     public <F extends UItemFactory<?>> boolean instanceOf(Class<F> factoryClass) {
         if (viewType < factoryViewTypeStartsWith) return false;
         if (factoryInstances == null) return false;
@@ -605,6 +628,7 @@ public class UItem extends AdapterWithDiffUtils.Item {
             intValue == item.intValue &&
             Math.abs(floatValue - item.floatValue) < 0.01f &&
             longValue == item.longValue &&
+            drawable == item.drawable &&
             Objects.equals(object, item.object) &&
             Objects.equals(object2, item.object2)
         );
@@ -658,7 +682,11 @@ public class UItem extends AdapterWithDiffUtils.Item {
             return null;
         }
 
-        public void bindView(View view, UItem item, boolean divider) {
+        public void bindView(View view, UItem item, boolean divider, UniversalAdapter adapter, UniversalRecyclerView listView) {
+
+        }
+
+        public void attachedView(View view, UItem item) {
 
         }
 

@@ -14,7 +14,6 @@
 #include <vector>
 
 #include "absl/types/optional.h"
-
 #include "rtc_base/experiments/field_trial_parser.h"
 
 namespace webrtc {

@@ -17,8 +17,8 @@
 
 #include <stdint.h>
 
+#include "api/legacy_stats_types.h"
 #include "api/media_stream_interface.h"
-#include "api/stats_types.h"
 
 namespace webrtc {
 

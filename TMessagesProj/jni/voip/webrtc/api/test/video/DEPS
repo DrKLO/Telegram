@@ -1,0 +1,6 @@
+specific_include_rules = {
+  "test_video_track_source\.h": [
+    "+rtc_base/thread_annotations.h",
+    "+rtc_base/system/no_unique_address.h",
+  ],
+}

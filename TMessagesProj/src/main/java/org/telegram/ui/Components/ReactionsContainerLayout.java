@@ -92,6 +92,7 @@ import java.util.List;
 
 public class ReactionsContainerLayout extends FrameLayout implements NotificationCenter.NotificationCenterDelegate {
 
+    public boolean forceAttachToParent = false;
     public final static Property<ReactionsContainerLayout, Float> TRANSITION_PROGRESS_VALUE = new Property<ReactionsContainerLayout, Float>(Float.class, "transitionProgress") {
         @Override
         public Float get(ReactionsContainerLayout reactionsContainerLayout) {
@@ -503,7 +504,8 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
         if (reactionsWindow != null) {
             return;
         }
-        reactionsWindow = new CustomEmojiReactionsWindow(type, fragment, allReactionsList, selectedReactions, this, resourcesProvider);
+        reactionsWindow = new CustomEmojiReactionsWindow(type, fragment, allReactionsList, selectedReactions, this, resourcesProvider, forceAttachToParent);
+        reactionsWindow.setLongPressEnabled(delegate == null || delegate.allowLongPress());
         invalidateLoopViews();
         reactionsWindow.onDismissListener(() -> {
             reactionsWindow = null;
@@ -514,6 +516,10 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
         });
         onShownCustomEmojiReactionDialog();
         //animatePullingBack();
+    }
+
+    public View getWindowView() {
+        return reactionsWindow == null ? null : reactionsWindow.windowView;
     }
 
     protected void onShownCustomEmojiReactionDialog() {
@@ -634,7 +640,7 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
             invalidate();
         }
 
-        if (pressedReaction != null && type != TYPE_MESSAGE_EFFECTS) {
+        if (pressedReaction != null && type != TYPE_MESSAGE_EFFECTS && (delegate == null || delegate.allowLongPress())) {
             if (pressedProgress != 1f) {
                 pressedProgress += 16f / (pressedReaction.isStar ? ViewConfiguration.getLongPressTimeout() : 1500f);
                 if (pressedProgress >= 1f) {
@@ -2189,7 +2195,7 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
                 pressed = true;
                 pressedX = event.getX();
                 pressedY = event.getY();
-                if (sideScale == 1f && !isLocked && type != TYPE_TAGS && type != TYPE_STICKER_SET_EMOJI && type != TYPE_MESSAGE_EFFECTS) {
+                if (sideScale == 1f && !isLocked && type != TYPE_TAGS && type != TYPE_STICKER_SET_EMOJI && type != TYPE_MESSAGE_EFFECTS && (delegate == null || delegate.allowLongPress())) {
                     AndroidUtilities.runOnUIThread(longPressRunnable, ViewConfiguration.getLongPressTimeout());
                 }
             }
@@ -2303,6 +2309,10 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
 
         default boolean drawBackground() {
             return false;
+        }
+
+        default boolean allowLongPress() {
+            return true;
         }
     }
 

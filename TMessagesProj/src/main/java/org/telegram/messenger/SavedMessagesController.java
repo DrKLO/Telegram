@@ -18,8 +18,10 @@ import org.telegram.ui.Components.AnimatedEmojiDrawable;
 import org.telegram.ui.LaunchActivity;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Objects;
 
 public class SavedMessagesController {
@@ -96,6 +98,10 @@ public class SavedMessagesController {
                 MessagesController.getInstance(currentAccount).setSavedViewAs(false);
             }
         }
+    }
+
+    public boolean isLoading() {
+        return dialogsLoading;
     }
 
     public int getAllCount() {
@@ -227,7 +233,6 @@ public class SavedMessagesController {
             req.offset_peer = new TLRPC.TL_inputPeerEmpty();
         }
         req.limit = 20;
-
         final ArrayList<SavedDialog> expectedDialogs = new ArrayList<>();
         expectedDialogs.addAll(allDialogs.subList(
             Math.min(loadedDialogs.size(), allDialogs.size()),
@@ -251,7 +256,7 @@ public class SavedMessagesController {
                 MessagesStorage.getInstance(currentAccount).putUsersAndChats(r.users, r.chats, true, true);
                 MessagesStorage.getInstance(currentAccount).putMessages(r.messages, false, true, false, 0, false, ChatActivity.MODE_SAVED, 0);
                 for (int i = 0; i < r.dialogs.size(); ++i) {
-                    SavedDialog d = SavedDialog.fromTL(currentAccount, r.dialogs.get(i), r.messages);
+                    SavedDialog d = SavedDialog.fromTL(currentAccount, r.dialogs.get(i), r.messages, true);
                     for (int j = 0; j < cachedDialogs.size(); ++j) {
                         if (cachedDialogs.get(j).dialogId == d.dialogId) {
                             d.messagesCount = cachedDialogs.get(j).messagesCount;
@@ -285,7 +290,7 @@ public class SavedMessagesController {
                 MessagesStorage.getInstance(currentAccount).putUsersAndChats(r.users, r.chats, true, true);
                 MessagesStorage.getInstance(currentAccount).putMessages(r.messages, false, true, false, 0, false, ChatActivity.MODE_SAVED, 0);
                 for (int i = 0; i < r.dialogs.size(); ++i) {
-                    SavedDialog d = SavedDialog.fromTL(currentAccount, r.dialogs.get(i), r.messages);
+                    SavedDialog d = SavedDialog.fromTL(currentAccount, r.dialogs.get(i), r.messages, true);
                     for (int j = 0; j < cachedDialogs.size(); ++j) {
                         if (cachedDialogs.get(j).dialogId == d.dialogId) {
                             d.messagesCount = cachedDialogs.get(j).messagesCount;
@@ -321,8 +326,13 @@ public class SavedMessagesController {
                         dialogsCountHidden++;
                     }
                 }
+
+                final boolean oldDialogsEndReached = dialogsEndReached;
                 dialogsEndReached = loadedDialogs.size() >= dialogsCount;
                 unsupported = false;
+                if (dialogsEndReached && !oldDialogsEndReached) {
+                    updateAllDialogs(true); // just for notify about dialogsEndReached = true
+                }
             } else if (err != null) {
                 dialogsLoaded = true;
                 if ("SAVED_DIALOGS_UNSUPPORTED".equals(err.text)) {
@@ -338,6 +348,7 @@ public class SavedMessagesController {
     }
 
     public boolean updateSavedDialogs(ArrayList<TLRPC.Message> inputMessages) {
+        ///
         if (inputMessages == null) {
             return false;
         }
@@ -384,11 +395,14 @@ public class SavedMessagesController {
                         d.message = new MessageObject(currentAccount, message, false, false);
                         d.top_message_id = d.message.getId();
                     }
+                    newMessagesCount = newMessagesCount != null ?
+                        Math.max(newMessagesCount, d.messagesCount) :
+                        d.messagesCount;
                     break;
                 }
             }
             if (!found) {
-                SavedDialog d = SavedDialog.fromMessage(currentAccount, message);
+                SavedDialog d = SavedDialog.fromMessage(currentAccount, message, true);
                 if (newMessagesCount != null) {
                     d.messagesCount = newMessagesCount;
                 }
@@ -414,11 +428,14 @@ public class SavedMessagesController {
                         d.message = new MessageObject(currentAccount, message, false, false);
                         d.top_message_id = d.message.getId();
                     }
+                    newMessagesCount = newMessagesCount != null ?
+                        Math.max(newMessagesCount, d.messagesCount) :
+                        d.messagesCount;
                     break;
                 }
             }
-            if (!found) {
-                SavedDialog d = SavedDialog.fromMessage(currentAccount, message);
+            if (!found /*&& forumDialogId == 0*/) {
+                SavedDialog d = SavedDialog.fromMessage(currentAccount, message, true);
                 if (newMessagesCount != null) {
                     d.messagesCount = newMessagesCount;
                 }
@@ -447,10 +464,14 @@ public class SavedMessagesController {
     }
 
     public boolean updatedDialogCount(long dialogId, int messagesCount) {
+        return updatedDialogCount(dialogId, messagesCount, false);
+    }
+
+    public boolean updatedDialogCount(long dialogId, int messagesCount, boolean forceIfCountNotLoaded) {
         for (int i = 0; i < allDialogs.size(); ++i) {
             SavedDialog d = allDialogs.get(i);
             if (d.dialogId == dialogId) {
-                if (d.messagesCount != messagesCount) {
+                if (d.messagesCount != messagesCount || (!d.messagesCountLoaded && forceIfCountNotLoaded)) {
                     d.messagesCount = messagesCount;
                     d.messagesCountLoaded = true;
                     return true;
@@ -468,6 +489,8 @@ public class SavedMessagesController {
             changed = updatedDialogCount(dialogId, messagesRes.count) || changed;
         } else if (messagesRes instanceof TLRPC.TL_messages_messages) {
             changed = updatedDialogCount(dialogId, messagesRes.messages.size()) || changed;
+        } else if (messagesRes instanceof TLRPC.TL_messages_channelMessages) {
+            changed = updatedDialogCount(dialogId, messagesRes.count) || changed;
         }
         if (changed) {
             AndroidUtilities.runOnUIThread(this::update);
@@ -586,10 +609,12 @@ public class SavedMessagesController {
                 i--;
             }
         }
+
         return Math.max(acount, lcount);
     }
 
     public void update() {
+        //
         updateAllDialogs(true);
         saveCacheSchedule();
     }
@@ -781,7 +806,7 @@ public class SavedMessagesController {
             final ArrayList<TLRPC.Document> emojis = new ArrayList<>();
 
             try {
-                cursor = db.queryFinalized("SELECT did, date, last_mid, pinned, flags, folder_id, last_mid_group, count FROM saved_dialogs ORDER BY pinned ASC, date DESC");
+                cursor = db.queryFinalized("SELECT did, date, last_mid, pinned, flags, folder_id, last_mid_group, count, unread_count, max_read_id, read_outbox FROM saved_dialogs WHERE forumChatId = ? ORDER BY pinned ASC, date DESC", 0);
                 while (cursor.next()) {
                     SavedDialog d = new SavedDialog();
                     d.dialogId = cursor.longValue(0);
@@ -792,6 +817,9 @@ public class SavedMessagesController {
                     d.messagesCountLoaded = (flags & 1) != 0;
                     d.pinned = d.pinnedOrder != 999;
                     d.messagesCount = cursor.intValue(7);
+                    d.unreadCount = cursor.longValue(8);
+                    d.readInboxMaxId = cursor.longValue(9);
+                    d.readOutboxMaxId = cursor.longValue(10);
                     if (d.dialogId < 0) {
                         chatsToLoad.add(-d.dialogId);
                     } else {
@@ -953,8 +981,13 @@ public class SavedMessagesController {
             SQLiteDatabase db = messagesStorage.getDatabase();
             SQLitePreparedStatement state = null;
             try {
-                db.executeFast("DELETE FROM saved_dialogs").stepThis().dispose();
-                state = db.executeFast("REPLACE INTO saved_dialogs VALUES(?, ?, ?, ?, ?, ?, ?, ?)");
+                SQLitePreparedStatement state2 = db.executeFast("DELETE FROM saved_dialogs WHERE forumChatId = ?");
+                state2.requery();
+                state2.bindLong(1, 0);
+                state2.step();
+                state2.dispose();
+
+                state = db.executeFast("REPLACE INTO saved_dialogs VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
                 for (int i = 0; i < dialogsToSave.size(); ++i) {
                     SavedDialog d = dialogsToSave.get(i);
                     state.requery();
@@ -966,6 +999,11 @@ public class SavedMessagesController {
                     state.bindInteger(6, 0);
                     state.bindInteger(7, 0);
                     state.bindInteger(8, d.messagesCount);
+                    state.bindLong(9, 0);
+                    state.bindLong(10, d.unreadCount);
+                    state.bindLong(11, d.readInboxMaxId);
+                    state.bindLong(12, d.readOutboxMaxId);
+
                     state.step();
                 }
                 state.dispose();
@@ -992,7 +1030,11 @@ public class SavedMessagesController {
         messagesStorage.getStorageQueue().postRunnable(() -> {
             SQLiteDatabase db = messagesStorage.getDatabase();
             try {
-                db.executeFast("DELETE FROM saved_dialogs").stepThis().dispose();
+                SQLitePreparedStatement state2 = db.executeFast("DELETE FROM saved_dialogs WHERE forumChatId = ?");
+                state2.requery();
+                state2.bindLong(1, 0);
+                state2.step();
+                state2.dispose();
             } catch (Exception e) {
                 FileLog.e(e);
             }
@@ -1009,6 +1051,9 @@ public class SavedMessagesController {
         public int top_message_id;
         public MessageObject message;
         public int messagesCount;
+        public long unreadCount;
+        public long readInboxMaxId;
+        public long readOutboxMaxId;
 
         public boolean messagesCountLoaded;
 
@@ -1018,11 +1063,18 @@ public class SavedMessagesController {
         // used only when sorting in update
         private int pinnedOrder;
 
+        private int lastDate;
+
         public int getDate() {
+            lastDate = getDateInternal();
+            return lastDate;
+        }
+
+        private int getDateInternal() {
             if (message == null || message.messageOwner == null) {
                 return localDate;
             }
-            if ((message.messageOwner.flags & TLRPC.MESSAGE_FLAG_EDITED) != 0 && !message.messageOwner.edit_hide) {
+            if ((message.messageOwner.flags & TLRPC.MESSAGE_FLAG_EDITED) != 0) {
                 return message.messageOwner.edit_date;
             }
             return message.messageOwner.date;
@@ -1032,20 +1084,23 @@ public class SavedMessagesController {
             return message != null && message.messageOwner != null && message.messageOwner.action instanceof TLRPC.TL_messageActionHistoryClear;
         }
 
-        public static SavedDialog fromMessage(int currentAccount, TLRPC.Message message) {
+        public static SavedDialog fromMessage(int currentAccount, TLRPC.Message message, boolean isSavedMessage) {
             SavedDialog d = new SavedDialog();
             d.dialogId = MessageObject.getSavedDialogId(UserConfig.getInstance(currentAccount).getClientUserId(), message);
             d.pinned = false;
             d.top_message_id = message.id;
-            d.message = new MessageObject(currentAccount, message, null, null, null, null, null, false, false, 0, false, false, true);
+            d.message = new MessageObject(currentAccount, message, null, null, null, null, null, false, false, 0, false, false, isSavedMessage);
             return d;
         }
 
-        public static SavedDialog fromTL(int currentAccount, TLRPC.TL_savedDialog tl, ArrayList<TLRPC.Message> messages) {
+        public static SavedDialog fromTL(int currentAccount, TLRPC.savedDialog tl, ArrayList<TLRPC.Message> messages, boolean isSavedMessage) {
             SavedDialog d = new SavedDialog();
             d.dialogId = DialogObject.getPeerDialogId(tl.peer);
             d.pinned = tl.pinned;
             d.top_message_id = tl.top_message;
+            d.unreadCount = tl.unread_count;
+            d.readInboxMaxId = tl.read_inbox_max_id;
+            d.readOutboxMaxId = tl.read_outbox_max_id;
             TLRPC.Message message = null;
             for (int i = 0; i < messages.size(); ++i) {
                 TLRPC.Message msg = messages.get(i);
@@ -1055,7 +1110,7 @@ public class SavedMessagesController {
                 }
             }
             if (message != null) {
-                d.message = new MessageObject(currentAccount, message, null, null, null, null, null, false, false, 0, false, false, true);
+                d.message = new MessageObject(currentAccount, message, null, null, null, null, null, false, false, 0, false, false, isSavedMessage);
             }
             return d;
         }
@@ -1115,9 +1170,9 @@ public class SavedMessagesController {
 
                 boolean hasMessages = count > 0;
                 if (count > 0) {
-                    if (!updatedDialogCount(did, count)) {
+                    if (!updatedDialogCount(did, count, true)) {
                         if (!r.messages.isEmpty()) {
-                            SavedDialog dialog = SavedDialog.fromMessage(currentAccount, r.messages.get(0));
+                            SavedDialog dialog = SavedDialog.fromMessage(currentAccount, r.messages.get(0), true);
                             dialog.messagesCount = count;
                             dialog.messagesCountLoaded = true;
                             cachedDialogs.add(dialog);

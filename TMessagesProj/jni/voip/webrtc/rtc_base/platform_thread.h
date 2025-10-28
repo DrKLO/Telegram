@@ -13,6 +13,9 @@
 
 #include <functional>
 #include <string>
+#if !defined(WEBRTC_WIN)
+#include <pthread.h>
+#endif
 
 #include "absl/strings/string_view.h"
 #include "absl/types/optional.h"

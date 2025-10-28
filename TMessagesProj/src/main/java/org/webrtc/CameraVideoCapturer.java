@@ -48,7 +48,7 @@ public interface CameraVideoCapturer extends VideoCapturer {
    * The callback may be called on an arbitrary thread.
    */
   public interface CameraSwitchHandler {
-    // Invoked on success. |isFrontCamera| is true if the new camera is front facing.
+    // Invoked on success. `isFrontCamera` is true if the new camera is front facing.
     void onCameraSwitchDone(boolean isFrontCamera);
 
     // Invoked on failure, e.g. camera is stopped or only one camera available.

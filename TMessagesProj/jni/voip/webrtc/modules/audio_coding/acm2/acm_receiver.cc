@@ -48,15 +48,21 @@ std::unique_ptr<NetEq> CreateNetEq(
 
 }  // namespace
 
-AcmReceiver::AcmReceiver(const AudioCodingModule::Config& config)
+AcmReceiver::Config::Config(
+    rtc::scoped_refptr<AudioDecoderFactory> decoder_factory)
+    : clock(*Clock::GetRealTimeClock()), decoder_factory(decoder_factory) {}
+
+AcmReceiver::Config::Config(const Config&) = default;
+AcmReceiver::Config::~Config() = default;
+
+AcmReceiver::AcmReceiver(const Config& config)
     : last_audio_buffer_(new int16_t[AudioFrame::kMaxDataSizeSamples]),
       neteq_(CreateNetEq(config.neteq_factory,
                          config.neteq_config,
-                         config.clock,
+                         &config.clock,
                          config.decoder_factory)),
       clock_(config.clock),
       resampled_last_output_frame_(true) {
-  RTC_DCHECK(clock_);
   memset(last_audio_buffer_.get(), 0,
          sizeof(int16_t) * AudioFrame::kMaxDataSizeSamples);
 }
@@ -337,7 +343,7 @@ uint32_t AcmReceiver::NowInTimestamp(int decoder_sampling_rate) const {
   // We masked 6 most significant bits of 32-bit so there is no overflow in
   // the conversion from milliseconds to timestamp.
   const uint32_t now_in_ms =
-      static_cast<uint32_t>(clock_->TimeInMilliseconds() & 0x03ffffff);
+      static_cast<uint32_t>(clock_.TimeInMilliseconds() & 0x03ffffff);
   return static_cast<uint32_t>((decoder_sampling_rate / 1000) * now_in_ms);
 }
 

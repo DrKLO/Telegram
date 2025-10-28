@@ -41,6 +41,7 @@ import android.view.ViewGroup;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.Button;
 import android.widget.FrameLayout;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -63,12 +64,14 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.messenger.time.SunDate;
+import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.tl.TL_account;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.ActionBarMenuItem;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
+import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.EmojiThemes;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeColors;
@@ -90,6 +93,7 @@ import org.telegram.ui.Cells.ThemePreviewMessagesCell;
 import org.telegram.ui.Cells.ThemeTypeCell;
 import org.telegram.ui.Cells.ThemesHorizontalListCell;
 import org.telegram.ui.Components.AlertsCreator;
+import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.PermissionRequest;
@@ -99,7 +103,12 @@ import org.telegram.ui.Components.SeekBarView;
 import org.telegram.ui.Components.ShareAlert;
 import org.telegram.ui.Components.SimpleThemeDescription;
 import org.telegram.ui.Components.SwipeGestureSettingsView;
+import org.telegram.ui.Components.TextHelper;
 import org.telegram.ui.Components.ThemeEditorView;
+import org.telegram.ui.Stories.recorder.ButtonWithCounterView;
+import org.telegram.ui.bots.BotWebViewAttachedSheet;
+import org.telegram.ui.bots.BotWebViewSheet;
+import org.telegram.ui.bots.WebViewRequestProps;
 import org.telegram.ui.web.SearchEngine;
 import org.telegram.ui.web.WebBrowserSettings;
 
@@ -818,6 +827,8 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.needShareTheme);
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.needSetDayNightTheme);
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.emojiPreviewThemesChanged);
+        getNotificationCenter().addObserver(this, NotificationCenter.appConfigUpdated);
+        getNotificationCenter().addObserver(this, NotificationCenter.contentSettingsLoaded);
         getNotificationCenter().addObserver(this, NotificationCenter.themeUploadedToServer);
         getNotificationCenter().addObserver(this, NotificationCenter.themeUploadError);
         if (currentType == THEME_TYPE_BASIC) {
@@ -839,6 +850,8 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.needShareTheme);
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.needSetDayNightTheme);
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.emojiPreviewThemesChanged);
+        getNotificationCenter().removeObserver(this, NotificationCenter.appConfigUpdated);
+        getNotificationCenter().removeObserver(this, NotificationCenter.contentSettingsLoaded);
         getNotificationCenter().removeObserver(this, NotificationCenter.themeUploadedToServer);
         getNotificationCenter().removeObserver(this, NotificationCenter.themeUploadError);
         Theme.saveAutoNightThemeConfig();
@@ -894,6 +907,10 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
         } else if (id == NotificationCenter.emojiPreviewThemesChanged) {
             if (themeListRow2 >= 0) {
                 listAdapter.notifyItemChanged(themeListRow2);
+            }
+        } else if (id == NotificationCenter.contentSettingsLoaded || id == NotificationCenter.appConfigUpdated) {
+            if (sensitiveContentRow >= 0) {
+                listAdapter.notifyItemChanged(sensitiveContentRow);
             }
         }
     }
@@ -1279,15 +1296,26 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
                 }
             } else if (position == sensitiveContentRow) {
                 if (!getMessagesController().showSensitiveContent()) {
+                    Runnable set = () -> {
+                        getMessagesController().setContentSettings(true);
+                        if (view instanceof TextCheckCell) {
+                            ((TextCheckCell) view).setChecked(getMessagesController().showSensitiveContent());
+                        }
+                    };
                     showDialog(
                         new AlertDialog.Builder(context, resourceProvider)
                             .setTitle(getString(R.string.ConfirmSensitiveContentTitle))
                             .setMessage(getString(R.string.ConfirmSensitiveContentText))
                             .setPositiveButton(getString(R.string.Confirm), (di, w) -> {
-                                getMessagesController().setContentSettings(true);
-                                if (view instanceof TextCheckCell) {
-                                    ((TextCheckCell) view).setChecked(getMessagesController().showSensitiveContent());
-                                }
+                                verifyAge(getContext(), currentAccount, passed -> {
+                                    if (passed) {
+                                        set.run();
+                                    } else {
+                                        BulletinFactory.of(this)
+                                            .createSimpleBulletin(R.raw.error, getString(R.string.AgeVerificationFailedTitle), getString(R.string.AgeVerificationFailedText))
+                                            .show();
+                                    }
+                                }, getResourceProvider());
                             })
                             .setNegativeButton(getString(R.string.Cancel), null)
                             .create()
@@ -1493,6 +1521,110 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
             AndroidUtilities.requestAdjustResize(getParentActivity(), classGuid);
             AndroidUtilities.setAdjustResizeToNothing(getParentActivity(), classGuid);
         }
+    }
+
+    public static void verifyAge(Context context, int currentAccount, Utilities.Callback<Boolean> done, Theme.ResourcesProvider resourcesProvider) {
+        final MessagesController messagesController = MessagesController.getInstance(currentAccount);
+        final String username = messagesController.verifyAgeBotUsername;
+        final String country = messagesController.verifyAgeCountry;
+        final int minAge = messagesController.verifyAgeMin;
+        if (TextUtils.isEmpty(username) || !messagesController.config.needAgeVideoVerification.get()) {
+            done.run(true);
+            return;
+        }
+
+        final BottomSheet.Builder b = new BottomSheet.Builder(context, false, resourcesProvider);
+        final BottomSheet[] sheet = new BottomSheet[1];
+
+        LinearLayout layout = new LinearLayout(context);
+        layout.setOrientation(LinearLayout.VERTICAL);
+        layout.setPadding(dp(12), 0, dp(12), 0);
+        layout.setClipChildren(false);
+        layout.setClipToPadding(false);
+        b.setCustomView(layout);
+
+        FrameLayout topView = new FrameLayout(context);
+        topView.setBackground(Theme.createCircleDrawable(dp(80), Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider)));
+        ImageView imageView = new ImageView(context);
+        imageView.setScaleType(ImageView.ScaleType.CENTER);
+        imageView.setImageResource(R.drawable.filled_verify_age);
+        topView.addView(imageView, LayoutHelper.createFrame(50, 50, Gravity.CENTER));
+        layout.addView(topView, LayoutHelper.createLinear(80, 80, Gravity.CENTER_HORIZONTAL, 0, 20, 0, 8));
+
+        TextView textView = TextHelper.makeTextView(context, 20, Theme.key_dialogTextBlack, true, resourcesProvider);
+        textView.setText(getString(R.string.AgeVerificationTitle));
+        textView.setGravity(Gravity.CENTER);
+        layout.addView(textView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.FILL_HORIZONTAL, 24, 8, 24, 8));
+
+        textView = TextHelper.makeTextView(context, 14, Theme.key_dialogTextBlack, false, resourcesProvider);
+        textView.setText(AndroidUtilities.replaceTags(getString("AgeVerificationText" + country)));
+        textView.setGravity(Gravity.CENTER);
+        layout.addView(textView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.FILL_HORIZONTAL, 24, 0, 24, 0));
+
+        ButtonWithCounterView button = new ButtonWithCounterView(context, resourcesProvider);
+        button.setText(getString(R.string.AgeVerificationButton), false);
+        button.setOnClickListener(v -> {
+            if (button.isLoading()) return;
+            button.setLoading(true);
+
+            PermissionRequest.ensurePermission(
+                R.raw.permission_request_camera,
+                R.string.AgeVerificationNeedCameraPermission,
+                Manifest.permission.CAMERA,
+                granted -> {
+                    if (!granted) {
+                        button.setLoading(false);
+                        return;
+                    }
+
+                    messagesController.getUserNameResolver().resolve(username, userId -> {
+                        if (userId == null) {
+                            button.setLoading(false);
+                            return;
+                        }
+                        final TLRPC.User bot = messagesController.getUser(userId);
+                        if (bot == null) {
+                            button.setLoading(false);
+                            return;
+                        }
+
+                        BaseFragment lastFragment = LaunchActivity.getSafeLastFragment();
+                        if (lastFragment == null) {
+                            button.setLoading(false);
+                            return;
+                        }
+
+                        final WebViewRequestProps props = WebViewRequestProps.of(currentAccount, userId, userId, null, null, BotWebViewAttachedSheet.TYPE_WEB_VIEW_BOT_MAIN, 0, 0L, false, null, false, null, bot, 0, false, false);
+                        final BotWebViewSheet webViewSheet = new BotWebViewSheet(context, resourcesProvider);
+                        webViewSheet.setOnVerifiedAge((localPassed, age, gender, genderProbability) -> {
+                            final boolean passed = age != null ? age >= minAge : localPassed;
+
+                            webViewSheet.dismiss();
+                            done.run(passed);
+
+                            final BaseFragment lastFragment2 = LaunchActivity.getSafeLastFragment();
+                            if (passed && lastFragment2 != null) {
+                                BulletinFactory.of(lastFragment2)
+                                    .createSimpleBulletin(R.raw.contact_check, getString(R.string.AgeVerificationPassedTitle))
+                                    .show();
+                            }
+                        });
+                        webViewSheet.setDefaultFullsize(true);
+                        webViewSheet.setNeedsContext(false);
+                        webViewSheet.setParentActivity(lastFragment.getParentActivity());
+                        webViewSheet.requestWebView(lastFragment, props);
+                        webViewSheet.show();
+
+                        button.setLoading(false);
+                        sheet[0].dismiss();
+                    });
+                }
+            );
+        });
+        layout.addView(button, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48, Gravity.FILL_HORIZONTAL, 2, 29, 2, 14));
+
+        sheet[0] = b.show();
+        sheet[0].fixNavigationBar();
     }
 
     private void updateMenuItem() {
@@ -2527,22 +2659,22 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
                     } else if (position == editThemeRow) {
                         cell.setSubtitle(null);
                         cell.setColors(Theme.key_windowBackgroundWhiteBlueText4, Theme.key_windowBackgroundWhiteBlueText4);
-                        cell.setTextAndIcon(getString("EditCurrentTheme", R.string.EditCurrentTheme), R.drawable.msg_theme, true);
+                        cell.setTextAndIcon(getString(R.string.EditCurrentTheme), R.drawable.msg_theme, true);
                     } else if (position == createNewThemeRow) {
                         cell.setSubtitle(null);
                         cell.setColors(Theme.key_windowBackgroundWhiteBlueText4, Theme.key_windowBackgroundWhiteBlueText4);
-                        cell.setTextAndIcon(getString("CreateNewTheme", R.string.CreateNewTheme), R.drawable.msg_colors, false);
+                        cell.setTextAndIcon(getString(R.string.CreateNewTheme), R.drawable.msg_colors, false);
                     } else if (position == liteModeRow) {
                         cell.setColors(Theme.key_dialogIcon, Theme.key_windowBackgroundWhiteBlackText);
-                        cell.setTextAndIcon(getString("LiteMode", R.string.LiteMode), R.drawable.msg2_animations, true);
-                        cell.setSubtitle(getString("LiteModeInfo", R.string.LiteModeInfo));
+                        cell.setTextAndIcon(getString(R.string.LiteMode), R.drawable.msg2_animations, true);
+                        cell.setSubtitle(getString(R.string.LiteModeInfo));
                         cell.heightDp = 60;
                         cell.offsetFromImage = 64;
                         cell.imageLeft = 20;
                     } else if (position == stickersRow) {
                         cell.setColors(Theme.key_dialogIcon, Theme.key_windowBackgroundWhiteBlackText);
-                        cell.setTextAndIcon(getString("StickersName", R.string.StickersName), R.drawable.msg2_sticker, false);
-                        cell.setSubtitle(getString("StickersNameInfo2", R.string.StickersNameInfo2));
+                        cell.setTextAndIcon(getString(R.string.StickersName), R.drawable.msg2_sticker, false);
+                        cell.setSubtitle(getString(R.string.StickersNameInfo2));
                         cell.offsetFromImage = 64;
                         cell.heightDp = 60;
                         cell.imageLeft = 20;

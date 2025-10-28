@@ -14,8 +14,9 @@
 #include <utility>
 
 #include "absl/strings/string_view.h"
+#include "api/sequence_checker.h"
 #include "modules/rtp_rtcp/source/rtp_util.h"
-#include "rtc_base/event.h"
+#include "rtc_base/thread.h"
 
 namespace webrtc {
 
@@ -30,18 +31,17 @@ DegradedCall::FakeNetworkPipeOnTaskQueue::FakeNetworkPipeOnTaskQueue(
       pipe_(clock, std::move(network_behavior)) {}
 
 void DegradedCall::FakeNetworkPipeOnTaskQueue::SendRtp(
-    const uint8_t* packet,
-    size_t length,
+    rtc::ArrayView<const uint8_t> packet,
     const PacketOptions& options,
     Transport* transport) {
-  pipe_.SendRtp(packet, length, options, transport);
+  pipe_.SendRtp(packet, options, transport);
   Process();
 }
 
-void DegradedCall::FakeNetworkPipeOnTaskQueue::SendRtcp(const uint8_t* packet,
-                                                        size_t length,
-                                                        Transport* transport) {
-  pipe_.SendRtcp(packet, length, transport);
+void DegradedCall::FakeNetworkPipeOnTaskQueue::SendRtcp(
+    rtc::ArrayView<const uint8_t> packet,
+    Transport* transport) {
+  pipe_.SendRtcp(packet, transport);
   Process();
 }
 
@@ -101,20 +101,19 @@ DegradedCall::FakeNetworkPipeTransportAdapter::
 }
 
 bool DegradedCall::FakeNetworkPipeTransportAdapter::SendRtp(
-    const uint8_t* packet,
-    size_t length,
+    rtc::ArrayView<const uint8_t> packet,
     const PacketOptions& options) {
   // A call here comes from the RTP stack (probably pacer). We intercept it and
   // put it in the fake network pipe instead, but report to Call that is has
   // been sent, so that the bandwidth estimator sees the delay we add.
-  network_pipe_->SendRtp(packet, length, options, real_transport_);
+  network_pipe_->SendRtp(packet, options, real_transport_);
   if (options.packet_id != -1) {
     rtc::SentPacket sent_packet;
     sent_packet.packet_id = options.packet_id;
     sent_packet.send_time_ms = clock_->TimeInMilliseconds();
     sent_packet.info.included_in_feedback = options.included_in_feedback;
     sent_packet.info.included_in_allocation = options.included_in_allocation;
-    sent_packet.info.packet_size_bytes = length;
+    sent_packet.info.packet_size_bytes = packet.size();
     sent_packet.info.packet_type = rtc::PacketType::kData;
     call_->OnSentPacket(sent_packet);
   }
@@ -122,58 +121,9 @@ bool DegradedCall::FakeNetworkPipeTransportAdapter::SendRtp(
 }
 
 bool DegradedCall::FakeNetworkPipeTransportAdapter::SendRtcp(
-    const uint8_t* packet,
-    size_t length) {
-  network_pipe_->SendRtcp(packet, length, real_transport_);
+    rtc::ArrayView<const uint8_t> packet) {
+  network_pipe_->SendRtcp(packet, real_transport_);
   return true;
-}
-
-DegradedCall::ThreadedPacketReceiver::ThreadedPacketReceiver(
-    webrtc::TaskQueueBase* worker_thread,
-    webrtc::TaskQueueBase* network_thread,
-    rtc::scoped_refptr<PendingTaskSafetyFlag> call_alive,
-    webrtc::PacketReceiver* receiver)
-    : worker_thread_(worker_thread),
-      network_thread_(network_thread),
-      call_alive_(std::move(call_alive)),
-      receiver_(receiver) {}
-
-DegradedCall::ThreadedPacketReceiver::~ThreadedPacketReceiver() = default;
-
-PacketReceiver::DeliveryStatus
-DegradedCall::ThreadedPacketReceiver::DeliverPacket(
-    MediaType media_type,
-    rtc::CopyOnWriteBuffer packet,
-    int64_t packet_time_us) {
-  // `Call::DeliverPacket` expects RTCP packets to be delivered from the
-  // network thread and RTP packets to be delivered from the worker thread.
-  // Because `FakeNetworkPipe` queues packets, the thread used when this packet
-  // is delivered to `DegradedCall::DeliverPacket` may differ from the thread
-  // used when this packet is delivered to
-  // `ThreadedPacketReceiver::DeliverPacket`. To solve this problem, always
-  // make sure that packets are sent in the correct thread.
-  if (IsRtcpPacket(packet)) {
-    if (!network_thread_->IsCurrent()) {
-      network_thread_->PostTask(
-          SafeTask(call_alive_, [receiver = receiver_, media_type,
-                                 packet = std::move(packet), packet_time_us]() {
-            receiver->DeliverPacket(media_type, std::move(packet),
-                                    packet_time_us);
-          }));
-      return DELIVERY_OK;
-    }
-  } else {
-    if (!worker_thread_->IsCurrent()) {
-      worker_thread_->PostTask([receiver = receiver_, media_type,
-                                packet = std::move(packet), packet_time_us]() {
-        receiver->DeliverPacket(media_type, std::move(packet), packet_time_us);
-      });
-      return DELIVERY_OK;
-    }
-  }
-
-  return receiver_->DeliverPacket(media_type, std::move(packet),
-                                  packet_time_us);
 }
 
 DegradedCall::DegradedCall(
@@ -193,10 +143,7 @@ DegradedCall::DegradedCall(
     receive_simulated_network_ = network.get();
     receive_pipe_ =
         std::make_unique<webrtc::FakeNetworkPipe>(clock_, std::move(network));
-    packet_receiver_ = std::make_unique<ThreadedPacketReceiver>(
-        call_->worker_thread(), call_->network_thread(), call_alive_,
-        call_->Receiver());
-    receive_pipe_->SetReceiver(packet_receiver_.get());
+    receive_pipe_->SetReceiver(call_->Receiver());
     if (receive_configs_.size() > 1) {
       call_->network_thread()->PostDelayedTask(
           SafeTask(call_alive_, [this] { UpdateReceiveNetworkConfig(); }),
@@ -222,13 +169,10 @@ DegradedCall::~DegradedCall() {
   // Otherwise, when the `DegradedCall` object is destroyed but
   // `SetNotAlive` has not yet been called,
   // another Closure guarded by `call_alive_` may be called.
-  rtc::Event event;
-  call_->network_thread()->PostTask(
-      [flag = std::move(call_alive_), &event]() mutable {
-        flag->SetNotAlive();
-        event.Set();
-      });
-  event.Wait(rtc::Event::kForever);
+  // TODO(https://crbug.com/webrtc/12649): Remove this block-invoke.
+  static_cast<rtc::Thread*>(call_->network_thread())
+      ->BlockingCall(
+          [flag = std::move(call_alive_)]() mutable { flag->SetNotAlive(); });
 }
 
 AudioSendStream* DegradedCall::CreateAudioSendStream(
@@ -396,22 +340,20 @@ void DegradedCall::OnSentPacket(const rtc::SentPacket& sent_packet) {
   call_->OnSentPacket(sent_packet);
 }
 
-PacketReceiver::DeliveryStatus DegradedCall::DeliverPacket(
+void DegradedCall::DeliverRtpPacket(
     MediaType media_type,
-    rtc::CopyOnWriteBuffer packet,
-    int64_t packet_time_us) {
-  PacketReceiver::DeliveryStatus status = receive_pipe_->DeliverPacket(
-      media_type, std::move(packet), packet_time_us);
-  // This is not optimal, but there are many places where there are thread
-  // checks that fail if we're not using the worker thread call into this
-  // method. If we want to fix this we probably need a task queue to do handover
-  // of all overriden methods, which feels like overkill for the current use
-  // case.
-  // By just having this thread call out via the Process() method we work around
-  // that, with the tradeoff that a non-zero delay may become a little larger
-  // than anticipated at very low packet rates.
+    RtpPacketReceived packet,
+    OnUndemuxablePacketHandler undemuxable_packet_handler) {
+  RTC_DCHECK_RUN_ON(&received_packet_sequence_checker_);
+  receive_pipe_->DeliverRtpPacket(media_type, std::move(packet),
+                                  std::move(undemuxable_packet_handler));
   receive_pipe_->Process();
-  return status;
+}
+
+void DegradedCall::DeliverRtcpPacket(rtc::CopyOnWriteBuffer packet) {
+  RTC_DCHECK_RUN_ON(&received_packet_sequence_checker_);
+  receive_pipe_->DeliverRtcpPacket(std::move(packet));
+  receive_pipe_->Process();
 }
 
 void DegradedCall::SetClientBitratePreferences(

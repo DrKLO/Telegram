@@ -48,9 +48,9 @@ enum DataChannelPriority {
 
 bool IsOpenMessage(const rtc::CopyOnWriteBuffer& payload) {
   // Format defined at
-  // http://tools.ietf.org/html/draft-jesup-rtcweb-data-protocol-04
+  // https://www.rfc-editor.org/rfc/rfc8832#section-5.1
   if (payload.size() < 1) {
-    RTC_LOG(LS_WARNING) << "Could not read OPEN message type.";
+    RTC_DLOG(LS_WARNING) << "Could not read OPEN message type.";
     return false;
   }
 
@@ -64,7 +64,7 @@ bool ParseDataChannelOpenMessage(const rtc::CopyOnWriteBuffer& payload,
   // Format defined at
   // http://tools.ietf.org/html/draft-jesup-rtcweb-data-protocol-04
 
-  rtc::ByteBufferReader buffer(payload.data<char>(), payload.size());
+  rtc::ByteBufferReader buffer(payload);
   uint8_t message_type;
   if (!buffer.ReadUInt8(&message_type)) {
     RTC_LOG(LS_WARNING) << "Could not read OPEN message type.";
@@ -165,6 +165,18 @@ bool ParseDataChannelOpenAckMessage(const rtc::CopyOnWriteBuffer& payload) {
 bool WriteDataChannelOpenMessage(const std::string& label,
                                  const DataChannelInit& config,
                                  rtc::CopyOnWriteBuffer* payload) {
+  return WriteDataChannelOpenMessage(label, config.protocol, config.priority,
+                                     config.ordered, config.maxRetransmits,
+                                     config.maxRetransmitTime, payload);
+}
+
+bool WriteDataChannelOpenMessage(const std::string& label,
+                                 const std::string& protocol,
+                                 absl::optional<Priority> opt_priority,
+                                 bool ordered,
+                                 absl::optional<int> max_retransmits,
+                                 absl::optional<int> max_retransmit_time,
+                                 rtc::CopyOnWriteBuffer* payload) {
   // Format defined at
   // http://tools.ietf.org/html/draft-ietf-rtcweb-data-protocol-09#section-5.1
   uint8_t channel_type = 0;
@@ -172,8 +184,8 @@ bool WriteDataChannelOpenMessage(const std::string& label,
   uint16_t priority = 0;
   // Set priority according to
   // https://tools.ietf.org/html/draft-ietf-rtcweb-data-channel-12#section-6.4
-  if (config.priority) {
-    switch (*config.priority) {
+  if (opt_priority) {
+    switch (*opt_priority) {
       case Priority::kVeryLow:
         priority = DCO_PRIORITY_VERY_LOW;
         break;
@@ -188,39 +200,38 @@ bool WriteDataChannelOpenMessage(const std::string& label,
         break;
     }
   }
-  if (config.ordered) {
-    if (config.maxRetransmits) {
+  if (ordered) {
+    if (max_retransmits) {
       channel_type = DCOMCT_ORDERED_PARTIAL_RTXS;
-      reliability_param = *config.maxRetransmits;
-    } else if (config.maxRetransmitTime) {
+      reliability_param = *max_retransmits;
+    } else if (max_retransmit_time) {
       channel_type = DCOMCT_ORDERED_PARTIAL_TIME;
-      reliability_param = *config.maxRetransmitTime;
+      reliability_param = *max_retransmit_time;
     } else {
       channel_type = DCOMCT_ORDERED_RELIABLE;
     }
   } else {
-    if (config.maxRetransmits) {
+    if (max_retransmits) {
       channel_type = DCOMCT_UNORDERED_PARTIAL_RTXS;
-      reliability_param = *config.maxRetransmits;
-    } else if (config.maxRetransmitTime) {
+      reliability_param = *max_retransmits;
+    } else if (max_retransmit_time) {
       channel_type = DCOMCT_UNORDERED_PARTIAL_TIME;
-      reliability_param = *config.maxRetransmitTime;
+      reliability_param = *max_retransmit_time;
     } else {
       channel_type = DCOMCT_UNORDERED_RELIABLE;
     }
   }
 
-  rtc::ByteBufferWriter buffer(NULL,
-                               20 + label.length() + config.protocol.length());
+  rtc::ByteBufferWriter buffer(NULL, 20 + label.length() + protocol.length());
   // TODO(tommi): Add error handling and check resulting length.
   buffer.WriteUInt8(DATA_CHANNEL_OPEN_MESSAGE_TYPE);
   buffer.WriteUInt8(channel_type);
   buffer.WriteUInt16(priority);
   buffer.WriteUInt32(reliability_param);
   buffer.WriteUInt16(static_cast<uint16_t>(label.length()));
-  buffer.WriteUInt16(static_cast<uint16_t>(config.protocol.length()));
+  buffer.WriteUInt16(static_cast<uint16_t>(protocol.length()));
   buffer.WriteString(label);
-  buffer.WriteString(config.protocol);
+  buffer.WriteString(protocol);
   payload->SetData(buffer.Data(), buffer.Length());
   return true;
 }

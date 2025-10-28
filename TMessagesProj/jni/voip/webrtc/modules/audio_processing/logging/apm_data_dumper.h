@@ -91,7 +91,7 @@ class ApmDataDumper {
   static void SetOutputDirectory(absl::string_view output_dir) {
 #if WEBRTC_APM_DEBUG_DUMP == 1
     RTC_CHECK_LT(output_dir.size(), kOutputDirMaxLength);
-    rtc::strcpyn(output_dir_, output_dir.size(), output_dir);
+    rtc::strcpyn(output_dir_, kOutputDirMaxLength, output_dir);
 #endif
   }
 

@@ -1,10 +1,17 @@
 #! /usr/bin/env perl
 # Copyright 2011-2016 The OpenSSL Project Authors. All Rights Reserved.
 #
-# Licensed under the OpenSSL license (the "License").  You may not use
-# this file except in compliance with the License.  You can obtain a copy
-# in the file LICENSE in the source distribution or at
-# https://www.openssl.org/source/license.html
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 
 ######################################################################
@@ -871,11 +878,10 @@ _vpaes_schedule_mangle:
 .align	16
 ${PREFIX}_set_encrypt_key:
 .cfi_startproc
-#ifndef NDEBUG
-#ifndef BORINGSSL_FIPS
+	_CET_ENDBR
+#ifdef BORINGSSL_DISPATCH_TEST
 .extern        BORINGSSL_function_hit
        movb \$1, BORINGSSL_function_hit+5(%rip)
-#endif
 #endif
 
 ___
@@ -928,6 +934,7 @@ $code.=<<___;
 .align	16
 ${PREFIX}_set_decrypt_key:
 .cfi_startproc
+	_CET_ENDBR
 ___
 $code.=<<___ if ($win64);
 	lea	-0xb8(%rsp),%rsp
@@ -983,11 +990,10 @@ $code.=<<___;
 .align	16
 ${PREFIX}_encrypt:
 .cfi_startproc
-#ifndef NDEBUG
-#ifndef BORINGSSL_FIPS
+	_CET_ENDBR
+#ifdef BORINGSSL_DISPATCH_TEST
 .extern        BORINGSSL_function_hit
        movb \$1, BORINGSSL_function_hit+4(%rip)
-#endif
 #endif
 ___
 $code.=<<___ if ($win64);
@@ -1034,6 +1040,7 @@ $code.=<<___;
 .align	16
 ${PREFIX}_decrypt:
 .cfi_startproc
+	_CET_ENDBR
 ___
 $code.=<<___ if ($win64);
 	lea	-0xb8(%rsp),%rsp
@@ -1085,6 +1092,7 @@ $code.=<<___;
 .align	16
 ${PREFIX}_cbc_encrypt:
 .cfi_startproc
+	_CET_ENDBR
 	xchg	$key,$len
 ___
 ($len,$key)=($key,$len);
@@ -1170,6 +1178,7 @@ $code.=<<___;
 .align	16
 ${PREFIX}_ctr32_encrypt_blocks:
 .cfi_startproc
+	_CET_ENDBR
 	# _vpaes_encrypt_core and _vpaes_encrypt_core_2x expect the key in %rdx.
 	xchg	$key, $blocks
 ___
@@ -1292,6 +1301,7 @@ _vpaes_preheat:
 ##                                                    ##
 ########################################################
 .type	_vpaes_consts,\@object
+.section .rodata
 .align	64
 _vpaes_consts:
 .Lk_inv:	# inv, inva
@@ -1401,6 +1411,7 @@ _vpaes_consts:
 .asciz	"Vector Permutation AES for x86_64/SSSE3, Mike Hamburg (Stanford University)"
 .align	64
 .size	_vpaes_consts,.-_vpaes_consts
+.text
 ___
 
 if ($win64) {
@@ -1550,4 +1561,4 @@ $code =~ s/\`([^\`]*)\`/eval($1)/gem;
 
 print $code;
 
-close STDOUT or die "error closing STDOUT";
+close STDOUT or die "error closing STDOUT: $!";

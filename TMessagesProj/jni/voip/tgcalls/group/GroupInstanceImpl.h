@@ -6,6 +6,7 @@
 #include <string>
 #include <memory>
 #include <map>
+#include <optional>
 
 #include "../Instance.h"
 
@@ -18,7 +19,7 @@ class TaskQueueFactory;
 class VideoTrackSourceInterface;
 }
 
-namespace rtc {
+namespace webrtc {
 template <class T>
 class scoped_refptr;
 }
@@ -27,6 +28,7 @@ namespace tgcalls {
 
 class LogSinkImpl;
 class GroupInstanceManager;
+class WrappedAudioDeviceModule;
 struct AudioFrame;
 
 struct GroupConfig {
@@ -48,6 +50,15 @@ struct GroupLevelUpdate {
 struct GroupLevelsUpdate {
     std::vector<GroupLevelUpdate> updates;
 };
+
+struct GroupActivityUpdate {
+    uint32_t ssrc = 0;
+};
+
+struct GroupActivitiesUpdate {
+    std::vector<GroupActivityUpdate> updates;
+};
+
 
 class BroadcastPartTask {
 public:
@@ -110,6 +121,7 @@ struct MediaChannelDescription {
 
     Type type = Type::Audio;
     uint32_t audioSsrc = 0;
+    int64_t userId = 0;
     std::string videoInformation;
 };
 
@@ -125,6 +137,7 @@ struct VideoChannelDescription {
         Full
     };
     uint32_t audioSsrc = 0;
+    int64_t userId = 0;
     std::string endpointId;
     std::vector<MediaSsrcGroup> ssrcGroups;
     Quality minQuality = Quality::Thumbnail;
@@ -143,27 +156,35 @@ struct GroupInstanceStats {
 struct GroupInstanceDescriptor {
     std::shared_ptr<Threads> threads;
     GroupConfig config;
+    std::string statsLogPath;
     std::function<void(GroupNetworkState)> networkStateUpdated;
+    std::function<void(int)> signalBarsUpdated;
     std::function<void(GroupLevelsUpdate const &)> audioLevelsUpdated;
     std::function<void(uint32_t, const AudioFrame &)> onAudioFrame;
+    std::function<void(GroupActivitiesUpdate const &)> ssrcActivityUpdated;
     std::string initialInputDeviceId;
     std::string initialOutputDeviceId;
     bool useDummyChannel{true};
     bool disableIncomingChannels{false};
-    std::function<rtc::scoped_refptr<webrtc::AudioDeviceModule>(webrtc::TaskQueueFactory*)> createAudioDeviceModule;
+    std::function<webrtc::scoped_refptr<webrtc::AudioDeviceModule>(webrtc::TaskQueueFactory*)> createAudioDeviceModule;
+    std::function<webrtc::scoped_refptr<WrappedAudioDeviceModule>(webrtc::TaskQueueFactory*)> createWrappedAudioDeviceModule;
     std::shared_ptr<VideoCaptureInterface> videoCapture; // deprecated
-    std::function<rtc::scoped_refptr<webrtc::VideoTrackSourceInterface>()> getVideoSource;
+    std::function<webrtc::scoped_refptr<webrtc::VideoTrackSourceInterface>()> getVideoSource;
     std::function<std::shared_ptr<BroadcastPartTask>(std::function<void(int64_t)>)> requestCurrentTime;
     std::function<std::shared_ptr<BroadcastPartTask>(std::shared_ptr<PlatformContext>, int64_t, int64_t, std::function<void(BroadcastPart &&)>)> requestAudioBroadcastPart;
     std::function<std::shared_ptr<BroadcastPartTask>(std::shared_ptr<PlatformContext>, int64_t, int64_t, int32_t, VideoChannelDescription::Quality, std::function<void(BroadcastPart &&)>)> requestVideoBroadcastPart;
     int outgoingAudioBitrateKbit{32};
     bool disableOutgoingAudioProcessing{false};
     bool disableAudioInput{false};
+    bool ios_enableSystemMute{false};
     VideoContentType videoContentType{VideoContentType::None};
     bool initialEnableNoiseSuppression{false};
     std::vector<VideoCodecName> videoCodecPreferences;
     std::function<std::shared_ptr<RequestMediaChannelDescriptionTask>(std::vector<uint32_t> const &, std::function<void(std::vector<MediaChannelDescription> &&)>)> requestMediaChannelDescriptions;
     int minOutgoingVideoBitrateKbit{100};
+    std::function<void(bool)> onMutedSpeechActivityDetected;
+    std::function<std::vector<uint8_t>(std::vector<uint8_t> const &, int64_t, bool, int32_t)> e2eEncryptDecrypt;
+    bool isConference{false};
 
     std::shared_ptr<PlatformContext> platformContext;
 };
@@ -178,7 +199,7 @@ protected:
 public:
     virtual ~GroupInstanceInterface() = default;
 
-    virtual void stop() = 0;
+    virtual void stop(std::function<void()> completion) = 0;
 
     virtual void setConnectionMode(GroupConnectionMode connectionMode, bool keepBroadcastIfWasEnabled, bool isUnifiedBroadcast) = 0;
 
@@ -190,7 +211,7 @@ public:
     virtual void setIsMuted(bool isMuted) = 0;
     virtual void setIsNoiseSuppressionEnabled(bool isNoiseSuppressionEnabled) = 0;
     virtual void setVideoCapture(std::shared_ptr<VideoCaptureInterface> videoCapture) = 0;
-    virtual void setVideoSource(std::function<rtc::scoped_refptr<webrtc::VideoTrackSourceInterface>()> getVideoSource) = 0;
+    virtual void setVideoSource(std::function<webrtc::scoped_refptr<webrtc::VideoTrackSourceInterface>()> getVideoSource) = 0;
     virtual void setAudioOutputDevice(std::string id) = 0;
     virtual void setAudioInputDevice(std::string id) = 0;
     virtual void addExternalAudioSamples(std::vector<uint8_t> &&samples) = 0;
@@ -202,6 +223,7 @@ public:
     virtual void setRequestedVideoChannels(std::vector<VideoChannelDescription> &&requestedVideoChannels) = 0;
 
     virtual void getStats(std::function<void(GroupInstanceStats)> completion) = 0;
+    virtual void internal_addCustomNetworkEvent(bool isRemoteConnected) = 0;
 
     struct AudioDevice {
       enum class Type {Input, Output};

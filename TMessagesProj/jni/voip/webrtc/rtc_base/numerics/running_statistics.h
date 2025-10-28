@@ -51,6 +51,7 @@ class RunningStatistics {
   void AddSample(T sample) {
     max_ = std::max(max_, sample);
     min_ = std::min(min_, sample);
+    sum_ += sample;
     ++size_;
     // Welford's incremental update.
     const double delta = sample - mean_;
@@ -123,6 +124,14 @@ class RunningStatistics {
     return max_;
   }
 
+  // Returns sum in O(1) time.
+  absl::optional<double> GetSum() const {
+    if (size_ == 0) {
+      return absl::nullopt;
+    }
+    return sum_;
+  }
+
   // Returns mean in O(1) time.
   absl::optional<double> GetMean() const {
     if (size_ == 0) {
@@ -153,6 +162,7 @@ class RunningStatistics {
   T max_ = minus_infinity_or_min<T>();
   double mean_ = 0;
   double cumul_ = 0;  // Variance * size_, sometimes noted m2.
+  double sum_ = 0;
 };
 
 }  // namespace webrtc_impl

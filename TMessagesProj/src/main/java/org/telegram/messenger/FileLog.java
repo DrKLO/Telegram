@@ -10,6 +10,9 @@ package org.telegram.messenger;
 
 import android.content.Context;
 import android.content.res.ColorStateList;
+import android.os.Debug;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 
 import com.google.gson.ExclusionStrategy;
@@ -20,6 +23,9 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
+import com.google.gson.TypeAdapter;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
 
 import org.telegram.messenger.time.FastDateFormat;
 import org.telegram.messenger.video.MediaCodecVideoConvertor;
@@ -37,6 +43,7 @@ import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Locale;
+import java.util.Map;
 
 public class FileLog {
     private OutputStreamWriter streamWriter = null;
@@ -113,10 +120,17 @@ public class FileLog {
                     FileLog.getInstance().tlStreamWriter.write("\n\n");
                     FileLog.getInstance().tlStreamWriter.flush();
 
-                    Log.d(mtproto_tag, metadata);
-                    Log.d(mtproto_tag, req);
-                    Log.d(mtproto_tag, finalRes);
-                    Log.d(mtproto_tag, " ");
+                    if (error != null) {
+                        Log.e(mtproto_tag, metadata);
+                        Log.e(mtproto_tag, req);
+                        Log.e(mtproto_tag, finalRes);
+                        Log.e(mtproto_tag, " ");
+                    } else {
+                        Log.d(mtproto_tag, metadata);
+                        Log.d(mtproto_tag, req);
+                        Log.d(mtproto_tag, finalRes);
+                        Log.d(mtproto_tag, " ");
+                    }
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -166,7 +180,7 @@ public class FileLog {
     private static void checkGson() {
         if (gson == null) {
             privateFields = new HashSet<>();
-//            privateFields.add("message");
+            privateFields.add("message");
             privateFields.add("phone");
             privateFields.add("about");
             privateFields.add("status_text");
@@ -180,6 +194,9 @@ public class FileLog {
             privateFields.add("mContext");
             privateFields.add("priority");
             privateFields.add("constructor");
+            for (int i = 0; i < 32; i++) {
+                privateFields.add("FLAG_" + i);
+            }
 
             //exclude file loading
             excludeRequests = new HashSet<>();
@@ -190,7 +207,7 @@ public class FileLog {
 
                 @Override
                 public boolean shouldSkipField(FieldAttributes f) {
-                    if (privateFields.contains(f.getName())) {
+                    if (privateFields.contains(f.getName()) || "message".equalsIgnoreCase(f.getName()) && String.class.equals(f.getDeclaredType())) {
                         return true;
                     }
                     return false;
@@ -203,9 +220,40 @@ public class FileLog {
             };
             gson = new GsonBuilder()
                 .addSerializationExclusionStrategy(exclusionStrategy)
+                .registerTypeAdapter(byte[].class, new ByteArrayHexAdapter())
                 .registerTypeAdapterFactory(RuntimeClassNameTypeAdapterFactory.of(TLObject.class, "type_", exclusionStrategy))
                 .registerTypeHierarchyAdapter(TLObject.class, new TLObjectDeserializer())
                 .create();
+        }
+    }
+
+    public static class ByteArrayHexAdapter extends TypeAdapter<byte[]> {
+
+        @Override
+        public void write(JsonWriter out, byte[] value) throws IOException {
+            if (value == null) {
+                out.nullValue();
+                return;
+            }
+
+            StringBuilder hex = new StringBuilder(2 + value.length * 2);
+            hex.append("0x");
+            for (byte b : value) {
+                hex.append(String.format("%02x", b & 0xFF));
+            }
+            out.value(hex.toString());
+        }
+
+        @Override
+        public byte[] read(JsonReader in) throws IOException {
+            String hex = in.nextString();
+            int len = hex.length();
+            byte[] result = new byte[len / 2];
+            for (int i = 0; i < len; i += 2) {
+                result[i / 2] = (byte) ((Character.digit(hex.charAt(i), 16) << 4)
+                    + Character.digit(hex.charAt(i+1), 16));
+            }
+            return result;
         }
     }
 
@@ -277,6 +325,9 @@ public class FileLog {
             tlStreamWriter.flush();
         } catch (Exception e) {
             e.printStackTrace();
+        }
+        if (BuildVars.DEBUG_VERSION) {
+            new ANRDetector(this::dumpANR);
         }
         initied = true;
     }
@@ -418,9 +469,42 @@ public class FileLog {
         fatal(e, true);
     }
 
+    private static long dumpedHeap;
+    public void dumpMemory(boolean force) {
+        if (!force && System.currentTimeMillis() - dumpedHeap < 30_000) return;
+        dumpedHeap = System.currentTimeMillis();
+        try {
+            Debug.dumpHprofData(new File(AndroidUtilities.getLogsDir(), getInstance().dateFormat.format(System.currentTimeMillis()) + "_heap.hprof").getAbsolutePath());
+        } catch (Exception e2) {
+            FileLog.e(e2);
+        }
+    }
+
+    private void dumpANR() {
+        StringBuilder sb = new StringBuilder();
+        Map<Thread, StackTraceElement[]> allThreads = Thread.getAllStackTraces();
+
+        for (Map.Entry<Thread, StackTraceElement[]> entry : allThreads.entrySet()) {
+            Thread thread = entry.getKey();
+            StackTraceElement[] stackTrace = entry.getValue();
+
+            sb.append("Thread: ").append(thread.getName()).append("\n");
+            for (StackTraceElement element : stackTrace) {
+                sb.append("\tat ").append(element).append("\n");
+            }
+            sb.append("\n\n");
+        }
+
+        FileLog.e("ANR thread dump\n" + sb.toString());
+        dumpMemory(false);
+    }
+
     public static void fatal(final Throwable e, boolean logToAppCenter) {
         if (!BuildVars.LOGS_ENABLED) {
             return;
+        }
+        if (e instanceof OutOfMemoryError) {
+            getInstance().dumpMemory(false);
         }
         if (logToAppCenter && BuildVars.DEBUG_VERSION && needSent(e)) {
             AndroidUtilities.appCenterLog(e);
@@ -536,5 +620,32 @@ public class FileLog {
             super(e);
         }
 
+    }
+
+    public class ANRDetector {
+        private final long TIMEOUT_MS = 5000; // ANR threshold (5 seconds)
+        private final Handler mainHandler = new Handler(Looper.getMainLooper());
+        private boolean isUIThreadResponsive = true;
+
+        public ANRDetector(Runnable anrDetected) {
+            new Thread(() -> {
+                while (true) {
+                    isUIThreadResponsive = false;
+
+                    // Post a task to the main thread
+                    mainHandler.post(() -> isUIThreadResponsive = true);
+
+                    try {
+                        Thread.sleep(TIMEOUT_MS);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+
+                    if (!isUIThreadResponsive) {
+                        anrDetected.run();
+                    }
+                }
+            }).start();
+        }
     }
 }

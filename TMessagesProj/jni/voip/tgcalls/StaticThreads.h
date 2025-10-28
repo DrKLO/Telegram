@@ -5,8 +5,6 @@
 
 namespace rtc {
 class Thread;
-template <class T>
-class scoped_refptr;
 }
 
 namespace tgcalls {

@@ -22,36 +22,37 @@
 
 namespace dcsctp {
 namespace {
+using ::webrtc::TimeDelta;
+
 TimeoutID MakeTimeoutId(TimerID timer_id, TimerGeneration generation) {
   return TimeoutID(static_cast<uint64_t>(*timer_id) << 32 | *generation);
 }
 
-DurationMs GetBackoffDuration(const TimerOptions& options,
-                              DurationMs base_duration,
-                              int expiration_count) {
+TimeDelta GetBackoffDuration(const TimerOptions& options,
+                             TimeDelta base_duration,
+                             int expiration_count) {
   switch (options.backoff_algorithm) {
     case TimerBackoffAlgorithm::kFixed:
       return base_duration;
     case TimerBackoffAlgorithm::kExponential: {
-      int32_t duration_ms = *base_duration;
+      TimeDelta duration = base_duration;
 
-      while (expiration_count > 0 && duration_ms < *Timer::kMaxTimerDuration) {
-        duration_ms *= 2;
+      while (expiration_count > 0 && duration < Timer::kMaxTimerDuration) {
+        duration = duration * 2;
         --expiration_count;
 
-        if (options.max_backoff_duration.has_value() &&
-            duration_ms > **options.max_backoff_duration) {
-          return *options.max_backoff_duration;
+        if (duration > options.max_backoff_duration) {
+          return options.max_backoff_duration;
         }
       }
 
-      return DurationMs(std::min(duration_ms, *Timer::kMaxTimerDuration));
+      return TimeDelta(std::min(duration, Timer::kMaxTimerDuration));
     }
   }
 }
 }  // namespace
 
-constexpr DurationMs Timer::kMaxTimerDuration;
+constexpr TimeDelta Timer::kMaxTimerDuration;
 
 Timer::Timer(TimerID id,
              absl::string_view name,
@@ -77,12 +78,12 @@ void Timer::Start() {
   if (!is_running()) {
     is_running_ = true;
     generation_ = TimerGeneration(*generation_ + 1);
-    timeout_->Start(duration_, MakeTimeoutId(id_, generation_));
+    timeout_->Start(DurationMs(duration_), MakeTimeoutId(id_, generation_));
   } else {
     // Timer was running - stop and restart it, to make it expire in `duration_`
     // from now.
     generation_ = TimerGeneration(*generation_ + 1);
-    timeout_->Restart(duration_, MakeTimeoutId(id_, generation_));
+    timeout_->Restart(DurationMs(duration_), MakeTimeoutId(id_, generation_));
   }
 }
 
@@ -104,23 +105,24 @@ void Timer::Trigger(TimerGeneration generation) {
       // timer. Note that it might be very quickly restarted again, if the
       // `on_expired_` callback returns a new duration.
       is_running_ = true;
-      DurationMs duration =
+      TimeDelta duration =
           GetBackoffDuration(options_, duration_, expiration_count_);
       generation_ = TimerGeneration(*generation_ + 1);
-      timeout_->Start(duration, MakeTimeoutId(id_, generation_));
+      timeout_->Start(DurationMs(duration), MakeTimeoutId(id_, generation_));
     }
 
-    absl::optional<DurationMs> new_duration = on_expired_();
-    if (new_duration.has_value() && new_duration != duration_) {
-      duration_ = new_duration.value();
+    TimeDelta new_duration = on_expired_();
+    RTC_DCHECK(new_duration != TimeDelta::PlusInfinity());
+    if (new_duration > TimeDelta::Zero() && new_duration != duration_) {
+      duration_ = new_duration;
       if (is_running_) {
         // Restart it with new duration.
         timeout_->Stop();
 
-        DurationMs duration =
+        TimeDelta duration =
             GetBackoffDuration(options_, duration_, expiration_count_);
         generation_ = TimerGeneration(*generation_ + 1);
-        timeout_->Start(duration, MakeTimeoutId(id_, generation_));
+        timeout_->Start(DurationMs(duration), MakeTimeoutId(id_, generation_));
       }
     }
   }

@@ -11,6 +11,7 @@
 #ifndef CALL_VIDEO_RECEIVE_STREAM_H_
 #define CALL_VIDEO_RECEIVE_STREAM_H_
 
+#include <cstdint>
 #include <limits>
 #include <map>
 #include <set>
@@ -33,6 +34,7 @@
 #include "common_video/frame_counts.h"
 #include "modules/rtp_rtcp/include/rtcp_statistics.h"
 #include "modules/rtp_rtcp/include/rtp_rtcp_defines.h"
+#include "rtc_base/checks.h"
 
 namespace webrtc {
 
@@ -86,7 +88,7 @@ class VideoReceiveStreamInterface : public MediaReceiveStreamInterface {
     uint32_t frames_rendered = 0;
 
     // Decoder stats.
-    std::string decoder_implementation_name = "unknown";
+    absl::optional<std::string> decoder_implementation_name;
     absl::optional<bool> power_efficient_decoder;
     FrameCounts frame_counts;
     int decode_ms = 0;
@@ -94,10 +96,14 @@ class VideoReceiveStreamInterface : public MediaReceiveStreamInterface {
     int current_delay_ms = 0;
     int target_delay_ms = 0;
     int jitter_buffer_ms = 0;
-    // https://w3c.github.io/webrtc-stats/#dom-rtcvideoreceiverstats-jitterbufferdelay
-    double jitter_buffer_delay_seconds = 0;
-    // https://w3c.github.io/webrtc-stats/#dom-rtcvideoreceiverstats-jitterbufferemittedcount
+    // https://w3c.github.io/webrtc-stats/#dom-rtcinboundrtpstreamstats-jitterbufferdelay
+    TimeDelta jitter_buffer_delay = TimeDelta::Zero();
+    // https://w3c.github.io/webrtc-stats/#dom-rtcinboundrtpstreamstats-jitterbuffertargetdelay
+    TimeDelta jitter_buffer_target_delay = TimeDelta::Zero();
+    // https://w3c.github.io/webrtc-stats/#dom-rtcinboundrtpstreamstats-jitterbufferemittedcount
     uint64_t jitter_buffer_emitted_count = 0;
+    // https://w3c.github.io/webrtc-stats/#dom-rtcinboundrtpstreamstats-jitterbufferminimumdelay
+    TimeDelta jitter_buffer_minimum_delay = TimeDelta::Zero();
     int min_playout_delay_ms = 0;
     int render_delay_ms = 10;
     int64_t interframe_delay_max_ms = -1;
@@ -132,8 +138,6 @@ class VideoReceiveStreamInterface : public MediaReceiveStreamInterface {
     uint32_t pause_count = 0;
     uint32_t total_freezes_duration_ms = 0;
     uint32_t total_pauses_duration_ms = 0;
-    uint32_t total_frames_duration_ms = 0;
-    double sum_squared_frame_durations = 0.0;
 
     VideoContentType content_type = VideoContentType::UNSPECIFIED;
 
@@ -145,6 +149,7 @@ class VideoReceiveStreamInterface : public MediaReceiveStreamInterface {
     std::string c_name;
     RtpReceiveStats rtp_stats;
     RtcpPacketTypeCounter rtcp_packet_type_counts;
+    absl::optional<RtpReceiveStats> rtx_rtp_stats;
 
     // Timing frame info: all important timestamps for a full lifetime of a
     // single 'timing frame'.
@@ -311,6 +316,8 @@ class VideoReceiveStreamInterface : public MediaReceiveStreamInterface {
 
   virtual void SetAssociatedPayloadTypes(
       std::map<int, int> associated_payload_types) = 0;
+
+  virtual void UpdateRtxSsrc(uint32_t ssrc) = 0;
 
  protected:
   virtual ~VideoReceiveStreamInterface() {}

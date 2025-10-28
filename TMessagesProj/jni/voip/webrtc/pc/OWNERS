@@ -4,3 +4,8 @@ perkj@webrtc.org
 tommi@webrtc.org
 deadbeef@webrtc.org
 orphis@webrtc.org
+
+# Adding features via SDP munging requires approval from SDP owners
+per-file webrtc_sdp.cc = set noparent
+per-file webrtc_sdp.cc = hta@webrtc.org
+per-file webrtc_sdp.cc = hbos@webrtc.org

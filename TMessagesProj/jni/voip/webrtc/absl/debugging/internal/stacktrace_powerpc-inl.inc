@@ -57,7 +57,7 @@ static inline void *StacktracePowerPCGetLR(void **sp) {
   // This check is in case the compiler doesn't define _CALL_SYSV.
   return *(sp+1);
 #else
-#error Need to specify the PPC ABI for your archiecture.
+#error Need to specify the PPC ABI for your architecture.
 #endif
 }
 

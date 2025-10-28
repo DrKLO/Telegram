@@ -14,13 +14,13 @@
 #include <memory>
 #include <vector>
 
-#include "api/transport/field_trial_based_config.h"
 #include "api/transport/network_control.h"
 #include "api/units/data_rate.h"
 #include "api/units/time_delta.h"
 #include "modules/congestion_controller/remb_throttler.h"
 #include "modules/pacing/packet_router.h"
 #include "modules/remote_bitrate_estimator/remote_estimator_proxy.h"
+#include "modules/rtp_rtcp/source/rtp_packet_received.h"
 #include "rtc_base/synchronization/mutex.h"
 #include "rtc_base/thread_annotations.h"
 
@@ -42,11 +42,7 @@ class ReceiveSideCongestionController : public CallStatsObserver {
 
   ~ReceiveSideCongestionController() override {}
 
-  virtual void OnReceivedPacket(int64_t arrival_time_ms,
-                                size_t payload_size,
-                                const RTPHeader& header);
-
-  void SetSendPeriodicFeedback(bool send_periodic_feedback);
+  void OnReceivedPacket(const RtpPacketReceived& packet, MediaType media_type);
 
   // Implements CallStatsObserver.
   void OnRttUpdate(int64_t avg_rtt_ms, int64_t max_rtt_ms) override;
@@ -73,12 +69,10 @@ class ReceiveSideCongestionController : public CallStatsObserver {
   TimeDelta MaybeProcess();
 
  private:
-  void PickEstimatorFromHeader(const RTPHeader& header)
+  void PickEstimator(bool has_absolute_send_time)
       RTC_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
-  void PickEstimator() RTC_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
 
   Clock& clock_;
-  const FieldTrialBasedConfig field_trial_config_;
   RembThrottler remb_throttler_;
   RemoteEstimatorProxy remote_estimator_proxy_;
 

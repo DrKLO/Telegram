@@ -8,21 +8,26 @@ bar:
 	# References to globals must be rewritten to their local targets.
 	call foo
 	jmp foo
+	notrack jmp foo
 	jbe foo
 	jne foo
+
+	# This also applies to symbols defined with .set
+	call foo1
+	call foo2
+	call foo3
 
 	# Jumps to PLT symbols are rewritten through redirectors.
 	call memcpy@PLT
 	jmp memcpy@PLT
+	notrack jmp memcpy@PLT
 	jbe memcpy@PLT
 
 	# Jumps to local PLT symbols use their local targets.
 	call foo@PLT
 	jmp foo@PLT
+	notrack jmp foo@PLT
 	jbe foo@PLT
-
-	# Synthesized symbols are treated as local ones.
-	call OPENSSL_ia32cap_get@PLT
 
 	# References to local labels are left as-is in the first file.
 .Llocal_label:
@@ -43,3 +48,16 @@ bar:
 	jmp 1f
 1:
 	jmp 1b
+2:
+
+	.quad 2b - 1b
+	.quad 2b - .L2
+
+	# .set directives should get local targets and have their references (above)
+	# rewritten.
+	.globl foo1
+	.globl foo2
+	.globl foo3
+	.set foo1, foo
+	.equ foo2, foo
+	.equiv foo3, foo

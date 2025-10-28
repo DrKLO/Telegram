@@ -16,33 +16,22 @@
 #include <string>
 
 #include "absl/strings/string_view.h"
-#include "api/transport/field_trial_based_config.h"
+#include "api/field_trials_view.h"
 #include "rtc_base/logging.h"
 
 namespace webrtc {
+namespace {
 
-const char AlrExperimentSettings::kScreenshareProbingBweExperimentName[] =
-    "WebRTC-ProbingScreenshareBwe";
-const char AlrExperimentSettings::kStrictPacingAndProbingExperimentName[] =
-    "WebRTC-StrictPacingAndProbing";
-const char kDefaultProbingScreenshareBweSettings[] = "1.0,2875,80,40,-60,3";
+constexpr absl::string_view kDefaultProbingScreenshareBweSettings =
+    "1.0,2875,80,40,-60,3";
 
-bool AlrExperimentSettings::MaxOneFieldTrialEnabled() {
-  return AlrExperimentSettings::MaxOneFieldTrialEnabled(
-      FieldTrialBasedConfig());
-}
+}  // namespace
 
 bool AlrExperimentSettings::MaxOneFieldTrialEnabled(
     const FieldTrialsView& key_value_config) {
   return key_value_config.Lookup(kStrictPacingAndProbingExperimentName)
              .empty() ||
          key_value_config.Lookup(kScreenshareProbingBweExperimentName).empty();
-}
-
-absl::optional<AlrExperimentSettings>
-AlrExperimentSettings::CreateFromFieldTrial(absl::string_view experiment_name) {
-  return AlrExperimentSettings::CreateFromFieldTrial(FieldTrialBasedConfig(),
-                                                     experiment_name);
 }
 
 absl::optional<AlrExperimentSettings>

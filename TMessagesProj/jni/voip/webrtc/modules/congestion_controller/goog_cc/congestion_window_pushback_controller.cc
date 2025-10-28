@@ -10,14 +10,12 @@
 
 #include "modules/congestion_controller/goog_cc/congestion_window_pushback_controller.h"
 
-#include <inttypes.h>
-#include <stdio.h>
-
 #include <algorithm>
-#include <string>
+#include <cstdint>
 
 #include "absl/strings/match.h"
-#include "rtc_base/checks.h"
+#include "api/field_trials_view.h"
+#include "api/units/data_size.h"
 #include "rtc_base/experiments/rate_control_settings.h"
 
 namespace webrtc {

@@ -14,11 +14,16 @@
 #include <stdint.h>
 #include <string.h>
 
+#include <cstddef>
+#include <cstdint>
+
+#include "api/array_view.h"
 #include "api/transport/stun.h"
+#include "api/units/timestamp.h"
 #include "rtc_base/byte_order.h"
 #include "rtc_base/checks.h"
+#include "rtc_base/network/received_packet.h"
 #include "rtc_base/network/sent_packet.h"
-#include "rtc_base/third_party/sigslot/sigslot.h"
 #include "rtc_base/time_utils.h"
 
 namespace cricket {
@@ -90,7 +95,7 @@ int AsyncStunTCPSocket::Send(const void* pv,
   return static_cast<int>(cb);
 }
 
-void AsyncStunTCPSocket::ProcessInput(char* data, size_t* len) {
+size_t AsyncStunTCPSocket::ProcessInput(rtc::ArrayView<const uint8_t> data) {
   rtc::SocketAddress remote_addr(GetRemoteAddress());
   // STUN packet - First 4 bytes. Total header size is 20 bytes.
   // +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -102,26 +107,27 @@ void AsyncStunTCPSocket::ProcessInput(char* data, size_t* len) {
   // |         Channel Number        |            Length             |
   // +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
+  size_t processed_bytes = 0;
   while (true) {
+    size_t bytes_left = data.size() - processed_bytes;
     // We need at least 4 bytes to read the STUN or ChannelData packet length.
-    if (*len < kPacketLenOffset + kPacketLenSize)
-      return;
+    if (bytes_left < kPacketLenOffset + kPacketLenSize)
+      return processed_bytes;
 
     int pad_bytes;
-    size_t expected_pkt_len = GetExpectedLength(data, *len, &pad_bytes);
+    size_t expected_pkt_len = GetExpectedLength(data.data() + processed_bytes,
+                                                bytes_left, &pad_bytes);
     size_t actual_length = expected_pkt_len + pad_bytes;
 
-    if (*len < actual_length) {
-      return;
+    if (bytes_left < actual_length) {
+      return processed_bytes;
     }
 
-    SignalReadPacket(this, data, expected_pkt_len, remote_addr,
-                     rtc::TimeMicros());
-
-    *len -= actual_length;
-    if (*len > 0) {
-      memmove(data, data + actual_length, *len);
-    }
+    rtc::ReceivedPacket received_packet(
+        data.subview(processed_bytes, expected_pkt_len), remote_addr,
+        webrtc::Timestamp::Micros(rtc::TimeMicros()));
+    NotifyPacketReceived(received_packet);
+    processed_bytes += actual_length;
   }
 }
 

@@ -1,17 +1,22 @@
 #! /usr/bin/env perl
 # Copyright 2009-2016 The OpenSSL Project Authors. All Rights Reserved.
 #
-# Licensed under the OpenSSL license (the "License").  You may not use
-# this file except in compliance with the License.  You can obtain a copy
-# in the file LICENSE in the source distribution or at
-# https://www.openssl.org/source/license.html
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 
 # ====================================================================
 # Written by Andy Polyakov <appro@openssl.org> for the OpenSSL
-# project. The module is, however, dual licensed under OpenSSL and
-# CRYPTOGAMS licenses depending on where you obtain it. For further
-# details see http://www.openssl.org/~appro/cryptogams/.
+# project.
 # ====================================================================
 #
 # This module implements support for Intel AES-NI extension. In
@@ -83,8 +88,7 @@ open OUT,">$output";
 
 &asm_init($ARGV[0]);
 
-&external_label("OPENSSL_ia32cap_P");
-&preprocessor_ifndef("NDEBUG")
+&preprocessor_ifdef("BORINGSSL_DISPATCH_TEST")
 &external_label("BORINGSSL_function_hit");
 &preprocessor_endif();
 &static_label("key_const");
@@ -2109,35 +2113,25 @@ if ($PREFIX eq $AESNI_PREFIX) {
 
 ######################################################################
 # Mechanical port from aesni-x86_64.pl.
-#
-# _aesni_set_encrypt_key is private interface,
-# input:
-#	"eax"	const unsigned char *userKey
-#	$rounds	int bits
-#	$key	AES_KEY *key
-# output:
-#	"eax"	return code
-#	$round	rounds
 
-&function_begin_B("_aesni_set_encrypt_key");
-	&push	("ebp");
+# int $PREFIX_set_encrypt_key_base (const unsigned char *userKey, int bits,
+#                                   AES_KEY *key)
+&function_begin_B("${PREFIX}_set_encrypt_key_base");
+	&record_function_hit(3);
+
+	&mov	("eax",&wparam(0));
+	&mov	($rounds,&wparam(1));
+	&mov	($key,&wparam(2));
 	&push	("ebx");
-	&test	("eax","eax");
-	&jz	(&label("bad_pointer"));
-	&test	($key,$key);
-	&jz	(&label("bad_pointer"));
 
 	&call	(&label("pic"));
 &set_label("pic");
 	&blindpop("ebx");
 	&lea	("ebx",&DWP(&label("key_const")."-".&label("pic"),"ebx"));
 
-	&picmeup("ebp","OPENSSL_ia32cap_P","ebx",&label("key_const"));
 	&movups	("xmm0",&QWP(0,"eax"));	# pull first 128 bits of *userKey
 	&xorps	("xmm4","xmm4");	# low dword of xmm4 is assumed 0
-	&mov	("ebp",&DWP(4,"ebp"));
 	&lea	($key,&DWP(16,$key));
-	&and	("ebp",1<<28|1<<11);	# AVX and XOP bits
 	&cmp	($rounds,256);
 	&je	(&label("14rounds"));
 	&cmp	($rounds,192);
@@ -2146,9 +2140,6 @@ if ($PREFIX eq $AESNI_PREFIX) {
 	&jne	(&label("bad_keybits"));
 
 &set_label("10rounds",16);
-	&cmp		("ebp",1<<28);
-	&je		(&label("10rounds_alt"));
-
 	&mov		($rounds,9);
 	&$movekey	(&QWP(-16,$key),"xmm0");	# round 0
 	&aeskeygenassist("xmm1","xmm0",0x01);		# round 1
@@ -2187,6 +2178,166 @@ if ($PREFIX eq $AESNI_PREFIX) {
 	&shufps		("xmm1","xmm1",0b11111111);	# critical path
 	&xorps		("xmm0","xmm1");
 	&ret();
+
+&set_label("12rounds",16);
+	&movq		("xmm2",&QWP(16,"eax"));	# remaining 1/3 of *userKey
+
+	&mov		($rounds,11);
+	&$movekey	(&QWP(-16,$key),"xmm0");	# round 0
+	&aeskeygenassist("xmm1","xmm2",0x01);		# round 1,2
+	&call		(&label("key_192a_cold"));
+	&aeskeygenassist("xmm1","xmm2",0x02);		# round 2,3
+	&call		(&label("key_192b"));
+	&aeskeygenassist("xmm1","xmm2",0x04);		# round 4,5
+	&call		(&label("key_192a"));
+	&aeskeygenassist("xmm1","xmm2",0x08);		# round 5,6
+	&call		(&label("key_192b"));
+	&aeskeygenassist("xmm1","xmm2",0x10);		# round 7,8
+	&call		(&label("key_192a"));
+	&aeskeygenassist("xmm1","xmm2",0x20);		# round 8,9
+	&call		(&label("key_192b"));
+	&aeskeygenassist("xmm1","xmm2",0x40);		# round 10,11
+	&call		(&label("key_192a"));
+	&aeskeygenassist("xmm1","xmm2",0x80);		# round 11,12
+	&call		(&label("key_192b"));
+	&$movekey	(&QWP(0,$key),"xmm0");
+	&mov		(&DWP(48,$key),$rounds);
+
+	&jmp	(&label("good_key"));
+
+&set_label("key_192a",16);
+	&$movekey	(&QWP(0,$key),"xmm0");
+	&lea		($key,&DWP(16,$key));
+&set_label("key_192a_cold",16);
+	&movaps		("xmm5","xmm2");
+&set_label("key_192b_warm");
+	&shufps		("xmm4","xmm0",0b00010000);
+	&movdqa		("xmm3","xmm2");
+	&xorps		("xmm0","xmm4");
+	&shufps		("xmm4","xmm0",0b10001100);
+	&pslldq		("xmm3",4);
+	&xorps		("xmm0","xmm4");
+	&pshufd		("xmm1","xmm1",0b01010101);	# critical path
+	&pxor		("xmm2","xmm3");
+	&pxor		("xmm0","xmm1");
+	&pshufd		("xmm3","xmm0",0b11111111);
+	&pxor		("xmm2","xmm3");
+	&ret();
+
+&set_label("key_192b",16);
+	&movaps		("xmm3","xmm0");
+	&shufps		("xmm5","xmm0",0b01000100);
+	&$movekey	(&QWP(0,$key),"xmm5");
+	&shufps		("xmm3","xmm2",0b01001110);
+	&$movekey	(&QWP(16,$key),"xmm3");
+	&lea		($key,&DWP(32,$key));
+	&jmp		(&label("key_192b_warm"));
+
+&set_label("14rounds",16);
+	&movups		("xmm2",&QWP(16,"eax"));	# remaining half of *userKey
+	&lea		($key,&DWP(16,$key));
+
+	&mov		($rounds,13);
+	&$movekey	(&QWP(-32,$key),"xmm0");	# round 0
+	&$movekey	(&QWP(-16,$key),"xmm2");	# round 1
+	&aeskeygenassist("xmm1","xmm2",0x01);		# round 2
+	&call		(&label("key_256a_cold"));
+	&aeskeygenassist("xmm1","xmm0",0x01);		# round 3
+	&call		(&label("key_256b"));
+	&aeskeygenassist("xmm1","xmm2",0x02);		# round 4
+	&call		(&label("key_256a"));
+	&aeskeygenassist("xmm1","xmm0",0x02);		# round 5
+	&call		(&label("key_256b"));
+	&aeskeygenassist("xmm1","xmm2",0x04);		# round 6
+	&call		(&label("key_256a"));
+	&aeskeygenassist("xmm1","xmm0",0x04);		# round 7
+	&call		(&label("key_256b"));
+	&aeskeygenassist("xmm1","xmm2",0x08);		# round 8
+	&call		(&label("key_256a"));
+	&aeskeygenassist("xmm1","xmm0",0x08);		# round 9
+	&call		(&label("key_256b"));
+	&aeskeygenassist("xmm1","xmm2",0x10);		# round 10
+	&call		(&label("key_256a"));
+	&aeskeygenassist("xmm1","xmm0",0x10);		# round 11
+	&call		(&label("key_256b"));
+	&aeskeygenassist("xmm1","xmm2",0x20);		# round 12
+	&call		(&label("key_256a"));
+	&aeskeygenassist("xmm1","xmm0",0x20);		# round 13
+	&call		(&label("key_256b"));
+	&aeskeygenassist("xmm1","xmm2",0x40);		# round 14
+	&call		(&label("key_256a"));
+	&$movekey	(&QWP(0,$key),"xmm0");
+	&mov		(&DWP(16,$key),$rounds);
+	&xor		("eax","eax");
+
+	&jmp	(&label("good_key"));
+
+&set_label("key_256a",16);
+	&$movekey	(&QWP(0,$key),"xmm2");
+	&lea		($key,&DWP(16,$key));
+&set_label("key_256a_cold");
+	&shufps		("xmm4","xmm0",0b00010000);
+	&xorps		("xmm0","xmm4");
+	&shufps		("xmm4","xmm0",0b10001100);
+	&xorps		("xmm0","xmm4");
+	&shufps		("xmm1","xmm1",0b11111111);	# critical path
+	&xorps		("xmm0","xmm1");
+	&ret();
+
+&set_label("key_256b",16);
+	&$movekey	(&QWP(0,$key),"xmm0");
+	&lea		($key,&DWP(16,$key));
+
+	&shufps		("xmm4","xmm2",0b00010000);
+	&xorps		("xmm2","xmm4");
+	&shufps		("xmm4","xmm2",0b10001100);
+	&xorps		("xmm2","xmm4");
+	&shufps		("xmm1","xmm1",0b10101010);	# critical path
+	&xorps		("xmm2","xmm1");
+	&ret();
+
+&set_label("good_key");
+	&pxor	("xmm0","xmm0");
+	&pxor	("xmm1","xmm1");
+	&pxor	("xmm2","xmm2");
+	&pxor	("xmm3","xmm3");
+	&pxor	("xmm4","xmm4");
+	&pxor	("xmm5","xmm5");
+	&xor	("eax","eax");
+	&pop	("ebx");
+	&ret	();
+
+&set_label("bad_keybits",4);
+	&pxor	("xmm0","xmm0");
+	&mov	("eax",-2);
+	&pop	("ebx");
+	&ret	();
+&function_end_B("${PREFIX}_set_encrypt_key_base");
+
+# int $PREFIX_set_encrypt_key_alt (const unsigned char *userKey, int bits,
+#                                  AES_KEY *key)
+&function_begin_B("${PREFIX}_set_encrypt_key_alt");
+	&record_function_hit(3);
+
+	&mov	("eax",&wparam(0));
+	&mov	($rounds,&wparam(1));
+	&mov	($key,&wparam(2));
+	&push	("ebx");
+
+	&call	(&label("pic"));
+&set_label("pic");
+	&blindpop("ebx");
+	&lea	("ebx",&DWP(&label("key_const")."-".&label("pic"),"ebx"));
+
+	&movups	("xmm0",&QWP(0,"eax"));	# pull first 128 bits of *userKey
+	&xorps	("xmm4","xmm4");	# low dword of xmm4 is assumed 0
+	&lea	($key,&DWP(16,$key));
+	&cmp	($rounds,256);
+	&je	(&label("14rounds_alt"));
+	&cmp	($rounds,192);
+	&je	(&label("12rounds_alt"));
+	&cmp	($rounds,128);
+	&jne	(&label("bad_keybits"));
 
 &set_label("10rounds_alt",16);
 	&movdqa		("xmm5",&QWP(0x00,"ebx"));
@@ -2253,63 +2404,8 @@ if ($PREFIX eq $AESNI_PREFIX) {
 
 	&jmp	(&label("good_key"));
 
-&set_label("12rounds",16);
-	&movq		("xmm2",&QWP(16,"eax"));	# remaining 1/3 of *userKey
-	&cmp		("ebp",1<<28);
-	&je		(&label("12rounds_alt"));
-
-	&mov		($rounds,11);
-	&$movekey	(&QWP(-16,$key),"xmm0");	# round 0
-	&aeskeygenassist("xmm1","xmm2",0x01);		# round 1,2
-	&call		(&label("key_192a_cold"));
-	&aeskeygenassist("xmm1","xmm2",0x02);		# round 2,3
-	&call		(&label("key_192b"));
-	&aeskeygenassist("xmm1","xmm2",0x04);		# round 4,5
-	&call		(&label("key_192a"));
-	&aeskeygenassist("xmm1","xmm2",0x08);		# round 5,6
-	&call		(&label("key_192b"));
-	&aeskeygenassist("xmm1","xmm2",0x10);		# round 7,8
-	&call		(&label("key_192a"));
-	&aeskeygenassist("xmm1","xmm2",0x20);		# round 8,9
-	&call		(&label("key_192b"));
-	&aeskeygenassist("xmm1","xmm2",0x40);		# round 10,11
-	&call		(&label("key_192a"));
-	&aeskeygenassist("xmm1","xmm2",0x80);		# round 11,12
-	&call		(&label("key_192b"));
-	&$movekey	(&QWP(0,$key),"xmm0");
-	&mov		(&DWP(48,$key),$rounds);
-
-	&jmp	(&label("good_key"));
-
-&set_label("key_192a",16);
-	&$movekey	(&QWP(0,$key),"xmm0");
-	&lea		($key,&DWP(16,$key));
-&set_label("key_192a_cold",16);
-	&movaps		("xmm5","xmm2");
-&set_label("key_192b_warm");
-	&shufps		("xmm4","xmm0",0b00010000);
-	&movdqa		("xmm3","xmm2");
-	&xorps		("xmm0","xmm4");
-	&shufps		("xmm4","xmm0",0b10001100);
-	&pslldq		("xmm3",4);
-	&xorps		("xmm0","xmm4");
-	&pshufd		("xmm1","xmm1",0b01010101);	# critical path
-	&pxor		("xmm2","xmm3");
-	&pxor		("xmm0","xmm1");
-	&pshufd		("xmm3","xmm0",0b11111111);
-	&pxor		("xmm2","xmm3");
-	&ret();
-
-&set_label("key_192b",16);
-	&movaps		("xmm3","xmm0");
-	&shufps		("xmm5","xmm0",0b01000100);
-	&$movekey	(&QWP(0,$key),"xmm5");
-	&shufps		("xmm3","xmm2",0b01001110);
-	&$movekey	(&QWP(16,$key),"xmm3");
-	&lea		($key,&DWP(32,$key));
-	&jmp		(&label("key_192b_warm"));
-
 &set_label("12rounds_alt",16);
+	&movq		("xmm2",&QWP(16,"eax"));	# remaining 1/3 of *userKey
 	&movdqa		("xmm5",&QWP(0x10,"ebx"));
 	&movdqa		("xmm4",&QWP(0x20,"ebx"));
 	&mov		($rounds,8);
@@ -2348,72 +2444,9 @@ if ($PREFIX eq $AESNI_PREFIX) {
 
 	&jmp	(&label("good_key"));
 
-&set_label("14rounds",16);
+&set_label("14rounds_alt",16);
 	&movups		("xmm2",&QWP(16,"eax"));	# remaining half of *userKey
 	&lea		($key,&DWP(16,$key));
-	&cmp		("ebp",1<<28);
-	&je		(&label("14rounds_alt"));
-
-	&mov		($rounds,13);
-	&$movekey	(&QWP(-32,$key),"xmm0");	# round 0
-	&$movekey	(&QWP(-16,$key),"xmm2");	# round 1
-	&aeskeygenassist("xmm1","xmm2",0x01);		# round 2
-	&call		(&label("key_256a_cold"));
-	&aeskeygenassist("xmm1","xmm0",0x01);		# round 3
-	&call		(&label("key_256b"));
-	&aeskeygenassist("xmm1","xmm2",0x02);		# round 4
-	&call		(&label("key_256a"));
-	&aeskeygenassist("xmm1","xmm0",0x02);		# round 5
-	&call		(&label("key_256b"));
-	&aeskeygenassist("xmm1","xmm2",0x04);		# round 6
-	&call		(&label("key_256a"));
-	&aeskeygenassist("xmm1","xmm0",0x04);		# round 7
-	&call		(&label("key_256b"));
-	&aeskeygenassist("xmm1","xmm2",0x08);		# round 8
-	&call		(&label("key_256a"));
-	&aeskeygenassist("xmm1","xmm0",0x08);		# round 9
-	&call		(&label("key_256b"));
-	&aeskeygenassist("xmm1","xmm2",0x10);		# round 10
-	&call		(&label("key_256a"));
-	&aeskeygenassist("xmm1","xmm0",0x10);		# round 11
-	&call		(&label("key_256b"));
-	&aeskeygenassist("xmm1","xmm2",0x20);		# round 12
-	&call		(&label("key_256a"));
-	&aeskeygenassist("xmm1","xmm0",0x20);		# round 13
-	&call		(&label("key_256b"));
-	&aeskeygenassist("xmm1","xmm2",0x40);		# round 14
-	&call		(&label("key_256a"));
-	&$movekey	(&QWP(0,$key),"xmm0");
-	&mov		(&DWP(16,$key),$rounds);
-	&xor		("eax","eax");
-
-	&jmp	(&label("good_key"));
-
-&set_label("key_256a",16);
-	&$movekey	(&QWP(0,$key),"xmm2");
-	&lea		($key,&DWP(16,$key));
-&set_label("key_256a_cold");
-	&shufps		("xmm4","xmm0",0b00010000);
-	&xorps		("xmm0","xmm4");
-	&shufps		("xmm4","xmm0",0b10001100);
-	&xorps		("xmm0","xmm4");
-	&shufps		("xmm1","xmm1",0b11111111);	# critical path
-	&xorps		("xmm0","xmm1");
-	&ret();
-
-&set_label("key_256b",16);
-	&$movekey	(&QWP(0,$key),"xmm0");
-	&lea		($key,&DWP(16,$key));
-
-	&shufps		("xmm4","xmm2",0b00010000);
-	&xorps		("xmm2","xmm4");
-	&shufps		("xmm4","xmm2",0b10001100);
-	&xorps		("xmm2","xmm4");
-	&shufps		("xmm1","xmm1",0b10101010);	# critical path
-	&xorps		("xmm2","xmm1");
-	&ret();
-
-&set_label("14rounds_alt",16);
 	&movdqa		("xmm5",&QWP(0x00,"ebx"));
 	&movdqa		("xmm4",&QWP(0x20,"ebx"));
 	&mov		($rounds,7);
@@ -2471,45 +2504,20 @@ if ($PREFIX eq $AESNI_PREFIX) {
 	&pxor	("xmm5","xmm5");
 	&xor	("eax","eax");
 	&pop	("ebx");
-	&pop	("ebp");
 	&ret	();
 
-&set_label("bad_pointer",4);
-	&mov	("eax",-1);
-	&pop	("ebx");
-	&pop	("ebp");
-	&ret	();
 &set_label("bad_keybits",4);
 	&pxor	("xmm0","xmm0");
 	&mov	("eax",-2);
 	&pop	("ebx");
-	&pop	("ebp");
 	&ret	();
-&function_end_B("_aesni_set_encrypt_key");
+&function_end_B("${PREFIX}_set_encrypt_key_alt");
 
-# int $PREFIX_set_encrypt_key (const unsigned char *userKey, int bits,
-#                              AES_KEY *key)
-&function_begin_B("${PREFIX}_set_encrypt_key");
-	&record_function_hit(3);
-
-	&mov	("eax",&wparam(0));
-	&mov	($rounds,&wparam(1));
-	&mov	($key,&wparam(2));
-	&call	("_aesni_set_encrypt_key");
-	&ret	();
-&function_end_B("${PREFIX}_set_encrypt_key");
-
-# int $PREFIX_set_decrypt_key (const unsigned char *userKey, int bits,
-#                              AES_KEY *key)
-&function_begin_B("${PREFIX}_set_decrypt_key");
-	&mov	("eax",&wparam(0));
-	&mov	($rounds,&wparam(1));
-	&mov	($key,&wparam(2));
-	&call	("_aesni_set_encrypt_key");
-	&mov	($key,&wparam(2));
-	&shl	($rounds,4);	# rounds-1 after _aesni_set_encrypt_key
-	&test	("eax","eax");
-	&jnz	(&label("dec_key_ret"));
+# void $PREFIX_encrypt_key_to_decrypt_key (AES_KEY *key)
+&function_begin_B("${PREFIX}_encrypt_key_to_decrypt_key");
+	&mov	($key,&wparam(0));
+	&mov	($rounds,&DWP(240,$key));
+	&shl	($rounds,4);
 	&lea	("eax",&DWP(16,$key,$rounds));	# end of key schedule
 
 	&$movekey	("xmm0",&QWP(0,$key));	# just swap
@@ -2537,10 +2545,8 @@ if ($PREFIX eq $AESNI_PREFIX) {
 
 	&pxor		("xmm0","xmm0");
 	&pxor		("xmm1","xmm1");
-	&xor		("eax","eax");		# return success
-&set_label("dec_key_ret");
 	&ret	();
-&function_end_B("${PREFIX}_set_decrypt_key");
+&function_end_B("${PREFIX}_encrypt_key_to_decrypt_key");
 
 &set_label("key_const",64);
 &data_word(0x0c0f0e0d,0x0c0f0e0d,0x0c0f0e0d,0x0c0f0e0d);
@@ -2551,4 +2557,4 @@ if ($PREFIX eq $AESNI_PREFIX) {
 
 &asm_finish();
 
-close STDOUT or die "error closing STDOUT";
+close STDOUT or die "error closing STDOUT: $!";

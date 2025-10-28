@@ -14,7 +14,16 @@
 
 #include "absl/strings/str_replace.h"
 
+#include <cstddef>
+#include <initializer_list>
+#include <string>
+#include <utility>
+#include <vector>
+
+#include "absl/base/config.h"
+#include "absl/base/nullability.h"
 #include "absl/strings/str_cat.h"
+#include "absl/strings/string_view.h"
 
 namespace absl {
 ABSL_NAMESPACE_BEGIN
@@ -28,8 +37,8 @@ using FixedMapping =
 // occurred.
 int ApplySubstitutions(
     absl::string_view s,
-    std::vector<strings_internal::ViableSubstitution>* subs_ptr,
-    std::string* result_ptr) {
+    absl::Nonnull<std::vector<strings_internal::ViableSubstitution>*> subs_ptr,
+    absl::Nonnull<std::string*> result_ptr) {
   auto& subs = *subs_ptr;
   int substitutions = 0;
   size_t pos = 0;
@@ -74,7 +83,7 @@ std::string StrReplaceAll(absl::string_view s,
 }
 
 int StrReplaceAll(strings_internal::FixedMapping replacements,
-                  std::string* target) {
+                  absl::Nonnull<std::string*> target) {
   return StrReplaceAll<strings_internal::FixedMapping>(replacements, target);
 }
 

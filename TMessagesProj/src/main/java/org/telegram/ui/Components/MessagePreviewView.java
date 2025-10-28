@@ -489,8 +489,8 @@ public class MessagePreviewView extends FrameLayout {
 
                                 int left = (cell.getLeft() + cell.getBackgroundDrawableLeft());
                                 int right = (cell.getLeft() + cell.getBackgroundDrawableRight());
-                                int top = (cell.getTop() + cell.getBackgroundDrawableTop());
-                                int bottom = (cell.getTop() + cell.getBackgroundDrawableBottom());
+                                int top = (cell.getTop() + cell.getPaddingTop() + cell.getBackgroundDrawableTop());
+                                int bottom = (cell.getTop() + cell.getPaddingTop() + cell.getBackgroundDrawableBottom());
 
                                 if ((cell.getCurrentPosition().flags & MessageObject.POSITION_FLAG_TOP) == 0) {
                                     top -= dp(10);
@@ -906,7 +906,7 @@ public class MessagePreviewView extends FrameLayout {
                     menu.addView(btn1, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48));
                 }
 
-                if (!messagePreviewParams.noforwards && !messagePreviewParams.hasSecretMessages) {
+                if (!messagePreviewParams.monoforum && !messagePreviewParams.noforwards && !messagePreviewParams.hasSecretMessages) {
                     FrameLayout btn2 = new FrameLayout(context);
                     replyAnotherChatButton = new ActionBarMenuSubItem(context, true, false, false, resourcesProvider);
                     replyAnotherChatButton.setTextAndIcon(LocaleController.getString(R.string.ReplyToAnotherChat), R.drawable.msg_forward_replace);
@@ -1415,7 +1415,7 @@ public class MessagePreviewView extends FrameLayout {
                 } else {
                     minTop -= dp(4);
                     chatTopOffset = Math.max(0, minTop);
-                    chatTopOffset = Math.min((chatTopOffset + (chatListView.getMeasuredHeight() - chatTopOffset)) - (int) (AndroidUtilities.displaySize.y * .8f - buttonsHeight - dp(8)), chatTopOffset);
+                    chatTopOffset = Math.min((chatTopOffset + (chatListView.getMeasuredHeight() - chatTopOffset)) - (int) ((AndroidUtilities.displaySize.y - (Build.VERSION.SDK_INT >= 35 ? AndroidUtilities.navigationBarHeight: 0)) * .8f - buttonsHeight - dp(8)), chatTopOffset);
                 }
 
                 float totalViewsHeight = buttonsHeight - dp(8) + (chatPreviewContainer.getMeasuredHeight() - chatTopOffset);
@@ -1511,8 +1511,8 @@ public class MessagePreviewView extends FrameLayout {
                     }
 
                     @Override
-                    public void setMessageObject(MessageObject messageObject, MessageObject.GroupedMessages groupedMessages, boolean bottomNear, boolean topNear) {
-                        super.setMessageObject(messageObject, groupedMessages, bottomNear, topNear);
+                    public void setMessageObject(MessageObject messageObject, MessageObject.GroupedMessages groupedMessages, boolean bottomNear, boolean topNear, boolean firstInChat, boolean lastInChatList) {
+                        super.setMessageObject(messageObject, groupedMessages, bottomNear, topNear, firstInChat, lastInChatList);
                         updateLinkHighlight(this);
                     }
 
@@ -1595,7 +1595,7 @@ public class MessagePreviewView extends FrameLayout {
                 if (currentTab == TAB_LINK) {
                     messagePreviewParams.checkCurrentLink(messages.previewMessages.get(position));
                 }
-                cell.setMessageObject(messages.previewMessages.get(position), messages.groupedMessagesMap.get(messages.previewMessages.get(position).getGroupId()), true, true);
+                cell.setMessageObject(messages.previewMessages.get(position), messages.groupedMessagesMap.get(messages.previewMessages.get(position).getGroupId()), true, true, false);
                 if (currentTab == TAB_FORWARD) {
                     cell.setDelegate(new ChatMessageCell.ChatMessageCellDelegate() {
 
@@ -1737,7 +1737,7 @@ public class MessagePreviewView extends FrameLayout {
 
         viewPager = new ViewPagerFixed(context, resourcesProvider) {
             @Override
-            protected void onTabAnimationUpdate(boolean manual) {
+            public void onTabAnimationUpdate(boolean manual) {
                 MessagePreviewView.this.tabsView.setSelectedTab(viewPager.getPositionAnimated());
 
                 if (viewPages[0] instanceof Page) {
@@ -1917,7 +1917,7 @@ public class MessagePreviewView extends FrameLayout {
 
     }
 
-    private static class TabsView extends View {
+    public static class TabsView extends View {
         private static class Tab {
             final int id;
             final Text text;
@@ -1963,6 +1963,10 @@ public class MessagePreviewView extends FrameLayout {
                 selectedColor = Theme.adaptHue(0xe5434e3b, wallpaperColor);
                 bgPaint.setColor(Theme.adaptHue(0x30939C78, wallpaperColor));
             }
+        }
+
+        public int getColor() {
+            return color;
         }
 
         public boolean containsTab(int id) {

@@ -1,114 +1,17 @@
-/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
- * All rights reserved.
- *
- * This package is an SSL implementation written
- * by Eric Young (eay@cryptsoft.com).
- * The implementation was written so as to conform with Netscapes SSL.
- *
- * This library is free for commercial and non-commercial use as long as
- * the following conditions are aheared to.  The following conditions
- * apply to all code found in this distribution, be it the RC4, RSA,
- * lhash, DES, etc., code; not just the SSL code.  The SSL documentation
- * included with this distribution is covered by the same copyright terms
- * except that the holder is Tim Hudson (tjh@cryptsoft.com).
- *
- * Copyright remains Eric Young's, and as such any Copyright notices in
- * the code are not to be removed.
- * If this package is used in a product, Eric Young should be given attribution
- * as the author of the parts of the library used.
- * This can be in the form of a textual message at program startup or
- * in documentation (online or textual) provided with the package.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- * 1. Redistributions of source code must retain the copyright
- *    notice, this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
- * 3. All advertising materials mentioning features or use of this software
- *    must display the following acknowledgement:
- *    "This product includes cryptographic software written by
- *     Eric Young (eay@cryptsoft.com)"
- *    The word 'cryptographic' can be left out if the rouines from the library
- *    being used are not cryptographic related :-).
- * 4. If you include any Windows specific code (or a derivative thereof) from
- *    the apps directory (application code) you must include an acknowledgement:
- *    "This product includes software written by Tim Hudson (tjh@cryptsoft.com)"
- *
- * THIS SOFTWARE IS PROVIDED BY ERIC YOUNG ``AS IS'' AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
- * SUCH DAMAGE.
- *
- * The licence and distribution terms for any publically available version or
- * derivative of this code cannot be changed.  i.e. this code cannot simply be
- * copied and put under another distribution licence
- * [including the GNU Public Licence.]
- */
-/* ====================================================================
- * Copyright (c) 1998-2002 The OpenSSL Project.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- *
- * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- *
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- *
- * 3. All advertising materials mentioning features or use of this
- *    software must display the following acknowledgment:
- *    "This product includes software developed by the OpenSSL Project
- *    for use in the OpenSSL Toolkit. (http://www.openssl.org/)"
- *
- * 4. The names "OpenSSL Toolkit" and "OpenSSL Project" must not be used to
- *    endorse or promote products derived from this software without
- *    prior written permission. For written permission, please contact
- *    openssl-core@openssl.org.
- *
- * 5. Products derived from this software may not be called "OpenSSL"
- *    nor may "OpenSSL" appear in their names without prior written
- *    permission of the OpenSSL Project.
- *
- * 6. Redistributions of any form whatsoever must retain the following
- *    acknowledgment:
- *    "This product includes software developed by the OpenSSL Project
- *    for use in the OpenSSL Toolkit (http://www.openssl.org/)"
- *
- * THIS SOFTWARE IS PROVIDED BY THE OpenSSL PROJECT ``AS IS'' AND ANY
- * EXPRESSED OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
- * PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE OpenSSL PROJECT OR
- * ITS CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
- * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
- * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
- * OF THE POSSIBILITY OF SUCH DAMAGE.
- * ====================================================================
- *
- * This product includes cryptographic software written by Eric Young
- * (eay@cryptsoft.com).  This product includes software written by Tim
- * Hudson (tjh@cryptsoft.com). */
-/* ====================================================================
- * Copyright 2002 Sun Microsystems, Inc. ALL RIGHTS RESERVED.
- * ECC cipher suite support in OpenSSL originally developed by
- * SUN MICROSYSTEMS, INC., and contributed to the OpenSSL project. */
+// Copyright 1995-2016 The OpenSSL Project Authors. All Rights Reserved.
+// Copyright (c) 2002, Oracle and/or its affiliates. All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 #include <openssl/ssl.h>
 
@@ -126,42 +29,71 @@ BSSL_NAMESPACE_BEGIN
 
 SSL_HANDSHAKE::SSL_HANDSHAKE(SSL *ssl_arg)
     : ssl(ssl_arg),
+      transcript(SSL_is_dtls(ssl_arg)),
+      inner_transcript(SSL_is_dtls(ssl_arg)),
+      ech_is_inner(false),
+      ech_authenticated_reject(false),
       scts_requested(false),
-      needs_psk_binder(false),
-      received_hello_retry_request(false),
-      sent_hello_retry_request(false),
       handshake_finalized(false),
       accept_psk_mode(false),
       cert_request(false),
       certificate_status_expected(false),
       ocsp_stapling_requested(false),
-      delegated_credential_requested(false),
       should_ack_sni(false),
       in_false_start(false),
       in_early_data(false),
       early_data_offered(false),
       can_early_read(false),
       can_early_write(false),
+      is_early_version(false),
       next_proto_neg_seen(false),
       ticket_expected(false),
       extended_master_secret(false),
       pending_private_key_op(false),
-      grease_seeded(false),
       handback(false),
+      hints_requested(false),
       cert_compression_negotiated(false),
-      apply_jdk11_workaround(false) {
+      apply_jdk11_workaround(false),
+      can_release_private_key(false),
+      channel_id_negotiated(false),
+      received_hello_verify_request(false),
+      matched_peer_trust_anchor(false),
+      peer_matched_trust_anchor(false) {
   assert(ssl);
+
+  // Draw entropy for all GREASE values at once. This avoids calling
+  // |RAND_bytes| repeatedly and makes the values consistent within a
+  // connection. The latter is so the second ClientHello matches after
+  // HelloRetryRequest and so supported_groups and key_shares are consistent.
+  RAND_bytes(grease_seed, sizeof(grease_seed));
 }
 
 SSL_HANDSHAKE::~SSL_HANDSHAKE() {
   ssl->ctx->x509_method->hs_flush_cached_ca_names(this);
 }
 
-void SSL_HANDSHAKE::ResizeSecrets(size_t hash_len) {
-  if (hash_len > SSL_MAX_MD_SIZE) {
-    abort();
+bool SSL_HANDSHAKE::GetClientHello(SSLMessage *out_msg,
+                                   SSL_CLIENT_HELLO *out_client_hello) {
+  if (!ech_client_hello_buf.empty()) {
+    // If the backing buffer is non-empty, the ClientHelloInner has been set.
+    out_msg->is_v2_hello = false;
+    out_msg->type = SSL3_MT_CLIENT_HELLO;
+    out_msg->raw = CBS(ech_client_hello_buf);
+    size_t header_len =
+        SSL_is_dtls(ssl) ? DTLS1_HM_HEADER_LENGTH : SSL3_HM_HEADER_LENGTH;
+    out_msg->body = CBS(Span(ech_client_hello_buf).subspan(header_len));
+  } else if (!ssl->method->get_message(ssl, out_msg)) {
+    // The message has already been read, so this cannot fail.
+    OPENSSL_PUT_ERROR(SSL, ERR_R_INTERNAL_ERROR);
+    return false;
   }
-  hash_len_ = hash_len;
+
+  if (!SSL_parse_client_hello(ssl, out_client_hello, CBS_data(&out_msg->body),
+                              CBS_len(&out_msg->body))) {
+    ssl_send_alert(ssl, SSL3_AL_FATAL, SSL_AD_DECODE_ERROR);
+    return false;
+  }
+  return true;
 }
 
 UniquePtr<SSL_HANDSHAKE> ssl_handshake_new(SSL *ssl) {
@@ -237,13 +169,16 @@ bool ssl_hash_message(SSL_HANDSHAKE *hs, const SSLMessage &msg) {
   return hs->transcript.Update(msg.raw);
 }
 
-int ssl_parse_extensions(const CBS *cbs, uint8_t *out_alert,
-                         const SSL_EXTENSION_TYPE *ext_types,
-                         size_t num_ext_types, int ignore_unknown) {
+bool ssl_parse_extensions(const CBS *cbs, uint8_t *out_alert,
+                          std::initializer_list<SSLExtension *> extensions,
+                          bool ignore_unknown) {
   // Reset everything.
-  for (size_t i = 0; i < num_ext_types; i++) {
-    *ext_types[i].out_present = 0;
-    CBS_init(ext_types[i].out_data, NULL, 0);
+  for (SSLExtension *ext : extensions) {
+    ext->present = false;
+    CBS_init(&ext->data, nullptr, 0);
+    if (!ext->allowed) {
+      assert(!ignore_unknown);
+    }
   }
 
   CBS copy = *cbs;
@@ -254,38 +189,39 @@ int ssl_parse_extensions(const CBS *cbs, uint8_t *out_alert,
         !CBS_get_u16_length_prefixed(&copy, &data)) {
       OPENSSL_PUT_ERROR(SSL, SSL_R_PARSE_TLSEXT);
       *out_alert = SSL_AD_DECODE_ERROR;
-      return 0;
+      return false;
     }
 
-    const SSL_EXTENSION_TYPE *ext_type = NULL;
-    for (size_t i = 0; i < num_ext_types; i++) {
-      if (type == ext_types[i].type) {
-        ext_type = &ext_types[i];
+    SSLExtension *found = nullptr;
+    for (SSLExtension *ext : extensions) {
+      if (type == ext->type && ext->allowed) {
+        found = ext;
         break;
       }
     }
 
-    if (ext_type == NULL) {
+    if (found == nullptr) {
       if (ignore_unknown) {
         continue;
       }
       OPENSSL_PUT_ERROR(SSL, SSL_R_UNEXPECTED_EXTENSION);
+      ERR_add_error_dataf("extension %u", unsigned{type});
       *out_alert = SSL_AD_UNSUPPORTED_EXTENSION;
-      return 0;
+      return false;
     }
 
     // Duplicate ext_types are forbidden.
-    if (*ext_type->out_present) {
+    if (found->present) {
       OPENSSL_PUT_ERROR(SSL, SSL_R_DUPLICATE_EXTENSION);
       *out_alert = SSL_AD_ILLEGAL_PARAMETER;
-      return 0;
+      return false;
     }
 
-    *ext_type->out_present = 1;
-    *ext_type->out_data = data;
+    found->present = true;
+    found->data = data;
   }
 
-  return 1;
+  return true;
 }
 
 enum ssl_verify_result_t ssl_verify_peer_cert(SSL_HANDSHAKE *hs) {
@@ -310,10 +246,8 @@ enum ssl_verify_result_t ssl_verify_peer_cert(SSL_HANDSHAKE *hs) {
           sk_CRYPTO_BUFFER_value(prev_session->certs.get(), i);
       const CRYPTO_BUFFER *new_cert =
           sk_CRYPTO_BUFFER_value(hs->new_session->certs.get(), i);
-      if (CRYPTO_BUFFER_len(old_cert) != CRYPTO_BUFFER_len(new_cert) ||
-          OPENSSL_memcmp(CRYPTO_BUFFER_data(old_cert),
-                         CRYPTO_BUFFER_data(new_cert),
-                         CRYPTO_BUFFER_len(old_cert)) != 0) {
+      if (Span(CRYPTO_BUFFER_data(old_cert), CRYPTO_BUFFER_len(old_cert)) !=
+          Span(CRYPTO_BUFFER_data(new_cert), CRYPTO_BUFFER_len(new_cert))) {
         OPENSSL_PUT_ERROR(SSL, SSL_R_SERVER_CERT_CHANGED);
         ssl_send_alert(ssl, SSL3_AL_FATAL, SSL_AD_ILLEGAL_PARAMETER);
         return ssl_verify_invalid;
@@ -388,7 +322,8 @@ enum ssl_verify_result_t ssl_verify_peer_cert(SSL_HANDSHAKE *hs) {
 // SSL_VERIFY_NONE
 // 3. We don't call the OCSP callback.
 // 4. We only support custom verify callbacks.
-enum ssl_verify_result_t ssl_reverify_peer_cert(SSL_HANDSHAKE *hs) {
+enum ssl_verify_result_t ssl_reverify_peer_cert(SSL_HANDSHAKE *hs,
+                                                bool send_alert) {
   SSL *const ssl = hs->ssl;
   assert(ssl->s3->established_session == nullptr);
   assert(hs->config->verify_mode != SSL_VERIFY_NONE);
@@ -401,27 +336,33 @@ enum ssl_verify_result_t ssl_reverify_peer_cert(SSL_HANDSHAKE *hs) {
 
   if (ret == ssl_verify_invalid) {
     OPENSSL_PUT_ERROR(SSL, SSL_R_CERTIFICATE_VERIFY_FAILED);
-    ssl_send_alert(ssl, SSL3_AL_FATAL, alert);
+    if (send_alert) {
+      ssl_send_alert(ssl, SSL3_AL_FATAL, alert);
+    }
   }
 
   return ret;
 }
 
-uint16_t ssl_get_grease_value(SSL_HANDSHAKE *hs,
-                              enum ssl_grease_index_t index) {
-  // Draw entropy for all GREASE values at once. This avoids calling
-  // |RAND_bytes| repeatedly and makes the values consistent within a
-  // connection. The latter is so the second ClientHello matches after
-  // HelloRetryRequest and so supported_groups and key_shares are consistent.
-  if (!hs->grease_seeded) {
-    RAND_bytes(hs->grease_seed, sizeof(hs->grease_seed));
-    hs->grease_seeded = true;
-  }
-
+static uint16_t grease_index_to_value(const SSL_HANDSHAKE *hs,
+                                      enum ssl_grease_index_t index) {
   // This generates a random value of the form 0xωaωa, for all 0 ≤ ω < 16.
   uint16_t ret = hs->grease_seed[index];
   ret = (ret & 0xf0) | 0x0a;
   ret |= ret << 8;
+  return ret;
+}
+
+uint16_t ssl_get_grease_value(const SSL_HANDSHAKE *hs,
+                              enum ssl_grease_index_t index) {
+  uint16_t ret = grease_index_to_value(hs, index);
+  if (index == ssl_grease_extension2 &&
+      ret == grease_index_to_value(hs, ssl_grease_extension1)) {
+    // The two fake extensions must not have the same value. GREASE values are
+    // of the form 0x1a1a, 0x2a2a, 0x3a3a, etc., so XOR to generate a different
+    // one.
+    ret ^= 0x1010;
+  }
   return ret;
 }
 
@@ -440,15 +381,15 @@ enum ssl_hs_wait_t ssl_get_finished(SSL_HANDSHAKE *hs) {
   uint8_t finished[EVP_MAX_MD_SIZE];
   size_t finished_len;
   if (!hs->transcript.GetFinishedMAC(finished, &finished_len,
-                                     SSL_get_session(ssl), !ssl->server) ||
+                                     ssl_handshake_session(hs), !ssl->server) ||
       !ssl_hash_message(hs, msg)) {
     return ssl_hs_error;
   }
 
-  int finished_ok = CBS_mem_equal(&msg.body, finished, finished_len);
-#if defined(BORINGSSL_UNSAFE_FUZZER_MODE)
-  finished_ok = 1;
-#endif
+  bool finished_ok = CBS_mem_equal(&msg.body, finished, finished_len);
+  if (CRYPTO_fuzzer_mode_enabled()) {
+    finished_ok = true;
+  }
   if (!finished_ok) {
     ssl_send_alert(ssl, SSL3_AL_FATAL, SSL_AD_DECRYPT_ERROR);
     OPENSSL_PUT_ERROR(SSL, SSL_R_DIGEST_CHECK_FAILED);
@@ -456,18 +397,23 @@ enum ssl_hs_wait_t ssl_get_finished(SSL_HANDSHAKE *hs) {
   }
 
   // Copy the Finished so we can use it for renegotiation checks.
-  if (finished_len > sizeof(ssl->s3->previous_client_finished) ||
-      finished_len > sizeof(ssl->s3->previous_server_finished)) {
+  if (finished_len > ssl->s3->previous_client_finished.capacity() ||
+      finished_len > ssl->s3->previous_server_finished.capacity()) {
     OPENSSL_PUT_ERROR(SSL, ERR_R_INTERNAL_ERROR);
     return ssl_hs_error;
   }
 
   if (ssl->server) {
-    OPENSSL_memcpy(ssl->s3->previous_client_finished, finished, finished_len);
-    ssl->s3->previous_client_finished_len = finished_len;
+    ssl->s3->previous_client_finished.CopyFrom(Span(finished, finished_len));
   } else {
-    OPENSSL_memcpy(ssl->s3->previous_server_finished, finished, finished_len);
-    ssl->s3->previous_server_finished_len = finished_len;
+    ssl->s3->previous_server_finished.CopyFrom(Span(finished, finished_len));
+  }
+
+  // The Finished message should be the end of a flight.
+  if (ssl->method->has_unprocessed_handshake_data(ssl)) {
+    ssl_send_alert(ssl, SSL3_AL_FATAL, SSL_AD_UNEXPECTED_MESSAGE);
+    OPENSSL_PUT_ERROR(SSL, SSL_R_EXCESS_HANDSHAKE_DATA);
+    return ssl_hs_error;
   }
 
   ssl->method->next_message(ssl);
@@ -476,56 +422,35 @@ enum ssl_hs_wait_t ssl_get_finished(SSL_HANDSHAKE *hs) {
 
 bool ssl_send_finished(SSL_HANDSHAKE *hs) {
   SSL *const ssl = hs->ssl;
-  const SSL_SESSION *session = SSL_get_session(ssl);
+  const SSL_SESSION *session = ssl_handshake_session(hs);
 
-  uint8_t finished[EVP_MAX_MD_SIZE];
+  uint8_t finished_buf[EVP_MAX_MD_SIZE];
   size_t finished_len;
-  if (!hs->transcript.GetFinishedMAC(finished, &finished_len, session,
+  if (!hs->transcript.GetFinishedMAC(finished_buf, &finished_len, session,
                                      ssl->server)) {
-    return 0;
+    return false;
   }
+  auto finished = Span(finished_buf, finished_len);
 
   // Log the master secret, if logging is enabled.
-  if (!ssl_log_secret(
-          ssl, "CLIENT_RANDOM",
-          MakeConstSpan(session->master_key, session->master_key_length))) {
-    return 0;
+  if (!ssl_log_secret(ssl, "CLIENT_RANDOM", session->secret)) {
+    return false;
   }
 
   // Copy the Finished so we can use it for renegotiation checks.
-  if (finished_len > sizeof(ssl->s3->previous_client_finished) ||
-      finished_len > sizeof(ssl->s3->previous_server_finished)) {
+  bool ok = ssl->server
+                ? ssl->s3->previous_server_finished.TryCopyFrom(finished)
+                : ssl->s3->previous_client_finished.TryCopyFrom(finished);
+  if (!ok) {
     OPENSSL_PUT_ERROR(SSL, ERR_R_INTERNAL_ERROR);
-    return 0;
-  }
-
-  if (ssl->server) {
-    OPENSSL_memcpy(ssl->s3->previous_server_finished, finished, finished_len);
-    ssl->s3->previous_server_finished_len = finished_len;
-  } else {
-    OPENSSL_memcpy(ssl->s3->previous_client_finished, finished, finished_len);
-    ssl->s3->previous_client_finished_len = finished_len;
+    return ssl_hs_error;
   }
 
   ScopedCBB cbb;
   CBB body;
   if (!ssl->method->init_message(ssl, cbb.get(), &body, SSL3_MT_FINISHED) ||
-      !CBB_add_bytes(&body, finished, finished_len) ||
+      !CBB_add_bytes(&body, finished.data(), finished.size()) ||
       !ssl_add_message_cbb(ssl, cbb.get())) {
-    OPENSSL_PUT_ERROR(SSL, ERR_R_INTERNAL_ERROR);
-    return 0;
-  }
-
-  return 1;
-}
-
-bool ssl_output_cert_chain(SSL_HANDSHAKE *hs) {
-  ScopedCBB cbb;
-  CBB body;
-  if (!hs->ssl->method->init_message(hs->ssl, cbb.get(), &body,
-                                     SSL3_MT_CERTIFICATE) ||
-      !ssl_add_cert_chain(hs, &body) ||
-      !ssl_add_message_cbb(hs->ssl, cbb.get())) {
     OPENSSL_PUT_ERROR(SSL, ERR_R_INTERNAL_ERROR);
     return false;
   }
@@ -533,17 +458,63 @@ bool ssl_output_cert_chain(SSL_HANDSHAKE *hs) {
   return true;
 }
 
+bool ssl_send_tls12_certificate(SSL_HANDSHAKE *hs) {
+  ScopedCBB cbb;
+  CBB body, certs, cert;
+  if (!hs->ssl->method->init_message(hs->ssl, cbb.get(), &body,
+                                     SSL3_MT_CERTIFICATE) ||
+      !CBB_add_u24_length_prefixed(&body, &certs)) {
+    return false;
+  }
+
+  if (hs->credential != nullptr) {
+    assert(hs->credential->type == SSLCredentialType::kX509);
+    STACK_OF(CRYPTO_BUFFER) *chain = hs->credential->chain.get();
+    for (size_t i = 0; i < sk_CRYPTO_BUFFER_num(chain); i++) {
+      CRYPTO_BUFFER *buffer = sk_CRYPTO_BUFFER_value(chain, i);
+      if (!CBB_add_u24_length_prefixed(&certs, &cert) ||
+          !CBB_add_bytes(&cert, CRYPTO_BUFFER_data(buffer),
+                         CRYPTO_BUFFER_len(buffer))) {
+        return false;
+      }
+    }
+  }
+
+  return ssl_add_message_cbb(hs->ssl, cbb.get());
+}
+
+const SSL_SESSION *ssl_handshake_session(const SSL_HANDSHAKE *hs) {
+  if (hs->new_session) {
+    return hs->new_session.get();
+  }
+  return hs->ssl->session.get();
+}
+
 int ssl_run_handshake(SSL_HANDSHAKE *hs, bool *out_early_return) {
   SSL *const ssl = hs->ssl;
   for (;;) {
-    // Resolve the operation the handshake was waiting on.
+    // If a timeout during the handshake triggered a DTLS ACK or retransmit, we
+    // resolve that first. E.g., if |ssl_hs_private_key_operation| is slow, the
+    // ACK timer may fire.
+    if (hs->wait != ssl_hs_error && SSL_is_dtls(ssl)) {
+      int ret = ssl->method->flush(ssl);
+      if (ret <= 0) {
+        return ret;
+      }
+    }
+
+    // Resolve the operation the handshake was waiting on. Each condition may
+    // halt the handshake by returning, or continue executing if the handshake
+    // may immediately proceed. Cases which halt the handshake can clear
+    // |hs->wait| to re-enter the state machine on the next iteration, or leave
+    // it set to keep the condition sticky.
     switch (hs->wait) {
       case ssl_hs_error:
         ERR_restore_state(hs->error.get());
         return -1;
 
       case ssl_hs_flush: {
-        int ret = ssl->method->flush_flight(ssl);
+        int ret = ssl->method->flush(ssl);
         if (ret <= 0) {
           return ret;
         }
@@ -553,14 +524,14 @@ int ssl_run_handshake(SSL_HANDSHAKE *hs, bool *out_early_return) {
       case ssl_hs_read_server_hello:
       case ssl_hs_read_message:
       case ssl_hs_read_change_cipher_spec: {
-        if (ssl->quic_method) {
+        if (SSL_is_quic(ssl)) {
+          // QUIC has no ChangeCipherSpec messages.
+          assert(hs->wait != ssl_hs_read_change_cipher_spec);
+          // The caller should call |SSL_provide_quic_data|. Clear |hs->wait| so
+          // the handshake can check if there is sufficient data next iteration.
+          ssl->s3->rwstate = SSL_ERROR_WANT_READ;
           hs->wait = ssl_hs_ok;
-          // The change cipher spec is omitted in QUIC.
-          if (hs->wait != ssl_hs_read_change_cipher_spec) {
-            ssl->s3->rwstate = SSL_ERROR_WANT_READ;
-            return -1;
-          }
-          break;
+          return -1;
         }
 
         uint8_t alert = SSL_AD_DECODE_ERROR;
@@ -620,36 +591,36 @@ int ssl_run_handshake(SSL_HANDSHAKE *hs, bool *out_early_return) {
         hs->wait = ssl_hs_ok;
         return -1;
 
-      case ssl_hs_handback:
+      case ssl_hs_handback: {
+        int ret = ssl->method->flush(ssl);
+        if (ret <= 0) {
+          return ret;
+        }
         ssl->s3->rwstate = SSL_ERROR_HANDBACK;
         hs->wait = ssl_hs_handback;
         return -1;
+      }
 
+        // The following cases are associated with callback APIs which expect to
+        // be called each time the state machine runs. Thus they set |hs->wait|
+        // to |ssl_hs_ok| so that, next time, we re-enter the state machine and
+        // call the callback again.
       case ssl_hs_x509_lookup:
         ssl->s3->rwstate = SSL_ERROR_WANT_X509_LOOKUP;
         hs->wait = ssl_hs_ok;
         return -1;
-
-      case ssl_hs_channel_id_lookup:
-        ssl->s3->rwstate = SSL_ERROR_WANT_CHANNEL_ID_LOOKUP;
-        hs->wait = ssl_hs_ok;
-        return -1;
-
       case ssl_hs_private_key_operation:
         ssl->s3->rwstate = SSL_ERROR_WANT_PRIVATE_KEY_OPERATION;
         hs->wait = ssl_hs_ok;
         return -1;
-
       case ssl_hs_pending_session:
         ssl->s3->rwstate = SSL_ERROR_PENDING_SESSION;
         hs->wait = ssl_hs_ok;
         return -1;
-
       case ssl_hs_pending_ticket:
         ssl->s3->rwstate = SSL_ERROR_PENDING_TICKET;
         hs->wait = ssl_hs_ok;
         return -1;
-
       case ssl_hs_certificate_verify:
         ssl->s3->rwstate = SSL_ERROR_WANT_CERTIFICATE_VERIFY;
         hs->wait = ssl_hs_ok;
@@ -657,15 +628,22 @@ int ssl_run_handshake(SSL_HANDSHAKE *hs, bool *out_early_return) {
 
       case ssl_hs_early_data_rejected:
         assert(ssl->s3->early_data_reason != ssl_early_data_unknown);
+        assert(!hs->can_early_write);
         ssl->s3->rwstate = SSL_ERROR_EARLY_DATA_REJECTED;
-        // Cause |SSL_write| to start failing immediately.
-        hs->can_early_write = false;
         return -1;
 
       case ssl_hs_early_return:
+        if (!ssl->server) {
+          // On ECH reject, the handshake should never complete.
+          assert(ssl->s3->ech_status != ssl_ech_rejected);
+        }
         *out_early_return = true;
         hs->wait = ssl_hs_ok;
         return 1;
+
+      case ssl_hs_hints_ready:
+        ssl->s3->rwstate = SSL_ERROR_HANDSHAKE_HINTS_READY;
+        return -1;
 
       case ssl_hs_ok:
         break;
@@ -678,13 +656,22 @@ int ssl_run_handshake(SSL_HANDSHAKE *hs, bool *out_early_return) {
       return -1;
     }
     if (hs->wait == ssl_hs_ok) {
+      if (!ssl->server) {
+        // On ECH reject, the handshake should never complete.
+        assert(ssl->s3->ech_status != ssl_ech_rejected);
+      }
       // The handshake has completed.
       *out_early_return = false;
       return 1;
     }
+    // If the handshake returns |ssl_hs_flush|, implicitly finish the flight.
+    // This is a convenience so we do not need to manually insert this
+    // throughout the handshake.
+    if (hs->wait == ssl_hs_flush) {
+      ssl->method->finish_flight(ssl);
+    }
 
-    // Otherwise, loop to the beginning and resolve what was blocking the
-    // handshake.
+    // Loop to the beginning and resolve what was blocking the handshake.
   }
 }
 

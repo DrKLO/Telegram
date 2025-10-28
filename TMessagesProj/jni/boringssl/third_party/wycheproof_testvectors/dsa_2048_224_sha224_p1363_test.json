@@ -1,0 +1,1273 @@
+{
+  "algorithm" : "DSA",
+  "generatorVersion" : "0.8rc18",
+  "numberOfTests" : 127,
+  "header" : [
+    "Test vectors of type DsaP1363Verify are meant for the verification",
+    "of IEEE P1363 encoded DSA signatures."
+  ],
+  "notes" : {
+    "EdgeCase" : "Some implementations of DSA do not properly check for boundaries. In some cases the modular inverse of 0 is simply 0. As a result there are implementations where values such as r=1, s=0 lead to forgeries."
+  },
+  "schema" : "dsa_p1363_verify_schema.json",
+  "testGroups" : [
+    {
+      "key" : {
+        "g" : "16a65c58204850704e7502a39757040d34da3a3478c154d4e4a5c02d242ee04f96e61e4bd0904abdac8f37eeb1e09f3182d23c9043cb642f88004160edf9ca09b32076a79c32a627f2473e91879ba2c4e744bd2081544cb55b802c368d1fa83ed489e94e0fa0688e32428a5c78c478c68d0527b71c9a3abb0b0be12c44689639e7d3ce74db101a65aa2b87f64c6826db3ec72f4b5599834bb4edb02f7c90e9a496d3a55d535bebfc45d4f619f63f3dedbb873925c2f224e07731296da887ec1e4748f87efb5fdeb75484316b2232dee553ddaf02112b0d1f02da30973224fe27aeda8b9d4b2922d9ba8be39ed9e103a63c52810bc688b7e2ed4316e1ef17dbde",
+        "keySize" : 2048,
+        "p" : "008f7935d9b9aae9bfabed887acf4951b6f32ec59e3baf3718e8eac4961f3efd3606e74351a9c4183339b809e7c2ae1c539ba7475b85d011adb8b47987754984695cac0e8f14b3360828a22ffa27110a3d62a993453409a0fe696c4658f84bdd20819c3709a01057b195adcd00233dba5484b6291f9d648ef883448677979cec04b434a6ac2e75e9985de23db0292fc1118c9ffa9d8181e7338db792b730d7b9e349592f68099872153915ea3d6b8b4653c633458f803b32a4c2e0f27290256e4e3f8a3b0838a1c450e4e18c1a29a37ddf5ea143de4b66ff04903ed5cf1623e158d487c608e97f211cd81dca23cb6e380765f822e342be484c05763939601cd667",
+        "q" : "00baf696a68578f7dfdee7fa67c977c785ef32b233bae580c0bcd5695d",
+        "type" : "DsaPublicKey",
+        "y" : "1e77f842b1ae0fcd9929d394161d41e14614ff7507a9a31f4a1f14d22e2a627a1f4e596624883f1a5b168e9425146f22d5f6ee28757414714bb994ba1129f015d6e04a717edf9b530a5d5cab94f14631e8b4cf79aeb358cc741845553841e8ac461630e804a62f43676ba6794af66899c377b869ea612a7b9fe6611aa96be52eb8b62c979117bbbcca8a7ec1e1ffab1c7dfcfc7048700d3ae3858136e897701d7c2921b5dfef1d1f897f50d96ca1b5c2edc58cada18919e35642f0807eebfa00c99a32f4d095c3188f78ed54711be0325c4b532aeccd6540a567c327225440ea15319bde06510479a1861799e25b57decc73c036d75a0702bd373ca231349931"
+      },
+      "keyDer" : "308203423082023506072a8648ce3804013082022802820101008f7935d9b9aae9bfabed887acf4951b6f32ec59e3baf3718e8eac4961f3efd3606e74351a9c4183339b809e7c2ae1c539ba7475b85d011adb8b47987754984695cac0e8f14b3360828a22ffa27110a3d62a993453409a0fe696c4658f84bdd20819c3709a01057b195adcd00233dba5484b6291f9d648ef883448677979cec04b434a6ac2e75e9985de23db0292fc1118c9ffa9d8181e7338db792b730d7b9e349592f68099872153915ea3d6b8b4653c633458f803b32a4c2e0f27290256e4e3f8a3b0838a1c450e4e18c1a29a37ddf5ea143de4b66ff04903ed5cf1623e158d487c608e97f211cd81dca23cb6e380765f822e342be484c05763939601cd667021d00baf696a68578f7dfdee7fa67c977c785ef32b233bae580c0bcd5695d0282010016a65c58204850704e7502a39757040d34da3a3478c154d4e4a5c02d242ee04f96e61e4bd0904abdac8f37eeb1e09f3182d23c9043cb642f88004160edf9ca09b32076a79c32a627f2473e91879ba2c4e744bd2081544cb55b802c368d1fa83ed489e94e0fa0688e32428a5c78c478c68d0527b71c9a3abb0b0be12c44689639e7d3ce74db101a65aa2b87f64c6826db3ec72f4b5599834bb4edb02f7c90e9a496d3a55d535bebfc45d4f619f63f3dedbb873925c2f224e07731296da887ec1e4748f87efb5fdeb75484316b2232dee553ddaf02112b0d1f02da30973224fe27aeda8b9d4b2922d9ba8be39ed9e103a63c52810bc688b7e2ed4316e1ef17dbde0382010500028201001e77f842b1ae0fcd9929d394161d41e14614ff7507a9a31f4a1f14d22e2a627a1f4e596624883f1a5b168e9425146f22d5f6ee28757414714bb994ba1129f015d6e04a717edf9b530a5d5cab94f14631e8b4cf79aeb358cc741845553841e8ac461630e804a62f43676ba6794af66899c377b869ea612a7b9fe6611aa96be52eb8b62c979117bbbcca8a7ec1e1ffab1c7dfcfc7048700d3ae3858136e897701d7c2921b5dfef1d1f897f50d96ca1b5c2edc58cada18919e35642f0807eebfa00c99a32f4d095c3188f78ed54711be0325c4b532aeccd6540a567c327225440ea15319bde06510479a1861799e25b57decc73c036d75a0702bd373ca231349931",
+      "keyPem" : "-----BEGIN PUBLIC KEY-----\nMIIDQjCCAjUGByqGSM44BAEwggIoAoIBAQCPeTXZuarpv6vtiHrPSVG28y7Fnjuv\nNxjo6sSWHz79NgbnQ1GpxBgzObgJ58KuHFObp0dbhdARrbi0eYd1SYRpXKwOjxSz\nNggooi/6JxEKPWKpk0U0CaD+aWxGWPhL3SCBnDcJoBBXsZWtzQAjPbpUhLYpH51k\njviDRIZ3l5zsBLQ0pqwudemYXeI9sCkvwRGMn/qdgYHnM423krcw17njSVkvaAmY\nchU5Feo9a4tGU8YzRY+AOzKkwuDycpAlbk4/ijsIOKHEUOThjBopo33fXqFD3ktm\n/wSQPtXPFiPhWNSHxgjpfyEc2B3KI8tuOAdl+CLjQr5ITAV2OTlgHNZnAh0AuvaW\npoV499/e5/pnyXfHhe8ysjO65YDAvNVpXQKCAQAWplxYIEhQcE51AqOXVwQNNNo6\nNHjBVNTkpcAtJC7gT5bmHkvQkEq9rI837rHgnzGC0jyQQ8tkL4gAQWDt+coJsyB2\np5wypifyRz6Rh5uixOdEvSCBVEy1W4AsNo0fqD7UielOD6BojjJCilx4xHjGjQUn\ntxyaOrsLC+EsRGiWOefTznTbEBplqiuH9kxoJts+xy9LVZmDS7TtsC98kOmkltOl\nXVNb6/xF1PYZ9j897buHOSXC8iTgdzEpbaiH7B5HSPh++1/et1SEMWsiMt7lU92v\nAhErDR8C2jCXMiT+J67ai51LKSLZuovjntnhA6Y8UoELxoi34u1DFuHvF9veA4IB\nBQACggEAHnf4QrGuD82ZKdOUFh1B4UYU/3UHqaMfSh8U0i4qYnofTllmJIg/GlsW\njpQlFG8i1fbuKHV0FHFLuZS6ESnwFdbgSnF+35tTCl1cq5TxRjHotM95rrNYzHQY\nRVU4QeisRhYw6ASmL0Nna6Z5SvZomcN3uGnqYSp7n+ZhGqlr5S64tiyXkRe7vMqK\nfsHh/6scffz8cEhwDTrjhYE26JdwHXwpIbXf7x0fiX9Q2WyhtcLtxYytoYkZ41ZC\n8IB+6/oAyZoy9NCVwxiPeO1UcRvgMlxLUyrszWVApWfDJyJUQOoVMZveBlEEeaGG\nF5niW1fezHPANtdaBwK9NzyiMTSZMQ==\n-----END PUBLIC KEY-----",
+      "sha" : "SHA-224",
+      "type" : "DsaP1363Verify",
+      "tests" : [
+        {
+          "tcId" : 1,
+          "comment" : "Modified r or s, e.g. by adding or subtracting the group order",
+          "msg" : "313233343030",
+          "sig" : "01603c6cd3f3ac5f55da5295ec5ee9ddcc947e8af9d2254162e62f84d800068259cf902e5d55eb26e7bf850a82d40fc5456b3a902679612ea4a8",
+          "result" : "invalid",
+          "flags" : []
+        },
+        {
+          "tcId" : 2,
+          "comment" : "Modified r or s, e.g. by adding or subtracting the group order",
+          "msg" : "313233343030",
+          "sig" : "15b0c07917459069e37d5ee33405b13f49e6d96da3a5c01e937b4de2068259cf902e5d55eb26e7bf850a82d40fc5456b3a902679612ea4a8",
+          "result" : "invalid",
+          "flags" : []
+        },
+        {
+          "tcId" : 3,
+          "comment" : "Modified r or s, e.g. by adding or subtracting the group order",
+          "msg" : "313233343030",
+          "sig" : "01a545d62d6e336775fb6a9b8495721646a54bd8c6173fc0a2295a1b7b00068259cf902e5d55eb26e7bf850a82d40fc5456b3a902679612ea4a8",
+          "result" : "invalid",
+          "flags" : []
+        },
+        {
+          "tcId" : 4,
+          "comment" : "Modified r or s, e.g. by adding or subtracting the group order",
+          "msg" : "313233343030",
+          "sig" : "5aba29d291cc988a0495647b6a8de9b95ab42739e8c03f5dd6a5e485068259cf902e5d55eb26e7bf850a82d40fc5456b3a902679612ea4a8",
+          "result" : "invalid",
+          "flags" : []
+        },
+        {
+          "tcId" : 5,
+          "comment" : "Modified r or s, e.g. by adding or subtracting the group order",
+          "msg" : "313233343030",
+          "sig" : "a545d62d6e336775fb6a9b8495721646a54bd8c6173fc0a2295a1b7bc178f07615a75535ca0ee2274e824a59fef7f79ef575a73a1e040e05",
+          "result" : "invalid",
+          "flags" : []
+        },
+        {
+          "tcId" : 6,
+          "comment" : "Modified r or s, e.g. by adding or subtracting the group order",
+          "msg" : "313233343030",
+          "sig" : "a545d62d6e336775fb6a9b8495721646a54bd8c6173fc0a2295a1b7bb4743cd6f54a9a89f3c112a8446d44b1df6d6cc880555a475ba6c4b5",
+          "result" : "invalid",
+          "flags" : []
+        },
+        {
+          "tcId" : 7,
+          "comment" : "Modified r or s, e.g. by adding or subtracting the group order",
+          "msg" : "313233343030",
+          "sig" : "00a545d62d6e336775fb6a9b8495721646a54bd8c6173fc0a2295a1b7b01068259cf902e5d55eb26e7bf850a82d40fc5456b3a902679612ea4a8",
+          "result" : "invalid",
+          "flags" : []
+        },
+        {
+          "tcId" : 8,
+          "comment" : "Modified r or s, e.g. by adding or subtracting the group order",
+          "msg" : "313233343030",
+          "sig" : "a545d62d6e336775fb6a9b8495721646a54bd8c6173fc0a2295a1b7bf97da6306fd1a2aa14d918407af57d2bf03aba94c56fd9869ed15b58",
+          "result" : "invalid",
+          "flags" : []
+        },
+        {
+          "tcId" : 9,
+          "comment" : "Signatures with special case values for r and s.",
+          "msg" : "313233343030",
+          "sig" : "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+          "result" : "invalid",
+          "flags" : [
+            "EdgeCase"
+          ]
+        },
+        {
+          "tcId" : 10,
+          "comment" : "Signatures with special case values for r and s.",
+          "msg" : "313233343030",
+          "sig" : "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001",
+          "result" : "invalid",
+          "flags" : [
+            "EdgeCase"
+          ]
+        },
+        {
+          "tcId" : 11,
+          "comment" : "Signatures with special case values for r and s.",
+          "msg" : "313233343030",
+          "sig" : "000000000000000000000000000000000000000000000000000000005d7b4b5342bc7befef73fd33e4bbe3c2f7995919dd72c0605e6ab4ae",
+          "result" : "invalid",
+          "flags" : [
+            "EdgeCase"
+          ]
+        },
+        {
+          "tcId" : 12,
+          "comment" : "Signatures with special case values for r and s.",
+          "msg" : "313233343030",
+          "sig" : "000000000000000000000000000000000000000000000000000000005d7b4b5342bc7befef73fd33e4bbe3c2f7995919dd72c0605e6ab4af",
+          "result" : "invalid",
+          "flags" : [
+            "EdgeCase"
+          ]
+        },
+        {
+          "tcId" : 13,
+          "comment" : "Signatures with special case values for r and s.",
+          "msg" : "313233343030",
+          "sig" : "00000000000000000000000000000000000000000000000000000000baf696a68578f7dfdee7fa67c977c785ef32b233bae580c0bcd5695c",
+          "result" : "invalid",
+          "flags" : [
+            "EdgeCase"
+          ]
+        },
+        {
+          "tcId" : 14,
+          "comment" : "Signatures with special case values for r and s.",
+          "msg" : "313233343030",
+          "sig" : "00000000000000000000000000000000000000000000000000000000baf696a68578f7dfdee7fa67c977c785ef32b233bae580c0bcd5695d",
+          "result" : "invalid",
+          "flags" : [
+            "EdgeCase"
+          ]
+        },
+        {
+          "tcId" : 15,
+          "comment" : "Signatures with special case values for r and s.",
+          "msg" : "313233343030",
+          "sig" : "00000000000000000000000000000000000000000000000000000000baf696a68578f7dfdee7fa67c977c785ef32b233bae580c0bcd5695e",
+          "result" : "invalid",
+          "flags" : [
+            "EdgeCase"
+          ]
+        },
+        {
+          "tcId" : 16,
+          "comment" : "Signatures with special case values for r and s.",
+          "msg" : "313233343030",
+          "sig" : "00000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000",
+          "result" : "invalid",
+          "flags" : [
+            "EdgeCase"
+          ]
+        },
+        {
+          "tcId" : 17,
+          "comment" : "Signatures with special case values for r and s.",
+          "msg" : "313233343030",
+          "sig" : "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000008f7935d9b9aae9bfabed887acf4951b6f32ec59e3baf3718e8eac4961f3efd3606e74351a9c4183339b809e7c2ae1c539ba7475b85d011adb8b47987754984695cac0e8f14b3360828a22ffa27110a3d62a993453409a0fe696c4658f84bdd20819c3709a01057b195adcd00233dba5484b6291f9d648ef883448677979cec04b434a6ac2e75e9985de23db0292fc1118c9ffa9d8181e7338db792b730d7b9e349592f68099872153915ea3d6b8b4653c633458f803b32a4c2e0f27290256e4e3f8a3b0838a1c450e4e18c1a29a37ddf5ea143de4b66ff04903ed5cf1623e158d487c608e97f211cd81dca23cb6e380765f822e342be484c05763939601cd667",
+          "result" : "invalid",
+          "flags" : [
+            "EdgeCase"
+          ]
+        },
+        {
+          "tcId" : 18,
+          "comment" : "Signatures with special case values for r and s.",
+          "msg" : "313233343030",
+          "sig" : "0000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000",
+          "result" : "invalid",
+          "flags" : [
+            "EdgeCase"
+          ]
+        },
+        {
+          "tcId" : 19,
+          "comment" : "Signatures with special case values for r and s.",
+          "msg" : "313233343030",
+          "sig" : "0000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000001",
+          "result" : "invalid",
+          "flags" : [
+            "EdgeCase"
+          ]
+        },
+        {
+          "tcId" : 20,
+          "comment" : "Signatures with special case values for r and s.",
+          "msg" : "313233343030",
+          "sig" : "000000000000000000000000000000000000000000000000000000015d7b4b5342bc7befef73fd33e4bbe3c2f7995919dd72c0605e6ab4ae",
+          "result" : "invalid",
+          "flags" : [
+            "EdgeCase"
+          ]
+        },
+        {
+          "tcId" : 21,
+          "comment" : "Signatures with special case values for r and s.",
+          "msg" : "313233343030",
+          "sig" : "000000000000000000000000000000000000000000000000000000015d7b4b5342bc7befef73fd33e4bbe3c2f7995919dd72c0605e6ab4af",
+          "result" : "invalid",
+          "flags" : [
+            "EdgeCase"
+          ]
+        },
+        {
+          "tcId" : 22,
+          "comment" : "Signatures with special case values for r and s.",
+          "msg" : "313233343030",
+          "sig" : "00000000000000000000000000000000000000000000000000000001baf696a68578f7dfdee7fa67c977c785ef32b233bae580c0bcd5695c",
+          "result" : "invalid",
+          "flags" : [
+            "EdgeCase"
+          ]
+        },
+        {
+          "tcId" : 23,
+          "comment" : "Signatures with special case values for r and s.",
+          "msg" : "313233343030",
+          "sig" : "00000000000000000000000000000000000000000000000000000001baf696a68578f7dfdee7fa67c977c785ef32b233bae580c0bcd5695d",
+          "result" : "invalid",
+          "flags" : [
+            "EdgeCase"
+          ]
+        },
+        {
+          "tcId" : 24,
+          "comment" : "Signatures with special case values for r and s.",
+          "msg" : "313233343030",
+          "sig" : "00000000000000000000000000000000000000000000000000000001baf696a68578f7dfdee7fa67c977c785ef32b233bae580c0bcd5695e",
+          "result" : "invalid",
+          "flags" : [
+            "EdgeCase"
+          ]
+        },
+        {
+          "tcId" : 25,
+          "comment" : "Signatures with special case values for r and s.",
+          "msg" : "313233343030",
+          "sig" : "00000000000000000000000000000000000000000000000000000000010100000000000000000000000000000000000000000000000000000000",
+          "result" : "invalid",
+          "flags" : [
+            "EdgeCase"
+          ]
+        },
+        {
+          "tcId" : 26,
+          "comment" : "Signatures with special case values for r and s.",
+          "msg" : "313233343030",
+          "sig" : "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000018f7935d9b9aae9bfabed887acf4951b6f32ec59e3baf3718e8eac4961f3efd3606e74351a9c4183339b809e7c2ae1c539ba7475b85d011adb8b47987754984695cac0e8f14b3360828a22ffa27110a3d62a993453409a0fe696c4658f84bdd20819c3709a01057b195adcd00233dba5484b6291f9d648ef883448677979cec04b434a6ac2e75e9985de23db0292fc1118c9ffa9d8181e7338db792b730d7b9e349592f68099872153915ea3d6b8b4653c633458f803b32a4c2e0f27290256e4e3f8a3b0838a1c450e4e18c1a29a37ddf5ea143de4b66ff04903ed5cf1623e158d487c608e97f211cd81dca23cb6e380765f822e342be484c05763939601cd667",
+          "result" : "invalid",
+          "flags" : [
+            "EdgeCase"
+          ]
+        },
+        {
+          "tcId" : 27,
+          "comment" : "Signatures with special case values for r and s.",
+          "msg" : "313233343030",
+          "sig" : "5d7b4b5342bc7befef73fd33e4bbe3c2f7995919dd72c0605e6ab4ae00000000000000000000000000000000000000000000000000000000",
+          "result" : "invalid",
+          "flags" : [
+            "EdgeCase"
+          ]
+        },
+        {
+          "tcId" : 28,
+          "comment" : "Signatures with special case values for r and s.",
+          "msg" : "313233343030",
+          "sig" : "5d7b4b5342bc7befef73fd33e4bbe3c2f7995919dd72c0605e6ab4ae00000000000000000000000000000000000000000000000000000001",
+          "result" : "invalid",
+          "flags" : [
+            "EdgeCase"
+          ]
+        },
+        {
+          "tcId" : 29,
+          "comment" : "Signatures with special case values for r and s.",
+          "msg" : "313233343030",
+          "sig" : "5d7b4b5342bc7befef73fd33e4bbe3c2f7995919dd72c0605e6ab4ae5d7b4b5342bc7befef73fd33e4bbe3c2f7995919dd72c0605e6ab4ae",
+          "result" : "invalid",
+          "flags" : [
+            "EdgeCase"
+          ]
+        },
+        {
+          "tcId" : 30,
+          "comment" : "Signatures with special case values for r and s.",
+          "msg" : "313233343030",
+          "sig" : "5d7b4b5342bc7befef73fd33e4bbe3c2f7995919dd72c0605e6ab4ae5d7b4b5342bc7befef73fd33e4bbe3c2f7995919dd72c0605e6ab4af",
+          "result" : "invalid",
+          "flags" : [
+            "EdgeCase"
+          ]
+        },
+        {
+          "tcId" : 31,
+          "comment" : "Signatures with special case values for r and s.",
+          "msg" : "313233343030",
+          "sig" : "5d7b4b5342bc7befef73fd33e4bbe3c2f7995919dd72c0605e6ab4aebaf696a68578f7dfdee7fa67c977c785ef32b233bae580c0bcd5695c",
+          "result" : "invalid",
+          "flags" : [
+            "EdgeCase"
+          ]
+        },
+        {
+          "tcId" : 32,
+          "comment" : "Signatures with special case values for r and s.",
+          "msg" : "313233343030",
+          "sig" : "5d7b4b5342bc7befef73fd33e4bbe3c2f7995919dd72c0605e6ab4aebaf696a68578f7dfdee7fa67c977c785ef32b233bae580c0bcd5695d",
+          "result" : "invalid",
+          "flags" : [
+            "EdgeCase"
+          ]
+        },
+        {
+          "tcId" : 33,
+          "comment" : "Signatures with special case values for r and s.",
+          "msg" : "313233343030",
+          "sig" : "5d7b4b5342bc7befef73fd33e4bbe3c2f7995919dd72c0605e6ab4aebaf696a68578f7dfdee7fa67c977c785ef32b233bae580c0bcd5695e",
+          "result" : "invalid",
+          "flags" : [
+            "EdgeCase"
+          ]
+        },
+        {
+          "tcId" : 34,
+          "comment" : "Signatures with special case values for r and s.",
+          "msg" : "313233343030",
+          "sig" : "005d7b4b5342bc7befef73fd33e4bbe3c2f7995919dd72c0605e6ab4ae0100000000000000000000000000000000000000000000000000000000",
+          "result" : "invalid",
+          "flags" : [
+            "EdgeCase"
+          ]
+        },
+        {
+          "tcId" : 35,
+          "comment" : "Signatures with special case values for r and s.",
+          "msg" : "313233343030",
+          "sig" : "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000005d7b4b5342bc7befef73fd33e4bbe3c2f7995919dd72c0605e6ab4ae8f7935d9b9aae9bfabed887acf4951b6f32ec59e3baf3718e8eac4961f3efd3606e74351a9c4183339b809e7c2ae1c539ba7475b85d011adb8b47987754984695cac0e8f14b3360828a22ffa27110a3d62a993453409a0fe696c4658f84bdd20819c3709a01057b195adcd00233dba5484b6291f9d648ef883448677979cec04b434a6ac2e75e9985de23db0292fc1118c9ffa9d8181e7338db792b730d7b9e349592f68099872153915ea3d6b8b4653c633458f803b32a4c2e0f27290256e4e3f8a3b0838a1c450e4e18c1a29a37ddf5ea143de4b66ff04903ed5cf1623e158d487c608e97f211cd81dca23cb6e380765f822e342be484c05763939601cd667",
+          "result" : "invalid",
+          "flags" : [
+            "EdgeCase"
+          ]
+        },
+        {
+          "tcId" : 36,
+          "comment" : "Signatures with special case values for r and s.",
+          "msg" : "313233343030",
+          "sig" : "5d7b4b5342bc7befef73fd33e4bbe3c2f7995919dd72c0605e6ab4af00000000000000000000000000000000000000000000000000000000",
+          "result" : "invalid",
+          "flags" : [
+            "EdgeCase"
+          ]
+        },
+        {
+          "tcId" : 37,
+          "comment" : "Signatures with special case values for r and s.",
+          "msg" : "313233343030",
+          "sig" : "5d7b4b5342bc7befef73fd33e4bbe3c2f7995919dd72c0605e6ab4af00000000000000000000000000000000000000000000000000000001",
+          "result" : "invalid",
+          "flags" : [
+            "EdgeCase"
+          ]
+        },
+        {
+          "tcId" : 38,
+          "comment" : "Signatures with special case values for r and s.",
+          "msg" : "313233343030",
+          "sig" : "5d7b4b5342bc7befef73fd33e4bbe3c2f7995919dd72c0605e6ab4af5d7b4b5342bc7befef73fd33e4bbe3c2f7995919dd72c0605e6ab4ae",
+          "result" : "invalid",
+          "flags" : [
+            "EdgeCase"
+          ]
+        },
+        {
+          "tcId" : 39,
+          "comment" : "Signatures with special case values for r and s.",
+          "msg" : "313233343030",
+          "sig" : "5d7b4b5342bc7befef73fd33e4bbe3c2f7995919dd72c0605e6ab4af5d7b4b5342bc7befef73fd33e4bbe3c2f7995919dd72c0605e6ab4af",
+          "result" : "invalid",
+          "flags" : [
+            "EdgeCase"
+          ]
+        },
+        {
+          "tcId" : 40,
+          "comment" : "Signatures with special case values for r and s.",
+          "msg" : "313233343030",
+          "sig" : "5d7b4b5342bc7befef73fd33e4bbe3c2f7995919dd72c0605e6ab4afbaf696a68578f7dfdee7fa67c977c785ef32b233bae580c0bcd5695c",
+          "result" : "invalid",
+          "flags" : [
+            "EdgeCase"
+          ]
+        },
+        {
+          "tcId" : 41,
+          "comment" : "Signatures with special case values for r and s.",
+          "msg" : "313233343030",
+          "sig" : "5d7b4b5342bc7befef73fd33e4bbe3c2f7995919dd72c0605e6ab4afbaf696a68578f7dfdee7fa67c977c785ef32b233bae580c0bcd5695d",
+          "result" : "invalid",
+          "flags" : [
+            "EdgeCase"
+          ]
+        },
+        {
+          "tcId" : 42,
+          "comment" : "Signatures with special case values for r and s.",
+          "msg" : "313233343030",
+          "sig" : "5d7b4b5342bc7befef73fd33e4bbe3c2f7995919dd72c0605e6ab4afbaf696a68578f7dfdee7fa67c977c785ef32b233bae580c0bcd5695e",
+          "result" : "invalid",
+          "flags" : [
+            "EdgeCase"
+          ]
+        },
+        {
+          "tcId" : 43,
+          "comment" : "Signatures with special case values for r and s.",
+          "msg" : "313233343030",
+          "sig" : "005d7b4b5342bc7befef73fd33e4bbe3c2f7995919dd72c0605e6ab4af0100000000000000000000000000000000000000000000000000000000",
+          "result" : "invalid",
+          "flags" : [
+            "EdgeCase"
+          ]
+        },
+        {
+          "tcId" : 44,
+          "comment" : "Signatures with special case values for r and s.",
+          "msg" : "313233343030",
+          "sig" : "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000005d7b4b5342bc7befef73fd33e4bbe3c2f7995919dd72c0605e6ab4af8f7935d9b9aae9bfabed887acf4951b6f32ec59e3baf3718e8eac4961f3efd3606e74351a9c4183339b809e7c2ae1c539ba7475b85d011adb8b47987754984695cac0e8f14b3360828a22ffa27110a3d62a993453409a0fe696c4658f84bdd20819c3709a01057b195adcd00233dba5484b6291f9d648ef883448677979cec04b434a6ac2e75e9985de23db0292fc1118c9ffa9d8181e7338db792b730d7b9e349592f68099872153915ea3d6b8b4653c633458f803b32a4c2e0f27290256e4e3f8a3b0838a1c450e4e18c1a29a37ddf5ea143de4b66ff04903ed5cf1623e158d487c608e97f211cd81dca23cb6e380765f822e342be484c05763939601cd667",
+          "result" : "invalid",
+          "flags" : [
+            "EdgeCase"
+          ]
+        },
+        {
+          "tcId" : 45,
+          "comment" : "Signatures with special case values for r and s.",
+          "msg" : "313233343030",
+          "sig" : "baf696a68578f7dfdee7fa67c977c785ef32b233bae580c0bcd5695c00000000000000000000000000000000000000000000000000000000",
+          "result" : "invalid",
+          "flags" : [
+            "EdgeCase"
+          ]
+        },
+        {
+          "tcId" : 46,
+          "comment" : "Signatures with special case values for r and s.",
+          "msg" : "313233343030",
+          "sig" : "baf696a68578f7dfdee7fa67c977c785ef32b233bae580c0bcd5695c00000000000000000000000000000000000000000000000000000001",
+          "result" : "invalid",
+          "flags" : [
+            "EdgeCase"
+          ]
+        },
+        {
+          "tcId" : 47,
+          "comment" : "Signatures with special case values for r and s.",
+          "msg" : "313233343030",
+          "sig" : "baf696a68578f7dfdee7fa67c977c785ef32b233bae580c0bcd5695c5d7b4b5342bc7befef73fd33e4bbe3c2f7995919dd72c0605e6ab4ae",
+          "result" : "invalid",
+          "flags" : [
+            "EdgeCase"
+          ]
+        },
+        {
+          "tcId" : 48,
+          "comment" : "Signatures with special case values for r and s.",
+          "msg" : "313233343030",
+          "sig" : "baf696a68578f7dfdee7fa67c977c785ef32b233bae580c0bcd5695c5d7b4b5342bc7befef73fd33e4bbe3c2f7995919dd72c0605e6ab4af",
+          "result" : "invalid",
+          "flags" : [
+            "EdgeCase"
+          ]
+        },
+        {
+          "tcId" : 49,
+          "comment" : "Signatures with special case values for r and s.",
+          "msg" : "313233343030",
+          "sig" : "baf696a68578f7dfdee7fa67c977c785ef32b233bae580c0bcd5695cbaf696a68578f7dfdee7fa67c977c785ef32b233bae580c0bcd5695c",
+          "result" : "invalid",
+          "flags" : [
+            "EdgeCase"
+          ]
+        },
+        {
+          "tcId" : 50,
+          "comment" : "Signatures with special case values for r and s.",
+          "msg" : "313233343030",
+          "sig" : "baf696a68578f7dfdee7fa67c977c785ef32b233bae580c0bcd5695cbaf696a68578f7dfdee7fa67c977c785ef32b233bae580c0bcd5695d",
+          "result" : "invalid",
+          "flags" : [
+            "EdgeCase"
+          ]
+        },
+        {
+          "tcId" : 51,
+          "comment" : "Signatures with special case values for r and s.",
+          "msg" : "313233343030",
+          "sig" : "baf696a68578f7dfdee7fa67c977c785ef32b233bae580c0bcd5695cbaf696a68578f7dfdee7fa67c977c785ef32b233bae580c0bcd5695e",
+          "result" : "invalid",
+          "flags" : [
+            "EdgeCase"
+          ]
+        },
+        {
+          "tcId" : 52,
+          "comment" : "Signatures with special case values for r and s.",
+          "msg" : "313233343030",
+          "sig" : "00baf696a68578f7dfdee7fa67c977c785ef32b233bae580c0bcd5695c0100000000000000000000000000000000000000000000000000000000",
+          "result" : "invalid",
+          "flags" : [
+            "EdgeCase"
+          ]
+        },
+        {
+          "tcId" : 53,
+          "comment" : "Signatures with special case values for r and s.",
+          "msg" : "313233343030",
+          "sig" : "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000baf696a68578f7dfdee7fa67c977c785ef32b233bae580c0bcd5695c8f7935d9b9aae9bfabed887acf4951b6f32ec59e3baf3718e8eac4961f3efd3606e74351a9c4183339b809e7c2ae1c539ba7475b85d011adb8b47987754984695cac0e8f14b3360828a22ffa27110a3d62a993453409a0fe696c4658f84bdd20819c3709a01057b195adcd00233dba5484b6291f9d648ef883448677979cec04b434a6ac2e75e9985de23db0292fc1118c9ffa9d8181e7338db792b730d7b9e349592f68099872153915ea3d6b8b4653c633458f803b32a4c2e0f27290256e4e3f8a3b0838a1c450e4e18c1a29a37ddf5ea143de4b66ff04903ed5cf1623e158d487c608e97f211cd81dca23cb6e380765f822e342be484c05763939601cd667",
+          "result" : "invalid",
+          "flags" : [
+            "EdgeCase"
+          ]
+        },
+        {
+          "tcId" : 54,
+          "comment" : "Signatures with special case values for r and s.",
+          "msg" : "313233343030",
+          "sig" : "baf696a68578f7dfdee7fa67c977c785ef32b233bae580c0bcd5695d00000000000000000000000000000000000000000000000000000000",
+          "result" : "invalid",
+          "flags" : [
+            "EdgeCase"
+          ]
+        },
+        {
+          "tcId" : 55,
+          "comment" : "Signatures with special case values for r and s.",
+          "msg" : "313233343030",
+          "sig" : "baf696a68578f7dfdee7fa67c977c785ef32b233bae580c0bcd5695d00000000000000000000000000000000000000000000000000000001",
+          "result" : "invalid",
+          "flags" : [
+            "EdgeCase"
+          ]
+        },
+        {
+          "tcId" : 56,
+          "comment" : "Signatures with special case values for r and s.",
+          "msg" : "313233343030",
+          "sig" : "baf696a68578f7dfdee7fa67c977c785ef32b233bae580c0bcd5695d5d7b4b5342bc7befef73fd33e4bbe3c2f7995919dd72c0605e6ab4ae",
+          "result" : "invalid",
+          "flags" : [
+            "EdgeCase"
+          ]
+        },
+        {
+          "tcId" : 57,
+          "comment" : "Signatures with special case values for r and s.",
+          "msg" : "313233343030",
+          "sig" : "baf696a68578f7dfdee7fa67c977c785ef32b233bae580c0bcd5695d5d7b4b5342bc7befef73fd33e4bbe3c2f7995919dd72c0605e6ab4af",
+          "result" : "invalid",
+          "flags" : [
+            "EdgeCase"
+          ]
+        },
+        {
+          "tcId" : 58,
+          "comment" : "Signatures with special case values for r and s.",
+          "msg" : "313233343030",
+          "sig" : "baf696a68578f7dfdee7fa67c977c785ef32b233bae580c0bcd5695dbaf696a68578f7dfdee7fa67c977c785ef32b233bae580c0bcd5695c",
+          "result" : "invalid",
+          "flags" : [
+            "EdgeCase"
+          ]
+        },
+        {
+          "tcId" : 59,
+          "comment" : "Signatures with special case values for r and s.",
+          "msg" : "313233343030",
+          "sig" : "baf696a68578f7dfdee7fa67c977c785ef32b233bae580c0bcd5695dbaf696a68578f7dfdee7fa67c977c785ef32b233bae580c0bcd5695d",
+          "result" : "invalid",
+          "flags" : [
+            "EdgeCase"
+          ]
+        },
+        {
+          "tcId" : 60,
+          "comment" : "Signatures with special case values for r and s.",
+          "msg" : "313233343030",
+          "sig" : "baf696a68578f7dfdee7fa67c977c785ef32b233bae580c0bcd5695dbaf696a68578f7dfdee7fa67c977c785ef32b233bae580c0bcd5695e",
+          "result" : "invalid",
+          "flags" : [
+            "EdgeCase"
+          ]
+        },
+        {
+          "tcId" : 61,
+          "comment" : "Signatures with special case values for r and s.",
+          "msg" : "313233343030",
+          "sig" : "00baf696a68578f7dfdee7fa67c977c785ef32b233bae580c0bcd5695d0100000000000000000000000000000000000000000000000000000000",
+          "result" : "invalid",
+          "flags" : [
+            "EdgeCase"
+          ]
+        },
+        {
+          "tcId" : 62,
+          "comment" : "Signatures with special case values for r and s.",
+          "msg" : "313233343030",
+          "sig" : "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000baf696a68578f7dfdee7fa67c977c785ef32b233bae580c0bcd5695d8f7935d9b9aae9bfabed887acf4951b6f32ec59e3baf3718e8eac4961f3efd3606e74351a9c4183339b809e7c2ae1c539ba7475b85d011adb8b47987754984695cac0e8f14b3360828a22ffa27110a3d62a993453409a0fe696c4658f84bdd20819c3709a01057b195adcd00233dba5484b6291f9d648ef883448677979cec04b434a6ac2e75e9985de23db0292fc1118c9ffa9d8181e7338db792b730d7b9e349592f68099872153915ea3d6b8b4653c633458f803b32a4c2e0f27290256e4e3f8a3b0838a1c450e4e18c1a29a37ddf5ea143de4b66ff04903ed5cf1623e158d487c608e97f211cd81dca23cb6e380765f822e342be484c05763939601cd667",
+          "result" : "invalid",
+          "flags" : [
+            "EdgeCase"
+          ]
+        },
+        {
+          "tcId" : 63,
+          "comment" : "Signatures with special case values for r and s.",
+          "msg" : "313233343030",
+          "sig" : "baf696a68578f7dfdee7fa67c977c785ef32b233bae580c0bcd5695e00000000000000000000000000000000000000000000000000000000",
+          "result" : "invalid",
+          "flags" : [
+            "EdgeCase"
+          ]
+        },
+        {
+          "tcId" : 64,
+          "comment" : "Signatures with special case values for r and s.",
+          "msg" : "313233343030",
+          "sig" : "baf696a68578f7dfdee7fa67c977c785ef32b233bae580c0bcd5695e00000000000000000000000000000000000000000000000000000001",
+          "result" : "invalid",
+          "flags" : [
+            "EdgeCase"
+          ]
+        },
+        {
+          "tcId" : 65,
+          "comment" : "Signatures with special case values for r and s.",
+          "msg" : "313233343030",
+          "sig" : "baf696a68578f7dfdee7fa67c977c785ef32b233bae580c0bcd5695e5d7b4b5342bc7befef73fd33e4bbe3c2f7995919dd72c0605e6ab4ae",
+          "result" : "invalid",
+          "flags" : [
+            "EdgeCase"
+          ]
+        },
+        {
+          "tcId" : 66,
+          "comment" : "Signatures with special case values for r and s.",
+          "msg" : "313233343030",
+          "sig" : "baf696a68578f7dfdee7fa67c977c785ef32b233bae580c0bcd5695e5d7b4b5342bc7befef73fd33e4bbe3c2f7995919dd72c0605e6ab4af",
+          "result" : "invalid",
+          "flags" : [
+            "EdgeCase"
+          ]
+        },
+        {
+          "tcId" : 67,
+          "comment" : "Signatures with special case values for r and s.",
+          "msg" : "313233343030",
+          "sig" : "baf696a68578f7dfdee7fa67c977c785ef32b233bae580c0bcd5695ebaf696a68578f7dfdee7fa67c977c785ef32b233bae580c0bcd5695c",
+          "result" : "invalid",
+          "flags" : [
+            "EdgeCase"
+          ]
+        },
+        {
+          "tcId" : 68,
+          "comment" : "Signatures with special case values for r and s.",
+          "msg" : "313233343030",
+          "sig" : "baf696a68578f7dfdee7fa67c977c785ef32b233bae580c0bcd5695ebaf696a68578f7dfdee7fa67c977c785ef32b233bae580c0bcd5695d",
+          "result" : "invalid",
+          "flags" : [
+            "EdgeCase"
+          ]
+        },
+        {
+          "tcId" : 69,
+          "comment" : "Signatures with special case values for r and s.",
+          "msg" : "313233343030",
+          "sig" : "baf696a68578f7dfdee7fa67c977c785ef32b233bae580c0bcd5695ebaf696a68578f7dfdee7fa67c977c785ef32b233bae580c0bcd5695e",
+          "result" : "invalid",
+          "flags" : [
+            "EdgeCase"
+          ]
+        },
+        {
+          "tcId" : 70,
+          "comment" : "Signatures with special case values for r and s.",
+          "msg" : "313233343030",
+          "sig" : "00baf696a68578f7dfdee7fa67c977c785ef32b233bae580c0bcd5695e0100000000000000000000000000000000000000000000000000000000",
+          "result" : "invalid",
+          "flags" : [
+            "EdgeCase"
+          ]
+        },
+        {
+          "tcId" : 71,
+          "comment" : "Signatures with special case values for r and s.",
+          "msg" : "313233343030",
+          "sig" : "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000baf696a68578f7dfdee7fa67c977c785ef32b233bae580c0bcd5695e8f7935d9b9aae9bfabed887acf4951b6f32ec59e3baf3718e8eac4961f3efd3606e74351a9c4183339b809e7c2ae1c539ba7475b85d011adb8b47987754984695cac0e8f14b3360828a22ffa27110a3d62a993453409a0fe696c4658f84bdd20819c3709a01057b195adcd00233dba5484b6291f9d648ef883448677979cec04b434a6ac2e75e9985de23db0292fc1118c9ffa9d8181e7338db792b730d7b9e349592f68099872153915ea3d6b8b4653c633458f803b32a4c2e0f27290256e4e3f8a3b0838a1c450e4e18c1a29a37ddf5ea143de4b66ff04903ed5cf1623e158d487c608e97f211cd81dca23cb6e380765f822e342be484c05763939601cd667",
+          "result" : "invalid",
+          "flags" : [
+            "EdgeCase"
+          ]
+        },
+        {
+          "tcId" : 72,
+          "comment" : "Signatures with special case values for r and s.",
+          "msg" : "313233343030",
+          "sig" : "01000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+          "result" : "invalid",
+          "flags" : [
+            "EdgeCase"
+          ]
+        },
+        {
+          "tcId" : 73,
+          "comment" : "Signatures with special case values for r and s.",
+          "msg" : "313233343030",
+          "sig" : "01000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001",
+          "result" : "invalid",
+          "flags" : [
+            "EdgeCase"
+          ]
+        },
+        {
+          "tcId" : 74,
+          "comment" : "Signatures with special case values for r and s.",
+          "msg" : "313233343030",
+          "sig" : "0100000000000000000000000000000000000000000000000000000000005d7b4b5342bc7befef73fd33e4bbe3c2f7995919dd72c0605e6ab4ae",
+          "result" : "invalid",
+          "flags" : [
+            "EdgeCase"
+          ]
+        },
+        {
+          "tcId" : 75,
+          "comment" : "Signatures with special case values for r and s.",
+          "msg" : "313233343030",
+          "sig" : "0100000000000000000000000000000000000000000000000000000000005d7b4b5342bc7befef73fd33e4bbe3c2f7995919dd72c0605e6ab4af",
+          "result" : "invalid",
+          "flags" : [
+            "EdgeCase"
+          ]
+        },
+        {
+          "tcId" : 76,
+          "comment" : "Signatures with special case values for r and s.",
+          "msg" : "313233343030",
+          "sig" : "010000000000000000000000000000000000000000000000000000000000baf696a68578f7dfdee7fa67c977c785ef32b233bae580c0bcd5695c",
+          "result" : "invalid",
+          "flags" : [
+            "EdgeCase"
+          ]
+        },
+        {
+          "tcId" : 77,
+          "comment" : "Signatures with special case values for r and s.",
+          "msg" : "313233343030",
+          "sig" : "010000000000000000000000000000000000000000000000000000000000baf696a68578f7dfdee7fa67c977c785ef32b233bae580c0bcd5695d",
+          "result" : "invalid",
+          "flags" : [
+            "EdgeCase"
+          ]
+        },
+        {
+          "tcId" : 78,
+          "comment" : "Signatures with special case values for r and s.",
+          "msg" : "313233343030",
+          "sig" : "010000000000000000000000000000000000000000000000000000000000baf696a68578f7dfdee7fa67c977c785ef32b233bae580c0bcd5695e",
+          "result" : "invalid",
+          "flags" : [
+            "EdgeCase"
+          ]
+        },
+        {
+          "tcId" : 79,
+          "comment" : "Signatures with special case values for r and s.",
+          "msg" : "313233343030",
+          "sig" : "01000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000",
+          "result" : "invalid",
+          "flags" : [
+            "EdgeCase"
+          ]
+        },
+        {
+          "tcId" : 80,
+          "comment" : "Signatures with special case values for r and s.",
+          "msg" : "313233343030",
+          "sig" : "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000008f7935d9b9aae9bfabed887acf4951b6f32ec59e3baf3718e8eac4961f3efd3606e74351a9c4183339b809e7c2ae1c539ba7475b85d011adb8b47987754984695cac0e8f14b3360828a22ffa27110a3d62a993453409a0fe696c4658f84bdd20819c3709a01057b195adcd00233dba5484b6291f9d648ef883448677979cec04b434a6ac2e75e9985de23db0292fc1118c9ffa9d8181e7338db792b730d7b9e349592f68099872153915ea3d6b8b4653c633458f803b32a4c2e0f27290256e4e3f8a3b0838a1c450e4e18c1a29a37ddf5ea143de4b66ff04903ed5cf1623e158d487c608e97f211cd81dca23cb6e380765f822e342be484c05763939601cd667",
+          "result" : "invalid",
+          "flags" : [
+            "EdgeCase"
+          ]
+        },
+        {
+          "tcId" : 81,
+          "comment" : "Signatures with special case values for r and s.",
+          "msg" : "313233343030",
+          "sig" : "8f7935d9b9aae9bfabed887acf4951b6f32ec59e3baf3718e8eac4961f3efd3606e74351a9c4183339b809e7c2ae1c539ba7475b85d011adb8b47987754984695cac0e8f14b3360828a22ffa27110a3d62a993453409a0fe696c4658f84bdd20819c3709a01057b195adcd00233dba5484b6291f9d648ef883448677979cec04b434a6ac2e75e9985de23db0292fc1118c9ffa9d8181e7338db792b730d7b9e349592f68099872153915ea3d6b8b4653c633458f803b32a4c2e0f27290256e4e3f8a3b0838a1c450e4e18c1a29a37ddf5ea143de4b66ff04903ed5cf1623e158d487c608e97f211cd81dca23cb6e380765f822e342be484c05763939601cd66700000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+          "result" : "invalid",
+          "flags" : [
+            "EdgeCase"
+          ]
+        },
+        {
+          "tcId" : 82,
+          "comment" : "Signatures with special case values for r and s.",
+          "msg" : "313233343030",
+          "sig" : "8f7935d9b9aae9bfabed887acf4951b6f32ec59e3baf3718e8eac4961f3efd3606e74351a9c4183339b809e7c2ae1c539ba7475b85d011adb8b47987754984695cac0e8f14b3360828a22ffa27110a3d62a993453409a0fe696c4658f84bdd20819c3709a01057b195adcd00233dba5484b6291f9d648ef883448677979cec04b434a6ac2e75e9985de23db0292fc1118c9ffa9d8181e7338db792b730d7b9e349592f68099872153915ea3d6b8b4653c633458f803b32a4c2e0f27290256e4e3f8a3b0838a1c450e4e18c1a29a37ddf5ea143de4b66ff04903ed5cf1623e158d487c608e97f211cd81dca23cb6e380765f822e342be484c05763939601cd66700000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001",
+          "result" : "invalid",
+          "flags" : [
+            "EdgeCase"
+          ]
+        },
+        {
+          "tcId" : 83,
+          "comment" : "Signatures with special case values for r and s.",
+          "msg" : "313233343030",
+          "sig" : "8f7935d9b9aae9bfabed887acf4951b6f32ec59e3baf3718e8eac4961f3efd3606e74351a9c4183339b809e7c2ae1c539ba7475b85d011adb8b47987754984695cac0e8f14b3360828a22ffa27110a3d62a993453409a0fe696c4658f84bdd20819c3709a01057b195adcd00233dba5484b6291f9d648ef883448677979cec04b434a6ac2e75e9985de23db0292fc1118c9ffa9d8181e7338db792b730d7b9e349592f68099872153915ea3d6b8b4653c633458f803b32a4c2e0f27290256e4e3f8a3b0838a1c450e4e18c1a29a37ddf5ea143de4b66ff04903ed5cf1623e158d487c608e97f211cd81dca23cb6e380765f822e342be484c05763939601cd6670000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000005d7b4b5342bc7befef73fd33e4bbe3c2f7995919dd72c0605e6ab4ae",
+          "result" : "invalid",
+          "flags" : [
+            "EdgeCase"
+          ]
+        },
+        {
+          "tcId" : 84,
+          "comment" : "Signatures with special case values for r and s.",
+          "msg" : "313233343030",
+          "sig" : "8f7935d9b9aae9bfabed887acf4951b6f32ec59e3baf3718e8eac4961f3efd3606e74351a9c4183339b809e7c2ae1c539ba7475b85d011adb8b47987754984695cac0e8f14b3360828a22ffa27110a3d62a993453409a0fe696c4658f84bdd20819c3709a01057b195adcd00233dba5484b6291f9d648ef883448677979cec04b434a6ac2e75e9985de23db0292fc1118c9ffa9d8181e7338db792b730d7b9e349592f68099872153915ea3d6b8b4653c633458f803b32a4c2e0f27290256e4e3f8a3b0838a1c450e4e18c1a29a37ddf5ea143de4b66ff04903ed5cf1623e158d487c608e97f211cd81dca23cb6e380765f822e342be484c05763939601cd6670000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000005d7b4b5342bc7befef73fd33e4bbe3c2f7995919dd72c0605e6ab4af",
+          "result" : "invalid",
+          "flags" : [
+            "EdgeCase"
+          ]
+        },
+        {
+          "tcId" : 85,
+          "comment" : "Signatures with special case values for r and s.",
+          "msg" : "313233343030",
+          "sig" : "8f7935d9b9aae9bfabed887acf4951b6f32ec59e3baf3718e8eac4961f3efd3606e74351a9c4183339b809e7c2ae1c539ba7475b85d011adb8b47987754984695cac0e8f14b3360828a22ffa27110a3d62a993453409a0fe696c4658f84bdd20819c3709a01057b195adcd00233dba5484b6291f9d648ef883448677979cec04b434a6ac2e75e9985de23db0292fc1118c9ffa9d8181e7338db792b730d7b9e349592f68099872153915ea3d6b8b4653c633458f803b32a4c2e0f27290256e4e3f8a3b0838a1c450e4e18c1a29a37ddf5ea143de4b66ff04903ed5cf1623e158d487c608e97f211cd81dca23cb6e380765f822e342be484c05763939601cd667000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000baf696a68578f7dfdee7fa67c977c785ef32b233bae580c0bcd5695c",
+          "result" : "invalid",
+          "flags" : [
+            "EdgeCase"
+          ]
+        },
+        {
+          "tcId" : 86,
+          "comment" : "Signatures with special case values for r and s.",
+          "msg" : "313233343030",
+          "sig" : "8f7935d9b9aae9bfabed887acf4951b6f32ec59e3baf3718e8eac4961f3efd3606e74351a9c4183339b809e7c2ae1c539ba7475b85d011adb8b47987754984695cac0e8f14b3360828a22ffa27110a3d62a993453409a0fe696c4658f84bdd20819c3709a01057b195adcd00233dba5484b6291f9d648ef883448677979cec04b434a6ac2e75e9985de23db0292fc1118c9ffa9d8181e7338db792b730d7b9e349592f68099872153915ea3d6b8b4653c633458f803b32a4c2e0f27290256e4e3f8a3b0838a1c450e4e18c1a29a37ddf5ea143de4b66ff04903ed5cf1623e158d487c608e97f211cd81dca23cb6e380765f822e342be484c05763939601cd667000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000baf696a68578f7dfdee7fa67c977c785ef32b233bae580c0bcd5695d",
+          "result" : "invalid",
+          "flags" : [
+            "EdgeCase"
+          ]
+        },
+        {
+          "tcId" : 87,
+          "comment" : "Signatures with special case values for r and s.",
+          "msg" : "313233343030",
+          "sig" : "8f7935d9b9aae9bfabed887acf4951b6f32ec59e3baf3718e8eac4961f3efd3606e74351a9c4183339b809e7c2ae1c539ba7475b85d011adb8b47987754984695cac0e8f14b3360828a22ffa27110a3d62a993453409a0fe696c4658f84bdd20819c3709a01057b195adcd00233dba5484b6291f9d648ef883448677979cec04b434a6ac2e75e9985de23db0292fc1118c9ffa9d8181e7338db792b730d7b9e349592f68099872153915ea3d6b8b4653c633458f803b32a4c2e0f27290256e4e3f8a3b0838a1c450e4e18c1a29a37ddf5ea143de4b66ff04903ed5cf1623e158d487c608e97f211cd81dca23cb6e380765f822e342be484c05763939601cd667000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000baf696a68578f7dfdee7fa67c977c785ef32b233bae580c0bcd5695e",
+          "result" : "invalid",
+          "flags" : [
+            "EdgeCase"
+          ]
+        },
+        {
+          "tcId" : 88,
+          "comment" : "Signatures with special case values for r and s.",
+          "msg" : "313233343030",
+          "sig" : "8f7935d9b9aae9bfabed887acf4951b6f32ec59e3baf3718e8eac4961f3efd3606e74351a9c4183339b809e7c2ae1c539ba7475b85d011adb8b47987754984695cac0e8f14b3360828a22ffa27110a3d62a993453409a0fe696c4658f84bdd20819c3709a01057b195adcd00233dba5484b6291f9d648ef883448677979cec04b434a6ac2e75e9985de23db0292fc1118c9ffa9d8181e7338db792b730d7b9e349592f68099872153915ea3d6b8b4653c633458f803b32a4c2e0f27290256e4e3f8a3b0838a1c450e4e18c1a29a37ddf5ea143de4b66ff04903ed5cf1623e158d487c608e97f211cd81dca23cb6e380765f822e342be484c05763939601cd66700000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000",
+          "result" : "invalid",
+          "flags" : [
+            "EdgeCase"
+          ]
+        },
+        {
+          "tcId" : 89,
+          "comment" : "Signatures with special case values for r and s.",
+          "msg" : "313233343030",
+          "sig" : "8f7935d9b9aae9bfabed887acf4951b6f32ec59e3baf3718e8eac4961f3efd3606e74351a9c4183339b809e7c2ae1c539ba7475b85d011adb8b47987754984695cac0e8f14b3360828a22ffa27110a3d62a993453409a0fe696c4658f84bdd20819c3709a01057b195adcd00233dba5484b6291f9d648ef883448677979cec04b434a6ac2e75e9985de23db0292fc1118c9ffa9d8181e7338db792b730d7b9e349592f68099872153915ea3d6b8b4653c633458f803b32a4c2e0f27290256e4e3f8a3b0838a1c450e4e18c1a29a37ddf5ea143de4b66ff04903ed5cf1623e158d487c608e97f211cd81dca23cb6e380765f822e342be484c05763939601cd6678f7935d9b9aae9bfabed887acf4951b6f32ec59e3baf3718e8eac4961f3efd3606e74351a9c4183339b809e7c2ae1c539ba7475b85d011adb8b47987754984695cac0e8f14b3360828a22ffa27110a3d62a993453409a0fe696c4658f84bdd20819c3709a01057b195adcd00233dba5484b6291f9d648ef883448677979cec04b434a6ac2e75e9985de23db0292fc1118c9ffa9d8181e7338db792b730d7b9e349592f68099872153915ea3d6b8b4653c633458f803b32a4c2e0f27290256e4e3f8a3b0838a1c450e4e18c1a29a37ddf5ea143de4b66ff04903ed5cf1623e158d487c608e97f211cd81dca23cb6e380765f822e342be484c05763939601cd667",
+          "result" : "invalid",
+          "flags" : [
+            "EdgeCase"
+          ]
+        },
+        {
+          "tcId" : 90,
+          "comment" : "random signatures",
+          "msg" : "313233343030",
+          "sig" : "a939df97ddbe605a925e2456acc196ceea94410d54eed9d501befb902f50ce7bac70f84f265794a3ada363f9afacf7b88c5273e23cac5e55",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 91,
+          "comment" : "random signatures",
+          "msg" : "313233343030",
+          "sig" : "3b98fa1f5ea18af8e2878571152f257accf243342582a757535f4a461d86c74f77cde3fdeb48efa02ca06a5264981310fa5922339d52dfff",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 92,
+          "comment" : "random signatures",
+          "msg" : "313233343030",
+          "sig" : "6413ccb5d0de22129ab5f861f571d9d9419e057101f990cebb2a52e53e332c78c75288f96057795872cbe64f343100b5df2353f60ed257f5",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 93,
+          "comment" : "random signatures",
+          "msg" : "313233343030",
+          "sig" : "19dc7c18a0ca1e947b095782aa5ab1e6c3f2ca329d6070959833d88c183eefdcfd75ff8dcdb2c17c184529b8accfa7cb2a5c94d214fa459c",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 94,
+          "comment" : "random signatures",
+          "msg" : "313233343030",
+          "sig" : "720931df5201f87af025960a55f815e841d827b85f047b789bb026f125541b566f22f776996699acd28248c9c3c3313d1508c8a09cc582e6",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 95,
+          "comment" : "special case hash",
+          "msg" : "32323534363238393834",
+          "sig" : "ae0bf0ce838e2edb37604efa49b6cd1d5f900c3c64e5736c673339b818ef9233f76217a6ad249b1f08c59457918a60ea86e8c2a277938c89",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 96,
+          "comment" : "special case hash",
+          "msg" : "31383237383738363130",
+          "sig" : "863925f1ecb1dbf5a42d756df18161339f89034584f3642fe5fa43c82f0a360afd74ead00fca0e66c4564e2ceda8870e61059e8ca380f98a",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 97,
+          "comment" : "special case hash",
+          "msg" : "31353138383631373039",
+          "sig" : "7bdc97bca7f3013fc6b6fc0034d723de4cf7c7039d09af4ef5f2f4fa2650562418258e080bf50e7b81d95b4ec77b92991a26d0386833ea74",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 98,
+          "comment" : "special case hash",
+          "msg" : "32313239323333343232",
+          "sig" : "051b0d01cfc2a31d139a670eb6f091e9436cc525a9b0242e49428b63718785905b3499e7934112656136da4809529f068c50f96e8e834b76",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 99,
+          "comment" : "special case hash",
+          "msg" : "31323231393739303539",
+          "sig" : "099ce9fa75f5fff9cf3ca5781378269376d9faa205711a6b8aa15690240586c456884c48b71a2e5b0a1dd0bb4471d5c9bc11c06e6618f84f",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 100,
+          "comment" : "special case hash",
+          "msg" : "32333032353637363131",
+          "sig" : "52a9967eb246ed578e094b3fd0722864015f065e419fe86dbc9656264b1a9a97c54387f2a4a6ed53c7280450151ec94979e8648bf0307db7",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 101,
+          "comment" : "special case hash",
+          "msg" : "31313035383638343732",
+          "sig" : "a5d86a6109be1f7fc13bfa24f3988ab773dd31fc48c078bcf1810d806db2be3b6ae263111b540ab708acdf1d72408fd073e8032634d2dfcc",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 102,
+          "comment" : "special case hash",
+          "msg" : "31343636363134343432",
+          "sig" : "6fe4095c131b39ec9e568d2079701707f68f8fc2adbaa110b6b250239f8b5e066750f5e9f2afe77a3a377367288637c6d045d53900368a66",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 103,
+          "comment" : "special case hash",
+          "msg" : "343431393536343230",
+          "sig" : "255b9c7a2e453c0e737c6e8cdb2d0a70ff83286381636c8e257acfde4da758b8cc6b44beb5334530d0f18aa435f1f13624f57408e5256a3d",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 104,
+          "comment" : "special case hash",
+          "msg" : "31393639343836303634",
+          "sig" : "1cfdc22c4198e7c2e8c5f4d444a66af35f4fc050ab5cd79d53e4c2fe08fa67477ae8bd723537f3f67bdc07691341cab13c60ac6619e4fd0e",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 105,
+          "comment" : "special case hash",
+          "msg" : "32323335363732383833",
+          "sig" : "07e4399a8efea40467291eadd4b72603f5239585dcdaa9af0886b4f1aa6fc9c29a83b42cc38177643363381764b7bcb0ee1b36e9dcc1305c",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 106,
+          "comment" : "special case hash",
+          "msg" : "32323537383433373033",
+          "sig" : "8325d2277a644be50232ac0d5d8ef9672c3512bcb63518e57f9da7f86cdcfa9c16a84114784db6a775802937cfbe796df1d1883b330c4d5d",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 107,
+          "comment" : "special case hash",
+          "msg" : "393434353030393436",
+          "sig" : "b56f2fc3a14310f4f7139e4b87c63b2603094c270ba9ead2b3689dab1188a91b903413844e241fe4f7118635c7c085a465dfa89fe81cd072",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 108,
+          "comment" : "special case hash",
+          "msg" : "31363837373839343130",
+          "sig" : "8d6dd789d09df289b7344a0868d9d93c61ef71ba2aa60f57a904496231da5aea906b4c5618def7f89d275ce6d3947bd00cd77044d213f587",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 109,
+          "comment" : "special case hash",
+          "msg" : "333933323631323238",
+          "sig" : "9a489a5bf29ac49e700ed1c7a61eaf422242e9a9f706f3093835349406b93abe7678e8bb9e6a3744581ba11e657021299f76b7803ce15fcb",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 110,
+          "comment" : "special case hash",
+          "msg" : "31303733353731303935",
+          "sig" : "89eef41c40f43032e2c17f80e3bfa8125ba4bef9c5590ea7704067c15a61599ed31031a0d5a9ae6fb1338b0002c7e647a4a76738c7f7ffdb",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 111,
+          "comment" : "special case hash",
+          "msg" : "3630383837343734",
+          "sig" : "b1b4bd210c230ad71527f0afdf31872d583978e7b44a4c8b0846f4fe912a4e8750aeaa073dfca5c206f645a8e8f498067331ec037cbbd0e2",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 112,
+          "comment" : "special case hash",
+          "msg" : "31313932353639393632",
+          "sig" : "4ad46013a0286073fbbfed901623f6838ccd6c81e3e18570b2f5c13c933c2e37d7f559f905fa14277144e2b64d20bf03c41069286139d8cc",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 113,
+          "comment" : "special case hash",
+          "msg" : "3930303736303933",
+          "sig" : "159879b8e270418199fb051152897126c80286bd38343fe914737b368a31fa7a9aac01e3df0770d6eaa9476ea36f47295c194a50d62b5eab",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 114,
+          "comment" : "special case hash",
+          "msg" : "31363032383336313337",
+          "sig" : "269cc182e0bbd081be7d135ff72355c67a58336657767abf4b9b64051684f1019a21d80feb1bdb4554933e8067feb6f0bf17437d2e63aaa6",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 115,
+          "comment" : "special case hash",
+          "msg" : "32303830323435363734",
+          "sig" : "1fd07fe19939130250715186cc77196dcbe20e8e6d67c47b0a6dcf28776f5809de588faddee252de1755a95f7b1f8a073fec81bad1972024",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 116,
+          "comment" : "special case hash",
+          "msg" : "31373938323734363539",
+          "sig" : "5b2d08ff9d8314a064b9bf7e65efc880c41b37dab090c5a33405664b6f790ac01d38c8adf3e9012f3f0e5bc38e17778cdcddf2cddabc75b0",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 117,
+          "comment" : "special case hash",
+          "msg" : "31313535353737373230",
+          "sig" : "6e6d35062b651c452c25327b4d99544fc2262be58c57bc8ff75f193a710c4ab62dfa6fb982505b9c4415ffb117808ec1c4b8a5aee5d92722",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 118,
+          "comment" : "special case hash",
+          "msg" : "32343332343734363634",
+          "sig" : "416b0d4f56fb6e2d1075e910c4cb349e8bff99f60aaaafa6a7398f45212d7473330f9bc0e22758072195982cc50d6f4146c87ff72be0bbf8",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 119,
+          "comment" : "special case hash",
+          "msg" : "32343137323832323737",
+          "sig" : "5f123d0b2862885918d2a67afc9743657bc6c603abfc0ff7c1d11a272ce308192c6ff01dd1eeb1709be7bfeab115a0edca1bc7b8de901f5a",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 120,
+          "comment" : "special case hash",
+          "msg" : "3737383734373731",
+          "sig" : "6aaad7b9f862239389d833ab039e7d63b84401bb05155a228848cad479a27fe2e493a1d29020cbb16c2921b1a87bd01bf8ef33e2d9882a37",
+          "result" : "valid",
+          "flags" : []
+        }
+      ]
+    },
+    {
+      "key" : {
+        "g" : "16a65c58204850704e7502a39757040d34da3a3478c154d4e4a5c02d242ee04f96e61e4bd0904abdac8f37eeb1e09f3182d23c9043cb642f88004160edf9ca09b32076a79c32a627f2473e91879ba2c4e744bd2081544cb55b802c368d1fa83ed489e94e0fa0688e32428a5c78c478c68d0527b71c9a3abb0b0be12c44689639e7d3ce74db101a65aa2b87f64c6826db3ec72f4b5599834bb4edb02f7c90e9a496d3a55d535bebfc45d4f619f63f3dedbb873925c2f224e07731296da887ec1e4748f87efb5fdeb75484316b2232dee553ddaf02112b0d1f02da30973224fe27aeda8b9d4b2922d9ba8be39ed9e103a63c52810bc688b7e2ed4316e1ef17dbde",
+        "keySize" : 2048,
+        "p" : "008f7935d9b9aae9bfabed887acf4951b6f32ec59e3baf3718e8eac4961f3efd3606e74351a9c4183339b809e7c2ae1c539ba7475b85d011adb8b47987754984695cac0e8f14b3360828a22ffa27110a3d62a993453409a0fe696c4658f84bdd20819c3709a01057b195adcd00233dba5484b6291f9d648ef883448677979cec04b434a6ac2e75e9985de23db0292fc1118c9ffa9d8181e7338db792b730d7b9e349592f68099872153915ea3d6b8b4653c633458f803b32a4c2e0f27290256e4e3f8a3b0838a1c450e4e18c1a29a37ddf5ea143de4b66ff04903ed5cf1623e158d487c608e97f211cd81dca23cb6e380765f822e342be484c05763939601cd667",
+        "q" : "00baf696a68578f7dfdee7fa67c977c785ef32b233bae580c0bcd5695d",
+        "type" : "DsaPublicKey",
+        "y" : "6978b68d31334ee5bc7b3e91ab6c2336fab45c64836bd92cb5337b734db9e8e44f889f8869829f4fe174dc9344c164a0ba5b0126259ba8a43f607564fa4a1d0d49645e1d5886a1fc485e2fe91e56eae330da05e17b0b3d018c290285b249bc409e7af54300fc7c3eb34911457e2371931ad9302e8450cd95df3d561ea0ad94d0a2eabcafe0dd6728fb280029b556d9f4fa7c0f46a7804329936708e97e11fc22b2a50761a890c65b5fea2a1a4172f6be9eaa60e738cdf60c015142e2e562bb62a11e810ccdf0bf633307382f2d9a9769b115dfcdab4bacae73feca289db209dce34cbe126e8c7f9d9e4f8f711349a608d567b48c050e9dfb32bc184ecaa4f0f0"
+      },
+      "keyDer" : "308203423082023506072a8648ce3804013082022802820101008f7935d9b9aae9bfabed887acf4951b6f32ec59e3baf3718e8eac4961f3efd3606e74351a9c4183339b809e7c2ae1c539ba7475b85d011adb8b47987754984695cac0e8f14b3360828a22ffa27110a3d62a993453409a0fe696c4658f84bdd20819c3709a01057b195adcd00233dba5484b6291f9d648ef883448677979cec04b434a6ac2e75e9985de23db0292fc1118c9ffa9d8181e7338db792b730d7b9e349592f68099872153915ea3d6b8b4653c633458f803b32a4c2e0f27290256e4e3f8a3b0838a1c450e4e18c1a29a37ddf5ea143de4b66ff04903ed5cf1623e158d487c608e97f211cd81dca23cb6e380765f822e342be484c05763939601cd667021d00baf696a68578f7dfdee7fa67c977c785ef32b233bae580c0bcd5695d0282010016a65c58204850704e7502a39757040d34da3a3478c154d4e4a5c02d242ee04f96e61e4bd0904abdac8f37eeb1e09f3182d23c9043cb642f88004160edf9ca09b32076a79c32a627f2473e91879ba2c4e744bd2081544cb55b802c368d1fa83ed489e94e0fa0688e32428a5c78c478c68d0527b71c9a3abb0b0be12c44689639e7d3ce74db101a65aa2b87f64c6826db3ec72f4b5599834bb4edb02f7c90e9a496d3a55d535bebfc45d4f619f63f3dedbb873925c2f224e07731296da887ec1e4748f87efb5fdeb75484316b2232dee553ddaf02112b0d1f02da30973224fe27aeda8b9d4b2922d9ba8be39ed9e103a63c52810bc688b7e2ed4316e1ef17dbde0382010500028201006978b68d31334ee5bc7b3e91ab6c2336fab45c64836bd92cb5337b734db9e8e44f889f8869829f4fe174dc9344c164a0ba5b0126259ba8a43f607564fa4a1d0d49645e1d5886a1fc485e2fe91e56eae330da05e17b0b3d018c290285b249bc409e7af54300fc7c3eb34911457e2371931ad9302e8450cd95df3d561ea0ad94d0a2eabcafe0dd6728fb280029b556d9f4fa7c0f46a7804329936708e97e11fc22b2a50761a890c65b5fea2a1a4172f6be9eaa60e738cdf60c015142e2e562bb62a11e810ccdf0bf633307382f2d9a9769b115dfcdab4bacae73feca289db209dce34cbe126e8c7f9d9e4f8f711349a608d567b48c050e9dfb32bc184ecaa4f0f0",
+      "keyPem" : "-----BEGIN PUBLIC KEY-----\nMIIDQjCCAjUGByqGSM44BAEwggIoAoIBAQCPeTXZuarpv6vtiHrPSVG28y7Fnjuv\nNxjo6sSWHz79NgbnQ1GpxBgzObgJ58KuHFObp0dbhdARrbi0eYd1SYRpXKwOjxSz\nNggooi/6JxEKPWKpk0U0CaD+aWxGWPhL3SCBnDcJoBBXsZWtzQAjPbpUhLYpH51k\njviDRIZ3l5zsBLQ0pqwudemYXeI9sCkvwRGMn/qdgYHnM423krcw17njSVkvaAmY\nchU5Feo9a4tGU8YzRY+AOzKkwuDycpAlbk4/ijsIOKHEUOThjBopo33fXqFD3ktm\n/wSQPtXPFiPhWNSHxgjpfyEc2B3KI8tuOAdl+CLjQr5ITAV2OTlgHNZnAh0AuvaW\npoV499/e5/pnyXfHhe8ysjO65YDAvNVpXQKCAQAWplxYIEhQcE51AqOXVwQNNNo6\nNHjBVNTkpcAtJC7gT5bmHkvQkEq9rI837rHgnzGC0jyQQ8tkL4gAQWDt+coJsyB2\np5wypifyRz6Rh5uixOdEvSCBVEy1W4AsNo0fqD7UielOD6BojjJCilx4xHjGjQUn\ntxyaOrsLC+EsRGiWOefTznTbEBplqiuH9kxoJts+xy9LVZmDS7TtsC98kOmkltOl\nXVNb6/xF1PYZ9j897buHOSXC8iTgdzEpbaiH7B5HSPh++1/et1SEMWsiMt7lU92v\nAhErDR8C2jCXMiT+J67ai51LKSLZuovjntnhA6Y8UoELxoi34u1DFuHvF9veA4IB\nBQACggEAaXi2jTEzTuW8ez6Rq2wjNvq0XGSDa9kstTN7c0256ORPiJ+IaYKfT+F0\n3JNEwWSgulsBJiWbqKQ/YHVk+kodDUlkXh1YhqH8SF4v6R5W6uMw2gXhews9AYwp\nAoWySbxAnnr1QwD8fD6zSRFFfiNxkxrZMC6EUM2V3z1WHqCtlNCi6ryv4N1nKPso\nACm1Vtn0+nwPRqeAQymTZwjpfhH8IrKlB2GokMZbX+oqGkFy9r6eqmDnOM32DAFR\nQuLlYrtioR6BDM3wv2MzBzgvLZqXabEV382rS6yuc/7KKJ2yCdzjTL4Sbox/nZ5P\nj3ETSaYI1We0jAUOnfsyvBhOyqTw8A==\n-----END PUBLIC KEY-----",
+      "sha" : "SHA-224",
+      "type" : "DsaP1363Verify",
+      "tests" : [
+        {
+          "tcId" : 121,
+          "comment" : "r,s = 1,1",
+          "msg" : "54657374",
+          "sig" : "0000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000001",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 122,
+          "comment" : "r,s = 1,5",
+          "msg" : "54657374",
+          "sig" : "0000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000005",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 123,
+          "comment" : "r = 1, u2 small",
+          "msg" : "54657374",
+          "sig" : "000000000000000000000000000000000000000000000000000000019592121ed12d93197f1ffb863ac63937f28ef4f62f1e009a30aabab1",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 124,
+          "comment" : "r = 1, s = q-1",
+          "msg" : "54657374",
+          "sig" : "00000000000000000000000000000000000000000000000000000001baf696a68578f7dfdee7fa67c977c785ef32b233bae580c0bcd5695c",
+          "result" : "valid",
+          "flags" : []
+        }
+      ]
+    },
+    {
+      "key" : {
+        "g" : "16a65c58204850704e7502a39757040d34da3a3478c154d4e4a5c02d242ee04f96e61e4bd0904abdac8f37eeb1e09f3182d23c9043cb642f88004160edf9ca09b32076a79c32a627f2473e91879ba2c4e744bd2081544cb55b802c368d1fa83ed489e94e0fa0688e32428a5c78c478c68d0527b71c9a3abb0b0be12c44689639e7d3ce74db101a65aa2b87f64c6826db3ec72f4b5599834bb4edb02f7c90e9a496d3a55d535bebfc45d4f619f63f3dedbb873925c2f224e07731296da887ec1e4748f87efb5fdeb75484316b2232dee553ddaf02112b0d1f02da30973224fe27aeda8b9d4b2922d9ba8be39ed9e103a63c52810bc688b7e2ed4316e1ef17dbde",
+        "keySize" : 2048,
+        "p" : "008f7935d9b9aae9bfabed887acf4951b6f32ec59e3baf3718e8eac4961f3efd3606e74351a9c4183339b809e7c2ae1c539ba7475b85d011adb8b47987754984695cac0e8f14b3360828a22ffa27110a3d62a993453409a0fe696c4658f84bdd20819c3709a01057b195adcd00233dba5484b6291f9d648ef883448677979cec04b434a6ac2e75e9985de23db0292fc1118c9ffa9d8181e7338db792b730d7b9e349592f68099872153915ea3d6b8b4653c633458f803b32a4c2e0f27290256e4e3f8a3b0838a1c450e4e18c1a29a37ddf5ea143de4b66ff04903ed5cf1623e158d487c608e97f211cd81dca23cb6e380765f822e342be484c05763939601cd667",
+        "q" : "00baf696a68578f7dfdee7fa67c977c785ef32b233bae580c0bcd5695d",
+        "type" : "DsaPublicKey",
+        "y" : "2a64953bde40789f80ed8227192286115b92d09d5de96904e803ec4ecfbd73e0f08e82910febf19fa3cdc55ff20eb970d9c712f44785c0fd592c17fb43f4625357a4ac8a1a628f72040ae5360839c7c1f6b214e7a15530fe22887139ea0f05a9daf9d95bd6b7467abf9107c9fbe31e36330276eeccce3d59635206d60ca256f9af60627626b0594984b5a075c42c42067fa8c330f258bcf145df27a97da8ee419b54e3ab296c7ce9ef6a0113389b3cac7885b44b3722d27cad60e4e5a924a1ed0342cea9e99256f6bc1308d4af2c0af9379b1cf2119ce113c085705f5519ccc1ba8562a2236190d3f0c0a10f01466ad79a48127c28433f6b34e24a539af60f3d"
+      },
+      "keyDer" : "308203423082023506072a8648ce3804013082022802820101008f7935d9b9aae9bfabed887acf4951b6f32ec59e3baf3718e8eac4961f3efd3606e74351a9c4183339b809e7c2ae1c539ba7475b85d011adb8b47987754984695cac0e8f14b3360828a22ffa27110a3d62a993453409a0fe696c4658f84bdd20819c3709a01057b195adcd00233dba5484b6291f9d648ef883448677979cec04b434a6ac2e75e9985de23db0292fc1118c9ffa9d8181e7338db792b730d7b9e349592f68099872153915ea3d6b8b4653c633458f803b32a4c2e0f27290256e4e3f8a3b0838a1c450e4e18c1a29a37ddf5ea143de4b66ff04903ed5cf1623e158d487c608e97f211cd81dca23cb6e380765f822e342be484c05763939601cd667021d00baf696a68578f7dfdee7fa67c977c785ef32b233bae580c0bcd5695d0282010016a65c58204850704e7502a39757040d34da3a3478c154d4e4a5c02d242ee04f96e61e4bd0904abdac8f37eeb1e09f3182d23c9043cb642f88004160edf9ca09b32076a79c32a627f2473e91879ba2c4e744bd2081544cb55b802c368d1fa83ed489e94e0fa0688e32428a5c78c478c68d0527b71c9a3abb0b0be12c44689639e7d3ce74db101a65aa2b87f64c6826db3ec72f4b5599834bb4edb02f7c90e9a496d3a55d535bebfc45d4f619f63f3dedbb873925c2f224e07731296da887ec1e4748f87efb5fdeb75484316b2232dee553ddaf02112b0d1f02da30973224fe27aeda8b9d4b2922d9ba8be39ed9e103a63c52810bc688b7e2ed4316e1ef17dbde0382010500028201002a64953bde40789f80ed8227192286115b92d09d5de96904e803ec4ecfbd73e0f08e82910febf19fa3cdc55ff20eb970d9c712f44785c0fd592c17fb43f4625357a4ac8a1a628f72040ae5360839c7c1f6b214e7a15530fe22887139ea0f05a9daf9d95bd6b7467abf9107c9fbe31e36330276eeccce3d59635206d60ca256f9af60627626b0594984b5a075c42c42067fa8c330f258bcf145df27a97da8ee419b54e3ab296c7ce9ef6a0113389b3cac7885b44b3722d27cad60e4e5a924a1ed0342cea9e99256f6bc1308d4af2c0af9379b1cf2119ce113c085705f5519ccc1ba8562a2236190d3f0c0a10f01466ad79a48127c28433f6b34e24a539af60f3d",
+      "keyPem" : "-----BEGIN PUBLIC KEY-----\nMIIDQjCCAjUGByqGSM44BAEwggIoAoIBAQCPeTXZuarpv6vtiHrPSVG28y7Fnjuv\nNxjo6sSWHz79NgbnQ1GpxBgzObgJ58KuHFObp0dbhdARrbi0eYd1SYRpXKwOjxSz\nNggooi/6JxEKPWKpk0U0CaD+aWxGWPhL3SCBnDcJoBBXsZWtzQAjPbpUhLYpH51k\njviDRIZ3l5zsBLQ0pqwudemYXeI9sCkvwRGMn/qdgYHnM423krcw17njSVkvaAmY\nchU5Feo9a4tGU8YzRY+AOzKkwuDycpAlbk4/ijsIOKHEUOThjBopo33fXqFD3ktm\n/wSQPtXPFiPhWNSHxgjpfyEc2B3KI8tuOAdl+CLjQr5ITAV2OTlgHNZnAh0AuvaW\npoV499/e5/pnyXfHhe8ysjO65YDAvNVpXQKCAQAWplxYIEhQcE51AqOXVwQNNNo6\nNHjBVNTkpcAtJC7gT5bmHkvQkEq9rI837rHgnzGC0jyQQ8tkL4gAQWDt+coJsyB2\np5wypifyRz6Rh5uixOdEvSCBVEy1W4AsNo0fqD7UielOD6BojjJCilx4xHjGjQUn\ntxyaOrsLC+EsRGiWOefTznTbEBplqiuH9kxoJts+xy9LVZmDS7TtsC98kOmkltOl\nXVNb6/xF1PYZ9j897buHOSXC8iTgdzEpbaiH7B5HSPh++1/et1SEMWsiMt7lU92v\nAhErDR8C2jCXMiT+J67ai51LKSLZuovjntnhA6Y8UoELxoi34u1DFuHvF9veA4IB\nBQACggEAKmSVO95AeJ+A7YInGSKGEVuS0J1d6WkE6APsTs+9c+DwjoKRD+vxn6PN\nxV/yDrlw2ccS9EeFwP1ZLBf7Q/RiU1ekrIoaYo9yBArlNgg5x8H2shTnoVUw/iKI\ncTnqDwWp2vnZW9a3Rnq/kQfJ++MeNjMCdu7Mzj1ZY1IG1gyiVvmvYGJ2JrBZSYS1\noHXELEIGf6jDMPJYvPFF3yepfajuQZtU46spbHzp72oBEzibPKx4hbRLNyLSfK1g\n5OWpJKHtA0LOqemSVva8EwjUrywK+TebHPIRnOETwIVwX1UZzMG6hWKiI2GQ0/DA\noQ8BRmrXmkgSfChDP2s04kpTmvYPPQ==\n-----END PUBLIC KEY-----",
+      "sha" : "SHA-224",
+      "type" : "DsaP1363Verify",
+      "tests" : [
+        {
+          "tcId" : 125,
+          "comment" : "s = 1",
+          "msg" : "54657374",
+          "sig" : "5a252f4fc55618747fd94b13c9bee62bb958d85777cb07dd90710d2400000000000000000000000000000000000000000000000000000001",
+          "result" : "valid",
+          "flags" : []
+        }
+      ]
+    },
+    {
+      "key" : {
+        "g" : "16a65c58204850704e7502a39757040d34da3a3478c154d4e4a5c02d242ee04f96e61e4bd0904abdac8f37eeb1e09f3182d23c9043cb642f88004160edf9ca09b32076a79c32a627f2473e91879ba2c4e744bd2081544cb55b802c368d1fa83ed489e94e0fa0688e32428a5c78c478c68d0527b71c9a3abb0b0be12c44689639e7d3ce74db101a65aa2b87f64c6826db3ec72f4b5599834bb4edb02f7c90e9a496d3a55d535bebfc45d4f619f63f3dedbb873925c2f224e07731296da887ec1e4748f87efb5fdeb75484316b2232dee553ddaf02112b0d1f02da30973224fe27aeda8b9d4b2922d9ba8be39ed9e103a63c52810bc688b7e2ed4316e1ef17dbde",
+        "keySize" : 2048,
+        "p" : "008f7935d9b9aae9bfabed887acf4951b6f32ec59e3baf3718e8eac4961f3efd3606e74351a9c4183339b809e7c2ae1c539ba7475b85d011adb8b47987754984695cac0e8f14b3360828a22ffa27110a3d62a993453409a0fe696c4658f84bdd20819c3709a01057b195adcd00233dba5484b6291f9d648ef883448677979cec04b434a6ac2e75e9985de23db0292fc1118c9ffa9d8181e7338db792b730d7b9e349592f68099872153915ea3d6b8b4653c633458f803b32a4c2e0f27290256e4e3f8a3b0838a1c450e4e18c1a29a37ddf5ea143de4b66ff04903ed5cf1623e158d487c608e97f211cd81dca23cb6e380765f822e342be484c05763939601cd667",
+        "q" : "00baf696a68578f7dfdee7fa67c977c785ef32b233bae580c0bcd5695d",
+        "type" : "DsaPublicKey",
+        "y" : "1d8f9992387355ff9381199d883e099d798bb730a7ad074236eb863b14b6aafe487ff8e7276232e938537f18d0fbea02c9ad305b31ef80ca5bfa2560a128b7c6342c692f3ecaf31e16866fe6395f10e6669caed8aa827708d890241f0011f5c2f390804b462e93ea319de7a44bbaf21ff98743611a0a4dd6def604c0bd6ff9d673db27b3ef6b16ac6b32f9fac975562b15908acdf909636b8622467c4b08b812485270f2797f9421dd9998b60b83e738cd359767da3c69a1ec1c4848d1f8dd4bf07282dec668b0fefa480336b0cc428a546620075dfcb488e14076ec76d20bba7111eba9e74e7846502f2b33b9ace80dfd92077c4bc9f396ffa90947de3eb604"
+      },
+      "keyDer" : "308203423082023506072a8648ce3804013082022802820101008f7935d9b9aae9bfabed887acf4951b6f32ec59e3baf3718e8eac4961f3efd3606e74351a9c4183339b809e7c2ae1c539ba7475b85d011adb8b47987754984695cac0e8f14b3360828a22ffa27110a3d62a993453409a0fe696c4658f84bdd20819c3709a01057b195adcd00233dba5484b6291f9d648ef883448677979cec04b434a6ac2e75e9985de23db0292fc1118c9ffa9d8181e7338db792b730d7b9e349592f68099872153915ea3d6b8b4653c633458f803b32a4c2e0f27290256e4e3f8a3b0838a1c450e4e18c1a29a37ddf5ea143de4b66ff04903ed5cf1623e158d487c608e97f211cd81dca23cb6e380765f822e342be484c05763939601cd667021d00baf696a68578f7dfdee7fa67c977c785ef32b233bae580c0bcd5695d0282010016a65c58204850704e7502a39757040d34da3a3478c154d4e4a5c02d242ee04f96e61e4bd0904abdac8f37eeb1e09f3182d23c9043cb642f88004160edf9ca09b32076a79c32a627f2473e91879ba2c4e744bd2081544cb55b802c368d1fa83ed489e94e0fa0688e32428a5c78c478c68d0527b71c9a3abb0b0be12c44689639e7d3ce74db101a65aa2b87f64c6826db3ec72f4b5599834bb4edb02f7c90e9a496d3a55d535bebfc45d4f619f63f3dedbb873925c2f224e07731296da887ec1e4748f87efb5fdeb75484316b2232dee553ddaf02112b0d1f02da30973224fe27aeda8b9d4b2922d9ba8be39ed9e103a63c52810bc688b7e2ed4316e1ef17dbde0382010500028201001d8f9992387355ff9381199d883e099d798bb730a7ad074236eb863b14b6aafe487ff8e7276232e938537f18d0fbea02c9ad305b31ef80ca5bfa2560a128b7c6342c692f3ecaf31e16866fe6395f10e6669caed8aa827708d890241f0011f5c2f390804b462e93ea319de7a44bbaf21ff98743611a0a4dd6def604c0bd6ff9d673db27b3ef6b16ac6b32f9fac975562b15908acdf909636b8622467c4b08b812485270f2797f9421dd9998b60b83e738cd359767da3c69a1ec1c4848d1f8dd4bf07282dec668b0fefa480336b0cc428a546620075dfcb488e14076ec76d20bba7111eba9e74e7846502f2b33b9ace80dfd92077c4bc9f396ffa90947de3eb604",
+      "keyPem" : "-----BEGIN PUBLIC KEY-----\nMIIDQjCCAjUGByqGSM44BAEwggIoAoIBAQCPeTXZuarpv6vtiHrPSVG28y7Fnjuv\nNxjo6sSWHz79NgbnQ1GpxBgzObgJ58KuHFObp0dbhdARrbi0eYd1SYRpXKwOjxSz\nNggooi/6JxEKPWKpk0U0CaD+aWxGWPhL3SCBnDcJoBBXsZWtzQAjPbpUhLYpH51k\njviDRIZ3l5zsBLQ0pqwudemYXeI9sCkvwRGMn/qdgYHnM423krcw17njSVkvaAmY\nchU5Feo9a4tGU8YzRY+AOzKkwuDycpAlbk4/ijsIOKHEUOThjBopo33fXqFD3ktm\n/wSQPtXPFiPhWNSHxgjpfyEc2B3KI8tuOAdl+CLjQr5ITAV2OTlgHNZnAh0AuvaW\npoV499/e5/pnyXfHhe8ysjO65YDAvNVpXQKCAQAWplxYIEhQcE51AqOXVwQNNNo6\nNHjBVNTkpcAtJC7gT5bmHkvQkEq9rI837rHgnzGC0jyQQ8tkL4gAQWDt+coJsyB2\np5wypifyRz6Rh5uixOdEvSCBVEy1W4AsNo0fqD7UielOD6BojjJCilx4xHjGjQUn\ntxyaOrsLC+EsRGiWOefTznTbEBplqiuH9kxoJts+xy9LVZmDS7TtsC98kOmkltOl\nXVNb6/xF1PYZ9j897buHOSXC8iTgdzEpbaiH7B5HSPh++1/et1SEMWsiMt7lU92v\nAhErDR8C2jCXMiT+J67ai51LKSLZuovjntnhA6Y8UoELxoi34u1DFuHvF9veA4IB\nBQACggEAHY+ZkjhzVf+TgRmdiD4JnXmLtzCnrQdCNuuGOxS2qv5If/jnJ2Iy6ThT\nfxjQ++oCya0wWzHvgMpb+iVgoSi3xjQsaS8+yvMeFoZv5jlfEOZmnK7YqoJ3CNiQ\nJB8AEfXC85CAS0Yuk+oxneekS7ryH/mHQ2EaCk3W3vYEwL1v+dZz2yez72sWrGsy\n+frJdVYrFZCKzfkJY2uGIkZ8Swi4EkhScPJ5f5Qh3ZmYtguD5zjNNZdn2jxpoewc\nSEjR+N1L8HKC3sZosP76SAM2sMxCilRmIAdd/LSI4UB27HbSC7pxEeup5054RlAv\nKzO5rOgN/ZIHfEvJ85b/qQlH3j62BA==\n-----END PUBLIC KEY-----",
+      "sha" : "SHA-224",
+      "type" : "DsaP1363Verify",
+      "tests" : [
+        {
+          "tcId" : 126,
+          "comment" : "u2 small",
+          "msg" : "54657374",
+          "sig" : "2b5a9e2ff5f7aa2ed6ff534908262d0ae5d070377f67704103a5a7c29592121ed12d93197f1ffb863ac63937f28ef4f62f1e009a30aabab1",
+          "result" : "valid",
+          "flags" : []
+        }
+      ]
+    },
+    {
+      "key" : {
+        "g" : "16a65c58204850704e7502a39757040d34da3a3478c154d4e4a5c02d242ee04f96e61e4bd0904abdac8f37eeb1e09f3182d23c9043cb642f88004160edf9ca09b32076a79c32a627f2473e91879ba2c4e744bd2081544cb55b802c368d1fa83ed489e94e0fa0688e32428a5c78c478c68d0527b71c9a3abb0b0be12c44689639e7d3ce74db101a65aa2b87f64c6826db3ec72f4b5599834bb4edb02f7c90e9a496d3a55d535bebfc45d4f619f63f3dedbb873925c2f224e07731296da887ec1e4748f87efb5fdeb75484316b2232dee553ddaf02112b0d1f02da30973224fe27aeda8b9d4b2922d9ba8be39ed9e103a63c52810bc688b7e2ed4316e1ef17dbde",
+        "keySize" : 2048,
+        "p" : "008f7935d9b9aae9bfabed887acf4951b6f32ec59e3baf3718e8eac4961f3efd3606e74351a9c4183339b809e7c2ae1c539ba7475b85d011adb8b47987754984695cac0e8f14b3360828a22ffa27110a3d62a993453409a0fe696c4658f84bdd20819c3709a01057b195adcd00233dba5484b6291f9d648ef883448677979cec04b434a6ac2e75e9985de23db0292fc1118c9ffa9d8181e7338db792b730d7b9e349592f68099872153915ea3d6b8b4653c633458f803b32a4c2e0f27290256e4e3f8a3b0838a1c450e4e18c1a29a37ddf5ea143de4b66ff04903ed5cf1623e158d487c608e97f211cd81dca23cb6e380765f822e342be484c05763939601cd667",
+        "q" : "00baf696a68578f7dfdee7fa67c977c785ef32b233bae580c0bcd5695d",
+        "type" : "DsaPublicKey",
+        "y" : "516b4a830ae8f21865f7467fcfe264ae975e08ea174bfa27dbea118f1998c473dcd30ec099580fd63dfe601ec2df835eef25597bebe18bac31c6bde258f6543d5703d8c3dfba6e26552ab773f557b6d9a429dd65e96e2473ee5b9383761eda17ac96fd9d239226ad14cd6647f2962b2d2297060dc7f2558d84e6da8ee4bdccb24c74acd7267551e434c7e54052af99dba6121f5efc86db6cdf6b8f9ce1ac77396187894c1420fbe90ec0845528a7b3212df13a3ff8eff84341271240623601fd41f3af8466aeffc0ff1f2eac1878d5fc604e9f19446cdf79865a4c2451cbbca978a254a0fe8fe19fb667e35787bc200b00452f42052bfc55e6fcf6ea9dd8f715"
+      },
+      "keyDer" : "308203423082023506072a8648ce3804013082022802820101008f7935d9b9aae9bfabed887acf4951b6f32ec59e3baf3718e8eac4961f3efd3606e74351a9c4183339b809e7c2ae1c539ba7475b85d011adb8b47987754984695cac0e8f14b3360828a22ffa27110a3d62a993453409a0fe696c4658f84bdd20819c3709a01057b195adcd00233dba5484b6291f9d648ef883448677979cec04b434a6ac2e75e9985de23db0292fc1118c9ffa9d8181e7338db792b730d7b9e349592f68099872153915ea3d6b8b4653c633458f803b32a4c2e0f27290256e4e3f8a3b0838a1c450e4e18c1a29a37ddf5ea143de4b66ff04903ed5cf1623e158d487c608e97f211cd81dca23cb6e380765f822e342be484c05763939601cd667021d00baf696a68578f7dfdee7fa67c977c785ef32b233bae580c0bcd5695d0282010016a65c58204850704e7502a39757040d34da3a3478c154d4e4a5c02d242ee04f96e61e4bd0904abdac8f37eeb1e09f3182d23c9043cb642f88004160edf9ca09b32076a79c32a627f2473e91879ba2c4e744bd2081544cb55b802c368d1fa83ed489e94e0fa0688e32428a5c78c478c68d0527b71c9a3abb0b0be12c44689639e7d3ce74db101a65aa2b87f64c6826db3ec72f4b5599834bb4edb02f7c90e9a496d3a55d535bebfc45d4f619f63f3dedbb873925c2f224e07731296da887ec1e4748f87efb5fdeb75484316b2232dee553ddaf02112b0d1f02da30973224fe27aeda8b9d4b2922d9ba8be39ed9e103a63c52810bc688b7e2ed4316e1ef17dbde038201050002820100516b4a830ae8f21865f7467fcfe264ae975e08ea174bfa27dbea118f1998c473dcd30ec099580fd63dfe601ec2df835eef25597bebe18bac31c6bde258f6543d5703d8c3dfba6e26552ab773f557b6d9a429dd65e96e2473ee5b9383761eda17ac96fd9d239226ad14cd6647f2962b2d2297060dc7f2558d84e6da8ee4bdccb24c74acd7267551e434c7e54052af99dba6121f5efc86db6cdf6b8f9ce1ac77396187894c1420fbe90ec0845528a7b3212df13a3ff8eff84341271240623601fd41f3af8466aeffc0ff1f2eac1878d5fc604e9f19446cdf79865a4c2451cbbca978a254a0fe8fe19fb667e35787bc200b00452f42052bfc55e6fcf6ea9dd8f715",
+      "keyPem" : "-----BEGIN PUBLIC KEY-----\nMIIDQjCCAjUGByqGSM44BAEwggIoAoIBAQCPeTXZuarpv6vtiHrPSVG28y7Fnjuv\nNxjo6sSWHz79NgbnQ1GpxBgzObgJ58KuHFObp0dbhdARrbi0eYd1SYRpXKwOjxSz\nNggooi/6JxEKPWKpk0U0CaD+aWxGWPhL3SCBnDcJoBBXsZWtzQAjPbpUhLYpH51k\njviDRIZ3l5zsBLQ0pqwudemYXeI9sCkvwRGMn/qdgYHnM423krcw17njSVkvaAmY\nchU5Feo9a4tGU8YzRY+AOzKkwuDycpAlbk4/ijsIOKHEUOThjBopo33fXqFD3ktm\n/wSQPtXPFiPhWNSHxgjpfyEc2B3KI8tuOAdl+CLjQr5ITAV2OTlgHNZnAh0AuvaW\npoV499/e5/pnyXfHhe8ysjO65YDAvNVpXQKCAQAWplxYIEhQcE51AqOXVwQNNNo6\nNHjBVNTkpcAtJC7gT5bmHkvQkEq9rI837rHgnzGC0jyQQ8tkL4gAQWDt+coJsyB2\np5wypifyRz6Rh5uixOdEvSCBVEy1W4AsNo0fqD7UielOD6BojjJCilx4xHjGjQUn\ntxyaOrsLC+EsRGiWOefTznTbEBplqiuH9kxoJts+xy9LVZmDS7TtsC98kOmkltOl\nXVNb6/xF1PYZ9j897buHOSXC8iTgdzEpbaiH7B5HSPh++1/et1SEMWsiMt7lU92v\nAhErDR8C2jCXMiT+J67ai51LKSLZuovjntnhA6Y8UoELxoi34u1DFuHvF9veA4IB\nBQACggEAUWtKgwro8hhl90Z/z+JkrpdeCOoXS/on2+oRjxmYxHPc0w7AmVgP1j3+\nYB7C34Ne7yVZe+vhi6wxxr3iWPZUPVcD2MPfum4mVSq3c/VXttmkKd1l6W4kc+5b\nk4N2HtoXrJb9nSOSJq0UzWZH8pYrLSKXBg3H8lWNhObajuS9zLJMdKzXJnVR5DTH\n5UBSr5nbphIfXvyG22zfa4+c4ax3OWGHiUwUIPvpDsCEVSinsyEt8To/+O/4Q0En\nEkBiNgH9QfOvhGau/8D/Hy6sGHjV/GBOnxlEbN95hlpMJFHLvKl4olSg/o/hn7Zn\n41eHvCALAEUvQgUr/FXm/Pbqndj3FQ==\n-----END PUBLIC KEY-----",
+      "sha" : "SHA-224",
+      "type" : "DsaP1363Verify",
+      "tests" : [
+        {
+          "tcId" : 127,
+          "comment" : "s = q - 1",
+          "msg" : "54657374",
+          "sig" : "2b5a9e2ff5f7aa2ed6ff534908262d0ae5d070377f67704103a5a7c2baf696a68578f7dfdee7fa67c977c785ef32b233bae580c0bcd5695c",
+          "result" : "valid",
+          "flags" : []
+        }
+      ]
+    }
+  ]
+}

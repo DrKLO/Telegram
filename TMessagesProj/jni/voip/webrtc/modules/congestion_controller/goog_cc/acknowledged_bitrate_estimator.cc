@@ -10,14 +10,19 @@
 
 #include "modules/congestion_controller/goog_cc/acknowledged_bitrate_estimator.h"
 
-#include <stddef.h>
-
 #include <algorithm>
 #include <memory>
 #include <utility>
+#include <vector>
 
+#include "absl/types/optional.h"
+#include "api/field_trials_view.h"
+#include "api/transport/network_types.h"
+#include "api/units/data_rate.h"
+#include "api/units/data_size.h"
+#include "api/units/timestamp.h"
+#include "modules/congestion_controller/goog_cc/bitrate_estimator.h"
 #include "rtc_base/checks.h"
-#include "rtc_base/numerics/safe_conversions.h"
 
 namespace webrtc {
 

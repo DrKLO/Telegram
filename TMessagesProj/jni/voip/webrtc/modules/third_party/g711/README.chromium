@@ -6,6 +6,7 @@ Date: 2018-06-25
 License: Custom license
 License File: LICENSE
 Security Critical: yes
+Shipped: yes
 
 Description:
 In line A-law and u-law conversion routines

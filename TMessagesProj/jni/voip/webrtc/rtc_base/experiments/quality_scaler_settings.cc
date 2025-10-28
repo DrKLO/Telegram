@@ -10,7 +10,7 @@
 
 #include "rtc_base/experiments/quality_scaler_settings.h"
 
-#include "api/transport/field_trial_based_config.h"
+#include "api/field_trials_view.h"
 #include "rtc_base/logging.h"
 
 namespace webrtc {
@@ -20,7 +20,7 @@ const double kMinScaleFactor = 0.01;
 }  // namespace
 
 QualityScalerSettings::QualityScalerSettings(
-    const FieldTrialsView* const key_value_config)
+    const FieldTrialsView& field_trials)
     : sampling_period_ms_("sampling_period_ms"),
       average_qp_window_("average_qp_window"),
       min_frames_("min_frames"),
@@ -28,16 +28,10 @@ QualityScalerSettings::QualityScalerSettings(
       scale_factor_("scale_factor"),
       initial_bitrate_interval_ms_("initial_bitrate_interval_ms"),
       initial_bitrate_factor_("initial_bitrate_factor") {
-  ParseFieldTrial(
-      {&sampling_period_ms_, &average_qp_window_, &min_frames_,
-       &initial_scale_factor_, &scale_factor_, &initial_bitrate_interval_ms_,
-       &initial_bitrate_factor_},
-      key_value_config->Lookup("WebRTC-Video-QualityScalerSettings"));
-}
-
-QualityScalerSettings QualityScalerSettings::ParseFromFieldTrials() {
-  FieldTrialBasedConfig field_trial_config;
-  return QualityScalerSettings(&field_trial_config);
+  ParseFieldTrial({&sampling_period_ms_, &average_qp_window_, &min_frames_,
+                   &initial_scale_factor_, &scale_factor_,
+                   &initial_bitrate_interval_ms_, &initial_bitrate_factor_},
+                  field_trials.Lookup("WebRTC-Video-QualityScalerSettings"));
 }
 
 absl::optional<int> QualityScalerSettings::SamplingPeriodMs() const {

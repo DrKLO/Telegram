@@ -1,13 +1,16 @@
 package org.telegram.ui;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
+import static org.telegram.messenger.AndroidUtilities.lerp;
 import static org.telegram.messenger.LocaleController.getString;
 
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.ColorFilter;
 import android.graphics.Paint;
+import android.graphics.Path;
 import android.graphics.PorterDuff;
+import android.graphics.PorterDuffColorFilter;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.Rect;
 import android.graphics.RectF;
@@ -29,7 +32,9 @@ import org.telegram.ui.ActionBar.ActionBarMenuItem;
 import org.telegram.ui.ActionBar.ActionBarMenuSubItem;
 import org.telegram.ui.ActionBar.ActionBarPopupWindow;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Components.AnimatedFloat;
 import org.telegram.ui.Components.AnimatedTextView;
+import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.PopupSwipeBackLayout;
 import org.telegram.ui.Components.VideoPlayer;
@@ -114,12 +119,30 @@ public class ChooseQualityLayout {
 
     public static class QualityIcon extends Drawable {
 
+        private final Theme.ResourcesProvider resourcesProvider;
+
         private final Paint bgPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         private final Paint bgLinePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         private final Drawable base;
         private final RectF rect = new RectF();
         public final AnimatedTextView.AnimatedTextDrawable topText = new AnimatedTextView.AnimatedTextDrawable();
         public final AnimatedTextView.AnimatedTextDrawable bottomText = new AnimatedTextView.AnimatedTextDrawable();
+
+        private final Paint castCutPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final Path castCutPath = new Path();
+        private final Drawable castFill;
+        private int castFillColor;
+        public boolean cast;
+        public final AnimatedFloat animatedCast = new AnimatedFloat(this::invalidateSelf, 0, 320, CubicBezierInterpolator.EASE_OUT_QUINT);
+
+        public void setCasting(boolean casting, boolean animated) {
+            if (this.cast == casting) return;
+            this.cast = casting;
+            if (!animated) {
+                animatedCast.force(casting);
+            }
+            invalidateSelf();
+        }
 
         private final Callback callback = new Callback() {
             @Override
@@ -136,8 +159,11 @@ public class ChooseQualityLayout {
             }
         };
 
-        public QualityIcon(Context context) {
-            base = context.getResources().getDrawable(R.drawable.msg_settings).mutate();
+        public QualityIcon(Context context, int baseResId, Theme.ResourcesProvider resourcesProvider) {
+            this.resourcesProvider = resourcesProvider;
+
+            base = context.getResources().getDrawable(baseResId).mutate();
+            castFill = context.getResources().getDrawable(R.drawable.mini_casting_fill).mutate();
 
             bgLinePaint.setColor(0xFFFFFFFF);
             bgLinePaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.DST_OUT));
@@ -155,6 +181,10 @@ public class ChooseQualityLayout {
             bottomText.setCallback(callback);
             bottomText.setGravity(Gravity.CENTER);
             bottomText.setOverrideFullWidth(AndroidUtilities.displaySize.x);
+
+            AndroidUtilities.rectTmp.set(dp(.66f), dp(4), dp(13), dp(13.33f));
+            castCutPath.addRoundRect(AndroidUtilities.rectTmp, dp(2.66f), dp(2.66f), Path.Direction.CW);
+            castCutPaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.CLEAR));
         }
 
         private float rotation;
@@ -165,14 +195,17 @@ public class ChooseQualityLayout {
 
         @Override
         public void draw(@NonNull Canvas canvas) {
+            final float casting = animatedCast.set(cast);
             final float top_w = dp(5) * topText.isNotEmpty() + topText.getCurrentWidth();
             final float bottom_w = dp(5) * bottomText.isNotEmpty() + bottomText.getCurrentWidth();
 
+            final int restoreCount = canvas.getSaveCount();
             final Rect bounds = getBounds();
-            if (top_w > 0 || bottom_w > 0)
+            if (top_w > 0 || bottom_w > 0 || casting > 0)
                 canvas.saveLayerAlpha(bounds.left, bounds.top, bounds.right, bounds.bottom, 0xFF, Canvas.ALL_SAVE_FLAG);
 
             AndroidUtilities.rectTmp2.set(dp(6), dp(6), dp(6) + (int) bounds.width() - dp(12), dp(6) + (int) bounds.height() - dp(12));
+            AndroidUtilities.rectTmp2.offset(bounds.left, bounds.top);
             base.setBounds(AndroidUtilities.rectTmp2);
             canvas.save();
             canvas.rotate(rotation * -180, bounds.centerX(), bounds.centerY());
@@ -194,18 +227,34 @@ public class ChooseQualityLayout {
                 canvas.drawRoundRect(rect, dp(3), dp(3), bgLinePaint);
             }
 
-            if (top_w > 0 || bottom_w > 0)
-                canvas.restore();
-
-            if (top_w > 0) {
-                bgPaint.setAlpha((int) (0xFF * topText.isNotEmpty()));
-                topText.setAlpha((int) (0xFF * topText.isNotEmpty()));
+            if (top_w * (1.0f - casting) > 0) {
+                bgPaint.setAlpha((int) (0xFF * topText.isNotEmpty() * (1.0f - casting)));
+                topText.setAlpha((int) (0xFF * topText.isNotEmpty() * (1.0f - casting)));
                 rect.set(right - top_w, cy_top - h / 2f, right, cy_top + h / 2f);
                 rect.inset(dp(1), dp(1));
                 canvas.drawRoundRect(rect, dp(3), dp(3), bgPaint);
                 rect.inset(-dp(1), -dp(1));
                 topText.setBounds(rect);
                 topText.draw(canvas);
+            }
+            if (casting > 0) {
+                canvas.save();
+                final int fillColor = Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider);
+                if (castFillColor != fillColor) {
+                    castFill.setColorFilter(new PorterDuffColorFilter(castFillColor = fillColor, PorterDuff.Mode.SRC_IN));
+                }
+                castFill.setBounds(bounds.right - castFill.getIntrinsicWidth() - dp(3), bounds.top + dp(0.66f), bounds.right - dp(3), bounds.top + dp(.66f) + castFill.getIntrinsicHeight());
+                castFill.setAlpha((int) (0xFF * casting));
+                final float s = lerp(.8f, 1.f, casting);
+                canvas.scale(s, s, castFill.getBounds().centerX(), castFill.getBounds().centerY());
+                if (casting > 0.5f) {
+                    canvas.save();
+                    canvas.translate(castFill.getBounds().left, castFill.getBounds().top);
+                    canvas.drawPath(castCutPath, castCutPaint);
+                    canvas.restore();
+                }
+                castFill.draw(canvas);
+                canvas.restore();
             }
 
             if (bottom_w > 0) {
@@ -218,6 +267,8 @@ public class ChooseQualityLayout {
                 bottomText.setBounds(rect);
                 bottomText.draw(canvas);
             }
+
+            canvas.restoreToCount(restoreCount);
         }
 
         @Override

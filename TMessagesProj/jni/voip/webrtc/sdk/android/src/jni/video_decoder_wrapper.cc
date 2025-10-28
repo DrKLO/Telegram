@@ -10,6 +10,8 @@
 
 #include "sdk/android/src/jni/video_decoder_wrapper.h"
 
+#include "absl/memory/memory.h"
+#include "api/environment/environment.h"
 #include "api/video/render_resolution.h"
 #include "api/video/video_frame.h"
 #include "api/video_codecs/video_decoder.h"
@@ -87,10 +89,9 @@ bool VideoDecoderWrapper::ConfigureInternal(JNIEnv* jni) {
   return status == WEBRTC_VIDEO_CODEC_OK;
 }
 
-int32_t VideoDecoderWrapper::Decode(
-    const EncodedImage& image_param,
-    bool missing_frames,
-    int64_t render_time_ms) {
+int32_t VideoDecoderWrapper::Decode(const EncodedImage& image_param,
+                                    bool missing_frames,
+                                    int64_t render_time_ms) {
   RTC_DCHECK_RUN_ON(&decoder_thread_checker_);
   if (!initialized_) {
     // Most likely initializing the codec failed.
@@ -101,12 +102,12 @@ int32_t VideoDecoderWrapper::Decode(
   EncodedImage input_image(image_param);
   // We use RTP timestamp for capture time because capture_time_ms_ is always 0.
   input_image.capture_time_ms_ =
-      input_image.Timestamp() / kNumRtpTicksPerMillisec;
+      input_image.RtpTimestamp() / kNumRtpTicksPerMillisec;
 
   FrameExtraInfo frame_extra_info;
   frame_extra_info.timestamp_ns =
       input_image.capture_time_ms_ * rtc::kNumNanosecsPerMillisec;
-  frame_extra_info.timestamp_rtp = input_image.Timestamp();
+  frame_extra_info.timestamp_rtp = input_image.RtpTimestamp();
   frame_extra_info.timestamp_ntp = input_image.ntp_time_ms_;
   frame_extra_info.qp =
       qp_parsing_enabled_ ? ParseQP(input_image) : absl::nullopt;
@@ -148,6 +149,13 @@ int32_t VideoDecoderWrapper::Release() {
 
 const char* VideoDecoderWrapper::ImplementationName() const {
   return implementation_name_.c_str();
+}
+
+VideoDecoder::DecoderInfo VideoDecoderWrapper::GetDecoderInfo() const {
+  VideoDecoder::DecoderInfo decoder_info;
+  decoder_info.implementation_name = implementation_name_;
+  decoder_info.is_hardware_accelerated = true;
+  return decoder_info;
 }
 
 void VideoDecoderWrapper::OnDecodedFrame(
@@ -249,6 +257,12 @@ absl::optional<uint8_t> VideoDecoderWrapper::ParseQP(
       qp = h264_bitstream_parser_.GetLastSliceQp();
       break;
     }
+#ifdef RTC_ENABLE_H265
+    case kVideoCodecH265:
+      h265_bitstream_parser_.ParseBitstream(input_image);
+      qp = h265_bitstream_parser_.GetLastSliceQp();
+      break;
+#endif
     default:
       break;  // Default is to not provide QP.
   }
@@ -257,16 +271,15 @@ absl::optional<uint8_t> VideoDecoderWrapper::ParseQP(
 
 std::unique_ptr<VideoDecoder> JavaToNativeVideoDecoder(
     JNIEnv* jni,
-    const JavaRef<jobject>& j_decoder) {
-  const jlong native_decoder =
-      Java_VideoDecoder_createNativeVideoDecoder(jni, j_decoder);
-  VideoDecoder* decoder;
-  if (native_decoder == 0) {
-    decoder = new VideoDecoderWrapper(jni, j_decoder);
+    const JavaRef<jobject>& j_decoder,
+    jlong webrtcEnvRef) {
+  if (jlong native_decoder =
+          Java_VideoDecoder_createNative(jni, j_decoder, webrtcEnvRef);
+      native_decoder != 0) {
+    return absl::WrapUnique(reinterpret_cast<VideoDecoder*>(native_decoder));
   } else {
-    decoder = reinterpret_cast<VideoDecoder*>(native_decoder);
+    return std::make_unique<VideoDecoderWrapper>(jni, j_decoder);
   }
-  return std::unique_ptr<VideoDecoder>(decoder);
 }
 
 }  // namespace jni

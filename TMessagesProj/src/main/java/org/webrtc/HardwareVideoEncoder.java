@@ -10,14 +10,19 @@
 
 package org.webrtc;
 
-import android.annotation.TargetApi;
+import static android.media.MediaCodecInfo.CodecProfileLevel.AVCLevel3;
+import static android.media.MediaCodecInfo.CodecProfileLevel.AVCProfileHigh;
+import static android.media.MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_CBR;
+
 import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
+import android.media.MediaCodecInfo.CodecCapabilities;
 import android.media.MediaFormat;
 import android.opengl.GLES20;
+import android.os.Build;
 import android.os.Bundle;
-import androidx.annotation.Nullable;
 import android.view.Surface;
+import androidx.annotation.Nullable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Map;
@@ -28,23 +33,9 @@ import org.webrtc.ThreadUtils.ThreadChecker;
 
 /**
  * Android hardware video encoder.
- *
- * @note This class is only supported on Android Kitkat and above.
  */
-@TargetApi(19)
-@SuppressWarnings("deprecation") // Cannot support API level 19 without using deprecated methods.
 class HardwareVideoEncoder implements VideoEncoder {
   private static final String TAG = "HardwareVideoEncoder";
-
-  // Bitrate modes - should be in sync with OMX_VIDEO_CONTROLRATETYPE defined
-  // in OMX_Video.h
-  private static final int VIDEO_ControlRateConstant = 2;
-  // Key associated with the bitrate control mode value (above). Not present as a MediaFormat
-  // constant until API level 21.
-  private static final String KEY_BITRATE_MODE = "bitrate-mode";
-
-  private static final int VIDEO_AVC_PROFILE_HIGH = 8;
-  private static final int VIDEO_AVC_LEVEL_3 = 0x100;
 
   private static final int MAX_VIDEO_FRAMERATE = 30;
 
@@ -54,10 +45,13 @@ class HardwareVideoEncoder implements VideoEncoder {
   private static final int MEDIA_CODEC_RELEASE_TIMEOUT_MS = 5000;
   private static final int DEQUEUE_OUTPUT_BUFFER_TIMEOUT_US = 100000;
 
+  // Size of the input frames should be multiple of 16 for the H/W encoder.
+  private static final int REQUIRED_RESOLUTION_ALIGNMENT = 16;
+
   /**
    * Keeps track of the number of output buffers that have been passed down the pipeline and not yet
    * released. We need to wait for this to go down to zero before operations invalidating the output
-   * buffers, i.e., stop() and getOutputBuffers().
+   * buffers, i.e., stop() and getOutputBuffer().
    */
   private static class BusyCount {
     private final Object countLock = new Object();
@@ -106,7 +100,6 @@ class HardwareVideoEncoder implements VideoEncoder {
   private final VideoCodecMimeType codecType;
   private final Integer surfaceColorFormat;
   private final Integer yuvColorFormat;
-  private final YuvFormat yuvFormat;
   private final Map<String, String> params;
   private final int keyFrameIntervalSec; // Base interval for generating key frames.
   // Interval at which to force a key frame. Used to reduce color distortions caused by some
@@ -133,7 +126,6 @@ class HardwareVideoEncoder implements VideoEncoder {
 
   // --- Valid and immutable while an encoding session is running.
   @Nullable private MediaCodecWrapper codec;
-  @Nullable private ByteBuffer[] outputBuffers;
   // Thread that delivers encoded frames to the user callback.
   @Nullable private Thread outputThread;
 
@@ -146,9 +138,19 @@ class HardwareVideoEncoder implements VideoEncoder {
 
   private int width;
   private int height;
+  // Y-plane strides in the encoder's input
+  private int stride;
+  // Y-plane slice-height in the encoder's input
+  private int sliceHeight;
+  // True if encoder input color format is semi-planar (NV12).
+  private boolean isSemiPlanar;
+  // Size of frame for current color format and stride, in bytes.
+  private int frameSizeBytes;
   private boolean useSurfaceMode;
 
   // --- Only accessed from the encoding thread.
+  // Presentation timestamp of next frame to encode.
+  private long nextPresentationTimestampUs;
   // Presentation timestamp of the last requested (or forced) key frame.
   private long lastKeyFrameNs;
 
@@ -164,12 +166,15 @@ class HardwareVideoEncoder implements VideoEncoder {
   // value to send exceptions thrown during release back to the encoder thread.
   @Nullable private volatile Exception shutdownException;
 
+  // True if collection of encoding statistics is enabled.
+  private boolean isEncodingStatisticsEnabled;
+
   /**
    * Creates a new HardwareVideoEncoder with the given codecName, codecType, colorFormat, key frame
    * intervals, and bitrateAdjuster.
    *
    * @param codecName the hardware codec implementation to use
-   * @param codecType the type of the given video codec (eg. VP8, VP9, or H264)
+   * @param codecType the type of the given video codec (eg. VP8, VP9, H264, H265, AV1)
    * @param surfaceColorFormat color format for surface mode or null if not available
    * @param yuvColorFormat color format for bytebuffer mode
    * @param keyFrameIntervalSec interval in seconds between key frames; used to initialize the codec
@@ -188,7 +193,6 @@ class HardwareVideoEncoder implements VideoEncoder {
     this.codecType = codecType;
     this.surfaceColorFormat = surfaceColorFormat;
     this.yuvColorFormat = yuvColorFormat;
-    this.yuvFormat = YuvFormat.valueOf(yuvColorFormat);
     this.params = params;
     this.keyFrameIntervalSec = keyFrameIntervalSec;
     this.forcedKeyFrameNs = TimeUnit.MILLISECONDS.toNanos(forceKeyFrameIntervalMs);
@@ -205,6 +209,7 @@ class HardwareVideoEncoder implements VideoEncoder {
 
     this.callback = callback;
     automaticResizeOn = settings.automaticResizeOn;
+
     this.width = settings.width;
     this.height = settings.height;
     useSurfaceMode = canUseSurface();
@@ -215,15 +220,19 @@ class HardwareVideoEncoder implements VideoEncoder {
     adjustedBitrate = bitrateAdjuster.getAdjustedBitrateBps();
 
     Logging.d(TAG,
-        "initEncode: " + width + " x " + height + ". @ " + settings.startBitrate
-            + "kbps. Fps: " + settings.maxFramerate + " Use surface mode: " + useSurfaceMode);
+        "initEncode name: " + codecName + " type: " + codecType + " width: " + width
+            + " height: " + height + " framerate_fps: " + settings.maxFramerate
+            + " bitrate_kbps: " + settings.startBitrate + " surface mode: " + useSurfaceMode);
     return initEncodeInternal();
   }
 
   private VideoCodecStatus initEncodeInternal() {
     encodeThreadChecker.checkIsOnValidThread();
 
+    nextPresentationTimestampUs = 0;
     lastKeyFrameNs = -1;
+
+    isEncodingStatisticsEnabled = false;
 
     try {
       codec = mediaCodecWrapperFactory.createByCodecName(codecName);
@@ -236,9 +245,10 @@ class HardwareVideoEncoder implements VideoEncoder {
     try {
       MediaFormat format = MediaFormat.createVideoFormat(codecType.mimeType(), width, height);
       format.setInteger(MediaFormat.KEY_BIT_RATE, adjustedBitrate);
-      format.setInteger(KEY_BITRATE_MODE, VIDEO_ControlRateConstant);
+      format.setInteger(MediaFormat.KEY_BITRATE_MODE, BITRATE_MODE_CBR);
       format.setInteger(MediaFormat.KEY_COLOR_FORMAT, colorFormat);
-      format.setInteger(MediaFormat.KEY_FRAME_RATE, bitrateAdjuster.getCodecConfigFramerate());
+      format.setFloat(
+          MediaFormat.KEY_FRAME_RATE, (float) bitrateAdjuster.getAdjustedFramerateFps());
       format.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, keyFrameIntervalSec);
       if (codecType == VideoCodecMimeType.H264) {
         String profileLevelId = params.get(VideoCodecInfo.H264_FMTP_PROFILE_LEVEL_ID);
@@ -247,8 +257,8 @@ class HardwareVideoEncoder implements VideoEncoder {
         }
         switch (profileLevelId) {
           case VideoCodecInfo.H264_CONSTRAINED_HIGH_3_1:
-            format.setInteger("profile", VIDEO_AVC_PROFILE_HIGH);
-            format.setInteger("level", VIDEO_AVC_LEVEL_3);
+            format.setInteger("profile", AVCProfileHigh);
+            format.setInteger("level", AVCLevel3);
             break;
           case VideoCodecInfo.H264_CONSTRAINED_BASELINE_3_1:
             break;
@@ -256,6 +266,18 @@ class HardwareVideoEncoder implements VideoEncoder {
             Logging.w(TAG, "Unknown profile level id: " + profileLevelId);
         }
       }
+
+      if (codecName.equals("c2.google.av1.encoder")) {
+        // Enable RTC mode in AV1 HW encoder.
+        format.setInteger("vendor.google-av1enc.encoding-preset.int32.value", 1);
+      }
+
+      if (isEncodingStatisticsSupported()) {
+        format.setInteger(MediaFormat.KEY_VIDEO_ENCODING_STATISTICS_LEVEL,
+            MediaFormat.VIDEO_ENCODING_STATISTICS_LEVEL_1);
+        isEncodingStatisticsEnabled = true;
+      }
+
       Logging.d(TAG, "Format: " + format);
       codec.configure(
           format, null /* surface */, null /* crypto */, MediaCodec.CONFIGURE_FLAG_ENCODE);
@@ -267,9 +289,10 @@ class HardwareVideoEncoder implements VideoEncoder {
         textureEglBase.makeCurrent();
       }
 
+      updateInputFormat(codec.getInputFormat());
+
       codec.start();
-      outputBuffers = codec.getOutputBuffers();
-    } catch (IllegalStateException e) {
+    } catch (IllegalArgumentException | IllegalStateException e) {
       Logging.e(TAG, "initEncodeInternal failed", e);
       release();
       return VideoCodecStatus.FALLBACK_SOFTWARE;
@@ -318,7 +341,6 @@ class HardwareVideoEncoder implements VideoEncoder {
     outputBuilders.clear();
 
     codec = null;
-    outputBuffers = null;
     outputThread = null;
 
     // Allow changing thread after release.
@@ -335,8 +357,7 @@ class HardwareVideoEncoder implements VideoEncoder {
     }
 
     final VideoFrame.Buffer videoFrameBuffer = videoFrame.getBuffer();
-    final boolean isTextureBuffer = videoFrameBuffer instanceof VideoFrame.TextureBuffer;
-    //TODO back to texture buffer
+    final boolean isTextureBuffer = videoFrame.getBuffer() instanceof VideoFrame.TextureBuffer;
 
     // If input resolution changed, restart the codec with the new resolution.
     final int frameWidth = videoFrame.getBuffer().getWidth();
@@ -376,9 +397,15 @@ class HardwareVideoEncoder implements VideoEncoder {
                                        .setRotation(videoFrame.getRotation());
     outputBuilders.offer(builder);
 
+    long presentationTimestampUs = nextPresentationTimestampUs;
+    // Round frame duration down to avoid bitrate overshoot.
+    long frameDurationUs =
+        (long) (TimeUnit.SECONDS.toMicros(1) / bitrateAdjuster.getAdjustedFramerateFps());
+    nextPresentationTimestampUs += frameDurationUs;
+
     final VideoCodecStatus returnValue;
     if (useSurfaceMode) {
-      returnValue = encodeTextureBuffer(videoFrame);
+      returnValue = encodeTextureBuffer(videoFrame, presentationTimestampUs);
     } else {
       returnValue = encodeByteBuffer(videoFrame, videoFrameBuffer, bufferSize);
     }
@@ -392,7 +419,8 @@ class HardwareVideoEncoder implements VideoEncoder {
     return returnValue;
   }
 
-  private VideoCodecStatus encodeTextureBuffer(VideoFrame videoFrame) {
+  private VideoCodecStatus encodeTextureBuffer(
+      VideoFrame videoFrame, long presentationTimestampUs) {
     encodeThreadChecker.checkIsOnValidThread();
     try {
       // TODO(perkj): glClear() shouldn't be necessary since every pixel is covered anyway,
@@ -402,7 +430,7 @@ class HardwareVideoEncoder implements VideoEncoder {
       VideoFrame derotatedFrame =
           new VideoFrame(videoFrame.getBuffer(), 0 /* rotation */, videoFrame.getTimestampNs());
       videoFrameDrawer.drawFrame(derotatedFrame, textureDrawer, null /* additionalRenderMatrix */);
-      textureEglBase.swapBuffers(videoFrame.getTimestampNs(), false);
+      textureEglBase.swapBuffers(TimeUnit.MICROSECONDS.toNanos(presentationTimestampUs), false);
     } catch (RuntimeException e) {
       Logging.e(TAG, "encodeTexture failed", e);
       return VideoCodecStatus.ERROR;
@@ -410,8 +438,18 @@ class HardwareVideoEncoder implements VideoEncoder {
     return VideoCodecStatus.OK;
   }
 
+  @Override
+  public VideoCodecStatus setRateAllocation(BitrateAllocation bitrateAllocation, int framerate) {
+    encodeThreadChecker.checkIsOnValidThread();
+    if (framerate > MAX_VIDEO_FRAMERATE) {
+      framerate = MAX_VIDEO_FRAMERATE;
+    }
+    bitrateAdjuster.setTargets(bitrateAllocation.getSum(), framerate);
+    return VideoCodecStatus.OK;
+  }
+
   private VideoCodecStatus encodeByteBuffer(
-      VideoFrame videoFrame, VideoFrame.Buffer videoFrameBuffer, int bufferSize) {
+          VideoFrame videoFrame, VideoFrame.Buffer videoFrameBuffer, int bufferSize) {
     encodeThreadChecker.checkIsOnValidThread();
     // Frame timestamp rounded to the nearest microsecond.
     long presentationTimestampUs = (videoFrame.getTimestampNs() + 500) / 1000;
@@ -433,16 +471,24 @@ class HardwareVideoEncoder implements VideoEncoder {
 
     ByteBuffer buffer;
     try {
-      buffer = codec.getInputBuffers()[index];
+      buffer = codec.getInputBuffer(index);
     } catch (IllegalStateException e) {
-      Logging.e(TAG, "getInputBuffers failed", e);
+      Logging.e(TAG, "getInputBuffer with index=" + index + " failed", e);
       return VideoCodecStatus.ERROR;
     }
-    fillInputBuffer(buffer, videoFrameBuffer);
+
+    if (buffer.capacity() < frameSizeBytes) {
+      Logging.e(TAG,
+              "Input buffer size: " + buffer.capacity()
+                      + " is smaller than frame size: " + frameSizeBytes);
+      return VideoCodecStatus.ERROR;
+    }
+
+    fillInputBuffer(buffer, videoFrame.getBuffer());
 
     try {
       codec.queueInputBuffer(
-          index, 0 /* offset */, bufferSize, presentationTimestampUs, 0 /* flags */);
+              index, 0 /* offset */, frameSizeBytes, presentationTimestampUs, 0 /* flags */);
     } catch (IllegalStateException e) {
       Logging.e(TAG, "queueInputBuffer failed", e);
       // IllegalStateException thrown when the codec is in the wrong state.
@@ -452,18 +498,14 @@ class HardwareVideoEncoder implements VideoEncoder {
   }
 
   @Override
-  public VideoCodecStatus setRateAllocation(BitrateAllocation bitrateAllocation, int framerate) {
+  public VideoCodecStatus setRates(RateControlParameters rcParameters) {
     encodeThreadChecker.checkIsOnValidThread();
-    if (framerate > MAX_VIDEO_FRAMERATE) {
-      framerate = MAX_VIDEO_FRAMERATE;
-    }
-    bitrateAdjuster.setTargets(bitrateAllocation.getSum(), framerate);
+    bitrateAdjuster.setTargets(rcParameters.bitrate.getSum(), rcParameters.framerateFps);
     return VideoCodecStatus.OK;
   }
 
   @Override
   public ScalingSettings getScalingSettings() {
-    encodeThreadChecker.checkIsOnValidThread();
     if (automaticResizeOn) {
       if (codecType == VideoCodecMimeType.VP8) {
         final int kLowVp8QpThreshold = 29;
@@ -480,7 +522,17 @@ class HardwareVideoEncoder implements VideoEncoder {
 
   @Override
   public String getImplementationName() {
-    return "HWEncoder";
+    return codecName;
+  }
+
+  @Override
+  public EncoderInfo getEncoderInfo() {
+    // Since our MediaCodec is guaranteed to encode 16-pixel-aligned frames only, we set alignment
+    // value to be 16. Additionally, this encoder produces a single stream. So it should not require
+    // alignment for all layers.
+    return new EncoderInfo(
+        /* requestedResolutionAlignment= */ REQUIRED_RESOLUTION_ALIGNMENT,
+        /* applyAlignmentToAllSimulcastLayers= */ false);
   }
 
   private VideoCodecStatus resetCodec(int newWidth, int newHeight, boolean newUseSurfaceMode) {
@@ -538,74 +590,88 @@ class HardwareVideoEncoder implements VideoEncoder {
       if (index < 0) {
         if (index == MediaCodec.INFO_OUTPUT_BUFFERS_CHANGED) {
           outputBuffersBusyCount.waitForZero();
-          outputBuffers = codec.getOutputBuffers();
         }
         return;
       }
 
-      ByteBuffer codecOutputBuffer = outputBuffers[index];
-      codecOutputBuffer.position(info.offset);
-      codecOutputBuffer.limit(info.offset + info.size);
+      ByteBuffer outputBuffer = codec.getOutputBuffer(index);
+      outputBuffer.position(info.offset);
+      outputBuffer.limit(info.offset + info.size);
 
       if ((info.flags & MediaCodec.BUFFER_FLAG_CODEC_CONFIG) != 0) {
         Logging.d(TAG, "Config frame generated. Offset: " + info.offset + ". Size: " + info.size);
-        configBuffer = ByteBuffer.allocateDirect(info.size);
-        configBuffer.put(codecOutputBuffer);
-      } else {
-        bitrateAdjuster.reportEncodedFrame(info.size);
-        if (adjustedBitrate != bitrateAdjuster.getAdjustedBitrateBps()) {
-          updateBitrate();
+        if (info.size > 0
+            && (codecType == VideoCodecMimeType.H264 || codecType == VideoCodecMimeType.H265)) {
+          // In case of H264 and H265 config buffer contains SPS and PPS headers. Presence of these
+          // headers makes IDR frame a truly keyframe. Some encoders issue IDR frames without SPS
+          // and PPS. We save config buffer here to prepend it to all IDR frames encoder delivers.
+          configBuffer = ByteBuffer.allocateDirect(info.size);
+          configBuffer.put(outputBuffer);
         }
-
-        final boolean isKeyFrame = (info.flags & MediaCodec.BUFFER_FLAG_SYNC_FRAME) != 0;
-        if (isKeyFrame) {
-          Logging.d(TAG, "Sync frame generated");
-        }
-
-        final ByteBuffer frameBuffer;
-        if (isKeyFrame && (codecType == VideoCodecMimeType.H264 || codecType == VideoCodecMimeType.H265)) {
-          if (configBuffer == null) {
-            configBuffer = ByteBuffer.allocateDirect(info.size);
-          }
-          Logging.d(TAG,
-              "Prepending config frame of size " + configBuffer.capacity()
-                  + " to output buffer with offset " + info.offset + ", size " + info.size);
-          // For H.264 key frame prepend SPS and PPS NALs at the start.
-          frameBuffer = ByteBuffer.allocateDirect(info.size + configBuffer.capacity());
-          configBuffer.rewind();
-          frameBuffer.put(configBuffer);
-          frameBuffer.put(codecOutputBuffer);
-          frameBuffer.rewind();
-        } else {
-          frameBuffer = codecOutputBuffer.slice();
-        }
-
-        final EncodedImage.FrameType frameType = isKeyFrame
-            ? EncodedImage.FrameType.VideoFrameKey
-            : EncodedImage.FrameType.VideoFrameDelta;
-
-        outputBuffersBusyCount.increment();
-        EncodedImage.Builder builder = outputBuilders.poll();
-        EncodedImage encodedImage = builder
-                                        .setBuffer(frameBuffer,
-                                            () -> {
-                                              // This callback should not throw any exceptions since
-                                              // it may be called on an arbitrary thread.
-                                              // Check bug webrtc:11230 for more details.
-                                              try {
-                                                codec.releaseOutputBuffer(index, false);
-                                              } catch (Exception e) {
-                                                Logging.e(TAG, "releaseOutputBuffer failed", e);
-                                              }
-                                              outputBuffersBusyCount.decrement();
-                                            })
-                                        .setFrameType(frameType)
-                                        .createEncodedImage();
-        // TODO(mellem):  Set codec-specific info.
-        callback.onEncodedFrame(encodedImage, new CodecSpecificInfo());
-        // Note that the callback may have retained the image.
-        encodedImage.release();
+        return;
       }
+
+      bitrateAdjuster.reportEncodedFrame(info.size);
+      if (adjustedBitrate != bitrateAdjuster.getAdjustedBitrateBps()) {
+        updateBitrate();
+      }
+
+      final boolean isKeyFrame = (info.flags & MediaCodec.BUFFER_FLAG_SYNC_FRAME) != 0;
+      if (isKeyFrame) {
+        Logging.d(TAG, "Sync frame generated");
+      }
+
+      // Extract QP before releasing output buffer.
+      Integer qp = null;
+      if (isEncodingStatisticsEnabled) {
+        MediaFormat format = codec.getOutputFormat(index);
+        if (format != null && format.containsKey(MediaFormat.KEY_VIDEO_QP_AVERAGE)) {
+          qp = format.getInteger(MediaFormat.KEY_VIDEO_QP_AVERAGE);
+        }
+      }
+
+      final ByteBuffer frameBuffer;
+      final Runnable releaseCallback;
+      if (isKeyFrame && configBuffer != null) {
+        Logging.d(TAG,
+            "Prepending config buffer of size " + configBuffer.capacity()
+                + " to output buffer with offset " + info.offset + ", size " + info.size);
+        frameBuffer = ByteBuffer.allocateDirect(info.size + configBuffer.capacity());
+        configBuffer.rewind();
+        frameBuffer.put(configBuffer);
+        frameBuffer.put(outputBuffer);
+        frameBuffer.rewind();
+        codec.releaseOutputBuffer(index, /* render= */ false);
+        releaseCallback = null;
+      } else {
+        frameBuffer = outputBuffer.slice();
+        outputBuffersBusyCount.increment();
+        releaseCallback = () -> {
+          // This callback should not throw any exceptions since
+          // it may be called on an arbitrary thread.
+          // Check bug webrtc:11230 for more details.
+          try {
+            codec.releaseOutputBuffer(index, /* render= */ false);
+          } catch (Exception e) {
+            Logging.e(TAG, "releaseOutputBuffer failed", e);
+          }
+          outputBuffersBusyCount.decrement();
+        };
+      }
+
+      final EncodedImage.FrameType frameType = isKeyFrame ? EncodedImage.FrameType.VideoFrameKey
+                                                          : EncodedImage.FrameType.VideoFrameDelta;
+
+      EncodedImage.Builder builder = outputBuilders.poll();
+      builder.setBuffer(frameBuffer, releaseCallback);
+      builder.setFrameType(frameType);
+      builder.setQp(qp);
+
+      EncodedImage encodedImage = builder.createEncodedImage();
+      // TODO(mellem):  Set codec-specific info.
+      callback.onEncodedFrame(encodedImage, new CodecSpecificInfo());
+      // Note that the callback may have retained the image.
+      encodedImage.release();
     } catch (IllegalStateException e) {
       Logging.e(TAG, "deliverOutput failed", e);
     }
@@ -649,47 +715,87 @@ class HardwareVideoEncoder implements VideoEncoder {
     return sharedContext != null && surfaceColorFormat != null;
   }
 
-  // Visible for testing.
-  protected void fillInputBuffer(ByteBuffer buffer, VideoFrame.Buffer videoFrameBuffer) {
-    yuvFormat.fillBuffer(buffer, videoFrameBuffer);
+  /** Fetches stride and slice height from input media format */
+  private void updateInputFormat(MediaFormat format) {
+    stride = width;
+    sliceHeight = height;
+
+    if (format != null) {
+      if (format.containsKey(MediaFormat.KEY_STRIDE)) {
+        stride = format.getInteger(MediaFormat.KEY_STRIDE);
+        stride = Math.max(stride, width);
+      }
+
+      if (format.containsKey(MediaFormat.KEY_SLICE_HEIGHT)) {
+        sliceHeight = format.getInteger(MediaFormat.KEY_SLICE_HEIGHT);
+        sliceHeight = Math.max(sliceHeight, height);
+      }
+    }
+
+    isSemiPlanar = isSemiPlanar(yuvColorFormat);
+    if (isSemiPlanar) {
+      int chromaHeight = (height + 1) / 2;
+      frameSizeBytes = sliceHeight * stride + chromaHeight * stride;
+    } else {
+      int chromaStride = (stride + 1) / 2;
+      int chromaSliceHeight = (sliceHeight + 1) / 2;
+      frameSizeBytes = sliceHeight * stride + chromaSliceHeight * chromaStride * 2;
+    }
+
+    Logging.d(TAG,
+        "updateInputFormat format: " + format + " stride: " + stride
+            + " sliceHeight: " + sliceHeight + " isSemiPlanar: " + isSemiPlanar
+            + " frameSizeBytes: " + frameSizeBytes);
   }
 
-  /**
-   * Enumeration of supported YUV color formats used for MediaCodec's input.
-   */
-  private enum YuvFormat {
-    I420 {
-      @Override
-      void fillBuffer(ByteBuffer dstBuffer, VideoFrame.Buffer srcBuffer) {
-        VideoFrame.I420Buffer i420 = srcBuffer.toI420();
-        YuvHelper.I420Copy(i420.getDataY(), i420.getStrideY(), i420.getDataU(), i420.getStrideU(),
-            i420.getDataV(), i420.getStrideV(), dstBuffer, i420.getWidth(), i420.getHeight());
-        i420.release();
-      }
-    },
-    NV12 {
-      @Override
-      void fillBuffer(ByteBuffer dstBuffer, VideoFrame.Buffer srcBuffer) {
-        VideoFrame.I420Buffer i420 = srcBuffer.toI420();
-        YuvHelper.I420ToNV12(i420.getDataY(), i420.getStrideY(), i420.getDataU(), i420.getStrideU(),
-            i420.getDataV(), i420.getStrideV(), dstBuffer, i420.getWidth(), i420.getHeight());
-        i420.release();
-      }
-    };
+  protected boolean isEncodingStatisticsSupported() {
+    // WebRTC quality scaler, which adjusts resolution and/or frame rate based on encoded QP,
+    // expects QP to be in native bitstream range for given codec. Native QP range for VP8 is
+    // [0, 127] and for VP9 is [0, 255]. MediaCodec VP8 and VP9 encoders (perhaps not all)
+    // return QP in range [0, 64], which is libvpx API specific range. Due to this mismatch we
+    // can't use QP feedback from these codecs.
+    if (codecType == VideoCodecMimeType.VP8 || codecType == VideoCodecMimeType.VP9) {
+      return false;
+    }
 
-    abstract void fillBuffer(ByteBuffer dstBuffer, VideoFrame.Buffer srcBuffer);
+    MediaCodecInfo codecInfo = codec.getCodecInfo();
+    if (codecInfo == null) {
+      return false;
+    }
 
-    static YuvFormat valueOf(int colorFormat) {
-      switch (colorFormat) {
-        case MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Planar:
-          return I420;
-        case MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420SemiPlanar:
-        case MediaCodecInfo.CodecCapabilities.COLOR_QCOM_FormatYUV420SemiPlanar:
-        case MediaCodecUtils.COLOR_QCOM_FORMATYUV420PackedSemiPlanar32m:
-          return NV12;
-        default:
-          throw new IllegalArgumentException("Unsupported colorFormat: " + colorFormat);
-      }
+    CodecCapabilities codecCaps = codecInfo.getCapabilitiesForType(codecType.mimeType());
+    if (codecCaps == null) {
+      return false;
+    }
+
+    return codecCaps.isFeatureSupported(CodecCapabilities.FEATURE_EncodingStatistics);
+  }
+
+  // Visible for testing.
+  protected void fillInputBuffer(ByteBuffer buffer, VideoFrame.Buffer frame) {
+    VideoFrame.I420Buffer i420 = frame.toI420();
+    if (isSemiPlanar) {
+      YuvHelper.I420ToNV12(i420.getDataY(), i420.getStrideY(), i420.getDataU(), i420.getStrideU(),
+          i420.getDataV(), i420.getStrideV(), buffer, i420.getWidth(), i420.getHeight(), stride,
+          sliceHeight);
+    } else {
+      YuvHelper.I420Copy(i420.getDataY(), i420.getStrideY(), i420.getDataU(), i420.getStrideU(),
+          i420.getDataV(), i420.getStrideV(), buffer, i420.getWidth(), i420.getHeight(), stride,
+          sliceHeight);
+    }
+    i420.release();
+  }
+
+  protected boolean isSemiPlanar(int colorFormat) {
+    switch (colorFormat) {
+      case MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Planar:
+        return false;
+      case MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420SemiPlanar:
+      case MediaCodecInfo.CodecCapabilities.COLOR_QCOM_FormatYUV420SemiPlanar:
+      case MediaCodecUtils.COLOR_QCOM_FORMATYUV420PackedSemiPlanar32m:
+        return true;
+      default:
+        throw new IllegalArgumentException("Unsupported colorFormat: " + colorFormat);
     }
   }
 }

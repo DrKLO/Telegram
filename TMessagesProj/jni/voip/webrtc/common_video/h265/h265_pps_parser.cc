@@ -16,7 +16,6 @@
 #include "common_video/h265/h265_common.h"
 #include "common_video/h265/h265_sps_parser.h"
 #include "common_video/h265/legacy_bit_buffer.h"
-#include "rtc_base/bit_buffer.h"
 #include "rtc_base/logging.h"
 
 #define RETURN_EMPTY_ON_FAIL(x) \

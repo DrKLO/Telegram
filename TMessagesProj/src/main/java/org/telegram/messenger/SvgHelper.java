@@ -43,8 +43,7 @@ import android.util.SparseArray;
 
 import androidx.core.graphics.ColorUtils;
 
-import com.google.android.exoplayer2.util.Log;
-
+import org.telegram.messenger.wallpaper.WallpaperGiftPatternPosition;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.DrawingInBackgroundThreadDrawable;
 import org.xml.sax.Attributes;
@@ -58,7 +57,10 @@ import java.io.InputStream;
 import java.io.StringReader;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
+import java.util.regex.Pattern;
 
 import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
@@ -485,6 +487,24 @@ public class SvgHelper {
         }
     }
 
+    public static SvgResult getSvgBitmap(File file, int width, int height, boolean white) {
+        try (FileInputStream stream = new FileInputStream(file)) {
+            SAXParserFactory spf = SAXParserFactory.newInstance();
+            SAXParser sp = spf.newSAXParser();
+            XMLReader xr = sp.getXMLReader();
+            SVGHandler handler = new SVGHandler(width, height, white ? 0xffffffff : null, false, 1f);
+            if (!white) {
+                handler.alphaOnly = true;
+            }
+            xr.setContentHandler(handler);
+            xr.parse(new InputSource(stream));
+            return handler;
+        } catch (Exception e) {
+            FileLog.e(e);
+            return null;
+        }
+    }
+
     public static Bitmap getBitmap(String xml, int width, int height, boolean white) {
         try {
             SAXParserFactory spf = SAXParserFactory.newInstance();
@@ -653,7 +673,19 @@ public class SvgHelper {
         return new NumberParse(numbers, p);
     }
 
-    private static Matrix parseTransform(String s) {
+    public static Matrix parseTransform(String s) {
+        Matrix matrix = new Matrix();
+        List<String> commands = splitSvgTransforms(s);
+        for (String command : commands) {
+            Matrix m = parseTransformCommand(command);
+            if (m != null) {
+                matrix.preConcat(m);
+            }
+        }
+        return matrix;
+    }
+
+    private static Matrix parseTransformCommand(String s) {
         if (s.startsWith("matrix(")) {
             NumberParse np = parseNumbers(s.substring("matrix(".length()));
             if (np.numbers.size() == 6) {
@@ -708,17 +740,15 @@ public class SvgHelper {
         } else if (s.startsWith("rotate(")) {
             NumberParse np = parseNumbers(s.substring("rotate(".length()));
             if (np.numbers.size() > 0) {
+                final Matrix matrix = new Matrix();
                 float angle = np.numbers.get(0);
-                float cx = 0;
-                float cy = 0;
                 if (np.numbers.size() > 2) {
-                    cx = np.numbers.get(1);
-                    cy = np.numbers.get(2);
+                    float cx = np.numbers.get(1);
+                    float cy = np.numbers.get(2);
+                    matrix.postRotate(angle, cx, cy);
+                } else {
+                    matrix.postRotate(angle);
                 }
-                Matrix matrix = new Matrix();
-                matrix.postTranslate(cx, cy);
-                matrix.postRotate(angle);
-                matrix.postTranslate(-cx, -cy);
                 return matrix;
             }
         }
@@ -726,6 +756,10 @@ public class SvgHelper {
     }
 
     public static Path doPath(String s) {
+        if (ApplicationLoader.isAndroidTestEnvironment()) {
+            return new Path();
+        }
+
         int n = s.length();
         ParserHelper ph = new ParserHelper(s, 0);
         ph.skipWhitespace();
@@ -752,6 +786,7 @@ public class SvgHelper {
                 case '7':
                 case '8':
                 case '9':
+                case '.':
                     if (prevCmd == 'm' || prevCmd == 'M') {
                         cmd = (char) (((int) prevCmd) - 1);
                         break;
@@ -1119,7 +1154,7 @@ public class SvgHelper {
         }
     }
 
-    private static class SVGHandler extends DefaultHandler {
+    private static class SVGHandler extends DefaultHandler implements SvgResult{
 
         private Canvas canvas;
         private Bitmap bitmap;
@@ -1264,8 +1299,35 @@ public class SvgHelper {
             }
         }
 
+        private boolean insideGiftRect = false;
+        private int insideGiftRectDepth = 0;
+        private List<WallpaperGiftPatternPosition> insideGiftRectPositions;
+        
+        
         @Override
         public void startElement(String namespaceURI, String localName, String qName, Attributes atts) {
+            if ("g".equals(qName) && !insideGiftRect) {
+                final String id = atts.getValue("id");
+                if ("GiftPatterns".equals(id)) {
+                    insideGiftRect = true;
+                    insideGiftRectDepth = 1;
+                    return;
+                }
+            } else if (insideGiftRect) {
+                insideGiftRectDepth++;
+                if ("rect".equals(qName)) {
+                    WallpaperGiftPatternPosition position = WallpaperGiftPatternPosition.create(atts, scale);
+                    if (position != null) {
+                        if (insideGiftRectPositions == null) {
+                            insideGiftRectPositions = new ArrayList<>();
+                        }
+                        insideGiftRectPositions.add(position);
+                    }
+                }
+                return;
+            }
+
+
             if (boundsMode && !localName.equals("style")) {
                 return;
             }
@@ -1292,6 +1354,7 @@ public class SvgHelper {
                         height = desiredHeight;
                     } else if (desiredWidth != 0 && desiredHeight != 0) {
                         scale = Math.min(desiredWidth / (float) width, desiredHeight / (float) height);
+                        // scale = Math.max(desiredWidth / (float) width, desiredHeight / (float) height);
                         width *= scale;
                         height *= scale;
                     }
@@ -1507,6 +1570,12 @@ public class SvgHelper {
 
         @Override
         public void endElement(String namespaceURI, String localName, String qName) {
+            if (insideGiftRect) {
+                insideGiftRectDepth--;
+                if (insideGiftRectDepth == 0) insideGiftRect = false;
+                return;
+            }
+            
             switch (localName) {
                 case "style":
                     if (styles != null) {
@@ -1541,9 +1610,19 @@ public class SvgHelper {
             return bitmap;
         }
 
+        public List<WallpaperGiftPatternPosition> getGiftPatternPositions() {
+            return insideGiftRectPositions;
+        }
+
         public SvgDrawable getDrawable() {
             return drawable;
         }
+    }
+
+    public interface SvgResult {
+        List<WallpaperGiftPatternPosition> getGiftPatternPositions();
+        Bitmap getBitmap();
+        SvgDrawable getDrawable();
     }
 
     private static final double[] pow10 = new double[128];
@@ -1936,5 +2015,24 @@ public class SvgHelper {
             FileLog.e(e);
         }
         return "";
+    }
+
+
+    // Split between commands: after ')' and before next command name (letter)
+    private static final Pattern SPLIT_BOUNDARY =
+        Pattern.compile("(?<=\\))\\s*(?=[A-Za-z])");
+
+    private static List<String> splitSvgTransforms(String input) {
+        if (input == null) return Collections.emptyList();
+        String trimmed = input.trim();
+        if (trimmed.isEmpty()) return Collections.emptyList();
+
+        String[] parts = SPLIT_BOUNDARY.split(trimmed);
+        List<String> out = new ArrayList<>(parts.length);
+        for (String p : parts) {
+            String s = p.trim();
+            if (!s.isEmpty()) out.add(s);
+        }
+        return out;
     }
 }

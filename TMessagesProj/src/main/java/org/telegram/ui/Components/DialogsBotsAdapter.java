@@ -556,6 +556,7 @@ public class DialogsBotsAdapter extends UniversalAdapter {
 
                     if (bots.isEmpty() || System.currentTimeMillis() - cacheTime > 60 * 60 * 1000) {
                         bots.clear();
+                        endReached = false;
                         lastOffset = null;
                         load();
                     }

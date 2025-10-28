@@ -35,6 +35,6 @@ void WebRtcIlbcfix_CbSearch(
     size_t lTarget,       /* (i) Length of vector */
     int16_t* weightDenum, /* (i) weighting filter coefficients in Q12 */
     size_t block          /* (i) the subblock number */
-    );
+);
 
 #endif

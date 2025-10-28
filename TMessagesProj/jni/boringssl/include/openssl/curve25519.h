@@ -1,21 +1,21 @@
-/* Copyright (c) 2015, Google Inc.
- *
- * Permission to use, copy, modify, and/or distribute this software for any
- * purpose with or without fee is hereby granted, provided that the above
- * copyright notice and this permission notice appear in all copies.
- *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
- * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY
- * SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION
- * OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
- * CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE. */
+// Copyright 2015 The BoringSSL Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 #ifndef OPENSSL_HEADER_CURVE25519_H
 #define OPENSSL_HEADER_CURVE25519_H
 
-#include <openssl/base.h>
+#include <openssl/base.h>   // IWYU pragma: export
 
 #if defined(__cplusplus)
 extern "C" {
@@ -161,10 +161,10 @@ OPENSSL_EXPORT int SPAKE2_generate_msg(SPAKE2_CTX *ctx, uint8_t *out,
 // |*out_key_len| to the number of bytes written.
 //
 // The resulting keying material is suitable for:
-//   a) Using directly in a key-confirmation step: i.e. each side could
+//    - Using directly in a key-confirmation step: i.e. each side could
 //      transmit a hash of their role, a channel-binding value and the key
 //      material to prove to the other side that they know the shared key.
-//   b) Using as input keying material to HKDF to generate a variety of subkeys
+//   -  Using as input keying material to HKDF to generate a variety of subkeys
 //      for encryption etc.
 //
 // If |max_out_key_key| is smaller than the amount of key material generated

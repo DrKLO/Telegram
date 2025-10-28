@@ -20,6 +20,7 @@
 #include <type_traits>
 
 #include "absl/base/internal/invoke.h"
+#include "absl/functional/any_invocable.h"
 #include "absl/meta/type_traits.h"
 
 namespace absl {
@@ -40,18 +41,21 @@ union VoidPtr {
 // Chooses the best type for passing T as an argument.
 // Attempt to be close to SystemV AMD64 ABI. Objects with trivial copy ctor are
 // passed by value.
-template <typename T>
-constexpr bool PassByValue() {
-  return !std::is_lvalue_reference<T>::value &&
-         absl::is_trivially_copy_constructible<T>::value &&
-         absl::is_trivially_copy_assignable<
-             typename std::remove_cv<T>::type>::value &&
-         std::is_trivially_destructible<T>::value &&
-         sizeof(T) <= 2 * sizeof(void*);
-}
+template <typename T,
+          bool IsLValueReference = std::is_lvalue_reference<T>::value>
+struct PassByValue : std::false_type {};
 
 template <typename T>
-struct ForwardT : std::conditional<PassByValue<T>(), T, T&&> {};
+struct PassByValue<T, /*IsLValueReference=*/false>
+    : std::integral_constant<bool,
+                             absl::is_trivially_copy_constructible<T>::value &&
+                                 absl::is_trivially_copy_assignable<
+                                     typename std::remove_cv<T>::type>::value &&
+                                 std::is_trivially_destructible<T>::value &&
+                                 sizeof(T) <= 2 * sizeof(void*)> {};
+
+template <typename T>
+struct ForwardT : std::conditional<PassByValue<T>::value, T, T&&> {};
 
 // An Invoker takes a pointer to the type-erased invokable object, followed by
 // the arguments that the invokable object expects.
@@ -83,6 +87,12 @@ R InvokeFunction(VoidPtr ptr, typename ForwardT<Args>::type... args) {
 
 template <typename Sig>
 void AssertNonNull(const std::function<Sig>& f) {
+  assert(f != nullptr);
+  (void)f;
+}
+
+template <typename Sig>
+void AssertNonNull(const AnyInvocable<Sig>& f) {
   assert(f != nullptr);
   (void)f;
 }

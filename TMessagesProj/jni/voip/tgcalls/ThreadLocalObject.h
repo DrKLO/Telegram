@@ -13,13 +13,13 @@ class ThreadLocalObject {
 public:
 	template <
 		typename Generator,
-		typename = std::enable_if_t<std::is_same<T*, decltype(std::declval<Generator>()())>::value>>
+		typename = std::enable_if_t<std::is_same<std::shared_ptr<T>, decltype(std::declval<Generator>()())>::value>>
 	ThreadLocalObject(rtc::Thread *thread, Generator &&generator) :
 	_thread(thread),
 	_valueHolder(std::make_unique<ValueHolder>()) {
 		assert(_thread != nullptr);
 		_thread->PostTask([valueHolder = _valueHolder.get(), generator = std::forward<Generator>(generator)]() mutable {
-			valueHolder->_value.reset(generator());
+			valueHolder->_value = generator();
 		});
 	}
 

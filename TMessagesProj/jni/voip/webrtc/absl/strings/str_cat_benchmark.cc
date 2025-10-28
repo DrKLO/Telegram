@@ -12,12 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "absl/strings/str_cat.h"
-
+#include <array>
 #include <cstdint>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 #include <string>
+#include <tuple>
+#include <utility>
 
 #include "benchmark/benchmark.h"
+#include "absl/random/log_uniform_int_distribution.h"
+#include "absl/random/random.h"
+#include "absl/strings/str_cat.h"
+#include "absl/strings/string_view.h"
 #include "absl/strings/substitute.h"
 
 namespace {
@@ -137,37 +145,63 @@ void BM_DoubleToString_By_SixDigits(benchmark::State& state) {
 }
 BENCHMARK(BM_DoubleToString_By_SixDigits);
 
-template <typename... Chunks>
-void BM_StrAppendImpl(benchmark::State& state, size_t total_bytes,
-                      Chunks... chunks) {
+template <typename Table, size_t... Index>
+void BM_StrAppendImpl(benchmark::State& state, Table table, size_t total_bytes,
+                      std::index_sequence<Index...>) {
   for (auto s : state) {
+    const size_t table_size = table.size();
+    size_t i = 0;
     std::string result;
     while (result.size() < total_bytes) {
-      absl::StrAppend(&result, chunks...);
+      absl::StrAppend(&result, std::get<Index>(table[i])...);
       benchmark::DoNotOptimize(result);
+      ++i;
+      i -= i >= table_size ? table_size : 0;
     }
   }
 }
 
-void BM_StrAppend(benchmark::State& state) {
-  const int total_bytes = state.range(0);
+template <typename Array>
+void BM_StrAppend(benchmark::State& state, Array&& table) {
+  const size_t total_bytes = state.range(0);
   const int chunks_at_a_time = state.range(1);
-  const absl::string_view kChunk = "0123456789";
 
   switch (chunks_at_a_time) {
     case 1:
-      return BM_StrAppendImpl(state, total_bytes, kChunk);
+      return BM_StrAppendImpl(state, std::forward<Array>(table), total_bytes,
+                              std::make_index_sequence<1>());
     case 2:
-      return BM_StrAppendImpl(state, total_bytes, kChunk, kChunk);
+      return BM_StrAppendImpl(state, std::forward<Array>(table), total_bytes,
+                              std::make_index_sequence<2>());
     case 4:
-      return BM_StrAppendImpl(state, total_bytes, kChunk, kChunk, kChunk,
-                              kChunk);
+      return BM_StrAppendImpl(state, std::forward<Array>(table), total_bytes,
+                              std::make_index_sequence<4>());
     case 8:
-      return BM_StrAppendImpl(state, total_bytes, kChunk, kChunk, kChunk,
-                              kChunk, kChunk, kChunk, kChunk, kChunk);
+      return BM_StrAppendImpl(state, std::forward<Array>(table), total_bytes,
+                              std::make_index_sequence<8>());
     default:
       std::abort();
   }
+}
+
+void BM_StrAppendStr(benchmark::State& state) {
+  using T = absl::string_view;
+  using Row = std::tuple<T, T, T, T, T, T, T, T>;
+  constexpr absl::string_view kChunk = "0123456789";
+  Row row = {kChunk, kChunk, kChunk, kChunk, kChunk, kChunk, kChunk, kChunk};
+  return BM_StrAppend(state, std::array<Row, 1>({row}));
+}
+
+template <typename T>
+void BM_StrAppendInt(benchmark::State& state) {
+  absl::BitGen rng;
+  absl::log_uniform_int_distribution<T> dist;
+  std::array<std::tuple<T, T, T, T, T, T, T, T>, (1 << 7)> table;
+  for (size_t i = 0; i < table.size(); ++i) {
+    table[i] = {dist(rng), dist(rng), dist(rng), dist(rng),
+                dist(rng), dist(rng), dist(rng), dist(rng)};
+  }
+  return BM_StrAppend(state, table);
 }
 
 template <typename B>
@@ -182,6 +216,50 @@ void StrAppendConfig(B* benchmark) {
   }
 }
 
-BENCHMARK(BM_StrAppend)->Apply(StrAppendConfig);
+BENCHMARK(BM_StrAppendStr)->Apply(StrAppendConfig);
+BENCHMARK(BM_StrAppendInt<int64_t>)->Apply(StrAppendConfig);
+BENCHMARK(BM_StrAppendInt<uint64_t>)->Apply(StrAppendConfig);
+BENCHMARK(BM_StrAppendInt<int32_t>)->Apply(StrAppendConfig);
+BENCHMARK(BM_StrAppendInt<uint32_t>)->Apply(StrAppendConfig);
+
+template <typename... Chunks>
+void BM_StrCatImpl(benchmark::State& state,
+                      Chunks... chunks) {
+  for (auto s : state) {
+    std::string result = absl::StrCat(chunks...);
+    benchmark::DoNotOptimize(result);
+  }
+}
+
+void BM_StrCat(benchmark::State& state) {
+  const int chunks_at_a_time = state.range(0);
+  const absl::string_view kChunk = "0123456789";
+
+  switch (chunks_at_a_time) {
+    case 1:
+      return BM_StrCatImpl(state, kChunk);
+    case 2:
+      return BM_StrCatImpl(state, kChunk, kChunk);
+    case 3:
+      return BM_StrCatImpl(state, kChunk, kChunk, kChunk);
+    case 4:
+      return BM_StrCatImpl(state, kChunk, kChunk, kChunk, kChunk);
+    default:
+      std::abort();
+  }
+}
+
+BENCHMARK(BM_StrCat)->Arg(1)->Arg(2)->Arg(3)->Arg(4);
+
+void BM_StrCat_int(benchmark::State& state) {
+  int i = 0;
+  for (auto s : state) {
+    std::string result = absl::StrCat(i);
+    benchmark::DoNotOptimize(result);
+    i = IncrementAlternatingSign(i);
+  }
+}
+
+BENCHMARK(BM_StrCat_int);
 
 }  // namespace

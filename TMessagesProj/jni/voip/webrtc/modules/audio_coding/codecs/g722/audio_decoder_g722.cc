@@ -63,6 +63,11 @@ int AudioDecoderG722Impl::PacketDuration(const uint8_t* encoded,
   return static_cast<int>(2 * encoded_len / Channels());
 }
 
+int AudioDecoderG722Impl::PacketDurationRedundant(const uint8_t* encoded,
+                                                  size_t encoded_len) const {
+  return PacketDuration(encoded, encoded_len);
+}
+
 int AudioDecoderG722Impl::SampleRateHz() const {
   return 16000;
 }
@@ -94,7 +99,7 @@ int AudioDecoderG722StereoImpl::DecodeInternal(const uint8_t* encoded,
   const size_t encoded_len_adjusted = PacketDuration(encoded, encoded_len) *
                                       Channels() /
                                       2;  // 1/2 byte per sample per channel
-  int16_t temp_type = 1;  // Default is speech.
+  int16_t temp_type = 1;                  // Default is speech.
   // De-interleave the bit-stream into two separate payloads.
   uint8_t* encoded_deinterleaved = new uint8_t[encoded_len_adjusted];
   SplitStereoPacket(encoded, encoded_len_adjusted, encoded_deinterleaved);

@@ -11,6 +11,9 @@
 #ifndef SDK_ANDROID_SRC_JNI_PC_DATA_CHANNEL_H_
 #define SDK_ANDROID_SRC_JNI_PC_DATA_CHANNEL_H_
 
+#include "api/data_channel_interface.h"
+#include "sdk/android/src/jni/jni_helpers.h"
+
 namespace webrtc {
 namespace jni {
 

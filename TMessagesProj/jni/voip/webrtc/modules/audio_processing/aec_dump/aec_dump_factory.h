@@ -13,34 +13,34 @@
 
 #include <memory>
 
+#include "absl/base/nullability.h"
 #include "absl/strings/string_view.h"
+#include "api/task_queue/task_queue_base.h"
 #include "modules/audio_processing/include/aec_dump.h"
 #include "rtc_base/system/file_wrapper.h"
 #include "rtc_base/system/rtc_export.h"
-
-namespace rtc {
-class TaskQueue;
-}  // namespace rtc
 
 namespace webrtc {
 
 class RTC_EXPORT AecDumpFactory {
  public:
-  // The `worker_queue` may not be null and must outlive the created
-  // AecDump instance. `max_log_size_bytes == -1` means the log size
-  // will be unlimited. `handle` may not be null. The AecDump takes
-  // responsibility for `handle` and closes it in the destructor. A
-  // non-null return value indicates that the file has been
+  // The `worker_queue` must outlive the created AecDump instance.
+  // `max_log_size_bytes == -1` means the log size will be unlimited.
+  // The AecDump takes responsibility for `handle` and closes it in the
+  // destructor. A non-null return value indicates that the file has been
   // sucessfully opened.
-  static std::unique_ptr<AecDump> Create(webrtc::FileWrapper file,
-                                         int64_t max_log_size_bytes,
-                                         rtc::TaskQueue* worker_queue);
-  static std::unique_ptr<AecDump> Create(absl::string_view file_name,
-                                         int64_t max_log_size_bytes,
-                                         rtc::TaskQueue* worker_queue);
-  static std::unique_ptr<AecDump> Create(FILE* handle,
-                                         int64_t max_log_size_bytes,
-                                         rtc::TaskQueue* worker_queue);
+  static absl::Nullable<std::unique_ptr<AecDump>> Create(
+      FileWrapper file,
+      int64_t max_log_size_bytes,
+      absl::Nonnull<TaskQueueBase*> worker_queue);
+  static absl::Nullable<std::unique_ptr<AecDump>> Create(
+      absl::string_view file_name,
+      int64_t max_log_size_bytes,
+      absl::Nonnull<TaskQueueBase*> worker_queue);
+  static absl::Nullable<std::unique_ptr<AecDump>> Create(
+      absl::Nonnull<FILE*> handle,
+      int64_t max_log_size_bytes,
+      absl::Nonnull<TaskQueueBase*> worker_queue);
 };
 
 }  // namespace webrtc

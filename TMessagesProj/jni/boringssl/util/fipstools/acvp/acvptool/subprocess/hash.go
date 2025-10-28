@@ -1,3 +1,17 @@
+// Copyright 2019 The BoringSSL Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package subprocess
 
 import (
@@ -7,7 +21,7 @@ import (
 )
 
 // The following structures reflect the JSON of ACVP hash tests. See
-// https://usnistgov.github.io/ACVP/artifacts/draft-celi-acvp-sha-00.html#test_vectors
+// https://pages.nist.gov/ACVP/draft-celi-acvp-sha.html#name-test-vectors
 
 type hashTestVectorSet struct {
 	Groups []hashTestGroup `json:"testGroups"`
@@ -46,19 +60,9 @@ type hashPrimitive struct {
 	algo string
 	// size is the number of bytes of digest that the hash produces.
 	size int
-	m    *Subprocess
 }
 
-// hash uses the subprocess to hash msg and returns the digest.
-func (h *hashPrimitive) hash(msg []byte) []byte {
-	result, err := h.m.transact(h.algo, 1, msg)
-	if err != nil {
-		panic("hash operation failed: " + err.Error())
-	}
-	return result[0]
-}
-
-func (h *hashPrimitive) Process(vectorSet []byte) (interface{}, error) {
+func (h *hashPrimitive) Process(vectorSet []byte, m Transactable) (any, error) {
 	var parsed hashTestVectorSet
 	if err := json.Unmarshal(vectorSet, &parsed); err != nil {
 		return nil, err
@@ -66,14 +70,17 @@ func (h *hashPrimitive) Process(vectorSet []byte) (interface{}, error) {
 
 	var ret []hashTestGroupResponse
 	// See
-	// https://usnistgov.github.io/ACVP/artifacts/draft-celi-acvp-sha-00.html#rfc.section.3
+	// https://pages.nist.gov/ACVP/draft-celi-acvp-sha.html#name-test-vectors
 	// for details about the tests.
 	for _, group := range parsed.Groups {
+		group := group
 		response := hashTestGroupResponse{
 			ID: group.ID,
 		}
 
 		for _, test := range group.Tests {
+			test := test
+
 			if uint64(len(test.MsgHex))*4 != test.BitLength {
 				return nil, fmt.Errorf("test case %d/%d contains hex message of length %d but specifies a bit length of %d", group.ID, test.ID, len(test.MsgHex), test.BitLength)
 			}
@@ -85,9 +92,12 @@ func (h *hashPrimitive) Process(vectorSet []byte) (interface{}, error) {
 			// http://usnistgov.github.io/ACVP/artifacts/draft-celi-acvp-sha-00.html#rfc.section.3
 			switch group.Type {
 			case "AFT":
-				response.Tests = append(response.Tests, hashTestResponse{
-					ID:        test.ID,
-					DigestHex: hex.EncodeToString(h.hash(msg)),
+				m.TransactAsync(h.algo, 1, [][]byte{msg}, func(result [][]byte) error {
+					response.Tests = append(response.Tests, hashTestResponse{
+						ID:        test.ID,
+						DigestHex: hex.EncodeToString(result[0]),
+					})
+					return nil
 				})
 
 			case "MCT":
@@ -97,20 +107,15 @@ func (h *hashPrimitive) Process(vectorSet []byte) (interface{}, error) {
 
 				testResponse := hashTestResponse{ID: test.ID}
 
-				buf := make([]byte, 3*h.size)
-				var digest []byte
+				digest := msg
 				for i := 0; i < 100; i++ {
-					copy(buf, msg)
-					copy(buf[h.size:], msg)
-					copy(buf[2*h.size:], msg)
-					for j := 0; j < 1000; j++ {
-						digest = h.hash(buf)
-						copy(buf, buf[h.size:])
-						copy(buf[2*h.size:], digest)
+					result, err := m.Transact(h.algo+"/MCT", 1, digest)
+					if err != nil {
+						panic(h.algo + " hash operation failed: " + err.Error())
 					}
 
+					digest = result[0]
 					testResponse.MCTResults = append(testResponse.MCTResults, hashMCTResult{hex.EncodeToString(digest)})
-					msg = digest
 				}
 
 				response.Tests = append(response.Tests, testResponse)
@@ -120,7 +125,13 @@ func (h *hashPrimitive) Process(vectorSet []byte) (interface{}, error) {
 			}
 		}
 
-		ret = append(ret, response)
+		m.Barrier(func() {
+			ret = append(ret, response)
+		})
+	}
+
+	if err := m.Flush(); err != nil {
+		return nil, err
 	}
 
 	return ret, nil

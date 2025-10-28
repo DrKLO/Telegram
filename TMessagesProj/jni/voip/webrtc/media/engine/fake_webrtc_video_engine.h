@@ -45,7 +45,7 @@ class FakeWebRtcVideoDecoder : public webrtc::VideoDecoder {
   ~FakeWebRtcVideoDecoder();
 
   bool Configure(const Settings& settings) override;
-  int32_t Decode(const webrtc::EncodedImage&, bool, int64_t) override;
+  int32_t Decode(const webrtc::EncodedImage&, int64_t) override;
   int32_t RegisterDecodeCompleteCallback(
       webrtc::DecodedImageCallback*) override;
   int32_t Release() override;
@@ -114,6 +114,9 @@ class FakeWebRtcVideoEncoderFactory : public webrtc::VideoEncoderFactory {
   FakeWebRtcVideoEncoderFactory();
 
   std::vector<webrtc::SdpVideoFormat> GetSupportedFormats() const override;
+  webrtc::VideoEncoderFactory::CodecSupport QueryCodecSupport(
+      const webrtc::SdpVideoFormat& format,
+      absl::optional<std::string> scalability_mode) const override;
   std::unique_ptr<webrtc::VideoEncoder> CreateVideoEncoder(
       const webrtc::SdpVideoFormat& format) override;
 
@@ -121,7 +124,9 @@ class FakeWebRtcVideoEncoderFactory : public webrtc::VideoEncoderFactory {
   void EncoderDestroyed(FakeWebRtcVideoEncoder* encoder);
   void set_encoders_have_internal_sources(bool internal_source);
   void AddSupportedVideoCodec(const webrtc::SdpVideoFormat& format);
-  void AddSupportedVideoCodecType(const std::string& name);
+  void AddSupportedVideoCodecType(
+      const std::string& name,
+      const std::vector<webrtc::ScalabilityMode>& scalability_modes = {});
   int GetNumCreatedEncoders();
   const std::vector<FakeWebRtcVideoEncoder*> encoders();
 

@@ -414,6 +414,12 @@ public class PhotoFilterView extends FrameLayout implements FilterShaders.Filter
                         eglThread.updateUiBlurTransform(transform, getWidth(), getHeight());
                     }
                 }
+
+                @Override
+                protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+                    final int width = MeasureSpec.getSize(widthMeasureSpec);
+                    super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+                }
             };
             if (ownLayout) {
                 addView(textureView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT));

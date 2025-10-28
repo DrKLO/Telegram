@@ -1554,6 +1554,56 @@ public class DatabaseMigrationHelper {
             version = 162;
         }
 
+        if (version == 162) {
+            database.executeFast("DROP TABLE saved_dialogs").stepThis().dispose();
+            database.executeFast("CREATE TABLE saved_dialogs(did INTEGER, date INTEGER, last_mid INTEGER, pinned INTEGER, flags INTEGER, folder_id INTEGER, last_mid_group INTEGER, count INTEGER, forumChatId INTEGER, PRIMARY KEY (did, forumChatId))").stepThis().dispose();
+            database.executeFast("CREATE INDEX IF NOT EXISTS date_idx_dialogs ON saved_dialogs(date);").stepThis().dispose();
+            database.executeFast("CREATE INDEX IF NOT EXISTS last_mid_idx_dialogs ON saved_dialogs(last_mid);").stepThis().dispose();
+            database.executeFast("CREATE INDEX IF NOT EXISTS folder_id_idx_dialogs ON saved_dialogs(folder_id);").stepThis().dispose();
+            database.executeFast("CREATE INDEX IF NOT EXISTS flags_idx_dialogs ON saved_dialogs(flags);").stepThis().dispose();
+            database.executeFast("CREATE INDEX IF NOT EXISTS forum_idx_dialogs ON saved_dialogs(forumChatId);").stepThis().dispose();
+            database.executeFast("PRAGMA user_version = 163").stepThis().dispose();
+            version = 163;
+        }
+
+        if (version == 163) {
+            database.executeFast("DROP TABLE saved_dialogs").stepThis().dispose();
+            database.executeFast("CREATE TABLE saved_dialogs(did INTEGER, date INTEGER, last_mid INTEGER, pinned INTEGER, flags INTEGER, folder_id INTEGER, last_mid_group INTEGER, count INTEGER, forumChatId INTEGER, unread_count INTEGER, max_read_id INTEGER, read_outbox INTEGER, PRIMARY KEY (did, forumChatId))").stepThis().dispose();
+            database.executeFast("CREATE INDEX IF NOT EXISTS date_idx_dialogs ON saved_dialogs(date);").stepThis().dispose();
+            database.executeFast("CREATE INDEX IF NOT EXISTS last_mid_idx_dialogs ON saved_dialogs(last_mid);").stepThis().dispose();
+            database.executeFast("CREATE INDEX IF NOT EXISTS folder_id_idx_dialogs ON saved_dialogs(folder_id);").stepThis().dispose();
+            database.executeFast("CREATE INDEX IF NOT EXISTS flags_idx_dialogs ON saved_dialogs(flags);").stepThis().dispose();
+            database.executeFast("CREATE INDEX IF NOT EXISTS forum_idx_dialogs ON saved_dialogs(forumChatId);").stepThis().dispose();
+            database.executeFast("PRAGMA user_version = 164").stepThis().dispose();
+            version = 164;
+        }
+
+        if (version == 164) {
+            database.executeFast("ALTER TABLE topics ADD COLUMN nopaid_messages_exception INTEGER default 0;").stepThis().dispose();
+            database.executeFast("PRAGMA user_version = 165").stepThis().dispose();
+            version = 165;
+        }
+
+        if (version == 165) {
+            database.executeFast("CREATE TABLE profile_stories_albums (dialog_id INTEGER, album_id INTEGER, order_index INTEGER, data BLOB, PRIMARY KEY(dialog_id, album_id));").stepThis().dispose();
+            database.executeFast("CREATE TABLE profile_stories_albums_links (dialog_id INTEGER, album_id INTEGER, story_id INTEGER, order_index INTEGER, PRIMARY KEY (dialog_id, album_id, story_id));").stepThis().dispose();
+            database.executeFast("PRAGMA user_version = 166").stepThis().dispose();
+            version = 166;
+        }
+
+        if (version == 166) {
+            database.executeFast("DROP TABLE profile_stories").stepThis().dispose();
+            database.executeFast("CREATE TABLE profile_stories (dialog_id INTEGER, story_id INTEGER, data BLOB, type INTEGER, seen INTEGER, pin INTEGER, PRIMARY KEY(dialog_id, story_id, type));").stepThis().dispose();
+            database.executeFast("PRAGMA user_version = 167").stepThis().dispose();
+            version = 167;
+        }
+
+        if (version == 167) {
+            database.executeFast("CREATE TABLE gift_themes (slug TEXT PRIMARY KEY, data BLOB);").stepThis().dispose();
+            database.executeFast("PRAGMA user_version = 168").stepThis().dispose();
+            version = 168;
+        }
+
         return version;
     }
 

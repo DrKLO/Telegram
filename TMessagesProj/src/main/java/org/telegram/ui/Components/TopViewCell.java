@@ -66,6 +66,12 @@ public class TopViewCell extends LinearLayout {
             imageView.getImageReceiver().setAutoRepeat(2);
         }
     }
+    public void setEmojiStatic(int iconResId) {
+        if (lastIconResId != iconResId) {
+            imageView.clearImage();
+            imageView.setImageResource(lastIconResId = iconResId);
+        }
+    }
 
     public void setText(CharSequence text) {
         textView.setText(text);

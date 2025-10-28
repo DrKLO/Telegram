@@ -295,11 +295,7 @@ public class ChangeUsernameActivity extends BaseFragment {
                     if (username == null || ((UsernameCell) view).loading) {
                         return;
                     }
-                    if (username.editable) {
-                        if (botId != 0) {
-                            return;
-                        }
-
+                    if (username.editable && botId == 0) {
                         listView.smoothScrollToPosition(0);
                         focusUsernameField(true);
                         return;
@@ -343,6 +339,29 @@ public class ChangeUsernameActivity extends BaseFragment {
                                     }
                                     TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(getUserId());
                                     getMessagesController().updateUsernameActiveness(user, username.username, username.active);
+
+                                    if (botId != 0 && usernames != null) {
+                                        boolean allInactive = true;
+                                        for (TLRPC.TL_username thisUsername : usernames) {
+                                            if (thisUsername.active) {
+                                                allInactive = false;
+                                                break;
+                                            }
+                                        }
+                                        if (allInactive) {
+                                            TLRPC.TL_username editableUsername = null;
+                                            for (TLRPC.TL_username thisUsername : usernames) {
+                                                if (thisUsername.editable) {
+                                                    editableUsername = thisUsername;
+                                                    break;
+                                                }
+                                            }
+                                            if (editableUsername != null) {
+                                                toggleUsername(editableUsername, true, false);
+                                                getMessagesController().updateUsernameActiveness(user, editableUsername.username, editableUsername.active);
+                                            }
+                                        }
+                                    }
                                 });
                             });
                             loadingUsernames.add(username.username);
@@ -902,6 +921,7 @@ public class ChangeUsernameActivity extends BaseFragment {
 
             loadingView = new ImageView(getContext());
             loadingDrawable = new CircularProgressDrawable(AndroidUtilities.dp(7), AndroidUtilities.dp(1.35f), Theme.getColor(Theme.key_windowBackgroundWhiteBlueText, resourcesProvider));
+            loadingView.setScaleType(ImageView.ScaleType.CENTER);
             loadingView.setImageDrawable(loadingDrawable);
             loadingView.setAlpha(0f);
             loadingView.setVisibility(View.VISIBLE);

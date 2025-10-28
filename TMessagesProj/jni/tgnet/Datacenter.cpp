@@ -1531,7 +1531,11 @@ TL_help_configSimple *Datacenter::decodeSimpleConfig(NativeByteBuffer *buffer) {
     BN_init(&y);
     BN_bin2bn(bytes, 256, &x);
 
-    if (BN_mod_exp(&y, &x, rsaKey->e, rsaKey->n, bnContext) == 1) {
+    const BIGNUM *n = NULL;
+    const BIGNUM *e = NULL;
+    RSA_get0_key(rsaKey, &n, &e, nullptr);
+
+    if (BN_mod_exp(&y, &x, e, n, bnContext) == 1) {
         unsigned l = 256 - BN_num_bytes(&y);
         memset(bytes, 0, l);
         if (BN_bn2bin(&y, bytes + l) == 256 - l) {

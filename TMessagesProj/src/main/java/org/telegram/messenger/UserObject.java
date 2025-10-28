@@ -14,6 +14,7 @@ import androidx.annotation.NonNull;
 
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.tgnet.tl.TL_account;
 
 public class UserObject {
 
@@ -54,7 +55,7 @@ public class UserObject {
         if (user == null || isDeleted(user)) {
             return LocaleController.getString(R.string.HiddenName);
         }
-        String name = ContactsController.formatName(user.first_name, user.last_name);
+        String name = AndroidUtilities.removeRTL(AndroidUtilities.removeDiacritics(ContactsController.formatName(user.first_name, user.last_name)));
         return name.length() != 0 || TextUtils.isEmpty(user.phone) ? name : PhoneFormat.getInstance().format("+" + user.phone);
     }
 
@@ -189,18 +190,18 @@ public class UserObject {
 
     public static int getColorId(TLRPC.User user) {
         if (user == null) return 0;
-        if (user.color != null && (user.color.flags & 1) != 0) return user.color.color;
+        if (user.color instanceof TLRPC.TL_peerColor && (user.color.flags & 1) != 0) return user.color.color;
         return (int) (user.id % 7);
     }
 
     public static long getEmojiId(TLRPC.User user) {
-        if (user != null && user.color != null && (user.color.flags & 2) != 0) return user.color.background_emoji_id;
+        if (user != null && user.color instanceof TLRPC.TL_peerColor && (user.color.flags & 2) != 0) return user.color.background_emoji_id;
         return 0;
     }
 
     public static int getProfileColorId(TLRPC.User user) {
         if (user == null) return 0;
-        if (user.profile_color != null && (user.profile_color.flags & 1) != 0) return user.profile_color.color;
+        if (user.profile_color instanceof TLRPC.TL_peerColor && (user.profile_color.flags & 1) != 0) return user.profile_color.color;
         return -1;
     }
 
@@ -212,10 +213,137 @@ public class UserObject {
         return 0;
     }
 
+    public static long getOnlyProfileEmojiId(TLRPC.User user) {
+        if (user != null && user.profile_color instanceof TLRPC.TL_peerColor && (user.profile_color.flags & 2) != 0) return user.profile_color.background_emoji_id;
+        return 0;
+    }
+
     public static long getProfileCollectibleId(TLRPC.User user) {
         if (user != null && user.emoji_status instanceof TLRPC.TL_emojiStatusCollectible) {
             return ((TLRPC.TL_emojiStatusCollectible) user.emoji_status).collectible_id;
         }
         return 0;
+    }
+
+    public static TL_account.RequirementToContact getRequirementToContact(TLRPC.User user) {
+        if (user == null) return null;
+        if (user.send_paid_messages_stars != 0) {
+            final TL_account.requirementToContactPaidMessages r = new TL_account.requirementToContactPaidMessages();
+            r.stars_amount = user.send_paid_messages_stars;
+            return r;
+        } else if (user.contact_require_premium) {
+            return new TL_account.requirementToContactPremium();
+        } else {
+            return null;
+        }
+    }
+
+    public static TL_account.RequirementToContact getRequirementToContact(TLRPC.UserFull user) {
+        if (user == null) return null;
+        if (user.send_paid_messages_stars != 0) {
+            final TL_account.requirementToContactPaidMessages r = new TL_account.requirementToContactPaidMessages();
+            r.stars_amount = user.send_paid_messages_stars;
+            return r;
+        } else if (user.contact_require_premium) {
+            return new TL_account.requirementToContactPremium();
+        } else {
+            return null;
+        }
+    }
+
+    public static boolean eq(TL_account.RequirementToContact a, TL_account.RequirementToContact b) {
+        if (a instanceof TL_account.requirementToContactEmpty) a = null;
+        if (b instanceof TL_account.requirementToContactEmpty) b = null;
+        if (a == null && b == null) return true;
+        if (a == null || b == null) return false;
+        if (
+            a instanceof TL_account.requirementToContactPremium &&
+            b instanceof TL_account.requirementToContactPremium
+        ) return true;
+        if (
+            a instanceof TL_account.requirementToContactPaidMessages &&
+            b instanceof TL_account.requirementToContactPaidMessages &&
+            ((TL_account.requirementToContactPaidMessages) a).stars_amount == ((TL_account.requirementToContactPaidMessages) b).stars_amount
+        ) return true;
+        return false;
+    }
+
+    public static boolean applyRequirementToContact(TLRPC.User user, TL_account.RequirementToContact value) {
+        if (user == null) return false;
+        if (value instanceof TL_account.requirementToContactEmpty) {
+            if (!user.contact_require_premium && user.send_paid_messages_stars == 0) {
+                return false;
+            }
+            user.contact_require_premium = false;
+            user.flags2 &=~ 16384;
+            user.send_paid_messages_stars = 0;
+        } else if (value instanceof TL_account.requirementToContactPremium) {
+            if (user.contact_require_premium && user.send_paid_messages_stars == 0) {
+                return false;
+            }
+            user.contact_require_premium = true;
+            user.flags2 &=~ 16384;
+            user.send_paid_messages_stars = 0;
+        } else if (value instanceof TL_account.requirementToContactPaidMessages) {
+            final long stars_amount = ((TL_account.requirementToContactPaidMessages) value).stars_amount;
+            if (!user.contact_require_premium && user.send_paid_messages_stars == stars_amount) {
+                return false;
+            }
+            user.contact_require_premium = false;
+            user.flags2 |= 16384;
+            user.send_paid_messages_stars = stars_amount;
+        } else {
+            return false;
+        }
+        return true;
+    }
+
+    public static boolean applyRequirementToContact(TLRPC.UserFull userFull, TL_account.RequirementToContact value) {
+        if (userFull == null) return false;
+        if (value instanceof TL_account.requirementToContactEmpty) {
+            if (!userFull.contact_require_premium && userFull.send_paid_messages_stars == 0) {
+                return false;
+            }
+            userFull.contact_require_premium = false;
+            userFull.flags2 &=~ 16384;
+            userFull.send_paid_messages_stars = 0;
+        } else if (value instanceof TL_account.requirementToContactPremium) {
+            if (userFull.contact_require_premium && userFull.send_paid_messages_stars == 0) {
+                return false;
+            }
+            userFull.contact_require_premium = true;
+            userFull.flags2 &=~ 16384;
+            userFull.send_paid_messages_stars = 0;
+        } else if (value instanceof TL_account.requirementToContactPaidMessages) {
+            final long stars_amount = ((TL_account.requirementToContactPaidMessages) value).stars_amount;
+            if (!userFull.contact_require_premium && userFull.send_paid_messages_stars == stars_amount) {
+                return false;
+            }
+            userFull.contact_require_premium = false;
+            userFull.flags2 |= 16384;
+            userFull.send_paid_messages_stars = stars_amount;
+        } else {
+            return false;
+        }
+        return true;
+    }
+
+    public static boolean areGiftsDisabled(long userId) {
+        return areGiftsDisabled(MessagesController.getInstance(UserConfig.selectedAccount).getUserFull(userId));
+    }
+
+    public static boolean areGiftsDisabled(TLRPC.UserFull userFull) {
+        if (userFull != null && userFull.id == UserConfig.getInstance(UserConfig.selectedAccount).getClientUserId())
+            return false;
+        return userFull != null && userFull.disallowed_stargifts != null && (
+            userFull.disallowed_stargifts.disallow_limited_stargifts &&
+                userFull.disallowed_stargifts.disallow_unlimited_stargifts &&
+                userFull.disallowed_stargifts.disallow_unique_stargifts &&
+                userFull.disallowed_stargifts.disallow_premium_gifts
+        );
+    }
+
+    public static boolean isBotForum(TLRPC.User user) {
+        return user != null && user.bot_forum_view;
     }
 }

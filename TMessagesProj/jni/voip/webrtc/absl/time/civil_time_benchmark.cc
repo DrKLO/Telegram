@@ -14,7 +14,9 @@
 
 #include "absl/time/civil_time.h"
 
+#include <cstddef>
 #include <numeric>
+#include <string>
 #include <vector>
 
 #include "absl/hash/hash.h"
@@ -42,7 +44,7 @@ void BM_Difference_Days(benchmark::State& state) {
   const absl::CivilDay c(2014, 8, 22);
   const absl::CivilDay epoch(1970, 1, 1);
   while (state.KeepRunning()) {
-    const absl::civil_diff_t n = c - epoch;
+    absl::civil_diff_t n = c - epoch;
     benchmark::DoNotOptimize(n);
   }
 }
@@ -60,7 +62,7 @@ BENCHMARK(BM_Step_Days);
 void BM_Format(benchmark::State& state) {
   const absl::CivilSecond c(2014, 1, 2, 3, 4, 5);
   while (state.KeepRunning()) {
-    const std::string s = absl::FormatCivilTime(c);
+    std::string s = absl::FormatCivilTime(c);
     benchmark::DoNotOptimize(s);
   }
 }
@@ -70,7 +72,7 @@ void BM_Parse(benchmark::State& state) {
   const std::string f = "2014-01-02T03:04:05";
   absl::CivilSecond c;
   while (state.KeepRunning()) {
-    const bool b = absl::ParseCivilTime(f, &c);
+    bool b = absl::ParseCivilTime(f, &c);
     benchmark::DoNotOptimize(b);
   }
 }
@@ -80,7 +82,7 @@ void BM_RoundTripFormatParse(benchmark::State& state) {
   const absl::CivilSecond c(2014, 1, 2, 3, 4, 5);
   absl::CivilSecond out;
   while (state.KeepRunning()) {
-    const bool b = absl::ParseCivilTime(absl::FormatCivilTime(c), &out);
+    bool b = absl::ParseCivilTime(absl::FormatCivilTime(c), &out);
     benchmark::DoNotOptimize(b);
   }
 }
@@ -95,7 +97,8 @@ void BM_CivilTimeAbslHash(benchmark::State& state) {
   absl::Hash<T> absl_hasher;
   while (state.KeepRunningBatch(kSize)) {
     for (const T civil_time : civil_times) {
-      benchmark::DoNotOptimize(absl_hasher(civil_time));
+      size_t hash = absl_hasher(civil_time);
+      benchmark::DoNotOptimize(hash);
     }
   }
 }

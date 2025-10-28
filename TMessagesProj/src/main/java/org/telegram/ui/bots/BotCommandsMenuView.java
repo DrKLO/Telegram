@@ -103,7 +103,6 @@ public class BotCommandsMenuView extends View {
     protected void onAttachedToWindow() {
         super.onAttachedToWindow();
         webViewAnimation.setMasterParent(this);
-        webViewAnimation.setCurrentParentView(this);
     }
 
     @Override

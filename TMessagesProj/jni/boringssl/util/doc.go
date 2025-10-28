@@ -1,10 +1,11 @@
+//go:build ignore
+
 // doc generates HTML files from the comments in header files.
 //
 // doc expects to be given the path to a JSON file via the --config option.
 // From that JSON (which is defined by the Config struct) it reads a list of
 // header file locations and generates HTML files for each in the current
 // directory.
-
 package main
 
 import (
@@ -14,11 +15,12 @@ import (
 	"flag"
 	"fmt"
 	"html/template"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
+	"unicode"
 )
 
 // Config describes the structure of the config JSON file.
@@ -41,7 +43,7 @@ type HeaderFile struct {
 	Name string
 	// Preamble contains a comment for the file as a whole. Each string
 	// is a separate paragraph.
-	Preamble []string
+	Preamble []CommentBlock
 	Sections []HeaderSection
 	// AllDecls maps all decls to their URL fragments.
 	AllDecls map[string]string
@@ -49,7 +51,7 @@ type HeaderFile struct {
 
 type HeaderSection struct {
 	// Preamble contains a comment for a group of functions.
-	Preamble []string
+	Preamble []CommentBlock
 	Decls    []HeaderDecl
 	// Anchor, if non-empty, is the URL fragment to use in anchor tags.
 	Anchor string
@@ -62,13 +64,27 @@ type HeaderDecl struct {
 	// Comment contains a comment for a specific function. Each string is a
 	// paragraph. Some paragraph may contain \n runes to indicate that they
 	// are preformatted.
-	Comment []string
+	Comment []CommentBlock
 	// Name contains the name of the function, if it could be extracted.
 	Name string
 	// Decl contains the preformatted C declaration itself.
 	Decl string
 	// Anchor, if non-empty, is the URL fragment to use in anchor tags.
 	Anchor string
+}
+
+type CommentBlockType int
+
+const (
+	CommentParagraph CommentBlockType = iota
+	CommentOrderedListItem
+	CommentBulletListItem
+	CommentCode
+)
+
+type CommentBlock struct {
+	Type      CommentBlockType
+	Paragraph string
 }
 
 const (
@@ -95,7 +111,7 @@ func commentSubject(line string) string {
 	return line[:idx]
 }
 
-func extractComment(lines []string, lineNo int) (comment []string, rest []string, restLineNo int, err error) {
+func extractCommentLines(lines []string, lineNo int) (comment []string, rest []string, restLineNo int, err error) {
 	if len(lines) == 0 {
 		return nil, lines, lineNo, nil
 	}
@@ -109,22 +125,19 @@ func extractComment(lines []string, lineNo int) (comment []string, rest []string
 	} else if !strings.HasPrefix(rest[0], lineComment) {
 		panic("extractComment called on non-comment")
 	}
-	commentParagraph := rest[0][len(commentStart):]
+	comment = []string{rest[0][len(commentStart):]}
 	rest = rest[1:]
 	restLineNo++
 
 	for len(rest) > 0 {
 		if isBlock {
-			i := strings.Index(commentParagraph, commentEnd)
-			if i >= 0 {
-				if i != len(commentParagraph)-len(commentEnd) {
+			last := &comment[len(comment)-1]
+			if i := strings.Index(*last, commentEnd); i >= 0 {
+				if i != len(*last)-len(commentEnd) {
 					err = fmt.Errorf("garbage after comment end on line %d", restLineNo)
 					return
 				}
-				commentParagraph = commentParagraph[:i]
-				if len(commentParagraph) > 0 {
-					comment = append(comment, commentParagraph)
-				}
+				*last = (*last)[:i]
 				return
 			}
 		}
@@ -136,36 +149,136 @@ func extractComment(lines []string, lineNo int) (comment []string, rest []string
 				return
 			}
 		} else if !strings.HasPrefix(line, "//") {
-			if len(commentParagraph) > 0 {
-				comment = append(comment, commentParagraph)
-			}
 			return
 		}
-		if len(line) == 2 || !isBlock || line[2] != '/' {
-			line = line[2:]
-		}
-		if strings.HasPrefix(line, "   ") {
-			/* Identing the lines of a paragraph marks them as
-			* preformatted. */
-			if len(commentParagraph) > 0 {
-				commentParagraph += "\n"
-			}
-			line = line[3:]
-		}
-		if len(line) > 0 {
-			commentParagraph = commentParagraph + line
-			if len(commentParagraph) > 0 && commentParagraph[0] == ' ' {
-				commentParagraph = commentParagraph[1:]
-			}
-		} else {
-			comment = append(comment, commentParagraph)
-			commentParagraph = ""
-		}
+		comment = append(comment, line[2:])
 		rest = rest[1:]
 		restLineNo++
 	}
 
 	err = errors.New("hit EOF in comment")
+	return
+}
+
+func removeBulletListMarker(line string) (string, bool) {
+	orig := line
+	line = strings.TrimSpace(line)
+	if !strings.HasPrefix(line, "+ ") && !strings.HasPrefix(line, "- ") && !strings.HasPrefix(line, "* ") {
+		return orig, false
+	}
+	return line[2:], true
+}
+
+func removeOrderedListMarker(line string) (rest string, num int, ok bool) {
+	orig := line
+	line = strings.TrimSpace(line)
+	if len(line) == 0 || !unicode.IsDigit(rune(line[0])) {
+		return orig, -1, false
+	}
+
+	l := 0
+	for l < len(line) && unicode.IsDigit(rune(line[l])) {
+		l++
+	}
+	num, err := strconv.Atoi(line[:l])
+	if err != nil {
+		return orig, -1, false
+	}
+
+	line = line[l:]
+	if line, ok := strings.CutPrefix(line, ". "); ok {
+		return line, num, true
+	}
+	if line, ok := strings.CutPrefix(line, ") "); ok {
+		return line, num, true
+	}
+
+	return orig, -1, false
+}
+
+func removeCodeIndent(line string) (string, bool) {
+	return strings.CutPrefix(line, "   ")
+}
+
+func extractComment(lines []string, lineNo int) (comment []CommentBlock, rest []string, restLineNo int, err error) {
+	commentLines, rest, restLineNo, err := extractCommentLines(lines, lineNo)
+	if err != nil {
+		return
+	}
+
+	// This syntax and parsing algorithm is loosely inspired by CommonMark,
+	// but reduced to a small subset with no nesting. Blocks being open vs.
+	// closed can be tracked implicitly. We're also much slopplier about how
+	// indentation. Additionally, rather than grouping list items into
+	// lists, our parser just emits a list items, which are grouped later at
+	// rendering time.
+	//
+	// If we later need more features, such as nested lists, this can evolve
+	// into a more complex implementation.
+	var numBlankLines int
+	for _, line := range commentLines {
+		// Defer blank lines until we know the next element.
+		if len(strings.TrimSpace(line)) == 0 {
+			numBlankLines++
+			continue
+		}
+
+		blankLinesSkipped := numBlankLines
+		numBlankLines = 0
+
+		// Attempt to continue the previous block.
+		if len(comment) > 0 {
+			last := &comment[len(comment)-1]
+			if last.Type == CommentCode {
+				l, ok := removeCodeIndent(line)
+				if ok {
+					for i := 0; i < blankLinesSkipped; i++ {
+						last.Paragraph += "\n"
+					}
+					last.Paragraph += l + "\n"
+					continue
+				}
+			} else if blankLinesSkipped == 0 {
+				_, isBulletList := removeBulletListMarker(line)
+				_, num, isOrderedList := removeOrderedListMarker(line)
+				if isOrderedList && last.Type == CommentParagraph && num != 1 {
+					// A list item can only interrupt a paragraph if the number is one.
+					// See the discussion in https://spec.commonmark.org/0.30/#lists.
+					// This avoids wrapping like "(See RFC\n5280)" turning into a list.
+					isOrderedList = false
+				}
+				if !isBulletList && !isOrderedList {
+					// This is a continuation line of the previous paragraph.
+					last.Paragraph += " " + strings.TrimSpace(line)
+					continue
+				}
+			}
+		}
+
+		// Make a new block.
+		if line, ok := removeBulletListMarker(line); ok {
+			comment = append(comment, CommentBlock{
+				Type:      CommentBulletListItem,
+				Paragraph: strings.TrimSpace(line),
+			})
+		} else if line, _, ok := removeOrderedListMarker(line); ok {
+			comment = append(comment, CommentBlock{
+				Type:      CommentOrderedListItem,
+				Paragraph: strings.TrimSpace(line),
+			})
+		} else if line, ok := removeCodeIndent(line); ok {
+			comment = append(comment, CommentBlock{
+				Type:      CommentCode,
+				Paragraph: line + "\n",
+			})
+		} else {
+			comment = append(comment, CommentBlock{
+				Type:      CommentParagraph,
+				Paragraph: strings.TrimSpace(line),
+			})
+		}
+	}
+
 	return
 }
 
@@ -291,6 +404,10 @@ func isPrivateSection(name string) bool {
 	return strings.HasPrefix(name, "Private functions") || strings.HasPrefix(name, "Private structures") || strings.Contains(name, "(hidden)")
 }
 
+func isCollectiveComment(line string) bool {
+	return strings.HasPrefix(line, "The ") || strings.HasPrefix(line, "These ")
+}
+
 func (config *Config) parseHeader(path string) (*HeaderFile, error) {
 	headerPath := filepath.Join(config.BaseDirectory, path)
 
@@ -386,7 +503,8 @@ func (config *Config) parseHeader(path string) (*HeaderFile, error) {
 				return nil, err
 			}
 			if len(rest) > 0 && len(rest[0]) == 0 {
-				anchor := sanitizeAnchor(firstSentence(comment))
+				heading := firstSentence(comment)
+				anchor := sanitizeAnchor(heading)
 				if len(anchor) > 0 {
 					if _, ok := allAnchors[anchor]; ok {
 						return nil, fmt.Errorf("duplicate anchor: %s", anchor)
@@ -395,7 +513,7 @@ func (config *Config) parseHeader(path string) (*HeaderFile, error) {
 				}
 
 				section.Preamble = comment
-				section.IsPrivate = len(comment) > 0 && isPrivateSection(comment[0])
+				section.IsPrivate = isPrivateSection(heading)
 				section.Anchor = anchor
 				lines = rest[1:]
 				lineNo = restLineNo + 1
@@ -410,10 +528,10 @@ func (config *Config) parseHeader(path string) (*HeaderFile, error) {
 				break
 			}
 			if line == cppGuard {
-				return nil, errors.New("hit ending C++ guard while in section")
+				return nil, fmt.Errorf("hit ending C++ guard while in section on line %d (possibly missing two empty lines ahead of guard?)", lineNo)
 			}
 
-			var comment []string
+			var comment []CommentBlock
 			var decl string
 			if isComment(line) {
 				comment, lines, lineNo, err = extractComment(lines, lineNo)
@@ -422,7 +540,7 @@ func (config *Config) parseHeader(path string) (*HeaderFile, error) {
 				}
 			}
 			if len(lines) == 0 {
-				return nil, errors.New("expected decl at EOF")
+				return nil, fmt.Errorf("expected decl at EOF on line %d", lineNo)
 			}
 			declLineNo := lineNo
 			decl, lines, lineNo, err = extractDecl(lines, lineNo)
@@ -439,13 +557,12 @@ func (config *Config) parseHeader(path string) (*HeaderFile, error) {
 				// As a matter of style, comments should start
 				// with the name of the thing that they are
 				// commenting on. We make an exception here for
-				// collective comments, which are detected by
-				// starting with “The” or “These”.
+				// collective comments.
+				sentence := firstSentence(comment)
 				if len(comment) > 0 &&
 					len(name) > 0 &&
-					!strings.HasPrefix(comment[0], "The ") &&
-					!strings.HasPrefix(comment[0], "These ") {
-					subject := commentSubject(comment[0])
+					!isCollectiveComment(sentence) {
+					subject := commentSubject(sentence)
 					ok := subject == name
 					if l := len(subject); l > 0 && subject[l-1] == '*' {
 						// Groups of names, notably #defines, are often
@@ -484,11 +601,11 @@ func (config *Config) parseHeader(path string) (*HeaderFile, error) {
 	return header, nil
 }
 
-func firstSentence(paragraphs []string) string {
-	if len(paragraphs) == 0 {
+func firstSentence(comment []CommentBlock) string {
+	if len(comment) == 0 {
 		return ""
 	}
-	s := paragraphs[0]
+	s := comment[0].Paragraph
 	i := strings.Index(s, ". ")
 	if i >= 0 {
 		return s[:i]
@@ -499,47 +616,108 @@ func firstSentence(paragraphs []string) string {
 	return s
 }
 
-// markupPipeWords converts |s| into an HTML string, safe to be included outside
-// a tag, while also marking up words surrounded by |.
-func markupPipeWords(allDecls map[string]string, s string) template.HTML {
-	// It is safe to look for '|' in the HTML-escaped version of |s|
-	// below. The escaped version cannot include '|' instead tags because
-	// there are no tags by construction.
-	s = template.HTMLEscapeString(s)
-	ret := ""
-
-	for {
-		i := strings.Index(s, "|")
-		if i == -1 {
-			ret += s
-			break
-		}
-		ret += s[:i]
-		s = s[i+1:]
-
-		i = strings.Index(s, "|")
-		j := strings.Index(s, " ")
-		if i > 0 && (j == -1 || j > i) {
-			ret += "<tt>"
-			anchor, isLink := allDecls[s[:i]]
-			if isLink {
-				ret += fmt.Sprintf("<a href=\"%s\">", template.HTMLEscapeString(anchor))
-			}
-			ret += s[:i]
-			if isLink {
-				ret += "</a>"
-			}
-			ret += "</tt>"
-			s = s[i+1:]
-		} else {
-			ret += "|"
+func markupComment(allDecls map[string]string, comment []CommentBlock) template.HTML {
+	var b strings.Builder
+	lastType := CommentParagraph
+	closeList := func() {
+		if lastType == CommentOrderedListItem {
+			b.WriteString("</ol>")
+		} else if lastType == CommentBulletListItem {
+			b.WriteString("</ul>")
 		}
 	}
 
-	return template.HTML(ret)
+	for _, block := range comment {
+		// Group consecutive list items of the same type into a list.
+		if block.Type != lastType {
+			closeList()
+			if block.Type == CommentOrderedListItem {
+				b.WriteString("<ol>")
+			} else if block.Type == CommentBulletListItem {
+				b.WriteString("<ul>")
+			}
+		}
+		lastType = block.Type
+
+		switch block.Type {
+		case CommentParagraph:
+			if strings.HasPrefix(block.Paragraph, "WARNING:") {
+				b.WriteString("<p class=\"warning\">")
+			} else {
+				b.WriteString("<p>")
+			}
+			b.WriteString(string(markupParagraph(allDecls, block.Paragraph)))
+			b.WriteString("</p>")
+		case CommentOrderedListItem, CommentBulletListItem:
+			b.WriteString("<li>")
+			b.WriteString(string(markupParagraph(allDecls, block.Paragraph)))
+			b.WriteString("</li>")
+		case CommentCode:
+			b.WriteString("<pre>")
+			b.WriteString(block.Paragraph)
+			b.WriteString("</pre>")
+		default:
+			panic(block.Type)
+		}
+	}
+
+	closeList()
+	return template.HTML(b.String())
+}
+
+func markupParagraph(allDecls map[string]string, s string) template.HTML {
+	// TODO(davidben): Ideally the inline transforms would be unified into
+	// one pass, so that the HTML output of one pass does not interfere with
+	// the next.
+	ret := markupPipeWords(allDecls, s, true /* linkDecls */)
+	ret = markupFirstWord(ret)
+	ret = markupRFC(ret)
+	return ret
+}
+
+// markupPipeWords converts |s| into an HTML string, safe to be included outside
+// a tag, while also marking up words surrounded by | or `.
+func markupPipeWords(allDecls map[string]string, s string, linkDecls bool) template.HTML {
+	// It is safe to look for '|' and '`' in the HTML-escaped version of |s|
+	// below. The escaped version cannot include '|' or '`' inside tags because
+	// there are no tags by construction.
+	s = template.HTMLEscapeString(s)
+	var ret strings.Builder
+
+	for {
+		i := strings.IndexAny(s, "|`")
+		if i == -1 {
+			ret.WriteString(s)
+			break
+		}
+		c := s[i]
+		ret.WriteString(s[:i])
+		s = s[i+1:]
+
+		i = strings.IndexByte(s, c)
+		j := strings.Index(s, " ")
+		if i > 0 && (j == -1 || j > i) {
+			ret.WriteString("<tt>")
+			anchor, isLink := allDecls[s[:i]]
+			if linkDecls && isLink {
+				fmt.Fprintf(&ret, "<a href=\"%s\">%s</a>", template.HTMLEscapeString(anchor), s[:i])
+			} else {
+				ret.WriteString(s[:i])
+			}
+			ret.WriteString("</tt>")
+			s = s[i+1:]
+		} else {
+			ret.WriteByte(c)
+		}
+	}
+
+	return template.HTML(ret.String())
 }
 
 func markupFirstWord(s template.HTML) template.HTML {
+	if isCollectiveComment(string(s)) {
+		return s
+	}
 	start := 0
 again:
 	end := strings.Index(string(s[start:]), " ")
@@ -560,14 +738,26 @@ again:
 	return s
 }
 
-func newlinesToBR(html template.HTML) template.HTML {
+var rfcRegexp = regexp.MustCompile("RFC ([0-9]+)")
+
+func markupRFC(html template.HTML) template.HTML {
 	s := string(html)
-	if !strings.Contains(s, "\n") {
+	matches := rfcRegexp.FindAllStringSubmatchIndex(s, -1)
+	if len(matches) == 0 {
 		return html
 	}
-	s = strings.Replace(s, "\n", "<br>", -1)
-	s = strings.Replace(s, " ", "&nbsp;", -1)
-	return template.HTML(s)
+
+	var b strings.Builder
+	var idx int
+	for _, match := range matches {
+		start, end := match[0], match[1]
+		number := s[match[2]:match[3]]
+		b.WriteString(s[idx:start])
+		fmt.Fprintf(&b, "<a href=\"https://www.rfc-editor.org/rfc/rfc%s.html\">%s</a>", number, s[start:end])
+		idx = end
+	}
+	b.WriteString(s[idx:])
+	return template.HTML(b.String())
 }
 
 func generate(outPath string, config *Config) (map[string]string, error) {
@@ -575,10 +765,9 @@ func generate(outPath string, config *Config) (map[string]string, error) {
 
 	headerTmpl := template.New("headerTmpl")
 	headerTmpl.Funcs(template.FuncMap{
-		"firstSentence":   firstSentence,
-		"markupPipeWords": func(s string) template.HTML { return markupPipeWords(allDecls, s) },
-		"markupFirstWord": markupFirstWord,
-		"newlinesToBR":    newlinesToBR,
+		"firstSentence":         firstSentence,
+		"markupPipeWordsNoLink": func(s string) template.HTML { return markupPipeWords(allDecls, s, false /* linkDecls */) },
+		"markupComment":         func(c []CommentBlock) template.HTML { return markupComment(allDecls, c) },
 	})
 	headerTmpl, err := headerTmpl.Parse(`<!DOCTYPE html>
 <html>
@@ -595,12 +784,12 @@ func generate(outPath string, config *Config) (map[string]string, error) {
       <a href="headers.html">All headers</a>
     </div>
 
-    {{range .Preamble}}<p>{{. | markupPipeWords}}</p>{{end}}
+    {{if .Preamble}}<div class="comment">{{.Preamble | markupComment}}</div>{{end}}
 
-    <ol>
+    <ol class="toc">
       {{range .Sections}}
         {{if not .IsPrivate}}
-          {{if .Anchor}}<li class="header"><a href="#{{.Anchor}}">{{.Preamble | firstSentence | markupPipeWords}}</a></li>{{end}}
+          {{if .Anchor}}<li class="header"><a href="#{{.Anchor}}">{{.Preamble | firstSentence | markupPipeWordsNoLink}}</a></li>{{end}}
           {{range .Decls}}
             {{if .Anchor}}<li><a href="#{{.Anchor}}"><tt>{{.Name}}</tt></a></li>{{end}}
           {{end}}
@@ -611,18 +800,12 @@ func generate(outPath string, config *Config) (map[string]string, error) {
     {{range .Sections}}
       {{if not .IsPrivate}}
         <div class="section" {{if .Anchor}}id="{{.Anchor}}"{{end}}>
-        {{if .Preamble}}
-          <div class="sectionpreamble">
-          {{range .Preamble}}<p>{{. | markupPipeWords}}</p>{{end}}
-          </div>
-        {{end}}
+        {{if .Preamble}}<div class="sectionpreamble comment">{{.Preamble | markupComment}}</div>{{end}}
 
         {{range .Decls}}
           <div class="decl" {{if .Anchor}}id="{{.Anchor}}"{{end}}>
-          {{range .Comment}}
-            <p>{{. | markupPipeWords | newlinesToBR | markupFirstWord}}</p>
-          {{end}}
-          <pre>{{.Decl}}</pre>
+            {{if .Comment}}<div class="comment">{{.Comment | markupComment}}</div>{{end}}
+            {{if .Decl}}<pre class="code">{{.Decl}}</pre>{{end}}
           </div>
         {{end}}
         </div>
@@ -719,11 +902,11 @@ func generateIndex(outPath string, config *Config, headerDescriptions map[string
 }
 
 func copyFile(outPath string, inFilePath string) error {
-	bytes, err := ioutil.ReadFile(inFilePath)
+	bytes, err := os.ReadFile(inFilePath)
 	if err != nil {
 		return err
 	}
-	return ioutil.WriteFile(filepath.Join(outPath, filepath.Base(inFilePath)), bytes, 0666)
+	return os.WriteFile(filepath.Join(outPath, filepath.Base(inFilePath)), bytes, 0666)
 }
 
 func main() {
@@ -745,7 +928,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	configBytes, err := ioutil.ReadFile(*configFlag)
+	configBytes, err := os.ReadFile(*configFlag)
 	if err != nil {
 		fmt.Printf("Failed to open config file: %s\n", err)
 		os.Exit(1)

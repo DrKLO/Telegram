@@ -30,6 +30,6 @@ void WebRtcIlbcfix_Smooth(int16_t* odata,   /* (o) smoothed output */
                                                      this block */
                           int16_t* surround /* (i) The approximation from the
                                                      surrounding sequences */
-                          );
+);
 
 #endif

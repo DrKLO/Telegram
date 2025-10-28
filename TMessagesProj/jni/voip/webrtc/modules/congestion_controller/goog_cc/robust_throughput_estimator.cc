@@ -14,12 +14,17 @@
 
 #include <algorithm>
 #include <utility>
+#include <vector>
 
+#include "absl/types/optional.h"
+#include "api/transport/network_types.h"
 #include "api/units/data_rate.h"
 #include "api/units/data_size.h"
 #include "api/units/time_delta.h"
 #include "api/units/timestamp.h"
+#include "modules/congestion_controller/goog_cc/acknowledged_bitrate_estimator_interface.h"
 #include "rtc_base/checks.h"
+#include "rtc_base/logging.h"
 
 namespace webrtc {
 
@@ -75,6 +80,16 @@ void RobustThroughputEstimator::IncomingPacketFeedbackVector(
     for (size_t i = window_.size() - 1;
          i > 0 && window_[i].receive_time < window_[i - 1].receive_time; i--) {
       std::swap(window_[i], window_[i - 1]);
+    }
+    constexpr TimeDelta kMaxReorderingTime = TimeDelta::Seconds(1);
+    const TimeDelta receive_delta =
+        (window_.back().receive_time - packet.receive_time);
+    if (receive_delta > kMaxReorderingTime) {
+      RTC_LOG(LS_WARNING)
+          << "Severe packet re-ordering or timestamps offset changed: "
+          << receive_delta;
+      window_.clear();
+      latest_discarded_send_time_ = Timestamp::MinusInfinity();
     }
   }
 

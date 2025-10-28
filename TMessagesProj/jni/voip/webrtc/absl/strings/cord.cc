@@ -15,26 +15,33 @@
 #include "absl/strings/cord.h"
 
 #include <algorithm>
-#include <atomic>
+#include <cassert>
 #include <cstddef>
+#include <cstdint>
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 #include <iomanip>
 #include <ios>
 #include <iostream>
 #include <limits>
+#include <memory>
 #include <ostream>
 #include <sstream>
-#include <type_traits>
-#include <unordered_set>
-#include <vector>
+#include <string>
+#include <utility>
 
-#include "absl/base/casts.h"
+#include "absl/base/attributes.h"
+#include "absl/base/config.h"
+#include "absl/base/internal/endian.h"
 #include "absl/base/internal/raw_logging.h"
 #include "absl/base/macros.h"
-#include "absl/base/port.h"
-#include "absl/container/fixed_array.h"
+#include "absl/base/optimization.h"
+#include "absl/base/nullability.h"
 #include "absl/container/inlined_vector.h"
+#include "absl/crc/crc32c.h"
+#include "absl/crc/internal/crc_cord_state.h"
+#include "absl/functional/function_ref.h"
 #include "absl/strings/cord_buffer.h"
 #include "absl/strings/escaping.h"
 #include "absl/strings/internal/cord_data_edge.h"
@@ -42,14 +49,14 @@
 #include "absl/strings/internal/cord_rep_btree.h"
 #include "absl/strings/internal/cord_rep_crc.h"
 #include "absl/strings/internal/cord_rep_flat.h"
-#include "absl/strings/internal/cordz_statistics.h"
-#include "absl/strings/internal/cordz_update_scope.h"
 #include "absl/strings/internal/cordz_update_tracker.h"
 #include "absl/strings/internal/resize_uninitialized.h"
+#include "absl/strings/match.h"
 #include "absl/strings/str_cat.h"
-#include "absl/strings/str_format.h"
-#include "absl/strings/str_join.h"
 #include "absl/strings/string_view.h"
+#include "absl/strings/strip.h"
+#include "absl/types/optional.h"
+#include "absl/types/span.h"
 
 namespace absl {
 ABSL_NAMESPACE_BEGIN
@@ -68,29 +75,21 @@ using ::absl::cord_internal::kMinFlatLength;
 using ::absl::cord_internal::kInlinedVectorSize;
 using ::absl::cord_internal::kMaxBytesToCopy;
 
-static void DumpNode(CordRep* rep, bool include_data, std::ostream* os,
-                     int indent = 0);
-static bool VerifyNode(CordRep* root, CordRep* start_node,
-                       bool full_validation);
+static void DumpNode(absl::Nonnull<CordRep*> nonnull_rep, bool include_data,
+                     absl::Nonnull<std::ostream*> os, int indent = 0);
+static bool VerifyNode(absl::Nonnull<CordRep*> root,
+                       absl::Nonnull<CordRep*> start_node);
 
-static inline CordRep* VerifyTree(CordRep* node) {
-  // Verification is expensive, so only do it in debug mode.
-  // Even in debug mode we normally do only light validation.
-  // If you are debugging Cord itself, you should define the
-  // macro EXTRA_CORD_VALIDATION, e.g. by adding
-  // --copt=-DEXTRA_CORD_VALIDATION to the blaze line.
-#ifdef EXTRA_CORD_VALIDATION
-  assert(node == nullptr || VerifyNode(node, node, /*full_validation=*/true));
-#else   // EXTRA_CORD_VALIDATION
-  assert(node == nullptr || VerifyNode(node, node, /*full_validation=*/false));
-#endif  // EXTRA_CORD_VALIDATION
+static inline absl::Nullable<CordRep*> VerifyTree(
+    absl::Nullable<CordRep*> node) {
+  assert(node == nullptr || VerifyNode(node, node));
   static_cast<void>(&VerifyNode);
-
   return node;
 }
 
-static CordRepFlat* CreateFlat(const char* data, size_t length,
-                               size_t alloc_hint) {
+static absl::Nonnull<CordRepFlat*> CreateFlat(absl::Nonnull<const char*> data,
+                                              size_t length,
+                                              size_t alloc_hint) {
   CordRepFlat* flat = CordRepFlat::New(length + alloc_hint);
   flat->length = length;
   memcpy(flat->Data(), data, length);
@@ -99,7 +98,8 @@ static CordRepFlat* CreateFlat(const char* data, size_t length,
 
 // Creates a new flat or Btree out of the specified array.
 // The returned node has a refcount of 1.
-static CordRep* NewBtree(const char* data, size_t length, size_t alloc_hint) {
+static absl::Nonnull<CordRep*> NewBtree(absl::Nonnull<const char*> data,
+                                        size_t length, size_t alloc_hint) {
   if (length <= kMaxFlatLength) {
     return CreateFlat(data, length, alloc_hint);
   }
@@ -112,14 +112,16 @@ static CordRep* NewBtree(const char* data, size_t length, size_t alloc_hint) {
 
 // Create a new tree out of the specified array.
 // The returned node has a refcount of 1.
-static CordRep* NewTree(const char* data, size_t length, size_t alloc_hint) {
+static absl::Nullable<CordRep*> NewTree(absl::Nullable<const char*> data,
+                                        size_t length, size_t alloc_hint) {
   if (length == 0) return nullptr;
   return NewBtree(data, length, alloc_hint);
 }
 
 namespace cord_internal {
 
-void InitializeCordRepExternal(absl::string_view data, CordRepExternal* rep) {
+void InitializeCordRepExternal(absl::string_view data,
+                               absl::Nonnull<CordRepExternal*> rep) {
   assert(!data.empty());
   rep->length = data.size();
   rep->tag = EXTERNAL;
@@ -133,7 +135,7 @@ void InitializeCordRepExternal(absl::string_view data, CordRepExternal* rep) {
 // and not wasteful, we move the string into an external cord rep, preserving
 // the already allocated string contents.
 // Requires the provided string length to be larger than `kMaxInline`.
-static CordRep* CordRepFromString(std::string&& src) {
+static absl::Nonnull<CordRep*> CordRepFromString(std::string&& src) {
   assert(src.length() > cord_internal::kMaxInline);
   if (
       // String is short: copy data to avoid external block overhead.
@@ -165,14 +167,13 @@ static CordRep* CordRepFromString(std::string&& src) {
 constexpr unsigned char Cord::InlineRep::kMaxInline;
 #endif
 
-inline void Cord::InlineRep::set_data(const char* data, size_t n) {
+inline void Cord::InlineRep::set_data(absl::Nonnull<const char*> data,
+                                      size_t n) {
   static_assert(kMaxInline == 15, "set_data is hard-coded for a length of 15");
-
-  cord_internal::SmallMemmove<true>(data_.as_chars(), data, n);
-  set_inline_size(n);
+  data_.set_inline_data(data, n);
 }
 
-inline char* Cord::InlineRep::set_data(size_t n) {
+inline absl::Nonnull<char*> Cord::InlineRep::set_data(size_t n) {
   assert(n <= kMaxInline);
   ResetToEmpty();
   set_inline_size(n);
@@ -196,13 +197,13 @@ inline void Cord::InlineRep::remove_prefix(size_t n) {
 
 // Returns `rep` converted into a CordRepBtree.
 // Directly returns `rep` if `rep` is already a CordRepBtree.
-static CordRepBtree* ForceBtree(CordRep* rep) {
+static absl::Nonnull<CordRepBtree*> ForceBtree(CordRep* rep) {
   return rep->IsBtree()
              ? rep->btree()
              : CordRepBtree::Create(cord_internal::RemoveCrcNode(rep));
 }
 
-void Cord::InlineRep::AppendTreeToInlined(CordRep* tree,
+void Cord::InlineRep::AppendTreeToInlined(absl::Nonnull<CordRep*> tree,
                                           MethodIdentifier method) {
   assert(!is_tree());
   if (!data_.is_empty()) {
@@ -212,14 +213,16 @@ void Cord::InlineRep::AppendTreeToInlined(CordRep* tree,
   EmplaceTree(tree, method);
 }
 
-void Cord::InlineRep::AppendTreeToTree(CordRep* tree, MethodIdentifier method) {
+void Cord::InlineRep::AppendTreeToTree(absl::Nonnull<CordRep*> tree,
+                                       MethodIdentifier method) {
   assert(is_tree());
   const CordzUpdateScope scope(data_.cordz_info(), method);
   tree = CordRepBtree::Append(ForceBtree(data_.as_tree()), tree);
   SetTree(tree, scope);
 }
 
-void Cord::InlineRep::AppendTree(CordRep* tree, MethodIdentifier method) {
+void Cord::InlineRep::AppendTree(absl::Nonnull<CordRep*> tree,
+                                 MethodIdentifier method) {
   assert(tree != nullptr);
   assert(tree->length != 0);
   assert(!tree->IsCrc());
@@ -230,7 +233,7 @@ void Cord::InlineRep::AppendTree(CordRep* tree, MethodIdentifier method) {
   }
 }
 
-void Cord::InlineRep::PrependTreeToInlined(CordRep* tree,
+void Cord::InlineRep::PrependTreeToInlined(absl::Nonnull<CordRep*> tree,
                                            MethodIdentifier method) {
   assert(!is_tree());
   if (!data_.is_empty()) {
@@ -240,7 +243,7 @@ void Cord::InlineRep::PrependTreeToInlined(CordRep* tree,
   EmplaceTree(tree, method);
 }
 
-void Cord::InlineRep::PrependTreeToTree(CordRep* tree,
+void Cord::InlineRep::PrependTreeToTree(absl::Nonnull<CordRep*> tree,
                                         MethodIdentifier method) {
   assert(is_tree());
   const CordzUpdateScope scope(data_.cordz_info(), method);
@@ -248,7 +251,8 @@ void Cord::InlineRep::PrependTreeToTree(CordRep* tree,
   SetTree(tree, scope);
 }
 
-void Cord::InlineRep::PrependTree(CordRep* tree, MethodIdentifier method) {
+void Cord::InlineRep::PrependTree(absl::Nonnull<CordRep*> tree,
+                                  MethodIdentifier method) {
   assert(tree != nullptr);
   assert(tree->length != 0);
   assert(!tree->IsCrc());
@@ -263,8 +267,9 @@ void Cord::InlineRep::PrependTree(CordRep* tree, MethodIdentifier method) {
 // suitable leaf is found, the function will update the length field for all
 // nodes to account for the size increase. The append region address will be
 // written to region and the actual size increase will be written to size.
-static inline bool PrepareAppendRegion(CordRep* root, char** region,
-                                       size_t* size, size_t max_length) {
+static inline bool PrepareAppendRegion(
+    absl::Nonnull<CordRep*> root, absl::Nonnull<absl::Nullable<char*>*> region,
+    absl::Nonnull<size_t*> size, size_t max_length) {
   if (root->IsBtree() && root->refcount.IsOne()) {
     Span<char> span = root->btree()->GetAppendBuffer(max_length);
     if (!span.empty()) {
@@ -420,8 +425,8 @@ Cord& Cord::operator=(absl::string_view src) {
 // we keep it here to make diffs easier.
 void Cord::InlineRep::AppendArray(absl::string_view src,
                                   MethodIdentifier method) {
-  MaybeRemoveEmptyCrcNode();
   if (src.empty()) return;  // memcpy(_, nullptr, 0) is undefined.
+  MaybeRemoveEmptyCrcNode();
 
   size_t appended = 0;
   CordRep* rep = tree();
@@ -438,8 +443,8 @@ void Cord::InlineRep::AppendArray(absl::string_view src,
     size_t inline_length = inline_size();
     if (src.size() <= kMaxInline - inline_length) {
       // Append new data to embedded array
-      memcpy(data_.as_chars() + inline_length, src.data(), src.size());
       set_inline_size(inline_length + src.size());
+      memcpy(data_.as_chars() + inline_length, src.data(), src.size());
       return;
     }
 
@@ -467,11 +472,11 @@ void Cord::InlineRep::AppendArray(absl::string_view src,
   CommitTree(root, rep, scope, method);
 }
 
-inline CordRep* Cord::TakeRep() const& {
+inline absl::Nonnull<CordRep*> Cord::TakeRep() const& {
   return CordRep::Ref(contents_.tree());
 }
 
-inline CordRep* Cord::TakeRep() && {
+inline absl::Nonnull<CordRep*> Cord::TakeRep() && {
   CordRep* rep = contents_.tree();
   contents_.clear();
   return rep;
@@ -529,7 +534,7 @@ inline void Cord::AppendImpl(C&& src) {
   contents_.AppendTree(rep, CordzUpdateTracker::kAppendCord);
 }
 
-static CordRep::ExtractResult ExtractAppendBuffer(CordRep* rep,
+static CordRep::ExtractResult ExtractAppendBuffer(absl::Nonnull<CordRep*> rep,
                                                   size_t min_capacity) {
   switch (rep->tag) {
     case cord_internal::BTREE:
@@ -575,13 +580,9 @@ CordBuffer Cord::GetAppendBufferSlowPath(size_t block_size, size_t capacity,
   return CreateAppendBuffer(contents_.data_, block_size, capacity);
 }
 
-void Cord::Append(const Cord& src) {
-  AppendImpl(src);
-}
+void Cord::Append(const Cord& src) { AppendImpl(src); }
 
-void Cord::Append(Cord&& src) {
-  AppendImpl(std::move(src));
-}
+void Cord::Append(Cord&& src) { AppendImpl(std::move(src)); }
 
 template <typename T, Cord::EnableIfString<T>>
 void Cord::Append(T&& src) {
@@ -621,9 +622,9 @@ void Cord::PrependArray(absl::string_view src, MethodIdentifier method) {
     if (cur_size + src.size() <= InlineRep::kMaxInline) {
       // Use embedded storage.
       InlineData data;
+      data.set_inline_size(cur_size + src.size());
       memcpy(data.as_chars(), src.data(), src.size());
       memcpy(data.as_chars() + src.size(), contents_.data(), cur_size);
-      data.set_inline_size(cur_size + src.size());
       contents_.data_ = data;
       return;
     }
@@ -637,8 +638,8 @@ void Cord::AppendPrecise(absl::string_view src, MethodIdentifier method) {
   assert(src.size() <= cord_internal::kMaxFlatLength);
   if (contents_.remaining_inline_capacity() >= src.size()) {
     const size_t inline_length = contents_.inline_size();
-    memcpy(contents_.data_.as_chars() + inline_length, src.data(), src.size());
     contents_.set_inline_size(inline_length + src.size());
+    memcpy(contents_.data_.as_chars() + inline_length, src.data(), src.size());
   } else {
     contents_.AppendTree(CordRepFlat::Create(src), method);
   }
@@ -650,9 +651,9 @@ void Cord::PrependPrecise(absl::string_view src, MethodIdentifier method) {
   if (contents_.remaining_inline_capacity() >= src.size()) {
     const size_t cur_size = contents_.inline_size();
     InlineData data;
+    data.set_inline_size(cur_size + src.size());
     memcpy(data.as_chars(), src.data(), src.size());
     memcpy(data.as_chars() + src.size(), contents_.data(), cur_size);
-    data.set_inline_size(cur_size + src.size());
     contents_.data_ = data;
   } else {
     contents_.PrependTree(CordRepFlat::Create(src), method);
@@ -745,6 +746,7 @@ Cord Cord::Subcord(size_t pos, size_t new_size) const {
   }
 
   if (new_size <= InlineRep::kMaxInline) {
+    sub_cord.contents_.set_inline_size(new_size);
     char* dest = sub_cord.contents_.data_.as_chars();
     Cord::ChunkIterator it = chunk_begin();
     it.AdvanceBytes(pos);
@@ -756,7 +758,6 @@ Cord Cord::Subcord(size_t pos, size_t new_size) const {
       ++it;
     }
     cord_internal::SmallMemmove(dest, it->data(), remaining_size);
-    sub_cord.contents_.set_inline_size(new_size);
     return sub_cord;
   }
 
@@ -780,8 +781,9 @@ int ClampResult(int memcmp_res) {
   return static_cast<int>(memcmp_res > 0) - static_cast<int>(memcmp_res < 0);
 }
 
-int CompareChunks(absl::string_view* lhs, absl::string_view* rhs,
-                  size_t* size_to_compare) {
+int CompareChunks(absl::Nonnull<absl::string_view*> lhs,
+                  absl::Nonnull<absl::string_view*> rhs,
+                  absl::Nonnull<size_t*> size_to_compare) {
   size_t compared_size = std::min(lhs->size(), rhs->size());
   assert(*size_to_compare >= compared_size);
   *size_to_compare -= compared_size;
@@ -796,7 +798,7 @@ int CompareChunks(absl::string_view* lhs, absl::string_view* rhs,
 }
 
 // This overload set computes comparison results from memcmp result. This
-// interface is used inside GenericCompare below. Differet implementations
+// interface is used inside GenericCompare below. Different implementations
 // are specialized for int and bool. For int we clamp result to {-1, 0, 1}
 // set. For bool we just interested in "value == 0".
 template <typename ResultType>
@@ -854,33 +856,51 @@ inline absl::string_view Cord::InlineRep::FindFlatStartPiece() const {
   return absl::string_view(node->external()->base + offset, length);
 }
 
-void Cord::SetExpectedChecksum(uint32_t crc) {
+void Cord::SetCrcCordState(crc_internal::CrcCordState state) {
   auto constexpr method = CordzUpdateTracker::kSetExpectedChecksum;
   if (empty()) {
     contents_.MaybeRemoveEmptyCrcNode();
-    CordRep* rep = CordRepCrc::New(nullptr, crc);
+    CordRep* rep = CordRepCrc::New(nullptr, std::move(state));
     contents_.EmplaceTree(rep, method);
   } else if (!contents_.is_tree()) {
     CordRep* rep = contents_.MakeFlatWithExtraCapacity(0);
-    rep = CordRepCrc::New(rep, crc);
+    rep = CordRepCrc::New(rep, std::move(state));
     contents_.EmplaceTree(rep, method);
   } else {
     const CordzUpdateScope scope(contents_.data_.cordz_info(), method);
-    CordRep* rep = CordRepCrc::New(contents_.data_.as_tree(), crc);
+    CordRep* rep = CordRepCrc::New(contents_.data_.as_tree(), std::move(state));
     contents_.SetTree(rep, scope);
   }
+}
+
+void Cord::SetExpectedChecksum(uint32_t crc) {
+  // Construct a CrcCordState with a single chunk.
+  crc_internal::CrcCordState state;
+  state.mutable_rep()->prefix_crc.push_back(
+      crc_internal::CrcCordState::PrefixCrc(size(), absl::crc32c_t{crc}));
+  SetCrcCordState(std::move(state));
+}
+
+absl::Nullable<const crc_internal::CrcCordState*> Cord::MaybeGetCrcCordState()
+    const {
+  if (!contents_.is_tree() || !contents_.tree()->IsCrc()) {
+    return nullptr;
+  }
+  return &contents_.tree()->crc()->crc_cord_state;
 }
 
 absl::optional<uint32_t> Cord::ExpectedChecksum() const {
   if (!contents_.is_tree() || !contents_.tree()->IsCrc()) {
     return absl::nullopt;
   }
-  return contents_.tree()->crc()->crc;
+  return static_cast<uint32_t>(
+      contents_.tree()->crc()->crc_cord_state.Checksum());
 }
 
 inline int Cord::CompareSlowPath(absl::string_view rhs, size_t compared_size,
                                  size_t size_to_compare) const {
-  auto advance = [](Cord::ChunkIterator* it, absl::string_view* chunk) {
+  auto advance = [](absl::Nonnull<Cord::ChunkIterator*> it,
+                    absl::Nonnull<absl::string_view*> chunk) {
     if (!chunk->empty()) return true;
     ++*it;
     if (it->bytes_remaining_ == 0) return false;
@@ -910,7 +930,8 @@ inline int Cord::CompareSlowPath(absl::string_view rhs, size_t compared_size,
 
 inline int Cord::CompareSlowPath(const Cord& rhs, size_t compared_size,
                                  size_t size_to_compare) const {
-  auto advance = [](Cord::ChunkIterator* it, absl::string_view* chunk) {
+  auto advance = [](absl::Nonnull<Cord::ChunkIterator*> it,
+                    absl::Nonnull<absl::string_view*> chunk) {
     if (!chunk->empty()) return true;
     ++*it;
     if (it->bytes_remaining_ == 0) return false;
@@ -1032,7 +1053,7 @@ Cord::operator std::string() const {
   return s;
 }
 
-void CopyCordToString(const Cord& src, std::string* dst) {
+void CopyCordToString(const Cord& src, absl::Nonnull<std::string*> dst) {
   if (!src.contents_.is_tree()) {
     src.contents_.CopyTo(dst);
   } else {
@@ -1041,7 +1062,16 @@ void CopyCordToString(const Cord& src, std::string* dst) {
   }
 }
 
-void Cord::CopyToArraySlowPath(char* dst) const {
+void AppendCordToString(const Cord& src, absl::Nonnull<std::string*> dst) {
+  const size_t cur_dst_size = dst->size();
+  const size_t new_dst_size = cur_dst_size + src.size();
+  absl::strings_internal::STLStringResizeUninitializedAmortized(dst,
+                                                                new_dst_size);
+  char* append_ptr = &(*dst)[cur_dst_size];
+  src.CopyToArrayImpl(append_ptr);
+}
+
+void Cord::CopyToArraySlowPath(absl::Nonnull<char*> dst) const {
   assert(contents_.is_tree());
   absl::string_view fragment;
   if (GetFlatAux(contents_.tree(), &fragment)) {
@@ -1151,6 +1181,194 @@ char Cord::operator[](size_t i) const {
   }
 }
 
+namespace {
+
+// Tests whether the sequence of chunks beginning at `position` starts with
+// `needle`.
+//
+// REQUIRES: remaining `absl::Cord` starting at `position` is greater than or
+// equal to `needle.size()`.
+bool IsSubstringInCordAt(absl::Cord::CharIterator position,
+                         absl::string_view needle) {
+  auto haystack_chunk = absl::Cord::ChunkRemaining(position);
+  while (true) {
+    // Precondition is that `absl::Cord::ChunkRemaining(position)` is not
+    // empty. This assert will trigger if that is not true.
+    assert(!haystack_chunk.empty());
+    auto min_length = std::min(haystack_chunk.size(), needle.size());
+    if (!absl::ConsumePrefix(&needle, haystack_chunk.substr(0, min_length))) {
+      return false;
+    }
+    if (needle.empty()) {
+      return true;
+    }
+    absl::Cord::Advance(&position, min_length);
+    haystack_chunk = absl::Cord::ChunkRemaining(position);
+  }
+}
+
+}  // namespace
+
+// A few options how this could be implemented:
+// (a) Flatten the Cord and find, i.e.
+//       haystack.Flatten().find(needle)
+//     For large 'haystack' (where Cord makes sense to be used), this copies
+//     the whole 'haystack' and can be slow.
+// (b) Use std::search, i.e.
+//       std::search(haystack.char_begin(), haystack.char_end(),
+//                   needle.begin(), needle.end())
+//     This avoids the copy, but compares one byte at a time, and branches a
+//     lot every time it has to advance. It is also not possible to use
+//     std::search as is, because CharIterator is only an input iterator, not a
+//     forward iterator.
+// (c) Use string_view::find in each fragment, and specifically handle fragment
+//     boundaries.
+//
+// This currently implements option (b).
+absl::Cord::CharIterator absl::Cord::FindImpl(CharIterator it,
+                                              absl::string_view needle) const {
+  // Ensure preconditions are met by callers first.
+
+  // Needle must not be empty.
+  assert(!needle.empty());
+  // Haystack must be at least as large as needle.
+  assert(it.chunk_iterator_.bytes_remaining_ >= needle.size());
+
+  // Cord is a sequence of chunks. To find `needle` we go chunk by chunk looking
+  // for the first char of needle, up until we have advanced `N` defined as
+  // `haystack.size() - needle.size()`. If we find the first char of needle at
+  // `P` and `P` is less than `N`, we then call `IsSubstringInCordAt` to
+  // see if this is the needle. If not, we advance to `P + 1` and try again.
+  while (it.chunk_iterator_.bytes_remaining_ >= needle.size()) {
+    auto haystack_chunk = Cord::ChunkRemaining(it);
+    assert(!haystack_chunk.empty());
+    // Look for the first char of `needle` in the current chunk.
+    auto idx = haystack_chunk.find(needle.front());
+    if (idx == absl::string_view::npos) {
+      // No potential match in this chunk, advance past it.
+      Cord::Advance(&it, haystack_chunk.size());
+      continue;
+    }
+    // We found the start of a potential match in the chunk. Advance the
+    // iterator and haystack chunk to the match the position.
+    Cord::Advance(&it, idx);
+    // Check if there is enough haystack remaining to actually have a match.
+    if (it.chunk_iterator_.bytes_remaining_ < needle.size()) {
+      break;
+    }
+    // Check if this is `needle`.
+    if (IsSubstringInCordAt(it, needle)) {
+      return it;
+    }
+    // No match, increment the iterator for the next attempt.
+    Cord::Advance(&it, 1);
+  }
+  // If we got here, we did not find `needle`.
+  return char_end();
+}
+
+absl::Cord::CharIterator absl::Cord::Find(absl::string_view needle) const {
+  if (needle.empty()) {
+    return char_begin();
+  }
+  if (needle.size() > size()) {
+    return char_end();
+  }
+  if (needle.size() == size()) {
+    return *this == needle ? char_begin() : char_end();
+  }
+  return FindImpl(char_begin(), needle);
+}
+
+namespace {
+
+// Tests whether the sequence of chunks beginning at `haystack` starts with the
+// sequence of chunks beginning at `needle_begin` and extending to `needle_end`.
+//
+// REQUIRES: remaining `absl::Cord` starting at `position` is greater than or
+// equal to `needle_end - needle_begin` and `advance`.
+bool IsSubcordInCordAt(absl::Cord::CharIterator haystack,
+                       absl::Cord::CharIterator needle_begin,
+                       absl::Cord::CharIterator needle_end) {
+  while (needle_begin != needle_end) {
+    auto haystack_chunk = absl::Cord::ChunkRemaining(haystack);
+    assert(!haystack_chunk.empty());
+    auto needle_chunk = absl::Cord::ChunkRemaining(needle_begin);
+    auto min_length = std::min(haystack_chunk.size(), needle_chunk.size());
+    if (haystack_chunk.substr(0, min_length) !=
+        needle_chunk.substr(0, min_length)) {
+      return false;
+    }
+    absl::Cord::Advance(&haystack, min_length);
+    absl::Cord::Advance(&needle_begin, min_length);
+  }
+  return true;
+}
+
+// Tests whether the sequence of chunks beginning at `position` starts with the
+// cord `needle`.
+//
+// REQUIRES: remaining `absl::Cord` starting at `position` is greater than or
+// equal to `needle.size()`.
+bool IsSubcordInCordAt(absl::Cord::CharIterator position,
+                       const absl::Cord& needle) {
+  return IsSubcordInCordAt(position, needle.char_begin(), needle.char_end());
+}
+
+}  // namespace
+
+absl::Cord::CharIterator absl::Cord::Find(const absl::Cord& needle) const {
+  if (needle.empty()) {
+    return char_begin();
+  }
+  const auto needle_size = needle.size();
+  if (needle_size > size()) {
+    return char_end();
+  }
+  if (needle_size == size()) {
+    return *this == needle ? char_begin() : char_end();
+  }
+  const auto needle_chunk = Cord::ChunkRemaining(needle.char_begin());
+  auto haystack_it = char_begin();
+  while (true) {
+    haystack_it = FindImpl(haystack_it, needle_chunk);
+    if (haystack_it == char_end() ||
+        haystack_it.chunk_iterator_.bytes_remaining_ < needle_size) {
+      break;
+    }
+    // We found the first chunk of `needle` at `haystack_it` but not the entire
+    // subcord. Advance past the first chunk and check for the remainder.
+    auto haystack_advanced_it = haystack_it;
+    auto needle_it = needle.char_begin();
+    Cord::Advance(&haystack_advanced_it, needle_chunk.size());
+    Cord::Advance(&needle_it, needle_chunk.size());
+    if (IsSubcordInCordAt(haystack_advanced_it, needle_it, needle.char_end())) {
+      return haystack_it;
+    }
+    Cord::Advance(&haystack_it, 1);
+    if (haystack_it.chunk_iterator_.bytes_remaining_ < needle_size) {
+      break;
+    }
+    if (haystack_it.chunk_iterator_.bytes_remaining_ == needle_size) {
+      // Special case, if there is exactly `needle_size` bytes remaining, the
+      // subcord is either at `haystack_it` or not at all.
+      if (IsSubcordInCordAt(haystack_it, needle)) {
+        return haystack_it;
+      }
+      break;
+    }
+  }
+  return char_end();
+}
+
+bool Cord::Contains(absl::string_view rhs) const {
+  return rhs.empty() || Find(rhs) != char_end();
+}
+
+bool Cord::Contains(const absl::Cord& rhs) const {
+  return rhs.empty() || Find(rhs) != char_end();
+}
+
 absl::string_view Cord::FlattenSlowPath() {
   assert(contents_.is_tree());
   size_t total_size = size();
@@ -1179,7 +1397,8 @@ absl::string_view Cord::FlattenSlowPath() {
   return absl::string_view(new_buffer, total_size);
 }
 
-/* static */ bool Cord::GetFlatAux(CordRep* rep, absl::string_view* fragment) {
+/* static */ bool Cord::GetFlatAux(absl::Nonnull<CordRep*> rep,
+                                   absl::Nonnull<absl::string_view*> fragment) {
   assert(rep != nullptr);
   if (rep->length == 0) {
     *fragment = absl::string_view();
@@ -1213,7 +1432,7 @@ absl::string_view Cord::FlattenSlowPath() {
 }
 
 /* static */ void Cord::ForEachChunkAux(
-    absl::cord_internal::CordRep* rep,
+    absl::Nonnull<absl::cord_internal::CordRep*> rep,
     absl::FunctionRef<void(absl::string_view)> callback) {
   assert(rep != nullptr);
   if (rep->length == 0) return;
@@ -1238,14 +1457,13 @@ absl::string_view Cord::FlattenSlowPath() {
   }
 }
 
-static void DumpNode(CordRep* rep, bool include_data, std::ostream* os,
-                     int indent) {
+static void DumpNode(absl::Nonnull<CordRep*> nonnull_rep, bool include_data,
+                     absl::Nonnull<std::ostream*> os, int indent) {
+  CordRep* rep = nonnull_rep;
   const int kIndentStep = 1;
-  absl::InlinedVector<CordRep*, kInlinedVectorSize> stack;
-  absl::InlinedVector<int, kInlinedVectorSize> indents;
   for (;;) {
-    *os << std::setw(3) << rep->refcount.Get();
-    *os << " " << std::setw(7) << rep->length;
+    *os << std::setw(3) << (rep == nullptr ? 0 : rep->refcount.Get());
+    *os << " " << std::setw(7) << (rep == nullptr ? 0 : rep->length);
     *os << " [";
     if (include_data) *os << static_cast<void*>(rep);
     *os << "]";
@@ -1255,7 +1473,7 @@ static void DumpNode(CordRep* rep, bool include_data, std::ostream* os,
       *os << "NULL\n";
       leaf = true;
     } else if (rep->IsCrc()) {
-      *os << "CRC crc=" << rep->crc()->crc << "\n";
+      *os << "CRC crc=" << rep->crc()->crc_cord_state.Checksum() << "\n";
       indent += kIndentStep;
       rep = rep->crc()->child;
     } else if (rep->IsSubstring()) {
@@ -1267,38 +1485,36 @@ static void DumpNode(CordRep* rep, bool include_data, std::ostream* os,
       if (rep->IsExternal()) {
         *os << "EXTERNAL [";
         if (include_data)
-          *os << absl::CEscape(std::string(rep->external()->base, rep->length));
+          *os << absl::CEscape(
+              absl::string_view(rep->external()->base, rep->length));
         *os << "]\n";
       } else if (rep->IsFlat()) {
         *os << "FLAT cap=" << rep->flat()->Capacity() << " [";
         if (include_data)
-          *os << absl::CEscape(std::string(rep->flat()->Data(), rep->length));
+          *os << absl::CEscape(
+              absl::string_view(rep->flat()->Data(), rep->length));
         *os << "]\n";
       } else {
-        CordRepBtree::Dump(rep, /*label=*/ "", include_data, *os);
+        CordRepBtree::Dump(rep, /*label=*/"", include_data, *os);
       }
     }
     if (leaf) {
-      if (stack.empty()) break;
-      rep = stack.back();
-      stack.pop_back();
-      indent = indents.back();
-      indents.pop_back();
+      break;
     }
   }
-  ABSL_INTERNAL_CHECK(indents.empty(), "");
 }
 
-static std::string ReportError(CordRep* root, CordRep* node) {
+static std::string ReportError(absl::Nonnull<CordRep*> root,
+                               absl::Nonnull<CordRep*> node) {
   std::ostringstream buf;
   buf << "Error at node " << node << " in:";
   DumpNode(root, true, &buf);
   return buf.str();
 }
 
-static bool VerifyNode(CordRep* root, CordRep* start_node,
-                       bool /* full_validation */) {
-  absl::InlinedVector<CordRep*, 2> worklist;
+static bool VerifyNode(absl::Nonnull<CordRep*> root,
+                       absl::Nonnull<CordRep*> start_node) {
+  absl::InlinedVector<absl::Nonnull<CordRep*>, 2> worklist;
   worklist.push_back(start_node);
   do {
     CordRep* node = worklist.back();

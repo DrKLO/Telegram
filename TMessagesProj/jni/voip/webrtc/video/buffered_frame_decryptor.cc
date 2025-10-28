@@ -13,8 +13,8 @@
 #include <utility>
 #include <vector>
 
+#include "modules/rtp_rtcp/source/frame_object.h"
 #include "modules/rtp_rtcp/source/rtp_descriptor_authentication.h"
-#include "modules/video_coding/frame_object.h"
 #include "rtc_base/logging.h"
 #include "system_wrappers/include/field_trial.h"
 

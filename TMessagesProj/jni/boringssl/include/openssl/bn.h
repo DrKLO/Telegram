@@ -1,129 +1,22 @@
-/* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
- * All rights reserved.
- *
- * This package is an SSL implementation written
- * by Eric Young (eay@cryptsoft.com).
- * The implementation was written so as to conform with Netscapes SSL.
- *
- * This library is free for commercial and non-commercial use as long as
- * the following conditions are aheared to.  The following conditions
- * apply to all code found in this distribution, be it the RC4, RSA,
- * lhash, DES, etc., code; not just the SSL code.  The SSL documentation
- * included with this distribution is covered by the same copyright terms
- * except that the holder is Tim Hudson (tjh@cryptsoft.com).
- *
- * Copyright remains Eric Young's, and as such any Copyright notices in
- * the code are not to be removed.
- * If this package is used in a product, Eric Young should be given attribution
- * as the author of the parts of the library used.
- * This can be in the form of a textual message at program startup or
- * in documentation (online or textual) provided with the package.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- * 1. Redistributions of source code must retain the copyright
- *    notice, this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
- * 3. All advertising materials mentioning features or use of this software
- *    must display the following acknowledgement:
- *    "This product includes cryptographic software written by
- *     Eric Young (eay@cryptsoft.com)"
- *    The word 'cryptographic' can be left out if the rouines from the library
- *    being used are not cryptographic related :-).
- * 4. If you include any Windows specific code (or a derivative thereof) from
- *    the apps directory (application code) you must include an acknowledgement:
- *    "This product includes software written by Tim Hudson (tjh@cryptsoft.com)"
- *
- * THIS SOFTWARE IS PROVIDED BY ERIC YOUNG ``AS IS'' AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
- * SUCH DAMAGE.
- *
- * The licence and distribution terms for any publically available version or
- * derivative of this code cannot be changed.  i.e. this code cannot simply be
- * copied and put under another distribution licence
- * [including the GNU Public Licence.]
- */
-/* ====================================================================
- * Copyright (c) 1998-2006 The OpenSSL Project.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- *
- * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- *
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- *
- * 3. All advertising materials mentioning features or use of this
- *    software must display the following acknowledgment:
- *    "This product includes software developed by the OpenSSL Project
- *    for use in the OpenSSL Toolkit. (http://www.openssl.org/)"
- *
- * 4. The names "OpenSSL Toolkit" and "OpenSSL Project" must not be used to
- *    endorse or promote products derived from this software without
- *    prior written permission. For written permission, please contact
- *    openssl-core@openssl.org.
- *
- * 5. Products derived from this software may not be called "OpenSSL"
- *    nor may "OpenSSL" appear in their names without prior written
- *    permission of the OpenSSL Project.
- *
- * 6. Redistributions of any form whatsoever must retain the following
- *    acknowledgment:
- *    "This product includes software developed by the OpenSSL Project
- *    for use in the OpenSSL Toolkit (http://www.openssl.org/)"
- *
- * THIS SOFTWARE IS PROVIDED BY THE OpenSSL PROJECT ``AS IS'' AND ANY
- * EXPRESSED OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
- * PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE OpenSSL PROJECT OR
- * ITS CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
- * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
- * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
- * OF THE POSSIBILITY OF SUCH DAMAGE.
- * ====================================================================
- *
- * This product includes cryptographic software written by Eric Young
- * (eay@cryptsoft.com).  This product includes software written by Tim
- * Hudson (tjh@cryptsoft.com).
- *
- */
-/* ====================================================================
- * Copyright 2002 Sun Microsystems, Inc. ALL RIGHTS RESERVED.
- *
- * Portions of the attached software ("Contribution") are developed by
- * SUN MICROSYSTEMS, INC., and are contributed to the OpenSSL project.
- *
- * The Contribution is licensed pursuant to the Eric Young open source
- * license provided above.
- *
- * The binary polynomial arithmetic software is originally written by
- * Sheueling Chang Shantz and Douglas Stebila of Sun Microsystems
- * Laboratories. */
+// Copyright 1995-2016 The OpenSSL Project Authors. All Rights Reserved.
+// Copyright (c) 2002, Oracle and/or its affiliates. All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 #ifndef OPENSSL_HEADER_BN_H
 #define OPENSSL_HEADER_BN_H
 
-#include <openssl/base.h>
+#include <openssl/base.h>   // IWYU pragma: export
 #include <openssl/thread.h>
 
 #include <inttypes.h>  // for PRIu64 and friends
@@ -136,7 +29,16 @@ extern "C" {
 
 // BN provides support for working with arbitrary sized integers. For example,
 // although the largest integer supported by the compiler might be 64 bits, BN
-// will allow you to work with numbers until you run out of memory.
+// will allow you to work with much larger numbers.
+//
+// This library is developed for use inside BoringSSL, and uses implementation
+// strategies that may not be ideal for other applications. Non-cryptographic
+// uses should use a more general-purpose integer library, especially if
+// performance-sensitive.
+//
+// Many functions in BN scale quadratically or higher in the bit length of their
+// input. Callers at this layer are assumed to have capped input sizes within
+// their performance tolerances.
 
 
 // BN_ULONG is the native word size when working with big integers.
@@ -148,17 +50,15 @@ extern "C" {
 // Projects which use |BN_*_FMT*| with outdated C headers may need to define it
 // externally.
 #if defined(OPENSSL_64_BIT)
-#define BN_ULONG uint64_t
+typedef uint64_t BN_ULONG;
 #define BN_BITS2 64
 #define BN_DEC_FMT1 "%" PRIu64
-#define BN_DEC_FMT2 "%019" PRIu64
 #define BN_HEX_FMT1 "%" PRIx64
 #define BN_HEX_FMT2 "%016" PRIx64
 #elif defined(OPENSSL_32_BIT)
-#define BN_ULONG uint32_t
+typedef uint32_t BN_ULONG;
 #define BN_BITS2 32
 #define BN_DEC_FMT1 "%" PRIu32
-#define BN_DEC_FMT2 "%09" PRIu32
 #define BN_HEX_FMT1 "%" PRIx32
 #define BN_HEX_FMT2 "%08" PRIx32
 #else
@@ -205,6 +105,10 @@ OPENSSL_EXPORT unsigned BN_num_bits(const BIGNUM *bn);
 
 // BN_num_bytes returns the minimum number of bytes needed to represent the
 // absolute value of |bn|.
+//
+// While |size_t| is the preferred type for byte counts, callers can assume that
+// |BIGNUM|s are bounded such that this value, and its corresponding bit count,
+// will always fit in |int|.
 OPENSSL_EXPORT unsigned BN_num_bytes(const BIGNUM *bn);
 
 // BN_zero sets |bn| to zero.
@@ -243,11 +147,11 @@ OPENSSL_EXPORT BIGNUM *BN_bin2bn(const uint8_t *in, size_t len, BIGNUM *ret);
 // |in| is secret, use |BN_bn2bin_padded| instead.
 OPENSSL_EXPORT size_t BN_bn2bin(const BIGNUM *in, uint8_t *out);
 
-// BN_le2bn sets |*ret| to the value of |len| bytes from |in|, interpreted as
+// BN_lebin2bn sets |*ret| to the value of |len| bytes from |in|, interpreted as
 // a little-endian number, and returns |ret|. If |ret| is NULL then a fresh
 // |BIGNUM| is allocated and returned. It returns NULL on allocation
 // failure.
-OPENSSL_EXPORT BIGNUM *BN_le2bn(const uint8_t *in, size_t len, BIGNUM *ret);
+OPENSSL_EXPORT BIGNUM *BN_lebin2bn(const uint8_t *in, size_t len, BIGNUM *ret);
 
 // BN_bn2le_padded serialises the absolute value of |in| to |out| as a
 // little-endian integer, which must have |len| of space available, padding
@@ -280,6 +184,10 @@ OPENSSL_EXPORT int BN_hex2bn(BIGNUM **outp, const char *in);
 // BN_bn2dec returns an allocated string that contains a NUL-terminated,
 // decimal representation of |bn|. If |bn| is negative, the first char in the
 // resulting string will be '-'. Returns NULL on allocation failure.
+//
+// Converting an arbitrarily large integer to decimal is quadratic in the bit
+// length of |a|. This function assumes the caller has capped the input within
+// performance tolerances.
 OPENSSL_EXPORT char *BN_bn2dec(const BIGNUM *a);
 
 // BN_dec2bn parses the leading decimal number from |in|, which may be
@@ -288,6 +196,10 @@ OPENSSL_EXPORT char *BN_bn2dec(const BIGNUM *a);
 // decimal number and stores it in |*outp|. If |*outp| is NULL then it
 // allocates a new BIGNUM and updates |*outp|. It returns the number of bytes
 // of |in| processed or zero on error.
+//
+// Converting an arbitrarily large integer to decimal is quadratic in the bit
+// length of |a|. This function assumes the caller has capped the input within
+// performance tolerances.
 OPENSSL_EXPORT int BN_dec2bn(BIGNUM **outp, const char *in);
 
 // BN_asc2bn acts like |BN_dec2bn| or |BN_hex2bn| depending on whether |in|
@@ -368,9 +280,9 @@ OPENSSL_EXPORT void BN_CTX_end(BN_CTX *ctx);
 // or |b|. It returns one on success and zero on allocation failure.
 OPENSSL_EXPORT int BN_add(BIGNUM *r, const BIGNUM *a, const BIGNUM *b);
 
-// BN_uadd sets |r| = |a| + |b|, where |a| and |b| are non-negative and |r| may
-// be the same pointer as either |a| or |b|. It returns one on success and zero
-// on allocation failure.
+// BN_uadd sets |r| = |a| + |b|, considering only the absolute values of |a| and
+// |b|. |r| may be the same pointer as either |a| or |b|. It returns one on
+// success and zero on allocation failure.
 OPENSSL_EXPORT int BN_uadd(BIGNUM *r, const BIGNUM *a, const BIGNUM *b);
 
 // BN_add_word adds |w| to |a|. It returns one on success and zero otherwise.
@@ -380,9 +292,9 @@ OPENSSL_EXPORT int BN_add_word(BIGNUM *a, BN_ULONG w);
 // or |b|. It returns one on success and zero on allocation failure.
 OPENSSL_EXPORT int BN_sub(BIGNUM *r, const BIGNUM *a, const BIGNUM *b);
 
-// BN_usub sets |r| = |a| - |b|, where |a| and |b| are non-negative integers,
-// |b| < |a| and |r| may be the same pointer as either |a| or |b|. It returns
-// one on success and zero on allocation failure.
+// BN_usub sets |r| = |a| - |b|, considering only the absolute values of |a| and
+// |b|. The result must be non-negative, i.e. |b| <= |a|. |r| may be the same
+// pointer as either |a| or |b|. It returns one on success and zero on error.
 OPENSSL_EXPORT int BN_usub(BIGNUM *r, const BIGNUM *a, const BIGNUM *b);
 
 // BN_sub_word subtracts |w| from |a|. It returns one on success and zero on
@@ -405,9 +317,14 @@ OPENSSL_EXPORT int BN_sqr(BIGNUM *r, const BIGNUM *a, BN_CTX *ctx);
 
 // BN_div divides |numerator| by |divisor| and places the result in |quotient|
 // and the remainder in |rem|. Either of |quotient| or |rem| may be NULL, in
-// which case the respective value is not returned. The result is rounded
-// towards zero; thus if |numerator| is negative, the remainder will be zero or
-// negative. It returns one on success or zero on error.
+// which case the respective value is not returned. It returns one on success or
+// zero on error. It is an error condition if |divisor| is zero.
+//
+// The outputs will be such that |quotient| * |divisor| + |rem| = |numerator|,
+// with the quotient rounded towards zero. Thus, if |numerator| is negative,
+// |rem| will be zero or negative. If |divisor| is negative, the sign of
+// |quotient| will be flipped to compensate but otherwise rounding will be as if
+// |divisor| were its absolute value.
 OPENSSL_EXPORT int BN_div(BIGNUM *quotient, BIGNUM *rem,
                           const BIGNUM *numerator, const BIGNUM *divisor,
                           BN_CTX *ctx);
@@ -584,9 +501,14 @@ OPENSSL_EXPORT int BN_mod_lshift1_quick(BIGNUM *r, const BIGNUM *a,
                                         const BIGNUM *m);
 
 // BN_mod_sqrt returns a newly-allocated |BIGNUM|, r, such that
-// r^2 == a (mod p). |p| must be a prime. It returns NULL on error or if |a| is
-// not a square mod |p|. In the latter case, it will add |BN_R_NOT_A_SQUARE| to
-// the error queue.
+// r^2 == a (mod p). It returns NULL on error or if |a| is not a square mod |p|.
+// In the latter case, it will add |BN_R_NOT_A_SQUARE| to the error queue.
+// If |a| is a square and |p| > 2, there are two possible square roots. This
+// function may return either and may even select one non-deterministically.
+//
+// This function only works if |p| is a prime. If |p| is composite, it may fail
+// or return an arbitrary value. Callers should not pass attacker-controlled
+// values of |p|.
 OPENSSL_EXPORT BIGNUM *BN_mod_sqrt(BIGNUM *in, const BIGNUM *a, const BIGNUM *p,
                                    BN_CTX *ctx);
 
@@ -642,11 +564,11 @@ OPENSSL_EXPORT int BN_pseudo_rand_range(BIGNUM *rnd, const BIGNUM *range);
 // The callback receives the address of that |BN_GENCB| structure as its last
 // argument and the user is free to put an arbitrary pointer in |arg|. The other
 // arguments are set as follows:
-//   event=BN_GENCB_GENERATED, n=i:   after generating the i'th possible prime
+// - event=BN_GENCB_GENERATED, n=i:   after generating the i'th possible prime
 //                                    number.
-//   event=BN_GENCB_PRIME_TEST, n=-1: when finished trial division primality
+// - event=BN_GENCB_PRIME_TEST, n=-1: when finished trial division primality
 //                                    checks.
-//   event=BN_GENCB_PRIME_TEST, n=i:  when the i'th primality test has finished.
+// - event=BN_GENCB_PRIME_TEST, n=i:  when the i'th primality test has finished.
 //
 // The callback can return zero to abort the generation progress or one to
 // allow it to continue.
@@ -658,6 +580,14 @@ struct bn_gencb_st {
   int (*callback)(int event, int n, struct bn_gencb_st *);
 };
 
+// BN_GENCB_new returns a newly-allocated |BN_GENCB| object, or NULL on
+// allocation failure. The result must be released with |BN_GENCB_free| when
+// done.
+OPENSSL_EXPORT BN_GENCB *BN_GENCB_new(void);
+
+// BN_GENCB_free releases memory associated with |callback|.
+OPENSSL_EXPORT void BN_GENCB_free(BN_GENCB *callback);
+
 // BN_GENCB_set configures |callback| to call |f| and sets |callout->arg| to
 // |arg|.
 OPENSSL_EXPORT void BN_GENCB_set(BN_GENCB *callback,
@@ -667,6 +597,9 @@ OPENSSL_EXPORT void BN_GENCB_set(BN_GENCB *callback,
 // BN_GENCB_call calls |callback|, if not NULL, and returns the return value of
 // the callback, or 1 if |callback| is NULL.
 OPENSSL_EXPORT int BN_GENCB_call(BN_GENCB *callback, int event, int n);
+
+// BN_GENCB_get_arg returns |callback->arg|.
+OPENSSL_EXPORT void *BN_GENCB_get_arg(const BN_GENCB *callback);
 
 // BN_generate_prime_ex sets |ret| to a prime number of |bits| length. If safe
 // is non-zero then the prime will be such that (ret-1)/2 is also a prime.
@@ -684,10 +617,22 @@ OPENSSL_EXPORT int BN_generate_prime_ex(BIGNUM *ret, int bits, int safe,
                                         const BIGNUM *add, const BIGNUM *rem,
                                         BN_GENCB *cb);
 
-// BN_prime_checks is magic value that can be used as the |checks| argument to
-// the primality testing functions in order to automatically select a number of
-// Miller-Rabin checks that gives a false positive rate of ~2^{-80}.
-#define BN_prime_checks 0
+// BN_prime_checks_for_validation can be used as the |checks| argument to the
+// primarily testing functions when validating an externally-supplied candidate
+// prime. It gives a false positive rate of at most 2^{-128}. (The worst case
+// false positive rate for a single iteration is 1/4 per
+// https://eprint.iacr.org/2018/749. (1/4)^64 = 2^{-128}.)
+#define BN_prime_checks_for_validation 64
+
+// BN_prime_checks_for_generation can be used as the |checks| argument to the
+// primality testing functions when generating random primes. It gives a false
+// positive rate at most the security level of the corresponding RSA key size.
+//
+// Note this value only performs enough checks if the candidate prime was
+// selected randomly. If validating an externally-supplied candidate, especially
+// one that may be selected adversarially, use |BN_prime_checks_for_validation|
+// instead.
+#define BN_prime_checks_for_generation 0
 
 // bn_primality_result_t enumerates the outcomes of primality-testing.
 enum bn_primality_result_t {
@@ -698,7 +643,7 @@ enum bn_primality_result_t {
 
 // BN_enhanced_miller_rabin_primality_test tests whether |w| is probably a prime
 // number using the Enhanced Miller-Rabin Test (FIPS 186-4 C.3.2) with
-// |iterations| iterations and returns the result in |out_result|. Enhanced
+// |checks| iterations and returns the result in |out_result|. Enhanced
 // Miller-Rabin tests primality for odd integers greater than 3, returning
 // |bn_probably_prime| if the number is probably prime,
 // |bn_non_prime_power_composite| if the number is a composite that is not the
@@ -706,12 +651,10 @@ enum bn_primality_result_t {
 // success and zero on failure. If |cb| is not NULL, then it is called during
 // each iteration of the primality test.
 //
-// If |iterations| is |BN_prime_checks|, then a value that results in a false
-// positive rate lower than the number-field sieve security level of |w| is
-// used, provided |w| was generated randomly. |BN_prime_checks| is not suitable
-// for inputs potentially crafted by an adversary.
+// See |BN_prime_checks_for_validation| and |BN_prime_checks_for_generation| for
+// recommended values of |checks|.
 OPENSSL_EXPORT int BN_enhanced_miller_rabin_primality_test(
-    enum bn_primality_result_t *out_result, const BIGNUM *w, int iterations,
+    enum bn_primality_result_t *out_result, const BIGNUM *w, int checks,
     BN_CTX *ctx, BN_GENCB *cb);
 
 // BN_primality_test sets |*is_probably_prime| to one if |candidate| is
@@ -720,11 +663,9 @@ OPENSSL_EXPORT int BN_enhanced_miller_rabin_primality_test(
 //
 // If |do_trial_division| is non-zero then |candidate| will be tested against a
 // list of small primes before Miller-Rabin tests. The probability of this
-// function returning a false positive is 2^{2*checks}. If |checks| is
-// |BN_prime_checks| then a value that results in a false positive rate lower
-// than the number-field sieve security level of |candidate| is used, provided
-// |candidate| was generated randomly. |BN_prime_checks| is not suitable for
-// inputs potentially crafted by an adversary.
+// function returning a false positive is at most 2^{2*checks}. See
+// |BN_prime_checks_for_validation| and |BN_prime_checks_for_generation| for
+// recommended values of |checks|.
 //
 // If |cb| is not NULL then it is called during the checking process. See the
 // comment above |BN_GENCB|.
@@ -740,11 +681,9 @@ OPENSSL_EXPORT int BN_primality_test(int *is_probably_prime,
 //
 // If |do_trial_division| is non-zero then |candidate| will be tested against a
 // list of small primes before Miller-Rabin tests. The probability of this
-// function returning one when |candidate| is composite is 2^{2*checks}. If
-// |checks| is |BN_prime_checks| then a value that results in a false positive
-// rate lower than the number-field sieve security level of |candidate| is used,
-// provided |candidate| was generated randomly. |BN_prime_checks| is not
-// suitable for inputs potentially crafted by an adversary.
+// function returning one when |candidate| is composite is at most 2^{2*checks}.
+// See |BN_prime_checks_for_validation| and |BN_prime_checks_for_generation| for
+// recommended values of |checks|.
 //
 // If |cb| is not NULL then it is called during the checking process. See the
 // comment above |BN_GENCB|.
@@ -791,8 +730,9 @@ OPENSSL_EXPORT BIGNUM *BN_mod_inverse(BIGNUM *out, const BIGNUM *a,
 // Note this function may incorrectly report |a| has no inverse if the random
 // blinding value has no inverse. It should only be used when |n| has few
 // non-invertible elements, such as an RSA modulus.
-int BN_mod_inverse_blinded(BIGNUM *out, int *out_no_inverse, const BIGNUM *a,
-                           const BN_MONT_CTX *mont, BN_CTX *ctx);
+OPENSSL_EXPORT int BN_mod_inverse_blinded(BIGNUM *out, int *out_no_inverse,
+                                          const BIGNUM *a,
+                                          const BN_MONT_CTX *mont, BN_CTX *ctx);
 
 // BN_mod_inverse_odd sets |out| equal to |a|^-1, mod |n|. |a| must be
 // non-negative and must be less than |n|. |n| must be odd. This function
@@ -830,15 +770,6 @@ OPENSSL_EXPORT void BN_MONT_CTX_free(BN_MONT_CTX *mont);
 OPENSSL_EXPORT BN_MONT_CTX *BN_MONT_CTX_copy(BN_MONT_CTX *to,
                                              const BN_MONT_CTX *from);
 
-// BN_MONT_CTX_set_locked takes |lock| and checks whether |*pmont| is NULL. If
-// so, it creates a new |BN_MONT_CTX| and sets the modulus for it to |mod|. It
-// then stores it as |*pmont|. It returns one on success and zero on error. Note
-// this function assumes |mod| is public.
-//
-// If |*pmont| is already non-NULL then it does nothing and returns one.
-int BN_MONT_CTX_set_locked(BN_MONT_CTX **pmont, CRYPTO_MUTEX *lock,
-                           const BIGNUM *mod, BN_CTX *bn_ctx);
-
 // BN_to_montgomery sets |ret| equal to |a| in the Montgomery domain. |a| is
 // assumed to be in the range [0, n), where |n| is the Montgomery modulus. It
 // returns one on success or zero on error.
@@ -846,8 +777,9 @@ OPENSSL_EXPORT int BN_to_montgomery(BIGNUM *ret, const BIGNUM *a,
                                     const BN_MONT_CTX *mont, BN_CTX *ctx);
 
 // BN_from_montgomery sets |ret| equal to |a| * R^-1, i.e. translates values out
-// of the Montgomery domain. |a| is assumed to be in the range [0, n), where |n|
-// is the Montgomery modulus. It returns one on success or zero on error.
+// of the Montgomery domain. |a| is assumed to be in the range [0, n*R), where
+// |n| is the Montgomery modulus. Note n < R, so inputs in the range [0, n*n)
+// are valid. This function returns one on success or zero on error.
 OPENSSL_EXPORT int BN_from_montgomery(BIGNUM *ret, const BIGNUM *a,
                                       const BN_MONT_CTX *mont, BN_CTX *ctx);
 
@@ -937,6 +869,24 @@ OPENSSL_EXPORT int BN_MONT_CTX_set(BN_MONT_CTX *mont, const BIGNUM *mod,
 //
 // Use |BN_bn2bin_padded| instead. It is |size_t|-clean.
 OPENSSL_EXPORT int BN_bn2binpad(const BIGNUM *in, uint8_t *out, int len);
+
+// BN_bn2lebinpad behaves like |BN_bn2le_padded|, but it returns |len| on
+// success and -1 on error.
+//
+// Use |BN_bn2le_padded| instead. It is |size_t|-clean.
+OPENSSL_EXPORT int BN_bn2lebinpad(const BIGNUM *in, uint8_t *out, int len);
+
+// BN_prime_checks is a deprecated alias for |BN_prime_checks_for_validation|.
+// Use |BN_prime_checks_for_generation| or |BN_prime_checks_for_validation|
+// instead. (This defaults to the |_for_validation| value in order to be
+// conservative.)
+#define BN_prime_checks BN_prime_checks_for_validation
+
+// BN_secure_new calls |BN_new|.
+OPENSSL_EXPORT BIGNUM *BN_secure_new(void);
+
+// BN_le2bn calls |BN_lebin2bn|.
+OPENSSL_EXPORT BIGNUM *BN_le2bn(const uint8_t *in, size_t len, BIGNUM *ret);
 
 
 // Private functions

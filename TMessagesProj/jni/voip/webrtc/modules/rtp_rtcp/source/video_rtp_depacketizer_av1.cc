@@ -15,6 +15,7 @@
 
 #include <utility>
 
+#include "modules/rtp_rtcp/source/leb128.h"
 #include "modules/rtp_rtcp/source/rtp_video_header.h"
 #include "rtc_base/byte_buffer.h"
 #include "rtc_base/checks.h"
@@ -187,8 +188,7 @@ VectorObuInfo ParseObus(
   VectorObuInfo obu_infos;
   bool expect_continues_obu = false;
   for (rtc::ArrayView<const uint8_t> rtp_payload : rtp_payloads) {
-    rtc::ByteBufferReader payload(
-        reinterpret_cast<const char*>(rtp_payload.data()), rtp_payload.size());
+    rtc::ByteBufferReader payload(rtp_payload);
     uint8_t aggregation_header;
     if (!payload.ReadUInt8(&aggregation_header)) {
       RTC_DLOG(LS_WARNING)
@@ -262,19 +262,6 @@ VectorObuInfo ParseObus(
   return obu_infos;
 }
 
-// Returns number of bytes consumed.
-int WriteLeb128(uint32_t value, uint8_t* buffer) {
-  int size = 0;
-  while (value >= 0x80) {
-    buffer[size] = 0x80 | (value & 0x7F);
-    ++size;
-    value >>= 7;
-  }
-  buffer[size] = value;
-  ++size;
-  return size;
-}
-
 // Calculates sizes for the Obu, i.e. base on ObuInfo::data field calculates
 // all other fields in the ObuInfo structure.
 // Returns false if obu found to be misformed.
@@ -331,7 +318,7 @@ bool CalculateObuSizes(ObuInfo* obu_info) {
   }
   obu_info->payload_offset = it;
   obu_info->prefix_size +=
-      WriteLeb128(rtc::dchecked_cast<uint32_t>(obu_info->payload_size),
+      WriteLeb128(rtc::dchecked_cast<uint64_t>(obu_info->payload_size),
                   obu_info->prefix.data() + obu_info->prefix_size);
   return true;
 }

@@ -1329,8 +1329,10 @@ public class CollageLayoutView2 extends FrameLayout implements ItemOptions.Scrim
         } else {
             fastSeek = false;
         }
-        AndroidUtilities.cancelRunOnUIThread(syncRunnable);
-        syncRunnable.run();
+        if (preview) {
+            AndroidUtilities.cancelRunOnUIThread(syncRunnable);
+            syncRunnable.run();
+        }
     }
 
     public boolean isPlaying() {
@@ -1372,8 +1374,10 @@ public class CollageLayoutView2 extends FrameLayout implements ItemOptions.Scrim
         final long now = System.currentTimeMillis();
         previewStartTime = now - progress;
         fastSeek = fast;
-        AndroidUtilities.cancelRunOnUIThread(syncRunnable);
-        syncRunnable.run();
+        if (preview) {
+            AndroidUtilities.cancelRunOnUIThread(syncRunnable);
+            syncRunnable.run();
+        }
     }
 
     private final Runnable syncRunnable = () -> {

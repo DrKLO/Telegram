@@ -8,10 +8,11 @@
  *  be found in the AUTHORS file in the root of the source tree.
  */
 
+#include "modules/audio_processing/agc2/rnn_vad/rnn_fc.h"
+
 #include <algorithm>
 #include <numeric>
 
-#include "modules/audio_processing/agc2/rnn_vad/rnn_fc.h"
 #include "rtc_base/checks.h"
 #include "rtc_base/numerics/safe_conversions.h"
 #include "third_party/rnnoise/src/rnn_activations.h"

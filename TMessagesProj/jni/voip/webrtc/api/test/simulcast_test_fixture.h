@@ -19,6 +19,7 @@ class SimulcastTestFixture {
   virtual ~SimulcastTestFixture() = default;
 
   virtual void TestKeyFrameRequestsOnAllStreams() = 0;
+  virtual void TestKeyFrameRequestsOnSpecificStreams() = 0;
   virtual void TestPaddingAllStreams() = 0;
   virtual void TestPaddingTwoStreams() = 0;
   virtual void TestPaddingTwoStreamsOneMaxedOut() = 0;

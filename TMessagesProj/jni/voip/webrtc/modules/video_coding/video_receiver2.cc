@@ -20,7 +20,6 @@
 #include "api/video_codecs/video_codec.h"
 #include "api/video_codecs/video_decoder.h"
 #include "modules/video_coding/decoder_database.h"
-#include "modules/video_coding/encoded_frame.h"
 #include "modules/video_coding/generic_decoder.h"
 #include "modules/video_coding/include/video_coding_defines.h"
 #include "modules/video_coding/timing/timing.h"
@@ -74,7 +73,7 @@ bool VideoReceiver2::IsExternalDecoderRegistered(uint8_t payload_type) const {
 }
 
 // Must be called from inside the receive side critical section.
-int32_t VideoReceiver2::Decode(const VCMEncodedFrame* frame) {
+int32_t VideoReceiver2::Decode(const EncodedFrame* frame) {
   RTC_DCHECK_RUN_ON(&decoder_sequence_checker_);
   TRACE_EVENT0("webrtc", "VideoReceiver2::Decode");
   // Change decoder if payload type has changed.

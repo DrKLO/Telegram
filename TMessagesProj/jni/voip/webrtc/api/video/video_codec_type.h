@@ -13,8 +13,6 @@
 
 namespace webrtc {
 
-// GENERATED_JAVA_ENUM_PACKAGE: org.webrtc
-#ifndef DISABLE_H265
 enum VideoCodecType {
   // There are various memset(..., 0, ...) calls in the code that rely on
   // kVideoCodecGeneric being zero.
@@ -26,18 +24,6 @@ enum VideoCodecType {
   kVideoCodecH265,
   kVideoCodecMultiplex,
 };
-#else
-enum VideoCodecType {
-  // There are various memset(..., 0, ...) calls in the code that rely on
-  // kVideoCodecGeneric being zero.
-  kVideoCodecGeneric = 0,
-  kVideoCodecVP8,
-  kVideoCodecVP9,
-  kVideoCodecAV1,
-  kVideoCodecH264,
-  kVideoCodecMultiplex,
-};
-#endif
 
 }  // namespace webrtc
 

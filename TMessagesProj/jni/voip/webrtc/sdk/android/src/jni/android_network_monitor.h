@@ -115,13 +115,15 @@ class AndroidNetworkMonitor : public rtc::NetworkMonitorInterface {
                                  jint preference);
 
   // Visible for testing.
+  void OnNetworkConnected_n(const NetworkInformation& network_info);
+
+  // Visible for testing.
   absl::optional<NetworkHandle> FindNetworkHandleFromAddressOrName(
       const rtc::IPAddress& address,
       absl::string_view ifname) const;
 
  private:
   void reset();
-  void OnNetworkConnected_n(const NetworkInformation& network_info);
   void OnNetworkDisconnected_n(NetworkHandle network_handle);
   void OnNetworkPreference_n(NetworkType type,
                              rtc::NetworkPreference preference);

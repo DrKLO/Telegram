@@ -236,7 +236,7 @@ FrameEncodeMetadataWriter::ExtractEncodeStartTimeAndFillMetadata(
     // Because some hardware encoders don't preserve capture timestamp we
     // use RTP timestamps here.
     while (!metadata_list->empty() &&
-           IsNewerTimestamp(encoded_image->Timestamp(),
+           IsNewerTimestamp(encoded_image->RtpTimestamp(),
                             metadata_list->front().rtp_timestamp)) {
       frame_drop_callback_->OnDroppedFrame(
           EncodedImageCallback::DropReason::kDroppedByEncoder);
@@ -249,7 +249,7 @@ FrameEncodeMetadataWriter::ExtractEncodeStartTimeAndFillMetadata(
             : VideoContentType::UNSPECIFIED;
 
     if (!metadata_list->empty() &&
-        metadata_list->front().rtp_timestamp == encoded_image->Timestamp()) {
+        metadata_list->front().rtp_timestamp == encoded_image->RtpTimestamp()) {
       result.emplace(metadata_list->front().encode_start_time_ms);
       encoded_image->capture_time_ms_ =
           metadata_list->front().timestamp_us / 1000;

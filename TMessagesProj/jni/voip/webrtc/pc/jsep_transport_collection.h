@@ -44,10 +44,7 @@ namespace webrtc {
 class BundleManager {
  public:
   explicit BundleManager(PeerConnectionInterface::BundlePolicy bundle_policy)
-      : bundle_policy_(bundle_policy) {
-    // Allow constructor to be called on a different thread.
-    sequence_checker_.Detach();
-  }
+      : bundle_policy_(bundle_policy) {}
   const std::vector<std::unique_ptr<cricket::ContentGroup>>& bundle_groups()
       const {
     RTC_DCHECK_RUN_ON(&sequence_checker_);
@@ -76,7 +73,8 @@ class BundleManager {
   // Recalculate established_bundle_groups_by_mid_ from bundle_groups_.
   void RefreshEstablishedBundleGroupsByMid() RTC_RUN_ON(sequence_checker_);
 
-  RTC_NO_UNIQUE_ADDRESS SequenceChecker sequence_checker_;
+  RTC_NO_UNIQUE_ADDRESS SequenceChecker sequence_checker_{
+      SequenceChecker::kDetached};
   PeerConnectionInterface::BundlePolicy bundle_policy_;
   std::vector<std::unique_ptr<cricket::ContentGroup>> bundle_groups_
       RTC_GUARDED_BY(sequence_checker_);
@@ -97,10 +95,7 @@ class JsepTransportCollection {
                               map_change_callback,
                           std::function<void()> state_change_callback)
       : map_change_callback_(map_change_callback),
-        state_change_callback_(state_change_callback) {
-    // Allow constructor to be called on a different thread.
-    sequence_checker_.Detach();
-  }
+        state_change_callback_(state_change_callback) {}
 
   void RegisterTransport(const std::string& mid,
                          std::unique_ptr<cricket::JsepTransport> transport);
@@ -151,7 +146,8 @@ class JsepTransportCollection {
 
   bool IsConsistent();  // For testing only: Verify internal structure.
 
-  RTC_NO_UNIQUE_ADDRESS SequenceChecker sequence_checker_;
+  RTC_NO_UNIQUE_ADDRESS SequenceChecker sequence_checker_{
+      SequenceChecker::kDetached};
   // This member owns the JSEP transports.
   std::map<std::string, std::unique_ptr<cricket::JsepTransport>>
       jsep_transports_by_name_ RTC_GUARDED_BY(sequence_checker_);

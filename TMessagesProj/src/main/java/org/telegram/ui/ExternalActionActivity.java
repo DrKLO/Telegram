@@ -78,6 +78,7 @@ public class ExternalActionActivity extends Activity implements INavigationLayou
         if (SharedConfig.passcodeHash.length() > 0 && !SharedConfig.allowScreenCapture) {
             try {
                 getWindow().setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE);
+                AndroidUtilities.logFlagSecure();
             } catch (Exception e) {
                 FileLog.e(e);
             }

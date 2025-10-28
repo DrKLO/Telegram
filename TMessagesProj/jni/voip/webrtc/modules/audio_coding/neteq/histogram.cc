@@ -114,8 +114,8 @@ int Histogram::Quantile(int probability) {
   // `iat_index`, it is more efficient to start with `sum` = 1 and subtract
   // elements from the start of the histogram.
   int inverse_probability = (1 << 30) - probability;
-  size_t index = 0;        // Start from the beginning of `buckets_`.
-  int sum = 1 << 30;       // Assign to 1 in Q30.
+  size_t index = 0;   // Start from the beginning of `buckets_`.
+  int sum = 1 << 30;  // Assign to 1 in Q30.
   sum -= buckets_[index];
 
   while ((sum > inverse_probability) && (index < buckets_.size() - 1)) {

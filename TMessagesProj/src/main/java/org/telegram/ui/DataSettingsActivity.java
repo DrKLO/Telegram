@@ -502,12 +502,12 @@ public class DataSettingsActivity extends BaseFragment {
                     String description;
                     boolean isInternal = storageDir.contains("/storage/emulated/");
                     if (fullString && !isInternal) {
-                        description = LocaleController.formatString("StoragePathFreeValueExternal", R.string.StoragePathFreeValueExternal, AndroidUtilities.formatFileSize(file.getFreeSpace()), storageDir);
+                        description = LocaleController.formatString(R.string.StoragePathFreeValueExternal, AndroidUtilities.formatFileSize(file.getFreeSpace()), storageDir);
                     } else {
                         if (isInternal) {
-                            description = LocaleController.formatString("StoragePathFreeInternal", R.string.StoragePathFreeInternal, AndroidUtilities.formatFileSize(file.getFreeSpace()));
+                            description = LocaleController.formatString(R.string.StoragePathFreeInternal, AndroidUtilities.formatFileSize(file.getFreeSpace()));
                         } else {
-                            description = LocaleController.formatString("StoragePathFreeExternal", R.string.StoragePathFreeExternal, AndroidUtilities.formatFileSize(file.getFreeSpace()));
+                            description = LocaleController.formatString(R.string.StoragePathFreeExternal, AndroidUtilities.formatFileSize(file.getFreeSpace()));
                         }
                     }
 

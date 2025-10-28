@@ -36,6 +36,7 @@ public:
     bool failedBySalt = false;
     int32_t failedByFloodWait = 0;
     bool awaitingIntegrityCheck = false;
+    bool awaitingCaptchaCheck = false;
     bool premiumFloodWait = false;
     ConnectionType connectionType;
     uint32_t requestFlags;

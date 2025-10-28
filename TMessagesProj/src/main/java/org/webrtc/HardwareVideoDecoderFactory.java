@@ -11,11 +11,8 @@
 package org.webrtc;
 
 import android.media.MediaCodecInfo;
-
-import org.telegram.messenger.voip.Instance;
-import org.telegram.messenger.voip.VoIPService;
-
 import androidx.annotation.Nullable;
+import java.util.Arrays;
 
 /** Factory for Android hardware VideoDecoders. */
 public class HardwareVideoDecoderFactory extends MediaCodecVideoDecoderFactory {
@@ -23,33 +20,7 @@ public class HardwareVideoDecoderFactory extends MediaCodecVideoDecoderFactory {
       new Predicate<MediaCodecInfo>() {
         @Override
         public boolean test(MediaCodecInfo arg) {
-            if (!MediaCodecUtils.isHardwareAccelerated(arg)) {
-                return false;
-            }
-            String[] types = arg.getSupportedTypes();
-            if (types == null || types.length == 0) {
-                return false;
-            }
-            Instance.ServerConfig config = Instance.getGlobalServerConfig();
-            for (int a = 0; a < types.length; a++) {
-                switch (types[a]) {
-                    case "video/x-vnd.on2.vp8":
-                        if (VoIPService.getSharedInstance() != null && VoIPService.getSharedInstance().groupCall != null) {
-                            return false;
-                        }
-                        return config.enable_vp8_decoder;
-                    case "video/x-vnd.on2.vp9":
-                        return config.enable_vp9_decoder;
-                    case "video/avc":
-                        if (VoIPService.getSharedInstance() != null && VoIPService.getSharedInstance().groupCall != null) {
-                            return false;
-                        }
-                        return config.enable_h264_decoder;
-                    case "video/hevc":
-                        return config.enable_h265_decoder;
-                }
-            }
-            return true;
+          return MediaCodecUtils.isHardwareAccelerated(arg);
         }
       };
 

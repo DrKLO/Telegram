@@ -15,6 +15,7 @@
 
 #include "absl/base/attributes.h"
 #include "api/field_trials_view.h"
+#include "api/metronome/metronome.h"
 #include "api/task_queue/task_queue_base.h"
 #include "api/units/time_delta.h"
 #include "api/video/video_frame.h"
@@ -60,14 +61,11 @@ class FrameCadenceAdapterInterface
     // The |post_time| parameter indicates the current time sampled when
     // FrameCadenceAdapterInterface::OnFrame was called.
     //
-    // |frames_scheduled_for_processing| indicates how many frames that have
-    // been scheduled for processing. During sequential conditions where
-    // FrameCadenceAdapterInterface::OnFrame is invoked and subsequently ending
-    // up in this callback, this value will read 1. Otherwise if the
-    // |queue| gets stalled for some reason, the value will increase
-    // beyond 1.
+    // |queue_overload| is true if the frame cadence adapter notices it's
+    // not able to deliver the incoming |frame| to the |queue| in the expected
+    // time.
     virtual void OnFrame(Timestamp post_time,
-                         int frames_scheduled_for_processing,
+                         bool queue_overload,
                          const VideoFrame& frame) = 0;
 
     // Called when the source has discarded a frame.
@@ -84,6 +82,8 @@ class FrameCadenceAdapterInterface
   static std::unique_ptr<FrameCadenceAdapterInterface> Create(
       Clock* clock,
       TaskQueueBase* queue,
+      Metronome* metronome,
+      TaskQueueBase* worker_queue,
       const FieldTrialsView& field_trials);
 
   // Call before using the rest of the API.
@@ -111,6 +111,12 @@ class FrameCadenceAdapterInterface
 
   // Updates spatial layer enabled status.
   virtual void UpdateLayerStatus(size_t spatial_index, bool enabled) = 0;
+
+  // Updates the restrictions of max frame rate for the video source.
+  // The new `max_frame_rate` will only affect the cadence of Callback::OnFrame
+  // for non-idle (non converged) repeated frames.
+  virtual void UpdateVideoSourceRestrictions(
+      absl::optional<double> max_frame_rate) = 0;
 
   // Conditionally requests a refresh frame via
   // Callback::RequestRefreshFrame.

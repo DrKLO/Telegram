@@ -14,17 +14,12 @@
 #include <vector>
 
 #include "api/test/create_frame_generator.h"
-#include "api/test/peerconnection_quality_test_fixture.h"
+#include "api/test/pclf/media_configuration.h"
 #include "rtc_base/checks.h"
 #include "test/testsupport/file_utils.h"
 
 namespace webrtc {
 namespace webrtc_pc_e2e {
-
-using VideoConfig =
-    ::webrtc::webrtc_pc_e2e::PeerConnectionE2EQualityTestFixture::VideoConfig;
-using ScreenShareConfig = ::webrtc::webrtc_pc_e2e::
-    PeerConnectionE2EQualityTestFixture::ScreenShareConfig;
 
 void ValidateScreenShareConfig(const VideoConfig& video_config,
                                const ScreenShareConfig& screen_share_config) {

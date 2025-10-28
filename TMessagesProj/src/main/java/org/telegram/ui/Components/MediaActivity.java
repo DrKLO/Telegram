@@ -494,7 +494,7 @@ public class MediaActivity extends BaseFragment implements SharedMediaLayout.Sha
         if (type == TYPE_MEDIA && dialogId == getUserConfig().getClientUserId() && topicId == 0 && !getMessagesController().getSavedMessagesController().unsupported && getMessagesController().getSavedMessagesController().hasDialogs()) {
             initialTab = SharedMediaLayout.TAB_SAVED_DIALOGS;
         }
-        sharedMediaLayout = new SharedMediaLayout(context, dialogId, sharedMediaPreloader, 0, null, currentChatInfo, currentUserInfo, initialTab, this, new SharedMediaLayout.Delegate() {
+        sharedMediaLayout = new SharedMediaLayout(context, dialogId, sharedMediaPreloader, 0, null, currentChatInfo, currentUserInfo, initialTab, 0, this, new SharedMediaLayout.Delegate() {
             @Override
             public void scrollToSharedMedia() {
 
@@ -761,10 +761,10 @@ public class MediaActivity extends BaseFragment implements SharedMediaLayout.Sha
                 subtitleTextView[0].setText(LocaleController.formatPluralStringSpaced("FoundStories", storiesCount));
             }
         } else if (type == TYPE_ARCHIVED_CHANNEL_STORIES) {
-            nameTextView[0].setText(LocaleController.getString("ProfileStoriesArchive"));
+            nameTextView[0].setText(LocaleController.getString(R.string.ProfileStoriesArchive));
         } else if (type == TYPE_STORIES) {
-            nameTextView[0].setText(LocaleController.getString("ProfileMyStories"));
-            nameTextView[1].setText(LocaleController.getString("ProfileStoriesArchive"));
+            nameTextView[0].setText(LocaleController.getString(R.string.ProfileMyStories));
+            nameTextView[1].setText(LocaleController.getString(R.string.ProfileStoriesArchive));
         } else if (avatarDialogId == UserObject.ANONYMOUS) {
             nameTextView[0].setText(LocaleController.getString(R.string.AnonymousForward));
             avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_ANONYMOUS);

@@ -100,6 +100,7 @@ public class AvatarDrawable extends Drawable {
     public static final int AVATAR_TYPE_NEW_CHATS = 24;
     public static final int AVATAR_TYPE_PREMIUM = 25;
     public static final int AVATAR_TYPE_STARS = 26;
+    public static final int AVATAR_TYPE_SUGGESTION = 27;
 
     /**
      * Matches {@link org.telegram.ui.Components.AvatarConstructorFragment#defaultColors}
@@ -256,7 +257,7 @@ public class AvatarDrawable extends Drawable {
             color = color2 = Theme.getColor(Theme.key_chats_actionBackground);
         } else if (avatarType == AVATAR_TYPE_ARCHIVED) {
             color = color2 = getThemedColor(Theme.key_avatar_backgroundArchivedHidden);
-        } else if (avatarType == AVATAR_TYPE_REPLIES || avatarType == AVATAR_TYPE_SAVED || avatarType == AVATAR_TYPE_OTHER_CHATS) {
+        } else if (avatarType == AVATAR_TYPE_SUGGESTION || avatarType == AVATAR_TYPE_REPLIES || avatarType == AVATAR_TYPE_SAVED || avatarType == AVATAR_TYPE_OTHER_CHATS) {
             hasGradient = true;
             color = getThemedColor(Theme.key_avatar_backgroundSaved);
             color2 = getThemedColor(Theme.key_avatar_background2Saved);
@@ -326,7 +327,7 @@ public class AvatarDrawable extends Drawable {
             color = getThemedColor(Theme.keys_avatar_background[getColorIndex(4)]);
             color2 = getThemedColor(Theme.keys_avatar_background2[getColorIndex(4)]);
         }
-        needApplyColorAccent = avatarType != AVATAR_TYPE_ARCHIVED && avatarType != AVATAR_TYPE_SAVED && avatarType != AVATAR_TYPE_STORY && avatarType != AVATAR_TYPE_ANONYMOUS && avatarType != AVATAR_TYPE_REPLIES && avatarType != AVATAR_TYPE_OTHER_CHATS;
+        needApplyColorAccent = avatarType != AVATAR_TYPE_ARCHIVED && avatarType != AVATAR_TYPE_SAVED && avatarType != AVATAR_TYPE_STORY && avatarType != AVATAR_TYPE_ANONYMOUS && avatarType != AVATAR_TYPE_SUGGESTION && avatarType != AVATAR_TYPE_REPLIES && avatarType != AVATAR_TYPE_OTHER_CHATS;
     }
 
     public void setArchivedAvatarHiddenProgress(float progress) {
@@ -541,8 +542,18 @@ public class AvatarDrawable extends Drawable {
     }
 
     private Drawable customIconDrawable;
+    private int iconTx, iconTy;
     public void setCustomIcon(Drawable drawable) {
         customIconDrawable = drawable;
+    }
+
+    public void setIconTranslation(int tx, int ty) {
+        this.iconTx = tx;
+        this.iconTy = ty;
+    }
+
+    public Drawable getCustomIcon() {
+        return customIconDrawable;
     }
 
     @Override
@@ -665,14 +676,16 @@ public class AvatarDrawable extends Drawable {
                 drawable = Theme.avatarDrawables[22];
             } else if (avatarType == AVATAR_TYPE_STARS) {
                 drawable = Theme.avatarDrawables[23];
+            } else if (avatarType == AVATAR_TYPE_SUGGESTION) {
+                drawable = Theme.avatarDrawables[24];
             } else {
                 drawable = Theme.avatarDrawables[9];
             }
             if (drawable != null) {
-                int w = (int) (drawable.getIntrinsicWidth() * scaleSize);
-                int h = (int) (drawable.getIntrinsicHeight() * scaleSize);
-                int x = (size - w) / 2;
-                int y = (size - h) / 2;
+                final int w = (int) (drawable.getIntrinsicWidth() * scaleSize);
+                final int h = (int) (drawable.getIntrinsicHeight() * scaleSize);
+                final int x = (size - w) / 2 + iconTx;
+                final int y = (size - h) / 2 + iconTy;
                 drawable.setBounds(x, y, x + w, y + h);
                 if (alpha != 255) {
                     drawable.setAlpha(alpha);
@@ -685,7 +698,10 @@ public class AvatarDrawable extends Drawable {
         } else if (drawDeleted && Theme.avatarDrawables[1] != null) {
             int w = Theme.avatarDrawables[1].getIntrinsicWidth();
             int h = Theme.avatarDrawables[1].getIntrinsicHeight();
-            if (w > size - dp(6) || h > size - dp(6)) {
+            if (isProfile) {
+                w *= scaleSize;
+                h *= scaleSize;
+            } else if (w > size - dp(6) || h > size - dp(6)) {
                 float scale = size / (float) dp(50);
                 w *= scale;
                 h *= scale;

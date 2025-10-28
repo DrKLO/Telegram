@@ -16,14 +16,17 @@
 
 #include "absl/base/attributes.h"
 #include "absl/functional/bind_front.h"
+#include "absl/types/optional.h"
 #include "api/sequence_checker.h"
 #include "api/task_queue/task_queue_base.h"
 #include "api/units/data_size.h"
+#include "api/units/time_delta.h"
+#include "api/units/timestamp.h"
 #include "api/video/encoded_frame.h"
 #include "api/video/frame_buffer.h"
 #include "api/video/video_content_type.h"
 #include "modules/video_coding/frame_helpers.h"
-#include "modules/video_coding/timing/inter_frame_delay.h"
+#include "modules/video_coding/timing/inter_frame_delay_variation_calculator.h"
 #include "modules/video_coding/timing/jitter_estimator.h"
 #include "rtc_base/checks.h"
 #include "rtc_base/logging.h"
@@ -53,7 +56,7 @@ struct FrameMetadata {
         size(frame.size()),
         contentType(frame.contentType()),
         delayed_by_retransmission(frame.delayed_by_retransmission()),
-        rtp_timestamp(frame.Timestamp()),
+        rtp_timestamp(frame.RtpTimestamp()),
         receive_time(frame.ReceivedTimestamp()) {}
 
   const bool is_last_spatial_layer;
@@ -64,6 +67,16 @@ struct FrameMetadata {
   const uint32_t rtp_timestamp;
   const absl::optional<Timestamp> receive_time;
 };
+
+Timestamp MinReceiveTime(const EncodedFrame& frame) {
+  Timestamp first_recv_time = Timestamp::PlusInfinity();
+  for (const auto& packet_info : frame.PacketInfos()) {
+    if (packet_info.receive_time().IsFinite()) {
+      first_recv_time = std::min(first_recv_time, packet_info.receive_time());
+    }
+  }
+  return first_recv_time;
+}
 
 Timestamp ReceiveTime(const EncodedFrame& frame) {
   absl::optional<Timestamp> ts = frame.ReceivedTimestamp();
@@ -77,7 +90,7 @@ VideoStreamBufferController::VideoStreamBufferController(
     Clock* clock,
     TaskQueueBase* worker_queue,
     VCMTiming* timing,
-    VCMReceiveStatisticsCallback* stats_proxy,
+    VideoStreamBufferControllerStatsObserver* stats_proxy,
     FrameSchedulingReceiver* receiver,
     TimeDelta max_wait_for_keyframe,
     TimeDelta max_wait_for_frame,
@@ -200,7 +213,8 @@ void VideoStreamBufferController::OnFrameReady(
   bool superframe_delayed_by_retransmission = false;
   DataSize superframe_size = DataSize::Zero();
   const EncodedFrame& first_frame = *frames.front();
-  Timestamp receive_time = ReceiveTime(first_frame);
+  Timestamp min_receive_time = MinReceiveTime(first_frame);
+  Timestamp max_receive_time = ReceiveTime(first_frame);
 
   if (first_frame.is_keyframe())
     keyframe_required_ = false;
@@ -210,25 +224,28 @@ void VideoStreamBufferController::OnFrameReady(
       TargetVideoDelayIsTooLarge(timing_->TargetVideoDelay())) {
     RTC_LOG(LS_WARNING) << "Resetting jitter estimator and timing module due "
                            "to bad render timing for rtp_timestamp="
-                        << first_frame.Timestamp();
+                        << first_frame.RtpTimestamp();
     jitter_estimator_.Reset();
     timing_->Reset();
-    render_time = timing_->RenderTime(first_frame.Timestamp(), now);
+    render_time = timing_->RenderTime(first_frame.RtpTimestamp(), now);
   }
 
   for (std::unique_ptr<EncodedFrame>& frame : frames) {
     frame->SetRenderTime(render_time.ms());
 
     superframe_delayed_by_retransmission |= frame->delayed_by_retransmission();
-    receive_time = std::max(receive_time, ReceiveTime(*frame));
+    min_receive_time = std::min(min_receive_time, MinReceiveTime(*frame));
+    max_receive_time = std::max(max_receive_time, ReceiveTime(*frame));
     superframe_size += DataSize::Bytes(frame->size());
   }
 
   if (!superframe_delayed_by_retransmission) {
-    auto frame_delay = inter_frame_delay_.CalculateDelay(
-        first_frame.Timestamp(), receive_time);
-    if (frame_delay) {
-      jitter_estimator_.UpdateEstimate(*frame_delay, superframe_size);
+    absl::optional<TimeDelta> inter_frame_delay_variation =
+        ifdv_calculator_.Calculate(first_frame.RtpTimestamp(),
+                                   max_receive_time);
+    if (inter_frame_delay_variation) {
+      jitter_estimator_.UpdateEstimate(*inter_frame_delay_variation,
+                                       superframe_size);
     }
 
     float rtt_mult = protection_mode_ == kProtectionNackFEC ? 0.0 : 1.0;
@@ -247,7 +264,7 @@ void VideoStreamBufferController::OnFrameReady(
 
   // Update stats.
   UpdateDroppedFrames();
-  UpdateJitterDelay();
+  UpdateFrameBufferTimings(min_receive_time, now);
   UpdateTimingFrameInfo();
 
   std::unique_ptr<EncodedFrame> frame =
@@ -312,14 +329,31 @@ void VideoStreamBufferController::UpdateDroppedFrames()
       buffer_->GetTotalNumberOfDroppedFrames();
 }
 
-void VideoStreamBufferController::UpdateJitterDelay() {
+void VideoStreamBufferController::UpdateFrameBufferTimings(
+    Timestamp min_receive_time,
+    Timestamp now) {
+  // Update instantaneous delays.
   auto timings = timing_->GetTimings();
   if (timings.num_decoded_frames) {
     stats_proxy_->OnFrameBufferTimingsUpdated(
-        timings.max_decode_duration.ms(), timings.current_delay.ms(),
-        timings.target_delay.ms(), timings.jitter_buffer_delay.ms(),
+        timings.estimated_max_decode_time.ms(), timings.current_delay.ms(),
+        timings.target_delay.ms(), timings.minimum_delay.ms(),
         timings.min_playout_delay.ms(), timings.render_delay.ms());
   }
+
+  // The spec mandates that `jitterBufferDelay` is the "time the first
+  // packet is received by the jitter buffer (ingest timestamp) to the time it
+  // exits the jitter buffer (emit timestamp)". Since the "jitter buffer"
+  // is not a monolith in the webrtc.org implementation, we take the freedom to
+  // define "ingest timestamp" as "first packet received by
+  // RtpVideoStreamReceiver2" and "emit timestamp" as "decodable frame released
+  // by VideoStreamBufferController".
+  //
+  // https://w3c.github.io/webrtc-stats/#dom-rtcinboundrtpstreamstats-jitterbufferdelay
+  TimeDelta jitter_buffer_delay =
+      std::max(TimeDelta::Zero(), now - min_receive_time);
+  stats_proxy_->OnDecodableFrame(jitter_buffer_delay, timings.target_delay,
+                                 timings.minimum_delay);
 }
 
 void VideoStreamBufferController::UpdateTimingFrameInfo() {
@@ -347,7 +381,7 @@ void VideoStreamBufferController::ForceKeyFrameReleaseImmediately()
     }
     // Found keyframe - decode right away.
     if (next_frame.front()->is_keyframe()) {
-      auto render_time = timing_->RenderTime(next_frame.front()->Timestamp(),
+      auto render_time = timing_->RenderTime(next_frame.front()->RtpTimestamp(),
                                              clock_->CurrentTime());
       OnFrameReady(std::move(next_frame), render_time);
       return;

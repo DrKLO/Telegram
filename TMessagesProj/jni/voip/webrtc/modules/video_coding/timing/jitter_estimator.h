@@ -172,7 +172,7 @@ class JitterEstimator {
 
   // TODO(bugs.webrtc.org/14381): Update `avg_frame_size_bytes_` to DataSize
   // when api/units have sufficient precision.
-  double avg_frame_size_bytes_;  // Average frame size
+  double avg_frame_size_bytes_;   // Average frame size
   double var_frame_size_bytes2_;  // Frame size variance. Unit is bytes^2.
   // Largest frame size received (descending with a factor kPsi).
   // Used by default.

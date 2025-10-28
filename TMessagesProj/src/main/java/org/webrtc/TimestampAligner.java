@@ -31,7 +31,7 @@ public class TimestampAligner {
 
   /**
    * Translates camera timestamps to the same timescale as is used by rtc::TimeNanos().
-   * |cameraTimeNs| is assumed to be accurate, but with an unknown epoch and clock drift. Returns
+   * `cameraTimeNs` is assumed to be accurate, but with an unknown epoch and clock drift. Returns
    * the translated timestamp.
    */
   public long translateTimestamp(long cameraTimeNs) {

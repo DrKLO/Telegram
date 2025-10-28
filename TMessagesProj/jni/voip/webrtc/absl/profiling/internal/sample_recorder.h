@@ -199,6 +199,14 @@ T* SampleRecorder<T>::Register(Targs&&... args) {
     sample = new T();
     {
       absl::MutexLock sample_lock(&sample->init_mu);
+      // If flag initialization happens to occur (perhaps in another thread)
+      // while in this block, it will lock `graveyard_` which is usually always
+      // locked before any sample. This will appear as a lock inversion.
+      // However, this code is run exactly once per sample, and this sample
+      // cannot be accessed until after it is returned from this method.  This
+      // means that this lock state can never be recreated, so we can safely
+      // inform the deadlock detector to ignore it.
+      sample->init_mu.ForgetDeadlockInfo();
       sample->PrepareForSampling(std::forward<Targs>(args)...);
     }
     PushNew(sample);

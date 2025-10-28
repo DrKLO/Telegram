@@ -1,16 +1,16 @@
-/* Copyright (c) 2016, Google Inc.
- *
- * Permission to use, copy, modify, and/or distribute this software for any
- * purpose with or without fee is hereby granted, provided that the above
- * copyright notice and this permission notice appear in all copies.
- *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
- * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY
- * SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION
- * OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
- * CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE. */
+// Copyright 2016 The BoringSSL Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 #include <openssl/ripemd.h>
 
@@ -57,17 +57,13 @@ static const RIPEMDTestCase kRIPEMDTestCases[] = {
 
 // TODO(davidben): Convert this file to GTest properly.
 TEST(RIPEMDTest, RunTest) {
-  unsigned test_num = 0;
-  int ok = 1;
-
   for (const auto &test : kRIPEMDTestCases) {
-    test_num++;
-
+    SCOPED_TRACE(test.input);
     const size_t input_len = strlen(test.input);
 
     for (size_t stride = 0; stride <= input_len; stride++) {
+      SCOPED_TRACE(stride);
       uint8_t digest[RIPEMD160_DIGEST_LENGTH];
-
       if (stride == 0) {
         RIPEMD160(reinterpret_cast<const uint8_t *>(test.input), input_len,
                   digest);
@@ -89,17 +85,12 @@ TEST(RIPEMDTest, RunTest) {
         RIPEMD160_Final(digest, &ctx);
       }
 
-      if (OPENSSL_memcmp(digest, test.expected, sizeof(digest)) != 0) {
-        fprintf(stderr, "#%u: bad result with stride %u: ", test_num,
-                static_cast<unsigned>(stride));
-        hexdump(stderr, "", digest, sizeof(digest));
-        ok = 0;
-      }
+      EXPECT_EQ(Bytes(digest), Bytes(test.expected));
     }
   }
 
   static const size_t kLargeBufSize = 1000000;
-  std::unique_ptr<uint8_t[]> buf(new uint8_t[kLargeBufSize]);
+  auto buf = std::make_unique<uint8_t[]>(kLargeBufSize);
   OPENSSL_memset(buf.get(), 'a', kLargeBufSize);
   uint8_t digest[RIPEMD160_DIGEST_LENGTH];
   RIPEMD160(buf.get(), kLargeBufSize, digest);
@@ -107,12 +98,6 @@ TEST(RIPEMDTest, RunTest) {
   static const uint8_t kMillionADigest[RIPEMD160_DIGEST_LENGTH] = {
       0x52, 0x78, 0x32, 0x43, 0xc1, 0x69, 0x7b, 0xdb, 0xe1, 0x6d,
       0x37, 0xf9, 0x7f, 0x68, 0xf0, 0x83, 0x25, 0xdc, 0x15, 0x28};
-
-  if (OPENSSL_memcmp(digest, kMillionADigest, sizeof(digest)) != 0) {
-    fprintf(stderr, u8"Digest incorrect for “million a's” test: ");
-    hexdump(stderr, "", digest, sizeof(digest));
-    ok = 0;
-  }
-
-  EXPECT_EQ(1, ok);
+  EXPECT_EQ(Bytes(digest), Bytes(kMillionADigest))
+      << "Digest incorrect for \"million a's\" test";
 }

@@ -28,8 +28,8 @@
 
 void WebRtcIlbcfix_EnergyInverse(
     int16_t*
-        energy, /* (i/o) Energy and inverse
-                                                          energy (in Q29) */
+        energy,           /* (i/o) Energy and inverse
+                                                                    energy (in Q29) */
     size_t noOfEnergies); /* (i)   The length of the energy
                                  vector */
 

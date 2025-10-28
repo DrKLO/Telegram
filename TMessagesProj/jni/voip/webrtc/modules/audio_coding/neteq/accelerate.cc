@@ -10,7 +10,6 @@
 
 #include "modules/audio_coding/neteq/accelerate.h"
 
-
 #include "api/array_view.h"
 #include "modules/audio_coding/neteq/audio_multi_vector.h"
 

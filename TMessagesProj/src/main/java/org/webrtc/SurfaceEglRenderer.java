@@ -42,9 +42,9 @@ public class SurfaceEglRenderer extends EglRenderer implements SurfaceHolder.Cal
   }
 
   /**
-   * Initialize this class, sharing resources with |sharedContext|. The custom |drawer| will be used
+   * Initialize this class, sharing resources with `sharedContext`. The custom `drawer` will be used
    * for drawing frames on the EGLSurface. This class is responsible for calling release() on
-   * |drawer|. It is allowed to call init() to reinitialize the renderer after a previous
+   * `drawer`. It is allowed to call init() to reinitialize the renderer after a previous
    * init()/release() cycle.
    */
   public void init(final EglBase.Context sharedContext,
@@ -125,7 +125,7 @@ public class SurfaceEglRenderer extends EglRenderer implements SurfaceHolder.Cal
     logD("surfaceChanged: format: " + format + " size: " + width + "x" + height);
   }
 
-  // Update frame dimensions and report any changes to |rendererEvents|.
+  // Update frame dimensions and report any changes to `rendererEvents`.
   private void updateFrameDimensionsAndReportEvents(VideoFrame frame) {
     synchronized (layoutLock) {
       if (isRenderingPaused) {

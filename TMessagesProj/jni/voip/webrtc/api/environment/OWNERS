@@ -1,0 +1,15 @@
+# Environment has a limited visibility for stronger control what utilities are
+# exposed through it.
+# Utilities exposed through environemnt
+# - should be helpful for various WebRTC sub components.
+# - should be thread safe.
+# - should have a default implementation.
+# - should provide functionality different to existing utilities in the
+#   environemnt.
+# - should need at most one instance per peer connection.
+set noparent
+include ../../OWNERS_INFRA
+
+danilchap@webrtc.org
+hta@webrtc.org
+mbonadei@webrtc.org

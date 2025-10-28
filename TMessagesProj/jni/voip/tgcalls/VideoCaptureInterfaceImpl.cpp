@@ -1,4 +1,3 @@
-#include <tgnet/FileLog.h>
 #include "VideoCaptureInterfaceImpl.h"
 
 #include "VideoCapturerInterface.h"
@@ -10,19 +9,17 @@
 namespace tgcalls {
 
 VideoCaptureInterfaceObject::VideoCaptureInterfaceObject(std::string deviceId, bool isScreenCapture, std::shared_ptr<PlatformContext> platformContext, Threads &threads)
-: _videoSource(PlatformInterface::SharedInstance()->makeVideoSource(threads.getMediaThread(), threads.getWorkerThread(), isScreenCapture)) {
-	_platformContext = platformContext;
-
+: _videoSource(PlatformInterface::SharedInstance()->makeVideoSource(threads.getMediaThread(), threads.getWorkerThread(), isScreenCapture)), _platformContext(platformContext) {
 	switchToDevice(deviceId, isScreenCapture);
 }
 
 VideoCaptureInterfaceObject::~VideoCaptureInterfaceObject() {
-	if (_videoCapturer && _currentUncroppedSink != nullptr) {
+	if (_videoCapturer) {
 		_videoCapturer->setUncroppedOutput(nullptr);
 	}
 }
 
-rtc::scoped_refptr<webrtc::VideoTrackSourceInterface> VideoCaptureInterfaceObject::source() {
+webrtc::scoped_refptr<webrtc::VideoTrackSourceInterface> VideoCaptureInterfaceObject::source() {
 	return _videoSource;
 }
 
@@ -73,12 +70,12 @@ void VideoCaptureInterfaceObject::switchToDevice(std::string deviceId, bool isSc
         }, _platformContext, _videoCapturerResolution);
 	}
 	if (_videoCapturer) {
-//		if (_preferredAspectRatio > 0) {
-//			_videoCapturer->setPreferredCaptureAspectRatio(_preferredAspectRatio);
-//		}
-		if (_currentUncroppedSink) {
-			_videoCapturer->setUncroppedOutput(_currentUncroppedSink);
+		if (_preferredAspectRatio > 0) {
+			_videoCapturer->setPreferredCaptureAspectRatio(_preferredAspectRatio);
 		}
+//		if (const auto currentUncroppedSink = _currentUncroppedSink.lock()) {
+			_videoCapturer->setUncroppedOutput(_currentUncroppedSink);
+//		}
         if (_onFatalError) {
             _videoCapturer->setOnFatalError(_onFatalError);
         }
@@ -117,9 +114,9 @@ void VideoCaptureInterfaceObject::updateAspectRateAdaptation() {
             if (_preferredAspectRatio > 0.01 && _shouldBeAdaptedToReceiverAspectRate) {
                 float originalWidth = (float)_videoCapturerResolution.first;
                 float originalHeight = (float)_videoCapturerResolution.second;
-                
+
                 float aspectRatio = _preferredAspectRatio;
-                
+
                 float width = (originalWidth > aspectRatio * originalHeight)
                     ? int(std::round(aspectRatio * originalHeight))
                     : originalWidth;
@@ -170,7 +167,7 @@ void VideoCaptureInterfaceObject::setRotationUpdated(std::function<void(int)> ro
 VideoCaptureInterfaceImpl::VideoCaptureInterfaceImpl(std::string deviceId, bool isScreenCapture, std::shared_ptr<PlatformContext> platformContext, std::shared_ptr<Threads> threads) :
 _platformContext(platformContext),
 _impl(threads->getMediaThread(), [deviceId, isScreenCapture, platformContext, threads]() {
-	return new VideoCaptureInterfaceObject(deviceId, isScreenCapture, platformContext, *threads);
+	return std::make_shared<VideoCaptureInterfaceObject>(deviceId, isScreenCapture, platformContext, *threads);
 }) {
 }
 

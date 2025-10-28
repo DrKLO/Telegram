@@ -943,7 +943,8 @@ public class ThemePreviewActivity extends BaseFragment implements DownloadContro
                     }
                     showDialog(new ShareAlert(getParentActivity(), null, link, false, link, false) {
                         @Override
-                        protected void onSend(LongSparseArray<TLRPC.Dialog> dids, int count, TLRPC.TL_forumTopic topic) {
+                        protected void onSend(LongSparseArray<TLRPC.Dialog> dids, int count, TLRPC.TL_forumTopic topic, boolean showToast) {
+                            if (!showToast) return;
                             if (dids.size() == 1) {
                                 undoView.showWithAction(dids.valueAt(0).id, UndoView.ACTION_SHARE_BACKGROUND, count);
                             } else {
@@ -5470,7 +5471,7 @@ public class ThemePreviewActivity extends BaseFragment implements DownloadContro
                     }
                     messageCell.isChat = showSecretMessages || dialogId < 0;
                     messageCell.setFullyDraw(true);
-                    messageCell.setMessageObject(message, null, pinnedBotton, pinnedTop);
+                    messageCell.setMessageObject(message, null, pinnedBotton, pinnedTop, false);
                 } else if (view instanceof ChatActionCell) {
                     ChatActionCell actionCell = (ChatActionCell) view;
                     actionCell.setMessageObject(message);

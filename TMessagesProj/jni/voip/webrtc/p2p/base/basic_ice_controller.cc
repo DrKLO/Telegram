@@ -16,8 +16,8 @@ namespace {
 const int kMinImprovement = 10;
 
 bool IsRelayRelay(const cricket::Connection* conn) {
-  return conn->local_candidate().type() == cricket::RELAY_PORT_TYPE &&
-         conn->remote_candidate().type() == cricket::RELAY_PORT_TYPE;
+  return conn->local_candidate().is_relay() &&
+         conn->remote_candidate().is_relay();
 }
 
 bool IsUdp(const cricket::Connection* conn) {
@@ -540,7 +540,8 @@ BasicIceController::SortAndSwitchConnection(IceSwitchReason reason) {
       });
 
   RTC_LOG(LS_VERBOSE) << "Sorting " << connections_.size()
-                      << " available connections";
+                      << " available connections due to: "
+                      << IceSwitchReasonToString(reason);
   for (size_t i = 0; i < connections_.size(); ++i) {
     RTC_LOG(LS_VERBOSE) << connections_[i]->ToString();
   }
@@ -564,9 +565,9 @@ bool BasicIceController::ReadyToSend(const Connection* connection) const {
 bool BasicIceController::PresumedWritable(const Connection* conn) const {
   return (conn->write_state() == Connection::STATE_WRITE_INIT &&
           config_.presume_writable_when_fully_relayed &&
-          conn->local_candidate().type() == RELAY_PORT_TYPE &&
-          (conn->remote_candidate().type() == RELAY_PORT_TYPE ||
-           conn->remote_candidate().type() == PRFLX_PORT_TYPE));
+          conn->local_candidate().is_relay() &&
+          (conn->remote_candidate().is_relay() ||
+           conn->remote_candidate().is_prflx()));
 }
 
 // Compare two connections based on their writing, receiving, and connected

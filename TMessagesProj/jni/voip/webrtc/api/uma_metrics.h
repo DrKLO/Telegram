@@ -119,16 +119,6 @@ enum AddIceCandidateResult {
   kAddIceCandidateMax
 };
 
-// Metric for recording which api surface was used to enable simulcast.
-// These values are persisted to logs. Entries should not be renumbered and
-// numeric values should never be reused.
-enum SimulcastApiVersion {
-  kSimulcastApiVersionNone = 0,
-  kSimulcastApiVersionLegacy = 1,
-  kSimulcastApiVersionSpecCompliant = 2,
-  kSimulcastApiVersionMax
-};
-
 // Metrics for reporting usage of BUNDLE.
 // These values are persisted to logs. Entries should not be renumbered and
 // numeric values should never be reused.
@@ -173,6 +163,16 @@ enum ProvisionalAnswerUsage {
   kProvisionalAnswerLocal = 1,
   kProvisionalAnswerRemote = 2,
   kProvisionalAnswerMax
+};
+
+// Metrics for RTCRtpMuxPolicy. The only defined value is
+// https://w3c.github.io/webrtc-pc/#rtcrtcpmuxpolicy-enum
+// "require" but there is a legacy option "negotiate" which
+// was removed from the spec.
+enum RtcpMuxPolicyUsage {
+  kRtcpMuxPolicyUsageRequire = 0,
+  kRtcpMuxPolicyUsageNegotiate = 1,
+  kRtcpMuxPolicyUsageMax
 };
 
 // When adding new metrics please consider using the style described in

@@ -109,11 +109,13 @@ void VideoQualityObserver::UpdateHistograms(bool screenshare) {
 
     int num_resolution_downgrades_per_minute =
         num_resolution_downgrades_ * 60000 / video_duration_ms;
-    RTC_HISTOGRAM_COUNTS_SPARSE_100(
-        uma_prefix + ".NumberResolutionDownswitchesPerMinute",
-        num_resolution_downgrades_per_minute);
-    log_stream << uma_prefix << ".NumberResolutionDownswitchesPerMinute "
-               << num_resolution_downgrades_per_minute << "\n";
+    if (!screenshare) {
+      RTC_HISTOGRAM_COUNTS_SPARSE_100(
+          uma_prefix + ".NumberResolutionDownswitchesPerMinute",
+          num_resolution_downgrades_per_minute);
+      log_stream << uma_prefix << ".NumberResolutionDownswitchesPerMinute "
+                 << num_resolution_downgrades_per_minute << "\n";
+    }
 
     int num_freezes_per_minute =
         freezes_durations_.NumSamples() * 60000 / video_duration_ms;

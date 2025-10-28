@@ -31,9 +31,14 @@
 #include "absl/container/fixed_array.h"
 #include "absl/container/inlined_vector.h"
 #include "absl/hash/hash_testing.h"
+#include "absl/meta/type_traits.h"
 #include "absl/strings/str_cat.h"
 
 namespace {
+
+static_assert(!absl::type_traits_internal::IsOwner<absl::Span<int>>::value &&
+                  absl::type_traits_internal::IsView<absl::Span<int>>::value,
+              "Span is a view, not an owner");
 
 MATCHER_P(DataIs, data,
           absl::StrCat("data() ", negation ? "isn't " : "is ",
@@ -191,7 +196,7 @@ TEST(IntSpan, SpanOfDerived) {
 }
 
 void TestInitializerList(absl::Span<const int> s, const std::vector<int>& v) {
-  EXPECT_TRUE(absl::equal(s.begin(), s.end(), v.begin(), v.end()));
+  EXPECT_TRUE(std::equal(s.begin(), s.end(), v.begin(), v.end()));
 }
 
 TEST(ConstIntSpan, InitializerListConversion) {
@@ -782,9 +787,9 @@ TEST(IntSpan, NoexceptTest) {
 template <int i>
 struct ConstexprTester {};
 
-#define ABSL_TEST_CONSTEXPR(expr)                       \
-  do {                                                  \
-    ABSL_ATTRIBUTE_UNUSED ConstexprTester<(expr, 1)> t; \
+#define ABSL_TEST_CONSTEXPR(expr)                                          \
+  do {                                                                     \
+    ABSL_ATTRIBUTE_UNUSED ConstexprTester<(static_cast<void>(expr), 1)> t; \
   } while (0)
 
 struct ContainerWithConstexprMethods {
@@ -820,6 +825,41 @@ TEST(ConstIntSpan, ConstexprTest) {
   ABSL_TEST_CONSTEXPR(span.last(1));
   ABSL_TEST_CONSTEXPR(span[0]);
 }
+
+#if defined(ABSL_INTERNAL_CPLUSPLUS_LANG) && \
+    ABSL_INTERNAL_CPLUSPLUS_LANG >= 202002L
+
+TEST(ConstIntSpan, ConstexprRelOpsTest) {
+  static constexpr int lhs_data[] = {1, 2, 3};
+  static constexpr int rhs_data[] = {1, 2, 3};
+
+  constexpr absl::Span<const int> lhs = absl::MakeConstSpan(lhs_data, 3);
+  constexpr absl::Span<const int> rhs = absl::MakeConstSpan(rhs_data, 3);
+
+  ABSL_TEST_CONSTEXPR(lhs_data == rhs);
+  ABSL_TEST_CONSTEXPR(lhs_data != rhs);
+  ABSL_TEST_CONSTEXPR(lhs_data < rhs);
+  ABSL_TEST_CONSTEXPR(lhs_data <= rhs);
+  ABSL_TEST_CONSTEXPR(lhs_data > rhs);
+  ABSL_TEST_CONSTEXPR(lhs_data >= rhs);
+
+  ABSL_TEST_CONSTEXPR(lhs == rhs);
+  ABSL_TEST_CONSTEXPR(lhs != rhs);
+  ABSL_TEST_CONSTEXPR(lhs < rhs);
+  ABSL_TEST_CONSTEXPR(lhs <= rhs);
+  ABSL_TEST_CONSTEXPR(lhs > rhs);
+  ABSL_TEST_CONSTEXPR(lhs >= rhs);
+
+  ABSL_TEST_CONSTEXPR(lhs == rhs_data);
+  ABSL_TEST_CONSTEXPR(lhs != rhs_data);
+  ABSL_TEST_CONSTEXPR(lhs < rhs_data);
+  ABSL_TEST_CONSTEXPR(lhs <= rhs_data);
+  ABSL_TEST_CONSTEXPR(lhs > rhs_data);
+  ABSL_TEST_CONSTEXPR(lhs >= rhs_data);
+}
+
+#endif  // defined(ABSL_INTERNAL_CPLUSPLUS_LANG) &&
+        //  ABSL_INTERNAL_CPLUSPLUS_LANG >= 202002L
 
 struct BigStruct {
   char bytes[10000];

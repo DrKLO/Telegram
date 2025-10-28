@@ -96,6 +96,16 @@ class UsedPayloadTypes : public UsedIds<Codec> {
       : UsedIds<Codec>(kFirstDynamicPayloadTypeLowerRange,
                        kLastDynamicPayloadTypeUpperRange) {}
 
+  // Check if a payload type is valid. The range [64-95] is forbidden
+  // when rtcp-mux is used.
+  static bool IsIdValid(Codec codec, bool rtcp_mux) {
+    if (rtcp_mux && (codec.id > kLastDynamicPayloadTypeLowerRange &&
+                     codec.id < kFirstDynamicPayloadTypeUpperRange)) {
+      return false;
+    }
+    return codec.id >= 0 && codec.id <= kLastDynamicPayloadTypeUpperRange;
+  }
+
  protected:
   bool IsIdUsed(int new_id) override {
     // Range marked for RTCP avoidance is "used".
@@ -137,15 +147,15 @@ class UsedRtpHeaderExtensionIds : public UsedIds<webrtc::RtpExtension> {
 
  private:
   // Returns the first unused id in reverse order from the max id of one byte
-  // header extensions. This hopefully reduce the risk of more collisions. We
+  // header extensions. This hopefully reduces the risk of more collisions. We
   // want to change the default ids as little as possible. If no unused id is
   // found and two byte header extensions are enabled (i.e.,
-  // `extmap_allow_mixed_` is true), search for unused ids from 15 to 255.
+  // `extmap_allow_mixed_` is true), search for unused ids from 16 to 255.
   int FindUnusedId() override {
     if (next_extension_id_ <=
         webrtc::RtpExtension::kOneByteHeaderExtensionMaxId) {
       // First search in reverse order from the max id of one byte header
-      // extensions.
+      // extensions (14).
       while (IsIdUsed(next_extension_id_) &&
              next_extension_id_ >= min_allowed_id_) {
         --next_extension_id_;
@@ -155,9 +165,10 @@ class UsedRtpHeaderExtensionIds : public UsedIds<webrtc::RtpExtension> {
     if (id_domain_ == IdDomain::kTwoByteAllowed) {
       if (next_extension_id_ < min_allowed_id_) {
         // We have searched among all one-byte IDs without finding an unused ID,
-        // continue at the first two-byte ID.
+        // continue at the first two-byte ID (16; avoid 15 since it is somewhat
+        // special per https://www.rfc-editor.org/rfc/rfc8285#section-4.2
         next_extension_id_ =
-            webrtc::RtpExtension::kOneByteHeaderExtensionMaxId + 1;
+            webrtc::RtpExtension::kOneByteHeaderExtensionMaxId + 2;
       }
 
       if (next_extension_id_ >

@@ -53,7 +53,8 @@ class RtpReceiverInternal : public RtpReceiverInterface {
   // * SetMediaChannel(nullptr) must be called before the media channel is
   //   destroyed.
   // * This method must be invoked on the worker thread.
-  virtual void SetMediaChannel(cricket::MediaChannel* media_channel) = 0;
+  virtual void SetMediaChannel(
+      cricket::MediaReceiveChannelInterface* media_channel) = 0;
 
   // Configures the RtpReceiver with the underlying media channel, with the
   // given SSRC as the stream identifier.
@@ -67,7 +68,7 @@ class RtpReceiverInternal : public RtpReceiverInterface {
       rtc::scoped_refptr<DtlsTransportInterface> dtls_transport) = 0;
   // This SSRC is used as an identifier for the receiver between the API layer
   // and the WebRtcVideoEngine, WebRtcVoiceEngine layer.
-  virtual uint32_t ssrc() const = 0;
+  virtual absl::optional<uint32_t> ssrc() const = 0;
 
   // Call this to notify the RtpReceiver when the first packet has been received
   // on the corresponding channel.

@@ -12,12 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <cstdint>
+#include <cstring>
 #include <memory>
 
 #include "absl/base/config.h"
 #include "absl/crc/crc32c.h"
 #include "absl/crc/internal/crc_memcpy.h"
+#include "absl/strings/string_view.h"
 
 namespace absl {
 ABSL_NAMESPACE_BEGIN
@@ -54,7 +55,8 @@ absl::crc32c_t FallbackCrcMemcpyEngine::Compute(void* __restrict dst,
 }
 
 // Compile the following only if we don't have
-#ifndef __SSE4_2__
+#if !defined(ABSL_INTERNAL_HAVE_X86_64_ACCELERATED_CRC_MEMCPY_ENGINE) && \
+    !defined(ABSL_INTERNAL_HAVE_ARM_ACCELERATED_CRC_MEMCPY_ENGINE)
 
 CrcMemcpy::ArchSpecificEngines CrcMemcpy::GetArchSpecificEngines() {
   CrcMemcpy::ArchSpecificEngines engines;
@@ -68,7 +70,8 @@ std::unique_ptr<CrcMemcpyEngine> CrcMemcpy::GetTestEngine(int /*vector*/,
   return std::make_unique<FallbackCrcMemcpyEngine>();
 }
 
-#endif
+#endif  // !ABSL_INTERNAL_HAVE_X86_64_ACCELERATED_CRC_MEMCPY_ENGINE &&
+        // !ABSL_INTERNAL_HAVE_ARM_ACCELERATED_CRC_MEMCPY_ENGINE
 
 }  // namespace crc_internal
 ABSL_NAMESPACE_END

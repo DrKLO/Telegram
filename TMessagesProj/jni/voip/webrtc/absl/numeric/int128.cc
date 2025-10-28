@@ -29,9 +29,6 @@
 namespace absl {
 ABSL_NAMESPACE_BEGIN
 
-ABSL_DLL const uint128 kuint128max = MakeUint128(
-    std::numeric_limits<uint64_t>::max(), std::numeric_limits<uint64_t>::max());
-
 namespace {
 
 // Returns the 0-based position of the last set bit (i.e., most significant bit)
@@ -111,7 +108,7 @@ uint128 MakeUint128FromFloat(T v) {
   return MakeUint128(0, static_cast<uint64_t>(v));
 }
 
-#if defined(__clang__) && !defined(__SSE3__)
+#if defined(__clang__) && (__clang_major__ < 9) && !defined(__SSE3__)
 // Workaround for clang bug: https://bugs.llvm.org/show_bug.cgi?id=38289
 // Casting from long double to uint64_t is miscompiled and drops bits.
 // It is more work, so only use when we need the workaround.
@@ -131,7 +128,7 @@ uint128 MakeUint128FromFloat(long double v) {
   return (static_cast<uint128>(w0) << 100) | (static_cast<uint128>(w1) << 50) |
          static_cast<uint128>(w2);
 }
-#endif  // __clang__ && !__SSE3__
+#endif  // __clang__ && (__clang_major__ < 9) && !__SSE3__
 }  // namespace
 
 uint128::uint128(float v) : uint128(MakeUint128FromFloat(v)) {}
@@ -202,6 +199,10 @@ std::string Uint128ToFormattedString(uint128 v, std::ios_base::fmtflags flags) {
 
 }  // namespace
 
+std::string uint128::ToString() const {
+  return Uint128ToFormattedString(*this, std::ios_base::dec);
+}
+
 std::ostream& operator<<(std::ostream& os, uint128 v) {
   std::ios_base::fmtflags flags = os.flags();
   std::string rep = Uint128ToFormattedString(v, flags);
@@ -216,9 +217,9 @@ std::ostream& operator<<(std::ostream& os, uint128 v) {
     } else if (adjustfield == std::ios::internal &&
                (flags & std::ios::showbase) &&
                (flags & std::ios::basefield) == std::ios::hex && v != 0) {
-      rep.insert(2, count, os.fill());
+      rep.insert(size_t{2}, count, os.fill());
     } else {
-      rep.insert(0, count, os.fill());
+      rep.insert(size_t{0}, count, os.fill());
     }
   }
 
@@ -285,6 +286,14 @@ int128 operator%(int128 lhs, int128 rhs) {
 }
 #endif  // ABSL_HAVE_INTRINSIC_INT128
 
+std::string int128::ToString() const {
+  std::string rep;
+  if (Int128High64(*this) < 0) rep = "-";
+  rep.append(Uint128ToFormattedString(UnsignedAbsoluteValue(*this),
+                                      std::ios_base::dec));
+  return rep;
+}
+
 std::ostream& operator<<(std::ostream& os, int128 v) {
   std::ios_base::fmtflags flags = os.flags();
   std::string rep;
@@ -314,16 +323,16 @@ std::ostream& operator<<(std::ostream& os, int128 v) {
         break;
       case std::ios::internal:
         if (print_as_decimal && (rep[0] == '+' || rep[0] == '-')) {
-          rep.insert(1, count, os.fill());
+          rep.insert(size_t{1}, count, os.fill());
         } else if ((flags & std::ios::basefield) == std::ios::hex &&
                    (flags & std::ios::showbase) && v != 0) {
-          rep.insert(2, count, os.fill());
+          rep.insert(size_t{2}, count, os.fill());
         } else {
-          rep.insert(0, count, os.fill());
+          rep.insert(size_t{0}, count, os.fill());
         }
         break;
       default:  // std::ios::right
-        rep.insert(0, count, os.fill());
+        rep.insert(size_t{0}, count, os.fill());
         break;
     }
   }

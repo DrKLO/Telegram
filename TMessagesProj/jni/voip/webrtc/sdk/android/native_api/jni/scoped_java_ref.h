@@ -19,7 +19,6 @@
 #include <utility>
 
 #include "sdk/android/native_api/jni/jvm.h"
-#include "tgnet/FileLog.h"
 
 namespace webrtc {
 
@@ -183,10 +182,8 @@ class ScopedJavaGlobalRef : public JavaRef<T> {
       : JavaRef<T>(other.Release()) {}
 
   ~ScopedJavaGlobalRef() {
-    if (obj_ != nullptr) {
-      DEBUG_DELREF("ScopedJavaGlobalRef");
+    if (obj_ != nullptr)
       AttachCurrentThreadIfNeeded()->DeleteGlobalRef(obj_);
-    }
   }
 
   ScopedJavaGlobalRef(const ScopedJavaGlobalRef&) = delete;
@@ -195,20 +192,13 @@ class ScopedJavaGlobalRef : public JavaRef<T> {
   void operator=(const JavaRef<T>& other) {
     JNIEnv* env = AttachCurrentThreadIfNeeded();
     if (obj_ != nullptr) {
-      DEBUG_DELREF("webrtc 3 delete global ref");
       env->DeleteGlobalRef(obj_);
     }
-    if (other.is_null()) {
-      obj_ = nullptr;
-    } else {
-      DEBUG_REF("webrtc 3 new global ref");
-      obj_ = env->NewGlobalRef(other.obj());
-    }
+    obj_ = other.is_null() ? nullptr : env->NewGlobalRef(other.obj());
   }
 
   void operator=(std::nullptr_t) {
     if (obj_ != nullptr) {
-      DEBUG_DELREF("webrtc 3 delete global ref");
       AttachCurrentThreadIfNeeded()->DeleteGlobalRef(obj_);
     }
     obj_ = nullptr;

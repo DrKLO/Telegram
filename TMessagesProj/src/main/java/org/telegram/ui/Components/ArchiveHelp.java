@@ -93,7 +93,7 @@ public class ArchiveHelp extends FrameLayout implements NotificationCenter.Notif
 
     private void updateText() {
         boolean keep = true;
-        TLRPC.TL_globalPrivacySettings settings = ContactsController.getInstance(currentAccount).getGlobalPrivacySettings();
+        TLRPC.GlobalPrivacySettings settings = ContactsController.getInstance(currentAccount).getGlobalPrivacySettings();
         if (settings != null) {
             keep = settings.keep_archived_unmuted;
         }

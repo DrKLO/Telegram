@@ -14,6 +14,7 @@ SctpDataChannelProviderInterfaceImpl::SctpDataChannelProviderInterfaceImpl(
     std::function<void(std::string const &)> onMessageReceived,
     std::shared_ptr<Threads> threads
 ) :
+_weakFactory(this),
 _threads(std::move(threads)),
 _onStateChanged(onStateChanged),
 _onTerminated(onTerminated),
@@ -30,20 +31,25 @@ _onMessageReceived(onMessageReceived) {
     webrtc::InternalDataChannelInit dataChannelInit;
     dataChannelInit.id = 0;
     dataChannelInit.open_handshake_role = isOutgoing ? webrtc::InternalDataChannelInit::kOpener : webrtc::InternalDataChannelInit::kAcker;
+    
     _dataChannel = webrtc::SctpDataChannel::Create(
-        this,
+        _weakFactory.GetWeakPtr(),
         "data",
+        true,
         dataChannelInit,
         _threads->getNetworkThread(),
         _threads->getNetworkThread()
     );
 
     _dataChannel->RegisterObserver(this);
+    
+    AddSctpDataStream(webrtc::StreamId(0));
 }
-
 
 SctpDataChannelProviderInterfaceImpl::~SctpDataChannelProviderInterfaceImpl() {
     assert(_threads->getNetworkThread()->IsCurrent());
+    
+    _weakFactory.InvalidateWeakPtrs();
 
     _dataChannel->UnregisterObserver();
     _dataChannel->Close();
@@ -51,6 +57,10 @@ SctpDataChannelProviderInterfaceImpl::~SctpDataChannelProviderInterfaceImpl() {
 
     _sctpTransport = nullptr;
     _sctpTransportFactory.reset();
+}
+
+bool SctpDataChannelProviderInterfaceImpl::IsOkToCallOnTheNetworkThread() {
+    return true;
 }
 
 void SctpDataChannelProviderInterfaceImpl::sendDataChannelMessage(std::string const &message) {
@@ -102,7 +112,7 @@ void SctpDataChannelProviderInterfaceImpl::updateIsConnected(bool isConnected) {
 void SctpDataChannelProviderInterfaceImpl::OnReadyToSend() {
     assert(_threads->getNetworkThread()->IsCurrent());
 
-    _dataChannel->OnTransportReady(true);
+    _dataChannel->OnTransportReady();
 }
 
 void SctpDataChannelProviderInterfaceImpl::OnTransportClosed(webrtc::RTCError error) {
@@ -116,53 +126,35 @@ void SctpDataChannelProviderInterfaceImpl::OnTransportClosed(webrtc::RTCError er
 void SctpDataChannelProviderInterfaceImpl::OnDataReceived(int channel_id, webrtc::DataMessageType type, const rtc::CopyOnWriteBuffer& buffer) {
     assert(_threads->getNetworkThread()->IsCurrent());
 
-    _dataChannel->OnDataReceived(cricket::ReceiveDataParams {
-        .sid = channel_id,
-        .type = type
-        }, buffer);
+    _dataChannel->OnDataReceived(type, buffer);
 }
 
-bool SctpDataChannelProviderInterfaceImpl::SendData(
-    int sid,
+webrtc::RTCError SctpDataChannelProviderInterfaceImpl::SendData(
+    webrtc::StreamId sid,
     const webrtc::SendDataParams& params,
-    const rtc::CopyOnWriteBuffer& payload,
-    cricket::SendDataResult* result
+    const rtc::CopyOnWriteBuffer& payload
 ) {
     assert(_threads->getNetworkThread()->IsCurrent());
 
-    return _sctpTransport->SendData(sid, params, payload, result);
+    return _sctpTransport->SendData(sid.stream_id_int(), params, payload);
 }
 
-bool SctpDataChannelProviderInterfaceImpl::ConnectDataChannel(webrtc::SctpDataChannel *data_channel) {
-    assert(_threads->getNetworkThread()->IsCurrent());
-
-    return true;
-}
-
-void SctpDataChannelProviderInterfaceImpl::DisconnectDataChannel(webrtc::SctpDataChannel* data_channel) {
-    assert(_threads->getNetworkThread()->IsCurrent());
-
-    return;
-}
-
-void SctpDataChannelProviderInterfaceImpl::AddSctpDataStream(int sid) {
+void SctpDataChannelProviderInterfaceImpl::AddSctpDataStream(webrtc::StreamId sid) {
   assert(_threads->getNetworkThread()->IsCurrent());
 
-    _sctpTransport->OpenStream(sid);
+    _sctpTransport->OpenStream(sid.stream_id_int());
 }
 
-void SctpDataChannelProviderInterfaceImpl::RemoveSctpDataStream(int sid) {
+void SctpDataChannelProviderInterfaceImpl::RemoveSctpDataStream(webrtc::StreamId sid) {
     assert(_threads->getNetworkThread()->IsCurrent());
 
     _threads->getNetworkThread()->BlockingCall([this, sid]() {
-        _sctpTransport->ResetStream(sid);
+        _sctpTransport->ResetStream(sid.stream_id_int());
     });
 }
 
-bool SctpDataChannelProviderInterfaceImpl::ReadyToSendData() const {
-    assert(_threads->getNetworkThread()->IsCurrent());
-
-    return _sctpTransport->ReadyToSendData();
+void SctpDataChannelProviderInterfaceImpl::OnChannelStateChanged(webrtc::SctpDataChannel *data_channel, webrtc::DataChannelInterface::DataState state) {
+    
 }
 
 }

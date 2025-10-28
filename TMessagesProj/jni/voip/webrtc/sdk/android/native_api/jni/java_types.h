@@ -242,6 +242,8 @@ std::vector<int8_t> JavaToNativeByteArray(JNIEnv* env,
                                           const JavaRef<jbyteArray>& jarray);
 std::vector<int32_t> JavaToNativeIntArray(JNIEnv* env,
                                           const JavaRef<jintArray>& jarray);
+std::vector<float> JavaToNativeFloatArray(JNIEnv* env,
+                                          const JavaRef<jfloatArray>& jarray);
 
 ScopedJavaLocalRef<jobjectArray> NativeToJavaBooleanArray(
     JNIEnv* env,
@@ -324,7 +326,7 @@ ScopedJavaLocalRef<jobject> NativeToJavaStringMap(JNIEnv* env,
 // Return a `jlong` that will correctly convert back to `ptr`.  This is needed
 // because the alternative (of silently passing a 32-bit pointer to a vararg
 // function expecting a 64-bit param) picks up garbage in the high 32 bits.
-jlong NativeToJavaPointer(void* ptr);
+jlong NativeToJavaPointer(const void* ptr);
 
 // ------------------------
 // -- Deprecated methods --

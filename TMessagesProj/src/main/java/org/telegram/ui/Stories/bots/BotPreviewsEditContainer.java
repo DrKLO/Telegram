@@ -8,7 +8,6 @@ import static org.telegram.messenger.LocaleController.getString;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
-import android.app.Activity;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
@@ -18,13 +17,10 @@ import android.text.Layout;
 import android.text.SpannableString;
 import android.text.SpannedString;
 import android.text.TextUtils;
-import android.text.style.ImageSpan;
-import android.util.Log;
 import android.util.LongSparseArray;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.MotionEvent;
-import android.view.VelocityTracker;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
@@ -38,7 +34,6 @@ import androidx.core.view.accessibility.AccessibilityNodeInfoCompat;
 import androidx.recyclerview.widget.DefaultItemAnimator;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.ItemTouchHelper;
-import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.AndroidUtilities;
@@ -56,10 +51,7 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.tl.TL_bots;
 import org.telegram.tgnet.tl.TL_stories;
 import org.telegram.ui.ActionBar.BaseFragment;
-import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Cells.SharedAudioCell;
-import org.telegram.ui.Cells.SharedDocumentCell;
 import org.telegram.ui.Cells.SharedPhotoVideoCell;
 import org.telegram.ui.Cells.SharedPhotoVideoCell2;
 import org.telegram.ui.Components.BottomSheetWithRecyclerListView;
@@ -78,10 +70,9 @@ import org.telegram.ui.Components.StickerEmptyView;
 import org.telegram.ui.Components.TranslateAlert2;
 import org.telegram.ui.Components.UItem;
 import org.telegram.ui.Components.UniversalAdapter;
+import org.telegram.ui.Components.UniversalRecyclerView;
 import org.telegram.ui.Components.ViewPagerFixed;
-import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.ProfileActivity;
-import org.telegram.ui.Stars.StarsIntroActivity;
 import org.telegram.ui.Stories.StoriesController;
 import org.telegram.ui.Stories.StoriesListPlaceProvider;
 import org.telegram.ui.Stories.recorder.ButtonWithCounterView;
@@ -90,7 +81,6 @@ import org.telegram.ui.Stories.recorder.StoryRecorder;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Locale;
 
 public class BotPreviewsEditContainer extends FrameLayout implements NotificationCenter.NotificationCenterDelegate {
 
@@ -206,7 +196,7 @@ public class BotPreviewsEditContainer extends FrameLayout implements Notificatio
             }
             private String lastLang;
             @Override
-            protected void onTabAnimationUpdate(boolean manual) {
+            public void onTabAnimationUpdate(boolean manual) {
                 String lang = getCurrentLang();
                 if (!TextUtils.equals(lastLang, lang)) {
                     lastLang = lang;
@@ -627,7 +617,7 @@ public class BotPreviewsEditContainer extends FrameLayout implements Notificatio
         }
         chatAttachAlert.setDelegate(new ChatAttachAlert.ChatAttachViewDelegate() {
             @Override
-            public void didPressedButton(int button, boolean arg, boolean notify, int scheduleDate, long effectId, boolean invertMedia, boolean forceDocument) {
+            public void didPressedButton(int button, boolean arg, boolean notify, int scheduleDate, long effectId, boolean invertMedia, boolean forceDocument, long payStars) {
                 if (!chatAttachAlert.getPhotoLayout().getSelectedPhotos().isEmpty()) {
                     HashMap<Object, Object> selectedPhotos = chatAttachAlert.getPhotoLayout().getSelectedPhotos();
                     ArrayList<Object> selectedPhotosOrder = chatAttachAlert.getPhotoLayout().getSelectedPhotosOrder();
@@ -1989,7 +1979,7 @@ public class BotPreviewsEditContainer extends FrameLayout implements Notificatio
                     return new LanguageView(context);
                 }
                 @Override
-                public void bindView(View view, UItem item, boolean divider) {
+                public void bindView(View view, UItem item, boolean divider, UniversalAdapter adapter, UniversalRecyclerView listView) {
                     ((LanguageView) view).set((TranslateController.Language) item.object, divider);
                 }
                 public static UItem of(TranslateController.Language l) {

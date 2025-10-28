@@ -37,14 +37,6 @@
 
 namespace rtc {
 
-namespace webrtc_openssl_adapter_internal {
-
-// Local definition, since absl::StrJoin is not allow-listed. Declared in header
-// file only for unittests.
-std::string StrJoin(const std::vector<std::string>& list, char delimiter);
-
-}  // namespace webrtc_openssl_adapter_internal
-
 class OpenSSLAdapter final : public SSLAdapter {
  public:
   static bool InitializeSSL();
@@ -124,10 +116,8 @@ class OpenSSLAdapter final : public SSLAdapter {
   int DoSslWrite(const void* pv, size_t cb, int* error);
   bool SSLPostConnectionCheck(SSL* ssl, absl::string_view host);
 
-#if !defined(NDEBUG)
-  // In debug builds, logs info about the state of the SSL connection.
+  // Logs info about the state of the SSL connection.
   static void SSLInfoCallback(const SSL* ssl, int where, int ret);
-#endif
 
 #if defined(OPENSSL_IS_BORINGSSL) && \
     defined(WEBRTC_EXCLUDE_BUILT_IN_SSL_ROOT_CERTS)

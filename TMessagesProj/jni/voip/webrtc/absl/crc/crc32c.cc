@@ -55,7 +55,7 @@ crc32c_t ExtendCrc32cInternal(crc32c_t initial_crc,
 }  // namespace crc_internal
 
 crc32c_t ComputeCrc32c(absl::string_view buf) {
-  return ExtendCrc32c(ToCrc32c(0), buf);
+  return ExtendCrc32c(crc32c_t{0}, buf);
 }
 
 crc32c_t ExtendCrc32cByZeroes(crc32c_t initial_crc, size_t length) {
@@ -67,7 +67,7 @@ crc32c_t ExtendCrc32cByZeroes(crc32c_t initial_crc, size_t length) {
 crc32c_t ConcatCrc32c(crc32c_t lhs_crc, crc32c_t rhs_crc, size_t rhs_len) {
   uint32_t result = static_cast<uint32_t>(lhs_crc);
   CrcEngine()->ExtendByZeroes(&result, rhs_len);
-  return static_cast<crc32c_t>(result) ^ rhs_crc;
+  return crc32c_t{result ^ static_cast<uint32_t>(rhs_crc)};
 }
 
 crc32c_t RemoveCrc32cPrefix(crc32c_t crc_a, crc32c_t crc_ab, size_t length_b) {
@@ -89,11 +89,10 @@ crc32c_t MemcpyCrc32c(void* dest, const void* src, size_t count,
 // This operation has a runtime cost of O(log(`suffix_len`))
 crc32c_t RemoveCrc32cSuffix(crc32c_t full_string_crc, crc32c_t suffix_crc,
                             size_t suffix_len) {
-  crc32c_t crc_with_suffix_zeroed =
-      suffix_crc ^ full_string_crc ^
-      ExtendCrc32cByZeroes(ToCrc32c(0), suffix_len);
-  return crc_internal::UnextendCrc32cByZeroes(
-    crc_with_suffix_zeroed, suffix_len);
+  uint32_t result = static_cast<uint32_t>(full_string_crc) ^
+                    static_cast<uint32_t>(suffix_crc);
+  CrcEngine()->UnextendByZeroes(&result, suffix_len);
+  return crc32c_t{result};
 }
 
 ABSL_NAMESPACE_END

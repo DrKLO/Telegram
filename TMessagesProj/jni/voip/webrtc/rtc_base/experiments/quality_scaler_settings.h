@@ -19,7 +19,7 @@ namespace webrtc {
 
 class QualityScalerSettings final {
  public:
-  static QualityScalerSettings ParseFromFieldTrials();
+  explicit QualityScalerSettings(const FieldTrialsView& field_trials);
 
   absl::optional<int> SamplingPeriodMs() const;
   absl::optional<int> AverageQpWindow() const;
@@ -30,8 +30,6 @@ class QualityScalerSettings final {
   absl::optional<double> InitialBitrateFactor() const;
 
  private:
-  explicit QualityScalerSettings(const FieldTrialsView* const key_value_config);
-
   FieldTrialOptional<int> sampling_period_ms_;
   FieldTrialOptional<int> average_qp_window_;
   FieldTrialOptional<int> min_frames_;

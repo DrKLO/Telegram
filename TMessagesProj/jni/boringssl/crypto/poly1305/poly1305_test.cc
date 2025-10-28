@@ -1,16 +1,16 @@
-/* Copyright (c) 2015, Google Inc.
- *
- * Permission to use, copy, modify, and/or distribute this software for any
- * purpose with or without fee is hereby granted, provided that the above
- * copyright notice and this permission notice appear in all copies.
- *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
- * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY
- * SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION
- * OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
- * CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE. */
+// Copyright 2015 The BoringSSL Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 #include <stdio.h>
 #include <string.h>
@@ -62,8 +62,7 @@ static void TestSIMD(unsigned excess, const std::vector<uint8_t> &key,
   // Consume the remainder and finish.
   CRYPTO_poly1305_update(&state, in.data() + done, in.size() - done);
 
-  // |CRYPTO_poly1305_finish| requires a 16-byte-aligned output.
-  alignas(16) uint8_t out[16];
+  uint8_t out[16];
   CRYPTO_poly1305_finish(&state, out);
   EXPECT_EQ(Bytes(out), Bytes(mac)) << "SIMD pattern " << excess << " failed.";
 }
@@ -81,8 +80,7 @@ TEST(Poly1305Test, TestVectors) {
     poly1305_state state;
     CRYPTO_poly1305_init(&state, key.data());
     CRYPTO_poly1305_update(&state, in.data(), in.size());
-    // |CRYPTO_poly1305_finish| requires a 16-byte-aligned output.
-    alignas(16) uint8_t out[16];
+    uint8_t out[16];
     CRYPTO_poly1305_finish(&state, out);
     EXPECT_EQ(Bytes(out), Bytes(mac)) << "Single-shot Poly1305 failed.";
 
@@ -93,6 +91,17 @@ TEST(Poly1305Test, TestVectors) {
     }
     CRYPTO_poly1305_finish(&state, out);
     EXPECT_EQ(Bytes(out), Bytes(mac)) << "Streaming Poly1305 failed.";
+
+    // Test |CRYPTO_poly1305_init| and |CRYPTO_poly1305_finish| work on
+    // unaligned values.
+    alignas(8) uint8_t unaligned_key[32 + 1];
+    OPENSSL_memcpy(unaligned_key + 1, key.data(), 32);
+    CRYPTO_poly1305_init(&state, unaligned_key + 1);
+    CRYPTO_poly1305_update(&state, in.data(), in.size());
+    alignas(8) uint8_t unaligned_out[16 + 1];
+    CRYPTO_poly1305_finish(&state, unaligned_out + 1);
+    EXPECT_EQ(Bytes(unaligned_out + 1, 16), Bytes(mac))
+        << "Unaligned Poly1305 failed.";
 
     // Test SIMD stress patterns. OpenSSL's AVX2 assembly needs a multiple of
     // four blocks, so test up to three blocks of excess.

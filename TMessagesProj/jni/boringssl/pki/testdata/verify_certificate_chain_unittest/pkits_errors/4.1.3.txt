@@ -1,0 +1,3 @@
+----- Certificate i=0 (CN=Invalid EE Signature Test3,O=Test Certificates 2011,C=US) -----
+ERROR: VerifySignedData failed
+

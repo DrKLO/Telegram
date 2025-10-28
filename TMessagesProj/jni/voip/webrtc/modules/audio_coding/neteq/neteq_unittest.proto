@@ -1,0 +1,31 @@
+syntax = "proto2";
+option optimize_for = LITE_RUNTIME;
+package webrtc.neteq_unittest;
+
+message NetEqNetworkStatistics {
+  // Next field number 18.
+  optional uint32 current_buffer_size_ms = 1;
+  optional uint32 preferred_buffer_size_ms = 2;
+  optional uint32 jitter_peaks_found = 3;
+  reserved 4;  // Was packet_loss_rate.
+  reserved 5;  // Was packet_discard_rate.
+  optional uint32 expand_rate = 6;
+  optional uint32 speech_expand_rate = 7;
+  optional uint32 preemptive_rate = 8;
+  optional uint32 accelerate_rate = 9;
+  optional uint32 secondary_decoded_rate = 10;
+  optional uint32 secondary_discarded_rate = 17;
+  optional int32 clockdrift_ppm = 11;
+  reserved 12;  // Was added_zero_samples.
+  optional int32 mean_waiting_time_ms = 13;
+  optional int32 median_waiting_time_ms = 14;
+  optional int32 min_waiting_time_ms = 15;
+  optional int32 max_waiting_time_ms = 16;
+}
+
+message RtcpStatistics {
+  optional uint32 fraction_lost = 1;
+  optional uint32 cumulative_lost = 2;
+  optional uint32 extended_max_sequence_number = 3;
+  optional uint32 jitter = 4;
+}

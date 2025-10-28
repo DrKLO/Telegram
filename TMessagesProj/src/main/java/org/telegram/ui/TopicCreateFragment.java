@@ -34,6 +34,7 @@ import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.tgnet.tl.TL_forum;
 import org.telegram.tgnet.tl.TL_stars;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarPopupWindow;
@@ -77,6 +78,12 @@ public class TopicCreateFragment extends BaseFragment {
     ReplaceableIconDrawable replaceableIconDrawable;
     TLRPC.TL_forumTopic topicForEdit;
     ForumBubbleDrawable forumBubbleDrawable;
+
+    private ChatActivity openInChatActivity;
+    public TopicCreateFragment setOpenInChatActivity(ChatActivity chatActivity) {
+        openInChatActivity = chatActivity;
+        return this;
+    }
 
     int iconColor;
 
@@ -141,9 +148,9 @@ public class TopicCreateFragment extends BaseFragment {
                     progressDialog.showDelayed(500);
                     created = true;
 
-                    TLRPC.TL_channels_createForumTopic reqSend = new TLRPC.TL_channels_createForumTopic();
+                    TL_forum.TL_messages_createForumTopic reqSend = new TL_forum.TL_messages_createForumTopic();
 
-                    reqSend.channel = getMessagesController().getInputChannel(chatId);
+                    reqSend.peer = getMessagesController().getInputPeer(-chatId);
                     reqSend.title = topicName;
                     if (selectedEmojiDocumentId != 0) {
                         reqSend.icon_emoji_id = selectedEmojiDocumentId;
@@ -160,12 +167,6 @@ public class TopicCreateFragment extends BaseFragment {
                             for (int i = 0; i < updates.updates.size(); i++) {
                                 if (updates.updates.get(i) instanceof TLRPC.TL_updateMessageID) {
                                     TLRPC.TL_updateMessageID updateMessageID = (TLRPC.TL_updateMessageID) updates.updates.get(i);
-                                    Bundle args = new Bundle();
-                                    args.putLong("chat_id", chatId);
-                                    args.putInt("message_id", 1);
-                                    args.putInt("unread_count", 0);
-                                    args.putBoolean("historyPreloaded", false);
-                                    ChatActivity chatActivity = new ChatActivity(args);
                                     TLRPC.TL_messageActionTopicCreate actionMessage = new TLRPC.TL_messageActionTopicCreate();
                                     actionMessage.title = topicName;
                                     TLRPC.TL_messageService message = new TLRPC.TL_messageService();
@@ -194,10 +195,42 @@ public class TopicCreateFragment extends BaseFragment {
                                     forumTopic.notify_settings = new TLRPC.TL_peerNotifySettings();
                                     forumTopic.icon_color = iconColor;
 
-                                    chatActivity.setThreadMessages(messageObjects, chatLocal, message.id, 1, 1, forumTopic);
-                                    chatActivity.justCreatedTopic = true;
-                                    getMessagesController().getTopicsController().onTopicCreated(-chatId, forumTopic, true);
-                                    presentFragment(chatActivity);
+                                    if (openInChatActivity != null) {
+                                        final ChatActivity chatActivity = openInChatActivity;
+
+                                        chatActivity.resetForReload();
+                                        chatActivity.saveDraft();
+                                        chatActivity.setThreadMessages(messageObjects, chatLocal, message.id, 1, 1, forumTopic);
+                                        chatActivity.justCreatedTopic = true;
+
+                                        chatActivity.firstLoadMessages();
+
+                                        chatActivity.updateTitle(true);
+                                        chatActivity.avatarContainer.updateSubtitle(true);
+                                        chatActivity.updateTopicTitleIcon();
+                                        chatActivity.topicsTabs.setCurrentTopic(chatActivity.getTopicId());
+                                        chatActivity.updateTopPanel(true);
+                                        chatActivity.updateBottomOverlay(true);
+                                        chatActivity.hideFieldPanel(true);
+                                        chatActivity.applyDraftMaybe(true, true);
+
+                                        chatActivity.reloadPinnedMessages();
+                                        getMessagesController().getTopicsController().onTopicCreated(-chatId, forumTopic, true);
+
+                                        finishFragment();
+                                    } else {
+                                        Bundle args = new Bundle();
+                                        args.putLong("chat_id", chatId);
+                                        args.putInt("message_id", 1);
+                                        args.putInt("unread_count", 0);
+                                        args.putBoolean("historyPreloaded", false);
+                                        ChatActivity chatActivity = new ChatActivity(args);
+
+                                        chatActivity.setThreadMessages(messageObjects, chatLocal, message.id, 1, 1, forumTopic);
+                                        chatActivity.justCreatedTopic = true;
+                                        getMessagesController().getTopicsController().onTopicCreated(-chatId, forumTopic, true);
+                                        presentFragment(chatActivity);
+                                    }
                                 }
                             }
                         }
@@ -215,8 +248,8 @@ public class TopicCreateFragment extends BaseFragment {
                         return;
                     }
                     if (!topicForEdit.title.equals(topicName) || topicForEdit.icon_emoji_id != selectedEmojiDocumentId) {
-                        TLRPC.TL_channels_editForumTopic editForumRequest = new TLRPC.TL_channels_editForumTopic();
-                        editForumRequest.channel = getMessagesController().getInputChannel(chatId);
+                        TL_forum.TL_messages_editForumTopic editForumRequest = new TL_forum.TL_messages_editForumTopic();
+                        editForumRequest.peer = getMessagesController().getInputPeer(-chatId);
                         editForumRequest.topic_id = topicForEdit.id;
                         if (!topicForEdit.title.equals(topicName)) {
                             editForumRequest.title = topicName;
@@ -235,8 +268,8 @@ public class TopicCreateFragment extends BaseFragment {
                         });
                     }
                     if (checkBoxCell != null && topicForEdit.id == 1 && !checkBoxCell.isChecked() != topicForEdit.hidden) {
-                        TLRPC.TL_channels_editForumTopic editForumRequest = new TLRPC.TL_channels_editForumTopic();
-                        editForumRequest.channel = getMessagesController().getInputChannel(chatId);
+                        TL_forum.TL_messages_editForumTopic editForumRequest = new TL_forum.TL_messages_editForumTopic();
+                        editForumRequest.peer = getMessagesController().getInputPeer(-chatId);
                         editForumRequest.topic_id = topicForEdit.id;
                         editForumRequest.hidden = !checkBoxCell.isChecked();
                         editForumRequest.flags |= 8;

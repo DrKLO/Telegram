@@ -536,7 +536,9 @@ void Handshake::processHandshakeResponse_resPQ(TLObject *message, int64_t messag
 
             bool ok = false;
             uint32_t offset = encryptedDataSize + paddedDataSize + ivSize + SHA256_DIGEST_LENGTH;
-            size_t resLen = BN_bn2bin(rsaKey->n, innerDataBuffer->bytes() + offset);
+            const BIGNUM *n = NULL;
+            RSA_get0_key(rsaKey, &n, NULL, NULL);
+            size_t resLen = BN_bn2bin(n, innerDataBuffer->bytes() + offset);
             const auto shift = (256 - resLen);
 
             for (auto i = 0; i != 256; ++i) {
@@ -559,7 +561,10 @@ void Handshake::processHandshakeResponse_resPQ(TLObject *message, int64_t messag
         }
         BIGNUM *a = BN_bin2bn(innerDataBuffer->bytes(), encryptedDataSize, nullptr);
         BIGNUM *r = BN_new();
-        BN_mod_exp(r, a, rsaKey->e, rsaKey->n, bnContext);
+        const BIGNUM *n = NULL;
+        const BIGNUM *e = NULL;
+        RSA_get0_key(rsaKey, &n, &e, NULL);
+        BN_mod_exp(r, a, e, n, bnContext);
         uint32_t size = BN_num_bytes(r);
         auto rsaEncryptedData = new ByteArray(size >= 256 ? size : 256);
         BN_bn2bin(r, rsaEncryptedData->bytes + (size < 256 ? (256 - size) : 0));
@@ -1003,11 +1008,14 @@ void Handshake::loadCdnConfig(Datacenter *datacenter) {
                 BIO_write(keyBio, publicKey->public_key.c_str(), (int) publicKey->public_key.length());
                 RSA *rsaKey = PEM_read_bio_RSAPublicKey(keyBio, nullptr, nullptr, nullptr);
 
-                int nBytes = BN_num_bytes(rsaKey->n);
-                int eBytes = BN_num_bytes(rsaKey->e);
+                const BIGNUM *n = NULL;
+                const BIGNUM *e = NULL;
+                RSA_get0_key(rsaKey, &n, &e, NULL);
+                int nBytes = BN_num_bytes(n);
+                int eBytes = BN_num_bytes(e);
                 std::string nStr(nBytes, 0), eStr(eBytes, 0);
-                BN_bn2bin(rsaKey->n, (uint8_t *)&nStr[0]);
-                BN_bn2bin(rsaKey->e, (uint8_t *)&eStr[0]);
+                BN_bn2bin(n, (uint8_t *)&nStr[0]);
+                BN_bn2bin(e, (uint8_t *)&eStr[0]);
                 buffer->writeString(nStr);
                 buffer->writeString(eStr);
                 SHA1(buffer->bytes(), buffer->position(), sha1Buffer);

@@ -37,7 +37,7 @@
 // not also use AddressSanitizer). To use the mode, simply pass
 // `-fsanitize=leak` to both the compiler and linker. Since GCC does not
 // currently provide a way of detecting this mode at compile-time, GCC users
-// must also pass -DLEAK_SANIITIZER to the compiler. An example Bazel command
+// must also pass -DLEAK_SANITIZER to the compiler. An example Bazel command
 // could be
 //
 //   $ bazel test --copt=-DLEAK_SANITIZER --copt=-fsanitize=leak

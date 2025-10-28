@@ -273,11 +273,10 @@ void TransportFeedback::LastChunk::DecodeRunLength(uint16_t chunk,
 }
 
 TransportFeedback::TransportFeedback()
-    : TransportFeedback(/*include_timestamps=*/true, /*include_lost=*/true) {}
+    : TransportFeedback(/*include_timestamps=*/true) {}
 
-TransportFeedback::TransportFeedback(bool include_timestamps, bool include_lost)
-    : include_lost_(include_lost),
-      base_seq_no_(0),
+TransportFeedback::TransportFeedback(bool include_timestamps)
+    : base_seq_no_(0),
       num_seq_no_(0),
       base_time_ticks_(0),
       feedback_seq_(0),
@@ -288,8 +287,7 @@ TransportFeedback::TransportFeedback(bool include_timestamps, bool include_lost)
 TransportFeedback::TransportFeedback(const TransportFeedback&) = default;
 
 TransportFeedback::TransportFeedback(TransportFeedback&& other)
-    : include_lost_(other.include_lost_),
-      base_seq_no_(other.base_seq_no_),
+    : base_seq_no_(other.base_seq_no_),
       num_seq_no_(other.num_seq_no_),
       base_time_ticks_(other.base_time_ticks_),
       feedback_seq_(other.feedback_seq_),
@@ -355,11 +353,6 @@ bool TransportFeedback::AddReceivedPacket(uint16_t sequence_number,
     uint16_t num_missing_packets = sequence_number - next_seq_no;
     if (!AddMissingPackets(num_missing_packets))
       return false;
-    if (include_lost_) {
-      for (; next_seq_no != sequence_number; ++next_seq_no) {
-        all_packets_.emplace_back(next_seq_no);
-      }
-    }
   }
 
   DeltaSize delta_size = (delta >= 0 && delta <= 0xff) ? 1 : 2;
@@ -367,8 +360,6 @@ bool TransportFeedback::AddReceivedPacket(uint16_t sequence_number,
     return false;
 
   received_packets_.emplace_back(sequence_number, delta);
-  if (include_lost_)
-    all_packets_.emplace_back(sequence_number, delta);
   last_timestamp_ += delta * kDeltaTick;
   if (include_timestamps_) {
     size_bytes_ += delta_size;
@@ -381,10 +372,22 @@ TransportFeedback::GetReceivedPackets() const {
   return received_packets_;
 }
 
-const std::vector<TransportFeedback::ReceivedPacket>&
-TransportFeedback::GetAllPackets() const {
-  RTC_DCHECK(include_lost_);
-  return all_packets_;
+void TransportFeedback::ForAllPackets(
+    rtc::FunctionView<void(uint16_t, TimeDelta)> handler) const {
+  TimeDelta delta_since_base = TimeDelta::Zero();
+  auto received_it = received_packets_.begin();
+  const uint16_t last_seq_num = base_seq_no_ + num_seq_no_;
+  for (uint16_t seq_num = base_seq_no_; seq_num != last_seq_num; ++seq_num) {
+    if (received_it != received_packets_.end() &&
+        received_it->sequence_number() == seq_num) {
+      delta_since_base += received_it->delta();
+      handler(seq_num, delta_since_base);
+      ++received_it;
+    } else {
+      handler(seq_num, TimeDelta::PlusInfinity());
+    }
+  }
+  RTC_DCHECK(received_it == received_packets_.end());
 }
 
 uint16_t TransportFeedback::GetBaseSequence() const {
@@ -469,14 +472,10 @@ bool TransportFeedback::Parse(const CommonHeader& packet) {
       RTC_DCHECK_LE(index + delta_size, end_index);
       switch (delta_size) {
         case 0:
-          if (include_lost_)
-            all_packets_.emplace_back(seq_no);
           break;
         case 1: {
           int16_t delta = payload[index];
           received_packets_.emplace_back(seq_no, delta);
-          if (include_lost_)
-            all_packets_.emplace_back(seq_no, delta);
           last_timestamp_ += delta * kDeltaTick;
           index += delta_size;
           break;
@@ -484,8 +483,6 @@ bool TransportFeedback::Parse(const CommonHeader& packet) {
         case 2: {
           int16_t delta = ByteReader<int16_t>::ReadBigEndian(&payload[index]);
           received_packets_.emplace_back(seq_no, delta);
-          if (include_lost_)
-            all_packets_.emplace_back(seq_no, delta);
           last_timestamp_ += delta * kDeltaTick;
           index += delta_size;
           break;
@@ -508,13 +505,6 @@ bool TransportFeedback::Parse(const CommonHeader& packet) {
       // Use delta sizes to detect if packet was received.
       if (delta_size > 0) {
         received_packets_.emplace_back(seq_no, 0);
-      }
-      if (include_lost_) {
-        if (delta_size > 0) {
-          all_packets_.emplace_back(seq_no, 0);
-        } else {
-          all_packets_.emplace_back(seq_no);
-        }
       }
       ++seq_no;
     }

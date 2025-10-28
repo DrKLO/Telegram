@@ -25,8 +25,9 @@
 #include <map>
 #include <memory>
 #include <ostream>
+#include <string>
 #include <tuple>
-#include <type_traits>
+#include <utility>
 #include <vector>
 
 #include "gtest/gtest.h"
@@ -424,6 +425,42 @@ TEST(StrJoin, InitializerList) {
     auto a = {1, 2, 3};
     TestingParenFormatter f;
     EXPECT_EQ("(1)-(2)-(3)", absl::StrJoin(a, "-", f));
+  }
+}
+
+TEST(StrJoin, StringViewInitializerList) {
+  {
+    // Tests initializer_list of string_views
+    std::string b = "b";
+    EXPECT_EQ("a-b-c", absl::StrJoin({"a", b, "c"}, "-"));
+  }
+  {
+    // Tests initializer_list of string_views with a non-default formatter
+    TestingParenFormatter f;
+    std::string b = "b";
+    EXPECT_EQ("(a)-(b)-(c)", absl::StrJoin({"a", b, "c"}, "-", f));
+  }
+
+  class NoCopy {
+   public:
+    explicit NoCopy(absl::string_view view) : view_(view) {}
+    NoCopy(const NoCopy&) = delete;
+    operator absl::string_view() { return view_; }  // NOLINT
+   private:
+    absl::string_view view_;
+  };
+  {
+    // Tests initializer_list of string_views preferred over initializer_list<T>
+    // for T that is implicitly convertible to string_view
+    EXPECT_EQ("a-b-c",
+              absl::StrJoin({NoCopy("a"), NoCopy("b"), NoCopy("c")}, "-"));
+  }
+  {
+    // Tests initializer_list of string_views preferred over initializer_list<T>
+    // for T that is implicitly convertible to string_view
+    TestingParenFormatter f;
+    EXPECT_EQ("(a)-(b)-(c)",
+              absl::StrJoin({NoCopy("a"), NoCopy("b"), NoCopy("c")}, "-", f));
   }
 }
 

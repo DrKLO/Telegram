@@ -191,6 +191,7 @@ public class BotWebViewAttachedSheet implements NotificationCenter.NotificationC
     private long peerId;
     private long queryId;
     private int replyToMsgId;
+    private long monoforumTopicId;
     private boolean silent;
     private String buttonText;
     private boolean forceExpnaded;
@@ -357,6 +358,14 @@ public class BotWebViewAttachedSheet implements NotificationCenter.NotificationC
             prolongWebView.silent = silent;
             if (replyToMsgId != 0) {
                 prolongWebView.reply_to = SendMessagesHelper.getInstance(currentAccount).createReplyInput(replyToMsgId);
+                if (monoforumTopicId != 0) {
+                    prolongWebView.reply_to.monoforum_peer_id = MessagesController.getInstance(currentAccount).getInputPeer(monoforumTopicId);
+                    prolongWebView.reply_to.flags |= 32;
+                }
+                prolongWebView.flags |= 1;
+            } else if (monoforumTopicId != 0) {
+                prolongWebView.reply_to = new TLRPC.TL_inputReplyToMonoForum();
+                prolongWebView.reply_to.monoforum_peer_id = MessagesController.getInstance(currentAccount).getInputPeer(monoforumTopicId);
                 prolongWebView.flags |= 1;
             }
             ConnectionsManager.getInstance(currentAccount).sendRequest(prolongWebView, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
@@ -934,6 +943,7 @@ public class BotWebViewAttachedSheet implements NotificationCenter.NotificationC
         this.peerId = props.peerId;
         this.botId = props.botId;
         this.replyToMsgId = props.replyToMsgId;
+        this.monoforumTopicId = props.monoforumTopicId;
         this.silent = props.silent;
         this.buttonText = props.buttonText;
         this.currentWebApp = props.app;
@@ -950,6 +960,7 @@ public class BotWebViewAttachedSheet implements NotificationCenter.NotificationC
         if (userbot != null && userbot.verified || userInfo != null && userInfo.user != null && userInfo.user.verified) {
             verifiedDrawable = getContext().getResources().getDrawable(R.drawable.verified_profile).mutate();
             verifiedDrawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_featuredStickers_addButton), PorterDuff.Mode.SRC_IN));
+            verifiedDrawable.setAlpha(0xFF);
             actionBar.getTitleTextView().setDrawablePadding(dp(2));
             actionBar.getTitleTextView().setRightDrawable(new Drawable() {
                 @Override
@@ -1155,6 +1166,14 @@ public class BotWebViewAttachedSheet implements NotificationCenter.NotificationC
 
                     if (replyToMsgId != 0) {
                         req.reply_to = SendMessagesHelper.getInstance(currentAccount).createReplyInput(replyToMsgId);
+                        if (monoforumTopicId != 0) {
+                            req.reply_to.monoforum_peer_id = MessagesController.getInstance(currentAccount).getInputPeer(monoforumTopicId);
+                            req.reply_to.flags |= 32;
+                        }
+                        req.flags |= 1;
+                    } else if (monoforumTopicId != 0) {
+                        req.reply_to = new TLRPC.TL_inputReplyToMonoForum();
+                        req.reply_to.monoforum_peer_id = MessagesController.getInstance(currentAccount).getInputPeer(monoforumTopicId);
                         req.flags |= 1;
                     }
 

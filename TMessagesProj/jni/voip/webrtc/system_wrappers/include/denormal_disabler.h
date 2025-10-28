@@ -30,10 +30,12 @@ namespace webrtc {
 // }
 class DenormalDisabler {
  public:
-  // Ctor. If `enabled` is true and architecture and compiler are supported,
-  // stores the HW settings for denormals, disables denormals and sets
-  // `disabling_activated_` to true. Otherwise, only sets `disabling_activated_`
-  // to false.
+  // Ctor. If architecture and compiler are supported, stores the HW settings
+  // for denormals, disables denormals and sets `disabling_activated_` to true.
+  // Otherwise, only sets `disabling_activated_` to false.
+  DenormalDisabler();
+  // Ctor. Same as above, but also requires `enabled` to be true to disable
+  // denormals.
   explicit DenormalDisabler(bool enabled);
   DenormalDisabler(const DenormalDisabler&) = delete;
   DenormalDisabler& operator=(const DenormalDisabler&) = delete;

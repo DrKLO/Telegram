@@ -5,7 +5,6 @@
 # ffmpeg 4.4.3
 # lib vpx 1.10.9
 # NDK for compile libvpx. Last successful build with 21.1.6352462
-# and dav1d. Last successful build with 
 # NDK r10e for compile ffmpeg
 #
 # 1) download ffmpeg
@@ -13,21 +12,11 @@
 # 3) download lib vpx
 # 4) copy libvpx to vpx-android folder and rename as libvpx
 # 5) copy build_ffmpeg foleder in ffmepg directory
-# 6) download dav1d into android-dav1d/dav1d folder
-# 7.1) in ffmpeg fix typos in 3 files, replacing 'int B0' into 'int b0'
-# 7.2) install python3.9 and replace python in vpx-android/_settings.sh
-# 7.3) (macos) replace HOST_NUM_CORES with $(sysctl -n hw.physicalcpu)
-# 7.4) (macos) press allow and open for each executable in system preferences
-# 8) patch ffmpeg/configure to take dav1d as an external lib from folder:
-#   enabled libdav1d          && {
-#     require_pkg_config libdav1d "libdav1d >= 0.5.0" "dav1d/dav1d.h" dav1d_version ||
-#     check_lib libdav1d "dav1d/dav1d.h" "DAV1D_VERSION" "-ldav1d $libm_extralibs $pthreads_extralibs"
-#   }
-# 9) run build_ffmpeg.sh
-# 10) see compiled library in build_ffmpeg/android folder
+# 6) run build_ffmpeg.sh
+# 7) see compiled library in build_ffmpeg/adnroid folder
 
-NDK="/opt/android/ndk/android-ndk-r21e"
-NDK_r10e="/opt/android/ndk/android-ndk-r10e"
+NDK="~/Library/Android/sdk/ndk/android-ndk-r21e"
+NDK_r10e="~/Library/Android/sdk/ndk/android-ndk-r10e"
 
 #build vpx
 cd ./vpx-android
@@ -35,11 +24,6 @@ export ANDROID_NDK=$NDK
 sh build-vpx.sh
 cd ..
 
-#build dav1d
-cd ./dav1d-android
-export ANDROID_NDK=$NDK
-./build_dav1d.sh
-cd ..
 
 NDK=$NDK_r10e
 
@@ -53,7 +37,7 @@ echo "Configuring..."
 
 INCLUDES=" -I${PREFIX}/include"
 LIBS=" -L${PREFIX}/lib"
-              
+
 ./configure \
 --cc=$CC \
 --nm=$NM \
@@ -96,10 +80,6 @@ LIBS=" -L${PREFIX}/lib"
 --enable-muxer=matroska \
 --enable-bsf=vp9_superframe \
 --enable-bsf=vp9_raw_reorder \
-\
---enable-libdav1d \
---enable-decoder=libdav1d \
---enable-decoder=av1 \
 --enable-runtime-cpudetect \
 --enable-pthreads \
 --enable-avresample \
@@ -126,7 +106,7 @@ $ADDITIONAL_CONFIGURE_FLAG
 
 #echo "continue?"
 #read
-make -j${HOST_NUM_CORES} install
+make -j8 install
 
 }
 

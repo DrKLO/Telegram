@@ -20,10 +20,10 @@ import android.widget.TextView;
 
 import androidx.core.graphics.ColorUtils;
 
-import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.LocaleController;
 import org.telegram.ui.Components.AnimatedEmojiSpan;
-import org.telegram.ui.Components.AnimatedTextView;
+import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.CheckBox2;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
@@ -37,6 +37,7 @@ public class ActionBarMenuSubItem extends FrameLayout {
     public boolean checkViewLeft;
     public CheckBox2 checkView;
     private ImageView rightIcon;
+    private BackupImageView backupImageView;
 
     private int textColor;
     private int iconColor;
@@ -47,7 +48,7 @@ public class ActionBarMenuSubItem extends FrameLayout {
     boolean bottom;
 
     private int itemHeight = 48;
-    private final Theme.ResourcesProvider resourcesProvider;
+    protected final Theme.ResourcesProvider resourcesProvider;
     public Runnable openSwipeBackLayout;
 
     public ActionBarMenuSubItem(Context context, boolean top, boolean bottom) {
@@ -95,8 +96,12 @@ public class ActionBarMenuSubItem extends FrameLayout {
         addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL));
 
         checkViewLeft = LocaleController.isRTL;
+        makeCheckView(needCheck);
+    }
+
+    public void makeCheckView(int needCheck) {
         if (needCheck > 0) {
-            checkView = new CheckBox2(context, 26, resourcesProvider);
+            checkView = new CheckBox2(getContext(), 26, resourcesProvider);
             checkView.setDrawUnchecked(false);
             checkView.setColor(-1, -1, Theme.key_radioBackgroundChecked);
             checkView.setDrawBackgroundAsArc(-1);
@@ -215,6 +220,18 @@ public class ActionBarMenuSubItem extends FrameLayout {
         }
     }
 
+    public void setTextAndIcon(CharSequence text, ImageLocation imageLocation, String imageFilter, Drawable thumb, Object parentObject) {
+        textView.setText(text);
+        textView.setPadding(checkViewLeft ? (checkView != null ? dp(43) : 0) : dp(43), 0, checkViewLeft ? dp(43) : (checkView != null ? dp(43) : 0), 0);
+        if (backupImageView == null) {
+            backupImageView = new BackupImageView(getContext());
+            backupImageView.setRoundRadius(dp(5));
+            addView(backupImageView, LayoutHelper.createFrame(28, 28, Gravity.CENTER_VERTICAL | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT)));
+        }
+        imageView.setVisibility(INVISIBLE);
+        backupImageView.setImage(imageLocation, imageFilter, thumb, parentObject);
+    }
+
     public ActionBarMenuSubItem setColors(int textColor, int iconColor) {
         setTextColor(textColor);
         setIconColor(iconColor);
@@ -252,6 +269,29 @@ public class ActionBarMenuSubItem extends FrameLayout {
                 final float t = enabled ? 1.0f : 0.0f;
                 setTextColor(ColorUtils.blendARGB(colorDisabled, colorEnabled, t));
                 setIconColor(ColorUtils.blendARGB(colorDisabled, colorEnabled, t));
+            }
+        });
+        enabledAnimator.setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT);
+        enabledAnimator.start();
+    }
+
+    public void setEnabledByColor(boolean enabled, int textColorDisabled, int iconColorDisabled, int colorEnabled) {
+        if (enabledAnimator != null) {
+            enabledAnimator.cancel();
+        }
+        enabledAnimator = ValueAnimator.ofFloat(this.enabled ? 1.0f : 0.0f, enabled ? 1.0f : 0.0f);
+        this.enabled = enabled;
+        enabledAnimator.addUpdateListener(anm -> {
+            final float t = (float) anm.getAnimatedValue();
+            setTextColor(ColorUtils.blendARGB(textColorDisabled, colorEnabled, t));
+            setIconColor(ColorUtils.blendARGB(iconColorDisabled, colorEnabled, t));
+        });
+        enabledAnimator.addListener(new AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationEnd(Animator animation) {
+                final float t = enabled ? 1.0f : 0.0f;
+                setTextColor(ColorUtils.blendARGB(textColorDisabled, colorEnabled, t));
+                setIconColor(ColorUtils.blendARGB(iconColorDisabled, colorEnabled, t));
             }
         });
         enabledAnimator.setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT);

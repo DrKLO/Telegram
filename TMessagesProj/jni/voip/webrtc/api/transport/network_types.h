@@ -93,7 +93,7 @@ struct PacedPacketInfo {
 
   // TODO(srte): Move probing info to a separate, optional struct.
   static constexpr int kNotAProbe = -1;
-  int send_bitrate_bps = -1;
+  DataRate send_bitrate = DataRate::BitsPerSec(0);
   int probe_cluster_id = kNotAProbe;
   int probe_cluster_min_probes = -1;
   int probe_cluster_min_bytes = -1;
@@ -233,6 +233,12 @@ struct NetworkControlUpdate {
   NetworkControlUpdate();
   NetworkControlUpdate(const NetworkControlUpdate&);
   ~NetworkControlUpdate();
+
+  bool has_updates() const {
+    return congestion_window.has_value() || pacer_config.has_value() ||
+           !probe_cluster_configs.empty() || target_rate.has_value();
+  }
+
   absl::optional<DataSize> congestion_window;
   absl::optional<PacerConfig> pacer_config;
   std::vector<ProbeClusterConfig> probe_cluster_configs;

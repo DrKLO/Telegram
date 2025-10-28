@@ -26,10 +26,10 @@
 #define ABSL_CRC_CRC32C_H_
 
 #include <cstdint>
-#include <iostream>
 #include <ostream>
 
 #include "absl/crc/internal/crc32c_inline.h"
+#include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
 
 namespace absl {
@@ -39,24 +39,38 @@ ABSL_NAMESPACE_BEGIN
 // crc32c_t
 //-----------------------------------------------------------------------------
 
-// `crc32c_t` defines a strongly typed integer type for holding a CRC32C value.
-enum class crc32c_t : uint32_t {};
+// `crc32c_t` defines a strongly-typed integer for holding a CRC32C value.
+//
+// Some operators are intentionally omitted. Only equality operators are defined
+// so that `crc32c_t` can be directly compared. Methods for putting `crc32c_t`
+// directly into a set are omitted because this is bug-prone due to checksum
+// collisions. Use an explicit conversion to the `uint32_t` space for operations
+// that treat `crc32c_t` as an integer.
+class crc32c_t final {
+ public:
+  crc32c_t() = default;
+  constexpr explicit crc32c_t(uint32_t crc) : crc_(crc) {}
 
-// ToCrc32c()
-//
-// Converts a uint32_t value to crc32c_t. This API is necessary in C++14
-// and earlier. Code targeting C++17-or-later can instead use `crc32c_t{n}`.
-inline crc32c_t ToCrc32c(uint32_t n) {
-  return static_cast<crc32c_t>(n);
-}
-// operator^
-//
-// Performs a bitwise XOR on two CRC32C values
-inline crc32c_t operator^(crc32c_t lhs, crc32c_t rhs) {
-  const auto lhs_int = static_cast<uint32_t>(lhs);
-  const auto rhs_int = static_cast<uint32_t>(rhs);
-  return ToCrc32c(lhs_int ^ rhs_int);
-}
+  crc32c_t(const crc32c_t&) = default;
+  crc32c_t& operator=(const crc32c_t&) = default;
+
+  explicit operator uint32_t() const { return crc_; }
+
+  friend bool operator==(crc32c_t lhs, crc32c_t rhs) {
+    return static_cast<uint32_t>(lhs) == static_cast<uint32_t>(rhs);
+  }
+
+  friend bool operator!=(crc32c_t lhs, crc32c_t rhs) { return !(lhs == rhs); }
+
+  template <typename Sink>
+  friend void AbslStringify(Sink& sink, crc32c_t crc) {
+    absl::Format(&sink, "%08x", static_cast<uint32_t>(crc));
+  }
+
+ private:
+  uint32_t crc_;
+};
+
 
 namespace crc_internal {
 // Non-inline code path for `absl::ExtendCrc32c()`. Do not call directly.
@@ -92,7 +106,7 @@ inline crc32c_t ExtendCrc32c(crc32c_t initial_crc,
     uint32_t crc = static_cast<uint32_t>(initial_crc);
     if (crc_internal::ExtendCrc32cInline(&crc, buf_to_add.data(),
                                          buf_to_add.size())) {
-      return ToCrc32c(crc);
+      return crc32c_t{crc};
     }
   }
   return crc_internal::ExtendCrc32cInternal(initial_crc, buf_to_add);
@@ -116,7 +130,7 @@ crc32c_t ExtendCrc32cByZeroes(crc32c_t initial_crc, size_t length);
 // Using `MemcpyCrc32c()` is potentially faster than performing the `memcpy()`
 // and `ComputeCrc32c()` operations separately.
 crc32c_t MemcpyCrc32c(void* dest, const void* src, size_t count,
-                      crc32c_t initial_crc = ToCrc32c(0));
+                      crc32c_t initial_crc = crc32c_t{0});
 
 // -----------------------------------------------------------------------------
 // CRC32C Arithmetic Functions
@@ -167,7 +181,7 @@ crc32c_t RemoveCrc32cSuffix(crc32c_t full_string_crc, crc32c_t suffix_crc,
 //
 // Streams the CRC32C value `crc` to the stream `os`.
 inline std::ostream& operator<<(std::ostream& os, crc32c_t crc) {
-  return os << static_cast<uint32_t>(crc);
+  return os << absl::StreamFormat("%08x", static_cast<uint32_t>(crc));
 }
 
 ABSL_NAMESPACE_END

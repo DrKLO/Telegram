@@ -295,6 +295,17 @@ public class UniversalAdapter extends AdapterWithDiffUtils {
         }
     }
 
+    public void updateWithoutNotify() {
+        oldItems.clear();
+        oldItems.addAll(items);
+        items.clear();
+        whiteSections.clear();
+        reorderSections.clear();
+        if (fillItems != null) {
+            fillItems.run(items, this);
+        }
+    }
+
     public boolean shouldApplyBackground(int viewType) {
         if (!applyBackground) return false;
         if (viewType >= UItem.factoryViewTypeStartsWith) {
@@ -562,7 +573,7 @@ public class UniversalAdapter extends AdapterWithDiffUtils {
         if (viewType >= UItem.factoryViewTypeStartsWith) {
             UItem.UItemFactory<?> factory = UItem.findFactory(viewType);
             if (factory != null) {
-                factory.bindView(holder.itemView, item, divider);
+                factory.bindView(holder.itemView, item, divider, this, listView instanceof UniversalRecyclerView ? (UniversalRecyclerView) listView : null);
             }
         } else switch (viewType) {
             case VIEW_TYPE_HEADER:
@@ -578,7 +589,11 @@ public class UniversalAdapter extends AdapterWithDiffUtils {
             case VIEW_TYPE_TOPVIEW:
                 TopViewCell topCell = (TopViewCell) holder.itemView;
                 if (item.iconResId != 0) {
-                    topCell.setEmoji(item.iconResId);
+                    if (item.accent) {
+                        topCell.setEmojiStatic(item.iconResId);
+                    } else {
+                        topCell.setEmoji(item.iconResId);
+                    }
                 } else {
                     topCell.setEmoji(item.subtext.toString(), item.textValue.toString());
                 }
@@ -935,9 +950,13 @@ public class UniversalAdapter extends AdapterWithDiffUtils {
                 switchCell.id = item.id;
                 switchCell.setIcon(item.locked ? R.drawable.permission_locked : 0);
                 if (viewType == VIEW_TYPE_EXPANDABLE_SWITCH) {
-                    switchCell.setCollapseArrow(item.animatedText.toString(), item.collapsed, () -> {
-                        item.clickCallback.onClick(switchCell);
-                    });
+                    if (TextUtils.isEmpty(item.animatedText)) {
+                        switchCell.hideCollapseArrow();
+                    } else {
+                        switchCell.setCollapseArrow(item.animatedText.toString(), item.collapsed, () -> {
+                            item.clickCallback.onClick(switchCell);
+                        });
+                    }
                 }
                 break;
         }
@@ -984,10 +1003,17 @@ public class UniversalAdapter extends AdapterWithDiffUtils {
     public void updateReorder(RecyclerView.ViewHolder holder, boolean allowReorder) {
         if (holder == null) return;
         final int viewType = holder.getItemViewType();
-        switch (viewType) {
-            case VIEW_TYPE_QUICK_REPLY:
-                ((QuickRepliesActivity.QuickReplyView) holder.itemView).setReorder(allowReorder);
-                break;
+        if (viewType >= UItem.factoryViewTypeStartsWith) {
+            UItem.UItemFactory<?> factory = UItem.findFactory(viewType);
+            if (factory != null) {
+                factory.attachedView(holder.itemView, getItem(holder.getAdapterPosition()));
+            }
+        } else {
+            switch (viewType) {
+                case VIEW_TYPE_QUICK_REPLY:
+                    ((QuickRepliesActivity.QuickReplyView) holder.itemView).setReorder(allowReorder);
+                    break;
+            }
         }
     }
 

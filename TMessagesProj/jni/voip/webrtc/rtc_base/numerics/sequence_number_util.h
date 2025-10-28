@@ -16,8 +16,6 @@
 #include <limits>
 #include <type_traits>
 
-#include "absl/types/optional.h"
-#include "rtc_base/checks.h"
 #include "rtc_base/numerics/mod_ops.h"
 
 namespace webrtc {
@@ -80,60 +78,6 @@ struct AscendingSeqNumComp {
 template <typename T, T M = 0>
 struct DescendingSeqNumComp {
   bool operator()(T a, T b) const { return AheadOf<T, M>(b, a); }
-};
-
-// A sequence number unwrapper where the first unwrapped value equals the
-// first value being unwrapped.
-template <typename T, T M = 0>
-class SeqNumUnwrapper {
-  static_assert(
-      std::is_unsigned<T>::value &&
-          std::numeric_limits<T>::max() < std::numeric_limits<int64_t>::max(),
-      "Type unwrapped must be an unsigned integer smaller than int64_t.");
-
- public:
-  int64_t Unwrap(T value) {
-    if (!last_value_) {
-      last_unwrapped_ = {value};
-    } else {
-      last_unwrapped_ += ForwardDiff<T, M>(*last_value_, value);
-
-      if (!AheadOrAt<T, M>(value, *last_value_)) {
-        constexpr int64_t kBackwardAdjustment =
-            M == 0 ? int64_t{std::numeric_limits<T>::max()} + 1 : M;
-        last_unwrapped_ -= kBackwardAdjustment;
-      }
-    }
-
-    last_value_ = value;
-    return last_unwrapped_;
-  }
-
-  int64_t UnwrapForward(T value) {
-    if (!last_value_) {
-      last_unwrapped_ = {value};
-    } else {
-      last_unwrapped_ += ForwardDiff<T, M>(*last_value_, value);
-    }
-
-    last_value_ = value;
-    return last_unwrapped_;
-  }
-
-  int64_t UnwrapBackwards(T value) {
-    if (!last_value_) {
-      last_unwrapped_ = {value};
-    } else {
-      last_unwrapped_ -= ReverseDiff<T, M>(*last_value_, value);
-    }
-
-    last_value_ = value;
-    return last_unwrapped_;
-  }
-
- private:
-  int64_t last_unwrapped_ = 0;
-  absl::optional<T> last_value_;
 };
 
 }  // namespace webrtc

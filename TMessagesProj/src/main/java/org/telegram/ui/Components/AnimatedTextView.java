@@ -1130,6 +1130,7 @@ public class AnimatedTextView extends View {
         }
     }
 
+    private Drawable backgroundDrawable;
     private final AnimatedTextDrawable drawable;
     private int lastMaxWidth, maxWidth;
 
@@ -1179,6 +1180,10 @@ public class AnimatedTextView extends View {
 
     @Override
     protected void onDraw(Canvas canvas) {
+        if (backgroundDrawable != null) {
+            backgroundDrawable.setBounds(0, 0, (int) (getPaddingLeft() + drawable.getCurrentWidth() + getPaddingRight()), getHeight());
+            backgroundDrawable.draw(canvas);
+        }
         drawable.setBounds(getPaddingLeft(), getPaddingTop(), getMeasuredWidth() - getPaddingRight(), getMeasuredHeight() - getPaddingBottom());
         drawable.draw(canvas);
     }
@@ -1227,8 +1232,17 @@ public class AnimatedTextView extends View {
         }
     }
 
+    public void setSizeableBackground(Drawable drawable) {
+        backgroundDrawable = drawable;
+        invalidate();
+    }
+
     public int width() {
         return getPaddingLeft() + (int) Math.ceil(drawable.getCurrentWidth()) + getPaddingRight();
+    }
+
+    public int finalWidth() {
+        return getPaddingLeft() + (int) Math.ceil(drawable.getAnimateToWidth()) + getPaddingRight();
     }
 
     public CharSequence getText() {

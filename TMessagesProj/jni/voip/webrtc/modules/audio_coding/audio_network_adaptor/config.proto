@@ -1,0 +1,196 @@
+syntax = "proto2";
+
+package webrtc.audio_network_adaptor.config;
+
+option optimize_for = LITE_RUNTIME;
+option java_package = "org.webrtc.AudioNetworkAdaptor";
+option java_outer_classname = "Config";
+option objc_class_prefix = "WANA";
+
+message FecController {
+  message Threshold {
+    // Threshold defines a curve in the bandwidth/packet-loss domain. The
+    // curve is characterized by the two conjunction points: A and B.
+    //
+    // packet ^  |
+    //  loss  | A|
+    //        |   \        A: (low_bandwidth_bps, low_bandwidth_packet_loss)
+    //        |    \       B: (high_bandwidth_bps, high_bandwidth_packet_loss)
+    //        |    B\________
+    //        |---------------> bandwidth
+    optional int32 low_bandwidth_bps = 1;
+    optional float low_bandwidth_packet_loss = 2;
+    optional int32 high_bandwidth_bps = 3;
+    optional float high_bandwidth_packet_loss = 4;
+  }
+
+  // `fec_enabling_threshold` defines a curve, above which FEC should be
+  // enabled. `fec_disabling_threshold` defines a curve, under which FEC
+  // should be disabled. See below
+  //
+  // packet-loss ^   |  |
+  //             |   |  |   FEC
+  //             |    \  \   ON
+  //             | FEC \  \_______ fec_enabling_threshold
+  //             | OFF  \_________ fec_disabling_threshold
+  //             |-----------------> bandwidth
+  optional Threshold fec_enabling_threshold = 1;
+  optional Threshold fec_disabling_threshold = 2;
+
+  // `time_constant_ms` is the time constant for an exponential filter, which
+  // is used for smoothing the packet loss fraction.
+  optional int32 time_constant_ms = 3;
+}
+
+message FecControllerRplrBased {
+  message Threshold {
+    // Threshold defines a curve in the bandwidth/recoverable-packet-loss
+    // domain.
+    // The curve is characterized by the two conjunction points: A and B.
+    //
+    // recoverable ^
+    // packet      |  |
+    //  loss       | A|
+    //             |   \        A: (low_bandwidth_bps,
+    //             |    \           low_bandwidth_recoverable_packet_loss)
+    //             |     \       B: (high_bandwidth_bps,
+    //             |      \          high_bandwidth_recoverable_packet_loss)
+    //             |      B\________
+    //             |---------------> bandwidth
+    optional int32 low_bandwidth_bps = 1;
+    optional float low_bandwidth_recoverable_packet_loss = 2;
+    optional int32 high_bandwidth_bps = 3;
+    optional float high_bandwidth_recoverable_packet_loss = 4;
+  }
+
+  // `fec_enabling_threshold` defines a curve, above which FEC should be
+  // enabled. `fec_disabling_threshold` defines a curve, under which FEC
+  // should be disabled. See below
+  //
+  // packet-loss ^   |  |
+  //             |   |  |   FEC
+  //             |    \  \   ON
+  //             | FEC \  \_______ fec_enabling_threshold
+  //             | OFF  \_________ fec_disabling_threshold
+  //             |-----------------> bandwidth
+  optional Threshold fec_enabling_threshold = 1;
+  optional Threshold fec_disabling_threshold = 2;
+}
+
+message FrameLengthController {
+  // Uplink packet loss fraction below which frame length can increase.
+  optional float fl_increasing_packet_loss_fraction = 1;
+
+  // Uplink packet loss fraction above which frame length should decrease.
+  optional float fl_decreasing_packet_loss_fraction = 2;
+
+  // Uplink bandwidth below which frame length can switch from 20ms to 60ms.
+  optional int32 fl_20ms_to_60ms_bandwidth_bps = 3;
+
+  // Uplink bandwidth above which frame length should switch from 60ms to 20ms.
+  optional int32 fl_60ms_to_20ms_bandwidth_bps = 4;
+
+  // Uplink bandwidth below which frame length can switch from 60ms to 120ms.
+  optional int32 fl_60ms_to_120ms_bandwidth_bps = 5;
+
+  // Uplink bandwidth above which frame length should switch from 120ms to 60ms.
+  optional int32 fl_120ms_to_60ms_bandwidth_bps = 6;
+
+  // Offset to apply to the per-packet overhead when increasing frame length.
+  optional int32 fl_increase_overhead_offset = 7;
+
+  // Offset to apply to the per-packet overhead when decreasing frame length.
+  optional int32 fl_decrease_overhead_offset = 8;
+
+  // Uplink bandwidth below which frame length can switch from 20ms to 40ms. In
+  // current implementation, defining this will invalidate
+  // fl_20ms_to_60ms_bandwidth_bps.
+  optional int32 fl_20ms_to_40ms_bandwidth_bps = 9;
+
+  // Uplink bandwidth above which frame length should switch from 40ms to 20ms.
+  optional int32 fl_40ms_to_20ms_bandwidth_bps = 10;
+
+  // Uplink bandwidth below which frame length can switch from 40ms to 60ms.
+  optional int32 fl_40ms_to_60ms_bandwidth_bps = 11;
+
+  // Uplink bandwidth above which frame length should switch from 60ms to 40ms.
+  // In current implementation, defining this will invalidate
+  // fl_60ms_to_20ms_bandwidth_bps.
+  optional int32 fl_60ms_to_40ms_bandwidth_bps = 12;
+}
+
+message FrameLengthControllerV2 {
+  // FrameLengthControllerV2 chooses the frame length by taking the target
+  // bitrate and subtracting the overhead bitrate to obtain the remaining
+  // bitrate for the payload. The chosen frame length is the shortest possible
+  // where the payload bitrate is more than `min_payload_bitrate_bps`.
+  optional int32 min_payload_bitrate_bps = 1;
+
+  // If true, uses the stable target bitrate to decide the frame length. This
+  // will result in less frame length toggling but spending more time at longer
+  // frame lengths compared to using the normal target bitrate.
+  optional bool use_slow_adaptation = 2;
+}
+
+message ChannelController {
+  // Uplink bandwidth above which the number of encoded channels should switch
+  // from 1 to 2.
+  optional int32 channel_1_to_2_bandwidth_bps = 1;
+
+  // Uplink bandwidth below which the number of encoded channels should switch
+  // from 2 to 1.
+  optional int32 channel_2_to_1_bandwidth_bps = 2;
+}
+
+message DtxController {
+  // Uplink bandwidth below which DTX should be switched on.
+  optional int32 dtx_enabling_bandwidth_bps = 1;
+
+  // Uplink bandwidth above which DTX should be switched off.
+  optional int32 dtx_disabling_bandwidth_bps = 2;
+}
+
+message BitrateController {
+  // Offset to apply to per-packet overhead when the frame length is increased.
+  optional int32 fl_increase_overhead_offset = 1;
+  // Offset to apply to per-packet overhead when the frame length is decreased.
+  optional int32 fl_decrease_overhead_offset = 2;
+}
+
+message Controller {
+  message ScoringPoint {
+    // `ScoringPoint` is a subspace of network condition. It is used for
+    // comparing the significance of controllers.
+    optional int32 uplink_bandwidth_bps = 1;
+    optional float uplink_packet_loss_fraction = 2;
+  }
+
+  // The distance from `scoring_point` to a given network condition defines
+  // the significance of this controller with respect that network condition.
+  // Shorter distance means higher significance. The significances of
+  // controllers determine their order in the processing pipeline. Controllers
+  // without `scoring_point` follow their default order in
+  // `ControllerManager::controllers`.
+  optional ScoringPoint scoring_point = 1;
+
+  oneof controller {
+    FecController fec_controller = 21;
+    FrameLengthController frame_length_controller = 22;
+    ChannelController channel_controller = 23;
+    DtxController dtx_controller = 24;
+    BitrateController bitrate_controller = 25;
+    FecControllerRplrBased fec_controller_rplr_based = 26;
+    FrameLengthControllerV2 frame_length_controller_v2 = 27;
+  }
+}
+
+message ControllerManager {
+  repeated Controller controllers = 1;
+
+  // Least time since last reordering for a new reordering to be made.
+  optional int32 min_reordering_time_ms = 2;
+
+  // Least squared distance from last scoring point for a new reordering to be
+  // made.
+  optional float min_reordering_squared_distance = 3;
+}

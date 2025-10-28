@@ -59,6 +59,7 @@ import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Components.Forum.ForumUtilities;
 import org.telegram.ui.Components.Premium.boosts.BoostRepository;
 import org.telegram.ui.PaymentFormActivity;
 
@@ -153,6 +154,7 @@ public class UndoView extends FrameLayout {
     public final static int ACTION_VOIP_USER_JOINED = 44;
     public final static int ACTION_VOIP_VIDEO_RECORDING_STARTED = 100;
     public final static int ACTION_VOIP_VIDEO_RECORDING_FINISHED = 101;
+    public final static int ACTION_VOIP_KICKED = 102;
 
     public final static int ACTION_IMPORT_NOT_MUTUAL = 45;
     public final static int ACTION_IMPORT_GROUP_NOT_ADMIN = 46;
@@ -346,7 +348,7 @@ public class UndoView extends FrameLayout {
                 currentAction == ACTION_ARCHIVE_PINNED || currentAction == ACTION_CONTACT_ADDED || currentAction == ACTION_PROXY_ADDED || currentAction == ACTION_OWNER_TRANSFERED_CHANNEL ||
                 currentAction == ACTION_OWNER_TRANSFERED_GROUP || currentAction == ACTION_QUIZ_CORRECT || currentAction == ACTION_QUIZ_INCORRECT || currentAction == ACTION_CACHE_WAS_CLEARED ||
                 currentAction == ACTION_ADDED_TO_FOLDER || currentAction == ACTION_REMOVED_FROM_FOLDER || currentAction == ACTION_PROFILE_PHOTO_CHANGED ||
-                currentAction == ACTION_CHAT_UNARCHIVED || currentAction == ACTION_VOIP_MUTED || currentAction == ACTION_VOIP_UNMUTED || currentAction == ACTION_VOIP_REMOVED ||
+                currentAction == ACTION_CHAT_UNARCHIVED || currentAction == ACTION_VOIP_MUTED || currentAction == ACTION_VOIP_UNMUTED || currentAction == ACTION_VOIP_REMOVED || currentAction == ACTION_VOIP_KICKED ||
                 currentAction == ACTION_VOIP_LINK_COPIED || currentAction == ACTION_VOIP_INVITED || currentAction == ACTION_VOIP_MUTED_FOR_YOU || currentAction == ACTION_VOIP_UNMUTED_FOR_YOU ||
                 currentAction == ACTION_REPORT_SENT || currentAction == ACTION_VOIP_USER_CHANGED || currentAction == ACTION_VOIP_CAN_NOW_SPEAK || currentAction == ACTION_VOIP_RECORDING_STARTED ||
                 currentAction == ACTION_VOIP_RECORDING_FINISHED || currentAction == ACTION_VOIP_SOUND_MUTED || currentAction == ACTION_VOIP_SOUND_UNMUTED || currentAction == ACTION_PAYMENT_SUCCESS ||
@@ -562,16 +564,16 @@ public class UndoView extends FrameLayout {
                 if (infoObject instanceof TLRPC.User) {
                     TLRPC.User user = (TLRPC.User) infoObject;
                     if (ChatObject.isChannelOrGiga(currentChat)) {
-                        infoText = AndroidUtilities.replaceTags(LocaleController.formatString("VoipChannelUserJoined", R.string.VoipChannelUserJoined, UserObject.getFirstName(user)));
+                        infoText = AndroidUtilities.replaceTags(LocaleController.formatString(R.string.VoipChannelUserJoined, UserObject.getFirstName(user)));
                     } else {
-                        infoText = AndroidUtilities.replaceTags(LocaleController.formatString("VoipChatUserJoined", R.string.VoipChatUserJoined, UserObject.getFirstName(user)));
+                        infoText = AndroidUtilities.replaceTags(LocaleController.formatString(R.string.VoipChatUserJoined, UserObject.getFirstName(user)));
                     }
                 } else if (infoObject instanceof TLRPC.Chat) {
                     TLRPC.Chat chat = (TLRPC.Chat) infoObject;
                     if (ChatObject.isChannelOrGiga(currentChat)) {
-                        infoText = AndroidUtilities.replaceTags(LocaleController.formatString("VoipChannelChatJoined", R.string.VoipChannelChatJoined, chat.title));
+                        infoText = AndroidUtilities.replaceTags(LocaleController.formatString(R.string.VoipChannelChatJoined, chat.title));
                     } else {
-                        infoText = AndroidUtilities.replaceTags(LocaleController.formatString("VoipChatChatJoined", R.string.VoipChatChatJoined, chat.title));
+                        infoText = AndroidUtilities.replaceTags(LocaleController.formatString(R.string.VoipChatChatJoined, chat.title));
                     }
                 } else {
                     infoText = "";
@@ -743,7 +745,7 @@ public class UndoView extends FrameLayout {
                 subInfoText = null;
                 icon = R.raw.voip_unmuted;
                 timeLeft = 3000;
-            } else if (action == ACTION_VOIP_REMOVED) {
+            } else if (action == ACTION_VOIP_REMOVED || action == ACTION_VOIP_KICKED) {
                 String name;
                 if (infoObject instanceof TLRPC.User) {
                     TLRPC.User user = (TLRPC.User) infoObject;
@@ -752,9 +754,13 @@ public class UndoView extends FrameLayout {
                     TLRPC.Chat chat = (TLRPC.Chat) infoObject;
                     name = chat.title;
                 }
-                infoText = AndroidUtilities.replaceTags(LocaleController.formatString("VoipGroupRemovedFromGroup", R.string.VoipGroupRemovedFromGroup, name));
+                if (action == ACTION_VOIP_KICKED) {
+                    infoText = AndroidUtilities.replaceTags(LocaleController.formatString(R.string.VoipConferenceKicked, name));
+                } else {
+                    infoText = AndroidUtilities.replaceTags(LocaleController.formatString(R.string.VoipGroupRemovedFromGroup, name));
+                }
                 subInfoText = null;
-                icon = R.raw.voip_group_removed;
+                icon = R.raw.ic_ban;
                 timeLeft = 3000;
             } else if (action == ACTION_OWNER_TRANSFERED_CHANNEL || action == ACTION_OWNER_TRANSFERED_GROUP) {
                 TLRPC.User user = (TLRPC.User) infoObject;
@@ -1068,10 +1074,15 @@ public class UndoView extends FrameLayout {
                         if (DialogObject.isChatDialog(did)) {
                             TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-did);
                             TLRPC.TL_forumTopic topic = (TLRPC.TL_forumTopic) infoObject2;
+                            String mfTitle = null;
+                            if (ChatObject.isMonoForum(chat)) {
+                                mfTitle = ForumUtilities.getMonoForumTitle(currentAccount, chat);
+                            }
+
                             if (count == 1) {
-                                infoTextView.setText(AndroidUtilities.replaceTags(LocaleController.formatString("FwdMessageToGroup", R.string.FwdMessageToGroup, topic != null ? topic.title : chat.title)));
+                                infoTextView.setText(AndroidUtilities.replaceTags(LocaleController.formatString("FwdMessageToGroup", R.string.FwdMessageToGroup, mfTitle != null ? mfTitle : (topic != null ? topic.title : chat.title))));
                             } else {
-                                infoTextView.setText(AndroidUtilities.replaceTags(LocaleController.formatString("FwdMessagesToGroup", R.string.FwdMessagesToGroup, topic != null ? topic.title : chat.title)));
+                                infoTextView.setText(AndroidUtilities.replaceTags(LocaleController.formatString("FwdMessagesToGroup", R.string.FwdMessagesToGroup, mfTitle != null ? mfTitle : (topic != null ? topic.title : chat.title))));
                             }
                         } else {
                             TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(did);
@@ -1502,7 +1513,9 @@ public class UndoView extends FrameLayout {
             } else {
                 if (DialogObject.isChatDialog(did)) {
                     TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-did);
-                    if (ChatObject.isChannel(chat) && !chat.megagroup) {
+                    if (ChatObject.isMonoForum(chat)) {
+                        infoTextView.setText(LocaleController.getString(R.string.MonoforumDeletedUndo));
+                    } else if (ChatObject.isChannel(chat) && !chat.megagroup) {
                         infoTextView.setText(LocaleController.getString(R.string.ChannelDeletedUndo));
                     } else {
                         infoTextView.setText(LocaleController.getString(R.string.GroupDeletedUndo));

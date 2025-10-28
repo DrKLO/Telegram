@@ -69,9 +69,6 @@ void PacketArrivalTimeMap::AddPacket(int64_t sequence_number,
     // Remove oldest entries
     begin_sequence_number_ = new_end_sequence_number - kMaxNumberOfPackets;
     RTC_DCHECK_GT(end_sequence_number_, begin_sequence_number_);
-    // Also trim the buffer to remove leading non-received packets, to
-    // ensure that the buffer only spans received packets.
-    TrimLeadingNotReceivedEntries();
   }
 
   AdjustToSize(new_end_sequence_number - begin_sequence_number_);
@@ -81,31 +78,6 @@ void PacketArrivalTimeMap::AddPacket(int64_t sequence_number,
   SetNotReceived(end_sequence_number_, sequence_number);
   end_sequence_number_ = new_end_sequence_number;
   arrival_times_[Index(sequence_number)] = arrival_time;
-}
-
-void PacketArrivalTimeMap::TrimLeadingNotReceivedEntries() {
-  const int begin_index = Index(begin_sequence_number_);
-  const Timestamp* const begin_it = arrival_times_.get() + begin_index;
-  const Timestamp* const end_it = arrival_times_.get() + capacity();
-
-  for (const Timestamp* it = begin_it; it != end_it; ++it) {
-    if (*it >= Timestamp::Zero()) {
-      begin_sequence_number_ += (it - begin_it);
-      return;
-    }
-  }
-  // Reached end of the arrival_times_ and all entries represent not received
-  // packets. Remove them.
-  begin_sequence_number_ += (capacity() - begin_index);
-  // Continue removing entries at the beginning of the circular buffer.
-  for (const Timestamp* it = arrival_times_.get(); it != begin_it; ++it) {
-    if (*it >= Timestamp::Zero()) {
-      begin_sequence_number_ += (it - arrival_times_.get());
-      return;
-    }
-  }
-
-  RTC_DCHECK_NOTREACHED() << "There should be at least one non-empty entry";
 }
 
 void PacketArrivalTimeMap::SetNotReceived(
@@ -151,7 +123,6 @@ void PacketArrivalTimeMap::EraseTo(int64_t sequence_number) {
   }
   // Remove some.
   begin_sequence_number_ = sequence_number;
-  RTC_DCHECK(has_received(begin_sequence_number_));
   AdjustToSize(end_sequence_number_ - begin_sequence_number_);
 }
 

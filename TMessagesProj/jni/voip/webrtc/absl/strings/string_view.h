@@ -37,6 +37,7 @@
 #include <string>
 
 #include "absl/base/attributes.h"
+#include "absl/base/nullability.h"
 #include "absl/base/config.h"
 #include "absl/base/internal/throw_delegate.h"
 #include "absl/base/macros.h"
@@ -158,20 +159,21 @@ ABSL_NAMESPACE_BEGIN
 //
 //   absl::string_view() == absl::string_view("", 0)
 //   absl::string_view(nullptr, 0) == absl::string_view("abcdef"+6, 0)
-class string_view {
+class ABSL_ATTRIBUTE_VIEW string_view {
  public:
   using traits_type = std::char_traits<char>;
   using value_type = char;
-  using pointer = char*;
-  using const_pointer = const char*;
+  using pointer = absl::Nullable<char*>;
+  using const_pointer = absl::Nullable<const char*>;
   using reference = char&;
   using const_reference = const char&;
-  using const_iterator = const char*;
+  using const_iterator = absl::Nullable<const char*>;
   using iterator = const_iterator;
   using const_reverse_iterator = std::reverse_iterator<const_iterator>;
   using reverse_iterator = const_reverse_iterator;
   using size_type = size_t;
   using difference_type = std::ptrdiff_t;
+  using absl_internal_is_view = std::true_type;
 
   static constexpr size_type npos = static_cast<size_type>(-1);
 
@@ -194,16 +196,16 @@ class string_view {
   // accepting possibly null strings, use `absl::NullSafeStringView(str)`
   // instead (see below).
   // The length check is skipped since it is unnecessary and causes code bloat.
-  constexpr string_view(const char* str)  // NOLINT(runtime/explicit)
+  constexpr string_view(  // NOLINT(runtime/explicit)
+      absl::Nonnull<const char*> str)
       : ptr_(str), length_(str ? StrlenInternal(str) : 0) {}
 
-  // Implicit constructor of a `string_view` from a `const char*` and length.
-  constexpr string_view(const char* data, size_type len)
+  // Constructor of a `string_view` from a `const char*` and length.
+  constexpr string_view(absl::Nullable<const char*> data, size_type len)
       : ptr_(data), length_(CheckLengthInternal(len)) {}
 
-  // NOTE: Harmlessly omitted to work around gdb bug.
-  //   constexpr string_view(const string_view&) noexcept = default;
-  //   string_view& operator=(const string_view&) noexcept = default;
+  constexpr string_view(const string_view&) noexcept = default;
+  string_view& operator=(const string_view&) noexcept = default;
 
   // Iterators
 
@@ -290,7 +292,8 @@ class string_view {
   // Returns the ith element of the `string_view` using the array operator.
   // Note that this operator does not perform any bounds checking.
   constexpr const_reference operator[](size_type i) const {
-    return ABSL_HARDENING_ASSERT(i < size()), ptr_[i];
+    ABSL_HARDENING_ASSERT(i < size());
+    return ptr_[i];
   }
 
   // string_view::at()
@@ -299,25 +302,26 @@ class string_view {
   // and an exception of type `std::out_of_range` will be thrown on invalid
   // access.
   constexpr const_reference at(size_type i) const {
-    return ABSL_PREDICT_TRUE(i < size())
-               ? ptr_[i]
-               : ((void)base_internal::ThrowStdOutOfRange(
-                      "absl::string_view::at"),
-                  ptr_[i]);
+    if (ABSL_PREDICT_FALSE(i >= size())) {
+      base_internal::ThrowStdOutOfRange("absl::string_view::at");
+    }
+    return ptr_[i];
   }
 
   // string_view::front()
   //
   // Returns the first element of a `string_view`.
   constexpr const_reference front() const {
-    return ABSL_HARDENING_ASSERT(!empty()), ptr_[0];
+    ABSL_HARDENING_ASSERT(!empty());
+    return ptr_[0];
   }
 
   // string_view::back()
   //
   // Returns the last element of a `string_view`.
   constexpr const_reference back() const {
-    return ABSL_HARDENING_ASSERT(!empty()), ptr_[size() - 1];
+    ABSL_HARDENING_ASSERT(!empty());
+    return ptr_[size() - 1];
   }
 
   // string_view::data()
@@ -391,11 +395,10 @@ class string_view {
   // `pos > size`.
   // Use absl::ClippedSubstr if you need a truncating substr operation.
   constexpr string_view substr(size_type pos = 0, size_type n = npos) const {
-    return ABSL_PREDICT_FALSE(pos > length_)
-               ? (base_internal::ThrowStdOutOfRange(
-                      "absl::string_view::substr"),
-                  string_view())
-               : string_view(ptr_ + pos, Min(n, length_ - pos));
+    if (ABSL_PREDICT_FALSE(pos > length_)) {
+      base_internal::ThrowStdOutOfRange("absl::string_view::substr");
+    }
+    return string_view(ptr_ + pos, Min(n, length_ - pos));
   }
 
   // string_view::compare()
@@ -427,18 +430,21 @@ class string_view {
 
   // Overload of `string_view::compare()` for comparing a `string_view` and a
   // a different C-style string `s`.
-  constexpr int compare(const char* s) const { return compare(string_view(s)); }
+  constexpr int compare(absl::Nonnull<const char*> s) const {
+    return compare(string_view(s));
+  }
 
   // Overload of `string_view::compare()` for comparing a substring of the
   // `string_view` and a different string C-style string `s`.
-  constexpr int compare(size_type pos1, size_type count1, const char* s) const {
+  constexpr int compare(size_type pos1, size_type count1,
+                        absl::Nonnull<const char*> s) const {
     return substr(pos1, count1).compare(string_view(s));
   }
 
   // Overload of `string_view::compare()` for comparing a substring of the
   // `string_view` and a substring of a different C-style string `s`.
-  constexpr int compare(size_type pos1, size_type count1, const char* s,
-                        size_type count2) const {
+  constexpr int compare(size_type pos1, size_type count1,
+                        absl::Nonnull<const char*> s, size_type count2) const {
     return substr(pos1, count1).compare(string_view(s, count2));
   }
 
@@ -457,13 +463,14 @@ class string_view {
 
   // Overload of `string_view::find()` for finding a substring of a different
   // C-style string `s` within the `string_view`.
-  size_type find(const char* s, size_type pos, size_type count) const {
+  size_type find(absl::Nonnull<const char*> s, size_type pos,
+                 size_type count) const {
     return find(string_view(s, count), pos);
   }
 
   // Overload of `string_view::find()` for finding a different C-style string
   // `s` within the `string_view`.
-  size_type find(const char* s, size_type pos = 0) const {
+  size_type find(absl::Nonnull<const char *> s, size_type pos = 0) const {
     return find(string_view(s), pos);
   }
 
@@ -480,13 +487,14 @@ class string_view {
 
   // Overload of `string_view::rfind()` for finding a substring of a different
   // C-style string `s` within the `string_view`.
-  size_type rfind(const char* s, size_type pos, size_type count) const {
+  size_type rfind(absl::Nonnull<const char*> s, size_type pos,
+                  size_type count) const {
     return rfind(string_view(s, count), pos);
   }
 
   // Overload of `string_view::rfind()` for finding a different C-style string
   // `s` within the `string_view`.
-  size_type rfind(const char* s, size_type pos = npos) const {
+  size_type rfind(absl::Nonnull<const char*> s, size_type pos = npos) const {
     return rfind(string_view(s), pos);
   }
 
@@ -505,14 +513,15 @@ class string_view {
 
   // Overload of `string_view::find_first_of()` for finding a substring of a
   // different C-style string `s` within the `string_view`.
-  size_type find_first_of(const char* s, size_type pos,
-                                    size_type count) const {
+  size_type find_first_of(absl::Nonnull<const char*> s, size_type pos,
+                          size_type count) const {
     return find_first_of(string_view(s, count), pos);
   }
 
   // Overload of `string_view::find_first_of()` for finding a different C-style
   // string `s` within the `string_view`.
-  size_type find_first_of(const char* s, size_type pos = 0) const {
+  size_type find_first_of(absl::Nonnull<const char*> s,
+                          size_type pos = 0) const {
     return find_first_of(string_view(s), pos);
   }
 
@@ -531,13 +540,15 @@ class string_view {
 
   // Overload of `string_view::find_last_of()` for finding a substring of a
   // different C-style string `s` within the `string_view`.
-  size_type find_last_of(const char* s, size_type pos, size_type count) const {
+  size_type find_last_of(absl::Nonnull<const char*> s, size_type pos,
+                         size_type count) const {
     return find_last_of(string_view(s, count), pos);
   }
 
   // Overload of `string_view::find_last_of()` for finding a different C-style
   // string `s` within the `string_view`.
-  size_type find_last_of(const char* s, size_type pos = npos) const {
+  size_type find_last_of(absl::Nonnull<const char*> s,
+                         size_type pos = npos) const {
     return find_last_of(string_view(s), pos);
   }
 
@@ -554,14 +565,15 @@ class string_view {
 
   // Overload of `string_view::find_first_not_of()` for finding a substring of a
   // different C-style string `s` within the `string_view`.
-  size_type find_first_not_of(const char* s, size_type pos,
+  size_type find_first_not_of(absl::Nonnull<const char*> s, size_type pos,
                               size_type count) const {
     return find_first_not_of(string_view(s, count), pos);
   }
 
   // Overload of `string_view::find_first_not_of()` for finding a different
   // C-style string `s` within the `string_view`.
-  size_type find_first_not_of(const char* s, size_type pos = 0) const {
+  size_type find_first_not_of(absl::Nonnull<const char*> s,
+                              size_type pos = 0) const {
     return find_first_not_of(string_view(s), pos);
   }
 
@@ -579,33 +591,88 @@ class string_view {
 
   // Overload of `string_view::find_last_not_of()` for finding a substring of a
   // different C-style string `s` within the `string_view`.
-  size_type find_last_not_of(const char* s, size_type pos,
+  size_type find_last_not_of(absl::Nonnull<const char*> s, size_type pos,
                              size_type count) const {
     return find_last_not_of(string_view(s, count), pos);
   }
 
   // Overload of `string_view::find_last_not_of()` for finding a different
   // C-style string `s` within the `string_view`.
-  size_type find_last_not_of(const char* s, size_type pos = npos) const {
+  size_type find_last_not_of(absl::Nonnull<const char*> s,
+                             size_type pos = npos) const {
     return find_last_not_of(string_view(s), pos);
   }
+
+#if ABSL_INTERNAL_CPLUSPLUS_LANG >= 202002L
+  // string_view::starts_with()
+  //
+  // Returns true if the `string_view` starts with the prefix `s`.
+  //
+  // This method only exists when targeting at least C++20.
+  // If support for C++ prior to C++20 is required, use `absl::StartsWith()`
+  // from `//absl/strings/match.h` for compatibility.
+  constexpr bool starts_with(string_view s) const noexcept {
+    return s.empty() ||
+           (size() >= s.size() &&
+            ABSL_INTERNAL_STRING_VIEW_MEMCMP(data(), s.data(), s.size()) == 0);
+  }
+
+  // Overload of `string_view::starts_with()` that returns true if `c` is the
+  // first character of the `string_view`.
+  constexpr bool starts_with(char c) const noexcept {
+    return !empty() && front() == c;
+  }
+
+  // Overload of `string_view::starts_with()` that returns true if the
+  // `string_view` starts with the C-style prefix `s`.
+  constexpr bool starts_with(const char* s) const {
+    return starts_with(string_view(s));
+  }
+
+  // string_view::ends_with()
+  //
+  // Returns true if the `string_view` ends with the suffix `s`.
+  //
+  // This method only exists when targeting at least C++20.
+  // If support for C++ prior to C++20 is required, use `absl::EndsWith()`
+  // from `//absl/strings/match.h` for compatibility.
+  constexpr bool ends_with(string_view s) const noexcept {
+    return s.empty() || (size() >= s.size() && ABSL_INTERNAL_STRING_VIEW_MEMCMP(
+                                                   data() + (size() - s.size()),
+                                                   s.data(), s.size()) == 0);
+  }
+
+  // Overload of `string_view::ends_with()` that returns true if `c` is the
+  // last character of the `string_view`.
+  constexpr bool ends_with(char c) const noexcept {
+    return !empty() && back() == c;
+  }
+
+  // Overload of `string_view::ends_with()` that returns true if the
+  // `string_view` ends with the C-style suffix `s`.
+  constexpr bool ends_with(const char* s) const {
+    return ends_with(string_view(s));
+  }
+#endif  // ABSL_INTERNAL_CPLUSPLUS_LANG >= 202002L
 
  private:
   // The constructor from std::string delegates to this constructor.
   // See the comment on that constructor for the rationale.
   struct SkipCheckLengthTag {};
-  string_view(const char* data, size_type len, SkipCheckLengthTag) noexcept
+  string_view(absl::Nullable<const char*> data, size_type len,
+              SkipCheckLengthTag) noexcept
       : ptr_(data), length_(len) {}
 
   static constexpr size_type kMaxSize =
       (std::numeric_limits<difference_type>::max)();
 
   static constexpr size_type CheckLengthInternal(size_type len) {
-    return ABSL_HARDENING_ASSERT(len <= kMaxSize), len;
+    ABSL_HARDENING_ASSERT(len <= kMaxSize);
+    return len;
   }
 
-  static constexpr size_type StrlenInternal(const char* str) {
-#if defined(_MSC_VER) && _MSC_VER >= 1910 && !defined(__clang__)
+  static constexpr size_type StrlenInternal(absl::Nonnull<const char*> str) {
+#if defined(_MSC_VER) && !defined(__clang__)
     // MSVC 2017+ can evaluate this at compile-time.
     const char* begin = str;
     while (*str != '\0') ++str;
@@ -633,7 +700,7 @@ class string_view {
                                : (compare_result < 0 ? -1 : 1);
   }
 
-  const char* ptr_;
+  absl::Nullable<const char*> ptr_;
   size_type length_;
 };
 
@@ -694,7 +761,7 @@ inline string_view ClippedSubstr(string_view s, size_t pos,
 // Creates an `absl::string_view` from a pointer `p` even if it's null-valued.
 // This function should be used where an `absl::string_view` can be created from
 // a possibly-null pointer.
-constexpr string_view NullSafeStringView(const char* p) {
+constexpr string_view NullSafeStringView(absl::Nullable<const char*> p) {
   return p ? string_view(p) : string_view();
 }
 

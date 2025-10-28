@@ -14,8 +14,8 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"errors"
-	"io/ioutil"
 	"net"
+	"os"
 	"strings"
 	"time"
 )
@@ -73,7 +73,7 @@ func NewListener(inner net.Listener, config *Config) net.Listener {
 // The configuration config must be non-nil and must have
 // at least one certificate.
 func Listen(network, laddr string, config *Config) (net.Listener, error) {
-	if config == nil || len(config.Certificates) == 0 {
+	if config == nil || config.Credential == nil {
 		return nil, errors.New("tls.Listen: no certificates in configuration")
 	}
 	l, err := net.Listen(network, laddr)
@@ -173,12 +173,12 @@ func Dial(network, addr string, config *Config) (*Conn, error) {
 
 // LoadX509KeyPair reads and parses a public/private key pair from a pair of
 // files. The files must contain PEM encoded data.
-func LoadX509KeyPair(certFile, keyFile string) (cert Certificate, err error) {
-	certPEMBlock, err := ioutil.ReadFile(certFile)
+func LoadX509KeyPair(certFile, keyFile string) (cert Credential, err error) {
+	certPEMBlock, err := os.ReadFile(certFile)
 	if err != nil {
 		return
 	}
-	keyPEMBlock, err := ioutil.ReadFile(keyFile)
+	keyPEMBlock, err := os.ReadFile(keyFile)
 	if err != nil {
 		return
 	}
@@ -187,7 +187,7 @@ func LoadX509KeyPair(certFile, keyFile string) (cert Certificate, err error) {
 
 // X509KeyPair parses a public/private key pair from a pair of
 // PEM encoded data.
-func X509KeyPair(certPEMBlock, keyPEMBlock []byte) (cert Certificate, err error) {
+func X509KeyPair(certPEMBlock, keyPEMBlock []byte) (cert Credential, err error) {
 	var certDERBlock *pem.Block
 	for {
 		certDERBlock, certPEMBlock = pem.Decode(certPEMBlock)

@@ -6,6 +6,9 @@
 #include "rtc_base/third_party/sigslot/sigslot.h"
 #include "api/transport/field_trial_based_config.h"
 #include "pc/rtp_sender.h"
+#include "media/base/media_channel.h"
+#include "pc/media_factory.h"
+#include "api/environment/environment.h"
 
 #include "Instance.h"
 #include "Message.h"
@@ -48,7 +51,7 @@ public:
 		std::function<void(Message &&)> sendTransportMessage,
         std::function<void(int)> signalBarsUpdated,
         std::function<void(float, float)> audioLevelUpdated,
-		std::function<rtc::scoped_refptr<webrtc::AudioDeviceModule>(webrtc::TaskQueueFactory*)> createAudioDeviceModule,
+		std::function<webrtc::scoped_refptr<webrtc::AudioDeviceModule>(webrtc::TaskQueueFactory*)> createAudioDeviceModule,
         bool enableHighBitrateVideo,
         std::vector<std::string> preferredCodecs,
 		std::shared_ptr<PlatformContext> platformContext);
@@ -82,9 +85,10 @@ private:
 		uint32_t fecOutgoing = 0;
 	};
 
-	class NetworkInterfaceImpl : public cricket::MediaChannel::NetworkInterface {
+	class NetworkInterfaceImpl : public cricket::MediaChannelNetworkInterface {
 	public:
 		NetworkInterfaceImpl(MediaManager *mediaManager, bool isVideo);
+        
 		bool SendPacket(rtc::CopyOnWriteBuffer *packet, const rtc::PacketOptions& options) override;
 		bool SendRtcp(rtc::CopyOnWriteBuffer *packet, const rtc::PacketOptions& options) override;
 		int SetOption(SocketType type, rtc::Socket::Option opt, int option) override;
@@ -117,7 +121,7 @@ private:
 	void sendVideoParametersMessage();
 	void sendOutgoingMediaStateMessage();
 
-	rtc::scoped_refptr<webrtc::AudioDeviceModule> createAudioDeviceModule();
+	webrtc::scoped_refptr<webrtc::AudioDeviceModule> createAudioDeviceModule();
 
     void beginStatsTimer(int timeoutMs);
     void beginLevelsTimer(int timeoutMs);
@@ -125,13 +129,12 @@ private:
 
 	rtc::Thread *_thread = nullptr;
 	std::unique_ptr<webrtc::RtcEventLogNull> _eventLog;
-	std::unique_ptr<webrtc::TaskQueueFactory> _taskQueueFactory;
 
 	std::function<void(Message &&)> _sendSignalingMessage;
 	std::function<void(Message &&)> _sendTransportMessage;
     std::function<void(int)> _signalBarsUpdated;
-    std::function<void(float, float)> _audioLevelUpdated;
-	std::function<rtc::scoped_refptr<webrtc::AudioDeviceModule>(webrtc::TaskQueueFactory*)> _createAudioDeviceModule;
+    std::function<void(float, float)> _audioLevelsUpdated;
+	std::function<webrtc::scoped_refptr<webrtc::AudioDeviceModule>(webrtc::TaskQueueFactory*)> _createAudioDeviceModule;
 
 	SSRC _ssrcAudio;
 	SSRC _ssrcVideo;
@@ -150,17 +153,24 @@ private:
 	std::vector<cricket::VideoCodec> _videoCodecs;
 	absl::optional<cricket::VideoCodec> _videoCodecOut;
 
-	std::unique_ptr<cricket::MediaEngineInterface> _mediaEngine;
+    webrtc::Environment _webrtcEnvironment;
+    std::unique_ptr<webrtc::MediaFactory> _mediaFactory;
+    std::unique_ptr<cricket::MediaEngineInterface> _mediaEngine;
 	std::unique_ptr<webrtc::Call> _call;
 	webrtc::LocalAudioSinkAdapter _audioSource;
-	rtc::scoped_refptr<webrtc::AudioDeviceModule> _audioDeviceModule;
-	std::unique_ptr<cricket::VoiceMediaChannel> _audioChannel;
-	std::unique_ptr<cricket::VideoMediaChannel> _videoChannel;
+	webrtc::scoped_refptr<webrtc::AudioDeviceModule> _audioDeviceModule;
+	std::unique_ptr<cricket::VoiceMediaSendChannelInterface> _audioSendChannel;
+    std::unique_ptr<cricket::VoiceMediaReceiveChannelInterface> _audioReceiveChannel;
+	std::unique_ptr<cricket::VideoMediaSendChannelInterface> _videoSendChannel;
+    bool _haveVideoSendChannel = false;
+    std::unique_ptr<cricket::VideoMediaReceiveChannelInterface> _videoReceiveChannel;
 	std::unique_ptr<webrtc::VideoBitrateAllocatorFactory> _videoBitrateAllocatorFactory;
 	std::shared_ptr<VideoCaptureInterface> _videoCapture;
 	std::shared_ptr<bool> _videoCaptureGuard;
     bool _isScreenCapture = false;
     std::shared_ptr<VideoSinkInterfaceProxyImpl> _incomingVideoSinkProxy;
+    webrtc::RtpHeaderExtensionMap _audioRtpHeaderExtensionMap;
+    webrtc::RtpHeaderExtensionMap _videoRtpHeaderExtensionMap;
 
     float _localPreferredVideoAspectRatio = 0.0f;
     float _preferredAspectRatio = 0.0f;

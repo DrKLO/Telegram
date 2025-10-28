@@ -28,7 +28,7 @@
 #include <sanitizer/lsan_interface.h>
 
 #if ABSL_HAVE_ATTRIBUTE_WEAK
-extern "C" ABSL_ATTRIBUTE_WEAK int __lsan_is_turned_off();
+extern "C" ABSL_ATTRIBUTE_WEAK int __lsan_is_turned_off() { return 0; }
 #endif
 
 namespace absl {
@@ -37,13 +37,13 @@ bool HaveLeakSanitizer() { return true; }
 
 #if ABSL_HAVE_ATTRIBUTE_WEAK
 bool LeakCheckerIsActive() {
-  return !(&__lsan_is_turned_off && __lsan_is_turned_off());
+  return __lsan_is_turned_off() == 0;
 }
 #else
 bool LeakCheckerIsActive() { return true; }
 #endif
 
-bool FindAndReportLeaks() { return __lsan_do_recoverable_leak_check(); }
+bool FindAndReportLeaks() { return __lsan_do_recoverable_leak_check() != 0; }
 void DoIgnoreLeak(const void* ptr) { __lsan_ignore_object(ptr); }
 void RegisterLivePointers(const void* ptr, size_t size) {
   __lsan_register_root_region(ptr, size);
@@ -65,8 +65,8 @@ bool LeakCheckerIsActive() { return false; }
 void DoIgnoreLeak(const void*) { }
 void RegisterLivePointers(const void*, size_t) { }
 void UnRegisterLivePointers(const void*, size_t) { }
-LeakCheckDisabler::LeakCheckDisabler() { }
-LeakCheckDisabler::~LeakCheckDisabler() { }
+LeakCheckDisabler::LeakCheckDisabler() = default;
+LeakCheckDisabler::~LeakCheckDisabler() = default;
 ABSL_NAMESPACE_END
 }  // namespace absl
 

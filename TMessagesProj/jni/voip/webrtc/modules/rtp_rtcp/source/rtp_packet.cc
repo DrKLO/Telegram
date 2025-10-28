@@ -60,8 +60,6 @@ RtpPacket::RtpPacket() : RtpPacket(nullptr, kDefaultPacketSize) {}
 RtpPacket::RtpPacket(const ExtensionManager* extensions)
     : RtpPacket(extensions, kDefaultPacketSize) {}
 
-RtpPacket::RtpPacket(const RtpPacket&) = default;
-
 RtpPacket::RtpPacket(const ExtensionManager* extensions, size_t capacity)
     : extensions_(extensions ? *extensions : ExtensionManager()),
       buffer_(capacity) {
@@ -69,7 +67,11 @@ RtpPacket::RtpPacket(const ExtensionManager* extensions, size_t capacity)
   Clear();
 }
 
-RtpPacket::~RtpPacket() {}
+RtpPacket::RtpPacket(const RtpPacket&) = default;
+RtpPacket::RtpPacket(RtpPacket&&) = default;
+RtpPacket& RtpPacket::operator=(const RtpPacket&) = default;
+RtpPacket& RtpPacket::operator=(RtpPacket&&) = default;
+RtpPacket::~RtpPacket() = default;
 
 void RtpPacket::IdentifyExtensions(ExtensionManager extensions) {
   extensions_ = std::move(extensions);
@@ -188,8 +190,8 @@ void RtpPacket::ZeroMutableExtensions() {
       case RTPExtensionType::kRtpExtensionCsrcAudioLevel:
       case RTPExtensionType::kRtpExtensionAbsoluteCaptureTime:
       case RTPExtensionType::kRtpExtensionColorSpace:
-      case RTPExtensionType::kRtpExtensionGenericFrameDescriptor00:
-      case RTPExtensionType::kRtpExtensionGenericFrameDescriptor02:
+      case RTPExtensionType::kRtpExtensionGenericFrameDescriptor:
+      case RTPExtensionType::kRtpExtensionDependencyDescriptor:
       case RTPExtensionType::kRtpExtensionMid:
       case RTPExtensionType::kRtpExtensionNumberOfExtensions:
       case RTPExtensionType::kRtpExtensionPlayoutDelay:
@@ -396,10 +398,6 @@ uint8_t* RtpPacket::AllocatePayload(size_t size_bytes) {
 
 uint8_t* RtpPacket::SetPayloadSize(size_t size_bytes) {
   RTC_DCHECK_EQ(padding_size_, 0);
-  if (payload_offset_ + size_bytes > capacity()) {
-    RTC_LOG(LS_WARNING) << "Cannot set payload, not enough space in buffer.";
-    return nullptr;
-  }
   payload_size_ = size_bytes;
   buffer_.SetSize(payload_offset_ + payload_size_);
   return WriteAt(payload_offset_);

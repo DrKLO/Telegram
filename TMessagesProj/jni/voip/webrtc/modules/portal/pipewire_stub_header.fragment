@@ -1,0 +1,8 @@
+// The extra include header needed in the generated stub file for defining
+// various PipeWire types.
+
+extern "C" {
+
+#include <pipewire/pipewire.h>
+
+}

@@ -40,7 +40,7 @@ using absl::debugging_internal::AddressIsReadable;
 
 #if defined(__linux__) && defined(__i386__)
 // Count "push %reg" instructions in VDSO __kernel_vsyscall(),
-// preceeding "syscall" or "sysenter".
+// preceding "syscall" or "sysenter".
 // If __kernel_vsyscall uses frame pointer, answer 0.
 //
 // kMaxBytes tells how many instruction bytes of __kernel_vsyscall
@@ -112,6 +112,10 @@ static int CountPushInstructions(const unsigned char *const addr) {
 
 // Assume stack frames larger than 100,000 bytes are bogus.
 static const int kMaxFrameBytes = 100000;
+// Stack end to use when we don't know the actual stack end
+// (effectively just the end of address space).
+constexpr uintptr_t kUnknownStackEnd =
+    std::numeric_limits<size_t>::max() - sizeof(void *);
 
 // Returns the stack frame pointer from signal context, 0 if unknown.
 // vuc is a ucontext_t *.  We use void* to avoid the use
@@ -258,8 +262,26 @@ static void **NextStackFrame(void **old_fp, const void *uc,
     // With the stack growing downwards, older stack frame must be
     // at a greater address that the current one.
     if (new_fp_u <= old_fp_u) return nullptr;
-    if (new_fp_u - old_fp_u > kMaxFrameBytes) return nullptr;
 
+    // If we get a very large frame size, it may be an indication that we
+    // guessed frame pointers incorrectly and now risk a paging fault
+    // dereferencing a wrong frame pointer. Or maybe not because large frames
+    // are possible as well. The main stack is assumed to be readable,
+    // so we assume the large frame is legit if we know the real stack bounds
+    // and are within the stack.
+    if (new_fp_u - old_fp_u > kMaxFrameBytes) {
+      if (stack_high < kUnknownStackEnd &&
+          static_cast<size_t>(getpagesize()) < stack_low) {
+        // Stack bounds are known.
+        if (!(stack_low < new_fp_u && new_fp_u <= stack_high)) {
+          // new_fp_u is not within the known stack.
+          return nullptr;
+        }
+      } else {
+        // Stack bounds are unknown, prefer truncated stack to possible crash.
+        return nullptr;
+      }
+    }
     if (stack_low < old_fp_u && old_fp_u <= stack_high) {
       // Old BP was in the expected stack region...
       if (!(stack_low < new_fp_u && new_fp_u <= stack_high)) {
@@ -312,7 +334,7 @@ static int UnwindImpl(void **result, int *sizes, int max_depth, int skip_count,
 
   // Assume that the first page is not stack.
   size_t stack_low = static_cast<size_t>(getpagesize());
-  size_t stack_high = std::numeric_limits<size_t>::max() - sizeof(void *);
+  size_t stack_high = kUnknownStackEnd;
 
   while (fp && n < max_depth) {
     if (*(fp + 1) == reinterpret_cast<void *>(0)) {

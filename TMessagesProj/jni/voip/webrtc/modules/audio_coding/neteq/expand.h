@@ -11,7 +11,6 @@
 #ifndef MODULES_AUDIO_CODING_NETEQ_EXPAND_H_
 #define MODULES_AUDIO_CODING_NETEQ_EXPAND_H_
 
-
 #include <memory>
 
 #include "modules/audio_coding/neteq/audio_vector.h"

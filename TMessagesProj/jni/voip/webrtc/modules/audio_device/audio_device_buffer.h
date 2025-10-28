@@ -78,7 +78,11 @@ class AudioDeviceBuffer {
     int16_t max_play_level = 0;
   };
 
-  explicit AudioDeviceBuffer(TaskQueueFactory* task_queue_factory);
+  // If `create_detached` is true, the created buffer can be used on another
+  // thread compared to the one on which it was created. It's useful for
+  // testing.
+  explicit AudioDeviceBuffer(TaskQueueFactory* task_queue_factory,
+                             bool create_detached = false);
   virtual ~AudioDeviceBuffer();
 
   int32_t RegisterAudioCallback(AudioTransport* audio_callback);
@@ -102,9 +106,10 @@ class AudioDeviceBuffer {
   virtual int32_t SetRecordedBuffer(const void* audio_buffer,
                                     size_t samples_per_channel);
 
-  virtual int32_t SetRecordedBuffer(const void* audio_buffer,
-                                    size_t samples_per_channel,
-                                    int64_t capture_timestamp_ns);
+  virtual int32_t SetRecordedBuffer(
+      const void* audio_buffer,
+      size_t samples_per_channel,
+      absl::optional<int64_t> capture_timestamp_ns);
   virtual void SetVQEData(int play_delay_ms, int rec_delay_ms);
   virtual int32_t DeliverRecordedData();
   uint32_t NewMicLevel() const;
@@ -194,7 +199,11 @@ class AudioDeviceBuffer {
   int rec_delay_ms_;
 
   // Capture timestamp.
-  int64_t capture_timestamp_ns_;
+  absl::optional<int64_t> capture_timestamp_ns_;
+  // The last time the Timestamp Aligner was used to estimate clock offset
+  // between system clock and capture time from audio.
+  // This is used to prevent estimating the clock offset too often.
+  absl::optional<int64_t> align_offsync_estimation_time_;
 
   // Counts number of times LogStats() has been called.
   size_t num_stat_reports_ RTC_GUARDED_BY(task_queue_);

@@ -79,6 +79,10 @@ public class LayoutHelper {
         return layoutParams;
     }
 
+    public static FrameLayout.LayoutParams createFrameMatchParent() {
+        return createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT);
+    }
+
     public static FrameLayout.LayoutParams createFrame(int width, int height, int gravity) {
         return new FrameLayout.LayoutParams(getSize(width), getSize(height), gravity);
     }
@@ -175,6 +179,13 @@ public class LayoutHelper {
     }
 
     public static LinearLayout.LayoutParams createLinear(int width, int height, int gravity, int leftMargin, int topMargin, int rightMargin, int bottomMargin) {
+        LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(getSize(width), getSize(height));
+        layoutParams.setMargins(AndroidUtilities.dp(leftMargin), AndroidUtilities.dp(topMargin), AndroidUtilities.dp(rightMargin), AndroidUtilities.dp(bottomMargin));
+        layoutParams.gravity = gravity;
+        return layoutParams;
+    }
+
+    public static LinearLayout.LayoutParams createLinear(int width, int height, int gravity, float leftMargin, float topMargin, float rightMargin, float bottomMargin) {
         LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(getSize(width), getSize(height));
         layoutParams.setMargins(AndroidUtilities.dp(leftMargin), AndroidUtilities.dp(topMargin), AndroidUtilities.dp(rightMargin), AndroidUtilities.dp(bottomMargin));
         layoutParams.gravity = gravity;

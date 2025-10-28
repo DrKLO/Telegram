@@ -1,17 +1,22 @@
 #! /usr/bin/env perl
 # Copyright 2014-2016 The OpenSSL Project Authors. All Rights Reserved.
 #
-# Licensed under the OpenSSL license (the "License").  You may not use
-# this file except in compliance with the License.  You can obtain a copy
-# in the file LICENSE in the source distribution or at
-# https://www.openssl.org/source/license.html
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 #
 # ====================================================================
 # Written by Andy Polyakov <appro@openssl.org> for the OpenSSL
-# project. The module is, however, dual licensed under OpenSSL and
-# CRYPTOGAMS licenses depending on where you obtain it. For further
-# details see http://www.openssl.org/~appro/cryptogams/.
+# project.
 # ====================================================================
 #
 # This module implements support for ARMv8 AES instructions. The
@@ -47,14 +52,12 @@ $0 =~ m/(.*[\/\\])[^\/\\]+$/; $dir=$1;
 ( $xlate="${dir}../../../perlasm/arm-xlate.pl" and -f $xlate) or
 die "can't locate arm-xlate.pl";
 
-open OUT,"| \"$^X\" $xlate $flavour $output";
+open OUT,"| \"$^X\" \"$xlate\" $flavour \"$output\"";
 *STDOUT=*OUT;
 
 $prefix="aes_hw";
 
 $code=<<___;
-#include <openssl/arm_arch.h>
-
 #if __ARM_MAX_ARCH__>=7
 .text
 ___
@@ -96,15 +99,12 @@ ${prefix}_set_encrypt_key:
 .Lenc_key:
 ___
 $code.=<<___	if ($flavour =~ /64/);
+	// Armv8.3-A PAuth: even though x30 is pushed to stack it is not popped later.
+	AARCH64_VALID_CALL_TARGET
 	stp	x29,x30,[sp,#-16]!
 	add	x29,sp,#0
 ___
 $code.=<<___;
-	mov	$ptr,#-1
-	cmp	$inp,#0
-	b.eq	.Lenc_key_abort
-	cmp	$out,#0
-	b.eq	.Lenc_key_abort
 	mov	$ptr,#-2
 	cmp	$bits,#128
 	b.lt	.Lenc_key_abort
@@ -274,6 +274,7 @@ $code.=<<___;
 ${prefix}_set_decrypt_key:
 ___
 $code.=<<___	if ($flavour =~ /64/);
+	AARCH64_SIGN_LINK_REGISTER
 	stp	x29,x30,[sp,#-16]!
 	add	x29,sp,#0
 ___
@@ -317,6 +318,7 @@ $code.=<<___	if ($flavour !~ /64/);
 ___
 $code.=<<___	if ($flavour =~ /64/);
 	ldp	x29,x30,[sp],#16
+	AARCH64_VALIDATE_LINK_REGISTER
 	ret
 ___
 $code.=<<___;
@@ -336,6 +338,7 @@ $code.=<<___;
 .type	${prefix}_${dir}crypt,%function
 .align	5
 ${prefix}_${dir}crypt:
+	AARCH64_VALID_CALL_TARGET
 	ldr	$rounds,[$key,#240]
 	vld1.32	{$rndkey0},[$key],#16
 	vld1.8	{$inout},[$inp]
@@ -383,6 +386,8 @@ $code.=<<___;
 ${prefix}_cbc_encrypt:
 ___
 $code.=<<___	if ($flavour =~ /64/);
+	// Armv8.3-A PAuth: even though x30 is pushed to stack it is not popped later.
+	AARCH64_VALID_CALL_TARGET
 	stp	x29,x30,[sp,#-16]!
 	add	x29,sp,#0
 ___
@@ -712,6 +717,8 @@ $code.=<<___;
 ${prefix}_ctr32_encrypt_blocks:
 ___
 $code.=<<___	if ($flavour =~ /64/);
+	// Armv8.3-A PAuth: even though x30 is pushed to stack it is not popped later.
+	AARCH64_VALID_CALL_TARGET
 	stp		x29,x30,[sp,#-16]!
 	add		x29,sp,#0
 ___
@@ -739,20 +746,34 @@ $code.=<<___;
 	add		$key_,$key,#32
 	mov		$cnt,$rounds
 	cclr		$step,lo
+
+	// ARM Cortex-A57 and Cortex-A72 cores running in 32-bit mode are
+	// affected by silicon errata #1742098 [0] and #1655431 [1],
+	// respectively, where the second instruction of an aese/aesmc
+	// instruction pair may execute twice if an interrupt is taken right
+	// after the first instruction consumes an input register of which a
+	// single 32-bit lane has been updated the last time it was modified.
+	//
+	// This function uses a counter in one 32-bit lane. The vmov.32 lines
+	// could write to $dat1 and $dat2 directly, but that trips this bugs.
+	// We write to $ivec and copy to the final register as a workaround.
+	//
+	// [0] ARM-EPM-049219 v23 Cortex-A57 MPCore Software Developers Errata Notice
+	// [1] ARM-EPM-012079 v11.0 Cortex-A72 MPCore Software Developers Errata Notice
 #ifndef __ARMEB__
 	rev		$ctr, $ctr
 #endif
-	vorr		$dat1,$dat0,$dat0
 	add		$tctr1, $ctr, #1
-	vorr		$dat2,$dat0,$dat0
-	add		$ctr, $ctr, #2
 	vorr		$ivec,$dat0,$dat0
 	rev		$tctr1, $tctr1
-	vmov.32		${dat1}[3],$tctr1
+	vmov.32		${ivec}[3],$tctr1
+	add		$ctr, $ctr, #2
+	vorr		$dat1,$ivec,$ivec
 	b.ls		.Lctr32_tail
 	rev		$tctr2, $ctr
+	vmov.32		${ivec}[3],$tctr2
 	sub		$len,$len,#3		// bias
-	vmov.32		${dat2}[3],$tctr2
+	vorr		$dat2,$ivec,$ivec
 	b		.Loop3x_ctr32
 
 .align	4
@@ -779,11 +800,11 @@ $code.=<<___;
 	aese		$dat1,q8
 	aesmc		$tmp1,$dat1
 	 vld1.8		{$in0},[$inp],#16
-	 vorr		$dat0,$ivec,$ivec
+	 add		$tctr0,$ctr,#1
 	aese		$dat2,q8
 	aesmc		$dat2,$dat2
 	 vld1.8		{$in1},[$inp],#16
-	 vorr		$dat1,$ivec,$ivec
+	 rev		$tctr0,$tctr0
 	aese		$tmp0,q9
 	aesmc		$tmp0,$tmp0
 	aese		$tmp1,q9
@@ -792,8 +813,6 @@ $code.=<<___;
 	 mov		$key_,$key
 	aese		$dat2,q9
 	aesmc		$tmp2,$dat2
-	 vorr		$dat2,$ivec,$ivec
-	 add		$tctr0,$ctr,#1
 	aese		$tmp0,q12
 	aesmc		$tmp0,$tmp0
 	aese		$tmp1,q12
@@ -808,21 +827,26 @@ $code.=<<___;
 	aesmc		$tmp0,$tmp0
 	aese		$tmp1,q13
 	aesmc		$tmp1,$tmp1
+	 // Note the logic to update $dat0, $dat1, and $dat1 is written to work
+	 // around a bug in ARM Cortex-A57 and Cortex-A72 cores running in
+	 // 32-bit mode. See the comment above.
 	 veor		$in2,$in2,$rndlast
-	 rev		$tctr0,$tctr0
+	 vmov.32	${ivec}[3], $tctr0
 	aese		$tmp2,q13
 	aesmc		$tmp2,$tmp2
-	 vmov.32	${dat0}[3], $tctr0
+	 vorr		$dat0,$ivec,$ivec
 	 rev		$tctr1,$tctr1
 	aese		$tmp0,q14
 	aesmc		$tmp0,$tmp0
+	 vmov.32	${ivec}[3], $tctr1
+	 rev		$tctr2,$ctr
 	aese		$tmp1,q14
 	aesmc		$tmp1,$tmp1
-	 vmov.32	${dat1}[3], $tctr1
-	 rev		$tctr2,$ctr
+	 vorr		$dat1,$ivec,$ivec
+	 vmov.32	${ivec}[3], $tctr2
 	aese		$tmp2,q14
 	aesmc		$tmp2,$tmp2
-	 vmov.32	${dat2}[3], $tctr2
+	 vorr		$dat2,$ivec,$ivec
 	 subs		$len,$len,#3
 	aese		$tmp0,q15
 	aese		$tmp1,q15
@@ -949,6 +973,9 @@ if ($flavour =~ /64/) {			######## 64-bit code
 	s/\.[ui]?64//o and s/\.16b/\.2d/go;
 	s/\.[42]([sd])\[([0-3])\]/\.$1\[$2\]/o;
 
+	# Switch preprocessor checks to aarch64 versions.
+	s/__ARME([BL])__/__AARCH64E$1__/go;
+
 	print $_,"\n";
     }
 } else {				######## 32-bit code
@@ -1018,4 +1045,4 @@ if ($flavour =~ /64/) {			######## 64-bit code
     }
 }
 
-close STDOUT or die "error closing STDOUT";
+close STDOUT or die "error closing STDOUT: $!";

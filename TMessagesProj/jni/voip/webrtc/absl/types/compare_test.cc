@@ -26,45 +26,6 @@ namespace {
 // to an int, which can't be converted to the unspecified zero type.
 bool Identity(bool b) { return b; }
 
-TEST(Compare, WeakEquality) {
-  EXPECT_TRUE(Identity(weak_equality::equivalent == 0));
-  EXPECT_TRUE(Identity(0 == weak_equality::equivalent));
-  EXPECT_TRUE(Identity(weak_equality::nonequivalent != 0));
-  EXPECT_TRUE(Identity(0 != weak_equality::nonequivalent));
-  const weak_equality values[] = {weak_equality::equivalent,
-                                  weak_equality::nonequivalent};
-  for (const auto& lhs : values) {
-    for (const auto& rhs : values) {
-      const bool are_equal = &lhs == &rhs;
-      EXPECT_EQ(lhs == rhs, are_equal);
-      EXPECT_EQ(lhs != rhs, !are_equal);
-    }
-  }
-}
-
-TEST(Compare, StrongEquality) {
-  EXPECT_TRUE(Identity(strong_equality::equal == 0));
-  EXPECT_TRUE(Identity(0 == strong_equality::equal));
-  EXPECT_TRUE(Identity(strong_equality::nonequal != 0));
-  EXPECT_TRUE(Identity(0 != strong_equality::nonequal));
-  EXPECT_TRUE(Identity(strong_equality::equivalent == 0));
-  EXPECT_TRUE(Identity(0 == strong_equality::equivalent));
-  EXPECT_TRUE(Identity(strong_equality::nonequivalent != 0));
-  EXPECT_TRUE(Identity(0 != strong_equality::nonequivalent));
-  const strong_equality values[] = {strong_equality::equal,
-                                    strong_equality::nonequal};
-  for (const auto& lhs : values) {
-    for (const auto& rhs : values) {
-      const bool are_equal = &lhs == &rhs;
-      EXPECT_EQ(lhs == rhs, are_equal);
-      EXPECT_EQ(lhs != rhs, !are_equal);
-    }
-  }
-  EXPECT_TRUE(Identity(strong_equality::equivalent == strong_equality::equal));
-  EXPECT_TRUE(
-      Identity(strong_equality::nonequivalent == strong_equality::nonequal));
-}
-
 TEST(Compare, PartialOrdering) {
   EXPECT_TRUE(Identity(partial_ordering::less < 0));
   EXPECT_TRUE(Identity(0 > partial_ordering::less));
@@ -147,30 +108,6 @@ TEST(Compare, StrongOrdering) {
 
 TEST(Compare, Conversions) {
   EXPECT_TRUE(
-      Identity(implicit_cast<weak_equality>(strong_equality::equal) == 0));
-  EXPECT_TRUE(
-      Identity(implicit_cast<weak_equality>(strong_equality::nonequal) != 0));
-  EXPECT_TRUE(
-      Identity(implicit_cast<weak_equality>(strong_equality::equivalent) == 0));
-  EXPECT_TRUE(Identity(
-      implicit_cast<weak_equality>(strong_equality::nonequivalent) != 0));
-
-  EXPECT_TRUE(
-      Identity(implicit_cast<weak_equality>(partial_ordering::less) != 0));
-  EXPECT_TRUE(Identity(
-      implicit_cast<weak_equality>(partial_ordering::equivalent) == 0));
-  EXPECT_TRUE(
-      Identity(implicit_cast<weak_equality>(partial_ordering::greater) != 0));
-  EXPECT_TRUE(
-      Identity(implicit_cast<weak_equality>(partial_ordering::unordered) != 0));
-
-  EXPECT_TRUE(implicit_cast<weak_equality>(weak_ordering::less) != 0);
-  EXPECT_TRUE(
-      Identity(implicit_cast<weak_equality>(weak_ordering::equivalent) == 0));
-  EXPECT_TRUE(
-      Identity(implicit_cast<weak_equality>(weak_ordering::greater) != 0));
-
-  EXPECT_TRUE(
       Identity(implicit_cast<partial_ordering>(weak_ordering::less) != 0));
   EXPECT_TRUE(
       Identity(implicit_cast<partial_ordering>(weak_ordering::less) < 0));
@@ -184,24 +121,6 @@ TEST(Compare, Conversions) {
       Identity(implicit_cast<partial_ordering>(weak_ordering::greater) > 0));
   EXPECT_TRUE(
       Identity(implicit_cast<partial_ordering>(weak_ordering::greater) >= 0));
-
-  EXPECT_TRUE(
-      Identity(implicit_cast<weak_equality>(strong_ordering::less) != 0));
-  EXPECT_TRUE(
-      Identity(implicit_cast<weak_equality>(strong_ordering::equal) == 0));
-  EXPECT_TRUE(
-      Identity(implicit_cast<weak_equality>(strong_ordering::equivalent) == 0));
-  EXPECT_TRUE(
-      Identity(implicit_cast<weak_equality>(strong_ordering::greater) != 0));
-
-  EXPECT_TRUE(
-      Identity(implicit_cast<strong_equality>(strong_ordering::less) != 0));
-  EXPECT_TRUE(
-      Identity(implicit_cast<strong_equality>(strong_ordering::equal) == 0));
-  EXPECT_TRUE(Identity(
-      implicit_cast<strong_equality>(strong_ordering::equivalent) == 0));
-  EXPECT_TRUE(
-      Identity(implicit_cast<strong_equality>(strong_ordering::greater) != 0));
 
   EXPECT_TRUE(
       Identity(implicit_cast<partial_ordering>(strong_ordering::less) != 0));
@@ -360,14 +279,6 @@ TEST(DoThreeWayComparison, SanityTest) {
 
 #ifdef __cpp_inline_variables
 TEST(Compare, StaticAsserts) {
-  static_assert(weak_equality::equivalent == 0, "");
-  static_assert(weak_equality::nonequivalent != 0, "");
-
-  static_assert(strong_equality::equal == 0, "");
-  static_assert(strong_equality::nonequal != 0, "");
-  static_assert(strong_equality::equivalent == 0, "");
-  static_assert(strong_equality::nonequivalent != 0, "");
-
   static_assert(partial_ordering::less < 0, "");
   static_assert(partial_ordering::equivalent == 0, "");
   static_assert(partial_ordering::greater > 0, "");

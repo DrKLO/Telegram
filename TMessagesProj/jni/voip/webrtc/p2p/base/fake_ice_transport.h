@@ -124,7 +124,7 @@ class FakeIceTransport : public IceTransportInternal {
     RTC_DCHECK_RUN_ON(network_thread_);
     if (gathering_state_ != kIceGatheringComplete) {
       gathering_state_ = kIceGatheringComplete;
-      SignalGatheringState(this);
+      SendGatheringStateEvent();
     }
   }
 
@@ -232,7 +232,7 @@ class FakeIceTransport : public IceTransportInternal {
     RTC_DCHECK_RUN_ON(network_thread_);
     if (gathering_state_ == kIceGatheringNew) {
       gathering_state_ = kIceGatheringGathering;
-      SignalGatheringState(this);
+      SendGatheringStateEvent();
     }
   }
 

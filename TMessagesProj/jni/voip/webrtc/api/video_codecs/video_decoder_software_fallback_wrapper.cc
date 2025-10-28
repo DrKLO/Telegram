@@ -16,6 +16,7 @@
 #include <string>
 #include <utility>
 
+#include "api/field_trials_view.h"
 #include "api/video/encoded_image.h"
 #include "api/video_codecs/video_decoder.h"
 #include "modules/video_coding/include/video_error_codes.h"
@@ -35,13 +36,13 @@ class VideoDecoderSoftwareFallbackWrapper final : public VideoDecoder {
  public:
   VideoDecoderSoftwareFallbackWrapper(
       std::unique_ptr<VideoDecoder> sw_fallback_decoder,
-      std::unique_ptr<VideoDecoder> hw_decoder);
+      std::unique_ptr<VideoDecoder> hw_decoder,
+      bool force_sw_decoder_fallback);
   ~VideoDecoderSoftwareFallbackWrapper() override;
 
   bool Configure(const Settings& settings) override;
 
   int32_t Decode(const EncodedImage& input_image,
-                 bool missing_frames,
                  int64_t render_time_ms) override;
 
   int32_t RegisterDecodeCompleteCallback(
@@ -68,6 +69,7 @@ class VideoDecoderSoftwareFallbackWrapper final : public VideoDecoder {
   } decoder_type_;
   std::unique_ptr<VideoDecoder> hw_decoder_;
 
+  const bool force_sw_decoder_fallback_;
   Settings decoder_settings_;
   const std::unique_ptr<VideoDecoder> fallback_decoder_;
   const std::string fallback_implementation_name_;
@@ -78,9 +80,11 @@ class VideoDecoderSoftwareFallbackWrapper final : public VideoDecoder {
 
 VideoDecoderSoftwareFallbackWrapper::VideoDecoderSoftwareFallbackWrapper(
     std::unique_ptr<VideoDecoder> sw_fallback_decoder,
-    std::unique_ptr<VideoDecoder> hw_decoder)
+    std::unique_ptr<VideoDecoder> hw_decoder,
+    bool force_sw_decoder_fallback)
     : decoder_type_(DecoderType::kNone),
       hw_decoder_(std::move(hw_decoder)),
+      force_sw_decoder_fallback_(force_sw_decoder_fallback),
       fallback_decoder_(std::move(sw_fallback_decoder)),
       fallback_implementation_name_(
           fallback_decoder_->GetDecoderInfo().implementation_name +
@@ -95,7 +99,7 @@ VideoDecoderSoftwareFallbackWrapper::~VideoDecoderSoftwareFallbackWrapper() =
 bool VideoDecoderSoftwareFallbackWrapper::Configure(const Settings& settings) {
   decoder_settings_ = settings;
 
-  if (webrtc::field_trial::IsEnabled("WebRTC-Video-ForcedSwDecoderFallback")) {
+  if (force_sw_decoder_fallback_) {
     RTC_LOG(LS_INFO) << "Forced software decoder fallback enabled.";
     RTC_DCHECK(decoder_type_ == DecoderType::kNone);
     return InitFallbackDecoder();
@@ -167,14 +171,12 @@ void VideoDecoderSoftwareFallbackWrapper::UpdateFallbackDecoderHistograms() {
       RTC_HISTOGRAM_COUNTS_100000(kFallbackHistogramsUmaPrefix + "H264",
                                   hw_decoded_frames_since_last_fallback_);
       break;
-#ifndef DISABLE_H265
-    case kVideoCodecH265:
-      RTC_HISTOGRAM_COUNTS_100000(kFallbackHistogramsUmaPrefix + "H265",
-                                  hw_decoded_frames_since_last_fallback_);
-      break;
-#endif
     case kVideoCodecMultiplex:
       RTC_HISTOGRAM_COUNTS_100000(kFallbackHistogramsUmaPrefix + "Multiplex",
+                                  hw_decoded_frames_since_last_fallback_);
+      break;
+    case kVideoCodecH265:
+      RTC_HISTOGRAM_COUNTS_100000(kFallbackHistogramsUmaPrefix + "H265",
                                   hw_decoded_frames_since_last_fallback_);
       break;
   }
@@ -182,7 +184,6 @@ void VideoDecoderSoftwareFallbackWrapper::UpdateFallbackDecoderHistograms() {
 
 int32_t VideoDecoderSoftwareFallbackWrapper::Decode(
     const EncodedImage& input_image,
-    bool missing_frames,
     int64_t render_time_ms) {
   TRACE_EVENT0("webrtc", "VideoDecoderSoftwareFallbackWrapper::Decode");
   switch (decoder_type_) {
@@ -190,7 +191,7 @@ int32_t VideoDecoderSoftwareFallbackWrapper::Decode(
       return WEBRTC_VIDEO_CODEC_UNINITIALIZED;
     case DecoderType::kHardware: {
       int32_t ret = WEBRTC_VIDEO_CODEC_FALLBACK_SOFTWARE;
-      ret = hw_decoder_->Decode(input_image, missing_frames, render_time_ms);
+      ret = hw_decoder_->Decode(input_image, render_time_ms);
       if (ret != WEBRTC_VIDEO_CODEC_FALLBACK_SOFTWARE) {
         if (ret != WEBRTC_VIDEO_CODEC_ERROR) {
           ++hw_decoded_frames_since_last_fallback_;
@@ -218,8 +219,7 @@ int32_t VideoDecoderSoftwareFallbackWrapper::Decode(
       [[fallthrough]];
     }
     case DecoderType::kFallback:
-      return fallback_decoder_->Decode(input_image, missing_frames,
-                                       render_time_ms);
+      return fallback_decoder_->Decode(input_image, render_time_ms);
     default:
       RTC_DCHECK_NOTREACHED();
       return WEBRTC_VIDEO_CODEC_ERROR;
@@ -281,10 +281,20 @@ VideoDecoder& VideoDecoderSoftwareFallbackWrapper::active_decoder() const {
 }  // namespace
 
 std::unique_ptr<VideoDecoder> CreateVideoDecoderSoftwareFallbackWrapper(
+    const Environment& env,
     std::unique_ptr<VideoDecoder> sw_fallback_decoder,
     std::unique_ptr<VideoDecoder> hw_decoder) {
   return std::make_unique<VideoDecoderSoftwareFallbackWrapper>(
-      std::move(sw_fallback_decoder), std::move(hw_decoder));
+      std::move(sw_fallback_decoder), std::move(hw_decoder),
+      env.field_trials().IsEnabled("WebRTC-Video-ForcedSwDecoderFallback"));
+}
+
+std::unique_ptr<VideoDecoder> CreateVideoDecoderSoftwareFallbackWrapper(
+    std::unique_ptr<VideoDecoder> sw_fallback_decoder,
+    std::unique_ptr<VideoDecoder> hw_decoder) {
+  return std::make_unique<VideoDecoderSoftwareFallbackWrapper>(
+      std::move(sw_fallback_decoder), std::move(hw_decoder),
+      webrtc::field_trial::IsEnabled("WebRTC-Video-ForcedSwDecoderFallback"));
 }
 
 }  // namespace webrtc

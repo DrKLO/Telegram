@@ -8,8 +8,8 @@ third_party {
     type: GIT
     value: "https://github.com/google/wycheproof"
   }
-  version: "f89f4c53a8845fcefcdb9f14ee9191dbe167e3e3"
-  last_upgrade_date { year: 2018 month: 8 day: 10 }
+  version: "eb35c25e05d17dc05fdf42f40ff4cbb3a959c096"
+  last_upgrade_date { year: 2019 month: 12 day: 13 }
 
   local_modifications:
     "Only the testvectors directory checked in. txt files "

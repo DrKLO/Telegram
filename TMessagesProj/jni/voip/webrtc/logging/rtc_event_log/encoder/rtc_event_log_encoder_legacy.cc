@@ -53,17 +53,14 @@
 #include "modules/rtp_rtcp/source/rtcp_packet/sender_report.h"
 #include "modules/rtp_rtcp/source/rtp_packet.h"
 #include "rtc_base/checks.h"
-#include "rtc_base/ignore_wundef.h"
 #include "rtc_base/logging.h"
 
 // *.pb.h files are generated at build-time by the protobuf compiler.
-RTC_PUSH_IGNORING_WUNDEF()
 #ifdef WEBRTC_ANDROID_PLATFORM_BUILD
 #include "external/webrtc/webrtc/logging/rtc_event_log/rtc_event_log.pb.h"
 #else
 #include "logging/rtc_event_log/rtc_event_log.pb.h"
 #endif
-RTC_POP_IGNORING_WUNDEF()
 
 namespace webrtc {
 
@@ -134,21 +131,15 @@ ConvertIceCandidatePairConfigType(IceCandidatePairConfigType type) {
 rtclog::IceCandidatePairConfig::IceCandidateType ConvertIceCandidateType(
     IceCandidateType type) {
   switch (type) {
-    case IceCandidateType::kUnknown:
-      return rtclog::IceCandidatePairConfig::UNKNOWN_CANDIDATE_TYPE;
-    case IceCandidateType::kLocal:
+    case IceCandidateType::kHost:
       return rtclog::IceCandidatePairConfig::LOCAL;
-    case IceCandidateType::kStun:
+    case IceCandidateType::kSrflx:
       return rtclog::IceCandidatePairConfig::STUN;
     case IceCandidateType::kPrflx:
       return rtclog::IceCandidatePairConfig::PRFLX;
     case IceCandidateType::kRelay:
       return rtclog::IceCandidatePairConfig::RELAY;
-    case IceCandidateType::kNumValues:
-      RTC_DCHECK_NOTREACHED();
   }
-  RTC_DCHECK_NOTREACHED();
-  return rtclog::IceCandidatePairConfig::UNKNOWN_CANDIDATE_TYPE;
 }
 
 rtclog::IceCandidatePairConfig::Protocol ConvertIceCandidatePairProtocol(
@@ -205,6 +196,7 @@ rtclog::IceCandidatePairConfig::NetworkType ConvertIceCandidateNetworkType(
       return rtclog::IceCandidatePairConfig::CELLULAR;
     case IceCandidateNetworkType::kNumValues:
       RTC_DCHECK_NOTREACHED();
+      break;
   }
   RTC_DCHECK_NOTREACHED();
   return rtclog::IceCandidatePairConfig::UNKNOWN_NETWORK_TYPE;
@@ -374,11 +366,16 @@ std::string RtcEventLogEncoderLegacy::Encode(const RtcEvent& event) {
       // and stopping the log, and only as part of version 3 of the format.
       RTC_DCHECK_NOTREACHED();
       break;
+    case RtcEvent::Type::FakeEvent:
+      // Fake event used for unit test.
+      RTC_DCHECK_NOTREACHED();
+      break;
     case RtcEvent::Type::RouteChangeEvent:
     case RtcEvent::Type::GenericPacketReceived:
     case RtcEvent::Type::GenericPacketSent:
     case RtcEvent::Type::GenericAckReceived:
     case RtcEvent::Type::FrameDecoded:
+    case RtcEvent::Type::NetEqSetMinimumDelay:
       // These are unsupported in the old format, but shouldn't crash.
       return "";
   }

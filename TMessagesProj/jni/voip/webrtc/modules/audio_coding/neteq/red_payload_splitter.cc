@@ -39,7 +39,7 @@ bool RedPayloadSplitter::SplitRed(PacketList* packet_list) {
   bool ret = true;
   PacketList::iterator it = packet_list->begin();
   while (it != packet_list->end()) {
-    const Packet& red_packet = *it;
+    Packet& red_packet = *it;
     RTC_DCHECK(!red_packet.payload.empty());
     const uint8_t* payload_ptr = red_packet.payload.data();
     size_t payload_length = red_packet.payload.size();
@@ -132,13 +132,6 @@ bool RedPayloadSplitter::SplitRed(PacketList* packet_list) {
         new_packet.priority.red_level =
             rtc::dchecked_cast<int>((new_headers.size() - 1) - i);
         new_packet.payload.SetData(payload_ptr, payload_length);
-        new_packet.packet_info = RtpPacketInfo(
-            /*ssrc=*/red_packet.packet_info.ssrc(),
-            /*csrcs=*/std::vector<uint32_t>(),
-            /*rtp_timestamp=*/new_packet.timestamp,
-            /*receive_time=*/red_packet.packet_info.receive_time());
-        new_packet.packet_info.set_audio_level(
-            red_packet.packet_info.audio_level());
         new_packets.push_front(std::move(new_packet));
         payload_ptr += payload_length;
       }

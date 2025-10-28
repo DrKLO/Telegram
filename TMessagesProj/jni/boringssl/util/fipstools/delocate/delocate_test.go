@@ -1,23 +1,23 @@
-// Copyright (c) 2017, Google Inc.
+// Copyright 2017 The BoringSSL Authors
 //
-// Permission to use, copy, modify, and/or distribute this software for any
-// purpose with or without fee is hereby granted, provided that the above
-// copyright notice and this permission notice appear in all copies.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-// WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
-// MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY
-// SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-// WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION
-// OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
-// CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE. */
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package main
 
 import (
 	"bytes"
 	"flag"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"testing"
 )
@@ -39,17 +39,14 @@ func (test *delocateTest) Path(file string) string {
 
 var delocateTests = []delocateTest{
 	{"generic-FileDirectives", []string{"in.s"}, "out.s"},
-	{"ppc64le-GlobalEntry", []string{"in.s"}, "out.s"},
-	{"ppc64le-LoadToR0", []string{"in.s"}, "out.s"},
-	{"ppc64le-Sample2", []string{"in.s"}, "out.s"},
-	{"ppc64le-Sample", []string{"in.s"}, "out.s"},
-	{"ppc64le-TOCWithOffset", []string{"in.s"}, "out.s"},
 	{"x86_64-Basic", []string{"in.s"}, "out.s"},
 	{"x86_64-BSS", []string{"in.s"}, "out.s"},
 	{"x86_64-GOTRewrite", []string{"in.s"}, "out.s"},
+	{"x86_64-LargeMemory", []string{"in.s"}, "out.s"},
 	{"x86_64-LabelRewrite", []string{"in1.s", "in2.s"}, "out.s"},
 	{"x86_64-Sections", []string{"in.s"}, "out.s"},
 	{"x86_64-ThreeArg", []string{"in.s"}, "out.s"},
+	{"aarch64-Basic", []string{"in.s"}, "out.s"},
 }
 
 func TestDelocate(t *testing.T) {
@@ -63,7 +60,7 @@ func TestDelocate(t *testing.T) {
 				})
 			}
 
-			if err := parseInputs(inputs); err != nil {
+			if err := parseInputs(inputs, nil); err != nil {
 				t.Fatalf("parseInputs failed: %s", err)
 			}
 
@@ -73,9 +70,9 @@ func TestDelocate(t *testing.T) {
 			}
 
 			if *update {
-				ioutil.WriteFile(test.Path(test.out), buf.Bytes(), 0666)
+				os.WriteFile(test.Path(test.out), buf.Bytes(), 0666)
 			} else {
-				expected, err := ioutil.ReadFile(test.Path(test.out))
+				expected, err := os.ReadFile(test.Path(test.out))
 				if err != nil {
 					t.Fatalf("could not read %q: %s", test.Path(test.out), err)
 				}

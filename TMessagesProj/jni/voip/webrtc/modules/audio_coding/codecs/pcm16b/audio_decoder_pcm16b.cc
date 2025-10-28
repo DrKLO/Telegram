@@ -67,4 +67,9 @@ int AudioDecoderPcm16B::PacketDuration(const uint8_t* encoded,
   return static_cast<int>(encoded_len / (2 * Channels()));
 }
 
+int AudioDecoderPcm16B::PacketDurationRedundant(const uint8_t* encoded,
+                                                size_t encoded_len) const {
+  return PacketDuration(encoded, encoded_len);
+}
+
 }  // namespace webrtc

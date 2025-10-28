@@ -424,7 +424,6 @@ public class CountrySelectActivity extends BaseFragment {
         private Timer searchTimer;
         private ArrayList<Country> searchResult;
         private List<Country> countryList = new ArrayList<>();
-        private Map<Country, List<String>> countrySearchMap = new HashMap<>();
 
         public CountrySearchAdapter(Context context, HashMap<String, ArrayList<Country>> countries) {
             mContext = context;
@@ -432,11 +431,6 @@ public class CountrySelectActivity extends BaseFragment {
             for (List<Country> list : countries.values()) {
                 for (Country country : list) {
                     countryList.add(country);
-                    List<String> keys = new ArrayList<>(Arrays.asList(country.name.split(" ")));
-                    if (country.defaultName != null) {
-                        keys.addAll(Arrays.asList(country.defaultName.split(" ")));
-                    }
-                    countrySearchMap.put(country, keys);
                 }
             }
         }
@@ -470,19 +464,28 @@ public class CountrySelectActivity extends BaseFragment {
 
         private void processSearch(final String query) {
             Utilities.searchQueue.postRunnable(() -> {
-
-                String q = query.trim().toLowerCase();
+                final String q = query.trim().toLowerCase();
                 if (q.length() == 0) {
                     updateSearchResults(new ArrayList<>());
                     return;
                 }
-                ArrayList<Country> resultArray = new ArrayList<>();
+                final String tq = AndroidUtilities.translitSafe(q);
+                final ArrayList<Country> resultArray = new ArrayList<>();
                 for (Country country : countryList) {
-                    for (String key : countrySearchMap.get(country)) {
-                        if (key.toLowerCase().startsWith(q)) {
-                            resultArray.add(country);
-                            break;
-                        }
+                    final String a = (country.name == null ? "" : country.name).toLowerCase();
+                    final String at = AndroidUtilities.translitSafe(country.name).toLowerCase();
+                    final String b = (country.defaultName == null ? "" : country.defaultName).toLowerCase();
+                    final String bt = AndroidUtilities.translitSafe(country.defaultName).toLowerCase();
+                    final String code = (country.code == null ? "" : country.code);
+                    final String plusCode = TextUtils.isEmpty(code) ? "" : "+" + code;
+                    if (
+                        a.startsWith(q) || a.contains(" " + q) ||
+                        at.startsWith(tq) || at.contains(" " + tq) ||
+                        b.startsWith(q) || b.contains(" " + q) ||
+                        bt.startsWith(tq) || bt.contains(" " + tq) ||
+                        code.startsWith(q) || plusCode.startsWith(q)
+                    ) {
+                        resultArray.add(country);
                     }
                 }
                 updateSearchResults(resultArray);

@@ -71,13 +71,12 @@ int64_t UnscaledCycleClock::Now() {
 #else
   int32_t tbu, tbl, tmp;
   asm volatile(
-      "0:\n"
       "mftbu %[hi32]\n"
       "mftb %[lo32]\n"
       "mftbu %[tmp]\n"
       "cmpw %[tmp],%[hi32]\n"
-      "bne 0b\n"
-      : [ hi32 ] "=r"(tbu), [ lo32 ] "=r"(tbl), [ tmp ] "=r"(tmp));
+      "bne $-16\n"  // Retry on failure.
+      : [hi32] "=r"(tbu), [lo32] "=r"(tbl), [tmp] "=r"(tmp));
   return (static_cast<int64_t>(tbu) << 32) | tbl;
 #endif
 #endif
@@ -106,32 +105,10 @@ double UnscaledCycleClock::Frequency() {
 
 #elif defined(__aarch64__)
 
-// System timer of ARMv8 runs at a different frequency than the CPU's.
-// The frequency is fixed, typically in the range 1-50MHz.  It can be
-// read at CNTFRQ special register.  We assume the OS has set up
-// the virtual timer properly.
-int64_t UnscaledCycleClock::Now() {
-  int64_t virtual_timer_value;
-  asm volatile("mrs %0, cntvct_el0" : "=r"(virtual_timer_value));
-  return virtual_timer_value;
-}
-
 double UnscaledCycleClock::Frequency() {
   uint64_t aarch64_timer_frequency;
   asm volatile("mrs %0, cntfrq_el0" : "=r"(aarch64_timer_frequency));
   return aarch64_timer_frequency;
-}
-
-#elif defined(__riscv)
-
-int64_t UnscaledCycleClock::Now() {
-  int64_t virtual_timer_value;
-  asm volatile("rdcycle %0" : "=r"(virtual_timer_value));
-  return virtual_timer_value;
-}
-
-double UnscaledCycleClock::Frequency() {
-  return base_internal::NominalCPUFrequency();
 }
 
 #elif defined(_M_IX86) || defined(_M_X64)
