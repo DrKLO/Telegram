@@ -9,11 +9,11 @@
 package org.telegram.ui.Adapters;
 
 import android.content.Context;
+import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 
 import androidx.annotation.Keep;
-import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -28,7 +28,6 @@ import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.DrawerLayoutContainer;
 import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Adapters.diffUtils.DrawerLayoutAdapterDiffCallback;
 import org.telegram.ui.Cells.DividerCell;
 import org.telegram.ui.Cells.DrawerActionCell;
 import org.telegram.ui.Cells.DrawerAddCell;
@@ -50,6 +49,7 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter {
     private boolean accountsShown;
     public DrawerProfileCell profileCell;
     private SideMenultItemAnimator itemAnimator;
+    private RecyclerView attachedRecyclerView;
 
     public DrawerLayoutAdapter(Context context, SideMenultItemAnimator animator, DrawerLayoutContainer drawerLayoutContainer) {
         mContext = context;
@@ -58,6 +58,7 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter {
         accountsShown = UserConfig.getActivatedAccountsCount() > 1 && MessagesController.getGlobalMainSettings().getBoolean("accountsShown", true);
         Theme.createCommonDialogResources(context);
         resetItems();
+        lastItems = (ArrayList<Item>) items.clone();
     }
 
     private int getAccountRowsCount() {
@@ -115,11 +116,31 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter {
      */
     @Override
     public void notifyDataSetChanged() {
+        ArrayList<Item> oldItems = (ArrayList<Item>) lastItems.clone();
         resetItems();
-        DrawerLayoutAdapterDiffCallback diffCallback = new DrawerLayoutAdapterDiffCallback(lastItems, items);
+        DrawerLayoutAdapterDiffCallback diffCallback = new DrawerLayoutAdapterDiffCallback(oldItems, items);
         DiffUtil.DiffResult diff = DiffUtil.calculateDiff(diffCallback);
-        diff.dispatchUpdatesTo(this);
         lastItems = (ArrayList<Item>) items.clone();
+
+        if (profileCell != null) {
+            profileCell.setUser(MessagesController.getInstance(UserConfig.selectedAccount).getUser(UserConfig.getInstance(UserConfig.selectedAccount).getClientUserId()), accountsShown);
+        }
+
+        if (attachedRecyclerView != null) {
+            attachedRecyclerView.post(() -> diff.dispatchUpdatesTo(DrawerLayoutAdapter.this));
+        }
+    }
+
+    @Override
+    public void onAttachedToRecyclerView(@NotNull RecyclerView recyclerView) {
+        super.onAttachedToRecyclerView(recyclerView);
+        attachedRecyclerView = recyclerView;
+    }
+
+    @Override
+    public void onDetachedFromRecyclerView(@NotNull RecyclerView recyclerView) {
+        super.onDetachedFromRecyclerView(recyclerView);
+        attachedRecyclerView = null;
     }
 
     @Override
@@ -130,6 +151,11 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter {
 
     @Override
     public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+        // Capture RecyclerView reference if not already done
+        if (attachedRecyclerView == null && parent instanceof RecyclerView) {
+            attachedRecyclerView = (RecyclerView) parent;
+        }
+
         View view;
         switch (viewType) {
             case 0:
@@ -177,13 +203,18 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter {
                 if (accountsShown) {
                     position -= getAccountRowsCount();
                 }
-                items.get(position).bind(drawerActionCell);
+                if (position >= 0 && position < items.size()) {
+                    items.get(position).bind(drawerActionCell);
+                }
                 drawerActionCell.setPadding(0, 0, 0, 0);
                 break;
             }
             case 4: {
                 DrawerUserCell drawerUserCell = (DrawerUserCell) holder.itemView;
-                drawerUserCell.setAccount(accountNumbers.get(position - 2));
+                int accountIndex = position - 2;
+                if (accountIndex >= 0 && accountIndex < accountNumbers.size()) {
+                    drawerUserCell.setAccount(accountNumbers.get(accountIndex));
+                }
                 break;
             }
         }
@@ -410,6 +441,59 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter {
         Item item = items.get(position);
         return item != null ? item.bot : null;
     }
+
+    // =============== Встроенный DiffUtil.Callback (как в вашем файле) ===============
+
+    /**
+     * A DiffUtil.Callback implementation for calculating the differences between two lists of
+     * {@link DrawerLayoutAdapter.Item} objects, specifically for updating the DrawerLayoutAdapter
+     * efficiently.
+     */
+    public static class DrawerLayoutAdapterDiffCallback extends DiffUtil.Callback {
+        private final ArrayList<DrawerLayoutAdapter.Item> oldItems;
+        private final ArrayList<DrawerLayoutAdapter.Item> newItems;
+
+        public DrawerLayoutAdapterDiffCallback(ArrayList<DrawerLayoutAdapter.Item> _oldItems, ArrayList<DrawerLayoutAdapter.Item> _newItems) {
+            oldItems = _oldItems;
+            newItems = _newItems;
+        }
+
+        @Override
+        public int getOldListSize() {
+            return oldItems.size();
+        }
+
+        @Override
+        public int getNewListSize() {
+            return newItems.size();
+        }
+
+        @Override
+        public boolean areItemsTheSame(int oldItemPosition, int newItemPosition) {
+            DrawerLayoutAdapter.Item oldItem = oldItems.get(oldItemPosition);
+            DrawerLayoutAdapter.Item newItem = newItems.get(newItemPosition);
+
+            if (oldItem == null || newItem == null) {
+                return false;
+            }
+
+            return oldItem.id == newItem.id;
+        }
+
+        @Override
+        public boolean areContentsTheSame(int oldItemPosition, int newItemPosition) {
+            DrawerLayoutAdapter.Item oldItem = oldItems.get(oldItemPosition);
+            DrawerLayoutAdapter.Item newItem = newItems.get(newItemPosition);
+
+            if (oldItem == null || newItem == null) {
+                return false;
+            }
+
+            return oldItem.areContentsTheSame(newItem);
+        }
+    }
+
+    // =============== Item class (без изменений) ===============
 
     public static class Item {
         public int icon;
