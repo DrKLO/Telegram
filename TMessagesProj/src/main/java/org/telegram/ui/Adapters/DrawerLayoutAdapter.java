@@ -9,7 +9,6 @@
 package org.telegram.ui.Adapters;
 
 import android.content.Context;
-import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 
@@ -39,17 +38,26 @@ import org.telegram.ui.Components.SideMenultItemAnimator;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 
 public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter {
-    private ArrayList<Item> lastItems = new ArrayList<>();
+    private static final int VIEW_TYPE_PROFILE = 0;
+    private static final int VIEW_TYPE_EMPTY = 1;
+    private static final int VIEW_TYPE_DIVIDER = 2;
+    private static final int VIEW_TYPE_ACTION = 3;
+    private static final int VIEW_TYPE_ACCOUNT = 4;
+    private static final int VIEW_TYPE_ADD_ACCOUNT = 5;
+
     private Context mContext;
     private DrawerLayoutContainer mDrawerLayoutContainer;
-    private ArrayList<Item> items = new ArrayList<>(11);
-    private ArrayList<Integer> accountNumbers = new ArrayList<>();
     private boolean accountsShown;
     public DrawerProfileCell profileCell;
     private SideMenultItemAnimator itemAnimator;
     private RecyclerView attachedRecyclerView;
+
+    // SINGLE source of data
+    private List<AbstractItem> items = new ArrayList<>();
+    private List<AbstractItem> lastItems = new ArrayList<>();
 
     public DrawerLayoutAdapter(Context context, SideMenultItemAnimator animator, DrawerLayoutContainer drawerLayoutContainer) {
         mContext = context;
@@ -58,24 +66,12 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter {
         accountsShown = UserConfig.getActivatedAccountsCount() > 1 && MessagesController.getGlobalMainSettings().getBoolean("accountsShown", true);
         Theme.createCommonDialogResources(context);
         resetItems();
-        lastItems = (ArrayList<Item>) items.clone();
-    }
-
-    private int getAccountRowsCount() {
-        int count = accountNumbers.size() + 1;
-        if (accountNumbers.size() < UserConfig.MAX_ACCOUNT_COUNT) {
-            count++;
-        }
-        return count;
+        lastItems = new ArrayList<>(items);
     }
 
     @Override
     public int getItemCount() {
-        int count = items.size() + 2;
-        if (accountsShown) {
-            count += getAccountRowsCount();
-        }
-        return count;
+        return items.size();
     }
 
     public void setAccountsShown(boolean value, boolean animated) {
@@ -83,20 +79,14 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter {
             return;
         }
         accountsShown = value;
-        if (profileCell != null) {
-            profileCell.setAccountsShown(accountsShown, animated);
-        }
         MessagesController.getGlobalMainSettings().edit().putBoolean("accountsShown", accountsShown).commit();
+        if (profileCell != null) {
+            profileCell.setAccountsShown(accountsShown, false); // Animation is handled by DiffUtil
+        }
         if (animated) {
             itemAnimator.setShouldClipChildren(false);
-            if (accountsShown) {
-                notifyItemRangeInserted(2, getAccountRowsCount());
-            } else {
-                notifyItemRangeRemoved(2, getAccountRowsCount());
-            }
-        } else {
-            notifyDataSetChanged();
         }
+        redrawAdapterData(); // Now safe and efficient
     }
 
     public boolean isAccountsShown() {
@@ -110,17 +100,24 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter {
     }
 
     /**
+     * @deprecated Use {@link #redrawAdapterData()} instead for better performance with DiffUtil
+     */
+    @Deprecated(since = "12.1.1", forRemoval = true)
+    @Override
+    public void notifyDataSetChanged() {
+        redrawAdapterData();
+    }
+
+    /**
      * Updates the RecyclerView's data set and efficiently refreshes the view using DiffUtil to calculate the minimal set of changes
      * based on the differences between the previous and current data. After the update, the current data set is saved as the previous data set
      * for the next DiffUtil comparison.
      */
-    @Override
-    public void notifyDataSetChanged() {
-        ArrayList<Item> oldItems = (ArrayList<Item>) lastItems.clone();
+    public void redrawAdapterData() {
         resetItems();
-        DrawerLayoutAdapterDiffCallback diffCallback = new DrawerLayoutAdapterDiffCallback(oldItems, items);
+        FullDrawerDiffCallback diffCallback = new FullDrawerDiffCallback(lastItems, items);
         DiffUtil.DiffResult diff = DiffUtil.calculateDiff(diffCallback);
-        lastItems = (ArrayList<Item>) items.clone();
+        lastItems = new ArrayList<>(items);
 
         if (profileCell != null) {
             profileCell.setUser(MessagesController.getInstance(UserConfig.selectedAccount).getUser(UserConfig.getInstance(UserConfig.selectedAccount).getClientUserId()), accountsShown);
@@ -145,8 +142,12 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter {
 
     @Override
     public boolean isEnabled(RecyclerView.ViewHolder holder) {
-        int itemType = holder.getItemViewType();
-        return itemType == 3 || itemType == 4 || itemType == 5 || itemType == 6;
+        int position = holder.getAdapterPosition();
+        if (position == RecyclerView.NO_POSITION) {
+            return false;
+        }
+        int viewType = getItemViewType(position);
+        return viewType == VIEW_TYPE_ACTION || viewType == VIEW_TYPE_ACCOUNT || viewType == VIEW_TYPE_ADD_ACCOUNT;
     }
 
     @Override
@@ -158,7 +159,7 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter {
 
         View view;
         switch (viewType) {
-            case 0:
+            case VIEW_TYPE_PROFILE:
                 view = profileCell = new DrawerProfileCell(mContext, mDrawerLayoutContainer) {
                     @Override
                     protected void onPremiumClick() {
@@ -168,19 +169,19 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter {
                     }
                 };
                 break;
-            case 2:
+            case VIEW_TYPE_DIVIDER:
                 view = new DividerCell(mContext);
                 break;
-            case 3:
+            case VIEW_TYPE_ACTION:
                 view = new DrawerActionCell(mContext);
                 break;
-            case 4:
+            case VIEW_TYPE_ACCOUNT:
                 view = new DrawerUserCell(mContext);
                 break;
-            case 5:
+            case VIEW_TYPE_ADD_ACCOUNT:
                 view = new DrawerAddCell(mContext);
                 break;
-            case 1:
+            case VIEW_TYPE_EMPTY:
             default:
                 view = new EmptyCell(mContext, AndroidUtilities.dp(8));
                 break;
@@ -191,103 +192,84 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter {
 
     @Override
     public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
-        switch (holder.getItemViewType()) {
-            case 0: {
-                DrawerProfileCell profileCell = (DrawerProfileCell) holder.itemView;
-                profileCell.setUser(MessagesController.getInstance(UserConfig.selectedAccount).getUser(UserConfig.getInstance(UserConfig.selectedAccount).getClientUserId()), accountsShown);
-                break;
-            }
-            case 3: {
-                DrawerActionCell drawerActionCell = (DrawerActionCell) holder.itemView;
-                position -= 2;
-                if (accountsShown) {
-                    position -= getAccountRowsCount();
-                }
-                if (position >= 0 && position < items.size()) {
-                    items.get(position).bind(drawerActionCell);
-                }
-                drawerActionCell.setPadding(0, 0, 0, 0);
-                break;
-            }
-            case 4: {
-                DrawerUserCell drawerUserCell = (DrawerUserCell) holder.itemView;
-                int accountIndex = position - 2;
-                if (accountIndex >= 0 && accountIndex < accountNumbers.size()) {
-                    drawerUserCell.setAccount(accountNumbers.get(accountIndex));
-                }
-                break;
-            }
+        AbstractItem item = items.get(position);
+        if (item instanceof ProfileItem) {
+            DrawerProfileCell cell = (DrawerProfileCell) holder.itemView;
+            cell.setUser(MessagesController.getInstance(UserConfig.selectedAccount).getUser(UserConfig.getInstance(UserConfig.selectedAccount).getClientUserId()), accountsShown);
+        } else if (item instanceof AccountItem) {
+            ((DrawerUserCell) holder.itemView).setAccount(((AccountItem) item).accountIndex);
+        } else if (item instanceof ActionItem) {
+            Item actionItem = ((ActionItem) item).item;
+            actionItem.bind((DrawerActionCell) holder.itemView);
+            holder.itemView.setPadding(0, 0, 0, 0);
         }
     }
 
     @Override
-    public int getItemViewType(int i) {
-        if (i == 0) {
-            return 0;
-        } else if (i == 1) {
-            return 1;
-        }
-        i -= 2;
-        if (accountsShown) {
-            if (i < accountNumbers.size()) {
-                return 4;
-            } else {
-                if (accountNumbers.size() < UserConfig.MAX_ACCOUNT_COUNT) {
-                    if (i == accountNumbers.size()) {
-                        return 5;
-                    } else if (i == accountNumbers.size() + 1) {
-                        return 2;
-                    }
-                } else {
-                    if (i == accountNumbers.size()) {
-                        return 2;
-                    }
-                }
-            }
-            i -= getAccountRowsCount();
-        }
-        if (i < 0 || i >= items.size() || items.get(i) == null) {
-            return 2;
-        }
-        return 3;
+    public int getItemViewType(int position) {
+        return items.get(position).viewType;
     }
 
     public void swapElements(int fromIndex, int toIndex) {
-        int idx1 = fromIndex - 2;
-        int idx2 = toIndex - 2;
-        if (idx1 < 0 || idx2 < 0 || idx1 >= accountNumbers.size() || idx2 >= accountNumbers.size()) {
+        AbstractItem from = items.get(fromIndex);
+        AbstractItem to = items.get(toIndex);
+        if (!(from instanceof AccountItem) || !(to instanceof AccountItem)) {
             return;
         }
-        final UserConfig userConfig1 = UserConfig.getInstance(accountNumbers.get(idx1));
-        final UserConfig userConfig2 = UserConfig.getInstance(accountNumbers.get(idx2));
+        AccountItem fromAccount = (AccountItem) from;
+        AccountItem toAccount = (AccountItem) to;
+
+        final UserConfig userConfig1 = UserConfig.getInstance(fromAccount.accountIndex);
+        final UserConfig userConfig2 = UserConfig.getInstance(toAccount.accountIndex);
         final int tempLoginTime = userConfig1.loginTime;
         userConfig1.loginTime = userConfig2.loginTime;
         userConfig2.loginTime = tempLoginTime;
         userConfig1.saveConfig(false);
         userConfig2.saveConfig(false);
-        Collections.swap(accountNumbers, idx1, idx2);
+
+        Collections.swap(items, fromIndex, toIndex);
         notifyItemMoved(fromIndex, toIndex);
     }
 
     private void resetItems() {
-        accountNumbers.clear();
-        for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
-            if (UserConfig.getInstance(a).isClientActivated()) {
-                accountNumbers.add(a);
-            }
-        }
-        Collections.sort(accountNumbers, (o1, o2) -> {
-            long l1 = UserConfig.getInstance(o1).loginTime;
-            long l2 = UserConfig.getInstance(o2).loginTime;
-            if (l1 > l2) {
-                return 1;
-            } else if (l1 < l2) {
-                return -1;
-            }
-            return 0;
-        });
-
         items.clear();
+
+        // 1. Profile
+        items.add(new ProfileItem());
+        // 2. Empty spacer
+        items.add(new EmptyItem());
+
+        // 3. Accounts section
+        if (accountsShown) {
+            ArrayList<Integer> accountNumbers = new ArrayList<>();
+            for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
+                if (UserConfig.getInstance(a).isClientActivated()) {
+                    accountNumbers.add(a);
+                }
+            }
+            Collections.sort(accountNumbers, (o1, o2) -> {
+                long l1 = UserConfig.getInstance(o1).loginTime;
+                long l2 = UserConfig.getInstance(o2).loginTime;
+                if (l1 > l2) {
+                    return 1;
+                } else if (l1 < l2) {
+                    return -1;
+                }
+                return 0;
+            });
+
+            for (int account : accountNumbers) {
+                items.add(new AccountItem(account));
+            }
+
+            if (accountNumbers.size() < UserConfig.MAX_ACCOUNT_COUNT) {
+                items.add(new AddAccountItem());
+            }
+
+            items.add(new DividerItem());
+        }
+
+        // 4. Main menu items
         if (!UserConfig.getInstance(UserConfig.selectedAccount).isClientActivated()) {
             return;
         }
@@ -344,12 +326,15 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter {
         }
         UserConfig me = UserConfig.getInstance(UserConfig.selectedAccount);
         boolean showDivider = false;
-        items.add(new Item(16, LocaleController.getString(R.string.MyProfile), R.drawable.left_status_profile));
+
+        // Main menu for extendDrawer
+        ArrayList<Item> mainMenuItems = new ArrayList<>();
+        mainMenuItems.add(new Item(16, LocaleController.getString(R.string.MyProfile), R.drawable.left_status_profile));
         if (me != null && me.isPremium()) {
             if (me.getEmojiStatus() != null) {
-                items.add(new Item(15, LocaleController.getString(R.string.ChangeEmojiStatus), R.drawable.msg_status_edit));
+                mainMenuItems.add(new Item(15, LocaleController.getString(R.string.ChangeEmojiStatus), R.drawable.msg_status_edit));
             } else {
-                items.add(new Item(15, LocaleController.getString(R.string.SetEmojiStatus), R.drawable.msg_status_set));
+                mainMenuItems.add(new Item(15, LocaleController.getString(R.string.SetEmojiStatus), R.drawable.msg_status_set));
             }
             showDivider = true;
         }
@@ -359,7 +344,7 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter {
 //        }
         showDivider = true;
         if (ApplicationLoader.applicationLoaderInstance != null) {
-            if (ApplicationLoader.applicationLoaderInstance.extendDrawer(items)) {
+            if (ApplicationLoader.applicationLoaderInstance.extendDrawer(mainMenuItems)) {
                 showDivider = true;
             }
         }
@@ -368,132 +353,189 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter {
             for (int i = 0; i < menuBots.bots.size(); i++) {
                 TLRPC.TL_attachMenuBot bot = menuBots.bots.get(i);
                 if (bot.show_in_side_menu) {
-                    items.add(new Item(bot));
+                    mainMenuItems.add(new Item(bot));
                     showDivider = true;
                 }
             }
         }
+
         if (showDivider) {
-            items.add(null); // divider
+            for (Item item : mainMenuItems) {
+                items.add(new ActionItem(item));
+            }
+            items.add(new DividerItem());
+        } else {
+            for (Item item : mainMenuItems) {
+                items.add(new ActionItem(item));
+            }
         }
-        items.add(new Item(2, LocaleController.getString(R.string.NewGroup), newGroupIcon));
+
+        items.add(new ActionItem(new Item(2, LocaleController.getString(R.string.NewGroup), newGroupIcon)));
         //items.add(new Item(3, LocaleController.getString(R.string.NewSecretChat), newSecretIcon));
         //items.add(new Item(4, LocaleController.getString(R.string.NewChannel), newChannelIcon));
-        items.add(new Item(6, LocaleController.getString(R.string.Contacts), contactsIcon));
-        items.add(new Item(10, LocaleController.getString(R.string.Calls), callsIcon));
-        items.add(new Item(11, LocaleController.getString(R.string.SavedMessages), savedIcon));
-        items.add(new Item(8, LocaleController.getString(R.string.Settings), settingsIcon));
-        items.add(null); // divider
-        items.add(new Item(7, LocaleController.getString(R.string.InviteFriends), inviteIcon));
-        items.add(new Item(13, LocaleController.getString(R.string.TelegramFeatures), helpIcon));
+        items.add(new ActionItem(new Item(6, LocaleController.getString(R.string.Contacts), contactsIcon)));
+        items.add(new ActionItem(new Item(10, LocaleController.getString(R.string.Calls), callsIcon)));
+        items.add(new ActionItem(new Item(11, LocaleController.getString(R.string.SavedMessages), savedIcon)));
+        items.add(new ActionItem(new Item(8, LocaleController.getString(R.string.Settings), settingsIcon)));
+        items.add(new DividerItem());
+        items.add(new ActionItem(new Item(7, LocaleController.getString(R.string.InviteFriends), inviteIcon)));
+        items.add(new ActionItem(new Item(13, LocaleController.getString(R.string.TelegramFeatures), helpIcon)));
     }
 
     public boolean click(View view, int position) {
-        position -= 2;
-        if (accountsShown) {
-            position -= getAccountRowsCount();
-        }
-        if (position < 0 || position >= items.size()) {
-            return false;
-        }
-        Item item = items.get(position);
-        if (item != null && item.listener != null) {
-            item.listener.onClick(view);
-            return true;
+        if (position < 0 || position >= items.size()) return false;
+        AbstractItem item = items.get(position);
+        if (item instanceof ActionItem) {
+            Item actionItem = ((ActionItem) item).item;
+            if (actionItem != null && actionItem.listener != null) {
+                actionItem.listener.onClick(view);
+                return true;
+            }
         }
         return false;
     }
 
     public int getId(int position) {
-        position -= 2;
-        if (accountsShown) {
-            position -= getAccountRowsCount();
+        if (position < 0 || position >= items.size()) return -1;
+        AbstractItem item = items.get(position);
+        if (item instanceof ActionItem) {
+            return ((ActionItem) item).item.id;
         }
-        if (position < 0 || position >= items.size()) {
-            return -1;
-        }
-        Item item = items.get(position);
-        return item != null ? item.id : -1;
+        return -1;
     }
 
     public int getFirstAccountPosition() {
-        if (!accountsShown) {
-            return RecyclerView.NO_POSITION;
+        for (int i = 0; i < items.size(); i++) {
+            if (items.get(i) instanceof AccountItem) {
+                return i;
+            }
         }
-        return 2;
+        return RecyclerView.NO_POSITION;
     }
 
     public int getLastAccountPosition() {
-        if (!accountsShown) {
-            return RecyclerView.NO_POSITION;
+        for (int i = items.size() - 1; i >= 0; i--) {
+            if (items.get(i) instanceof AccountItem) {
+                return i;
+            }
         }
-        return 1 + accountNumbers.size();
+        return RecyclerView.NO_POSITION;
     }
 
     public TLRPC.TL_attachMenuBot getAttachMenuBot(int position) {
-        position -= 2;
-        if (accountsShown) {
-            position -= getAccountRowsCount();
+        if (position < 0 || position >= items.size()) return null;
+        AbstractItem item = items.get(position);
+        if (item instanceof ActionItem) {
+            return ((ActionItem) item).item.bot;
         }
-        if (position < 0 || position >= items.size()) {
-            return null;
-        }
-        Item item = items.get(position);
-        return item != null ? item.bot : null;
+        return null;
     }
 
-    // =============== Встроенный DiffUtil.Callback (как в вашем файле) ===============
+    public static class FullDrawerDiffCallback extends DiffUtil.Callback {
+        private final List<AbstractItem> oldList;
+        private final List<AbstractItem> newList;
 
-    /**
-     * A DiffUtil.Callback implementation for calculating the differences between two lists of
-     * {@link DrawerLayoutAdapter.Item} objects, specifically for updating the DrawerLayoutAdapter
-     * efficiently.
-     */
-    public static class DrawerLayoutAdapterDiffCallback extends DiffUtil.Callback {
-        private final ArrayList<DrawerLayoutAdapter.Item> oldItems;
-        private final ArrayList<DrawerLayoutAdapter.Item> newItems;
-
-        public DrawerLayoutAdapterDiffCallback(ArrayList<DrawerLayoutAdapter.Item> _oldItems, ArrayList<DrawerLayoutAdapter.Item> _newItems) {
-            oldItems = _oldItems;
-            newItems = _newItems;
+        public FullDrawerDiffCallback(List<AbstractItem> oldList, List<AbstractItem> newList) {
+            this.oldList = oldList;
+            this.newList = newList;
         }
 
         @Override
         public int getOldListSize() {
-            return oldItems.size();
+            return oldList.size();
         }
 
         @Override
         public int getNewListSize() {
-            return newItems.size();
+            return newList.size();
         }
 
         @Override
         public boolean areItemsTheSame(int oldItemPosition, int newItemPosition) {
-            DrawerLayoutAdapter.Item oldItem = oldItems.get(oldItemPosition);
-            DrawerLayoutAdapter.Item newItem = newItems.get(newItemPosition);
+            AbstractItem oldItem = oldList.get(oldItemPosition);
+            AbstractItem newItem = newList.get(newItemPosition);
+            if (oldItem.viewType != newItem.viewType) return false;
 
-            if (oldItem == null || newItem == null) {
-                return false;
+            if (oldItem instanceof ActionItem && newItem instanceof ActionItem) {
+                return ((ActionItem) oldItem).item.id == ((ActionItem) newItem).item.id;
             }
-
-            return oldItem.id == newItem.id;
+            if (oldItem instanceof AccountItem && newItem instanceof AccountItem) {
+                return ((AccountItem) oldItem).accountIndex == ((AccountItem) newItem).accountIndex;
+            }
+            // For Profile, Empty, Divider, AddAccount - type determines identity
+            return true;
         }
 
         @Override
         public boolean areContentsTheSame(int oldItemPosition, int newItemPosition) {
-            DrawerLayoutAdapter.Item oldItem = oldItems.get(oldItemPosition);
-            DrawerLayoutAdapter.Item newItem = newItems.get(newItemPosition);
+            AbstractItem oldItem = oldList.get(oldItemPosition);
+            AbstractItem newItem = newList.get(newItemPosition);
 
-            if (oldItem == null || newItem == null) {
-                return false;
+            if (oldItem instanceof ActionItem && newItem instanceof ActionItem) {
+                return ((ActionItem) oldItem).item.areContentsTheSame(((ActionItem) newItem).item);
             }
-
-            return oldItem.areContentsTheSame(newItem);
+            if (oldItem instanceof AccountItem && newItem instanceof AccountItem) {
+                // Accounts don't have "content" - only index, which is checked in areItemsTheSame
+                return true;
+            }
+            // Other types don't have changeable content
+            return true;
         }
     }
 
-    // =============== Item class (без изменений) ===============
+    // =============== Base element ===============
+
+    private abstract static class AbstractItem {
+        final int viewType;
+
+        AbstractItem(int viewType) {
+            this.viewType = viewType;
+        }
+    }
+
+    private static class ProfileItem extends AbstractItem {
+        ProfileItem() {
+            super(VIEW_TYPE_PROFILE);
+        }
+    }
+
+    private static class EmptyItem extends AbstractItem {
+        EmptyItem() {
+            super(VIEW_TYPE_EMPTY);
+        }
+    }
+
+    private static class DividerItem extends AbstractItem {
+        DividerItem() {
+            super(VIEW_TYPE_DIVIDER);
+        }
+    }
+
+    private static class AddAccountItem extends AbstractItem {
+        AddAccountItem() {
+            super(VIEW_TYPE_ADD_ACCOUNT);
+        }
+    }
+
+    private static class AccountItem extends AbstractItem {
+        final int accountIndex;
+
+        AccountItem(int accountIndex) {
+            super(VIEW_TYPE_ACCOUNT);
+            this.accountIndex = accountIndex;
+        }
+    }
+
+    private static class ActionItem extends AbstractItem {
+        final Item item;
+
+        ActionItem(Item item) {
+            super(VIEW_TYPE_ACTION);
+            this.item = item;
+        }
+    }
+
+    // =============== Legacy Item (for compatibility) ===============
 
     public static class Item {
         public int icon;
