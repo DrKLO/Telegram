@@ -461,10 +461,7 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter {
             if (oldItem instanceof Item && newItem instanceof Item) {
                 return ((Item) oldItem).areContentsTheSame(((Item) newItem));
             }
-            if (oldItem instanceof AccountItem && newItem instanceof AccountItem) {
-                // Accounts don't have "content" - only index, which is checked in areItemsTheSame
-                return true;
-            }
+            // Accounts don't have "content" - only index, which is checked in areItemsTheSame
             // Other types don't have changeable content
             return true;
         }
