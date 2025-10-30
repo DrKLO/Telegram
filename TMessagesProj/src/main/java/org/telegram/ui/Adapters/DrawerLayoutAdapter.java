@@ -198,9 +198,8 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter {
             cell.setUser(MessagesController.getInstance(UserConfig.selectedAccount).getUser(UserConfig.getInstance(UserConfig.selectedAccount).getClientUserId()), accountsShown);
         } else if (item instanceof AccountItem) {
             ((DrawerUserCell) holder.itemView).setAccount(((AccountItem) item).accountIndex);
-        } else if (item instanceof ActionItem) {
-            Item actionItem = ((ActionItem) item).item;
-            actionItem.bind((DrawerActionCell) holder.itemView);
+        } else if (item instanceof Item) {
+            ((Item) item).bind((DrawerActionCell) holder.itemView);
             holder.itemView.setPadding(0, 0, 0, 0);
         }
     }
@@ -361,32 +360,32 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter {
 
         if (showDivider) {
             for (Item item : mainMenuItems) {
-                items.add(new ActionItem(item));
+                items.add(item);
             }
             items.add(new DividerItem());
         } else {
             for (Item item : mainMenuItems) {
-                items.add(new ActionItem(item));
+                items.add(item);
             }
         }
 
-        items.add(new ActionItem(new Item(2, LocaleController.getString(R.string.NewGroup), newGroupIcon)));
+        items.add(new Item(2, LocaleController.getString(R.string.NewGroup), newGroupIcon));
         //items.add(new Item(3, LocaleController.getString(R.string.NewSecretChat), newSecretIcon));
         //items.add(new Item(4, LocaleController.getString(R.string.NewChannel), newChannelIcon));
-        items.add(new ActionItem(new Item(6, LocaleController.getString(R.string.Contacts), contactsIcon)));
-        items.add(new ActionItem(new Item(10, LocaleController.getString(R.string.Calls), callsIcon)));
-        items.add(new ActionItem(new Item(11, LocaleController.getString(R.string.SavedMessages), savedIcon)));
-        items.add(new ActionItem(new Item(8, LocaleController.getString(R.string.Settings), settingsIcon)));
+        items.add(new Item(6, LocaleController.getString(R.string.Contacts), contactsIcon));
+        items.add(new Item(10, LocaleController.getString(R.string.Calls), callsIcon));
+        items.add(new Item(11, LocaleController.getString(R.string.SavedMessages), savedIcon));
+        items.add(new Item(8, LocaleController.getString(R.string.Settings), settingsIcon));
         items.add(new DividerItem());
-        items.add(new ActionItem(new Item(7, LocaleController.getString(R.string.InviteFriends), inviteIcon)));
-        items.add(new ActionItem(new Item(13, LocaleController.getString(R.string.TelegramFeatures), helpIcon)));
+        items.add(new Item(7, LocaleController.getString(R.string.InviteFriends), inviteIcon));
+        items.add(new Item(13, LocaleController.getString(R.string.TelegramFeatures), helpIcon));
     }
 
     public boolean click(View view, int position) {
         if (position < 0 || position >= items.size()) return false;
         AbstractItem item = items.get(position);
-        if (item instanceof ActionItem) {
-            Item actionItem = ((ActionItem) item).item;
+        if (item instanceof Item) {
+            Item actionItem = (Item) item;
             if (actionItem != null && actionItem.listener != null) {
                 actionItem.listener.onClick(view);
                 return true;
@@ -398,8 +397,8 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter {
     public int getId(int position) {
         if (position < 0 || position >= items.size()) return -1;
         AbstractItem item = items.get(position);
-        if (item instanceof ActionItem) {
-            return ((ActionItem) item).item.id;
+        if (item instanceof Item) {
+            return ((Item) item).id;
         }
         return -1;
     }
@@ -425,8 +424,8 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter {
     public TLRPC.TL_attachMenuBot getAttachMenuBot(int position) {
         if (position < 0 || position >= items.size()) return null;
         AbstractItem item = items.get(position);
-        if (item instanceof ActionItem) {
-            return ((ActionItem) item).item.bot;
+        if (item instanceof Item) {
+            return ((Item) item).bot;
         }
         return null;
     }
@@ -456,8 +455,8 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter {
             AbstractItem newItem = newList.get(newItemPosition);
             if (oldItem.viewType != newItem.viewType) return false;
 
-            if (oldItem instanceof ActionItem && newItem instanceof ActionItem) {
-                return ((ActionItem) oldItem).item.id == ((ActionItem) newItem).item.id;
+            if (oldItem instanceof Item && newItem instanceof Item) {
+                return ((Item) oldItem).id == ((Item) newItem).id;
             }
             if (oldItem instanceof AccountItem && newItem instanceof AccountItem) {
                 return ((AccountItem) oldItem).accountIndex == ((AccountItem) newItem).accountIndex;
@@ -471,8 +470,8 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter {
             AbstractItem oldItem = oldList.get(oldItemPosition);
             AbstractItem newItem = newList.get(newItemPosition);
 
-            if (oldItem instanceof ActionItem && newItem instanceof ActionItem) {
-                return ((ActionItem) oldItem).item.areContentsTheSame(((ActionItem) newItem).item);
+            if (oldItem instanceof Item && newItem instanceof Item) {
+                return ((Item) oldItem).areContentsTheSame(((Item) newItem));
             }
             if (oldItem instanceof AccountItem && newItem instanceof AccountItem) {
                 // Accounts don't have "content" - only index, which is checked in areItemsTheSame
@@ -526,18 +525,13 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter {
         }
     }
 
-    private static class ActionItem extends AbstractItem {
-        final Item item;
-
-        ActionItem(Item item) {
-            super(VIEW_TYPE_ACTION);
-            this.item = item;
-        }
-    }
-
     // =============== Legacy Item (for compatibility) ===============
 
-    public static class Item {
+    /**
+     * Represents a single actionable item in the drawer menu.
+     * This class now directly extends {@link AbstractItem} to integrate with the DiffUtil-based adapter architecture.
+     */
+    public static class Item extends AbstractItem {
         public int icon;
         public CharSequence text;
         public int id;
@@ -546,6 +540,7 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter {
         public boolean error;
 
         public Item(int id, CharSequence text, int icon) {
+            super(VIEW_TYPE_ACTION);
             this.icon = icon;
             this.id = id;
             this.text = text;
@@ -579,6 +574,7 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter {
         }
 
         public Item(TLRPC.TL_attachMenuBot bot) {
+            super(VIEW_TYPE_ACTION);
             this.bot = bot;
             this.id = (int) (100 + (bot.bot_id >> 16));
         }
