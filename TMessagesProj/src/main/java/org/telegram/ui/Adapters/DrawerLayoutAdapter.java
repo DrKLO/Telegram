@@ -13,6 +13,7 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import androidx.annotation.Keep;
+import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -48,11 +49,11 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter {
     private static final int VIEW_TYPE_ACCOUNT = 4;
     private static final int VIEW_TYPE_ADD_ACCOUNT = 5;
 
-    private Context mContext;
-    private DrawerLayoutContainer mDrawerLayoutContainer;
+    private final Context mContext;
+    private final DrawerLayoutContainer mDrawerLayoutContainer;
     private boolean accountsShown;
     public DrawerProfileCell profileCell;
-    private SideMenultItemAnimator itemAnimator;
+    private final SideMenultItemAnimator itemAnimator;
     private RecyclerView attachedRecyclerView;
 
     // SINGLE source of data
@@ -150,8 +151,9 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter {
         return viewType == VIEW_TYPE_ACTION || viewType == VIEW_TYPE_ACCOUNT || viewType == VIEW_TYPE_ADD_ACCOUNT;
     }
 
+    @NonNull
     @Override
-    public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+    public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         // Capture RecyclerView reference if not already done
         if (attachedRecyclerView == null && parent instanceof RecyclerView) {
             attachedRecyclerView = (RecyclerView) parent;
@@ -191,7 +193,7 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter {
     }
 
     @Override
-    public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
+    public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
         AbstractItem item = items.get(position);
         if (item instanceof ProfileItem) {
             DrawerProfileCell cell = (DrawerProfileCell) holder.itemView;
@@ -274,8 +276,8 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter {
         }
         int eventType = Theme.getEventType();
         int newGroupIcon;
-        int newSecretIcon;
-        int newChannelIcon;
+//        int newSecretIcon;
+//        int newChannelIcon;
         int contactsIcon;
         int callsIcon;
         int savedIcon;
@@ -324,7 +326,6 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter {
             helpIcon = R.drawable.msg_help;
         }
         UserConfig me = UserConfig.getInstance(UserConfig.selectedAccount);
-        boolean showDivider = false;
 
         // Main menu for extendDrawer
         ArrayList<Item> mainMenuItems = new ArrayList<>();
@@ -335,17 +336,13 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter {
             } else {
                 mainMenuItems.add(new Item(15, LocaleController.getString(R.string.SetEmojiStatus), R.drawable.msg_status_set));
             }
-            showDivider = true;
         }
 //        if (MessagesController.getInstance(UserConfig.selectedAccount).storiesEnabled()) {
 //            items.add(new Item(17, LocaleController.getString(R.string.ProfileStories), R.drawable.msg_menu_stories));
 //            showDivider = true;
 //        }
-        showDivider = true;
         if (ApplicationLoader.applicationLoaderInstance != null) {
-            if (ApplicationLoader.applicationLoaderInstance.extendDrawer(mainMenuItems)) {
-                showDivider = true;
-            }
+            ApplicationLoader.applicationLoaderInstance.extendDrawer(mainMenuItems);
         }
         TLRPC.TL_attachMenuBots menuBots = MediaDataController.getInstance(UserConfig.selectedAccount).getAttachMenuBots();
         if (menuBots != null && menuBots.bots != null) {
@@ -353,21 +350,12 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter {
                 TLRPC.TL_attachMenuBot bot = menuBots.bots.get(i);
                 if (bot.show_in_side_menu) {
                     mainMenuItems.add(new Item(bot));
-                    showDivider = true;
                 }
             }
         }
 
-        if (showDivider) {
-            for (Item item : mainMenuItems) {
-                items.add(item);
-            }
-            items.add(new DividerItem());
-        } else {
-            for (Item item : mainMenuItems) {
-                items.add(item);
-            }
-        }
+        items.addAll(mainMenuItems);
+        items.add(new DividerItem());
 
         items.add(new Item(2, LocaleController.getString(R.string.NewGroup), newGroupIcon));
         //items.add(new Item(3, LocaleController.getString(R.string.NewSecretChat), newSecretIcon));
@@ -484,7 +472,7 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter {
 
     // =============== Base element ===============
 
-    private abstract static class AbstractItem {
+    public abstract static class AbstractItem {
         final int viewType;
 
         AbstractItem(int viewType) {
