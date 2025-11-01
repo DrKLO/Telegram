@@ -490,7 +490,7 @@ public class NotificationsController extends BaseController {
                 }
                 popupArray.add(0, messageObject);
             }
-            if (!popupArray.isEmpty() && !AndroidUtilities.needShowPasscode() && !SharedConfig.isWaitingForPasscodeEnter) {
+            if (!popupArray.isEmpty() /*&& !AndroidUtilities.needShowPasscode() && !SharedConfig.isWaitingForPasscodeEnter*/) {
                 AndroidUtilities.runOnUIThread(() -> {
                     popupReplyMessages = popupArray;
                     Intent popupIntent = new Intent(ApplicationLoader.applicationContext, PopupNotificationActivity.class);
