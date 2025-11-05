@@ -1,0 +1,57 @@
+name: Build Telegram Android
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Optional: Git tag or branch to build (default = current commit)'
+        required: false
+        default: ''
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout your repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Show build target
+        run: |
+          if [ -n "${{ github.event.inputs.tag }}" ]; then
+            echo "🔹 Building specified tag or branch: ${{ github.event.inputs.tag }}"
+          else
+            CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+            echo "🔸 No tag specified, building current branch: ${CURRENT_BRANCH}"
+          fi
+
+      - name: Switch to target tag or branch (if provided)
+        if: ${{ github.event.inputs.tag != '' }}
+        run: |
+          git checkout ${{ github.event.inputs.tag }}
+
+      - name: Set up environment
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3 adb
+
+      - name: Build with Docker
+        run: |
+          docker build -t telegram-build .
+          docker run --rm -v "$PWD":/home/source telegram-build
+
+      - name: Collect built APKs
+        run: |
+          mkdir -p output
+          cp TMessagesProj/build/outputs/apk/afat/release/app.apk output/app-release.apk || true
+          cp TMessagesProj/build/outputs/apk/afat/standalone/app.apk output/app-standalone.apk || true
+          cp TMessagesProj/build/outputs/apk/afat/release/app-huawei.apk output/app-huawei.apk || true
+          ls -lh output
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: telegram-apks
+          path: output/
