@@ -143,8 +143,8 @@ public class ChatThemeBottomSheet extends BottomSheet implements NotificationCen
         if (Build.VERSION.SDK_INT >= 30) {
             navBarColorKey = -1;
             navBarColor = getThemedColor(Theme.key_dialogBackgroundGray);
-            AndroidUtilities.setNavigationBarColor(getWindow(), getThemedColor(Theme.key_dialogBackgroundGray), false);
-            AndroidUtilities.setLightNavigationBar(getWindow(), AndroidUtilities.computePerceivedBrightness(navBarColor) > 0.721);
+            AndroidUtilities.setNavigationBarColor(this, getThemedColor(Theme.key_dialogBackgroundGray), false);
+            AndroidUtilities.setLightNavigationBar(this, AndroidUtilities.computePerceivedBrightness(navBarColor) > 0.721);
         } else {
             fixNavigationBar(getThemedColor(Theme.key_dialogBackgroundGray));
         }
@@ -681,6 +681,7 @@ public class ChatThemeBottomSheet extends BottomSheet implements NotificationCen
                 if (chatAttachButtonText != null) {
                     chatAttachButtonText.setTextColor(getThemedColor(Theme.key_featuredStickers_addButton));
                 }
+                setBackgroundColor(getThemedColor(Theme.key_dialogBackground));
             }
 
             @Override
@@ -1343,7 +1344,7 @@ public class ChatThemeBottomSheet extends BottomSheet implements NotificationCen
             }
 
             @Override
-            public void didPressedButton(int button, boolean arg, boolean notify, int scheduleDate, long effectId, boolean invertMedia, boolean forceDocument, long payStars) {
+            public void didPressedButton(int button, boolean arg, boolean notify, int scheduleDate, int scheduleRepeatPeriod, long effectId, boolean invertMedia, boolean forceDocument, long payStars) {
                 try {
                     HashMap<Object, Object> photos = chatAttachAlert.getPhotoLayout().getSelectedPhotos();
                     if (!photos.isEmpty()) {
@@ -1437,7 +1438,7 @@ public class ChatThemeBottomSheet extends BottomSheet implements NotificationCen
             }
 
             @Override
-            public void didPressedButton(int button, boolean arg, boolean notify, int scheduleDate, long effectId, boolean invertMedia, boolean forceDocument, long payStars) {
+            public void didPressedButton(int button, boolean arg, boolean notify, int scheduleDate, int scheduleRepeatPeriod, long effectId, boolean invertMedia, boolean forceDocument, long payStars) {
                 try {
                     HashMap<Object, Object> photos = chatAttachAlert.getPhotoLayout().getSelectedPhotos();
                     if (!photos.isEmpty()) {

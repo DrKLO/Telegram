@@ -286,6 +286,7 @@ public class MotionBackgroundDrawable extends Drawable {
 
     public void switchToNextPosition(boolean fast) {
         if (posAnimationProgress < 1.0f || !LiteMode.isEnabled(LiteMode.FLAG_CHAT_BACKGROUND)) {
+            invalidateParent();
             return;
         }
         rotatingPreview = false;

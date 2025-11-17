@@ -484,7 +484,9 @@ public class ReactionsLayoutInBubble {
     }
 
     public boolean hasOverlay() {
-        return hasPaidReaction && !(isEmpty && outButtons.isEmpty()) && LiteMode.isEnabled(LiteMode.FLAG_ANIMATED_EMOJI_REACTIONS);
+        return hasPaidReaction && !(isEmpty && outButtons.isEmpty())
+            && LiteMode.isEnabled(LiteMode.FLAG_ANIMATED_EMOJI_REACTIONS)
+            && LiteMode.isEnabled(LiteMode.FLAG_PARTICLES);
     }
 
     public void drawOverlay(Canvas canvas, float animationProgress) {
@@ -987,7 +989,7 @@ public class ReactionsLayoutInBubble {
 
         public void drawOverlay(Canvas canvas, float x, float y, float progress, float alpha, boolean drawOverlayScrim) {
             if (particles == null) return;
-            if (!LiteMode.isEnabled(LiteMode.FLAG_ANIMATED_EMOJI_REACTIONS)) return;
+            if (!LiteMode.isEnabled(LiteMode.FLAG_ANIMATED_EMOJI_REACTIONS) || !LiteMode.isEnabled(LiteMode.FLAG_PARTICLES)) return;
 
             AndroidUtilities.rectTmp.set(x, y, x + width, y + height);
             float rad = height / 2f;

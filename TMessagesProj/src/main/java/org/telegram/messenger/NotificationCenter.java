@@ -195,6 +195,7 @@ public class NotificationCenter {
 
     public static final int didStartedCall = totalEvents++;
     public static final int groupCallUpdated = totalEvents++;
+    public static final int storyGroupCallUpdated = totalEvents++;
     public static final int groupCallSpeakingUsersUpdated = totalEvents++;
     public static final int groupCallScreencastStateChanged = totalEvents++;
     public static final int activeGroupCallsUpdated = totalEvents++;
@@ -203,6 +204,8 @@ public class NotificationCenter {
     public static final int didEndCall = totalEvents++;
     public static final int closeInCallActivity = totalEvents++;
     public static final int groupCallVisibilityChanged = totalEvents++;
+    public static final int liveStoryUpdated = totalEvents++;
+    public static final int liveStoryMessageUpdate = totalEvents++;
 
     public static final int appDidLogout = totalEvents++;
 
@@ -275,6 +278,7 @@ public class NotificationCenter {
     public static final int messagesFeeUpdated = totalEvents++;
     public static final int commonChatsLoaded = totalEvents++;
     public static final int appConfigUpdated = totalEvents++;
+    public static final int activeAuctionsUpdated = totalEvents++;
     public static final int conferenceEmojiUpdated = totalEvents++;
     public static final int contentSettingsLoaded = totalEvents++;
     public static final int musicListLoaded = totalEvents++;
@@ -352,6 +356,7 @@ public class NotificationCenter {
     public static final int onDatabaseReset = totalEvents++;
     public static final int wallpaperSettedToUser = totalEvents++;
     public static final int storiesUpdated = totalEvents++;
+    public static final int storyDeleted = totalEvents++;
     public static final int storiesListUpdated = totalEvents++;
     public static final int storiesDraftsUpdated = totalEvents++;
     public static final int chatlistFolderUpdate = totalEvents++;
@@ -367,6 +372,7 @@ public class NotificationCenter {
     public static final int botForumTopicDidCreate = totalEvents++;
     public static final int botForumDraftUpdate = totalEvents++;
     public static final int botForumDraftDelete = totalEvents++;
+    public static final int tlSchemeParseException = totalEvents++;
 
     public static boolean alreadyLogged;
 

@@ -13,6 +13,7 @@ import static org.telegram.messenger.AndroidUtilities.dp;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Paint;
 import android.graphics.drawable.Drawable;
 import android.text.TextUtils;
 import android.util.TypedValue;
@@ -30,10 +31,11 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.LinkSpanDrawable;
+import org.telegram.ui.Components.spoilers.SpoilersTextView;
 
 public class TextDetailCell extends FrameLayout {
 
-    public final LinkSpanDrawable.LinksTextView textView;
+    public final SpoilersTextView textView;
     public final LinkSpanDrawable.LinksTextView valueTextView;
     public final LinkSpanDrawable.LinksTextView rightValueTextView;
     private final TextView showMoreTextView = null;
@@ -57,17 +59,7 @@ public class TextDetailCell extends FrameLayout {
         this.resourcesProvider = resourcesProvider;
         this.multiline = textMultiline || valueMultiline;
 
-        textView = new LinkSpanDrawable.LinksTextView(context, resourcesProvider) {
-            @Override
-            protected int processColor(int color) {
-                return TextDetailCell.this.processColor(color);
-            }
-
-            @Override
-            public int overrideColor() {
-                return processColor(super.overrideColor());
-            }
-        };
+        textView = new SpoilersTextView(context, resourcesProvider);
         textView.setOnLinkLongPressListener(span -> {
             if (span != null) {
                 try {
@@ -269,12 +261,14 @@ public class TextDetailCell extends FrameLayout {
     @Override
     protected void onDraw(Canvas canvas) {
         if (needDivider) {
+            Paint paint = resourcesProvider != null ? resourcesProvider.getPaint(Theme.key_paint_divider) : Theme.dividerPaint;
+            if (paint == null) paint = Theme.dividerPaint;
             canvas.drawLine(
                 LocaleController.isRTL ? 0 : dp(20),
                 getMeasuredHeight() - 1,
                 getMeasuredWidth() - (LocaleController.isRTL ? dp(20) : 0),
                 getMeasuredHeight() - 1,
-                Theme.dividerPaint
+                paint
             );
         }
     }

@@ -18,6 +18,7 @@ import android.os.Build;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.TextPaint;
+import android.text.TextUtils;
 import android.text.style.ClickableSpan;
 import android.view.MotionEvent;
 import android.view.View;
@@ -42,18 +43,31 @@ import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.Components.AnimatedEmojiDrawable;
 import org.telegram.ui.Components.AvatarDrawable;
+import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.Reactions.ReactionsLayoutInBubble;
 import org.telegram.ui.Components.TypefaceSpan;
 import org.telegram.ui.Components.spoilers.SpoilersTextView;
+import org.telegram.ui.Components.voip.CellFlickerDrawable;
 
+import me.vkryl.android.animator.BoolAnimator;
+import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.android.util.ClickHelper;
 
 public class GroupCallMessageCell extends ViewGroup
-    implements ClickHelper.Delegate, NotificationCenter.NotificationCenterDelegate {
+    implements ClickHelper.Delegate, NotificationCenter.NotificationCenterDelegate, FactorAnimator.Target {
+
+    private static final int ANIMATOR_IS_SEND_DELAYED_ID = 0;
+    private static final int ANIMATOR_IS_SEND_ERROR_ID = 1;
+
+    private final BoolAnimator isSendDelayedAnimator = new BoolAnimator(ANIMATOR_IS_SEND_DELAYED_ID, this, CubicBezierInterpolator.EASE_OUT_QUINT, 320L);
+    private final BoolAnimator isSendErrorAnimator = new BoolAnimator(ANIMATOR_IS_SEND_ERROR_ID, this, CubicBezierInterpolator.EASE_OUT_QUINT, 320L);
+
     private final ClickHelper clickHelper = new ClickHelper(this);
 
     private final ImageReceiver avatarReceiver;
     private final Paint bgPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint errPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final CellFlickerDrawable flickerDrawable = new CellFlickerDrawable();
 
     private final ImageReceiver animatedReactionReceiver;
     private AnimatedEmojiDrawable animatedReactionDrawable;
@@ -76,12 +90,36 @@ public class GroupCallMessageCell extends ViewGroup
         addView(messageTextView);
 
         bgPaint.setColor(0xFF2B333B);
+        errPaint.setColor(Color.RED);
+        errPaint.setAlpha(0);
+
         avatarReceiver = new ImageReceiver(this);
         avatarReceiver.setRoundRadius(dp(Layout.AVATAR_RADIUS));
+        flickerDrawable.setStrokeWidth(dp(1));
 
         animatedReactionReceiver = new ImageReceiver(this);
         setWillNotDraw(false);
     }
+
+    private final Runnable onMessageStateUpdateListener = () -> onMessageStateUpdate(true);
+    private void onMessageStateUpdate(boolean animated) {
+        if (groupCallMessage != null) {
+            isSendDelayedAnimator.setValue(groupCallMessage.isSendDelayed(), animated);
+            isSendErrorAnimator.setValue(groupCallMessage.isSendError(), animated);
+        }
+    }
+
+    public void setSingleLine() {
+        messageTextView.setMaxLines(1);
+        messageTextView.setSingleLine(true);
+        messageTextView.setEllipsize(TextUtils.TruncateAt.END);
+    }
+
+    public void setBackgroundColor(int color) {
+        bgPaint.setColor(color);
+    }
+
+
 
     private RenderNode renderNode;
     private float renderNodeScale;
@@ -96,7 +134,15 @@ public class GroupCallMessageCell extends ViewGroup
     }
 
     public void set(GroupCallMessage message) {
+        if (isAttachedToWindow() && groupCallMessage != null) {
+            groupCallMessage.unsubscribeFromStateUpdates(onMessageStateUpdateListener);
+        }
         this.groupCallMessage = message;
+        if (isAttachedToWindow() && groupCallMessage != null) {
+            groupCallMessage.subscribeToStateUpdates(onMessageStateUpdateListener);
+        }
+
+        onMessageStateUpdate(false);
 
         TLObject userOrChat = MessagesController.getInstance(UserConfig.selectedAccount).getUserOrChat(message.fromId);
         String name = DialogObject.getName(userOrChat);
@@ -178,7 +224,7 @@ public class GroupCallMessageCell extends ViewGroup
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         final int width = MeasureSpec.getSize(widthMeasureSpec);
         if (layout == null || layoutInvalidated || layout.viewWidth != width) {
-            layout = Layout.build(width, messageTextView, messageReaction);
+            layout = Layout.build(width, getPaddingLeft(), getPaddingRight(), messageTextView, messageReaction);
             avatarReceiver.setImageCoords(layout.avatar);
             animatedReactionReceiver.setImageCoords(layout.reaction);
             if (animatedReactionDrawable != null) {
@@ -189,6 +235,8 @@ public class GroupCallMessageCell extends ViewGroup
 
         final int height = layout.viewHeight;
         setMeasuredDimension(width, height);
+
+        flickerDrawable.setParentWidth(Math.round(layout.bubble.width() + dp(48)));
     }
 
     @Override
@@ -214,6 +262,9 @@ public class GroupCallMessageCell extends ViewGroup
             animatedReactionDrawable.addView(this);
         }
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.emojiLoaded);
+        if (groupCallMessage != null) {
+            groupCallMessage.subscribeToStateUpdates(onMessageStateUpdateListener);
+        }
     }
 
     @Override
@@ -226,6 +277,9 @@ public class GroupCallMessageCell extends ViewGroup
         }
 
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.emojiLoaded);
+        if (groupCallMessage != null) {
+            groupCallMessage.unsubscribeFromStateUpdates(onMessageStateUpdateListener);
+        }
     }
 
     public boolean isInsideBubble(float x, float y) {
@@ -308,6 +362,17 @@ public class GroupCallMessageCell extends ViewGroup
             canvas.restore();
         }
 
+        if (errPaint.getAlpha() > 0) {
+            canvas.drawPath(layout.bubblePath, errPaint);
+        }
+        if (isSendDelayedAnimator.getFloatValue() > 0f) {
+            tmpRectF.set(layout.bubble);
+            tmpRectF.inset(dp(1), dp(1));
+
+            flickerDrawable.draw(canvas, tmpRectF, dp(Layout.BUBBLE_RADIUS), null);
+            invalidate();
+        }
+
         super.dispatchDraw(canvas);
 
         avatarReceiver.draw(canvas);
@@ -328,13 +393,19 @@ public class GroupCallMessageCell extends ViewGroup
         }
     }
 
+    @Override
+    public void onFactorChanged(int id, float factor, float fraction, FactorAnimator callee) {
+        errPaint.setAlpha(Math.round(100 * isSendErrorAnimator.getFloatValue()));
+        flickerDrawable.setAlpha(Math.round(220 * isSendDelayedAnimator.getFloatValue()));
+        invalidate();
+    }
+
     public interface Delegate {
         default void didClickAvatar(GroupCallMessageCell cell, GroupCallMessage message, float x, float y) {}
         default void didClickSenderName(GroupCallMessageCell cell, GroupCallMessage message) {}
     }
 
     private static class Layout {
-        private static final int MARGIN_HORIZONTAL = 22;
         private static final int TEXT_MARGIN_START = 32;
         private static final int TEXT_MARGIN_END = 12;
         private static final int TEXT_MARGIN_VERTICAL = 4;
@@ -357,11 +428,11 @@ public class GroupCallMessageCell extends ViewGroup
         public final RectF reaction = new RectF();
         public final PointF text = new PointF();
 
-        public static Layout build(int width,
+        public static Layout build(int width, int paddingLeft, int paddingRight,
            SpoilersTextView textView,
                    ReactionsLayoutInBubble.VisibleReaction reaction
         ) {
-            final int maxBubbleWidth = width - dp(Layout.MARGIN_HORIZONTAL * 2);
+            final int maxBubbleWidth = width - paddingLeft - paddingRight;
             final int maxTextWidth = maxBubbleWidth - dp(Layout.TEXT_MARGIN_START + Layout.TEXT_MARGIN_END);
 
             textView.measure(

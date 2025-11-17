@@ -30,6 +30,7 @@ public class TL_stars {
         public int per_user_remains;
         public int locked_until_date;
         public boolean can_upgrade;
+        public boolean auction;
         public long id;
         public long gift_id;
         public TLRPC.Document sticker;
@@ -60,6 +61,8 @@ public class TL_stars {
         public long value_amount;
         public String value_currency;
         public @Nullable ArrayList<StarsAmount> resell_amount;
+        public String auction_slug;
+        public int gifts_per_round;
 
         public AmountUtils.Amount getResellAmount(AmountUtils.Currency currency) {
             if (resell_amount == null || resell_amount.isEmpty()) {
@@ -81,71 +84,33 @@ public class TL_stars {
             return amount != null ? amount.asDecimal() : 0;
         }
 
-        public static StarGift TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
-            StarGift result = null;
+        private static StarGift fromConstructor(int constructor) {
             switch (constructor) {
-                case TL_starGift.constructor:
-                    result = new TL_starGift();
-                    break;
-                case TL_starGiftUnique.constructor:
-                    result = new TL_starGiftUnique();
-                    break;
-                case TL_starGiftUnique_layer215.constructor:
-                    result = new TL_starGiftUnique_layer215();
-                    break;
-                case TL_starGiftUnique_layer214.constructor:
-                    result = new TL_starGiftUnique_layer214();
-                    break;
-                case TL_starGiftUnique_layer213.constructor:
-                    result = new TL_starGiftUnique_layer213();
-                    break;
-                case TL_starGiftUnique_layer211.constructor:
-                    result = new TL_starGiftUnique_layer211();
-                    break;
-                case TL_starGiftUnique_layer210.constructor:
-                    result = new TL_starGiftUnique_layer210();
-                    break;
-                case TL_starGiftUnique_layer206.constructor:
-                    result = new TL_starGiftUnique_layer206();
-                    break;
-                case TL_starGiftUnique_layer202.constructor:
-                    result = new TL_starGiftUnique_layer202();
-                    break;
-                case TL_starGiftUnique_layer198.constructor:
-                    result = new TL_starGiftUnique_layer198();
-                    break;
-                case TL_starGiftUnique_layer197.constructor:
-                    result = new TL_starGiftUnique_layer197();
-                    break;
-                case TL_starGiftUnique_layer196.constructor:
-                    result = new TL_starGiftUnique_layer196();
-                    break;
-                case TL_starGift_layer212.constructor:
-                    result = new TL_starGift_layer212();
-                    break;
-                case TL_starGift_layer209.constructor:
-                    result = new TL_starGift_layer209();
-                    break;
-                case TL_starGift_layer206.constructor:
-                    result = new TL_starGift_layer206();
-                    break;
-                case TL_starGift_layer202.constructor:
-                    result = new TL_starGift_layer202();
-                    break;
-                case TL_starGift_layer190.constructor:
-                    result = new TL_starGift_layer190();
-                    break;
-                case TL_starGift_layer195.constructor:
-                    result = new TL_starGift_layer195();
-                    break;
+                case TL_starGift.constructor:                   return new TL_starGift();
+                case TL_starGiftUnique.constructor:             return new TL_starGiftUnique();
+                case TL_starGiftUnique_layer215.constructor:    return new TL_starGiftUnique_layer215();
+                case TL_starGiftUnique_layer214.constructor:    return new TL_starGiftUnique_layer214();
+                case TL_starGiftUnique_layer213.constructor:    return new TL_starGiftUnique_layer213();
+                case TL_starGiftUnique_layer211.constructor:    return new TL_starGiftUnique_layer211();
+                case TL_starGiftUnique_layer210.constructor:    return new TL_starGiftUnique_layer210();
+                case TL_starGiftUnique_layer206.constructor:    return new TL_starGiftUnique_layer206();
+                case TL_starGiftUnique_layer202.constructor:    return new TL_starGiftUnique_layer202();
+                case TL_starGiftUnique_layer198.constructor:    return new TL_starGiftUnique_layer198();
+                case TL_starGiftUnique_layer197.constructor:    return new TL_starGiftUnique_layer197();
+                case TL_starGiftUnique_layer196.constructor:    return new TL_starGiftUnique_layer196();
+                case TL_starGift_layer217.constructor:          return new TL_starGift_layer217();
+                case TL_starGift_layer212.constructor:          return new TL_starGift_layer212();
+                case TL_starGift_layer209.constructor:          return new TL_starGift_layer209();
+                case TL_starGift_layer206.constructor:          return new TL_starGift_layer206();
+                case TL_starGift_layer202.constructor:          return new TL_starGift_layer202();
+                case TL_starGift_layer190.constructor:          return new TL_starGift_layer190();
+                case TL_starGift_layer195.constructor:          return new TL_starGift_layer195();
             }
-            if (result == null && exception) {
-                throw new RuntimeException(String.format("can't parse magic %x in StarGift", constructor));
-            }
-            if (result != null) {
-                result.readParams(stream, exception);
-            }
-            return result;
+            return null;
+        }
+
+        public static StarGift TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
+            return TLdeserialize(StarGift.class, fromConstructor(constructor), stream, constructor, exception);
         }
 
         @Nullable
@@ -894,6 +859,113 @@ public class TL_stars {
     }
 
     public static class TL_starGift extends StarGift {
+        public static final int constructor = 0x1B9A4D7F;
+
+        @Override
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+            flags = limited ? flags | 1 : flags &~ 1;
+            flags = sold_out ? flags | 2 : flags &~ 2;
+            flags = birthday ? flags | 4 : flags &~ 4;
+            flags = can_upgrade ? flags | 8 : flags &~ 8;
+            flags = setFlag(flags, FLAG_7, require_premium);
+            flags = setFlag(flags, FLAG_8, limited_per_user);
+            flags = setFlag(flags, FLAG_10, peer_color_available);
+            flags = setFlag(flags, FLAG_11, auction);
+            stream.writeInt32(flags);
+            stream.writeInt64(id);
+            sticker.serializeToStream(stream);
+            stream.writeInt64(stars);
+            if ((flags & 1) != 0) {
+                stream.writeInt32(availability_remains);
+                stream.writeInt32(availability_total);
+            }
+            if ((flags & 16) != 0) {
+                stream.writeInt64(availability_resale);
+            }
+            stream.writeInt64(convert_stars);
+            if ((flags & 2) != 0) {
+                stream.writeInt32(first_sale_date);
+                stream.writeInt32(last_sale_date);
+            }
+            if ((flags & 8) != 0) {
+                stream.writeInt64(upgrade_stars);
+            }
+            if ((flags & 16) != 0) {
+                stream.writeInt64(resell_min_stars);
+            }
+            if ((flags & 32) != 0) {
+                stream.writeString(title);
+            }
+            if ((flags & 64) != 0) {
+                released_by.serializeToStream(stream);
+            }
+            if (hasFlag(flags, FLAG_8)) {
+                stream.writeInt32(per_user_total);
+                stream.writeInt32(per_user_remains);
+            }
+            if (hasFlag(flags, FLAG_9)) {
+                stream.writeInt32(locked_until_date);
+            }
+            if (hasFlag(flags, FLAG_11)) {
+                stream.writeString(auction_slug);
+                stream.writeInt32(gifts_per_round);
+            }
+        }
+
+        @Override
+        public void readParams(InputSerializedData stream, boolean exception) {
+            flags = stream.readInt32(exception);
+            limited = (flags & 1) != 0;
+            sold_out = (flags & 2) != 0;
+            birthday = (flags & 4) != 0;
+            can_upgrade = (flags & 8) != 0;
+            require_premium = hasFlag(flags, FLAG_7);
+            limited_per_user = hasFlag(flags, FLAG_8);
+            peer_color_available = hasFlag(flags, FLAG_10);
+            auction = hasFlag(flags, FLAG_11);
+            id = stream.readInt64(exception);
+            sticker = TLRPC.Document.TLdeserialize(stream, stream.readInt32(exception), exception);
+            stars = stream.readInt64(exception);
+            if ((flags & 1) != 0) {
+                availability_remains = stream.readInt32(exception);
+                availability_total = stream.readInt32(exception);
+            }
+            if ((flags & 16) != 0) {
+                availability_resale = stream.readInt64(exception);
+            }
+            convert_stars = stream.readInt64(exception);
+            if ((flags & 2) != 0) {
+                first_sale_date = stream.readInt32(exception);
+                last_sale_date = stream.readInt32(exception);
+            }
+            if ((flags & 8) != 0) {
+                upgrade_stars = stream.readInt64(exception);
+            }
+            if ((flags & 16) != 0) {
+                resell_min_stars = stream.readInt64(exception);
+            }
+            if ((flags & 32) != 0) {
+                title = stream.readString(exception);
+            }
+            if ((flags & 64) != 0) {
+                released_by = TLRPC.Peer.TLdeserialize(stream, stream.readInt32(exception), exception);
+            }
+            if (hasFlag(flags, FLAG_8)) {
+                per_user_total = stream.readInt32(exception);
+                per_user_remains = stream.readInt32(exception);
+            }
+            if (hasFlag(flags, FLAG_9)) {
+                locked_until_date = stream.readInt32(exception);
+            }
+            if (hasFlag(flags, FLAG_11)) {
+                auction_slug = stream.readString(exception);
+                gifts_per_round = stream.readInt32(exception);
+            }
+        }
+    }
+
+    public static class TL_starGift_layer217 extends TL_starGift {
         public static final int constructor = 0x80ac53c3;
 
         @Override
@@ -1370,13 +1442,7 @@ public class TL_stars {
                     result = new TL_starGiftsNotModified();
                     break;
             }
-            if (result == null && exception) {
-                throw new RuntimeException(String.format("can't parse magic %x in StarGifts", constructor));
-            }
-            if (result != null) {
-                result.readParams(stream, exception);
-            }
-            return result;
+            return TLdeserialize(StarGifts.class, result, stream, constructor, exception);
         }
     }
     public static class TL_starGifts extends StarGifts {
@@ -1578,15 +1644,8 @@ public class TL_stars {
         public long upgrade_stars;
 
         public static StarGiftUpgradePrice TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
-            if (StarGiftUpgradePrice.constructor != constructor) {
-                if (exception) {
-                    throw new RuntimeException(String.format("can't parse magic %x in StarGiftUpgradePrice", constructor));
-                }
-                return null;
-            }
-            StarGiftUpgradePrice result = new StarGiftUpgradePrice();
-            result.readParams(stream, exception);
-            return result;
+            final StarGiftUpgradePrice result = StarGiftUpgradePrice.constructor != constructor ? null : new StarGiftUpgradePrice();
+            return TLdeserialize(StarGiftUpgradePrice.class, result, stream, constructor, exception);
         }
 
         @Override
@@ -1611,15 +1670,8 @@ public class TL_stars {
         public ArrayList<StarGiftUpgradePrice> next_prices = new ArrayList<>();
 
         public static starGiftUpgradePreview TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
-            if (starGiftUpgradePreview.constructor != constructor) {
-                if (exception) {
-                    throw new RuntimeException(String.format("can't parse magic %x in starGiftUpgradePreview", constructor));
-                }
-                return null;
-            }
-            starGiftUpgradePreview result = new starGiftUpgradePreview();
-            result.readParams(stream, exception);
-            return result;
+            final starGiftUpgradePreview result = starGiftUpgradePreview.constructor != constructor ? null : new starGiftUpgradePreview();
+            return TLdeserialize(starGiftUpgradePreview.class, result, stream, constructor, exception);
         }
 
         @Override
@@ -1668,16 +1720,8 @@ public class TL_stars {
         public boolean missingStorePrice; //custom
 
         public static TL_starsTopupOption TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
-            if (TL_starsTopupOption.constructor != constructor) {
-                if (exception) {
-                    throw new RuntimeException(String.format("can't parse magic %x in TL_starsTopupOption", constructor));
-                } else {
-                    return null;
-                }
-            }
-            TL_starsTopupOption result = new TL_starsTopupOption();
-            result.readParams(stream, exception);
-            return result;
+            final TL_starsTopupOption result = TL_starsTopupOption.constructor != constructor ? null : new TL_starsTopupOption();
+            return TLdeserialize(TL_starsTopupOption.class, result, stream, constructor, exception);
         }
 
         public void readParams(InputSerializedData stream, boolean exception) {
@@ -1717,16 +1761,8 @@ public class TL_stars {
         public boolean missingStorePrice; //custom
 
         public static TL_starsGiftOption TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
-            if (TL_starsGiftOption.constructor != constructor) {
-                if (exception) {
-                    throw new RuntimeException(String.format("can't parse magic %x in TL_starsGiftOption", constructor));
-                } else {
-                    return null;
-                }
-            }
-            TL_starsGiftOption result = new TL_starsGiftOption();
-            result.readParams(stream, exception);
-            return result;
+            final TL_starsGiftOption result = TL_starsGiftOption.constructor != constructor ? null : new TL_starsGiftOption();
+            return TLdeserialize(TL_starsGiftOption.class, result, stream, constructor, exception);
         }
 
         public void readParams(InputSerializedData stream, boolean exception) {
@@ -1762,16 +1798,8 @@ public class TL_stars {
         public long per_user_stars;
 
         public static TL_starsGiveawayWinnersOption TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
-            if (TL_starsGiveawayWinnersOption.constructor != constructor) {
-                if (exception) {
-                    throw new RuntimeException(String.format("can't parse magic %x in TL_starsGiveawayWinnersOption", constructor));
-                } else {
-                    return null;
-                }
-            }
-            TL_starsGiveawayWinnersOption result = new TL_starsGiveawayWinnersOption();
-            result.readParams(stream, exception);
-            return result;
+            final TL_starsGiveawayWinnersOption result = TL_starsGiveawayWinnersOption.constructor != constructor ? null : new TL_starsGiveawayWinnersOption();
+            return TLdeserialize(TL_starsGiveawayWinnersOption.class, result, stream, constructor, exception);
         }
 
         public void readParams(InputSerializedData stream, boolean exception) {
@@ -1807,16 +1835,8 @@ public class TL_stars {
         public boolean missingStorePrice; //custom
 
         public static TL_starsGiveawayOption TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
-            if (TL_starsGiveawayOption.constructor != constructor) {
-                if (exception) {
-                    throw new RuntimeException(String.format("can't parse magic %x in TL_starsGiveawayOption", constructor));
-                } else {
-                    return null;
-                }
-            }
-            TL_starsGiveawayOption result = new TL_starsGiveawayOption();
-            result.readParams(stream, exception);
-            return result;
+            final TL_starsGiveawayOption result = TL_starsGiveawayOption.constructor != constructor ? null : new TL_starsGiveawayOption();
+            return TLdeserialize(TL_starsGiveawayOption.class, result, stream, constructor, exception);
         }
 
         public void readParams(InputSerializedData stream, boolean exception) {
@@ -1881,13 +1901,7 @@ public class TL_stars {
                     result = new TL_starsTransactionPeerAPI();
                     break;
             }
-            if (result == null && exception) {
-                throw new RuntimeException(String.format("can't parse magic %x in StarsTransactionPeer", constructor));
-            }
-            if (result != null) {
-                result.readParams(stream, exception);
-            }
-            return result;
+            return TLdeserialize(StarsTransactionPeer.class, result, stream, constructor, exception);
         }
     }
 
@@ -1992,6 +2006,8 @@ public class TL_stars {
         public boolean posts_search;
         public boolean stargift_prepaid_upgrade;
         public boolean stargift_drop_original_details;
+        public boolean phonegroup_message;
+        public boolean stargift_auction_bid;
         public String id;
         public StarsAmount amount = StarsAmount.ofStars(0);
         public int date;
@@ -2056,13 +2072,7 @@ public class TL_stars {
                     result = new TL_starsTransaction();
                     break;
             }
-            if (result == null && exception) {
-                throw new RuntimeException(String.format("can't parse magic %x in StarsTransaction", constructor));
-            }
-            if (result != null) {
-                result.readParams(stream, exception);
-            }
-            return result;
+            return TLdeserialize(StarsTransaction.class, result, stream, constructor, exception);
         }
 
     }
@@ -2177,13 +2187,7 @@ public class TL_stars {
                     result = new TL_starsTonAmount();
                     break;
             }
-            if (result == null && exception) {
-                throw new RuntimeException(String.format("can't parse magic %x in StarsAmount", constructor));
-            }
-            if (result != null) {
-                result.readParams(stream, exception);
-            }
-            return result;
+            return TLdeserialize(StarsAmount.class, result, stream, constructor, exception);
         }
 
         public static StarsAmount ofStars(long stars) {
@@ -2270,6 +2274,8 @@ public class TL_stars {
             posts_search = (flags & 16777216) != 0;
             stargift_prepaid_upgrade = (flags & 33554432) != 0;
             stargift_drop_original_details = (flags & 67108864) != 0;
+            phonegroup_message = hasFlag(flags, FLAG_27);
+            stargift_auction_bid = hasFlag(flags, FLAG_28);
             id = stream.readString(exception);
             amount = StarsAmount.TLdeserialize(stream, stream.readInt32(exception), exception);
             date = stream.readInt32(exception);
@@ -2344,6 +2350,8 @@ public class TL_stars {
             flags = posts_search ? flags | 16777216 : flags &~ 16777216;
             flags = stargift_prepaid_upgrade ? flags | 33554432 : flags &~ 33554432;
             flags = stargift_drop_original_details ? flags | 67108864 : flags &~ 67108864;
+            flags = setFlag(flags, FLAG_27, phonegroup_message);
+            flags = setFlag(flags, FLAG_28, stargift_auction_bid);
             stream.writeInt32(flags);
             stream.writeString(id);
             amount.serializeToStream(stream);
@@ -2403,7 +2411,7 @@ public class TL_stars {
         }
     }
 
-    public static class TL_starsTransaction_layer205 extends StarsTransaction {
+    public static class TL_starsTransaction_layer205 extends TL_starsTransaction {
         public static final int constructor = 0xa39fd94a;
 
         public void readParams(InputSerializedData stream, boolean exception) {
@@ -3255,13 +3263,7 @@ public class TL_stars {
                     result = new TL_payments_starsStatus();
                     break;
             }
-            if (result == null && exception) {
-                throw new RuntimeException(String.format("can't parse magic %x in StarsStatus", constructor));
-            }
-            if (result != null) {
-                result.readParams(stream, exception);
-            }
-            return result;
+            return TLdeserialize(StarsStatus.class, result, stream, constructor, exception);
         }
     }
 
@@ -3463,14 +3465,14 @@ public class TL_stars {
         }
     }
 
-    public static class TL_payments_sendStarsForm extends TLObject {
+    public static class TL_payments_sendStarsForm extends TLMethod<TLRPC.payments_PaymentResult> {
         public static final int constructor = 0x7998c914;
 
         public long form_id;
         public TLRPC.InputInvoice invoice;
 
-        public TLObject deserializeResponse(InputSerializedData stream, int constructor, boolean exception) {
-            return TLRPC.TL_payments_paymentResult.TLdeserialize(stream, constructor, exception);
+        public TLRPC.payments_PaymentResult deserializeResponseT(InputSerializedData stream, int constructor, boolean exception) {
+            return TLRPC.payments_PaymentResult.TLdeserialize(stream, constructor, exception);
         }
 
         public void serializeToStream(OutputSerializedData stream) {
@@ -3509,13 +3511,7 @@ public class TL_stars {
                     result = new TL_starsSubscription_old();
                     break;
             }
-            if (result == null && exception) {
-                throw new RuntimeException(String.format("can't parse magic %x in StarsTransaction", constructor));
-            }
-            if (result != null) {
-                result.readParams(stream, exception);
-            }
-            return result;
+            return TLdeserialize(StarsSubscription.class, result, stream, constructor, exception);
         }
 
     }
@@ -3646,16 +3642,8 @@ public class TL_stars {
         public long amount;
 
         public static TL_starsSubscriptionPricing TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
-            if (TL_starsSubscriptionPricing.constructor != constructor) {
-                if (exception) {
-                    throw new RuntimeException(String.format("can't parse magic %x in TL_starsSubscriptionPricing", constructor));
-                } else {
-                    return null;
-                }
-            }
-            TL_starsSubscriptionPricing result = new TL_starsSubscriptionPricing();
-            result.readParams(stream, exception);
-            return result;
+            final TL_starsSubscriptionPricing result = TL_starsSubscriptionPricing.constructor != constructor ? null : new TL_starsSubscriptionPricing();
+            return TLdeserialize(TL_starsSubscriptionPricing.class, result, stream, constructor, exception);
         }
 
         @Override
@@ -3741,16 +3729,8 @@ public class TL_stars {
         public int count;
 
         public static starGiftAttributeCounter TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
-            if (starGiftAttributeCounter.constructor != constructor) {
-                if (exception) {
-                    throw new RuntimeException(String.format("can't parse magic %x in starGiftAttributeCounter", constructor));
-                } else {
-                    return null;
-                }
-            }
-            starGiftAttributeCounter result = new starGiftAttributeCounter();
-            result.readParams(stream, exception);
-            return result;
+            final starGiftAttributeCounter result = starGiftAttributeCounter.constructor != constructor ? null : new starGiftAttributeCounter();
+            return TLdeserialize(starGiftAttributeCounter.class, result, stream, constructor, exception);
         }
 
         @Override
@@ -3784,13 +3764,7 @@ public class TL_stars {
                     result = new starGiftAttributeIdBackdrop();
                     break;
             }
-            if (result == null && exception) {
-                throw new RuntimeException(String.format("can't parse magic %x in StarGiftAttributeId", constructor));
-            }
-            if (result != null) {
-                result.readParams(stream, exception);
-            }
-            return result;
+            return TLdeserialize(StarGiftAttributeId.class, result, stream, constructor, exception);
         }
 
     }
@@ -3867,13 +3841,7 @@ public class TL_stars {
                     result = new starGiftAttributeOriginalDetails_layer197();
                     break;
             }
-            if (result == null && exception) {
-                throw new RuntimeException(String.format("can't parse magic %x in StarGiftAttribute", constructor));
-            }
-            if (result != null) {
-                result.readParams(stream, exception);
-            }
-            return result;
+            return TLdeserialize(StarGiftAttribute.class, result, stream, constructor, exception);
         }
     }
 
@@ -4050,16 +4018,8 @@ public class TL_stars {
         public ArrayList<TLRPC.User> users = new ArrayList<>();
 
         public static TL_payments_uniqueStarGift TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
-            if (TL_payments_uniqueStarGift.constructor != constructor) {
-                if (exception) {
-                    throw new RuntimeException(String.format("can't parse magic %x in TL_payments_uniqueStarGift", constructor));
-                } else {
-                    return null;
-                }
-            }
-            TL_payments_uniqueStarGift result = new TL_payments_uniqueStarGift();
-            result.readParams(stream, exception);
-            return result;
+            final TL_payments_uniqueStarGift result = TL_payments_uniqueStarGift.constructor != constructor ? null : new TL_payments_uniqueStarGift();
+            return TLdeserialize(TL_payments_uniqueStarGift.class, result, stream, constructor, exception);
         }
 
         @Override
@@ -4138,13 +4098,7 @@ public class TL_stars {
                     result = new TL_savedStarGift_layer202();
                     break;
             }
-            if (result == null && exception) {
-                throw new RuntimeException(String.format("can't parse magic %x in SavedStarGift", constructor));
-            }
-            if (result != null) {
-                result.readParams(stream, exception);
-            }
-            return result;
+            return TLdeserialize(SavedStarGift.class, result, stream, constructor, exception);
         }
     }
 
@@ -4633,16 +4587,8 @@ public class TL_stars {
         public ArrayList<TLRPC.User> users = new ArrayList<>();
 
         public static TL_payments_savedStarGifts TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
-            if (TL_payments_savedStarGifts.constructor != constructor) {
-                if (exception) {
-                    throw new RuntimeException(String.format("can't parse magic %x in TL_payments_savedStarGifts", constructor));
-                } else {
-                    return null;
-                }
-            }
-            TL_payments_savedStarGifts result = new TL_payments_savedStarGifts();
-            result.readParams(stream, exception);
-            return result;
+            final TL_payments_savedStarGifts result = TL_payments_savedStarGifts.constructor != constructor ? null : new TL_payments_savedStarGifts();
+            return TLdeserialize(TL_payments_savedStarGifts.class, result, stream, constructor, exception);
         }
 
         @Override
@@ -4691,13 +4637,7 @@ public class TL_stars {
                     result = new TL_inputSavedStarGiftSlug();
                     break;
             }
-            if (result == null && exception) {
-                throw new RuntimeException(String.format("can't parse magic %x in InputSavedStarGift", constructor));
-            }
-            if (result != null) {
-                result.readParams(stream, exception);
-            }
-            return result;
+            return TLdeserialize(InputSavedStarGift.class, result, stream, constructor, exception);
         }
     }
 
@@ -4782,15 +4722,8 @@ public class TL_stars {
         public String url;
 
         public static starGiftWithdrawalUrl TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
-            if (starGiftWithdrawalUrl.constructor != constructor) {
-                if (exception) {
-                    throw new RuntimeException(String.format("can't parse magic %x in starGiftWithdrawalUrl", constructor));
-                }
-                return null;
-            }
-            starGiftWithdrawalUrl result = new starGiftWithdrawalUrl();
-            result.readParams(stream, exception);
-            return result;
+            final starGiftWithdrawalUrl result = starGiftWithdrawalUrl.constructor != constructor ? null : new starGiftWithdrawalUrl();
+            return TLdeserialize(starGiftWithdrawalUrl.class, result, stream, constructor, exception);
         }
 
         @Override
@@ -4840,13 +4773,7 @@ public class TL_stars {
                     result = new paidReactionPrivacyPeer();
                     break;
             }
-            if (result == null && exception) {
-                throw new RuntimeException(String.format("can't parse magic %x in PaidReactionPrivacy", constructor));
-            }
-            if (result != null) {
-                result.readParams(stream, exception);
-            }
-            return result;
+            return TLdeserialize(PaidReactionPrivacy.class, result, stream, constructor, exception);
         }
 
         public long getDialogId() {
@@ -4968,16 +4895,8 @@ public class TL_stars {
         public ArrayList<TLRPC.User> users = new ArrayList<>();
 
         public static resaleStarGifts TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
-            if (resaleStarGifts.constructor != constructor) {
-                if (exception) {
-                    throw new RuntimeException(String.format("can't parse magic %x in TL_payments.starRefProgram", constructor));
-                } else {
-                    return null;
-                }
-            }
-            resaleStarGifts result = new resaleStarGifts();
-            result.readParams(stream, exception);
-            return result;
+            final resaleStarGifts result = resaleStarGifts.constructor != constructor ? null : new resaleStarGifts();
+            return TLdeserialize(resaleStarGifts.class, result, stream, constructor, exception);
         }
 
         @Override
@@ -5064,16 +4983,8 @@ public class TL_stars {
         public long next_level_stars;
 
         public static Tl_starsRating TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
-            if (Tl_starsRating.constructor != constructor) {
-                if (exception) {
-                    throw new RuntimeException(String.format("can't parse magic %x in TL_stars.Tl_starsRating", constructor));
-                } else {
-                    return null;
-                }
-            }
-            Tl_starsRating result = new Tl_starsRating();
-            result.readParams(stream, exception);
-            return result;
+            final Tl_starsRating result = Tl_starsRating.constructor != constructor ? null : new Tl_starsRating();
+            return TLdeserialize(Tl_starsRating.class, result, stream, constructor, exception);
         }
 
         @Override
@@ -5119,13 +5030,7 @@ public class TL_stars {
             if (constructor == TL_starGiftCollection.constructor) {
                 result = new TL_starGiftCollection();
             }
-            if (result == null && exception) {
-                throw new RuntimeException(String.format("can't parse magic %x in TL_starGiftCollection", constructor));
-            }
-            if (result != null) {
-                result.readParams(stream, exception);
-            }
-            return result;
+            return TLdeserialize(TL_starGiftCollection.class, result, stream, constructor, exception);
         }
 
         @Override
@@ -5167,13 +5072,7 @@ public class TL_stars {
                     result = new TL_starGiftCollections();
                     break;
             }
-            if (result == null && exception) {
-                throw new RuntimeException(String.format("can't parse magic %x in StarGiftCollections", constructor));
-            }
-            if (result != null) {
-                result.readParams(stream, exception);
-            }
-            return result;
+            return TLdeserialize(StarGiftCollections.class, result, stream, constructor, exception);
         }
     }
 
@@ -5340,13 +5239,7 @@ public class TL_stars {
             if (constructor == UniqueStarGiftValueInfo.constructor) {
                 result = new UniqueStarGiftValueInfo();
             }
-            if (result == null && exception) {
-                throw new RuntimeException(String.format("can't parse magic %x in UniqueStarGiftValueInfo", constructor));
-            }
-            if (result != null) {
-                result.readParams(stream, exception);
-            }
-            return result;
+            return TLdeserialize(UniqueStarGiftValueInfo.class, result, stream, constructor, exception);
         }
 
         @Override
@@ -5439,13 +5332,7 @@ public class TL_stars {
                     result = new checkCanSendGiftResultFail();
                     break;
             }
-            if (result == null && exception) {
-                throw new RuntimeException(String.format("can't parse magic %x in CheckCanSendGiftResult", constructor));
-            }
-            if (result != null) {
-                result.readParams(stream, exception);
-            }
-            return result;
+            return TLdeserialize(CheckCanSendGiftResult.class, result, stream, constructor, exception);
         }
     }
 
@@ -5492,4 +5379,300 @@ public class TL_stars {
         }
     }
 
+    public static abstract class StarGiftAuctionState extends TLObject {
+
+        private static StarGiftAuctionState fromConstructor(int constructor) {
+            switch (constructor) {
+                case TL_starGiftAuctionStateNotModified.constructor:
+                    return new TL_starGiftAuctionStateNotModified();
+                case TL_starGiftAuctionStateFinished.constructor:
+                    return new TL_starGiftAuctionStateFinished();
+                case TL_starGiftAuctionState.constructor:
+                    return new TL_starGiftAuctionState();
+            }
+            return null;
+        }
+
+        public static StarGiftAuctionState TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
+            return TLdeserialize(StarGiftAuctionState.class, fromConstructor(constructor), stream, constructor, exception);
+        }
+    }
+
+    public static class TL_starGiftAuctionState extends StarGiftAuctionState {
+        public static final int constructor = 0x5DB04F4B;
+
+        public int version;
+        public int start_date;
+        public int end_date;
+        public long min_bid_amount;
+        public ArrayList<TL_AuctionBidLevel> bid_levels = new ArrayList<>();
+        public ArrayList<Long> top_bidders = new ArrayList<>();
+        public int next_round_at;
+        public int gifts_left;
+        public int current_round;
+        public int total_rounds;
+
+        @Override
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+            stream.writeInt32(version);
+            stream.writeInt32(start_date);
+            stream.writeInt32(end_date);
+            stream.writeInt64(min_bid_amount);
+            Vector.serialize(stream, bid_levels);
+            Vector.serializeLong(stream, top_bidders);
+            stream.writeInt32(next_round_at);
+            stream.writeInt32(gifts_left);
+            stream.writeInt32(current_round);
+            stream.writeInt32(total_rounds);
+        }
+
+        @Override
+        public void readParams(InputSerializedData stream, boolean exception) {
+            version = stream.readInt32(exception);
+            start_date = stream.readInt32(exception);
+            end_date = stream.readInt32(exception);
+            min_bid_amount = stream.readInt64(exception);
+            bid_levels = Vector.deserialize(stream, TL_AuctionBidLevel::TLdeserialize, exception);
+            top_bidders = Vector.deserializeLong(stream, exception);
+            next_round_at = stream.readInt32(exception);
+            gifts_left = stream.readInt32(exception);
+            current_round = stream.readInt32(exception);
+            total_rounds = stream.readInt32(exception);
+        }
+    }
+    
+    public static class TL_starGiftAuctionStateNotModified extends StarGiftAuctionState {
+        public static final int constructor = 0xFE333952;
+
+        @Override
+        public void readParams(InputSerializedData stream, boolean exception) {
+
+        }
+
+        @Override
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+        }
+    }
+
+    public static class TL_starGiftAuctionStateFinished extends StarGiftAuctionState {
+        public static final int constructor = 0x7D967C3A;
+
+        public int start_date;
+        public int end_date;
+        public long average_price;
+
+        @Override
+        public void readParams(InputSerializedData stream, boolean exception) {
+            start_date = stream.readInt32(exception);
+            end_date = stream.readInt32(exception);
+            average_price = stream.readInt64(exception);
+        }
+
+        @Override
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+            stream.writeInt32(start_date);
+            stream.writeInt32(end_date);
+            stream.writeInt64(average_price);
+        }
+    }
+
+    public static class TL_StarGiftAuctionUserState extends TLObject {
+        public static final int constructor = 0x2eeed1c4;
+
+        public int flags;
+        public boolean returned;
+        public int acquired_count;
+        public long bid_amount;
+        public int bid_date;
+        public TLRPC.Peer peer;
+        public long min_bid_amount;
+
+        public static TL_StarGiftAuctionUserState TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
+            final TL_StarGiftAuctionUserState result = TL_StarGiftAuctionUserState.constructor != constructor ? null : new TL_StarGiftAuctionUserState();
+            return TLdeserialize(TL_StarGiftAuctionUserState.class, result, stream, constructor, exception);
+        }
+
+        @Override
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+            flags = setFlag(flags, FLAG_1, returned);
+            stream.writeInt32(flags);
+            if (hasFlag(flags, FLAG_0)) {
+                stream.writeInt64(bid_amount);
+                stream.writeInt32(bid_date);
+                stream.writeInt64(min_bid_amount);
+                peer.serializeToStream(stream);
+            }
+            stream.writeInt32(acquired_count);
+        }
+
+        @Override
+        public void readParams(InputSerializedData stream, boolean exception) {
+            flags = stream.readInt32(exception);
+            returned = hasFlag(flags, FLAG_1);
+            if (hasFlag(flags, FLAG_0)) {
+                bid_amount = stream.readInt64(exception);
+                bid_date = stream.readInt32(exception);
+                min_bid_amount = stream.readInt64(exception);
+                peer = TLRPC.Peer.TLdeserialize(stream, stream.readInt32(exception), exception);
+            }
+            acquired_count = stream.readInt32(exception);
+        }
+    }
+
+    public static class TL_StarGiftAuctionAcquiredGift extends TLObject {
+        public static final int constructor = 0xAB60E20B;
+
+        public boolean name_hidden;
+        public TLRPC.Peer peer;
+        public int date;
+        public long bid_amount;
+        public int round;
+        public int pos;
+        public TLRPC.TL_textWithEntities message;
+
+        @Override
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+
+            int flags = 0;
+            flags = setFlag(flags, FLAG_0, name_hidden);
+            flags = setFlag(flags, FLAG_1, message != null);
+            stream.writeInt32(flags);
+            peer.serializeToStream(stream);
+            stream.writeInt32(date);
+            stream.writeInt64(bid_amount);
+            stream.writeInt32(round);
+            stream.writeInt32(pos);
+            if (hasFlag(flags, FLAG_1)) {
+                message.serializeToStream(stream);
+            }
+        }
+
+        @Override
+        public void readParams(InputSerializedData stream, boolean exception) {
+            final int flags = stream.readInt32(exception);
+            name_hidden = hasFlag(flags, FLAG_0);
+            peer = TLRPC.Peer.TLdeserialize(stream, stream.readInt32(exception), exception);
+            date = stream.readInt32(exception);
+            bid_amount = stream.readInt64(exception);
+            round = stream.readInt32(exception);
+            pos = stream.readInt32(exception);
+            if (hasFlag(flags, FLAG_1)) {
+                message = TLRPC.TL_textWithEntities.TLdeserialize(stream, stream.readInt32(exception), exception);
+            }
+        }
+
+        public static TL_StarGiftAuctionAcquiredGift TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
+            final TL_StarGiftAuctionAcquiredGift result = TL_StarGiftAuctionAcquiredGift.constructor != constructor ? null : new TL_StarGiftAuctionAcquiredGift();
+            return TLdeserialize(TL_StarGiftAuctionAcquiredGift.class, result, stream, constructor, exception);
+        }
+    }
+
+    public static class TL_StarGiftActiveAuctionState extends TLObject {
+        public static final int constructor = 0xD31BC45D;
+
+        public StarGift gift;
+        public StarGiftAuctionState state;
+        public TL_StarGiftAuctionUserState user_state;
+
+        @Override
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+            gift.serializeToStream(stream);
+            state.serializeToStream(stream);
+            user_state.serializeToStream(stream);
+        }
+
+        @Override
+        public void readParams(InputSerializedData stream, boolean exception) {
+            gift = StarGift.TLdeserialize(stream, stream.readInt32(exception), exception);
+            state = StarGiftAuctionState.TLdeserialize(stream, stream.readInt32(exception), exception);
+            user_state = TL_StarGiftAuctionUserState.TLdeserialize(stream, stream.readInt32(exception), exception);
+        }
+
+        public static TL_StarGiftActiveAuctionState TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
+            final TL_StarGiftActiveAuctionState result = TL_StarGiftActiveAuctionState.constructor != constructor ? null : new TL_StarGiftActiveAuctionState();
+            return TLdeserialize(TL_StarGiftActiveAuctionState.class, result, stream, constructor, exception);
+        }
+    }
+
+    public static abstract class InputStarGiftAuction extends TLObject {
+        private static InputStarGiftAuction fromConstructor(int constructor) {
+            switch (constructor) {
+                case TL_inputStarGiftAuction.constructor:       return new TL_inputStarGiftAuction();
+                case TL_inputStarGiftAuctionSlug.constructor:   return new TL_inputStarGiftAuctionSlug();
+            }
+            return null;
+        }
+
+        public static InputStarGiftAuction TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
+            return TLdeserialize(InputStarGiftAuction.class, fromConstructor(constructor), stream, constructor, exception);
+        }
+    }
+
+    public static class TL_inputStarGiftAuction extends InputStarGiftAuction {
+        public static final int constructor = 0x02E16C98;
+
+        public long gift_id;
+
+        @Override
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+            stream.writeInt64(gift_id);
+        }
+
+        @Override
+        public void readParams(InputSerializedData stream, boolean exception) {
+            gift_id = stream.readInt64(exception);
+        }
+    }
+
+    public static class TL_inputStarGiftAuctionSlug extends InputStarGiftAuction {
+        public static final int constructor = 0x7AB58308;
+
+        public String slug;
+
+        @Override
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+            stream.writeString(slug);
+        }
+
+        @Override
+        public void readParams(InputSerializedData stream, boolean exception) {
+            slug = stream.readString(exception);
+        }
+    }
+
+    public static class TL_AuctionBidLevel extends TLObject {
+        public static final int constructor = 0x310240CC;
+
+        public int pos;
+        public long amount;
+        public int date;
+
+        public static TL_AuctionBidLevel TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
+            final TL_AuctionBidLevel result = TL_AuctionBidLevel.constructor != constructor ? null : new TL_AuctionBidLevel();
+            return TLdeserialize(TL_AuctionBidLevel.class, result, stream, constructor, exception);
+        }
+
+        @Override
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+            stream.writeInt32(pos);
+            stream.writeInt64(amount);
+            stream.writeInt32(date);
+        }
+
+        @Override
+        public void readParams(InputSerializedData stream, boolean exception) {
+            pos = stream.readInt32(exception);
+            amount = stream.readInt64(exception);
+            date = stream.readInt32(exception);
+        }
+    }
 }

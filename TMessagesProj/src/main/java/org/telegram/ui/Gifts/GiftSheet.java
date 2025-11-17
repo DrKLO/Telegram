@@ -133,7 +133,6 @@ import org.telegram.ui.Stories.recorder.HintView2;
 
 import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.TreeSet;
@@ -215,7 +214,7 @@ public class GiftSheet extends BottomSheetWithRecyclerListView implements Notifi
         }
         topPadding = 0.10f;
 
-        balanceView = new StarsIntroActivity.StarsBalanceView(context, currentAccount);
+        balanceView = new StarsIntroActivity.StarsBalanceView(context, currentAccount, resourcesProvider);
         ScaleStateListAnimator.apply(balanceView);
         balanceView.setOnClickListener(v -> {
             if (balanceView.lastBalance <= 0) return;
@@ -544,6 +543,11 @@ public class GiftSheet extends BottomSheetWithRecyclerListView implements Notifi
                         lastFragment.showAsSheet(fragment, bottomSheetParams);
                         return;
                     }
+                    if (gift.auction) {
+                        AuctionJoinSheet.show(context, resourcesProvider, currentAccount, dialogId, gift.id);
+                        return;
+                    }
+
                     if (gift.sold_out) {
                         StarsIntroActivity.showSoldOutGiftSheet(context, currentAccount, gift, resourcesProvider);
                         return;
@@ -1164,6 +1168,19 @@ public class GiftSheet extends BottomSheetWithRecyclerListView implements Notifi
             card.addView(tonOnlySaleView, LayoutHelper.createFrame(20, 20, Gravity.TOP | Gravity.LEFT, 3, 3, 3, 3));
         }
 
+        public void setImageSize(int size) {
+            imageViewLayoutParams.width = size;
+            imageViewLayoutParams.height = size;
+        }
+
+        public void setImageLayer(int l) {
+            imageView.setLayerNum(l);
+        }
+
+        public void hidePrice() {
+            priceLayout.setVisibility(GONE);
+        }
+
         public void setSelected(boolean selected, boolean animated) {
             cardBackground.setSelected(selected, animated);
             if (animated) {
@@ -1367,6 +1384,7 @@ public class GiftSheet extends BottomSheetWithRecyclerListView implements Notifi
 
         private GiftPremiumBottomSheet.GiftTier premiumTier;
         private TL_stars.StarGift gift;
+        private boolean priotityAuction;
         private boolean giftMine;
         private TL_stars.SavedStarGift userGift;
         public boolean allowResaleInGifts, inResalePage;
@@ -1383,6 +1401,10 @@ public class GiftSheet extends BottomSheetWithRecyclerListView implements Notifi
         }
 
         private GiftPremiumBottomSheet.GiftTier lastTier;
+
+        public void setPriorityAuction() {
+            priotityAuction = true;
+        }
 
         public boolean setPremiumGift(GiftPremiumBottomSheet.GiftTier tier) {
             final int months = tier.getMonths();
@@ -1482,7 +1504,18 @@ public class GiftSheet extends BottomSheetWithRecyclerListView implements Notifi
             final TL_stars.starGiftAttributeBackdrop backdrop = findAttribute(gift.attributes, TL_stars.starGiftAttributeBackdrop.class);
             cardBackground.setBackdrop(backdrop);
             cardBackground.setPattern(findAttribute(gift.attributes, TL_stars.starGiftAttributePattern.class));
-            cardBackground.setStrokeColors(gift.require_premium && !(allowResaleInGifts && gift.availability_resale > 0) ? PREMIUM_STROKE : null);
+            if (gift.auction && (!gift.sold_out || priotityAuction)) {
+                if (gift.sold_out) {
+                    cardBackground.setStrokeColors(new int[] {
+                        Theme.getColor(Theme.key_gift_ribbon_soldout, resourcesProvider),
+                        Theme.getColor(Theme.key_gift_ribbon_soldout, resourcesProvider)
+                    });
+                } else {
+                    cardBackground.setStrokeColors(PREMIUM_STROKE);
+                }
+            } else {
+                cardBackground.setStrokeColors(gift.require_premium && !(allowResaleInGifts && gift.availability_resale > 0) ? PREMIUM_STROKE : null);
+            }
             titleView.setVisibility(View.GONE);
             subtitleView.setVisibility(View.GONE);
             imageView.setTranslationY(0);
@@ -1539,7 +1572,13 @@ public class GiftSheet extends BottomSheetWithRecyclerListView implements Notifi
                 } else {
                     stars = gift.stars + (includeUpgradeInPrice && gift.can_upgrade ? gift.upgrade_stars : 0);
                 }
-                priceView.setText(StarsIntroActivity.replaceStarsWithPlain("XTR " + LocaleController.formatNumber(stars, ',') + (plus ? "+" : ""), .71f));
+
+                if (gift.auction) {
+                    priceView.setText(getString(gift.sold_out ? R.string.Gift2AuctionPriceView : R.string.Gift2AuctionPriceJoin));
+                } else {
+                    priceView.setText(StarsIntroActivity.replaceStarsWithPlain("XTR " + LocaleController.formatNumber(stars, ',') + (plus ? "+" : ""), .71f));
+                }
+
                 priceBackground.setBackground(new StarsBackground(gift instanceof TL_stars.TL_starGiftUnique ? 0x40FFFFFF : (Theme.isCurrentThemeDark() ? 0x1EEBA52D : 0x40E8AB02)));
                 priceView.setTextColor(Theme.isCurrentThemeDark() ? 0xFFEBA52D : 0xFFD67722);
 
@@ -1792,6 +1831,12 @@ public class GiftSheet extends BottomSheetWithRecyclerListView implements Notifi
                     ribbon.setStrokeColor(0);
                     ribbon.setBackdrop(null);
                     ribbon.setText(LocaleController.getString(R.string.Gift2SoldOut), true);
+                } else if (gift.auction) {
+                    ribbon.setVisibility(View.VISIBLE);
+                    ribbon.setBackdrop(null);
+                    ribbon.setColors(0xFFD79023, 0xFFBF7D16);
+                    ribbon.setStrokeColor(0);
+                    ribbon.setText(getString(R.string.Gift2LimitedAuction), true);
                 } else if (gift.require_premium) {
                     ribbon.setVisibility(View.VISIBLE);
                     ribbon.setBackdrop(null);

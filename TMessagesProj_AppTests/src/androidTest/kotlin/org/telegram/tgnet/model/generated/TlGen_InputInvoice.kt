@@ -234,4 +234,36 @@ public sealed class TlGen_InputInvoice : TlGen_Object {
       public const val MAGIC: UInt = 0x0923D8D1U
     }
   }
+
+  public data class TL_inputInvoiceStarGiftAuctionBid(
+    public val hide_name: Boolean,
+    public val update_bid: Boolean,
+    public val peer: TlGen_InputPeer?,
+    public val gift_id: Long,
+    public val bid_amount: Long,
+    public val message: TlGen_TextWithEntities?,
+  ) : TlGen_InputInvoice() {
+    internal val flags: UInt
+      get() {
+        var result = 0U
+        if (hide_name) result = result or 1U
+        if (message != null) result = result or 2U
+        if (update_bid) result = result or 4U
+        if (peer != null) result = result or 8U
+        return result
+      }
+
+    public override fun serializeToStream(stream: OutputSerializedData) {
+      stream.writeInt32(MAGIC.toInt())
+      stream.writeInt32(flags.toInt())
+      peer?.serializeToStream(stream)
+      stream.writeInt64(gift_id)
+      stream.writeInt64(bid_amount)
+      message?.serializeToStream(stream)
+    }
+
+    public companion object {
+      public const val MAGIC: UInt = 0x1ECAFA10U
+    }
+  }
 }

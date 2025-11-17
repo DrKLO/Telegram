@@ -189,7 +189,7 @@ public class MessageObject {
     public boolean reactionsChanged;
     public boolean isReactionPush;
     public boolean isStoryReactionPush;
-    public boolean isStoryPush, isStoryMentionPush, isStoryPushHidden;
+    public boolean isStoryPush, isStoryMentionPush, isStoryPushHidden, isLiveStoryPush;
     public boolean putInDownloadsStore;
     public boolean isDownloadingFile;
     public boolean forcePlayEffect;
@@ -4720,7 +4720,7 @@ public class MessageObject {
                         messageText = replaceWithLink(messageText, "un2", peerObj);
                         messageTextShort = getString(R.string.ActionStarGift);
                     } else if (UserObject.isUserSelf(user)) {
-                        messageText = AndroidUtilities.replaceTags(getString(R.string.ActionGiftSelf));
+                        messageText = AndroidUtilities.replaceTags(getString(action.auction_acquired ? R.string.ActionGiftAuctionSelf : R.string.ActionGiftSelf));
                         messageTextShort = getString(R.string.ActionStarGift);
                     } else if (obj instanceof TLRPC.User && ((TLRPC.User) obj).self && !action.forceIn) {
                         messageText = replaceWithLink(AndroidUtilities.replaceTags(getString(R.string.ActionGiftOutbound)), "un1", user);
@@ -4823,7 +4823,7 @@ public class MessageObject {
                             messageText = replaceWithLink(messageText, "un1", obj);
                             messageText = replaceWithLink(messageText, "un2", peer);
                         } else if (action.assigned) {
-                            String giftName = action.gift.title + " #" + action.gift.num;
+                            String giftName = action.gift.title + " #" + LocaleController.formatNumber(action.gift.num, ',');
                             messageText = replaceWithLink(AndroidUtilities.replaceTags(formatString(R.string.ActionUniqueGiftTransferOutboundAssigned, giftName)), "un1", obj);
                         } else {
                             messageText = replaceWithLink(AndroidUtilities.replaceTags(getString(isOutOwner() ? R.string.ActionUniqueGiftTransferOutbound : R.string.ActionUniqueGiftTransferInbound)), "un1", obj);
@@ -12211,7 +12211,7 @@ public class MessageObject {
         return false;
     }
 
-    public static void toggleTodo(TLRPC.TL_messageMediaToDo mediaTodo, int taskId, boolean enable, long myself, int currentDate) {
+    public static void toggleTodo(int currentAccount, long dialogId, TLRPC.TL_messageMediaToDo mediaTodo, int taskId, boolean enable, int currentDate) {
         for (int i = 0; i < mediaTodo.completions.size(); ++i) {
             final TLRPC.TodoCompletion completion = mediaTodo.completions.get(i);
             if (completion.id == taskId) {
@@ -12222,7 +12222,7 @@ public class MessageObject {
         if (enable) {
             final TLRPC.TodoCompletion completion = new TLRPC.TodoCompletion();
             completion.id = taskId;
-            completion.completed_by = myself;
+            completion.completed_by = MessagesController.getInstance(currentAccount).getSendAsSelectedPeer(dialogId);
             completion.date = currentDate;
             mediaTodo.completions.add(completion);
         }

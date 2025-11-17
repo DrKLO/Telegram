@@ -1782,7 +1782,10 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
                 } else {
                     req.flags |= 4;
                     req.color = new TLRPC.TL_peerColor();
-                    req.color.color = me.color.color = namePage.selectedColor;
+                    req.color.flags |= 1;
+                    req.color.color = namePage.selectedColor;
+                    me.color.flags |= 1;
+                    me.color.color = namePage.selectedColor;
                     if (namePage.selectedEmoji != 0) {
                         req.flags |= 1;
                         me.color.flags |= 2;
@@ -1802,7 +1805,7 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
             ) {
                 applyingProfile = true;
                 if (me.profile_color == null) {
-                    me.profile_color = new TLRPC.PeerColor();
+                    me.profile_color = new TLRPC.TL_peerColor();
                 }
                 TL_account.updateColor req = new TL_account.updateColor();
                 req.for_profile = true;
@@ -1810,13 +1813,14 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
                 if (profilePage.selectedColor < 0) {
                     me.profile_color.flags &=~ 1;
                 } else {
-                    me.profile_color.flags |= 1;
                     if (req.color == null) {
                         req.flags |= 4;
                         req.color = new TLRPC.TL_peerColor();
                     }
                     req.color.flags |= 1;
-                    req.color.color = me.profile_color.color = profilePage.selectedColor;
+                    req.color.color = profilePage.selectedColor;
+                    me.profile_color.flags |= 1;
+                    me.profile_color.color = profilePage.selectedColor;
                 }
                 if (profilePage.selectedEmoji != 0) {
                     req.flags |= 1;

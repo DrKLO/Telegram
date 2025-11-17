@@ -362,6 +362,10 @@ public class TableView extends TableLayout {
     }
 
     public TableRow addRow(CharSequence title, CharSequence text) {
+        return addRow(title, text, null);
+    }
+
+    public TableRow addRow(CharSequence title, CharSequence text, ButtonSpan.TextViewButtons[] textViewRef) {
         ButtonSpan.TextViewButtons textView = new ButtonSpan.TextViewButtons(getContext());
         textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
@@ -375,6 +379,10 @@ public class TableView extends TableLayout {
         lp = new TableRow.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 1f);
         row.addView(new TableRowContent(this, textView), lp);
         addView(row);
+
+        if (textViewRef != null) {
+            textViewRef[0] = textView;
+        }
 
         return row;
     }

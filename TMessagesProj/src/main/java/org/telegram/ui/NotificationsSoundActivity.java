@@ -585,7 +585,7 @@ public class NotificationsSoundActivity extends BaseFragment implements ChatAtta
     }
 
     @Override
-    public void didSelectFiles(ArrayList<String> files, String caption, ArrayList<TLRPC.MessageEntity> captionEntities, ArrayList<MessageObject> fmessages, boolean notify, int scheduleDate, long effectId, boolean invertMedia, long payStars) {
+    public void didSelectFiles(ArrayList<String> files, String caption, ArrayList<TLRPC.MessageEntity> captionEntities, ArrayList<MessageObject> fmessages, boolean notify, int scheduleDate, int scheduleRepeatPeriod, long effectId, boolean invertMedia, long payStars) {
         for (int i = 0; i < files.size(); i++) {
             getMediaDataController().uploadRingtone(files.get(i));
         }

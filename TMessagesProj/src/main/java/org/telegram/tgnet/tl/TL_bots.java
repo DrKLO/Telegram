@@ -3,10 +3,10 @@ package org.telegram.tgnet.tl;
 import android.graphics.Path;
 
 import org.telegram.messenger.SvgHelper;
-import org.telegram.tgnet.AbstractSerializedData;
 import org.telegram.tgnet.InputSerializedData;
 import org.telegram.tgnet.OutputSerializedData;
 import org.telegram.tgnet.TLObject;
+import org.telegram.tgnet.TLParseException;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.Vector;
 
@@ -21,16 +21,8 @@ public class TL_bots {
         public TLRPC.MessageMedia media;
 
         public static botPreviewMedia TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
-            if (botPreviewMedia.constructor != constructor) {
-                if (exception) {
-                    throw new RuntimeException(String.format("can't parse magic %x in botPreviewMedia", constructor));
-                } else {
-                    return null;
-                }
-            }
-            botPreviewMedia result = new botPreviewMedia();
-            result.readParams(stream, exception);
-            return result;
+            final botPreviewMedia result = botPreviewMedia.constructor != constructor ? null : new botPreviewMedia();
+            return TLdeserialize(botPreviewMedia.class, result, stream, constructor, exception);
         }
 
         @Override
@@ -177,16 +169,8 @@ public class TL_bots {
         public ArrayList<String> lang_codes = new ArrayList<>();
 
         public static previewInfo TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
-            if (previewInfo.constructor != constructor) {
-                if (exception) {
-                    throw new RuntimeException(String.format("can't parse magic %x in previewInfo", constructor));
-                } else {
-                    return null;
-                }
-            }
-            previewInfo result = new previewInfo();
-            result.readParams(stream, exception);
-            return result;
+            final previewInfo result = previewInfo.constructor != constructor ? null : new previewInfo();
+            return TLdeserialize(previewInfo.class, result, stream, constructor, exception);
         }
 
         @Override
@@ -338,13 +322,7 @@ public class TL_bots {
                     result = new TL_botInfo();
                     break;
             }
-            if (result == null && exception) {
-                throw new RuntimeException(String.format("can't parse magic %x in BotInfo", constructor));
-            }
-            if (result != null) {
-                result.readParams(stream, exception);
-            }
-            return result;
+            return TLdeserialize(BotInfo.class, result, stream, constructor, exception);
         }
     }
 
@@ -692,13 +670,7 @@ public class TL_bots {
                     result = new TL_botMenuButtonCommands();
                     break;
             }
-            if (result == null && exception) {
-                throw new RuntimeException(String.format("can't parse magic %x in BotMenuButton", constructor));
-            }
-            if (result != null) {
-                result.readParams(stream, exception);
-            }
-            return result;
+            return TLdeserialize(BotMenuButton.class, result, stream, constructor, exception);
         }
     }
 
@@ -864,16 +836,8 @@ public class TL_bots {
         public ArrayList<TLRPC.User> users = new ArrayList<>();
 
         public static popularAppBots TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
-            if (popularAppBots.constructor != constructor) {
-                if (exception) {
-                    throw new RuntimeException(String.format("can't parse magic %x in TL_bots_popularAppBots", constructor));
-                } else {
-                    return null;
-                }
-            }
-            popularAppBots result = new popularAppBots();
-            result.readParams(stream, exception);
-            return result;
+            final popularAppBots result = popularAppBots.constructor != constructor ? null : new popularAppBots();
+            return TLdeserialize(popularAppBots.class, result, stream, constructor, exception);
         }
 
         public void readParams(InputSerializedData stream, boolean exception) {
@@ -906,16 +870,8 @@ public class TL_bots {
         public int header_dark_color;
 
         public static botAppSettings TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
-            if (botAppSettings.constructor != constructor) {
-                if (exception) {
-                    throw new RuntimeException(String.format("can't parse magic %x in botAppSettings", constructor));
-                } else {
-                    return null;
-                }
-            }
-            botAppSettings result = new botAppSettings();
-            result.readParams(stream, exception);
-            return result;
+            final botAppSettings result = botAppSettings.constructor != constructor ? null : new botAppSettings();
+            return TLdeserialize(botAppSettings.class, result, stream, constructor, exception);
         }
 
         @Override
@@ -1050,16 +1006,8 @@ public class TL_bots {
         public String custom_description;
 
         public static botVerifierSettings TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
-            if (botVerifierSettings.constructor != constructor) {
-                if (exception) {
-                    throw new RuntimeException(String.format("can't parse magic %x in TL_bots.botVerifierSettings", constructor));
-                } else {
-                    return null;
-                }
-            }
-            botVerifierSettings result = new botVerifierSettings();
-            result.readParams(stream, exception);
-            return result;
+            final botVerifierSettings result = botVerifierSettings.constructor != constructor ? null : new botVerifierSettings();
+            return TLdeserialize(botVerifierSettings.class, result, stream, constructor, exception);
         }
 
         @Override
@@ -1094,16 +1042,8 @@ public class TL_bots {
         public String description;
 
         public static botVerification TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
-            if (botVerification.constructor != constructor) {
-                if (exception) {
-                    throw new RuntimeException(String.format("can't parse magic %x in TL_bots.botVerification", constructor));
-                } else {
-                    return null;
-                }
-            }
-            botVerification result = new botVerification();
-            result.readParams(stream, exception);
-            return result;
+            final botVerification result = botVerification.constructor != constructor ? null : new botVerification();
+            return TLdeserialize(botVerification.class, result, stream, constructor, exception);
         }
 
         @Override

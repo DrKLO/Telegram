@@ -16,6 +16,7 @@ import android.text.Layout;
 import android.text.Spannable;
 import android.text.SpannableString;
 import android.text.Spanned;
+import android.text.style.CharacterStyle;
 import android.text.style.ClickableSpan;
 import android.view.MotionEvent;
 import android.view.ViewConfiguration;
@@ -29,6 +30,7 @@ import org.telegram.ui.Components.AnimatedEmojiDrawable;
 import org.telegram.ui.Components.AnimatedEmojiSpan;
 import org.telegram.ui.Components.LinkPath;
 import org.telegram.ui.Components.LinkSpanDrawable;
+import org.telegram.ui.Components.LoadingDrawable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -88,6 +90,26 @@ public class SpoilersTextView extends TextView implements TextSelectionHelper.Si
             for (SpoilerEffect ef : spoilers)
                 ef.startRipple(x, y, rad);
         });
+    }
+
+    private CharacterStyle currentLinkLoading;
+    public void setLoading(CharacterStyle span) {
+        if (currentLinkLoading != span) {
+            links.clearLoading(true);
+            currentLinkLoading = span;
+            LoadingDrawable drawable = LinkSpanDrawable.LinkCollector.makeLoading(getLayout(), span, getPaddingTop());
+            if (drawable != null) {
+                final int color = Theme.getColor(Theme.key_chat_linkSelectBackground, resourcesProvider);
+                drawable.setColors(
+                    Theme.multAlpha(color, .8f),
+                    Theme.multAlpha(color, 1.3f),
+                    Theme.multAlpha(color, 1f),
+                    Theme.multAlpha(color, 4f)
+                );
+                drawable.strokePaint.setStrokeWidth(AndroidUtilities.dpf2(1.25f));
+                links.addLoading(drawable);
+            }
+        }
     }
 
     public void setOnLinkPressListener(LinkSpanDrawable.LinksTextView.OnLinkPress listener) {

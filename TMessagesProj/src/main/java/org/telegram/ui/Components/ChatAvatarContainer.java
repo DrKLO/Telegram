@@ -178,6 +178,7 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
                     baseFragment.getOrCreateStoryViewer().open(getContext(), dialogId, (dialogId1, messageId, storyId, type, holder) -> {
                         holder.crossfadeToAvatarImage = holder.storyImage = imageReceiver;
                         holder.params = params;
+                        holder.isLive = params.drawnLive;
                         holder.view = avatarImageView;
                         holder.alpha = avatarImageView.getAlpha();
                         holder.clipTop = 0;

@@ -1018,7 +1018,7 @@ public class ThemePreviewActivity extends BaseFragment implements DownloadContro
                         PhotoViewer.getInstance().setParentActivity(getParentActivity());
                         PhotoViewer.getInstance().openPhotoForSelect(arrayList, 0, PhotoViewer.SELECT_TYPE_WALLPAPER, false, new PhotoViewer.EmptyPhotoViewerProvider() {
                             @Override
-                            public void sendButtonPressed(int index, VideoEditedInfo videoEditedInfo, boolean notify, int scheduleDate, boolean forceDocument) {
+                            public void sendButtonPressed(int index, VideoEditedInfo videoEditedInfo, boolean notify, int scheduleDate, int scheduleRepeatPeriod, boolean forceDocument) {
                                 if (photoEntry.imagePath != null) {
                                     File currentWallpaperPath = new File(FileLoader.getDirectory(FileLoader.MEDIA_DIR_CACHE), Utilities.random.nextInt() + ".jpg");
                                     Point screenSize = AndroidUtilities.getRealScreenSize();

@@ -42,6 +42,7 @@ import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.DownloadController;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
+import org.telegram.messenger.GiftAuctionController;
 import org.telegram.messenger.LocationController;
 import org.telegram.messenger.MediaController;
 import org.telegram.messenger.MediaDataController;
@@ -279,11 +280,7 @@ public abstract class BaseFragment {
     public void setInPreviewMode(boolean value) {
         inPreviewMode = value;
         if (actionBar != null) {
-            if (inPreviewMode) {
-                actionBar.setOccupyStatusBar(false);
-            } else {
-                actionBar.setOccupyStatusBar(Build.VERSION.SDK_INT >= 21);
-            }
+            actionBar.setOccupyStatusBar(!inPreviewMode);
         }
     }
 
@@ -725,9 +722,17 @@ public abstract class BaseFragment {
             c.run();
         }
         updateSheetsVisibility();
+        checkSystemBarColors();
     }
 
-    private void updateSheetsVisibility() {
+    protected void checkSystemBarColors() {
+        Activity activity = getParentActivity();
+        if (activity instanceof LaunchActivity) {
+            ((LaunchActivity) activity).checkSystemBarColors(true, true, true);
+        }
+    }
+
+    protected void updateSheetsVisibility() {
         if (sheetsStack == null) return;
         for (int i = 0; i < sheetsStack.size(); ++i) {
             AttachedSheet sheet = sheetsStack.get(i);
@@ -844,6 +849,10 @@ public abstract class BaseFragment {
 
     public MessagesController getMessagesController() {
         return getAccountInstance().getMessagesController();
+    }
+
+    public GiftAuctionController getGiftAuctionsController() {
+        return getAccountInstance().getGiftAuctionsController();
     }
 
     protected ContactsController getContactsController() {
@@ -968,7 +977,7 @@ public abstract class BaseFragment {
                 if (params == null || !params.occupyNavigationBar) {
                     fixNavigationBar(Theme.getColor(Theme.key_dialogBackgroundGray, fragment.getResourceProvider()));
                 } else {
-                    AndroidUtilities.setLightNavigationBar(bottomSheet[0].getWindow(), true);
+                    AndroidUtilities.setLightNavigationBar(bottomSheet[0], true);
                 }
                 AndroidUtilities.setLightStatusBar(getWindow(), fragment.isLightStatusBar());
                 fragment.onBottomSheetCreated();
@@ -1078,20 +1087,26 @@ public abstract class BaseFragment {
     }
 
     public void setNavigationBarColor(int color) {
+        if (isSupportEdgeToEdge()) {
+            return;
+        }
+
         Activity activity = getParentActivity();
         if (activity instanceof LaunchActivity) {
             LaunchActivity launchActivity = (LaunchActivity) activity;
-            launchActivity.setNavigationBarColor(color, true);
+            launchActivity.setNavigationBarColor(color);
         } else {
             if (activity != null) {
                 Window window = activity.getWindow();
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && window != null && window.getNavigationBarColor() != color) {
-                    window.setNavigationBarColor(color);
-                    final float brightness = AndroidUtilities.computePerceivedBrightness(color);
-                    AndroidUtilities.setLightNavigationBar(window, brightness >= 0.721f);
+                    // window.setNavigationBarColor(color);
                 }
             }
         }
+
+        final float brightness = AndroidUtilities.computePerceivedBrightness(color);
+        AndroidUtilities.setLightNavigationBar(activity, brightness >= 0.721f);
+
         if (parentLayout != null) {
             parentLayout.setNavigationBarColor(color);
         }
@@ -1259,6 +1274,30 @@ public abstract class BaseFragment {
         return storyViewer;
     }
 
+    public StoryViewer getOrCreateStoryViewer(int account) {
+        if (sheetsStack == null) {
+            sheetsStack = new ArrayList<>();
+        }
+        StoryViewer storyViewer = null;
+        if (!sheetsStack.isEmpty() && sheetsStack.get(sheetsStack.size() - 1) instanceof StoryViewer) {
+            storyViewer = (StoryViewer) sheetsStack.get(sheetsStack.size() - 1);
+        }
+        if (storyViewer != null && storyViewer.currentAccount != account) {
+            storyViewer.close(true);
+            removeSheet(storyViewer);
+            storyViewer = null;
+        }
+        if (storyViewer == null) {
+            storyViewer = new StoryViewer(this);
+            if (parentLayout != null && parentLayout.isSheet()) {
+                storyViewer.fromBottomSheet = true;
+            }
+            sheetsStack.add(storyViewer);
+            updateSheetsVisibility();
+        }
+        return storyViewer;
+    }
+
     public void removeSheet(BaseFragment.AttachedSheet sheet) {
         if (sheetsStack == null) return;
         sheetsStack.remove(sheet);
@@ -1328,4 +1367,8 @@ public abstract class BaseFragment {
         public boolean occupyNavigationBar;
     }
 
+    public boolean isSupportEdgeToEdge() {
+        // warn: overridden method must return a constant
+        return false;
+    }
 }

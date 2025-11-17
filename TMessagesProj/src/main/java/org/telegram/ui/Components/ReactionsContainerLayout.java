@@ -2231,7 +2231,7 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
                     loopImageView.animatedEmojiDrawable.getImageReceiver().setRoundRadius(selected ? dp(6) : 0);
                 }
             }
-            if (currentReaction != null && currentReaction.isStar && particles != null && LiteMode.isEnabled(LiteMode.FLAG_ANIMATED_EMOJI_REACTIONS)) {
+            if (currentReaction != null && currentReaction.isStar && particles != null && LiteMode.isEnabled(LiteMode.FLAG_ANIMATED_EMOJI_REACTIONS) && LiteMode.isEnabled(LiteMode.FLAG_PARTICLES)) {
                 final int sz = (int) (getHeight() * .7f);
                 AndroidUtilities.rectTmp.set(getWidth() / 2f - sz / 2f, getHeight() / 2f - sz / 2f, getWidth() / 2f + sz / 2f, getHeight() / 2f + sz / 2f);
                 RLottieDrawable lottieDrawable = enterImageView.getImageReceiver().getLottieAnimation();

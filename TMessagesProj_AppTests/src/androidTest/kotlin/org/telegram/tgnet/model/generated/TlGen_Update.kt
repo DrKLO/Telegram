@@ -1846,29 +1846,6 @@ public sealed class TlGen_Update : TlGen_Object {
     }
   }
 
-  public data class TL_updateGroupCall(
-    public val chat_id: Long?,
-    public val call: TlGen_GroupCall,
-  ) : TlGen_Update() {
-    internal val flags: UInt
-      get() {
-        var result = 0U
-        if (chat_id != null) result = result or 1U
-        return result
-      }
-
-    public override fun serializeToStream(stream: OutputSerializedData) {
-      stream.writeInt32(MAGIC.toInt())
-      stream.writeInt32(flags.toInt())
-      chat_id?.let { stream.writeInt64(it) }
-      call.serializeToStream(stream)
-    }
-
-    public companion object {
-      public const val MAGIC: UInt = 0x97D64341U
-    }
-  }
-
   public data class TL_updatePaidReactionPrivacy(
     public val `private`: TlGen_PaidReactionPrivacy,
   ) : TlGen_Update() {
@@ -2142,25 +2119,6 @@ public sealed class TlGen_Update : TlGen_Object {
     }
   }
 
-  public data class TL_updateGroupCallMessage(
-    public val call: TlGen_InputGroupCall,
-    public val from_id: TlGen_Peer,
-    public val random_id: Long,
-    public val message: TlGen_TextWithEntities,
-  ) : TlGen_Update() {
-    public override fun serializeToStream(stream: OutputSerializedData) {
-      stream.writeInt32(MAGIC.toInt())
-      call.serializeToStream(stream)
-      from_id.serializeToStream(stream)
-      stream.writeInt64(random_id)
-      message.serializeToStream(stream)
-    }
-
-    public companion object {
-      public const val MAGIC: UInt = 0x78C314E0U
-    }
-  }
-
   public data class TL_updateGroupCallEncryptedMessage(
     public val call: TlGen_InputGroupCall,
     public val from_id: TlGen_Peer,
@@ -2222,6 +2180,91 @@ public sealed class TlGen_Update : TlGen_Object {
 
     public companion object {
       public const val MAGIC: UInt = 0xDEF143D0U
+    }
+  }
+
+  public data class TL_updateGroupCall(
+    public val live_story: Boolean,
+    public val peer: TlGen_Peer?,
+    public val call: TlGen_GroupCall,
+  ) : TlGen_Update() {
+    internal val flags: UInt
+      get() {
+        var result = 0U
+        if (peer != null) result = result or 2U
+        if (live_story) result = result or 4U
+        return result
+      }
+
+    public override fun serializeToStream(stream: OutputSerializedData) {
+      stream.writeInt32(MAGIC.toInt())
+      stream.writeInt32(flags.toInt())
+      peer?.serializeToStream(stream)
+      call.serializeToStream(stream)
+    }
+
+    public companion object {
+      public const val MAGIC: UInt = 0x9D2216E0U
+    }
+  }
+
+  public data class TL_updateGroupCallMessage(
+    public val call: TlGen_InputGroupCall,
+    public val message: TlGen_GroupCallMessage,
+  ) : TlGen_Update() {
+    public override fun serializeToStream(stream: OutputSerializedData) {
+      stream.writeInt32(MAGIC.toInt())
+      call.serializeToStream(stream)
+      message.serializeToStream(stream)
+    }
+
+    public companion object {
+      public const val MAGIC: UInt = 0xD8326F0DU
+    }
+  }
+
+  public data class TL_updateDeleteGroupCallMessages(
+    public val call: TlGen_InputGroupCall,
+    public val messages: List<Int>,
+  ) : TlGen_Update() {
+    public override fun serializeToStream(stream: OutputSerializedData) {
+      stream.writeInt32(MAGIC.toInt())
+      call.serializeToStream(stream)
+      TlGen_Vector.serializeInt(stream, messages)
+    }
+
+    public companion object {
+      public const val MAGIC: UInt = 0x3E85E92CU
+    }
+  }
+
+  public data class TL_updateStarGiftAuctionState(
+    public val gift_id: Long,
+    public val state: TlGen_StarGiftAuctionState,
+  ) : TlGen_Update() {
+    public override fun serializeToStream(stream: OutputSerializedData) {
+      stream.writeInt32(MAGIC.toInt())
+      stream.writeInt64(gift_id)
+      state.serializeToStream(stream)
+    }
+
+    public companion object {
+      public const val MAGIC: UInt = 0x48E246C2U
+    }
+  }
+
+  public data class TL_updateStarGiftAuctionUserState(
+    public val gift_id: Long,
+    public val user_state: TlGen_StarGiftAuctionUserState,
+  ) : TlGen_Update() {
+    public override fun serializeToStream(stream: OutputSerializedData) {
+      stream.writeInt32(MAGIC.toInt())
+      stream.writeInt64(gift_id)
+      user_state.serializeToStream(stream)
+    }
+
+    public companion object {
+      public const val MAGIC: UInt = 0xDC58F31EU
     }
   }
 }

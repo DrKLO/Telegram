@@ -2,11 +2,15 @@ package org.telegram.messenger.utils.tlutils;
 
 import android.text.TextUtils;
 
+import androidx.annotation.Nullable;
+
 import org.telegram.tgnet.TLObject;
 
 import org.telegram.messenger.MediaDataController;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.tl.TL_stars;
+
+import java.util.List;
 
 public class TlUtils {
 
@@ -74,6 +78,20 @@ public class TlUtils {
             ((TLRPC.TL_messages_sendMultiMedia) request).reply_to = replyTo;
             ((TLRPC.TL_messages_sendMultiMedia) request).flags |= 1;
         }
+    }
+
+    @Nullable
+    public static <T> T findFirstInstance(List<?> list, Class<T> tClass) {
+        if (list == null || tClass == null) {
+            return null;
+        }
+
+        for (Object entry : list) {
+            if (tClass.isInstance(entry)) {
+                return tClass.cast(entry);
+            }
+        }
+        return null;
     }
 
     public static long getOrCalculateRandomIdFromSendMessageRequest(TLObject request) {

@@ -7,7 +7,6 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
-import android.os.Build;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
@@ -22,7 +21,6 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.Emoji;
 import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
 import org.telegram.ui.ActionBar.ActionBar;
@@ -741,7 +739,7 @@ public abstract class BottomSheetWithRecyclerListView extends BottomSheet {
 
     private void updateStatusBar() {
         if (attachedFragment != null) {
-            LaunchActivity.instance.checkSystemBarColors(true, true, true, false);
+            LaunchActivity.instance.checkSystemBarColors(true, true, true);
         } else if (actionBar != null && actionBar.getTag() != null) {
             AndroidUtilities.setLightStatusBar(getWindow(), isLightStatusBar());
         } else if (baseFragment != null) {

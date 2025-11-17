@@ -35,7 +35,7 @@ public class AutoMessageReplyReceiver extends BroadcastReceiver {
         if (dialogId == 0 || maxId == 0 || !UserConfig.isValidAccount(currentAccount)) {
             return;
         }
-        SendMessagesHelper.getInstance(currentAccount).sendMessage(SendMessagesHelper.SendMessageParams.of(text.toString(), dialogId, null, null, null, true, null, null, null, true, 0, null, false));
+        SendMessagesHelper.getInstance(currentAccount).sendMessage(SendMessagesHelper.SendMessageParams.of(text.toString(), dialogId, null, null, null, true, null, null, null, true, 0, 0, null, false));
         MessagesController.getInstance(currentAccount).markDialogAsRead(dialogId, maxId, maxId, 0, false, 0, 0, true, 0);
     }
 }

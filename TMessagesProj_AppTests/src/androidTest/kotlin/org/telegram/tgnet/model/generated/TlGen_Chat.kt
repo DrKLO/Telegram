@@ -161,7 +161,7 @@ public sealed class TlGen_Chat : TlGen_Object {
     public val default_banned_rights: TlGen_ChatBannedRights?,
     public val participants_count: Int?,
     public val usernames: List<TlGen_Username>?,
-    public val stories_max_id: Int?,
+    public val stories_max_id: TlGen_RecentStory?,
     public val color: TlGen_PeerColor?,
     public val profile_color: TlGen_PeerColor?,
     public val emoji_status: TlGen_EmojiStatus?,
@@ -245,7 +245,7 @@ public sealed class TlGen_Chat : TlGen_Object {
       default_banned_rights?.serializeToStream(stream)
       participants_count?.let { stream.writeInt32(it) }
       usernames?.let { TlGen_Vector.serialize(stream, it) }
-      stories_max_id?.let { stream.writeInt32(it) }
+      stories_max_id?.serializeToStream(stream)
       color?.serializeToStream(stream)
       profile_color?.serializeToStream(stream)
       emoji_status?.serializeToStream(stream)
@@ -257,7 +257,7 @@ public sealed class TlGen_Chat : TlGen_Object {
     }
 
     public companion object {
-      public const val MAGIC: UInt = 0xFE685355U
+      public const val MAGIC: UInt = 0x1C32B11CU
     }
   }
 
@@ -2066,6 +2066,146 @@ public sealed class TlGen_Chat : TlGen_Object {
 
     public companion object {
       public const val MAGIC: UInt = 0x7482147EU
+    }
+  }
+
+  public data class TL_channel_layer216(
+    public val creator: Boolean,
+    public val left: Boolean,
+    public val broadcast: Boolean,
+    public val verified: Boolean,
+    public val megagroup: Boolean,
+    public val signatures: Boolean,
+    public val min: Boolean,
+    public val scam: Boolean,
+    public val has_link: Boolean,
+    public val has_geo: Boolean,
+    public val slowmode_enabled: Boolean,
+    public val call_active: Boolean,
+    public val call_not_empty: Boolean,
+    public val fake: Boolean,
+    public val gigagroup: Boolean,
+    public val noforwards: Boolean,
+    public val join_to_send: Boolean,
+    public val join_request: Boolean,
+    public val forum: Boolean,
+    public val stories_hidden: Boolean,
+    public val stories_hidden_min: Boolean,
+    public val stories_unavailable: Boolean,
+    public val signature_profiles: Boolean,
+    public val autotranslation: Boolean,
+    public val broadcast_messages_allowed: Boolean,
+    public val monoforum: Boolean,
+    public val forum_tabs: Boolean,
+    public val id: Long,
+    public val access_hash: Long?,
+    public val title: String,
+    public val username: String?,
+    public val photo: TlGen_ChatPhoto,
+    public val date: Int,
+    public val restriction_reason: List<TlGen_RestrictionReason>?,
+    public val admin_rights: TlGen_ChatAdminRights?,
+    public val banned_rights: TlGen_ChatBannedRights?,
+    public val default_banned_rights: TlGen_ChatBannedRights?,
+    public val participants_count: Int?,
+    public val usernames: List<TlGen_Username>?,
+    public val stories_max_id: Int?,
+    public val color: TlGen_PeerColor?,
+    public val profile_color: TlGen_PeerColor?,
+    public val emoji_status: TlGen_EmojiStatus?,
+    public val level: Int?,
+    public val subscription_until_date: Int?,
+    public val bot_verification_icon: Long?,
+    public val send_paid_messages_stars: Long?,
+    public val linked_monoforum_id: Long?,
+  ) : TlGen_Object {
+    public val restricted: Boolean = restriction_reason != null
+
+    internal val flags: UInt
+      get() {
+        var result = 0U
+        if (creator) result = result or 1U
+        if (left) result = result or 4U
+        if (broadcast) result = result or 32U
+        if (username != null) result = result or 64U
+        if (verified) result = result or 128U
+        if (megagroup) result = result or 256U
+        if (restricted) result = result or 512U
+        if (signatures) result = result or 2048U
+        if (min) result = result or 4096U
+        if (access_hash != null) result = result or 8192U
+        if (admin_rights != null) result = result or 16384U
+        if (banned_rights != null) result = result or 32768U
+        if (participants_count != null) result = result or 131072U
+        if (default_banned_rights != null) result = result or 262144U
+        if (scam) result = result or 524288U
+        if (has_link) result = result or 1048576U
+        if (has_geo) result = result or 2097152U
+        if (slowmode_enabled) result = result or 4194304U
+        if (call_active) result = result or 8388608U
+        if (call_not_empty) result = result or 16777216U
+        if (fake) result = result or 33554432U
+        if (gigagroup) result = result or 67108864U
+        if (noforwards) result = result or 134217728U
+        if (join_to_send) result = result or 268435456U
+        if (join_request) result = result or 536870912U
+        if (forum) result = result or 1073741824U
+        return result
+      }
+
+    internal val flags2: UInt
+      get() {
+        var result = 0U
+        if (usernames != null) result = result or 1U
+        if (stories_hidden) result = result or 2U
+        if (stories_hidden_min) result = result or 4U
+        if (stories_unavailable) result = result or 8U
+        if (stories_max_id != null) result = result or 16U
+        if (color != null) result = result or 128U
+        if (profile_color != null) result = result or 256U
+        if (emoji_status != null) result = result or 512U
+        if (level != null) result = result or 1024U
+        if (subscription_until_date != null) result = result or 2048U
+        if (signature_profiles) result = result or 4096U
+        if (bot_verification_icon != null) result = result or 8192U
+        if (send_paid_messages_stars != null) result = result or 16384U
+        if (autotranslation) result = result or 32768U
+        if (broadcast_messages_allowed) result = result or 65536U
+        if (monoforum) result = result or 131072U
+        if (linked_monoforum_id != null) result = result or 262144U
+        if (forum_tabs) result = result or 524288U
+        return result
+      }
+
+    public override fun serializeToStream(stream: OutputSerializedData) {
+      stream.writeInt32(MAGIC.toInt())
+      stream.writeInt32(flags.toInt())
+      stream.writeInt32(flags2.toInt())
+      stream.writeInt64(id)
+      access_hash?.let { stream.writeInt64(it) }
+      stream.writeString(title)
+      username?.let { stream.writeString(it) }
+      photo.serializeToStream(stream)
+      stream.writeInt32(date)
+      restriction_reason?.let { TlGen_Vector.serialize(stream, it) }
+      admin_rights?.serializeToStream(stream)
+      banned_rights?.serializeToStream(stream)
+      default_banned_rights?.serializeToStream(stream)
+      participants_count?.let { stream.writeInt32(it) }
+      usernames?.let { TlGen_Vector.serialize(stream, it) }
+      stories_max_id?.let { stream.writeInt32(it) }
+      color?.serializeToStream(stream)
+      profile_color?.serializeToStream(stream)
+      emoji_status?.serializeToStream(stream)
+      level?.let { stream.writeInt32(it) }
+      subscription_until_date?.let { stream.writeInt32(it) }
+      bot_verification_icon?.let { stream.writeInt64(it) }
+      send_paid_messages_stars?.let { stream.writeInt64(it) }
+      linked_monoforum_id?.let { stream.writeInt64(it) }
+    }
+
+    public companion object {
+      public const val MAGIC: UInt = 0xFE685355U
     }
   }
 }

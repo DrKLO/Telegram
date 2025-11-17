@@ -336,7 +336,7 @@ public class EmojiBottomSheet extends BottomSheet implements NotificationCenter.
                 if (viewType == VIEW_TYPE_PAD) {
                     view = new View(getContext());
                 } else if (viewType == VIEW_TYPE_HEADER) {
-                    final StickerSetNameCell cell1 = new StickerSetNameCell(getContext(), false, resourcesProvider);
+                    final StickerSetNameCell cell1 = new StickerSetNameCell(getContext(), false, resourcesProvider, false);
                     cell1.setText(LocaleController.getString(R.string.FeaturedGifs), 0);
                     view = cell1;
                     final RecyclerView.LayoutParams lp = new RecyclerView.LayoutParams(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT);
@@ -1321,7 +1321,7 @@ public class EmojiBottomSheet extends BottomSheet implements NotificationCenter.
                 if (viewType == VIEW_TYPE_PAD) {
                     view = new View(getContext());
                 } else if (viewType == VIEW_TYPE_HEADER) {
-                    view = new StickerSetNameCell(getContext(), true, resourcesProvider);
+                    view = new StickerSetNameCell(getContext(), true, resourcesProvider, false);
                 } else if (viewType == VIEW_TYPE_NOT_FOUND) {
                     view = new NoEmojiView(getContext(), currentType == PAGE_TYPE_EMOJI);
                 } else if (viewType == VIEW_TYPE_WIDGETS) {

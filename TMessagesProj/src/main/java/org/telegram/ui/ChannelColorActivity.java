@@ -589,7 +589,7 @@ public class ChannelColorActivity extends BaseFragment implements NotificationCe
             req.for_profile = false;
 
             if (channel.color == null) {
-                channel.color = new TLRPC.PeerColor();
+                channel.color = new TLRPC.TL_peerColor();
                 channel.flags2 |= 128;
             }
             req.flags |= 4;
@@ -624,7 +624,7 @@ public class ChannelColorActivity extends BaseFragment implements NotificationCe
             req.for_profile = true;
 
             if (channel.profile_color == null) {
-                channel.profile_color = new TLRPC.PeerColor();
+                channel.profile_color = new TLRPC.TL_peerColor();
                 channel.flags2 |= 256;
             }
             if (selectedProfileColor >= 0) {

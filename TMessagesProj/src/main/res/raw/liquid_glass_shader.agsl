@@ -1,0 +1,39 @@
+uniform shader img;
+
+uniform float2 resolution;
+uniform float2 center;
+uniform float2 size;
+uniform float4 radius;
+uniform float thickness;
+uniform float refract_index;
+uniform float refract_intensity;
+
+half sdfRect(half2 p, half4 r) {
+  r.xy = (p.x > 0.0) ? r.xy : r.zw;
+  r.x  = (p.y > 0.0) ? r.x  : r.y;
+  half2 q = abs(p) - size + r.x;
+  return length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - r.x;
+}
+
+half4 main(in float2 fragCoord) {
+  half2 p = fragCoord - center;
+  half sd = sdfRect(p, radius);
+  half2 uv = fragCoord;
+  if (sd < 0.0) {
+    half sdX = sdfRect(p + half2(1.0, 0.0), radius);
+    half sdY = sdfRect(p + half2(0.0, 1.0), radius);
+
+    half n_cos = max(thickness + sd, 0.0) / thickness;
+    half n_cos2 = n_cos * n_cos;
+    half n_sin = sqrt(1.0 - n_cos2);
+    half3 normal = normalize(half3((sdX - sd) * n_cos, (sdY - sd) * n_cos, n_sin));
+
+    half3 refract_vec = refract(half3(0.0, 0.0, -1.0), normal, 1.0 / refract_index);
+    half h = sd < -thickness ? thickness : sqrt(sd * (-2.0 * thickness - sd));
+    half refract_length = (h + 8.0 * thickness) / -refract_vec.z;
+
+    uv += refract_vec.xy * refract_length * refract_intensity;
+  }
+
+  return img.eval(uv);
+}

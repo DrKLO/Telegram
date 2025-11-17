@@ -454,7 +454,7 @@ public class BotWebViewMenuContainer extends FrameLayout implements Notification
 
             @Override
             public boolean isClipboardAvailable() {
-                return MediaDataController.getInstance(currentAccount).botInAttachMenu(botId);
+                return MediaDataController.getInstance(currentAccount).botInAttachMenu(botId) || MessagesController.getInstance(currentAccount).whitelistedBots.contains(botId);
             }
         });
 

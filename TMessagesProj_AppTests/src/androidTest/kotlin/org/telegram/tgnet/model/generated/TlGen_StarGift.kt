@@ -11,92 +11,6 @@ import org.telegram.tgnet.model.TlGen_Object
 import org.telegram.tgnet.model.TlGen_Vector
 
 public sealed class TlGen_StarGift : TlGen_Object {
-  public data class TL_starGift(
-    public val birthday: Boolean,
-    public val require_premium: Boolean,
-    public val peer_color_available: Boolean,
-    public val id: Long,
-    public val sticker: TlGen_Document,
-    public val stars: Long,
-    public val convert_stars: Long,
-    public val upgrade_stars: Long?,
-    public val title: String?,
-    public val released_by: TlGen_Peer?,
-    public val locked_until_date: Int?,
-    public val multiflags_0: Multiflags_0?,
-    public val multiflags_1: Multiflags_1?,
-    public val multiflags_8: Multiflags_8?,
-    public val multiflags_4: Multiflags_4?,
-  ) : TlGen_StarGift() {
-    public val limited: Boolean = multiflags_0 != null
-
-    public val sold_out: Boolean = multiflags_1 != null
-
-    public val limited_per_user: Boolean = multiflags_8 != null
-
-    internal val flags: UInt
-      get() {
-        var result = 0U
-        if (limited) result = result or 1U
-        if (sold_out) result = result or 2U
-        if (birthday) result = result or 4U
-        if (upgrade_stars != null) result = result or 8U
-        if (multiflags_4 != null) result = result or 16U
-        if (title != null) result = result or 32U
-        if (released_by != null) result = result or 64U
-        if (require_premium) result = result or 128U
-        if (limited_per_user) result = result or 256U
-        if (locked_until_date != null) result = result or 512U
-        if (peer_color_available) result = result or 1024U
-        return result
-      }
-
-    public override fun serializeToStream(stream: OutputSerializedData) {
-      stream.writeInt32(MAGIC.toInt())
-      stream.writeInt32(flags.toInt())
-      stream.writeInt64(id)
-      sticker.serializeToStream(stream)
-      stream.writeInt64(stars)
-      multiflags_0?.let { stream.writeInt32(it.availability_remains) }
-      multiflags_0?.let { stream.writeInt32(it.availability_total) }
-      multiflags_4?.let { stream.writeInt64(it.availability_resale) }
-      stream.writeInt64(convert_stars)
-      multiflags_1?.let { stream.writeInt32(it.first_sale_date) }
-      multiflags_1?.let { stream.writeInt32(it.last_sale_date) }
-      upgrade_stars?.let { stream.writeInt64(it) }
-      multiflags_4?.let { stream.writeInt64(it.resell_min_stars) }
-      title?.let { stream.writeString(it) }
-      released_by?.serializeToStream(stream)
-      multiflags_8?.let { stream.writeInt32(it.per_user_total) }
-      multiflags_8?.let { stream.writeInt32(it.per_user_remains) }
-      locked_until_date?.let { stream.writeInt32(it) }
-    }
-
-    public data class Multiflags_0(
-      public val availability_remains: Int,
-      public val availability_total: Int,
-    )
-
-    public data class Multiflags_1(
-      public val first_sale_date: Int,
-      public val last_sale_date: Int,
-    )
-
-    public data class Multiflags_8(
-      public val per_user_total: Int,
-      public val per_user_remains: Int,
-    )
-
-    public data class Multiflags_4(
-      public val availability_resale: Long,
-      public val resell_min_stars: Long,
-    )
-
-    public companion object {
-      public const val MAGIC: UInt = 0x80AC53C3U
-    }
-  }
-
   public data class TL_starGiftUnique(
     public val require_premium: Boolean,
     public val resale_ton_only: Boolean,
@@ -170,6 +84,103 @@ public sealed class TlGen_StarGift : TlGen_Object {
 
     public companion object {
       public const val MAGIC: UInt = 0xB0BF741BU
+    }
+  }
+
+  public data class TL_starGift(
+    public val birthday: Boolean,
+    public val require_premium: Boolean,
+    public val peer_color_available: Boolean,
+    public val id: Long,
+    public val sticker: TlGen_Document,
+    public val stars: Long,
+    public val convert_stars: Long,
+    public val upgrade_stars: Long?,
+    public val title: String?,
+    public val released_by: TlGen_Peer?,
+    public val locked_until_date: Int?,
+    public val multiflags_0: Multiflags_0?,
+    public val multiflags_1: Multiflags_1?,
+    public val multiflags_8: Multiflags_8?,
+    public val multiflags_11: Multiflags_11?,
+    public val multiflags_4: Multiflags_4?,
+  ) : TlGen_StarGift() {
+    public val limited: Boolean = multiflags_0 != null
+
+    public val sold_out: Boolean = multiflags_1 != null
+
+    public val limited_per_user: Boolean = multiflags_8 != null
+
+    public val auction: Boolean = multiflags_11 != null
+
+    internal val flags: UInt
+      get() {
+        var result = 0U
+        if (limited) result = result or 1U
+        if (sold_out) result = result or 2U
+        if (birthday) result = result or 4U
+        if (upgrade_stars != null) result = result or 8U
+        if (multiflags_4 != null) result = result or 16U
+        if (title != null) result = result or 32U
+        if (released_by != null) result = result or 64U
+        if (require_premium) result = result or 128U
+        if (limited_per_user) result = result or 256U
+        if (locked_until_date != null) result = result or 512U
+        if (peer_color_available) result = result or 1024U
+        if (auction) result = result or 2048U
+        return result
+      }
+
+    public override fun serializeToStream(stream: OutputSerializedData) {
+      stream.writeInt32(MAGIC.toInt())
+      stream.writeInt32(flags.toInt())
+      stream.writeInt64(id)
+      sticker.serializeToStream(stream)
+      stream.writeInt64(stars)
+      multiflags_0?.let { stream.writeInt32(it.availability_remains) }
+      multiflags_0?.let { stream.writeInt32(it.availability_total) }
+      multiflags_4?.let { stream.writeInt64(it.availability_resale) }
+      stream.writeInt64(convert_stars)
+      multiflags_1?.let { stream.writeInt32(it.first_sale_date) }
+      multiflags_1?.let { stream.writeInt32(it.last_sale_date) }
+      upgrade_stars?.let { stream.writeInt64(it) }
+      multiflags_4?.let { stream.writeInt64(it.resell_min_stars) }
+      title?.let { stream.writeString(it) }
+      released_by?.serializeToStream(stream)
+      multiflags_8?.let { stream.writeInt32(it.per_user_total) }
+      multiflags_8?.let { stream.writeInt32(it.per_user_remains) }
+      locked_until_date?.let { stream.writeInt32(it) }
+      multiflags_11?.let { stream.writeString(it.auction_slug) }
+      multiflags_11?.let { stream.writeInt32(it.gifts_per_round) }
+    }
+
+    public data class Multiflags_0(
+      public val availability_remains: Int,
+      public val availability_total: Int,
+    )
+
+    public data class Multiflags_1(
+      public val first_sale_date: Int,
+      public val last_sale_date: Int,
+    )
+
+    public data class Multiflags_8(
+      public val per_user_total: Int,
+      public val per_user_remains: Int,
+    )
+
+    public data class Multiflags_11(
+      public val auction_slug: String,
+      public val gifts_per_round: Int,
+    )
+
+    public data class Multiflags_4(
+      public val availability_resale: Long,
+      public val resell_min_stars: Long,
+    )
+
+    public companion object {
+      public const val MAGIC: UInt = 0x1B9A4D7FU
     }
   }
 
@@ -890,6 +901,92 @@ public sealed class TlGen_StarGift : TlGen_Object {
 
     public companion object {
       public const val MAGIC: UInt = 0x26A5553EU
+    }
+  }
+
+  public data class TL_starGift_layer217(
+    public val birthday: Boolean,
+    public val require_premium: Boolean,
+    public val peer_color_available: Boolean,
+    public val id: Long,
+    public val sticker: TlGen_Document,
+    public val stars: Long,
+    public val convert_stars: Long,
+    public val upgrade_stars: Long?,
+    public val title: String?,
+    public val released_by: TlGen_Peer?,
+    public val locked_until_date: Int?,
+    public val multiflags_0: Multiflags_0?,
+    public val multiflags_1: Multiflags_1?,
+    public val multiflags_8: Multiflags_8?,
+    public val multiflags_4: Multiflags_4?,
+  ) : TlGen_Object {
+    public val limited: Boolean = multiflags_0 != null
+
+    public val sold_out: Boolean = multiflags_1 != null
+
+    public val limited_per_user: Boolean = multiflags_8 != null
+
+    internal val flags: UInt
+      get() {
+        var result = 0U
+        if (limited) result = result or 1U
+        if (sold_out) result = result or 2U
+        if (birthday) result = result or 4U
+        if (upgrade_stars != null) result = result or 8U
+        if (multiflags_4 != null) result = result or 16U
+        if (title != null) result = result or 32U
+        if (released_by != null) result = result or 64U
+        if (require_premium) result = result or 128U
+        if (limited_per_user) result = result or 256U
+        if (locked_until_date != null) result = result or 512U
+        if (peer_color_available) result = result or 1024U
+        return result
+      }
+
+    public override fun serializeToStream(stream: OutputSerializedData) {
+      stream.writeInt32(MAGIC.toInt())
+      stream.writeInt32(flags.toInt())
+      stream.writeInt64(id)
+      sticker.serializeToStream(stream)
+      stream.writeInt64(stars)
+      multiflags_0?.let { stream.writeInt32(it.availability_remains) }
+      multiflags_0?.let { stream.writeInt32(it.availability_total) }
+      multiflags_4?.let { stream.writeInt64(it.availability_resale) }
+      stream.writeInt64(convert_stars)
+      multiflags_1?.let { stream.writeInt32(it.first_sale_date) }
+      multiflags_1?.let { stream.writeInt32(it.last_sale_date) }
+      upgrade_stars?.let { stream.writeInt64(it) }
+      multiflags_4?.let { stream.writeInt64(it.resell_min_stars) }
+      title?.let { stream.writeString(it) }
+      released_by?.serializeToStream(stream)
+      multiflags_8?.let { stream.writeInt32(it.per_user_total) }
+      multiflags_8?.let { stream.writeInt32(it.per_user_remains) }
+      locked_until_date?.let { stream.writeInt32(it) }
+    }
+
+    public data class Multiflags_0(
+      public val availability_remains: Int,
+      public val availability_total: Int,
+    )
+
+    public data class Multiflags_1(
+      public val first_sale_date: Int,
+      public val last_sale_date: Int,
+    )
+
+    public data class Multiflags_8(
+      public val per_user_total: Int,
+      public val per_user_remains: Int,
+    )
+
+    public data class Multiflags_4(
+      public val availability_resale: Long,
+      public val resell_min_stars: Long,
+    )
+
+    public companion object {
+      public const val MAGIC: UInt = 0x80AC53C3U
     }
   }
 
