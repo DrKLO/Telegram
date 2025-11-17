@@ -8601,9 +8601,10 @@
     <string name="Gift2AuctionPlaceACustomBidHint2">Custom Bid...</string>
     <string name="Gift2AuctionYourBid">your bid</string>
     <string name="Gift2AuctionTapToBidMore">tap to bid more</string>
-
+    <string name="Gift2AuctionMinimumBidIncreased_one">You must bid at least **%d star**.</string>
+    <string name="Gift2AuctionMinimumBidIncreased_other">You must bid at least is **%d stars**.</string>
     <string name="Gift2AuctionBidStatusFuture">Your bid will be</string>
-    <string name="Gift2AuctionBidStatusOutbid">You\'be been outbid</string>
+    <string name="Gift2AuctionBidStatusOutbid">You\'re been outbid</string>
     <string name="Gift2AuctionBidStatusWinning">You\'re winning</string>
 
     <string name="Gift2AuctionBidInfoMinimumBid">minimum bid</string>
@@ -8791,6 +8792,8 @@
     <string name="Gift2Converted_other">%d Stars were sent to your balance</string>
     <string name="Gift2ConvertedChannel_one">%d Star was sent to channel\'s balance</string>
     <string name="Gift2ConvertedChannel_other">%d Stars were sent to channel\'s balance</string>
+    <string name="Gift2SoldAuctionPreviewGifts_one">%d Gift</string>
+    <string name="Gift2SoldAuctionPreviewGifts_other">%d Gifts</string>
     <string name="Gift2SoldOutTitle">Sold Out!</string>
     <string name="Gift2SoldOutCount_one">All %d gifts were already sold.</string>
     <string name="Gift2SoldOutCount_other">All %d gifts were already sold.</string>
@@ -10000,10 +10003,10 @@
     <string name="Gift2ActiveAuctionsActiveAuctionTitle">Active Auction</string>
     <string name="Gift2ActiveAuctionsActiveAuctionsTitle">%d Active Auctions</string>
     <string name="Gift2ActiveAuctionsActiveStatusWinningOne">You are winning (%s).</string>
-    <string name="Gift2ActiveAuctionsActiveStatusWinning1Place">1st place.</string>
-    <string name="Gift2ActiveAuctionsActiveStatusWinning2Place">2nd place.</string>
-    <string name="Gift2ActiveAuctionsActiveStatusWinning3Place">3rd place.</string>
-    <string name="Gift2ActiveAuctionsActiveStatusWinningOtherPlace">%d place.</string>
+    <string name="Gift2ActiveAuctionsActiveStatusWinning1Place">1st place</string>
+    <string name="Gift2ActiveAuctionsActiveStatusWinning2Place">2nd place</string>
+    <string name="Gift2ActiveAuctionsActiveStatusWinning3Place">3rd place</string>
+    <string name="Gift2ActiveAuctionsActiveStatusWinningOtherPlace">%d place</string>
     <string name="Gift2ActiveAuctionsActiveStatusWinningAll">You are winning all of them.</string>
     <string name="Gift2ActiveAuctionsActiveStatusOutbid">You\'ve been outbid.</string>
 

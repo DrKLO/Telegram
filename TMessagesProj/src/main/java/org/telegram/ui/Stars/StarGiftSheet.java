@@ -391,6 +391,7 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
         beforeTableTextView.setVisibility(View.GONE);
 
         tableView = new TableView(context, resourcesProvider);
+
         infoLayout.addView(tableView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 12));
 
         afterTableTextView = new LinkSpanDrawable.LinksTextView(context, resourcesProvider);
@@ -4302,6 +4303,7 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
             long convert_stars, upgrade_stars;
             TLRPC.Peer from_id, peer;
             String prepaid_upgrade_hash;
+            TLRPC.Peer auctionPeer = null;
             if (messageObject.messageOwner.action instanceof TLRPC.TL_messageActionStarGift) {
                 final TLRPC.TL_messageActionStarGift action = (TLRPC.TL_messageActionStarGift) messageObject.messageOwner.action;
                 converted = action.converted;
@@ -4318,6 +4320,7 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
                 peer = action.peer;
                 prepaid_upgrade = action.prepaid_upgrade;
                 prepaid_upgrade_hash = action.prepaid_upgrade_hash;
+                auctionPeer = action.auction_acquired ? action.to_id : null;
             } else {
                 final TLRPC.TL_messageActionStarGiftUnique action = (TLRPC.TL_messageActionStarGiftUnique) messageObject.messageOwner.action;
                 converted = false;
@@ -4383,15 +4386,22 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
             final long fromId = from_id != null ? DialogObject.getPeerDialogId(from_id) : out ? selfId : dialogId;
             final long toId = peer != null ? DialogObject.getPeerDialogId(peer) : out ? dialogId : selfId;
             final TLRPC.User fromUser = MessagesController.getInstance(currentAccount).getUser(fromId);
-            if (fromId != selfId || prepaid_upgrade || isForChannel) {
-                tableView.addRowUser(getString(R.string.Gift2From), currentAccount, fromId, () -> openProfile(fromId), fromId != selfId && fromId != UserObject.ANONYMOUS && !UserObject.isDeleted(fromUser) && !fromBot && !isForChannel ? getString(R.string.Gift2ButtonSendGift) : null, isForChannel ? null : () -> {
-                    new GiftSheet(getContext(), currentAccount, fromId, this::dismiss).show();
+            if (auctionPeer != null) {
+                long auctionToDid = DialogObject.getPeerDialogId(auctionPeer);
+                tableView.addRowUser(getString(R.string.Gift2To), currentAccount, auctionToDid, () -> openProfile(auctionToDid), null, isForChannel ? null : () -> {
+                    new GiftSheet(getContext(), currentAccount, auctionToDid, this::dismiss).show();
                 });
-            }
-            if (toId != selfId || isForChannel) {
-                tableView.addRowUser(getString(R.string.Gift2To), currentAccount, toId, () -> openProfile(toId), null, isForChannel ? null : () -> {
-                    new GiftSheet(getContext(), currentAccount, toId, this::dismiss).show();
-                });
+            } else {
+                if (fromId != selfId || prepaid_upgrade || isForChannel) {
+                    tableView.addRowUser(getString(R.string.Gift2From), currentAccount, fromId, () -> openProfile(fromId), fromId != selfId && fromId != UserObject.ANONYMOUS && !UserObject.isDeleted(fromUser) && !fromBot && !isForChannel ? getString(R.string.Gift2ButtonSendGift) : null, isForChannel ? null : () -> {
+                        new GiftSheet(getContext(), currentAccount, fromId, this::dismiss).show();
+                    });
+                }
+                if (toId != selfId || isForChannel) {
+                    tableView.addRowUser(getString(R.string.Gift2To), currentAccount, toId, () -> openProfile(toId), null, isForChannel ? null : () -> {
+                        new GiftSheet(getContext(), currentAccount, toId, this::dismiss).show();
+                    });
+                }
             }
             tableView.addRowDateTime(getString(R.string.StarsTransactionDate), date);
             if (stargift.stars > 0) {
@@ -6683,7 +6693,8 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
                 giftName.align(Layout.Alignment.ALIGN_CENTER);
                 giftName.multiline(1);
 
-                giftStatus = new Text(gift.sold_out ? getString(R.string.Gift2SoldOutTitle) : formatPluralString("Gift2AvailabilityLeft", gift.availability_remains), 13);
+                giftStatus = new Text(gift.sold_out ? getString(R.string.Gift2SoldOutTitle) :
+                    formatPluralString("Gift2SoldAuctionPreviewGifts", gift.availability_total), 13);
                 giftStatus.setMaxWidth(dp(sizeDp - 30));
                 giftStatus.align(Layout.Alignment.ALIGN_CENTER);
                 giftStatus.multiline(1);

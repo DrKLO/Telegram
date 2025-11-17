@@ -281,11 +281,20 @@ public class LivePlayer implements NotificationCenter.NotificationCenterDelegate
                                 params = upd.params;
                             }
 
-                            if (destroyed || instance == null) return;
-
                             FileLog.d("[LivePlayer] joined call " + inputCall.id);
 
                             joined = true;
+
+                            if (destroyed || instance == null) {
+                                final TL_phone.leaveGroupCall leaveReq = new TL_phone.leaveGroupCall();
+                                leaveReq.call = inputCall;
+                                ConnectionsManager.getInstance(currentAccount).sendRequest(leaveReq, (res2, err2) -> {
+                                    if (res2 instanceof TLRPC.Updates) {
+                                        MessagesController.getInstance(currentAccount).processUpdates((TLRPC.Updates) res, false);
+                                    }
+                                });
+                                return;
+                            }
 
                             final boolean isChannelStreaming;
                             if (params != null && !params.data.startsWith("{\"stream\":true")) {
@@ -398,6 +407,10 @@ public class LivePlayer implements NotificationCenter.NotificationCenterDelegate
                                 NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.liveStoryUpdated, call.id);
                                 setPolling(true);
                             });
+                        } else if (err != null) {
+                            if ("GROUPCALL_INVALID".equalsIgnoreCase(err.text)) {
+                                AndroidUtilities.runOnUIThread(this::storyDeleted);
+                            }
                         }
                     });
                 },
@@ -469,7 +482,10 @@ public class LivePlayer implements NotificationCenter.NotificationCenterDelegate
                             FileLog.d("[LivePlayer] received in "+(System.currentTimeMillis() - startTime)+"ms getFile{time_ms=" + timestamp + (duration == 500 ? ", scale = 1" : "") + ", video_channel = " + videoChannel + ", video_quality = " + quality+ "}: " + res.bytes.limit() + " bytes");
                             instance.onStreamPartAvailable(timestamp, res.bytes.buffer, res.bytes.limit(), responseTime, videoChannel, quality);
                         } else {
-                            if ("GROUPCALL_JOIN_MISSING".equals(error.text)) {
+                            if ("GROUPCALL_INVALID".equalsIgnoreCase(error.text)) {
+                                instance.onStreamPartAvailable(timestamp, null, -1, responseTime, videoChannel, quality);
+                                AndroidUtilities.runOnUIThread(this::storyDeleted);
+                            } else if ("GROUPCALL_JOIN_MISSING".equals(error.text)) {
                                 AndroidUtilities.runOnUIThread(() -> {
                                     if (instance != null) {
                                         Utilities.globalQueue.postRunnable(instance::stopGroup);
@@ -634,6 +650,15 @@ public class LivePlayer implements NotificationCenter.NotificationCenterDelegate
         }
     }
 
+    public void storyDeleted() {
+        final TL_stories.TL_updateStory upd = new TL_stories.TL_updateStory();
+        upd.peer = MessagesController.getInstance(currentAccount).getPeer(dialogId);
+        upd.story = new TL_stories.TL_storyItemDeleted();
+        upd.story.id = storyId;
+        MessagesController.getInstance(currentAccount).getStoriesController().processUpdate(upd);
+        destroy();
+    }
+
     public boolean equals(TLRPC.InputGroupCall call) {
         return (
             this.inputCall == call ||
@@ -732,6 +757,7 @@ public class LivePlayer implements NotificationCenter.NotificationCenterDelegate
     private int pollingRequestId = -1;
     private int polling2RequestId = -1;
     private void setPolling(boolean poll) {
+        if (destroyed) poll = false;
         if (this.polling == poll) return;
 
         this.polling = poll;
@@ -784,7 +810,9 @@ public class LivePlayer implements NotificationCenter.NotificationCenterDelegate
 
                 NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.liveStoryUpdated, call.id);
             } else if (err != null) {
-                // TODO
+                if ("GROUPCALL_INVALID".equalsIgnoreCase(err.text)) {
+                    AndroidUtilities.runOnUIThread(this::storyDeleted);
+                }
             }
 
             if (this.polling) {
@@ -833,6 +861,8 @@ public class LivePlayer implements NotificationCenter.NotificationCenterDelegate
                         }
                         init();
                     });
+                } else if ("GROUPCALL_INVALID".equalsIgnoreCase(err.text)) {
+                    AndroidUtilities.runOnUIThread(this::storyDeleted);
                 }
             }
 
@@ -891,7 +921,18 @@ public class LivePlayer implements NotificationCenter.NotificationCenterDelegate
         if (destroyed) return;
         final TL_phone.discardGroupCall req = new TL_phone.discardGroupCall();
         req.call = inputCall;
-        ConnectionsManager.getInstance(currentAccount).sendRequest(req, null);
+        ConnectionsManager.getInstance(currentAccount).sendRequest(req, (res, err) -> {
+            if (res instanceof TLRPC.Updates) {
+                final TLRPC.Updates updates = (TLRPC.Updates) res;
+                MessagesController.getInstance(currentAccount).putUsers(updates.users, false);
+                MessagesController.getInstance(currentAccount).putChats(updates.chats, false);
+                MessagesController.getInstance(currentAccount).processUpdates(updates, false);
+            } else if (err != null) {
+                if ("GROUPCALL_ALREADY_DISCARDED".equalsIgnoreCase(err.text)) {
+                    AndroidUtilities.runOnUIThread(this::storyDeleted);
+                }
+            }
+        });
         destroy();
     }
 

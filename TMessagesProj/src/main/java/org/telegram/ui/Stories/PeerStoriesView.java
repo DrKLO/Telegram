@@ -1796,7 +1796,7 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
                         }
                         if (currentStory.storyItem != null && currentStory.storyItem.media instanceof TLRPC.TL_messageMediaVideoStream && LivePlayer.recording != null && LivePlayer.recording.equals(((TLRPC.TL_messageMediaVideoStream) currentStory.storyItem.media).call)) {
                             final boolean isMuted = LivePlayer.recording != null && LivePlayer.recording.isMuted();
-                            ActionBarMenuSubItem muteItem = ActionBarMenuItem.addItem(popupLayout, isMuted ? R.drawable.msg_voice_unmuted : R.drawable.msg_voice_muted, isMuted ? "Unmute" : "Mute", false, resourcesProvider);
+                            ActionBarMenuSubItem muteItem = ActionBarMenuItem.addItem(popupLayout, isMuted ? R.drawable.msg_voice_unmuted : R.drawable.msg_voice_muted, isMuted ? getString(R.string.Unmute) : getString(R.string.Mute), false, resourcesProvider);
                             muteItem.setOnClickListener(v -> {
                                 if (LivePlayer.recording != null) {
                                     LivePlayer.recording.setMuted(!isMuted);
@@ -1806,7 +1806,7 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
                                 }
                             });
 
-                            ActionBarMenuSubItem rotateItem = ActionBarMenuItem.addItem(popupLayout, R.drawable.menu_camera_retake, "Switch Camera", false, resourcesProvider);
+                            ActionBarMenuSubItem rotateItem = ActionBarMenuItem.addItem(popupLayout, R.drawable.menu_camera_retake, getString(R.string.AccDescrSwitchCamera), false, resourcesProvider);
                             rotateItem.setOnClickListener(v -> {
                                 if (LivePlayer.recording != null) {
                                     LivePlayer.recording.switchCamera();

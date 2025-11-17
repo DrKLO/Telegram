@@ -31,7 +31,7 @@ import java.util.concurrent.TimeUnit;
 public class GroupCallMessagesController extends BaseController {
 
     public interface CallMessageListener {
-        void onNewGroupCallMessage(GroupCallMessage message);
+        void onNewGroupCallMessage(long callId, GroupCallMessage message);
         void onPopGroupCallMessage();
     }
 
@@ -203,13 +203,13 @@ public class GroupCallMessagesController extends BaseController {
         List<CallMessageListener> listeners = callMessagesListeners.get(callId);
         if (listeners != null) {
             for (CallMessageListener listener: listeners) {
-                listener.onNewGroupCallMessage(message);
+                listener.onNewGroupCallMessage(callId, message);
             }
         }
         listeners = callMessagesListeners.get(0);
         if (listeners != null) {
             for (CallMessageListener listener: listeners) {
-                listener.onNewGroupCallMessage(message);
+                listener.onNewGroupCallMessage(callId, message);
             }
         }
 

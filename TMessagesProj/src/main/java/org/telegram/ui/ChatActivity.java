@@ -12420,7 +12420,9 @@ public class ChatActivity extends BaseFragment implements
                 replyingMessageObject = null;
             }
             replyingQuote = null;
-            chatActivityEnterView.setReplyingMessageObject(null, null);
+            if (chatActivityEnterView != null) {
+                chatActivityEnterView.setReplyingMessageObject(null, null);
+            }
         }
         hideFieldPanel(false);
         if (chatMode == 0) {

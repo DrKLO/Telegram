@@ -198,7 +198,7 @@ public class ActiveGiftAuctionsHintCell extends BlurredFrameLayout implements Gi
 
     @SuppressLint("ViewConstructor")
     public static class CountDown extends FrameLayout {
-        public final AnimatedTextView textView;
+        public final AnimatedTextView.AnimatedTextDrawable textView;
         private final Paint fillPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         private final CountdownTimer timer = new CountdownTimer(this::updateTimer);
         private final Drawable drawable;
@@ -210,17 +210,20 @@ public class ActiveGiftAuctionsHintCell extends BlurredFrameLayout implements Gi
             this.currentAccount = currentAccount;
 
             drawable = context.getResources().getDrawable(R.drawable.filled_gift_sell_24).mutate();
-            drawable.setBounds(dp(8), dp(5), dp(8 + 18), dp(5 + 18));
-
-            textView = new AnimatedTextView(context);
+            textView = new AnimatedTextView.AnimatedTextDrawable();
+            textView.setOverrideFullWidth(AndroidUtilities.displaySize.x);
+            textView.setCallback(this);
             textView.setTypeface(AndroidUtilities.bold());
             textView.setTextSize(dp(14));
             textView.setTextColor(Color.WHITE);
-            textView.setGravity(Gravity.CENTER);
+            textView.setGravity(Gravity.LEFT);
 
             fillPaint.setShader(new LinearGradient(0, 0, dp(72), 0, new int[]{0xff329bde, 0xff66c1fb}, new float[]{0.0f, 1.0f}, Shader.TileMode.CLAMP));
+        }
 
-            addView(textView, LayoutHelper.createFrame(40, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL | Gravity.RIGHT, 0, 0, 6, 0));
+        @Override
+        protected boolean verifyDrawable(@NonNull Drawable who) {
+            return who == textView || super.verifyDrawable(who);
         }
 
         public void start(int endTime) {
@@ -234,6 +237,7 @@ public class ActiveGiftAuctionsHintCell extends BlurredFrameLayout implements Gi
         }
 
         public void stop() {
+            endTime = 0;
             timer.stop();
         }
 
@@ -259,14 +263,26 @@ public class ActiveGiftAuctionsHintCell extends BlurredFrameLayout implements Gi
 
         @Override
         protected void dispatchDraw(@NonNull Canvas canvas) {
-            canvas.drawRoundRect(0, 0, getWidth(), getHeight(), dp(14), dp(14), fillPaint);
+            final int l = getMeasuredWidth() - dp(8) - (int) textView.getCurrentWidth();
+
+            final int o = l - dp(30);
+            canvas.save();
+            canvas.translate(o, 0);
+            canvas.drawRoundRect(0, 0, getWidth() - o, getHeight(), dp(14), dp(14), fillPaint);
+            canvas.restore();
+
+            textView.setBounds(l, 0, getMeasuredWidth() - dp(8), getMeasuredHeight() - dp(1));
+            textView.draw(canvas);
+
+            drawable.setBounds(l + dp(8 - 30), dp(5), l + dp(8 + 18 - 30), dp(5 + 18));
             drawable.draw(canvas);
+
             super.dispatchDraw(canvas);
         }
 
         @Override
         protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-            super.onMeasure(LayoutHelper.measureSpecExactlyDp(72), LayoutHelper.measureSpecExactlyDp(28));
+            super.onMeasure(LayoutHelper.measureSpecExactlyDp(172), LayoutHelper.measureSpecExactlyDp(28));
         }
     }
 }

@@ -1303,7 +1303,7 @@ public class StarsReactionsSheet extends BottomSheet implements NotificationCent
                 lerp(sliderCircleRect.left + dp(9), sliderCircleRect.right - dp(9), roundedValue),
                 Math.min(Utilities.clamp01(roundedValue / slide), Utilities.clamp01((1f - roundedValue) / slide))
             ); // slide < dp(12) ? sliderInnerRect.left + dp(12) : slide > (sliderInnerRect.width() - dp(12)) ? sliderInnerRect.right - dp(12) : sliderCircleRect.centerX();
-            final float textWidth = counterText.getCurrentWidth() + dp(24 + 26);
+            final float textWidth = Math.max(counterSubText.getCurrentWidth() + dp(20), counterText.getCurrentWidth() + dp(24 + 26));
             final float textHeight = dp(44);
             final float left = Utilities.clamp(pointerX - textWidth / 2f, sliderInnerRect.right - textWidth - dp(4), sliderInnerRect.left + dp(4));
             textRect.set(left, sliderInnerRect.top - dp(21) - textHeight, left + textWidth, sliderInnerRect.top - dp(21));
@@ -1373,7 +1373,12 @@ public class StarsReactionsSheet extends BottomSheet implements NotificationCent
             canvas.save();
             final float s = 1f - subTextVisible.getFloatValue() * 0.15f;
             canvas.scale(s, s, textRect.centerX(), textRect.top - textRect.height() * 0.5f);
-            counterImage.setBounds((int) (textRect.left + dp(13)), (int) (textRect.centerY() - dp(10)), (int) (textRect.left + dp(13 + 20)), (int) (textRect.centerY() + dp(10)));
+            counterImage.setBounds(
+                (int) (textRect.centerX() - counterText.getCurrentWidth() / 2 + dp(8 - 20)),
+                (int) (textRect.centerY() - dp(10)),
+                (int) (textRect.centerX() - counterText.getCurrentWidth() / 2 + dp(8)),
+                (int) (textRect.centerY() + dp(10))
+            );
             if (drawCounterImage) {
                 counterImage.draw(canvas);
             }
@@ -1450,6 +1455,13 @@ public class StarsReactionsSheet extends BottomSheet implements NotificationCent
 
         protected boolean onTapCustom(float x, float y) {
             return false;
+        }
+
+        public void setValueAnimated(int value) {
+            if (value == getValue()) {
+                return;
+            }
+            animateProgressTo(getProgress(value));
         }
 
         private ValueAnimator progressAnimator;

@@ -1,6 +1,8 @@
 package org.telegram.ui.Gifts;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
+import static org.telegram.messenger.AndroidUtilities.replaceTags;
+import static org.telegram.messenger.AndroidUtilities.shakeView;
 import static org.telegram.messenger.LocaleController.formatNumber;
 import static org.telegram.messenger.LocaleController.formatPluralString;
 import static org.telegram.messenger.LocaleController.formatString;
@@ -34,6 +36,8 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.graphics.ColorUtils;
+
+import com.google.android.exoplayer2.C;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.DialogObject;
@@ -168,6 +172,15 @@ public class AuctionBidSheet extends BottomSheetWithRecyclerListView implements 
 
                 return false;
             }
+
+            @Override
+            public boolean dispatchTouchEvent(MotionEvent event) {
+                if ((event.getAction() == MotionEvent.ACTION_DOWN) && (event.getY() > (getMeasuredHeight() - dp(48)))) {
+                    return false;
+                }
+
+                return super.dispatchTouchEvent(event);
+            }
         };
         slider.drawPlus = true;
 
@@ -180,7 +193,10 @@ public class AuctionBidSheet extends BottomSheetWithRecyclerListView implements 
         horizontalLayout.setOrientation(LinearLayout.HORIZONTAL);
 
         minimumBidCell = new InfoCell(context, resourcesProvider);
-        minimumBidCell.setBackground(Theme.createRoundRectDrawable(dp(12), getThemedColor(Theme.key_windowBackgroundGray)));
+        minimumBidCell.setBackground(Theme.createSimpleSelectorRoundRectDrawable(dp(12), getThemedColor(Theme.key_windowBackgroundGray), ColorUtils.compositeColors(getThemedColor(Theme.key_listSelector), getThemedColor(Theme.key_windowBackgroundGray))));
+        minimumBidCell.setOnClickListener(v -> {
+            slider.setValueAnimated((int) this.auction.getMinimumBid());
+        });
         minimumBidCell.titleView.setText(getString(R.string.Gift2AuctionBidInfoMinimumBid));
         nextRoundCell = new InfoCell(context, resourcesProvider);
         nextRoundCell.setBackground(Theme.createRoundRectDrawable(dp(12), getThemedColor(Theme.key_windowBackgroundGray)));
@@ -235,7 +251,7 @@ public class AuctionBidSheet extends BottomSheetWithRecyclerListView implements 
         selfBidderCell = new BidderCell(context, resourcesProvider);
         selfBidderCell.placeTextView.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteBlueHeader));
         selfBidderCell.setUser(userSelf, false);
-        linearLayout.addView(selfBidderCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 20, 0, 20, -7));
+        linearLayout.addView(selfBidderCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, -7));
 
         HeaderCell topBiddersHeader = new HeaderCell(context, Theme.key_windowBackgroundWhiteBlueHeader, 21, 15, 0, false, resourcesProvider);
         topBiddersHeader.setText(getString(R.string.Gift2AuctionTop3Winners));
@@ -243,10 +259,10 @@ public class AuctionBidSheet extends BottomSheetWithRecyclerListView implements 
 
         for (int a = 0; a < topBidderCells.length; a++) {
             topBidderCells[a] = new BidderCell(context, resourcesProvider);
-            topBidderCells[a].setPadding(dp(20), 0, dp(20), 0);
             topBidderCells[a].setPlace(a + 1, true, false);
             topBidderCells[a].setBackground(Theme.getSelectorDrawable(false));
             topBidderCells[a].drawDivider = a < 2;
+            topBidderCells[a].setOnClickListener(v -> {});
             linearLayout.addView(topBidderCells[a], LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
         }
 
@@ -410,7 +426,7 @@ public class AuctionBidSheet extends BottomSheetWithRecyclerListView implements 
     private AnimatedEmojiSpan animatedEmojiSpan;
     private void updateTable(boolean animated) {
         minimumBidCell.infoView.setText(StarsIntroActivity.replaceStarsWithPlain(
-            "⭐️" + LocaleController.formatNumber((int) auction.getMinimumBid(), ','), 0.78f, refS), animated);
+            "⭐️" + LocaleController.formatNumberWithMillion((int) auction.getMinimumBid(), ','), 0.78f, refS), animated);
 
         if (auction.auctionStateActive != null) {
             final int timeLeft = Math.max(0, auction.auctionStateActive.next_round_at - (ConnectionsManager.getInstance(currentAccount).getCurrentTime()));
@@ -533,31 +549,34 @@ public class AuctionBidSheet extends BottomSheetWithRecyclerListView implements 
         super.onDismissAnimationStart();
         isOpenAnimationEnd = false;
         checkBalanceCloudVisibility();
+        Bulletin.removeDelegate(container);
     }
 
     private final ColoredImageSpan[] spanRefStars = new ColoredImageSpan[1];
     private void updateButtonText(boolean animated) {
         final int myBid = slider.getValue();
-        boolean enabled = true;
         if (myBid == auction.getCurrentMyBid()) {
             buttonView.setText(getString(R.string.OK), animated);
             buttonView.setOnClickListener(v -> dismiss());
         } else {
-            enabled = myBid >= auction.getMinimumBid();
             buttonView.setText(StarsIntroActivity.replaceStars(
                 formatString(R.string.Gift2AuctionPlaceBid, formatNumber(myBid, ',')),
                 spanRefStars
             ), animated);
             buttonView.setOnClickListener(v -> {
                 final int myValue = slider.getValue();
-                sendBid(myValue);
+                final int minimumBid = (int) auction.getMinimumBid();
+                if (myValue < minimumBid) {
+                    // slider.setValueAnimated(minimumBid);
+                    shakeView(buttonView);
+                    BulletinFactory.of(container, resourcesProvider).createSimpleBulletin(
+                        R.raw.info, replaceTags(formatPluralString("Gift2AuctionMinimumBidIncreased", minimumBid))
+                    ).show();
+                } else {
+                    sendBid(myValue);
+                }
             });
         }
-        if (enabled != buttonView.isEnabled()) {
-            buttonView.animate().alpha(enabled ? 1f : 0.6f).setDuration(180L).start();
-        }
-        buttonView.setEnabled(enabled);
-        buttonView.setClickable(enabled);
     }
 
     @Override
@@ -574,6 +593,12 @@ public class AuctionBidSheet extends BottomSheetWithRecyclerListView implements 
         super.onOpenAnimationEnd();
         isOpenAnimationEnd = true;
         checkBalanceCloudVisibility();
+        Bulletin.addDelegate(container, new Bulletin.Delegate() {
+            @Override
+            public int getBottomOffset(int tag) {
+                return dp(48 + 16);
+            }
+        });
     }
 
     @Override
@@ -846,6 +871,7 @@ public class AuctionBidSheet extends BottomSheetWithRecyclerListView implements 
             nameTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
             nameTextView.setTextSize(dp(15));
             nameTextView.setPadding(dp(12), 0, dp(12), 0);
+            nameTextView.setEllipsizeByGradient(true);
             bidTextView = new AnimatedTextView(context);
             bidTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText, resourcesProvider));
             bidTextView.setTextSize(dp(15));
@@ -853,14 +879,15 @@ public class AuctionBidSheet extends BottomSheetWithRecyclerListView implements 
 
             placeTextView = new AnimatedTextView(context);
             placeTextView.setTextSize(dp(15));
-            placeTextView.setPadding(dp(5), 0, dp(5), 0);
+            placeTextView.setPadding(dp(20), 0, 0, 0);
             placeTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
             placeTextView.setTypeface(AndroidUtilities.bold());
+            placeTextView.setGravity(Gravity.CENTER);
 
-            addView(placeTextView, LayoutHelper.createLinear(46, LayoutHelper.WRAP_CONTENT, 0f, Gravity.CENTER_VERTICAL));
+            addView(placeTextView, LayoutHelper.createLinear(66, LayoutHelper.WRAP_CONTENT, 0f, Gravity.CENTER_VERTICAL));
             addView(backupImageView, LayoutHelper.createLinear(32, 32, 0f, Gravity.CENTER_VERTICAL));
             addView(nameTextView, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1f, Gravity.CENTER_VERTICAL));
-            addView(bidTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0f, Gravity.CENTER_VERTICAL, 12, 0, 0, 0));
+            addView(bidTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0f, Gravity.CENTER_VERTICAL, 0, 0, 20, 0));
         }
 
         private final ColoredImageSpan[] ref = new ColoredImageSpan[1];
@@ -886,7 +913,14 @@ public class AuctionBidSheet extends BottomSheetWithRecyclerListView implements 
                         "\uD83E\uDD49", placeTextView.getPaint().getFontMetricsInt(), null), animated);
                 }
             } else {
-                placeTextView.setText(LocaleController.formatNumber(place, ','), animated);
+                if (place >= 10000) {
+                    placeTextView.setTextSize(dp(12));
+                } else if (place >= 1000) {
+                    placeTextView.setTextSize(dp(14));
+                } else {
+                    placeTextView.setTextSize(dp(15));
+                }
+                placeTextView.setText(Integer.toString(place), animated);
             }
         }
 

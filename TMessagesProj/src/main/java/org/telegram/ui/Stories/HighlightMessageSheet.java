@@ -232,7 +232,7 @@ public class HighlightMessageSheet {
             final int length = getTierOption(currentAccount, newStars, TIER_LENGTH);
             final int emojis = getTierOption(currentAccount, newStars, TIER_EMOJIS);
 
-            tierPeriod.set(period >= 60 ? (period / 60) + "m" : period + "s");
+            tierPeriod.set(period >= 60 ? LocaleController.formatString(R.string.SlowmodeMinutes, period / 60) : LocaleController.formatString(R.string.SlowmodeSeconds, period));
             tierLength.set(LocaleController.formatNumber(length, ','));
             tierEmoji.set(LocaleController.formatNumber(emojis, ','));
 

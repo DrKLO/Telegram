@@ -1163,6 +1163,10 @@ public class LiveCommentsView extends FrameLayout implements NotificationCenter.
                     delete(id);
                     if ("BALANCE_TOO_LOW".equalsIgnoreCase(err.text)) {
                         new StarsIntroActivity.StarsNeededSheet(getContext(), new DarkThemeResourceProvider(), stars, StarsIntroActivity.StarsNeededSheet.TYPE_LIVE_COMMENTS, "", () -> send(send_as, text, stars), dialogId).show();
+                    } else if ("GROUPCALL_INVALID".equalsIgnoreCase(err.text)) {
+                        if (livePlayer != null) {
+                            livePlayer.storyDeleted();
+                        }
                     } else {
                         BulletinFactory.of(topBulletinContainer, new DarkThemeResourceProvider()).showForError(err, true);
                     }

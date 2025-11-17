@@ -4278,6 +4278,10 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 		return privateCall != null ? privateCall.id : 0;
 	}
 
+	public long getGroupCallID() {
+		return groupCall != null && groupCall.call != null ? groupCall.call.id : 0;
+	}
+
 	public void hangUp() {
 		hangUp(0, null);
 	}
