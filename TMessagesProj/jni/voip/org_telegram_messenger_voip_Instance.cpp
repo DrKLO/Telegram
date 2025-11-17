@@ -31,7 +31,10 @@
 using namespace tgcalls;
 
 const auto RegisterTag = Register<InstanceImpl>();
-const auto RegisterTagLegacy = Register<InstanceImplLegacy>();
+
+//fix random crash or livtgviop legacy lib on android 15-16
+//const auto RegisterTagLegacy = Register<InstanceImplLegacy>();
+
 const auto RegisterTagV2_4_0_1 = Register<InstanceV2Impl>();
 const auto RegisterTagV2_4_1_2 = Register<InstanceV2ReferenceImpl>();
 
