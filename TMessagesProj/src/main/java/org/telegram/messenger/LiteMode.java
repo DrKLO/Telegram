@@ -209,7 +209,7 @@ public class LiteMode {
         if (!preferences.contains("lite_mode5")) {
             if (preferences.contains("lite_mode4")) {
                 defaultValue = preferences.getInt("lite_mode4", defaultValue);
-                if (BuildVars.DEBUG_VERSION && SharedConfig.getDevicePerformanceClass() == SharedConfig.PERFORMANCE_CLASS_HIGH) {
+                if (SharedConfig.getDevicePerformanceClass() == SharedConfig.PERFORMANCE_CLASS_HIGH) {
                     defaultValue |= FLAG_LIQUID_GLASS;
                 }
                 preferences.edit().putInt("lite_mode5", defaultValue).apply();

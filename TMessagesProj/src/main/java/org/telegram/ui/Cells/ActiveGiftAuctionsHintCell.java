@@ -238,7 +238,11 @@ public class ActiveGiftAuctionsHintCell extends BlurredFrameLayout implements Gi
         }
 
         private void updateTimer(long value) {
-            textView.setText(AndroidUtilities.formatDurationNoHours((int) value, false), isAttachedToWindow());
+            if (value == 0) {
+                textView.setText(getString(R.string.Gift2AuctionPriceView));
+            } else {
+                textView.setText(AndroidUtilities.formatDurationNoHours((int) value, false), isAttachedToWindow());
+            }
         }
 
         @Override

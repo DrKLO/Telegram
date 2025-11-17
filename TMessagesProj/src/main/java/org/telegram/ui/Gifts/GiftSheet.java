@@ -544,7 +544,12 @@ public class GiftSheet extends BottomSheetWithRecyclerListView implements Notifi
                         return;
                     }
                     if (gift.auction) {
-                        AuctionJoinSheet.show(context, resourcesProvider, currentAccount, dialogId, gift.id);
+                        AuctionJoinSheet.show(context, resourcesProvider, currentAccount, dialogId, gift.id, () -> {
+                            if (closeParentSheet != null) {
+                                closeParentSheet.run();
+                            }
+                            dismiss();
+                        });
                         return;
                     }
 
@@ -935,6 +940,11 @@ public class GiftSheet extends BottomSheetWithRecyclerListView implements Notifi
                 }
             }).collect(Collectors.toCollection(ArrayList::new));
         }
+
+        if (dialogId < 0) {
+            gifts = gifts.stream().filter(gift -> !gift.auction).collect(Collectors.toCollection(ArrayList::new));
+        }
+
         boolean myGiftsHaveUnique = false;
         if (dialogId != UserConfig.getInstance(currentAccount).getClientUserId()) {
             if (myGifts != null) {

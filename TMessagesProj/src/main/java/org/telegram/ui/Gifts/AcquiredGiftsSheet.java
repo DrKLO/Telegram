@@ -56,6 +56,7 @@ public class AcquiredGiftsSheet extends BottomSheetWithRecyclerListView {
         super(context, null, false, false, false, false, ActionBarType.SLIDING, resourcesProvider);
         this.auction = auction;
         this.gifts = gifts;
+        topPadding = 0.2f;
 
         ignoreTouchActionBar = false;
         headerMoveTop = dp(12);

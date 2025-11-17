@@ -8630,6 +8630,9 @@
     <string name="Gift2SendYourBalance_one">Your balance is %d Star</string>
     <string name="Gift2SendYourBalance_other">Your balance is %d Stars</string>
     <string name="Gift2ActionTitle">Gift from </string>
+    <string name="Gift2ActionTitleTo">Gift for </string>
+    <string name="Gift2AveragePriceHint">**%d Stars** is the average sale price for **%s** gifts.</string>
+    <string name="Gift2ActionWonActionText">You bought this gift at auction for %s Stars.</string>
     <string name="Gift2ActionUpgradeTitle">Upgrade from </string>
     <string name="Gift2ActionUpgradeUnknownTitle">Upgrade from unknown</string>
     <string name="Gift2ActionSelfTitle">Saved Gift</string>

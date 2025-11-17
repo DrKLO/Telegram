@@ -4384,7 +4384,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                             .createSimpleBulletin(R.raw.error, getString(R.string.GiftAuctionNotFound))
                             .show();
                 } else if (res != null) {
-                    AuctionJoinSheet.show(LaunchActivity.this, null, currentAccount, 0, res.gift.id);
+                    AuctionJoinSheet.show(LaunchActivity.this, null, currentAccount, 0, res.gift.id, null);
                 }
 
                 try {

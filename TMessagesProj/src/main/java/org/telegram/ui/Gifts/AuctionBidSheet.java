@@ -36,6 +36,7 @@ import androidx.annotation.Nullable;
 import androidx.core.graphics.ColorUtils;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.Emoji;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.GiftAuctionController;
@@ -52,6 +53,7 @@ import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.HeaderCell;
+import org.telegram.ui.ChatActivity;
 import org.telegram.ui.Components.AnimatedEmojiSpan;
 import org.telegram.ui.Components.AnimatedTextView;
 import org.telegram.ui.Components.AvatarDrawable;
@@ -63,6 +65,7 @@ import org.telegram.ui.Components.ColoredImageSpan;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.EditTextCaption;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.LinkSpanDrawable;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.ScaleStateListAnimator;
 import org.telegram.ui.Components.UItem;
@@ -121,6 +124,8 @@ public class AuctionBidSheet extends BottomSheetWithRecyclerListView implements 
         this.auction = auction;
         this.params = params;
         this.giftId = auction.giftId;
+        centerTitle = true;
+        topPadding = 0.2f;
 
         auction = GiftAuctionController.getInstance(currentAccount).subscribeToGiftAuction(giftId, this);
         timer = new CountdownTimer(this::updateCountdownCell);
@@ -190,10 +195,41 @@ public class AuctionBidSheet extends BottomSheetWithRecyclerListView implements 
         horizontalLayout.addView(new View(context), LayoutHelper.createLinear(10, LayoutHelper.MATCH_PARENT, 0f));
         horizontalLayout.addView(giftsLeftCell, LayoutHelper.createLinear(0, LayoutHelper.MATCH_PARENT, 1f));
 
-        linearLayout.addView(horizontalLayout, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 56, 16, 0, 16, 0));
+        linearLayout.addView(horizontalLayout, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 56, 16, 0, 16, 15));
 
+        if (auction.auctionUserState.acquired_count > 0) {
+            boolean[] pending = new boolean[1];
+            LinkSpanDrawable.LinksTextView itemsBought = new LinkSpanDrawable.LinksTextView(context, resourcesProvider);
 
-        selfBidderHeader = new HeaderCell(context, Theme.key_windowBackgroundWhiteBlueHeader, 21, 15, 0, false, true, resourcesProvider);
+            itemsBought.setGravity(Gravity.CENTER);
+            itemsBought.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+            itemsBought.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteLinkText, resourcesProvider));
+            itemsBought.setLinkTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteLinkText, resourcesProvider));
+            itemsBought.setOnClickListener((v) -> {
+                if (pending[0]) {
+                    return;
+                }
+                pending[0] = true;
+                GiftAuctionController.getInstance(currentAccount).getOrRequestAcquiredGifts(giftId, gifts -> {
+                    pending[0] = false;
+                    new AcquiredGiftsSheet(getContext(), resourcesProvider, this.auction, gifts).show();
+                });
+            });
+
+            SpannableStringBuilder emoji = new SpannableStringBuilder("*");
+            emoji.setSpan(
+                new AnimatedEmojiSpan(auction.giftDocumentId, itemsBought.getPaint().getFontMetricsInt()),
+                0, emoji.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+            );
+            itemsBought.setText(TextUtils.concat(AndroidUtilities.replaceArrows(
+                LocaleController.formatPluralSpannable("Gift2AuctionsItemsBought", auction.auctionUserState.acquired_count, emoji),
+                true, dp(8f / 3f), dp(1))));
+
+            ScaleStateListAnimator.apply(itemsBought, 0.02f, 1.5f);
+            linearLayout.addView(itemsBought, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 16, 4, 16, 4));
+        }
+
+        selfBidderHeader = new HeaderCell(context, Theme.key_windowBackgroundWhiteBlueHeader, 21, 0, 0, false, true, resourcesProvider);
         linearLayout.addView(selfBidderHeader, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 5, 0, 0));
 
         selfBidderCell = new BidderCell(context, resourcesProvider);
@@ -299,9 +335,9 @@ public class AuctionBidSheet extends BottomSheetWithRecyclerListView implements 
         }
         */
         minimumBid = 50; // Math.min(5000, minimumBid);
-        maximumBid = topBid > 30000 ? 100000 : 50000;
+        maximumBid = topBid > 100_000 ? (((int) topBid * 3 / 2000) * 1000) : (topBid > 30000 ? 100000 : 50000);
 
-        int[] steps_arr = new int[] { 50, 100, 500, 1_000, 2_000, 5_000, 7_500, 10_000, 25_000, 50_000, 100_000 };
+        int[] steps_arr = new int[] { 50, 100, 500, 1_000, 2_000, 5_000, 7_500, 10_000, 25_000, 50_000, 100_000, 500_000, 1_000_000, 5_000_000, 10_000_000 };
         ArrayList<Integer> steps = new ArrayList<>();
         boolean wasSkipped = false;
         for (int i = 0; i < steps_arr.length; ++i) {
@@ -334,6 +370,40 @@ public class AuctionBidSheet extends BottomSheetWithRecyclerListView implements 
         steps_arr = new int[ steps.size() ];
         for (int i = 0; i < steps.size(); ++i) steps_arr[i] = steps.get(i);
         slider.setSteps(100, steps_arr);
+    }
+
+    private @Nullable Runnable closeParentSheet;
+    private long lastRecipientDialogId;
+    private long lastAcquiredCount;
+    private boolean isFirstCheck = true;
+
+    private void checkAuctionParams() {
+        final long dialogId = DialogObject.getPeerDialogId(auction.auctionUserState.peer);
+        final long acquiredCount = auction.auctionUserState.acquired_count;
+
+        if (lastAcquiredCount < acquiredCount && !isFirstCheck) {
+            final BaseFragment fragment = LaunchActivity.getLastFragment();
+            if (fragment != null && lastRecipientDialogId != 0) {
+                final ChatActivity chatActivity = ChatActivity.of(lastRecipientDialogId);
+                chatActivity.whenFullyVisible(chatActivity::startFireworks);
+                fragment.presentFragment(chatActivity);
+                if (closeParentSheet != null) {
+                    closeParentSheet.run();
+                }
+                dismiss();
+            }
+        }
+
+        if (dialogId != 0) {
+            lastRecipientDialogId = dialogId;
+        }
+
+        lastAcquiredCount = acquiredCount;
+        isFirstCheck = false;
+    }
+
+    public void setCloseParentSheet(@Nullable Runnable closeParentSheet) {
+        this.closeParentSheet = closeParentSheet;
     }
 
     private final ColoredImageSpan[] refS = new ColoredImageSpan[1];
@@ -382,10 +452,10 @@ public class AuctionBidSheet extends BottomSheetWithRecyclerListView implements 
         updateSelfBidderHeader(animated);
         updateButtonText(animated);
         checkSliderSubText();
+        checkAuctionParams();
     }
 
     private void openProfile(long did) {
-        dismiss();
         final BaseFragment lastFragment = LaunchActivity.getSafeLastFragment();
         if (lastFragment != null) {
             if (UserObject.isService(did)) return;
@@ -401,6 +471,10 @@ public class AuctionBidSheet extends BottomSheetWithRecyclerListView implements 
             args.putBoolean("open_gifts", true);
             lastFragment.presentFragment(new ProfileActivity(args));
         }
+        if (closeParentSheet != null) {
+            closeParentSheet.run();
+        }
+        dismiss();
     }
 
     private final BoolAnimator winningColor = new BoolAnimator(0, this::onColorFactorChanged, CubicBezierInterpolator.EASE_OUT_QUINT, 380);
@@ -656,7 +730,7 @@ public class AuctionBidSheet extends BottomSheetWithRecyclerListView implements 
         editText.setHintText(getString(R.string.Gift2AuctionPlaceACustomBidHint2));
         editText.setFocusable(true);
         editText.setInputType(InputType.TYPE_CLASS_NUMBER);
-        editText.setFilters(new InputFilter[]{new InputFilter.LengthFilter(7)});
+        editText.setFilters(new InputFilter[]{new InputFilter.LengthFilter(9)});
         editText.setLineColors(Theme.getColor(Theme.key_windowBackgroundWhiteInputField, resourcesProvider), Theme.getColor(Theme.key_windowBackgroundWhiteInputFieldActivated, resourcesProvider), Theme.getColor(Theme.key_text_RedRegular, resourcesProvider));
         editText.setImeOptions(EditorInfo.IME_ACTION_DONE | EditorInfo.IME_FLAG_NO_EXTRACT_UI);
         editText.setBackgroundDrawable(null);

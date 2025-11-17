@@ -112,6 +112,8 @@ import java.util.List;
 
 public class LiveCommentsView extends FrameLayout implements NotificationCenter.NotificationCenterDelegate {
 
+    public static final int MAX_MESSAGES_COUNT = 2_000;
+
     public static class Message {
         public int id;
         public boolean fromAdmin;
@@ -1350,6 +1352,9 @@ public class LiveCommentsView extends FrameLayout implements NotificationCenter.
         }
         messages.add(position, message);
         if (!isHistory) {
+            if (messages.size() > MAX_MESSAGES_COUNT) {
+                messages.subList(MAX_MESSAGES_COUNT, messages.size()).clear();
+            }
             adapter.update(true);
         }
 

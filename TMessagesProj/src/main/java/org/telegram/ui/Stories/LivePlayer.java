@@ -563,11 +563,25 @@ public class LivePlayer implements NotificationCenter.NotificationCenterDelegate
         instance.setOnStateUpdatedListener(new Instance.OnStateUpdatedListener() {
             @Override
             public void onStateUpdated(int state, boolean inTransition) {
+                final boolean wasConnected = isConnected();
                 connectionState = state;
                 FileLog.d("[LivePlayer] connectionState = " + state);
+                if (wasConnected != isConnected()) {
+                    AndroidUtilities.runOnUIThread(() -> {
+                        NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.liveStoryUpdated, getCallId());
+                    });
+                }
             }
         });
         instance.resetGroupInstance(false, false);
+    }
+
+    public boolean isConnected() {
+        return (
+            connectionState == Instance.STATE_ESTABLISHED ||
+            connectionState == Instance.STATE_WAIT_INIT ||
+            connectionState == Instance.STATE_WAIT_INIT_ACK
+        );
     }
 
     private final HashSet<Integer> srcs = new HashSet<>();

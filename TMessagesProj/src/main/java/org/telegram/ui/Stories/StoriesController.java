@@ -469,7 +469,7 @@ public class StoriesController {
             for (int j = 0; j < userStories.stories.size(); j++) {
                 TL_stories.StoryItem story = userStories.stories.get(j);
                 if (story instanceof TL_stories.TL_storyItemDeleted ||
-                    story instanceof TL_stories.TL_storyItem && now > story.expire_date) {
+                    story instanceof TL_stories.TL_storyItem && now > story.expire_date && !(story.media instanceof TLRPC.TL_messageMediaVideoStream)) {
                     NotificationsController.getInstance(currentAccount).processDeleteStory(dialogId, story.id);
                     userStories.stories.remove(j);
                     j--;

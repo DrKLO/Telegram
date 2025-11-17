@@ -223,6 +223,7 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
     public static final float SHARE_BUTTON_OFFSET = 46;
     private final static long IMAGE_LIVE_TIME = 10_000;
     private final ImageView optionsIconView;
+    private final ImageView pipIconView;
     private final FrameLayout muteIconContainer;
     private final RLottieImageView muteIconView;
     private final ImageView noSoundIconView;
@@ -1270,6 +1271,17 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
         optionsIconView.setPadding(dp(8), dp(8), dp(8), dp(8));
         optionsIconView.setBackground(Theme.createSelectorDrawable(Color.WHITE));
         storyContainer.addView(optionsIconView, LayoutHelper.createFrame(40, 40, Gravity.RIGHT | Gravity.TOP, 2, 15, 2, 0));
+
+        pipIconView = new ImageView(context);
+        pipIconView.setImageDrawable(sharedResources.pipDrawable);
+        pipIconView.setPadding(dp(8), dp(8), dp(8), dp(8));
+        pipIconView.setBackground(Theme.createSelectorDrawable(Color.WHITE));
+        storyContainer.addView(pipIconView, LayoutHelper.createFrame(40, 40, Gravity.RIGHT | Gravity.TOP, 2, 15, 2 + 40, 0));
+        pipIconView.setOnClickListener(v -> {
+            if (storyViewer != null) {
+                storyViewer.switchToPip();
+            }
+        });
 
         optionsIconView.setOnClickListener(v -> {
             delegate.setPopupIsVisible(true);
@@ -2335,6 +2347,7 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
 
         muteIconContainer.setBackground(Theme.createSimpleSelectorRoundRectDrawable(dp(20), Color.TRANSPARENT, ColorUtils.setAlphaComponent(Color.WHITE, 100)));
         optionsIconView.setBackground(Theme.createSimpleSelectorRoundRectDrawable(dp(20), Color.TRANSPARENT, ColorUtils.setAlphaComponent(Color.WHITE, 100)));
+        pipIconView.setBackground(Theme.createSimpleSelectorRoundRectDrawable(dp(20), Color.TRANSPARENT, ColorUtils.setAlphaComponent(Color.WHITE, 100)));
         shareButton.setBackground(Theme.createSimpleSelectorRoundRectDrawable(dp(20), Color.TRANSPARENT, ColorUtils.setAlphaComponent(Color.WHITE, 100)));
         likeButtonContainer.setBackground(Theme.createSimpleSelectorRoundRectDrawable(dp(20), Color.TRANSPARENT, ColorUtils.setAlphaComponent(Color.WHITE, 100)));
         if (repostButtonContainer != null) {
@@ -2994,6 +3007,7 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
             muteButton.setMuted(!muted, true);
         });
         muteButton.setMuted(LivePlayer.recording != null && LivePlayer.recording.isMuted(), false);
+        muteButton.setConnected(LivePlayer.recording == null || LivePlayer.recording.isConnected(), false);
         addView(muteButton, LayoutHelper.createFrame(38 + 8, 38 + 4, Gravity.RIGHT | Gravity.BOTTOM, 7, 0, 7, 3));
     }
 
@@ -5389,6 +5403,7 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
         if (muteButton != null) {
             muteButton.setVisibility(!unsupported && currentStory.isLive && LivePlayer.recording != null && currentStory.isThisCall(LivePlayer.recording.getCallId()) ? View.VISIBLE : View.GONE);
             muteButton.setMuted(LivePlayer.recording != null && LivePlayer.recording.isMuted(), true);
+            muteButton.setConnected(LivePlayer.recording == null || LivePlayer.recording.isConnected(), true);
         }
         if (starsButton != null) {
             starsButtonEffectsView.setVisibility(!unsupported && currentStory.isLive ? View.VISIBLE : View.GONE);
@@ -5570,6 +5585,9 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
 
         if (optionsIconView != null) {
             optionsIconView.setVisibility(isBotsPreview() && !isEditBotsPreview() && (currentStory == null || !currentStory.isVideo) ? View.GONE : View.VISIBLE);
+        }
+        if (pipIconView != null) {
+            pipIconView.setVisibility(currentStory.isLive && !privacyButton.draw ? View.VISIBLE : View.GONE);
         }
     }
 
@@ -7479,7 +7497,7 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
             if (child == null || child == liveCommentsShadowView) {
                 continue;
             }
-            if (child == headerView || child == optionsIconView || child == muteIconContainer || child == selfView || child == storyCaptionView || child == privacyButton) {
+            if (child == headerView || child == optionsIconView || child == pipIconView || child == muteIconContainer || child == selfView || child == storyCaptionView || child == privacyButton) {
                 float alpha = 1f;
                 if (child == muteIconContainer) {
                     alpha = muteIconViewAlpha;
@@ -8084,6 +8102,7 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
         public Drawable likeDrawable;
         public Drawable likeDrawableFilled;
         public Drawable optionsDrawable;
+        public Drawable pipDrawable;
         public Drawable deleteDrawable;
         public RLottieDrawable noSoundDrawable;
        // public ReplaceableIconDrawable muteDrawable;
@@ -8096,6 +8115,7 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
             likeDrawableFilled = ContextCompat.getDrawable(context, R.drawable.media_like_active);
             likeDrawableFilled.setColorFilter(new PorterDuffColorFilter(0xFFFF2E38, PorterDuff.Mode.MULTIPLY));
             optionsDrawable = ContextCompat.getDrawable(context, R.drawable.media_more);
+            pipDrawable = ContextCompat.getDrawable(context, R.drawable.menu_stream_pip);
             deleteDrawable = ContextCompat.getDrawable(context, R.drawable.msg_delete);
             muteDrawable = new RLottieDrawable(R.raw.media_mute_unmute, "media_mute_unmute", AndroidUtilities.dp(28), AndroidUtilities.dp(28), true, null);
            // muteDrawable = new ReplaceableIconDrawable(context);
@@ -8235,6 +8255,8 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
             headerView.setAlpha(1f - outT);
             optionsIconView.setTranslationY(-AndroidUtilities.dp(8) * outT);
             optionsIconView.setAlpha(1f - outT);
+            pipIconView.setTranslationY(-AndroidUtilities.dp(8) * outT);
+            pipIconView.setAlpha(1f - outT);
             muteIconContainer.setTranslationY(-AndroidUtilities.dp(8) * outT);
             muteIconContainer.setAlpha(muteIconViewAlpha * (1f - outT));
             if (selfView != null) {
@@ -8271,6 +8293,8 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
                 headerView.setAlpha(1f - outT);
                 optionsIconView.setTranslationY(-AndroidUtilities.dp(8) * outT);
                 optionsIconView.setAlpha(1f - outT);
+                pipIconView.setTranslationY(-AndroidUtilities.dp(8) * outT);
+                pipIconView.setAlpha(1f - outT);
                 muteIconContainer.setTranslationY(-AndroidUtilities.dp(8) * outT);
                 muteIconContainer.setAlpha(muteIconViewAlpha * (1f - outT));
                 if (selfView != null) {

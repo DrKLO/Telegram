@@ -10,6 +10,7 @@ import static org.telegram.ui.Stars.StarGiftSheet.replaceUnderstood;
 import android.content.Context;
 import android.graphics.drawable.ShapeDrawable;
 import android.graphics.drawable.shapes.OvalShape;
+import android.text.Layout;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.TextUtils;
@@ -31,6 +32,7 @@ import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
+import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.tl.TL_stars;
@@ -56,6 +58,7 @@ import org.telegram.ui.PremiumFeatureCell;
 import org.telegram.ui.Stars.StarGiftSheet;
 import org.telegram.ui.Stars.StarsIntroActivity;
 import org.telegram.ui.Stories.recorder.ButtonWithCounterView;
+import org.telegram.ui.Stories.recorder.HintView2;
 
 import java.util.ArrayList;
 
@@ -71,6 +74,7 @@ public class AuctionJoinSheet extends BottomSheetWithRecyclerListView implements
     private final ButtonSpan.TextViewButtons auctionRowCurrentRoundText;
     private final ButtonSpan.TextViewButtons auctionRowAveragePriceText;
     private final ButtonSpan.TextViewButtons auctionRowAvailabilityText;
+    private final Utilities.Callback2<View, CharSequence> showHint;
 
     private final TableRow auctionRowCurrentRound;
     private final TableRow auctionRowAveragePrice;
@@ -87,10 +91,11 @@ public class AuctionJoinSheet extends BottomSheetWithRecyclerListView implements
 
     private CharSequence emojiGiftText;
 
-    private AuctionJoinSheet(Context context, Theme.ResourcesProvider resourcesProvider, long dialogId, TL_stars.StarGift starGift) {
+    private AuctionJoinSheet(Context context, Theme.ResourcesProvider resourcesProvider, long dialogId, TL_stars.StarGift starGift, Runnable closeParentSheet) {
         super(context, null, false, false, false, false, ActionBarType.FADING, resourcesProvider);
         this.starGift = starGift;
         this.giftId = starGift.id;
+        topPadding = 0.2f;
 
         fixNavigationBar();
 
@@ -156,13 +161,56 @@ public class AuctionJoinSheet extends BottomSheetWithRecyclerListView implements
         auctionRowCurrentRound = tableView.addRow(getString(R.string.Gift2AuctionTableCurrentRound), "", ref);
         auctionRowCurrentRoundText = ref[0];
 
+        final FrameLayout tableLayout = new FrameLayout(getContext());
+        tableLayout.setClipChildren(false);
+        tableLayout.setClipToPadding(false);
+        tableLayout.addView(tableView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.FILL));
+
+        final HintView2[] hintView = new HintView2[1];
+        showHint = (view, text) -> {
+            if (hintView[0] != null) {
+                hintView[0].hide();
+            }
+            text = AndroidUtilities.replaceTags(text);
+            float x = view.getX() + ((View) view.getParent()).getX() + ((View) ((View) view.getParent()).getParent()).getX();
+            float y = view.getY() + ((View) view.getParent()).getY() + ((View) ((View) view.getParent()).getParent()).getY();
+            if (view instanceof ButtonSpan.TextViewButtons) {
+                final ButtonSpan.TextViewButtons textView2 = (ButtonSpan.TextViewButtons) view;
+                final Layout layout = textView2.getLayout();
+                final CharSequence viewText = layout.getText();
+                if (viewText instanceof Spanned) {
+                    ButtonSpan[] spans = ((Spanned) viewText).getSpans(0, viewText.length(), ButtonSpan.class);
+                    if (spans.length > 0 && spans[0] != null) {
+                        final int offset = ((Spanned) viewText).getSpanStart(spans[0]);
+                        x += layout.getPrimaryHorizontal(offset) + spans[0].getSize() / 2;
+                        y += layout.getLineTop(layout.getLineForOffset(offset));
+                    }
+                }
+            }
+
+            final HintView2 thisHintView = hintView[0] = new HintView2(getContext(), HintView2.DIRECTION_BOTTOM);
+            thisHintView.setMultilineText(true);
+            thisHintView.setInnerPadding(11, 8, 11, 7);
+            thisHintView.setRounding(10);
+            thisHintView.setText(text);
+            thisHintView.setOnHiddenListener(() -> AndroidUtilities.removeFromParent(thisHintView));
+            thisHintView.setTranslationY(-dp(100) + y);
+            thisHintView.setMaxWidthPx(dp(300));
+            thisHintView.setPadding(dp(4), dp(4), dp(4), dp(4));
+            thisHintView.setJointPx(0, x - dp(4));
+            tableLayout.addView(thisHintView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 100, Gravity.TOP | Gravity.FILL_HORIZONTAL));
+            thisHintView.show();
+        };
+
+
         auctionRowAveragePrice = tableView.addRow(getString(R.string.GiftValueAveragePrice), "", ref);
+        auctionRowAveragePrice.setOnClickListener(v -> showAveragePriceHint());
         auctionRowAveragePriceText = ref[0];
 
         tableView.addRow(getString(R.string.Gift2AuctionTableCurrentAvailability), "", ref);
         auctionRowAvailabilityText = ref[0];
 
-        linearLayout.addView(tableView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 16, 0, 14, 18));
+        linearLayout.addView(tableLayout, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 16, 0, 14, 18));
 
         boolean pending[] = new boolean[1];
         itemsBought = new LinkSpanDrawable.LinksTextView(context, resourcesProvider);
@@ -200,16 +248,12 @@ public class AuctionJoinSheet extends BottomSheetWithRecyclerListView implements
         buttonView = new ButtonWithCounterView(context, resourcesProvider);
         buttonView.setOnClickListener(v -> {
             if (auction != null && !auction.isFinished()) {
-                new SendGiftSheet(context, currentAccount, auction.gift, dialogId, () -> {
-                    dismiss();
-                }, false, false) {
+                new SendGiftSheet(context, currentAccount, auction.gift, dialogId, closeParentSheet, false, false) {
                     @Override
                     protected BulletinFactory getParentBulletinFactory() {
                         return BulletinFactory.of(this.container, this.resourcesProvider);
                     }
                 }.show();
-
-                // new AuctionBidSheet(context, resourcesProvider, dialogId, auction).show();
             }
             dismiss();
         });
@@ -226,11 +270,20 @@ public class AuctionJoinSheet extends BottomSheetWithRecyclerListView implements
         updateTable(false);
     }
 
+    private void showAveragePriceHint() {
+        if (auction != null && auction.auctionStateFinished != null && auction.gift.title != null) {
+            showHint.run(auctionRowAveragePriceText, formatString(R.string.Gift2AveragePriceHint, auction.auctionStateFinished.average_price, auction.gift.title));
+        }
+    }
+
     private void updateTable(boolean animated) {
         if (auction != null && auction.auctionStateFinished != null) {
             auctionRowStartTimeText.setText(LocaleController.formatDateTime(auction.auctionStateFinished.start_date, true));
             auctionRowEndTimeText.setText(LocaleController.formatDateTime(auction.auctionStateFinished.end_date, true));
-            auctionRowAveragePriceText.setText(StarsIntroActivity.replaceStarsWithPlain("⭐️ " + LocaleController.formatNumber(auction.auctionStateFinished.average_price, ','), .8f));
+
+            SpannableStringBuilder ssb = new SpannableStringBuilder(StarsIntroActivity.replaceStarsWithPlain("⭐️ " + LocaleController.formatNumber(auction.auctionStateFinished.average_price, ','), .8f));
+            ssb.append(" ").append(ButtonSpan.make("?", this::showAveragePriceHint, resourcesProvider));
+            auctionRowAveragePriceText.setText(ssb);
         } else if (auction != null && auction.auctionStateActive != null) {
             auctionRowStartTimeText.setText(LocaleController.formatDateTime(auction.auctionStateActive.start_date, true));
             auctionRowEndTimeText.setText(LocaleController.formatDateTime(auction.auctionStateActive.end_date, true));
@@ -244,7 +297,11 @@ public class AuctionJoinSheet extends BottomSheetWithRecyclerListView implements
             buttonView.setSubText(formatString(R.string.Gift2AuctionTimeLeft, LocaleController.formatTTLString(timeLeft)), animated);
         }
 
-        auctionRowAvailabilityText.setText(formatPluralString("Gift2Availability4Value", starGift.availability_remains,
+
+
+        auctionRowAvailabilityText.setText(formatPluralString("Gift2Availability4Value",
+                auction != null ? (auction.isFinished() ? 0 : auction.auctionStateActive != null ? auction.auctionStateActive.gifts_left : starGift.availability_remains):
+                starGift.availability_remains,
             formatNumber(starGift.availability_total, ',')));
 
 
@@ -391,10 +448,11 @@ public class AuctionJoinSheet extends BottomSheetWithRecyclerListView implements
                             Theme.ResourcesProvider resourcesProvider,
                             int currentAccount,
                             long dialogId,
-                            long giftId) {
+                            long giftId,
+                            Runnable closeParentSheet) {
         GiftAuctionController.getInstance(currentAccount).getOrRequestAuction(giftId, (auction, err) -> {
             if (auction != null) {
-                show(context, resourcesProvider, currentAccount, dialogId, auction);
+                show(context, resourcesProvider, currentAccount, dialogId, auction, closeParentSheet);
             }
         });
     }
@@ -403,7 +461,8 @@ public class AuctionJoinSheet extends BottomSheetWithRecyclerListView implements
                             Theme.ResourcesProvider resourcesProvider,
                             int currentAccount,
                             long dialogId,
-                            GiftAuctionController.Auction auction) {
+                            GiftAuctionController.Auction auction,
+                            Runnable closeParentSheet) {
         if (auction == null) {
             return; // loading
         }
@@ -412,18 +471,21 @@ public class AuctionJoinSheet extends BottomSheetWithRecyclerListView implements
         final long bidPeer = DialogObject.getPeerDialogId(auction.auctionUserState.peer);
         if (dialogId != bidPeer && dialogId != 0 && bidPeer != 0) {
             openAuctionTransferAlert(context, resourcesProvider, currentAccount, bidPeer, dialogId, () -> {
-                new SendGiftSheet(context, currentAccount, auction.gift, dialogId, null, false, false)
+                new SendGiftSheet(context, currentAccount, auction.gift, dialogId, closeParentSheet, false, false)
                     .show();
             });
             return;
         }
 
-        if (auction.auctionUserState.bid_date > 0) {
-            new AuctionBidSheet(context, resourcesProvider, null, auction).show();
+        if (auction.auctionUserState.bid_date > 0 && !auction.isFinished()) {
+            AuctionBidSheet auctionBidSheet = new AuctionBidSheet(context, resourcesProvider, null, auction);
+            auctionBidSheet.setCloseParentSheet(closeParentSheet);
+            auctionBidSheet.show();
+
             return;
         }
 
-        new AuctionJoinSheet(context, resourcesProvider, dialogId, auction.gift).show();
+        new AuctionJoinSheet(context, resourcesProvider, dialogId, auction.gift, closeParentSheet).show();
     }
 
     public static void initActionBar(ActionBar actionBar, Context context, Theme.ResourcesProvider resourcesProvider, int currentAccount, TL_stars.StarGift starGift) {

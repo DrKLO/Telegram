@@ -419,9 +419,11 @@ public class SendGiftSheet extends BottomSheetWithRecyclerListView implements No
 
             if (auction != null) {
                 final AuctionBidSheet.Params p = new AuctionBidSheet.Params(dialogId, anonymous, getMessage());
-                new AuctionBidSheet(context, resourcesProvider, p, auction)
-                    .show();
+                AuctionBidSheet auctionSheet = new AuctionBidSheet(context, resourcesProvider, p, auction);
+                auctionSheet.show();
+                auctionSheet.setCloseParentSheet(closeParentSheet);
 
+                AndroidUtilities.hideKeyboard(messageEdit);
                 dismiss();
                 if (!isDismissed) {
                     AndroidUtilities.runOnUIThread(this::dismiss, 500);

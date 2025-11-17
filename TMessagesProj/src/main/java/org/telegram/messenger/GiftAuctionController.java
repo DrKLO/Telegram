@@ -59,7 +59,7 @@ public class GiftAuctionController extends BaseController {
             return;
         }
 
-        auction.subscription = false;
+        auction.subscription = listeners.has(giftId);
         if (auction.resubscribe != null) {
             AndroidUtilities.cancelRunOnUIThread(auction.resubscribe);
             auction.resubscribe = null;
@@ -151,13 +151,6 @@ public class GiftAuctionController extends BaseController {
         }
 
         final boolean hasBid = auction.hasBid();
-        if (!hasBid && params == null) {
-            if (whenDone != null) {
-                whenDone.run(false, "NO_PARAMS");
-            }
-            return;
-        }
-
         auction.pendingBid = true;
 
 
@@ -175,6 +168,10 @@ public class GiftAuctionController extends BaseController {
             }
             invoice.message = params.message;
             invoice.hide_name = params.hideName;
+        } else if (!hasBid) {
+            // default params
+            invoice.peer = new TLRPC.TL_inputPeerSelf();
+            invoice.hide_name = false;
         }
 
         req.invoice = invoice;

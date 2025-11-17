@@ -119,6 +119,13 @@ public class CreateRtmpStreamBottomSheet extends BottomSheetWithRecyclerListView
             }
         }
 
+        DefaultItemAnimator itemAnimator = new DefaultItemAnimator();
+        itemAnimator.setSupportsChangeAnimations(false);
+        itemAnimator.setDelayAnimations(false);
+        itemAnimator.setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT);
+        itemAnimator.setDurations(350);
+        recyclerListView.setItemAnimator(itemAnimator);
+
         recyclerListView.setPadding(backgroundPaddingLeft, 0, backgroundPaddingLeft, hasButton ? dp(hasRevokeButton ? 72 + 52 : 72) : 0);
         fixNavigationBar();
         updateTitle();
