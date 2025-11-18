@@ -1458,6 +1458,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
             if (focusChange == AudioManager.AUDIOFOCUS_LOSS) {
                 if (isPlayingMessage(getPlayingMessageObject()) && !isMessagePaused()) {
                     pauseMessage(playingMessageObject);
+                    resumeAudioOnFocusGain = true;
                 }
                 hasAudioFocus = 0;
                 audioFocus = AUDIO_NO_FOCUS_NO_DUCK;
@@ -1471,6 +1472,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                 }
             } else if (focusChange == AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK) {
                 audioFocus = AUDIO_NO_FOCUS_CAN_DUCK;
+                setPlayerVolume();
             } else if (focusChange == AudioManager.AUDIOFOCUS_LOSS_TRANSIENT) {
                 audioFocus = AUDIO_NO_FOCUS_NO_DUCK;
                 if (isPlayingMessage(getPlayingMessageObject()) && !isMessagePaused()) {
@@ -3068,7 +3070,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
             if (neededAudioFocus == 3) {
                 result = NotificationsController.audioManager.requestAudioFocus(this, AudioManager.STREAM_VOICE_CALL, AudioManager.AUDIOFOCUS_GAIN);
             } else {
-                result = NotificationsController.audioManager.requestAudioFocus(this, AudioManager.STREAM_MUSIC, neededAudioFocus == 2 && !SharedConfig.pauseMusicOnMedia ? AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK : AudioManager.AUDIOFOCUS_GAIN);
+                result = NotificationsController.audioManager.requestAudioFocus(this, AudioManager.STREAM_MUSIC, neededAudioFocus == 2 && !SharedConfig.pauseMusicOnMedia ? AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK : AudioManager.AUDIOFOCUS_GAIN_TRANSIENT);
             }
             if (result == AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
                 audioFocus = AUDIO_FOCUSED;
@@ -6506,7 +6508,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
         messageObject.audioProgressMs = state.progressMs;
         messageObject.audioProgressSec = state.progressSec;
         playMessage(messageObject);
-        pauseMessage(messageObject, false);
+        if (!SharedConfig.pauseMusicOnMedia) pauseMessage(messageObject, false);
 
         return true;
     }
