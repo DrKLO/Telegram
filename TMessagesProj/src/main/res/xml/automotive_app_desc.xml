@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <automotiveApp>
     <uses name="notification"/>
-    <uses name="media"/>
+    <!--<uses name="media"/>
+    <media android:name="org.telegram.messenger.MusicBrowserService"/>-->
 </automotiveApp>

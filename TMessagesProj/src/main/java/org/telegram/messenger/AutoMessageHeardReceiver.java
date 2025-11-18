@@ -16,13 +16,17 @@ import org.telegram.tgnet.TLRPC;
 
 public class AutoMessageHeardReceiver extends BroadcastReceiver {
 
+    private static final String TAG = "AutoMessageHeardReceiver";
+
     @Override
     public void onReceive(Context context, Intent intent) {
         ApplicationLoader.postInitApplication();
         long dialogId = intent.getLongExtra("dialog_id", 0);
         int maxId = intent.getIntExtra("max_id", 0);
         int currentAccount = intent.getIntExtra("currentAccount", 0);
+        android.util.Log.d(TAG, "heard action dialog=" + dialogId + " maxId=" + maxId + " account=" + currentAccount);
         if (dialogId == 0 || maxId == 0 || !UserConfig.isValidAccount(currentAccount)) {
+            android.util.Log.d(TAG, "heard action ignored (invalid extras)");
             return;
         }
         AccountInstance accountInstance = AccountInstance.getInstance(currentAccount);
@@ -55,5 +59,6 @@ public class AutoMessageHeardReceiver extends BroadcastReceiver {
         }
         MessagesController.getInstance(currentAccount).markDialogAsRead(dialogId, maxId, maxId, 0, false, 0, 0, true, 0);
         MessagesController.getInstance(currentAccount).markReactionsAsRead(dialogId, 0);
+        android.util.Log.d(TAG, "heard action markDialogAsRead done dialog=" + dialogId);
     }
 }
