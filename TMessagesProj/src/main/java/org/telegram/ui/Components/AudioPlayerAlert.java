@@ -1674,6 +1674,9 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
             saveToProfile(messageObject, false, () -> {
                 if (savedMusicList != null) {
                     savedMusicList.remove(messageObject);
+                }
+            }, () -> {
+                if (savedMusicList != null) {
                     if (savedMusicList.list.isEmpty()) {
                         MediaController.getInstance().cleanup();
                         dismiss();
@@ -2583,6 +2586,10 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
     }
 
     private void saveToProfile(MessageObject messageObject, boolean save, Runnable done, boolean triedFileRef) {
+        saveToProfile(messageObject, save, null, done, triedFileRef);
+    }
+
+    private void saveToProfile(MessageObject messageObject, boolean save, Runnable profileUpdater, Runnable done, boolean triedFileRef) {
         final TLRPC.Document document = messageObject.getDocument();
         if (document == null) {
             return;
@@ -2690,8 +2697,13 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
                         userInfo.flags2 &=~ TLObject.FLAG_21;
                         userInfo.saved_music = null;
                     }
+                    if (profileUpdater != null) {
+                        profileUpdater.run();
+                    }
                     MessagesStorage.getInstance(currentAccount).updateUserInfo(userInfo, true);
                     NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.profileMusicUpdated, selfId);
+                } else if (profileUpdater != null) {
+                    profileUpdater.run();
                 }
                 if (done != null) {
                     done.run();
