@@ -7060,6 +7060,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         } catch (Exception e) {
             FileLog.e(e);
         }
+        clearFragments();
         super.onDestroy();
         onFinish();
         FloatingDebugController.onDestroy();
