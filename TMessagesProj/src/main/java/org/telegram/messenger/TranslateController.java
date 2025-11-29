@@ -1,15 +1,9 @@
 package org.telegram.messenger;
 
-import static org.telegram.ui.Components.TranslateAlert2.userAgents;
-import android.app.DownloadManager;
 import android.content.Context;
 import android.content.res.Resources;
-import android.database.Cursor;
 import android.icu.text.Collator;
-import android.net.Uri;
-import android.os.SystemClock;
 import android.text.TextUtils;
-import android.util.Log;
 import android.util.LongSparseArray;
 import android.util.Pair;
 import android.view.inputmethod.InputMethodInfo;
@@ -17,11 +11,6 @@ import android.view.inputmethod.InputMethodManager;
 import android.view.inputmethod.InputMethodSubtype;
 
 import androidx.annotation.Nullable;
-
-import com.google.common.base.Charsets;
-
-import org.json.JSONArray;
-import org.json.JSONTokener;
 
 //import com.google.mlkit.common.model.RemoteModelManager;
 //import com.google.mlkit.common.sdkinternal.MlKitContext;
@@ -35,23 +24,14 @@ import org.json.JSONTokener;
 import org.telegram.tgnet.InputSerializedData;
 import org.telegram.tgnet.OutputSerializedData;
 import org.telegram.tgnet.TLObject;
+import org.telegram.tgnet.TLParseException;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.Vector;
 import org.telegram.tgnet.tl.TL_stories;
-import org.telegram.ui.ActionBar.BaseFragment;
-import org.telegram.ui.ChatActivity;
 import org.telegram.ui.Components.Bulletin;
-import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.TranslateAlert2;
-import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.RestrictedLanguagesSelectActivity;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.Reader;
-import java.net.HttpURLConnection;
-import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -1753,16 +1733,8 @@ public class TranslateController extends BaseController {
         public TLRPC.TL_textWithEntities solution;
 
         public static PollText TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
-            if (PollText.constructor != constructor) {
-                if (exception) {
-                    throw new RuntimeException(String.format("can't parse magic %x in TranslatedPoll", constructor));
-                } else {
-                    return null;
-                }
-            }
-            PollText result = new PollText();
-            result.readParams(stream, exception);
-            return result;
+            final PollText result = PollText.constructor != constructor ? null : new PollText();
+            return TLdeserialize(PollText.class, result, stream, constructor, exception);
         }
 
         @Override

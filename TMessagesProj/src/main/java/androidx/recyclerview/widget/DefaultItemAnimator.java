@@ -126,7 +126,6 @@ public class DefaultItemAnimator extends SimpleItemAnimator {
         for (RecyclerView.ViewHolder holder : mPendingRemovals) {
             animateRemoveImpl(holder);
         }
-        final long[] delay = new long[] { 0 };
         mPendingRemovals.clear();
         // Next, move stuff
         if (movesPending) {
@@ -185,10 +184,14 @@ public class DefaultItemAnimator extends SimpleItemAnimator {
             Runnable adder = new Runnable() {
                 @Override
                 public void run() {
+                    int minPosition = Integer.MAX_VALUE;
+                    for (int i = additions.size() - 1; i >= 0; --i) {
+                        minPosition = Math.min(minPosition, additions.get(i).getAdapterPosition());
+                    }
                     for (int i = additions.size() - 1; i >= 0; --i) {
 //                    for (int i = 0; i < additions.size(); ++i) {
                         final RecyclerView.ViewHolder holder = additions.get(i);
-                        animateAddImpl(holder, delay[0] += delayIncrement);
+                        animateAddImpl(holder, (holder.getAdapterPosition() - minPosition) * delayIncrement);
                     }
                     additions.clear();
                     mAdditionsList.remove(additions);

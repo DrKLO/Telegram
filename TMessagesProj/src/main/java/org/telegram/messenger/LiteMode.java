@@ -41,7 +41,8 @@ public class LiteMode {
     public static final int FLAG_CHAT_BLUR = 256;
     public static final int FLAG_CHAT_SCALE = 32768;
     public static final int FLAG_CHAT_THANOS = 65536;
-    public static final int FLAGS_CHAT = FLAG_CHAT_BACKGROUND | FLAG_CHAT_FORUM_TWOCOLUMN | FLAG_CHAT_SPOILER | FLAG_CHAT_BLUR | FLAG_CHAT_SCALE | FLAG_CHAT_THANOS;
+    public static final int FLAG_LIQUID_GLASS = 1 << 18;
+    public static final int FLAGS_CHAT = FLAG_CHAT_BACKGROUND | FLAG_CHAT_FORUM_TWOCOLUMN | FLAG_CHAT_SPOILER | FLAG_CHAT_BLUR | FLAG_CHAT_SCALE | FLAG_CHAT_THANOS | FLAG_LIQUID_GLASS;
 
     public static final int FLAG_CALLS_ANIMATIONS = 512;
     public static final int FLAG_AUTOPLAY_VIDEOS = 1024;
@@ -71,7 +72,12 @@ public class LiteMode {
     public static int PRESET_HIGH = (
         FLAGS_ANIMATED_STICKERS |
         FLAGS_ANIMATED_EMOJI |
-        FLAGS_CHAT |
+        FLAG_CHAT_BACKGROUND |
+        FLAG_CHAT_FORUM_TWOCOLUMN |
+        FLAG_CHAT_SPOILER |
+        FLAG_CHAT_BLUR |
+        FLAG_CHAT_SCALE |
+        FLAG_CHAT_THANOS |
         FLAG_CALLS_ANIMATIONS |
         FLAG_AUTOPLAY_VIDEOS |
         FLAG_AUTOPLAY_GIFS |
@@ -205,11 +211,18 @@ public class LiteMode {
         }
 
         final SharedPreferences preferences = MessagesController.getGlobalMainSettings();
-        if (!preferences.contains("lite_mode4")) {
-            if (preferences.contains("lite_mode3")) {
+        if (!preferences.contains("lite_mode6")) {
+            if (preferences.contains("lite_mode5")) {
+                defaultValue = preferences.getInt("lite_mode5", defaultValue);
+                defaultValue &=~ FLAG_LIQUID_GLASS;
+                preferences.edit().putInt("lite_mode6", defaultValue).apply();
+            } else if (preferences.contains("lite_mode4")) {
+                defaultValue = preferences.getInt("lite_mode4", defaultValue);
+                preferences.edit().putInt("lite_mode5", defaultValue).apply();
+            } else if (preferences.contains("lite_mode3")) {
                 defaultValue = preferences.getInt("lite_mode3", defaultValue);
                 defaultValue |= FLAG_PARTICLES;
-                preferences.edit().putInt("lite_mode4", defaultValue).apply();
+                preferences.edit().putInt("lite_mode5", defaultValue).apply();
             } else if (preferences.contains("lite_mode2")) {
                 defaultValue = preferences.getInt("lite_mode2", defaultValue);
                 defaultValue |= FLAG_CHAT_THANOS;
@@ -265,7 +278,7 @@ public class LiteMode {
         }
 
         int prevValue = value;
-        value = preferences.getInt("lite_mode4", defaultValue);
+        value = preferences.getInt("lite_mode6", defaultValue);
         if (loaded) {
             onFlagsUpdate(prevValue, value);
         }
@@ -274,7 +287,7 @@ public class LiteMode {
     }
 
     public static void savePreference() {
-        MessagesController.getGlobalMainSettings().edit().putInt("lite_mode4", value).putInt("lite_mode_battery_level", powerSaverLevel).apply();
+        MessagesController.getGlobalMainSettings().edit().putInt("lite_mode6", value).putInt("lite_mode_battery_level", powerSaverLevel).apply();
     }
 
     public static int getPowerSaverLevel() {

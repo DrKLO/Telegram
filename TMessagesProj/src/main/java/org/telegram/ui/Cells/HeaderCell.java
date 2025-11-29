@@ -43,7 +43,7 @@ public class HeaderCell extends FrameLayout {
     private SimpleTextView textView2;
     private int height = 40;
     private final Theme.ResourcesProvider resourcesProvider;
-    private boolean animated;
+    private final boolean animated;
 
     public HeaderCell(Context context) {
         this(context, Theme.key_windowBackgroundWhiteBlueHeader, 21, 15, false, null);
@@ -153,7 +153,12 @@ public class HeaderCell extends FrameLayout {
     }
 
     public void setTextColor(int color) {
-        textView.setTextColor(color);
+        if (textView != null) {
+            textView.setTextColor(color);
+        }
+        if (animatedTextView != null) {
+            animatedTextView.setTextColor(color);
+        }
     }
 
     public void setText(CharSequence text) {
@@ -190,7 +195,7 @@ public class HeaderCell extends FrameLayout {
         super.onInitializeAccessibilityNodeInfo(info);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             info.setHeading(true);
-        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+        } else {
             AccessibilityNodeInfo.CollectionItemInfo collection = info.getCollectionItemInfo();
             if (collection != null) {
                 info.setCollectionItemInfo(AccessibilityNodeInfo.CollectionItemInfo.obtain(collection.getRowIndex(), collection.getRowSpan(), collection.getColumnIndex(), collection.getColumnSpan(), true));

@@ -843,8 +843,8 @@ public:
         }
     }
     
-    bool hasRemainingFrames() const {
-        return !_parsedVideoParts.empty();
+    bool hasRemainingFrames() {
+        return !_parsedVideoParts.empty() || getAudioRemainingMilliseconds() > 0;
     }
 
     int getAudioRemainingMilliseconds() {

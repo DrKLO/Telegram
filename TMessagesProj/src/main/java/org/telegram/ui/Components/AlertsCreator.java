@@ -131,6 +131,7 @@ import org.telegram.ui.LoginActivity;
 import org.telegram.ui.NotificationsCustomSettingsActivity;
 import org.telegram.ui.NotificationsSettingsActivity;
 import org.telegram.ui.PhotoViewer;
+import org.telegram.ui.PremiumPreviewFragment;
 import org.telegram.ui.PrivacyControlActivity;
 import org.telegram.ui.ProfileActivity;
 import org.telegram.ui.ProfileNotificationsActivity;
@@ -3703,7 +3704,7 @@ public class AlertsCreator {
     }
 
     public interface ScheduleDatePickerDelegate {
-        void didSelectDate(boolean notify, int scheduleDate);
+        void didSelectDate(boolean notify, int scheduleDate, int scheduleRepeatPeriod);
     }
 
     public static class ScheduleDatePickerColors {
@@ -3762,29 +3763,30 @@ public class AlertsCreator {
     }
 
     public static BottomSheet.Builder createScheduleDatePickerDialog(Context context, long dialogId, final ScheduleDatePickerDelegate datePickerDelegate, Theme.ResourcesProvider resourcesProvider) {
-        return createScheduleDatePickerDialog(context, dialogId, -1, datePickerDelegate, null, resourcesProvider);
+        return createScheduleDatePickerDialog(context, dialogId, -1, 0, datePickerDelegate, null, resourcesProvider);
     }
 
     public static BottomSheet.Builder createScheduleDatePickerDialog(Context context, long dialogId, final ScheduleDatePickerDelegate datePickerDelegate, final ScheduleDatePickerColors datePickerColors) {
-        return createScheduleDatePickerDialog(context, dialogId, -1, datePickerDelegate, null, datePickerColors, null);
+        return createScheduleDatePickerDialog(context, dialogId, -1, 0, datePickerDelegate, null, datePickerColors, null);
     }
 
     public static BottomSheet.Builder createScheduleDatePickerDialog(Context context, long dialogId, final ScheduleDatePickerDelegate datePickerDelegate, final Runnable cancelRunnable, Theme.ResourcesProvider resourcesProvider) {
-        return createScheduleDatePickerDialog(context, dialogId, -1, datePickerDelegate, cancelRunnable, resourcesProvider);
+        return createScheduleDatePickerDialog(context, dialogId, -1, 0, datePickerDelegate, cancelRunnable, resourcesProvider);
     }
 
     public static BottomSheet.Builder createScheduleDatePickerDialog(Context context, long dialogId, long currentDate, final ScheduleDatePickerDelegate datePickerDelegate, final Runnable cancelRunnable) {
-        return createScheduleDatePickerDialog(context, dialogId, currentDate, datePickerDelegate, cancelRunnable, new ScheduleDatePickerColors(), null);
+        return createScheduleDatePickerDialog(context, dialogId, currentDate, 0, datePickerDelegate, cancelRunnable, new ScheduleDatePickerColors(), null);
     }
 
-    public static BottomSheet.Builder createScheduleDatePickerDialog(Context context, long dialogId, long currentDate, final ScheduleDatePickerDelegate datePickerDelegate, final Runnable cancelRunnable, Theme.ResourcesProvider resourcesProvider) {
-        return createScheduleDatePickerDialog(context, dialogId, currentDate, datePickerDelegate, cancelRunnable, new ScheduleDatePickerColors(resourcesProvider), resourcesProvider);
+    public static BottomSheet.Builder createScheduleDatePickerDialog(Context context, long dialogId, long currentDate, int currentRepeatPeriod, final ScheduleDatePickerDelegate datePickerDelegate, final Runnable cancelRunnable, Theme.ResourcesProvider resourcesProvider) {
+        return createScheduleDatePickerDialog(context, dialogId, currentDate, currentRepeatPeriod, datePickerDelegate, cancelRunnable, new ScheduleDatePickerColors(resourcesProvider), resourcesProvider);
     }
 
-    public static BottomSheet.Builder createScheduleDatePickerDialog(Context context, long dialogId, long currentDate, final ScheduleDatePickerDelegate datePickerDelegate, final Runnable cancelRunnable, final ScheduleDatePickerColors datePickerColors, Theme.ResourcesProvider resourcesProvider) {
+    public static BottomSheet.Builder createScheduleDatePickerDialog(Context context, long dialogId, long currentDate, int currentRepeatPeriod, final ScheduleDatePickerDelegate datePickerDelegate, final Runnable cancelRunnable, final ScheduleDatePickerColors datePickerColors, Theme.ResourcesProvider resourcesProvider) {
         if (context == null) {
             return null;
         }
+        final int[] repeat = new int[] { currentRepeatPeriod };
 
         long selfUserId = UserConfig.getInstance(UserConfig.selectedAccount).getClientUserId();
 
@@ -3818,6 +3820,8 @@ public class AlertsCreator {
         minutePicker.setTextColor(datePickerColors.textColor);
         minutePicker.setTextOffset(-dp(34));
 
+        FrameLayout frameLayout = new FrameLayout(context);
+
         LinearLayout container = new LinearLayout(context) {
 
             boolean ignoreLayout = false;
@@ -3850,6 +3854,10 @@ public class AlertsCreator {
             }
         };
         container.setOrientation(LinearLayout.VERTICAL);
+        frameLayout.addView(container, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+
+        FrameLayout bulletinContainer = new FrameLayout(context);
+        frameLayout.addView(bulletinContainer, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 100, Gravity.FILL_HORIZONTAL | Gravity.BOTTOM, 0, 0, 0, 120));
 
         FrameLayout titleLayout = new FrameLayout(context);
         container.addView(titleLayout, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 22, 0, 0, 4));
@@ -3889,7 +3897,7 @@ public class AlertsCreator {
                 });
                 optionsButton.setDelegate(id -> {
                     if (id == 1) {
-                        datePickerDelegate.didSelectDate(true, 0x7ffffffe);
+                        datePickerDelegate.didSelectDate(true, 0x7ffffffe, 0);
                         builder.getDismissRunnable().run();
                     }
                 });
@@ -3973,6 +3981,108 @@ public class AlertsCreator {
 
         checkScheduleDate(buttonTextView, null, selfUserId == dialogId ? 1 : 0, dayPicker, hourPicker, minutePicker);
 
+        final boolean testBackend = ConnectionsManager.getInstance(UserConfig.selectedAccount).isTestBackend();
+        final int[] repeatValues =
+            testBackend ?
+                new int[] {
+                    0,
+                    60,
+                    300,
+                    86400,
+                    7 * 86400,
+                    14 * 86400,
+                    30 * 86400,
+                    91 * 86400,
+                    182 * 86400,
+                    365 * 86400
+                } : new int[] {
+                    0,
+                    86400,
+                    7 * 86400,
+                    14 * 86400,
+                    30 * 86400,
+                    91 * 86400,
+                    182 * 86400,
+                    365 * 86400
+                };
+        final String[] repeatLabels =
+            testBackend ?
+                new String[] {
+                    getString(R.string.MessageScheduledRepeatOptionNever),
+                    "Every minute",
+                    "Every 5 minutes",
+                    getString(R.string.MessageScheduledRepeatOptionDaily),
+                    getString(R.string.MessageScheduledRepeatOptionWeekly),
+                    getString(R.string.MessageScheduledRepeatOptionBiweekly),
+                    getString(R.string.MessageScheduledRepeatOptionMonthly),
+                    getString(R.string.MessageScheduledRepeatOption3Monthly),
+                    getString(R.string.MessageScheduledRepeatOption6Monthly),
+                    getString(R.string.MessageScheduledRepeatOptionYearly)
+                } :
+                new String[] {
+                    getString(R.string.MessageScheduledRepeatOptionNever),
+                    getString(R.string.MessageScheduledRepeatOptionDaily),
+                    getString(R.string.MessageScheduledRepeatOptionWeekly),
+                    getString(R.string.MessageScheduledRepeatOptionBiweekly),
+                    getString(R.string.MessageScheduledRepeatOptionMonthly),
+                    getString(R.string.MessageScheduledRepeatOption3Monthly),
+                    getString(R.string.MessageScheduledRepeatOption6Monthly),
+                    getString(R.string.MessageScheduledRepeatOptionYearly)
+                };
+        final FrameLayout repeatContainer;
+        final TextView repeatTextView;
+        final Runnable updateRepeatText;
+        if (dialogId == selfUserId || true) {
+            repeatContainer = new FrameLayout(context);
+
+            final int textColor = datePickerColors != null ? datePickerColors.textColor : Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider);
+            final int backgroundColor = datePickerColors != null ? Theme.blendOver(datePickerColors.backgroundColor, Theme.multAlpha(datePickerColors.textColor, 0.075f)) : Theme.getColor(Theme.key_dialogBackgroundGray, resourcesProvider);
+            final int selectorColor = datePickerColors != null ? Theme.multAlpha(datePickerColors.textColor, 0.1f) : Theme.getColor(Theme.key_listSelector, resourcesProvider);
+
+            repeatTextView = new TextView(context);
+            repeatTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
+            repeatTextView.setTextColor(textColor);
+            repeatTextView.setPadding(dp(12), 0, dp(12), 0);
+            repeatTextView.setBackground(Theme.createSimpleSelectorRoundRectDrawable(dp(14), backgroundColor, Theme.blendOver(backgroundColor, selectorColor)));
+            repeatTextView.setGravity(Gravity.CENTER);
+            updateRepeatText = () -> {
+                final SpannableStringBuilder sb = new SpannableStringBuilder();
+                sb.append(getString(R.string.MessageScheduledRepeatOption));
+                sb.append(" ");
+                int fromIndex = sb.length();
+                for (int i = 0; i < repeatValues.length; ++i) {
+                    if (repeat[0] == repeatValues[i]) {
+                        sb.append(repeatLabels[i]);
+                        sb.setSpan(new TypefaceSpan(AndroidUtilities.bold()), fromIndex, sb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                        break;
+                    }
+                }
+                sb.append(" v");
+                if (UserConfig.getInstance(UserConfig.selectedAccount).isPremium()) {
+                    final ColoredImageSpan imageSpan = new ColoredImageSpan(R.drawable.arrows_select);
+                    imageSpan.spaceScaleX = 0.7f;
+                    imageSpan.translate(dp(-1.33f), dp(0));
+                    imageSpan.setAlpha(0.75f);
+                    sb.setSpan(imageSpan, sb.length() - 1, sb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                } else {
+                    final ColoredImageSpan imageSpan = new ColoredImageSpan(R.drawable.mini_switch_lock);
+                    imageSpan.spaceScaleX = 0.7f;
+                    imageSpan.translate(dp(-1.33f), dp(0));
+                    imageSpan.setAlpha(0.75f);
+                    sb.setSpan(imageSpan, sb.length() - 1, sb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                }
+                repeatTextView.setText(sb);
+            };
+            updateRepeatText.run();
+
+            repeatContainer.addView(repeatTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 28, Gravity.CENTER_HORIZONTAL, 32, 4, 32, 5));
+            container.addView(repeatContainer, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+        } else {
+            repeatContainer = null;
+            repeatTextView = null;
+            updateRepeatText = null;
+        }
+
         buttonTextView.setPadding(dp(34), 0, dp(34), 0);
         buttonTextView.setGravity(Gravity.CENTER);
         buttonTextView.setTextColor(datePickerColors.buttonTextColor);
@@ -3989,11 +4099,11 @@ public class AlertsCreator {
             if (setSeconds) {
                 calendar.set(Calendar.SECOND, 0);
             }
-            datePickerDelegate.didSelectDate(true, (int) (calendar.getTimeInMillis() / 1000));
+            datePickerDelegate.didSelectDate(true, (int) (calendar.getTimeInMillis() / 1000), repeat[0]);
             builder.getDismissRunnable().run();
         });
 
-        builder.setCustomView(container);
+        builder.setCustomView(frameLayout);
         BottomSheet bottomSheet = builder.show();
         bottomSheet.setOnDismissListener(dialog -> {
             if (cancelRunnable != null && canceled[0]) {
@@ -4002,6 +4112,36 @@ public class AlertsCreator {
         });
         bottomSheet.setBackgroundColor(datePickerColors.backgroundColor);
         bottomSheet.fixNavigationBar(datePickerColors.backgroundColor);
+
+        if (repeatTextView != null) {
+            repeatTextView.setOnClickListener(v -> {
+                if (!UserConfig.getInstance(UserConfig.selectedAccount).isPremium()) {
+                    BulletinFactory.of(bulletinContainer, resourcesProvider)
+                        .createSimpleBulletin(R.raw.star_premium_2, AndroidUtilities.premiumText(LocaleController.getString(R.string.MessageScheduledRepeatPremium), () -> {
+                            final BaseFragment lastFragment = LaunchActivity.getSafeLastFragment();
+                            if (lastFragment == null) return;
+                            BaseFragment.BottomSheetParams params = new BaseFragment.BottomSheetParams();
+                            params.transitionFromLeft = true;
+                            params.allowNestedScroll = false;
+                            lastFragment.showAsSheet(new PremiumPreviewFragment("schedule_repeat"), params);
+                        }))
+                        .show();
+                    return;
+                }
+
+                final ItemOptions o = ItemOptions.makeOptions(bottomSheet.container, resourcesProvider, repeatContainer);
+                for (int i = 0; i < repeatValues.length; ++i) {
+                    final int value = repeatValues[i];
+                    o.add(repeatLabels[i], () -> {
+                        repeat[0] = value;
+                        updateRepeatText.run();
+                    });
+                }
+                o.setGravity(Gravity.CENTER_HORIZONTAL);
+                o.show();
+            });
+        }
+
         return builder;
     }
 
@@ -4169,7 +4309,7 @@ public class AlertsCreator {
             if (setSeconds) {
                 calendar.set(Calendar.SECOND, 0);
             }
-            datePickerDelegate.didSelectDate(true, (int) (calendar.getTimeInMillis() / 1000));
+            datePickerDelegate.didSelectDate(true, (int) (calendar.getTimeInMillis() / 1000), 0);
             builder.getDismissRunnable().run();
         });
 
@@ -4772,7 +4912,7 @@ public class AlertsCreator {
 
         buttonTextView.setOnClickListener(v -> {
             int time = values[numberPicker.getValue()];
-            datePickerDelegate.didSelectDate(true, time);
+            datePickerDelegate.didSelectDate(true, time, 0);
             builder.getDismissRunnable().run();
         });
 
@@ -5063,7 +5203,7 @@ public class AlertsCreator {
         container.addView(buttonTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48, Gravity.LEFT | Gravity.BOTTOM, 16, 15, 16, 16));
         buttonTextView.setOnClickListener(v -> {
             int time = values[numberPicker.getValue()] * 60;
-            datePickerDelegate.didSelectDate(true, time);
+            datePickerDelegate.didSelectDate(true, time, 0);
             builder.getDismissRunnable().run();
         });
 
@@ -6505,6 +6645,107 @@ public class AlertsCreator {
             dialogId = -chat.id;
         }
 
+        if (scheduled) {
+            final int schedule_date, schedule_repeat_period;
+            if (selectedMessage != null && selectedMessage.messageOwner != null && selectedMessage.messageOwner.schedule_repeat_period > 0) {
+                schedule_date = selectedMessage.messageOwner.date;
+                schedule_repeat_period = selectedMessage.messageOwner.schedule_repeat_period;
+            } else if (selectedGroup != null && !selectedGroup.messages.isEmpty() && selectedGroup.messages.get(0) != null && selectedGroup.messages.get(0).messageOwner != null && selectedGroup.messages.get(0).messageOwner.schedule_repeat_period > 0) {
+                schedule_date = selectedGroup.messages.get(0).messageOwner.date;
+                schedule_repeat_period = selectedGroup.messages.get(0).messageOwner.schedule_repeat_period;
+            } else {
+                schedule_date = 0;
+                schedule_repeat_period = 0;
+            }
+            if (schedule_date > 0 && schedule_repeat_period > 0) {
+                String postponeText = LocaleController.formatString(R.string.MessageScheduledRepeatDeletePostponeSeconds, schedule_repeat_period);
+                if (schedule_repeat_period == 365 * 86400) {
+                    postponeText = getString(R.string.MessageScheduledRepeatDeletePostponeYear);
+                } else if (schedule_repeat_period >= 30 * 86400) {
+                    postponeText = LocaleController.formatPluralString("MessageScheduledRepeatDeletePostponeMonths", schedule_repeat_period / (30 * 86400));
+                } else if (schedule_repeat_period >= 7 * 86400) {
+                    postponeText = LocaleController.formatPluralString("MessageScheduledRepeatDeletePostponeWeeks", schedule_repeat_period / (7 * 86400));
+                } else if (schedule_repeat_period >= 86400) {
+                    postponeText = LocaleController.formatPluralString("MessageScheduledRepeatDeletePostponeDays", schedule_repeat_period / 86400);
+                }
+                new AlertDialog.Builder(activity, resourcesProvider)
+                    .setTitle(getString(R.string.MessageScheduledRepeatDeleteTitle))
+                    .setMessage(getString(R.string.MessageScheduledRepeatDeleteText))
+                    .setNegativeButton(postponeText, (di, w) -> {
+                        if (selectedGroup != null && !selectedGroup.messages.isEmpty()) {
+                            SendMessagesHelper.getInstance(currentAccount).editMessage(selectedGroup.messages.get(0), null, false, fragment, null, schedule_date + schedule_repeat_period, schedule_repeat_period);
+                        } else {
+                            SendMessagesHelper.getInstance(currentAccount).editMessage(selectedMessage, null, false, fragment, null, schedule_date + schedule_repeat_period, schedule_repeat_period);
+                        }
+                    })
+                    .setNeutralButton(getString(R.string.MessageScheduledRepeatDeleteAll), (di, w) -> {
+                        ArrayList<Integer> ids = null;
+                        long thisDialogId = dialogId;
+                        if (isSavedMessages) {
+                            thisDialogId = UserConfig.getInstance(currentAccount).getClientUserId();
+                        }
+                        if (selectedMessage != null) {
+                            ids = new ArrayList<>();
+                            ArrayList<Long> random_ids = null;
+                            if (selectedGroup != null) {
+                                for (int a = 0; a < selectedGroup.messages.size(); a++) {
+                                    MessageObject messageObject = selectedGroup.messages.get(a);
+                                    ids.add(messageObject.getId());
+                                    if (encryptedChat != null && messageObject.messageOwner.random_id != 0 && messageObject.type != 10) {
+                                        if (random_ids == null) {
+                                            random_ids = new ArrayList<>();
+                                        }
+                                        random_ids.add(messageObject.messageOwner.random_id);
+                                    }
+                                }
+                            } else {
+                                ids.add(selectedMessage.getId());
+                                if (encryptedChat != null && selectedMessage.messageOwner.random_id != 0 && selectedMessage.type != 10) {
+                                    random_ids = new ArrayList<>();
+                                    random_ids.add(selectedMessage.messageOwner.random_id);
+                                }
+                            }
+                            if (mergeDialogId != 0 && selectedMessage.messageOwner.peer_id != null && selectedMessage.messageOwner.peer_id.chat_id == -mergeDialogId) {
+                                thisDialogId = mergeDialogId;
+                            }
+                            MessagesController.getInstance(currentAccount).deleteMessages(ids, random_ids, encryptedChat, thisDialogId, topicId, true, mode);
+                        } else {
+                            for (int a = 1; a >= 0; a--) {
+                                ids = new ArrayList<>();
+                                for (int b = 0; b < selectedMessages[a].size(); b++) {
+                                    ids.add(selectedMessages[a].keyAt(b));
+                                }
+                                ArrayList<Long> random_ids = null;
+                                if (encryptedChat != null) {
+                                    random_ids = new ArrayList<>();
+                                    for (int b = 0; b < selectedMessages[a].size(); b++) {
+                                        MessageObject msg = selectedMessages[a].valueAt(b);
+                                        if (msg.messageOwner.random_id != 0 && msg.type != 10) {
+                                            random_ids.add(msg.messageOwner.random_id);
+                                        }
+                                    }
+                                }
+                                MessagesController.getInstance(currentAccount).deleteMessages(ids, random_ids, encryptedChat, (a == 1 && mergeDialogId != 0) ? mergeDialogId : thisDialogId, topicId, true, mode);
+                                selectedMessages[a].clear();
+                            }
+                        }
+                        if (onDelete != null) {
+                            onDelete.run();
+                        }
+                    })
+                    .setPositiveButton(getString(R.string.Cancel), null)
+                    .makeRed(AlertDialog.BUTTON_NEGATIVE)
+                    .makeRed(AlertDialog.BUTTON_NEUTRAL)
+                    .setOnPreDismissListener(di -> {
+                        if (hideDim != null) {
+                            hideDim.run();
+                        }
+                    })
+                    .show();
+                return;
+            }
+        }
+
         int currentDate = ConnectionsManager.getInstance(currentAccount).getCurrentTime();
         boolean hasNonDiceMessages = false;
 
@@ -6899,7 +7140,7 @@ public class AlertsCreator {
             builder.setPositiveButton(LocaleController.getString(R.string.SuggestionStarsWillBeLostDelete), deleteAction);
         } else if (isActiveGiveawayAndOwner && !isSavedMessages) {
             builder.setTitle(LocaleController.getString(R.string.BoostingGiveawayDeleteMsgTitle));
-            builder.setMessage(AndroidUtilities.replaceTags(LocaleController.formatString("BoostingGiveawayDeleteMsgText", R.string.BoostingGiveawayDeleteMsgText, giveawayEndDate)));
+            builder.setMessage(AndroidUtilities.replaceTags(LocaleController.formatString(R.string.BoostingGiveawayDeleteMsgText, giveawayEndDate)));
             builder.setNeutralButton(LocaleController.getString(R.string.Delete), deleteAction);
         } else {
             builder.setPositiveButton(LocaleController.getString(isSavedMessages ? R.string.Remove : R.string.Delete), deleteAction);
@@ -7675,7 +7916,7 @@ public class AlertsCreator {
             if (setSeconds) {
                 calendar.set(Calendar.SECOND, 0);
             }
-            datePickerDelegate.didSelectDate(true, (int) (calendar.getTimeInMillis() / 1000));
+            datePickerDelegate.didSelectDate(true, (int) (calendar.getTimeInMillis() / 1000), 0);
             builder.getDismissRunnable().run();
         });
         ScaleStateListAnimator.apply(buttonTextView, 0.02f, 1.2f);
@@ -7696,7 +7937,7 @@ public class AlertsCreator {
         container.addView(buttonAnytimeTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48, Gravity.LEFT | Gravity.BOTTOM, 16, 0, 16, 16));
         buttonAnytimeTextView.setOnClickListener(v -> {
             canceled[0] = false;
-            datePickerDelegate.didSelectDate(true, -1);
+            datePickerDelegate.didSelectDate(true, -1, 0);
             builder.getDismissRunnable().run();
         });
         ScaleStateListAnimator.apply(buttonAnytimeTextView, 0.02f, 1.2f);

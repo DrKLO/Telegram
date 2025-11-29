@@ -579,6 +579,14 @@ public class EglRenderer implements VideoSink {
       GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT);
       eglBase.swapBuffers(false);
     }
+    if (eglBase != null && eglBase.hasBackgroundSurface()) {
+      eglBase.makeBackgroundCurrent();
+      logD("clearSurface in background");
+      GLES20.glClearColor(r, g, b, a);
+      GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT);
+      eglBase.swapBuffers(true);
+      eglBase.makeCurrent();
+    }
   }
 
   /**

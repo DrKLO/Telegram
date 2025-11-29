@@ -210,7 +210,7 @@ public class MHTML {
                 int next1 = in.read();
                 int next2 = in.read();
                 if (next1 == -1 || next2 == -1) {
-                    throw new IOException("Invalid quoted-printable encoding");
+                    return -1;
                 }
                 if (next1 == '\r' && next2 == '\n') {
                     return read();
@@ -252,7 +252,7 @@ public class MHTML {
             } else if (digit >= 'a' && digit <= 'f') {
                 return digit - 'a' + 10;
             } else {
-                throw new IllegalArgumentException("Invalid hexadecimal digit");
+                return 0;
             }
         }
     }

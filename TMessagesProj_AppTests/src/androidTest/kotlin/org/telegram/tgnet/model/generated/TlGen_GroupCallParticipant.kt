@@ -30,6 +30,7 @@ public sealed class TlGen_GroupCallParticipant : TlGen_Object {
     public val raise_hand_rating: Long?,
     public val video: TlGen_GroupCallParticipantVideo?,
     public val presentation: TlGen_GroupCallParticipantVideo?,
+    public val paid_stars_total: Long?,
   ) : TlGen_GroupCallParticipant() {
     internal val flags: UInt
       get() {
@@ -50,6 +51,7 @@ public sealed class TlGen_GroupCallParticipant : TlGen_Object {
         if (raise_hand_rating != null) result = result or 8192U
         if (presentation != null) result = result or 16384U
         if (video_joined) result = result or 32768U
+        if (paid_stars_total != null) result = result or 65536U
         return result
       }
 
@@ -65,10 +67,11 @@ public sealed class TlGen_GroupCallParticipant : TlGen_Object {
       raise_hand_rating?.let { stream.writeInt64(it) }
       video?.serializeToStream(stream)
       presentation?.serializeToStream(stream)
+      paid_stars_total?.let { stream.writeInt64(it) }
     }
 
     public companion object {
-      public const val MAGIC: UInt = 0xEBA636FEU
+      public const val MAGIC: UInt = 0x2A3DC7ACU
     }
   }
 }

@@ -112,8 +112,8 @@ class HwTextureView extends TextureView {
 @SuppressLint("ViewConstructor")
 class HwStoriesViewPager extends StoriesViewPager {
 
-    public HwStoriesViewPager(@NonNull Context context, StoryViewer storyViewer, Theme.ResourcesProvider resourcesProvider) {
-        super(context, storyViewer, resourcesProvider);
+    public HwStoriesViewPager(int account, @NonNull Context context, StoryViewer storyViewer, Theme.ResourcesProvider resourcesProvider) {
+        super(account, context, storyViewer, resourcesProvider);
     }
 
     @Override

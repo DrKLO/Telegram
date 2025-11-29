@@ -73,10 +73,12 @@ import org.telegram.messenger.Utilities;
 import org.telegram.messenger.video.MP4Builder;
 import org.telegram.messenger.video.MediaCodecVideoConvertor;
 import org.telegram.messenger.video.Mp4Movie;
+import org.telegram.messenger.voip.VoIPService;
 import org.telegram.ui.Components.AnimatedFloat;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.InstantCameraView;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Stories.LivePlayer;
 
 import java.io.File;
 import java.io.IOException;
@@ -381,6 +383,17 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
 
     public interface CameraViewDelegate {
         void onCameraInit();
+    }
+
+    public static boolean isCameraAllowed() {
+        final VoIPService voip = VoIPService.getSharedInstance();
+        if (voip != null && voip.hasVideoCapturer()) {
+            return false;
+        }
+        if (LivePlayer.recording != null) {
+            return false;
+        }
+        return true;
     }
 
     public CameraView(Context context, boolean frontface) {

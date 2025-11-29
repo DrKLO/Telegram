@@ -196,7 +196,7 @@ public class EditTextEmoji extends FrameLayout implements NotificationCenter.Not
             @Override
             protected void extendActionMode(ActionMode actionMode, Menu menu) {
                 if (allowEntities()) {
-                    ChatActivity.fillActionModeMenu(menu, null, currentStyle == STYLE_PHOTOVIEWER);
+                    ChatActivity.fillActionModeMenu(menu, null, currentStyle == STYLE_PHOTOVIEWER, true);
                 } else {
                     EditTextEmoji.this.extendActionMode(actionMode, menu);
                 }

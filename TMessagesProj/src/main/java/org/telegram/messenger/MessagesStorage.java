@@ -720,7 +720,7 @@ public class MessagesStorage extends BaseController {
 
         database.executeFast("CREATE TABLE story_drafts (id INTEGER PRIMARY KEY, date INTEGER, data BLOB, type INTEGER);").stepThis().dispose();
 
-        database.executeFast("CREATE TABLE story_pushes (uid INTEGER, sid INTEGER, date INTEGER, localName TEXT, flags INTEGER, expire_date INTEGER, PRIMARY KEY(uid, sid));").stepThis().dispose();
+        database.executeFast("CREATE TABLE story_pushes (uid INTEGER, sid INTEGER, date INTEGER, localName TEXT, flags INTEGER, expire_date INTEGER, live INTEGER, PRIMARY KEY(uid, sid));").stepThis().dispose();
 
         database.executeFast("CREATE TABLE unconfirmed_auth (data BLOB);").stepThis().dispose();
 
@@ -4702,7 +4702,7 @@ public class MessagesStorage extends BaseController {
 
                         if (message.media instanceof TLRPC.TL_messageMediaToDo) {
                             final TLRPC.TL_messageMediaToDo mediaTodo = (TLRPC.TL_messageMediaToDo) message.media;
-                            MessageObject.toggleTodo(mediaTodo, taskId, enable, myself, date);
+                            MessageObject.toggleTodo(currentAccount, dialogId, mediaTodo, taskId, enable, date);
                             cursor.dispose();
                             cursor = null;
 
@@ -4744,7 +4744,7 @@ public class MessagesStorage extends BaseController {
 
                             if (message.media instanceof TLRPC.TL_messageMediaToDo) {
                                 final TLRPC.TL_messageMediaToDo mediaTodo = (TLRPC.TL_messageMediaToDo) message.media;
-                                MessageObject.toggleTodo(mediaTodo, taskId, enable, myself, date);
+                                MessageObject.toggleTodo(currentAccount, dialogId, mediaTodo, taskId, enable, date);
                                 cursor.dispose();
                                 cursor = null;
 

@@ -426,7 +426,7 @@ public:
             } else if (segment->unifiedAudio) {
                 const auto available = [&] {
                     _audioDataMutex.Lock();
-                    const auto result = (_audioRingBuffer.availableForWriting() >= 480);
+                    const auto result = (_audioRingBuffer.availableForWriting() >= 480 * _audioRingBufferNumChannels);
                     _audioDataMutex.Unlock();
 
                     return result;
@@ -531,6 +531,17 @@ public:
                 if (!segment->unified.empty() && segment->unified[0]->videoPart->hasRemainingFrames()) {
                     RTC_LOG(LS_INFO) << "render: discarding video frames at the end of a segment (displayed " << segment->unified[0]->_displayedFrames << " frames)";
                 }
+
+                _availableSegments.erase(_availableSegments.begin());
+            } else if (
+                _availableSegments.size() > 1 &&
+                (!segment->audio || segment->audio->getRemainingMilliseconds() <= 0) &&
+                (segment->video.empty() || !segment->video[0]->part->getActiveEndpointId()) &&
+                (segment->unified.empty() || !segment->unified[0]->videoPart->hasRemainingFrames()) &&
+                (!segment->unifiedAudio || !segment->unifiedAudio->hasRemainingFrames())
+            ) {
+                _playbackReferenceTimestamp += segment->duration;
+                _waitForBufferredMillisecondsBeforeRendering = absl::nullopt;
 
                 _availableSegments.erase(_availableSegments.begin());
             }
@@ -1053,7 +1064,7 @@ private:
     int64_t _playbackReferenceTimestamp = 0;
 
     const int _audioRingBufferNumChannels = 2;
-    const size_t _audioDataRingBufferMaxSize = 4800 * 2;
+    const size_t _audioDataRingBufferMaxSize = 4800 * 8;
     webrtc::Mutex _audioDataMutex;
     SampleRingBuffer _audioRingBuffer;
     std::vector<int16_t> _tempAudioBuffer;

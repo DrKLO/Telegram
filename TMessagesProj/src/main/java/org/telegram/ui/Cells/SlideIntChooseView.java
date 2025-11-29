@@ -78,7 +78,7 @@ public class SlideIntChooseView extends FrameLayout {
         maxText.setEmojiCacheType(AnimatedEmojiDrawable.CACHE_TYPE_COLORABLE);
         addView(maxText, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 25, Gravity.TOP, 22, 13, 22, 0));
 
-        seekBarView = new SeekBarView(context) {
+        seekBarView = new SeekBarView(context, resourcesProvider) {
             @Override
             public boolean onTouchEvent(MotionEvent event) {
                 if (event.getAction() == MotionEvent.ACTION_DOWN) {

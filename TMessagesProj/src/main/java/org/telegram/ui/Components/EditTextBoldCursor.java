@@ -760,6 +760,8 @@ public class EditTextBoldCursor extends EditTextEffects {
         } catch (Exception ignore) {};
     }
 
+    public int hintLayoutOffset;
+
     private void drawHint(Canvas canvas) {
         if (length() != 0 && !transformHintToHeader) {
             return;
@@ -820,7 +822,7 @@ public class EditTextBoldCursor extends EditTextEffects {
                 float offset = getMeasuredWidth() - hintWidth;
                 canvas.translate(hintLayoutX = left + getScrollX() + offset, hintLayoutY = lineY - hintLayout.getHeight() - dp(7));
             } else {
-                canvas.translate(hintLayoutX = left + getScrollX(), hintLayoutY = lineY - hintLayout.getHeight() - AndroidUtilities.dp2(7));
+                canvas.translate(hintLayoutX = left + getScrollX()+ hintLayoutOffset, hintLayoutY = lineY - hintLayout.getHeight() - AndroidUtilities.dp2(7));
             }
             if (transformHintToHeader) {
                 float scale = 1.0f - 0.3f * headerAnimationProgress;

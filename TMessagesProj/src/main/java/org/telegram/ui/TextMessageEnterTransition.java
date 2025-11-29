@@ -14,6 +14,7 @@ import android.graphics.LinearGradient;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Path;
+import android.graphics.PointF;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.PorterDuffXfermode;
@@ -50,6 +51,7 @@ import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.EmptyStubSpan;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.ReplyMessageLine;
+import org.telegram.ui.Components.chat.ViewPositionWatcher;
 import org.telegram.ui.Components.spoilers.SpoilerEffect;
 
 public class TextMessageEnterTransition implements MessageEnterTransitionContainer.Transition {
@@ -116,6 +118,8 @@ public class TextMessageEnterTransition implements MessageEnterTransitionContain
     int fromColor;
     int toColor;
     private final Theme.ResourcesProvider resourcesProvider;
+
+    private final PointF tmpPointF = new PointF();
 
     @SuppressLint("WrongConstant")
     public TextMessageEnterTransition(ChatMessageCell messageView, ChatActivity chatActivity, RecyclerListView listView, MessageEnterTransitionContainer container, Theme.ResourcesProvider resourcesProvider) {
@@ -218,8 +222,10 @@ public class TextMessageEnterTransition implements MessageEnterTransitionContain
             layout = new StaticLayout(text, textPaint, width, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
         }
         animatedEmojiStack = AnimatedEmojiSpan.update(AnimatedEmojiDrawable.CACHE_TYPE_KEYBOARD, null, animatedEmojiStack, layout);
-        float textViewY = chatActivityEnterView.getY() + chatActivityEnterView.getEditField().getY() + ((View) chatActivityEnterView.getEditField().getParent()).getY() + ((View) chatActivityEnterView.getEditField().getParent().getParent()).getY();
-        fromStartX = chatActivityEnterView.getX() + chatActivityEnterView.getEditField().getX() + ((View) chatActivityEnterView.getEditField().getParent()).getX() + ((View) chatActivityEnterView.getEditField().getParent().getParent()).getX();
+
+        ViewPositionWatcher.computeCoordinatesInParent(chatActivityEnterView.getEditField(), chatActivity.contentView, tmpPointF);
+        float textViewY = tmpPointF.y;
+        fromStartX = tmpPointF.x;
         fromStartY = textViewY + dp(10) - chatActivityEnterView.getEditField().getScrollY() + linesOffset;
         toXOffset = 0;
         float minX = Float.MAX_VALUE;
@@ -335,15 +341,18 @@ public class TextMessageEnterTransition implements MessageEnterTransitionContain
         hasReply = messageView.getMessageObject().getReplyMsgId() != 0 && messageView.replyNameLayout != null;
 
         if (hasReply) {
-            SimpleTextView replyNameTextView = chatActivity.getReplyNameTextView();
-            replyFromStartX = replyNameTextView.getX() + ((View) replyNameTextView.getParent()).getX();
+            final SimpleTextView replyNameTextView = chatActivity.getReplyNameTextView();
+            ViewPositionWatcher.computeCoordinatesInParent(replyNameTextView, chatActivity.contentView, tmpPointF);
+            replyFromStartX = tmpPointF.x;
+            replyFromStartY = tmpPointF.y;
             replyFromStartWidth = ((View) replyNameTextView.getParent()).getWidth();
-            replyFromStartY = replyNameTextView.getY() + ((View) replyNameTextView.getParent().getParent()).getY() + ((View) replyNameTextView.getParent().getParent().getParent()).getY();
-            replyNameTextView = chatActivity.getReplyObjectTextView();
-            replyFromObjectStartY = replyNameTextView.getY() + ((View) replyNameTextView.getParent().getParent()).getY() + ((View) replyNameTextView.getParent().getParent().getParent()).getY();
 
-            replayFromColor = chatActivity.getReplyNameTextView().getTextColor();
-            replayObjectFromColor = chatActivity.getReplyObjectTextView().getTextColor();
+            final SimpleTextView replyObjectTextView = chatActivity.getReplyObjectTextView();
+            ViewPositionWatcher.computeCoordinatesInParent(replyObjectTextView, chatActivity.contentView, tmpPointF);
+            replyFromObjectStartY = tmpPointF.y;
+
+            replayFromColor = replyNameTextView.getTextColor();
+            replayObjectFromColor = replyObjectTextView.getTextColor();
             drawableFromTop -= dp(46);
         }
 
@@ -447,7 +456,6 @@ public class TextMessageEnterTransition implements MessageEnterTransitionContain
         } else {
             messageViewX = messageView.getX() + listView.getX() - container.getX();
             messageViewY = messageView.getTop() + messageView.getPaddingTop() + listView.getTop() - container.getY();
-            messageViewY += enterView.getTopViewHeight();
 
             lastMessageX = messageViewX;
             lastMessageY = messageViewY;
@@ -847,8 +855,11 @@ public class TextMessageEnterTransition implements MessageEnterTransitionContain
             enterView.setTextTransitionIsRunning(false);
         }
         if (enterView.getSendButton().getVisibility() == View.VISIBLE && sendProgress < 1f) {
+            ViewPositionWatcher.computeCoordinatesInParent(enterView.getSendButton(), chatActivity.contentView, tmpPointF);
             canvas.save();
-            canvas.translate(enterView.getX() + enterView.getSendButton().getX() + ((View) enterView.getSendButton().getParent()).getX() + ((View) enterView.getSendButton().getParent().getParent()).getX() - container.getX() + dp(52) * sendProgress, enterView.getY() + enterView.getSendButton().getY() + ((View) enterView.getSendButton().getParent()).getY() + ((View) enterView.getSendButton().getParent().getParent()).getY() - container.getY());
+            canvas.translate(
+                tmpPointF.x - container.getX() + dp(52) * sendProgress,
+                tmpPointF.y - container.getY());
             enterView.getSendButton().draw(canvas);
             canvas.restore();
             canvas.restore();

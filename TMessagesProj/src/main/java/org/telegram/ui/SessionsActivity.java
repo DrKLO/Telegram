@@ -473,7 +473,7 @@ public class SessionsActivity extends BaseFragment implements NotificationCenter
             undoView = new UndoView(context) {
                 @Override
                 public void hide(boolean apply, int animated) {
-                    if (!apply) {
+                    if (!apply && getCurrentInfoObject() != null) {
                         TLRPC.TL_authorization authorization = (TLRPC.TL_authorization) getCurrentInfoObject();
                         TL_account.resetAuthorization req = new TL_account.resetAuthorization();
                         req.hash = authorization.hash;

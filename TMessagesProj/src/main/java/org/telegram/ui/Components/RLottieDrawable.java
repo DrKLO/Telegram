@@ -114,7 +114,7 @@ public class RLottieDrawable extends BitmapDrawable implements Animatable, Bitma
     private boolean forceFrameRedraw;
     private boolean applyingLayerColors;
     protected int currentFrame;
-    private boolean shouldLimitFps;
+    public boolean shouldLimitFps;
     private boolean createdForFirstFrame;
 
     private float scaleX = 1.0f;

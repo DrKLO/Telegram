@@ -1,6 +1,8 @@
 package org.telegram.ui.Stories.recorder;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
+import static org.telegram.messenger.AndroidUtilities.lerp;
+import static org.telegram.messenger.LocaleController.getString;
 
 import android.animation.ValueAnimator;
 import android.content.Context;
@@ -19,17 +21,16 @@ import androidx.core.graphics.ColorUtils;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
 import org.telegram.ui.Components.CubicBezierInterpolator;
+import org.telegram.ui.Components.Text;
 
 public class PhotoVideoSwitcherView extends View implements FlashViews.Invertable {
 
-    private TextPaint textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
-    private Paint selectorPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint selectorPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
-    private StaticLayout photoText, videoText;
-    private float photoTextLeft, photoTextWidth, photoTextHeight;
-    private float videoTextLeft, videoTextWidth, videoTextHeight;
+    private final Text liveText, photoText, videoText;
     private float scrollWidth;
 
     private VelocityTracker mVelocityTracker;
@@ -42,41 +43,22 @@ public class PhotoVideoSwitcherView extends View implements FlashViews.Invertabl
     public PhotoVideoSwitcherView(Context context) {
         super(context);
 
-        selectorPaint.setColor(0x32ffffff);
-        textPaint.setColor(0xffffffff);
+        liveText =  new Text(getString(R.string.StoryLive),  14, AndroidUtilities.bold());
+        photoText = new Text(getString(R.string.StoryPhoto), 14, AndroidUtilities.bold());
+        videoText = new Text(getString(R.string.StoryVideo), 14, AndroidUtilities.bold());
 
-        textPaint.setTypeface(AndroidUtilities.bold());
-        textPaint.setTextSize(AndroidUtilities.dpf2(14));
-        textPaint.setShadowLayer(AndroidUtilities.dpf2(1), 0, AndroidUtilities.dpf2(0.4f), 0x33000000);
-
-        CharSequence text = LocaleController.getString("StoryPhoto");
-        if (text == null) {
-            text = "Photo";
-        }
-        photoText = new StaticLayout(text, textPaint, AndroidUtilities.displaySize.x / 2, Layout.Alignment.ALIGN_NORMAL, 1, 0, false);
-        photoTextLeft = photoText.getLineCount() > 0 ? photoText.getLineLeft(0) : 0;
-        photoTextWidth = photoText.getLineCount() > 0 ? photoText.getLineWidth(0) : 0;
-        photoTextHeight = photoText.getHeight();
-
-        text = LocaleController.getString("StoryVideo");
-        if (text == null) {
-            text = "Video";
-        }
-        videoText = new StaticLayout(text, textPaint, AndroidUtilities.displaySize.x / 2, Layout.Alignment.ALIGN_NORMAL, 1, 0, false);
-        videoTextLeft = videoText.getLineCount() > 0 ? videoText.getLineLeft(0) : 0;
-        videoTextWidth = videoText.getLineCount() > 0 ? videoText.getLineWidth(0) : 0;
-        videoTextHeight = videoText.getHeight();
-
-        scrollWidth = dp(32) + photoTextWidth / 2 + videoTextWidth / 2;
+        scrollWidth = dp(32) + liveText.getWidth() / 2 + photoText.getWidth() / 2 + videoText.getWidth() / 2;
 
         mTouchSlop = ViewConfiguration.get(context).getScaledTouchSlop();
+
+        setInvert(0);
     }
 
     private float mode;
 
-    private Utilities.Callback<Boolean> onSwitchModeListener;
+    private Utilities.Callback<Integer> onSwitchModeListener;
     private Utilities.Callback<Float> onSwitchingModeListener;
-    public void setOnSwitchModeListener(Utilities.Callback<Boolean> onSwitchModeListener) {
+    public void setOnSwitchModeListener(Utilities.Callback<Integer> onSwitchModeListener) {
         this.onSwitchModeListener = onSwitchModeListener;
     }
 
@@ -84,15 +66,15 @@ public class PhotoVideoSwitcherView extends View implements FlashViews.Invertabl
         this.onSwitchingModeListener = onSwitchingModeListener;
     }
 
-    public void switchMode(boolean modeIsVideo) {
+    public void switchMode(int newMode) {
         if (animator != null) {
             animator.cancel();
         }
-        animator = ValueAnimator.ofFloat(mode, modeIsVideo ? 1 : 0);
+        animator = ValueAnimator.ofFloat(mode, newMode);
         animator.addUpdateListener(anm -> {
             mode = (float) anm.getAnimatedValue();
             if (onSwitchingModeListener != null) {
-                onSwitchingModeListener.run(Utilities.clamp(mode, 1, 0));
+                onSwitchingModeListener.run(Utilities.clamp(mode, 1, -1));
             }
             invalidate();
         });
@@ -101,12 +83,15 @@ public class PhotoVideoSwitcherView extends View implements FlashViews.Invertabl
         animator.start();
     }
 
-    private RectF photoRect = new RectF(), videoRect = new RectF(), selectorRect = new RectF();
+    private final RectF liveRect = new RectF();
+    private final RectF photoRect = new RectF();
+    private final RectF videoRect = new RectF();
+    private final RectF selectorRect = new RectF();
 
     private float getScrollCx() {
-        return getWidth() / 2f + AndroidUtilities.lerp(
-            (dp(4 + 12) + photoTextWidth / 2),
-            -(dp(4 + 12) + videoTextWidth / 2),
+        return getWidth() / 2f + lerp(
+            (dp(4 + 12) + photoText.getWidth() / 2),
+            -(dp(4 + 12) + videoText.getWidth() / 2),
             mode
         );
     }
@@ -118,15 +103,15 @@ public class PhotoVideoSwitcherView extends View implements FlashViews.Invertabl
         }
         if (mIsScrolling) {
             float overscrollFactor = 0.2f;
-            if (mode <= 0 && dx < 0) {
+            if (mode <= -1 && dx < 0) {
                 dx *= overscrollFactor;
             } else if (mode >= 1 && dx > 0) {
                 dx *= overscrollFactor;
             }
             mode += dx / scrollWidth / 2.5f;
-            mode = Utilities.clamp(mode, 1 + overscrollFactor, -overscrollFactor);
+            mode = Utilities.clamp(mode, 1 + overscrollFactor, -1 - overscrollFactor);
             if (onSwitchingModeListener != null) {
-                onSwitchingModeListener.run(Utilities.clamp(mode, 1, 0));
+                onSwitchingModeListener.run(Utilities.clamp(mode, 1, -1));
             }
             invalidate();
         }
@@ -140,11 +125,11 @@ public class PhotoVideoSwitcherView extends View implements FlashViews.Invertabl
 
         mIsScrolling = false;
 
-        final boolean targetMode;
+        final int targetMode;
         if (Math.abs(velocityX) > 500) {
-            targetMode = velocityX < 0;
+            targetMode = Utilities.clamp((int) Math.round(mode + (velocityX < 0 ? +1 : -1)), 1, -1);
         } else {
-            targetMode = mode > 0.5f;
+            targetMode = mode <= -0.5f ? -1 : mode > 0.5f ? 1 : 0;
         }
 
         switchMode(targetMode);
@@ -164,20 +149,21 @@ public class PhotoVideoSwitcherView extends View implements FlashViews.Invertabl
 
         final int oy = -dp(1);
         final int h = dp(26);
-        photoRect.set(x - dp(4 + 12 + 12) - photoTextWidth, cy - h / 2f + oy, x - dp(4), cy + h / 2f + oy);
-        videoRect.set(x + dp(4), cy - h / 2f + oy, x + dp(4 + 12 + 12) + videoTextWidth, cy + h / 2f + oy);
-        AndroidUtilities.lerp(photoRect, videoRect, Utilities.clamp(mode, 1.025f, -.025f), selectorRect);
+        liveRect.set(x - dp(4 + 12 + 12) - photoText.getWidth() - liveText.getWidth() - dp(4 + 12 + 12), cy - h / 2f + oy, x - dp(4 + 12 + 12) - photoText.getWidth() - dp(4), cy + h / 2f + oy);
+        photoRect.set(x - dp(4 + 12 + 12) - photoText.getWidth(), cy - h / 2f + oy, x - dp(4), cy + h / 2f + oy);
+        videoRect.set(x + dp(4), cy - h / 2f + oy, x + dp(4 + 12 + 12) + videoText.getWidth(), cy + h / 2f + oy);
+
+        final float t = Utilities.clamp(mode, 1.025f, -1.025f);
+        if (t < 0) {
+            lerp(liveRect, photoRect, t + 1.0f, selectorRect);
+        } else {
+            lerp(photoRect, videoRect, t, selectorRect);
+        }
         canvas.drawRoundRect(selectorRect, h / 2f, h / 2f, selectorPaint);
 
-        canvas.save();
-        canvas.translate(x - dp(4 + 12) - photoTextWidth - photoTextLeft, cy - photoTextHeight / 2f + oy);
-        photoText.draw(canvas);
-        canvas.restore();
-
-        canvas.save();
-        canvas.translate(x + dp(4 + 12) - videoTextLeft, cy - videoTextHeight / 2f + oy);
-        videoText.draw(canvas);
-        canvas.restore();
+        liveText.draw(canvas,  x - dp(4 + 12 + 12) - photoText.getWidth() - liveText.getWidth() - dp(4 + 12), cy, 0xFFFFFFFF, 1.0f);
+        photoText.draw(canvas, x - dp(4 + 12) - photoText.getWidth(), cy, 0xFFFFFFFF, 1.0f);
+        videoText.draw(canvas, x + dp(4 + 12), cy, 0xFFFFFFFF, 1.0f);
     }
 
     protected boolean allowTouch() {
@@ -220,7 +206,10 @@ public class PhotoVideoSwitcherView extends View implements FlashViews.Invertabl
                 }
 
                 if (!stopScroll(xVelocity) && (System.currentTimeMillis() - mLastTouchTime) <= ViewConfiguration.getTapTimeout() && Math.abs(event.getX() - mLastX) < AndroidUtilities.dp(4)) {
-                    final boolean targetMode = event.getX() > getScrollCx();
+                    final int targetMode = (
+                        event.getX() < photoRect.left ? -1 :
+                        event.getX() > getScrollCx() ? 1 : 0
+                    );
                     switchMode(targetMode);
                     if (onSwitchModeListener != null) {
                         onSwitchModeListener.run(targetMode);
@@ -252,6 +241,8 @@ public class PhotoVideoSwitcherView extends View implements FlashViews.Invertabl
 
     public void setInvert(float invert) {
         selectorPaint.setColor(ColorUtils.blendARGB(0x32ffffff, 0x20000000, invert));
-        textPaint.setColor(ColorUtils.blendARGB(0xffffffff, 0xff000000, invert));
+        liveText.setColor(ColorUtils.blendARGB(0xffffffff, 0xff000000, invert));
+        photoText.setColor(ColorUtils.blendARGB(0xffffffff, 0xff000000, invert));
+        videoText.setColor(ColorUtils.blendARGB(0xffffffff, 0xff000000, invert));
     }
 }

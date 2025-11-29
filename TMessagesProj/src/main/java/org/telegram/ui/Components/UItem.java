@@ -621,6 +621,7 @@ public class UItem extends AdapterWithDiffUtils.Item {
             red == item.red &&
             locked == item.locked &&
             accent == item.accent &&
+            view == item.view &&
             TextUtils.equals(text, item.text) &&
             TextUtils.equals(subtext, item.subtext) &&
             TextUtils.equals(textValue, item.textValue) &&

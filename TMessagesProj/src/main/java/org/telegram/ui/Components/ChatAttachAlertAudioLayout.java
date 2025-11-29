@@ -90,7 +90,7 @@ public class ChatAttachAlertAudioLayout extends ChatAttachAlert.AttachAlertLayou
     private float currentPanTranslationProgress;
 
     public interface AudioSelectDelegate {
-        void didSelectAudio(ArrayList<MessageObject> audios, CharSequence caption, boolean notify, int scheduleDate, long effectId, boolean invertMedia, long payStars);
+        void didSelectAudio(ArrayList<MessageObject> audios, CharSequence caption, boolean notify, int scheduleDate, int scheduleRepeatPeriod, long effectId, boolean invertMedia, long payStars);
     }
 
     public ChatAttachAlertAudioLayout(ChatAttachAlert alert, Context context, Theme.ResourcesProvider resourcesProvider) {
@@ -467,7 +467,7 @@ public class ChatAttachAlertAudioLayout extends ChatAttachAlert.AttachAlertLayou
             sendPressed = true;
             ArrayList<MessageObject> audios = new ArrayList<>();
             audios.add(audioEntry.messageObject);
-            delegate.didSelectAudio(audios, parentAlert.getCommentView().getText(), false, 0, 0, false, 0);
+            delegate.didSelectAudio(audios, parentAlert.getCommentView().getText(), false, 0, 0, 0, false, 0);
             add = true;
         } else if (selectedAudios.indexOfKey(audioEntry.id) >= 0) {
             selectedAudios.remove(audioEntry.id);
@@ -493,7 +493,7 @@ public class ChatAttachAlertAudioLayout extends ChatAttachAlert.AttachAlertLayou
     }
 
     @Override
-    public boolean sendSelectedItems(boolean notify, int scheduleDate, long effectId, boolean invertMedia) {
+    public boolean sendSelectedItems(boolean notify, int scheduleDate, int scheduleRepeatPeriod, long effectId, boolean invertMedia) {
         if (selectedAudios.size() == 0 || delegate == null || sendPressed) {
             return false;
         }
@@ -503,7 +503,7 @@ public class ChatAttachAlertAudioLayout extends ChatAttachAlert.AttachAlertLayou
             audios.add(selectedAudiosOrder.get(a).messageObject);
         }
         return AlertsCreator.ensurePaidMessageConfirmation(parentAlert.currentAccount, parentAlert.getDialogId(), audios.size() + parentAlert.getAdditionalMessagesCount(), payStars -> {
-            delegate.didSelectAudio(audios, parentAlert.getCommentView().getText(), notify, scheduleDate, effectId, invertMedia, payStars);
+            delegate.didSelectAudio(audios, parentAlert.getCommentView().getText(), notify, scheduleDate, scheduleRepeatPeriod, effectId, invertMedia, payStars);
             parentAlert.dismiss(true);
         });
     }

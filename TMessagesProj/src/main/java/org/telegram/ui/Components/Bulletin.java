@@ -2445,7 +2445,7 @@ public class Bulletin {
                     params.layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
                 }
                 window.setAttributes(params);
-                AndroidUtilities.setLightNavigationBar(window, AndroidUtilities.computePerceivedBrightness(Theme.getColor(Theme.key_windowBackgroundGray)) > 0.721f);
+                AndroidUtilities.setLightNavigationBar(this, AndroidUtilities.computePerceivedBrightness(Theme.getColor(Theme.key_windowBackgroundGray)) > 0.721f);
             } catch (Exception ignore) {}
         }
 

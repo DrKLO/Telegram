@@ -62,7 +62,7 @@ public class AutoDeletePopupWrapper {
         item = ActionBarMenuItem.addItem(windowLayout, R.drawable.msg_customize, customTitle, false, resourcesProvider);
         item.setOnClickListener(view -> {
             dismiss();
-            AlertsCreator.createAutoDeleteDatePickerDialog(context, type, resourcesProvider, (notify, timeInMinutes) -> {
+            AlertsCreator.createAutoDeleteDatePickerDialog(context, type, resourcesProvider, (notify, timeInMinutes, scheduleRepeatPeriod) -> {
                 callback.setAutoDeleteHistory(timeInMinutes * 60, timeInMinutes == 0 ? UndoView.ACTION_AUTO_DELETE_OFF : UndoView.ACTION_AUTO_DELETE_ON);
             });
         });

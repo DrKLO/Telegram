@@ -1,5 +1,7 @@
 package org.telegram.ui.Components.conference.message;
 
+import static org.telegram.messenger.AndroidUtilities.dp;
+
 import android.annotation.SuppressLint;
 import android.view.ViewGroup;
 
@@ -20,6 +22,7 @@ public class GroupCallMessagesAdapter extends RecyclerView.Adapter<GroupCallMess
     @Override
     public GroupCallMessageCell.VH onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         GroupCallMessageCell cell = new GroupCallMessageCell(parent.getContext());
+        cell.setPadding(dp(22), 0, dp(22), 0);
         return new GroupCallMessageCell.VH(cell);
     }
 
@@ -57,7 +60,7 @@ public class GroupCallMessagesAdapter extends RecyclerView.Adapter<GroupCallMess
     private List<GroupCallMessage> messages;
 
     @Override
-    public void onNewGroupCallMessage(GroupCallMessage message) {
+    public void onNewGroupCallMessage(long callId, GroupCallMessage message) {
         if (messages == null) {
             messages = new ArrayList<>();
         }
@@ -83,12 +86,13 @@ public class GroupCallMessagesAdapter extends RecyclerView.Adapter<GroupCallMess
     private TLRPC.InputGroupCall inputGroupCall;
 
 
-
+    @SuppressLint("NotifyDataSetChanged")
     public void attach() {
         isAttachedToRecyclerView = true;
 
         if (currentAccount != -1 && inputGroupCall != null) {
             messages = GroupCallMessagesController.getInstance(currentAccount).getCallMessages(inputGroupCall.id);
+            notifyDataSetChanged();
             GroupCallMessagesController.getInstance(currentAccount)
                 .subscribeToCallMessages(inputGroupCall.id, this);
         }

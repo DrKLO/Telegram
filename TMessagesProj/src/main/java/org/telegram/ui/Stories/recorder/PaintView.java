@@ -2180,7 +2180,7 @@ public class PaintView extends SizeNotifierFrameLayoutPhoto implements IPhotoPai
         }, false, true, false, resourcesProvider);
         locationAlert.setDelegate(new ChatAttachAlert.ChatAttachViewDelegate() {
             @Override
-            public void didPressedButton(int button, boolean arg, boolean notify, int scheduleDate, long effectId, boolean invertMedia, boolean forceDocument, long payStars) {
+            public void didPressedButton(int button, boolean arg, boolean notify, int scheduleDate, int scheduleRepeatPeriod, long effectId, boolean invertMedia, boolean forceDocument, long payStars) {
 
             }
         });
@@ -2232,7 +2232,7 @@ public class PaintView extends SizeNotifierFrameLayoutPhoto implements IPhotoPai
             }
 
             @Override
-            public void sendAudio(ArrayList<MessageObject> audios, CharSequence caption, boolean notify, int scheduleDate, long effectId, boolean invertMedia, long payStars) {
+            public void sendAudio(ArrayList<MessageObject> audios, CharSequence caption, boolean notify, int scheduleDate, int scheduledRepeatPeriod, long effectId, boolean invertMedia, long payStars) {
                 if (audios.isEmpty()) {
                     return;
                 }
@@ -2249,7 +2249,7 @@ public class PaintView extends SizeNotifierFrameLayoutPhoto implements IPhotoPai
         audioAlert[0] = new ChatAttachAlert(getContext(), chatActivity, false, true, false, resourcesProvider);
         audioAlert[0].setDelegate(new ChatAttachAlert.ChatAttachViewDelegate() {
             @Override
-            public void didPressedButton(int button, boolean arg, boolean notify, int scheduleDate, long effectId, boolean invertMedia, boolean forceDocument, long payStars) {
+            public void didPressedButton(int button, boolean arg, boolean notify, int scheduleDate, int scheduleRepeatPeriod, long effectId, boolean invertMedia, boolean forceDocument, long payStars) {
 
             }
         });
