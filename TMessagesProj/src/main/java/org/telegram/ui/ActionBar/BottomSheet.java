@@ -56,7 +56,6 @@ import androidx.core.graphics.ColorUtils;
 import androidx.core.view.NestedScrollingParent;
 import androidx.core.view.NestedScrollingParentHelper;
 import androidx.core.view.ViewCompat;
-import androidx.core.view.WindowInsetsCompat;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.AnimationNotificationsLocker;
@@ -360,6 +359,9 @@ public class BottomSheet extends Dialog implements BaseFragment.AttachedSheet {
             onSwipeStarts();
         }
 
+
+        private int internalPaddingBottom;
+
         private float y = 0f;
         private float swipeBackX = 0f;
         private boolean allowedSwipeToBack;
@@ -557,7 +559,8 @@ public class BottomSheet extends Dialog implements BaseFragment.AttachedSheet {
                     containerHeight -= getBottomInset();
                 }
             }
-            setMeasuredDimension(width, containerHeight);
+            internalPaddingBottom = height - containerHeight;
+            setMeasuredDimension(width, height);
             navigationBarHeight = 0;
             if (lastInsets != null && !occupyNavigationBar) {
                 int inset = (int) (lastInsets.getSystemWindowInsetBottom() * (1f - hideSystemVerticalInsetsProgress));
@@ -601,6 +604,8 @@ public class BottomSheet extends Dialog implements BaseFragment.AttachedSheet {
 
         @Override
         protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
+            bottom -= internalPaddingBottom;
+
             layoutCount--;
             if (containerView != null) {
                 int t = (bottom - top) - containerView.getMeasuredHeight();
@@ -734,8 +739,19 @@ public class BottomSheet extends Dialog implements BaseFragment.AttachedSheet {
             return false;
         }
 
+        private final Paint internalBackgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+
         @Override
         protected void dispatchDraw(Canvas canvas) {
+            if (containerView != null && internalPaddingBottom > 0) {
+                internalBackgroundPaint.setColor(internalBackgroundColor);
+                canvas.drawRect(0,
+                    getMeasuredHeight() - internalPaddingBottom + containerView.getTranslationY() - 1,
+                    getMeasuredWidth(),
+                    getMeasuredHeight() + containerView.getTranslationY(),
+                    internalBackgroundPaint);
+            }
+
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 if (navBarColorKey >= 0) {
                     backgroundPaint.setColor(getThemedColor(navBarColorKey));
@@ -853,11 +869,14 @@ public class BottomSheet extends Dialog implements BaseFragment.AttachedSheet {
                 if (overlayDrawNavBarColor != 0) {
                     backgroundPaint.setColor(overlayDrawNavBarColor);
                     wasAlpha = backgroundPaint.getAlpha();
+                    float addAlpha = AndroidUtilities.getNavigationBarThirdButtonsFactor(navBarHeight);
                     if (alpha < 1f) {
-                        backgroundPaint.setAlpha((int) (wasAlpha * alpha));
+                        backgroundPaint.setAlpha((int) (wasAlpha * alpha * addAlpha));
                         translation = 0;
                     }
-                    canvas.drawRect(left  + backgroundPaddingLeft, getMeasuredHeight() - navBarHeight + translation - currentPanTranslationY, containerView.getRight() - backgroundPaddingLeft, getMeasuredHeight() + translation, backgroundPaint);
+                    if (backgroundPaint.getAlpha() > 0) {
+                        canvas.drawRect(left + backgroundPaddingLeft, getMeasuredHeight() - navBarHeight + translation - currentPanTranslationY, containerView.getRight() - backgroundPaddingLeft, getMeasuredHeight() + translation, backgroundPaint);
+                    }
                     backgroundPaint.setAlpha(wasAlpha);
                 }
             }
@@ -1096,7 +1115,7 @@ public class BottomSheet extends Dialog implements BaseFragment.AttachedSheet {
 
         Rect padding = new Rect();
         shadowDrawable = context.getResources().getDrawable(R.drawable.sheet_shadow_round).mutate();
-        shadowDrawable.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_dialogBackground), PorterDuff.Mode.MULTIPLY));
+        shadowDrawable.setColorFilter(new PorterDuffColorFilter(internalBackgroundColor = getThemedColor(Theme.key_dialogBackground), PorterDuff.Mode.MULTIPLY));
         shadowDrawable.getPadding(padding);
         backgroundPaddingLeft = padding.left;
         backgroundPaddingTop = padding.top;
@@ -1230,7 +1249,7 @@ public class BottomSheet extends Dialog implements BaseFragment.AttachedSheet {
             }
         }
         if (useLightNavBar && Build.VERSION.SDK_INT >= 26) {
-            AndroidUtilities.setLightNavigationBar(getWindow(), false);
+            AndroidUtilities.setLightNavigationBar(this, false);
         }
 
         if (containerView == null) {
@@ -1388,7 +1407,7 @@ public class BottomSheet extends Dialog implements BaseFragment.AttachedSheet {
             container.setSystemUiVisibility(flags);
         }
         if (attachedFragment != null) {
-            LaunchActivity.instance.checkSystemBarColors(true, true, true, false);
+            LaunchActivity.instance.checkSystemBarColors(true, true, true);
         }
     }
 
@@ -1422,8 +1441,19 @@ public class BottomSheet extends Dialog implements BaseFragment.AttachedSheet {
         showWithoutAnimation = value;
     }
 
+    private int internalBackgroundColor;
     public void setBackgroundColor(int color) {
         shadowDrawable.setColorFilter(color, PorterDuff.Mode.MULTIPLY);
+        if (internalBackgroundColor != color) {
+            internalBackgroundColor = color;
+            if (container != null) {
+                container.invalidate(0,
+                    container.getMeasuredHeight() - container.internalPaddingBottom,
+                    container.getMeasuredWidth(),
+                    container.getMeasuredHeight()
+                );
+            }
+        }
     }
 
     @Override
@@ -1552,7 +1582,9 @@ public class BottomSheet extends Dialog implements BaseFragment.AttachedSheet {
     }
 
     protected void onContainerTranslationYChanged(float translationY) {
-
+        if (container != null) {
+            container.invalidate();
+        }
     }
 
     protected void cancelSheetAnimation() {
@@ -1586,7 +1618,10 @@ public class BottomSheet extends Dialog implements BaseFragment.AttachedSheet {
                 containerView.setAlpha(0);
                 containerView.setTranslationY(0);
             } else {
-                containerView.setTranslationY(getContainerViewHeight() + keyboardHeight + dp(10) + (scrollNavBar ? Math.max(0, Math.min(AndroidUtilities.navigationBarHeight, getBottomInset())) : 0));
+                containerView.setTranslationY(getContainerViewHeight()
+                    + keyboardHeight
+                    + dp(10)
+                    + Math.max(0, Math.min(AndroidUtilities.navigationBarHeight, getBottomInset())));
             }
             currentSheetAnimationType = 1;
             if (navigationBarAnimation != null) {
@@ -1731,7 +1766,10 @@ public class BottomSheet extends Dialog implements BaseFragment.AttachedSheet {
         currentSheetAnimationType = 2;
         currentSheetAnimation = new AnimatorSet();
         currentSheetAnimation.playTogether(
-                ObjectAnimator.ofFloat(containerView, View.TRANSLATION_Y, getContainerViewHeight() + keyboardHeight + dp(10) + (scrollNavBar ? Math.max(0, Math.min(AndroidUtilities.navigationBarHeight, getBottomInset())) : 0)),
+                ObjectAnimator.ofFloat(containerView, View.TRANSLATION_Y, getContainerViewHeight()
+                    + keyboardHeight
+                    + dp(10)
+                    + Math.max(0, Math.min(AndroidUtilities.navigationBarHeight, getBottomInset()))),
                 ObjectAnimator.ofInt(backDrawable, AnimationProperties.COLOR_DRAWABLE_ALPHA, 0)
         );
         currentSheetAnimation.setDuration(cellType == Builder.CELL_TYPE_CALL ? 330 : 180);
@@ -1876,7 +1914,11 @@ public class BottomSheet extends Dialog implements BaseFragment.AttachedSheet {
                         animators.add(ObjectAnimator.ofFloat(containerView, View.TRANSLATION_X, dp(48)));
                         animators.add(ObjectAnimator.ofFloat(containerView, View.ALPHA, 0));
                     } else {
-                        animators.add(ObjectAnimator.ofFloat(containerView, View.TRANSLATION_Y, getContainerViewHeight() + (forceKeyboardOnDismiss ? lastKeyboardHeight : keyboardHeight) + dp(10) + (scrollNavBar ? Math.max(0, Math.min(AndroidUtilities.navigationBarHeight, getBottomInset())) : 0)));
+                        animators.add(ObjectAnimator.ofFloat(containerView, View.TRANSLATION_Y, getContainerViewHeight()
+                            + (forceKeyboardOnDismiss ? lastKeyboardHeight : keyboardHeight)
+                            + dp(10)
+                            + Math.max(0, Math.min(AndroidUtilities.navigationBarHeight, getBottomInset()))
+                        ));
                     }
                 }
                 animators.add(ObjectAnimator.ofInt(backDrawable, AnimationProperties.COLOR_DRAWABLE_ALPHA, 0));
@@ -2219,7 +2261,7 @@ public class BottomSheet extends Dialog implements BaseFragment.AttachedSheet {
         }
 
         if (attachedFragment != null) {
-            LaunchActivity.instance.checkSystemBarColors(true, true, true, false);
+            LaunchActivity.instance.checkSystemBarColors(true, true, true);
             AndroidUtilities.setLightNavigationBar(getWindowView(), AndroidUtilities.computePerceivedBrightness(getNavigationBarColor(getThemedColor(Theme.key_windowBackgroundGray))) >= .721f);
 //            AndroidUtilities.setLightStatusBar(dialog != null ? dialog.windowView : windowView, attachedToActionBar && AndroidUtilities.computePerceivedBrightness(actionBar.getBackgroundColor()) > .721f);
             return;
@@ -2231,8 +2273,8 @@ public class BottomSheet extends Dialog implements BaseFragment.AttachedSheet {
 //            AndroidUtilities.setLightStatusBar(getWindow(), !useLightStatusBar);
 //            AndroidUtilities.setLightNavigationBar(getWindow(), !useLightNavBar);
 //        }
-        AndroidUtilities.setNavigationBarColor(getWindow(), overlayDrawNavBarColor);
-        AndroidUtilities.setLightNavigationBar(getWindow(), AndroidUtilities.computePerceivedBrightness(overlayDrawNavBarColor) > .721);
+        AndroidUtilities.setNavigationBarColor(this, overlayDrawNavBarColor);
+        AndroidUtilities.setLightNavigationBar(this, AndroidUtilities.computePerceivedBrightness(overlayDrawNavBarColor) > .721);
     }
 
     public ViewGroup getContainerView() {

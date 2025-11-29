@@ -149,6 +149,7 @@ public class StoriesListPlaceProvider implements StoryViewer.PlaceProvider {
                     holder.clipParent = (View) cell.getParent();
                     if (isHiddenArchive) {
                         holder.crossfadeToAvatarImage = cell.avatarImage;
+                        holder.isLive = cell.storyParams.drawnLive;
                     }
                     holder.alpha = 1;
                     updateClip(holder);

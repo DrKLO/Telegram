@@ -250,9 +250,9 @@ public class BotShareSheet extends BottomSheetWithRecyclerListView {
                     params.put("query_id", "" + message.query_id);
                     params.put("id", "" + message.result.id);
                     params.put("bot", "" + botId);
-                    SendMessagesHelper.prepareSendingBotContextResult(lastFragment, AccountInstance.getInstance(currentAccount), message.result, params, dialogId, replyToMsg, replyToMsg, null, null, notify, scheduleDate, null, 0, 0);
+                    SendMessagesHelper.prepareSendingBotContextResult(lastFragment, AccountInstance.getInstance(currentAccount), message.result, params, dialogId, replyToMsg, replyToMsg, null, null, notify, scheduleDate, 0, null, 0, 0);
                     if (_message != null) {
-                        SendMessagesHelper.getInstance(currentAccount).sendMessage(SendMessagesHelper.SendMessageParams.of(_message.toString(), dialogId, replyToMsg, replyToMsg, null, true, null, null, null, true, 0, null, false));
+                        SendMessagesHelper.getInstance(currentAccount).sendMessage(SendMessagesHelper.SendMessageParams.of(_message.toString(), dialogId, replyToMsg, replyToMsg, null, true, null, null, null, true, 0, 0, null, false));
                     }
                     dialogIds.add(dialogId);
                 }

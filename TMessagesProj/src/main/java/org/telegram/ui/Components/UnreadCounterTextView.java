@@ -10,7 +10,6 @@ import android.graphics.drawable.Drawable;
 import android.text.Layout;
 import android.text.StaticLayout;
 import android.text.TextPaint;
-import android.view.MotionEvent;
 import android.view.View;
 
 import androidx.core.graphics.ColorUtils;
@@ -138,42 +137,8 @@ public class UnreadCounterTextView extends View {
         }
     }
 
-    @Override
-    public boolean onTouchEvent(MotionEvent event) {
-        if (event.getAction() == MotionEvent.ACTION_DOWN) {
-            if (textLayout != null) {
-                int lineWidth = (int) Math.ceil(textLayout.getLineWidth(0));
-                int contentWidth;
-                if (getMeasuredWidth() == ((View)getParent()).getMeasuredWidth()) {
-                    contentWidth = getMeasuredWidth() - AndroidUtilities.dp(96);
-                } else {
-                    if (isTouchFullWidth())  {
-                        contentWidth = getMeasuredWidth();
-                    } else {
-                        contentWidth = lineWidth + (circleWidth > 0 ? circleWidth + AndroidUtilities.dp(8) : 0);
-                        contentWidth += AndroidUtilities.dp(48);
-                    }
-                }
-                int x = (getMeasuredWidth() - contentWidth) / 2;
-                rect.set(
-                        x, getMeasuredHeight() / 2f - contentWidth / 2f,
-                        x + contentWidth, getMeasuredHeight() / 2f + contentWidth / 2f
-                );
-                if (!rect.contains(event.getX(), event.getY())) {
-                    setPressed(false);
-                    return false;
-                }
-            }
-        }
-        return super.onTouchEvent(event);
-    }
-
     protected Theme.ResourcesProvider getResourceProvider() {
         return null;
-    }
-
-    protected boolean isTouchFullWidth() {
-        return false;
     }
 
     protected void updateCounter() {

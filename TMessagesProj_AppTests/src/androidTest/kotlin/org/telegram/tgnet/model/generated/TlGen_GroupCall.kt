@@ -52,6 +52,8 @@ public sealed class TlGen_GroupCall : TlGen_Object {
     public val unmuted_video_limit: Int,
     public val version: Int,
     public val invite_link: String?,
+    public val send_paid_messages_stars: Long?,
+    public val default_send_as: TlGen_Peer?,
   ) : TlGen_GroupCall() {
     internal val flags: UInt
       get() {
@@ -75,6 +77,8 @@ public sealed class TlGen_GroupCall : TlGen_Object {
         if (messages_enabled) result = result or 131072U
         if (can_change_messages_enabled) result = result or 262144U
         if (min) result = result or 524288U
+        if (send_paid_messages_stars != null) result = result or 1048576U
+        if (default_send_as != null) result = result or 2097152U
         return result
       }
 
@@ -92,10 +96,12 @@ public sealed class TlGen_GroupCall : TlGen_Object {
       stream.writeInt32(unmuted_video_limit)
       stream.writeInt32(version)
       invite_link?.let { stream.writeString(it) }
+      send_paid_messages_stars?.let { stream.writeInt64(it) }
+      default_send_as?.serializeToStream(stream)
     }
 
     public companion object {
-      public const val MAGIC: UInt = 0x553B0BA1U
+      public const val MAGIC: UInt = 0xEFB2B617U
     }
   }
 }

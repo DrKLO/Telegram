@@ -77,7 +77,6 @@ import org.telegram.ui.Stars.StarsIntroActivity;
 import org.telegram.ui.Stories.recorder.KeyboardNotifier;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 
 public class MessageSendPreview extends Dialog implements NotificationCenter.NotificationCenterDelegate {
 
@@ -1227,7 +1226,6 @@ public class MessageSendPreview extends Dialog implements NotificationCenter.Not
             }
         };
         this.anchorSendButton.copyTo(this.sendButton);
-        this.sendButton.center = sendButton.center;
         this.sendButton.open.set(sendButton.open.get(), true);
         this.sendButton.setOnClickListener(onClick);
         containerView.addView(this.sendButton, new ViewGroup.LayoutParams(sendButton.getWidth(), sendButton.getHeight()));
@@ -1637,6 +1635,19 @@ public class MessageSendPreview extends Dialog implements NotificationCenter.Not
     public void dismiss(boolean sent) {
         this.sent = sent;
         dismiss();
+    }
+
+    public void dismissInstant() {
+        if (dismissing) return;
+        dismissing = true;
+
+        SpoilerEffect2.pause(SpoilerEffect2.TYPE_DEFAULT, false);
+        if (spoilerEffect2 != null) {
+            spoilerEffect2.detach(windowView);
+        }
+        super.dismiss();
+
+        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.availableEffectsUpdate);
     }
 
     @Override

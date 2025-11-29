@@ -33,26 +33,21 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
-import androidx.core.math.MathUtils;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.LinearSmoothScroller;
 import androidx.recyclerview.widget.LinearSmoothScrollerCustom;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.DocumentObject;
 import org.telegram.messenger.Emoji;
 import org.telegram.messenger.FileLoader;
-import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.LiteMode;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaDataController;
-import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
-import org.telegram.messenger.SvgHelper;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.ConnectionsManager;
@@ -138,7 +133,7 @@ public class StickerMasksAlert extends BottomSheet implements NotificationCenter
 
     private ContentPreviewViewer.ContentPreviewViewerDelegate contentPreviewViewerDelegate = new ContentPreviewViewer.ContentPreviewViewerDelegate() {
         @Override
-        public void sendSticker(TLRPC.Document sticker, String query, Object parent, boolean notify, int scheduleDate) {
+        public void sendSticker(TLRPC.Document sticker, String query, Object parent, boolean notify, int scheduleDate, int scheduleRepeatPeriod) {
             delegate.onStickerSelected(parent, sticker);
         }
 
@@ -668,7 +663,7 @@ public class StickerMasksAlert extends BottomSheet implements NotificationCenter
         gridView.setOnItemClickListener(stickersOnItemClickListener);
         containerView.addView(gridView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
-        stickersTab = new ScrollSlidingTabStrip(context, resourcesProvider) {
+        stickersTab = new ScrollSlidingTabStrip(context, resourcesProvider, false) {
             @Override
             public boolean onInterceptTouchEvent(MotionEvent ev) {
                 if (getParent() != null) {
@@ -1402,7 +1397,7 @@ public class StickerMasksAlert extends BottomSheet implements NotificationCenter
                     view = new EmptyCell(context);
                     break;
                 case 2:
-                    StickerSetNameCell cell = new StickerSetNameCell(context, false, resourcesProvider);
+                    StickerSetNameCell cell = new StickerSetNameCell(context, false, resourcesProvider, false);
                     cell.setTitleColor(0xff888888);
                     view = cell;
                     break;
@@ -1932,7 +1927,7 @@ public class StickerMasksAlert extends BottomSheet implements NotificationCenter
                     view = new EmptyCell(context);
                     break;
                 case 2:
-                    view = new StickerSetNameCell(context, false, resourcesProvider);
+                    view = new StickerSetNameCell(context, false, resourcesProvider, false);
                     break;
                 case 4:
                     view = new View(context);

@@ -41,6 +41,8 @@ public class ButtonWithCounterView extends FrameLayout implements Loadable {
 
     private Theme.ResourcesProvider resourcesProvider;
 
+    private int radiusDp = 8;
+
     private final Paint paint;
     public final AnimatedTextView.AnimatedTextDrawable text;
     public final AnimatedTextView.AnimatedTextDrawable subText;
@@ -54,11 +56,21 @@ public class ButtonWithCounterView extends FrameLayout implements Loadable {
         this(context, true, resourcesProvider);
     }
 
+    public void setRoundRadius(int radiusDp) {
+        this.radiusDp = radiusDp;
+        if (filled) {
+            setBackground(Theme.createRoundRectDrawable(dp(radiusDp), Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider)));
+        } else {
+            setBackground(null);
+        }
+        updateColors();
+    }
+
     public void setFilled(boolean filled) {
         if (this.filled == filled) return;
         this.filled = filled;
         if (filled) {
-            setBackground(Theme.createRoundRectDrawable(dp(8), Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider)));
+            setBackground(Theme.createRoundRectDrawable(dp(radiusDp), Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider)));
             text.setTypeface(AndroidUtilities.bold());
         } else {
             setBackground(null);
@@ -130,7 +142,10 @@ public class ButtonWithCounterView extends FrameLayout implements Loadable {
 
     public void setColor(int color) {
         if (filled) {
-            setBackground(Theme.createRoundRectDrawable(dp(8), color));
+            setBackground(Theme.createRoundRectDrawable(dp(radiusDp), color));
+        } else {
+            text.setTextColor(color);
+            rippleView.setBackground(Theme.createRadSelectorDrawable(Theme.multAlpha(color, .10f), radiusDp, radiusDp));
         }
     }
 
@@ -142,9 +157,9 @@ public class ButtonWithCounterView extends FrameLayout implements Loadable {
     public void updateColors() {
         text.setTextColor(Theme.getColor(filled ? Theme.key_featuredStickers_buttonText : Theme.key_featuredStickers_addButton, resourcesProvider));
         if (filled) {
-            rippleView.setBackground(Theme.createRadSelectorDrawable(Theme.getColor(Theme.key_listSelector, resourcesProvider), 8, 8));
+            rippleView.setBackground(Theme.createRadSelectorDrawable(Theme.getColor(Theme.key_listSelector, resourcesProvider), radiusDp, radiusDp));
         } else {
-            rippleView.setBackground(Theme.createRadSelectorDrawable(Theme.multAlpha(text.getTextColor(), .10f), 8, 8));
+            rippleView.setBackground(Theme.createRadSelectorDrawable(Theme.multAlpha(text.getTextColor(), .10f), radiusDp, radiusDp));
         }
         subText.setTextColor(Theme.getColor(filled ? Theme.key_featuredStickers_buttonText : Theme.key_featuredStickers_addButton, resourcesProvider));
         countText.setTextColor(Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider));
@@ -158,7 +173,7 @@ public class ButtonWithCounterView extends FrameLayout implements Loadable {
     public void setTextColor(int color) {
         text.setTextColor(color);
         if (!filled) {
-            rippleView.setBackground(Theme.createRadSelectorDrawable(Theme.multAlpha(text.getTextColor(), .10f), 8, 8));
+            rippleView.setBackground(Theme.createRadSelectorDrawable(Theme.multAlpha(text.getTextColor(), .10f), radiusDp, radiusDp));
         }
     }
 
@@ -445,7 +460,7 @@ public class ButtonWithCounterView extends FrameLayout implements Loadable {
                 }
                 flickeringLoadingDrawable.resetDisappear();
                 flickeringLoadingDrawable.setBounds(0, 0, getMeasuredWidth(), getMeasuredHeight());
-                flickeringLoadingDrawable.setRadiiDp(8);
+                flickeringLoadingDrawable.setRadiiDp(radiusDp);
                 flickeringLoadingDrawable.draw(canvas);
             } else if (flickeringLoadingDrawable != null) {
                 flickeringLoadingDrawable.disappear();

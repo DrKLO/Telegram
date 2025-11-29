@@ -10,12 +10,10 @@ package org.telegram.ui.Components;
 
 import android.content.Context;
 import android.graphics.Canvas;
-import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Paint.Style;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.RippleDrawable;
-import android.os.Build;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
@@ -69,7 +67,7 @@ public class PagerSlidingTabStrip extends HorizontalScrollView {
     private int dividerPadding = AndroidUtilities.dp(12);
     private int tabPadding = AndroidUtilities.dp(24);
 
-    private Theme.ResourcesProvider resourcesProvider;
+    private final Theme.ResourcesProvider resourcesProvider;
     private int lastScrollX = 0;
 
     public PagerSlidingTabStrip(Context context, Theme.ResourcesProvider resourcesProvider) {
@@ -151,18 +149,15 @@ public class PagerSlidingTabStrip extends HorizontalScrollView {
             public void setSelected(boolean selected) {
                 super.setSelected(selected);
                 Drawable background = getBackground();
-                if (Build.VERSION.SDK_INT >= 21 && background != null) {
-                    int color = getThemedColor(selected ? Theme.key_chat_emojiPanelIconSelected : Theme.key_chat_emojiBottomPanelIcon);
-                    Theme.setSelectorDrawableColor(background, Color.argb(30, Color.red(color), Color.green(color), Color.blue(color)), true);
+                if (background != null) {
+                    Theme.setSelectorDrawableColor(background, getGlassIconColor(selected ? 0.1f : 0.05f), true);
                 }
             }
         };
         tab.setFocusable(true);
-        if (Build.VERSION.SDK_INT >= 21) {
-            RippleDrawable rippleDrawable = (RippleDrawable) Theme.createSelectorDrawable(getThemedColor(Theme.key_chat_emojiBottomPanelIcon), Theme.RIPPLE_MASK_CIRCLE_20DP, AndroidUtilities.dp(18));
-            Theme.setRippleDrawableForceSoftware(rippleDrawable);
-            tab.setBackground(rippleDrawable);
-        }
+        RippleDrawable rippleDrawable = (RippleDrawable) Theme.createSelectorDrawable(getGlassIconColor(0.05f), Theme.RIPPLE_MASK_CIRCLE_20DP, AndroidUtilities.dp(18));
+        Theme.setRippleDrawableForceSoftware(rippleDrawable);
+        tab.setBackground(rippleDrawable);
         tab.setImageDrawable(drawable);
         tab.setScaleType(ImageView.ScaleType.CENTER);
         tab.setOnClickListener(v -> {
@@ -182,7 +177,7 @@ public class PagerSlidingTabStrip extends HorizontalScrollView {
         TextTab tab = new TextTab(getContext(), position);
         tab.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         tab.setTypeface(AndroidUtilities.bold());
-        tab.setTextColor(getThemedColor(Theme.key_chat_emojiPanelBackspace));
+        tab.setTextColor(getGlassIconColor(0.6f));
         tab.setFocusable(true);
         tab.setGravity(Gravity.CENTER);
 //        if (Build.VERSION.SDK_INT >= 21) {
@@ -342,8 +337,10 @@ public class PagerSlidingTabStrip extends HorizontalScrollView {
         }
     }
 
-    private int getThemedColor(int key) {
-        return Theme.getColor(key, resourcesProvider);
+    private int getGlassIconColor(float alpha) {
+        return ColorUtils.setAlphaComponent(
+                Theme.getColor(Theme.key_glass_defaultIcon, resourcesProvider),
+                (int) (255 * alpha));
     }
 
     public void onSizeChanged(int paramInt1, int paramInt2, int paramInt3, int paramInt4) {
@@ -456,17 +453,15 @@ public class PagerSlidingTabStrip extends HorizontalScrollView {
         public void setSelected(boolean selected) {
             super.setSelected(selected);
             Drawable background = getBackground();
-            if (Build.VERSION.SDK_INT >= 21 && background != null) {
-                int color = getThemedColor(selected ? Theme.key_chat_emojiPanelIconSelected : Theme.key_chat_emojiBottomPanelIcon);
-                Theme.setSelectorDrawableColor(background, Color.argb(30, Color.red(color), Color.green(color), Color.blue(color)), true);
+            if (background != null) {
+                Theme.setSelectorDrawableColor(background, getGlassIconColor(selected ? 0.1f : 0.05f), true);
             }
-            setTextColor(getThemedColor(selected ? Theme.key_chat_emojiPanelIconSelected : Theme.key_chat_emojiPanelBackspace));
+
+            setTextColor(getGlassIconColor(selected ? 0.8f : 0.6f));
         }
 
         public void setSelectedProgress(float progress) {
-            int selectedColor = getThemedColor(Theme.key_chat_emojiPanelIconSelected);
-            int color = getThemedColor(Theme.key_chat_emojiPanelBackspace);
-            setTextColor(ColorUtils.blendARGB(color, selectedColor, progress));
+            setTextColor(getGlassIconColor(AndroidUtilities.lerp(0.6f, 0.8f, progress)));
         }
-    };
+    }
 }

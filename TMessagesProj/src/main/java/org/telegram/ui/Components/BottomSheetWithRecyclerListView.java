@@ -7,7 +7,6 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
-import android.os.Build;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
@@ -22,7 +21,6 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.Emoji;
 import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
 import org.telegram.ui.ActionBar.ActionBar;
@@ -587,6 +585,7 @@ public abstract class BottomSheetWithRecyclerListView extends BottomSheet {
         return dp(56);
     }
 
+    protected boolean centerTitle;
     private boolean restore;
     protected void preDrawInternal(Canvas canvas, View parent) {
         restore = false;
@@ -644,6 +643,9 @@ public abstract class BottomSheetWithRecyclerListView extends BottomSheet {
                 actionBar.backButtonImageView.setScaleY(t);
                 SimpleTextView titleTextView = actionBar.getTitleTextView();
                 titleTextView.setTranslationX(AndroidUtilities.lerp(dp(21) - titleTextView.getLeft(), 0.0f, t));
+                if (centerTitle) {
+                    titleTextView.setTranslationX((actionBar.getMeasuredWidth() - titleTextView.getTextWidth()) / 2f - titleTextView.getLeft());
+                }
                 actionBar.setTranslationY(actionBarY);
                 top -= AndroidUtilities.lerp(0, headerTotalHeight - headerHeight - headerPaddingTop - headerPaddingBottom + dp(13), t);
                 actionBar.getBackground().setBounds(0, AndroidUtilities.lerp(actionBar.getHeight(), 0, t), actionBar.getWidth(), actionBar.getHeight());
@@ -741,7 +743,7 @@ public abstract class BottomSheetWithRecyclerListView extends BottomSheet {
 
     private void updateStatusBar() {
         if (attachedFragment != null) {
-            LaunchActivity.instance.checkSystemBarColors(true, true, true, false);
+            LaunchActivity.instance.checkSystemBarColors(true, true, true);
         } else if (actionBar != null && actionBar.getTag() != null) {
             AndroidUtilities.setLightStatusBar(getWindow(), isLightStatusBar());
         } else if (baseFragment != null) {

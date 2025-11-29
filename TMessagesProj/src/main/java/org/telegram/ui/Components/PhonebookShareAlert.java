@@ -928,7 +928,7 @@ public class PhonebookShareAlert extends BottomSheet {
                 }
                 if (parentFragment instanceof ChatActivity && ((ChatActivity) parentFragment).isInScheduleMode()) {
                     ChatActivity chatActivity = (ChatActivity) parentFragment;
-                    AlertsCreator.createScheduleDatePickerDialog(getContext(), chatActivity.getDialogId(), (notify, scheduleDate) -> {
+                    AlertsCreator.createScheduleDatePickerDialog(getContext(), chatActivity.getDialogId(), (notify, scheduleDate, scheduleRepeatPeriod) -> {
                         delegate.didSelectContact(currentUser, notify, scheduleDate, 0, false, 0);
                         dismiss();
                     }, resourcesProvider);

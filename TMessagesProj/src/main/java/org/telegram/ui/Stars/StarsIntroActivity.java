@@ -777,13 +777,15 @@ public class StarsIntroActivity extends GradientHeaderActivity implements Notifi
 
         private long dialogId;
 
+        private final Theme.ResourcesProvider resourcesProvider;
         private final int currentAccount;
         private final TextView headerTextView;
         private final AnimatedTextView amountTextView;
 
-        public StarsBalanceView(Context context, int currentAccount) {
+        public StarsBalanceView(Context context, int currentAccount, Theme.ResourcesProvider resourcesProvider) {
             super(context);
 
+            this.resourcesProvider = resourcesProvider;
             this.currentAccount = currentAccount;
             this.dialogId = UserConfig.getInstance(currentAccount).getClientUserId();
 
@@ -791,7 +793,7 @@ public class StarsIntroActivity extends GradientHeaderActivity implements Notifi
             setGravity(Gravity.CENTER_VERTICAL | Gravity.RIGHT);
 
             headerTextView = new TextView(context);
-            headerTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+            headerTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
             headerTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
             headerTextView.setText(getString(R.string.StarsBalance));
             headerTextView.setGravity(Gravity.RIGHT);
@@ -811,7 +813,7 @@ public class StarsIntroActivity extends GradientHeaderActivity implements Notifi
             amountTextView.adaptWidth = true;
             amountTextView.getDrawable().setHacks(false, true, true);
             amountTextView.setTypeface(AndroidUtilities.bold());
-            amountTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+            amountTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
             amountTextView.setTextSize(dp(13));
             amountTextView.setGravity(Gravity.RIGHT);
             amountTextView.setPadding(dp(19), 0, 0, 0);
@@ -919,6 +921,7 @@ public class StarsIntroActivity extends GradientHeaderActivity implements Notifi
 
     public static class StarTierView extends FrameLayout {
 
+        private final Theme.ResourcesProvider resourcesProvider;
         private final Drawable starDrawableOutline;
         private final Drawable starDrawable;
         private final TextView textView;
@@ -926,6 +929,7 @@ public class StarsIntroActivity extends GradientHeaderActivity implements Notifi
 
         public StarTierView(@NonNull Context context, Theme.ResourcesProvider resourcesProvider) {
             super(context);
+            this.resourcesProvider = resourcesProvider;
 
             starDrawableOutline = context.getResources().getDrawable(R.drawable.star_small_outline).mutate();
             starDrawableOutline.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_dialogBackground, resourcesProvider), PorterDuff.Mode.SRC_IN));
@@ -1000,7 +1004,9 @@ public class StarsIntroActivity extends GradientHeaderActivity implements Notifi
             }
 
             if (needDivider) {
-                canvas.drawRect(LocaleController.isRTL ? 0 : dp(22), getMeasuredHeight() - 1, getMeasuredWidth() - (LocaleController.isRTL ? dp(22) : 0), getMeasuredHeight(), Theme.dividerPaint);
+                Paint paint = resourcesProvider != null ? resourcesProvider.getPaint(Theme.key_paint_divider) : null;
+                if (paint == null) paint = Theme.dividerPaint;
+                canvas.drawRect(LocaleController.isRTL ? 0 : dp(22), getMeasuredHeight() - 1, getMeasuredWidth() - (LocaleController.isRTL ? dp(22) : 0), getMeasuredHeight(), paint);
             }
         }
 
@@ -1627,9 +1633,9 @@ public class StarsIntroActivity extends GradientHeaderActivity implements Notifi
                     } else if (transaction.stargift instanceof TL_stars.TL_starGiftUnique) {
                         subtitleTextView.setText(getString(transaction.refund ? R.string.StarGiftTransactionGiftTransferRefund : R.string.StarGiftTransactionGiftTransfer));
                     } else if (transaction.refund) {
-                        subtitleTextView.setText(TextUtils.concat(spanString, " ", LocaleController.getString(transaction.amount.amount > 0 ? (transaction.stargift_upgrade ? R.string.Gift2TransactionRefundedUpgrade : R.string.Gift2TransactionRefundedSent) : R.string.Gift2TransactionRefundedConverted)));
+                        subtitleTextView.setText(TextUtils.concat(spanString, " ", LocaleController.getString(transaction.stargift_auction_bid ? R.string.Gift2TransactionRefundedAuctionBid : transaction.amount.amount > 0 ? (transaction.stargift_upgrade ? R.string.Gift2TransactionRefundedUpgrade : R.string.Gift2TransactionRefundedSent) : R.string.Gift2TransactionRefundedConverted)));
                     } else {
-                        subtitleTextView.setText(TextUtils.concat(spanString, " ", LocaleController.getString(transaction.amount.amount > 0 ? R.string.Gift2TransactionConverted : (transaction.stargift_upgrade ? R.string.Gift2TransactionUpgraded : R.string.Gift2TransactionSent))));
+                        subtitleTextView.setText(TextUtils.concat(spanString, " ", LocaleController.getString(transaction.stargift_auction_bid ? R.string.Gift2TransactionAuctionBid : transaction.amount.amount > 0 ? R.string.Gift2TransactionConverted : (transaction.stargift_upgrade ? R.string.Gift2TransactionUpgraded : R.string.Gift2TransactionSent))));
                     }
                 } else if (transaction.subscription) {
                     titleTextView.setText(username);
@@ -1641,6 +1647,10 @@ public class StarsIntroActivity extends GradientHeaderActivity implements Notifi
                         subtitleTextView.setVisibility(VISIBLE);
                         subtitleTextView.setText(String.format(Locale.US, "%s subscription fee", period));
                     }
+                } else if (transaction.phonegroup_message) {
+                    titleTextView.setText(username);
+                    subtitleTextView.setVisibility(deleted ? GONE : VISIBLE);
+                    subtitleTextView.setText(LocaleController.getString(R.string.StarsTransactionLiveStoryMessageFee));
                 } else if (transaction.paid_message) {
                     titleTextView.setText(username);
                     subtitleTextView.setVisibility(deleted ? GONE : VISIBLE);
@@ -2115,7 +2125,7 @@ public class StarsIntroActivity extends GradientHeaderActivity implements Notifi
             imageViewLayout.addView(backgroundLayout, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 16+2.66f, Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL));
         }
 
-        StarsBalanceView balanceView = new StarsBalanceView(context, currentAccount);
+        StarsBalanceView balanceView = new StarsBalanceView(context, currentAccount, resourcesProvider);
         ScaleStateListAnimator.apply(balanceView);
         balanceView.setOnClickListener(v -> {
             if (balanceView.lastBalance <= 0) return;
@@ -2323,7 +2333,7 @@ public class StarsIntroActivity extends GradientHeaderActivity implements Notifi
         starFgView.setTranslationX(dp(26));
         starFgView.setTranslationY(dp(26));
 
-        StarsBalanceView balanceView = new StarsBalanceView(context, currentAccount);
+        StarsBalanceView balanceView = new StarsBalanceView(context, currentAccount, resourcesProvider);
         ScaleStateListAnimator.apply(balanceView);
         balanceView.setOnClickListener(v -> {
             if (balanceView.lastBalance <= 0) return;
@@ -2655,6 +2665,7 @@ public class StarsIntroActivity extends GradientHeaderActivity implements Notifi
         public static final int TYPE_STAR_GIFT_BUY_RESALE = 14;
         public static final int TYPE_SEARCH = 15;
         public static final int TYPE_REMOVE_GIFT_DESCRIPTION = 16;
+        public static final int TYPE_LIVE_COMMENTS = 17;
 
         public StarsNeededSheet(
             Context context,
@@ -2728,6 +2739,8 @@ public class StarsIntroActivity extends GradientHeaderActivity implements Notifi
                 stringRes = "StarsNeededTextSearch";
             } else if (type == TYPE_REMOVE_GIFT_DESCRIPTION) {
                 stringRes = "StarsNeededRemoveGiftDescription";
+            } else if (type == TYPE_LIVE_COMMENTS) {
+                stringRes = "StarsNeededLiveComments";
             } else {
                 stringRes = "StarsNeededText";
             }
@@ -2905,7 +2918,7 @@ public class StarsIntroActivity extends GradientHeaderActivity implements Notifi
                 topView.addView(iconView, LayoutHelper.createFrame(170, 170, Gravity.CENTER, 0, 32, 0, 24));
                 iconView.setPaused(false);
 
-                balanceView = new StarsBalanceView(context, currentAccount);
+                balanceView = new StarsBalanceView(context, currentAccount, resourcesProvider);
                 ScaleStateListAnimator.apply(balanceView);
                 balanceView.setOnClickListener(v -> {
                     if (balanceView.lastBalance <= 0) return;
@@ -3361,6 +3374,9 @@ public class StarsIntroActivity extends GradientHeaderActivity implements Notifi
         if (t.premium_gift) {
             return LocaleController.getString(R.string.StarsTransactionPremiumGift);
         }
+        if (t.phonegroup_message) {
+            return getString(R.string.StarsTransactionLiveStoryMessageFee);
+        }
         if (t.paid_message) {
             return LocaleController.formatPluralStringComma("StarsTransactionMessageFee", t.paid_messages);
         }
@@ -3380,9 +3396,9 @@ public class StarsIntroActivity extends GradientHeaderActivity implements Notifi
             if (t.stargift_prepaid_upgrade) {
                 return getString(R.string.Gift2TransactionPrepaidUpgrade);
             } else if (t.refund) {
-                return LocaleController.getString(t.amount.amount > 0 ? (t.stargift_upgrade ? R.string.Gift2TransactionRefundedUpgrade : R.string.Gift2TransactionRefundedSent) : R.string.Gift2TransactionRefundedConverted);
+                return LocaleController.getString(t.stargift_auction_bid ? R.string.Gift2TransactionRefundedAuctionBid : t.amount.amount > 0 ? (t.stargift_upgrade ? R.string.Gift2TransactionRefundedUpgrade : R.string.Gift2TransactionRefundedSent) : R.string.Gift2TransactionRefundedConverted);
             } else {
-                return LocaleController.getString(t.amount.amount > 0 ? R.string.Gift2TransactionConverted : (t.stargift_upgrade ? R.string.Gift2TransactionUpgraded : R.string.Gift2TransactionSent));
+                return LocaleController.getString(t.stargift_auction_bid ? R.string.Gift2TransactionAuctionBid : t.amount.amount > 0 ? R.string.Gift2TransactionConverted : (t.stargift_upgrade ? R.string.Gift2TransactionUpgraded : R.string.Gift2TransactionSent));
             }
         }
         if (t.subscription) {

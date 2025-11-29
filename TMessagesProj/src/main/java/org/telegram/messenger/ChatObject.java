@@ -918,7 +918,10 @@ public class ChatObject {
             if (peer == null) {
                 selfPeer = null;
             } else {
-                if (peer instanceof TLRPC.TL_inputPeerUser) {
+                if (peer instanceof TLRPC.TL_inputPeerSelf) {
+                    selfPeer = new TLRPC.TL_peerUser();
+                    selfPeer.user_id = currentAccount.getUserConfig().getClientUserId();
+                } else if (peer instanceof TLRPC.TL_inputPeerUser) {
                     selfPeer = new TLRPC.TL_peerUser();
                     selfPeer.user_id = peer.user_id;
                 } else if (peer instanceof TLRPC.TL_inputPeerChat) {

@@ -4,6 +4,7 @@ import org.telegram.tgnet.InputSerializedData;
 import org.telegram.tgnet.OutputSerializedData;
 import org.telegram.tgnet.TLMethod;
 import org.telegram.tgnet.TLObject;
+import org.telegram.tgnet.TLParseException;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.Vector;
 
@@ -21,16 +22,8 @@ public class TL_phone {
         public ArrayList<TLRPC.User> users = new ArrayList<>();
 
         public static joinAsPeers TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
-            if (joinAsPeers.constructor != constructor) {
-                if (exception) {
-                    throw new RuntimeException(String.format("can't parse magic %x in TL_phone_joinAsPeers", constructor));
-                } else {
-                    return null;
-                }
-            }
-            joinAsPeers result = new joinAsPeers();
-            result.readParams(stream, exception);
-            return result;
+            final joinAsPeers result = joinAsPeers.constructor != constructor ? null : new joinAsPeers();
+            return TLdeserialize(joinAsPeers.class, result, stream, constructor, exception);
         }
 
         public void readParams(InputSerializedData stream, boolean exception) {
@@ -57,16 +50,8 @@ public class TL_phone {
         public ArrayList<TLRPC.User> users = new ArrayList<>();
 
         public static groupCall TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
-            if (groupCall.constructor != constructor) {
-                if (exception) {
-                    throw new RuntimeException(String.format("can't parse magic %x in TL_phone_groupCall", constructor));
-                } else {
-                    return null;
-                }
-            }
-            groupCall result = new groupCall();
-            result.readParams(stream, exception);
-            return result;
+            final groupCall result = groupCall.constructor != constructor ? null : new groupCall();
+            return TLdeserialize(groupCall.class, result, stream, constructor, exception);
         }
 
         public void readParams(InputSerializedData stream, boolean exception) {
@@ -137,13 +122,7 @@ public class TL_phone {
                     result = new TL_phoneCallDiscarded();
                     break;
             }
-            if (result == null && exception) {
-                throw new RuntimeException(String.format("can't parse magic %x in PhoneCall", constructor));
-            }
-            if (result != null) {
-                result.readParams(stream, exception);
-            }
-            return result;
+            return TLdeserialize(PhoneCall.class, result, stream, constructor, exception);
         }
     }
 
@@ -373,16 +352,8 @@ public class TL_phone {
         public String key;
 
         public static groupCallStreamRtmpUrl TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
-            if (groupCallStreamRtmpUrl.constructor != constructor) {
-                if (exception) {
-                    throw new RuntimeException(String.format("can't parse magic %x in TL_phone_groupCallStreamRtmpUrl", constructor));
-                } else {
-                    return null;
-                }
-            }
-            groupCallStreamRtmpUrl result = new groupCallStreamRtmpUrl();
-            result.readParams(stream, exception);
-            return result;
+            final groupCallStreamRtmpUrl result = groupCallStreamRtmpUrl.constructor != constructor ? null : new groupCallStreamRtmpUrl();
+            return TLdeserialize(groupCallStreamRtmpUrl.class, result, stream, constructor, exception);
         }
 
         public void readParams(InputSerializedData stream, boolean exception) {
@@ -404,16 +375,8 @@ public class TL_phone {
         public ArrayList<TLRPC.User> users = new ArrayList<>();
 
         public static TL_phone_phoneCall TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
-            if (TL_phone_phoneCall.constructor != constructor) {
-                if (exception) {
-                    throw new RuntimeException(String.format("can't parse magic %x in TL_phone_phoneCall", constructor));
-                } else {
-                    return null;
-                }
-            }
-            TL_phone_phoneCall result = new TL_phone_phoneCall();
-            result.readParams(stream, exception);
-            return result;
+            final TL_phone_phoneCall result = TL_phone_phoneCall.constructor != constructor ? null : new TL_phone_phoneCall();
+            return TLdeserialize(TL_phone_phoneCall.class, result, stream, constructor, exception);
         }
 
         public void readParams(InputSerializedData stream, boolean exception) {
@@ -439,16 +402,8 @@ public class TL_phone {
         public int version;
 
         public static groupParticipants TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
-            if (groupParticipants.constructor != constructor) {
-                if (exception) {
-                    throw new RuntimeException(String.format("can't parse magic %x in TL_phone_groupParticipants", constructor));
-                } else {
-                    return null;
-                }
-            }
-            groupParticipants result = new groupParticipants();
-            result.readParams(stream, exception);
-            return result;
+            final groupParticipants result = groupParticipants.constructor != constructor ? null : new groupParticipants();
+            return TLdeserialize(groupParticipants.class, result, stream, constructor, exception);
         }
 
         public void readParams(InputSerializedData stream, boolean exception) {
@@ -477,16 +432,8 @@ public class TL_phone {
         public String link;
 
         public static exportedGroupCallInvite TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
-            if (exportedGroupCallInvite.constructor != constructor) {
-                if (exception) {
-                    throw new RuntimeException(String.format("can't parse magic %x in TL_phone_exportedGroupCallInvite", constructor));
-                } else {
-                    return null;
-                }
-            }
-            exportedGroupCallInvite result = new exportedGroupCallInvite();
-            result.readParams(stream, exception);
-            return result;
+            final exportedGroupCallInvite result = exportedGroupCallInvite.constructor != constructor ? null : new exportedGroupCallInvite();
+            return TLdeserialize(exportedGroupCallInvite.class, result, stream, constructor, exception);
         }
 
         public void readParams(InputSerializedData stream, boolean exception) {
@@ -785,11 +732,12 @@ public class TL_phone {
     }
 
     public static class toggleGroupCallSettings extends TLMethod<TLRPC.Updates> {
-        public static final int constructor = 0xe9723804;
+        public static final int constructor = 0x974392f2;
         public boolean reset_invite_hash;
         public TLRPC.InputGroupCall call;
         public Boolean join_muted;
         public Boolean messages_enabled;
+        public Long send_paid_messages_stars;
 
         @Override
         public TLRPC.Updates deserializeResponseT(InputSerializedData stream, int constructor, boolean exception) {
@@ -798,19 +746,21 @@ public class TL_phone {
 
         public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
-
             int flags = 0;
-            flags = BitwiseUtils.setFlag(flags, FLAG_0, join_muted != null);
-            flags = BitwiseUtils.setFlag(flags, FLAG_1, reset_invite_hash);
-            flags = BitwiseUtils.setFlag(flags, FLAG_2, messages_enabled != null);
-
+            flags = setFlag(flags, FLAG_0, join_muted != null);
+            flags = setFlag(flags, FLAG_1, reset_invite_hash);
+            flags = setFlag(flags, FLAG_2, messages_enabled != null);
+            flags = setFlag(flags, FLAG_3, send_paid_messages_stars != null);
             stream.writeInt32(flags);
             call.serializeToStream(stream);
-            if (BitwiseUtils.hasFlag(flags, FLAG_0)) {
+            if (hasFlag(flags, FLAG_0)) {
                 stream.writeBool(join_muted);
             }
-            if (BitwiseUtils.hasFlag(flags, FLAG_2)) {
+            if (hasFlag(flags, FLAG_2)) {
                 stream.writeBool(messages_enabled);
+            }
+            if (hasFlag(flags, FLAG_3)) {
+                stream.writeInt64(send_paid_messages_stars);
             }
         }
     }
@@ -1069,16 +1019,8 @@ public class TL_phone {
         public long last_timestamp_ms;
 
         public static TL_groupCallStreamChannel TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
-            if (TL_groupCallStreamChannel.constructor != constructor) {
-                if (exception) {
-                    throw new RuntimeException(String.format("can't parse magic %x in TL_groupCallStreamChannel", constructor));
-                } else {
-                    return null;
-                }
-            }
-            TL_groupCallStreamChannel result = new TL_groupCallStreamChannel();
-            result.readParams(stream, exception);
-            return result;
+            final TL_groupCallStreamChannel result = TL_groupCallStreamChannel.constructor != constructor ? null : new TL_groupCallStreamChannel();
+            return TLdeserialize(TL_groupCallStreamChannel.class, result, stream, constructor, exception);
         }
 
         public void readParams(InputSerializedData stream, boolean exception) {
@@ -1101,16 +1043,8 @@ public class TL_phone {
         public ArrayList<TL_groupCallStreamChannel> channels = new ArrayList<>();
 
         public static groupCallStreamChannels TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
-            if (groupCallStreamChannels.constructor != constructor) {
-                if (exception) {
-                    throw new RuntimeException(String.format("can't parse magic %x in TL_phone_groupCallStreamChannels", constructor));
-                } else {
-                    return null;
-                }
-            }
-            groupCallStreamChannels result = new groupCallStreamChannels();
-            result.readParams(stream, exception);
-            return result;
+            final groupCallStreamChannels result = groupCallStreamChannels.constructor != constructor ? null : new groupCallStreamChannels();
+            return TLdeserialize(groupCallStreamChannels.class, result, stream, constructor, exception);
         }
 
         public void readParams(InputSerializedData stream, boolean exception) {
@@ -1154,8 +1088,10 @@ public class TL_phone {
     }
 
     public static class getGroupCallStreamRtmpUrl extends TLObject {
-        public static final int constructor = 0xdeb3abbf;
+        public static final int constructor = 0x5af4c73a;
 
+        public int flags;
+        public boolean live_story;
         public TLRPC.InputPeer peer;
         public boolean revoke;
 
@@ -1165,6 +1101,8 @@ public class TL_phone {
 
         public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
+            flags = setFlag(flags, FLAG_0, live_story);
+            stream.writeInt32(flags);
             peer.serializeToStream(stream);
             stream.writeBool(revoke);
         }
@@ -1188,13 +1126,7 @@ public class TL_phone {
                     result = new TL_phoneCallProtocol_layer110();
                     break;
             }
-            if (result == null && exception) {
-                throw new RuntimeException(String.format("can't parse magic %x in PhoneCallProtocol", constructor));
-            }
-            if (result != null) {
-                result.readParams(stream, exception);
-            }
-            return result;
+            return TLdeserialize(PhoneCallProtocol.class, result, stream, constructor, exception);
         }
     }
 
@@ -1401,24 +1333,35 @@ public class TL_phone {
         }
     }
 
-    public static class sendGroupCallMessage extends TLMethod<TLRPC.Bool> {
-        public static final int constructor = 0x87893014;
+    public static class sendGroupCallMessage extends TLMethod<TLRPC.Updates> {
+        public static final int constructor = 0xb1d11410;
 
+        public int flags;
         public TLRPC.InputGroupCall call;
         public long random_id;
         public TLRPC.TL_textWithEntities message;
+        public long allow_paid_stars;
+        public TLRPC.InputPeer send_as;
 
         @Override
         public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
+            flags = setFlag(flags, FLAG_1, send_as != null);
+            stream.writeInt32(flags);
             call.serializeToStream(stream);
             stream.writeInt64(random_id);
             message.serializeToStream(stream);
+            if (hasFlag(flags, FLAG_0)) {
+                stream.writeInt64(allow_paid_stars);
+            }
+            if (hasFlag(flags, FLAG_1)) {
+                send_as.serializeToStream(stream);
+            }
         }
 
         @Override
-        public TLRPC.Bool deserializeResponseT(InputSerializedData stream, int constructor, boolean exception) {
-            return TLRPC.Bool.TLdeserialize(stream, constructor, exception);
+        public TLRPC.Updates deserializeResponseT(InputSerializedData stream, int constructor, boolean exception) {
+            return TLRPC.Updates.TLdeserialize(stream, constructor, exception);
         }
     }
 
@@ -1433,6 +1376,174 @@ public class TL_phone {
             stream.writeInt32(constructor);
             call.serializeToStream(stream);
             stream.writeByteArray(encrypted_message);
+        }
+
+        @Override
+        public TLRPC.Bool deserializeResponseT(InputSerializedData stream, int constructor, boolean exception) {
+            return TLRPC.Bool.TLdeserialize(stream, constructor, exception);
+        }
+    }
+
+    public static class deleteGroupCallMessages extends TLMethod<TLRPC.Updates> {
+        public static final int constructor = 0xf64f54f7;
+
+        public int flags;
+        public boolean report_spam;
+        public TLRPC.InputGroupCall call;
+        public ArrayList<Integer> messages = new ArrayList<>();
+
+        @Override
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+            flags = setFlag(flags, FLAG_0, report_spam);
+            stream.writeInt32(flags);
+            call.serializeToStream(stream);
+            Vector.serializeInt(stream, messages);
+        }
+
+        @Override
+        public TLRPC.Updates deserializeResponseT(InputSerializedData stream, int constructor, boolean exception) {
+            return TLRPC.Updates.TLdeserialize(stream, constructor, exception);
+        }
+    }
+
+    public static class deleteGroupCallParticipantMessages extends TLMethod<TLRPC.Updates> {
+        public static final int constructor = 0x1dbfeca0;
+
+        public int flags;
+        public boolean report_spam;
+        public TLRPC.InputGroupCall call;
+        public TLRPC.InputPeer participant;
+
+        @Override
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+            flags = setFlag(flags, FLAG_0, report_spam);
+            stream.writeInt32(flags);
+            call.serializeToStream(stream);
+            participant.serializeToStream(stream);
+        }
+
+        @Override
+        public TLRPC.Updates deserializeResponseT(InputSerializedData stream, int constructor, boolean exception) {
+            return TLRPC.Updates.TLdeserialize(stream, constructor, exception);
+        }
+    }
+
+    public static class groupCallDonor extends TLObject {
+        public static final int constructor = 0xee430c85;
+
+        public int flags;
+        public boolean top;
+        public boolean my;
+        public boolean anonymous;
+        public TLRPC.Peer peer_id;
+        public long stars;
+
+        public static groupCallDonor TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
+            return TLdeserialize(
+                groupCallDonor.class,
+                constructor == groupCallDonor.constructor ?
+                    new groupCallDonor() :
+                    null,
+                stream,
+                constructor,
+                exception
+            );
+        }
+
+        @Override
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+            flags = setFlag(flags, FLAG_0, top);
+            flags = setFlag(flags, FLAG_1, my);
+            flags = setFlag(flags, FLAG_2, anonymous);
+            stream.writeInt32(flags);
+            if (hasFlag(flags, FLAG_3)) {
+                peer_id.serializeToStream(stream);
+            }
+            stream.writeInt64(stars);
+        }
+
+        @Override
+        public void readParams(InputSerializedData stream, boolean exception) {
+            flags = stream.readInt32(exception);
+            top = hasFlag(flags, FLAG_0);
+            my = hasFlag(flags, FLAG_1);
+            anonymous = hasFlag(flags, FLAG_2);
+            if (hasFlag(flags, FLAG_3)) {
+                peer_id = TLRPC.Peer.TLdeserialize(stream, stream.readInt32(exception), exception);
+            }
+            stars = stream.readInt64(exception);
+        }
+    }
+
+    public static class groupCallStars extends TLObject {
+        public static final int constructor = 0x9d1dbd26;
+
+        public long total_stars;
+        public ArrayList<groupCallDonor> top_donors = new ArrayList<>();
+        public ArrayList<TLRPC.Chat> chats = new ArrayList<>();
+        public ArrayList<TLRPC.User> users = new ArrayList<>();
+
+        public static groupCallStars TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
+            return TLdeserialize(
+                groupCallStars.class,
+                constructor == groupCallStars.constructor ?
+                    new groupCallStars() :
+                    null,
+                stream,
+                constructor,
+                exception
+            );
+        }
+
+        @Override
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+            stream.writeInt64(total_stars);
+            Vector.serialize(stream, top_donors);
+            Vector.serialize(stream, chats);
+            Vector.serialize(stream, users);
+        }
+
+        @Override
+        public void readParams(InputSerializedData stream, boolean exception) {
+            total_stars = stream.readInt64(exception);
+            top_donors = Vector.deserialize(stream, groupCallDonor::TLdeserialize, exception);
+            chats = Vector.deserialize(stream, TLRPC.Chat::TLdeserialize, exception);
+            users = Vector.deserialize(stream, TLRPC.User::TLdeserialize, exception);
+        }
+    }
+
+    public static class getGroupCallStars extends TLMethod<groupCallStars> {
+        public static final int constructor = 0x6f636302;
+
+        public TLRPC.InputGroupCall call;
+
+        @Override
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+            call.serializeToStream(stream);
+        }
+
+        @Override
+        public groupCallStars deserializeResponseT(InputSerializedData stream, int constructor, boolean exception) {
+            return groupCallStars.TLdeserialize(stream, constructor, exception);
+        }
+    }
+
+    public static class saveDefaultSendAs extends TLMethod<TLRPC.Bool> {
+        public static final int constructor = 0x4167add1;
+
+        public TLRPC.InputGroupCall call;
+        public TLRPC.InputPeer send_as;
+
+        @Override
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+            call.serializeToStream(stream);
+            send_as.serializeToStream(stream);
         }
 
         @Override

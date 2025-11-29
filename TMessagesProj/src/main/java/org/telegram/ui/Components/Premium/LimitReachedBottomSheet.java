@@ -878,7 +878,7 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView imp
         for (Object obj : selectedChats) {
             TLRPC.User user = (TLRPC.User) obj;
             final Long price = prices == null ? 0 : prices.get(user.id);
-            final SendMessagesHelper.SendMessageParams params = SendMessagesHelper.SendMessageParams.of(link, user.id, null, null, null, true, null, null, null, false, 0, null, false);
+            final SendMessagesHelper.SendMessageParams params = SendMessagesHelper.SendMessageParams.of(link, user.id, null, null, null, true, null, null, null, false, 0, 0, null, false);
             params.payStars = price == null ? 0 : price;
             SendMessagesHelper.getInstance(currentAccount).sendMessage(params);
             if (params.payStars > 0) {

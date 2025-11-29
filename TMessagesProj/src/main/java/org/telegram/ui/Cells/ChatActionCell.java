@@ -9,6 +9,7 @@
 package org.telegram.ui.Cells;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
+import static org.telegram.messenger.LocaleController.formatNumber;
 import static org.telegram.messenger.LocaleController.formatPluralStringComma;
 import static org.telegram.messenger.LocaleController.formatString;
 import static org.telegram.messenger.LocaleController.getString;
@@ -1976,8 +1977,19 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
                     }
                     final SpannableStringBuilder sb = new SpannableStringBuilder();
                     final TLObject sender = MessagesController.getInstance(currentAccount).getUserOrChat(fromId);
+                    long toId = DialogObject.getPeerDialogId(action.to_id);
+                    final TLObject recipient = MessagesController.getInstance(currentAccount).getUserOrChat(toId);
                     final boolean freeUpgrade = action.can_upgrade && !action.converted && action.upgrade_stars > 0 && !action.upgraded;
-                    if (self) {
+                    if (toId != 0 && action.auction_acquired && recipient != null) {
+                        sb.append(getString(R.string.Gift2ActionTitleTo)).append(" ");
+                        if (DialogObject.hasPhoto(recipient)) {
+                            sb.append("a ");
+                            final AvatarSpan avatarSpan = new AvatarSpan(this, currentAccount, 18);
+                            avatarSpan.setObject(recipient);
+                            sb.setSpan(avatarSpan, sb.length() - 2, sb.length() - 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                        }
+                        sb.append(DialogObject.getShortName(recipient));
+                    } else if (self) {
                         sb.append(getString(R.string.Gift2ActionSelfTitle));
                     } else {
                         sb.append(LocaleController.getString(action.prepaid_upgrade ? R.string.Gift2ActionUpgradeTitle : R.string.Gift2ActionTitle)).append(" ");
@@ -2000,7 +2012,9 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
                         MessageObject.addEntitiesToText(title, action.message.entities, false, false, true, true);
                         title = Emoji.replaceEmoji(title, giftTextPaint.getFontMetricsInt(), false, null);
                         title = MessageObject.replaceAnimatedEmoji(title, action.message.entities, giftTextPaint.getFontMetricsInt());
-                    } else if (isForChannel) {
+                    } else if (action.auction_acquired) {
+                        title = formatString(R.string.Gift2ActionWonActionText, formatNumber(action.gift.stars, ','));
+                    }  else if (isForChannel) {
                         if (action.converted) {
                             title = formatPluralStringComma("Gift2ActionConvertedInfo", (int) stars);
                         } else if (canConvert && stars > 0) {

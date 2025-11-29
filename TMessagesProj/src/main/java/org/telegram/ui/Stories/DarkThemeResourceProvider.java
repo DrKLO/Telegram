@@ -62,10 +62,10 @@ public class DarkThemeResourceProvider implements Theme.ResourcesProvider {
         sparseIntArray.put(Theme.key_featuredStickers_addedIcon, Color.WHITE);
         sparseIntArray.put(Theme.key_actionBarDefault, Color.WHITE);
         sparseIntArray.put(Theme.key_chat_gifSaveHintText, Color.WHITE);
-        sparseIntArray.put(Theme.key_chat_messagePanelSend, Color.WHITE);
+//        sparseIntArray.put(Theme.key_chat_messagePanelSend, Color.WHITE);
 
         sparseIntArray.put(Theme.key_chat_emojiSearchBackground, ColorUtils.setAlphaComponent(Color.WHITE, 30));
-        sparseIntArray.put(Theme.key_chat_emojiPanelBackground, 0xc0000000);
+        sparseIntArray.put(Theme.key_chat_emojiPanelBackground, 0xFF20242A);
         sparseIntArray.put(Theme.key_actionBarActionModeDefaultIcon, Color.WHITE);
 
         sparseIntArray.put(Theme.key_dialogSearchHint, ColorUtils.blendARGB(Color.BLACK, Color.WHITE, 0.5f));
@@ -80,12 +80,13 @@ public class DarkThemeResourceProvider implements Theme.ResourcesProvider {
         sparseIntArray.put(Theme.key_chat_recordTime, 2030043135);
         sparseIntArray.put(Theme.key_chat_recordVoiceCancel, -10638868);
         sparseIntArray.put(Theme.key_chat_messagePanelCursor, -1);
-        sparseIntArray.put(Theme.key_chat_messagePanelHint, 1694498815);
+        sparseIntArray.put(Theme.key_chat_messagePanelHint, Theme.multAlpha(Color.WHITE, 0.6f));
         sparseIntArray.put(Theme.key_chat_inTextSelectionHighlight, -1515107571);
         sparseIntArray.put(Theme.key_chat_messageLinkOut, -5316609);
         sparseIntArray.put(Theme.key_chat_messagePanelText, -1);
-        sparseIntArray.put(Theme.key_chat_messagePanelIcons, Color.WHITE);
-        sparseIntArray.put(Theme.key_chat_messagePanelBackground, ColorUtils.setAlphaComponent(Color.BLACK, 122));
+        sparseIntArray.put(Theme.key_chat_messagePanelIcons, Theme.multAlpha(Color.WHITE, 0.9f));
+        sparseIntArray.put(Theme.key_glass_defaultIcon, Theme.multAlpha(Color.WHITE, 0.8f));
+        sparseIntArray.put(Theme.key_chat_messagePanelBackground, 0xFF20242A);
         sparseIntArray.put(Theme.key_dialogBackground, 0xFF1F1F1F);
         sparseIntArray.put(Theme.key_dialogBackgroundGray, 0xff000000);
         sparseIntArray.put(Theme.key_dialog_inlineProgressBackground, -15393241);
@@ -175,6 +176,11 @@ public class DarkThemeResourceProvider implements Theme.ResourcesProvider {
         sparseIntArray.put(Theme.key_share_icon, -1);
         sparseIntArray.put(Theme.key_share_linkText, 0xB7FFFFFF);
         sparseIntArray.put(Theme.key_share_linkBackground, 352321535);
+
+        sparseIntArray.put(Theme.key_player_time, -8553091);
+        sparseIntArray.put(Theme.key_player_progress, -11292689);
+        sparseIntArray.put(Theme.key_player_progressBackground, -12829636);
+        sparseIntArray.put(Theme.key_player_progressCachedBackground, -11184811);
 
         appendColors();
         dividerPaint.setColor(getColor(Theme.key_divider));

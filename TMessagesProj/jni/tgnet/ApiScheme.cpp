@@ -366,6 +366,17 @@ TL_restrictionReason *TL_restrictionReason::TLdeserialize(NativeByteBuffer *stre
     return result;
 }
 
+TL_recentStory *TL_recentStory::TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, int32_t instanceNum, bool &error) {
+    if (TL_recentStory::constructor != constructor) {
+        error = true;
+        if (LOGS_ENABLED) DEBUG_FATAL("can't parse magic %x in TL_recentStory", constructor);
+        return nullptr;
+    }
+    TL_recentStory *result = new TL_recentStory();
+    result->readParams(stream, instanceNum, error);
+    return result;
+}
+
 TL_username *TL_username::TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, int32_t instanceNum, bool &error) {
     if (TL_username::constructor != constructor) {
         error = true;
@@ -399,6 +410,23 @@ void TL_restrictionReason::serializeToStream(NativeByteBuffer *stream) {
     stream->writeString(platform);
     stream->writeString(reason);
     stream->writeString(text);
+}
+
+void TL_recentStory::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error) {
+    flags = stream->readInt32(&error);
+    is_live = (flags & 1) != 0;
+    if ((flags & 2) != 0) {
+        max_id = stream->readInt32(&error);
+    }
+}
+
+void TL_recentStory::serializeToStream(NativeByteBuffer *stream) {
+    stream->writeInt32(constructor);
+    flags = is_live ? flags | 1 : flags &~ 1;
+    stream->writeInt32(flags);
+    if ((flags & 2) != 0) {
+        stream->writeInt32(max_id);
+    }
 }
 
 void TL_username::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error) {
@@ -551,8 +579,8 @@ User *User::TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, int32_
         case TL_user::constructor:
             result = new TL_user();
             break;
-        case TL_user_layer199::constructor:
-            result = new TL_user_layer199();
+        case TL_user_layer216::constructor:
+            result = new TL_user_layer216();
             break;
         default:
             error = true;
@@ -642,7 +670,7 @@ void TL_user::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &er
         }
     }
     if ((flags2 & 32) != 0) {
-        stories_max_id = stream->readInt32(&error);
+        stories_max_id = std::unique_ptr<TL_recentStory>(TL_recentStory::TLdeserialize(stream, stream->readInt32(&error), instanceNum, error));
     }
     if ((flags2 & 256) != 0) {
         color = std::unique_ptr<TL_peerColor>(TL_peerColor::TLdeserialize(stream, stream->readUint32(&error), instanceNum, error));
@@ -716,7 +744,7 @@ void TL_user::serializeToStream(NativeByteBuffer *stream) {
         }
     }
     if ((flags2 & 32) != 0) {
-        stream->writeInt32(stories_max_id);
+        stories_max_id->serializeToStream(stream);
     }
     if ((flags2 & 256) != 0) {
         color->serializeToStream(stream);
@@ -735,7 +763,7 @@ void TL_user::serializeToStream(NativeByteBuffer *stream) {
     }
 }
 
-void TL_user_layer199::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error) {
+void TL_user_layer216::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error) {
     flags = stream->readInt32(&error);
     flags2 = stream->readInt32(&error);
     id = stream->readInt64(&error);
@@ -805,7 +833,9 @@ void TL_user_layer199::readParams(NativeByteBuffer *stream, int32_t instanceNum,
         }
     }
     if ((flags2 & 32) != 0) {
-        stories_max_id = stream->readInt32(&error);
+        stories_max_id = std::make_unique<TL_recentStory>();
+        stories_max_id->flags |= 2;
+        stories_max_id->max_id = stream->readInt32(&error);
     }
     if ((flags2 & 256) != 0) {
         color = std::unique_ptr<TL_peerColor>(TL_peerColor::TLdeserialize(stream, stream->readUint32(&error), instanceNum, error));
@@ -819,9 +849,12 @@ void TL_user_layer199::readParams(NativeByteBuffer *stream, int32_t instanceNum,
     if ((flags2 & 16384) != 0) {
         bot_verification_icon = stream->readInt64(&error);
     }
+    if ((flags2 & 32768) != 0) {
+        send_paid_messages_stars = stream->readInt64(&error);
+    }
 }
 
-void TL_user_layer199::serializeToStream(NativeByteBuffer *stream) {
+void TL_user_layer216::serializeToStream(NativeByteBuffer *stream) {
     stream->writeInt32(constructor);
     stream->writeInt32(flags);
     stream->writeInt32(flags2);
@@ -876,7 +909,7 @@ void TL_user_layer199::serializeToStream(NativeByteBuffer *stream) {
         }
     }
     if ((flags2 & 32) != 0) {
-        stream->writeInt32(stories_max_id);
+        stream->writeInt32(stories_max_id ? stories_max_id->max_id : 0);
     }
     if ((flags2 & 256) != 0) {
         color->serializeToStream(stream);
@@ -889,6 +922,9 @@ void TL_user_layer199::serializeToStream(NativeByteBuffer *stream) {
     }
     if ((flags2 & 16384) != 0) {
         stream->writeInt64(bot_verification_icon);
+    }
+    if ((flags2 & 32768) != 0) {
+        stream->writeInt64(send_paid_messages_stars);
     }
 }
 

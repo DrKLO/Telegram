@@ -24,6 +24,8 @@ public sealed class TlGen_StarsTransaction : TlGen_Object {
     public val posts_search: Boolean,
     public val stargift_prepaid_upgrade: Boolean,
     public val stargift_drop_original_details: Boolean,
+    public val phonegroup_message: Boolean,
+    public val stargift_auction_bid: Boolean,
     public val id: String,
     public val amount: TlGen_StarsAmount,
     public val date: Int,
@@ -75,6 +77,8 @@ public sealed class TlGen_StarsTransaction : TlGen_Object {
         if (posts_search) result = result or 16777216U
         if (stargift_prepaid_upgrade) result = result or 33554432U
         if (stargift_drop_original_details) result = result or 67108864U
+        if (phonegroup_message) result = result or 134217728U
+        if (stargift_auction_bid) result = result or 268435456U
         return result
       }
 

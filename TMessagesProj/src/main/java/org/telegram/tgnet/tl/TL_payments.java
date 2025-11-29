@@ -1,8 +1,8 @@
 package org.telegram.tgnet.tl;
 
-import org.telegram.tgnet.AbstractSerializedData;
 import org.telegram.tgnet.InputSerializedData;
 import org.telegram.tgnet.OutputSerializedData;
+import org.telegram.tgnet.TLMethod;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.Vector;
@@ -25,16 +25,8 @@ public class TL_payments {
         public long revenue;
 
         public static connectedBotStarRef TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
-            if (connectedBotStarRef.constructor != constructor) {
-                if (exception) {
-                    throw new RuntimeException(String.format("can't parse magic %x in TL_payments.connectedBotStarRef", constructor));
-                } else {
-                    return null;
-                }
-            }
-            connectedBotStarRef result = new connectedBotStarRef();
-            result.readParams(stream, exception);
-            return result;
+            final connectedBotStarRef result = connectedBotStarRef.constructor != constructor ? null : new connectedBotStarRef();
+            return TLdeserialize(connectedBotStarRef.class, result, stream, constructor, exception);
         }
 
         @Override
@@ -77,16 +69,8 @@ public class TL_payments {
         public ArrayList<TLRPC.User> users = new ArrayList<TLRPC.User>();
 
         public static connectedStarRefBots TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
-            if (connectedStarRefBots.constructor != constructor) {
-                if (exception) {
-                    throw new RuntimeException(String.format("can't parse magic %x in TL_payments.connectedStarRefBots", constructor));
-                } else {
-                    return null;
-                }
-            }
-            connectedStarRefBots result = new connectedStarRefBots();
-            result.readParams(stream, exception);
-            return result;
+            final connectedStarRefBots result = connectedStarRefBots.constructor != constructor ? null : new connectedStarRefBots();
+            return TLdeserialize(connectedStarRefBots.class, result, stream, constructor, exception);
         }
 
         @Override
@@ -115,16 +99,8 @@ public class TL_payments {
         public String next_offset;
 
         public static suggestedStarRefBots TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
-            if (suggestedStarRefBots.constructor != constructor) {
-                if (exception) {
-                    throw new RuntimeException(String.format("can't parse magic %x in TL_payments.suggestedStarRefBots", constructor));
-                } else {
-                    return null;
-                }
-            }
-            suggestedStarRefBots result = new suggestedStarRefBots();
-            result.readParams(stream, exception);
-            return result;
+            final suggestedStarRefBots result = suggestedStarRefBots.constructor != constructor ? null : new suggestedStarRefBots();
+            return TLdeserialize(suggestedStarRefBots.class, result, stream, constructor, exception);
         }
 
         @Override
@@ -162,16 +138,8 @@ public class TL_payments {
         public TL_stars.StarsAmount daily_revenue_per_user = TL_stars.StarsAmount.ofStars(0);
 
         public static starRefProgram TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
-            if (starRefProgram.constructor != constructor) {
-                if (exception) {
-                    throw new RuntimeException(String.format("can't parse magic %x in TL_payments.starRefProgram", constructor));
-                } else {
-                    return null;
-                }
-            }
-            starRefProgram result = new starRefProgram();
-            result.readParams(stream, exception);
-            return result;
+            final starRefProgram result = starRefProgram.constructor != constructor ? null : new starRefProgram();
+            return TLdeserialize(starRefProgram.class, result, stream, constructor, exception);
         }
 
         @Override
@@ -324,4 +292,167 @@ public class TL_payments {
         }
     }
 
+    public static abstract class StarGiftActiveAuctions extends TLObject {
+
+        private static StarGiftActiveAuctions fromConstructor(int constructor) {
+            switch (constructor) {
+                case TL_starGiftActiveAuctions.constructor:
+                    return new TL_starGiftActiveAuctions();
+                case TL_starGiftActiveAuctionsNotModified.constructor:
+                    return new TL_starGiftActiveAuctionsNotModified();
+            }
+            return null;
+        }
+
+        public static StarGiftActiveAuctions TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
+            return TLdeserialize(StarGiftActiveAuctions.class, fromConstructor(constructor), stream, constructor, exception);
+        }
+    }
+
+    public static class TL_starGiftActiveAuctionsNotModified extends StarGiftActiveAuctions {
+        public static final int constructor = 0xDB33DAD0;
+
+        @Override
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+        }
+
+        @Override
+        public void readParams(InputSerializedData stream, boolean exception) {
+
+        }
+    }
+
+    public static class TL_starGiftActiveAuctions extends StarGiftActiveAuctions {
+        public static final int constructor = 0x97F187D8;
+
+        public ArrayList<TL_stars.TL_StarGiftActiveAuctionState> auctions = new ArrayList<>();
+        public ArrayList<TLRPC.User> users = new ArrayList<>();
+
+        @Override
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+            Vector.serialize(stream, auctions);
+            Vector.serialize(stream, users);
+        }
+
+        @Override
+        public void readParams(InputSerializedData stream, boolean exception) {
+            auctions = Vector.deserialize(stream, TL_stars.TL_StarGiftActiveAuctionState::TLdeserialize, exception);
+            users = Vector.deserialize(stream, TLRPC.User::TLdeserialize, exception);
+        }
+    }
+
+    public static class TL_StarGiftAuctionAcquiredGifts extends TLObject {
+        public static final int constructor = 0x7D5BD1F0;
+
+        public ArrayList<TL_stars.TL_StarGiftAuctionAcquiredGift> gifts = new ArrayList<>();
+        public ArrayList<TLRPC.User> users = new ArrayList<>();
+        public ArrayList<TLRPC.Chat> chats = new ArrayList<>();
+
+        @Override
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+            Vector.serialize(stream, gifts);
+            Vector.serialize(stream, users);
+            Vector.serialize(stream, chats);
+        }
+
+        @Override
+        public void readParams(InputSerializedData stream, boolean exception) {
+            gifts = Vector.deserialize(stream, TL_stars.TL_StarGiftAuctionAcquiredGift::TLdeserialize, exception);
+            users = Vector.deserialize(stream, TLRPC.User::TLdeserialize, exception);
+            chats = Vector.deserialize(stream, TLRPC.Chat::TLdeserialize, exception);
+        }
+
+        public static TL_StarGiftAuctionAcquiredGifts TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
+            final TL_StarGiftAuctionAcquiredGifts result = TL_StarGiftAuctionAcquiredGifts.constructor != constructor ? null : new TL_StarGiftAuctionAcquiredGifts();
+            return TLdeserialize(TL_StarGiftAuctionAcquiredGifts.class, result, stream, constructor, exception);
+        }
+    }
+
+    public static class TL_StarGiftAuctionState extends TLObject {
+        public static final int constructor = 0x0E98E474;
+
+        public TL_stars.StarGift gift;
+        public TL_stars.StarGiftAuctionState state;
+        public TL_stars.TL_StarGiftAuctionUserState user_state;
+        public int timeout;
+        public ArrayList<TLRPC.User> users;
+
+        @Override
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+            gift.serializeToStream(stream);
+            state.serializeToStream(stream);
+            user_state.serializeToStream(stream);
+            stream.writeInt32(timeout);
+            Vector.serialize(stream, users);
+        }
+
+        @Override
+        public void readParams(InputSerializedData stream, boolean exception) {
+            gift = TL_stars.StarGift.TLdeserialize(stream, stream.readInt32(exception), exception);
+            state = TL_stars.StarGiftAuctionState.TLdeserialize(stream, stream.readInt32(exception), exception);
+            user_state = TL_stars.TL_StarGiftAuctionUserState.TLdeserialize(stream, stream.readInt32(exception), exception);
+            timeout = stream.readInt32(exception);
+            users = Vector.deserialize(stream, TLRPC.User::TLdeserialize, exception);
+        }
+
+        public static TL_StarGiftAuctionState TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
+            final TL_StarGiftAuctionState result = TL_StarGiftAuctionState.constructor != constructor ? null : new TL_StarGiftAuctionState();
+            return TLdeserialize(TL_StarGiftAuctionState.class, result, stream, constructor, exception);
+        }
+    }
+
+    public static class TL_getStarGiftAuctionState extends TLMethod<TL_StarGiftAuctionState> {
+        public static final int constructor = 0x5c9ff4d6;
+
+        public TL_stars.InputStarGiftAuction auction;
+        public int version;
+
+        @Override
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+            auction.serializeToStream(stream);
+            stream.writeInt32(version);
+        }
+
+        @Override
+        public TL_StarGiftAuctionState deserializeResponseT(InputSerializedData stream, int constructor, boolean exception) {
+            return TL_StarGiftAuctionState.TLdeserialize(stream, constructor, exception);
+        }
+    }
+
+    public static class TL_getStarGiftAuctionAcquiredGifts extends TLMethod<TL_StarGiftAuctionAcquiredGifts> {
+        public static final int constructor = 0x6ba2cbec;
+        public long gift_id;
+
+        @Override
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+            stream.writeInt64(gift_id);
+        }
+
+        @Override
+        public TL_StarGiftAuctionAcquiredGifts deserializeResponseT(InputSerializedData stream, int constructor, boolean exception) {
+            return TL_StarGiftAuctionAcquiredGifts.TLdeserialize(stream, constructor, exception);
+        }
+    }
+
+    public static class TL_getStarGiftActiveAuctions extends TLMethod<StarGiftActiveAuctions> {
+        public static final int constructor = 0xa5d0514d;
+        public long hash;
+
+        @Override
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+            stream.writeInt64(hash);
+        }
+
+        @Override
+        public StarGiftActiveAuctions deserializeResponseT(InputSerializedData stream, int constructor, boolean exception) {
+            return StarGiftActiveAuctions.TLdeserialize(stream, constructor, exception);
+        }
+    }
 }

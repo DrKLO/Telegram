@@ -2,6 +2,7 @@ package org.telegram.ui.Stars;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
 import static org.telegram.messenger.AndroidUtilities.dpf2;
+import static org.telegram.messenger.AndroidUtilities.formatDuration;
 import static org.telegram.messenger.AndroidUtilities.lerp;
 import static org.telegram.messenger.AndroidUtilities.randomOf;
 import static org.telegram.messenger.LocaleController.formatPluralString;
@@ -89,6 +90,7 @@ import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
 import org.telegram.messenger.Utilities;
 import org.telegram.messenger.browser.Browser;
+import org.telegram.messenger.utils.CountdownTimer;
 import org.telegram.messenger.utils.tlutils.AmountUtils;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLObject;
@@ -109,6 +111,7 @@ import org.telegram.ui.Components.AlertsCreator;
 import org.telegram.ui.Components.AnimatedEmojiDrawable;
 import org.telegram.ui.Components.AnimatedEmojiSpan;
 import org.telegram.ui.Components.AnimatedFloat;
+import org.telegram.ui.Components.AnimatedTextView;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.BottomSheetLayouted;
@@ -137,6 +140,7 @@ import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.ScaleStateListAnimator;
 import org.telegram.ui.Components.ShareAlert;
 import org.telegram.ui.Components.TableView;
+import org.telegram.ui.Components.Text;
 import org.telegram.ui.Components.TextHelper;
 import org.telegram.ui.Components.ViewPagerFixed;
 import org.telegram.ui.Components.spoilers.SpoilersTextView;
@@ -387,6 +391,7 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
         beforeTableTextView.setVisibility(View.GONE);
 
         tableView = new TableView(context, resourcesProvider);
+
         infoLayout.addView(tableView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 12));
 
         afterTableTextView = new LinkSpanDrawable.LinksTextView(context, resourcesProvider);
@@ -4298,6 +4303,7 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
             long convert_stars, upgrade_stars;
             TLRPC.Peer from_id, peer;
             String prepaid_upgrade_hash;
+            TLRPC.Peer auctionPeer = null;
             if (messageObject.messageOwner.action instanceof TLRPC.TL_messageActionStarGift) {
                 final TLRPC.TL_messageActionStarGift action = (TLRPC.TL_messageActionStarGift) messageObject.messageOwner.action;
                 converted = action.converted;
@@ -4314,6 +4320,7 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
                 peer = action.peer;
                 prepaid_upgrade = action.prepaid_upgrade;
                 prepaid_upgrade_hash = action.prepaid_upgrade_hash;
+                auctionPeer = action.auction_acquired ? action.to_id : null;
             } else {
                 final TLRPC.TL_messageActionStarGiftUnique action = (TLRPC.TL_messageActionStarGiftUnique) messageObject.messageOwner.action;
                 converted = false;
@@ -4379,15 +4386,22 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
             final long fromId = from_id != null ? DialogObject.getPeerDialogId(from_id) : out ? selfId : dialogId;
             final long toId = peer != null ? DialogObject.getPeerDialogId(peer) : out ? dialogId : selfId;
             final TLRPC.User fromUser = MessagesController.getInstance(currentAccount).getUser(fromId);
-            if (fromId != selfId || prepaid_upgrade || isForChannel) {
-                tableView.addRowUser(getString(R.string.Gift2From), currentAccount, fromId, () -> openProfile(fromId), fromId != selfId && fromId != UserObject.ANONYMOUS && !UserObject.isDeleted(fromUser) && !fromBot && !isForChannel ? getString(R.string.Gift2ButtonSendGift) : null, isForChannel ? null : () -> {
-                    new GiftSheet(getContext(), currentAccount, fromId, this::dismiss).show();
+            if (auctionPeer != null) {
+                long auctionToDid = DialogObject.getPeerDialogId(auctionPeer);
+                tableView.addRowUser(getString(R.string.Gift2To), currentAccount, auctionToDid, () -> openProfile(auctionToDid), null, isForChannel ? null : () -> {
+                    new GiftSheet(getContext(), currentAccount, auctionToDid, this::dismiss).show();
                 });
-            }
-            if (toId != selfId || isForChannel) {
-                tableView.addRowUser(getString(R.string.Gift2To), currentAccount, toId, () -> openProfile(toId), null, isForChannel ? null : () -> {
-                    new GiftSheet(getContext(), currentAccount, toId, this::dismiss).show();
-                });
+            } else {
+                if (fromId != selfId || prepaid_upgrade || isForChannel) {
+                    tableView.addRowUser(getString(R.string.Gift2From), currentAccount, fromId, () -> openProfile(fromId), fromId != selfId && fromId != UserObject.ANONYMOUS && !UserObject.isDeleted(fromUser) && !fromBot && !isForChannel ? getString(R.string.Gift2ButtonSendGift) : null, isForChannel ? null : () -> {
+                        new GiftSheet(getContext(), currentAccount, fromId, this::dismiss).show();
+                    });
+                }
+                if (toId != selfId || isForChannel) {
+                    tableView.addRowUser(getString(R.string.Gift2To), currentAccount, toId, () -> openProfile(toId), null, isForChannel ? null : () -> {
+                        new GiftSheet(getContext(), currentAccount, toId, this::dismiss).show();
+                    });
+                }
             }
             tableView.addRowDateTime(getString(R.string.StarsTransactionDate), date);
             if (stargift.stars > 0) {
@@ -6508,6 +6522,80 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
         }
     }
 
+    public static class UserToUserTransferTopView extends View {
+
+        private final ImageReceiver fromUserImageReceiver;
+        private final ImageReceiver toUserImageReceiver;
+
+        private final Path arrowPath = new Path();
+        private final Paint arrowPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+
+        public UserToUserTransferTopView(Context context, TLObject fromObj, TLObject toObj) {
+            super(context);
+
+            AvatarDrawable avatarDrawable = new AvatarDrawable();
+            avatarDrawable.setInfo(fromObj);
+            fromUserImageReceiver = new ImageReceiver(this);
+            fromUserImageReceiver.setRoundRadius(dp(30));
+            fromUserImageReceiver.setForUserOrChat(fromObj, avatarDrawable);
+
+            AvatarDrawable avatarDrawable2 = new AvatarDrawable();
+            avatarDrawable2.setInfo(toObj);
+            toUserImageReceiver = new ImageReceiver(this);
+            toUserImageReceiver.setRoundRadius(dp(30));
+            toUserImageReceiver.setForUserOrChat(toObj, avatarDrawable2);
+
+            arrowPaint.setColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText7));
+            arrowPaint.setStyle(Paint.Style.STROKE);
+            arrowPaint.setStrokeCap(Paint.Cap.ROUND);
+            arrowPaint.setStrokeJoin(Paint.Join.ROUND);
+            arrowPaint.setStrokeWidth(dp(2));
+
+            arrowPath.rewind();
+            arrowPath.moveTo(0, -dp(8));
+            arrowPath.lineTo(dp(6.166f), 0);
+            arrowPath.lineTo(0, dp(8));
+        }
+
+        @Override
+        protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+            super.onMeasure(
+                    MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY),
+                    MeasureSpec.makeMeasureSpec(dp(100), MeasureSpec.EXACTLY)
+            );
+        }
+
+        @Override
+        protected void onDraw(@NonNull Canvas canvas) {
+            final int width = dp(60 + 36 + 60);
+            int left = getWidth() / 2 - width / 2, top = getHeight() / 2 - dp(30);
+            fromUserImageReceiver.setImageCoords(left, top, dp(60), dp(60));
+            fromUserImageReceiver.draw(canvas);
+
+            canvas.save();
+            canvas.translate(getWidth() / 2.0f - dp(6.166f) / 2.0f, getHeight() / 2.0f);
+            canvas.drawPath(arrowPath, arrowPaint);
+            canvas.restore();
+
+            toUserImageReceiver.setImageCoords(left + dp(60 + 36), top, dp(60), dp(60));
+            toUserImageReceiver.draw(canvas);
+        }
+
+        @Override
+        protected void onAttachedToWindow() {
+            super.onAttachedToWindow();
+            fromUserImageReceiver.onAttachedToWindow();
+            toUserImageReceiver.onAttachedToWindow();
+        }
+
+        @Override
+        protected void onDetachedFromWindow() {
+            super.onDetachedFromWindow();
+            fromUserImageReceiver.onDetachedFromWindow();
+            toUserImageReceiver.onDetachedFromWindow();
+        }
+    }
+
     public static class GiftThemeReuseTopView extends View {
 
         private final StarGiftDrawableIcon giftDrawable;
@@ -6571,24 +6659,50 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
 
         private final Path path = new Path();
         private final RectF rect = new RectF();
+        private StarsReactionsSheet.Particles particles;
         private final int sizeDp;
+        private final TL_stars.StarGift starGift;
+        private final View view;
 
         private final ImageReceiver imageReceiver;
         private final AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable pattern;
         private RadialGradient gradient;
         private final Matrix matrix = new Matrix();
+        private Text giftName;
+        private Text giftStatus;
+        private AnimatedTextView.AnimatedTextDrawable countdownText;
 
         private float patternsScale;
 
         public StarGiftDrawableIcon(View view, TL_stars.StarGift gift, int sizeDp, float patternsScale) {
             super(view);
 
+            this.starGift = gift;
+            this.view = view;
             this.patternsScale = patternsScale;
             imageReceiver = new ImageReceiver(view);
             pattern = new AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable(view, false, dp(sizeDp > 180 ? 24 : 18));
             this.sizeDp = sizeDp;
 
-            if (gift != null) {
+            if (gift instanceof TL_stars.TL_starGift) {
+                setGiftImage(imageReceiver, gift.sticker, (int) (sizeDp * .75f));
+
+                giftName = new Text(gift.title != null ? gift.title : "Gift", 16, AndroidUtilities.bold());
+                giftName.setColor(Color.WHITE);
+                giftName.setMaxWidth(dp(sizeDp - 30));
+                giftName.align(Layout.Alignment.ALIGN_CENTER);
+                giftName.multiline(1);
+
+                giftStatus = new Text(gift.sold_out ? getString(R.string.Gift2SoldOutTitle) :
+                    formatPluralString("Gift2SoldAuctionPreviewGifts", gift.availability_total), 13);
+                giftStatus.setMaxWidth(dp(sizeDp - 30));
+                giftStatus.align(Layout.Alignment.ALIGN_CENTER);
+                giftStatus.multiline(1);
+
+                particles = new StarsReactionsSheet.Particles(StarsReactionsSheet.Particles.TYPE_RADIAL, 40);
+                particles.setBounds(-dp(sizeDp * 0.45f), -dp(sizeDp * 0.45f), dp(sizeDp * 0.45f), dp(sizeDp * 0.25f));
+                particles.generateGrid();
+            } else if (gift != null) {
                 final TL_stars.starGiftAttributeBackdrop backdrop = findAttribute(gift.attributes, TL_stars.starGiftAttributeBackdrop.class);
                 final TL_stars.starGiftAttributePattern pattern = findAttribute(gift.attributes, TL_stars.starGiftAttributePattern.class);
                 final TL_stars.starGiftAttributeModel model = findAttribute(gift.attributes, TL_stars.starGiftAttributeModel.class);
@@ -6610,6 +6724,68 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
                 onAttachedToWindow();
             }
         }
+
+        public void setGradient(int centerColor, int edgeColor) {
+            gradient = new RadialGradient(0, 0, dpf2(sizeDp) / 2, new int[]{ centerColor | 0xFF000000, edgeColor | 0xFF000000 }, new float[] { 0, 1 }, Shader.TileMode.CLAMP);
+            paint.setShader(gradient);
+        }
+
+        public void setAuctionStateTextColor(int textColor) {
+            if (giftStatus != null) {
+                giftStatus.setColor(textColor | 0xFF000000);
+            }
+        }
+
+        private CountdownTimer countdownTimer;
+        private int endTime;
+
+        public void setCountdownRemainingTime(int endTime) {
+            this.endTime = endTime;
+
+            if (countdownTimer == null) {
+                countdownTimer = new CountdownTimer((r) -> {
+                    updateCountdownText(r, true);
+                });
+            }
+
+            final int remaining = endTime - ConnectionsManager.getInstance(UserConfig.selectedAccount).getCurrentTime();
+            countdownTimer.start(remaining);
+            if (countdownText == null) {
+                countdownText = new AnimatedTextView.AnimatedTextDrawable();
+                countdownText.setTextColor(Color.WHITE);
+                countdownText.setTextSize(dp(12));
+                countdownText.setCallback(new Callback() {
+                    @Override
+                    public void invalidateDrawable(@NonNull Drawable who) {
+                        view.invalidate();
+                    }
+
+                    @Override
+                    public void scheduleDrawable(@NonNull Drawable who, @NonNull Runnable what, long when) {
+
+                    }
+
+                    @Override
+                    public void unscheduleDrawable(@NonNull Drawable who, @NonNull Runnable what) {
+
+                    }
+                });
+            }
+            updateCountdownText(remaining, false);
+        }
+
+        private void updateCountdownText(long remaining, boolean animated) {
+            if (countdownText != null) {
+                countdownText.setText(remaining > 0 ?
+                        formatDuration((int) remaining, true) :
+                        getString(R.string.Gift2AuctionCountdownFinished), animated);
+            }
+            if (remaining <= 0 && giftStatus != null) {
+                giftStatus.setText(getString(R.string.Gift2SoldOutTitle));
+            }
+        }
+
+        private final Paint countdownPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
         private int rounding = dp(16);
         public StarGiftDrawableIcon setRounding(int r) {
@@ -6643,11 +6819,42 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
             canvas.save();
             canvas.translate(rect.centerX(), rect.centerY());
             StarGiftPatterns.drawPattern(canvas, patternsType, pattern, rect.width(), rect.height(), 1.0f, patternsScale);
+            if (particles != null) {
+                particles.draw(canvas, Color.WHITE, 1f);
+            }
             canvas.restore();
 
-            final float imageSize = Math.min(rect.width(), rect.height()) * 0.75f;
-            imageReceiver.setImageCoords(rect.centerX() - imageSize / 2, rect.centerY() - imageSize / 2, imageSize, imageSize);
-            imageReceiver.draw(canvas);
+            if (giftName != null && giftStatus != null) {
+                if (countdownText != null) {
+                    countdownPaint.setColor(0x50000000);
+                    canvas.drawRoundRect(
+                        rect.left + dp(6),
+                        rect.top + dp(6),
+                        rect.left + dp(6 + 14) + Math.max(countdownText.getCurrentWidth(), dp(3)),
+                        rect.top + dp(6 + 17),
+                        dp(17 / 2f),
+                        dp(17 / 2f),
+                        countdownPaint
+                    );
+                    canvas.save();
+                    canvas.translate(rect.left + dp(13), rect.top + dp(14f));
+                    countdownText.draw(canvas);
+                    canvas.restore();
+                }
+
+
+                final float imageSize = Math.min(rect.width(), rect.height()) * 0.6f;
+
+                imageReceiver.setImageCoords(rect.centerX() - imageSize / 2, rect.top + rect.height() * 0.12f, imageSize, imageSize);
+                imageReceiver.draw(canvas);
+
+                giftName.draw(canvas, rect.centerX() - giftName.getWidth() / 2f, rect.bottom - dp(50));
+                giftStatus.draw(canvas, rect.centerX() - giftStatus.getWidth() / 2f, rect.bottom - dp(30));
+            } else {
+                final float imageSize = Math.min(rect.width(), rect.height()) * (0.75f);
+                imageReceiver.setImageCoords(rect.centerX() - imageSize / 2, rect.centerY() - imageSize / 2, imageSize, imageSize);
+                imageReceiver.draw(canvas);
+            }
 
             canvas.restore();
         }
@@ -6656,12 +6863,19 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
         public void onAttachedToWindow() {
             pattern.attach();
             imageReceiver.onAttachedToWindow();
+            if (countdownTimer != null) {
+                final int remaining = endTime - ConnectionsManager.getInstance(UserConfig.selectedAccount).getCurrentTime();
+                countdownTimer.start(remaining);
+            }
         }
 
         @Override
         public void onDetachedToWindow() {
             pattern.detach();
             imageReceiver.onDetachedFromWindow();
+            if (countdownTimer != null) {
+                countdownTimer.stop();
+            }
         }
 
         @Override

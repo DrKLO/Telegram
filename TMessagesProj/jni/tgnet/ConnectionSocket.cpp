@@ -76,6 +76,25 @@ static BIGNUM *get_double_x(BIGNUM *x, const BIGNUM *mod, BN_CTX *big_num_contex
     return numerator;
 }
 
+static void generate_key_ml_kem_768(unsigned char *key) {
+    constexpr uint32_t Q = 3329;
+    constexpr int N = 384;
+
+    std::vector<uint32_t> values(N * 2);
+    RAND_bytes(reinterpret_cast<unsigned char*>(values.data()),values.size() * sizeof(uint32_t));
+
+    for (int i = 0; i < N; ++i) {
+        uint32_t a = values[i * 2]     % Q;
+        uint32_t b = values[i * 2 + 1] % Q;
+
+        key[i * 3 + 0] = static_cast<unsigned char>(a & 0xFFu);
+        key[i * 3 + 1] = static_cast<unsigned char>((a >> 8) | ((b & 0x0Fu) << 4));
+        key[i * 3 + 2] = static_cast<unsigned char>(b >> 4);
+    }
+
+    RAND_bytes(key + 1152, 32);
+}
+
 static void generate_public_key(unsigned char *key) {
     BIGNUM *mod = NULL;
     BN_hex2bn(&mod, "7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffed");
@@ -144,7 +163,7 @@ public:
 
     struct Op {
         enum class Type {
-            String, Random, K, Zero, Domain, Grease, BeginScope, EndScope, Permutation
+            String, Random, K, M, P, E, Zero, Domain, Grease, BeginScope, EndScope, Permutation
         };
         Type type;
         size_t length;
@@ -170,6 +189,24 @@ public:
             Op res;
             res.type = Type::K;
             res.length = 32;
+            return res;
+        }
+
+        static Op E() {
+            Op res;
+            res.type = Type::E;
+            return res;
+        }
+
+        static Op M() {
+            Op res;
+            res.type = Type::M;
+            return res;
+        }
+
+        static Op P() {
+            Op res;
+            res.type = Type::P;
             return res;
         }
 
@@ -214,7 +251,92 @@ public:
 
     };
 
-    static const TlsHello &getDefault() {
+    static const TlsHello &getDefault(bool useLegacy) {
+        if (!useLegacy) {
+            static TlsHello result = [] {
+                TlsHello res;
+                res.ops = {
+                    Op::string("\x16\x03\x01", 3),
+                    Op::begin_scope(),
+                    Op::string("\x01\x00", 2),
+                    Op::begin_scope(),
+                    Op::string("\x03\x03", 2),
+                    Op::zero(32),
+                    Op::string("\x20", 1),
+                    Op::random(32),
+                    Op::string("\x00\x20", 2),
+                    Op::grease(0),
+                    Op::string("\x13\x01\x13\x02\x13\x03\xc0\x2b\xc0\x2f\xc0\x2c\xc0\x30\xcc\xa9\xcc\xa8\xc0\x13\xc0\x14\x00\x9c\x00\x9d\x00\x2f\x00\x35\x01\x00", 32),
+                    Op::begin_scope(),
+                    Op::grease(2),
+                    Op::string("\x00\x00", 2),
+                    Op::permutation({
+                        {
+                            Op::string("\x00\x00", 2),
+                            Op::begin_scope(),
+                            Op::begin_scope(),
+                            Op::string("\x00", 1),
+                            Op::begin_scope(),
+                            Op::domain(),
+                            Op::end_scope(),
+                            Op::end_scope(),
+                            Op::end_scope()
+                        },
+                        { Op::string("\x00\x05\x00\x05\x01\x00\x00\x00\x00",9) },
+                        {
+                            Op::string("\x00\x0a\x00\x0c\x00\x0a", 6),
+                            Op::grease(4),
+                            Op::string("\x11\xec\x00\x1d\x00\x17\x00\x18", 8)
+                        },
+                        { Op::string("\x00\x0b\x00\x02\x01\x00", 6) },
+                        { Op::string("\x00\x0d\x00\x12\x00\x10\x04\x03\x08\x04\x04\x01\x05\x03\x08\x05\x05\x01\x08\x06\x06\x01",22) },
+                        { Op::string("\x00\x10\x00\x0e\x00\x0c\x02\x68\x32\x08\x68\x74\x74\x70\x2f\x31\x2e\x31", 18) },
+                        { Op::string("\x00\x12\x00\x00", 4) },
+                        { Op::string("\x00\x17\x00\x00", 4) },
+                        { Op::string("\x00\x1b\x00\x03\x02\x00\x02", 7) },
+                        { Op::string("\x00\x23\x00\x00", 4) },
+                        {
+                            Op::string("\x00\x2b\x00\x07\x06", 5),
+                            Op::grease(6),
+                            Op::string("\x03\x04\x03\x03", 4)
+                        },
+                        { Op::string("\x00\x2d\x00\x02\x01\x01", 6) },
+                        {
+                            Op::string("\x00\x33\x04\xef\x04\xed", 6),
+                            Op::grease(4),
+                            Op::string("\x00\x01\x00\x11\xec\x04\xc0", 7),
+                            Op::M(),
+                            Op::K(),
+                            Op::string("\x00\x1d\x00\x20", 4),
+                            Op::K(),
+                        },
+                        { Op::string("\x44\xcd\x00\x05\x00\x03\x02\x68\x32", 9) },
+                        {
+                            Op::string("\xfe\x02", 2),
+                            Op::begin_scope(),
+                            Op::string("\x00\x00\x01\x00\x01", 5),
+                            Op::random(1),
+                            Op::string("\x00\x20", 2),
+                            Op::random(20),
+                            Op::begin_scope(),
+                            Op::E(),
+                            Op::end_scope(),
+                            Op::end_scope()
+                        },
+                        { Op::string("\xff\x01\x00\x01\x00", 5) }
+                    }),
+                    Op::grease(3),
+                    Op::string("\x00\x01\x00", 3),
+                    Op::P(),
+                    Op::end_scope(),
+                    Op::end_scope(),
+                    Op::end_scope()
+                };
+                return res;
+            }();
+            return result;
+        }
+
         static TlsHello result = [] {
             TlsHello res;
             res.ops = {
@@ -297,7 +419,8 @@ public:
                     }),
 
                     Op::grease(3),
-                    Op::string("\x00\x01\x00\x00\x15", 5)
+                    Op::string("\x00\x01\x00", 3),
+                    Op::P()
             };
             return res;
         }();
@@ -310,17 +433,6 @@ public:
             writeOp(op, data, offset);
         }
         return offset;
-    }
-
-    uint32_t writePadding(uint8_t *data, uint32_t length) {
-        if (length > 515) {
-            return 0;
-        }
-        uint32_t size = 515 - length;
-        memset(data + length + 2, 0, size);
-        data[length] = static_cast<uint8_t>((size >> 8) & 0xff);
-        data[length + 1] = static_cast<uint8_t>(size & 0xff);
-        return length + size + 2;
     }
 
     void setDomain(std::string value) {
@@ -347,6 +459,10 @@ private:
             case Type::K:
                 generate_public_key(data + offset);
                 offset += op.length;
+                break;
+            case Type::M:
+                generate_key_ml_kem_768(data + offset);
+                offset += 1184;
                 break;
             case Type::Zero:
                 std::memset(data + offset, 0, op.length);
@@ -377,6 +493,25 @@ private:
                 size_t size = offset - begin_offset - 2;
                 data[begin_offset] = static_cast<uint8_t>((size >> 8) & 0xff);
                 data[begin_offset + 1] = static_cast<uint8_t>(size & 0xff);
+                break;
+            }
+            case Type::E: {
+                size_t r = rand() % 4;
+                size_t length = (r == 0 ? 144 :
+                                (r == 1 ? 176 :
+                                (r == 2 ? 208 : 240)));
+                RAND_bytes(data + offset, (size_t) length);
+                offset += length;
+                break;
+            }
+            case Type::P: {
+                auto length = offset;
+                if (length <= 513) {
+                    writeOp(Op::string("\x00\x15", 2), data, offset);
+                    writeOp(Op::begin_scope(), data, offset);
+                    writeOp(Op::zero(513 - length), data, offset);
+                    writeOp(Op::end_scope(), data, offset);
+                }
                 break;
             }
             case Type::Permutation: {
@@ -723,6 +858,7 @@ void ConnectionSocket::onEvent(uint32_t events) {
                             delete[] temp;
                             if (std::memcmp(tempBuffer->bytes + 64 * 1024, tempBuffer->bytes + 64 * 1024 + 32, 32) != 0) {
                                 tlsHashMismatch = true;
+                                tlsUseLegacy = true;
                                 closeSocket(1, -1);
                                 if (LOGS_ENABLED) DEBUG_E("connection(%p) TLS hash mismatch", this);
                                 return;
@@ -876,14 +1012,9 @@ void ConnectionSocket::onEvent(uint32_t events) {
                         lastEventTime = ConnectionsManager::getInstance(instanceNum).getCurrentTimeMonotonicMillis();
                         tlsHashMismatch = false;
                         proxyAuthState = 11;
-                        TlsHello hello = TlsHello::getDefault();
+                        TlsHello hello = TlsHello::getDefault(tlsUseLegacy);
                         hello.setDomain(currentSecretDomain);
                         uint32_t size = hello.writeToBuffer(tempBuffer->bytes);
-                        if (!(size = hello.writePadding(tempBuffer->bytes, size))) {
-                            if (LOGS_ENABLED) DEBUG_E("connection(%p) too much data for padding", this);
-                            closeSocket(1, -1);
-                            return;
-                        }
                         uint32_t outLength;
                         HMAC(EVP_sha256(), currentSecret.data(), currentSecret.size(), tempBuffer->bytes, size, tempBuffer->bytes + 64 * 1024, &outLength);
 

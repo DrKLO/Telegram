@@ -128,8 +128,7 @@ void FrameEncodeMetadataWriter::OnEncodeStarted(const VideoFrame& frame) {
                  "warnings will be throttled.";
         }
       }
-      frame_drop_callback_->OnDroppedFrame(
-          EncodedImageCallback::DropReason::kDroppedByEncoder);
+      frame_drop_callback_->OnDroppedFrame(EncodedImageCallback::DropReason::kDroppedByEncoder);
       timing_frames_info_[si].frames.pop_front();
     }
     timing_frames_info_[si].frames.emplace_back(metadata);
@@ -238,8 +237,7 @@ FrameEncodeMetadataWriter::ExtractEncodeStartTimeAndFillMetadata(
     while (!metadata_list->empty() &&
            IsNewerTimestamp(encoded_image->RtpTimestamp(),
                             metadata_list->front().rtp_timestamp)) {
-      frame_drop_callback_->OnDroppedFrame(
-          EncodedImageCallback::DropReason::kDroppedByEncoder);
+      frame_drop_callback_->OnDroppedFrame(EncodedImageCallback::DropReason::kDroppedByEncoder);
       metadata_list->pop_front();
     }
 

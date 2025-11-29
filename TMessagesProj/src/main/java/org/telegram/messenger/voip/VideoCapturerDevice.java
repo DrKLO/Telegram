@@ -54,7 +54,7 @@ public class VideoCapturerDevice {
         if (Build.VERSION.SDK_INT < 18) {
             return;
         }
-        Logging.enableLogToDebugOutput(Logging.Severity.LS_INFO);
+        Logging.enableLogToDebugOutput(Logging.Severity.LS_VERBOSE);
         Logging.d("VideoCapturerDevice", "device model = " + Build.MANUFACTURER + Build.MODEL);
         AndroidUtilities.runOnUIThread(() -> {
             if (eglBase == null) {

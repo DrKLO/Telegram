@@ -823,7 +823,8 @@ public class ImageLoader {
                         imgView.setImageBitmapByKey(bitmapDrawable, kf, ImageReceiver.TYPE_IMAGE, false, finalImageReceiverGuidsArray.get(a));
                     }
 
-                    memCache.put(kf, bitmapDrawable);
+                    if (!kf.contains("nocache"))
+                        memCache.put(kf, bitmapDrawable);
                 });
             } catch (Throwable e) {
                 FileLog.e(e);
@@ -1731,9 +1732,9 @@ public class ImageLoader {
                         if (cacheImage.key.endsWith("_f")) {
                             wallpaperMemCache.put(cacheImage.key, bitmapDrawable);
                             incrementUseCount = false;
-                        } else if (!cacheImage.key.endsWith("_isc") && bitmapDrawable.getBitmap().getWidth() <= 80 * AndroidUtilities.density && bitmapDrawable.getBitmap().getHeight() <= 80 * AndroidUtilities.density) {
+                        } else if (!cacheImage.key.endsWith("_isc") && !cacheImage.key.endsWith("_nocache") && bitmapDrawable.getBitmap().getWidth() <= 80 * AndroidUtilities.density && bitmapDrawable.getBitmap().getHeight() <= 80 * AndroidUtilities.density) {
                             smallImagesMemCache.put(cacheImage.key, bitmapDrawable);
-                        } else {
+                        } else if (!cacheImage.key.endsWith("_nocache")) {
                             memCache.put(cacheImage.key, bitmapDrawable);
                         }
                         toSet = bitmapDrawable;
@@ -2926,6 +2927,7 @@ public class ImageLoader {
     }
 
     public void putImageToCache(BitmapDrawable bitmap, String key, boolean smallImage) {
+        if (key.endsWith("_nocache")) return;
         if (smallImage) {
             smallImagesMemCache.put(key, bitmap);
         } else {

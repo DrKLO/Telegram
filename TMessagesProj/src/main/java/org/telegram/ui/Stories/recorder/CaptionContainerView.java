@@ -450,7 +450,7 @@ public class CaptionContainerView extends FrameLayout {
     }
 
     private void createMentionsContainer() {
-        mentionContainer = new MentionsContainerView(getContext(), UserConfig.getInstance(currentAccount).getClientUserId(), 0, LaunchActivity.getLastFragment(), null, new DarkThemeResourceProvider()) {
+        mentionContainer = new MentionsContainerView(getContext(), UserConfig.getInstance(currentAccount).getClientUserId(), 0, LaunchActivity.getLastFragment(), new DarkThemeResourceProvider()) {
             @Override
             public void drawRoundRect(Canvas canvas, Rect rectTmp, float radius) {
                 rectF.set(rectTmp);

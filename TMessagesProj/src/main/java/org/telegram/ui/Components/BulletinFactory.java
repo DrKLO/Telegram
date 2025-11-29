@@ -97,15 +97,18 @@ public final class BulletinFactory {
     }
 
     public void showForError(TLRPC.TL_error error) {
+        showForError(error, false);
+    }
+    public void showForError(TLRPC.TL_error error, boolean top) {
         if (!LaunchActivity.isActive) return;
         if (error == null) {
             Bulletin b = createErrorBulletin(LocaleController.formatString(R.string.UnknownError));
             b.hideAfterBottomSheet = false;
-            b.show();
+            b.show(top);
         } else {
             Bulletin b = createErrorBulletin(LocaleController.formatString(R.string.UnknownErrorCode, error.text));
             b.hideAfterBottomSheet = false;
-            b.show();
+            b.show(top);
         }
     }
 

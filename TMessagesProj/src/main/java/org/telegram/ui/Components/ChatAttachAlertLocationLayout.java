@@ -259,7 +259,7 @@ public class ChatAttachAlertLocationLayout extends ChatAttachAlert.AttachAlertLa
             lastPressedMarkerView.setOnClickListener(v -> {
                 ChatActivity chatActivity = (ChatActivity) parentAlert.baseFragment;
                 if (chatActivity.isInScheduleMode()) {
-                    AlertsCreator.createScheduleDatePickerDialog(getParentActivity(), chatActivity.getDialogId(), (notify, scheduleDate) -> {
+                    AlertsCreator.createScheduleDatePickerDialog(getParentActivity(), chatActivity.getDialogId(), (notify, scheduleDate, scheduleRepeatPeriod) -> {
                         delegate.didSelectLocation(location.venue, locationType, notify, scheduleDate, 0);
                         parentAlert.dismiss(true);
                     }, resourcesProvider);
@@ -776,7 +776,7 @@ public class ChatAttachAlertLocationLayout extends ChatAttachAlert.AttachAlertLa
                         location.geo._long = AndroidUtilities.fixLocationCoord(userLocation.getLongitude());
                         AlertsCreator.ensurePaidMessageConfirmation(parentAlert.currentAccount, parentAlert.getDialogId(), 1 + parentAlert.getAdditionalMessagesCount(), payStars -> {
                             if (chatActivity.isInScheduleMode()) {
-                                AlertsCreator.createScheduleDatePickerDialog(getParentActivity(), chatActivity.getDialogId(), (notify, scheduleDate) -> {
+                                AlertsCreator.createScheduleDatePickerDialog(getParentActivity(), chatActivity.getDialogId(), (notify, scheduleDate, scheduleRepeatPeriod) -> {
                                     delegate.didSelectLocation(location, locationType, notify, scheduleDate, payStars);
                                     parentAlert.dismiss(true);
                                 }, resourcesProvider);
@@ -808,7 +808,7 @@ public class ChatAttachAlertLocationLayout extends ChatAttachAlert.AttachAlertLa
             if (object instanceof TLRPC.TL_messageMediaVenue) {
                 AlertsCreator.ensurePaidMessageConfirmation(parentAlert.currentAccount, parentAlert.getDialogId(), 1 + parentAlert.getAdditionalMessagesCount(), payStars -> {
                     if (chatActivity.isInScheduleMode()) {
-                        AlertsCreator.createScheduleDatePickerDialog(getParentActivity(), chatActivity.getDialogId(), (notify, scheduleDate) -> {
+                        AlertsCreator.createScheduleDatePickerDialog(getParentActivity(), chatActivity.getDialogId(), (notify, scheduleDate, scheduleRepeatPeriod) -> {
                             delegate.didSelectLocation((TLRPC.TL_messageMediaVenue) object, locationType, notify, scheduleDate, 0);
                             parentAlert.dismiss(true);
                         }, resourcesProvider);
@@ -950,7 +950,7 @@ public class ChatAttachAlertLocationLayout extends ChatAttachAlert.AttachAlertLa
             TLRPC.TL_messageMediaVenue object = searchAdapter.getItem(position);
             if (object != null && delegate != null) {
                 if (chatActivity.isInScheduleMode()) {
-                    AlertsCreator.createScheduleDatePickerDialog(getParentActivity(), chatActivity.getDialogId(), (notify, scheduleDate) -> {
+                    AlertsCreator.createScheduleDatePickerDialog(getParentActivity(), chatActivity.getDialogId(), (notify, scheduleDate, scheduleRepeatPeriod) -> {
                         delegate.didSelectLocation(object, locationType, notify, scheduleDate, 0);
                         parentAlert.dismiss(true);
                     }, resourcesProvider);

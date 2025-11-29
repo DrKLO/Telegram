@@ -89,6 +89,7 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
     private int lastSeenRow;
     private int profilePhotoRow;
     private int bioRow;
+    private int musicRow;
     private int giftsRow;
     private int birthdayRow;
     private int forwardsRow;
@@ -382,6 +383,8 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
                 presentFragment(new PrivacyControlActivity(ContactsController.PRIVACY_RULES_TYPE_PHOTO));
             } else if (position == bioRow) {
                 presentFragment(new PrivacyControlActivity(ContactsController.PRIVACY_RULES_TYPE_BIO));
+            } else if (position == musicRow) {
+                presentFragment(new PrivacyControlActivity(ContactsController.PRIVACY_RULES_TYPE_MUSIC));
             } else if (position == birthdayRow) {
                 presentFragment(new PrivacyControlActivity(ContactsController.PRIVACY_RULES_TYPE_BIRTHDAY));
             } else if (position == giftsRow) {
@@ -697,6 +700,7 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
         birthdayRow = rowCount++;
         giftsRow = rowCount++;
         bioRow = rowCount++;
+        musicRow = rowCount++;
         groupsRow = rowCount++;
         privacyShadowRow = rowCount++;
 
@@ -964,6 +968,7 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
                     position == callsRow && !getContactsController().getLoadingPrivacyInfo(ContactsController.PRIVACY_RULES_TYPE_CALLS) ||
                     position == profilePhotoRow && !getContactsController().getLoadingPrivacyInfo(ContactsController.PRIVACY_RULES_TYPE_PHOTO) ||
                     position == bioRow && !getContactsController().getLoadingPrivacyInfo(ContactsController.PRIVACY_RULES_TYPE_BIO) ||
+                    position == musicRow && !getContactsController().getLoadingPrivacyInfo(ContactsController.PRIVACY_RULES_TYPE_MUSIC) ||
                     position == birthdayRow && !getContactsController().getLoadingPrivacyInfo(ContactsController.PRIVACY_RULES_TYPE_BIRTHDAY) ||
                     position == giftsRow && !getContactsController().getLoadingPrivacyInfo(ContactsController.PRIVACY_RULES_TYPE_GIFTS) ||
                     position == forwardsRow && !getContactsController().getLoadingPrivacyInfo(ContactsController.PRIVACY_RULES_TYPE_FORWARDS) ||
@@ -1074,6 +1079,14 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
                             value = formatRulesString(getAccountInstance(), ContactsController.PRIVACY_RULES_TYPE_BIO);
                         }
                         textCell.setTextAndValue(getString("PrivacyBio", R.string.PrivacyBio), value, true);
+                    } else if (position == musicRow) {
+                        if (getContactsController().getLoadingPrivacyInfo(ContactsController.PRIVACY_RULES_TYPE_MUSIC)) {
+                            showLoading = true;
+                            loadingLen = 30;
+                        } else {
+                            value = formatRulesString(getAccountInstance(), ContactsController.PRIVACY_RULES_TYPE_MUSIC);
+                        }
+                        textCell.setTextAndValue(getString(R.string.PrivacyMusic), value, true);
                     } else if (position == birthdayRow) {
                         if (getContactsController().getLoadingPrivacyInfo(ContactsController.PRIVACY_RULES_TYPE_BIRTHDAY)) {
                             showLoading = true;
@@ -1112,7 +1125,7 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
                         imageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteGrayIcon), PorterDuff.Mode.MULTIPLY));
                     } else if (position == noncontactsRow) {
                         value = getString(feeValue ? R.string.ContactsAndFee : noncontactsValue ? R.string.ContactsAndPremium : R.string.P2PEverybody);
-                        textCell.setTextAndValue(getMessagesController().newNoncontactPeersRequirePremiumWithoutOwnpremium && !getMessagesController().starsPaidMessagesAvailable ? getString(R.string.PrivacyMessages) : addPremiumStar(getString(R.string.PrivacyMessages)), value, bioRow != -1);
+                        textCell.setTextAndValue(getMessagesController().newNoncontactPeersRequirePremiumWithoutOwnpremium && !getMessagesController().starsPaidMessagesAvailable ? getString(R.string.PrivacyMessages) : addPremiumStar(getString(R.string.PrivacyMessages)), value, musicRow != -1);
                     } else if (position == passportRow) {
                         textCell.setText(getString("TelegramPassport", R.string.TelegramPassport), true);
                     } else if (position == deleteAccountRow) {

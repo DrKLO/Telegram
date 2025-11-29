@@ -444,6 +444,28 @@ public sealed class TlGen_MessageMedia : TlGen_Object {
     }
   }
 
+  public data class TL_messageMediaVideoStream(
+    public val rtmp_stream: Boolean,
+    public val call: TlGen_InputGroupCall,
+  ) : TlGen_MessageMedia() {
+    internal val flags: UInt
+      get() {
+        var result = 0U
+        if (rtmp_stream) result = result or 1U
+        return result
+      }
+
+    public override fun serializeToStream(stream: OutputSerializedData) {
+      stream.writeInt32(MAGIC.toInt())
+      stream.writeInt32(flags.toInt())
+      call.serializeToStream(stream)
+    }
+
+    public companion object {
+      public const val MAGIC: UInt = 0xCA5CAB89U
+    }
+  }
+
   public data class TL_messageMediaPhoto_layer27(
     public val photo: TlGen_Photo,
   ) : TlGen_Object {
