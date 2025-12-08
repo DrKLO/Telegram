@@ -755,10 +755,16 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
             if (currentStyle == STYLE_LIVE_STORY) {
                 final LivePlayer player = LivePlayer.recording;
                 if (player == null) return;
+                if (player.currentAccount != UserConfig.selectedAccount) {
+                    if (LaunchActivity.instance == null) return;
+                    LaunchActivity.instance.switchToAccount(player.currentAccount, true);
+                }
+                final BaseFragment lastFragment = LaunchActivity.getSafeLastFragment();
+                if (lastFragment == null) return;
                 final TL_stories.StoryItem story = MessagesController.getInstance(player.currentAccount).getStoriesController().findStory(player.dialogId, player.storyId);
                 if (story != null) {
                     story.dialogId = player.dialogId;
-                    fragment.getOrCreateStoryViewer(player.currentAccount).open(player.currentAccount, getContext(), story, null);
+                    lastFragment.getOrCreateStoryViewer(player.currentAccount).open(player.currentAccount, getContext(), story, null);
                 }
             } else if (currentStyle == STYLE_AUDIO_PLAYER) {
                 MessageObject messageObject = MediaController.getInstance().getPlayingMessageObject();

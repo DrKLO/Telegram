@@ -44,11 +44,13 @@ import android.text.style.ReplacementSpan;
 import android.text.style.StyleSpan;
 import android.view.HapticFeedbackConstants;
 import android.view.MotionEvent;
+import android.view.View;
 import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.view.animation.Interpolator;
 import android.view.animation.OvershootInterpolator;
 
+import androidx.annotation.NonNull;
 import androidx.collection.LongSparseArray;
 import androidx.core.content.ContextCompat;
 import androidx.core.graphics.ColorUtils;
@@ -572,6 +574,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
     private boolean drawVerified;
     private boolean drawBotVerified;
     private boolean drawPremium;
+    private final View emojiStatusView;
     private final AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable emojiStatus;
     private final AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable botVerification;
 
@@ -640,7 +643,15 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
         useForceThreeLines = forceThreeLines;
         currentAccount = account;
 
-        emojiStatus = new AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable(this, dp(22));
+        emojiStatusView = new View(context) {
+            @Override
+            protected void onDraw(@NonNull Canvas canvas) {
+                emojiStatus.setBounds(0, 0, getWidth(), getHeight());
+                emojiStatus.draw(canvas);
+            }
+        };
+        addView(emojiStatusView);
+        emojiStatus = new AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable(emojiStatusView, dp(22));
         botVerification = new AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable(this, dp(17));
         avatarImage.setAllowLoadingOnAttachedOnly(true);
     }
@@ -865,6 +876,12 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+        if (emojiStatusView != null) {
+            emojiStatusView.measure(
+                MeasureSpec.makeMeasureSpec(dp(22), MeasureSpec.EXACTLY),
+                MeasureSpec.makeMeasureSpec(dp(22), MeasureSpec.EXACTLY)
+            );
+        }
         if (checkBox != null) {
             checkBox.measure(
                 MeasureSpec.makeMeasureSpec(dp(24), MeasureSpec.EXACTLY),
@@ -927,6 +944,9 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
     protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
         if (currentDialogId == 0 && customDialog == null) {
             return;
+        }
+        if (emojiStatusView != null) {
+            emojiStatusView.layout(0, 0, dp(22), dp(22));
         }
         if (checkBox != null) {
             int paddingStart = dp(messagePaddingStart - (useForceThreeLines || SharedConfig.useThreeLinesLayout ? 29 : 27));
@@ -3490,6 +3510,8 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
             return;
         }
 
+        boolean emojiStatusVisible = false;
+
         if (clipProgress != 0.0f && Build.VERSION.SDK_INT != 24) {
             canvas.save();
             canvas.clipRect(0, topClip * clipProgress, getMeasuredWidth(), getMeasuredHeight() - (int) (bottomClip * clipProgress));
@@ -4113,13 +4135,16 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                 }
                 if (emojiStatus != null) {
                     emojiStatus.setBounds(
-                            nameMuteLeft - dp(2),
-                            y - dp(4),
-                            nameMuteLeft + dp(20),
-                            y - dp(4) + dp(22)
+                        nameMuteLeft - dp(2),
+                        y - dp(4),
+                        nameMuteLeft + dp(20),
+                        y - dp(4) + dp(22)
                     );
+                    emojiStatusView.setTranslationX(nameMuteLeft - dp(2));
+                    emojiStatusView.setTranslationY(y - dp(4));
+                    emojiStatusVisible = true;
                     emojiStatus.setColor(Theme.getColor(Theme.key_chats_verifiedBackground, resourcesProvider));
-                    emojiStatus.draw(canvas);
+//                    emojiStatus.draw(canvas);
                 } else {
                     Drawable premiumDrawable = PremiumGradient.getInstance().premiumStarDrawableMini;
                     setDrawableBounds(premiumDrawable, nameMuteLeft - dp(1), dp(useForceThreeLines || SharedConfig.useThreeLinesLayout ? 12.5f : 15.5f));
@@ -4476,6 +4501,8 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                 needInvalidate = true;
             }
         }
+
+        emojiStatusView.setVisibility(emojiStatusVisible ? View.VISIBLE : View.GONE);
 
         if (needInvalidate) {
             invalidate();

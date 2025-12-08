@@ -106,16 +106,6 @@ public abstract class BlurredBackgroundDrawable extends Drawable {
         onBoundPropsChanged();
     }
 
-    public void setLiquidIndex(float index) {
-        boundProps.liquidIndex = index;
-        onBoundPropsChanged();
-    }
-
-    public void setFillAlpha(float multAlpha) {
-        boundProps.fillAlpha = multAlpha;
-        updateColors();
-    }
-
     public Rect getPaddedBounds() {
         return boundProps.boundsWithPadding;
     }
@@ -133,10 +123,15 @@ public abstract class BlurredBackgroundDrawable extends Drawable {
         onBoundPropsChanged();
     }
 
+    @CallSuper
+    protected void onBoundPropsChanged() {
+        dispatchSourceRelativePositionChange();
+    }
 
-    protected void onBoundPropsChanged() {}
-
-    protected void onSourceOffsetChange(float sourceOffsetX, float sourceOffsetY) {}
+    @CallSuper
+    protected void onSourceOffsetChange(float sourceOffsetX, float sourceOffsetY) {
+        dispatchSourceRelativePositionChange();
+    }
 
     public abstract BlurredBackgroundSource getSource();
 
@@ -185,8 +180,6 @@ public abstract class BlurredBackgroundDrawable extends Drawable {
         public int liquidThickness;
         public float liquidIntensity = 0.75f;
         public float liquidIndex = 1.5f;
-
-        public float fillAlpha = 1.0f;
 
         public float strokeWidthTop;
         public float strokeWidthBottom;
@@ -529,5 +522,25 @@ public abstract class BlurredBackgroundDrawable extends Drawable {
         }
 
         // todo: move from drawableRenderNode
+    }
+
+    private final RectF cmpRectF1 = new RectF();
+    private final RectF cmpRectF2 = new RectF();
+    private void dispatchSourceRelativePositionChange() {
+        getPositionRelativeSource(cmpRectF1);
+        if (!cmpRectF1.equals(cmpRectF2)) {
+            cmpRectF2.set(cmpRectF1);
+            onSourceRelativePositionChanged(cmpRectF1);
+        }
+    }
+
+    @CallSuper
+    protected void onSourceRelativePositionChanged(RectF position) {
+
+    }
+
+    public void getPositionRelativeSource(RectF position) {
+        position.set(boundProps.boundsWithPadding);
+        position.offset(sourceOffsetX, sourceOffsetY);
     }
 }

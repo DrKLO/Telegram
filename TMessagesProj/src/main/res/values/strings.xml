@@ -9964,6 +9964,8 @@
     <string name="LiveStoryPricePerCommentInfo">The price a viewer must pay to send a comment.</string>
     <string name="LiveStoryRTMPEnable">Connect Stream</string>
     <string name="LiveStoryRTMPRevoke">Revoke Stream Key</string>
+    <string name="LiveStoryRTMPRevokeTitle">Revoke Stream Key</string>
+    <string name="LiveStoryRTMPRevokeText">Are you sure you want to regenerate your stream key?</string>
     <string name="LiveStoryRTMPEnableInfo">Stream with a different app.</string>
     <string name="LiveStoryRTMPDisable">Stream from your phone</string>
     <string name="LiveStoryRTMPSettings">RTMP Settings</string>

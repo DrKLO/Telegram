@@ -2,6 +2,9 @@ package org.telegram.ui.Components.chat;
 
 import androidx.recyclerview.widget.RecyclerView;
 
+import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.FileLog;
+
 public class ChatListViewPaddingsAnimator {
     private final RecyclerView recyclerView;
 
@@ -33,6 +36,17 @@ public class ChatListViewPaddingsAnimator {
 
         //recyclerView.setTranslationY(translationY);
         if (paddingTopOld != paddingTop || paddingBottomOld != paddingBottom) {
+            final int dy = paddingTopOld - paddingTop;
+            if (dy != 0) {
+                AndroidUtilities.doOnLayout(recyclerView, () -> {
+                    try {
+                        recyclerView.scrollBy(0, dy);
+                    } catch (Throwable t) {
+                        FileLog.e(t);
+                    }
+                });
+            }
+
             recyclerView.setPadding(
                     recyclerView.getPaddingLeft(),
                     paddingTop,

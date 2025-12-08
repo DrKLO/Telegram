@@ -49,6 +49,7 @@ import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
+import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.pip.source.IPipSourceDelegate;
 import org.telegram.messenger.pip.utils.PipPermissions;
 import org.telegram.messenger.pip.PipSource;
@@ -631,14 +632,20 @@ public class LiveStoryPipOverlay implements NotificationCenter.NotificationCente
         expandButton.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector)));
         expandButton.setPadding(padding, padding, padding, padding);
         expandButton.setOnClickListener(v -> {
+            final LivePlayer player = livePlayer;
+            if (player == null) return;
+            if (player.currentAccount != UserConfig.selectedAccount) {
+                if (LaunchActivity.instance == null) return;
+                LaunchActivity.instance.switchToAccount(player.currentAccount, true);
+            }
             final BaseFragment fragment = LaunchActivity.getSafeLastFragment();
-            if (fragment == null || livePlayer == null) return;
-            TL_stories.StoryItem storyItem = MessagesController.getInstance(currentAccount).getStoriesController().findStory(livePlayer.dialogId, livePlayer.storyId);
+            if (fragment == null) return;
+            TL_stories.StoryItem storyItem = MessagesController.getInstance(livePlayer.currentAccount).getStoriesController().findStory(livePlayer.dialogId, livePlayer.storyId);
             if (storyItem == null) {
                 storyItem = livePlayer.storyItem;
             }
             if (storyItem == null) return;
-            fragment.getOrCreateStoryViewer().open(currentAccount, context, storyItem, null);
+            fragment.getOrCreateStoryViewer().open(player.currentAccount, context, storyItem, null);
             AndroidUtilities.runOnUIThread(LiveStoryPipOverlay::dismiss, 200);
         });
         controlsView.addView(expandButton, LayoutHelper.createFrame(buttonSize, buttonSize, Gravity.RIGHT, 0, margin, buttonSize + margin + 6, 0));

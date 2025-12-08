@@ -516,10 +516,19 @@ public class SendGiftSheet extends BottomSheetWithRecyclerListView implements No
 
             @Override
             public void onDraw(@NonNull Canvas c, @NonNull RecyclerView parent, @NonNull RecyclerView.State state) {
-                ViewPositionWatcher.computeCoordinatesInParent(chatView, recyclerListView, p);
-                final int top = (int) p.y;
-                final int left = (int) p.x;
-                final int bottom = (int) ViewPositionWatcher.computeYCoordinateInParent(messageEdit, recyclerListView) + messageEdit.getMeasuredHeight() + dp(12);
+                float top = parent.getHeight();
+                float bottom = 0;
+                float left = 0;
+
+                if (ViewPositionWatcher.computeCoordinatesInParent(chatView, recyclerListView, p)) {
+                    left = p.x;
+                    top = Math.min(top, p.y);
+                    bottom = Math.max(bottom, p.y + chatView.getMeasuredHeight());
+                }
+                if (ViewPositionWatcher.computeCoordinatesInParent(messageEdit, recyclerListView, p)) {
+                    top = Math.min(top, p.y);
+                    bottom = Math.max(bottom, p.y + messageEdit.getMeasuredHeight() + dp(12));
+                }
 
                 if (top < bottom && chatView.backgroundView != null) {
                     final float s = (float) (bottom - top) / chatView.backgroundView.getHeight();

@@ -22,6 +22,8 @@ import androidx.recyclerview.widget.DefaultItemAnimator;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ChatObject;
+import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
@@ -31,6 +33,7 @@ import org.telegram.messenger.browser.Browser;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.tl.TL_phone;
+import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.TextViewWithLoading;
 import org.telegram.ui.ActionBar.Theme;
@@ -78,9 +81,10 @@ public class CreateRtmpStreamBottomSheet extends BottomSheetWithRecyclerListView
         this.joinCallDelegate = null;
         this.hasFewPeers = false;
 
+        final long dialogId = DialogObject.getPeerDialogId(request.peer);
+        hasRevokeButton = request != null && start != null && (dialogId >= 0 || ChatObject.isCreator(MessagesController.getInstance(currentAccount).getChat(-dialogId)));
         if (start != null) {
             hasButton = true;
-            hasRevokeButton = request != null;
 
             final ButtonWithCounterView startBtn = new ButtonWithCounterView(context, resourcesProvider);
             startBtn.setText(getString(R.string.LiveStoryRTMPEnable), false);
@@ -94,32 +98,40 @@ public class CreateRtmpStreamBottomSheet extends BottomSheetWithRecyclerListView
                 }));
             });
 
-            if (request != null) {
+            if (hasRevokeButton) {
                 final ButtonWithCounterView revokeBtn = new ButtonWithCounterView(context, false, resourcesProvider);
                 revokeBtn.setColor(Theme.getColor(Theme.key_fill_RedNormal));
                 revokeBtn.text.setTypeface(AndroidUtilities.bold());
                 revokeBtn.setText(getString(R.string.LiveStoryRTMPRevoke), false);
                 revokeBtn.setOnClickListener(v -> {
-                    if (revokeBtn.isLoading()) return;
-                    revokeBtn.setLoading(true);
-                    request.revoke = true;
-                    ConnectionsManager.getInstance(currentAccount).sendRequest(request, (res, err) -> AndroidUtilities.runOnUIThread(() -> {
-                        revokeBtn.setLoading(false);
-                        if (res instanceof TL_phone.groupCallStreamRtmpUrl) {
-                            TL_phone.groupCallStreamRtmpUrl rtmpUrl = (TL_phone.groupCallStreamRtmpUrl) res;
-                            this.rtmpUrl = rtmpUrl.url;
-                            this.rtmpKey = rtmpUrl.key;
-                            this.rtmpKeySpoiled = new SpannableStringBuilder(rtmpKey);
-                            adapter.update(true);
-                        }
-                    }));
+                    new AlertDialog.Builder(context, resourcesProvider)
+                        .setTitle(getString(R.string.LiveStoryRTMPRevokeTitle))
+                        .setMessage(getString(R.string.LiveStoryRTMPRevokeText))
+                        .setPositiveButton(getString(R.string.RevokeButton), (di, w) -> {
+                            if (revokeBtn.isLoading()) return;
+                            revokeBtn.setLoading(true);
+                            request.revoke = true;
+                            ConnectionsManager.getInstance(currentAccount).sendRequest(request, (res, err) -> AndroidUtilities.runOnUIThread(() -> {
+                                revokeBtn.setLoading(false);
+                                if (res instanceof TL_phone.groupCallStreamRtmpUrl) {
+                                    TL_phone.groupCallStreamRtmpUrl rtmpUrl = (TL_phone.groupCallStreamRtmpUrl) res;
+                                    this.rtmpUrl = rtmpUrl.url;
+                                    this.rtmpKey = rtmpUrl.key;
+                                    this.rtmpKeySpoiled = new SpannableStringBuilder(rtmpKey);
+                                    adapter.update(true);
+                                }
+                            }));
+                        })
+                        .setNegativeButton(getString(R.string.Cancel), null)
+                        .makeRed(AlertDialog.BUTTON_POSITIVE)
+                        .show();
                 });
 
                 containerView.addView(revokeBtn, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.BOTTOM, 16, 0, 16, 12));
             }
         }
 
-        DefaultItemAnimator itemAnimator = new DefaultItemAnimator();
+        final DefaultItemAnimator itemAnimator = new DefaultItemAnimator();
         itemAnimator.setSupportsChangeAnimations(false);
         itemAnimator.setDelayAnimations(false);
         itemAnimator.setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT);
@@ -150,6 +162,8 @@ public class CreateRtmpStreamBottomSheet extends BottomSheetWithRecyclerListView
         this.joinCallDelegate = joinCallDelegate;
         this.hasFewPeers = hasFewPeers;
         Context context = containerView.getContext();
+
+        final boolean hasRevoke = ChatObject.isCreator(MessagesController.getInstance(currentAccount).getChat(-dialogId));
         hasButton = true;
         TextView startBtn = new TextView(context);
         startBtn.setGravity(Gravity.CENTER);
@@ -160,39 +174,49 @@ public class CreateRtmpStreamBottomSheet extends BottomSheetWithRecyclerListView
         startBtn.setText(getString(R.string.VoipChannelStartStreaming));
         startBtn.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText, resourcesProvider));
         startBtn.setBackground(Theme.createSimpleSelectorRoundRectDrawable(dp(8), Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider), ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_windowBackgroundWhite), 120)));
-        containerView.addView(startBtn, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.BOTTOM, 16, 0, 16, 52 + 12));
+        containerView.addView(startBtn, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.BOTTOM, 16, 0, 16, (hasRevoke ? 52 : 0) + 12));
         startBtn.setOnClickListener(view -> {
             selectAfterDismiss = MessagesController.getInstance(currentAccount).getInputPeer(MessageObject.getPeerId(selectedPeer));
             dismiss();
         });
 
-        final ButtonWithCounterView revokeBtn = new ButtonWithCounterView(context, false, resourcesProvider);
-        revokeBtn.setColor(Theme.getColor(Theme.key_fill_RedNormal));
-        revokeBtn.text.setTypeface(AndroidUtilities.bold());
-        revokeBtn.setText(getString(R.string.LiveStoryRTMPRevoke), false);
-        revokeBtn.setOnClickListener(v -> {
-            if (revokeBtn.isLoading()) return;
-            revokeBtn.setLoading(true);
+        if (hasRevoke) {
+            final ButtonWithCounterView revokeBtn = new ButtonWithCounterView(context, false, resourcesProvider);
+            revokeBtn.setColor(Theme.getColor(Theme.key_fill_RedNormal));
+            revokeBtn.text.setTypeface(AndroidUtilities.bold());
+            revokeBtn.setText(getString(R.string.LiveStoryRTMPRevoke), false);
+            revokeBtn.setOnClickListener(v -> {
+                new AlertDialog.Builder(context, resourcesProvider)
+                    .setTitle(getString(R.string.LiveStoryRTMPRevokeTitle))
+                    .setMessage(getString(R.string.LiveStoryRTMPRevokeText))
+                    .setPositiveButton(getString(R.string.RevokeButton), (di, w) -> {
+                        if (revokeBtn.isLoading()) return;
+                        revokeBtn.setLoading(true);
 
-            final TL_phone.getGroupCallStreamRtmpUrl req = new TL_phone.getGroupCallStreamRtmpUrl();
-            req.peer = MessagesController.getInstance(currentAccount).getInputPeer(dialogId);
-            req.revoke = true;
-            ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
-                revokeBtn.setLoading(false);
-                if (response != null) {
-                    if (response instanceof TL_phone.groupCallStreamRtmpUrl) {
-                        TL_phone.groupCallStreamRtmpUrl rtmpUrl = (TL_phone.groupCallStreamRtmpUrl) response;
-                        this.rtmpUrl = rtmpUrl.url;
-                        this.rtmpKey = rtmpUrl.key;
-                        this.rtmpKeySpoiled = new SpannableStringBuilder(rtmpKey);
-                        adapter.update(true);
-                    }
-                }
-            }));
-        });
-        containerView.addView(revokeBtn, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.BOTTOM, 16, 0, 16, 12));
+                        final TL_phone.getGroupCallStreamRtmpUrl req = new TL_phone.getGroupCallStreamRtmpUrl();
+                        req.peer = MessagesController.getInstance(currentAccount).getInputPeer(dialogId);
+                        req.revoke = true;
+                        ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+                            revokeBtn.setLoading(false);
+                            if (response != null) {
+                                if (response instanceof TL_phone.groupCallStreamRtmpUrl) {
+                                    TL_phone.groupCallStreamRtmpUrl rtmpUrl = (TL_phone.groupCallStreamRtmpUrl) response;
+                                    this.rtmpUrl = rtmpUrl.url;
+                                    this.rtmpKey = rtmpUrl.key;
+                                    this.rtmpKeySpoiled = new SpannableStringBuilder(rtmpKey);
+                                    adapter.update(true);
+                                }
+                            }
+                        }));
+                    })
+                    .setNegativeButton(getString(R.string.Cancel), null)
+                    .makeRed(AlertDialog.BUTTON_POSITIVE)
+                    .show();
+            });
+            containerView.addView(revokeBtn, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.BOTTOM, 16, 0, 16, 12));
+        }
 
-        recyclerListView.setPadding(backgroundPaddingLeft, 0, backgroundPaddingLeft, dp(52 + 72));
+        recyclerListView.setPadding(backgroundPaddingLeft, 0, backgroundPaddingLeft, dp((hasRevoke ? 52 : 0) + 72));
 
         DefaultItemAnimator itemAnimator = new DefaultItemAnimator();
         itemAnimator.setSupportsChangeAnimations(false);
@@ -305,7 +329,8 @@ public class CreateRtmpStreamBottomSheet extends BottomSheetWithRecyclerListView
         public void bindView(View view, UItem item, boolean divider, UniversalAdapter adapter, UniversalRecyclerView listView) {
             ((TextDetailCell) view).setTextAndValue(item.text, item.textValue, !item.hideDivider);
             if (item.text instanceof SpannableStringBuilder) {
-                ((TextDetailCell) view).textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
+                ((TextDetailCell) view).textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
+                ((TextDetailCell) view).textView.setTranslationY(dp(2));
                 ((TextDetailCell) view).textView.setTypeface(AndroidUtilities.getTypeface("fonts/rmono.ttf"));
             }
         }

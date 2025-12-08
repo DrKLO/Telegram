@@ -1561,7 +1561,7 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
             }
 
             text = Emoji.replaceEmoji(text, paint.getFontMetricsInt(), false, null,
-                DynamicDrawableSpan.ALIGN_BOTTOM, 0.85f);
+                DynamicDrawableSpan.ALIGN_BOTTOM, 0.85f, 0);
         }
 
         textLayout = new StaticLayout(text, paint, maxWidth,
@@ -1578,7 +1578,7 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
         ) {
             final CharSequence title = Emoji.replaceEmoji(
                 AndroidUtilities.replaceTags(LocaleController.getString(R.string.SuggestionAgreementReached)),
-                paint.getFontMetricsInt(), false, null, DynamicDrawableSpan.ALIGN_BOTTOM, 1);
+                paint.getFontMetricsInt(), false, null, DynamicDrawableSpan.ALIGN_BOTTOM, 1, 0);
 
             titleLayout = new StaticLayout(title, paint, maxWidth, Layout.Alignment.ALIGN_CENTER, 1.0f, 0.0f, false);
         }

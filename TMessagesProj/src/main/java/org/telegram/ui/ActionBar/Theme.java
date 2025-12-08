@@ -10578,4 +10578,14 @@ public class Theme {
 
     public static Paint DEBUG_RED = new Paint(); static { DEBUG_RED.setColor(0xffff0000); }
     public static Paint DEBUG_BLUE = new Paint(); static { DEBUG_BLUE.setColor(0xff0000ff); }
+    public static Paint DEBUG_RED_STROKE = new Paint(); static {
+        DEBUG_RED_STROKE.setColor(0xffff0000);
+        DEBUG_RED_STROKE.setStrokeWidth(2);
+        DEBUG_RED_STROKE.setStyle(Paint.Style.STROKE);
+    }
+    public static Paint DEBUG_GREEN_STROKE = new Paint(); static {
+        DEBUG_GREEN_STROKE.setColor(0xff00ff00);
+        DEBUG_GREEN_STROKE.setStrokeWidth(2);
+        DEBUG_GREEN_STROKE.setStyle(Paint.Style.STROKE);
+    }
 }

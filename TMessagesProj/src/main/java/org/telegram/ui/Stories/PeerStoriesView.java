@@ -1302,7 +1302,7 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
                 private boolean edit;
 
                 private void addViewStatistics(ActionBarPopupWindow.ActionBarPopupWindowLayout popupLayout, TL_stories.StoryItem storyItem) {
-                    if (isChannel) {
+                    if (isChannel && storyItem != null && !(storyItem.media instanceof TLRPC.TL_messageMediaVideoStream)) {
                         TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-dialogId);
                         if (chat != null) {
                             TLRPC.ChatFull chatFull = MessagesController.getInstance(currentAccount).getChatFull(chat.id);

@@ -34,7 +34,6 @@ import org.telegram.ui.Components.AnimatedEmojiDrawable;
 import org.telegram.ui.Components.AnimatedEmojiSpan;
 import org.telegram.ui.Components.ColoredImageSpan;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -643,7 +642,7 @@ public class Emoji {
     }
 
     public static CharSequence replaceEmoji(CharSequence cs, Paint.FontMetricsInt fontMetrics, boolean createNew, float scale) {
-        return replaceEmoji(cs, fontMetrics, createNew, null, DynamicDrawableSpan.ALIGN_BOTTOM, scale);
+        return replaceEmoji(cs, fontMetrics, createNew, null, DynamicDrawableSpan.ALIGN_BOTTOM, scale, 0);
     }
 
     public static CharSequence replaceEmoji(CharSequence cs, Paint.FontMetricsInt fontMetrics, boolean createNew, int[] emojiOnly) {
@@ -651,11 +650,11 @@ public class Emoji {
     }
 
     public static CharSequence replaceEmoji(CharSequence cs, Paint.FontMetricsInt fontMetrics, boolean createNew, int[] emojiOnly, int alignment) {
-        return replaceEmoji(cs, fontMetrics, createNew, emojiOnly, alignment, 1.0f);
+        return replaceEmoji(cs, fontMetrics, createNew, emojiOnly, alignment, 1.0f, 0);
     }
 
-    public static CharSequence replaceEmoji(CharSequence cs, Paint.FontMetricsInt fontMetrics, boolean createNew, int[] emojiOnly, int alignment, float scale) {
-            if (SharedConfig.useSystemEmoji || cs == null || cs.length() == 0) {
+    public static CharSequence replaceEmoji(CharSequence cs, Paint.FontMetricsInt fontMetrics, boolean createNew, int[] emojiOnly, int alignment, float scale, int minusLimit) {
+        if (SharedConfig.useSystemEmoji || cs == null || cs.length() == 0) {
             return cs;
         }
         Spannable s;
@@ -673,7 +672,7 @@ public class Emoji {
         ColoredImageSpan[] imageSpans = s.getSpans(0, s.length(), ColoredImageSpan.class);
         EmojiSpan span;
         Drawable drawable;
-        int limitCount = SharedConfig.getDevicePerformanceClass() >= SharedConfig.PERFORMANCE_CLASS_HIGH ? 100 : 50;
+        int limitCount = (SharedConfig.getDevicePerformanceClass() >= SharedConfig.PERFORMANCE_CLASS_HIGH ? 100 : 50) - minusLimit;
         for (int i = 0; i < emojis.size(); ++i) {
             try {
                 EmojiSpanRange emojiRange = emojis.get(i);

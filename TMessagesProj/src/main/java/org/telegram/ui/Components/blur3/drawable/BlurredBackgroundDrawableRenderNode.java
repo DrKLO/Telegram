@@ -8,12 +8,12 @@ import android.graphics.Color;
 import android.graphics.Outline;
 import android.graphics.Paint;
 import android.graphics.Rect;
+import android.graphics.RectF;
 import android.graphics.RenderNode;
 import android.os.Build;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
-import androidx.core.math.MathUtils;
 
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.blur3.LiquidGlassEffect;
@@ -174,9 +174,13 @@ public class BlurredBackgroundDrawableRenderNode extends BlurredBackgroundDrawab
             return;
         }
 
-        if (renderNodeInvalidated || !renderNode.hasDisplayList()) {
+        if (!renderNode.hasDisplayList()) {
+            source.dispatchOnDrawablesRelativePositionChange();
+            updateDisplayList();
+        } else if (renderNodeInvalidated) {
             updateDisplayList();
         }
+        renderNodeInvalidated = false;
 
         int color = Theme.multAlpha(shadowColor, renderNode.getAlpha());
         if (Color.alpha(color) != 0) {
@@ -192,8 +196,20 @@ public class BlurredBackgroundDrawableRenderNode extends BlurredBackgroundDrawab
 
     @Override
     public void setAlpha(int alpha) {
+        final int oldAlpha = getAlpha();
+
         super.setAlpha(alpha);
         renderNode.setAlpha(alpha / 255f);
         renderNodeInvalidated = true;
+
+        if (oldAlpha == 0 && alpha > 0) {
+            source.dispatchOnDrawablesRelativePositionChange();
+        }
+    }
+
+    @Override
+    protected void onSourceRelativePositionChanged(RectF position) {
+        super.onSourceRelativePositionChanged(position);
+        source.dispatchOnDrawablesRelativePositionChange();
     }
 }

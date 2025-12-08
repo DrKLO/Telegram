@@ -1049,7 +1049,6 @@ public class StoriesUtilities {
     }
 
     public static boolean isExpired(int currentAccount, TL_stories.StoryItem storyItem) {
-        if (storyItem.media instanceof TLRPC.TL_messageMediaVideoStream) return false;
         return ConnectionsManager.getInstance(currentAccount).getCurrentTime() > storyItem.expire_date;
     }
 
