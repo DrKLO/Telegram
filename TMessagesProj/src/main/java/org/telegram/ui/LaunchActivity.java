@@ -3662,17 +3662,6 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
     }
 
     private void openEmailSettings(TL_account.Password currentPassword) {
-        SpannableStringBuilder spannable = SpannableStringBuilder.valueOf(currentPassword.login_email_pattern);
-        int startIndex = currentPassword.login_email_pattern.indexOf('*');
-        int endIndex = currentPassword.login_email_pattern.lastIndexOf('*');
-        if (startIndex != endIndex && startIndex != -1 && endIndex != -1) {
-            TextStyleSpan.TextStyleRun run = new TextStyleSpan.TextStyleRun();
-            run.flags |= TextStyleSpan.FLAG_STYLE_SPOILER;
-            run.start = startIndex;
-            run.end = endIndex + 1;
-            spannable.setSpan(new TextStyleSpan(run), startIndex, endIndex + 1, 0);
-        }
-
         final LoginActivity loginActivity = new LoginActivity().changeEmail(() -> {
             Bulletin.LottieLayout layout = new Bulletin.LottieLayout(this, null);
             layout.setAnimation(R.raw.email_check_inbox);
@@ -3689,6 +3678,17 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         });
 
         if (currentPassword != null && currentPassword.login_email_pattern != null) {
+            SpannableStringBuilder spannable = SpannableStringBuilder.valueOf(currentPassword.login_email_pattern);
+            int startIndex = currentPassword.login_email_pattern.indexOf('*');
+            int endIndex = currentPassword.login_email_pattern.lastIndexOf('*');
+            if (startIndex != endIndex && startIndex != -1 && endIndex != -1) {
+                TextStyleSpan.TextStyleRun run = new TextStyleSpan.TextStyleRun();
+                run.flags |= TextStyleSpan.FLAG_STYLE_SPOILER;
+                run.start = startIndex;
+                run.end = endIndex + 1;
+                spannable.setSpan(new TextStyleSpan(run), startIndex, endIndex + 1, 0);
+            }
+
             new AlertDialog.Builder(this)
                     .setTitle(spannable)
                     .setMessage(getString(R.string.EmailLoginChangeMessage))

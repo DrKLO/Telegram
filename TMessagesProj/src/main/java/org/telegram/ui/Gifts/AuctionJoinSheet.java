@@ -311,7 +311,7 @@ public class AuctionJoinSheet extends BottomSheetWithRecyclerListView implements
         if (boughtCount > 0) {
             itemsBought.setVisibility(View.VISIBLE);
             itemsBought.setText(TextUtils.concat(AndroidUtilities.replaceArrows(
-                    LocaleController.formatPluralSpannable("Gift2AuctionsItemsBought", boughtCount, emojiGiftText),
+                    LocaleController.formatPluralSpannable("Gift2AuctionsItemsBought2", boughtCount, emojiGiftText),
                     true, dp(8f / 3f), dp(1))));
         } else {
             itemsBought.setVisibility(View.GONE);

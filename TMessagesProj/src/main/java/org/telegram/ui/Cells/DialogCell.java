@@ -3510,6 +3510,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
             return;
         }
 
+        float gtx = 0, gty = 0;
         boolean emojiStatusVisible = false;
 
         if (clipProgress != 0.0f && Build.VERSION.SDK_INT != 24) {
@@ -3695,6 +3696,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
         if (translationX != 0) {
             canvas.save();
             canvas.translate(translationX, 0);
+            gtx += translationX;
         }
 
         float cornersRadius = dp(8) * cornerProgress;
@@ -3722,6 +3724,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
         if (collapseOffset != 0) {
             canvas.save();
             canvas.translate(0, collapseOffset);
+            gty += collapseOffset;
         }
 
         if (rightFragmentOpenedProgress != 1) {
@@ -3735,6 +3738,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                     canvas.clipRect(dp(RightSlidingDialogContainer.getRightPaddingSize() + 1) - dp(8) * (1f - startAnimationProgress), 0, getMeasuredWidth(), getMeasuredHeight());
                 }
                 canvas.translate(-(getMeasuredWidth() - dp(74)) * 0.7f * rightFragmentOpenedProgress, 0);
+                gtx += -(getMeasuredWidth() - dp(74)) * 0.7f * rightFragmentOpenedProgress;
             }
 
             if (translationX != 0 || cornerProgress != 0.0f) {
@@ -4134,17 +4138,20 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                     y -= dp(9);
                 }
                 if (emojiStatus != null) {
-                    emojiStatus.setBounds(
-                        nameMuteLeft - dp(2),
-                        y - dp(4),
-                        nameMuteLeft + dp(20),
-                        y - dp(4) + dp(22)
-                    );
-                    emojiStatusView.setTranslationX(nameMuteLeft - dp(2));
-                    emojiStatusView.setTranslationY(y - dp(4));
-                    emojiStatusVisible = true;
+                    emojiStatusView.setTranslationX(gtx + nameMuteLeft - dp(2));
+                    emojiStatusView.setTranslationY(gty + y - dp(4));
+                    if (rightFragmentOpenedProgress > 0) {
+                        emojiStatus.setBounds(
+                            nameMuteLeft - dp(2),
+                            y - dp(4),
+                            nameMuteLeft + dp(20),
+                            y - dp(4) + dp(22)
+                        );
+                        emojiStatus.draw(canvas);
+                    } else {
+                        emojiStatusVisible = true;
+                    }
                     emojiStatus.setColor(Theme.getColor(Theme.key_chats_verifiedBackground, resourcesProvider));
-//                    emojiStatus.draw(canvas);
                 } else {
                     Drawable premiumDrawable = PremiumGradient.getInstance().premiumStarDrawableMini;
                     setDrawableBounds(premiumDrawable, nameMuteLeft - dp(1), dp(useForceThreeLines || SharedConfig.useThreeLinesLayout ? 12.5f : 15.5f));

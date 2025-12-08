@@ -487,7 +487,7 @@ public:
 class TL_userEmpty : public User {
 
 public:
-    static const uint32_t constructor = 0x31774388;
+    static const uint32_t constructor = 0xd3bc4b7a;
 
     void readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error);
     void serializeToStream(NativeByteBuffer *stream);
@@ -496,7 +496,7 @@ public:
 class TL_user : public User {
 
 public:
-    static const uint32_t constructor = 0xd3bc4b7a;
+    static const uint32_t constructor = 0x31774388;
 
     void readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error);
     void serializeToStream(NativeByteBuffer *stream);

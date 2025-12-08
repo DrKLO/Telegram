@@ -15,7 +15,7 @@ public class ChatListViewPaddingsAnimator {
     private int currentAdditionalHeight;
     public void setPaddings(
         int paddingTopTarget,
-        float paddingBottomAnimated, int paddingBottomTarget
+        float paddingBottomAnimated, int paddingBottomTarget, boolean allowScrollCompensation
     ) {
         final float translationY = paddingBottomTarget - paddingBottomAnimated;
         final int additionalHeight = 0; //(int) Math.ceil(Math.abs(translationY));
@@ -37,7 +37,7 @@ public class ChatListViewPaddingsAnimator {
         //recyclerView.setTranslationY(translationY);
         if (paddingTopOld != paddingTop || paddingBottomOld != paddingBottom) {
             final int dy = paddingTopOld - paddingTop;
-            if (dy != 0) {
+            if (allowScrollCompensation && dy != 0) {
                 AndroidUtilities.doOnLayout(recyclerView, () -> {
                     try {
                         recyclerView.scrollBy(0, dy);

@@ -11634,12 +11634,7 @@ public class ChatActivity extends BaseFragment implements
         if (topicsTabs != null) {
             topicsTabs.setSideMenuBackgroundMarginTop(Math.max(0, paddingTop - blurredViewTopOffset - dp(5)));
         }
-
-        if (chatListView.getPaddingTop() != paddingTop || chatListView.getPaddingBottom() != paddingBottomTarget) {
-            //chatListView.setPadding(0, paddingTop, 0, paddingBottomTarget);
-        }
-        chatListViewPaddingsAnimator.setPaddings(paddingTop, paddingBottomAnimated, paddingBottomTarget);
-
+        chatListViewPaddingsAnimator.setPaddings(paddingTop, paddingBottomAnimated, paddingBottomTarget, wasManualScroll);
     }
 
 

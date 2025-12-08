@@ -1583,7 +1583,7 @@ public class GiftSheet extends BottomSheetWithRecyclerListView implements Notifi
                     stars = gift.stars + (includeUpgradeInPrice && gift.can_upgrade ? gift.upgrade_stars : 0);
                 }
 
-                if (gift.auction) {
+                if (gift.auction && gift.availability_resale == 0) {
                     priceView.setText(getString(gift.sold_out ? R.string.Gift2AuctionPriceView : R.string.Gift2AuctionPriceJoin));
                 } else {
                     priceView.setText(StarsIntroActivity.replaceStarsWithPlain("XTR " + LocaleController.formatNumber(stars, ',') + (plus ? "+" : ""), .71f));

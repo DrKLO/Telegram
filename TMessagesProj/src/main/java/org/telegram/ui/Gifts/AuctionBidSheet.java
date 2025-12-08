@@ -238,7 +238,7 @@ public class AuctionBidSheet extends BottomSheetWithRecyclerListView implements 
                 0, emoji.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
             );
             itemsBought.setText(TextUtils.concat(AndroidUtilities.replaceArrows(
-                LocaleController.formatPluralSpannable("Gift2AuctionsItemsBought", auction.auctionUserState.acquired_count, emoji),
+                LocaleController.formatPluralSpannable("Gift2AuctionsItemsBought2", auction.auctionUserState.acquired_count, emoji),
                 true, dp(8f / 3f), dp(1))));
 
             ScaleStateListAnimator.apply(itemsBought, 0.02f, 1.5f);

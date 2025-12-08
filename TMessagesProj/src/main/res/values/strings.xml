@@ -10023,8 +10023,8 @@
     <string name="Gift2ActiveAuctionsActiveRaiseBid">Raise Bid</string>
     <string name="Gift2ActiveAuctionsActiveBidActive">Your bid **%s** is ranked **#%d**</string>
     <string name="Gift2ActiveAuctionsActiveBidOutbid">Your bid **%s** is outbid</string>
-    <string name="Gift2AuctionsItemsBought_one">%d %s item bought ></string>
-    <string name="Gift2AuctionsItemsBought_other">%1$d %2$s items bought ></string>
+    <string name="Gift2AuctionsItemsBought2_one">%1$d %2$s item bought ></string>
+    <string name="Gift2AuctionsItemsBought2_other">%1$d %2$s items bought ></string>
     <string name="Gift2AuctionsAcquiredGifts_one">%1$d Bought Gift</string>
     <string name="Gift2AuctionsAcquiredGifts_other">%1$d Bought Gifts</string>
     <string name="Gift2AuctionsAcquiredRound">Round #%1$d</string>
