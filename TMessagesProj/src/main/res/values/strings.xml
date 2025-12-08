@@ -8611,6 +8611,7 @@
 
     <string name="Gift2AuctionBidInfoMinimumBid">minimum bid</string>
     <string name="Gift2AuctionBidInfoUntilNextRound">until next round</string>
+    <string name="Gift2AuctionBidInfoUntilEndRound">last round</string>
     <string name="Gift2AuctionBidInfoLeft">left</string>
     <string name="Gift2AuctionAlreadyParticipateTitle">Auction</string>
     <string name="Gift2AuctionAlreadyParticipate">You are already participating in an auction for **%s**. You can only participate in one auction. Win the current round or wait until you are removed from the list of participants.</string>

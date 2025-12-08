@@ -7,12 +7,18 @@ uniform float4 radius;
 uniform float thickness;
 uniform float refract_index;
 uniform float refract_intensity;
+uniform float4 foreground_color_premultiplied;
 
 half sdfRect(half2 p, half4 r) {
   r.xy = (p.x > 0.0) ? r.xy : r.zw;
   r.x  = (p.y > 0.0) ? r.x  : r.y;
   half2 q = abs(p) - size + r.x;
   return length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - r.x;
+}
+
+half4 srcOver(half4 src, half4 dst) {
+    half3 outRGB = (src.rgb + dst.rgb * (1.0 - src.a));
+    return half4(outRGB, 1.0);
 }
 
 half4 main(in float2 fragCoord) {
@@ -35,5 +41,5 @@ half4 main(in float2 fragCoord) {
     uv += refract_vec.xy * refract_length * refract_intensity;
   }
 
-  return img.eval(uv);
+  return srcOver(half4(foreground_color_premultiplied), img.eval(uv));
 }

@@ -445,6 +445,10 @@ public class AuctionBidSheet extends BottomSheetWithRecyclerListView implements 
             ssb.append(formatNumber(auction.auctionStateActive.gifts_left, ','));
 
             giftsLeftCell.infoView.setText(ssb, animated);
+            nextRoundCell.titleView.setText(getString(
+                auction.auctionStateActive.current_round == auction.auctionStateActive.total_rounds ?
+                    R.string.Gift2AuctionBidInfoUntilEndRound : R.string.Gift2AuctionBidInfoUntilNextRound
+            ));
 
             final int topBidders = Math.min(topBidderCells.length, auction.auctionStateActive.top_bidders.size());
             if (topBidders > 0) {

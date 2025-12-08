@@ -237,6 +237,21 @@ public abstract class BlurredBackgroundDrawable extends Drawable {
             strokePathBottom.close();
         }
 
+        public void drawShadows(Canvas canvas, Paint paint, boolean useInAppKeyboardOptimization) {
+            if (useInAppKeyboardOptimization) {
+                final float bottom = MathUtils.clamp(boundsWithPadding.top + radii[0] * 2,
+                        boundsWithPadding.top, boundsWithPadding.bottom);
+
+                canvas.save();
+                canvas.clipRect(bounds.left, bounds.top, bounds.right, bottom);
+                canvas.drawRoundRect(boundsWithPadding.left, boundsWithPadding.top,
+                        boundsWithPadding.right, bottom, radii[0], radii[0], paint);
+                canvas.restore();
+            } else {
+                draw(canvas, paint);
+            }
+        }
+
         public void draw(Canvas canvas, Paint paint) {
             if (radiiAreSame) {
                 canvas.drawRoundRect(
@@ -433,21 +448,23 @@ public abstract class BlurredBackgroundDrawable extends Drawable {
 
     private final Paint backgroundBitmapPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint backgroundBitmapFill = new Paint(Paint.ANTI_ALIAS_FLAG);
-    private final Paint backgroundBitmapShadowPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint shadowPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Matrix bitmapShaderMatrix = new Matrix();
     private final WeakReference<Bitmap> bitmapInShader = new WeakReference<>(null);
     private @Nullable BitmapShader bitmapShader;
 
     {
-        backgroundBitmapShadowPaint.setColor(0);
+        shadowPaint.setColor(0);
         backgroundBitmapPaint.setFilterBitmap(true);
     }
 
     private void drawSourceColor(Canvas canvas, BlurredBackgroundSourceColor source) {
         final int backgroundColor = Theme.multAlpha(ColorUtils.compositeColors(this.backgroundColor, source.getColor()), alpha / 255f);
-        final int shadowColor = Theme.multAlpha(this.shadowColor, alpha / 255f);
+        if (Color.alpha(shadowColor) > 0 && alpha == 255) {
+            shadowPaint.setShadowLayer(dpf2(1), 0f, dpf2(1 / 3f), shadowColor);
+            boundProps.drawShadows(canvas, shadowPaint, inAppKeyboardOptimization);
+        }
 
-        backgroundColorPaint.setShadowLayer(dpf2(1), 0f, dpf2(1 / 3f), shadowColor);
         backgroundColorPaint.setColor(backgroundColor);
         boundProps.draw(canvas, backgroundColorPaint);
 
@@ -469,8 +486,8 @@ public abstract class BlurredBackgroundDrawable extends Drawable {
         }
 
         if (Color.alpha(shadowColor) > 0 && alpha == 255) {
-            backgroundBitmapShadowPaint.setShadowLayer(dpf2(1), 0f, dpf2(1 / 3f), shadowColor);
-            boundProps.draw(canvas, backgroundBitmapShadowPaint);
+            shadowPaint.setShadowLayer(dpf2(1), 0f, dpf2(1 / 3f), shadowColor);
+            boundProps.drawShadows(canvas, shadowPaint, inAppKeyboardOptimization);
         }
 
         if (bitmapShader != null && newBitmap != null && !newBitmap.isRecycled() && alpha > 0) {

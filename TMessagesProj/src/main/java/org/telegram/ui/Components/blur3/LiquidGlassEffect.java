@@ -1,11 +1,9 @@
 package org.telegram.ui.Components.blur3;
 
-import static org.telegram.messenger.AndroidUtilities.dp;
-
+import android.graphics.Color;
 import android.graphics.RenderEffect;
 import android.graphics.RenderNode;
 import android.graphics.RuntimeShader;
-import android.os.Build;
 
 import androidx.annotation.RequiresApi;
 
@@ -36,6 +34,7 @@ public class LiquidGlassEffect {
     private float thickness;
     private float intensity;
     private float index;
+    private int foregroundColor;
 
     public void update(
         float left, float top, float right, float bottom,
@@ -43,7 +42,8 @@ public class LiquidGlassEffect {
 
         float thickness,
         float intensity,
-        float index
+        float index,
+        int foregroundColor
     ) {
         float resolutionX = node.getWidth();
         float resolutionY = node.getHeight();
@@ -77,8 +77,16 @@ public class LiquidGlassEffect {
             Math.abs(this.radiusLeftBottom - radiusLeftBottom) > 0.1f ||
             Math.abs(this.thickness - thickness) > 0.1f ||
             Math.abs(this.intensity - intensity) > 0.1f ||
-            Math.abs(this.index - index) > 0.1f
+            Math.abs(this.index - index) > 0.1f ||
+            this.foregroundColor != foregroundColor
         ) {
+            this.foregroundColor = foregroundColor;
+
+            final float a = Color.alpha(foregroundColor) / 255f;
+            final float r = Color.red(foregroundColor) / 255f * a;
+            final float g = Color.green(foregroundColor) / 255f * a;
+            final float b = Color.blue(foregroundColor) / 255f * a;
+
             shader.setFloatUniform("resolution", this.resolutionX = resolutionX, this.resolutionY = resolutionY);
             shader.setFloatUniform("center", this.centerX = centerX, this.centerY = centerY);
             shader.setFloatUniform("size", this.sizeX = sizeX, this.sizeY = sizeY);
@@ -86,6 +94,7 @@ public class LiquidGlassEffect {
             shader.setFloatUniform("thickness", this.thickness = thickness);
             shader.setFloatUniform("refract_intensity", this.intensity = intensity);
             shader.setFloatUniform("refract_index", this.index = index);
+            shader.setFloatUniform("foreground_color_premultiplied", r, g, b, a);
             node.setRenderEffect(effect = RenderEffect.createRuntimeShaderEffect(shader, "img"));
         }
     }

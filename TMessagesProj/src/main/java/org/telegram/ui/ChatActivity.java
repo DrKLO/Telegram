@@ -138,6 +138,7 @@ import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BotForumHelper;
 import org.telegram.messenger.BotInlineKeyboard;
 import org.telegram.messenger.BotWebViewVibrationEffect;
+import org.telegram.messenger.BuildConfig;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.ChannelBoostsController;
 import org.telegram.messenger.ChatMessageSharedResources;
@@ -2466,23 +2467,25 @@ public class ChatActivity extends BaseFragment implements
             scrollableViewNoiseSuppressor = new DownscaleScrollableNoiseSuppressor();
             recommendedAdditionalSizeY = dp(48);
 
-            glassBackgroundSourceRenderNode = new BlurredBackgroundSourceRenderNode(navbarContentSourceWallpaper);
             glassBackgroundSourceFrostedRenderNode = new BlurredBackgroundSourceRenderNode(navbarContentSourceWallpaper);
-
 
             navbarContentSourceMessages = new BlurredBackgroundSourceRenderNode(null);
             navbarContentSourceMessagesDrawable = navbarContentSourceMessages.createDrawable();
-            navbarContentSourceWallpaperAndMessagesRenderNode = new BlurredBackgroundSourceRenderNode(null);
-
-            glassBackgroundDrawableFactory = new BlurredBackgroundDrawableViewFactory(glassBackgroundSourceRenderNode);
-            glassBackgroundDrawableFactory.setLiquidGlassEffectAllowed(LiteMode.isEnabled(LiteMode.FLAG_LIQUID_GLASS));
 
             glassBackgroundDrawableFactoryFrosted = new BlurredBackgroundDrawableViewFactory(glassBackgroundSourceFrostedRenderNode);
             glassBackgroundDrawableFactoryFrosted.setLiquidGlassEffectAllowed(LiteMode.isEnabled(LiteMode.FLAG_LIQUID_GLASS));
 
             if (LiteMode.isEnabled(LiteMode.FLAG_LIQUID_GLASS)) {
+                glassBackgroundSourceRenderNode = new BlurredBackgroundSourceRenderNode(navbarContentSourceWallpaper);
+                glassBackgroundDrawableFactory = new BlurredBackgroundDrawableViewFactory(glassBackgroundSourceRenderNode);
+                glassBackgroundDrawableFactory.setLiquidGlassEffectAllowed(LiteMode.isEnabled(LiteMode.FLAG_LIQUID_GLASS));
+
+                navbarContentSourceWallpaperAndMessagesRenderNode = null;
                 navbarContentDrawableFactory = new BlurredBackgroundDrawableViewFactory(navbarContentSourceWallpaper);
             } else {
+                glassBackgroundSourceRenderNode = null;
+                glassBackgroundDrawableFactory = glassBackgroundDrawableFactoryFrosted;
+                navbarContentSourceWallpaperAndMessagesRenderNode = new BlurredBackgroundSourceRenderNode(null);
                 navbarContentDrawableFactory = new BlurredBackgroundDrawableViewFactory(navbarContentSourceWallpaperAndMessagesRenderNode);
             }
         } else {
@@ -4551,6 +4554,7 @@ public class ChatActivity extends BaseFragment implements
                 if (textSelectionHelper != null && textSelectionHelper.isInSelectionMode()) {
                     textSelectionHelper.invalidate();
                 }
+                invalidateClipRectForBackgroundAndChatList();
                 isSkeletonVisible();
             }
 
@@ -8716,6 +8720,7 @@ public class ChatActivity extends BaseFragment implements
         checkUi_BlurHeight();
         checkUi_emptyContainerPosition();
         checkUi_chatListViewPaddings();
+        invalidateClipRectForBackgroundAndChatList();
 
         final boolean inAppInputVisible = windowInsetsStateHolder.inAppViewIsVisible();
         if (lastInAppInputVisible != inAppInputVisible) {
@@ -44292,5 +44297,30 @@ public class ChatActivity extends BaseFragment implements
         try {
             fireworksOverlay.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
         } catch (Exception ignored) {};
+    }
+
+    private final Rect clipBoundsTmp = new Rect();
+    private void invalidateClipRectForBackgroundAndChatList() {
+        if (contentView == null) {
+            return;
+        }
+
+        final int topClip = ActionBar.getCurrentActionBarHeight() + windowInsetsStateHolder.getInsets(WindowInsetsCompat.Type.statusBars()).top;
+        final int bottomClip = (int) Math.max(0,
+            windowInsetsStateHolder.getAnimatedImeBottomInset() * windowInsetsStateHolder.getAnimatedKeyboardVisibility() - dp(29));
+
+        if (contentView.backgroundView != null) {
+            clipBoundsTmp.set(0, topClip, contentView.getMeasuredWidth(), contentView.getMeasuredHeight() - bottomClip);
+            contentView.backgroundView.setClipBounds(clipBoundsTmp);
+        }
+        if (chatListView != null) {
+            clipBoundsTmp.set(0, topClip, contentView.getMeasuredWidth(), contentView.getMeasuredHeight() - bottomClip);
+            clipBoundsTmp.offset(0, -chatListView.getTop());
+            chatListView.setClipBounds(clipBoundsTmp);
+        }
+        if (chatInputViewsContainer != null && chatInputViewsContainer.getFadeView() != null) {
+            clipBoundsTmp.set(0, 0, contentView.getMeasuredWidth(), contentView.getMeasuredHeight() - bottomClip);
+            // chatInputViewsContainer.getFadeView().setClipBounds(clipBoundsTmp);
+        }
     }
 }

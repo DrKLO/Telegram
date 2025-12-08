@@ -161,12 +161,15 @@ public class MotionBackgroundDrawable extends Drawable {
     @SuppressLint("NewApi")
     private void init() {
         currentBitmap = Bitmap.createBitmap(bitmapWidth, bitmapHeight, Bitmap.Config.ARGB_8888);
+        currentBitmap.setHasAlpha(false);
         for (int i = 0; i < ANIMATION_CACHE_BITMAPS_COUNT; i++) {
             gradientToBitmap[i] = Bitmap.createBitmap(bitmapWidth, bitmapHeight, Bitmap.Config.ARGB_8888);
+            gradientToBitmap[i].setHasAlpha(false);
         }
         gradientCanvas = new Canvas(currentBitmap);
 
         gradientFromBitmap = Bitmap.createBitmap(bitmapWidth, bitmapHeight, Bitmap.Config.ARGB_8888);
+        gradientFromBitmap.setHasAlpha(false);
         gradientFromCanvas = new Canvas(gradientFromBitmap);
 
         Utilities.generateGradient(currentBitmap, true, phase, interpolator.getInterpolation(posAnimationProgress), currentBitmap.getWidth(), currentBitmap.getHeight(), currentBitmap.getRowBytes(), colors);

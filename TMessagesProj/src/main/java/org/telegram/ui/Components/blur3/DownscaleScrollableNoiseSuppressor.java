@@ -36,7 +36,7 @@ public class DownscaleScrollableNoiseSuppressor {
 
         final int frostedDownscale;
         if (LiteMode.isEnabled(LiteMode.FLAG_LIQUID_GLASS)) {
-            final float glassRadius = downscaleRadius(dpf2(1.66f), 2);
+            final float glassRadius = downscaleRadius(dpf2(1.66f), 3);
 
             renderNodesForGlass = new DownscaledRenderNode(1);
             renderNodesForGlass.setScale(2, 2);
@@ -49,11 +49,11 @@ public class DownscaleScrollableNoiseSuppressor {
             renderNodesForGlass = null;
             int performance = SharedConfig.getDevicePerformanceClass();
             if (performance == SharedConfig.PERFORMANCE_CLASS_HIGH) {
-                frostedDownscale = 4;
-            } else if (performance == SharedConfig.PERFORMANCE_CLASS_AVERAGE) {
                 frostedDownscale = 6;
-            } else {
+            } else if (performance == SharedConfig.PERFORMANCE_CLASS_AVERAGE) {
                 frostedDownscale = 8;
+            } else {
+                frostedDownscale = 10;
             }
         }
 
