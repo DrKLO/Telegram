@@ -1213,6 +1213,8 @@ public class MessageObject {
         public boolean isDocuments;
         public boolean captionAbove;
 
+        public int cachedWidthForCaption = -1;
+
         public GroupedMessagePosition getPosition(MessageObject msg) {
             if (msg == null) {
                 return null;

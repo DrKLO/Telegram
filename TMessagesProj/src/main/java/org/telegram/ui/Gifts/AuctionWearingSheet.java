@@ -252,7 +252,7 @@ public class AuctionWearingSheet extends BottomSheetWithRecyclerListView impleme
         };
         giftCell.setPriorityAuction();
         giftCell.setStarsGift(starGift, true, false, false, false);
-        giftCell.setImageSize(dp(100));
+        giftCell.setImageSize(dp(84));
         giftCell.setImageLayer(7);
         giftCell.hidePrice();
         giftCell.cardBackground.setStrokeColors(null);

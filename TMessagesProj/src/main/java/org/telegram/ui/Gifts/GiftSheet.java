@@ -1518,7 +1518,7 @@ public class GiftSheet extends BottomSheetWithRecyclerListView implements Notifi
             final TL_stars.starGiftAttributeBackdrop backdrop = findAttribute(gift.attributes, TL_stars.starGiftAttributeBackdrop.class);
             cardBackground.setBackdrop(backdrop);
             cardBackground.setPattern(findAttribute(gift.attributes, TL_stars.starGiftAttributePattern.class));
-            if (gift.auction && (!gift.sold_out || priotityAuction)) {
+            if (gift.auction && (!gift.sold_out || priotityAuction) && !(allowResaleInGifts && gift.availability_resale > 0)) {
                 if (gift.sold_out) {
                     cardBackground.setStrokeColors(new int[] {
                         Theme.getColor(Theme.key_gift_ribbon_soldout, resourcesProvider),

@@ -14,6 +14,8 @@ import android.graphics.ColorMatrixColorFilter;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Path;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffXfermode;
 import android.graphics.RectF;
 import android.graphics.RenderEffect;
 import android.graphics.RenderNode;
@@ -161,16 +163,26 @@ public class ProfileGooeyView extends FrameLayout {
         private Bitmap bitmap;
         private Canvas bitmapCanvas;
         private final Paint bitmapPaint = new Paint();
+        private final Paint bitmapPaint2 = new Paint();
 
         private int optimizedH;
         private int optimizedW;
 
         private int bitmapOrigW, bitmapOrigH;
-        private final float scaleConst = 3f;
+        private final float scaleConst = 5f;
 
         {
             bitmapPaint.setFlags(Paint.FILTER_BITMAP_FLAG | Paint.ANTI_ALIAS_FLAG | Paint.DITHER_FLAG);
             bitmapPaint.setFilterBitmap(true);
+            bitmapPaint2.setFlags(Paint.FILTER_BITMAP_FLAG | Paint.ANTI_ALIAS_FLAG | Paint.DITHER_FLAG);
+            bitmapPaint2.setFilterBitmap(true);
+            bitmapPaint2.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC_ATOP));
+            bitmapPaint.setColorFilter(new ColorMatrixColorFilter(new float[] {
+                0f, 0f, 0f, 0f, 0f,
+                0f, 0f, 0f, 0f, 0f,
+                0f, 0f, 0f, 0f, 0f,
+                0f, 0f, 0f, 60, -7500
+            }));
         }
 
         @Override
@@ -234,13 +246,15 @@ public class ProfileGooeyView extends FrameLayout {
 
                 // Blur buffer
                 Utilities.stackBlurBitmap(bitmap, (int) (intensity * 2 / scaleConst));
-                Utilities.applyAlphaThreshold(bitmap, 125);
 
                 // Filter alpha + fade, then draw
                 canvas.save();
                 canvas.translate(optimizedOffsetX, 0);
+                canvas.saveLayer(0, 0, bitmapOrigW, bitmapOrigH, null);
                 canvas.scale((float) bitmapOrigW / bitmap.getWidth(), (float) bitmapOrigH / bitmap.getHeight());
                 canvas.drawBitmap(bitmap, 0, 0, bitmapPaint);
+                canvas.drawBitmap(bitmap, 0, 0, bitmapPaint2);
+                canvas.restore();
                 canvas.restore();
             }
 

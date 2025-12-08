@@ -2098,7 +2098,7 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
                         title = Emoji.replaceEmoji(title, giftTextPaint.getFontMetricsInt(), false, null);
                         title = MessageObject.replaceAnimatedEmoji(title, action.message.entities, giftTextPaint.getFontMetricsInt());
                     } else if (action.auction_acquired) {
-                        title = formatString(R.string.Gift2ActionWonActionText, formatNumber(action.gift.stars, ','));
+                        title = formatString(R.string.Gift2ActionWonActionText, formatNumber(action.gift.stars + action.upgrade_stars, ','));
                     }  else if (isForChannel) {
                         if (action.converted) {
                             title = formatPluralStringComma("Gift2ActionConvertedInfo", (int) stars);
