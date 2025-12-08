@@ -51,6 +51,8 @@ public class AppGlobalConfig {
 
     public final ConfigInt passkeysAccountPasskeysMax = ofInt("passkeys_account_passkeys_max", 5);
 
+    public final ConfigBoolean settingsDisplayPasskeys = ofBoolean("settings_display_passkeys", false);
+
     /* * */
 
     public boolean apply(SharedPreferences.Editor editor, TLRPC.TL_jsonObject object) {

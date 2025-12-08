@@ -601,37 +601,37 @@ public class DrawerLayoutContainer extends FrameLayout {
         return behindKeyboardColor;
     }
 
-    private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
-    private final float[] radii = new float[8];
-    private final Path clipPath = new Path();
+//    private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+//    private final float[] radii = new float[8];
+//    private final Path clipPath = new Path();
 
     @Override
     protected void dispatchDraw(@NonNull Canvas canvas) {
-        canvas.save();
-        if (BuildVars.DEBUG_PRIVATE_VERSION && Build.VERSION.SDK_INT >= 31) {
-            canvas.drawColor(0xFF000000);
-            final WindowInsets insets = getRootWindowInsets();
-            if (insets != null) {
-                AndroidUtilities.rectTmp.set(0, 0, getWidth(), getHeight());
-                final RoundedCorner topLeft = insets.getRoundedCorner(android.view.RoundedCorner.POSITION_TOP_LEFT);
-                final RoundedCorner topRight = insets.getRoundedCorner(android.view.RoundedCorner.POSITION_TOP_RIGHT);
-                final RoundedCorner bottomRight = insets.getRoundedCorner(android.view.RoundedCorner.POSITION_BOTTOM_RIGHT);
-                final RoundedCorner bottomLeft = insets.getRoundedCorner(RoundedCorner.POSITION_BOTTOM_LEFT);
-                radii[0] = radii[1] = topLeft == null ? 0 : topLeft.getRadius();
-                radii[2] = radii[3] = topRight == null ? 0 : topRight.getRadius();
-                radii[4] = radii[5] = bottomRight == null ? 0 : bottomRight.getRadius();
-                radii[6] = radii[7] = bottomLeft == null ? 0 : bottomLeft.getRadius();
-
-                clipPath.rewind();
-                clipPath.addRoundRect(AndroidUtilities.rectTmp, radii, Path.Direction.CW);
-                canvas.clipPath(clipPath);
-
-                paint.setColor(Theme.getColor(Theme.key_windowBackgroundGray));
-                canvas.drawRect(0, getHeight() - AndroidUtilities.navigationBarHeight, getWidth(), getHeight(), paint);
-            }
-        }
+//        canvas.save();
+//        if (BuildVars.DEBUG_PRIVATE_VERSION && Build.VERSION.SDK_INT >= 31) {
+//            canvas.drawColor(0xFF000000);
+//            final WindowInsets insets = getRootWindowInsets();
+//            if (insets != null) {
+//                AndroidUtilities.rectTmp.set(0, 0, getWidth(), getHeight());
+//                final RoundedCorner topLeft = insets.getRoundedCorner(android.view.RoundedCorner.POSITION_TOP_LEFT);
+//                final RoundedCorner topRight = insets.getRoundedCorner(android.view.RoundedCorner.POSITION_TOP_RIGHT);
+//                final RoundedCorner bottomRight = insets.getRoundedCorner(android.view.RoundedCorner.POSITION_BOTTOM_RIGHT);
+//                final RoundedCorner bottomLeft = insets.getRoundedCorner(RoundedCorner.POSITION_BOTTOM_LEFT);
+//                radii[0] = radii[1] = topLeft == null ? 0 : topLeft.getRadius();
+//                radii[2] = radii[3] = topRight == null ? 0 : topRight.getRadius();
+//                radii[4] = radii[5] = bottomRight == null ? 0 : bottomRight.getRadius();
+//                radii[6] = radii[7] = bottomLeft == null ? 0 : bottomLeft.getRadius();
+//
+//                clipPath.rewind();
+//                clipPath.addRoundRect(AndroidUtilities.rectTmp, radii, Path.Direction.CW);
+//                canvas.clipPath(clipPath);
+//
+//                paint.setColor(Theme.getColor(Theme.key_windowBackgroundGray));
+//                canvas.drawRect(0, getHeight() - AndroidUtilities.navigationBarHeight, getWidth(), getHeight(), paint);
+//            }
+//        }
         super.dispatchDraw(canvas);
-        canvas.restore();
+//        canvas.restore();
         if (drawCurrentPreviewFragmentAbove && parentActionBarLayout != null) {
             if (previewBlurDrawable != null) {
                 previewBlurDrawable.setAlpha((int) (parentActionBarLayout.getCurrentPreviewFragmentAlpha() * 255));

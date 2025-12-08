@@ -3483,7 +3483,9 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                         }
                     }
                 }
-                requestPasskey(false);
+                if (activityMode == MODE_LOGIN) {
+                    requestPasskey(false);
+                }
             }, SHOW_DELAY);
         }
 
@@ -3500,6 +3502,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
         private boolean requestingPasskey = false;
         private Runnable cancelRequestingPasskey;
         private void requestPasskey(boolean clickedButton) {
+            if (activityMode != MODE_LOGIN) return;
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P || !BuildVars.SUPPORTS_PASSKEYS) return;
             if (requestingPasskey || !clickedButton && requestedPasskey) return;
 
@@ -3509,7 +3512,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                 cancelRequestingPasskey = null;
                 requestingPasskey = false;
                 if (err != null && ("EMPTY".equals(err) || "CANCELLED".equals(err))) {
-                    if (subtitleView != null) {
+                    if (subtitleView != null && "CANCELLED".equals(err)) {
                         subtitleView.setText(AndroidUtilities.replaceArrows(AndroidUtilities.replaceSingleTag(getString(R.string.StartTextPasskey), () -> {
                             requestPasskey(true);
                         }), true));

@@ -88,6 +88,7 @@ public class Utilities {
 //    public static native int saveProgressiveJpeg(Bitmap bitmap, int width, int height, int stride, int quality, String path);
     public static native void generateGradient(Bitmap bitmap, boolean unpin, int phase, float progress, int width, int height, int stride, int[] colors);
     public static native void setupNativeCrashesListener(String path);
+    public static native void applyAlphaThreshold(Bitmap bitmap, int threshold);
 
     public static Bitmap stackBlurBitmapMax(Bitmap bitmap) {
         return stackBlurBitmapMax(bitmap, false);
