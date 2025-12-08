@@ -3069,7 +3069,7 @@ public class PaintView extends SizeNotifierFrameLayoutPhoto implements IPhotoPai
                     }
                     if (mediaEntity.mediaArea != null && mediaEntity.mediaArea.coordinates != null && radius > 0) {
                         mediaEntity.mediaArea.coordinates.flags |= 1;
-                        mediaEntity.mediaArea.coordinates.radius = (scaleX * radius / (float) entitiesView.getMeasuredWidth()) * 100;
+                        mediaEntity.mediaArea.coordinates.radius = (scaleX * radius / v.getWidth()) * 100;
                     }
                 }
                 if (drawThisEntity && (drawEntities || drawMessage && mediaEntity.type == VideoEditedInfo.MediaEntity.TYPE_MESSAGE) && bitmap != null) {

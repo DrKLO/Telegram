@@ -1519,6 +1519,17 @@ public class ChatActivityEnterView extends FrameLayout implements
             float locCx = rectF.centerX();
             float locCy = rectF.centerY();
             canvas.save();
+
+            final float transformToResume = Utilities.clamp(transformToSeekbar * 2f, 1, 0);
+            final int wasAlpha = lockPaint.getAlpha();
+            final int saveToLayer = canvas.saveLayerAlpha(
+                    locCx - dp(24),
+                    locCy - dp(24),
+                    locCx + dp(24),
+                    locCy + dp(24), (int) (wasAlpha * (1f - transformToResume)), Canvas.ALL_SAVE_FLAG);
+            lockOutlinePaint.setAlpha(255);
+            lockPaint.setAlpha(255);
+
             canvas.translate(0, dpf2(2) * (1f - moveProgress));
             canvas.rotate(lockRotation, locCx, locCy);
 
@@ -1541,13 +1552,10 @@ public class ChatActivityEnterView extends FrameLayout implements
             }
 
             Drawable resumeDrawable = null;
-            float transformToResume = Utilities.clamp(transformToSeekbar * 2f, 1, 0);
             if (transformToResume > 0) {
                 resumeDrawable = isInVideoMode ? vidDrawable : micDrawable;
             }
 
-            int wasAlpha = lockPaint.getAlpha();
-            lockPaint.setAlpha((int) (wasAlpha * (1f - transformToResume)));
             if (transformToPauseProgress > 0) {
                 if (periodBackgroundDrawable == null) {
                     canvas.drawRoundRect(rectF, dpf2(3), dpf2(3), lockBackgroundPaint);
@@ -1569,6 +1577,8 @@ public class ChatActivityEnterView extends FrameLayout implements
                 canvas.drawRoundRect(rectF, dpf2(3), dpf2(3), lockPaint);
             }
             lockPaint.setAlpha(wasAlpha);
+            lockOutlinePaint.setAlpha(wasAlpha);
+            canvas.restoreToCount(saveToLayer);
 
             if (resumeDrawable != null) {
                 final float _s = 0.9285f;
@@ -10643,6 +10653,7 @@ public class ChatActivityEnterView extends FrameLayout implements
                 }
             }
         };
+        emojiView.shouldDrawStickerSettings = true;
         if (!shouldDrawBackground) {
             emojiView.updateColors();
         }

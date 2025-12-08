@@ -10318,6 +10318,7 @@ public class ChatActivity extends BaseFragment implements
         if (index < 0) {
             index = contentView.getChildCount();
         }
+        index = Math.min(index + 1, contentView.getChildCount());
 
         contentView.addView(instantCameraView, index, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT | Gravity.TOP));
     }
@@ -16049,7 +16050,7 @@ public class ChatActivity extends BaseFragment implements
         return getScrollOffsetForMessage(getHeightForMessage(object, !TextUtils.isEmpty(highlightMessageQuote))) - scrollOffsetForQuote(object);
     }
     private int getScrollOffsetForMessage(int messageHeight) {
-        return (int) Math.max(-AndroidUtilities.dp(2), (chatListView.getMeasuredHeight() - blurredViewBottomOffset - chatListViewPaddingTop - messageHeight) / 2);
+        return (int) Math.max(-AndroidUtilities.dp(2), (chatListView.getMeasuredHeight() - blurredViewBottomOffset - chatListViewPaddingTop - windowInsetsStateHolder.getCurrentMaxBottomInset() - dp(44 + 9) - messageHeight) / 2);
     }
 
     private int scrollOffsetForQuote(MessageObject object) {
@@ -16909,6 +16910,9 @@ public class ChatActivity extends BaseFragment implements
             if (switchingFromTopics && child == actionBar) {
                 return true;
             }
+            if (child == instantCameraView) {
+                return true;
+            }
             if (getTag(BlurBehindDrawable.TAG_DRAWING_AS_BACKGROUND) != null) {
                 boolean needBlur;
                 if (((int) getTag(BlurBehindDrawable.TAG_DRAWING_AS_BACKGROUND)) == BlurBehindDrawable.STATIC_CONTENT) {
@@ -16960,6 +16964,9 @@ public class ChatActivity extends BaseFragment implements
                 }
                 canvas.restore();
             } else {
+                if (child == chatInputViewsContainer && instantCameraView != null && instantCameraView.getVisibility() == VISIBLE) {
+                    super.drawChild(canvas, instantCameraView, drawingTime);
+                }
                 result = super.drawChild(canvas, child, drawingTime);
                 if (isVideo && child == chatListView && messageObject.type != MessageObject.TYPE_ROUND_VIDEO && videoPlayerContainer != null && videoPlayerContainer.getTag() != null) {
                     canvas.save();

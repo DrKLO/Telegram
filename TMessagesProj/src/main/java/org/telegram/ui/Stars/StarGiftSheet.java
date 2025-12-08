@@ -4286,6 +4286,7 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
         final boolean self = messageObject.getDialogId() == selfId;
         TL_stars.StarGift stargift;
         TLRPC.TL_textWithEntities message;
+        TLRPC.Peer auctionPeer = null;
         if (messageObject.messageOwner.action instanceof TLRPC.TL_messageActionStarGift || messageObject.messageOwner.action instanceof TLRPC.TL_messageActionStarGiftUnique && ((TLRPC.TL_messageActionStarGiftUnique) messageObject.messageOwner.action).gift instanceof TL_stars.TL_starGift) {
             if (!rolling && roller != null && roller.isRolling() && roller.rollingGift != null) {
                 roller.detach();
@@ -4303,7 +4304,6 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
             long convert_stars, upgrade_stars;
             TLRPC.Peer from_id, peer;
             String prepaid_upgrade_hash;
-            TLRPC.Peer auctionPeer = null;
             if (messageObject.messageOwner.action instanceof TLRPC.TL_messageActionStarGift) {
                 final TLRPC.TL_messageActionStarGift action = (TLRPC.TL_messageActionStarGift) messageObject.messageOwner.action;
                 converted = action.converted;
@@ -4551,7 +4551,7 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
             afterTableTextView.setText(AndroidUtilities.replaceArrows(AndroidUtilities.replaceSingleTag(getString(R.string.Gift2InBlockchain), () -> {
                 Browser.openUrlInSystemBrowser(getContext(), MessagesController.getInstance(currentAccount).tonBlockchainExplorerUrl + gift_address);
             }), true, dp(8f / 3f), dp(.66f)));
-        } else if (!converted && !refunded && stargift != null && isMine(currentAccount, getDialogId())) {
+        } else if (!converted && !refunded && stargift != null && isMine(currentAccount, getDialogId()) && auctionPeer == null) {
             afterTableTextView.setVisibility(View.VISIBLE);
             if (getDialogId() >= 0) {
                 final SpannableStringBuilder sb = new SpannableStringBuilder();

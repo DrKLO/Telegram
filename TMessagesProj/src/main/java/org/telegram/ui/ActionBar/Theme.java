@@ -4483,8 +4483,8 @@ public class Theme {
         fallbackKeys.put(key_share_icon, key_windowBackgroundWhiteBlackText);
         fallbackKeys.put(key_share_linkBackground, key_windowBackgroundGray);
         fallbackKeys.put(key_share_linkText, key_windowBackgroundWhiteBlackText);
-        fallbackKeys.put(key_glass_defaultIcon, Theme.key_windowBackgroundWhiteGrayText6);
-        fallbackKeys.put(key_glass_defaultText, Theme.key_windowBackgroundWhiteGrayText6);
+        fallbackKeys.put(key_glass_defaultIcon, Theme.key_chat_messagePanelIcons);
+        fallbackKeys.put(key_glass_defaultText, Theme.key_chat_messagePanelText);
 
         for (int i = 0; i < keys_avatar_background.length; i++) {
             themeAccentExclusionKeys.add(keys_avatar_background[i]);

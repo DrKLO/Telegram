@@ -175,7 +175,7 @@ public class ActiveGiftAuctionsHintCell extends BlurredFrameLayout implements Gi
                 } else if (myPlace == 3) {
                     str = getString(R.string.Gift2ActiveAuctionsActiveStatusWinning3Place);
                 } else {
-                    str = formatString(R.string.Gift2ActiveAuctionsActiveStatusWinningOtherPlace, myPlace);
+                    str = formatPlace(myPlace);
                 }
 
                 messageTextView.setText(formatString(R.string.Gift2ActiveAuctionsActiveStatusWinningOne, str));
@@ -184,6 +184,21 @@ public class ActiveGiftAuctionsHintCell extends BlurredFrameLayout implements Gi
 
         updateColors();
     }
+
+    private static String formatPlace(int place) {
+        int lastTwo = place % 100;
+        if (lastTwo >= 11 && lastTwo <= 13) {
+            return formatString(R.string.Gift2ActiveAuctionsActiveStatusWinningOtherTh, place);
+        }
+
+        switch (place % 10) {
+            case 1: return formatString(R.string.Gift2ActiveAuctionsActiveStatusWinningOtherSt, place);
+            case 2: return formatString(R.string.Gift2ActiveAuctionsActiveStatusWinningOtherNd, place);
+            case 3: return formatString(R.string.Gift2ActiveAuctionsActiveStatusWinningOtherRd, place);
+            default: return formatString(R.string.Gift2ActiveAuctionsActiveStatusWinningOtherTh, place);
+        }
+    }
+
 
     private boolean isOutbid;
 

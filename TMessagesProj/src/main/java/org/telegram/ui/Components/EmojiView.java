@@ -205,6 +205,7 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
     private int gifTrendingTabNum = -2;
     private int gifFirstEmojiTabNum = -2;
     private boolean shouldDrawBackground = true;
+    public boolean shouldDrawStickerSettings;
     public boolean shouldLightenBackground = true;
 
     private FrameLayout stickersContainer;
@@ -1945,7 +1946,7 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
                         }
                     }
                 });
-                gifGridView.setPadding(0, searchFieldHeight, 0, AndroidUtilities.dp(44));
+                gifGridView.setPadding(0, searchFieldHeight, 0, AndroidUtilities.dp(44) + bottomInset);
                 gifGridView.setOverScrollMode(RecyclerListView.OVER_SCROLL_NEVER);
                 ((SimpleItemAnimator) gifGridView.getItemAnimator()).setSupportsChangeAnimations(false);
                 gifGridView.setAdapter(gifAdapter = new GifAdapter(context, true));
@@ -2600,7 +2601,7 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
                 public void onPageSelected(int position) {
                     saveNewPage();
                     showBackspaceButton(position == 0, true);
-                    showStickerSettingsButton(position == 2 && shouldDrawBackground, true);
+                    showStickerSettingsButton(position == 2 && (shouldDrawBackground || shouldDrawStickerSettings), true);
                     if (delegate.isSearchOpened()) {
                         if (position == 0) {
                             if (emojiSearchField != null) {
@@ -4454,11 +4455,11 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
                         if (animation.equals(searchAnimation)) {
                             gridView.setTranslationY(0);
                             if (gridView == stickersGridView) {
-                                gridView.setPadding(0, 0, 0, 0);
+                                gridView.setPadding(0, 0, 0, bottomInset);
                             } else if (gridView == emojiGridView) {
-                                gridView.setPadding(AndroidUtilities.dp(5), 0, AndroidUtilities.dp(5), 0);
+                                gridView.setPadding(AndroidUtilities.dp(5), 0, AndroidUtilities.dp(5), bottomInset);
                             } else if (gridView == gifGridView) {
-                                gridView.setPadding(0, searchFieldHeight, 0, 0);
+                                gridView.setPadding(0, searchFieldHeight, 0, bottomInset);
                             }
                             searchAnimation = null;
                         }
@@ -4478,11 +4479,11 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
                     tabStrip.setTranslationY(-AndroidUtilities.dp(40));
                 }
                 if (gridView == stickersGridView) {
-                    gridView.setPadding(0, AndroidUtilities.dp(4), 0, 0);
+                    gridView.setPadding(0, AndroidUtilities.dp(4), 0, bottomInset);
                 } else if (gridView == emojiGridView) {
-                    gridView.setPadding(AndroidUtilities.dp(5), 0, AndroidUtilities.dp(5), 0);
+                    gridView.setPadding(AndroidUtilities.dp(5), 0, AndroidUtilities.dp(5), bottomInset);
                 } else if (gridView == gifGridView) {
-                    gridView.setPadding(0, searchFieldHeight, 0, 0);
+                    gridView.setPadding(0, searchFieldHeight, 0, bottomInset);
                 }
                 if (gridView == gifGridView) {
                     if (gifSearchAdapter.showTrendingWhenSearchEmpty = gifAdapter.results.size() > 0) {
@@ -4656,11 +4657,11 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
                             int firstVisPos = layoutManager.findFirstVisibleItemPosition();
                             gridView.setTranslationY(0);
                             if (gridView == stickersGridView) {
-                                gridView.setPadding(0, AndroidUtilities.dp(36), 0, AndroidUtilities.dp(44));
+                                gridView.setPadding(0, AndroidUtilities.dp(36), 0, AndroidUtilities.dp(44) + bottomInset);
                             } else if (gridView == gifGridView) {
-                                gridView.setPadding(0, searchFieldHeight, 0, AndroidUtilities.dp(44));
+                                gridView.setPadding(0, searchFieldHeight, 0, AndroidUtilities.dp(44) + bottomInset);
                             } else if (gridView == emojiGridView) {
-                                gridView.setPadding(AndroidUtilities.dp(5), AndroidUtilities.dp(36), AndroidUtilities.dp(5), AndroidUtilities.dp(44));
+                                gridView.setPadding(AndroidUtilities.dp(5), AndroidUtilities.dp(36), AndroidUtilities.dp(5), AndroidUtilities.dp(44) + bottomInset);
                             }
                             if (firstVisPos != RecyclerView.NO_POSITION) {
                                 layoutManager.scrollToPositionWithOffset(firstVisPos, 0);
@@ -4685,11 +4686,11 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
                     tabStrip.setTranslationY(0);
                 }
                 if (gridView == stickersGridView) {
-                    gridView.setPadding(0, AndroidUtilities.dp(36), 0, AndroidUtilities.dp(44));
+                    gridView.setPadding(0, AndroidUtilities.dp(36), 0, AndroidUtilities.dp(44) + bottomInset);
                 } else if (gridView == gifGridView) {
-                    gridView.setPadding(0, AndroidUtilities.dp(36 + 4), 0, AndroidUtilities.dp(44));
+                    gridView.setPadding(0, AndroidUtilities.dp(36 + 4), 0, AndroidUtilities.dp(44) + bottomInset);
                 } else if (gridView == emojiGridView) {
-                    gridView.setPadding(AndroidUtilities.dp(5), AndroidUtilities.dp(36), AndroidUtilities.dp(5), AndroidUtilities.dp(44));
+                    gridView.setPadding(AndroidUtilities.dp(5), AndroidUtilities.dp(36), AndroidUtilities.dp(5), AndroidUtilities.dp(44) + bottomInset);
                 }
                 layoutManager.scrollToPositionWithOffset(0, 0);
             }
@@ -5730,7 +5731,7 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
             }
         } else if (currentPage == 1) {
             showBackspaceButton(false, false);
-            showStickerSettingsButton(shouldDrawBackground, false);
+            showStickerSettingsButton(shouldDrawBackground || shouldDrawStickerSettings, false);
             if (pager.getCurrentItem() != 2) {
                 pager.setCurrentItem(2, false);
             }

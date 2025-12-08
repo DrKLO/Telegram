@@ -8584,6 +8584,8 @@
     <string name="Gift2HideSelfInfo">Hide my name and message from visitors to my profile</string>
     <string name="Gift2AuctionInfo_one">%d gift is dropped at varying intervals to the top %d bidder by bid amount.</string>
     <string name="Gift2AuctionInfo_other">%d gifts are dropped at varying intervals to the top %d bidders by bid amount.</string>
+    <string name="Gift2AuctionInfoLearnMore2_one">%d gift is dropped at varying intervals to the top %d bidder by bid amount. **Learn More >**</string>
+    <string name="Gift2AuctionInfoLearnMore2_other">%d gifts are dropped at varying intervals to the top %d bidders by bid amount. **Learn More >**</string>
     <string name="Gift2AuctionInfo2_one">Top **%d** bidder will get an **%s**\nthis round.</string>
     <string name="Gift2AuctionInfo2_other">Top **%d** bidders will get an **%s**\nthis round.</string>
     <string name="Gift2AuctionTableStarted">Started</string>
@@ -10007,6 +10009,10 @@
     <string name="Gift2ActiveAuctionsActiveStatusWinning2Place">2nd place</string>
     <string name="Gift2ActiveAuctionsActiveStatusWinning3Place">3rd place</string>
     <string name="Gift2ActiveAuctionsActiveStatusWinningOtherPlace">%d place</string>
+    <string name="Gift2ActiveAuctionsActiveStatusWinningOtherSt">%dst place</string>
+    <string name="Gift2ActiveAuctionsActiveStatusWinningOtherNd">%dnd place</string>
+    <string name="Gift2ActiveAuctionsActiveStatusWinningOtherRd">%drd place</string>
+    <string name="Gift2ActiveAuctionsActiveStatusWinningOtherTh">%dth place</string>
     <string name="Gift2ActiveAuctionsActiveStatusWinningAll">You are winning all of them.</string>
     <string name="Gift2ActiveAuctionsActiveStatusOutbid">You\'ve been outbid.</string>
 
