@@ -629,10 +629,19 @@ public class SendGiftSheet extends BottomSheetWithRecyclerListView implements No
 
     private void setButtonText(boolean animated) {
         if (auction != null) {
-            button.setText(getString(R.string.Gift2AuctionPlaceABid), animated);
-            final int timeLeft = auction.auctionStateActive != null ?
-                Math.max(0, auction.auctionStateActive.end_date - (ConnectionsManager.getInstance(currentAccount).getCurrentTime())) : 0;
-            button.setSubText(formatString(R.string.Gift2AuctionTimeLeft, LocaleController.formatTTLString(timeLeft)), animated);
+            final int currentTime = ConnectionsManager.getInstance(currentAccount).getCurrentTime();
+            if (auction.isUpcoming(currentTime)) {
+                final int timeLeft = auction.gift.auction_start_date - currentTime;
+                button.setText(getString(R.string.Gift2AuctionPlaceAEarlyBid), animated);
+                button.setSubText(formatString(R.string.Gift2AuctionStartsIn, LocaleController.formatTTLString(timeLeft)), animated);
+            } else if (auction.auctionStateActive != null) {
+                final int timeLeft = auction.auctionStateActive.end_date - currentTime;
+                button.setText(getString(R.string.Gift2AuctionPlaceABid), animated);
+                button.setSubText(formatString(R.string.Gift2AuctionTimeLeft, LocaleController.formatTTLString(timeLeft)), animated);
+            } else {
+                button.setText(getString(R.string.Gift2AuctionPlaceABid), animated);
+                button.setSubText(null, animated);
+            }
         } else if (starGift != null) {
             final long balance = StarsController.getInstance(currentAccount).getBalance().amount;
             final long price = this.starGift.stars + (upgrade ? this.starGift.upgrade_stars : 0) + (TextUtils.isEmpty(messageEdit.getText()) ? 0 : send_paid_messages_stars);

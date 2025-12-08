@@ -1041,7 +1041,7 @@ public class StarsReactionsSheet extends BottomSheet implements NotificationCent
         public boolean drawCounterImage = true;
         private final Drawable counterImage;
         private final AnimatedTextView.AnimatedTextDrawable counterText = new AnimatedTextView.AnimatedTextDrawable(false, true, true);
-        private final AnimatedTextView.AnimatedTextDrawable counterSubText = new AnimatedTextView.AnimatedTextDrawable();
+        private final AnimatedTextView.AnimatedTextDrawable counterSubText = new AnimatedTextView.AnimatedTextDrawable(false, true, true);
 
         private final ColoredImageSpan[] starRef = new ColoredImageSpan[1];
 
@@ -1398,6 +1398,7 @@ public class StarsReactionsSheet extends BottomSheet implements NotificationCent
 
         public void setCounterSubText(@Nullable String text, boolean animated) {
             subTextVisible.setValue(!TextUtils.isEmpty(text), animated);
+            counterSubText.cancelAnimation();
             counterSubText.setText(text, animated);
         }
 

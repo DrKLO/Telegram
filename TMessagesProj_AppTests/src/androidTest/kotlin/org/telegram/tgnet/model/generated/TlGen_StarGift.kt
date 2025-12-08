@@ -11,82 +11,6 @@ import org.telegram.tgnet.model.TlGen_Object
 import org.telegram.tgnet.model.TlGen_Vector
 
 public sealed class TlGen_StarGift : TlGen_Object {
-  public data class TL_starGiftUnique(
-    public val require_premium: Boolean,
-    public val resale_ton_only: Boolean,
-    public val theme_available: Boolean,
-    public val id: Long,
-    public val gift_id: Long,
-    public val title: String,
-    public val slug: String,
-    public val num: Int,
-    public val owner_id: TlGen_Peer?,
-    public val owner_name: String?,
-    public val owner_address: String?,
-    public val attributes: List<TlGen_StarGiftAttribute>,
-    public val availability_issued: Int,
-    public val availability_total: Int,
-    public val gift_address: String?,
-    public val resell_amount: List<TlGen_StarsAmount>?,
-    public val released_by: TlGen_Peer?,
-    public val theme_peer: TlGen_Peer?,
-    public val peer_color: TlGen_PeerColor?,
-    public val host_id: TlGen_Peer?,
-    public val multiflags_8: Multiflags_8?,
-  ) : TlGen_StarGift() {
-    internal val flags: UInt
-      get() {
-        var result = 0U
-        if (owner_id != null) result = result or 1U
-        if (owner_name != null) result = result or 2U
-        if (owner_address != null) result = result or 4U
-        if (gift_address != null) result = result or 8U
-        if (resell_amount != null) result = result or 16U
-        if (released_by != null) result = result or 32U
-        if (require_premium) result = result or 64U
-        if (resale_ton_only) result = result or 128U
-        if (multiflags_8 != null) result = result or 256U
-        if (theme_available) result = result or 512U
-        if (theme_peer != null) result = result or 1024U
-        if (peer_color != null) result = result or 2048U
-        if (host_id != null) result = result or 4096U
-        return result
-      }
-
-    public override fun serializeToStream(stream: OutputSerializedData) {
-      stream.writeInt32(MAGIC.toInt())
-      stream.writeInt32(flags.toInt())
-      stream.writeInt64(id)
-      stream.writeInt64(gift_id)
-      stream.writeString(title)
-      stream.writeString(slug)
-      stream.writeInt32(num)
-      owner_id?.serializeToStream(stream)
-      owner_name?.let { stream.writeString(it) }
-      owner_address?.let { stream.writeString(it) }
-      TlGen_Vector.serialize(stream, attributes)
-      stream.writeInt32(availability_issued)
-      stream.writeInt32(availability_total)
-      gift_address?.let { stream.writeString(it) }
-      resell_amount?.let { TlGen_Vector.serialize(stream, it) }
-      released_by?.serializeToStream(stream)
-      multiflags_8?.let { stream.writeInt64(it.value_amount) }
-      multiflags_8?.let { stream.writeString(it.value_currency) }
-      theme_peer?.serializeToStream(stream)
-      peer_color?.serializeToStream(stream)
-      host_id?.serializeToStream(stream)
-    }
-
-    public data class Multiflags_8(
-      public val value_amount: Long,
-      public val value_currency: String,
-    )
-
-    public companion object {
-      public const val MAGIC: UInt = 0xB0BF741BU
-    }
-  }
-
   public data class TL_starGift(
     public val birthday: Boolean,
     public val require_premium: Boolean,
@@ -99,6 +23,8 @@ public sealed class TlGen_StarGift : TlGen_Object {
     public val title: String?,
     public val released_by: TlGen_Peer?,
     public val locked_until_date: Int?,
+    public val upgrade_variants: Int?,
+    public val background: TlGen_StarGiftBackground?,
     public val multiflags_0: Multiflags_0?,
     public val multiflags_1: Multiflags_1?,
     public val multiflags_8: Multiflags_8?,
@@ -128,6 +54,8 @@ public sealed class TlGen_StarGift : TlGen_Object {
         if (locked_until_date != null) result = result or 512U
         if (peer_color_available) result = result or 1024U
         if (auction) result = result or 2048U
+        if (upgrade_variants != null) result = result or 4096U
+        if (background != null) result = result or 8192U
         return result
       }
 
@@ -152,6 +80,9 @@ public sealed class TlGen_StarGift : TlGen_Object {
       locked_until_date?.let { stream.writeInt32(it) }
       multiflags_11?.let { stream.writeString(it.auction_slug) }
       multiflags_11?.let { stream.writeInt32(it.gifts_per_round) }
+      multiflags_11?.let { stream.writeInt32(it.auction_start_date) }
+      upgrade_variants?.let { stream.writeInt32(it) }
+      background?.serializeToStream(stream)
     }
 
     public data class Multiflags_0(
@@ -172,6 +103,7 @@ public sealed class TlGen_StarGift : TlGen_Object {
     public data class Multiflags_11(
       public val auction_slug: String,
       public val gifts_per_round: Int,
+      public val auction_start_date: Int,
     )
 
     public data class Multiflags_4(
@@ -180,7 +112,88 @@ public sealed class TlGen_StarGift : TlGen_Object {
     )
 
     public companion object {
-      public const val MAGIC: UInt = 0x1B9A4D7FU
+      public const val MAGIC: UInt = 0x313A9547U
+    }
+  }
+
+  public data class TL_starGiftUnique(
+    public val require_premium: Boolean,
+    public val resale_ton_only: Boolean,
+    public val theme_available: Boolean,
+    public val id: Long,
+    public val gift_id: Long,
+    public val title: String,
+    public val slug: String,
+    public val num: Int,
+    public val owner_id: TlGen_Peer?,
+    public val owner_name: String?,
+    public val owner_address: String?,
+    public val attributes: List<TlGen_StarGiftAttribute>,
+    public val availability_issued: Int,
+    public val availability_total: Int,
+    public val gift_address: String?,
+    public val resell_amount: List<TlGen_StarsAmount>?,
+    public val released_by: TlGen_Peer?,
+    public val theme_peer: TlGen_Peer?,
+    public val peer_color: TlGen_PeerColor?,
+    public val host_id: TlGen_Peer?,
+    public val offer_min_stars: Int?,
+    public val multiflags_8: Multiflags_8?,
+  ) : TlGen_StarGift() {
+    internal val flags: UInt
+      get() {
+        var result = 0U
+        if (owner_id != null) result = result or 1U
+        if (owner_name != null) result = result or 2U
+        if (owner_address != null) result = result or 4U
+        if (gift_address != null) result = result or 8U
+        if (resell_amount != null) result = result or 16U
+        if (released_by != null) result = result or 32U
+        if (require_premium) result = result or 64U
+        if (resale_ton_only) result = result or 128U
+        if (multiflags_8 != null) result = result or 256U
+        if (theme_available) result = result or 512U
+        if (theme_peer != null) result = result or 1024U
+        if (peer_color != null) result = result or 2048U
+        if (host_id != null) result = result or 4096U
+        if (offer_min_stars != null) result = result or 8192U
+        return result
+      }
+
+    public override fun serializeToStream(stream: OutputSerializedData) {
+      stream.writeInt32(MAGIC.toInt())
+      stream.writeInt32(flags.toInt())
+      stream.writeInt64(id)
+      stream.writeInt64(gift_id)
+      stream.writeString(title)
+      stream.writeString(slug)
+      stream.writeInt32(num)
+      owner_id?.serializeToStream(stream)
+      owner_name?.let { stream.writeString(it) }
+      owner_address?.let { stream.writeString(it) }
+      TlGen_Vector.serialize(stream, attributes)
+      stream.writeInt32(availability_issued)
+      stream.writeInt32(availability_total)
+      gift_address?.let { stream.writeString(it) }
+      resell_amount?.let { TlGen_Vector.serialize(stream, it) }
+      released_by?.serializeToStream(stream)
+      multiflags_8?.let { stream.writeInt64(it.value_amount) }
+      multiflags_8?.let { stream.writeString(it.value_currency) }
+      multiflags_8?.let { stream.writeInt64(it.value_usd_amount) }
+      theme_peer?.serializeToStream(stream)
+      peer_color?.serializeToStream(stream)
+      host_id?.serializeToStream(stream)
+      offer_min_stars?.let { stream.writeInt32(it) }
+    }
+
+    public data class Multiflags_8(
+      public val value_amount: Long,
+      public val value_currency: String,
+      public val value_usd_amount: Long,
+    )
+
+    public companion object {
+      public const val MAGIC: UInt = 0x569D64C9U
     }
   }
 
@@ -1057,6 +1070,179 @@ public sealed class TlGen_StarGift : TlGen_Object {
 
     public companion object {
       public const val MAGIC: UInt = 0x1BEFE865U
+    }
+  }
+
+  public data class TL_starGiftUnique_layer219(
+    public val require_premium: Boolean,
+    public val resale_ton_only: Boolean,
+    public val theme_available: Boolean,
+    public val id: Long,
+    public val gift_id: Long,
+    public val title: String,
+    public val slug: String,
+    public val num: Int,
+    public val owner_id: TlGen_Peer?,
+    public val owner_name: String?,
+    public val owner_address: String?,
+    public val attributes: List<TlGen_StarGiftAttribute>,
+    public val availability_issued: Int,
+    public val availability_total: Int,
+    public val gift_address: String?,
+    public val resell_amount: List<TlGen_StarsAmount>?,
+    public val released_by: TlGen_Peer?,
+    public val theme_peer: TlGen_Peer?,
+    public val peer_color: TlGen_PeerColor?,
+    public val host_id: TlGen_Peer?,
+    public val multiflags_8: Multiflags_8?,
+  ) : TlGen_Object {
+    internal val flags: UInt
+      get() {
+        var result = 0U
+        if (owner_id != null) result = result or 1U
+        if (owner_name != null) result = result or 2U
+        if (owner_address != null) result = result or 4U
+        if (gift_address != null) result = result or 8U
+        if (resell_amount != null) result = result or 16U
+        if (released_by != null) result = result or 32U
+        if (require_premium) result = result or 64U
+        if (resale_ton_only) result = result or 128U
+        if (multiflags_8 != null) result = result or 256U
+        if (theme_available) result = result or 512U
+        if (theme_peer != null) result = result or 1024U
+        if (peer_color != null) result = result or 2048U
+        if (host_id != null) result = result or 4096U
+        return result
+      }
+
+    public override fun serializeToStream(stream: OutputSerializedData) {
+      stream.writeInt32(MAGIC.toInt())
+      stream.writeInt32(flags.toInt())
+      stream.writeInt64(id)
+      stream.writeInt64(gift_id)
+      stream.writeString(title)
+      stream.writeString(slug)
+      stream.writeInt32(num)
+      owner_id?.serializeToStream(stream)
+      owner_name?.let { stream.writeString(it) }
+      owner_address?.let { stream.writeString(it) }
+      TlGen_Vector.serialize(stream, attributes)
+      stream.writeInt32(availability_issued)
+      stream.writeInt32(availability_total)
+      gift_address?.let { stream.writeString(it) }
+      resell_amount?.let { TlGen_Vector.serialize(stream, it) }
+      released_by?.serializeToStream(stream)
+      multiflags_8?.let { stream.writeInt64(it.value_amount) }
+      multiflags_8?.let { stream.writeString(it.value_currency) }
+      theme_peer?.serializeToStream(stream)
+      peer_color?.serializeToStream(stream)
+      host_id?.serializeToStream(stream)
+    }
+
+    public data class Multiflags_8(
+      public val value_amount: Long,
+      public val value_currency: String,
+    )
+
+    public companion object {
+      public const val MAGIC: UInt = 0xB0BF741BU
+    }
+  }
+
+  public data class TL_starGift_layer219(
+    public val birthday: Boolean,
+    public val require_premium: Boolean,
+    public val peer_color_available: Boolean,
+    public val id: Long,
+    public val sticker: TlGen_Document,
+    public val stars: Long,
+    public val convert_stars: Long,
+    public val upgrade_stars: Long?,
+    public val title: String?,
+    public val released_by: TlGen_Peer?,
+    public val locked_until_date: Int?,
+    public val multiflags_0: Multiflags_0?,
+    public val multiflags_1: Multiflags_1?,
+    public val multiflags_8: Multiflags_8?,
+    public val multiflags_11: Multiflags_11?,
+    public val multiflags_4: Multiflags_4?,
+  ) : TlGen_Object {
+    public val limited: Boolean = multiflags_0 != null
+
+    public val sold_out: Boolean = multiflags_1 != null
+
+    public val limited_per_user: Boolean = multiflags_8 != null
+
+    public val auction: Boolean = multiflags_11 != null
+
+    internal val flags: UInt
+      get() {
+        var result = 0U
+        if (limited) result = result or 1U
+        if (sold_out) result = result or 2U
+        if (birthday) result = result or 4U
+        if (upgrade_stars != null) result = result or 8U
+        if (multiflags_4 != null) result = result or 16U
+        if (title != null) result = result or 32U
+        if (released_by != null) result = result or 64U
+        if (require_premium) result = result or 128U
+        if (limited_per_user) result = result or 256U
+        if (locked_until_date != null) result = result or 512U
+        if (peer_color_available) result = result or 1024U
+        if (auction) result = result or 2048U
+        return result
+      }
+
+    public override fun serializeToStream(stream: OutputSerializedData) {
+      stream.writeInt32(MAGIC.toInt())
+      stream.writeInt32(flags.toInt())
+      stream.writeInt64(id)
+      sticker.serializeToStream(stream)
+      stream.writeInt64(stars)
+      multiflags_0?.let { stream.writeInt32(it.availability_remains) }
+      multiflags_0?.let { stream.writeInt32(it.availability_total) }
+      multiflags_4?.let { stream.writeInt64(it.availability_resale) }
+      stream.writeInt64(convert_stars)
+      multiflags_1?.let { stream.writeInt32(it.first_sale_date) }
+      multiflags_1?.let { stream.writeInt32(it.last_sale_date) }
+      upgrade_stars?.let { stream.writeInt64(it) }
+      multiflags_4?.let { stream.writeInt64(it.resell_min_stars) }
+      title?.let { stream.writeString(it) }
+      released_by?.serializeToStream(stream)
+      multiflags_8?.let { stream.writeInt32(it.per_user_total) }
+      multiflags_8?.let { stream.writeInt32(it.per_user_remains) }
+      locked_until_date?.let { stream.writeInt32(it) }
+      multiflags_11?.let { stream.writeString(it.auction_slug) }
+      multiflags_11?.let { stream.writeInt32(it.gifts_per_round) }
+    }
+
+    public data class Multiflags_0(
+      public val availability_remains: Int,
+      public val availability_total: Int,
+    )
+
+    public data class Multiflags_1(
+      public val first_sale_date: Int,
+      public val last_sale_date: Int,
+    )
+
+    public data class Multiflags_8(
+      public val per_user_total: Int,
+      public val per_user_remains: Int,
+    )
+
+    public data class Multiflags_11(
+      public val auction_slug: String,
+      public val gifts_per_round: Int,
+    )
+
+    public data class Multiflags_4(
+      public val availability_resale: Long,
+      public val resell_min_stars: Long,
+    )
+
+    public companion object {
+      public const val MAGIC: UInt = 0x1B9A4D7FU
     }
   }
 }

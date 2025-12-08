@@ -112,21 +112,15 @@ public sealed class TlGen_WebPageAttribute : TlGen_Object {
   public data class TL_webPageAttributeStarGiftAuction(
     public val gift: TlGen_StarGift,
     public val end_date: Int,
-    public val center_color: Int,
-    public val edge_color: Int,
-    public val text_color: Int,
   ) : TlGen_WebPageAttribute() {
     public override fun serializeToStream(stream: OutputSerializedData) {
       stream.writeInt32(MAGIC.toInt())
       gift.serializeToStream(stream)
       stream.writeInt32(end_date)
-      stream.writeInt32(center_color)
-      stream.writeInt32(edge_color)
-      stream.writeInt32(text_color)
     }
 
     public companion object {
-      public const val MAGIC: UInt = 0x034986ABU
+      public const val MAGIC: UInt = 0x01C641C2U
     }
   }
 
@@ -152,6 +146,27 @@ public sealed class TlGen_WebPageAttribute : TlGen_Object {
 
     public companion object {
       public const val MAGIC: UInt = 0x939A4671U
+    }
+  }
+
+  public data class TL_webPageAttributeStarGiftAuction_layer219(
+    public val gift: TlGen_StarGift,
+    public val end_date: Int,
+    public val center_color: Int,
+    public val edge_color: Int,
+    public val text_color: Int,
+  ) : TlGen_Object {
+    public override fun serializeToStream(stream: OutputSerializedData) {
+      stream.writeInt32(MAGIC.toInt())
+      gift.serializeToStream(stream)
+      stream.writeInt32(end_date)
+      stream.writeInt32(center_color)
+      stream.writeInt32(edge_color)
+      stream.writeInt32(text_color)
+    }
+
+    public companion object {
+      public const val MAGIC: UInt = 0x034986ABU
     }
   }
 }

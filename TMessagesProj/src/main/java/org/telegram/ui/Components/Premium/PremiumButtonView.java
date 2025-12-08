@@ -275,7 +275,7 @@ public class PremiumButtonView extends FrameLayout implements Loadable {
         super.dispatchDraw(canvas);
     }
 
-    public void setOverlayText(String text, boolean drawOverlayColor, boolean animated) {
+    public void setOverlayText(CharSequence text, boolean drawOverlayColor, boolean animated) {
         showOverlay = true;
         this.drawOverlayColor = drawOverlayColor;
         overlayTextView.setText(text, animated);

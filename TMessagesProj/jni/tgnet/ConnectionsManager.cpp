@@ -585,6 +585,11 @@ uint32_t ConnectionsManager::getCurrentDatacenterId() {
     return datacenter != nullptr ? datacenter->getDatacenterId() : INT_MAX;
 }
 
+int64_t ConnectionsManager::getCurrentAuthKeyId() {
+    Datacenter *datacenter = getDatacenterWithId(DEFAULT_DATACENTER_ID);
+    return datacenter != nullptr ? datacenter->getPermanentAuthKeyId() : 0;
+}
+
 bool ConnectionsManager::isTestBackend() {
     return testBackend;
 }

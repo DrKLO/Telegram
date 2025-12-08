@@ -19,15 +19,17 @@ public sealed class TlGen_payments_StarGiftActiveAuctions : TlGen_Object {
   public data class TL_payments_starGiftActiveAuctions(
     public val auctions: List<TlGen_StarGiftActiveAuctionState>,
     public val users: List<TlGen_User>,
+    public val chats: List<TlGen_Chat>,
   ) : TlGen_payments_StarGiftActiveAuctions() {
     public override fun serializeToStream(stream: OutputSerializedData) {
       stream.writeInt32(MAGIC.toInt())
       TlGen_Vector.serialize(stream, auctions)
       TlGen_Vector.serialize(stream, users)
+      TlGen_Vector.serialize(stream, chats)
     }
 
     public companion object {
-      public const val MAGIC: UInt = 0x97F187D8U
+      public const val MAGIC: UInt = 0xAEF6ABBCU
     }
   }
 }

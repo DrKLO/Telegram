@@ -36,6 +36,8 @@ public class BotInlineKeyboard {
         public static final int SUGGESTION_ACCEPT = 2;
         public static final int SUGGESTION_EDIT = 3;
         public static final int OPEN_MESSAGE_THREAD = 4;
+        public static final int GIFT_OFFER_DECLINE = 5;
+        public static final int GIFT_OFFER_ACCEPT = 6;
 
         public final int id;
         public final @DrawableRes int icon;
@@ -120,6 +122,13 @@ public class BotInlineKeyboard {
             });
             buttons.add(new Button[]{
                     new ButtonCustom(ButtonCustom.SUGGESTION_EDIT, R.string.PostSuggestionsInlineEdit, R.drawable.filled_bot_suggest_24)
+            });
+        }
+
+        public void addGiftOfferKeyboard() {
+            buttons.add(new Button[]{
+                new ButtonCustom(ButtonCustom.GIFT_OFFER_DECLINE, R.string.GiftOfferDecline, R.drawable.filled_bot_decline_24),
+                new ButtonCustom(ButtonCustom.GIFT_OFFER_ACCEPT, R.string.GiftOfferAccept, R.drawable.filled_bot_approve_24),
             });
         }
 

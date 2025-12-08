@@ -82,11 +82,23 @@ public class GiftAuctionController extends BaseController {
         req.version = auction.getVersion();
 
         getConnectionsManager().sendRequestTyped(req, AndroidUtilities::runOnUIThread, (res, err) -> {
-            if (res == null || err != null) {
+            if (res != null) {
+                getMessagesController().putUsers(res.users, false);
+                getMessagesController().putChats(res.chats, false);
+            }
+
+            if (res != null && !upgrades.get(giftId, false)) {
+                upgrades.put(giftId, true);
+                requestAuctionUpgrades(giftId, attrs -> {
+                    getOrCreateAuction(giftId).previewAttributes = attrs;
+                    onGiftAuctionStateReceivedInternal(giftId, res);
+                });
                 return;
             }
-            getMessagesController().putUsers(res.users, false);
-            onGiftAuctionStateReceivedInternal(giftId, res);
+
+            if (res != null) {
+                onGiftAuctionStateReceivedInternal(giftId, res);
+            }
         });
     }
 
@@ -123,9 +135,39 @@ public class GiftAuctionController extends BaseController {
 
         return getConnectionsManager().sendRequestTyped(req, AndroidUtilities::runOnUIThread, (res, err) -> {
             if (res != null) {
+                getMessagesController().putUsers(res.users, false);
+                getMessagesController().putChats(res.chats, false);
+            }
+
+            if (res != null && !upgrades.get(res.gift.id, false)) {
+                upgrades.put(res.gift.id, true);
+                requestAuctionUpgrades(res.gift.id, attrs -> {
+                    getOrCreateAuction(res.gift.id).previewAttributes = attrs;
+                    onGiftAuctionStateReceivedInternal(res.gift.id, res);
+                    callback.run(res, err);
+                });
+                return;
+            }
+
+            if (res != null) {
                 onGiftAuctionStateReceivedInternal(res.gift.id, res);
             }
             callback.run(res, err);
+        });
+    }
+
+    private final LongSparseArray<Boolean> upgrades = new LongSparseArray<>();
+
+    private void requestAuctionUpgrades(long giftId, Utilities.Callback<ArrayList<TL_stars.StarGiftAttribute>> callback) {
+        TL_stars.getStarGiftUpgradeAttributes req = new TL_stars.getStarGiftUpgradeAttributes();
+        req.gift_id = giftId;
+
+        getConnectionsManager().sendRequestTyped(req, AndroidUtilities::runOnUIThread, (res, err) -> {
+            if (res != null) {
+                callback.run(res.attributes);
+            } else {
+                callback.run(null);
+            }
         });
     }
 
@@ -251,6 +293,7 @@ public class GiftAuctionController extends BaseController {
             if (res instanceof TL_payments.TL_starGiftActiveAuctions) {
                 TL_payments.TL_starGiftActiveAuctions activeAuctions = (TL_payments.TL_starGiftActiveAuctions) res;
                 getMessagesController().putUsers(activeAuctions.users, false);
+                getMessagesController().putChats(activeAuctions.chats, false);
 
                 for (TL_stars.TL_StarGiftActiveAuctionState state : activeAuctions.auctions) {
                     applyGiftAuctionStateAndPerformUpdate(state.gift, state.state, state.user_state);
@@ -343,6 +386,7 @@ public class GiftAuctionController extends BaseController {
 
         if (auction.internalState == null) {
             auction.internalState = new Auction(currentAccount, gift, state, user_state);
+            auction.internalState.previewAttributes = auction.previewAttributes;
             changed = true;
         } else {
             changed |= auction.internalState.applyGift(gift);
@@ -426,6 +470,7 @@ public class GiftAuctionController extends BaseController {
         public final long giftId;
 
         private Auction internalState;
+        private @Nullable ArrayList<TL_stars.StarGiftAttribute> previewAttributes;
 
         private @Nullable Runnable resubscribe;
         private boolean subscription;
@@ -491,6 +536,7 @@ public class GiftAuctionController extends BaseController {
 
         public @Nullable TL_stars.TL_starGiftAuctionState auctionStateActive;
         public @Nullable TL_stars.TL_starGiftAuctionStateFinished auctionStateFinished;
+        public @Nullable ArrayList<TL_stars.StarGiftAttribute> previewAttributes;
 
         private Auction(
                 final int currentAccount,
@@ -507,6 +553,14 @@ public class GiftAuctionController extends BaseController {
             this.giftAuctionSlug = gift.auction_slug;
 
             applyAuctionState(auctionState);
+        }
+
+        public boolean isUpcoming() {
+            return isUpcoming(ConnectionsManager.getInstance(UserConfig.selectedAccount).getCurrentTime());
+        }
+
+        public boolean isUpcoming(int currentTime) {
+            return gift.auction_start_date > currentTime;
         }
 
         public BidStatus getBidStatus() {

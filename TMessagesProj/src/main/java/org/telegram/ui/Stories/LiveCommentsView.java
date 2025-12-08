@@ -1944,22 +1944,32 @@ public class LiveCommentsView extends FrameLayout implements NotificationCenter.
                 @Override
                 protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
                     super.onMeasure(MeasureSpec.makeMeasureSpec(dp(100), MeasureSpec.AT_MOST), heightMeasureSpec);
-//                    setMeasuredDimension(
-//                        Math.min(MeasureSpec.getSize(widthMeasureSpec), dp(200)),
-//                        MeasureSpec.getSize(heightMeasureSpec)
-//                    );
+                }
+
+                private int width = -1;
+                @Override
+                public void setText(CharSequence text, BufferType type) {
+                    super.setText(text, type);
+                    width = -1;
                 }
 
                 private final GradientClip clip = new GradientClip();
                 @Override
                 protected void onDraw(@NonNull Canvas canvas) {
-                    canvas.saveLayerAlpha(0, 0, getWidth(), getHeight(), 0xFF, Canvas.ALL_SAVE_FLAG);
-                    super.onDraw(canvas);
-                    canvas.save();
-                    AndroidUtilities.rectTmp.set(getWidth() - dp(15), 0, getWidth(), getHeight());
-                    clip.draw(canvas, AndroidUtilities.rectTmp, GradientClip.RIGHT, 1.0f);
-                    canvas.restore();
-                    canvas.restore();
+                    if (width < 0) {
+                        width = getLayout() == null ? 0 : (int) getLayout().getLineWidth(0);
+                    }
+                    if (width > dp(100)) {
+                        canvas.saveLayerAlpha(0, 0, getWidth(), getHeight(), 0xFF, Canvas.ALL_SAVE_FLAG);
+                        super.onDraw(canvas);
+                        canvas.save();
+                        AndroidUtilities.rectTmp.set(getWidth() - dp(15), 0, getWidth(), getHeight());
+                        clip.draw(canvas, AndroidUtilities.rectTmp, GradientClip.RIGHT, 1.0f);
+                        canvas.restore();
+                        canvas.restore();
+                    } else {
+                        super.onDraw(canvas);
+                    }
                 }
             };
             textView.setLines(1);

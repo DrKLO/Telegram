@@ -63,6 +63,7 @@ public class ProfileGalleryBlurView extends View {
     private boolean needNewFrame = false;
 
     private ProfileActionsView actionsView;
+    private ProfileSuggestionView suggestionView;
     private ProfileMusicView musicView;
     private boolean shouldBlurActions;
     private RenderNode blurNode, actionsBlurNode;
@@ -140,6 +141,10 @@ public class ProfileGalleryBlurView extends View {
         this.actionsView = actionsView;
     }
 
+    public void setSuggestionView(ProfileSuggestionView suggestionView) {
+        this.suggestionView = suggestionView;
+    }
+
     public void setMusicView(ProfileMusicView musicView) {
         this.musicView = musicView;
     }
@@ -184,6 +189,21 @@ public class ProfileGalleryBlurView extends View {
     }
 
     public void setSize(int size) {
+        if (this.actionSize != size) {
+            invalidate();
+            requestLayout();
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                if (blurNode != null) {
+                    blurNode.discardDisplayList();
+                    blurNode = null;
+                }
+                if (actionsBlurNode != null) {
+                    actionsBlurNode.discardDisplayList();
+                    actionsBlurNode = null;
+                }
+            }
+            updateContent();
+        }
         this.actionSize = size;
         this.size = (int) (dp(64) * 1.5f);
     }
@@ -214,6 +234,8 @@ public class ProfileGalleryBlurView extends View {
             }
         }
         actionsView = null;
+        suggestionView = null;
+        musicView = null;
         synchronized (lock) {
             for (int i = 0; i < 3; i++) {
                 if (nextFrame[i] != null) {
@@ -438,6 +460,9 @@ public class ProfileGalleryBlurView extends View {
         if (actionsView != null) {
             actionsView.drawingBlur(false);
         }
+        if (suggestionView != null) {
+            suggestionView.drawingBlur(false);
+        }
         if (musicView != null) {
             musicView.drawingBlur(false);
         }
@@ -521,7 +546,7 @@ public class ProfileGalleryBlurView extends View {
 
     @RequiresApi(api = Build.VERSION_CODES.S)
     private void initActionsRenderNode() {
-        if (actionsView == null && musicView == null) {
+        if (actionsView == null && suggestionView == null && musicView == null) {
             shouldBlurActions = false;
             return;
         }
@@ -614,10 +639,10 @@ public class ProfileGalleryBlurView extends View {
         initRenderNode();
 
         blurNode.setPosition(0, 0, (int) (width / scale), (int) ((croppedSize + actionSize) / scale));
-        RecordingCanvas recordingCanvas = blurNode.beginRecording();
+        final RecordingCanvas recordingCanvas = blurNode.beginRecording();
         recordingCanvas.scale(1f / scale, 1f / scale);
 
-        ImageReceiver imageReceiver = avatarImageView.animatedEmojiDrawable != null
+        final ImageReceiver imageReceiver = avatarImageView.animatedEmojiDrawable != null
                 ? avatarImageView.animatedEmojiDrawable.getImageReceiver()
                 : avatarImageView.imageReceiver;
 
@@ -644,6 +669,9 @@ public class ProfileGalleryBlurView extends View {
             if (actionsView != null) {
                 actionsView.drawingBlur(false);
             }
+            if (suggestionView != null) {
+                suggestionView.drawingBlur(false);
+            }
             if (musicView != null) {
                 musicView.drawingBlur(false);
             }
@@ -652,7 +680,7 @@ public class ProfileGalleryBlurView extends View {
 
         float outScale = 8f;
         float scale = getRenderNodeScale() * openingScale * outScale;
-        actionsBlurNode.setPosition(0, 0, (int) (width / scale), (int) ((size + actionSize) / scale));
+        actionsBlurNode.setPosition(0, 0, (int) Math.ceil(width / scale), (int) ((size + actionSize) / scale));
         RecordingCanvas recordingCanvas = actionsBlurNode.beginRecording();
         recordingCanvas.scale(1f / outScale, 1f / outScale);
         recordingCanvas.drawRenderNode(blurNode);
@@ -664,6 +692,13 @@ public class ProfileGalleryBlurView extends View {
                 actionsView.drawingBlur(actionsBlurNode, avatarImageView, scale / openingScale, -size);
             } else {
                 actionsView.drawingBlur(actionsBlurNode, null, scale, -size);
+            }
+        }
+        if (suggestionView != null) {
+            if (avatarImageView != null) {
+                suggestionView.drawingBlur(actionsBlurNode, avatarImageView, scale / openingScale, -size);
+            } else {
+                suggestionView.drawingBlur(actionsBlurNode, null, scale, -size);
             }
         }
         if (musicView != null) {

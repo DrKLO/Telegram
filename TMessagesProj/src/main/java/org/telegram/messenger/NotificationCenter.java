@@ -878,6 +878,21 @@ public class NotificationCenter {
         addObserver(observer[0], id);
     }
 
+    public void listenOnce(int id, Utilities.Callback3<Integer, Object[], Runnable> callback) {
+        final NotificationCenterDelegate[] observer = new NotificationCenterDelegate[1];
+        observer[0] = (nid, account, args) -> {
+            if (nid == id && observer[0] != null) {
+                if (callback != null) {
+                    callback.run(account, args, () -> {
+                        removeObserver(observer[0], id);
+                        observer[0] = null;
+                    });
+                }
+            }
+        };
+        addObserver(observer[0], id);
+    }
+
     private class UniqArrayList<T> extends ArrayList<T> {
         HashSet<T> set = new HashSet<>();
 

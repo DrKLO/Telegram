@@ -148,9 +148,10 @@ public class AcquiredGiftsSheet extends BottomSheetWithRecyclerListView {
                 0, ssb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
             );
             ssb.append(' ');
-            ssb.append(formatString(R.string.Gift2AuctionsAcquiredRound, gift.round));
-            ssb.setSpan(new TypefaceSpan(AndroidUtilities.bold()), 0, ssb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
 
+            final int giftNum = gift.gift_num;
+            ssb.append(formatString(R.string.Gift2AuctionsAcquiredRound2, auction.gift.title, giftNum, gift.round));
+            ssb.setSpan(new TypefaceSpan(AndroidUtilities.bold()), 0, ssb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
 
             SpannableStringBuilder ssb1 = new SpannableStringBuilder();
             final CharSequence bid = "⭐️" + formatNumber(gift.bid_amount, ',');

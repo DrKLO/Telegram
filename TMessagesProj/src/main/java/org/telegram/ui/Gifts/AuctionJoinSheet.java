@@ -1,13 +1,18 @@
 package org.telegram.ui.Gifts;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
+import static org.telegram.messenger.AndroidUtilities.replaceArrows;
 import static org.telegram.messenger.LocaleController.formatNumber;
 import static org.telegram.messenger.LocaleController.formatPluralString;
+import static org.telegram.messenger.LocaleController.formatSpannable;
 import static org.telegram.messenger.LocaleController.formatString;
 import static org.telegram.messenger.LocaleController.getString;
 import static org.telegram.ui.Stars.StarGiftSheet.replaceUnderstood;
 
 import android.content.Context;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Path;
 import android.graphics.drawable.ShapeDrawable;
 import android.graphics.drawable.shapes.OvalShape;
 import android.text.Layout;
@@ -24,6 +29,8 @@ import android.widget.LinearLayout;
 import android.widget.TableRow;
 import android.widget.TextView;
 
+import androidx.annotation.NonNull;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.GiftAuctionController;
@@ -33,6 +40,7 @@ import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
+import org.telegram.messenger.utils.tlutils.TlUtils;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.tl.TL_stars;
@@ -48,6 +56,7 @@ import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.ButtonSpan;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.LinkSpanDrawable;
+import org.telegram.ui.Components.Premium.PremiumFeatureBottomSheet;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.ScaleStateListAnimator;
 import org.telegram.ui.Components.ShareAlert;
@@ -55,6 +64,9 @@ import org.telegram.ui.Components.TableView;
 import org.telegram.ui.Components.UItem;
 import org.telegram.ui.Components.UniversalAdapter;
 import org.telegram.ui.PremiumFeatureCell;
+import org.telegram.ui.PremiumPreviewFragment;
+import org.telegram.ui.Stars.BagRandomizer;
+import org.telegram.ui.Stars.StarGiftPreviewSheet;
 import org.telegram.ui.Stars.StarGiftSheet;
 import org.telegram.ui.Stars.StarsIntroActivity;
 import org.telegram.ui.Stories.recorder.ButtonWithCounterView;
@@ -68,15 +80,16 @@ public class AuctionJoinSheet extends BottomSheetWithRecyclerListView implements
     private final LinearLayout linearLayout;
 
     private final static ButtonSpan.TextViewButtons[] ref = new ButtonSpan.TextViewButtons[1];
+    private final static TableView.TableRowTitle[] ref2 = new TableView.TableRowTitle[1];
 
+    private final FrameLayout headerContainer;
     private final ButtonSpan.TextViewButtons auctionRowStartTimeText;
     private final ButtonSpan.TextViewButtons auctionRowEndTimeText;
-    private final ButtonSpan.TextViewButtons auctionRowCurrentRoundText;
     private final ButtonSpan.TextViewButtons auctionRowAveragePriceText;
     private final ButtonSpan.TextViewButtons auctionRowAvailabilityText;
+    private final TableView.TableRowTitle auctionRowAvailabilityTitle;
     private final Utilities.Callback2<View, CharSequence> showHint;
 
-    private final TableRow auctionRowCurrentRound;
     private final TableRow auctionRowAveragePrice;
     private final ButtonWithCounterView buttonView;
 
@@ -89,12 +102,13 @@ public class AuctionJoinSheet extends BottomSheetWithRecyclerListView implements
     private final static int copy_link = 3;
     private final static int more_info = 4;
 
-    private CharSequence emojiGiftText;
+    private final CharSequence emojiGiftText;
 
     private AuctionJoinSheet(Context context, Theme.ResourcesProvider resourcesProvider, long dialogId, TL_stars.StarGift starGift, Runnable closeParentSheet) {
         super(context, null, false, false, false, false, ActionBarType.FADING, resourcesProvider);
         this.starGift = starGift;
         this.giftId = starGift.id;
+        headerMoveTop = dp(6);
         topPadding = 0.2f;
 
         fixNavigationBar();
@@ -108,12 +122,14 @@ public class AuctionJoinSheet extends BottomSheetWithRecyclerListView implements
         linearLayout.setClickable(true);
 
         ActionBar actionBar = new ActionBar(context, resourcesProvider);
-        actionBar.setItemsColor(Theme.getColor(Theme.key_actionBarActionModeDefaultIcon, resourcesProvider), false);
+        actionBar.setItemsColor(Color.WHITE/*Theme.getColor(Theme.key_actionBarActionModeDefaultIcon, resourcesProvider)*/, false);
         actionBar.setOccupyStatusBar(false);
         initActionBar(actionBar, context, resourcesProvider, currentAccount, starGift);
-        linearLayout.addView(actionBar, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, -56));
 
+        headerContainer = new FrameLayout(context);
+        headerContainer.addView(actionBar, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
+        linearLayout.addView(headerContainer);
 
         GiftSheet.GiftCell giftCell = new GiftSheet.GiftCell(context, currentAccount, resourcesProvider) {
             @Override
@@ -127,7 +143,7 @@ public class AuctionJoinSheet extends BottomSheetWithRecyclerListView implements
         giftCell.setImageLayer(7);
         giftCell.hidePrice();
 
-        linearLayout.addView(giftCell, LayoutHelper.createLinear(130, 130, Gravity.CENTER, 0, 18, 0, 14));
+        headerContainer.addView(giftCell, LayoutHelper.createFrame(130, 130, Gravity.CENTER, 0, 18, 0, 14));
 
         final TextView titleView = new TextView(context);
         titleView.setTypeface(AndroidUtilities.bold());
@@ -148,7 +164,7 @@ public class AuctionJoinSheet extends BottomSheetWithRecyclerListView implements
         subtitleTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         subtitleTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
         subtitleTextView.setLinkTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteLinkText, resourcesProvider));
-        linearLayout.addView(subtitleTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER, 20, 0, 20, 20));
+        linearLayout.addView(subtitleTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER, 20, 0, 20, 4));
 
         TableView tableView = new TableView(context, resourcesProvider);
 
@@ -157,9 +173,6 @@ public class AuctionJoinSheet extends BottomSheetWithRecyclerListView implements
 
         tableView.addRow(getString(R.string.Gift2AuctionTableEnded), "", ref);
         auctionRowEndTimeText = ref[0];
-
-        auctionRowCurrentRound = tableView.addRow(getString(R.string.Gift2AuctionTableCurrentRound), "", ref);
-        auctionRowCurrentRoundText = ref[0];
 
         final FrameLayout tableLayout = new FrameLayout(getContext());
         tableLayout.setClipChildren(false);
@@ -207,10 +220,11 @@ public class AuctionJoinSheet extends BottomSheetWithRecyclerListView implements
         auctionRowAveragePrice.setOnClickListener(v -> showAveragePriceHint());
         auctionRowAveragePriceText = ref[0];
 
-        tableView.addRow(getString(R.string.Gift2AuctionTableCurrentAvailability), "", ref);
+        tableView.addRow("", "", ref2, ref);
         auctionRowAvailabilityText = ref[0];
+        auctionRowAvailabilityTitle = ref2[0];
 
-        linearLayout.addView(tableLayout, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 16, 0, 14, 18));
+        linearLayout.addView(tableLayout, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 16, 16, 14, 18));
 
         boolean pending[] = new boolean[1];
         itemsBought = new LinkSpanDrawable.LinksTextView(context, resourcesProvider);
@@ -232,7 +246,6 @@ public class AuctionJoinSheet extends BottomSheetWithRecyclerListView implements
             });
         });
         ScaleStateListAnimator.apply(itemsBought, 0.02f, 1.5f);
-        linearLayout.addView(itemsBought, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 16, 0, 14, 18));
 
         if (starGift.sticker != null) {
             SpannableStringBuilder spannableStringBuilder = new SpannableStringBuilder("*");
@@ -248,12 +261,16 @@ public class AuctionJoinSheet extends BottomSheetWithRecyclerListView implements
         buttonView = new ButtonWithCounterView(context, resourcesProvider);
         buttonView.setOnClickListener(v -> {
             if (auction != null && !auction.isFinished()) {
-                new SendGiftSheet(context, currentAccount, auction.gift, dialogId, closeParentSheet, false, false) {
-                    @Override
-                    protected BulletinFactory getParentBulletinFactory() {
-                        return BulletinFactory.of(this.container, this.resourcesProvider);
-                    }
-                }.show();
+                if ((dialogId == 0 || dialogId == UserConfig.getInstance(currentAccount).getClientUserId()) && auction.previewAttributes != null) {
+                    new AuctionWearingSheet(context, resourcesProvider, dialogId, auction.gift, auction.previewAttributes, closeParentSheet, false).show();
+                } else {
+                    new SendGiftSheet(context, currentAccount, auction.gift, dialogId, closeParentSheet, false, false) {
+                        @Override
+                        protected BulletinFactory getParentBulletinFactory() {
+                            return BulletinFactory.of(this.container, this.resourcesProvider);
+                        }
+                    }.show();
+                }
             }
             dismiss();
         });
@@ -267,6 +284,133 @@ public class AuctionJoinSheet extends BottomSheetWithRecyclerListView implements
         adapter.update(false);
 
         auction = GiftAuctionController.getInstance(currentAccount).subscribeToGiftAuction(giftId, this);
+
+
+
+        if (auction != null && auction.auctionStateActive != null) {
+            if (auction.auctionStateActive.start_date > ConnectionsManager.getInstance(currentAccount).getCurrentTime()) {
+                tableView.addRow(getString(R.string.Gift2AuctionTableCurrentRounds), formatNumber(auction.auctionStateActive.total_rounds, ','));
+            } else {
+                tableView.addRow(getString(R.string.Gift2AuctionTableCurrentRound), formatString(R.string.OfS,
+                    formatNumber(auction.auctionStateActive.current_round, ','),
+                    formatNumber(auction.auctionStateActive.total_rounds, ',')));
+            }
+        }
+
+        if (auction != null && auction.auctionStateActive != null && auction.auctionStateActive.rounds != null) {
+            final int N = auction.auctionStateActive.rounds.size();
+            for (int a = 0; a < N; a++) {
+                final TL_stars.StarGiftAuctionRound round = auction.auctionStateActive.rounds.get(a);
+                final int nextRound = (a < N - 1) ?
+                    (auction.auctionStateActive.rounds.get(a + 1).num - 1) :
+                    (auction.auctionStateActive.total_rounds);
+
+                final String rowTitle = round.num == nextRound ?
+                    formatString(R.string.Gift2AuctionTableCurrentRoundsOne, round.num):
+                    formatString(R.string.Gift2AuctionTableCurrentRoundsTwo, round.num, nextRound);
+
+                final String rowInfo = round.num == nextRound ?
+                    formatString(R.string.Gift2AuctionTableCurrentRoundsOneDuration,
+                        LocaleController.formatTTLString(round.duration),
+                        LocaleController.formatTTLString(round.current_window),
+                        round.extend_top
+                    ):
+                    formatPluralString("Gift2AuctionTableCurrentRoundsTwoDuration", round.duration / 60);
+                tableView.addRow(rowTitle, rowInfo);
+            }
+        }
+
+        if (auction != null && auction.previewAttributes != null) {
+            StarGiftSheet.TopView topView = new StarGiftSheet.TopView(context, resourcesProvider, this::onBackPressed, v -> {}, v -> {}, v -> {}, v -> {}, v -> {}, v -> {}) {
+                @Override
+                public float getRealHeight() {
+                    return dp(268);
+                }
+
+                @Override
+                public int getFinalHeight() {
+                    return dp(268);
+                }
+
+                Path path = new Path();
+                float[] r = new float[8];
+
+                @Override
+                protected void onSizeChanged(int w, int h, int oldw, int oldh) {
+                    super.onSizeChanged(w, h, oldw, oldh);
+
+                    r[0] = r[1] = r[2] = r[3] = dp(12);
+                    path.rewind();
+                    path.addRoundRect(0, 0, w, h, r, Path.Direction.CW);
+                }
+
+                @Override
+                protected void dispatchDraw(@NonNull Canvas canvas) {
+                    canvas.save();
+                    canvas.clipPath(path);
+                    super.dispatchDraw(canvas);
+                    canvas.restore();
+                }
+            };
+
+            topView.onSwitchPage(new StarGiftSheet.PageTransition(StarGiftSheet.PAGE_UPGRADE, StarGiftSheet.PAGE_UPGRADE, 1.0f));
+            topView.setPreviewingAttributes(auction.previewAttributes);
+            topView.hideCloseButton();
+
+
+            headerContainer.addView(topView, 0, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 268, Gravity.TOP));
+
+            TextView giftNameTextView = new TextView(context);
+            giftNameTextView.setTypeface(AndroidUtilities.bold());
+            giftNameTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 21);
+            giftNameTextView.setText(title);
+            giftNameTextView.setGravity(Gravity.CENTER);
+            giftNameTextView.setTextColor(Color.WHITE);
+            headerContainer.addView(giftNameTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.FILL_HORIZONTAL | Gravity.BOTTOM, 16, 0, 16, 40));
+
+
+            TextView giftStatusTextView = new TextView(context);
+            giftStatusTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
+            giftStatusTextView.setText(replaceArrows(getString(R.string.Gift2AuctionLearnMore2), false, dp(8f / 3f), dp(1)));
+            giftStatusTextView.setPadding(dp(8), dp(8), dp(8), dp(8));
+            giftStatusTextView.setGravity(Gravity.CENTER);
+            giftStatusTextView.setTextColor(0xAFFFFFFF);
+            giftStatusTextView.setOnClickListener(v -> {
+                new PremiumFeatureBottomSheet(getContext(), PremiumPreviewFragment.FEATURE_GIFTS, true, null).show();
+            });
+            ScaleStateListAnimator.apply(giftStatusTextView, 0.02f, 1.5f);
+            headerContainer.addView(giftStatusTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.FILL_HORIZONTAL | Gravity.BOTTOM, 16, 0, 16, 12));
+
+            giftCell.setVisibility(View.GONE);
+            titleView.setVisibility(View.GONE);
+            subtitleTextView.setVisibility(View.GONE);
+
+            LinkSpanDrawable.LinksTextView itemsVariants = new LinkSpanDrawable.LinksTextView(context, resourcesProvider);
+            itemsVariants.setGravity(Gravity.CENTER);
+            itemsVariants.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+            itemsVariants.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteLinkText, resourcesProvider));
+            itemsVariants.setLinkTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteLinkText, resourcesProvider));
+            itemsVariants.setOnClickListener((v) -> {
+                new StarGiftPreviewSheet(context, resourcesProvider, currentAccount, auction.gift, auction.previewAttributes).show();
+                dismiss();
+            });
+            ScaleStateListAnimator.apply(itemsVariants, 0.02f, 1.5f);
+            linearLayout.addView(itemsVariants, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 16, 0, 14, 18));
+
+            BagRandomizer<TL_stars.starGiftAttributeModel> r = new BagRandomizer<>(TlUtils.findAllInstances(auction.previewAttributes, TL_stars.starGiftAttributeModel.class));
+            final long variantsCount = starGift.upgrade_variants;
+            SpannableStringBuilder ssb = new SpannableStringBuilder();
+            for (int i = 0; i < 3; i++) {
+                TL_stars.starGiftAttributeModel m = r.next();
+                if (m == null) continue;
+                ssb.append('*');
+                ssb.setSpan(new AnimatedEmojiSpan(m.document, itemsVariants.getPaint().getFontMetricsInt()), i, i + 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            }
+            itemsVariants.setText(AndroidUtilities.replaceArrows(formatSpannable(R.string.Gift2AuctionVariants, ssb, formatNumber(variantsCount, ',')), true, dp(8f / 3f), dp(1)));
+        }
+        linearLayout.addView(itemsBought, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 16, 0, 14, 18));
+
+
         updateTable(false);
     }
 
@@ -287,22 +431,29 @@ public class AuctionJoinSheet extends BottomSheetWithRecyclerListView implements
         } else if (auction != null && auction.auctionStateActive != null) {
             auctionRowStartTimeText.setText(LocaleController.formatDateTime(auction.auctionStateActive.start_date, true));
             auctionRowEndTimeText.setText(LocaleController.formatDateTime(auction.auctionStateActive.end_date, true));
-            auctionRowCurrentRoundText.setText(formatString(R.string.OfS,
-                formatNumber(auction.auctionStateActive.current_round, ','),
-                formatNumber(auction.auctionStateActive.total_rounds, ','))
-            );
 
-            final int timeLeft = auction.auctionStateActive.end_date - (ConnectionsManager.getInstance(currentAccount).getCurrentTime());
+            final int currentTime = ConnectionsManager.getInstance(currentAccount).getCurrentTime();
 
-            buttonView.setSubText(formatString(R.string.Gift2AuctionTimeLeft, LocaleController.formatTTLString(timeLeft)), animated);
+            if (auction.isUpcoming(currentTime)) {
+                final int timeLeft = auction.auctionStateActive.start_date - currentTime;
+                buttonView.setSubText(formatString(R.string.Gift2AuctionStartsIn, LocaleController.formatTTLString(timeLeft)), animated);
+            } else {
+                final int timeLeft = auction.auctionStateActive.end_date - currentTime;
+                buttonView.setSubText(formatString(R.string.Gift2AuctionTimeLeft, LocaleController.formatTTLString(timeLeft)), animated);
+            }
         }
 
-
-
-        auctionRowAvailabilityText.setText(formatPluralString("Gift2Availability4Value",
-                auction != null ? (auction.isFinished() ? 0 : auction.auctionStateActive != null ? auction.auctionStateActive.gifts_left : starGift.availability_remains):
-                starGift.availability_remains,
-            formatNumber(starGift.availability_total, ',')));
+        {
+            int a = auction != null ? (auction.isFinished() ? 0 : auction.auctionStateActive != null ? auction.auctionStateActive.gifts_left : starGift.availability_remains) : starGift.availability_remains;
+            int b = starGift.availability_total;
+            if (a == b) {
+                auctionRowAvailabilityTitle.setText(getString(R.string.Gift2AuctionTableCurrentQuantity));
+                auctionRowAvailabilityText.setText(formatNumber(b, ','));
+            } else {
+                auctionRowAvailabilityTitle.setText(getString(R.string.Gift2AuctionTableCurrentAvailability));
+                auctionRowAvailabilityText.setText(formatPluralString("Gift2Availability4Value", a, formatNumber(b, ',')));
+            }
+        }
 
 
 
@@ -321,13 +472,11 @@ public class AuctionJoinSheet extends BottomSheetWithRecyclerListView implements
             subtitleTextView.setText(getString(R.string.Gift2AuctionEnded));
             subtitleTextView.setTextColor(Theme.getColor(Theme.key_text_RedBold, resourcesProvider));
 
-            auctionRowCurrentRound.setVisibility(View.GONE);
             auctionRowAveragePrice.setVisibility(View.VISIBLE);
 
             buttonView.setText(getString(R.string.OK), animated);
             buttonView.setSubText(null, animated);
         } else {
-            auctionRowCurrentRound.setVisibility(View.VISIBLE);
             auctionRowAveragePrice.setVisibility(View.GONE);
 
             buttonView.setText(getString(R.string.Gift2AuctionJoin), animated);

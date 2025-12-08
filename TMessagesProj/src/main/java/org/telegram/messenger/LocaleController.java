@@ -2037,6 +2037,25 @@ public class LocaleController {
         }
     }
 
+    public static String formatShortDuration(int duration) {
+        final int hours = duration / 3600;
+        final int minutes = duration / 60 % 60;
+        final int seconds = duration % 60;
+        final StringBuilder stringBuilder = new StringBuilder();
+        if (hours > 0) {
+            if (stringBuilder.length() > 0) stringBuilder.append(":");
+            stringBuilder.append(hours > 10 ? "" : "0");
+            stringBuilder.append(hours);
+        }
+        if (stringBuilder.length() > 0) stringBuilder.append(":");
+        stringBuilder.append(minutes > 10 ? "" : "0");
+        stringBuilder.append(minutes);
+        if (stringBuilder.length() > 0) stringBuilder.append(":");
+        stringBuilder.append(seconds > 10 ? "" : "0");
+        stringBuilder.append(seconds);
+        return stringBuilder.toString();
+    }
+
     public void onDeviceConfigurationChange(Configuration newConfig) {
         if (changingConfiguration) {
             return;
@@ -2294,6 +2313,17 @@ public class LocaleController {
             FileLog.e(e);
         }
         return "LOC_ERR";
+    }
+
+    public static String formatShortDuration2(int time) {
+        final int minutes = time / 60;
+        final int hours = time / 3600;
+
+        if (hours > 0) {
+            return LocaleController.formatPluralString("ShortHoursAgo", hours) + " " + LocaleController.formatPluralString("ShortMinutesAgo", minutes % 60);
+        }
+
+        return LocaleController.formatPluralString("ShortMinutesAgo", minutes);
     }
 
     public static String formatShortDate(long date) {

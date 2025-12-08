@@ -10,6 +10,7 @@ import org.telegram.messenger.MediaDataController;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.tl.TL_stars;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class TlUtils {
@@ -92,6 +93,21 @@ public class TlUtils {
             }
         }
         return null;
+    }
+
+
+    public static <T> ArrayList<T> findAllInstances(List<?> list, Class<T> tClass) {
+        final ArrayList<T> result = new ArrayList<>();
+        if (list == null || tClass == null) {
+            return result;
+        }
+
+        for (Object entry : list) {
+            if (tClass.isInstance(entry)) {
+                result.add(tClass.cast(entry));
+            }
+        }
+        return result;
     }
 
     public static long getOrCalculateRandomIdFromSendMessageRequest(TLObject request) {

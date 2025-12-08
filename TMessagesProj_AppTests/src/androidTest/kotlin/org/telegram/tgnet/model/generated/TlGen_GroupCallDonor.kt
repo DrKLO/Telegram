@@ -11,7 +11,6 @@ public sealed class TlGen_GroupCallDonor : TlGen_Object {
   public data class TL_groupCallDonor(
     public val top: Boolean,
     public val my: Boolean,
-    public val anonymous: Boolean,
     public val peer_id: TlGen_Peer?,
     public val stars: Long,
   ) : TlGen_GroupCallDonor() {
@@ -20,7 +19,6 @@ public sealed class TlGen_GroupCallDonor : TlGen_Object {
         var result = 0U
         if (top) result = result or 1U
         if (my) result = result or 2U
-        if (anonymous) result = result or 4U
         if (peer_id != null) result = result or 8U
         return result
       }

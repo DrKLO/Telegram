@@ -1,6 +1,7 @@
 package org.telegram.ui.Cells;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
+import static org.telegram.messenger.AndroidUtilities.formatDuration;
 import static org.telegram.messenger.LocaleController.formatString;
 import static org.telegram.messenger.LocaleController.getString;
 
@@ -112,13 +113,16 @@ public class ActiveGiftAuctionsHintCell extends BlurredFrameLayout implements Gi
         activeAuctions = new ArrayList<>(auctions);
 
         if (activeAuctions.size() == 1) {
-            int nextRoundAt = 0;
-            for (GiftAuctionController.Auction auction : auctions) {
+            GiftAuctionController.Auction auction = activeAuctions.get(0);
+            if (auction.isUpcoming()) {
+                timerView.start(auction.gift.auction_start_date);
+            } else {
+                int nextRoundAt = 0;
                 if (auction.auctionStateActive != null) {
                     nextRoundAt = Math.max(nextRoundAt, auction.auctionStateActive.next_round_at);
                 }
+                timerView.start(nextRoundAt);
             }
-            timerView.start(nextRoundAt);
         } else {
             timerView.stop();
             timerView.textView.setText(getString(R.string.Gift2AuctionPriceView), true);
@@ -136,9 +140,13 @@ public class ActiveGiftAuctionsHintCell extends BlurredFrameLayout implements Gi
         }
 
         boolean outbid = false;
+        boolean upcoming = false;
 
+        final int currentTime = ConnectionsManager.getInstance(currentAccount).getCurrentTime();
         for (int a = 0; a < count; a++) {
             final GiftAuctionController.Auction auction = activeAuctions.get(a);
+            upcoming |= auction.isUpcoming(currentTime);
+
             if (auction.giftDocumentId != 0) {
                 ssb.append("*");
                 ssb.setSpan(
@@ -150,14 +158,22 @@ public class ActiveGiftAuctionsHintCell extends BlurredFrameLayout implements Gi
                 || status == GiftAuctionController.Auction.BidStatus.RETURNED;
         }
         ssb.append(' ');
-        ssb.append(count == 1 ?
-            getString(R.string.Gift2ActiveAuctionsActiveAuctionTitle):
-            formatString(R.string.Gift2ActiveAuctionsActiveAuctionsTitle, count));
+        if (upcoming) {
+            ssb.append(count == 1 ?
+                getString(R.string.Gift2ActiveAuctionsUpcomingAuctionTitle) :
+                formatString(R.string.Gift2ActiveAuctionsUpcomingAuctionsTitle, count));
+        } else {
+            ssb.append(count == 1 ?
+                getString(R.string.Gift2ActiveAuctionsActiveAuctionTitle) :
+                formatString(R.string.Gift2ActiveAuctionsActiveAuctionsTitle, count));
+        }
 
         titleTextView.setText(ssb, animated);
 
         isOutbid = false;
-        if (outbid) {
+        if (upcoming) {
+            messageTextView.setText(getString(R.string.Gift2ActiveAuctionsActiveStatusEarly));
+        } else if (outbid) {
             messageTextView.setText(getString(R.string.Gift2ActiveAuctionsActiveStatusOutbid));
             isOutbid = true;
         } else {
@@ -260,7 +276,8 @@ public class ActiveGiftAuctionsHintCell extends BlurredFrameLayout implements Gi
             if (value == 0) {
                 textView.setText(getString(R.string.Gift2AuctionPriceView));
             } else {
-                textView.setText(AndroidUtilities.formatDurationNoHours((int) value, false), isAttachedToWindow());
+                textView.setText(value > 3600 ? formatDuration((int) value, false) :
+                    AndroidUtilities.formatDurationNoHours((int) value, false), isAttachedToWindow());
             }
         }
 

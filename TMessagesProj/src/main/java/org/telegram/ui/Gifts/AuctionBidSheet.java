@@ -5,6 +5,7 @@ import static org.telegram.messenger.AndroidUtilities.replaceTags;
 import static org.telegram.messenger.AndroidUtilities.shakeView;
 import static org.telegram.messenger.LocaleController.formatNumber;
 import static org.telegram.messenger.LocaleController.formatPluralString;
+import static org.telegram.messenger.LocaleController.formatSpannable;
 import static org.telegram.messenger.LocaleController.formatString;
 import static org.telegram.messenger.LocaleController.getString;
 import static org.telegram.ui.Stories.HighlightMessageSheet.TIER_COLOR1;
@@ -37,8 +38,6 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.graphics.ColorUtils;
 
-import com.google.android.exoplayer2.C;
-
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.Emoji;
@@ -65,6 +64,7 @@ import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.BottomSheetWithRecyclerListView;
 import org.telegram.ui.Components.Bulletin;
 import org.telegram.ui.Components.BulletinFactory;
+import org.telegram.ui.Components.ButtonSpan;
 import org.telegram.ui.Components.ColoredImageSpan;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.EditTextCaption;
@@ -102,6 +102,7 @@ public class AuctionBidSheet extends BottomSheetWithRecyclerListView implements 
     private final InfoCell giftsLeftCell;
 
     private final HeaderCell selfBidderHeader;
+    private final AnimatedTextView selfBidderFutureGift;
     private final BidderCell selfBidderCell;
 
     private final BidderCell[] topBidderCells = new BidderCell[3];
@@ -248,6 +249,16 @@ public class AuctionBidSheet extends BottomSheetWithRecyclerListView implements 
         selfBidderHeader = new HeaderCell(context, Theme.key_windowBackgroundWhiteBlueHeader, 21, 0, 0, false, true, resourcesProvider);
         linearLayout.addView(selfBidderHeader, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 5, 0, 0));
 
+        selfBidderFutureGift = new AnimatedTextView(context);
+        selfBidderFutureGift.setTextSize(dp(12.5f));
+        selfBidderFutureGift.setPadding(dp(8), 0, dp(8), 0);
+        selfBidderFutureGift.setSizeableBackground(Theme.createRadSelectorDrawable(0, 0, 9, 9));
+        selfBidderFutureGift.setHideBackgroundIfEmpty(true);
+        selfBidderHeader.setOnWidthUpdateListener(() -> {
+            selfBidderFutureGift.setTranslationX(selfBidderHeader.getAnimatedWidth() + dp(28));
+        });
+        selfBidderHeader.addView(selfBidderFutureGift, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 17, Gravity.LEFT | Gravity.TOP, 0, 12, 0, 0));
+
         selfBidderCell = new BidderCell(context, resourcesProvider);
         selfBidderCell.placeTextView.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteBlueHeader));
         selfBidderCell.setUser(userSelf, false);
@@ -312,6 +323,7 @@ public class AuctionBidSheet extends BottomSheetWithRecyclerListView implements 
         bulletinContainer = new FrameLayout(context);
         container.addView(bulletinContainer, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 100, Gravity.TOP));
 
+        updateColors();
         adapter.update(false);
     }
 
@@ -333,7 +345,16 @@ public class AuctionBidSheet extends BottomSheetWithRecyclerListView implements 
         } else if (sliderValue == auction.auctionUserState.bid_amount) {
             slider.setCounterSubText(getString(R.string.Gift2AuctionYourBid), true);
         } else {
-            slider.setCounterSubText(null, true);
+            if (auction.auctionUserState.bid_amount > 0 && !auction.auctionUserState.returned) {
+                long up = sliderValue - auction.auctionUserState.bid_amount;
+                if (up > 0) {
+                    slider.setCounterSubText("+" + formatNumber(up, ','), true);
+                } else {
+                    slider.setCounterSubText(null, true);
+                }
+            } else {
+                slider.setCounterSubText(null, true);
+            }
         }
     }
 
@@ -429,9 +450,16 @@ public class AuctionBidSheet extends BottomSheetWithRecyclerListView implements 
             "⭐️" + LocaleController.formatNumberWithMillion((int) auction.getMinimumBid(), ','), 0.78f, refS), animated);
 
         if (auction.auctionStateActive != null) {
-            final int timeLeft = Math.max(0, auction.auctionStateActive.next_round_at - (ConnectionsManager.getInstance(currentAccount).getCurrentTime()));
-            timer.start(timeLeft);
-            updateCountdownCell(timeLeft, animated);
+            final int currentTime = ConnectionsManager.getInstance(currentAccount).getCurrentTime();
+            if (auction.isUpcoming(currentTime)) {
+                final int timeLeft = Math.max(0, auction.auctionStateActive.start_date - currentTime);
+                timer.start(timeLeft);
+                updateCountdownCell(timeLeft, animated);
+            } else {
+                final int timeLeft = Math.max(0, auction.auctionStateActive.next_round_at - currentTime);
+                timer.start(timeLeft);
+                updateCountdownCell(timeLeft, animated);
+            }
 
             if (animatedEmojiSpan == null && auction.gift.sticker != null) {
                 animatedEmojiSpan = new AnimatedEmojiSpan(auction.gift.sticker.id, giftsLeftCell.infoView.getPaint().getFontMetricsInt());
@@ -445,7 +473,7 @@ public class AuctionBidSheet extends BottomSheetWithRecyclerListView implements 
             ssb.append(formatNumber(auction.auctionStateActive.gifts_left, ','));
 
             giftsLeftCell.infoView.setText(ssb, animated);
-            nextRoundCell.titleView.setText(getString(
+            nextRoundCell.titleView.setText(getString(auction.isUpcoming() ? R.string.Gift2AuctionBidInfoUntilStart :
                 auction.auctionStateActive.current_round == auction.auctionStateActive.total_rounds ?
                     R.string.Gift2AuctionBidInfoUntilEndRound : R.string.Gift2AuctionBidInfoUntilNextRound
             ));
@@ -501,14 +529,23 @@ public class AuctionBidSheet extends BottomSheetWithRecyclerListView implements 
     private final BoolAnimator outbidColor = new BoolAnimator(0, this::onColorFactorChanged, CubicBezierInterpolator.EASE_OUT_QUINT, 380);
 
     private void onColorFactorChanged (int id, float factor, float fraction, FactorAnimator callee) {
+        updateColors();
+    }
+
+    private void updateColors() {
         final int color = ColorUtils.blendARGB(ColorUtils.blendARGB(
-            getThemedColor(Theme.key_windowBackgroundWhiteBlueHeader),
-            getThemedColor(Theme.key_text_RedBold),
-            outbidColor.getFloatValue()
+                getThemedColor(Theme.key_windowBackgroundWhiteBlueHeader),
+                getThemedColor(Theme.key_text_RedBold),
+                outbidColor.getFloatValue()
         ), getThemedColor(Theme.key_color_green), winningColor.getFloatValue());
         selfBidderHeader.setTextColor(color);
+        selfBidderFutureGift.setTextColor(color);
         selfBidderCell.placeTextView.setTextColor(color);
+        if (Theme.setSelectorDrawableColor(selfBidderFutureGift.getSizeableBackground(), Theme.multAlpha(color, 0.15f), false)) {
+            selfBidderFutureGift.invalidate();
+        }
     }
+
 
     private void updateSelfBidderHeader(boolean animated) {
         boolean winning = false, outbid = false;
@@ -537,7 +574,20 @@ public class AuctionBidSheet extends BottomSheetWithRecyclerListView implements 
         final int myPlace = auction.getApproximatedMyPlace();
         final int place = auction.approximatePlaceFromStars(amount);
         selfBidderCell.setBid(Math.max(amount, auction.getCurrentMyBid()), false);
-        selfBidderCell.setPlace(myPlace > 0 ? Math.min(myPlace, place) : place, false, animated);
+        final int pos = myPlace > 0 ? Math.min(myPlace, place) : place;
+        selfBidderCell.setPlace(pos, false, animated);
+
+        boolean set = false;
+        if (auction.auctionStateActive != null && pos > 0 && auction.gift.title != null && auction.getBidStatus() == GiftAuctionController.Auction.BidStatus.WINNING && !auction.isUpcoming()) {
+            final int num = auction.auctionStateActive.last_gift_num + pos;
+            if (num <= auction.gift.availability_total) {
+                selfBidderFutureGift.setText(auction.gift.title + " #" + formatNumber(num, ','));
+                set = true;
+            }
+        }
+        if (!set) {
+            selfBidderFutureGift.setText(null);
+        }
     }
 
     private void updateCountdownCell(long value) {
@@ -563,10 +613,17 @@ public class AuctionBidSheet extends BottomSheetWithRecyclerListView implements 
             buttonView.setText(getString(R.string.OK), animated);
             buttonView.setOnClickListener(v -> dismiss());
         } else {
-            buttonView.setText(StarsIntroActivity.replaceStars(
-                formatString(R.string.Gift2AuctionPlaceBid, formatNumber(myBid, ',')),
-                spanRefStars
-            ), animated);
+            if (auction.auctionUserState.bid_amount < myBid && !auction.auctionUserState.returned) {
+                buttonView.setText(StarsIntroActivity.replaceStars(
+                        formatString(R.string.Gift2AuctionPlaceBidAdd, formatNumber(myBid - auction.auctionUserState.bid_amount, ',')),
+                        spanRefStars
+                ), animated);
+            } else {
+                buttonView.setText(StarsIntroActivity.replaceStars(
+                        formatString(R.string.Gift2AuctionPlaceBid, formatNumber(myBid, ',')),
+                        spanRefStars
+                ), animated);
+            }
             buttonView.setOnClickListener(v -> {
                 final int myValue = slider.getValue();
                 final int minimumBid = (int) auction.getMinimumBid();

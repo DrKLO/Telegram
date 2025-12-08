@@ -55,6 +55,7 @@ import android.text.TextPaint;
 import android.text.TextUtils;
 import android.transition.ChangeBounds;
 import android.transition.TransitionManager;
+import android.util.Log;
 import android.util.LongSparseArray;
 import android.util.Property;
 import android.util.StateSet;
@@ -5942,7 +5943,23 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 true
             );
             updateAuthHintCellVisibility(false);
-        }else if (folderId == 0 && getMessagesController().pendingSuggestions.contains("PREMIUM_GRACE")) {
+        } else if (folderId == 0 && getMessagesController().pendingSuggestions.contains("SETUP_PASSKEY")) {
+            dialogsHintCellVisible = true;
+            dialogsHintCell.setVisibility(View.VISIBLE);
+            dialogsHintCell.setCompact(true);
+            dialogsHintCell.setOnClickListener(v -> {
+                PasskeysActivity.showLearnSheet(getContext(), currentAccount, resourceProvider, true);
+            });
+            dialogsHintCell.setText(Emoji.replaceWithRestrictedEmoji(getString(R.string.PasskeyPopupTitle), dialogsHintCell.titleView, this::updateDialogsHint), getString(R.string.PasskeyPopupText));
+            dialogsHintCell.setOnCloseListener(v -> {
+                MessagesController.getInstance(currentAccount).removeSuggestion(0, "SETUP_PASSKEY");
+                ChangeBounds transition = new ChangeBounds();
+                transition.setDuration(200);
+                TransitionManager.beginDelayedTransition((ViewGroup) dialogsHintCell.getParent(), transition);
+                updateDialogsHint();
+            });
+            updateAuthHintCellVisibility(false);
+        } else if (folderId == 0 && getMessagesController().pendingSuggestions.contains("PREMIUM_GRACE")) {
             dialogsHintCellVisible = true;
             dialogsHintCell.setVisibility(View.VISIBLE);
             dialogsHintCell.setCompact(true);
@@ -12611,7 +12628,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
     }
 
     float slideFragmentProgress = 1f;
-    final int slideAmplitudeDp = 40;
+    final int slideAmplitudeDp = 120;
     boolean slideFragmentLite;
     boolean isSlideBackTransition;
     boolean isDrawerTransition;
@@ -12703,7 +12720,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
 
     @Override
     public void onSlideProgress(boolean isOpen, float progress) {
-        if (SharedConfig.getDevicePerformanceClass() <= SharedConfig.PERFORMANCE_CLASS_LOW) {
+        if (SharedConfig.getDevicePerformanceClass() <= SharedConfig.PERFORMANCE_CLASS_LOW && !BuildVars.DEBUG_PRIVATE_VERSION) {
             return;
         }
         if (isSlideBackTransition && slideBackTransitionAnimator == null) {
@@ -12712,7 +12729,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
     }
 
     private void setSlideTransitionProgress(float progress) {
-        if (SharedConfig.getDevicePerformanceClass() <= SharedConfig.PERFORMANCE_CLASS_LOW || slideFragmentProgress == progress) {
+        if (SharedConfig.getDevicePerformanceClass() <= SharedConfig.PERFORMANCE_CLASS_LOW && !BuildVars.DEBUG_PRIVATE_VERSION || slideFragmentProgress == progress) {
             return;
         }
 

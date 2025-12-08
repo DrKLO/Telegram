@@ -14,6 +14,7 @@ public sealed class TlGen_payments_StarGiftAuctionState : TlGen_Object {
     public val user_state: TlGen_StarGiftAuctionUserState,
     public val timeout: Int,
     public val users: List<TlGen_User>,
+    public val chats: List<TlGen_Chat>,
   ) : TlGen_payments_StarGiftAuctionState() {
     public override fun serializeToStream(stream: OutputSerializedData) {
       stream.writeInt32(MAGIC.toInt())
@@ -22,10 +23,11 @@ public sealed class TlGen_payments_StarGiftAuctionState : TlGen_Object {
       user_state.serializeToStream(stream)
       stream.writeInt32(timeout)
       TlGen_Vector.serialize(stream, users)
+      TlGen_Vector.serialize(stream, chats)
     }
 
     public companion object {
-      public const val MAGIC: UInt = 0x0E98E474U
+      public const val MAGIC: UInt = 0x6B39F4ECU
     }
   }
 }

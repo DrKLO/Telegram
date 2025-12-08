@@ -915,6 +915,10 @@ public class BottomSheet extends Dialog implements BaseFragment.AttachedSheet {
         return keyboardVisible;
     }
 
+    public int getSystemBottomInset() {
+        return lastInsets != null ? lastInsets.getSystemWindowInsetBottom() : 0;
+    }
+
     public interface BottomSheetDelegateInterface {
         void onOpenAnimationStart();
         void onOpenAnimationEnd();

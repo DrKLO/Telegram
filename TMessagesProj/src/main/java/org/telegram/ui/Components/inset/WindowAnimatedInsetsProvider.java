@@ -4,7 +4,7 @@ import android.graphics.PointF;
 import android.view.View;
 import android.view.ViewGroup;
 
-import androidx.annotation.NonNull;
+import org.jspecify.annotations.NonNull;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsAnimationCompat;
 import androidx.core.view.WindowInsetsCompat;
@@ -34,6 +34,23 @@ public class WindowAnimatedInsetsProvider extends WindowInsetsAnimationCompat.Ca
         return insets;
     }
 
+    private int activeAnimationsCounter;
+
+    public boolean hasActiveAnimations() {
+        return activeAnimationsCounter > 0;
+    }
+
+    @Override
+    public WindowInsetsAnimationCompat.@NonNull BoundsCompat onStart(@NonNull WindowInsetsAnimationCompat animation, WindowInsetsAnimationCompat.@NonNull BoundsCompat bounds) {
+        activeAnimationsCounter++;
+        return super.onStart(animation, bounds);
+    }
+
+    @Override
+    public void onEnd(@NonNull WindowInsetsAnimationCompat animation) {
+        super.onEnd(animation);
+        activeAnimationsCounter--;
+    }
 
     private final ReferenceList<Listener> listeners =  new ReferenceList<>();
 

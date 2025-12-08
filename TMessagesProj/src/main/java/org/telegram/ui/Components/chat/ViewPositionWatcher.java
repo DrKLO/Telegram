@@ -191,7 +191,7 @@ public final class ViewPositionWatcher implements
      * @return false if parentView is not an ancestor of view.
      */
 
-    private static boolean computeRectInParent(@NonNull View view,
+    public static boolean computeRectInParent(@NonNull View view,
                                                @NonNull ViewGroup parentView,
                                                @NonNull RectF out) {
         float left = 0f;

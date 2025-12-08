@@ -1130,6 +1130,7 @@ public class AnimatedTextView extends View {
         }
     }
 
+    private boolean hideBackgroundIfEmpty;
     private Drawable backgroundDrawable;
     private final AnimatedTextDrawable drawable;
     private int lastMaxWidth, maxWidth;
@@ -1180,8 +1181,13 @@ public class AnimatedTextView extends View {
 
     @Override
     protected void onDraw(Canvas canvas) {
-        if (backgroundDrawable != null) {
-            backgroundDrawable.setBounds(0, 0, (int) (getPaddingLeft() + drawable.getCurrentWidth() + getPaddingRight()), getHeight());
+        if (backgroundDrawable != null && (!hideBackgroundIfEmpty || drawable.isNotEmpty() > 0)) {
+            final int width = (int) (getPaddingLeft() + drawable.getCurrentWidth() + getPaddingRight());
+            if (drawable.gravity == Gravity.RIGHT) {
+                backgroundDrawable.setBounds(getWidth() - width, 0, getWidth(), getHeight());
+            } else {
+                backgroundDrawable.setBounds(0, 0, width, getHeight());
+            }
             backgroundDrawable.draw(canvas);
         }
         drawable.setBounds(getPaddingLeft(), getPaddingTop(), getMeasuredWidth() - getPaddingRight(), getMeasuredHeight() - getPaddingBottom());
@@ -1235,6 +1241,14 @@ public class AnimatedTextView extends View {
     public void setSizeableBackground(Drawable drawable) {
         backgroundDrawable = drawable;
         invalidate();
+    }
+
+    public void setHideBackgroundIfEmpty(boolean hideBackgroundIfEmpty) {
+        this.hideBackgroundIfEmpty = hideBackgroundIfEmpty;
+    }
+
+    public Drawable getSizeableBackground() {
+        return backgroundDrawable;
     }
 
     public int width() {

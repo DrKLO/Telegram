@@ -295,6 +295,10 @@ public class DownscaleScrollableNoiseSuppressor {
     private final ArrayList<SourcePart> rectRenderNodes = new ArrayList<>();
     private int rectRenderNodesCount;
 
+    public int getRenderNodesCount() {
+        return rectRenderNodesCount;
+    }
+
     public void setupRenderNodes(List<RectF> positions, int count) {
         rectRenderNodesCount = count;
 

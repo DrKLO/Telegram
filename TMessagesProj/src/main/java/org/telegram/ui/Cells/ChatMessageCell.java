@@ -88,7 +88,6 @@ import android.view.accessibility.AccessibilityManager;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.view.accessibility.AccessibilityNodeProvider;
 import android.view.animation.Interpolator;
-import android.view.animation.OvershootInterpolator;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -113,7 +112,6 @@ import org.telegram.messenger.Emoji;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.FlagSecureReason;
-import org.telegram.messenger.GiftAuctionController;
 import org.telegram.messenger.ImageLoader;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.ImageReceiver;
@@ -803,74 +801,6 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
     private final static int DOCUMENT_ATTACH_TYPE_WALLPAPER = 8;
     private final static int DOCUMENT_ATTACH_TYPE_THEME = 9;
     private final static int DOCUMENT_ATTACH_TYPE_STORY = 10;
-
-    private class BotButton {
-        private boolean isSeparator;
-        private float x;
-        private int y;
-        private float width;
-        private int height;
-        private int positionFlags;
-        private Text title;
-        @Nullable private TLRPC.KeyboardButton button;
-        @Nullable private BotInlineKeyboard.ButtonCustom buttonCustom;
-        private TLRPC.TL_reactionCount reaction;
-        private int angle;
-        private float progressAlpha;
-        private long lastUpdateTime;
-        private boolean isInviteButton;
-        private boolean isLocked;
-
-        private LoadingDrawable loadingDrawable;
-        private Drawable selectorDrawable;
-        private Drawable iconDrawable;
-
-        private boolean pressed;
-        private float pressT;
-        private ValueAnimator pressAnimator;
-        private void setPressed(boolean pressed) {
-            if (this.pressed != pressed) {
-                this.pressed = pressed;
-                invalidateOutbounds();
-                if (pressed) {
-                    if (pressAnimator != null) {
-                        pressAnimator.removeAllListeners();
-                        pressAnimator.cancel();
-                    }
-                }
-                if (!pressed && pressT != 0) {
-                    pressAnimator = ValueAnimator.ofFloat(pressT, 0);
-                    pressAnimator.addUpdateListener(animation -> {
-                        pressT = (float) animation.getAnimatedValue();
-                        invalidateOutbounds();
-                    });
-                    pressAnimator.addListener(new AnimatorListenerAdapter() {
-                        @Override
-                        public void onAnimationEnd(Animator animation) {
-                            super.onAnimationEnd(animation);
-                            pressAnimator = null;
-                        }
-                    });
-                    pressAnimator.setInterpolator(new OvershootInterpolator(2.0f));
-                    pressAnimator.setDuration(350);
-                    pressAnimator.start();
-                }
-            }
-        }
-
-        public boolean hasPositionFlag(int flag) {
-            return (positionFlags & flag) == flag;
-        }
-
-        private float getPressScale() {
-            if (pressed && pressT != 1f) {
-                pressT += (float) Math.min(40, 1000f / AndroidUtilities.screenRefreshRate) / 100f;
-                pressT = Utilities.clamp(pressT, 1f, 0);
-                invalidateOutbounds();
-            }
-            return 0.96f + 0.04f * (1f - pressT);
-        }
-    }
 
     public class PollButton {
         public int x;
@@ -4871,13 +4801,15 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             try {
                 if (vibrate) performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
             } catch (Exception ignored) {}
+            final long dialogId = currentMessageObject.getDialogId();
+            final long send_as = ChatObject.getSendAsPeerId(MessagesController.getInstance(currentAccount).getChat(dialogId), MessagesController.getInstance(currentAccount).getChatFull(dialogId), true);
             final TLRPC.TL_messageMediaToDo media = (TLRPC.TL_messageMediaToDo) MessageObject.getMedia(currentMessageObject);
-            MessageObject.toggleTodo(currentAccount, currentMessageObject.getDialogId(), media, button.task.id, !button.chosen, ConnectionsManager.getInstance(currentAccount).getCurrentTime());
+            MessageObject.toggleTodo(currentAccount, send_as, media, button.task.id, !button.chosen, ConnectionsManager.getInstance(currentAccount).getCurrentTime());
             if (!button.chosen) {
-                final TLRPC.User self = UserConfig.getInstance(currentAccount).getCurrentUser();
-                button.avatarDrawable.setInfo(self);
-                button.avatarImageReceiver.setForUserOrChat(self, button.avatarDrawable);
-                button.author = new Text(DialogObject.getName(self), 12);
+                final TLObject obj = MessagesController.getInstance(currentAccount).getUserOrChat(send_as);
+                button.avatarDrawable.setInfo(obj);
+                button.avatarImageReceiver.setForUserOrChat(obj, button.avatarDrawable);
+                button.author = new Text(DialogObject.getName(obj), 12);
             }
             pollCheckBox[index].setChecked(!button.chosen, true);
             if (animatedInfoLayout != null) {
@@ -6988,6 +6920,13 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                         TLRPC.TL_webPage webPage = (TLRPC.TL_webPage) webpage;
                         site_name = webPage.site_name;
                         title = drawInstantViewType != 6 && drawInstantViewType != 7 ? webPage.title : null;
+                        if (instantViewTypeIsGiftAuction != null) {
+                            if (instantViewTypeIsGiftAuction.auction_start_date > ConnectionsManager.getInstance(currentAccount).getCurrentTime()) {
+                                title = getString(R.string.Gift2LinkUpcomingAuction);
+                            } else {
+                                title = getString(R.string.Gift2LinkGiftAuction);
+                            }
+                        }
                         author = drawInstantViewType != 6 && drawInstantViewType != 7 ? webPage.author : null;
                         description = drawInstantViewType != 6 && drawInstantViewType != 7 ? webPage.description : null;
                         photo = webPage.photo;
@@ -7591,7 +7530,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                             if (starGiftAuction != null) {
                                 starGiftDrawableIcon.setGradient(starGiftAuction.center_color, starGiftAuction.edge_color);
                                 starGiftDrawableIcon.setAuctionStateTextColor(starGiftAuction.text_color);
-                                starGiftDrawableIcon.setCountdownRemainingTime(starGiftAuction.end_date);
+                                starGiftDrawableIcon.setCountdownRemainingTime(starGiftAuction.gift.auction_start_date, starGiftAuction.end_date);
                             }
 
                             photoImage.setImageBitmap(starGiftDrawableIcon);
@@ -10413,7 +10352,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                         int buttonWidth = (widthForButtons - dp(5) * (buttonsCount - 1) - dp(2)) / buttonsCount;
                         for (int column = 0; column < buttonsCount; column++) {
                             BotInlineKeyboard.Button inlineButton = inlineButtons.getButton(row, column);
-                            BotButton botButton = new BotButton();
+                            BotButton botButton = new BotButton(this::invalidateOutbounds);
                             if (inlineButton instanceof BotInlineKeyboard.ButtonBot) {
                                 botButton.button = ((BotInlineKeyboard.ButtonBot) inlineButton).button;
                             } else if (inlineButton instanceof BotInlineKeyboard.ButtonCustom) {
@@ -10511,7 +10450,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                             }
                         }
                         if (inlineButtons.hasSeparator(row)) {
-                            BotButton botButton = new BotButton();
+                            BotButton botButton = new BotButton(this::invalidateParentForce);
                             botButton.isSeparator = true;
                             botButton.y = row * dp(44 + 4) + dp(2.5f) + separatorsHeight + dp(44 + 5);
                             botButton.height = dp(2);
@@ -12320,15 +12259,23 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 str = getString(R.string.OpenEmojiSet);
             } else if (drawInstantViewType == 26)  {
                 if (instantViewTypeIsGiftAuction != null) {
-                    if (instantViewTypeIsGiftAuction.sold_out) {
+                    final boolean needIcon;
+                    if (instantViewTypeIsGiftAuction.auction_start_date > ConnectionsManager.getInstance(currentAccount).getCurrentTime()) {
+                        str = getString(R.string.OpenGiftAuctionView);
+                        needIcon = false;
+                    } else if (instantViewTypeIsGiftAuction.sold_out) {
                         str = getString(R.string.OpenGiftAuctionResults);
+                        needIcon = true;
                     } else {
                         str = getString(R.string.OpenGiftAuctionActive);
+                        needIcon = true;
                     }
 
-                    SpannableString ok = new SpannableString("*");
-                    ok.setSpan(new ColoredImageSpan(R.drawable.filled_gift_sell_24), 0, ok.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-                    str = TextUtils.concat(ok, " ", str);
+                    if (needIcon) {
+                        SpannableString ok = new SpannableString("*");
+                        ok.setSpan(new ColoredImageSpan(R.drawable.filled_gift_sell_24), 0, ok.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                        str = TextUtils.concat(ok, " ", str);
+                    }
                 } else {
                     str = getString(R.string.OpenUniqueGift);
                 }

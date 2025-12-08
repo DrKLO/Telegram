@@ -1859,13 +1859,13 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
 
             ItemOptions.makeOptions(this, view)
                 .setScrimViewBackground(new ColorDrawable(Theme.getColor(Theme.key_windowBackgroundWhite)))
-                .addIf(allowSetAdmin, R.drawable.msg_admins, editingAdmin ? getString("EditAdminRights", R.string.EditAdminRights) : getString("SetAsAdmin", R.string.SetAsAdmin), () -> openRightsFor.run(0))
+                .addIf(allowSetAdmin, R.drawable.msg_admins, editingAdmin ? getString(R.string.EditAdminRights) : getString(R.string.SetAsAdmin), () -> openRightsFor.run(0))
                 .addIf(canChangePermission, R.drawable.msg_permissions, getString("ChangePermissions", R.string.ChangePermissions), () -> {
                     if (participant instanceof TLRPC.TL_channelParticipantAdmin || participant instanceof TLRPC.TL_chatParticipantAdmin) {
                         showDialog(
                             new AlertDialog.Builder(getParentActivity())
                                 .setTitle(getString("AppName", R.string.AppName))
-                                .setMessage(LocaleController.formatString("AdminWillBeRemoved", R.string.AdminWillBeRemoved, UserObject.getUserName(user)))
+                                .setMessage(LocaleController.formatString(R.string.AdminWillBeRemoved, UserObject.getUserName(user)))
                                 .setPositiveButton(getString("OK", R.string.OK), (dialog, which) -> openRightsFor.run(1))
                                 .setNegativeButton(getString("Cancel", R.string.Cancel), null)
                                 .create()

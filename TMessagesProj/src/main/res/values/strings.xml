@@ -10,6 +10,7 @@
     <!--signin view-->
     <string name="YourPhone">Your Phone</string>
     <string name="StartText">Please confirm your country code and enter your phone number.</string>
+    <string name="StartTextPasskey">Please enter your phone number\nor **log in using passkey >**</string>
     <string name="Country">Country</string>
     <string name="YourNumber">Your phone number</string>
     <string name="PhoneNumber">Phone number</string>
@@ -578,6 +579,11 @@
     <string name="ActionUniqueGiftResaleOutbound_other">You bought this gift for %d Stars</string>
     <string name="ActionUniqueGiftResaleInbound_one">**un1** bought you a gift for %d Star!</string>
     <string name="ActionUniqueGiftResaleInbound_other">**un1** bought you a gift for %d Stars!</string>
+
+    <string name="ActionUniqueGiftResaleSoldOutboundTON">You sold this gift for %s TON</string>
+    <string name="ActionUniqueGiftResaleSoldOutbound_one">You sold this gift for %d Star</string>
+    <string name="ActionUniqueGiftResaleSoldOutbound_other">You sold this gift for %d Stars</string>
+
     <string name="ActionStarGiftInbound">%s sent you a gift</string>
     <string name="ActionStarGift">Gift</string>
     <string name="ActionGiftPremiumTitle2_one">%d Month Premium</string>
@@ -7946,6 +7952,7 @@
     <string name="OpenEmojiSet">VIEW EMOJI</string>
     <string name="OpenUniqueGift">VIEW COLLECTIBLE</string>
     <string name="OpenGiftAuctionActive">JOIN</string>
+    <string name="OpenGiftAuctionView">VIEW</string>
     <string name="OpenGiftAuctionResults">VIEW RESULTS</string>
     <string name="StoriesPinned_one">Story pinned</string>
     <string name="StoriesPinned_other">%d stories pinned</string>
@@ -8588,15 +8595,26 @@
     <string name="Gift2AuctionInfoLearnMore2_other">%d gifts are dropped at varying intervals to the top %d bidders by bid amount. **Learn More >**</string>
     <string name="Gift2AuctionInfo2_one">Top **%d** bidder will get an **%s**\nthis round.</string>
     <string name="Gift2AuctionInfo2_other">Top **%d** bidders will get an **%s**\nthis round.</string>
+    <string name="Gift2AuctionInfo3">**%1$s** gifts are dropped in **%2$d** rounds\nto the top **%3$d** bidders. %4$s</string>
     <string name="Gift2AuctionTableStarted">Started</string>
     <string name="Gift2AuctionTableEnded">Ended</string>
     <string name="Gift2AuctionEnded">Auction ended.</string>
     <string name="Gift2AuctionTableCurrentRound">Current Round</string>
+    <string name="Gift2AuctionTableCurrentRounds">Rounds</string>
+    <string name="Gift2AuctionTableCurrentRoundsOne">Round %d</string>
+    <string name="Gift2AuctionTableCurrentRoundsOneDuration">%1$s + %2$s for late bids in top %3$d</string>
+    <string name="Gift2AuctionTableCurrentRoundsTwo">Rounds %1$d-%2$d</string>
+    <string name="Gift2AuctionTableCurrentRoundsTwoDuration_one">%1$d minute each</string>
+    <string name="Gift2AuctionTableCurrentRoundsTwoDuration_other">%1$d minutes each</string>
+    <string name="Gift2AuctionUpgradedShort">upgraded</string>
     <string name="Gift2AuctionTableCurrentAvailability">Availability</string>
+    <string name="Gift2AuctionTableCurrentQuantity">Quantity</string>
     <string name="Gift2AuctionInfoLearnMore">**Learn More >**</string>
     <string name="Gift2AuctionJoin">Join Auction</string>
     <string name="Gift2AuctionTimeLeft">%s left</string>
+    <string name="Gift2AuctionStartsIn">starts in %s</string>
     <string name="Gift2AuctionPlaceABid">Place a Bid</string>
+    <string name="Gift2AuctionPlaceAEarlyBid">Place an Early Bid</string>
     <string name="Gift2AuctionPlaceABidTitle">Place a Bid</string>
     <string name="Gift2AuctionPlaceACustomBid">Place a Custom Bid</string>
     <string name="Gift2AuctionPlaceACustomBidHint">If you fall bellow the top %d, your bid will roll over to the next round.</string>
@@ -8606,11 +8624,18 @@
     <string name="Gift2AuctionMinimumBidIncreased_one">You must bid at least **%d star**.</string>
     <string name="Gift2AuctionMinimumBidIncreased_other">You must bid at least is **%d stars**.</string>
     <string name="Gift2AuctionBidStatusFuture">Your bid will be</string>
+    <string name="Gift2AuctionBidStatusFuture2">Your bid will be %s</string>
     <string name="Gift2AuctionBidStatusOutbid">You\'re been outbid</string>
     <string name="Gift2AuctionBidStatusWinning">You\'re winning</string>
+    <string name="Gift2AuctionBidStatusWinning2">You\'re winning %s</string>
+    <string name="Gift2AuctionLearnMore2">Learn more about Telegram Gifts ></string>
+    <string name="Gift2AuctionLearnMore3">Learn more about wearing gifts ></string>
+    <string name="Gift2WearingHint">You can upgrade your gift for free, sell it on\nthe market, or set it as your profile cover.</string>
+    <string name="Gift2AuctionVariants">View %1$s %2$s Variants ></string>
 
     <string name="Gift2AuctionBidInfoMinimumBid">minimum bid</string>
     <string name="Gift2AuctionBidInfoUntilNextRound">until next round</string>
+    <string name="Gift2AuctionBidInfoUntilStart">until start</string>
     <string name="Gift2AuctionBidInfoUntilEndRound">last round</string>
     <string name="Gift2AuctionBidInfoLeft">left</string>
     <string name="Gift2AuctionAlreadyParticipateTitle">Auction</string>
@@ -8683,10 +8708,13 @@
     <string name="Gift2LimitedRibbon">limited</string>
     <string name="Gift2LimitedPremium">premium</string>
     <string name="Gift2LimitedAuction">auction</string>
+    <string name="Gift2LimitedAuctionSoon">soon</string>
     <string name="Gift2AuctionPriceJoin">Join</string>
     <string name="Gift2AuctionPriceView">View</string>
     <string name="Gift2AuctionTop3Winners">Top 3 Winners</string>
     <string name="Gift2AuctionPlaceBid">Place a ⭐️%s Bid</string>
+    <string name="Gift2AuctionPlaceBidAdd">Add ⭐️%s to Your Bid</string>
+    <string name="Gift2PreviewRandomTraits">Random Traits</string>
     <string name="Gift2LimitedSlider">Limited</string>
     <string name="Gift2Limited1OfRibbon">1 of %s</string>
     <string name="StarsGiftCompleted">Gift sent!</string>
@@ -8771,6 +8799,7 @@
     <string name="Gift2ConvertButton">Convert</string>
     <string name="Gift2SoldOut">sold out</string>
     <string name="Gift2AuctionCountdownFinished">Finished</string>
+    <string name="Gift2AuctionCountdownStartsIn">starts in %s</string>
     <string name="ExplainStarsTitle">What are Stars?</string>
     <string name="ExplainStarsTitle2">Telegram Stars allow users to:</string>
     <string name="ExplainStarsFeature1Title">Send Gifts to Friends</string>
@@ -9245,6 +9274,7 @@
     <string name="StarsTransactionMessageFee_one">Fee for %d Message</string>
     <string name="StarsTransactionMessageFee_other">Fee for %d Messages</string>
     <string name="StarsTransactionLiveStoryMessageFee">Fee for Live Story Comment</string>
+    <string name="StarsTransactionLiveStoryReactionFee">Fee for Live Story Reaction</string>
     <string name="StarsTransactionFullPrice">Full Price</string>
     <string name="StarsTransactionMessageFeeInfo">You receive **%s** of the price that you charge for each incoming message.</string>
     <string name="StarsTransactionMessageFeeInfoLink">**Change Fee >**</string>
@@ -10007,6 +10037,10 @@
 
     <string name="Gift2ActiveAuctionsActiveAuctionTitle">Active Auction</string>
     <string name="Gift2ActiveAuctionsActiveAuctionsTitle">%d Active Auctions</string>
+    <string name="Gift2ActiveAuctionsUpcomingAuctionTitle">Upcoming Auction</string>
+    <string name="Gift2LinkUpcomingAuction">Upcoming Auction</string>
+    <string name="Gift2LinkGiftAuction">Gift Auction</string>
+    <string name="Gift2ActiveAuctionsUpcomingAuctionsTitle">%d Upcoming Auctions</string>
     <string name="Gift2ActiveAuctionsActiveStatusWinningOne">You are winning (%s).</string>
     <string name="Gift2ActiveAuctionsActiveStatusWinning1Place">1st place</string>
     <string name="Gift2ActiveAuctionsActiveStatusWinning2Place">2nd place</string>
@@ -10018,6 +10052,7 @@
     <string name="Gift2ActiveAuctionsActiveStatusWinningOtherTh">%dth place</string>
     <string name="Gift2ActiveAuctionsActiveStatusWinningAll">You are winning all of them.</string>
     <string name="Gift2ActiveAuctionsActiveStatusOutbid">You\'ve been outbid.</string>
+    <string name="Gift2ActiveAuctionsActiveStatusEarly">You\'ve placed an early bid.</string>
 
     <string name="Gift2ActiveAuctionsActiveRound">Round %s of %s</string>
     <string name="Gift2ActiveAuctionsActiveRaiseBid">Raise Bid</string>
@@ -10028,6 +10063,7 @@
     <string name="Gift2AuctionsAcquiredGifts_one">%1$d Bought Gift</string>
     <string name="Gift2AuctionsAcquiredGifts_other">%1$d Bought Gifts</string>
     <string name="Gift2AuctionsAcquiredRound">Round #%1$d</string>
+    <string name="Gift2AuctionsAcquiredRound2">%1$s #%2$d in round %3$d</string>
     <string name="Gift2AuctionsAcquiredRecipient">Recipient</string>
     <string name="Gift2AuctionsAcquiredDate">Date</string>
     <string name="Gift2AuctionsAcquiredAcceptedBid">Accepted Bid</string>
@@ -10037,4 +10073,123 @@
     <string name="Gift2AuctionsBidHasBeenIncreased">Your bid has been increased</string>
     <string name="Gift2AuctionsChangeRecipient">Change Recipient</string>
     <string name="Gift2AuctionsChangeRecipient2">You’ve already placed a bid on this gift for **%s.** Do you want to raise your bid and change the recipient to **%s?**</string>
+
+    <string name="Passkey">Passkeys</string>
+    <string name="PasskeyDeleteTitle">Delete Passkey</string>
+    <string name="PasskeyDeleteText">Once deleted, this passkey can\'t be used to log in.\n\nDon\'t forget to remove it from your password manager too.</string>
+    <string name="PasskeyTopInfo">Manage your passkey, stored safely in the cloud service you choose.</string>
+    <string name="PasskeyCreatedOn">Created %s</string>
+    <string name="PasskeyLastUsedOn">Last used %s</string>
+    <string name="PasskeyAdd">Add Passkey</string>
+    <string name="PasskeyInfo">Your passkey is stored securely in your password manager. **Learn more >**</string>
+    <string name="PasskeyFeatureTitle">Protect your account</string>
+    <string name="PasskeyFeatureSubtitle">Log in safely and keep your account secure.</string>
+    <string name="PasskeyFeature1Title">Create a Passkey</string>
+    <string name="PasskeyFeature1Subtitle">Make a passkey to sign in easily and safely.</string>
+    <string name="PasskeyFeature2Title">Log in with face recognition</string>
+    <string name="PasskeyFeature2Subtitle">Use your face, fingerprint, or screen lock to sign in.</string>
+    <string name="PasskeyFeature3Title">Store Passkey securely</string>
+    <string name="PasskeyFeature3Subtitle">Your passkey is stored safely in the cloud service you choose.</string>
+    <string name="PasskeyFeatureButton">Create Passkey</string>
+    <string name="PasskeyAddedTitle">Passkey Added!</string>
+    <string name="PasskeyAddedText">You can now login into your account with %s.</string>
+    <string name="PasskeyUnknown">Passkey</string>
+    <string name="PasskeyPopupTitle">🔑  Protect your account</string>
+    <string name="PasskeyPopupText">Log in with your face, fingerprint or screen lock</string>
+
+    <string name="StoryMusicTitle">Add Audiotrack</string>
+    <string name="StoryMusicSelectFromFiles">Select from Files</string>
+    <string name="StoryMusicProfileMusic">Saved Music</string>
+    <string name="StoryMusicSearchMusic">Shared Audio</string>
+    <string name="StoryMusicLocalMusic">Local Music</string>
+
+    <string name="GiftOfferToBuyMenu">Offer to buy</string>
+    <string name="GiftOfferToBuyTitle">Offer to Buy</string>
+    <string name="GiftOfferStarsToOffer">Stars to offer</string>
+    <string name="GiftOfferStarsToOfferInfo">Enter the number of Stars you’d like to offer for **%s**.</string>
+    <string name="GiftOfferStarsToOfferInfoIsLow">The offer is too low. The minimum offer for **%2$s** is **%1$s Stars**.</string>
+    <string name="GiftOfferStarsToOfferInfoIsHigh">The offer is too high. The maximum offer for **%2$s** is **%1$s Star**.</string>
+    <string name="GiftOfferTONToOffer">TON to offer</string>
+    <string name="GiftOfferTONToOfferInfo">Enter the number of TON you’d like to offer for **%s**.</string>
+    <string name="GiftOfferTONToOfferInfoIsLow">The offer is too low. The minimum offer for **%2$s** is **%1$s TON**.</string>
+    <string name="GiftOfferTONToOfferInfoIsHigh">The offer is too high. The maximum offer for **%2$s** is **%1$s TON**.</string>
+    <string name="GiftOfferDuration">Offer Duration</string>
+    <string name="GiftOfferDurationInfoStars">Choose how long **%s** can accept your offer. When the time expires, your **Stars** will be refunded.</string>
+    <string name="GiftOfferDurationInfoTON">Choose how long **%s** can accept your offer. When the time expires, your **TON** will be refunded.</string>
+    <string name="GiftOfferButtonStars">Offer ⭐️%s</string>
+    <string name="GiftOfferHours_one">%d hour</string>
+    <string name="GiftOfferHours_other">%d hours</string>
+    <string name="GiftOfferConfirmSend">Confirm Offer</string>
+    <string name="GiftOfferRowOffer">Offer</string>
+    <string name="GiftOfferRowFee">Fee</string>
+    <string name="GiftOfferRowValue">Value</string>
+    <string name="GiftOfferRowDuration">Duration</string>
+    <string name="GiftOfferPay">Pay ⭐️%s</string>
+    <string name="GiftOfferPayMulti">Pay %s and %s</string>
+    <string name="GiftOfferPayMultiPart">⭐️%s</string>
+    <string name="GiftOfferSellFor">Sell for ⭐️%s</string>
+    <string name="GiftOfferAmount">⭐️ %s</string>
+    <string name="GiftOfferAmountHigher">%s higher</string>
+    <string name="GiftOfferAmountLower">%s lower</string>
+    <string name="GiftOfferAmountHigherHint">The value of this gift is **%s higher** than the offer</string>
+    <string name="GiftOfferAmountLowerHint">The value of this gift is **%s lower** than the offer</string>
+    <string name="GiftOfferAmountHigherHint2">The price you are offered is **%1$s** higher\nthan the average price for %2$s</string>
+    <string name="GiftOfferAmountLowerHint2">The price you are offered is **%1$s** lower\nthan the average price for %2$s</string>
+    <string name="GiftOfferStatusRejected">This offer was rejected.</string>
+    <string name="GiftOfferStatusAccepted">This offer was accepted.</string>
+    <string name="GiftOfferStatusExpired">This offer has expired.</string>
+    <string name="GiftOfferStatusPending">This offer expires in **%s**.</string>
+    <string name="GiftOfferRejectConfirmTitle">Reject Offer</string>
+    <string name="GiftOfferRejectConfirmText">Are you sure you want to reject the offer from **%s**?</string>
+    <string name="GiftOfferRejectConfirmConfirm">Reject</string>
+    <string name="GiftOfferAccept">Accept</string>
+    <string name="GiftOfferDecline">Reject</string>
+    <string name="GiftOfferTransferInfoTextStars">Do you want to offer **%1$s Stars** to **%2$s** for **%3$s**?</string>
+    <string name="GiftOfferTransferInfoTextTON">Do you want to offer **%1$s TON** to **%2$s** for **%3$s**?</string>
+    <string name="GiftOfferTransferInfoTextSellStars">Do you want to sell **%3$s** to **%2$s** for **%1$s Stars**?\n\nYou will receive **%4$s Stars** after fees.</string>
+    <string name="GiftOfferTransferInfoTextSellTON">Do you want to sell **%3$s** to **%2$s** for **%1$s TON**?\n\nYou will receive **%4$s TON** after fees.</string>
+    <string name="GiftOfferOfferedTextStarsOut">You offered **%1$s** **%2$s Stars** for **%3$s**.</string>
+    <string name="GiftOfferOfferedTextTONOut">You offered **%1$s** **%2$s TON** for **%3$s**.</string>
+    <string name="GiftOfferOfferedTextStars">**%1$s** offered you **%2$s Stars** for **%3$s**.</string>
+    <string name="GiftOfferOfferedTextTON">**%1$s** offered you **%2$s TON** for **%3$s**.</string>
+    <string name="GiftOfferSentTitle">Gift offer sent</string>
+    <string name="GiftOfferSentText">You have successfully sent offer **%1$s** for **%2$s**.</string>
+    <string name="GiftOfferOfferedTextStarsRejectedOut">You rejected **%1$s\'s** offer to buy your **%3$s** for **%2$s Stars**.</string>
+    <string name="GiftOfferOfferedTextTONRejectedOut">You rejected **%1$s\'s** offer to buy your **%3$s** for **%2$s TON**.</string>
+    <string name="GiftOfferOfferedTextStarsRejected">**%1$s** rejected your offer. **%2$s Stars** for **%3$s**.</string>
+    <string name="GiftOfferOfferedTextTONRejected">**%1$s** rejected your offer. **%2$s TON** for **%3$s**.</string>
+
+    <string name="FeaturePreviewGifts">Unique Collectibles</string>
+    <string name="FeaturePreviewGiftsDescription">Telegram Gifts are collectible items you can trade or showcase on your profile.</string>
+    <string name="GiftsFeature1Title">Unique</string>
+    <string name="GiftsFeature1Text">Upgrade your gifts to get a unique number, model, backdrop and symbol.</string>
+    <string name="GiftsFeature2Title">Tradeable</string>
+    <string name="GiftsFeature2Text">Sell your gift on Telegram or on third-part NFT marketplace</string>
+    <string name="GiftsFeature3Title">Wearable</string>
+    <string name="GiftsFeature3Text">Display gifts on your page and set them as profile covers or statuses.</string>
+
+    <string name="GiftPreviewModels">Models</string>
+    <string name="GiftPreviewBackdrops">Backdrops</string>
+    <string name="GiftPreviewSymbols">Symbols</string>
+
+    <string name="GiftPreviewModel">model</string>
+    <string name="GiftPreviewBackdrop">backdrop</string>
+    <string name="GiftPreviewSymbol">symbol</string>
+
+    <string name="GiftPreviewCountModels_one">This collectible features **%d** unique models</string>
+    <string name="GiftPreviewCountModels_other">This collectible features **%d** unique models</string>
+    <string name="GiftPreviewCountBackdrops_one">This collectible features **%d** unique backdrop</string>
+    <string name="GiftPreviewCountBackdrops_other">This collectible features **%d** unique backdrops</string>
+    <string name="GiftPreviewCountSymbols_one">This collectible features **%d** unique symbol</string>
+    <string name="GiftPreviewCountSymbols_other">This collectible features **%d** unique symbols</string>
+
+    <string name="GiftAuctionWearInfoOnline">online</string>
+    <string name="GiftAuctionWearInfoHeader">Wear %s</string>
+    <string name="GiftAuctionWearInfoText">and get these benefits:</string>
+    <string name="GiftAuctionWearInfo1Header">Radiant Badge</string>
+    <string name="GiftAuctionWearInfo1Text">The glittering icon of this item will be displayed next to your name.</string>
+    <string name="GiftAuctionWearInfo2Header">Unique Profile Design</string>
+    <string name="GiftAuctionWearInfo2Text">Your profile page will get the color and the symbol of this item.</string>
+    <string name="GiftAuctionWearInfo3Header">Proof of Ownership</string>
+    <string name="GiftAuctionWearInfo3Text">Tapping the icon of this item next to your name will show its info and owner.</string>
 </resources>

@@ -1048,8 +1048,8 @@ public class GiftSheet extends BottomSheetWithRecyclerListView implements Notifi
 
         private final Shaker shaker;
 
-        private final FrameLayout card;
-        private final CardBackground cardBackground;
+        public final FrameLayout card;
+        public final CardBackground cardBackground;
         private final Ribbon ribbon;
         private final AvatarDrawable avatarDrawable;
         private final BackupImageView avatarView;
@@ -1176,6 +1176,10 @@ public class GiftSheet extends BottomSheetWithRecyclerListView implements Notifi
             tonOnlySaleView.setVisibility(GONE);
             tonOnlySaleView.setScaleType(ImageView.ScaleType.CENTER);
             card.addView(tonOnlySaleView, LayoutHelper.createFrame(20, 20, Gravity.TOP | Gravity.LEFT, 3, 3, 3, 3));
+        }
+
+        public void removeImage() {
+            card.removeView(imageView);
         }
 
         public void setImageSize(int size) {
@@ -1846,7 +1850,11 @@ public class GiftSheet extends BottomSheetWithRecyclerListView implements Notifi
                     ribbon.setBackdrop(null);
                     ribbon.setColors(0xFFD79023, 0xFFBF7D16);
                     ribbon.setStrokeColor(0);
-                    ribbon.setText(getString(R.string.Gift2LimitedAuction), true);
+                    if (gift.auction_start_date > ConnectionsManager.getInstance(currentAccount).getCurrentTime()) {
+                        ribbon.setText(getString(R.string.Gift2LimitedAuctionSoon), true);
+                    } else {
+                        ribbon.setText(getString(R.string.Gift2LimitedAuction), true);
+                    }
                 } else if (gift.require_premium) {
                     ribbon.setVisibility(View.VISIBLE);
                     ribbon.setBackdrop(null);
@@ -1877,6 +1885,23 @@ public class GiftSheet extends BottomSheetWithRecyclerListView implements Notifi
                     ribbon.setStrokeColor(0);
                 }
             }
+        }
+
+        public void setRibbonColor(int color) {
+            ribbon.setColor(color);
+            ribbon.invalidate();
+        }
+
+        public void setRibbonText(String text) {
+            ribbon.setText(text, true);
+        }
+
+        public void setRibbonTextOneOf(int total) {
+            ribbon.setVisibility(View.VISIBLE);
+            ribbon.setColor(Theme.getColor(Theme.key_gift_ribbon, resourcesProvider));
+            ribbon.setStrokeColor(0);
+            ribbon.setBackdrop(findAttribute(gift.attributes, TL_stars.starGiftAttributeBackdrop.class));
+            ribbon.setText(formatString(R.string.Gift2Limited1OfRibbon, AndroidUtilities.formatWholeNumber(total, 0)), true);
         }
 
         public static class Factory extends UItem.UItemFactory<GiftCell> {
@@ -2466,8 +2491,8 @@ public class GiftSheet extends BottomSheetWithRecyclerListView implements Notifi
 
                 canvas.save();
                 canvas.translate(bounds.centerX(), bounds.centerY());
-                final float s = lerp(1.0f, 0.925f, selected);
-                canvas.scale(s, s);
+                //final float s = lerp(1.0f, 0.925f, selected);
+                //canvas.scale(s, s);
 
                 boolean drawLegacy = true;
                 if (BatchParticlesDrawHelper.isAvailable()) {
@@ -2517,11 +2542,11 @@ public class GiftSheet extends BottomSheetWithRecyclerListView implements Notifi
 
             if (selected > 0) {
                 selectedPaint.setColor(Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider));
-                selectedPaint.setStrokeWidth(dpf2(2.33f));
+                selectedPaint.setStrokeWidth(lerp(0, dpf2(1.667f), selected));
                 AndroidUtilities.rectTmp.set(rect);
-                final float b = lerp(-dpf2(2.33f), dp(5.166f), selected);
+                final float b = lerp(-dpf2(2.33f), dpf2(3.33f), selected);
                 AndroidUtilities.rectTmp.inset(b, b);
-                final float r = lerp(dpf2(11), dpf2(6.66f), selected);
+                final float r = lerp(dpf2(11), dpf2(7.33f), selected);
                 canvas.drawRoundRect(AndroidUtilities.rectTmp, r, r, selectedPaint);
             }
         }

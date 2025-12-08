@@ -321,18 +321,7 @@ public abstract class BottomSheetWithRecyclerListView extends BottomSheet {
                  }
             };
         }
-        recyclerListView = new RecyclerListView(context, resourcesProvider) {
-            @Override
-            protected void onLayout(boolean changed, int l, int t, int r, int b) {
-                applyScrolledPosition();
-                super.onLayout(changed, l, t, r, b);
-            }
-
-            @Override
-            protected boolean canHighlightChildAt(View child, float x, float y) {
-                return BottomSheetWithRecyclerListView.this.canHighlightChildAt(child, x, y);
-            }
-        };
+        recyclerListView = createRecyclerView(context);
         layoutManager = new LinearLayoutManager(context) {
             @Override
             public void scrollToPositionWithOffset(int position, int offset) {
@@ -444,6 +433,21 @@ public abstract class BottomSheetWithRecyclerListView extends BottomSheet {
     }
 
     public boolean reverseLayout;
+
+    protected RecyclerListView createRecyclerView(Context context) {
+        return new RecyclerListView(context, resourcesProvider) {
+            @Override
+            protected void onLayout(boolean changed, int l, int t, int r, int b) {
+                applyScrolledPosition();
+                super.onLayout(changed, l, t, r, b);
+            }
+
+            @Override
+            protected boolean canHighlightChildAt(View child, float x, float y) {
+                return BottomSheetWithRecyclerListView.this.canHighlightChildAt(child, x, y);
+            }
+        };
+    }
 
     private class PaddingView extends View {
 

@@ -111,6 +111,21 @@ public final class BulletinFactory {
             b.show(top);
         }
     }
+    public void showForError(String errorCode) {
+        showForError(errorCode, false);
+    }
+    public void showForError(String errorCode, boolean top) {
+        if (!LaunchActivity.isActive) return;
+        if (TextUtils.isEmpty(errorCode)) {
+            Bulletin b = createErrorBulletin(LocaleController.formatString(R.string.UnknownError));
+            b.hideAfterBottomSheet = false;
+            b.show(top);
+        } else {
+            Bulletin b = createErrorBulletin(LocaleController.formatString(R.string.UnknownErrorCode, errorCode));
+            b.hideAfterBottomSheet = false;
+            b.show(top);
+        }
+    }
 
     public static void showError(TLRPC.TL_error error) {
         if (!LaunchActivity.isActive) return;

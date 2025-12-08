@@ -73,7 +73,6 @@ private:
     std::string currentSecret;
     std::string currentSecretDomain;
 
-    bool tlsUseLegacy = false;
     bool tlsHashMismatch = false;
     bool tlsBufferSized = true;
     NativeByteBuffer *tlsBuffer = nullptr;
