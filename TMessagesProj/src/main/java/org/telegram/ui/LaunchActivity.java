@@ -8,8 +8,6 @@
 
 package org.telegram.ui;
 
-import static org.telegram.messenger.LocaleController.formatPluralString;
-import static org.telegram.messenger.LocaleController.getString;
 import static org.telegram.ui.Components.Premium.LimitReachedBottomSheet.TYPE_ACCOUNTS;
 import static org.telegram.ui.Components.Premium.LimitReachedBottomSheet.TYPE_BOOSTS_FOR_USERS;
 
@@ -1629,7 +1627,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
             switchToAccount(account, true);
         } else {
             if (drawerLayoutAdapter != null) {
-                drawerLayoutAdapter.notifyDataSetChanged();
+                drawerLayoutAdapter.redrawAdapterData();
             }
             RestrictedLanguagesSelectActivity.checkRestrictedLanguages(true);
             clearFragments();
@@ -6277,7 +6275,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                         if (res.can_not_skip) {
                             showUpdateActivity(accountNum, res, false);
                         } else if (ApplicationLoader.isStandaloneBuild() || BuildVars.DEBUG_VERSION) {
-                            drawerLayoutAdapter.notifyDataSetChanged();
+                            drawerLayoutAdapter.redrawAdapterData();
                             ApplicationLoader.applicationLoaderInstance.showUpdateAppPopup(LaunchActivity.this, res, accountNum);
                         }
                         NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.appUpdateAvailable);
@@ -7341,9 +7339,9 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                 updateCurrentConnectionState(account);
             }
         } else if (id == NotificationCenter.mainUserInfoChanged) {
-            drawerLayoutAdapter.notifyDataSetChanged();
+            drawerLayoutAdapter.redrawAdapterData();
         } else if (id == NotificationCenter.attachMenuBotsDidLoad) {
-            drawerLayoutAdapter.notifyDataSetChanged();
+            drawerLayoutAdapter.redrawAdapterData();
         } else if (id == NotificationCenter.needShowAlert) {
             final Integer reason = (Integer) args[0];
             if (reason == 6 || reason == 3 && proxyErrorDialog != null) {
@@ -7864,7 +7862,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
             }
         } else if (id == NotificationCenter.currentUserPremiumStatusChanged) {
             if (drawerLayoutAdapter != null) {
-                drawerLayoutAdapter.notifyDataSetChanged();
+                drawerLayoutAdapter.redrawAdapterData();
             }
             MessagesController.getMainSettings(currentAccount).edit().remove("transcribeButtonPressed").apply();
         } else if (id == NotificationCenter.requestPermissions) {
@@ -7894,7 +7892,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
             }
         } else if (id == NotificationCenter.storiesEnabledUpdate) {
             if (drawerLayoutAdapter != null) {
-                drawerLayoutAdapter.notifyDataSetChanged();
+                drawerLayoutAdapter.redrawAdapterData();
             }
         } else if (id == NotificationCenter.tlSchemeParseException) {
             if (tlErrorAlertDialog == null) {
@@ -8902,7 +8900,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                 actionBarLayout.rebuildAllFragmentViews(last, last);
             }
         }
-        drawerLayoutAdapter.notifyDataSetChanged();
+        drawerLayoutAdapter.redrawAdapterData();
     }
 
     public static BaseFragment getLastFragment() {
