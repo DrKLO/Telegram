@@ -4120,7 +4120,13 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
 
     @Override
     public void onOpenAnimationEnd() {
-        checkCamera(parentAlert != null && parentAlert.baseFragment instanceof ChatActivity);
+        boolean request = parentAlert != null && parentAlert.baseFragment instanceof ChatActivity;
+        if (request && Build.VERSION.SDK_INT >= 23 && parentAlert.baseFragment.getParentActivity() != null) {
+            if (parentAlert.baseFragment.getParentActivity().checkSelfPermission(Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+                request = false;
+            }
+        }
+        checkCamera(request);
     }
 
     @Override
