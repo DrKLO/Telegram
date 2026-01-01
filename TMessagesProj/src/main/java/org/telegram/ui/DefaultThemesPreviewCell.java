@@ -240,7 +240,8 @@ public class DefaultThemesPreviewCell extends LinearLayout {
                         valueAnimator.start();
 
                         int navBarNewColor = Theme.getColor(Theme.key_windowBackgroundGray);
-                        final Window window = context instanceof Activity ? ((Activity) context).getWindow() : null;
+                        final Activity activity = context instanceof Activity ? ((Activity) context) : null;
+                        final Window window = activity != null ? activity.getWindow() : null;
                         if (window != null) {
                             if (navBarAnimator != null && navBarAnimator.isRunning()) {
                                 navBarAnimator.cancel();
@@ -253,15 +254,15 @@ public class DefaultThemesPreviewCell extends LinearLayout {
                                 public void onAnimationUpdate(ValueAnimator valueAnimator) {
                                     float t = Math.max(0, Math.min(1, ((float) valueAnimator.getAnimatedValue() * fullDuration - startDelay) / duration));
                                     navBarColor = ColorUtils.blendARGB(navBarFromColor, navBarNewColor, t);
-                                    AndroidUtilities.setNavigationBarColor(window, navBarColor, false);
-                                    AndroidUtilities.setLightNavigationBar(window, AndroidUtilities.computePerceivedBrightness(navBarColor) >= 0.721f);
+                                    AndroidUtilities.setNavigationBarColor(activity, navBarColor, false);
+                                    AndroidUtilities.setLightNavigationBar(activity, AndroidUtilities.computePerceivedBrightness(navBarColor) >= 0.721f);
                                 }
                             });
                             navBarAnimator.addListener(new AnimatorListenerAdapter() {
                                 @Override
                                 public void onAnimationEnd(Animator animation) {
-                                    AndroidUtilities.setNavigationBarColor(window, navBarNewColor, false);
-                                    AndroidUtilities.setLightNavigationBar(window, AndroidUtilities.computePerceivedBrightness(navBarNewColor) >= 0.721f);
+                                    AndroidUtilities.setNavigationBarColor(activity, navBarNewColor, false);
+                                    AndroidUtilities.setLightNavigationBar(activity, AndroidUtilities.computePerceivedBrightness(navBarNewColor) >= 0.721f);
                                 }
                             });
                             navBarAnimator.setDuration((long) fullDuration);

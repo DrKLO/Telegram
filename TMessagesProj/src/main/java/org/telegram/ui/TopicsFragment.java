@@ -68,6 +68,7 @@ import org.telegram.messenger.NotificationsController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.TopicsController;
+import org.telegram.messenger.UserObject;
 import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLObject;
@@ -2464,8 +2465,11 @@ public class TopicsFragment extends BaseFragment implements NotificationCenter.N
             return;
         }
         TLRPC.Chat chatLocal = getMessagesController().getChat(chatId);
+        TLRPC.User userLocal = getMessagesController().getUser(-chatId);
 
-        if (ChatObject.isMonoForum(chatLocal)) {
+        if (UserObject.isBotForum(userLocal)) {
+            avatarContainer.setUserAvatar(userLocal);
+        } else if (ChatObject.isMonoForum(chatLocal)) {
             final TLRPC.Chat mfChatLocal = getMessagesController().getChat(chatLocal.linked_monoforum_id);
             if (mfChatLocal != null) {
                 avatarContainer.setChatAvatar(mfChatLocal);

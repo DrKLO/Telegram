@@ -1220,6 +1220,7 @@ public class ChatRightsEditActivity extends BaseFragment implements Notification
                 addUsersRow = rowCount++;
                 startVoiceChatRow = rowCount++;
                 addAdminsRow = rowCount++;
+                banUsersRow = rowCount++;
             } else {
                 if (currentType == TYPE_ADD_BOT) {
                     manageRow = rowCount++;
@@ -1960,7 +1961,7 @@ public class ChatRightsEditActivity extends BaseFragment implements Notification
                             checkCell.setIcon(myAdminRights.delete_messages || isCreator ? 0 : R.drawable.permission_locked);
                         }
                     } else if (position == addAdminsRow) {
-                        checkCell.setTextAndCheck(LocaleController.getString(R.string.EditAdminAddAdmins), asAdminValue && adminRights.add_admins, anonymousRow != -1);
+                        checkCell.setTextAndCheck(LocaleController.getString(R.string.EditAdminAddAdmins), asAdminValue && adminRights.add_admins, banUsersRow != -1 && isChannel || anonymousRow != -1);
                         if (currentType == TYPE_ADD_BOT) {
                             checkCell.setIcon(myAdminRights.add_admins || isCreator ? 0 : R.drawable.permission_locked);
                         }

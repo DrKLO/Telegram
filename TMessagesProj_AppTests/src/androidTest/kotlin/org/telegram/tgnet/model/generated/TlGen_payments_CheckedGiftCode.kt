@@ -16,7 +16,7 @@ public sealed class TlGen_payments_CheckedGiftCode : TlGen_Object {
     public val giveaway_msg_id: Int?,
     public val to_id: Long?,
     public val date: Int,
-    public val months: Int,
+    public val days: Int,
     public val used_date: Int?,
     public val chats: List<TlGen_Chat>,
     public val users: List<TlGen_User>,
@@ -39,14 +39,14 @@ public sealed class TlGen_payments_CheckedGiftCode : TlGen_Object {
       giveaway_msg_id?.let { stream.writeInt32(it) }
       to_id?.let { stream.writeInt64(it) }
       stream.writeInt32(date)
-      stream.writeInt32(months)
+      stream.writeInt32(days)
       used_date?.let { stream.writeInt32(it) }
       TlGen_Vector.serialize(stream, chats)
       TlGen_Vector.serialize(stream, users)
     }
 
     public companion object {
-      public const val MAGIC: UInt = 0x284A1096U
+      public const val MAGIC: UInt = 0xEB983F8FU
     }
   }
 }

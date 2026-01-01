@@ -1,6 +1,7 @@
 package org.telegram.tgnet.model.generated
 
 import kotlin.Int
+import kotlin.Long
 import kotlin.String
 import kotlin.UInt
 import org.telegram.tgnet.OutputSerializedData
@@ -54,6 +55,8 @@ public sealed class TlGen_auth_SentCode : TlGen_Object {
     public val phone_code_hash: String,
     public val support_email_address: String,
     public val support_email_subject: String,
+    public val currency: String,
+    public val amount: Long,
   ) : TlGen_auth_SentCode() {
     public override fun serializeToStream(stream: OutputSerializedData) {
       stream.writeInt32(MAGIC.toInt())
@@ -61,10 +64,12 @@ public sealed class TlGen_auth_SentCode : TlGen_Object {
       stream.writeString(phone_code_hash)
       stream.writeString(support_email_address)
       stream.writeString(support_email_subject)
+      stream.writeString(currency)
+      stream.writeInt64(amount)
     }
 
     public companion object {
-      public const val MAGIC: UInt = 0xD7A2FCF9U
+      public const val MAGIC: UInt = 0xE0955A3CU
     }
   }
 }

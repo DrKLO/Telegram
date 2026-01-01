@@ -524,6 +524,9 @@ public class TodoItemMenu extends Dialog {
                         final TLRPC.TodoCompletion c = media.completions.get(i);
                         if (c.id == taskId) {
                             media.completions.remove(i);
+                            if (media.completions.isEmpty()) {
+                                media.flags &=~ 1;
+                            }
                             i--;
                         }
                     }

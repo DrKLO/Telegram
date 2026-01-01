@@ -17,7 +17,6 @@ import android.graphics.PorterDuffColorFilter;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.RectF;
 import android.graphics.Shader;
-import android.graphics.Xfermode;
 import android.view.View;
 
 import androidx.core.content.ContextCompat;
@@ -26,6 +25,7 @@ import androidx.core.math.MathUtils;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
+import org.telegram.messenger.LiteMode;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.SvgHelper;
@@ -51,6 +51,32 @@ public class StarParticlesView extends View {
             SharedConfig.getDevicePerformanceClass() == SharedConfig.PERFORMANCE_CLASS_AVERAGE ? 100 :
             50
         ));
+    }
+
+    @Override
+    protected void onAttachedToWindow() {
+        super.onAttachedToWindow();
+        LiteMode.addOnPowerSaverAppliedListener(powerSaverCallback = b -> onApplyPowerSaverMode());
+        onApplyPowerSaverMode();
+    }
+
+    @Override
+    protected void onDetachedFromWindow() {
+        super.onDetachedFromWindow();
+        if (powerSaverCallback != null) {
+            LiteMode.removeOnPowerSaverAppliedListener(powerSaverCallback);
+        }
+    }
+
+    private Utilities.Callback<Boolean> powerSaverCallback;
+    private boolean isLiteModeParticlesAllowed = true;
+
+    private void onApplyPowerSaverMode() {
+        boolean isAllowed = LiteMode.isEnabled(LiteMode.FLAG_PARTICLES);
+        if (isLiteModeParticlesAllowed != isAllowed) {
+            isLiteModeParticlesAllowed = isAllowed;
+            invalidate();
+        }
     }
 
     public StarParticlesView(Context context, int particlesCount) {
@@ -103,6 +129,11 @@ public class StarParticlesView extends View {
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
+
+        if (!isLiteModeParticlesAllowed) {
+            return;
+        }
+
         if (clipGradientPaint != null) {
             canvas.saveLayerAlpha(0, 0, getWidth(), getHeight(), 0xFF, Canvas.ALL_SAVE_FLAG);
         }

@@ -287,7 +287,7 @@ public class SearchDownloadsContainer extends FrameLayout implements Notificatio
             FileLoader.getInstance(currentAccount).getRecentLoadingFiles(recentLoadingFilesTmp);
 
             String q = searchQuery.toLowerCase();
-            boolean sameQuery = q.equals(lastQueryString);
+            final boolean sameQuery = q.equals(lastQueryString);
 
             lastQueryString = q;
             Utilities.searchQueue.cancelRunnable(lastSearchRunnable);
@@ -295,8 +295,9 @@ public class SearchDownloadsContainer extends FrameLayout implements Notificatio
                 ArrayList<MessageObject> currentLoadingFilesRes = new ArrayList<>();
                 ArrayList<MessageObject> recentLoadingFilesRes = new ArrayList<>();
                 for (int i = 0; i < currentLoadingFilesTmp.size(); i++) {
-                    if (FileLoader.getDocumentFileName(currentLoadingFilesTmp.get(i).getDocument()).toLowerCase().contains(q)) {
-                        MessageObject messageObject = new MessageObject(currentAccount, currentLoadingFilesTmp.get(i).messageOwner, false, false);
+                    final String filename = FileLoader.getDocumentFileName(currentLoadingFilesTmp.get(i).getDocument());
+                    if (filename != null && filename.toLowerCase().contains(q)) {
+                        final MessageObject messageObject = new MessageObject(currentAccount, currentLoadingFilesTmp.get(i).messageOwner, false, false);
                         messageObject.mediaExists = currentLoadingFilesTmp.get(i).mediaExists;
                         messageObject.setQuery(searchQuery);
                         currentLoadingFilesRes.add(messageObject);
@@ -304,9 +305,9 @@ public class SearchDownloadsContainer extends FrameLayout implements Notificatio
                 }
 
                 for (int i = 0; i < recentLoadingFilesTmp.size(); i++) {
-                    String documentName = FileLoader.getDocumentFileName(recentLoadingFilesTmp.get(i).getDocument());
+                    final String documentName = FileLoader.getDocumentFileName(recentLoadingFilesTmp.get(i).getDocument());
                     if (documentName != null && documentName.toLowerCase().contains(q)) {
-                        MessageObject messageObject = new MessageObject(currentAccount, recentLoadingFilesTmp.get(i).messageOwner, false, false);
+                        final MessageObject messageObject = new MessageObject(currentAccount, recentLoadingFilesTmp.get(i).messageOwner, false, false);
                         messageObject.mediaExists = recentLoadingFilesTmp.get(i).mediaExists;
                         messageObject.setQuery(searchQuery);
                         recentLoadingFilesRes.add(messageObject);

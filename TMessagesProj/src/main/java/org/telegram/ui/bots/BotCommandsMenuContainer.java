@@ -17,15 +17,20 @@ import android.view.View;
 import android.view.animation.OvershootInterpolator;
 import android.widget.FrameLayout;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.core.graphics.ColorUtils;
 import androidx.core.view.NestedScrollingParent;
 import androidx.core.view.NestedScrollingParentHelper;
 import androidx.core.view.ViewCompat;
+import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.RecyclerListView;
+import org.telegram.ui.Components.blur3.drawable.BlurredBackgroundDrawable;
 
 public class BotCommandsMenuContainer extends FrameLayout implements NestedScrollingParent {
 
@@ -33,7 +38,6 @@ public class BotCommandsMenuContainer extends FrameLayout implements NestedScrol
     private NestedScrollingParentHelper nestedScrollingParentHelper;
 
     public RecyclerListView listView;
-    Paint backgroundPaint = new Paint();
     Paint topBackground = new Paint(Paint.ANTI_ALIAS_FLAG);
     private float containerY;
 
@@ -41,12 +45,10 @@ public class BotCommandsMenuContainer extends FrameLayout implements NestedScrol
 
     float scrollYOffset;
 
-    Drawable shadowDrawable;
     public BotCommandsMenuContainer(Context context) {
         super(context);
 
         nestedScrollingParentHelper = new NestedScrollingParentHelper(this);
-        shadowDrawable = context.getResources().getDrawable(R.drawable.sheet_shadow_round).mutate();
         listView = new RecyclerListView(context) {
             @Override
             protected void dispatchDraw(Canvas canvas) {
@@ -54,27 +56,14 @@ public class BotCommandsMenuContainer extends FrameLayout implements NestedScrol
                     super.dispatchDraw(canvas);
                     return;
                 }
-                View firstView = listView.getLayoutManager().findViewByPosition(0);
-                float y = 0;
-                if (firstView != null) {
-                    y = firstView.getY();
-                }
-                if (y < 0) {
-                    y = 0;
-                }
-                scrollYOffset = y;
+
+                float y = scrollYOffset;
+
                 y -= dp(8);
-                if (y > 0) {
-                    shadowDrawable.setBounds(
-                        -dp(8),
-                        (int) y - dp(24),
-                        getMeasuredWidth() + dp(8),
-                        (int) y
-                    );
-                    shadowDrawable.draw(canvas);
-                }
                 containerY = y - dp(16);
-                canvas.drawRect(0, y, getMeasuredWidth(), getMeasuredHeight() + dp(16), backgroundPaint);
+                if (backgroundDrawable != null) {
+                    backgroundDrawable.draw(canvas);
+                }
                 AndroidUtilities.rectTmp.set(
                     getMeasuredWidth() / 2f - dp(12),
                     y - dp(4),
@@ -87,6 +76,25 @@ public class BotCommandsMenuContainer extends FrameLayout implements NestedScrol
         };
         listView.setOverScrollMode(OVER_SCROLL_NEVER);
         listView.setClipToPadding(false);
+        listView.setClipToOutline(true);
+        listView.addOnScrollListener(new RecyclerView.OnScrollListener() {
+            @Override
+            public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
+                super.onScrolled(recyclerView, dx, dy);
+
+                View firstView = listView.getLayoutManager().findViewByPosition(0);
+                float y = 0;
+                if (firstView != null) {
+                    y = firstView.getY();
+                }
+                if (y < 0) {
+                    y = 0;
+                }
+                scrollYOffset = y;
+
+                checkBackgroundBounds();
+            }
+        });
         addView(listView);
         updateColors();
         setClipChildren(false);
@@ -212,6 +220,12 @@ public class BotCommandsMenuContainer extends FrameLayout implements NestedScrol
             playEnterAnim(true);
             entering = false;
         }
+
+        checkBackgroundBounds();
+    }
+
+    public RecyclerListView getListView() {
+        return listView;
     }
 
     private void playEnterAnim(boolean firstTime) {
@@ -262,8 +276,35 @@ public class BotCommandsMenuContainer extends FrameLayout implements NestedScrol
 
     public void updateColors() {
         topBackground.setColor(Theme.getColor(Theme.key_sheet_scrollUp));
-        backgroundPaint.setColor(Theme.getColor(Theme.key_windowBackgroundWhite));
-        shadowDrawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhite), PorterDuff.Mode.MULTIPLY));
+        if (backgroundDrawable != null) {
+            backgroundDrawable.updateColors();
+        }
+
         invalidate();
+    }
+
+
+    private @Nullable BlurredBackgroundDrawable backgroundDrawable;
+
+    public void setBackgroundDrawable(@NonNull BlurredBackgroundDrawable backgroundDrawable) {
+        this.backgroundDrawable = backgroundDrawable;
+        this.backgroundDrawable.setRadius(dp(22));
+        this.backgroundDrawable.setPadding(dp(5));
+
+        listView.setOutlineProvider(backgroundDrawable.getViewOutlineProvider());
+    }
+
+    private void checkBackgroundBounds() {
+        if (backgroundDrawable != null) {
+            backgroundDrawable.setBounds(
+                0,
+                (int) scrollYOffset - dp(20 + 5),
+                getMeasuredWidth(),
+                getMeasuredHeight() + dp(5)
+            );
+
+            listView.invalidateOutline();
+            listView.invalidate();
+        }
     }
 }

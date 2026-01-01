@@ -67,6 +67,10 @@ public class ThemeKey {
         if (string.startsWith("emoticon_")) {
             return new ThemeKey(string.substring(9), null);
         }
+        if (!TextUtils.isEmpty(string)) {
+            return new ThemeKey(string, null);
+        }
+
         return null;
     }
 

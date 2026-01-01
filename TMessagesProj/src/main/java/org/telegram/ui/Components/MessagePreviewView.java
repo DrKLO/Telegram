@@ -1511,8 +1511,8 @@ public class MessagePreviewView extends FrameLayout {
                     }
 
                     @Override
-                    public void setMessageObject(MessageObject messageObject, MessageObject.GroupedMessages groupedMessages, boolean bottomNear, boolean topNear, boolean firstInChat) {
-                        super.setMessageObject(messageObject, groupedMessages, bottomNear, topNear, firstInChat);
+                    public void setMessageObject(MessageObject messageObject, MessageObject.GroupedMessages groupedMessages, boolean bottomNear, boolean topNear, boolean firstInChat, boolean lastInChatList) {
+                        super.setMessageObject(messageObject, groupedMessages, bottomNear, topNear, firstInChat, lastInChatList);
                         updateLinkHighlight(this);
                     }
 

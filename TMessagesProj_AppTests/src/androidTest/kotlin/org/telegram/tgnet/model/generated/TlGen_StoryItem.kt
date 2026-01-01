@@ -25,6 +25,7 @@ public sealed class TlGen_StoryItem : TlGen_Object {
 
   public data class TL_storyItemSkipped(
     public val close_friends: Boolean,
+    public val live: Boolean,
     public val id: Int,
     public val date: Int,
     public val expire_date: Int,
@@ -33,6 +34,7 @@ public sealed class TlGen_StoryItem : TlGen_Object {
       get() {
         var result = 0U
         if (close_friends) result = result or 256U
+        if (live) result = result or 512U
         return result
       }
 

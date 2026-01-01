@@ -117,6 +117,8 @@ public class SearchEngine {
 
     public static SearchEngine getCurrent() {
         final ArrayList<SearchEngine> searchEngines = getSearchEngines();
+        if (searchEngines.isEmpty())
+            return new SearchEngine("Google", "https://www.google.com/search?q=", "https://suggestqueries.google.com/complete/search?client=chrome&amp;q=", "https://policies.google.com/privacy");
         final int index = Utilities.clamp(SharedConfig.searchEngineType, searchEngines.size() - 1, 0);
         return searchEngines.get(index);
     }

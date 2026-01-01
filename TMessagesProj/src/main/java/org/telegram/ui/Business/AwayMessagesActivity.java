@@ -355,12 +355,12 @@ public class AwayMessagesActivity extends BaseFragment implements NotificationCe
             listView.adapter.update(true);
             checkDone(true);
         } else if (item.id == BUTTON_SCHEDULE_CUSTOM_START) {
-            AlertsCreator.createDatePickerDialog(getContext(), getString(R.string.BusinessAwayScheduleCustomStartTitle), getString(R.string.BusinessAwayScheduleCustomSetButton), scheduleCustomStart, (notify, date) -> {
+            AlertsCreator.createDatePickerDialog(getContext(), getString(R.string.BusinessAwayScheduleCustomStartTitle), getString(R.string.BusinessAwayScheduleCustomSetButton), scheduleCustomStart, (notify, date, scheduleRepeatPeriod) -> {
                 ((TextCell) view).setValue(LocaleController.formatShortDateTime(scheduleCustomStart = date), true);
                 checkDone(true);
             });
         } else if (item.id == BUTTON_SCHEDULE_CUSTOM_END) {
-            AlertsCreator.createDatePickerDialog(getContext(), getString(R.string.BusinessAwayScheduleCustomEndTitle), getString(R.string.BusinessAwayScheduleCustomSetButton), scheduleCustomEnd, (notify, date) -> {
+            AlertsCreator.createDatePickerDialog(getContext(), getString(R.string.BusinessAwayScheduleCustomEndTitle), getString(R.string.BusinessAwayScheduleCustomSetButton), scheduleCustomEnd, (notify, date, scheduleRepeatPeriod) -> {
                 ((TextCell) view).setValue(LocaleController.formatShortDateTime(scheduleCustomEnd = date), true);
                 checkDone(true);
             });

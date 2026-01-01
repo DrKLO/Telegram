@@ -88,7 +88,7 @@ public class SizeNotifierFrameLayout extends FrameLayout {
     private boolean animationInProgress;
     private boolean skipBackgroundDrawing;
     SnowflakesEffect snowflakesEffect;
-    protected View backgroundView;
+    public View backgroundView;
     boolean attached;
 
 
@@ -192,6 +192,7 @@ public class SizeNotifierFrameLayout extends FrameLayout {
                 }
                 backgroundMotion = newMotion;
                 themeAnimationValue = 0f;
+                onUpdateBackgroundDrawable(backgroundDrawable);
                 checkMotion();
             } else if (backgroundMotion != newMotion) {
                 backgroundMotion = newMotion;
@@ -348,6 +349,11 @@ public class SizeNotifierFrameLayout extends FrameLayout {
         }
     }
 
+    public void onUpdateBackgroundDrawable(Drawable drawable) {
+
+    }
+
+
     public void setBackgroundImage(Drawable bitmap, boolean motion) {
         if (backgroundDrawable == bitmap) {
             return;
@@ -373,6 +379,7 @@ public class SizeNotifierFrameLayout extends FrameLayout {
         if (attached && backgroundDrawable instanceof MotionBackgroundDrawable) {
             ((MotionBackgroundDrawable) backgroundDrawable).onAttachedToWindow();
         }
+        onUpdateBackgroundDrawable(backgroundDrawable);
         checkMotion();
         backgroundView.invalidate();
         checkLayerType();
@@ -912,7 +919,6 @@ public class SizeNotifierFrameLayout extends FrameLayout {
     private RenderNode[] blurNodes;
     private boolean[] blurNodeInvalidatedThisFrame = new boolean[2];
     private boolean[] blurNodeInvalidated = new boolean[2];
-    private NoClipCanvas noClipCanvas;
     public static boolean drawingBlur;
 
     private final ArrayList<IViewWithInvalidateCallback> lastViews = new ArrayList<>();
@@ -939,7 +945,7 @@ public class SizeNotifierFrameLayout extends FrameLayout {
         return false;
     }
 
-    private float getRenderNodeScale() {
+    public static float getRenderNodeScale() {
         switch (SharedConfig.getDevicePerformanceClass()) {
             case SharedConfig.PERFORMANCE_CLASS_HIGH:
                 return AndroidUtilities.density;
@@ -951,7 +957,7 @@ public class SizeNotifierFrameLayout extends FrameLayout {
         }
     }
 
-    private float getBlurRadius() {
+    public static float getBlurRadius() {
         switch (SharedConfig.getDevicePerformanceClass()) {
             case SharedConfig.PERFORMANCE_CLASS_HIGH:
                 return 60;

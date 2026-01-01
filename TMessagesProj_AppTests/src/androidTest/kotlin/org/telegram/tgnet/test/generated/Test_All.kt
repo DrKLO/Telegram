@@ -68,13 +68,6 @@ public class Test_All {
     }
 
     @Test
-    public fun test_InputContact_TL_inputPhoneContact() {
-      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_InputContact.TL_inputPhoneContact::class,
-          org.telegram.tgnet.TLRPC.TL_inputPhoneContact::TLdeserialize, null)
-
-    }
-
-    @Test
     public fun test_InputFile_TL_inputFile() {
       test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_InputFile.TL_inputFile::class,
           org.telegram.tgnet.TLRPC.InputFile::TLdeserialize, null)
@@ -351,13 +344,6 @@ public class Test_All {
     public fun test_messages_Dialogs_TL_messages_dialogsSlice() {
       test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_messages_Dialogs.TL_messages_dialogsSlice::class,
           org.telegram.tgnet.TLRPC.messages_Dialogs::TLdeserialize, null)
-
-    }
-
-    @Test
-    public fun test_messages_Messages_TL_messages_messages() {
-      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_messages_Messages.TL_messages_messages::class,
-          org.telegram.tgnet.TLRPC.messages_Messages::TLdeserialize, null)
 
     }
 
@@ -776,14 +762,14 @@ public class Test_All {
 
     @Test
     public fun test_InputPrivacyKey_TL_inputPrivacyKeyStatusTimestamp() {
-      test_TLdeserializeEnum(org.telegram.tgnet.model.generated.TlGen_InputPrivacyKey.TL_inputPrivacyKeyStatusTimestamp::class,
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_InputPrivacyKey.TL_inputPrivacyKeyStatusTimestamp::class,
           org.telegram.tgnet.TLRPC.InputPrivacyKey::TLdeserialize, null)
 
     }
 
     @Test
     public fun test_PrivacyKey_TL_privacyKeyStatusTimestamp() {
-      test_TLdeserializeEnum(org.telegram.tgnet.model.generated.TlGen_PrivacyKey.TL_privacyKeyStatusTimestamp::class,
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_PrivacyKey.TL_privacyKeyStatusTimestamp::class,
           org.telegram.tgnet.TLRPC.PrivacyKey::TLdeserialize, null)
 
     }
@@ -1266,14 +1252,14 @@ public class Test_All {
 
     @Test
     public fun test_InputPrivacyKey_TL_inputPrivacyKeyChatInvite() {
-      test_TLdeserializeEnum(org.telegram.tgnet.model.generated.TlGen_InputPrivacyKey.TL_inputPrivacyKeyChatInvite::class,
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_InputPrivacyKey.TL_inputPrivacyKeyChatInvite::class,
           org.telegram.tgnet.TLRPC.InputPrivacyKey::TLdeserialize, null)
 
     }
 
     @Test
     public fun test_PrivacyKey_TL_privacyKeyChatInvite() {
-      test_TLdeserializeEnum(org.telegram.tgnet.model.generated.TlGen_PrivacyKey.TL_privacyKeyChatInvite::class,
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_PrivacyKey.TL_privacyKeyChatInvite::class,
           org.telegram.tgnet.TLRPC.PrivacyKey::TLdeserialize, null)
 
     }
@@ -1868,14 +1854,14 @@ public class Test_All {
 
     @Test
     public fun test_InputPrivacyKey_TL_inputPrivacyKeyPhoneCall() {
-      test_TLdeserializeEnum(org.telegram.tgnet.model.generated.TlGen_InputPrivacyKey.TL_inputPrivacyKeyPhoneCall::class,
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_InputPrivacyKey.TL_inputPrivacyKeyPhoneCall::class,
           org.telegram.tgnet.TLRPC.InputPrivacyKey::TLdeserialize, null)
 
     }
 
     @Test
     public fun test_PrivacyKey_TL_privacyKeyPhoneCall() {
-      test_TLdeserializeEnum(org.telegram.tgnet.model.generated.TlGen_PrivacyKey.TL_privacyKeyPhoneCall::class,
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_PrivacyKey.TL_privacyKeyPhoneCall::class,
           org.telegram.tgnet.TLRPC.PrivacyKey::TLdeserialize, null)
 
     }
@@ -3320,14 +3306,14 @@ public class Test_All {
 
     @Test
     public fun test_InputPrivacyKey_TL_inputPrivacyKeyPhoneP2P() {
-      test_TLdeserializeEnum(org.telegram.tgnet.model.generated.TlGen_InputPrivacyKey.TL_inputPrivacyKeyPhoneP2P::class,
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_InputPrivacyKey.TL_inputPrivacyKeyPhoneP2P::class,
           org.telegram.tgnet.TLRPC.InputPrivacyKey::TLdeserialize, null)
 
     }
 
     @Test
     public fun test_PrivacyKey_TL_privacyKeyPhoneP2P() {
-      test_TLdeserializeEnum(org.telegram.tgnet.model.generated.TlGen_PrivacyKey.TL_privacyKeyPhoneP2P::class,
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_PrivacyKey.TL_privacyKeyPhoneP2P::class,
           org.telegram.tgnet.TLRPC.PrivacyKey::TLdeserialize, null)
 
     }
@@ -3537,28 +3523,28 @@ public class Test_All {
 
     @Test
     public fun test_InputPrivacyKey_TL_inputPrivacyKeyForwards() {
-      test_TLdeserializeEnum(org.telegram.tgnet.model.generated.TlGen_InputPrivacyKey.TL_inputPrivacyKeyForwards::class,
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_InputPrivacyKey.TL_inputPrivacyKeyForwards::class,
           org.telegram.tgnet.TLRPC.InputPrivacyKey::TLdeserialize, null)
 
     }
 
     @Test
     public fun test_PrivacyKey_TL_privacyKeyForwards() {
-      test_TLdeserializeEnum(org.telegram.tgnet.model.generated.TlGen_PrivacyKey.TL_privacyKeyForwards::class,
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_PrivacyKey.TL_privacyKeyForwards::class,
           org.telegram.tgnet.TLRPC.PrivacyKey::TLdeserialize, null)
 
     }
 
     @Test
     public fun test_InputPrivacyKey_TL_inputPrivacyKeyProfilePhoto() {
-      test_TLdeserializeEnum(org.telegram.tgnet.model.generated.TlGen_InputPrivacyKey.TL_inputPrivacyKeyProfilePhoto::class,
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_InputPrivacyKey.TL_inputPrivacyKeyProfilePhoto::class,
           org.telegram.tgnet.TLRPC.InputPrivacyKey::TLdeserialize, null)
 
     }
 
     @Test
     public fun test_PrivacyKey_TL_privacyKeyProfilePhoto() {
-      test_TLdeserializeEnum(org.telegram.tgnet.model.generated.TlGen_PrivacyKey.TL_privacyKeyProfilePhoto::class,
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_PrivacyKey.TL_privacyKeyProfilePhoto::class,
           org.telegram.tgnet.TLRPC.PrivacyKey::TLdeserialize, null)
 
     }
@@ -3581,13 +3567,6 @@ public class Test_All {
     public fun test_InputFileLocation_TL_inputPhotoFileLocation() {
       test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_InputFileLocation.TL_inputPhotoFileLocation::class,
           org.telegram.tgnet.TLRPC.InputFileLocation::TLdeserialize, null)
-
-    }
-
-    @Test
-    public fun test_Update_TL_updateReadHistoryInbox() {
-      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_Update.TL_updateReadHistoryInbox::class,
-          org.telegram.tgnet.TLRPC.Update::TLdeserialize, null)
 
     }
 
@@ -3670,14 +3649,14 @@ public class Test_All {
 
     @Test
     public fun test_InputPrivacyKey_TL_inputPrivacyKeyPhoneNumber() {
-      test_TLdeserializeEnum(org.telegram.tgnet.model.generated.TlGen_InputPrivacyKey.TL_inputPrivacyKeyPhoneNumber::class,
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_InputPrivacyKey.TL_inputPrivacyKeyPhoneNumber::class,
           org.telegram.tgnet.TLRPC.InputPrivacyKey::TLdeserialize, null)
 
     }
 
     @Test
     public fun test_PrivacyKey_TL_privacyKeyPhoneNumber() {
-      test_TLdeserializeEnum(org.telegram.tgnet.model.generated.TlGen_PrivacyKey.TL_privacyKeyPhoneNumber::class,
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_PrivacyKey.TL_privacyKeyPhoneNumber::class,
           org.telegram.tgnet.TLRPC.PrivacyKey::TLdeserialize, null)
 
     }
@@ -3873,14 +3852,14 @@ public class Test_All {
 
     @Test
     public fun test_InputPrivacyKey_TL_inputPrivacyKeyAddedByPhone() {
-      test_TLdeserializeEnum(org.telegram.tgnet.model.generated.TlGen_InputPrivacyKey.TL_inputPrivacyKeyAddedByPhone::class,
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_InputPrivacyKey.TL_inputPrivacyKeyAddedByPhone::class,
           org.telegram.tgnet.TLRPC.InputPrivacyKey::TLdeserialize, null)
 
     }
 
     @Test
     public fun test_PrivacyKey_TL_privacyKeyAddedByPhone() {
-      test_TLdeserializeEnum(org.telegram.tgnet.model.generated.TlGen_PrivacyKey.TL_privacyKeyAddedByPhone::class,
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_PrivacyKey.TL_privacyKeyAddedByPhone::class,
           org.telegram.tgnet.TLRPC.PrivacyKey::TLdeserialize, null)
 
     }
@@ -4727,13 +4706,6 @@ public class Test_All {
     }
 
     @Test
-    public fun test_GroupCallParticipant_TL_groupCallParticipant() {
-      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_GroupCallParticipant.TL_groupCallParticipant::class,
-          org.telegram.tgnet.TLRPC.GroupCallParticipant::TLdeserialize, null)
-
-    }
-
-    @Test
     public fun test_GroupCallParticipantVideoSourceGroup_TL_groupCallParticipantVideoSourceGroup() {
       test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_GroupCallParticipantVideoSourceGroup.TL_groupCallParticipantVideoSourceGroup::class,
           org.telegram.tgnet.TLRPC.TL_groupCallParticipantVideoSourceGroup::TLdeserialize, null)
@@ -4947,13 +4919,6 @@ public class Test_All {
     public fun test_ContactStatus_TL_contactStatus() {
       test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_ContactStatus.TL_contactStatus::class,
           org.telegram.tgnet.TLRPC.TL_contactStatus::TLdeserialize, null)
-
-    }
-
-    @Test
-    public fun test_Update_TL_updateUserTyping() {
-      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_Update.TL_updateUserTyping::class,
-          org.telegram.tgnet.TLRPC.Update::TLdeserialize, null)
 
     }
 
@@ -6082,14 +6047,14 @@ public class Test_All {
 
     @Test
     public fun test_InputPrivacyKey_TL_inputPrivacyKeyVoiceMessages() {
-      test_TLdeserializeEnum(org.telegram.tgnet.model.generated.TlGen_InputPrivacyKey.TL_inputPrivacyKeyVoiceMessages::class,
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_InputPrivacyKey.TL_inputPrivacyKeyVoiceMessages::class,
           org.telegram.tgnet.TLRPC.InputPrivacyKey::TLdeserialize, null)
 
     }
 
     @Test
     public fun test_PrivacyKey_TL_privacyKeyVoiceMessages() {
-      test_TLdeserializeEnum(org.telegram.tgnet.model.generated.TlGen_PrivacyKey.TL_privacyKeyVoiceMessages::class,
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_PrivacyKey.TL_privacyKeyVoiceMessages::class,
           org.telegram.tgnet.TLRPC.PrivacyKey::TLdeserialize, null)
 
     }
@@ -6435,17 +6400,6 @@ public class Test_All {
     public fun test_ForumTopic_TL_forumTopicDeleted() {
       test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_ForumTopic.TL_forumTopicDeleted::class,
           org.telegram.tgnet.TLRPC.ForumTopic::TLdeserialize, null)
-          test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_ForumTopic.TL_forumTopicDeleted::class,
-              org.telegram.tgnet.TLRPC.TL_forumTopic::TLdeserialize, null)
-
-    }
-
-    @Test
-    public fun test_ForumTopic_TL_forumTopic() {
-      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_ForumTopic.TL_forumTopic::class,
-          org.telegram.tgnet.TLRPC.ForumTopic::TLdeserialize, null)
-          test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_ForumTopic.TL_forumTopic::class,
-              org.telegram.tgnet.TLRPC.TL_forumTopic::TLdeserialize, null)
 
     }
 
@@ -6495,20 +6449,6 @@ public class Test_All {
     public fun test_messages_Messages_TL_messages_channelMessages() {
       test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_messages_Messages.TL_messages_channelMessages::class,
           org.telegram.tgnet.TLRPC.messages_Messages::TLdeserialize, null)
-
-    }
-
-    @Test
-    public fun test_Update_TL_updateChannelPinnedTopic() {
-      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_Update.TL_updateChannelPinnedTopic::class,
-          org.telegram.tgnet.TLRPC.Update::TLdeserialize, null)
-
-    }
-
-    @Test
-    public fun test_Update_TL_updateChannelPinnedTopics() {
-      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_Update.TL_updateChannelPinnedTopics::class,
-          org.telegram.tgnet.TLRPC.Update::TLdeserialize, null)
 
     }
 
@@ -6924,14 +6864,14 @@ public class Test_All {
 
     @Test
     public fun test_InputPrivacyKey_TL_inputPrivacyKeyAbout() {
-      test_TLdeserializeEnum(org.telegram.tgnet.model.generated.TlGen_InputPrivacyKey.TL_inputPrivacyKeyAbout::class,
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_InputPrivacyKey.TL_inputPrivacyKeyAbout::class,
           org.telegram.tgnet.TLRPC.InputPrivacyKey::TLdeserialize, null)
 
     }
 
     @Test
     public fun test_PrivacyKey_TL_privacyKeyAbout() {
-      test_TLdeserializeEnum(org.telegram.tgnet.model.generated.TlGen_PrivacyKey.TL_privacyKeyAbout::class,
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_PrivacyKey.TL_privacyKeyAbout::class,
           org.telegram.tgnet.TLRPC.PrivacyKey::TLdeserialize, null)
 
     }
@@ -7261,13 +7201,6 @@ public class Test_All {
     }
 
     @Test
-    public fun test_payments_CheckedGiftCode_TL_payments_checkedGiftCode() {
-      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_payments_CheckedGiftCode.TL_payments_checkedGiftCode::class,
-          org.telegram.tgnet.TLRPC.TL_payments_checkedGiftCode::TLdeserialize, null)
-
-    }
-
-    @Test
     public fun test_payments_GiveawayInfo_TL_payments_giveawayInfo() {
       test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_payments_GiveawayInfo.TL_payments_giveawayInfo::class,
           org.telegram.tgnet.TLRPC.payments_GiveawayInfo::TLdeserialize, null)
@@ -7389,7 +7322,7 @@ public class Test_All {
     @Test
     public fun test_PeerColor_TL_peerColor() {
       test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_PeerColor.TL_peerColor::class,
-          org.telegram.tgnet.TLRPC.TL_peerColor::TLdeserialize, null)
+          org.telegram.tgnet.TLRPC.PeerColor::TLdeserialize, null)
 
     }
 
@@ -7908,14 +7841,14 @@ public class Test_All {
 
     @Test
     public fun test_InputPrivacyKey_TL_inputPrivacyKeyBirthday() {
-      test_TLdeserializeEnum(org.telegram.tgnet.model.generated.TlGen_InputPrivacyKey.TL_inputPrivacyKeyBirthday::class,
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_InputPrivacyKey.TL_inputPrivacyKeyBirthday::class,
           org.telegram.tgnet.TLRPC.InputPrivacyKey::TLdeserialize, null)
 
     }
 
     @Test
     public fun test_PrivacyKey_TL_privacyKeyBirthday() {
-      test_TLdeserializeEnum(org.telegram.tgnet.model.generated.TlGen_PrivacyKey.TL_privacyKeyBirthday::class,
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_PrivacyKey.TL_privacyKeyBirthday::class,
           org.telegram.tgnet.TLRPC.PrivacyKey::TLdeserialize, null)
 
     }
@@ -8597,23 +8530,9 @@ public class Test_All {
     }
 
     @Test
-    public fun test_MessageAction_TL_messageActionGiftPremium() {
-      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_MessageAction.TL_messageActionGiftPremium::class,
-          org.telegram.tgnet.TLRPC.MessageAction::TLdeserialize, null)
-
-    }
-
-    @Test
     public fun test_InputStorePaymentPurpose_TL_inputStorePaymentPremiumGiftCode() {
       test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_InputStorePaymentPurpose.TL_inputStorePaymentPremiumGiftCode::class,
           org.telegram.tgnet.TLRPC.InputStorePaymentPurpose::TLdeserialize, null)
-
-    }
-
-    @Test
-    public fun test_MessageAction_TL_messageActionGiftCode() {
-      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_MessageAction.TL_messageActionGiftCode::class,
-          org.telegram.tgnet.TLRPC.MessageAction::TLdeserialize, null)
 
     }
 
@@ -8689,14 +8608,14 @@ public class Test_All {
 
     @Test
     public fun test_InputPrivacyKey_TL_inputPrivacyKeyStarGiftsAutoSave() {
-      test_TLdeserializeEnum(org.telegram.tgnet.model.generated.TlGen_InputPrivacyKey.TL_inputPrivacyKeyStarGiftsAutoSave::class,
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_InputPrivacyKey.TL_inputPrivacyKeyStarGiftsAutoSave::class,
           org.telegram.tgnet.TLRPC.InputPrivacyKey::TLdeserialize, null)
 
     }
 
     @Test
     public fun test_PrivacyKey_TL_privacyKeyStarGiftsAutoSave() {
-      test_TLdeserializeEnum(org.telegram.tgnet.model.generated.TlGen_PrivacyKey.TL_privacyKeyStarGiftsAutoSave::class,
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_PrivacyKey.TL_privacyKeyStarGiftsAutoSave::class,
           org.telegram.tgnet.TLRPC.PrivacyKey::TLdeserialize, null)
 
     }
@@ -8807,13 +8726,6 @@ public class Test_All {
     }
 
     @Test
-    public fun test_Update_TL_updateGroupCall() {
-      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_Update.TL_updateGroupCall::class,
-          org.telegram.tgnet.TLRPC.Update::TLdeserialize, null)
-
-    }
-
-    @Test
     public fun test_DialogFilter_TL_dialogFilterChatlist() {
       test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_DialogFilter.TL_dialogFilterChatlist::class,
           org.telegram.tgnet.TLRPC.DialogFilter::TLdeserialize, null)
@@ -8852,13 +8764,6 @@ public class Test_All {
     public fun test_StarGiftAttribute_TL_starGiftAttributePattern() {
       test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_StarGiftAttribute.TL_starGiftAttributePattern::class,
           org.telegram.tgnet.tl.TL_stars.StarGiftAttribute::TLdeserialize, null)
-
-    }
-
-    @Test
-    public fun test_payments_StarGiftUpgradePreview_TL_payments_starGiftUpgradePreview() {
-      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_payments_StarGiftUpgradePreview.TL_payments_starGiftUpgradePreview::class,
-          org.telegram.tgnet.tl.TL_stars.starGiftUpgradePreview::TLdeserialize, null)
 
     }
 
@@ -9031,22 +8936,15 @@ public class Test_All {
     }
 
     @Test
-    public fun test_User_TL_user() {
-      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_User.TL_user::class,
-          org.telegram.tgnet.TLRPC.User::TLdeserialize, null)
-
-    }
-
-    @Test
     public fun test_InputPrivacyKey_TL_inputPrivacyKeyNoPaidMessages() {
-      test_TLdeserializeEnum(org.telegram.tgnet.model.generated.TlGen_InputPrivacyKey.TL_inputPrivacyKeyNoPaidMessages::class,
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_InputPrivacyKey.TL_inputPrivacyKeyNoPaidMessages::class,
           org.telegram.tgnet.TLRPC.InputPrivacyKey::TLdeserialize, null)
 
     }
 
     @Test
     public fun test_PrivacyKey_TL_privacyKeyNoPaidMessages() {
-      test_TLdeserializeEnum(org.telegram.tgnet.model.generated.TlGen_PrivacyKey.TL_privacyKeyNoPaidMessages::class,
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_PrivacyKey.TL_privacyKeyNoPaidMessages::class,
           org.telegram.tgnet.TLRPC.PrivacyKey::TLdeserialize, null)
 
     }
@@ -9153,13 +9051,6 @@ public class Test_All {
     public fun test_contacts_SponsoredPeers_TL_contacts_sponsoredPeers() {
       test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_contacts_SponsoredPeers.TL_contacts_sponsoredPeers::class,
           org.telegram.tgnet.TLRPC.contacts_SponsoredPeers::TLdeserialize, null)
-
-    }
-
-    @Test
-    public fun test_GroupCall_TL_groupCall() {
-      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_GroupCall.TL_groupCall::class,
-          org.telegram.tgnet.TLRPC.GroupCall::TLdeserialize, null)
 
     }
 
@@ -9277,13 +9168,6 @@ public class Test_All {
     }
 
     @Test
-    public fun test_Chat_TL_channel() {
-      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_Chat.TL_channel::class,
-          org.telegram.tgnet.TLRPC.Chat::TLdeserialize, null)
-
-    }
-
-    @Test
     public fun test_Update_TL_updateDraftMessage() {
       test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_Update.TL_updateDraftMessage::class,
           org.telegram.tgnet.TLRPC.Update::TLdeserialize, null)
@@ -9382,13 +9266,6 @@ public class Test_All {
     }
 
     @Test
-    public fun test_TodoCompletion_TL_todoCompletion() {
-      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_TodoCompletion.TL_todoCompletion::class,
-          org.telegram.tgnet.TLRPC.TodoCompletion::TLdeserialize, null)
-
-    }
-
-    @Test
     public fun test_InputMedia_TL_inputMediaTodo() {
       test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_InputMedia.TL_inputMediaTodo::class,
           org.telegram.tgnet.TLRPC.InputMedia::TLdeserialize, null)
@@ -9420,13 +9297,6 @@ public class Test_All {
     public fun test_Update_TL_updateMonoForumNoPaidException() {
       test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_Update.TL_updateMonoForumNoPaidException::class,
           org.telegram.tgnet.TLRPC.Update::TLdeserialize, null)
-
-    }
-
-    @Test
-    public fun test_Message_TL_message() {
-      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_Message.TL_message::class,
-          org.telegram.tgnet.TLRPC.Message::TLdeserialize, null)
 
     }
 
@@ -9550,23 +9420,9 @@ public class Test_All {
     }
 
     @Test
-    public fun test_messages_Messages_TL_messages_messagesSlice() {
-      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_messages_Messages.TL_messages_messagesSlice::class,
-          org.telegram.tgnet.TLRPC.messages_Messages::TLdeserialize, null)
-
-    }
-
-    @Test
     public fun test_StoryItem_TL_storyItem() {
       test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_StoryItem.TL_storyItem::class,
           org.telegram.tgnet.tl.TL_stories.StoryItem::TLdeserialize, null)
-
-    }
-
-    @Test
-    public fun test_MessageAction_TL_messageActionStarGiftUnique() {
-      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_MessageAction.TL_messageActionStarGiftUnique::class,
-          org.telegram.tgnet.TLRPC.MessageAction::TLdeserialize, null)
 
     }
 
@@ -9613,20 +9469,6 @@ public class Test_All {
     }
 
     @Test
-    public fun test_MessageAction_TL_messageActionStarGift() {
-      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_MessageAction.TL_messageActionStarGift::class,
-          org.telegram.tgnet.TLRPC.MessageAction::TLdeserialize, null)
-
-    }
-
-    @Test
-    public fun test_SavedStarGift_TL_savedStarGift() {
-      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_SavedStarGift.TL_savedStarGift::class,
-          org.telegram.tgnet.tl.TL_stars.SavedStarGift::TLdeserialize, null)
-
-    }
-
-    @Test
     public fun test_InputInvoice_TL_inputInvoiceStarGiftPrepaidUpgrade() {
       test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_InputInvoice.TL_inputInvoiceStarGiftPrepaidUpgrade::class,
           org.telegram.tgnet.TLRPC.InputInvoice::TLdeserialize, null)
@@ -9655,13 +9497,6 @@ public class Test_All {
     }
 
     @Test
-    public fun test_StarGift_TL_starGift() {
-      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_StarGift.TL_starGift::class,
-          org.telegram.tgnet.tl.TL_stars.StarGift::TLdeserialize, null)
-
-    }
-
-    @Test
     public fun test_payments_UniqueStarGift_TL_payments_uniqueStarGift() {
       test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_payments_UniqueStarGift.TL_payments_uniqueStarGift::class,
           org.telegram.tgnet.tl.TL_stars.TL_payments_uniqueStarGift::TLdeserialize, null)
@@ -9676,64 +9511,57 @@ public class Test_All {
     }
 
     @Test
-    public fun test_auth_SentCode_TL_auth_sentCodePaymentRequired() {
-      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_auth_SentCode.TL_auth_sentCodePaymentRequired::class,
-          org.telegram.tgnet.TLRPC.auth_SentCode::TLdeserialize, null)
-
-    }
-
-    @Test
     public fun test_ProfileTab_TL_profileTabPosts() {
-      test_TLdeserializeEnum(org.telegram.tgnet.model.generated.TlGen_ProfileTab.TL_profileTabPosts::class,
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_ProfileTab.TL_profileTabPosts::class,
           org.telegram.tgnet.TLRPC.ProfileTab::TLdeserialize, null)
 
     }
 
     @Test
     public fun test_ProfileTab_TL_profileTabGifts() {
-      test_TLdeserializeEnum(org.telegram.tgnet.model.generated.TlGen_ProfileTab.TL_profileTabGifts::class,
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_ProfileTab.TL_profileTabGifts::class,
           org.telegram.tgnet.TLRPC.ProfileTab::TLdeserialize, null)
 
     }
 
     @Test
     public fun test_ProfileTab_TL_profileTabMedia() {
-      test_TLdeserializeEnum(org.telegram.tgnet.model.generated.TlGen_ProfileTab.TL_profileTabMedia::class,
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_ProfileTab.TL_profileTabMedia::class,
           org.telegram.tgnet.TLRPC.ProfileTab::TLdeserialize, null)
 
     }
 
     @Test
     public fun test_ProfileTab_TL_profileTabFiles() {
-      test_TLdeserializeEnum(org.telegram.tgnet.model.generated.TlGen_ProfileTab.TL_profileTabFiles::class,
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_ProfileTab.TL_profileTabFiles::class,
           org.telegram.tgnet.TLRPC.ProfileTab::TLdeserialize, null)
 
     }
 
     @Test
     public fun test_ProfileTab_TL_profileTabMusic() {
-      test_TLdeserializeEnum(org.telegram.tgnet.model.generated.TlGen_ProfileTab.TL_profileTabMusic::class,
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_ProfileTab.TL_profileTabMusic::class,
           org.telegram.tgnet.TLRPC.ProfileTab::TLdeserialize, null)
 
     }
 
     @Test
     public fun test_ProfileTab_TL_profileTabVoice() {
-      test_TLdeserializeEnum(org.telegram.tgnet.model.generated.TlGen_ProfileTab.TL_profileTabVoice::class,
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_ProfileTab.TL_profileTabVoice::class,
           org.telegram.tgnet.TLRPC.ProfileTab::TLdeserialize, null)
 
     }
 
     @Test
     public fun test_ProfileTab_TL_profileTabLinks() {
-      test_TLdeserializeEnum(org.telegram.tgnet.model.generated.TlGen_ProfileTab.TL_profileTabLinks::class,
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_ProfileTab.TL_profileTabLinks::class,
           org.telegram.tgnet.TLRPC.ProfileTab::TLdeserialize, null)
 
     }
 
     @Test
     public fun test_ProfileTab_TL_profileTabGifs() {
-      test_TLdeserializeEnum(org.telegram.tgnet.model.generated.TlGen_ProfileTab.TL_profileTabGifs::class,
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_ProfileTab.TL_profileTabGifs::class,
           org.telegram.tgnet.TLRPC.ProfileTab::TLdeserialize, null)
 
     }
@@ -9781,13 +9609,6 @@ public class Test_All {
     }
 
     @Test
-    public fun test_UserFull_TL_userFull() {
-      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_UserFull.TL_userFull::class,
-          org.telegram.tgnet.TLRPC.UserFull::TLdeserialize, null)
-
-    }
-
-    @Test
     public fun test_ChatTheme_TL_chatTheme() {
       test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_ChatTheme.TL_chatTheme::class,
           org.telegram.tgnet.TLRPC.ChatTheme::TLdeserialize, null)
@@ -9795,23 +9616,9 @@ public class Test_All {
     }
 
     @Test
-    public fun test_account_ChatThemes_TL_account_chatThemes() {
-      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_account_ChatThemes.TL_account_chatThemes::class,
-          org.telegram.tgnet.tl.TL_account.ChatThemes::TLdeserialize, null)
-
-    }
-
-    @Test
     public fun test_MessageAction_TL_messageActionSetChatTheme() {
       test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_MessageAction.TL_messageActionSetChatTheme::class,
           org.telegram.tgnet.TLRPC.MessageAction::TLdeserialize, null)
-
-    }
-
-    @Test
-    public fun test_StarGift_TL_starGiftUnique() {
-      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_StarGift.TL_starGiftUnique::class,
-          org.telegram.tgnet.tl.TL_stars.StarGift::TLdeserialize, null)
 
     }
 
@@ -9840,6 +9647,526 @@ public class Test_All {
     public fun test_InputChatTheme_TL_inputChatThemeUniqueGift() {
       test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_InputChatTheme.TL_inputChatThemeUniqueGift::class,
           org.telegram.tgnet.TLRPC.InputChatTheme::TLdeserialize, null)
+
+    }
+
+    @Test
+    public fun test_account_ChatThemes_TL_account_chatThemes() {
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_account_ChatThemes.TL_account_chatThemes::class,
+          org.telegram.tgnet.tl.TL_account.ChatThemes::TLdeserialize, null)
+
+    }
+
+    @Test
+    public fun test_MessageAction_TL_messageActionStarGiftUnique() {
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_MessageAction.TL_messageActionStarGiftUnique::class,
+          org.telegram.tgnet.TLRPC.MessageAction::TLdeserialize, null)
+
+    }
+
+    @Test
+    public fun test_payments_StarGiftUpgradePreview_TL_payments_starGiftUpgradePreview() {
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_payments_StarGiftUpgradePreview.TL_payments_starGiftUpgradePreview::class,
+          org.telegram.tgnet.tl.TL_stars.starGiftUpgradePreview::TLdeserialize, null)
+
+    }
+
+    @Test
+    public fun test_auth_SentCode_TL_auth_sentCodePaymentRequired() {
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_auth_SentCode.TL_auth_sentCodePaymentRequired::class,
+          org.telegram.tgnet.TLRPC.auth_SentCode::TLdeserialize, null)
+
+    }
+
+    @Test
+    public fun test_InputInvoice_TL_inputInvoicePremiumAuthCode() {
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_InputInvoice.TL_inputInvoicePremiumAuthCode::class,
+          org.telegram.tgnet.TLRPC.InputInvoice::TLdeserialize, null)
+
+    }
+
+    @Test
+    public fun test_InputInvoice_TL_inputInvoiceStarGiftDropOriginalDetails() {
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_InputInvoice.TL_inputInvoiceStarGiftDropOriginalDetails::class,
+          org.telegram.tgnet.TLRPC.InputInvoice::TLdeserialize, null)
+
+    }
+
+    @Test
+    public fun test_StarGiftUpgradePrice_TL_starGiftUpgradePrice() {
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_StarGiftUpgradePrice.TL_starGiftUpgradePrice::class,
+          org.telegram.tgnet.tl.TL_stars.StarGiftUpgradePrice::TLdeserialize, null)
+
+    }
+
+    @Test
+    public fun test_InputContact_TL_inputPhoneContact() {
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_InputContact.TL_inputPhoneContact::class,
+          org.telegram.tgnet.TLRPC.TL_inputPhoneContact::TLdeserialize, null)
+
+    }
+
+    @Test
+    public fun test_UserFull_TL_userFull() {
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_UserFull.TL_userFull::class,
+          org.telegram.tgnet.TLRPC.UserFull::TLdeserialize, null)
+
+    }
+
+    @Test
+    public fun test_messages_Messages_TL_messages_messages() {
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_messages_Messages.TL_messages_messages::class,
+          org.telegram.tgnet.TLRPC.messages_Messages::TLdeserialize, null)
+
+    }
+
+    @Test
+    public fun test_messages_Messages_TL_messages_messagesSlice() {
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_messages_Messages.TL_messages_messagesSlice::class,
+          org.telegram.tgnet.TLRPC.messages_Messages::TLdeserialize, null)
+
+    }
+
+    @Test
+    public fun test_Update_TL_updateUserTyping() {
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_Update.TL_updateUserTyping::class,
+          org.telegram.tgnet.TLRPC.Update::TLdeserialize, null)
+
+    }
+
+    @Test
+    public fun test_Update_TL_updateReadHistoryInbox() {
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_Update.TL_updateReadHistoryInbox::class,
+          org.telegram.tgnet.TLRPC.Update::TLdeserialize, null)
+
+    }
+
+    @Test
+    public fun test_ForumTopic_TL_forumTopic() {
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_ForumTopic.TL_forumTopic::class,
+          org.telegram.tgnet.TLRPC.ForumTopic::TLdeserialize, null)
+
+    }
+
+    @Test
+    public fun test_SendMessageAction_TL_sendMessageTextDraftAction() {
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_SendMessageAction.TL_sendMessageTextDraftAction::class,
+          org.telegram.tgnet.TLRPC.SendMessageAction::TLdeserialize, null)
+
+    }
+
+    @Test
+    public fun test_Update_TL_updateGroupCallEncryptedMessage() {
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_Update.TL_updateGroupCallEncryptedMessage::class,
+          org.telegram.tgnet.TLRPC.Update::TLdeserialize, null)
+
+    }
+
+    @Test
+    public fun test_Update_TL_updatePinnedForumTopic() {
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_Update.TL_updatePinnedForumTopic::class,
+          org.telegram.tgnet.TLRPC.Update::TLdeserialize, null)
+
+    }
+
+    @Test
+    public fun test_Update_TL_updatePinnedForumTopics() {
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_Update.TL_updatePinnedForumTopics::class,
+          org.telegram.tgnet.TLRPC.Update::TLdeserialize, null)
+
+    }
+
+    @Test
+    public fun test_PeerColor_TL_peerColorCollectible() {
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_PeerColor.TL_peerColorCollectible::class,
+          org.telegram.tgnet.TLRPC.PeerColor::TLdeserialize, null)
+
+    }
+
+    @Test
+    public fun test_PeerColor_TL_inputPeerColorCollectible() {
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_PeerColor.TL_inputPeerColorCollectible::class,
+          org.telegram.tgnet.TLRPC.PeerColor::TLdeserialize, null)
+
+    }
+
+    @Test
+    public fun test_MessageAction_TL_messageActionSuggestBirthday() {
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_MessageAction.TL_messageActionSuggestBirthday::class,
+          org.telegram.tgnet.TLRPC.MessageAction::TLdeserialize, null)
+
+    }
+
+    @Test
+    public fun test_Message_TL_message() {
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_Message.TL_message::class,
+          org.telegram.tgnet.TLRPC.Message::TLdeserialize, null)
+
+    }
+
+    @Test
+    public fun test_User_TL_user() {
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_User.TL_user::class,
+          org.telegram.tgnet.TLRPC.User::TLdeserialize, null)
+
+    }
+
+    @Test
+    public fun test_Chat_TL_channel() {
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_Chat.TL_channel::class,
+          org.telegram.tgnet.TLRPC.Chat::TLdeserialize, null)
+
+    }
+
+    @Test
+    public fun test_GroupCall_TL_groupCall() {
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_GroupCall.TL_groupCall::class,
+          org.telegram.tgnet.TLRPC.GroupCall::TLdeserialize, null)
+
+    }
+
+    @Test
+    public fun test_GroupCallParticipant_TL_groupCallParticipant() {
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_GroupCallParticipant.TL_groupCallParticipant::class,
+          org.telegram.tgnet.TLRPC.GroupCallParticipant::TLdeserialize, null)
+
+    }
+
+    @Test
+    public fun test_Update_TL_updateGroupCall() {
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_Update.TL_updateGroupCall::class,
+          org.telegram.tgnet.TLRPC.Update::TLdeserialize, null)
+
+    }
+
+    @Test
+    public fun test_MessageAction_TL_messageActionGiftPremium() {
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_MessageAction.TL_messageActionGiftPremium::class,
+          org.telegram.tgnet.TLRPC.MessageAction::TLdeserialize, null)
+
+    }
+
+    @Test
+    public fun test_payments_CheckedGiftCode_TL_payments_checkedGiftCode() {
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_payments_CheckedGiftCode.TL_payments_checkedGiftCode::class,
+          org.telegram.tgnet.TLRPC.TL_payments_checkedGiftCode::TLdeserialize, null)
+
+    }
+
+    @Test
+    public fun test_MessageAction_TL_messageActionGiftCode() {
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_MessageAction.TL_messageActionGiftCode::class,
+          org.telegram.tgnet.TLRPC.MessageAction::TLdeserialize, null)
+
+    }
+
+    @Test
+    public fun test_TodoCompletion_TL_todoCompletion() {
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_TodoCompletion.TL_todoCompletion::class,
+          org.telegram.tgnet.TLRPC.TodoCompletion::TLdeserialize, null)
+
+    }
+
+    @Test
+    public fun test_Update_TL_updateGroupCallMessage() {
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_Update.TL_updateGroupCallMessage::class,
+          org.telegram.tgnet.TLRPC.Update::TLdeserialize, null)
+
+    }
+
+    @Test
+    public fun test_MessageMedia_TL_messageMediaVideoStream() {
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_MessageMedia.TL_messageMediaVideoStream::class,
+          org.telegram.tgnet.TLRPC.MessageMedia::TLdeserialize, null)
+
+    }
+
+    @Test
+    public fun test_Update_TL_updateDeleteGroupCallMessages() {
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_Update.TL_updateDeleteGroupCallMessages::class,
+          org.telegram.tgnet.TLRPC.Update::TLdeserialize, null)
+
+    }
+
+    @Test
+    public fun test_GroupCallMessage_TL_groupCallMessage() {
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_GroupCallMessage.TL_groupCallMessage::class,
+          org.telegram.tgnet.TLRPC.GroupCallMessage::TLdeserialize, null)
+
+    }
+
+    @Test
+    public fun test_InputPrivacyKey_TL_inputPrivacyKeySavedMusic() {
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_InputPrivacyKey.TL_inputPrivacyKeySavedMusic::class,
+          org.telegram.tgnet.TLRPC.InputPrivacyKey::TLdeserialize, null)
+
+    }
+
+    @Test
+    public fun test_PrivacyKey_TL_privacyKeySavedMusic() {
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_PrivacyKey.TL_privacyKeySavedMusic::class,
+          org.telegram.tgnet.TLRPC.PrivacyKey::TLdeserialize, null)
+
+    }
+
+    @Test
+    public fun test_GroupCallDonor_TL_groupCallDonor() {
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_GroupCallDonor.TL_groupCallDonor::class,
+          org.telegram.tgnet.tl.TL_phone.groupCallDonor::TLdeserialize, null)
+
+    }
+
+    @Test
+    public fun test_phone_GroupCallStars_TL_phone_groupCallStars() {
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_phone_GroupCallStars.TL_phone_groupCallStars::class,
+          org.telegram.tgnet.tl.TL_phone.groupCallStars::TLdeserialize, null)
+
+    }
+
+    @Test
+    public fun test_RecentStory_TL_recentStory() {
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_RecentStory.TL_recentStory::class,
+          org.telegram.tgnet.TLRPC.TL_recentStory::TLdeserialize, null)
+
+    }
+
+    @Test
+    public fun test_InputInvoice_TL_inputInvoiceStarGiftAuctionBid() {
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_InputInvoice.TL_inputInvoiceStarGiftAuctionBid::class,
+          org.telegram.tgnet.TLRPC.InputInvoice::TLdeserialize, null)
+
+    }
+
+    @Test
+    public fun test_AuctionBidLevel_TL_auctionBidLevel() {
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_AuctionBidLevel.TL_auctionBidLevel::class,
+          org.telegram.tgnet.tl.TL_stars.TL_AuctionBidLevel::TLdeserialize, null)
+
+    }
+
+    @Test
+    public fun test_StarGiftAuctionState_TL_starGiftAuctionStateNotModified() {
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_StarGiftAuctionState.TL_starGiftAuctionStateNotModified::class,
+          org.telegram.tgnet.tl.TL_stars.StarGiftAuctionState::TLdeserialize, null)
+
+    }
+
+    @Test
+    public fun test_StarGiftAuctionUserState_TL_starGiftAuctionUserState() {
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_StarGiftAuctionUserState.TL_starGiftAuctionUserState::class,
+          org.telegram.tgnet.tl.TL_stars.TL_StarGiftAuctionUserState::TLdeserialize, null)
+
+    }
+
+    @Test
+    public fun test_Update_TL_updateStarGiftAuctionState() {
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_Update.TL_updateStarGiftAuctionState::class,
+          org.telegram.tgnet.TLRPC.Update::TLdeserialize, null)
+
+    }
+
+    @Test
+    public fun test_Update_TL_updateStarGiftAuctionUserState() {
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_Update.TL_updateStarGiftAuctionUserState::class,
+          org.telegram.tgnet.TLRPC.Update::TLdeserialize, null)
+
+    }
+
+    @Test
+    public
+        fun test_payments_StarGiftAuctionAcquiredGifts_TL_payments_starGiftAuctionAcquiredGifts() {
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_payments_StarGiftAuctionAcquiredGifts.TL_payments_starGiftAuctionAcquiredGifts::class,
+          org.telegram.tgnet.tl.TL_payments.TL_StarGiftAuctionAcquiredGifts::TLdeserialize, null)
+
+    }
+
+    @Test
+    public fun test_StarGiftActiveAuctionState_TL_starGiftActiveAuctionState() {
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_StarGiftActiveAuctionState.TL_starGiftActiveAuctionState::class,
+          org.telegram.tgnet.tl.TL_stars.TL_StarGiftActiveAuctionState::TLdeserialize, null)
+
+    }
+
+    @Test
+    public
+        fun test_payments_StarGiftActiveAuctions_TL_payments_starGiftActiveAuctionsNotModified() {
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_payments_StarGiftActiveAuctions.TL_payments_starGiftActiveAuctionsNotModified::class,
+          org.telegram.tgnet.tl.TL_payments.StarGiftActiveAuctions::TLdeserialize, null)
+
+    }
+
+    @Test
+    public fun test_InputStarGiftAuction_TL_inputStarGiftAuction() {
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_InputStarGiftAuction.TL_inputStarGiftAuction::class,
+          org.telegram.tgnet.tl.TL_stars.InputStarGiftAuction::TLdeserialize, null)
+
+    }
+
+    @Test
+    public fun test_InputStarGiftAuction_TL_inputStarGiftAuctionSlug() {
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_InputStarGiftAuction.TL_inputStarGiftAuctionSlug::class,
+          org.telegram.tgnet.tl.TL_stars.InputStarGiftAuction::TLdeserialize, null)
+
+    }
+
+    @Test
+    public fun test_Passkey_TL_passkey() {
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_Passkey.TL_passkey::class,
+          org.telegram.tgnet.tl.TL_account.Passkey::TLdeserialize, null)
+
+    }
+
+    @Test
+    public fun test_account_Passkeys_TL_account_passkeys() {
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_account_Passkeys.TL_account_passkeys::class,
+          org.telegram.tgnet.tl.TL_account.Passkeys::TLdeserialize, null)
+
+    }
+
+    @Test
+    public fun test_account_PasskeyRegistrationOptions_TL_account_passkeyRegistrationOptions() {
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_account_PasskeyRegistrationOptions.TL_account_passkeyRegistrationOptions::class,
+          org.telegram.tgnet.tl.TL_account.passkeyRegistrationOptions::TLdeserialize, null)
+
+    }
+
+    @Test
+    public fun test_auth_PasskeyLoginOptions_TL_auth_passkeyLoginOptions() {
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_auth_PasskeyLoginOptions.TL_auth_passkeyLoginOptions::class,
+          org.telegram.tgnet.tl.TL_account.passkeyLoginOptions::TLdeserialize, null)
+
+    }
+
+    @Test
+    public fun test_InputPasskeyResponse_TL_inputPasskeyResponseRegister() {
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_InputPasskeyResponse.TL_inputPasskeyResponseRegister::class,
+          org.telegram.tgnet.tl.TL_account.InputPasskeyResponse::TLdeserialize, null)
+
+    }
+
+    @Test
+    public fun test_InputPasskeyResponse_TL_inputPasskeyResponseLogin() {
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_InputPasskeyResponse.TL_inputPasskeyResponseLogin::class,
+          org.telegram.tgnet.tl.TL_account.InputPasskeyResponse::TLdeserialize, null)
+
+    }
+
+    @Test
+    public fun test_InputPasskeyCredential_TL_inputPasskeyCredentialPublicKey() {
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_InputPasskeyCredential.TL_inputPasskeyCredentialPublicKey::class,
+          org.telegram.tgnet.tl.TL_account.inputPasskeyCredentialPublicKey::TLdeserialize, null)
+
+    }
+
+    @Test
+    public fun test_StarGift_TL_starGift() {
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_StarGift.TL_starGift::class,
+          org.telegram.tgnet.tl.TL_stars.StarGift::TLdeserialize, null)
+
+    }
+
+    @Test
+    public fun test_MessageAction_TL_messageActionStarGift() {
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_MessageAction.TL_messageActionStarGift::class,
+          org.telegram.tgnet.TLRPC.MessageAction::TLdeserialize, null)
+
+    }
+
+    @Test
+    public fun test_StarGift_TL_starGiftUnique() {
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_StarGift.TL_starGiftUnique::class,
+          org.telegram.tgnet.tl.TL_stars.StarGift::TLdeserialize, null)
+
+    }
+
+    @Test
+    public fun test_SavedStarGift_TL_savedStarGift() {
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_SavedStarGift.TL_savedStarGift::class,
+          org.telegram.tgnet.tl.TL_stars.SavedStarGift::TLdeserialize, null)
+
+    }
+
+    @Test
+    public fun test_StarGiftAuctionState_TL_starGiftAuctionState() {
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_StarGiftAuctionState.TL_starGiftAuctionState::class,
+          org.telegram.tgnet.tl.TL_stars.StarGiftAuctionState::TLdeserialize, null)
+
+    }
+
+    @Test
+    public fun test_StarGiftAuctionState_TL_starGiftAuctionStateFinished() {
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_StarGiftAuctionState.TL_starGiftAuctionStateFinished::class,
+          org.telegram.tgnet.tl.TL_stars.StarGiftAuctionState::TLdeserialize, null)
+
+    }
+
+    @Test
+    public fun test_payments_StarGiftAuctionState_TL_payments_starGiftAuctionState() {
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_payments_StarGiftAuctionState.TL_payments_starGiftAuctionState::class,
+          org.telegram.tgnet.tl.TL_payments.TL_StarGiftAuctionState::TLdeserialize, null)
+
+    }
+
+    @Test
+    public fun test_StarGiftAuctionAcquiredGift_TL_starGiftAuctionAcquiredGift() {
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_StarGiftAuctionAcquiredGift.TL_starGiftAuctionAcquiredGift::class,
+          org.telegram.tgnet.tl.TL_stars.TL_StarGiftAuctionAcquiredGift::TLdeserialize, null)
+
+    }
+
+    @Test
+    public fun test_payments_StarGiftActiveAuctions_TL_payments_starGiftActiveAuctions() {
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_payments_StarGiftActiveAuctions.TL_payments_starGiftActiveAuctions::class,
+          org.telegram.tgnet.tl.TL_payments.StarGiftActiveAuctions::TLdeserialize, null)
+
+    }
+
+    @Test
+    public fun test_WebPageAttribute_TL_webPageAttributeStarGiftAuction() {
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_WebPageAttribute.TL_webPageAttributeStarGiftAuction::class,
+          org.telegram.tgnet.TLRPC.WebPageAttribute::TLdeserialize, null)
+
+    }
+
+    @Test
+    public fun test_MessageAction_TL_messageActionStarGiftPurchaseOffer() {
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_MessageAction.TL_messageActionStarGiftPurchaseOffer::class,
+          org.telegram.tgnet.TLRPC.MessageAction::TLdeserialize, null)
+
+    }
+
+    @Test
+    public fun test_MessageAction_TL_messageActionStarGiftPurchaseOfferDeclined() {
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_MessageAction.TL_messageActionStarGiftPurchaseOfferDeclined::class,
+          org.telegram.tgnet.TLRPC.MessageAction::TLdeserialize, null)
+
+    }
+
+    @Test
+    public fun test_StarGiftBackground_TL_starGiftBackground() {
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_StarGiftBackground.TL_starGiftBackground::class,
+          org.telegram.tgnet.tl.TL_stars.TL_starGiftBackground::TLdeserialize, null)
+
+    }
+
+    @Test
+    public fun test_StarGiftAuctionRound_TL_starGiftAuctionRound() {
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_StarGiftAuctionRound.TL_starGiftAuctionRound::class,
+          org.telegram.tgnet.tl.TL_stars.StarGiftAuctionRound::TLdeserialize, null)
+
+    }
+
+    @Test
+    public fun test_StarGiftAuctionRound_TL_starGiftAuctionRoundExtendable() {
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_StarGiftAuctionRound.TL_starGiftAuctionRoundExtendable::class,
+          org.telegram.tgnet.tl.TL_stars.StarGiftAuctionRound::TLdeserialize, null)
+
+    }
+
+    @Test
+    public fun test_payments_StarGiftUpgradeAttributes_TL_payments_starGiftUpgradeAttributes() {
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_payments_StarGiftUpgradeAttributes.TL_payments_starGiftUpgradeAttributes::class,
+          org.telegram.tgnet.tl.TL_stars.starGiftUpgradeAttributes::TLdeserialize, null)
 
     }
   }
@@ -11676,6 +12003,16 @@ public class Test_All {
     }
 
     /**
+     * ForumTopic-DraftMessage
+     */
+    @Test
+    public fun test_DraftMessage_TL_draftMessage_layer165() {
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_DraftMessage.TL_draftMessage_layer165::class,
+          org.telegram.tgnet.TLRPC.DraftMessage::TLdeserialize, 165)
+
+    }
+
+    /**
      * Message-MessageMedia-Document
      */
     @Test
@@ -12097,12 +12434,32 @@ public class Test_All {
     }
 
     /**
+     * ForumTopic-DraftMessage-InputMedia
+     */
+    @Test
+    public fun test_InputMedia_TL_inputMediaUploadedDocument_layer197() {
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_InputMedia.TL_inputMediaUploadedDocument_layer197::class,
+          org.telegram.tgnet.TLRPC.InputMedia::TLdeserialize, 197)
+
+    }
+
+    /**
      * Message-MessageMedia
      */
     @Test
     public fun test_MessageMedia_TL_messageMediaDocument_layer159() {
       test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_MessageMedia.TL_messageMediaDocument_layer159::class,
           org.telegram.tgnet.TLRPC.MessageMedia::TLdeserialize, 159)
+
+    }
+
+    /**
+     * ForumTopic-DraftMessage-InputMedia
+     */
+    @Test
+    public fun test_InputMedia_TL_inputMediaDocumentExternal_layer197() {
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_InputMedia.TL_inputMediaDocumentExternal_layer197::class,
+          org.telegram.tgnet.TLRPC.InputMedia::TLdeserialize, 197)
 
     }
 
@@ -12300,6 +12657,7 @@ public class Test_All {
      * StoryItem-MessageMedia-Poll-PollAnswer
      * UserFull-PeerStories-StoryItem-MessageMedia-Poll-PollAnswer
      * ChatFull-PeerStories-StoryItem-MessageMedia-Poll-PollAnswer
+     * ForumTopic-DraftMessage-InputMedia-Poll-PollAnswer
      */
     @Test
     public fun test_PollAnswer_TL_pollAnswer_layer178() {
@@ -12716,6 +13074,7 @@ public class Test_All {
      * StoryItem-MessageMedia-Poll
      * UserFull-PeerStories-StoryItem-MessageMedia-Poll
      * ChatFull-PeerStories-StoryItem-MessageMedia-Poll
+     * ForumTopic-DraftMessage-InputMedia-Poll
      */
     @Test
     public fun test_Poll_TL_poll_layer178() {
@@ -12881,6 +13240,16 @@ public class Test_All {
     public fun test_ChatFull_TL_chatFull_layer122() {
       test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_ChatFull.TL_chatFull_layer122::class,
           org.telegram.tgnet.TLRPC.ChatFull::TLdeserialize, 122)
+
+    }
+
+    /**
+     * ForumTopic-DraftMessage-InputMedia
+     */
+    @Test
+    public fun test_InputMedia_TL_inputMediaDocument_layer197() {
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_InputMedia.TL_inputMediaDocument_layer197::class,
+          org.telegram.tgnet.TLRPC.InputMedia::TLdeserialize, 197)
 
     }
 
@@ -13357,6 +13726,7 @@ public class Test_All {
     /**
      * UserFull-PeerNotifySettings
      * ChatFull-PeerNotifySettings
+     * ForumTopic-PeerNotifySettings
      */
     @Test
     public fun test_PeerNotifySettings_TL_peerNotifySettings_layer159() {
@@ -13520,6 +13890,16 @@ public class Test_All {
     }
 
     /**
+     * ForumTopic-DraftMessage-InputMedia
+     */
+    @Test
+    public fun test_InputMedia_TL_inputMediaInvoice_layer180() {
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_InputMedia.TL_inputMediaInvoice_layer180::class,
+          org.telegram.tgnet.TLRPC.InputMedia::TLdeserialize, 180)
+
+    }
+
+    /**
      * User
      */
     @Test
@@ -13539,6 +13919,16 @@ public class Test_All {
     public fun test_Chat_TL_channel_layer163() {
       test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_Chat.TL_channel_layer163::class,
           org.telegram.tgnet.TLRPC.Chat::TLdeserialize, 163)
+
+    }
+
+    /**
+     * ForumTopic
+     */
+    @Test
+    public fun test_ForumTopic_TL_forumTopic_layer215() {
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_ForumTopic.TL_forumTopic_layer215::class,
+          org.telegram.tgnet.TLRPC.ForumTopic::TLdeserialize, 215)
 
     }
 
@@ -13663,6 +14053,7 @@ public class Test_All {
      * UserFull-BotInfo-Document-DocumentAttribute
      * ChatFull-BotInfo-Document-DocumentAttribute
      * StarsTransaction-WebDocument-DocumentAttribute
+     * ForumTopic-DraftMessage-InputMedia-DocumentAttribute
      */
     @Test
     public fun test_DocumentAttribute_TL_documentAttributeVideo_layer184() {
@@ -13711,6 +14102,16 @@ public class Test_All {
     @Test
     public fun test_UserStories_TL_userStories_layer163() {
       assumeTrue("Test skipped, link error", false)
+
+    }
+
+    /**
+     * ForumTopic-DraftMessage-InputReplyTo
+     */
+    @Test
+    public fun test_InputReplyTo_TL_inputReplyToStory_layer173() {
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_InputReplyTo.TL_inputReplyToStory_layer173::class,
+          org.telegram.tgnet.TLRPC.InputReplyTo::TLdeserialize, 173)
 
     }
 
@@ -13804,6 +14205,26 @@ public class Test_All {
     }
 
     /**
+     * ForumTopic-DraftMessage
+     */
+    @Test
+    public fun test_DraftMessage_TL_draftMessage_layer181() {
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_DraftMessage.TL_draftMessage_layer181::class,
+          org.telegram.tgnet.TLRPC.DraftMessage::TLdeserialize, 181)
+
+    }
+
+    /**
+     * ForumTopic-DraftMessage-InputMedia-Invoice
+     */
+    @Test
+    public fun test_Invoice_TL_invoice_layer192() {
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_Invoice.TL_invoice_layer192::class,
+          org.telegram.tgnet.TLRPC.TL_invoice::TLdeserialize, 192)
+
+    }
+
+    /**
      * Message-MessageReplyHeader
      */
     @Test
@@ -13823,6 +14244,16 @@ public class Test_All {
     public fun test_StoryItem_TL_storyItem_layer173() {
       test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_StoryItem.TL_storyItem_layer173::class,
           org.telegram.tgnet.tl.TL_stories.StoryItem::TLdeserialize, 173)
+
+    }
+
+    /**
+     * ForumTopic-DraftMessage-InputReplyTo
+     */
+    @Test
+    public fun test_InputReplyTo_TL_inputReplyToMessage_layer203() {
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_InputReplyTo.TL_inputReplyToMessage_layer203::class,
+          org.telegram.tgnet.TLRPC.InputReplyTo::TLdeserialize, 203)
 
     }
 
@@ -13901,6 +14332,7 @@ public class Test_All {
      * StoryItem-MessageEntity
      * UserFull-PeerStories-StoryItem-MessageEntity
      * ChatFull-PeerStories-StoryItem-MessageEntity
+     * ForumTopic-DraftMessage-MessageEntity
      */
     @Test
     public fun test_MessageEntity_TL_messageEntityBlockquote_layer180() {
@@ -14013,6 +14445,16 @@ public class Test_All {
     public fun test_MessageReplyHeader_TL_messageReplyHeader_layer166() {
       test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_MessageReplyHeader.TL_messageReplyHeader_layer166::class,
           org.telegram.tgnet.TLRPC.MessageReplyHeader::TLdeserialize, 166)
+
+    }
+
+    /**
+     * ForumTopic-DraftMessage-InputReplyTo
+     */
+    @Test
+    public fun test_InputReplyTo_TL_inputReplyToMessage_layer166() {
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_InputReplyTo.TL_inputReplyToMessage_layer166::class,
+          org.telegram.tgnet.TLRPC.InputReplyTo::TLdeserialize, 166)
 
     }
 
@@ -14198,6 +14640,16 @@ public class Test_All {
     }
 
     /**
+     * ForumTopic-DraftMessage
+     */
+    @Test
+    public fun test_DraftMessage_TL_draftMessage_layer205() {
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_DraftMessage.TL_draftMessage_layer205::class,
+          org.telegram.tgnet.TLRPC.DraftMessage::TLdeserialize, 205)
+
+    }
+
+    /**
      * StarsTransaction
      */
     @Test
@@ -14218,12 +14670,23 @@ public class Test_All {
     }
 
     /**
+     * ForumTopic-DraftMessage-InputMedia
+     */
+    @Test
+    public fun test_InputMedia_TL_inputMediaPaidMedia_layer186() {
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_InputMedia.TL_inputMediaPaidMedia_layer186::class,
+          org.telegram.tgnet.TLRPC.InputMedia::TLdeserialize, 186)
+
+    }
+
+    /**
      * Message-MessageMedia-Document-DocumentAttribute
      * StoryItem-MessageMedia-Document-DocumentAttribute
      * Theme-Document-DocumentAttribute
      * UserFull-BotInfo-Document-DocumentAttribute
      * ChatFull-BotInfo-Document-DocumentAttribute
      * StarsTransaction-WebDocument-DocumentAttribute
+     * ForumTopic-DraftMessage-InputMedia-DocumentAttribute
      */
     @Test
     public fun test_DocumentAttribute_TL_documentAttributeVideo_layer187() {
@@ -14351,6 +14814,26 @@ public class Test_All {
     public fun test_MessageAction_TL_messageActionStarGift_layer192() {
       test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_MessageAction.TL_messageActionStarGift_layer192::class,
           org.telegram.tgnet.TLRPC.MessageAction::TLdeserialize, 192)
+
+    }
+
+    /**
+     * Message-MessageAction
+     */
+    @Test
+    public fun test_MessageAction_TL_messageActionGiftPremium_layer216() {
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_MessageAction.TL_messageActionGiftPremium_layer216::class,
+          org.telegram.tgnet.TLRPC.MessageAction::TLdeserialize, 216)
+
+    }
+
+    /**
+     * Message-MessageAction
+     */
+    @Test
+    public fun test_MessageAction_TL_messageActionGiftCode_layer216() {
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_MessageAction.TL_messageActionGiftCode_layer216::class,
+          org.telegram.tgnet.TLRPC.MessageAction::TLdeserialize, 216)
 
     }
 
@@ -14669,6 +15152,16 @@ public class Test_All {
     }
 
     /**
+     * User
+     */
+    @Test
+    public fun test_User_TL_user_layer216() {
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_User.TL_user_layer216::class,
+          org.telegram.tgnet.TLRPC.User::TLdeserialize, 216)
+
+    }
+
+    /**
      * Message-MessageMedia-WebPage-Page-PageBlock-Chat
      * StoryItem-MessageMedia-WebPage-Page-PageBlock-Chat
      * Chat
@@ -14766,12 +15259,61 @@ public class Test_All {
     }
 
     /**
+     * Message-MessageMedia-WebPage-Page-PageBlock-Chat
+     * StoryItem-MessageMedia-WebPage-Page-PageBlock-Chat
+     * Chat
+     * UserFull-PeerStories-StoryItem-MessageMedia-WebPage-Page-PageBlock-Chat
+     * ChatFull-PeerStories-StoryItem-MessageMedia-WebPage-Page-PageBlock-Chat
+     * StarsTransaction-MessageMedia-WebPage-Page-PageBlock-Chat
+     */
+    @Test
+    public fun test_Chat_TL_channel_layer216() {
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_Chat.TL_channel_layer216::class,
+          org.telegram.tgnet.TLRPC.Chat::TLdeserialize, 216)
+
+    }
+
+    /**
+     * ForumTopic-DraftMessage-InputReplyTo
+     */
+    @Test
+    public fun test_InputReplyTo_TL_inputReplyToMessage_layer207() {
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_InputReplyTo.TL_inputReplyToMessage_layer207::class,
+          org.telegram.tgnet.TLRPC.InputReplyTo::TLdeserialize, 207)
+
+    }
+
+    /**
      * ChatFull
      */
     @Test
     public fun test_ChatFull_TL_channelFull_layer212() {
       test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_ChatFull.TL_channelFull_layer212::class,
           org.telegram.tgnet.TLRPC.ChatFull::TLdeserialize, 212)
+
+    }
+
+    /**
+     * Message-MessageMedia-TodoCompletion
+     * StoryItem-MessageMedia-TodoCompletion
+     * UserFull-PeerStories-StoryItem-MessageMedia-TodoCompletion
+     * ChatFull-PeerStories-StoryItem-MessageMedia-TodoCompletion
+     * StarsTransaction-MessageMedia-TodoCompletion
+     */
+    @Test
+    public fun test_TodoCompletion_TL_todoCompletion_layer216() {
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_TodoCompletion.TL_todoCompletion_layer216::class,
+          org.telegram.tgnet.TLRPC.TodoCompletion::TLdeserialize, 216)
+
+    }
+
+    /**
+     * Message
+     */
+    @Test
+    public fun test_Message_TL_message_layer216() {
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_Message.TL_message_layer216::class,
+          org.telegram.tgnet.TLRPC.Message::TLdeserialize, 216)
 
     }
 
@@ -14870,6 +15412,26 @@ public class Test_All {
     }
 
     /**
+     * Message-MessageAction
+     */
+    @Test
+    public fun test_MessageAction_TL_messageActionStarGiftUnique_layer214() {
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_MessageAction.TL_messageActionStarGiftUnique_layer214::class,
+          org.telegram.tgnet.TLRPC.MessageAction::TLdeserialize, 214)
+
+    }
+
+    /**
+     * Message-MessageAction
+     */
+    @Test
+    public fun test_MessageAction_TL_messageActionStarGift_layer217() {
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_MessageAction.TL_messageActionStarGift_layer217::class,
+          org.telegram.tgnet.TLRPC.MessageAction::TLdeserialize, 217)
+
+    }
+
+    /**
      * Message-MessageAction-StarGift
      * StoryItem-MessageMedia-WebPage-WebPageAttribute-StarGift
      * UserFull-PeerStories-StoryItem-MessageMedia-WebPage-WebPageAttribute-StarGift
@@ -14886,12 +15448,130 @@ public class Test_All {
     }
 
     /**
+     * SavedStarGift
+     */
+    @Test
+    public fun test_SavedStarGift_TL_savedStarGift_layer214() {
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_SavedStarGift.TL_savedStarGift_layer214::class,
+          org.telegram.tgnet.tl.TL_stars.SavedStarGift::TLdeserialize, 214)
+
+    }
+
+    /**
      * UserFull
      */
     @Test
     public fun test_UserFull_TL_userFull_layer213() {
       test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_UserFull.TL_userFull_layer213::class,
           org.telegram.tgnet.TLRPC.UserFull::TLdeserialize, 213)
+
+    }
+
+    /**
+     * Message-MessageAction-StarGift
+     * StoryItem-MessageMedia-WebPage-WebPageAttribute-StarGift
+     * UserFull-ChatTheme-StarGift
+     * ChatFull-PeerStories-StoryItem-MessageMedia-WebPage-WebPageAttribute-StarGift
+     * StarsTransaction-StarGift
+     * StarGift
+     * SavedStarGift-StarGift
+     */
+    @Test
+    public fun test_StarGift_TL_starGift_layer217() {
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_StarGift.TL_starGift_layer217::class,
+          org.telegram.tgnet.tl.TL_stars.StarGift::TLdeserialize, 217)
+
+    }
+
+    /**
+     * UserFull
+     */
+    @Test
+    public fun test_UserFull_TL_userFull_layer215() {
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_UserFull.TL_userFull_layer215::class,
+          org.telegram.tgnet.TLRPC.UserFull::TLdeserialize, 215)
+
+    }
+
+    /**
+     * Message-MessageAction-StarGift
+     * StoryItem-MessageMedia-WebPage-WebPageAttribute-StarGift
+     * UserFull-ChatTheme-StarGift
+     * ChatFull-PeerStories-StoryItem-MessageMedia-WebPage-WebPageAttribute-StarGift
+     * StarsTransaction-StarGift
+     * StarGift
+     * SavedStarGift-StarGift
+     */
+    @Test
+    public fun test_StarGift_TL_starGiftUnique_layer215() {
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_StarGift.TL_starGiftUnique_layer215::class,
+          org.telegram.tgnet.tl.TL_stars.StarGift::TLdeserialize, 215)
+
+    }
+
+    /**
+     * SavedStarGift
+     */
+    @Test
+    public fun test_SavedStarGift_TL_savedStarGift_layer219() {
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_SavedStarGift.TL_savedStarGift_layer219::class,
+          org.telegram.tgnet.tl.TL_stars.SavedStarGift::TLdeserialize, 219)
+
+    }
+
+    /**
+     * Message-MessageAction-StarGift
+     * StoryItem-MessageMedia-WebPage-WebPageAttribute-StarGift
+     * UserFull-ChatTheme-StarGift
+     * ChatFull-PeerStories-StoryItem-MessageMedia-WebPage-WebPageAttribute-StarGift
+     * StarsTransaction-StarGift
+     * StarGift
+     * SavedStarGift-StarGift
+     */
+    @Test
+    public fun test_StarGift_TL_starGiftUnique_layer219() {
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_StarGift.TL_starGiftUnique_layer219::class,
+          org.telegram.tgnet.tl.TL_stars.StarGift::TLdeserialize, 219)
+
+    }
+
+    /**
+     * Message-MessageAction-StarGift
+     * StoryItem-MessageMedia-WebPage-WebPageAttribute-StarGift
+     * UserFull-ChatTheme-StarGift
+     * ChatFull-PeerStories-StoryItem-MessageMedia-WebPage-WebPageAttribute-StarGift
+     * StarsTransaction-StarGift
+     * StarGift
+     * SavedStarGift-StarGift
+     */
+    @Test
+    public fun test_StarGift_TL_starGift_layer219() {
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_StarGift.TL_starGift_layer219::class,
+          org.telegram.tgnet.tl.TL_stars.StarGift::TLdeserialize, 219)
+
+    }
+
+    /**
+     * Message-MessageAction
+     */
+    @Test
+    public fun test_MessageAction_TL_messageActionStarGift_layer219() {
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_MessageAction.TL_messageActionStarGift_layer219::class,
+          org.telegram.tgnet.TLRPC.MessageAction::TLdeserialize, 219)
+
+    }
+
+    /**
+     * Message-MessageMedia-WebPage-WebPageAttribute
+     * StoryItem-MessageMedia-WebPage-WebPageAttribute
+     * UserFull-PeerStories-StoryItem-MessageMedia-WebPage-WebPageAttribute
+     * ChatFull-PeerStories-StoryItem-MessageMedia-WebPage-WebPageAttribute
+     * StarsTransaction-MessageMedia-WebPage-WebPageAttribute
+     */
+    @Test
+    public fun test_WebPageAttribute_TL_webPageAttributeStarGiftAuction_layer219() {
+      test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_WebPageAttribute.TL_webPageAttributeStarGiftAuction_layer219::class,
+          org.telegram.tgnet.TLRPC.WebPageAttribute::TLdeserialize, 219)
 
     }
   }

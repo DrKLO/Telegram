@@ -22,6 +22,8 @@ public class WebFile extends TLObject {
     public int size;
     public String mime_type;
 
+    public boolean noproxy;
+
     public static WebFile createWithGeoPoint(TLRPC.GeoPoint point, int w, int h, int zoom, int scale) {
         return createWithGeoPoint(point.lat, point._long, point.access_hash, w, h, zoom, scale);
     }
@@ -45,18 +47,31 @@ public class WebFile extends TLObject {
     }
 
     public static WebFile createWithWebDocument(TLRPC.WebDocument webDocument) {
-        if (!(webDocument instanceof TLRPC.TL_webDocument)) {
+        if (webDocument instanceof TLRPC.TL_webDocument) {
+            final WebFile webFile = new WebFile();
+            final TLRPC.TL_webDocument document = (TLRPC.TL_webDocument) webDocument;
+            final TLRPC.TL_inputWebFileLocation location = new TLRPC.TL_inputWebFileLocation();
+            webFile.location = location;
+            location.url = webFile.url = webDocument.url;
+            location.access_hash = document.access_hash;
+            webFile.size = document.size;
+            webFile.mime_type = document.mime_type;
+            webFile.attributes = document.attributes;
+            return webFile;
+        } else if (webDocument instanceof TLRPC.TL_webDocumentNoProxy) {
+            final WebFile webFile = new WebFile();
+            final TLRPC.TL_webDocumentNoProxy document = (TLRPC.TL_webDocumentNoProxy) webDocument;
+            final TLRPC.TL_inputWebFileLocation location = new TLRPC.TL_inputWebFileLocation();
+            webFile.location = location;
+            location.url = webFile.url = webDocument.url;
+            location.access_hash = document.access_hash;
+            webFile.size = document.size;
+            webFile.mime_type = document.mime_type;
+            webFile.attributes = document.attributes;
+            webFile.noproxy = true;
+            return webFile;
+        } else {
             return null;
         }
-        WebFile webFile = new WebFile();
-        TLRPC.TL_webDocument document = (TLRPC.TL_webDocument) webDocument;
-        TLRPC.TL_inputWebFileLocation location = new TLRPC.TL_inputWebFileLocation();
-        webFile.location = location;
-        location.url = webFile.url = webDocument.url;
-        location.access_hash = document.access_hash;
-        webFile.size = document.size;
-        webFile.mime_type = document.mime_type;
-        webFile.attributes = document.attributes;
-        return webFile;
     }
 }
